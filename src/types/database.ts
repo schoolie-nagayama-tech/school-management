@@ -149,7 +149,7 @@ export type Database = {
           inquiry_id: string;
           school_id: string;
           contacted_at: string;
-          method: 'tel' | 'email' | 'sms' | 'visit' | 'other';
+          method: 'tel' | 'email' | 'sms' | 'visit' | 'other' | 'material_sent' | 'status_change';
           direction: 'outbound' | 'inbound' | null;
           result: string | null;
           note: string | null;
@@ -161,7 +161,7 @@ export type Database = {
           inquiry_id: string;
           school_id: string;
           contacted_at?: string;
-          method?: 'tel' | 'email' | 'sms' | 'visit' | 'other';
+          method?: 'tel' | 'email' | 'sms' | 'visit' | 'other' | 'material_sent' | 'status_change';
           direction?: 'outbound' | 'inbound' | null;
           result?: string | null;
           note?: string | null;

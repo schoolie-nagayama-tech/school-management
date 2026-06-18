@@ -25,6 +25,7 @@ import AccessDenied from '@/components/AccessDenied';
 import {
   getInquiry,
   updateInquiry,
+  updateInquiryWithTimeline,
   softDeleteInquiry,
   getInquiryContacts,
   addInquiryContact,
@@ -57,6 +58,9 @@ import {
   LOST_REASONS,
   formatDate,
   formatDateTime,
+  MANUAL_CONTACT_METHODS,
+  CONTACT_RESULT_OPTIONS,
+  type ManualContactMethod,
 } from '../inquiryConstants';
 import {
   ChevronLeft,
@@ -70,9 +74,19 @@ import {
   CalendarDays,
   Copy,
   X,
+  Package,
+  ArrowRightLeft,
+  MessageSquare,
+  Building2,
+  Circle,
 } from 'lucide-react';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 import { supabase } from '@/lib/supabase';
+
+/** コンタクト履歴とメールログを統合したタイムラインアイテム */
+type TimelineItem =
+  | { kind: 'contact'; at: string; data: InquiryContact }
+  | { kind: 'mail_log'; at: string; data: InquiryMailLog };
 
 export default function InquiryDetailPage() {
   const params = useParams();
@@ -100,7 +114,7 @@ export default function InquiryDetailPage() {
   const [isSaving, setIsSaving] = useState(false);
 
   // ---- コンタクト追加フォーム ----
-  const [contactMethod, setContactMethod] = useState<'tel' | 'email' | 'sms' | 'visit' | 'other'>('tel');
+  const [contactMethod, setContactMethod] = useState<ManualContactMethod>('tel');
   const [contactDirection, setContactDirection] = useState<'outbound' | 'inbound'>('outbound');
   const [contactDate, setContactDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [contactResult, setContactResult] = useState('');
@@ -293,7 +307,7 @@ export default function InquiryDetailPage() {
     if (!inquiry) return;
     setIsSaving(true);
     try {
-      const update: Parameters<typeof updateInquiry>[1] = {
+      const update: Parameters<typeof updateInquiryWithTimeline>[1] = {
         status: editStatus,
         note: editNote || null,
       };
@@ -312,8 +326,10 @@ export default function InquiryDetailPage() {
       } else {
         update.lost_reason = null;
       }
-      const updated = await updateInquiry(id, update);
-      setInquiry(updated);
+      // updateInquiryWithTimeline でステータス変更・資料発送を自動でタイムラインに積む
+      await updateInquiryWithTimeline(inquiry, update);
+      // contacts も再取得してタイムラインを最新化する
+      await fetchData();
       toast.success('保存しました');
     } catch (err) {
       toast.error(getUserErrorMessage(err, '保存に失敗しました'));
@@ -545,139 +561,207 @@ export default function InquiryDetailPage() {
                   ──────────────────────────────── */}
               <div className="lg:col-span-2 space-y-6">
 
-                {/* ── ステータス・追客情報 ── */}
+                {/* ── 追客タイムライン（ステータス+コンタクト履歴の統合ビュー） ── */}
                 <section className="bg-surface-raised border border-border rounded-xl p-6">
-                  <h2 className="text-base font-bold text-text-heading mb-4">ステータス・追客情報</h2>
-                  <div className="space-y-4">
+                  <h2 className="text-base font-bold text-text-heading mb-4">追客タイムライン</h2>
 
-                    {/* ステータス選択 */}
-                    <div>
-                      <label className="block text-xs font-medium text-text-heading mb-1">ステータス</label>
-                      <select
-                        value={editStatus}
-                        onChange={(e) => setEditStatus(e.target.value as InquiryStatus)}
-                        className="w-full sm:w-48 px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary"
-                      >
-                        {STATUS_OPTIONS.filter((o) => o.value !== 'all').map((o) => (
-                          <option key={o.value} value={o.value}>{o.label}</option>
-                        ))}
-                      </select>
-                    </div>
+                  {/* ── 現状ブロック（ステータス・追客情報） ── */}
+                  <div className="mb-6 pb-6 border-b border-border">
+                    <h3 className="text-sm font-semibold text-text-heading mb-3">現状</h3>
+                    <div className="space-y-3">
 
-                    {/* 入会時: 入会日・週回数 */}
-                    {(editStatus === 'enrolled') && (
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-xs font-medium text-text-heading mb-1">入会日</label>
-                          <input
-                            type="date"
-                            value={editEnrolledAt}
-                            onChange={(e) => setEditEnrolledAt(e.target.value)}
-                            className="w-full px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-medium text-text-heading mb-1">週回数</label>
-                          <input
-                            type="number"
-                            min={1}
-                            max={10}
-                            value={editWeeklyCount}
-                            onChange={(e) => setEditWeeklyCount(e.target.value)}
-                            placeholder="例: 2"
-                            className="w-full px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary"
-                          />
-                        </div>
-                      </div>
-                    )}
-
-                    {/* 体験没 / 入会: 体験日 */}
-                    {(editStatus === 'trial_lost' || editStatus === 'enrolled') && (
+                      {/* ステータス選択 */}
                       <div>
-                        <label className="block text-xs font-medium text-text-heading mb-1">体験日</label>
-                        <input
-                          type="date"
-                          value={editTrialAt}
-                          onChange={(e) => setEditTrialAt(e.target.value)}
-                          className="w-full sm:w-48 px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary"
-                        />
-                      </div>
-                    )}
-
-                    {/* 没 / 体験没: 失注理由 */}
-                    {(editStatus === 'lost' || editStatus === 'trial_lost') && (
-                      <div>
-                        <label className="block text-xs font-medium text-text-heading mb-1">失注理由</label>
+                        <label className="block text-xs font-medium text-text-heading mb-1">ステータス</label>
                         <select
-                          value={editLostReason}
-                          onChange={(e) => setEditLostReason(e.target.value)}
-                          className="w-full sm:w-56 px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary"
+                          value={editStatus}
+                          onChange={(e) => setEditStatus(e.target.value as InquiryStatus)}
+                          className="w-full sm:w-48 px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary"
                         >
-                          <option value="">— 未選択 —</option>
-                          {LOST_REASONS.map((r) => (
-                            <option key={r} value={r}>{r}</option>
+                          {STATUS_OPTIONS.filter((o) => o.value !== 'all').map((o) => (
+                            <option key={o.value} value={o.value}>{o.label}</option>
                           ))}
                         </select>
                       </div>
-                    )}
 
-                    {/* メモ */}
-                    <div>
-                      <label className="block text-xs font-medium text-text-heading mb-1">メモ</label>
-                      <textarea
-                        value={editNote}
-                        onChange={(e) => setEditNote(e.target.value)}
-                        rows={3}
-                        className="w-full px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary resize-none"
-                        placeholder="内部メモ（保護者には見えません）"
-                      />
-                    </div>
-
-                    <div className="flex gap-2">
-                      <Button onClick={handleSave} isLoading={isSaving} size="sm">
-                        保存
-                      </Button>
-                    </div>
-                  </div>
-                </section>
-
-                {/* ── コンタクト履歴 ── */}
-                <section className="bg-surface-raised border border-border rounded-xl p-6">
-                  <h2 className="text-base font-bold text-text-heading mb-4">コンタクト履歴</h2>
-
-                  {/* 履歴タイムライン */}
-                  {contacts.length === 0 ? (
-                    <p className="text-sm text-text-muted mb-4">コンタクト履歴はありません</p>
-                  ) : (
-                    <div className="space-y-3 mb-6">
-                      {contacts.map((c) => (
-                        <div key={c.id} className="flex gap-3">
-                          {/* タイムライン縦線 */}
-                          <div className="flex flex-col items-center">
-                            <div className="w-2.5 h-2.5 rounded-full bg-primary mt-1 shrink-0" />
-                            <div className="flex-1 w-px bg-border" />
+                      {/* 入会時: 入会日・週回数 */}
+                      {(editStatus === 'enrolled') && (
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-xs font-medium text-text-heading mb-1">入会日</label>
+                            <input
+                              type="date"
+                              value={editEnrolledAt}
+                              onChange={(e) => setEditEnrolledAt(e.target.value)}
+                              className="w-full px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary"
+                            />
                           </div>
-                          <div className="pb-3 min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap text-xs text-text-muted mb-0.5">
-                              <span>{formatDate(c.contacted_at)}</span>
-                              <span className="font-medium text-text-body">{CONTACT_METHOD_LABELS[c.method] ?? c.method}</span>
-                              {c.direction && (
-                                <span>{CONTACT_DIRECTION_LABELS[c.direction] ?? c.direction}</span>
-                              )}
-                              {c.result && (
-                                <span className="px-1.5 py-0.5 bg-surface-hover rounded text-text-body">{c.result}</span>
-                              )}
-                            </div>
-                            {c.note && (
-                              <p className="text-sm text-text-body whitespace-pre-wrap">{c.note}</p>
-                            )}
+                          <div>
+                            <label className="block text-xs font-medium text-text-heading mb-1">週回数</label>
+                            <input
+                              type="number"
+                              min={1}
+                              max={10}
+                              value={editWeeklyCount}
+                              onChange={(e) => setEditWeeklyCount(e.target.value)}
+                              placeholder="例: 2"
+                              className="w-full px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary"
+                            />
                           </div>
                         </div>
-                      ))}
-                    </div>
-                  )}
+                      )}
 
-                  {/* コンタクト追加フォーム */}
+                      {/* 体験没 / 入会: 体験日 */}
+                      {(editStatus === 'trial_lost' || editStatus === 'enrolled') && (
+                        <div>
+                          <label className="block text-xs font-medium text-text-heading mb-1">体験日</label>
+                          <input
+                            type="date"
+                            value={editTrialAt}
+                            onChange={(e) => setEditTrialAt(e.target.value)}
+                            className="w-full sm:w-48 px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary"
+                          />
+                        </div>
+                      )}
+
+                      {/* 没 / 体験没: 失注理由 */}
+                      {(editStatus === 'lost' || editStatus === 'trial_lost') && (
+                        <div>
+                          <label className="block text-xs font-medium text-text-heading mb-1">失注理由</label>
+                          <select
+                            value={editLostReason}
+                            onChange={(e) => setEditLostReason(e.target.value)}
+                            className="w-full sm:w-56 px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary"
+                          >
+                            <option value="">— 未選択 —</option>
+                            {LOST_REASONS.map((r) => (
+                              <option key={r} value={r}>{r}</option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+
+                      {/* メモ */}
+                      <div>
+                        <label className="block text-xs font-medium text-text-heading mb-1">メモ</label>
+                        <textarea
+                          value={editNote}
+                          onChange={(e) => setEditNote(e.target.value)}
+                          rows={3}
+                          className="w-full px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+                          placeholder="内部メモ（保護者には見えません）"
+                        />
+                      </div>
+
+                      <div className="flex gap-2">
+                        <Button onClick={handleSave} isLoading={isSaving} size="sm">
+                          保存
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* ── タイムライン（contacts + mail_logs を at 降順に統合） ── */}
+                  {(() => {
+                    // contacts と mailLogs を統合して contacted_at / sent_at で降順ソート
+                    const items: TimelineItem[] = [
+                      ...contacts.map((c): TimelineItem => ({ kind: 'contact', at: c.contacted_at, data: c })),
+                      ...mailLogs.map((m): TimelineItem => ({ kind: 'mail_log', at: m.sent_at, data: m })),
+                    ].sort((a, b) => b.at.localeCompare(a.at));
+
+                    if (items.length === 0) {
+                      return <p className="text-sm text-text-muted mb-4">履歴はありません</p>;
+                    }
+
+                    return (
+                      <div className="space-y-3 mb-6">
+                        {items.map((item) => {
+                          if (item.kind === 'contact') {
+                            const c = item.data;
+                            // アイコン選択（method 別）
+                            const Icon = {
+                              tel:           Phone,
+                              email:         Mail,
+                              sms:           MessageSquare,
+                              visit:         Building2,
+                              other:         Circle,
+                              material_sent: Package,
+                              status_change: ArrowRightLeft,
+                            }[c.method] ?? Circle;
+
+                            // 電話の result によるバッジ色
+                            const resultBadgeClass = (() => {
+                              if (c.method !== 'tel' || !c.result) return 'bg-surface-hover text-text-body';
+                              if (c.result === 'つながった') return 'bg-green-100 text-green-800';
+                              if (c.result === '拒否' || c.result === '番号違い') return 'bg-red-100 text-red-700';
+                              if (c.result === '不在' || c.result === '留守電') return 'bg-yellow-100 text-yellow-700';
+                              if (c.result === '折返し待ち') return 'bg-blue-100 text-blue-700';
+                              return 'bg-surface-hover text-text-body';
+                            })();
+
+                            // direction は status_change / material_sent では表示しない
+                            const showDirection = c.direction && c.method !== 'status_change' && c.method !== 'material_sent';
+
+                            return (
+                              <div key={`c-${c.id}`} className="flex gap-3">
+                                <div className="flex flex-col items-center">
+                                  <div className="w-7 h-7 rounded-full bg-surface-hover border border-border flex items-center justify-center shrink-0">
+                                    <Icon className="w-3.5 h-3.5 text-text-muted" />
+                                  </div>
+                                  <div className="flex-1 w-px bg-border" />
+                                </div>
+                                <div className="pb-3 min-w-0 flex-1">
+                                  <div className="flex items-center gap-2 flex-wrap text-xs text-text-muted mb-0.5">
+                                    <span className="font-medium text-text-body">{CONTACT_METHOD_LABELS[c.method] ?? c.method}</span>
+                                    {showDirection && (
+                                      <span>{CONTACT_DIRECTION_LABELS[c.direction!] ?? c.direction}</span>
+                                    )}
+                                    <span>{formatDate(c.contacted_at)}</span>
+                                    {c.result && (
+                                      <span className={`px-1.5 py-0.5 rounded font-medium ${resultBadgeClass}`}>{c.result}</span>
+                                    )}
+                                  </div>
+                                  {c.note && (
+                                    <p className="text-sm text-text-body whitespace-pre-wrap">{c.note}</p>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          } else {
+                            // mail_log
+                            const m = item.data;
+                            return (
+                              <div key={`m-${m.id}`} className="flex gap-3">
+                                <div className="flex flex-col items-center">
+                                  <div className="w-7 h-7 rounded-full bg-surface-hover border border-border flex items-center justify-center shrink-0">
+                                    <Send className="w-3.5 h-3.5 text-text-muted" />
+                                  </div>
+                                  <div className="flex-1 w-px bg-border" />
+                                </div>
+                                <div className="pb-3 min-w-0 flex-1">
+                                  <div className="flex items-center gap-2 flex-wrap text-xs text-text-muted mb-0.5">
+                                    <span className="font-medium text-text-body">メール送信</span>
+                                    <span>{formatDateTime(m.sent_at)}</span>
+                                    <span className={`px-1.5 py-0.5 rounded font-medium ${m.status === 'sent' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-700'}`}>
+                                      {m.status === 'sent' ? '送信済み' : '失敗'}
+                                    </span>
+                                    {m.opened_at && (
+                                      <span className="px-1.5 py-0.5 rounded font-medium bg-teal-100 text-teal-800">開封済み</span>
+                                    )}
+                                  </div>
+                                  {m.subject && (
+                                    <p className="text-xs text-text-muted truncate">{m.subject}</p>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          }
+                        })}
+                      </div>
+                    );
+                  })()}
+
+                  {/* ── コンタクト追加フォーム ── */}
                   <div className="border border-border rounded-lg p-4 bg-surface-hover">
                     <h3 className="text-sm font-medium text-text-heading mb-3">コンタクトを追加</h3>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
@@ -685,11 +769,16 @@ export default function InquiryDetailPage() {
                         <label className="block text-xs text-text-muted mb-1">方法</label>
                         <select
                           value={contactMethod}
-                          onChange={(e) => setContactMethod(e.target.value as typeof contactMethod)}
+                          onChange={(e) => {
+                            const m = e.target.value as ManualContactMethod;
+                            setContactMethod(m);
+                            // method が変わったら result をリセット
+                            setContactResult('');
+                          }}
                           className="w-full px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised focus:outline-none focus:ring-2 focus:ring-primary"
                         >
-                          {Object.entries(CONTACT_METHOD_LABELS).map(([k, v]) => (
-                            <option key={k} value={k}>{v}</option>
+                          {MANUAL_CONTACT_METHODS.map((m) => (
+                            <option key={m} value={m}>{CONTACT_METHOD_LABELS[m]}</option>
                           ))}
                         </select>
                       </div>
@@ -715,13 +804,22 @@ export default function InquiryDetailPage() {
                       </div>
                       <div>
                         <label className="block text-xs text-text-muted mb-1">結果</label>
+                        {/* method に選択肢がある場合は datalist で候補表示、自由記述も可 */}
                         <input
                           type="text"
+                          list={`result-options-${contactMethod}`}
                           value={contactResult}
                           onChange={(e) => setContactResult(e.target.value)}
-                          placeholder="例: 折り返し待ち"
+                          placeholder={CONTACT_RESULT_OPTIONS[contactMethod].length > 0 ? '選択または入力' : '例: 折り返し待ち'}
                           className="w-full px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised focus:outline-none focus:ring-2 focus:ring-primary"
                         />
+                        {CONTACT_RESULT_OPTIONS[contactMethod].length > 0 && (
+                          <datalist id={`result-options-${contactMethod}`}>
+                            {CONTACT_RESULT_OPTIONS[contactMethod].map((opt) => (
+                              <option key={opt} value={opt} />
+                            ))}
+                          </datalist>
+                        )}
                       </div>
                     </div>
                     <div className="mb-3">

@@ -6,7 +6,7 @@
  * 現在選択中の教室IDを getSelectedSchoolIds() で取得し、getInquiries() に渡す。
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { AdminLayout } from '@/components/layouts';
 import { Loading } from '@/components/ui';
@@ -17,16 +17,21 @@ import AccessDenied from '@/components/AccessDenied';
 import {
   getInquiries,
   updateInquiry,
+  getInquiryContacts,
   type InquiryFilters,
 } from '@/lib/api/inquiries';
+import { getMailLogs } from '@/lib/api/inquiryMail';
+import type { InquiryContact, InquiryMailLog } from '@/types/database';
 import { toast } from 'sonner';
 import type { Inquiry, InquiryStatus } from '@/types/database';
 import {
   STATUS_CONFIG,
   STATUS_OPTIONS,
+  CONTACT_METHOD_LABELS,
   formatDate,
+  formatDateTime,
 } from './inquiryConstants';
-import { Search, X, Upload, SlidersHorizontal, BarChart3, Send, Truck, ClipboardPaste, QrCode, Bookmark, UserPlus } from 'lucide-react';
+import { Search, X, Upload, SlidersHorizontal, BarChart3, Send, Truck, ClipboardPaste, QrCode, Bookmark, UserPlus, Phone, Mail, MessageSquare, Building2, Package, ArrowRightLeft, Circle, ChevronRight, ChevronDown, ExternalLink } from 'lucide-react';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 import { InquiryReminders } from '@/components/inquiries/InquiryReminders';
 import { InquiryManualAddModal } from '@/components/inquiries/InquiryManualAddModal';
@@ -45,6 +50,16 @@ export default function InquiriesPage() {
   const [errorMessage, setErrorMessage] = useState('');
   // インラインでステータス更新中の問合せID（連打防止・disabled用）
   const [statusUpdatingId, setStatusUpdatingId] = useState<string | null>(null);
+
+  // アコーディオン展開行のID集合
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+
+  // 展開行のタイムラインキャッシュ (inquiryId → アイテム配列)
+  type TimelineItem =
+    | { kind: 'contact'; at: string; data: InquiryContact }
+    | { kind: 'mail_log'; at: string; data: InquiryMailLog };
+  const [timelineCache, setTimelineCache] = useState<Map<string, TimelineItem[]>>(new Map());
+  const [timelineLoading, setTimelineLoading] = useState<Set<string>>(new Set());
 
   // ---- 一覧でステータスをその場で切り替える ----
   // 行クリックの遷移とは独立。楽観更新し、失敗時は元に戻してトースト表示する。
@@ -71,6 +86,49 @@ export default function InquiriesPage() {
       }
     },
     []
+  );
+
+  /** 行クリックでアコーディオンを開閉する。初回展開時にタイムラインを遅延フェッチ */
+  const handleRowToggle = useCallback(
+    async (inquiry: Inquiry) => {
+      const id = inquiry.id;
+      setExpandedIds((prev) => {
+        const next = new Set(prev);
+        if (next.has(id)) {
+          next.delete(id);
+        } else {
+          next.add(id);
+        }
+        return next;
+      });
+
+      // キャッシュ済みなら fetch しない
+      if (timelineCache.has(id)) return;
+
+      // 初回展開時に fetch
+      setTimelineLoading((prev) => new Set(prev).add(id));
+      try {
+        const [contacts, mailLogs] = await Promise.all([
+          getInquiryContacts(id),
+          getMailLogs(id),
+        ]);
+        const items: TimelineItem[] = [
+          ...contacts.map((c): TimelineItem => ({ kind: 'contact', at: c.contacted_at, data: c })),
+          ...mailLogs.map((m): TimelineItem => ({ kind: 'mail_log', at: m.sent_at, data: m })),
+        ].sort((a, b) => b.at.localeCompare(a.at));
+        setTimelineCache((prev) => new Map(prev).set(id, items));
+      } catch {
+        // fetch 失敗時はキャッシュに空配列をセット（再試行防止）
+        setTimelineCache((prev) => new Map(prev).set(id, []));
+      } finally {
+        setTimelineLoading((prev) => {
+          const next = new Set(prev);
+          next.delete(id);
+          return next;
+        });
+      }
+    },
+    [timelineCache]
   );
 
   // ---- フィルタ状態 ----
@@ -440,63 +498,153 @@ export default function InquiriesPage() {
                     <th className="border border-border px-3 py-2.5 text-left font-medium text-text-heading">媒体</th>
                     <th className="border border-border px-3 py-2.5 text-left font-medium text-text-heading">申込内容</th>
                     <th className="border border-border px-3 py-2.5 text-center font-medium text-text-heading">ステータス</th>
+                    <th className="border border-border px-2 py-2.5 text-center font-medium text-text-heading w-8">詳細</th>
+                    <th className="border border-border px-2 py-2.5 w-8"></th>
                   </tr>
                 </thead>
                 <tbody>
                   {inquiries.map((inquiry) => {
                     const sc = STATUS_CONFIG[inquiry.status];
+                    const isExpanded = expandedIds.has(inquiry.id);
+                    const isLoadingTimeline = timelineLoading.has(inquiry.id);
+                    const timelineItems = timelineCache.get(inquiry.id) ?? [];
+
                     return (
-                      <tr
-                        key={inquiry.id}
-                        onClick={() => window.location.href = `/admin/inquiries/${inquiry.id}`}
-                        className="table-row-hover cursor-pointer"
-                      >
-                        <td className="border border-border px-3 py-2.5 whitespace-nowrap text-text-body">
-                          {formatDate(inquiry.inquired_at)}
-                        </td>
-                        {isMultiSchool && (
-                          <td className="border border-border px-3 py-2.5 text-text-body">
-                            {schoolsMap[inquiry.school_id] ?? '—'}
-                          </td>
-                        )}
-                        <td className="border border-border px-3 py-2.5 font-medium text-text-heading">
-                          {inquiry.student_name ?? '—'}
-                        </td>
-                        <td className="border border-border px-3 py-2.5 text-text-body">
-                          {inquiry.guardian_name ?? '—'}
-                        </td>
-                        <td className="border border-border px-3 py-2.5 text-text-body">
-                          {inquiry.grade ?? '—'}
-                        </td>
-                        <td className="border border-border px-3 py-2.5 text-text-body">
-                          {inquiry.media ?? '—'}
-                        </td>
-                        <td className="border border-border px-3 py-2.5 text-text-body">
-                          {inquiry.request_type ?? '—'}
-                        </td>
-                        {/* ステータスはその場でプルダウン切替（行クリックの遷移は止める） */}
-                        <td
-                          className="border border-border px-3 py-2.5 text-center"
-                          onClick={(e) => e.stopPropagation()}
+                      // key はフラグメントに付与する（React の list key 要件）
+                      <React.Fragment key={inquiry.id}>
+                        {/* メイン行 — クリックでアコーディオン開閉 */}
+                        <tr
+                          onClick={() => handleRowToggle(inquiry)}
+                          className="table-row-hover cursor-pointer"
                         >
-                          <select
-                            value={inquiry.status}
-                            disabled={statusUpdatingId === inquiry.id}
+                          <td className="border border-border px-3 py-2.5 whitespace-nowrap text-text-body">
+                            {formatDate(inquiry.inquired_at)}
+                          </td>
+                          {isMultiSchool && (
+                            <td className="border border-border px-3 py-2.5 text-text-body">
+                              {schoolsMap[inquiry.school_id] ?? '—'}
+                            </td>
+                          )}
+                          <td className="border border-border px-3 py-2.5 font-medium text-text-heading">
+                            {inquiry.student_name ?? '—'}
+                          </td>
+                          <td className="border border-border px-3 py-2.5 text-text-body">
+                            {inquiry.guardian_name ?? '—'}
+                          </td>
+                          <td className="border border-border px-3 py-2.5 text-text-body">
+                            {inquiry.grade ?? '—'}
+                          </td>
+                          <td className="border border-border px-3 py-2.5 text-text-body">
+                            {inquiry.media ?? '—'}
+                          </td>
+                          <td className="border border-border px-3 py-2.5 text-text-body">
+                            {inquiry.request_type ?? '—'}
+                          </td>
+                          {/* ステータスはその場でプルダウン切替（行クリックのアコーディオン開閉は止める） */}
+                          <td
+                            className="border border-border px-3 py-2.5 text-center"
                             onClick={(e) => e.stopPropagation()}
-                            onChange={(e) =>
-                              handleInlineStatusChange(inquiry, e.target.value as InquiryStatus)
-                            }
-                            className={`px-2 py-1 rounded-full text-xs font-medium border-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-60 ${sc.className}`}
-                            aria-label="ステータスを変更"
                           >
-                            {(Object.keys(STATUS_CONFIG) as InquiryStatus[]).map((s) => (
-                              <option key={s} value={s}>
-                                {STATUS_CONFIG[s].label}
-                              </option>
-                            ))}
-                          </select>
-                        </td>
-                      </tr>
+                            <select
+                              value={inquiry.status}
+                              disabled={statusUpdatingId === inquiry.id}
+                              onClick={(e) => e.stopPropagation()}
+                              onChange={(e) =>
+                                handleInlineStatusChange(inquiry, e.target.value as InquiryStatus)
+                              }
+                              className={`px-2 py-1 rounded-full text-xs font-medium border-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-60 ${sc.className}`}
+                              aria-label="ステータスを変更"
+                            >
+                              {(Object.keys(STATUS_CONFIG) as InquiryStatus[]).map((s) => (
+                                <option key={s} value={s}>
+                                  {STATUS_CONFIG[s].label}
+                                </option>
+                              ))}
+                            </select>
+                          </td>
+                          {/* 詳細ページへのリンク（アコーディオン展開とは独立） */}
+                          <td
+                            className="border border-border px-2 py-2.5 text-center"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <a
+                              href={`/admin/inquiries/${inquiry.id}`}
+                              aria-label="詳細を開く"
+                              className="inline-flex items-center justify-center w-7 h-7 rounded hover:bg-surface-hover text-text-muted hover:text-text-heading transition-colors"
+                            >
+                              <ExternalLink className="w-4 h-4" />
+                            </a>
+                          </td>
+                          {/* 展開インジケータ */}
+                          <td className="border border-border px-2 py-2.5 text-center text-text-muted">
+                            {isExpanded
+                              ? <ChevronDown className="w-4 h-4 inline" />
+                              : <ChevronRight className="w-4 h-4 inline" />
+                            }
+                          </td>
+                        </tr>
+
+                        {/* アコーディオン展開行 */}
+                        {isExpanded && (
+                          <tr key={`${inquiry.id}-detail`}>
+                            <td
+                              colSpan={isMultiSchool ? 11 : 10}
+                              className="border border-border bg-surface px-4 py-3"
+                            >
+                              {isLoadingTimeline ? (
+                                <p className="text-xs text-text-muted">読み込み中...</p>
+                              ) : timelineItems.length === 0 ? (
+                                <p className="text-xs text-text-muted">履歴なし</p>
+                              ) : (
+                                <div className="space-y-1.5">
+                                  {timelineItems.slice(0, 5).map((item) => {
+                                    if (item.kind === 'contact') {
+                                      const c = item.data;
+                                      const Icon = {
+                                        tel:           Phone,
+                                        email:         Mail,
+                                        sms:           MessageSquare,
+                                        visit:         Building2,
+                                        other:         Circle,
+                                        material_sent: Package,
+                                        status_change: ArrowRightLeft,
+                                      }[c.method] ?? Circle;
+                                      return (
+                                        <div key={`c-${c.id}`} className="flex items-center gap-2 text-xs text-text-body">
+                                          <Icon className="w-3.5 h-3.5 text-text-muted shrink-0" />
+                                          <span className="font-medium">{CONTACT_METHOD_LABELS[c.method] ?? c.method}</span>
+                                          <span className="text-text-muted">{formatDate(c.contacted_at)}</span>
+                                          {c.result && (
+                                            <span className="px-1.5 py-0.5 bg-surface-hover rounded">{c.result}</span>
+                                          )}
+                                          {c.note && (
+                                            <span className="text-text-muted truncate max-w-xs">{c.note}</span>
+                                          )}
+                                        </div>
+                                      );
+                                    } else {
+                                      const m = item.data;
+                                      return (
+                                        <div key={`m-${m.id}`} className="flex items-center gap-2 text-xs text-text-body">
+                                          <Send className="w-3.5 h-3.5 text-text-muted shrink-0" />
+                                          <span className="font-medium">メール送信</span>
+                                          <span className="text-text-muted">{formatDateTime(m.sent_at)}</span>
+                                          <span className={`px-1.5 py-0.5 rounded ${m.status === 'sent' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-700'}`}>
+                                            {m.status === 'sent' ? '送信済み' : '失敗'}
+                                          </span>
+                                          {m.subject && (
+                                            <span className="text-text-muted truncate max-w-xs">{m.subject}</span>
+                                          )}
+                                        </div>
+                                      );
+                                    }
+                                  })}
+                                </div>
+                              )}
+                            </td>
+                          </tr>
+                        )}
+                      </React.Fragment>
                     );
                   })}
                 </tbody>

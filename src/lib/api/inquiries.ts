@@ -171,6 +171,68 @@ export async function updateInquiry(id: string, data: InquiryUpdate): Promise<In
 }
 
 /**
+ * 問合せを更新し、ステータス・資料発送日の変化を自動でコンタクト履歴に記録する。
+ *
+ * 追客タイムラインに「いつ何が起きたか」が時系列で残るようにするための薄いラッパー。
+ * - status が変わったら → contacts に method='status_change', result='対応中→入会' を残す
+ * - material_sent_at が null→値 になったら → method='material_sent', result='資料発送' を残す
+ *
+ * 「現在のステータス」と「最後のアクション」を別々の場所で見なくて済むようにする狙い。
+ */
+export async function updateInquiryWithTimeline(
+  current: Inquiry,
+  patch: InquiryUpdate
+): Promise<Inquiry> {
+  const updated = await updateInquiry(current.id, patch);
+
+  const events: InquiryContactInsert[] = [];
+
+  // タイムライン表示用のステータス日本語ラベル。
+  // UI 定数(inquiryConstants)をここで import すると循環依存になるため最小限を直書き。
+  const STATUS_JP: Record<InquiryStatus, string> = {
+    in_progress: '対応中',
+    enrolled: '入会',
+    unreachable: '連絡不通',
+    lost: '没',
+    trial_lost: '体験没',
+  };
+
+  // ステータス変更
+  if (patch.status && patch.status !== current.status) {
+    events.push({
+      inquiry_id: current.id,
+      school_id: current.school_id,
+      method: 'status_change',
+      direction: null,
+      result: `${STATUS_JP[current.status]} → ${STATUS_JP[patch.status]}`,
+      note: null,
+    });
+  }
+
+  // 資料発送（null → 値）
+  if (patch.material_sent_at && !current.material_sent_at) {
+    events.push({
+      inquiry_id: current.id,
+      school_id: current.school_id,
+      method: 'material_sent',
+      direction: 'outbound',
+      result: '資料発送',
+      note: null,
+    });
+  }
+
+  // 失敗しても本体の更新は守りたいので、バルク insert を best-effort で実行
+  if (events.length > 0) {
+    const { error } = await supabase.from('inquiry_contacts').insert(events);
+    if (error) {
+      console.warn('[inquiries] タイムライン記録に失敗（本体は更新済み）:', error.message);
+    }
+  }
+
+  return updated;
+}
+
+/**
  * 問合せを論理削除する（deleted_at = now()）。
  * 物理削除はしない。
  */
