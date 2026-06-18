@@ -872,6 +872,8 @@ export type Database = {
           is_active: boolean;
           is_draft: boolean;
           track_progress: boolean;
+          // 物理的に所持しているか（進行表管理 track_progress とは独立）
+          is_owned: boolean;
           season: 'spring' | 'summer' | 'winter' | null;
           sort_order: number | null;
           created_at: string;
@@ -885,6 +887,7 @@ export type Database = {
           is_active?: boolean;
           is_draft?: boolean;
           track_progress?: boolean;
+          is_owned?: boolean;
           season?: 'spring' | 'summer' | 'winter' | null;
           sort_order?: number | null;
           created_at?: string;
@@ -898,6 +901,7 @@ export type Database = {
           is_active?: boolean;
           track_progress?: boolean;
           is_draft?: boolean;
+          is_owned?: boolean;
           season?: 'spring' | 'summer' | 'winter' | null;
           sort_order?: number | null;
           created_at?: string;
@@ -1027,6 +1031,7 @@ export type Database = {
           tardy: boolean;
           teacher_name: string | null;
           group_number: number | null;
+          applied_group_number: number | null;
           intent_tag: string | null;
           created_at: string;
           updated_at: string;
@@ -1044,6 +1049,7 @@ export type Database = {
           tardy?: boolean;
           teacher_name?: string | null;
           group_number?: number | null;
+          applied_group_number?: number | null;
           intent_tag?: string | null;
           created_at?: string;
           updated_at?: string;
@@ -1061,6 +1067,7 @@ export type Database = {
           tardy?: boolean;
           teacher_name?: string | null;
           group_number?: number | null;
+          applied_group_number?: number | null;
           intent_tag?: string | null;
           created_at?: string;
           updated_at?: string;
