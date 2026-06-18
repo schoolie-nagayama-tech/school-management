@@ -26,7 +26,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { Eye, EyeOff, FileText, Plus, RefreshCw, Send, Settings2, Trash2 } from 'lucide-react';
+import { CornerDownRight, Eye, EyeOff, FileText, Plus, RefreshCw, Send, Settings2, Trash2 } from 'lucide-react';
 import { AdminLayout } from '@/components/layouts';
 import { Button, Modal, Select, ToastContainer, Loading } from '@/components/ui';
 import { useToast } from '@/hooks/useToast';
@@ -1791,6 +1791,11 @@ function TableView({
                 const curGroup = row.progress?.group_number ?? null;
                 const prevGroup = prev?.progress?.group_number ?? null;
                 const groupStart = curGroup == null || prevGroup == null || prevGroup !== curGroup;
+                // 申込結合(applied_group_number)も提案結合とは独立に先頭行を判定する。
+                // 結合グループは sort_order 連続なので、前行と番号が変われば先頭。
+                const curApplied = row.progress?.applied_group_number ?? null;
+                const prevApplied = prev?.progress?.applied_group_number ?? null;
+                const appliedGroupStart = curApplied == null || prevApplied == null || prevApplied !== curApplied;
                 // 非先頭行でも同グループの指導意図を継承表示
                 const inheritedTag: IntentTag | null = !groupStart && curGroup != null
                   ? (groupIntentMap.get(curGroup) ?? null)
@@ -1807,6 +1812,7 @@ function TableView({
                     isMeeting={isMeeting}
                     meetingCols={meetingCols}
                     groupStart={groupStart}
+                    appliedGroupStart={appliedGroupStart}
                     inheritedIntentTag={inheritedTag}
                     selfName={selfName}
                     isTeacher={role === 'teacher'}
@@ -2154,6 +2160,7 @@ function ProgressRow({
   isMeeting,
   meetingCols,
   groupStart = true,
+  appliedGroupStart = true,
   inheritedIntentTag = null,
   selfName = '',
   isTeacher = false,
@@ -2174,8 +2181,10 @@ function ProgressRow({
   examTypes: ExamType[];
   isMeeting: boolean;
   meetingCols: MeetingColMap;
-  /** グループ先頭行（指導意図タグを編集できる） */
+  /** 提案結合グループの先頭行（指導意図タグを編集できる / 提案コマ合計を表示） */
   groupStart?: boolean;
+  /** 申込結合グループの先頭行（申込コマ合計を表示） */
+  appliedGroupStart?: boolean;
   /** 非先頭行に継承表示する指導意図タグ（読み取り専用） */
   inheritedIntentTag?: IntentTag | null;
   /** ログイン中ユーザーの display_name（講師名欄の自動補完用） */
@@ -2204,6 +2213,17 @@ function ProgressRow({
   const lessonDate = (n: 1 | 2 | 3) =>
     (p?.lessons || []).find((l) => l.lesson_number === n)?.lesson_date ?? '';
   const groupBadge = p?.group_number ? `G${p.group_number}` : '';
+  // 結合グループの2行目以降は数値を出さず「まとめ表示」にする（合計は先頭行のみ。提案書と同じ見せ方）。
+  // 提案結合(group_number)と申込結合(applied_group_number)は別系統なので列ごとに判定する。
+  const isProposalGroupMember = p?.group_number != null && !groupStart;
+  const isAppliedGroupMember = p?.applied_group_number != null && !appliedGroupStart;
+  const isGroupedRow = p?.group_number != null || p?.applied_group_number != null;
+  // まとめ表示セル（先頭行に合計をまとめている旨を示す控えめなマーク）
+  const mergedCell = (
+    <span className="inline-flex items-center text-[#cbd5e1]" title="上の行にまとめて計上（結合）">
+      <CornerDownRight className="w-3.5 h-3.5" />
+    </span>
+  );
   const examRangeName = examTypes.find((et) => et.id === p?.exam_range_exam_type_id)?.name ?? '';
 
   // セッション選択状態
@@ -2238,7 +2258,7 @@ function ProgressRow({
       className={rowClass}
       onClick={paintActive ? onPaintRowClick : undefined}
     >
-      <td className="px-3 py-2.5 text-[#6b7280] text-xs">{row.item_number ?? ''}</td>
+      <td className={`px-3 py-2.5 text-[#6b7280] text-xs ${isGroupedRow ? 'border-l-2 border-l-[#cbd5e1]' : ''}`}>{row.item_number ?? ''}</td>
       <td className="px-3 py-2.5 text-[#1f2937]">
         <div className="flex items-center gap-1.5 flex-wrap">
           {groupBadge && <span className="inline-block px-1.5 py-0.5 bg-[#eff6ff] text-[#1e40af] text-[11px] rounded">{groupBadge}</span>}
@@ -2279,7 +2299,10 @@ function ProgressRow({
       {/* 提案: 管理モードは常時編集 / 面談モードは列設定に従う読み取り */}
       {showProposal && (
         <td className="px-3 py-2.5">
-          {isMeeting ? (
+          {isProposalGroupMember ? (
+            // 結合グループの2行目以降: 合計は先頭行にまとめているのでまとめマークのみ
+            mergedCell
+          ) : isMeeting ? (
             <span className="text-[#1f2937] text-xs">{p?.proposal_count != null ? `${p.proposal_count}コマ` : '—'}</span>
           ) : (
             <input
@@ -2299,17 +2322,22 @@ function ProgressRow({
       {/* 申込: 管理モードのみ & 列設定 ON */}
       {showApplication && (
         <td className="px-3 py-2.5">
-          <input
-            type="number"
-            min={0}
-            defaultValue={p?.application_count ?? ''}
-            onBlur={(e) => {
-              const v = e.target.value === '' ? null : Number(e.target.value);
-              onLocalPatch({ application_count: v ?? undefined });
-              onSaveProgress({ application_count: v });
-            }}
-            className="w-14 px-1.5 py-1 text-xs bg-transparent border border-transparent hover:border-[#e5e7eb] focus:border-[#1e3a5f] focus:bg-white rounded outline-none text-center"
-          />
+          {isAppliedGroupMember ? (
+            // 結合グループの2行目以降: 合計は先頭行にまとめているのでまとめマークのみ
+            mergedCell
+          ) : (
+            <input
+              type="number"
+              min={0}
+              defaultValue={p?.application_count ?? ''}
+              onBlur={(e) => {
+                const v = e.target.value === '' ? null : Number(e.target.value);
+                onLocalPatch({ application_count: v ?? undefined });
+                onSaveProgress({ application_count: v });
+              }}
+              className="w-14 px-1.5 py-1 text-xs bg-transparent border border-transparent hover:border-[#e5e7eb] focus:border-[#1e3a5f] focus:bg-white rounded outline-none text-center"
+            />
+          )}
         </td>
       )}
       {/* 試験範囲 */}

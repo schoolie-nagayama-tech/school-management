@@ -488,20 +488,20 @@ export async function syncProposalToProgress(
     await updateProposal(proposalId, { student_textbook_id: stbId });
   }
 
-  // group_id ごとのコマ数を集計（group_id=0 は未グループ＝個別カウント）
-  const groupKoma = new Map<number, number>();
-  for (const u of proposal.units) {
-    if (u.group_id > 0 && !groupKoma.has(u.group_id)) {
-      groupKoma.set(u.group_id, u.koma_count);
-    }
-  }
-
-  const unitKomaMap = new Map<number, number>();
+  // 提案結合(group_id)を進行表へ転記する。
+  // 進行表は「グループの先頭行に合計・他は0」を表示する作り（旧UIはセル結合 / 新UIは先頭行のみ表示）なので、
+  // group_id ごとに先頭行(units は sort_order 昇順)へ合計コマを集約し、他の行は 0 にする。
+  // 先頭の koma_count がそのグループの合計（calcTotalKoma が先頭1件で計上するのと整合）。
+  const propGroupHead = new Map<number, number>();   // group_id -> 先頭 curriculum_item_id
+  const propGroupTotal = new Map<number, number>();  // group_id -> 合計コマ（先頭の koma_count）
+  const propGroupCount = new Map<number, number>();  // group_id -> 構成単元数
   for (const u of proposal.units) {
     if (u.group_id > 0) {
-      unitKomaMap.set(u.curriculum_item_id, groupKoma.get(u.group_id) ?? u.koma_count);
-    } else {
-      unitKomaMap.set(u.curriculum_item_id, u.koma_count);
+      if (!propGroupHead.has(u.group_id)) {
+        propGroupHead.set(u.group_id, u.curriculum_item_id);
+        propGroupTotal.set(u.group_id, u.koma_count);
+      }
+      propGroupCount.set(u.group_id, (propGroupCount.get(u.group_id) ?? 0) + 1);
     }
   }
 
@@ -509,13 +509,20 @@ export async function syncProposalToProgress(
   // 旧実装は curriculum_item ごとに select→update/insert していた（40〜50件で80〜100クエリ）。
   // 複合ユニーク制約 (student_textbook_id, curriculum_item_id) を使い1回の upsert にまとめる。
   // upsert はペイロードの列のみ更新するため、既存行の application_count 等は保持される。
-  const entries = Array.from(unitKomaMap.entries());
-  if (entries.length > 0) {
-    const payload = entries.map(([ciId, komaCount]) => ({
-      student_textbook_id: stbId,
-      curriculum_item_id: ciId,
-      proposal_count: komaCount,
-    }));
+  if (proposal.units.length > 0) {
+    const payload = proposal.units.map((u) => {
+      // 2件以上で実際に結合されているグループのみまとめ表示の対象にする（単独はそのまま個別）。
+      const grouped = u.group_id > 0 && (propGroupCount.get(u.group_id) ?? 0) >= 2;
+      const isHead = grouped && propGroupHead.get(u.group_id) === u.curriculum_item_id;
+      return {
+        student_textbook_id: stbId,
+        curriculum_item_id: u.curriculum_item_id,
+        // 結合: 先頭行に合計・他は0 / 非結合: 単元の koma_count
+        proposal_count: grouped ? (isHead ? (propGroupTotal.get(u.group_id) ?? u.koma_count) : 0) : u.koma_count,
+        // 再公開時に結合解除を反映できるよう、非結合は明示的に null を書く
+        group_number: grouped ? u.group_id : null,
+      };
+    });
     const { error: upsertError } = await supabase
       .from('student_progress')
       .upsert(payload, { onConflict: 'student_textbook_id,curriculum_item_id' });
@@ -536,25 +543,53 @@ export async function syncApplicationToProgress(
     throw new Error('提案書またはテキスト紐付けがありません');
   }
 
-  // unit ごとに個別 UPDATE していたのを、同じコマ数の unit をまとめて
-  // 「値ごとに1回の UPDATE（curriculum_item_id を .in() で指定）」に集約する。
-  // コマ数は小さい整数で種類が少ないため、クエリ数は unit 数ではなく値の種類数に比例。
-  const idsByCount = new Map<number, number[]>();
+  // 申込結合(applied_group_id)を進行表へ転記する。
+  // 提案結合と同様に「グループの先頭行に合計・他は0」で持たせ、進行表でまとめ表示できるようにする。
+  // 申込結合は提案結合(group_id)とは別グループになりうるため、applied_group_number 列に独立して持つ。
+  // 申込コマ>0 の単元のみを結合対象とする（提案書エディタの appliedGroupMap と同じ判定）。
+  const appliedHead = new Map<number, number>();   // applied_group_id -> 先頭 curriculum_item_id
+  const appliedTotal = new Map<number, number>();  // applied_group_id -> 合計（先頭の applied_koma）
+  const appliedCount = new Map<number, number>();  // applied_group_id -> 申込>0 の構成単元数
   for (const u of proposal.units) {
-    const count = u.applied_koma ?? u.koma_count;
-    const arr = idsByCount.get(count);
-    if (arr) arr.push(u.curriculum_item_id);
-    else idsByCount.set(count, [u.curriculum_item_id]);
+    const ak = u.applied_koma ?? 0;
+    if (u.applied_group_id > 0 && ak > 0) {
+      if (!appliedHead.has(u.applied_group_id)) {
+        appliedHead.set(u.applied_group_id, u.curriculum_item_id);
+        appliedTotal.set(u.applied_group_id, ak);
+      }
+      appliedCount.set(u.applied_group_id, (appliedCount.get(u.applied_group_id) ?? 0) + 1);
+    }
+  }
+
+  // 各単元の application_count と applied_group_number を決める。
+  // クエリ数を抑えるため (申込コマ値, 申込グループ番号) の組ごとに1回の UPDATE にまとめる。
+  const byKey = new Map<string, number[]>();
+  const keyMeta = new Map<string, { count: number; group: number | null }>();
+  for (const u of proposal.units) {
+    const grouped = u.applied_group_id > 0 && (u.applied_koma ?? 0) > 0 && (appliedCount.get(u.applied_group_id) ?? 0) >= 2;
+    const isHead = grouped && appliedHead.get(u.applied_group_id) === u.curriculum_item_id;
+    // 結合: 先頭行に合計・他は0 / 非結合: 申込コマ（未入力なら提案コマ）
+    const count = grouped
+      ? (isHead ? (appliedTotal.get(u.applied_group_id) ?? 0) : 0)
+      : (u.applied_koma ?? u.koma_count);
+    const group = grouped ? u.applied_group_id : null;
+    const key = `${count}|${group ?? 'null'}`;
+    if (!byKey.has(key)) {
+      byKey.set(key, []);
+      keyMeta.set(key, { count, group });
+    }
+    byKey.get(key)!.push(u.curriculum_item_id);
   }
 
   await Promise.all(
-    Array.from(idsByCount.entries()).map(([count, ids]) =>
-      supabase
+    Array.from(byKey.entries()).map(([key, ids]) => {
+      const meta = keyMeta.get(key)!;
+      return supabase
         .from('student_progress')
-        .update({ application_count: count })
+        .update({ application_count: meta.count, applied_group_number: meta.group })
         .eq('student_textbook_id', proposal.student_textbook_id!)
-        .in('curriculum_item_id', ids)
-    )
+        .in('curriculum_item_id', ids);
+    })
   );
 }
 
