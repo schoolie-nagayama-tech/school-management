@@ -102,9 +102,11 @@ export interface InquiryAnalytics {
 // 内部定数
 // ============================================================
 
-/** 表示ラベルの定義。5値すべてを網羅する。 */
+/** 表示ラベルの定義。7値すべてを網羅する。 */
 const STATUS_LABELS: Record<string, string> = {
   in_progress: '対応中',
+  trial_waiting: '体験待ち',
+  trial_done: '体験済み',
   enrolled: '入会',
   unreachable: '連絡不通',
   lost: '没',
@@ -112,7 +114,7 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 /** ステータスの表示順（PieChart 等で並び順を安定させる）。 */
-const STATUS_ORDER = ['enrolled', 'in_progress', 'trial_lost', 'unreachable', 'lost'] as const;
+const STATUS_ORDER = ['enrolled', 'trial_done', 'trial_waiting', 'in_progress', 'trial_lost', 'unreachable', 'lost'] as const;
 
 // ============================================================
 // ユーティリティ関数

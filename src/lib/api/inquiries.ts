@@ -191,6 +191,8 @@ export async function updateInquiryWithTimeline(
   // UI 定数(inquiryConstants)をここで import すると循環依存になるため最小限を直書き。
   const STATUS_JP: Record<InquiryStatus, string> = {
     in_progress: '対応中',
+    trial_waiting: '体験待ち',
+    trial_done: '体験済み',
     enrolled: '入会',
     unreachable: '連絡不通',
     lost: '没',

@@ -72,7 +72,7 @@ export type Database = {
           purpose: string | null;
           preferred_subjects: string | null;
           juku_experience: string | null;
-          status: 'in_progress' | 'enrolled' | 'unreachable' | 'lost' | 'trial_lost';
+          status: 'in_progress' | 'trial_waiting' | 'trial_done' | 'enrolled' | 'unreachable' | 'lost' | 'trial_lost';
           material_sent_at: string | null;
           trial_at: string | null;
           trial_teacher: string | null;
@@ -121,7 +121,7 @@ export type Database = {
           purpose?: string | null;
           preferred_subjects?: string | null;
           juku_experience?: string | null;
-          status?: 'in_progress' | 'enrolled' | 'unreachable' | 'lost' | 'trial_lost';
+          status?: 'in_progress' | 'trial_waiting' | 'trial_done' | 'enrolled' | 'unreachable' | 'lost' | 'trial_lost';
           material_sent_at?: string | null;
           trial_at?: string | null;
           trial_teacher?: string | null;

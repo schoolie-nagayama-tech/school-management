@@ -316,8 +316,13 @@ export default function InquiryDetailPage() {
         update.enrolled_at = editEnrolledAt || null;
         update.weekly_count = editWeeklyCount ? parseInt(editWeeklyCount, 10) : null;
       }
-      // 体験没・入会時は trial_at も保存
-      if (editStatus === 'trial_lost' || editStatus === 'enrolled') {
+      // 体験フェーズ（体験待ち/体験済み/体験没）・入会時は trial_at も保存
+      if (
+        editStatus === 'trial_waiting' ||
+        editStatus === 'trial_done' ||
+        editStatus === 'trial_lost' ||
+        editStatus === 'enrolled'
+      ) {
         update.trial_at = editTrialAt || null;
       }
       // 失注理由: lost / trial_lost のときのみ保存。それ以外は null に戻す
@@ -354,6 +359,19 @@ export default function InquiryDetailPage() {
       });
       // 再取得するよりリストを先頭に追加する（contacted_at 降順になるよう）
       setContacts((prev) => [contact, ...prev]);
+
+      // 資料送付コンタクトを記録したら、未設定なら資送日も同期する。
+      // （資料未発送リマインドの解消・分析への反映のため。
+      //   タイムラインの二重記録を避けるため updateInquiryWithTimeline は使わない）
+      if (contactMethod === 'material_sent' && !inquiry.material_sent_at) {
+        try {
+          const updated = await updateInquiry(inquiry.id, { material_sent_at: contactDate });
+          setInquiry(updated);
+        } catch {
+          // 同期失敗してもコンタクト記録は成功扱い
+        }
+      }
+
       setContactResult('');
       setContactNote('');
       toast.success('コンタクトを追加しました');
@@ -611,8 +629,8 @@ export default function InquiryDetailPage() {
                         </div>
                       )}
 
-                      {/* 体験没 / 入会: 体験日 */}
-                      {(editStatus === 'trial_lost' || editStatus === 'enrolled') && (
+                      {/* 体験待ち / 体験済み / 体験没 / 入会: 体験日 */}
+                      {(editStatus === 'trial_waiting' || editStatus === 'trial_done' || editStatus === 'trial_lost' || editStatus === 'enrolled') && (
                         <div>
                           <label className="block text-xs font-medium text-text-heading mb-1">体験日</label>
                           <input
