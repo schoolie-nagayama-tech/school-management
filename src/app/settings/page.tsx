@@ -151,7 +151,7 @@ const settingsGroups: SettingsGroup[] = [
     ],
   },
   {
-    // ベータ版機能。アドミン（admin/owner）のみに表示する。
+    // ベータ版機能。教室長以上（manager/owner/admin）に表示する。
     // 入り口は設定のみ・ナビには出さない（ダッシュボード機能と同じ方針）。
     title: '問合せ管理（ベータ）',
     items: [
@@ -160,7 +160,7 @@ const settingsGroups: SettingsGroup[] = [
         icon: <MessageSquare className="w-5 h-5" />,
         label: '問合せ管理',
         description: 'HPからの問合せを取り込み・追客・分析・発送まで一元管理',
-        requiresAdmin: true,
+        requiresManager: true,
       },
     ],
   },

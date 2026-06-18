@@ -43,7 +43,7 @@ export default function InquiriesPage() {
   const { schools: masterSchools } = useMasterData();
 
   // ロールガード: admin / owner のみ
-  const isAdmin = profile?.role === 'admin' || profile?.role === 'owner';
+  const isAdmin = profile?.role === 'admin' || profile?.role === 'owner' || profile?.role === 'manager';
 
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -249,7 +249,7 @@ export default function InquiriesPage() {
   if (!isAdmin) {
     return (
       <AdminLayout>
-        <AccessDenied message="問合せ管理は管理者のみ利用できます" />
+        <AccessDenied message="問合せ管理は教室長以上が利用できます" />
       </AdminLayout>
     );
   }

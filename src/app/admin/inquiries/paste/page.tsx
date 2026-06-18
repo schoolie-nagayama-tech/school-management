@@ -165,7 +165,7 @@ export default function InquiriesPastePage() {
   const { profile } = useAuth();
 
   // ロールガード: admin / owner のみ
-  const isAdmin = profile?.role === 'admin' || profile?.role === 'owner';
+  const isAdmin = profile?.role === 'admin' || profile?.role === 'owner' || profile?.role === 'manager';
 
   // ---- ステップ状態 ----
   const [step, setStep] = useState<Step>('paste');

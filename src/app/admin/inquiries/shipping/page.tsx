@@ -174,7 +174,7 @@ export default function ShippingPage() {
   }, [masterSchools]);
 
   // ロールガード: admin / owner のみ
-  const isAdmin = profile?.role === 'admin' || profile?.role === 'owner';
+  const isAdmin = profile?.role === 'admin' || profile?.role === 'owner' || profile?.role === 'manager';
 
   // ── セクション1 ──
   /** 全未発送フラグ(true=material_sent_at null の全status、false=資料請求+in_progress) */

@@ -166,7 +166,7 @@ export default function InquiryFormPage() {
   const { schools: masterSchools } = useMasterData();
 
   // ロールガード: admin / owner のみ
-  const isAdmin = profile?.role === 'admin' || profile?.role === 'owner';
+  const isAdmin = profile?.role === 'admin' || profile?.role === 'owner' || profile?.role === 'manager';
 
   // 選択中の教室を絞り込み
   const [schools, setSchools] = useState<SchoolInfo[]>([]);

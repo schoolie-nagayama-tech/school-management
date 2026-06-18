@@ -237,7 +237,7 @@ export default function InquiryAnalyticsPage() {
   const { profile, getSelectedSchoolIds, selectedSchoolId } = useAuth();
 
   // ロールガード: admin / owner のみ
-  const isAdmin = profile?.role === 'admin' || profile?.role === 'owner';
+  const isAdmin = profile?.role === 'admin' || profile?.role === 'owner' || profile?.role === 'manager';
 
   // ---- 分析結果ステート ----
   const [current, setCurrent] = useState<InquiryAnalytics | null>(null);

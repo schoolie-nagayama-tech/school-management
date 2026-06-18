@@ -52,7 +52,7 @@ export default function InquiryConnectPage() {
   const { profile } = useAuth();
 
   // ロールガード: admin / owner のみ
-  const isAdmin = profile?.role === 'admin' || profile?.role === 'owner';
+  const isAdmin = profile?.role === 'admin' || profile?.role === 'owner' || profile?.role === 'manager';
 
   const [bookmarklet, setBookmarklet] = useState<string | null>(null);
   const [isIssuing, setIsIssuing] = useState(false);

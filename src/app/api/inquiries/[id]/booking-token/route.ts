@@ -4,13 +4,13 @@
  * POST   /api/inquiries/[id]/booking-token — トークン発行（なければ新規、あれば既存を返す）
  * DELETE /api/inquiries/[id]/booking-token — トークン取消＋カレンダーイベント取消
  *
- * 認証: admin または owner のみ（requireAdmin）
+ * 認証: 教室長以上（requireManager）
  * 権限: service role で操作
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { requireAdmin } from '@/lib/api-auth';
+import { requireManager } from '@/lib/api-auth';
 import { generateBookingToken, resolveBookingCalendarUserId, resolveBookingConfig } from '@/lib/server/booking';
 import { deleteCalendarEvent } from '@/lib/google-calendar';
 
@@ -33,7 +33,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   // 管理者認証
-  const authError = await requireAdmin(request);
+  const authError = await requireManager(request);
   if (authError) return authError;
 
   const { id: inquiryId } = await params;
@@ -112,7 +112,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   // 管理者認証
-  const authError = await requireAdmin(request);
+  const authError = await requireManager(request);
   if (authError) return authError;
 
   const { id: inquiryId } = await params;

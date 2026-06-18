@@ -39,7 +39,7 @@ export default function InquiriesImportPage() {
   const { profile } = useAuth();
 
   // ロールガード: admin / owner のみ
-  const isAdmin = profile?.role === 'admin' || profile?.role === 'owner';
+  const isAdmin = profile?.role === 'admin' || profile?.role === 'owner' || profile?.role === 'manager';
 
   // ---- CSV取込の状態 ----
   const fileInputRef = useRef<HTMLInputElement>(null);

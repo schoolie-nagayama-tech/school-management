@@ -687,8 +687,8 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                           <div className="border-t border-border my-1" />
                         </>
                       )}
-                      {/* 問合せ管理（admin / owner のみ・ベータ。ダッシュボードと同様ここを入口にする） */}
-                      {(profile?.role === 'admin' || profile?.role === 'owner') && (
+                      {/* 問合せ管理（教室長以上・ベータ。ダッシュボードと同様ここを入口にする） */}
+                      {(profile?.role === 'admin' || profile?.role === 'owner' || profile?.role === 'manager') && (
                         <>
                           <Link
                             href="/admin/inquiries"

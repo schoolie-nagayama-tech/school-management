@@ -6,12 +6,12 @@
  * DELETE: そのユーザーの全トークンを revoked=true に設定（漏洩時の一括失効用）。
  *         レスポンス: { success: true }
  *
- * 認証: requireAdmin（admin / owner のみ）
+ * 認証: requireManager（教室長以上）
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { requireAdmin, getApiAuth } from '@/lib/api-auth';
+import { requireManager, getApiAuth } from '@/lib/api-auth';
 import crypto from 'crypto';
 
 /**
@@ -34,11 +34,11 @@ function getServiceClient() {
 // ============================================================
 
 export async function POST(request: NextRequest) {
-  // requireAdmin は失敗時に NextResponse を返す、成功時に null を返す
-  const authError = await requireAdmin(request);
+  // requireManager は失敗時に NextResponse を返す、成功時に null を返す
+  const authError = await requireManager(request);
   if (authError) return authError;
 
-  // auth.uid 取得（requireAdmin 通過後なので auth は必ず存在する）
+  // auth.uid 取得（requireManager 通過後なので auth は必ず存在する）
   const { auth } = await getApiAuth(request);
   if (!auth) {
     return NextResponse.json({ error: '認証が必要です' }, { status: 401 });
@@ -107,7 +107,7 @@ export async function POST(request: NextRequest) {
 // ============================================================
 
 export async function DELETE(request: NextRequest) {
-  const authError = await requireAdmin(request);
+  const authError = await requireManager(request);
   if (authError) return authError;
 
   const { auth } = await getApiAuth(request);

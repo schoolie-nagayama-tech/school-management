@@ -96,7 +96,7 @@ export default function InquiryDetailPage() {
   const { profile } = useAuth();
 
   // ロールガード: admin / owner のみ
-  const isAdmin = profile?.role === 'admin' || profile?.role === 'owner';
+  const isAdmin = profile?.role === 'admin' || profile?.role === 'owner' || profile?.role === 'manager';
 
   const [inquiry, setInquiry] = useState<Inquiry | null>(null);
   const [contacts, setContacts] = useState<InquiryContact[]>([]);

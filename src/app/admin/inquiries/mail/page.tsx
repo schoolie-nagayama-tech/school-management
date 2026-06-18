@@ -58,7 +58,7 @@ export default function InquiryMailPage() {
   const { profile, getSelectedSchoolIds, selectedSchoolId } = useAuth();
 
   // ロールガード: admin / owner のみ
-  const isAdmin = profile?.role === 'admin' || profile?.role === 'owner';
+  const isAdmin = profile?.role === 'admin' || profile?.role === 'owner' || profile?.role === 'manager';
 
   // ---- 候補データ ----
   const [candidates, setCandidates] = useState<MailCandidate[]>([]);

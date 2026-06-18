@@ -50,7 +50,7 @@ export default function MailTemplatesPage() {
   const { schools } = useMasterData();
 
   // ロールガード: admin / owner のみ
-  const isAdmin = profile?.role === 'admin' || profile?.role === 'owner';
+  const isAdmin = profile?.role === 'admin' || profile?.role === 'owner' || profile?.role === 'manager';
 
   const [templates, setTemplates] = useState<InquiryMailTemplate[]>([]);
   const [isLoading, setIsLoading] = useState(true);
