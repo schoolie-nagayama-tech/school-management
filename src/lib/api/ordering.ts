@@ -269,11 +269,10 @@ export async function getProposalOrderCandidates(
 }
 
 /**
- * 発注候補から material_orders を作成し、そのまま「発注済(ordered)」まで進める。
- * 発注ページと同じく、対応する material が無ければ materialName(ラベル)で material を作成してから発注する
- * （提案書のテキストはすべて発注できる）。
- * updateOrderStatus('ordered') を呼んで ordered_at と所持教材登録(registerStudentTextbook)まで実行する。
- * （発注→所持教材の流れを維持。請求連携は配布時のみなのでここでは発生しない）
+ * 発注候補から material_orders を「未確認(unconfirmed)」で作成する（通常の発注手順に乗せる）。
+ * 発注ページと同じく、対応する material が無ければ materialName(ラベル)で material を作成してから登録する
+ * （提案書のテキストはすべて発注リストに積める）。
+ * ここでは発注済みにはせず、所持教材へも反映しない。発注画面で未確認→発注→発送→配布と進める運用。
  * schoolId と materialName が必須。失敗は件数で返す。
  */
 export async function createOrdersForCandidates(
@@ -308,7 +307,9 @@ export async function createOrdersForCandidates(
         }
       }
 
-      const created = await createOrder(
+      // 未確認のまま発注リストに積む（発注済みにはしない／所持教材にも入れない）。
+      // 以降は通常の発注手順（未確認→発注→発送→配布）で進める。
+      await createOrder(
         {
           material_id: materialId,
           student_id: c.studentId,
@@ -317,8 +318,6 @@ export async function createOrdersForCandidates(
         },
         c.schoolId
       );
-      // 確認済みとして即「発注済」に進める（所持教材にも登録される）
-      await updateOrderStatus(created.id, 'ordered');
       // 発注に使った教材をテキストに永続紐付け（次回から即マッチ・自動候補に）。
       // 既に紐付け済み(material_id 非null)は触らない。リンク保存失敗は致命的でないので無視。
       try {

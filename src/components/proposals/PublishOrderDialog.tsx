@@ -78,7 +78,7 @@ export function PublishOrderDialog({
         <div className="flex items-center gap-2 px-4 py-3 border-b border-border-subtle">
           <Package className="w-4 h-4 text-info" />
           <h2 className="text-sm font-bold text-text-heading">
-            {done ? '教材を発注しました' : '教材を発注しますか？'}
+            {done ? '発注リストに追加しました' : '教材を発注しますか？'}
           </h2>
           <button
             onClick={onClose}
@@ -96,8 +96,8 @@ export function PublishOrderDialog({
             <div>
               <div className="text-[11px] font-bold text-text-muted mb-1.5">
                 {done
-                  ? `発注しました（${result?.success ?? 0}件 / 所持教材にも反映）`
-                  : '発注する教材（「発注する」を押すと発注済みになり、所持教材にも反映）'}
+                  ? `発注リストに追加しました（${result?.success ?? 0}件・未確認）`
+                  : '発注する教材（発注リストに「未確認」として追加します）'}
               </div>
               <div className="space-y-1">
                 {autoCandidates.map((c) => {
@@ -166,7 +166,7 @@ export function PublishOrderDialog({
           )}
 
           {done && (
-            <p className="text-[11px] text-text-faint">間違いがあれば発注画面で修正・取消できます。</p>
+            <p className="text-[11px] text-text-faint">発注画面に「未確認」で追加しました。発注画面で確認のうえ発注してください（所持教材に入るのは発注後です）。</p>
           )}
         </div>
 
