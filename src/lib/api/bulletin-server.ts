@@ -4,6 +4,7 @@ import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { getBulletinPostsBatch, getBulletinLabelsBatch } from './bulletin';
 import type { BulletinPost, BulletinLabel } from '@/types/bulletin';
 import type { School } from '@/types/database';
+import { isDynamicServerError } from '@/lib/utils/dynamicServerError';
 
 /**
  * BulletinBoard に渡す SSR 初期データの形（BulletinBoard.initialData と一致させること）。
@@ -96,6 +97,8 @@ export async function prefetchBulletinInitial(): Promise<BulletinInitialData | n
 
     return { posts, labelsBySchool, schools: selectedSchools, unreadCount };
   } catch (e) {
+    // DynamicServerError（ビルドの静的生成プローブが cookies() で投げる）は再 throw して Next に委ねる。
+    if (isDynamicServerError(e)) throw e;
     // 事前取得は最適化。失敗してもページは従来のクライアント取得で動くので握りつぶす。
     console.warn('[prefetchBulletinInitial] 事前取得に失敗。クライアント取得にフォールバックします:', e);
     return null;

@@ -5,6 +5,7 @@ import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { getPermissions } from '@/types/database';
 import type { UserProfile, Permission } from '@/types/database';
 import { resolveSelectedSchoolId } from './selectedSchool';
+import { isDynamicServerError } from '@/lib/utils/dynamicServerError';
 
 /**
  * サーバーで先に解決した認証情報。AuthProvider の初期 state にそのまま採用される
@@ -90,6 +91,9 @@ export async function resolveServerAuth(): Promise<InitialAuth | null> {
 
     return { user, profile, permissions, schoolIds, demoSchoolIds, selectedSchoolId };
   } catch (e) {
+    // DynamicServerError（ビルドの静的生成プローブが cookies() で投げる）は握りつぶさず
+    // 再 throw して Next にルートを動的判定させる（握りつぶすと作法に反し、ログも汚れる）。
+    if (isDynamicServerError(e)) throw e;
     // 事前解決は最適化。失敗してもクライアント側の従来フローで認証されるので握りつぶす。
     console.warn('[resolveServerAuth] サーバー認証解決に失敗。クライアント解決にフォールバックします:', e);
     return null;

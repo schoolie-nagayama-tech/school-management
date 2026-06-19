@@ -4,6 +4,7 @@ import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { getAlertsLight } from './alerts';
 import type { StudentAlerts } from '@/types/alerts';
 import type { School } from '@/types/database';
+import { isDynamicServerError } from '@/lib/utils/dynamicServerError';
 
 /**
  * AlertBoard に渡す SSR 初期データの形（AlertBoard.initialData プロップと一致させること）。
@@ -72,6 +73,8 @@ export async function prefetchAlertInitial(): Promise<AlertInitialData | null> {
 
     return { studentAlerts };
   } catch (e) {
+    // DynamicServerError（ビルドの静的生成プローブが cookies() で投げる）は再 throw して Next に委ねる。
+    if (isDynamicServerError(e)) throw e;
     // 事前取得は最適化。失敗してもページは従来のクライアント取得で動くので握りつぶす。
     console.warn('[prefetchAlertInitial] 事前取得に失敗。クライアント取得にフォールバックします:', e);
     return null;

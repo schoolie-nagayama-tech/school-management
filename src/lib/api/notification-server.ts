@@ -21,6 +21,7 @@ import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { loadNotificationFeed } from './notifications';
 import type { NotificationInitialData } from './notifications';
 import type { School } from '@/types/database';
+import { isDynamicServerError } from '@/lib/utils/dynamicServerError';
 
 // 型を再 export しておく（page.tsx 側での import を楽にする）
 export type { NotificationInitialData };
@@ -77,6 +78,8 @@ export async function prefetchNotificationInitial(): Promise<NotificationInitial
 
     return { feedItems };
   } catch (e) {
+    // DynamicServerError（ビルドの静的生成プローブが cookies() で投げる）は再 throw して Next に委ねる。
+    if (isDynamicServerError(e)) throw e;
     // 事前取得は最適化。失敗してもページは従来のクライアント取得で動くので握りつぶす。
     console.warn('[prefetchNotificationInitial] 事前取得に失敗。クライアント取得にフォールバックします:', e);
     return null;
