@@ -6,7 +6,7 @@
  * 現在選択中の教室IDを getSelectedSchoolIds() で取得し、getInquiries() に渡す。
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { AdminLayout } from '@/components/layouts';
 import { Loading } from '@/components/ui';
@@ -35,8 +35,8 @@ import { Search, X, Upload, SlidersHorizontal, BarChart3, Send, Truck, Clipboard
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 import { InquiryReminders } from '@/components/inquiries/InquiryReminders';
 import { InquiryManualAddModal } from '@/components/inquiries/InquiryManualAddModal';
-import { InquiryPeriodPicker } from '@/components/inquiries/InquiryPeriodPicker';
-import { resolvePeriod, type PeriodPreset } from '@/lib/utils/inquiryPeriod';
+import { InquiryPeriodSegmented } from '@/components/inquiries/InquiryPeriodSegmented';
+import { resolvePeriod, formatPeriodLabel, type PeriodPreset } from '@/lib/utils/inquiryPeriod';
 
 export default function InquiriesPage() {
   const { profile, getSelectedSchoolIds, selectedSchoolId } = useAuth();
@@ -50,6 +50,14 @@ export default function InquiriesPage() {
   const [errorMessage, setErrorMessage] = useState('');
   // インラインでステータス更新中の問合せID（連打防止・disabled用）
   const [statusUpdatingId, setStatusUpdatingId] = useState<string | null>(null);
+
+  // ---- 初回描画の同期（レイアウトシフト対策） ----
+  // 一覧本体の初回取得が終わったか / リマインドの読み込みが終わったか。
+  // 両方そろうまで本文を出さず、リマインド+カード+一覧を一度に描画することで
+  // 「一覧が出た後にリマインドが差し込まれて下にズレる」現象を防ぐ。
+  const [hasLoaded, setHasLoaded] = useState(false);
+  const [remindersReady, setRemindersReady] = useState(false);
+  const handleRemindersReady = useCallback(() => setRemindersReady(true), []);
 
   // アコーディオン展開行のID集合
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
@@ -135,13 +143,13 @@ export default function InquiriesPage() {
   const [filterStatus, setFilterStatus] = useState<InquiryStatus | 'all'>('all');
   const [filterGrade, setFilterGrade] = useState('');
   const [filterMedia, setFilterMedia] = useState('');
-  // 期間ピッカーの状態。一覧のデフォルトは全期間。
-  const [filterPreset, setFilterPreset] = useState<PeriodPreset>('all_time');
+  // 期間セレクタの状態。一覧のデフォルトは「今月」。
+  const [filterPreset, setFilterPreset] = useState<PeriodPreset>('this_month');
   const [filterCustomFrom, setFilterCustomFrom] = useState('');
   const [filterCustomTo, setFilterCustomTo] = useState('');
-  // 解決済み日付フィルタ（fetchData の依存に使う）
-  const [filterDateFrom, setFilterDateFrom] = useState('');
-  const [filterDateTo, setFilterDateTo] = useState('');
+  // 解決済み日付フィルタ（fetchData の依存に使う）。初期値は当月境界で揃える。
+  const [filterDateFrom, setFilterDateFrom] = useState(() => resolvePeriod('this_month').dateFrom);
+  const [filterDateTo, setFilterDateTo] = useState(() => resolvePeriod('this_month').dateTo);
   const [searchInput, setSearchInput] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [showFilters, setShowFilters] = useState(false);
@@ -170,6 +178,18 @@ export default function InquiriesPage() {
   // 複数教室表示時のみ「教室」列を表示するか判定
   const schoolIds = getSelectedSchoolIds();
   const isMultiSchool = schoolIds.length > 1;
+
+  // 教室が切り替わったら本文ゲートを一旦閉じ、新教室のリマインド+一覧が
+  // そろってから出す（認証シード前の空→確定の遷移でのズレも防ぐ）。
+  const schoolKey = schoolIds.join(',');
+  const prevSchoolKeyRef = useRef(schoolKey);
+  useEffect(() => {
+    if (prevSchoolKeyRef.current !== schoolKey) {
+      prevSchoolKeyRef.current = schoolKey;
+      setRemindersReady(false);
+      setHasLoaded(false);
+    }
+  }, [schoolKey]);
 
   // 手入力モーダルの開閉状態
   const [isManualAddOpen, setIsManualAddOpen] = useState(false);
@@ -207,6 +227,7 @@ export default function InquiriesPage() {
       setErrorMessage(getUserErrorMessage(err, 'データの取得に失敗しました'));
     } finally {
       setIsLoading(false);
+      setHasLoaded(true); // 初回完了フラグ（以降は本文を出したまま）
     }
   }, [
     getSelectedSchoolIds,
@@ -251,16 +272,15 @@ export default function InquiriesPage() {
     [inquiries, filterStatus]
   );
 
-  // ---- サマリー（今月 / 入会率） ----
-  const now = new Date();
-  const thisMonthCount = inquiries.filter((q) => {
-    const d = new Date(q.inquired_at);
-    return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
-  }).length;
+  // ---- サマリー（入会率 = 選択期間内の入会 / 全件） ----
   const enrollRate =
     inquiries.length > 0
       ? Math.round((statusCounts.enrolled / inquiries.length) * 100)
       : 0;
+
+  // 本文を出してよいか（初回の一覧取得 + リマインド取得が両方そろったら true）。
+  // 一度 true になれば以降の絞り込みでは false に戻さず、本文を出したまま更新する。
+  const showContent = hasLoaded && remindersReady;
 
   // ---- ロールチェック前のローディング対応 ----
   if (profile === null) {
@@ -350,11 +370,81 @@ export default function InquiriesPage() {
           </div>
         )}
 
-        {/* リマインドボード（要対応アラート）— リマインドがなければ何も表示しない */}
-        <InquiryReminders schoolIds={schoolIds} />
+        {/* 読み込み中インジケータ（本文がそろうまで）。
+            リマインド・カード・一覧を一度に出すことで「後から差し込まれて下にズレる」のを防ぐ。 */}
+        {!showContent && (
+          <div className="py-24">
+            <Loading size="md" />
+          </div>
+        )}
+
+        {/* 本文ラッパ。showContent まで hidden（display:none）。
+            InquiryReminders は hidden 中もマウントされ取得を進め、完了を onReady で通知する。 */}
+        <div className={showContent ? '' : 'hidden'}>
+          {/* リマインドボード（要対応アラート）— リマインドがなければ何も表示しない */}
+          <InquiryReminders schoolIds={schoolIds} onReady={handleRemindersReady} />
+
+          {/* 操作バー: 左=集計コンテキスト（期間・入会率） / 右=期間切替・検索・絞り込み */}
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-text-muted">
+              <span>
+                集計期間 <span className="font-medium text-text-body">{formatPeriodLabel({ dateFrom: filterDateFrom, dateTo: filterDateTo })}</span>
+              </span>
+              <span>
+                入会率 <span className="font-bold text-green-700 text-sm">{enrollRate}%</span>
+              </span>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              {/* 期間セレクタ（スライド式） */}
+              <InquiryPeriodSegmented
+                preset={filterPreset}
+                customFrom={filterCustomFrom}
+                customTo={filterCustomTo}
+                onChange={handlePeriodChange}
+              />
+              {/* コンパクト検索（Enter で実行・×でクリア） */}
+              <form
+                onSubmit={(e) => { e.preventDefault(); setSearchQuery(searchInput.trim()); }}
+                className="relative"
+              >
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <input
+                  type="text"
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  placeholder="氏名・電話・メールで検索"
+                  className="w-52 sm:w-60 pl-9 pr-8 py-1.5 border border-border rounded-lg text-sm bg-surface-raised text-text-heading focus:outline-none focus:ring-2 focus:ring-primary placeholder:text-gray-400"
+                />
+                {searchInput && (
+                  <button
+                    type="button"
+                    onClick={() => { setSearchInput(''); setSearchQuery(''); }}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    aria-label="検索をクリア"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+              </form>
+              {/* 絞り込み（詳細フィルターの開閉） */}
+              <button
+                type="button"
+                onClick={() => setShowFilters((v) => !v)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors duration-150 shrink-0 ${
+                  showFilters
+                    ? 'bg-ink text-white border-ink'
+                    : 'bg-surface-raised text-gray-600 border-border hover:bg-gray-50'
+                }`}
+              >
+                <SlidersHorizontal className="h-4 w-4" />
+                <span className="hidden sm:inline">絞り込み</span>
+              </button>
+            </div>
+          </div>
 
         {/* ステータス別カード — クリックでそのステータスに絞り込む（再クリックで解除） */}
-        <div className="mb-3 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2">
+        <div className="mb-4 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2">
           {/* 「すべて」カード（総数・絞り込み解除） */}
           <button
             type="button"
@@ -393,58 +483,6 @@ export default function InquiriesPage() {
               </button>
             );
           })}
-        </div>
-
-        {/* 補助サマリー（今月 / 入会率） */}
-        <div className="mb-6 flex flex-wrap items-center gap-x-6 gap-y-1 text-xs text-text-muted">
-          <span>今月の問合せ <span className="font-bold text-text-heading text-sm">{thisMonthCount}</span> 件</span>
-          <span>入会率（全期間） <span className="font-bold text-green-700 text-sm">{enrollRate}%</span></span>
-        </div>
-
-        {/* 検索 + フィルタトグル */}
-        <div className="mb-4 bg-surface-raised rounded-xl border border-border p-3">
-          <form
-            onSubmit={(e) => { e.preventDefault(); setSearchQuery(searchInput.trim()); }}
-            className="flex items-center gap-2"
-          >
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <input
-                type="text"
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                placeholder="氏名・電話・メールで検索"
-                className="w-full pl-9 pr-8 py-2 border border-border rounded-lg text-sm bg-surface-raised text-text-heading focus:outline-none focus:ring-2 focus:ring-primary placeholder:text-gray-400"
-              />
-              {searchInput && (
-                <button
-                  type="button"
-                  onClick={() => { setSearchInput(''); setSearchQuery(''); }}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              )}
-            </div>
-            <button
-              type="submit"
-              className="px-3 py-2 bg-ink text-white rounded-lg text-sm hover:bg-ink/80 transition-colors duration-150 shrink-0"
-            >
-              検索
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowFilters((v) => !v)}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium border transition-colors duration-150 shrink-0 ${
-                showFilters
-                  ? 'bg-ink text-white border-ink'
-                  : 'bg-surface-raised text-gray-600 border-border hover:bg-gray-50'
-              }`}
-            >
-              <SlidersHorizontal className="h-4 w-4" />
-              <span className="hidden sm:inline">絞り込み</span>
-            </button>
-          </form>
         </div>
 
         {/* 詳細フィルター（折りたたみ） */}
@@ -488,33 +526,25 @@ export default function InquiriesPage() {
                   className="w-full px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary"
                 />
               </div>
-
-              {/* 受付日 — プリセット付きピッカー */}
-              <div className="col-span-2 sm:col-span-3 lg:col-span-4">
-                <label className="block text-xs font-medium text-text-heading mb-1">受付日</label>
-                <InquiryPeriodPicker
-                  preset={filterPreset}
-                  customFrom={filterCustomFrom}
-                  customTo={filterCustomTo}
-                  onChange={handlePeriodChange}
-                  showCompare={false}
-                />
-              </div>
             </div>
             <div className="mt-3 flex items-center justify-between">
-              <p className="text-xs text-gray-500">{displayedInquiries.length}件表示</p>
+              <p className="text-xs text-gray-500">
+                {displayedInquiries.length}件表示
+                <span className="ml-2 text-text-faint">期間は画面上部の期間セレクタで切り替えできます</span>
+              </p>
               <button
                 type="button"
                 onClick={() => {
                   setFilterStatus('all');
                   setFilterGrade('');
                   setFilterMedia('');
-                  // 期間ピッカーも全期間にリセットする
-                  setFilterPreset('all_time');
+                  // 期間は既定の「今月」に戻す
+                  const def = resolvePeriod('this_month');
+                  setFilterPreset('this_month');
                   setFilterCustomFrom('');
                   setFilterCustomTo('');
-                  setFilterDateFrom('');
-                  setFilterDateTo('');
+                  setFilterDateFrom(def.dateFrom);
+                  setFilterDateTo(def.dateTo);
                   setSearchInput('');
                   setSearchQuery('');
                 }}
@@ -716,6 +746,8 @@ export default function InquiriesPage() {
             </div>
           )}
         </div>
+        </div>
+        {/* /本文ラッパ（showContent ゲート） */}
       </div>
       {/* 手入力で追加モーダル */}
       <InquiryManualAddModal

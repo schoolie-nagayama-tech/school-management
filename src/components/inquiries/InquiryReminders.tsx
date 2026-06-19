@@ -7,7 +7,7 @@
  * コアの alerts.ts / alert_settings とは独立したベータ実装。
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { AlertTriangle, Clock, Mail, Phone } from 'lucide-react';
 import { getInquiries } from '@/lib/api/inquiries';
@@ -61,26 +61,38 @@ const SEVERITY_BADGE: Record<InquiryReminder['severity'], string> = {
 interface Props {
   /** 表示対象の school_id 配列 */
   schoolIds: string[];
+  /**
+   * 初回の取得が完了したら一度呼ばれる（0件でも呼ぶ）。
+   * 親が「リマインドの読み込みが終わったか」を知り、一覧と同時に
+   * 描画してレイアウトシフトを防ぐために使う。
+   */
+  onReady?: () => void;
 }
 
-export function InquiryReminders({ schoolIds }: Props): JSX.Element | null {
+export function InquiryReminders({ schoolIds, onReady }: Props): JSX.Element | null {
   const [reminders, setReminders] = useState<InquiryReminder[]>([]);
-  /** true: まだデータ取得中 */
-  const [isLoading, setIsLoading] = useState(true);
+  /** 初回取得が完了したか（完了後は再取得中もボードを消さずちらつきを防ぐ） */
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
 
   // schoolIds が空なら即 null
   const hasSchools = schoolIds.length > 0;
+  // 配列参照は毎レンダリング変わるので、文字列キーで effect の再実行を安定化する
+  const schoolKey = schoolIds.join(',');
+
+  // onReady は ref 経由で呼ぶ（識別子が変わっても effect を再実行させない）
+  const onReadyRef = useRef(onReady);
+  useEffect(() => { onReadyRef.current = onReady; }, [onReady]);
 
   useEffect(() => {
     if (!hasSchools) {
-      setIsLoading(false);
+      setHasLoadedOnce(true);
+      onReadyRef.current?.();
       return;
     }
 
     let cancelled = false;
 
     const load = async () => {
-      setIsLoading(true);
       try {
         // inquiries（全ステータス）と contactedIds を並列取得
         const [inquiries, contactedIds] = await Promise.all([
@@ -96,19 +108,22 @@ export function InquiryReminders({ schoolIds }: Props): JSX.Element | null {
         // リマインドは補助表示のため、エラー時は静かに空にする
         if (!cancelled) setReminders([]);
       } finally {
-        if (!cancelled) setIsLoading(false);
+        if (!cancelled) {
+          setHasLoadedOnce(true);
+          onReadyRef.current?.();
+        }
       }
     };
 
     load();
     return () => { cancelled = true; };
-  }, [schoolIds, hasSchools]);
+  }, [schoolKey, hasSchools]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // schoolIds が空 → 表示不要
   if (!hasSchools) return null;
 
-  // ロード中 → 何も表示しない（控えめ）
-  if (isLoading) return null;
+  // 初回ロード未完 → 何も表示しない（控えめ）。完了後は再取得中もボードを維持する。
+  if (!hasLoadedOnce) return null;
 
   // リマインドなし → null（スペースを使わない）
   if (reminders.length === 0) return null;
