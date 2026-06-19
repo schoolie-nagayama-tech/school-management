@@ -120,6 +120,102 @@ export async function createOrder(
 }
 
 // ============================================
+// 取次サイト（日本教材出版）への発注データ生成
+// ============================================
+
+/** 取次サイトの注文フォーム1行分（版元・教材名・教科・準拠・学年・部数）。 */
+export interface DistributorOrderRow {
+  hanmoto: string; // 版元（ワーク発行元。NESTに該当カラムなし → 既定は空、手入力可）
+  kyuozaimei: string; // 教材名
+  kyouka: string; // 教科
+  junkyo: string; // 準拠（NESTの textbooks.publisher = 教科書準拠先を充当）
+  gakunen: string; // 学年
+  busuu: string; // 部数
+}
+
+/**
+ * 発注（通常は未確認 unconfirmed）を、取次サイトの注文行に集約する。
+ * - 準拠/教科/学年は materials ではなく textbooks 側にあるため、material_id で textbooks を引いて構造化する。
+ *   引けなかった分は materials.name のラベル「名前 | [準拠 |] 学年 | 科目」を逆パースして補完する。
+ * - 重要: NEST の textbooks.publisher は出版社ではなく「準拠(教科書準拠先: 東京書籍/啓林館等)」を指す。
+ *   よって publisher → 取次フォームの「準拠(junkyo)」に入れる。
+ * - 版元(hanmoto, ワークの発行元)は NEST に構造化カラムが無いため空。教材名が版元を兼ねることが多い。
+ *   必要なら呼び出し側のダイアログで手入力する。
+ * - 同一教材は部数を合算する（取次へは「商品×総部数」で発注するため、生徒単位の行は不要）。
+ * - 「フォレスタ」は別の取次会社へ発注するため、教材名に含む発注はこの注文（日本教材出版）から除外する。
+ */
+/** 日本教材出版以外へ発注する教材（教材名に含まれていたら除外）。 */
+const EXCLUDED_MATERIAL_KEYWORDS = ['フォレスタ'];
+
+export async function buildDistributorOrderRows(
+  orders: MaterialOrderWithDetails[]
+): Promise<DistributorOrderRow[]> {
+  const isExcluded = (name: string) => EXCLUDED_MATERIAL_KEYWORDS.some((kw) => name.includes(kw));
+  // 別取次の教材（フォレスタ等）は最初に除外する。materials.name は「教材名 | …」のラベルなので名前判定に使える。
+  const active = orders.filter((o) => o.status !== 'cancelled' && !isExcluded(o.material?.name ?? ''));
+  if (active.length === 0) return [];
+
+  // material_id → textbooks の構造化フィールド（版元/教材名/教科/学年）
+  const materialIds = Array.from(new Set(active.map((o) => o.material_id)));
+  const tbByMaterial = new Map<
+    string,
+    { name: string; publisher: string | null; subject: string | null; grade: string | null }
+  >();
+  const { data: tbs } = await supabase
+    .from('textbooks')
+    .select('name, publisher, subject, grade, material_id')
+    .in('material_id', materialIds);
+  for (const t of (tbs ?? []) as {
+    name: string;
+    publisher: string | null;
+    subject: string | null;
+    grade: string | null;
+    material_id: string | null;
+  }[]) {
+    if (t.material_id && !tbByMaterial.has(t.material_id)) {
+      tbByMaterial.set(t.material_id, { name: t.name, publisher: t.publisher, subject: t.subject, grade: t.grade });
+    }
+  }
+
+  // materials.name ラベルの逆パース（textbooks を引けなかった場合のフォールバック）。
+  // ラベル形式は formatTextbookLabel と同じ「名前 | [準拠 |] 学年 | 科目」（publisher=準拠は存在する時だけ index1 に入る）。
+  const parseLabel = (label: string): { name: string; publisher: string; grade: string; subject: string } => {
+    const p = label.split(' | ').map((s) => s.trim());
+    if (p.length >= 4) return { name: p.slice(0, p.length - 3).join(' | '), publisher: p[p.length - 3], grade: p[p.length - 2], subject: p[p.length - 1] };
+    if (p.length === 3) return { name: p[0], publisher: '', grade: p[1], subject: p[2] };
+    if (p.length === 2) return { name: p[0], publisher: '', grade: '', subject: p[1] };
+    return { name: label, publisher: '', grade: '', subject: '' };
+  };
+
+  // 教材ごとに部数を合算
+  const agg = new Map<string, { qty: number; order: MaterialOrderWithDetails }>();
+  for (const o of active) {
+    const cur = agg.get(o.material_id);
+    if (cur) cur.qty += o.quantity;
+    else agg.set(o.material_id, { qty: o.quantity, order: o });
+  }
+
+  const rows: DistributorOrderRow[] = [];
+  agg.forEach(({ qty, order }, materialId) => {
+    const tb = tbByMaterial.get(materialId);
+    const fallback = parseLabel(order.material?.name ?? '');
+    const kyuozaimei = (tb?.name ?? fallback.name) || '';
+    // 解決後の教材名にも除外キーワードが残っていれば最終的に弾く（material.name と textbook 名の食い違い対策）
+    if (isExcluded(kyuozaimei)) return;
+    rows.push({
+      hanmoto: '', // 版元(ワーク発行元)はNESTに構造化データが無い → 空。必要ならダイアログで手入力
+      kyuozaimei,
+      kyouka: (tb?.subject ?? fallback.subject) || '',
+      junkyo: (tb?.publisher ?? fallback.publisher) || '', // textbooks.publisher = 準拠(教科書準拠先)
+      gakunen: (tb?.grade ?? fallback.grade) || '',
+      busuu: String(qty),
+    });
+  });
+  rows.sort((a, b) => a.kyuozaimei.localeCompare(b.kyuozaimei, 'ja'));
+  return rows;
+}
+
+// ============================================
 // 提案書公開時の発注候補（ハイブリッド自動発注）
 // ============================================
 

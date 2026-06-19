@@ -13,8 +13,9 @@ import AccessDenied from '@/components/AccessDenied';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/useToast';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Truck } from 'lucide-react';
 import { getSupabaseBrowserClient } from '@/lib/supabase';
+import { DistributorOrderDialog } from '@/components/ordering/DistributorOrderDialog';
 
 /** Slack通知を送信（失敗しても無視） */
 async function sendSlackNotification(orderIds: string[], newStatus: string) {
@@ -48,6 +49,7 @@ export default function OrderHistoryPage() {
   const [schoolMap, setSchoolMap] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [showAllDistributed, setShowAllDistributed] = useState(false);
+  const [distributorOpen, setDistributorOpen] = useState(false);
 
   const fetchData = useCallback(async () => {
     const schoolIds = getSelectedSchoolIds();
@@ -99,6 +101,15 @@ export default function OrderHistoryPage() {
     }
     return { ordersByStatus: map, hiddenDistributedCount: hiddenCount };
   }, [orders, showAllDistributed]);
+
+  // 取次発注ダイアログの宛先初期値: 未確認の発注が単一校舎なら、その校舎名/通知メールを既定にする
+  const distributorDefaults = useMemo(() => {
+    const unconfirmed = ordersByStatus.unconfirmed;
+    const schoolIds = Array.from(new Set(unconfirmed.map((o) => o.school_id)));
+    if (schoolIds.length !== 1) return { name: undefined, email: undefined };
+    const school = masterSchools.find((s) => s.id === schoolIds[0]);
+    return { name: school?.name, email: school?.notification_email };
+  }, [ordersByStatus.unconfirmed, masterSchools]);
 
   const handleStatusChange = useCallback(async (orderId: string, newStatus: OrderStatus) => {
     try {
@@ -157,6 +168,15 @@ export default function OrderHistoryPage() {
           <ArrowLeft className="w-4 h-4" />
           教材・発注管理に戻る
         </Link>
+        {canEdit && ordersByStatus.unconfirmed.length > 0 && (
+          <button
+            onClick={() => setDistributorOpen(true)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-info text-white rounded-lg hover:brightness-95 active:scale-[0.97] transition-[filter,transform] duration-150"
+          >
+            <Truck className="w-3.5 h-3.5" />
+            取次サイトへ発注（{ordersByStatus.unconfirmed.length}）
+          </button>
+        )}
       </div>
 
       {loading ? (
@@ -193,6 +213,15 @@ export default function OrderHistoryPage() {
             </div>
           )}
         </div>
+      )}
+
+      {distributorOpen && (
+        <DistributorOrderDialog
+          orders={ordersByStatus.unconfirmed}
+          defaultSchoolName={distributorDefaults.name}
+          defaultEmail={distributorDefaults.email}
+          onClose={() => setDistributorOpen(false)}
+        />
       )}
     </AdminLayout>
   );
