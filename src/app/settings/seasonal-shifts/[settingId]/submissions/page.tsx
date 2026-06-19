@@ -499,7 +499,7 @@ export default function SeasonalShiftSubmissionsPage() {
                           className="text-info hover:underline text-sm disabled:opacity-50"
                           title="スクールIE講習会契約設定への自動入力用にコピー"
                         >
-                          {copyingSchoolieId === sub.id ? 'コピー中...' : 'スクールIEへ'}
+                          {copyingSchoolieId === sub.id ? 'コピー中...' : '座席表の自動入力'}
                         </button>
                         <span className="text-border">|</span>
                         <button
