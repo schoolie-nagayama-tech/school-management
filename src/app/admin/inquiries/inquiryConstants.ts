@@ -75,6 +75,34 @@ export const CONTACT_RESULT_OPTIONS: Record<ManualContactMethod, string[]> = {
   other:         [],
 };
 
+/**
+ * 問合せの「表示名」と、それが保護者名フォールバックかどうかを返す。
+ *
+ * HP からの取込では生徒名が空で保護者名しか入っていないことがある。
+ * その場合に「表示している名前は保護者名」だと UI 上で示せるよう、
+ * isGuardianFallback を返す。
+ *
+ * - student_name があればそれを使う（isGuardianFallback=false）
+ * - student_name が空で guardian_name があれば保護者名を使う（isGuardianFallback=true）
+ * - どちらも無ければ '（氏名未登録）'（isGuardianFallback=false）
+ */
+export interface InquiryDisplayName {
+  name: string;
+  isGuardianFallback: boolean;
+}
+export function getInquiryDisplayName(q: {
+  student_name: string | null;
+  guardian_name: string | null;
+}): InquiryDisplayName {
+  if (q.student_name && q.student_name.trim()) {
+    return { name: q.student_name, isGuardianFallback: false };
+  }
+  if (q.guardian_name && q.guardian_name.trim()) {
+    return { name: q.guardian_name, isGuardianFallback: true };
+  }
+  return { name: '（氏名未登録）', isGuardianFallback: false };
+}
+
 /** ステータス遷移メッセージ（status_change の result）*/
 export function formatStatusTransition(from: string, to: string): string {
   return `${STATUS_CONFIG[from as keyof typeof STATUS_CONFIG]?.label ?? from} → ${STATUS_CONFIG[to as keyof typeof STATUS_CONFIG]?.label ?? to}`;

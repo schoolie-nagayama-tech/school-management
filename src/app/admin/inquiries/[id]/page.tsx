@@ -60,6 +60,7 @@ import {
   formatDateTime,
   MANUAL_CONTACT_METHODS,
   CONTACT_RESULT_OPTIONS,
+  getInquiryDisplayName,
   type ManualContactMethod,
 } from '../inquiryConstants';
 import {
@@ -79,6 +80,7 @@ import {
   MessageSquare,
   Building2,
   Circle,
+  AlertTriangle,
 } from 'lucide-react';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 import { supabase } from '@/lib/supabase';
@@ -130,6 +132,8 @@ export default function InquiryDetailPage() {
 
   // ---- 生徒として登録 ----
   const [isEnrolling, setIsEnrolling] = useState(false);
+  // 生徒名が未入力（保護者名で登録される）場合の確認モーダル
+  const [enrollWarnOpen, setEnrollWarnOpen] = useState(false);
 
   // ---- 面談予約 ----
   /** POST /api/inquiries/[id]/booking-token の結果 URL */
@@ -450,8 +454,20 @@ export default function InquiryDetailPage() {
       toast.error(getUserErrorMessage(err, '生徒登録に失敗しました'));
     } finally {
       setIsEnrolling(false);
+      setEnrollWarnOpen(false);
     }
   }, [inquiry, router]);
+
+  // ---- 生徒として登録ボタンのクリック ----
+  // 生徒名が未入力だと保護者名で生徒が作られてしまうため、その場合は確認モーダルを挟む。
+  const handleEnrollClick = useCallback(() => {
+    if (!inquiry) return;
+    if (!inquiry.student_name?.trim()) {
+      setEnrollWarnOpen(true);
+      return;
+    }
+    handleEnrollAsStudent();
+  }, [inquiry, handleEnrollAsStudent]);
 
   // ---- ローディング / 権限 ----
   if (profile === null) {
@@ -501,8 +517,14 @@ export default function InquiryDetailPage() {
               {/* 氏名 + ステータス + 学年 */}
               <div className="flex items-start gap-3 flex-wrap mb-4">
                 <h1 className="text-xl font-bold text-text-heading">
-                  {inquiry.student_name || inquiry.guardian_name || '（氏名未登録）'}
+                  {getInquiryDisplayName(inquiry).name}
                 </h1>
+                {/* 生徒名が無く保護者名を表示している場合は明示する */}
+                {getInquiryDisplayName(inquiry).isGuardianFallback && (
+                  <span className="px-2.5 py-0.5 rounded-full text-xs font-medium shrink-0 bg-amber-100 text-amber-700 border border-amber-200">
+                    保護者名（生徒名 未入力）
+                  </span>
+                )}
                 <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium shrink-0 ${STATUS_CONFIG[inquiry.status].className}`}>
                   {STATUS_CONFIG[inquiry.status].label}
                 </span>
@@ -1146,7 +1168,7 @@ export default function InquiryDetailPage() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={handleEnrollAsStudent}
+                        onClick={handleEnrollClick}
                         disabled={isEnrolling}
                         className="w-full justify-start"
                       >
@@ -1191,6 +1213,38 @@ export default function InquiryDetailPage() {
           </Button>
           <Button variant="danger" size="sm" isLoading={isDeleting} onClick={handleDelete}>
             削除する
+          </Button>
+        </div>
+      </Modal>
+
+      {/* 生徒名 未入力での登録 確認モーダル
+          生徒名が空のまま登録すると保護者名で生徒が作られてしまうため警告する */}
+      <Modal
+        isOpen={enrollWarnOpen}
+        onClose={() => setEnrollWarnOpen(false)}
+        title="生徒名が未入力です"
+        size="sm"
+      >
+        <div className="mb-6 space-y-3">
+          <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 border border-amber-200">
+            <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+            <p className="text-sm text-amber-800">
+              この問合せには生徒名が入力されていません。このまま登録すると
+              {inquiry?.guardian_name ? `保護者名「${inquiry.guardian_name}」` : '保護者名'}
+              が生徒の氏名として登録されます。
+            </p>
+          </div>
+          <p className="text-sm text-text-body">
+            生徒の本名が分かる場合は、先に問合せの「生徒名」を入力してから登録することをおすすめします。
+            このまま保護者名で登録して、あとで生徒詳細から修正することもできます。
+          </p>
+        </div>
+        <div className="flex justify-end gap-2">
+          <Button variant="ghost" size="sm" onClick={() => setEnrollWarnOpen(false)}>
+            キャンセル
+          </Button>
+          <Button variant="outline" size="sm" isLoading={isEnrolling} onClick={handleEnrollAsStudent}>
+            このまま登録する
           </Button>
         </div>
       </Modal>

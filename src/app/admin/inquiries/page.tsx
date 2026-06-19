@@ -619,8 +619,21 @@ export default function InquiriesPage() {
                               {schoolsMap[inquiry.school_id] ?? '—'}
                             </td>
                           )}
+                          {/* 生徒名: 未入力で保護者名にフォールバックしている場合は
+                              「保護者名」バッジ付きで表示し、表示名が保護者名だと分かるようにする */}
                           <td className="border border-border px-3 py-2.5 font-medium text-text-heading">
-                            {inquiry.student_name ?? '—'}
+                            {inquiry.student_name?.trim() ? (
+                              inquiry.student_name
+                            ) : inquiry.guardian_name?.trim() ? (
+                              <span className="inline-flex items-center gap-1.5">
+                                <span className="italic font-normal text-text-body">{inquiry.guardian_name}</span>
+                                <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-100 text-amber-700 shrink-0">
+                                  保護者名
+                                </span>
+                              </span>
+                            ) : (
+                              '—'
+                            )}
                           </td>
                           <td className="border border-border px-3 py-2.5 text-text-body">
                             {inquiry.guardian_name ?? '—'}
