@@ -350,7 +350,7 @@ export default function SeasonalShiftSubmissionsPage() {
           </summary>
           <div className="px-4 pb-4 space-y-3 text-sm text-text-body">
             <ol className="list-decimal list-inside space-y-1 text-text-muted">
-              <li>下の「スクールIEに流し込む」リンクをブラウザのブックマークバーに<strong>ドラッグ&amp;ドロップ</strong>して登録（初回のみ）</li>
+              <li>下の「座席表に流し込む」リンクをブラウザのブックマークバーに<strong>ドラッグ&amp;ドロップ</strong>して登録（初回のみ）</li>
               <li>各講師行の「座席表の自動入力」を押してコピー</li>
               <li>スクールIEでその講師の「講習会契約設定」を開き、登録したブックマークをクリック → チェックが自動で入る</li>
               <li>内容を確認して「登録」を押す（登録と確認ダイアログは手動）</li>
@@ -363,7 +363,7 @@ export default function SeasonalShiftSubmissionsPage() {
               draggable
               className="inline-flex items-center gap-1.5 px-4 py-2 bg-info text-white text-sm font-medium rounded-lg cursor-grab active:cursor-grabbing select-none hover:brightness-95 transition-[filter] duration-150"
             >
-              スクールIEに流し込む
+              座席表に流し込む
             </a>
             <p className="text-xs text-text-muted">
               ※ このリンクはクリックしても動きません。ブックマークバーにドラッグして登録してください。時限の対応は永山校の講習時間（3限〜7限）を前提にしています。
