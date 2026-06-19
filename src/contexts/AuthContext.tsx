@@ -73,11 +73,16 @@ export function AuthProvider({ children, initialAuth }: AuthProviderProps) {
   const [isLoading, setIsLoading] = useState(!initialAuth);
   const lastUserIdRef = useRef<string | null>(initialAuth?.user.id ?? null);
 
-  // 選択された教室IDを設定（localStorageにも保存）
+  // 選択された教室IDを設定（localStorage + cookie に即時保存）
+  // cookie は useEffect でもミラーされるが、handleSchoolChange → router.refresh() の流れでは
+  // useEffect がレンダー後に実行されるため router.refresh() にクッキーが間に合わない。
+  // setSelectedSchoolId 呼び出し時に同期でクッキーを書いておくことで、
+  // サーバー側の prefetch が常に最新の教室選択を読めるようにする。
   const setSelectedSchoolId = useCallback((schoolId: string | 'all') => {
     setSelectedSchoolIdState(schoolId);
     if (typeof window !== 'undefined') {
       localStorage.setItem('selectedSchoolId', schoolId);
+      document.cookie = `selectedSchoolId=${encodeURIComponent(schoolId)}; path=/; max-age=31536000; SameSite=Lax`;
     }
   }, []);
 
