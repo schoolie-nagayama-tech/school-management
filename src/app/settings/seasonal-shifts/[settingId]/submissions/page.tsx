@@ -34,6 +34,7 @@ import AccessDenied from '@/components/AccessDenied';
 import { SubmissionAccountLinkCell } from '@/components/shift-link/SubmissionAccountLinkCell';
 import { UnsubmittedTeachersSection } from '@/components/shift-link/UnsubmittedTeachersSection';
 import { getSchoolTeacherAccounts, type SchoolTeacherAccount } from '@/lib/api/school-teachers';
+import { buildSchoolieCheckboxNames, SCHOOLIE_BOOKMARKLET, type SchooliePayload } from '@/lib/utils/schoolieShift';
 
 export default function SeasonalShiftSubmissionsPage() {
   const params = useParams();
@@ -69,6 +70,7 @@ export default function SeasonalShiftSubmissionsPage() {
   const [detailSlotSettings, setDetailSlotSettings] = useState<SlotSetting[]>([]);
   const [pdfExportAfterOpen, setPdfExportAfterOpen] = useState<string | null>(null);
   const [updatingSeatChartId, setUpdatingSeatChartId] = useState<string | null>(null);
+  const [copyingSchoolieId, setCopyingSchoolieId] = useState<string | null>(null);
   // 連続クリック時の競合防止用リクエストID
   const openDetailRequestRef = useRef(0);
 
@@ -196,6 +198,37 @@ export default function SeasonalShiftSubmissionsPage() {
     }
   };
 
+  /**
+   * 講師の出勤可能コマを「スクールIE講習会契約設定」用のチェックボックス名一覧に変換し、
+   * クリップボードへコピーする。スクールIE側で導入済みブックマークレットが読んで自動入力する。
+   */
+  const handleCopyForSchoolie = async (sub: SeasonalShiftSubmission) => {
+    setCopyingSchoolieId(sub.id);
+    try {
+      const full = await getSeasonalShiftSubmissionWithSlots(sub.id);
+      if (!full) {
+        error('提出データの取得に失敗しました');
+        return;
+      }
+      const { names, skipped } = buildSchoolieCheckboxNames(full.slots ?? []);
+      if (names.length === 0) {
+        error('スクールIEに変換できる出勤可能コマがありません');
+        return;
+      }
+      const payload: SchooliePayload = { _nest_schoolie: true, teacher_name: full.teacher_name, names };
+      await navigator.clipboard.writeText(JSON.stringify(payload));
+      // 対応表に無い時間帯があれば警告（黙って落とさない）
+      success(
+        `${full.teacher_name} さんの${names.length}コマをコピーしました。スクールIEで対象講師の「講習会契約設定」を開きブックマークレットを実行してください。` +
+          (skipped.length > 0 ? `（未対応の時間帯${skipped.length}件は除外: ${skipped.join(', ')}）` : '')
+      );
+    } catch (err) {
+      error(err instanceof Error ? err.message : 'コピーに失敗しました');
+    } finally {
+      setCopyingSchoolieId(null);
+    }
+  };
+
   const openDetail = async (sub: SeasonalShiftSubmission) => {
     const requestId = ++openDetailRequestRef.current;
     const [full, slotSettings] = await Promise.all([
@@ -309,6 +342,34 @@ export default function SeasonalShiftSubmissionsPage() {
         {setting && (
           <h1 className="text-xl font-bold text-text-heading mb-4">{setting.name} 提出一覧</h1>
         )}
+
+        {/* スクールIE連携: 初回のみブックマークレットを導入。各講師行の「スクールIEへ」でコピー→取込。 */}
+        <details className="mb-6 rounded-xl border border-border bg-surface-raised">
+          <summary className="px-4 py-3 cursor-pointer text-sm font-semibold text-text-heading hover:bg-surface-hover rounded-xl">
+            スクールIEへ出勤コマを流し込む（初回設定）
+          </summary>
+          <div className="px-4 pb-4 space-y-3 text-sm text-text-body">
+            <ol className="list-decimal list-inside space-y-1 text-text-muted">
+              <li>下の「スクールIEに流し込む」リンクをブラウザのブックマークバーに<strong>ドラッグ&amp;ドロップ</strong>して登録（初回のみ）</li>
+              <li>各講師行の「スクールIEへ」を押してコピー</li>
+              <li>スクールIEでその講師の「講習会契約設定」を開き、登録したブックマークをクリック → チェックが自動で入る</li>
+              <li>内容を確認して「登録」を押す（登録と確認ダイアログは手動）</li>
+            </ol>
+            {/* javascript: URL のため通常クリックは無効化し、ドラッグ登録専用にする（HP取込ブックマークレットと同方式）。 */}
+            {/* eslint-disable-next-line react/jsx-no-target-blank */}
+            <a
+              href={SCHOOLIE_BOOKMARKLET}
+              onClick={(e) => e.preventDefault()}
+              draggable
+              className="inline-flex items-center gap-1.5 px-4 py-2 bg-info text-white text-sm font-medium rounded-lg cursor-grab active:cursor-grabbing select-none hover:brightness-95 transition-[filter] duration-150"
+            >
+              スクールIEに流し込む
+            </a>
+            <p className="text-xs text-text-muted">
+              ※ このリンクはクリックしても動きません。ブックマークバーにドラッグして登録してください。時限の対応は永山校の講習時間（3限〜7限）を前提にしています。
+            </p>
+          </div>
+        </details>
 
         {/* 運営判断用ダッシュボード（アコーディオン） */}
         {setting && (
@@ -429,6 +490,16 @@ export default function SeasonalShiftSubmissionsPage() {
                           className="text-info hover:underline text-sm"
                         >
                           詳細
+                        </button>
+                        <span className="text-border">|</span>
+                        <button
+                          type="button"
+                          onClick={() => handleCopyForSchoolie(sub)}
+                          disabled={copyingSchoolieId === sub.id}
+                          className="text-info hover:underline text-sm disabled:opacity-50"
+                          title="スクールIE講習会契約設定への自動入力用にコピー"
+                        >
+                          {copyingSchoolieId === sub.id ? 'コピー中...' : 'スクールIEへ'}
                         </button>
                         <span className="text-border">|</span>
                         <button
