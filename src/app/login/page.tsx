@@ -16,8 +16,10 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  // エラーではない情報通知（無操作ログアウト等）。赤字で警告しないよう error と分ける。
+  const [notice, setNotice] = useState('');
 
-  // URLパラメータからエラーを取得
+  // URLパラメータからエラー・通知を取得
   useEffect(() => {
     const errorParam = searchParams.get('error');
     if (errorParam === 'not_registered') {
@@ -26,6 +28,12 @@ export default function LoginPage() {
       setError('認証に失敗しました。もう一度お試しください。');
     } else if (errorParam === 'not_allowed') {
       setError('Googleログインは教室長以上のアカウントのみ利用可能です。\nメールアドレスとパスワードでログインしてください。');
+    }
+
+    // 無操作ログアウトの通知
+    const reasonParam = searchParams.get('reason');
+    if (reasonParam === 'inactivity') {
+      setNotice('一定時間操作がなかったため、自動的にログアウトしました。\nお手数ですが再度ログインしてください。');
     }
   }, [searchParams]);
 
@@ -101,6 +109,13 @@ export default function LoginPage() {
           {error && (
             <div className="p-3 bg-danger/10 border border-danger/30 rounded-lg">
               <p className="text-sm text-danger whitespace-pre-line">{error}</p>
+            </div>
+          )}
+
+          {/* 情報通知（無操作ログアウト等）。エラーと違い穏やかな見た目にする。 */}
+          {notice && (
+            <div className="p-3 bg-surface-hover border border-border-subtle rounded-lg">
+              <p className="text-sm text-text-body whitespace-pre-line">{notice}</p>
             </div>
           )}
 

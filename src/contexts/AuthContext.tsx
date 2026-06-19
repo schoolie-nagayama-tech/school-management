@@ -11,6 +11,7 @@ import { getSchools } from '@/lib/api/schools';
 import { Loading } from '@/components/ui';
 import { clearAllFetchCache } from '@/lib/utils/fetchCache';
 import { resolveSelectedSchoolId } from '@/lib/auth/selectedSchool';
+import { useInactivityLogout } from '@/hooks/useInactivityLogout';
 // 型のみの import。resolveServerAuth は 'server-only' だが import type は
 // コンパイル時に消えるためクライアントバンドルには入らない（実行時 import なし）。
 import type { InitialAuth } from '@/lib/auth/resolveServerAuth';
@@ -215,8 +216,9 @@ export function AuthProvider({ children, initialAuth }: AuthProviderProps) {
     }
   }, [user, fetchProfile]);
 
-  // ログアウト
-  const handleSignOut = useCallback(async () => {
+  // ログアウト本体。リダイレクト先を差し替えられるようにして、通常ログアウトと
+  // 無操作ログアウト（理由付きでログイン画面に通知表示）で使い回す。
+  const performSignOut = useCallback(async (redirectTo: string = '/login') => {
     clearAllFetchCache();
     const supabase = createSupabaseBrowserClient();
     try {
@@ -226,7 +228,7 @@ export function AuthProvider({ children, initialAuth }: AuthProviderProps) {
     }
     // 即時リダイレクトで、状態クリア後の「権限がありません」画面を経由せずログインへ
     if (typeof window !== 'undefined') {
-      window.location.href = '/login';
+      window.location.href = redirectTo;
       return;
     }
     setUser(null);
@@ -237,6 +239,20 @@ export function AuthProvider({ children, initialAuth }: AuthProviderProps) {
     setSelectedSchoolIdState(null);
     router.replace('/login');
   }, [router]);
+
+  // 通常のサインアウト（コンテキスト経由で各画面に公開）。
+  const handleSignOut = useCallback(() => performSignOut('/login'), [performSignOut]);
+
+  // 無操作（アイドル）ログアウト。ログイン済みのときだけ作動し、ロール別の
+  // タイムアウト（講師60分 / 教室長以上2時間）で自動サインアウトする。
+  // ログイン画面では「自動ログアウトした」旨を通知するため reason を付ける。
+  useInactivityLogout({
+    enabled: !!user && !!profile,
+    role: profile?.role ?? null,
+    onTimeout: () => {
+      void performSignOut('/login?reason=inactivity');
+    },
+  });
 
   // 認証状態の監視
   useEffect(() => {
