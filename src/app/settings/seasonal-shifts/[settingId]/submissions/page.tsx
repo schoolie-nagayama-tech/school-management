@@ -343,15 +343,15 @@ export default function SeasonalShiftSubmissionsPage() {
           <h1 className="text-xl font-bold text-text-heading mb-4">{setting.name} 提出一覧</h1>
         )}
 
-        {/* スクールIE連携: 初回のみブックマークレットを導入。各講師行の「スクールIEへ」でコピー→取込。 */}
+        {/* スクールIE連携: 初回のみブックマークレットを導入。各講師行の「座席表の自動入力」でコピー→取込。 */}
         <details className="mb-6 rounded-xl border border-border bg-surface-raised">
           <summary className="px-4 py-3 cursor-pointer text-sm font-semibold text-text-heading hover:bg-surface-hover rounded-xl">
-            スクールIEへ出勤コマを流し込む（初回設定）
+            座席表への自動入力（初回設定）
           </summary>
           <div className="px-4 pb-4 space-y-3 text-sm text-text-body">
             <ol className="list-decimal list-inside space-y-1 text-text-muted">
               <li>下の「スクールIEに流し込む」リンクをブラウザのブックマークバーに<strong>ドラッグ&amp;ドロップ</strong>して登録（初回のみ）</li>
-              <li>各講師行の「スクールIEへ」を押してコピー</li>
+              <li>各講師行の「座席表の自動入力」を押してコピー</li>
               <li>スクールIEでその講師の「講習会契約設定」を開き、登録したブックマークをクリック → チェックが自動で入る</li>
               <li>内容を確認して「登録」を押す（登録と確認ダイアログは手動）</li>
             </ol>
