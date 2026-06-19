@@ -187,8 +187,9 @@ export default function InquiriesPage() {
       }
 
       // フィルタ条件の組み立て
+      // ステータスはあえてサーバーに渡さない。上部のステータス別カードが
+      // 常に全内訳を表示できるよう、ステータス絞り込みはクライアント側で行う。
       const filters: InquiryFilters = {};
-      if (filterStatus !== 'all') filters.status = filterStatus;
       if (filterGrade) filters.grade = filterGrade;
       if (filterMedia) filters.media = filterMedia;
       if (filterDateFrom) filters.dateFrom = filterDateFrom;
@@ -209,7 +210,6 @@ export default function InquiriesPage() {
     }
   }, [
     getSelectedSchoolIds,
-    filterStatus,
     filterGrade,
     filterMedia,
     filterDateFrom,
@@ -224,17 +224,42 @@ export default function InquiriesPage() {
     }
   }, [fetchData, selectedSchoolId]);
 
-  // ---- サマリー（対応中 / 今月 / 入会率） ----
+  // ---- ステータス別の件数集計（カードに表示） ----
+  // inquiries はステータス未絞り込みで取得しているので、ここで全内訳を数えられる。
+  const statusCounts = React.useMemo(() => {
+    const counts: Record<InquiryStatus, number> = {
+      in_progress: 0,
+      trial_waiting: 0,
+      trial_done: 0,
+      enrolled: 0,
+      unreachable: 0,
+      lost: 0,
+      trial_lost: 0,
+    };
+    for (const q of inquiries) {
+      if (q.status in counts) counts[q.status] += 1;
+    }
+    return counts;
+  }, [inquiries]);
+
+  // ---- 表示対象（ステータスカード/プルダウンによるクライアント側フィルタ） ----
+  const displayedInquiries = React.useMemo(
+    () =>
+      filterStatus === 'all'
+        ? inquiries
+        : inquiries.filter((q) => q.status === filterStatus),
+    [inquiries, filterStatus]
+  );
+
+  // ---- サマリー（今月 / 入会率） ----
   const now = new Date();
   const thisMonthCount = inquiries.filter((q) => {
     const d = new Date(q.inquired_at);
     return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
   }).length;
-  const inProgressCount = inquiries.filter((q) => q.status === 'in_progress').length;
-  const enrolledCount = inquiries.filter((q) => q.status === 'enrolled').length;
   const enrollRate =
     inquiries.length > 0
-      ? Math.round((enrolledCount / inquiries.length) * 100)
+      ? Math.round((statusCounts.enrolled / inquiries.length) * 100)
       : 0;
 
   // ---- ロールチェック前のローディング対応 ----
@@ -328,20 +353,52 @@ export default function InquiriesPage() {
         {/* リマインドボード（要対応アラート）— リマインドがなければ何も表示しない */}
         <InquiryReminders schoolIds={schoolIds} />
 
-        {/* サマリーカード */}
-        <div className="grid grid-cols-3 gap-4 mb-6">
-          <div className="bg-surface-raised border border-border rounded-lg p-4">
-            <p className="text-xs text-text-muted mb-1">対応中</p>
-            <p className="text-2xl font-bold text-blue-700">{inProgressCount}</p>
-          </div>
-          <div className="bg-surface-raised border border-border rounded-lg p-4">
-            <p className="text-xs text-text-muted mb-1">今月の問合せ</p>
-            <p className="text-2xl font-bold text-text-heading">{thisMonthCount}</p>
-          </div>
-          <div className="bg-surface-raised border border-border rounded-lg p-4">
-            <p className="text-xs text-text-muted mb-1">入会率（全期間）</p>
-            <p className="text-2xl font-bold text-green-700">{enrollRate}%</p>
-          </div>
+        {/* ステータス別カード — クリックでそのステータスに絞り込む（再クリックで解除） */}
+        <div className="mb-3 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2">
+          {/* 「すべて」カード（総数・絞り込み解除） */}
+          <button
+            type="button"
+            onClick={() => setFilterStatus('all')}
+            className={`text-left rounded-lg border p-3 transition-colors duration-150 ${
+              filterStatus === 'all'
+                ? 'border-ink bg-surface-hover ring-1 ring-ink/30'
+                : 'border-border bg-surface-raised hover:bg-surface-hover'
+            }`}
+          >
+            <p className="text-[11px] text-text-muted mb-0.5">すべて</p>
+            <p className="text-xl font-bold text-text-heading leading-none">{inquiries.length}</p>
+          </button>
+
+          {/* 各ステータスのカード */}
+          {(Object.keys(STATUS_CONFIG) as InquiryStatus[]).map((s) => {
+            const active = filterStatus === s;
+            return (
+              <button
+                key={s}
+                type="button"
+                // 再クリックで解除（'all' に戻す）
+                onClick={() => setFilterStatus(active ? 'all' : s)}
+                className={`text-left rounded-lg border p-3 transition-colors duration-150 ${
+                  active
+                    ? 'border-ink bg-surface-hover ring-1 ring-ink/30'
+                    : 'border-border bg-surface-raised hover:bg-surface-hover'
+                }`}
+              >
+                <span
+                  className={`inline-block px-1.5 py-0.5 rounded-full text-[11px] font-medium mb-1 ${STATUS_CONFIG[s].className}`}
+                >
+                  {STATUS_CONFIG[s].label}
+                </span>
+                <p className="text-xl font-bold text-text-heading leading-none">{statusCounts[s]}</p>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* 補助サマリー（今月 / 入会率） */}
+        <div className="mb-6 flex flex-wrap items-center gap-x-6 gap-y-1 text-xs text-text-muted">
+          <span>今月の問合せ <span className="font-bold text-text-heading text-sm">{thisMonthCount}</span> 件</span>
+          <span>入会率（全期間） <span className="font-bold text-green-700 text-sm">{enrollRate}%</span></span>
         </div>
 
         {/* 検索 + フィルタトグル */}
@@ -445,7 +502,7 @@ export default function InquiriesPage() {
               </div>
             </div>
             <div className="mt-3 flex items-center justify-between">
-              <p className="text-xs text-gray-500">{inquiries.length}件表示</p>
+              <p className="text-xs text-gray-500">{displayedInquiries.length}件表示</p>
               <button
                 type="button"
                 onClick={() => {
@@ -472,13 +529,20 @@ export default function InquiriesPage() {
         {/* 一覧テーブル */}
         <div className="bg-surface-raised rounded-xl border border-border p-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-bold text-text-heading">問合せ一覧</h2>
-            <p className="text-sm text-text-muted">{inquiries.length}件</p>
+            <h2 className="text-lg font-bold text-text-heading">
+              問合せ一覧
+              {filterStatus !== 'all' && (
+                <span className="ml-2 text-sm font-normal text-text-muted">
+                  （{STATUS_CONFIG[filterStatus].label}で絞り込み中）
+                </span>
+              )}
+            </h2>
+            <p className="text-sm text-text-muted">{displayedInquiries.length}件</p>
           </div>
 
           {isLoading ? (
             <Loading size="md" />
-          ) : inquiries.length === 0 ? (
+          ) : displayedInquiries.length === 0 ? (
             <div className="text-center py-8 text-text-body">
               該当する問合せがありません。フィルターを変更してください。
             </div>
@@ -503,7 +567,7 @@ export default function InquiriesPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {inquiries.map((inquiry) => {
+                  {displayedInquiries.map((inquiry) => {
                     const sc = STATUS_CONFIG[inquiry.status];
                     const isExpanded = expandedIds.has(inquiry.id);
                     const isLoadingTimeline = timelineLoading.has(inquiry.id);
