@@ -43,6 +43,9 @@ const CATEGORY_COLORS: Record<SchoolCategory, { bg: string; border: string; text
   other: { bg: 'bg-gray-50', border: 'border-gray-200', text: 'text-gray-700', accent: '#6b7280' },
 };
 
+// 教科別分析の表示順。ここに無い教科は末尾に日本語名順で並ぶ。
+const SUBJECT_ORDER = ['国語', '算数', '数学', '英語', '英検', '理科', '社会', '理社', '小論文', '作文'];
+
 // =============================================
 // onBlur保存のnumber input（ローカルstate保持）
 // =============================================
@@ -132,6 +135,9 @@ export function CourseProgressDashboard({
   onPeriodDateChange,
 }: CourseProgressDashboardProps) {
   const [categoryOpen, setCategoryOpen] = useState(false);
+  // 教科別 提案vs取得セクションの開閉と、表示対象（全体／学校種別）
+  const [subjectOpen, setSubjectOpen] = useState(false);
+  const [subjectCat, setSubjectCat] = useState<'overall' | 'elementary' | 'middle' | 'high'>('overall');
 
   const budgetKoma = period?.budget_koma || 0;
   const targetKoma = period?.target_koma || 0;
@@ -288,6 +294,8 @@ export function CourseProgressDashboard({
   }, [students, decidedKomaItem, progressData, studentDecidedKoma]);
 
   // --- 集計 ---
+  // 進捗率（%整数）。0除算は0扱い。進捗状況カードの各行と学年別内訳の取得率で共用する。
+  const pct = (n: number, d: number) => (d > 0 ? Math.round((n / d) * 100) : 0);
   const totalProposed = Object.values(studentProposedKoma).reduce((a, b) => a + b, 0);
   const totalDecided = Object.values(studentDecidedKoma).reduce((a, b) => a + b, 0);
   const actualRate = totalProposed > 0 ? totalDecided / totalProposed : 0;
@@ -332,7 +340,7 @@ export function CourseProgressDashboard({
       // 申込済件数は「決定コマの記録あり」で数える（0コマ確定も申込済に含める）
       const catDecidedCount = catStudents.filter((s) => studentDecidedHasValue[s.id]).length;
 
-      const gradeBreakdown: { grade: number; label: string; count: number; proposed: number; decided: number; avgProposed: number; avgDecided: number }[] = [];
+      const gradeBreakdown: { grade: number; label: string; count: number; proposed: number; decided: number; avgProposed: number; avgDecided: number; rate: number }[] = [];
       const gradeSet = Array.from(new Set(catStudents.map((s) => s.grade))).sort((a, b) => a - b);
       for (const grade of gradeSet) {
         const gs = catStudents.filter((s) => s.grade === grade);
@@ -348,6 +356,8 @@ export function CourseProgressDashboard({
           avgProposed: gs.length > 0 ? gProposed / gs.length : 0,
           // 取得増コマ平均（その学年の在籍1人あたりの決定コマ数）
           avgDecided: gs.length > 0 ? gDecided / gs.length : 0,
+          // 取得率（決定コマ ÷ 提案コマ）。提案0の学年は0%扱い。
+          rate: gProposed > 0 ? gDecided / gProposed : 0,
         });
       }
 
@@ -362,6 +372,56 @@ export function CourseProgressDashboard({
       };
     }).filter((x): x is Exclude<typeof x, null> => x !== null);
   }, [students, studentProposedKoma, studentDecidedKoma, studentDecidedHasValue]);
+
+  // --- 教科別 提案 vs 取得（提案書ベース） ---
+  // 提案書の subject_proposals（提案コマ）と subject_applied（申込＝取得コマ）を教科ごとに全生徒合算する。
+  // 提案コマ・取得コマは結合グループを考慮済みの値が auto_values で届くため、ここでは素直に加算するだけでよい。
+  // 「全体」に加えて学校種別（小／中／高）でも内訳を集計し、タブで切り替えて見られるようにする。
+  type SubjectRow = { subject: string; proposed: number; applied: number; rate: number };
+  const subjectAnalysis = useMemo(() => {
+    type Agg = Record<string, { proposed: number; applied: number }>;
+    const overall: Agg = {};
+    const byCat: Record<'elementary' | 'middle' | 'high', Agg> = { elementary: {}, middle: {}, high: {} };
+    const add = (agg: Agg, subject: string, proposed: number, applied: number) => {
+      if (!agg[subject]) agg[subject] = { proposed: 0, applied: 0 };
+      agg[subject].proposed += proposed;
+      agg[subject].applied += applied;
+    };
+    for (const s of students) {
+      const sv = autoValues?.[s.id];
+      if (!sv) continue;
+      const cat = getSchoolCategory(s.grade);
+      // 提案・申込どちらかに登場する教科をすべて対象にする（提案0・申込のみの教科も拾う）
+      const subjects = Array.from(new Set([
+        ...Object.keys(sv.subject_proposals ?? {}),
+        ...Object.keys(sv.subject_applied ?? {}),
+      ]));
+      for (const subject of subjects) {
+        const p = sv.subject_proposals?.[subject] ?? 0;
+        const a = sv.subject_applied?.[subject] ?? 0;
+        add(overall, subject, p, a);
+        if (cat === 'elementary' || cat === 'middle' || cat === 'high') add(byCat[cat], subject, p, a);
+      }
+    }
+    // 既知順（SUBJECT_ORDER）→ それ以外は日本語名順に並べて行配列化する
+    const toRows = (agg: Agg): SubjectRow[] =>
+      Object.entries(agg)
+        .map(([subject, v]) => ({ subject, proposed: v.proposed, applied: v.applied, rate: v.proposed > 0 ? v.applied / v.proposed : 0 }))
+        .sort((a, b) => {
+          const ia = SUBJECT_ORDER.indexOf(a.subject);
+          const ib = SUBJECT_ORDER.indexOf(b.subject);
+          if (ia !== -1 && ib !== -1) return ia - ib;
+          if (ia !== -1) return -1;
+          if (ib !== -1) return 1;
+          return a.subject.localeCompare(b.subject, 'ja');
+        });
+    return {
+      overall: toRows(overall),
+      elementary: toRows(byCat.elementary),
+      middle: toRows(byCat.middle),
+      high: toRows(byCat.high),
+    };
+  }, [students, autoValues]);
 
   const hasScheduleDates = period?.schedule_start_date && period?.schedule_end_date;
 
@@ -540,7 +600,7 @@ export function CourseProgressDashboard({
             <div>
               <div className="flex items-center justify-between text-xs mb-0.5">
                 <span className="text-gray-500">作成済</span>
-                <span className="text-gray-700 font-medium">{proposedStudentCount}<span className="text-gray-400 font-normal"> / {students.length}名</span></span>
+                <span className="text-gray-700 font-medium">{proposedStudentCount}<span className="text-gray-400 font-normal"> / {students.length}名</span><span className="text-gray-400 font-normal ml-1">({pct(proposedStudentCount, students.length)}%)</span></span>
               </div>
               <div className="w-full bg-gray-100 rounded-full h-1.5">
                 <div className="h-1.5 rounded-full bg-[#f59e0b] transition-[width] duration-500 ease-out" style={{ width: `${students.length > 0 ? Math.round((proposedStudentCount / students.length) * 100) : 0}%` }} />
@@ -551,7 +611,7 @@ export function CourseProgressDashboard({
               <div>
                 <div className="flex items-center justify-between text-xs mb-0.5">
                   <span className="text-gray-500">生徒面談</span>
-                  <span className="text-gray-700 font-medium">{studentInterviewCount}<span className="text-gray-400 font-normal"> / {students.length}名</span></span>
+                  <span className="text-gray-700 font-medium">{studentInterviewCount}<span className="text-gray-400 font-normal"> / {students.length}名</span><span className="text-gray-400 font-normal ml-1">({pct(studentInterviewCount, students.length)}%)</span></span>
                 </div>
                 <div className="w-full bg-gray-100 rounded-full h-1.5">
                   <div className="h-1.5 rounded-full bg-[#10b981] transition-[width] duration-500 ease-out" style={{ width: `${students.length > 0 ? Math.round((studentInterviewCount / students.length) * 100) : 0}%` }} />
@@ -563,7 +623,7 @@ export function CourseProgressDashboard({
               <div>
                 <div className="flex items-center justify-between text-xs mb-0.5">
                   <span className="text-gray-500">父母面談</span>
-                  <span className="text-gray-700 font-medium">{parentInterviewCount}<span className="text-gray-400 font-normal"> / {students.length}名</span></span>
+                  <span className="text-gray-700 font-medium">{parentInterviewCount}<span className="text-gray-400 font-normal"> / {students.length}名</span><span className="text-gray-400 font-normal ml-1">({pct(parentInterviewCount, students.length)}%)</span></span>
                 </div>
                 <div className="w-full bg-gray-100 rounded-full h-1.5">
                   <div className="h-1.5 rounded-full bg-[#059669] transition-[width] duration-500 ease-out" style={{ width: `${students.length > 0 ? Math.round((parentInterviewCount / students.length) * 100) : 0}%` }} />
@@ -574,7 +634,7 @@ export function CourseProgressDashboard({
             <div>
               <div className="flex items-center justify-between text-xs mb-0.5">
                 <span className="text-gray-500">申込済</span>
-                <span className="text-gray-700 font-medium">{decidedStudentCount}<span className="text-gray-400 font-normal"> / {students.length}名</span></span>
+                <span className="text-gray-700 font-medium">{decidedStudentCount}<span className="text-gray-400 font-normal"> / {students.length}名</span><span className="text-gray-400 font-normal ml-1">({pct(decidedStudentCount, students.length)}%)</span></span>
               </div>
               <div className="w-full bg-gray-100 rounded-full h-1.5">
                 <div className="h-1.5 rounded-full bg-[#3b82f6] transition-[width] duration-500 ease-out" style={{ width: `${students.length > 0 ? Math.round((decidedStudentCount / students.length) * 100) : 0}%` }} />
@@ -702,12 +762,13 @@ export function CourseProgressDashboard({
                     <div className="mt-2 space-y-0.5">
                       {cat.gradeBreakdown.map((g) => (
                         <div key={g.grade} className="flex items-center justify-between text-[10px]">
-                          <span className="text-gray-500 w-7">{g.label}</span>
-                          <span className="text-gray-400 w-8 text-right">{g.count}名</span>
-                          <span className="text-gray-500 w-12 text-right">提案{g.proposed}</span>
-                          <span className="text-gray-400 w-12 text-right" title="提案増コマ平均（提案コマ÷人数）">提{g.avgProposed.toFixed(1)}</span>
-                          <span className={`font-medium w-12 text-right ${cat.colors.text}`}>決定{g.decided}</span>
-                          <span className="text-gray-400 w-12 text-right" title="取得増コマ平均（決定コマ÷人数）">取{g.avgDecided.toFixed(1)}</span>
+                          <span className="text-gray-500 w-6">{g.label}</span>
+                          <span className="text-gray-400 w-7 text-right">{g.count}名</span>
+                          <span className="text-gray-500 w-11 text-right">提案{g.proposed}</span>
+                          <span className="text-gray-400 w-10 text-right" title="提案増コマ平均（提案コマ÷人数）">提{g.avgProposed.toFixed(1)}</span>
+                          <span className={`font-medium w-11 text-right ${cat.colors.text}`}>決定{g.decided}</span>
+                          <span className="text-gray-400 w-10 text-right" title="取得増コマ平均（決定コマ÷人数）">取{g.avgDecided.toFixed(1)}</span>
+                          <span className={`font-medium w-9 text-right ${cat.colors.text}`} title="取得率（決定コマ÷提案コマ）">{Math.round(g.rate * 100)}%</span>
                         </div>
                       ))}
                     </div>
@@ -718,6 +779,106 @@ export function CourseProgressDashboard({
           )}
         </div>
       )}
+
+      {/* ===== 3段目: 教科別 提案 vs 取得（アコーディオン） ===== */}
+      {subjectAnalysis.overall.length > 0 && (() => {
+        // 全体サマリ（ヘッダー常時表示用）
+        const ovProposed = subjectAnalysis.overall.reduce((a, r) => a + r.proposed, 0);
+        const ovApplied = subjectAnalysis.overall.reduce((a, r) => a + r.applied, 0);
+        const ovRate = ovProposed > 0 ? ovApplied / ovProposed : 0;
+        // タブは「全体」＋データのある学校種別のみ
+        const tabs: { key: 'overall' | 'elementary' | 'middle' | 'high'; label: string }[] = [
+          { key: 'overall', label: '全体' },
+          ...(['elementary', 'middle', 'high'] as const)
+            .filter((c) => subjectAnalysis[c].length > 0)
+            .map((c) => ({ key: c, label: CATEGORY_LABELS[c] })),
+        ];
+        // 選択中タブにデータが無ければ全体にフォールバック
+        const rows = subjectAnalysis[subjectCat]?.length > 0 ? subjectAnalysis[subjectCat] : subjectAnalysis.overall;
+        const sumProposed = rows.reduce((a, r) => a + r.proposed, 0);
+        const sumApplied = rows.reduce((a, r) => a + r.applied, 0);
+        const sumRate = sumProposed > 0 ? sumApplied / sumProposed : 0;
+        const sumDiff = sumApplied - sumProposed;
+        // 取得率バーの色（全体はスレート、種別はそのカラー）
+        const barColor = subjectCat === 'overall' ? '#475569' : CATEGORY_COLORS[subjectCat].accent;
+        return (
+          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <button
+              onClick={() => setSubjectOpen(!subjectOpen)}
+              className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-gray-50 transition-colors duration-150"
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-medium text-gray-600">教科別 提案 vs 取得</span>
+                <span className="text-[10px] text-gray-400">提案{ovProposed} → 取得{ovApplied}・取得率{Math.round(ovRate * 100)}%</span>
+              </div>
+              <ChevronDown className={`w-4 h-4 text-gray-400 transition-[transform] duration-150 ease-out ${subjectOpen ? 'rotate-180' : ''}`} />
+            </button>
+
+            {subjectOpen && (
+              <div className="px-4 pb-4">
+                {/* 学校種別タブ */}
+                <div className="flex flex-wrap gap-1 mb-3">
+                  {tabs.map((t) => (
+                    <button
+                      key={t.key}
+                      onClick={() => setSubjectCat(t.key)}
+                      className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition-colors duration-150 ${
+                        subjectCat === t.key ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                      }`}
+                    >
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* 教科別テーブル: 提案コマ / 取得コマ / 差 / 取得率 */}
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="text-gray-400 border-b border-gray-100">
+                      <th className="text-left font-medium py-1.5 pl-1">教科</th>
+                      <th className="text-right font-medium py-1.5">提案</th>
+                      <th className="text-right font-medium py-1.5">取得</th>
+                      <th className="text-right font-medium py-1.5" title="取得コマ − 提案コマ（マイナスは取りこぼし）">差</th>
+                      <th className="text-right font-medium py-1.5 pr-1 w-[42%]">取得率</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rows.map((r) => {
+                      const diff = r.applied - r.proposed;
+                      const ratePct = Math.round(r.rate * 100);
+                      return (
+                        <tr key={r.subject} className="border-b border-gray-50">
+                          <td className="py-1.5 pl-1 text-gray-700 font-medium">{r.subject}</td>
+                          <td className="py-1.5 text-right text-gray-600">{r.proposed}</td>
+                          <td className="py-1.5 text-right text-gray-800 font-medium">{r.applied}</td>
+                          <td className={`py-1.5 text-right ${diff < 0 ? 'text-amber-600' : 'text-gray-400'}`}>{diff > 0 ? `+${diff}` : diff}</td>
+                          <td className="py-1.5 pr-1">
+                            <div className="flex items-center gap-2 justify-end">
+                              <div className="flex-1 bg-gray-100 rounded-full h-1.5 max-w-[120px]">
+                                <div className="h-1.5 rounded-full transition-[width] duration-500 ease-out" style={{ width: `${Math.min(ratePct, 100)}%`, backgroundColor: barColor }} />
+                              </div>
+                              <span className="text-gray-700 font-medium w-9 text-right">{ratePct}%</span>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                  <tfoot>
+                    <tr className="border-t border-gray-200">
+                      <td className="py-1.5 pl-1 text-gray-500 font-medium">合計</td>
+                      <td className="py-1.5 text-right text-gray-600 font-medium">{sumProposed}</td>
+                      <td className="py-1.5 text-right text-gray-800 font-bold">{sumApplied}</td>
+                      <td className={`py-1.5 text-right font-medium ${sumDiff < 0 ? 'text-amber-600' : 'text-gray-400'}`}>{sumDiff > 0 ? `+${sumDiff}` : sumDiff}</td>
+                      <td className="py-1.5 pr-1 text-right text-gray-800 font-bold">{Math.round(sumRate * 100)}%</td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            )}
+          </div>
+        );
+      })()}
     </div>
   );
 }
