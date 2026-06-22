@@ -38,123 +38,121 @@ async function fetchSubjectProposals(
   const applied: Record<string, Record<string, number>> = {};
   try {
 
-    // ========== 1. 提案書ベース（seasonal_proposals + seasonal_proposal_units） ==========
-    {
-      let proposalQuery = supabaseAdmin
-        .from('seasonal_proposals')
-        .select('id, student_id, textbook_id')
-        .eq('school_id', schoolId)
-        .eq('season', season);
+    // ========== 提案書ベース（seasonal_proposals + seasonal_proposal_units） ==========
+    // 以前は proposals → textbooks → units(並列バッチ) と DB と 3 ラウンド往復していた。
+    // 計測の結果 DB 自体は warm 数ms で速く、ボトルネックは往復回数。教科(textbook.subject)を
+    // proposals に !inner 埋め込みして取得し、別建ての textbooks クエリ 1 往復を削減する（FK 済みで解決可能）。
+    // units は 1000 行上限を超えるため全件を 1 クエリにできず、提案書ID単位の並列バッチ（1ラウンド）を維持する。
 
+    // PostgREST の to-one 埋め込みはバージョンによりオブジェクト/配列のどちらでも返りうるので吸収する
+    const firstOf = <T,>(v: T | T[] | null | undefined): T | null =>
+      Array.isArray(v) ? (v[0] ?? null) : (v ?? null);
+
+    type ProposalRow = { id: string; student_id: string; textbook: { subject: string | null } | { subject: string | null }[] | null };
+    // 提案書は通常 1000 行未満だが、安全のためページングする（教科を埋め込んで往復を1つ削減）
+    const proposals = await fetchAllPaged<ProposalRow>((from, to) => {
+      let q = supabaseAdmin
+        .from('seasonal_proposals')
+        .select('id, student_id, textbook:textbooks!inner(subject)')
+        .eq('school_id', schoolId)
+        .eq('season', season)
+        .order('id', { ascending: true })
+        .range(from, to);
       if (year && year > 0) {
-        proposalQuery = proposalQuery.eq('year', year);
+        q = q.eq('year', year);
+      }
+      return q;
+    }).catch((err) => {
+      console.warn('[fetchSubjectProposals] seasonal_proposals query error:', err);
+      return [] as ProposalRow[];
+    });
+
+    if (proposals.length === 0) {
+      return { proposed, applied };
+    }
+
+    // 提案書ID → { studentId, subject }。教科(subject)が無い提案書は集計対象外。
+    const proposalInfo = new Map<string, { studentId: string; subject: string }>();
+    for (const p of proposals) {
+      const subject = firstOf(p.textbook)?.subject;
+      if (!subject) continue;
+      proposalInfo.set(p.id, { studentId: p.student_id, subject });
+    }
+    const proposalIds = Array.from(proposalInfo.keys());
+    if (proposalIds.length === 0) {
+      return { proposed, applied };
+    }
+
+    type UnitRow = { id: string; proposal_id: string; koma_count: number; group_id: number; applied_koma: number | null; applied_group_id: number };
+    // 1 提案書あたり最大 ~55 ユニット。15 提案書/バッチで 1 クエリ最大 825 行に抑え、
+    // PostgREST のデフォルト 1000 行上限の余裕内に収める。バッチ同士は並列実行（往復は1ラウンド）。
+    const BATCH = 15;
+    const batches: string[][] = [];
+    for (let i = 0; i < proposalIds.length; i += BATCH) {
+      batches.push(proposalIds.slice(i, i + BATCH));
+    }
+    const batchResults = await Promise.all(
+      batches.map((batch) =>
+        supabaseAdmin
+          .from('seasonal_proposal_units')
+          .select('id, proposal_id, koma_count, group_id, applied_koma, applied_group_id')
+          .in('proposal_id', batch)
+          // 提案コマ・申込コマのどちらかが1以上の単元を取得（提案0・申込1の単元も拾う）
+          .or('koma_count.gt.0,applied_koma.gt.0')
+      )
+    );
+    const unitsByProposal = new Map<string, UnitRow[]>();
+    const seenUnitIds = new Set<string>();
+    for (const { data: units } of batchResults) {
+      for (const u of (units ?? []) as UnitRow[]) {
+        if (seenUnitIds.has(u.id)) continue;
+        seenUnitIds.add(u.id);
+        const arr = unitsByProposal.get(u.proposal_id);
+        if (arr) arr.push(u);
+        else unitsByProposal.set(u.proposal_id, [u]);
+      }
+    }
+
+    // proposal(=生徒×教科) 単位に集計する。group_id で提案コマを、
+    // applied_group_id で申込コマを1コマに重複排除する（提案結合と申込結合は別系統）。
+    for (const [proposalId, info] of Array.from(proposalInfo.entries())) {
+      const units = unitsByProposal.get(proposalId) || [];
+      const seenGroups = new Set<number>();
+      let proposedTotal = 0;
+      const seenAppliedGroups = new Set<number>();
+      let appliedTotal = 0;
+
+      for (const u of units) {
+        if (u.koma_count > 0) {
+          if (u.group_id > 0) {
+            if (!seenGroups.has(u.group_id)) {
+              seenGroups.add(u.group_id);
+              proposedTotal += u.koma_count;
+            }
+          } else {
+            proposedTotal += u.koma_count;
+          }
+        }
+        const ak = u.applied_koma ?? 0;
+        if (ak > 0) {
+          if (u.applied_group_id > 0) {
+            if (!seenAppliedGroups.has(u.applied_group_id)) {
+              seenAppliedGroups.add(u.applied_group_id);
+              appliedTotal += ak;
+            }
+          } else {
+            appliedTotal += ak;
+          }
+        }
       }
 
-      const { data: proposals, error: pErr } = await proposalQuery;
-
-      if (pErr) {
-        console.warn('[fetchSubjectProposals] seasonal_proposals query error:', pErr.message);
-      } else if (proposals && proposals.length > 0) {
-        const tbIds = Array.from(new Set(
-          (proposals as { textbook_id: number }[]).map((p) => p.textbook_id)
-        ));
-        const { data: textbooks } = await supabaseAdmin
-          .from('textbooks')
-          .select('id, subject')
-          .in('id', tbIds);
-
-        const subjectMap = new Map<number, string>();
-        for (const t of (textbooks || []) as { id: number; subject: string }[]) {
-          if (t.subject) subjectMap.set(t.id, t.subject);
-        }
-
-        const proposalIds = (proposals as { id: string }[]).map((p) => p.id);
-
-        type UnitRow = { id: string; proposal_id: string; koma_count: number; group_id: number; applied_koma: number | null; applied_group_id: number };
-        const allUnits: UnitRow[] = [];
-        const seenUnitIds = new Set<string>();
-        // 1 提案書あたり最大 ~55 ユニット。15 提案書/バッチで 1 クエリ最大 825 行に抑え、
-        // PostgREST のデフォルト 1000 行上限の余裕内に収める。
-        // .range() は ORDER BY 無しだとページ間重複が起きうるので使わない。id で dedup。
-        const BATCH = 15;
-        const batches: string[][] = [];
-        for (let i = 0; i < proposalIds.length; i += BATCH) {
-          batches.push(proposalIds.slice(i, i + BATCH));
-        }
-        // バッチ同士は独立なので逐次ではなく並列実行（往復レイテンシを削減）
-        const batchResults = await Promise.all(
-          batches.map((batch) =>
-            supabaseAdmin
-              .from('seasonal_proposal_units')
-              .select('id, proposal_id, koma_count, group_id, applied_koma, applied_group_id')
-              .in('proposal_id', batch)
-              // 提案コマ・申込コマのどちらかが1以上の単元を取得（提案0・申込1の単元も拾う）
-              .or('koma_count.gt.0,applied_koma.gt.0')
-          )
-        );
-        for (const { data: units } of batchResults) {
-          for (const u of (units ?? []) as UnitRow[]) {
-            if (seenUnitIds.has(u.id)) continue;
-            seenUnitIds.add(u.id);
-            allUnits.push(u);
-          }
-        }
-
-        const unitsByProposal = new Map<string, UnitRow[]>();
-        for (const u of allUnits) {
-          const arr = unitsByProposal.get(u.proposal_id);
-          if (arr) arr.push(u);
-          else unitsByProposal.set(u.proposal_id, [u]);
-        }
-
-        for (const proposal of proposals as { id: string; student_id: string; textbook_id: number }[]) {
-          const subject = subjectMap.get(proposal.textbook_id);
-          if (!subject) continue;
-
-          const units = unitsByProposal.get(proposal.id) || [];
-
-          // 提案コマ合計（group_id で1コマにまとめる）
-          const seenGroups = new Set<number>();
-          let proposedTotal = 0;
-          // 申込コマ合計（applied_group_id で1コマにまとめる。提案結合とは別系統）
-          const seenAppliedGroups = new Set<number>();
-          let appliedTotal = 0;
-
-          for (const u of units) {
-            if (u.koma_count > 0) {
-              if (u.group_id > 0) {
-                if (!seenGroups.has(u.group_id)) {
-                  seenGroups.add(u.group_id);
-                  proposedTotal += u.koma_count;
-                }
-              } else {
-                proposedTotal += u.koma_count;
-              }
-            }
-            const ak = u.applied_koma ?? 0;
-            if (ak > 0) {
-              if (u.applied_group_id > 0) {
-                if (!seenAppliedGroups.has(u.applied_group_id)) {
-                  seenAppliedGroups.add(u.applied_group_id);
-                  appliedTotal += ak;
-                }
-              } else {
-                appliedTotal += ak;
-              }
-            }
-          }
-
-          if (proposedTotal > 0) {
-            if (!proposed[proposal.student_id]) proposed[proposal.student_id] = {};
-            proposed[proposal.student_id][subject] =
-              (proposed[proposal.student_id][subject] || 0) + proposedTotal;
-          }
-          if (appliedTotal > 0) {
-            if (!applied[proposal.student_id]) applied[proposal.student_id] = {};
-            applied[proposal.student_id][subject] =
-              (applied[proposal.student_id][subject] || 0) + appliedTotal;
-          }
-        }
+      if (proposedTotal > 0) {
+        if (!proposed[info.studentId]) proposed[info.studentId] = {};
+        proposed[info.studentId][info.subject] = (proposed[info.studentId][info.subject] || 0) + proposedTotal;
+      }
+      if (appliedTotal > 0) {
+        if (!applied[info.studentId]) applied[info.studentId] = {};
+        applied[info.studentId][info.subject] = (applied[info.studentId][info.subject] || 0) + appliedTotal;
       }
     }
 
