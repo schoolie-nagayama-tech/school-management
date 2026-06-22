@@ -81,6 +81,7 @@ import {
   Building2,
   Circle,
   AlertTriangle,
+  Pencil,
 } from 'lucide-react';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 import { supabase } from '@/lib/supabase';
@@ -114,6 +115,15 @@ export default function InquiryDetailPage() {
   const [editLostReason, setEditLostReason] = useState('');
   const [editNote, setEditNote] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+
+  // ---- 氏名編集モーダル ----
+  // HP 取込では生徒名が空・保護者名と入れ違い等があるため、後から修正できるようにする。
+  const [nameEditOpen, setNameEditOpen] = useState(false);
+  const [editStudentName, setEditStudentName] = useState('');
+  const [editStudentNameKana, setEditStudentNameKana] = useState('');
+  const [editGuardianName, setEditGuardianName] = useState('');
+  const [editGuardianNameKana, setEditGuardianNameKana] = useState('');
+  const [isSavingName, setIsSavingName] = useState(false);
 
   // ---- コンタクト追加フォーム ----
   const [contactMethod, setContactMethod] = useState<ManualContactMethod>('tel');
@@ -404,20 +414,21 @@ export default function InquiryDetailPage() {
 
   // ---- 生徒として登録 ----
   // 入会確定時に問合せ情報から students レコードを作り、linked_student_id で紐付ける。
-  // 学年テキスト（"中2"等）は GRADE_LABELS を逆引きして数値に変換する。
-  // 氏名はスペースで姓名を分割（分割できない場合は全体を姓に入れる）。
+  // 学年・姓名・カナ・在籍校を生徒情報に転記する（students 表に列がある項目のみ）。
+  // 登録後は生徒一覧の編集モーダル（?edit=）へ遷移し、転記内容をその場で確認・修正できるようにする。
   const handleEnrollAsStudent = useCallback(async () => {
     if (!inquiry) return;
     setIsEnrolling(true);
     try {
-      // 学年テキスト → 数値（GRADE_LABELS は number→label なので逆引き）
-      const gradeNum = inquiry.grade
-        ? Number(
-            Object.entries(GRADE_LABELS).find(([, label]) => label === inquiry.grade)?.[0]
-          )
-        : NaN;
+      // 学年テキスト（"中2"等）→ 数値。GRADE_LABELS は number→label なので逆引き。
+      // 前後の空白を除いてから照合する（取込揺れ対策）。
+      const normalizedGrade = inquiry.grade?.trim() ?? '';
+      const gradeEntry = Object.entries(GRADE_LABELS).find(
+        ([, label]) => label === normalizedGrade
+      );
+      const gradeNum = gradeEntry ? Number(gradeEntry[0]) : NaN;
 
-      // 氏名・カナをスペースで姓名に分割
+      // 氏名・カナを空白（半角/全角）で姓名に分割。分割できない場合は全体を姓に入れる。
       const splitName = (full: string | null): [string, string] => {
         if (!full) return ['', ''];
         const parts = full.trim().split(/\s+/);
@@ -432,9 +443,9 @@ export default function InquiryDetailPage() {
         first_name: firstName,
         last_name_kana: lastKana,
         first_name_kana: firstKana,
-        grade: Number.isFinite(gradeNum) ? gradeNum : 7, // 不明時は中1を仮置き（詳細で修正）
+        grade: Number.isFinite(gradeNum) ? gradeNum : 7, // 不明時は中1を仮置き（編集モーダルで修正）
         status: 'active',
-        school_name: inquiry.school_name ?? null,
+        school_name: inquiry.school_name ?? null, // 在籍校
       };
 
       const created = await createStudent(studentData);
@@ -447,9 +458,9 @@ export default function InquiryDetailPage() {
       });
       setInquiry(updated);
       setEditStatus(updated.status);
-      toast.success('生徒として登録しました');
-      // 作成した生徒の詳細へ
-      router.push(`/students/${created.id}`);
+      toast.success('生徒として登録しました。内容をご確認ください');
+      // 生徒一覧の編集モーダルを開く（転記された学年・姓名などを確認・修正できる）
+      router.push(`/students?edit=${created.id}`);
     } catch (err) {
       toast.error(getUserErrorMessage(err, '生徒登録に失敗しました'));
     } finally {
@@ -468,6 +479,40 @@ export default function InquiryDetailPage() {
     }
     handleEnrollAsStudent();
   }, [inquiry, handleEnrollAsStudent]);
+
+  // ---- 氏名編集 ----
+  // モーダルを開く際に現在値をフォームに流し込む。
+  const openNameEdit = useCallback(() => {
+    if (!inquiry) return;
+    setEditStudentName(inquiry.student_name ?? '');
+    setEditStudentNameKana(inquiry.student_name_kana ?? '');
+    setEditGuardianName(inquiry.guardian_name ?? '');
+    setEditGuardianNameKana(inquiry.guardian_name_kana ?? '');
+    setNameEditOpen(true);
+  }, [inquiry]);
+
+  // 生徒名・保護者名・カナを保存する。空欄は null として保存する。
+  // 氏名修正は履歴に積む必要がないため updateInquiry を使う。
+  const handleSaveName = useCallback(async () => {
+    if (!inquiry) return;
+    setIsSavingName(true);
+    try {
+      const trimOrNull = (v: string) => (v.trim() === '' ? null : v.trim());
+      const updated = await updateInquiry(inquiry.id, {
+        student_name: trimOrNull(editStudentName),
+        student_name_kana: trimOrNull(editStudentNameKana),
+        guardian_name: trimOrNull(editGuardianName),
+        guardian_name_kana: trimOrNull(editGuardianNameKana),
+      });
+      setInquiry(updated);
+      toast.success('氏名を更新しました');
+      setNameEditOpen(false);
+    } catch (err) {
+      toast.error(getUserErrorMessage(err, '氏名の更新に失敗しました'));
+    } finally {
+      setIsSavingName(false);
+    }
+  }, [inquiry, editStudentName, editStudentNameKana, editGuardianName, editGuardianNameKana]);
 
   // ---- ローディング / 権限 ----
   if (profile === null) {
@@ -533,6 +578,15 @@ export default function InquiryDetailPage() {
                     {inquiry.grade}
                   </span>
                 )}
+                {/* 氏名の修正（生徒名・保護者名・カナ） */}
+                <button
+                  type="button"
+                  onClick={openNameEdit}
+                  className="ml-auto inline-flex items-center gap-1 text-xs text-text-muted hover:text-text-heading transition-colors duration-150 shrink-0"
+                >
+                  <Pencil className="w-3.5 h-3.5" />
+                  氏名を編集
+                </button>
               </div>
 
               {/* 連絡先ボタン */}
@@ -1246,6 +1300,83 @@ export default function InquiryDetailPage() {
           <Button variant="outline" size="sm" isLoading={isEnrolling} onClick={handleEnrollAsStudent}>
             このまま登録する
           </Button>
+        </div>
+      </Modal>
+
+      {/* 氏名編集モーダル（生徒名・保護者名・カナを修正） */}
+      <Modal
+        isOpen={nameEditOpen}
+        onClose={() => setNameEditOpen(false)}
+        title="氏名の編集"
+        size="md"
+      >
+        <div className="space-y-4">
+          <p className="text-xs text-text-muted">
+            生徒名・保護者名・カナを修正できます。空欄にすると未入力として保存されます。
+          </p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-medium text-text-heading mb-1">生徒名</label>
+              <input
+                type="text"
+                value={editStudentName}
+                onChange={(e) => setEditStudentName(e.target.value)}
+                placeholder="例: 山田 太郎"
+                className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-text-heading mb-1">生徒カナ</label>
+              <input
+                type="text"
+                value={editStudentNameKana}
+                onChange={(e) => setEditStudentNameKana(e.target.value)}
+                placeholder="例: ヤマダ タロウ"
+                className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-text-heading mb-1">保護者名</label>
+              <input
+                type="text"
+                value={editGuardianName}
+                onChange={(e) => setEditGuardianName(e.target.value)}
+                placeholder="例: 山田 花子"
+                className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-text-heading mb-1">保護者カナ</label>
+              <input
+                type="text"
+                value={editGuardianNameKana}
+                onChange={(e) => setEditGuardianNameKana(e.target.value)}
+                placeholder="例: ヤマダ ハナコ"
+                className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+            </div>
+          </div>
+
+          {/* 生徒名と保護者名が同じ場合の注意（取込で入れ違っている可能性） */}
+          {editStudentName.trim() !== '' &&
+            editStudentName.trim() === editGuardianName.trim() && (
+              <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 border border-amber-200">
+                <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <p className="text-sm text-amber-800">
+                  生徒名と保護者名が同じです。取込時に入れ違っていないかご確認ください。
+                </p>
+              </div>
+            )}
+
+          <div className="flex justify-end gap-2 pt-2 border-t border-border">
+            <Button variant="ghost" size="sm" onClick={() => setNameEditOpen(false)}>
+              キャンセル
+            </Button>
+            <Button size="sm" isLoading={isSavingName} onClick={handleSaveName}>
+              保存
+            </Button>
+          </div>
         </div>
       </Modal>
     </AdminLayout>
