@@ -31,7 +31,7 @@ import {
   formatDate,
   formatDateTime,
 } from './inquiryConstants';
-import { Search, X, Upload, SlidersHorizontal, BarChart3, Send, Truck, ClipboardPaste, QrCode, Bookmark, UserPlus, Phone, Mail, MessageSquare, Building2, Package, ArrowRightLeft, Circle, ChevronRight, ChevronDown, ExternalLink } from 'lucide-react';
+import { Search, X, Upload, SlidersHorizontal, BarChart3, Send, Truck, ClipboardPaste, QrCode, Bookmark, UserPlus, Phone, Mail, MessageSquare, Building2, Package, ArrowRightLeft, Circle, ChevronRight, ChevronDown, ExternalLink, Users } from 'lucide-react';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 import { InquiryReminders } from '@/components/inquiries/InquiryReminders';
 import { InquiryManualAddModal } from '@/components/inquiries/InquiryManualAddModal';
@@ -712,6 +712,7 @@ export default function InquiriesPage() {
                                         email:         Mail,
                                         sms:           MessageSquare,
                                         visit:         Building2,
+                                        interview:     Users,
                                         other:         Circle,
                                         material_sent: Package,
                                         status_change: ArrowRightLeft,

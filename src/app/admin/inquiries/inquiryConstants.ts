@@ -44,6 +44,7 @@ export const CONTACT_METHOD_LABELS: Record<string, string> = {
   email:         'メール',
   sms:           'SMS',
   visit:         '来校',
+  interview:     '面談',
   other:         'その他',
   material_sent: '資料発送',
   status_change: 'ステータス変更',
@@ -65,6 +66,7 @@ export const METHOD_DEFAULT_DIRECTION: Record<ManualContactMethod, 'outbound' | 
   email:         'outbound',
   sms:           'outbound',
   visit:         'inbound',
+  interview:     'inbound',
   material_sent: 'outbound',
   other:         'outbound',
 };
@@ -74,7 +76,7 @@ export const METHOD_DEFAULT_DIRECTION: Record<ManualContactMethod, 'outbound' | 
  * material_sent(資料送付) は手動でも記録できる（status変更時の自動記録とは別経路）。
  * status_change は handleSave で自動 insert するのでフォームには出さない。
  */
-export const MANUAL_CONTACT_METHODS = ['tel', 'email', 'sms', 'visit', 'material_sent', 'other'] as const;
+export const MANUAL_CONTACT_METHODS = ['tel', 'email', 'sms', 'visit', 'interview', 'material_sent', 'other'] as const;
 export type ManualContactMethod = (typeof MANUAL_CONTACT_METHODS)[number];
 
 /**
@@ -86,6 +88,7 @@ export const CONTACT_RESULT_OPTIONS: Record<ManualContactMethod, string[]> = {
   email:         ['送信済み', '返信あり', '返信なし', 'その他'],
   sms:           ['送信済み', '返信あり', 'その他'],
   visit:         ['来校', '面談実施', '体験実施', 'キャンセル', 'その他'],
+  interview:     ['実施', '日程調整中', 'キャンセル', '欠席', 'その他'],
   material_sent: ['発送済み', '手渡し', 'その他'],
   other:         [],
 };

@@ -83,6 +83,7 @@ import {
   Circle,
   AlertTriangle,
   Pencil,
+  Users,
 } from 'lucide-react';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 import { supabase } from '@/lib/supabase';
@@ -782,6 +783,7 @@ export default function InquiryDetailPage() {
                               email:         Mail,
                               sms:           MessageSquare,
                               visit:         Building2,
+                              interview:     Users,
                               other:         Circle,
                               material_sent: Package,
                               status_change: ArrowRightLeft,
