@@ -2,9 +2,8 @@
  * NEST の季節講習シフト提出 → スクールIE(M Planning「講習会契約設定」)への自動入力ヘルパー。
  *
  * スクールIEの契約設定グリッドは、日付×時限ごとに name="BASE_YYYYMMDD_{時限index}" の
- * チェックボックスを持つプレーンHTMLフォーム。reCAPTCHAは無いが「登録」押下時に確認ダイアログが出る。
- * サーバー直POSTはセッション/フレーム依存で不安定なため、ブラウザ上で動くブックマークレットが
- * チェックを入れ、最終の「登録」と確認ダイアログだけ人間が行う方式を採る（取次発注と同じ思想）。
+ * チェックボックスを持つプレーンHTMLフォーム。ここでは出勤可能スロットを「チェックすべき name 一覧」に
+ * 変換するだけを担う。実際の流し込みは共通ローダー(src/lib/automation/actions.ts)が actions として実行する。
  *
  * 時限indexは永山校のスクールIE画面実物から確認した対応:
  *   HALLO① 15:10-16:00 → 7 / HALLO② 16:10-17:00 → 8 / HALLO③ 18:10-19:30 → 9
@@ -61,17 +60,3 @@ export function buildSchoolieCheckboxNames(slots: ShiftSlotLike[]): SchoolieChec
   names.sort();
   return { names, skipped: Array.from(skippedSet) };
 }
-
-/** クリップボードに書き込む payload の型（ブックマークレットが読む）。 */
-export interface SchooliePayload {
-  _nest_schoolie: true;
-  teacher_name: string;
-  names: string[];
-}
-
-/**
- * スクールIE「講習会契約設定」ページで実行する自動入力ブックマークレット（静的・1回だけ導入）。
- * クリップボードの payload を読み、フレーム内グリッドの該当チェックボックスを ON にする。
- * 「登録」押下と確認ダイアログは人間が行う（誤登録防止）。
- */
-export const SCHOOLIE_BOOKMARKLET = `javascript:(async()=>{try{const t=await navigator.clipboard.readText();const d=JSON.parse(t);if(!d||!d._nest_schoolie){alert('NESTの出勤データがクリップボードにありません。NESTの提出一覧で講師の「座席表の自動入力」を押してから実行してください。');return;}let cdoc=null;for(let i=0;i<window.frames.length;i++){try{const f=window.frames[i];if(f.document&&f.document.querySelectorAll('input[type=checkbox][name^=\"BASE_\"]').length){cdoc=f.document;break;}}catch(e){}}if(!cdoc&&document.querySelectorAll('input[type=checkbox][name^=\"BASE_\"]').length)cdoc=document;if(!cdoc){alert('講習会契約設定の入力グリッドが見つかりません。対象講師の「講習会契約設定」を開いてから実行してください。');return;}let ok=0,miss=0;(d.names||[]).forEach(function(n){const el=cdoc.getElementsByName(n)[0];if(!el){miss++;return;}if(!el.checked){el.checked=true;el.dispatchEvent(new Event('change',{bubbles:true}));}ok++;});alert('NEST: '+(d.teacher_name||'')+' の出勤可能 '+ok+'コマを入力しました'+(miss?'（'+miss+'件は該当セルが見つからず）':'')+'。\\n内容を確認して「登録」を押してください。');}catch(e){alert('NEST入力失敗: '+((e&&e.message)||e)+'\\nクリップボードの読み取りを許可してください。');}})();`;

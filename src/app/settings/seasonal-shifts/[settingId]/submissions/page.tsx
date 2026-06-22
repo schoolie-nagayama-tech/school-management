@@ -34,7 +34,9 @@ import AccessDenied from '@/components/AccessDenied';
 import { SubmissionAccountLinkCell } from '@/components/shift-link/SubmissionAccountLinkCell';
 import { UnsubmittedTeachersSection } from '@/components/shift-link/UnsubmittedTeachersSection';
 import { getSchoolTeacherAccounts, type SchoolTeacherAccount } from '@/lib/api/school-teachers';
-import { buildSchoolieCheckboxNames, SCHOOLIE_BOOKMARKLET, type SchooliePayload } from '@/lib/utils/schoolieShift';
+import { buildSchoolieCheckboxNames } from '@/lib/utils/schoolieShift';
+import { buildCheckActions, type AutomationPayload } from '@/lib/automation/actions';
+import { supabase } from '@/lib/supabase';
 
 export default function SeasonalShiftSubmissionsPage() {
   const params = useParams();
@@ -199,10 +201,11 @@ export default function SeasonalShiftSubmissionsPage() {
   };
 
   /**
-   * 講師の出勤可能コマを「スクールIE講習会契約設定」用のチェックボックス名一覧に変換し、
-   * クリップボードへコピーする。スクールIE側で導入済みブックマークレットが読んで自動入力する。
+   * 講師の出勤可能コマを「スクールIE講習会契約設定」用のチェックボックス操作(actions)に変換し、
+   * /api/automation/queue に保留ジョブとして投入する。スクールIE側で導入済みローダー・
+   * ブックマークレットがNESTから取得して自動入力する（クリップボード不要）。
    */
-  const handleCopyForSchoolie = async (sub: SeasonalShiftSubmission) => {
+  const handleQueueForSchoolie = async (sub: SeasonalShiftSubmission) => {
     setCopyingSchoolieId(sub.id);
     try {
       const full = await getSeasonalShiftSubmissionWithSlots(sub.id);
@@ -215,15 +218,36 @@ export default function SeasonalShiftSubmissionsPage() {
         error('スクールIEに変換できる出勤可能コマがありません');
         return;
       }
-      const payload: SchooliePayload = { _nest_schoolie: true, teacher_name: full.teacher_name, names };
-      await navigator.clipboard.writeText(JSON.stringify(payload));
+      const payload: AutomationPayload = {
+        label: `${full.teacher_name} / ${setting?.name ?? '講習'}`,
+        actions: buildCheckActions(names),
+      };
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        error('ログインが必要です');
+        return;
+      }
+      const res = await fetch('/api/automation/queue', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ payload }),
+      });
+      const d = (await res.json()) as { error?: string; code?: string };
+      if (!res.ok) {
+        if (d.code === 'NO_TOKEN') {
+          error('先に「自動入力ローダー」を発行してください（設定 > 自動入力ローダー）');
+        } else {
+          error(d.error ?? 'キュー投入に失敗しました');
+        }
+        return;
+      }
       // 対応表に無い時間帯があれば警告（黙って落とさない）
       success(
-        `${full.teacher_name} さんの${names.length}コマをコピーしました。スクールIEで対象講師の「講習会契約設定」を開きブックマークレットを実行してください。` +
+        `${full.teacher_name} さんの${names.length}コマを用意しました。スクールIEで対象講師の「講習会契約設定」を開き、ブックマーク「NESTから流し込む」をクリックしてください。` +
           (skipped.length > 0 ? `（未対応の時間帯${skipped.length}件は除外: ${skipped.join(', ')}）` : '')
       );
     } catch (err) {
-      error(err instanceof Error ? err.message : 'コピーに失敗しました');
+      error(err instanceof Error ? err.message : 'キュー投入に失敗しました');
     } finally {
       setCopyingSchoolieId(null);
     }
@@ -343,30 +367,24 @@ export default function SeasonalShiftSubmissionsPage() {
           <h1 className="text-xl font-bold text-text-heading mb-4">{setting.name} 提出一覧</h1>
         )}
 
-        {/* スクールIE連携: 初回のみブックマークレットを導入。各講師行の「座席表の自動入力」でコピー→取込。 */}
+        {/* スクールIE連携: 各講師行の「座席表の自動入力」で準備 → 対象サイトで共通ローダーを実行。 */}
         <details className="mb-6 rounded-xl border border-border bg-surface-raised">
           <summary className="px-4 py-3 cursor-pointer text-sm font-semibold text-text-heading hover:bg-surface-hover rounded-xl">
-            座席表への自動入力（初回設定）
+            座席表への自動入力の使い方
           </summary>
           <div className="px-4 pb-4 space-y-3 text-sm text-text-body">
             <ol className="list-decimal list-inside space-y-1 text-text-muted">
-              <li>下の「座席表に流し込む」リンクをブラウザのブックマークバーに<strong>ドラッグ&amp;ドロップ</strong>して登録（初回のみ）</li>
-              <li>各講師行の「座席表の自動入力」を押してコピー</li>
-              <li>スクールIEでその講師の「講習会契約設定」を開き、登録したブックマークをクリック → チェックが自動で入る</li>
+              <li>
+                初回のみ:{' '}
+                <Link href="/settings/automation" className="text-info hover:underline">設定 &gt; 自動入力ローダー</Link>
+                {' '}でローダーをブックマークバーに登録
+              </li>
+              <li>各講師行の「座席表の自動入力」を押して準備（クリップボード不要）</li>
+              <li>スクールIEでその講師の「講習会契約設定」を開き、ブックマーク「NESTから流し込む」をクリック → チェックが自動で入る</li>
               <li>内容を確認して「登録」を押す（登録と確認ダイアログは手動）</li>
             </ol>
-            {/* javascript: URL のため通常クリックは無効化し、ドラッグ登録専用にする（HP取込ブックマークレットと同方式）。 */}
-            {/* eslint-disable-next-line react/jsx-no-target-blank */}
-            <a
-              href={SCHOOLIE_BOOKMARKLET}
-              onClick={(e) => e.preventDefault()}
-              draggable
-              className="inline-flex items-center gap-1.5 px-4 py-2 bg-info text-white text-sm font-medium rounded-lg cursor-grab active:cursor-grabbing select-none hover:brightness-95 transition-[filter] duration-150"
-            >
-              座席表に流し込む
-            </a>
             <p className="text-xs text-text-muted">
-              ※ このリンクはクリックしても動きません。ブックマークバーにドラッグして登録してください。時限の対応は永山校の講習時間（3限〜7限）を前提にしています。
+              ※ 時限の対応は永山校の講習時間（3限〜7限）を前提にしています。未対応の時間帯は準備時に除外され、件数が通知されます。
             </p>
           </div>
         </details>
@@ -494,12 +512,12 @@ export default function SeasonalShiftSubmissionsPage() {
                         <span className="text-border">|</span>
                         <button
                           type="button"
-                          onClick={() => handleCopyForSchoolie(sub)}
+                          onClick={() => handleQueueForSchoolie(sub)}
                           disabled={copyingSchoolieId === sub.id}
                           className="text-info hover:underline text-sm disabled:opacity-50"
-                          title="スクールIE講習会契約設定への自動入力用にコピー"
+                          title="スクールIE講習会契約設定への自動入力を準備"
                         >
-                          {copyingSchoolieId === sub.id ? 'コピー中...' : '座席表の自動入力'}
+                          {copyingSchoolieId === sub.id ? '準備中...' : '座席表の自動入力'}
                         </button>
                         <span className="text-border">|</span>
                         <button

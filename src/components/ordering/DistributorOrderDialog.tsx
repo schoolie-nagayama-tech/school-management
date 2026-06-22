@@ -1,20 +1,23 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Truck, X, Copy, Check, ExternalLink, Loader2, ChevronDown, ChevronRight, Bookmark } from 'lucide-react';
+import Link from 'next/link';
+import { Truck, X, Check, ExternalLink, Loader2, ChevronDown, ChevronRight } from 'lucide-react';
 import { buildDistributorOrderRows, type DistributorOrderRow } from '@/lib/api/ordering';
+import { buildSetActions, type AutomationPayload } from '@/lib/automation/actions';
+import { supabase } from '@/lib/supabase';
 import type { MaterialOrderWithDetails } from '@/types/database';
 
 /**
  * 取次サイト（日本教材出版 https://www.nihonkyouzai.jp/order）への発注支援ダイアログ。
  *
  * 取次フォームは reCAPTCHA ＋ Concrete5 の CSRF トークン付きのため、サーバーからの直接 POST は不可。
- * そのため「ブラウザ上で動くブックマークレットがフォームを自動入力 → reCAPTCHA 通過と送信だけ人間が行う」
+ * そのため「対象サイト上の共通ローダー・ブックマークレットがフォームを自動入力 → reCAPTCHA 通過と送信だけ人間が行う」
  * という構成を採る。本ダイアログの役割は:
  *   1. 未確認の発注を取次フォームの6列（版元・教材名・教科・準拠・学年・部数）に集約・編集する
  *   2. 顧客情報（NESTに無い住所/TEL等）を一度だけ入力し localStorage に保存する
- *   3. それらを1つの JSON にまとめてクリップボードへコピーする
- * ブックマークレット（静的・1回だけ導入）がそのクリップボードを読んでフォームに流し込む。
+ *   3. それらを actions に変換し /api/automation/queue に保留ジョブとして投入する
+ * 対象サイトで共通ローダー（設定>自動入力ローダーで導入）が取得してフォームに流し込む（クリップボード不要）。
  */
 
 const ORDER_URL = 'https://www.nihonkyouzai.jp/order';
@@ -51,13 +54,6 @@ const EMPTY_CUSTOMER: CustomerInfo = {
   form_building: '', form_tel: '', form_fax: '', form_email: '', form_message: '',
 };
 
-/**
- * 取次ページで実行する自動入力ブックマークレット（静的・1回だけブックマークバーに登録する）。
- * クリップボードの JSON（NEST が「発注データをコピー」で書き込む）を読み、name 属性でフォームを埋める。
- * プレーンなHTMLフォームのため value 代入＋input/changeイベント発火で十分。reCAPTCHA と送信は触らない。
- */
-const BOOKMARKLET = `javascript:(async()=>{try{const t=await navigator.clipboard.readText();const d=JSON.parse(t);if(!d||!d._nest_order){alert('NESTの発注データがクリップボードにありません。先にNESTで「発注データをコピー」を押してください。');return;}const set=(n,v)=>{const e=document.getElementsByName(n)[0];if(!e||v==null||v==='')return;e.value=v;e.dispatchEvent(new Event('input',{bubbles:true}));e.dispatchEvent(new Event('change',{bubbles:true}));};const c=d.customer||{};for(const k in c)set(k,c[k]);(d.rows||[]).slice(0,19).forEach((r,i)=>{const n=i+1;set('form_hanmoto'+n,r.hanmoto);set('form_kyuozaimei'+n,r.kyuozaimei);set('form_kyouka'+n,r.kyouka);set('form_junkyo'+n,r.junkyo);set('form_gakunen'+n,r.gakunen);set('form_busuu'+n,r.busuu);});alert('NEST: '+Math.min((d.rows||[]).length,19)+'件を入力しました。reCAPTCHAにチェックして送信してください。');}catch(e){alert('NEST入力失敗: '+((e&&e.message)||e)+'\\nブラウザにクリップボードの読み取りを許可してください。');}})();`;
-
 const CUSTOMER_FIELDS: { key: keyof CustomerInfo; label: string; required?: boolean; type?: string }[] = [
   { key: 'form_name', label: '担当者名', required: true },
   { key: 'form_syozoku', label: '塾名・教室名', required: true },
@@ -84,8 +80,8 @@ export function DistributorOrderDialog({
   const [loadingRows, setLoadingRows] = useState(true);
   const [customer, setCustomer] = useState<CustomerInfo>(EMPTY_CUSTOMER);
   const [customerOpen, setCustomerOpen] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const [bookmarkletCopied, setBookmarkletCopied] = useState(false);
+  const [queued, setQueued] = useState(false);
+  const [queuing, setQueuing] = useState(false);
 
   // 未確認の発注 → 取次行に集約（教材ごとに部数合算）
   useEffect(() => {
@@ -120,35 +116,55 @@ export function DistributorOrderDialog({
       try { localStorage.setItem(CUSTOMER_STORAGE_KEY, JSON.stringify(next)); } catch { /* 容量超過等は無視 */ }
       return next;
     });
-    setCopied(false);
+    setQueued(false);
   };
 
   const updateRow = (i: number, key: keyof DistributorOrderRow, value: string) => {
     setRows((prev) => prev.map((r, idx) => (idx === i ? { ...r, [key]: value } : r)));
-    setCopied(false);
+    setQueued(false);
   };
 
   const overflow = rows.length > MAX_ROWS;
   const sentRows = useMemo(() => rows.slice(0, MAX_ROWS), [rows]);
 
-  const handleCopy = async () => {
-    const payload = { _nest_order: true, customer, rows: sentRows };
+  /** 顧客情報＋明細を set アクションに変換し、/api/automation/queue に保留ジョブとして投入する。 */
+  const handleQueue = async () => {
+    setQueuing(true);
     try {
-      await navigator.clipboard.writeText(JSON.stringify(payload));
-      setCopied(true);
+      const fields: Record<string, string> = { ...customer };
+      sentRows.forEach((r, idx) => {
+        const n = idx + 1;
+        fields[`form_hanmoto${n}`] = r.hanmoto;
+        fields[`form_kyuozaimei${n}`] = r.kyuozaimei;
+        fields[`form_kyouka${n}`] = r.kyouka;
+        fields[`form_junkyo${n}`] = r.junkyo;
+        fields[`form_gakunen${n}`] = r.gakunen;
+        fields[`form_busuu${n}`] = r.busuu;
+      });
+      const payload: AutomationPayload = {
+        label: `取次発注（日本教材出版） ${sentRows.length}件`,
+        actions: buildSetActions(fields), // 空値は自動スキップ
+      };
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) { alert('ログインが必要です'); return; }
+      const res = await fetch('/api/automation/queue', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ payload }),
+      });
+      const d = (await res.json()) as { error?: string; code?: string };
+      if (!res.ok) {
+        alert(d.code === 'NO_TOKEN'
+          ? '先に「自動入力ローダー」を発行してください（設定 > 自動入力ローダー）'
+          : (d.error ?? 'キュー投入に失敗しました'));
+        return;
+      }
+      setQueued(true);
     } catch (e) {
-      console.error('コピーに失敗:', e);
-      alert('クリップボードへのコピーに失敗しました。ブラウザの権限を確認してください。');
-    }
-  };
-
-  const handleCopyBookmarklet = async () => {
-    try {
-      await navigator.clipboard.writeText(BOOKMARKLET);
-      setBookmarkletCopied(true);
-      setTimeout(() => setBookmarkletCopied(false), 2000);
-    } catch (e) {
-      console.error('コピーに失敗:', e);
+      console.error('キュー投入に失敗:', e);
+      alert('キュー投入に失敗しました。');
+    } finally {
+      setQueuing(false);
     }
   };
 
@@ -268,48 +284,18 @@ export function DistributorOrderDialog({
             )}
           </div>
 
-          {/* ブックマークレット導入（初回のみ） */}
-          <details className="rounded-lg border border-border-subtle">
-            <summary className="px-3 py-2 text-[11px] font-bold text-text-muted cursor-pointer hover:bg-surface-hover rounded-lg">
-              初回設定: 自動入力ブックマークレットを導入する
-            </summary>
-            <div className="px-3 pb-3 space-y-2 text-[11px] text-text-body">
-              <ol className="list-decimal list-inside space-y-1 text-text-muted">
-                <li>下のリンクをブラウザのブックマークバーに<strong>ドラッグ&amp;ドロップ</strong>して登録</li>
-                <li>以後は取次ページで そのブックマークをクリックするだけで自動入力されます</li>
-              </ol>
-              {/* ドラッグ登録用リンク（問合せ管理のブックマークレットと同方式）。
-                  javascript: URL のため通常クリックは preventDefault で無効化し、ドラッグ登録専用にする。 */}
-              {/* eslint-disable-next-line react/jsx-no-target-blank */}
-              <a
-                href={BOOKMARKLET}
-                onClick={(e) => e.preventDefault()}
-                draggable
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-info text-white text-[11px] font-medium rounded-md cursor-grab active:cursor-grabbing select-none hover:brightness-95 transition-[filter] duration-150"
-              >
-                <Bookmark className="w-3.5 h-3.5" />
-                取次に流し込む
-              </a>
-              <p className="text-[10px] text-text-faint">
-                ※ このリンクはクリックしても動きません。ブックマークバーにドラッグして登録してください。
-              </p>
-              <div className="pt-1">
-                <button
-                  onClick={handleCopyBookmarklet}
-                  className="inline-flex items-center gap-1.5 text-[10px] text-text-muted hover:text-text-body transition-colors"
-                >
-                  {bookmarkletCopied ? <Check className="w-3 h-3 text-success" /> : <Copy className="w-3 h-3" />}
-                  {bookmarkletCopied ? 'コピーしました' : 'または、コードをコピーして手動登録'}
-                </button>
-              </div>
-            </div>
-          </details>
+          {/* 初回設定の案内（共通ローダー） */}
+          <p className="text-[11px] text-text-faint">
+            初回のみ{' '}
+            <Link href="/settings/automation" className="text-info hover:underline">設定 &gt; 自動入力ローダー</Link>
+            {' '}でブックマークを登録してください。クリップボードのコピーは不要です。
+          </p>
         </div>
 
         {/* フッター: 手順 + アクション */}
         <div className="px-4 py-3 border-t border-border-subtle space-y-2">
           <p className="text-[11px] text-text-faint">
-            ①「発注データをコピー」→ ②「発注ページを開く」→ ③ 導入済みブックマークをクリックで自動入力 → ④ reCAPTCHA通過・送信は手動
+            ①「取次に流し込む」→ ②「発注ページを開く」→ ③ ブックマーク「NESTから流し込む」をクリックで自動入力 → ④ reCAPTCHA通過・送信は手動
           </p>
           <div className="flex items-center gap-2">
             <button
@@ -320,12 +306,12 @@ export function DistributorOrderDialog({
             </button>
             <div className="flex-1" />
             <button
-              onClick={handleCopy}
-              disabled={loadingRows || rows.length === 0}
+              onClick={handleQueue}
+              disabled={loadingRows || rows.length === 0 || queuing}
               className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold border border-border-default rounded-lg hover:bg-surface-hover transition-colors disabled:opacity-50"
             >
-              {copied ? <Check className="w-3.5 h-3.5 text-success" /> : <Copy className="w-3.5 h-3.5" />}
-              {copied ? 'コピー済み' : '発注データをコピー'}
+              {queuing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : queued ? <Check className="w-3.5 h-3.5 text-success" /> : <Truck className="w-3.5 h-3.5" />}
+              {queuing ? '準備中…' : queued ? '準備済み' : '取次に流し込む'}
             </button>
             <a
               href={ORDER_URL}
