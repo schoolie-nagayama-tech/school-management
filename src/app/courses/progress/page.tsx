@@ -100,6 +100,8 @@ export default function CourseProgressPage() {
   const [period, setPeriod] = useState<CoursePrepPeriod | null>(null);
   const [autoValuesData, setAutoValuesData] = useState<AutoValues>({});
   const [isLoading, setIsLoading] = useState(true);
+  // 重い auto_values 集計の読み込み状態。表本体より遅れて到着するので分けて持つ。
+  const [autoLoading, setAutoLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
 
   // テンプレート
@@ -138,20 +140,36 @@ export default function CourseProgressPage() {
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
+    setAutoLoading(true);
     setErrorMessage('');
-    try {
-      if (!localSchoolId) {
-        setErrorMessage('教室が選択されていません');
-        setIsLoading(false);
-        return;
-      }
-      const schoolId = localSchoolId;
+    if (!localSchoolId) {
+      setErrorMessage('教室が選択されていません');
+      setIsLoading(false);
+      setAutoLoading(false);
+      return;
+    }
+    const schoolId = localSchoolId;
+    const params = { schoolId, season, year: String(year), includeHidden: String(showHidden) };
 
-      // バッチAPI: 生徒を含む全データを1リクエストで取得
-      const batchData = await batchFetchCoursePrepApi(
-        { schoolId, season, year: String(year), includeHidden: String(showHidden) },
-        ['students', 'progress_items', 'student_progress', 'period', 'auto_values', 'schedule_tasks']
-      );
+    // 表本体（軽いクエリ）と auto_values（提案書集計・通塾日程ページングで重い）を
+    // 別リクエストで並列発行する。重い集計の完了を待たずにグリッドを先に描画して体感を上げる。
+    const lightPromise = batchFetchCoursePrepApi(params, ['students', 'progress_items', 'student_progress', 'period']);
+    const heavyPromise = batchFetchCoursePrepApi(params, ['auto_values', 'schedule_tasks']);
+
+    // 重い集計は後追いで反映（ダッシュボードのカードはこれが届いてから表示）
+    heavyPromise
+      .then((heavy) => {
+        setAutoValuesData((heavy.auto_values || {}) as AutoValues);
+        setScheduleTasks((heavy.schedule_tasks || []) as ScheduleTaskWithMarkers[]);
+      })
+      .catch((error) => {
+        console.error('Error fetching auto_values:', error);
+      })
+      .finally(() => setAutoLoading(false));
+
+    // 軽いデータ: 到着次第グリッドを表示
+    try {
+      const batchData = await lightPromise;
 
       const studentsData = ((batchData.students as Record<string, unknown>[]) || []) as Student[];
 
@@ -174,8 +192,6 @@ export default function CourseProgressPage() {
       setItems(itemsData);
       setProgressData(progressResult);
       setPeriod((batchData.period as CoursePrepPeriod) || null);
-      setAutoValuesData((batchData.auto_values || {}) as AutoValues);
-      setScheduleTasks((batchData.schedule_tasks || []) as ScheduleTaskWithMarkers[]);
 
       // 項目が0件なら初回テンプレート適用を提案
       if (itemsData.length === 0 && isOwnerOrAbove) {
@@ -838,19 +854,26 @@ export default function CourseProgressPage() {
           </div>
         )}
 
-        {/* ダッシュボード（教室長以上のみ表示） */}
+        {/* ダッシュボード（教室長以上のみ表示）。集計(auto_values)が届いてから表示し、
+            それまではグリッドを先に出す。集計中は控えめなプレースホルダを表示する。 */}
         {!isLoading && displayItems.length > 0 && isManagerOrAbove && (
-          <CourseProgressDashboard
-            students={filteredStudents}
-            items={displayItems}
-            progressData={progressData}
-            period={period}
-            autoValues={autoValuesData}
-            onBudgetKomaChange={isManagerOrAbove ? handleBudgetKomaChange : undefined}
-            onTargetKomaChange={isManagerOrAbove ? handleTargetKomaChange : undefined}
-            onExpectedRateChange={isManagerOrAbove ? handleExpectedRateChange : undefined}
-            onPeriodDateChange={isManagerOrAbove ? handlePeriodDateChange : undefined}
-          />
+          autoLoading ? (
+            <div className="mb-4 bg-white rounded-xl border border-gray-200 p-6 flex items-center justify-center">
+              <InlineLoading label="集計データを読み込み中…" />
+            </div>
+          ) : (
+            <CourseProgressDashboard
+              students={filteredStudents}
+              items={displayItems}
+              progressData={progressData}
+              period={period}
+              autoValues={autoValuesData}
+              onBudgetKomaChange={isManagerOrAbove ? handleBudgetKomaChange : undefined}
+              onTargetKomaChange={isManagerOrAbove ? handleTargetKomaChange : undefined}
+              onExpectedRateChange={isManagerOrAbove ? handleExpectedRateChange : undefined}
+              onPeriodDateChange={isManagerOrAbove ? handlePeriodDateChange : undefined}
+            />
+          )
         )}
 
         {/* 設定パネル（アコーディオン: フィルター + 項目管理） */}
