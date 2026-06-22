@@ -21,6 +21,15 @@ const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
 const FROM_DOMAIN = 'noreply@school-ie.com'
 const DEFAULT_FROM_NAME = 'スクールIE'
 
+// CORS ヘッダー。本関数はブラウザから supabase.functions.invoke で呼ばれるため、
+// プリフライト(OPTIONS)に応答し、全レスポンスに Access-Control-* を付与する必要がある。
+// （これが無いとプリフライトが弾かれ、実際の POST が届かず送信できない）
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+}
+
 /** Resend のレート制限（2 req/秒）対策の待機 */
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
@@ -78,6 +87,14 @@ async function sendEmail(params: {
 }
 
 serve(async (req) => {
+  // CORS プリフライト（ブラウザが POST 前に送る OPTIONS）に応答する
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { status: 200, headers: corsHeaders })
+  }
+
+  // 以降の全レスポンスに付ける共通ヘッダー
+  const jsonHeaders = { ...corsHeaders, 'Content-Type': 'application/json' }
+
   try {
     const body = await req.json()
     const { to, subject, body: mailBody, fromName, replyTo } = body ?? {}
@@ -86,7 +103,7 @@ serve(async (req) => {
     if (!to || !subject || !mailBody) {
       return new Response(
         JSON.stringify({ error: 'to / subject / body が必要です' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
+        { status: 400, headers: jsonHeaders }
       )
     }
 
@@ -100,12 +117,12 @@ serve(async (req) => {
 
     return new Response(JSON.stringify({ success: true, id: result?.id ?? null }), {
       status: 200,
-      headers: { 'Content-Type': 'application/json' },
+      headers: jsonHeaders,
     })
   } catch (error) {
     return new Response(JSON.stringify({ error: (error as Error).message }), {
       status: 500,
-      headers: { 'Content-Type': 'application/json' },
+      headers: jsonHeaders,
     })
   }
 })
