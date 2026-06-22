@@ -12,13 +12,14 @@ export interface StatusConfig {
 
 /**
  * ステータスごとの表示設定。
- * 追客の段階を表す: 対応中 → 体験待ち → 体験済み → 入会 / 失注(連絡不通/没/体験没)。
+ * 追客の段階を表す: 対応中 → 体験待ち → 返事待ち → 入会 / 失注(連絡不通/没/体験没)。
+ * 「返事待ち」は内部値 trial_done（体験を実施し、相手の返事を待っている状態）。
  * Record のキー順が select / ドーナツの表示順になる。
  */
 export const STATUS_CONFIG: Record<InquiryStatus, StatusConfig> = {
   in_progress:   { label: '対応中',     className: 'bg-blue-100 text-blue-800' },
   trial_waiting: { label: '体験待ち',   className: 'bg-indigo-100 text-indigo-800' },
-  trial_done:    { label: '体験済み',   className: 'bg-cyan-100 text-cyan-800' },
+  trial_done:    { label: '返事待ち',   className: 'bg-cyan-100 text-cyan-800' },
   enrolled:      { label: '入会',       className: 'bg-green-100 text-green-800' },
   unreachable:   { label: '連絡不通',   className: 'bg-gray-200 text-gray-700' },
   lost:          { label: '没',         className: 'bg-gray-100 text-gray-500' },
@@ -30,7 +31,7 @@ export const STATUS_OPTIONS: { value: InquiryStatus | 'all'; label: string }[] =
   { value: 'all',           label: 'すべて' },
   { value: 'in_progress',   label: '対応中' },
   { value: 'trial_waiting', label: '体験待ち' },
-  { value: 'trial_done',    label: '体験済み' },
+  { value: 'trial_done',    label: '返事待ち' },
   { value: 'enrolled',      label: '入会' },
   { value: 'unreachable',   label: '連絡不通' },
   { value: 'lost',          label: '没' },

@@ -174,7 +174,7 @@ export function computeInquiryReminders(
 
     // ---- 4. trial_followup ----
     // 条件: trial_at が非 null かつ trial_at < (now - 1日) かつ
-    //        status が in_progress または trial_done（体験済み＝結論待ち）
+    //        status が in_progress または trial_done（返事待ち＝体験後の返事待ち）
     // daysSince はここでは体験日からの経過日数を使う
     const trialAt = parseDate(inquiry.trial_at);
     if (trialAt && (inquiry.status === 'in_progress' || inquiry.status === 'trial_done')) {

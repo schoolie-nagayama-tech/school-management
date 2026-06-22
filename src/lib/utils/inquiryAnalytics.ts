@@ -106,7 +106,7 @@ export interface InquiryAnalytics {
 const STATUS_LABELS: Record<string, string> = {
   in_progress: '対応中',
   trial_waiting: '体験待ち',
-  trial_done: '体験済み',
+  trial_done: '返事待ち',
   enrolled: '入会',
   unreachable: '連絡不通',
   lost: '没',

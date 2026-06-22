@@ -161,6 +161,8 @@ export default function InquiryDetailPage() {
   const [mailBody, setMailBody] = useState('');
   const [isSendingMail, setIsSendingMail] = useState(false);
   const [mailLogs, setMailLogs] = useState<InquiryMailLog[]>([]);
+  // 送信前の確認モーダル（誤送信防止）
+  const [mailConfirmOpen, setMailConfirmOpen] = useState(false);
 
   // ---- データ取得 ----
   const fetchData = useCallback(async () => {
@@ -313,6 +315,7 @@ export default function InquiryDetailPage() {
       toast.error(getUserErrorMessage(err, '送信に失敗しました'));
     } finally {
       setIsSendingMail(false);
+      setMailConfirmOpen(false);
     }
   };
 
@@ -330,7 +333,7 @@ export default function InquiryDetailPage() {
         update.enrolled_at = editEnrolledAt || null;
         update.weekly_count = editWeeklyCount ? parseInt(editWeeklyCount, 10) : null;
       }
-      // 体験フェーズ（体験待ち/体験済み/体験没）・入会時は trial_at も保存
+      // 体験フェーズ（体験待ち/返事待ち/体験没）・入会時は trial_at も保存
       if (
         editStatus === 'trial_waiting' ||
         editStatus === 'trial_done' ||
@@ -705,7 +708,7 @@ export default function InquiryDetailPage() {
                         </div>
                       )}
 
-                      {/* 体験待ち / 体験済み / 体験没 / 入会: 体験日 */}
+                      {/* 体験待ち / 返事待ち / 体験没 / 入会: 体験日 */}
                       {(editStatus === 'trial_waiting' || editStatus === 'trial_done' || editStatus === 'trial_lost' || editStatus === 'enrolled') && (
                         <div>
                           <label className="block text-xs font-medium text-text-heading mb-1">体験日</label>
@@ -989,9 +992,9 @@ export default function InquiryDetailPage() {
                         />
                       </div>
 
-                      {/* 送信ボタン */}
+                      {/* 送信ボタン（押すと確認モーダルを挟む） */}
                       <Button
-                        onClick={handleSendMail}
+                        onClick={() => setMailConfirmOpen(true)}
                         isLoading={isSendingMail}
                         disabled={isSendingMail || !mailSubject.trim() || !mailBody.trim()}
                         size="sm"
@@ -1377,6 +1380,37 @@ export default function InquiryDetailPage() {
               保存
             </Button>
           </div>
+        </div>
+      </Modal>
+
+      {/* メール送信 確認モーダル（誤送信防止） */}
+      <Modal
+        isOpen={mailConfirmOpen}
+        onClose={() => setMailConfirmOpen(false)}
+        title="メールを送信します"
+        size="sm"
+      >
+        <div className="mb-6 space-y-2 text-sm">
+          <div>
+            <span className="text-text-muted w-16 inline-block">宛先</span>
+            <span className="text-text-heading font-medium">{inquiry?.email}</span>
+          </div>
+          <div>
+            <span className="text-text-muted w-16 inline-block align-top">件名</span>
+            <span className="text-text-heading">{mailSubject}</span>
+          </div>
+          <p className="text-xs text-text-muted pt-1">
+            この内容で実際にメールを送信します。送信後は取り消せません。
+          </p>
+        </div>
+        <div className="flex justify-end gap-2">
+          <Button variant="ghost" size="sm" onClick={() => setMailConfirmOpen(false)}>
+            キャンセル
+          </Button>
+          <Button size="sm" isLoading={isSendingMail} onClick={handleSendMail}>
+            <Send className="w-4 h-4 mr-1.5" />
+            送信する
+          </Button>
         </div>
       </Modal>
     </AdminLayout>
