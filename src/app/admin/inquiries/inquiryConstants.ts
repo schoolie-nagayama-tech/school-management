@@ -56,6 +56,20 @@ export const CONTACT_DIRECTION_LABELS: Record<string, string> = {
 };
 
 /**
+ * 方法ごとの既定の方向。
+ * 方法を選ぶと方向を自動でこの値に切り替える（その後の手動変更も可）。
+ * - 来校(visit)は相手が来るので 着信・受信、それ以外はこちらからの発信が基本。
+ */
+export const METHOD_DEFAULT_DIRECTION: Record<ManualContactMethod, 'outbound' | 'inbound'> = {
+  tel:           'outbound',
+  email:         'outbound',
+  sms:           'outbound',
+  visit:         'inbound',
+  material_sent: 'outbound',
+  other:         'outbound',
+};
+
+/**
  * 手入力フォームで選べる method。
  * material_sent(資料送付) は手動でも記録できる（status変更時の自動記録とは別経路）。
  * status_change は handleSave で自動 insert するのでフォームには出さない。

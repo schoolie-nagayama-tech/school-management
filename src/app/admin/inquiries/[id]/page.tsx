@@ -60,6 +60,7 @@ import {
   formatDateTime,
   MANUAL_CONTACT_METHODS,
   CONTACT_RESULT_OPTIONS,
+  METHOD_DEFAULT_DIRECTION,
   getInquiryDisplayName,
   type ManualContactMethod,
 } from '../inquiryConstants';
@@ -869,8 +870,9 @@ export default function InquiryDetailPage() {
                           onChange={(e) => {
                             const m = e.target.value as ManualContactMethod;
                             setContactMethod(m);
-                            // method が変わったら result をリセット
+                            // method が変わったら result をリセットし、方向も方法の既定値に合わせる
                             setContactResult('');
+                            setContactDirection(METHOD_DEFAULT_DIRECTION[m]);
                           }}
                           className="w-full px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised focus:outline-none focus:ring-2 focus:ring-primary"
                         >
