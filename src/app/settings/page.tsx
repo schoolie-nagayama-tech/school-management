@@ -22,6 +22,7 @@ import {
   ClipboardList,
   Link as LinkIcon,
   MessageSquare,
+  Wand2,
 } from 'lucide-react';
 
 interface SettingsItem {
@@ -127,6 +128,18 @@ const settingsGroups: SettingsGroup[] = [
         icon: <Calendar className="w-5 h-5" />,
         label: '講習シフト設定',
         description: '季節講習のシフト管理',
+        requiresManager: true,
+      },
+    ],
+  },
+  {
+    title: '外部サイト自動入力',
+    items: [
+      {
+        href: '/settings/automation',
+        icon: <Wand2 className="w-5 h-5" />,
+        label: '自動入力ローダー',
+        description: '取次発注・スクールIE座席表など外部サイトへの自動入力に使う共通ブックマークレットの発行',
         requiresManager: true,
       },
     ],
