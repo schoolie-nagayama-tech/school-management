@@ -44,6 +44,7 @@ import {
   updateProposal,
   saveProposalUnits,
   publishProposal,
+  clearProposalProgressTracking,
   calcTotalKoma,
   calcTotalAppliedKoma,
   promoteProposalToCourse,
@@ -1095,6 +1096,9 @@ export default function ProposalEditor() {
           }));
         await saveProposalUnits(proposalId, unitInputs);
         await updateProposal(proposalId, { status: newStatus, applied_koma: 0 });
+        // 公開を取り消して下書きに戻すので、紐付くテキストを進行表から外す
+        // （未公開の提案を生徒の進行表に残さない）。所持・提案書本体には触れない。
+        await clearProposalProgressTracking(proposalId);
       } else {
         await updateProposal(proposalId, { status: newStatus });
       }

@@ -290,7 +290,7 @@ export default function NewProgressPage() {
       const name = tb.textbook?.name ?? 'テキスト';
       if (
         !window.confirm(
-          `「${name}」の進行表を削除しますか？\n\n進行データ・テスト目標・提案書も削除されます。この操作は取り消せません。`
+          `「${name}」の進行表を削除しますか？\n\n進行データ・テスト目標も削除されます（提案書は削除されず、リンクが外れて下書きとして残ります）。この操作は取り消せません。`
         )
       )
         return;

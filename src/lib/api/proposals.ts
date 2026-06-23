@@ -609,6 +609,29 @@ export async function publishProposal(proposalId: string): Promise<void> {
 }
 
 /**
+ * 提案書を下書きに戻す/公開取消したときに、紐付く student_textbook を
+ * 進行表(track_progress)から外す。
+ *
+ * 「公開していない提案を生徒の進行表に残さない」ための後処理。
+ * 公開時(publishProposal)は track_progress=true にするので、その逆操作にあたる。
+ * 所持(is_owned)・提案書本体・進行データ(student_progress)には触れない:
+ *  - is_owned は配布/手動でのみ立つ正当な所持フラグなので、未公開化で勝手に消さない。
+ *  - 提案書を消さないのは大前提（FK は ON DELETE SET NULL）。
+ *  - student_progress は track_progress=false で進行表に出なくなるため残してよい
+ *    （再公開時に syncProposalToProgress が track_progress=true に戻して再利用する）。
+ */
+export async function clearProposalProgressTracking(proposalId: string): Promise<void> {
+  const proposal = await getProposal(proposalId);
+  // 未公開段階(sent/draft)の提案は st 未紐付けのことが多く、その場合は何もしない。
+  if (!proposal?.student_textbook_id) return;
+
+  await supabase
+    .from('student_textbooks')
+    .update({ track_progress: false })
+    .eq('id', proposal.student_textbook_id);
+}
+
+/**
  * 複数の提案書を一括公開
  */
 export async function bulkPublishProposals(
