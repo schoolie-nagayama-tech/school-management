@@ -86,6 +86,36 @@ function isInAppBrowser(ua: string): boolean {
   return false;
 }
 
+// メンテナンス画面（純粋HTML / Next.js非依存）。DBリージョン移行などのカットオーバー中に表示する。
+// スタイルはインライン完結（静的アセット取得不要）。lucide の wrench アイコンを埋め込み。
+function buildMaintenancePage(): string {
+  return `<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>メンテナンス中</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans",sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:linear-gradient(to bottom,#ecfdf5,#fff);color:#1f2937}
+.c{text-align:center;max-width:400px;width:100%}
+.ic{width:52px;height:52px;margin:0 auto 20px;color:#059669}
+h1{font-size:20px;margin-bottom:12px}
+p{font-size:14px;color:#6b7280;line-height:1.8}
+.t{margin-top:18px;font-size:12px;color:#9ca3af}
+</style>
+</head>
+<body>
+<div class="c">
+<svg class="ic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+<h1>メンテナンス中</h1>
+<p>ただいまシステムのメンテナンスを行っています。<br>ご不便をおかけしますが、終了までしばらくお待ちください。</p>
+<p class="t">しばらくしてから、もう一度アクセスしてください。</p>
+</div>
+</body>
+</html>`;
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -96,6 +126,39 @@ export async function middleware(request: NextRequest) {
     pathname.endsWith('.webmanifest')
   ) {
     return NextResponse.next();
+  }
+
+  // ── メンテナンスモード（環境変数で切替。DB移行などのカットオーバー中に利用を停止） ──
+  // MAINTENANCE_MODE=true の間は全リクエストにメンテ画面(503)を返す。静的アセットは config.matcher で除外済み。
+  // 管理者は ?maint_bypass=<MAINTENANCE_BYPASS_TOKEN> でアクセスすると cookie が発行され、以降すり抜けて動作確認できる。
+  if (process.env.MAINTENANCE_MODE === 'true') {
+    const bypassToken = process.env.MAINTENANCE_BYPASS_TOKEN;
+    const qpBypass = request.nextUrl.searchParams.get('maint_bypass');
+    const cookieBypass = request.cookies.get('maint_bypass')?.value;
+
+    // ?maint_bypass=<token> でアクセス → cookie を発行して通す（管理者の事前確認用）
+    if (bypassToken && qpBypass === bypassToken) {
+      const res = NextResponse.next();
+      res.cookies.set('maint_bypass', bypassToken, {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 60 * 60 * 6, // 6時間
+      });
+      return res;
+    }
+
+    // バイパス cookie を持たない通常アクセスはメンテ画面
+    if (!(bypassToken && cookieBypass === bypassToken)) {
+      return new NextResponse(buildMaintenancePage(), {
+        status: 503,
+        headers: {
+          'Content-Type': 'text/html; charset=utf-8',
+          'Retry-After': '900',
+          'Cache-Control': 'no-store',
+        },
+      });
+    }
   }
 
   // ── アプリ内ブラウザ → 純粋HTML（Next.js不使用）で外部ブラウザ誘導 ──
