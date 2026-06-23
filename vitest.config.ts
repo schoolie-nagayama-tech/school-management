@@ -7,7 +7,9 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
-    exclude: ['src/__tests__/integration/**', 'node_modules/**'],
+    // .claude/worktrees 配下には別ブランチの作業コピーが入ることがあり、
+    // そのテストまで拾うと本体と二重実行・誤検知になるため除外する
+    exclude: ['src/__tests__/integration/**', 'node_modules/**', '.claude/**'],
     setupFiles: ['./src/__tests__/setup.ts'],
     env: {
       NEXT_PUBLIC_SUPABASE_URL: 'https://test.supabase.co',

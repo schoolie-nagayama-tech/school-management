@@ -1,0 +1,19 @@
+# ビルド成果物・依存
+node_modules
+.next
+out
+build
+coverage
+
+# 自動生成・スナップショット系（手で整形しない）
+src/types/database.ts
+supabase/migrations/00000000000000_base_schema.sql
+public/sw.js
+public/workbox-*.js
+
+# ロックファイル・各種データ
+package-lock.json
+*.min.js
+*.min.css
+
+# Markdown/設定は整形対象（除外しない）
