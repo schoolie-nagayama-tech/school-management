@@ -1,26 +1,13 @@
-import {
-  getFormPeriods,
-  getActiveFormPeriod,
-  getFormPeriod,
-  getFormPeriodByKey,
-  createFormPeriod,
-  updateFormPeriod,
-  deleteFormPeriod,
-  archivePeriod,
-  unarchivePeriod,
-} from './form-periods';
+import { createPeriodApi, updateChargedStatusWithBilling } from './form-period-api';
 import {
   createPublicFormResponse,
   getFormResponses,
   getFormResponse,
   updateFormResponseStatus,
 } from './form-responses';
-import { syncFormResponseToBilling } from './billing';
-import { getDefaultSchoolId, getSchoolByCode } from './schools';
-import type { FormPeriodInsert, FormPeriodUpdate, FormResponseInsert } from '@/types/database';
+import type { FormResponseInsert } from '@/types/database';
 import type {
   MoshiPeriod,
-  MoshiSettings,
   MoshiResponse,
   MoshiResponseData,
   MoshiResponseFilters,
@@ -28,149 +15,20 @@ import type {
 } from '@/types/forms/moshi';
 
 // ============================================
-// 模試期間管理
+// 模試期間管理（共通の期間CRUDは createPeriodApi に集約）
 // ============================================
 
-/**
- * 模試期間一覧を取得
- */
-export async function getMoshiPeriods(
-  schoolId?: string,
-  includeArchived: boolean = false
-): Promise<MoshiPeriod[]> {
-  const targetSchoolId = schoolId || getDefaultSchoolId();
-  const periods = await getFormPeriods(targetSchoolId, 'moshi', includeArchived);
-  return periods.map((p) => ({
-    ...p,
-    form_type: 'moshi' as const,
-    settings: (p.settings || {}) as unknown as MoshiSettings,
-  }));
-}
+const periodApi = createPeriodApi<'moshi', MoshiPeriod>('moshi');
 
-/**
- * 公開中の模試期間を取得（ポータル用）
- */
-export async function getActiveMoshiPeriod(schoolCode: string): Promise<MoshiPeriod | null> {
-  const school = await getSchoolByCode(schoolCode);
-  if (!school) {
-    return null;
-  }
-
-  const period = await getActiveFormPeriod(school.id, 'moshi');
-  if (!period) {
-    return null;
-  }
-
-  return {
-    ...period,
-    form_type: 'moshi' as const,
-    settings: (period.settings || {}) as unknown as MoshiSettings,
-  };
-}
-
-/**
- * 模試期間を1件取得
- */
-export async function getMoshiPeriod(id: string): Promise<MoshiPeriod | null> {
-  const period = await getFormPeriod(id);
-  if (!period || period.form_type !== 'moshi') {
-    return null;
-  }
-
-  return {
-    ...period,
-    form_type: 'moshi' as const,
-    settings: (period.settings || {}) as unknown as MoshiSettings,
-  };
-}
-
-/**
- * 模試期間を period_key で取得（プレビュー用）
- */
-export async function getMoshiPeriodByKey(
-  schoolId: string,
-  periodKey: string
-): Promise<MoshiPeriod | null> {
-  const period = await getFormPeriodByKey(schoolId, 'moshi', periodKey);
-  if (!period) return null;
-  return {
-    ...period,
-    form_type: 'moshi' as const,
-    settings: (period.settings || {}) as unknown as MoshiSettings,
-  };
-}
-
-/**
- * 模試期間を作成
- * @param data 期間データ（school_id / form_type 除く）
- * @param schoolId 教室ID（省略時は getDefaultSchoolId()）
- */
-export async function createMoshiPeriod(
-  data: Omit<FormPeriodInsert, 'school_id' | 'form_type'>,
-  schoolId?: string
-): Promise<MoshiPeriod> {
-  const targetSchoolId = schoolId ?? getDefaultSchoolId();
-
-  const periodData: FormPeriodInsert = {
-    ...data,
-    school_id: targetSchoolId,
-    form_type: 'moshi',
-    settings: (data.settings || {}) as unknown as Record<string, unknown>,
-  };
-
-  const period = await createFormPeriod(periodData);
-  return {
-    ...period,
-    form_type: 'moshi' as const,
-    settings: (period.settings || {}) as unknown as MoshiSettings,
-  };
-}
-
-/**
- * 模試期間を更新
- */
-export async function updateMoshiPeriod(id: string, data: FormPeriodUpdate): Promise<MoshiPeriod> {
-  const updateData: FormPeriodUpdate = {
-    ...data,
-    settings: data.settings ? (data.settings as unknown as Record<string, unknown>) : undefined,
-  };
-
-  const period = await updateFormPeriod(id, updateData);
-  return {
-    ...period,
-    form_type: 'moshi' as const,
-    settings: (period.settings || {}) as unknown as MoshiSettings,
-  };
-}
-
-/**
- * 模試期間を削除
- */
-export async function deleteMoshiPeriod(id: string): Promise<void> {
-  await deleteFormPeriod(id);
-}
-
-/**
- * 模試期間をアーカイブ
- */
-export async function archiveMoshiPeriod(
-  id: string,
-  schoolId: string,
-  periodKey: string
-): Promise<{ periodArchived: boolean; responsesArchived: number }> {
-  return archivePeriod(id, schoolId, 'moshi', periodKey);
-}
-
-/**
- * 模試期間のアーカイブを解除
- */
-export async function unarchiveMoshiPeriod(
-  id: string,
-  schoolId: string,
-  periodKey: string
-): Promise<{ periodUnarchived: boolean; responsesUnarchived: number }> {
-  return unarchivePeriod(id, schoolId, 'moshi', periodKey);
-}
+export const getMoshiPeriods = periodApi.getPeriods;
+export const getActiveMoshiPeriod = periodApi.getActivePeriod;
+export const getMoshiPeriod = periodApi.getPeriod;
+export const getMoshiPeriodByKey = periodApi.getPeriodByKey;
+export const createMoshiPeriod = periodApi.createPeriod;
+export const updateMoshiPeriod = periodApi.updatePeriod;
+export const deleteMoshiPeriod = periodApi.deletePeriod;
+export const archiveMoshiPeriod = periodApi.archive;
+export const unarchiveMoshiPeriod = periodApi.unarchive;
 
 // ============================================
 // 模試回答送信
@@ -265,22 +123,9 @@ export async function getMoshiStats(
 }
 
 /**
- * 模試回答の計上状態を更新（既存の status_checks をマージ）
+ * 模試回答の計上状態を更新（既存の status_checks をマージし請求へ同期）
  */
-export async function updateMoshiChargedStatus(
-  responseId: string,
-  charged: boolean
-): Promise<void> {
-  const response = await getFormResponse(responseId);
-  const current = (response?.status_checks || {}) as Record<string, boolean>;
-  await updateFormResponseStatus(responseId, { ...current, charged });
-  // 請求側の is_billed へ同期（AND判定）
-  try {
-    await syncFormResponseToBilling(responseId);
-  } catch (err) {
-    console.warn('請求への計上同期に失敗:', err);
-  }
-}
+export const updateMoshiChargedStatus = updateChargedStatusWithBilling;
 
 /**
  * 模試回答の発注状態を更新（既存の status_checks をマージ）

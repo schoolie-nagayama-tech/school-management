@@ -1,27 +1,15 @@
 import { supabase } from '@/lib/supabase';
-import {
-  getFormPeriods,
-  getActiveFormPeriod,
-  getFormPeriod,
-  getFormPeriodByKey,
-  createFormPeriod,
-  updateFormPeriod,
-  deleteFormPeriod,
-  archivePeriod,
-  unarchivePeriod,
-} from './form-periods';
+import { createPeriodApi, updateChargedStatusWithBilling } from './form-period-api';
 import {
   createPublicFormResponse,
   getFormResponses,
   getFormResponse,
   updateFormResponseStatus,
 } from './form-responses';
-import { syncFormResponseToBilling } from './billing';
-import { getDefaultSchoolId, getSchoolByCode } from './schools';
-import type { FormPeriodInsert, FormPeriodUpdate, FormResponseInsert } from '@/types/database';
+import { getDefaultSchoolId } from './schools';
+import type { FormResponseInsert } from '@/types/database';
 import type {
   SoudanPeriod,
-  SoudanSettings,
   SoudanResponse,
   SoudanResponseData,
   SoudanResponseFilters,
@@ -29,152 +17,20 @@ import type {
 } from '@/types/forms/soudan';
 
 // ============================================
-// お客様相談期間管理
+// お客様相談期間管理（共通の期間CRUDは createPeriodApi に集約）
 // ============================================
 
-/**
- * お客様相談期間一覧を取得
- */
-export async function getSoudanPeriods(
-  schoolId?: string,
-  includeArchived: boolean = false
-): Promise<SoudanPeriod[]> {
-  const targetSchoolId = schoolId || getDefaultSchoolId();
-  const periods = await getFormPeriods(targetSchoolId, 'soudan', includeArchived);
-  return periods.map((p) => ({
-    ...p,
-    form_type: 'soudan' as const,
-    settings: (p.settings || {}) as unknown as SoudanSettings,
-  }));
-}
+const periodApi = createPeriodApi<'soudan', SoudanPeriod>('soudan');
 
-/**
- * 公開中のお客様相談期間を取得（ポータル用）
- */
-export async function getActiveSoudanPeriod(schoolCode: string): Promise<SoudanPeriod | null> {
-  const school = await getSchoolByCode(schoolCode);
-  if (!school) {
-    return null;
-  }
-
-  const period = await getActiveFormPeriod(school.id, 'soudan');
-  if (!period) {
-    return null;
-  }
-
-  return {
-    ...period,
-    form_type: 'soudan' as const,
-    settings: (period.settings || {}) as unknown as SoudanSettings,
-  };
-}
-
-/**
- * お客様相談期間を1件取得
- */
-export async function getSoudanPeriod(id: string): Promise<SoudanPeriod | null> {
-  const period = await getFormPeriod(id);
-  if (!period || period.form_type !== 'soudan') {
-    return null;
-  }
-
-  return {
-    ...period,
-    form_type: 'soudan' as const,
-    settings: (period.settings || {}) as unknown as SoudanSettings,
-  };
-}
-
-/**
- * お客様相談期間を period_key で取得（プレビュー用）
- */
-export async function getSoudanPeriodByKey(
-  schoolId: string,
-  periodKey: string
-): Promise<SoudanPeriod | null> {
-  const period = await getFormPeriodByKey(schoolId, 'soudan', periodKey);
-  if (!period) return null;
-  return {
-    ...period,
-    form_type: 'soudan' as const,
-    settings: (period.settings || {}) as unknown as SoudanSettings,
-  };
-}
-
-/**
- * お客様相談期間を作成
- * @param data 期間データ（school_id / form_type 除く）
- * @param schoolId 教室ID（省略時は getDefaultSchoolId()）
- */
-export async function createSoudanPeriod(
-  data: Omit<FormPeriodInsert, 'school_id' | 'form_type'>,
-  schoolId?: string
-): Promise<SoudanPeriod> {
-  const targetSchoolId = schoolId ?? getDefaultSchoolId();
-
-  const periodData: FormPeriodInsert = {
-    ...data,
-    school_id: targetSchoolId,
-    form_type: 'soudan',
-    settings: (data.settings || {}) as unknown as Record<string, unknown>,
-  };
-
-  const period = await createFormPeriod(periodData);
-  return {
-    ...period,
-    form_type: 'soudan' as const,
-    settings: (period.settings || {}) as unknown as SoudanSettings,
-  };
-}
-
-/**
- * お客様相談期間を更新
- */
-export async function updateSoudanPeriod(
-  id: string,
-  data: FormPeriodUpdate
-): Promise<SoudanPeriod> {
-  const updateData: FormPeriodUpdate = {
-    ...data,
-    settings: data.settings ? (data.settings as unknown as Record<string, unknown>) : undefined,
-  };
-
-  const period = await updateFormPeriod(id, updateData);
-  return {
-    ...period,
-    form_type: 'soudan' as const,
-    settings: (period.settings || {}) as unknown as SoudanSettings,
-  };
-}
-
-/**
- * お客様相談期間を削除
- */
-export async function deleteSoudanPeriod(id: string): Promise<void> {
-  await deleteFormPeriod(id);
-}
-
-/**
- * お客様相談期間をアーカイブ
- */
-export async function archiveSoudanPeriod(
-  id: string,
-  schoolId: string,
-  periodKey: string
-): Promise<{ periodArchived: boolean; responsesArchived: number }> {
-  return archivePeriod(id, schoolId, 'soudan', periodKey);
-}
-
-/**
- * お客様相談期間のアーカイブを解除
- */
-export async function unarchiveSoudanPeriod(
-  id: string,
-  schoolId: string,
-  periodKey: string
-): Promise<{ periodUnarchived: boolean; responsesUnarchived: number }> {
-  return unarchivePeriod(id, schoolId, 'soudan', periodKey);
-}
+export const getSoudanPeriods = periodApi.getPeriods;
+export const getActiveSoudanPeriod = periodApi.getActivePeriod;
+export const getSoudanPeriod = periodApi.getPeriod;
+export const getSoudanPeriodByKey = periodApi.getPeriodByKey;
+export const createSoudanPeriod = periodApi.createPeriod;
+export const updateSoudanPeriod = periodApi.updatePeriod;
+export const deleteSoudanPeriod = periodApi.deletePeriod;
+export const archiveSoudanPeriod = periodApi.archive;
+export const unarchiveSoudanPeriod = periodApi.unarchive;
 
 // ============================================
 // お客様相談回答送信
@@ -291,7 +147,7 @@ export async function getSoudanStats(
 }
 
 /**
- * お客様相談回答の対応状況を更新（既存の status_checks をマージ）
+ * お客様相談回答の対応状況を更新（既存の status_checks をマージ。請求同期はなし）
  */
 export async function updateSoudanHandledStatus(
   responseId: string,
@@ -303,21 +159,9 @@ export async function updateSoudanHandledStatus(
 }
 
 /**
- * お客様相談回答の計上状態を更新（既存の status_checks をマージ）
+ * お客様相談回答の計上状態を更新（既存の status_checks をマージし請求へ同期）
  */
-export async function updateSoudanChargedStatus(
-  responseId: string,
-  charged: boolean
-): Promise<void> {
-  const response = await getFormResponse(responseId);
-  const current = (response?.status_checks || {}) as Record<string, boolean>;
-  await updateFormResponseStatus(responseId, { ...current, charged });
-  try {
-    await syncFormResponseToBilling(responseId);
-  } catch (err) {
-    console.warn('請求への計上同期に失敗:', err);
-  }
-}
+export const updateSoudanChargedStatus = updateChargedStatusWithBilling;
 
 /**
  * お客様相談期間の回答数を取得

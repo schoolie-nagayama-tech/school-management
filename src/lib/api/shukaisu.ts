@@ -1,26 +1,8 @@
-import {
-  getFormPeriods,
-  getActiveFormPeriod,
-  getFormPeriod,
-  getFormPeriodByKey,
-  createFormPeriod,
-  updateFormPeriod,
-  deleteFormPeriod,
-  archivePeriod,
-  unarchivePeriod,
-} from './form-periods';
-import {
-  createPublicFormResponse,
-  getFormResponses,
-  getFormResponse,
-  updateFormResponseStatus,
-} from './form-responses';
-import { syncFormResponseToBilling } from './billing';
-import { getDefaultSchoolId, getSchoolByCode } from './schools';
-import type { FormPeriodInsert, FormPeriodUpdate, FormResponseInsert } from '@/types/database';
+import { createPeriodApi, updateStatusChecksWithBilling } from './form-period-api';
+import { createPublicFormResponse, getFormResponses } from './form-responses';
+import type { FormResponseInsert } from '@/types/database';
 import type {
   ShukaisuPeriod,
-  ShukaisuSettings,
   ShukaisuResponse,
   ShukaisuResponseData,
   ShukaisuResponseFilters,
@@ -28,152 +10,20 @@ import type {
 } from '@/types/forms/shukaisu';
 
 // ============================================
-// 週回数変更期間管理
+// 週回数変更期間管理（共通の期間CRUDは createPeriodApi に集約）
 // ============================================
 
-/**
- * 週回数変更期間一覧を取得
- */
-export async function getShukaisuPeriods(
-  schoolId?: string,
-  includeArchived: boolean = false
-): Promise<ShukaisuPeriod[]> {
-  const targetSchoolId = schoolId || getDefaultSchoolId();
-  const periods = await getFormPeriods(targetSchoolId, 'shukaisu', includeArchived);
-  return periods.map((p) => ({
-    ...p,
-    form_type: 'shukaisu' as const,
-    settings: (p.settings || {}) as unknown as ShukaisuSettings,
-  }));
-}
+const periodApi = createPeriodApi<'shukaisu', ShukaisuPeriod>('shukaisu');
 
-/**
- * 公開中の週回数変更期間を取得（ポータル用）
- */
-export async function getActiveShukaisuPeriod(schoolCode: string): Promise<ShukaisuPeriod | null> {
-  const school = await getSchoolByCode(schoolCode);
-  if (!school) {
-    return null;
-  }
-
-  const period = await getActiveFormPeriod(school.id, 'shukaisu');
-  if (!period) {
-    return null;
-  }
-
-  return {
-    ...period,
-    form_type: 'shukaisu' as const,
-    settings: (period.settings || {}) as unknown as ShukaisuSettings,
-  };
-}
-
-/**
- * 週回数変更期間を1件取得
- */
-export async function getShukaisuPeriod(id: string): Promise<ShukaisuPeriod | null> {
-  const period = await getFormPeriod(id);
-  if (!period || period.form_type !== 'shukaisu') {
-    return null;
-  }
-
-  return {
-    ...period,
-    form_type: 'shukaisu' as const,
-    settings: (period.settings || {}) as unknown as ShukaisuSettings,
-  };
-}
-
-/**
- * 週回数変更期間を period_key で取得（プレビュー用）
- */
-export async function getShukaisuPeriodByKey(
-  schoolId: string,
-  periodKey: string
-): Promise<ShukaisuPeriod | null> {
-  const period = await getFormPeriodByKey(schoolId, 'shukaisu', periodKey);
-  if (!period) return null;
-  return {
-    ...period,
-    form_type: 'shukaisu' as const,
-    settings: (period.settings || {}) as unknown as ShukaisuSettings,
-  };
-}
-
-/**
- * 週回数変更期間を作成
- * @param data 期間データ（school_id / form_type 除く）
- * @param schoolId 教室ID（省略時は getDefaultSchoolId()）
- */
-export async function createShukaisuPeriod(
-  data: Omit<FormPeriodInsert, 'school_id' | 'form_type'>,
-  schoolId?: string
-): Promise<ShukaisuPeriod> {
-  const targetSchoolId = schoolId ?? getDefaultSchoolId();
-
-  const periodData: FormPeriodInsert = {
-    ...data,
-    school_id: targetSchoolId,
-    form_type: 'shukaisu',
-    settings: (data.settings || {}) as unknown as Record<string, unknown>,
-  };
-
-  const period = await createFormPeriod(periodData);
-  return {
-    ...period,
-    form_type: 'shukaisu' as const,
-    settings: (period.settings || {}) as unknown as ShukaisuSettings,
-  };
-}
-
-/**
- * 週回数変更期間を更新
- */
-export async function updateShukaisuPeriod(
-  id: string,
-  data: FormPeriodUpdate
-): Promise<ShukaisuPeriod> {
-  const updateData: FormPeriodUpdate = {
-    ...data,
-    settings: data.settings ? (data.settings as unknown as Record<string, unknown>) : undefined,
-  };
-
-  const period = await updateFormPeriod(id, updateData);
-  return {
-    ...period,
-    form_type: 'shukaisu' as const,
-    settings: (period.settings || {}) as unknown as ShukaisuSettings,
-  };
-}
-
-/**
- * 週回数変更期間を削除
- */
-export async function deleteShukaisuPeriod(id: string): Promise<void> {
-  await deleteFormPeriod(id);
-}
-
-/**
- * 週回数変更期間をアーカイブ
- */
-export async function archiveShukaisuPeriod(
-  id: string,
-  schoolId: string,
-  periodKey: string
-): Promise<{ periodArchived: boolean; responsesArchived: number }> {
-  return archivePeriod(id, schoolId, 'shukaisu', periodKey);
-}
-
-/**
- * 週回数変更期間のアーカイブを解除
- */
-export async function unarchiveShukaisuPeriod(
-  id: string,
-  schoolId: string,
-  periodKey: string
-): Promise<{ periodUnarchived: boolean; responsesUnarchived: number }> {
-  return unarchivePeriod(id, schoolId, 'shukaisu', periodKey);
-}
+export const getShukaisuPeriods = periodApi.getPeriods;
+export const getActiveShukaisuPeriod = periodApi.getActivePeriod;
+export const getShukaisuPeriod = periodApi.getPeriod;
+export const getShukaisuPeriodByKey = periodApi.getPeriodByKey;
+export const createShukaisuPeriod = periodApi.createPeriod;
+export const updateShukaisuPeriod = periodApi.updatePeriod;
+export const deleteShukaisuPeriod = periodApi.deletePeriod;
+export const archiveShukaisuPeriod = periodApi.archive;
+export const unarchiveShukaisuPeriod = periodApi.unarchive;
 
 // ============================================
 // 週回数変更回答送信
@@ -275,23 +125,7 @@ export async function getShukaisuStats(
 /**
  * 週回数変更回答の計上・座席状態を更新（既存の status_checks とマージ）
  */
-export async function updateShukaisuStatusCheck(
-  responseId: string,
-  statusChecks: { charged?: boolean; seated?: boolean }
-): Promise<void> {
-  const response = await getFormResponse(responseId);
-  if (!response) throw new Error('回答が見つかりません');
-  const current = (response.status_checks || {}) as Record<string, boolean>;
-  await updateFormResponseStatus(responseId, { ...current, ...statusChecks });
-  // charged が含まれる場合のみ請求側へ同期
-  if (statusChecks.charged !== undefined) {
-    try {
-      await syncFormResponseToBilling(responseId);
-    } catch (err) {
-      console.warn('請求への計上同期に失敗:', err);
-    }
-  }
-}
+export const updateShukaisuStatusCheck = updateStatusChecksWithBilling;
 
 /**
  * 週回数変更期間の回答数を取得

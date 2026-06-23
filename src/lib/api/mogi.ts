@@ -1,24 +1,8 @@
-import {
-  getFormPeriods,
-  getActiveFormPeriod,
-  getFormPeriod,
-  getFormPeriodByKey,
-  createFormPeriod,
-  updateFormPeriod,
-  deleteFormPeriod,
-} from './form-periods';
-import {
-  createPublicFormResponse,
-  getFormResponses,
-  getFormResponse,
-  updateFormResponseStatus,
-} from './form-responses';
-import { syncFormResponseToBilling } from './billing';
-import { getDefaultSchoolId, getSchoolByCode } from './schools';
-import type { FormPeriodInsert, FormPeriodUpdate, FormResponseInsert } from '@/types/database';
+import { createPeriodApi, updateChargedStatusWithBilling } from './form-period-api';
+import { createPublicFormResponse, getFormResponses } from './form-responses';
+import type { FormResponseInsert } from '@/types/database';
 import type {
   MogiPeriod,
-  MogiSettings,
   MogiResponse,
   MogiResponseData,
   MogiResponseFilters,
@@ -26,120 +10,18 @@ import type {
 } from '@/types/forms/mogi';
 
 // ============================================
-// Vもぎ期間管理
+// Vもぎ期間管理（共通の期間CRUDは createPeriodApi に集約）
 // ============================================
 
-/**
- * Vもぎ期間一覧を取得
- */
-export async function getMogiPeriods(
-  schoolId?: string,
-  includeArchived: boolean = false
-): Promise<MogiPeriod[]> {
-  const targetSchoolId = schoolId || getDefaultSchoolId();
-  const periods = await getFormPeriods(targetSchoolId, 'mogi', includeArchived);
-  return periods.map((p) => ({
-    ...p,
-    form_type: 'mogi' as const,
-    settings: (p.settings || {}) as unknown as MogiSettings,
-  }));
-}
+const periodApi = createPeriodApi<'mogi', MogiPeriod>('mogi');
 
-/**
- * 公開中のVもぎ期間を取得（ポータル用）
- */
-export async function getActiveMogiPeriod(schoolCode: string): Promise<MogiPeriod | null> {
-  const school = await getSchoolByCode(schoolCode);
-  if (!school) {
-    return null;
-  }
-
-  const period = await getActiveFormPeriod(school.id, 'mogi');
-  if (!period) {
-    return null;
-  }
-
-  return {
-    ...period,
-    form_type: 'mogi' as const,
-    settings: (period.settings || {}) as unknown as MogiSettings,
-  };
-}
-
-/**
- * Vもぎ期間を1件取得
- */
-export async function getMogiPeriod(id: string): Promise<MogiPeriod | null> {
-  const period = await getFormPeriod(id);
-  if (!period || period.form_type !== 'mogi') {
-    return null;
-  }
-
-  return {
-    ...period,
-    form_type: 'mogi' as const,
-    settings: (period.settings || {}) as unknown as MogiSettings,
-  };
-}
-
-/**
- * Vもぎ期間を period_key で取得（プレビュー用）
- */
-export async function getMogiPeriodByKey(
-  schoolId: string,
-  periodKey: string
-): Promise<MogiPeriod | null> {
-  const period = await getFormPeriodByKey(schoolId, 'mogi', periodKey);
-  if (!period) return null;
-  return {
-    ...period,
-    form_type: 'mogi' as const,
-    settings: (period.settings || {}) as unknown as MogiSettings,
-  };
-}
-
-/**
- * Vもぎ期間を作成
- * @param data 期間データ（school_id / form_type 除く）
- * @param schoolId 教室ID（省略時は getDefaultSchoolId()）
- */
-export async function createMogiPeriod(
-  data: Omit<FormPeriodInsert, 'school_id' | 'form_type'>,
-  schoolId?: string
-): Promise<MogiPeriod> {
-  const targetSchoolId = schoolId ?? getDefaultSchoolId();
-
-  const periodData: FormPeriodInsert = {
-    ...data,
-    school_id: targetSchoolId,
-    form_type: 'mogi',
-    settings: (data.settings || {}) as unknown as Record<string, unknown>,
-  };
-
-  const period = await createFormPeriod(periodData);
-  return {
-    ...period,
-    form_type: 'mogi' as const,
-    settings: (period.settings || {}) as unknown as MogiSettings,
-  };
-}
-
-/**
- * Vもぎ期間を更新
- */
-export async function updateMogiPeriod(id: string, data: FormPeriodUpdate): Promise<MogiPeriod> {
-  const updateData: FormPeriodUpdate = {
-    ...data,
-    settings: data.settings ? (data.settings as unknown as Record<string, unknown>) : undefined,
-  };
-
-  const period = await updateFormPeriod(id, updateData);
-  return {
-    ...period,
-    form_type: 'mogi' as const,
-    settings: (period.settings || {}) as unknown as MogiSettings,
-  };
-}
+export const getMogiPeriods = periodApi.getPeriods;
+export const getActiveMogiPeriod = periodApi.getActivePeriod;
+export const getMogiPeriod = periodApi.getPeriod;
+export const getMogiPeriodByKey = periodApi.getPeriodByKey;
+export const createMogiPeriod = periodApi.createPeriod;
+export const updateMogiPeriod = periodApi.updatePeriod;
+export const deleteMogiPeriod = periodApi.deletePeriod;
 
 /**
  * 前回の期間設定をコピーして新規作成
@@ -150,24 +32,18 @@ export async function copyMogiPeriod(sourceId: string): Promise<MogiPeriod> {
     throw new Error('コピー元の期間が見つかりません');
   }
 
-  const newPeriod: Omit<FormPeriodInsert, 'school_id' | 'form_type'> = {
-    period_key: '', // 空欄（手入力）
-    title: '', // 空欄（手入力）
-    settings: source.settings as unknown as Record<string, unknown>,
-    publish_start: null,
-    publish_end: null,
-    is_active: false,
-    linked_application_item_id: null,
-  };
-
-  return createMogiPeriod(newPeriod, source.school_id);
-}
-
-/**
- * Vもぎ期間を削除
- */
-export async function deleteMogiPeriod(id: string): Promise<void> {
-  await deleteFormPeriod(id);
+  return createMogiPeriod(
+    {
+      period_key: '', // 空欄（手入力）
+      title: '', // 空欄（手入力）
+      settings: source.settings as unknown as Record<string, unknown>,
+      publish_start: null,
+      publish_end: null,
+      is_active: false,
+      linked_application_item_id: null,
+    },
+    source.school_id
+  );
 }
 
 // ============================================
@@ -349,19 +225,9 @@ export async function getMogiStats(
 }
 
 /**
- * Vもぎ回答の計上状態を更新（既存の status_checks をマージ）
+ * Vもぎ回答の計上状態を更新（既存の status_checks をマージし請求へ同期）
  */
-export async function updateMogiChargedStatus(responseId: string, charged: boolean): Promise<void> {
-  const response = await getFormResponse(responseId);
-  const current = (response?.status_checks || {}) as Record<string, boolean>;
-  await updateFormResponseStatus(responseId, { ...current, charged });
-  // 請求側の is_billed へ同期（AND判定）
-  try {
-    await syncFormResponseToBilling(responseId);
-  } catch (err) {
-    console.warn('請求への計上同期に失敗:', err);
-  }
-}
+export const updateMogiChargedStatus = updateChargedStatusWithBilling;
 
 /**
  * Vもぎ期間の回答数を取得
