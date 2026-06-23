@@ -2,7 +2,17 @@
 
 import { useState } from 'react';
 import type { MonthlyTaskTemplate } from '@/types/database';
-import { GripVertical, ChevronDown, ChevronRight, Layers, Trash2, Pencil, Plus, X, Check } from 'lucide-react';
+import {
+  GripVertical,
+  ChevronDown,
+  ChevronRight,
+  Layers,
+  Trash2,
+  Pencil,
+  Plus,
+  X,
+  Check,
+} from 'lucide-react';
 
 interface PoolItem {
   task_name: string;
@@ -80,7 +90,9 @@ export function TaskPool({
       const data = JSON.parse(raw);
       const idx = data.poolIndex as number;
       onSetPoolItems(poolItems.filter((_, i) => i !== idx));
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   };
 
   // 編集開始
@@ -151,7 +163,10 @@ export function TaskPool({
         {/* ゴミ箱ドロップゾーン */}
         {poolItems.length > 0 && (
           <div
-            onDragOver={(e) => { e.preventDefault(); setTrashOver(true); }}
+            onDragOver={(e) => {
+              e.preventDefault();
+              setTrashOver(true);
+            }}
             onDragLeave={() => setTrashOver(false)}
             onDrop={handleTrashDrop}
             className={`flex items-center gap-1 px-3 py-2 mr-1 rounded transition-[background-color,color,transform] duration-150 ease-out ${
@@ -173,7 +188,9 @@ export function TaskPool({
           {/* テンプレート選択（プールが空のときだけでなく常に表示） */}
           {canEdit && templates.length > 0 && (
             <div>
-              <p className="text-[11px] text-gray-400 mb-1.5">テンプレートを選択してプールに読み込み:</p>
+              <p className="text-[11px] text-gray-400 mb-1.5">
+                テンプレートを選択してプールに読み込み:
+              </p>
               <div className="flex flex-wrap gap-1">
                 {templates.map((tpl) => (
                   <button
@@ -193,17 +210,24 @@ export function TaskPool({
             </div>
           )}
           {canEdit && templates.length === 0 && poolItems.length === 0 && (
-            <p className="text-[11px] text-gray-300 italic">テンプレートなし（テンプレートボタンから作成できます）</p>
+            <p className="text-[11px] text-gray-300 italic">
+              テンプレートなし（テンプレートボタンから作成できます）
+            </p>
           )}
 
           {/* プールアイテム */}
           {poolItems.length > 0 && (
             <div className="space-y-1 max-h-64 overflow-y-auto">
               <div className="flex items-center justify-between mb-1">
-                <p className="text-[11px] text-gray-400">タスクリストにD&D、または＋ボタンで日付を選んで追加</p>
+                <p className="text-[11px] text-gray-400">
+                  タスクリストにD&D、または＋ボタンで日付を選んで追加
+                </p>
                 {canEdit && (
                   <button
-                    onClick={() => { onSetPoolItems([]); setSelectedTemplateId(null); }}
+                    onClick={() => {
+                      onSetPoolItems([]);
+                      setSelectedTemplateId(null);
+                    }}
                     className="text-[11px] text-gray-400 hover:text-red-500"
                   >
                     クリア
@@ -268,9 +292,11 @@ export function TaskPool({
                     /* 日付選択して追加モード */
                     <div className="text-xs px-2 py-2 border rounded-lg border-green-300 bg-green-50/50">
                       <div className="flex items-center gap-2 mb-1.5">
-                        <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
-                          item.category === 'business' ? 'bg-orange-400' : 'bg-purple-400'
-                        }`} />
+                        <span
+                          className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
+                            item.category === 'business' ? 'bg-orange-400' : 'bg-purple-400'
+                          }`}
+                        />
                         <span className="font-medium truncate flex-1">{item.task_name}</span>
                       </div>
                       <div className="flex items-center gap-2">
@@ -306,7 +332,9 @@ export function TaskPool({
                       onDragStart={(e) => handleDragStart(e, item, idx)}
                       onDragEnd={handleDragEnd}
                       className={`flex items-center gap-1 text-xs px-2 py-1.5 border rounded-lg transition-[background-color] duration-150 ease-out group ${
-                        canEdit ? 'cursor-grab active:cursor-grabbing hover:shadow-sm hover:border-blue-300' : ''
+                        canEdit
+                          ? 'cursor-grab active:cursor-grabbing hover:shadow-sm hover:border-blue-300'
+                          : ''
                       } ${
                         item.category === 'business'
                           ? 'border-orange-200 bg-orange-50/50'
@@ -314,15 +342,22 @@ export function TaskPool({
                       }`}
                     >
                       {canEdit && <GripVertical className="w-3 h-3 text-gray-300 flex-shrink-0" />}
-                      <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
-                        item.category === 'business' ? 'bg-orange-400' : 'bg-purple-400'
-                      }`} />
+                      <span
+                        className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
+                          item.category === 'business' ? 'bg-orange-400' : 'bg-purple-400'
+                        }`}
+                      />
                       <span className="truncate flex-1">{item.task_name}</span>
-                      <span className="text-[11px] text-gray-400 flex-shrink-0">{item.day_of_month}日</span>
+                      <span className="text-[11px] text-gray-400 flex-shrink-0">
+                        {item.day_of_month}日
+                      </span>
                       {/* 編集ボタン */}
                       {canEdit && (
                         <button
-                          onClick={(e) => { e.stopPropagation(); startEdit(idx); }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            startEdit(idx);
+                          }}
                           className="p-0.5 text-gray-300 hover:text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity duration-150 flex-shrink-0"
                           title="編集"
                         >
@@ -332,7 +367,10 @@ export function TaskPool({
                       {/* 日付選択追加ボタン */}
                       {canEdit && onAddPoolItemAsTask && (
                         <button
-                          onClick={(e) => { e.stopPropagation(); handleAddToTaskList(idx); }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleAddToTaskList(idx);
+                          }}
                           className="p-0.5 text-gray-300 hover:text-green-500 opacity-0 group-hover:opacity-100 transition-opacity duration-150 flex-shrink-0"
                           title="日付を選んでタスクリストに追加"
                         >

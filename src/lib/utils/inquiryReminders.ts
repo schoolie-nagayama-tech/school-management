@@ -12,9 +12,9 @@ import type { Inquiry } from '@/types/database';
 /** リマインドの種別 */
 export type InquiryReminderKind =
   | 'first_contact_overdue' // 初回コンタクト未実施
-  | 'response_delay'        // 対応遅延（3/5/7/10/14/21/30日）
-  | 'material_unsent'       // 資料未発送
-  | 'trial_followup';       // 体験後フォロー
+  | 'response_delay' // 対応遅延（3/5/7/10/14/21/30日）
+  | 'material_unsent' // 資料未発送
+  | 'trial_followup'; // 体験後フォロー
 
 /** 個々のリマインド情報 */
 export interface InquiryReminder {

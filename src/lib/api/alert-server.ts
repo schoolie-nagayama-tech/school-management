@@ -38,7 +38,9 @@ export async function prefetchAlertInitial(): Promise<AlertInitialData | null> {
     const client = await createSupabaseServerClient();
 
     // 未ログインはサーバー取得不可
-    const { data: { user } } = await client.auth.getUser();
+    const {
+      data: { user },
+    } = await client.auth.getUser();
     if (!user) return null;
 
     // ユーザーがアクセス可能な学校（RLSでスコープ済み）。
@@ -76,7 +78,10 @@ export async function prefetchAlertInitial(): Promise<AlertInitialData | null> {
     // DynamicServerError（ビルドの静的生成プローブが cookies() で投げる）は再 throw して Next に委ねる。
     if (isDynamicServerError(e)) throw e;
     // 事前取得は最適化。失敗してもページは従来のクライアント取得で動くので握りつぶす。
-    console.warn('[prefetchAlertInitial] 事前取得に失敗。クライアント取得にフォールバックします:', e);
+    console.warn(
+      '[prefetchAlertInitial] 事前取得に失敗。クライアント取得にフォールバックします:',
+      e
+    );
     return null;
   }
 }

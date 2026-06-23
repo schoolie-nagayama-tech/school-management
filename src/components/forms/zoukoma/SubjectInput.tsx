@@ -9,12 +9,7 @@ interface SubjectInputProps {
   disabled?: boolean;
 }
 
-export function SubjectInput({
-  subjects,
-  values,
-  onChange,
-  disabled = false,
-}: SubjectInputProps) {
+export function SubjectInput({ subjects, values, onChange, disabled = false }: SubjectInputProps) {
   const handleChange = (subject: string, value: string) => {
     const numValue = parseInt(value, 10);
     if (isNaN(numValue) || numValue < 0) {
@@ -32,9 +27,7 @@ export function SubjectInput({
     <div className="space-y-3">
       {subjects.map((subject) => (
         <div key={subject} className="flex items-center gap-4">
-          <label className="w-24 text-sm font-medium text-[#1f2937] flex-shrink-0">
-            {subject}
-          </label>
+          <label className="w-24 text-sm font-medium text-[#1f2937] flex-shrink-0">{subject}</label>
           <div className="flex-1 flex items-center gap-2">
             <Input
               type="number"

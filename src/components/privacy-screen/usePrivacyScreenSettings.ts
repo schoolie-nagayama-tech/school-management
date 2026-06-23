@@ -19,7 +19,8 @@ function parseTimeoutByRole(value: string | undefined): TimeoutByRole {
   if (!value) return { owner: DEFAULT_TIMEOUT, manager: DEFAULT_TIMEOUT };
   try {
     const parsed = JSON.parse(value);
-    if (typeof parsed !== 'object' || parsed === null) return { owner: DEFAULT_TIMEOUT, manager: DEFAULT_TIMEOUT };
+    if (typeof parsed !== 'object' || parsed === null)
+      return { owner: DEFAULT_TIMEOUT, manager: DEFAULT_TIMEOUT };
     const out: TimeoutByRole = {};
     for (const role of ROLES) {
       const v = parsed[role];

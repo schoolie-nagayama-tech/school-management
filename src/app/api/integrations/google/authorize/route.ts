@@ -25,7 +25,10 @@ export async function GET(request: NextRequest) {
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
         { global: { headers: { Authorization: `Bearer ${tokenParam}` } } }
       );
-      const { data: { user }, error } = await supabase.auth.getUser();
+      const {
+        data: { user },
+        error,
+      } = await supabase.auth.getUser();
       if (!error && user) {
         const { data: profile } = await supabase
           .from('user_profiles')
@@ -63,7 +66,9 @@ export async function GET(request: NextRequest) {
           },
         }
       );
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (session?.user) {
         const { data: profile } = await supabase
           .from('user_profiles')

@@ -2,7 +2,16 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { AdminLayout } from '@/components/layouts';
-import { Button, Card, CardHeader, CardTitle, CardContent, Input, ToastContainer, Loading } from '@/components/ui';
+import {
+  Button,
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+  Input,
+  ToastContainer,
+  Loading,
+} from '@/components/ui';
 import Link from 'next/link';
 import { getSchool, updateSchool } from '@/lib/api/schools';
 import { useToast } from '@/hooks/useToast';
@@ -160,9 +169,7 @@ export default function SchoolSettingsPage() {
       success('通知先メールアドレスを更新しました');
     } catch (error) {
       console.error('Error updating school:', error);
-      toastError(
-        getUserErrorMessage(error, '更新に失敗しました')
-      );
+      toastError(getUserErrorMessage(error, '更新に失敗しました'));
     } finally {
       setIsSubmitting(false);
     }
@@ -199,7 +206,10 @@ export default function SchoolSettingsPage() {
       <ToastContainer toasts={toasts} onRemove={removeToast} />
       <div className="max-w-2xl mx-auto">
         <div className="mb-4">
-          <Link href="/settings" className="inline-flex items-center gap-1 text-sm text-text-muted hover:text-text-heading transition-colors duration-150">
+          <Link
+            href="/settings"
+            className="inline-flex items-center gap-1 text-sm text-text-muted hover:text-text-heading transition-colors duration-150"
+          >
             <ChevronLeft className="w-4 h-4" />
             設定に戻る
           </Link>
@@ -220,9 +230,7 @@ export default function SchoolSettingsPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <label className="block text-sm font-medium text-text-heading mb-1">
-                ロゴ画像
-              </label>
+              <label className="block text-sm font-medium text-text-heading mb-1">ロゴ画像</label>
               <div className="flex items-center gap-4">
                 {logoUrl ? (
                   <img
@@ -248,7 +256,11 @@ export default function SchoolSettingsPage() {
                     disabled={isUploading}
                     className="text-sm"
                   >
-                    {isUploading ? 'アップロード中...' : logoUrl ? '画像を変更' : '画像をアップロード'}
+                    {isUploading
+                      ? 'アップロード中...'
+                      : logoUrl
+                        ? '画像を変更'
+                        : '画像をアップロード'}
                   </Button>
                   {logoUrl && (
                     <button
@@ -332,16 +344,13 @@ export default function SchoolSettingsPage() {
                   className="max-w-xs"
                 />
                 <p className="mt-2 text-sm text-text-body">
-                  教材管理の通知でメンションする担当者のSlackメンバーIDです。Slackのプロフィール → 「メンバーIDをコピー」で取得できます。
+                  教材管理の通知でメンションする担当者のSlackメンバーIDです。Slackのプロフィール →
+                  「メンバーIDをコピー」で取得できます。
                 </p>
               </div>
 
               <div className="flex justify-end">
-                <Button
-                  onClick={handleSave}
-                  disabled={isSubmitting}
-                  className="min-w-[120px]"
-                >
+                <Button onClick={handleSave} disabled={isSubmitting} className="min-w-[120px]">
                   {isSubmitting ? '保存中...' : '保存'}
                 </Button>
               </div>

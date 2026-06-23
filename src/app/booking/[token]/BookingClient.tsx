@@ -18,9 +18,9 @@ import { CalendarDays, Clock } from 'lucide-react';
 const DAY_NAMES = ['日', '月', '火', '水', '木', '金', '土'] as const;
 
 interface BookingSlot {
-  date: string;    // 'YYYY-MM-DD'
+  date: string; // 'YYYY-MM-DD'
   startTime: string; // 'HH:mm'
-  startIso: string;  // ISO 8601
+  startIso: string; // ISO 8601
 }
 
 interface BookingInfo {
@@ -41,8 +41,10 @@ type ApiResult = BookingInfo | InvalidInfo;
 
 /** reason に応じた無効メッセージを返す */
 function getInvalidMessage(reason: string): string {
-  if (reason === 'expired') return 'このリンクは期限切れです。お手数ですが教室までお問い合わせください。';
-  if (reason === 'used') return 'このリンクはすでに予約済みです。お手数ですが教室までお問い合わせください。';
+  if (reason === 'expired')
+    return 'このリンクは期限切れです。お手数ですが教室までお問い合わせください。';
+  if (reason === 'used')
+    return 'このリンクはすでに予約済みです。お手数ですが教室までお問い合わせください。';
   return 'このリンクは無効です。お手数ですが教室までお問い合わせください。';
 }
 
@@ -81,7 +83,9 @@ interface BookingClientProps {
 
 export default function BookingClient({ token }: BookingClientProps) {
   // 画面のステート: loading / invalid / ready / confirming / confirmed
-  const [phase, setPhase] = useState<'loading' | 'invalid' | 'ready' | 'confirming' | 'confirmed'>('loading');
+  const [phase, setPhase] = useState<'loading' | 'invalid' | 'ready' | 'confirming' | 'confirmed'>(
+    'loading'
+  );
   const [info, setInfo] = useState<BookingInfo | null>(null);
   const [invalidReason, setInvalidReason] = useState('');
   const [selectedSlot, setSelectedSlot] = useState<BookingSlot | null>(null);
@@ -140,7 +144,9 @@ export default function BookingClient({ token }: BookingClientProps) {
       }
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        setConfirmError((body as { error?: string }).error ?? '予約に失敗しました。もう一度お試しください。');
+        setConfirmError(
+          (body as { error?: string }).error ?? '予約に失敗しました。もう一度お試しください。'
+        );
         setPhase('ready');
         return;
       }
@@ -190,9 +196,7 @@ export default function BookingClient({ token }: BookingClientProps) {
             </div>
             <h2 className="text-base font-bold text-[#1a1a1a] mb-3">ご予約ありがとうございます</h2>
             <p className="text-sm text-[#374151] leading-relaxed">
-              <span className="font-semibold text-[#1a1a1a]">
-                {formatDateTimeJa(confirmedAt)}
-              </span>{' '}
+              <span className="font-semibold text-[#1a1a1a]">{formatDateTimeJa(confirmedAt)}</span>{' '}
               にお待ちしております。
             </p>
             {schoolNameForComplete && (
@@ -220,9 +224,7 @@ export default function BookingClient({ token }: BookingClientProps) {
         <h2 className="text-base font-bold text-[#1a1a1a] mb-1">
           面談（教室見学・学習相談）のご予約
         </h2>
-        {info?.guardianName && (
-          <p className="text-sm text-[#6b7280] mb-5">{info.guardianName}様</p>
-        )}
+        {info?.guardianName && <p className="text-sm text-[#6b7280] mb-5">{info.guardianName}様</p>}
 
         {/* カレンダー未連携の注記 */}
         {info && !info.calendarConnected && (
@@ -248,12 +250,13 @@ export default function BookingClient({ token }: BookingClientProps) {
         ) : (
           <div className="space-y-5">
             {Array.from(slotsByDate.entries()).map(([date, daySlots]) => (
-              <div key={date} className="bg-white rounded-2xl border border-[#e5e7eb] overflow-hidden">
+              <div
+                key={date}
+                className="bg-white rounded-2xl border border-[#e5e7eb] overflow-hidden"
+              >
                 {/* 日付見出し */}
                 <div className="px-4 py-3 bg-[#f9fafb] border-b border-[#e5e7eb]">
-                  <p className="text-sm font-semibold text-[#1a1a1a]">
-                    {formatDateJa(date)}
-                  </p>
+                  <p className="text-sm font-semibold text-[#1a1a1a]">{formatDateJa(date)}</p>
                 </div>
                 {/* 時刻ボタン */}
                 <div className="px-4 py-3 flex flex-wrap gap-2">
@@ -271,9 +274,10 @@ export default function BookingClient({ token }: BookingClientProps) {
                         disabled={isConfirming}
                         className={`
                           flex items-center gap-1.5 px-4 py-2 rounded-xl border text-sm font-medium transition-colors duration-150
-                          ${isSelected
-                            ? 'bg-[#1a1a1a] text-white border-[#1a1a1a]'
-                            : 'bg-white text-[#374151] border-[#d1d5db] hover:border-[#1a1a1a]'
+                          ${
+                            isSelected
+                              ? 'bg-[#1a1a1a] text-white border-[#1a1a1a]'
+                              : 'bg-white text-[#374151] border-[#d1d5db] hover:border-[#1a1a1a]'
                           }
                           disabled:opacity-50 disabled:cursor-not-allowed
                         `}

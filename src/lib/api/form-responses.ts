@@ -45,10 +45,7 @@ export async function getFormResponses(
   // 1ページ1000件で全件ページング取得する。created_at は一意でなくページ境界で
   // 行が重複/欠落しうるので、安定化のため id を第2ソートキーに加える。
   const buildQuery = (from: number, to: number) => {
-    let query = supabase
-      .from('form_responses')
-      .select('*')
-      .in('school_id', schoolIds);
+    let query = supabase.from('form_responses').select('*').in('school_id', schoolIds);
 
     if (filters?.formType) {
       query = query.eq('form_type', filters.formType);
@@ -193,11 +190,7 @@ export async function getRecentUnprocessedResponses(
  * フォーム回答を1件取得
  */
 export async function getFormResponse(id: string): Promise<FormResponse | null> {
-  const { data, error } = await supabase
-    .from('form_responses')
-    .select('*')
-    .eq('id', id)
-    .single();
+  const { data, error } = await supabase.from('form_responses').select('*').eq('id', id).single();
 
   if (error) {
     if (error.code === 'PGRST116') {
@@ -213,9 +206,7 @@ export async function getFormResponse(id: string): Promise<FormResponse | null> 
  * 保護者ポータル用フォーム回答を作成（認証不要）
  * サーバー側の /api/portal/form-responses に fetch して RLS をバイパスする
  */
-export async function createPublicFormResponse(
-  data: FormResponseInsert
-): Promise<FormResponse> {
+export async function createPublicFormResponse(data: FormResponseInsert): Promise<FormResponse> {
   const res = await fetch('/api/portal/form-responses', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -229,8 +220,7 @@ export async function createPublicFormResponse(
       throw new Error('この内容は既に送信されています。');
     }
     throw new Error(
-      (json as { error?: string }).error ||
-        `フォーム回答の作成に失敗しました: ${res.status}`
+      (json as { error?: string }).error || `フォーム回答の作成に失敗しました: ${res.status}`
     );
   }
 
@@ -240,9 +230,7 @@ export async function createPublicFormResponse(
 /**
  * フォーム回答を作成（申込者・教室への通知メールは Edge Function で送信）
  */
-export async function createFormResponse(
-  data: FormResponseInsert
-): Promise<FormResponse> {
+export async function createFormResponse(data: FormResponseInsert): Promise<FormResponse> {
   const { data: created, error } = await supabase
     .from('form_responses')
     .insert(data)
@@ -331,11 +319,7 @@ export async function linkResponseToStudent(
       if (period?.linked_application_item_id) {
         const { updateStudentApplication } = await import('./applications');
         try {
-          await updateStudentApplication(
-            studentId,
-            period.linked_application_item_id,
-            'completed'
-          );
+          await updateStudentApplication(studentId, period.linked_application_item_id, 'completed');
         } catch (error) {
           // 申込状況の更新失敗は警告のみ（回答の紐付けは成功扱い）
           console.warn('Failed to update application status:', error);
@@ -350,7 +334,8 @@ export async function linkResponseToStudent(
   // Billing auto-sync: if form type has a linked billing item, auto-reflect
   // 判定基準: response.created_at が請求期間の start_date〜end_date 内
   try {
-    const responseDate = response.created_at?.split('T')[0] || new Date().toISOString().split('T')[0];
+    const responseDate =
+      response.created_at?.split('T')[0] || new Date().toISOString().split('T')[0];
 
     // Find active billing periods that cover the response date
     const { data: activePeriods } = await supabase
@@ -394,7 +379,8 @@ export async function linkResponseToStudent(
                 .gte('created_at', `${period.start_date}T00:00:00`)
                 .lt('created_at', `${periodEndPlusOne}T00:00:00`);
               const totalKoma = (rows || []).reduce(
-                (sum, r) => sum + zoukomaKomaCount((r as { response_data?: unknown }).response_data),
+                (sum, r) =>
+                  sum + zoukomaKomaCount((r as { response_data?: unknown }).response_data),
                 0
               );
               countByPeriod.set(period.id, totalKoma || 1);
@@ -446,9 +432,7 @@ export async function linkResponseToStudent(
 /**
  * フォーム回答の生徒紐付けを解除
  */
-export async function unlinkResponseFromStudent(
-  responseId: string
-): Promise<FormResponse> {
+export async function unlinkResponseFromStudent(responseId: string): Promise<FormResponse> {
   const { data: updated, error } = await supabase
     .from('form_responses')
     .update({
@@ -628,10 +612,7 @@ export async function getArchivedCount(
  * アーカイブと異なり物理削除のため、UI側でマネージャー以上に限定すること。
  */
 export async function deleteFormResponse(id: string): Promise<void> {
-  const { error } = await supabase
-    .from('form_responses')
-    .delete()
-    .eq('id', id);
+  const { error } = await supabase.from('form_responses').delete().eq('id', id);
 
   if (error) {
     throw new Error(`回答の削除に失敗しました: ${error.message}`);
@@ -644,10 +625,7 @@ export async function deleteFormResponse(id: string): Promise<void> {
  */
 export async function deleteResponses(ids: string[]): Promise<void> {
   if (ids.length === 0) return;
-  const { error } = await supabase
-    .from('form_responses')
-    .delete()
-    .in('id', ids);
+  const { error } = await supabase.from('form_responses').delete().in('id', ids);
 
   if (error) {
     throw new Error(`回答の一括削除に失敗しました: ${error.message}`);

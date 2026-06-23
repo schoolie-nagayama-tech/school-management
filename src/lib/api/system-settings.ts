@@ -18,7 +18,11 @@ const CACHE_TTL_MS = 60_000; // 1分
  */
 export async function getSystemSettings(category?: string): Promise<SystemSetting[]> {
   const cacheKey = category ?? '_all';
-  if (settingsCache && settingsCache.category === cacheKey && Date.now() < settingsCache.expiresAt) {
+  if (
+    settingsCache &&
+    settingsCache.category === cacheKey &&
+    Date.now() < settingsCache.expiresAt
+  ) {
     return settingsCache.data;
   }
 

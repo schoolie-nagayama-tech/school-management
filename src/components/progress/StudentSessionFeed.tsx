@@ -39,7 +39,9 @@ export default function StudentSessionFeed({ studentId, limit = 5 }: Props) {
     }
   }, [studentId, limit]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+  }, [load]);
 
   if (loading && sessions.length === 0) {
     return (
@@ -75,7 +77,7 @@ export default function StudentSessionFeed({ studentId, limit = 5 }: Props) {
 
       {/* セッション一覧 */}
       <div className="divide-y divide-gray-100">
-        {sessions.map(session => (
+        {sessions.map((session) => (
           <MiniCard key={session.id} session={session} isTeacher={isTeacher} />
         ))}
       </div>
@@ -104,14 +106,16 @@ function MiniCard({
   const textbookName = st?.textbook?.name || '—';
 
   const displayTeacher = session.teacher_name
-    ? isTeacher ? toSurnameOnly(session.teacher_name) : session.teacher_name
+    ? isTeacher
+      ? toSurnameOnly(session.teacher_name)
+      : session.teacher_name
     : null;
 
   // 指導単元ラベル
   const unitLabels = (session.lessons || [])
-    .filter(l => l.student_progress?.curriculum_item)
+    .filter((l) => l.student_progress?.curriculum_item)
     .sort((a, b) => (a.lesson_number ?? 0) - (b.lesson_number ?? 0))
-    .map(l => {
+    .map((l) => {
       const ci = l.student_progress!.curriculum_item!;
       return `${ci.item_number ?? ''} ${ci.title ?? ''}`.trim();
     });
@@ -122,7 +126,9 @@ function MiniCard({
       <div className="flex items-center justify-between mb-1">
         <span className="text-xs font-medium text-gray-800">{textbookName}</span>
         <div className="flex items-center gap-2">
-          <span className="text-[10px] text-gray-400">{session.session_date?.replace(/-/g, '/')}</span>
+          <span className="text-[10px] text-gray-400">
+            {session.session_date?.replace(/-/g, '/')}
+          </span>
           {displayTeacher && <span className="text-[10px] text-gray-400">{displayTeacher}</span>}
         </div>
       </div>
@@ -131,10 +137,14 @@ function MiniCard({
       {hasIssue && (
         <div className="flex items-center gap-1.5 mb-1">
           {session.homework_not_done && (
-            <span className="px-1.5 py-0.5 text-[10px] bg-amber-200 text-amber-900 rounded font-medium">宿題未提出</span>
+            <span className="px-1.5 py-0.5 text-[10px] bg-amber-200 text-amber-900 rounded font-medium">
+              宿題未提出
+            </span>
           )}
           {session.tardy && (
-            <span className="px-1.5 py-0.5 text-[10px] bg-amber-200 text-amber-900 rounded font-medium">遅刻</span>
+            <span className="px-1.5 py-0.5 text-[10px] bg-amber-200 text-amber-900 rounded font-medium">
+              遅刻
+            </span>
           )}
         </div>
       )}
@@ -151,9 +161,7 @@ function MiniCard({
       )}
 
       {/* 引継ぎ */}
-      {session.handover && (
-        <p className="text-xs text-gray-600 line-clamp-1">{session.handover}</p>
-      )}
+      {session.handover && <p className="text-xs text-gray-600 line-clamp-1">{session.handover}</p>}
     </div>
   );
 }

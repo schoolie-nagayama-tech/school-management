@@ -55,7 +55,12 @@ interface HelpTooltipProps {
  * ? アイコン付きのヘルプツールチップ
  * ラベル横などに配置して補足説明を表示する
  */
-export function HelpTooltip({ text, position = 'top', multiline = true, size = 12 }: HelpTooltipProps) {
+export function HelpTooltip({
+  text,
+  position = 'top',
+  multiline = true,
+  size = 12,
+}: HelpTooltipProps) {
   return (
     <Tooltip text={text} position={position} multiline={multiline}>
       <span

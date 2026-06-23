@@ -26,7 +26,11 @@ export function useRequirePermission(
     }
   }, [permissions, isLoading, user, router, redirectTo, checkPermission]);
 
-  return { permissions, isLoading, hasPermission: permissions ? checkPermission(permissions) : false };
+  return {
+    permissions,
+    isLoading,
+    hasPermission: permissions ? checkPermission(permissions) : false,
+  };
 }
 
 /**

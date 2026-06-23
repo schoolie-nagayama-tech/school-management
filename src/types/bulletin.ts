@@ -27,7 +27,7 @@ export interface BulletinPost {
   label?: BulletinLabel | null;
   creator?: { display_name: string | null; email: string } | null;
   read_count?: number;
-  is_read?: boolean;  // 現在のユーザーが既読か
+  is_read?: boolean; // 現在のユーザーが既読か
   /** 表示用：複数教室一覧時に設定される教室名 */
   school_name?: string | null;
 }

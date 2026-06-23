@@ -48,7 +48,19 @@ export const ATTENDANCE_FLOWERS: FlowerPlacement[] = [
 /** AppHeader — 全ページのヘッダー帯。白文字との対比で淡いトーン */
 export const HEADER_FLOWERS: FlowerPlacement[] = [
   { position: { top: '4px', left: '76px' }, size: 9, rotate: 22, opacity: 0.45, color: '#FCE4EC' },
-  { position: { bottom: '4px', left: '128px' }, size: 8, rotate: -18, opacity: 0.4, color: '#F8BBD0' },
+  {
+    position: { bottom: '4px', left: '128px' },
+    size: 8,
+    rotate: -18,
+    opacity: 0.4,
+    color: '#F8BBD0',
+  },
   { position: { top: '6px', right: '34%' }, size: 10, rotate: 40, opacity: 0.35, color: '#FCE4EC' },
-  { position: { bottom: '5px', right: '20%' }, size: 8, rotate: -34, opacity: 0.4, color: '#F8BBD0' },
+  {
+    position: { bottom: '5px', right: '20%' },
+    size: 8,
+    rotate: -34,
+    opacity: 0.4,
+    color: '#F8BBD0',
+  },
 ];

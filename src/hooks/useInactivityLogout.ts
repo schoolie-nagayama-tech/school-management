@@ -37,7 +37,14 @@ const WRITE_THROTTLE_MS = 15 * 1000;
 const CHECK_INTERVAL_MS = 30 * 1000;
 
 // 「操作あり」とみなすイベント。
-const ACTIVITY_EVENTS = ['mousedown', 'keydown', 'scroll', 'touchstart', 'click', 'mousemove'] as const;
+const ACTIVITY_EVENTS = [
+  'mousedown',
+  'keydown',
+  'scroll',
+  'touchstart',
+  'click',
+  'mousemove',
+] as const;
 
 interface UseInactivityLogoutOptions {
   /** 有効化フラグ。ログイン済みのときだけ true にする。 */
@@ -48,7 +55,11 @@ interface UseInactivityLogoutOptions {
   onTimeout: () => void;
 }
 
-export function useInactivityLogout({ enabled, role, onTimeout }: UseInactivityLogoutOptions): void {
+export function useInactivityLogout({
+  enabled,
+  role,
+  onTimeout,
+}: UseInactivityLogoutOptions): void {
   // onTimeout は呼び出し側で都度新しい関数になりうるので ref に固定し、
   // effect の再購読（イベントリスナの張り直し）を避ける。
   const onTimeoutRef = useRef(onTimeout);

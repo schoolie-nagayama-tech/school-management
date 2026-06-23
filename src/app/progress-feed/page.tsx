@@ -33,9 +33,7 @@ export default function ProgressFeedPage() {
       {/* AdminLayout 既定の max-w-[1600px] を使用（他ページと統一） */}
       <div className="mb-6">
         <h1 className="text-lg font-bold text-gray-900">進行表確認</h1>
-        <p className="text-sm text-gray-500 mt-1">
-          直近の授業セッション記録を新着順で表示します
-        </p>
+        <p className="text-sm text-gray-500 mt-1">直近の授業セッション記録を新着順で表示します</p>
       </div>
       <SessionFeed />
     </AdminLayout>

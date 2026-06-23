@@ -1,6 +1,16 @@
 'use client';
 
-import { Button, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, Badge, Loading } from '@/components/ui';
+import {
+  Button,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+  Badge,
+  Loading,
+} from '@/components/ui';
 import { Trash2, Plus } from 'lucide-react';
 import type { ScheduleClosedDay } from '@/types/schedule';
 
@@ -19,9 +29,7 @@ interface ClosedDayListProps {
 
 export function ClosedDayList({ closedDays, onDelete, onAdd, isLoading }: ClosedDayListProps) {
   if (isLoading) {
-    return (
-      <Loading size="md" />
-    );
+    return <Loading size="md" />;
   }
   return (
     <div className="space-y-4">
@@ -32,9 +40,7 @@ export function ClosedDayList({ closedDays, onDelete, onAdd, isLoading }: Closed
         </Button>
       </div>
       {closedDays.length === 0 ? (
-        <div className="py-8 text-center text-[var(--paragraph)]">
-          休講日が登録されていません
-        </div>
+        <div className="py-8 text-center text-[var(--paragraph)]">休講日が登録されていません</div>
       ) : (
         <Table>
           <TableHeader>

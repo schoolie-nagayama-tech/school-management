@@ -43,7 +43,9 @@ export function KomaFormRenderer({
   const slotsByDate = useMemo(() => groupSlotsByDate(slots), [slots]);
 
   // 科目フィールドを取得
-  const subjectFields = form.fields.filter((f) => f.field_type === 'number' && f.label.includes('（コマ）'));
+  const subjectFields = form.fields.filter(
+    (f) => f.field_type === 'number' && f.label.includes('（コマ）')
+  );
   const slotsField = form.fields.find((f) => f.label === '出席可能日程');
   const notesField = form.fields.find((f) => f.label === '備考');
 
@@ -112,7 +114,9 @@ export function KomaFormRenderer({
 
     // プレビューモードのチェック
     if (window.location.pathname.includes('/preview/')) {
-      setErrorMessage('プレビューモードでは送信できません。実際のフォームページから送信してください。');
+      setErrorMessage(
+        'プレビューモードでは送信できません。実際のフォームページから送信してください。'
+      );
       return;
     }
 
@@ -149,9 +153,7 @@ export function KomaFormRenderer({
       router.push(`/portal/${schoolCode}/${form.slug}?submitted=true`);
     } catch (error) {
       console.error('Error submitting form:', error);
-      setErrorMessage(
-        getUserErrorMessage(error, '送信に失敗しました。もう一度お試しください。')
-      );
+      setErrorMessage(getUserErrorMessage(error, '送信に失敗しました。もう一度お試しください。'));
     } finally {
       setIsSubmitting(false);
     }
@@ -247,9 +249,7 @@ export function KomaFormRenderer({
                 ...KOMA_GRADE_OPTIONS.map((opt) => ({ value: opt.value, label: opt.label })),
               ]}
             />
-            {errors.grade && (
-              <p className="text-sm text-[#ef4444] mt-1">{errors.grade}</p>
-            )}
+            {errors.grade && <p className="text-sm text-[#ef4444] mt-1">{errors.grade}</p>}
           </div>
 
           <div>
@@ -272,9 +272,7 @@ export function KomaFormRenderer({
               placeholder="example@email.com"
               disabled={isSubmitting}
             />
-            {errors.email && (
-              <p className="text-sm text-[#ef4444] mt-1">{errors.email}</p>
-            )}
+            {errors.email && <p className="text-sm text-[#ef4444] mt-1">{errors.email}</p>}
           </div>
         </div>
       </div>
@@ -345,12 +343,13 @@ export function KomaFormRenderer({
       {/* スロット選択 */}
       <div className="bg-white rounded-xl border border-[#e5e7eb] p-6">
         <h2 className="text-xl font-bold text-[#1f2937] mb-2">出席可能日程</h2>
-        
+
         {/* 時限全選択ボタン */}
         <div className="mb-4 flex gap-2 flex-wrap">
           {[4, 5, 6, 7].map((period) => {
             const periodSlots = slots.filter((s) => s.period === period);
-            const allSelected = periodSlots.length > 0 && periodSlots.every((s) => selectedSlots.includes(s.id));
+            const allSelected =
+              periodSlots.length > 0 && periodSlots.every((s) => selectedSlots.includes(s.id));
             return (
               <button
                 key={period}
@@ -451,7 +450,11 @@ export function KomaFormRenderer({
           <textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            placeholder={('placeholder' in notesField && notesField.placeholder) ? String(notesField.placeholder) : ''}
+            placeholder={
+              'placeholder' in notesField && notesField.placeholder
+                ? String(notesField.placeholder)
+                : ''
+            }
             rows={4}
             disabled={isSubmitting}
             className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#4b5563] focus:ring-2 focus:ring-[#3b82f6] focus:border-[#3b82f6] disabled:opacity-50"

@@ -2,13 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui';
 import { Button } from '@/components/ui';
 import { StudentSearchInput, type StudentWithSubjects } from './StudentSearchInput';
 import {
@@ -198,18 +192,14 @@ export function AddStudentToSlotModal({
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-[var(--paragraph)] mb-1">
-              科目
-            </label>
+            <label className="block text-xs font-medium text-[var(--paragraph)] mb-1">科目</label>
             <select
               value={subjectId}
               onChange={(e) => setSubjectId(e.target.value)}
               className="w-full px-3 py-2 border border-[var(--stroke)] rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
             >
               {availableSubjects.length === 0 ? (
-                <option value="">
-                  この講師の指導可能科目が設定されていません
-                </option>
+                <option value="">この講師の指導可能科目が設定されていません</option>
               ) : (
                 availableSubjects.map((s) => (
                   <option key={s.id} value={s.id}>
@@ -221,9 +211,7 @@ export function AddStudentToSlotModal({
           </div>
 
           <div>
-            <div className="text-xs font-medium text-[var(--paragraph)] mb-2">
-              登録タイプ
-            </div>
+            <div className="text-xs font-medium text-[var(--paragraph)] mb-2">登録タイプ</div>
             <div className="space-y-2">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
@@ -233,9 +221,7 @@ export function AddStudentToSlotModal({
                   onChange={() => setRegisterType('regular')}
                   className="text-[#1e3a5f]"
                 />
-                <span className="text-sm">
-                  通常授業として登録（毎週この曜日・コマに入る）
-                </span>
+                <span className="text-sm">通常授業として登録（毎週この曜日・コマに入る）</span>
               </label>
               <label className="flex items-center gap-2 cursor-pointer">
                 <input

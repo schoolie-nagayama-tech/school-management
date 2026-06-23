@@ -10,7 +10,10 @@ import { vi } from 'vitest';
  *     return { supabase: mock, getSupabaseBrowserClient: () => mock, createSupabaseBrowserClient: () => mock };
  *   });
  */
-export function createMockSupabaseClient(resolvedData: unknown = null, resolvedError: unknown = null) {
+export function createMockSupabaseClient(
+  resolvedData: unknown = null,
+  resolvedError: unknown = null
+) {
   const mockChain: Record<string, ReturnType<typeof vi.fn>> = {
     select: vi.fn().mockReturnThis(),
     insert: vi.fn().mockReturnThis(),

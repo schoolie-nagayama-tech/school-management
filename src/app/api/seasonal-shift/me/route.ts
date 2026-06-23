@@ -151,16 +151,14 @@ export async function POST(request: NextRequest) {
   }
 
   if (slots.length > 0) {
-    const { error: slotError } = await supabaseAdmin
-      .from('seasonal_shift_submission_slots')
-      .insert(
-        slots.map((slot) => ({
-          submission_id: submission.id,
-          shift_date: slot.shift_date,
-          time_slot: slot.time_slot,
-          available: slot.available,
-        }))
-      );
+    const { error: slotError } = await supabaseAdmin.from('seasonal_shift_submission_slots').insert(
+      slots.map((slot) => ({
+        submission_id: submission.id,
+        shift_date: slot.shift_date,
+        time_slot: slot.time_slot,
+        available: slot.available,
+      }))
+    );
     if (slotError) {
       console.error('[seasonal-shift/me] POST slots insert failed:', slotError);
       return NextResponse.json({ error: 'Failed to save slots' }, { status: 500 });

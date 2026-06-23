@@ -26,7 +26,11 @@ export async function getSchoolTeacherAccounts(schoolId: string): Promise<School
   }
 
   const userIds = Array.from(
-    new Set((links ?? []).map((l: { user_id?: string | null }) => l.user_id).filter((v): v is string => !!v))
+    new Set(
+      (links ?? [])
+        .map((l: { user_id?: string | null }) => l.user_id)
+        .filter((v): v is string => !!v)
+    )
   );
   if (userIds.length === 0) return [];
 

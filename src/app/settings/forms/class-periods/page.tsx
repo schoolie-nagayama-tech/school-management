@@ -96,18 +96,13 @@ export default function ClassPeriodsSettingsPage() {
       <AdminLayout headerTitle="授業の時間帯">
         <div className="max-w-2xl">
           <div className="mb-4">
-            <Link
-              href="/settings/portal"
-              className="text-sm text-info hover:underline"
-            >
+            <Link href="/settings/portal" className="text-sm text-info hover:underline">
               ← フォーム設定に戻る
             </Link>
           </div>
 
           <div className="bg-surface-raised rounded-xl border border-border p-6">
-            <h2 className="text-lg font-bold text-text-heading mb-2">
-              授業の時間帯（共通設定）
-            </h2>
+            <h2 className="text-lg font-bold text-text-heading mb-2">授業の時間帯（共通設定）</h2>
             <p className="text-sm text-text-body mb-4">
               週回数変更・曜日変更などのフォームで利用する時限の一覧です。ここで設定した内容が、各フォームの期間設定で「時限」の初期値として使われます。1行に「コード,ラベル」の形式で入力してください。
             </p>
@@ -129,17 +124,10 @@ export default function ClassPeriodsSettingsPage() {
             </div>
 
             <div className="flex flex-wrap gap-3">
-              <Button
-                onClick={handleSave}
-                disabled={isSubmitting || !isDirty}
-              >
+              <Button onClick={handleSave} disabled={isSubmitting || !isDirty}>
                 {isSubmitting ? '保存中...' : '保存する'}
               </Button>
-              <Button
-                variant="secondary"
-                onClick={handleResetToDefault}
-                disabled={isSubmitting}
-              >
+              <Button variant="secondary" onClick={handleResetToDefault} disabled={isSubmitting}>
                 デフォルトに戻す
               </Button>
             </div>

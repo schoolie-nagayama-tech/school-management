@@ -62,7 +62,9 @@ describe('BulletinPostCard', () => {
     const htmlPost = { ...basePost, content: '<p>HTML本文</p>' };
     const { container } = render(<BulletinPostCard {...defaultProps} post={htmlPost} />);
     // dangerouslySetInnerHTML で表示される
-    expect(container.querySelector('.bulletin-post-content')?.innerHTML).toContain('<p>HTML本文</p>');
+    expect(container.querySelector('.bulletin-post-content')?.innerHTML).toContain(
+      '<p>HTML本文</p>'
+    );
   });
 
   it('投稿者名が表示される', () => {

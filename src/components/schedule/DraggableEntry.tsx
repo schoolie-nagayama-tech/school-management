@@ -34,15 +34,16 @@ export const DraggableEntry = React.memo(function DraggableEntry({
 
   const isTransferIn = entry.status === 'transferred_in';
   const bg = entry.attendance_status
-    ? ATTENDANCE_BG[entry.attendance_status] ?? DEFAULT_BG
+    ? (ATTENDANCE_BG[entry.attendance_status] ?? DEFAULT_BG)
     : DEFAULT_BG;
   const studentName = entry.student
     ? `${entry.student.last_name} ${entry.student.first_name}（${gradeLabel(entry.student.grade)}）`
     : entry.student_id;
-  const subjectNames = (entry.subject_ids || [])
-    .map((id) => entry.subjects?.find((s) => s.id === id)?.name ?? '')
-    .filter(Boolean)
-    .join('・') || '—';
+  const subjectNames =
+    (entry.subject_ids || [])
+      .map((id) => entry.subjects?.find((s) => s.id === id)?.name ?? '')
+      .filter(Boolean)
+      .join('・') || '—';
 
   return (
     <div

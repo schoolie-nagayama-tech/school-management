@@ -131,7 +131,15 @@ export default function RegularShiftSubmissionsPage() {
   );
 
   const handleDelete = async (sub: RegularShiftSubmission) => {
-    if (!(await confirm({ title: '削除確認', description: `${sub.teacher_name} さんの提出を削除しますか？\nこの操作は取り消せません。`, confirmLabel: '削除', variant: 'danger' }))) return;
+    if (
+      !(await confirm({
+        title: '削除確認',
+        description: `${sub.teacher_name} さんの提出を削除しますか？\nこの操作は取り消せません。`,
+        confirmLabel: '削除',
+        variant: 'danger',
+      }))
+    )
+      return;
     setDeletingId(sub.id);
     try {
       await deleteRegularShiftSubmission(sub.id);
@@ -179,14 +187,14 @@ export default function RegularShiftSubmissionsPage() {
     const newValue = !sub.seat_chart_entered;
     // 楽観的更新
     setSubmissions((prev) =>
-      prev.map((s) => s.id === sub.id ? { ...s, seat_chart_entered: newValue } : s)
+      prev.map((s) => (s.id === sub.id ? { ...s, seat_chart_entered: newValue } : s))
     );
     try {
       await toggleRegularShiftSeatChartEntered(sub.id, newValue);
     } catch (err) {
       // エラー時にロールバック
       setSubmissions((prev) =>
-        prev.map((s) => s.id === sub.id ? { ...s, seat_chart_entered: !newValue } : s)
+        prev.map((s) => (s.id === sub.id ? { ...s, seat_chart_entered: !newValue } : s))
       );
       error(err instanceof Error ? err.message : '更新に失敗しました');
     }
@@ -281,16 +289,25 @@ export default function RegularShiftSubmissionsPage() {
                 <tr className="bg-surface-hover border-infoorderorder border-border">
                   <th className="px-4 py-3 text-left font-semibold text-text-heading">講師名</th>
                   <th className="px-4 py-3 text-left font-semibold text-text-heading">メール</th>
-                  <th className="px-4 py-3 text-left font-semibold text-text-heading">アカウント</th>
+                  <th className="px-4 py-3 text-left font-semibold text-text-heading">
+                    アカウント
+                  </th>
                   <th className="px-4 py-3 text-left font-semibold text-text-heading">提出日時</th>
-                  <th className="px-4 py-3 text-text-dangeraintenter font-semibold text-text-heading">修正許可</th>
-                  <th className="px-4 py-3 text-text-dangeraintenter font-semibold text-text-heading">座席表反映</th>
+                  <th className="px-4 py-3 text-text-dangeraintenter font-semibold text-text-heading">
+                    修正許可
+                  </th>
+                  <th className="px-4 py-3 text-text-dangeraintenter font-semibold text-text-heading">
+                    座席表反映
+                  </th>
                   <th className="px-4 py-3 text-right font-semibold text-text-heading">操作</th>
                 </tr>
               </thead>
               <tbody>
                 {submissions.map((sub) => (
-                  <tr key={sub.id} className="border-infoorderorder border-border/60 hover:bg-surface transition-colors duration-150">
+                  <tr
+                    key={sub.id}
+                    className="border-infoorderorder border-border/60 hover:bg-surface transition-colors duration-150"
+                  >
                     <td className="px-4 py-3 font-medium text-text-heading">{sub.teacher_name}</td>
                     <td className="px-4 py-3 text-text-body">{sub.teacher_email}</td>
                     <td className="px-4 py-3">
@@ -403,9 +420,7 @@ export default function RegularShiftSubmissionsPage() {
 
               <div className="mb-4">
                 <h4 className="text-sm font-semibold text-text-heading mb-2">出勤可能日時</h4>
-                <p className="text-xs text-text-muted mb-2">
-                  ✓：出勤可能　空白：出勤不可　-：休校
-                </p>
+                <p className="text-xs text-text-muted mb-2">✓：出勤可能　空白：出勤不可　-：休校</p>
                 <RegularSubmissionDetailMatrix
                   setting={setting}
                   slotSettings={detailSlotSettings}
@@ -447,7 +462,9 @@ export default function RegularShiftSubmissionsPage() {
                       if (sub) handleResendEmail(sub);
                     }}
                     title={
-                      !detailSubmission.teacher_email ? 'メールアドレス未登録' : '修正許可メールを再送'
+                      !detailSubmission.teacher_email
+                        ? 'メールアドレス未登録'
+                        : '修正許可メールを再送'
                     }
                   >
                     {resendingId === detailSubmission.id ? '送信中...' : 'メール再送'}

@@ -48,9 +48,7 @@ export function computeMailCandidates(
   );
 
   // アクティブかつ trigger_days を持つテンプレートに絞る
-  const activeTemplates = templates.filter(
-    (t) => t.is_active && t.trigger_days !== null
-  );
+  const activeTemplates = templates.filter((t) => t.is_active && t.trigger_days !== null);
 
   const candidates: MailCandidate[] = [];
 

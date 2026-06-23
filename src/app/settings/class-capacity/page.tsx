@@ -15,7 +15,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import { AdminLayout } from '@/components/layouts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui';
-import { SelectShadcn as Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui';
+import {
+  SelectShadcn as Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '@/components/ui';
 import { Button } from '@/components/ui';
 import { ToastContainer, Loading } from '@/components/ui';
 import { useToast } from '@/hooks/useToast';
@@ -60,22 +66,25 @@ export default function ClassCapacitySettingsPage() {
   }, [masterSchools, selectedSchoolId, headerSelectedSchoolId, getSelectedSchoolIds]);
 
   // 教室変更時に現行値を読み込み（無ければデフォルトで作成）
-  const load = useCallback(async (schoolId: string) => {
-    setIsLoading(true);
-    try {
-      const data = await getOrCreateClassCapacity(schoolId);
-      setForm({
-        max_students_per_teacher_individual: data.max_students_per_teacher_individual,
-        total_individual_seats: data.total_individual_seats,
-        max_students_per_group: data.max_students_per_group,
-        max_concurrent_groups: data.max_concurrent_groups,
-      });
-    } catch (e) {
-      toastError(e instanceof Error ? e.message : '読み込みに失敗しました');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [toastError]);
+  const load = useCallback(
+    async (schoolId: string) => {
+      setIsLoading(true);
+      try {
+        const data = await getOrCreateClassCapacity(schoolId);
+        setForm({
+          max_students_per_teacher_individual: data.max_students_per_teacher_individual,
+          total_individual_seats: data.total_individual_seats,
+          max_students_per_group: data.max_students_per_group,
+          max_concurrent_groups: data.max_concurrent_groups,
+        });
+      } catch (e) {
+        toastError(e instanceof Error ? e.message : '読み込みに失敗しました');
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [toastError]
+  );
 
   useEffect(() => {
     if (selectedSchoolId) load(selectedSchoolId);
@@ -101,7 +110,12 @@ export default function ClassCapacitySettingsPage() {
   };
 
   // manager 以上のみ
-  if (profile && profile.role !== 'admin' && profile.role !== 'manager' && profile.role !== 'owner') {
+  if (
+    profile &&
+    profile.role !== 'admin' &&
+    profile.role !== 'manager' &&
+    profile.role !== 'owner'
+  ) {
     return <AccessDenied />;
   }
 

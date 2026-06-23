@@ -9,14 +9,15 @@ import {
   archivePeriod,
   unarchivePeriod,
 } from './form-periods';
-import { createPublicFormResponse, getFormResponses, getFormResponse, updateFormResponseStatus } from './form-responses';
+import {
+  createPublicFormResponse,
+  getFormResponses,
+  getFormResponse,
+  updateFormResponseStatus,
+} from './form-responses';
 import { syncFormResponseToBilling } from './billing';
 import { getDefaultSchoolId, getSchoolByCode } from './schools';
-import type {
-  FormPeriodInsert,
-  FormPeriodUpdate,
-  FormResponseInsert,
-} from '@/types/database';
+import type { FormPeriodInsert, FormPeriodUpdate, FormResponseInsert } from '@/types/database';
 import type {
   ShukaisuPeriod,
   ShukaisuSettings,
@@ -49,9 +50,7 @@ export async function getShukaisuPeriods(
 /**
  * 公開中の週回数変更期間を取得（ポータル用）
  */
-export async function getActiveShukaisuPeriod(
-  schoolCode: string
-): Promise<ShukaisuPeriod | null> {
+export async function getActiveShukaisuPeriod(schoolCode: string): Promise<ShukaisuPeriod | null> {
   const school = await getSchoolByCode(schoolCode);
   if (!school) {
     return null;
@@ -183,16 +182,14 @@ export async function unarchiveShukaisuPeriod(
 /**
  * 週回数変更回答を送信
  */
-export async function submitShukaisuResponse(
-  data: {
-    school_id: string;
-    period_key: string;
-    student_name: string;
-    grade: number;
-    email: string;
-    response_data: ShukaisuResponseData;
-  }
-): Promise<void> {
+export async function submitShukaisuResponse(data: {
+  school_id: string;
+  period_key: string;
+  student_name: string;
+  grade: number;
+  email: string;
+  response_data: ShukaisuResponseData;
+}): Promise<void> {
   const responseData: FormResponseInsert = {
     school_id: data.school_id,
     form_type: 'shukaisu',

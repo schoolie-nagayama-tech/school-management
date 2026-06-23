@@ -27,12 +27,14 @@ export async function GET(req: NextRequest) {
     // 提案書本体 + 生徒 + 試験種別 + 教室
     const { data: proposal, error } = await admin
       .from('test_prep_proposals')
-      .select(`
+      .select(
+        `
         *,
         student:students(id, last_name, first_name, grade),
         exam_type:exam_types(id, name),
         school:schools(id, name, code, logo_url)
-      `)
+      `
+      )
       .eq('token', token)
       .in('status', ['sent', 'published'])
       .single();

@@ -89,7 +89,10 @@ function Pct({ label, value, color }: { label: string; value: number; color: str
         </span>
       </div>
       <div className="h-2 rounded-full bg-gray-100 overflow-hidden">
-        <div className="h-full rounded-full" style={{ width: `${value}%`, backgroundColor: color }} />
+        <div
+          className="h-full rounded-full"
+          style={{ width: `${value}%`, backgroundColor: color }}
+        />
       </div>
     </div>
   );
@@ -104,7 +107,8 @@ function SectionTitle({ icon, children }: { icon: React.ReactNode; children: Rea
   );
 }
 
-const W = (d: string) => ['日', '月', '火', '水', '木', '金', '土'][new Date(d + 'T12:00:00').getDay()];
+const W = (d: string) =>
+  ['日', '月', '火', '水', '木', '金', '土'][new Date(d + 'T12:00:00').getDay()];
 
 export default function LessonReportSamplePage() {
   // 表示モード: preview=室長が承認時に見る完成形 / form=講師が書く入力画面 /
@@ -125,7 +129,8 @@ export default function LessonReportSamplePage() {
           </Link>
         </div>
         <div className="rounded-lg bg-info-subtle border border-info/30 px-3 py-2 text-xs text-info">
-          これは授業報告書の<strong>見本（ダミーデータ）</strong>です。講師が「入力画面」で記入 → 室長が「完成イメージ」を確認・承認 → 生徒・保護者に「保護者の見え方」で公開されます。
+          これは授業報告書の<strong>見本（ダミーデータ）</strong>です。講師が「入力画面」で記入 →
+          室長が「完成イメージ」を確認・承認 → 生徒・保護者に「保護者の見え方」で公開されます。
         </div>
 
         {/* モード切替タブ */}
@@ -134,7 +139,9 @@ export default function LessonReportSamplePage() {
             type="button"
             onClick={() => setMode('form')}
             className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
-              mode === 'form' ? 'bg-white shadow-sm text-info' : 'text-text-muted hover:text-text-body'
+              mode === 'form'
+                ? 'bg-white shadow-sm text-info'
+                : 'text-text-muted hover:text-text-body'
             }`}
           >
             <Pencil className="w-3.5 h-3.5" />
@@ -144,7 +151,9 @@ export default function LessonReportSamplePage() {
             type="button"
             onClick={() => setMode('preview')}
             className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
-              mode === 'preview' ? 'bg-white shadow-sm text-info' : 'text-text-muted hover:text-text-body'
+              mode === 'preview'
+                ? 'bg-white shadow-sm text-info'
+                : 'text-text-muted hover:text-text-body'
             }`}
           >
             <Eye className="w-3.5 h-3.5" />
@@ -154,7 +163,9 @@ export default function LessonReportSamplePage() {
             type="button"
             onClick={() => setMode('portal')}
             className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
-              mode === 'portal' ? 'bg-white shadow-sm text-info' : 'text-text-muted hover:text-text-body'
+              mode === 'portal'
+                ? 'bg-white shadow-sm text-info'
+                : 'text-text-muted hover:text-text-body'
             }`}
           >
             <Smartphone className="w-3.5 h-3.5" />
@@ -169,7 +180,9 @@ export default function LessonReportSamplePage() {
                 <Pencil className="w-6 h-6" />
               </div>
               <p className="text-sm text-text-body">
-                講師が記入する<strong>実際の入力画面</strong>を、ダミーデータが入った状態で開きます。<br />
+                講師が記入する<strong>実際の入力画面</strong>
+                を、ダミーデータが入った状態で開きます。
+                <br />
                 各項目を実際に触って確認できます（保存・提出はされません）。
               </p>
               <Link href="/lesson-reports/demo">
@@ -183,207 +196,227 @@ export default function LessonReportSamplePage() {
         ) : mode === 'portal' ? (
           <PortalView />
         ) : (
-        <>
-        {/* 完成イメージ（保護者が見る形） */}
+          <>
+            {/* 完成イメージ（保護者が見る形） */}
 
-        {/* ヘッダー：生徒・講師・日付 */}
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-start justify-between flex-wrap gap-2">
-              <div>
-                <div className="text-lg font-bold text-text-heading">
-                  {SAMPLE.studentName}
-                  <span className="ml-2 text-sm font-normal text-text-muted">{SAMPLE.grade}</span>
-                </div>
-                <div className="text-sm text-text-muted mt-0.5">
-                  {SAMPLE.lessonDate}（{W(SAMPLE.lessonDate)}）{SAMPLE.slotLabel}
-                </div>
-              </div>
-              <div className="text-right">
-                <div className="text-xs text-text-muted">担当講師</div>
-                <div className="text-sm font-semibold">{SAMPLE.teacherName}</div>
-                <div className="mt-1 flex gap-1 justify-end">
-                  {SAMPLE.subjects.map((s) => (
-                    <span
-                      key={s}
-                      className="px-1.5 py-0.5 text-[10px] rounded bg-sky-50 text-sky-700 border border-sky-200"
-                    >
-                      {s}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </div>
-            <div className="mt-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-success-subtle text-success text-[11px] font-semibold">
-              公開済み
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* 3層目標 */}
-        <Card>
-          <CardContent className="p-4">
-            <SectionTitle icon={<Target className="w-4 h-4 text-info" />}>目標</SectionTitle>
-            <div className="space-y-2">
-              <div className="rounded-lg bg-surface border border-border-subtle p-2.5">
-                <div className="text-[10px] text-text-muted font-semibold">中期目標（教材）</div>
-                <div className="text-sm text-text-body">{SAMPLE.midTermGoal}</div>
-              </div>
-              <div className="rounded-lg bg-surface border border-border-subtle p-2.5">
-                <div className="text-[10px] text-text-muted font-semibold">中期目標（行動）</div>
-                <div className="text-sm text-text-body">{SAMPLE.midActionGoal}</div>
-              </div>
-              <div className="rounded-lg bg-info-subtle border border-info/30 p-2.5">
-                <div className="text-[10px] text-info font-semibold">この授業の目標（短期）</div>
-                <div className="text-sm text-text-body">{SAMPLE.shortTermGoal}</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* 学習内容（学校進度 + 教材） */}
-        <Card>
-          <CardContent className="p-4">
-            <SectionTitle icon={<BookOpen className="w-4 h-4 text-info" />}>学習内容</SectionTitle>
-            <div className="rounded-lg bg-surface border border-border-subtle p-2.5 mb-2">
-              <div className="text-[10px] text-text-muted font-semibold">学校進度</div>
-              <div className="text-sm text-text-body">{SAMPLE.schoolProgress}</div>
-            </div>
-            <ul className="space-y-1.5">
-              {SAMPLE.units.map((u, i) => (
-                <li
-                  key={i}
-                  className="flex items-center gap-2 rounded-lg border border-border-subtle p-2.5"
-                >
-                  <span
-                    className={`px-1.5 py-0.5 text-[10px] rounded font-semibold flex-shrink-0 ${
-                      u.isMain
-                        ? 'bg-info text-white'
-                        : 'bg-gray-100 text-gray-600 border border-gray-200'
-                    }`}
-                  >
-                    {u.isMain ? 'メイン' : 'サブ'}
-                  </span>
-                  <div className="min-w-0">
-                    <div className="text-sm font-medium text-text-body">{u.textbook}</div>
-                    <div className="text-xs text-text-muted">
-                      {u.unit} ／ {u.pages}
+            {/* ヘッダー：生徒・講師・日付 */}
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-start justify-between flex-wrap gap-2">
+                  <div>
+                    <div className="text-lg font-bold text-text-heading">
+                      {SAMPLE.studentName}
+                      <span className="ml-2 text-sm font-normal text-text-muted">
+                        {SAMPLE.grade}
+                      </span>
+                    </div>
+                    <div className="text-sm text-text-muted mt-0.5">
+                      {SAMPLE.lessonDate}（{W(SAMPLE.lessonDate)}）{SAMPLE.slotLabel}
                     </div>
                   </div>
-                </li>
-              ))}
-            </ul>
-          </CardContent>
-        </Card>
+                  <div className="text-right">
+                    <div className="text-xs text-text-muted">担当講師</div>
+                    <div className="text-sm font-semibold">{SAMPLE.teacherName}</div>
+                    <div className="mt-1 flex gap-1 justify-end">
+                      {SAMPLE.subjects.map((s) => (
+                        <span
+                          key={s}
+                          className="px-1.5 py-0.5 text-[10px] rounded bg-sky-50 text-sky-700 border border-sky-200"
+                        >
+                          {s}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-success-subtle text-success text-[11px] font-semibold">
+                  公開済み
+                </div>
+              </CardContent>
+            </Card>
 
-        {/* 達成度・テスト */}
-        <Card>
-          <CardContent className="p-4">
-            <SectionTitle icon={<ClipboardCheck className="w-4 h-4 text-info" />}>
-              達成度・テスト
-            </SectionTitle>
-            <div className="flex flex-wrap gap-3 mb-3">
-              <Pct label="宿題実施率" value={SAMPLE.homeworkCompletionPct} color="var(--info)" />
-              <Pct label="宿題正答率" value={SAMPLE.homeworkCorrectPct} color="var(--warning)" />
-              <Pct label="本日正答率" value={SAMPLE.todayCorrectPct} color="var(--success)" />
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <div className="flex items-center gap-1.5 rounded-lg border border-border-subtle px-2.5 py-1.5">
-                <span className="text-xs text-text-muted">単語テスト</span>
-                <span className="text-sm font-bold tabular-nums">
-                  {SAMPLE.vocab.score}/{SAMPLE.vocab.total}
-                </span>
-                <span
-                  className={`px-1.5 py-0.5 text-[10px] rounded-full font-semibold ${
-                    SAMPLE.vocab.passed
-                      ? 'bg-success-subtle text-success'
-                      : 'bg-danger-subtle text-danger'
-                  }`}
-                >
-                  {SAMPLE.vocab.passed ? '合格' : '再テスト'}
-                </span>
-              </div>
-              <div className="flex items-center gap-1.5 rounded-lg border border-border-subtle px-2.5 py-1.5">
-                <span className="text-xs text-text-muted">チェックテスト</span>
-                <span className="text-sm font-bold tabular-nums">
-                  {SAMPLE.check.score}/{SAMPLE.check.total}
-                </span>
-                <span
-                  className={`px-1.5 py-0.5 text-[10px] rounded-full font-semibold ${
-                    SAMPLE.check.passed
-                      ? 'bg-success-subtle text-success'
-                      : 'bg-danger-subtle text-danger'
-                  }`}
-                >
-                  {SAMPLE.check.passed ? '合格' : '再テスト'}
-                </span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            {/* 3層目標 */}
+            <Card>
+              <CardContent className="p-4">
+                <SectionTitle icon={<Target className="w-4 h-4 text-info" />}>目標</SectionTitle>
+                <div className="space-y-2">
+                  <div className="rounded-lg bg-surface border border-border-subtle p-2.5">
+                    <div className="text-[10px] text-text-muted font-semibold">
+                      中期目標（教材）
+                    </div>
+                    <div className="text-sm text-text-body">{SAMPLE.midTermGoal}</div>
+                  </div>
+                  <div className="rounded-lg bg-surface border border-border-subtle p-2.5">
+                    <div className="text-[10px] text-text-muted font-semibold">
+                      中期目標（行動）
+                    </div>
+                    <div className="text-sm text-text-body">{SAMPLE.midActionGoal}</div>
+                  </div>
+                  <div className="rounded-lg bg-info-subtle border border-info/30 p-2.5">
+                    <div className="text-[10px] text-info font-semibold">
+                      この授業の目標（短期）
+                    </div>
+                    <div className="text-sm text-text-body">{SAMPLE.shortTermGoal}</div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
-        {/* 講評 */}
-        <Card>
-          <CardContent className="p-4">
-            <SectionTitle icon={<MessageSquareText className="w-4 h-4 text-info" />}>
-              講評
-            </SectionTitle>
-            <p className="text-sm text-text-body leading-relaxed whitespace-pre-wrap">
-              {SAMPLE.reviewComment}
-            </p>
-          </CardContent>
-        </Card>
+            {/* 学習内容（学校進度 + 教材） */}
+            <Card>
+              <CardContent className="p-4">
+                <SectionTitle icon={<BookOpen className="w-4 h-4 text-info" />}>
+                  学習内容
+                </SectionTitle>
+                <div className="rounded-lg bg-surface border border-border-subtle p-2.5 mb-2">
+                  <div className="text-[10px] text-text-muted font-semibold">学校進度</div>
+                  <div className="text-sm text-text-body">{SAMPLE.schoolProgress}</div>
+                </div>
+                <ul className="space-y-1.5">
+                  {SAMPLE.units.map((u, i) => (
+                    <li
+                      key={i}
+                      className="flex items-center gap-2 rounded-lg border border-border-subtle p-2.5"
+                    >
+                      <span
+                        className={`px-1.5 py-0.5 text-[10px] rounded font-semibold flex-shrink-0 ${
+                          u.isMain
+                            ? 'bg-info text-white'
+                            : 'bg-gray-100 text-gray-600 border border-gray-200'
+                        }`}
+                      >
+                        {u.isMain ? 'メイン' : 'サブ'}
+                      </span>
+                      <div className="min-w-0">
+                        <div className="text-sm font-medium text-text-body">{u.textbook}</div>
+                        <div className="text-xs text-text-muted">
+                          {u.unit} ／ {u.pages}
+                        </div>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
 
-        {/* 次回までの宿題（日割り） */}
-        <Card>
-          <CardContent className="p-4">
-            <SectionTitle icon={<CalendarDays className="w-4 h-4 text-info" />}>
-              次回までの宿題
-            </SectionTitle>
-            <ul className="space-y-1.5">
-              {SAMPLE.homeworkAssignments.map((h, i) => (
-                <li key={i} className="flex items-start gap-2">
-                  <span className="flex-shrink-0 mt-0.5 px-2 py-0.5 rounded-md bg-surface border border-border-subtle text-[11px] font-semibold tabular-nums text-text-muted">
-                    {h.date.slice(5).replace('-', '/')}（{W(h.date)}）
-                  </span>
-                  <span className="text-sm text-text-body">{h.text}</span>
-                </li>
-              ))}
-            </ul>
-          </CardContent>
-        </Card>
+            {/* 達成度・テスト */}
+            <Card>
+              <CardContent className="p-4">
+                <SectionTitle icon={<ClipboardCheck className="w-4 h-4 text-info" />}>
+                  達成度・テスト
+                </SectionTitle>
+                <div className="flex flex-wrap gap-3 mb-3">
+                  <Pct
+                    label="宿題実施率"
+                    value={SAMPLE.homeworkCompletionPct}
+                    color="var(--info)"
+                  />
+                  <Pct
+                    label="宿題正答率"
+                    value={SAMPLE.homeworkCorrectPct}
+                    color="var(--warning)"
+                  />
+                  <Pct label="本日正答率" value={SAMPLE.todayCorrectPct} color="var(--success)" />
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <div className="flex items-center gap-1.5 rounded-lg border border-border-subtle px-2.5 py-1.5">
+                    <span className="text-xs text-text-muted">単語テスト</span>
+                    <span className="text-sm font-bold tabular-nums">
+                      {SAMPLE.vocab.score}/{SAMPLE.vocab.total}
+                    </span>
+                    <span
+                      className={`px-1.5 py-0.5 text-[10px] rounded-full font-semibold ${
+                        SAMPLE.vocab.passed
+                          ? 'bg-success-subtle text-success'
+                          : 'bg-danger-subtle text-danger'
+                      }`}
+                    >
+                      {SAMPLE.vocab.passed ? '合格' : '再テスト'}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5 rounded-lg border border-border-subtle px-2.5 py-1.5">
+                    <span className="text-xs text-text-muted">チェックテスト</span>
+                    <span className="text-sm font-bold tabular-nums">
+                      {SAMPLE.check.score}/{SAMPLE.check.total}
+                    </span>
+                    <span
+                      className={`px-1.5 py-0.5 text-[10px] rounded-full font-semibold ${
+                        SAMPLE.check.passed
+                          ? 'bg-success-subtle text-success'
+                          : 'bg-danger-subtle text-danger'
+                      }`}
+                    >
+                      {SAMPLE.check.passed ? '合格' : '再テスト'}
+                    </span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
-        {/* 科目別欄（英語＝単語練習） */}
-        <Card>
-          <CardContent className="p-4">
-            <SectionTitle icon={<GraduationCap className="w-4 h-4 text-info" />}>
-              科目別（{SAMPLE.subjectSpecific.label}）
-            </SectionTitle>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              <div className="rounded-lg border border-border-subtle p-2">
-                <div className="text-[10px] text-text-muted">範囲</div>
-                <div className="text-sm font-medium">{SAMPLE.subjectSpecific.range}</div>
-              </div>
-              <div className="rounded-lg border border-border-subtle p-2">
-                <div className="text-[10px] text-text-muted">ページ</div>
-                <div className="text-sm font-medium">{SAMPLE.subjectSpecific.pages}</div>
-              </div>
-              <div className="rounded-lg border border-border-subtle p-2">
-                <div className="text-[10px] text-text-muted">1日の回数</div>
-                <div className="text-sm font-medium">{SAMPLE.subjectSpecific.timesPerDay} 回</div>
-              </div>
-              <div className="rounded-lg border border-border-subtle p-2">
-                <div className="text-[10px] text-text-muted">期間</div>
-                <div className="text-sm font-medium">{SAMPLE.subjectSpecific.duration}</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            {/* 講評 */}
+            <Card>
+              <CardContent className="p-4">
+                <SectionTitle icon={<MessageSquareText className="w-4 h-4 text-info" />}>
+                  講評
+                </SectionTitle>
+                <p className="text-sm text-text-body leading-relaxed whitespace-pre-wrap">
+                  {SAMPLE.reviewComment}
+                </p>
+              </CardContent>
+            </Card>
 
-        {/* 室長の確認画面でも進行表をマージして表示。
+            {/* 次回までの宿題（日割り） */}
+            <Card>
+              <CardContent className="p-4">
+                <SectionTitle icon={<CalendarDays className="w-4 h-4 text-info" />}>
+                  次回までの宿題
+                </SectionTitle>
+                <ul className="space-y-1.5">
+                  {SAMPLE.homeworkAssignments.map((h, i) => (
+                    <li key={i} className="flex items-start gap-2">
+                      <span className="flex-shrink-0 mt-0.5 px-2 py-0.5 rounded-md bg-surface border border-border-subtle text-[11px] font-semibold tabular-nums text-text-muted">
+                        {h.date.slice(5).replace('-', '/')}（{W(h.date)}）
+                      </span>
+                      <span className="text-sm text-text-body">{h.text}</span>
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
+
+            {/* 科目別欄（英語＝単語練習） */}
+            <Card>
+              <CardContent className="p-4">
+                <SectionTitle icon={<GraduationCap className="w-4 h-4 text-info" />}>
+                  科目別（{SAMPLE.subjectSpecific.label}）
+                </SectionTitle>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  <div className="rounded-lg border border-border-subtle p-2">
+                    <div className="text-[10px] text-text-muted">範囲</div>
+                    <div className="text-sm font-medium">{SAMPLE.subjectSpecific.range}</div>
+                  </div>
+                  <div className="rounded-lg border border-border-subtle p-2">
+                    <div className="text-[10px] text-text-muted">ページ</div>
+                    <div className="text-sm font-medium">{SAMPLE.subjectSpecific.pages}</div>
+                  </div>
+                  <div className="rounded-lg border border-border-subtle p-2">
+                    <div className="text-[10px] text-text-muted">1日の回数</div>
+                    <div className="text-sm font-medium">
+                      {SAMPLE.subjectSpecific.timesPerDay} 回
+                    </div>
+                  </div>
+                  <div className="rounded-lg border border-border-subtle p-2">
+                    <div className="text-[10px] text-text-muted">期間</div>
+                    <div className="text-sm font-medium">{SAMPLE.subjectSpecific.duration}</div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* 室長の確認画面でも進行表をマージして表示。
             報告書の内容と進行フィードを同じページで突き合わせて承認できる動線。 */}
-        <DemoProgressPreview />
-        </>
+            <DemoProgressPreview />
+          </>
         )}
       </div>
     </AdminLayout>
@@ -409,7 +442,8 @@ function PortalView() {
             <div className="p-3 space-y-3 max-h-[70vh] overflow-y-auto">
               {/* 日付 */}
               <div className="text-center text-xs text-text-muted">
-                {SAMPLE.lessonDate}（{W(SAMPLE.lessonDate)}）{SAMPLE.subjects.join('・')} ／ {SAMPLE.teacherName} 先生
+                {SAMPLE.lessonDate}（{W(SAMPLE.lessonDate)}）{SAMPLE.subjects.join('・')} ／{' '}
+                {SAMPLE.teacherName} 先生
               </div>
 
               {/* 先生からのひとこと（講評を主役に） */}

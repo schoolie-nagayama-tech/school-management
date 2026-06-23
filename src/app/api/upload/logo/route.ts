@@ -33,10 +33,7 @@ export async function POST(request: NextRequest) {
     const schoolId = formData.get('schoolId') as string | null;
 
     if (!file || !schoolId) {
-      return NextResponse.json(
-        { error: 'file と schoolId は必須です' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'file と schoolId は必須です' }, { status: 400 });
     }
 
     // service role で RLS をバイパスするため、対象教室が操作者のスコープ内かを必ず検証する
@@ -47,18 +44,12 @@ export async function POST(request: NextRequest) {
 
     // ファイルサイズ制限（2MB）
     if (file.size > 2 * 1024 * 1024) {
-      return NextResponse.json(
-        { error: 'ファイルサイズは2MB以下にしてください' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'ファイルサイズは2MB以下にしてください' }, { status: 400 });
     }
 
     // 画像ファイルのみ許可
     if (!file.type.startsWith('image/')) {
-      return NextResponse.json(
-        { error: '画像ファイルのみアップロードできます' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: '画像ファイルのみアップロードできます' }, { status: 400 });
     }
 
     const supabaseAdmin = getSupabaseAdmin();
@@ -103,9 +94,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 公開URLを取得
-    const { data: urlData } = supabaseAdmin.storage
-      .from('public-assets')
-      .getPublicUrl(fileName);
+    const { data: urlData } = supabaseAdmin.storage.from('public-assets').getPublicUrl(fileName);
 
     const publicUrl = urlData.publicUrl;
 
@@ -117,10 +106,7 @@ export async function POST(request: NextRequest) {
 
     if (updateError) {
       console.error('Update error:', updateError);
-      return NextResponse.json(
-        { error: 'ロゴURLの保存に失敗しました' },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: 'ロゴURLの保存に失敗しました' }, { status: 500 });
     }
 
     return NextResponse.json({ url: publicUrl });

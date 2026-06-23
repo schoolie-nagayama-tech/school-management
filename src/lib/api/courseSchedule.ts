@@ -1,9 +1,5 @@
 import { callCoursePrepApi, fetchCoursePrepApi } from './coursePrepApi';
-import type {
-  ScheduleTask,
-  ScheduleTaskWithMarkers,
-  SeasonType,
-} from '@/types/database';
+import type { ScheduleTask, ScheduleTaskWithMarkers, SeasonType } from '@/types/database';
 
 // =============================================
 // 工程表タスク
@@ -49,7 +45,19 @@ export async function createScheduleTask(
 
 export async function updateScheduleTask(
   id: string,
-  updates: Partial<Pick<ScheduleTask, 'major_category' | 'name' | 'description' | 'start_date' | 'end_date' | 'is_completed' | 'sort_order' | 'linked_progress_item_id'>>,
+  updates: Partial<
+    Pick<
+      ScheduleTask,
+      | 'major_category'
+      | 'name'
+      | 'description'
+      | 'start_date'
+      | 'end_date'
+      | 'is_completed'
+      | 'sort_order'
+      | 'linked_progress_item_id'
+    >
+  >,
   schoolId: string
 ): Promise<void> {
   await callCoursePrepApi('update_schedule_task', schoolId, {

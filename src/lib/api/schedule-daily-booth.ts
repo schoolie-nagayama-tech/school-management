@@ -86,10 +86,7 @@ export async function setDailyBoothAssignments(
     booth_no: a.booth_no,
   }));
 
-  const { data, error } = await db
-    .from('schedule_daily_booth_assignments')
-    .insert(rows)
-    .select();
+  const { data, error } = await db.from('schedule_daily_booth_assignments').insert(rows).select();
 
   if (error) {
     console.error('Error inserting booth assignments:', error);

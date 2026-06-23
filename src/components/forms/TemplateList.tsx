@@ -2,11 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Button, Loading } from '@/components/ui';
-import {
-  getFormTemplates,
-  deleteFormTemplate,
-  getFormTemplate,
-} from '@/lib/api/forms';
+import { getFormTemplates, deleteFormTemplate, getFormTemplate } from '@/lib/api/forms';
 import type { FormTemplate } from '@/types/database';
 import { TemplateEditor } from './TemplateEditor';
 import { useConfirm } from '@/hooks/useConfirm';
@@ -34,9 +30,7 @@ export function TemplateList({ onSelectTemplate, onRefresh }: TemplateListProps)
       setTemplates(data);
     } catch (error) {
       console.error('Error fetching templates:', error);
-      setErrorMessage(
-        getUserErrorMessage(error, 'テンプレート一覧の取得に失敗しました')
-      );
+      setErrorMessage(getUserErrorMessage(error, 'テンプレート一覧の取得に失敗しました'));
     } finally {
       setIsLoading(false);
     }
@@ -57,7 +51,15 @@ export function TemplateList({ onSelectTemplate, onRefresh }: TemplateListProps)
   };
 
   const handleDelete = async (id: string) => {
-    if (!(await confirm({ title: '削除確認', description: 'このテンプレートを削除しますか？', confirmLabel: '削除', variant: 'danger' }))) return;
+    if (
+      !(await confirm({
+        title: '削除確認',
+        description: 'このテンプレートを削除しますか？',
+        confirmLabel: '削除',
+        variant: 'danger',
+      }))
+    )
+      return;
 
     setIsSubmitting(true);
     setErrorMessage('');
@@ -67,9 +69,7 @@ export function TemplateList({ onSelectTemplate, onRefresh }: TemplateListProps)
       onRefresh();
     } catch (error) {
       console.error('Error deleting template:', error);
-      setErrorMessage(
-        getUserErrorMessage(error, 'テンプレートの削除に失敗しました')
-      );
+      setErrorMessage(getUserErrorMessage(error, 'テンプレートの削除に失敗しました'));
     } finally {
       setIsSubmitting(false);
     }
@@ -95,9 +95,7 @@ export function TemplateList({ onSelectTemplate, onRefresh }: TemplateListProps)
   };
 
   if (isLoading) {
-    return (
-      <Loading size="md" />
-    );
+    return <Loading size="md" />;
   }
 
   return (
@@ -130,9 +128,7 @@ export function TemplateList({ onSelectTemplate, onRefresh }: TemplateListProps)
                 <div className="flex-1">
                   <div className="font-medium text-[#1f2937]">{template.name}</div>
                   {template.description && (
-                    <div className="text-sm text-[#4b5563]/60 mt-1">
-                      {template.description}
-                    </div>
+                    <div className="text-sm text-[#4b5563]/60 mt-1">{template.description}</div>
                   )}
                   <div className="text-xs text-[#4b5563]/60 mt-1">
                     作成日: {new Date(template.created_at).toLocaleDateString('ja-JP')}

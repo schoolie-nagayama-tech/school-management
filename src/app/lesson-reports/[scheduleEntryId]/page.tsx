@@ -25,10 +25,7 @@ import { Card, CardContent } from '@/components/ui';
 import { Button } from '@/components/ui';
 import { ToastContainer, Loading } from '@/components/ui';
 import { useToast } from '@/hooks/useToast';
-import {
-  getReportByScheduleEntry,
-  upsertClassReport,
-} from '@/lib/api/class-reports';
+import { getReportByScheduleEntry, upsertClassReport } from '@/lib/api/class-reports';
 import type {
   ClassReport,
   ClassReportFormData,
@@ -246,7 +243,9 @@ export default function LessonReportFormPage() {
         return;
       }
       const e = entryRow as ScheduleEntryInfo & {
-        time_slot?: { slot_number: number; start_time: string; end_time: string } | Array<{ slot_number: number; start_time: string; end_time: string }>;
+        time_slot?:
+          | { slot_number: number; start_time: string; end_time: string }
+          | Array<{ slot_number: number; start_time: string; end_time: string }>;
         student?: ScheduleEntryInfo['student'] | Array<NonNullable<ScheduleEntryInfo['student']>>;
         teacher?: ScheduleEntryInfo['teacher'] | Array<NonNullable<ScheduleEntryInfo['teacher']>>;
       };
@@ -327,18 +326,19 @@ export default function LessonReportFormPage() {
         });
       } else {
         // 新規：基本情報だけセット。メイン教材セットを1つデフォルト追加
-        const defaultUnit = options.length > 0
-          ? [
-              {
-                student_textbook_id: options[0].id,
-                is_main: true,
-                curriculum_item_ids: [] as number[],
-                page_start: null,
-                page_end: null,
-                display_order: 0,
-              },
-            ]
-          : [];
+        const defaultUnit =
+          options.length > 0
+            ? [
+                {
+                  student_textbook_id: options[0].id,
+                  is_main: true,
+                  curriculum_item_ids: [] as number[],
+                  page_start: null,
+                  page_end: null,
+                  display_order: 0,
+                },
+              ]
+            : [];
         setForm((f) => ({
           ...f,
           student_id: info.student_id,
@@ -420,10 +420,7 @@ export default function LessonReportFormPage() {
     }));
   const removeUnit = (idx: number) =>
     setForm((f) => ({ ...f, units: f.units.filter((_, i) => i !== idx) }));
-  const updateUnit = (
-    idx: number,
-    patch: Partial<ClassReportFormData['units'][number]>
-  ) =>
+  const updateUnit = (idx: number, patch: Partial<ClassReportFormData['units'][number]>) =>
     setForm((f) => ({
       ...f,
       units: f.units.map((u, i) => (i === idx ? { ...u, ...patch } : u)),
@@ -482,11 +479,11 @@ export default function LessonReportFormPage() {
     <AdminLayout>
       <ToastContainer toasts={toasts} onRemove={removeToast} />
       <div className="space-y-4">
-
         {/* デモモードの注記バナー */}
         {isDemo && (
           <div className="rounded-lg bg-warning-subtle border border-warning/30 px-3 py-2 text-xs text-warning">
-            <strong>入力画面の見本（ダミーデータ）</strong>です。実際の授業からはここで記入して保存・提出します。このページでは保存されません。
+            <strong>入力画面の見本（ダミーデータ）</strong>
+            です。実際の授業からはここで記入して保存・提出します。このページでは保存されません。
           </div>
         )}
 
@@ -500,14 +497,14 @@ export default function LessonReportFormPage() {
           {existingReport && (
             <span
               className={`px-2 py-0.5 rounded text-xs font-medium ${
- existingReport.status === 'draft'
- ? 'bg-surface text-text-body'
- : existingReport.status === 'submitted'
- ? 'bg-warning-subtle text-warning'
- : existingReport.status === 'approved'
- ? 'bg-success-subtle text-success'
- : 'bg-danger-subtle text-danger'
- }`}
+                existingReport.status === 'draft'
+                  ? 'bg-surface text-text-body'
+                  : existingReport.status === 'submitted'
+                    ? 'bg-warning-subtle text-warning'
+                    : existingReport.status === 'approved'
+                      ? 'bg-success-subtle text-success'
+                      : 'bg-danger-subtle text-danger'
+              }`}
             >
               {existingReport.status === 'draft'
                 ? '下書き'
@@ -523,7 +520,9 @@ export default function LessonReportFormPage() {
         {/* 授業情報サマリ */}
         <Card>
           <CardContent className="p-4 bg-ink text-white rounded-md">
-            <div className="text-xs opacity-70 uppercase tracking-wide">{form.lesson_date} {slotLabel}</div>
+            <div className="text-xs opacity-70 uppercase tracking-wide">
+              {form.lesson_date} {slotLabel}
+            </div>
             <div className="text-xl font-bold mt-1">
               {studentName} <span className="text-sm font-normal opacity-80">（{gradeLabel}）</span>
             </div>
@@ -540,7 +539,10 @@ export default function LessonReportFormPage() {
 
         {/* 1. 目標 */}
         <Section title="1. 目標">
-          <Field label="中期: 教材目標 (進行表から取得・スナップショット)" hint="保存時点の進行表内容を保存します">
+          <Field
+            label="中期: 教材目標 (進行表から取得・スナップショット)"
+            hint="保存時点の進行表内容を保存します"
+          >
             <textarea
               className="w-full px-3 py-2 border rounded-md text-sm bg-surface"
               rows={2}
@@ -627,14 +629,14 @@ export default function LessonReportFormPage() {
                 <div
                   key={idx}
                   className={`p-3 border rounded-md ${
- u.is_main ? 'border-info border-2 bg-info-subtle/30' : 'bg-surface'
- }`}
+                    u.is_main ? 'border-info border-2 bg-info-subtle/30' : 'bg-surface'
+                  }`}
                 >
                   <div className="flex items-center gap-2 mb-2">
                     <span
                       className={`px-2 py-0.5 rounded text-xs font-bold ${
- u.is_main ? 'bg-info text-white' : 'bg-gray-500 text-white'
- }`}
+                        u.is_main ? 'bg-info text-white' : 'bg-gray-500 text-white'
+                      }`}
                     >
                       {u.is_main ? 'メイン' : 'サブ'}
                     </span>
@@ -675,7 +677,9 @@ export default function LessonReportFormPage() {
                               type="button"
                               onClick={() =>
                                 updateUnit(idx, {
-                                  curriculum_item_ids: u.curriculum_item_ids.filter((id) => id !== itemId),
+                                  curriculum_item_ids: u.curriculum_item_ids.filter(
+                                    (id) => id !== itemId
+                                  ),
                                 })
                               }
                               className="hover:opacity-70 transition-opacity duration-150 ease-[var(--ease-out)]"
@@ -721,7 +725,8 @@ export default function LessonReportFormPage() {
                           value={u.page_start ?? ''}
                           onChange={(e) =>
                             updateUnit(idx, {
-                              page_start: e.target.value === '' ? null : parseInt(e.target.value, 10),
+                              page_start:
+                                e.target.value === '' ? null : parseInt(e.target.value, 10),
                             })
                           }
                         />
@@ -805,9 +810,7 @@ export default function LessonReportFormPage() {
             onChange={(e) => setForm((f) => ({ ...f, review_comment: e.target.value }))}
             placeholder="5行程度で記入"
           />
-          <div className="text-xs text-text-muted mt-1">
-            現在 {reviewLineCount} 行 / 推奨 5 行
-          </div>
+          <div className="text-xs text-text-muted mt-1">現在 {reviewLineCount} 行 / 推奨 5 行</div>
         </Section>
 
         {/* 6. 次回までの宿題 */}
@@ -871,7 +874,9 @@ export default function LessonReportFormPage() {
         {/* フッター */}
         <div className="sticky bottom-0 bg-white border-t p-3 flex items-center gap-2 -mx-4 px-4">
           <span className="text-xs text-text-muted flex-1">
-            {existingReport?.updated_at ? `最終保存: ${new Date(existingReport.updated_at).toLocaleString('ja-JP')}` : '未保存'}
+            {existingReport?.updated_at
+              ? `最終保存: ${new Date(existingReport.updated_at).toLocaleString('ja-JP')}`
+              : '未保存'}
           </span>
           <Button variant="outline" onClick={() => router.back()} disabled={isSaving}>
             キャンセル
@@ -1017,9 +1022,10 @@ function SubjectSpecificField({
 }) {
   const kind = value?.kind ?? 'none';
   // 'none' 以外は { kind, range, pages, times_per_day, duration } を持つ統一構造
-  const v = (value && value.kind !== 'none' ? value : null) as
-    | Exclude<SubjectSpecific, { kind: 'none' }>
-    | null;
+  const v = (value && value.kind !== 'none' ? value : null) as Exclude<
+    SubjectSpecific,
+    { kind: 'none' }
+  > | null;
 
   return (
     <div className="space-y-2">

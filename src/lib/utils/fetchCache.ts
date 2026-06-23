@@ -47,14 +47,16 @@ export function withFetchCache<TArgs extends unknown[], TResult>(
     const inflight = pending.get(key) as Promise<TResult> | undefined;
     if (inflight) return inflight;
 
-    const promise = fn(...args).then((result) => {
-      store.set(key, { data: result, expiresAt: Date.now() + ttl });
-      pending.delete(key);
-      return result;
-    }).catch((err) => {
-      pending.delete(key);
-      throw err;
-    });
+    const promise = fn(...args)
+      .then((result) => {
+        store.set(key, { data: result, expiresAt: Date.now() + ttl });
+        pending.delete(key);
+        return result;
+      })
+      .catch((err) => {
+        pending.delete(key);
+        throw err;
+      });
 
     pending.set(key, promise);
     return promise;

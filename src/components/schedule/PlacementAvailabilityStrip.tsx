@@ -65,10 +65,7 @@ const STATUS_LABEL: Record<StripCellStatus, string> = {
 };
 
 /** セルの背景 Tailwind クラスを返す */
-function cellBg(
-  status: StripCellStatus | null,
-  source: PlacementStripData['source']
-): string {
+function cellBg(status: StripCellStatus | null, source: PlacementStripData['source']): string {
   if (status === 'placed') return 'bg-success';
   if (status === 'full') return 'bg-danger';
   if (status === 'available') {
@@ -80,11 +77,7 @@ function cellBg(
 }
 
 /** title 属性テキスト。日付・コマ・状態を含む */
-function cellTitle(
-  dateStr: string,
-  slotNumber: number,
-  status: StripCellStatus | null
-): string {
+function cellTitle(dateStr: string, slotNumber: number, status: StripCellStatus | null): string {
   const d = new Date(dateStr + 'T12:00:00');
   const month = d.getMonth() + 1;
   const day = d.getDate();
@@ -176,7 +169,9 @@ export function PlacementAvailabilityStrip({
           {subjectName && (
             <span className="text-xs text-text-muted whitespace-nowrap">（{subjectName}）</span>
           )}
-          <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium whitespace-nowrap ${sourceBadge.className}`}>
+          <span
+            className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium whitespace-nowrap ${sourceBadge.className}`}
+          >
             {sourceBadge.text}
           </span>
         </div>
@@ -184,7 +179,10 @@ export function PlacementAvailabilityStrip({
         {/* 右: 凡例（粒見本） */}
         <div className="flex items-center gap-2 text-[10px] text-text-muted flex-shrink-0">
           <LegendDot color="bg-gray-200" label="不可" />
-          <LegendDot color={source === 'regular_pattern' ? 'bg-amber-300' : 'bg-amber-400'} label="可" />
+          <LegendDot
+            color={source === 'regular_pattern' ? 'bg-amber-300' : 'bg-amber-400'}
+            label="可"
+          />
           <LegendDot color="bg-success" label="配置済み" />
           <LegendDot color="bg-danger" label="満席" />
         </div>
@@ -222,11 +220,7 @@ export function PlacementAvailabilityStrip({
           const isInCurrentWeek = dateStr >= weekStartStr && dateStr <= weekEndDate;
           // 土日は薄いグレー文字
           const textColor =
-            dow === 0
-              ? 'text-red-400'
-              : dow === 6
-              ? 'text-blue-400'
-              : 'text-text-muted';
+            dow === 0 ? 'text-red-400' : dow === 6 ? 'text-blue-400' : 'text-text-muted';
 
           return (
             <button
@@ -258,9 +252,7 @@ export function PlacementAvailabilityStrip({
         {visibleSlots.map((slot) => (
           <Fragment key={slot.id}>
             {/* 行頭の時限ラベル */}
-            <div
-              className="flex items-center justify-end pr-1 text-[9px] text-text-muted leading-none self-center"
-            >
+            <div className="flex items-center justify-end pr-1 text-[9px] text-text-muted leading-none self-center">
               {slot.slot_number}限
             </div>
 

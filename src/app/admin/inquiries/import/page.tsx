@@ -26,7 +26,14 @@ import type { InquiryImportResult, MigrationImportResult } from '@/lib/api/inqui
 import { parseMigrationXlsx } from '@/lib/utils/inquiryMigration';
 import type { MigrationRow } from '@/lib/utils/inquiryMigration';
 import { STATUS_CONFIG, formatDate } from '../inquiryConstants';
-import { AlertTriangle, CheckCircle, Upload, ChevronLeft, Info, FileSpreadsheet } from 'lucide-react';
+import {
+  AlertTriangle,
+  CheckCircle,
+  Upload,
+  ChevronLeft,
+  Info,
+  FileSpreadsheet,
+} from 'lucide-react';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 
 /** CSV取込の3ステップ */
@@ -39,7 +46,8 @@ export default function InquiriesImportPage() {
   const { profile } = useAuth();
 
   // ロールガード: admin / owner のみ
-  const isAdmin = profile?.role === 'admin' || profile?.role === 'owner' || profile?.role === 'manager';
+  const isAdmin =
+    profile?.role === 'admin' || profile?.role === 'owner' || profile?.role === 'manager';
 
   // ---- CSV取込の状態 ----
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -86,7 +94,9 @@ export default function InquiriesImportPage() {
       setCheckedRows(rows.map(() => true));
       setStep('preview');
     } catch (err) {
-      setParseError(getUserErrorMessage(err, 'CSVのパースに失敗しました。文字コードや形式を確認してください。'));
+      setParseError(
+        getUserErrorMessage(err, 'CSVのパースに失敗しました。文字コードや形式を確認してください。')
+      );
     } finally {
       setIsParsing(false);
       // ファイル入力をリセット（同じファイルを再選択できるよう）
@@ -147,7 +157,9 @@ export default function InquiriesImportPage() {
       setMigSkippedNoDate(skipped);
       setMigStep('preview');
     } catch (err) {
-      setMigParseError(getUserErrorMessage(err, 'Excelのパースに失敗しました。ファイル形式を確認してください。'));
+      setMigParseError(
+        getUserErrorMessage(err, 'Excelのパースに失敗しました。ファイル形式を確認してください。')
+      );
     } finally {
       setIsMigParsing(false);
       if (migFileInputRef.current) migFileInputRef.current.value = '';
@@ -238,7 +250,8 @@ export default function InquiriesImportPage() {
         <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg flex gap-3">
           <Info className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
           <p className="text-sm text-blue-700">
-            HPシステムからエクスポートした <code className="font-mono">boshu_applicant_*.csv</code>（教室別）をアップロードしてください。問合せNOで重複は自動スキップされます。
+            HPシステムからエクスポートした <code className="font-mono">boshu_applicant_*.csv</code>
+            （教室別）をアップロードしてください。問合せNOで重複は自動スキップされます。
           </p>
         </div>
 
@@ -246,9 +259,7 @@ export default function InquiriesImportPage() {
         {step === 'select' && (
           <div className="bg-surface-raised border border-border rounded-xl p-8 text-center">
             <Upload className="w-10 h-10 text-text-muted mx-auto mb-4" />
-            <p className="text-sm text-text-muted mb-4">
-              Shift_JIS形式のCSVファイルをアップロード
-            </p>
+            <p className="text-sm text-text-muted mb-4">Shift_JIS形式のCSVファイルをアップロード</p>
             {isParsing ? (
               <Loading size="sm" />
             ) : (
@@ -265,9 +276,7 @@ export default function InquiriesImportPage() {
                     className="sr-only"
                   />
                 </label>
-                {parseError && (
-                  <p className="mt-3 text-sm text-danger">{parseError}</p>
-                )}
+                {parseError && <p className="mt-3 text-sm text-danger">{parseError}</p>}
               </>
             )}
           </div>
@@ -279,7 +288,8 @@ export default function InquiriesImportPage() {
             {/* プレビューサマリー */}
             <div className="flex flex-wrap items-center gap-4 p-4 bg-surface-raised border border-border rounded-xl">
               <div className="text-sm text-text-body">
-                <span className="font-semibold text-text-heading">{parsedRows.length}</span>件をパース
+                <span className="font-semibold text-text-heading">{parsedRows.length}</span>
+                件をパース
               </div>
               {warningRowCount > 0 && (
                 <div className="flex items-center gap-1.5 text-sm text-orange-700">
@@ -324,16 +334,36 @@ export default function InquiriesImportPage() {
                         className="cursor-pointer"
                       />
                     </th>
-                    <th className="border border-border px-3 py-2 text-left font-medium text-text-heading whitespace-nowrap">受付日</th>
-                    <th className="border border-border px-3 py-2 text-left font-medium text-text-heading whitespace-nowrap">教室名</th>
-                    <th className="border border-border px-3 py-2 text-left font-medium text-text-heading whitespace-nowrap">生徒名</th>
-                    <th className="border border-border px-3 py-2 text-left font-medium text-text-heading whitespace-nowrap">保護者名</th>
-                    <th className="border border-border px-3 py-2 text-left font-medium text-text-heading whitespace-nowrap">学年</th>
-                    <th className="border border-border px-3 py-2 text-left font-medium text-text-heading whitespace-nowrap">媒体</th>
-                    <th className="border border-border px-3 py-2 text-left font-medium text-text-heading whitespace-nowrap">申込内容</th>
-                    <th className="border border-border px-3 py-2 text-left font-medium text-text-heading whitespace-nowrap">電話</th>
-                    <th className="border border-border px-3 py-2 text-center font-medium text-text-heading whitespace-nowrap">ステータス</th>
-                    <th className="border border-border px-3 py-2 text-left font-medium text-text-heading">警告</th>
+                    <th className="border border-border px-3 py-2 text-left font-medium text-text-heading whitespace-nowrap">
+                      受付日
+                    </th>
+                    <th className="border border-border px-3 py-2 text-left font-medium text-text-heading whitespace-nowrap">
+                      教室名
+                    </th>
+                    <th className="border border-border px-3 py-2 text-left font-medium text-text-heading whitespace-nowrap">
+                      生徒名
+                    </th>
+                    <th className="border border-border px-3 py-2 text-left font-medium text-text-heading whitespace-nowrap">
+                      保護者名
+                    </th>
+                    <th className="border border-border px-3 py-2 text-left font-medium text-text-heading whitespace-nowrap">
+                      学年
+                    </th>
+                    <th className="border border-border px-3 py-2 text-left font-medium text-text-heading whitespace-nowrap">
+                      媒体
+                    </th>
+                    <th className="border border-border px-3 py-2 text-left font-medium text-text-heading whitespace-nowrap">
+                      申込内容
+                    </th>
+                    <th className="border border-border px-3 py-2 text-left font-medium text-text-heading whitespace-nowrap">
+                      電話
+                    </th>
+                    <th className="border border-border px-3 py-2 text-center font-medium text-text-heading whitespace-nowrap">
+                      ステータス
+                    </th>
+                    <th className="border border-border px-3 py-2 text-left font-medium text-text-heading">
+                      警告
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -361,15 +391,31 @@ export default function InquiriesImportPage() {
                         <td className="border border-border px-3 py-1.5 whitespace-nowrap text-text-body">
                           {row.data.inquired_at ? formatDate(row.data.inquired_at) : '—'}
                         </td>
-                        <td className="border border-border px-3 py-1.5 text-text-body">{row.schoolName}</td>
-                        <td className="border border-border px-3 py-1.5 font-medium text-text-heading">{row.data.student_name ?? '—'}</td>
-                        <td className="border border-border px-3 py-1.5 text-text-body">{row.data.guardian_name ?? '—'}</td>
-                        <td className="border border-border px-3 py-1.5 text-text-body">{row.data.grade ?? '—'}</td>
-                        <td className="border border-border px-3 py-1.5 text-text-body">{row.data.media ?? '—'}</td>
-                        <td className="border border-border px-3 py-1.5 text-text-body">{row.data.request_type ?? '—'}</td>
-                        <td className="border border-border px-3 py-1.5 text-text-body whitespace-nowrap">{row.data.phone ?? '—'}</td>
+                        <td className="border border-border px-3 py-1.5 text-text-body">
+                          {row.schoolName}
+                        </td>
+                        <td className="border border-border px-3 py-1.5 font-medium text-text-heading">
+                          {row.data.student_name ?? '—'}
+                        </td>
+                        <td className="border border-border px-3 py-1.5 text-text-body">
+                          {row.data.guardian_name ?? '—'}
+                        </td>
+                        <td className="border border-border px-3 py-1.5 text-text-body">
+                          {row.data.grade ?? '—'}
+                        </td>
+                        <td className="border border-border px-3 py-1.5 text-text-body">
+                          {row.data.media ?? '—'}
+                        </td>
+                        <td className="border border-border px-3 py-1.5 text-text-body">
+                          {row.data.request_type ?? '—'}
+                        </td>
+                        <td className="border border-border px-3 py-1.5 text-text-body whitespace-nowrap">
+                          {row.data.phone ?? '—'}
+                        </td>
                         <td className="border border-border px-3 py-1.5 text-center">
-                          <span className={`px-1.5 py-0.5 rounded-full font-medium ${sc.className}`}>
+                          <span
+                            className={`px-1.5 py-0.5 rounded-full font-medium ${sc.className}`}
+                          >
                             {sc.label}
                           </span>
                         </td>
@@ -412,9 +458,17 @@ export default function InquiriesImportPage() {
                 <p className="text-xs text-gray-600 mb-1">スキップ（重複）</p>
                 <p className="text-2xl font-bold text-gray-600">{importResult.skipped}</p>
               </div>
-              <div className={`p-4 border rounded-lg text-center ${importResult.errors.length > 0 ? 'bg-red-50 border-red-200' : 'bg-gray-50 border-gray-200'}`}>
-                <p className={`text-xs mb-1 ${importResult.errors.length > 0 ? 'text-red-700' : 'text-gray-600'}`}>エラー</p>
-                <p className={`text-2xl font-bold ${importResult.errors.length > 0 ? 'text-red-700' : 'text-gray-600'}`}>
+              <div
+                className={`p-4 border rounded-lg text-center ${importResult.errors.length > 0 ? 'bg-red-50 border-red-200' : 'bg-gray-50 border-gray-200'}`}
+              >
+                <p
+                  className={`text-xs mb-1 ${importResult.errors.length > 0 ? 'text-red-700' : 'text-gray-600'}`}
+                >
+                  エラー
+                </p>
+                <p
+                  className={`text-2xl font-bold ${importResult.errors.length > 0 ? 'text-red-700' : 'text-gray-600'}`}
+                >
                   {importResult.errors.length}
                 </p>
               </div>
@@ -426,7 +480,10 @@ export default function InquiriesImportPage() {
                 <h3 className="text-sm font-medium text-text-heading mb-2">エラー詳細</h3>
                 <div className="space-y-1">
                   {importResult.errors.map((e, i) => (
-                    <div key={i} className="flex gap-2 text-xs p-2 bg-red-50 border border-red-200 rounded">
+                    <div
+                      key={i}
+                      className="flex gap-2 text-xs p-2 bg-red-50 border border-red-200 rounded"
+                    >
                       <AlertTriangle className="w-3.5 h-3.5 text-red-600 shrink-0 mt-0.5" />
                       <span className="text-red-800">
                         【{e.schoolName || '不明'} / NO: {e.hpNo || '不明'}】{e.message}
@@ -461,7 +518,9 @@ export default function InquiriesImportPage() {
           <div className="mb-5 p-4 bg-amber-50 border border-amber-200 rounded-lg flex gap-3">
             <Info className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
             <div className="text-sm text-amber-800 space-y-1">
-              <p>問合せ管理表.xlsxをアップロードしてください。シート名「問合せ管理」を読み込みます。</p>
+              <p>
+                問合せ管理表.xlsxをアップロードしてください。シート名「問合せ管理」を読み込みます。
+              </p>
               <p>再実行しても同一とみなせる行（同日・同電話番号または同名）はスキップされます。</p>
             </div>
           </div>
@@ -487,9 +546,7 @@ export default function InquiriesImportPage() {
                       className="sr-only"
                     />
                   </label>
-                  {migParseError && (
-                    <p className="mt-3 text-sm text-danger">{migParseError}</p>
-                  )}
+                  {migParseError && <p className="mt-3 text-sm text-danger">{migParseError}</p>}
                 </>
               )}
             </div>
@@ -501,7 +558,8 @@ export default function InquiriesImportPage() {
               {/* サマリー行 */}
               <div className="flex flex-wrap items-center gap-4 p-4 bg-surface-raised border border-border rounded-xl">
                 <div className="text-sm text-text-body">
-                  パース結果: <span className="font-semibold text-text-heading">{migRows.length}</span>件
+                  パース結果:{' '}
+                  <span className="font-semibold text-text-heading">{migRows.length}</span>件
                 </div>
                 {migSkippedNoDate > 0 && (
                   <div className="flex items-center gap-1.5 text-sm text-orange-700">
@@ -550,7 +608,9 @@ export default function InquiriesImportPage() {
                       const sc = STATUS_CONFIG[status as keyof typeof STATUS_CONFIG];
                       return (
                         <div key={status} className="flex justify-between text-xs">
-                          <span className={`px-1.5 py-0.5 rounded-full font-medium ${sc?.className ?? ''}`}>
+                          <span
+                            className={`px-1.5 py-0.5 rounded-full font-medium ${sc?.className ?? ''}`}
+                          >
                             {sc?.label ?? status}
                           </span>
                           <span className="font-medium text-text-heading">{String(cnt)}件</span>
@@ -584,15 +644,33 @@ export default function InquiriesImportPage() {
                 <table className="w-full text-xs border-collapse">
                   <thead>
                     <tr className="bg-surface-hover">
-                      <th className="border border-border px-3 py-2 text-left font-medium text-text-heading whitespace-nowrap">問合日</th>
-                      <th className="border border-border px-3 py-2 text-left font-medium text-text-heading whitespace-nowrap">教室</th>
-                      <th className="border border-border px-3 py-2 text-left font-medium text-text-heading whitespace-nowrap">生徒名</th>
-                      <th className="border border-border px-3 py-2 text-left font-medium text-text-heading whitespace-nowrap">保護者名</th>
-                      <th className="border border-border px-3 py-2 text-left font-medium text-text-heading whitespace-nowrap">学年</th>
-                      <th className="border border-border px-3 py-2 text-left font-medium text-text-heading whitespace-nowrap">媒体</th>
-                      <th className="border border-border px-3 py-2 text-left font-medium text-text-heading whitespace-nowrap">電話</th>
-                      <th className="border border-border px-3 py-2 text-center font-medium text-text-heading whitespace-nowrap">ステータス</th>
-                      <th className="border border-border px-3 py-2 text-left font-medium text-text-heading">警告</th>
+                      <th className="border border-border px-3 py-2 text-left font-medium text-text-heading whitespace-nowrap">
+                        問合日
+                      </th>
+                      <th className="border border-border px-3 py-2 text-left font-medium text-text-heading whitespace-nowrap">
+                        教室
+                      </th>
+                      <th className="border border-border px-3 py-2 text-left font-medium text-text-heading whitespace-nowrap">
+                        生徒名
+                      </th>
+                      <th className="border border-border px-3 py-2 text-left font-medium text-text-heading whitespace-nowrap">
+                        保護者名
+                      </th>
+                      <th className="border border-border px-3 py-2 text-left font-medium text-text-heading whitespace-nowrap">
+                        学年
+                      </th>
+                      <th className="border border-border px-3 py-2 text-left font-medium text-text-heading whitespace-nowrap">
+                        媒体
+                      </th>
+                      <th className="border border-border px-3 py-2 text-left font-medium text-text-heading whitespace-nowrap">
+                        電話
+                      </th>
+                      <th className="border border-border px-3 py-2 text-center font-medium text-text-heading whitespace-nowrap">
+                        ステータス
+                      </th>
+                      <th className="border border-border px-3 py-2 text-left font-medium text-text-heading">
+                        警告
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
@@ -605,14 +683,28 @@ export default function InquiriesImportPage() {
                           <td className="border border-border px-3 py-1.5 whitespace-nowrap text-text-body">
                             {row.data.inquired_at ? formatDate(row.data.inquired_at) : '—'}
                           </td>
-                          <td className="border border-border px-3 py-1.5 text-text-body">{row.schoolNameShort}</td>
-                          <td className="border border-border px-3 py-1.5 font-medium text-text-heading">{row.data.student_name ?? '—'}</td>
-                          <td className="border border-border px-3 py-1.5 text-text-body">{row.data.guardian_name ?? '—'}</td>
-                          <td className="border border-border px-3 py-1.5 text-text-body">{row.data.grade ?? '—'}</td>
-                          <td className="border border-border px-3 py-1.5 text-text-body">{row.data.media ?? '—'}</td>
-                          <td className="border border-border px-3 py-1.5 text-text-body whitespace-nowrap">{row.data.phone ?? '—'}</td>
+                          <td className="border border-border px-3 py-1.5 text-text-body">
+                            {row.schoolNameShort}
+                          </td>
+                          <td className="border border-border px-3 py-1.5 font-medium text-text-heading">
+                            {row.data.student_name ?? '—'}
+                          </td>
+                          <td className="border border-border px-3 py-1.5 text-text-body">
+                            {row.data.guardian_name ?? '—'}
+                          </td>
+                          <td className="border border-border px-3 py-1.5 text-text-body">
+                            {row.data.grade ?? '—'}
+                          </td>
+                          <td className="border border-border px-3 py-1.5 text-text-body">
+                            {row.data.media ?? '—'}
+                          </td>
+                          <td className="border border-border px-3 py-1.5 text-text-body whitespace-nowrap">
+                            {row.data.phone ?? '—'}
+                          </td>
                           <td className="border border-border px-3 py-1.5 text-center">
-                            <span className={`px-1.5 py-0.5 rounded-full font-medium ${sc.className}`}>
+                            <span
+                              className={`px-1.5 py-0.5 rounded-full font-medium ${sc.className}`}
+                            >
                               {sc.label}
                             </span>
                           </td>
@@ -655,9 +747,17 @@ export default function InquiriesImportPage() {
                   <p className="text-xs text-gray-600 mb-1">スキップ（重複）</p>
                   <p className="text-2xl font-bold text-gray-600">{migImportResult.skipped}</p>
                 </div>
-                <div className={`p-4 border rounded-lg text-center ${migImportResult.errors.length > 0 ? 'bg-red-50 border-red-200' : 'bg-gray-50 border-gray-200'}`}>
-                  <p className={`text-xs mb-1 ${migImportResult.errors.length > 0 ? 'text-red-700' : 'text-gray-600'}`}>エラー</p>
-                  <p className={`text-2xl font-bold ${migImportResult.errors.length > 0 ? 'text-red-700' : 'text-gray-600'}`}>
+                <div
+                  className={`p-4 border rounded-lg text-center ${migImportResult.errors.length > 0 ? 'bg-red-50 border-red-200' : 'bg-gray-50 border-gray-200'}`}
+                >
+                  <p
+                    className={`text-xs mb-1 ${migImportResult.errors.length > 0 ? 'text-red-700' : 'text-gray-600'}`}
+                  >
+                    エラー
+                  </p>
+                  <p
+                    className={`text-2xl font-bold ${migImportResult.errors.length > 0 ? 'text-red-700' : 'text-gray-600'}`}
+                  >
                     {migImportResult.errors.length}
                   </p>
                 </div>
@@ -669,7 +769,10 @@ export default function InquiriesImportPage() {
                   <h3 className="text-sm font-medium text-text-heading mb-2">エラー詳細</h3>
                   <div className="space-y-1">
                     {migImportResult.errors.map((e, i) => (
-                      <div key={i} className="flex gap-2 text-xs p-2 bg-red-50 border border-red-200 rounded">
+                      <div
+                        key={i}
+                        className="flex gap-2 text-xs p-2 bg-red-50 border border-red-200 rounded"
+                      >
                         <AlertTriangle className="w-3.5 h-3.5 text-red-600 shrink-0 mt-0.5" />
                         <span className="text-red-800">
                           【{e.school || '不明'} / {e.name || '不明'}】{e.message}

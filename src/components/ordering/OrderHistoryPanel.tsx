@@ -49,11 +49,7 @@ export function OrderHistoryPanel({
   };
 
   if (orders.length === 0) {
-    return (
-      <div className="text-center py-8 text-gray-500 text-sm">
-        発注履歴がありません。
-      </div>
-    );
+    return <div className="text-center py-8 text-gray-500 text-sm">発注履歴がありません。</div>;
   }
 
   return (
@@ -74,29 +70,25 @@ export function OrderHistoryPanel({
         <tbody>
           {orders.map((order) => (
             <tr key={order.id} className="border-b border-gray-100 hover:bg-gray-50">
-              <td className="py-2 px-3 text-xs text-gray-600">
-                {formatDate(order.created_at)}
-              </td>
+              <td className="py-2 px-3 text-xs text-gray-600">{formatDate(order.created_at)}</td>
               <td className="py-2 px-3 text-xs text-gray-800">
                 {order.is_sample ? (
-                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-700">見本</span>
-                ) : order.student
-                  ? `${order.student.last_name} ${order.student.first_name}`
-                  : '-'}
+                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-700">
+                    見本
+                  </span>
+                ) : order.student ? (
+                  `${order.student.last_name} ${order.student.first_name}`
+                ) : (
+                  '-'
+                )}
               </td>
-              <td className="py-2 px-3 text-xs text-gray-800">
-                {order.material?.name || '-'}
-              </td>
-              <td className="py-2 px-3 text-center text-xs text-gray-800">
-                {order.quantity}
-              </td>
+              <td className="py-2 px-3 text-xs text-gray-800">{order.material?.name || '-'}</td>
+              <td className="py-2 px-3 text-center text-xs text-gray-800">{order.quantity}</td>
               <td className="py-2 px-3 text-center">
                 {canEdit ? (
                   <select
                     value={order.status}
-                    onChange={(e) =>
-                      handleStatusChange(order.id, e.target.value as OrderStatus)
-                    }
+                    onChange={(e) => handleStatusChange(order.id, e.target.value as OrderStatus)}
                     disabled={changingId === order.id}
                     className="text-xs border border-gray-200 rounded px-1.5 py-0.5 bg-white"
                   >

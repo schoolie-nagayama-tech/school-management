@@ -24,11 +24,7 @@ export async function GET(request: NextRequest) {
     const category = request.nextUrl.searchParams.get('category');
     const includeInactive = request.nextUrl.searchParams.get('includeInactive') === '1';
 
-    let query = db
-      .from('teacher_badges')
-      .select('*')
-      .order('sort_order')
-      .order('created_at');
+    let query = db.from('teacher_badges').select('*').order('sort_order').order('created_at');
 
     if (!includeInactive) {
       query = query.eq('is_active', true);

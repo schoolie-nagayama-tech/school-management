@@ -32,14 +32,9 @@ export function SortableMenuRow({
   onToggleVisibility,
   onEdit,
 }: SortableMenuRowProps) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: menu.id });
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: menu.id,
+  });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -48,19 +43,13 @@ export function SortableMenuRow({
   };
 
   return (
-    <tr
-      ref={setNodeRef}
-      style={style}
-      className={`table-row-hover ${isDragging ? 'z-50' : ''}`}
-    >
+    <tr ref={setNodeRef} style={style} className={`table-row-hover ${isDragging ? 'z-50' : ''}`}>
       <td className="border border-[#e5e7eb] px-4 py-3">
         <div className="flex items-start justify-between gap-2">
           <div>
             <div className="font-medium text-[#1f2937]">{menu.title}</div>
             {menu.description && (
-              <div className="text-xs text-[#4b5563] mt-1">
-                {menu.description}
-              </div>
+              <div className="text-xs text-[#4b5563] mt-1">{menu.description}</div>
             )}
           </div>
           <Button

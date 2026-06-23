@@ -149,9 +149,7 @@ export function ResponseList({ responses, formId, onRefresh }: ResponseListProps
                   <th className="px-4 py-3 text-left text-[#1f2937] font-semibold border-r border-[#e5e7eb]">
                     紐付け状態
                   </th>
-                  <th className="px-4 py-3 text-center text-[#1f2937] font-semibold">
-                    操作
-                  </th>
+                  <th className="px-4 py-3 text-center text-[#1f2937] font-semibold">操作</th>
                 </tr>
               </thead>
               <tbody>
@@ -216,10 +214,7 @@ export function ResponseList({ responses, formId, onRefresh }: ResponseListProps
                               解除
                             </Button>
                           ) : (
-                            <Button
-                              onClick={() => handleLink(response)}
-                              size="sm"
-                            >
+                            <Button onClick={() => handleLink(response)} size="sm">
                               紐付け
                             </Button>
                           )}

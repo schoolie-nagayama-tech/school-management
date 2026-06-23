@@ -20,14 +20,12 @@ import { fetchAllPaged } from '@/lib/utils/supabasePaging';
 /**
  * 請求期間一覧を取得
  */
-export async function getBillingPeriods(
-  schoolIds?: string | string[]
-): Promise<BillingPeriod[]> {
+export async function getBillingPeriods(schoolIds?: string | string[]): Promise<BillingPeriod[]> {
   const targetSchoolIds = Array.isArray(schoolIds)
     ? schoolIds
     : schoolIds
-    ? [schoolIds]
-    : [getDefaultSchoolId()];
+      ? [schoolIds]
+      : [getDefaultSchoolId()];
 
   const { data, error } = await supabase
     .from('billing_periods')
@@ -36,7 +34,11 @@ export async function getBillingPeriods(
     .order('start_date', { ascending: false });
 
   if (error) {
-    if (error.code === 'PGRST116' || error.code === '42501' || error.message.includes('schema cache')) {
+    if (
+      error.code === 'PGRST116' ||
+      error.code === '42501' ||
+      error.message.includes('schema cache')
+    ) {
       console.warn('billing_periodsテーブルの取得に失敗しました（無視します）:', error);
       return [];
     }
@@ -54,9 +56,7 @@ export async function createBillingPeriod(
   period: { name: string; start_date: string; end_date: string },
   schoolId?: string | string[]
 ): Promise<BillingPeriod> {
-  const targetSchoolIds = Array.isArray(schoolId)
-    ? schoolId
-    : [schoolId || getDefaultSchoolId()];
+  const targetSchoolIds = Array.isArray(schoolId) ? schoolId : [schoolId || getDefaultSchoolId()];
 
   const insertData: BillingPeriodInsert[] = targetSchoolIds.map((sid) => ({
     school_id: sid,
@@ -66,10 +66,7 @@ export async function createBillingPeriod(
     is_active: true,
   }));
 
-  const { data, error } = await supabase
-    .from('billing_periods')
-    .insert(insertData)
-    .select();
+  const { data, error } = await supabase.from('billing_periods').insert(insertData).select();
 
   if (error) {
     throw new Error(`請求期間の作成に失敗しました: ${error.message}`);
@@ -103,10 +100,7 @@ export async function updateBillingPeriod(
  * 請求期間を削除
  */
 export async function deleteBillingPeriod(id: string): Promise<void> {
-  const { error } = await supabase
-    .from('billing_periods')
-    .delete()
-    .eq('id', id);
+  const { error } = await supabase.from('billing_periods').delete().eq('id', id);
 
   if (error) {
     throw new Error(`請求期間の削除に失敗しました: ${error.message}`);
@@ -127,8 +121,8 @@ export async function getBillingItems(
   const targetSchoolIds = Array.isArray(schoolIds)
     ? schoolIds
     : schoolIds
-    ? [schoolIds]
-    : [getDefaultSchoolId()];
+      ? [schoolIds]
+      : [getDefaultSchoolId()];
 
   const { data, error } = await supabase
     .from('billing_items')
@@ -138,7 +132,11 @@ export async function getBillingItems(
     .order('sort_order', { ascending: true });
 
   if (error) {
-    if (error.code === 'PGRST116' || error.code === '42501' || error.message.includes('schema cache')) {
+    if (
+      error.code === 'PGRST116' ||
+      error.code === '42501' ||
+      error.message.includes('schema cache')
+    ) {
       console.warn('billing_itemsテーブルの取得に失敗しました（無視します）:', error);
       return [];
     }
@@ -153,12 +151,16 @@ export async function getBillingItems(
  * schoolId に配列を渡すと全ての教室に対して一括作成する
  */
 export async function createBillingItem(
-  item: { billing_period_id: string; name: string; source_type?: string; value_type?: string; linked_form_type?: string | null },
+  item: {
+    billing_period_id: string;
+    name: string;
+    source_type?: string;
+    value_type?: string;
+    linked_form_type?: string | null;
+  },
   schoolId?: string | string[]
 ): Promise<BillingItem> {
-  const targetSchoolIds = Array.isArray(schoolId)
-    ? schoolId
-    : [schoolId || getDefaultSchoolId()];
+  const targetSchoolIds = Array.isArray(schoolId) ? schoolId : [schoolId || getDefaultSchoolId()];
 
   // 全教室の既存 sort_order を1クエリで取得し、教室ごとの最大値をメモリで算出
   // （教室ごとに SELECT していた N+1 を解消）
@@ -185,10 +187,7 @@ export async function createBillingItem(
     is_active: true,
   }));
 
-  const { data, error } = await supabase
-    .from('billing_items')
-    .insert(insertData)
-    .select();
+  const { data, error } = await supabase.from('billing_items').insert(insertData).select();
 
   if (error) {
     throw new Error(`請求項目の作成に失敗しました: ${error.message}`);
@@ -222,10 +221,7 @@ export async function updateBillingItem(
  * 請求項目を削除
  */
 export async function deleteBillingItem(id: string): Promise<void> {
-  const { error } = await supabase
-    .from('billing_items')
-    .delete()
-    .eq('id', id);
+  const { error } = await supabase.from('billing_items').delete().eq('id', id);
 
   if (error) {
     throw new Error(`請求項目の削除に失敗しました: ${error.message}`);
@@ -239,10 +235,7 @@ export async function updateBillingItemSortOrder(
   items: { id: string; sort_order: number }[]
 ): Promise<void> {
   const updates = items.map((item) =>
-    supabase
-      .from('billing_items')
-      .update({ sort_order: item.sort_order })
-      .eq('id', item.id)
+    supabase.from('billing_items').update({ sort_order: item.sort_order }).eq('id', item.id)
   );
 
   const results = await Promise.all(updates);
@@ -267,8 +260,8 @@ export async function getStudentBillings(
   const targetSchoolIds = Array.isArray(schoolIds)
     ? schoolIds
     : schoolIds
-    ? [schoolIds]
-    : [getDefaultSchoolId()];
+      ? [schoolIds]
+      : [getDefaultSchoolId()];
 
   // まず対象期間の請求項目IDを取得
   const { data: billingItems, error: itemsError } = await supabase
@@ -278,7 +271,11 @@ export async function getStudentBillings(
     .in('school_id', targetSchoolIds);
 
   if (itemsError) {
-    if (itemsError.code === 'PGRST116' || itemsError.code === '42501' || itemsError.message.includes('schema cache')) {
+    if (
+      itemsError.code === 'PGRST116' ||
+      itemsError.code === '42501' ||
+      itemsError.message.includes('schema cache')
+    ) {
       console.warn('billing_itemsテーブルの取得に失敗しました（無視します）:', itemsError);
       return [];
     }
@@ -307,7 +304,11 @@ export async function getStudentBillings(
       .range(from, from + PAGE_SIZE - 1);
 
     if (error) {
-      if (error.code === 'PGRST116' || error.code === '42501' || error.message.includes('schema cache')) {
+      if (
+        error.code === 'PGRST116' ||
+        error.code === '42501' ||
+        error.message.includes('schema cache')
+      ) {
         console.warn('student_billingsテーブルの取得に失敗しました（無視します）:', error);
         return [];
       }
@@ -342,7 +343,9 @@ export async function toggleStudentBilling(
       .single();
 
     if (studentError || !student) {
-      throw new Error(`生徒情報の取得に失敗しました: ${studentError?.message || '生徒が見つかりません'}`);
+      throw new Error(
+        `生徒情報の取得に失敗しました: ${studentError?.message || '生徒が見つかりません'}`
+      );
     }
     targetSchoolId = student.school_id;
   }
@@ -356,7 +359,12 @@ export async function toggleStudentBilling(
     .eq('school_id', targetSchoolId)
     .maybeSingle();
 
-  if (existingError && existingError.code !== 'PGRST116' && existingError.code !== '42501' && existingError.code !== 'PGRST202') {
+  if (
+    existingError &&
+    existingError.code !== 'PGRST116' &&
+    existingError.code !== '42501' &&
+    existingError.code !== 'PGRST202'
+  ) {
     console.warn('既存レコードの確認に失敗しました（新規作成として処理します）:', existingError);
   }
 
@@ -454,11 +462,9 @@ async function bulkUpsertFifthWeekValues(
   // 大量行でも安全なよう一定件数ごとに分割して upsert
   const CHUNK = 500;
   for (let i = 0; i < payload.length; i += CHUNK) {
-    const { error } = await supabase
-      .from('student_billings')
-      .upsert(payload.slice(i, i + CHUNK), {
-        onConflict: 'student_id,billing_item_id',
-      });
+    const { error } = await supabase.from('student_billings').upsert(payload.slice(i, i + CHUNK), {
+      onConflict: 'student_id,billing_item_id',
+    });
     if (error) throw new Error(`請求コマ数の更新に失敗: ${error.message}`);
   }
 
@@ -467,7 +473,7 @@ async function bulkUpsertFifthWeekValues(
 
 export async function autoFillFifthWeekBilling(
   billingItemId: string,
-  periodStartDate: string,  // 'YYYY-MM-DD' format
+  periodStartDate: string, // 'YYYY-MM-DD' format
   schoolIds: string | string[]
 ): Promise<{ updated: number; skipped: number }> {
   const targetSchoolIds = Array.isArray(schoolIds) ? schoolIds : [schoolIds];
@@ -525,7 +531,11 @@ export async function autoFillFifthWeekBilling(
 
   // 6. 全生徒分のコマ数を算出してバルクupsert
   //    対象月初時点で退塾済み / プログラミング生は0コマ
-  const quantityFor = (student: { id: string; is_programming: boolean | null; withdrawal_date: string | null }) => {
+  const quantityFor = (student: {
+    id: string;
+    is_programming: boolean | null;
+    withdrawal_date: string | null;
+  }) => {
     const withdrawnByMonth = student.withdrawal_date && student.withdrawal_date < targetMonthStart;
     return withdrawnByMonth ? 0 : student.is_programming ? 0 : slotMap.get(student.id) || 0;
   };
@@ -573,7 +583,7 @@ export async function syncApplicationToBilling(
   if (appItemError) throw new Error(`申込項目の取得に失敗: ${appItemError.message}`);
   if (!appItems || appItems.length === 0) return { synced: 0, total: 0 };
 
-  const appItemIds = appItems.map(item => item.id);
+  const appItemIds = appItems.map((item) => item.id);
 
   // 2. Find student_applications where these items are completed
   // student_applications has: student_id, item_id, status, school_id
@@ -699,7 +709,11 @@ export async function syncFormToBilling(
 
     // 3b. 前期以前の回答も取得（キャリーオーバー）
     //     charged/非charged 両方取得し、カウント段階で判定する
-    let carryOverResponses: Array<{ linked_student_id: string | null; status_checks: Record<string, boolean> | null; response_data: unknown }> = [];
+    let carryOverResponses: Array<{
+      linked_student_id: string | null;
+      status_checks: Record<string, boolean> | null;
+      response_data: unknown;
+    }> = [];
     try {
       const { data: olderResponsesRaw } = await supabase
         .from('form_responses')
@@ -719,7 +733,7 @@ export async function syncFormToBilling(
           .lt('end_date', periodStart);
 
         if (pastPeriods && pastPeriods.length > 0) {
-          const pastPeriodIds = pastPeriods.map(p => p.id);
+          const pastPeriodIds = pastPeriods.map((p) => p.id);
           const { data: pastItems } = await supabase
             .from('billing_items')
             .select('id')
@@ -727,18 +741,16 @@ export async function syncFormToBilling(
             .eq('linked_form_type', item.linked_form_type!);
 
           if (pastItems && pastItems.length > 0) {
-            const pastItemIds = pastItems.map(pi => pi.id);
+            const pastItemIds = pastItems.map((pi) => pi.id);
             const { data: billedInPast } = await supabase
               .from('student_billings')
               .select('student_id')
               .in('billing_item_id', pastItemIds)
               .eq('is_billed', true);
 
-            const billedStudentIds = new Set(
-              billedInPast?.map(b => b.student_id) || []
-            );
+            const billedStudentIds = new Set(billedInPast?.map((b) => b.student_id) || []);
             carryOverResponses = olderAll.filter(
-              r => r.linked_student_id && !billedStudentIds.has(r.linked_student_id)
+              (r) => r.linked_student_id && !billedStudentIds.has(r.linked_student_id)
             );
           } else {
             carryOverResponses = olderAll;
@@ -769,10 +781,16 @@ export async function syncFormToBilling(
     for (const resp of allResponses) {
       if (resp.linked_student_id) {
         const weight = responseWeight(resp);
-        studentTotalCounts.set(resp.linked_student_id, (studentTotalCounts.get(resp.linked_student_id) || 0) + weight);
+        studentTotalCounts.set(
+          resp.linked_student_id,
+          (studentTotalCounts.get(resp.linked_student_id) || 0) + weight
+        );
         const sc = (resp.status_checks || {}) as Record<string, boolean>;
         if (!sc.charged) {
-          studentNonChargedCounts.set(resp.linked_student_id, (studentNonChargedCounts.get(resp.linked_student_id) || 0) + weight);
+          studentNonChargedCounts.set(
+            resp.linked_student_id,
+            (studentNonChargedCounts.get(resp.linked_student_id) || 0) + weight
+          );
         }
       }
     }
@@ -811,16 +829,14 @@ export async function syncFormToBilling(
           .single();
 
         if (studentData) {
-          await supabase
-            .from('student_billings')
-            .insert({
-              school_id: studentData.school_id,
-              student_id: studentId,
-              billing_item_id: item.id,
-              is_billed: allCharged,
-              value_number: nonCharged,
-              quantity: charged,
-            });
+          await supabase.from('student_billings').insert({
+            school_id: studentData.school_id,
+            student_id: studentId,
+            billing_item_id: item.id,
+            is_billed: allCharged,
+            value_number: nonCharged,
+            quantity: charged,
+          });
         }
       }
       synced++;
@@ -958,9 +974,9 @@ export async function syncFormResponseToBilling(responseId: string): Promise<voi
   const weightOf = (r: { response_data?: unknown }) =>
     isZoukoma ? zoukomaKomaCount(r.response_data) : 1;
 
-  let chargedCount = 0;      // 計上済みコマ数（重み付け）
-  let nonChargedCount = 0;   // 未計上コマ数（重み付け）
-  let chargedResponses = 0;  // 全件計上済み判定用の回答件数
+  let chargedCount = 0; // 計上済みコマ数（重み付け）
+  let nonChargedCount = 0; // 未計上コマ数（重み付け）
+  let chargedResponses = 0; // 全件計上済み判定用の回答件数
   for (const r of siblings) {
     const sc = (r.status_checks || {}) as Record<string, boolean>;
     const w = weightOf(r);
@@ -999,16 +1015,14 @@ export async function syncFormResponseToBilling(responseId: string): Promise<voi
         .eq('id', existing.id);
     }
   } else {
-    await supabase
-      .from('student_billings')
-      .insert({
-        school_id: response.school_id,
-        student_id: response.linked_student_id,
-        billing_item_id: itemId,
-        is_billed: allCharged,
-        value_number: nonChargedCount,
-        quantity: chargedCount,
-      });
+    await supabase.from('student_billings').insert({
+      school_id: response.school_id,
+      student_id: response.linked_student_id,
+      billing_item_id: itemId,
+      is_billed: allCharged,
+      value_number: nonChargedCount,
+      quantity: chargedCount,
+    });
   }
 }
 
@@ -1020,7 +1034,12 @@ export async function syncFormResponseToBilling(responseId: string): Promise<voi
 export async function updateBillingValue(
   studentId: string,
   billingItemId: string,
-  updates: { is_billed?: boolean; value_number?: number | null; value_text?: string | null; quantity?: number | null },
+  updates: {
+    is_billed?: boolean;
+    value_number?: number | null;
+    value_text?: string | null;
+    quantity?: number | null;
+  },
   schoolId?: string
 ): Promise<StudentBilling> {
   // Resolve school_id if not provided
@@ -1033,7 +1052,9 @@ export async function updateBillingValue(
       .single();
 
     if (studentError || !student) {
-      throw new Error(`生徒情報の取得に失敗しました: ${studentError?.message || '生徒が見つかりません'}`);
+      throw new Error(
+        `生徒情報の取得に失敗しました: ${studentError?.message || '生徒が見つかりません'}`
+      );
     }
     targetSchoolId = student.school_id;
   }
@@ -1182,15 +1203,13 @@ export async function calcFifthWeekBilling(
             .update({ value_number: 0, updated_at: new Date().toISOString() })
             .eq('id', existing.id);
         } else {
-          await supabase
-            .from('student_billings')
-            .insert({
-              school_id: student.school_id,
-              student_id: student.id,
-              billing_item_id: item.id,
-              is_billed: false,
-              value_number: 0,
-            });
+          await supabase.from('student_billings').insert({
+            school_id: student.school_id,
+            student_id: student.id,
+            billing_item_id: item.id,
+            is_billed: false,
+            value_number: 0,
+          });
         }
         updated++;
       }
@@ -1250,19 +1269,29 @@ export async function calcFifthWeekBilling(
   let updated = 0;
   const skipped = 0;
 
-  const programmingStudents = allStudents.filter(s => s.is_programming);
+  const programmingStudents = allStudents.filter((s) => s.is_programming);
   console.warn(`[5週目] 対象教室: ${targetSchoolIds.join(', ')}`);
-  console.warn(`[5週目] 全${allStudents.length}名中、プログラミング生徒: ${programmingStudents.length}名（スキップ対象）`);
+  console.warn(
+    `[5週目] 全${allStudents.length}名中、プログラミング生徒: ${programmingStudents.length}名（スキップ対象）`
+  );
   if (programmingStudents.length > 0) {
-    console.warn(`[5週目] プログラミング生徒:`, programmingStudents.map(s => ({ id: s.id, school_id: s.school_id, is_programming: s.is_programming })));
+    console.warn(
+      `[5週目] プログラミング生徒:`,
+      programmingStudents.map((s) => ({
+        id: s.id,
+        school_id: s.school_id,
+        is_programming: s.is_programming,
+      }))
+    );
   }
 
   for (const item of fifthWeekItems) {
     for (const student of allStudents) {
       const rawSlots = slotMap.get(student.id) || 0;
       // 対象月初時点で退塾済みの生徒は0コマ
-      const withdrawnByMonth = student.withdrawal_date && student.withdrawal_date < targetMonthStart;
-      const quantity = withdrawnByMonth ? 0 : (student.is_programming ? 0 : rawSlots);
+      const withdrawnByMonth =
+        student.withdrawal_date && student.withdrawal_date < targetMonthStart;
+      const quantity = withdrawnByMonth ? 0 : student.is_programming ? 0 : rawSlots;
 
       const { data: existing } = await supabase
         .from('student_billings')
@@ -1277,15 +1306,13 @@ export async function calcFifthWeekBilling(
           .update({ value_number: quantity, updated_at: new Date().toISOString() })
           .eq('id', existing.id);
       } else {
-        await supabase
-          .from('student_billings')
-          .insert({
-            school_id: student.school_id,
-            student_id: student.id,
-            billing_item_id: item.id,
-            is_billed: false,
-            value_number: quantity,
-          });
+        await supabase.from('student_billings').insert({
+          school_id: student.school_id,
+          student_id: student.id,
+          billing_item_id: item.id,
+          is_billed: false,
+          value_number: quantity,
+        });
       }
       updated++;
     }
@@ -1315,7 +1342,10 @@ export async function syncOrdersToBilling(
   if (!orders || orders.length === 0) return { synced: 0 };
 
   // Group by student_id, sum quantities and collect textbook names
-  const studentData = new Map<string, { quantity: number; school_id: string; textbookNames: string[] }>();
+  const studentData = new Map<
+    string,
+    { quantity: number; school_id: string; textbookNames: string[] }
+  >();
   for (const order of orders) {
     if (!order.student_id) continue;
     const materialName = (order as Record<string, unknown>).materials
@@ -1357,16 +1387,14 @@ export async function syncOrdersToBilling(
         .update({ is_billed: false, quantity: data.quantity, value_text: valueText })
         .eq('id', existing.id);
     } else {
-      await supabase
-        .from('student_billings')
-        .insert({
-          school_id: data.school_id,
-          student_id: studentId,
-          billing_item_id: billingItemId,
-          is_billed: false,
-          quantity: data.quantity,
-          value_text: valueText,
-        });
+      await supabase.from('student_billings').insert({
+        school_id: data.school_id,
+        student_id: studentId,
+        billing_item_id: billingItemId,
+        is_billed: false,
+        quantity: data.quantity,
+        value_text: valueText,
+      });
     }
     synced++;
   }

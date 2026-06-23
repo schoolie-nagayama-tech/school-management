@@ -29,7 +29,9 @@ function normalizeSlots(input: PublicUpdateRequest['slots']) {
   if (!Array.isArray(input)) return [];
 
   return input
-    .filter((slot) => slot && typeof slot.shift_date === 'string' && typeof slot.time_slot === 'string')
+    .filter(
+      (slot) => slot && typeof slot.shift_date === 'string' && typeof slot.time_slot === 'string'
+    )
     .map((slot) => ({
       shift_date: slot!.shift_date!.trim(),
       time_slot: slot!.time_slot!.trim(),
@@ -72,10 +74,7 @@ async function getSubmissionByToken(
   };
 }
 
-export async function GET(
-  _request: NextRequest,
-  { params }: { params: { editToken: string } }
-) {
+export async function GET(_request: NextRequest, { params }: { params: { editToken: string } }) {
   try {
     const editToken = params.editToken?.trim();
     if (!editToken) {
@@ -90,17 +89,11 @@ export async function GET(
     return NextResponse.json({ submission });
   } catch (error) {
     console.error('[seasonal-shift/public] fetch failed:', error);
-    return NextResponse.json(
-      { error: 'Failed to get submission' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to get submission' }, { status: 500 });
   }
 }
 
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: { editToken: string } }
-) {
+export async function PUT(request: NextRequest, { params }: { params: { editToken: string } }) {
   try {
     const editToken = params.editToken?.trim();
     if (!editToken) {
@@ -123,10 +116,7 @@ export async function PUT(
     const supabaseAdmin = getSupabaseAdmin();
     const existing = await getSubmissionByToken(supabaseAdmin, editToken);
     if (!existing) {
-      return NextResponse.json(
-        { error: 'Invalid edit URL' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Invalid edit URL' }, { status: 404 });
     }
 
     const { error: updateError } = await supabaseAdmin
@@ -175,9 +165,6 @@ export async function PUT(
     return NextResponse.json({ submission: updated });
   } catch (error) {
     console.error('[seasonal-shift/public] update failed:', error);
-    return NextResponse.json(
-      { error: 'Failed to update submission' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to update submission' }, { status: 500 });
   }
 }

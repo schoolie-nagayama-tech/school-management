@@ -79,7 +79,10 @@ export function DemoProgressPreview() {
                     )}
                   </td>
                   {[u.l1, u.l2, u.l3].map((n, j) => (
-                    <td key={j} className="p-2 border border-border-subtle text-center tabular-nums">
+                    <td
+                      key={j}
+                      className="p-2 border border-border-subtle text-center tabular-nums"
+                    >
                       {n > 0 ? (
                         <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-info text-white text-[10px] font-bold">
                           {n}

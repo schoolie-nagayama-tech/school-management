@@ -37,7 +37,7 @@ function resolveMedia(src: string | null | undefined): string {
  */
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json() as Record<string, unknown>;
+    const body = (await request.json()) as Record<string, unknown>;
 
     // ---- ハニーポット: hidden フィールドに値が入っていたら静かに破棄 ----
     if (body._hp && String(body._hp).trim() !== '') {
@@ -45,16 +45,16 @@ export async function POST(request: NextRequest) {
     }
 
     // ---- 入力抽出 ----
-    const schoolCode    = typeof body.schoolCode    === 'string' ? body.schoolCode.trim()    : '';
-    const guardianName  = typeof body.guardianName  === 'string' ? body.guardianName.trim()  : '';
-    const guardianKana  = typeof body.guardianKana  === 'string' ? body.guardianKana.trim()  : '';
-    const studentName   = typeof body.studentName   === 'string' ? body.studentName.trim()   : '';
-    const grade         = typeof body.grade         === 'string' ? body.grade.trim()          : '';
-    const phone         = typeof body.phone         === 'string' ? body.phone.trim()          : '';
-    const email         = typeof body.email         === 'string' ? body.email.trim()          : '';
-    const requestType   = typeof body.requestType   === 'string' ? body.requestType.trim()   : '';
-    const message       = typeof body.message       === 'string' ? body.message.trim()        : '';
-    const src           = typeof body.src           === 'string' ? body.src.trim()            : '';
+    const schoolCode = typeof body.schoolCode === 'string' ? body.schoolCode.trim() : '';
+    const guardianName = typeof body.guardianName === 'string' ? body.guardianName.trim() : '';
+    const guardianKana = typeof body.guardianKana === 'string' ? body.guardianKana.trim() : '';
+    const studentName = typeof body.studentName === 'string' ? body.studentName.trim() : '';
+    const grade = typeof body.grade === 'string' ? body.grade.trim() : '';
+    const phone = typeof body.phone === 'string' ? body.phone.trim() : '';
+    const email = typeof body.email === 'string' ? body.email.trim() : '';
+    const requestType = typeof body.requestType === 'string' ? body.requestType.trim() : '';
+    const message = typeof body.message === 'string' ? body.message.trim() : '';
+    const src = typeof body.src === 'string' ? body.src.trim() : '';
 
     // ---- バリデーション ----
     if (!schoolCode) {
@@ -64,13 +64,22 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '保護者氏名は必須です' }, { status: 400 });
     }
     if (guardianName.length > 100) {
-      return NextResponse.json({ error: '保護者氏名は100文字以内で入力してください' }, { status: 400 });
+      return NextResponse.json(
+        { error: '保護者氏名は100文字以内で入力してください' },
+        { status: 400 }
+      );
     }
     if (!phone && !email) {
-      return NextResponse.json({ error: '電話番号またはメールアドレスのどちらかは必須です' }, { status: 400 });
+      return NextResponse.json(
+        { error: '電話番号またはメールアドレスのどちらかは必須です' },
+        { status: 400 }
+      );
     }
     if (message.length > 2000) {
-      return NextResponse.json({ error: 'ご質問ご要望は2000文字以内で入力してください' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'ご質問ご要望は2000文字以内で入力してください' },
+        { status: 400 }
+      );
     }
 
     const supabaseAdmin = getSupabaseAdmin();
@@ -93,35 +102,33 @@ export async function POST(request: NextRequest) {
     const media = resolveMedia(src);
 
     // ---- inquiries に insert ----
-    const { error: insertError } = await supabaseAdmin
-      .from('inquiries')
-      .insert({
-        school_id:         school.id,
-        inquired_at:       new Date().toISOString(),
-        status:            'in_progress',
-        guardian_name:     guardianName || null,
-        guardian_name_kana: guardianKana || null,
-        student_name:      studentName || null,
-        grade:             grade || null,
-        phone:             phone || null,
-        email:             email || null,
-        request_type:      requestType || null,
-        initial_message:   message || null,
-        media,
-        channel:           '自社フォーム',
-        raw_source: {
-          _self_form: 'true',
-          src: src || null,
-          guardian_name:    guardianName,
-          guardian_name_kana: guardianKana,
-          student_name:     studentName,
-          grade:            grade,
-          phone:            phone,
-          email:            email,
-          request_type:     requestType,
-          message:          message,
-        },
-      });
+    const { error: insertError } = await supabaseAdmin.from('inquiries').insert({
+      school_id: school.id,
+      inquired_at: new Date().toISOString(),
+      status: 'in_progress',
+      guardian_name: guardianName || null,
+      guardian_name_kana: guardianKana || null,
+      student_name: studentName || null,
+      grade: grade || null,
+      phone: phone || null,
+      email: email || null,
+      request_type: requestType || null,
+      initial_message: message || null,
+      media,
+      channel: '自社フォーム',
+      raw_source: {
+        _self_form: 'true',
+        src: src || null,
+        guardian_name: guardianName,
+        guardian_name_kana: guardianKana,
+        student_name: studentName,
+        grade: grade,
+        phone: phone,
+        email: email,
+        request_type: requestType,
+        message: message,
+      },
+    });
 
     if (insertError) {
       throw insertError;

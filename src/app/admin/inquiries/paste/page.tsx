@@ -43,7 +43,7 @@ type Step = 'paste' | 'confirm' | 'done';
 /** フォームの編集状態（confirm ステップで使用） */
 interface FormState {
   schoolId: string;
-  inquiredAt: string;        // datetime-local 形式 "YYYY-MM-DDTHH:mm"
+  inquiredAt: string; // datetime-local 形式 "YYYY-MM-DDTHH:mm"
   guardianName: string;
   guardianNameKana: string;
   studentName: string;
@@ -57,7 +57,7 @@ interface FormState {
   addressPref: string;
   addressDetail: string;
   addressBuilding: string;
-  schoolNameField: string;   // フォームの学校名（DBの school_id と区別するため suffix）
+  schoolNameField: string; // フォームの学校名（DBの school_id と区別するため suffix）
   media: string;
   channel: string;
   requestType: string;
@@ -139,25 +139,36 @@ function pastedToFormState(parsed: PastedInquiry): FormState {
 
 /** 媒体の選択肢 */
 const MEDIA_OPTIONS = [
-  '友人紹介', '看板・外パンフ', 'チラシ', '本部HP',
-  '塾ナビ', '塾選', '塾シル', 'その他',
+  '友人紹介',
+  '看板・外パンフ',
+  'チラシ',
+  '本部HP',
+  '塾ナビ',
+  '塾選',
+  '塾シル',
+  'その他',
 ];
 
 /** 問合せ経路の選択肢 */
-const CHANNEL_OPTIONS = [
-  '本部HP', '塾ナビ', '電話', '直来', '塾選', '塾シル', 'その他',
-];
+const CHANNEL_OPTIONS = ['本部HP', '塾ナビ', '電話', '直来', '塾選', '塾シル', 'その他'];
 
 /** 申込内容の選択肢 */
-const REQUEST_TYPE_OPTIONS = [
-  '無料体験授業', '資料請求', '学習相談・教室見学', 'その他',
-];
+const REQUEST_TYPE_OPTIONS = ['無料体験授業', '資料請求', '学習相談・教室見学', 'その他'];
 
 /** 学年の選択肢 */
 const GRADE_OPTIONS = [
-  '小1', '小2', '小3', '小4', '小5', '小6',
-  '中1', '中2', '中3',
-  '高1', '高2', '高3',
+  '小1',
+  '小2',
+  '小3',
+  '小4',
+  '小5',
+  '小6',
+  '中1',
+  '中2',
+  '中3',
+  '高1',
+  '高2',
+  '高3',
   '既卒',
 ];
 
@@ -165,7 +176,8 @@ export default function InquiriesPastePage() {
   const { profile } = useAuth();
 
   // ロールガード: admin / owner のみ
-  const isAdmin = profile?.role === 'admin' || profile?.role === 'owner' || profile?.role === 'manager';
+  const isAdmin =
+    profile?.role === 'admin' || profile?.role === 'owner' || profile?.role === 'manager';
 
   // ---- ステップ状態 ----
   const [step, setStep] = useState<Step>('paste');
@@ -200,7 +212,9 @@ export default function InquiriesPastePage() {
     setParseError('');
     const result = parsePastedInquiry(text);
     if (!result) {
-      setParseError('受付日時を読み取れませんでした。HPの問合せ詳細ページを全選択（Ctrl+A）してコピーしてください。');
+      setParseError(
+        '受付日時を読み取れませんでした。HPの問合せ詳細ページを全選択（Ctrl+A）してコピーしてください。'
+      );
       return;
     }
 
@@ -224,9 +238,7 @@ export default function InquiriesPastePage() {
       // hp_school_code === schoolCode で解決を試みる
       let resolvedId = '';
       if (result.schoolCode) {
-        const setting = allSettings.find(
-          (s) => s.hp_school_code === result.schoolCode
-        );
+        const setting = allSettings.find((s) => s.hp_school_code === result.schoolCode);
         if (setting) resolvedId = setting.school_id;
       }
 
@@ -279,7 +291,7 @@ export default function InquiriesPastePage() {
 
   /** フォームフィールドを更新するハンドラ */
   const setField = <K extends keyof FormState>(key: K, value: FormState[K]) => {
-    setForm((prev) => prev ? { ...prev, [key]: value } : prev);
+    setForm((prev) => (prev ? { ...prev, [key]: value } : prev));
   };
 
   /** 確認ステップから登録を実行 */
@@ -417,8 +429,8 @@ export default function InquiriesPastePage() {
                       isDone
                         ? 'bg-green-600 border-green-600 text-white'
                         : isCurrent
-                        ? 'bg-ink border-ink text-white'
-                        : 'bg-surface-raised border-border text-text-muted'
+                          ? 'bg-ink border-ink text-white'
+                          : 'bg-surface-raised border-border text-text-muted'
                     }`}
                   >
                     {isDone ? <CheckCircle className="w-4 h-4" /> : i + 1}
@@ -450,7 +462,10 @@ export default function InquiriesPastePage() {
               <Info className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
               <div className="text-sm text-blue-700 space-y-1">
                 <p className="font-medium">HPの問合せ詳細ページから貼り付け</p>
-                <p>問合せ詳細ページを開き、全選択（Ctrl+A / Cmd+A）してコピーし、下のテキストエリアに貼り付けてください。</p>
+                <p>
+                  問合せ詳細ページを開き、全選択（Ctrl+A /
+                  Cmd+A）してコピーし、下のテキストエリアに貼り付けてください。
+                </p>
               </div>
             </div>
 
@@ -499,9 +514,7 @@ export default function InquiriesPastePage() {
               <p className="text-sm text-green-800">
                 <span className="font-semibold">{parsedFieldCount} 項目</span>を読み取りました
                 {parsed.schoolRaw && (
-                  <span className="ml-2 text-green-700">
-                    （教室: {parsed.schoolRaw}）
-                  </span>
+                  <span className="ml-2 text-green-700">（教室: {parsed.schoolRaw}）</span>
                 )}
               </p>
             </div>
@@ -536,7 +549,8 @@ export default function InquiriesPastePage() {
                 <div className="flex items-center gap-2 mb-3">
                   <AlertTriangle className="w-4 h-4 text-yellow-600" />
                   <p className="text-sm font-medium text-yellow-800">
-                    同じ電話番号/メールの問合せが {dupInquiries.length} 件あります（登録はブロックされません）
+                    同じ電話番号/メールの問合せが {dupInquiries.length}{' '}
+                    件あります（登録はブロックされません）
                   </p>
                 </div>
                 <div className="space-y-1.5">
@@ -549,12 +563,16 @@ export default function InquiriesPastePage() {
                         target="_blank"
                         className="flex items-center gap-3 p-2 bg-white border border-yellow-200 rounded-lg text-xs hover:bg-yellow-50 transition-colors duration-150"
                       >
-                        <span className="text-text-muted shrink-0">{formatDate(inq.inquired_at)}</span>
+                        <span className="text-text-muted shrink-0">
+                          {formatDate(inq.inquired_at)}
+                        </span>
                         <span className="font-medium text-text-heading">
                           {inq.student_name ?? inq.guardian_name ?? '—'}
                         </span>
                         <span className="text-text-muted">{inq.phone ?? inq.email ?? ''}</span>
-                        <span className={`ml-auto px-1.5 py-0.5 rounded-full font-medium shrink-0 ${sc.className}`}>
+                        <span
+                          className={`ml-auto px-1.5 py-0.5 rounded-full font-medium shrink-0 ${sc.className}`}
+                        >
                           {sc.label}
                         </span>
                       </Link>
@@ -574,12 +592,10 @@ export default function InquiriesPastePage() {
 
             {/* ---- フォーム ---- */}
             <div className="bg-surface-raised border border-border rounded-xl divide-y divide-border">
-
               {/* 基本情報 */}
               <div className="p-5 space-y-4">
                 <h3 className="text-sm font-semibold text-text-heading">基本情報</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-
                   {/* 教室 */}
                   <div>
                     <label className="block text-xs font-medium text-text-heading mb-1">
@@ -594,7 +610,9 @@ export default function InquiriesPastePage() {
                     >
                       <option value="">教室を選択...</option>
                       {schools.map((s) => (
-                        <option key={s.id} value={s.id}>{s.name}</option>
+                        <option key={s.id} value={s.id}>
+                          {s.name}
+                        </option>
                       ))}
                     </select>
                   </div>
@@ -614,21 +632,27 @@ export default function InquiriesPastePage() {
 
                   {/* ステータス */}
                   <div>
-                    <label className="block text-xs font-medium text-text-heading mb-1">ステータス</label>
+                    <label className="block text-xs font-medium text-text-heading mb-1">
+                      ステータス
+                    </label>
                     <select
                       value={form.status}
                       onChange={(e) => setField('status', e.target.value as InquiryStatus)}
                       className="w-full px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary"
                     >
                       {STATUS_OPTIONS.filter((o) => o.value !== 'all').map((o) => (
-                        <option key={o.value} value={o.value}>{o.label}</option>
+                        <option key={o.value} value={o.value}>
+                          {o.label}
+                        </option>
                       ))}
                     </select>
                   </div>
 
                   {/* HP問合せNO */}
                   <div>
-                    <label className="block text-xs font-medium text-text-heading mb-1">HP問合せNO</label>
+                    <label className="block text-xs font-medium text-text-heading mb-1">
+                      HP問合せNO
+                    </label>
                     <input
                       type="text"
                       value={form.hpInquiryNo}
@@ -645,7 +669,9 @@ export default function InquiriesPastePage() {
                 <h3 className="text-sm font-semibold text-text-heading">保護者情報</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-medium text-text-heading mb-1">保護者氏名（漢字）</label>
+                    <label className="block text-xs font-medium text-text-heading mb-1">
+                      保護者氏名（漢字）
+                    </label>
                     <input
                       type="text"
                       value={form.guardianName}
@@ -654,7 +680,9 @@ export default function InquiriesPastePage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-text-heading mb-1">保護者氏名（カナ）</label>
+                    <label className="block text-xs font-medium text-text-heading mb-1">
+                      保護者氏名（カナ）
+                    </label>
                     <input
                       type="text"
                       value={form.guardianNameKana}
@@ -663,7 +691,9 @@ export default function InquiriesPastePage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-text-heading mb-1">電話番号</label>
+                    <label className="block text-xs font-medium text-text-heading mb-1">
+                      電話番号
+                    </label>
                     <input
                       type="text"
                       value={form.phone}
@@ -673,7 +703,9 @@ export default function InquiriesPastePage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-text-heading mb-1">メールアドレス</label>
+                    <label className="block text-xs font-medium text-text-heading mb-1">
+                      メールアドレス
+                    </label>
                     <input
                       type="email"
                       value={form.email}
@@ -689,7 +721,9 @@ export default function InquiriesPastePage() {
                 <h3 className="text-sm font-semibold text-text-heading">生徒情報</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-medium text-text-heading mb-1">生徒氏名（漢字）</label>
+                    <label className="block text-xs font-medium text-text-heading mb-1">
+                      生徒氏名（漢字）
+                    </label>
                     <input
                       type="text"
                       value={form.studentName}
@@ -698,7 +732,9 @@ export default function InquiriesPastePage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-text-heading mb-1">生徒氏名（カナ）</label>
+                    <label className="block text-xs font-medium text-text-heading mb-1">
+                      生徒氏名（カナ）
+                    </label>
                     <input
                       type="text"
                       value={form.studentNameKana}
@@ -707,7 +743,9 @@ export default function InquiriesPastePage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-text-heading mb-1">生徒との関係性</label>
+                    <label className="block text-xs font-medium text-text-heading mb-1">
+                      生徒との関係性
+                    </label>
                     <input
                       type="text"
                       value={form.relationship}
@@ -725,7 +763,9 @@ export default function InquiriesPastePage() {
                     >
                       <option value="">—</option>
                       {GRADE_OPTIONS.map((g) => (
-                        <option key={g} value={g}>{g}</option>
+                        <option key={g} value={g}>
+                          {g}
+                        </option>
                       ))}
                       {/* パース値がリストにない場合も表示できるよう追加 */}
                       {form.grade && !GRADE_OPTIONS.includes(form.grade) && (
@@ -747,7 +787,9 @@ export default function InquiriesPastePage() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-text-heading mb-1">学校名</label>
+                    <label className="block text-xs font-medium text-text-heading mb-1">
+                      学校名
+                    </label>
                     <input
                       type="text"
                       value={form.schoolNameField}
@@ -771,7 +813,9 @@ export default function InquiriesPastePage() {
                     >
                       <option value="">—</option>
                       {MEDIA_OPTIONS.map((m) => (
-                        <option key={m} value={m}>{m}</option>
+                        <option key={m} value={m}>
+                          {m}
+                        </option>
                       ))}
                       {form.media && !MEDIA_OPTIONS.includes(form.media) && (
                         <option value={form.media}>{form.media}</option>
@@ -779,7 +823,9 @@ export default function InquiriesPastePage() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-text-heading mb-1">問合せ経路</label>
+                    <label className="block text-xs font-medium text-text-heading mb-1">
+                      問合せ経路
+                    </label>
                     <select
                       value={form.channel}
                       onChange={(e) => setField('channel', e.target.value)}
@@ -787,7 +833,9 @@ export default function InquiriesPastePage() {
                     >
                       <option value="">—</option>
                       {CHANNEL_OPTIONS.map((c) => (
-                        <option key={c} value={c}>{c}</option>
+                        <option key={c} value={c}>
+                          {c}
+                        </option>
                       ))}
                       {form.channel && !CHANNEL_OPTIONS.includes(form.channel) && (
                         <option value={form.channel}>{form.channel}</option>
@@ -795,7 +843,9 @@ export default function InquiriesPastePage() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-text-heading mb-1">申込内容</label>
+                    <label className="block text-xs font-medium text-text-heading mb-1">
+                      申込内容
+                    </label>
                     <select
                       value={form.requestType}
                       onChange={(e) => setField('requestType', e.target.value)}
@@ -803,7 +853,9 @@ export default function InquiriesPastePage() {
                     >
                       <option value="">—</option>
                       {REQUEST_TYPE_OPTIONS.map((r) => (
-                        <option key={r} value={r}>{r}</option>
+                        <option key={r} value={r}>
+                          {r}
+                        </option>
                       ))}
                       {form.requestType && !REQUEST_TYPE_OPTIONS.includes(form.requestType) && (
                         <option value={form.requestType}>{form.requestType}</option>
@@ -811,7 +863,9 @@ export default function InquiriesPastePage() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-text-heading mb-1">通塾目的</label>
+                    <label className="block text-xs font-medium text-text-heading mb-1">
+                      通塾目的
+                    </label>
                     <input
                       type="text"
                       value={form.purpose}
@@ -820,7 +874,9 @@ export default function InquiriesPastePage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-text-heading mb-1">希望科目</label>
+                    <label className="block text-xs font-medium text-text-heading mb-1">
+                      希望科目
+                    </label>
                     <input
                       type="text"
                       value={form.preferredSubjects}
@@ -829,7 +885,9 @@ export default function InquiriesPastePage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-text-heading mb-1">通塾経験</label>
+                    <label className="block text-xs font-medium text-text-heading mb-1">
+                      通塾経験
+                    </label>
                     <input
                       type="text"
                       value={form.jukuExperience}
@@ -841,7 +899,9 @@ export default function InquiriesPastePage() {
 
                 {/* 問合せ内容（複数行） */}
                 <div>
-                  <label className="block text-xs font-medium text-text-heading mb-1">ご質問・ご要望</label>
+                  <label className="block text-xs font-medium text-text-heading mb-1">
+                    ご質問・ご要望
+                  </label>
                   <textarea
                     value={form.initialMessage}
                     onChange={(e) => setField('initialMessage', e.target.value)}
@@ -856,7 +916,9 @@ export default function InquiriesPastePage() {
                 <h3 className="text-sm font-semibold text-text-heading">進捗</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-medium text-text-heading mb-1">資料送付日</label>
+                    <label className="block text-xs font-medium text-text-heading mb-1">
+                      資料送付日
+                    </label>
                     <input
                       type="date"
                       value={form.materialSentAt}
@@ -865,7 +927,9 @@ export default function InquiriesPastePage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-text-heading mb-1">面談日時</label>
+                    <label className="block text-xs font-medium text-text-heading mb-1">
+                      面談日時
+                    </label>
                     <input
                       type="datetime-local"
                       value={form.interviewAt}
@@ -874,7 +938,9 @@ export default function InquiriesPastePage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-text-heading mb-1">体験日時</label>
+                    <label className="block text-xs font-medium text-text-heading mb-1">
+                      体験日時
+                    </label>
                     <input
                       type="datetime-local"
                       value={form.trialAt}
@@ -883,7 +949,9 @@ export default function InquiriesPastePage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-text-heading mb-1">入会成約日</label>
+                    <label className="block text-xs font-medium text-text-heading mb-1">
+                      入会成約日
+                    </label>
                     <input
                       type="date"
                       value={form.enrolledAt}
@@ -892,7 +960,9 @@ export default function InquiriesPastePage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-text-heading mb-1">個別週回数</label>
+                    <label className="block text-xs font-medium text-text-heading mb-1">
+                      個別週回数
+                    </label>
                     <input
                       type="number"
                       min="0"
@@ -921,7 +991,9 @@ export default function InquiriesPastePage() {
                 <h3 className="text-sm font-semibold text-text-heading">住所</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-medium text-text-heading mb-1">郵便番号</label>
+                    <label className="block text-xs font-medium text-text-heading mb-1">
+                      郵便番号
+                    </label>
                     <input
                       type="text"
                       value={form.postalCode}
@@ -930,7 +1002,9 @@ export default function InquiriesPastePage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-text-heading mb-1">都道府県</label>
+                    <label className="block text-xs font-medium text-text-heading mb-1">
+                      都道府県
+                    </label>
                     <input
                       type="text"
                       value={form.addressPref}
@@ -939,7 +1013,9 @@ export default function InquiriesPastePage() {
                     />
                   </div>
                   <div className="sm:col-span-2">
-                    <label className="block text-xs font-medium text-text-heading mb-1">ご住所</label>
+                    <label className="block text-xs font-medium text-text-heading mb-1">
+                      ご住所
+                    </label>
                     <input
                       type="text"
                       value={form.addressDetail}
@@ -948,7 +1024,9 @@ export default function InquiriesPastePage() {
                     />
                   </div>
                   <div className="sm:col-span-2">
-                    <label className="block text-xs font-medium text-text-heading mb-1">建物名</label>
+                    <label className="block text-xs font-medium text-text-heading mb-1">
+                      建物名
+                    </label>
                     <input
                       type="text"
                       value={form.addressBuilding}
@@ -996,9 +1074,7 @@ export default function InquiriesPastePage() {
             <div className="flex flex-col sm:flex-row gap-3">
               {createdId && (
                 <Link href={`/admin/inquiries/${createdId}`}>
-                  <Button size="sm">
-                    登録した問合せを確認する
-                  </Button>
+                  <Button size="sm">登録した問合せを確認する</Button>
                 </Link>
               )}
               <Link href="/admin/inquiries">

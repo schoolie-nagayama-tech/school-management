@@ -34,8 +34,19 @@ interface EmbedApplication {
 }
 
 const GRADE_LABELS: Record<number, string> = {
-  1: '小1', 2: '小2', 3: '小3', 4: '小4', 5: '小5', 6: '小6',
-  7: '中1', 8: '中2', 9: '中3', 10: '高1', 11: '高2', 12: '高3', 13: '既卒',
+  1: '小1',
+  2: '小2',
+  3: '小3',
+  4: '小4',
+  5: '小5',
+  6: '小6',
+  7: '中1',
+  8: '中2',
+  9: '中3',
+  10: '高1',
+  11: '高2',
+  12: '高3',
+  13: '既卒',
 };
 
 const STATUS_SYMBOLS: Record<string, string> = {
@@ -83,7 +94,9 @@ export default function EmbedApplicationsPage() {
   const [toast, setToast] = useState('');
 
   // 数値入力用
-  const [editingNumber, setEditingNumber] = useState<{ studentId: string; itemId: string } | null>(null);
+  const [editingNumber, setEditingNumber] = useState<{ studentId: string; itemId: string } | null>(
+    null
+  );
   const [numberInput, setNumberInput] = useState('');
   const numberInputRef = useRef<HTMLInputElement>(null);
 
@@ -125,100 +138,112 @@ export default function EmbedApplicationsPage() {
   }, [fetchData, refreshMinutes]);
 
   // ── 書き込みAPI呼び出し ──
-  const postUpdate = useCallback(async (
-    studentId: string,
-    itemId: string,
-    action: 'status' | 'number' | 'date',
-    value: string | number | null
-  ) => {
-    if (!token) return;
-    const key = `${studentId}-${itemId}`;
-    setSaving(key);
-    try {
-      const res = await fetch('/api/embed/applications', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token, student_id: studentId, item_id: itemId, action, value }),
-      });
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body.error || '更新に失敗しました');
+  const postUpdate = useCallback(
+    async (
+      studentId: string,
+      itemId: string,
+      action: 'status' | 'number' | 'date',
+      value: string | number | null
+    ) => {
+      if (!token) return;
+      const key = `${studentId}-${itemId}`;
+      setSaving(key);
+      try {
+        const res = await fetch('/api/embed/applications', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token, student_id: studentId, item_id: itemId, action, value }),
+        });
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          throw new Error(body.error || '更新に失敗しました');
+        }
+        // ローカルstate更新
+        if (action === 'status') {
+          setApplications((prev) => {
+            if (value === null) {
+              return prev.filter((a) => !(a.student_id === studentId && a.item_id === itemId));
+            }
+            const existing = prev.find((a) => a.student_id === studentId && a.item_id === itemId);
+            if (existing) {
+              return prev.map((a) =>
+                a.student_id === studentId && a.item_id === itemId
+                  ? { ...a, status: value as ApplicationStatus }
+                  : a
+              );
+            }
+            return [
+              ...prev,
+              {
+                id: `temp-${Date.now()}`,
+                student_id: studentId,
+                item_id: itemId,
+                status: value as ApplicationStatus,
+                number_value: null,
+                date_value: null,
+              },
+            ];
+          });
+        } else if (action === 'number') {
+          setApplications((prev) => {
+            if (value === null) {
+              return prev.filter((a) => !(a.student_id === studentId && a.item_id === itemId));
+            }
+            const existing = prev.find((a) => a.student_id === studentId && a.item_id === itemId);
+            if (existing) {
+              return prev.map((a) =>
+                a.student_id === studentId && a.item_id === itemId
+                  ? { ...a, number_value: value as number }
+                  : a
+              );
+            }
+            return [
+              ...prev,
+              {
+                id: `temp-${Date.now()}`,
+                student_id: studentId,
+                item_id: itemId,
+                status: null,
+                number_value: value as number,
+                date_value: null,
+              },
+            ];
+          });
+        } else if (action === 'date') {
+          setApplications((prev) => {
+            if (value === null) {
+              return prev.filter((a) => !(a.student_id === studentId && a.item_id === itemId));
+            }
+            const existing = prev.find((a) => a.student_id === studentId && a.item_id === itemId);
+            if (existing) {
+              return prev.map((a) =>
+                a.student_id === studentId && a.item_id === itemId
+                  ? { ...a, date_value: value as string }
+                  : a
+              );
+            }
+            return [
+              ...prev,
+              {
+                id: `temp-${Date.now()}`,
+                student_id: studentId,
+                item_id: itemId,
+                status: null,
+                number_value: null,
+                date_value: value as string,
+              },
+            ];
+          });
+        }
+      } catch (err) {
+        console.error('Update error:', err);
+        showToast(err instanceof Error ? err.message : '更新に失敗しました');
+      } finally {
+        setSaving(null);
       }
-      // ローカルstate更新
-      if (action === 'status') {
-        setApplications((prev) => {
-          if (value === null) {
-            return prev.filter((a) => !(a.student_id === studentId && a.item_id === itemId));
-          }
-          const existing = prev.find((a) => a.student_id === studentId && a.item_id === itemId);
-          if (existing) {
-            return prev.map((a) =>
-              a.student_id === studentId && a.item_id === itemId
-                ? { ...a, status: value as ApplicationStatus }
-                : a
-            );
-          }
-          return [...prev, {
-            id: `temp-${Date.now()}`,
-            student_id: studentId,
-            item_id: itemId,
-            status: value as ApplicationStatus,
-            number_value: null,
-            date_value: null,
-          }];
-        });
-      } else if (action === 'number') {
-        setApplications((prev) => {
-          if (value === null) {
-            return prev.filter((a) => !(a.student_id === studentId && a.item_id === itemId));
-          }
-          const existing = prev.find((a) => a.student_id === studentId && a.item_id === itemId);
-          if (existing) {
-            return prev.map((a) =>
-              a.student_id === studentId && a.item_id === itemId
-                ? { ...a, number_value: value as number }
-                : a
-            );
-          }
-          return [...prev, {
-            id: `temp-${Date.now()}`,
-            student_id: studentId,
-            item_id: itemId,
-            status: null,
-            number_value: value as number,
-            date_value: null,
-          }];
-        });
-      } else if (action === 'date') {
-        setApplications((prev) => {
-          if (value === null) {
-            return prev.filter((a) => !(a.student_id === studentId && a.item_id === itemId));
-          }
-          const existing = prev.find((a) => a.student_id === studentId && a.item_id === itemId);
-          if (existing) {
-            return prev.map((a) =>
-              a.student_id === studentId && a.item_id === itemId
-                ? { ...a, date_value: value as string }
-                : a
-            );
-          }
-          return [...prev, {
-            id: `temp-${Date.now()}`,
-            student_id: studentId,
-            item_id: itemId,
-            status: null,
-            number_value: null,
-            date_value: value as string,
-          }];
-        });
-      }
-    } catch (err) {
-      console.error('Update error:', err);
-      showToast(err instanceof Error ? err.message : '更新に失敗しました');
-    } finally {
-      setSaving(null);
-    }
-  }, [token]);
+    },
+    [token]
+  );
 
   const showToast = (msg: string) => {
     setToast(msg);
@@ -226,7 +251,11 @@ export default function EmbedApplicationsPage() {
   };
 
   // チェック列のクリック
-  const handleCheckClick = (studentId: string, itemId: string, currentStatus: ApplicationStatus | null) => {
+  const handleCheckClick = (
+    studentId: string,
+    itemId: string,
+    currentStatus: ApplicationStatus | null
+  ) => {
     if (readOnly) return;
     const nextStatus = getNextStatus(currentStatus);
     postUpdate(studentId, itemId, 'status', nextStatus);
@@ -310,13 +339,16 @@ export default function EmbedApplicationsPage() {
       {/* ヘッダー */}
       <div className="sticky top-0 z-30 bg-ink text-white px-3 py-2 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="font-bold text-sm flex items-center gap-1"><ClipboardList className="h-4 w-4" />申込状況</span>
+          <span className="font-bold text-sm flex items-center gap-1">
+            <ClipboardList className="h-4 w-4" />
+            申込状況
+          </span>
           {schoolName && <span className="text-xs opacity-80">（{schoolName}）</span>}
-          {readOnly && <span className="text-[10px] bg-surface-raised/20 px-1.5 py-0.5 rounded">閲覧専用</span>}
+          {readOnly && (
+            <span className="text-[10px] bg-surface-raised/20 px-1.5 py-0.5 rounded">閲覧専用</span>
+          )}
         </div>
-        <div className="text-xs opacity-70">
-          更新: {formatTime(generatedAt)}
-        </div>
+        <div className="text-xs opacity-70">更新: {formatTime(generatedAt)}</div>
       </div>
 
       {/* 説明 */}
@@ -331,10 +363,17 @@ export default function EmbedApplicationsPage() {
         <table className="w-full border-collapse min-w-[600px]">
           <thead>
             <tr className="bg-ink text-white">
-              <th className="sticky left-0 z-20 bg-ink px-2 py-1.5 text-left text-xs font-medium w-12">学年</th>
-              <th className="sticky left-12 z-20 bg-ink px-2 py-1.5 text-left text-xs font-medium min-w-[100px]">名前</th>
+              <th className="sticky left-0 z-20 bg-ink px-2 py-1.5 text-left text-xs font-medium w-12">
+                学年
+              </th>
+              <th className="sticky left-12 z-20 bg-ink px-2 py-1.5 text-left text-xs font-medium min-w-[100px]">
+                名前
+              </th>
               {items.map((item) => (
-                <th key={item.id} className="px-2 py-1.5 text-center text-xs font-medium min-w-[80px]">
+                <th
+                  key={item.id}
+                  className="px-2 py-1.5 text-center text-xs font-medium min-w-[80px]"
+                >
                   <div>{item.name}</div>
                   {item.due_date && (
                     <div className="text-[10px] opacity-70 font-normal">
@@ -346,7 +385,10 @@ export default function EmbedApplicationsPage() {
             </tr>
             {/* 集計行 */}
             <tr className="bg-gray-50 border-b-2 border-gray-300">
-              <td className="sticky left-0 z-20 bg-gray-50 px-2 py-1 text-xs font-medium text-gray-600" colSpan={2}>
+              <td
+                className="sticky left-0 z-20 bg-gray-50 px-2 py-1 text-xs font-medium text-gray-600"
+                colSpan={2}
+              >
                 集計
               </td>
               {items.map((item, i) => {
@@ -356,7 +398,9 @@ export default function EmbedApplicationsPage() {
                     {s.type === 'check' ? (
                       <>
                         <div className="text-gray-500">対象: {s.target}人</div>
-                        <div className="font-bold">済: {s.completed} ({s.pct}%)</div>
+                        <div className="font-bold">
+                          済: {s.completed} ({s.pct}%)
+                        </div>
                       </>
                     ) : s.type === 'number' ? (
                       <>
@@ -366,7 +410,10 @@ export default function EmbedApplicationsPage() {
                     ) : (
                       <>
                         <div className="text-gray-500">対象: {s.target}人</div>
-                        <div className="font-bold">済: {s.count} ({s.target > 0 ? Math.round((s.count / s.target) * 100) : 0}%)</div>
+                        <div className="font-bold">
+                          済: {s.count} ({s.target > 0 ? Math.round((s.count / s.target) * 100) : 0}
+                          %)
+                        </div>
                       </>
                     )}
                   </td>
@@ -380,12 +427,16 @@ export default function EmbedApplicationsPage() {
                 key={student.id}
                 className={`border-b border-gray-200 ${idx % 2 === 0 ? 'bg-surface-raised' : 'bg-gray-50/50'}`}
               >
-                <td className="sticky left-0 z-10 px-2 py-1.5 text-xs text-blue-700 font-medium"
-                    style={{ backgroundColor: idx % 2 === 0 ? 'white' : '#fafafa' }}>
+                <td
+                  className="sticky left-0 z-10 px-2 py-1.5 text-xs text-blue-700 font-medium"
+                  style={{ backgroundColor: idx % 2 === 0 ? 'white' : '#fafafa' }}
+                >
                   {GRADE_LABELS[student.grade] || `${student.grade}`}
                 </td>
-                <td className="sticky left-12 z-10 px-2 py-1.5 text-xs font-medium whitespace-nowrap"
-                    style={{ backgroundColor: idx % 2 === 0 ? 'white' : '#fafafa' }}>
+                <td
+                  className="sticky left-12 z-10 px-2 py-1.5 text-xs font-medium whitespace-nowrap"
+                  style={{ backgroundColor: idx % 2 === 0 ? 'white' : '#fafafa' }}
+                >
                   {student.last_name} {student.first_name}
                 </td>
                 {items.map((item) => {
@@ -396,12 +447,16 @@ export default function EmbedApplicationsPage() {
 
                   // 数値列
                   if (item.column_type === 'number') {
-                    const isEditing = editingNumber?.studentId === student.id && editingNumber?.itemId === item.id;
+                    const isEditing =
+                      editingNumber?.studentId === student.id && editingNumber?.itemId === item.id;
                     return (
                       <td
                         key={item.id}
                         className={`px-2 py-1.5 text-center text-xs ${!readOnly ? 'cursor-pointer hover:bg-blue-50 transition-colors duration-150' : ''} ${isSaving ? 'opacity-50' : ''}`}
-                        onClick={() => !isEditing && handleNumberClick(student.id, item.id, app?.number_value ?? null)}
+                        onClick={() =>
+                          !isEditing &&
+                          handleNumberClick(student.id, item.id, app?.number_value ?? null)
+                        }
                       >
                         {isEditing ? (
                           <input
@@ -416,8 +471,10 @@ export default function EmbedApplicationsPage() {
                               if (e.key === 'Escape') setEditingNumber(null);
                             }}
                           />
+                        ) : app?.number_value != null ? (
+                          app.number_value
                         ) : (
-                          app?.number_value != null ? app.number_value : '-'
+                          '-'
                         )}
                       </td>
                     );
@@ -435,12 +492,17 @@ export default function EmbedApplicationsPage() {
                             type="date"
                             className="w-[100px] text-xs border-0 bg-transparent cursor-pointer text-center"
                             value={app?.date_value || ''}
-                            onChange={(e) => postUpdate(student.id, item.id, 'date', e.target.value || null)}
+                            onChange={(e) =>
+                              postUpdate(student.id, item.id, 'date', e.target.value || null)
+                            }
                           />
+                        ) : app?.date_value ? (
+                          new Date(app.date_value + 'T00:00:00').toLocaleDateString('ja-JP', {
+                            month: 'short',
+                            day: 'numeric',
+                          })
                         ) : (
-                          app?.date_value
-                            ? new Date(app.date_value + 'T00:00:00').toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' })
-                            : '-'
+                          '-'
                         )}
                       </td>
                     );

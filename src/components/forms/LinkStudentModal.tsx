@@ -43,20 +43,14 @@ export function LinkStudentModal({
       onSuccess();
     } catch (error) {
       console.error('Error linking response:', error);
-      setError(
-        getUserErrorMessage(error, '紐付けに失敗しました')
-      );
+      setError(getUserErrorMessage(error, '紐付けに失敗しました'));
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      title="生徒への紐付け"
-    >
+    <Modal isOpen={isOpen} onClose={onClose} title="生徒への紐付け">
       <div className="space-y-4">
         {/* 回答者情報 */}
         <div className="bg-[#f3f4f6] p-4 rounded-lg border border-[#e5e7eb]">

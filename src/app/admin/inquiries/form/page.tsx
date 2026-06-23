@@ -19,8 +19,8 @@ import { ArrowLeft, Copy, Check, Download } from 'lucide-react';
 /** URL の src パラメータバリエーション */
 const SRC_VARIANTS = [
   { label: '自社フォーム（srcなし）', src: null },
-  { label: 'チラシ',                  src: 'チラシ' },
-  { label: '看板・外パンフ',           src: '看板' },
+  { label: 'チラシ', src: 'チラシ' },
+  { label: '看板・外パンフ', src: '看板' },
 ] as const;
 
 /** 教室の表示に必要な最小限の型 */
@@ -148,13 +148,7 @@ function SchoolCard({ school, origin }: { school: SchoolInfo; origin: string }) 
           const url = v.src
             ? `${origin}/inquiry/${school.code}?src=${encodeURIComponent(v.src)}`
             : `${origin}/inquiry/${school.code}`;
-          return (
-            <QrCard
-              key={v.label}
-              url={url}
-              label={v.label}
-            />
-          );
+          return <QrCard key={v.label} url={url} label={v.label} />;
         })}
       </div>
     </div>
@@ -166,7 +160,8 @@ export default function InquiryFormPage() {
   const { schools: masterSchools } = useMasterData();
 
   // ロールガード: admin / owner のみ
-  const isAdmin = profile?.role === 'admin' || profile?.role === 'owner' || profile?.role === 'manager';
+  const isAdmin =
+    profile?.role === 'admin' || profile?.role === 'owner' || profile?.role === 'manager';
 
   // 選択中の教室を絞り込み
   const [schools, setSchools] = useState<SchoolInfo[]>([]);
@@ -223,25 +218,26 @@ export default function InquiryFormPage() {
             流入元（src）別に媒体が自動記録されます。
           </p>
           <ul className="mt-3 space-y-1 text-xs text-blue-700">
-            <li>・ <strong>自社フォーム（srcなし）</strong>: チラシ以外の汎用URL（HPへの掲載など）</li>
-            <li>・ <strong>チラシ</strong>: チラシに印刷するQR → 媒体「チラシ」として自動記録</li>
-            <li>・ <strong>看板・外パンフ</strong>: 看板や外設置のパンフへのQR → 媒体「看板・外パンフ」として自動記録</li>
+            <li>
+              ・ <strong>自社フォーム（srcなし）</strong>: チラシ以外の汎用URL（HPへの掲載など）
+            </li>
+            <li>
+              ・ <strong>チラシ</strong>: チラシに印刷するQR → 媒体「チラシ」として自動記録
+            </li>
+            <li>
+              ・ <strong>看板・外パンフ</strong>: 看板や外設置のパンフへのQR →
+              媒体「看板・外パンフ」として自動記録
+            </li>
           </ul>
         </div>
 
         {/* 教室ごとのカード */}
         {schools.length === 0 ? (
-          <div className="text-center py-12 text-text-muted text-sm">
-            教室が選択されていません
-          </div>
+          <div className="text-center py-12 text-text-muted text-sm">教室が選択されていません</div>
         ) : (
           <div className="space-y-6">
             {schools.map((school) => (
-              <SchoolCard
-                key={school.id}
-                school={school}
-                origin={origin}
-              />
+              <SchoolCard key={school.id} school={school} origin={origin} />
             ))}
           </div>
         )}

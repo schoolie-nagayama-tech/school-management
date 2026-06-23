@@ -5,7 +5,13 @@ import Link from 'next/link';
 import { AdminLayout } from '@/components/layouts';
 import { Button, ToastContainer, Loading } from '@/components/ui';
 import { ChevronLeft } from 'lucide-react';
-import { getShukaisuPeriods, deleteShukaisuPeriod, getShukaisuResponseCount, archiveShukaisuPeriod, unarchiveShukaisuPeriod } from '@/lib/api/shukaisu';
+import {
+  getShukaisuPeriods,
+  deleteShukaisuPeriod,
+  getShukaisuResponseCount,
+  archiveShukaisuPeriod,
+  unarchiveShukaisuPeriod,
+} from '@/lib/api/shukaisu';
 import { ShukaisuPeriodEditor } from '@/components/forms/shukaisu/ShukaisuPeriodEditor';
 import { useToast } from '@/hooks/useToast';
 import { useConfirm } from '@/hooks/useConfirm';
@@ -50,9 +56,7 @@ export default function ShukaisuSettingsPage() {
       setResponseCounts(counts);
     } catch (error) {
       console.error('Error fetching shukaisu periods:', error);
-      setErrorMessage(
-        getUserErrorMessage(error, '期間一覧の取得に失敗しました')
-      );
+      setErrorMessage(getUserErrorMessage(error, '期間一覧の取得に失敗しました'));
     } finally {
       setIsLoading(false);
     }
@@ -77,7 +81,15 @@ export default function ShukaisuSettingsPage() {
 
   // 期間削除
   const handleDelete = async (periodId: string, periodTitle: string) => {
-    if (!(await confirm({ title: '削除確認', description: `「${periodTitle}」を削除してもよろしいですか？`, confirmLabel: '削除', variant: 'danger' }))) return;
+    if (
+      !(await confirm({
+        title: '削除確認',
+        description: `「${periodTitle}」を削除してもよろしいですか？`,
+        confirmLabel: '削除',
+        variant: 'danger',
+      }))
+    )
+      return;
     try {
       setIsSubmitting(true);
       await deleteShukaisuPeriod(periodId);
@@ -85,9 +97,7 @@ export default function ShukaisuSettingsPage() {
       success('期間を削除しました');
     } catch (err) {
       console.error('Error deleting period:', err);
-      error(
-        getUserErrorMessage(err, '期間の削除に失敗しました')
-      );
+      error(getUserErrorMessage(err, '期間の削除に失敗しました'));
     } finally {
       setIsSubmitting(false);
     }
@@ -96,7 +106,12 @@ export default function ShukaisuSettingsPage() {
   // 期間アーカイブ
   const handleArchivePeriod = async (period: ShukaisuPeriod) => {
     if (
-      !(await confirm({ title: 'アーカイブ確認', description: `「${period.title}」をアーカイブしますか？\n\nこの期間の全ての回答もアーカイブされます。`, confirmLabel: 'アーカイブ', variant: 'warning' }))
+      !(await confirm({
+        title: 'アーカイブ確認',
+        description: `「${period.title}」をアーカイブしますか？\n\nこの期間の全ての回答もアーカイブされます。`,
+        confirmLabel: 'アーカイブ',
+        variant: 'warning',
+      }))
     ) {
       return;
     }
@@ -104,20 +119,12 @@ export default function ShukaisuSettingsPage() {
     try {
       setIsSubmitting(true);
       const schoolId = getDefaultSchoolId();
-      const result = await archiveShukaisuPeriod(
-        period.id,
-        schoolId,
-        period.period_key
-      );
+      const result = await archiveShukaisuPeriod(period.id, schoolId, period.period_key);
       await fetchPeriods();
-      success(
-        `アーカイブしました（回答${result.responsesArchived}件を含む）`
-      );
+      success(`アーカイブしました（回答${result.responsesArchived}件を含む）`);
     } catch (err) {
       console.error('Error archiving period:', err);
-      error(
-        getUserErrorMessage(err, 'アーカイブに失敗しました')
-      );
+      error(getUserErrorMessage(err, 'アーカイブに失敗しました'));
     } finally {
       setIsSubmitting(false);
     }
@@ -128,20 +135,12 @@ export default function ShukaisuSettingsPage() {
     try {
       setIsSubmitting(true);
       const schoolId = getDefaultSchoolId();
-      const result = await unarchiveShukaisuPeriod(
-        period.id,
-        schoolId,
-        period.period_key
-      );
+      const result = await unarchiveShukaisuPeriod(period.id, schoolId, period.period_key);
       await fetchPeriods();
-      success(
-        `アーカイブを解除しました（回答${result.responsesUnarchived}件を含む）`
-      );
+      success(`アーカイブを解除しました（回答${result.responsesUnarchived}件を含む）`);
     } catch (err) {
       console.error('Error unarchiving period:', err);
-      error(
-        getUserErrorMessage(err, 'アーカイブ解除に失敗しました')
-      );
+      error(getUserErrorMessage(err, 'アーカイブ解除に失敗しました'));
     } finally {
       setIsSubmitting(false);
     }
@@ -152,7 +151,10 @@ export default function ShukaisuSettingsPage() {
       <ToastContainer toasts={toasts} onRemove={removeToast} />
       <AdminLayout headerTitle="週回数変更 設定">
         <div className="mb-4">
-          <Link href="/settings" className="inline-flex items-center gap-1 text-sm text-text-muted hover:text-text-heading transition-colors duration-150">
+          <Link
+            href="/settings"
+            className="inline-flex items-center gap-1 text-sm text-text-muted hover:text-text-heading transition-colors duration-150"
+          >
             <ChevronLeft className="w-4 h-4" />
             設定に戻る
           </Link>
@@ -177,9 +179,7 @@ export default function ShukaisuSettingsPage() {
                 <span className="text-sm text-text-heading">
                   アーカイブ済みを表示
                   {archivedPeriods.length > 0 && (
-                    <span className="ml-1 text-text-body/60">
-                      ({archivedPeriods.length}件)
-                    </span>
+                    <span className="ml-1 text-text-body/60">({archivedPeriods.length}件)</span>
                   )}
                 </span>
               </label>
@@ -206,35 +206,19 @@ export default function ShukaisuSettingsPage() {
               <table className="w-full border-collapse border border-border text-sm">
                 <thead>
                   <tr className="bg-surface-hover">
-                    <th className="border border-border px-4 py-3 text-left">
-                      期間
-                    </th>
-                    <th className="border border-border px-4 py-3 text-left">
-                      タイトル
-                    </th>
-                    <th className="border border-border px-4 py-3 text-left">
-                      公開期間
-                    </th>
-                    <th className="border border-border px-4 py-3 text-left">
-                      状態
-                    </th>
-                    <th className="border border-border px-4 py-3 text-left">
-                      回答数
-                    </th>
-                    <th className="border border-border px-4 py-3 text-left">
-                      操作
-                    </th>
+                    <th className="border border-border px-4 py-3 text-left">期間</th>
+                    <th className="border border-border px-4 py-3 text-left">タイトル</th>
+                    <th className="border border-border px-4 py-3 text-left">公開期間</th>
+                    <th className="border border-border px-4 py-3 text-left">状態</th>
+                    <th className="border border-border px-4 py-3 text-left">回答数</th>
+                    <th className="border border-border px-4 py-3 text-left">操作</th>
                   </tr>
                 </thead>
                 <tbody>
                   {activePeriods.map((period) => (
                     <tr key={period.id} className="table-row-hover">
-                      <td className="border border-border px-4 py-3">
-                        {period.period_key}
-                      </td>
-                      <td className="border border-border px-4 py-3">
-                        {period.title}
-                      </td>
+                      <td className="border border-border px-4 py-3">{period.period_key}</td>
+                      <td className="border border-border px-4 py-3">{period.title}</td>
                       <td className="border border-border px-4 py-3">
                         {formatDateRange(period.publish_start, period.publish_end)}
                       </td>
@@ -245,8 +229,8 @@ export default function ShukaisuSettingsPage() {
                             status.color === 'green'
                               ? 'bg-green-100 text-green-800'
                               : status.color === 'yellow'
-                              ? 'bg-yellow-100 text-yellow-800'
-                              : 'bg-gray-100 text-gray-800';
+                                ? 'bg-yellow-100 text-yellow-800'
+                                : 'bg-gray-100 text-gray-800';
                           return (
                             <span
                               className={`px-2 py-1 rounded text-xs font-medium ${statusColorClass}`}
@@ -316,22 +300,13 @@ export default function ShukaisuSettingsPage() {
                     <>
                       <tr>
                         <td colSpan={6} className="border border-border px-4 py-2 bg-gray-50">
-                          <div className="text-sm font-medium text-gray-600">
-                            アーカイブ済み
-                          </div>
+                          <div className="text-sm font-medium text-gray-600">アーカイブ済み</div>
                         </td>
                       </tr>
                       {archivedPeriods.map((period) => (
-                        <tr
-                          key={period.id}
-                          className="table-row-hover bg-gray-50 opacity-70"
-                        >
-                          <td className="border border-border px-4 py-3">
-                            {period.period_key}
-                          </td>
-                          <td className="border border-border px-4 py-3">
-                            {period.title}
-                          </td>
+                        <tr key={period.id} className="table-row-hover bg-gray-50 opacity-70">
+                          <td className="border border-border px-4 py-3">{period.period_key}</td>
+                          <td className="border border-border px-4 py-3">{period.title}</td>
                           <td className="border border-border px-4 py-3">
                             {formatDateRange(period.publish_start, period.publish_end)}
                           </td>
@@ -388,7 +363,7 @@ export default function ShukaisuSettingsPage() {
             </div>
           )}
         </div>
-      {ConfirmDialog}
+        {ConfirmDialog}
       </AdminLayout>
 
       {/* 期間編集モーダル */}

@@ -34,44 +34,54 @@ interface BadgeAssignDialogProps {
 }
 
 /** バッジを講師にまとめて付与/剥奪するダイアログ */
-export function BadgeAssignDialog({ open, badge, schoolIds, onClose, onSuccess, onError }: BadgeAssignDialogProps) {
+export function BadgeAssignDialog({
+  open,
+  badge,
+  schoolIds,
+  onClose,
+  onSuccess,
+  onError,
+}: BadgeAssignDialogProps) {
   const [teachers, setTeachers] = useState<TeacherSummary[]>([]);
   const [assignedIds, setAssignedIds] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(false);
   const [togglingIds, setTogglingIds] = useState<Set<string>>(new Set());
 
-  const fetchData = useCallback(async (badgeId: string) => {
-    setLoading(true);
-    try {
-      const [teachersRes, assigned] = await Promise.all([
-        fetchWithAuth('/api/admin/users?role=teacher'),
-        getBadgeAssignees(badgeId),
-      ]);
-      if (teachersRes.ok) {
-        const data = await teachersRes.json();
-        let users: TeacherSummary[] = (data.users || []).map((u: TeacherSummary) => ({
-          id: u.id,
-          display_name: u.display_name,
-          last_name: u.last_name,
-          first_name: u.first_name,
-          user_schools: u.user_schools,
-        }));
-        // 教室IDで絞り込み
-        if (schoolIds && schoolIds.length > 0) {
-          users = users.filter((u) =>
-            (u.user_schools || []).some((us) => schoolIds.includes(us.school_id))
-          );
+  const fetchData = useCallback(
+    async (badgeId: string) => {
+      setLoading(true);
+      try {
+        const [teachersRes, assigned] = await Promise.all([
+          fetchWithAuth('/api/admin/users?role=teacher'),
+          getBadgeAssignees(badgeId),
+        ]);
+        if (teachersRes.ok) {
+          const data = await teachersRes.json();
+          let users: TeacherSummary[] = (data.users || []).map((u: TeacherSummary) => ({
+            id: u.id,
+            display_name: u.display_name,
+            last_name: u.last_name,
+            first_name: u.first_name,
+            user_schools: u.user_schools,
+          }));
+          // 教室IDで絞り込み
+          if (schoolIds && schoolIds.length > 0) {
+            users = users.filter((u) =>
+              (u.user_schools || []).some((us) => schoolIds.includes(us.school_id))
+            );
+          }
+          setTeachers(users);
         }
-        setTeachers(users);
+        setAssignedIds(new Set(assigned));
+      } catch {
+        // 空で表示
+      } finally {
+        setLoading(false);
       }
-      setAssignedIds(new Set(assigned));
-    } catch {
-      // 空で表示
-    } finally {
-      setLoading(false);
-    }
-  }, [schoolIds]);
+    },
+    [schoolIds]
+  );
 
   useEffect(() => {
     if (open && badge) {
@@ -127,7 +137,10 @@ export function BadgeAssignDialog({ open, badge, schoolIds, onClose, onSuccess, 
   const rankConfig = BADGE_RANK_CONFIG[badge.rank];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+      onClick={onClose}
+    >
       <div
         className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 max-h-[80vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}

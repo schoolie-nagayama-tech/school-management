@@ -36,7 +36,9 @@ export default function IntegrationsPage() {
     setError('');
     try {
       const supabase = createSupabaseBrowserClient();
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       const res = await fetch('/api/integrations/google/connections', {
         headers: {
           Authorization: `Bearer ${session?.access_token || ''}`,
@@ -55,7 +57,9 @@ export default function IntegrationsPage() {
   if (!isAdminOrOwner) {
     return (
       <AdminLayout headerTitle="外部サービス連携">
-        <div className="text-center py-12 text-gray-500">この画面はシステム管理者のみ利用できます</div>
+        <div className="text-center py-12 text-gray-500">
+          この画面はシステム管理者のみ利用できます
+        </div>
       </AdminLayout>
     );
   }
@@ -78,7 +82,9 @@ export default function IntegrationsPage() {
               <Calendar className="w-5 h-5 text-blue-600" />
               <div>
                 <h2 className="text-base font-bold text-gray-900">Googleカレンダー連携状況</h2>
-                <p className="text-xs text-gray-500 mt-0.5">模試の振替予定が各ユーザーのカレンダーに自動登録されます</p>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  模試の振替予定が各ユーザーのカレンダーに自動登録されます
+                </p>
               </div>
             </div>
             <button
@@ -100,7 +106,9 @@ export default function IntegrationsPage() {
             <div className="px-6 py-8 text-center text-gray-400">
               <XCircle className="w-8 h-8 mx-auto mb-2 opacity-40" />
               <p className="text-sm">まだ誰もカレンダー連携していません</p>
-              <p className="text-xs mt-1">各ユーザーが「設定 → アカウント → 外部サービス連携」から連携できます</p>
+              <p className="text-xs mt-1">
+                各ユーザーが「設定 → アカウント → 外部サービス連携」から連携できます
+              </p>
             </div>
           ) : (
             <div className="divide-y divide-gray-100">
@@ -120,8 +128,12 @@ export default function IntegrationsPage() {
                     {/* User Info */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-gray-900">{conn.displayName}</span>
-                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-500">{conn.role}</span>
+                        <span className="text-sm font-medium text-gray-900">
+                          {conn.displayName}
+                        </span>
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-500">
+                          {conn.role}
+                        </span>
                       </div>
                       <div className="text-xs text-gray-500 mt-0.5">
                         {conn.calendarEmail || 'メール不明'}
@@ -142,7 +154,9 @@ export default function IntegrationsPage() {
                       </div>
                       <div className="text-[10px] text-gray-400 mt-1">
                         {isExpired ? (
-                          <span className="text-orange-500">トークン期限切れ（自動更新されます）</span>
+                          <span className="text-orange-500">
+                            トークン期限切れ（自動更新されます）
+                          </span>
                         ) : (
                           <>連携日: {new Date(conn.connectedAt).toLocaleDateString('ja-JP')}</>
                         )}
@@ -160,7 +174,9 @@ export default function IntegrationsPage() {
           <p className="font-medium mb-1">連携の仕組み</p>
           <ul className="list-disc list-inside space-y-0.5 text-blue-600">
             <li>各教室長が自分のアカウント設定からGoogleカレンダーを連携します</li>
-            <li>模試フォームで「振替受験」が送信されると、該当教室のメールアドレスと一致するユーザーのカレンダーに予定が追加されます</li>
+            <li>
+              模試フォームで「振替受験」が送信されると、該当教室のメールアドレスと一致するユーザーのカレンダーに予定が追加されます
+            </li>
             <li>トークンは自動更新されますが、Google側で権限を取り消した場合は再連携が必要です</li>
           </ul>
         </div>

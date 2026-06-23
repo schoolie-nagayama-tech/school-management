@@ -58,9 +58,7 @@ export default function ResetPasswordPage() {
                 <Check className="w-8 h-8 text-green-600" />
               </div>
               <h2 className="text-xl font-bold text-text-heading mb-2">パスワードを更新しました</h2>
-              <p className="text-text-body">
-                3秒後にログイン画面に移動します...
-              </p>
+              <p className="text-text-body">3秒後にログイン画面に移動します...</p>
             </div>
           ) : (
             <>
@@ -78,7 +76,7 @@ export default function ResetPasswordPage() {
                   <input
                     type="password"
                     value={password}
-                    onChange={e => setPassword(e.target.value)}
+                    onChange={(e) => setPassword(e.target.value)}
                     required
                     minLength={8}
                     className="w-full px-4 py-3 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
@@ -92,7 +90,7 @@ export default function ResetPasswordPage() {
                   <input
                     type="password"
                     value={confirmPassword}
-                    onChange={e => setConfirmPassword(e.target.value)}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
                     required
                     className="w-full px-4 py-3 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                     placeholder="もう一度入力"

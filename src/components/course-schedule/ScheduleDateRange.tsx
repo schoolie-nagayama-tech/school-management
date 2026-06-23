@@ -26,19 +26,19 @@ function getSeasonFullRange(season: SeasonType, year: number): { start: Date; en
     case 'spring':
       // 1月中旬～4月上旬 → 1月～4月
       return {
-        start: new Date(year, 0, 1),    // 1月1日
-        end: new Date(year, 3, 30),     // 4月30日
+        start: new Date(year, 0, 1), // 1月1日
+        end: new Date(year, 3, 30), // 4月30日
       };
     case 'summer':
       // 4月中旬～7月上旬 → 4月～8月
       return {
-        start: new Date(year, 3, 1),    // 4月1日
-        end: new Date(year, 7, 31),     // 8月31日
+        start: new Date(year, 3, 1), // 4月1日
+        end: new Date(year, 7, 31), // 8月31日
       };
     case 'winter':
       // 10月～1月 → 10月～翌1月
       return {
-        start: new Date(year, 9, 1),    // 10月1日
+        start: new Date(year, 9, 1), // 10月1日
         end: new Date(year + 1, 0, 31), // 翌1月31日
       };
     default:

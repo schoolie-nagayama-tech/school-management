@@ -78,7 +78,7 @@ export default function PatternMatchPage() {
   const schoolId =
     selectedSchoolId && selectedSchoolId !== 'all'
       ? selectedSchoolId
-      : getSelectedSchoolIds()[0] ?? null;
+      : (getSelectedSchoolIds()[0] ?? null);
 
   const load = useCallback(async () => {
     if (!schoolId) return;
@@ -187,7 +187,6 @@ export default function PatternMatchPage() {
     <AdminLayout headerTitle="通塾日程 講師マッチング">
       <ToastContainer toasts={toasts} onRemove={removeToast} />
       <div className="space-y-4">
-
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold">通塾日程 講師マッチング</h1>
@@ -292,7 +291,10 @@ export default function PatternMatchPage() {
             <div className="ml-auto text-xs text-text-muted">
               残: <strong className="text-text-body">{patterns.length}</strong> 件
               {visible.length !== patterns.length && (
-                <> / 表示: <strong className="text-text-body">{visible.length}</strong> 件</>
+                <>
+                  {' '}
+                  / 表示: <strong className="text-text-body">{visible.length}</strong> 件
+                </>
               )}
             </div>
           </CardContent>
@@ -494,7 +496,8 @@ function AllCandidatesModal({
         <div className="px-5 py-3 border-b border-border-subtle sticky top-0 bg-white flex items-center justify-between">
           <div className="min-w-0">
             <h3 className="text-base font-bold text-text-heading truncate">
-              {studentName} <span className="text-xs font-normal text-text-muted ml-1">{grade}</span>
+              {studentName}{' '}
+              <span className="text-xs font-normal text-text-muted ml-1">{grade}</span>
             </h3>
             <p className="text-xs text-text-muted">
               {dowLabel}曜 {slot?.slot_number}限
@@ -518,9 +521,7 @@ function AllCandidatesModal({
 
         <div className="p-4">
           {candidates.length === 0 ? (
-            <p className="text-sm text-text-muted text-center py-8">
-              候補講師が見つかりません
-            </p>
+            <p className="text-sm text-text-muted text-center py-8">候補講師が見つかりません</p>
           ) : (
             <ul className="space-y-1.5">
               {candidates.map((c) => (
@@ -550,7 +551,9 @@ function AllCandidatesModal({
                     </span>
                     <div className="flex-1 min-w-0">
                       <div className="text-sm font-semibold text-text-body truncate">
-                        {c.score >= 50 && <CheckCircle2 className="inline w-3.5 h-3.5 mr-1 text-success" />}
+                        {c.score >= 50 && (
+                          <CheckCircle2 className="inline w-3.5 h-3.5 mr-1 text-success" />
+                        )}
                         {c.display_name || c.email || '名無し'}
                       </div>
                       {(c.reasons.length > 0 || c.warnings.length > 0) && (

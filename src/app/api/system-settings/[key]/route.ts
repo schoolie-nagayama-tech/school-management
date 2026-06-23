@@ -29,7 +29,10 @@ async function getUserFromAuthHeader(request: NextRequest): Promise<{ userId: st
       global: { headers: { Authorization: `Bearer ${token}` } },
     }
   );
-  const { data: { user }, error } = await supabase.auth.getUser();
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
   if (error || !user) return null;
   return { userId: user.id };
 }
@@ -69,10 +72,7 @@ async function getSessionFromRequest(request: NextRequest) {
  * PUT /api/system-settings/[key]
  * 認証必須かつ admin ロールのみ。{ value: "..." } で更新
  */
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: { key: string } }
-) {
+export async function PUT(request: NextRequest, { params }: { params: { key: string } }) {
   try {
     const key = params?.key;
     if (!key || typeof key !== 'string') {
@@ -94,10 +94,7 @@ export async function PUT(
       .single();
 
     if (profileError || !profile) {
-      return NextResponse.json(
-        { error: 'プロファイルを取得できませんでした' },
-        { status: 403 }
-      );
+      return NextResponse.json({ error: 'プロファイルを取得できませんでした' }, { status: 403 });
     }
 
     if (String(profile.role).toLowerCase() !== 'admin') {
@@ -110,10 +107,7 @@ export async function PUT(
     const body = await request.json();
     const value = body?.value;
     if (value === undefined || value === null) {
-      return NextResponse.json(
-        { error: 'value が必要です' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'value が必要です' }, { status: 400 });
     }
 
     // 文字列の場合はJSON妥当性を検証

@@ -37,14 +37,8 @@ export async function getExamTypes(schoolId?: string): Promise<ExamType[]> {
 /**
  * テスト名マスタを作成
  */
-export async function createExamType(
-  examType: ExamTypeInsert
-): Promise<ExamType> {
-  const { data, error } = await supabase
-    .from('exam_types')
-    .insert(examType)
-    .select()
-    .single();
+export async function createExamType(examType: ExamTypeInsert): Promise<ExamType> {
+  const { data, error } = await supabase.from('exam_types').insert(examType).select().single();
 
   if (error) {
     throw new Error(`テスト名マスタの作成に失敗しました: ${error.message}`);
@@ -56,10 +50,7 @@ export async function createExamType(
 /**
  * テスト名マスタを更新
  */
-export async function updateExamType(
-  id: string,
-  examType: ExamTypeUpdate
-): Promise<ExamType> {
+export async function updateExamType(id: string, examType: ExamTypeUpdate): Promise<ExamType> {
   const { data, error } = await supabase
     .from('exam_types')
     .update(examType)
@@ -127,14 +118,8 @@ export async function getTextbooks(
 /**
  * テキストマスタを作成
  */
-export async function createTextbook(
-  textbook: TextbookInsert
-): Promise<Textbook> {
-  const { data, error } = await supabase
-    .from('textbooks')
-    .insert(textbook)
-    .select()
-    .single();
+export async function createTextbook(textbook: TextbookInsert): Promise<Textbook> {
+  const { data, error } = await supabase.from('textbooks').insert(textbook).select().single();
 
   if (error) {
     throw new Error(`テキストマスタの作成に失敗しました: ${error.message}`);
@@ -146,10 +131,7 @@ export async function createTextbook(
 /**
  * テキストマスタを更新
  */
-export async function updateTextbook(
-  id: number,
-  textbook: TextbookUpdate
-): Promise<Textbook> {
+export async function updateTextbook(id: number, textbook: TextbookUpdate): Promise<Textbook> {
   const { data, error } = await supabase
     .from('textbooks')
     .update(textbook)
@@ -182,9 +164,7 @@ export async function deleteTextbook(id: number): Promise<void> {
 /**
  * 目次項目一覧を取得（テキストID指定）
  */
-export async function getCurriculumItems(
-  textbookId: number
-): Promise<CurriculumItem[]> {
+export async function getCurriculumItems(textbookId: number): Promise<CurriculumItem[]> {
   const { data, error } = await supabase
     .from('curriculum_items')
     .select('*')
@@ -201,14 +181,8 @@ export async function getCurriculumItems(
 /**
  * 目次項目を作成
  */
-export async function createCurriculumItem(
-  item: CurriculumItemInsert
-): Promise<CurriculumItem> {
-  const { data, error } = await supabase
-    .from('curriculum_items')
-    .insert(item)
-    .select()
-    .single();
+export async function createCurriculumItem(item: CurriculumItemInsert): Promise<CurriculumItem> {
+  const { data, error } = await supabase.from('curriculum_items').insert(item).select().single();
 
   if (error) {
     throw new Error(`目次項目の作成に失敗しました: ${error.message}`);
@@ -242,10 +216,7 @@ export async function updateCurriculumItem(
  * 目次項目を削除
  */
 export async function deleteCurriculumItem(id: number): Promise<void> {
-  const { error } = await supabase
-    .from('curriculum_items')
-    .delete()
-    .eq('id', id);
+  const { error } = await supabase.from('curriculum_items').delete().eq('id', id);
 
   if (error) {
     throw new Error(`目次項目の削除に失敗しました: ${error.message}`);

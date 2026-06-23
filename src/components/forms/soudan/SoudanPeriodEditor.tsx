@@ -3,7 +3,12 @@
 import { useState, useEffect } from 'react';
 import { Modal, Input, Button, Select } from '@/components/ui';
 import { createSoudanPeriod, updateSoudanPeriod } from '@/lib/api/soudan';
-import { createFormPeriodForSchools, updateFormPeriodForSchools, generateUniquePeriodKey, getNextPeriodKey } from '@/lib/api/form-periods';
+import {
+  createFormPeriodForSchools,
+  updateFormPeriodForSchools,
+  generateUniquePeriodKey,
+  getNextPeriodKey,
+} from '@/lib/api/form-periods';
 import { getApplicationItems } from '@/lib/api/applications';
 import type { SoudanPeriod, SoudanSettings } from '@/types/forms/soudan';
 import type { ApplicationItem } from '@/types/database';
@@ -62,7 +67,6 @@ export function SoudanPeriodEditor({
   const [linkedApplicationItemId, setLinkedApplicationItemId] = useState<string>('');
   const [applicationItems, setApplicationItems] = useState<ApplicationItem[]>([]);
 
-
   // 公開開始日のデフォルト（今の日時・YYYY-MM-DDTHH:mm）
   const getDefaultPublishStart = () => {
     const now = new Date();
@@ -81,7 +85,8 @@ export function SoudanPeriodEditor({
   // 初期値の設定
   useEffect(() => {
     if (isOpen) {
-      const targetIds = schoolIds && schoolIds.length > 0 ? schoolIds : schoolId ? [schoolId] : undefined;
+      const targetIds =
+        schoolIds && schoolIds.length > 0 ? schoolIds : schoolId ? [schoolId] : undefined;
       getApplicationItems(targetIds, true).then(setApplicationItems).catch(console.error);
       if (period) {
         // 編集モード
@@ -91,28 +96,31 @@ export function SoudanPeriodEditor({
         setDescription(settings.description || DEFAULT_DESCRIPTION);
         setCategoriesText(settings.categories?.join('\n') || DEFAULT_CATEGORIES);
         setPublishStart(
-          period.publish_start
-            ? new Date(period.publish_start).toISOString().slice(0, 16)
-            : ''
+          period.publish_start ? new Date(period.publish_start).toISOString().slice(0, 16) : ''
         );
         setPublishEnd(
-          period.publish_end
-            ? new Date(period.publish_end).toISOString().slice(0, 16)
-            : ''
+          period.publish_end ? new Date(period.publish_end).toISOString().slice(0, 16) : ''
         );
-        setCompletionMessage(settings.completion_message || 'ご相談を受け付けました。\n内容を確認の上、担当者よりご連絡させていただきます。');
+        setCompletionMessage(
+          settings.completion_message ||
+            'ご相談を受け付けました。\n内容を確認の上、担当者よりご連絡させていただきます。'
+        );
         setLinkedApplicationItemId(period.linked_application_item_id || '');
       } else {
         // 新規作成モード（公開開始日はデフォルトで「今」＝保存後すぐ公開）
         // 期間キーは自動生成（YYYY-MM、衝突時は連番）
         setPeriodKey(generateUniquePeriodKey([]));
-        getNextPeriodKey('soudan', targetIds ?? []).then(setPeriodKey).catch(() => {});
+        getNextPeriodKey('soudan', targetIds ?? [])
+          .then(setPeriodKey)
+          .catch(() => {});
         setTitle('お客様相談');
         setDescription(DEFAULT_DESCRIPTION);
         setCategoriesText(DEFAULT_CATEGORIES);
         setPublishStart(getDefaultPublishStart());
         setPublishEnd('');
-        setCompletionMessage('ご相談を受け付けました。\n内容を確認の上、担当者よりご連絡させていただきます。');
+        setCompletionMessage(
+          'ご相談を受け付けました。\n内容を確認の上、担当者よりご連絡させていただきます。'
+        );
         setLinkedApplicationItemId('');
       }
       setError('');
@@ -185,12 +193,7 @@ export function SoudanPeriodEditor({
               ? schoolIds
               : null;
         if (idsToUpdate && idsToUpdate.length > 1) {
-          await updateFormPeriodForSchools(
-            idsToUpdate,
-            'soudan',
-            period.period_key,
-            baseData
-          );
+          await updateFormPeriodForSchools(idsToUpdate, 'soudan', period.period_key, baseData);
         } else {
           await updateSoudanPeriod(period.id, baseData);
         }
@@ -218,9 +221,7 @@ export function SoudanPeriodEditor({
       onClose();
     } catch (error) {
       console.error('Failed to save:', error);
-      setError(
-        getUserErrorMessage(error, '保存に失敗しました')
-      );
+      setError(getUserErrorMessage(error, '保存に失敗しました'));
     } finally {
       setIsSubmitting(false);
     }
@@ -252,9 +253,7 @@ export function SoudanPeriodEditor({
 
           <div className="grid grid-cols-2 gap-4 mb-4">
             <div>
-              <label className="block text-sm font-medium mb-1 text-[#1f2937]">
-                期間キー
-              </label>
+              <label className="block text-sm font-medium mb-1 text-[#1f2937]">期間キー</label>
               <Input
                 type="text"
                 value={periodKey}
@@ -262,9 +261,7 @@ export function SoudanPeriodEditor({
                 disabled // 自動生成のため常に編集不可
                 className="disabled:bg-gray-100"
               />
-              <p className="text-xs text-[#4b5563]/60 mt-1">
-                ※ 自動で割り当てられます（変更不可）
-              </p>
+              <p className="text-xs text-[#4b5563]/60 mt-1">※ 自動で割り当てられます（変更不可）</p>
             </div>
             <div>
               <label className="block text-sm font-medium mb-1 text-[#1f2937]">
@@ -306,9 +303,7 @@ export function SoudanPeriodEditor({
                 value={publishEnd}
                 onChange={(e) => setPublishEnd(e.target.value)}
               />
-              <p className="text-xs text-[#4b5563]/60 mt-1">
-                ※空欄にすると永続的に公開されます
-              </p>
+              <p className="text-xs text-[#4b5563]/60 mt-1">※空欄にすると永続的に公開されます</p>
             </div>
           </div>
         </section>
@@ -373,15 +368,10 @@ export function SoudanPeriodEditor({
 
         {!period && allowedSchools && allowedSchools.length > 1 && (
           <div className="p-3 bg-[#eff6ff] rounded-lg border border-[#bfdbfe]">
-            <p className="text-sm font-medium text-[#1f2937] mb-2">
-              作成する教室を選択
-            </p>
+            <p className="text-sm font-medium text-[#1f2937] mb-2">作成する教室を選択</p>
             <div className="flex flex-wrap gap-x-4 gap-y-2">
               {allowedSchools.map((school) => (
-                <label
-                  key={school.id}
-                  className="flex items-center gap-2 cursor-pointer"
-                >
+                <label key={school.id} className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={selectedSchoolIdsForCreate.includes(school.id)}
@@ -407,15 +397,10 @@ export function SoudanPeriodEditor({
         )}
         {period && allowedSchools && allowedSchools.length > 1 && (
           <div className="p-3 bg-[#eff6ff] rounded-lg border border-[#bfdbfe]">
-            <p className="text-sm font-medium text-[#1f2937] mb-2">
-              同じ内容で更新する教室を選択
-            </p>
+            <p className="text-sm font-medium text-[#1f2937] mb-2">同じ内容で更新する教室を選択</p>
             <div className="flex flex-wrap gap-x-4 gap-y-2">
               {allowedSchools.map((school) => (
-                <label
-                  key={school.id}
-                  className="flex items-center gap-2 cursor-pointer"
-                >
+                <label key={school.id} className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={selectedSchoolIdsForUpdate.includes(school.id)}

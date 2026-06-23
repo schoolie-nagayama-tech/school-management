@@ -39,7 +39,14 @@ export interface AlertSources {
   homeworkCountByStudent: Map<string, number>;
   tardyCountByStudent: Map<string, number>;
   /** 講習準備：期日付き進捗項目と生徒完了状態 */
-  coursePrepItems: Array<{ id: string; school_id: string; name: string; deadline: string; season: SeasonType; year: number }>;
+  coursePrepItems: Array<{
+    id: string;
+    school_id: string;
+    name: string;
+    deadline: string;
+    season: SeasonType;
+    year: number;
+  }>;
   coursePrepStudentProgress: Array<{ student_id: string; item_id: string; status: string | null }>;
   /** 行動目標が1件以上存在するテスト設定のIDセット */
   actionGoalExamIds: Set<string>;
@@ -77,7 +84,9 @@ async function fetchProgressFlagsByStudent(
   // student_textbooks 経由で school_id をフィルタし、紐づく student_progress を集計
   const { data, error } = await supabase
     .from('student_progress')
-    .select('homework_not_done, tardy, student_textbook:student_textbooks!inner(student_id, school_id)')
+    .select(
+      'homework_not_done, tardy, student_textbook:student_textbooks!inner(student_id, school_id)'
+    )
     .in('student_textbook.school_id', schoolIds)
     .or('homework_not_done.eq.true,tardy.eq.true');
 
@@ -127,7 +136,10 @@ async function fetchScheduleChangeAlertData(
   responses: ScheduleChangeResponse[];
   touchedByStudent: Map<string, number>;
 }> {
-  const empty = { responses: [] as ScheduleChangeResponse[], touchedByStudent: new Map<string, number>() };
+  const empty = {
+    responses: [] as ScheduleChangeResponse[],
+    touchedByStudent: new Map<string, number>(),
+  };
   if (schoolIds.length === 0) return empty;
 
   const PAGE = 1000;
@@ -257,12 +269,21 @@ export async function fetchAlertSources(schoolIds: string[]): Promise<AlertSourc
     listAssessmentsBySchool(schoolIds),
     getInterviewsBySchool(schoolIds),
     getApplicationItems(schoolIds, false),
-    getStudentApplications(schoolIds).catch((e) => { console.warn('学生申込の取得に失敗しました:', e); return []; }),
-    getPendingTasksBySchools(schoolIds).catch((e) => { console.warn('未完了タスクの取得に失敗しました:', e); return []; }),
+    getStudentApplications(schoolIds).catch((e) => {
+      console.warn('学生申込の取得に失敗しました:', e);
+      return [];
+    }),
+    getPendingTasksBySchools(schoolIds).catch((e) => {
+      console.warn('未完了タスクの取得に失敗しました:', e);
+      return [];
+    }),
     getStudentTextbooksExamsBySchool(schoolIds),
     fetchProgressFlagsByStudent(schoolIds),
     fetchCoursePrepAlertData(schoolIds),
-    fetchScheduleChangeAlertData(schoolIds).catch((e) => { console.warn('日程変更データの取得に失敗しました:', e); return { responses: [], touchedByStudent: new Map<string, number>() }; }),
+    fetchScheduleChangeAlertData(schoolIds).catch((e) => {
+      console.warn('日程変更データの取得に失敗しました:', e);
+      return { responses: [], touchedByStudent: new Map<string, number>() };
+    }),
     getAlertSettingsBySchools(schoolIds).catch(() => new Map<string, AlertSetting[]>()),
   ]);
 
@@ -342,7 +363,10 @@ function getStrictestThreshold(
 }
 
 /** いずれかの教室で当該アラートが無効ならスキップしないが、全教室で無効なら出さない */
-function isAlertEnabled(settingsBySchool: Map<string, AlertSetting[]>, alertType: AlertType): boolean {
+function isAlertEnabled(
+  settingsBySchool: Map<string, AlertSetting[]>,
+  alertType: AlertType
+): boolean {
   if (settingsBySchool.size === 0) return true;
   for (const settings of Array.from(settingsBySchool.values()) as AlertSetting[][]) {
     const s = settings.find((x: AlertSetting) => x.alert_type === alertType);
@@ -354,11 +378,32 @@ function isAlertEnabled(settingsBySchool: Map<string, AlertSetting[]>, alertType
 function buildScoreDropCandidates(sources: AlertSources): Alert[] {
   if (!isAlertEnabled(sources.settingsBySchool, 'score_drop')) return [];
   const alerts: Alert[] = [];
-  const categories: Array<'regular_test' | 'report_card' | 'mock'> = ['regular_test', 'report_card', 'mock'];
-  const thresholdRegular = getStrictestThreshold(sources.settingsBySchool, 'score_drop', 'score_drop_regular');
-  const thresholdMock = getStrictestThreshold(sources.settingsBySchool, 'score_drop', 'score_drop_mock');
-  const thresholdReport = getStrictestThreshold(sources.settingsBySchool, 'score_drop', 'score_drop_report');
-  const trendWindowMonths = getStrictestThreshold(sources.settingsBySchool, 'score_drop', 'trend_window_months', 'max');
+  const categories: Array<'regular_test' | 'report_card' | 'mock'> = [
+    'regular_test',
+    'report_card',
+    'mock',
+  ];
+  const thresholdRegular = getStrictestThreshold(
+    sources.settingsBySchool,
+    'score_drop',
+    'score_drop_regular'
+  );
+  const thresholdMock = getStrictestThreshold(
+    sources.settingsBySchool,
+    'score_drop',
+    'score_drop_mock'
+  );
+  const thresholdReport = getStrictestThreshold(
+    sources.settingsBySchool,
+    'score_drop',
+    'score_drop_report'
+  );
+  const trendWindowMonths = getStrictestThreshold(
+    sources.settingsBySchool,
+    'score_drop',
+    'trend_window_months',
+    'max'
+  );
 
   const thresholdFor = (cat: 'regular_test' | 'report_card' | 'mock') =>
     cat === 'regular_test' ? thresholdRegular : cat === 'mock' ? thresholdMock : thresholdReport;
@@ -405,14 +450,17 @@ function buildScoreDropCandidates(sources: AlertSources): Alert[] {
         // 長期トレンド：trendWindowMonths 以内の最古点と比較して下落傾向か
         const cutoff = new Date();
         cutoff.setMonth(cutoff.getMonth() - trendWindowMonths);
-        const inWindow = assessments.filter((a) => a.exam_month && new Date(a.exam_month) >= cutoff);
+        const inWindow = assessments.filter(
+          (a) => a.exam_month && new Date(a.exam_month) >= cutoff
+        );
         const oldestInWindow = inWindow[inWindow.length - 1];
-        const oldestScore = oldestInWindow ? getScoreMap(oldestInWindow.scores).get(subjectCode) : null;
+        const oldestScore = oldestInWindow
+          ? getScoreMap(oldestInWindow.scores).get(subjectCode)
+          : null;
         const longTermDecline =
           oldestScore != null && latestScore < oldestScore && inWindow.length >= 3;
 
-        const severity: AlertSeverity =
-          consecutive >= 3 || longTermDecline ? 'danger' : 'warning';
+        const severity: AlertSeverity = consecutive >= 3 || longTermDecline ? 'danger' : 'warning';
 
         const alertKey = `${category}:${subjectCode}:${latest.exam_month || latest.id}`;
         const subjLabel = SUBJECT_LABELS[subjectCode] || subjectCode;
@@ -470,9 +518,9 @@ function buildScoreMissingCandidates(sources: AlertSources): Alert[] {
       const latest = assessments[0];
       // 中間テスト（name_codeに_midを含む or titleに中間を含む）は5教科のみ。
       // 期末・学年末・内申は9教科。
-      const isMidterm = category === 'regular_test' && (
-        latest.name_code?.includes('_mid') || latest.title?.includes('中間')
-      );
+      const isMidterm =
+        category === 'regular_test' &&
+        (latest.name_code?.includes('_mid') || latest.title?.includes('中間'));
       const expectedSubjects = isMidterm
         ? ['english', 'math', 'japanese', 'social', 'science']
         : ['english', 'math', 'japanese', 'social', 'science', 'music', 'art', 'tech_home', 'pe'];
@@ -489,7 +537,10 @@ function buildScoreMissingCandidates(sources: AlertSources): Alert[] {
           category === 'regular_test' ? '定期テスト' : category === 'report_card' ? '内申' : '模試';
         const testName = ASSESSMENT_NAME_LABELS[latest.name_code] || '';
         const examMonthStr = latest.exam_month
-          ? new Date(latest.exam_month).toLocaleDateString('ja-JP', { year: 'numeric', month: 'long' })
+          ? new Date(latest.exam_month).toLocaleDateString('ja-JP', {
+              year: 'numeric',
+              month: 'long',
+            })
           : '';
         const prefix = [categoryLabel, testName, examMonthStr].filter(Boolean).join(' ');
         const alertKey = `${category}:${latest.exam_month || latest.id}`;
@@ -528,8 +579,13 @@ function buildInterviewOverdueCandidates(sources: AlertSources): Alert[] {
     // 1日ずれて createInterview 側の dismiss 記録とマッチしなくなる。
     const rawLastInterviewDate: string | null =
       interviews.length > 0 ? interviews[0].interview_date : null;
-    const lastInterviewDate =
-      rawLastInterviewDate ? (() => { const d = new Date(rawLastInterviewDate); d.setHours(0, 0, 0, 0); return d; })() : null;
+    const lastInterviewDate = rawLastInterviewDate
+      ? (() => {
+          const d = new Date(rawLastInterviewDate);
+          d.setHours(0, 0, 0, 0);
+          return d;
+        })()
+      : null;
     const daysDiff = lastInterviewDate
       ? Math.floor((today.getTime() - lastInterviewDate.getTime()) / (1000 * 60 * 60 * 24))
       : Infinity;
@@ -582,7 +638,9 @@ function buildApplicationOverdueCandidates(sources: AlertSources): Alert[] {
 
   for (const student of sources.students) {
     for (const item of upcomingItems) {
-      const app = sources.applications.find((a) => a.student_id === student.id && a.item_id === item.id);
+      const app = sources.applications.find(
+        (a) => a.student_id === student.id && a.item_id === item.id
+      );
       // 「空欄のとき」のみアラート対象。pending/completed/not_applicable はすべて除外
       if (app && app.status) continue;
 
@@ -648,10 +706,15 @@ function buildInterviewTaskCandidates(sources: AlertSources): Alert[] {
 
     const alertKey = `task:${task.id}`;
     const taskDateStr = task.interview_date
-      ? new Date(task.interview_date).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' })
+      ? new Date(task.interview_date).toLocaleDateString('ja-JP', {
+          month: 'numeric',
+          day: 'numeric',
+        })
       : '';
     const contentPreview = task.content
-      ? (task.content.length > 50 ? task.content.substring(0, 50) + '...' : task.content)
+      ? task.content.length > 50
+        ? task.content.substring(0, 50) + '...'
+        : task.content
       : '';
 
     // 期日までの日数を計算
@@ -707,9 +770,13 @@ function buildExamOverdueCandidates(sources: AlertSources): Alert[] {
         const daysUntil = Math.ceil((examDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
         if (daysUntil > -overdueThreshold) continue;
 
-        const examName = exam.custom_exam_name ?? sources.examTypeNames.get(exam.exam_type_id ?? '') ?? 'テスト';
+        const examName =
+          exam.custom_exam_name ?? sources.examTypeNames.get(exam.exam_type_id ?? '') ?? 'テスト';
         const textbookName = (st as { textbook?: { name: string } }).textbook?.name ?? 'テキスト';
-        const examDateStr = examDate.toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' });
+        const examDateStr = examDate.toLocaleDateString('ja-JP', {
+          month: 'numeric',
+          day: 'numeric',
+        });
         const daysDiff = Math.floor((today.getTime() - examDate.getTime()) / (1000 * 60 * 60 * 24));
 
         const alertKey = `exam:${exam.id}`;
@@ -751,7 +818,8 @@ function buildOccurrenceAlert(
   for (const student of sources.students) {
     const count = countMap.get(student.id) ?? 0;
     if (count < warn) continue;
-    const severity: AlertSeverity = count >= danger ? 'danger' : count >= warn + 1 ? 'warning' : 'info';
+    const severity: AlertSeverity =
+      count >= danger ? 'danger' : count >= warn + 1 ? 'warning' : 'info';
     alerts.push({
       id: `${student.id}:${alertType}:count`,
       student_id: student.id,
@@ -852,7 +920,10 @@ function buildCoursePrepOverdueCandidates(sources: AlertSources): Alert[] {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const warnDays = getStrictestThreshold(
-    sources.settingsBySchool, 'course_prep_overdue', 'course_prep_warn_days', 'max'
+    sources.settingsBySchool,
+    'course_prep_overdue',
+    'course_prep_warn_days',
+    'max'
   );
 
   const completedSet = new Set<string>();
@@ -941,9 +1012,13 @@ function buildScheduleChangeUnappliedCandidates(sources: AlertSources): Alert[] 
       }
     }
 
-    const fromLabel = res.change_from_label
-      || (res.change_from
-        ? new Date(res.change_from).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' })
+    const fromLabel =
+      res.change_from_label ||
+      (res.change_from
+        ? new Date(res.change_from).toLocaleDateString('ja-JP', {
+            month: 'numeric',
+            day: 'numeric',
+          })
         : '');
     const message = fromLabel
       ? `${kindLabel}の申込が通塾日程に未反映（希望日 ${fromLabel}）`
@@ -986,14 +1061,29 @@ export const ALERT_DEFINITIONS: Record<
   homework_not_done: { level: 'warning', evaluator: buildHomeworkNotDoneCandidates },
   tardy: { level: 'warning', evaluator: buildTardyCandidates },
   course_prep_overdue: { level: 'warning', evaluator: buildCoursePrepOverdueCandidates },
-  schedule_change_unapplied: { level: 'warning', evaluator: buildScheduleChangeUnappliedCandidates },
+  schedule_change_unapplied: {
+    level: 'warning',
+    evaluator: buildScheduleChangeUnappliedCandidates,
+  },
 };
 
 /** Light 用の alert types */
-const LIGHT_ALERT_TYPES: AlertType[] = ['interview_overdue', 'application_overdue', 'interview_task', 'schedule_change_unapplied'];
+const LIGHT_ALERT_TYPES: AlertType[] = [
+  'interview_overdue',
+  'application_overdue',
+  'interview_task',
+  'schedule_change_unapplied',
+];
 
 /** Heavy 用の alert types */
-const HEAVY_ALERT_TYPES: AlertType[] = ['score_drop', 'score_missing', 'exam_overdue', 'homework_not_done', 'tardy', 'course_prep_overdue'];
+const HEAVY_ALERT_TYPES: AlertType[] = [
+  'score_drop',
+  'score_missing',
+  'exam_overdue',
+  'homework_not_done',
+  'tardy',
+  'course_prep_overdue',
+];
 
 /**
  * 全アラート候補を生成（pure、dismiss 未考慮、ALERT_DEFINITIONS 駆動）
@@ -1116,7 +1206,10 @@ export async function getAlertDismissals(
 
   if (error) {
     if (error.code === 'PGRST116' || error.message.includes('schema cache')) {
-      console.warn('alert_dismissalsテーブルが見つかりません。マイグレーションを実行してください:', error);
+      console.warn(
+        'alert_dismissalsテーブルが見つかりません。マイグレーションを実行してください:',
+        error
+      );
       return [];
     }
     throw new Error(`対応済み記録の取得に失敗しました: ${error.message}`);
@@ -1151,7 +1244,9 @@ export async function dismissAlert(
 
   if (error) {
     if (error.code === '42501') {
-      throw new Error(`対応済み記録の作成に失敗しました: RLSポリシー違反。マイグレーションを確認してください。${error.message}`);
+      throw new Error(
+        `対応済み記録の作成に失敗しました: RLSポリシー違反。マイグレーションを確認してください。${error.message}`
+      );
     }
     throw new Error(`対応済み記録の作成に失敗しました: ${error.message}`);
   }
@@ -1209,16 +1304,29 @@ async function fetchAlertSourcesLight(
   }
 
   // 全下位関数に client を渡してサーバー RLS 認証を適用する
-  const [allStudents, interviewsByStudent, applicationItems, applicationsResult, pendingTasksResult, scheduleChangeData, settingsBySchool] =
-    await Promise.all([
-      getStudents(undefined, schoolIds, client),
-      getInterviewsBySchool(schoolIds, client),
-      getApplicationItems(schoolIds, false, client),
-      getStudentApplications(schoolIds, client).catch(() => []),
-      getPendingTasksBySchools(schoolIds, client).catch((e) => { console.warn('未完了タスクの取得に失敗しました:', e); return []; }),
-      fetchScheduleChangeAlertData(schoolIds, client).catch((e) => { console.warn('日程変更データの取得に失敗しました:', e); return { responses: [], touchedByStudent: new Map<string, number>() }; }),
-      getAlertSettingsBySchools(schoolIds, client).catch(() => new Map<string, AlertSetting[]>()),
-    ]);
+  const [
+    allStudents,
+    interviewsByStudent,
+    applicationItems,
+    applicationsResult,
+    pendingTasksResult,
+    scheduleChangeData,
+    settingsBySchool,
+  ] = await Promise.all([
+    getStudents(undefined, schoolIds, client),
+    getInterviewsBySchool(schoolIds, client),
+    getApplicationItems(schoolIds, false, client),
+    getStudentApplications(schoolIds, client).catch(() => []),
+    getPendingTasksBySchools(schoolIds, client).catch((e) => {
+      console.warn('未完了タスクの取得に失敗しました:', e);
+      return [];
+    }),
+    fetchScheduleChangeAlertData(schoolIds, client).catch((e) => {
+      console.warn('日程変更データの取得に失敗しました:', e);
+      return { responses: [], touchedByStudent: new Map<string, number>() };
+    }),
+    getAlertSettingsBySchools(schoolIds, client).catch(() => new Map<string, AlertSetting[]>()),
+  ]);
   // プログラミング受講生はアラート対象外
   const students = allStudents.filter((s) => s.status === 'active' && !s.is_programming);
 
@@ -1253,7 +1361,14 @@ async function fetchAlertSourcesHeavy(schoolIds: string[]): Promise<Partial<Aler
     };
   }
 
-  const [allStudents, assessmentsByStudent, textbooksResult, progressFlags, coursePrepData, settingsBySchool] = await Promise.all([
+  const [
+    allStudents,
+    assessmentsByStudent,
+    textbooksResult,
+    progressFlags,
+    coursePrepData,
+    settingsBySchool,
+  ] = await Promise.all([
     getStudents(undefined, schoolIds),
     listAssessmentsBySchool(schoolIds),
     getStudentTextbooksExamsBySchool(schoolIds),
@@ -1291,8 +1406,20 @@ async function fetchAlertSourcesHeavy(schoolIds: string[]): Promise<Partial<Aler
   }
 
   if (process.env.NODE_ENV === 'development') {
-    const assessmentCount = Array.from(assessmentsByStudent.values()).reduce((n, arr) => n + arr.length, 0);
-    console.debug('[Heavy] schoolIds:', schoolIds.length, 'students:', students.length, 'assessments:', assessmentCount, 'textbooksByStudent:', textbooksByStudent.size);
+    const assessmentCount = Array.from(assessmentsByStudent.values()).reduce(
+      (n, arr) => n + arr.length,
+      0
+    );
+    console.debug(
+      '[Heavy] schoolIds:',
+      schoolIds.length,
+      'students:',
+      students.length,
+      'assessments:',
+      assessmentCount,
+      'textbooksByStudent:',
+      textbooksByStudent.size
+    );
   }
 
   return {
@@ -1382,7 +1509,9 @@ export async function getAlertsLight(
     fetchAlertSourcesLight(schoolIds, resolvedClient),
     getAlertDismissals(schoolIds, resolvedClient),
   ]);
-  const dismissedSet = new Set(dismissals.map((d) => `${d.student_id}:${d.alert_type}:${d.alert_key}`));
+  const dismissedSet = new Set(
+    dismissals.map((d) => `${d.student_id}:${d.alert_type}:${d.alert_key}`)
+  );
   const candidates = buildAlertCandidatesLight(sources);
   const result = applyDismissAndSort(candidates, dismissedSet);
 
@@ -1411,7 +1540,9 @@ export async function getAlertsHeavy(
     fetchAlertSourcesHeavy(schoolIds),
     getAlertDismissals(schoolIds),
   ]);
-  const dismissedSet = new Set(dismissals.map((d) => `${d.student_id}:${d.alert_type}:${d.alert_key}`));
+  const dismissedSet = new Set(
+    dismissals.map((d) => `${d.student_id}:${d.alert_type}:${d.alert_key}`)
+  );
   const candidates = buildAlertCandidatesHeavy(sources);
   const result = applyDismissAndSort(candidates, dismissedSet);
   setCached(cacheHeavy, key, result);
@@ -1452,7 +1583,9 @@ export async function getAlerts(schoolIds: string[]): Promise<StudentAlerts[]> {
     getAlertDismissals(schoolIds),
   ]);
 
-  const dismissedSet = new Set(dismissals.map((d) => `${d.student_id}:${d.alert_type}:${d.alert_key}`));
+  const dismissedSet = new Set(
+    dismissals.map((d) => `${d.student_id}:${d.alert_type}:${d.alert_key}`)
+  );
   const candidates = buildAlertCandidates(sources);
   return applyDismissAndSort(candidates, dismissedSet);
 }

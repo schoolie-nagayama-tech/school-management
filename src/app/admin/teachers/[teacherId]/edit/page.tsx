@@ -21,10 +21,20 @@ import { displayLoginId } from '@/lib/utils/loginId';
 import { ChevronLeft } from 'lucide-react';
 import { useMasterData } from '@/contexts/MasterDataContext';
 import { getActiveTimeSlots } from '@/lib/api/schedule';
-import { getTeacherBadges, getTeacherBadgeAssignments, toggleTeacherBadge } from '@/lib/api/teacher-badges';
+import {
+  getTeacherBadges,
+  getTeacherBadgeAssignments,
+  toggleTeacherBadge,
+} from '@/lib/api/teacher-badges';
 import { upsertManualAvailability } from '@/lib/api/teacher-availability';
 import { emitTeacherBadgesChanged } from '@/lib/teacher-badge-events';
-import type { School, UserProfile, Subject, TeacherBadge, TeacherBadgeAssignment } from '@/types/database';
+import type {
+  School,
+  UserProfile,
+  Subject,
+  TeacherBadge,
+  TeacherBadgeAssignment,
+} from '@/types/database';
 import type { ScheduleTimeSlot } from '@/types/schedule';
 import { BadgeGrid } from '@/components/teacher-badges/BadgeGrid';
 import { BadgeProgress } from '@/components/teacher-badges/BadgeProgress';
@@ -77,7 +87,10 @@ function normalizeToNumArray(v: unknown): number[] {
   if (typeof v === 'string') {
     const trimmed = v.replace(/^\{|\}$/g, '').trim();
     if (!trimmed) return [];
-    return trimmed.split(',').map((s) => Number(s.trim())).filter((n) => !Number.isNaN(n));
+    return trimmed
+      .split(',')
+      .map((s) => Number(s.trim()))
+      .filter((n) => !Number.isNaN(n));
   }
   return [];
 }
@@ -261,7 +274,9 @@ export default function TeacherEditPage() {
       }
     })();
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [teacherId, isManager, getSelectedSchoolIds, toastError, masterSchools, masterSubjects]);
 
   const handleBadgeToggle = async (badge: TeacherBadge) => {
@@ -289,7 +304,9 @@ export default function TeacherEditPage() {
       const result = await toggleTeacherBadge(teacherId, { badgeId: badge.id });
       if (result.action === 'assigned' && result.assignment) {
         setBadgeAssignments((prev) =>
-          prev.map((a) => (a.badge_id === badge.id && a.id.startsWith('temp-') ? result.assignment! : a))
+          prev.map((a) =>
+            a.badge_id === badge.id && a.id.startsWith('temp-') ? result.assignment! : a
+          )
         );
       }
       // 他画面（一覧・詳細）へ同期通知
@@ -334,7 +351,9 @@ export default function TeacherEditPage() {
         if (!cancelled) setScheduleTimeSlots([]);
       }
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [editSchoolIds]);
 
   const handleSave = async () => {
@@ -492,7 +511,9 @@ export default function TeacherEditPage() {
               </h2>
               <div className="space-y-4">
                 <div>
-                  <Label className="block text-sm font-medium text-text-muted mb-1.5">ログインID</Label>
+                  <Label className="block text-sm font-medium text-text-muted mb-1.5">
+                    ログインID
+                  </Label>
                   <Input
                     value={displayLoginId(teacher.email)}
                     disabled
@@ -520,10 +541,15 @@ export default function TeacherEditPage() {
                   </div>
                 </div>
                 <div>
-                  <Label className="block text-sm font-medium text-text-muted mb-1.5">担当教室</Label>
+                  <Label className="block text-sm font-medium text-text-muted mb-1.5">
+                    担当教室
+                  </Label>
                   <div className="space-y-2 max-h-40 overflow-y-auto border border-border rounded-lg p-3 bg-surface">
                     {availableSchools.map((school) => (
-                      <label key={school.id} className="flex items-center gap-2 cursor-pointer hover:bg-surface-hover rounded px-2 py-1 -mx-2 -my-1">
+                      <label
+                        key={school.id}
+                        className="flex items-center gap-2 cursor-pointer hover:bg-surface-hover rounded px-2 py-1 -mx-2 -my-1"
+                      >
                         <input
                           type="checkbox"
                           checked={editSchoolIds.includes(school.id)}
@@ -579,15 +605,18 @@ export default function TeacherEditPage() {
                   groupSubjectsByGradeCategory(subjects).map(({ label, items }) => (
                     <div key={label}>
                       <div className="flex items-center justify-between mb-2">
-                        <p className="text-xs font-semibold text-text-muted uppercase tracking-wide">{label}</p>
+                        <p className="text-xs font-semibold text-text-muted uppercase tracking-wide">
+                          {label}
+                        </p>
                         <div className="flex gap-1">
                           <button
                             type="button"
                             onClick={() => {
                               const ids = items.map((s) => s.id);
-                              setEditTeachableSubjectIds((prev) =>
-                                [...prev.filter((id) => !ids.includes(id)), ...ids]
-                              );
+                              setEditTeachableSubjectIds((prev) => [
+                                ...prev.filter((id) => !ids.includes(id)),
+                                ...ids,
+                              ]);
                             }}
                             className="text-[11px] px-2 py-0.5 rounded border border-border hover:bg-surface text-text-muted transition-[background-color] duration-150 ease-out active:scale-[0.97]"
                           >
@@ -608,13 +637,19 @@ export default function TeacherEditPage() {
                       </div>
                       <div className="flex flex-wrap gap-x-4 gap-y-2">
                         {items.map((subject) => (
-                          <label key={subject.id} className="flex items-center gap-2 cursor-pointer hover:text-[#ff8e3c]">
+                          <label
+                            key={subject.id}
+                            className="flex items-center gap-2 cursor-pointer hover:text-[#ff8e3c]"
+                          >
                             <input
                               type="checkbox"
                               checked={editTeachableSubjectIds.includes(subject.id)}
                               onChange={(e) => {
                                 if (e.target.checked) {
-                                  setEditTeachableSubjectIds([...editTeachableSubjectIds, subject.id]);
+                                  setEditTeachableSubjectIds([
+                                    ...editTeachableSubjectIds,
+                                    subject.id,
+                                  ]);
                                 } else {
                                   setEditTeachableSubjectIds(
                                     editTeachableSubjectIds.filter((id) => id !== subject.id)
@@ -649,9 +684,14 @@ export default function TeacherEditPage() {
                   <table className="w-full min-w-[360px] text-sm">
                     <thead>
                       <tr className="border-b border-border">
-                        <th className="text-left py-2 pr-4 font-medium text-text-muted w-10">曜日</th>
+                        <th className="text-left py-2 pr-4 font-medium text-text-muted w-10">
+                          曜日
+                        </th>
                         {scheduleTimeSlots.map((slot) => (
-                          <th key={slot.id} className="text-center py-2 px-1 font-medium text-text-muted min-w-[5rem]">
+                          <th
+                            key={slot.id}
+                            className="text-center py-2 px-1 font-medium text-text-muted min-w-[5rem]"
+                          >
                             <div>{slot.slot_number}限</div>
                             <div className="text-[11px] font-normal text-text-faint tabular-nums mt-0.5">
                               {slot.start_time?.slice(0, 5)}〜{slot.end_time?.slice(0, 5)}
@@ -667,7 +707,9 @@ export default function TeacherEditPage() {
                         const toggleSlot = (n: number) => {
                           setEditAvailableSlotNumbersByDay((prev) => {
                             const arr = prev[dayKey] ?? [];
-                            const next = arr.includes(n) ? arr.filter((x) => x !== n) : [...arr, n].sort((a, b) => a - b);
+                            const next = arr.includes(n)
+                              ? arr.filter((x) => x !== n)
+                              : [...arr, n].sort((a, b) => a - b);
                             const nextMap = { ...prev };
                             if (next.length === 0) delete nextMap[dayKey];
                             else nextMap[dayKey] = next;
@@ -699,49 +741,53 @@ export default function TeacherEditPage() {
             </div>
 
             {/* バッジ / トロフィー */}
-              <div className="bg-surface-raised rounded-xl border border-border p-6 shadow-sm">
-                <div className="flex items-center justify-between mb-4 pb-2 border-b border-border">
-                  <h2 className="text-base font-semibold text-text-heading">
-                    バッジ / トロフィー
-                  </h2>
-                  <button
-                    type="button"
-                    onClick={() => setBadgeCreateDialogOpen(true)}
-                    className="text-xs px-3 py-1.5 rounded-md border border-border hover:bg-surface hover:border-ink/30 text-text-muted transition-[background-color,border-color] duration-150 ease-out active:scale-[0.97]"
-                  >
-                    + バッジを新規作成
-                  </button>
-                </div>
-                {allBadges.length > 0 && (
-                  <>
-                    <div className="mb-4">
-                      <BadgeProgress
-                        earned={badgeAssignments.length}
-                        total={allBadges.length}
-                        rankCounts={badgeAssignments.reduce((acc, a) => {
-                          const rank = a.badge?.rank || allBadges.find((b) => b.id === a.badge_id)?.rank;
+            <div className="bg-surface-raised rounded-xl border border-border p-6 shadow-sm">
+              <div className="flex items-center justify-between mb-4 pb-2 border-b border-border">
+                <h2 className="text-base font-semibold text-text-heading">バッジ / トロフィー</h2>
+                <button
+                  type="button"
+                  onClick={() => setBadgeCreateDialogOpen(true)}
+                  className="text-xs px-3 py-1.5 rounded-md border border-border hover:bg-surface hover:border-ink/30 text-text-muted transition-[background-color,border-color] duration-150 ease-out active:scale-[0.97]"
+                >
+                  + バッジを新規作成
+                </button>
+              </div>
+              {allBadges.length > 0 && (
+                <>
+                  <div className="mb-4">
+                    <BadgeProgress
+                      earned={badgeAssignments.length}
+                      total={allBadges.length}
+                      rankCounts={badgeAssignments.reduce(
+                        (acc, a) => {
+                          const rank =
+                            a.badge?.rank || allBadges.find((b) => b.id === a.badge_id)?.rank;
                           if (rank) acc[rank] = (acc[rank] || 0) + 1;
                           return acc;
-                        }, {} as Partial<Record<BadgeRank, number>>)}
-                      />
-                    </div>
-                    <p className="text-xs text-gray-500 mb-3">
-                      クリックでバッジの付与 / 剥奪を切り替えます
-                    </p>
-                  </>
-                )}
-                {allBadges.length > 0 ? (
-                  <BadgeGrid
-                    badges={allBadges}
-                    assignments={badgeAssignments}
-                    onBadgeClick={(badge) => handleBadgeToggle(badge)}
-                    interactive
-                    groupByCategory
-                  />
-                ) : (
-                  <p className="text-sm text-gray-400 py-2">バッジがまだ登録されていません。上の「+ バッジを新規作成」から作成できます。</p>
-                )}
-              </div>
+                        },
+                        {} as Partial<Record<BadgeRank, number>>
+                      )}
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500 mb-3">
+                    クリックでバッジの付与 / 剥奪を切り替えます
+                  </p>
+                </>
+              )}
+              {allBadges.length > 0 ? (
+                <BadgeGrid
+                  badges={allBadges}
+                  assignments={badgeAssignments}
+                  onBadgeClick={(badge) => handleBadgeToggle(badge)}
+                  interactive
+                  groupByCategory
+                />
+              ) : (
+                <p className="text-sm text-gray-400 py-2">
+                  バッジがまだ登録されていません。上の「+ バッジを新規作成」から作成できます。
+                </p>
+              )}
+            </div>
 
             {/* 研修参加履歴 */}
             <div className="bg-surface-raised rounded-xl border border-border p-6 shadow-sm">
@@ -759,7 +805,10 @@ export default function TeacherEditPage() {
                     {trainingMasters.length === 0 ? (
                       <div className="mt-1 text-xs text-gray-500">
                         研修マスタが未登録です。
-                        <Link href="/admin/teacher-badges" className="text-ink hover:underline ml-1">
+                        <Link
+                          href="/admin/teacher-badges"
+                          className="text-ink hover:underline ml-1"
+                        >
                           バッジ管理 &gt; 研修マスタ
                         </Link>
                         で登録してください。
@@ -894,7 +943,9 @@ export default function TeacherEditPage() {
                 setBadgeAssignments((prev) => [...prev, result.assignment!]);
               }
               emitTeacherBadgesChanged(teacherId);
-            } catch { /* 付与失敗は無視、リフレッシュで拾う */ }
+            } catch {
+              /* 付与失敗は無視、リフレッシュで拾う */
+            }
           }
           setAllBadges((prev) => [...prev, created]);
           success('バッジを作成し、この講師に付与しました');

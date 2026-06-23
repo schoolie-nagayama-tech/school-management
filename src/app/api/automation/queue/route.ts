@@ -66,7 +66,10 @@ export async function POST(request: NextRequest) {
 
   if (!tokenRow) {
     return NextResponse.json(
-      { error: 'ローダーが未発行です。設定 > 自動入力ローダー で発行してください。', code: 'NO_TOKEN' },
+      {
+        error: 'ローダーが未発行です。設定 > 自動入力ローダー で発行してください。',
+        code: 'NO_TOKEN',
+      },
       { status: 409 }
     );
   }

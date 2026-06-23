@@ -26,9 +26,19 @@ const BULK_ACTION_LABELS: Record<string, string> = {
   delivered: '一括配布済みにする',
 };
 
-const STATUS_OPTIONS: OrderStatus[] = ['unconfirmed', 'ordered', 'delivered', 'distributed', 'cancelled'];
+const STATUS_OPTIONS: OrderStatus[] = [
+  'unconfirmed',
+  'ordered',
+  'delivered',
+  'distributed',
+  'cancelled',
+];
 const STATUS_LABELS: Record<OrderStatus, string> = {
-  unconfirmed: '未確認', ordered: '発注済み', delivered: '発送済み', distributed: '配布済み', cancelled: 'キャンセル',
+  unconfirmed: '未確認',
+  ordered: '発注済み',
+  delivered: '発送済み',
+  distributed: '配布済み',
+  cancelled: 'キャンセル',
 };
 
 interface OrderStatusSectionProps {
@@ -69,24 +79,33 @@ export function OrderStatusSection({
     if (!nextStatus || orders.length === 0) return;
     setBulkLoading(true);
     try {
-      await onBulkStatusChange(orders.map((o) => o.id), nextStatus);
+      await onBulkStatusChange(
+        orders.map((o) => o.id),
+        nextStatus
+      );
     } finally {
       setBulkLoading(false);
     }
   }, [nextStatus, orders, onBulkStatusChange]);
 
-  const handleSingleStatusChange = useCallback(async (orderId: string, newStatus: OrderStatus) => {
-    setChangingId(orderId);
-    try {
-      await onStatusChange(orderId, newStatus);
-    } finally {
-      setChangingId(null);
-    }
-  }, [onStatusChange]);
+  const handleSingleStatusChange = useCallback(
+    async (orderId: string, newStatus: OrderStatus) => {
+      setChangingId(orderId);
+      try {
+        await onStatusChange(orderId, newStatus);
+      } finally {
+        setChangingId(null);
+      }
+    },
+    [onStatusChange]
+  );
 
-  const getSchoolName = useCallback((order: MaterialOrderWithDetails) => {
-    return schoolMap[order.school_id] || '不明';
-  }, [schoolMap]);
+  const getSchoolName = useCallback(
+    (order: MaterialOrderWithDetails) => {
+      return schoolMap[order.school_id] || '不明';
+    },
+    [schoolMap]
+  );
 
   return (
     <div className="mb-4">
@@ -96,14 +115,13 @@ export function OrderStatusSection({
         className={`w-full flex items-center justify-between px-4 py-3 border border-gray-200 ${style.bg} rounded-t-lg ${!open ? 'rounded-b-lg' : ''} hover:opacity-90 transition-opacity`}
       >
         <div className="flex items-center gap-2">
-          {open ? <ChevronDown className="w-4 h-4 text-gray-500" /> : <ChevronRight className="w-4 h-4 text-gray-500" />}
-          <span
-            aria-hidden="true"
-            className={`w-2 h-2 rounded-full ${style.dot}`}
-          />
-          <span className="font-medium text-sm text-gray-800">
-            {STATUS_LABELS[status]}
-          </span>
+          {open ? (
+            <ChevronDown className="w-4 h-4 text-gray-500" />
+          ) : (
+            <ChevronRight className="w-4 h-4 text-gray-500" />
+          )}
+          <span aria-hidden="true" className={`w-2 h-2 rounded-full ${style.dot}`} />
+          <span className="font-medium text-sm text-gray-800">{STATUS_LABELS[status]}</span>
           <span className="bg-white/80 text-gray-600 text-xs font-medium px-2 py-0.5 rounded-full">
             {orders.length}件
           </span>
@@ -216,7 +234,9 @@ function StatusDropdown({
       className="text-xs border border-gray-200 rounded-md px-2 py-1 bg-white focus:ring-1 focus:ring-[#1e3a5f]/30"
     >
       {STATUS_OPTIONS.map((opt) => (
-        <option key={opt} value={opt}>{STATUS_LABELS[opt]}</option>
+        <option key={opt} value={opt}>
+          {STATUS_LABELS[opt]}
+        </option>
       ))}
     </select>
   );
@@ -272,7 +292,9 @@ function UnconfirmedSection({
             <th className="text-left py-2 px-4 text-xs font-medium text-gray-500">発注日</th>
             {canEdit && (
               <>
-                <th className="text-center py-2 px-4 text-xs font-medium text-gray-500">ステータス</th>
+                <th className="text-center py-2 px-4 text-xs font-medium text-gray-500">
+                  ステータス
+                </th>
                 <th className="text-center py-2 px-4 text-xs font-medium text-gray-500">操作</th>
               </>
             )}
@@ -280,24 +302,39 @@ function UnconfirmedSection({
         </thead>
         <tbody>
           {rows.map((order) => (
-            <tr key={order.id} className="border-b border-gray-100 hover:bg-gray-50 transition-[background-color,color] duration-150 ease-out">
+            <tr
+              key={order.id}
+              className="border-b border-gray-100 hover:bg-gray-50 transition-[background-color,color] duration-150 ease-out"
+            >
               <td className="py-2 px-4 text-sm text-gray-900">{order.material?.name || '-'}</td>
               <td className="py-2 px-4 text-sm text-gray-600">{getSchoolName(order)}</td>
               <td className="py-2 px-4 text-sm text-gray-600">
                 {order.is_sample ? (
-                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-700">見本</span>
-                ) : order.student ? `${order.student.last_name} ${order.student.first_name}` : '-'}
+                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-700">
+                    見本
+                  </span>
+                ) : order.student ? (
+                  `${order.student.last_name} ${order.student.first_name}`
+                ) : (
+                  '-'
+                )}
               </td>
               <td className="py-2 px-4 text-center text-sm text-gray-900">{order.quantity}冊</td>
               <td className="py-2 px-4 text-sm text-gray-500">{formatDate(order.created_at)}</td>
               {canEdit && (
                 <>
                   <td className="py-2 px-4 text-center">
-                    <StatusDropdown order={order} changingId={changingId} onStatusChange={onStatusChange} />
+                    <StatusDropdown
+                      order={order}
+                      changingId={changingId}
+                      onStatusChange={onStatusChange}
+                    />
                   </td>
                   <td className="py-2 px-4 text-center">
                     <button
-                      onClick={() => { if (confirm('この発注を削除しますか？')) onDelete(order.id); }}
+                      onClick={() => {
+                        if (confirm('この発注を削除しますか？')) onDelete(order.id);
+                      }}
                       className="text-xs text-gray-400 hover:text-red-600 transition-[background-color,color] duration-150 ease-out"
                     >
                       削除
@@ -343,22 +380,41 @@ function OrderedSection({
             {schoolName}
           </div>
           {schoolOrders.map((order) => (
-            <div key={order.id} className="flex items-center justify-between px-4 py-1.5 pl-8 hover:bg-gray-50 transition-[background-color,color] duration-150 ease-out">
+            <div
+              key={order.id}
+              className="flex items-center justify-between px-4 py-1.5 pl-8 hover:bg-gray-50 transition-[background-color,color] duration-150 ease-out"
+            >
               <div className="flex items-center gap-4 flex-1 min-w-0">
-                <span className="text-sm text-gray-900 truncate">{order.material?.name || '-'}</span>
+                <span className="text-sm text-gray-900 truncate">
+                  {order.material?.name || '-'}
+                </span>
                 <span className="text-sm text-gray-600 whitespace-nowrap">{order.quantity}冊</span>
                 <span className="text-xs text-gray-400 whitespace-nowrap">
                   {order.is_sample ? (
-                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-700">見本</span>
-                  ) : order.student ? `${order.student.last_name} ${order.student.first_name}` : ''}
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-700">
+                      見本
+                    </span>
+                  ) : order.student ? (
+                    `${order.student.last_name} ${order.student.first_name}`
+                  ) : (
+                    ''
+                  )}
                 </span>
-                <span className="text-xs text-gray-400 whitespace-nowrap">発注日: {formatDate(order.created_at)}</span>
+                <span className="text-xs text-gray-400 whitespace-nowrap">
+                  発注日: {formatDate(order.created_at)}
+                </span>
               </div>
               {canEdit && (
                 <div className="flex items-center gap-2 ml-2">
-                  <StatusDropdown order={order} changingId={changingId} onStatusChange={onStatusChange} />
+                  <StatusDropdown
+                    order={order}
+                    changingId={changingId}
+                    onStatusChange={onStatusChange}
+                  />
                   <button
-                    onClick={() => { if (confirm('この発注を削除しますか？')) onDelete(order.id); }}
+                    onClick={() => {
+                      if (confirm('この発注を削除しますか？')) onDelete(order.id);
+                    }}
                     className="text-xs text-gray-400 hover:text-red-600 transition-[background-color,color] duration-150 ease-out"
                   >
                     削除
@@ -421,10 +477,14 @@ function DeliveredSection({
             const grade = parseInt(parts[1], 10);
             const gradeLabel = GRADE_LABELS[grade] || '';
             return studentOrders.map((order) => (
-              <div key={order.id} className="flex items-center justify-between px-4 py-1.5 pl-8 hover:bg-gray-50 transition-[background-color,color] duration-150 ease-out">
+              <div
+                key={order.id}
+                className="flex items-center justify-between px-4 py-1.5 pl-8 hover:bg-gray-50 transition-[background-color,color] duration-150 ease-out"
+              >
                 <div className="flex items-center gap-3 flex-1 min-w-0">
                   <span className="text-sm text-gray-900 whitespace-nowrap">
-                    {name}{gradeLabel ? `（${gradeLabel}）` : ''}
+                    {name}
+                    {gradeLabel ? `（${gradeLabel}）` : ''}
                   </span>
                   <span className="text-sm text-gray-600 truncate">
                     {order.material?.name || '-'} x{order.quantity}
@@ -432,7 +492,11 @@ function DeliveredSection({
                 </div>
                 {canEdit && (
                   <div className="ml-2">
-                    <StatusDropdown order={order} changingId={changingId} onStatusChange={onStatusChange} />
+                    <StatusDropdown
+                      order={order}
+                      changingId={changingId}
+                      onStatusChange={onStatusChange}
+                    />
                   </div>
                 )}
               </div>
@@ -475,15 +539,24 @@ function DistributedSection({
             {schoolName}
           </div>
           {schoolOrders.map((order) => (
-            <div key={order.id} className="flex items-center justify-between px-4 py-1.5 pl-8 hover:bg-gray-50 transition-[background-color,color] duration-150 ease-out">
+            <div
+              key={order.id}
+              className="flex items-center justify-between px-4 py-1.5 pl-8 hover:bg-gray-50 transition-[background-color,color] duration-150 ease-out"
+            >
               <div className="flex items-center gap-3 flex-1 min-w-0">
                 <span className="text-xs text-gray-400 whitespace-nowrap">
                   {formatDate(order.distributed_at || order.created_at)}
                 </span>
                 <span className="text-sm text-gray-900 whitespace-nowrap">
                   {order.is_sample ? (
-                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-700">見本</span>
-                  ) : order.student ? `${order.student.last_name} ${order.student.first_name}` : '-'}
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-700">
+                      見本
+                    </span>
+                  ) : order.student ? (
+                    `${order.student.last_name} ${order.student.first_name}`
+                  ) : (
+                    '-'
+                  )}
                 </span>
                 <span className="text-sm text-gray-600 truncate">
                   {order.material?.name || '-'} x{order.quantity}
@@ -491,7 +564,11 @@ function DistributedSection({
               </div>
               {canEdit && (
                 <div className="ml-2">
-                  <StatusDropdown order={order} changingId={changingId} onStatusChange={onStatusChange} />
+                  <StatusDropdown
+                    order={order}
+                    changingId={changingId}
+                    onStatusChange={onStatusChange}
+                  />
                 </div>
               )}
             </div>

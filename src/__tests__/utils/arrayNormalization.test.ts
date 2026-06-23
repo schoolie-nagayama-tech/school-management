@@ -18,7 +18,10 @@ function toNumArray(v: unknown): number[] {
   if (typeof v === 'string') {
     const trimmed = v.replace(/^\{|\}$/g, '').trim();
     if (!trimmed) return [];
-    return trimmed.split(',').map((s) => Number(s.trim())).filter((n) => !Number.isNaN(n));
+    return trimmed
+      .split(',')
+      .map((s) => Number(s.trim()))
+      .filter((n) => !Number.isNaN(n));
   }
   return [];
 }

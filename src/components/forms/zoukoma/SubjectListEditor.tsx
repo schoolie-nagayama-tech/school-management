@@ -36,20 +36,14 @@ export function SubjectListEditor({
   const handleMoveUp = (index: number) => {
     if (disabled || index === 0) return;
     const newSubjects = [...subjects];
-    [newSubjects[index - 1], newSubjects[index]] = [
-      newSubjects[index],
-      newSubjects[index - 1],
-    ];
+    [newSubjects[index - 1], newSubjects[index]] = [newSubjects[index], newSubjects[index - 1]];
     onChange(newSubjects);
   };
 
   const handleMoveDown = (index: number) => {
     if (disabled || index === subjects.length - 1) return;
     const newSubjects = [...subjects];
-    [newSubjects[index], newSubjects[index + 1]] = [
-      newSubjects[index + 1],
-      newSubjects[index],
-    ];
+    [newSubjects[index], newSubjects[index + 1]] = [newSubjects[index + 1], newSubjects[index]];
     onChange(newSubjects);
   };
 
@@ -61,9 +55,7 @@ export function SubjectListEditor({
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <label className="block text-sm font-medium text-[#1f2937]">
-          科目リスト
-        </label>
+        <label className="block text-sm font-medium text-[#1f2937]">科目リスト</label>
         <Button
           type="button"
           variant="secondary"
@@ -85,9 +77,7 @@ export function SubjectListEditor({
             >
               <div className="flex items-center gap-2 flex-1">
                 <span className="text-sm text-[#4b5563] w-6">{index + 1}.</span>
-                <span className="text-sm font-medium text-[#1f2937] flex-1">
-                  {subject}
-                </span>
+                <span className="text-sm font-medium text-[#1f2937] flex-1">{subject}</span>
               </div>
               <div className="flex items-center gap-2">
                 <button

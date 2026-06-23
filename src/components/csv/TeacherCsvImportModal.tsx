@@ -2,7 +2,13 @@
 
 import { useState, useRef, useMemo } from 'react';
 import { Modal, Button, Input, Label, Spinner } from '@/components/ui';
-import { SelectShadcn as Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui';
+import {
+  SelectShadcn as Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui';
 import {
   parseTeacherCSV,
   downloadCSV,
@@ -32,12 +38,7 @@ interface Props {
   onImportComplete: () => void;
 }
 
-export function TeacherCsvImportModal({
-  isOpen,
-  onClose,
-  schools,
-  onImportComplete,
-}: Props) {
+export function TeacherCsvImportModal({ isOpen, onClose, schools, onImportComplete }: Props) {
   const { subjects, schools: allSchools } = useMasterData();
   // 教室コード/名前 → ID のマップ（大文字小文字・前後空白を正規化）
   const schoolLookup = useMemo(() => {
@@ -123,7 +124,9 @@ export function TeacherCsvImportModal({
       return;
     }
     if (commonPasswordRequired && defaultPassword.length < 4) {
-      setErrorMessage('初期パスワードは4文字以上で入力してください（CSVの全行にパスワードが入っていれば省略可）');
+      setErrorMessage(
+        '初期パスワードは4文字以上で入力してください（CSVの全行にパスワードが入っていれば省略可）'
+      );
       return;
     }
 
@@ -213,12 +216,7 @@ export function TeacherCsvImportModal({
   };
 
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={handleClose}
-      title="講師CSVインポート"
-      size="lg"
-    >
+    <Modal isOpen={isOpen} onClose={handleClose} title="講師CSVインポート" size="lg">
       {/* ── STEP: アップロード ── */}
       {step === 'upload' && (
         <div className="space-y-6">
@@ -232,13 +230,18 @@ export function TeacherCsvImportModal({
             <div>
               <p className="text-sm font-medium text-[#1f2937]">CSVテンプレート</p>
               <p className="text-xs text-[#4b5563] mt-0.5">
-                列: 表示名 / メール or ID（任意） / パスワード（任意） / 担当教室（コード・/区切り） / 指導科目（名前・/区切り） / 出勤可能曜日（日月火水木金土・/区切り） / 状態（有効・無効）
+                列: 表示名 / メール or ID（任意） / パスワード（任意） / 担当教室（コード・/区切り）
+                / 指導科目（名前・/区切り） / 出勤可能曜日（日月火水木金土・/区切り） /
+                状態（有効・無効）
               </p>
               <p className="text-[11px] text-[#6b7280] mt-1">
-                ※ メール欄は既存システムのID（例: <code className="bg-white px-1 rounded">tanaka123</code>）をそのまま入力してOK。講師はそのIDでログインできます。
+                ※ メール欄は既存システムのID（例:{' '}
+                <code className="bg-white px-1 rounded">tanaka123</code>
+                ）をそのまま入力してOK。講師はそのIDでログインできます。
               </p>
               <p className="text-[11px] text-[#6b7280] mt-0.5">
-                ※ パスワード欄も講師ごとに個別指定できます（4文字以上）。空欄の行は右の「初期パスワード」が適用されます。全行に入れる場合は右の欄は省略可。
+                ※
+                パスワード欄も講師ごとに個別指定できます（4文字以上）。空欄の行は右の「初期パスワード」が適用されます。全行に入れる場合は右の欄は省略可。
               </p>
             </div>
             <Button variant="outline" size="sm" onClick={handleDownloadTemplate}>
@@ -250,10 +253,7 @@ export function TeacherCsvImportModal({
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label htmlFor="import-school">所属教室 *</Label>
-              <Select
-                value={selectedSchoolId}
-                onValueChange={setSelectedSchoolId}
-              >
+              <Select value={selectedSchoolId} onValueChange={setSelectedSchoolId}>
                 <SelectTrigger>
                   <SelectValue placeholder="教室を選択" />
                 </SelectTrigger>
@@ -272,7 +272,9 @@ export function TeacherCsvImportModal({
                 {commonPasswordRequired ? (
                   <span className="text-[#ef4444]"> *</span>
                 ) : (
-                  <span className="text-[11px] text-[#6b7280] font-normal ml-1">（任意・全行に個別PWあり）</span>
+                  <span className="text-[11px] text-[#6b7280] font-normal ml-1">
+                    （任意・全行に個別PWあり）
+                  </span>
                 )}
               </Label>
               <Input
@@ -280,7 +282,9 @@ export function TeacherCsvImportModal({
                 type="password"
                 value={defaultPassword}
                 onChange={(e) => setDefaultPassword(e.target.value)}
-                placeholder={commonPasswordRequired ? '4文字以上' : '省略可（CSVの個別PWが使われます）'}
+                placeholder={
+                  commonPasswordRequired ? '4文字以上' : '省略可（CSVの個別PWが使われます）'
+                }
               />
               <p className="text-xs text-[#4b5563] mt-1">
                 CSVのパスワード欄が空の行にのみ適用されます。登録後、各講師が変更可。
@@ -309,7 +313,9 @@ export function TeacherCsvImportModal({
           )}
 
           <div className="flex justify-end">
-            <Button variant="ghost" onClick={handleClose}>キャンセル</Button>
+            <Button variant="ghost" onClick={handleClose}>
+              キャンセル
+            </Button>
           </div>
         </div>
       )}
@@ -331,15 +337,18 @@ export function TeacherCsvImportModal({
 
           {/* 設定確認 */}
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-800">
-            <p>所属教室: <strong>{schools.find((s) => s.id === selectedSchoolId)?.name ?? '—'}</strong></p>
+            <p>
+              所属教室:{' '}
+              <strong>{schools.find((s) => s.id === selectedSchoolId)?.name ?? '—'}</strong>
+            </p>
             <p>
               パスワード:{' '}
               <strong>
                 {allRowsHaveOwnPassword
                   ? 'CSVから個別適用（全員）'
                   : defaultPassword
-                  ? `共通 (${'•'.repeat(defaultPassword.length)}) + 個別`
-                  : '—'}
+                    ? `共通 (${'•'.repeat(defaultPassword.length)}) + 個別`
+                    : '—'}
               </strong>
             </p>
           </div>
@@ -368,7 +377,16 @@ export function TeacherCsvImportModal({
               <table className="w-full text-xs">
                 <thead className="bg-[#f9fafb]">
                   <tr>
-                    {['行', '表示名', 'メール', 'PW', '担当教室', '指導科目', '出勤曜日', '状態'].map((h) => (
+                    {[
+                      '行',
+                      '表示名',
+                      'メール',
+                      'PW',
+                      '担当教室',
+                      '指導科目',
+                      '出勤曜日',
+                      '状態',
+                    ].map((h) => (
                       <th
                         key={h}
                         className="px-3 py-2 text-left text-[#4b5563] font-medium whitespace-nowrap"
@@ -386,7 +404,9 @@ export function TeacherCsvImportModal({
                       <td className="px-3 py-2 text-[#4b5563]">{r.email ?? '（自動生成）'}</td>
                       <td className="px-3 py-2 text-[#4b5563]">{r.password ? '個別' : '共通'}</td>
                       <td className="px-3 py-2 text-[#4b5563]">
-                        {r.school_codes_raw.length > 0 ? r.school_codes_raw.join(' / ') : '（選択教室）'}
+                        {r.school_codes_raw.length > 0
+                          ? r.school_codes_raw.join(' / ')
+                          : '（選択教室）'}
                       </td>
                       <td className="px-3 py-2 text-[#4b5563]">
                         {r.subject_names_raw.length > 0 ? r.subject_names_raw.join(' / ') : '—'}
@@ -411,13 +431,14 @@ export function TeacherCsvImportModal({
           )}
 
           <div className="flex justify-between">
-            <Button variant="ghost" onClick={resetState}>← やり直し</Button>
+            <Button variant="ghost" onClick={resetState}>
+              ← やり直し
+            </Button>
             <div className="flex gap-2">
-              <Button variant="ghost" onClick={handleClose}>キャンセル</Button>
-              <Button
-                onClick={handleImport}
-                disabled={validRows.length === 0}
-              >
+              <Button variant="ghost" onClick={handleClose}>
+                キャンセル
+              </Button>
+              <Button onClick={handleImport} disabled={validRows.length === 0}>
                 {validRows.length} 件を登録する
               </Button>
             </div>
@@ -438,9 +459,7 @@ export function TeacherCsvImportModal({
             <div
               className="bg-[#1e3a5f] h-2 rounded-full transition-[width] duration-300 ease-out"
               style={{
-                width: validRows.length > 0
-                  ? `${(progress / validRows.length) * 100}%`
-                  : '0%',
+                width: validRows.length > 0 ? `${(progress / validRows.length) * 100}%` : '0%',
               }}
             />
           </div>
@@ -465,7 +484,9 @@ export function TeacherCsvImportModal({
             <div className="bg-red-50 border border-red-200 rounded-lg p-3 max-h-40 overflow-y-auto">
               <p className="text-xs font-medium text-[#c62828] mb-1">失敗の詳細:</p>
               {importResult.failDetails.map((d, i) => (
-                <p key={i} className="text-xs text-[#c62828]">{d}</p>
+                <p key={i} className="text-xs text-[#c62828]">
+                  {d}
+                </p>
               ))}
             </div>
           )}

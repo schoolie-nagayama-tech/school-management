@@ -1,6 +1,10 @@
 'use client';
 
-import type { RegularShiftSetting, RegularShiftSlotSetting, RegularShiftSubmissionSlot } from '@/types/regular-shift';
+import type {
+  RegularShiftSetting,
+  RegularShiftSlotSetting,
+  RegularShiftSubmissionSlot,
+} from '@/types/regular-shift';
 
 const DAY_LABELS: Record<number, string> = {
   1: '月',
@@ -38,9 +42,7 @@ export function RegularSubmissionDetailMatrix({
     .filter(Boolean);
 
   const getCellStatus = (day: number, timeSlot: string): CellStatus => {
-    const slotSetting = slotSettings.find(
-      (s) => s.day_of_week === day && s.time_slot === timeSlot
-    );
+    const slotSetting = slotSettings.find((s) => s.day_of_week === day && s.time_slot === timeSlot);
     if (!slotSetting?.is_open) {
       return 'closed';
     }
@@ -79,10 +81,7 @@ export function RegularSubmissionDetailMatrix({
         <tbody>
           {DAYS.map((day) => {
             return (
-              <tr
-                key={day}
-                className={day === 6 ? 'bg-blue-50/30' : ''}
-              >
+              <tr key={day} className={day === 6 ? 'bg-blue-50/30' : ''}>
                 <td className="border border-[#e5e7eb] p-2 whitespace-nowrap font-medium text-[#1f2937]">
                   {DAY_LABELS[day]}
                 </td>

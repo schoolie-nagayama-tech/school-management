@@ -1,10 +1,5 @@
 import { supabase } from '../supabase';
-import type {
-  FormPeriod,
-  FormPeriodInsert,
-  FormPeriodUpdate,
-  FormType,
-} from '@/types/database';
+import type { FormPeriod, FormPeriodInsert, FormPeriodUpdate, FormType } from '@/types/database';
 import { getDefaultSchoolId } from './schools';
 
 // ============================================
@@ -52,17 +47,12 @@ export function generateUniquePeriodKey(
  * 複数教室に一括作成する場合は全教室の既存キーを集約し、どの教室とも衝突しないキーを選ぶ。
  * アーカイブ済みの期間もキーを占有しているため衝突回避の対象に含める。
  */
-export async function getNextPeriodKey(
-  formType: FormType,
-  schoolIds: string[]
-): Promise<string> {
+export async function getNextPeriodKey(formType: FormType, schoolIds: string[]): Promise<string> {
   const targets = schoolIds.filter(Boolean);
   if (targets.length === 0) {
     return generateUniquePeriodKey([]);
   }
-  const lists = await Promise.all(
-    targets.map((sid) => getFormPeriods(sid, formType, true))
-  );
+  const lists = await Promise.all(targets.map((sid) => getFormPeriods(sid, formType, true)));
   const keys = lists.flat().map((p) => p.period_key);
   return generateUniquePeriodKey(keys);
 }
@@ -79,10 +69,7 @@ export async function getFormPeriods(
 ): Promise<FormPeriod[]> {
   const targetSchoolId = schoolId || getDefaultSchoolId();
 
-  let query = supabase
-    .from('form_periods')
-    .select('*')
-    .eq('school_id', targetSchoolId);
+  let query = supabase.from('form_periods').select('*').eq('school_id', targetSchoolId);
 
   if (formType) {
     query = query.eq('form_type', formType);
@@ -92,10 +79,7 @@ export async function getFormPeriods(
     query = query.or('is_archived.eq.false,is_archived.is.null');
   }
 
-  query = query.order(
-    orderByCreatedAt ? 'created_at' : 'period_key',
-    { ascending: false }
-  );
+  query = query.order(orderByCreatedAt ? 'created_at' : 'period_key', { ascending: false });
 
   const { data, error } = await query;
 
@@ -178,16 +162,10 @@ export async function getFormPeriodByKey(
 /**
  * フォーム公開期間を作成（同一の school_id / form_type / period_key が既にある場合は更新）
  */
-export async function createFormPeriod(
-  data: FormPeriodInsert
-): Promise<FormPeriod> {
+export async function createFormPeriod(data: FormPeriodInsert): Promise<FormPeriod> {
   assertValidPeriodKey(data.period_key);
 
-  const existing = await getFormPeriodByKey(
-    data.school_id,
-    data.form_type,
-    data.period_key
-  );
+  const existing = await getFormPeriodByKey(data.school_id, data.form_type, data.period_key);
 
   if (existing) {
     const updateData: FormPeriodUpdate = {
@@ -203,7 +181,8 @@ export async function createFormPeriod(
 
   const insertData = {
     ...data,
-    settings: data.settings != null ? (data.settings as unknown as Record<string, unknown>) : undefined,
+    settings:
+      data.settings != null ? (data.settings as unknown as Record<string, unknown>) : undefined,
     is_active: data.is_active ?? false, // 新規作成時は非公開
   };
   const { data: created, error } = await supabase
@@ -222,10 +201,7 @@ export async function createFormPeriod(
 /**
  * フォーム公開期間を更新
  */
-export async function updateFormPeriod(
-  id: string,
-  data: FormPeriodUpdate
-): Promise<FormPeriod> {
+export async function updateFormPeriod(id: string, data: FormPeriodUpdate): Promise<FormPeriod> {
   const { data: updated, error } = await supabase
     .from('form_periods')
     .update(data)
@@ -250,7 +226,9 @@ export async function createFormPeriodForSchools(
   if (schoolIds.length === 0) {
     return [];
   }
-  return Promise.all(schoolIds.map((schoolId) => createFormPeriod({ ...data, school_id: schoolId })));
+  return Promise.all(
+    schoolIds.map((schoolId) => createFormPeriod({ ...data, school_id: schoolId }))
+  );
 }
 
 /**
@@ -275,11 +253,7 @@ export async function updateFormPeriodForSchools(
  * フォーム公開期間を1件取得
  */
 export async function getFormPeriod(id: string): Promise<FormPeriod | null> {
-  const { data, error } = await supabase
-    .from('form_periods')
-    .select('*')
-    .eq('id', id)
-    .single();
+  const { data, error } = await supabase.from('form_periods').select('*').eq('id', id).single();
 
   if (error) {
     if (error.code === 'PGRST116') {
@@ -406,9 +380,7 @@ export async function deletePeriodWithCheck(
 ): Promise<void> {
   const count = await getResponseCountByPeriod(schoolId, formType, periodKey);
   if (count > 0) {
-    throw new Error(
-      'この期間には回答があるため削除できません。アーカイブしてください。'
-    );
+    throw new Error('この期間には回答があるため削除できません。アーカイブしてください。');
   }
   await deleteFormPeriod(periodId);
 }
@@ -438,11 +410,7 @@ export async function archivePeriod(
 
   // 期間内の回答もアーカイブ
   const { archiveResponsesByPeriod } = await import('./form-responses');
-  const responsesArchived = await archiveResponsesByPeriod(
-    schoolId,
-    formType,
-    periodKey
-  );
+  const responsesArchived = await archiveResponsesByPeriod(schoolId, formType, periodKey);
 
   return { periodArchived: true, responsesArchived };
 }
@@ -472,11 +440,7 @@ export async function unarchivePeriod(
 
   // 期間内の回答もアーカイブ解除
   const { unarchiveResponsesByPeriod } = await import('./form-responses');
-  const responsesUnarchived = await unarchiveResponsesByPeriod(
-    schoolId,
-    formType,
-    periodKey
-  );
+  const responsesUnarchived = await unarchiveResponsesByPeriod(schoolId, formType, periodKey);
 
   return { periodUnarchived: true, responsesUnarchived };
 }

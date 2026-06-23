@@ -140,7 +140,15 @@ export default function SeasonalShiftSubmissionsPage() {
   );
 
   const handleDelete = async (sub: SeasonalShiftSubmission) => {
-    if (!(await confirm({ title: '削除確認', description: `${sub.teacher_name} さんの提出を削除しますか？\nこの操作は取り消せません。`, confirmLabel: '削除', variant: 'danger' }))) return;
+    if (
+      !(await confirm({
+        title: '削除確認',
+        description: `${sub.teacher_name} さんの提出を削除しますか？\nこの操作は取り消せません。`,
+        confirmLabel: '削除',
+        variant: 'danger',
+      }))
+    )
+      return;
     setDeletingId(sub.id);
     try {
       await deleteSeasonalShiftSubmission(sub.id);
@@ -222,14 +230,19 @@ export default function SeasonalShiftSubmissionsPage() {
         label: `${full.teacher_name} / ${setting?.name ?? '講習'}`,
         actions: buildCheckActions(names),
       };
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (!session) {
         error('ログインが必要です');
         return;
       }
       const res = await fetch('/api/automation/queue', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
         body: JSON.stringify({ payload }),
       });
       const d = (await res.json()) as { error?: string; code?: string };
@@ -244,7 +257,9 @@ export default function SeasonalShiftSubmissionsPage() {
       // 対応表に無い時間帯があれば警告（黙って落とさない）
       success(
         `${full.teacher_name} さんの${names.length}コマを用意しました。スクールIEで対象講師の「講習会契約設定」を開き、ブックマーク「NESTから流し込む」をクリックしてください。` +
-          (skipped.length > 0 ? `（未対応の時間帯${skipped.length}件は除外: ${skipped.join(', ')}）` : '')
+          (skipped.length > 0
+            ? `（未対応の時間帯${skipped.length}件は除外: ${skipped.join(', ')}）`
+            : '')
       );
     } catch (err) {
       error(err instanceof Error ? err.message : 'キュー投入に失敗しました');
@@ -319,7 +334,8 @@ export default function SeasonalShiftSubmissionsPage() {
   };
 
   useEffect(() => {
-    if (!detailSubmission || !pdfExportAfterOpen || detailSubmission.id !== pdfExportAfterOpen) return;
+    if (!detailSubmission || !pdfExportAfterOpen || detailSubmission.id !== pdfExportAfterOpen)
+      return;
     const timer = setTimeout(async () => {
       try {
         const dateStr = new Date().toISOString().slice(0, 10);
@@ -376,15 +392,21 @@ export default function SeasonalShiftSubmissionsPage() {
             <ol className="list-decimal list-inside space-y-1 text-text-muted">
               <li>
                 初回のみ:{' '}
-                <Link href="/settings/automation" className="text-info hover:underline">設定 &gt; 自動入力ローダー</Link>
-                {' '}でローダーをブックマークバーに登録
+                <Link href="/settings/automation" className="text-info hover:underline">
+                  設定 &gt; 自動入力ローダー
+                </Link>{' '}
+                でローダーをブックマークバーに登録
               </li>
               <li>各講師行の「座席表の自動入力」を押して準備（クリップボード不要）</li>
-              <li>スクールIEでその講師の「講習会契約設定」を開き、ブックマーク「NESTから流し込む」をクリック → チェックが自動で入る</li>
+              <li>
+                スクールIEでその講師の「講習会契約設定」を開き、ブックマーク「NESTから流し込む」をクリック
+                → チェックが自動で入る
+              </li>
               <li>内容を確認して「登録」を押す（登録と確認ダイアログは手動）</li>
             </ol>
             <p className="text-xs text-text-muted">
-              ※ 時限の対応は永山校の講習時間（3限〜7限）を前提にしています。未対応の時間帯は準備時に除外され、件数が通知されます。
+              ※
+              時限の対応は永山校の講習時間（3限〜7限）を前提にしています。未対応の時間帯は準備時に除外され、件数が通知されます。
             </p>
           </div>
         </details>
@@ -423,16 +445,25 @@ export default function SeasonalShiftSubmissionsPage() {
                 <tr className="bg-surface-hover border-infoorderorder border-border">
                   <th className="px-4 py-3 text-left font-semibold text-text-heading">講師名</th>
                   <th className="px-4 py-3 text-left font-semibold text-text-heading">メール</th>
-                  <th className="px-4 py-3 text-left font-semibold text-text-heading">アカウント</th>
+                  <th className="px-4 py-3 text-left font-semibold text-text-heading">
+                    アカウント
+                  </th>
                   <th className="px-4 py-3 text-left font-semibold text-text-heading">提出日時</th>
-                  <th className="px-4 py-3 text-text-dangeraintenter font-semibold text-text-heading">修正許可</th>
-                  <th className="px-4 py-3 text-text-dangeraintenter font-semibold text-text-heading">座席表入力</th>
+                  <th className="px-4 py-3 text-text-dangeraintenter font-semibold text-text-heading">
+                    修正許可
+                  </th>
+                  <th className="px-4 py-3 text-text-dangeraintenter font-semibold text-text-heading">
+                    座席表入力
+                  </th>
                   <th className="px-4 py-3 text-right font-semibold text-text-heading">操作</th>
                 </tr>
               </thead>
               <tbody>
                 {submissions.map((sub) => (
-                  <tr key={sub.id} className="border-infoorderorder border-border/60 hover:bg-surface transition-colors duration-150">
+                  <tr
+                    key={sub.id}
+                    className="border-infoorderorder border-border/60 hover:bg-surface transition-colors duration-150"
+                  >
                     <td className="px-4 py-3 font-medium text-text-heading">{sub.teacher_name}</td>
                     <td className="px-4 py-3 text-text-body">{sub.teacher_email}</td>
                     <td className="px-4 py-3">
@@ -488,7 +519,11 @@ export default function SeasonalShiftSubmissionsPage() {
                           className="w-4 h-4 rounded border-border text-ink focus:ring-ink"
                         />
                         <span className="text-sm text-text-body">
-                          {updatingSeatChartId === sub.id ? '更新中...' : sub.seat_chart_entered ? '入力済' : '未入力'}
+                          {updatingSeatChartId === sub.id
+                            ? '更新中...'
+                            : sub.seat_chart_entered
+                              ? '入力済'
+                              : '未入力'}
                         </span>
                       </label>
                     </td>
@@ -569,9 +604,7 @@ export default function SeasonalShiftSubmissionsPage() {
 
               <div className="mb-4">
                 <h4 className="text-sm font-semibold text-text-heading mb-2">出勤可能日時</h4>
-                <p className="text-xs text-text-muted mb-2">
-                  ✓：出勤可能　空白：出勤不可　-：休校
-                </p>
+                <p className="text-xs text-text-muted mb-2">✓：出勤可能　空白：出勤不可　-：休校</p>
                 <SubmissionDetailMatrix
                   setting={setting}
                   slotSettings={detailSlotSettings}
@@ -616,7 +649,9 @@ export default function SeasonalShiftSubmissionsPage() {
                       if (sub) handleResendEmail(sub);
                     }}
                     title={
-                      !detailSubmission.teacher_email ? 'メールアドレス未登録' : '修正許可メールを再送'
+                      !detailSubmission.teacher_email
+                        ? 'メールアドレス未登録'
+                        : '修正許可メールを再送'
                     }
                   >
                     {resendingId === detailSubmission.id ? '送信中...' : 'メール再送'}

@@ -19,14 +19,9 @@ export function SortableAttendanceTypeRow({
   onDeleteClick,
   isSubmitting,
 }: SortableAttendanceTypeRowProps) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: item.id });
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: item.id,
+  });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -65,9 +60,7 @@ export function SortableAttendanceTypeRow({
       <TableCell className="text-center border border-[#e5e7eb] px-4 py-3">
         <span
           className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${
-            item.is_active
-              ? 'bg-[#3b82f6] text-white'
-              : 'bg-[#f3f4f6] text-[#6b7280]'
+            item.is_active ? 'bg-[#3b82f6] text-white' : 'bg-[#f3f4f6] text-[#6b7280]'
           }`}
         >
           {item.is_active ? '有効' : '無効'}

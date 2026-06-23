@@ -69,7 +69,10 @@ function sortStudents(students: ScoreListStudent[], key: SortKey): ScoreListStud
   switch (key) {
     case 'name_asc':
       arr.sort((a, b) =>
-        `${a.lastNameKana}${a.firstNameKana}`.localeCompare(`${b.lastNameKana}${b.firstNameKana}`, 'ja')
+        `${a.lastNameKana}${a.firstNameKana}`.localeCompare(
+          `${b.lastNameKana}${b.firstNameKana}`,
+          'ja'
+        )
       );
       break;
     case 'grade_desc':
@@ -131,7 +134,9 @@ export function ScoreListView({ category, students, schoolIds }: ScoreListViewPr
   const showClassroomSubtitle = schoolIds.length > 1;
 
   // データ
-  const [assessmentsByStudent, setAssessmentsByStudent] = useState<Map<string, AssessmentWithScores[]>>(new Map());
+  const [assessmentsByStudent, setAssessmentsByStudent] = useState<
+    Map<string, AssessmentWithScores[]>
+  >(new Map());
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -145,11 +150,15 @@ export function ScoreListView({ category, students, schoolIds }: ScoreListViewPr
   const [sortKey, setSortKey] = useState<SortKey>('default');
 
   // インライン編集
-  const [editingCell, setEditingCell] = useState<{ assessmentId: string; subject: string } | null>(null);
+  const [editingCell, setEditingCell] = useState<{ assessmentId: string; subject: string } | null>(
+    null
+  );
   const [cellValue, setCellValue] = useState('');
 
   // 未保存の変更を追跡
-  const [pendingChanges, setPendingChanges] = useState<Map<string, { assessmentId: string; subject: string; value: number | null }>>(new Map());
+  const [pendingChanges, setPendingChanges] = useState<
+    Map<string, { assessmentId: string; subject: string; value: number | null }>
+  >(new Map());
   const [isSaving, setIsSaving] = useState(false);
   const [saveResult, setSaveResult] = useState<{ success: number; failed: number } | null>(null);
   const saveResultTimer = useRef<ReturnType<typeof setTimeout>>();
@@ -245,7 +254,8 @@ export function ScoreListView({ category, students, schoolIds }: ScoreListViewPr
     const q = searchQuery.trim().toLowerCase();
     const filtered = q
       ? baseStudents.filter((s) => {
-          const hay = `${s.lastName}${s.firstName}${s.lastNameKana}${s.firstNameKana}${s.schoolName ?? ''}`.toLowerCase();
+          const hay =
+            `${s.lastName}${s.firstName}${s.lastNameKana}${s.firstNameKana}${s.schoolName ?? ''}`.toLowerCase();
           return hay.includes(q);
         })
       : baseStudents;
@@ -276,7 +286,8 @@ export function ScoreListView({ category, students, schoolIds }: ScoreListViewPr
     return base.length;
   }, [students, assessmentsByStudent, category, naishinType]);
 
-  const hasActiveFilter = searchQuery.trim() !== '' || nameCodeFilter !== 'all' || gradeFilter !== 'all';
+  const hasActiveFilter =
+    searchQuery.trim() !== '' || nameCodeFilter !== 'all' || gradeFilter !== 'all';
 
   // ── インライン編集ハンドラ ──
 
@@ -380,9 +391,12 @@ export function ScoreListView({ category, students, schoolIds }: ScoreListViewPr
   }, [pendingChanges]);
 
   // クリーンアップ
-  useEffect(() => () => {
-    if (saveResultTimer.current) clearTimeout(saveResultTimer.current);
-  }, []);
+  useEffect(
+    () => () => {
+      if (saveResultTimer.current) clearTimeout(saveResultTimer.current);
+    },
+    []
+  );
 
   // ── レンダリング ──
 
@@ -395,9 +409,7 @@ export function ScoreListView({ category, students, schoolIds }: ScoreListViewPr
   }
 
   if (error) {
-    return (
-      <div className="py-8 text-center text-sm text-red-500">{error}</div>
-    );
+    return <div className="py-8 text-center text-sm text-red-500">{error}</div>;
   }
 
   return (
@@ -531,7 +543,11 @@ export function ScoreListView({ category, students, schoolIds }: ScoreListViewPr
 
           {/* 内申切り替え（内申タブのみ） */}
           {category === 'report_card' && (
-            <div className="flex items-center gap-1 bg-gray-100 rounded-md p-0.5" role="radiogroup" aria-label="内申タイプ">
+            <div
+              className="flex items-center gap-1 bg-gray-100 rounded-md p-0.5"
+              role="radiogroup"
+              aria-label="内申タイプ"
+            >
               {(['tokyo', 'kanagawa'] as const).map((type) => (
                 <button
                   key={type}
@@ -554,15 +570,19 @@ export function ScoreListView({ category, students, schoolIds }: ScoreListViewPr
 
       {/* 保存バー */}
       {canEdit && (isDirty || saveResult) && (
-        <div className={`mb-3 flex items-center gap-3 px-4 py-2.5 rounded-lg border ${
-          saveResult
-            ? saveResult.failed > 0
-              ? 'bg-amber-50 border-amber-200'
-              : 'bg-green-50 border-green-200'
-            : 'bg-blue-50 border-blue-200'
-        }`}>
+        <div
+          className={`mb-3 flex items-center gap-3 px-4 py-2.5 rounded-lg border ${
+            saveResult
+              ? saveResult.failed > 0
+                ? 'bg-amber-50 border-amber-200'
+                : 'bg-green-50 border-green-200'
+              : 'bg-blue-50 border-blue-200'
+          }`}
+        >
           {saveResult ? (
-            <span className={`text-xs font-medium ${saveResult.failed > 0 ? 'text-amber-700' : 'text-green-700'}`}>
+            <span
+              className={`text-xs font-medium ${saveResult.failed > 0 ? 'text-amber-700' : 'text-green-700'}`}
+            >
               {saveResult.success}件保存しました
               {saveResult.failed > 0 && `（${saveResult.failed}件失敗）`}
             </span>
@@ -603,8 +623,7 @@ export function ScoreListView({ category, students, schoolIds }: ScoreListViewPr
       {totalPages > 1 && (
         <div className="flex items-center justify-between mt-4 px-2">
           <span className="text-sm text-gray-500">
-            {scoreListStudents.length}名中{' '}
-            {(currentPage - 1) * ITEMS_PER_PAGE + 1}〜
+            {scoreListStudents.length}名中 {(currentPage - 1) * ITEMS_PER_PAGE + 1}〜
             {Math.min(currentPage * ITEMS_PER_PAGE, scoreListStudents.length)}名を表示
           </span>
           <div className="flex items-center gap-1">

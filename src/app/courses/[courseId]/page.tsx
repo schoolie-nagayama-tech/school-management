@@ -144,7 +144,7 @@ export default function CourseDetailPage() {
   // 合計コマ数を計算（入力中の値も考慮）
   const calculatedTotalKoma = useMemo(() => {
     return displayRows
-      .filter(row => row.isGroupStart)
+      .filter((row) => row.isGroupStart)
       .reduce((sum, row) => {
         const inputValue = proposalCountValues.get(row.curriculumItem.id);
         return sum + (inputValue !== undefined ? inputValue : row.groupProposalCount);
@@ -154,8 +154,8 @@ export default function CourseDetailPage() {
   // 利用可能なテキスト（コースに未追加のもの）
   const availableTextbooks = useMemo(() => {
     if (!course) return [];
-    const addedIds = course.textbooks?.map(t => t.textbook_id) || [];
-    return allTextbooks.filter(tb => {
+    const addedIds = course.textbooks?.map((t) => t.textbook_id) || [];
+    return allTextbooks.filter((tb) => {
       if (addedIds.includes(tb.id)) return false;
       if (selectedGradeCategory && tb.grade_category !== selectedGradeCategory) return false;
       if (selectedSubject && tb.subject !== selectedSubject) return false;
@@ -167,7 +167,7 @@ export default function CourseDetailPage() {
   // 利用可能な科目
   const availableSubjects = useMemo(() => {
     const subjects = new Set<string>();
-    allTextbooks.forEach(tb => {
+    allTextbooks.forEach((tb) => {
       if (tb.subject) subjects.add(tb.subject);
     });
     return Array.from(subjects).sort();
@@ -176,7 +176,7 @@ export default function CourseDetailPage() {
   // 利用可能な学年
   const availableGrades = useMemo(() => {
     const grades = new Set<string>();
-    allTextbooks.forEach(tb => {
+    allTextbooks.forEach((tb) => {
       if (tb.grade) grades.add(tb.grade);
     });
     return Array.from(grades).sort();
@@ -184,12 +184,15 @@ export default function CourseDetailPage() {
 
   const handleDeleteCourse = async () => {
     if (!courseId || !course) return;
-    if (!(await confirm({
-      title: 'コースを削除',
-      description: `「${course.name}」を削除しますか？`,
-      confirmLabel: '削除',
-      variant: 'danger',
-    }))) return;
+    if (
+      !(await confirm({
+        title: 'コースを削除',
+        description: `「${course.name}」を削除しますか？`,
+        confirmLabel: '削除',
+        variant: 'danger',
+      }))
+    )
+      return;
     try {
       await deleteSeasonalCourse(courseId);
       router.push('/courses');
@@ -250,7 +253,14 @@ export default function CourseDetailPage() {
   // テキストを削除
   const handleRemoveTextbook = async (textbookId: number, textbookName: string) => {
     if (!courseId) return;
-    if (!(await confirm({ title: '削除確認', description: `「${textbookName}」をコースから削除しますか？\nカリキュラム設定も削除されます。`, confirmLabel: '削除', variant: 'danger' }))) {
+    if (
+      !(await confirm({
+        title: '削除確認',
+        description: `「${textbookName}」をコースから削除しますか？\nカリキュラム設定も削除されます。`,
+        confirmLabel: '削除',
+        variant: 'danger',
+      }))
+    ) {
       return;
     }
     setIsSaving(true);
@@ -258,7 +268,8 @@ export default function CourseDetailPage() {
       await removeTextbookFromCourse(courseId, textbookId);
       await fetchCourse();
       if (selectedTextbookId === textbookId) {
-        const remainingTextbooks = course?.textbooks?.filter(t => t.textbook_id !== textbookId) || [];
+        const remainingTextbooks =
+          course?.textbooks?.filter((t) => t.textbook_id !== textbookId) || [];
         setSelectedTextbookId(remainingTextbooks[0]?.textbook_id || null);
       }
       success('テキストを削除しました');
@@ -271,29 +282,32 @@ export default function CourseDetailPage() {
   };
 
   // 提案回数を更新（ローカル状態のみ、保存はしない）
-  const handleProposalCountChange = useCallback((
-    row: CourseCurriculumRow,
-    value: number
-  ) => {
-    // 即座に表示を更新（ローカル状態のみ）
-    const newValues = new Map(proposalCountValues);
-    if (row.isGroupStart) {
-      // グループの場合は、グループ内の全アイテムの値を更新
-      const groupNumber = row.setting?.group_number;
-      if (groupNumber != null) {
-        displayRows
-          .filter(r => r.setting?.group_number === groupNumber)
-          .forEach(r => {
-            newValues.set(r.curriculumItem.id, r.curriculumItem.id === row.curriculumItem.id ? value : 0);
-          });
+  const handleProposalCountChange = useCallback(
+    (row: CourseCurriculumRow, value: number) => {
+      // 即座に表示を更新（ローカル状態のみ）
+      const newValues = new Map(proposalCountValues);
+      if (row.isGroupStart) {
+        // グループの場合は、グループ内の全アイテムの値を更新
+        const groupNumber = row.setting?.group_number;
+        if (groupNumber != null) {
+          displayRows
+            .filter((r) => r.setting?.group_number === groupNumber)
+            .forEach((r) => {
+              newValues.set(
+                r.curriculumItem.id,
+                r.curriculumItem.id === row.curriculumItem.id ? value : 0
+              );
+            });
+        } else {
+          newValues.set(row.curriculumItem.id, value);
+        }
       } else {
         newValues.set(row.curriculumItem.id, value);
       }
-    } else {
-      newValues.set(row.curriculumItem.id, value);
-    }
-    setProposalCountValues(newValues);
-  }, [proposalCountValues, displayRows]);
+      setProposalCountValues(newValues);
+    },
+    [proposalCountValues, displayRows]
+  );
 
   // 提案回数を一括保存
   const handleSaveProposalCounts = useCallback(async () => {
@@ -317,10 +331,8 @@ export default function CourseDetailPage() {
 
         if (groupNumber != null) {
           // グループの場合
-          const groupItems = displayRows.filter(
-            r => r.setting?.group_number === groupNumber
-          );
-          
+          const groupItems = displayRows.filter((r) => r.setting?.group_number === groupNumber);
+
           groupItems.forEach((item, index) => {
             updates.push({
               curriculum_item_id: item.curriculumItem.id,
@@ -348,27 +360,34 @@ export default function CourseDetailPage() {
 
       await fetchCurriculum();
       // 合計コマ数を再計算して更新
-      const { items: newItems, settings: newSettings } = await getCourseCurriculum(courseId, selectedTextbookId);
+      const { items: newItems, settings: newSettings } = await getCourseCurriculum(
+        courseId,
+        selectedTextbookId
+      );
       const newDisplayRows = convertToCourseCurriculumRows(newItems, newSettings);
       const _newTotalKoma = newDisplayRows
-        .filter(r => r.isGroupStart)
+        .filter((r) => r.isGroupStart)
         .reduce((sum, r) => sum + r.groupProposalCount, 0);
-      
+
       // 全テキストの合計を計算
       let totalKomaAll = 0;
       if (course?.textbooks) {
         for (const ct of course.textbooks) {
-          const { items: itemsForTextbook, settings: settingsForTextbook } = await getCourseCurriculum(courseId, ct.textbook_id);
-          const rowsForTextbook = convertToCourseCurriculumRows(itemsForTextbook, settingsForTextbook);
+          const { items: itemsForTextbook, settings: settingsForTextbook } =
+            await getCourseCurriculum(courseId, ct.textbook_id);
+          const rowsForTextbook = convertToCourseCurriculumRows(
+            itemsForTextbook,
+            settingsForTextbook
+          );
           totalKomaAll += rowsForTextbook
-            .filter(r => r.isGroupStart)
+            .filter((r) => r.isGroupStart)
             .reduce((sum, r) => sum + r.groupProposalCount, 0);
         }
       }
-      
+
       await updateSeasonalCourse(courseId, { total_koma: totalKomaAll });
       await fetchCourse();
-      
+
       // ローカル状態をクリア
       setProposalCountValues(new Map());
       success('提案回数を保存しました');
@@ -378,7 +397,17 @@ export default function CourseDetailPage() {
     } finally {
       setIsSaving(false);
     }
-  }, [courseId, selectedTextbookId, displayRows, proposalCountValues, course, fetchCurriculum, fetchCourse, error, success]);
+  }, [
+    courseId,
+    selectedTextbookId,
+    displayRows,
+    proposalCountValues,
+    course,
+    fetchCurriculum,
+    fetchCourse,
+    error,
+    success,
+  ]);
 
   // グループ化
   const handleGroup = async () => {
@@ -444,9 +473,9 @@ export default function CourseDetailPage() {
 
   // 学年チェックボックスの切り替え
   const toggleGrade = (grade: number) => {
-    setEditTargetGrades(prev =>
+    setEditTargetGrades((prev) =>
       prev.includes(grade)
-        ? prev.filter(g => g !== grade)
+        ? prev.filter((g) => g !== grade)
         : [...prev, grade].sort((a, b) => a - b)
     );
   };
@@ -511,16 +540,20 @@ export default function CourseDetailPage() {
               <div>
                 <div className="flex items-center gap-2">
                   <h1 className="text-lg font-bold text-text-heading">{course.name}</h1>
-                  <span className={`px-2 py-0.5 text-[11px] font-bold rounded ${SEASON_BADGE[course.season]}`}>
+                  <span
+                    className={`px-2 py-0.5 text-[11px] font-bold rounded ${SEASON_BADGE[course.season]}`}
+                  >
                     {SEASON_LABELS[course.season]}
                   </span>
                   <span className="text-sm font-bold text-accent-ink tabular-nums">
-                    {calculatedTotalKoma > 0 ? `${calculatedTotalKoma}コマ` : `${course.total_koma}コマ`}
+                    {calculatedTotalKoma > 0
+                      ? `${calculatedTotalKoma}コマ`
+                      : `${course.total_koma}コマ`}
                   </span>
                 </div>
                 <p className="text-sm text-text-muted mt-0.5">
                   {course.target_grades.length > 0
-                    ? course.target_grades.map(g => GRADE_LABELS[g] || g).join(' ')
+                    ? course.target_grades.map((g) => GRADE_LABELS[g] || g).join(' ')
                     : '学年未設定'}
                   {course.comment && (
                     <span className="ml-2 text-text-muted/70">— {course.comment}</span>
@@ -575,7 +608,7 @@ export default function CourseDetailPage() {
                   <input
                     type="text"
                     value={editName}
-                    onChange={e => setEditName(e.target.value)}
+                    onChange={(e) => setEditName(e.target.value)}
                     className="w-full px-3 py-1.5 text-sm border border-border-default rounded-lg bg-surface-raised focus:ring-2 focus:ring-primary/20 focus:border-primary"
                   />
                 </div>
@@ -583,7 +616,7 @@ export default function CourseDetailPage() {
                   <div>
                     <label className="text-xs font-bold text-text-muted block mb-1">シーズン</label>
                     <div className="flex gap-1">
-                      {(['spring', 'summer', 'winter'] as SeasonType[]).map(s => (
+                      {(['spring', 'summer', 'winter'] as SeasonType[]).map((s) => (
                         <button
                           key={s}
                           onClick={() => setEditSeason(s)}
@@ -601,7 +634,7 @@ export default function CourseDetailPage() {
                   <div className="flex-1">
                     <label className="text-xs font-bold text-text-muted block mb-1">対象学年</label>
                     <div className="flex flex-wrap gap-1">
-                      {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(grade => (
+                      {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((grade) => (
                         <button
                           key={grade}
                           onClick={() => toggleGrade(grade)}
@@ -622,7 +655,7 @@ export default function CourseDetailPage() {
                   <input
                     type="text"
                     value={editComment}
-                    onChange={e => setEditComment(e.target.value)}
+                    onChange={(e) => setEditComment(e.target.value)}
                     className="w-full px-3 py-1.5 text-sm border border-border-default rounded-lg bg-surface-raised focus:ring-2 focus:ring-primary/20 focus:border-primary"
                     placeholder="講習に関するメモ"
                   />
@@ -633,187 +666,199 @@ export default function CourseDetailPage() {
         </div>
 
         {!isEditingBasic && (
-        <div className="space-y-5">
-          {/* テキスト */}
-          <section className="p-4 bg-surface-raised rounded-xl border border-border-default">
-            <div className="flex items-center justify-between mb-2">
-              <div className="text-xs font-bold text-text-muted">テキスト</div>
-              <button
-                onClick={() => setIsAddTextbookModalOpen(true)}
-                disabled={(course.textbooks?.length || 0) >= 3}
-                className="px-2.5 py-1 text-[11px] font-medium bg-ink text-text-on-primary rounded-md hover:brightness-[0.85] transition-[filter] duration-150 disabled:opacity-40 flex items-center gap-1"
-              >
-                <Plus className="w-3 h-3" />
-                テキスト追加 ({course.textbooks?.length || 0}/3)
-              </button>
-            </div>
-            {course.textbooks?.length === 0 ? (
-              <p className="text-sm text-text-muted text-center py-3">テキストを追加してください</p>
-            ) : (
-              <div className="flex gap-2 flex-wrap">
-                {course.textbooks?.map(ct => (
-                  <button
-                    key={ct.id}
-                    onClick={() => setSelectedTextbookId(ct.textbook_id)}
-                    className={`group flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors duration-150 ${
-                      selectedTextbookId === ct.textbook_id
-                        ? 'bg-ink text-text-on-primary'
-                        : 'bg-surface-hover text-text-body hover:bg-border-default'
-                    }`}
-                  >
-                    {ct.textbook?.name}
-                    <span
-                      onClick={e => {
-                        e.stopPropagation();
-                        handleRemoveTextbook(ct.textbook_id, ct.textbook?.name || '');
-                      }}
-                      className={`ml-0.5 transition-colors duration-150 ${
+          <div className="space-y-5">
+            {/* テキスト */}
+            <section className="p-4 bg-surface-raised rounded-xl border border-border-default">
+              <div className="flex items-center justify-between mb-2">
+                <div className="text-xs font-bold text-text-muted">テキスト</div>
+                <button
+                  onClick={() => setIsAddTextbookModalOpen(true)}
+                  disabled={(course.textbooks?.length || 0) >= 3}
+                  className="px-2.5 py-1 text-[11px] font-medium bg-ink text-text-on-primary rounded-md hover:brightness-[0.85] transition-[filter] duration-150 disabled:opacity-40 flex items-center gap-1"
+                >
+                  <Plus className="w-3 h-3" />
+                  テキスト追加 ({course.textbooks?.length || 0}/3)
+                </button>
+              </div>
+              {course.textbooks?.length === 0 ? (
+                <p className="text-sm text-text-muted text-center py-3">
+                  テキストを追加してください
+                </p>
+              ) : (
+                <div className="flex gap-2 flex-wrap">
+                  {course.textbooks?.map((ct) => (
+                    <button
+                      key={ct.id}
+                      onClick={() => setSelectedTextbookId(ct.textbook_id)}
+                      className={`group flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors duration-150 ${
                         selectedTextbookId === ct.textbook_id
-                          ? 'text-text-on-primary/60 hover:text-text-on-primary'
-                          : 'text-text-faint hover:text-danger'
+                          ? 'bg-ink text-text-on-primary'
+                          : 'bg-surface-hover text-text-body hover:bg-border-default'
                       }`}
                     >
-                      <X className="w-3 h-3" />
-                    </span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </section>
-
-          {/* カリキュラム設定 */}
-          {selectedTextbookId && (
-            <section className="bg-surface-raised rounded-xl border border-border-default overflow-hidden">
-              <div className="p-4 flex items-center justify-between flex-wrap gap-2">
-                <h2 className="text-sm font-bold text-text-heading">
-                  対象単元を設定
-                  <span className="ml-3 text-accent-ink">{calculatedTotalKoma}コマ</span>
-                </h2>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={handleGroup}
-                    disabled={isSaving || selectedItems.size < 2}
-                    className="px-2 py-1 text-[11px] bg-surface-hover text-text-muted rounded-md hover:bg-border-default flex items-center gap-1 transition-[background-color,color,transform] duration-150 ease-out active:scale-[0.97] disabled:opacity-40"
-                  >
-                    <Link2 className="w-3 h-3" />
-                    グループ化 ({selectedItems.size})
-                  </button>
-                  <button
-                    onClick={handleUngroup}
-                    disabled={isSaving || selectedItems.size === 0}
-                    className="px-2 py-1 text-[11px] text-text-faint hover:text-text-muted rounded-md transition-[color,transform] duration-150 ease-out active:scale-[0.97] disabled:opacity-40 flex items-center gap-1"
-                  >
-                    <Unlink className="w-3 h-3" />
-                    グループ解除
-                  </button>
-                  <button
-                    onClick={handleSaveProposalCounts}
-                    disabled={isSaving || proposalCountValues.size === 0}
-                    className="px-3 py-1.5 text-[11px] font-medium bg-ink text-text-on-primary rounded-lg hover:brightness-[0.85] transition-[filter,transform] duration-150 ease-out active:scale-[0.97] disabled:opacity-40 flex items-center gap-1"
-                  >
-                    <Save className="w-3 h-3" />
-                    {isSaving ? '保存中...' : '提案回数を保存'}
-                  </button>
-                  <Link
-                    href={`/courses/${courseId}/apply`}
-                    className="px-3 py-1.5 text-[11px] font-medium text-text-body border border-border-default rounded-lg hover:bg-surface-hover transition-[background-color,transform] duration-150 ease-out active:scale-[0.97] flex items-center gap-1"
-                    title="生徒ごとに下書きの提案書を作成します"
-                  >
-                    <Users className="w-3 h-3" />
-                    生徒に下書き登録
-                  </Link>
-                </div>
-              </div>
-
-              {/* ヘッダーラベル */}
-              {displayRows.length > 0 && (
-                <div className="flex items-center px-4 py-1.5 border-t border-border-subtle text-[10px] text-text-faint font-medium">
-                  <div className="w-7 text-center shrink-0" />
-                  <div className="flex-1 pl-1">単元名</div>
-                  <div className="w-20 text-center shrink-0">提案回数</div>
-                </div>
-              )}
-
-              {/* 単元リスト */}
-              <div className="border-t border-border-subtle">
-                {displayRows.length === 0 ? (
-                  <div className="px-4 py-8 text-center text-sm text-text-muted">
-                    カリキュラム項目がありません
-                  </div>
-                ) : (
-                  displayRows.map((row, _idx) => {
-                    const groupColor = getGroupColor(row.setting?.group_number);
-                    const isChecked = selectedItems.has(row.curriculumItem.id);
-                    const isGrouped = row.setting?.group_number != null;
-
-                    return (
-                      <div
-                        key={row.curriculumItem.id}
-                        className={`flex items-center px-4 py-2 border-b border-border-subtle last:border-b-0 transition-colors duration-100 ${groupColor} ${
-                          isChecked ? 'bg-primary/5' : 'hover:bg-surface-hover/50'
+                      {ct.textbook?.name}
+                      <span
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRemoveTextbook(ct.textbook_id, ct.textbook?.name || '');
+                        }}
+                        className={`ml-0.5 transition-colors duration-150 ${
+                          selectedTextbookId === ct.textbook_id
+                            ? 'text-text-on-primary/60 hover:text-text-on-primary'
+                            : 'text-text-faint hover:text-danger'
                         }`}
                       >
-                        <div className="w-7 shrink-0 flex items-center justify-center">
-                          <input
-                            type="checkbox"
-                            checked={isChecked}
-                            onChange={e => {
-                              const newSet = new Set(selectedItems);
-                              if (e.target.checked) {
-                                newSet.add(row.curriculumItem.id);
-                              } else {
-                                newSet.delete(row.curriculumItem.id);
-                              }
-                              setSelectedItems(newSet);
-                            }}
-                            className="w-3.5 h-3.5 rounded"
-                          />
-                        </div>
-                        <div className="flex-1 min-w-0 pl-1">
-                          <span className="text-sm text-text-heading">
-                            {row.curriculumItem.item_number != null && (
-                              <span className="text-text-muted mr-1.5 tabular-nums text-xs">{row.curriculumItem.item_number}</span>
-                            )}
-                            {row.curriculumItem.title}
-                          </span>
-                          {isGrouped && row.isGroupStart && (
-                            <span className="ml-2 text-[10px] text-text-faint">
-                              G{row.setting?.group_number} ({row.groupRowSpan}単元)
-                            </span>
-                          )}
-                        </div>
-                        {row.isGroupStart && (
-                          <div className="w-20 shrink-0 flex justify-center" style={row.groupRowSpan > 1 ? {} : {}}>
-                            <input
-                              type="number"
-                              min="0"
-                              value={proposalCountValues.get(row.curriculumItem.id) ?? row.groupProposalCount}
-                              onChange={e => handleProposalCountChange(row, parseInt(e.target.value) || 0)}
-                              className="w-16 px-2 py-1 text-center text-sm border border-border-default rounded-lg bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary tabular-nums"
-                            />
-                          </div>
-                        )}
-                        {!row.isGroupStart && isGrouped && (
-                          <div className="w-20 shrink-0" />
-                        )}
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-
-              {/* フッター合計 */}
-              {displayRows.length > 0 && (
-                <div className="flex items-center px-4 py-2.5 border-t border-border-default bg-surface-hover/50">
-                  <div className="flex-1 text-right text-xs font-bold text-text-heading pr-4">合計</div>
-                  <div className="w-20 shrink-0 text-center text-sm font-bold text-accent-ink tabular-nums">
-                    {calculatedTotalKoma}コマ
-                  </div>
+                        <X className="w-3 h-3" />
+                      </span>
+                    </button>
+                  ))}
                 </div>
               )}
             </section>
-          )}
-        </div>
+
+            {/* カリキュラム設定 */}
+            {selectedTextbookId && (
+              <section className="bg-surface-raised rounded-xl border border-border-default overflow-hidden">
+                <div className="p-4 flex items-center justify-between flex-wrap gap-2">
+                  <h2 className="text-sm font-bold text-text-heading">
+                    対象単元を設定
+                    <span className="ml-3 text-accent-ink">{calculatedTotalKoma}コマ</span>
+                  </h2>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={handleGroup}
+                      disabled={isSaving || selectedItems.size < 2}
+                      className="px-2 py-1 text-[11px] bg-surface-hover text-text-muted rounded-md hover:bg-border-default flex items-center gap-1 transition-[background-color,color,transform] duration-150 ease-out active:scale-[0.97] disabled:opacity-40"
+                    >
+                      <Link2 className="w-3 h-3" />
+                      グループ化 ({selectedItems.size})
+                    </button>
+                    <button
+                      onClick={handleUngroup}
+                      disabled={isSaving || selectedItems.size === 0}
+                      className="px-2 py-1 text-[11px] text-text-faint hover:text-text-muted rounded-md transition-[color,transform] duration-150 ease-out active:scale-[0.97] disabled:opacity-40 flex items-center gap-1"
+                    >
+                      <Unlink className="w-3 h-3" />
+                      グループ解除
+                    </button>
+                    <button
+                      onClick={handleSaveProposalCounts}
+                      disabled={isSaving || proposalCountValues.size === 0}
+                      className="px-3 py-1.5 text-[11px] font-medium bg-ink text-text-on-primary rounded-lg hover:brightness-[0.85] transition-[filter,transform] duration-150 ease-out active:scale-[0.97] disabled:opacity-40 flex items-center gap-1"
+                    >
+                      <Save className="w-3 h-3" />
+                      {isSaving ? '保存中...' : '提案回数を保存'}
+                    </button>
+                    <Link
+                      href={`/courses/${courseId}/apply`}
+                      className="px-3 py-1.5 text-[11px] font-medium text-text-body border border-border-default rounded-lg hover:bg-surface-hover transition-[background-color,transform] duration-150 ease-out active:scale-[0.97] flex items-center gap-1"
+                      title="生徒ごとに下書きの提案書を作成します"
+                    >
+                      <Users className="w-3 h-3" />
+                      生徒に下書き登録
+                    </Link>
+                  </div>
+                </div>
+
+                {/* ヘッダーラベル */}
+                {displayRows.length > 0 && (
+                  <div className="flex items-center px-4 py-1.5 border-t border-border-subtle text-[10px] text-text-faint font-medium">
+                    <div className="w-7 text-center shrink-0" />
+                    <div className="flex-1 pl-1">単元名</div>
+                    <div className="w-20 text-center shrink-0">提案回数</div>
+                  </div>
+                )}
+
+                {/* 単元リスト */}
+                <div className="border-t border-border-subtle">
+                  {displayRows.length === 0 ? (
+                    <div className="px-4 py-8 text-center text-sm text-text-muted">
+                      カリキュラム項目がありません
+                    </div>
+                  ) : (
+                    displayRows.map((row, _idx) => {
+                      const groupColor = getGroupColor(row.setting?.group_number);
+                      const isChecked = selectedItems.has(row.curriculumItem.id);
+                      const isGrouped = row.setting?.group_number != null;
+
+                      return (
+                        <div
+                          key={row.curriculumItem.id}
+                          className={`flex items-center px-4 py-2 border-b border-border-subtle last:border-b-0 transition-colors duration-100 ${groupColor} ${
+                            isChecked ? 'bg-primary/5' : 'hover:bg-surface-hover/50'
+                          }`}
+                        >
+                          <div className="w-7 shrink-0 flex items-center justify-center">
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={(e) => {
+                                const newSet = new Set(selectedItems);
+                                if (e.target.checked) {
+                                  newSet.add(row.curriculumItem.id);
+                                } else {
+                                  newSet.delete(row.curriculumItem.id);
+                                }
+                                setSelectedItems(newSet);
+                              }}
+                              className="w-3.5 h-3.5 rounded"
+                            />
+                          </div>
+                          <div className="flex-1 min-w-0 pl-1">
+                            <span className="text-sm text-text-heading">
+                              {row.curriculumItem.item_number != null && (
+                                <span className="text-text-muted mr-1.5 tabular-nums text-xs">
+                                  {row.curriculumItem.item_number}
+                                </span>
+                              )}
+                              {row.curriculumItem.title}
+                            </span>
+                            {isGrouped && row.isGroupStart && (
+                              <span className="ml-2 text-[10px] text-text-faint">
+                                G{row.setting?.group_number} ({row.groupRowSpan}単元)
+                              </span>
+                            )}
+                          </div>
+                          {row.isGroupStart && (
+                            <div
+                              className="w-20 shrink-0 flex justify-center"
+                              style={row.groupRowSpan > 1 ? {} : {}}
+                            >
+                              <input
+                                type="number"
+                                min="0"
+                                value={
+                                  proposalCountValues.get(row.curriculumItem.id) ??
+                                  row.groupProposalCount
+                                }
+                                onChange={(e) =>
+                                  handleProposalCountChange(row, parseInt(e.target.value) || 0)
+                                }
+                                className="w-16 px-2 py-1 text-center text-sm border border-border-default rounded-lg bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary tabular-nums"
+                              />
+                            </div>
+                          )}
+                          {!row.isGroupStart && isGrouped && <div className="w-20 shrink-0" />}
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+
+                {/* フッター合計 */}
+                {displayRows.length > 0 && (
+                  <div className="flex items-center px-4 py-2.5 border-t border-border-default bg-surface-hover/50">
+                    <div className="flex-1 text-right text-xs font-bold text-text-heading pr-4">
+                      合計
+                    </div>
+                    <div className="w-20 shrink-0 text-center text-sm font-bold text-accent-ink tabular-nums">
+                      {calculatedTotalKoma}コマ
+                    </div>
+                  </div>
+                )}
+              </section>
+            )}
+          </div>
         )}
       </div>
 
@@ -834,7 +879,7 @@ export default function CourseDetailPage() {
             <Select
               label="学年カテゴリ"
               value={selectedGradeCategory}
-              onChange={e => {
+              onChange={(e) => {
                 setSelectedGradeCategory(e.target.value);
                 setSelectedSubject('');
                 setSelectedGrade('');
@@ -849,19 +894,19 @@ export default function CourseDetailPage() {
             <Select
               label="学年"
               value={selectedGrade}
-              onChange={e => setSelectedGrade(e.target.value)}
+              onChange={(e) => setSelectedGrade(e.target.value)}
               options={[
                 { value: '', label: 'すべて' },
-                ...availableGrades.map(g => ({ value: g, label: g })),
+                ...availableGrades.map((g) => ({ value: g, label: g })),
               ]}
             />
             <Select
               label="科目"
               value={selectedSubject}
-              onChange={e => setSelectedSubject(e.target.value)}
+              onChange={(e) => setSelectedSubject(e.target.value)}
               options={[
                 { value: '', label: 'すべて' },
-                ...availableSubjects.map(s => ({ value: s, label: s })),
+                ...availableSubjects.map((s) => ({ value: s, label: s })),
               ]}
             />
           </div>
@@ -874,7 +919,7 @@ export default function CourseDetailPage() {
               </p>
             ) : (
               <div className="max-h-64 overflow-y-auto space-y-1">
-                {availableTextbooks.map(textbook => (
+                {availableTextbooks.map((textbook) => (
                   <div
                     key={textbook.id}
                     className="p-3 rounded-lg border border-border-subtle hover:bg-surface-hover transition-colors duration-150 flex items-center justify-between"

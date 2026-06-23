@@ -131,9 +131,7 @@ export function SlotPreview({ schedule }: SlotPreviewProps) {
             return (
               <tr key={date}>
                 <td className="border border-[#e5e7eb] px-3 py-2 sticky left-0 z-10 bg-white">
-                  <span className="text-sm font-medium text-[#1f2937]">
-                    {dateStr}
-                  </span>
+                  <span className="text-sm font-medium text-[#1f2937]">{dateStr}</span>
                 </td>
                 {[4, 5, 6, 7].map((period) => {
                   const slot = dateSlots.find((s) => s.period === period);
@@ -147,10 +145,7 @@ export function SlotPreview({ schedule }: SlotPreviewProps) {
                   }
 
                   return (
-                    <td
-                      key={period}
-                      className="border border-[#e5e7eb] px-3 py-2 text-center"
-                    >
+                    <td key={period} className="border border-[#e5e7eb] px-3 py-2 text-center">
                       <div
                         className={`inline-block px-2 py-1 rounded text-xs ${
                           slot.isAvailable

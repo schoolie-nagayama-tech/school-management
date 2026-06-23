@@ -19,9 +19,7 @@ export type TrainingMasterPatch = Partial<TrainingMasterInput>;
  * 研修マスタ一覧を取得
  * @param activeOnly true の場合は is_active=true のみ返す
  */
-export async function getTrainingMasters(
-  activeOnly = false
-): Promise<TrainingMaster[]> {
+export async function getTrainingMasters(activeOnly = false): Promise<TrainingMaster[]> {
   let query = db
     .from('training_masters')
     .select('*')
@@ -39,9 +37,7 @@ export async function getTrainingMasters(
   return (data || []) as TrainingMaster[];
 }
 
-export async function createTrainingMaster(
-  input: TrainingMasterInput
-): Promise<TrainingMaster> {
+export async function createTrainingMaster(input: TrainingMasterInput): Promise<TrainingMaster> {
   const payload = {
     name: input.name,
     period_label: input.period_label ?? null,
@@ -49,11 +45,7 @@ export async function createTrainingMaster(
     sort_order: input.sort_order ?? 0,
     is_active: input.is_active ?? true,
   };
-  const { data, error } = await db
-    .from('training_masters')
-    .insert(payload)
-    .select()
-    .single();
+  const { data, error } = await db.from('training_masters').insert(payload).select().single();
   if (error) {
     throw new Error(`研修マスタの登録に失敗しました: ${error.message}`);
   }

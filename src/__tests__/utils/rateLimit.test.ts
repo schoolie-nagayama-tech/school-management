@@ -83,7 +83,10 @@ describe('checkRateLimit', () => {
 
   it('resetAtが正しく設定される', () => {
     vi.setSystemTime(new Date('2026-01-01T00:00:00Z'));
-    const result = checkRateLimit('10.0.0.5', '/api/reset-at-test', { limit: 10, windowSeconds: 60 });
+    const result = checkRateLimit('10.0.0.5', '/api/reset-at-test', {
+      limit: 10,
+      windowSeconds: 60,
+    });
     expect(result.resetAt).toBe(new Date('2026-01-01T00:01:00Z').getTime());
   });
 });

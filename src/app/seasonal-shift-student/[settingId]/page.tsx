@@ -243,9 +243,7 @@ export default function StudentShiftFormPage() {
           <CardContent className="p-8 text-center">
             <CheckCircle2 className="w-12 h-12 text-green-500 mx-auto mb-3" />
             <h2 className="text-xl font-bold mb-2">送信完了</h2>
-            <p className="text-sm text-text-muted">
-              ご提出いただきありがとうございました。
-            </p>
+            <p className="text-sm text-text-muted">ご提出いただきありがとうございました。</p>
           </CardContent>
         </Card>
       </div>
@@ -259,9 +257,7 @@ export default function StudentShiftFormPage() {
         <Card>
           <CardContent className="p-4">
             <h1 className="text-xl font-bold mb-1">{data.setting.name}</h1>
-            <p className="text-sm text-text-muted">
-              通塾可能日時の確認フォーム
-            </p>
+            <p className="text-sm text-text-muted">通塾可能日時の確認フォーム</p>
             <p className="text-xs text-text-muted mt-2">
               期間: {data.setting.start_date} 〜 {data.setting.end_date}
               {data.setting.deadline && ` ・ 締切: ${data.setting.deadline}`}
@@ -301,7 +297,10 @@ export default function StudentShiftFormPage() {
             <Card>
               <CardContent className="p-4 space-y-3">
                 <div className="bg-info-subtle border border-info rounded p-3 text-sm">
-                  生徒: <strong>{data.student.last_name} {data.student.first_name}</strong>
+                  生徒:{' '}
+                  <strong>
+                    {data.student.last_name} {data.student.first_name}
+                  </strong>
                   <span className="text-text-muted ml-1">（{gradeLabel(data.student.grade)}）</span>
                 </div>
 
@@ -360,8 +359,8 @@ export default function StudentShiftFormPage() {
                                 type="button"
                                 onClick={() => toggleAllInDay(d)}
                                 className={`block w-full text-center px-1 py-0.5 rounded ${
- allOn ? 'bg-info-subtle text-info' : 'hover:bg-surface'
- }`}
+                                  allOn ? 'bg-info-subtle text-info' : 'hover:bg-surface'
+                                }`}
                               >
                                 {d.slice(5)}
                               </button>

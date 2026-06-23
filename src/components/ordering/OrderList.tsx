@@ -1,8 +1,22 @@
 'use client';
 
 import { useCallback } from 'react';
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell, Button } from '@/components/ui';
-import { SelectShadcn as Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui';
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+  Button,
+} from '@/components/ui';
+import {
+  SelectShadcn as Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '@/components/ui';
 import { OrderStatusBadge } from './OrderStatusBadge';
 import type { MaterialOrderWithDetails, OrderStatus } from '@/types/database';
 
@@ -74,10 +88,16 @@ export function OrderList({ orders, canEdit, onStatusChange, onDelete }: OrderLi
               >
                 <TableCell>
                   {order.is_sample ? (
-                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-700">見本</span>
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-700">
+                      見本
+                    </span>
                   ) : order.student ? (
-                    <>{order.student.last_name} {order.student.first_name}</>
-                  ) : '-'}
+                    <>
+                      {order.student.last_name} {order.student.first_name}
+                    </>
+                  ) : (
+                    '-'
+                  )}
                 </TableCell>
                 <TableCell>{order.material?.name ?? '-'}</TableCell>
                 <TableCell className="text-center">{order.quantity}</TableCell>

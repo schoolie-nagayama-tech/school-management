@@ -59,51 +59,56 @@ export function useCachedFetch<T>(
   const [error, setError] = useState<string | null>(null);
   const mountedRef = useRef(true);
 
-  const doFetch = useCallback(async (skipCache = false) => {
-    if (!enabled) return;
+  const doFetch = useCallback(
+    async (skipCache = false) => {
+      if (!enabled) return;
 
-    // キャッシュヒット判定
-    if (!skipCache) {
-      const entry = cache.get(key) as CacheEntry<T> | undefined;
-      if (entry && Date.now() - entry.timestamp < ttl) {
-        setData(entry.data);
-        setIsLoading(false);
-        return;
-      }
-    }
-
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      // 同一キーへの並行リクエストを合流させる
-      let promise = inflight.get(key) as Promise<T> | undefined;
-      if (!promise) {
-        promise = fetcher();
-        inflight.set(key, promise);
+      // キャッシュヒット判定
+      if (!skipCache) {
+        const entry = cache.get(key) as CacheEntry<T> | undefined;
+        if (entry && Date.now() - entry.timestamp < ttl) {
+          setData(entry.data);
+          setIsLoading(false);
+          return;
+        }
       }
 
-      const result = await promise;
-      cache.set(key, { data: result, timestamp: Date.now() });
+      setIsLoading(true);
+      setError(null);
 
-      if (mountedRef.current) {
-        setData(result);
-        setIsLoading(false);
+      try {
+        // 同一キーへの並行リクエストを合流させる
+        let promise = inflight.get(key) as Promise<T> | undefined;
+        if (!promise) {
+          promise = fetcher();
+          inflight.set(key, promise);
+        }
+
+        const result = await promise;
+        cache.set(key, { data: result, timestamp: Date.now() });
+
+        if (mountedRef.current) {
+          setData(result);
+          setIsLoading(false);
+        }
+      } catch (err) {
+        if (mountedRef.current) {
+          setError(err instanceof Error ? err.message : String(err));
+          setIsLoading(false);
+        }
+      } finally {
+        inflight.delete(key);
       }
-    } catch (err) {
-      if (mountedRef.current) {
-        setError(err instanceof Error ? err.message : String(err));
-        setIsLoading(false);
-      }
-    } finally {
-      inflight.delete(key);
-    }
-  }, [key, fetcher, ttl, enabled]);
+    },
+    [key, fetcher, ttl, enabled]
+  );
 
   useEffect(() => {
     mountedRef.current = true;
     doFetch(forceRefresh);
-    return () => { mountedRef.current = false; };
+    return () => {
+      mountedRef.current = false;
+    };
   }, [doFetch, forceRefresh]);
 
   const refresh = useCallback(async () => {

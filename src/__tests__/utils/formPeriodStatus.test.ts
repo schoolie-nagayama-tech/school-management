@@ -9,8 +9,8 @@
 import { describe, it, expect } from 'vitest';
 import { getFormPeriodStatus } from '@/lib/utils/formPeriodStatus';
 
-const PAST = '2000-01-01T00:00:00';   // 現在より必ず過去
-const PAST2 = '2000-01-02T00:00:00';  // PAST より後だが、これも必ず過去
+const PAST = '2000-01-01T00:00:00'; // 現在より必ず過去
+const PAST2 = '2000-01-02T00:00:00'; // PAST より後だが、これも必ず過去
 const FUTURE = '2999-01-01T00:00:00'; // 現在より必ず未来
 
 describe('getFormPeriodStatus - フォーム受付期間の状態判定', () => {

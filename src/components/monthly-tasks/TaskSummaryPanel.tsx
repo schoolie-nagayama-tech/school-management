@@ -58,7 +58,7 @@ export function TaskSummaryPanel({
     d.setDate(d.getDate() + 7);
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   })();
-  const schoolIds = schools.map(s => s.id);
+  const schoolIds = schools.map((s) => s.id);
 
   const stats = useMemo(() => {
     let totalChecks = 0;
@@ -69,7 +69,7 @@ export function TaskSummaryPanel({
       let allDone = true;
       for (const sid of schoolIds) {
         totalChecks++;
-        const check = task.checks.find(c => c.school_id === sid);
+        const check = task.checks.find((c) => c.school_id === sid);
         if (check?.is_completed) {
           completedChecks++;
         } else {
@@ -82,25 +82,32 @@ export function TaskSummaryPanel({
     }
 
     const percent = totalChecks > 0 ? Math.round((completedChecks / totalChecks) * 100) : 0;
-    return { totalChecks, completedChecks, percent, overdueCount: overdueTasks, totalTasks: tasks.length };
+    return {
+      totalChecks,
+      completedChecks,
+      percent,
+      overdueCount: overdueTasks,
+      totalTasks: tasks.length,
+    };
   }, [tasks, schoolIds, today]);
 
-  const overdueTasks = useMemo(() =>
-    tasks.filter((t) => {
-      if (t.task_date >= today) return false;
-      return schoolIds.some((sid) => {
-        const check = t.checks.find((c) => c.school_id === sid);
-        return !check || !check.is_completed;
-      });
-    }),
+  const overdueTasks = useMemo(
+    () =>
+      tasks.filter((t) => {
+        if (t.task_date >= today) return false;
+        return schoolIds.some((sid) => {
+          const check = t.checks.find((c) => c.school_id === sid);
+          return !check || !check.is_completed;
+        });
+      }),
     [tasks, today, schoolIds]
   );
 
   const schoolProgress = useMemo(() => {
-    return schools.map(school => {
+    return schools.map((school) => {
       const total = tasks.length;
-      const completed = tasks.filter(t =>
-        t.checks.find(c => c.school_id === school.id)?.is_completed
+      const completed = tasks.filter(
+        (t) => t.checks.find((c) => c.school_id === school.id)?.is_completed
       ).length;
       const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
       return { school, total, completed, percent };
@@ -108,13 +115,15 @@ export function TaskSummaryPanel({
   }, [tasks, schools]);
 
   const upcomingTasks = useMemo(() => {
-    return tasks.filter(t => {
-      if (t.task_date < today || t.task_date > weekLater) return false;
-      const allDone = schoolIds.every(sid =>
-        t.checks.find(c => c.school_id === sid)?.is_completed
-      );
-      return !allDone;
-    }).sort((a, b) => a.task_date.localeCompare(b.task_date));
+    return tasks
+      .filter((t) => {
+        if (t.task_date < today || t.task_date > weekLater) return false;
+        const allDone = schoolIds.every(
+          (sid) => t.checks.find((c) => c.school_id === sid)?.is_completed
+        );
+        return !allDone;
+      })
+      .sort((a, b) => a.task_date.localeCompare(b.task_date));
   }, [tasks, today, weekLater, schoolIds]);
 
   // 週間表示用 state
@@ -129,7 +138,9 @@ export function TaskSummaryPanel({
     for (let i = 0; i < 7; i++) {
       const dd = new Date(d);
       dd.setDate(d.getDate() + i);
-      days.push(`${dd.getFullYear()}-${String(dd.getMonth() + 1).padStart(2, '0')}-${String(dd.getDate()).padStart(2, '0')}`);
+      days.push(
+        `${dd.getFullYear()}-${String(dd.getMonth() + 1).padStart(2, '0')}-${String(dd.getDate()).padStart(2, '0')}`
+      );
     }
     return days;
   }, [today, weekOffset]);
@@ -183,13 +194,18 @@ export function TaskSummaryPanel({
       if (!session) return;
       const res = await fetch('/api/integrations/google/calendar/events', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
         body: JSON.stringify({ summary: taskName, date: dateStr, allDay: true }),
       });
       if (res.ok) {
         onRefreshCalendar?.();
       }
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   };
 
   // 予定追加フォーム
@@ -234,8 +250,11 @@ export function TaskSummaryPanel({
         setShowAddEvent(false);
         onRefreshCalendar?.();
       }
-    } catch { /* ignore */ }
-    finally { setIsCreatingEvent(false); }
+    } catch {
+      /* ignore */
+    } finally {
+      setIsCreatingEvent(false);
+    }
   };
 
   return (
@@ -254,7 +273,11 @@ export function TaskSummaryPanel({
           <div className="mt-2 h-2 bg-gray-100 rounded-full overflow-hidden">
             <div
               className={`h-full rounded-full transition-[width] duration-500 ease-out ${
-                stats.percent >= 80 ? 'bg-green-500' : stats.percent >= 50 ? 'bg-yellow-500' : 'bg-[#d32f2f]'
+                stats.percent >= 80
+                  ? 'bg-green-500'
+                  : stats.percent >= 50
+                    ? 'bg-yellow-500'
+                    : 'bg-[#d32f2f]'
               }`}
               style={{ width: `${stats.percent}%` }}
             />
@@ -262,12 +285,16 @@ export function TaskSummaryPanel({
         </div>
 
         {/* Overdue */}
-        <div className={`rounded-lg border p-3 ${
-          stats.overdueCount > 0 ? 'bg-red-50 border-red-200' : 'bg-white border-gray-200'
-        }`}>
+        <div
+          className={`rounded-lg border p-3 ${
+            stats.overdueCount > 0 ? 'bg-red-50 border-red-200' : 'bg-white border-gray-200'
+          }`}
+        >
           <div className="text-[11px] text-gray-500 mb-1">超過タスク</div>
           <div className="flex items-end gap-2">
-            <span className={`text-2xl font-bold ${stats.overdueCount > 0 ? 'text-red-600' : 'text-gray-800'}`}>
+            <span
+              className={`text-2xl font-bold ${stats.overdueCount > 0 ? 'text-red-600' : 'text-gray-800'}`}
+            >
               {stats.overdueCount}
             </span>
             <span className="text-xs text-gray-400 pb-1">件</span>
@@ -285,7 +312,10 @@ export function TaskSummaryPanel({
                     return !check || !check.is_completed;
                   });
                   return (
-                    <div key={task.id} className="text-xs p-1.5 bg-white rounded border border-red-100">
+                    <div
+                      key={task.id}
+                      className="text-xs p-1.5 bg-white rounded border border-red-100"
+                    >
                       <div className="font-medium text-red-800 truncate">{task.task_name}</div>
                       <div className="text-red-500 mt-0.5 flex items-center justify-between">
                         <span>{formatDate(task.task_date)}</span>
@@ -316,12 +346,18 @@ export function TaskSummaryPanel({
                 <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
                   <div
                     className={`h-full rounded-full transition-[width] duration-500 ease-out ${
-                      percent >= 80 ? 'bg-green-500' : percent >= 50 ? 'bg-yellow-500' : 'bg-red-400'
+                      percent >= 80
+                        ? 'bg-green-500'
+                        : percent >= 50
+                          ? 'bg-yellow-500'
+                          : 'bg-red-400'
                     }`}
                     style={{ width: `${percent}%` }}
                   />
                 </div>
-                <span className="text-[11px] text-gray-400 w-10 text-right">{completed}/{total}</span>
+                <span className="text-[11px] text-gray-400 w-10 text-right">
+                  {completed}/{total}
+                </span>
               </div>
             ))
           )}
@@ -342,7 +378,7 @@ export function TaskSummaryPanel({
           <div className="text-xs text-gray-400">今後7日間に未完了タスクはありません</div>
         ) : (
           <div className="flex flex-wrap gap-1.5">
-            {upcomingTasks.map(task => {
+            {upcomingTasks.map((task) => {
               const dayNum = parseInt(task.task_date.split('-')[2]);
               return (
                 <div
@@ -387,14 +423,24 @@ export function TaskSummaryPanel({
                 追加
               </button>
               <span className="w-px h-3 bg-gray-200" />
-              <button onClick={() => setWeekOffset(w => w - 1)} className="px-1 py-0.5 text-gray-400 hover:text-gray-600 text-xs">◀</button>
+              <button
+                onClick={() => setWeekOffset((w) => w - 1)}
+                className="px-1 py-0.5 text-gray-400 hover:text-gray-600 text-xs"
+              >
+                ◀
+              </button>
               <button
                 onClick={() => setWeekOffset(0)}
                 className={`px-2 py-0.5 text-[11px] rounded transition-[background-color,color] duration-150 ease-out ${weekOffset === 0 ? 'bg-blue-100 text-blue-700 font-bold' : 'text-gray-500 hover:bg-gray-100'}`}
               >
                 今週
               </button>
-              <button onClick={() => setWeekOffset(w => w + 1)} className="px-1 py-0.5 text-gray-400 hover:text-gray-600 text-xs">▶</button>
+              <button
+                onClick={() => setWeekOffset((w) => w + 1)}
+                className="px-1 py-0.5 text-gray-400 hover:text-gray-600 text-xs"
+              >
+                ▶
+              </button>
               <span className="w-px h-3 bg-gray-200" />
               <button
                 onClick={onRefreshCalendar}
@@ -526,8 +572,11 @@ export function TaskSummaryPanel({
                   <div
                     key={dateStr}
                     className={`flex flex-col border-r last:border-r-0 transition-[background-color] duration-150 ease-out ${
-                      calDropDate === dateStr ? 'bg-green-50 ring-2 ring-inset ring-green-400' :
-                      isToday ? 'bg-blue-50/50' : ''
+                      calDropDate === dateStr
+                        ? 'bg-green-50 ring-2 ring-inset ring-green-400'
+                        : isToday
+                          ? 'bg-blue-50/50'
+                          : ''
                     }`}
                     onDragOver={(e) => handleCalDragOver(e, dateStr)}
                     onDragLeave={handleCalDragLeave}
@@ -536,28 +585,38 @@ export function TaskSummaryPanel({
                     {/* 曜日ヘッダー */}
                     <div
                       className={`text-center py-1 border-b text-[11px] font-medium cursor-pointer hover:bg-gray-100 ${
-                        calDropDate === dateStr ? 'bg-green-100 text-green-700' :
-                        isToday ? 'bg-blue-100 text-blue-700' :
-                        isSun ? 'text-red-500 bg-gray-50' :
-                        isSat ? 'text-blue-500 bg-gray-50' :
-                        'text-gray-500 bg-gray-50'
+                        calDropDate === dateStr
+                          ? 'bg-green-100 text-green-700'
+                          : isToday
+                            ? 'bg-blue-100 text-blue-700'
+                            : isSun
+                              ? 'text-red-500 bg-gray-50'
+                              : isSat
+                                ? 'text-blue-500 bg-gray-50'
+                                : 'text-gray-500 bg-gray-50'
                       }`}
                       onClick={() => handleOpenAddEvent(dateStr)}
                       title="クリックで予定を追加"
                     >
                       <div>{dow}</div>
-                      <div className={`text-sm font-bold leading-tight ${
-                        isToday ? 'text-blue-700' : 'text-gray-700'
-                      }`}>
+                      <div
+                        className={`text-sm font-bold leading-tight ${
+                          isToday ? 'text-blue-700' : 'text-gray-700'
+                        }`}
+                      >
                         {dayNum}
                       </div>
                     </div>
                     {/* イベント */}
                     <div className="flex-1 overflow-y-auto p-0.5 space-y-0.5">
-                      {events.map(evt => {
+                      {events.map((evt) => {
                         const timeStr = evt.allDay
                           ? ''
-                          : new Date(evt.start).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit', hour12: false });
+                          : new Date(evt.start).toLocaleTimeString('ja-JP', {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                              hour12: false,
+                            });
                         return (
                           <div
                             key={evt.id}

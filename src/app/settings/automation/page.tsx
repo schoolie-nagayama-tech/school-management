@@ -21,7 +21,8 @@ import { Bookmark, Copy, Check, RefreshCw, ArrowLeft } from 'lucide-react';
 
 export default function AutomationLoaderPage() {
   const { profile } = useAuth();
-  const isManager = profile?.role === 'admin' || profile?.role === 'owner' || profile?.role === 'manager';
+  const isManager =
+    profile?.role === 'admin' || profile?.role === 'owner' || profile?.role === 'manager';
 
   const [bookmarklet, setBookmarklet] = useState<string | null>(null);
   const [isIssuing, setIsIssuing] = useState(false);
@@ -33,11 +34,16 @@ export default function AutomationLoaderPage() {
     setIsIssuing(true);
     setError('');
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (!session) throw new Error('ログインが必要です');
       const res = await fetch('/api/automation/token', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
         body: JSON.stringify({ label: '自動入力ローダー' }),
       });
       const data = (await res.json()) as { token?: string; error?: string };
@@ -55,10 +61,15 @@ export default function AutomationLoaderPage() {
     setIsRevoking(true);
     setError('');
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (!session) throw new Error('ログインが必要です');
       const authHeader = { Authorization: `Bearer ${session.access_token}` };
-      const delRes = await fetch('/api/automation/token', { method: 'DELETE', headers: authHeader });
+      const delRes = await fetch('/api/automation/token', {
+        method: 'DELETE',
+        headers: authHeader,
+      });
       if (!delRes.ok) {
         const d = (await delRes.json()) as { error?: string };
         throw new Error(d.error ?? '失効に失敗しました');
@@ -86,7 +97,9 @@ export default function AutomationLoaderPage() {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      setError('自動コピーに失敗しました。下のリンクを右クリック→「リンクアドレスをコピー」してください。');
+      setError(
+        '自動コピーに失敗しました。下のリンクを右クリック→「リンクアドレスをコピー」してください。'
+      );
     }
   }
 
@@ -101,7 +114,10 @@ export default function AutomationLoaderPage() {
   return (
     <AdminLayout headerTitle="自動入力ローダー">
       <div className="max-w-3xl space-y-6">
-        <Link href="/settings" className="inline-flex items-center gap-1.5 text-sm text-info hover:underline">
+        <Link
+          href="/settings"
+          className="inline-flex items-center gap-1.5 text-sm text-info hover:underline"
+        >
           <ArrowLeft className="w-4 h-4" />
           設定に戻る
         </Link>
@@ -123,11 +139,15 @@ export default function AutomationLoaderPage() {
         <div className="bg-surface-raised border border-border rounded-xl p-5">
           <h2 className="text-base font-bold text-text-heading mb-3">ローダーを発行</h2>
           {error && (
-            <p className="mb-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</p>
+            <p className="mb-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+              {error}
+            </p>
           )}
           {!bookmarklet ? (
             <div className="space-y-3">
-              <p className="text-sm text-text-body">下のボタンを押すとローダーのリンクを生成します。</p>
+              <p className="text-sm text-text-body">
+                下のボタンを押すとローダーのリンクを生成します。
+              </p>
               <Button onClick={issueToken} disabled={isIssuing}>
                 {isIssuing ? '発行中...' : 'ローダーを発行'}
               </Button>
@@ -150,17 +170,26 @@ export default function AutomationLoaderPage() {
                   NESTから流し込む
                 </a>
                 <p className="text-xs text-blue-600 mt-2">
-                  ※ このリンクはクリックしても動きません。ブックマークバーにドラッグして登録してください。
+                  ※
+                  このリンクはクリックしても動きません。ブックマークバーにドラッグして登録してください。
                 </p>
               </div>
 
               <div>
-                <p className="text-sm text-text-body mb-2">または、コードをコピーして手動で登録できます。</p>
+                <p className="text-sm text-text-body mb-2">
+                  または、コードをコピーして手動で登録できます。
+                </p>
                 <Button variant="outline" onClick={copyBookmarklet}>
                   {copied ? (
-                    <><Check className="w-4 h-4 mr-1.5 text-green-600" />コピーしました</>
+                    <>
+                      <Check className="w-4 h-4 mr-1.5 text-green-600" />
+                      コピーしました
+                    </>
                   ) : (
-                    <><Copy className="w-4 h-4 mr-1.5" />コードをコピー</>
+                    <>
+                      <Copy className="w-4 h-4 mr-1.5" />
+                      コードをコピー
+                    </>
                   )}
                 </Button>
               </div>

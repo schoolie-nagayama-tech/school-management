@@ -87,10 +87,7 @@ function verifySvixSignature(
   for (const part of sigParts) {
     const sigValue = part.startsWith('v1,') ? part.slice(3) : part;
     try {
-      const ok = crypto.timingSafeEqual(
-        Buffer.from(expectedSig),
-        Buffer.from(sigValue)
-      );
+      const ok = crypto.timingSafeEqual(Buffer.from(expectedSig), Buffer.from(sigValue));
       if (ok) return true;
     } catch {
       // 長さ不一致などは不一致として次の候補へ
@@ -125,10 +122,7 @@ export async function POST(request: NextRequest) {
   const secret = process.env.RESEND_WEBHOOK_SECRET;
   if (!secret) {
     console.error('[resend-webhook] RESEND_WEBHOOK_SECRET is not configured');
-    return NextResponse.json(
-      { error: 'webhook secret not configured' },
-      { status: 503 }
-    );
+    return NextResponse.json({ error: 'webhook secret not configured' }, { status: 503 });
   }
 
   // rawBody を先に読む（署名検証は raw テキストに対して行う）

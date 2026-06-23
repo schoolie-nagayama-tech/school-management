@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getApiAuth } from '@/lib/api-auth';
-import { listCalendarEvents, createCalendarEvent, updateCalendarEvent, getCalendarConnectionStatus } from '@/lib/google-calendar';
+import {
+  listCalendarEvents,
+  createCalendarEvent,
+  updateCalendarEvent,
+  getCalendarConnectionStatus,
+} from '@/lib/google-calendar';
 
 export const dynamic = 'force-dynamic';
 

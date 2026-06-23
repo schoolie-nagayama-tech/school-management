@@ -5,7 +5,12 @@ import { Modal, Input, Button, Select } from '@/components/ui';
 import { createZoukomaPeriod, updateZoukomaPeriod } from '@/lib/api/zoukoma';
 import { generateUniquePeriodKey, getNextPeriodKey } from '@/lib/api/form-periods';
 import { getApplicationItems } from '@/lib/api/applications';
-import type { ZoukomaPeriod, ZoukomaSettings, ScheduleConfig, PeriodConfig } from '@/types/forms/zoukoma';
+import type {
+  ZoukomaPeriod,
+  ZoukomaSettings,
+  ScheduleConfig,
+  PeriodConfig,
+} from '@/types/forms/zoukoma';
 import type { ApplicationItem } from '@/types/database';
 import { GradePriceEditor } from './GradePriceEditor';
 import { SubjectListEditor } from './SubjectListEditor';
@@ -65,14 +70,10 @@ export function ZoukomaPeriodForm({
         setTitle(period.title);
         setDescription(settings.description || '');
         setPublishStart(
-          period.publish_start
-            ? new Date(period.publish_start).toISOString().slice(0, 16)
-            : ''
+          period.publish_start ? new Date(period.publish_start).toISOString().slice(0, 16) : ''
         );
         setPublishEnd(
-          period.publish_end
-            ? new Date(period.publish_end).toISOString().slice(0, 16)
-            : ''
+          period.publish_end ? new Date(period.publish_end).toISOString().slice(0, 16) : ''
         );
         setCompletionMessage(settings.completion_message || '');
         setLinkedApplicationItemId(period.linked_application_item_id || '');
@@ -111,11 +112,11 @@ export function ZoukomaPeriodForm({
         const now = new Date();
         const startDate = new Date(now);
         startDate.setMinutes(0, 0, 0); // 時分秒を00:00:00に設定
-        
+
         const endDate = new Date(now);
         endDate.setDate(endDate.getDate() + 30); // 30日後
         endDate.setHours(23, 59, 59, 999); // 時刻を23:59:59に設定
-        
+
         // 日時フォーマット（datetime-local用: YYYY-MM-DDTHH:mm）
         const formatDateTimeLocal = (date: Date): string => {
           const year = date.getFullYear();
@@ -169,7 +170,9 @@ export function ZoukomaPeriodForm({
     // 期間キーは回答詳細ページのURL（/forms/responses/zoukoma/[periodKey]）に埋め込まれるため、
     // / や空白などパスを壊す文字を禁止する（"6/1～7/15" のような値だと開く際に404になる）
     if (/[/\\?#%\s]/.test(periodKey)) {
-      setError('期間キーに / \\ ? # % や空白は使えません。例: 2026-06。日付の範囲はタイトルに記入してください。');
+      setError(
+        '期間キーに / \\ ? # % や空白は使えません。例: 2026-06。日付の範囲はタイトルに記入してください。'
+      );
       setCurrentStep(1);
       return;
     }
@@ -211,12 +214,7 @@ export function ZoukomaPeriodForm({
       const endDate = publishEnd ? new Date(publishEnd) : null;
 
       // 公開期間内であればtrue
-      const shouldBeActive = !!(
-        startDate &&
-        endDate &&
-        startDate <= now &&
-        endDate >= now
-      );
+      const shouldBeActive = !!(startDate && endDate && startDate <= now && endDate >= now);
 
       const settingsForApi = settings as unknown as Record<string, unknown>;
 
@@ -252,9 +250,7 @@ export function ZoukomaPeriodForm({
       onClose();
     } catch (error) {
       console.error('Error saving period:', error);
-      setError(
-        getUserErrorMessage(error, '期間の保存に失敗しました')
-      );
+      setError(getUserErrorMessage(error, '期間の保存に失敗しました'));
     } finally {
       setIsSubmitting(false);
     }
@@ -285,8 +281,8 @@ export function ZoukomaPeriodForm({
                   step === currentStep
                     ? 'bg-[#3b82f6] border-[#e5e7eb] text-white'
                     : step < currentStep
-                    ? 'bg-[#1f2937] border-[#e5e7eb] text-white'
-                    : 'bg-white border-[#e5e7eb] text-[#4b5563]'
+                      ? 'bg-[#1f2937] border-[#e5e7eb] text-white'
+                      : 'bg-white border-[#e5e7eb] text-[#4b5563]'
                 }`}
               >
                 {step}
@@ -315,7 +311,8 @@ export function ZoukomaPeriodForm({
                 className="bg-[#f3f4f6] cursor-not-allowed"
               />
               <p className="text-xs text-[#4b5563]/60 mt-1">
-                ※ 期間キーは自動で割り当てられます（変更不可）。表示名は下の「タイトル」で設定してください。
+                ※
+                期間キーは自動で割り当てられます（変更不可）。表示名は下の「タイトル」で設定してください。
               </p>
             </div>
 
@@ -330,9 +327,7 @@ export function ZoukomaPeriodForm({
             />
 
             <div>
-              <label className="block text-sm font-medium text-[#1f2937] mb-2">
-                説明文
-              </label>
+              <label className="block text-sm font-medium text-[#1f2937] mb-2">説明文</label>
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
@@ -402,26 +397,16 @@ export function ZoukomaPeriodForm({
 
         {/* ステップ3: 科目設定 */}
         {currentStep === 3 && (
-          <SubjectListEditor
-            subjects={subjects}
-            onChange={setSubjects}
-            disabled={isSubmitting}
-          />
+          <SubjectListEditor subjects={subjects} onChange={setSubjects} disabled={isSubmitting} />
         )}
 
         {/* ステップ4: 日程スロット設定 */}
         {currentStep === 4 && (
           <div className="space-y-6">
-            <ScheduleEditor
-              schedule={schedule}
-              onChange={setSchedule}
-              disabled={isSubmitting}
-            />
+            <ScheduleEditor schedule={schedule} onChange={setSchedule} disabled={isSubmitting} />
             {schedule && (
               <div>
-                <label className="block text-sm font-medium text-[#1f2937] mb-3">
-                  プレビュー
-                </label>
+                <label className="block text-sm font-medium text-[#1f2937] mb-3">プレビュー</label>
                 <SlotPreview schedule={schedule} />
               </div>
             )}
@@ -432,9 +417,7 @@ export function ZoukomaPeriodForm({
         {currentStep === 5 && (
           <div className="space-y-4">
             <div className="bg-[#f3f4f6] rounded-lg border border-[#e5e7eb] p-4">
-              <h3 className="text-sm font-semibold text-[#1f2937] mb-3">
-                基本情報
-              </h3>
+              <h3 className="text-sm font-semibold text-[#1f2937] mb-3">基本情報</h3>
               <div className="space-y-2 text-sm text-[#4b5563]">
                 <p>
                   <span className="font-medium">期間キー:</span> {periodKey}
@@ -452,13 +435,10 @@ export function ZoukomaPeriodForm({
             </div>
 
             <div className="bg-[#f3f4f6] rounded-lg border border-[#e5e7eb] p-4">
-              <h3 className="text-sm font-semibold text-[#1f2937] mb-3">
-                対象学年・料金
-              </h3>
+              <h3 className="text-sm font-semibold text-[#1f2937] mb-3">対象学年・料金</h3>
               <div className="space-y-2 text-sm text-[#4b5563]">
                 <p>
-                  <span className="font-medium">対象学年:</span>{' '}
-                  {selectedGrades.join(', ')}
+                  <span className="font-medium">対象学年:</span> {selectedGrades.join(', ')}
                 </p>
                 <div>
                   <span className="font-medium">単価:</span>
@@ -474,19 +454,13 @@ export function ZoukomaPeriodForm({
             </div>
 
             <div className="bg-[#f3f4f6] rounded-lg border border-[#e5e7eb] p-4">
-              <h3 className="text-sm font-semibold text-[#1f2937] mb-3">
-                科目
-              </h3>
-              <p className="text-sm text-[#4b5563]">
-                {subjects.join(', ')}
-              </p>
+              <h3 className="text-sm font-semibold text-[#1f2937] mb-3">科目</h3>
+              <p className="text-sm text-[#4b5563]">{subjects.join(', ')}</p>
             </div>
 
             {schedule && (
               <div className="bg-[#f3f4f6] rounded-lg border border-[#e5e7eb] p-4">
-                <h3 className="text-sm font-semibold text-[#1f2937] mb-3">
-                  日程スロット
-                </h3>
+                <h3 className="text-sm font-semibold text-[#1f2937] mb-3">日程スロット</h3>
                 <SlotPreview schedule={schedule} />
               </div>
             )}
@@ -508,12 +482,7 @@ export function ZoukomaPeriodForm({
             )}
           </div>
           <div className="flex gap-3">
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={onClose}
-              disabled={isSubmitting}
-            >
+            <Button type="button" variant="secondary" onClick={onClose} disabled={isSubmitting}>
               キャンセル
             </Button>
             {currentStep < totalSteps ? (

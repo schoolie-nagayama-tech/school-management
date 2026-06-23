@@ -71,9 +71,7 @@ export async function createMatchBatch(input: MatchBatchInput): Promise<Schedule
 }
 
 /** バッチの提案一覧（draft 優先） */
-export async function getProposalsByBatch(
-  batchId: string
-): Promise<ScheduleMatchProposal[]> {
+export async function getProposalsByBatch(batchId: string): Promise<ScheduleMatchProposal[]> {
   const { data, error } = await db
     .from('schedule_match_proposals')
     .select(

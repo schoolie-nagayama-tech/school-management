@@ -25,7 +25,10 @@ export async function getApiAuth(request: NextRequest): Promise<{
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
         { global: { headers: { Authorization: `Bearer ${bearerToken}` } } }
       );
-      const { data: { user }, error } = await supabase.auth.getUser();
+      const {
+        data: { user },
+        error,
+      } = await supabase.auth.getUser();
       if (!error && user) {
         const { data: profile } = await supabase
           .from('user_profiles')
@@ -116,24 +119,28 @@ function mergeCookiesIntoResponse(source: NextResponse, target: NextResponse): v
 export async function requireAdmin(request: NextRequest): Promise<NextResponse | null> {
   const { auth, cookieResponse } = await getApiAuth(request);
   if (!auth) {
-    console.error(JSON.stringify({
-      type: 'AUTH_FAILURE',
-      path: request.nextUrl.pathname,
-      ip: request.headers.get('x-forwarded-for'),
-      timestamp: new Date().toISOString(),
-    }));
+    console.error(
+      JSON.stringify({
+        type: 'AUTH_FAILURE',
+        path: request.nextUrl.pathname,
+        ip: request.headers.get('x-forwarded-for'),
+        timestamp: new Date().toISOString(),
+      })
+    );
     const res = NextResponse.json({ error: '認証が必要です' }, { status: 401 });
     mergeCookiesIntoResponse(cookieResponse, res);
     return res;
   }
   const roleLower = auth.role.toLowerCase();
   if (roleLower !== 'admin' && roleLower !== 'owner') {
-    console.error(JSON.stringify({
-      type: 'AUTH_FAILURE',
-      path: request.nextUrl.pathname,
-      ip: request.headers.get('x-forwarded-for'),
-      timestamp: new Date().toISOString(),
-    }));
+    console.error(
+      JSON.stringify({
+        type: 'AUTH_FAILURE',
+        path: request.nextUrl.pathname,
+        ip: request.headers.get('x-forwarded-for'),
+        timestamp: new Date().toISOString(),
+      })
+    );
     const res = NextResponse.json({ error: '管理者権限が必要です' }, { status: 403 });
     mergeCookiesIntoResponse(cookieResponse, res);
     return res;
@@ -148,24 +155,28 @@ export async function requireAdmin(request: NextRequest): Promise<NextResponse |
 export async function requireManager(request: NextRequest): Promise<NextResponse | null> {
   const { auth, cookieResponse } = await getApiAuth(request);
   if (!auth) {
-    console.error(JSON.stringify({
-      type: 'AUTH_FAILURE',
-      path: request.nextUrl.pathname,
-      ip: request.headers.get('x-forwarded-for'),
-      timestamp: new Date().toISOString(),
-    }));
+    console.error(
+      JSON.stringify({
+        type: 'AUTH_FAILURE',
+        path: request.nextUrl.pathname,
+        ip: request.headers.get('x-forwarded-for'),
+        timestamp: new Date().toISOString(),
+      })
+    );
     const res = NextResponse.json({ error: '認証が必要です' }, { status: 401 });
     mergeCookiesIntoResponse(cookieResponse, res);
     return res;
   }
   const roleLower = auth.role.toLowerCase();
   if (roleLower !== 'admin' && roleLower !== 'owner' && roleLower !== 'manager') {
-    console.error(JSON.stringify({
-      type: 'AUTH_FAILURE',
-      path: request.nextUrl.pathname,
-      ip: request.headers.get('x-forwarded-for'),
-      timestamp: new Date().toISOString(),
-    }));
+    console.error(
+      JSON.stringify({
+        type: 'AUTH_FAILURE',
+        path: request.nextUrl.pathname,
+        ip: request.headers.get('x-forwarded-for'),
+        timestamp: new Date().toISOString(),
+      })
+    );
     const res = NextResponse.json({ error: '権限がありません' }, { status: 403 });
     mergeCookiesIntoResponse(cookieResponse, res);
     return res;
@@ -193,18 +204,13 @@ export async function isUserInScope(
     .eq('user_id', targetUserId);
   if (!targetSchools || targetSchools.length === 0) return false;
   // 対象ユーザーの教室のうち1つでも操作者の教室に含まれていればOK
-  return targetSchools.some(
-    (s: { school_id: string }) => callerSchoolIds.includes(s.school_id)
-  );
+  return targetSchools.some((s: { school_id: string }) => callerSchoolIds.includes(s.school_id));
 }
 
 /**
  * 指定した schoolId が操作者の教室スコープ内にあるか検証する。
  * ユーザー作成時の作成先教室チェックに使う。
  */
-export function isSchoolInScope(
-  targetSchoolId: string,
-  callerSchoolIds: string[]
-): boolean {
+export function isSchoolInScope(targetSchoolId: string, callerSchoolIds: string[]): boolean {
   return callerSchoolIds.includes(targetSchoolId);
 }

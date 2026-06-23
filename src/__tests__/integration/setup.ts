@@ -24,8 +24,8 @@ beforeAll(async () => {
   if (error) {
     throw new Error(
       `ローカルSupabaseに接続できません。\n` +
-      `supabase start を実行してから再度テストしてください。\n` +
-      `エラー: ${error.message}`
+        `supabase start を実行してから再度テストしてください。\n` +
+        `エラー: ${error.message}`
     );
   }
 });

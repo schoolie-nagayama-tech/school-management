@@ -39,10 +39,16 @@ export function getFifthWeekDays(year: number, month: number): number[] {
  */
 export function getFifthWeekDayLabels(year: number, month: number): string {
   const DAY_LABELS: Record<number, string> = {
-    0: '日', 1: '月', 2: '火', 3: '水', 4: '木', 5: '金', 6: '土',
+    0: '日',
+    1: '月',
+    2: '火',
+    3: '水',
+    4: '木',
+    5: '金',
+    6: '土',
   };
   const days = getFifthWeekDays(year, month);
-  return days.map(d => DAY_LABELS[d]).join('・');
+  return days.map((d) => DAY_LABELS[d]).join('・');
 }
 
 /**
@@ -58,7 +64,7 @@ export function calcFifthWeekSlots(
   const result = new Map<string, number>();
 
   // Only active regular patterns
-  const activePatterns = patterns.filter(p => p.is_active);
+  const activePatterns = patterns.filter((p) => p.is_active);
 
   for (const pattern of activePatterns) {
     // schedule_regular_patterns.day_of_week: 1=Mon..6=Sat

@@ -122,7 +122,7 @@ export async function updateRegularShiftSetting(
       .from('regular_shift_submissions')
       .select('id')
       .eq('setting_id', id);
-    for (const s of ((subs ?? []) as Array<{ id: string }>)) {
+    for (const s of (subs ?? []) as Array<{ id: string }>) {
       await syncRegularShiftToAvailability(s.id);
     }
   } catch (e) {

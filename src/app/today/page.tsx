@@ -112,7 +112,10 @@ export default function TodayPage() {
         time_slot?: TodayEntry['time_slot'] | TodayEntry['time_slot'][];
         student?: TodayEntry['student'] | TodayEntry['student'][];
         teacher?: TodayEntry['teacher'] | TodayEntry['teacher'][];
-        report?: { id: string; status: ClassReportStatus }[] | { id: string; status: ClassReportStatus } | null;
+        report?:
+          | { id: string; status: ClassReportStatus }[]
+          | { id: string; status: ClassReportStatus }
+          | null;
       };
       const rows = (data || []) as Row[];
       const normalized = rows.map((r): TodayEntry => {
@@ -238,7 +241,9 @@ export default function TodayPage() {
             </Card>
             <Card>
               <CardContent className="p-3 text-center">
-                <div className={`text-2xl font-bold ${unreported > 0 ? 'text-danger' : 'text-text-faint'}`}>
+                <div
+                  className={`text-2xl font-bold ${unreported > 0 ? 'text-danger' : 'text-text-faint'}`}
+                >
                   {unreported}
                 </div>
                 <div className="text-xs text-text-muted">未提出</div>
@@ -246,7 +251,9 @@ export default function TodayPage() {
             </Card>
             <Card>
               <CardContent className="p-3 text-center">
-                <div className={`text-2xl font-bold ${drafts > 0 ? 'text-warning' : 'text-text-faint'}`}>
+                <div
+                  className={`text-2xl font-bold ${drafts > 0 ? 'text-warning' : 'text-text-faint'}`}
+                >
                   {drafts}
                 </div>
                 <div className="text-xs text-text-muted">下書き中</div>

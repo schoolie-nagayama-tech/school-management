@@ -26,10 +26,7 @@ function getSupabaseAdmin() {
  *
  * 未受諾（accepted_at IS NULL）かつ未失効のものだけを返す。
  */
-export async function GET(
-  _request: NextRequest,
-  { params }: { params: { token: string } }
-) {
+export async function GET(_request: NextRequest, { params }: { params: { token: string } }) {
   const token = params.token;
   if (!token || typeof token !== 'string') {
     return NextResponse.json({ error: 'token が必要です' }, { status: 400 });

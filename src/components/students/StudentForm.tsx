@@ -116,9 +116,7 @@ export function StudentForm({
     }
   };
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-  ) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
@@ -220,9 +218,7 @@ export function StudentForm({
       {/* 登録教室（新規のみ・現在選択中の教室に登録） */}
       {!isEdit && schools.length > 0 && (
         <div>
-          <label className="block text-sm font-medium text-[#1f2937] mb-1">
-            登録する教室
-          </label>
+          <label className="block text-sm font-medium text-[#1f2937] mb-1">登録する教室</label>
           <p className="text-sm text-[#4b5563] px-3 py-2 border border-[#e5e7eb] rounded-lg bg-[#f9fafb]">
             {schools.find((s) => s.id === selectedSchoolId)?.name ?? schools[0]?.name}
           </p>
@@ -254,9 +250,7 @@ export function StudentForm({
       {/* 退塾予定日（編集時のみ表示）— 入力すればこの日以降は座席表生成・5週目計算から除外 */}
       {isEdit && (
         <div>
-          <label className="block text-sm font-medium text-[#1f2937] mb-1">
-            退塾予定日
-          </label>
+          <label className="block text-sm font-medium text-[#1f2937] mb-1">退塾予定日</label>
           <input
             type="date"
             name="withdrawal_date"
@@ -325,9 +319,7 @@ export function StudentForm({
       {/* 所持教材 */}
       {isEdit && student?.id && (
         <div>
-          <label className="block text-sm font-medium text-[#1f2937] mb-2">
-            所持教材
-          </label>
+          <label className="block text-sm font-medium text-[#1f2937] mb-2">所持教材</label>
           {textbooksLoading ? (
             <Loading size="md" />
           ) : textbookError ? (
@@ -346,12 +338,17 @@ export function StudentForm({
                         x{tb.quantity}
                       </span>
                     )}
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
-                      tb.status === 'distributed' ? 'bg-green-100 text-green-700' :
-                      tb.status === 'delivered' ? 'bg-blue-100 text-blue-700' :
-                      tb.status === 'ordered' ? 'bg-indigo-100 text-indigo-700' :
-                      'bg-yellow-100 text-yellow-700'
-                    }`}>
+                    <span
+                      className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+                        tb.status === 'distributed'
+                          ? 'bg-green-100 text-green-700'
+                          : tb.status === 'delivered'
+                            ? 'bg-blue-100 text-blue-700'
+                            : tb.status === 'ordered'
+                              ? 'bg-indigo-100 text-indigo-700'
+                              : 'bg-yellow-100 text-yellow-700'
+                      }`}
+                    >
                       {ORDER_STATUS_LABELS[tb.status]}
                     </span>
                   </div>
@@ -367,9 +364,7 @@ export function StudentForm({
               ))}
             </div>
           ) : (
-            <p className="text-sm text-[#4b5563]/60">
-              発注された教材はありません
-            </p>
+            <p className="text-sm text-[#4b5563]/60">発注された教材はありません</p>
           )}
           <p className="text-xs text-[#9ca3af] mt-1">
             教材の追加は「教材・発注管理」ページから行えます

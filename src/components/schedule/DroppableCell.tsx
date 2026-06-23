@@ -46,7 +46,11 @@ export const DroppableCell = React.memo(function DroppableCell({
     <td
       ref={setNodeRef}
       className={`border border-[var(--surface)] p-1 min-w-[120px] align-top ${
-        isOver ? (canDrop ? 'ring-2 ring-green-500 bg-green-50' : 'ring-2 ring-red-500 bg-red-50') : ''
+        isOver
+          ? canDrop
+            ? 'ring-2 ring-green-500 bg-green-50'
+            : 'ring-2 ring-red-500 bg-red-50'
+          : ''
       } ${isClosed ? 'bg-[var(--surface)]' : ''} ${!isSlotAvailable && !isClosed ? 'bg-[var(--surface)]' : ''}`}
       onClick={canAdd ? onCellClick : undefined}
     >
@@ -67,7 +71,13 @@ export const DroppableCell = React.memo(function DroppableCell({
           );
         })}
         {activeEntries.map((entry) => (
-          <div key={entry.id} onClick={(e) => { e.stopPropagation(); onEntryClick(entry, e); }}>
+          <div
+            key={entry.id}
+            onClick={(e) => {
+              e.stopPropagation();
+              onEntryClick(entry, e);
+            }}
+          >
             <DraggableEntry entry={entry} isDragging={activeId === entry.id} />
           </div>
         ))}
@@ -93,7 +103,9 @@ export function getCellId(date: string, slotId: string, teacherId: string): stri
   return `cell-${date}|${slotId}|${teacherId}`;
 }
 
-export function parseCellId(cellId: string): { date: string; slotId: string; teacherId: string } | null {
+export function parseCellId(
+  cellId: string
+): { date: string; slotId: string; teacherId: string } | null {
   if (!cellId.startsWith('cell-')) return null;
   const rest = cellId.slice(5);
   const parts = rest.split('|');

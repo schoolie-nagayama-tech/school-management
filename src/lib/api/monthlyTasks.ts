@@ -2,7 +2,9 @@ import { supabase } from '../supabase';
 import type { MonthlyTaskWithChecks, MonthlyTaskTemplate } from '@/types/database';
 
 async function getAccessToken(): Promise<string> {
-  const { data: { session } } = await supabase.auth.getSession();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
   if (!session) {
     throw new Error('認証が必要です。ログインし直してください。');
   }
@@ -11,9 +13,16 @@ async function getAccessToken(): Promise<string> {
 
 // ===================== GET =====================
 
-export async function getMonthlyTasks(year: number, month: number): Promise<MonthlyTaskWithChecks[]> {
+export async function getMonthlyTasks(
+  year: number,
+  month: number
+): Promise<MonthlyTaskWithChecks[]> {
   const token = await getAccessToken();
-  const params = new URLSearchParams({ action: 'get_monthly_tasks', year: String(year), month: String(month) });
+  const params = new URLSearchParams({
+    action: 'get_monthly_tasks',
+    year: String(year),
+    month: String(month),
+  });
   const res = await fetch(`/api/tasks?${params}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
@@ -33,7 +42,10 @@ export async function getTemplates(): Promise<MonthlyTaskTemplate[]> {
   return data.data as MonthlyTaskTemplate[];
 }
 
-export async function getOverdueSummary(): Promise<{ count: number; tasks: Array<{ id: string; task_date: string; task_name: string; category: string }> }> {
+export async function getOverdueSummary(): Promise<{
+  count: number;
+  tasks: Array<{ id: string; task_date: string; task_name: string; category: string }>;
+}> {
   const token = await getAccessToken();
   const params = new URLSearchParams({ action: 'get_overdue_summary' });
   const res = await fetch(`/api/tasks?${params}`, {
@@ -126,14 +138,30 @@ async function postTaskApi(body: Record<string, unknown>): Promise<Record<string
 }
 
 export async function createTask(params: {
-  year: number; month: number; task_date: string; category: string; task_name: string; sort_order?: number; note?: string; url?: string;
+  year: number;
+  month: number;
+  task_date: string;
+  category: string;
+  task_name: string;
+  sort_order?: number;
+  note?: string;
+  url?: string;
 }) {
   const result = await postTaskApi({ action: 'create_task', ...params });
   return result.data as MonthlyTaskWithChecks;
 }
 
-export async function updateTask(taskId: string, updates: Record<string, unknown>, schoolId?: string) {
-  const result = await postTaskApi({ action: 'update_task', taskId, updates, ...(schoolId ? { schoolId } : {}) });
+export async function updateTask(
+  taskId: string,
+  updates: Record<string, unknown>,
+  schoolId?: string
+) {
+  const result = await postTaskApi({
+    action: 'update_task',
+    taskId,
+    updates,
+    ...(schoolId ? { schoolId } : {}),
+  });
   return result.data;
 }
 
@@ -175,7 +203,15 @@ export async function setGoogleEventId(taskId: string, googleEventId: string | n
 
 export async function updateTemplate(
   templateId: string,
-  updates: { name?: string; template_data?: Array<{ day_of_month: number; task_name: string; category: string; sort_order: number }> }
+  updates: {
+    name?: string;
+    template_data?: Array<{
+      day_of_month: number;
+      task_name: string;
+      category: string;
+      sort_order: number;
+    }>;
+  }
 ) {
   const result = await postTaskApi({ action: 'update_template', templateId, ...updates });
   return result.data as MonthlyTaskTemplate;

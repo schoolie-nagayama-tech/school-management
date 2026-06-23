@@ -15,7 +15,7 @@ export type ScoreListCategory = 'regular_test' | 'report_card' | 'mock';
 
 export interface ScoreListRow {
   assessmentId: string;
-  label: string;          // "2学期", "1学期中間", "会場模試 2026-03" 等
+  label: string; // "2学期", "1学期中間", "会場模試 2026-03" 等
   nameCode: string;
   grade: number;
   examMonth: string | null;
@@ -49,26 +49,47 @@ export interface ScoreListStudent {
 // ── 定数 ──
 
 const FIVE_SUBJECTS = ['english', 'math', 'japanese', 'social', 'science'] as const;
-const NINE_SUBJECTS = ['english', 'math', 'japanese', 'social', 'science', 'music', 'art', 'tech_home', 'pe'] as const;
+const NINE_SUBJECTS = [
+  'english',
+  'math',
+  'japanese',
+  'social',
+  'science',
+  'music',
+  'art',
+  'tech_home',
+  'pe',
+] as const;
 
 /** name_code のソート順（時系列）*/
 const NAME_CODE_ORDER: Record<string, number> = {
   // 3学期制
-  term1_mid: 1, term1_final: 2,
-  term2_mid: 3, term2_final: 4,
+  term1_mid: 1,
+  term1_final: 2,
+  term2_mid: 3,
+  term2_final: 4,
   year_end: 5,
   // 2学期制
-  first_mid: 1, first_final: 2,
-  second_mid: 3, second_final: 4,
+  first_mid: 1,
+  first_final: 2,
+  second_mid: 3,
+  second_final: 4,
   // 内申
-  term1: 1, term2: 2, first: 1, second: 2,
+  term1: 1,
+  term2: 2,
+  first: 1,
+  second: 2,
   // 模試
-  venue: 1, classroom: 2,
+  venue: 1,
+  classroom: 2,
 };
 
 // ── ユーティリティ ──
 
-function sumSubjects(scores: Record<string, number | null>, subjects: readonly string[]): number | null {
+function sumSubjects(
+  scores: Record<string, number | null>,
+  subjects: readonly string[]
+): number | null {
   const values = subjects.map((s) => scores[s]).filter((v): v is number => v != null);
   return values.length > 0 ? values.reduce((a, b) => a + b, 0) : null;
 }

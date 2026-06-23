@@ -11,7 +11,9 @@ import {
 import type { Student, Subject } from '@/types/database';
 
 // テスト用の最低限のStudentオブジェクト
-function makeStudent(overrides: Partial<Student & { subjects?: Subject[] }> = {}): Student & { subjects?: Subject[] } {
+function makeStudent(
+  overrides: Partial<Student & { subjects?: Subject[] }> = {}
+): Student & { subjects?: Subject[] } {
   return {
     id: 'student-1',
     student_code: 'S001',
@@ -64,8 +66,22 @@ describe('generateStudentCSV', () => {
   it('subjects がある場合はスラッシュ区切りで出力する', () => {
     const student = makeStudent();
     (student as Student & { subjects: Subject[] }).subjects = [
-      { id: '1', name: '英語', grade_category: 'middle', sort_order: 1, duration_minutes: 50, created_at: '' } as Subject,
-      { id: '2', name: '数学', grade_category: 'middle', sort_order: 2, duration_minutes: 50, created_at: '' } as Subject,
+      {
+        id: '1',
+        name: '英語',
+        grade_category: 'middle',
+        sort_order: 1,
+        duration_minutes: 50,
+        created_at: '',
+      } as Subject,
+      {
+        id: '2',
+        name: '数学',
+        grade_category: 'middle',
+        sort_order: 2,
+        duration_minutes: 50,
+        created_at: '',
+      } as Subject,
     ];
     const csv = generateStudentCSV([student]);
     expect(csv).toContain('英語/数学');

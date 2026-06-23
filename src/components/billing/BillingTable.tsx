@@ -2,7 +2,16 @@
 
 import type { Student, BillingItem, StudentBilling } from '@/types/database';
 import { GRADE_LABELS } from '@/types/database';
-import { toggleStudentBilling, updateBillingItem, deleteBillingItem, syncOrdersToBilling, autoFillFifthWeekBilling, updateBillingValue, syncFormToBilling, calcFifthWeekBilling } from '@/lib/api/billing';
+import {
+  toggleStudentBilling,
+  updateBillingItem,
+  deleteBillingItem,
+  syncOrdersToBilling,
+  autoFillFifthWeekBilling,
+  updateBillingValue,
+  syncFormToBilling,
+  calcFifthWeekBilling,
+} from '@/lib/api/billing';
 import { getMaterials, createStockTransaction } from '@/lib/api/inventory';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 import { getFifthWeekDayLabels } from '@/lib/utils/fifthWeek';
@@ -19,12 +28,12 @@ interface BillingTableProps {
   onBillingChange?: (studentId: string, billingItemId: string, isBilled: boolean) => void;
   onStudentClick?: (student: Student) => void;
   onItemsChange?: () => void;
-  periodStartDate?: string;  // For 5th week auto-calc
-  periodEndDate?: string;    // For order sync
-  schoolIds?: string | string[];  // For 5th week auto-calc
-  billingPeriodId?: string;  // For form sync and 5th week calc
-  billingPeriodName?: string;  // For 5th week dialog display
-  onStockUpdated?: () => void;  // 在庫変動後のリフレッシュ通知
+  periodStartDate?: string; // For 5th week auto-calc
+  periodEndDate?: string; // For order sync
+  schoolIds?: string | string[]; // For 5th week auto-calc
+  billingPeriodId?: string; // For form sync and 5th week calc
+  billingPeriodName?: string; // For 5th week dialog display
+  onStockUpdated?: () => void; // 在庫変動後のリフレッシュ通知
 }
 
 export function BillingTable({
@@ -43,14 +52,17 @@ export function BillingTable({
 }: BillingTableProps) {
   const { profile } = useAuth();
   const isTeacher = profile?.role === 'teacher';
-  const isManagerOrAbove = profile?.role === 'manager' || profile?.role === 'owner' || profile?.role === 'admin';
+  const isManagerOrAbove =
+    profile?.role === 'manager' || profile?.role === 'owner' || profile?.role === 'admin';
   const [updatingCells, setUpdatingCells] = useState<Set<string>>(new Set());
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
   const [deletingItemId, setDeletingItemId] = useState<string | null>(null);
   const [autoFilling, setAutoFilling] = useState(false);
   const [syncing, setSyncing] = useState(false);
-  const [editingCell, setEditingCell] = useState<{ studentId: string; itemId: string } | null>(null);
+  const [editingCell, setEditingCell] = useState<{ studentId: string; itemId: string } | null>(
+    null
+  );
   const [editingValue, setEditingValue] = useState<string>('');
   const { success, error: toastError } = useToast();
   const { confirm, ConfirmDialog } = useConfirm();
@@ -103,7 +115,8 @@ export function BillingTable({
         if (billing?.value_text != null && billing.value_text !== '') textHasValueCount++;
       } else {
         // check type (default)
-        const isBilled = billing?.is_billed === true || (billing?.quantity != null && billing.quantity > 0);
+        const isBilled =
+          billing?.is_billed === true || (billing?.quantity != null && billing.quantity > 0);
         if (isBilled) billedCount++;
         if (billing?.quantity != null && billing.quantity > 0) {
           quantitySum += billing.quantity;
@@ -111,9 +124,7 @@ export function BillingTable({
       }
     });
 
-    const billedRate = totalStudents > 0
-      ? Math.round((billedCount / totalStudents) * 100)
-      : 0;
+    const billedRate = totalStudents > 0 ? Math.round((billedCount / totalStudents) * 100) : 0;
 
     return {
       itemId: item.id,
@@ -159,7 +170,11 @@ export function BillingTable({
   const isVocabBookItem = (item: BillingItem) => item.name === '単語練習帳';
 
   // 単語練習帳ワンクリックトグル: 値なし→1(在庫-1), 値あり→クリア(在庫+1)
-  const handleVocabToggle = async (studentId: string, itemId: string, currentBilling: StudentBilling | undefined) => {
+  const handleVocabToggle = async (
+    studentId: string,
+    itemId: string,
+    currentBilling: StudentBilling | undefined
+  ) => {
     if (isTeacher || !onBillingChange) return;
     const hasValue = currentBilling?.value_number != null && currentBilling.value_number !== 0;
     // 計上済みは誤って冊数を消さないよう、未計上に戻してからでないとクリアできない。
@@ -179,14 +194,16 @@ export function BillingTable({
         const targetSchoolIds = Array.isArray(schoolIds) ? schoolIds : schoolIds ? [schoolIds] : [];
         if (targetSchoolIds.length > 0) {
           const allMaterials = await getMaterials(targetSchoolIds);
-          const vocabMaterial = allMaterials.find(m => m.name === '単語練習帳');
+          const vocabMaterial = allMaterials.find((m) => m.name === '単語練習帳');
           if (vocabMaterial) {
             await createStockTransaction({
               material_id: vocabMaterial.id,
               school_id: vocabMaterial.school_id,
               transaction_type: newValue ? 'out' : 'in',
               quantity: 1,
-              reason: newValue ? '単語練習帳セットによる自動出庫' : '単語練習帳クリアによる自動入庫',
+              reason: newValue
+                ? '単語練習帳セットによる自動出庫'
+                : '単語練習帳クリアによる自動入庫',
             });
             onStockUpdated?.();
           }
@@ -208,14 +225,24 @@ export function BillingTable({
   };
 
   // Number cell edit handler
-  const handleNumberCellClick = (studentId: string, itemId: string, currentBilling: StudentBilling | undefined) => {
+  const handleNumberCellClick = (
+    studentId: string,
+    itemId: string,
+    currentBilling: StudentBilling | undefined
+  ) => {
     if (isTeacher) return;
     setEditingCell({ studentId, itemId });
-    setEditingValue(currentBilling?.value_number != null ? String(currentBilling.value_number) : '');
+    setEditingValue(
+      currentBilling?.value_number != null ? String(currentBilling.value_number) : ''
+    );
   };
 
   // Text cell edit handler
-  const handleTextCellClick = (studentId: string, itemId: string, currentBilling: StudentBilling | undefined) => {
+  const handleTextCellClick = (
+    studentId: string,
+    itemId: string,
+    currentBilling: StudentBilling | undefined
+  ) => {
     if (isTeacher) return;
     setEditingCell({ studentId, itemId });
     setEditingValue(currentBilling?.value_text || '');
@@ -297,7 +324,8 @@ export function BillingTable({
     if (!billingPeriodId || !schoolIds) return;
     const confirmed = await confirm({
       title: 'フォーム回答同期',
-      description: 'フォーム回答から請求データを同期しますか？\n紐付け済みの回答件数が反映されます（増コマは申込コマ数）。',
+      description:
+        'フォーム回答から請求データを同期しますか？\n紐付け済みの回答件数が反映されます（増コマは申込コマ数）。',
       confirmLabel: '同期する',
       variant: 'default',
     });
@@ -329,13 +357,19 @@ export function BillingTable({
     if (nameMatch) {
       baseYear = Number(nameMatch[1]);
       baseMonth = Number(nameMatch[2]) + 1; // 翌月が対象
-      if (baseMonth > 12) { baseMonth -= 12; baseYear++; }
+      if (baseMonth > 12) {
+        baseMonth -= 12;
+        baseYear++;
+      }
     } else if (periodStartDate) {
       // フォールバック: periodStartDateから+2ヶ月
       const [yearStr, monthStr] = periodStartDate.split('-');
       baseYear = Number(yearStr);
       baseMonth = Number(monthStr) + 2;
-      if (baseMonth > 12) { baseMonth -= 12; baseYear++; }
+      if (baseMonth > 12) {
+        baseMonth -= 12;
+        baseYear++;
+      }
     } else {
       return;
     }
@@ -381,13 +415,19 @@ export function BillingTable({
     if (nameMatch) {
       year = Number(nameMatch[1]);
       month = Number(nameMatch[2]) + 1; // 翌月が対象
-      if (month > 12) { month = 1; year++; }
+      if (month > 12) {
+        month = 1;
+        year++;
+      }
     } else if (periodStartDate) {
       // フォールバック: periodStartDateから+2ヶ月
       const [yearStr, monthStr] = periodStartDate.split('-');
       year = Number(yearStr);
       month = Number(monthStr) + 2;
-      if (month > 12) { month -= 12; year++; }
+      if (month > 12) {
+        month -= 12;
+        year++;
+      }
     } else {
       return;
     }
@@ -431,12 +471,20 @@ export function BillingTable({
               <th className="px-3 py-2 text-left text-white text-xs font-semibold border-r border-[#2d4a6f] sticky left-0 bg-[#1e3a5f] z-40 w-[60px]">
                 学年
               </th>
-              <th className="px-3 py-2 text-left text-white text-xs font-semibold border-r border-[#2d4a6f] sticky left-[60px] bg-[#1e3a5f] z-40 w-[160px]" style={{ boxShadow: '4px 0 6px -2px rgba(0,0,0,0.15)' }}>
+              <th
+                className="px-3 py-2 text-left text-white text-xs font-semibold border-r border-[#2d4a6f] sticky left-[60px] bg-[#1e3a5f] z-40 w-[160px]"
+                style={{ boxShadow: '4px 0 6px -2px rgba(0,0,0,0.15)' }}
+              >
                 名前
               </th>
               {items.map((item) => {
                 const isFifthWeekItem = item.name.includes('5週目');
-                const showAutoFillButton = isFifthWeekItem && onBillingChange && isManagerOrAbove && periodStartDate && schoolIds;
+                const showAutoFillButton =
+                  isFifthWeekItem &&
+                  onBillingChange &&
+                  isManagerOrAbove &&
+                  periodStartDate &&
+                  schoolIds;
                 return (
                   <th
                     key={item.id}
@@ -534,7 +582,12 @@ export function BillingTable({
                           )}
                         </div>
                         {/* アクションボタン（1列に1つだけ） */}
-                        {(showAutoFillButton || (item.linked_form_type && !isTeacher && billingPeriodId && schoolIds) || (item.source_type === 'order' && !isTeacher && periodStartDate && schoolIds)) && (
+                        {(showAutoFillButton ||
+                          (item.linked_form_type && !isTeacher && billingPeriodId && schoolIds) ||
+                          (item.source_type === 'order' &&
+                            !isTeacher &&
+                            periodStartDate &&
+                            schoolIds)) && (
                           <div className="flex items-center gap-1">
                             {showAutoFillButton && (
                               <button
@@ -550,45 +603,74 @@ export function BillingTable({
                                 disabled={autoFilling}
                                 title="通塾日程から5週目コマ数を自動計算"
                               >
-                                {autoFilling ? '...' : (<><Zap className="inline h-3 w-3 mr-0.5" />自動計算</>)}
+                                {autoFilling ? (
+                                  '...'
+                                ) : (
+                                  <>
+                                    <Zap className="inline h-3 w-3 mr-0.5" />
+                                    自動計算
+                                  </>
+                                )}
                               </button>
                             )}
-                            {item.linked_form_type && !isTeacher && billingPeriodId && schoolIds && (
-                              <button
-                                className="text-[11px] px-1.5 py-0.5 rounded-full bg-cyan-400/30 text-cyan-200 hover:bg-cyan-400/50 transition-[background-color] duration-150 ease-out disabled:opacity-50"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleFormSync(item.id);
-                                }}
-                                disabled={syncing}
-                                title="フォーム回答から件数を同期"
-                              >
-                                {syncing ? '...' : (<><Inbox className="inline h-3 w-3 mr-0.5" />同期</>)}
-                              </button>
-                            )}
-                            {item.source_type === 'order' && !isTeacher && periodStartDate && schoolIds && (
-                              <button
-                                className="text-[11px] px-1.5 py-0.5 rounded-full bg-purple-400/30 text-purple-200 hover:bg-purple-400/50 transition-[background-color] duration-150 ease-out"
-                                title="発注管理から同期"
-                                onClick={async (e) => {
-                                  e.stopPropagation();
-                                  if (!await confirm({
-                                    title: '発注管理から同期',
-                                    description: `「${item.name}」を発注管理から自動同期しますか？\n期間内の発注が請求に反映されます。`,
-                                    confirmLabel: '同期する',
-                                  })) return;
-                                  try {
-                                    const result = await syncOrdersToBilling(item.id, schoolIds, periodStartDate, periodEndDate || periodStartDate);
-                                    success(`${result.synced}名の発注を同期しました`);
-                                    onItemsChange?.();
-                                  } catch (err) {
-                                    toastError(getUserErrorMessage(err, '同期に失敗しました'));
-                                  }
-                                }}
-                              >
-                                <Inbox className="inline h-3 w-3 mr-0.5" />同期
-                              </button>
-                            )}
+                            {item.linked_form_type &&
+                              !isTeacher &&
+                              billingPeriodId &&
+                              schoolIds && (
+                                <button
+                                  className="text-[11px] px-1.5 py-0.5 rounded-full bg-cyan-400/30 text-cyan-200 hover:bg-cyan-400/50 transition-[background-color] duration-150 ease-out disabled:opacity-50"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleFormSync(item.id);
+                                  }}
+                                  disabled={syncing}
+                                  title="フォーム回答から件数を同期"
+                                >
+                                  {syncing ? (
+                                    '...'
+                                  ) : (
+                                    <>
+                                      <Inbox className="inline h-3 w-3 mr-0.5" />
+                                      同期
+                                    </>
+                                  )}
+                                </button>
+                              )}
+                            {item.source_type === 'order' &&
+                              !isTeacher &&
+                              periodStartDate &&
+                              schoolIds && (
+                                <button
+                                  className="text-[11px] px-1.5 py-0.5 rounded-full bg-purple-400/30 text-purple-200 hover:bg-purple-400/50 transition-[background-color] duration-150 ease-out"
+                                  title="発注管理から同期"
+                                  onClick={async (e) => {
+                                    e.stopPropagation();
+                                    if (
+                                      !(await confirm({
+                                        title: '発注管理から同期',
+                                        description: `「${item.name}」を発注管理から自動同期しますか？\n期間内の発注が請求に反映されます。`,
+                                        confirmLabel: '同期する',
+                                      }))
+                                    )
+                                      return;
+                                    try {
+                                      const result = await syncOrdersToBilling(
+                                        item.id,
+                                        schoolIds,
+                                        periodStartDate,
+                                        periodEndDate || periodStartDate
+                                      );
+                                      success(`${result.synced}名の発注を同期しました`);
+                                      onItemsChange?.();
+                                    } catch (err) {
+                                      toastError(getUserErrorMessage(err, '同期に失敗しました'));
+                                    }
+                                  }}
+                                >
+                                  <Inbox className="inline h-3 w-3 mr-0.5" />
+                                  同期
+                                </button>
+                              )}
                           </div>
                         )}
                       </div>
@@ -602,8 +684,10 @@ export function BillingTable({
               <td className="px-3 py-1.5 text-left text-[#4b5563] text-xs border-r border-[#e5e7eb] sticky left-0 bg-[#f0f4f8] z-40 w-[60px]">
                 集計
               </td>
-              <td className="px-3 py-1.5 text-left text-[#4b5563] text-xs border-r border-[#e5e7eb] sticky left-[60px] bg-[#f0f4f8] z-40 w-[160px]" style={{ boxShadow: '4px 0 6px -2px rgba(0,0,0,0.08)' }}>
-              </td>
+              <td
+                className="px-3 py-1.5 text-left text-[#4b5563] text-xs border-r border-[#e5e7eb] sticky left-[60px] bg-[#f0f4f8] z-40 w-[160px]"
+                style={{ boxShadow: '4px 0 6px -2px rgba(0,0,0,0.08)' }}
+              ></td>
               {summaryData.map((summary) => (
                 <td
                   key={summary.itemId}
@@ -611,15 +695,23 @@ export function BillingTable({
                 >
                   {summary.valueType === 'number' ? (
                     <div className="flex flex-col items-center">
-                      <span className="text-[11px] font-bold text-[#1e3a5f]">{summary.numberHasValueCount}名</span>
-                      <span className={`text-[11px] ${summary.numberBilledCount === summary.numberHasValueCount && summary.numberHasValueCount > 0 ? 'text-green-600' : 'text-orange-500'}`}>
+                      <span className="text-[11px] font-bold text-[#1e3a5f]">
+                        {summary.numberHasValueCount}名
+                      </span>
+                      <span
+                        className={`text-[11px] ${summary.numberBilledCount === summary.numberHasValueCount && summary.numberHasValueCount > 0 ? 'text-green-600' : 'text-orange-500'}`}
+                      >
                         計上 {summary.numberBilledCount}/{summary.numberHasValueCount}
                       </span>
                     </div>
                   ) : summary.valueType === 'text' ? (
                     <div className="flex flex-col items-center">
-                      <span className="text-[11px] font-bold text-[#1e3a5f]">{summary.textHasValueCount}名</span>
-                      <span className={`text-[11px] ${summary.textBilledCount === summary.textHasValueCount && summary.textHasValueCount > 0 ? 'text-green-600' : 'text-orange-500'}`}>
+                      <span className="text-[11px] font-bold text-[#1e3a5f]">
+                        {summary.textHasValueCount}名
+                      </span>
+                      <span
+                        className={`text-[11px] ${summary.textBilledCount === summary.textHasValueCount && summary.textHasValueCount > 0 ? 'text-green-600' : 'text-orange-500'}`}
+                      >
                         計上 {summary.textBilledCount}/{summary.textHasValueCount}
                       </span>
                     </div>
@@ -647,7 +739,9 @@ export function BillingTable({
                   key={student.id}
                   className={`border-b border-[#e5e7eb] hover:bg-[#e8f0fe] transition-[background-color] duration-150 ease-out ${rowBg}`}
                 >
-                  <td className={`px-3 py-2 text-xs text-[#4b5563] border-r border-[#e5e7eb] sticky left-0 ${rowBg} z-20 w-[60px]`}>
+                  <td
+                    className={`px-3 py-2 text-xs text-[#4b5563] border-r border-[#e5e7eb] sticky left-0 ${rowBg} z-20 w-[60px]`}
+                  >
                     {GRADE_LABELS[student.grade] || student.grade}
                   </td>
                   <td
@@ -665,16 +759,14 @@ export function BillingTable({
                     const valueType = item.value_type || 'check';
                     const isUpdating = updatingCells.has(key);
                     const canEditCell = !isTeacher;
-                    const isEditingThis = editingCell?.studentId === student.id && editingCell?.itemId === item.id;
+                    const isEditingThis =
+                      editingCell?.studentId === student.id && editingCell?.itemId === item.id;
 
                     if (valueType === 'number') {
                       const hasValue = billing?.value_number != null && billing.value_number !== 0;
                       const isBilled = billing?.is_billed === true;
-                      const bgClass = hasValue && isBilled
-                        ? 'bg-green-100'
-                        : hasValue
-                        ? 'bg-yellow-50'
-                        : '';
+                      const bgClass =
+                        hasValue && isBilled ? 'bg-green-100' : hasValue ? 'bg-yellow-50' : '';
 
                       // 単語練習帳: ワンクリックで 1/クリア 切替
                       if (isVocabBookItem(item)) {
@@ -689,13 +781,21 @@ export function BillingTable({
                                 handleVocabToggle(student.id, item.id, billing);
                               }
                             }}
-                            title={hasValue ? (isBilled ? '計上済み（消すには先に計上を外す）' : '1（クリックでクリア）') : 'クリックで1をセット'}
+                            title={
+                              hasValue
+                                ? isBilled
+                                  ? '計上済み（消すには先に計上を外す）'
+                                  : '1（クリックでクリア）'
+                                : 'クリックで1をセット'
+                            }
                           >
                             {isUpdating ? (
                               <span className="text-[#4b5563] text-xs">...</span>
                             ) : (
                               <div className="flex flex-col items-center gap-0.5">
-                                <span className={`text-sm font-bold ${hasValue ? (isBilled ? 'text-green-700' : 'text-[#1e3a5f]') : 'text-gray-300'}`}>
+                                <span
+                                  className={`text-sm font-bold ${hasValue ? (isBilled ? 'text-green-700' : 'text-[#1e3a5f]') : 'text-gray-300'}`}
+                                >
                                   {hasValue ? billing?.value_number : '-'}
                                 </span>
                                 {canEditCell && onBillingChange && hasValue && (
@@ -709,7 +809,11 @@ export function BillingTable({
                                       e.stopPropagation();
                                       handleChargedToggle(student.id, item.id, billing);
                                     }}
-                                    title={isBilled ? '計上済（クリックで解除）' : '未計上（クリックで計上）'}
+                                    title={
+                                      isBilled
+                                        ? '計上済（クリックで解除）'
+                                        : '未計上（クリックで計上）'
+                                    }
                                   >
                                     {isBilled ? '✓ 計上' : '計上'}
                                   </button>
@@ -729,13 +833,14 @@ export function BillingTable({
                         const pending = billing?.value_number ?? 0;
                         const total = charged + pending;
                         const fullyCharged = pending === 0 && charged > 0;
-                        const cellBg = total === 0
-                          ? ''
-                          : fullyCharged
-                          ? 'bg-green-100'
-                          : charged > 0
-                          ? 'bg-lime-50'
-                          : 'bg-yellow-50';
+                        const cellBg =
+                          total === 0
+                            ? ''
+                            : fullyCharged
+                              ? 'bg-green-100'
+                              : charged > 0
+                                ? 'bg-lime-50'
+                                : 'bg-yellow-50';
                         return (
                           <td
                             key={item.id}
@@ -752,7 +857,9 @@ export function BillingTable({
                                 {/* 計上済み: 数字を上に＋下に緑「✓計上」ピル（計上済みは同期しても残る） */}
                                 {charged > 0 && (
                                   <div className="flex flex-col items-center gap-0.5">
-                                    <span className="text-sm font-bold text-green-700">{charged}</span>
+                                    <span className="text-sm font-bold text-green-700">
+                                      {charged}
+                                    </span>
                                     {canEditCell && onBillingChange && pending === 0 ? (
                                       <button
                                         className="text-[11px] leading-none rounded-md px-2 py-0.5 font-medium bg-green-500 text-white hover:bg-green-600 transition-[background-color] duration-150 ease-out"
@@ -777,7 +884,10 @@ export function BillingTable({
                                 {/* 未計上（新規）: 数字を上に＋下にグレー「計上」ピル */}
                                 {pending > 0 && (
                                   <div className="flex flex-col items-center gap-0.5">
-                                    <span className="text-sm font-bold text-[#1e3a5f]" title="未計上（新規）コマ数">
+                                    <span
+                                      className="text-sm font-bold text-[#1e3a5f]"
+                                      title="未計上（新規）コマ数"
+                                    >
                                       {pending}
                                     </span>
                                     {canEditCell && onBillingChange && (
@@ -812,7 +922,11 @@ export function BillingTable({
                               handleNumberCellClick(student.id, item.id, billing);
                             }
                           }}
-                          title={hasValue ? `${billing?.value_number}（クリックで編集）` : 'クリックで入力'}
+                          title={
+                            hasValue
+                              ? `${billing?.value_number}（クリックで編集）`
+                              : 'クリックで入力'
+                          }
                         >
                           {isUpdating ? (
                             <span className="text-[#4b5563] text-xs">...</span>
@@ -824,7 +938,10 @@ export function BillingTable({
                               onBlur={() => handleSaveEditedValue('number')}
                               onKeyDown={(e) => {
                                 if (e.key === 'Enter') e.currentTarget.blur();
-                                if (e.key === 'Escape') { setEditingCell(null); setEditingValue(''); }
+                                if (e.key === 'Escape') {
+                                  setEditingCell(null);
+                                  setEditingValue('');
+                                }
                               }}
                               onClick={(e) => e.stopPropagation()}
                               autoFocus
@@ -849,9 +966,18 @@ export function BillingTable({
                                     e.stopPropagation();
                                     // フォーム連携項目なら item を渡して計上済み/未計上の内訳(quantity)も付与し、
                                     // 旧データを新表示へ移行させる。非連携項目は従来どおり is_billed のみ更新。
-                                    handleChargedToggle(student.id, item.id, billing, item.linked_form_type ? item : undefined);
+                                    handleChargedToggle(
+                                      student.id,
+                                      item.id,
+                                      billing,
+                                      item.linked_form_type ? item : undefined
+                                    );
                                   }}
-                                  title={isBilled ? '計上済（クリックで解除）' : '未計上（クリックで計上）'}
+                                  title={
+                                    isBilled
+                                      ? '計上済（クリックで解除）'
+                                      : '未計上（クリックで計上）'
+                                  }
                                 >
                                   {isBilled ? '✓ 計上' : '計上'}
                                 </button>
@@ -865,11 +991,8 @@ export function BillingTable({
                     if (valueType === 'text') {
                       const hasValue = billing?.value_text != null && billing.value_text !== '';
                       const isBilled = billing?.is_billed === true;
-                      const bgClass = hasValue && isBilled
-                        ? 'bg-green-100'
-                        : hasValue
-                        ? 'bg-yellow-50'
-                        : '';
+                      const bgClass =
+                        hasValue && isBilled ? 'bg-green-100' : hasValue ? 'bg-yellow-50' : '';
 
                       return (
                         <td
@@ -882,7 +1005,9 @@ export function BillingTable({
                               handleTextCellClick(student.id, item.id, billing);
                             }
                           }}
-                          title={hasValue ? `${billing?.value_text}（クリックで編集）` : 'クリックで入力'}
+                          title={
+                            hasValue ? `${billing?.value_text}（クリックで編集）` : 'クリックで入力'
+                          }
                         >
                           {isUpdating ? (
                             <span className="text-[#4b5563] text-xs">...</span>
@@ -894,7 +1019,10 @@ export function BillingTable({
                               onBlur={() => handleSaveEditedValue('text')}
                               onKeyDown={(e) => {
                                 if (e.key === 'Enter') e.currentTarget.blur();
-                                if (e.key === 'Escape') { setEditingCell(null); setEditingValue(''); }
+                                if (e.key === 'Escape') {
+                                  setEditingCell(null);
+                                  setEditingValue('');
+                                }
                               }}
                               onClick={(e) => e.stopPropagation()}
                               autoFocus
@@ -905,7 +1033,11 @@ export function BillingTable({
                               {/* テキスト表示（複数行対応） */}
                               <span
                                 className={`text-xs whitespace-pre-wrap break-all text-left leading-tight ${
-                                  hasValue ? (isBilled ? 'text-green-700' : 'text-[#1e3a5f]') : 'text-gray-300'
+                                  hasValue
+                                    ? isBilled
+                                      ? 'text-green-700'
+                                      : 'text-[#1e3a5f]'
+                                    : 'text-gray-300'
                                 }`}
                               >
                                 {hasValue ? billing?.value_text : '-'}
@@ -922,9 +1054,18 @@ export function BillingTable({
                                     e.stopPropagation();
                                     // フォーム連携項目なら item を渡して計上済み/未計上の内訳(quantity)も付与し、
                                     // 旧データを新表示へ移行させる。非連携項目は従来どおり is_billed のみ更新。
-                                    handleChargedToggle(student.id, item.id, billing, item.linked_form_type ? item : undefined);
+                                    handleChargedToggle(
+                                      student.id,
+                                      item.id,
+                                      billing,
+                                      item.linked_form_type ? item : undefined
+                                    );
                                   }}
-                                  title={isBilled ? '計上済（クリックで解除）' : '未計上（クリックで計上）'}
+                                  title={
+                                    isBilled
+                                      ? '計上済（クリックで解除）'
+                                      : '未計上（クリックで計上）'
+                                  }
                                 >
                                   {isBilled ? '✓ 計上' : '計上'}
                                 </button>
@@ -948,26 +1089,31 @@ export function BillingTable({
                           isUpdating
                             ? 'opacity-50'
                             : onBillingChange && canEditCell
-                            ? 'cursor-pointer hover:bg-[#3b82f6]/10'
-                            : 'cursor-default'
+                              ? 'cursor-pointer hover:bg-[#3b82f6]/10'
+                              : 'cursor-default'
                         }`}
                         onClick={() =>
-                          onBillingChange && !isUpdating && canEditCell && handleCellClick(student.id, item.id)
+                          onBillingChange &&
+                          !isUpdating &&
+                          canEditCell &&
+                          handleCellClick(student.id, item.id)
                         }
                         title={
                           isTeacher
                             ? '閲覧のみ'
                             : hasQuantity
-                            ? `${billing?.quantity}コマ（クリックで解除）`
-                            : isBilled
-                            ? '請求済（クリックで解除）'
-                            : '未請求（クリックで請求済に）'
+                              ? `${billing?.quantity}コマ（クリックで解除）`
+                              : isBilled
+                                ? '請求済（クリックで解除）'
+                                : '未請求（クリックで請求済に）'
                         }
                       >
                         {isUpdating ? (
                           <span className="text-[#4b5563]">...</span>
                         ) : hasQuantity ? (
-                          <span className="text-sm font-semibold text-green-700">{billing?.quantity}</span>
+                          <span className="text-sm font-semibold text-green-700">
+                            {billing?.quantity}
+                          </span>
                         ) : isBilled ? (
                           <span className="text-sm font-semibold text-green-700">✓</span>
                         ) : (

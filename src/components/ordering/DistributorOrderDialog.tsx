@@ -26,13 +26,53 @@ const CUSTOMER_STORAGE_KEY = 'nest:distributorCustomer';
 
 /** 取次フォームの都道府県 select の選択肢（value=表示名）。 */
 const PREFECTURES = [
-  '北海道', '青森県', '岩手県', '宮城県', '秋田県', '山形県', '福島県',
-  '茨城県', '栃木県', '群馬県', '埼玉県', '千葉県', '東京都', '神奈川県',
-  '新潟県', '富山県', '石川県', '福井県', '山梨県', '長野県', '岐阜県',
-  '静岡県', '愛知県', '三重県', '滋賀県', '京都府', '大阪府', '兵庫県',
-  '奈良県', '和歌山県', '鳥取県', '島根県', '岡山県', '広島県', '山口県',
-  '徳島県', '香川県', '愛媛県', '高知県', '福岡県', '佐賀県', '長崎県',
-  '熊本県', '大分県', '宮崎県', '鹿児島県', '沖縄県',
+  '北海道',
+  '青森県',
+  '岩手県',
+  '宮城県',
+  '秋田県',
+  '山形県',
+  '福島県',
+  '茨城県',
+  '栃木県',
+  '群馬県',
+  '埼玉県',
+  '千葉県',
+  '東京都',
+  '神奈川県',
+  '新潟県',
+  '富山県',
+  '石川県',
+  '福井県',
+  '山梨県',
+  '長野県',
+  '岐阜県',
+  '静岡県',
+  '愛知県',
+  '三重県',
+  '滋賀県',
+  '京都府',
+  '大阪府',
+  '兵庫県',
+  '奈良県',
+  '和歌山県',
+  '鳥取県',
+  '島根県',
+  '岡山県',
+  '広島県',
+  '山口県',
+  '徳島県',
+  '香川県',
+  '愛媛県',
+  '高知県',
+  '福岡県',
+  '佐賀県',
+  '長崎県',
+  '熊本県',
+  '大分県',
+  '宮崎県',
+  '鹿児島県',
+  '沖縄県',
 ];
 
 /** 顧客情報（取次フォームの宛先欄）。NESTに無い項目が多いので一度入力したら localStorage に保存して再利用する。 */
@@ -50,11 +90,24 @@ interface CustomerInfo {
 }
 
 const EMPTY_CUSTOMER: CustomerInfo = {
-  form_name: '', form_syozoku: '', form_zip: '', form_prefectures: '', form_city: '',
-  form_building: '', form_tel: '', form_fax: '', form_email: '', form_message: '',
+  form_name: '',
+  form_syozoku: '',
+  form_zip: '',
+  form_prefectures: '',
+  form_city: '',
+  form_building: '',
+  form_tel: '',
+  form_fax: '',
+  form_email: '',
+  form_message: '',
 };
 
-const CUSTOMER_FIELDS: { key: keyof CustomerInfo; label: string; required?: boolean; type?: string }[] = [
+const CUSTOMER_FIELDS: {
+  key: keyof CustomerInfo;
+  label: string;
+  required?: boolean;
+  type?: string;
+}[] = [
   { key: 'form_name', label: '担当者名', required: true },
   { key: 'form_syozoku', label: '塾名・教室名', required: true },
   { key: 'form_zip', label: '郵便番号', required: true },
@@ -88,10 +141,19 @@ export function DistributorOrderDialog({
     let cancelled = false;
     setLoadingRows(true);
     buildDistributorOrderRows(orders)
-      .then((r) => { if (!cancelled) setRows(r); })
-      .catch((e) => { console.error('取次行の生成に失敗:', e); if (!cancelled) setRows([]); })
-      .finally(() => { if (!cancelled) setLoadingRows(false); });
-    return () => { cancelled = true; };
+      .then((r) => {
+        if (!cancelled) setRows(r);
+      })
+      .catch((e) => {
+        console.error('取次行の生成に失敗:', e);
+        if (!cancelled) setRows([]);
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingRows(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [orders]);
 
   // 顧客情報: localStorage を優先、無ければ選択中の校舎名/メールで初期化
@@ -100,20 +162,32 @@ export function DistributorOrderDialog({
     try {
       const raw = localStorage.getItem(CUSTOMER_STORAGE_KEY);
       if (raw) saved = JSON.parse(raw);
-    } catch { /* 破損時は無視 */ }
+    } catch {
+      /* 破損時は無視 */
+    }
     const next: CustomerInfo = { ...EMPTY_CUSTOMER, ...saved };
     if (!next.form_syozoku && defaultSchoolName) next.form_syozoku = defaultSchoolName;
     if (!next.form_email && defaultEmail) next.form_email = defaultEmail;
     setCustomer(next);
     // 必須項目が埋まっていなければ顧客情報セクションを開いて入力を促す
-    const incomplete = !next.form_name || !next.form_zip || !next.form_prefectures || !next.form_city || !next.form_tel || !next.form_email;
+    const incomplete =
+      !next.form_name ||
+      !next.form_zip ||
+      !next.form_prefectures ||
+      !next.form_city ||
+      !next.form_tel ||
+      !next.form_email;
     setCustomerOpen(incomplete);
   }, [defaultSchoolName, defaultEmail]);
 
   const updateCustomer = (key: keyof CustomerInfo, value: string) => {
     setCustomer((prev) => {
       const next = { ...prev, [key]: value };
-      try { localStorage.setItem(CUSTOMER_STORAGE_KEY, JSON.stringify(next)); } catch { /* 容量超過等は無視 */ }
+      try {
+        localStorage.setItem(CUSTOMER_STORAGE_KEY, JSON.stringify(next));
+      } catch {
+        /* 容量超過等は無視 */
+      }
       return next;
     });
     setQueued(false);
@@ -145,18 +219,28 @@ export function DistributorOrderDialog({
         label: `取次発注（日本教材出版） ${sentRows.length}件`,
         actions: buildSetActions(fields), // 空値は自動スキップ
       };
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { alert('ログインが必要です'); return; }
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session) {
+        alert('ログインが必要です');
+        return;
+      }
       const res = await fetch('/api/automation/queue', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
         body: JSON.stringify({ payload }),
       });
       const d = (await res.json()) as { error?: string; code?: string };
       if (!res.ok) {
-        alert(d.code === 'NO_TOKEN'
-          ? '先に「自動入力ローダー」を発行してください（設定 > 自動入力ローダー）'
-          : (d.error ?? 'キュー投入に失敗しました'));
+        alert(
+          d.code === 'NO_TOKEN'
+            ? '先に「自動入力ローダー」を発行してください（設定 > 自動入力ローダー）'
+            : (d.error ?? 'キュー投入に失敗しました')
+        );
         return;
       }
       setQueued(true);
@@ -200,7 +284,9 @@ export function DistributorOrderDialog({
                 <Loader2 className="w-4 h-4 animate-spin" /> 明細を集計中…
               </div>
             ) : rows.length === 0 ? (
-              <div className="text-sm text-text-muted py-4 text-center">未確認の発注がありません。</div>
+              <div className="text-sm text-text-muted py-4 text-center">
+                未確認の発注がありません。
+              </div>
             ) : (
               <div className="overflow-x-auto rounded-lg border border-border-subtle">
                 <table className="w-full text-xs">
@@ -217,8 +303,15 @@ export function DistributorOrderDialog({
                   <tbody>
                     {sentRows.map((r, i) => (
                       <tr key={i} className="border-t border-border-subtle">
-                        <RowCell value={r.hanmoto} onChange={(v) => updateRow(i, 'hanmoto', v)} placeholder="（任意）" />
-                        <RowCell value={r.kyuozaimei} onChange={(v) => updateRow(i, 'kyuozaimei', v)} />
+                        <RowCell
+                          value={r.hanmoto}
+                          onChange={(v) => updateRow(i, 'hanmoto', v)}
+                          placeholder="（任意）"
+                        />
+                        <RowCell
+                          value={r.kyuozaimei}
+                          onChange={(v) => updateRow(i, 'kyuozaimei', v)}
+                        />
                         <RowCell value={r.kyouka} onChange={(v) => updateRow(i, 'kyouka', v)} />
                         <RowCell value={r.junkyo} onChange={(v) => updateRow(i, 'junkyo', v)} />
                         <RowCell value={r.gakunen} onChange={(v) => updateRow(i, 'gakunen', v)} />
@@ -231,7 +324,8 @@ export function DistributorOrderDialog({
             )}
             {overflow && (
               <p className="text-[11px] text-danger mt-1">
-                取次フォームは最大{MAX_ROWS}行です。{rows.length - MAX_ROWS}件は今回送信されません（残りは再度この操作で発注してください）。
+                取次フォームは最大{MAX_ROWS}行です。{rows.length - MAX_ROWS}
+                件は今回送信されません（残りは再度この操作で発注してください）。
               </p>
             )}
             <p className="text-[11px] text-text-faint mt-1">
@@ -248,28 +342,58 @@ export function DistributorOrderDialog({
               onClick={() => setCustomerOpen((v) => !v)}
               className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-surface-hover transition-colors rounded-lg"
             >
-              {customerOpen ? <ChevronDown className="w-4 h-4 text-text-faint" /> : <ChevronRight className="w-4 h-4 text-text-faint" />}
-              <span className="text-[11px] font-bold text-text-muted">送り先・担当者情報（初回のみ入力、以後この端末に保存）</span>
+              {customerOpen ? (
+                <ChevronDown className="w-4 h-4 text-text-faint" />
+              ) : (
+                <ChevronRight className="w-4 h-4 text-text-faint" />
+              )}
+              <span className="text-[11px] font-bold text-text-muted">
+                送り先・担当者情報（初回のみ入力、以後この端末に保存）
+              </span>
             </button>
             {customerOpen && (
               <div className="px-3 pb-3 grid grid-cols-2 gap-2">
                 {CUSTOMER_FIELDS.slice(0, 2).map((f) => (
-                  <Field key={f.key} field={f} value={customer[f.key]} onChange={(v) => updateCustomer(f.key, v)} className="col-span-2" />
+                  <Field
+                    key={f.key}
+                    field={f}
+                    value={customer[f.key]}
+                    onChange={(v) => updateCustomer(f.key, v)}
+                    className="col-span-2"
+                  />
                 ))}
-                <Field field={CUSTOMER_FIELDS[2]} value={customer.form_zip} onChange={(v) => updateCustomer('form_zip', v)} />
+                <Field
+                  field={CUSTOMER_FIELDS[2]}
+                  value={customer.form_zip}
+                  onChange={(v) => updateCustomer('form_zip', v)}
+                />
                 <label className="flex flex-col gap-0.5">
-                  <span className="text-[10px] text-text-muted">都道府県<span className="text-danger">*</span></span>
+                  <span className="text-[10px] text-text-muted">
+                    都道府県<span className="text-danger">*</span>
+                  </span>
                   <select
                     value={customer.form_prefectures}
                     onChange={(e) => updateCustomer('form_prefectures', e.target.value)}
                     className="text-xs border border-border-default rounded-md px-2 py-1.5 bg-surface-raised focus:ring-1 focus:ring-info/30"
                   >
                     <option value="">選択してください</option>
-                    {PREFECTURES.map((p) => <option key={p} value={p}>{p}</option>)}
+                    {PREFECTURES.map((p) => (
+                      <option key={p} value={p}>
+                        {p}
+                      </option>
+                    ))}
                   </select>
                 </label>
                 {CUSTOMER_FIELDS.slice(3).map((f) => (
-                  <Field key={f.key} field={f} value={customer[f.key]} onChange={(v) => updateCustomer(f.key, v)} className={f.key === 'form_city' || f.key === 'form_building' ? 'col-span-2' : ''} />
+                  <Field
+                    key={f.key}
+                    field={f}
+                    value={customer[f.key]}
+                    onChange={(v) => updateCustomer(f.key, v)}
+                    className={
+                      f.key === 'form_city' || f.key === 'form_building' ? 'col-span-2' : ''
+                    }
+                  />
                 ))}
                 <label className="flex flex-col gap-0.5 col-span-2">
                   <span className="text-[10px] text-text-muted">備考（希望納期など）</span>
@@ -287,15 +411,18 @@ export function DistributorOrderDialog({
           {/* 初回設定の案内（共通ローダー） */}
           <p className="text-[11px] text-text-faint">
             初回のみ{' '}
-            <Link href="/settings/automation" className="text-info hover:underline">設定 &gt; 自動入力ローダー</Link>
-            {' '}でブックマークを登録してください。クリップボードのコピーは不要です。
+            <Link href="/settings/automation" className="text-info hover:underline">
+              設定 &gt; 自動入力ローダー
+            </Link>{' '}
+            でブックマークを登録してください。クリップボードのコピーは不要です。
           </p>
         </div>
 
         {/* フッター: 手順 + アクション */}
         <div className="px-4 py-3 border-t border-border-subtle space-y-2">
           <p className="text-[11px] text-text-faint">
-            ①「取次に流し込む」→ ②「発注ページを開く」→ ③ ブックマーク「NESTから流し込む」をクリックで自動入力 → ④ reCAPTCHA通過・送信は手動
+            ①「取次に流し込む」→ ②「発注ページを開く」→ ③
+            ブックマーク「NESTから流し込む」をクリックで自動入力 → ④ reCAPTCHA通過・送信は手動
           </p>
           <div className="flex items-center gap-2">
             <button
@@ -310,7 +437,13 @@ export function DistributorOrderDialog({
               disabled={loadingRows || rows.length === 0 || queuing}
               className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold border border-border-default rounded-lg hover:bg-surface-hover transition-colors disabled:opacity-50"
             >
-              {queuing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : queued ? <Check className="w-3.5 h-3.5 text-success" /> : <Truck className="w-3.5 h-3.5" />}
+              {queuing ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : queued ? (
+                <Check className="w-3.5 h-3.5 text-success" />
+              ) : (
+                <Truck className="w-3.5 h-3.5" />
+              )}
               {queuing ? '準備中…' : queued ? '準備済み' : '取次に流し込む'}
             </button>
             <a
@@ -330,7 +463,15 @@ export function DistributorOrderDialog({
 }
 
 /** 明細テーブルのセル（インライン編集）。 */
-function RowCell({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder?: string }) {
+function RowCell({
+  value,
+  onChange,
+  placeholder,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+}) {
   return (
     <td className="px-1 py-1">
       <input

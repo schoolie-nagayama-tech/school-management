@@ -7,7 +7,7 @@ import type { UserProfile } from '@/types/database';
  * 講師権限のユーザーには個人情報保護のため苗字のみ表示する。
  */
 export function getSurname(
-  profile: Pick<UserProfile, 'last_name' | 'display_name'> | null | undefined,
+  profile: Pick<UserProfile, 'last_name' | 'display_name'> | null | undefined
 ): string {
   if (!profile) return '';
   if (profile.last_name) return profile.last_name;

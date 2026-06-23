@@ -5,20 +5,20 @@
  */
 export function isPeriodActive(period: FormPeriod): boolean {
   if (period.is_archived) return false;
-  
+
   const now = new Date();
   const start = period.publish_start ? new Date(period.publish_start) : null;
   const end = period.publish_end ? new Date(period.publish_end) : null;
 
   // 開始日未設定は非公開
   if (!start) return false;
-  
+
   // まだ開始前
   if (now < start) return false;
-  
+
   // 終了日なし = 永続公開
   if (!end) return true;
-  
+
   // 終了日以内
   return now <= end;
 }

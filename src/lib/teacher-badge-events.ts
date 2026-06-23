@@ -9,9 +9,7 @@ export function emitTeacherBadgesChanged(teacherId: string) {
   window.dispatchEvent(new CustomEvent(EVENT_NAME, { detail: { teacherId } }));
 }
 
-export function onTeacherBadgesChanged(
-  handler: (teacherId: string) => void
-): () => void {
+export function onTeacherBadgesChanged(handler: (teacherId: string) => void): () => void {
   if (typeof window === 'undefined') return () => {};
   const listener = (e: Event) => {
     const detail = (e as CustomEvent<{ teacherId: string }>).detail;

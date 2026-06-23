@@ -30,10 +30,7 @@ const nextConfig = {
     ],
   },
   webpack: (config, { isServer }) => {
-    config.ignoreWarnings = [
-      { module: /node_modules/ },
-      { message: /Failed to parse source map/ },
-    ];
+    config.ignoreWarnings = [{ module: /node_modules/ }, { message: /Failed to parse source map/ }];
 
     if (isServer) {
       config.externals.push('web-push');

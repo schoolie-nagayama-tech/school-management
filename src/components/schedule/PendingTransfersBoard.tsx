@@ -88,14 +88,10 @@ export function PendingTransfersBoard({
         className="w-full px-4 py-3 flex items-center gap-2 text-left hover:bg-warning-subtle/50 transition-[background-color,border-color,color] duration-150 ease-[var(--ease-out)]"
       >
         <AlertTriangle className="w-4 h-4 text-warning flex-shrink-0" />
-        <span className="font-medium text-warning text-sm">
-          振替期限の対応待ち
-        </span>
+        <span className="font-medium text-warning text-sm">振替期限の対応待ち</span>
         <span className="text-xs text-warning">
           {overdueCount > 0 && (
-            <span className="font-semibold text-danger">
-              期限切れ {overdueCount}件
-            </span>
+            <span className="font-semibold text-danger">期限切れ {overdueCount}件</span>
           )}
           {overdueCount > 0 && soonCount > 0 && <span className="mx-1">/</span>}
           {soonCount > 0 && <span>期限間近 {soonCount}件</span>}
@@ -113,9 +109,7 @@ export function PendingTransfersBoard({
                 ? `${entry.student.last_name} ${entry.student.first_name}（${gradeLabel(entry.student.grade)}）`
                 : entry.student_id;
               const teacherName = entry.teacher?.display_name || entry.teacher?.email || '';
-              const slotLabel = entry.time_slot
-                ? `${entry.time_slot.slot_number}限`
-                : '';
+              const slotLabel = entry.time_slot ? `${entry.time_slot.slot_number}限` : '';
               const deadline = entry.transfer_deadline;
               const daysLeft = deadline ? daysUntil(deadline) : null;
 
@@ -145,12 +139,12 @@ export function PendingTransfersBoard({
                         欠席日: {entry.entry_date} {slotLabel} ・ 担当: {teacherName}
                       </div>
                     </div>
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium flex-shrink-0 ${chipClass}`}>
+                    <span
+                      className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium flex-shrink-0 ${chipClass}`}
+                    >
                       {chipLabel}
                     </span>
-                    <span className="text-xs text-text-faint flex-shrink-0">
-                      期限: {deadline}
-                    </span>
+                    <span className="text-xs text-text-faint flex-shrink-0">期限: {deadline}</span>
                     <ChevronRight className="w-4 h-4 text-text-faint flex-shrink-0" />
                   </div>
                 </li>

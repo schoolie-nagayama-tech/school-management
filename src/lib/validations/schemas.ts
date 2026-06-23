@@ -28,7 +28,10 @@ export type StudentFormData = z.infer<typeof studentSchema>;
 // ── ユーザー招待 ──
 
 export const userInviteSchema = z.object({
-  email: z.string().min(1, 'メールアドレスは必須です').email('有効なメールアドレスを入力してください'),
+  email: z
+    .string()
+    .min(1, 'メールアドレスは必須です')
+    .email('有効なメールアドレスを入力してください'),
   display_name: z.string().min(1, '表示名は必須です'),
   role: z.enum(['admin', 'owner', 'manager', 'teacher'], {
     required_error: '役割を選択してください',
@@ -108,7 +111,10 @@ export type CourseFormData = z.infer<typeof courseSchema>;
  * Zodスキーマでデータを検証し、エラーメッセージの配列を返す。
  * 検証成功時は空配列を返す。
  */
-export function validate<T>(schema: z.ZodType<T>, data: unknown): { success: true; data: T } | { success: false; errors: string[] } {
+export function validate<T>(
+  schema: z.ZodType<T>,
+  data: unknown
+): { success: true; data: T } | { success: false; errors: string[] } {
   const result = schema.safeParse(data);
   if (result.success) {
     return { success: true, data: result.data };

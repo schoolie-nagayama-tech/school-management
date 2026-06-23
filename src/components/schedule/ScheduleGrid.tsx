@@ -3,12 +3,7 @@
 import React, { useMemo, useState } from 'react';
 import { DndContext, DragOverlay, type DragStartEvent, type DragEndEvent } from '@dnd-kit/core';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui';
-import {
-  DroppableCell,
-  getCellId,
-  parseCellId,
-  MAX_STUDENTS_PER_TEACHER,
-} from './DroppableCell';
+import { DroppableCell, getCellId, parseCellId, MAX_STUDENTS_PER_TEACHER } from './DroppableCell';
 import { DraggableEntry } from './DraggableEntry';
 import type { ScheduleEntry, ScheduleTimeSlot } from '@/types/schedule';
 
@@ -92,10 +87,7 @@ export function ScheduleGrid({
   const [activeId, setActiveId] = useState<string | null>(null);
 
   const teachersForSchool = useMemo(
-    () =>
-      teachers.filter((t) =>
-        t.user_schools?.some((us) => us.school_id === selectedSchoolId)
-      ),
+    () => teachers.filter((t) => t.user_schools?.some((us) => us.school_id === selectedSchoolId)),
     [teachers, selectedSchoolId]
   );
 
@@ -133,9 +125,8 @@ export function ScheduleGrid({
     const entryId = String(active.id);
     const cellEntries = entriesByCell.get(overId) ?? [];
     const canDrop =
-      cellEntries.filter(
-        (e) => e.status !== 'cancelled' && e.status !== 'transferred_out'
-      ).length < MAX_STUDENTS_PER_TEACHER;
+      cellEntries.filter((e) => e.status !== 'cancelled' && e.status !== 'transferred_out').length <
+      MAX_STUDENTS_PER_TEACHER;
     if (!canDrop) return;
     void onMove(entryId, targetDate, targetSlotId, targetTeacherId);
   };
@@ -196,8 +187,7 @@ export function ScheduleGrid({
                       date,
                       slot.slot_number
                     );
-                    const canDrop =
-                      slotAvailable && activeCount < MAX_STUDENTS_PER_TEACHER;
+                    const canDrop = slotAvailable && activeCount < MAX_STUDENTS_PER_TEACHER;
                     return (
                       <DroppableCell
                         key={cellId}

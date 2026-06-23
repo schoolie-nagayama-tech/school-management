@@ -29,16 +29,12 @@ export function MoshiResponseDetailModal({
     <Modal isOpen={isOpen} onClose={onClose} title="回答詳細" size="md">
       <div className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-[#1f2937] mb-1">
-            回答日時
-          </label>
+          <label className="block text-sm font-medium text-[#1f2937] mb-1">回答日時</label>
           <p className="text-sm text-[#4b5563]">{formatDate(response.created_at)}</p>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-[#1f2937] mb-1">
-            生徒名
-          </label>
+          <label className="block text-sm font-medium text-[#1f2937] mb-1">生徒名</label>
           <p className="text-sm text-[#4b5563]">
             {response.linked_student
               ? `${response.linked_student.last_name} ${response.linked_student.first_name}`
@@ -47,25 +43,19 @@ export function MoshiResponseDetailModal({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-[#1f2937] mb-1">
-            学年
-          </label>
+          <label className="block text-sm font-medium text-[#1f2937] mb-1">学年</label>
           <p className="text-sm text-[#4b5563]">
             {MOSHI_GRADE_NUMBER_TO_NAME[response.grade] || response.grade}
           </p>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-[#1f2937] mb-1">
-            メールアドレス
-          </label>
+          <label className="block text-sm font-medium text-[#1f2937] mb-1">メールアドレス</label>
           <p className="text-sm text-[#4b5563]">{response.email}</p>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-[#1f2937] mb-1">
-            受験方法
-          </label>
+          <label className="block text-sm font-medium text-[#1f2937] mb-1">受験方法</label>
           <p className="text-sm text-[#4b5563]">
             {response.response_data.exam_type === 'regular' ? '通常受験' : '振替受験'}
           </p>
@@ -73,9 +63,7 @@ export function MoshiResponseDetailModal({
 
         {response.response_data.exam_type === 'regular' && (
           <div>
-            <label className="block text-sm font-medium text-[#1f2937] mb-1">
-              通常受験
-            </label>
+            <label className="block text-sm font-medium text-[#1f2937] mb-1">通常受験</label>
             <p className="text-sm text-[#4b5563]">
               {response.response_data.regular_confirmed ? '参加確認済み' : '-'}
             </p>
@@ -85,29 +73,23 @@ export function MoshiResponseDetailModal({
         {response.response_data.exam_type === 'furikae' && (
           <>
             <div>
-              <label className="block text-sm font-medium text-[#1f2937] mb-1">
-                振替希望日
-              </label>
+              <label className="block text-sm font-medium text-[#1f2937] mb-1">振替希望日</label>
               <p className="text-sm text-[#4b5563]">
-                {response.response_data.furikae_date_label || response.response_data.furikae_date || '-'}
+                {response.response_data.furikae_date_label ||
+                  response.response_data.furikae_date ||
+                  '-'}
               </p>
             </div>
             <div>
-              <label className="block text-sm font-medium text-[#1f2937] mb-1">
-                振替希望時間
-              </label>
-              <p className="text-sm text-[#4b5563]">
-                {response.response_data.furikae_time || '-'}
-              </p>
+              <label className="block text-sm font-medium text-[#1f2937] mb-1">振替希望時間</label>
+              <p className="text-sm text-[#4b5563]">{response.response_data.furikae_time || '-'}</p>
             </div>
           </>
         )}
 
         {response.response_data.note && (
           <div>
-            <label className="block text-sm font-medium text-[#1f2937] mb-1">
-              備考
-            </label>
+            <label className="block text-sm font-medium text-[#1f2937] mb-1">備考</label>
             <p className="text-sm text-[#4b5563] whitespace-pre-wrap">
               {response.response_data.note}
             </p>
@@ -115,9 +97,7 @@ export function MoshiResponseDetailModal({
         )}
 
         <div>
-          <label className="block text-sm font-medium text-[#1f2937] mb-1">
-            紐付け状態
-          </label>
+          <label className="block text-sm font-medium text-[#1f2937] mb-1">紐付け状態</label>
           <p className="text-sm text-[#4b5563]">
             {response.linked_student_id ? '紐付け済み' : '未紐付け'}
           </p>
@@ -125,9 +105,7 @@ export function MoshiResponseDetailModal({
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-[#1f2937] mb-1">
-              計上
-            </label>
+            <label className="block text-sm font-medium text-[#1f2937] mb-1">計上</label>
             {onChargedChange ? (
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
@@ -147,9 +125,7 @@ export function MoshiResponseDetailModal({
             )}
           </div>
           <div>
-            <label className="block text-sm font-medium text-[#1f2937] mb-1">
-              発注
-            </label>
+            <label className="block text-sm font-medium text-[#1f2937] mb-1">発注</label>
             {onOrderChange ? (
               <label className="flex items-center gap-2 cursor-pointer">
                 <input

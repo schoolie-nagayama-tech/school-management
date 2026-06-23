@@ -21,14 +21,7 @@ const sizeStyles = {
   '2xl': 'max-w-6xl',
 };
 
-export function Modal({
-  isOpen,
-  onClose,
-  title,
-  children,
-  size = 'md',
-  minHeight,
-}: ModalProps) {
+export function Modal({ isOpen, onClose, title, children, size = 'md', minHeight }: ModalProps) {
   // ポータル描画はマウント後のみ（SSR/ハイドレーション不一致を避ける）
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
@@ -59,11 +52,7 @@ export function Modal({
   // ポータルで body 直下に出すことで、入れ子でもビューポート基準で正しく中央表示される。
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div
-        className="absolute inset-0 modal-overlay"
-        onClick={onClose}
-        aria-hidden="true"
-      />
+      <div className="absolute inset-0 modal-overlay" onClick={onClose} aria-hidden="true" />
 
       <div
         className={`
@@ -78,10 +67,7 @@ export function Modal({
         aria-labelledby="modal-title"
       >
         <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-          <h2
-            id="modal-title"
-            className="text-lg font-bold text-text-heading"
-          >
+          <h2 id="modal-title" className="text-lg font-bold text-text-heading">
             {title}
           </h2>
           <button

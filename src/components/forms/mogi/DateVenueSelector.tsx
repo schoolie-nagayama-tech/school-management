@@ -27,7 +27,7 @@ export function DateVenueSelector({
   disabled = false,
 }: DateVenueSelectorProps) {
   // 指定日付の日程を特定するためのヘルパー（id または exam_type で一意）
-  const dateKeyOf = (d: MogiDate) => d.id.includes('__') ? d.id.split('__')[0] : d.id;
+  const dateKeyOf = (d: MogiDate) => (d.id.includes('__') ? d.id.split('__')[0] : d.id);
 
   const handleDateToggle = (date: MogiDate, checked: boolean) => {
     if (checked) {
@@ -171,7 +171,7 @@ export function DateVenueSelector({
                         onChange={(e) => handleVenueChange(date.id, e.target.value)}
                         options={[
                           { value: '', label: '選択してください' },
-                          ...date.venues.map((venue) => ({ value: venue.id, label: venue.label }))
+                          ...date.venues.map((venue) => ({ value: venue.id, label: venue.label })),
                         ]}
                         disabled={disabled}
                         required

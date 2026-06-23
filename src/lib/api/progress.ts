@@ -45,16 +45,17 @@ export async function getStudentTextbooksExamsBySchool(
   // 教室横断のため (生徒数 × テキスト数) でスケールし 1000 行を超えうる。
   // PostgREST の上限で切り捨てられると一部生徒のテキストが欠落しアラートが誤るため全件ページング取得。
   // created_at は一意でなくページ境界で重複/欠落しうるので id を第2ソートキーに加える。
-  const studentTextbooks = await fetchAllPaged<StudentTextbook & { textbook: Textbook }>((from, to) =>
-    supabase
-      .from('student_textbooks')
-      .select('*, textbook:textbooks(*)')
-      .in('school_id', schoolIds)
-      .eq('is_active', true)
-      .eq('track_progress', true)
-      .order('created_at', { ascending: false })
-      .order('id', { ascending: true })
-      .range(from, to)
+  const studentTextbooks = await fetchAllPaged<StudentTextbook & { textbook: Textbook }>(
+    (from, to) =>
+      supabase
+        .from('student_textbooks')
+        .select('*, textbook:textbooks(*)')
+        .in('school_id', schoolIds)
+        .eq('is_active', true)
+        .eq('track_progress', true)
+        .order('created_at', { ascending: false })
+        .order('id', { ascending: true })
+        .range(from, to)
   ).catch((e) => {
     throw new Error(`生徒テキストの取得に失敗しました: ${e.message}`);
   });
@@ -65,22 +66,22 @@ export async function getStudentTextbooksExamsBySchool(
   // stIds も教室横断で 1000 を超えうる。さらに 1 テキストに複数試験があり .in() の結果が
   // id 数より増えるため、id チャンク分割＋チャンク内ページングの fetchAllInChunks で取得する。
   const stIds = stList.map((st) => st.id);
-  const exams = await fetchAllInChunks<StudentTextbookExam>(
-    stIds,
-    (chunk, from, to) =>
-      supabase
-        .from('student_textbook_exams')
-        .select('*')
-        .in('student_textbook_id', chunk)
-        .order('exam_date', { ascending: true })
-        .order('id', { ascending: true })
-        .range(from, to)
+  const exams = await fetchAllInChunks<StudentTextbookExam>(stIds, (chunk, from, to) =>
+    supabase
+      .from('student_textbook_exams')
+      .select('*')
+      .in('student_textbook_id', chunk)
+      .order('exam_date', { ascending: true })
+      .order('id', { ascending: true })
+      .range(from, to)
   ).catch((e) => {
     throw new Error(`テスト設定の取得に失敗しました: ${e.message}`);
   });
 
   const examTypeNames = new Map<string, string>();
-  const examTypeIds = Array.from(new Set(exams.map((e) => e.exam_type_id).filter((id): id is string => Boolean(id))));
+  const examTypeIds = Array.from(
+    new Set(exams.map((e) => e.exam_type_id).filter((id): id is string => Boolean(id)))
+  );
   if (examTypeIds.length > 0) {
     const { data: examTypes } = await supabase
       .from('exam_types')
@@ -101,15 +102,13 @@ export async function getStudentTextbooksExamsBySchool(
   const settingsByStId = new Map<string, StudentTextbookSetting | null>();
   // stIds は教室横断で 1000 を超えうる。settings は概ね 1 テキスト 1 件だが、念のため
   // id チャンク分割＋チャンク内ページングの fetchAllInChunks で安全に取得する。
-  const settings = await fetchAllInChunks<StudentTextbookSetting>(
-    stIds,
-    (chunk, from, to) =>
-      supabase
-        .from('student_textbook_settings')
-        .select('*')
-        .in('student_textbook_id', chunk)
-        .order('id', { ascending: true })
-        .range(from, to)
+  const settings = await fetchAllInChunks<StudentTextbookSetting>(stIds, (chunk, from, to) =>
+    supabase
+      .from('student_textbook_settings')
+      .select('*')
+      .in('student_textbook_id', chunk)
+      .order('id', { ascending: true })
+      .range(from, to)
   ).catch(() => []);
   // O(1)ルックアップ用Mapを事前構築してO(n²)→O(n)に改善
   const settingsMap = new Map<string, StudentTextbookSetting>(
@@ -122,7 +121,7 @@ export async function getStudentTextbooksExamsBySchool(
   const result: StudentTextbookWithDetails[] = stList.map((st) => ({
     ...st,
     settings: settingsByStId.get(st.id) || null,
-    exams: (examsByStId.get(st.id) || []),
+    exams: examsByStId.get(st.id) || [],
   }));
 
   const byStudent = new Map<string, StudentTextbookWithDetails[]>();
@@ -253,10 +252,7 @@ export async function updateStudentTextbook(
  * 生徒×テキストの紐付けを解除
  */
 export async function deleteStudentTextbook(id: string): Promise<void> {
-  const { error } = await supabase
-    .from('student_textbooks')
-    .delete()
-    .eq('id', id);
+  const { error } = await supabase.from('student_textbooks').delete().eq('id', id);
 
   if (error) {
     throw new Error(`生徒テキストの削除に失敗しました: ${error.message}`);
@@ -379,10 +375,7 @@ export async function updateStudentTextbookExam(
  * テスト設定を削除
  */
 export async function deleteStudentTextbookExam(id: string): Promise<void> {
-  const { error } = await supabase
-    .from('student_textbook_exams')
-    .delete()
-    .eq('id', id);
+  const { error } = await supabase.from('student_textbook_exams').delete().eq('id', id);
 
   if (error) {
     throw new Error(`テスト設定の削除に失敗しました: ${error.message}`);
@@ -416,11 +409,13 @@ export async function getStudentProgress(
   // 進行記録を取得（exam_range_exam_type, lessons をJOIN）
   const { data: progressData, error: progressError } = await supabase
     .from('student_progress')
-    .select(`
+    .select(
+      `
       *,
       lessons:student_progress_lessons(*),
       exam_range_exam_type:exam_types(*)
-    `)
+    `
+    )
     .eq('student_textbook_id', studentTextbookId);
 
   if (progressError) {
@@ -449,12 +444,9 @@ export async function upsertStudentProgress(
 ): Promise<StudentProgress> {
   const { data, error } = await supabase
     .from('student_progress')
-    .upsert(
-      progress,
-      {
-        onConflict: 'student_textbook_id,curriculum_item_id',
-      }
-    )
+    .upsert(progress, {
+      onConflict: 'student_textbook_id,curriculum_item_id',
+    })
     .select()
     .single();
 
@@ -490,10 +482,7 @@ export async function updateStudentProgress(
  * 進行記録を削除
  */
 export async function deleteStudentProgress(id: string): Promise<void> {
-  const { error } = await supabase
-    .from('student_progress')
-    .delete()
-    .eq('id', id);
+  const { error } = await supabase.from('student_progress').delete().eq('id', id);
 
   if (error) {
     throw new Error(`進行記録の削除に失敗しました: ${error.message}`);
@@ -548,10 +537,7 @@ export async function upsertStudentProgressLesson(
  * 指導日を削除
  */
 export async function deleteStudentProgressLesson(id: string): Promise<void> {
-  const { error } = await supabase
-    .from('student_progress_lessons')
-    .delete()
-    .eq('id', id);
+  const { error } = await supabase.from('student_progress_lessons').delete().eq('id', id);
 
   if (error) {
     throw new Error(`指導日の削除に失敗しました: ${error.message}`);
@@ -577,7 +563,7 @@ export async function getNextGroupNumber(studentTextbookId: string): Promise<num
   if (error) {
     throw new Error(`グループ番号の取得に失敗しました: ${error.message}`);
   }
-  
+
   const maxGroup = data?.[0]?.group_number ?? 0;
   return maxGroup + 1;
 }
@@ -598,16 +584,17 @@ export async function groupProgressItems(
 
   // 各単元の進行データを更新（なければ作成）
   for (const curriculumItemId of curriculumItemIds) {
-    const { error } = await supabase
-      .from('student_progress')
-      .upsert({
+    const { error } = await supabase.from('student_progress').upsert(
+      {
         student_textbook_id: studentTextbookId,
         curriculum_item_id: curriculumItemId,
         group_number: groupNumber,
         updated_at: new Date().toISOString(),
-      }, {
+      },
+      {
         onConflict: 'student_textbook_id,curriculum_item_id',
-      });
+      }
+    );
 
     if (error) {
       throw new Error(`グループ化に失敗しました: ${error.message}`);
@@ -624,7 +611,7 @@ export async function ungroupProgressItems(
 ): Promise<void> {
   const { error } = await supabase
     .from('student_progress')
-    .update({ 
+    .update({
       group_number: null,
       updated_at: new Date().toISOString(),
     })

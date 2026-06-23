@@ -41,10 +41,7 @@ import {
   sendInquiryMail,
 } from '@/lib/api/inquiryMail';
 import { getSchools } from '@/lib/api/schools';
-import {
-  computeMailCandidates,
-  type MailCandidate,
-} from '@/lib/utils/inquiryMailCandidates';
+import { computeMailCandidates, type MailCandidate } from '@/lib/utils/inquiryMailCandidates';
 import type {
   InquirySchoolSettings,
   Inquiry,
@@ -91,7 +88,8 @@ export default function InquiryMailPage() {
   const { profile, getSelectedSchoolIds, selectedSchoolId } = useAuth();
 
   // ロールガード: 教室長以上
-  const isAdmin = profile?.role === 'admin' || profile?.role === 'owner' || profile?.role === 'manager';
+  const isAdmin =
+    profile?.role === 'admin' || profile?.role === 'owner' || profile?.role === 'manager';
 
   const [activeTab, setActiveTab] = useState<TabKey>('candidates');
 
@@ -109,7 +107,9 @@ export default function InquiryMailPage() {
   // ---- 送信候補タブ: 選択状態・編集オーバーライド ----
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
   // 候補ごとに編集した件名・本文（差し込み済みテキスト）。一括送信にも反映する。
-  const [overrides, setOverrides] = useState<Map<string, { subject: string; body: string }>>(new Map());
+  const [overrides, setOverrides] = useState<Map<string, { subject: string; body: string }>>(
+    new Map()
+  );
   // 編集モーダル
   const [editTarget, setEditTarget] = useState<EditTarget | null>(null);
 
@@ -318,7 +318,13 @@ export default function InquiryMailPage() {
       .filter((c) => selectedKeys.has(candidateKey(c)))
       .map((c) => {
         const { subject, body } = renderCandidate(c);
-        return { inquiry: c.inquiry, subject, body, templateId: c.template.id, label: toName(c.inquiry) };
+        return {
+          inquiry: c.inquiry,
+          subject,
+          body,
+          templateId: c.template.id,
+          label: toName(c.inquiry),
+        };
       });
     if (targets.length > 0) setPendingSend(targets);
   }
@@ -372,7 +378,8 @@ export default function InquiryMailPage() {
       if (!hasEmail(q)) return false;
       if (recipientStatus !== 'all' && q.status !== recipientStatus) return false;
       if (kw) {
-        const hay = `${q.student_name ?? ''} ${q.guardian_name ?? ''} ${q.email ?? ''} ${q.phone ?? ''}`.toLowerCase();
+        const hay =
+          `${q.student_name ?? ''} ${q.guardian_name ?? ''} ${q.email ?? ''} ${q.phone ?? ''}`.toLowerCase();
         if (!hay.includes(kw)) return false;
       }
       return true;
@@ -444,7 +451,10 @@ export default function InquiryMailPage() {
         });
         success++;
       } catch (err) {
-        errors.push({ label: t.label, message: getUserErrorMessage(err, 'メール送信に失敗しました') });
+        errors.push({
+          label: t.label,
+          message: getUserErrorMessage(err, 'メール送信に失敗しました'),
+        });
       }
       // 最後の1件は待機不要
       if (i < targets.length - 1) {
@@ -495,10 +505,18 @@ export default function InquiryMailPage() {
     if (first) return renderForInquiry(first, composeSubject, composeBody);
     return {
       subject: renderTemplate(composeSubject, {
-        保護者: '山田 花子', 生徒: '山田 太郎', 教室名: 'スクールIE○○校', 教室電話: '000-0000-0000', 署名: '担当',
+        保護者: '山田 花子',
+        生徒: '山田 太郎',
+        教室名: 'スクールIE○○校',
+        教室電話: '000-0000-0000',
+        署名: '担当',
       }),
       body: renderTemplate(composeBody, {
-        保護者: '山田 花子', 生徒: '山田 太郎', 教室名: 'スクールIE○○校', 教室電話: '000-0000-0000', 署名: '担当',
+        保護者: '山田 花子',
+        生徒: '山田 太郎',
+        教室名: 'スクールIE○○校',
+        教室電話: '000-0000-0000',
+        署名: '担当',
       }),
     };
   })();
@@ -554,11 +572,15 @@ export default function InquiryMailPage() {
 
       {/* 送信結果バナー（タブ共通） */}
       {sendResult && (
-        <div className={`mb-4 p-4 rounded-lg border ${sendResult.failed === 0 ? 'bg-green-50 border-green-300' : 'bg-yellow-50 border-yellow-300'}`}>
+        <div
+          className={`mb-4 p-4 rounded-lg border ${sendResult.failed === 0 ? 'bg-green-50 border-green-300' : 'bg-yellow-50 border-yellow-300'}`}
+        >
           <div className="flex items-center gap-2 mb-2">
-            {sendResult.failed === 0
-              ? <CheckCircle className="w-4 h-4 text-green-600" />
-              : <AlertCircle className="w-4 h-4 text-yellow-600" />}
+            {sendResult.failed === 0 ? (
+              <CheckCircle className="w-4 h-4 text-green-600" />
+            ) : (
+              <AlertCircle className="w-4 h-4 text-yellow-600" />
+            )}
             <span className="text-sm font-medium text-text-heading">
               送信完了: 成功 {sendResult.success}件 / 失敗 {sendResult.failed}件
             </span>
@@ -566,7 +588,9 @@ export default function InquiryMailPage() {
           {sendResult.errors.length > 0 && (
             <ul className="mt-2 space-y-1 text-xs text-danger">
               {sendResult.errors.map((e, i) => (
-                <li key={i}>{e.label}: {e.message}</li>
+                <li key={i}>
+                  {e.label}: {e.message}
+                </li>
               ))}
             </ul>
           )}
@@ -634,12 +658,24 @@ export default function InquiryMailPage() {
                         aria-label="全て選択"
                       />
                     </th>
-                    <th className="border border-border px-3 py-2.5 text-left font-medium text-text-heading">宛先名</th>
-                    <th className="border border-border px-3 py-2.5 text-left font-medium text-text-heading">教室</th>
-                    <th className="border border-border px-3 py-2.5 text-left font-medium text-text-heading">テンプレート</th>
-                    <th className="border border-border px-3 py-2.5 text-center font-medium text-text-heading w-24">経過日数</th>
-                    <th className="border border-border px-3 py-2.5 text-left font-medium text-text-heading">メールアドレス</th>
-                    <th className="border border-border px-3 py-2.5 text-center font-medium text-text-heading w-24">確認・編集</th>
+                    <th className="border border-border px-3 py-2.5 text-left font-medium text-text-heading">
+                      宛先名
+                    </th>
+                    <th className="border border-border px-3 py-2.5 text-left font-medium text-text-heading">
+                      教室
+                    </th>
+                    <th className="border border-border px-3 py-2.5 text-left font-medium text-text-heading">
+                      テンプレート
+                    </th>
+                    <th className="border border-border px-3 py-2.5 text-center font-medium text-text-heading w-24">
+                      経過日数
+                    </th>
+                    <th className="border border-border px-3 py-2.5 text-left font-medium text-text-heading">
+                      メールアドレス
+                    </th>
+                    <th className="border border-border px-3 py-2.5 text-center font-medium text-text-heading w-24">
+                      確認・編集
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -647,7 +683,10 @@ export default function InquiryMailPage() {
                     const key = candidateKey(c);
                     const edited = overrides.has(key);
                     return (
-                      <tr key={key} className="hover:bg-surface-hover transition-colors duration-100">
+                      <tr
+                        key={key}
+                        className="hover:bg-surface-hover transition-colors duration-100"
+                      >
                         <td className="border border-border px-3 py-2.5 text-center">
                           <input
                             type="checkbox"
@@ -669,7 +708,9 @@ export default function InquiryMailPage() {
                         </td>
                         <td className="border border-border px-3 py-2.5 text-text-body">
                           <span>{c.template.name}</span>
-                          <span className="ml-1.5 text-xs text-text-muted">({c.template.trigger_days}日後)</span>
+                          <span className="ml-1.5 text-xs text-text-muted">
+                            ({c.template.trigger_days}日後)
+                          </span>
                         </td>
                         <td className="border border-border px-3 py-2.5 text-center text-text-body">
                           {c.daysSince}日
@@ -708,7 +749,9 @@ export default function InquiryMailPage() {
 
             {/* テンプレート選択 */}
             <div className="mb-3">
-              <label className="block text-xs font-medium text-text-heading mb-1">テンプレートを読み込む</label>
+              <label className="block text-xs font-medium text-text-heading mb-1">
+                テンプレートを読み込む
+              </label>
               <select
                 value={composeTemplateId}
                 onChange={(e) => applyComposeTemplate(e.target.value)}
@@ -717,7 +760,8 @@ export default function InquiryMailPage() {
                 <option value="">テンプレートなし（自由入力）</option>
                 {templates.map((t) => (
                   <option key={t.id} value={t.id}>
-                    {t.name}{t.school_id ? '' : '（共通）'}
+                    {t.name}
+                    {t.school_id ? '' : '（共通）'}
                   </option>
                 ))}
               </select>
@@ -725,7 +769,9 @@ export default function InquiryMailPage() {
 
             {/* 変数チップ */}
             <div className="mb-3">
-              <p className="text-xs text-text-muted mb-1.5">変数（クリックで挿入。送信時に宛先ごとに置換されます）</p>
+              <p className="text-xs text-text-muted mb-1.5">
+                変数（クリックで挿入。送信時に宛先ごとに置換されます）
+              </p>
               <div className="flex flex-wrap gap-2">
                 {VAR_CHIPS.map((chip) => (
                   <button
@@ -748,7 +794,9 @@ export default function InquiryMailPage() {
                 type="text"
                 value={composeSubject}
                 onChange={(e) => setComposeSubject(e.target.value)}
-                onFocus={() => { lastComposeField.current = 'subject'; }}
+                onFocus={() => {
+                  lastComposeField.current = 'subject';
+                }}
                 placeholder="例: 体験授業のご案内（{教室名}）"
                 className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary"
               />
@@ -761,7 +809,9 @@ export default function InquiryMailPage() {
                 ref={composeBodyRef}
                 value={composeBody}
                 onChange={(e) => setComposeBody(e.target.value)}
-                onFocus={() => { lastComposeField.current = 'body'; }}
+                onFocus={() => {
+                  lastComposeField.current = 'body';
+                }}
                 rows={10}
                 placeholder="{保護者} 様&#10;&#10;お問い合わせいただきありがとうございます。"
                 className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary resize-none"
@@ -772,13 +822,18 @@ export default function InquiryMailPage() {
             {(composeSubject || composeBody) && (
               <div className="border border-border rounded-lg p-3 bg-surface-hover">
                 <p className="text-xs font-medium text-text-muted mb-2">
-                  プレビュー（{selectedRecipientIds.size > 0 ? '先頭の宛先で置換' : 'サンプルで置換'}）
+                  プレビュー（
+                  {selectedRecipientIds.size > 0 ? '先頭の宛先で置換' : 'サンプルで置換'}）
                 </p>
                 {composePreview.subject && (
-                  <p className="text-sm font-medium text-text-heading mb-2 break-all">件名: {composePreview.subject}</p>
+                  <p className="text-sm font-medium text-text-heading mb-2 break-all">
+                    件名: {composePreview.subject}
+                  </p>
                 )}
                 {composePreview.body && (
-                  <p className="text-sm text-text-body whitespace-pre-wrap">{composePreview.body}</p>
+                  <p className="text-sm text-text-body whitespace-pre-wrap">
+                    {composePreview.body}
+                  </p>
                 )}
               </div>
             )}
@@ -809,7 +864,9 @@ export default function InquiryMailPage() {
                 className="px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary shrink-0"
               >
                 {STATUS_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>{o.label}</option>
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
                 ))}
               </select>
             </div>
@@ -852,9 +909,13 @@ export default function InquiryMailPage() {
                           <span className="font-medium text-text-heading text-sm truncate">
                             {q.student_name || q.guardian_name || 'お客様'}
                           </span>
-                          {q.grade && <span className="text-xs text-text-muted shrink-0">{q.grade}</span>}
+                          {q.grade && (
+                            <span className="text-xs text-text-muted shrink-0">{q.grade}</span>
+                          )}
                           {sc && (
-                            <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-medium shrink-0 ${sc.className}`}>
+                            <span
+                              className={`px-1.5 py-0.5 rounded-full text-[10px] font-medium shrink-0 ${sc.className}`}
+                            >
                               {sc.label}
                             </span>
                           )}
@@ -909,7 +970,11 @@ export default function InquiryMailPage() {
           >
             <div className="flex items-center justify-between px-6 py-4 border-b border-border">
               <h3 className="text-base font-bold text-text-heading">メールの確認・編集</h3>
-              <button type="button" onClick={() => setEditTarget(null)} className="text-text-muted hover:text-text-body transition-colors duration-150">
+              <button
+                type="button"
+                onClick={() => setEditTarget(null)}
+                className="text-text-muted hover:text-text-body transition-colors duration-150"
+              >
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -922,7 +987,9 @@ export default function InquiryMailPage() {
               </div>
               <div>
                 <span className="text-text-muted w-20 inline-block">宛先</span>
-                <span className="text-text-body">{editTarget.toName}（{editTarget.toEmail}）</span>
+                <span className="text-text-body">
+                  {editTarget.toName}（{editTarget.toEmail}）
+                </span>
               </div>
             </div>
 
@@ -965,7 +1032,12 @@ export default function InquiryMailPage() {
                 <Button variant="outline" size="sm" onClick={saveOverride}>
                   編集を保存
                 </Button>
-                <Button variant="primary" size="sm" onClick={sendSingleFromEdit} disabled={isSending}>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={sendSingleFromEdit}
+                  disabled={isSending}
+                >
                   <Send className="w-4 h-4 mr-1.5" />
                   この1件を送信
                 </Button>
@@ -989,7 +1061,11 @@ export default function InquiryMailPage() {
           >
             <div className="flex items-center justify-between px-6 py-4 border-b border-border">
               <h3 className="text-base font-bold text-text-heading">送信確認</h3>
-              <button type="button" onClick={() => setPendingSend(null)} className="text-text-muted hover:text-text-body transition-colors duration-150">
+              <button
+                type="button"
+                onClick={() => setPendingSend(null)}
+                className="text-text-muted hover:text-text-body transition-colors duration-150"
+              >
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -1000,7 +1076,9 @@ export default function InquiryMailPage() {
               </p>
             </div>
             <div className="px-6 pb-5 flex justify-end gap-2">
-              <Button variant="outline" size="sm" onClick={() => setPendingSend(null)}>キャンセル</Button>
+              <Button variant="outline" size="sm" onClick={() => setPendingSend(null)}>
+                キャンセル
+              </Button>
               <Button variant="primary" size="sm" onClick={executeSend}>
                 <Send className="w-4 h-4 mr-1.5" />
                 送信する

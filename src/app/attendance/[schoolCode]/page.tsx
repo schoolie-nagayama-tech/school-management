@@ -9,12 +9,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { AppHeader } from '@/components/layout/AppHeader';
 import { getSchoolByCode } from '@/lib/api/schools';
 import { getTeachersWithAttendance } from '@/lib/api/attendance';
-import {
-  getCurrentYearMonth,
-  getPrevMonth,
-  getNextMonth,
-  formatYearMonth,
-} from '@/lib/utils/date';
+import { getCurrentYearMonth, getPrevMonth, getNextMonth, formatYearMonth } from '@/lib/utils/date';
 import { ATTENDANCE_STATUS_LABELS, ATTENDANCE_STATUS_COLORS } from '@/types/attendance';
 
 interface TeacherWithAttendance {
@@ -40,7 +35,7 @@ export default function AttendancePortalPage() {
     async function fetchData() {
       setIsLoading(true);
       setError(null);
-      
+
       try {
         const schoolData = await getSchoolByCode(schoolCode);
         if (!schoolData) {
@@ -66,7 +61,10 @@ export default function AttendancePortalPage() {
   };
 
   const getStatusColor = (status: string) => {
-    return ATTENDANCE_STATUS_COLORS[status as keyof typeof ATTENDANCE_STATUS_COLORS] || 'bg-gray-100 text-gray-800';
+    return (
+      ATTENDANCE_STATUS_COLORS[status as keyof typeof ATTENDANCE_STATUS_COLORS] ||
+      'bg-gray-100 text-gray-800'
+    );
   };
 
   const getStatusLabel = (status: string) => {

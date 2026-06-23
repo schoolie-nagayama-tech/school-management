@@ -23,7 +23,8 @@ export function BadgeProgress({ earned, total, rankCounts }: BadgeProgressProps)
           />
         </div>
         <span className="text-sm font-bold text-gray-700 tabular-nums whitespace-nowrap">
-          {earned}<span className="text-gray-400 font-normal">/{total}</span>
+          {earned}
+          <span className="text-gray-400 font-normal">/{total}</span>
         </span>
       </div>
 

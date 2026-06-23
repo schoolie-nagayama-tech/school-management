@@ -28,16 +28,12 @@ export function SoudanResponseDetailModal({
     <Modal isOpen={isOpen} onClose={onClose} title="回答詳細" size="md">
       <div className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-[#1f2937] mb-1">
-            回答日時
-          </label>
+          <label className="block text-sm font-medium text-[#1f2937] mb-1">回答日時</label>
           <p className="text-sm text-[#4b5563]">{formatDate(response.created_at)}</p>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-[#1f2937] mb-1">
-            生徒名
-          </label>
+          <label className="block text-sm font-medium text-[#1f2937] mb-1">生徒名</label>
           <p className="text-sm text-[#4b5563]">
             {response.linked_student
               ? `${response.linked_student.last_name} ${response.linked_student.first_name}`
@@ -46,40 +42,31 @@ export function SoudanResponseDetailModal({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-[#1f2937] mb-1">
-            学年
-          </label>
+          <label className="block text-sm font-medium text-[#1f2937] mb-1">学年</label>
           <p className="text-sm text-[#4b5563]">
             {response.response_data.grade
-              ? SOUDAN_GRADE_NUMBER_TO_NAME[response.response_data.grade] || response.response_data.grade
+              ? SOUDAN_GRADE_NUMBER_TO_NAME[response.response_data.grade] ||
+                response.response_data.grade
               : response.grade
-              ? SOUDAN_GRADE_NUMBER_TO_NAME[response.grade] || response.grade
-              : '-'}
+                ? SOUDAN_GRADE_NUMBER_TO_NAME[response.grade] || response.grade
+                : '-'}
           </p>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-[#1f2937] mb-1">
-            メールアドレス
-          </label>
+          <label className="block text-sm font-medium text-[#1f2937] mb-1">メールアドレス</label>
           <p className="text-sm text-[#4b5563]">
             {response.response_data.email || response.email || '-'}
           </p>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-[#1f2937] mb-1">
-            電話番号
-          </label>
-          <p className="text-sm text-[#4b5563]">
-            {response.response_data.phone || '-'}
-          </p>
+          <label className="block text-sm font-medium text-[#1f2937] mb-1">電話番号</label>
+          <p className="text-sm text-[#4b5563]">{response.response_data.phone || '-'}</p>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-[#1f2937] mb-1">
-            相談区分
-          </label>
+          <label className="block text-sm font-medium text-[#1f2937] mb-1">相談区分</label>
           <p className="text-sm text-[#4b5563]">
             {response.response_data.categories?.length
               ? response.response_data.categories.join('、')
@@ -88,59 +75,51 @@ export function SoudanResponseDetailModal({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-[#1f2937] mb-1">
-            相談内容
-          </label>
+          <label className="block text-sm font-medium text-[#1f2937] mb-1">相談内容</label>
           <p className="text-sm text-[#4b5563] whitespace-pre-wrap">
             {response.response_data.content}
           </p>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-[#1f2937] mb-1">
-            対応状況
-          </label>
+          <label className="block text-sm font-medium text-[#1f2937] mb-1">対応状況</label>
           <p className="text-sm text-[#4b5563]">
             {response.status_checks?.handled ? '対応済み' : '未対応'}
           </p>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-[#1f2937] mb-1">
-            紐付け状態
-          </label>
+          <label className="block text-sm font-medium text-[#1f2937] mb-1">紐付け状態</label>
           <div className="flex items-center gap-3">
             <p className="text-sm text-[#4b5563]">
               {response.linked_student_id
                 ? `紐付け済み（${response.linked_student ? `${response.linked_student.last_name} ${response.linked_student.first_name}` : ''}）`
                 : '未紐付け'}
             </p>
-            {response.linked_student_id ? (
-              onUnlink && (
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => {
-                    onUnlink(response.id);
-                    onClose();
-                  }}
-                >
-                  紐付け解除
-                </Button>
-              )
-            ) : (
-              onLink && (
-                <Button
-                  size="sm"
-                  onClick={() => {
-                    onLink(response);
-                    onClose();
-                  }}
-                >
-                  生徒に紐付け
-                </Button>
-              )
-            )}
+            {response.linked_student_id
+              ? onUnlink && (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => {
+                      onUnlink(response.id);
+                      onClose();
+                    }}
+                  >
+                    紐付け解除
+                  </Button>
+                )
+              : onLink && (
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      onLink(response);
+                      onClose();
+                    }}
+                  >
+                    生徒に紐付け
+                  </Button>
+                )}
           </div>
         </div>
       </div>

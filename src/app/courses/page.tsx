@@ -3,11 +3,28 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { AlertCircle, ArrowUpDown, CheckSquare, ChevronRight, Copy, FileText, Plus, Search, Square, Trash2, X } from 'lucide-react';
+import {
+  AlertCircle,
+  ArrowUpDown,
+  CheckSquare,
+  ChevronRight,
+  Copy,
+  FileText,
+  Plus,
+  Search,
+  Square,
+  Trash2,
+  X,
+} from 'lucide-react';
 import { ContextHelp } from '@/components/help/ContextHelp';
 import { AdminLayout } from '@/components/layouts';
 import { Button, Loading, InlineLoading } from '@/components/ui';
-import { getCachedSeasonalCourses, createSeasonalCourse, deployCourseToSchools, deleteSeasonalCourse } from '@/lib/api/seasonalCourses';
+import {
+  getCachedSeasonalCourses,
+  createSeasonalCourse,
+  deployCourseToSchools,
+  deleteSeasonalCourse,
+} from '@/lib/api/seasonalCourses';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRequirePermission } from '@/hooks/usePermissions';
 import AccessDenied from '@/components/AccessDenied';
@@ -34,7 +51,6 @@ const SORT_OPTIONS: { key: SortKey; label: string }[] = [
   { key: 'application', label: '適用数' },
 ];
 
-
 const NAV_GRADES = [
   { key: 7, label: '中1' },
   { key: 8, label: '中2' },
@@ -45,12 +61,12 @@ const NAV_GRADES = [
 ];
 
 const SUBJECT_BADGE_COLORS: Record<string, { bg: string; text: string }> = {
-  '英語': { bg: 'bg-blue-50', text: 'text-blue-700' },
-  '数学': { bg: 'bg-red-50', text: 'text-red-700' },
-  '算数': { bg: 'bg-red-50', text: 'text-red-700' },
-  '国語': { bg: 'bg-green-50', text: 'text-green-700' },
-  '理科': { bg: 'bg-amber-50', text: 'text-amber-700' },
-  '社会': { bg: 'bg-purple-50', text: 'text-purple-700' },
+  英語: { bg: 'bg-blue-50', text: 'text-blue-700' },
+  数学: { bg: 'bg-red-50', text: 'text-red-700' },
+  算数: { bg: 'bg-red-50', text: 'text-red-700' },
+  国語: { bg: 'bg-green-50', text: 'text-green-700' },
+  理科: { bg: 'bg-amber-50', text: 'text-amber-700' },
+  社会: { bg: 'bg-purple-50', text: 'text-purple-700' },
 };
 const DEFAULT_BADGE_COLOR = { bg: 'bg-gray-100', text: 'text-gray-600' };
 
@@ -73,8 +89,8 @@ export default function CoursesPage() {
 
   // 検索・フィルタ（URLパラメータから初期化）
   const [query, setQuery] = useState(() => searchParams.get('q') || '');
-  const [filterSeason, setFilterSeason] = useState<SeasonType | ''>(() =>
-    (searchParams.get('season') as SeasonType) || ''
+  const [filterSeason, setFilterSeason] = useState<SeasonType | ''>(
+    () => (searchParams.get('season') as SeasonType) || ''
   );
   const [filterGrade, setFilterGrade] = useState<number | ''>(() => {
     const g = searchParams.get('grade');
@@ -83,8 +99,8 @@ export default function CoursesPage() {
   const [filterSubject, setFilterSubject] = useState(() => searchParams.get('subject') || '');
 
   // ソート（URLパラメータから初期化）
-  const [sortKey, setSortKey] = useState<SortKey>(() =>
-    (searchParams.get('sort') as SortKey) || 'grade'
+  const [sortKey, setSortKey] = useState<SortKey>(
+    () => (searchParams.get('sort') as SortKey) || 'grade'
   );
   const [sortAsc, setSortAsc] = useState(() => searchParams.get('asc') !== '0');
 
@@ -108,24 +124,27 @@ export default function CoursesPage() {
   const [newCourseComment, setNewCourseComment] = useState('');
   const [applyToAllSchools, setApplyToAllSchools] = useState(false);
 
-  const fetchCourses = useCallback(async (skipCache = false) => {
-    setIsLoading(true);
-    setErrorMessage('');
-    try {
-      if (!localSchoolId) {
-        setCourses([]);
-        return;
+  const fetchCourses = useCallback(
+    async (skipCache = false) => {
+      setIsLoading(true);
+      setErrorMessage('');
+      try {
+        if (!localSchoolId) {
+          setCourses([]);
+          return;
+        }
+        if (skipCache) getCachedSeasonalCourses.invalidate();
+        const data = await getCachedSeasonalCourses(localSchoolId);
+        setCourses(data);
+      } catch (error) {
+        console.error('Error fetching courses:', error);
+        setErrorMessage(getUserErrorMessage(error, '講習一覧の取得に失敗しました'));
+      } finally {
+        setIsLoading(false);
       }
-      if (skipCache) getCachedSeasonalCourses.invalidate();
-      const data = await getCachedSeasonalCourses(localSchoolId);
-      setCourses(data);
-    } catch (error) {
-      console.error('Error fetching courses:', error);
-      setErrorMessage(getUserErrorMessage(error, '講習一覧の取得に失敗しました'));
-    } finally {
-      setIsLoading(false);
-    }
-  }, [localSchoolId]);
+    },
+    [localSchoolId]
+  );
 
   useEffect(() => {
     if (localSchoolId) {
@@ -215,9 +234,7 @@ export default function CoursesPage() {
     }
 
     if (filterSubject) {
-      list = list.filter((c) =>
-        c.textbooks?.some((t) => t.textbook?.subject === filterSubject)
-      );
+      list = list.filter((c) => c.textbooks?.some((t) => t.textbook?.subject === filterSubject));
     }
 
     return [...list].sort((a, b) => {
@@ -297,9 +314,12 @@ export default function CoursesPage() {
       setErrorMessage('展開先の教室がありません');
       return;
     }
-    if (!window.confirm(
-      `選択した${count}件の講習を他の${targetCount}教室に展開します。\n\n同名・同季節の講習が既にある教室はスキップされます。よろしいですか？`
-    )) return;
+    if (
+      !window.confirm(
+        `選択した${count}件の講習を他の${targetCount}教室に展開します。\n\n同名・同季節の講習が既にある教室はスキップされます。よろしいですか？`
+      )
+    )
+      return;
 
     setIsDeploying(true);
     setErrorMessage('');
@@ -570,7 +590,8 @@ export default function CoursesPage() {
                       : 'text-text-faint hover:text-text-muted'
                   }`}
                 >
-                  {label}{sortKey === key && (sortAsc ? '↑' : '↓')}
+                  {label}
+                  {sortKey === key && (sortAsc ? '↑' : '↓')}
                 </button>
               ))}
             </div>
@@ -627,10 +648,11 @@ export default function CoursesPage() {
             onClick={toggleSelectAll}
             className="text-xs text-text-muted hover:text-text-heading transition-colors flex items-center gap-1.5"
           >
-            {selected.size === filteredSorted.length && filteredSorted.length > 0
-              ? <CheckSquare className="w-3.5 h-3.5 text-info" />
-              : <Square className="w-3.5 h-3.5" />
-            }
+            {selected.size === filteredSorted.length && filteredSorted.length > 0 ? (
+              <CheckSquare className="w-3.5 h-3.5 text-info" />
+            ) : (
+              <Square className="w-3.5 h-3.5" />
+            )}
             {hasSelection ? `${selected.size}件選択` : '一括選択'}
           </button>
           {hasSelection ? (
@@ -660,9 +682,7 @@ export default function CoursesPage() {
           ) : (
             <>
               <div className="flex-1" />
-              <span className="text-[11px] text-text-faint">
-                チェックして全教室に展開
-              </span>
+              <span className="text-[11px] text-text-faint">チェックして全教室に展開</span>
             </>
           )}
         </div>
@@ -674,17 +694,12 @@ export default function CoursesPage() {
       ) : courses.length === 0 ? (
         <div className="bg-surface-raised rounded-xl border border-border p-8 text-center">
           <p className="text-text-body mb-4">講習が登録されていません。</p>
-          <Button onClick={() => setIsCreateModalOpen(true)}>
-            最初の講習を作成
-          </Button>
+          <Button onClick={() => setIsCreateModalOpen(true)}>最初の講習を作成</Button>
         </div>
       ) : filteredSorted.length === 0 ? (
         <div className="bg-surface-raised rounded-xl border border-border p-8 text-center">
           <p className="text-sm text-text-muted mb-3">該当する講習が見つかりません</p>
-          <button
-            onClick={clearFilters}
-            className="text-sm text-primary hover:underline"
-          >
+          <button onClick={clearFilters} className="text-sm text-primary hover:underline">
             フィルタを解除
           </button>
         </div>
@@ -702,11 +717,11 @@ export default function CoursesPage() {
                 return (
                   <div
                     key={course.id}
-                    ref={(el) => { if (el) itemRefs.current.set(course.id, el); }}
+                    ref={(el) => {
+                      if (el) itemRefs.current.set(course.id, el);
+                    }}
                     className={`group flex items-start gap-3 transition-colors duration-100 ${
-                      isChecked
-                        ? 'bg-info/5'
-                        : 'hover:bg-surface-hover/50'
+                      isChecked ? 'bg-info/5' : 'hover:bg-surface-hover/50'
                     }`}
                   >
                     {/* チェックボックス */}
@@ -715,10 +730,11 @@ export default function CoursesPage() {
                         onClick={() => toggleSelect(course.id)}
                         className="pl-4 pt-4 text-text-faint hover:text-text-heading transition-colors shrink-0"
                       >
-                        {isChecked
-                          ? <CheckSquare className="w-4 h-4 text-info" />
-                          : <Square className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
-                        }
+                        {isChecked ? (
+                          <CheckSquare className="w-4 h-4 text-info" />
+                        ) : (
+                          <Square className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        )}
                       </button>
                     )}
 
@@ -730,17 +746,26 @@ export default function CoursesPage() {
                       <div className="flex-1 min-w-0">
                         {/* 1行目: 季節 + 教科 + 講習名 */}
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className={`shrink-0 px-2 py-0.5 text-[11px] font-bold rounded ${SEASON_COLORS[course.season]}`}>
+                          <span
+                            className={`shrink-0 px-2 py-0.5 text-[11px] font-bold rounded ${SEASON_COLORS[course.season]}`}
+                          >
                             {SEASON_LABELS[course.season]}
                           </span>
                           {(() => {
-                            const subjects = Array.from(new Set(
-                              course.textbooks?.map((t) => t.textbook?.subject).filter(Boolean) as string[] ?? []
-                            ));
+                            const subjects = Array.from(
+                              new Set(
+                                (course.textbooks
+                                  ?.map((t) => t.textbook?.subject)
+                                  .filter(Boolean) as string[]) ?? []
+                              )
+                            );
                             return subjects.map((s) => {
                               const c = SUBJECT_BADGE_COLORS[s] ?? DEFAULT_BADGE_COLOR;
                               return (
-                                <span key={s} className={`inline-flex px-1.5 py-0.5 text-[10px] font-bold rounded shrink-0 ${c.bg} ${c.text}`}>
+                                <span
+                                  key={s}
+                                  className={`inline-flex px-1.5 py-0.5 text-[10px] font-bold rounded shrink-0 ${c.bg} ${c.text}`}
+                                >
                                   {s}
                                 </span>
                               );
@@ -752,24 +777,34 @@ export default function CoursesPage() {
                         </div>
                         {/* 2行目: 学年 + コマ + 適用 + テキスト名 */}
                         <div className="mt-1 flex items-center gap-1.5 flex-wrap text-xs">
-                          {course.target_grades.length > 0 && course.target_grades.map((g) => (
-                            <span key={g} className="px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 text-[10px] font-medium">
-                              {GRADE_LABELS[g]}
-                            </span>
-                          ))}
+                          {course.target_grades.length > 0 &&
+                            course.target_grades.map((g) => (
+                              <span
+                                key={g}
+                                className="px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 text-[10px] font-medium"
+                              >
+                                {GRADE_LABELS[g]}
+                              </span>
+                            ))}
                           {course.total_koma > 0 && (
                             <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 text-[10px] font-medium tabular-nums">
                               {course.total_koma}コマ
                             </span>
                           )}
                           {(course.application_count || 0) > 0 && (
-                            <span className="px-1.5 py-0.5 rounded bg-blue-50 text-blue-600 text-[10px] font-medium tabular-nums" title="下書きで適用済みの生徒数">
+                            <span
+                              className="px-1.5 py-0.5 rounded bg-blue-50 text-blue-600 text-[10px] font-medium tabular-nums"
+                              title="下書きで適用済みの生徒数"
+                            >
                               下書き {course.application_count}件
                             </span>
                           )}
                           {course.textbooks && course.textbooks.length > 0 && (
                             <span className="text-text-muted truncate">
-                              {course.textbooks.map((t) => t.textbook?.name).filter(Boolean).join('、')}
+                              {course.textbooks
+                                .map((t) => t.textbook?.name)
+                                .filter(Boolean)
+                                .join('、')}
                             </span>
                           )}
                         </div>
@@ -799,7 +834,10 @@ export default function CoursesPage() {
 
           {/* 縦スクロールナビ（学年メモリ付き） */}
           {showScrollNav && (
-            <div className="shrink-0 w-12 flex flex-col items-center py-2 select-none" style={{ maxHeight: 'calc(100vh - 130px)' }}>
+            <div
+              className="shrink-0 w-12 flex flex-col items-center py-2 select-none"
+              style={{ maxHeight: 'calc(100vh - 130px)' }}
+            >
               {/* スクロール位置トラック */}
               <div className="relative flex-1 w-1 bg-border/40 rounded-full">
                 {/* 現在位置インジケータ */}
@@ -870,9 +908,7 @@ export default function CoursesPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-text-heading mb-1">
-                  対象学年
-                </label>
+                <label className="block text-sm font-medium text-text-heading mb-1">対象学年</label>
                 <div className="space-y-2 max-h-48 overflow-y-auto border border-border rounded-lg p-2">
                   {Object.entries(GRADE_LABELS).map(([gradeStr, label]) => {
                     const grade = Number(gradeStr);
@@ -912,9 +948,7 @@ export default function CoursesPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-text-heading mb-1">
-                  コメント
-                </label>
+                <label className="block text-sm font-medium text-text-heading mb-1">コメント</label>
                 <textarea
                   value={newCourseComment}
                   onChange={(e) => setNewCourseComment(e.target.value)}
@@ -958,11 +992,7 @@ export default function CoursesPage() {
                 >
                   キャンセル
                 </Button>
-                <Button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="flex-1"
-                >
+                <Button type="submit" disabled={isSubmitting} className="flex-1">
                   {isSubmitting ? '作成中...' : '作成'}
                 </Button>
               </div>

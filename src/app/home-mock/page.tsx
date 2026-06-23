@@ -21,19 +21,49 @@ import { getRecentUnprocessedResponses } from '@/lib/api/form-responses';
 import { getBulletinPosts } from '@/lib/api/bulletin';
 import type { BulletinPost } from '@/types/bulletin';
 import { getScheduleEntries } from '@/lib/api/schedule';
-import { getFormParticipation, getProposalFunnel, type FormParticipation, type ProposalFunnel } from '@/lib/api/dashboardForms';
+import {
+  getFormParticipation,
+  getProposalFunnel,
+  type FormParticipation,
+  type ProposalFunnel,
+} from '@/lib/api/dashboardForms';
 import { GRADE_LABELS } from '@/types/database';
 import { AdminLayout } from '@/components/layouts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui';
 import {
-  Inbox, CalendarDays, AlertTriangle, Users,
-  FileText, Repeat, Clock, MessageSquare,
-  TrendingUp, TrendingDown, Target, GraduationCap,
-  School, CheckCircle2, ChevronRight, Flag, Circle, CalendarPlus, ClipboardList, Pin,
+  Inbox,
+  CalendarDays,
+  AlertTriangle,
+  Users,
+  FileText,
+  Repeat,
+  Clock,
+  MessageSquare,
+  TrendingUp,
+  TrendingDown,
+  Target,
+  GraduationCap,
+  School,
+  CheckCircle2,
+  ChevronRight,
+  Flag,
+  Circle,
+  CalendarPlus,
+  ClipboardList,
+  Pin,
 } from 'lucide-react';
 import {
-  ResponsiveContainer, LineChart, Line, BarChart, Bar,
-  XAxis, YAxis, CartesianGrid, Tooltip, Legend, Cell,
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  Cell,
 } from 'recharts';
 
 /* ============================================================
@@ -41,7 +71,14 @@ import {
  * ========================================================== */
 
 // タスク種別 → ラベル・アイコン・色（tone は TONE マップのキー）
-const TASK_TYPES: Record<string, { label: string; icon: React.ElementType; tone: 'danger' | 'warning' | 'info' | 'primary' | 'neutral' }> = {
+const TASK_TYPES: Record<
+  string,
+  {
+    label: string;
+    icon: React.ElementType;
+    tone: 'danger' | 'warning' | 'info' | 'primary' | 'neutral';
+  }
+> = {
   apply: { label: '申込', icon: FileText, tone: 'danger' },
   transfer: { label: '振替', icon: Repeat, tone: 'warning' },
   koushu: { label: '講習', icon: CalendarDays, tone: 'info' },
@@ -60,10 +97,42 @@ const DUE_GROUPS = [
 
 // [A] KPI サマリーカード
 const KPIS = [
-  { key: 'pending', label: '未処理の申込', value: 5, unit: '件', icon: Inbox, tone: 'danger' as const, sub: '要さばき' },
-  { key: 'today', label: '本日の授業', value: 24, unit: 'コマ', icon: CalendarDays, tone: 'info' as const, sub: '出欠未入力 6' },
-  { key: 'alert', label: '要対応アラート', value: 7, unit: '件', icon: AlertTriangle, tone: 'warning' as const, sub: '成績・面談' },
-  { key: 'students', label: '在籍生徒数', value: 123, unit: '名', icon: Users, tone: 'primary' as const, sub: '前月比 +3' },
+  {
+    key: 'pending',
+    label: '未処理の申込',
+    value: 5,
+    unit: '件',
+    icon: Inbox,
+    tone: 'danger' as const,
+    sub: '要さばき',
+  },
+  {
+    key: 'today',
+    label: '本日の授業',
+    value: 24,
+    unit: 'コマ',
+    icon: CalendarDays,
+    tone: 'info' as const,
+    sub: '出欠未入力 6',
+  },
+  {
+    key: 'alert',
+    label: '要対応アラート',
+    value: 7,
+    unit: '件',
+    icon: AlertTriangle,
+    tone: 'warning' as const,
+    sub: '成績・面談',
+  },
+  {
+    key: 'students',
+    label: '在籍生徒数',
+    value: 123,
+    unit: '名',
+    icon: Users,
+    tone: 'primary' as const,
+    sub: '前月比 +3',
+  },
 ];
 
 // 在籍数トレンド（今年 vs 昨年）— 昨対比
@@ -100,9 +169,15 @@ const TARGET = { current: 123, target: 130 };
 
 // 学年構成
 const GRADE_DIST = [
-  { grade: '小4', count: 6, cat: 'elem' }, { grade: '小5', count: 9, cat: 'elem' }, { grade: '小6', count: 12, cat: 'elem' },
-  { grade: '中1', count: 18, cat: 'mid' }, { grade: '中2', count: 21, cat: 'mid' }, { grade: '中3', count: 28, cat: 'mid' },
-  { grade: '高1', count: 11, cat: 'high' }, { grade: '高2', count: 9, cat: 'high' }, { grade: '高3', count: 9, cat: 'high' },
+  { grade: '小4', count: 6, cat: 'elem' },
+  { grade: '小5', count: 9, cat: 'elem' },
+  { grade: '小6', count: 12, cat: 'elem' },
+  { grade: '中1', count: 18, cat: 'mid' },
+  { grade: '中2', count: 21, cat: 'mid' },
+  { grade: '中3', count: 28, cat: 'mid' },
+  { grade: '高1', count: 11, cat: 'high' },
+  { grade: '高2', count: 9, cat: 'high' },
+  { grade: '高3', count: 9, cat: 'high' },
 ];
 
 // 通学校別ランキング（上位）
@@ -150,7 +225,13 @@ const TONE: Record<string, { text: string; bg: string; bar: string }> = {
  * ========================================================== */
 
 // セクション見出し
-function SectionLabel({ icon: Icon, children }: { icon: React.ElementType; children: React.ReactNode }) {
+function SectionLabel({
+  icon: Icon,
+  children,
+}: {
+  icon: React.ElementType;
+  children: React.ReactNode;
+}) {
   return (
     <div className="flex items-center gap-2 mt-8 mb-3">
       <Icon className="w-5 h-5 text-text-muted" />
@@ -161,7 +242,19 @@ function SectionLabel({ icon: Icon, children }: { icon: React.ElementType; child
 
 // 小さな統計表示
 // invert=true のときは「上昇が悪い指標」（例：退会率）として矢印の色を反転する
-function MiniStat({ label, value, hint, trend, invert }: { label: string; value: string; hint?: string; trend?: 'up' | 'down'; invert?: boolean }) {
+function MiniStat({
+  label,
+  value,
+  hint,
+  trend,
+  invert,
+}: {
+  label: string;
+  value: string;
+  hint?: string;
+  trend?: 'up' | 'down';
+  invert?: boolean;
+}) {
   const upColor = invert ? 'text-danger' : 'text-success';
   const downColor = invert ? 'text-success' : 'text-danger';
   return (
@@ -183,7 +276,20 @@ function MiniStat({ label, value, hint, trend, invert }: { label: string; value:
  * データが無いブロックは上のダミー定数にフォールバックする。
  * ========================================================== */
 
-const MONTH_LABELS = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
+const MONTH_LABELS = [
+  '1月',
+  '2月',
+  '3月',
+  '4月',
+  '5月',
+  '6月',
+  '7月',
+  '8月',
+  '9月',
+  '10月',
+  '11月',
+  '12月',
+];
 
 // アラートの重要度ソート順と色（danger > warning > info）
 const SEVERITY_RANK: Record<string, number> = { danger: 0, warning: 1, info: 2 };
@@ -209,7 +315,9 @@ interface BuiltMetrics {
 }
 
 function buildMetrics(metrics: MonthlyMetricPoint[], thisYear: number): BuiltMetrics {
-  const actualThis = metrics.filter((m) => m.kind === 'actual' && m.year === thisYear).sort((a, b) => a.month - b.month);
+  const actualThis = metrics
+    .filter((m) => m.kind === 'actual' && m.year === thisYear)
+    .sort((a, b) => a.month - b.month);
   const actualPrev = metrics.filter((m) => m.kind === 'actual' && m.year === thisYear - 1);
   const budgetThis = metrics.filter((m) => m.kind === 'budget' && m.year === thisYear);
 
@@ -230,14 +338,26 @@ function buildMetrics(metrics: MonthlyMetricPoint[], thisYear: number): BuiltMet
   if (last) {
     // 前月末在籍（無ければ 月末−入会+休会 で逆算）
     const prevActive =
-      actualThis.length >= 2 ? actualThis[actualThis.length - 2].activeCount : last.activeCount - last.newCount + last.leaveCount;
+      actualThis.length >= 2
+        ? actualThis[actualThis.length - 2].activeCount
+        : last.activeCount - last.newCount + last.leaveCount;
     const afterNew = prevActive + last.newCount;
     const prevMonthLabel = last.month - 1 >= 1 ? `${last.month - 1}月末` : '前月末';
     waterfall = [
       { name: prevMonthLabel, range: [0, prevActive], delta: String(prevActive), kind: 'total' },
       { name: '入会', range: [prevActive, afterNew], delta: `+${last.newCount}`, kind: 'up' },
-      { name: '休会', range: [afterNew - last.leaveCount, afterNew], delta: `−${last.leaveCount}`, kind: 'down' },
-      { name: `${last.month}月末`, range: [0, last.activeCount], delta: String(last.activeCount), kind: 'total' },
+      {
+        name: '休会',
+        range: [afterNew - last.leaveCount, afterNew],
+        delta: `−${last.leaveCount}`,
+        kind: 'down',
+      },
+      {
+        name: `${last.month}月末`,
+        range: [0, last.activeCount],
+        delta: String(last.activeCount),
+        kind: 'total',
+      },
     ];
 
     // 予実（最新実績月の在籍 vs 同月予算）
@@ -273,7 +393,11 @@ function buildGradeDist(students: EnrichedStudent[]) {
   students.forEach((s) => counts.set(s.grade, (counts.get(s.grade) ?? 0) + 1));
   return Array.from(counts.entries())
     .sort((a, b) => a[0] - b[0])
-    .map(([grade, count]) => ({ grade: GRADE_LABELS[grade] ?? `${grade}`, count, cat: gradeCategory(grade) }));
+    .map(([grade, count]) => ({
+      grade: GRADE_LABELS[grade] ?? `${grade}`,
+      count,
+      cat: gradeCategory(grade),
+    }));
 }
 
 // 通学校別の生徒数（上位5校）
@@ -332,7 +456,13 @@ const DUE_ALERT_TO_TYPE: Record<string, string> = {
 };
 
 const GROUP_RANK: Record<string, number> = { overdue: 0, thisWeek: 1, nextWeek: 2, later: 3 };
-const TASK_TYPE_RANK: Record<string, number> = { apply: 0, transfer: 1, interview: 2, koushu: 3, procedure: 4 };
+const TASK_TYPE_RANK: Record<string, number> = {
+  apply: 0,
+  transfer: 1,
+  interview: 2,
+  koushu: 3,
+  procedure: 4,
+};
 
 function fmtDate(d?: string): string {
   if (!d) return '';
@@ -359,8 +489,13 @@ function buildDueStudents(alertData: StudentAlerts[]): DueStudentRow[] {
         dueText = d.due_date ? fmtDate(d.due_date) : `${overdue}日超過`;
         sortKey = -overdue;
       } else if (until != null) {
-        group = until < 0 ? 'overdue' : until <= 6 ? 'thisWeek' : until <= 13 ? 'nextWeek' : 'later';
-        dueText = d.due_date ? fmtDate(d.due_date) : until < 0 ? `${-until}日超過` : `あと${until}日`;
+        group =
+          until < 0 ? 'overdue' : until <= 6 ? 'thisWeek' : until <= 13 ? 'nextWeek' : 'later';
+        dueText = d.due_date
+          ? fmtDate(d.due_date)
+          : until < 0
+            ? `${-until}日超過`
+            : `あと${until}日`;
         sortKey = until;
       } else {
         group = 'overdue';
@@ -419,7 +554,8 @@ function DetailView() {
       .catch(() => setMetrics([]));
   }, [getSelectedSchoolIds]);
 
-  const real = metrics && metrics.length > 0 ? buildMetrics(metrics, new Date().getFullYear()) : null;
+  const real =
+    metrics && metrics.length > 0 ? buildMetrics(metrics, new Date().getFullYear()) : null;
   const isRealData = !!real;
   const trend = real?.trend ?? ENROLLMENT_TREND;
   const waterfall = real?.waterfall ?? WATERFALL;
@@ -457,7 +593,9 @@ function DetailView() {
 
   // 種別ごと件数（重要度順）。クリックでこの種別に絞り込む
   const typeCountMap = new Map<AlertType, number>();
-  allAlerts.forEach((a) => typeCountMap.set(a.alert_type, (typeCountMap.get(a.alert_type) ?? 0) + 1));
+  allAlerts.forEach((a) =>
+    typeCountMap.set(a.alert_type, (typeCountMap.get(a.alert_type) ?? 0) + 1)
+  );
   const typeSummary = Array.from(typeCountMap.entries())
     .map(([type, count]) => ({ type, count }))
     .sort((a, b) => (TYPE_PRIORITY[a.type] ?? 99) - (TYPE_PRIORITY[b.type] ?? 99));
@@ -508,7 +646,9 @@ function DetailView() {
 
   // 掲示板と本日の授業（単一校APIのため、複数選択時は先頭校を対象）
   const [bulletins, setBulletins] = useState<BulletinPost[] | null>(null);
-  const [todayClasses, setTodayClasses] = useState<{ total: number; unrecorded: number } | null>(null);
+  const [todayClasses, setTodayClasses] = useState<{ total: number; unrecorded: number } | null>(
+    null
+  );
   useEffect(() => {
     const ids = getSelectedSchoolIds();
     if (ids.length === 0) return;
@@ -575,9 +715,13 @@ function DetailView() {
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
             <CardTitle>要対応・期日一覧</CardTitle>
-            <p className="text-xs text-text-muted mt-0.5">期日が来るもの・アラート予兆を網羅。カレンダーにいつ入れるかの判断材料。</p>
+            <p className="text-xs text-text-muted mt-0.5">
+              期日が来るもの・アラート予兆を網羅。カレンダーにいつ入れるかの判断材料。
+            </p>
           </div>
-          <span className="text-sm text-text-muted shrink-0">未対応 <span className="font-bold text-text-heading">{openCount}</span> 件</span>
+          <span className="text-sm text-text-muted shrink-0">
+            未対応 <span className="font-bold text-text-heading">{openCount}</span> 件
+          </span>
         </CardHeader>
         <CardContent className="py-2">
           {dueStudents.length === 0 ? (
@@ -589,15 +733,23 @@ function DetailView() {
               // この期日帯の生徒（未対応を上、対応済みを下）
               const inGroup = dueStudents
                 .filter((s) => s.group === g.key)
-                .sort((a, b) => Number(doneIds.has(a.studentId)) - Number(doneIds.has(b.studentId)));
+                .sort(
+                  (a, b) => Number(doneIds.has(a.studentId)) - Number(doneIds.has(b.studentId))
+                );
               if (inGroup.length === 0) return null;
               const gt = TONE[g.tone];
               return (
                 <div key={g.key} className="py-2">
                   {/* グループ見出し（期日帯） */}
                   <div className="flex items-center gap-2 mb-1">
-                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${gt.bg} ${gt.text}`}>{g.label}</span>
-                    <span className="text-xs text-text-faint">{g.range}・{inGroup.length}名</span>
+                    <span
+                      className={`text-xs font-bold px-2 py-0.5 rounded-full ${gt.bg} ${gt.text}`}
+                    >
+                      {g.label}
+                    </span>
+                    <span className="text-xs text-text-faint">
+                      {g.range}・{inGroup.length}名
+                    </span>
                   </div>
                   {inGroup.map((s) => {
                     const done = doneIds.has(s.studentId);
@@ -616,11 +768,16 @@ function DetailView() {
                         )}
                         {/* 生徒名 + 最緊急の期日 */}
                         <div className="flex items-center gap-2 shrink-0">
-                          <span className={`text-sm font-medium ${done ? 'line-through text-text-faint' : 'text-text-body'}`}>
+                          <span
+                            className={`text-sm font-medium ${done ? 'line-through text-text-faint' : 'text-text-body'}`}
+                          >
                             {s.studentName}
                           </span>
-                          <span className={`flex items-center gap-1 text-xs ${overdue ? 'text-danger font-medium' : 'text-text-faint'}`}>
-                            <Clock className="w-3 h-3" />{s.soonestText}
+                          <span
+                            className={`flex items-center gap-1 text-xs ${overdue ? 'text-danger font-medium' : 'text-text-faint'}`}
+                          >
+                            <Clock className="w-3 h-3" />
+                            {s.soonestText}
                           </span>
                         </div>
                         {/* 種別チップ群（件数つき） */}
@@ -633,7 +790,9 @@ function DetailView() {
                                 key={ty.type}
                                 className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs font-medium ${tn.bg} ${tn.text}`}
                               >
-                                <def.icon className="w-3 h-3" />{def.label}{ty.count > 1 ? ` ${ty.count}` : ''}
+                                <def.icon className="w-3 h-3" />
+                                {def.label}
+                                {ty.count > 1 ? ` ${ty.count}` : ''}
                               </span>
                             );
                           })}
@@ -689,7 +848,9 @@ function DetailView() {
                 </div>
                 <div className="mt-0.5 text-sm text-text-body">{k.label}</div>
                 <div className="text-xs text-text-faint">
-                  {k.key === 'today' && todayClasses ? `出欠未入力 ${todayClasses.unrecorded}` : k.sub}
+                  {k.key === 'today' && todayClasses
+                    ? `出欠未入力 ${todayClasses.unrecorded}`
+                    : k.sub}
                 </div>
               </CardContent>
             </Card>
@@ -700,7 +861,9 @@ function DetailView() {
       {/* [D] 掲示板 / [E] アラート（要対応カードはタスクに一本化したため廃止） */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-2">
         <Card>
-          <CardHeader><CardTitle>連絡掲示板</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle>連絡掲示板</CardTitle>
+          </CardHeader>
           <CardContent className="py-2">
             {bulletins === null ? (
               <div className="py-2 text-sm text-text-muted">読み込み中…</div>
@@ -708,10 +871,15 @@ function DetailView() {
               <div className="py-2 text-sm text-text-muted">連絡はありません</div>
             ) : (
               bulletins.slice(0, 4).map((b) => (
-                <div key={b.id} className="flex items-center gap-2 py-2 border-b border-border-subtle last:border-0">
+                <div
+                  key={b.id}
+                  className="flex items-center gap-2 py-2 border-b border-border-subtle last:border-0"
+                >
                   {b.is_pinned && <Pin className="w-3.5 h-3.5 text-warning shrink-0" />}
                   <span className="flex-1 truncate text-sm text-text-body">{b.title}</span>
-                  <span className="shrink-0 text-xs text-text-faint">{(b.created_at ?? '').slice(5, 10).replace('-', '/')}</span>
+                  <span className="shrink-0 text-xs text-text-faint">
+                    {(b.created_at ?? '').slice(5, 10).replace('-', '/')}
+                  </span>
                 </div>
               ))
             )}
@@ -739,7 +907,9 @@ function DetailView() {
                         type="button"
                         onClick={() => setFilterType(activeF ? null : type)}
                         className={`px-2 py-0.5 rounded-full text-xs font-medium transition-colors ${
-                          activeF ? 'bg-ink text-text-on-primary' : 'bg-surface-hover text-text-body hover:bg-surface-raised'
+                          activeF
+                            ? 'bg-ink text-text-on-primary'
+                            : 'bg-surface-hover text-text-body hover:bg-surface-raised'
                         }`}
                       >
                         {ALERT_TYPE_LABELS[type]} {count}
@@ -749,22 +919,30 @@ function DetailView() {
                 </div>
                 {/* 生徒ごと集約（最重要順・上位8名）。各生徒の種別を件数チップで */}
                 {visibleStudents.slice(0, 8).map(({ data: s, topSeverity }) => {
-                  const sevTone = topSeverity === 0 ? 'danger' : topSeverity === 1 ? 'warning' : 'info';
+                  const sevTone =
+                    topSeverity === 0 ? 'danger' : topSeverity === 1 ? 'warning' : 'info';
                   const byType = new Map<AlertType, number>();
                   s.alerts
                     .filter((a) => !filterType || a.alert_type === filterType)
                     .forEach((a) => byType.set(a.alert_type, (byType.get(a.alert_type) ?? 0) + 1));
                   const chips = Array.from(byType.entries()).sort(
-                    (a, b) => (TYPE_PRIORITY[a[0]] ?? 99) - (TYPE_PRIORITY[b[0]] ?? 99),
+                    (a, b) => (TYPE_PRIORITY[a[0]] ?? 99) - (TYPE_PRIORITY[b[0]] ?? 99)
                   );
                   return (
-                    <div key={s.student_id} className="flex items-center gap-2 py-2 border-b border-border-subtle last:border-0">
+                    <div
+                      key={s.student_id}
+                      className="flex items-center gap-2 py-2 border-b border-border-subtle last:border-0"
+                    >
                       <span className={`w-2 h-2 rounded-full shrink-0 ${TONE[sevTone].bar}`} />
                       <span className="text-sm text-text-body shrink-0">{s.student_name}</span>
                       <div className="flex flex-wrap gap-1 justify-end flex-1">
                         {chips.map(([type, cnt]) => (
-                          <span key={type} className="px-1.5 py-0.5 rounded text-xs bg-surface-hover text-text-muted">
-                            {ALERT_TYPE_LABELS[type]}{cnt > 1 ? ` ${cnt}` : ''}
+                          <span
+                            key={type}
+                            className="px-1.5 py-0.5 rounded text-xs bg-surface-hover text-text-muted"
+                          >
+                            {ALERT_TYPE_LABELS[type]}
+                            {cnt > 1 ? ` ${cnt}` : ''}
                           </span>
                         ))}
                       </div>
@@ -772,7 +950,9 @@ function DetailView() {
                   );
                 })}
                 {visibleStudents.length > 8 && (
-                  <div className="pt-2 text-xs text-text-muted">ほか {visibleStudents.length - 8} 名</div>
+                  <div className="pt-2 text-xs text-text-muted">
+                    ほか {visibleStudents.length - 8} 名
+                  </div>
                 )}
               </>
             )}
@@ -784,25 +964,60 @@ function DetailView() {
       <SectionLabel icon={TrendingUp}>経営指標 — 動き（フロー・昨対・予実）</SectionLabel>
       {!isRealData && (
         <p className="-mt-2 mb-3 text-xs text-text-faint">
-          ※ この教室の月次データが未取得のためサンプル表示です（教室で永山校を選択し、月次データのマイグレーションを適用すると実データになります）。
+          ※
+          この教室の月次データが未取得のためサンプル表示です（教室で永山校を選択し、月次データのマイグレーションを適用すると実データになります）。
         </p>
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* 在籍数トレンド（昨対比） */}
         <Card>
-          <CardHeader><CardTitle>在籍数の推移（昨対比）</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle>在籍数の推移（昨対比）</CardTitle>
+          </CardHeader>
           <CardContent>
             <div className="w-full h-[260px]">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={trend} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                  <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#4b5563' }} tickLine={false} />
-                  <YAxis domain={[90, 130]} tick={{ fontSize: 11, fill: '#4b5563' }} tickLine={false} axisLine={false} width={32} />
-                  <Tooltip contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: 8, fontSize: 12 }} />
+                  <XAxis
+                    dataKey="month"
+                    tick={{ fontSize: 11, fill: '#4b5563' }}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    domain={[90, 130]}
+                    tick={{ fontSize: 11, fill: '#4b5563' }}
+                    tickLine={false}
+                    axisLine={false}
+                    width={32}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#fff',
+                      border: '1px solid #e5e7eb',
+                      borderRadius: 8,
+                      fontSize: 12,
+                    }}
+                  />
                   <Legend wrapperStyle={{ fontSize: 12 }} iconType="circle" iconSize={8} />
-                  <Line type="monotone" dataKey="thisYear" name="今年" stroke={C.primary} strokeWidth={2.5} dot={{ r: 2 }} />
-                  <Line type="monotone" dataKey="lastYear" name="昨年" stroke={C.slate} strokeWidth={2} strokeDasharray="5 4" dot={false} />
+                  <Line
+                    type="monotone"
+                    dataKey="thisYear"
+                    name="今年"
+                    stroke={C.primary}
+                    strokeWidth={2.5}
+                    dot={{ r: 2 }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="lastYear"
+                    name="昨年"
+                    stroke={C.slate}
+                    strokeWidth={2}
+                    strokeDasharray="5 4"
+                    dot={false}
+                  />
                 </LineChart>
               </ResponsiveContainer>
             </div>
@@ -811,18 +1026,41 @@ function DetailView() {
 
         {/* 増減ウォーターフォール */}
         <Card>
-          <CardHeader><CardTitle>今月の増減内訳</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle>今月の増減内訳</CardTitle>
+          </CardHeader>
           <CardContent>
             <div className="w-full h-[260px]">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={waterfall} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
-                  <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#4b5563' }} tickLine={false} interval={0} />
-                  <YAxis domain={[100, 130]} tick={{ fontSize: 11, fill: '#4b5563' }} tickLine={false} axisLine={false} width={32} />
-                  <Tooltip contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: 8, fontSize: 12 }} />
+                  <XAxis
+                    dataKey="name"
+                    tick={{ fontSize: 11, fill: '#4b5563' }}
+                    tickLine={false}
+                    interval={0}
+                  />
+                  <YAxis
+                    domain={[100, 130]}
+                    tick={{ fontSize: 11, fill: '#4b5563' }}
+                    tickLine={false}
+                    axisLine={false}
+                    width={32}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#fff',
+                      border: '1px solid #e5e7eb',
+                      borderRadius: 8,
+                      fontSize: 12,
+                    }}
+                  />
                   <Bar dataKey="range" radius={[4, 4, 4, 4]}>
                     {waterfall.map((w, i) => (
-                      <Cell key={i} fill={w.kind === 'up' ? C.green : w.kind === 'down' ? C.red : C.slate} />
+                      <Cell
+                        key={i}
+                        fill={w.kind === 'up' ? C.green : w.kind === 'down' ? C.red : C.slate}
+                      />
                     ))}
                   </Bar>
                 </BarChart>
@@ -830,7 +1068,16 @@ function DetailView() {
             </div>
             <div className="flex justify-between px-2 -mt-2 text-xs">
               {waterfall.map((w) => (
-                <span key={w.name} className={w.kind === 'up' ? 'text-success' : w.kind === 'down' ? 'text-danger' : 'text-text-muted'}>
+                <span
+                  key={w.name}
+                  className={
+                    w.kind === 'up'
+                      ? 'text-success'
+                      : w.kind === 'down'
+                        ? 'text-danger'
+                        : 'text-text-muted'
+                  }
+                >
                   {w.delta}
                 </span>
               ))}
@@ -855,9 +1102,13 @@ function DetailView() {
         <Card>
           <CardContent className="py-5">
             <div className="flex items-center gap-2 text-xs text-text-muted">
-              <Target className="w-4 h-4" />期末の着地見込み
+              <Target className="w-4 h-4" />
+              期末の着地見込み
             </div>
-            <div className="mt-1 text-3xl font-bold text-text-heading">{churn.forecast}<span className="text-sm font-normal text-text-muted ml-1">名</span></div>
+            <div className="mt-1 text-3xl font-bold text-text-heading">
+              {churn.forecast}
+              <span className="text-sm font-normal text-text-muted ml-1">名</span>
+            </div>
             <div className="text-xs text-text-faint mt-0.5">直近の純増ペースから外挿</div>
           </CardContent>
         </Card>
@@ -867,11 +1118,16 @@ function DetailView() {
           <CardContent className="py-5">
             <div className="flex items-center justify-between text-xs text-text-muted">
               <span>在籍目標の達成</span>
-              <span>{target.current} / {target.target} 名</span>
+              <span>
+                {target.current} / {target.target} 名
+              </span>
             </div>
             <div className="mt-2 text-3xl font-bold text-text-heading">{targetPct}%</div>
             <div className="mt-2 h-2.5 w-full rounded-full bg-surface-hover overflow-hidden">
-              <div className={`h-full rounded-full ${targetPct >= 100 ? 'bg-success' : 'bg-primary'}`} style={{ width: `${Math.min(targetPct, 100)}%` }} />
+              <div
+                className={`h-full rounded-full ${targetPct >= 100 ? 'bg-success' : 'bg-primary'}`}
+                style={{ width: `${Math.min(targetPct, 100)}%` }}
+              />
             </div>
           </CardContent>
         </Card>
@@ -883,25 +1139,64 @@ function DetailView() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* 学年構成 */}
         <Card>
-          <CardHeader><CardTitle>学年構成</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle>学年構成</CardTitle>
+          </CardHeader>
           <CardContent>
             <div className="w-full h-[240px]">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={gradeDist} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
-                  <XAxis dataKey="grade" tick={{ fontSize: 11, fill: '#4b5563' }} tickLine={false} interval={0} />
-                  <YAxis tick={{ fontSize: 11, fill: '#4b5563' }} tickLine={false} axisLine={false} width={28} />
-                  <Tooltip contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: 8, fontSize: 12 }} />
+                  <XAxis
+                    dataKey="grade"
+                    tick={{ fontSize: 11, fill: '#4b5563' }}
+                    tickLine={false}
+                    interval={0}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 11, fill: '#4b5563' }}
+                    tickLine={false}
+                    axisLine={false}
+                    width={28}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#fff',
+                      border: '1px solid #e5e7eb',
+                      borderRadius: 8,
+                      fontSize: 12,
+                    }}
+                  />
                   <Bar dataKey="count" name="人数" radius={[4, 4, 0, 0]}>
-                    {gradeDist.map((g, i) => <Cell key={i} fill={gradeColor(g.cat)} />)}
+                    {gradeDist.map((g, i) => (
+                      <Cell key={i} fill={gradeColor(g.cat)} />
+                    ))}
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
             </div>
             <div className="flex gap-4 justify-center text-xs text-text-muted mt-1">
-              <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full inline-block" style={{ background: C.blue }} />小学</span>
-              <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full inline-block" style={{ background: C.primary }} />中学</span>
-              <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full inline-block" style={{ background: C.ink }} />高校</span>
+              <span className="flex items-center gap-1">
+                <span
+                  className="w-2.5 h-2.5 rounded-full inline-block"
+                  style={{ background: C.blue }}
+                />
+                小学
+              </span>
+              <span className="flex items-center gap-1">
+                <span
+                  className="w-2.5 h-2.5 rounded-full inline-block"
+                  style={{ background: C.primary }}
+                />
+                中学
+              </span>
+              <span className="flex items-center gap-1">
+                <span
+                  className="w-2.5 h-2.5 rounded-full inline-block"
+                  style={{ background: C.ink }}
+                />
+                高校
+              </span>
             </div>
           </CardContent>
         </Card>
@@ -910,16 +1205,35 @@ function DetailView() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>週回数の分布</CardTitle>
-            <span className="text-sm text-text-muted">平均 <span className="font-bold text-text-heading">{weekly.avg}</span> 回</span>
+            <span className="text-sm text-text-muted">
+              平均 <span className="font-bold text-text-heading">{weekly.avg}</span> 回
+            </span>
           </CardHeader>
           <CardContent>
             <div className="w-full h-[240px]">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={weekly.dist} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
-                  <XAxis dataKey="times" tick={{ fontSize: 11, fill: '#4b5563' }} tickLine={false} interval={0} />
-                  <YAxis tick={{ fontSize: 11, fill: '#4b5563' }} tickLine={false} axisLine={false} width={28} />
-                  <Tooltip contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: 8, fontSize: 12 }} />
+                  <XAxis
+                    dataKey="times"
+                    tick={{ fontSize: 11, fill: '#4b5563' }}
+                    tickLine={false}
+                    interval={0}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 11, fill: '#4b5563' }}
+                    tickLine={false}
+                    axisLine={false}
+                    width={28}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#fff',
+                      border: '1px solid #e5e7eb',
+                      borderRadius: 8,
+                      fontSize: 12,
+                    }}
+                  />
                   <Bar dataKey="count" name="人数" fill={C.blue} radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
@@ -940,9 +1254,14 @@ function DetailView() {
               <div key={s.name} className="flex items-center gap-3">
                 <div className="w-28 shrink-0 text-sm text-text-body truncate">{s.name}</div>
                 <div className="flex-1 h-5 rounded-md bg-surface-hover overflow-hidden">
-                  <div className="h-full rounded-md bg-primary" style={{ width: `${(s.count / maxSchool) * 100}%` }} />
+                  <div
+                    className="h-full rounded-md bg-primary"
+                    style={{ width: `${(s.count / maxSchool) * 100}%` }}
+                  />
                 </div>
-                <div className="w-8 text-right text-sm font-medium text-text-heading">{s.count}</div>
+                <div className="w-8 text-right text-sm font-medium text-text-heading">
+                  {s.count}
+                </div>
               </div>
             ))}
           </CardContent>
@@ -950,7 +1269,9 @@ function DetailView() {
 
         {/* 男女比プレースホルダ（性別データ未整備） */}
         <Card>
-          <CardHeader><CardTitle>男女比</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle>男女比</CardTitle>
+          </CardHeader>
           <CardContent className="flex flex-col items-center justify-center h-[180px] text-center">
             <Users className="w-8 h-8 text-text-faint mb-2" />
             <div className="text-sm text-text-muted">性別データの取り込み後に表示</div>
@@ -976,7 +1297,9 @@ function DetailView() {
                 <div className="text-sm text-text-muted">{p.label}</div>
                 <div className="mt-1 flex items-baseline gap-2">
                   <span className="text-3xl font-bold text-text-heading">{p.rate}%</span>
-                  <span className="text-xs text-text-faint">{p.numerator} / {p.denominator} 名</span>
+                  <span className="text-xs text-text-faint">
+                    {p.numerator} / {p.denominator} 名
+                  </span>
                 </div>
                 <div className="mt-1 truncate text-xs text-text-faint">{p.periodTitle || '—'}</div>
               </CardContent>
@@ -1000,10 +1323,16 @@ function DetailView() {
           <CardContent className="py-4">
             {/* 全体ファネル */}
             <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
-              <span className="text-sm text-text-muted">提案 <b className="text-text-heading">{funnel.proposalCount}</b> 件</span>
-              <span className="text-sm text-text-muted">提案人数 <b className="text-text-heading">{funnel.proposedStudents}</b> 名</span>
+              <span className="text-sm text-text-muted">
+                提案 <b className="text-text-heading">{funnel.proposalCount}</b> 件
+              </span>
+              <span className="text-sm text-text-muted">
+                提案人数 <b className="text-text-heading">{funnel.proposedStudents}</b> 名
+              </span>
               <ChevronRight className="w-4 h-4 text-text-faint" />
-              <span className="text-sm text-text-muted">取得 <b className="text-text-heading">{funnel.acquiredStudents}</b> 名</span>
+              <span className="text-sm text-text-muted">
+                取得 <b className="text-text-heading">{funnel.acquiredStudents}</b> 名
+              </span>
               <span className="ml-auto text-2xl font-bold text-primary">{funnel.rate}%</span>
             </div>
             {/* 科目ベースの取得率 */}
@@ -1019,11 +1348,18 @@ function DetailView() {
                 <div className="text-xs font-medium text-text-muted">学年別の取得率</div>
                 {funnel.byGrade.map((g) => (
                   <div key={g.grade} className="flex items-center gap-3">
-                    <div className="w-10 shrink-0 text-sm text-text-body">{GRADE_LABELS[g.grade] ?? g.grade}</div>
-                    <div className="h-5 flex-1 overflow-hidden rounded-md bg-surface-hover">
-                      <div className="h-full rounded-md bg-primary" style={{ width: `${g.rate}%` }} />
+                    <div className="w-10 shrink-0 text-sm text-text-body">
+                      {GRADE_LABELS[g.grade] ?? g.grade}
                     </div>
-                    <div className="w-28 text-right text-xs text-text-faint">{g.acquired}/{g.proposed} 名（{g.rate}%）</div>
+                    <div className="h-5 flex-1 overflow-hidden rounded-md bg-surface-hover">
+                      <div
+                        className="h-full rounded-md bg-primary"
+                        style={{ width: `${g.rate}%` }}
+                      />
+                    </div>
+                    <div className="w-28 text-right text-xs text-text-faint">
+                      {g.acquired}/{g.proposed} 名（{g.rate}%）
+                    </div>
                   </div>
                 ))}
               </div>
@@ -1099,7 +1435,9 @@ function OverviewView() {
 
       {/* 校舎別 比較テーブル */}
       <Card>
-        <CardHeader><CardTitle>校舎別 比較</CardTitle></CardHeader>
+        <CardHeader>
+          <CardTitle>校舎別 比較</CardTitle>
+        </CardHeader>
         <CardContent className="overflow-x-auto py-2">
           {data === null ? (
             <div className="py-4 text-sm text-text-muted">読み込み中…</div>
@@ -1158,7 +1496,9 @@ function OverviewView() {
                     </td>
                     <td
                       className={`px-2 py-2.5 text-right ${
-                        r.churnRate != null && r.churnRate > 5 ? 'font-medium text-danger' : 'text-text-body'
+                        r.churnRate != null && r.churnRate > 5
+                          ? 'font-medium text-danger'
+                          : 'text-text-body'
                       }`}
                     >
                       {fmtPct(r.churnRate)}
@@ -1170,8 +1510,12 @@ function OverviewView() {
                     </td>
                     <td className="px-2 py-2.5 text-right text-text-body">{fmtPct(r.moshiRate)}</td>
                     <td className="px-2 py-2.5 text-right text-text-body">{fmtPct(r.mogiRate)}</td>
-                    <td className="px-2 py-2.5 text-right text-text-body">{fmtPct(r.zoukomaRate)}</td>
-                    <td className="px-2 py-2.5 text-right text-text-body">{fmtPct(r.proposalRate)}</td>
+                    <td className="px-2 py-2.5 text-right text-text-body">
+                      {fmtPct(r.zoukomaRate)}
+                    </td>
+                    <td className="px-2 py-2.5 text-right text-text-body">
+                      {fmtPct(r.proposalRate)}
+                    </td>
                   </tr>
                 ))}
                 {/* 合計/全社行 */}
@@ -1181,13 +1525,21 @@ function OverviewView() {
                   <td className="px-2 py-2.5 text-right text-text-faint">—</td>
                   <td className="px-2 py-2.5 text-right text-text-body">{data.totalNew}</td>
                   <td className="px-2 py-2.5 text-right text-text-body">{data.totalLeave}</td>
-                  <td className="px-2 py-2.5 text-right text-text-body">{fmtPct(data.overallTargetRate)}</td>
+                  <td className="px-2 py-2.5 text-right text-text-body">
+                    {fmtPct(data.overallTargetRate)}
+                  </td>
                   <td className="px-2 py-2.5 text-right text-text-body">{fmtPct(data.avgChurn)}</td>
                   <td className="px-2 py-2.5 text-right text-text-heading">{data.totalAlerts}</td>
-                  <td className="px-2 py-2.5 text-right text-text-body">{fmtPct(data.moshiRate)}</td>
+                  <td className="px-2 py-2.5 text-right text-text-body">
+                    {fmtPct(data.moshiRate)}
+                  </td>
                   <td className="px-2 py-2.5 text-right text-text-body">{fmtPct(data.mogiRate)}</td>
-                  <td className="px-2 py-2.5 text-right text-text-body">{fmtPct(data.zoukomaRate)}</td>
-                  <td className="px-2 py-2.5 text-right text-text-body">{fmtPct(data.proposalRate)}</td>
+                  <td className="px-2 py-2.5 text-right text-text-body">
+                    {fmtPct(data.zoukomaRate)}
+                  </td>
+                  <td className="px-2 py-2.5 text-right text-text-body">
+                    {fmtPct(data.proposalRate)}
+                  </td>
                 </tr>
               </tbody>
             </table>

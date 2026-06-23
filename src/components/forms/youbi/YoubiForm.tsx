@@ -15,11 +15,7 @@ import {
 } from '@/components/forms/shared';
 import type { School } from '@/types/database';
 import { validateStudentName } from '@/lib/utils/validation';
-import type {
-  YoubiPeriod,
-  YoubiResponseData,
-  YoubiSlot,
-} from '@/types/forms/youbi';
+import type { YoubiPeriod, YoubiResponseData, YoubiSlot } from '@/types/forms/youbi';
 import { submitYoubiResponse } from '@/lib/api/youbi';
 import { getSubjects } from '@/lib/api/subjects';
 import { YOUBI_GRADE_NAME_TO_NUMBER } from '@/types/forms/youbi';
@@ -83,7 +79,9 @@ export function YoubiForm({ school, period, isPreview }: YoubiFormProps) {
 
   // 学年に応じた科目オプション（共通科目を小学/中学/高校で自動参照）
   // value は "科目名|||duration" 形式（同名科目の誤判定防止）
-  const [subjectOptionsForGrade, setSubjectOptionsForGrade] = useState<Array<{ value: string; label: string }>>([]);
+  const [subjectOptionsForGrade, setSubjectOptionsForGrade] = useState<
+    Array<{ value: string; label: string }>
+  >([]);
   const [isLoadingSubjects, setIsLoadingSubjects] = useState(false);
 
   // バリデーションエラー
@@ -100,12 +98,15 @@ export function YoubiForm({ school, period, isPreview }: YoubiFormProps) {
     fetchClassPeriodsLive(school.id).then((p) => {
       if (!cancelled) setMasterPeriods(p);
     });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [school.id]);
 
   // 1・2限（昼の時間帯）はフォームでは対象外のため除外
   const periodOptions = useMemo(() => {
-    const base = masterPeriods && masterPeriods.length > 0 ? masterPeriods : settings.available_periods;
+    const base =
+      masterPeriods && masterPeriods.length > 0 ? masterPeriods : settings.available_periods;
     return base.filter((p) => p.code !== '1' && p.code !== '2');
   }, [masterPeriods, settings.available_periods]);
 
@@ -140,10 +141,10 @@ export function YoubiForm({ school, period, isPreview }: YoubiFormProps) {
         const gradeNum = YOUBI_GRADE_NAME_TO_NUMBER[selectedGrade] ?? 0;
         const isGrade5Plus = gradeNum >= 5;
         const displaySubjects = isGrade5Plus
-          ? subjects.filter(s => (s.duration_minutes ?? 90) !== 45)
+          ? subjects.filter((s) => (s.duration_minutes ?? 90) !== 45)
           : subjects;
         // value に duration を埋め込む → 同名科目が複数あっても正しいdurationを保持
-        const options = displaySubjects.map(s => {
+        const options = displaySubjects.map((s) => {
           const dur = s.duration_minutes ?? 90;
           return {
             value: `${s.name}|||${dur}`,
@@ -171,7 +172,8 @@ export function YoubiForm({ school, period, isPreview }: YoubiFormProps) {
   }, [selectedGrade]);
 
   const getPeriodLabel = (code: string): string => {
-    const base = masterPeriods && masterPeriods.length > 0 ? masterPeriods : settings.available_periods;
+    const base =
+      masterPeriods && masterPeriods.length > 0 ? masterPeriods : settings.available_periods;
     return base.find((p) => p.code === code)?.label || code;
   };
 
@@ -327,11 +329,7 @@ export function YoubiForm({ school, period, isPreview }: YoubiFormProps) {
       success('申請を受け付けました');
     } catch (err) {
       console.error('Failed to submit:', err);
-      error(
-        err instanceof Error
-          ? err.message
-          : '送信に失敗しました。もう一度お試しください。'
-      );
+      error(err instanceof Error ? err.message : '送信に失敗しました。もう一度お試しください。');
     } finally {
       submittingRef.current = false;
       setIsSubmitting(false);
@@ -360,13 +358,10 @@ export function YoubiForm({ school, period, isPreview }: YoubiFormProps) {
     highlight?: string,
     required?: boolean
   ) => (
-    <div
-      className={`p-4 rounded-lg border ${
-        highlight || 'border-gray-200 bg-gray-50'
-      }`}
-    >
+    <div className={`p-4 rounded-lg border ${highlight || 'border-gray-200 bg-gray-50'}`}>
       <p className="text-sm font-medium text-[#1f2937] mb-3">
-        {label}{required && <span className="text-[color:var(--primary)] ml-1">*</span>}
+        {label}
+        {required && <span className="text-[color:var(--primary)] ml-1">*</span>}
       </p>
       <div className="grid grid-cols-3 gap-2">
         <div>
@@ -402,7 +397,14 @@ export function YoubiForm({ school, period, isPreview }: YoubiFormProps) {
             value={slot.subject ? `${slot.subject}|||${slot.duration_minutes ?? 90}` : ''}
             onChange={(e) => updateSlot(slot, setSlot, 'subject', e.target.value)}
             options={[
-              { value: '', label: selectedGrade ? (isLoadingSubjects ? '読み込み中...' : '科目') : '学年を選んでください' },
+              {
+                value: '',
+                label: selectedGrade
+                  ? isLoadingSubjects
+                    ? '読み込み中...'
+                    : '科目'
+                  : '学年を選んでください',
+              },
               ...subjectOptionsForGrade,
             ]}
             className="text-sm"

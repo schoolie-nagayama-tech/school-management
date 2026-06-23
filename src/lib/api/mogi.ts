@@ -7,14 +7,15 @@ import {
   updateFormPeriod,
   deleteFormPeriod,
 } from './form-periods';
-import { createPublicFormResponse, getFormResponses, getFormResponse, updateFormResponseStatus } from './form-responses';
+import {
+  createPublicFormResponse,
+  getFormResponses,
+  getFormResponse,
+  updateFormResponseStatus,
+} from './form-responses';
 import { syncFormResponseToBilling } from './billing';
 import { getDefaultSchoolId, getSchoolByCode } from './schools';
-import type {
-  FormPeriodInsert,
-  FormPeriodUpdate,
-  FormResponseInsert,
-} from '@/types/database';
+import type { FormPeriodInsert, FormPeriodUpdate, FormResponseInsert } from '@/types/database';
 import type {
   MogiPeriod,
   MogiSettings,
@@ -47,9 +48,7 @@ export async function getMogiPeriods(
 /**
  * 公開中のVもぎ期間を取得（ポータル用）
  */
-export async function getActiveMogiPeriod(
-  schoolCode: string
-): Promise<MogiPeriod | null> {
+export async function getActiveMogiPeriod(schoolCode: string): Promise<MogiPeriod | null> {
   const school = await getSchoolByCode(schoolCode);
   if (!school) {
     return null;
@@ -128,10 +127,7 @@ export async function createMogiPeriod(
 /**
  * Vもぎ期間を更新
  */
-export async function updateMogiPeriod(
-  id: string,
-  data: FormPeriodUpdate
-): Promise<MogiPeriod> {
+export async function updateMogiPeriod(id: string, data: FormPeriodUpdate): Promise<MogiPeriod> {
   const updateData: FormPeriodUpdate = {
     ...data,
     settings: data.settings ? (data.settings as unknown as Record<string, unknown>) : undefined,
@@ -181,16 +177,14 @@ export async function deleteMogiPeriod(id: string): Promise<void> {
 /**
  * Vもぎ回答を送信
  */
-export async function submitMogiResponse(
-  data: {
-    school_id: string;
-    period_key: string;
-    student_name: string;
-    grade: number;
-    email: string;
-    response_data: MogiResponseData;
-  }
-): Promise<void> {
+export async function submitMogiResponse(data: {
+  school_id: string;
+  period_key: string;
+  student_name: string;
+  grade: number;
+  email: string;
+  response_data: MogiResponseData;
+}): Promise<void> {
   const responseData: FormResponseInsert = {
     school_id: data.school_id,
     form_type: 'mogi',
@@ -294,9 +288,7 @@ export async function getMogiStats(
   const dateVenueCounts = period.settings.dates.map((date) => {
     const venueCounts = date.venues.map((venue) => {
       const count = responses.filter((r) =>
-        r.response_data.selections.some(
-          (s) => s.date_id === date.id && s.venue_id === venue.id
-        )
+        r.response_data.selections.some((s) => s.date_id === date.id && s.venue_id === venue.id)
       ).length;
       return {
         venue_id: venue.id,
@@ -333,16 +325,19 @@ export async function getMogiStats(
       count: typeBuckets[key] ?? 0,
     })),
     ...(typeBuckets['unclassified']
-      ? [{ exam_type: 'unclassified' as const, label: '未分類', count: typeBuckets['unclassified'] }]
+      ? [
+          {
+            exam_type: 'unclassified' as const,
+            label: '未分類',
+            count: typeBuckets['unclassified'],
+          },
+        ]
       : []),
   ].filter((t) => t.count > 0);
 
-  const chargedCount = responses.filter(
-    (r) => r.status_checks?.charged === true
-  ).length;
+  const chargedCount = responses.filter((r) => r.status_checks?.charged === true).length;
 
-  const linkedCount = responses.filter((r) => r.linked_student_id !== null)
-    .length;
+  const linkedCount = responses.filter((r) => r.linked_student_id !== null).length;
 
   return {
     total_responses: responses.length,
@@ -356,10 +351,7 @@ export async function getMogiStats(
 /**
  * Vもぎ回答の計上状態を更新（既存の status_checks をマージ）
  */
-export async function updateMogiChargedStatus(
-  responseId: string,
-  charged: boolean
-): Promise<void> {
+export async function updateMogiChargedStatus(responseId: string, charged: boolean): Promise<void> {
   const response = await getFormResponse(responseId);
   const current = (response?.status_checks || {}) as Record<string, boolean>;
   await updateFormResponseStatus(responseId, { ...current, charged });
@@ -374,10 +366,7 @@ export async function updateMogiChargedStatus(
 /**
  * Vもぎ期間の回答数を取得
  */
-export async function getMogiResponseCount(
-  schoolId: string,
-  periodKey: string
-): Promise<number> {
+export async function getMogiResponseCount(schoolId: string, periodKey: string): Promise<number> {
   const responses = await getMogiResponses(schoolId, periodKey);
   return responses.length;
 }

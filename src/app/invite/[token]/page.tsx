@@ -12,7 +12,7 @@ export default function InvitePage() {
   const router = useRouter();
   const params = useParams();
   const token = params.token as string;
-  
+
   const [invitation, setInvitation] = useState<UserInvitation | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [password, setPassword] = useState('');
@@ -134,8 +134,10 @@ export default function InvitePage() {
             <>
               <div className="mb-6 p-4 bg-info/10 rounded-lg">
                 <p className="text-sm text-text-heading">
-                  <span className="font-bold">{invitation.email}</span> として<br />
-                  <span className="font-bold">{USER_ROLE_LABELS[invitation.role]}</span> 権限で招待されています
+                  <span className="font-bold">{invitation.email}</span> として
+                  <br />
+                  <span className="font-bold">{USER_ROLE_LABELS[invitation.role]}</span>{' '}
+                  権限で招待されています
                 </p>
               </div>
 
@@ -153,7 +155,7 @@ export default function InvitePage() {
                   <input
                     type="text"
                     value={displayName}
-                    onChange={e => setDisplayName(e.target.value)}
+                    onChange={(e) => setDisplayName(e.target.value)}
                     className="w-full px-4 py-3 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                     placeholder="山田太郎"
                   />
@@ -165,7 +167,7 @@ export default function InvitePage() {
                   <input
                     type="password"
                     value={password}
-                    onChange={e => setPassword(e.target.value)}
+                    onChange={(e) => setPassword(e.target.value)}
                     required
                     minLength={8}
                     className="w-full px-4 py-3 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
@@ -179,7 +181,7 @@ export default function InvitePage() {
                   <input
                     type="password"
                     value={confirmPassword}
-                    onChange={e => setConfirmPassword(e.target.value)}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
                     required
                     className="w-full px-4 py-3 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                     placeholder="もう一度入力"

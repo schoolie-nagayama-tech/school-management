@@ -65,9 +65,7 @@ export default async function InquiryPage({ params, searchParams }: InquiryPageP
               />
             ) : (
               <div className="w-9 h-9 rounded-lg bg-[#1a1a1a] flex items-center justify-center flex-shrink-0">
-                <span className="text-white text-sm font-bold">
-                  {school.name.charAt(0)}
-                </span>
+                <span className="text-white text-sm font-bold">{school.name.charAt(0)}</span>
               </div>
             )}
             <div className="min-w-0">
@@ -85,11 +83,7 @@ export default async function InquiryPage({ params, searchParams }: InquiryPageP
         <p className="text-[13px] text-[#6b7280] leading-relaxed mb-5 px-1">
           お気軽にご入力のうえ送信してください。担当者よりご連絡いたします。
         </p>
-        <InquiryForm
-          schoolCode={schoolCode}
-          schoolName={school.name}
-          src={src ?? ''}
-        />
+        <InquiryForm schoolCode={schoolCode} schoolName={school.name} src={src ?? ''} />
       </main>
     </div>
   );

@@ -47,42 +47,30 @@ function gradeLabel(g: number): string {
 /** subject_ids から最初の科目名を取得するための補助マップ生成 */
 async function fetchSubjectsMap(subjectIds: string[]): Promise<Map<string, string>> {
   if (subjectIds.length === 0) return new Map();
-  const { data } = await db
-    .from('subjects')
-    .select('id, name')
-    .in('id', subjectIds);
+  const { data } = await db.from('subjects').select('id, name').in('id', subjectIds);
   const m = new Map<string, string>();
   for (const s of (data || []) as { id: string; name: string }[]) m.set(s.id, s.name);
   return m;
 }
 
 /** schedule_entries の subject_ids を一括取得して報告書ごとに科目名を引けるようにする */
-async function attachSubjectNames(
-  reports: ClassReport[]
-): Promise<Map<string, string>> {
+async function attachSubjectNames(reports: ClassReport[]): Promise<Map<string, string>> {
   if (reports.length === 0) return new Map();
   const entryIds = reports.map((r) => r.schedule_entry_id);
-  const { data } = await db
-    .from('schedule_entries')
-    .select('id, subject_ids')
-    .in('id', entryIds);
+  const { data } = await db.from('schedule_entries').select('id, subject_ids').in('id', entryIds);
   type EntryRow = { id: string; subject_ids: string[] };
   const entryMap = new Map<string, string[]>();
   for (const e of (data || []) as EntryRow[]) {
     entryMap.set(e.id, e.subject_ids || []);
   }
   // 全 subject_id を集める
-  const allSubjectIds = Array.from(
-    new Set(Array.from(entryMap.values()).flat())
-  );
+  const allSubjectIds = Array.from(new Set(Array.from(entryMap.values()).flat()));
   const subjectsMap = await fetchSubjectsMap(allSubjectIds);
   // 報告書ID → 科目名一覧
   const result = new Map<string, string>();
   for (const r of reports) {
     const subIds = entryMap.get(r.schedule_entry_id) ?? [];
-    const names = subIds
-      .map((id) => subjectsMap.get(id))
-      .filter((n): n is string => !!n);
+    const names = subIds.map((id) => subjectsMap.get(id)).filter((n): n is string => !!n);
     result.set(r.id, names.join('・') || 'その他');
   }
   return result;
@@ -96,9 +84,7 @@ export default function StudentLessonReportsPage() {
 
   const [student, setStudent] = useState<StudentInfo | null>(null);
   const [reports, setReports] = useState<ClassReport[]>([]);
-  const [subjectNameByReport, setSubjectNameByReport] = useState<Map<string, string>>(
-    new Map()
-  );
+  const [subjectNameByReport, setSubjectNameByReport] = useState<Map<string, string>>(new Map());
   const [isLoading, setIsLoading] = useState(true);
   const [subjectFilter, setSubjectFilter] = useState<string>('all');
 
@@ -176,7 +162,6 @@ export default function StudentLessonReportsPage() {
     <AdminLayout>
       <ToastContainer toasts={toasts} onRemove={removeToast} />
       <div className="space-y-4">
-
         <Button variant="ghost" size="sm" onClick={() => router.back()}>
           <ChevronLeft className="w-4 h-4 mr-1" />
           戻る
@@ -186,11 +171,15 @@ export default function StudentLessonReportsPage() {
         {student && (
           <Card>
             <CardContent className="p-4 bg-ink text-text-on-primary rounded-md">
-              <div className="text-xs uppercase tracking-wide text-text-on-primary/70">授業報告</div>
+              <div className="text-xs uppercase tracking-wide text-text-on-primary/70">
+                授業報告
+              </div>
               <div className="text-2xl font-bold mt-1">
                 {student.last_name} {student.first_name}
               </div>
-              <div className="text-sm mt-1 text-text-on-primary/80">{gradeLabel(student.grade)}</div>
+              <div className="text-sm mt-1 text-text-on-primary/80">
+                {gradeLabel(student.grade)}
+              </div>
             </CardContent>
           </Card>
         )}
@@ -237,19 +226,25 @@ export default function StudentLessonReportsPage() {
                         {r.vocab_test_score != null && r.vocab_test_total != null && (
                           <span
                             className={`px-1.5 py-0.5 rounded ${
- r.vocab_test_passed ? 'bg-success-subtle text-success' : 'bg-surface'
- }`}
+                              r.vocab_test_passed ? 'bg-success-subtle text-success' : 'bg-surface'
+                            }`}
                           >
-                            単語 <strong>{r.vocab_test_score}/{r.vocab_test_total}</strong>
+                            単語{' '}
+                            <strong>
+                              {r.vocab_test_score}/{r.vocab_test_total}
+                            </strong>
                           </span>
                         )}
                         {r.check_test_score != null && r.check_test_total != null && (
                           <span
                             className={`px-1.5 py-0.5 rounded ${
- r.check_test_passed ? 'bg-success-subtle text-success' : 'bg-surface'
- }`}
+                              r.check_test_passed ? 'bg-success-subtle text-success' : 'bg-surface'
+                            }`}
                           >
-                            確認 <strong>{r.check_test_score}/{r.check_test_total}</strong>
+                            確認{' '}
+                            <strong>
+                              {r.check_test_score}/{r.check_test_total}
+                            </strong>
                           </span>
                         )}
                       </div>
@@ -268,10 +263,10 @@ export default function StudentLessonReportsPage() {
                 <button
                   type="button"
                   className={`px-2 py-1 text-xs rounded border transition-[background-color,color,border-color] duration-150 ease-out active:scale-[0.97] ${
- subjectFilter === 'all'
- ? 'bg-info text-white border-info'
- : 'bg-white text-text-muted border-border-default'
- }`}
+                    subjectFilter === 'all'
+                      ? 'bg-info text-white border-info'
+                      : 'bg-white text-text-muted border-border-default'
+                  }`}
                   onClick={() => setSubjectFilter('all')}
                 >
                   すべて
@@ -281,10 +276,10 @@ export default function StudentLessonReportsPage() {
                     key={s}
                     type="button"
                     className={`px-2 py-1 text-xs rounded border transition-[background-color,color,border-color] duration-150 ease-out active:scale-[0.97] ${
- subjectFilter === s
- ? 'bg-info text-white border-info'
- : 'bg-white text-text-muted border-border-default'
- }`}
+                      subjectFilter === s
+                        ? 'bg-info text-white border-info'
+                        : 'bg-white text-text-muted border-border-default'
+                    }`}
                     onClick={() => setSubjectFilter(s)}
                   >
                     {s}

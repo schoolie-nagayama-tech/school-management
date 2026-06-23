@@ -30,7 +30,7 @@ function makeRequest(body: Record<string, unknown>, bearerToken = 'valid-token')
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${bearerToken}`,
+      Authorization: `Bearer ${bearerToken}`,
     },
     body: JSON.stringify(body),
   });

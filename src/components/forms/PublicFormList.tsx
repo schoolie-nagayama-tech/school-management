@@ -37,9 +37,7 @@ export function PublicFormList({ forms, schoolCode }: PublicFormListProps) {
               <p className="text-[#4b5563] mb-4 line-clamp-2">{form.description}</p>
             )}
             <div className="flex items-center justify-between">
-              {endDate && (
-                <p className="text-sm text-[#4b5563]/60">{endDate}まで</p>
-              )}
+              {endDate && <p className="text-sm text-[#4b5563]/60">{endDate}まで</p>}
               <Link
                 href={`/portal/${schoolCode}/${form.slug}`}
                 className="px-6 py-3 bg-[#3b82f6] text-white font-semibold rounded-lg hover:bg-[#60a5fa] transition-colors min-h-[44px] flex items-center justify-center"

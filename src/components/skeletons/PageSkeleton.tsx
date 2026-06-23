@@ -4,11 +4,7 @@
  */
 
 function Shimmer({ className }: { className?: string }) {
-  return (
-    <div
-      className={`animate-pulse rounded bg-gray-200 ${className ?? ''}`}
-    />
-  );
+  return <div className={`animate-pulse rounded bg-gray-200 ${className ?? ''}`} />;
 }
 
 // ヘッダーバー（AppHeader相当）
@@ -27,10 +23,7 @@ function TableRowSkeleton({ cols = 5 }: { cols?: number }) {
   return (
     <div className="flex items-center gap-4 px-4 py-3 border-b border-gray-100">
       {Array.from({ length: cols }).map((_, i) => (
-        <Shimmer
-          key={i}
-          className={`h-4 ${i === 0 ? 'w-32' : i === 1 ? 'w-48' : 'w-20'}`}
-        />
+        <Shimmer key={i} className={`h-4 ${i === 0 ? 'w-32' : i === 1 ? 'w-48' : 'w-20'}`} />
       ))}
     </div>
   );
@@ -87,10 +80,7 @@ export function CardGridPageSkeleton({ cards = 6 }: { cards?: number }) {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {Array.from({ length: cards }).map((_, i) => (
-            <div
-              key={i}
-              className="bg-white rounded-xl border border-gray-200 p-5"
-            >
+            <div key={i} className="bg-white rounded-xl border border-gray-200 p-5">
               <Shimmer className="h-5 w-3/4 mb-3" />
               <Shimmer className="h-4 w-1/2 mb-2" />
               <Shimmer className="h-4 w-2/3" />
@@ -129,9 +119,7 @@ export function SchedulePageSkeleton() {
             <div key={row} className="grid grid-cols-8 border-b border-gray-100 last:border-b-0">
               {Array.from({ length: 8 }).map((_, col) => (
                 <div key={col} className="p-3 h-16 border-r border-gray-100 last:border-r-0">
-                  {col > 0 && Math.random() > 0.5 && (
-                    <Shimmer className="h-8 w-full rounded" />
-                  )}
+                  {col > 0 && Math.random() > 0.5 && <Shimmer className="h-8 w-full rounded" />}
                 </div>
               ))}
             </div>
@@ -179,10 +167,7 @@ export function FeedPageSkeleton() {
         <Shimmer className="h-4 w-64 mb-6" />
         <div className="space-y-4">
           {Array.from({ length: 5 }).map((_, i) => (
-            <div
-              key={i}
-              className="bg-white rounded-xl border border-gray-200 p-4"
-            >
+            <div key={i} className="bg-white rounded-xl border border-gray-200 p-4">
               <div className="flex items-center gap-3 mb-3">
                 <Shimmer className="h-8 w-8 rounded-full" />
                 <Shimmer className="h-4 w-32" />

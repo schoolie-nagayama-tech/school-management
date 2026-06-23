@@ -101,19 +101,19 @@ export interface ZoukomaResponseFilters {
 
 // 学年とgrade（数値）のマッピング
 export const GRADE_NAME_TO_NUMBER: Record<string, number> = {
-  '小1': 1,
-  '小2': 2,
-  '小3': 3,
-  '小4': 4,
-  '小5': 5,
-  '小6': 6,
-  '中1': 7,
-  '中2': 8,
-  '中3': 9,
-  '高1': 10,
-  '高2': 11,
-  '高3': 12,
-  '既卒': 13,
+  小1: 1,
+  小2: 2,
+  小3: 3,
+  小4: 4,
+  小5: 5,
+  小6: 6,
+  中1: 7,
+  中2: 8,
+  中3: 9,
+  高1: 10,
+  高2: 11,
+  高3: 12,
+  既卒: 13,
 };
 
 export const GRADE_NUMBER_TO_NAME: Record<number, string> = {

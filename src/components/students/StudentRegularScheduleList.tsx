@@ -77,9 +77,8 @@ export function StudentRegularScheduleList({
 
   // 週回数: 同じ曜日×コマ（例: 国/理 のように 2 科目を 1 コマで実施）は週 1 回として数える。
   // パターン件数ではなく「曜日×コマ」のユニーク数で集計する。
-  const weeklyCount = new Set(
-    regularPatterns.map((p) => `${p.day_of_week}-${p.time_slot_id}`)
-  ).size;
+  const weeklyCount = new Set(regularPatterns.map((p) => `${p.day_of_week}-${p.time_slot_id}`))
+    .size;
 
   const fetchData = useCallback(async () => {
     if (!schoolId) return;
@@ -127,7 +126,15 @@ export function StudentRegularScheduleList({
   };
 
   const handleDelete = async (pattern: ScheduleRegularPattern) => {
-    if (!(await confirm({ title: '削除確認', description: 'この通塾日程を削除しますか？', confirmLabel: '削除', variant: 'danger' }))) return;
+    if (
+      !(await confirm({
+        title: '削除確認',
+        description: 'この通塾日程を削除しますか？',
+        confirmLabel: '削除',
+        variant: 'danger',
+      }))
+    )
+      return;
     try {
       await deleteRegularPattern(pattern.id);
       await regenerateCurrentWeekIfNeeded(schoolId, profile?.id);
@@ -168,35 +175,20 @@ export function StudentRegularScheduleList({
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-[var(--surface)] border-b border-[var(--stroke)]">
-                <th className="px-4 py-2 text-left font-medium text-[var(--headline)]">
-                  曜日
-                </th>
-                <th className="px-4 py-2 text-left font-medium text-[var(--headline)]">
-                  コマ
-                </th>
-                <th className="px-4 py-2 text-left font-medium text-[var(--headline)]">
-                  講師
-                </th>
-                <th className="px-4 py-2 text-left font-medium text-[var(--headline)]">
-                  科目
-                </th>
-                <th className="px-4 py-2 text-right font-medium text-[var(--headline)]">
-                  操作
-                </th>
+                <th className="px-4 py-2 text-left font-medium text-[var(--headline)]">曜日</th>
+                <th className="px-4 py-2 text-left font-medium text-[var(--headline)]">コマ</th>
+                <th className="px-4 py-2 text-left font-medium text-[var(--headline)]">講師</th>
+                <th className="px-4 py-2 text-left font-medium text-[var(--headline)]">科目</th>
+                <th className="px-4 py-2 text-right font-medium text-[var(--headline)]">操作</th>
               </tr>
             </thead>
             <tbody>
               {regularPatterns.map((p) => (
-                <tr
-                  key={p.id}
-                  className="border-b border-[var(--stroke)] last:border-b-0"
-                >
+                <tr key={p.id} className="border-b border-[var(--stroke)] last:border-b-0">
                   <td className="px-4 py-2 text-[var(--paragraph)]">
                     {DAY_OF_WEEK_LABELS[p.day_of_week] ?? '—'}
                   </td>
-                  <td className="px-4 py-2 text-[var(--paragraph)]">
-                    {slotLabel(p.time_slot)}
-                  </td>
+                  <td className="px-4 py-2 text-[var(--paragraph)]">{slotLabel(p.time_slot)}</td>
                   <td className="px-4 py-2 text-[var(--paragraph)]">
                     {p.teacher?.display_name || p.teacher?.email || '—'}
                   </td>
@@ -247,7 +239,10 @@ export function StudentRegularScheduleList({
           </p>
           <ul className="space-y-1">
             {kousyuPatterns.map((p) => (
-              <li key={p.id} className="text-xs text-[var(--paragraph)] flex flex-wrap items-center gap-2">
+              <li
+                key={p.id}
+                className="text-xs text-[var(--paragraph)] flex flex-wrap items-center gap-2"
+              >
                 <span className="inline-flex px-1.5 py-0.5 text-[10px] rounded bg-orange-100 text-orange-700 border border-orange-200">
                   {SCHEDULE_PERIOD_LABELS[p.period_type] ?? p.period_type}
                 </span>

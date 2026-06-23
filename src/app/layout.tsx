@@ -1,53 +1,53 @@
-﻿import type { Metadata, Viewport } from "next";
-import localFont from "next/font/local";
-import { Noto_Sans_JP } from "next/font/google";
-import "./globals.css";
+﻿import type { Metadata, Viewport } from 'next';
+import localFont from 'next/font/local';
+import { Noto_Sans_JP } from 'next/font/google';
+import './globals.css';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { resolveServerAuth } from '@/lib/auth/resolveServerAuth';
 import { MasterDataProvider } from '@/contexts/MasterDataContext';
 import { ThemeProvider, themeInitScript } from '@/contexts/ThemeContext';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { ImpersonationBanner } from '@/components/ImpersonationBanner';
-import { SpeedInsights } from "@vercel/speed-insights/next";
+import { SpeedInsights } from '@vercel/speed-insights/next';
 import { Toaster } from 'sonner';
 
 const notoSansJP = Noto_Sans_JP({
-  subsets: ["latin"],
-  weight: ["400", "500", "700"],
-  display: "swap",
-  variable: "--font-sans-jp",
+  subsets: ['latin'],
+  weight: ['400', '500', '700'],
+  display: 'swap',
+  variable: '--font-sans-jp',
   preload: true,
 });
 
 const geistSans = localFont({
-  src: "./fonts/GeistVF.woff",
-  display: "swap",
-  variable: "--font-geist-sans",
-  weight: "100 900",
+  src: './fonts/GeistVF.woff',
+  display: 'swap',
+  variable: '--font-geist-sans',
+  weight: '100 900',
 });
 
 const geistMono = localFont({
-  src: "./fonts/GeistMonoVF.woff",
-  display: "swap",
-  variable: "--font-geist-mono",
-  weight: "100 900",
+  src: './fonts/GeistMonoVF.woff',
+  display: 'swap',
+  variable: '--font-geist-mono',
+  weight: '100 900',
 });
 
 export const viewport: Viewport = {
-  width: "device-width",
+  width: 'device-width',
   initialScale: 1,
   maximumScale: 5,
-  viewportFit: "cover",
+  viewportFit: 'cover',
 };
 
 export const metadata: Metadata = {
-  title: "NEST",
-  description: "学習塾向け生徒管理システム",
-  manifest: "/manifest.json",
+  title: 'NEST',
+  description: '学習塾向け生徒管理システム',
+  manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
-    statusBarStyle: "default",
-    title: "NEST",
+    statusBarStyle: 'default',
+    title: 'NEST',
   },
 };
 

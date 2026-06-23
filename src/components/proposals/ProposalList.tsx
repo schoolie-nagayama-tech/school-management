@@ -35,9 +35,7 @@ export default function ProposalList() {
   const { profile } = useAuth();
   // 一括公開は教室長以上(manager/owner/admin)のみ許可
   const isManagerOrAbove =
-    profile?.role === 'manager' ||
-    profile?.role === 'owner' ||
-    profile?.role === 'admin';
+    profile?.role === 'manager' || profile?.role === 'owner' || profile?.role === 'admin';
 
   const [loading, setLoading] = useState(true);
   const [studentName, setStudentName] = useState('');
@@ -110,9 +108,12 @@ export default function ProposalList() {
     if (!isManagerOrAbove) return;
     const ids = Array.from(selected).filter((id) => publishable.some((p) => p.id === id));
     if (ids.length === 0) return;
-    if (!window.confirm(
-      `${ids.length}件の提案書を公開しますか？\n\n申込コマ数が進行表に反映され、講師に公開されます。`
-    )) return;
+    if (
+      !window.confirm(
+        `${ids.length}件の提案書を公開しますか？\n\n申込コマ数が進行表に反映され、講師に公開されます。`
+      )
+    )
+      return;
     setPublishing(true);
     try {
       // 公開前に発注候補をスナップショット（所持判定は is_draft=false 化の前に取る必要がある）
@@ -126,7 +127,9 @@ export default function ProposalList() {
             studentName,
             schoolId: p.school_id ?? null,
             textbookId: p.textbook_id,
-            textbookName: p.textbook?.subject ? `${p.textbook.subject} ${p.textbook.name}` : (p.textbook?.name ?? '不明'),
+            textbookName: p.textbook?.subject
+              ? `${p.textbook.subject} ${p.textbook.name}`
+              : (p.textbook?.name ?? '不明'),
             materialId: p.textbook?.material_id ?? null,
           }))
         );
@@ -156,9 +159,12 @@ export default function ProposalList() {
       proposals.some((p) => p.id === id && p.status === 'draft')
     );
     if (ids.length === 0) return;
-    if (!window.confirm(
-      `${ids.length}件の提案書を「提案済み」にしますか？\n\n申込コマ数を入力できる状態になります（進行表への反映は公開時）。`
-    )) return;
+    if (
+      !window.confirm(
+        `${ids.length}件の提案書を「提案済み」にしますか？\n\n申込コマ数を入力できる状態になります（進行表への反映は公開時）。`
+      )
+    )
+      return;
     setSending(true);
     try {
       const { success, failed } = await bulkMarkProposalsSent(ids);
@@ -225,7 +231,7 @@ export default function ProposalList() {
 
         const tbName = p.textbook?.subject
           ? `${p.textbook.subject} ${p.textbook.name}`
-          : p.textbook?.name ?? '';
+          : (p.textbook?.name ?? '');
 
         results.push({
           studentName,
@@ -273,7 +279,9 @@ export default function ProposalList() {
             <Printer className="w-3.5 h-3.5" />
             印刷
           </button>
-          <span className="text-sm text-text-muted ml-2">{studentName} ({printData.length}件)</span>
+          <span className="text-sm text-text-muted ml-2">
+            {studentName} ({printData.length}件)
+          </span>
         </div>
         <div className="space-y-8">
           {printData.map((data, i) => (
@@ -287,7 +295,10 @@ export default function ProposalList() {
   }
 
   // ── 科目→テキストごとにグループ化 ──
-  const byTextbook = new Map<number, { name: string; subject: string; proposals: SeasonalProposalWithDetails[] }>();
+  const byTextbook = new Map<
+    number,
+    { name: string; subject: string; proposals: SeasonalProposalWithDetails[] }
+  >();
   for (const p of proposals) {
     const tbId = p.textbook_id;
     const tbName = p.textbook?.name ?? '不明なテキスト';
@@ -313,7 +324,9 @@ export default function ProposalList() {
     entry.count += 1;
     bySubject.set(subject, entry);
   }
-  const subjectSummary = Array.from(bySubject.entries()).sort(([a], [b]) => a.localeCompare(b, 'ja'));
+  const subjectSummary = Array.from(bySubject.entries()).sort(([a], [b]) =>
+    a.localeCompare(b, 'ja')
+  );
   const totalKomaAll = subjectSummary.reduce((sum, [, v]) => sum + v.koma, 0);
 
   const hasSelection = selected.size > 0;
@@ -390,16 +403,21 @@ export default function ProposalList() {
                 key={subject}
                 className="inline-flex items-center gap-1.5 pl-1.5 pr-2 py-1 rounded-lg bg-surface-hover"
               >
-                <span className={`inline-flex px-1.5 py-0.5 text-[11px] font-bold rounded ${colors.bg} ${colors.text}`}>
+                <span
+                  className={`inline-flex px-1.5 py-0.5 text-[11px] font-bold rounded ${colors.bg} ${colors.text}`}
+                >
                   {subject}
                 </span>
-                <span className="text-xs font-semibold text-text-heading tabular-nums">{v.koma}コマ</span>
+                <span className="text-xs font-semibold text-text-heading tabular-nums">
+                  {v.koma}コマ
+                </span>
               </span>
             );
           })}
           <span className="flex-1" />
           <span className="text-xs text-text-muted shrink-0">
-            合計 <span className="font-bold text-text-heading tabular-nums">{totalKomaAll}</span>コマ
+            合計 <span className="font-bold text-text-heading tabular-nums">{totalKomaAll}</span>
+            コマ
           </span>
         </div>
       )}
@@ -414,7 +432,7 @@ export default function ProposalList() {
           }`}
         >
           <button
-            onClick={() => hasSelection ? clearSelection() : selectAllPublishable()}
+            onClick={() => (hasSelection ? clearSelection() : selectAllPublishable())}
             className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors duration-150 ${
               hasSelection
                 ? 'bg-emerald-600 border-emerald-600 text-white'
@@ -426,9 +444,7 @@ export default function ProposalList() {
 
           {hasSelection ? (
             <>
-              <span className="text-xs font-medium text-emerald-800">
-                {selectedCount}件選択
-              </span>
+              <span className="text-xs font-medium text-emerald-800">{selectedCount}件選択</span>
               <button
                 onClick={clearSelection}
                 className="text-[11px] text-emerald-600 hover:text-emerald-800 transition-colors"
@@ -440,7 +456,11 @@ export default function ProposalList() {
               <button
                 onClick={handleBulkSent}
                 disabled={sending || publishing || selectedDraftCount === 0}
-                title={selectedDraftCount === 0 ? '下書きの提案書を選択してください' : `${selectedDraftCount}件を提案済みにする`}
+                title={
+                  selectedDraftCount === 0
+                    ? '下書きの提案書を選択してください'
+                    : `${selectedDraftCount}件を提案済みにする`
+                }
                 className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-bold bg-info text-white rounded-lg hover:brightness-95 active:scale-[0.97] transition-[filter,transform] duration-150 disabled:opacity-50"
               >
                 {sending ? (
@@ -456,19 +476,13 @@ export default function ProposalList() {
                   disabled={publishing || sending || selectedCount === 0}
                   className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-bold bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 active:scale-[0.97] transition-[colors,transform] duration-150 disabled:opacity-50"
                 >
-                  {publishing ? (
-                    <InlineLoading size="sm" label="公開中..." />
-                  ) : (
-                    `公開する`
-                  )}
+                  {publishing ? <InlineLoading size="sm" label="公開中..." /> : `公開する`}
                 </button>
               )}
             </>
           ) : (
             <>
-              <span className="text-xs text-text-faint">
-                未公開 {publishable.length}件
-              </span>
+              <span className="text-xs text-text-faint">未公開 {publishable.length}件</span>
               <div className="flex-1" />
               <button
                 onClick={selectAllPublishable}
@@ -485,23 +499,27 @@ export default function ProposalList() {
       {loading ? (
         <Loading size="md" />
       ) : proposals.length === 0 ? (
-        <div className="py-12 text-center text-sm text-text-faint">
-          提案書はまだありません
-        </div>
+        <div className="py-12 text-center text-sm text-text-faint">提案書はまだありません</div>
       ) : (
         <div className="space-y-6">
           {sortedTextbooks.map(([tbId, { name, subject, proposals: tbProposals }]) => (
-            <div key={tbId} className="bg-surface-raised rounded-xl border border-border-default overflow-hidden">
+            <div
+              key={tbId}
+              className="bg-surface-raised rounded-xl border border-border-default overflow-hidden"
+            >
               <div className="px-4 py-3 border-b border-border-subtle">
                 <div className="font-semibold text-sm text-text-heading flex items-center gap-1.5">
-                  {subject && (() => {
-                    const colors = getSubjectBadgeColor(subject);
-                    return (
-                      <span className={`inline-flex px-1.5 py-0.5 text-[11px] font-bold rounded shrink-0 ${colors.bg} ${colors.text}`}>
-                        {subject}
-                      </span>
-                    );
-                  })()}
+                  {subject &&
+                    (() => {
+                      const colors = getSubjectBadgeColor(subject);
+                      return (
+                        <span
+                          className={`inline-flex px-1.5 py-0.5 text-[11px] font-bold rounded shrink-0 ${colors.bg} ${colors.text}`}
+                        >
+                          {subject}
+                        </span>
+                      );
+                    })()}
                   <span className="truncate">{name}</span>
                 </div>
               </div>
@@ -548,8 +566,12 @@ export default function ProposalList() {
                             {p.theme || `${p.year}年 ${SEASON_LABELS[p.season as SeasonType]}講習`}
                           </div>
                           <div className="text-xs text-text-muted flex gap-2 flex-wrap">
-                            <span>{p.year}年 {SEASON_LABELS[p.season as SeasonType]}</span>
-                            <span>{p.units.length}単元 / {koma}コマ</span>
+                            <span>
+                              {p.year}年 {SEASON_LABELS[p.season as SeasonType]}
+                            </span>
+                            <span>
+                              {p.units.length}単元 / {koma}コマ
+                            </span>
                             {appliedKoma != null && (
                               <span className="text-info">申込 {appliedKoma}コマ</span>
                             )}
@@ -572,10 +594,7 @@ export default function ProposalList() {
 
       {/* 公開後の教材発注ダイアログ */}
       {orderDialog && (
-        <PublishOrderDialog
-          candidates={orderDialog}
-          onClose={() => setOrderDialog(null)}
-        />
+        <PublishOrderDialog candidates={orderDialog} onClose={() => setOrderDialog(null)} />
       )}
     </div>
   );

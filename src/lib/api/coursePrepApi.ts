@@ -1,7 +1,9 @@
 import { supabase } from '../supabase';
 
 async function getAccessToken(): Promise<string> {
-  const { data: { session } } = await supabase.auth.getSession();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
   if (!session) {
     throw new Error('認証が必要です。ログインし直してください。');
   }
@@ -73,7 +75,10 @@ const batchInflight = new Map<string, Promise<Record<string, unknown>>>();
 
 // 複数校バッチ（batch_get_multi）専用のキャッシュ。キーが schoolIds 結合のため
 // 単一校キャッシュとは別の Map で持ち、無効化時は安全側に倒して全クリアする（後述）。
-const batchMultiCache = new Map<string, { data: Record<string, Record<string, unknown>>; expiresAt: number }>();
+const batchMultiCache = new Map<
+  string,
+  { data: Record<string, Record<string, unknown>>; expiresAt: number }
+>();
 const batchMultiInflight = new Map<string, Promise<Record<string, Record<string, unknown>>>>();
 
 function batchCacheKey(params: Record<string, string | undefined>, targets: string[]): string {
@@ -81,7 +86,10 @@ function batchCacheKey(params: Record<string, string | undefined>, targets: stri
 }
 
 // 複数校キャッシュキー: schoolIds をソートして結合し、順序に依存しないようにする。
-function batchMultiCacheKey(params: { schoolIds: string[]; season: string; year: string }, targets: string[]): string {
+function batchMultiCacheKey(
+  params: { schoolIds: string[]; season: string; year: string },
+  targets: string[]
+): string {
   return `${params.schoolIds.slice().sort().join('|')}:${params.season}:${params.year}:${targets.slice().sort().join(',')}`;
 }
 
@@ -89,7 +97,10 @@ export function invalidateCoursePrepCache(schoolId?: string): void {
   // multi キャッシュは複数校が混在しキーから特定 schoolId を部分削除できないため、
   // 書き込み無効化時は schoolId 指定の有無に関わらず全クリアする（古いデータ混入を防ぐ安全側）。
   batchMultiCache.clear();
-  if (!schoolId) { batchCache.clear(); return; }
+  if (!schoolId) {
+    batchCache.clear();
+    return;
+  }
   Array.from(batchCache.keys()).forEach((key) => {
     if (key.startsWith(`${schoolId}:`)) batchCache.delete(key);
   });

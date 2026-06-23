@@ -56,9 +56,7 @@ export default function TransferNotificationsPage() {
 
   const [notifications, setNotifications] = useState<TransferNotification[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState<TransferNotificationStatus | 'all'>(
-    'pending'
-  );
+  const [statusFilter, setStatusFilter] = useState<TransferNotificationStatus | 'all'>('pending');
   // 「送信済みにマーク」ダイアログ
   const [markTarget, setMarkTarget] = useState<TransferNotification | null>(null);
   const [markMethod, setMarkMethod] = useState('email');
@@ -128,9 +126,7 @@ export default function TransferNotificationsPage() {
             : 'bg-surface text-text-muted';
     const label =
       s === 'pending' ? '未送信' : s === 'sent' ? '送信済' : s === 'failed' ? '失敗' : 'スキップ';
-    return (
-      <span className={`px-2 py-0.5 rounded text-xs font-semibold ${cls}`}>{label}</span>
-    );
+    return <span className={`px-2 py-0.5 rounded text-xs font-semibold ${cls}`}>{label}</span>;
   };
 
   return (
@@ -139,7 +135,10 @@ export default function TransferNotificationsPage() {
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold">振替確定通知</h1>
-          <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as typeof statusFilter)}>
+          <Select
+            value={statusFilter}
+            onValueChange={(v) => setStatusFilter(v as typeof statusFilter)}
+          >
             <SelectTrigger className="w-40">
               <SelectValue />
             </SelectTrigger>

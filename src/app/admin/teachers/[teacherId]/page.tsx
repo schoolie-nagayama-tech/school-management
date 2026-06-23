@@ -8,10 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useMasterData } from '@/contexts/MasterDataContext';
 import { fetchWithAuth } from '@/lib/api/auth';
 import { getActiveTimeSlots } from '@/lib/api/schedule';
-import {
-  getTeacherShiftHistory,
-  type TeacherShiftHistoryEntry,
-} from '@/lib/api/teacher-shifts';
+import { getTeacherShiftHistory, type TeacherShiftHistoryEntry } from '@/lib/api/teacher-shifts';
 import {
   deleteAvailabilityPeriod,
   getAvailabilityPeriods,
@@ -23,7 +20,15 @@ import {
 import { getTeacherBadges, getTeacherBadgeAssignments } from '@/lib/api/teacher-badges';
 import { getTeacherTrainings } from '@/lib/api/teacher-trainings';
 import { onTeacherBadgesChanged } from '@/lib/teacher-badge-events';
-import type { School, UserProfile, Subject, TeacherBadge, TeacherBadgeAssignment, BadgeRank, TeacherTraining } from '@/types/database';
+import type {
+  School,
+  UserProfile,
+  Subject,
+  TeacherBadge,
+  TeacherBadgeAssignment,
+  BadgeRank,
+  TeacherTraining,
+} from '@/types/database';
 import { BADGE_RANK_CONFIG, USER_ROLE_LABELS } from '@/types/database';
 import type { ScheduleTimeSlot } from '@/types/schedule';
 import { Loading } from '@/components/ui';
@@ -52,7 +57,10 @@ function normalizeToNumArray(v: unknown): number[] {
   if (typeof v === 'string') {
     const trimmed = v.replace(/^\{|\}$/g, '').trim();
     if (!trimmed) return [];
-    return trimmed.split(',').map((s) => Number(s.trim())).filter((n) => !Number.isNaN(n));
+    return trimmed
+      .split(',')
+      .map((s) => Number(s.trim()))
+      .filter((n) => !Number.isNaN(n));
   }
   return [];
 }
@@ -61,7 +69,9 @@ function normalizeToSlotNumbersByDay(v: unknown): Record<string, number[]> {
   if (v !== null && typeof v === 'object' && !Array.isArray(v)) {
     const out: Record<string, number[]> = {};
     for (const key of Object.keys(v as object)) {
-      const arr = normalizeToNumArray((v as Record<string, unknown>)[key]).filter((n) => n >= 1 && n <= 7);
+      const arr = normalizeToNumArray((v as Record<string, unknown>)[key]).filter(
+        (n) => n >= 1 && n <= 7
+      );
       if (arr.length > 0) out[key] = arr;
     }
     return out;
@@ -95,7 +105,8 @@ export default function TeacherDetailPage() {
   // 出勤可能期間一覧（teacher_availability_periods）：manual / regular_shift 両方
   const [availabilityPeriods, setAvailabilityPeriods] = useState<TeacherAvailabilityPeriod[]>([]);
   // 「今日有効な」出勤可能（manual > regular_shift 解決済み）
-  const [effectiveAvailability, setEffectiveAvailability] = useState<TeacherAvailabilityPeriod | null>(null);
+  const [effectiveAvailability, setEffectiveAvailability] =
+    useState<TeacherAvailabilityPeriod | null>(null);
   const [isResyncing, setIsResyncing] = useState(false);
 
   useEffect(() => {
@@ -163,7 +174,9 @@ export default function TeacherDetailPage() {
       }
     })();
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [teacherId]);
 
   useEffect(() => {
@@ -231,15 +244,16 @@ export default function TeacherDetailPage() {
 
   // 「今日有効な」出勤可能を slot_number ベースで描画。
   // effective が無ければ user_profiles の旧値にフォールバック（過渡期データ）。
-  const slotsByDay: Record<string, number[]> = effectiveAvailability?.available_slot_numbers_by_day
-    && Object.keys(effectiveAvailability.available_slot_numbers_by_day).length > 0
-    ? Object.fromEntries(
-        Object.entries(effectiveAvailability.available_slot_numbers_by_day).map(([k, v]) => [
-          k,
-          Array.isArray(v) ? (v as number[]) : [],
-        ])
-      )
-    : normalizeToSlotNumbersByDay(teacher.available_slot_numbers_by_day);
+  const slotsByDay: Record<string, number[]> =
+    effectiveAvailability?.available_slot_numbers_by_day &&
+    Object.keys(effectiveAvailability.available_slot_numbers_by_day).length > 0
+      ? Object.fromEntries(
+          Object.entries(effectiveAvailability.available_slot_numbers_by_day).map(([k, v]) => [
+            k,
+            Array.isArray(v) ? (v as number[]) : [],
+          ])
+        )
+      : normalizeToSlotNumbersByDay(teacher.available_slot_numbers_by_day);
   const totalAvailableSlots = Object.values(slotsByDay).reduce((sum, arr) => sum + arr.length, 0);
   // 「いつ時点の出勤可能か」ラベル
   const effectiveLabel = effectiveAvailability
@@ -256,7 +270,11 @@ export default function TeacherDetailPage() {
     .filter((b): b is TeacherBadge => b !== undefined);
 
   const rankCounts: Record<BadgeRank, number> = {
-    neutral: 0, bronze: 0, silver: 0, gold: 0, platinum: 0,
+    neutral: 0,
+    bronze: 0,
+    silver: 0,
+    gold: 0,
+    platinum: 0,
   };
   for (const b of earnedBadges) rankCounts[b.rank] = (rankCounts[b.rank] || 0) + 1;
 
@@ -297,7 +315,9 @@ export default function TeacherDetailPage() {
       }
     >
       {/* ヒーローカード */}
-      <div className={`${heroBgClass} relative overflow-hidden rounded-2xl p-6 mb-6 shadow-lg text-white transition-[background] duration-500 ease-out`}>
+      <div
+        className={`${heroBgClass} relative overflow-hidden rounded-2xl p-6 mb-6 shadow-lg text-white transition-[background] duration-500 ease-out`}
+      >
         <div className="flex items-center gap-5">
           <div className="flex-1 min-w-0">
             <h1 className="text-2xl font-bold truncate">{teacher.display_name || '(未設定)'}</h1>
@@ -341,7 +361,9 @@ export default function TeacherDetailPage() {
                   if (!items || items.length === 0) return null;
                   return (
                     <div key={cat}>
-                      <div className="text-xs font-semibold text-gray-500 mb-1.5">{GRADE_CATEGORY_LABELS[cat]}</div>
+                      <div className="text-xs font-semibold text-gray-500 mb-1.5">
+                        {GRADE_CATEGORY_LABELS[cat]}
+                      </div>
                       <div className="flex flex-wrap gap-1.5">
                         {items.map((s) => (
                           <span
@@ -381,9 +403,7 @@ export default function TeacherDetailPage() {
                     >
                       {effectiveSourceLabel}
                     </span>
-                    <span className="ml-auto text-gray-400">
-                      編集は下の「出勤可能期間」から
-                    </span>
+                    <span className="ml-auto text-gray-400">編集は下の「出勤可能期間」から</span>
                   </div>
                 ) : (
                   <div className="text-[11px] text-gray-400">
@@ -394,9 +414,14 @@ export default function TeacherDetailPage() {
                   <table className="w-full border-collapse text-xs">
                     <thead>
                       <tr>
-                        <th className="p-2 border border-gray-200 bg-gray-50 text-left font-semibold text-gray-600">コマ</th>
+                        <th className="p-2 border border-gray-200 bg-gray-50 text-left font-semibold text-gray-600">
+                          コマ
+                        </th>
                         {DAY_LABELS.map((d, i) => (
-                          <th key={i} className="p-2 border border-gray-200 bg-gray-50 text-center font-semibold text-gray-600 min-w-[42px]">
+                          <th
+                            key={i}
+                            className="p-2 border border-gray-200 bg-gray-50 text-center font-semibold text-gray-600 min-w-[42px]"
+                          >
                             {d}
                           </th>
                         ))}
@@ -407,10 +432,14 @@ export default function TeacherDetailPage() {
                         <tr key={slot.slot_number}>
                           <td className="p-2 border border-gray-200 text-gray-700 whitespace-nowrap">
                             <span className="font-semibold">{slot.slot_number}</span>
-                            <span className="ml-1 text-gray-400">{slot.start_time}〜{slot.end_time}</span>
+                            <span className="ml-1 text-gray-400">
+                              {slot.start_time}〜{slot.end_time}
+                            </span>
                           </td>
                           {DAY_LABELS.map((_, dayIdx) => {
-                            const available = (slotsByDay[String(dayIdx)] || []).includes(slot.slot_number);
+                            const available = (slotsByDay[String(dayIdx)] || []).includes(
+                              slot.slot_number
+                            );
                             return (
                               <td
                                 key={dayIdx}
@@ -418,7 +447,9 @@ export default function TeacherDetailPage() {
                                   available ? 'bg-emerald-50' : 'bg-surface-raised'
                                 }`}
                               >
-                                {available && <span className="inline-block w-2 h-2 rounded-full bg-emerald-500" />}
+                                {available && (
+                                  <span className="inline-block w-2 h-2 rounded-full bg-emerald-500" />
+                                )}
                               </td>
                             );
                           })}
@@ -561,9 +592,7 @@ export default function TeacherDetailPage() {
                         <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-0.5 text-xs text-gray-500">
                           {t.period_label && <span>{t.period_label}</span>}
                           {t.attended_on && (
-                            <span>
-                              {new Date(t.attended_on).toLocaleDateString('ja-JP')}
-                            </span>
+                            <span>{new Date(t.attended_on).toLocaleDateString('ja-JP')}</span>
                           )}
                         </div>
                         {t.note && (
@@ -586,13 +615,16 @@ export default function TeacherDetailPage() {
               <div className="flex items-end justify-between mb-1.5">
                 <span className="text-xs text-gray-500">獲得数</span>
                 <span className="text-sm font-bold text-gray-900">
-                  {earnedBadges.length} <span className="text-xs font-normal text-gray-400">/ {allBadges.length}</span>
+                  {earnedBadges.length}{' '}
+                  <span className="text-xs font-normal text-gray-400">/ {allBadges.length}</span>
                 </span>
               </div>
               <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
                 <div
                   className="h-full bg-gradient-to-r from-sky-500 to-emerald-500 rounded-full transition-[width] duration-500 ease-out"
-                  style={{ width: `${allBadges.length ? (earnedBadges.length / allBadges.length) * 100 : 0}%` }}
+                  style={{
+                    width: `${allBadges.length ? (earnedBadges.length / allBadges.length) * 100 : 0}%`,
+                  }}
                 />
               </div>
             </div>
@@ -605,8 +637,13 @@ export default function TeacherDetailPage() {
                     className="text-center py-2 rounded-lg border"
                     style={{ borderColor: `${cfg.color}40`, backgroundColor: `${cfg.color}08` }}
                   >
-                    <div className="text-lg font-bold" style={{ color: cfg.color }}>{rankCounts[r]}</div>
-                    <div className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: cfg.color }}>
+                    <div className="text-lg font-bold" style={{ color: cfg.color }}>
+                      {rankCounts[r]}
+                    </div>
+                    <div
+                      className="text-[11px] font-semibold uppercase tracking-wide"
+                      style={{ color: cfg.color }}
+                    >
                       {cfg.label}
                     </div>
                   </div>
@@ -627,7 +664,9 @@ export default function TeacherDetailPage() {
                     >
                       <div
                         className="w-10 h-10 rounded-lg flex items-center justify-center text-white shadow-sm"
-                        style={{ background: `linear-gradient(135deg, ${cfg.color}, ${cfg.color}88)` }}
+                        style={{
+                          background: `linear-gradient(135deg, ${cfg.color}, ${cfg.color}88)`,
+                        }}
                       >
                         <BadgeIcon icon={b.icon} size={18} />
                       </div>
@@ -655,11 +694,15 @@ export default function TeacherDetailPage() {
             <dl className="text-sm space-y-2">
               <div className="flex justify-between">
                 <dt className="text-gray-500">ログインID</dt>
-                <dd className="font-medium text-gray-800 truncate ml-2">{displayLoginId(teacher.email)}</dd>
+                <dd className="font-medium text-gray-800 truncate ml-2">
+                  {displayLoginId(teacher.email)}
+                </dd>
               </div>
               <div className="flex justify-between">
                 <dt className="text-gray-500">役割</dt>
-                <dd className="font-medium text-gray-800">{USER_ROLE_LABELS[teacher.role] || teacher.role}</dd>
+                <dd className="font-medium text-gray-800">
+                  {USER_ROLE_LABELS[teacher.role] || teacher.role}
+                </dd>
               </div>
               {teacher.created_at && (
                 <div className="flex justify-between">
@@ -731,9 +774,7 @@ function AvailabilityPeriodsPanel({
 }) {
   const today = new Date().toISOString().slice(0, 10);
   // 編集モーダル状態。null=閉じている、{}=新規、TeacherAvailabilityPeriod=編集
-  const [editorTarget, setEditorTarget] = useState<
-    TeacherAvailabilityPeriod | 'new' | null
-  >(null);
+  const [editorTarget, setEditorTarget] = useState<TeacherAvailabilityPeriod | 'new' | null>(null);
 
   // 期間を「現在有効 / 未来予定 / 過去」に分類
   const current: TeacherAvailabilityPeriod[] = [];
@@ -752,7 +793,9 @@ function AvailabilityPeriodsPanel({
       alert('シフト由来の期間は削除できません。シフト提出を編集/削除してください。');
       return;
     }
-    if (!confirm(`${p.effective_from} 〜 ${p.effective_until || '無期限'} の期間を削除しますか？`)) {
+    if (
+      !confirm(`${p.effective_from} 〜 ${p.effective_until || '無期限'} の期間を削除しますか？`)
+    ) {
       return;
     }
     try {
@@ -948,9 +991,7 @@ function PeriodGroup({
                 })}
               </div>
             )}
-            {p.notes && (
-              <p className="mt-1.5 text-[11px] text-gray-400 italic">{p.notes}</p>
-            )}
+            {p.notes && <p className="mt-1.5 text-[11px] text-gray-400 italic">{p.notes}</p>}
           </li>
         ))}
       </ul>
@@ -983,15 +1024,9 @@ function AvailabilityEditorModal({
   // 新規 or 編集（シフト由来の上書きも「新規 manual」として扱う）
   const isEdit = !!initial && initial.source === 'manual';
 
-  const [schoolId, setSchoolId] = useState<string>(
-    initial?.school_id ?? schoolIds[0] ?? ''
-  );
-  const [effectiveFrom, setEffectiveFrom] = useState<string>(
-    initial?.effective_from ?? today
-  );
-  const [effectiveUntil, setEffectiveUntil] = useState<string>(
-    initial?.effective_until ?? ''
-  );
+  const [schoolId, setSchoolId] = useState<string>(initial?.school_id ?? schoolIds[0] ?? '');
+  const [effectiveFrom, setEffectiveFrom] = useState<string>(initial?.effective_from ?? today);
+  const [effectiveUntil, setEffectiveUntil] = useState<string>(initial?.effective_until ?? '');
   const [notes, setNotes] = useState<string>(initial?.notes ?? '');
   // 曜日×slot_number セット
   const [grid, setGrid] = useState<Record<string, Set<number>>>(() => {
@@ -1020,10 +1055,17 @@ function AvailabilityEditorModal({
 
   const handleSave = async () => {
     setErrMsg(null);
-    if (!schoolId) { setErrMsg('校舎を選択してください'); return; }
-    if (!effectiveFrom) { setErrMsg('開始日を選択してください'); return; }
+    if (!schoolId) {
+      setErrMsg('校舎を選択してください');
+      return;
+    }
+    if (!effectiveFrom) {
+      setErrMsg('開始日を選択してください');
+      return;
+    }
     if (effectiveUntil && effectiveUntil < effectiveFrom) {
-      setErrMsg('終了日は開始日以降にしてください'); return;
+      setErrMsg('終了日は開始日以降にしてください');
+      return;
     }
     setIsSaving(true);
     try {
@@ -1083,8 +1125,8 @@ function AvailabilityEditorModal({
         <div className="p-5 space-y-4">
           {!isEdit && initial?.source === 'regular_shift' && (
             <div className="text-xs text-warning bg-warning-subtle border border-warning/30 rounded p-2">
-              シフト由来の期間を「上書き」する新しい manual 期間を作ります。
-              同じ日に manual がある場合はそちらが優先表示されます。
+              シフト由来の期間を「上書き」する新しい manual 期間を作ります。 同じ日に manual
+              がある場合はそちらが優先表示されます。
             </div>
           )}
 
@@ -1228,4 +1270,3 @@ function AvailabilityEditorModal({
     </div>
   );
 }
-

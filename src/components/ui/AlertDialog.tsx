@@ -45,7 +45,9 @@ export function AlertDialog({ open, onOpenChange, children, overlayClassName }: 
   if (!open) return null;
 
   return (
-    <div className={`fixed inset-0 z-50 flex items-center justify-center p-4 ${overlayClassName ?? ''}`}>
+    <div
+      className={`fixed inset-0 z-50 flex items-center justify-center p-4 ${overlayClassName ?? ''}`}
+    >
       <div
         className="absolute inset-0 modal-overlay"
         onClick={() => onOpenChange(false)}
@@ -81,11 +83,7 @@ interface AlertDialogHeaderProps {
 }
 
 export function AlertDialogHeader({ children, className = '' }: AlertDialogHeaderProps) {
-  return (
-    <div className={`px-6 py-4 border-b border-border ${className}`}>
-      {children}
-    </div>
-  );
+  return <div className={`px-6 py-4 border-b border-border ${className}`}>{children}</div>;
 }
 
 interface AlertDialogTitleProps {
@@ -123,7 +121,9 @@ interface AlertDialogFooterProps {
 
 export function AlertDialogFooter({ children, className = '' }: AlertDialogFooterProps) {
   return (
-    <div className={`flex items-center justify-end gap-2 px-6 py-4 border-t border-border ${className}`}>
+    <div
+      className={`flex items-center justify-end gap-2 px-6 py-4 border-t border-border ${className}`}
+    >
       {children}
     </div>
   );
@@ -136,7 +136,12 @@ interface AlertDialogActionProps {
   disabled?: boolean;
 }
 
-export function AlertDialogAction({ children, onClick, className = '', disabled = false }: AlertDialogActionProps) {
+export function AlertDialogAction({
+  children,
+  onClick,
+  className = '',
+  disabled = false,
+}: AlertDialogActionProps) {
   return (
     <button
       type="button"

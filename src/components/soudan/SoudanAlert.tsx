@@ -17,13 +17,13 @@ export function SoudanAlert() {
         const schoolId = getDefaultSchoolId();
         const count = await getUnhandledSoudanCount(schoolId);
         setUnhandledCount(count);
-        
+
         // 最新の期間を取得（リンク用）
         const periods = await getSoudanPeriods(schoolId, false);
         if (periods.length > 0) {
           // 最新の期間（作成日時が新しい順）
-          const sorted = periods.sort((a, b) => 
-            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+          const sorted = periods.sort(
+            (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
           );
           setLatestPeriodKey(sorted[0].period_key);
         }
@@ -36,7 +36,7 @@ export function SoudanAlert() {
     };
 
     fetchData();
-    
+
     // 30秒ごとに更新
     const interval = setInterval(fetchData, 30000);
     return () => clearInterval(interval);
@@ -58,9 +58,7 @@ export function SoudanAlert() {
         <div className="flex items-center gap-3">
           <AlertTriangle className="w-7 h-7 text-white" />
           <div>
-            <h3 className="text-lg font-bold text-white mb-1">
-              未対応のお客様相談があります
-            </h3>
+            <h3 className="text-lg font-bold text-white mb-1">未対応のお客様相談があります</h3>
             <p className="text-white/90 text-sm">
               {unhandledCount}件の未対応のお客様相談がございます。早急にご確認ください。
             </p>

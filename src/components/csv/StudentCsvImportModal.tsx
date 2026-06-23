@@ -110,9 +110,7 @@ export function StudentCsvImportModal({
     } catch {
       // 科目取得失敗時は科目なしで続行
     }
-    const subjectMap = new Map<string, string>(
-      allSubjects.map((s) => [s.name, s.id])
-    );
+    const subjectMap = new Map<string, string>(allSubjects.map((s) => [s.name, s.id]));
 
     const result: ImportResult = {
       success: 0,
@@ -162,12 +160,7 @@ export function StudentCsvImportModal({
   const previewRows = rows.slice(0, 5);
 
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={handleClose}
-      title="生徒CSVインポート"
-      size="lg"
-    >
+    <Modal isOpen={isOpen} onClose={handleClose} title="生徒CSVインポート" size="lg">
       {/* ── STEP: アップロード ── */}
       {step === 'upload' && (
         <div className="space-y-6">
@@ -249,7 +242,9 @@ export function StudentCsvImportModal({
           </div>
 
           <div className="flex justify-end">
-            <Button variant="ghost" onClick={handleClose}>キャンセル</Button>
+            <Button variant="ghost" onClick={handleClose}>
+              キャンセル
+            </Button>
           </div>
         </div>
       )}
@@ -304,24 +299,28 @@ export function StudentCsvImportModal({
               <table className="w-full text-xs">
                 <thead className="bg-[#f9fafb]">
                   <tr>
-                    {['行', '姓', '名', '姓（かな）', '名（かな）', '学年', '在籍状況', '受講科目'].map(
-                      (h) => (
-                        <th
-                          key={h}
-                          className="px-3 py-2 text-left text-[#4b5563] font-medium whitespace-nowrap"
-                        >
-                          {h}
-                        </th>
-                      )
-                    )}
+                    {[
+                      '行',
+                      '姓',
+                      '名',
+                      '姓（かな）',
+                      '名（かな）',
+                      '学年',
+                      '在籍状況',
+                      '受講科目',
+                    ].map((h) => (
+                      <th
+                        key={h}
+                        className="px-3 py-2 text-left text-[#4b5563] font-medium whitespace-nowrap"
+                      >
+                        {h}
+                      </th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#e5e7eb]/50">
                   {previewRows.map((r) => (
-                    <tr
-                      key={r.rowIndex}
-                      className={r.errors.length > 0 ? 'bg-red-50' : ''}
-                    >
+                    <tr key={r.rowIndex} className={r.errors.length > 0 ? 'bg-red-50' : ''}>
                       <td className="px-3 py-2 text-[#4b5563]">{r.rowIndex}</td>
                       <td className="px-3 py-2">{r.last_name}</td>
                       <td className="px-3 py-2">{r.first_name}</td>
@@ -348,11 +347,10 @@ export function StudentCsvImportModal({
               ← やり直し
             </Button>
             <div className="flex gap-2">
-              <Button variant="ghost" onClick={handleClose}>キャンセル</Button>
-              <Button
-                onClick={handleImport}
-                disabled={importableRows.length === 0}
-              >
+              <Button variant="ghost" onClick={handleClose}>
+                キャンセル
+              </Button>
+              <Button onClick={handleImport} disabled={importableRows.length === 0}>
                 {importableRows.length} 件を登録する
               </Button>
             </div>
@@ -373,9 +371,8 @@ export function StudentCsvImportModal({
             <div
               className="bg-[#1e3a5f] h-2 rounded-full transition-[width] duration-300 ease-out"
               style={{
-                width: importableRows.length > 0
-                  ? `${(progress / importableRows.length) * 100}%`
-                  : '0%',
+                width:
+                  importableRows.length > 0 ? `${(progress / importableRows.length) * 100}%` : '0%',
               }}
             />
           </div>
@@ -404,7 +401,9 @@ export function StudentCsvImportModal({
             <div className="bg-red-50 border border-red-200 rounded-lg p-3 max-h-40 overflow-y-auto">
               <p className="text-xs font-medium text-[#c62828] mb-1">失敗の詳細:</p>
               {importResult.failDetails.map((d, i) => (
-                <p key={i} className="text-xs text-[#c62828]">{d}</p>
+                <p key={i} className="text-xs text-[#c62828]">
+                  {d}
+                </p>
               ))}
             </div>
           )}

@@ -5,7 +5,16 @@ import type { ReactNode } from 'react';
 import dynamic from 'next/dynamic';
 import { Button, Modal, Loading } from '@/components/ui';
 import Link from 'next/link';
-import { Plus, AlertCircle, Eye, EyeOff, AlertTriangle, Mic, Search, ClipboardPaste } from 'lucide-react';
+import {
+  Plus,
+  AlertCircle,
+  Eye,
+  EyeOff,
+  AlertTriangle,
+  Mic,
+  Search,
+  ClipboardPaste,
+} from 'lucide-react';
 import { ContextHelp } from '@/components/help/ContextHelp';
 import {
   StudentForm,
@@ -14,10 +23,9 @@ import {
   StudentDetailModal,
 } from '@/components/students';
 
-const StudentScores = dynamic(
-  () => import('@/components/students').then((m) => m.StudentScores),
-  { ssr: false }
-);
+const StudentScores = dynamic(() => import('@/components/students').then((m) => m.StudentScores), {
+  ssr: false,
+});
 const AttendanceMatrix = dynamic(
   () => import('@/components/students').then((m) => m.AttendanceMatrix),
   { ssr: false }
@@ -93,14 +101,12 @@ const StudentCsvImportModalDynamic = dynamic(
 );
 
 const BulkGradeUpdateModalDynamic = dynamic(
-  () =>
-    import('@/components/students/BulkGradeUpdateModal').then((m) => m.BulkGradeUpdateModal),
+  () => import('@/components/students/BulkGradeUpdateModal').then((m) => m.BulkGradeUpdateModal),
   { loading: () => null }
 );
 
 const MockPasteImportModalDynamic = dynamic(
-  () =>
-    import('@/components/scores/MockPasteImportModal').then((m) => m.MockPasteImportModal),
+  () => import('@/components/scores/MockPasteImportModal').then((m) => m.MockPasteImportModal),
   { loading: () => null }
 );
 
@@ -131,9 +137,9 @@ export function StudentsPageClient({
   // 状態管理（名簿タブはサーバページング、成績タブは従来どおり全件）
   const [rosterRows, setRosterRows] = useState<(Student & { subjects?: Subject[] })[]>([]);
   const [rosterTotalCount, setRosterTotalCount] = useState(0);
-  const [studentsForScores, setStudentsForScores] = useState<(Student & { subjects?: Subject[] })[]>(
-    []
-  );
+  const [studentsForScores, setStudentsForScores] = useState<
+    (Student & { subjects?: Subject[] })[]
+  >([]);
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -182,10 +188,7 @@ export function StudentsPageClient({
   // 選択生徒の教室移動
   const [isMoveSelectedModalOpen, setIsMoveSelectedModalOpen] = useState(false);
   const [moveTargetSchoolId, setMoveTargetSchoolId] = useState('');
-  const moveSchoolOptions = useMemo(
-    () => masterSchools.filter((s) => !s.is_demo),
-    [masterSchools]
-  );
+  const moveSchoolOptions = useMemo(() => masterSchools.filter((s) => !s.is_demo), [masterSchools]);
 
   // TaskProgressWidget へ渡す配列を安定化（毎レンダリングで新規配列を渡すと
   // 子コンポーネントが不要に再レンダリングされるため）
@@ -205,56 +208,62 @@ export function StudentsPageClient({
     return () => clearTimeout(t);
   }, [searchQuery]);
 
-  const reloadRosterPage = useCallback(async (options?: { silent?: boolean }) => {
-    const silent = options?.silent ?? false;
-    if (!silent) setIsLoading(true);
-    setErrorMessage('');
-    try {
-      const schoolIds = getSelectedSchoolIds();
-      if (schoolIds.length === 0) {
-        setRosterRows([]);
-        setRosterTotalCount(0);
+  const reloadRosterPage = useCallback(
+    async (options?: { silent?: boolean }) => {
+      const silent = options?.silent ?? false;
+      if (!silent) setIsLoading(true);
+      setErrorMessage('');
+      try {
+        const schoolIds = getSelectedSchoolIds();
+        if (schoolIds.length === 0) {
+          setRosterRows([]);
+          setRosterTotalCount(0);
+          if (!silent) setIsLoading(false);
+          return;
+        }
+        const { rows, totalCount } = await getStudentsPage({
+          searchQuery: debouncedSearch,
+          schoolIds,
+          activeOnly: !showInactive,
+          grade: selectedGrade,
+          offset: (currentPage - 1) * ITEMS_PER_PAGE,
+          limit: ITEMS_PER_PAGE,
+        });
+        setRosterRows(rows);
+        setRosterTotalCount(totalCount);
+      } catch (error) {
+        console.error('Error fetching roster:', error);
+        setErrorMessage(getUserErrorMessage(error, '生徒一覧の取得に失敗しました'));
+      } finally {
         if (!silent) setIsLoading(false);
-        return;
       }
-      const { rows, totalCount } = await getStudentsPage({
-        searchQuery: debouncedSearch,
-        schoolIds,
-        activeOnly: !showInactive,
-        grade: selectedGrade,
-        offset: (currentPage - 1) * ITEMS_PER_PAGE,
-        limit: ITEMS_PER_PAGE,
-      });
-      setRosterRows(rows);
-      setRosterTotalCount(totalCount);
-    } catch (error) {
-      console.error('Error fetching roster:', error);
-      setErrorMessage(getUserErrorMessage(error, '生徒一覧の取得に失敗しました'));
-    } finally {
-      if (!silent) setIsLoading(false);
-    }
-  }, [getSelectedSchoolIds, debouncedSearch, showInactive, selectedGrade, currentPage]);
+    },
+    [getSelectedSchoolIds, debouncedSearch, showInactive, selectedGrade, currentPage]
+  );
 
-  const reloadScoresStudents = useCallback(async (options?: { silent?: boolean }) => {
-    const silent = options?.silent ?? false;
-    if (!silent) setIsLoading(true);
-    setErrorMessage('');
-    try {
-      const schoolIds = getSelectedSchoolIds();
-      if (schoolIds.length === 0) {
-        setStudentsForScores([]);
+  const reloadScoresStudents = useCallback(
+    async (options?: { silent?: boolean }) => {
+      const silent = options?.silent ?? false;
+      if (!silent) setIsLoading(true);
+      setErrorMessage('');
+      try {
+        const schoolIds = getSelectedSchoolIds();
+        if (schoolIds.length === 0) {
+          setStudentsForScores([]);
+          if (!silent) setIsLoading(false);
+          return;
+        }
+        const data = await getStudents(debouncedSearch, schoolIds);
+        setStudentsForScores(data);
+      } catch (error) {
+        console.error('Error fetching students for scores:', error);
+        setErrorMessage(getUserErrorMessage(error, '生徒一覧の取得に失敗しました'));
+      } finally {
         if (!silent) setIsLoading(false);
-        return;
       }
-      const data = await getStudents(debouncedSearch, schoolIds);
-      setStudentsForScores(data);
-    } catch (error) {
-      console.error('Error fetching students for scores:', error);
-      setErrorMessage(getUserErrorMessage(error, '生徒一覧の取得に失敗しました'));
-    } finally {
-      if (!silent) setIsLoading(false);
-    }
-  }, [getSelectedSchoolIds, debouncedSearch]);
+    },
+    [getSelectedSchoolIds, debouncedSearch]
+  );
 
   const refreshCodes = useCallback(() => {
     const schoolIds = getSelectedSchoolIds();
@@ -438,59 +447,64 @@ export function StudentsPageClient({
   }, []);
 
   // 新規登録
-  const handleCreate = useCallback(async (
-    data: StudentInsert | StudentUpdate
-  ) => {
-    setIsSubmitting(true);
-    setErrorMessage('');
-    try {
-      const created = await createStudent(data as StudentInsert);
-      setIsCreateModalOpen(false);
-      await syncListsAfterMutation();
-      setSelectedStudent(created);
-      setIsDetailModalOpen(true);
-    } catch (error) {
-      setErrorMessage(
-        getUserErrorMessage(error, '生徒の登録に失敗しました')
-      );
-    } finally {
-      setIsSubmitting(false);
-    }
-  }, [syncListsAfterMutation]);
+  const handleCreate = useCallback(
+    async (data: StudentInsert | StudentUpdate) => {
+      setIsSubmitting(true);
+      setErrorMessage('');
+      try {
+        const created = await createStudent(data as StudentInsert);
+        setIsCreateModalOpen(false);
+        await syncListsAfterMutation();
+        setSelectedStudent(created);
+        setIsDetailModalOpen(true);
+      } catch (error) {
+        setErrorMessage(getUserErrorMessage(error, '生徒の登録に失敗しました'));
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [syncListsAfterMutation]
+  );
 
   // 更新
-  const handleUpdate = useCallback(async (
-    data: StudentInsert | StudentUpdate
-  ) => {
-    if (!selectedStudent) return;
+  const handleUpdate = useCallback(
+    async (data: StudentInsert | StudentUpdate) => {
+      if (!selectedStudent) return;
 
-    setIsSubmitting(true);
-    setErrorMessage('');
-    try {
-      const update = data as StudentUpdate;
-      await updateStudent(selectedStudent.id, update);
-      setIsEditModalOpen(false);
-      // ステータス変更時のトースト案内
-      if (update.status && update.status !== selectedStudent.status) {
-        const statusLabel = update.status === 'withdrawn' ? '退会' : update.status === 'inactive' ? '休会' : '在籍中';
-        success(`${selectedStudent.last_name} ${selectedStudent.first_name} を「${statusLabel}」に変更しました`);
-        if ((update.status === 'withdrawn' || update.status === 'inactive') && !showInactive) {
-          success('退会・休会の生徒を表示するには「退会済み表示」をONにしてください');
+      setIsSubmitting(true);
+      setErrorMessage('');
+      try {
+        const update = data as StudentUpdate;
+        await updateStudent(selectedStudent.id, update);
+        setIsEditModalOpen(false);
+        // ステータス変更時のトースト案内
+        if (update.status && update.status !== selectedStudent.status) {
+          const statusLabel =
+            update.status === 'withdrawn'
+              ? '退会'
+              : update.status === 'inactive'
+                ? '休会'
+                : '在籍中';
+          success(
+            `${selectedStudent.last_name} ${selectedStudent.first_name} を「${statusLabel}」に変更しました`
+          );
+          if ((update.status === 'withdrawn' || update.status === 'inactive') && !showInactive) {
+            success('退会・休会の生徒を表示するには「退会済み表示」をONにしてください');
+          }
+        } else {
+          success('生徒情報を更新しました');
         }
-      } else {
-        success('生徒情報を更新しました');
+        setSelectedStudent(null);
+        await syncListsAfterMutation();
+      } catch (error) {
+        console.error('Error updating student:', error);
+        setErrorMessage(getUserErrorMessage(error, '生徒情報の更新に失敗しました'));
+      } finally {
+        setIsSubmitting(false);
       }
-      setSelectedStudent(null);
-      await syncListsAfterMutation();
-    } catch (error) {
-      console.error('Error updating student:', error);
-      setErrorMessage(
-        getUserErrorMessage(error, '生徒情報の更新に失敗しました')
-      );
-    } finally {
-      setIsSubmitting(false);
-    }
-  }, [selectedStudent, showInactive, success, syncListsAfterMutation]);
+    },
+    [selectedStudent, showInactive, success, syncListsAfterMutation]
+  );
 
   // 詳細モーダルを開く
   const handleOpenDetailModal = useCallback((student: Student) => {
@@ -533,9 +547,7 @@ export function StudentsPageClient({
       await syncListsAfterMutation();
     } catch (error) {
       console.error('Error bulk deleting students:', error);
-      setErrorMessage(
-        getUserErrorMessage(error, '一括削除に失敗しました')
-      );
+      setErrorMessage(getUserErrorMessage(error, '一括削除に失敗しました'));
     } finally {
       setIsSubmitting(false);
     }
@@ -556,9 +568,7 @@ export function StudentsPageClient({
       }
     } catch (error) {
       console.error('Error moving students:', error);
-      setErrorMessage(
-        getUserErrorMessage(error, '教室移動に失敗しました')
-      );
+      setErrorMessage(getUserErrorMessage(error, '教室移動に失敗しました'));
     } finally {
       setIsSubmitting(false);
     }
@@ -581,9 +591,7 @@ export function StudentsPageClient({
       await syncListsAfterMutation();
     } catch (error) {
       console.error('Error deleting student:', error);
-      setErrorMessage(
-        getUserErrorMessage(error, '生徒の削除に失敗しました')
-      );
+      setErrorMessage(getUserErrorMessage(error, '生徒の削除に失敗しました'));
     } finally {
       setIsSubmitting(false);
     }
@@ -610,79 +618,82 @@ export function StudentsPageClient({
   return (
     <AdminLayout
       headerTitle="生徒管理"
-      headerOnBulkGradeUpdateClick={!isTeacher ? () => setIsBulkGradeUpdateModalOpen(true) : undefined}
+      headerOnBulkGradeUpdateClick={
+        !isTeacher ? () => setIsBulkGradeUpdateModalOpen(true) : undefined
+      }
     >
       <ToastContainer toasts={toasts} onRemove={removeToast} />
 
       {/* エラーメッセージ */}
-        {errorMessage && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
-            <div className="flex items-center gap-2">
-              <AlertCircle className="w-5 h-5 text-danger" />
-              <p className="text-sm text-danger">{errorMessage}</p>
-            </div>
+      {errorMessage && (
+        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-5 h-5 text-danger" />
+            <p className="text-sm text-danger">{errorMessage}</p>
           </div>
-        )}
-
-        {/* 出勤簿未提出アラート（講師向け） */}
-        {isTeacher && <AttendanceUnsubmittedAlert />}
-
-        {/* 外部ツール（Grow・らくプリ等）クイックリンク + コンテキストヘルプ：
-            ヘルプアイコン単体で1行使うのは縦余白が無駄なため、クイックリンクと横並びにする */}
-        <div className="mb-4 flex items-start gap-2">
-          <div className="flex-1 min-w-0">
-            <QuickLinksBar />
-          </div>
-          <ContextHelp
-            searchQuery="生徒"
-            topics={[
-              {
-                title: '生徒を新規登録する',
-                description: '生徒情報を手動で追加します。',
-                steps: [
-                  '「新規登録」ボタンをクリック',
-                  'フォームに氏名・学年・所属教室を入力',
-                  '「保存」をクリックして登録完了',
-                ],
-              },
-              {
-                title: '生徒の詳細を確認・編集する',
-                description: '成績や面談記録など生徒の全情報を確認できます。',
-                steps: [
-                  '一覧から生徒名をクリック',
-                  '詳細モーダルが開き、タブで情報を切替',
-                  '「編集」で情報を変更、「保存」で確定',
-                ],
-              },
-              {
-                title: '生徒を検索・フィルタする',
-                description: '名前や学年で素早く絞り込みます。',
-                steps: [
-                  '検索バーに氏名・フリガナ・コードを入力',
-                  '学年フィルタや在籍状況で絞り込み',
-                ],
-              },
-            ]}
-          />
         </div>
+      )}
 
-        {/* 業務進捗ウィジェット（教室長以上のみ） */}
-        {!isTeacher && <TaskProgressWidget schoolIds={taskProgressSchoolIds} schoolId={selectedSchoolId || undefined} schools={taskProgressSchools} />}
+      {/* 出勤簿未提出アラート（講師向け） */}
+      {isTeacher && <AttendanceUnsubmittedAlert />}
 
-        {/* 講師: 連絡掲示板 ↔ アラート を横並び / 管理側: 従来のレイアウト */}
-        {isTeacher ? (
+      {/* 外部ツール（Grow・らくプリ等）クイックリンク + コンテキストヘルプ：
+            ヘルプアイコン単体で1行使うのは縦余白が無駄なため、クイックリンクと横並びにする */}
+      <div className="mb-4 flex items-start gap-2">
+        <div className="flex-1 min-w-0">
+          <QuickLinksBar />
+        </div>
+        <ContextHelp
+          searchQuery="生徒"
+          topics={[
+            {
+              title: '生徒を新規登録する',
+              description: '生徒情報を手動で追加します。',
+              steps: [
+                '「新規登録」ボタンをクリック',
+                'フォームに氏名・学年・所属教室を入力',
+                '「保存」をクリックして登録完了',
+              ],
+            },
+            {
+              title: '生徒の詳細を確認・編集する',
+              description: '成績や面談記録など生徒の全情報を確認できます。',
+              steps: [
+                '一覧から生徒名をクリック',
+                '詳細モーダルが開き、タブで情報を切替',
+                '「編集」で情報を変更、「保存」で確定',
+              ],
+            },
+            {
+              title: '生徒を検索・フィルタする',
+              description: '名前や学年で素早く絞り込みます。',
+              steps: ['検索バーに氏名・フリガナ・コードを入力', '学年フィルタや在籍状況で絞り込み'],
+            },
+          ]}
+        />
+      </div>
+
+      {/* 業務進捗ウィジェット（教室長以上のみ） */}
+      {!isTeacher && (
+        <TaskProgressWidget
+          schoolIds={taskProgressSchoolIds}
+          schoolId={selectedSchoolId || undefined}
+          schools={taskProgressSchools}
+        />
+      )}
+
+      {/* 講師: 連絡掲示板 ↔ アラート を横並び / 管理側: 従来のレイアウト */}
+      {isTeacher ? (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+          {bulletinSlot ?? <BulletinBoard />}
+          {alertSlot ?? <AlertBoard />}
+        </div>
+      ) : (
+        <>
+          <div className="mb-4">{bulletinSlot ?? <BulletinBoard />}</div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
-            {bulletinSlot ?? <BulletinBoard />}
             {alertSlot ?? <AlertBoard />}
-          </div>
-        ) : (
-          <>
-            <div className="mb-4">
-              {bulletinSlot ?? <BulletinBoard />}
-            </div>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
-              {alertSlot ?? <AlertBoard />}
-              <NotificationFeed
+            <NotificationFeed
               initialData={notificationInitialData}
               onStudentClick={({ studentId, studentName, schoolId }) => {
                 void (async () => {
@@ -695,7 +706,10 @@ export function StudentsPageClient({
                     const normalizedInput = normalize(studentName);
                     student = pools.find((s) => {
                       const normalizedFull = normalize(`${s.last_name}${s.first_name}`);
-                      return normalizedFull === normalizedInput && (!schoolId || s.school_id === schoolId);
+                      return (
+                        normalizedFull === normalizedInput &&
+                        (!schoolId || s.school_id === schoolId)
+                      );
                     });
                     if (!student) {
                       student = pools.find((s) => {
@@ -712,26 +726,32 @@ export function StudentsPageClient({
                 })();
               }}
             />
-            </div>
-          </>
-        )}
+          </div>
+        </>
+      )}
 
-        {/* タブナビゲーション */}
-        <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0 mb-6">
+      {/* タブナビゲーション */}
+      <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0 mb-6">
         <div className="flex items-center gap-0 border-b border-border min-w-max sm:min-w-0">
-          {([
-            { key: 'roster' as TabType, label: '生徒名簿' },
-            ...(!isTeacher ? [
-              { key: 'report_card' as TabType, label: '内申集計' },
-              { key: 'regular_test' as TabType, label: 'テスト点数集計' },
-              { key: 'mock' as TabType, label: '模試結果集計' },
-            ] : []),
-          ] as const).map((tab) => (
+          {(
+            [
+              { key: 'roster' as TabType, label: '生徒名簿' },
+              ...(!isTeacher
+                ? [
+                    { key: 'report_card' as TabType, label: '内申集計' },
+                    { key: 'regular_test' as TabType, label: 'テスト点数集計' },
+                    { key: 'mock' as TabType, label: '模試結果集計' },
+                  ]
+                : []),
+            ] as const
+          ).map((tab) => (
             <button
               key={tab.key}
               onClick={() => {
                 setActiveTab(tab.key);
-                router.replace(`/students${tab.key === 'roster' ? '' : `?tab=${tab.key}`}`, { scroll: false });
+                router.replace(`/students${tab.key === 'roster' ? '' : `?tab=${tab.key}`}`, {
+                  scroll: false,
+                });
               }}
               className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-[color,border-color] duration-150 ease-out whitespace-nowrap ${
                 activeTab === tab.key
@@ -743,70 +763,18 @@ export function StudentsPageClient({
             </button>
           ))}
         </div>
-        </div>
+      </div>
 
-        {/* 成績一覧タブ（講師には非表示） */}
-        {activeTab !== 'roster' && !isTeacher && (
-          <div>
-            {/* 学年フィルター + 模試一括取り込みボタン */}
-            <div className="flex items-center gap-3 mb-4">
-              <select
-                value={selectedGrade}
-                onChange={(e) => setSelectedGrade(e.target.value === 'all' ? 'all' : Number(e.target.value))}
-                className="px-4 py-2 border border-border-strong rounded-lg text-sm bg-surface-raised text-text-heading focus:ring-2 focus:ring-ink/30 focus:border-ink"
-              >
-                <option value="all">全学年</option>
-                {Array.from({ length: 13 }, (_, i) => i + 1).map((grade) => (
-                  <option key={grade} value={grade}>
-                    {GRADE_LABELS[grade] || `学年${grade}`}
-                  </option>
-                ))}
-              </select>
-              {activeTab === 'mock' && !isTeacher && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setIsMockPasteModalOpen(true)}
-                >
-                  <ClipboardPaste className="w-4 h-4 mr-1.5" />
-                  模試結果の一括取り込み
-                </Button>
-              )}
-            </div>
-            <ScoreListView
-              category={activeTab}
-              students={filteredStudents}
-              schoolIds={getSelectedSchoolIds()}
-            />
-          </div>
-        )}
-
-        {/* ===== 生徒名簿タブ（既存） ===== */}
-        {activeTab === 'roster' && <>
-        {/* ツールバー */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-          {/* 左側: 検索 + フィルターボタン */}
-          <div className="flex flex-col sm:flex-row gap-3">
-            {/* 検索 */}
-            <div className="w-full sm:w-72">
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Search className="w-5 h-5 text-text-faint" />
-                </div>
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="氏名・フリガナ・コードで検索..."
-                  className="w-full pl-10 pr-4 py-2 border border-border-strong rounded-lg text-sm bg-surface-raised text-text-heading focus:ring-2 focus:ring-ink/30 focus:border-ink placeholder:text-text-faint"
-                />
-              </div>
-            </div>
-
-            {/* 学年フィルター */}
+      {/* 成績一覧タブ（講師には非表示） */}
+      {activeTab !== 'roster' && !isTeacher && (
+        <div>
+          {/* 学年フィルター + 模試一括取り込みボタン */}
+          <div className="flex items-center gap-3 mb-4">
             <select
               value={selectedGrade}
-              onChange={(e) => setSelectedGrade(e.target.value === 'all' ? 'all' : Number(e.target.value))}
+              onChange={(e) =>
+                setSelectedGrade(e.target.value === 'all' ? 'all' : Number(e.target.value))
+              }
               className="px-4 py-2 border border-border-strong rounded-lg text-sm bg-surface-raised text-text-heading focus:ring-2 focus:ring-ink/30 focus:border-ink"
             >
               <option value="all">全学年</option>
@@ -816,26 +784,79 @@ export function StudentsPageClient({
                 </option>
               ))}
             </select>
+            {activeTab === 'mock' && !isTeacher && (
+              <Button variant="outline" size="sm" onClick={() => setIsMockPasteModalOpen(true)}>
+                <ClipboardPaste className="w-4 h-4 mr-1.5" />
+                模試結果の一括取り込み
+              </Button>
+            )}
+          </div>
+          <ScoreListView
+            category={activeTab}
+            students={filteredStudents}
+            schoolIds={getSelectedSchoolIds()}
+          />
+        </div>
+      )}
 
-            {/* 休会・退会表示ボタン（講師には非表示） */}
-            {!isTeacher && (
-              <button
-                onClick={() => {
-                  void (async () => {
-                    const next = !showInactive;
-                    setShowInactive(next);
-                    if (next) {
-                      const schoolIds = getSelectedSchoolIds();
-                      const inactiveCount = await countNonActiveStudents(searchQuery, schoolIds, {
-                        grade: selectedGrade,
-                      });
-                      if (inactiveCount === 0) {
-                        success('現在、休会・退会の生徒はいません');
+      {/* ===== 生徒名簿タブ（既存） ===== */}
+      {activeTab === 'roster' && (
+        <>
+          {/* ツールバー */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+            {/* 左側: 検索 + フィルターボタン */}
+            <div className="flex flex-col sm:flex-row gap-3">
+              {/* 検索 */}
+              <div className="w-full sm:w-72">
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Search className="w-5 h-5 text-text-faint" />
+                  </div>
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="氏名・フリガナ・コードで検索..."
+                    className="w-full pl-10 pr-4 py-2 border border-border-strong rounded-lg text-sm bg-surface-raised text-text-heading focus:ring-2 focus:ring-ink/30 focus:border-ink placeholder:text-text-faint"
+                  />
+                </div>
+              </div>
+
+              {/* 学年フィルター */}
+              <select
+                value={selectedGrade}
+                onChange={(e) =>
+                  setSelectedGrade(e.target.value === 'all' ? 'all' : Number(e.target.value))
+                }
+                className="px-4 py-2 border border-border-strong rounded-lg text-sm bg-surface-raised text-text-heading focus:ring-2 focus:ring-ink/30 focus:border-ink"
+              >
+                <option value="all">全学年</option>
+                {Array.from({ length: 13 }, (_, i) => i + 1).map((grade) => (
+                  <option key={grade} value={grade}>
+                    {GRADE_LABELS[grade] || `学年${grade}`}
+                  </option>
+                ))}
+              </select>
+
+              {/* 休会・退会表示ボタン（講師には非表示） */}
+              {!isTeacher && (
+                <button
+                  onClick={() => {
+                    void (async () => {
+                      const next = !showInactive;
+                      setShowInactive(next);
+                      if (next) {
+                        const schoolIds = getSelectedSchoolIds();
+                        const inactiveCount = await countNonActiveStudents(searchQuery, schoolIds, {
+                          grade: selectedGrade,
+                        });
+                        if (inactiveCount === 0) {
+                          success('現在、休会・退会の生徒はいません');
+                        }
                       }
-                    }
-                  })();
-                }}
-                className={`
+                    })();
+                  }}
+                  className={`
                   inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-[background-color,color,border-color] duration-150 ease-out active:scale-[0.97]
                   ${
                     showInactive
@@ -843,163 +864,150 @@ export function StudentsPageClient({
                       : 'bg-surface-raised text-text-body border border-border-strong hover:bg-surface-hover'
                   }
                 `}
-              >
-              {showInactive ? (
-                <>
-                  <Eye className="w-4 h-4" />
-                  全員表示中
-                </>
-              ) : (
-                <>
-                  <EyeOff className="w-4 h-4" />
-                  休会・退会を表示
-                </>
+                >
+                  {showInactive ? (
+                    <>
+                      <Eye className="w-4 h-4" />
+                      全員表示中
+                    </>
+                  ) : (
+                    <>
+                      <EyeOff className="w-4 h-4" />
+                      休会・退会を表示
+                    </>
+                  )}
+                </button>
               )}
-              </button>
+            </div>
+
+            {/* CSV / 新規登録ボタン（講師には非表示） */}
+            {!isTeacher && (
+              <div className="flex flex-wrap items-center gap-2">
+                {/* CSVエクスポート ドロップダウン */}
+                <div className="relative" ref={exportMenuRef}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setExportMenuOpen((prev) => !prev)}
+                    disabled={isExporting}
+                  >
+                    {isExporting ? 'エクスポート中...' : 'CSVエクスポート ▾'}
+                  </Button>
+                  {exportMenuOpen && (
+                    <div className="absolute right-0 top-full mt-1 bg-surface-raised rounded-lg shadow-lg border border-border z-50 min-w-[140px] overflow-hidden origin-top-right animate-[popover-enter_150ms_cubic-bezier(0.23,1,0.32,1)]">
+                      {[
+                        { label: '生徒一覧', onClick: handleExportStudents },
+                        { label: '成績', onClick: handleExportAssessments },
+                        { label: '面談記録', onClick: handleExportInterviews },
+                      ].map((item) => (
+                        <button
+                          key={item.label}
+                          onClick={item.onClick}
+                          className="w-full text-left px-4 py-2 text-sm text-text-heading hover:bg-surface-hover transition-[background-color] duration-150 ease-out"
+                        >
+                          {item.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <Button variant="outline" size="sm" onClick={() => setIsCsvImportModalOpen(true)}>
+                  CSVインポート
+                </Button>
+                <Link
+                  href="/transcriptions"
+                  className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-text-body border border-border-default rounded-lg hover:bg-surface-hover transition-[background-color] duration-150 ease-out"
+                >
+                  <Mic className="w-3.5 h-3.5" />
+                  面談記録追加
+                </Link>
+                <Button onClick={handleOpenCreateModal}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  新規登録
+                </Button>
+              </div>
             )}
           </div>
 
-          {/* CSV / 新規登録ボタン（講師には非表示） */}
-          {!isTeacher && (
-            <div className="flex flex-wrap items-center gap-2">
-              {/* CSVエクスポート ドロップダウン */}
-              <div className="relative" ref={exportMenuRef}>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setExportMenuOpen((prev) => !prev)}
-                  disabled={isExporting}
-                >
-                  {isExporting ? 'エクスポート中...' : 'CSVエクスポート ▾'}
-                </Button>
-                {exportMenuOpen && (
-                  <div className="absolute right-0 top-full mt-1 bg-surface-raised rounded-lg shadow-lg border border-border z-50 min-w-[140px] overflow-hidden origin-top-right animate-[popover-enter_150ms_cubic-bezier(0.23,1,0.32,1)]">
-                    {[
-                      { label: '生徒一覧', onClick: handleExportStudents },
-                      { label: '成績', onClick: handleExportAssessments },
-                      { label: '面談記録', onClick: handleExportInterviews },
-                    ].map((item) => (
-                      <button
-                        key={item.label}
-                        onClick={item.onClick}
-                        className="w-full text-left px-4 py-2 text-sm text-text-heading hover:bg-surface-hover transition-[background-color] duration-150 ease-out"
-                      >
-                        {item.label}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsCsvImportModalOpen(true)}
-              >
-                CSVインポート
+          {/* 一括操作バー */}
+          {!isTeacher && selectedIds.size > 0 && (
+            <div className="mb-4 flex items-center gap-3 p-3 bg-ink/5 border border-ink/20 rounded-lg slide-in-bar">
+              <span className="text-sm font-medium text-ink">{selectedIds.size}件選択中</span>
+              <Button variant="outline" size="sm" onClick={handleOpenMoveSelectedModal}>
+                教室移動
               </Button>
-              <Link
-                href="/transcriptions"
-                className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-text-body border border-border-default rounded-lg hover:bg-surface-hover transition-[background-color] duration-150 ease-out"
-              >
-                <Mic className="w-3.5 h-3.5" />
-                面談記録追加
-              </Link>
-              <Button onClick={handleOpenCreateModal}>
-                <Plus className="w-4 h-4 mr-2" />
-                新規登録
+              <Button variant="danger" size="sm" onClick={() => setIsBulkDeleteDialogOpen(true)}>
+                一括削除
               </Button>
+              <button
+                onClick={() => setSelectedIds(new Set())}
+                className="ml-auto text-sm text-text-muted hover:text-text-body transition-[color] duration-150 ease-out"
+              >
+                選択解除
+              </button>
             </div>
           )}
-        </div>
 
-        {/* 一括操作バー */}
-        {!isTeacher && selectedIds.size > 0 && (
-          <div className="mb-4 flex items-center gap-3 p-3 bg-ink/5 border border-ink/20 rounded-lg slide-in-bar">
-            <span className="text-sm font-medium text-ink">
-              {selectedIds.size}件選択中
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleOpenMoveSelectedModal}
-            >
-              教室移動
-            </Button>
-            <Button
-              variant="danger"
-              size="sm"
-              onClick={() => setIsBulkDeleteDialogOpen(true)}
-            >
-              一括削除
-            </Button>
-            <button
-              onClick={() => setSelectedIds(new Set())}
-              className="ml-auto text-sm text-text-muted hover:text-text-body transition-[color] duration-150 ease-out"
-            >
-              選択解除
-            </button>
-          </div>
-        )}
+          {/* 生徒一覧テーブル */}
+          <StudentTable
+            students={rosterRows}
+            onEdit={!isTeacher ? handleOpenEditModal : undefined}
+            onDelete={!isTeacher ? handleOpenDeleteDialog : undefined}
+            onRowClick={handleOpenDetailModal}
+            onScores={handleOpenScores}
+            onProgress={handleOpenProgress}
+            onInterviews={handleOpenInterviews}
+            onSchedule={!isTeacher ? handleOpenSchedule : undefined}
+            isLoading={isLoading}
+            selectedIds={!isTeacher ? selectedIds : undefined}
+            onSelectionChange={!isTeacher ? setSelectedIds : undefined}
+            isTeacher={isTeacher}
+          />
 
-        {/* 生徒一覧テーブル */}
-        <StudentTable
-          students={rosterRows}
-          onEdit={!isTeacher ? handleOpenEditModal : undefined}
-          onDelete={!isTeacher ? handleOpenDeleteDialog : undefined}
-          onRowClick={handleOpenDetailModal}
-          onScores={handleOpenScores}
-          onProgress={handleOpenProgress}
-          onInterviews={handleOpenInterviews}
-          onSchedule={!isTeacher ? handleOpenSchedule : undefined}
-          isLoading={isLoading}
-          selectedIds={!isTeacher ? selectedIds : undefined}
-          onSelectionChange={!isTeacher ? setSelectedIds : undefined}
-          isTeacher={isTeacher}
-        />
-
-        {/* ページネーション */}
-        {rosterTotalPages > 1 && (
-          <div className="flex items-center justify-between mt-4 px-2">
-            <span className="text-sm text-text-muted">
-              {rosterTotalCount}件中 {(currentPage - 1) * ITEMS_PER_PAGE + 1}〜
-              {Math.min(currentPage * ITEMS_PER_PAGE, rosterTotalCount)}件を表示
-            </span>
-            <div className="flex items-center gap-1">
-              <button
-                onClick={() => setCurrentPage(1)}
-                disabled={currentPage === 1}
-                className="px-2 py-1 text-sm rounded border border-border disabled:opacity-40 hover:bg-surface-hover transition-[background-color] duration-150 ease-out active:scale-[0.97]"
-              >
-                «
-              </button>
-              <button
-                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                disabled={currentPage === 1}
-                className="px-3 py-1 text-sm rounded border border-border disabled:opacity-40 hover:bg-surface-hover transition-[background-color] duration-150 ease-out active:scale-[0.97]"
-              >
-                ‹ 前
-              </button>
-              <span className="px-3 py-1 text-sm text-ink font-medium tabular-nums">
-                {currentPage} / {rosterTotalPages}
+          {/* ページネーション */}
+          {rosterTotalPages > 1 && (
+            <div className="flex items-center justify-between mt-4 px-2">
+              <span className="text-sm text-text-muted">
+                {rosterTotalCount}件中 {(currentPage - 1) * ITEMS_PER_PAGE + 1}〜
+                {Math.min(currentPage * ITEMS_PER_PAGE, rosterTotalCount)}件を表示
               </span>
-              <button
-                onClick={() => setCurrentPage((p) => Math.min(rosterTotalPages, p + 1))}
-                disabled={currentPage === rosterTotalPages}
-                className="px-3 py-1 text-sm rounded border border-border disabled:opacity-40 hover:bg-surface-hover transition-[background-color] duration-150 ease-out active:scale-[0.97]"
-              >
-                次 ›
-              </button>
-              <button
-                onClick={() => setCurrentPage(rosterTotalPages)}
-                disabled={currentPage === rosterTotalPages}
-                className="px-2 py-1 text-sm rounded border border-border disabled:opacity-40 hover:bg-surface-hover transition-[background-color] duration-150 ease-out active:scale-[0.97]"
-              >
-                »
-              </button>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setCurrentPage(1)}
+                  disabled={currentPage === 1}
+                  className="px-2 py-1 text-sm rounded border border-border disabled:opacity-40 hover:bg-surface-hover transition-[background-color] duration-150 ease-out active:scale-[0.97]"
+                >
+                  «
+                </button>
+                <button
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="px-3 py-1 text-sm rounded border border-border disabled:opacity-40 hover:bg-surface-hover transition-[background-color] duration-150 ease-out active:scale-[0.97]"
+                >
+                  ‹ 前
+                </button>
+                <span className="px-3 py-1 text-sm text-ink font-medium tabular-nums">
+                  {currentPage} / {rosterTotalPages}
+                </span>
+                <button
+                  onClick={() => setCurrentPage((p) => Math.min(rosterTotalPages, p + 1))}
+                  disabled={currentPage === rosterTotalPages}
+                  className="px-3 py-1 text-sm rounded border border-border disabled:opacity-40 hover:bg-surface-hover transition-[background-color] duration-150 ease-out active:scale-[0.97]"
+                >
+                  次 ›
+                </button>
+                <button
+                  onClick={() => setCurrentPage(rosterTotalPages)}
+                  disabled={currentPage === rosterTotalPages}
+                  className="px-2 py-1 text-sm rounded border border-border disabled:opacity-40 hover:bg-surface-hover transition-[background-color] duration-150 ease-out active:scale-[0.97]"
+                >
+                  »
+                </button>
+              </div>
             </div>
-          </div>
-        )}
-        </>}
+          )}
+        </>
+      )}
 
       {/* CSVインポートモーダル */}
       <StudentCsvImportModalDynamic
@@ -1010,7 +1018,7 @@ export function StudentsPageClient({
         existingStudentCodes={existingStudentCodes}
       />
 
-{/* 新規登録モーダル */}
+      {/* 新規登録モーダル */}
       <Modal
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
@@ -1022,7 +1030,11 @@ export function StudentsPageClient({
           onCancel={() => setIsCreateModalOpen(false)}
           isLoading={isSubmitting}
           schools={masterSchools.filter((s) => !s.is_demo)}
-          defaultSchoolId={selectedSchoolId !== 'all' ? (selectedSchoolId ?? '') : (masterSchools.find((s) => !s.is_demo)?.id ?? '')}
+          defaultSchoolId={
+            selectedSchoolId !== 'all'
+              ? (selectedSchoolId ?? '')
+              : (masterSchools.find((s) => !s.is_demo)?.id ?? '')
+          }
         />
       </Modal>
 
@@ -1087,7 +1099,11 @@ export function StudentsPageClient({
           setIsScheduleModalOpen(false);
           setScheduleModalStudent(null);
         }}
-        title={scheduleModalStudent ? `${scheduleModalStudent.last_name} ${scheduleModalStudent.first_name} の通塾日程` : '通塾日程'}
+        title={
+          scheduleModalStudent
+            ? `${scheduleModalStudent.last_name} ${scheduleModalStudent.first_name} の通塾日程`
+            : '通塾日程'
+        }
         size="2xl"
       >
         {scheduleModalStudent && (
@@ -1127,7 +1143,8 @@ export function StudentsPageClient({
             </div>
             <div>
               <p className="text-text-heading">
-                選択した <span className="font-bold">{selectedIds.size}名</span> の生徒を削除してもよろしいですか？
+                選択した <span className="font-bold">{selectedIds.size}名</span>{' '}
+                の生徒を削除してもよろしいですか？
               </p>
               <p className="mt-3 text-sm text-text-body">
                 削除後もデータは保持されますが、一覧には表示されなくなります。
@@ -1160,9 +1177,7 @@ export function StudentsPageClient({
             選択した <span className="font-bold">{selectedIds.size}名</span> の生徒を移動します。
           </p>
           <div>
-            <label className="block text-sm font-medium text-text-heading mb-1">
-              移動先の教室
-            </label>
+            <label className="block text-sm font-medium text-text-heading mb-1">移動先の教室</label>
             <select
               value={moveTargetSchoolId}
               onChange={(e) => setMoveTargetSchoolId(e.target.value)}

@@ -32,8 +32,11 @@ export default function SeasonalShiftDetailPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [copied, setCopied] = useState(false);
-  const { slots: masterSlots, slotsString: masterSlotsString, isLoading: masterLoading } =
-    useMasterTimeSlots();
+  const {
+    slots: masterSlots,
+    slotsString: masterSlotsString,
+    isLoading: masterLoading,
+  } = useMasterTimeSlots();
   const [form, setForm] = useState({
     name: '',
     start_date: '',
@@ -145,9 +148,7 @@ export default function SeasonalShiftDetailPage() {
   };
 
   const publicUrl =
-    typeof window !== 'undefined'
-      ? `${window.location.origin}/seasonal-shift/${settingId}`
-      : '';
+    typeof window !== 'undefined' ? `${window.location.origin}/seasonal-shift/${settingId}` : '';
 
   const copyUrl = () => {
     if (!publicUrl) return;
@@ -197,13 +198,20 @@ export default function SeasonalShiftDetailPage() {
               value={publicUrl}
               className="flex-1 px-3 py-2 border border-border rounded-lg text-sm bg-surface"
             />
-            <Button type="button" onClick={copyUrl} className="bg-text-heading hover:bg-text-heading/90 text-white transition-colors duration-150">
+            <Button
+              type="button"
+              onClick={copyUrl}
+              className="bg-text-heading hover:bg-text-heading/90 text-white transition-colors duration-150"
+            >
               {copied ? 'コピー済み' : 'コピー'}
             </Button>
           </div>
         </div>
 
-        <form onSubmit={handleSave} className="bg-surface-raised rounded-xl border border-border p-6 space-y-4">
+        <form
+          onSubmit={handleSave}
+          className="bg-surface-raised rounded-xl border border-border p-6 space-y-4"
+        >
           <div>
             <label className="block text-sm font-medium text-text-heading mb-1">講習期間名 *</label>
             <input
@@ -236,7 +244,9 @@ export default function SeasonalShiftDetailPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-text-heading mb-1">提出締切日 *</label>
+              <label className="block text-sm font-medium text-text-heading mb-1">
+                提出締切日 *
+              </label>
               <input
                 type="date"
                 required
@@ -261,8 +271,8 @@ export default function SeasonalShiftDetailPage() {
               {masterLoading
                 ? '読み込み中...'
                 : masterSlots.length > 0
-                ? masterSlots.join('、')
-                : 'コマ時間マスタが未設定です'}
+                  ? masterSlots.join('、')
+                  : 'コマ時間マスタが未設定です'}
             </div>
             <p className="mt-1 text-xs text-text-muted">
               <Link href="/schedule" className="text-info hover:underline">
@@ -297,7 +307,11 @@ export default function SeasonalShiftDetailPage() {
           </div>
 
           <div className="flex gap-3 pt-4">
-            <Button type="submit" disabled={isSubmitting} className="bg-danger hover:bg-danger/80 text-white transition-colors duration-150">
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              className="bg-danger hover:bg-danger/80 text-white transition-colors duration-150"
+            >
               {isSubmitting ? '保存中...' : '保存'}
             </Button>
             <Link href={`/settings/seasonal-shifts/${settingId}/submissions`}>

@@ -1,11 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import {
-  getFormPeriods,
-  deletePeriodWithCheck,
-  archivePeriod,
-} from '@/lib/api/form-periods';
+import { getFormPeriods, deletePeriodWithCheck, archivePeriod } from '@/lib/api/form-periods';
 import type { FormPeriod, FormType } from '@/types/database';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 
@@ -128,12 +124,7 @@ export function usePeriodEditor({
     setLoading(true);
     setError(null);
     try {
-      const data = await getFormPeriods(
-        schoolId,
-        formType as FormType,
-        false,
-        true
-      );
+      const data = await getFormPeriods(schoolId, formType as FormType, false, true);
       setPeriods(data);
     } catch (err) {
       console.error('[usePeriodEditor] Error fetching periods:', err);
@@ -200,12 +191,7 @@ export function usePeriodEditor({
         if (!period) {
           throw new Error('指定した期間が見つかりません');
         }
-        await deletePeriodWithCheck(
-          period.id,
-          period.period_key,
-          formType as FormType,
-          schoolId
-        );
+        await deletePeriodWithCheck(period.id, period.period_key, formType as FormType, schoolId);
         await refresh();
       } catch (err) {
         console.error('[usePeriodEditor] Error deleting period:', err);
@@ -226,12 +212,7 @@ export function usePeriodEditor({
         if (!period) {
           throw new Error('指定した期間が見つかりません');
         }
-        await archivePeriod(
-          period.id,
-          schoolId,
-          formType as FormType,
-          period.period_key
-        );
+        await archivePeriod(period.id, schoolId, formType as FormType, period.period_key);
         await refresh();
       } catch (err) {
         console.error('[usePeriodEditor] Error archiving period:', err);

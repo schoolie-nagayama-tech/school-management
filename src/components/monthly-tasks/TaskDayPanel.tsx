@@ -13,7 +13,12 @@ interface TaskDayPanelProps {
   month: number;
   canEdit: boolean;
   onToggleCheck: (taskId: string, schoolId: string, isCompleted: boolean) => void;
-  onCreateTask: (taskDate: string, category: MonthlyTaskCategory, taskName: string, sortOrder: number) => void;
+  onCreateTask: (
+    taskDate: string,
+    category: MonthlyTaskCategory,
+    taskName: string,
+    sortOrder: number
+  ) => void;
   onUpdateTask: (taskId: string, updates: Record<string, unknown>) => void;
   onDeleteTask: (taskId: string) => void;
   onUpdateNote: (taskId: string, note: string | null) => void;
@@ -43,10 +48,7 @@ export function TaskDayPanel({
   onDeleteTask,
   onUpdateNote,
 }: TaskDayPanelProps) {
-  const dayTasks = useMemo(
-    () => tasks.filter((t) => t.task_date === date),
-    [tasks, date]
-  );
+  const dayTasks = useMemo(() => tasks.filter((t) => t.task_date === date), [tasks, date]);
   const businessTasks = dayTasks.filter((t) => t.category === 'business');
   const courseTasks = dayTasks.filter((t) => t.category === 'course');
 
@@ -87,20 +89,24 @@ export function TaskDayPanel({
   return (
     <div className="h-full flex flex-col">
       {/* 日付ヘッダー */}
-      <div className={`px-4 py-3 border-b ${
-        isPast ? 'bg-red-50/50' : isToday ? 'bg-blue-50' : 'bg-white'
-      }`}>
+      <div
+        className={`px-4 py-3 border-b ${
+          isPast ? 'bg-red-50/50' : isToday ? 'bg-blue-50' : 'bg-white'
+        }`}
+      >
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-bold">{formatDateFull(date)}</h2>
-          <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-            isToday
-              ? 'bg-blue-500 text-white'
-              : isPast
-              ? 'bg-red-100 text-red-700'
-              : days <= 3
-              ? 'bg-amber-100 text-amber-700'
-              : 'bg-gray-100 text-gray-600'
-          }`}>
+          <span
+            className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+              isToday
+                ? 'bg-blue-500 text-white'
+                : isPast
+                  ? 'bg-red-100 text-red-700'
+                  : days <= 3
+                    ? 'bg-amber-100 text-amber-700'
+                    : 'bg-gray-100 text-gray-600'
+            }`}
+          >
             {isToday ? '今日' : isPast ? `${Math.abs(days)}日超過` : `あと${days}日`}
           </span>
         </div>
@@ -201,7 +207,10 @@ export function TaskDayPanel({
                   onChange={(e) => setNewName(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') handleAdd();
-                    if (e.key === 'Escape') { setIsAdding(false); setNewName(''); }
+                    if (e.key === 'Escape') {
+                      setIsAdding(false);
+                      setNewName('');
+                    }
                   }}
                   placeholder="タスク名..."
                   className="flex-1 text-xs px-2 py-1 border rounded focus:outline-none focus:ring-1 focus:ring-blue-300"

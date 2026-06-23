@@ -12,7 +12,11 @@ import {
 import { StudentSearchInput, type StudentWithSubjects } from './StudentSearchInput';
 import { SubjectInput } from '@/components/forms/zoukoma/SubjectInput';
 import { SlotTable, generateAllSlots } from '@/components/forms/zoukoma/SlotTable';
-import { createFormResponse, updateFormResponse, linkResponseToStudent } from '@/lib/api/form-responses';
+import {
+  createFormResponse,
+  updateFormResponse,
+  linkResponseToStudent,
+} from '@/lib/api/form-responses';
 import type { FormResponseInsert } from '@/types/database';
 import type { ZoukomaPeriod, ZoukomaResponse, ZoukomaResponseData } from '@/types/forms/zoukoma';
 
@@ -51,7 +55,10 @@ export function ZoukomaEnrollmentFormModal({
 }: Props) {
   const isEdit = !!editing;
   const settings = useMemo(() => period.settings ?? {}, [period.settings]);
-  const subjectList = useMemo(() => settings.subjects ?? ['英語', '数学', '国語', '理科', '社会'], [settings]);
+  const subjectList = useMemo(
+    () => settings.subjects ?? ['英語', '数学', '国語', '理科', '社会'],
+    [settings]
+  );
 
   const [selectedStudent, setSelectedStudent] = useState<StudentWithSubjects | null>(null);
   const [subjectValues, setSubjectValues] = useState<Record<string, number>>({});
@@ -76,9 +83,7 @@ export function ZoukomaEnrollmentFormModal({
   }, [open, editing]);
 
   // 編集時の表示名/学年（編集は生徒固定）
-  const lockedLabel = editing
-    ? `${editing.student_name}（${gradeLabel(editing.grade)}）`
-    : null;
+  const lockedLabel = editing ? `${editing.student_name}（${gradeLabel(editing.grade)}）` : null;
 
   const totalKoma = Object.values(subjectValues).reduce((s, n) => s + (Number(n) || 0), 0);
 
@@ -89,10 +94,16 @@ export function ZoukomaEnrollmentFormModal({
       : selectedStudent
         ? `${selectedStudent.last_name} ${selectedStudent.first_name}`
         : '';
-    const grade = editing ? editing.grade : selectedStudent?.grade ?? 0;
+    const grade = editing ? editing.grade : (selectedStudent?.grade ?? 0);
 
-    if (!studentId) { setError('生徒を選択してください'); return; }
-    if (totalKoma <= 0) { setError('いずれかの科目に1コマ以上を入力してください'); return; }
+    if (!studentId) {
+      setError('生徒を選択してください');
+      return;
+    }
+    if (totalKoma <= 0) {
+      setError('いずれかの科目に1コマ以上を入力してください');
+      return;
+    }
 
     // 単価：price_table を学年ラベル（中1 等）で引く。無ければ0（請求は別途）。
     const unitPrice = settings.price_table?.[gradeLabel(grade)] ?? 0;
@@ -177,7 +188,8 @@ export function ZoukomaEnrollmentFormModal({
               />
               {selectedStudent && (
                 <div className="mt-2 text-sm text-[var(--headline)] bg-blue-50 px-3 py-2 rounded-md">
-                  選択: {selectedStudent.last_name} {selectedStudent.first_name}（{gradeLabel(selectedStudent.grade)}）
+                  選択: {selectedStudent.last_name} {selectedStudent.first_name}（
+                  {gradeLabel(selectedStudent.grade)}）
                 </div>
               )}
             </div>
@@ -214,7 +226,9 @@ export function ZoukomaEnrollmentFormModal({
 
           {/* 備考 */}
           <div>
-            <label className="block text-sm font-medium text-[var(--headline)] mb-1">備考（任意）</label>
+            <label className="block text-sm font-medium text-[var(--headline)] mb-1">
+              備考（任意）
+            </label>
             <textarea
               value={note}
               onChange={(e) => setNote(e.target.value)}
@@ -227,8 +241,12 @@ export function ZoukomaEnrollmentFormModal({
         </div>
 
         <DialogFooter>
-          <Button variant="secondary" onClick={onClose} disabled={saving}>キャンセル</Button>
-          <Button onClick={handleSubmit} disabled={saving}>{saving ? '保存中...' : '保存'}</Button>
+          <Button variant="secondary" onClick={onClose} disabled={saving}>
+            キャンセル
+          </Button>
+          <Button onClick={handleSubmit} disabled={saving}>
+            {saving ? '保存中...' : '保存'}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

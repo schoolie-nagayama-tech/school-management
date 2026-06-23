@@ -35,8 +35,20 @@ import {
   deleteScheduleMarker,
 } from '@/lib/api/courseSchedule';
 import { batchFetchCoursePrepApi } from '@/lib/api/coursePrepApi';
-import { getTemplates, initializeScheduleFromTemplate, saveCurrentAsTemplate, deleteTemplate } from '@/lib/api/courseTemplates';
-import type { ScheduleTaskWithMarkers, ScheduleMarker, CourseTemplate, CourseProgressItem, StudentCourseProgress, SeasonType } from '@/types/database';
+import {
+  getTemplates,
+  initializeScheduleFromTemplate,
+  saveCurrentAsTemplate,
+  deleteTemplate,
+} from '@/lib/api/courseTemplates';
+import type {
+  ScheduleTaskWithMarkers,
+  ScheduleMarker,
+  CourseTemplate,
+  CourseProgressItem,
+  StudentCourseProgress,
+  SeasonType,
+} from '@/types/database';
 import { useRequirePermission, useCanEdit } from '@/hooks/usePermissions';
 import AccessDenied from '@/components/AccessDenied';
 import { useAuth } from '@/contexts/AuthContext';
@@ -66,24 +78,29 @@ export default function CourseSchedulePage() {
   );
   const canEdit = useCanEdit('canEditApplications');
   const { getSelectedSchoolIds, selectedSchoolId, profile, schoolIds, demoSchoolIds } = useAuth();
-  const isOwnerOrAbove =
-    profile?.role === 'owner' || profile?.role === 'admin';
+  const isOwnerOrAbove = profile?.role === 'owner' || profile?.role === 'admin';
 
   // 期・年（localStorageから復元）
   const [season, setSeasonRaw] = useState<SeasonType>(() => loadSavedSeasonYear().season);
   const [year, setYearRaw] = useState(() => loadSavedSeasonYear().year);
 
-  const setSeason = useCallback((s: SeasonType) => {
-    setSeasonRaw(s);
-    saveSavedSeasonYear(s, year);
-    setDateRange(getSeasonFullRangeForInit(s, year));
-  }, [year]);
+  const setSeason = useCallback(
+    (s: SeasonType) => {
+      setSeasonRaw(s);
+      saveSavedSeasonYear(s, year);
+      setDateRange(getSeasonFullRangeForInit(s, year));
+    },
+    [year]
+  );
 
-  const setYear = useCallback((y: number) => {
-    setYearRaw(y);
-    saveSavedSeasonYear(season, y);
-    setDateRange(getSeasonFullRangeForInit(season, y));
-  }, [season]);
+  const setYear = useCallback(
+    (y: number) => {
+      setYearRaw(y);
+      saveSavedSeasonYear(season, y);
+      setDateRange(getSeasonFullRangeForInit(season, y));
+    },
+    [season]
+  );
 
   // ビューモード（デフォルト: ガントチャート）
   const [viewMode, setViewMode] = useState<ViewMode>('gantt');
@@ -98,7 +115,14 @@ export default function CourseSchedulePage() {
   const [tasks, setTasks] = useState<ScheduleTaskWithMarkers[]>([]);
   const [deadlineItems, setDeadlineItems] = useState<CourseProgressItem[]>([]);
   const [allProgressItems, setAllProgressItems] = useState<CourseProgressItem[]>([]);
-  const [progressSummary, setProgressSummary] = useState<{ total: number; completed: number; itemSummaries?: { name: string; total: number; done: number }[] } | undefined>();
+  const [progressSummary, setProgressSummary] = useState<
+    | {
+        total: number;
+        completed: number;
+        itemSummaries?: { name: string; total: number; done: number }[];
+      }
+    | undefined
+  >();
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -154,19 +178,26 @@ export default function CourseSchedulePage() {
       if (progressItems.length > 0 && studentProgress.length > 0) {
         // check型の項目について完了率を計算
         const checkItems = progressItems.filter((pi) => pi.column_type === 'check');
-        const totalStudentChecks = checkItems.length > 0
-          ? studentProgress.filter((sp) => checkItems.some((ci) => ci.id === sp.item_id)).length
-          : 0;
-        const doneStudentChecks = checkItems.length > 0
-          ? studentProgress.filter((sp) => checkItems.some((ci) => ci.id === sp.item_id) && sp.status === 'completed').length
-          : 0;
+        const totalStudentChecks =
+          checkItems.length > 0
+            ? studentProgress.filter((sp) => checkItems.some((ci) => ci.id === sp.item_id)).length
+            : 0;
+        const doneStudentChecks =
+          checkItems.length > 0
+            ? studentProgress.filter(
+                (sp) => checkItems.some((ci) => ci.id === sp.item_id) && sp.status === 'completed'
+              ).length
+            : 0;
 
         // 項目ごとのサマリー（主要なものだけ）
-        const itemSummaries = checkItems.slice(0, 6).map((ci) => {
-          const related = studentProgress.filter((sp) => sp.item_id === ci.id);
-          const done = related.filter((sp) => sp.status === 'completed').length;
-          return { name: ci.name, total: related.length, done };
-        }).filter((s) => s.total > 0);
+        const itemSummaries = checkItems
+          .slice(0, 6)
+          .map((ci) => {
+            const related = studentProgress.filter((sp) => sp.item_id === ci.id);
+            const done = related.filter((sp) => sp.status === 'completed').length;
+            return { name: ci.name, total: related.length, done };
+          })
+          .filter((s) => s.total > 0);
 
         setProgressSummary({
           total: totalStudentChecks,
@@ -233,9 +264,7 @@ export default function CourseSchedulePage() {
       const ids = getSelectedSchoolIds();
       if (ids.length === 0) return;
       // Optimistic update
-      setTasks((prev) =>
-        prev.map((t) => (t.id === taskId ? { ...t, ...updates } : t))
-      );
+      setTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, ...updates } : t)));
       try {
         await updateScheduleTask(taskId, updates, ids[0]);
         // リンク変更時はサーバーから再取得（進捗率データが変わるため）
@@ -335,9 +364,7 @@ export default function CourseSchedulePage() {
 
       try {
         await Promise.all(
-          reorderedIds.map((r) =>
-            updateScheduleTask(r.id, { sort_order: r.sort_order }, ids[0])
-          )
+          reorderedIds.map((r) => updateScheduleTask(r.id, { sort_order: r.sort_order }, ids[0]))
         );
       } catch (err) {
         console.error('Error reordering tasks:', err);
@@ -431,19 +458,22 @@ export default function CourseSchedulePage() {
   }, [saveTemplateName, getSelectedSchoolIds, season, year]);
 
   // テンプレート削除
-  const handleDeleteTemplate = useCallback(async (templateId: string) => {
-    const ids = getSelectedSchoolIds();
-    if (ids.length === 0) return;
-    try {
-      await deleteTemplate(templateId, ids[0]);
-      // テンプレート一覧を再取得
-      const tpls = await getTemplates('schedule', season, ids[0]);
-      setTemplates(tpls);
-    } catch (err) {
-      console.error('Error deleting template:', err);
-      setErrorMessage(getUserErrorMessage(err, 'テンプレートの削除に失敗しました'));
-    }
-  }, [getSelectedSchoolIds, season]);
+  const handleDeleteTemplate = useCallback(
+    async (templateId: string) => {
+      const ids = getSelectedSchoolIds();
+      if (ids.length === 0) return;
+      try {
+        await deleteTemplate(templateId, ids[0]);
+        // テンプレート一覧を再取得
+        const tpls = await getTemplates('schedule', season, ids[0]);
+        setTemplates(tpls);
+      } catch (err) {
+        console.error('Error deleting template:', err);
+        setErrorMessage(getUserErrorMessage(err, 'テンプレートの削除に失敗しました'));
+      }
+    },
+    [getSelectedSchoolIds, season]
+  );
 
   // PDF出力
   const handleExportPDF = useCallback(async () => {
@@ -516,7 +546,9 @@ export default function CourseSchedulePage() {
         successCount++;
       }
 
-      const msg = `${successCount}教室に展開しました。` + (skipCount > 0 ? ` ${skipCount}教室はスキップ（既存タスクあり）` : '');
+      const msg =
+        `${successCount}教室に展開しました。` +
+        (skipCount > 0 ? ` ${skipCount}教室はスキップ（既存タスクあり）` : '');
       alert(msg);
     } catch (err) {
       console.error('Error deploying to all schools:', err);
@@ -617,7 +649,8 @@ export default function CourseSchedulePage() {
                 {tasks.length > 0 && (
                   <button
                     onClick={() => {
-                      const seasonLabel = season === 'spring' ? '春期' : season === 'summer' ? '夏期' : '冬期';
+                      const seasonLabel =
+                        season === 'spring' ? '春期' : season === 'summer' ? '夏期' : '冬期';
                       setSaveTemplateName(`${seasonLabel}${year} 準備スケジュールテンプレート`);
                       setShowSaveTemplateDialog(true);
                     }}
@@ -655,25 +688,24 @@ export default function CourseSchedulePage() {
 
         {/* メインコンテンツ */}
         <div id="schedule-content">
-        {isLoading ? (
-          <div className="bg-white rounded-xl border border-gray-200 p-8">
-            <InlineLoading />
-          </div>
-        ) : viewMode === 'list' ? (
-          /* リスト表示 */
-          <ScheduleBoard
-            tasks={tasks}
-            canEdit={canEdit}
-            season={season}
-            year={year}
-            onToggleComplete={handleToggleComplete}
-            onUpdateTask={handleUpdateTask}
-            onReorderTasks={handleReorderTasks}
-            onDeleteTask={handleDeleteTask}
-            onAddTask={handleAddTask}
-          />
-        ) : (
-          /* ガントチャート表示 */
+          {isLoading ? (
+            <div className="bg-white rounded-xl border border-gray-200 p-8">
+              <InlineLoading />
+            </div>
+          ) : viewMode === 'list' ? (
+            /* リスト表示 */
+            <ScheduleBoard
+              tasks={tasks}
+              canEdit={canEdit}
+              season={season}
+              year={year}
+              onToggleComplete={handleToggleComplete}
+              onUpdateTask={handleUpdateTask}
+              onReorderTasks={handleReorderTasks}
+              onDeleteTask={handleDeleteTask}
+              onAddTask={handleAddTask}
+            />
+          ) : /* ガントチャート表示 */
           tasks.length === 0 ? (
             <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
               <p className="text-text-body mb-4">スケジュールがありません。</p>
@@ -702,8 +734,7 @@ export default function CourseSchedulePage() {
               onUpdateTask={handleUpdateTask}
               onDeleteTask={handleDeleteTask}
             />
-          )
-        )}
+          )}
         </div>
       </div>
 
@@ -746,7 +777,9 @@ export default function CourseSchedulePage() {
                 type="text"
                 value={saveTemplateName}
                 onChange={(e) => setSaveTemplateName(e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Enter') handleSaveAsTemplate(); }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleSaveAsTemplate();
+                }}
                 placeholder="テンプレート名を入力"
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
                 autoFocus
@@ -754,7 +787,10 @@ export default function CourseSchedulePage() {
             </div>
             <div className="px-6 py-4 border-t border-gray-200 flex justify-end gap-2">
               <button
-                onClick={() => { setShowSaveTemplateDialog(false); setSaveTemplateName(''); }}
+                onClick={() => {
+                  setShowSaveTemplateDialog(false);
+                  setSaveTemplateName('');
+                }}
                 className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 rounded-lg transition-[background-color,transform] duration-150 ease-out active:scale-[0.97]"
                 disabled={saveTemplateLoading}
               >

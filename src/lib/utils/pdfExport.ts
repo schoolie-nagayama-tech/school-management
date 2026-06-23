@@ -10,7 +10,12 @@ export async function exportProgressToPDF(
     pageSize?: 'a4' | 'a3'; // 用紙サイズ（デフォルト: a4）
   }
 ): Promise<void> {
-  const { fitToPage = false, orientation = 'portrait', expandScrollable = false, pageSize = 'a4' } = options || {};
+  const {
+    fitToPage = false,
+    orientation = 'portrait',
+    expandScrollable = false,
+    pageSize = 'a4',
+  } = options || {};
 
   // html2canvas-pro と jspdf を動的インポート
   // html2canvas-pro は oklch() / lab() などモダンなCSS色関数に対応した後継フォーク。
@@ -19,7 +24,7 @@ export async function exportProgressToPDF(
     import('html2canvas-pro'),
     import('jspdf'),
   ]);
-  
+
   const html2canvas = html2canvasModule.default;
   const { jsPDF } = jsPDFModule;
 
@@ -54,22 +59,26 @@ export async function exportProgressToPDF(
     if (fitToPage) {
       // 1ページに収める場合：フォントサイズ縮小・表が切れないよう体裁を整える
       const fitWidth = isA3
-        ? (isLandscape ? '2000px' : '1400px')
-        : (isLandscape ? '1400px' : '800px');
+        ? isLandscape
+          ? '2000px'
+          : '1400px'
+        : isLandscape
+          ? '1400px'
+          : '800px';
       element.style.width = fitWidth;
       const tables = element.querySelectorAll('table');
-      tables.forEach(table => {
+      tables.forEach((table) => {
         (table as HTMLElement).style.fontSize = '9px';
         (table as HTMLElement).style.pageBreakInside = 'avoid';
         const cells = table.querySelectorAll('th, td');
-        cells.forEach(cell => {
+        cells.forEach((cell) => {
           (cell as HTMLElement).style.fontSize = '9px';
           (cell as HTMLElement).style.padding = '2px 4px';
         });
       });
       // セクション・見出しもコンパクトに
       const sections = element.querySelectorAll('section');
-      sections.forEach(sec => {
+      sections.forEach((sec) => {
         (sec as HTMLElement).style.pageBreakInside = 'avoid';
         (sec as HTMLElement).style.padding = '8px';
       });
@@ -88,11 +97,19 @@ export async function exportProgressToPDF(
 
     // PDFのサイズ設定
     const pageWidth = isLandscape
-      ? (isA3 ? 420 : 297)   // A3横: 420mm, A4横: 297mm
-      : (isA3 ? 297 : 210);  // A3縦: 297mm, A4縦: 210mm
+      ? isA3
+        ? 420
+        : 297 // A3横: 420mm, A4横: 297mm
+      : isA3
+        ? 297
+        : 210; // A3縦: 297mm, A4縦: 210mm
     const pageHeight = isLandscape
-      ? (isA3 ? 297 : 210)   // A3横: 297mm, A4横: 210mm
-      : (isA3 ? 420 : 297);  // A3縦: 420mm, A4縦: 297mm
+      ? isA3
+        ? 297
+        : 210 // A3横: 297mm, A4横: 210mm
+      : isA3
+        ? 420
+        : 297; // A3縦: 420mm, A4縦: 297mm
 
     // Canvas画像のサイズを計算
     const imgWidth = pageWidth - 10; // マージン5mm x 2
@@ -131,21 +148,14 @@ export async function exportProgressToPDF(
         imgWidth,
         imgHeight
       );
-      heightLeft -= (pageHeight - 10);
+      heightLeft -= pageHeight - 10;
 
       // 複数ページ対応
       while (heightLeft > 0) {
         position = heightLeft - imgHeight + 5;
         pdf.addPage();
-        pdf.addImage(
-          canvas.toDataURL('image/png'),
-          'PNG',
-          5,
-          position,
-          imgWidth,
-          imgHeight
-        );
-        heightLeft -= (pageHeight - 10);
+        pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 5, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight - 10;
       }
     }
 
@@ -162,17 +172,17 @@ export async function exportProgressToPDF(
 
     // テーブル・セクションのスタイルを元に戻す
     const tables = element.querySelectorAll('table');
-    tables.forEach(table => {
+    tables.forEach((table) => {
       (table as HTMLElement).style.fontSize = '';
       (table as HTMLElement).style.pageBreakInside = '';
       const cells = table.querySelectorAll('th, td');
-      cells.forEach(cell => {
+      cells.forEach((cell) => {
         (cell as HTMLElement).style.fontSize = '';
         (cell as HTMLElement).style.padding = '';
       });
     });
     const sections = element.querySelectorAll('section');
-    sections.forEach(sec => {
+    sections.forEach((sec) => {
       (sec as HTMLElement).style.pageBreakInside = '';
       (sec as HTMLElement).style.padding = '';
     });

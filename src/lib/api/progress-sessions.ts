@@ -72,10 +72,7 @@ export async function updateProgressSession(
  * セッションを削除
  */
 export async function deleteProgressSession(id: string): Promise<void> {
-  const { error } = await supabase
-    .from('progress_sessions')
-    .delete()
-    .eq('id', id);
+  const { error } = await supabase.from('progress_sessions').delete().eq('id', id);
 
   if (error) {
     throw new Error(`セッションの削除に失敗しました: ${error.message}`);
@@ -179,9 +176,7 @@ export async function getStudentSessionFeed(
 /**
  * 直前のセッション（引継ぎ表示用）
  */
-export async function getLastSession(
-  studentTextbookId: string
-): Promise<ProgressSession | null> {
+export async function getLastSession(studentTextbookId: string): Promise<ProgressSession | null> {
   const { data, error } = await supabase
     .from('progress_sessions')
     .select('*')
@@ -280,15 +275,23 @@ export async function recordSession(params: {
     // primaryCurriculumItemId に一致する場合は引継ぎ・フラグも含めて upsert
     const isPrimary = action.curriculumItemId === primaryCurriculumItemId;
     const progressFields = isPrimary
-      ? { student_textbook_id: studentTextbookId, curriculum_item_id: action.curriculumItemId, teacher_name: teacherName, handover, homework_not_done: homeworkNotDone, tardy }
-      : { student_textbook_id: studentTextbookId, curriculum_item_id: action.curriculumItemId, teacher_name: teacherName };
+      ? {
+          student_textbook_id: studentTextbookId,
+          curriculum_item_id: action.curriculumItemId,
+          teacher_name: teacherName,
+          handover,
+          homework_not_done: homeworkNotDone,
+          tardy,
+        }
+      : {
+          student_textbook_id: studentTextbookId,
+          curriculum_item_id: action.curriculumItemId,
+          teacher_name: teacherName,
+        };
 
     const { data: progress, error: progressError } = await supabase
       .from('student_progress')
-      .upsert(
-        progressFields,
-        { onConflict: 'student_textbook_id,curriculum_item_id' }
-      )
+      .upsert(progressFields, { onConflict: 'student_textbook_id,curriculum_item_id' })
       .select('id')
       .single();
 
@@ -319,16 +322,14 @@ export async function recordSession(params: {
 
   // 3. 学校進度を更新
   for (const curriculumItemId of schoolProgressUnits) {
-    const { error: schoolError } = await supabase
-      .from('student_progress')
-      .upsert(
-        {
-          student_textbook_id: studentTextbookId,
-          curriculum_item_id: curriculumItemId,
-          school_progress_date: sessionDate,
-        },
-        { onConflict: 'student_textbook_id,curriculum_item_id' }
-      );
+    const { error: schoolError } = await supabase.from('student_progress').upsert(
+      {
+        student_textbook_id: studentTextbookId,
+        curriculum_item_id: curriculumItemId,
+        school_progress_date: sessionDate,
+      },
+      { onConflict: 'student_textbook_id,curriculum_item_id' }
+    );
 
     if (schoolError) {
       console.error('school progress upsert error:', schoolError);
@@ -338,19 +339,17 @@ export async function recordSession(params: {
   // 4. primaryCurriculumItemId が unitActions に含まれていない場合も、
   //    その単元の行に引継ぎ・遅刻・宿題を書き込む（学校進度のみ触れた場合など）
   if (primaryCurriculumItemId != null && !touchedCurriculumItemIds.has(primaryCurriculumItemId)) {
-    const { error: primaryError } = await supabase
-      .from('student_progress')
-      .upsert(
-        {
-          student_textbook_id: studentTextbookId,
-          curriculum_item_id: primaryCurriculumItemId,
-          teacher_name: teacherName,
-          handover,
-          homework_not_done: homeworkNotDone,
-          tardy,
-        },
-        { onConflict: 'student_textbook_id,curriculum_item_id' }
-      );
+    const { error: primaryError } = await supabase.from('student_progress').upsert(
+      {
+        student_textbook_id: studentTextbookId,
+        curriculum_item_id: primaryCurriculumItemId,
+        teacher_name: teacherName,
+        handover,
+        homework_not_done: homeworkNotDone,
+        tardy,
+      },
+      { onConflict: 'student_textbook_id,curriculum_item_id' }
+    );
 
     if (primaryError) {
       console.error('primary row upsert error:', primaryError);
@@ -493,12 +492,9 @@ export async function syncSessionToProgress(
 
   if (!lessons || lessons.length === 0) return;
 
-  const progressIds = Array.from(new Set(lessons.map(l => l.student_progress_id)));
+  const progressIds = Array.from(new Set(lessons.map((l) => l.student_progress_id)));
   for (const pid of progressIds) {
-    await supabase
-      .from('student_progress')
-      .update(progressPatch)
-      .eq('id', pid);
+    await supabase.from('student_progress').update(progressPatch).eq('id', pid);
   }
 }
 
@@ -519,10 +515,7 @@ export interface SessionFeedFilter {
 /**
  * student_textbook_ids を school_id + 任意の student_id で取得
  */
-async function getTextbookIds(
-  schoolIds: string[],
-  studentId?: string
-): Promise<string[]> {
+async function getTextbookIds(schoolIds: string[], studentId?: string): Promise<string[]> {
   const q = supabase
     .from('student_textbooks')
     .select('id, student_id')
@@ -616,9 +609,7 @@ export interface SmartAlert {
  * - 近い試験に目標が未設定
  * - 14日以内に試験がある
  */
-export async function getSmartAlerts(
-  schoolIds: string[]
-): Promise<SmartAlert[]> {
+export async function getSmartAlerts(schoolIds: string[]): Promise<SmartAlert[]> {
   if (schoolIds.length === 0) return [];
 
   const alerts: SmartAlert[] = [];
@@ -663,9 +654,7 @@ export async function getSmartAlerts(
       .eq('lesson_number', 1)
       .not('lesson_date', 'is', null);
 
-    const hasLesson1 = new Set(
-      (lessons ?? []).map((l) => l.student_progress_id)
-    );
+    const hasLesson1 = new Set((lessons ?? []).map((l) => l.student_progress_id));
 
     // school_progress_date がある単元で lesson1 が未完了 = 追いつかれている
     const seenSt = new Set<string>();
@@ -704,9 +693,7 @@ export async function getSmartAlerts(
       if (!st?.student) continue;
       const name = `${st.student.last_name} ${st.student.first_name}`;
 
-      const daysLeft = Math.ceil(
-        (new Date(exam.exam_date).getTime() - Date.now()) / 86400000
-      );
+      const daysLeft = Math.ceil((new Date(exam.exam_date).getTime() - Date.now()) / 86400000);
       const examLabel = exam.custom_exam_name || 'テスト';
 
       // テストが近い
@@ -754,7 +741,7 @@ export interface FeedGoalSummary {
   /** 直近の試験目標（複数あれば exam_date が早いものを優先） */
   exam: {
     id: string;
-    label: string;       // 試験名
+    label: string; // 試験名
     examDate: string | null;
     targetScore: number | null;
   } | null;
@@ -837,18 +824,23 @@ export async function getFeedGoalsByTextbooks(
 
   // 行動目標を該当 examId 群で一括取得
   const examIds = Array.from(examByTextbook.values()).map((e) => e.id);
-  const goalsByExam = new Map<string, Array<{
-    id: string;
-    title: string;
-    achieved: boolean;
-    counter_current: number | null;
-    counter_target: number | null;
-    sort_order: number | null;
-  }>>();
+  const goalsByExam = new Map<
+    string,
+    Array<{
+      id: string;
+      title: string;
+      achieved: boolean;
+      counter_current: number | null;
+      counter_target: number | null;
+      sort_order: number | null;
+    }>
+  >();
   if (examIds.length > 0) {
     const { data: goals } = await supabase
       .from('action_goals')
-      .select('id, student_textbook_exam_id, title, achieved, counter_current, counter_target, sort_order')
+      .select(
+        'id, student_textbook_exam_id, title, achieved, counter_current, counter_target, sort_order'
+      )
       .in('student_textbook_exam_id', examIds)
       .order('sort_order', { ascending: true });
     for (const g of (goals || []) as Array<{
@@ -875,7 +867,8 @@ export async function getFeedGoalsByTextbooks(
       continue;
     }
     const label =
-      exam.custom_exam_name ?? (exam.exam_type_id ? examTypeNameMap.get(exam.exam_type_id) ?? 'テスト' : 'テスト');
+      exam.custom_exam_name ??
+      (exam.exam_type_id ? (examTypeNameMap.get(exam.exam_type_id) ?? 'テスト') : 'テスト');
     const goals = goalsByExam.get(exam.id) ?? [];
     out[tbId] = {
       exam: {

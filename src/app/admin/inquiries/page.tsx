@@ -31,7 +31,30 @@ import {
   formatDate,
   formatDateTime,
 } from './inquiryConstants';
-import { Search, X, Upload, SlidersHorizontal, BarChart3, Send, Truck, ClipboardPaste, QrCode, Bookmark, UserPlus, Phone, Mail, MessageSquare, Building2, Package, ArrowRightLeft, Circle, ChevronRight, ChevronDown, ExternalLink, Users } from 'lucide-react';
+import {
+  Search,
+  X,
+  Upload,
+  SlidersHorizontal,
+  BarChart3,
+  Send,
+  Truck,
+  ClipboardPaste,
+  QrCode,
+  Bookmark,
+  UserPlus,
+  Phone,
+  Mail,
+  MessageSquare,
+  Building2,
+  Package,
+  ArrowRightLeft,
+  Circle,
+  ChevronRight,
+  ChevronDown,
+  ExternalLink,
+  Users,
+} from 'lucide-react';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 import { InquiryReminders } from '@/components/inquiries/InquiryReminders';
 import { InquiryManualAddModal } from '@/components/inquiries/InquiryManualAddModal';
@@ -43,7 +66,8 @@ export default function InquiriesPage() {
   const { schools: masterSchools } = useMasterData();
 
   // ロールガード: admin / owner のみ
-  const isAdmin = profile?.role === 'admin' || profile?.role === 'owner' || profile?.role === 'manager';
+  const isAdmin =
+    profile?.role === 'admin' || profile?.role === 'owner' || profile?.role === 'manager';
 
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -116,10 +140,7 @@ export default function InquiriesPage() {
       // 初回展開時に fetch
       setTimelineLoading((prev) => new Set(prev).add(id));
       try {
-        const [contacts, mailLogs] = await Promise.all([
-          getInquiryContacts(id),
-          getMailLogs(id),
-        ]);
+        const [contacts, mailLogs] = await Promise.all([getInquiryContacts(id), getMailLogs(id)]);
         const items: TimelineItem[] = [
           ...contacts.map((c): TimelineItem => ({ kind: 'contact', at: c.contacted_at, data: c })),
           ...mailLogs.map((m): TimelineItem => ({ kind: 'mail_log', at: m.sent_at, data: m })),
@@ -159,11 +180,7 @@ export default function InquiriesPage() {
    * プリセット変更時に resolvePeriod で日付境界を解決し、
    * filterDateFrom / filterDateTo に流してデータ再取得をトリガーする。
    */
-  const handlePeriodChange = (
-    preset: PeriodPreset,
-    customFrom: string,
-    customTo: string
-  ) => {
+  const handlePeriodChange = (preset: PeriodPreset, customFrom: string, customTo: string) => {
     setFilterPreset(preset);
     setFilterCustomFrom(customFrom);
     setFilterCustomTo(customTo);
@@ -221,7 +238,9 @@ export default function InquiriesPage() {
 
       // 教室名マップを更新
       const map: Record<string, string> = {};
-      masterSchools.forEach((s) => { map[s.id] = s.name; });
+      masterSchools.forEach((s) => {
+        map[s.id] = s.name;
+      });
       setSchoolsMap(map);
     } catch (err) {
       setErrorMessage(getUserErrorMessage(err, 'データの取得に失敗しました'));
@@ -265,18 +284,13 @@ export default function InquiriesPage() {
 
   // ---- 表示対象（ステータスカード/プルダウンによるクライアント側フィルタ） ----
   const displayedInquiries = React.useMemo(
-    () =>
-      filterStatus === 'all'
-        ? inquiries
-        : inquiries.filter((q) => q.status === filterStatus),
+    () => (filterStatus === 'all' ? inquiries : inquiries.filter((q) => q.status === filterStatus)),
     [inquiries, filterStatus]
   );
 
   // ---- サマリー（入会率 = 選択期間内の入会 / 全件） ----
   const enrollRate =
-    inquiries.length > 0
-      ? Math.round((statusCounts.enrolled / inquiries.length) * 100)
-      : 0;
+    inquiries.length > 0 ? Math.round((statusCounts.enrolled / inquiries.length) * 100) : 0;
 
   // 本文を出してよいか（初回の一覧取得 + リマインド取得が両方そろったら true）。
   // 一度 true になれば以降の絞り込みでは false に戻さず、本文を出したまま更新する。
@@ -312,11 +326,7 @@ export default function InquiriesPage() {
             </Button>
           </Link>
           {/* 手入力で追加 — 電話・直来など HP に元データが無い問合せを直接登録する */}
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => setIsManualAddOpen(true)}
-          >
+          <Button variant="secondary" size="sm" onClick={() => setIsManualAddOpen(true)}>
             <UserPlus className="w-4 h-4 mr-1.5" />
             手入力で追加
           </Button>
@@ -388,7 +398,10 @@ export default function InquiriesPage() {
           <div className="mb-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-text-muted">
               <span>
-                集計期間 <span className="font-medium text-text-body">{formatPeriodLabel({ dateFrom: filterDateFrom, dateTo: filterDateTo })}</span>
+                集計期間{' '}
+                <span className="font-medium text-text-body">
+                  {formatPeriodLabel({ dateFrom: filterDateFrom, dateTo: filterDateTo })}
+                </span>
               </span>
               <span>
                 入会率 <span className="font-bold text-green-700 text-sm">{enrollRate}%</span>
@@ -405,7 +418,10 @@ export default function InquiriesPage() {
               />
               {/* コンパクト検索（Enter で実行・×でクリア） */}
               <form
-                onSubmit={(e) => { e.preventDefault(); setSearchQuery(searchInput.trim()); }}
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  setSearchQuery(searchInput.trim());
+                }}
                 className="relative"
               >
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -419,7 +435,10 @@ export default function InquiriesPage() {
                 {searchInput && (
                   <button
                     type="button"
-                    onClick={() => { setSearchInput(''); setSearchQuery(''); }}
+                    onClick={() => {
+                      setSearchInput('');
+                      setSearchQuery('');
+                    }}
                     className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                     aria-label="検索をクリア"
                   >
@@ -443,323 +462,373 @@ export default function InquiriesPage() {
             </div>
           </div>
 
-        {/* ステータス別カード — クリックでそのステータスに絞り込む（再クリックで解除） */}
-        <div className="mb-4 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2">
-          {/* 「すべて」カード（総数・絞り込み解除） */}
-          <button
-            type="button"
-            onClick={() => setFilterStatus('all')}
-            className={`text-left rounded-lg border p-3 transition-colors duration-150 ${
-              filterStatus === 'all'
-                ? 'border-ink bg-surface-hover ring-1 ring-ink/30'
-                : 'border-border bg-surface-raised hover:bg-surface-hover'
-            }`}
-          >
-            <p className="text-[11px] text-text-muted mb-0.5">すべて</p>
-            <p className="text-xl font-bold text-text-heading leading-none">{inquiries.length}</p>
-          </button>
+          {/* ステータス別カード — クリックでそのステータスに絞り込む（再クリックで解除） */}
+          <div className="mb-4 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2">
+            {/* 「すべて」カード（総数・絞り込み解除） */}
+            <button
+              type="button"
+              onClick={() => setFilterStatus('all')}
+              className={`text-left rounded-lg border p-3 transition-colors duration-150 ${
+                filterStatus === 'all'
+                  ? 'border-ink bg-surface-hover ring-1 ring-ink/30'
+                  : 'border-border bg-surface-raised hover:bg-surface-hover'
+              }`}
+            >
+              <p className="text-[11px] text-text-muted mb-0.5">すべて</p>
+              <p className="text-xl font-bold text-text-heading leading-none">{inquiries.length}</p>
+            </button>
 
-          {/* 各ステータスのカード */}
-          {(Object.keys(STATUS_CONFIG) as InquiryStatus[]).map((s) => {
-            const active = filterStatus === s;
-            return (
-              <button
-                key={s}
-                type="button"
-                // 再クリックで解除（'all' に戻す）
-                onClick={() => setFilterStatus(active ? 'all' : s)}
-                className={`text-left rounded-lg border p-3 transition-colors duration-150 ${
-                  active
-                    ? 'border-ink bg-surface-hover ring-1 ring-ink/30'
-                    : 'border-border bg-surface-raised hover:bg-surface-hover'
-                }`}
-              >
-                <span
-                  className={`inline-block px-1.5 py-0.5 rounded-full text-[11px] font-medium mb-1 ${STATUS_CONFIG[s].className}`}
+            {/* 各ステータスのカード */}
+            {(Object.keys(STATUS_CONFIG) as InquiryStatus[]).map((s) => {
+              const active = filterStatus === s;
+              return (
+                <button
+                  key={s}
+                  type="button"
+                  // 再クリックで解除（'all' に戻す）
+                  onClick={() => setFilterStatus(active ? 'all' : s)}
+                  className={`text-left rounded-lg border p-3 transition-colors duration-150 ${
+                    active
+                      ? 'border-ink bg-surface-hover ring-1 ring-ink/30'
+                      : 'border-border bg-surface-raised hover:bg-surface-hover'
+                  }`}
                 >
-                  {STATUS_CONFIG[s].label}
-                </span>
-                <p className="text-xl font-bold text-text-heading leading-none">{statusCounts[s]}</p>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* 詳細フィルター（折りたたみ） */}
-        {showFilters && (
-          <div className="mb-4 bg-surface-raised rounded-xl border border-border p-4">
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-              {/* ステータス */}
-              <div>
-                <label className="block text-xs font-medium text-text-heading mb-1">ステータス</label>
-                <select
-                  value={filterStatus}
-                  onChange={(e) => setFilterStatus(e.target.value as InquiryStatus | 'all')}
-                  className="w-full px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary"
-                >
-                  {STATUS_OPTIONS.map((o) => (
-                    <option key={o.value} value={o.value}>{o.label}</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* 学年 */}
-              <div>
-                <label className="block text-xs font-medium text-text-heading mb-1">学年</label>
-                <input
-                  type="text"
-                  value={filterGrade}
-                  onChange={(e) => setFilterGrade(e.target.value)}
-                  placeholder="例: 中2"
-                  className="w-full px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary"
-                />
-              </div>
-
-              {/* 媒体 */}
-              <div>
-                <label className="block text-xs font-medium text-text-heading mb-1">媒体</label>
-                <input
-                  type="text"
-                  value={filterMedia}
-                  onChange={(e) => setFilterMedia(e.target.value)}
-                  placeholder="例: 友人紹介"
-                  className="w-full px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary"
-                />
-              </div>
-            </div>
-            <div className="mt-3 flex items-center justify-between">
-              <p className="text-xs text-gray-500">
-                {displayedInquiries.length}件表示
-                <span className="ml-2 text-text-faint">期間は画面上部の期間セレクタで切り替えできます</span>
-              </p>
-              <button
-                type="button"
-                onClick={() => {
-                  setFilterStatus('all');
-                  setFilterGrade('');
-                  setFilterMedia('');
-                  // 期間は既定の「今月」に戻す
-                  const def = resolvePeriod('this_month');
-                  setFilterPreset('this_month');
-                  setFilterCustomFrom('');
-                  setFilterCustomTo('');
-                  setFilterDateFrom(def.dateFrom);
-                  setFilterDateTo(def.dateTo);
-                  setSearchInput('');
-                  setSearchQuery('');
-                }}
-                className="text-xs text-blue-600 hover:text-blue-800 transition-colors duration-150"
-              >
-                リセット
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* 一覧テーブル */}
-        <div className="bg-surface-raised rounded-xl border border-border p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-bold text-text-heading">
-              問合せ一覧
-              {filterStatus !== 'all' && (
-                <span className="ml-2 text-sm font-normal text-text-muted">
-                  （{STATUS_CONFIG[filterStatus].label}で絞り込み中）
-                </span>
-              )}
-            </h2>
-            <p className="text-sm text-text-muted">{displayedInquiries.length}件</p>
+                  <span
+                    className={`inline-block px-1.5 py-0.5 rounded-full text-[11px] font-medium mb-1 ${STATUS_CONFIG[s].className}`}
+                  >
+                    {STATUS_CONFIG[s].label}
+                  </span>
+                  <p className="text-xl font-bold text-text-heading leading-none">
+                    {statusCounts[s]}
+                  </p>
+                </button>
+              );
+            })}
           </div>
 
-          {isLoading ? (
-            <Loading size="md" />
-          ) : displayedInquiries.length === 0 ? (
-            <div className="text-center py-8 text-text-body">
-              該当する問合せがありません。フィルターを変更してください。
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse border border-border text-sm">
-                <thead>
-                  <tr className="bg-surface-hover">
-                    <th className="border border-border px-3 py-2.5 text-left font-medium text-text-heading">受付日</th>
-                    {/* 複数教室表示時のみ教室列を出す */}
-                    {isMultiSchool && (
-                      <th className="border border-border px-3 py-2.5 text-left font-medium text-text-heading">教室</th>
-                    )}
-                    <th className="border border-border px-3 py-2.5 text-left font-medium text-text-heading">生徒名</th>
-                    <th className="border border-border px-3 py-2.5 text-left font-medium text-text-heading">保護者名</th>
-                    <th className="border border-border px-3 py-2.5 text-left font-medium text-text-heading">学年</th>
-                    <th className="border border-border px-3 py-2.5 text-left font-medium text-text-heading">媒体</th>
-                    <th className="border border-border px-3 py-2.5 text-left font-medium text-text-heading">申込内容</th>
-                    <th className="border border-border px-3 py-2.5 text-center font-medium text-text-heading">ステータス</th>
-                    <th className="border border-border px-2 py-2.5 text-center font-medium text-text-heading w-8">詳細</th>
-                    <th className="border border-border px-2 py-2.5 w-8"></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {displayedInquiries.map((inquiry) => {
-                    const sc = STATUS_CONFIG[inquiry.status];
-                    const isExpanded = expandedIds.has(inquiry.id);
-                    const isLoadingTimeline = timelineLoading.has(inquiry.id);
-                    const timelineItems = timelineCache.get(inquiry.id) ?? [];
+          {/* 詳細フィルター（折りたたみ） */}
+          {showFilters && (
+            <div className="mb-4 bg-surface-raised rounded-xl border border-border p-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                {/* ステータス */}
+                <div>
+                  <label className="block text-xs font-medium text-text-heading mb-1">
+                    ステータス
+                  </label>
+                  <select
+                    value={filterStatus}
+                    onChange={(e) => setFilterStatus(e.target.value as InquiryStatus | 'all')}
+                    className="w-full px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary"
+                  >
+                    {STATUS_OPTIONS.map((o) => (
+                      <option key={o.value} value={o.value}>
+                        {o.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-                    return (
-                      // key はフラグメントに付与する（React の list key 要件）
-                      <React.Fragment key={inquiry.id}>
-                        {/* メイン行 — クリックでアコーディオン開閉 */}
-                        <tr
-                          onClick={() => handleRowToggle(inquiry)}
-                          className="table-row-hover cursor-pointer"
-                        >
-                          <td className="border border-border px-3 py-2.5 whitespace-nowrap text-text-body">
-                            {formatDate(inquiry.inquired_at)}
-                          </td>
-                          {isMultiSchool && (
-                            <td className="border border-border px-3 py-2.5 text-text-body">
-                              {schoolsMap[inquiry.school_id] ?? '—'}
+                {/* 学年 */}
+                <div>
+                  <label className="block text-xs font-medium text-text-heading mb-1">学年</label>
+                  <input
+                    type="text"
+                    value={filterGrade}
+                    onChange={(e) => setFilterGrade(e.target.value)}
+                    placeholder="例: 中2"
+                    className="w-full px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
+
+                {/* 媒体 */}
+                <div>
+                  <label className="block text-xs font-medium text-text-heading mb-1">媒体</label>
+                  <input
+                    type="text"
+                    value={filterMedia}
+                    onChange={(e) => setFilterMedia(e.target.value)}
+                    placeholder="例: 友人紹介"
+                    className="w-full px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
+              </div>
+              <div className="mt-3 flex items-center justify-between">
+                <p className="text-xs text-gray-500">
+                  {displayedInquiries.length}件表示
+                  <span className="ml-2 text-text-faint">
+                    期間は画面上部の期間セレクタで切り替えできます
+                  </span>
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFilterStatus('all');
+                    setFilterGrade('');
+                    setFilterMedia('');
+                    // 期間は既定の「今月」に戻す
+                    const def = resolvePeriod('this_month');
+                    setFilterPreset('this_month');
+                    setFilterCustomFrom('');
+                    setFilterCustomTo('');
+                    setFilterDateFrom(def.dateFrom);
+                    setFilterDateTo(def.dateTo);
+                    setSearchInput('');
+                    setSearchQuery('');
+                  }}
+                  className="text-xs text-blue-600 hover:text-blue-800 transition-colors duration-150"
+                >
+                  リセット
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* 一覧テーブル */}
+          <div className="bg-surface-raised rounded-xl border border-border p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold text-text-heading">
+                問合せ一覧
+                {filterStatus !== 'all' && (
+                  <span className="ml-2 text-sm font-normal text-text-muted">
+                    （{STATUS_CONFIG[filterStatus].label}で絞り込み中）
+                  </span>
+                )}
+              </h2>
+              <p className="text-sm text-text-muted">{displayedInquiries.length}件</p>
+            </div>
+
+            {isLoading ? (
+              <Loading size="md" />
+            ) : displayedInquiries.length === 0 ? (
+              <div className="text-center py-8 text-text-body">
+                該当する問合せがありません。フィルターを変更してください。
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse border border-border text-sm">
+                  <thead>
+                    <tr className="bg-surface-hover">
+                      <th className="border border-border px-3 py-2.5 text-left font-medium text-text-heading">
+                        受付日
+                      </th>
+                      {/* 複数教室表示時のみ教室列を出す */}
+                      {isMultiSchool && (
+                        <th className="border border-border px-3 py-2.5 text-left font-medium text-text-heading">
+                          教室
+                        </th>
+                      )}
+                      <th className="border border-border px-3 py-2.5 text-left font-medium text-text-heading">
+                        生徒名
+                      </th>
+                      <th className="border border-border px-3 py-2.5 text-left font-medium text-text-heading">
+                        保護者名
+                      </th>
+                      <th className="border border-border px-3 py-2.5 text-left font-medium text-text-heading">
+                        学年
+                      </th>
+                      <th className="border border-border px-3 py-2.5 text-left font-medium text-text-heading">
+                        媒体
+                      </th>
+                      <th className="border border-border px-3 py-2.5 text-left font-medium text-text-heading">
+                        申込内容
+                      </th>
+                      <th className="border border-border px-3 py-2.5 text-center font-medium text-text-heading">
+                        ステータス
+                      </th>
+                      <th className="border border-border px-2 py-2.5 text-center font-medium text-text-heading w-8">
+                        詳細
+                      </th>
+                      <th className="border border-border px-2 py-2.5 w-8"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {displayedInquiries.map((inquiry) => {
+                      const sc = STATUS_CONFIG[inquiry.status];
+                      const isExpanded = expandedIds.has(inquiry.id);
+                      const isLoadingTimeline = timelineLoading.has(inquiry.id);
+                      const timelineItems = timelineCache.get(inquiry.id) ?? [];
+
+                      return (
+                        // key はフラグメントに付与する（React の list key 要件）
+                        <React.Fragment key={inquiry.id}>
+                          {/* メイン行 — クリックでアコーディオン開閉 */}
+                          <tr
+                            onClick={() => handleRowToggle(inquiry)}
+                            className="table-row-hover cursor-pointer"
+                          >
+                            <td className="border border-border px-3 py-2.5 whitespace-nowrap text-text-body">
+                              {formatDate(inquiry.inquired_at)}
                             </td>
-                          )}
-                          {/* 生徒名: 未入力で保護者名にフォールバックしている場合は
-                              「保護者名」バッジ付きで表示し、表示名が保護者名だと分かるようにする */}
-                          <td className="border border-border px-3 py-2.5 font-medium text-text-heading">
-                            {inquiry.student_name?.trim() ? (
-                              inquiry.student_name
-                            ) : inquiry.guardian_name?.trim() ? (
-                              <span className="inline-flex items-center gap-1.5">
-                                <span className="italic font-normal text-text-body">{inquiry.guardian_name}</span>
-                                <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-100 text-amber-700 shrink-0">
-                                  保護者名
-                                </span>
-                              </span>
-                            ) : (
-                              '—'
+                            {isMultiSchool && (
+                              <td className="border border-border px-3 py-2.5 text-text-body">
+                                {schoolsMap[inquiry.school_id] ?? '—'}
+                              </td>
                             )}
-                          </td>
-                          <td className="border border-border px-3 py-2.5 text-text-body">
-                            {inquiry.guardian_name ?? '—'}
-                          </td>
-                          <td className="border border-border px-3 py-2.5 text-text-body">
-                            {inquiry.grade ?? '—'}
-                          </td>
-                          <td className="border border-border px-3 py-2.5 text-text-body">
-                            {inquiry.media ?? '—'}
-                          </td>
-                          <td className="border border-border px-3 py-2.5 text-text-body">
-                            {inquiry.request_type ?? '—'}
-                          </td>
-                          {/* ステータスはその場でプルダウン切替（行クリックのアコーディオン開閉は止める） */}
-                          <td
-                            className="border border-border px-3 py-2.5 text-center"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <select
-                              value={inquiry.status}
-                              disabled={statusUpdatingId === inquiry.id}
-                              onClick={(e) => e.stopPropagation()}
-                              onChange={(e) =>
-                                handleInlineStatusChange(inquiry, e.target.value as InquiryStatus)
-                              }
-                              className={`px-2 py-1 rounded-full text-xs font-medium border-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-60 ${sc.className}`}
-                              aria-label="ステータスを変更"
-                            >
-                              {(Object.keys(STATUS_CONFIG) as InquiryStatus[]).map((s) => (
-                                <option key={s} value={s}>
-                                  {STATUS_CONFIG[s].label}
-                                </option>
-                              ))}
-                            </select>
-                          </td>
-                          {/* 詳細ページへのリンク（アコーディオン展開とは独立） */}
-                          <td
-                            className="border border-border px-2 py-2.5 text-center"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <a
-                              href={`/admin/inquiries/${inquiry.id}`}
-                              aria-label="詳細を開く"
-                              className="inline-flex items-center justify-center w-7 h-7 rounded hover:bg-surface-hover text-text-muted hover:text-text-heading transition-colors"
-                            >
-                              <ExternalLink className="w-4 h-4" />
-                            </a>
-                          </td>
-                          {/* 展開インジケータ */}
-                          <td className="border border-border px-2 py-2.5 text-center text-text-muted">
-                            {isExpanded
-                              ? <ChevronDown className="w-4 h-4 inline" />
-                              : <ChevronRight className="w-4 h-4 inline" />
-                            }
-                          </td>
-                        </tr>
-
-                        {/* アコーディオン展開行 */}
-                        {isExpanded && (
-                          <tr key={`${inquiry.id}-detail`}>
-                            <td
-                              colSpan={isMultiSchool ? 11 : 10}
-                              className="border border-border bg-surface px-4 py-3"
-                            >
-                              {isLoadingTimeline ? (
-                                <p className="text-xs text-text-muted">読み込み中...</p>
-                              ) : timelineItems.length === 0 ? (
-                                <p className="text-xs text-text-muted">履歴なし</p>
+                            {/* 生徒名: 未入力で保護者名にフォールバックしている場合は
+                              「保護者名」バッジ付きで表示し、表示名が保護者名だと分かるようにする */}
+                            <td className="border border-border px-3 py-2.5 font-medium text-text-heading">
+                              {inquiry.student_name?.trim() ? (
+                                inquiry.student_name
+                              ) : inquiry.guardian_name?.trim() ? (
+                                <span className="inline-flex items-center gap-1.5">
+                                  <span className="italic font-normal text-text-body">
+                                    {inquiry.guardian_name}
+                                  </span>
+                                  <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-100 text-amber-700 shrink-0">
+                                    保護者名
+                                  </span>
+                                </span>
                               ) : (
-                                <div className="space-y-1.5">
-                                  {timelineItems.slice(0, 5).map((item) => {
-                                    if (item.kind === 'contact') {
-                                      const c = item.data;
-                                      const Icon = {
-                                        tel:           Phone,
-                                        email:         Mail,
-                                        sms:           MessageSquare,
-                                        visit:         Building2,
-                                        interview:     Users,
-                                        other:         Circle,
-                                        material_sent: Package,
-                                        status_change: ArrowRightLeft,
-                                      }[c.method] ?? Circle;
-                                      return (
-                                        <div key={`c-${c.id}`} className="flex items-center gap-2 text-xs text-text-body">
-                                          <Icon className="w-3.5 h-3.5 text-text-muted shrink-0" />
-                                          <span className="font-medium">{CONTACT_METHOD_LABELS[c.method] ?? c.method}</span>
-                                          <span className="text-text-muted">{formatDate(c.contacted_at)}</span>
-                                          {c.result && (
-                                            <span className="px-1.5 py-0.5 bg-surface-hover rounded">{c.result}</span>
-                                          )}
-                                          {c.note && (
-                                            <span className="text-text-muted truncate max-w-xs">{c.note}</span>
-                                          )}
-                                        </div>
-                                      );
-                                    } else {
-                                      const m = item.data;
-                                      return (
-                                        <div key={`m-${m.id}`} className="flex items-center gap-2 text-xs text-text-body">
-                                          <Send className="w-3.5 h-3.5 text-text-muted shrink-0" />
-                                          <span className="font-medium">メール送信</span>
-                                          <span className="text-text-muted">{formatDateTime(m.sent_at)}</span>
-                                          <span className={`px-1.5 py-0.5 rounded ${m.status === 'sent' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-700'}`}>
-                                            {m.status === 'sent' ? '送信済み' : '失敗'}
-                                          </span>
-                                          {m.subject && (
-                                            <span className="text-text-muted truncate max-w-xs">{m.subject}</span>
-                                          )}
-                                        </div>
-                                      );
-                                    }
-                                  })}
-                                </div>
+                                '—'
+                              )}
+                            </td>
+                            <td className="border border-border px-3 py-2.5 text-text-body">
+                              {inquiry.guardian_name ?? '—'}
+                            </td>
+                            <td className="border border-border px-3 py-2.5 text-text-body">
+                              {inquiry.grade ?? '—'}
+                            </td>
+                            <td className="border border-border px-3 py-2.5 text-text-body">
+                              {inquiry.media ?? '—'}
+                            </td>
+                            <td className="border border-border px-3 py-2.5 text-text-body">
+                              {inquiry.request_type ?? '—'}
+                            </td>
+                            {/* ステータスはその場でプルダウン切替（行クリックのアコーディオン開閉は止める） */}
+                            <td
+                              className="border border-border px-3 py-2.5 text-center"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <select
+                                value={inquiry.status}
+                                disabled={statusUpdatingId === inquiry.id}
+                                onClick={(e) => e.stopPropagation()}
+                                onChange={(e) =>
+                                  handleInlineStatusChange(inquiry, e.target.value as InquiryStatus)
+                                }
+                                className={`px-2 py-1 rounded-full text-xs font-medium border-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-60 ${sc.className}`}
+                                aria-label="ステータスを変更"
+                              >
+                                {(Object.keys(STATUS_CONFIG) as InquiryStatus[]).map((s) => (
+                                  <option key={s} value={s}>
+                                    {STATUS_CONFIG[s].label}
+                                  </option>
+                                ))}
+                              </select>
+                            </td>
+                            {/* 詳細ページへのリンク（アコーディオン展開とは独立） */}
+                            <td
+                              className="border border-border px-2 py-2.5 text-center"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <a
+                                href={`/admin/inquiries/${inquiry.id}`}
+                                aria-label="詳細を開く"
+                                className="inline-flex items-center justify-center w-7 h-7 rounded hover:bg-surface-hover text-text-muted hover:text-text-heading transition-colors"
+                              >
+                                <ExternalLink className="w-4 h-4" />
+                              </a>
+                            </td>
+                            {/* 展開インジケータ */}
+                            <td className="border border-border px-2 py-2.5 text-center text-text-muted">
+                              {isExpanded ? (
+                                <ChevronDown className="w-4 h-4 inline" />
+                              ) : (
+                                <ChevronRight className="w-4 h-4 inline" />
                               )}
                             </td>
                           </tr>
-                        )}
-                      </React.Fragment>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
+
+                          {/* アコーディオン展開行 */}
+                          {isExpanded && (
+                            <tr key={`${inquiry.id}-detail`}>
+                              <td
+                                colSpan={isMultiSchool ? 11 : 10}
+                                className="border border-border bg-surface px-4 py-3"
+                              >
+                                {isLoadingTimeline ? (
+                                  <p className="text-xs text-text-muted">読み込み中...</p>
+                                ) : timelineItems.length === 0 ? (
+                                  <p className="text-xs text-text-muted">履歴なし</p>
+                                ) : (
+                                  <div className="space-y-1.5">
+                                    {timelineItems.slice(0, 5).map((item) => {
+                                      if (item.kind === 'contact') {
+                                        const c = item.data;
+                                        const Icon =
+                                          {
+                                            tel: Phone,
+                                            email: Mail,
+                                            sms: MessageSquare,
+                                            visit: Building2,
+                                            interview: Users,
+                                            other: Circle,
+                                            material_sent: Package,
+                                            status_change: ArrowRightLeft,
+                                          }[c.method] ?? Circle;
+                                        return (
+                                          <div
+                                            key={`c-${c.id}`}
+                                            className="flex items-center gap-2 text-xs text-text-body"
+                                          >
+                                            <Icon className="w-3.5 h-3.5 text-text-muted shrink-0" />
+                                            <span className="font-medium">
+                                              {CONTACT_METHOD_LABELS[c.method] ?? c.method}
+                                            </span>
+                                            <span className="text-text-muted">
+                                              {formatDate(c.contacted_at)}
+                                            </span>
+                                            {c.result && (
+                                              <span className="px-1.5 py-0.5 bg-surface-hover rounded">
+                                                {c.result}
+                                              </span>
+                                            )}
+                                            {c.note && (
+                                              <span className="text-text-muted truncate max-w-xs">
+                                                {c.note}
+                                              </span>
+                                            )}
+                                          </div>
+                                        );
+                                      } else {
+                                        const m = item.data;
+                                        return (
+                                          <div
+                                            key={`m-${m.id}`}
+                                            className="flex items-center gap-2 text-xs text-text-body"
+                                          >
+                                            <Send className="w-3.5 h-3.5 text-text-muted shrink-0" />
+                                            <span className="font-medium">メール送信</span>
+                                            <span className="text-text-muted">
+                                              {formatDateTime(m.sent_at)}
+                                            </span>
+                                            <span
+                                              className={`px-1.5 py-0.5 rounded ${m.status === 'sent' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-700'}`}
+                                            >
+                                              {m.status === 'sent' ? '送信済み' : '失敗'}
+                                            </span>
+                                            {m.subject && (
+                                              <span className="text-text-muted truncate max-w-xs">
+                                                {m.subject}
+                                              </span>
+                                            )}
+                                          </div>
+                                        );
+                                      }
+                                    })}
+                                  </div>
+                                )}
+                              </td>
+                            </tr>
+                          )}
+                        </React.Fragment>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
         </div>
         {/* /本文ラッパ（showContent ゲート） */}
       </div>
@@ -768,7 +837,7 @@ export default function InquiriesPage() {
         isOpen={isManualAddOpen}
         onClose={() => setIsManualAddOpen(false)}
         schools={masterSchools}
-        defaultSchoolId={selectedSchoolId !== 'all' ? selectedSchoolId ?? undefined : undefined}
+        defaultSchoolId={selectedSchoolId !== 'all' ? (selectedSchoolId ?? undefined) : undefined}
         onCreated={() => {
           setIsManualAddOpen(false);
           fetchData();

@@ -15,9 +15,7 @@ function StatusBadge({ isActive, label }: { isActive: boolean; label: string }) 
   return (
     <span
       className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
-        isActive
-          ? 'bg-[#d1fae5] text-[#065f46]'
-          : 'bg-[#f3f4f6] text-[#6b7280]'
+        isActive ? 'bg-[#d1fae5] text-[#065f46]' : 'bg-[#f3f4f6] text-[#6b7280]'
       }`}
     >
       <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-[#059669]' : 'bg-[#9ca3af]'}`} />
@@ -98,9 +96,7 @@ export function VisibilityBadge({
       </div>
       {/* 2行目: 期間名 + 登録済み件数 */}
       {subParts.length > 0 && (
-        <div className="text-xs text-[#6b7280] pl-0.5">
-          {subParts.join(' · ')}
-        </div>
+        <div className="text-xs text-[#6b7280] pl-0.5">{subParts.join(' · ')}</div>
       )}
     </div>
   );

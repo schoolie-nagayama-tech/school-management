@@ -2,7 +2,12 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { AdminLayout } from '@/components/layouts';
-import { getZoukomaPeriods, deleteZoukomaPeriod, archiveZoukomaPeriod, unarchiveZoukomaPeriod } from '@/lib/api/zoukoma';
+import {
+  getZoukomaPeriods,
+  deleteZoukomaPeriod,
+  archiveZoukomaPeriod,
+  unarchiveZoukomaPeriod,
+} from '@/lib/api/zoukoma';
 import { ZoukomaPeriodForm } from '@/components/forms/zoukoma/ZoukomaPeriodForm';
 import type { ZoukomaPeriod } from '@/types/forms/zoukoma';
 import Link from 'next/link';
@@ -33,9 +38,7 @@ export default function ZoukomaSettingsPage() {
       setPeriods(data);
     } catch (error) {
       console.error('Error fetching periods:', error);
-      setErrorMessage(
-        getUserErrorMessage(error, '期間一覧の取得に失敗しました')
-      );
+      setErrorMessage(getUserErrorMessage(error, '期間一覧の取得に失敗しました'));
     } finally {
       setIsLoading(false);
     }
@@ -52,7 +55,6 @@ export default function ZoukomaSettingsPage() {
     return `${startDate.getMonth() + 1}/${startDate.getDate()}〜${endDate.getMonth() + 1}/${endDate.getDate()}`;
   };
 
-
   // 公開期間に基づいて状態を取得（/settings/portalと同じロジック）
   const getPeriodStatus = (period: ZoukomaPeriod) => {
     const now = new Date();
@@ -68,7 +70,10 @@ export default function ZoukomaSettingsPage() {
     }
 
     if (!end) {
-      return { label: `公開中（常時）(${period.title || period.period_key})`, className: 'bg-inkmerald-500 text-white' };
+      return {
+        label: `公開中（常時）(${period.title || period.period_key})`,
+        className: 'bg-inkmerald-500 text-white',
+      };
     }
 
     if (end < now) {
@@ -76,11 +81,21 @@ export default function ZoukomaSettingsPage() {
     }
 
     // 公開期間内
-    return { label: `公開中(${period.title || period.period_key})`, className: 'bg-inkmerald-500 text-white' };
+    return {
+      label: `公開中(${period.title || period.period_key})`,
+      className: 'bg-inkmerald-500 text-white',
+    };
   };
 
   const handleDelete = async (period: ZoukomaPeriod) => {
-    if (!(await confirm({ title: '削除確認', description: `「${period.title}」を削除してもよろしいですか？\nこの操作は取り消せません。`, confirmLabel: '削除', variant: 'danger' }))) {
+    if (
+      !(await confirm({
+        title: '削除確認',
+        description: `「${period.title}」を削除してもよろしいですか？\nこの操作は取り消せません。`,
+        confirmLabel: '削除',
+        variant: 'danger',
+      }))
+    ) {
       return;
     }
 
@@ -91,18 +106,21 @@ export default function ZoukomaSettingsPage() {
       success('期間を削除しました');
     } catch (err) {
       console.error('Error deleting period:', err);
-      error(
-        err instanceof Error
-          ? err.message
-          : '期間の削除に失敗しました'
-      );
+      error(err instanceof Error ? err.message : '期間の削除に失敗しました');
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleArchive = async (period: ZoukomaPeriod) => {
-    if (!(await confirm({ title: 'アーカイブ確認', description: `「${period.title}」をアーカイブしますか？\n\nこの期間の全ての回答もアーカイブされます。`, confirmLabel: 'アーカイブ', variant: 'warning' }))) {
+    if (
+      !(await confirm({
+        title: 'アーカイブ確認',
+        description: `「${period.title}」をアーカイブしますか？\n\nこの期間の全ての回答もアーカイブされます。`,
+        confirmLabel: 'アーカイブ',
+        variant: 'warning',
+      }))
+    ) {
       return;
     }
 
@@ -114,9 +132,7 @@ export default function ZoukomaSettingsPage() {
       success(`アーカイブしました（回答${result.responsesArchived}件を含む）`);
     } catch (err) {
       console.error('Error archiving period:', err);
-      error(
-        getUserErrorMessage(err, 'アーカイブに失敗しました')
-      );
+      error(getUserErrorMessage(err, 'アーカイブに失敗しました'));
     } finally {
       setIsSubmitting(false);
     }
@@ -131,9 +147,7 @@ export default function ZoukomaSettingsPage() {
       success(`アーカイブを解除しました（回答${result.responsesUnarchived}件を含む）`);
     } catch (err) {
       console.error('Error unarchiving period:', err);
-      error(
-        getUserErrorMessage(err, 'アーカイブ解除に失敗しました')
-      );
+      error(getUserErrorMessage(err, 'アーカイブ解除に失敗しました'));
     } finally {
       setIsSubmitting(false);
     }
@@ -147,7 +161,10 @@ export default function ZoukomaSettingsPage() {
       <ToastContainer toasts={toasts} onRemove={removeToast} />
       <AdminLayout headerTitle="テスト対策増コマ申し込み 設定">
         <div className="mb-4">
-          <Link href="/settings" className="inline-flex items-center gap-1 text-sm text-text-muted hover:text-text-heading transition-colors duration-150">
+          <Link
+            href="/settings"
+            className="inline-flex items-center gap-1 text-sm text-text-muted hover:text-text-heading transition-colors duration-150"
+          >
             <ChevronLeft className="w-4 h-4" />
             設定に戻る
           </Link>
@@ -172,9 +189,7 @@ export default function ZoukomaSettingsPage() {
                 <span className="text-sm text-text-heading">
                   アーカイブ済みを表示
                   {archivedPeriods.length > 0 && (
-                    <span className="ml-1 text-text-body/60">
-                      ({archivedPeriods.length}件)
-                    </span>
+                    <span className="ml-1 text-text-body/60">({archivedPeriods.length}件)</span>
                   )}
                 </span>
               </label>
@@ -201,35 +216,19 @@ export default function ZoukomaSettingsPage() {
               <table className="w-full border-collapse border border-border text-sm">
                 <thead>
                   <tr className="bg-surface-hover">
-                    <th className="border border-border px-4 py-3 text-left">
-                      期間
-                    </th>
-                    <th className="border border-border px-4 py-3 text-left">
-                      タイトル
-                    </th>
-                    <th className="border border-border px-4 py-3 text-left">
-                      公開期間
-                    </th>
-                    <th className="border border-border px-4 py-3 text-left">
-                      状態
-                    </th>
-                    <th className="border border-border px-4 py-3 text-left">
-                      回答数
-                    </th>
-                    <th className="border border-border px-4 py-3 text-left">
-                      操作
-                    </th>
+                    <th className="border border-border px-4 py-3 text-left">期間</th>
+                    <th className="border border-border px-4 py-3 text-left">タイトル</th>
+                    <th className="border border-border px-4 py-3 text-left">公開期間</th>
+                    <th className="border border-border px-4 py-3 text-left">状態</th>
+                    <th className="border border-border px-4 py-3 text-left">回答数</th>
+                    <th className="border border-border px-4 py-3 text-left">操作</th>
                   </tr>
                 </thead>
                 <tbody>
                   {activePeriods.map((period) => (
                     <tr key={period.id} className="table-row-hover">
-                      <td className="border border-border px-4 py-3">
-                        {period.period_key}
-                      </td>
-                      <td className="border border-border px-4 py-3">
-                        {period.title}
-                      </td>
+                      <td className="border border-border px-4 py-3">{period.period_key}</td>
+                      <td className="border border-border px-4 py-3">{period.title}</td>
                       <td className="border border-border px-4 py-3">
                         {formatDateRange(period.publish_start, period.publish_end)}
                       </td>
@@ -246,8 +245,7 @@ export default function ZoukomaSettingsPage() {
                         })()}
                       </td>
                       <td className="border border-border px-4 py-3">
-                        {/* TODO: 回答数を取得して表示 */}
-                        -
+                        {/* TODO: 回答数を取得して表示 */}-
                       </td>
                       <td className="border border-border px-4 py-3">
                         <div className="flex gap-2">
@@ -299,76 +297,71 @@ export default function ZoukomaSettingsPage() {
                       </td>
                     </tr>
                   ))}
-                  {showArchived && archivedPeriods.map((period) => (
-                    <tr key={period.id} className="table-row-hover opacity-60">
-                      <td className="border border-border px-4 py-3">
-                        {period.period_key}
-                      </td>
-                      <td className="border border-border px-4 py-3">
-                        {period.title}
-                      </td>
-                      <td className="border border-border px-4 py-3">
-                        {formatDateRange(period.publish_start, period.publish_end)}
-                      </td>
-                      <td className="border border-border px-4 py-3">
-                        <span className="px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                          アーカイブ
-                        </span>
-                      </td>
-                      <td className="border border-border px-4 py-3">
-                        -
-                      </td>
-                      <td className="border border-border px-4 py-3">
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => {
-                              const schoolId = getDefaultSchoolId();
-                              window.open(
-                                `/forms/preview-period/zoukoma/${period.period_key}?schoolId=${schoolId}`,
-                                '_blank'
-                              );
-                            }}
-                            className="px-3 py-1 text-xs bg-surface-hover text-text-body rounded hover:bg-border transition-colors duration-150"
-                          >
-                            プレビュー
-                          </button>
-                          <button
-                            onClick={() => handleUnarchive(period)}
-                            className="px-3 py-1 text-xs bg-surface-hover text-text-body rounded hover:bg-border transition-colors duration-150"
-                            disabled={isSubmitting}
-                          >
-                            元に戻す
-                          </button>
-                          <button
-                            onClick={() => handleDelete(period)}
-                            className="px-3 py-1 text-xs bg-danger text-white rounded hover:bg-danger/80 transition-colors duration-150"
-                            disabled={isSubmitting}
-                          >
-                            削除
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                  {showArchived &&
+                    archivedPeriods.map((period) => (
+                      <tr key={period.id} className="table-row-hover opacity-60">
+                        <td className="border border-border px-4 py-3">{period.period_key}</td>
+                        <td className="border border-border px-4 py-3">{period.title}</td>
+                        <td className="border border-border px-4 py-3">
+                          {formatDateRange(period.publish_start, period.publish_end)}
+                        </td>
+                        <td className="border border-border px-4 py-3">
+                          <span className="px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                            アーカイブ
+                          </span>
+                        </td>
+                        <td className="border border-border px-4 py-3">-</td>
+                        <td className="border border-border px-4 py-3">
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => {
+                                const schoolId = getDefaultSchoolId();
+                                window.open(
+                                  `/forms/preview-period/zoukoma/${period.period_key}?schoolId=${schoolId}`,
+                                  '_blank'
+                                );
+                              }}
+                              className="px-3 py-1 text-xs bg-surface-hover text-text-body rounded hover:bg-border transition-colors duration-150"
+                            >
+                              プレビュー
+                            </button>
+                            <button
+                              onClick={() => handleUnarchive(period)}
+                              className="px-3 py-1 text-xs bg-surface-hover text-text-body rounded hover:bg-border transition-colors duration-150"
+                              disabled={isSubmitting}
+                            >
+                              元に戻す
+                            </button>
+                            <button
+                              onClick={() => handleDelete(period)}
+                              className="px-3 py-1 text-xs bg-danger text-white rounded hover:bg-danger/80 transition-colors duration-150"
+                              disabled={isSubmitting}
+                            >
+                              削除
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
                 </tbody>
               </table>
+            </div>
+          )}
         </div>
-      )}
-      </div>
 
-      {/* 期間編集モーダル */}
-      <ZoukomaPeriodForm
-        isOpen={isEditorOpen}
-        period={editingPeriod}
-        onClose={() => {
-          setIsEditorOpen(false);
-          setEditingPeriod(null);
-        }}
-        onSuccess={() => {
-          fetchPeriods();
-        }}
-      />
-      {ConfirmDialog}
+        {/* 期間編集モーダル */}
+        <ZoukomaPeriodForm
+          isOpen={isEditorOpen}
+          period={editingPeriod}
+          onClose={() => {
+            setIsEditorOpen(false);
+            setEditingPeriod(null);
+          }}
+          onSuccess={() => {
+            fetchPeriods();
+          }}
+        />
+        {ConfirmDialog}
       </AdminLayout>
     </div>
   );

@@ -4,14 +4,21 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { Plus, Pencil, Trash2, ChevronDown, ChevronRight } from 'lucide-react';
 import { Button, Loading } from '@/components/ui';
-import { KoushuEnrollmentFormModal, type EnrollmentRow } from '@/components/schedule/KoushuEnrollmentFormModal';
+import {
+  KoushuEnrollmentFormModal,
+  type EnrollmentRow,
+} from '@/components/schedule/KoushuEnrollmentFormModal';
 import {
   getKoushuEnrollmentsForPeriod,
   upsertKoushuEnrollment,
   deleteKoushuEnrollment,
   type KoushuEnrollment,
 } from '@/lib/api/seasonalCourses';
-import { getKoushuPeriods, getStudentRegularSchedule, type KoushuPeriodInfo } from '@/lib/api/koushu-period';
+import {
+  getKoushuPeriods,
+  getStudentRegularSchedule,
+  type KoushuPeriodInfo,
+} from '@/lib/api/koushu-period';
 import { useMasterData } from '@/contexts/MasterDataContext';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -59,7 +66,11 @@ export function KoushuEnrollmentManager() {
   const [deletingStudent, setDeletingStudent] = useState<StudentRow | null>(null);
 
   useEffect(() => {
-    if (!schoolId) { setPeriods([]); setSelectedPeriod(null); return; }
+    if (!schoolId) {
+      setPeriods([]);
+      setSelectedPeriod(null);
+      return;
+    }
     getKoushuPeriods(schoolId)
       .then((p) => {
         setPeriods(p);
@@ -69,7 +80,10 @@ export function KoushuEnrollmentManager() {
   }, [schoolId]);
 
   const loadEnrollments = useCallback(async () => {
-    if (!schoolId || !selectedPeriod) { setEnrollments([]); return; }
+    if (!schoolId || !selectedPeriod) {
+      setEnrollments([]);
+      return;
+    }
     setLoading(true);
     try {
       setEnrollments(await getKoushuEnrollmentsForPeriod(schoolId, selectedPeriod.season));
@@ -78,7 +92,9 @@ export function KoushuEnrollmentManager() {
     }
   }, [schoolId, selectedPeriod]);
 
-  useEffect(() => { loadEnrollments(); }, [loadEnrollments]);
+  useEffect(() => {
+    loadEnrollments();
+  }, [loadEnrollments]);
 
   const studentRows = useMemo<StudentRow[]>(() => {
     const map = new Map<string, StudentRow>();
@@ -98,7 +114,13 @@ export function KoushuEnrollmentManager() {
   const handleSave = async (studentId: string, rows: EnrollmentRow[]) => {
     if (!selectedPeriod) return;
     for (const r of rows) {
-      await upsertKoushuEnrollment(schoolId, selectedPeriod.season, studentId, r.komaBySubject, r.formation);
+      await upsertKoushuEnrollment(
+        schoolId,
+        selectedPeriod.season,
+        studentId,
+        r.komaBySubject,
+        r.formation
+      );
     }
     await loadEnrollments();
   };
@@ -111,26 +133,40 @@ export function KoushuEnrollmentManager() {
     await loadEnrollments();
   };
 
-  const toggleSchedule = useCallback(async (studentId: string) => {
-    if (openStudent === studentId) { setOpenStudent(null); return; }
-    setOpenStudent(studentId);
-    setSchedLoading(true);
-    try { setSched(await getStudentRegularSchedule(studentId)); }
-    catch { setSched([]); }
-    finally { setSchedLoading(false); }
-  }, [openStudent]);
+  const toggleSchedule = useCallback(
+    async (studentId: string) => {
+      if (openStudent === studentId) {
+        setOpenStudent(null);
+        return;
+      }
+      setOpenStudent(studentId);
+      setSchedLoading(true);
+      try {
+        setSched(await getStudentRegularSchedule(studentId));
+      } catch {
+        setSched([]);
+      } finally {
+        setSchedLoading(false);
+      }
+    },
+    [openStudent]
+  );
 
   const komaSummary = (en?: KoushuEnrollment): string => {
     if (!en) return '—';
     const kbs = en.koma_by_subject ?? {};
-    const parts = Object.entries(kbs).map(([sid, n]) => `${subjectNameById.get(sid) ?? sid.slice(0, 4)}${n}`);
+    const parts = Object.entries(kbs).map(
+      ([sid, n]) => `${subjectNameById.get(sid) ?? sid.slice(0, 4)}${n}`
+    );
     return parts.length > 0 ? parts.join('・') : `${en.koma_count}コマ`;
   };
 
   const editInitialRows = (r: StudentRow): EnrollmentRow[] => {
     const rows: EnrollmentRow[] = [];
-    if (r.individual?.koma_by_subject) rows.push({ formation: 'individual', komaBySubject: r.individual.koma_by_subject });
-    if (r.group?.koma_by_subject) rows.push({ formation: 'group', komaBySubject: r.group.koma_by_subject });
+    if (r.individual?.koma_by_subject)
+      rows.push({ formation: 'individual', komaBySubject: r.individual.koma_by_subject });
+    if (r.group?.koma_by_subject)
+      rows.push({ formation: 'group', komaBySubject: r.group.koma_by_subject });
     return rows;
   };
 
@@ -141,7 +177,13 @@ export function KoushuEnrollmentManager() {
           講習（春期/夏期/冬期）の申込。生徒ごとに科目×個別/集団のコマ数を登録します。
         </p>
         {selectedPeriod && (
-          <Button onClick={() => { setEditingStudent(null); setFormOpen(true); }} className="flex items-center gap-1">
+          <Button
+            onClick={() => {
+              setEditingStudent(null);
+              setFormOpen(true);
+            }}
+            className="flex items-center gap-1"
+          >
             <Plus className="w-4 h-4" />
             生徒を追加
           </Button>
@@ -180,13 +222,19 @@ export function KoushuEnrollmentManager() {
         </div>
       )}
 
-      {schoolId && selectedPeriod && (
-        loading ? (
+      {schoolId &&
+        selectedPeriod &&
+        (loading ? (
           <Loading size="md" />
         ) : studentRows.length === 0 ? (
           <div className="text-center py-12 text-[var(--paragraph)]">
             <p className="mb-4">まだ申込がありません。</p>
-            <Button onClick={() => { setEditingStudent(null); setFormOpen(true); }}>
+            <Button
+              onClick={() => {
+                setEditingStudent(null);
+                setFormOpen(true);
+              }}
+            >
               <Plus className="w-4 h-4 mr-1" />
               最初の生徒を追加
             </Button>
@@ -215,7 +263,10 @@ export function KoushuEnrollmentManager() {
                       schedLoading={schedLoading}
                       komaSummary={komaSummary}
                       onToggleSchedule={() => toggleSchedule(r.student_id)}
-                      onEdit={() => { setEditingStudent(r); setFormOpen(true); }}
+                      onEdit={() => {
+                        setEditingStudent(r);
+                        setFormOpen(true);
+                      }}
                       onDelete={() => setDeletingStudent(r)}
                     />
                   );
@@ -223,12 +274,14 @@ export function KoushuEnrollmentManager() {
               </tbody>
             </table>
           </div>
-        )
-      )}
+        ))}
 
       <KoushuEnrollmentFormModal
         open={formOpen}
-        onClose={() => { setFormOpen(false); setEditingStudent(null); }}
+        onClose={() => {
+          setFormOpen(false);
+          setEditingStudent(null);
+        }}
         schoolId={schoolId}
         subjects={subjects}
         existingStudentIds={editingStudent ? [] : existingStudentIds}
@@ -249,8 +302,12 @@ export function KoushuEnrollmentManager() {
               の講習申込（個別・集団）を削除します。
             </p>
             <div className="flex gap-2 justify-end">
-              <Button variant="secondary" onClick={() => setDeletingStudent(null)}>キャンセル</Button>
-              <Button variant="danger" onClick={handleDelete}>削除する</Button>
+              <Button variant="secondary" onClick={() => setDeletingStudent(null)}>
+                キャンセル
+              </Button>
+              <Button variant="danger" onClick={handleDelete}>
+                削除する
+              </Button>
             </div>
           </div>
         </div>
@@ -283,26 +340,49 @@ function FragmentRow({
     <>
       <tr className="border-t border-gray-100 hover:bg-gray-50/60 transition-colors">
         <td className="px-3 py-2 font-medium text-[var(--headline)]">
-          <button type="button" onClick={onToggleSchedule} className="inline-flex items-center gap-1 hover:underline" title="通塾日程を表示">
-            {isOpen ? <ChevronDown className="w-3.5 h-3.5 text-gray-400" /> : <ChevronRight className="w-3.5 h-3.5 text-gray-400" />}
+          <button
+            type="button"
+            onClick={onToggleSchedule}
+            className="inline-flex items-center gap-1 hover:underline"
+            title="通塾日程を表示"
+          >
+            {isOpen ? (
+              <ChevronDown className="w-3.5 h-3.5 text-gray-400" />
+            ) : (
+              <ChevronRight className="w-3.5 h-3.5 text-gray-400" />
+            )}
             {row.student ? `${row.student.last_name} ${row.student.first_name}` : '—'}
           </button>
         </td>
-        <td className="px-3 py-2 text-[var(--paragraph)]">{row.student ? gradeLabel(row.student.grade) : '—'}</td>
+        <td className="px-3 py-2 text-[var(--paragraph)]">
+          {row.student ? gradeLabel(row.student.grade) : '—'}
+        </td>
         <td className="px-3 py-2">
-          <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-medium bg-info-subtle text-info border border-info/20 mr-1.5">個別</span>
+          <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-medium bg-info-subtle text-info border border-info/20 mr-1.5">
+            個別
+          </span>
           <span className="text-[var(--paragraph)]">{komaSummary(row.individual)}</span>
         </td>
         <td className="px-3 py-2">
-          <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-medium bg-accent-ink-subtle text-accent-ink border border-accent-ink/15 mr-1.5">集団</span>
+          <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-medium bg-accent-ink-subtle text-accent-ink border border-accent-ink/15 mr-1.5">
+            集団
+          </span>
           <span className="text-[var(--paragraph)]">{komaSummary(row.group)}</span>
         </td>
         <td className="px-3 py-2">
           <div className="flex items-center gap-1 justify-end">
-            <button onClick={onEdit} className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded" title="編集">
+            <button
+              onClick={onEdit}
+              className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded"
+              title="編集"
+            >
               <Pencil className="w-3.5 h-3.5" />
             </button>
-            <button onClick={onDelete} className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded" title="削除">
+            <button
+              onClick={onDelete}
+              className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded"
+              title="削除"
+            >
               <Trash2 className="w-3.5 h-3.5" />
             </button>
           </div>
@@ -320,8 +400,12 @@ function FragmentRow({
               ) : (
                 <span className="inline-flex flex-wrap gap-1 align-middle">
                   {sched.map((s, i) => (
-                    <span key={i} className="px-1.5 py-0.5 rounded bg-white border border-border-subtle text-[10px]">
-                      {DOW_LABELS[s.day_of_week]}{s.slot_number}限
+                    <span
+                      key={i}
+                      className="px-1.5 py-0.5 rounded bg-white border border-border-subtle text-[10px]"
+                    >
+                      {DOW_LABELS[s.day_of_week]}
+                      {s.slot_number}限
                       <span className="text-text-muted ml-0.5">{s.start_time?.slice(0, 5)}</span>
                     </span>
                   ))}

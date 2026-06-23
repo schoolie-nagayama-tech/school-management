@@ -51,11 +51,13 @@ export async function GET(request: NextRequest) {
     const unconfirmedOrders = await fetchAllPaged<Record<string, unknown>>((from, to) =>
       supabaseAdmin
         .from('material_orders')
-        .select(`
+        .select(
+          `
           id, school_id, created_at,
           material:materials(name),
           student:students(last_name, first_name)
-        `)
+        `
+        )
         .eq('status', 'unconfirmed')
         .order('id', { ascending: true })
         .range(from, to)
@@ -66,11 +68,13 @@ export async function GET(request: NextRequest) {
     const overdueOrders = await fetchAllPaged<Record<string, unknown>>((from, to) =>
       supabaseAdmin
         .from('material_orders')
-        .select(`
+        .select(
+          `
           id, school_id, delivered_at,
           material:materials(name),
           student:students(last_name, first_name)
-        `)
+        `
+        )
         .eq('status', 'delivered')
         .lt('delivered_at', sevenDaysAgo)
         .order('id', { ascending: true })

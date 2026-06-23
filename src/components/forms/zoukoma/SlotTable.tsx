@@ -20,9 +20,30 @@ function parseLocalDateStr(s: string): Date {
 
 /** 期間設定が未登録のときに使うデフォルト時限（平日のみ・土日なし） */
 const DEFAULT_PERIODS_FALLBACK: PeriodConfig[] = [
-  { code: '5', start_time: '16:20', end_time: '17:50', available_saturday: false, available_sunday: false, available_weekday: true },
-  { code: '6', start_time: '17:55', end_time: '19:25', available_saturday: false, available_sunday: false, available_weekday: true },
-  { code: '7', start_time: '19:30', end_time: '21:00', available_saturday: false, available_sunday: false, available_weekday: true },
+  {
+    code: '5',
+    start_time: '16:20',
+    end_time: '17:50',
+    available_saturday: false,
+    available_sunday: false,
+    available_weekday: true,
+  },
+  {
+    code: '6',
+    start_time: '17:55',
+    end_time: '19:25',
+    available_saturday: false,
+    available_sunday: false,
+    available_weekday: true,
+  },
+  {
+    code: '7',
+    start_time: '19:30',
+    end_time: '21:00',
+    available_saturday: false,
+    available_sunday: false,
+    available_weekday: true,
+  },
 ];
 
 /** 増コマフォームで表示する日程のデフォルト週数（保護者側で増減可能） */
@@ -44,10 +65,9 @@ export function generateAllSlots(
   const startDate = new Date(today);
   const slots: TimeSlot[] = [];
 
-  const periodsToUse: PeriodConfig[] =
-    settings.schedule?.periods?.length
-      ? settings.schedule.periods
-      : DEFAULT_PERIODS_FALLBACK;
+  const periodsToUse: PeriodConfig[] = settings.schedule?.periods?.length
+    ? settings.schedule.periods
+    : DEFAULT_PERIODS_FALLBACK;
 
   // 表示日数 = 週数 × 7。週数は最低1週間を保証
   const totalDays = Math.max(1, numWeeks) * 7;
@@ -68,10 +88,7 @@ export function generateAllSlots(
       const satOk = periodConfig.available_saturday ?? false;
       const sunOk = periodConfig.available_sunday ?? false;
       const weekdayOk = periodConfig.available_weekday ?? false;
-      const shouldShow =
-        (isSunday && sunOk) ||
-        (isSaturday && satOk) ||
-        (isWeekday && weekdayOk);
+      const shouldShow = (isSunday && sunOk) || (isSaturday && satOk) || (isWeekday && weekdayOk);
 
       if (!shouldShow) return;
 
@@ -206,7 +223,7 @@ export function SlotTable({
             {[5, 6, 7].map((period) => {
               const periodState = getPeriodSelectionState(period);
               const hasSlots = slots.some((s) => s.period === period);
-              
+
               return (
                 <th key={period} className="border border-[#e5e7eb] px-3 py-2 text-center">
                   {hasSlots ? (
@@ -219,16 +236,15 @@ export function SlotTable({
                             ? 'bg-[#ef4444] text-white'
                             : 'bg-[#3b82f6] text-white'
                           : periodState.someSelected
-                          ? isUnavailableMode
-                            ? 'bg-[#ef4444]/50 text-[#1f2937]'
-                            : 'bg-[#3b82f6]/50 text-[#1f2937]'
-                          : 'text-[#4b5563] hover:bg-[#e5e7eb]'
+                            ? isUnavailableMode
+                              ? 'bg-[#ef4444]/50 text-[#1f2937]'
+                              : 'bg-[#3b82f6]/50 text-[#1f2937]'
+                            : 'text-[#4b5563] hover:bg-[#e5e7eb]'
                       }`}
                       disabled={disabled}
                       title={`${period}限を全て${periodState.allSelected ? '解除' : isUnavailableMode ? '✗にする' : '選択'}`}
                     >
-                      {period}限
-                      {periodState.allSelected && (isUnavailableMode ? ' ✗' : ' ✓')}
+                      {period}限{periodState.allSelected && (isUnavailableMode ? ' ✗' : ' ✓')}
                     </button>
                   ) : (
                     <span className="text-xs text-[#4b5563]/40">{period}限</span>
@@ -248,9 +264,7 @@ export function SlotTable({
                   return `${d.getMonth() + 1}/${d.getDate()}(${dateSlots[0].dayOfWeek})`;
                 })()
               : date;
-            const allDateSelected = dateSlots.every((s) =>
-              selectedSlotSet.has(s.id)
-            );
+            const allDateSelected = dateSlots.every((s) => selectedSlotSet.has(s.id));
 
             return (
               <tr key={date}>
@@ -286,15 +300,10 @@ export function SlotTable({
                   const isSelected = selectedSlotSet.has(slot.id);
                   const periodSlots = dateSlots.filter((s) => s.period === period);
                   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                  const _allPeriodSelected = periodSlots.every((s) =>
-                    selectedSlotSet.has(s.id)
-                  );
+                  const _allPeriodSelected = periodSlots.every((s) => selectedSlotSet.has(s.id));
 
                   return (
-                    <td
-                      key={period}
-                      className="border border-[#e5e7eb] px-3 py-2 text-center"
-                    >
+                    <td key={period} className="border border-[#e5e7eb] px-3 py-2 text-center">
                       <button
                         type="button"
                         onClick={() => handleSlotToggle(slot.id)}

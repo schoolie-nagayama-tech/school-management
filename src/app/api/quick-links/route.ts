@@ -116,18 +116,16 @@ export async function PUT(request: NextRequest) {
   try {
     const supabaseAdmin = getSupabaseAdmin();
     const now = new Date().toISOString();
-    const { error } = await supabaseAdmin
-      .from('system_settings')
-      .upsert(
-        {
-          key: SETTING_KEY,
-          value: JSON.stringify(sanitized),
-          description: '生徒管理ページ上部に表示する外部ツールへのクイックリンク（全教室共通）',
-          category: 'ui',
-          updated_at: now,
-        },
-        { onConflict: 'key' }
-      );
+    const { error } = await supabaseAdmin.from('system_settings').upsert(
+      {
+        key: SETTING_KEY,
+        value: JSON.stringify(sanitized),
+        description: '生徒管理ページ上部に表示する外部ツールへのクイックリンク（全教室共通）',
+        category: 'ui',
+        updated_at: now,
+      },
+      { onConflict: 'key' }
+    );
 
     if (error) {
       console.error('quick-links PUT error:', error);

@@ -3,7 +3,12 @@
 import { useState, useEffect } from 'react';
 import { Modal, Input, Button, Select } from '@/components/ui';
 import { createMogiPeriod, updateMogiPeriod } from '@/lib/api/mogi';
-import { createFormPeriodForSchools, updateFormPeriodForSchools, generateUniquePeriodKey, getNextPeriodKey } from '@/lib/api/form-periods';
+import {
+  createFormPeriodForSchools,
+  updateFormPeriodForSchools,
+  generateUniquePeriodKey,
+  getNextPeriodKey,
+} from '@/lib/api/form-periods';
 import { getApplicationItems } from '@/lib/api/applications';
 import type { MogiPeriod, MogiSettings, Venue, MogiExamType, MogiRegion } from '@/types/forms/mogi';
 import {
@@ -129,11 +134,14 @@ export function MogiPeriodEditor({
   useEffect(() => {
     if (isOpen) {
       // 申込項目を取得（選択中の教室のものを取得）
-      const targetIds = schoolIds && schoolIds.length > 0 ? schoolIds : schoolId ? [schoolId] : undefined;
+      const targetIds =
+        schoolIds && schoolIds.length > 0 ? schoolIds : schoolId ? [schoolId] : undefined;
       getApplicationItems(targetIds, true).then(setApplicationItems).catch(console.error);
       // デフォルト自動挿入の設定を読み込み
       if (typeof window !== 'undefined' && schoolId) {
-        setUseDefaultInsert(window.localStorage.getItem(MOGI_USE_DEFAULTS_KEY(schoolId)) === 'true');
+        setUseDefaultInsert(
+          window.localStorage.getItem(MOGI_USE_DEFAULTS_KEY(schoolId)) === 'true'
+        );
       }
 
       if (period) {
@@ -144,14 +152,10 @@ export function MogiPeriodEditor({
         setDescription(settings.description || '');
         setRegion(settings.region ?? 'tokyo');
         setPublishStart(
-          period.publish_start
-            ? new Date(period.publish_start).toISOString().slice(0, 16)
-            : ''
+          period.publish_start ? new Date(period.publish_start).toISOString().slice(0, 16) : ''
         );
         setPublishEnd(
-          period.publish_end
-            ? new Date(period.publish_end).toISOString().slice(0, 16)
-            : ''
+          period.publish_end ? new Date(period.publish_end).toISOString().slice(0, 16) : ''
         );
         // 会場テキスト復元（全日程の会場を集約してユニーク化）
         const venueMap = new Map<string, string>();
@@ -181,7 +185,9 @@ export function MogiPeriodEditor({
       } else {
         // 新規作成モード - 期間キーは自動生成（YYYY-MM、衝突時は連番）
         setPeriodKey(generateUniquePeriodKey([]));
-        getNextPeriodKey('mogi', targetIds ?? []).then(setPeriodKey).catch(() => {});
+        getNextPeriodKey('mogi', targetIds ?? [])
+          .then(setPeriodKey)
+          .catch(() => {});
         setTitle('');
         setDescription('');
         setRegion('tokyo');
@@ -198,12 +204,17 @@ export function MogiPeriodEditor({
         setLinkedApplicationItemId('');
         // デフォルト自動挿入がONなら保存済みデフォルトを挿入
         if (typeof window !== 'undefined' && schoolId) {
-          const useDefaults = window.localStorage.getItem(MOGI_USE_DEFAULTS_KEY(schoolId)) === 'true';
+          const useDefaults =
+            window.localStorage.getItem(MOGI_USE_DEFAULTS_KEY(schoolId)) === 'true';
           if (useDefaults) {
             try {
               const saved = window.localStorage.getItem(MOGI_DEFAULTS_KEY(schoolId));
               if (saved) {
-                const def = JSON.parse(saved) as { description?: string; venueText?: string; completionMessage?: string };
+                const def = JSON.parse(saved) as {
+                  description?: string;
+                  venueText?: string;
+                  completionMessage?: string;
+                };
                 if (def.description != null) setDescription(def.description);
                 if (def.venueText != null) setVenueText(def.venueText);
                 if (def.completionMessage != null) setCompletionMessage(def.completionMessage);
@@ -289,11 +300,11 @@ export function MogiPeriodEditor({
 
     setIsSubmitting(true);
     try {
-    // venueText / extraVenueText 変更に伴う選択クリーンアップ
-    const cleanedEntries = sanitizeSelections(dateEntries);
-    setDateEntries(cleanedEntries);
+      // venueText / extraVenueText 変更に伴う選択クリーンアップ
+      const cleanedEntries = sanitizeSelections(dateEntries);
+      setDateEntries(cleanedEntries);
 
-    const settings: MogiSettings = {
+      const settings: MogiSettings = {
         description: description.trim() || undefined,
         grades: [...MOGI_GRADES],
         region,
@@ -324,12 +335,7 @@ export function MogiPeriodEditor({
       const endDate = publishEnd ? new Date(publishEnd) : null;
 
       // 公開開始日が現在時刻以降または未設定の場合、公開期間内であればtrue
-      const shouldBeActive = !!(
-        startDate &&
-        endDate &&
-        startDate <= now &&
-        endDate >= now
-      );
+      const shouldBeActive = !!(startDate && endDate && startDate <= now && endDate >= now);
 
       const settingsForApi = settings as unknown as Record<string, unknown>;
 
@@ -344,12 +350,7 @@ export function MogiPeriodEditor({
 
       if (period) {
         if (schoolIds && schoolIds.length > 1 && applyToAllSchools) {
-          await updateFormPeriodForSchools(
-            schoolIds,
-            'mogi',
-            period.period_key,
-            updates
-          );
+          await updateFormPeriodForSchools(schoolIds, 'mogi', period.period_key, updates);
         } else {
           await updateMogiPeriod(period.id, updates);
         }
@@ -384,9 +385,7 @@ export function MogiPeriodEditor({
       onClose();
     } catch (error) {
       console.error('Error saving period:', error);
-      setError(
-        getUserErrorMessage(error, '期間の保存に失敗しました')
-      );
+      setError(getUserErrorMessage(error, '期間の保存に失敗しました'));
     } finally {
       setIsSubmitting(false);
     }
@@ -487,7 +486,8 @@ export function MogiPeriodEditor({
           className="bg-[#f3f4f6] cursor-not-allowed"
         />
         <p className="text-xs text-[#4b5563]/60 mt-1">
-          ※ 期間キーは自動で割り当てられます（変更不可）。表示名は下の「タイトル」で設定してください。
+          ※
+          期間キーは自動で割り当てられます（変更不可）。表示名は下の「タイトル」で設定してください。
         </p>
 
         {/* 地域（東京 = Vもぎ / 神奈川 = 全県模試） */}
@@ -538,7 +538,9 @@ export function MogiPeriodEditor({
           type="text"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder={region === 'kanagawa' ? '例: 全県模試申込（10月）' : '例: Vもぎ申込（10月・11月）'}
+          placeholder={
+            region === 'kanagawa' ? '例: 全県模試申込（10月）' : '例: Vもぎ申込（10月・11月）'
+          }
           required
           disabled={isSubmitting}
         />
@@ -558,24 +560,30 @@ export function MogiPeriodEditor({
           onChange={(e) => setPublishEnd(e.target.value)}
           disabled={isSubmitting}
         />
-        <p className="text-xs text-[#4b5563]/60 mt-1">
-          ※空欄にすると永続的に公開されます
-        </p>
+        <p className="text-xs text-[#4b5563]/60 mt-1">※空欄にすると永続的に公開されます</p>
 
         <div className="p-3 bg-[#f3f4f6] rounded-lg border border-[#e5e7eb]">
           <p className="text-sm text-[#4b5563]">
             ※ 公開状態は公開開始日時と公開終了日時に基づいて自動的に設定されます。
-            {publishStart && (() => {
-              const now = new Date();
-              const startDate = new Date(publishStart);
-              const endDate = publishEnd ? new Date(publishEnd) : null;
-              const isActive = startDate <= now && (!endDate || endDate >= now);
-              return (
-                <span className="block mt-1 font-medium">
-                  現在の状態: {isActive ? (endDate ? '公開中' : '公開中（永続公開）') : startDate > now ? '公開前' : '公開終了'}
-                </span>
-              );
-            })()}
+            {publishStart &&
+              (() => {
+                const now = new Date();
+                const startDate = new Date(publishStart);
+                const endDate = publishEnd ? new Date(publishEnd) : null;
+                const isActive = startDate <= now && (!endDate || endDate >= now);
+                return (
+                  <span className="block mt-1 font-medium">
+                    現在の状態:{' '}
+                    {isActive
+                      ? endDate
+                        ? '公開中'
+                        : '公開中（永続公開）'
+                      : startDate > now
+                        ? '公開前'
+                        : '公開終了'}
+                  </span>
+                );
+              })()}
           </p>
         </div>
 
@@ -608,9 +616,7 @@ export function MogiPeriodEditor({
 
         {/* 説明文 */}
         <div>
-          <label className="block text-sm font-medium text-[#1f2937] mb-2">
-            説明文
-          </label>
+          <label className="block text-sm font-medium text-[#1f2937] mb-2">説明文</label>
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
@@ -791,9 +797,7 @@ export function MogiPeriodEditor({
                                   disabled={isSubmitting}
                                   className="w-4 h-4 text-[#3b82f6] border-[#e5e7eb] rounded focus:ring-[#3b82f6] cursor-pointer"
                                 />
-                                <span className="text-sm text-[#4b5563] flex-1">
-                                  {venue.label}
-                                </span>
+                                <span className="text-sm text-[#4b5563] flex-1">{venue.label}</span>
                                 {entry.selectedVenueIds.includes(venue.id) && (
                                   <span className="text-xs text-[#3b82f6] font-medium">✓</span>
                                 )}
@@ -816,9 +820,7 @@ export function MogiPeriodEditor({
                       </label>
                       <textarea
                         value={entry.extraVenueText}
-                        onChange={(e) =>
-                          handleUpdateExtraVenueText(index, e.target.value)
-                        }
+                        onChange={(e) => handleUpdateExtraVenueText(index, e.target.value)}
                         disabled={isSubmitting}
                         rows={2}
                         className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#4b5563] focus:outline-none focus:ring-2 focus:ring-[#3b82f6] disabled:bg-[#f3f4f6] disabled:cursor-not-allowed"
@@ -856,9 +858,7 @@ export function MogiPeriodEditor({
 
         {/* 完了メッセージ */}
         <div>
-          <label className="block text-sm font-medium text-[#1f2937] mb-2">
-            完了メッセージ
-          </label>
+          <label className="block text-sm font-medium text-[#1f2937] mb-2">完了メッセージ</label>
           <textarea
             value={completionMessage}
             onChange={(e) => setCompletionMessage(e.target.value)}
@@ -886,15 +886,10 @@ export function MogiPeriodEditor({
 
         {!period && allowedSchools && allowedSchools.length > 1 && (
           <div className="p-3 bg-[#eff6ff] rounded-lg border border-[#bfdbfe]">
-            <p className="text-sm font-medium text-[#1f2937] mb-2">
-              作成する教室を選択
-            </p>
+            <p className="text-sm font-medium text-[#1f2937] mb-2">作成する教室を選択</p>
             <div className="flex flex-wrap gap-x-4 gap-y-2">
               {allowedSchools.map((school) => (
-                <label
-                  key={school.id}
-                  className="flex items-center gap-2 cursor-pointer"
-                >
+                <label key={school.id} className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={selectedSchoolIdsForCreate.includes(school.id)}
@@ -920,15 +915,10 @@ export function MogiPeriodEditor({
         )}
         {period && allowedSchools && allowedSchools.length > 1 && (
           <div className="p-3 bg-[#eff6ff] rounded-lg border border-[#bfdbfe]">
-            <p className="text-sm font-medium text-[#1f2937] mb-2">
-              同じ内容で更新する教室を選択
-            </p>
+            <p className="text-sm font-medium text-[#1f2937] mb-2">同じ内容で更新する教室を選択</p>
             <div className="flex flex-wrap gap-x-4 gap-y-2">
               {allowedSchools.map((school) => (
-                <label
-                  key={school.id}
-                  className="flex items-center gap-2 cursor-pointer"
-                >
+                <label key={school.id} className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={selectedSchoolIdsForUpdate.includes(school.id)}

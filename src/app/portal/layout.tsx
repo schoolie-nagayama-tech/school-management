@@ -13,10 +13,6 @@ export const viewport: Viewport = {
   themeColor: '#10b981',
 };
 
-export default function PortalLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function PortalLayout({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }

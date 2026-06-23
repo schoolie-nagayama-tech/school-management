@@ -3,7 +3,12 @@
 import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { FileText, User } from 'lucide-react';
-import type { Student, CourseProgressItem, StudentCourseProgress, ApplicationStatus } from '@/types/database';
+import type {
+  Student,
+  CourseProgressItem,
+  StudentCourseProgress,
+  ApplicationStatus,
+} from '@/types/database';
 import { GRADE_LABELS, PROGRESS_COLUMN_GROUPS } from '@/types/database';
 import type { AutoValues } from '@/lib/api/courseProgress';
 import { Tooltip } from '@/components/ui/Tooltip';
@@ -49,8 +54,8 @@ function formatDeadline(deadline: string | null): string {
 
 // 小学校「算数」と中高「数学」は同一科目として扱う
 const SUBJECT_ALIASES: Record<string, string[]> = {
-  '数学': ['算数'],
-  '算数': ['数学'],
+  数学: ['算数'],
+  算数: ['数学'],
 };
 
 /** 科目名マッチング: auto_source='subject_proposal' の列に対して、科目名→コマ数を返す。
@@ -93,12 +98,14 @@ function getCellStyle(
   groupColor: string
 ): { bg: string; text: string; border: string } {
   if (item.column_type === 'check') {
-    if (status === 'completed' || status === 'pending') return { bg: `${groupColor}22`, text: groupColor, border: `${groupColor}44` };
+    if (status === 'completed' || status === 'pending')
+      return { bg: `${groupColor}22`, text: groupColor, border: `${groupColor}44` };
     if (status === 'not_applicable') return { bg: '#f3f4f6', text: '#9ca3af', border: '#e5e7eb' };
     return { bg: '#ffffff', text: '#d1d5db', border: '#f3f4f6' };
   }
   if (item.column_type === 'number') {
-    if (numberValue != null && numberValue > 0) return { bg: `${groupColor}15`, text: groupColor, border: `${groupColor}30` };
+    if (numberValue != null && numberValue > 0)
+      return { bg: `${groupColor}15`, text: groupColor, border: `${groupColor}30` };
     if (numberValue === 0) return { bg: '#f9fafb', text: '#9ca3af', border: '#e5e7eb' };
     return { bg: '#ffffff', text: '#d1d5db', border: '#f3f4f6' };
   }
@@ -175,22 +182,33 @@ export function CourseProgressTable({
   onItemDeadlineChange,
   onShowStudentInfo,
 }: CourseProgressTableProps) {
-  const [editingCell, setEditingCell] = useState<{ studentId: string; itemId: string; type: 'number' | 'date' } | null>(null);
+  const [editingCell, setEditingCell] = useState<{
+    studentId: string;
+    itemId: string;
+    type: 'number' | 'date';
+  } | null>(null);
   const [editValue, setEditValue] = useState('');
   const [editPosition, setEditPosition] = useState({ top: 0, left: 0 });
   // 項目名 / 期日編集
-  const [editingHeader, setEditingHeader] = useState<{ itemId: string; type: 'item-name' | 'deadline' } | null>(null);
+  const [editingHeader, setEditingHeader] = useState<{
+    itemId: string;
+    type: 'item-name' | 'deadline';
+  } | null>(null);
   const [editHeaderValue, setEditHeaderValue] = useState('');
   const [headerEditPosition, setHeaderEditPosition] = useState({ top: 0, left: 0 });
   // 生徒名クリックで開くポップオーバー（生徒情報 / 提案書一覧への導線）。
   // テーブルは overflow スクロールするので、クリップされないよう fixed 配置でアンカーする。
-  const [nameMenu, setNameMenu] = useState<{ student: Student; top: number; left: number } | null>(null);
+  const [nameMenu, setNameMenu] = useState<{ student: Student; top: number; left: number } | null>(
+    null
+  );
 
   // ポップオーバーは外側クリック・Esc・スクロールで閉じる（スクロールするとアンカーから外れるため）。
   useEffect(() => {
     if (!nameMenu) return;
     const close = () => setNameMenu(null);
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') close(); };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') close();
+    };
     // capture=true でテーブル内側のスクロールも拾う
     window.addEventListener('scroll', close, true);
     window.addEventListener('resize', close);
@@ -240,8 +258,12 @@ export function CourseProgressTable({
   }, [items]);
 
   // 教科別グループがあるかチェック
-  const subjectGroup = useMemo(() => columnGroups.find((g) => g.key === SUBJECT_GROUP_KEY), [columnGroups]);
-  const hasSubjectTotal = !!subjectGroup && subjectGroup.items.some((i) => i.column_type === 'number');
+  const subjectGroup = useMemo(
+    () => columnGroups.find((g) => g.key === SUBJECT_GROUP_KEY),
+    [columnGroups]
+  );
+  const hasSubjectTotal =
+    !!subjectGroup && subjectGroup.items.some((i) => i.column_type === 'number');
 
   // 教科別合計の計算（生徒ID→合計値）
   const subjectTotals = useMemo(() => {
@@ -256,7 +278,8 @@ export function CourseProgressTable({
           if (sv) {
             if (item.auto_source === 'regular_weekly') sum += sv.regular_weekly;
             else if (item.auto_source === 'course_sessions') sum += sv.course_sessions;
-            else if (item.auto_source === 'subject_proposal') sum += getSubjectProposalValue(sv.subject_proposals, item.name);
+            else if (item.auto_source === 'subject_proposal')
+              sum += getSubjectProposalValue(sv.subject_proposals, item.name);
           }
         } else {
           const d = progressMap.get(`${s.id}:${item.id}`);
@@ -446,9 +469,12 @@ export function CourseProgressTable({
       if (item.column_type === 'check') return;
       const rect = (e.target as HTMLElement).getBoundingClientRect();
       const d = progressMap.get(`${studentId}:${item.id}`);
-      const currentVal = item.column_type === 'number'
-        ? (d?.number_value != null ? String(d.number_value) : '')
-        : (d?.date_value || '');
+      const currentVal =
+        item.column_type === 'number'
+          ? d?.number_value != null
+            ? String(d.number_value)
+            : ''
+          : d?.date_value || '';
       setEditValue(currentVal);
       setEditPosition({ top: rect.bottom + 4, left: rect.left });
       setEditingCell({ studentId, itemId: item.id, type: item.column_type as 'number' | 'date' });
@@ -528,23 +554,42 @@ export function CourseProgressTable({
   const MIN_CELL_W = 36;
   const itemCount = items.length;
   const availableWidth = containerWidth > 0 ? containerWidth - LEFT_TOTAL - TOTAL_COL_W : 0;
-  const dynamicCellW = itemCount > 0 && availableWidth > 0
-    ? Math.max(MIN_CELL_W, Math.floor(availableWidth / itemCount))
-    : 36;
+  const dynamicCellW =
+    itemCount > 0 && availableWidth > 0
+      ? Math.max(MIN_CELL_W, Math.floor(availableWidth / itemCount))
+      : 36;
   // スクロールが必要かどうか
   const needsScroll = dynamicCellW <= MIN_CELL_W;
 
   if (students.length === 0) {
-    return <div ref={containerRef} className="py-12 text-center text-sm text-gray-400 italic">対象の生徒がいません</div>;
+    return (
+      <div ref={containerRef} className="py-12 text-center text-sm text-gray-400 italic">
+        対象の生徒がいません
+      </div>
+    );
   }
   if (items.length === 0) {
-    return <div ref={containerRef} className="py-12 text-center text-sm text-gray-400 italic">進捗項目がありません。テンプレートから作成してください。</div>;
+    return (
+      <div ref={containerRef} className="py-12 text-center text-sm text-gray-400 italic">
+        進捗項目がありません。テンプレートから作成してください。
+      </div>
+    );
   }
 
   return (
     <>
-      <div ref={containerRef} className={`border border-gray-200 rounded-xl bg-white shadow-sm overflow-auto max-h-[80vh]`}>
-        <table className="border-collapse w-full" style={needsScroll ? { minWidth: `${LEFT_TOTAL + itemCount * MIN_CELL_W + TOTAL_COL_W}px` } : undefined}>
+      <div
+        ref={containerRef}
+        className={`border border-gray-200 rounded-xl bg-white shadow-sm overflow-auto max-h-[80vh]`}
+      >
+        <table
+          className="border-collapse w-full"
+          style={
+            needsScroll
+              ? { minWidth: `${LEFT_TOTAL + itemCount * MIN_CELL_W + TOTAL_COL_W}px` }
+              : undefined
+          }
+        >
           {/* ===== グループカラーバー ===== */}
           <thead className="sticky top-0 z-40">
             <tr>
@@ -557,9 +602,10 @@ export function CourseProgressTable({
               {/* グループ別カラーバー */}
               {columnGroups.map((g) => {
                 const rate = groupCompletionRates[g.key];
-                const pct = rate && rate.total > 0 ? Math.round((rate.completed / rate.total) * 100) : 0;
+                const pct =
+                  rate && rate.total > 0 ? Math.round((rate.completed / rate.total) * 100) : 0;
                 // 教科別は+1列（合計列）
-                const extraCols = (g.key === SUBJECT_GROUP_KEY && hasSubjectTotal) ? 1 : 0;
+                const extraCols = g.key === SUBJECT_GROUP_KEY && hasSubjectTotal ? 1 : 0;
                 return (
                   <th
                     key={g.key}
@@ -573,7 +619,9 @@ export function CourseProgressTable({
                       style={{ backgroundColor: g.color }}
                     />
                     <div className="flex items-center justify-center gap-1 pt-0.5">
-                      <span className="text-[10px] font-semibold" style={{ color: g.color }}>{g.label}</span>
+                      <span className="text-[10px] font-semibold" style={{ color: g.color }}>
+                        {g.label}
+                      </span>
                       {rate && rate.total > 0 && (
                         <span
                           className="text-[9px] px-1 rounded-full font-medium"
@@ -624,7 +672,9 @@ export function CourseProgressTable({
                       className="border-b border-gray-200 px-0 py-1 text-center align-top"
                       style={{ width: dynamicCellW, minWidth: MIN_CELL_W }}
                     >
-                      <Tooltip text={`${item.name}${item.deadline ? ` (期日: ${formatDeadline(item.deadline)})` : ''}${item.auto_source ? ` [自動: ${AUTO_SOURCE_LABELS[item.auto_source]?.label || item.auto_source}]` : ''}`}>
+                      <Tooltip
+                        text={`${item.name}${item.deadline ? ` (期日: ${formatDeadline(item.deadline)})` : ''}${item.auto_source ? ` [自動: ${AUTO_SOURCE_LABELS[item.auto_source]?.label || item.auto_source}]` : ''}`}
+                      >
                         <div
                           className={`text-[10px] leading-[1.3] px-0.5 min-h-[28px] flex items-center justify-center ${
                             onItemNameChange && canEdit ? 'cursor-pointer hover:text-blue-600' : ''
@@ -638,7 +688,9 @@ export function CourseProgressTable({
                         >
                           <span className="line-clamp-3 break-all text-center">
                             {item.name}
-                            {item.auto_source && <span className="text-blue-400 text-[8px] ml-0.5">A</span>}
+                            {item.auto_source && (
+                              <span className="text-blue-400 text-[8px] ml-0.5">A</span>
+                            )}
                           </span>
                         </div>
                         {/* 期日バッジ */}
@@ -666,7 +718,10 @@ export function CourseProgressTable({
                       className="border-b border-gray-200 px-0 py-1 text-center align-top bg-gray-100/50"
                       style={{ width: TOTAL_COL_W, minWidth: TOTAL_COL_W }}
                     >
-                      <div className="text-[9px] leading-[1.2] font-bold min-h-[22px] flex items-center justify-center" style={{ color: subjectGroup?.color }}>
+                      <div
+                        className="text-[9px] leading-[1.2] font-bold min-h-[22px] flex items-center justify-center"
+                        style={{ color: subjectGroup?.color }}
+                      >
                         合計
                       </div>
                     </th>
@@ -691,15 +746,26 @@ export function CourseProgressTable({
                   const groupColor = g.color;
 
                   if (item.column_type === 'check') {
-                    const pct = agg && agg.total > 0 ? Math.round((agg.completed / agg.total) * 100) : 0;
+                    const pct =
+                      agg && agg.total > 0 ? Math.round((agg.completed / agg.total) * 100) : 0;
                     return (
-                      <th key={item.id} className="border-b border-gray-300 p-0 text-center font-normal">
+                      <th
+                        key={item.id}
+                        className="border-b border-gray-300 p-0 text-center font-normal"
+                      >
                         <Tooltip text={`${agg?.completed ?? 0}/${agg?.total ?? 0} 完了`}>
                           <div className="w-full py-0.5 flex flex-col items-center justify-center">
-                            <span className="text-[9px] font-bold" style={{ color: pct >= 80 ? '#10b981' : pct >= 50 ? '#f59e0b' : '#ef4444' }}>
+                            <span
+                              className="text-[9px] font-bold"
+                              style={{
+                                color: pct >= 80 ? '#10b981' : pct >= 50 ? '#f59e0b' : '#ef4444',
+                              }}
+                            >
                               {pct}%
                             </span>
-                            <span className="text-[8px] text-gray-400 leading-none">{agg?.completed ?? 0}/{agg?.total ?? 0}</span>
+                            <span className="text-[8px] text-gray-400 leading-none">
+                              {agg?.completed ?? 0}/{agg?.total ?? 0}
+                            </span>
                           </div>
                         </Tooltip>
                       </th>
@@ -708,11 +774,18 @@ export function CourseProgressTable({
 
                   if (item.column_type === 'number') {
                     return (
-                      <th key={item.id} className="border-b border-gray-300 p-0 text-center font-normal">
+                      <th
+                        key={item.id}
+                        className="border-b border-gray-300 p-0 text-center font-normal"
+                      >
                         <Tooltip text={`合計: ${agg?.sum ?? 0}（${agg?.filled ?? 0}名入力済み）`}>
                           <div className="w-full py-0.5 flex flex-col items-center justify-center">
-                            <span className="text-[9px] font-bold" style={{ color: groupColor }}>{agg?.sum ?? 0}</span>
-                            <span className="text-[8px] text-gray-400 leading-none">{agg?.filled ?? 0}名</span>
+                            <span className="text-[9px] font-bold" style={{ color: groupColor }}>
+                              {agg?.sum ?? 0}
+                            </span>
+                            <span className="text-[8px] text-gray-400 leading-none">
+                              {agg?.filled ?? 0}名
+                            </span>
                           </div>
                         </Tooltip>
                       </th>
@@ -721,7 +794,10 @@ export function CourseProgressTable({
 
                   if (item.column_type === 'date') {
                     return (
-                      <th key={item.id} className="border-b border-gray-300 p-0 text-center font-normal">
+                      <th
+                        key={item.id}
+                        className="border-b border-gray-300 p-0 text-center font-normal"
+                      >
                         <Tooltip text={`${agg?.filled ?? 0}/${students.length}名 入力済み`}>
                           <div className="w-full py-0.5 flex flex-col items-center justify-center">
                             <span className="text-[9px] font-bold" style={{ color: groupColor }}>
@@ -739,9 +815,17 @@ export function CourseProgressTable({
                 if (g.key === SUBJECT_GROUP_KEY && hasSubjectTotal) {
                   const grandTotal = Object.values(subjectTotals).reduce((a, b) => a + b, 0);
                   cells.push(
-                    <th key="_subject_total_agg" className="border-b border-gray-300 p-0 text-center bg-gray-100 font-normal">
+                    <th
+                      key="_subject_total_agg"
+                      className="border-b border-gray-300 p-0 text-center bg-gray-100 font-normal"
+                    >
                       <div className="w-full py-0.5">
-                        <span className="text-[9px] font-bold" style={{ color: subjectGroup?.color }}>{grandTotal > 0 ? grandTotal : ''}</span>
+                        <span
+                          className="text-[9px] font-bold"
+                          style={{ color: subjectGroup?.color }}
+                        >
+                          {grandTotal > 0 ? grandTotal : ''}
+                        </span>
                       </div>
                     </th>
                   );
@@ -756,7 +840,10 @@ export function CourseProgressTable({
           <tbody>
             {sortedStudents.map((student, si) => {
               const completion = studentCompletionRates[student.id];
-              const completionPct = completion && completion.total > 0 ? Math.round((completion.completed / completion.total) * 100) : 0;
+              const completionPct =
+                completion && completion.total > 0
+                  ? Math.round((completion.completed / completion.total) * 100)
+                  : 0;
               const gRates = studentGroupRates[student.id] || {};
               const isEven = si % 2 === 0;
               const prevStudent = si > 0 ? sortedStudents[si - 1] : null;
@@ -805,11 +892,18 @@ export function CourseProgressTable({
                           className="h-1.5 rounded-full transition-[width] duration-500 ease-out"
                           style={{
                             width: `${completionPct}%`,
-                            backgroundColor: completionPct >= 80 ? '#10b981' : completionPct >= 50 ? '#f59e0b' : '#ef4444',
+                            backgroundColor:
+                              completionPct >= 80
+                                ? '#10b981'
+                                : completionPct >= 50
+                                  ? '#f59e0b'
+                                  : '#ef4444',
                           }}
                         />
                       </div>
-                      <span className="text-[9px] text-gray-400 w-7 text-right shrink-0">{completionPct}%</span>
+                      <span className="text-[9px] text-gray-400 w-7 text-right shrink-0">
+                        {completionPct}%
+                      </span>
                     </div>
                     <div className="flex items-center gap-0.5 mt-0.5">
                       {columnGroups.map((g) => {
@@ -821,7 +915,8 @@ export function CourseProgressTable({
                             <div
                               className="w-2 h-2 rounded-full border"
                               style={{
-                                backgroundColor: gPct >= 1 ? g.color : gPct > 0 ? `${g.color}40` : '#e5e7eb',
+                                backgroundColor:
+                                  gPct >= 1 ? g.color : gPct > 0 ? `${g.color}40` : '#e5e7eb',
                                 borderColor: gPct > 0 ? g.color : '#d1d5db',
                               }}
                             />
@@ -845,7 +940,10 @@ export function CourseProgressTable({
                           <td key={item.id} className="border-b border-gray-100 p-0 text-center">
                             <div
                               className="w-full h-[30px] flex items-center justify-center text-[10px] font-semibold"
-                              style={{ backgroundColor: showVal ? `${groupColor}12` : undefined, color: showVal ? groupColor : undefined }}
+                              style={{
+                                backgroundColor: showVal ? `${groupColor}12` : undefined,
+                                color: showVal ? groupColor : undefined,
+                              }}
                             >
                               {showVal ? autoVal : ''}
                             </div>
@@ -896,7 +994,10 @@ export function CourseProgressTable({
                       // 日付
                       if (item.column_type === 'date') {
                         const dateStr = d?.date_value
-                          ? new Date(d.date_value).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' })
+                          ? new Date(d.date_value).toLocaleDateString('ja-JP', {
+                              month: 'numeric',
+                              day: 'numeric',
+                            })
                           : '';
                         return (
                           <td key={item.id} className="border-b border-gray-100 p-0 text-center">
@@ -921,7 +1022,10 @@ export function CourseProgressTable({
                     if (g.key === SUBJECT_GROUP_KEY && hasSubjectTotal) {
                       const total = subjectTotals[student.id] ?? 0;
                       cells.push(
-                        <td key="_subject_total" className="border-b border-gray-100 p-0 text-center bg-gray-50/80">
+                        <td
+                          key="_subject_total"
+                          className="border-b border-gray-100 p-0 text-center bg-gray-50/80"
+                        >
                           <div
                             className="w-full h-[30px] flex items-center justify-center text-[11px] font-bold"
                             style={{ color: subjectGroup?.color }}
@@ -938,7 +1042,6 @@ export function CourseProgressTable({
               );
             })}
           </tbody>
-
         </table>
       </div>
 
@@ -950,11 +1053,15 @@ export function CourseProgressTable({
           <span>未入力</span>
         </div>
         <div className="flex items-center gap-1">
-          <div className="w-4 h-4 rounded flex items-center justify-center bg-green-50 text-green-600 text-[10px] font-bold border border-green-200">{'\u2713'}</div>
+          <div className="w-4 h-4 rounded flex items-center justify-center bg-green-50 text-green-600 text-[10px] font-bold border border-green-200">
+            {'\u2713'}
+          </div>
           <span>完了</span>
         </div>
         <div className="flex items-center gap-1">
-          <div className="w-4 h-4 rounded flex items-center justify-center bg-gray-100 text-gray-400 text-[10px] border border-gray-200">{'\u2013'}</div>
+          <div className="w-4 h-4 rounded flex items-center justify-center bg-gray-100 text-gray-400 text-[10px] border border-gray-200">
+            {'\u2013'}
+          </div>
           <span>対象外</span>
         </div>
         <span className="text-gray-300">|</span>
@@ -999,7 +1106,10 @@ export function CourseProgressTable({
             </div>
             <button
               type="button"
-              onClick={() => { onShowStudentInfo?.(nameMenu.student); setNameMenu(null); }}
+              onClick={() => {
+                onShowStudentInfo?.(nameMenu.student);
+                setNameMenu(null);
+              }}
               className="w-full flex items-center gap-2 px-3 py-1.5 text-[11px] text-gray-700 hover:bg-gray-50 active:bg-gray-100 transition-[background-color] duration-100"
             >
               <User className="w-3.5 h-3.5 text-gray-400 shrink-0" />

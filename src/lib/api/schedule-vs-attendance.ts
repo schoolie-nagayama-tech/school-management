@@ -67,7 +67,11 @@ export async function getScheduleCountsByMonth(
   let totalRegular = 0;
   let totalKoushu = 0;
 
-  for (const row of (data || []) as Array<{ entry_date: string; kind: 'regular' | 'koushu'; status: string }>) {
+  for (const row of (data || []) as Array<{
+    entry_date: string;
+    kind: 'regular' | 'koushu';
+    status: string;
+  }>) {
     byDate.set(row.entry_date, (byDate.get(row.entry_date) ?? 0) + 1);
     const existing = byDateByKind.get(row.entry_date) ?? { regular: 0, koushu: 0 };
     if (row.kind === 'koushu') {

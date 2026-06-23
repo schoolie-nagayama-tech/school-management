@@ -53,17 +53,13 @@ describe('calcFifthWeekSlots', () => {
   });
 
   it('非アクティブパターンは無視される', () => {
-    const patterns = [
-      { student_id: 's1', day_of_week: 5, is_active: false },
-    ];
+    const patterns = [{ student_id: 's1', day_of_week: 5, is_active: false }];
     const result = calcFifthWeekSlots(patterns, [5]);
     expect(result.get('s1')).toBeUndefined();
   });
 
   it('該当曜日がない場合は空のMapを返す', () => {
-    const patterns = [
-      { student_id: 's1', day_of_week: 1, is_active: true },
-    ];
+    const patterns = [{ student_id: 's1', day_of_week: 1, is_active: true }];
     const result = calcFifthWeekSlots(patterns, [5]);
     expect(result.size).toBe(0);
   });

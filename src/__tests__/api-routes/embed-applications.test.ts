@@ -43,8 +43,8 @@ describe('GET /api/embed/applications', () => {
   });
 
   it('無効なトークンで403を返す', async () => {
-    mockAdmin.from.mockImplementation(() =>
-      createMockChain(null, { code: 'PGRST116', message: 'not found' }) as never
+    mockAdmin.from.mockImplementation(
+      () => createMockChain(null, { code: 'PGRST116', message: 'not found' }) as never
     );
 
     const { GET } = await import('@/app/api/embed/applications/route');
@@ -55,8 +55,15 @@ describe('GET /api/embed/applications', () => {
   });
 
   it('有効なトークンで生徒・申込データを返す', async () => {
-    const tokenData = { token: 'valid', school_id: 's1', is_active: true, embed_type: 'applications' };
-    const students = [{ id: 'st1', last_name: '山田', first_name: '太郎', grade: 3, status: 'active' }];
+    const tokenData = {
+      token: 'valid',
+      school_id: 's1',
+      is_active: true,
+      embed_type: 'applications',
+    };
+    const students = [
+      { id: 'st1', last_name: '山田', first_name: '太郎', grade: 3, status: 'active' },
+    ];
     const items = [{ id: 'item1', name: '教材費', sort_order: 1 }];
     const applications = [{ id: 'app1', student_id: 'st1', item_id: 'item1', status: 'paid' }];
     const school = { name: 'テスト教室' };
@@ -100,19 +107,27 @@ describe('POST /api/embed/applications', () => {
   });
 
   it('無効なトークンで403を返す', async () => {
-    mockAdmin.from.mockImplementation(() =>
-      createMockChain(null, { code: 'PGRST116' }) as never
-    );
+    mockAdmin.from.mockImplementation(() => createMockChain(null, { code: 'PGRST116' }) as never);
 
     const { POST } = await import('@/app/api/embed/applications/route');
-    const res = await POST(makePostRequest({
-      token: 'bad', student_id: 'st1', item_id: 'i1', action: 'status',
-    }));
+    const res = await POST(
+      makePostRequest({
+        token: 'bad',
+        student_id: 'st1',
+        item_id: 'i1',
+        action: 'status',
+      })
+    );
     expect(res.status).toBe(403);
   });
 
   it('教室外の生徒で404を返す', async () => {
-    const tokenData = { token: 'valid', school_id: 's1', is_active: true, embed_type: 'applications' };
+    const tokenData = {
+      token: 'valid',
+      school_id: 's1',
+      is_active: true,
+      embed_type: 'applications',
+    };
 
     let callCount = 0;
     mockAdmin.from.mockImplementation(() => {
@@ -123,14 +138,25 @@ describe('POST /api/embed/applications', () => {
     });
 
     const { POST } = await import('@/app/api/embed/applications/route');
-    const res = await POST(makePostRequest({
-      token: 'valid', student_id: 'other-student', item_id: 'i1', action: 'status', value: 'paid',
-    }));
+    const res = await POST(
+      makePostRequest({
+        token: 'valid',
+        student_id: 'other-student',
+        item_id: 'i1',
+        action: 'status',
+        value: 'paid',
+      })
+    );
     expect(res.status).toBe(404);
   });
 
   it('status=null で既存レコードを削除する', async () => {
-    const tokenData = { token: 'valid', school_id: 's1', is_active: true, embed_type: 'applications' };
+    const tokenData = {
+      token: 'valid',
+      school_id: 's1',
+      is_active: true,
+      embed_type: 'applications',
+    };
     const student = { id: 'st1' };
     const existing = { id: 'app1', status: 'paid', number_value: null, date_value: null };
 
@@ -144,16 +170,27 @@ describe('POST /api/embed/applications', () => {
     });
 
     const { POST } = await import('@/app/api/embed/applications/route');
-    const res = await POST(makePostRequest({
-      token: 'valid', student_id: 'st1', item_id: 'i1', action: 'status', value: null,
-    }));
+    const res = await POST(
+      makePostRequest({
+        token: 'valid',
+        student_id: 'st1',
+        item_id: 'i1',
+        action: 'status',
+        value: null,
+      })
+    );
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.success).toBe(true);
   });
 
   it('不明なactionで400を返す', async () => {
-    const tokenData = { token: 'valid', school_id: 's1', is_active: true, embed_type: 'applications' };
+    const tokenData = {
+      token: 'valid',
+      school_id: 's1',
+      is_active: true,
+      embed_type: 'applications',
+    };
     const student = { id: 'st1' };
 
     let callCount = 0;
@@ -165,9 +202,14 @@ describe('POST /api/embed/applications', () => {
     });
 
     const { POST } = await import('@/app/api/embed/applications/route');
-    const res = await POST(makePostRequest({
-      token: 'valid', student_id: 'st1', item_id: 'i1', action: 'unknown',
-    }));
+    const res = await POST(
+      makePostRequest({
+        token: 'valid',
+        student_id: 'st1',
+        item_id: 'i1',
+        action: 'unknown',
+      })
+    );
     expect(res.status).toBe(400);
   });
 });

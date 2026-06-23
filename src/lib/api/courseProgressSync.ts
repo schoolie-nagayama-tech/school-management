@@ -111,19 +111,29 @@ export async function syncCalendarBookingsToProgress(
     .in('item_id', itemIds);
 
   const statusMap = new Map<string, string>();
-  for (const row of (existingRows || []) as Array<{ student_id: string; item_id: string; status: string }>) {
+  for (const row of (existingRows || []) as Array<{
+    student_id: string;
+    item_id: string;
+    status: string;
+  }>) {
     statusMap.set(`${row.student_id}|${row.item_id}`, row.status);
   }
 
   // 3. 未完了の (生徒, 項目) のみ完了にするペイロードを構築
-  const payload: Array<{ school_id: string; student_id: string; item_id: string; status: string }> = [];
+  const payload: Array<{ school_id: string; student_id: string; item_id: string; status: string }> =
+    [];
   for (const studentId of studentIdList) {
     for (const item of itemList) {
       if (statusMap.get(`${studentId}|${item.id}`) === 'completed') {
         skipped++;
         continue;
       }
-      payload.push({ school_id: schoolId, student_id: studentId, item_id: item.id, status: 'completed' });
+      payload.push({
+        school_id: schoolId,
+        student_id: studentId,
+        item_id: item.id,
+        status: 'completed',
+      });
       synced++;
     }
   }

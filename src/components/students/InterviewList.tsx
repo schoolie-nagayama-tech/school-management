@@ -1,8 +1,18 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { StudentInterview, InterviewType, INTERVIEW_TYPE_LABELS, INTERVIEW_TYPE_COLORS } from '@/types/database';
-import { getStudentInterviews, deleteInterview, completeTask, uncompleteTask } from '@/lib/api/interviews';
+import {
+  StudentInterview,
+  InterviewType,
+  INTERVIEW_TYPE_LABELS,
+  INTERVIEW_TYPE_COLORS,
+} from '@/types/database';
+import {
+  getStudentInterviews,
+  deleteInterview,
+  completeTask,
+  uncompleteTask,
+} from '@/lib/api/interviews';
 import { undismissAlert } from '@/lib/api/alerts';
 import { InterviewModal } from './InterviewModal';
 import { ImportNottaModal } from './ImportNottaModal';
@@ -27,7 +37,7 @@ export function InterviewList({ studentId, schoolId }: InterviewListProps) {
   const [filterType, setFilterType] = useState<InterviewType | 'all'>('all');
   const { success, error: toastError } = useToast();
   const { permissions } = useAuth();
-  
+
   // 編集権限チェック（講師は編集・削除不可）
   const canEdit = permissions?.canEditInterviews ?? false;
 
@@ -52,22 +62,32 @@ export function InterviewList({ studentId, schoolId }: InterviewListProps) {
   }, [studentId, fetchInterviews]);
 
   // フィルター適用
-  const filteredInterviews = filterType === 'all'
-    ? interviews
-    : interviews.filter(i => i.interview_type === filterType);
+  const filteredInterviews =
+    filterType === 'all' ? interviews : interviews.filter((i) => i.interview_type === filterType);
 
   // 日付でグループ化
-  const groupedByDate = filteredInterviews.reduce((acc, interview) => {
-    const date = interview.interview_date;
-    if (!acc[date]) acc[date] = [];
-    acc[date].push(interview);
-    return acc;
-  }, {} as Record<string, StudentInterview[]>);
+  const groupedByDate = filteredInterviews.reduce(
+    (acc, interview) => {
+      const date = interview.interview_date;
+      if (!acc[date]) acc[date] = [];
+      acc[date].push(interview);
+      return acc;
+    },
+    {} as Record<string, StudentInterview[]>
+  );
 
   // 削除処理
   const handleDelete = async (id: string) => {
-    if (!(await confirm({ title: '削除確認', description: 'この記録を削除しますか？', confirmLabel: '削除', variant: 'danger' }))) return;
-    
+    if (
+      !(await confirm({
+        title: '削除確認',
+        description: 'この記録を削除しますか？',
+        confirmLabel: '削除',
+        variant: 'danger',
+      }))
+    )
+      return;
+
     try {
       await deleteInterview(id);
       success('削除しました');
@@ -128,7 +148,9 @@ export function InterviewList({ studentId, schoolId }: InterviewListProps) {
               <Mic className="w-3.5 h-3.5 mr-1 inline" />
               Nottaから取り込み
             </Button>
-            <Button onClick={handleAdd} size="sm">+ 記録を追加</Button>
+            <Button onClick={handleAdd} size="sm">
+              + 記録を追加
+            </Button>
           </div>
         )}
       </div>
@@ -161,9 +183,7 @@ export function InterviewList({ studentId, schoolId }: InterviewListProps) {
             .sort(([a], [b]) => b.localeCompare(a))
             .map(([date, dateInterviews]) => (
               <div key={date}>
-                <div className="text-sm font-medium text-[#4b5563] mb-2">
-                  {formatDate(date)}
-                </div>
+                <div className="text-sm font-medium text-[#4b5563] mb-2">{formatDate(date)}</div>
                 <div className="space-y-3">
                   {dateInterviews.map((interview) => (
                     <div
@@ -191,7 +211,12 @@ export function InterviewList({ studentId, schoolId }: InterviewListProps) {
                                     await uncompleteTask(interview.id);
                                     // 対応済み記録があれば解除してアラートを再表示
                                     try {
-                                      await undismissAlert(schoolId, studentId, 'interview_task', `task:${interview.id}`);
+                                      await undismissAlert(
+                                        schoolId,
+                                        studentId,
+                                        'interview_task',
+                                        `task:${interview.id}`
+                                      );
                                     } catch (_) {
                                       // 対応済み記録がない場合は無視
                                     }
@@ -236,19 +261,23 @@ export function InterviewList({ studentId, schoolId }: InterviewListProps) {
                           </div>
                         )}
                       </div>
-                      <p className={`text-[#1f2937] whitespace-pre-wrap text-sm leading-relaxed ${
-                        interview.interview_type === 'task' && interview.is_completed
-                          ? 'line-through'
-                          : ''
-                      }`}>
+                      <p
+                        className={`text-[#1f2937] whitespace-pre-wrap text-sm leading-relaxed ${
+                          interview.interview_type === 'task' && interview.is_completed
+                            ? 'line-through'
+                            : ''
+                        }`}
+                      >
                         {interview.content}
                       </p>
                       {/* 完了日時表示（タスクの場合） */}
-                      {interview.interview_type === 'task' && interview.is_completed && interview.completed_at && (
-                        <p className="text-xs text-[#4b5563]/60 mt-2">
-                          完了: {new Date(interview.completed_at).toLocaleString('ja-JP')}
-                        </p>
-                      )}
+                      {interview.interview_type === 'task' &&
+                        interview.is_completed &&
+                        interview.completed_at && (
+                          <p className="text-xs text-[#4b5563]/60 mt-2">
+                            完了: {new Date(interview.completed_at).toLocaleString('ja-JP')}
+                          </p>
+                        )}
                     </div>
                   ))}
                 </div>

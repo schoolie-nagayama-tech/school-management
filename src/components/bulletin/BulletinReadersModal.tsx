@@ -55,7 +55,9 @@ export function BulletinReadersModal({
       }
 
       // user_profilesから情報を取得（講師のみ）
-      const userIds = (userSchools || []).map((us: { user_id: string }) => us.user_id).filter(Boolean);
+      const userIds = (userSchools || [])
+        .map((us: { user_id: string }) => us.user_id)
+        .filter(Boolean);
       const { data: userProfiles } = await supabase
         .from('user_profiles')
         .select('id, display_name, email, role')
@@ -63,13 +65,16 @@ export function BulletinReadersModal({
         .eq('role', 'teacher'); // 講師のみ
 
       const userMap = new Map(
-        (userProfiles || []).map(up => [up.id, { display_name: up.display_name, email: up.email }])
+        (userProfiles || []).map((up) => [
+          up.id,
+          { display_name: up.display_name, email: up.email },
+        ])
       );
 
-      const readUserIds = new Set(readersData.map(r => r.user_id));
+      const readUserIds = new Set(readersData.map((r) => r.user_id));
       const unread = (userProfiles || [])
-        .filter(up => !readUserIds.has(up.id))
-        .map(up => {
+        .filter((up) => !readUserIds.has(up.id))
+        .map((up) => {
           const userInfo = userMap.get(up.id);
           return {
             id: up.id,
@@ -88,9 +93,7 @@ export function BulletinReadersModal({
     <Modal isOpen={isOpen} onClose={onClose} title={`「${postTitle}」の既読状況`}>
       <div className="space-y-4">
         <div>
-          <h3 className="font-semibold text-[#1f2937] mb-2">
-            既読 ({readers.length}人)
-          </h3>
+          <h3 className="font-semibold text-[#1f2937] mb-2">既読 ({readers.length}人)</h3>
           {isLoading ? (
             <Loading size="md" />
           ) : readers.length === 0 ? (
@@ -117,9 +120,7 @@ export function BulletinReadersModal({
 
         {unreadUsers.length > 0 && (
           <div>
-            <h3 className="font-semibold text-[#1f2937] mb-2">
-              未読 ({unreadUsers.length}人)
-            </h3>
+            <h3 className="font-semibold text-[#1f2937] mb-2">未読 ({unreadUsers.length}人)</h3>
             <div className="space-y-1">
               {unreadUsers.map((user) => (
                 <div key={user.id} className="text-sm text-[#4b5563]/70">

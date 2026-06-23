@@ -12,7 +12,12 @@ export async function POST(request: NextRequest) {
       schoolId: string;
     };
 
-    if (!subscription?.endpoint || !subscription?.keys?.p256dh || !subscription?.keys?.auth || !schoolId) {
+    if (
+      !subscription?.endpoint ||
+      !subscription?.keys?.p256dh ||
+      !subscription?.keys?.auth ||
+      !schoolId
+    ) {
       return NextResponse.json({ error: '不正なリクエスト' }, { status: 400 });
     }
 
@@ -23,7 +28,10 @@ export async function POST(request: NextRequest) {
       { cookies: { getAll: () => cookieStore.getAll(), setAll: () => {} } }
     );
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
     if (authError || !user) {
       return NextResponse.json({ error: '認証が必要です' }, { status: 401 });
     }
@@ -63,7 +71,10 @@ export async function DELETE(request: NextRequest) {
       { cookies: { getAll: () => cookieStore.getAll(), setAll: () => {} } }
     );
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
     if (authError || !user) {
       return NextResponse.json({ error: '認証が必要です' }, { status: 401 });
     }

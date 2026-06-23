@@ -26,8 +26,7 @@ export async function GET(request: NextRequest) {
   if (!email || !password) {
     return NextResponse.json(
       {
-        error:
-          'DEV_LOGIN_EMAIL と DEV_LOGIN_PASSWORD を .env.local に設定してください',
+        error: 'DEV_LOGIN_EMAIL と DEV_LOGIN_PASSWORD を .env.local に設定してください',
       },
       { status: 500 }
     );

@@ -1,8 +1,8 @@
-declare module "web-push" {
+declare module 'web-push' {
   export function sendNotification(
     subscription: PushSubscription,
     payload?: string | Buffer | null,
-    options?: RequestOptions,
+    options?: RequestOptions
   ): Promise<SendResult>;
 
   export function setVapidDetails(subject: string, publicKey: string, privateKey: string): void;
@@ -11,9 +11,9 @@ declare module "web-push" {
 
   export function setGCMAPIKey(apiKey: string | null): void;
 
-  export type ContentEncoding = "aesgcm" | "aes128gcm";
+  export type ContentEncoding = 'aesgcm' | 'aes128gcm';
 
-  export type Urgency = "very-low" | "low" | "normal" | "high";
+  export type Urgency = 'very-low' | 'low' | 'normal' | 'high';
 
   export interface VapidKeys {
     publicKey: string;
@@ -57,6 +57,12 @@ declare module "web-push" {
     readonly headers: Headers;
     readonly body: string;
     readonly endpoint: string;
-    constructor(message: string, statusCode: number, headers: Headers, body: string, endpoint: string);
+    constructor(
+      message: string,
+      statusCode: number,
+      headers: Headers,
+      body: string,
+      endpoint: string
+    );
   }
 }

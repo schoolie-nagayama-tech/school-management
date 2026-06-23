@@ -29,7 +29,15 @@ interface UserEditModalProps {
   profileId: string | undefined;
   schools: School[];
   isSaving: boolean;
-  onSave: (lastName: string, firstName: string, role: UserRole, schoolIds: string[], defaultSchoolId: string, employeeNo: string | null, isTeachingStaff: boolean) => void;
+  onSave: (
+    lastName: string,
+    firstName: string,
+    role: UserRole,
+    schoolIds: string[],
+    defaultSchoolId: string,
+    employeeNo: string | null,
+    isTeachingStaff: boolean
+  ) => void;
   onClose: () => void;
 }
 
@@ -56,12 +64,14 @@ export function UserEditModal({
     setEditFirstName(editingUser.first_name || '');
     setEditEmployeeNo(editingUser.employee_no || '');
     setEditIsTeachingStaff(editingUser.is_teaching_staff ?? false);
-    setEditRole(editingUser.role === 'teacher' ? 'manager' : (editingUser.role || 'manager') as UserRole);
-    const ids = editingUser.user_schools?.map(us => us.school_id) || [];
+    setEditRole(
+      editingUser.role === 'teacher' ? 'manager' : ((editingUser.role || 'manager') as UserRole)
+    );
+    const ids = editingUser.user_schools?.map((us) => us.school_id) || [];
     setEditSchoolIds(ids);
     // デモ教室はデフォルトに選ばない。フォールバックもデモ以外の先頭を優先する。
-    const demoIdSet = new Set(schools.filter(s => s.is_demo).map(s => s.id));
-    const firstNonDemo = ids.find(id => !demoIdSet.has(id)) || ids[0] || '';
+    const demoIdSet = new Set(schools.filter((s) => s.is_demo).map((s) => s.id));
+    const firstNonDemo = ids.find((id) => !demoIdSet.has(id)) || ids[0] || '';
     const savedDefault = editingUser.default_school_id;
     const defaultId =
       savedDefault && ids.includes(savedDefault) && !demoIdSet.has(savedDefault)
@@ -80,9 +90,7 @@ export function UserEditModal({
         </h2>
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-[#1f2937] mb-1">
-              メールアドレス
-            </label>
+            <label className="block text-sm font-medium text-[#1f2937] mb-1">メールアドレス</label>
             <input
               type="text"
               value={editingUser.email}
@@ -96,7 +104,7 @@ export function UserEditModal({
               <input
                 type="text"
                 value={editLastName}
-                onChange={e => setEditLastName(e.target.value)}
+                onChange={(e) => setEditLastName(e.target.value)}
                 className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
                 placeholder="山田"
               />
@@ -106,111 +114,123 @@ export function UserEditModal({
               <input
                 type="text"
                 value={editFirstName}
-                onChange={e => setEditFirstName(e.target.value)}
+                onChange={(e) => setEditFirstName(e.target.value)}
                 className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
                 placeholder="太郎"
               />
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-[#1f2937] mb-1">
-              社員番号
-            </label>
+            <label className="block text-sm font-medium text-[#1f2937] mb-1">社員番号</label>
             <input
               type="text"
               value={editEmployeeNo}
-              onChange={e => {
+              onChange={(e) => {
                 // 全角数字を半角に正規化して保持する
-                const normalized = e.target.value.replace(/[０-９]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0xfee0));
+                const normalized = e.target.value.replace(/[０-９]/g, (ch) =>
+                  String.fromCharCode(ch.charCodeAt(0) - 0xfee0)
+                );
                 setEditEmployeeNo(normalized);
               }}
               className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
               placeholder="例: 001"
             />
-            <p className="text-xs text-[#4b5563]/70 mt-1">出勤簿一覧の並び順に使用します。空欄でも登録できます。</p>
+            <p className="text-xs text-[#4b5563]/70 mt-1">
+              出勤簿一覧の並び順に使用します。空欄でも登録できます。
+            </p>
           </div>
           {/* teacher ロールは元々講師なので表示不要。owner/admin/manager 等が授業を兼任する場合のみ表示 */}
           {editingUser.role !== 'teacher' && (
-          <div>
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={editIsTeachingStaff}
-                onChange={e => setEditIsTeachingStaff(e.target.checked)}
-                className="rounded border-[#e5e7eb] w-4 h-4"
-              />
-              <span className="text-sm font-medium text-[#1f2937]">時給講師として扱う（出勤簿・講師として管理）</span>
-            </label>
-            <p className="text-xs text-[#4b5563]/70 mt-1 ml-6">ロールが管理者・室長・オーナーでも、授業を持つ場合はONにすると出勤簿の講師一覧に表示されます</p>
-          </div>
-          )}
-          {!isEditingSelf && (
-          <div>
-            <label className="block text-sm font-medium text-[#1f2937] mb-1">
-              権限
-            </label>
-            <select
-              value={editRole}
-              onChange={e => setEditRole(e.target.value as UserRole)}
-              className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
-            >
-              {(Object.keys(USER_ROLE_LABELS) as UserRole[]).filter(role => role !== 'teacher').map(role => (
-                <option key={role} value={role}>
-                  {USER_ROLE_LABELS[role]}
-                </option>
-              ))}
-            </select>
-          </div>
-          )}
-          {!isEditingSelf && (
-          <div>
-            <label className="block text-sm font-medium text-[#1f2937] mb-1">
-              担当教室
-            </label>
-            <div className="space-y-2 max-h-48 overflow-y-auto">
-              {schools.map(school => (
-                <label key={school.id} className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={editSchoolIds.includes(school.id)}
-                    onChange={e => {
-                      if (e.target.checked) {
-                        setEditSchoolIds([...editSchoolIds, school.id]);
-                      } else {
-                        const next = editSchoolIds.filter(id => id !== school.id);
-                        setEditSchoolIds(next);
-                        if (editDefaultSchoolId === school.id) {
-                          // デフォルトを外したら、デモ以外の先頭教室に付け替える
-                          const demoIdSet = new Set(schools.filter(s => s.is_demo).map(s => s.id));
-                          setEditDefaultSchoolId(next.find(id => !demoIdSet.has(id)) || next[0] || '');
-                        }
-                      }
-                    }}
-                    className="rounded border-[#e5e7eb]"
-                  />
-                  <span className="text-sm text-[#1f2937]">{school.name}</span>
-                </label>
-              ))}
+            <div>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={editIsTeachingStaff}
+                  onChange={(e) => setEditIsTeachingStaff(e.target.checked)}
+                  className="rounded border-[#e5e7eb] w-4 h-4"
+                />
+                <span className="text-sm font-medium text-[#1f2937]">
+                  時給講師として扱う（出勤簿・講師として管理）
+                </span>
+              </label>
+              <p className="text-xs text-[#4b5563]/70 mt-1 ml-6">
+                ロールが管理者・室長・オーナーでも、授業を持つ場合はONにすると出勤簿の講師一覧に表示されます
+              </p>
             </div>
-          </div>
+          )}
+          {!isEditingSelf && (
+            <div>
+              <label className="block text-sm font-medium text-[#1f2937] mb-1">権限</label>
+              <select
+                value={editRole}
+                onChange={(e) => setEditRole(e.target.value as UserRole)}
+                className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
+              >
+                {(Object.keys(USER_ROLE_LABELS) as UserRole[])
+                  .filter((role) => role !== 'teacher')
+                  .map((role) => (
+                    <option key={role} value={role}>
+                      {USER_ROLE_LABELS[role]}
+                    </option>
+                  ))}
+              </select>
+            </div>
+          )}
+          {!isEditingSelf && (
+            <div>
+              <label className="block text-sm font-medium text-[#1f2937] mb-1">担当教室</label>
+              <div className="space-y-2 max-h-48 overflow-y-auto">
+                {schools.map((school) => (
+                  <label key={school.id} className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={editSchoolIds.includes(school.id)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setEditSchoolIds([...editSchoolIds, school.id]);
+                        } else {
+                          const next = editSchoolIds.filter((id) => id !== school.id);
+                          setEditSchoolIds(next);
+                          if (editDefaultSchoolId === school.id) {
+                            // デフォルトを外したら、デモ以外の先頭教室に付け替える
+                            const demoIdSet = new Set(
+                              schools.filter((s) => s.is_demo).map((s) => s.id)
+                            );
+                            setEditDefaultSchoolId(
+                              next.find((id) => !demoIdSet.has(id)) || next[0] || ''
+                            );
+                          }
+                        }
+                      }}
+                      className="rounded border-[#e5e7eb]"
+                    />
+                    <span className="text-sm text-[#1f2937]">{school.name}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
           )}
           {editSchoolIds.length > 1 && (
             <div>
               <label className="block text-sm font-medium text-[#1f2937] mb-1">
                 デフォルトの教室
               </label>
-              <p className="text-xs text-[#4b5563]/70 mb-2">複数教室のとき、ログイン時に最初に選択される教室です。</p>
+              <p className="text-xs text-[#4b5563]/70 mb-2">
+                複数教室のとき、ログイン時に最初に選択される教室です。
+              </p>
               <select
                 value={editDefaultSchoolId}
-                onChange={e => setEditDefaultSchoolId(e.target.value)}
+                onChange={(e) => setEditDefaultSchoolId(e.target.value)}
                 className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
               >
                 {/* デモ教室はデフォルトに選べないようにする（見本用のため） */}
-                {schools.filter(s => editSchoolIds.includes(s.id) && !s.is_demo).map(school => (
-                  <option key={school.id} value={school.id}>
-                    {school.name}
-                  </option>
-                ))}
+                {schools
+                  .filter((s) => editSchoolIds.includes(s.id) && !s.is_demo)
+                  .map((school) => (
+                    <option key={school.id} value={school.id}>
+                      {school.name}
+                    </option>
+                  ))}
               </select>
             </div>
           )}
@@ -223,7 +243,17 @@ export function UserEditModal({
               キャンセル
             </button>
             <button
-              onClick={() => onSave(editLastName, editFirstName, editRole, editSchoolIds, editDefaultSchoolId, editEmployeeNo.trim() || null, editIsTeachingStaff)}
+              onClick={() =>
+                onSave(
+                  editLastName,
+                  editFirstName,
+                  editRole,
+                  editSchoolIds,
+                  editDefaultSchoolId,
+                  editEmployeeNo.trim() || null,
+                  editIsTeachingStaff
+                )
+              }
               disabled={isSaving}
               className="flex-1 px-4 py-2 bg-[#3b82f6] text-white font-bold rounded-lg hover:bg-[#60a5fa] transition-colors duration-150 disabled:opacity-50"
             >

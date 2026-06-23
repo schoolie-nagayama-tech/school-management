@@ -11,7 +11,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { requireManager } from '@/lib/api-auth';
-import { generateBookingToken, resolveBookingCalendarUserId, resolveBookingConfig } from '@/lib/server/booking';
+import {
+  generateBookingToken,
+  resolveBookingCalendarUserId,
+  resolveBookingConfig,
+} from '@/lib/server/booking';
 import { deleteCalendarEvent } from '@/lib/google-calendar';
 
 export const dynamic = 'force-dynamic';
@@ -28,10 +32,7 @@ function getServiceClient() {
 // POST: トークン発行
 // ============================================================
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   // 管理者認証
   const authError = await requireManager(request);
   if (authError) return authError;
@@ -81,15 +82,13 @@ export async function POST(
   const token = generateBookingToken();
   const expiresAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
 
-  const { error: insertError } = await serviceClient
-    .from('inquiry_booking_tokens')
-    .insert({
-      token,
-      inquiry_id: inquiryId,
-      school_id: inquiry.school_id,
-      purpose: 'interview',
-      expires_at: expiresAt,
-    });
+  const { error: insertError } = await serviceClient.from('inquiry_booking_tokens').insert({
+    token,
+    inquiry_id: inquiryId,
+    school_id: inquiry.school_id,
+    purpose: 'interview',
+    expires_at: expiresAt,
+  });
 
   if (insertError) {
     console.error('[booking-token] トークン作成エラー:', insertError.message);

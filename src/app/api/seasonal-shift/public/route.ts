@@ -32,16 +32,13 @@ async function invokeNotification(
   type: 'submitted' | 'allow_edit',
   submissionId: string
 ) {
-  const { data, error } = await supabaseAdmin.functions.invoke(
-    'send-form-notification',
-    {
-      body: {
-        notificationType: 'seasonal-shift',
-        type,
-        submissionId,
-      },
-    }
-  );
+  const { data, error } = await supabaseAdmin.functions.invoke('send-form-notification', {
+    body: {
+      notificationType: 'seasonal-shift',
+      type,
+      submissionId,
+    },
+  });
 
   if (error) {
     throw new Error(error.message || 'notification_failed');
@@ -56,7 +53,9 @@ function normalizeSlots(input: PublicSubmissionRequest['slots']) {
   if (!Array.isArray(input)) return [];
 
   return input
-    .filter((slot) => slot && typeof slot.shift_date === 'string' && typeof slot.time_slot === 'string')
+    .filter(
+      (slot) => slot && typeof slot.shift_date === 'string' && typeof slot.time_slot === 'string'
+    )
     .map((slot) => ({
       shift_date: slot!.shift_date!.trim(),
       time_slot: slot!.time_slot!.trim(),
@@ -96,18 +95,12 @@ export async function POST(request: NextRequest) {
     }
 
     if (!setting) {
-      return NextResponse.json(
-        { error: 'Published shift setting not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Published shift setting not found' }, { status: 404 });
     }
 
     const deadline = new Date(`${setting.deadline}T23:59:59`);
     if (Number.isFinite(deadline.getTime()) && new Date() > deadline) {
-      return NextResponse.json(
-        { error: 'Submission deadline has passed' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Submission deadline has passed' }, { status: 400 });
     }
 
     // メールが既存講師アカウントと一致したら自動で user_id をセット
@@ -238,10 +231,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ submission });
   } catch (error) {
     console.error('[seasonal-shift/public] create failed:', error);
-    return NextResponse.json(
-      { error: 'Failed to submit' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to submit' }, { status: 500 });
   }
 }
 
@@ -256,10 +246,7 @@ export async function GET(request: NextRequest) {
     const settingId = searchParams.get('settingId')?.trim();
 
     if (!settingId) {
-      return NextResponse.json(
-        { error: 'settingId is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'settingId is required' }, { status: 400 });
     }
 
     const supabaseAdmin = getSupabaseAdmin();
@@ -276,10 +263,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (!setting) {
-      return NextResponse.json(
-        { error: 'Published shift setting not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Published shift setting not found' }, { status: 404 });
     }
 
     const { data: slotSettings, error: slotError } = await supabaseAdmin
@@ -294,9 +278,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ setting, slotSettings: slotSettings ?? [] });
   } catch (error) {
     console.error('[seasonal-shift/public] GET failed:', error);
-    return NextResponse.json(
-      { error: 'Failed to get setting' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to get setting' }, { status: 500 });
   }
 }

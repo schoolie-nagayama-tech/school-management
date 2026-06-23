@@ -14,11 +14,7 @@ import {
 } from '@/components/forms/shared';
 import type { School } from '@/types/database';
 import { validateStudentName } from '@/lib/utils/validation';
-import type {
-  ShukaisuPeriod,
-  ShukaisuResponseData,
-  ShukaisuSlot,
-} from '@/types/forms/shukaisu';
+import type { ShukaisuPeriod, ShukaisuResponseData, ShukaisuSlot } from '@/types/forms/shukaisu';
 import { submitShukaisuResponse } from '@/lib/api/shukaisu';
 import { getSubjects } from '@/lib/api/subjects';
 import { SHUKAISU_GRADE_NAME_TO_NUMBER } from '@/types/forms/shukaisu';
@@ -70,7 +66,9 @@ export function ShukaisuForm({ school, period, isPreview }: ShukaisuFormProps) {
 
   // 学年に応じた科目オプション（共通科目を小学/中学/高校でフィルタ）
   // value は "科目名|||duration" 形式（同名科目の誤判定防止）
-  const [subjectOptionsForGrade, setSubjectOptionsForGrade] = useState<Array<{ value: string; label: string }>>([]);
+  const [subjectOptionsForGrade, setSubjectOptionsForGrade] = useState<
+    Array<{ value: string; label: string }>
+  >([]);
   const [isLoadingSubjects, setIsLoadingSubjects] = useState(false);
 
   // バリデーションエラー
@@ -87,12 +85,15 @@ export function ShukaisuForm({ school, period, isPreview }: ShukaisuFormProps) {
     fetchClassPeriodsLive(school.id).then((p) => {
       if (!cancelled) setMasterPeriods(p);
     });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [school.id]);
 
   // 表示する時限リスト。1・2限（昼の時間帯）は週回数変更では対象外のため除外。
   const periodOptions = useMemo(() => {
-    const base = masterPeriods && masterPeriods.length > 0 ? masterPeriods : settings.available_periods;
+    const base =
+      masterPeriods && masterPeriods.length > 0 ? masterPeriods : settings.available_periods;
     return base.filter((p) => p.code !== '1' && p.code !== '2');
   }, [masterPeriods, settings.available_periods]);
 
@@ -138,10 +139,10 @@ export function ShukaisuForm({ school, period, isPreview }: ShukaisuFormProps) {
         const gradeNum = SHUKAISU_GRADE_NAME_TO_NUMBER[selectedGrade] ?? 0;
         const isGrade5Plus = gradeNum >= 5;
         const displaySubjects = isGrade5Plus
-          ? subjects.filter(s => (s.duration_minutes ?? 90) !== 45)
+          ? subjects.filter((s) => (s.duration_minutes ?? 90) !== 45)
           : subjects;
         // value に duration を埋め込む → 同名科目が複数あっても正しいdurationを保持
-        const options = displaySubjects.map(s => {
+        const options = displaySubjects.map((s) => {
           const dur = s.duration_minutes ?? 90;
           return {
             value: `${s.name}|||${dur}`,
@@ -181,12 +182,14 @@ export function ShukaisuForm({ school, period, isPreview }: ShukaisuFormProps) {
     if (slots.length < count) {
       return [
         ...slots,
-        ...Array(count - slots.length).fill(null).map(() => ({
-          day: '',
-          period: '',
-          period_label: '',
-          subject: '',
-        })),
+        ...Array(count - slots.length)
+          .fill(null)
+          .map(() => ({
+            day: '',
+            period: '',
+            period_label: '',
+            subject: '',
+          })),
       ];
     }
     return slots.slice(0, count);
@@ -250,7 +253,8 @@ export function ShukaisuForm({ school, period, isPreview }: ShukaisuFormProps) {
 
   const getPeriodLabel = (code: string): string => {
     // マスタ優先、無ければスナップショットからラベルを引く
-    const base = masterPeriods && masterPeriods.length > 0 ? masterPeriods : settings.available_periods;
+    const base =
+      masterPeriods && masterPeriods.length > 0 ? masterPeriods : settings.available_periods;
     return base.find((p) => p.code === code)?.label || code;
   };
 
@@ -379,11 +383,7 @@ export function ShukaisuForm({ school, period, isPreview }: ShukaisuFormProps) {
       success('申請を受け付けました');
     } catch (err) {
       console.error('Failed to submit:', err);
-      error(
-        err instanceof Error
-          ? err.message
-          : '送信に失敗しました。もう一度お試しください。'
-      );
+      error(err instanceof Error ? err.message : '送信に失敗しました。もう一度お試しください。');
     } finally {
       submittingRef.current = false;
       setIsSubmitting(false);
@@ -440,7 +440,14 @@ export function ShukaisuForm({ school, period, isPreview }: ShukaisuFormProps) {
                 value={slot.subject ? `${slot.subject}|||${slot.duration_minutes ?? 90}` : ''}
                 onChange={(e) => updateFn(index, 'subject', e.target.value)}
                 options={[
-                  { value: '', label: selectedGrade ? (isLoadingSubjects ? '読み込み中...' : '科目') : '学年を選んでください' },
+                  {
+                    value: '',
+                    label: selectedGrade
+                      ? isLoadingSubjects
+                        ? '読み込み中...'
+                        : '科目'
+                      : '学年を選んでください',
+                  },
                   ...subjectOptionsForGrade,
                 ]}
                 className="text-sm"
@@ -579,7 +586,8 @@ export function ShukaisuForm({ school, period, isPreview }: ShukaisuFormProps) {
               変更は翌月以降からとなります。変更希望月の前々月末までにお申し込みください。
             </p>
             <p className="text-xs text-amber-800 leading-relaxed">
-              例：4月から変更したい場合 → 2月末までにお申し込みください。2月中にお申し込みいただいた場合、3月は現在と同じ内容で通塾いただき、4月から変更が適用されます。
+              例：4月から変更したい場合 →
+              2月末までにお申し込みください。2月中にお申し込みいただいた場合、3月は現在と同じ内容で通塾いただき、4月から変更が適用されます。
             </p>
             <p className="text-sm font-semibold text-amber-900 leading-relaxed">
               ご希望の時間帯が満席の場合もございます。決まり次第Growからご連絡、ご相談させていただきます。

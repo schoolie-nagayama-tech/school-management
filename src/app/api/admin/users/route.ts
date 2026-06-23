@@ -10,7 +10,10 @@ function toNumArray(v: unknown): number[] {
   if (typeof v === 'string') {
     const trimmed = v.replace(/^\{|\}$/g, '').trim();
     if (!trimmed) return [];
-    return trimmed.split(',').map((s) => Number(s.trim())).filter((n) => !Number.isNaN(n));
+    return trimmed
+      .split(',')
+      .map((s) => Number(s.trim()))
+      .filter((n) => !Number.isNaN(n));
   }
   return [];
 }
@@ -100,8 +103,8 @@ export async function GET(request: NextRequest) {
     // ユーザー権限変更を即時反映するためキャッシュ不可
     const noCacheHeaders = {
       'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
-      'Pragma': 'no-cache',
-      'Expires': '0',
+      Pragma: 'no-cache',
+      Expires: '0',
     };
     if (profileList.length === 0) {
       return NextResponse.json({ users: [] }, { headers: noCacheHeaders });
@@ -123,7 +126,9 @@ export async function GET(request: NextRequest) {
     // userIds はページング取得した filteredProfiles 由来で 1000 を超えうるうえ、
     // user_schools は (ユーザー × 教室) でスケールするため、userIds を 500 件ずつに
     // 分割し、各チャンク内も .range() でページングして全件取得する。
-    const userIds = filteredProfiles.map((p: Record<string, unknown>) => String(p.id)).filter(Boolean);
+    const userIds = filteredProfiles
+      .map((p: Record<string, unknown>) => String(p.id))
+      .filter(Boolean);
     const allUserSchools: Record<string, unknown>[] = [];
     const USER_CHUNK = 500;
     try {
@@ -174,9 +179,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ users: scopedUsers }, { headers: noCacheHeaders });
   } catch (error: unknown) {
     console.error('Failed to fetch users:', error);
-    return NextResponse.json(
-      { error: 'ユーザーの取得に失敗しました' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'ユーザーの取得に失敗しました' }, { status: 500 });
   }
 }

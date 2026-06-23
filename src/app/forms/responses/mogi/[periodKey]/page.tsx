@@ -3,11 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import { AdminLayout } from '@/components/layouts';
-import {
-  getMogiResponses,
-  getMogiStats,
-  updateMogiChargedStatus,
-} from '@/lib/api/mogi';
+import { getMogiResponses, getMogiStats, updateMogiChargedStatus } from '@/lib/api/mogi';
 import {
   unlinkResponseFromStudent,
   getArchivedCount,
@@ -26,7 +22,11 @@ import type { MogiResponse, MogiResponseFilters } from '@/types/forms/mogi';
 import type { Student } from '@/types/database';
 import { getDefaultSchoolId } from '@/lib/api/schools';
 import { useAuth } from '@/contexts/AuthContext';
-import { GRADE_NUMBER_TO_NAME, MOGI_EXAM_TYPE_OPTIONS, MOGI_EXAM_TYPE_LABELS } from '@/types/forms/mogi';
+import {
+  GRADE_NUMBER_TO_NAME,
+  MOGI_EXAM_TYPE_OPTIONS,
+  MOGI_EXAM_TYPE_LABELS,
+} from '@/types/forms/mogi';
 import type { MogiExamType } from '@/types/forms/mogi';
 import { MogiStats } from '@/components/forms/mogi/MogiStats';
 import { MogiResponseDetailModal } from '@/components/forms/mogi/MogiResponseDetailModal';
@@ -69,12 +69,12 @@ export default function MogiResponsePage() {
   const [filterExamType, setFilterExamType] = useState<MogiExamType | 'all'>('all');
   const [filterDateId, setFilterDateId] = useState<string>('all');
   const [filterVenueId, setFilterVenueId] = useState<string>('all');
-  const [filterChargedStatus, setFilterChargedStatus] = useState<
-    'all' | 'charged' | 'not_charged'
-  >('all');
-  const [filterLinkedStatus, setFilterLinkedStatus] = useState<
-    'all' | 'linked' | 'unlinked'
-  >('all');
+  const [filterChargedStatus, setFilterChargedStatus] = useState<'all' | 'charged' | 'not_charged'>(
+    'all'
+  );
+  const [filterLinkedStatus, setFilterLinkedStatus] = useState<'all' | 'linked' | 'unlinked'>(
+    'all'
+  );
   const [showArchived, setShowArchived] = useState(false);
   const [archivedCount, setArchivedCount] = useState(0);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -85,7 +85,8 @@ export default function MogiResponsePage() {
     setErrorMessage('');
     try {
       const schoolIds = getSelectedSchoolIds();
-      const schoolId: string | string[] = schoolIdParam || (schoolIds.length > 0 ? schoolIds : getDefaultSchoolId());
+      const schoolId: string | string[] =
+        schoolIdParam || (schoolIds.length > 0 ? schoolIds : getDefaultSchoolId());
       const filters: MogiResponseFilters = {
         grade: filterGrade === 'all' ? undefined : filterGrade,
         examType: filterExamType === 'all' ? undefined : filterExamType,
@@ -107,13 +108,22 @@ export default function MogiResponsePage() {
       setArchivedCount(archivedCountData);
     } catch (error) {
       console.error('Error fetching mogi responses:', error);
-      setErrorMessage(
-        getUserErrorMessage(error, '回答一覧の取得に失敗しました')
-      );
+      setErrorMessage(getUserErrorMessage(error, '回答一覧の取得に失敗しました'));
     } finally {
       setIsLoading(false);
     }
-  }, [getSelectedSchoolIds, schoolIdParam, periodKey, filterGrade, filterExamType, filterDateId, filterVenueId, filterChargedStatus, filterLinkedStatus, showArchived]);
+  }, [
+    getSelectedSchoolIds,
+    schoolIdParam,
+    periodKey,
+    filterGrade,
+    filterExamType,
+    filterDateId,
+    filterVenueId,
+    filterChargedStatus,
+    filterLinkedStatus,
+    showArchived,
+  ]);
 
   useEffect(() => {
     if (periodKey) {
@@ -136,9 +146,7 @@ export default function MogiResponsePage() {
     const prevStats = stats;
     setResponses((prev) =>
       prev.map((r) =>
-        r.id === responseId
-          ? { ...r, status_checks: { ...r.status_checks, charged } }
-          : r
+        r.id === responseId ? { ...r, status_checks: { ...r.status_checks, charged } } : r
       )
     );
     setStats((s) => ({
@@ -153,11 +161,7 @@ export default function MogiResponsePage() {
       console.error('Error updating charged status:', err);
       setResponses(prevResponses);
       setStats(prevStats);
-      error(
-        err instanceof Error
-          ? err.message
-          : '計上状態の更新に失敗しました'
-      );
+      error(err instanceof Error ? err.message : '計上状態の更新に失敗しました');
     }
   };
 
@@ -195,9 +199,7 @@ export default function MogiResponsePage() {
       success('紐付けを解除しました');
     } catch (err) {
       console.error('Error unlinking student:', err);
-      error(
-        getUserErrorMessage(err, '紐付け解除に失敗しました')
-      );
+      error(getUserErrorMessage(err, '紐付け解除に失敗しました'));
     }
   };
 
@@ -242,7 +244,14 @@ export default function MogiResponsePage() {
       return;
     }
 
-    if (!(await confirm({ title: 'アーカイブ確認', description: `${selectedIds.size}件の回答をアーカイブしますか？`, confirmLabel: 'アーカイブ', variant: 'warning' }))) {
+    if (
+      !(await confirm({
+        title: 'アーカイブ確認',
+        description: `${selectedIds.size}件の回答をアーカイブしますか？`,
+        confirmLabel: 'アーカイブ',
+        variant: 'warning',
+      }))
+    ) {
       return;
     }
 
@@ -264,7 +273,14 @@ export default function MogiResponsePage() {
   // 回答を完全削除（マネージャー以上のみ）。アーカイブと違い物理削除で復元不可。
   const handleDelete = async (id: string) => {
     if (!permissions?.canDeleteFormResponses) return;
-    if (!(await confirm({ title: '回答削除', description: 'この回答を完全に削除しますか？この操作は取り消せません。', confirmLabel: '削除', variant: 'danger' }))) {
+    if (
+      !(await confirm({
+        title: '回答削除',
+        description: 'この回答を完全に削除しますか？この操作は取り消せません。',
+        confirmLabel: '削除',
+        variant: 'danger',
+      }))
+    ) {
       return;
     }
     setIsProcessing(true);
@@ -287,7 +303,14 @@ export default function MogiResponsePage() {
       error('削除する回答を選択してください');
       return;
     }
-    if (!(await confirm({ title: '一括削除確認', description: `${selectedIds.size}件の回答を完全に削除しますか？この操作は取り消せません。`, confirmLabel: '削除', variant: 'danger' }))) {
+    if (
+      !(await confirm({
+        title: '一括削除確認',
+        description: `${selectedIds.size}件の回答を完全に削除しますか？この操作は取り消せません。`,
+        confirmLabel: '削除',
+        variant: 'danger',
+      }))
+    ) {
       return;
     }
     setIsProcessing(true);
@@ -307,8 +330,8 @@ export default function MogiResponsePage() {
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      const activeResponses = responses.filter(r => !r.is_archived);
-      setSelectedIds(new Set(activeResponses.map(r => r.id)));
+      const activeResponses = responses.filter((r) => !r.is_archived);
+      setSelectedIds(new Set(activeResponses.map((r) => r.id)));
     } else {
       setSelectedIds(new Set());
     }
@@ -324,409 +347,396 @@ export default function MogiResponsePage() {
     setSelectedIds(newSet);
   };
 
-  const activeResponses = responses.filter(r => !r.is_archived);
-  const allSelected = activeResponses.length > 0 && activeResponses.every(r => selectedIds.has(r.id));
+  const activeResponses = responses.filter((r) => !r.is_archived);
+  const allSelected =
+    activeResponses.length > 0 && activeResponses.every((r) => selectedIds.has(r.id));
 
   return (
     <>
       <ToastContainer toasts={toasts} onRemove={removeToast} />
       <AdminLayout headerTitle={`${periodKey} Vもぎ申込 回答一覧`}>
-      <main>
-        {errorMessage && (
-          <div className="mb-6 p-4 bg-danger/10 border border-danger rounded-lg">
-            <p className="text-sm text-danger">{errorMessage}</p>
-          </div>
-        )}
-
-        {/* 集計表示 */}
-        <MogiStats stats={stats} />
-
-        {/* フィルター */}
-        <div className="mb-6 bg-surface-raised rounded-xl border border-border p-4">
-          <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-4">
-            <div>
-              <label className="block text-sm font-medium text-text-heading mb-2">
-                学年
-              </label>
-              <select
-                value={filterGrade}
-                onChange={(e) =>
-                  setFilterGrade(
-                    e.target.value === 'all' ? 'all' : Number(e.target.value)
-                  )
-                }
-                className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-surface-raised text-text-body"
-              >
-                <option value="all">全て</option>
-                {Array.from({ length: 13 }, (_, i) => i + 1).map((grade) => (
-                  <option key={grade} value={grade}>
-                    {GRADE_NUMBER_TO_NAME[grade]}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-text-heading mb-2">
-                模試種別
-              </label>
-              <select
-                value={filterExamType}
-                onChange={(e) => {
-                  const next = e.target.value as MogiExamType | 'all';
-                  setFilterExamType(next);
-                  setFilterDateId('all');
-                }}
-                className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-surface-raised text-text-body"
-              >
-                <option value="all">全て</option>
-                {MOGI_EXAM_TYPE_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-text-heading mb-2">
-                日程
-              </label>
-              <select
-                value={filterDateId}
-                onChange={(e) => setFilterDateId(e.target.value)}
-                className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-surface-raised text-text-body"
-              >
-                <option value="all">全て</option>
-                {stats.date_venue_counts
-                  .filter((d) => filterExamType === 'all' || d.exam_type === filterExamType)
-                  .map((d) => (
-                    <option key={d.date_id} value={d.date_id}>
-                      {d.exam_type ? `[${MOGI_EXAM_TYPE_LABELS[d.exam_type]}] ` : ''}{d.date_label}
-                    </option>
-                  ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-text-heading mb-2">
-                会場
-              </label>
-              <select
-                value={filterVenueId}
-                onChange={(e) => setFilterVenueId(e.target.value)}
-                className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-surface-raised text-text-body"
-              >
-                <option value="all">全て</option>
-                {uniqueVenueIds.map((venueId) => {
-                  const venueLabel = stats.date_venue_counts
-                    .flatMap((d) => d.venue_counts)
-                    .find((v) => v.venue_id === venueId)?.venue_label || venueId;
-                  return (
-                    <option key={venueId} value={venueId}>
-                      {venueLabel}
-                    </option>
-                  );
-                })}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-text-heading mb-2">
-                計上状態
-              </label>
-              <select
-                value={filterChargedStatus}
-                onChange={(e) =>
-                  setFilterChargedStatus(
-                    e.target.value as 'all' | 'charged' | 'not_charged'
-                  )
-                }
-                className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-surface-raised text-text-body"
-              >
-                <option value="all">全て</option>
-                <option value="charged">計上済み</option>
-                <option value="not_charged">未計上</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-text-heading mb-2">
-                紐付け状態
-              </label>
-              <select
-                value={filterLinkedStatus}
-                onChange={(e) =>
-                  setFilterLinkedStatus(
-                    e.target.value as 'all' | 'linked' | 'unlinked'
-                  )
-                }
-                className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-surface-raised text-text-body"
-              >
-                <option value="all">全て</option>
-                <option value="linked">紐付け済み</option>
-                <option value="unlinked">未紐付け</option>
-              </select>
-            </div>
-          </div>
-          <div className="flex items-center justify-between pt-4 border-t border-border/20">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={showArchived}
-                onChange={(e) => setShowArchived(e.target.checked)}
-                className="w-4 h-4 text-info border-border rounded focus:ring-primary cursor-pointer"
-              />
-              <span className="text-sm text-text-heading flex items-center gap-2">
-                アーカイブ済みを表示
-                {archivedCount > 0 && (
-                  <span className="ml-1 text-text-body/60">({archivedCount}件)</span>
-                )}
-                {isLoading && <Spinner size="xs" tone="current" className="inline-block" />}
-              </span>
-            </label>
-          </div>
-        </div>
-
-        {/* 一括操作バー */}
-        {selectedIds.size > 0 && (
-          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between">
-            <span className="text-sm text-blue-800">
-              {selectedIds.size}件を選択中
-            </span>
-            <div className="flex gap-2">
-              <button
-                onClick={handleBulkArchive}
-                disabled={isProcessing}
-                className="px-3 py-1 bg-gray-600 text-white text-sm rounded hover:bg-gray-700 disabled:opacity-50 transition-colors duration-150"
-              >
-                一括アーカイブ
-              </button>
-              {permissions?.canDeleteFormResponses && (
-                <button
-                  onClick={handleBulkDelete}
-                  disabled={isProcessing}
-                  className="px-3 py-1 bg-[#ef4444] text-white text-sm rounded hover:bg-[#dc2626] disabled:opacity-50 transition-colors duration-150"
-                >
-                  一括削除
-                </button>
-              )}
-              <button
-                onClick={() => setSelectedIds(new Set())}
-                className="px-3 py-1 text-gray-600 text-sm hover:underline transition-colors duration-150"
-              >
-                選択解除
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* 回答一覧 */}
-        <div className="bg-surface-raised rounded-xl border border-border overflow-hidden">
-          {isLoading ? (
-            <div className="p-8">
-              <Loading size="md" />
-            </div>
-          ) : responses.length === 0 ? (
-            <div className="p-8 text-center">
-              <p className="text-text-body">回答がありません。保護者ポータルから申込が届くとここに表示されます。</p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="bg-surface-hover border-b border-border">
-                    <th className="px-2 py-3 text-center w-10">
-                      <input
-                        type="checkbox"
-                        checked={allSelected}
-                        onChange={(e) => handleSelectAll(e.target.checked)}
-                        className="w-4 h-4 text-info border-border rounded focus:ring-primary cursor-pointer"
-                      />
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-text-heading uppercase">
-                      回答日時
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-text-heading uppercase">
-                      生徒名
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-text-heading uppercase">
-                      学年
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-text-heading uppercase">
-                      選択日程・会場
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-text-heading uppercase">
-                      計上
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-text-heading uppercase">
-                      紐付け
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-text-heading uppercase">
-                      操作
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {responses.map((response) => (
-                    <tr
-                      key={response.id}
-                      className={`border-b border-border/20 hover:bg-surface-hover transition-colors duration-150 ${
-                        response.is_archived ? 'bg-gray-100 opacity-60' : ''
-                      }`}
-                    >
-                      <td className="px-2 py-3 text-center">
-                        {!response.is_archived && (
-                          <input
-                            type="checkbox"
-                            checked={selectedIds.has(response.id)}
-                            onChange={(e) => handleSelect(response.id, e.target.checked)}
-                            className="w-4 h-4 text-info border-border rounded focus:ring-primary cursor-pointer"
-                          />
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-text-body">
-                        {formatDate(response.created_at)}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-text-heading font-medium">
-                        {response.linked_student
-                          ? `${response.linked_student.last_name} ${response.linked_student.first_name}`
-                          : response.student_name}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-text-body">
-                        {GRADE_NUMBER_TO_NAME[response.grade] || response.grade}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-text-body">
-                        {formatSelections(response.response_data.selections)}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-text-body">
-                        <input
-                          type="checkbox"
-                          checked={response.status_checks?.charged || false}
-                          onChange={(e) => handleChargedToggle(response.id, e.target.checked)}
-                          className="w-4 h-4 text-info border-border rounded focus:ring-primary cursor-pointer"
-                        />
-                      </td>
-                      <td className="px-4 py-3 text-sm text-text-body">
-                        {response.linked_student_id ? (
-                          <span className="text-text-heading font-medium">済</span>
-                        ) : (
-                          <span className="text-text-body/60">未</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex gap-2">
-                          {response.is_archived ? (
-                            <>
-                              <span className="px-2 py-1 text-xs bg-gray-200 text-gray-600 rounded">
-                                アーカイブ済
-                              </span>
-                              <button
-                                className="px-3 py-1 text-xs bg-surface-hover text-blue-600 rounded hover:bg-blue-50 transition-colors duration-150"
-                                onClick={() => handleUnarchive(response.id)}
-                                disabled={isProcessing}
-                              >
-                                戻す
-                              </button>
-                              {permissions?.canDeleteFormResponses && (
-                                <button
-                                  className="px-3 py-1 text-xs bg-surface-hover text-[#ef4444] rounded hover:bg-[#ef4444]/10 transition-colors duration-150"
-                                  onClick={() => handleDelete(response.id)}
-                                  disabled={isProcessing}
-                                >
-                                  削除
-                                </button>
-                              )}
-                            </>
-                          ) : (
-                            <>
-                              <button
-                                className="px-3 py-1 text-xs bg-surface-hover text-text-body rounded hover:bg-border transition-colors duration-150"
-                                onClick={() => setDetailResponse(response)}
-                              >
-                                詳細
-                              </button>
-                              {response.linked_student_id ? (
-                                <button
-                                  className="px-3 py-1 text-xs bg-surface-hover text-text-body rounded hover:bg-border transition-colors duration-150"
-                                  onClick={() => handleUnlinkStudent(response.id)}
-                                >
-                                  解除
-                                </button>
-                              ) : (
-                                <button
-                                  className="px-3 py-1 text-xs bg-surface-hover text-text-body rounded hover:bg-border transition-colors duration-150"
-                                  onClick={() => handleOpenLinkModal(response)}
-                                >
-                                  紐付け
-                                </button>
-                              )}
-                              <button
-                                className="px-3 py-1 text-xs bg-surface-hover text-gray-500 rounded hover:bg-gray-100 transition-colors duration-150"
-                                onClick={() => handleArchive(response.id)}
-                                disabled={isProcessing}
-                              >
-                                アーカイブ
-                              </button>
-                              {permissions?.canDeleteFormResponses && (
-                                <button
-                                  className="px-3 py-1 text-xs bg-surface-hover text-[#ef4444] rounded hover:bg-[#ef4444]/10 transition-colors duration-150"
-                                  onClick={() => handleDelete(response.id)}
-                                  disabled={isProcessing}
-                                >
-                                  削除
-                                </button>
-                              )}
-                            </>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+        <main>
+          {errorMessage && (
+            <div className="mb-6 p-4 bg-danger/10 border border-danger rounded-lg">
+              <p className="text-sm text-danger">{errorMessage}</p>
             </div>
           )}
-        </div>
-      </main>
 
-      {/* 紐付けモーダル */}
-      {linkingResponse && (
-        <LinkStudentModal
-          isOpen={!!linkingResponse}
-          onClose={() => setLinkingResponse(null)}
-          response={{
-            id: linkingResponse.id,
-            school_id: linkingResponse.school_id,
-            form_type: 'mogi',
-            form_period: linkingResponse.form_period,
-            student_name: linkingResponse.student_name,
-            grade: linkingResponse.grade,
-            email: linkingResponse.email,
-            response_data: linkingResponse.response_data as unknown as Record<string, unknown>,
-            linked_student_id: linkingResponse.linked_student_id,
-            linked_at: linkingResponse.linked_at,
-            status_checks: (linkingResponse.status_checks ?? {}) as Record<string, boolean>,
-            is_archived: linkingResponse.is_archived,
-            archived_at: linkingResponse.archived_at,
-            created_at: linkingResponse.created_at,
-            updated_at: linkingResponse.updated_at,
-          }}
-          students={students}
-          isLoadingStudents={isLoadingStudents}
-          onSuccess={handleLinkSuccess}
-        />
-      )}
+          {/* 集計表示 */}
+          <MogiStats stats={stats} />
 
-      {/* 回答詳細モーダル */}
-      {detailResponse && (
-        <MogiResponseDetailModal
-          isOpen={!!detailResponse}
-          response={detailResponse}
-          onClose={() => setDetailResponse(null)}
-        />
-      )}
-      {ConfirmDialog}
+          {/* フィルター */}
+          <div className="mb-6 bg-surface-raised rounded-xl border border-border p-4">
+            <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-4">
+              <div>
+                <label className="block text-sm font-medium text-text-heading mb-2">学年</label>
+                <select
+                  value={filterGrade}
+                  onChange={(e) =>
+                    setFilterGrade(e.target.value === 'all' ? 'all' : Number(e.target.value))
+                  }
+                  className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-surface-raised text-text-body"
+                >
+                  <option value="all">全て</option>
+                  {Array.from({ length: 13 }, (_, i) => i + 1).map((grade) => (
+                    <option key={grade} value={grade}>
+                      {GRADE_NUMBER_TO_NAME[grade]}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-text-heading mb-2">模試種別</label>
+                <select
+                  value={filterExamType}
+                  onChange={(e) => {
+                    const next = e.target.value as MogiExamType | 'all';
+                    setFilterExamType(next);
+                    setFilterDateId('all');
+                  }}
+                  className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-surface-raised text-text-body"
+                >
+                  <option value="all">全て</option>
+                  {MOGI_EXAM_TYPE_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-text-heading mb-2">日程</label>
+                <select
+                  value={filterDateId}
+                  onChange={(e) => setFilterDateId(e.target.value)}
+                  className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-surface-raised text-text-body"
+                >
+                  <option value="all">全て</option>
+                  {stats.date_venue_counts
+                    .filter((d) => filterExamType === 'all' || d.exam_type === filterExamType)
+                    .map((d) => (
+                      <option key={d.date_id} value={d.date_id}>
+                        {d.exam_type ? `[${MOGI_EXAM_TYPE_LABELS[d.exam_type]}] ` : ''}
+                        {d.date_label}
+                      </option>
+                    ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-text-heading mb-2">会場</label>
+                <select
+                  value={filterVenueId}
+                  onChange={(e) => setFilterVenueId(e.target.value)}
+                  className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-surface-raised text-text-body"
+                >
+                  <option value="all">全て</option>
+                  {uniqueVenueIds.map((venueId) => {
+                    const venueLabel =
+                      stats.date_venue_counts
+                        .flatMap((d) => d.venue_counts)
+                        .find((v) => v.venue_id === venueId)?.venue_label || venueId;
+                    return (
+                      <option key={venueId} value={venueId}>
+                        {venueLabel}
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-text-heading mb-2">計上状態</label>
+                <select
+                  value={filterChargedStatus}
+                  onChange={(e) =>
+                    setFilterChargedStatus(e.target.value as 'all' | 'charged' | 'not_charged')
+                  }
+                  className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-surface-raised text-text-body"
+                >
+                  <option value="all">全て</option>
+                  <option value="charged">計上済み</option>
+                  <option value="not_charged">未計上</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-text-heading mb-2">
+                  紐付け状態
+                </label>
+                <select
+                  value={filterLinkedStatus}
+                  onChange={(e) =>
+                    setFilterLinkedStatus(e.target.value as 'all' | 'linked' | 'unlinked')
+                  }
+                  className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-surface-raised text-text-body"
+                >
+                  <option value="all">全て</option>
+                  <option value="linked">紐付け済み</option>
+                  <option value="unlinked">未紐付け</option>
+                </select>
+              </div>
+            </div>
+            <div className="flex items-center justify-between pt-4 border-t border-border/20">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={showArchived}
+                  onChange={(e) => setShowArchived(e.target.checked)}
+                  className="w-4 h-4 text-info border-border rounded focus:ring-primary cursor-pointer"
+                />
+                <span className="text-sm text-text-heading flex items-center gap-2">
+                  アーカイブ済みを表示
+                  {archivedCount > 0 && (
+                    <span className="ml-1 text-text-body/60">({archivedCount}件)</span>
+                  )}
+                  {isLoading && <Spinner size="xs" tone="current" className="inline-block" />}
+                </span>
+              </label>
+            </div>
+          </div>
+
+          {/* 一括操作バー */}
+          {selectedIds.size > 0 && (
+            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between">
+              <span className="text-sm text-blue-800">{selectedIds.size}件を選択中</span>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleBulkArchive}
+                  disabled={isProcessing}
+                  className="px-3 py-1 bg-gray-600 text-white text-sm rounded hover:bg-gray-700 disabled:opacity-50 transition-colors duration-150"
+                >
+                  一括アーカイブ
+                </button>
+                {permissions?.canDeleteFormResponses && (
+                  <button
+                    onClick={handleBulkDelete}
+                    disabled={isProcessing}
+                    className="px-3 py-1 bg-[#ef4444] text-white text-sm rounded hover:bg-[#dc2626] disabled:opacity-50 transition-colors duration-150"
+                  >
+                    一括削除
+                  </button>
+                )}
+                <button
+                  onClick={() => setSelectedIds(new Set())}
+                  className="px-3 py-1 text-gray-600 text-sm hover:underline transition-colors duration-150"
+                >
+                  選択解除
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* 回答一覧 */}
+          <div className="bg-surface-raised rounded-xl border border-border overflow-hidden">
+            {isLoading ? (
+              <div className="p-8">
+                <Loading size="md" />
+              </div>
+            ) : responses.length === 0 ? (
+              <div className="p-8 text-center">
+                <p className="text-text-body">
+                  回答がありません。保護者ポータルから申込が届くとここに表示されます。
+                </p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="bg-surface-hover border-b border-border">
+                      <th className="px-2 py-3 text-center w-10">
+                        <input
+                          type="checkbox"
+                          checked={allSelected}
+                          onChange={(e) => handleSelectAll(e.target.checked)}
+                          className="w-4 h-4 text-info border-border rounded focus:ring-primary cursor-pointer"
+                        />
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-text-heading uppercase">
+                        回答日時
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-text-heading uppercase">
+                        生徒名
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-text-heading uppercase">
+                        学年
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-text-heading uppercase">
+                        選択日程・会場
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-text-heading uppercase">
+                        計上
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-text-heading uppercase">
+                        紐付け
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-text-heading uppercase">
+                        操作
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {responses.map((response) => (
+                      <tr
+                        key={response.id}
+                        className={`border-b border-border/20 hover:bg-surface-hover transition-colors duration-150 ${
+                          response.is_archived ? 'bg-gray-100 opacity-60' : ''
+                        }`}
+                      >
+                        <td className="px-2 py-3 text-center">
+                          {!response.is_archived && (
+                            <input
+                              type="checkbox"
+                              checked={selectedIds.has(response.id)}
+                              onChange={(e) => handleSelect(response.id, e.target.checked)}
+                              className="w-4 h-4 text-info border-border rounded focus:ring-primary cursor-pointer"
+                            />
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-text-body">
+                          {formatDate(response.created_at)}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-text-heading font-medium">
+                          {response.linked_student
+                            ? `${response.linked_student.last_name} ${response.linked_student.first_name}`
+                            : response.student_name}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-text-body">
+                          {GRADE_NUMBER_TO_NAME[response.grade] || response.grade}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-text-body">
+                          {formatSelections(response.response_data.selections)}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-text-body">
+                          <input
+                            type="checkbox"
+                            checked={response.status_checks?.charged || false}
+                            onChange={(e) => handleChargedToggle(response.id, e.target.checked)}
+                            className="w-4 h-4 text-info border-border rounded focus:ring-primary cursor-pointer"
+                          />
+                        </td>
+                        <td className="px-4 py-3 text-sm text-text-body">
+                          {response.linked_student_id ? (
+                            <span className="text-text-heading font-medium">済</span>
+                          ) : (
+                            <span className="text-text-body/60">未</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex gap-2">
+                            {response.is_archived ? (
+                              <>
+                                <span className="px-2 py-1 text-xs bg-gray-200 text-gray-600 rounded">
+                                  アーカイブ済
+                                </span>
+                                <button
+                                  className="px-3 py-1 text-xs bg-surface-hover text-blue-600 rounded hover:bg-blue-50 transition-colors duration-150"
+                                  onClick={() => handleUnarchive(response.id)}
+                                  disabled={isProcessing}
+                                >
+                                  戻す
+                                </button>
+                                {permissions?.canDeleteFormResponses && (
+                                  <button
+                                    className="px-3 py-1 text-xs bg-surface-hover text-[#ef4444] rounded hover:bg-[#ef4444]/10 transition-colors duration-150"
+                                    onClick={() => handleDelete(response.id)}
+                                    disabled={isProcessing}
+                                  >
+                                    削除
+                                  </button>
+                                )}
+                              </>
+                            ) : (
+                              <>
+                                <button
+                                  className="px-3 py-1 text-xs bg-surface-hover text-text-body rounded hover:bg-border transition-colors duration-150"
+                                  onClick={() => setDetailResponse(response)}
+                                >
+                                  詳細
+                                </button>
+                                {response.linked_student_id ? (
+                                  <button
+                                    className="px-3 py-1 text-xs bg-surface-hover text-text-body rounded hover:bg-border transition-colors duration-150"
+                                    onClick={() => handleUnlinkStudent(response.id)}
+                                  >
+                                    解除
+                                  </button>
+                                ) : (
+                                  <button
+                                    className="px-3 py-1 text-xs bg-surface-hover text-text-body rounded hover:bg-border transition-colors duration-150"
+                                    onClick={() => handleOpenLinkModal(response)}
+                                  >
+                                    紐付け
+                                  </button>
+                                )}
+                                <button
+                                  className="px-3 py-1 text-xs bg-surface-hover text-gray-500 rounded hover:bg-gray-100 transition-colors duration-150"
+                                  onClick={() => handleArchive(response.id)}
+                                  disabled={isProcessing}
+                                >
+                                  アーカイブ
+                                </button>
+                                {permissions?.canDeleteFormResponses && (
+                                  <button
+                                    className="px-3 py-1 text-xs bg-surface-hover text-[#ef4444] rounded hover:bg-[#ef4444]/10 transition-colors duration-150"
+                                    onClick={() => handleDelete(response.id)}
+                                    disabled={isProcessing}
+                                  >
+                                    削除
+                                  </button>
+                                )}
+                              </>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </main>
+
+        {/* 紐付けモーダル */}
+        {linkingResponse && (
+          <LinkStudentModal
+            isOpen={!!linkingResponse}
+            onClose={() => setLinkingResponse(null)}
+            response={{
+              id: linkingResponse.id,
+              school_id: linkingResponse.school_id,
+              form_type: 'mogi',
+              form_period: linkingResponse.form_period,
+              student_name: linkingResponse.student_name,
+              grade: linkingResponse.grade,
+              email: linkingResponse.email,
+              response_data: linkingResponse.response_data as unknown as Record<string, unknown>,
+              linked_student_id: linkingResponse.linked_student_id,
+              linked_at: linkingResponse.linked_at,
+              status_checks: (linkingResponse.status_checks ?? {}) as Record<string, boolean>,
+              is_archived: linkingResponse.is_archived,
+              archived_at: linkingResponse.archived_at,
+              created_at: linkingResponse.created_at,
+              updated_at: linkingResponse.updated_at,
+            }}
+            students={students}
+            isLoadingStudents={isLoadingStudents}
+            onSuccess={handleLinkSuccess}
+          />
+        )}
+
+        {/* 回答詳細モーダル */}
+        {detailResponse && (
+          <MogiResponseDetailModal
+            isOpen={!!detailResponse}
+            response={detailResponse}
+            onClose={() => setDetailResponse(null)}
+          />
+        )}
+        {ConfirmDialog}
       </AdminLayout>
     </>
   );

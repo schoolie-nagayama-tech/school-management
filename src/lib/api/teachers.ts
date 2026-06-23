@@ -29,10 +29,12 @@ export interface TeacherFormData {
 export async function getTeachers(schoolId?: string): Promise<Teacher[]> {
   let query = supabase
     .from('teachers')
-    .select(`
+    .select(
+      `
       *,
       school:schools(id, name, code)
-    `)
+    `
+    )
     .order('name');
 
   if (schoolId) {
@@ -67,10 +69,12 @@ export async function getActiveTeachers(schoolId: string): Promise<Teacher[]> {
 export async function getTeacher(id: string): Promise<Teacher> {
   const { data, error } = await supabase
     .from('teachers')
-    .select(`
+    .select(
+      `
       *,
       school:schools(id, name, code)
-    `)
+    `
+    )
     .eq('id', id)
     .single();
 
@@ -82,10 +86,7 @@ export async function getTeacher(id: string): Promise<Teacher> {
 }
 
 // 講師を作成
-export async function createTeacher(
-  schoolId: string,
-  formData: TeacherFormData
-): Promise<Teacher> {
+export async function createTeacher(schoolId: string, formData: TeacherFormData): Promise<Teacher> {
   const { data, error } = await supabase
     .from('teachers')
     .insert({
@@ -123,10 +124,7 @@ export async function updateTeacher(
 
 // 講師を削除
 export async function deleteTeacher(id: string): Promise<void> {
-  const { error } = await supabase
-    .from('teachers')
-    .delete()
-    .eq('id', id);
+  const { error } = await supabase.from('teachers').delete().eq('id', id);
 
   if (error) {
     console.error('Error deleting teacher:', error);

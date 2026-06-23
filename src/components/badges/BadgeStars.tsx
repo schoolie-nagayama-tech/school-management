@@ -19,7 +19,12 @@ interface BadgeStarsProps {
   className?: string;
 }
 
-export function BadgeStars({ count, maxWidth = '160px', size = 9, className = '' }: BadgeStarsProps) {
+export function BadgeStars({
+  count,
+  maxWidth = '160px',
+  size = 9,
+  className = '',
+}: BadgeStarsProps) {
   if (count <= 0) return null;
   return (
     <div

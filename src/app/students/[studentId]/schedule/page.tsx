@@ -84,9 +84,7 @@ export default function StudentSchedulePage() {
           >
             ← 生徒一覧
           </Link>
-          <h1 className="text-lg font-semibold text-[var(--headline)]">
-            {studentName} の通塾日程
-          </h1>
+          <h1 className="text-lg font-semibold text-[var(--headline)]">{studentName} の通塾日程</h1>
         </div>
 
         <Card className="bg-surface border-gray-200">

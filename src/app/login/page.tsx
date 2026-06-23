@@ -23,17 +23,23 @@ export default function LoginPage() {
   useEffect(() => {
     const errorParam = searchParams.get('error');
     if (errorParam === 'not_registered') {
-      setError('このGoogleアカウントは登録されていません。\n管理者にアカウント作成を依頼してください。');
+      setError(
+        'このGoogleアカウントは登録されていません。\n管理者にアカウント作成を依頼してください。'
+      );
     } else if (errorParam === 'auth_failed') {
       setError('認証に失敗しました。もう一度お試しください。');
     } else if (errorParam === 'not_allowed') {
-      setError('Googleログインは教室長以上のアカウントのみ利用可能です。\nメールアドレスとパスワードでログインしてください。');
+      setError(
+        'Googleログインは教室長以上のアカウントのみ利用可能です。\nメールアドレスとパスワードでログインしてください。'
+      );
     }
 
     // 無操作ログアウトの通知
     const reasonParam = searchParams.get('reason');
     if (reasonParam === 'inactivity') {
-      setNotice('一定時間操作がなかったため、自動的にログアウトしました。\nお手数ですが再度ログインしてください。');
+      setNotice(
+        '一定時間操作がなかったため、自動的にログアウトしました。\nお手数ですが再度ログインしてください。'
+      );
     }
   }, [searchParams]);
 
@@ -79,7 +85,9 @@ export default function LoginPage() {
           `サーバーに接続できませんでした。ネットワーク接続を確認してください。${diag ? `\n${diag}` : ''}`
         );
       } else {
-        setError(`ログインに失敗しました${diag ? `\n${diag}` : `\n詳細: ${message || '不明なエラー'}`}`);
+        setError(
+          `ログインに失敗しました${diag ? `\n${diag}` : `\n詳細: ${message || '不明なエラー'}`}`
+        );
       }
     }
   };
@@ -140,21 +148,19 @@ export default function LoginPage() {
               <input
                 type="text"
                 value={email}
-                onChange={e => setEmail(e.target.value)}
+                onChange={(e) => setEmail(e.target.value)}
                 required
                 className="w-full px-3 py-2.5 text-sm border border-border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-colors"
                 placeholder="メールアドレスまたはユーザーID"
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-text-heading mb-1">
-                パスワード
-              </label>
+              <label className="block text-xs font-medium text-text-heading mb-1">パスワード</label>
               <div className="relative">
                 <input
                   type={showPassword ? 'text' : 'password'}
                   value={password}
-                  onChange={e => setPassword(e.target.value)}
+                  onChange={(e) => setPassword(e.target.value)}
                   required
                   className="w-full px-3 py-2.5 pr-10 text-sm border border-border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-colors"
                   placeholder="••••••••"
@@ -165,11 +171,7 @@ export default function LoginPage() {
                   className="absolute right-2.5 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-heading focus:outline-none transition-colors"
                   aria-label={showPassword ? 'パスワードを非表示' : 'パスワードを表示'}
                 >
-                  {showPassword ? (
-                    <EyeOff className="w-4 h-4" />
-                  ) : (
-                    <Eye className="w-4 h-4" />
-                  )}
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
             </div>

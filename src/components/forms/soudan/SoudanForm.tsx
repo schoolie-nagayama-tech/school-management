@@ -13,10 +13,7 @@ import {
 } from '@/components/forms/shared';
 import type { School } from '@/types/database';
 import { validateStudentName } from '@/lib/utils/validation';
-import type {
-  SoudanPeriod,
-  SoudanResponseData,
-} from '@/types/forms/soudan';
+import type { SoudanPeriod, SoudanResponseData } from '@/types/forms/soudan';
 import { submitSoudanResponse } from '@/lib/api/soudan';
 import { SOUDAN_GRADE_NAME_TO_NUMBER } from '@/types/forms/soudan';
 
@@ -72,9 +69,7 @@ export function SoudanForm({ school, period, isPreview }: SoudanFormProps) {
   // 相談区分の選択切り替え
   const toggleCategory = (category: string) => {
     setSelectedCategories((prev) =>
-      prev.includes(category)
-        ? prev.filter((c) => c !== category)
-        : [...prev, category]
+      prev.includes(category) ? prev.filter((c) => c !== category) : [...prev, category]
     );
   };
 
@@ -149,9 +144,7 @@ export function SoudanForm({ school, period, isPreview }: SoudanFormProps) {
     } catch (error) {
       console.error('Failed to submit:', error);
       setErrorMessage(
-        error instanceof Error
-          ? error.message
-          : '送信に失敗しました。もう一度お試しください。'
+        error instanceof Error ? error.message : '送信に失敗しました。もう一度お試しください。'
       );
     } finally {
       submittingRef.current = false;
@@ -182,65 +175,59 @@ export function SoudanForm({ school, period, isPreview }: SoudanFormProps) {
         {isPreview && <PortalPreviewBanner />}
 
         <PortalFormSection title="基本情報">
-        <div className="space-y-4">
-          {/* 生徒名 */}
-          <div>
-            <label className="block text-sm font-medium mb-1 text-[#1f2937]">
-              生徒名
-            </label>
-            <Input
-              type="text"
-              value={studentName}
-              onChange={(e) => setStudentName(e.target.value)}
-              placeholder="例：山田 太郎"
-            />
-          </div>
+          <div className="space-y-4">
+            {/* 生徒名 */}
+            <div>
+              <label className="block text-sm font-medium mb-1 text-[#1f2937]">生徒名</label>
+              <Input
+                type="text"
+                value={studentName}
+                onChange={(e) => setStudentName(e.target.value)}
+                placeholder="例：山田 太郎"
+              />
+            </div>
 
-          {/* 学年 */}
-          <div>
-            <label className="block text-sm font-medium mb-1 text-[#1f2937]">
-              学年
-            </label>
-            <Select
-              value={selectedGrade}
-              onChange={(e) => setSelectedGrade(e.target.value)}
-              options={[
-                { value: '', label: '選択してください' },
-                ...GRADES.map((g) => ({ value: g, label: g })),
-              ]}
-            />
-          </div>
+            {/* 学年 */}
+            <div>
+              <label className="block text-sm font-medium mb-1 text-[#1f2937]">学年</label>
+              <Select
+                value={selectedGrade}
+                onChange={(e) => setSelectedGrade(e.target.value)}
+                options={[
+                  { value: '', label: '選択してください' },
+                  ...GRADES.map((g) => ({ value: g, label: g })),
+                ]}
+              />
+            </div>
 
-          {/* メールアドレス */}
-          <div>
-            <label className="block text-sm font-medium mb-1 text-[#1f2937]">
-              メールアドレス
-            </label>
-            <Input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="example@email.com"
-              className={errors.email ? 'border-[color:var(--primary)]' : ''}
-            />
-            {errors.email && (
-              <p className="text-[color:var(--primary)] text-xs mt-1">{errors.email}</p>
-            )}
-          </div>
+            {/* メールアドレス */}
+            <div>
+              <label className="block text-sm font-medium mb-1 text-[#1f2937]">
+                メールアドレス
+              </label>
+              <Input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="example@email.com"
+                className={errors.email ? 'border-[color:var(--primary)]' : ''}
+              />
+              {errors.email && (
+                <p className="text-[color:var(--primary)] text-xs mt-1">{errors.email}</p>
+              )}
+            </div>
 
-          {/* 電話番号 */}
-          <div>
-            <label className="block text-sm font-medium mb-1 text-[#1f2937]">
-              電話番号
-            </label>
-            <Input
-              type="tel"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="090-1234-5678"
-            />
+            {/* 電話番号 */}
+            <div>
+              <label className="block text-sm font-medium mb-1 text-[#1f2937]">電話番号</label>
+              <Input
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="090-1234-5678"
+              />
+            </div>
           </div>
-        </div>
         </PortalFormSection>
 
         <PortalFormSection title="相談区分">
@@ -274,23 +261,25 @@ export function SoudanForm({ school, period, isPreview }: SoudanFormProps) {
             <label className="sr-only">
               相談内容 <span className="text-[color:var(--primary)]">*</span>
             </label>
-          <textarea
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            placeholder="ご相談内容をご記入ください"
-            rows={6}
-            className={`w-full border border-[#e5e7eb] rounded-lg px-3 py-2 resize-y min-h-[120px] text-sm ${
-              errors.content ? 'border-[color:var(--primary)]' : ''
-            }`}
-          />
-          <p className={`text-xs mt-1 ${
-            content.length < 10 ? 'text-[color:var(--primary)]' : 'text-[#4b5563]/60'
-          }`}>
-            {content.length}文字（10文字以上）
-          </p>
-          {errors.content && (
-            <p className="text-[color:var(--primary)] text-xs mt-1">{errors.content}</p>
-          )}
+            <textarea
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              placeholder="ご相談内容をご記入ください"
+              rows={6}
+              className={`w-full border border-[#e5e7eb] rounded-lg px-3 py-2 resize-y min-h-[120px] text-sm ${
+                errors.content ? 'border-[color:var(--primary)]' : ''
+              }`}
+            />
+            <p
+              className={`text-xs mt-1 ${
+                content.length < 10 ? 'text-[color:var(--primary)]' : 'text-[#4b5563]/60'
+              }`}
+            >
+              {content.length}文字（10文字以上）
+            </p>
+            {errors.content && (
+              <p className="text-[color:var(--primary)] text-xs mt-1">{errors.content}</p>
+            )}
           </div>
         </PortalFormSection>
 

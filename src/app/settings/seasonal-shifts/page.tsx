@@ -44,7 +44,9 @@ export default function SeasonalShiftsPage() {
 
   // Regular shift state
   const [regularSettings, setRegularSettings] = useState<RegularShiftSetting[]>([]);
-  const [regularSubmissionCounts, setRegularSubmissionCounts] = useState<Record<string, number>>({});
+  const [regularSubmissionCounts, setRegularSubmissionCounts] = useState<Record<string, number>>(
+    {}
+  );
   const [isRegularLoading, setIsRegularLoading] = useState(true);
   const [regularErrorMessage, setRegularErrorMessage] = useState('');
 
@@ -88,7 +90,9 @@ export default function SeasonalShiftsPage() {
       setRegularSubmissionCounts(counts);
     } catch (err) {
       console.error(err);
-      setRegularErrorMessage(err instanceof Error ? err.message : '通常シフト設定の取得に失敗しました');
+      setRegularErrorMessage(
+        err instanceof Error ? err.message : '通常シフト設定の取得に失敗しました'
+      );
     } finally {
       setIsRegularLoading(false);
     }
@@ -100,7 +104,15 @@ export default function SeasonalShiftsPage() {
   }, [fetchSeasonalData, fetchRegularData]);
 
   const handleDeleteSeasonal = async (id: string, name: string) => {
-    if (!(await confirm({ title: '削除確認', description: `「${name}」を削除してもよろしいですか？`, confirmLabel: '削除', variant: 'danger' }))) return;
+    if (
+      !(await confirm({
+        title: '削除確認',
+        description: `「${name}」を削除してもよろしいですか？`,
+        confirmLabel: '削除',
+        variant: 'danger',
+      }))
+    )
+      return;
     try {
       await deleteSeasonalShiftSetting(id);
       success('シフト設定を削除しました');
@@ -111,7 +123,15 @@ export default function SeasonalShiftsPage() {
   };
 
   const handleDeleteRegular = async (id: string, name: string) => {
-    if (!(await confirm({ title: '削除確認', description: `「${name}」を削除してもよろしいですか？`, confirmLabel: '削除', variant: 'danger' }))) return;
+    if (
+      !(await confirm({
+        title: '削除確認',
+        description: `「${name}」を削除してもよろしいですか？`,
+        confirmLabel: '削除',
+        variant: 'danger',
+      }))
+    )
+      return;
     try {
       await deleteRegularShiftSetting(id);
       success('通常シフト設定を削除しました');
@@ -146,7 +166,10 @@ export default function SeasonalShiftsPage() {
       <ToastContainer toasts={toasts} onRemove={removeToast} />
       <div className="max-w-[1600px]">
         <div className="mb-4">
-          <Link href="/settings" className="inline-flex items-center gap-1 text-sm text-text-muted hover:text-text-heading transition-colors duration-150">
+          <Link
+            href="/settings"
+            className="inline-flex items-center gap-1 text-sm text-text-muted hover:text-text-heading transition-colors duration-150"
+          >
             <ChevronLeft className="w-4 h-4" />
             設定に戻る
           </Link>
@@ -190,7 +213,9 @@ export default function SeasonalShiftsPage() {
         {activeTab === 'seasonal' && (
           <>
             <div className="flex justify-between items-center mb-6">
-              <h1 className="text-text-headingxl font-bold text-text-heading">講習期間シフト設定</h1>
+              <h1 className="text-text-headingxl font-bold text-text-heading">
+                講習期間シフト設定
+              </h1>
               <Link href="/settings/seasonal-shifts/new">
                 <Button className="bg-danger hover:bg-danger/80 text-white transition-colors duration-150">
                   新規作成
@@ -215,17 +240,26 @@ export default function SeasonalShiftsPage() {
                 <table className="w-full border-collapse text-sm">
                   <thead>
                     <tr className="bg-surface-hover border-infoorderorder border-border">
-                      <th className="px-4 py-3 text-left font-semibold text-text-heading">講習期間名</th>
+                      <th className="px-4 py-3 text-left font-semibold text-text-heading">
+                        講習期間名
+                      </th>
                       <th className="px-4 py-3 text-left font-semibold text-text-heading">期間</th>
                       <th className="px-4 py-3 text-left font-semibold text-text-heading">締切</th>
-                      <th className="px-4 py-3 text-text-dangeraintenter font-semibold text-text-heading">ステータス</th>
-                      <th className="px-4 py-3 text-text-dangeraintenter font-semibold text-text-heading">提出数</th>
+                      <th className="px-4 py-3 text-text-dangeraintenter font-semibold text-text-heading">
+                        ステータス
+                      </th>
+                      <th className="px-4 py-3 text-text-dangeraintenter font-semibold text-text-heading">
+                        提出数
+                      </th>
                       <th className="px-4 py-3 text-right font-semibold text-text-heading">操作</th>
                     </tr>
                   </thead>
                   <tbody>
                     {settings.map((s) => (
-                      <tr key={s.id} className="border-infoorderorder border-border/60 hover:bg-surface transition-colors duration-150">
+                      <tr
+                        key={s.id}
+                        className="border-infoorderorder border-border/60 hover:bg-surface transition-colors duration-150"
+                      >
                         <td className="px-4 py-3 font-medium text-text-heading">{s.name}</td>
                         <td className="px-4 py-3 text-text-body">
                           {formatDate(s.start_date)} 〜 {formatDate(s.end_date)}
@@ -304,16 +338,25 @@ export default function SeasonalShiftsPage() {
                 <table className="w-full border-collapse text-sm">
                   <thead>
                     <tr className="bg-surface-hover border-infoorderorder border-border">
-                      <th className="px-4 py-3 text-left font-semibold text-text-heading">シフト名</th>
+                      <th className="px-4 py-3 text-left font-semibold text-text-heading">
+                        シフト名
+                      </th>
                       <th className="px-4 py-3 text-left font-semibold text-text-heading">締切</th>
-                      <th className="px-4 py-3 text-text-dangeraintenter font-semibold text-text-heading">ステータス</th>
-                      <th className="px-4 py-3 text-text-dangeraintenter font-semibold text-text-heading">提出数</th>
+                      <th className="px-4 py-3 text-text-dangeraintenter font-semibold text-text-heading">
+                        ステータス
+                      </th>
+                      <th className="px-4 py-3 text-text-dangeraintenter font-semibold text-text-heading">
+                        提出数
+                      </th>
                       <th className="px-4 py-3 text-right font-semibold text-text-heading">操作</th>
                     </tr>
                   </thead>
                   <tbody>
                     {regularSettings.map((s) => (
-                      <tr key={s.id} className="border-infoorderorder border-border/60 hover:bg-surface transition-colors duration-150">
+                      <tr
+                        key={s.id}
+                        className="border-infoorderorder border-border/60 hover:bg-surface transition-colors duration-150"
+                      >
                         <td className="px-4 py-3 font-medium text-text-heading">{s.name}</td>
                         <td className="px-4 py-3 text-text-body">
                           {s.deadline ? formatDate(s.deadline) : '-'}

@@ -5,9 +5,24 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { AdminLayout } from '@/components/layouts';
 import { Card, CardContent, CardHeader, CardTitle, Loading } from '@/components/ui';
-import { SelectShadcn as Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui';
+import {
+  SelectShadcn as Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '@/components/ui';
 import { ToastContainer } from '@/components/ui';
-import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogAction, AlertDialogCancel } from '@/components/ui';
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogAction,
+  AlertDialogCancel,
+} from '@/components/ui';
 import { RegularPatternForm } from '@/components/schedule/RegularPatternForm';
 import { RegularPatternTable } from '@/components/schedule/RegularPatternTable';
 import { useToast } from '@/hooks/useToast';
@@ -64,12 +79,14 @@ export default function RegularPatternsPage() {
   useEffect(() => {
     if (masterSchools.length > 0) {
       const ids = getSelectedSchoolIds();
-      const filtered = ids.length > 0 ? masterSchools.filter((s) => ids.includes(s.id)) : masterSchools;
+      const filtered =
+        ids.length > 0 ? masterSchools.filter((s) => ids.includes(s.id)) : masterSchools;
       setSchools(filtered);
       if (filtered.length > 0 && !selectedSchoolId) {
-        const initial = schoolIdFromUrl && filtered.some((s) => s.id === schoolIdFromUrl)
-          ? schoolIdFromUrl
-          : filtered[0].id;
+        const initial =
+          schoolIdFromUrl && filtered.some((s) => s.id === schoolIdFromUrl)
+            ? schoolIdFromUrl
+            : filtered[0].id;
         setSelectedSchoolId(initial);
       }
     }
@@ -87,7 +104,9 @@ export default function RegularPatternsPage() {
       }),
       getTimeSlots(selectedSchoolId),
       getStudents(undefined, [selectedSchoolId]),
-      fetchWithAuth('/api/admin/users?role=teacher').then((r) => r.json()).then((d) => d.users || []),
+      fetchWithAuth('/api/admin/users?role=teacher')
+        .then((r) => r.json())
+        .then((d) => d.users || []),
     ])
       .then(([p, t, s, users]) => {
         setPatterns(p);
@@ -165,7 +184,8 @@ export default function RegularPatternsPage() {
     }
   };
 
-  const isAdmin = profile?.role === 'admin' || profile?.role === 'owner' || profile?.role === 'manager';
+  const isAdmin =
+    profile?.role === 'admin' || profile?.role === 'owner' || profile?.role === 'manager';
   if (!profile) {
     return (
       <AdminLayout headerTitle="座席表">
@@ -188,7 +208,10 @@ export default function RegularPatternsPage() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Link href="/schedule" className="text-sm text-[var(--paragraph)] hover:text-[var(--primary)] transition-colors duration-150">
+            <Link
+              href="/schedule"
+              className="text-sm text-[var(--paragraph)] hover:text-[var(--primary)] transition-colors duration-150"
+            >
               ← 座席表に戻る
             </Link>
             <h1 className="text-2xl font-bold text-[var(--headline)]">通塾日程</h1>
@@ -203,9 +226,7 @@ export default function RegularPatternsPage() {
           <div className="flex items-center gap-4">
             <Select value={selectedSchoolId} onValueChange={setSelectedSchoolId}>
               <SelectTrigger className="w-48">
-                <SelectValue placeholder="教室を選択">
-                  {selectedSchool?.name}
-                </SelectValue>
+                <SelectValue placeholder="教室を選択">{selectedSchool?.name}</SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {schools.map((s) => (

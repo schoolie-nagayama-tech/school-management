@@ -48,7 +48,6 @@ export function ResponseDetailModal({
     return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日 ${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')}`;
   };
 
-
   const formatAnswer = (field: FormField | undefined, value: unknown): string => {
     if (value === null || value === undefined) return '-';
     if (Array.isArray(value)) return value.join(', ');
@@ -107,16 +106,9 @@ export function ResponseDetailModal({
                   {form.fields.map((field) => {
                     const value = answers[field.id];
                     return (
-                      <div
-                        key={field.id}
-                        className="bg-white p-3 rounded border border-[#e5e7eb]"
-                      >
-                        <div className="text-sm font-medium text-[#4b5563] mb-1">
-                          {field.label}
-                        </div>
-                        <div className="text-[#4b5563]">
-                          {formatAnswer(field, value)}
-                        </div>
+                      <div key={field.id} className="bg-white p-3 rounded border border-[#e5e7eb]">
+                        <div className="text-sm font-medium text-[#4b5563] mb-1">{field.label}</div>
+                        <div className="text-[#4b5563]">{formatAnswer(field, value)}</div>
                       </div>
                     );
                   })}

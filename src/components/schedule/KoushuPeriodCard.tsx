@@ -145,9 +145,7 @@ export function KoushuPeriodCard({
                           className="border-b border-gray-100 last:border-0 hover:bg-white transition-colors duration-150"
                         >
                           <td className="px-4 py-2 font-medium text-[var(--headline)]">
-                            {en.student
-                              ? `${en.student.last_name} ${en.student.first_name}`
-                              : '—'}
+                            {en.student ? `${en.student.last_name} ${en.student.first_name}` : '—'}
                           </td>
                           <td className="px-4 py-2 text-[var(--paragraph)]">
                             {en.student ? gradeLabel(en.student.grade) : '—'}
@@ -181,7 +179,11 @@ export function KoushuPeriodCard({
                                       className="text-xs px-1.5 py-0.5 bg-white border border-gray-200 rounded text-[var(--paragraph)]"
                                     >
                                       {subjectMap.get(sid) ?? sid}
-                                      {n != null && <span className="ml-1 font-semibold text-[var(--headline)]">{n}</span>}
+                                      {n != null && (
+                                        <span className="ml-1 font-semibold text-[var(--headline)]">
+                                          {n}
+                                        </span>
+                                      )}
                                     </span>
                                   );
                                 })

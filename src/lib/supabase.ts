@@ -3,10 +3,8 @@ import type { Database } from '@/types/database';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 // ビルド時（CI等）で環境変数が未設定の場合にプレースホルダーを使用（ビルドを通すため）
-const supabaseUrl =
-  process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
-const supabaseAnonKey =
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-anon-key';
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-anon-key';
 
 let browserClient: SupabaseClient<Database> | null = null;
 

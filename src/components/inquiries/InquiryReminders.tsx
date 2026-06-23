@@ -27,31 +27,31 @@ const KIND_META: Record<
   InquiryReminderKind,
   { icon: React.ComponentType<{ className?: string }>; label: string }
 > = {
-  first_contact_overdue: { icon: Phone,         label: '初回コンタクト未' },
-  response_delay:        { icon: Clock,          label: '対応遅延' },
-  material_unsent:       { icon: Mail,           label: '資料未発送' },
-  trial_followup:        { icon: AlertTriangle,  label: '体験フォロー' },
+  first_contact_overdue: { icon: Phone, label: '初回コンタクト未' },
+  response_delay: { icon: Clock, label: '対応遅延' },
+  material_unsent: { icon: Mail, label: '資料未発送' },
+  trial_followup: { icon: AlertTriangle, label: '体験フォロー' },
 };
 
 /** severity ごとの色クラス */
 const SEVERITY_DOT: Record<InquiryReminder['severity'], string> = {
-  danger:  'bg-red-500',
+  danger: 'bg-red-500',
   warning: 'bg-amber-400',
-  info:    'bg-blue-400',
+  info: 'bg-blue-400',
 };
 
 /** severity ごとの行ハイライト */
 const SEVERITY_ROW: Record<InquiryReminder['severity'], string> = {
-  danger:  'border-l-2 border-red-400 bg-red-50',
+  danger: 'border-l-2 border-red-400 bg-red-50',
   warning: 'border-l-2 border-amber-400 bg-amber-50',
-  info:    'border-l-2 border-blue-300 bg-blue-50/50',
+  info: 'border-l-2 border-blue-300 bg-blue-50/50',
 };
 
 /** severity 件数バッジの色 */
 const SEVERITY_BADGE: Record<InquiryReminder['severity'], string> = {
-  danger:  'bg-red-100 text-red-700',
+  danger: 'bg-red-100 text-red-700',
   warning: 'bg-amber-100 text-amber-700',
-  info:    'bg-blue-100 text-blue-700',
+  info: 'bg-blue-100 text-blue-700',
 };
 
 // ============================================================
@@ -81,7 +81,9 @@ export function InquiryReminders({ schoolIds, onReady }: Props): JSX.Element | n
 
   // onReady は ref 経由で呼ぶ（識別子が変わっても effect を再実行させない）
   const onReadyRef = useRef(onReady);
-  useEffect(() => { onReadyRef.current = onReady; }, [onReady]);
+  useEffect(() => {
+    onReadyRef.current = onReady;
+  }, [onReady]);
 
   useEffect(() => {
     if (!hasSchools) {
@@ -116,7 +118,9 @@ export function InquiryReminders({ schoolIds, onReady }: Props): JSX.Element | n
     };
 
     load();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [schoolKey, hasSchools]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // schoolIds が空 → 表示不要
@@ -129,9 +133,9 @@ export function InquiryReminders({ schoolIds, onReady }: Props): JSX.Element | n
   if (reminders.length === 0) return null;
 
   // ---- severity 別件数集計 ----
-  const dangerCount  = reminders.filter((r) => r.severity === 'danger').length;
+  const dangerCount = reminders.filter((r) => r.severity === 'danger').length;
   const warningCount = reminders.filter((r) => r.severity === 'warning').length;
-  const infoCount    = reminders.filter((r) => r.severity === 'info').length;
+  const infoCount = reminders.filter((r) => r.severity === 'info').length;
 
   return (
     <div className="mb-6 bg-surface-raised border border-border rounded-xl overflow-hidden">
@@ -144,12 +148,16 @@ export function InquiryReminders({ schoolIds, onReady }: Props): JSX.Element | n
         {/* severity 別件数バッジ */}
         <div className="flex items-center gap-1.5">
           {dangerCount > 0 && (
-            <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${SEVERITY_BADGE.danger}`}>
+            <span
+              className={`text-xs font-medium px-2 py-0.5 rounded-full ${SEVERITY_BADGE.danger}`}
+            >
               緊急 {dangerCount}
             </span>
           )}
           {warningCount > 0 && (
-            <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${SEVERITY_BADGE.warning}`}>
+            <span
+              className={`text-xs font-medium px-2 py-0.5 rounded-full ${SEVERITY_BADGE.warning}`}
+            >
               注意 {warningCount}
             </span>
           )}

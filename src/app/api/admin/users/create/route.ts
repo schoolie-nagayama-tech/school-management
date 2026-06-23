@@ -64,17 +64,14 @@ export async function POST(request: NextRequest) {
     // 姓名が渡された場合は display_name を自動生成
     const effectiveDisplayName = lastName
       ? [lastName, firstName].filter(Boolean).join(' ')
-      : (displayName || null);
+      : displayName || null;
 
     // バリデーション
     // 表示名は displayName 直接指定 か lastName/firstName からの生成(effectiveDisplayName)の
     // どちらでもよい。講師追加フォームは lastName/firstName を送る（displayName は送らない）ため、
     // displayName 必須にすると「全部入力しても必須エラー」になるバグがあった。
     if (!password || !effectiveDisplayName || !role || !schoolId) {
-      return NextResponse.json(
-        { error: '必須項目が入力されていません' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: '必須項目が入力されていません' }, { status: 400 });
     }
 
     // 自分より上の権限のユーザーは作成不可
@@ -181,18 +178,16 @@ export async function POST(request: NextRequest) {
     const effectiveIsActive = typeof isActive === 'boolean' ? isActive : true;
 
     if (!existingProfileAfterAuth) {
-      const { error: profileError } = await supabaseAdmin
-        .from('user_profiles')
-        .insert({
-          id: authData.user.id,
-          email: finalEmail,
-          display_name: effectiveDisplayName,
-          last_name: lastName || null,
-          first_name: firstName || null,
-          role,
-          is_active: effectiveIsActive,
-          ...profileExtras,
-        });
+      const { error: profileError } = await supabaseAdmin.from('user_profiles').insert({
+        id: authData.user.id,
+        email: finalEmail,
+        display_name: effectiveDisplayName,
+        last_name: lastName || null,
+        first_name: firstName || null,
+        role,
+        is_active: effectiveIsActive,
+        ...profileExtras,
+      });
 
       if (profileError) {
         // ロールバック
@@ -234,12 +229,10 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (!existingSchool) {
-      const { error: schoolError } = await supabaseAdmin
-        .from('user_schools')
-        .insert({
-          user_id: authData.user.id,
-          school_id: schoolId,
-        });
+      const { error: schoolError } = await supabaseAdmin.from('user_schools').insert({
+        user_id: authData.user.id,
+        school_id: schoolId,
+      });
 
       if (schoolError) {
         // ロールバック（user_profilesが新規作成された場合のみ）
@@ -247,10 +240,7 @@ export async function POST(request: NextRequest) {
           await supabaseAdmin.from('user_profiles').delete().eq('id', authData.user.id);
           await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
         }
-        return NextResponse.json(
-          { error: '教室の紐付けに失敗しました' },
-          { status: 400 }
-        );
+        return NextResponse.json({ error: '教室の紐付けに失敗しました' }, { status: 400 });
       }
     }
 
@@ -310,9 +300,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Failed to create user:', error);
-    return NextResponse.json(
-      { error: 'ユーザーの作成に失敗しました' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'ユーザーの作成に失敗しました' }, { status: 500 });
   }
 }

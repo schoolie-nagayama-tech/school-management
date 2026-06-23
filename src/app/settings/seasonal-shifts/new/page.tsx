@@ -24,8 +24,11 @@ export default function NewSeasonalShiftPage() {
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [slotSettings, setSlotSettings] = useState<SlotSettingRow[]>([]);
-  const { slots: masterSlots, slotsString: masterSlotsString, isLoading: masterLoading } =
-    useMasterTimeSlots();
+  const {
+    slots: masterSlots,
+    slotsString: masterSlotsString,
+    isLoading: masterLoading,
+  } = useMasterTimeSlots();
   const [form, setForm] = useState({
     name: '',
     start_date: '',
@@ -62,10 +65,12 @@ export default function NewSeasonalShiftPage() {
       const slotsToSave =
         slotSettings.length > 0
           ? slotSettings.map((s) => ({ ...s, setting_id: created.id }))
-          : generateDefaultSlotSettings(form.start_date, form.end_date, timeSlotsArray).map((s) => ({
-              ...s,
-              setting_id: created.id,
-            }));
+          : generateDefaultSlotSettings(form.start_date, form.end_date, timeSlotsArray).map(
+              (s) => ({
+                ...s,
+                setting_id: created.id,
+              })
+            );
       if (slotsToSave.length > 0) {
         await setSeasonalShiftSlotSettings(created.id, slotsToSave);
       }
@@ -103,7 +108,10 @@ export default function NewSeasonalShiftPage() {
         >
           ← 一覧に戻る
         </Link>
-        <form onSubmit={handleSubmit} className="bg-surface-raised rounded-xl border border-border p-6 space-y-4">
+        <form
+          onSubmit={handleSubmit}
+          className="bg-surface-raised rounded-xl border border-border p-6 space-y-4"
+        >
           <div>
             <label className="block text-sm font-medium text-text-heading mb-1">講習期間名 *</label>
             <input
@@ -137,7 +145,9 @@ export default function NewSeasonalShiftPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-text-heading mb-1">提出締切日 *</label>
+              <label className="block text-sm font-medium text-text-heading mb-1">
+                提出締切日 *
+              </label>
               <input
                 type="date"
                 required
@@ -163,8 +173,8 @@ export default function NewSeasonalShiftPage() {
               {masterLoading
                 ? '読み込み中...'
                 : masterSlots.length > 0
-                ? masterSlots.join('、')
-                : 'コマ時間マスタが未設定です'}
+                  ? masterSlots.join('、')
+                  : 'コマ時間マスタが未設定です'}
             </div>
             <p className="mt-1 text-xs text-text-muted">
               <Link href="/schedule" className="text-info hover:underline">
@@ -198,7 +208,11 @@ export default function NewSeasonalShiftPage() {
             </select>
           </div>
           <div className="flex gap-3 pt-4">
-            <Button type="submit" disabled={isSubmitting} className="bg-danger hover:bg-danger/80 text-white transition-colors duration-150">
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              className="bg-danger hover:bg-danger/80 text-white transition-colors duration-150"
+            >
               {isSubmitting ? '作成中...' : '作成'}
             </Button>
             <Link href="/settings/seasonal-shifts">

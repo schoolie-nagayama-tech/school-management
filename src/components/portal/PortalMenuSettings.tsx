@@ -87,32 +87,17 @@ export function PortalMenuSettings({ menus, onUpdate }: PortalMenuSettingsProps)
       <table className="w-full border-collapse">
         <thead>
           <tr className="border-b border-[#e5e7eb]">
-            <th className="px-4 py-2 text-left text-sm font-medium text-[#1f2937]">
-              表示
-            </th>
-            <th className="px-4 py-2 text-left text-sm font-medium text-[#1f2937]">
-              タイトル
-            </th>
-            <th className="px-4 py-2 text-left text-sm font-medium text-[#1f2937]">
-              説明文
-            </th>
-            <th className="px-4 py-2 text-left text-sm font-medium text-[#1f2937]">
-              リンク種別
-            </th>
-            <th className="px-4 py-2 text-left text-sm font-medium text-[#1f2937]">
-              リンク先
-            </th>
-            <th className="px-4 py-2 text-left text-sm font-medium text-[#1f2937]">
-              操作
-            </th>
+            <th className="px-4 py-2 text-left text-sm font-medium text-[#1f2937]">表示</th>
+            <th className="px-4 py-2 text-left text-sm font-medium text-[#1f2937]">タイトル</th>
+            <th className="px-4 py-2 text-left text-sm font-medium text-[#1f2937]">説明文</th>
+            <th className="px-4 py-2 text-left text-sm font-medium text-[#1f2937]">リンク種別</th>
+            <th className="px-4 py-2 text-left text-sm font-medium text-[#1f2937]">リンク先</th>
+            <th className="px-4 py-2 text-left text-sm font-medium text-[#1f2937]">操作</th>
           </tr>
         </thead>
         <tbody>
           {menus.map((menu, index) => (
-            <tr
-              key={menu.id}
-              className="border-b border-[#e5e7eb]/20 hover:bg-[#f3f4f6]"
-            >
+            <tr key={menu.id} className="border-b border-[#e5e7eb]/20 hover:bg-[#f3f4f6]">
               <td className="px-4 py-3 text-sm text-center">
                 {menu.is_visible ? (
                   <span className="text-[#1f2937] font-medium">✓</span>
@@ -120,12 +105,8 @@ export function PortalMenuSettings({ menus, onUpdate }: PortalMenuSettingsProps)
                   <span className="text-[#4b5563]/40">-</span>
                 )}
               </td>
-              <td className="px-4 py-3 text-sm text-[#1f2937] font-medium">
-                {menu.title}
-              </td>
-              <td className="px-4 py-3 text-sm text-[#4b5563]">
-                {menu.description || '-'}
-              </td>
+              <td className="px-4 py-3 text-sm text-[#1f2937] font-medium">{menu.title}</td>
+              <td className="px-4 py-3 text-sm text-[#4b5563]">{menu.description || '-'}</td>
               <td className="px-4 py-3 text-sm text-[#4b5563]">
                 {menu.link_type === 'internal' ? (
                   <span className="text-xs">内部</span>

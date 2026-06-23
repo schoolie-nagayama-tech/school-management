@@ -2,7 +2,18 @@
 
 import { useState } from 'react';
 import type { MonthlyTaskTemplate } from '@/types/database';
-import { X, Play, Save, Trash2, Pencil, ChevronDown, ChevronRight, Plus, GripVertical, ArrowLeft } from 'lucide-react';
+import {
+  X,
+  Play,
+  Save,
+  Trash2,
+  Pencil,
+  ChevronDown,
+  ChevronRight,
+  Plus,
+  GripVertical,
+  ArrowLeft,
+} from 'lucide-react';
 
 interface TemplateItem {
   day_of_month: number;
@@ -16,7 +27,10 @@ interface TemplateDialogProps {
   onGenerate: (templateId: string) => void;
   onSave: (name: string) => void;
   onDelete: (templateId: string) => void;
-  onUpdateTemplate?: (templateId: string, updates: { name?: string; template_data?: TemplateItem[] }) => Promise<void>;
+  onUpdateTemplate?: (
+    templateId: string,
+    updates: { name?: string; template_data?: TemplateItem[] }
+  ) => Promise<void>;
   onClose: () => void;
   hasExistingTasks: boolean;
 }
@@ -53,12 +67,14 @@ export function TemplateDialog({
   const startEdit = (tpl: MonthlyTaskTemplate) => {
     setEditingTemplate(tpl);
     setEditName(tpl.name);
-    setEditItems(tpl.template_data.map((item) => ({
-      day_of_month: item.day_of_month,
-      task_name: item.task_name,
-      category: item.category as 'business' | 'course',
-      sort_order: item.sort_order,
-    })));
+    setEditItems(
+      tpl.template_data.map((item) => ({
+        day_of_month: item.day_of_month,
+        task_name: item.task_name,
+        category: item.category as 'business' | 'course',
+        sort_order: item.sort_order,
+      }))
+    );
   };
 
   // 編集保存
@@ -70,8 +86,11 @@ export function TemplateDialog({
       const sorted = editItems.map((item, i) => ({ ...item, sort_order: i }));
       await onUpdateTemplate(editingTemplate.id, { name: editName.trim(), template_data: sorted });
       setEditingTemplate(null);
-    } catch { /* handled by parent */ }
-    finally { setIsSaving(false); }
+    } catch {
+      /* handled by parent */
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   // アイテム操作
@@ -136,7 +155,9 @@ export function TemplateDialog({
                 <div
                   key={idx}
                   className={`flex items-center gap-1.5 px-2 py-1.5 border rounded-lg text-xs ${
-                    item.category === 'business' ? 'border-orange-200 bg-orange-50/30' : 'border-purple-200 bg-purple-50/30'
+                    item.category === 'business'
+                      ? 'border-orange-200 bg-orange-50/30'
+                      : 'border-purple-200 bg-purple-50/30'
                   }`}
                 >
                   <GripVertical className="w-3 h-3 text-gray-300 flex-shrink-0" />
@@ -161,7 +182,9 @@ export function TemplateDialog({
                   />
                   <select
                     value={item.category}
-                    onChange={(e) => updateItem(idx, { category: e.target.value as 'business' | 'course' })}
+                    onChange={(e) =>
+                      updateItem(idx, { category: e.target.value as 'business' | 'course' })
+                    }
                     className={`px-1.5 py-1 border rounded text-[11px] font-medium focus:outline-none focus:ring-1 focus:ring-blue-400 ${
                       item.category === 'business'
                         ? 'border-orange-300 text-orange-600 bg-orange-50'
@@ -228,7 +251,10 @@ export function TemplateDialog({
             ) : (
               <div className="space-y-2">
                 {templates.map((tpl) => (
-                  <div key={tpl.id} className="border rounded-lg hover:bg-gray-50 transition-[background-color] duration-150 ease-out">
+                  <div
+                    key={tpl.id}
+                    className="border rounded-lg hover:bg-gray-50 transition-[background-color] duration-150 ease-out"
+                  >
                     <div className="flex items-center gap-2 p-2">
                       {/* 展開ボタン */}
                       <button
@@ -246,7 +272,9 @@ export function TemplateDialog({
                         <div className="text-[11px] text-gray-400">
                           {tpl.template_data.length}件のタスク
                           {tpl.is_default && (
-                            <span className="ml-1 px-1 py-0.5 bg-blue-100 text-blue-600 rounded">デフォルト</span>
+                            <span className="ml-1 px-1 py-0.5 bg-blue-100 text-blue-600 rounded">
+                              デフォルト
+                            </span>
                           )}
                         </div>
                       </div>
@@ -279,7 +307,10 @@ export function TemplateDialog({
                         )}
                         {confirmDeleteId === tpl.id ? (
                           <button
-                            onClick={() => { onDelete(tpl.id); setConfirmDeleteId(null); }}
+                            onClick={() => {
+                              onDelete(tpl.id);
+                              setConfirmDeleteId(null);
+                            }}
                             className="text-[11px] px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600"
                           >
                             削除
@@ -301,13 +332,20 @@ export function TemplateDialog({
                         <div className="space-y-0.5 mt-1.5 max-h-40 overflow-y-auto">
                           {tpl.template_data
                             .slice()
-                            .sort((a, b) => a.day_of_month - b.day_of_month || a.sort_order - b.sort_order)
+                            .sort(
+                              (a, b) =>
+                                a.day_of_month - b.day_of_month || a.sort_order - b.sort_order
+                            )
                             .map((item, idx) => (
                               <div key={idx} className="flex items-center gap-2 text-[11px] py-0.5">
-                                <span className="text-gray-400 w-6 text-right flex-shrink-0">{item.day_of_month}日</span>
-                                <span className={`w-1 h-1 rounded-full flex-shrink-0 ${
-                                  item.category === 'business' ? 'bg-orange-400' : 'bg-purple-400'
-                                }`} />
+                                <span className="text-gray-400 w-6 text-right flex-shrink-0">
+                                  {item.day_of_month}日
+                                </span>
+                                <span
+                                  className={`w-1 h-1 rounded-full flex-shrink-0 ${
+                                    item.category === 'business' ? 'bg-orange-400' : 'bg-purple-400'
+                                  }`}
+                                />
                                 <span className="truncate text-gray-700">{item.task_name}</span>
                               </div>
                             ))}
@@ -323,7 +361,9 @@ export function TemplateDialog({
           {/* テンプレート保存 */}
           {hasExistingTasks && (
             <div className="border-t pt-3">
-              <h3 className="text-xs font-medium text-gray-600 mb-2">現在の月をテンプレートとして保存</h3>
+              <h3 className="text-xs font-medium text-gray-600 mb-2">
+                現在の月をテンプレートとして保存
+              </h3>
               <div className="flex items-center gap-2">
                 <input
                   value={saveName}

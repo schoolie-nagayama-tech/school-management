@@ -29,19 +29,12 @@ const CATEGORY_SUGGESTIONS = [
   'その他',
 ];
 
-export function MaterialForm({
-  isOpen,
-  onClose,
-  onSubmit,
-  material,
-}: MaterialFormProps) {
+export function MaterialForm({ isOpen, onClose, onSubmit, material }: MaterialFormProps) {
   const [name, setName] = useState(material?.name || '');
   const [description, setDescription] = useState(material?.description || '');
   const [category, setCategory] = useState(material?.category || '');
   const [unit, setUnit] = useState(material?.unit || '冊');
-  const [lowStockThreshold, setLowStockThreshold] = useState(
-    material?.low_stock_threshold ?? 5
-  );
+  const [lowStockThreshold, setLowStockThreshold] = useState(material?.low_stock_threshold ?? 5);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -67,9 +60,7 @@ export function MaterialForm({
       });
       onClose();
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : '保存に失敗しました'
-      );
+      setError(err instanceof Error ? err.message : '保存に失敗しました');
     } finally {
       setIsSubmitting(false);
     }
@@ -80,11 +71,7 @@ export function MaterialForm({
   );
 
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      title={isEditing ? '教材を編集' : '教材を追加'}
-    >
+    <Modal isOpen={isOpen} onClose={onClose} title={isEditing ? '教材を編集' : '教材を追加'}>
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && (
           <div className="bg-[#ef4444]/20 text-[#ef4444] px-4 py-2 rounded border border-[#ef4444] text-sm">
@@ -101,9 +88,7 @@ export function MaterialForm({
         />
 
         <div className="w-full">
-          <label className="block text-sm font-medium text-[#1f2937] mb-1">
-            説明
-          </label>
+          <label className="block text-sm font-medium text-[#1f2937] mb-1">説明</label>
           <textarea
             className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg bg-white text-[#4b5563] placeholder-[#4b5563]/40 transition-[border-color] duration-150 ease-out focus:ring-2 focus:ring-[#3b82f6] focus:border-[#3b82f6]"
             rows={2}

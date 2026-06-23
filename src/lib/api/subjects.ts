@@ -13,10 +13,7 @@ import type {
 export async function getSubjects(
   gradeCategory?: 'elementary' | 'middle' | 'high'
 ): Promise<Subject[]> {
-  let query = supabase
-    .from('subjects')
-    .select('*')
-    .order('sort_order', { ascending: true });
+  let query = supabase.from('subjects').select('*').order('sort_order', { ascending: true });
 
   if (gradeCategory) {
     query = query.eq('grade_category', gradeCategory);
@@ -34,11 +31,7 @@ export async function getSubjects(
 
 // 科目を1件取得
 export async function getSubject(id: string): Promise<Subject | null> {
-  const { data, error } = await supabase
-    .from('subjects')
-    .select('*')
-    .eq('id', id)
-    .single();
+  const { data, error } = await supabase.from('subjects').select('*').eq('id', id).single();
 
   if (error) {
     if (error.code === 'PGRST116') {
@@ -68,10 +61,7 @@ export async function createSubject(subject: SubjectInsert): Promise<Subject> {
 }
 
 // 科目を更新
-export async function updateSubject(
-  id: string,
-  subject: SubjectUpdate
-): Promise<Subject> {
+export async function updateSubject(id: string, subject: SubjectUpdate): Promise<Subject> {
   const { data, error } = await supabase
     .from('subjects')
     .update(subject as never)
@@ -102,10 +92,7 @@ export async function updateSubjectSortOrders(
   updates: { id: string; sort_order: number }[]
 ): Promise<void> {
   const promises = updates.map((update) =>
-    supabase
-      .from('subjects')
-      .update({ sort_order: update.sort_order })
-      .eq('id', update.id)
+    supabase.from('subjects').update({ sort_order: update.sort_order }).eq('id', update.id)
   );
 
   const results = await Promise.all(promises);
@@ -118,9 +105,7 @@ export async function updateSubjectSortOrders(
 }
 
 // 生徒の受講科目を取得
-export async function getStudentSubjects(
-  studentId: string
-): Promise<StudentSubject[]> {
+export async function getStudentSubjects(studentId: string): Promise<StudentSubject[]> {
   const { data, error } = await supabase
     .from('student_subjects')
     .select('*')
@@ -136,10 +121,7 @@ export async function getStudentSubjects(
 }
 
 // 生徒の受講科目を設定（一括置き換え）
-export async function setStudentSubjects(
-  studentId: string,
-  subjectIds: string[]
-): Promise<void> {
+export async function setStudentSubjects(studentId: string, subjectIds: string[]): Promise<void> {
   // 既存の関連を削除
   const { error: deleteError } = await supabase
     .from('student_subjects')
@@ -158,9 +140,7 @@ export async function setStudentSubjects(
       subject_id: subjectId,
     }));
 
-    const { error: insertError } = await supabase
-      .from('student_subjects')
-      .insert(inserts as never);
+    const { error: insertError } = await supabase.from('student_subjects').insert(inserts as never);
 
     if (insertError) {
       console.error('Error inserting student subjects:', insertError);
@@ -170,9 +150,7 @@ export async function setStudentSubjects(
 }
 
 // 生徒と科目の関連を含む生徒情報を取得
-export async function getStudentWithSubjects(
-  studentId: string
-): Promise<{
+export async function getStudentWithSubjects(studentId: string): Promise<{
   student: Student;
   subjects: Subject[];
 } | null> {

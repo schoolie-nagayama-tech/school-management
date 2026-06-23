@@ -121,10 +121,7 @@ export async function updateFormTemplate(
  * テンプレートを削除
  */
 export async function deleteFormTemplate(id: string): Promise<void> {
-  const { error } = await supabase
-    .from('form_templates')
-    .delete()
-    .eq('id', id);
+  const { error } = await supabase.from('form_templates').delete().eq('id', id);
 
   if (error) {
     throw new Error(`テンプレートの削除に失敗しました: ${error.message}`);
@@ -145,15 +142,15 @@ export async function createFormTemplateField(
     .order('sort_order', { ascending: false })
     .limit(1);
 
-  const maxSortOrder = existingFields && existingFields.length > 0
-    ? existingFields[0].sort_order
-    : -1;
+  const maxSortOrder =
+    existingFields && existingFields.length > 0 ? existingFields[0].sort_order : -1;
 
   const { data, error } = await supabase
     .from('form_template_fields')
     .insert({
       ...field,
-      options: field.options != null ? (field.options as Record<string, unknown> | string[]) : undefined,
+      options:
+        field.options != null ? (field.options as Record<string, unknown> | string[]) : undefined,
       sort_order: maxSortOrder + 1,
     })
     .select()
@@ -191,10 +188,7 @@ export async function updateFormTemplateField(
  * テンプレート項目を削除
  */
 export async function deleteFormTemplateField(id: string): Promise<void> {
-  const { error } = await supabase
-    .from('form_template_fields')
-    .delete()
-    .eq('id', id);
+  const { error } = await supabase.from('form_template_fields').delete().eq('id', id);
 
   if (error) {
     throw new Error(`テンプレート項目の削除に失敗しました: ${error.message}`);
@@ -231,18 +225,18 @@ export async function reorderFormTemplateFields(
 /**
  * フォーム一覧を取得
  */
-export async function getForms(schoolId?: string, includeArchived: boolean = false): Promise<Form[]> {
+export async function getForms(
+  schoolId?: string,
+  includeArchived: boolean = false
+): Promise<Form[]> {
   const targetSchoolId = schoolId || getDefaultSchoolId();
 
-  let query = supabase
-    .from('forms')
-    .select('*')
-    .eq('school_id', targetSchoolId);
-  
+  let query = supabase.from('forms').select('*').eq('school_id', targetSchoolId);
+
   if (!includeArchived) {
     query = query.eq('is_archived', false);
   }
-  
+
   query = query.order('created_at', { ascending: false });
 
   const { data, error } = await query;
@@ -324,9 +318,7 @@ export async function createFormFromTemplate(
       sort_order: field.sort_order,
     }));
 
-    const { error: fieldsError } = await supabase
-      .from('form_fields')
-      .insert(fieldInserts);
+    const { error: fieldsError } = await supabase.from('form_fields').insert(fieldInserts);
 
     if (fieldsError) {
       throw new Error(`フォーム項目の作成に失敗しました: ${fieldsError.message}`);
@@ -339,9 +331,7 @@ export async function createFormFromTemplate(
 /**
  * フォームを新規作成（テンプレートなし）
  */
-export async function createForm(
-  form: Omit<FormInsert, 'school_id'>
-): Promise<Form> {
+export async function createForm(form: Omit<FormInsert, 'school_id'>): Promise<Form> {
   const schoolId = getDefaultSchoolId();
 
   const { data, error } = await supabase
@@ -363,10 +353,7 @@ export async function createForm(
 /**
  * フォームを更新
  */
-export async function updateForm(
-  id: string,
-  updates: FormUpdate
-): Promise<Form> {
+export async function updateForm(id: string, updates: FormUpdate): Promise<Form> {
   const { data, error } = await supabase
     .from('forms')
     .update(updates)
@@ -385,10 +372,7 @@ export async function updateForm(
  * フォームを削除
  */
 export async function deleteForm(id: string): Promise<void> {
-  const { error } = await supabase
-    .from('forms')
-    .delete()
-    .eq('id', id);
+  const { error } = await supabase.from('forms').delete().eq('id', id);
 
   if (error) {
     throw new Error(`フォームの削除に失敗しました: ${error.message}`);
@@ -398,10 +382,7 @@ export async function deleteForm(id: string): Promise<void> {
 /**
  * フォームの状態を変更
  */
-export async function updateFormStatus(
-  id: string,
-  status: FormStatus
-): Promise<Form> {
+export async function updateFormStatus(id: string, status: FormStatus): Promise<Form> {
   return updateForm(id, { status });
 }
 
@@ -437,7 +418,9 @@ export async function archiveForm(id: string): Promise<{ form: Form; responsesAr
 /**
  * フォームのアーカイブを解除（回答も自動アーカイブ解除）
  */
-export async function unarchiveForm(id: string): Promise<{ form: Form; responsesUnarchived: number }> {
+export async function unarchiveForm(
+  id: string
+): Promise<{ form: Form; responsesUnarchived: number }> {
   // フォームのアーカイブを解除
   const { data, error } = await supabase
     .from('forms')
@@ -474,9 +457,8 @@ export async function createFormField(
     .order('sort_order', { ascending: false })
     .limit(1);
 
-  const maxSortOrder = existingFields && existingFields.length > 0
-    ? existingFields[0].sort_order
-    : -1;
+  const maxSortOrder =
+    existingFields && existingFields.length > 0 ? existingFields[0].sort_order : -1;
 
   const { data, error } = await supabase
     .from('form_fields')
@@ -497,10 +479,7 @@ export async function createFormField(
 /**
  * フォーム項目を更新
  */
-export async function updateFormField(
-  id: string,
-  updates: FormFieldUpdate
-): Promise<FormField> {
+export async function updateFormField(id: string, updates: FormFieldUpdate): Promise<FormField> {
   const { data, error } = await supabase
     .from('form_fields')
     .update(updates)
@@ -519,10 +498,7 @@ export async function updateFormField(
  * フォーム項目を削除
  */
 export async function deleteFormField(id: string): Promise<void> {
-  const { error } = await supabase
-    .from('form_fields')
-    .delete()
-    .eq('id', id);
+  const { error } = await supabase.from('form_fields').delete().eq('id', id);
 
   if (error) {
     throw new Error(`フォーム項目の削除に失敗しました: ${error.message}`);
@@ -532,10 +508,7 @@ export async function deleteFormField(id: string): Promise<void> {
 /**
  * フォーム項目の並び順を更新
  */
-export async function reorderFormFields(
-  formId: string,
-  fieldIds: string[]
-): Promise<void> {
+export async function reorderFormFields(formId: string, fieldIds: string[]): Promise<void> {
   const updates = fieldIds.map((fieldId, index) =>
     supabase
       .from('form_fields')
@@ -594,7 +567,7 @@ export async function getPublishedForms(schoolCode: string): Promise<Form[]> {
     if (form.is_archived) return false;
     // statusがpublishedでないフォームは除外
     if (form.status !== 'published') return false;
-    
+
     const start = form.publish_start ? new Date(form.publish_start) : null;
     const end = form.publish_end ? new Date(form.publish_end) : null;
     const nowDate = new Date();
@@ -757,11 +730,7 @@ export async function getFormResponses(
  * 回答詳細を取得
  */
 export async function getFormResponse(id: string): Promise<FormResponse> {
-  const { data, error } = await supabase
-    .from('form_responses')
-    .select('*')
-    .eq('id', id)
-    .single();
+  const { data, error } = await supabase.from('form_responses').select('*').eq('id', id).single();
 
   if (error) {
     throw new Error(`回答の取得に失敗しました: ${error.message}`);
@@ -773,12 +742,9 @@ export async function getFormResponse(id: string): Promise<FormResponse> {
 /**
  * 回答を生徒に紐付け
  */
-export async function linkResponseToStudent(
-  responseId: string,
-  studentId: string
-): Promise<void> {
+export async function linkResponseToStudent(responseId: string, studentId: string): Promise<void> {
   // 回答を取得
-  const response = await getFormResponse(responseId) as FormResponseRow;
+  const response = (await getFormResponse(responseId)) as FormResponseRow;
 
   // フォームを取得（form_idがあれば）
   if (!response.form_id) {
@@ -803,11 +769,7 @@ export async function linkResponseToStudent(
   if (form.linked_application_item_id) {
     const { updateStudentApplication } = await import('./applications');
     try {
-      await updateStudentApplication(
-        studentId,
-        form.linked_application_item_id,
-        'completed'
-      );
+      await updateStudentApplication(studentId, form.linked_application_item_id, 'completed');
     } catch (error) {
       // 申込状況の更新失敗は警告のみ（回答の紐付けは成功扱い）
       console.warn('Failed to update application status:', error);

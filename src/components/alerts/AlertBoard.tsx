@@ -2,7 +2,12 @@
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { AlertItem, SENSITIVE_ALERT_ICONS, MASKED_ALERT_LABEL_OVERRIDES } from './AlertItem';
-import { getAlertsLight, getAlertsHeavy, mergeStudentAlerts, invalidateAlertCache } from '@/lib/api/alerts';
+import {
+  getAlertsLight,
+  getAlertsHeavy,
+  mergeStudentAlerts,
+  invalidateAlertCache,
+} from '@/lib/api/alerts';
 import type { StudentAlerts, Alert } from '@/types/alerts';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMasterData } from '@/contexts/MasterDataContext';
@@ -12,7 +17,13 @@ import { ChevronDown, ChevronUp, Info, AlertTriangle, X } from 'lucide-react';
 import { InlineLoading } from '@/components/ui';
 import { supabase } from '@/lib/supabase';
 import { dismissAlert } from '@/lib/api/alerts';
-import { ALERT_TYPE_LABELS, ALERT_TYPE_COLORS, DISMISSABLE_ALERT_TYPES, SENSITIVE_ALERT_TYPES, TEACHER_HIDDEN_ALERT_TYPES } from '@/types/alerts';
+import {
+  ALERT_TYPE_LABELS,
+  ALERT_TYPE_COLORS,
+  DISMISSABLE_ALERT_TYPES,
+  SENSITIVE_ALERT_TYPES,
+  TEACHER_HIDDEN_ALERT_TYPES,
+} from '@/types/alerts';
 import type { AlertType } from '@/types/alerts';
 import { whenNetworkIdle } from '@/lib/utils/networkIdle';
 
@@ -47,13 +58,17 @@ export function AlertBoard({ className = '', initialData }: AlertBoardProps) {
   const { schools } = useMasterData();
   const { success, error: toastError } = useToast();
   // 初期データがあれば SSR 事前取得済みの Light アラートをそのまま表示する
-  const [studentAlerts, setStudentAlerts] = useState<StudentAlerts[]>(initialData?.studentAlerts ?? []);
+  const [studentAlerts, setStudentAlerts] = useState<StudentAlerts[]>(
+    initialData?.studentAlerts ?? []
+  );
   // 初期データがあれば最初からローディング非表示（即時に内容を出す）
   const [isLoading, setIsLoading] = useState(!initialData);
   const [isExpanded, setIsExpanded] = useState(true);
   const [showInfoPopup, setShowInfoPopup] = useState(false);
   /** Heavy アラート（成績・テスト）の取得状態 */
-  const [heavyLoadState, setHeavyLoadState] = useState<'idle' | 'loading' | 'done' | 'error'>('idle');
+  const [heavyLoadState, setHeavyLoadState] = useState<'idle' | 'loading' | 'done' | 'error'>(
+    'idle'
+  );
   // 遅延発火する Heavy 取得が「古い教室選択」のまま resolve してマージされるのを防ぐトークン。
   // fetchAlerts 呼び出しごとに加算し、deferred 実行・resolve 時に一致を確認する。
   const heavyRunRef = useRef(0);
@@ -63,7 +78,8 @@ export function AlertBoard({ className = '', initialData }: AlertBoardProps) {
   const skipInitialFetchRef = useRef<boolean>(!!initialData);
 
   // 対応済み操作はmanager以上のみ
-  const canDismiss = profile?.role === 'admin' || profile?.role === 'owner' || profile?.role === 'manager';
+  const canDismiss =
+    profile?.role === 'admin' || profile?.role === 'owner' || profile?.role === 'manager';
   // 講師画面：生徒に見える可能性があるためネガティブ情報をマスク
   const isTeacher = profile?.role === 'teacher';
 
@@ -88,53 +104,56 @@ export function AlertBoard({ className = '', initialData }: AlertBoardProps) {
     interview_overdue: '面談から日数が経過した生徒（具体日数は非表示）',
   };
 
-  const fetchAlerts = useCallback(async (skipCache = false) => {
-    setIsLoading(true);
-    setHeavyLoadState('idle');
-    const runToken = ++heavyRunRef.current;
-    try {
-      const schoolIds = getSelectedSchoolIds();
-      if (schoolIds.length === 0) {
-        setStudentAlerts([]);
+  const fetchAlerts = useCallback(
+    async (skipCache = false) => {
+      setIsLoading(true);
+      setHeavyLoadState('idle');
+      const runToken = ++heavyRunRef.current;
+      try {
+        const schoolIds = getSelectedSchoolIds();
+        if (schoolIds.length === 0) {
+          setStudentAlerts([]);
+          setHeavyLoadState('idle');
+          setIsLoading(false);
+          return;
+        }
+        if (skipCache) invalidateAlertCache(schoolIds);
+        // Phase 2: Light を先に表示し、Heavy は裏で取得
+        const lightAlerts = await getAlertsLight(schoolIds, { skipCache });
+        setStudentAlerts(lightAlerts);
+        setIsLoading(false);
+
+        // Heavy（成績・テスト系: assessments→textbooks→exams→assessment_scores の重い連鎖）は
+        // 初期ロードの「DBリクエスト殺到」を増幅する。critical な Light 表示を優先するため、
+        // ブラウザがアイドルになってから取得する。発火・resolve 時に runToken を照合し、
+        // 教室切替などで古くなった結果はマージしない。
+        const startHeavy = () => {
+          if (runToken !== heavyRunRef.current) return; // 既に新しい取得が始まっている
+          setHeavyLoadState('loading');
+          getAlertsHeavy(schoolIds, { skipCache })
+            .then((heavyAlerts) => {
+              if (runToken !== heavyRunRef.current) return; // resolve 時点で陳腐化
+              setStudentAlerts((prev) => mergeStudentAlerts(prev, heavyAlerts));
+              setHeavyLoadState('done');
+            })
+            .catch((err) => {
+              if (runToken !== heavyRunRef.current) return;
+              console.error('Error fetching heavy alerts:', err);
+              setHeavyLoadState('error');
+              toastError('成績・テスト関連のアラートの取得に失敗しました');
+            });
+        };
+        // クリティカル取得の群れが捌けてから Heavy を開始（ピーク同時実行数を下げる）
+        void whenNetworkIdle().then(startHeavy);
+      } catch (error) {
+        console.error('Error fetching alerts:', error);
+        toastError('アラートの取得に失敗しました');
         setHeavyLoadState('idle');
         setIsLoading(false);
-        return;
       }
-      if (skipCache) invalidateAlertCache(schoolIds);
-      // Phase 2: Light を先に表示し、Heavy は裏で取得
-      const lightAlerts = await getAlertsLight(schoolIds, { skipCache });
-      setStudentAlerts(lightAlerts);
-      setIsLoading(false);
-
-      // Heavy（成績・テスト系: assessments→textbooks→exams→assessment_scores の重い連鎖）は
-      // 初期ロードの「DBリクエスト殺到」を増幅する。critical な Light 表示を優先するため、
-      // ブラウザがアイドルになってから取得する。発火・resolve 時に runToken を照合し、
-      // 教室切替などで古くなった結果はマージしない。
-      const startHeavy = () => {
-        if (runToken !== heavyRunRef.current) return; // 既に新しい取得が始まっている
-        setHeavyLoadState('loading');
-        getAlertsHeavy(schoolIds, { skipCache })
-          .then((heavyAlerts) => {
-            if (runToken !== heavyRunRef.current) return; // resolve 時点で陳腐化
-            setStudentAlerts((prev) => mergeStudentAlerts(prev, heavyAlerts));
-            setHeavyLoadState('done');
-          })
-          .catch((err) => {
-            if (runToken !== heavyRunRef.current) return;
-            console.error('Error fetching heavy alerts:', err);
-            setHeavyLoadState('error');
-            toastError('成績・テスト関連のアラートの取得に失敗しました');
-          });
-      };
-      // クリティカル取得の群れが捌けてから Heavy を開始（ピーク同時実行数を下げる）
-      void whenNetworkIdle().then(startHeavy);
-    } catch (error) {
-      console.error('Error fetching alerts:', error);
-      toastError('アラートの取得に失敗しました');
-      setHeavyLoadState('idle');
-      setIsLoading(false);
-    }
-  }, [getSelectedSchoolIds, toastError]);
+    },
+    [getSelectedSchoolIds, toastError]
+  );
 
   // Heavy アラート（成績・テスト系）だけを遅延取得してマージする。
   // SSR で Light を初期表示済みのとき（initialData あり）に、Light の初回取得はスキップしつつ
@@ -174,10 +193,14 @@ export function AlertBoard({ className = '', initialData }: AlertBoardProps) {
     try {
       const heavyAlerts = await getAlertsHeavy(schoolIds, { skipCache: true });
       setStudentAlerts((prev) => {
-        const withoutHeavy = prev.map((sa) => ({
-          ...sa,
-          alerts: sa.alerts.filter((a) => !(HEAVY_ALERT_TYPES as readonly string[]).includes(a.alert_type)),
-        })).filter((sa) => sa.alerts.length > 0);
+        const withoutHeavy = prev
+          .map((sa) => ({
+            ...sa,
+            alerts: sa.alerts.filter(
+              (a) => !(HEAVY_ALERT_TYPES as readonly string[]).includes(a.alert_type)
+            ),
+          }))
+          .filter((sa) => sa.alerts.length > 0);
         return mergeStudentAlerts(withoutHeavy, heavyAlerts);
       });
       setHeavyLoadState('done');
@@ -202,46 +225,49 @@ export function AlertBoard({ className = '', initialData }: AlertBoardProps) {
     fetchAlerts();
   }, [fetchAlerts, loadHeavyAlerts]);
 
-  const handleDismiss = useCallback(async (alert: Alert) => {
-    if (!canDismiss) return;
-    if (!DISMISSABLE_ALERT_TYPES.has(alert.alert_type)) return;
+  const handleDismiss = useCallback(
+    async (alert: Alert) => {
+      if (!canDismiss) return;
+      if (!DISMISSABLE_ALERT_TYPES.has(alert.alert_type)) return;
 
-    try {
-      const schoolIds = getSelectedSchoolIds();
-      if (schoolIds.length === 0) {
-        toastError('教室が選択されていません');
-        return;
+      try {
+        const schoolIds = getSelectedSchoolIds();
+        if (schoolIds.length === 0) {
+          toastError('教室が選択されていません');
+          return;
+        }
+
+        // 生徒のschool_idを取得
+        const { data: student, error: studentError } = await supabase
+          .from('students')
+          .select('school_id')
+          .eq('id', alert.student_id)
+          .maybeSingle();
+
+        if (studentError || !student) {
+          toastError('生徒情報が見つかりません');
+          return;
+        }
+
+        await dismissAlert(
+          student.school_id,
+          alert.student_id,
+          alert.alert_type,
+          alert.alert_key,
+          profile?.id,
+          undefined
+        );
+
+        success('対応済みにしました');
+        // アラートを再取得（キャッシュをスキップ）
+        await fetchAlerts(true);
+      } catch (error) {
+        console.error('Error dismissing alert:', error);
+        toastError('対応済みの記録に失敗しました');
       }
-
-      // 生徒のschool_idを取得
-      const { data: student, error: studentError } = await supabase
-        .from('students')
-        .select('school_id')
-        .eq('id', alert.student_id)
-        .maybeSingle();
-
-      if (studentError || !student) {
-        toastError('生徒情報が見つかりません');
-        return;
-      }
-
-      await dismissAlert(
-        student.school_id,
-        alert.student_id,
-        alert.alert_type,
-        alert.alert_key,
-        profile?.id,
-        undefined
-      );
-
-      success('対応済みにしました');
-      // アラートを再取得（キャッシュをスキップ）
-      await fetchAlerts(true);
-    } catch (error) {
-      console.error('Error dismissing alert:', error);
-      toastError('対応済みの記録に失敗しました');
-    }
-  }, [canDismiss, getSelectedSchoolIds, profile?.id, success, toastError, fetchAlerts]);
+    },
+    [canDismiss, getSelectedSchoolIds, profile?.id, success, toastError, fetchAlerts]
+  );
 
   // 講師には講習関連など担当外のアラートを表示しない（行ごと除外）。
   // 取得・dismiss は raw な studentAlerts を使い、表示系のみこの絞り込みビューを参照する。
@@ -269,9 +295,13 @@ export function AlertBoard({ className = '', initialData }: AlertBoardProps) {
   }, [schools]);
 
   const schoolColorMap = useMemo(() => {
-    const ids = Array.from(new Set(visibleStudentAlerts.map((sa) => sa.school_id).filter(Boolean) as string[]));
-    const map: Record<string, typeof SCHOOL_COLORS[number]> = {};
-    ids.forEach((id, i) => { map[id] = SCHOOL_COLORS[i % SCHOOL_COLORS.length]; });
+    const ids = Array.from(
+      new Set(visibleStudentAlerts.map((sa) => sa.school_id).filter(Boolean) as string[])
+    );
+    const map: Record<string, (typeof SCHOOL_COLORS)[number]> = {};
+    ids.forEach((id, i) => {
+      map[id] = SCHOOL_COLORS[i % SCHOOL_COLORS.length];
+    });
     return map;
   }, [visibleStudentAlerts]);
 
@@ -302,9 +332,7 @@ export function AlertBoard({ className = '', initialData }: AlertBoardProps) {
   if (totalAlerts === 0) {
     return (
       <div className={`bg-[#f8f8f8] rounded-xl border border-gray-200 p-4 ${className}`}>
-        <div className="text-center text-sm text-gray-500">
-          対応が必要な項目はありません
-        </div>
+        <div className="text-center text-sm text-gray-500">対応が必要な項目はありません</div>
       </div>
     );
   }
@@ -315,15 +343,16 @@ export function AlertBoard({ className = '', initialData }: AlertBoardProps) {
       <div className="flex items-center justify-between p-4 bg-[#ffebee] border-b border-[#ffcdd2]">
         <div className="flex items-center gap-2 flex-wrap">
           <AlertTriangle className="w-5 h-5 text-[#d32f2f]" />
-          <span className="font-bold text-[#1a1a1a]">
-            アラート（{totalAlerts}件）
-          </span>
+          <span className="font-bold text-[#1a1a1a]">アラート（{totalAlerts}件）</span>
           {isMultiSchool && alertsBySchool && (
             <div className="flex items-center gap-1">
               {alertsBySchool.map(([sid, group]) => {
                 const color = schoolColorMap[sid];
                 return (
-                  <span key={sid} className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${color?.bg || 'bg-gray-100'} ${color?.text || 'text-gray-700'}`}>
+                  <span
+                    key={sid}
+                    className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${color?.bg || 'bg-gray-100'} ${color?.text || 'text-gray-700'}`}
+                  >
                     {group.name} {group.count}
                   </span>
                 );
@@ -345,11 +374,7 @@ export function AlertBoard({ className = '', initialData }: AlertBoardProps) {
           onClick={() => setIsExpanded(!isExpanded)}
           className="text-gray-400 hover:text-gray-600 transition-colors duration-150"
         >
-          {isExpanded ? (
-            <ChevronUp className="w-5 h-5" />
-          ) : (
-            <ChevronDown className="w-5 h-5" />
-          )}
+          {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
         </button>
       </div>
 
@@ -373,21 +398,23 @@ export function AlertBoard({ className = '', initialData }: AlertBoardProps) {
                 if (isTeacher && TEACHER_HIDDEN_ALERT_TYPES.has(alertType)) return null;
                 const isSensitiveType = SENSITIVE_ALERT_TYPES.has(alertType);
                 const Icon = isTeacher && isSensitiveType ? SENSITIVE_ALERT_ICONS[alertType] : null;
-                const displayLabel = isTeacher && isSensitiveType
-                  ? (MASKED_ALERT_LABEL_OVERRIDES[alertType] || label)
-                  : label;
-                const desc = isTeacher && isSensitiveType
-                  ? (teacherMaskDescriptions[alertType] || alertTypeDescriptions[type])
-                  : alertTypeDescriptions[type];
+                const displayLabel =
+                  isTeacher && isSensitiveType
+                    ? MASKED_ALERT_LABEL_OVERRIDES[alertType] || label
+                    : label;
+                const desc =
+                  isTeacher && isSensitiveType
+                    ? teacherMaskDescriptions[alertType] || alertTypeDescriptions[type]
+                    : alertTypeDescriptions[type];
                 return (
                   <div key={type} className="flex items-start gap-2">
-                    <span className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded ${ALERT_TYPE_COLORS[alertType]}`}>
+                    <span
+                      className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded ${ALERT_TYPE_COLORS[alertType]}`}
+                    >
                       {Icon && <Icon className="w-3 h-3" />}
                       {displayLabel}
                     </span>
-                    <span className="text-sm text-[#4b5563] flex-1">
-                      {desc}
-                    </span>
+                    <span className="text-sm text-[#4b5563] flex-1">{desc}</span>
                   </div>
                 );
               })}
@@ -427,42 +454,42 @@ export function AlertBoard({ className = '', initialData }: AlertBoardProps) {
       {/* アラート一覧 */}
       {isExpanded && (
         <div className="p-3 space-y-2 max-h-[640px] overflow-y-auto">
-          {isMultiSchool && alertsBySchool ? (
-            alertsBySchool.map(([schoolId, group]) => {
-              const color = schoolColorMap[schoolId];
-              return (
-                <div key={schoolId}>
-                  <div className={`flex items-center gap-2 px-2 py-1.5 mb-1.5 rounded-lg ${color?.bg || 'bg-gray-100'}`}>
-                    <span className={`text-xs font-bold ${color?.text || 'text-gray-700'}`}>
-                      {group.name}
-                    </span>
-                    <span className="text-[10px] text-gray-500">{group.count}件</span>
+          {isMultiSchool && alertsBySchool
+            ? alertsBySchool.map(([schoolId, group]) => {
+                const color = schoolColorMap[schoolId];
+                return (
+                  <div key={schoolId}>
+                    <div
+                      className={`flex items-center gap-2 px-2 py-1.5 mb-1.5 rounded-lg ${color?.bg || 'bg-gray-100'}`}
+                    >
+                      <span className={`text-xs font-bold ${color?.text || 'text-gray-700'}`}>
+                        {group.name}
+                      </span>
+                      <span className="text-[10px] text-gray-500">{group.count}件</span>
+                    </div>
+                    <div className="space-y-1.5 mb-3">
+                      {group.alerts.map((studentAlert) => (
+                        <StudentAlertCard
+                          key={studentAlert.student_id}
+                          studentAlert={studentAlert}
+                          handleDismiss={handleDismiss}
+                          canDismiss={canDismiss}
+                          masked={isTeacher}
+                        />
+                      ))}
+                    </div>
                   </div>
-                  <div className="space-y-1.5 mb-3">
-                    {group.alerts.map((studentAlert) => (
-                      <StudentAlertCard
-                        key={studentAlert.student_id}
-                        studentAlert={studentAlert}
-                        handleDismiss={handleDismiss}
-                        canDismiss={canDismiss}
-                        masked={isTeacher}
-                      />
-                    ))}
-                  </div>
-                </div>
-              );
-            })
-          ) : (
-            visibleStudentAlerts.map((studentAlert) => (
-              <StudentAlertCard
-                key={studentAlert.student_id}
-                studentAlert={studentAlert}
-                handleDismiss={handleDismiss}
-                canDismiss={canDismiss}
-                masked={isTeacher}
-              />
-            ))
-          )}
+                );
+              })
+            : visibleStudentAlerts.map((studentAlert) => (
+                <StudentAlertCard
+                  key={studentAlert.student_id}
+                  studentAlert={studentAlert}
+                  handleDismiss={handleDismiss}
+                  canDismiss={canDismiss}
+                  masked={isTeacher}
+                />
+              ))}
         </div>
       )}
     </div>
@@ -489,9 +516,7 @@ function StudentAlertCard({
   return (
     <div className="rounded-lg border border-gray-200 overflow-hidden bg-white">
       <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 border-b border-gray-200">
-        <span className="font-semibold text-sm text-[#1a1a1a]">
-          {displayName}
-        </span>
+        <span className="font-semibold text-sm text-[#1a1a1a]">{displayName}</span>
         {!masked && (
           <span className="text-xs text-gray-500">
             ({GRADE_LABELS[studentAlert.grade] || studentAlert.grade})

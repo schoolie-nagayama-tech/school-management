@@ -4,9 +4,24 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { AdminLayout } from '@/components/layouts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui';
-import { SelectShadcn as Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui';
+import {
+  SelectShadcn as Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '@/components/ui';
 import { Button } from '@/components/ui';
-import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogAction, AlertDialogCancel } from '@/components/ui';
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogAction,
+  AlertDialogCancel,
+} from '@/components/ui';
 import { ToastContainer, Loading } from '@/components/ui';
 import { TimeSlotForm } from '@/components/schedule/TimeSlotForm';
 import { TimeSlotTable } from '@/components/schedule/TimeSlotTable';
@@ -20,7 +35,11 @@ import {
   isTimeSlotInUse,
   reorderTimeSlots,
 } from '@/lib/api/schedule';
-import type { ScheduleTimeSlot, ScheduleTimeSlotFormData, ScheduleEntryFormation } from '@/types/schedule';
+import type {
+  ScheduleTimeSlot,
+  ScheduleTimeSlotFormData,
+  ScheduleEntryFormation,
+} from '@/types/schedule';
 import type { School } from '@/types/database';
 import AccessDenied from '@/components/AccessDenied';
 import { useAuth } from '@/contexts/AuthContext';
@@ -99,7 +118,10 @@ export default function TimeSlotsSettingsPage() {
     [newSlots[index], newSlots[swapIndex]] = [newSlots[swapIndex], newSlots[index]];
     setSlots(newSlots);
     try {
-      await reorderTimeSlots(selectedSchoolId, newSlots.map((s) => s.id));
+      await reorderTimeSlots(
+        selectedSchoolId,
+        newSlots.map((s) => s.id)
+      );
       const data = await getTimeSlots(selectedSchoolId, selectedFormation);
       setSlots(data);
     } catch (e) {
@@ -128,7 +150,10 @@ export default function TimeSlotsSettingsPage() {
       // 削除後にコマ番号を詰め直す
       const remaining = slots.filter((s) => s.id !== deletingSlot.id);
       if (remaining.length > 0) {
-        await reorderTimeSlots(selectedSchoolId!, remaining.map((s) => s.id));
+        await reorderTimeSlots(
+          selectedSchoolId!,
+          remaining.map((s) => s.id)
+        );
       }
       success('コマ時間を削除しました');
       const data = await getTimeSlots(selectedSchoolId!, selectedFormation);
@@ -140,7 +165,8 @@ export default function TimeSlotsSettingsPage() {
     }
   };
 
-  const isManager = profile?.role === 'admin' || profile?.role === 'owner' || profile?.role === 'manager';
+  const isManager =
+    profile?.role === 'admin' || profile?.role === 'owner' || profile?.role === 'manager';
   if (!profile) {
     return (
       <AdminLayout headerTitle="設定">
@@ -161,7 +187,10 @@ export default function TimeSlotsSettingsPage() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Link href="/settings" className="text-sm text-[var(--paragraph)] hover:text-[var(--primary)]">
+            <Link
+              href="/settings"
+              className="text-sm text-[var(--paragraph)] hover:text-[var(--primary)]"
+            >
               ← 設定に戻る
             </Link>
             <h1 className="text-text-headingxl font-bold text-[var(--headline)]">コマ時間設定</h1>
@@ -169,10 +198,12 @@ export default function TimeSlotsSettingsPage() {
           <div className="flex items-center gap-4">
             {/* 個別/集団でコマ時間は別建て。タブで表示・追加対象の formation を切り替える */}
             <div className="inline-flex rounded-lg border border-border-default bg-white p-0.5">
-              {([
-                { key: 'individual', label: '個別' },
-                { key: 'group', label: '集団' },
-              ] as const).map((f) => (
+              {(
+                [
+                  { key: 'individual', label: '個別' },
+                  { key: 'group', label: '集団' },
+                ] as const
+              ).map((f) => (
                 <button
                   key={f.key}
                   type="button"
@@ -189,9 +220,7 @@ export default function TimeSlotsSettingsPage() {
             </div>
             <Select value={selectedSchoolId} onValueChange={setSelectedSchoolId}>
               <SelectTrigger className="w-48">
-                <SelectValue placeholder="教室を選択">
-                  {selectedSchool?.name}
-                </SelectValue>
+                <SelectValue placeholder="教室を選択">{selectedSchool?.name}</SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {schools.map((s) => (
@@ -251,7 +280,8 @@ export default function TimeSlotsSettingsPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>コマ時間を削除しますか？</AlertDialogTitle>
             <AlertDialogDescription>
-              {deletingSlot && `${deletingSlot.slot_number}限 ${deletingSlot.start_time?.slice(0, 5)}-${deletingSlot.end_time?.slice(0, 5)} を削除します。`}
+              {deletingSlot &&
+                `${deletingSlot.slot_number}限 ${deletingSlot.start_time?.slice(0, 5)}-${deletingSlot.end_time?.slice(0, 5)} を削除します。`}
               通塾日程またはスケジュールで使用中の場合は削除できません。
             </AlertDialogDescription>
           </AlertDialogHeader>

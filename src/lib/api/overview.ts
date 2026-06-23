@@ -77,7 +77,8 @@ export async function getOverview(schools: { id: string; name: string }[]): Prom
   const students = await getStudents(undefined, ids);
   const activeBySchool = new Map<string, number>();
   for (const s of students) {
-    if (s.status === 'active') activeBySchool.set(s.school_id, (activeBySchool.get(s.school_id) ?? 0) + 1);
+    if (s.status === 'active')
+      activeBySchool.set(s.school_id, (activeBySchool.get(s.school_id) ?? 0) + 1);
   }
 
   // 月次（校舎別、今年の実績/予算）
@@ -110,7 +111,12 @@ export async function getOverview(schools: { id: string; name: string }[]): Prom
   // 校舎別のフォーム参加率・提案取得率（各校を並列に集計）
   const formBySchool = new Map<
     string,
-    { moshi: number | null; mogi: number | null; zoukoma: number | null; proposalRate: number | null }
+    {
+      moshi: number | null;
+      mogi: number | null;
+      zoukoma: number | null;
+      proposalRate: number | null;
+    }
   >();
   await Promise.all(
     schools.map(async (school) => {
@@ -124,7 +130,7 @@ export async function getOverview(schools: { id: string; name: string }[]): Prom
         zoukoma: rateOf(parts, 'zoukoma'),
         proposalRate: funnel && funnel.proposedStudents > 0 ? funnel.rate : null,
       });
-    }),
+    })
   );
 
   // 全社のフォーム参加率・提案取得率
@@ -147,9 +153,15 @@ export async function getOverview(schools: { id: string; name: string }[]): Prom
       newCount = last.new_count;
       leaveCount = last.leave_count;
       netChange = prev ? last.active_count - prev.active_count : last.new_count - last.leave_count;
-      churnRate = prev && prev.active_count > 0 ? Math.round((last.leave_count / prev.active_count) * 1000) / 10 : null;
+      churnRate =
+        prev && prev.active_count > 0
+          ? Math.round((last.leave_count / prev.active_count) * 1000) / 10
+          : null;
       const b = m.budget.find((x) => x.month === last.month);
-      targetRate = b && b.active_count > 0 ? Math.round((last.active_count / b.active_count) * 1000) / 10 : null;
+      targetRate =
+        b && b.active_count > 0
+          ? Math.round((last.active_count / b.active_count) * 1000) / 10
+          : null;
     }
     const f = formBySchool.get(school.id);
     return {

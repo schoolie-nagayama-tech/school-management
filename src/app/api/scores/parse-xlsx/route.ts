@@ -54,9 +54,10 @@ export async function POST(req: NextRequest) {
         if (decoded.r > maxRow) maxRow = decoded.r;
         if (decoded.c > maxCol) maxCol = decoded.c;
       }
-      const correctRef = XLSX.utils.encode_range(
-        { s: { r: 0, c: 0 }, e: { r: maxRow, c: maxCol } }
-      );
+      const correctRef = XLSX.utils.encode_range({
+        s: { r: 0, c: 0 },
+        e: { r: maxRow, c: maxCol },
+      });
       if (ws['!ref'] !== correctRef) {
         ws['!ref'] = correctRef;
       }

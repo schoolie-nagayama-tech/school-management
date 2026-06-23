@@ -41,7 +41,11 @@ describe('studentSchema', () => {
   });
 
   it('オプションフィールドは空文字を許可', () => {
-    const result = studentSchema.safeParse({ ...validStudent, last_name_kana: '', school_name: '' });
+    const result = studentSchema.safeParse({
+      ...validStudent,
+      last_name_kana: '',
+      school_name: '',
+    });
     expect(result.success).toBe(true);
   });
 });

@@ -39,9 +39,7 @@ async function fetchAllUnitsByProposalIds(proposalIds: string[]): Promise<Season
   const seen = new Set<string>();
   for (let i = 0; i < proposalIds.length; i += BATCH) {
     const batch = proposalIds.slice(i, i + BATCH);
-    const { data, error } = await fromProposalUnits()
-      .select('*')
-      .in('proposal_id', batch);
+    const { data, error } = await fromProposalUnits().select('*').in('proposal_id', batch);
     if (error) {
       // 失敗時は取得済み分で打ち切り（一覧表示が完全に止まるよりは良い）
       break;
@@ -62,13 +60,8 @@ async function fetchAllUnitsByProposalIds(proposalIds: string[]): Promise<Season
 // 提案書 CRUD
 // ============================================
 
-export async function createProposal(
-  data: SeasonalProposalInsert
-): Promise<SeasonalProposal> {
-  const { data: row, error } = await fromProposals()
-    .insert(data)
-    .select()
-    .single();
+export async function createProposal(data: SeasonalProposalInsert): Promise<SeasonalProposal> {
+  const { data: row, error } = await fromProposals().insert(data).select().single();
 
   if (error) {
     throw new Error(`提案書の作成に失敗しました: ${error.message}`);
@@ -80,11 +73,7 @@ export async function updateProposal(
   id: string,
   patch: SeasonalProposalUpdate
 ): Promise<SeasonalProposal> {
-  const { data: row, error } = await fromProposals()
-    .update(patch)
-    .eq('id', id)
-    .select()
-    .single();
+  const { data: row, error } = await fromProposals().update(patch).eq('id', id).select().single();
 
   if (error) {
     throw new Error(`提案書の更新に失敗しました: ${error.message}`);
@@ -93,9 +82,7 @@ export async function updateProposal(
 }
 
 export async function deleteProposal(id: string): Promise<void> {
-  const { error } = await fromProposals()
-    .delete()
-    .eq('id', id);
+  const { error } = await fromProposals().delete().eq('id', id);
 
   if (error) {
     throw new Error(`提案書の削除に失敗しました: ${error.message}`);
@@ -106,11 +93,10 @@ export async function deleteProposal(id: string): Promise<void> {
 // 提案書取得
 // ============================================
 
-export async function getProposal(
-  id: string
-): Promise<SeasonalProposalWithDetails | null> {
+export async function getProposal(id: string): Promise<SeasonalProposalWithDetails | null> {
   const { data, error } = await fromProposals()
-    .select(`
+    .select(
+      `
       *,
       student:students(*),
       textbook:textbooks(*),
@@ -119,7 +105,8 @@ export async function getProposal(
         textbook:textbooks(*),
         student:students(*)
       )
-    `)
+    `
+    )
     .eq('id', id)
     .maybeSingle();
 
@@ -129,10 +116,12 @@ export async function getProposal(
   if (!data) return null;
 
   const { data: units, error: uErr } = await fromProposalUnits()
-    .select(`
+    .select(
+      `
       *,
       curriculum_item:curriculum_items(*)
-    `)
+    `
+    )
     .eq('proposal_id', id)
     .order('sort_order', { ascending: true });
 
@@ -157,11 +146,13 @@ export async function getProposalsByStudent(
   studentId: string
 ): Promise<SeasonalProposalWithDetails[]> {
   const { data, error } = await fromProposals()
-    .select(`
+    .select(
+      `
       *,
       student:students(*),
       textbook:textbooks(*)
-    `)
+    `
+    )
     .eq('student_id', studentId)
     .order('year', { ascending: false })
     .order('created_at', { ascending: false });
@@ -209,11 +200,13 @@ export async function getProposalsBySchool(
   const data: unknown[] = [];
   for (let from = 0; ; from += PAGE_SIZE) {
     let query = fromProposals()
-      .select(`
+      .select(
+        `
         *,
         student:students(*),
         textbook:textbooks(*)
-      `)
+      `
+      )
       .in('school_id', schoolIds)
       .order('updated_at', { ascending: false })
       .order('id', { ascending: true })
@@ -270,9 +263,7 @@ export async function saveProposalUnits(
   proposalId: string,
   units: ProposalUnitInput[]
 ): Promise<SeasonalProposalUnit[]> {
-  const { error: delErr } = await fromProposalUnits()
-    .delete()
-    .eq('proposal_id', proposalId);
+  const { error: delErr } = await fromProposalUnits().delete().eq('proposal_id', proposalId);
 
   if (delErr) {
     throw new Error(`既存単元の削除に失敗しました: ${delErr.message}`);
@@ -292,9 +283,7 @@ export async function saveProposalUnits(
     sort_order: i,
   }));
 
-  const { data, error } = await fromProposalUnits()
-    .insert(inserts)
-    .select();
+  const { data, error } = await fromProposalUnits().insert(inserts).select();
 
   if (error) {
     throw new Error(`提案単元の保存に失敗しました: ${error.message}`);
@@ -432,10 +421,7 @@ export async function syncProposalToProgress(
 
   // 既に紐付け済みの場合でも track_progress を有効化（テンプレ適用で作った下書きは false のままなので公開時にONにする）
   if (stbId) {
-    await supabase
-      .from('student_textbooks')
-      .update({ track_progress: true })
-      .eq('id', stbId);
+    await supabase.from('student_textbooks').update({ track_progress: true }).eq('id', stbId);
   }
 
   // student_textbook が未紐付けの場合は作成
@@ -451,10 +437,7 @@ export async function syncProposalToProgress(
     if (existing) {
       stbId = (existing as { id: string }).id;
       // 既存テキストの track_progress を有効化
-      await supabase
-        .from('student_textbooks')
-        .update({ track_progress: true })
-        .eq('id', stbId);
+      await supabase.from('student_textbooks').update({ track_progress: true }).eq('id', stbId);
     } else {
       // 生徒の school_id を取得
       const { data: student } = await supabase
@@ -492,9 +475,9 @@ export async function syncProposalToProgress(
   // 進行表は「グループの先頭行に合計・他は0」を表示する作り（旧UIはセル結合 / 新UIは先頭行のみ表示）なので、
   // group_id ごとに先頭行(units は sort_order 昇順)へ合計コマを集約し、他の行は 0 にする。
   // 先頭の koma_count がそのグループの合計（calcTotalKoma が先頭1件で計上するのと整合）。
-  const propGroupHead = new Map<number, number>();   // group_id -> 先頭 curriculum_item_id
-  const propGroupTotal = new Map<number, number>();  // group_id -> 合計コマ（先頭の koma_count）
-  const propGroupCount = new Map<number, number>();  // group_id -> 構成単元数
+  const propGroupHead = new Map<number, number>(); // group_id -> 先頭 curriculum_item_id
+  const propGroupTotal = new Map<number, number>(); // group_id -> 合計コマ（先頭の koma_count）
+  const propGroupCount = new Map<number, number>(); // group_id -> 構成単元数
   for (const u of proposal.units) {
     if (u.group_id > 0) {
       if (!propGroupHead.has(u.group_id)) {
@@ -518,7 +501,11 @@ export async function syncProposalToProgress(
         student_textbook_id: stbId,
         curriculum_item_id: u.curriculum_item_id,
         // 結合: 先頭行に合計・他は0 / 非結合: 単元の koma_count
-        proposal_count: grouped ? (isHead ? (propGroupTotal.get(u.group_id) ?? u.koma_count) : 0) : u.koma_count,
+        proposal_count: grouped
+          ? isHead
+            ? (propGroupTotal.get(u.group_id) ?? u.koma_count)
+            : 0
+          : u.koma_count,
         // 再公開時に結合解除を反映できるよう、非結合は明示的に null を書く
         group_number: grouped ? u.group_id : null,
       };
@@ -535,9 +522,7 @@ export async function syncProposalToProgress(
 /**
  * 申し込みコマ数を進行表の application_count に反映
  */
-export async function syncApplicationToProgress(
-  proposalId: string
-): Promise<void> {
+export async function syncApplicationToProgress(proposalId: string): Promise<void> {
   const proposal = await getProposal(proposalId);
   if (!proposal || !proposal.student_textbook_id) {
     throw new Error('提案書またはテキスト紐付けがありません');
@@ -547,9 +532,9 @@ export async function syncApplicationToProgress(
   // 提案結合と同様に「グループの先頭行に合計・他は0」で持たせ、進行表でまとめ表示できるようにする。
   // 申込結合は提案結合(group_id)とは別グループになりうるため、applied_group_number 列に独立して持つ。
   // 申込コマ>0 の単元のみを結合対象とする（提案書エディタの appliedGroupMap と同じ判定）。
-  const appliedHead = new Map<number, number>();   // applied_group_id -> 先頭 curriculum_item_id
-  const appliedTotal = new Map<number, number>();  // applied_group_id -> 合計（先頭の applied_koma）
-  const appliedCount = new Map<number, number>();  // applied_group_id -> 申込>0 の構成単元数
+  const appliedHead = new Map<number, number>(); // applied_group_id -> 先頭 curriculum_item_id
+  const appliedTotal = new Map<number, number>(); // applied_group_id -> 合計（先頭の applied_koma）
+  const appliedCount = new Map<number, number>(); // applied_group_id -> 申込>0 の構成単元数
   for (const u of proposal.units) {
     const ak = u.applied_koma ?? 0;
     if (u.applied_group_id > 0 && ak > 0) {
@@ -566,11 +551,16 @@ export async function syncApplicationToProgress(
   const byKey = new Map<string, number[]>();
   const keyMeta = new Map<string, { count: number; group: number | null }>();
   for (const u of proposal.units) {
-    const grouped = u.applied_group_id > 0 && (u.applied_koma ?? 0) > 0 && (appliedCount.get(u.applied_group_id) ?? 0) >= 2;
+    const grouped =
+      u.applied_group_id > 0 &&
+      (u.applied_koma ?? 0) > 0 &&
+      (appliedCount.get(u.applied_group_id) ?? 0) >= 2;
     const isHead = grouped && appliedHead.get(u.applied_group_id) === u.curriculum_item_id;
     // 結合: 先頭行に合計・他は0 / 非結合: 申込コマ（未入力なら提案コマ）
     const count = grouped
-      ? (isHead ? (appliedTotal.get(u.applied_group_id) ?? 0) : 0)
+      ? isHead
+        ? (appliedTotal.get(u.applied_group_id) ?? 0)
+        : 0
       : (u.applied_koma ?? u.koma_count);
     const group = grouped ? u.applied_group_id : null;
     const key = `${count}|${group ?? 'null'}`;
@@ -612,10 +602,7 @@ export async function publishProposal(proposalId: string): Promise<void> {
   await syncApplicationToProgress(proposalId);
 
   // 講師に公開
-  await supabase
-    .from('student_textbooks')
-    .update({ is_draft: false })
-    .eq('id', studentTextbookId);
+  await supabase.from('student_textbooks').update({ is_draft: false }).eq('id', studentTextbookId);
 
   // ステータス更新
   await updateProposal(proposalId, { status: 'approved' });
@@ -624,7 +611,9 @@ export async function publishProposal(proposalId: string): Promise<void> {
 /**
  * 複数の提案書を一括公開
  */
-export async function bulkPublishProposals(proposalIds: string[]): Promise<{ success: number; failed: number }> {
+export async function bulkPublishProposals(
+  proposalIds: string[]
+): Promise<{ success: number; failed: number }> {
   let success = 0;
   let failed = 0;
   for (const id of proposalIds) {
@@ -657,7 +646,8 @@ export async function markProposalSent(proposalId: string): Promise<void> {
       curriculum_item_id: u.curriculum_item_id,
       koma_count: u.koma_count,
       // 提案コマがあれば申込はそれで初期化。提案0・申込ありの単元は申込値を維持。
-      applied_koma: u.koma_count > 0 ? u.koma_count : ((u.applied_koma ?? 0) > 0 ? u.applied_koma : null),
+      applied_koma:
+        u.koma_count > 0 ? u.koma_count : (u.applied_koma ?? 0) > 0 ? u.applied_koma : null,
       reason: u.reason,
       group_id: u.group_id,
       applied_group_id: u.applied_group_id > 0 ? u.applied_group_id : u.group_id,
@@ -672,7 +662,9 @@ export async function markProposalSent(proposalId: string): Promise<void> {
 /**
  * 複数の提案書を一括で「提案済み」にする（draft → sent）。
  */
-export async function bulkMarkProposalsSent(proposalIds: string[]): Promise<{ success: number; failed: number }> {
+export async function bulkMarkProposalsSent(
+  proposalIds: string[]
+): Promise<{ success: number; failed: number }> {
   let success = 0;
   let failed = 0;
   for (const id of proposalIds) {
@@ -711,7 +703,9 @@ export function calcTotalKoma(units: { group_id: number; koma_count: number }[])
 
 // 申込コマ合計。申込結合(applied_group_id)が同じ単元は1コマとしてまとめてカウントする。
 // 提案結合(group_id)とは別グループなので、申込側の結合だけで dedup する。
-export function calcTotalAppliedKoma(units: { applied_group_id: number; applied_koma: number | null }[]): number | null {
+export function calcTotalAppliedKoma(
+  units: { applied_group_id: number; applied_koma: number | null }[]
+): number | null {
   const withApplied = units.filter((u) => u.applied_koma != null && u.applied_koma > 0);
   if (withApplied.length === 0) return null;
   let total = 0;
@@ -761,8 +755,10 @@ export async function promoteProposalToCourse(
 
   if (existing) throw new Error('同名の講習が既に存在します');
 
-  const units = (proposal.units ?? []).filter(u => u.koma_count > 0);
-  const totalKoma = calcTotalKoma(units.map(u => ({ group_id: u.group_id, koma_count: u.koma_count })));
+  const units = (proposal.units ?? []).filter((u) => u.koma_count > 0);
+  const totalKoma = calcTotalKoma(
+    units.map((u) => ({ group_id: u.group_id, koma_count: u.koma_count }))
+  );
 
   const course = await createSeasonalCourse(schoolId, {
     name: courseName,
@@ -780,7 +776,7 @@ export async function promoteProposalToCourse(
     await saveBulkCourseCurriculum(
       course.id,
       proposal.textbook_id,
-      units.map(u => ({
+      units.map((u) => ({
         curriculum_item_id: u.curriculum_item_id,
         proposal_count: u.koma_count,
         group_number: u.group_id > 0 ? u.group_id : null,

@@ -3,9 +3,58 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { AdminLayout } from '@/components/layouts';
-import { Card, CardContent, CardHeader, CardTitle, Button, SelectShadcn as Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, Badge, Checkbox, Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, Textarea, Label, Input, AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, Loading } from '@/components/ui';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  Button,
+  SelectShadcn as Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+  Badge,
+  Checkbox,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  Textarea,
+  Label,
+  Input,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  Loading,
+} from '@/components/ui';
 import { ToastContainer } from '@/components/ui';
-import { ChevronLeft, ChevronRight, CheckCircle, ExternalLink, Download, RotateCcw, AlertTriangle, UserMinus, UserPlus, TrendingUp, Send, ArrowUpDown } from 'lucide-react';
+import {
+  ChevronLeft,
+  ChevronRight,
+  CheckCircle,
+  ExternalLink,
+  Download,
+  RotateCcw,
+  AlertTriangle,
+  UserMinus,
+  UserPlus,
+  TrendingUp,
+  Send,
+  ArrowUpDown,
+} from 'lucide-react';
 import { useToast } from '@/hooks/useToast';
 import { useMasterData } from '@/contexts/MasterDataContext';
 import {
@@ -27,12 +76,7 @@ import {
   getAdminUsers,
   setKomaChange,
 } from '@/lib/api/attendance';
-import {
-  getCurrentYearMonth,
-  getPrevMonth,
-  getNextMonth,
-  formatYearMonth,
-} from '@/lib/utils/date';
+import { getCurrentYearMonth, getPrevMonth, getNextMonth, formatYearMonth } from '@/lib/utils/date';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   ATTENDANCE_STATUS_LABELS,
@@ -58,16 +102,24 @@ interface SummaryRow {
   id: string;
   school: { id: string; name: string; code?: string | null } | null;
   /** teacher.employee_no は出勤簿一覧の並び順（社員番号順）に使用。exit_date は退職状態バッジ表示に使用 */
-  teacher: { id: string; name: string; employee_no?: string | null; exit_date?: string | null } | null;
+  teacher: {
+    id: string;
+    name: string;
+    employee_no?: string | null;
+    exit_date?: string | null;
+  } | null;
   teacher_id?: string;
   status: string;
-  type_totals: Record<string, {
-    name: string;
-    unit: string;
-    unit_price?: number;
-    total: number;
-    amount?: number;
-  }>;
+  type_totals: Record<
+    string,
+    {
+      name: string;
+      unit: string;
+      unit_price?: number;
+      total: number;
+      amount?: number;
+    }
+  >;
   grand_total: number;
   total_amount: number;
   prep_days: number;
@@ -114,7 +166,8 @@ function compareByEmployeeNo(a: SummaryRow, b: SummaryRow): number {
   if (!ea && !eb) return (a.teacher?.name ?? '').localeCompare(b.teacher?.name ?? '', 'ja');
   if (!ea) return 1;
   if (!eb) return -1;
-  const na = Number(ea), nb = Number(eb);
+  const na = Number(ea),
+    nb = Number(eb);
   const bothNum = Number.isFinite(na) && Number.isFinite(nb) && ea !== '' && eb !== '';
   if (bothNum && na !== nb) return na - nb;
   if (bothNum) return (a.teacher?.name ?? '').localeCompare(b.teacher?.name ?? '', 'ja');
@@ -148,8 +201,12 @@ export default function AttendanceManagementPage() {
 
   // 人事関連 (admin)
   const [allTeachers, setAllTeachers] = useState<TeacherProfile[]>([]);
-  const [recentlyRetired, setRecentlyRetired] = useState<{ id: string; name: string; exit_date: string | null }[]>([]);
-  const [newTeachers, setNewTeachers] = useState<{ id: string; name: string; created_at: string }[]>([]);
+  const [recentlyRetired, setRecentlyRetired] = useState<
+    { id: string; name: string; exit_date: string | null }[]
+  >([]);
+  const [newTeachers, setNewTeachers] = useState<
+    { id: string; name: string; created_at: string }[]
+  >([]);
   const [retiringTeacherId, setRetiringTeacherId] = useState<string>('');
   const [retiringExitDate, setRetiringExitDate] = useState<string>('');
 
@@ -187,13 +244,33 @@ export default function AttendanceManagementPage() {
     setIsLoading(true);
     try {
       const schoolId = selectedSchoolId === 'all' ? null : selectedSchoolId;
-      const schoolIdsForTypes =
-        schoolId ? [schoolId] : (userSchoolIds.length > 0 ? userSchoolIds : undefined);
-      const allowedIds = schoolId ? undefined : (userSchoolIds.length > 0 ? userSchoolIds : undefined);
+      const schoolIdsForTypes = schoolId
+        ? [schoolId]
+        : userSchoolIds.length > 0
+          ? userSchoolIds
+          : undefined;
+      const allowedIds = schoolId
+        ? undefined
+        : userSchoolIds.length > 0
+          ? userSchoolIds
+          : undefined;
       const realPrevMonth = getPrevMonth(getCurrentYearMonth());
-      const effectiveSchoolIds = schoolId ? [schoolId] : (userSchoolIds.length > 0 ? userSchoolIds : []);
+      const effectiveSchoolIds = schoolId
+        ? [schoolId]
+        : userSchoolIds.length > 0
+          ? userSchoolIds
+          : [];
 
-      const [typesData, summaryResult, lateEarlyResult, prevMonthSummary, retiredResult, newResult, teacherList, adminList] = await Promise.all([
+      const [
+        typesData,
+        summaryResult,
+        lateEarlyResult,
+        prevMonthSummary,
+        retiredResult,
+        newResult,
+        teacherList,
+        adminList,
+      ] = await Promise.all([
         getAllAttendanceTypes(schoolIdsForTypes),
         getAttendanceSummary(schoolId, yearMonth, allowedIds),
         getLateEarlyList(schoolId, yearMonth),
@@ -359,7 +436,7 @@ export default function AttendanceManagementPage() {
   const transportTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   const handleTransportCostChange = (sheetId: string, value: string) => {
     const numVal = parseInt(value) || 0;
-    setSheets((prev) => prev.map((s) => s.id === sheetId ? { ...s, transport_cost: numVal } : s));
+    setSheets((prev) => prev.map((s) => (s.id === sheetId ? { ...s, transport_cost: numVal } : s)));
     if (transportTimers.current[sheetId]) clearTimeout(transportTimers.current[sheetId]);
     transportTimers.current[sheetId] = setTimeout(async () => {
       try {
@@ -373,7 +450,9 @@ export default function AttendanceManagementPage() {
   // 備考の更新（デバウンス付き）
   const noteTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   const handleAdminNoteChange = (sheetId: string, value: string) => {
-    setSheets((prev) => prev.map((s) => s.id === sheetId ? { ...s, admin_note: value || null } : s));
+    setSheets((prev) =>
+      prev.map((s) => (s.id === sheetId ? { ...s, admin_note: value || null } : s))
+    );
     if (noteTimers.current[sheetId]) clearTimeout(noteTimers.current[sheetId]);
     noteTimers.current[sheetId] = setTimeout(async () => {
       try {
@@ -390,17 +469,21 @@ export default function AttendanceManagementPage() {
     const teacherId = sheet.teacher?.id || sheet.teacher_id;
     if (!teacherId) return;
     // 全角数字を半角へ正規化
-    const normalized = raw.replace(/[０-９]/g, (ch) => String.fromCharCode(ch.charCodeAt(0) - 0xfee0)).trim();
+    const normalized = raw
+      .replace(/[０-９]/g, (ch) => String.fromCharCode(ch.charCodeAt(0) - 0xfee0))
+      .trim();
     const current = sheet.teacher?.employee_no ?? '';
     if (normalized === current) return; // 変更なしなら何もしない
     try {
       await updateTeacherEmployeeNo(teacherId, normalized || null);
       // 同じ講師の全シート行（全校舎表示時など）に反映 → 社員番号順ソートも更新される
-      setSheets((prev) => prev.map((s) =>
-        (s.teacher?.id || s.teacher_id) === teacherId && s.teacher
-          ? { ...s, teacher: { ...s.teacher, employee_no: normalized || null } }
-          : s
-      ));
+      setSheets((prev) =>
+        prev.map((s) =>
+          (s.teacher?.id || s.teacher_id) === teacherId && s.teacher
+            ? { ...s, teacher: { ...s.teacher, employee_no: normalized || null } }
+            : s
+        )
+      );
       success('社員番号を更新しました');
     } catch {
       toastError('社員番号の保存に失敗しました');
@@ -442,13 +525,14 @@ export default function AttendanceManagementPage() {
       toastError('旧コマ給と新コマ給を入力してください');
       return;
     }
-    const effectiveSchoolIds = !selectedSchoolId || selectedSchoolId === 'all'
-      ? userSchoolIds
-      : [selectedSchoolId];
+    const effectiveSchoolIds =
+      !selectedSchoolId || selectedSchoolId === 'all' ? userSchoolIds : [selectedSchoolId];
     try {
       await setKomaChange(komaChangeTeacherId, yearMonth, effectiveSchoolIds, fromVal, toVal);
       const teacher = allTeachers.find((t) => t.id === komaChangeTeacherId);
-      success(`${teacher?.name ?? '不明'}のコマ給変更を登録しました（¥${fromVal.toLocaleString()}→¥${toVal.toLocaleString()}）`);
+      success(
+        `${teacher?.name ?? '不明'}のコマ給変更を登録しました（¥${fromVal.toLocaleString()}→¥${toVal.toLocaleString()}）`
+      );
       setKomaChangeTeacherId('');
       setKomaChangeFrom('');
       setKomaChangeTo('');
@@ -462,9 +546,8 @@ export default function AttendanceManagementPage() {
   const handleClearKomaChange = async (sheet: SummaryRow) => {
     if (!sheet.teacher?.id && !sheet.teacher_id) return;
     const teacherId = sheet.teacher?.id || sheet.teacher_id!;
-    const effectiveSchoolIds = !selectedSchoolId || selectedSchoolId === 'all'
-      ? userSchoolIds
-      : [selectedSchoolId];
+    const effectiveSchoolIds =
+      !selectedSchoolId || selectedSchoolId === 'all' ? userSchoolIds : [selectedSchoolId];
     try {
       await setKomaChange(teacherId, yearMonth, effectiveSchoolIds, null, null);
       success(`${sheet.teacher?.name ?? '不明'}のコマ給変更を解除しました`);
@@ -482,9 +565,13 @@ export default function AttendanceManagementPage() {
         // 社員番号順（数値優先・NULL末尾・姓フォールバック）
         return copy.sort(compareByEmployeeNo);
       case 'name-asc':
-        return copy.sort((a, b) => (a.teacher?.name ?? '').localeCompare(b.teacher?.name ?? '', 'ja'));
+        return copy.sort((a, b) =>
+          (a.teacher?.name ?? '').localeCompare(b.teacher?.name ?? '', 'ja')
+        );
       case 'name-desc':
-        return copy.sort((a, b) => (b.teacher?.name ?? '').localeCompare(a.teacher?.name ?? '', 'ja'));
+        return copy.sort((a, b) =>
+          (b.teacher?.name ?? '').localeCompare(a.teacher?.name ?? '', 'ja')
+        );
       case 'amount-desc':
         return copy.sort((a, b) => b.total_amount - a.total_amount);
       default:
@@ -503,9 +590,13 @@ export default function AttendanceManagementPage() {
   };
 
   const sortLabel =
-    sortOrder === 'employee' ? '社員番号順' :
-    sortOrder === 'name-asc' ? '名前 昇順' :
-    sortOrder === 'name-desc' ? '名前 降順' : '金額 降順';
+    sortOrder === 'employee'
+      ? '社員番号順'
+      : sortOrder === 'name-asc'
+        ? '名前 昇順'
+        : sortOrder === 'name-desc'
+          ? '名前 降順'
+          : '金額 降順';
 
   // CSVエクスポート
   const handleExportCSV = () => {
@@ -519,14 +610,35 @@ export default function AttendanceManagementPage() {
       return;
     }
 
-    const typeNames = Array.from(new Set(
-      sheets.flatMap((row) => Object.values(row.type_totals).map((t) => t.name))
-    ));
+    const typeNames = Array.from(
+      new Set(sheets.flatMap((row) => Object.values(row.type_totals).map((t) => t.name)))
+    );
 
     const hasSchoolColumn = selectedSchoolId === 'all';
     const headers = hasSchoolColumn
-      ? ['教室', '講師名', 'ステータス', ...typeNames, '合計', '金額合計', '準備給日数', '勤務日数', '交通費', '備考']
-      : ['講師名', 'ステータス', ...typeNames, '合計', '金額合計', '準備給日数', '勤務日数', '交通費', '備考'];
+      ? [
+          '教室',
+          '講師名',
+          'ステータス',
+          ...typeNames,
+          '合計',
+          '金額合計',
+          '準備給日数',
+          '勤務日数',
+          '交通費',
+          '備考',
+        ]
+      : [
+          '講師名',
+          'ステータス',
+          ...typeNames,
+          '合計',
+          '金額合計',
+          '準備給日数',
+          '勤務日数',
+          '交通費',
+          '備考',
+        ];
 
     const rows = sheets.map((row) => {
       const typeCols = typeNames.map((name) => {
@@ -534,13 +646,31 @@ export default function AttendanceManagementPage() {
         return typeData?.total || 0;
       });
       const base = hasSchoolColumn
-        ? [row.school?.name || '', row.teacher?.name || '', ATTENDANCE_STATUS_LABELS[row.status as keyof typeof ATTENDANCE_STATUS_LABELS] || '']
-        : [row.teacher?.name || '', ATTENDANCE_STATUS_LABELS[row.status as keyof typeof ATTENDANCE_STATUS_LABELS] || ''];
-      return [...base, ...typeCols, row.grand_total, row.total_amount, row.prep_days, row.work_days, row.transport_cost, row.admin_note || ''];
+        ? [
+            row.school?.name || '',
+            row.teacher?.name || '',
+            ATTENDANCE_STATUS_LABELS[row.status as keyof typeof ATTENDANCE_STATUS_LABELS] || '',
+          ]
+        : [
+            row.teacher?.name || '',
+            ATTENDANCE_STATUS_LABELS[row.status as keyof typeof ATTENDANCE_STATUS_LABELS] || '',
+          ];
+      return [
+        ...base,
+        ...typeCols,
+        row.grand_total,
+        row.total_amount,
+        row.prep_days,
+        row.work_days,
+        row.transport_cost,
+        row.admin_note || '',
+      ];
     });
 
     downloadCSV(
-      [headers.join(','), ...rows.map((row) => row.map((cell) => `"${cell}"`).join(','))].join('\n'),
+      [headers.join(','), ...rows.map((row) => row.map((cell) => `"${cell}"`).join(','))].join(
+        '\n'
+      ),
       `出勤簿集計_${yearMonth}.csv`
     );
   };
@@ -564,14 +694,32 @@ export default function AttendanceManagementPage() {
         }, 0),
       ]);
     });
-    rows.push(['金額合計', ...sortedSheets.map((s) => s.total_amount), sortedSheets.reduce((s, r) => s + r.total_amount, 0)]);
-    rows.push(['準備給日数', ...sortedSheets.map((s) => s.prep_days), sortedSheets.reduce((s, r) => s + r.prep_days, 0)]);
-    rows.push(['勤務日数', ...sortedSheets.map((s) => s.work_days), sortedSheets.reduce((s, r) => s + r.work_days, 0)]);
-    rows.push(['交通費', ...sortedSheets.map((s) => s.transport_cost), sortedSheets.reduce((s, r) => s + r.transport_cost, 0)]);
+    rows.push([
+      '金額合計',
+      ...sortedSheets.map((s) => s.total_amount),
+      sortedSheets.reduce((s, r) => s + r.total_amount, 0),
+    ]);
+    rows.push([
+      '準備給日数',
+      ...sortedSheets.map((s) => s.prep_days),
+      sortedSheets.reduce((s, r) => s + r.prep_days, 0),
+    ]);
+    rows.push([
+      '勤務日数',
+      ...sortedSheets.map((s) => s.work_days),
+      sortedSheets.reduce((s, r) => s + r.work_days, 0),
+    ]);
+    rows.push([
+      '交通費',
+      ...sortedSheets.map((s) => s.transport_cost),
+      sortedSheets.reduce((s, r) => s + r.transport_cost, 0),
+    ]);
     rows.push(['備考', ...sortedSheets.map((s) => s.admin_note || ''), '']);
 
     downloadCSV(
-      [headers.join(','), ...rows.map((row) => row.map((cell) => `"${cell}"`).join(','))].join('\n'),
+      [headers.join(','), ...rows.map((row) => row.map((cell) => `"${cell}"`).join(','))].join(
+        '\n'
+      ),
       `出勤簿集計_転置_${yearMonth}.csv`
     );
   };
@@ -603,7 +751,9 @@ export default function AttendanceManagementPage() {
       record.note || '',
     ]);
     downloadCSV(
-      [headers.join(','), ...rows.map((row) => row.map((cell) => `"${cell}"`).join(','))].join('\n'),
+      [headers.join(','), ...rows.map((row) => row.map((cell) => `"${cell}"`).join(','))].join(
+        '\n'
+      ),
       `遅刻早退一覧_${yearMonth}.csv`
     );
   };
@@ -616,8 +766,8 @@ export default function AttendanceManagementPage() {
     return `${date.getMonth() + 1}/${date.getDate()}(${dayLabels[date.getDay()]})`;
   };
 
-  const displayTypes = attendanceTypes.filter((type, index, self) =>
-    index === self.findIndex((t) => t.name === type.name)
+  const displayTypes = attendanceTypes.filter(
+    (type, index, self) => index === self.findIndex((t) => t.name === type.name)
   );
 
   const komaChangingSheets = sheets.filter((s) => s.is_koma_changing);
@@ -633,13 +783,18 @@ export default function AttendanceManagementPage() {
             <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-amber-900">
-                前月（{formatYearMonth(getPrevMonth(getCurrentYearMonth()))}）の出勤簿が未提出の講師が{prevMonthUnsubmitted.length}名います
+                前月（{formatYearMonth(getPrevMonth(getCurrentYearMonth()))}
+                ）の出勤簿が未提出の講師が{prevMonthUnsubmitted.length}名います
               </p>
               <p className="text-xs text-amber-800 mt-1 break-all">
                 {prevMonthUnsubmitted.map((s) => s.teacher?.name ?? '不明').join('、')}
               </p>
               <div className="mt-2">
-                <Button size="sm" variant="secondary" onClick={() => setYearMonth(getPrevMonth(getCurrentYearMonth()))}>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => setYearMonth(getPrevMonth(getCurrentYearMonth()))}
+                >
                   前月を表示
                 </Button>
               </div>
@@ -675,7 +830,9 @@ export default function AttendanceManagementPage() {
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {recentlyRetired.map((t) => (
-                      <Badge key={t.id} className="bg-red-600 text-white">{t.name}</Badge>
+                      <Badge key={t.id} className="bg-red-600 text-white">
+                        {t.name}
+                      </Badge>
                     ))}
                   </div>
                 </CardContent>
@@ -690,7 +847,9 @@ export default function AttendanceManagementPage() {
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {newTeachers.map((t) => (
-                      <Badge key={t.id} className="bg-blue-600 text-white">{t.name}</Badge>
+                      <Badge key={t.id} className="bg-blue-600 text-white">
+                        {t.name}
+                      </Badge>
                     ))}
                   </div>
                 </CardContent>
@@ -724,26 +883,43 @@ export default function AttendanceManagementPage() {
                   </div>
                 )}
                 <div className="relative w-48">
-                  <Select value={selectedSchoolId ?? 'all'} onValueChange={(v) => setSelectedSchoolId(v)}>
+                  <Select
+                    value={selectedSchoolId ?? 'all'}
+                    onValueChange={(v) => setSelectedSchoolId(v)}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="教室を選択">
-                        {!selectedSchoolId || selectedSchoolId === 'all' ? '全教室' : allowedSchools.find((s) => s.id === selectedSchoolId)?.name}
+                        {!selectedSchoolId || selectedSchoolId === 'all'
+                          ? '全教室'
+                          : allowedSchools.find((s) => s.id === selectedSchoolId)?.name}
                       </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       {allowedSchools.length > 1 && <SelectItem value="all">全教室</SelectItem>}
                       {allowedSchools.map((school) => (
-                        <SelectItem key={school.id} value={school.id}>{school.name}</SelectItem>
+                        <SelectItem key={school.id} value={school.id}>
+                          {school.name}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Button variant="ghost" onClick={() => setYearMonth(getPrevMonth(yearMonth))} className="p-2">
+                  <Button
+                    variant="ghost"
+                    onClick={() => setYearMonth(getPrevMonth(yearMonth))}
+                    className="p-2"
+                  >
                     <ChevronLeft className="h-5 w-5" />
                   </Button>
-                  <span className="font-medium min-w-[100px] text-center">{formatYearMonth(yearMonth)}</span>
-                  <Button variant="ghost" onClick={() => setYearMonth(getNextMonth(yearMonth))} className="p-2">
+                  <span className="font-medium min-w-[100px] text-center">
+                    {formatYearMonth(yearMonth)}
+                  </span>
+                  <Button
+                    variant="ghost"
+                    onClick={() => setYearMonth(getNextMonth(yearMonth))}
+                    className="p-2"
+                  >
                     <ChevronRight className="h-5 w-5" />
                   </Button>
                 </div>
@@ -756,9 +932,7 @@ export default function AttendanceManagementPage() {
               <div className="mb-4 flex flex-wrap items-center gap-4">
                 {isManager ? (
                   <>
-                    <span className="text-sm text-text-body">
-                      提出済み: {actionableCount}件
-                    </span>
+                    <span className="text-sm text-text-body">提出済み: {actionableCount}件</span>
                     <div className="flex items-center gap-2">
                       <Select value={selectedAdminId} onValueChange={setSelectedAdminId}>
                         <SelectTrigger className="w-48">
@@ -766,7 +940,9 @@ export default function AttendanceManagementPage() {
                         </SelectTrigger>
                         <SelectContent>
                           {adminUsers.map((u) => (
-                            <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>
+                            <SelectItem key={u.id} value={u.id}>
+                              {u.name}
+                            </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -780,9 +956,7 @@ export default function AttendanceManagementPage() {
                   </>
                 ) : (
                   <>
-                    <span className="text-sm text-text-body">
-                      承認待ち: {actionableCount}件
-                    </span>
+                    <span className="text-sm text-text-body">承認待ち: {actionableCount}件</span>
                     {selectedIds.size > 0 && (
                       <Button onClick={handleBulkApprove}>
                         <CheckCircle className="h-4 w-4 mr-2" />
@@ -804,39 +978,48 @@ export default function AttendanceManagementPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="min-w-[120px] sticky left-0 bg-surface-raised z-10">項目</TableHead>
+                      <TableHead className="min-w-[120px] sticky left-0 bg-surface-raised z-10">
+                        項目
+                      </TableHead>
                       {sortedSheets.map((sheet) => {
                         // 転置ビューでも退職状態バッジを表示する
                         const exitStatusT = getExitStatus(sheet.teacher?.exit_date);
                         return (
-                        <TableHead key={sheet.id} className="text-center min-w-[100px]">
-                          <div className="flex flex-col items-center gap-1">
-                            <span className="font-medium text-xs">{sheet.teacher?.name ?? '不明'}</span>
-                            {/* 社員番号を講師名の下に小さく表示 */}
-                            {sheet.teacher?.employee_no && (
-                              <span className="text-[10px] text-gray-400 tabular-nums">{sheet.teacher.employee_no}</span>
-                            )}
-                            {sheet.is_koma_changing && (
-                              <Badge className="bg-purple-600 text-white text-[9px] px-1">
-                                コマ¥{(sheet.koma_change_from ?? 0).toLocaleString()}→¥{(sheet.koma_change_to ?? 0).toLocaleString()}
+                          <TableHead key={sheet.id} className="text-center min-w-[100px]">
+                            <div className="flex flex-col items-center gap-1">
+                              <span className="font-medium text-xs">
+                                {sheet.teacher?.name ?? '不明'}
+                              </span>
+                              {/* 社員番号を講師名の下に小さく表示 */}
+                              {sheet.teacher?.employee_no && (
+                                <span className="text-[10px] text-gray-400 tabular-nums">
+                                  {sheet.teacher.employee_no}
+                                </span>
+                              )}
+                              {sheet.is_koma_changing && (
+                                <Badge className="bg-purple-600 text-white text-[9px] px-1">
+                                  コマ¥{(sheet.koma_change_from ?? 0).toLocaleString()}→¥
+                                  {(sheet.koma_change_to ?? 0).toLocaleString()}
+                                </Badge>
+                              )}
+                              {/* 退職状態バッジ（転置ビュー用） */}
+                              {exitStatusT === 'leaving' && sheet.teacher?.exit_date && (
+                                <Badge className="bg-orange-500 text-white text-[9px] px-1">
+                                  退職予定 {formatExitMonthDay(sheet.teacher.exit_date)}
+                                </Badge>
+                              )}
+                              {exitStatusT === 'retired' && (
+                                <Badge className="bg-gray-400 text-white text-[9px] px-1">
+                                  退職
+                                </Badge>
+                              )}
+                              <Badge
+                                className={`text-[10px] ${ATTENDANCE_STATUS_COLORS[sheet.status as AttendanceSheetStatus]}`}
+                              >
+                                {ATTENDANCE_STATUS_LABELS[sheet.status as AttendanceSheetStatus]}
                               </Badge>
-                            )}
-                            {/* 退職状態バッジ（転置ビュー用） */}
-                            {exitStatusT === 'leaving' && sheet.teacher?.exit_date && (
-                              <Badge className="bg-orange-500 text-white text-[9px] px-1">
-                                退職予定 {formatExitMonthDay(sheet.teacher.exit_date)}
-                              </Badge>
-                            )}
-                            {exitStatusT === 'retired' && (
-                              <Badge className="bg-gray-400 text-white text-[9px] px-1">
-                                退職
-                              </Badge>
-                            )}
-                            <Badge className={`text-[10px] ${ATTENDANCE_STATUS_COLORS[sheet.status as AttendanceSheetStatus]}`}>
-                              {ATTENDANCE_STATUS_LABELS[sheet.status as AttendanceSheetStatus]}
-                            </Badge>
-                          </div>
-                        </TableHead>
+                            </div>
+                          </TableHead>
                         );
                       })}
                       <TableHead className="text-center font-bold min-w-[80px]">合計</TableHead>
@@ -846,20 +1029,28 @@ export default function AttendanceManagementPage() {
                     {/* コマ種別行 */}
                     {displayTypes.map((type) => (
                       <TableRow key={type.id}>
-                        <TableCell className="font-medium sticky left-0 bg-surface-raised z-10">{type.name}</TableCell>
+                        <TableCell className="font-medium sticky left-0 bg-surface-raised z-10">
+                          {type.name}
+                        </TableCell>
                         {sortedSheets.map((sheet) => {
-                          const td = Object.values(sheet.type_totals).find((t) => t.name === type.name);
+                          const td = Object.values(sheet.type_totals).find(
+                            (t) => t.name === type.name
+                          );
                           return (
                             <TableCell key={sheet.id} className="text-center">
-                              {td?.total || 0}{type.unit === 'hours' ? 'h' : ''}
+                              {td?.total || 0}
+                              {type.unit === 'hours' ? 'h' : ''}
                             </TableCell>
                           );
                         })}
                         <TableCell className="text-center font-medium">
                           {sortedSheets.reduce((sum, sheet) => {
-                            const td = Object.values(sheet.type_totals).find((t) => t.name === type.name);
+                            const td = Object.values(sheet.type_totals).find(
+                              (t) => t.name === type.name
+                            );
                             return sum + (td?.total || 0);
-                          }, 0)}{type.unit === 'hours' ? 'h' : ''}
+                          }, 0)}
+                          {type.unit === 'hours' ? 'h' : ''}
                         </TableCell>
                       </TableRow>
                     ))}
@@ -877,9 +1068,13 @@ export default function AttendanceManagementPage() {
                     </TableRow>
                     {/* 準備給日数 */}
                     <TableRow>
-                      <TableCell className="font-medium sticky left-0 bg-surface-raised z-10">準備給日数</TableCell>
+                      <TableCell className="font-medium sticky left-0 bg-surface-raised z-10">
+                        準備給日数
+                      </TableCell>
                       {sortedSheets.map((sheet) => (
-                        <TableCell key={sheet.id} className="text-center">{sheet.prep_days}日</TableCell>
+                        <TableCell key={sheet.id} className="text-center">
+                          {sheet.prep_days}日
+                        </TableCell>
                       ))}
                       <TableCell className="text-center font-medium">
                         {sortedSheets.reduce((s, r) => s + r.prep_days, 0)}日
@@ -887,9 +1082,13 @@ export default function AttendanceManagementPage() {
                     </TableRow>
                     {/* 勤務日数 */}
                     <TableRow>
-                      <TableCell className="font-medium sticky left-0 bg-surface-raised z-10">勤務日数</TableCell>
+                      <TableCell className="font-medium sticky left-0 bg-surface-raised z-10">
+                        勤務日数
+                      </TableCell>
                       {sortedSheets.map((sheet) => (
-                        <TableCell key={sheet.id} className="text-center">{sheet.work_days}日</TableCell>
+                        <TableCell key={sheet.id} className="text-center">
+                          {sheet.work_days}日
+                        </TableCell>
                       ))}
                       <TableCell className="text-center font-medium">
                         {sortedSheets.reduce((s, r) => s + r.work_days, 0)}日
@@ -897,7 +1096,9 @@ export default function AttendanceManagementPage() {
                     </TableRow>
                     {/* 交通費 (editable) */}
                     <TableRow>
-                      <TableCell className="font-medium sticky left-0 bg-surface-raised z-10">交通費</TableCell>
+                      <TableCell className="font-medium sticky left-0 bg-surface-raised z-10">
+                        交通費
+                      </TableCell>
                       {sortedSheets.map((sheet) => (
                         <TableCell key={sheet.id}>
                           <Input
@@ -916,7 +1117,9 @@ export default function AttendanceManagementPage() {
                     </TableRow>
                     {/* 備考 (editable) */}
                     <TableRow>
-                      <TableCell className="font-medium sticky left-0 bg-surface-raised z-10">備考</TableCell>
+                      <TableCell className="font-medium sticky left-0 bg-surface-raised z-10">
+                        備考
+                      </TableCell>
                       {sortedSheets.map((sheet) => (
                         <TableCell key={sheet.id}>
                           <Input
@@ -931,31 +1134,57 @@ export default function AttendanceManagementPage() {
                     </TableRow>
                     {/* 操作行 */}
                     <TableRow className="bg-gray-50">
-                      <TableCell className="font-medium sticky left-0 bg-gray-50 z-10">操作</TableCell>
+                      <TableCell className="font-medium sticky left-0 bg-gray-50 z-10">
+                        操作
+                      </TableCell>
                       {sortedSheets.map((sheet) => (
                         <TableCell key={sheet.id}>
                           <div className="flex flex-col gap-1 items-center">
-                            <Button variant="secondary" size="sm" onClick={() => handleViewDetail(sheet)} className="text-xs w-full">
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              onClick={() => handleViewDetail(sheet)}
+                              className="text-xs w-full"
+                            >
                               詳細
                             </Button>
                             {sheet.status === 'reviewed' && (
                               <>
-                                <Button size="sm" onClick={() => handleApprove(sheet)} className="text-green-600 hover:text-green-700 hover:bg-green-50 text-xs w-full">
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleApprove(sheet)}
+                                  className="text-green-600 hover:text-green-700 hover:bg-green-50 text-xs w-full"
+                                >
                                   承認
                                 </Button>
-                                <Button variant="danger" size="sm" onClick={() => handleRejectClick(sheet, 'to-manager')} className="text-xs w-full">
+                                <Button
+                                  variant="danger"
+                                  size="sm"
+                                  onClick={() => handleRejectClick(sheet, 'to-manager')}
+                                  className="text-xs w-full"
+                                >
                                   差戻
                                 </Button>
                               </>
                             )}
                             {sheet.status === 'submitted' && (
-                              <Button size="sm" onClick={() => handleApprove(sheet)} className="text-green-600 hover:text-green-700 hover:bg-green-50 text-xs w-full">
+                              <Button
+                                size="sm"
+                                onClick={() => handleApprove(sheet)}
+                                className="text-green-600 hover:text-green-700 hover:bg-green-50 text-xs w-full"
+                              >
                                 承認
                               </Button>
                             )}
                             {sheet.status === 'approved' && (
-                              <Button variant="secondary" size="sm" onClick={() => handleReopenClick(sheet)} className="text-xs w-full">
-                                <RotateCcw className="h-3 w-3 mr-1" />取消
+                              <Button
+                                variant="secondary"
+                                size="sm"
+                                onClick={() => handleReopenClick(sheet)}
+                                className="text-xs w-full"
+                              >
+                                <RotateCcw className="h-3 w-3 mr-1" />
+                                取消
                               </Button>
                             )}
                           </div>
@@ -984,7 +1213,9 @@ export default function AttendanceManagementPage() {
                       <TableHead>講師名</TableHead>
                       <TableHead className="text-center">ステータス</TableHead>
                       {displayTypes.map((type) => (
-                        <TableHead key={type.id} className="text-center">{type.name}</TableHead>
+                        <TableHead key={type.id} className="text-center">
+                          {type.name}
+                        </TableHead>
                       ))}
                       <TableHead className="text-center">合計</TableHead>
                       <TableHead className="text-right">金額</TableHead>
@@ -1000,98 +1231,140 @@ export default function AttendanceManagementPage() {
                       // 退職状態を計算してグレーアウトや退職バッジの表示に使う
                       const exitStatus = getExitStatus(sheet.teacher?.exit_date);
                       return (
-                      <TableRow key={sheet.id} className={exitStatus === 'retired' ? 'opacity-60' : undefined}>
-                        <TableCell>
-                          <Checkbox
-                            checked={selectedIds.has(sheet.id)}
-                            onCheckedChange={() => toggleSelect(sheet.id)}
-                            disabled={!actionableStatuses.includes(sheet.status)}
-                          />
-                        </TableCell>
-                        {showSchoolColumn && <TableCell>{sheet.school?.name ?? ''}</TableCell>}
-                        <TableCell className="text-sm text-gray-500 tabular-nums">
-                          {isAdmin ? (
-                            // 社員番号インライン編集（admin/owner のみ）。Enterで確定（blur）。
-                            <Input
-                              key={`emp-${sheet.id}-${sheet.teacher?.employee_no ?? ''}`}
-                              defaultValue={sheet.teacher?.employee_no ?? ''}
-                              onBlur={(e) => handleEmployeeNoBlur(sheet, e.target.value)}
-                              onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
-                              disabled={!sheet.teacher?.id && !sheet.teacher_id}
-                              placeholder="—"
-                              inputMode="numeric"
-                              className="w-16 h-7 text-center mx-auto"
+                        <TableRow
+                          key={sheet.id}
+                          className={exitStatus === 'retired' ? 'opacity-60' : undefined}
+                        >
+                          <TableCell>
+                            <Checkbox
+                              checked={selectedIds.has(sheet.id)}
+                              onCheckedChange={() => toggleSelect(sheet.id)}
+                              disabled={!actionableStatuses.includes(sheet.status)}
                             />
-                          ) : (
-                            sheet.teacher?.employee_no ?? '—'
-                          )}
-                        </TableCell>
-                        <TableCell className="font-medium">
-                          <span>{sheet.teacher?.name ?? '不明'}</span>
-                          {sheet.is_koma_changing && (
-                            <Badge className="ml-1 bg-purple-600 text-white text-[10px] px-1">
-                              ¥{(sheet.koma_change_from ?? 0).toLocaleString()}→¥{(sheet.koma_change_to ?? 0).toLocaleString()}
-                            </Badge>
-                          )}
-                          {/* 退職状態バッジ: 退職予定はオレンジ、退職済みはグレー */}
-                          {exitStatus === 'leaving' && sheet.teacher?.exit_date && (
-                            <Badge className="ml-1 bg-orange-500 text-white text-[10px] px-1">
-                              退職予定 {formatExitMonthDay(sheet.teacher.exit_date)}
-                            </Badge>
-                          )}
-                          {exitStatus === 'retired' && (
-                            <Badge className="ml-1 bg-gray-400 text-white text-[10px] px-1">
-                              退職
-                            </Badge>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <Badge className={ATTENDANCE_STATUS_COLORS[sheet.status as AttendanceSheetStatus]}>
-                            {ATTENDANCE_STATUS_LABELS[sheet.status as AttendanceSheetStatus]}
-                          </Badge>
-                        </TableCell>
-                        {displayTypes.map((type) => {
-                          const typeData = Object.values(sheet.type_totals).find((t) => t.name === type.name);
-                          return (
-                            <TableCell key={type.id} className="text-center">
-                              {typeData?.total || 0}{type.unit === 'hours' ? 'h' : ''}
-                            </TableCell>
-                          );
-                        })}
-                        <TableCell className="text-center font-medium">{sheet.grand_total}</TableCell>
-                        <TableCell className="text-right">¥{sheet.total_amount.toLocaleString()}</TableCell>
-                        <TableCell className="text-center">{sheet.prep_days}日</TableCell>
-                        <TableCell className="text-center">{sheet.work_days}日</TableCell>
-                        <TableCell>
-                          <Input
-                            type="number"
-                            min="0"
-                            value={sheet.transport_cost || ''}
-                            onChange={(e) => handleTransportCostChange(sheet.id, e.target.value)}
-                            placeholder="0"
-                            className="w-20 h-7 text-sm text-right"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Input
-                            value={sheet.admin_note || ''}
-                            onChange={(e) => handleAdminNoteChange(sheet.id, e.target.value)}
-                            placeholder="備考"
-                            className="h-7 text-sm min-w-[100px]"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex flex-wrap gap-1">
-                            <Button variant="secondary" size="sm" onClick={() => handleViewDetail(sheet)}>
-                              詳細
-                            </Button>
-                            {isManager && sheet.status === 'submitted' && (
-                              <Button variant="danger" size="sm" onClick={() => handleRejectClick(sheet, 'to-teacher')}>
-                                差戻
-                              </Button>
+                          </TableCell>
+                          {showSchoolColumn && <TableCell>{sheet.school?.name ?? ''}</TableCell>}
+                          <TableCell className="text-sm text-gray-500 tabular-nums">
+                            {isAdmin ? (
+                              // 社員番号インライン編集（admin/owner のみ）。Enterで確定（blur）。
+                              <Input
+                                key={`emp-${sheet.id}-${sheet.teacher?.employee_no ?? ''}`}
+                                defaultValue={sheet.teacher?.employee_no ?? ''}
+                                onBlur={(e) => handleEmployeeNoBlur(sheet, e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+                                }}
+                                disabled={!sheet.teacher?.id && !sheet.teacher_id}
+                                placeholder="—"
+                                inputMode="numeric"
+                                className="w-16 h-7 text-center mx-auto"
+                              />
+                            ) : (
+                              (sheet.teacher?.employee_no ?? '—')
                             )}
-                            {isAdmin && sheet.status === 'reviewed' && (
-                              <>
+                          </TableCell>
+                          <TableCell className="font-medium">
+                            <span>{sheet.teacher?.name ?? '不明'}</span>
+                            {sheet.is_koma_changing && (
+                              <Badge className="ml-1 bg-purple-600 text-white text-[10px] px-1">
+                                ¥{(sheet.koma_change_from ?? 0).toLocaleString()}→¥
+                                {(sheet.koma_change_to ?? 0).toLocaleString()}
+                              </Badge>
+                            )}
+                            {/* 退職状態バッジ: 退職予定はオレンジ、退職済みはグレー */}
+                            {exitStatus === 'leaving' && sheet.teacher?.exit_date && (
+                              <Badge className="ml-1 bg-orange-500 text-white text-[10px] px-1">
+                                退職予定 {formatExitMonthDay(sheet.teacher.exit_date)}
+                              </Badge>
+                            )}
+                            {exitStatus === 'retired' && (
+                              <Badge className="ml-1 bg-gray-400 text-white text-[10px] px-1">
+                                退職
+                              </Badge>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <Badge
+                              className={
+                                ATTENDANCE_STATUS_COLORS[sheet.status as AttendanceSheetStatus]
+                              }
+                            >
+                              {ATTENDANCE_STATUS_LABELS[sheet.status as AttendanceSheetStatus]}
+                            </Badge>
+                          </TableCell>
+                          {displayTypes.map((type) => {
+                            const typeData = Object.values(sheet.type_totals).find(
+                              (t) => t.name === type.name
+                            );
+                            return (
+                              <TableCell key={type.id} className="text-center">
+                                {typeData?.total || 0}
+                                {type.unit === 'hours' ? 'h' : ''}
+                              </TableCell>
+                            );
+                          })}
+                          <TableCell className="text-center font-medium">
+                            {sheet.grand_total}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            ¥{sheet.total_amount.toLocaleString()}
+                          </TableCell>
+                          <TableCell className="text-center">{sheet.prep_days}日</TableCell>
+                          <TableCell className="text-center">{sheet.work_days}日</TableCell>
+                          <TableCell>
+                            <Input
+                              type="number"
+                              min="0"
+                              value={sheet.transport_cost || ''}
+                              onChange={(e) => handleTransportCostChange(sheet.id, e.target.value)}
+                              placeholder="0"
+                              className="w-20 h-7 text-sm text-right"
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Input
+                              value={sheet.admin_note || ''}
+                              onChange={(e) => handleAdminNoteChange(sheet.id, e.target.value)}
+                              placeholder="備考"
+                              className="h-7 text-sm min-w-[100px]"
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex flex-wrap gap-1">
+                              <Button
+                                variant="secondary"
+                                size="sm"
+                                onClick={() => handleViewDetail(sheet)}
+                              >
+                                詳細
+                              </Button>
+                              {isManager && sheet.status === 'submitted' && (
+                                <Button
+                                  variant="danger"
+                                  size="sm"
+                                  onClick={() => handleRejectClick(sheet, 'to-teacher')}
+                                >
+                                  差戻
+                                </Button>
+                              )}
+                              {isAdmin && sheet.status === 'reviewed' && (
+                                <>
+                                  <Button
+                                    size="sm"
+                                    onClick={() => handleApprove(sheet)}
+                                    className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                                  >
+                                    承認
+                                  </Button>
+                                  <Button
+                                    variant="danger"
+                                    size="sm"
+                                    onClick={() => handleRejectClick(sheet, 'to-manager')}
+                                  >
+                                    差戻
+                                  </Button>
+                                </>
+                              )}
+                              {isAdmin && sheet.status === 'submitted' && (
                                 <Button
                                   size="sm"
                                   onClick={() => handleApprove(sheet)}
@@ -1099,28 +1372,20 @@ export default function AttendanceManagementPage() {
                                 >
                                   承認
                                 </Button>
-                                <Button variant="danger" size="sm" onClick={() => handleRejectClick(sheet, 'to-manager')}>
-                                  差戻
+                              )}
+                              {isAdmin && sheet.status === 'approved' && (
+                                <Button
+                                  variant="secondary"
+                                  size="sm"
+                                  onClick={() => handleReopenClick(sheet)}
+                                >
+                                  <RotateCcw className="h-3 w-3 mr-1" />
+                                  取消
                                 </Button>
-                              </>
-                            )}
-                            {isAdmin && sheet.status === 'submitted' && (
-                              <Button
-                                size="sm"
-                                onClick={() => handleApprove(sheet)}
-                                className="text-green-600 hover:text-green-700 hover:bg-green-50"
-                              >
-                                承認
-                              </Button>
-                            )}
-                            {isAdmin && sheet.status === 'approved' && (
-                              <Button variant="secondary" size="sm" onClick={() => handleReopenClick(sheet)}>
-                                <RotateCcw className="h-3 w-3 mr-1" />取消
-                              </Button>
-                            )}
-                          </div>
-                        </TableCell>
-                      </TableRow>
+                              )}
+                            </div>
+                          </TableCell>
+                        </TableRow>
                       );
                     })}
                     {/* 合計行 */}
@@ -1129,9 +1394,12 @@ export default function AttendanceManagementPage() {
                       {displayTypes.map((type) => (
                         <TableCell key={type.id} className="text-center">
                           {sheets.reduce((sum, row) => {
-                            const typeData = Object.values(row.type_totals).find((t) => t.name === type.name);
+                            const typeData = Object.values(row.type_totals).find(
+                              (t) => t.name === type.name
+                            );
                             return sum + (typeData?.total || 0);
-                          }, 0)}{type.unit === 'hours' ? 'h' : ''}
+                          }, 0)}
+                          {type.unit === 'hours' ? 'h' : ''}
                         </TableCell>
                       ))}
                       <TableCell className="text-center">
@@ -1176,7 +1444,9 @@ export default function AttendanceManagementPage() {
                     </SelectTrigger>
                     <SelectContent>
                       {allTeachers.map((t) => (
-                        <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                        <SelectItem key={t.id} value={t.id}>
+                          {t.name}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -1186,7 +1456,9 @@ export default function AttendanceManagementPage() {
                     onChange={(e) => setRetiringExitDate(e.target.value)}
                     className="w-40"
                   />
-                  <Button size="sm" onClick={handleSetExitDate} disabled={!retiringTeacherId}>登録</Button>
+                  <Button size="sm" onClick={handleSetExitDate} disabled={!retiringTeacherId}>
+                    登録
+                  </Button>
                 </div>
                 {/* exit_date が設定されている全講師を表示（当月限定をやめ、未来月の退職日も確認できるようにする） */}
                 {allTeachers.some((t) => !!t.exit_date) && (
@@ -1194,7 +1466,10 @@ export default function AttendanceManagementPage() {
                     {allTeachers
                       .filter((t) => !!t.exit_date)
                       .map((t) => (
-                        <div key={t.id} className="inline-flex items-center gap-1 bg-orange-500 text-white rounded-md px-2 py-1 text-xs">
+                        <div
+                          key={t.id}
+                          className="inline-flex items-center gap-1 bg-orange-500 text-white rounded-md px-2 py-1 text-xs"
+                        >
                           <span className="font-medium">{t.name}</span>
                           <span>（{t.exit_date}）</span>
                           {/* 解除ボタン: コマ給変更の解除ボタンと同じ作法 */}
@@ -1222,7 +1497,9 @@ export default function AttendanceManagementPage() {
                     </SelectTrigger>
                     <SelectContent>
                       {allTeachers.map((t) => (
-                        <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                        <SelectItem key={t.id} value={t.id}>
+                          {t.name}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -1258,17 +1535,18 @@ export default function AttendanceManagementPage() {
                   <div className="flex flex-wrap gap-2 mt-2">
                     {Array.from(
                       new Map(
-                        komaChangingSheets.map((s) => [
-                          s.teacher?.id || s.teacher_id || s.id,
-                          s,
-                        ])
+                        komaChangingSheets.map((s) => [s.teacher?.id || s.teacher_id || s.id, s])
                       ).values()
                     ).map((s) => (
-                      <div key={s.id} className="inline-flex items-center gap-1 bg-purple-600 text-white rounded-md px-2 py-1 text-xs">
+                      <div
+                        key={s.id}
+                        className="inline-flex items-center gap-1 bg-purple-600 text-white rounded-md px-2 py-1 text-xs"
+                      >
                         <TrendingUp className="h-3 w-3" />
                         <span className="font-medium">{s.teacher?.name ?? '不明'}</span>
                         <span>
-                          ¥{(s.koma_change_from ?? 0).toLocaleString()}→¥{(s.koma_change_to ?? 0).toLocaleString()}
+                          ¥{(s.koma_change_from ?? 0).toLocaleString()}→¥
+                          {(s.koma_change_to ?? 0).toLocaleString()}
                         </span>
                         <button
                           type="button"
@@ -1294,10 +1572,16 @@ export default function AttendanceManagementPage() {
               <CardTitle>
                 遅刻・早退一覧
                 {lateEarlyRecords.length > 0 && (
-                  <span className="text-text-body font-normal text-sm ml-2">（{lateEarlyRecords.length}件）</span>
+                  <span className="text-text-body font-normal text-sm ml-2">
+                    （{lateEarlyRecords.length}件）
+                  </span>
                 )}
               </CardTitle>
-              <Button variant="secondary" onClick={handleExportLateEarlyCSV} disabled={lateEarlyRecords.length === 0}>
+              <Button
+                variant="secondary"
+                onClick={handleExportLateEarlyCSV}
+                disabled={lateEarlyRecords.length === 0}
+              >
                 <Download className="mr-2 h-4 w-4" />
                 CSVエクスポート
               </Button>
@@ -1326,7 +1610,9 @@ export default function AttendanceManagementPage() {
                         <TableCell>{formatLateEarlyDate(record.date)}</TableCell>
                         {showSchoolColumn && <TableCell>{record.sheet?.school?.name}</TableCell>}
                         <TableCell className="font-medium">{record.sheet?.teacher?.name}</TableCell>
-                        <TableCell className="text-red-600 font-medium">{record.late_early}</TableCell>
+                        <TableCell className="text-red-600 font-medium">
+                          {record.late_early}
+                        </TableCell>
                         <TableCell className="text-text-body">{record.note || '-'}</TableCell>
                       </TableRow>
                     ))}
@@ -1363,8 +1649,12 @@ export default function AttendanceManagementPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="secondary" onClick={() => setIsRejectDialogOpen(false)}>キャンセル</Button>
-            <Button variant="danger" onClick={handleReject}>差し戻す</Button>
+            <Button variant="secondary" onClick={() => setIsRejectDialogOpen(false)}>
+              キャンセル
+            </Button>
+            <Button variant="danger" onClick={handleReject}>
+              差し戻す
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -1379,7 +1669,9 @@ export default function AttendanceManagementPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setIsReopenDialogOpen(false)}>キャンセル</AlertDialogCancel>
+            <AlertDialogCancel onClick={() => setIsReopenDialogOpen(false)}>
+              キャンセル
+            </AlertDialogCancel>
             <AlertDialogAction onClick={handleReopen}>取り消す</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

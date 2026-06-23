@@ -32,12 +32,14 @@ async function fetchSubjectProposals(
   schoolId: string,
   season: string,
   year?: number
-): Promise<{ proposed: Record<string, Record<string, number>>; applied: Record<string, Record<string, number>> }> {
+): Promise<{
+  proposed: Record<string, Record<string, number>>;
+  applied: Record<string, Record<string, number>>;
+}> {
   // proposed: 提案コマ（koma_count）の生徒×科目合計 / applied: 申込コマ（applied_koma）の生徒×科目合計
   const proposed: Record<string, Record<string, number>> = {};
   const applied: Record<string, Record<string, number>> = {};
   try {
-
     // ========== 提案書ベース（seasonal_proposals + seasonal_proposal_units） ==========
     // 以前は proposals → textbooks → units(並列バッチ) と DB と 3 ラウンド往復していた。
     // 計測の結果 DB 自体は warm 数ms で速く、ボトルネックは往復回数。教科(textbook.subject)を
@@ -45,10 +47,14 @@ async function fetchSubjectProposals(
     // units は 1000 行上限を超えるため全件を 1 クエリにできず、提案書ID単位の並列バッチ（1ラウンド）を維持する。
 
     // PostgREST の to-one 埋め込みはバージョンによりオブジェクト/配列のどちらでも返りうるので吸収する
-    const firstOf = <T,>(v: T | T[] | null | undefined): T | null =>
+    const firstOf = <T>(v: T | T[] | null | undefined): T | null =>
       Array.isArray(v) ? (v[0] ?? null) : (v ?? null);
 
-    type ProposalRow = { id: string; student_id: string; textbook: { subject: string | null } | { subject: string | null }[] | null };
+    type ProposalRow = {
+      id: string;
+      student_id: string;
+      textbook: { subject: string | null } | { subject: string | null }[] | null;
+    };
     // 提案書は通常 1000 行未満だが、安全のためページングする（教科を埋め込んで往復を1つ削減）
     const proposals = await fetchAllPaged<ProposalRow>((from, to) => {
       let q = supabaseAdmin
@@ -83,7 +89,14 @@ async function fetchSubjectProposals(
       return { proposed, applied };
     }
 
-    type UnitRow = { id: string; proposal_id: string; koma_count: number; group_id: number; applied_koma: number | null; applied_group_id: number };
+    type UnitRow = {
+      id: string;
+      proposal_id: string;
+      koma_count: number;
+      group_id: number;
+      applied_koma: number | null;
+      applied_group_id: number;
+    };
     // 1 提案書あたり最大 ~55 ユニット。15 提案書/バッチで 1 クエリ最大 825 行に抑え、
     // PostgREST のデフォルト 1000 行上限の余裕内に収める。バッチ同士は並列実行（往復は1ラウンド）。
     const BATCH = 15;
@@ -148,11 +161,13 @@ async function fetchSubjectProposals(
 
       if (proposedTotal > 0) {
         if (!proposed[info.studentId]) proposed[info.studentId] = {};
-        proposed[info.studentId][info.subject] = (proposed[info.studentId][info.subject] || 0) + proposedTotal;
+        proposed[info.studentId][info.subject] =
+          (proposed[info.studentId][info.subject] || 0) + proposedTotal;
       }
       if (appliedTotal > 0) {
         if (!applied[info.studentId]) applied[info.studentId] = {};
-        applied[info.studentId][info.subject] = (applied[info.studentId][info.subject] || 0) + appliedTotal;
+        applied[info.studentId][info.subject] =
+          (applied[info.studentId][info.subject] || 0) + appliedTotal;
       }
     }
 
@@ -211,207 +226,263 @@ async function runBatchForSchool(
   const promises: Promise<void>[] = [];
 
   if (targets.includes('students')) {
-    promises.push((async () => {
-      // 大型校では 1000 名を超えうるため全件ページング取得。
-      // 並び替えキーが一意でないので id を最終ソートキーに加えて安定化する。
-      const data = await fetchAllPaged<Record<string, unknown>>((from, to) =>
-        supabaseAdmin
-          .from('students')
-          .select('*')
-          .eq('school_id', schoolId)
-          .is('deleted_at', null)
-          .neq('status', 'withdrawn')
-          .order('grade', { ascending: true })
-          .order('last_name_kana', { ascending: true, nullsFirst: false })
-          .order('first_name_kana', { ascending: true, nullsFirst: false })
-          .order('id', { ascending: true })
-          .range(from, to)
-      ).catch(() => []);
-      batchResult.students = data;
-    })());
+    promises.push(
+      (async () => {
+        // 大型校では 1000 名を超えうるため全件ページング取得。
+        // 並び替えキーが一意でないので id を最終ソートキーに加えて安定化する。
+        const data = await fetchAllPaged<Record<string, unknown>>((from, to) =>
+          supabaseAdmin
+            .from('students')
+            .select('*')
+            .eq('school_id', schoolId)
+            .is('deleted_at', null)
+            .neq('status', 'withdrawn')
+            .order('grade', { ascending: true })
+            .order('last_name_kana', { ascending: true, nullsFirst: false })
+            .order('first_name_kana', { ascending: true, nullsFirst: false })
+            .order('id', { ascending: true })
+            .range(from, to)
+        ).catch(() => []);
+        batchResult.students = data;
+      })()
+    );
   }
 
   if (targets.includes('progress_items')) {
-    promises.push((async () => {
-      let query = supabaseAdmin
-        .from('course_prep_progress_items')
-        .select('*')
-        .eq('school_id', schoolId)
-        .eq('season', season)
-        .eq('year', year)
-        .order('sort_order', { ascending: true });
-      if (!includeHidden) {
-        query = query.or('is_hidden.eq.false,is_hidden.is.null');
-      }
-      const { data } = await query;
-      batchResult.progress_items = data || [];
-    })());
+    promises.push(
+      (async () => {
+        let query = supabaseAdmin
+          .from('course_prep_progress_items')
+          .select('*')
+          .eq('school_id', schoolId)
+          .eq('season', season)
+          .eq('year', year)
+          .order('sort_order', { ascending: true });
+        if (!includeHidden) {
+          query = query.or('is_hidden.eq.false,is_hidden.is.null');
+        }
+        const { data } = await query;
+        batchResult.progress_items = data || [];
+      })()
+    );
   }
 
   if (targets.includes('student_progress')) {
-    promises.push((async () => {
-      const { data } = await supabaseAdmin
-        .from('course_prep_student_progress')
-        .select('*, item:course_prep_progress_items!inner(school_id, season, year)')
-        .eq('item.school_id', schoolId)
-        .eq('item.season', season)
-        .eq('item.year', year);
-      batchResult.student_progress = (data || []).map(({ item: _item, ...rest }: { item: unknown; [key: string]: unknown }) => rest);
-    })());
+    promises.push(
+      (async () => {
+        const { data } = await supabaseAdmin
+          .from('course_prep_student_progress')
+          .select('*, item:course_prep_progress_items!inner(school_id, season, year)')
+          .eq('item.school_id', schoolId)
+          .eq('item.season', season)
+          .eq('item.year', year);
+        batchResult.student_progress = (data || []).map(
+          ({ item: _item, ...rest }: { item: unknown; [key: string]: unknown }) => rest
+        );
+      })()
+    );
   }
 
   if (targets.includes('period')) {
-    promises.push((async () => {
-      const { data } = await supabaseAdmin
-        .from('course_prep_periods')
-        .select('*')
-        .eq('school_id', schoolId)
-        .eq('season', season)
-        .eq('year', year)
-        .maybeSingle();
-      batchResult.period = data;
-    })());
+    promises.push(
+      (async () => {
+        const { data } = await supabaseAdmin
+          .from('course_prep_periods')
+          .select('*')
+          .eq('school_id', schoolId)
+          .eq('season', season)
+          .eq('year', year)
+          .maybeSingle();
+        batchResult.period = data;
+      })()
+    );
   }
 
   if (targets.includes('auto_values')) {
-    promises.push((async () => {
-      // 通塾日程は (生徒数 × 曜日) でスケールし単一校でも 1000 行を超えうるため
-      // 全件ページング取得する（切り捨てると一部生徒の自動コマ数計算が欠落する）。
-      const [regularPatterns, seasonalPatterns, { data: periodForAuto }, proposalMaps] = await Promise.all([
-        fetchAllPaged<{ student_id: string; day_of_week: number }>((from, to) =>
-          supabaseAdmin.from('schedule_regular_patterns')
-            .select('student_id, day_of_week, id')
-            .eq('school_id', schoolId).eq('period_type', 'regular').eq('is_active', true)
-            .order('id', { ascending: true }).range(from, to)
-        ).catch(() => []),
-        fetchAllPaged<{ student_id: string; day_of_week: number }>((from, to) =>
-          supabaseAdmin.from('schedule_regular_patterns')
-            .select('student_id, day_of_week, id')
-            .eq('school_id', schoolId).eq('period_type', season).eq('is_active', true)
-            .order('id', { ascending: true }).range(from, to)
-        ).catch(() => []),
-        supabaseAdmin.from('course_prep_periods')
-          .select('schedule_start_date, schedule_end_date')
-          .eq('school_id', schoolId).eq('season', season).eq('year', year).maybeSingle(),
-        fetchSubjectProposals(supabaseAdmin, schoolId, season, year),
-      ]);
-      const regularWeeklyMap: Record<string, number> = {};
-      const regularDayMap: Record<string, Record<number, number>> = {};
-      for (const p of (regularPatterns || []) as { student_id: string; day_of_week: number }[]) {
-        regularWeeklyMap[p.student_id] = (regularWeeklyMap[p.student_id] || 0) + 1;
-        if (!regularDayMap[p.student_id]) regularDayMap[p.student_id] = {};
-        regularDayMap[p.student_id][p.day_of_week] = (regularDayMap[p.student_id][p.day_of_week] || 0) + 1;
-      }
-      const seasonalDayMap: Record<string, Record<number, number>> = {};
-      for (const p of (seasonalPatterns || []) as { student_id: string; day_of_week: number }[]) {
-        if (!seasonalDayMap[p.student_id]) seasonalDayMap[p.student_id] = {};
-        seasonalDayMap[p.student_id][p.day_of_week] = (seasonalDayMap[p.student_id][p.day_of_week] || 0) + 1;
-      }
-      let dayCounts: Record<number, number> | null = null;
-      if (periodForAuto?.schedule_start_date && periodForAuto?.schedule_end_date) {
-        dayCounts = countDayOccurrences(periodForAuto.schedule_start_date, periodForAuto.schedule_end_date);
-      }
-      const autoResult: Record<string, { regular_weekly: number; course_sessions: number; proposal_total?: number; subject_proposals?: Record<string, number>; applied_total?: number; subject_applied?: Record<string, number> }> = {};
-      const allIds = Array.from(new Set([...Object.keys(regularWeeklyMap), ...Object.keys(seasonalDayMap)]));
-      for (const sid of allIds) {
-        const weeklyCount = regularWeeklyMap[sid] || 0;
-        const dayMap = Object.keys(seasonalDayMap[sid] || {}).length > 0
-          ? seasonalDayMap[sid]
-          : regularDayMap[sid] || {};
-        let sessions = 0;
-        if (dayCounts) {
-          for (const [day, patternCount] of Object.entries(dayMap)) {
-            sessions += patternCount * (dayCounts[Number(day)] || 0);
+    promises.push(
+      (async () => {
+        // 通塾日程は (生徒数 × 曜日) でスケールし単一校でも 1000 行を超えうるため
+        // 全件ページング取得する（切り捨てると一部生徒の自動コマ数計算が欠落する）。
+        const [regularPatterns, seasonalPatterns, { data: periodForAuto }, proposalMaps] =
+          await Promise.all([
+            fetchAllPaged<{ student_id: string; day_of_week: number }>((from, to) =>
+              supabaseAdmin
+                .from('schedule_regular_patterns')
+                .select('student_id, day_of_week, id')
+                .eq('school_id', schoolId)
+                .eq('period_type', 'regular')
+                .eq('is_active', true)
+                .order('id', { ascending: true })
+                .range(from, to)
+            ).catch(() => []),
+            fetchAllPaged<{ student_id: string; day_of_week: number }>((from, to) =>
+              supabaseAdmin
+                .from('schedule_regular_patterns')
+                .select('student_id, day_of_week, id')
+                .eq('school_id', schoolId)
+                .eq('period_type', season)
+                .eq('is_active', true)
+                .order('id', { ascending: true })
+                .range(from, to)
+            ).catch(() => []),
+            supabaseAdmin
+              .from('course_prep_periods')
+              .select('schedule_start_date, schedule_end_date')
+              .eq('school_id', schoolId)
+              .eq('season', season)
+              .eq('year', year)
+              .maybeSingle(),
+            fetchSubjectProposals(supabaseAdmin, schoolId, season, year),
+          ]);
+        const regularWeeklyMap: Record<string, number> = {};
+        const regularDayMap: Record<string, Record<number, number>> = {};
+        for (const p of (regularPatterns || []) as { student_id: string; day_of_week: number }[]) {
+          regularWeeklyMap[p.student_id] = (regularWeeklyMap[p.student_id] || 0) + 1;
+          if (!regularDayMap[p.student_id]) regularDayMap[p.student_id] = {};
+          regularDayMap[p.student_id][p.day_of_week] =
+            (regularDayMap[p.student_id][p.day_of_week] || 0) + 1;
+        }
+        const seasonalDayMap: Record<string, Record<number, number>> = {};
+        for (const p of (seasonalPatterns || []) as { student_id: string; day_of_week: number }[]) {
+          if (!seasonalDayMap[p.student_id]) seasonalDayMap[p.student_id] = {};
+          seasonalDayMap[p.student_id][p.day_of_week] =
+            (seasonalDayMap[p.student_id][p.day_of_week] || 0) + 1;
+        }
+        let dayCounts: Record<number, number> | null = null;
+        if (periodForAuto?.schedule_start_date && periodForAuto?.schedule_end_date) {
+          dayCounts = countDayOccurrences(
+            periodForAuto.schedule_start_date,
+            periodForAuto.schedule_end_date
+          );
+        }
+        const autoResult: Record<
+          string,
+          {
+            regular_weekly: number;
+            course_sessions: number;
+            proposal_total?: number;
+            subject_proposals?: Record<string, number>;
+            applied_total?: number;
+            subject_applied?: Record<string, number>;
           }
-        } else {
-          sessions = Object.values(dayMap).reduce((s, c) => s + c, 0);
+        > = {};
+        const allIds = Array.from(
+          new Set([...Object.keys(regularWeeklyMap), ...Object.keys(seasonalDayMap)])
+        );
+        for (const sid of allIds) {
+          const weeklyCount = regularWeeklyMap[sid] || 0;
+          const dayMap =
+            Object.keys(seasonalDayMap[sid] || {}).length > 0
+              ? seasonalDayMap[sid]
+              : regularDayMap[sid] || {};
+          let sessions = 0;
+          if (dayCounts) {
+            for (const [day, patternCount] of Object.entries(dayMap)) {
+              sessions += patternCount * (dayCounts[Number(day)] || 0);
+            }
+          } else {
+            sessions = Object.values(dayMap).reduce((s, c) => s + c, 0);
+          }
+          autoResult[sid] = {
+            regular_weekly: weeklyCount,
+            course_sessions: sessions,
+          };
         }
-        autoResult[sid] = {
-          regular_weekly: weeklyCount,
-          course_sessions: sessions,
-        };
-      }
-      const proposalSids = Array.from(new Set([
-        ...Object.keys(proposalMaps.proposed),
-        ...Object.keys(proposalMaps.applied),
-      ]));
-      for (const sid of proposalSids) {
-        if (!autoResult[sid]) {
-          autoResult[sid] = { regular_weekly: 0, course_sessions: 0 };
+        const proposalSids = Array.from(
+          new Set([...Object.keys(proposalMaps.proposed), ...Object.keys(proposalMaps.applied)])
+        );
+        for (const sid of proposalSids) {
+          if (!autoResult[sid]) {
+            autoResult[sid] = { regular_weekly: 0, course_sessions: 0 };
+          }
+          const propSubjects = proposalMaps.proposed[sid];
+          if (propSubjects) {
+            autoResult[sid].subject_proposals = propSubjects;
+            autoResult[sid].proposal_total = Object.values(propSubjects).reduce((a, b) => a + b, 0);
+          }
+          const appliedSubjects = proposalMaps.applied[sid];
+          if (appliedSubjects) {
+            autoResult[sid].subject_applied = appliedSubjects;
+            autoResult[sid].applied_total = Object.values(appliedSubjects).reduce(
+              (a, b) => a + b,
+              0
+            );
+          }
         }
-        const propSubjects = proposalMaps.proposed[sid];
-        if (propSubjects) {
-          autoResult[sid].subject_proposals = propSubjects;
-          autoResult[sid].proposal_total = Object.values(propSubjects).reduce((a, b) => a + b, 0);
-        }
-        const appliedSubjects = proposalMaps.applied[sid];
-        if (appliedSubjects) {
-          autoResult[sid].subject_applied = appliedSubjects;
-          autoResult[sid].applied_total = Object.values(appliedSubjects).reduce((a, b) => a + b, 0);
-        }
-      }
-      batchResult.auto_values = autoResult;
-    })());
+        batchResult.auto_values = autoResult;
+      })()
+    );
   }
 
   if (targets.includes('schedule_tasks')) {
-    promises.push((async () => {
-      const { data: tasks } = await supabaseAdmin
-        .from('course_prep_schedule_tasks')
-        .select('*')
-        .eq('school_id', schoolId)
-        .eq('season', season)
-        .eq('year', year)
-        .order('sort_order', { ascending: true });
-      if (!tasks || tasks.length === 0) { batchResult.schedule_tasks = []; return; }
-      const taskIds = tasks.map((t: { id: string }) => t.id);
-      const linkedItemIds = tasks
-        .map((t: { linked_progress_item_id: string | null }) => t.linked_progress_item_id)
-        .filter((id: string | null): id is string => !!id);
-      const uniqueLinkedIds = Array.from(new Set(linkedItemIds));
-
-      const [{ data: markers }, studentCount, progressData] = await Promise.all([
-        supabaseAdmin
-          .from('course_prep_schedule_markers')
+    promises.push(
+      (async () => {
+        const { data: tasks } = await supabaseAdmin
+          .from('course_prep_schedule_tasks')
           .select('*')
-          .in('task_id', taskIds)
-          .order('marker_date', { ascending: true }),
-        uniqueLinkedIds.length > 0
-          ? supabaseAdmin
-              .from('students')
-              .select('id', { count: 'exact', head: true })
-              .eq('school_id', schoolId)
-              .is('deleted_at', null)
-              .neq('status', 'withdrawn')
-              .then(({ count }) => count || 0)
-          : Promise.resolve(0),
-        uniqueLinkedIds.length > 0
-          ? supabaseAdmin
-              .from('course_prep_student_progress')
-              .select('item_id, status')
-              .in('item_id', uniqueLinkedIds)
-              .then(({ data }) => data || [])
-          : Promise.resolve([]),
-      ]);
+          .eq('school_id', schoolId)
+          .eq('season', season)
+          .eq('year', year)
+          .order('sort_order', { ascending: true });
+        if (!tasks || tasks.length === 0) {
+          batchResult.schedule_tasks = [];
+          return;
+        }
+        const taskIds = tasks.map((t: { id: string }) => t.id);
+        const linkedItemIds = tasks
+          .map((t: { linked_progress_item_id: string | null }) => t.linked_progress_item_id)
+          .filter((id: string | null): id is string => !!id);
+        const uniqueLinkedIds = Array.from(new Set(linkedItemIds));
 
-      const markersByTask = new Map<string, unknown[]>();
-      for (const m of (markers || [])) {
-        const tid = (m as { task_id: string }).task_id;
-        if (!markersByTask.has(tid)) markersByTask.set(tid, []);
-        markersByTask.get(tid)!.push(m);
-      }
-      const progressRateMap: Record<string, { total: number; completed: number }> = {};
-      for (const itemId of uniqueLinkedIds) {
-        const related = (progressData as { item_id: string; status: string }[]).filter((p) => p.item_id === itemId);
-        const completed = related.filter((p) => p.status === 'completed').length;
-        progressRateMap[itemId] = { total: studentCount as number, completed };
-      }
-      batchResult.schedule_tasks = tasks.map((t: { id: string; linked_progress_item_id: string | null }) => ({
-        ...t,
-        markers: markersByTask.get(t.id) || [],
-        linked_progress_rate: t.linked_progress_item_id ? progressRateMap[t.linked_progress_item_id] || null : null,
-      }));
-    })());
+        const [{ data: markers }, studentCount, progressData] = await Promise.all([
+          supabaseAdmin
+            .from('course_prep_schedule_markers')
+            .select('*')
+            .in('task_id', taskIds)
+            .order('marker_date', { ascending: true }),
+          uniqueLinkedIds.length > 0
+            ? supabaseAdmin
+                .from('students')
+                .select('id', { count: 'exact', head: true })
+                .eq('school_id', schoolId)
+                .is('deleted_at', null)
+                .neq('status', 'withdrawn')
+                .then(({ count }) => count || 0)
+            : Promise.resolve(0),
+          uniqueLinkedIds.length > 0
+            ? supabaseAdmin
+                .from('course_prep_student_progress')
+                .select('item_id, status')
+                .in('item_id', uniqueLinkedIds)
+                .then(({ data }) => data || [])
+            : Promise.resolve([]),
+        ]);
+
+        const markersByTask = new Map<string, unknown[]>();
+        for (const m of markers || []) {
+          const tid = (m as { task_id: string }).task_id;
+          if (!markersByTask.has(tid)) markersByTask.set(tid, []);
+          markersByTask.get(tid)!.push(m);
+        }
+        const progressRateMap: Record<string, { total: number; completed: number }> = {};
+        for (const itemId of uniqueLinkedIds) {
+          const related = (progressData as { item_id: string; status: string }[]).filter(
+            (p) => p.item_id === itemId
+          );
+          const completed = related.filter((p) => p.status === 'completed').length;
+          progressRateMap[itemId] = { total: studentCount as number, completed };
+        }
+        batchResult.schedule_tasks = tasks.map(
+          (t: { id: string; linked_progress_item_id: string | null }) => ({
+            ...t,
+            markers: markersByTask.get(t.id) || [],
+            linked_progress_rate: t.linked_progress_item_id
+              ? progressRateMap[t.linked_progress_item_id] || null
+              : null,
+          })
+        );
+      })()
+    );
   }
 
   await Promise.all(promises);
@@ -614,7 +685,7 @@ export async function GET(request: NextRequest) {
           .order('marker_date', { ascending: true });
 
         const markersByTask = new Map<string, unknown[]>();
-        for (const m of (markers || [])) {
+        for (const m of markers || []) {
           const tid = (m as { task_id: string }).task_id;
           if (!markersByTask.has(tid)) markersByTask.set(tid, []);
           markersByTask.get(tid)!.push(m);
@@ -644,8 +715,12 @@ export async function GET(request: NextRequest) {
             .in('item_id', uniqueItemIds);
 
           for (const itemId of uniqueItemIds) {
-            const related = (progressData || []).filter((p: { item_id: string }) => p.item_id === itemId);
-            const completed = related.filter((p: { status: string }) => p.status === 'completed').length;
+            const related = (progressData || []).filter(
+              (p: { item_id: string }) => p.item_id === itemId
+            );
+            const completed = related.filter(
+              (p: { status: string }) => p.status === 'completed'
+            ).length;
             progressRateMap[itemId] = { total: totalStudents, completed };
           }
         }
@@ -666,7 +741,14 @@ export async function GET(request: NextRequest) {
       case 'batch_get': {
         // per-school ロジックは runBatchForSchool に抽出済み（挙動同一）。
         const targets = (url.searchParams.get('targets') || '').split(',').filter(Boolean);
-        const batchResult = await runBatchForSchool(supabaseAdmin, schoolId, season, year, includeHidden, targets);
+        const batchResult = await runBatchForSchool(
+          supabaseAdmin,
+          schoolId,
+          season,
+          year,
+          includeHidden,
+          targets
+        );
         return NextResponse.json({ data: batchResult });
       }
 
@@ -764,14 +846,18 @@ export async function POST(request: NextRequest) {
         const linkTaskId = params.linkTaskId as string | null;
         const linkItemId = params.linkItemId as string | null;
         for (const tid of unlinkTaskIds) {
-          await supabaseAdmin.from('course_prep_schedule_tasks')
+          await supabaseAdmin
+            .from('course_prep_schedule_tasks')
             .update({ linked_progress_item_id: null })
-            .eq('id', tid).eq('school_id', schoolId);
+            .eq('id', tid)
+            .eq('school_id', schoolId);
         }
         if (linkTaskId && linkItemId) {
-          await supabaseAdmin.from('course_prep_schedule_tasks')
+          await supabaseAdmin
+            .from('course_prep_schedule_tasks')
             .update({ linked_progress_item_id: linkItemId })
-            .eq('id', linkTaskId).eq('school_id', schoolId);
+            .eq('id', linkTaskId)
+            .eq('school_id', schoolId);
 
           // リンク確立時に end_date ↔ deadline を初期同期
           const { data: linkedTask } = await supabaseAdmin
@@ -789,11 +875,13 @@ export async function POST(request: NextRequest) {
             const taskDate = linkedTask.end_date as string | null;
             const itemDeadline = linkedItem.deadline as string | null;
             if (taskDate && !itemDeadline) {
-              await supabaseAdmin.from('course_prep_progress_items')
+              await supabaseAdmin
+                .from('course_prep_progress_items')
                 .update({ deadline: taskDate, updated_at: new Date().toISOString() })
                 .eq('id', linkItemId);
             } else if (!taskDate && itemDeadline) {
-              await supabaseAdmin.from('course_prep_schedule_tasks')
+              await supabaseAdmin
+                .from('course_prep_schedule_tasks')
                 .update({ end_date: itemDeadline, updated_at: new Date().toISOString() })
                 .eq('id', linkTaskId);
             }
@@ -847,9 +935,14 @@ async function handleInitProgressTemplate(
   }
 
   type ProgressTemplateItem = {
-    name: string; column_type: string; sort_order: number;
-    column_group?: string; auto_source?: string; manager_only?: boolean;
-    deadline?: string; is_hidden?: boolean;
+    name: string;
+    column_type: string;
+    sort_order: number;
+    column_group?: string;
+    auto_source?: string;
+    manager_only?: boolean;
+    deadline?: string;
+    is_hidden?: boolean;
   };
   const items = (template as { template_data: ProgressTemplateItem[] }).template_data;
   if (!items || items.length === 0) {
@@ -907,8 +1000,13 @@ async function handleInitScheduleTemplate(
   }
 
   type ScheduleTemplateTask = {
-    major_category: string; name: string; description?: string; sort_order: number;
-    start_date?: string; end_date?: string; deadline?: string;
+    major_category: string;
+    name: string;
+    description?: string;
+    sort_order: number;
+    start_date?: string;
+    end_date?: string;
+    deadline?: string;
     linked_progress_item_name?: string;
     markers?: Array<{ marker_date: string; label: string; color: string | null }>;
   };
@@ -983,13 +1081,23 @@ async function handleInitScheduleTemplate(
     sortOrderToId[t.sort_order] = t.id;
   }
 
-  const markerInserts: Array<{ task_id: string; marker_date: string; label: string; color: string | null }> = [];
+  const markerInserts: Array<{
+    task_id: string;
+    marker_date: string;
+    label: string;
+    color: string | null;
+  }> = [];
   for (const task of tasks) {
     if (task.markers && task.markers.length > 0) {
       const taskId = sortOrderToId[task.sort_order];
       if (taskId) {
         for (const m of task.markers) {
-          markerInserts.push({ task_id: taskId, marker_date: m.marker_date, label: m.label, color: m.color });
+          markerInserts.push({
+            task_id: taskId,
+            marker_date: m.marker_date,
+            label: m.label,
+            color: m.color,
+          });
         }
       }
     }
@@ -1006,7 +1114,15 @@ async function handleInitScheduleTemplate(
 async function handleCreateProgressItem(
   supabaseAdmin: ReturnType<typeof getSupabaseAdmin>,
   schoolId: string,
-  params: { season: string; year: number; name: string; columnType: string; columnGroup?: string | null; autoSource?: string | null; sortOrder: number }
+  params: {
+    season: string;
+    year: number;
+    name: string;
+    columnType: string;
+    columnGroup?: string | null;
+    autoSource?: string | null;
+    sortOrder: number;
+  }
 ) {
   const { season, year, name, columnType, columnGroup, autoSource, sortOrder } = params;
 
@@ -1140,12 +1256,16 @@ async function handleUpdateStudentProgress(
     // UPSERT で更新する。SELECT→INSERT/UPDATE の非アトミック実装だと、
     // 同一セルを素早く連打（空欄→完了→対象外）した際に2リクエストが競合し、
     // (student_id,item_id) のユニーク制約違反（重複キー500）→画面全体の再読込が起きていた。
-    const { error } = await supabaseAdmin
-      .from('course_prep_student_progress')
-      .upsert(
-        { school_id: schoolId, student_id: studentId, item_id: itemId, status, updated_at: new Date().toISOString() },
-        { onConflict: 'student_id,item_id' }
-      );
+    const { error } = await supabaseAdmin.from('course_prep_student_progress').upsert(
+      {
+        school_id: schoolId,
+        student_id: studentId,
+        item_id: itemId,
+        status,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'student_id,item_id' }
+    );
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
@@ -1166,12 +1286,16 @@ async function handleUpdateStudentNumber(
   const { schoolId, studentId, itemId, numberValue } = params;
 
   // UPSERT（連打時の重複キー競合を回避）
-  const { error } = await supabaseAdmin
-    .from('course_prep_student_progress')
-    .upsert(
-      { school_id: schoolId, student_id: studentId, item_id: itemId, number_value: numberValue, updated_at: new Date().toISOString() },
-      { onConflict: 'student_id,item_id' }
-    );
+  const { error } = await supabaseAdmin.from('course_prep_student_progress').upsert(
+    {
+      school_id: schoolId,
+      student_id: studentId,
+      item_id: itemId,
+      number_value: numberValue,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: 'student_id,item_id' }
+  );
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   return NextResponse.json({ success: true });
@@ -1184,12 +1308,16 @@ async function handleUpdateStudentDate(
   const { schoolId, studentId, itemId, dateValue } = params;
 
   // UPSERT（連打時の重複キー競合を回避）
-  const { error } = await supabaseAdmin
-    .from('course_prep_student_progress')
-    .upsert(
-      { school_id: schoolId, student_id: studentId, item_id: itemId, date_value: dateValue, updated_at: new Date().toISOString() },
-      { onConflict: 'student_id,item_id' }
-    );
+  const { error } = await supabaseAdmin.from('course_prep_student_progress').upsert(
+    {
+      school_id: schoolId,
+      student_id: studentId,
+      item_id: itemId,
+      date_value: dateValue,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: 'student_id,item_id' }
+  );
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   return NextResponse.json({ success: true });
@@ -1200,7 +1328,16 @@ async function handleUpdateStudentDate(
 async function handleCreateScheduleTask(
   supabaseAdmin: ReturnType<typeof getSupabaseAdmin>,
   schoolId: string,
-  params: { season: string; year: number; majorCategory: string; name: string; description?: string; sortOrder?: number; startDate?: string | null; endDate?: string | null }
+  params: {
+    season: string;
+    year: number;
+    majorCategory: string;
+    name: string;
+    description?: string;
+    sortOrder?: number;
+    startDate?: string | null;
+    endDate?: string | null;
+  }
 ) {
   let sortOrder = params.sortOrder;
   if (sortOrder == null) {
@@ -1212,9 +1349,8 @@ async function handleCreateScheduleTask(
       .eq('year', params.year)
       .order('sort_order', { ascending: false })
       .limit(1);
-    sortOrder = existing && existing.length > 0
-      ? (existing[0] as { sort_order: number }).sort_order + 1
-      : 0;
+    sortOrder =
+      existing && existing.length > 0 ? (existing[0] as { sort_order: number }).sort_order + 1 : 0;
   }
 
   const { data, error } = await supabaseAdmin
@@ -1326,14 +1462,12 @@ async function syncScheduleTaskCompletionFromProgress(
           })
           .eq('id', existingCheck.id);
       } else if (allCompleted) {
-        await supabaseAdmin
-          .from('monthly_task_checks')
-          .insert({
-            task_id: linkedMonthlyTask.id,
-            school_id: schoolId,
-            is_completed: true,
-            completed_at: new Date().toISOString(),
-          });
+        await supabaseAdmin.from('monthly_task_checks').insert({
+          task_id: linkedMonthlyTask.id,
+          school_id: schoolId,
+          is_completed: true,
+          completed_at: new Date().toISOString(),
+        });
       }
     }
   }
@@ -1388,7 +1522,10 @@ async function handleUpdateScheduleTask(
   }
 
   // リンク設定時: スケジュールタスクの end_date を進捗項目の deadline に同期
-  if (params.updates.linked_progress_item_id !== undefined && params.updates.end_date === undefined) {
+  if (
+    params.updates.linked_progress_item_id !== undefined &&
+    params.updates.end_date === undefined
+  ) {
     try {
       const linkedId = params.updates.linked_progress_item_id as string | null;
       if (linkedId) {
@@ -1436,13 +1573,14 @@ async function handleUpdateScheduleTask(
 
         // linked_schedule_task_id がいずれかのIDに一致する月次タスクを検索
         // 同じschedule_taskから複数月(Feb/Mar/Apr/May)のmonthly_tasksが生成されうるため全件処理する
-        const { data: linkedTasks } = relatedIds.length > 0
-          ? await supabaseAdmin
-              .from('monthly_tasks')
-              .select('id')
-              .in('linked_schedule_task_id', relatedIds)
-              .eq('category', 'course')
-          : { data: [] as { id: string }[] };
+        const { data: linkedTasks } =
+          relatedIds.length > 0
+            ? await supabaseAdmin
+                .from('monthly_tasks')
+                .select('id')
+                .in('linked_schedule_task_id', relatedIds)
+                .eq('category', 'course')
+            : { data: [] as { id: string }[] };
 
         const isCompleted = params.updates.is_completed as boolean;
         for (const linkedTask of linkedTasks || []) {
@@ -1463,14 +1601,12 @@ async function handleUpdateScheduleTask(
               })
               .eq('id', existing.id);
           } else {
-            await supabaseAdmin
-              .from('monthly_task_checks')
-              .insert({
-                task_id: linkedTask.id,
-                school_id: scheduleTask.school_id,
-                is_completed: isCompleted,
-                completed_at: isCompleted ? new Date().toISOString() : null,
-              });
+            await supabaseAdmin.from('monthly_task_checks').insert({
+              task_id: linkedTask.id,
+              school_id: scheduleTask.school_id,
+              is_completed: isCompleted,
+              completed_at: isCompleted ? new Date().toISOString() : null,
+            });
           }
         }
       }
@@ -1526,18 +1662,20 @@ async function handleUpsertScheduleMarker(
   if (existing) {
     const { error } = await supabaseAdmin
       .from('course_prep_schedule_markers')
-      .update({ label: params.label, color: params.color || null, updated_at: new Date().toISOString() })
+      .update({
+        label: params.label,
+        color: params.color || null,
+        updated_at: new Date().toISOString(),
+      })
       .eq('id', existing.id);
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   } else {
-    const { error } = await supabaseAdmin
-      .from('course_prep_schedule_markers')
-      .insert({
-        task_id: params.taskId,
-        marker_date: params.markerDate,
-        label: params.label,
-        color: params.color || null,
-      });
+    const { error } = await supabaseAdmin.from('course_prep_schedule_markers').insert({
+      task_id: params.taskId,
+      marker_date: params.markerDate,
+      label: params.label,
+      color: params.color || null,
+    });
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
@@ -1583,7 +1721,9 @@ async function handleSaveTemplate(
     // 進捗項目: 生徒実績以外の全フィールドを保存
     const { data, error } = await supabaseAdmin
       .from('course_prep_progress_items')
-      .select('name, column_type, sort_order, column_group, auto_source, manager_only, deadline, is_hidden')
+      .select(
+        'name, column_type, sort_order, column_group, auto_source, manager_only, deadline, is_hidden'
+      )
       .eq('school_id', schoolId)
       .eq('season', season)
       .eq('year', year)
@@ -1594,7 +1734,9 @@ async function handleSaveTemplate(
     // スケジュールタスク: 全フィールド + マーカー + リンク先進捗項目名を保存
     const { data: tasks, error } = await supabaseAdmin
       .from('course_prep_schedule_tasks')
-      .select('id, major_category, name, description, sort_order, start_date, end_date, deadline, linked_progress_item_id')
+      .select(
+        'id, major_category, name, description, sort_order, start_date, end_date, deadline, linked_progress_item_id'
+      )
       .eq('school_id', schoolId)
       .eq('season', season)
       .eq('year', year)
@@ -1603,14 +1745,22 @@ async function handleSaveTemplate(
 
     // マーカーを取得
     const taskIds = (tasks || []).map((t: { id: string }) => t.id);
-    const markersMap: Record<string, Array<{ marker_date: string; label: string; color: string | null }>> = {};
+    const markersMap: Record<
+      string,
+      Array<{ marker_date: string; label: string; color: string | null }>
+    > = {};
     if (taskIds.length > 0) {
       const { data: markers } = await supabaseAdmin
         .from('course_prep_schedule_markers')
         .select('task_id, marker_date, label, color')
         .in('task_id', taskIds)
         .order('marker_date');
-      for (const m of (markers || []) as Array<{ task_id: string; marker_date: string; label: string; color: string | null }>) {
+      for (const m of (markers || []) as Array<{
+        task_id: string;
+        marker_date: string;
+        label: string;
+        color: string | null;
+      }>) {
         if (!markersMap[m.task_id]) markersMap[m.task_id] = [];
         markersMap[m.task_id].push({ marker_date: m.marker_date, label: m.label, color: m.color });
       }
@@ -1631,17 +1781,31 @@ async function handleSaveTemplate(
       }
     }
 
-    templateData = (tasks || []).map((t: { id: string; major_category: string; name: string; description: string | null; sort_order: number; start_date: string | null; end_date: string | null; deadline: string | null; linked_progress_item_id: string | null }) => ({
-      major_category: t.major_category,
-      name: t.name,
-      description: t.description,
-      sort_order: t.sort_order,
-      start_date: t.start_date,
-      end_date: t.end_date,
-      deadline: t.deadline,
-      linked_progress_item_name: t.linked_progress_item_id ? itemNameMap[t.linked_progress_item_id] || null : null,
-      markers: markersMap[t.id] || [],
-    }));
+    templateData = (tasks || []).map(
+      (t: {
+        id: string;
+        major_category: string;
+        name: string;
+        description: string | null;
+        sort_order: number;
+        start_date: string | null;
+        end_date: string | null;
+        deadline: string | null;
+        linked_progress_item_id: string | null;
+      }) => ({
+        major_category: t.major_category,
+        name: t.name,
+        description: t.description,
+        sort_order: t.sort_order,
+        start_date: t.start_date,
+        end_date: t.end_date,
+        deadline: t.deadline,
+        linked_progress_item_name: t.linked_progress_item_id
+          ? itemNameMap[t.linked_progress_item_id] || null
+          : null,
+        markers: markersMap[t.id] || [],
+      })
+    );
   }
 
   const { data, error } = await supabaseAdmin
@@ -1696,7 +1860,15 @@ async function handleDeleteAllProgressItems(
 async function handleUpsertPeriod(
   supabaseAdmin: ReturnType<typeof getSupabaseAdmin>,
   schoolId: string,
-  params: { season: string; year: number; budgetKoma?: number; targetKoma?: number; expectedRate?: number; scheduleStartDate?: string; scheduleEndDate?: string }
+  params: {
+    season: string;
+    year: number;
+    budgetKoma?: number;
+    targetKoma?: number;
+    expectedRate?: number;
+    scheduleStartDate?: string;
+    scheduleEndDate?: string;
+  }
 ) {
   const { data: existing } = await supabaseAdmin
     .from('course_prep_periods')
@@ -1710,7 +1882,8 @@ async function handleUpsertPeriod(
   if (params.budgetKoma !== undefined) updateData.budget_koma = params.budgetKoma;
   if (params.targetKoma !== undefined) updateData.target_koma = params.targetKoma;
   if (params.expectedRate !== undefined) updateData.expected_rate = params.expectedRate;
-  if (params.scheduleStartDate !== undefined) updateData.schedule_start_date = params.scheduleStartDate;
+  if (params.scheduleStartDate !== undefined)
+    updateData.schedule_start_date = params.scheduleStartDate;
   if (params.scheduleEndDate !== undefined) updateData.schedule_end_date = params.scheduleEndDate;
 
   if (existing) {
@@ -1720,14 +1893,12 @@ async function handleUpsertPeriod(
       .eq('id', existing.id);
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   } else {
-    const { error } = await supabaseAdmin
-      .from('course_prep_periods')
-      .insert({
-        school_id: schoolId,
-        season: params.season,
-        year: params.year,
-        ...updateData,
-      });
+    const { error } = await supabaseAdmin.from('course_prep_periods').insert({
+      school_id: schoolId,
+      season: params.season,
+      year: params.year,
+      ...updateData,
+    });
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   }
 

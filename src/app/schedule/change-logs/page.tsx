@@ -74,7 +74,7 @@ export default function ScheduleChangeLogsPage() {
   const schoolId =
     selectedSchoolId && selectedSchoolId !== 'all'
       ? selectedSchoolId
-      : getSelectedSchoolIds()[0] ?? null;
+      : (getSelectedSchoolIds()[0] ?? null);
 
   const load = useCallback(async () => {
     if (!schoolId) return;
@@ -156,7 +156,7 @@ export default function ScheduleChangeLogsPage() {
                 {logs.map((log) => {
                   const studentName = log.student
                     ? `${log.student.last_name} ${log.student.first_name}`
-                    : log.student_id ?? '—';
+                    : (log.student_id ?? '—');
                   const before = log.before_teacher?.display_name ?? '—';
                   const after = log.after_teacher?.display_name ?? '—';
                   const actor = log.actor?.display_name ?? log.actor?.email ?? 'システム';

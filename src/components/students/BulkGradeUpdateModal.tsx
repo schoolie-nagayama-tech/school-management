@@ -99,9 +99,7 @@ export function BulkGradeUpdateModal({
       onClose();
     } catch (error) {
       console.error('Bulk grade update error:', error);
-      setErrorMessage(
-        getUserErrorMessage(error, '学年の一括更新に失敗しました')
-      );
+      setErrorMessage(getUserErrorMessage(error, '学年の一括更新に失敗しました'));
     } finally {
       setIsSubmitting(false);
     }
@@ -110,16 +108,9 @@ export function BulkGradeUpdateModal({
   if (!isOpen) return null;
 
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      title="一括学年更新"
-      size="lg"
-    >
+    <Modal isOpen={isOpen} onClose={onClose} title="一括学年更新" size="lg">
       <div className="space-y-6">
-        {isLoadingStudents && (
-          <InlineLoading label="生徒一覧を取得中..." />
-        )}
+        {isLoadingStudents && <InlineLoading label="生徒一覧を取得中..." />}
         {errorMessage && (
           <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
             {errorMessage}
@@ -137,9 +128,7 @@ export function BulkGradeUpdateModal({
             <p className="text-xs font-medium text-amber-800 uppercase tracking-wider">
               カテゴリが変わる生徒
             </p>
-            <p className="mt-1 text-2xl font-bold text-amber-900">
-              {categoryChange}名
-            </p>
+            <p className="mt-1 text-2xl font-bold text-amber-900">{categoryChange}名</p>
             <p className="mt-1 text-xs text-amber-700">
               受講科目・テキスト・通塾日程の科目がリセットされます
             </p>
@@ -148,12 +137,8 @@ export function BulkGradeUpdateModal({
             <p className="text-xs font-medium text-gray-600 uppercase tracking-wider">
               同じカテゴリ内
             </p>
-            <p className="mt-1 text-2xl font-bold text-gray-900">
-              {sameCategory}名
-            </p>
-            <p className="mt-1 text-xs text-gray-600">
-              引き継ぎあり（そのまま）
-            </p>
+            <p className="mt-1 text-2xl font-bold text-gray-900">{sameCategory}名</p>
+            <p className="mt-1 text-xs text-gray-600">引き継ぎあり（そのまま）</p>
           </div>
         </div>
 

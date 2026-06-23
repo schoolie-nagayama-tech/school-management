@@ -96,16 +96,10 @@ export function ScheduleDailyPrintView({
             .filter(({ groups }) => groups.size > 0);
 
           return (
-            <div
-              key={dateStr}
-              className="p-2"
-              style={{ pageBreakAfter: 'always' }}
-            >
+            <div key={dateStr} className="p-2" style={{ pageBreakAfter: 'always' }}>
               {/* ヘッダー: 教室名 + 日付。1行に収めて縦スペース節約 */}
               <div className="flex items-end justify-between border-b-2 border-black pb-1 mb-2">
-                <h2 className="text-lg font-bold leading-tight">
-                  {formatDateHeader(dateStr)}
-                </h2>
+                <h2 className="text-lg font-bold leading-tight">{formatDateHeader(dateStr)}</h2>
                 {schoolName && (
                   <span className="text-sm font-medium text-gray-700">{schoolName}</span>
                 )}
@@ -136,7 +130,9 @@ export function ScheduleDailyPrintView({
                     >
                       {/* コマヘッダー: 限数 + 時間帯 */}
                       <div className="flex items-baseline gap-2 border-b border-gray-300 pb-1 mb-1">
-                        <span className="text-base font-bold leading-none">{slot.slot_number}限</span>
+                        <span className="text-base font-bold leading-none">
+                          {slot.slot_number}限
+                        </span>
                         <span className="text-[10px] text-gray-600 tabular-nums">
                           {slot.start_time?.slice(0, 5)}〜{slot.end_time?.slice(0, 5)}
                         </span>

@@ -2,7 +2,16 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { AdminLayout } from '@/components/layouts';
-import { Button, Card, CardHeader, CardTitle, CardContent, Input, ToastContainer, Loading } from '@/components/ui';
+import {
+  Button,
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+  Input,
+  ToastContainer,
+  Loading,
+} from '@/components/ui';
 import Link from 'next/link';
 import { useToast } from '@/hooks/useToast';
 import { useConfirm } from '@/hooks/useConfirm';
@@ -30,14 +39,32 @@ interface FieldDef {
 
 const FIELDS_BY_TYPE: Partial<Record<AlertType, FieldDef[]>> = {
   score_drop: [
-    { key: 'score_drop_regular', label: '定期テスト：何点下落で発火', unit: '点', min: 1, max: 100 },
-    { key: 'score_drop_mock', label: '模試：偏差値何ポイント下落で発火', unit: 'pt', min: 1, max: 30 },
+    {
+      key: 'score_drop_regular',
+      label: '定期テスト：何点下落で発火',
+      unit: '点',
+      min: 1,
+      max: 100,
+    },
+    {
+      key: 'score_drop_mock',
+      label: '模試：偏差値何ポイント下落で発火',
+      unit: 'pt',
+      min: 1,
+      max: 30,
+    },
     { key: 'score_drop_report', label: '通知表：何段階下落で発火', unit: '段階', min: 1, max: 5 },
     { key: 'trend_window_months', label: '長期トレンド判定期間', unit: '月', min: 1, max: 24 },
   ],
   score_missing: [],
   interview_overdue: [
-    { key: 'interview_overdue_days', label: '最終面談から何日経過で発火', unit: '日', min: 1, max: 365 },
+    {
+      key: 'interview_overdue_days',
+      label: '最終面談から何日経過で発火',
+      unit: '日',
+      min: 1,
+      max: 365,
+    },
   ],
   application_overdue: [
     { key: 'application_warn_days', label: '何日前から表示', unit: '日', min: 0, max: 60 },
@@ -65,13 +92,15 @@ const ALERT_DESCRIPTIONS: Record<AlertType, string> = {
   score_drop: '前回比でスコアが下落した教科を検出。連続下降や長期下落は強調表示します。',
   score_missing: '最新の評価で空欄の教科を検出。小学生は対象外。入力すると自動で消えます。',
   interview_overdue: '最後の面談から指定日数を超えている生徒を検出。',
-  application_overdue: '提出が必要な申込項目で「空欄」のものだけを段階表示。提出すると自動で消えます。',
+  application_overdue:
+    '提出が必要な申込項目で「空欄」のものだけを段階表示。提出すると自動で消えます。',
   interview_task: '面談で起票された未完了タスクを表示。達成すると自動で消えます。',
   exam_overdue: '教材のテスト日が過ぎているのに記録未更新の項目を検出。',
   homework_not_done: '進行表で「宿題未実施」にチェックした回数で段階表示。',
   tardy: '進行表で「遅刻」にチェックした回数で段階表示。',
   course_prep_overdue: '講習準備の進捗項目で期日超過・間近の未完了生徒を段階表示。',
-  schedule_change_unapplied: '週回数変更・曜日変更フォームの申込があったのに、通塾日程がまだ更新されていない生徒を検出。通塾日程を編集すると自動で消えます。',
+  schedule_change_unapplied:
+    '週回数変更・曜日変更フォームの申込があったのに、通塾日程がまだ更新されていない生徒を検出。通塾日程を編集すると自動で消えます。',
 };
 
 export default function AlertsSettingsPage() {
@@ -101,7 +130,9 @@ export default function AlertsSettingsPage() {
     }
   }, [localSchoolId, toastError]);
 
-  useEffect(() => { fetchSettings(); }, [fetchSettings]);
+  useEffect(() => {
+    fetchSettings();
+  }, [fetchSettings]);
 
   const updateOne = (type: AlertType, patch: Partial<AlertSetting>) => {
     setSettings((prev) => {
@@ -124,7 +155,9 @@ export default function AlertsSettingsPage() {
     try {
       const types = Object.keys(settings) as AlertType[];
       await Promise.all(
-        types.map((t) => upsertAlertSetting(localSchoolId, t, settings[t].enabled, settings[t].thresholds))
+        types.map((t) =>
+          upsertAlertSetting(localSchoolId, t, settings[t].enabled, settings[t].thresholds)
+        )
       );
       success('保存しました');
     } catch (e) {
@@ -162,13 +195,20 @@ export default function AlertsSettingsPage() {
     );
   }
   if (!hasPermission) {
-    return <AdminLayout><AccessDenied /></AdminLayout>;
+    return (
+      <AdminLayout>
+        <AccessDenied />
+      </AdminLayout>
+    );
   }
 
   return (
     <AdminLayout headerTitle="アラート設定">
       <div className="space-y-6">
-        <Link href="/settings" className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700 transition-colors duration-150">
+        <Link
+          href="/settings"
+          className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700 transition-colors duration-150"
+        >
           <ChevronLeft className="w-4 h-4 mr-1" />
           設定一覧に戻る
         </Link>
@@ -187,7 +227,8 @@ export default function AlertsSettingsPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-gray-600">
-              アラート種別ごとに ON/OFF としきい値を教室単位で設定できます。空欄のフィールドはデフォルト値が使われます。
+              アラート種別ごとに ON/OFF
+              としきい値を教室単位で設定できます。空欄のフィールドはデフォルト値が使われます。
             </p>
 
             <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
@@ -230,7 +271,9 @@ export default function AlertsSettingsPage() {
                 <CardContent className="space-y-3">
                   <p className="text-xs text-gray-500">{ALERT_DESCRIPTIONS[type]}</p>
                   {fields.length === 0 ? (
-                    <p className="text-xs text-gray-400">このアラートにはしきい値の設定はありません。</p>
+                    <p className="text-xs text-gray-400">
+                      このアラートにはしきい値の設定はありません。
+                    </p>
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       {fields.map((f) => {
@@ -240,7 +283,10 @@ export default function AlertsSettingsPage() {
                           <div key={f.key}>
                             <label className="block text-xs font-medium text-gray-700 mb-1">
                               {f.label}
-                              <span className="ml-1 text-gray-400">（デフォルト: {fallback}{f.unit}）</span>
+                              <span className="ml-1 text-gray-400">
+                                （デフォルト: {fallback}
+                                {f.unit}）
+                              </span>
                             </label>
                             <div className="flex items-center gap-2">
                               <Input

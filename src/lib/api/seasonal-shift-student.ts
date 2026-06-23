@@ -153,9 +153,7 @@ export async function submitStudentShift(
       time_slot: s.time_slot,
       available: true,
     }));
-    const { error: insErr } = await db
-      .from('seasonal_shift_student_submission_slots')
-      .insert(rows);
+    const { error: insErr } = await db.from('seasonal_shift_student_submission_slots').insert(rows);
     if (insErr) {
       console.error('Error inserting slots:', insErr);
       throw new Error('スロット保存に失敗しました');
@@ -168,9 +166,7 @@ export async function submitStudentShift(
 }
 
 /** 室長による「修正許可」発行：edit_token を生成して allow_edit=true に */
-export async function grantStudentSubmissionEdit(
-  submissionId: string
-): Promise<string> {
+export async function grantStudentSubmissionEdit(submissionId: string): Promise<string> {
   const token = randomBytes(24).toString('hex');
   const { error } = await db
     .from('seasonal_shift_student_submissions')

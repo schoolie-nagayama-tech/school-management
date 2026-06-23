@@ -60,9 +60,7 @@ export function TemplateApplyDialog({
       <div className="bg-white rounded-xl border border-gray-200 shadow-2xl max-w-md w-full mx-4">
         <div className="px-6 py-4 border-b border-gray-200">
           <h3 className="text-lg font-bold text-[#1e3a5f]">テンプレートから作成</h3>
-          <p className="text-sm text-gray-500 mt-1">
-            テンプレートを選択して項目を初期化します
-          </p>
+          <p className="text-sm text-gray-500 mt-1">テンプレートを選択して項目を初期化します</p>
         </div>
         <div className="px-6 py-4 max-h-[60vh] overflow-y-auto">
           {templates.length === 0 ? (

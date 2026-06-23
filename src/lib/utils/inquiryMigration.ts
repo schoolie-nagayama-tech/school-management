@@ -158,7 +158,9 @@ function normalizePostalCode(v: unknown): string | null {
     // 7桁未満なら先頭ゼロ埋め
     while (s.length < 7) s = '0' + s;
   } else {
-    s = String(v).trim().replace(/[^\d-]/g, '');
+    s = String(v)
+      .trim()
+      .replace(/[^\d-]/g, '');
   }
   return s || null;
 }
@@ -222,9 +224,7 @@ export async function parseMigrationXlsx(file: File): Promise<ParseMigrationXlsx
   const wb = XLSX.read(buf, { cellDates: true });
 
   // シート名「問合せ管理」を優先、無ければ先頭シートを使用
-  const sheetName = wb.SheetNames.includes('問合せ管理')
-    ? '問合せ管理'
-    : wb.SheetNames[0];
+  const sheetName = wb.SheetNames.includes('問合せ管理') ? '問合せ管理' : wb.SheetNames[0];
   const ws = wb.Sheets[sheetName];
 
   // 2次元配列として取得（raw:true で生値のまま取得）
@@ -261,7 +261,9 @@ export async function parseMigrationXlsx(file: File): Promise<ParseMigrationXlsx
     const str = (name: string): string => cellStr(get(name));
 
     // ---- 教室名が空の行はスキップ ----
-    const schoolNameShort = str('教室名').replace(/[\s　]+/g, '').replace(/校$/, '');
+    const schoolNameShort = str('教室名')
+      .replace(/[\s　]+/g, '')
+      .replace(/校$/, '');
     if (!schoolNameShort) continue;
 
     // ---- 問合日のパースと検証 ----

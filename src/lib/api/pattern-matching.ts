@@ -46,9 +46,7 @@ export interface UnassignedPatternRow {
 }
 
 /** 未割当（teacher_id NULL）パターン一覧。学生情報付き */
-export async function getUnassignedPatterns(
-  schoolId: string
-): Promise<UnassignedPatternRow[]> {
+export async function getUnassignedPatterns(schoolId: string): Promise<UnassignedPatternRow[]> {
   const { data, error } = await db
     .from('schedule_regular_patterns')
     .select(
@@ -101,7 +99,8 @@ export async function getPatternMatchCandidates(
     const shifts = await getCurrentTeacherShifts(schoolId, asOfDate);
     dowAvailable = shifts.byDayOfWeek.get(pattern.day_of_week) ?? [];
     if (pattern.time_slot?.slot_number) {
-      const fbSlot = shifts.byDayAndSlot.get(`${pattern.day_of_week}|${pattern.time_slot.slot_number}`) ?? [];
+      const fbSlot =
+        shifts.byDayAndSlot.get(`${pattern.day_of_week}|${pattern.time_slot.slot_number}`) ?? [];
       slotAvailableSet = new Set(fbSlot);
     }
   }
@@ -266,7 +265,10 @@ export async function assignTeacherToPattern(
   }
   const { data: updated, error: entUpdErr } = await query.select('id');
   if (entUpdErr) {
-    console.warn('Failed to update entries (pattern saved, but entries left unassigned):', entUpdErr);
+    console.warn(
+      'Failed to update entries (pattern saved, but entries left unassigned):',
+      entUpdErr
+    );
     return { patternUpdated: true, entriesUpdated: 0 };
   }
   return {
@@ -343,7 +345,10 @@ export async function reassignTeacherFromToday(
     .single();
   if (insErr || !newPat) {
     // ロールバック：旧パターンの effective_until を戻す
-    await db.from('schedule_regular_patterns').update({ effective_until: pat.effective_until ?? null }).eq('id', patternId);
+    await db
+      .from('schedule_regular_patterns')
+      .update({ effective_until: pat.effective_until ?? null })
+      .eq('id', patternId);
     throw new Error('新しい通塾日程の作成に失敗しました');
   }
 

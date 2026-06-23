@@ -7,7 +7,10 @@ import {
   createRegularShiftSubmission,
 } from '@/lib/api/regular-shift';
 import type { RegularShiftSetting, RegularShiftSlotSetting } from '@/types/regular-shift';
-import { RegularShiftSlotMatrix, type RegularSlotSettingRow } from '@/components/regular-shift/RegularShiftSlotMatrix';
+import {
+  RegularShiftSlotMatrix,
+  type RegularSlotSettingRow,
+} from '@/components/regular-shift/RegularShiftSlotMatrix';
 import { Loading } from '@/components/ui';
 
 const DAYS = [1, 2, 3, 4, 5, 6] as const;
@@ -43,7 +46,10 @@ export default function RegularShiftFormPage() {
       setSetting(s);
       setSlotSettings(slots);
       // Initialize form slots: all unchecked
-      const timeSlots = s.weekday_slots.split(',').map((x) => x.trim()).filter(Boolean);
+      const timeSlots = s.weekday_slots
+        .split(',')
+        .map((x) => x.trim())
+        .filter(Boolean);
       const initial: RegularSlotSettingRow[] = [];
       DAYS.forEach((day) => {
         timeSlots.forEach((ts) => {
@@ -64,7 +70,10 @@ export default function RegularShiftFormPage() {
   }, [fetchData]);
 
   const timeSlots = setting
-    ? setting.weekday_slots.split(',').map((x) => x.trim()).filter(Boolean)
+    ? setting.weekday_slots
+        .split(',')
+        .map((x) => x.trim())
+        .filter(Boolean)
     : [];
 
   const slotSettingsForMatrix: RegularSlotSettingRow[] = slotSettings.map((s) => ({
@@ -159,7 +168,10 @@ export default function RegularShiftFormPage() {
           )}
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-surface-raised rounded-xl border border-border p-6 space-y-6">
+        <form
+          onSubmit={handleSubmit}
+          className="bg-surface-raised rounded-xl border border-border p-6 space-y-6"
+        >
           <div>
             <label className="block text-sm font-medium text-text-heading mb-1">お名前 *</label>
             <input
@@ -171,7 +183,9 @@ export default function RegularShiftFormPage() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-text-heading mb-1">メールアドレス *</label>
+            <label className="block text-sm font-medium text-text-heading mb-1">
+              メールアドレス *
+            </label>
             <input
               type="email"
               required
@@ -201,9 +215,7 @@ export default function RegularShiftFormPage() {
             />
           </div>
 
-          {errorMessage && (
-            <p className="text-sm text-red-600">{errorMessage}</p>
-          )}
+          {errorMessage && <p className="text-sm text-red-600">{errorMessage}</p>}
 
           <button
             type="submit"

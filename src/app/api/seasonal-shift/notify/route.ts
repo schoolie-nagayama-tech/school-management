@@ -33,16 +33,10 @@ export async function POST(request: NextRequest) {
     };
 
     if (!type || !submissionId) {
-      return NextResponse.json(
-        { error: 'type and submissionId are required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'type and submissionId are required' }, { status: 400 });
     }
     if (type !== 'submitted' && type !== 'allow_edit') {
-      return NextResponse.json(
-        { error: 'type must be submitted or allow_edit' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'type must be submitted or allow_edit' }, { status: 400 });
     }
 
     const supabaseAdmin = getSupabaseAdmin();
@@ -60,51 +54,41 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '提出が見つかりません' }, { status: 404 });
     }
     if (!isSchoolInScope(String(submission.school_id), auth.schoolIds)) {
-      console.error(JSON.stringify({
-        type: 'SCOPE_VIOLATION',
-        actorId: auth.userId,
-        path: request.nextUrl.pathname,
-        submissionId,
-        timestamp: new Date().toISOString(),
-      }));
+      console.error(
+        JSON.stringify({
+          type: 'SCOPE_VIOLATION',
+          actorId: auth.userId,
+          path: request.nextUrl.pathname,
+          submissionId,
+          timestamp: new Date().toISOString(),
+        })
+      );
       return NextResponse.json({ error: '提出が見つかりません' }, { status: 404 });
     }
 
-    const { data, error } = await supabaseAdmin.functions.invoke(
-      'send-form-notification',
-      {
-        body: {
-          notificationType: 'seasonal-shift',
-          type,
-          submissionId,
-        },
-      }
-    );
+    const { data, error } = await supabaseAdmin.functions.invoke('send-form-notification', {
+      body: {
+        notificationType: 'seasonal-shift',
+        type,
+        submissionId,
+      },
+    });
 
     if (error) {
       console.error('[seasonal-shift/notify] Edge Function error:', error);
-      return NextResponse.json(
-        { error: 'Failed to send notification' },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: 'Failed to send notification' }, { status: 500 });
     }
     if (data && typeof data === 'object' && 'error' in data) {
       console.error(
         '[seasonal-shift/notify] Edge Function returned error:',
         (data as { error: string }).error
       );
-      return NextResponse.json(
-        { error: (data as { error: string }).error },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: (data as { error: string }).error }, { status: 500 });
     }
 
     return NextResponse.json({ success: true });
   } catch (e) {
     console.error('[seasonal-shift/notify]', e);
-    return NextResponse.json(
-      { error: 'Failed to send notification' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to send notification' }, { status: 500 });
   }
 }

@@ -21,7 +21,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useMasterData } from '@/contexts/MasterDataContext';
 import AccessDenied from '@/components/AccessDenied';
 import { getInquiries } from '@/lib/api/inquiries';
-import { getAllInquirySchoolSettings, upsertInquirySchoolSettings } from '@/lib/api/inquirySettings';
+import {
+  getAllInquirySchoolSettings,
+  upsertInquirySchoolSettings,
+} from '@/lib/api/inquirySettings';
 import { generateNekoposCsv, downloadCsvNoBom } from '@/lib/utils/yamatoB2';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 import { updateInquiry } from '@/lib/api/inquiries';
@@ -72,8 +75,7 @@ function hasWarning(inquiry: Inquiry): boolean {
     (inquiry.address_detail ?? '').trim() !== '' ||
     (inquiry.address_building ?? '').trim() !== '';
   const hasAddressee =
-    (inquiry.guardian_name ?? '').trim() !== '' ||
-    (inquiry.student_name ?? '').trim() !== '';
+    (inquiry.guardian_name ?? '').trim() !== '' || (inquiry.student_name ?? '').trim() !== '';
   return !hasAddress || !hasAddressee;
 }
 
@@ -113,23 +115,23 @@ function settingsToFormState(s: InquirySchoolSettings): SettingFormState {
   // interview_days（数値配列）を boolean[] に変換（インデックス 0-6 が曜日）
   const dowChecked = [0, 1, 2, 3, 4, 5, 6].map((d) => bc.interview_days.includes(d));
   return {
-    hp_school_code:       s.hp_school_code ?? '',
+    hp_school_code: s.hp_school_code ?? '',
     yamato_customer_code: s.yamato_customer_code ?? '',
-    yamato_fare_code:     s.yamato_fare_code ?? '',
-    sender_name:          s.sender_name ?? '',
-    sender_tel:           s.sender_tel ?? '',
-    sender_zip:           s.sender_zip ?? '',
-    sender_address:       s.sender_address ?? '',
-    mail_signature:       s.mail_signature ?? '',
-    mail_reply_to:        s.mail_reply_to ?? '',
-    slack_mention_id:     s.slack_mention_id ?? '',
-    booking_calendar_email:           bc.calendar_email ?? '',
-    booking_interview_days:           dowChecked,
-    booking_interview_start:          bc.interview_start,
-    booking_interview_end:            bc.interview_end,
-    booking_interview_duration_min:   String(bc.interview_duration_min),
-    booking_lead_hours:               String(bc.lead_hours),
-    booking_window_days:              String(bc.window_days),
+    yamato_fare_code: s.yamato_fare_code ?? '',
+    sender_name: s.sender_name ?? '',
+    sender_tel: s.sender_tel ?? '',
+    sender_zip: s.sender_zip ?? '',
+    sender_address: s.sender_address ?? '',
+    mail_signature: s.mail_signature ?? '',
+    mail_reply_to: s.mail_reply_to ?? '',
+    slack_mention_id: s.slack_mention_id ?? '',
+    booking_calendar_email: bc.calendar_email ?? '',
+    booking_interview_days: dowChecked,
+    booking_interview_start: bc.interview_start,
+    booking_interview_end: bc.interview_end,
+    booking_interview_duration_min: String(bc.interview_duration_min),
+    booking_lead_hours: String(bc.lead_hours),
+    booking_window_days: String(bc.window_days),
   };
 }
 
@@ -148,13 +150,13 @@ function emptyFormState(): SettingFormState {
     mail_signature: '',
     mail_reply_to: '',
     slack_mention_id: '',
-    booking_calendar_email:           '',
-    booking_interview_days:           dowChecked,
-    booking_interview_start:          bc.interview_start,
-    booking_interview_end:            bc.interview_end,
-    booking_interview_duration_min:   String(bc.interview_duration_min),
-    booking_lead_hours:               String(bc.lead_hours),
-    booking_window_days:              String(bc.window_days),
+    booking_calendar_email: '',
+    booking_interview_days: dowChecked,
+    booking_interview_start: bc.interview_start,
+    booking_interview_end: bc.interview_end,
+    booking_interview_duration_min: String(bc.interview_duration_min),
+    booking_lead_hours: String(bc.lead_hours),
+    booking_window_days: String(bc.window_days),
   };
 }
 
@@ -169,12 +171,15 @@ export default function ShippingPage() {
   // 教室名マップ (school_id → name)。masterSchools の非同期ロード完了に追従するよう useMemo で構築
   const schoolsMap = useMemo(() => {
     const map: Record<string, string> = {};
-    masterSchools.forEach((s) => { map[s.id] = s.name; });
+    masterSchools.forEach((s) => {
+      map[s.id] = s.name;
+    });
     return map;
   }, [masterSchools]);
 
   // ロールガード: admin / owner のみ
-  const isAdmin = profile?.role === 'admin' || profile?.role === 'owner' || profile?.role === 'manager';
+  const isAdmin =
+    profile?.role === 'admin' || profile?.role === 'owner' || profile?.role === 'manager';
 
   // ── セクション1 ──
   /** 全未発送フラグ(true=material_sent_at null の全status、false=資料請求+in_progress) */
@@ -226,17 +231,15 @@ export default function ShippingPage() {
       } else {
         // 資料請求 + in_progress + material_sent_at IS NULL
         const all = await getInquiries(ids, { status: 'in_progress' });
-        data = all.filter(
-          (q) =>
-            q.request_type === '資料請求' &&
-            q.material_sent_at === null
-        );
+        data = all.filter((q) => q.request_type === '資料請求' && q.material_sent_at === null);
       }
 
       setInquiries(data);
       // デフォルト: 全行チェックON
       const initChecked: Record<string, boolean> = {};
-      data.forEach((q) => { initChecked[q.id] = true; });
+      data.forEach((q) => {
+        initChecked[q.id] = true;
+      });
       setChecked(initChecked);
       // スキップ表示リセット
       setSkippedRows([]);
@@ -256,9 +259,7 @@ export default function ShippingPage() {
       if (ids.length === 0) return;
 
       const list = await getAllInquirySchoolSettings(ids);
-      const sMap = new Map<string, InquirySchoolSettings>(
-        list.map((s) => [s.school_id, s])
-      );
+      const sMap = new Map<string, InquirySchoolSettings>(list.map((s) => [s.school_id, s]));
 
       // フォーム状態を初期化
       const forms: Record<string, SettingFormState> = {};
@@ -278,7 +279,7 @@ export default function ShippingPage() {
       fetchInquiries();
       fetchSettings();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedSchoolId, showAllUnsent]);
 
   // ── CSV出力ハンドラ ──
@@ -328,9 +329,7 @@ export default function ShippingPage() {
           return !skippedNames.has(displayName);
         });
         await Promise.all(
-          updateTargets.map((q) =>
-            updateInquiry(q.id, { material_sent_at: todayStr })
-          )
+          updateTargets.map((q) => updateInquiry(q.id, { material_sent_at: todayStr }))
         );
         // 更新後に一覧を再取得
         await fetchInquiries();
@@ -356,19 +355,18 @@ export default function ShippingPage() {
   );
 
   /** 面談受付曜日チェックボックスの変更ハンドラ（dow: 0=日〜6=土） */
-  const handleDowChange = useCallback(
-    (schoolId: string, dow: number, checked: boolean) => {
-      setFormStates((prev) => {
-        const prev_days = (prev[schoolId]?.booking_interview_days ?? [false, false, false, false, false, false, false]).slice();
-        prev_days[dow] = checked;
-        return {
-          ...prev,
-          [schoolId]: { ...prev[schoolId], booking_interview_days: prev_days },
-        };
-      });
-    },
-    []
-  );
+  const handleDowChange = useCallback((schoolId: string, dow: number, checked: boolean) => {
+    setFormStates((prev) => {
+      const prev_days = (
+        prev[schoolId]?.booking_interview_days ?? [false, false, false, false, false, false, false]
+      ).slice();
+      prev_days[dow] = checked;
+      return {
+        ...prev,
+        [schoolId]: { ...prev[schoolId], booking_interview_days: prev_days },
+      };
+    });
+  }, []);
 
   const handleSaveSettings = useCallback(
     async (schoolId: string) => {
@@ -381,28 +379,28 @@ export default function ShippingPage() {
           .map((on, i) => (on ? i : -1))
           .filter((v) => v >= 0);
         const bookingConfig = {
-          calendar_email:           form.booking_calendar_email || null,
-          interview_days:           interviewDays,
-          interview_start:          form.booking_interview_start,
-          interview_end:            form.booking_interview_end,
-          interview_duration_min:   parseInt(form.booking_interview_duration_min, 10) || 60,
-          lead_hours:               parseInt(form.booking_lead_hours, 10) || 24,
-          window_days:              parseInt(form.booking_window_days, 10) || 14,
+          calendar_email: form.booking_calendar_email || null,
+          interview_days: interviewDays,
+          interview_start: form.booking_interview_start,
+          interview_end: form.booking_interview_end,
+          interview_duration_min: parseInt(form.booking_interview_duration_min, 10) || 60,
+          lead_hours: parseInt(form.booking_lead_hours, 10) || 24,
+          window_days: parseInt(form.booking_window_days, 10) || 14,
         };
 
         const payload: InquirySchoolSettingsInsert = {
-          school_id:            schoolId,
-          hp_school_code:       form.hp_school_code || null,
+          school_id: schoolId,
+          hp_school_code: form.hp_school_code || null,
           yamato_customer_code: form.yamato_customer_code || null,
-          yamato_fare_code:     form.yamato_fare_code || null,
-          sender_name:          form.sender_name || null,
-          sender_tel:           form.sender_tel || null,
-          sender_zip:           form.sender_zip || null,
-          sender_address:       form.sender_address || null,
-          mail_signature:       form.mail_signature || null,
-          mail_reply_to:        form.mail_reply_to || null,
-          slack_mention_id:     form.slack_mention_id || null,
-          booking_config:       bookingConfig,
+          yamato_fare_code: form.yamato_fare_code || null,
+          sender_name: form.sender_name || null,
+          sender_tel: form.sender_tel || null,
+          sender_zip: form.sender_zip || null,
+          sender_address: form.sender_address || null,
+          mail_signature: form.mail_signature || null,
+          mail_reply_to: form.mail_reply_to || null,
+          slack_mention_id: form.slack_mention_id || null,
+          booking_config: bookingConfig,
         };
         await upsertInquirySchoolSettings(payload);
         setSavedIds((prev) => new Set(prev).add(schoolId));
@@ -452,7 +450,6 @@ export default function ShippingPage() {
   return (
     <AdminLayout headerTitle="資料発送（ネコポス）">
       <div className="space-y-8">
-
         {/* ナビゲーション */}
         <div>
           <Link
@@ -476,10 +473,7 @@ export default function ShippingPage() {
               </CardTitle>
               {/* 全未発送トグル */}
               <label className="flex items-center gap-2 cursor-pointer text-sm text-text-body select-none">
-                <Checkbox
-                  checked={showAllUnsent}
-                  onCheckedChange={(v) => setShowAllUnsent(v)}
-                />
+                <Checkbox checked={showAllUnsent} onCheckedChange={(v) => setShowAllUnsent(v)} />
                 全ての未発送を表示（ステータス問わず）
               </label>
             </div>
@@ -505,7 +499,9 @@ export default function ShippingPage() {
                     type="button"
                     onClick={() => {
                       const all: Record<string, boolean> = {};
-                      inquiries.forEach((q) => { all[q.id] = true; });
+                      inquiries.forEach((q) => {
+                        all[q.id] = true;
+                      });
                       setChecked(all);
                     }}
                     className="text-blue-600 hover:text-blue-800 transition-colors duration-150"
@@ -516,7 +512,9 @@ export default function ShippingPage() {
                     type="button"
                     onClick={() => {
                       const none: Record<string, boolean> = {};
-                      inquiries.forEach((q) => { none[q.id] = false; });
+                      inquiries.forEach((q) => {
+                        none[q.id] = false;
+                      });
                       setChecked(none);
                     }}
                     className="text-gray-500 hover:text-gray-700 transition-colors duration-150"
@@ -534,32 +532,37 @@ export default function ShippingPage() {
                     <thead>
                       <tr className="bg-surface-hover">
                         <th className="border-b border-border px-3 py-2.5 text-left font-medium text-text-heading w-8"></th>
-                        <th className="border-b border-border px-3 py-2.5 text-left font-medium text-text-heading">受付日</th>
-                        <th className="border-b border-border px-3 py-2.5 text-left font-medium text-text-heading">教室</th>
-                        <th className="border-b border-border px-3 py-2.5 text-left font-medium text-text-heading">宛名</th>
-                        <th className="border-b border-border px-3 py-2.5 text-left font-medium text-text-heading">住所</th>
-                        <th className="border-b border-border px-3 py-2.5 text-left font-medium text-text-heading">電話</th>
+                        <th className="border-b border-border px-3 py-2.5 text-left font-medium text-text-heading">
+                          受付日
+                        </th>
+                        <th className="border-b border-border px-3 py-2.5 text-left font-medium text-text-heading">
+                          教室
+                        </th>
+                        <th className="border-b border-border px-3 py-2.5 text-left font-medium text-text-heading">
+                          宛名
+                        </th>
+                        <th className="border-b border-border px-3 py-2.5 text-left font-medium text-text-heading">
+                          住所
+                        </th>
+                        <th className="border-b border-border px-3 py-2.5 text-left font-medium text-text-heading">
+                          電話
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
                       {inquiries.map((q) => {
                         const warn = hasWarning(q);
                         const addressee = getDisplayAddressee(q);
-                        const address = [
-                          q.address_pref ?? '',
-                          q.address_detail ?? '',
-                          q.address_building ?? '',
-                        ]
-                          .filter(Boolean)
-                          .join('') || '—';
+                        const address =
+                          [q.address_pref ?? '', q.address_detail ?? '', q.address_building ?? '']
+                            .filter(Boolean)
+                            .join('') || '—';
 
                         return (
                           <tr
                             key={q.id}
                             className={`transition-colors duration-100 ${
-                              checked[q.id]
-                                ? 'bg-surface-raised'
-                                : 'bg-surface opacity-60'
+                              checked[q.id] ? 'bg-surface-raised' : 'bg-surface opacity-60'
                             }`}
                           >
                             {/* チェックボックス */}
@@ -583,7 +586,7 @@ export default function ShippingPage() {
                             <td className="border-b border-border px-3 py-2.5">
                               <div className="flex items-center gap-1.5">
                                 <span className="text-text-body">{addressee}</span>
-                                {(!q.guardian_name && !q.student_name) && (
+                                {!q.guardian_name && !q.student_name && (
                                   <span className="inline-flex items-center gap-1 text-xs text-amber-600">
                                     <AlertTriangle className="w-3 h-3" />
                                     宛名なし
@@ -628,10 +631,7 @@ export default function ShippingPage() {
             {/* CSV出力エリア */}
             <div className="mt-5 flex flex-wrap items-center gap-4">
               <label className="flex items-center gap-2 cursor-pointer text-sm text-text-body select-none">
-                <Checkbox
-                  checked={recordSentAt}
-                  onCheckedChange={(v) => setRecordSentAt(v)}
-                />
+                <Checkbox checked={recordSentAt} onCheckedChange={(v) => setRecordSentAt(v)} />
                 発送日を記録する（出力対象の material_sent_at を今日の日付で更新）
               </label>
               <Button
@@ -639,10 +639,7 @@ export default function ShippingPage() {
                 size="md"
                 onClick={handleExportCsv}
                 isLoading={isExporting}
-                disabled={
-                  isExporting ||
-                  Object.values(checked).filter(Boolean).length === 0
-                }
+                disabled={isExporting || Object.values(checked).filter(Boolean).length === 0}
                 className="ml-auto"
               >
                 <Truck className="w-4 h-4 mr-1.5" />
@@ -666,7 +663,8 @@ export default function ShippingPage() {
                     <ul className="list-disc list-inside space-y-0.5 text-amber-700">
                       {skippedRows.map((r, i) => (
                         <li key={i}>
-                          {r.name ? `${r.name} — ` : ''}{r.reason}
+                          {r.name ? `${r.name} — ` : ''}
+                          {r.reason}
                         </li>
                       ))}
                     </ul>
@@ -705,9 +703,7 @@ export default function ShippingPage() {
                       <div className="flex items-center justify-between flex-wrap gap-2">
                         <CardTitle>{schoolName}</CardTitle>
                         {isSaved && (
-                          <span className="text-xs text-green-600 font-medium">
-                            保存しました
-                          </span>
+                          <span className="text-xs text-green-600 font-medium">保存しました</span>
                         )}
                         <Button
                           variant="primary"
@@ -723,7 +719,6 @@ export default function ShippingPage() {
                     </CardHeader>
                     <CardContent>
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-
                         {/* ヤマト設定 */}
                         <Input
                           label="請求先顧客コード"
@@ -766,18 +761,14 @@ export default function ShippingPage() {
                         <Input
                           label="差出人電話番号"
                           value={form.sender_tel}
-                          onChange={(e) =>
-                            handleFormChange(schoolId, 'sender_tel', e.target.value)
-                          }
+                          onChange={(e) => handleFormChange(schoolId, 'sender_tel', e.target.value)}
                           placeholder="例: 0312345678"
                           helpText="ハイフンなしで入力"
                         />
                         <Input
                           label="差出人郵便番号"
                           value={form.sender_zip}
-                          onChange={(e) =>
-                            handleFormChange(schoolId, 'sender_zip', e.target.value)
-                          }
+                          onChange={(e) => handleFormChange(schoolId, 'sender_zip', e.target.value)}
                           placeholder="例: 1234567"
                           helpText="ハイフンなしで入力"
                         />
@@ -861,9 +852,10 @@ export default function ShippingPage() {
                                     key={dow}
                                     className={`
                                       flex items-center justify-center w-10 h-10 rounded-lg border cursor-pointer text-sm font-medium transition-colors duration-150 select-none
-                                      ${checked
-                                        ? 'bg-[#1a1a1a] text-white border-[#1a1a1a]'
-                                        : 'bg-white text-text-body border-border hover:border-[#1a1a1a]'
+                                      ${
+                                        checked
+                                          ? 'bg-[#1a1a1a] text-white border-[#1a1a1a]'
+                                          : 'bg-white text-text-body border-border hover:border-[#1a1a1a]'
                                       }
                                     `}
                                   >
@@ -905,7 +897,11 @@ export default function ShippingPage() {
                             type="number"
                             value={form.booking_interview_duration_min}
                             onChange={(e) =>
-                              handleFormChange(schoolId, 'booking_interview_duration_min', e.target.value)
+                              handleFormChange(
+                                schoolId,
+                                'booking_interview_duration_min',
+                                e.target.value
+                              )
                             }
                             placeholder="例: 60"
                             helpText="1回の面談の長さ（分）"

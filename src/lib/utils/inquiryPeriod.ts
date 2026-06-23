@@ -22,20 +22,20 @@ export type PeriodPreset =
 /** resolvePeriod の戻り値。空文字は境界なし（全期間の片端）を意味する。 */
 export interface ResolvedPeriod {
   dateFrom: string; // YYYY-MM-DD または ''
-  dateTo: string;   // YYYY-MM-DD または ''
+  dateTo: string; // YYYY-MM-DD または ''
 }
 
 /** プリセットの表示ラベル */
 export const PRESET_LABELS: Record<PeriodPreset, string> = {
-  this_month:   '今月',
-  last_month:   '先月',
+  this_month: '今月',
+  last_month: '先月',
   last_30_days: '直近30日',
   last_90_days: '直近90日',
   this_quarter: '今四半期',
-  this_year:    '今年',
-  last_year:    '去年',
-  all_time:     '全期間',
-  custom:       'カスタム',
+  this_year: '今年',
+  last_year: '去年',
+  all_time: '全期間',
+  custom: 'カスタム',
 };
 
 // ============================================================
@@ -48,9 +48,9 @@ export const PRESET_LABELS: Record<PeriodPreset, string> = {
 function jstParts(now: Date): { year: number; month: number; day: number } {
   const jst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
   return {
-    year:  jst.getUTCFullYear(),
+    year: jst.getUTCFullYear(),
     month: jst.getUTCMonth() + 1, // 1-indexed
-    day:   jst.getUTCDate(),
+    day: jst.getUTCDate(),
   };
 }
 
@@ -110,16 +110,16 @@ export function resolvePeriod(
   switch (preset) {
     case 'this_month': {
       const from = ymd(year, month, 1);
-      const to   = ymd(year, month, lastDayOfMonth(year, month));
+      const to = ymd(year, month, lastDayOfMonth(year, month));
       return { dateFrom: from, dateTo: to };
     }
 
     case 'last_month': {
       // 先月の年月を計算する
       const prevMonth = month === 1 ? 12 : month - 1;
-      const prevYear  = month === 1 ? year - 1 : year;
+      const prevYear = month === 1 ? year - 1 : year;
       const from = ymd(prevYear, prevMonth, 1);
-      const to   = ymd(prevYear, prevMonth, lastDayOfMonth(prevYear, prevMonth));
+      const to = ymd(prevYear, prevMonth, lastDayOfMonth(prevYear, prevMonth));
       return { dateFrom: from, dateTo: to };
     }
 
@@ -130,7 +130,7 @@ export function resolvePeriod(
       const fromUtc = new Date(Date.UTC(year, month - 1, day - 30));
       return {
         dateFrom: `${fromUtc.getUTCFullYear()}-${String(fromUtc.getUTCMonth() + 1).padStart(2, '0')}-${String(fromUtc.getUTCDate()).padStart(2, '0')}`,
-        dateTo:   ymd(year, month, day),
+        dateTo: ymd(year, month, day),
       };
     }
 
@@ -139,23 +139,23 @@ export function resolvePeriod(
       const fromUtc = new Date(Date.UTC(year, month - 1, day - 90));
       return {
         dateFrom: `${fromUtc.getUTCFullYear()}-${String(fromUtc.getUTCMonth() + 1).padStart(2, '0')}-${String(fromUtc.getUTCDate()).padStart(2, '0')}`,
-        dateTo:   ymd(year, month, day),
+        dateTo: ymd(year, month, day),
       };
     }
 
     case 'this_quarter': {
       // Q1: 1-3月, Q2: 4-6月, Q3: 7-9月, Q4: 10-12月
       const quarterStart = Math.floor((month - 1) / 3) * 3 + 1; // 1, 4, 7, 10
-      const quarterEnd   = quarterStart + 2;                      // 3, 6, 9, 12
+      const quarterEnd = quarterStart + 2; // 3, 6, 9, 12
       const from = ymd(year, quarterStart, 1);
-      const to   = ymd(year, quarterEnd, lastDayOfMonth(year, quarterEnd));
+      const to = ymd(year, quarterEnd, lastDayOfMonth(year, quarterEnd));
       return { dateFrom: from, dateTo: to };
     }
 
     case 'this_year': {
       return {
         dateFrom: ymd(year, 1, 1),
-        dateTo:   ymd(year, 12, 31),
+        dateTo: ymd(year, 12, 31),
       };
     }
 
@@ -163,7 +163,7 @@ export function resolvePeriod(
       const prevYear = year - 1;
       return {
         dateFrom: ymd(prevYear, 1, 1),
-        dateTo:   ymd(prevYear, 12, 31),
+        dateTo: ymd(prevYear, 12, 31),
       };
     }
 
@@ -197,15 +197,15 @@ export function shiftByYear(period: ResolvedPeriod, yearOffset: number): Resolve
       // 1日前に戻す
       shifted.setUTCDate(shifted.getUTCDate() - 1);
     }
-    const ny   = shifted.getUTCFullYear();
-    const nm   = String(shifted.getUTCMonth() + 1).padStart(2, '0');
-    const nd   = String(shifted.getUTCDate()).padStart(2, '0');
+    const ny = shifted.getUTCFullYear();
+    const nm = String(shifted.getUTCMonth() + 1).padStart(2, '0');
+    const nd = String(shifted.getUTCDate()).padStart(2, '0');
     return `${ny}-${nm}-${nd}`;
   };
 
   return {
     dateFrom: shiftDate(period.dateFrom),
-    dateTo:   shiftDate(period.dateTo),
+    dateTo: shiftDate(period.dateTo),
   };
 }
 
@@ -221,6 +221,6 @@ export function formatPeriodLabel(period: ResolvedPeriod): string {
 
   if (!period.dateFrom && !period.dateTo) return '全期間';
   if (!period.dateFrom) return `〜 ${fmt(period.dateTo)}`;
-  if (!period.dateTo)   return `${fmt(period.dateFrom)} 〜`;
+  if (!period.dateTo) return `${fmt(period.dateFrom)} 〜`;
   return `${fmt(period.dateFrom)} 〜 ${fmt(period.dateTo)}`;
 }

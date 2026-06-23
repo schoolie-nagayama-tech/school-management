@@ -2,12 +2,19 @@
 
 import Link from 'next/link';
 import type { Alert, AlertType } from '@/types/alerts';
-import { ALERT_TYPE_LABELS, ALERT_TYPE_COLORS, DISMISSABLE_ALERT_TYPES, SENSITIVE_ALERT_TYPES } from '@/types/alerts';
+import {
+  ALERT_TYPE_LABELS,
+  ALERT_TYPE_COLORS,
+  DISMISSABLE_ALERT_TYPES,
+  SENSITIVE_ALERT_TYPES,
+} from '@/types/alerts';
 import { Button } from '@/components/ui';
 import { TrendingDown, BookOpen, Clock, MessageCircle } from 'lucide-react';
 
 /** マスク時にラベル横に出すアイコン（ネガティブ系アラート） */
-export const SENSITIVE_ALERT_ICONS: Partial<Record<AlertType, React.ComponentType<{ className?: string }>>> = {
+export const SENSITIVE_ALERT_ICONS: Partial<
+  Record<AlertType, React.ComponentType<{ className?: string }>>
+> = {
   score_drop: TrendingDown,
   homework_not_done: BookOpen,
   tardy: Clock,
@@ -74,7 +81,12 @@ function getEditHref(alert: Alert): string | null {
   }
 }
 
-export function AlertItem({ alert, onDismiss, canDismiss = false, masked = false }: AlertItemProps) {
+export function AlertItem({
+  alert,
+  onDismiss,
+  canDismiss = false,
+  masked = false,
+}: AlertItemProps) {
   const urgencyStyle = getAlertUrgencyStyle(alert);
   const editHref = getEditHref(alert);
   const isSensitive = masked && SENSITIVE_ALERT_TYPES.has(alert.alert_type);
@@ -82,7 +94,9 @@ export function AlertItem({ alert, onDismiss, canDismiss = false, masked = false
   // マスク時はネガティブ系の具体メッセージを非表示。科目名など個人情報ではない要素は別途出す
   const maskedMessage = isSensitive ? getMaskedMessage(alert) : null;
   const messageNode = isSensitive ? (
-    maskedMessage ? <span className="text-xs text-gray-700 truncate">{maskedMessage}</span> : null
+    maskedMessage ? (
+      <span className="text-xs text-gray-700 truncate">{maskedMessage}</span>
+    ) : null
   ) : editHref ? (
     <Link
       href={editHref}
@@ -98,12 +112,18 @@ export function AlertItem({ alert, onDismiss, canDismiss = false, masked = false
   // マスク時のネガティブ系はラベル横にアイコンを併記
   const Icon = isSensitive ? SENSITIVE_ALERT_ICONS[alert.alert_type] : null;
   // マスク時はラベルを婉曲表現に差し替え（score_drop → "成績"）
-  const displayLabel = (isSensitive && MASKED_ALERT_LABEL_OVERRIDES[alert.alert_type]) || ALERT_TYPE_LABELS[alert.alert_type];
+  const displayLabel =
+    (isSensitive && MASKED_ALERT_LABEL_OVERRIDES[alert.alert_type]) ||
+    ALERT_TYPE_LABELS[alert.alert_type];
 
   return (
-    <div className={`flex items-center justify-between gap-2 py-1 px-2 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors duration-150 ${urgencyStyle}`}>
+    <div
+      className={`flex items-center justify-between gap-2 py-1 px-2 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors duration-150 ${urgencyStyle}`}
+    >
       <div className="flex items-center gap-2 flex-1 min-w-0">
-        <span className={`shrink-0 inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium ${ALERT_TYPE_COLORS[alert.alert_type]}`}>
+        <span
+          className={`shrink-0 inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium ${ALERT_TYPE_COLORS[alert.alert_type]}`}
+        >
           {isSensitive && Icon && <Icon className="w-3 h-3" />}
           {displayLabel}
         </span>

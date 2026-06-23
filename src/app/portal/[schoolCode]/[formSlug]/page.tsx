@@ -22,10 +22,7 @@ export default async function FormPage({ params, searchParams }: FormPageProps) 
           <h1 className="text-2xl font-bold text-[#1f2937] mb-4">
             このフォームは現在受付していません
           </h1>
-          <a
-            href={`/portal/${schoolCode}`}
-            className="text-[#3b82f6] hover:underline"
-          >
+          <a href={`/portal/${schoolCode}`} className="text-[#3b82f6] hover:underline">
             お申込みページに戻る
           </a>
         </div>
@@ -44,9 +41,7 @@ export default async function FormPage({ params, searchParams }: FormPageProps) 
             </div>
             <h2 className="text-2xl font-bold text-[#1f2937] mb-4">送信完了</h2>
             {form.completion_message && (
-              <p className="text-[#4b5563] mb-6 whitespace-pre-line">
-                {form.completion_message}
-              </p>
+              <p className="text-[#4b5563] mb-6 whitespace-pre-line">{form.completion_message}</p>
             )}
             <Link
               href={`/portal/${schoolCode}`}
@@ -65,7 +60,10 @@ export default async function FormPage({ params, searchParams }: FormPageProps) 
     return (
       <div className="min-h-screen bg-[#f3f4f6]">
         <div className="max-w-lg mx-auto px-4 py-8 w-full">
-          <Link href={`/portal/${schoolCode}`} className="text-sm text-gray-500 hover:text-gray-700 mb-4 inline-block">
+          <Link
+            href={`/portal/${schoolCode}`}
+            className="text-sm text-gray-500 hover:text-gray-700 mb-4 inline-block"
+          >
             ← メニューに戻る
           </Link>
           <header className="mb-6">
@@ -85,7 +83,10 @@ export default async function FormPage({ params, searchParams }: FormPageProps) 
   return (
     <div className="min-h-screen bg-[#f3f4f6]">
       <div className="max-w-lg mx-auto px-4 py-8 w-full">
-        <Link href={`/portal/${schoolCode}`} className="text-sm text-gray-500 hover:text-gray-700 mb-4 inline-block">
+        <Link
+          href={`/portal/${schoolCode}`}
+          className="text-sm text-gray-500 hover:text-gray-700 mb-4 inline-block"
+        >
           ← メニューに戻る
         </Link>
         {/* ヘッダー */}

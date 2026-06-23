@@ -184,9 +184,7 @@ export default function SeasonalShiftFormPage() {
       <div className="min-h-screen bg-surface-hover">
         <div className="max-w-lg mx-auto px-4 py-8">
           <div className="bg-surface-raised rounded-xl border border-border p-8 text-center">
-            <h2 className="text-xl font-bold text-text-heading mb-4">
-              シフト提出が完了しました
-            </h2>
+            <h2 className="text-xl font-bold text-text-heading mb-4">シフト提出が完了しました</h2>
             <p className="text-text-body text-sm">ご提出ありがとうございました。</p>
           </div>
         </div>
@@ -211,7 +209,10 @@ export default function SeasonalShiftFormPage() {
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-surface-raised rounded-xl border border-border p-6 space-y-6">
+        <form
+          onSubmit={handleSubmit}
+          className="bg-surface-raised rounded-xl border border-border p-6 space-y-6"
+        >
           <div>
             <label className="block text-sm font-medium text-text-heading mb-1">お名前 *</label>
             <input
@@ -223,7 +224,9 @@ export default function SeasonalShiftFormPage() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-text-heading mb-1">メールアドレス *</label>
+            <label className="block text-sm font-medium text-text-heading mb-1">
+              メールアドレス *
+            </label>
             <input
               type="email"
               required

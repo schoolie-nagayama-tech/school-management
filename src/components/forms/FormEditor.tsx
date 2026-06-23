@@ -37,13 +37,7 @@ interface FormEditorProps {
   onSuccess: () => void;
 }
 
-export function FormEditor({
-  isOpen,
-  onClose,
-  formId,
-  template,
-  onSuccess,
-}: FormEditorProps) {
+export function FormEditor({ isOpen, onClose, formId, template, onSuccess }: FormEditorProps) {
   const { confirm, ConfirmDialog } = useConfirm();
   const [form, setForm] = useState<FormWithFields | null>(null);
   const [title, setTitle] = useState('');
@@ -84,16 +78,16 @@ export function FormEditor({
       setDescription(data.description || '');
       setSlug(data.slug);
       setStatus(data.status);
-      setPublishStart(data.publish_start ? new Date(data.publish_start).toISOString().slice(0, 16) : '');
+      setPublishStart(
+        data.publish_start ? new Date(data.publish_start).toISOString().slice(0, 16) : ''
+      );
       setPublishEnd(data.publish_end ? new Date(data.publish_end).toISOString().slice(0, 16) : '');
       setCompletionMessage(data.completion_message || '');
       setLinkedApplicationItemId(data.linked_application_item_id || '');
       setFields(data.fields);
     } catch (error) {
       console.error('Error loading form:', error);
-      setErrorMessage(
-        getUserErrorMessage(error, 'フォームの読み込みに失敗しました')
-      );
+      setErrorMessage(getUserErrorMessage(error, 'フォームの読み込みに失敗しました'));
     } finally {
       setIsLoading(false);
     }
@@ -196,9 +190,7 @@ export function FormEditor({
       onClose();
     } catch (error) {
       console.error('Error saving form:', error);
-      setErrorMessage(
-        getUserErrorMessage(error, 'フォームの保存に失敗しました')
-      );
+      setErrorMessage(getUserErrorMessage(error, 'フォームの保存に失敗しました'));
     } finally {
       setIsSubmitting(false);
     }
@@ -254,16 +246,22 @@ export function FormEditor({
       setEditingField(null);
     } catch (error) {
       console.error('Error saving field:', error);
-      setErrorMessage(
-        getUserErrorMessage(error, '項目の保存に失敗しました')
-      );
+      setErrorMessage(getUserErrorMessage(error, '項目の保存に失敗しました'));
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleDeleteField = async (id: string) => {
-    if (!(await confirm({ title: '削除確認', description: 'この項目を削除しますか？', confirmLabel: '削除', variant: 'danger' }))) return;
+    if (
+      !(await confirm({
+        title: '削除確認',
+        description: 'この項目を削除しますか？',
+        confirmLabel: '削除',
+        variant: 'danger',
+      }))
+    )
+      return;
 
     const targetFormId = formId || form?.id;
     if (!targetFormId) return;
@@ -278,9 +276,7 @@ export function FormEditor({
       setFields(formWithFields.fields);
     } catch (error) {
       console.error('Error deleting field:', error);
-      setErrorMessage(
-        getUserErrorMessage(error, '項目の削除に失敗しました')
-      );
+      setErrorMessage(getUserErrorMessage(error, '項目の削除に失敗しました'));
     } finally {
       setIsSubmitting(false);
     }
@@ -311,9 +307,7 @@ export function FormEditor({
       setFields(formWithFields.fields);
     } catch (error) {
       console.error('Error reordering fields:', error);
-      setErrorMessage(
-        getUserErrorMessage(error, '並び順の更新に失敗しました')
-      );
+      setErrorMessage(getUserErrorMessage(error, '並び順の更新に失敗しました'));
     } finally {
       setIsSubmitting(false);
     }
@@ -330,8 +324,8 @@ export function FormEditor({
           formId
             ? 'フォームを編集'
             : template
-            ? 'テンプレートからフォームを作成'
-            : 'フォームを新規作成'
+              ? 'テンプレートからフォームを作成'
+              : 'フォームを新規作成'
         }
       >
         <div className="space-y-4 max-h-[80vh] overflow-y-auto">
@@ -375,9 +369,7 @@ export function FormEditor({
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-[#4b5563] mb-2">
-                  説明文
-                </label>
+                <label className="block text-sm font-medium text-[#4b5563] mb-2">説明文</label>
                 <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
@@ -389,9 +381,7 @@ export function FormEditor({
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-[#4b5563] mb-2">
-                  状態
-                </label>
+                <label className="block text-sm font-medium text-[#4b5563] mb-2">状態</label>
                 <Select
                   value={status}
                   onChange={(e) => setStatus(e.target.value as typeof status)}
@@ -472,9 +462,7 @@ export function FormEditor({
                   </div>
 
                   <div className="flex justify-between items-center mb-2">
-                    <label className="block text-sm font-medium text-[#4b5563]">
-                      カスタム項目
-                    </label>
+                    <label className="block text-sm font-medium text-[#4b5563]">カスタム項目</label>
                     <Button onClick={handleAddField} size="sm" disabled={isSubmitting}>
                       項目を追加
                     </Button>
@@ -496,9 +484,7 @@ export function FormEditor({
                               <span className="text-sm text-[#4b5563]/60">
                                 {FORM_FIELD_TYPE_LABELS[field.field_type]}
                               </span>
-                              <span className="text-[#4b5563] font-medium">
-                                {field.label}
-                              </span>
+                              <span className="text-[#4b5563] font-medium">{field.label}</span>
                               {field.is_required && (
                                 <span className="text-xs text-[#ef4444]">必須</span>
                               )}
@@ -570,14 +556,21 @@ export function FormEditor({
                       <Button
                         onClick={async () => {
                           if (!formId && !form?.id) return;
-                          if (!(await confirm({ description: 'このフォームのアーカイブを解除して元に戻しますか？' }))) return;
-                          
+                          if (
+                            !(await confirm({
+                              description: 'このフォームのアーカイブを解除して元に戻しますか？',
+                            }))
+                          )
+                            return;
+
                           setIsArchiving(true);
                           setErrorMessage('');
                           try {
                             const result = await unarchiveForm(formId || form!.id);
                             await loadForm();
-                            setSuccessMessage(`元に戻しました（回答${result.responsesUnarchived}件を含む）`);
+                            setSuccessMessage(
+                              `元に戻しました（回答${result.responsesUnarchived}件を含む）`
+                            );
                           } catch (error) {
                             console.error('Error unarchiving form:', error);
                             setErrorMessage(
@@ -598,19 +591,28 @@ export function FormEditor({
                       <Button
                         onClick={async () => {
                           if (!formId && !form?.id) return;
-                          if (!(await confirm({ title: 'アーカイブ確認', description: 'このフォームをアーカイブしますか？このフォームから申し込んだ回答も自動でアーカイブされます。', confirmLabel: 'アーカイブ', variant: 'warning' }))) return;
-                          
+                          if (
+                            !(await confirm({
+                              title: 'アーカイブ確認',
+                              description:
+                                'このフォームをアーカイブしますか？このフォームから申し込んだ回答も自動でアーカイブされます。',
+                              confirmLabel: 'アーカイブ',
+                              variant: 'warning',
+                            }))
+                          )
+                            return;
+
                           setIsArchiving(true);
                           setErrorMessage('');
                           try {
                             const result = await archiveForm(formId || form!.id);
                             await loadForm();
-                            setSuccessMessage(`アーカイブしました（回答${result.responsesArchived}件を含む）`);
+                            setSuccessMessage(
+                              `アーカイブしました（回答${result.responsesArchived}件を含む）`
+                            );
                           } catch (error) {
                             console.error('Error archiving form:', error);
-                            setErrorMessage(
-                              getUserErrorMessage(error, 'アーカイブに失敗しました')
-                            );
+                            setErrorMessage(getUserErrorMessage(error, 'アーカイブに失敗しました'));
                           } finally {
                             setIsArchiving(false);
                           }
@@ -627,10 +629,17 @@ export function FormEditor({
               )}
 
               <div className="flex justify-end gap-2 pt-4 border-t border-[#e5e7eb]">
-                <Button onClick={onClose} variant="secondary" disabled={isSubmitting || isArchiving}>
+                <Button
+                  onClick={onClose}
+                  variant="secondary"
+                  disabled={isSubmitting || isArchiving}
+                >
                   キャンセル
                 </Button>
-                <Button onClick={handleSave} disabled={isSubmitting || isArchiving || !title.trim() || !slug.trim()}>
+                <Button
+                  onClick={handleSave}
+                  disabled={isSubmitting || isArchiving || !title.trim() || !slug.trim()}
+                >
                   保存
                 </Button>
               </div>

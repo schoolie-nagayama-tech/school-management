@@ -10,7 +10,16 @@ import { createSchool, updateSchool, deleteSchool } from '@/lib/api/schools';
 import { useMasterData } from '@/contexts/MasterDataContext';
 import { useToast } from '@/hooks/useToast';
 import { ToastContainer } from '@/components/ui';
-import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogAction, AlertDialogCancel } from '@/components/ui';
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogAction,
+  AlertDialogCancel,
+} from '@/components/ui';
 import { Button, Loading } from '@/components/ui';
 import { Trash2, LogIn, Home } from 'lucide-react';
 import { ContextHelp } from '@/components/help/ContextHelp';
@@ -95,7 +104,9 @@ export default function UsersPage() {
   const loadData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const usersResponse = await fetchWithAuth(`/api/admin/users?t=${Date.now()}`, { cache: 'no-store' } as RequestInit);
+      const usersResponse = await fetchWithAuth(`/api/admin/users?t=${Date.now()}`, {
+        cache: 'no-store',
+      } as RequestInit);
 
       if (!usersResponse.ok) {
         const errBody = await usersResponse.json().catch(() => ({}));
@@ -107,8 +118,8 @@ export default function UsersPage() {
       const schoolsData = masterSchools;
 
       // 講師を除外（念のため）
-      let filteredUsers = list.filter((user: UserWithDetails) =>
-        String(user?.role ?? '').toLowerCase() !== 'teacher'
+      let filteredUsers = list.filter(
+        (user: UserWithDetails) => String(user?.role ?? '').toLowerCase() !== 'teacher'
       );
 
       // 権限ごとに表示するユーザーを分ける
@@ -120,7 +131,9 @@ export default function UsersPage() {
         const myIds = Array.isArray(mySchoolIds) ? mySchoolIds : [];
         if (myIds.length > 0) {
           filteredUsers = filteredUsers.filter((user: UserWithDetails) => {
-            const userSchoolIds = (user.user_schools || []).map((us: { school_id: string }) => us.school_id);
+            const userSchoolIds = (user.user_schools || []).map(
+              (us: { school_id: string }) => us.school_id
+            );
             return (
               userSchoolIds.length === 0 || // 未割当ユーザーも通す（新規登録ユーザーが消えないように）
               userSchoolIds.some((sid: string) => myIds.includes(sid))
@@ -149,7 +162,15 @@ export default function UsersPage() {
   }, [authLoading, profile?.role, profile?.id, loadData]);
 
   // ユーザー作成
-  const handleCreate = async (formData: { email: string; displayName: string; lastName: string; firstName: string; password: string; role: UserRole; schoolId: string }) => {
+  const handleCreate = async (formData: {
+    email: string;
+    displayName: string;
+    lastName: string;
+    firstName: string;
+    password: string;
+    role: UserRole;
+    schoolId: string;
+  }) => {
     if (!formData.lastName || !formData.password || !formData.schoolId) {
       toastError('必須項目を入力してください');
       return;
@@ -219,14 +240,21 @@ export default function UsersPage() {
   };
 
   // ユーザー編集を保存（employeeNo: 社員番号。isTeachingStaff: 時給講師フラグ）
-  const handleSaveUser = async (lastName: string, firstName: string, role: UserRole, schoolIds: string[], defaultSchoolId: string, employeeNo: string | null, isTeachingStaff: boolean) => {
+  const handleSaveUser = async (
+    lastName: string,
+    firstName: string,
+    role: UserRole,
+    schoolIds: string[],
+    defaultSchoolId: string,
+    employeeNo: string | null,
+    isTeachingStaff: boolean
+  ) => {
     if (!editingUser) return;
 
     setIsSaving(true);
     try {
-      const resolvedDefaultSchoolId = schoolIds.length > 0 && schoolIds.includes(defaultSchoolId)
-        ? defaultSchoolId
-        : null;
+      const resolvedDefaultSchoolId =
+        schoolIds.length > 0 && schoolIds.includes(defaultSchoolId) ? defaultSchoolId : null;
 
       const res = await fetchWithAuth(`/api/admin/users/${editingUser.id}`, {
         method: 'PATCH',
@@ -425,7 +453,9 @@ export default function UsersPage() {
   const handleToggleDemo = async (school: School) => {
     try {
       await updateSchool(school.id, { is_demo: !school.is_demo });
-      setSchools((prev) => prev.map((s) => s.id === school.id ? { ...s, is_demo: !school.is_demo } : s));
+      setSchools((prev) =>
+        prev.map((s) => (s.id === school.id ? { ...s, is_demo: !school.is_demo } : s))
+      );
       success(school.is_demo ? 'デモフラグを解除しました' : 'デモ教室に設定しました');
     } catch (err: unknown) {
       toastError(err instanceof Error ? err.message : 'デモフラグの更新に失敗しました');
@@ -502,9 +532,7 @@ export default function UsersPage() {
             />
           </div>
           {activeTab === 'users' && !isManager && (
-            <Button onClick={() => setIsCreateDialogOpen(true)}>
-              + ユーザーを追加
-            </Button>
+            <Button onClick={() => setIsCreateDialogOpen(true)}>+ ユーザーを追加</Button>
           )}
           {activeTab === 'schools' && canAccessSchoolSettings && (
             <Button
@@ -569,22 +597,47 @@ export default function UsersPage() {
                   </colgroup>
                   <thead className="bg-surface-hover border-b border-border">
                     <tr>
-                      <th className="px-3 py-2 text-left text-sm font-bold text-text-heading truncate">名前</th>
-                      <th className="px-3 py-2 text-left text-sm font-bold text-text-heading truncate">ログインID</th>
-                      <th className="px-3 py-2 text-left text-sm font-bold text-text-heading truncate">権限</th>
-                      <th className="px-3 py-2 text-left text-sm font-bold text-text-heading">担当教室</th>
-                      <th className="px-3 py-2 text-left text-sm font-bold text-text-heading truncate">状態</th>
-                      <th className="px-3 py-2 text-left text-sm font-bold text-text-heading truncate">最終ログイン</th>
-                      <th className="px-3 py-2 text-right text-sm font-bold text-text-heading truncate">操作</th>
+                      <th className="px-3 py-2 text-left text-sm font-bold text-text-heading truncate">
+                        名前
+                      </th>
+                      <th className="px-3 py-2 text-left text-sm font-bold text-text-heading truncate">
+                        ログインID
+                      </th>
+                      <th className="px-3 py-2 text-left text-sm font-bold text-text-heading truncate">
+                        権限
+                      </th>
+                      <th className="px-3 py-2 text-left text-sm font-bold text-text-heading">
+                        担当教室
+                      </th>
+                      <th className="px-3 py-2 text-left text-sm font-bold text-text-heading truncate">
+                        状態
+                      </th>
+                      <th className="px-3 py-2 text-left text-sm font-bold text-text-heading truncate">
+                        最終ログイン
+                      </th>
+                      <th className="px-3 py-2 text-right text-sm font-bold text-text-heading truncate">
+                        操作
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border/10">
-                    {users.map(user => (
-                      <tr key={user.id} className="hover:bg-surface-hover/50 transition-colors duration-150">
-                        <td className="px-3 py-2 text-sm text-text-heading truncate" title={user.display_name || '-'}>
+                    {users.map((user) => (
+                      <tr
+                        key={user.id}
+                        className="hover:bg-surface-hover/50 transition-colors duration-150"
+                      >
+                        <td
+                          className="px-3 py-2 text-sm text-text-heading truncate"
+                          title={user.display_name || '-'}
+                        >
                           {user.display_name || '-'}
                         </td>
-                        <td className="px-3 py-2 text-sm text-text-body truncate" title={displayLoginId(user.email)}>{displayLoginId(user.email)}</td>
+                        <td
+                          className="px-3 py-2 text-sm text-text-body truncate"
+                          title={displayLoginId(user.email)}
+                        >
+                          {displayLoginId(user.email)}
+                        </td>
                         <td className="px-3 py-2 whitespace-nowrap">
                           <span className="inline-block px-2 py-1 text-xs font-bold bg-info/20 text-text-heading rounded">
                             {USER_ROLE_LABELS[user.role as UserRole] ?? '未設定'}
@@ -594,8 +647,11 @@ export default function UsersPage() {
                           {user.user_schools && user.user_schools.length > 0 ? (
                             <div className="flex flex-wrap gap-1 break-words">
                               {user.user_schools.map((us, idx) => {
-                                const profileWithDefault = user as UserWithDetails & { default_school_id?: string | null };
-                                const isDefault = profileWithDefault.default_school_id === us.school_id;
+                                const profileWithDefault = user as UserWithDetails & {
+                                  default_school_id?: string | null;
+                                };
+                                const isDefault =
+                                  profileWithDefault.default_school_id === us.school_id;
                                 return (
                                   <span
                                     key={us.id || `${us.user_id}-${us.school_id}-${idx}`}
@@ -622,7 +678,9 @@ export default function UsersPage() {
                           )}
                         </td>
                         <td className="px-3 py-2 text-sm text-text-body whitespace-nowrap">
-                          {user.last_login_at ? new Date(user.last_login_at).toLocaleDateString('ja-JP') : '-'}
+                          {user.last_login_at
+                            ? new Date(user.last_login_at).toLocaleDateString('ja-JP')
+                            : '-'}
                         </td>
                         <td className="px-3 py-2 text-right">
                           <div className="flex items-center justify-end gap-1.5 flex-wrap">
@@ -646,7 +704,12 @@ export default function UsersPage() {
                                   <button
                                     type="button"
                                     onClick={async () => {
-                                      if (!confirm(`${user.display_name || displayLoginId(user.email)}としてログインしますか？\n（元のアカウントにはバナーから戻れます）`)) return;
+                                      if (
+                                        !confirm(
+                                          `${user.display_name || displayLoginId(user.email)}としてログインしますか？\n（元のアカウントにはバナーから戻れます）`
+                                        )
+                                      )
+                                        return;
                                       try {
                                         await impersonateUser(user.id);
                                       } catch (e) {
@@ -694,19 +757,32 @@ export default function UsersPage() {
                 <table className="w-full">
                   <thead className="bg-surface-hover border-b border-border">
                     <tr>
-                      <th className="px-3 py-2 text-left text-sm font-bold text-text-heading">教室名</th>
-                      <th className="px-3 py-2 text-left text-sm font-bold text-text-heading">コード</th>
-                      <th className="px-3 py-2 text-center text-sm font-bold text-text-heading">デモ</th>
-                      <th className="px-3 py-2 text-right text-sm font-bold text-text-heading">操作</th>
+                      <th className="px-3 py-2 text-left text-sm font-bold text-text-heading">
+                        教室名
+                      </th>
+                      <th className="px-3 py-2 text-left text-sm font-bold text-text-heading">
+                        コード
+                      </th>
+                      <th className="px-3 py-2 text-center text-sm font-bold text-text-heading">
+                        デモ
+                      </th>
+                      <th className="px-3 py-2 text-right text-sm font-bold text-text-heading">
+                        操作
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border/10">
-                    {schools.map(school => (
-                      <tr key={school.id} className={`hover:bg-surface-hover/50 ${school.is_demo ? 'opacity-60' : ''}`}>
+                    {schools.map((school) => (
+                      <tr
+                        key={school.id}
+                        className={`hover:bg-surface-hover/50 ${school.is_demo ? 'opacity-60' : ''}`}
+                      >
                         <td className="px-3 py-2 text-sm text-text-heading">
                           <span>{school.name}</span>
                           {school.is_demo && (
-                            <span className="ml-2 px-1.5 py-0.5 text-[10px] bg-gray-200 text-gray-600 rounded">デモ</span>
+                            <span className="ml-2 px-1.5 py-0.5 text-[10px] bg-gray-200 text-gray-600 rounded">
+                              デモ
+                            </span>
                           )}
                         </td>
                         <td className="px-3 py-2 text-sm text-text-body">{school.code || '-'}</td>
@@ -784,7 +860,14 @@ export default function UsersPage() {
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel onClick={() => { setIsDeleteDialogOpen(false); setDeletingUser(null); }}>キャンセル</AlertDialogCancel>
+              <AlertDialogCancel
+                onClick={() => {
+                  setIsDeleteDialogOpen(false);
+                  setDeletingUser(null);
+                }}
+              >
+                キャンセル
+              </AlertDialogCancel>
               <AlertDialogAction
                 onClick={handleDelete}
                 disabled={isDeleting}
@@ -797,7 +880,10 @@ export default function UsersPage() {
         </AlertDialog>
 
         {/* 教室削除確認 */}
-        <AlertDialog open={!!schoolToDelete} onOpenChange={(open) => !open && setSchoolToDelete(null)}>
+        <AlertDialog
+          open={!!schoolToDelete}
+          onOpenChange={(open) => !open && setSchoolToDelete(null)}
+        >
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>教室を削除しますか？</AlertDialogTitle>

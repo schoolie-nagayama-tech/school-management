@@ -58,12 +58,7 @@ export const MOGI_REGION_FORM_TITLES: Record<MogiRegion, { eyebrow: string; titl
 };
 
 // Vもぎ種別（東京 + 神奈川の両地域の種別を含むフラットなユニオン）
-export type MogiExamType =
-  | 'toritsu_v'
-  | 'shiritsu_v'
-  | 'jikousakusei'
-  | 'zenken'
-  | 'tokushoku';
+export type MogiExamType = 'toritsu_v' | 'shiritsu_v' | 'jikousakusei' | 'zenken' | 'tokushoku';
 
 export const MOGI_EXAM_TYPE_LABELS: Record<MogiExamType, string> = {
   toritsu_v: '都立Vもぎ',

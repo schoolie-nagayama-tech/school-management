@@ -1,12 +1,12 @@
 export type AlertType =
-  | 'score_drop'        // 成績低下
-  | 'score_missing'     // 成績未入力
+  | 'score_drop' // 成績低下
+  | 'score_missing' // 成績未入力
   | 'interview_overdue' // 面談未更新
   | 'application_overdue' // 申込未提出
-  | 'interview_task'    // 面談タスク
-  | 'exam_overdue'      // テスト未更新
+  | 'interview_task' // 面談タスク
+  | 'exam_overdue' // テスト未更新
   | 'homework_not_done' // 宿題未実施
-  | 'tardy'             // 遅刻
+  | 'tardy' // 遅刻
   | 'course_prep_overdue' // 講習準備未完了
   | 'schedule_change_unapplied'; // 週回数/曜日変更の申込が通塾日程に未反映
 
@@ -41,14 +41,14 @@ export const ALERT_TYPE_COLORS: Record<AlertType, string> = {
 export type AlertSeverity = 'info' | 'warning' | 'danger';
 
 export interface Alert {
-  id: string;  // 一意なID（student_id + alert_type + alert_key）
+  id: string; // 一意なID（student_id + alert_type + alert_key）
   student_id: string;
   student_name: string;
   grade: number;
   school_id?: string;
   alert_type: AlertType;
   alert_key: string;
-  message: string;  // 表示メッセージ（例: "英語 -12点"）
+  message: string; // 表示メッセージ（例: "英語 -12点"）
   details?: {
     subject?: string;
     previous_value?: number;
@@ -98,20 +98,20 @@ export interface StudentAlerts {
 
 /** アラートのしきい値設定（教室ごと） */
 export interface AlertThresholds {
-  score_drop_regular?: number;       // 定期テスト：N点以上下落で発火（デフォ 10）
-  score_drop_mock?: number;          // 模試：偏差値 N 以上下落（デフォ 5）
-  score_drop_report?: number;        // 通知表：N 段階以上下落（デフォ 1）
-  interview_overdue_days?: number;   // 面談：N日経過（デフォ 30）
-  application_warn_days?: number;    // 申込：N日前から黄（デフォ 7）
-  application_alert_days?: number;   // 申込：N日前から橙（デフォ 3）
-  exam_overdue_days?: number;        // 目標未設定：テスト日からN日経過（デフォ 1）
-  homework_warn_count?: number;      // 宿題未実施：N回で黄（デフォ 1）
-  homework_danger_count?: number;    // 宿題未実施：N回で赤（デフォ 3）
-  tardy_warn_count?: number;         // 遅刻：N回で黄（デフォ 1）
-  tardy_danger_count?: number;       // 遅刻：N回で赤（デフォ 3）
-  trend_window_months?: number;      // 長期トレンド判定の月数（デフォ 6）
-  course_prep_warn_days?: number;    // 講習準備：N日前から黄（デフォ 3）
-  course_prep_alert_days?: number;   // 講習準備：N日前から橙（デフォ 0 = 当日）
+  score_drop_regular?: number; // 定期テスト：N点以上下落で発火（デフォ 10）
+  score_drop_mock?: number; // 模試：偏差値 N 以上下落（デフォ 5）
+  score_drop_report?: number; // 通知表：N 段階以上下落（デフォ 1）
+  interview_overdue_days?: number; // 面談：N日経過（デフォ 30）
+  application_warn_days?: number; // 申込：N日前から黄（デフォ 7）
+  application_alert_days?: number; // 申込：N日前から橙（デフォ 3）
+  exam_overdue_days?: number; // 目標未設定：テスト日からN日経過（デフォ 1）
+  homework_warn_count?: number; // 宿題未実施：N回で黄（デフォ 1）
+  homework_danger_count?: number; // 宿題未実施：N回で赤（デフォ 3）
+  tardy_warn_count?: number; // 遅刻：N回で黄（デフォ 1）
+  tardy_danger_count?: number; // 遅刻：N回で赤（デフォ 3）
+  trend_window_months?: number; // 長期トレンド判定の月数（デフォ 6）
+  course_prep_warn_days?: number; // 講習準備：N日前から黄（デフォ 3）
+  course_prep_alert_days?: number; // 講習準備：N日前から橙（デフォ 0 = 当日）
 }
 
 /**

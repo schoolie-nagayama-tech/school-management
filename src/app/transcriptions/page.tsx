@@ -198,7 +198,9 @@ export default function TranscriptionsPage() {
                           })
                         : '-'}
                     </td>
-                    <td className="px-3 py-2 whitespace-nowrap">{formatDuration(t.duration_seconds)}</td>
+                    <td className="px-3 py-2 whitespace-nowrap">
+                      {formatDuration(t.duration_seconds)}
+                    </td>
                     <td className="px-3 py-2 max-w-[300px] truncate text-text-body/80">
                       {t.transcript.slice(0, 80)}
                     </td>
@@ -236,7 +238,10 @@ export default function TranscriptionsPage() {
                           解除
                         </Button>
                       )}
-                      <Button variant="secondary" onClick={() => handleArchive(t.id, t.is_archived)}>
+                      <Button
+                        variant="secondary"
+                        onClick={() => handleArchive(t.id, t.is_archived)}
+                      >
                         {t.is_archived ? '戻す' : 'アーカイブ'}
                       </Button>
                     </td>

@@ -37,10 +37,7 @@ export async function GET(
 
   if (tokenError) {
     console.error('[booking/GET] トークン取得エラー:', tokenError.message);
-    return NextResponse.json(
-      { valid: false, reason: 'server_error' },
-      { status: 200 }
-    );
+    return NextResponse.json({ valid: false, reason: 'server_error' }, { status: 200 });
   }
 
   if (!tokenRow) {
@@ -58,9 +55,7 @@ export async function GET(
   // inquiry を取得
   const { data: inquiry, error: inquiryError } = await serviceClient
     .from('inquiries')
-    .select(
-      'id, school_id, guardian_name, student_name, interview_at, interview_event_id'
-    )
+    .select('id, school_id, guardian_name, student_name, interview_at, interview_event_id')
     .eq('id', tokenRow.inquiry_id)
     .maybeSingle();
 
@@ -84,9 +79,7 @@ export async function GET(
 
   const schoolName = school?.name ?? '';
   const guardianName =
-    (inquiry.guardian_name as string | null) ||
-    (inquiry.student_name as string | null) ||
-    'お客様';
+    (inquiry.guardian_name as string | null) || (inquiry.student_name as string | null) || 'お客様';
 
   // 空き枠を算出
   const { slots, calendarConnected } = await getInterviewAvailability(

@@ -69,7 +69,9 @@ export function TestPrepPlacementPanel({
       const map = await getZoukomaPlacementProgress(schoolId, subjects);
       const list = Array.from(map.values());
       // 残コマ多い順 → 申込多い順
-      list.sort((a, b) => (b.enrolled - b.placed) - (a.enrolled - a.placed) || b.enrolled - a.enrolled);
+      list.sort(
+        (a, b) => b.enrolled - b.placed - (a.enrolled - a.placed) || b.enrolled - a.enrolled
+      );
       setRows(list);
     } catch (e) {
       console.error('Failed to load test-prep placement progress:', e);
@@ -107,7 +109,12 @@ export function TestPrepPlacementPanel({
             {totalEnrolled > 0 && ` (${Math.round((totalPlaced / totalEnrolled) * 100)}%)`}
           </span>
           {onClose && (
-            <button type="button" onClick={onClose} className="text-text-faint hover:text-text-muted" title="閉じる">
+            <button
+              type="button"
+              onClick={onClose}
+              className="text-text-faint hover:text-text-muted"
+              title="閉じる"
+            >
               <X className="w-4 h-4" />
             </button>
           )}
@@ -115,7 +122,8 @@ export function TestPrepPlacementPanel({
 
         {placingStudentId && (
           <div className="mb-2 px-2 py-1 bg-info-subtle border border-info rounded text-xs text-info">
-            <strong>配置モード中:</strong> 生徒が通塾できる枠（強調表示）をクリックするとテスト対策コマが追加されます。
+            <strong>配置モード中:</strong>{' '}
+            生徒が通塾できる枠（強調表示）をクリックするとテスト対策コマが追加されます。
             もう一度「配置」を押すと終了します。
           </div>
         )}
@@ -165,7 +173,8 @@ export function TestPrepPlacementPanel({
                       {subjEntries.map(([key, b]) => {
                         const remaining = b.enrolled - b.placed;
                         const isComplete = remaining <= 0;
-                        const isPlacing = placingStudentId === r.student_id && placingSubjectId === b.subjectId;
+                        const isPlacing =
+                          placingStudentId === r.student_id && placingSubjectId === b.subjectId;
                         const canPlace = !!b.subjectId && !isComplete && !!onStartPlacement;
                         return (
                           <tr key={key} className="border-t border-border-subtle/40">
@@ -193,7 +202,12 @@ export function TestPrepPlacementPanel({
                                 <button
                                   type="button"
                                   onClick={() =>
-                                    onStartPlacement!(r.student_id, b.subjectId!, b.subjectName, r.availableSlots)
+                                    onStartPlacement!(
+                                      r.student_id,
+                                      b.subjectId!,
+                                      b.subjectName,
+                                      r.availableSlots
+                                    )
                                   }
                                   className={`text-xs px-2 py-0.5 rounded ${
                                     isPlacing

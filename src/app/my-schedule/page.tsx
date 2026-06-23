@@ -131,7 +131,10 @@ export default function MySchedulePage() {
       type Row = MyEntry & {
         time_slot?: MyEntry['time_slot'] | MyEntry['time_slot'][];
         student?: MyEntry['student'] | MyEntry['student'][];
-        report?: { id: string; status: ClassReportStatus }[] | { id: string; status: ClassReportStatus } | null;
+        report?:
+          | { id: string; status: ClassReportStatus }[]
+          | { id: string; status: ClassReportStatus }
+          | null;
       };
       const rows = ((data || []) as Row[]).map((r): MyEntry => {
         const rep = Array.isArray(r.report) ? r.report[0] : r.report;
@@ -166,18 +169,19 @@ export default function MySchedulePage() {
   }, [load]);
 
   // 出欠記録（権限：自分のコマのみ recordAttendance 可能 — 既存APIは制限なしなので注意）
-  const handleRecord = async (
-    entry: MyEntry,
-    status: 'present' | 'absent' | 'late'
-  ) => {
+  const handleRecord = async (entry: MyEntry, status: 'present' | 'absent' | 'late') => {
     if (!profile) return;
     setActingId(entry.id);
     try {
       await recordAttendance(entry.id, status, profile.id);
-      success(`${status === 'present' ? '出席' : status === 'absent' ? '欠席' : '遅刻'}を記録しました`);
+      success(
+        `${status === 'present' ? '出席' : status === 'absent' ? '欠席' : '遅刻'}を記録しました`
+      );
       // ローカル状態を更新（再フェッチも可だが、軽いので部分更新）
       setEntries((prev) =>
-        prev.map((e) => (e.id === entry.id ? { ...e, attendance_status: status, status: 'completed' } : e))
+        prev.map((e) =>
+          e.id === entry.id ? { ...e, attendance_status: status, status: 'completed' } : e
+        )
       );
     } catch (e) {
       toastError(e instanceof Error ? e.message : '記録に失敗しました');
@@ -228,7 +232,6 @@ export default function MySchedulePage() {
     <AdminLayout>
       <ToastContainer toasts={toasts} onRemove={removeToast} />
       <div className="max-w-4xl mx-auto p-4 space-y-4">
-
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold">授業スケジュール</h1>
           <Link href="/today" className="text-sm text-info hover:underline underline-offset-2">
@@ -258,21 +261,19 @@ export default function MySchedulePage() {
                 type="button"
                 onClick={() => setMode('week')}
                 className={`px-3 py-1 text-xs font-semibold flex items-center gap-1 ${
- mode === 'week' ? 'bg-info text-white' : 'bg-white text-text-muted'
- }`}
+                  mode === 'week' ? 'bg-info text-white' : 'bg-white text-text-muted'
+                }`}
               >
-                <CalendarRange className="w-3 h-3" />
-                週
+                <CalendarRange className="w-3 h-3" />週
               </button>
               <button
                 type="button"
                 onClick={() => setMode('month')}
                 className={`px-3 py-1 text-xs font-semibold flex items-center gap-1 ${
- mode === 'month' ? 'bg-info text-white' : 'bg-white text-text-muted'
- }`}
+                  mode === 'month' ? 'bg-info text-white' : 'bg-white text-text-muted'
+                }`}
               >
-                <CalendarDays className="w-3 h-3" />
-                月
+                <CalendarDays className="w-3 h-3" />月
               </button>
             </div>
           </CardContent>
@@ -292,8 +293,8 @@ export default function MySchedulePage() {
                   <CardContent className="p-3">
                     <div
                       className={`text-sm font-bold mb-2 flex items-center gap-2 ${
- isToday ? 'text-info' : ''
- }`}
+                        isToday ? 'text-info' : ''
+                      }`}
                     >
                       {formatDateLong(d)}
                       {isToday && (
@@ -347,25 +348,25 @@ export default function MySchedulePage() {
                         key={key}
                         onClick={() => setMonthSelectedDate(isSelected ? null : key)}
                         className={`aspect-square rounded text-xs flex flex-col items-center justify-center transition-[background-color,border-color,color] duration-150 ease-[var(--ease-out)] border ${
- !inMonth
- ? 'bg-surface text-text-faint border-transparent'
- : isSelected
- ? 'bg-info text-white border-info'
- : isToday
- ? 'border-info bg-white'
- : 'bg-white border-border-subtle hover:bg-surface'
- }`}
+                          !inMonth
+                            ? 'bg-surface text-text-faint border-transparent'
+                            : isSelected
+                              ? 'bg-info text-white border-info'
+                              : isToday
+                                ? 'border-info bg-white'
+                                : 'bg-white border-border-subtle hover:bg-surface'
+                        }`}
                       >
                         <span className="font-semibold">{d.getDate()}</span>
                         {count > 0 && (
                           <span
                             className={`text-[10px] mt-0.5 px-1 rounded ${
- isSelected
- ? 'bg-white/20'
- : count > 4
- ? 'bg-danger-subtle text-danger'
- : 'bg-info-subtle text-info'
- }`}
+                              isSelected
+                                ? 'bg-white/20'
+                                : count > 4
+                                  ? 'bg-danger-subtle text-danger'
+                                  : 'bg-info-subtle text-info'
+                            }`}
                           >
                             {count}コマ
                           </span>
@@ -484,14 +485,14 @@ function EntryRow({
           {entry.report && (
             <span
               className={`ml-0.5 px-1 rounded text-[9px] font-bold ${
- entry.report.status === 'approved'
- ? 'bg-success-subtle text-success'
- : entry.report.status === 'submitted'
- ? 'bg-warning-subtle text-warning'
- : entry.report.status === 'rejected'
- ? 'bg-danger-subtle text-danger'
- : 'bg-surface text-text-body'
- }`}
+                entry.report.status === 'approved'
+                  ? 'bg-success-subtle text-success'
+                  : entry.report.status === 'submitted'
+                    ? 'bg-warning-subtle text-warning'
+                    : entry.report.status === 'rejected'
+                      ? 'bg-danger-subtle text-danger'
+                      : 'bg-surface text-text-body'
+              }`}
             >
               {entry.report.status === 'approved'
                 ? '済'

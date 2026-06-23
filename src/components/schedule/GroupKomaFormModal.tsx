@@ -32,7 +32,11 @@ interface Props {
   maxStudents: number;
   /** その日に出勤可能な講師 */
   availableTeachers: { id: string; display_name: string | null; email: string | null }[];
-  onSubmit: (data: { teacherId: string; subjectIds: string[]; studentIds: string[] }) => Promise<void>;
+  onSubmit: (data: {
+    teacherId: string;
+    subjectIds: string[];
+    studentIds: string[];
+  }) => Promise<void>;
 }
 
 function fmtDate(dateStr: string): string {
@@ -77,9 +81,18 @@ export function GroupKomaFormModal({
   const removeStudent = (id: string) => setStudents((prev) => prev.filter((s) => s.id !== id));
 
   const handleSubmit = async () => {
-    if (!teacherId) { setError('講師を選択してください'); return; }
-    if (students.length === 0) { setError('生徒を1名以上選択してください'); return; }
-    if (students.length > maxStudents) { setError(`生徒は最大${maxStudents}名までです`); return; }
+    if (!teacherId) {
+      setError('講師を選択してください');
+      return;
+    }
+    if (students.length === 0) {
+      setError('生徒を1名以上選択してください');
+      return;
+    }
+    if (students.length > maxStudents) {
+      setError(`生徒は最大${maxStudents}名までです`);
+      return;
+    }
     setSaving(true);
     setError(null);
     try {
@@ -118,7 +131,9 @@ export function GroupKomaFormModal({
               >
                 <option value="">選択してください</option>
                 {availableTeachers.map((t) => (
-                  <option key={t.id} value={t.id}>{t.display_name || t.email || t.id}</option>
+                  <option key={t.id} value={t.id}>
+                    {t.display_name || t.email || t.id}
+                  </option>
                 ))}
               </select>
             )}
@@ -138,7 +153,12 @@ export function GroupKomaFormModal({
                         : 'bg-white text-[var(--paragraph)] border-[var(--stroke)] hover:border-[var(--primary)]'
                     }`}
                   >
-                    <input type="checkbox" className="sr-only" checked={subjectIds.includes(s.id)} onChange={() => toggleSubject(s.id)} />
+                    <input
+                      type="checkbox"
+                      className="sr-only"
+                      checked={subjectIds.includes(s.id)}
+                      onChange={() => toggleSubject(s.id)}
+                    />
                     {s.name}
                   </label>
                 ))}
@@ -150,7 +170,9 @@ export function GroupKomaFormModal({
           <div>
             <label className="block text-sm font-medium text-[var(--headline)] mb-1">
               生徒 <span className="text-red-500">*</span>
-              <span className="ml-2 text-xs font-normal text-[var(--paragraph)]">{students.length}/{maxStudents}名</span>
+              <span className="ml-2 text-xs font-normal text-[var(--paragraph)]">
+                {students.length}/{maxStudents}名
+              </span>
             </label>
             <StudentSearchInput
               schoolId={schoolId}
@@ -161,9 +183,17 @@ export function GroupKomaFormModal({
             {students.length > 0 && (
               <div className="mt-2 flex flex-wrap gap-1.5">
                 {students.map((s) => (
-                  <span key={s.id} className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-accent-ink-subtle border border-accent-ink/15 text-xs text-accent-ink">
+                  <span
+                    key={s.id}
+                    className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-accent-ink-subtle border border-accent-ink/15 text-xs text-accent-ink"
+                  >
                     {s.last_name} {s.first_name}
-                    <button type="button" onClick={() => removeStudent(s.id)} className="text-accent-ink/40 hover:text-danger" aria-label="外す">
+                    <button
+                      type="button"
+                      onClick={() => removeStudent(s.id)}
+                      className="text-accent-ink/40 hover:text-danger"
+                      aria-label="外す"
+                    >
                       <X className="w-3 h-3" />
                     </button>
                   </span>
@@ -175,7 +205,9 @@ export function GroupKomaFormModal({
           {error && <p className="text-sm text-red-600 bg-red-50 rounded px-3 py-2">{error}</p>}
         </div>
         <DialogFooter>
-          <Button variant="secondary" onClick={onClose} disabled={saving}>キャンセル</Button>
+          <Button variant="secondary" onClick={onClose} disabled={saving}>
+            キャンセル
+          </Button>
           <Button onClick={handleSubmit} disabled={saving || availableTeachers.length === 0}>
             {saving ? '作成中...' : '作成'}
           </Button>

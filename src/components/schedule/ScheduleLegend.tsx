@@ -33,10 +33,18 @@ export function ScheduleLegend() {
 
           {/* 種別バッジ */}
           <span className="text-[var(--paragraph)] font-medium">種別:</span>
-          <LegendBadge className={EXTRA_KIND_BADGE.test_prep} label="テスト対策" desc="増コマ申込の落とし込み" />
+          <LegendBadge
+            className={EXTRA_KIND_BADGE.test_prep}
+            label="テスト対策"
+            desc="増コマ申込の落とし込み"
+          />
           <LegendBadge className={EXTRA_KIND_BADGE.additional} label="追加授業" desc="単発追加" />
           <LegendBadge className={EXTRA_KIND_BADGE.trial} label="体験" desc="体験授業" />
-          <LegendBadge className="bg-info text-white" label="仮" desc="自動マッチング下書き（未公開）" />
+          <LegendBadge
+            className="bg-info text-white"
+            label="仮"
+            desc="自動マッチング下書き（未公開）"
+          />
 
           <span className="w-px h-4 bg-[var(--stroke)]" />
 
@@ -68,10 +76,20 @@ function LegendSwatch({ className, label }: { className: string; label: string }
   );
 }
 
-function LegendBadge({ className, label, desc }: { className: string; label: string; desc: string }) {
+function LegendBadge({
+  className,
+  label,
+  desc,
+}: {
+  className: string;
+  label: string;
+  desc: string;
+}) {
   return (
     <span className="inline-flex items-center gap-1">
-      <span className={`px-1 py-0.5 rounded text-[9px] font-bold leading-none ${className}`}>{label}</span>
+      <span className={`px-1 py-0.5 rounded text-[9px] font-bold leading-none ${className}`}>
+        {label}
+      </span>
       <span className="text-[var(--paragraph)]">{desc}</span>
     </span>
   );

@@ -12,10 +12,7 @@
  * を検証する。
  */
 import { describe, it, expect } from 'vitest';
-import {
-  transformToScoreList,
-  getGradeLabel,
-} from '@/lib/utils/scoreListTransform';
+import { transformToScoreList, getGradeLabel } from '@/lib/utils/scoreListTransform';
 import { GRADE_LABELS } from '@/types/database';
 import type { AssessmentWithScores, Student } from '@/types/database';
 
@@ -55,7 +52,13 @@ function makeStudent(over: {
   } as unknown as Student;
 }
 
-const FIVE = (e: number | null, m: number | null, j: number | null, so: number | null, sc: number | null): ScorePair[] => [
+const FIVE = (
+  e: number | null,
+  m: number | null,
+  j: number | null,
+  so: number | null,
+  sc: number | null
+): ScorePair[] => [
   { subject: 'english', value: e },
   { subject: 'math', value: m },
   { subject: 'japanese', value: j },
@@ -68,14 +71,20 @@ describe('transformToScoreList - 定期テスト(regular_test)', () => {
     const student = makeStudent({ id: 's1', grade: 8 });
     const assessments = [
       // わざと「後の試験」を先に渡し、時系列ソートされることも確認する
-      makeAssessment({ id: 'a2', grade: 8, name_code: 'term1_final', scores: FIVE(45, 55, 35, 25, 15) }),
-      makeAssessment({ id: 'a1', grade: 8, name_code: 'term1_mid', scores: FIVE(40, 50, 30, 20, 10) }),
+      makeAssessment({
+        id: 'a2',
+        grade: 8,
+        name_code: 'term1_final',
+        scores: FIVE(45, 55, 35, 25, 15),
+      }),
+      makeAssessment({
+        id: 'a1',
+        grade: 8,
+        name_code: 'term1_mid',
+        scores: FIVE(40, 50, 30, 20, 10),
+      }),
     ];
-    const result = transformToScoreList(
-      [student],
-      new Map([['s1', assessments]]),
-      'regular_test'
-    );
+    const result = transformToScoreList([student], new Map([['s1', assessments]]), 'regular_test');
 
     expect(result).toHaveLength(1);
     const rows = result[0].rows;
@@ -98,7 +107,12 @@ describe('transformToScoreList - 定期テスト(regular_test)', () => {
     const student = makeStudent({ id: 's1', grade: 8 });
     // 理科が null → 合計は 40+50+30+20 = 140（null を 0 とはしない）
     const assessments = [
-      makeAssessment({ id: 'a1', grade: 8, name_code: 'term1_mid', scores: FIVE(40, 50, 30, 20, null) }),
+      makeAssessment({
+        id: 'a1',
+        grade: 8,
+        name_code: 'term1_mid',
+        scores: FIVE(40, 50, 30, 20, null),
+      }),
     ];
     const result = transformToScoreList([student], new Map([['s1', assessments]]), 'regular_test');
     expect(result[0].rows[0].fiveSum).toBe(140);
@@ -107,7 +121,12 @@ describe('transformToScoreList - 定期テスト(regular_test)', () => {
   it('全科目 null の合計は null（0ではない）', () => {
     const student = makeStudent({ id: 's1', grade: 8 });
     const assessments = [
-      makeAssessment({ id: 'a1', grade: 8, name_code: 'term1_mid', scores: FIVE(null, null, null, null, null) }),
+      makeAssessment({
+        id: 'a1',
+        grade: 8,
+        name_code: 'term1_mid',
+        scores: FIVE(null, null, null, null, null),
+      }),
     ];
     const result = transformToScoreList([student], new Map([['s1', assessments]]), 'regular_test');
     expect(result[0].rows[0].fiveSum).toBeNull();
@@ -118,7 +137,19 @@ describe('transformToScoreList - 定期テスト(regular_test)', () => {
     const s2 = makeStudent({ id: 's2', grade: 8 });
     const result = transformToScoreList(
       [s1, s2],
-      new Map([['s1', [makeAssessment({ id: 'a1', grade: 8, name_code: 'term1_mid', scores: FIVE(40, 50, 30, 20, 10) })]]]),
+      new Map([
+        [
+          's1',
+          [
+            makeAssessment({
+              id: 'a1',
+              grade: 8,
+              name_code: 'term1_mid',
+              scores: FIVE(40, 50, 30, 20, 10),
+            }),
+          ],
+        ],
+      ]),
       'regular_test'
     );
     // s2 は assessments が無いので除外される
@@ -130,13 +161,21 @@ describe('transformToScoreList - 内申(report_card)', () => {
   it('9科オール5で9科合計45・換算内申(都立)65', () => {
     const student = makeStudent({ id: 's1', grade: 9 });
     const nineAllFive: ScorePair[] = [
-      { subject: 'english', value: 5 }, { subject: 'math', value: 5 }, { subject: 'japanese', value: 5 },
-      { subject: 'social', value: 5 }, { subject: 'science', value: 5 }, { subject: 'music', value: 5 },
-      { subject: 'art', value: 5 }, { subject: 'tech_home', value: 5 }, { subject: 'pe', value: 5 },
+      { subject: 'english', value: 5 },
+      { subject: 'math', value: 5 },
+      { subject: 'japanese', value: 5 },
+      { subject: 'social', value: 5 },
+      { subject: 'science', value: 5 },
+      { subject: 'music', value: 5 },
+      { subject: 'art', value: 5 },
+      { subject: 'tech_home', value: 5 },
+      { subject: 'pe', value: 5 },
     ];
     const result = transformToScoreList(
       [student],
-      new Map([['s1', [makeAssessment({ id: 'a1', grade: 9, name_code: 'term1', scores: nineAllFive })]]]),
+      new Map([
+        ['s1', [makeAssessment({ id: 'a1', grade: 9, name_code: 'term1', scores: nineAllFive })]],
+      ]),
       'report_card',
       'tokyo'
     );
@@ -151,12 +190,28 @@ describe('transformToScoreList - 模試(mock)', () => {
   it('偏差値(hensa_3 / hensa_5)が取り込まれる', () => {
     const student = makeStudent({ id: 's1', grade: 9 });
     const scores: ScorePair[] = [
-      { subject: 'english', value: 60 }, { subject: 'math', value: 70 }, { subject: 'japanese', value: 50 },
-      { subject: 'hensa_3', value: 55 }, { subject: 'hensa_5', value: 58 },
+      { subject: 'english', value: 60 },
+      { subject: 'math', value: 70 },
+      { subject: 'japanese', value: 50 },
+      { subject: 'hensa_3', value: 55 },
+      { subject: 'hensa_5', value: 58 },
     ];
     const result = transformToScoreList(
       [student],
-      new Map([['s1', [makeAssessment({ id: 'a1', grade: 9, name_code: 'venue', exam_month: '2026-03-01', scores })]]]),
+      new Map([
+        [
+          's1',
+          [
+            makeAssessment({
+              id: 'a1',
+              grade: 9,
+              name_code: 'venue',
+              exam_month: '2026-03-01',
+              scores,
+            }),
+          ],
+        ],
+      ]),
       'mock'
     );
     const row = result[0].rows[0];
@@ -167,7 +222,12 @@ describe('transformToScoreList - 模試(mock)', () => {
 
 describe('transformToScoreList - 生徒の並び順', () => {
   it('学年昇順 → かな順でソートされる', () => {
-    const a1 = makeAssessment({ id: 'a', grade: 7, name_code: 'term1_mid', scores: FIVE(1, 1, 1, 1, 1) });
+    const a1 = makeAssessment({
+      id: 'a',
+      grade: 7,
+      name_code: 'term1_mid',
+      scores: FIVE(1, 1, 1, 1, 1),
+    });
     const students = [
       makeStudent({ id: 'older', grade: 9, last_name_kana: 'あ', first_name_kana: 'あ' }),
       makeStudent({ id: 'youngB', grade: 7, last_name_kana: 'さ', first_name_kana: 'き' }),

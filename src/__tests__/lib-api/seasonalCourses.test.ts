@@ -101,9 +101,7 @@ describe('getSeasonalCourses (N+1解消後)', () => {
   });
 
   it('講習一覧の取得エラーは throw する', async () => {
-    mockSupabase.from.mockImplementation(() =>
-      createMockChain(null, { message: 'DB error' })
-    );
+    mockSupabase.from.mockImplementation(() => createMockChain(null, { message: 'DB error' }));
 
     const { getSeasonalCourses } = await import('@/lib/api/seasonalCourses');
     await expect(getSeasonalCourses('s1')).rejects.toBeDefined();

@@ -2,11 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Modal, Button, Select, Input, Loading } from '@/components/ui';
-import type {
-  NottaTranscript,
-  InterviewType,
-  Student,
-} from '@/types/database';
+import type { NottaTranscript, InterviewType, Student } from '@/types/database';
 import { INTERVIEW_TYPE_LABELS, GRADE_LABELS } from '@/types/database';
 import { getStudents } from '@/lib/api/students';
 import { linkTranscriptToStudent } from '@/lib/api/notta-transcripts';
@@ -67,7 +63,8 @@ export function LinkTranscriptModal({ isOpen, onClose, transcript, onSuccess }: 
   const filtered = students.filter((s) => {
     if (!search) return true;
     const q = search.toLowerCase();
-    const full = `${s.last_name}${s.first_name}${s.last_name_kana || ''}${s.first_name_kana || ''}`.toLowerCase();
+    const full =
+      `${s.last_name}${s.first_name}${s.last_name_kana || ''}${s.first_name_kana || ''}`.toLowerCase();
     return full.includes(q) || (s.student_code || '').toLowerCase().includes(q);
   });
 
@@ -97,7 +94,9 @@ export function LinkTranscriptModal({ isOpen, onClose, transcript, onSuccess }: 
         <div className="bg-[#f3f4f6] p-3 rounded border border-[#e5e7eb] text-sm space-y-1">
           <div className="font-semibold text-[#1f2937]">{transcript.title || '(無題)'}</div>
           {transcript.recorded_at && (
-            <div className="text-[#4b5563]/70">録音: {new Date(transcript.recorded_at).toLocaleString('ja-JP')}</div>
+            <div className="text-[#4b5563]/70">
+              録音: {new Date(transcript.recorded_at).toLocaleString('ja-JP')}
+            </div>
           )}
           <div className="text-[#4b5563] line-clamp-3 whitespace-pre-wrap">
             {transcript.transcript.slice(0, 200)}

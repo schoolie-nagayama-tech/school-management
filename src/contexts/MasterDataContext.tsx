@@ -1,6 +1,14 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, useCallback, useRef, ReactNode } from 'react';
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useCallback,
+  useRef,
+  ReactNode,
+} from 'react';
 import { getSchools } from '@/lib/api/schools';
 import { getSubjects } from '@/lib/api/subjects';
 import { useAuth } from '@/contexts/AuthContext';
@@ -72,7 +80,14 @@ export function MasterDataProvider({ children }: { children: ReactNode }) {
 
   return (
     <MasterDataContext.Provider
-      value={{ schools, subjects, schoolsLoading, subjectsLoading, refreshSchools, refreshSubjects }}
+      value={{
+        schools,
+        subjects,
+        schoolsLoading,
+        subjectsLoading,
+        refreshSchools,
+        refreshSubjects,
+      }}
     >
       {children}
     </MasterDataContext.Provider>

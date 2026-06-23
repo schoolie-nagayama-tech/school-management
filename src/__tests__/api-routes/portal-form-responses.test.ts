@@ -40,7 +40,13 @@ describe('POST /api/portal/form-responses', () => {
   });
 
   it('有効なリクエストでフォーム回答を作成できる', async () => {
-    const period = { id: 'p1', is_active: true, is_archived: false, publish_start: '2020-01-01', publish_end: '2099-12-31' };
+    const period = {
+      id: 'p1',
+      is_active: true,
+      is_archived: false,
+      publish_start: '2020-01-01',
+      publish_end: '2099-12-31',
+    };
     const createdResponse = { id: 'resp-1', ...validBody };
 
     let callCount = 0;
@@ -87,7 +93,13 @@ describe('POST /api/portal/form-responses', () => {
   });
 
   it('受付期間がアーカイブ済みの場合400を返す', async () => {
-    const period = { id: 'p1', is_active: true, is_archived: true, publish_start: '2020-01-01', publish_end: '2099-12-31' };
+    const period = {
+      id: 'p1',
+      is_active: true,
+      is_archived: true,
+      publish_start: '2020-01-01',
+      publish_end: '2099-12-31',
+    };
     mockAdmin.from.mockImplementation(() => createMockChain(period) as never);
 
     const { POST } = await import('@/app/api/portal/form-responses/route');
@@ -100,7 +112,13 @@ describe('POST /api/portal/form-responses', () => {
   });
 
   it('受付期間が非アクティブの場合400を返す', async () => {
-    const period = { id: 'p1', is_active: false, is_archived: false, publish_start: '2020-01-01', publish_end: '2099-12-31' };
+    const period = {
+      id: 'p1',
+      is_active: false,
+      is_archived: false,
+      publish_start: '2020-01-01',
+      publish_end: '2099-12-31',
+    };
     mockAdmin.from.mockImplementation(() => createMockChain(period) as never);
 
     const { POST } = await import('@/app/api/portal/form-responses/route');
@@ -121,7 +139,13 @@ describe('POST /api/portal/form-responses', () => {
   });
 
   it('公開開始前の場合400を返す', async () => {
-    const period = { id: 'p1', is_active: true, is_archived: false, publish_start: '2099-01-01', publish_end: '2099-12-31' };
+    const period = {
+      id: 'p1',
+      is_active: true,
+      is_archived: false,
+      publish_start: '2099-01-01',
+      publish_end: '2099-12-31',
+    };
     mockAdmin.from.mockImplementation(() => createMockChain(period) as never);
 
     const { POST } = await import('@/app/api/portal/form-responses/route');
@@ -134,7 +158,13 @@ describe('POST /api/portal/form-responses', () => {
   });
 
   it('公開終了後の場合400を返す', async () => {
-    const period = { id: 'p1', is_active: true, is_archived: false, publish_start: '2020-01-01', publish_end: '2020-12-31' };
+    const period = {
+      id: 'p1',
+      is_active: true,
+      is_archived: false,
+      publish_start: '2020-01-01',
+      publish_end: '2020-12-31',
+    };
     mockAdmin.from.mockImplementation(() => createMockChain(period) as never);
 
     const { POST } = await import('@/app/api/portal/form-responses/route');
@@ -147,7 +177,13 @@ describe('POST /api/portal/form-responses', () => {
   });
 
   it('重複回答(23505)で409を返す', async () => {
-    const period = { id: 'p1', is_active: true, is_archived: false, publish_start: '2020-01-01', publish_end: '2099-12-31' };
+    const period = {
+      id: 'p1',
+      is_active: true,
+      is_archived: false,
+      publish_start: '2020-01-01',
+      publish_end: '2099-12-31',
+    };
 
     let callCount = 0;
     mockAdmin.from.mockImplementation(() => {

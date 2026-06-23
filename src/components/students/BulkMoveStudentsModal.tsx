@@ -127,8 +127,9 @@ export function BulkMoveStudentsModal({
     <Modal isOpen={isOpen} onClose={onClose} title="生徒の教室移動（一括）" size="lg">
       <div className="space-y-4">
         <p className="text-sm text-[#4b5563]">
-          生徒の <span className="font-medium text-[#1f2937]">所属教室（school_id）</span> をまとめて変更します。
-          既に誤った教室（例: デフォルト）に登録されてしまった生徒を、正しい教室へ移す用途を想定しています。
+          生徒の <span className="font-medium text-[#1f2937]">所属教室（school_id）</span>{' '}
+          をまとめて変更します。 既に誤った教室（例:
+          デフォルト）に登録されてしまった生徒を、正しい教室へ移す用途を想定しています。
         </p>
 
         {/* 教室選択 */}
@@ -190,7 +191,8 @@ export function BulkMoveStudentsModal({
               className="w-4 h-4 mt-0.5"
             />
             <label htmlFor="moveAll" className="text-sm text-[#4b5563]">
-              生徒コードを空にした場合、移動元教室の生徒を <span className="font-medium text-[#1f2937]">全員移動</span> することに同意します
+              生徒コードを空にした場合、移動元教室の生徒を{' '}
+              <span className="font-medium text-[#1f2937]">全員移動</span> することに同意します
               （コード入力時はこのチェックは不要です）
             </label>
           </div>
@@ -216,10 +218,16 @@ export function BulkMoveStudentsModal({
             <p className="text-sm font-medium text-green-800">移動が完了しました。</p>
             <p className="text-xs text-green-800">students: {result.movedStudents} 件</p>
             <p className="text-xs text-green-800">student_logs: {result.updatedStudentLogs} 件</p>
-            <p className="text-xs text-green-800">student_interviews: {result.updatedInterviews} 件</p>
+            <p className="text-xs text-green-800">
+              student_interviews: {result.updatedInterviews} 件
+            </p>
             <p className="text-xs text-green-800">assessments: {result.updatedAssessments} 件</p>
-            <p className="text-xs text-green-800">schedule_regular_patterns: {result.updatedSchedulePatterns} 件</p>
-            <p className="text-xs text-green-800">schedule_entries: {result.updatedScheduleEntries} 件</p>
+            <p className="text-xs text-green-800">
+              schedule_regular_patterns: {result.updatedSchedulePatterns} 件
+            </p>
+            <p className="text-xs text-green-800">
+              schedule_entries: {result.updatedScheduleEntries} 件
+            </p>
           </div>
         )}
 
@@ -237,4 +245,3 @@ export function BulkMoveStudentsModal({
     </Modal>
   );
 }
-

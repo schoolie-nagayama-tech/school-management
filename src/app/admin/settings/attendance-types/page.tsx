@@ -101,7 +101,7 @@ export default function AttendanceTypesPage() {
   useEffect(() => {
     async function fetchAttendanceTypes() {
       if (!selectedSchoolId) return;
-      
+
       setIsLoading(true);
       try {
         const data = await getAttendanceTypes(selectedSchoolId);
@@ -165,7 +165,7 @@ export default function AttendanceTypesPage() {
         await createAttendanceType(selectedSchoolId, formData);
         success('コマ種別を追加しました');
       }
-      
+
       // 一覧を再取得
       const data = await getAttendanceTypes(selectedSchoolId);
       setAttendanceTypes(data);
@@ -183,7 +183,7 @@ export default function AttendanceTypesPage() {
     try {
       await deleteAttendanceType(deletingItem.id);
       success('コマ種別を削除しました');
-      
+
       // 一覧を再取得
       const data = await getAttendanceTypes(selectedSchoolId);
       setAttendanceTypes(data);
@@ -195,7 +195,7 @@ export default function AttendanceTypesPage() {
     }
   };
 
-  const selectedSchool = schools.find(s => s.id === selectedSchoolId);
+  const selectedSchool = schools.find((s) => s.id === selectedSchoolId);
 
   // ドラッグ&ドロップ用のセンサー
   const sensors = useSensors(
@@ -245,7 +245,10 @@ export default function AttendanceTypesPage() {
     <AdminLayout headerTitle="講師勤怠">
       <div className="space-y-6">
         <div className="mb-4">
-          <Link href="/settings" className="inline-flex items-center gap-1 text-sm text-text-muted hover:text-text-heading transition-colors duration-150">
+          <Link
+            href="/settings"
+            className="inline-flex items-center gap-1 text-sm text-text-muted hover:text-text-heading transition-colors duration-150"
+          >
             <ChevronLeft className="w-4 h-4" />
             設定に戻る
           </Link>
@@ -262,9 +265,7 @@ export default function AttendanceTypesPage() {
                 <div className="relative w-48">
                   <Select value={selectedSchoolId} onValueChange={setSelectedSchoolId}>
                     <SelectTrigger className="w-full">
-                      <SelectValue placeholder="教室を選択">
-                        {selectedSchool?.name}
-                      </SelectValue>
+                      <SelectValue placeholder="教室を選択">{selectedSchool?.name}</SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       {schools.map((school) => (
@@ -287,9 +288,7 @@ export default function AttendanceTypesPage() {
               <Loading size="md" />
             ) : attendanceTypes.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-8 text-center">
-                <p className="text-text-body mb-4">
-                  コマ種別が登録されていません
-                </p>
+                <p className="text-text-body mb-4">コマ種別が登録されていません</p>
                 <Button onClick={handleCreate}>
                   <Plus className="mr-2 h-4 w-4" />
                   最初の種別を追加
@@ -339,9 +338,7 @@ export default function AttendanceTypesPage() {
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>
-              {editingItem ? 'コマ種別を編集' : 'コマ種別を追加'}
-            </DialogTitle>
+            <DialogTitle>{editingItem ? 'コマ種別を編集' : 'コマ種別を追加'}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
@@ -349,32 +346,24 @@ export default function AttendanceTypesPage() {
               <Input
                 id="name"
                 value={formData.name}
-                onChange={(e) =>
-                  setFormData({ ...formData, name: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 placeholder="例：PS1、キッズコース、事務"
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="unit">単位</Label>
-              <Select 
-                value={formData.unit} 
+              <Select
+                value={formData.unit}
                 onValueChange={(value: string) =>
                   setFormData({ ...formData, unit: value as 'count' | 'hours' })
                 }
               >
                 <SelectTrigger>
-                  <SelectValue>
-                    {formData.unit === 'count' ? 'コマ' : '時間'}
-                  </SelectValue>
+                  <SelectValue>{formData.unit === 'count' ? 'コマ' : '時間'}</SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="count">
-                    コマ
-                  </SelectItem>
-                  <SelectItem value="hours">
-                    時間
-                  </SelectItem>
+                  <SelectItem value="count">コマ</SelectItem>
+                  <SelectItem value="hours">時間</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -398,9 +387,7 @@ export default function AttendanceTypesPage() {
               <Switch
                 id="is_active"
                 checked={formData.is_active}
-                onCheckedChange={(checked) =>
-                  setFormData({ ...formData, is_active: checked })
-                }
+                onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
               />
             </div>
           </div>

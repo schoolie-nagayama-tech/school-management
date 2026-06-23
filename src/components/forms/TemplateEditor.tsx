@@ -13,11 +13,7 @@ import {
   reorderFormTemplateFields,
 } from '@/lib/api/forms';
 import { FieldEditor } from './FieldEditor';
-import type {
-  FormTemplateWithFields,
-  FormTemplateField,
-  FormFieldType,
-} from '@/types/database';
+import type { FormTemplateWithFields, FormTemplateField, FormFieldType } from '@/types/database';
 import { FORM_FIELD_TYPE_LABELS } from '@/types/database';
 import { useConfirm } from '@/hooks/useConfirm';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
@@ -29,12 +25,7 @@ interface TemplateEditorProps {
   onSuccess: () => void;
 }
 
-export function TemplateEditor({
-  isOpen,
-  onClose,
-  templateId,
-  onSuccess,
-}: TemplateEditorProps) {
+export function TemplateEditor({ isOpen, onClose, templateId, onSuccess }: TemplateEditorProps) {
   const { confirm, ConfirmDialog } = useConfirm();
   const [template, setTemplate] = useState<FormTemplateWithFields | null>(null);
   const [name, setName] = useState('');
@@ -58,9 +49,7 @@ export function TemplateEditor({
       setFields(data.fields);
     } catch (error) {
       console.error('Error loading template:', error);
-      setErrorMessage(
-        getUserErrorMessage(error, 'テンプレートの読み込みに失敗しました')
-      );
+      setErrorMessage(getUserErrorMessage(error, 'テンプレートの読み込みに失敗しました'));
     } finally {
       setIsLoading(false);
     }
@@ -109,9 +98,7 @@ export function TemplateEditor({
       onClose();
     } catch (error) {
       console.error('Error saving template:', error);
-      setErrorMessage(
-        getUserErrorMessage(error, 'テンプレートの保存に失敗しました')
-      );
+      setErrorMessage(getUserErrorMessage(error, 'テンプレートの保存に失敗しました'));
     } finally {
       setIsSubmitting(false);
     }
@@ -159,16 +146,22 @@ export function TemplateEditor({
       setEditingField(null);
     } catch (error) {
       console.error('Error saving field:', error);
-      setErrorMessage(
-        getUserErrorMessage(error, '項目の保存に失敗しました')
-      );
+      setErrorMessage(getUserErrorMessage(error, '項目の保存に失敗しました'));
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleDeleteField = async (id: string) => {
-    if (!(await confirm({ title: '削除確認', description: 'この項目を削除しますか？', confirmLabel: '削除', variant: 'danger' }))) return;
+    if (
+      !(await confirm({
+        title: '削除確認',
+        description: 'この項目を削除しますか？',
+        confirmLabel: '削除',
+        variant: 'danger',
+      }))
+    )
+      return;
 
     setIsSubmitting(true);
     setErrorMessage('');
@@ -177,9 +170,7 @@ export function TemplateEditor({
       await loadTemplate();
     } catch (error) {
       console.error('Error deleting field:', error);
-      setErrorMessage(
-        getUserErrorMessage(error, '項目の削除に失敗しました')
-      );
+      setErrorMessage(getUserErrorMessage(error, '項目の削除に失敗しました'));
     } finally {
       setIsSubmitting(false);
     }
@@ -204,9 +195,7 @@ export function TemplateEditor({
       await loadTemplate();
     } catch (error) {
       console.error('Error reordering fields:', error);
-      setErrorMessage(
-        getUserErrorMessage(error, '並び順の更新に失敗しました')
-      );
+      setErrorMessage(getUserErrorMessage(error, '並び順の更新に失敗しました'));
     } finally {
       setIsSubmitting(false);
     }
@@ -243,9 +232,7 @@ export function TemplateEditor({
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-[#4b5563] mb-2">
-                  説明文
-                </label>
+                <label className="block text-sm font-medium text-[#4b5563] mb-2">説明文</label>
                 <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
@@ -259,9 +246,7 @@ export function TemplateEditor({
               {template && (
                 <div>
                   <div className="flex justify-between items-center mb-2">
-                    <label className="block text-sm font-medium text-[#4b5563]">
-                      項目一覧
-                    </label>
+                    <label className="block text-sm font-medium text-[#4b5563]">項目一覧</label>
                     <Button onClick={handleAddField} size="sm" disabled={isSubmitting}>
                       項目を追加
                     </Button>
@@ -283,9 +268,7 @@ export function TemplateEditor({
                               <span className="text-sm text-[#4b5563]/60">
                                 {FORM_FIELD_TYPE_LABELS[field.field_type]}
                               </span>
-                              <span className="text-[#4b5563] font-medium">
-                                {field.label}
-                              </span>
+                              <span className="text-[#4b5563] font-medium">{field.label}</span>
                               {field.is_required && (
                                 <span className="text-xs text-[#ef4444]">必須</span>
                               )}

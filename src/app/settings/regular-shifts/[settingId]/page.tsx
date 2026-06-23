@@ -15,7 +15,10 @@ import {
 import type { RegularShiftSetting } from '@/types/regular-shift';
 import { useRequirePermission } from '@/hooks/usePermissions';
 import AccessDenied from '@/components/AccessDenied';
-import { RegularShiftSlotMatrix, type RegularSlotSettingRow } from '@/components/regular-shift/RegularShiftSlotMatrix';
+import {
+  RegularShiftSlotMatrix,
+  type RegularSlotSettingRow,
+} from '@/components/regular-shift/RegularShiftSlotMatrix';
 import { useMasterTimeSlots } from '@/hooks/useMasterTimeSlots';
 
 const DAYS = [1, 2, 3, 4, 5, 6] as const;
@@ -44,8 +47,11 @@ export default function RegularShiftDetailPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [copied, setCopied] = useState(false);
-  const { slots: masterSlots, slotsString: masterSlotsString, isLoading: masterLoading } =
-    useMasterTimeSlots();
+  const {
+    slots: masterSlots,
+    slotsString: masterSlotsString,
+    isLoading: masterLoading,
+  } = useMasterTimeSlots();
   const [form, setForm] = useState({
     name: '',
     deadline: '',
@@ -149,9 +155,7 @@ export default function RegularShiftDetailPage() {
   };
 
   const publicUrl =
-    typeof window !== 'undefined'
-      ? `${window.location.origin}/regular-shift/${settingId}`
-      : '';
+    typeof window !== 'undefined' ? `${window.location.origin}/regular-shift/${settingId}` : '';
 
   const copyUrl = () => {
     if (!publicUrl) return;
@@ -203,13 +207,20 @@ export default function RegularShiftDetailPage() {
               value={publicUrl}
               className="flex-1 px-3 py-2 border border-border rounded-lg text-sm bg-surface"
             />
-            <Button type="button" onClick={copyUrl} className="bg-text-heading hover:bg-text-heading/90 text-white transition-colors duration-150">
+            <Button
+              type="button"
+              onClick={copyUrl}
+              className="bg-text-heading hover:bg-text-heading/90 text-white transition-colors duration-150"
+            >
               {copied ? 'コピー済み' : 'コピー'}
             </Button>
           </div>
         </div>
 
-        <form onSubmit={handleSave} className="bg-surface-raised rounded-xl border border-border p-6 space-y-4">
+        <form
+          onSubmit={handleSave}
+          className="bg-surface-raised rounded-xl border border-border p-6 space-y-4"
+        >
           <div>
             <label className="block text-sm font-medium text-text-heading mb-1">シフト名 *</label>
             <input
@@ -244,8 +255,8 @@ export default function RegularShiftDetailPage() {
               {masterLoading
                 ? '読み込み中...'
                 : masterSlots.length > 0
-                ? masterSlots.join('、')
-                : 'コマ時間マスタが未設定です'}
+                  ? masterSlots.join('、')
+                  : 'コマ時間マスタが未設定です'}
             </div>
             <p className="mt-1 text-xs text-text-muted">
               <Link href="/schedule" className="text-info hover:underline">
@@ -279,7 +290,11 @@ export default function RegularShiftDetailPage() {
           </div>
 
           <div className="flex gap-3 pt-4">
-            <Button type="submit" disabled={isSubmitting} className="bg-danger hover:bg-danger/80 text-white transition-colors duration-150">
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              className="bg-danger hover:bg-danger/80 text-white transition-colors duration-150"
+            >
               {isSubmitting ? '保存中...' : '保存'}
             </Button>
             <Link href={`/settings/regular-shifts/${settingId}/submissions`}>

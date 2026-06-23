@@ -7,9 +7,7 @@ import { useRequirePermission } from '@/hooks/usePermissions';
 import AccessDenied from '@/components/AccessDenied';
 
 export default function TasksPage() {
-  const { hasPermission, isLoading } = useRequirePermission(
-    (p) => p.canAccessBilling
-  );
+  const { hasPermission, isLoading } = useRequirePermission((p) => p.canAccessBilling);
 
   if (isLoading) {
     return (

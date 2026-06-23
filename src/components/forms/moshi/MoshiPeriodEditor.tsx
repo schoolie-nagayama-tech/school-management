@@ -3,7 +3,12 @@
 import { useState, useEffect } from 'react';
 import { Modal, Input, Button, Select } from '@/components/ui';
 import { createMoshiPeriod, updateMoshiPeriod } from '@/lib/api/moshi';
-import { createFormPeriodForSchools, updateFormPeriodForSchools, generateUniquePeriodKey, getNextPeriodKey } from '@/lib/api/form-periods';
+import {
+  createFormPeriodForSchools,
+  updateFormPeriodForSchools,
+  generateUniquePeriodKey,
+  getNextPeriodKey,
+} from '@/lib/api/form-periods';
 import { getApplicationItems } from '@/lib/api/applications';
 import type { MoshiPeriod, MoshiSettings } from '@/types/forms/moshi';
 import type { ApplicationItem } from '@/types/database';
@@ -69,7 +74,8 @@ export function MoshiPeriodEditor({
   useEffect(() => {
     if (isOpen) {
       // 申込項目を取得（選択中の教室のものを取得）
-      const targetIds = schoolIds && schoolIds.length > 0 ? schoolIds : schoolId ? [schoolId] : undefined;
+      const targetIds =
+        schoolIds && schoolIds.length > 0 ? schoolIds : schoolId ? [schoolId] : undefined;
       getApplicationItems(targetIds, true).then(setApplicationItems).catch(console.error);
 
       if (period) {
@@ -79,14 +85,10 @@ export function MoshiPeriodEditor({
         setTitle(period.title);
         setDescription(settings.description || '');
         setPublishStart(
-          period.publish_start
-            ? new Date(period.publish_start).toISOString().slice(0, 16)
-            : ''
+          period.publish_start ? new Date(period.publish_start).toISOString().slice(0, 16) : ''
         );
         setPublishEnd(
-          period.publish_end
-            ? new Date(period.publish_end).toISOString().slice(0, 16)
-            : ''
+          period.publish_end ? new Date(period.publish_end).toISOString().slice(0, 16) : ''
         );
         setSelectedGrades(settings.grades || ALL_GRADES);
         setExamDate(settings.exam_date || '');
@@ -100,7 +102,9 @@ export function MoshiPeriodEditor({
       } else {
         // 新規作成モード — 期間キーは自動生成（YYYY-MM、衝突時は連番）
         setPeriodKey(generateUniquePeriodKey([]));
-        getNextPeriodKey('moshi', targetIds ?? []).then(setPeriodKey).catch(() => {});
+        getNextPeriodKey('moshi', targetIds ?? [])
+          .then(setPeriodKey)
+          .catch(() => {});
         setTitle('');
         setDescription('');
         setPublishStart('');
@@ -128,9 +132,7 @@ export function MoshiPeriodEditor({
   // 学年の選択切り替え
   const toggleGrade = (grade: string) => {
     setSelectedGrades((prev) =>
-      prev.includes(grade)
-        ? prev.filter((g) => g !== grade)
-        : [...prev, grade]
+      prev.includes(grade) ? prev.filter((g) => g !== grade) : [...prev, grade]
     );
   };
 
@@ -209,12 +211,7 @@ export function MoshiPeriodEditor({
               ? schoolIds
               : null;
         if (idsToUpdate && idsToUpdate.length > 1) {
-          await updateFormPeriodForSchools(
-            idsToUpdate,
-            'moshi',
-            period.period_key,
-            baseData
-          );
+          await updateFormPeriodForSchools(idsToUpdate, 'moshi', period.period_key, baseData);
         } else {
           await updateMoshiPeriod(period.id, baseData);
         }
@@ -242,9 +239,7 @@ export function MoshiPeriodEditor({
       onClose();
     } catch (error) {
       console.error('Failed to save:', error);
-      setError(
-        getUserErrorMessage(error, '保存に失敗しました')
-      );
+      setError(getUserErrorMessage(error, '保存に失敗しました'));
     } finally {
       setIsSubmitting(false);
     }
@@ -276,9 +271,7 @@ export function MoshiPeriodEditor({
 
           <div className="grid grid-cols-2 gap-4 mb-4">
             <div>
-              <label className="block text-sm font-medium mb-1 text-[#1f2937]">
-                期間キー
-              </label>
+              <label className="block text-sm font-medium mb-1 text-[#1f2937]">期間キー</label>
               <Input
                 type="text"
                 value={periodKey}
@@ -286,9 +279,7 @@ export function MoshiPeriodEditor({
                 disabled // 自動生成のため常に編集不可
                 className="disabled:bg-gray-100"
               />
-              <p className="text-xs text-[#4b5563]/60 mt-1">
-                ※ 自動で割り当てられます（変更不可）
-              </p>
+              <p className="text-xs text-[#4b5563]/60 mt-1">※ 自動で割り当てられます（変更不可）</p>
             </div>
             <div>
               <label className="block text-sm font-medium mb-1 text-[#1f2937]">
@@ -330,9 +321,7 @@ export function MoshiPeriodEditor({
                 value={publishEnd}
                 onChange={(e) => setPublishEnd(e.target.value)}
               />
-              <p className="text-xs text-[#4b5563]/60 mt-1">
-                ※空欄にすると永続的に公開されます
-              </p>
+              <p className="text-xs text-[#4b5563]/60 mt-1">※空欄にすると永続的に公開されます</p>
             </div>
           </div>
         </section>
@@ -348,15 +337,9 @@ export function MoshiPeriodEditor({
               <label className="block text-sm font-medium mb-1 text-[#1f2937]">
                 受験日 <span className="text-red-500">*</span>
               </label>
-              <Input
-                type="date"
-                value={examDate}
-                onChange={(e) => setExamDate(e.target.value)}
-              />
+              <Input type="date" value={examDate} onChange={(e) => setExamDate(e.target.value)} />
               {examDate && (
-                <p className="text-sm text-[#4b5563] mt-1">
-                  → {formatDateLabel(examDate)}
-                </p>
+                <p className="text-sm text-[#4b5563] mt-1">→ {formatDateLabel(examDate)}</p>
               )}
             </div>
           </div>
@@ -481,15 +464,10 @@ export function MoshiPeriodEditor({
 
         {!period && allowedSchools && allowedSchools.length > 1 && (
           <div className="p-3 bg-[#eff6ff] rounded-lg border border-[#bfdbfe]">
-            <p className="text-sm font-medium text-[#1f2937] mb-2">
-              作成する教室を選択
-            </p>
+            <p className="text-sm font-medium text-[#1f2937] mb-2">作成する教室を選択</p>
             <div className="flex flex-wrap gap-x-4 gap-y-2">
               {allowedSchools.map((school) => (
-                <label
-                  key={school.id}
-                  className="flex items-center gap-2 cursor-pointer"
-                >
+                <label key={school.id} className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={selectedSchoolIdsForCreate.includes(school.id)}
@@ -515,15 +493,10 @@ export function MoshiPeriodEditor({
         )}
         {period && allowedSchools && allowedSchools.length > 1 && (
           <div className="p-3 bg-[#eff6ff] rounded-lg border border-[#bfdbfe]">
-            <p className="text-sm font-medium text-[#1f2937] mb-2">
-              同じ内容で更新する教室を選択
-            </p>
+            <p className="text-sm font-medium text-[#1f2937] mb-2">同じ内容で更新する教室を選択</p>
             <div className="flex flex-wrap gap-x-4 gap-y-2">
               {allowedSchools.map((school) => (
-                <label
-                  key={school.id}
-                  className="flex items-center gap-2 cursor-pointer"
-                >
+                <label key={school.id} className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={selectedSchoolIdsForUpdate.includes(school.id)}

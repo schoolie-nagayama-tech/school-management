@@ -3,7 +3,13 @@
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui';
 import { Button, Input, Label } from '@/components/ui';
-import { SelectShadcn as Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui';
+import {
+  SelectShadcn as Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '@/components/ui';
 import type { ScheduleEntry } from '@/types/schedule';
 import type { ScheduleTimeSlot } from '@/types/schedule';
 
@@ -55,8 +61,8 @@ export function TransferModal({
   const [seatLabel, setSeatLabel] = useState('');
   const [saving, setSaving] = useState(false);
 
-  const teachersForSchool = teachers.filter(
-    (t) => t.user_schools?.some((us) => us.school_id === schoolId)
+  const teachersForSchool = teachers.filter((t) =>
+    t.user_schools?.some((us) => us.school_id === schoolId)
   );
 
   useEffect(() => {

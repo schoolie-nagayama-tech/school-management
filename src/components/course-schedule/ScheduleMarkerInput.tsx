@@ -72,7 +72,12 @@ export function ScheduleMarkerInput({
       <div ref={ref} className="bg-white rounded-xl border border-gray-200 shadow-2xl w-72 p-4">
         <div className="flex items-center justify-between mb-3">
           <h4 className="text-sm font-bold text-[#1e3a5f]">マーカー ({displayDate})</h4>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-lg leading-none">&times;</button>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 text-lg leading-none"
+          >
+            &times;
+          </button>
         </div>
 
         {/* テキスト入力 */}
@@ -120,7 +125,10 @@ export function ScheduleMarkerInput({
         <div className="flex justify-between">
           {existing ? (
             <button
-              onClick={() => { onDelete(taskId, date); onClose(); }}
+              onClick={() => {
+                onDelete(taskId, date);
+                onClose();
+              }}
               className="text-xs text-[#ef4444] hover:text-[#dc2626]"
             >
               削除

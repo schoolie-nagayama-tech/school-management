@@ -62,9 +62,10 @@ export default async function PortalPage({ params }: PortalPageProps) {
         }
       }
       // 外部リンクの場合は常にアクティブとみなす（link_urlまたはlink_urlsが設定されている場合）
-      const hasLinks: boolean = menu.menu_key === 'mendan'
-        ? !!(menu.link_urls && menu.link_urls.length > 0)
-        : !!menu.link_url;
+      const hasLinks: boolean =
+        menu.menu_key === 'mendan'
+          ? !!(menu.link_urls && menu.link_urls.length > 0)
+          : !!menu.link_url;
       return { menu, isFormActive: hasLinks, isVisible: menu.is_visible === true };
     })
   );
@@ -86,9 +87,7 @@ export default async function PortalPage({ params }: PortalPageProps) {
               />
             ) : (
               <div className="w-9 h-9 rounded-lg bg-[#1a1a1a] flex items-center justify-center flex-shrink-0">
-                <span className="text-white text-sm font-bold">
-                  {school.name.charAt(0)}
-                </span>
+                <span className="text-white text-sm font-bold">{school.name.charAt(0)}</span>
               </div>
             )}
             <div className="min-w-0">

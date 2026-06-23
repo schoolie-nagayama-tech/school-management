@@ -19,7 +19,13 @@ const GRADE_SUBJECTS: Record<string, string[]> = {
 // ダミー単元候補（テキストマスタから取得する想定）
 const MOCK_UNITS: Record<string, string[]> = {
   英語: ['Unit 3 接続詞 that', 'Unit 4 不定詞', 'Unit 4 動名詞', 'Unit 5 比較', 'Unit 5 最上級'],
-  数学: ['式の計算（多項式）', '連立方程式（加減法）', '連立方程式（代入法）', '連立方程式の利用', '1次関数'],
+  数学: [
+    '式の計算（多項式）',
+    '連立方程式（加減法）',
+    '連立方程式（代入法）',
+    '連立方程式の利用',
+    '1次関数',
+  ],
   国語: ['枕草子', '文法（助動詞）', '古文読解', '漢字・語句'],
   理科: ['化学変化と原子・分子', '化学変化と質量', '電流と回路', 'オームの法則'],
   社会: ['日本の地域的特色', '世界と日本の結びつき', '日本の産業', '地形図の読み取り'],
@@ -50,11 +56,7 @@ export default function TestPrepCreateMock() {
   const [status, setStatus] = useState<'draft' | 'sent' | 'published'>('draft');
 
   const selectedStudent = MOCK_STUDENTS.find((s) => s.id === selectedStudentId);
-  const gradeCategory = selectedStudent
-    ? selectedStudent.grade >= 10
-      ? '高校'
-      : '中学'
-    : null;
+  const gradeCategory = selectedStudent ? (selectedStudent.grade >= 10 ? '高校' : '中学') : null;
 
   // 生徒選択時に科目テンプレートを自動生成
   const handleStudentSelect = (studentId: string) => {
@@ -108,23 +110,16 @@ export default function TestPrepCreateMock() {
   const removeUnit = (subjectId: string, unitId: string) => {
     setSubjects((prev) =>
       prev.map((s) =>
-        s.id === subjectId
-          ? { ...s, units: s.units.filter((u) => u.id !== unitId) }
-          : s
+        s.id === subjectId ? { ...s, units: s.units.filter((u) => u.id !== unitId) } : s
       )
     );
   };
 
   const updateSubjectScore = (subjectId: string, score: number | null) => {
-    setSubjects((prev) =>
-      prev.map((s) => (s.id === subjectId ? { ...s, targetScore: score } : s))
-    );
+    setSubjects((prev) => prev.map((s) => (s.id === subjectId ? { ...s, targetScore: score } : s)));
   };
 
-  const totalKoma = subjects.reduce(
-    (sum, s) => sum + s.units.reduce((us, u) => us + u.koma, 0),
-    0
-  );
+  const totalKoma = subjects.reduce((sum, s) => sum + s.units.reduce((us, u) => us + u.koma, 0), 0);
 
   return (
     <div className="min-h-screen bg-[var(--bg)]">
@@ -141,13 +136,19 @@ export default function TestPrepCreateMock() {
           <div className="flex items-center gap-2">
             <StatusBadge status={status} />
             <button
-              onClick={() => { setStatus('draft'); alert('下書き保存しました（モック）'); }}
+              onClick={() => {
+                setStatus('draft');
+                alert('下書き保存しました（モック）');
+              }}
               className="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
             >
               下書き保存
             </button>
             <button
-              onClick={() => { setStatus('published'); alert('保存して公開URLを発行しました（モック）'); }}
+              onClick={() => {
+                setStatus('published');
+                alert('保存して公開URLを発行しました（モック）');
+              }}
               className="px-4 py-2 text-sm bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition-colors"
             >
               保存して共有URL発行
@@ -206,7 +207,9 @@ export default function TestPrepCreateMock() {
               <span className="font-bold text-gray-900">{selectedStudent.name}</span>
               <span className="text-gray-500">{selectedStudent.gradeName}</span>
               <span className="text-gray-400">|</span>
-              <span className="text-gray-500">科目テンプレート: {gradeCategory}（{subjects.length}科目）</span>
+              <span className="text-gray-500">
+                科目テンプレート: {gradeCategory}（{subjects.length}科目）
+              </span>
             </div>
           )}
         </section>
@@ -215,7 +218,9 @@ export default function TestPrepCreateMock() {
         {subjects.length > 0 && (
           <section className="space-y-4 mb-6">
             <div className="flex items-center justify-between">
-              <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wide">科目・単元</h2>
+              <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wide">
+                科目・単元
+              </h2>
               <div className="text-sm text-gray-500">
                 合計: <span className="font-bold text-red-600 text-lg">{totalKoma}</span> コマ
               </div>
@@ -350,7 +355,9 @@ function SubjectEditor({
                   >
                     <option value="">-</option>
                     {ASSESSMENTS.map((a) => (
-                      <option key={a} value={a}>{a}</option>
+                      <option key={a} value={a}>
+                        {a}
+                      </option>
                     ))}
                   </select>
                 </td>
@@ -358,7 +365,9 @@ function SubjectEditor({
                   <input
                     type="number"
                     value={unit.koma}
-                    onChange={(e) => onUpdateUnit(unit.id, { koma: Math.max(0, Number(e.target.value)) })}
+                    onChange={(e) =>
+                      onUpdateUnit(unit.id, { koma: Math.max(0, Number(e.target.value)) })
+                    }
                     min={0}
                     className="w-16 px-2 py-1 border border-gray-200 rounded text-sm text-center"
                   />
@@ -407,7 +416,9 @@ function SubjectEditor({
                   {candidates.map((c) => (
                     <button
                       key={c}
-                      onClick={() => { onAddUnit(c, true); }}
+                      onClick={() => {
+                        onAddUnit(c, true);
+                      }}
                       className="px-2.5 py-1 text-xs bg-blue-50 text-blue-700 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
                     >
                       + {c}
@@ -478,7 +489,9 @@ function StatusBadge({ status }: { status: string }) {
     published: '公開中',
   };
   return (
-    <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${styles[status] || styles.draft}`}>
+    <span
+      className={`px-2.5 py-1 rounded-full text-xs font-medium ${styles[status] || styles.draft}`}
+    >
       {labels[status] || status}
     </span>
   );

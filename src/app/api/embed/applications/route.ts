@@ -177,10 +177,7 @@ export async function POST(request: NextRequest) {
       if (status === null) {
         // 削除
         if (existing) {
-          await supabase
-            .from('student_applications')
-            .delete()
-            .eq('id', existing.id);
+          await supabase.from('student_applications').delete().eq('id', existing.id);
         }
         return NextResponse.json({ success: true, status: null });
       }

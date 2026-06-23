@@ -11,7 +11,10 @@ import { getDefaultSchoolId } from '@/lib/api/schools';
 import { createRegularShiftSetting, setRegularShiftSlotSettings } from '@/lib/api/regular-shift';
 import { useRequirePermission } from '@/hooks/usePermissions';
 import AccessDenied from '@/components/AccessDenied';
-import { RegularShiftSlotMatrix, type RegularSlotSettingRow } from '@/components/regular-shift/RegularShiftSlotMatrix';
+import {
+  RegularShiftSlotMatrix,
+  type RegularSlotSettingRow,
+} from '@/components/regular-shift/RegularShiftSlotMatrix';
 import { useMasterTimeSlots } from '@/hooks/useMasterTimeSlots';
 
 const DAYS = [1, 2, 3, 4, 5, 6] as const;
@@ -36,8 +39,11 @@ export default function NewRegularShiftPage() {
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [slotSettings, setSlotSettings] = useState<RegularSlotSettingRow[]>([]);
-  const { slots: masterSlots, slotsString: masterSlotsString, isLoading: masterLoading } =
-    useMasterTimeSlots();
+  const {
+    slots: masterSlots,
+    slotsString: masterSlotsString,
+    isLoading: masterLoading,
+  } = useMasterTimeSlots();
   const [form, setForm] = useState({
     name: '',
     deadline: '',
@@ -111,7 +117,10 @@ export default function NewRegularShiftPage() {
         >
           ← 一覧に戻る
         </Link>
-        <form onSubmit={handleSubmit} className="bg-surface-raised rounded-xl border border-border p-6 space-y-4">
+        <form
+          onSubmit={handleSubmit}
+          className="bg-surface-raised rounded-xl border border-border p-6 space-y-4"
+        >
           <div>
             <label className="block text-sm font-medium text-text-heading mb-1">シフト名 *</label>
             <input
@@ -148,8 +157,8 @@ export default function NewRegularShiftPage() {
               {masterLoading
                 ? '読み込み中...'
                 : masterSlots.length > 0
-                ? masterSlots.join('、')
-                : 'コマ時間マスタが未設定です'}
+                  ? masterSlots.join('、')
+                  : 'コマ時間マスタが未設定です'}
             </div>
             <p className="mt-1 text-xs text-text-muted">
               <Link href="/schedule" className="text-info hover:underline">
@@ -182,7 +191,11 @@ export default function NewRegularShiftPage() {
             </select>
           </div>
           <div className="flex gap-3 pt-4">
-            <Button type="submit" disabled={isSubmitting} className="bg-danger hover:bg-danger/80 text-white transition-colors duration-150">
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              className="bg-danger hover:bg-danger/80 text-white transition-colors duration-150"
+            >
               {isSubmitting ? '作成中...' : '作成'}
             </Button>
             <Link href="/settings/seasonal-shifts">

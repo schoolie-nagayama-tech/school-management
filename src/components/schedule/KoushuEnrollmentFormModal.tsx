@@ -1,13 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui';
 import { Button } from '@/components/ui';
 import { StudentSearchInput, type StudentWithSubjects } from './StudentSearchInput';
 import { estimateRegularKomaInPeriod, type KoushuPeriodInfo } from '@/lib/api/koushu-period';
@@ -100,7 +94,10 @@ export function KoushuEnrollmentFormModal({
 
   const handleSubmit = async () => {
     const studentId = lockedStudent?.id ?? selectedStudent?.id;
-    if (!studentId) { setError('生徒を選択してください'); return; }
+    if (!studentId) {
+      setError('生徒を選択してください');
+      return;
+    }
 
     const indiv: Record<string, number> = {};
     const group: Record<string, number> = {};
@@ -164,7 +161,8 @@ export function KoushuEnrollmentFormModal({
               />
               {selectedStudent && (
                 <div className="mt-2 text-sm text-[var(--headline)] bg-blue-50 px-3 py-2 rounded-md">
-                  ✓ {selectedStudent.last_name} {selectedStudent.first_name}（{gradeLabel(selectedStudent.grade)}）
+                  ✓ {selectedStudent.last_name} {selectedStudent.first_name}（
+                  {gradeLabel(selectedStudent.grade)}）
                   {regularHint != null && (
                     <span className="ml-2 text-xs text-[var(--paragraph)]">
                       （講習期間中の通常授業: 約{regularHint}コマ）
@@ -230,9 +228,7 @@ export function KoushuEnrollmentFormModal({
             )}
           </div>
 
-          {error && (
-            <p className="text-sm text-red-600 bg-red-50 rounded px-3 py-2">{error}</p>
-          )}
+          {error && <p className="text-sm text-red-600 bg-red-50 rounded px-3 py-2">{error}</p>}
         </div>
         <DialogFooter>
           <Button variant="secondary" onClick={onClose} disabled={saving}>

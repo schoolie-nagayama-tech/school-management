@@ -24,9 +24,18 @@ import type { Inquiry } from '@/types/database';
 
 /** 学年選択肢（空＝未選択可） */
 const GRADE_OPTIONS = [
-  '小1', '小2', '小3', '小4', '小5', '小6',
-  '中1', '中2', '中3',
-  '高1', '高2', '高3',
+  '小1',
+  '小2',
+  '小3',
+  '小4',
+  '小5',
+  '小6',
+  '中1',
+  '中2',
+  '中3',
+  '高1',
+  '高2',
+  '高3',
   '既卒',
 ] as const;
 
@@ -58,8 +67,8 @@ const REQUEST_TYPE_OPTIONS = [
 /** 性別選択肢 */
 const GENDER_OPTIONS = [
   { value: '不明', label: '不明' },
-  { value: '男',   label: '男' },
-  { value: '女',   label: '女' },
+  { value: '男', label: '男' },
+  { value: '女', label: '女' },
 ] as const;
 
 // ============================================================
@@ -68,12 +77,12 @@ const GENDER_OPTIONS = [
 
 interface FormState {
   schoolId: string;
-  inquiredAt: string;       // YYYY-MM-DD
+  inquiredAt: string; // YYYY-MM-DD
   guardianName: string;
   guardianNameKana: string;
   studentName: string;
   studentNameKana: string;
-  grade: string;            // 空 = 未選択
+  grade: string; // 空 = 未選択
   gender: string;
   phone: string;
   email: string;
@@ -117,22 +126,22 @@ export function InquiryManualAddModal({
 }: Props) {
   // ---- フォーム初期値 ----
   const initialForm = (): FormState => ({
-    schoolId:         defaultSchoolId ?? (schools[0]?.id ?? ''),
-    inquiredAt:       todayJst(),
-    guardianName:     '',
+    schoolId: defaultSchoolId ?? schools[0]?.id ?? '',
+    inquiredAt: todayJst(),
+    guardianName: '',
     guardianNameKana: '',
-    studentName:      '',
-    studentNameKana:  '',
-    grade:            '',
-    gender:           '不明',
-    phone:            '',
-    email:            '',
-    media:            '電話',
-    requestType:      '学習相談・教室見学',
-    initialMessage:   '',
+    studentName: '',
+    studentNameKana: '',
+    grade: '',
+    gender: '不明',
+    phone: '',
+    email: '',
+    media: '電話',
+    requestType: '学習相談・教室見学',
+    initialMessage: '',
   });
 
-  const [form, setForm]           = useState<FormState>(initialForm);
+  const [form, setForm] = useState<FormState>(initialForm);
   const [isSubmitting, setIsSubmitting] = useState(false);
   // バリデーションエラーメッセージ（null = エラーなし）
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
@@ -148,10 +157,7 @@ export function InquiryManualAddModal({
   }, [isOpen, defaultSchoolId, schools]);
 
   // ---- 入力ハンドラ（汎用） ----
-  const handleChange = (
-    field: keyof FormState,
-    value: string
-  ) => {
+  const handleChange = (field: keyof FormState, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
     // 入力があったらエラーをクリア
     if (validationErrors.length > 0) setValidationErrors([]);
@@ -160,8 +166,8 @@ export function InquiryManualAddModal({
   // ---- バリデーション ----
   const validate = (): string[] => {
     const errors: string[] = [];
-    if (!form.schoolId)    errors.push('教室を選択してください');
-    if (!form.inquiredAt)  errors.push('受付日を入力してください');
+    if (!form.schoolId) errors.push('教室を選択してください');
+    if (!form.inquiredAt) errors.push('受付日を入力してください');
     if (!form.phone && !form.email)
       errors.push('電話番号またはメールアドレスのどちらかを入力してください');
     if (!form.guardianName && !form.studentName)
@@ -183,22 +189,22 @@ export function InquiryManualAddModal({
       const inquiredAtIso = `${form.inquiredAt}T00:00:00+09:00`;
 
       const created = await createInquiry({
-        school_id:          form.schoolId,
-        inquired_at:        inquiredAtIso,
-        status:             'in_progress',
-        guardian_name:      form.guardianName      || null,
-        guardian_name_kana: form.guardianNameKana  || null,
-        student_name:       form.studentName       || null,
-        student_name_kana:  form.studentNameKana   || null,
-        grade:              form.grade             || null,
-        gender:             form.gender            || null,
-        phone:              form.phone             || null,
-        email:              form.email             || null,
-        media:              form.media             || null,
+        school_id: form.schoolId,
+        inquired_at: inquiredAtIso,
+        status: 'in_progress',
+        guardian_name: form.guardianName || null,
+        guardian_name_kana: form.guardianNameKana || null,
+        student_name: form.studentName || null,
+        student_name_kana: form.studentNameKana || null,
+        grade: form.grade || null,
+        gender: form.gender || null,
+        phone: form.phone || null,
+        email: form.email || null,
+        media: form.media || null,
         // channel: 手入力の場合は媒体と同一（導線=手入力自体）
-        channel:            form.media             || null,
-        request_type:       form.requestType       || null,
-        initial_message:    form.initialMessage    || null,
+        channel: form.media || null,
+        request_type: form.requestType || null,
+        initial_message: form.initialMessage || null,
       });
 
       toast.success('問合せを追加しました');
@@ -215,8 +221,9 @@ export function InquiryManualAddModal({
   // 共通スタイル（既存ページと揃える）
   // ============================================================
 
-  const labelCls  = 'block text-xs font-medium text-text-heading mb-1';
-  const inputCls  = 'w-full px-3 py-2 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary placeholder:text-gray-400';
+  const labelCls = 'block text-xs font-medium text-text-heading mb-1';
+  const inputCls =
+    'w-full px-3 py-2 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary placeholder:text-gray-400';
   const selectCls = inputCls;
 
   // ============================================================
@@ -224,20 +231,16 @@ export function InquiryManualAddModal({
   // ============================================================
 
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      title="問合せを手入力で追加"
-      size="lg"
-    >
+    <Modal isOpen={isOpen} onClose={onClose} title="問合せを手入力で追加" size="lg">
       <div className="space-y-5">
-
         {/* ---- バリデーションエラー ---- */}
         {validationErrors.length > 0 && (
           <div className="p-3 bg-danger/10 border border-danger/40 rounded-lg">
             <ul className="space-y-0.5">
               {validationErrors.map((msg, i) => (
-                <li key={i} className="text-sm text-danger">{msg}</li>
+                <li key={i} className="text-sm text-danger">
+                  {msg}
+                </li>
               ))}
             </ul>
           </div>
@@ -254,11 +257,11 @@ export function InquiryManualAddModal({
               onChange={(e) => handleChange('schoolId', e.target.value)}
               className={selectCls}
             >
-              {schools.length === 0 && (
-                <option value="">（教室が見つかりません）</option>
-              )}
+              {schools.length === 0 && <option value="">（教室が見つかりません）</option>}
               {schools.map((s) => (
-                <option key={s.id} value={s.id}>{s.name}</option>
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
               ))}
             </select>
           </div>
@@ -334,7 +337,9 @@ export function InquiryManualAddModal({
             >
               <option value="">未選択</option>
               {GRADE_OPTIONS.map((g) => (
-                <option key={g} value={g}>{g}</option>
+                <option key={g} value={g}>
+                  {g}
+                </option>
               ))}
             </select>
           </div>
@@ -346,7 +351,9 @@ export function InquiryManualAddModal({
               className={selectCls}
             >
               {GENDER_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>{o.label}</option>
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
               ))}
             </select>
           </div>
@@ -388,7 +395,9 @@ export function InquiryManualAddModal({
               className={selectCls}
             >
               {MEDIA_OPTIONS.map((m) => (
-                <option key={m} value={m}>{m}</option>
+                <option key={m} value={m}>
+                  {m}
+                </option>
               ))}
             </select>
           </div>
@@ -400,7 +409,9 @@ export function InquiryManualAddModal({
               className={selectCls}
             >
               {REQUEST_TYPE_OPTIONS.map((r) => (
-                <option key={r} value={r}>{r}</option>
+                <option key={r} value={r}>
+                  {r}
+                </option>
               ))}
             </select>
           </div>

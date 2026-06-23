@@ -50,9 +50,9 @@ let sheetTeacherAId: string; // teacherA 自身の出勤簿 (教室A)
 let sheetTeacherBId: string; // teacherB の出勤簿 (教室A 同一教室・別講師)
 
 // テストユーザー
-let teacherAUser: TestUser;  // 教室A のみに所属する teacher
-let teacherBUser: TestUser;  // 教室A のみに所属する別の teacher
-let managerUser: TestUser;   // manager（教室紐づけなし → check_school_access で全教室TRUE）
+let teacherAUser: TestUser; // 教室A のみに所属する teacher
+let teacherBUser: TestUser; // 教室A のみに所属する別の teacher
+let managerUser: TestUser; // manager（教室紐づけなし → check_school_access で全教室TRUE）
 
 // ── beforeAll: service_role でシードデータを作成 ──
 beforeAll(async () => {

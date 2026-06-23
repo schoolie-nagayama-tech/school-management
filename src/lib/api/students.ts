@@ -34,9 +34,7 @@ async function logStudentAction(
       diff: diff || null,
     };
 
-    const { error } = await supabase
-      .from('student_logs')
-      .insert(logEntry as never);
+    const { error } = await supabase.from('student_logs').insert(logEntry as never);
 
     if (error) {
       // ログ書き込み失敗は警告のみ（処理自体は成功扱い）
@@ -216,7 +214,9 @@ export interface GetStudentsPageResult {
 /**
  * 生徒名簿タブ用ページング（他機能は従来どおり getStudents の全件を利用）
  */
-export async function getStudentsPage(opts: GetStudentsPageOptions): Promise<GetStudentsPageResult> {
+export async function getStudentsPage(
+  opts: GetStudentsPageOptions
+): Promise<GetStudentsPageResult> {
   const targetSchoolIds =
     opts.schoolIds && opts.schoolIds.length > 0 ? opts.schoolIds : [getDefaultSchoolId()];
   const { offset, limit } = opts;
@@ -260,7 +260,9 @@ export async function getStudentCodesInSchools(schoolIds: string[]): Promise<Set
     throw new Error('生徒コードの取得に失敗しました');
   }
   return new Set(
-    (data || []).map((r) => r.student_code).filter((c): c is string => typeof c === 'string' && c.length > 0)
+    (data || [])
+      .map((r) => r.student_code)
+      .filter((c): c is string => typeof c === 'string' && c.length > 0)
   );
 }
 
@@ -270,8 +272,7 @@ export async function countNonActiveStudents(
   schoolIds: string[] | undefined,
   listFilters: StudentListFilterOptions
 ): Promise<number> {
-  const targetSchoolIds =
-    schoolIds && schoolIds.length > 0 ? schoolIds : [getDefaultSchoolId()];
+  const targetSchoolIds = schoolIds && schoolIds.length > 0 ? schoolIds : [getDefaultSchoolId()];
   let query = supabase
     .from('students')
     .select('*', { count: 'exact', head: true })
@@ -304,10 +305,15 @@ export async function getStudents(
   // 広く使われる関数のため末尾 optional で後方互換を維持する
   client: SupabaseClient<Database> = supabase
 ): Promise<EnrichedStudent[]> {
-  const targetSchoolIds =
-    schoolIds && schoolIds.length > 0 ? schoolIds : [getDefaultSchoolId()];
+  const targetSchoolIds = schoolIds && schoolIds.length > 0 ? schoolIds : [getDefaultSchoolId()];
 
-  const query = buildStudentsBaseQuery(searchQuery, targetSchoolIds, {}, STUDENT_LIST_COLUMNS, client);
+  const query = buildStudentsBaseQuery(
+    searchQuery,
+    targetSchoolIds,
+    {},
+    STUDENT_LIST_COLUMNS,
+    client
+  );
   const { data: students, error } = await query;
 
   if (error) {
@@ -369,9 +375,7 @@ export async function getStudent(
   schoolIds?: string[] // 複数教室IDを指定可能（未指定の場合はデフォルト教室）
 ): Promise<Student | null> {
   // schoolIdsが指定されていない場合はデフォルト教室を使用
-  const targetSchoolIds = schoolIds && schoolIds.length > 0 
-    ? schoolIds 
-    : [getDefaultSchoolId()];
+  const targetSchoolIds = schoolIds && schoolIds.length > 0 ? schoolIds : [getDefaultSchoolId()];
 
   const { data, error } = await supabase
     .from('students')
@@ -498,7 +502,8 @@ export async function bulkMoveStudentsToSchool({
   if (logsErr) console.warn('Failed to update student_logs school_id:', logsErr);
   if (interviewsErr) console.warn('Failed to update student_interviews school_id:', interviewsErr);
   if (assessmentsErr) console.warn('Failed to update assessments school_id:', assessmentsErr);
-  if (patternsErr) console.warn('Failed to update schedule_regular_patterns school_id:', patternsErr);
+  if (patternsErr)
+    console.warn('Failed to update schedule_regular_patterns school_id:', patternsErr);
   if (entriesErr) console.warn('Failed to update schedule_entries school_id:', entriesErr);
 
   return {
@@ -524,8 +529,7 @@ export async function createStudent(
       : getDefaultSchoolId();
 
   // 生徒コードが空の場合は一意のコードを自動生成（DBがNOT NULLかつUNIQUEのため）
-  const rawCode =
-    student.student_code != null ? String(student.student_code).trim() : '';
+  const rawCode = student.student_code != null ? String(student.student_code).trim() : '';
   const studentCode =
     rawCode !== ''
       ? rawCode
@@ -627,9 +631,7 @@ export async function updateStudent(
   const oldTyped = oldData as Student | null;
   // statusが変更された場合はstatus_changed、それ以外はupdated
   const action: StudentLogInsert['action'] =
-    oldTyped && oldTyped.status !== studentData.status
-      ? 'status_changed'
-      : 'updated';
+    oldTyped && oldTyped.status !== studentData.status ? 'status_changed' : 'updated';
 
   // ログを記録（実際に DB に送った updateData を基準に差分を取る）
   const diff: Record<string, unknown> = {};

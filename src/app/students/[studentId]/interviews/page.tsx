@@ -18,7 +18,9 @@ export default function StudentInterviewsPage() {
   const router = useRouter();
   const { getSelectedSchoolIds } = useAuth();
   // 面談記録の閲覧権限ガード（保護者等の直リンク流入を防ぐ。講師は canAccessInterviews=true で通過）
-  const { hasPermission, isLoading: permissionLoading } = useRequirePermission((p) => p.canAccessInterviews);
+  const { hasPermission, isLoading: permissionLoading } = useRequirePermission(
+    (p) => p.canAccessInterviews
+  );
   const studentId = params.studentId as string;
   const [student, setStudent] = useState<Student | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -83,11 +85,7 @@ export default function StudentInterviewsPage() {
       <div>
         {/* ヘッダー */}
         <div className="mb-6">
-          <Button
-            variant="ghost"
-            onClick={() => router.push('/students')}
-            className="mb-4"
-          >
+          <Button variant="ghost" onClick={() => router.push('/students')} className="mb-4">
             <ArrowLeft className="w-4 h-4 mr-2" />
             生徒一覧に戻る
           </Button>

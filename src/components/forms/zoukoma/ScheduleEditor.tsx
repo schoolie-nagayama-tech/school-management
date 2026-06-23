@@ -45,17 +45,9 @@ const DEFAULT_PERIODS: PeriodConfig[] = [
   },
 ];
 
-export function ScheduleEditor({
-  schedule,
-  onChange,
-  disabled = false,
-}: ScheduleEditorProps) {
-  const [startDate, setStartDate] = useState(
-    schedule?.start_date || ''
-  );
-  const [minDaysAhead, setMinDaysAhead] = useState(
-    schedule?.min_days_ahead ?? 0
-  );
+export function ScheduleEditor({ schedule, onChange, disabled = false }: ScheduleEditorProps) {
+  const [startDate, setStartDate] = useState(schedule?.start_date || '');
+  const [minDaysAhead, setMinDaysAhead] = useState(schedule?.min_days_ahead ?? 0);
   const [periods, setPeriods] = useState<PeriodConfig[]>(() => {
     const raw = schedule?.periods || DEFAULT_PERIODS;
     return raw.map((p) => ({
@@ -65,7 +57,11 @@ export function ScheduleEditor({
     }));
   });
 
-  const emitSchedule = (nextStartDate: string, nextMinDaysAhead: number, nextPeriods: PeriodConfig[]) => {
+  const emitSchedule = (
+    nextStartDate: string,
+    nextMinDaysAhead: number,
+    nextPeriods: PeriodConfig[]
+  ) => {
     if (nextPeriods.length > 0) {
       onChange({
         ...(nextStartDate ? { start_date: nextStartDate } : {}),
@@ -89,7 +85,11 @@ export function ScheduleEditor({
     emitSchedule(startDate, numValue, periods);
   };
 
-  const handlePeriodChange = (index: number, field: keyof PeriodConfig, value: string | boolean) => {
+  const handlePeriodChange = (
+    index: number,
+    field: keyof PeriodConfig,
+    value: string | boolean
+  ) => {
     if (disabled) return;
     const newPeriods = [...periods];
     newPeriods[index] = {
@@ -141,9 +141,7 @@ export function ScheduleEditor({
       {/* 時限設定 */}
       <div>
         <div className="flex items-center justify-between mb-3">
-          <label className="block text-sm font-medium text-[#1f2937]">
-            時限設定
-          </label>
+          <label className="block text-sm font-medium text-[#1f2937]">時限設定</label>
           <Button
             type="button"
             variant="secondary"
@@ -158,42 +156,27 @@ export function ScheduleEditor({
           <table className="w-full">
             <thead>
               <tr className="bg-[#f3f4f6] border-b border-[#e5e7eb]">
-                <th className="px-4 py-2 text-left text-sm font-semibold text-[#1f2937]">
-                  時限
-                </th>
+                <th className="px-4 py-2 text-left text-sm font-semibold text-[#1f2937]">時限</th>
                 <th className="px-4 py-2 text-left text-sm font-semibold text-[#1f2937]">
                   開始時間
                 </th>
                 <th className="px-4 py-2 text-left text-sm font-semibold text-[#1f2937]">
                   終了時間
                 </th>
-                <th className="px-4 py-2 text-center text-sm font-semibold text-[#1f2937]">
-                  土曜
-                </th>
-                <th className="px-4 py-2 text-center text-sm font-semibold text-[#1f2937]">
-                  日曜
-                </th>
-                <th className="px-4 py-2 text-center text-sm font-semibold text-[#1f2937]">
-                  平日
-                </th>
+                <th className="px-4 py-2 text-center text-sm font-semibold text-[#1f2937]">土曜</th>
+                <th className="px-4 py-2 text-center text-sm font-semibold text-[#1f2937]">日曜</th>
+                <th className="px-4 py-2 text-center text-sm font-semibold text-[#1f2937]">平日</th>
               </tr>
             </thead>
             <tbody>
               {periods.map((period, index) => (
-                <tr
-                  key={period.code}
-                  className="border-b border-[#e5e7eb]/20 last:border-b-0"
-                >
-                  <td className="px-4 py-2 text-sm font-medium text-[#1f2937]">
-                    {period.code}限
-                  </td>
+                <tr key={period.code} className="border-b border-[#e5e7eb]/20 last:border-b-0">
+                  <td className="px-4 py-2 text-sm font-medium text-[#1f2937]">{period.code}限</td>
                   <td className="px-4 py-2">
                     <Input
                       type="time"
                       value={period.start_time}
-                      onChange={(e) =>
-                        handlePeriodChange(index, 'start_time', e.target.value)
-                      }
+                      onChange={(e) => handlePeriodChange(index, 'start_time', e.target.value)}
                       disabled={disabled}
                       className="w-32"
                     />
@@ -202,9 +185,7 @@ export function ScheduleEditor({
                     <Input
                       type="time"
                       value={period.end_time}
-                      onChange={(e) =>
-                        handlePeriodChange(index, 'end_time', e.target.value)
-                      }
+                      onChange={(e) => handlePeriodChange(index, 'end_time', e.target.value)}
                       disabled={disabled}
                       className="w-32"
                     />
@@ -214,11 +195,7 @@ export function ScheduleEditor({
                       type="checkbox"
                       checked={period.available_saturday ?? false}
                       onChange={(e) =>
-                        handlePeriodChange(
-                          index,
-                          'available_saturday',
-                          e.target.checked
-                        )
+                        handlePeriodChange(index, 'available_saturday', e.target.checked)
                       }
                       disabled={disabled}
                       className="w-4 h-4 text-[#3b82f6] border-[#e5e7eb] rounded focus:ring-[#3b82f6]"
@@ -229,11 +206,7 @@ export function ScheduleEditor({
                       type="checkbox"
                       checked={period.available_sunday ?? false}
                       onChange={(e) =>
-                        handlePeriodChange(
-                          index,
-                          'available_sunday',
-                          e.target.checked
-                        )
+                        handlePeriodChange(index, 'available_sunday', e.target.checked)
                       }
                       disabled={disabled}
                       className="w-4 h-4 text-[#3b82f6] border-[#e5e7eb] rounded focus:ring-[#3b82f6]"
@@ -244,11 +217,7 @@ export function ScheduleEditor({
                       type="checkbox"
                       checked={period.available_weekday}
                       onChange={(e) =>
-                        handlePeriodChange(
-                          index,
-                          'available_weekday',
-                          e.target.checked
-                        )
+                        handlePeriodChange(index, 'available_weekday', e.target.checked)
                       }
                       disabled={disabled}
                       className="w-4 h-4 text-[#3b82f6] border-[#e5e7eb] rounded focus:ring-[#3b82f6]"

@@ -81,10 +81,7 @@ async function getSubmissionByToken(
 }
 
 /** GET: Fetch submission by edit token */
-export async function GET(
-  _request: NextRequest,
-  { params }: { params: { editToken: string } }
-) {
+export async function GET(_request: NextRequest, { params }: { params: { editToken: string } }) {
   try {
     const editToken = params.editToken?.trim();
     if (!editToken) {
@@ -99,18 +96,12 @@ export async function GET(
     return NextResponse.json({ submission });
   } catch (error) {
     console.error('[regular-shift/public] fetch failed:', error);
-    return NextResponse.json(
-      { error: 'Failed to get submission' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to get submission' }, { status: 500 });
   }
 }
 
 /** PUT: Update submission by edit token */
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: { editToken: string } }
-) {
+export async function PUT(request: NextRequest, { params }: { params: { editToken: string } }) {
   try {
     const editToken = params.editToken?.trim();
     if (!editToken) {
@@ -133,10 +124,7 @@ export async function PUT(
     const supabaseAdmin = getSupabaseAdmin();
     const existing = await getSubmissionByToken(supabaseAdmin, editToken);
     if (!existing) {
-      return NextResponse.json(
-        { error: 'Invalid edit URL' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Invalid edit URL' }, { status: 404 });
     }
 
     // Update submission (allow_edit becomes false after resubmit)
@@ -200,9 +188,6 @@ export async function PUT(
     return NextResponse.json({ submission: updated });
   } catch (error) {
     console.error('[regular-shift/public] update failed:', error);
-    return NextResponse.json(
-      { error: 'Failed to update submission' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to update submission' }, { status: 500 });
   }
 }

@@ -3,7 +3,13 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, Loading } from '@/components/ui';
-import { getForms, deleteForm, updateFormStatus, archiveForm, unarchiveForm } from '@/lib/api/forms';
+import {
+  getForms,
+  deleteForm,
+  updateFormStatus,
+  archiveForm,
+  unarchiveForm,
+} from '@/lib/api/forms';
 import type { Form, FormStatus } from '@/types/database';
 import { FORM_STATUS_LABELS } from '@/types/database';
 import { FormLinkModal } from './FormLinkModal';
@@ -17,7 +23,11 @@ interface FormListProps {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function FormList({ onEditForm, onViewResponses: _onViewResponses, onRefresh }: FormListProps) {
+export function FormList({
+  onEditForm,
+  onViewResponses: _onViewResponses,
+  onRefresh,
+}: FormListProps) {
   const router = useRouter();
   const { confirm, ConfirmDialog } = useConfirm();
   const [forms, setForms] = useState<Form[]>([]);
@@ -37,9 +47,7 @@ export function FormList({ onEditForm, onViewResponses: _onViewResponses, onRefr
       setForms(data);
     } catch (error) {
       console.error('Error fetching forms:', error);
-      setErrorMessage(
-        getUserErrorMessage(error, 'フォーム一覧の取得に失敗しました')
-      );
+      setErrorMessage(getUserErrorMessage(error, 'フォーム一覧の取得に失敗しました'));
     } finally {
       setIsLoading(false);
     }
@@ -50,7 +58,15 @@ export function FormList({ onEditForm, onViewResponses: _onViewResponses, onRefr
   }, [showArchived]);
 
   const handleDelete = async (id: string) => {
-    if (!(await confirm({ title: '削除確認', description: 'このフォームを削除しますか？回答データも削除されます。', confirmLabel: '削除', variant: 'danger' }))) return;
+    if (
+      !(await confirm({
+        title: '削除確認',
+        description: 'このフォームを削除しますか？回答データも削除されます。',
+        confirmLabel: '削除',
+        variant: 'danger',
+      }))
+    )
+      return;
 
     setIsSubmitting(true);
     setErrorMessage('');
@@ -60,9 +76,7 @@ export function FormList({ onEditForm, onViewResponses: _onViewResponses, onRefr
       onRefresh();
     } catch (error) {
       console.error('Error deleting form:', error);
-      setErrorMessage(
-        getUserErrorMessage(error, 'フォームの削除に失敗しました')
-      );
+      setErrorMessage(getUserErrorMessage(error, 'フォームの削除に失敗しました'));
     } finally {
       setIsSubmitting(false);
     }
@@ -77,16 +91,23 @@ export function FormList({ onEditForm, onViewResponses: _onViewResponses, onRefr
       onRefresh();
     } catch (error) {
       console.error('Error updating form status:', error);
-      setErrorMessage(
-        getUserErrorMessage(error, '状態の更新に失敗しました')
-      );
+      setErrorMessage(getUserErrorMessage(error, '状態の更新に失敗しました'));
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleArchive = async (id: string) => {
-    if (!(await confirm({ title: 'アーカイブ確認', description: 'このフォームをアーカイブしますか？このフォームから申し込んだ回答も自動でアーカイブされます。', confirmLabel: 'アーカイブ', variant: 'warning' }))) return;
+    if (
+      !(await confirm({
+        title: 'アーカイブ確認',
+        description:
+          'このフォームをアーカイブしますか？このフォームから申し込んだ回答も自動でアーカイブされます。',
+        confirmLabel: 'アーカイブ',
+        variant: 'warning',
+      }))
+    )
+      return;
 
     setIsSubmitting(true);
     setErrorMessage('');
@@ -98,9 +119,7 @@ export function FormList({ onEditForm, onViewResponses: _onViewResponses, onRefr
       setSuccessMessage(`アーカイブしました（回答${result.responsesArchived}件を含む）`);
     } catch (error) {
       console.error('Error archiving form:', error);
-      setErrorMessage(
-        getUserErrorMessage(error, 'フォームのアーカイブに失敗しました')
-      );
+      setErrorMessage(getUserErrorMessage(error, 'フォームのアーカイブに失敗しました'));
     } finally {
       setIsSubmitting(false);
     }
@@ -117,9 +136,7 @@ export function FormList({ onEditForm, onViewResponses: _onViewResponses, onRefr
       setSuccessMessage(`アーカイブを解除しました（回答${result.responsesUnarchived}件を含む）`);
     } catch (error) {
       console.error('Error unarchiving form:', error);
-      setErrorMessage(
-        getUserErrorMessage(error, 'フォームのアーカイブ解除に失敗しました')
-      );
+      setErrorMessage(getUserErrorMessage(error, 'フォームのアーカイブ解除に失敗しました'));
     } finally {
       setIsSubmitting(false);
     }
@@ -139,9 +156,7 @@ export function FormList({ onEditForm, onViewResponses: _onViewResponses, onRefr
   };
 
   if (isLoading) {
-    return (
-      <Loading size="md" />
-    );
+    return <Loading size="md" />;
   }
 
   return (
@@ -189,23 +204,19 @@ export function FormList({ onEditForm, onViewResponses: _onViewResponses, onRefr
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="font-medium text-[#1f2937]">{form.title}</span>
-                  <span
-                    className={`px-2 py-1 text-xs rounded ${getStatusBadgeClass(form.status)}`}
-                  >
+                  <span className={`px-2 py-1 text-xs rounded ${getStatusBadgeClass(form.status)}`}>
                     {FORM_STATUS_LABELS[form.status]}
                   </span>
                 </div>
                 {form.description && (
-                  <div className="text-sm text-[#4b5563]/60 mb-1">
-                    {form.description}
-                  </div>
+                  <div className="text-sm text-[#4b5563]/60 mb-1">{form.description}</div>
                 )}
                 <div className="text-xs text-[#4b5563]/60">
                   {form.publish_start && form.publish_end
                     ? `公開期間: ${new Date(form.publish_start).toLocaleDateString('ja-JP')} ～ ${new Date(form.publish_end).toLocaleDateString('ja-JP')}`
                     : form.publish_start
-                    ? `公開開始: ${new Date(form.publish_start).toLocaleDateString('ja-JP')}`
-                    : '公開期間未設定'}
+                      ? `公開開始: ${new Date(form.publish_start).toLocaleDateString('ja-JP')}`
+                      : '公開期間未設定'}
                 </div>
               </div>
               <div className="flex items-center gap-2">

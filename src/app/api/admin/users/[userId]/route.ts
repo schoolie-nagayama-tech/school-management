@@ -40,7 +40,10 @@ function toNumArray(v: unknown): number[] {
   if (typeof v === 'string') {
     const trimmed = v.replace(/^\{|\}$/g, '').trim();
     if (!trimmed) return [];
-    return trimmed.split(',').map((s) => Number(s.trim())).filter((n) => !Number.isNaN(n));
+    return trimmed
+      .split(',')
+      .map((s) => Number(s.trim()))
+      .filter((n) => !Number.isNaN(n));
   }
   return [];
 }
@@ -59,10 +62,7 @@ function toSlotNumbersByDay(v: unknown): Record<string, number[]> {
 }
 
 /** 講師1件取得（編集画面用。teachable_subject_ids, available_days_of_week を必ず配列で返す） */
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { userId: string } }
-) {
+export async function GET(request: NextRequest, { params }: { params: { userId: string } }) {
   try {
     const authError = await requireManager(request);
     if (authError) return authError;
@@ -75,13 +75,15 @@ export async function GET(
     if (!auth) return NextResponse.json({ error: '認証が必要です' }, { status: 401 });
     const inScope = await isUserInScope(userId, auth.schoolIds, supabaseAdmin);
     if (!inScope) {
-      console.error(JSON.stringify({
-        type: 'SCOPE_VIOLATION',
-        actorId: auth.userId,
-        targetUserId: userId,
-        path: request.nextUrl.pathname,
-        timestamp: new Date().toISOString(),
-      }));
+      console.error(
+        JSON.stringify({
+          type: 'SCOPE_VIOLATION',
+          actorId: auth.userId,
+          targetUserId: userId,
+          path: request.nextUrl.pathname,
+          timestamp: new Date().toISOString(),
+        })
+      );
       return NextResponse.json({ error: 'ユーザーが見つかりません' }, { status: 404 });
     }
     const { data: profile, error: profileError } = await supabaseAdmin
@@ -112,18 +114,12 @@ export async function GET(
     });
   } catch (error) {
     console.error('Failed to fetch user:', error);
-    return NextResponse.json(
-      { error: 'ユーザーの取得に失敗しました' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'ユーザーの取得に失敗しました' }, { status: 500 });
   }
 }
 
 /** 講師プロファイル更新（display_name, teachable_subject_ids, available_days_of_week）。RPC で確実に保存 */
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: { userId: string } }
-) {
+export async function PATCH(request: NextRequest, { params }: { params: { userId: string } }) {
   try {
     const authError = await requireManager(request);
     if (authError) return authError;
@@ -141,13 +137,15 @@ export async function PATCH(
     if (!isEditingSelf) {
       const inScope = await isUserInScope(userId, auth.schoolIds, supabaseAdmin);
       if (!inScope) {
-        console.error(JSON.stringify({
-          type: 'SCOPE_VIOLATION',
-          actorId: auth.userId,
-          targetUserId: userId,
-          path: request.nextUrl.pathname,
-          timestamp: new Date().toISOString(),
-        }));
+        console.error(
+          JSON.stringify({
+            type: 'SCOPE_VIOLATION',
+            actorId: auth.userId,
+            targetUserId: userId,
+            path: request.nextUrl.pathname,
+            timestamp: new Date().toISOString(),
+          })
+        );
         return NextResponse.json({ error: 'ユーザーが見つかりません' }, { status: 404 });
       }
       // 自分より権限が下のユーザーのみ編集可能
@@ -157,7 +155,8 @@ export async function PATCH(
         .eq('id', userId)
         .maybeSingle();
       const myLevel = USER_ROLE_LEVELS[auth.role as keyof typeof USER_ROLE_LEVELS] ?? 0;
-      const targetLevel = USER_ROLE_LEVELS[(targetProfile?.role as keyof typeof USER_ROLE_LEVELS) ?? ''] ?? 0;
+      const targetLevel =
+        USER_ROLE_LEVELS[(targetProfile?.role as keyof typeof USER_ROLE_LEVELS) ?? ''] ?? 0;
       if (targetLevel >= myLevel) {
         return NextResponse.json(
           { error: '自分より権限が高い、または同レベルのユーザーは編集できません' },
@@ -173,12 +172,24 @@ export async function PATCH(
     const wantIds: string[] = Array.isArray(rawSchoolIds)
       ? rawSchoolIds.map((id: unknown) => String(id).trim()).filter(Boolean)
       : typeof rawSchoolIds === 'string'
-        ? rawSchoolIds.split(',').map((s: string) => s.trim()).filter(Boolean)
+        ? rawSchoolIds
+            .split(',')
+            .map((s: string) => s.trim())
+            .filter(Boolean)
         : [];
-    const isUserManagementEdit = 'school_ids' in body && (Array.isArray(rawSchoolIds) || typeof rawSchoolIds === 'string');
+    const isUserManagementEdit =
+      'school_ids' in body && (Array.isArray(rawSchoolIds) || typeof rawSchoolIds === 'string');
 
     if (isUserManagementEdit) {
-      const { display_name, last_name, first_name, role, default_school_id, employee_no, is_teaching_staff } = body;
+      const {
+        display_name,
+        last_name,
+        first_name,
+        role,
+        default_school_id,
+        employee_no,
+        is_teaching_staff,
+      } = body;
 
       // 教室紐付けのスコープ安全化:
       // admin/owner は全教室を扱えるので wantIds をそのまま採用。
@@ -278,9 +289,7 @@ export async function PATCH(
 
         if (finalSchoolIds.length > 0) {
           const rows = finalSchoolIds.map((school_id) => ({ user_id: userId, school_id }));
-          const { error: insertError } = await supabaseAdmin
-            .from('user_schools')
-            .insert(rows);
+          const { error: insertError } = await supabaseAdmin.from('user_schools').insert(rows);
 
           if (insertError) {
             console.error('user_schools bulk insert error:', insertError);
@@ -295,7 +304,10 @@ export async function PATCH(
         .from('user_schools')
         .select('school_id')
         .eq('user_id', userId);
-      console.log('[PATCH user] after sync:', { count: afterRows?.length ?? 0, school_ids: (afterRows || []).map((r: { school_id: string }) => r.school_id) });
+      console.log('[PATCH user] after sync:', {
+        count: afterRows?.length ?? 0,
+        school_ids: (afterRows || []).map((r: { school_id: string }) => r.school_id),
+      });
 
       // 一覧の即時反映用に、更新後の user_schools（教室名付き）を返す
       const { data: userSchoolsWithSchool } = await supabaseAdmin
@@ -332,7 +344,8 @@ export async function PATCH(
     if (body.last_name !== undefined) {
       profileUpdates.last_name = body.last_name || null;
       profileUpdates.first_name = body.first_name || null;
-      profileUpdates.display_name = [body.last_name, body.first_name].filter(Boolean).join(' ') || null;
+      profileUpdates.display_name =
+        [body.last_name, body.first_name].filter(Boolean).join(' ') || null;
     } else if (body.display_name !== undefined) {
       profileUpdates.display_name = body.display_name ?? null;
     }
@@ -353,10 +366,7 @@ export async function PATCH(
 
     if (error) {
       console.error('user_profiles update error:', error);
-      return NextResponse.json(
-        { error: 'プロファイルの更新に失敗しました' },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: 'プロファイルの更新に失敗しました' }, { status: 500 });
     }
 
     await writeAuditLog({
@@ -372,17 +382,11 @@ export async function PATCH(
     return NextResponse.json(data);
   } catch (error) {
     console.error('Failed to update user profile:', error);
-    return NextResponse.json(
-      { error: 'プロファイルの更新に失敗しました' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'プロファイルの更新に失敗しました' }, { status: 500 });
   }
 }
 
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { userId: string } }
-) {
+export async function DELETE(request: NextRequest, { params }: { params: { userId: string } }) {
   try {
     const authError = await requireAdmin(request);
     if (authError) return authError;
@@ -395,26 +399,72 @@ export async function DELETE(
     if (!auth) return NextResponse.json({ error: '認証が必要です' }, { status: 401 });
     const inScope = await isUserInScope(userId, auth.schoolIds, supabaseAdmin);
     if (!inScope) {
-      console.error(JSON.stringify({
-        type: 'SCOPE_VIOLATION',
-        actorId: auth.userId,
-        targetUserId: userId,
-        path: request.nextUrl.pathname,
-        timestamp: new Date().toISOString(),
-      }));
+      console.error(
+        JSON.stringify({
+          type: 'SCOPE_VIOLATION',
+          actorId: auth.userId,
+          targetUserId: userId,
+          path: request.nextUrl.pathname,
+          timestamp: new Date().toISOString(),
+        })
+      );
       return NextResponse.json({ error: 'ユーザーが見つかりません' }, { status: 404 });
     }
 
     // 外部キー参照を解除（ON DELETE RESTRICT のため事前に削除・更新が必要）
     const steps = [
-      { name: 'schedule_entries.attendance_recorded_by', fn: () => supabaseAdmin.from('schedule_entries').update({ attendance_recorded_by: null }).eq('attendance_recorded_by', userId) },
-      { name: 'schedule_entries.teacher_id', fn: () => supabaseAdmin.from('schedule_entries').delete().eq('teacher_id', userId) },
-      { name: 'schedule_regular_patterns', fn: () => supabaseAdmin.from('schedule_regular_patterns').delete().eq('teacher_id', userId) },
-      { name: 'schedule_generation_logs', fn: () => supabaseAdmin.from('schedule_generation_logs').update({ created_by: null }).eq('created_by', userId) },
-      { name: 'bulletin_posts.created_by', fn: () => supabaseAdmin.from('bulletin_posts').update({ created_by: null }).eq('created_by', userId) },
-      { name: 'bulletin_posts.updated_by', fn: () => supabaseAdmin.from('bulletin_posts').update({ updated_by: null }).eq('updated_by', userId) },
-      { name: 'bulletin_reads', fn: () => supabaseAdmin.from('bulletin_reads').delete().eq('user_id', userId) },
-      { name: 'alert_dismissals', fn: () => supabaseAdmin.from('alert_dismissals').update({ dismissed_by: null }).eq('dismissed_by', userId) },
+      {
+        name: 'schedule_entries.attendance_recorded_by',
+        fn: () =>
+          supabaseAdmin
+            .from('schedule_entries')
+            .update({ attendance_recorded_by: null })
+            .eq('attendance_recorded_by', userId),
+      },
+      {
+        name: 'schedule_entries.teacher_id',
+        fn: () => supabaseAdmin.from('schedule_entries').delete().eq('teacher_id', userId),
+      },
+      {
+        name: 'schedule_regular_patterns',
+        fn: () => supabaseAdmin.from('schedule_regular_patterns').delete().eq('teacher_id', userId),
+      },
+      {
+        name: 'schedule_generation_logs',
+        fn: () =>
+          supabaseAdmin
+            .from('schedule_generation_logs')
+            .update({ created_by: null })
+            .eq('created_by', userId),
+      },
+      {
+        name: 'bulletin_posts.created_by',
+        fn: () =>
+          supabaseAdmin
+            .from('bulletin_posts')
+            .update({ created_by: null })
+            .eq('created_by', userId),
+      },
+      {
+        name: 'bulletin_posts.updated_by',
+        fn: () =>
+          supabaseAdmin
+            .from('bulletin_posts')
+            .update({ updated_by: null })
+            .eq('updated_by', userId),
+      },
+      {
+        name: 'bulletin_reads',
+        fn: () => supabaseAdmin.from('bulletin_reads').delete().eq('user_id', userId),
+      },
+      {
+        name: 'alert_dismissals',
+        fn: () =>
+          supabaseAdmin
+            .from('alert_dismissals')
+            .update({ dismissed_by: null })
+            .eq('dismissed_by', userId),
+      },
     ];
 
     for (const step of steps) {
@@ -477,7 +527,10 @@ export async function DELETE(
     }
 
     // user_schoolsを削除
-    const { error: usErr } = await supabaseAdmin.from('user_schools').delete().eq('user_id', userId);
+    const { error: usErr } = await supabaseAdmin
+      .from('user_schools')
+      .delete()
+      .eq('user_id', userId);
     if (usErr) {
       console.error('[DELETE user] user_schools:', usErr);
       throw new Error(`user_schools: ${usErr.message}`);
@@ -495,10 +548,7 @@ export async function DELETE(
     }
     if (!deletedProfiles?.length) {
       console.error('[DELETE user] user_profiles: no row deleted for userId=', userId);
-      return NextResponse.json(
-        { error: 'ユーザーが見つかりません' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'ユーザーが見つかりません' }, { status: 404 });
     }
 
     // Authユーザーを削除（既に存在しない場合は成功扱い）
@@ -525,9 +575,6 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Failed to delete user:', error);
-    return NextResponse.json(
-      { error: 'ユーザーの削除に失敗しました' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'ユーザーの削除に失敗しました' }, { status: 500 });
   }
 }

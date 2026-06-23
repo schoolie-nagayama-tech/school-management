@@ -44,7 +44,9 @@ export function BulletinBoard({ className = '', initialData }: BulletinBoardProp
   const { confirm, ConfirmDialog } = useConfirm();
   const [posts, setPosts] = useState<BulletinPost[]>(initialData?.posts ?? []);
   /** 教室IDごとのラベル一覧（複数教室対応） */
-  const [labelsBySchool, setLabelsBySchool] = useState<Record<string, BulletinLabel[]>>(initialData?.labelsBySchool ?? {});
+  const [labelsBySchool, setLabelsBySchool] = useState<Record<string, BulletinLabel[]>>(
+    initialData?.labelsBySchool ?? {}
+  );
   const [schools, setSchools] = useState<School[]>(initialData?.schools ?? []);
   // 初期データがあれば最初からローディング非表示（即時に内容を出す）
   const [isLoading, setIsLoading] = useState(!initialData);
@@ -59,7 +61,8 @@ export function BulletinBoard({ className = '', initialData }: BulletinBoardProp
   const skipInitialFetchRef = useRef<boolean>(!!initialData);
 
   // 編集権限はmanager以上のみ
-  const canEdit = profile?.role === 'admin' || profile?.role === 'owner' || profile?.role === 'manager';
+  const canEdit =
+    profile?.role === 'admin' || profile?.role === 'owner' || profile?.role === 'manager';
   // 既読機能は講師のみ
   const canRead = profile?.role === 'teacher';
   const userId = profile?.id;
@@ -136,7 +139,10 @@ export function BulletinBoard({ className = '', initialData }: BulletinBoardProp
       } catch (error: unknown) {
         const message = error instanceof Error ? error.message : '';
         if (message.includes('schema cache') || message.includes('not found')) {
-          console.warn('掲示板テーブルが見つかりません。マイグレーションを実行してください:', error);
+          console.warn(
+            '掲示板テーブルが見つかりません。マイグレーションを実行してください:',
+            error
+          );
           setPosts([]);
           setLabelsBySchool({});
           return;
@@ -167,41 +173,54 @@ export function BulletinBoard({ className = '', initialData }: BulletinBoardProp
     fetchData();
   }, [fetchData]);
 
-  const handleRead = useCallback(async (post: BulletinPost) => {
-    if (!userId) return;
+  const handleRead = useCallback(
+    async (post: BulletinPost) => {
+      if (!userId) return;
 
-    try {
-      await markAsRead(post.id, userId);
-      success('既読にしました');
-      await fetchData();
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('bulletin-unread-changed'));
+      try {
+        await markAsRead(post.id, userId);
+        success('既読にしました');
+        await fetchData();
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('bulletin-unread-changed'));
+        }
+      } catch (error) {
+        console.error('Error marking as read:', error);
+        toastError('既読の記録に失敗しました');
       }
-    } catch (error) {
-      console.error('Error marking as read:', error);
-      toastError('既読の記録に失敗しました');
-    }
-  }, [userId, success, toastError, fetchData]);
+    },
+    [userId, success, toastError, fetchData]
+  );
 
   const handleEdit = useCallback((post: BulletinPost) => {
     setEditingPost(post);
     setIsPostModalOpen(true);
   }, []);
 
-  const handleDelete = useCallback(async (post: BulletinPost) => {
-    if (!(await confirm({ title: '削除確認', description: 'この投稿を削除しますか？', confirmLabel: '削除', variant: 'danger' }))) {
-      return;
-    }
+  const handleDelete = useCallback(
+    async (post: BulletinPost) => {
+      if (
+        !(await confirm({
+          title: '削除確認',
+          description: 'この投稿を削除しますか？',
+          confirmLabel: '削除',
+          variant: 'danger',
+        }))
+      ) {
+        return;
+      }
 
-    try {
-      await deleteBulletinPost(post.id);
-      success('削除しました');
-      await fetchData();
-    } catch (error) {
-      console.error('Error deleting post:', error);
-      toastError('削除に失敗しました');
-    }
-  }, [confirm, success, toastError, fetchData]);
+      try {
+        await deleteBulletinPost(post.id);
+        success('削除しました');
+        await fetchData();
+      } catch (error) {
+        console.error('Error deleting post:', error);
+        toastError('削除に失敗しました');
+      }
+    },
+    [confirm, success, toastError, fetchData]
+  );
 
   const handleShowReaders = useCallback((post: BulletinPost) => {
     setReadersModalPost(post);
@@ -227,7 +246,9 @@ export function BulletinBoard({ className = '', initialData }: BulletinBoardProp
 
   return (
     <>
-      <div className={`bg-[#f8f8f8] rounded-xl border border-gray-200 overflow-hidden ${className}`}>
+      <div
+        className={`bg-[#f8f8f8] rounded-xl border border-gray-200 overflow-hidden ${className}`}
+      >
         {/* ヘッダー */}
         <div
           className="flex items-center justify-between p-4 bg-[#ffebee] border-b border-[#ffcdd2] cursor-pointer hover:bg-[#ffcdd2]/40 transition-colors duration-150"
@@ -259,11 +280,7 @@ export function BulletinBoard({ className = '', initialData }: BulletinBoardProp
               </Button>
             )}
             <button className="text-gray-500 hover:text-gray-700 transition-colors duration-150">
-              {isExpanded ? (
-                <ChevronUp className="w-5 h-5" />
-              ) : (
-                <ChevronDown className="w-5 h-5" />
-              )}
+              {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
             </button>
           </div>
         </div>
@@ -278,7 +295,9 @@ export function BulletinBoard({ className = '', initialData }: BulletinBoardProp
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-bold text-green-800">アップデート情報</span>
                     {hasUpdateUnread && (
-                      <span className="px-1.5 py-0.5 text-[10px] font-bold bg-green-600 text-white rounded-full">NEW</span>
+                      <span className="px-1.5 py-0.5 text-[10px] font-bold bg-green-600 text-white rounded-full">
+                        NEW
+                      </span>
                     )}
                   </div>
                   {hasUpdateUnread && (
@@ -295,7 +314,9 @@ export function BulletinBoard({ className = '', initialData }: BulletinBoardProp
                   {recentNotes.map((note) => (
                     <div key={note.version}>
                       <div className="flex items-center gap-1.5 mb-1">
-                        <span className="px-1.5 py-0.5 bg-green-100 text-green-800 text-[10px] font-semibold rounded">{note.version}</span>
+                        <span className="px-1.5 py-0.5 bg-green-100 text-green-800 text-[10px] font-semibold rounded">
+                          {note.version}
+                        </span>
                         <span className="text-[10px] text-gray-500">{note.date}</span>
                         <span className="text-xs font-medium text-[#1a1a1a]">{note.title}</span>
                       </div>
@@ -347,10 +368,12 @@ export function BulletinBoard({ className = '', initialData }: BulletinBoardProp
           post={editingPost}
           labels={
             editingPost
-              ? labelsBySchool[editingPost.school_id] ?? []
-              : labelsBySchool[postingSchoolIds[0] ?? getSelectedSchoolIds()[0]] ?? []
+              ? (labelsBySchool[editingPost.school_id] ?? [])
+              : (labelsBySchool[postingSchoolIds[0] ?? getSelectedSchoolIds()[0]] ?? [])
           }
-          schoolId={editingPost ? editingPost.school_id : postingSchoolIds[0] ?? getSelectedSchoolIds()[0]}
+          schoolId={
+            editingPost ? editingPost.school_id : (postingSchoolIds[0] ?? getSelectedSchoolIds()[0])
+          }
           schoolIds={getSelectedSchoolIds().length > 1 ? getSelectedSchoolIds() : undefined}
           schools={schools}
           selectedSchoolIds={editingPost ? [editingPost.school_id] : postingSchoolIds}

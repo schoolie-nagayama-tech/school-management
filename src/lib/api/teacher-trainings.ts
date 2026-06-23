@@ -24,9 +24,7 @@ export type TeacherTrainingPatch = Partial<Omit<TeacherTrainingInput, 'teacher_i
  * 指定講師の研修参加履歴を取得
  * 並び順: attended_on 降順（NULL は末尾）→ created_at 降順
  */
-export async function getTeacherTrainings(
-  teacherId: string
-): Promise<TeacherTraining[]> {
+export async function getTeacherTrainings(teacherId: string): Promise<TeacherTraining[]> {
   const { data, error } = await db
     .from('teacher_trainings')
     .select('*')
@@ -44,9 +42,7 @@ export async function getTeacherTrainings(
 /**
  * 研修参加履歴を1件作成
  */
-export async function createTeacherTraining(
-  input: TeacherTrainingInput
-): Promise<TeacherTraining> {
+export async function createTeacherTraining(input: TeacherTrainingInput): Promise<TeacherTraining> {
   const payload = {
     teacher_id: input.teacher_id,
     title: input.title,
@@ -56,11 +52,7 @@ export async function createTeacherTraining(
     training_master_id: input.training_master_id ?? null,
   };
 
-  const { data, error } = await db
-    .from('teacher_trainings')
-    .insert(payload)
-    .select()
-    .single();
+  const { data, error } = await db.from('teacher_trainings').insert(payload).select().single();
 
   if (error) {
     throw new Error(`研修参加履歴の登録に失敗しました: ${error.message}`);
@@ -94,10 +86,7 @@ export async function updateTeacherTraining(
  * 研修参加履歴を削除
  */
 export async function deleteTeacherTraining(id: string): Promise<void> {
-  const { error } = await db
-    .from('teacher_trainings')
-    .delete()
-    .eq('id', id);
+  const { error } = await db.from('teacher_trainings').delete().eq('id', id);
 
   if (error) {
     throw new Error(`研修参加履歴の削除に失敗しました: ${error.message}`);

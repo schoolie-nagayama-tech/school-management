@@ -80,9 +80,7 @@ function buildDateRange(startDate: string, endDate: string): string[] {
  * 時刻文字列 "HH:MM:SS" / "HH:MM" の先頭5文字を比較して slotId を解決するマップを作る。
  * start_time の先頭5文字 → slot.id
  */
-function buildTimeToSlotMap(
-  slots: Array<{ id: string; start_time: string }>
-): Map<string, string> {
+function buildTimeToSlotMap(slots: Array<{ id: string; start_time: string }>): Map<string, string> {
   const map = new Map<string, string>();
   for (const s of slots) {
     const key = (s.start_time ?? '').slice(0, 5);
@@ -232,7 +230,7 @@ export async function buildKoushuPlacementStrip(
   let hasSubmission = false;
 
   for (const sub of (submissions ?? []) as Submission[]) {
-    for (const slot of (sub.slots ?? [])) {
+    for (const slot of sub.slots ?? []) {
       // 期間内かつ available=true のスロットのみ
       if (!slot.available) continue;
       if (!dateSet.has(slot.shift_date)) continue;

@@ -85,9 +85,7 @@ describe('FieldEditor', () => {
     await user.click(screen.getByLabelText('必須項目'));
     await user.click(screen.getByText('保存'));
 
-    expect(onSave).toHaveBeenCalledWith(
-      expect.objectContaining({ is_required: true })
-    );
+    expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ is_required: true }));
   });
 
   it('キャンセルボタンでonCloseが呼ばれる', async () => {

@@ -4,7 +4,13 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { AdminLayout } from '@/components/layouts';
 import { Card, CardContent, CardHeader, CardTitle, Loading } from '@/components/ui';
-import { SelectShadcn as Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui';
+import {
+  SelectShadcn as Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '@/components/ui';
 import { Input } from '@/components/ui';
 import { Label } from '@/components/ui';
 import { ToastContainer } from '@/components/ui';
@@ -79,7 +85,8 @@ export default function ClosedDaysPage() {
     }
   };
 
-  const isAdmin = profile?.role === 'admin' || profile?.role === 'owner' || profile?.role === 'manager';
+  const isAdmin =
+    profile?.role === 'admin' || profile?.role === 'owner' || profile?.role === 'manager';
   if (!profile) {
     return (
       <AdminLayout headerTitle="座席表">
@@ -102,7 +109,10 @@ export default function ClosedDaysPage() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Link href="/schedule" className="text-sm text-[var(--paragraph)] hover:text-[var(--primary)] transition-colors duration-150">
+            <Link
+              href="/schedule"
+              className="text-sm text-[var(--paragraph)] hover:text-[var(--primary)] transition-colors duration-150"
+            >
               ← 座席表に戻る
             </Link>
             <h1 className="text-2xl font-bold text-[var(--headline)]">休講日設定</h1>
@@ -110,9 +120,7 @@ export default function ClosedDaysPage() {
           <div className="flex items-center gap-4">
             <Select value={selectedSchoolId} onValueChange={setSelectedSchoolId}>
               <SelectTrigger className="w-48">
-                <SelectValue placeholder="教室を選択">
-                  {selectedSchool?.name}
-                </SelectValue>
+                <SelectValue placeholder="教室を選択">{selectedSchool?.name}</SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {schools.map((s) => (
@@ -152,11 +160,7 @@ export default function ClosedDaysPage() {
         </Card>
       </div>
 
-      <ClosedDayForm
-        open={formOpen}
-        onClose={() => setFormOpen(false)}
-        onSubmit={handleAdd}
-      />
+      <ClosedDayForm open={formOpen} onClose={() => setFormOpen(false)} onSubmit={handleAdd} />
 
       <ToastContainer toasts={toasts} onRemove={removeToast} />
     </AdminLayout>

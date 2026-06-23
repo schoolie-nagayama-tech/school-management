@@ -10,14 +10,15 @@ import {
   archivePeriod,
   unarchivePeriod,
 } from './form-periods';
-import { createPublicFormResponse, getFormResponses, getFormResponse, updateFormResponseStatus } from './form-responses';
+import {
+  createPublicFormResponse,
+  getFormResponses,
+  getFormResponse,
+  updateFormResponseStatus,
+} from './form-responses';
 import { syncFormResponseToBilling } from './billing';
 import { getDefaultSchoolId, getSchoolByCode } from './schools';
-import type {
-  FormPeriodInsert,
-  FormPeriodUpdate,
-  FormResponseInsert,
-} from '@/types/database';
+import type { FormPeriodInsert, FormPeriodUpdate, FormResponseInsert } from '@/types/database';
 import type {
   SoudanPeriod,
   SoudanSettings,
@@ -50,9 +51,7 @@ export async function getSoudanPeriods(
 /**
  * 公開中のお客様相談期間を取得（ポータル用）
  */
-export async function getActiveSoudanPeriod(
-  schoolCode: string
-): Promise<SoudanPeriod | null> {
+export async function getActiveSoudanPeriod(schoolCode: string): Promise<SoudanPeriod | null> {
   const school = await getSchoolByCode(schoolCode);
   if (!school) {
     return null;
@@ -184,16 +183,14 @@ export async function unarchiveSoudanPeriod(
 /**
  * お客様相談回答を送信
  */
-export async function submitSoudanResponse(
-  data: {
-    school_id: string;
-    period_key: string;
-    student_name: string;
-    grade: number;
-    email: string;
-    response_data: SoudanResponseData;
-  }
-): Promise<void> {
+export async function submitSoudanResponse(data: {
+  school_id: string;
+  period_key: string;
+  student_name: string;
+  grade: number;
+  email: string;
+  response_data: SoudanResponseData;
+}): Promise<void> {
   const responseData: FormResponseInsert = {
     school_id: data.school_id,
     form_type: 'soudan',
@@ -240,9 +237,7 @@ export async function getSoudanResponses(
 
   // 相談区分フィルター
   if (filters?.category) {
-    filtered = filtered.filter((r) => 
-      r.response_data.categories?.includes(filters.category!)
-    );
+    filtered = filtered.filter((r) => r.response_data.categories?.includes(filters.category!));
   }
 
   // 対応状況フィルター
@@ -266,9 +261,7 @@ export async function getSoudanStats(
 ): Promise<SoudanStats> {
   const responses = await getSoudanResponses(schoolId, periodKey);
 
-  const handledCount = responses.filter(
-    (r) => r.status_checks?.handled === true
-  ).length;
+  const handledCount = responses.filter((r) => r.status_checks?.handled === true).length;
   const linkedCount = responses.filter((r) => r.linked_student_id !== null).length;
 
   // 相談区分別の集計
@@ -329,10 +322,7 @@ export async function updateSoudanChargedStatus(
 /**
  * お客様相談期間の回答数を取得
  */
-export async function getSoudanResponseCount(
-  schoolId: string,
-  periodKey: string
-): Promise<number> {
+export async function getSoudanResponseCount(schoolId: string, periodKey: string): Promise<number> {
   const responses = await getSoudanResponses(schoolId, periodKey);
   return responses.length;
 }
@@ -340,11 +330,9 @@ export async function getSoudanResponseCount(
 /**
  * 未対応のお客様相談の回答数を取得（全期間）
  */
-export async function getUnhandledSoudanCount(
-  schoolId?: string
-): Promise<number> {
+export async function getUnhandledSoudanCount(schoolId?: string): Promise<number> {
   const targetSchoolId = schoolId || getDefaultSchoolId();
-  
+
   // 非アーカイブ期間のperiod_keyを一括取得
   const periods = await getSoudanPeriods(targetSchoolId, false);
   if (periods.length === 0) return 0;

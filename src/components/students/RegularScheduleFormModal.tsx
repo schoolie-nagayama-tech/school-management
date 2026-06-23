@@ -2,13 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui';
 import { Button } from '@/components/ui';
 import {
   createRegularPattern,
@@ -130,13 +124,14 @@ export function RegularScheduleFormModal({
   }, [open, pattern, timeSlots, subjects, studentGrade]);
 
   /** 選択科目を指導可能な講師のみ（teachable_subject_ids が空/未設定は全科目可） */
-  const teachersForSubject = subjectIds.length > 0
-    ? teachers.filter((t) => {
-        const allowed = t.teachable_subject_ids;
-        if (!allowed || allowed.length === 0) return true;
-        return subjectIds.some((id) => allowed.includes(id));
-      })
-    : teachers;
+  const teachersForSubject =
+    subjectIds.length > 0
+      ? teachers.filter((t) => {
+          const allowed = t.teachable_subject_ids;
+          if (!allowed || allowed.length === 0) return true;
+          return subjectIds.some((id) => allowed.includes(id));
+        })
+      : teachers;
 
   const validTeacherId =
     teacherId === ''
@@ -202,16 +197,12 @@ export function RegularScheduleFormModal({
     <Dialog open={open} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-md bg-white">
         <DialogHeader>
-          <DialogTitle>
-            {isEdit ? '通塾日程を編集' : '通塾日程を追加'}
-          </DialogTitle>
+          <DialogTitle>{isEdit ? '通塾日程を編集' : '通塾日程を追加'}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 py-2">
           <div>
-            <label className="block text-xs font-medium text-[var(--paragraph)] mb-1">
-              曜日
-            </label>
+            <label className="block text-xs font-medium text-[var(--paragraph)] mb-1">曜日</label>
             <div className="flex flex-wrap gap-2">
               {DAYS.map((d) => (
                 <button
@@ -231,9 +222,7 @@ export function RegularScheduleFormModal({
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-[var(--paragraph)] mb-1">
-              コマ
-            </label>
+            <label className="block text-xs font-medium text-[var(--paragraph)] mb-1">コマ</label>
             <select
               value={timeSlotId}
               onChange={(e) => setTimeSlotId(e.target.value)}
@@ -248,9 +237,7 @@ export function RegularScheduleFormModal({
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-[var(--paragraph)] mb-1">
-              科目
-            </label>
+            <label className="block text-xs font-medium text-[var(--paragraph)] mb-1">科目</label>
             <select
               value={subjectIds[0] ?? ''}
               onChange={(e) => {
@@ -259,11 +246,13 @@ export function RegularScheduleFormModal({
                 if (next.length === 0) {
                   setTeacherId('');
                 } else {
-                  const nextTeacherIds = teachers.filter((t) => {
-                    const allowed = t.teachable_subject_ids;
-                    if (!allowed || allowed.length === 0) return true;
-                    return next.some((id) => allowed.includes(id));
-                  }).map((t) => t.id);
+                  const nextTeacherIds = teachers
+                    .filter((t) => {
+                      const allowed = t.teachable_subject_ids;
+                      if (!allowed || allowed.length === 0) return true;
+                      return next.some((id) => allowed.includes(id));
+                    })
+                    .map((t) => t.id);
                   if (!nextTeacherIds.includes(teacherId)) setTeacherId(nextTeacherIds[0] ?? '');
                 }
               }}
@@ -279,9 +268,7 @@ export function RegularScheduleFormModal({
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-[var(--paragraph)] mb-1">
-              講師
-            </label>
+            <label className="block text-xs font-medium text-[var(--paragraph)] mb-1">講師</label>
             <select
               value={validTeacherId}
               onChange={(e) => setTeacherId(e.target.value)}
@@ -297,9 +284,7 @@ export function RegularScheduleFormModal({
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-[var(--paragraph)] mb-1">
-              期間
-            </label>
+            <label className="block text-xs font-medium text-[var(--paragraph)] mb-1">期間</label>
             <select
               value={periodType}
               onChange={(e) => setPeriodType(e.target.value as SchedulePeriodType)}

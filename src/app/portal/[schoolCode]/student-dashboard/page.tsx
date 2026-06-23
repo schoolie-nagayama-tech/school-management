@@ -27,7 +27,9 @@ interface DashboardData {
   upcoming: Array<{
     id: string;
     entry_date: string;
-    time_slot?: { slot_number: number; start_time: string; end_time: string } | { slot_number: number; start_time: string; end_time: string }[];
+    time_slot?:
+      | { slot_number: number; start_time: string; end_time: string }
+      | { slot_number: number; start_time: string; end_time: string }[];
     subject_ids: string[];
     teacher?: { display_name: string | null } | { display_name: string | null }[];
     kind: 'regular' | 'koushu';
@@ -140,11 +142,12 @@ export default function StudentDashboardPage() {
   return (
     <div className="min-h-screen bg-surface py-6">
       <div className="max-w-3xl mx-auto px-4 space-y-4">
-
         {/* ヒーロー */}
         <Card>
           <CardContent className="p-5 bg-ink text-text-on-primary rounded-md">
-            <div className="text-xs text-text-on-primary/70 uppercase tracking-wide">マイページ</div>
+            <div className="text-xs text-text-on-primary/70 uppercase tracking-wide">
+              マイページ
+            </div>
             <h1 className="text-2xl font-bold mt-1">
               {data.student.last_name} {data.student.first_name}
             </h1>
@@ -178,9 +181,7 @@ export default function StudentDashboardPage() {
                       <span className="text-xs text-text-muted w-16 flex-shrink-0">
                         {slot ? `${slot.start_time?.slice(0, 5)}〜` : ''}
                       </span>
-                      <span className="flex-1 min-w-0">
-                        担当: {teacher?.display_name ?? '-'}
-                      </span>
+                      <span className="flex-1 min-w-0">担当: {teacher?.display_name ?? '-'}</span>
                       {u.kind === 'koushu' && (
                         <span className="px-1.5 py-0.5 bg-warning-subtle text-warning text-[10px] rounded font-semibold">
                           講習
@@ -226,9 +227,7 @@ export default function StudentDashboardPage() {
               科目ごとの最新の授業報告
             </h2>
             {data.latest_reports_by_subject.length === 0 ? (
-              <p className="text-sm text-text-muted py-2">
-                公開済みの報告書はまだありません
-              </p>
+              <p className="text-sm text-text-muted py-2">公開済みの報告書はまだありません</p>
             ) : (
               <div className="space-y-2">
                 {data.latest_reports_by_subject.map((r) => (
@@ -239,7 +238,9 @@ export default function StudentDashboardPage() {
                         {r.lesson_date}
                       </span>
                     </div>
-                    <div className="text-xs text-text-muted mb-1">担当: {r.teacher_name ?? '-'}</div>
+                    <div className="text-xs text-text-muted mb-1">
+                      担当: {r.teacher_name ?? '-'}
+                    </div>
                     <div className="text-xs text-text-body line-clamp-2 mb-1">
                       {r.preview || '記述なし'}
                     </div>
@@ -252,19 +253,25 @@ export default function StudentDashboardPage() {
                       {r.vocab_test_score != null && r.vocab_test_total != null && (
                         <span
                           className={`px-1.5 py-0.5 text-[10px] rounded ${
- r.vocab_test_passed ? 'bg-success-subtle text-success' : 'bg-surface'
- }`}
+                            r.vocab_test_passed ? 'bg-success-subtle text-success' : 'bg-surface'
+                          }`}
                         >
-                          単語 <strong>{r.vocab_test_score}/{r.vocab_test_total}</strong>
+                          単語{' '}
+                          <strong>
+                            {r.vocab_test_score}/{r.vocab_test_total}
+                          </strong>
                         </span>
                       )}
                       {r.check_test_score != null && r.check_test_total != null && (
                         <span
                           className={`px-1.5 py-0.5 text-[10px] rounded ${
- r.check_test_passed ? 'bg-success-subtle text-success' : 'bg-surface'
- }`}
+                            r.check_test_passed ? 'bg-success-subtle text-success' : 'bg-surface'
+                          }`}
                         >
-                          確認 <strong>{r.check_test_score}/{r.check_test_total}</strong>
+                          確認{' '}
+                          <strong>
+                            {r.check_test_score}/{r.check_test_total}
+                          </strong>
                         </span>
                       )}
                     </div>

@@ -6,7 +6,18 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/useToast';
 import { useConfirm } from '@/hooks/useConfirm';
 import { supabase } from '@/lib/supabase';
-import { Copy, Trash2, Plus, ExternalLink, Eye, EyeOff, ChevronDown, ChevronUp, RefreshCw, ClipboardList } from 'lucide-react';
+import {
+  Copy,
+  Trash2,
+  Plus,
+  ExternalLink,
+  Eye,
+  EyeOff,
+  ChevronDown,
+  ChevronUp,
+  RefreshCw,
+  ClipboardList,
+} from 'lucide-react';
 
 interface EmbedToken {
   id: string;
@@ -82,10 +93,7 @@ export function EmbedTokenManager() {
     });
     if (!confirmed) return;
 
-    const { error } = await supabase
-      .from('embed_tokens')
-      .delete()
-      .eq('id', token.id);
+    const { error } = await supabase.from('embed_tokens').delete().eq('id', token.id);
 
     if (error) {
       toastError('削除に失敗しました');
@@ -170,7 +178,9 @@ export function EmbedTokenManager() {
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium">{token.label}</span>
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded ${token.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-500'}`}>
+                  <span
+                    className={`text-[10px] px-1.5 py-0.5 rounded ${token.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-500'}`}
+                  >
                     {token.is_active ? '有効' : '無効'}
                   </span>
                 </div>
@@ -200,7 +210,11 @@ export function EmbedTokenManager() {
                   className="p-1 hover:bg-gray-100 rounded transition-colors duration-150"
                   title={showTokens.has(token.id) ? 'トークンを隠す' : 'トークンを表示'}
                 >
-                  {showTokens.has(token.id) ? <EyeOff className="w-3.5 h-3.5 text-gray-400" /> : <Eye className="w-3.5 h-3.5 text-gray-400" />}
+                  {showTokens.has(token.id) ? (
+                    <EyeOff className="w-3.5 h-3.5 text-gray-400" />
+                  ) : (
+                    <Eye className="w-3.5 h-3.5 text-gray-400" />
+                  )}
                 </button>
               </div>
 
@@ -219,7 +233,9 @@ export function EmbedTokenManager() {
                   <Copy className="w-3 h-3" /> URL（閲覧専用）
                 </button>
                 <button
-                  onClick={() => copyToClipboard(getIframeCode(token.token), 'iframe埋め込みコード')}
+                  onClick={() =>
+                    copyToClipboard(getIframeCode(token.token), 'iframe埋め込みコード')
+                  }
                   className="flex items-center gap-1 text-[11px] text-purple-600 hover:text-purple-800 bg-purple-50 hover:bg-purple-100 px-2 py-1 rounded transition-colors duration-150"
                 >
                   <Copy className="w-3 h-3" /> iframe
@@ -236,7 +252,11 @@ export function EmbedTokenManager() {
                   onClick={() => setPreviewTokenId(previewTokenId === token.id ? null : token.id)}
                   className="flex items-center gap-1 text-[11px] text-amber-600 hover:text-amber-800 bg-amber-50 hover:bg-amber-100 px-2 py-1 rounded transition-colors duration-150"
                 >
-                  {previewTokenId === token.id ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                  {previewTokenId === token.id ? (
+                    <ChevronUp className="w-3 h-3" />
+                  ) : (
+                    <ChevronDown className="w-3 h-3" />
+                  )}
                   プレビュー
                 </button>
               </div>
@@ -245,7 +265,10 @@ export function EmbedTokenManager() {
               {previewTokenId === token.id && (
                 <div className="mt-3 border border-gray-200 rounded-lg overflow-hidden">
                   <div className="flex items-center justify-between bg-gray-50 px-3 py-1.5 border-b">
-                    <span className="text-[11px] text-gray-500 font-medium flex items-center gap-1"><ClipboardList className="h-3 w-3" />プレビュー</span>
+                    <span className="text-[11px] text-gray-500 font-medium flex items-center gap-1">
+                      <ClipboardList className="h-3 w-3" />
+                      プレビュー
+                    </span>
                     <button
                       onClick={() => setPreviewKey((k) => k + 1)}
                       className="flex items-center gap-1 text-[10px] text-gray-500 hover:text-gray-700 px-1.5 py-0.5 rounded hover:bg-gray-200 transition-colors duration-150"

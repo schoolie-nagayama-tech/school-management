@@ -94,26 +94,26 @@ const INTENT_TAGS = [
   '直前演習',
   '応用発展',
 ] as const;
-type IntentTag = typeof INTENT_TAGS[number];
+type IntentTag = (typeof INTENT_TAGS)[number];
 
 /** 指導意図チップの色（控えめ：文字色 + 境界線のみ。背景なし） */
 const INTENT_TAG_COLOR: Record<IntentTag, string> = {
-  '苦手補強': 'text-red-700 border-red-200',
-  '既習の定着': 'text-blue-700 border-blue-200',
-  '未習の先取り': 'text-purple-700 border-purple-200',
-  '学校進度に合わせる': 'text-emerald-700 border-emerald-200',
-  '直前演習': 'text-amber-700 border-amber-200',
-  '応用発展': 'text-indigo-700 border-indigo-200',
+  苦手補強: 'text-red-700 border-red-200',
+  既習の定着: 'text-blue-700 border-blue-200',
+  未習の先取り: 'text-purple-700 border-purple-200',
+  学校進度に合わせる: 'text-emerald-700 border-emerald-200',
+  直前演習: 'text-amber-700 border-amber-200',
+  応用発展: 'text-indigo-700 border-indigo-200',
 };
 
 /** タグから面談用の根拠文を自動生成 */
 const _INTENT_TAG_RATIONALE: Record<IntentTag, string> = {
-  '苦手補強': '過去のテストで失点が多い単元。重点的に演習を重ねて定着を図ります。',
-  '既習の定着': '学校で学習済みの範囲。理解の確認と典型問題の再演習で得点源に。',
-  '未習の先取り': '学校の進度より前倒しで学習。基礎定着から段階的に進めます。',
-  '学校進度に合わせる': '学校の授業と並行して進めることで理解を定着させます。',
-  '直前演習': '試験直前の総仕上げ。類題演習で取りこぼしを防ぎます。',
-  '応用発展': '基礎が固まった単元の発展問題。得点力の底上げを狙います。',
+  苦手補強: '過去のテストで失点が多い単元。重点的に演習を重ねて定着を図ります。',
+  既習の定着: '学校で学習済みの範囲。理解の確認と典型問題の再演習で得点源に。',
+  未習の先取り: '学校の進度より前倒しで学習。基礎定着から段階的に進めます。',
+  学校進度に合わせる: '学校の授業と並行して進めることで理解を定着させます。',
+  直前演習: '試験直前の総仕上げ。類題演習で取りこぼしを防ぎます。',
+  応用発展: '基礎が固まった単元の発展問題。得点力の底上げを狙います。',
 };
 
 function isIntentTag(v: unknown): v is IntentTag {
@@ -139,7 +139,9 @@ export default function NewProgressPage() {
   /** 行動目標: key = student_textbook_exam_id, value = ActionGoal[] */
   const [actionGoalsByExam, setActionGoalsByExam] = useState<Record<string, ActionGoal[]>>({});
   /** 試験範囲: key = student_textbook_id, value = ExamRange[] （独立したテーブル） */
-  const [examRangesByTextbook, setExamRangesByTextbook] = useState<Record<string, StudentTextbookExamRange[]>>({});
+  const [examRangesByTextbook, setExamRangesByTextbook] = useState<
+    Record<string, StudentTextbookExamRange[]>
+  >({});
   const [isLoading, setIsLoading] = useState(true);
 
   // ビュー状態
@@ -150,7 +152,9 @@ export default function NewProgressPage() {
   // テキスト追加モーダル
   const [isAddTextbookModalOpen, setIsAddTextbookModalOpen] = useState(false);
   const [allTextbooks, setAllTextbooks] = useState<Textbook[]>([]);
-  const [addModalGradeCategory, setAddModalGradeCategory] = useState<'elementary' | 'middle' | 'high' | ''>('');
+  const [addModalGradeCategory, setAddModalGradeCategory] = useState<
+    'elementary' | 'middle' | 'high' | ''
+  >('');
   const [addModalSubject, setAddModalSubject] = useState<string>('');
   const [addModalSearch, setAddModalSearch] = useState<string>('');
 
@@ -170,14 +174,16 @@ export default function NewProgressPage() {
         const ets = await getExamTypes(s?.school_id ?? undefined);
         setStudent(s);
         // 進行表で管理しないものは除外（所持教材一覧では別途扱う）
-        const baseTbs = (tbs || []).filter((tb) => (tb as { track_progress?: boolean }).track_progress === true);
+        const baseTbs = (tbs || []).filter(
+          (tb) => (tb as { track_progress?: boolean }).track_progress === true
+        );
         const filteredTbs = isTeacher ? baseTbs.filter((tb) => !tb.is_draft) : baseTbs;
         setStudentTextbooks(filteredTbs);
         setExamTypes(ets || []);
         // 全教科書の active な目標設定の行動目標を一括取得
         const examIds: string[] = [];
         for (const tb of filteredTbs) {
-          for (const e of (tb.exams || [])) if (e.id) examIds.push(e.id);
+          for (const e of tb.exams || []) if (e.id) examIds.push(e.id);
         }
         if (examIds.length > 0) {
           try {
@@ -232,21 +238,24 @@ export default function NewProgressPage() {
   };
 
   // テキスト追加モーダルを開く時にテキスト一覧をロード
-  const openAddTextbookModal = useCallback(async (presetSubject?: string) => {
-    setAddModalSubject(presetSubject ?? '');
-    setAddModalGradeCategory('');
-    setAddModalSearch('');
-    setIsAddTextbookModalOpen(true);
-    if (allTextbooks.length === 0) {
-      try {
-        const list = await getTextbooks();
-        setAllTextbooks(list || []);
-      } catch (e) {
-        console.error(e);
-        toastError('テキスト一覧の取得に失敗しました');
+  const openAddTextbookModal = useCallback(
+    async (presetSubject?: string) => {
+      setAddModalSubject(presetSubject ?? '');
+      setAddModalGradeCategory('');
+      setAddModalSearch('');
+      setIsAddTextbookModalOpen(true);
+      if (allTextbooks.length === 0) {
+        try {
+          const list = await getTextbooks();
+          setAllTextbooks(list || []);
+        } catch (e) {
+          console.error(e);
+          toastError('テキスト一覧の取得に失敗しました');
+        }
       }
-    }
-  }, [allTextbooks.length, toastError]);
+    },
+    [allTextbooks.length, toastError]
+  );
 
   // 公開/非公開 切替（is_draft=true が講師に対して非公開）
   const handleTogglePublish = useCallback(
@@ -279,7 +288,12 @@ export default function NewProgressPage() {
       const tb = studentTextbooks.find((t) => t.id === textbookId);
       if (!tb) return;
       const name = tb.textbook?.name ?? 'テキスト';
-      if (!window.confirm(`「${name}」の進行表を削除しますか？\n\n進行データ・テスト目標・提案書も削除されます。この操作は取り消せません。`)) return;
+      if (
+        !window.confirm(
+          `「${name}」の進行表を削除しますか？\n\n進行データ・テスト目標・提案書も削除されます。この操作は取り消せません。`
+        )
+      )
+        return;
       try {
         await deleteStudentTextbook(textbookId);
         setStudentTextbooks((prev) => prev.filter((t) => t.id !== textbookId));
@@ -309,7 +323,9 @@ export default function NewProgressPage() {
           track_progress: true,
         });
         const tbs = await getStudentTextbooks(studentId);
-        const baseTbs = (tbs || []).filter((tb) => (tb as { track_progress?: boolean }).track_progress === true);
+        const baseTbs = (tbs || []).filter(
+          (tb) => (tb as { track_progress?: boolean }).track_progress === true
+        );
         const filteredTbs = isTeacher ? baseTbs.filter((tb) => !tb.is_draft) : baseTbs;
         setStudentTextbooks(filteredTbs);
         setIsAddTextbookModalOpen(false);
@@ -326,13 +342,15 @@ export default function NewProgressPage() {
   const refreshTextbooks = useCallback(async () => {
     try {
       const tbs = await getStudentTextbooks(studentId);
-      const baseTbs = (tbs || []).filter((tb) => (tb as { track_progress?: boolean }).track_progress === true);
+      const baseTbs = (tbs || []).filter(
+        (tb) => (tb as { track_progress?: boolean }).track_progress === true
+      );
       const filteredTbs = isTeacher ? baseTbs.filter((tb) => !tb.is_draft) : baseTbs;
       setStudentTextbooks(filteredTbs);
       // 行動目標も再取得
       const examIds: string[] = [];
       for (const tb of filteredTbs) {
-        for (const e of (tb.exams || [])) if (e.id) examIds.push(e.id);
+        for (const e of tb.exams || []) if (e.id) examIds.push(e.id);
       }
       if (examIds.length > 0) {
         const map = await getActionGoalsByExams(examIds);
@@ -546,7 +564,8 @@ function AddTextbookModal({
       if (subject && tb.subject !== subject) return false;
       if (search) {
         const q = search.toLowerCase();
-        const hay = `${tb.name} ${tb.publisher ?? ''} ${tb.subject ?? ''} ${tb.grade ?? ''}`.toLowerCase();
+        const hay =
+          `${tb.name} ${tb.publisher ?? ''} ${tb.subject ?? ''} ${tb.grade ?? ''}`.toLowerCase();
         if (!hay.includes(q)) return false;
       }
       return true;
@@ -594,7 +613,9 @@ function AddTextbookModal({
         <div className="border-t border-[#e5e7eb] pt-3">
           <div className="text-xs text-[#6b7280] mb-2">{filtered.length} 件</div>
           {filtered.length === 0 ? (
-            <p className="text-sm text-[#4b5563] py-6 text-center">条件に一致するテキストがありません</p>
+            <p className="text-sm text-[#4b5563] py-6 text-center">
+              条件に一致するテキストがありません
+            </p>
           ) : (
             <div className="max-h-80 overflow-y-auto space-y-2">
               {filtered.map((tb) => (
@@ -606,15 +627,17 @@ function AddTextbookModal({
                     <div className="font-medium text-[#1f2937] truncate">{tb.name}</div>
                     <div className="text-xs text-[#6b7280] mt-0.5">
                       {tb.publisher && <span>{tb.publisher}</span>}
-                      {tb.subject && <span className={tb.publisher ? ' ml-2' : ''}>{tb.subject}</span>}
+                      {tb.subject && (
+                        <span className={tb.publisher ? ' ml-2' : ''}>{tb.subject}</span>
+                      )}
                       {tb.grade && <span className="ml-2">{tb.grade}</span>}
                       {tb.grade_category && (
                         <span className="ml-2">
                           {tb.grade_category === 'elementary'
                             ? '小'
                             : tb.grade_category === 'middle'
-                            ? '中'
-                            : '高'}
+                              ? '中'
+                              : '高'}
                         </span>
                       )}
                     </div>
@@ -695,15 +718,15 @@ function itemNo(row: { item_number?: number | string | null }): number | null {
 
 // 科目を5列（国語/数学/英語/理科/社会）+ その他にカテゴリ分け
 const SUBJECT_COLUMNS = ['国語', '数学', '英語', '理科', '社会'] as const;
-type SubjectColumn = typeof SUBJECT_COLUMNS[number] | 'その他';
+type SubjectColumn = (typeof SUBJECT_COLUMNS)[number] | 'その他';
 
 const SUBJECT_COLOR: Record<SubjectColumn, { bg: string; text: string; accent: string }> = {
-  '国語': { bg: 'bg-rose-50', text: 'text-rose-800', accent: 'border-rose-300' },
-  '数学': { bg: 'bg-blue-50', text: 'text-blue-800', accent: 'border-blue-300' },
-  '英語': { bg: 'bg-emerald-50', text: 'text-emerald-800', accent: 'border-emerald-300' },
-  '理科': { bg: 'bg-purple-50', text: 'text-purple-800', accent: 'border-purple-300' },
-  '社会': { bg: 'bg-amber-50', text: 'text-amber-800', accent: 'border-amber-300' },
-  'その他': { bg: 'bg-gray-50', text: 'text-gray-700', accent: 'border-gray-300' },
+  国語: { bg: 'bg-rose-50', text: 'text-rose-800', accent: 'border-rose-300' },
+  数学: { bg: 'bg-blue-50', text: 'text-blue-800', accent: 'border-blue-300' },
+  英語: { bg: 'bg-emerald-50', text: 'text-emerald-800', accent: 'border-emerald-300' },
+  理科: { bg: 'bg-purple-50', text: 'text-purple-800', accent: 'border-purple-300' },
+  社会: { bg: 'bg-amber-50', text: 'text-amber-800', accent: 'border-amber-300' },
+  その他: { bg: 'bg-gray-50', text: 'text-gray-700', accent: 'border-gray-300' },
 };
 
 function categorizeSubject(subject: string | null | undefined): SubjectColumn {
@@ -845,7 +868,12 @@ function CardsView({
   // 科目ごとにグループ化
   const groups = useMemo(() => {
     const map: Record<SubjectColumn, StudentTextbookWithDetails[]> = {
-      '国語': [], '数学': [], '英語': [], '理科': [], '社会': [], 'その他': [],
+      国語: [],
+      数学: [],
+      英語: [],
+      理科: [],
+      社会: [],
+      その他: [],
     };
     for (const tb of textbooks) {
       map[categorizeSubject(tb.textbook?.subject)].push(tb);
@@ -857,17 +885,24 @@ function CardsView({
   }, [textbooks]);
 
   const hasOther = groups['その他'].length > 0;
-  const allColumns: SubjectColumn[] = hasOther ? [...SUBJECT_COLUMNS, 'その他'] : [...SUBJECT_COLUMNS];
+  const allColumns: SubjectColumn[] = hasOther
+    ? [...SUBJECT_COLUMNS, 'その他']
+    : [...SUBJECT_COLUMNS];
   // 空の科目列は非表示
   const columns = allColumns.filter((c) => groups[c].length > 0);
   const colCount = columns.length;
   const colGridClass =
-    colCount <= 1 ? 'md:grid-cols-1' :
-    colCount === 2 ? 'md:grid-cols-2' :
-    colCount === 3 ? 'md:grid-cols-3' :
-    colCount === 4 ? 'md:grid-cols-4' :
-    colCount === 5 ? 'md:grid-cols-5' :
-    'md:grid-cols-6';
+    colCount <= 1
+      ? 'md:grid-cols-1'
+      : colCount === 2
+        ? 'md:grid-cols-2'
+        : colCount === 3
+          ? 'md:grid-cols-3'
+          : colCount === 4
+            ? 'md:grid-cols-4'
+            : colCount === 5
+              ? 'md:grid-cols-5'
+              : 'md:grid-cols-6';
 
   return (
     <div>
@@ -897,31 +932,33 @@ function CardsView({
           const items = groups[col];
           return (
             <div key={col} className="flex flex-col gap-2">
-              <div className={`${tint.bg} ${tint.accent} border rounded-lg px-2 py-2 text-center sticky top-0`}>
+              <div
+                className={`${tint.bg} ${tint.accent} border rounded-lg px-2 py-2 text-center sticky top-0`}
+              >
                 <div className={`${tint.text} text-lg font-bold leading-tight`}>{col}</div>
                 <div className="text-[11px] text-[#6b7280] mt-0.5">{items.length} 冊</div>
               </div>
               {items.map((tb, i) => {
-                  const ae = activeExamOf(tb, examTypes);
-                  const goals = ae ? actionGoalsByExam[ae.id] ?? [] : [];
-                  return (
-                    <TextbookCard
-                      key={tb.id}
-                      textbook={tb}
-                      subjectColumn={col}
-                      activeExam={ae}
-                      actionGoals={goals}
-                      role={role}
-                      isMeeting={isMeeting}
-                      onOpen={() => onSelect(tb.id)}
-                      canMoveUp={i > 0}
-                      canMoveDown={i < items.length - 1}
-                      onReorder={(dir) => onReorder(tb.id, dir)}
-                      onTogglePublish={onTogglePublish ? () => onTogglePublish(tb.id) : undefined}
-                      onDelete={onDelete ? () => onDelete(tb.id) : undefined}
-                    />
-                  );
-                })}
+                const ae = activeExamOf(tb, examTypes);
+                const goals = ae ? (actionGoalsByExam[ae.id] ?? []) : [];
+                return (
+                  <TextbookCard
+                    key={tb.id}
+                    textbook={tb}
+                    subjectColumn={col}
+                    activeExam={ae}
+                    actionGoals={goals}
+                    role={role}
+                    isMeeting={isMeeting}
+                    onOpen={() => onSelect(tb.id)}
+                    canMoveUp={i > 0}
+                    canMoveDown={i < items.length - 1}
+                    onReorder={(dir) => onReorder(tb.id, dir)}
+                    onTogglePublish={onTogglePublish ? () => onTogglePublish(tb.id) : undefined}
+                    onDelete={onDelete ? () => onDelete(tb.id) : undefined}
+                  />
+                );
+              })}
             </div>
           );
         })}
@@ -946,7 +983,14 @@ function TextbookCard({
 }: {
   textbook: StudentTextbookWithDetails;
   subjectColumn: SubjectColumn;
-  activeExam: { id: string; exam_type_id: string | null; name: string; date: string | null; daysLeft: number | null; targetScore: number | null } | null;
+  activeExam: {
+    id: string;
+    exam_type_id: string | null;
+    name: string;
+    date: string | null;
+    daysLeft: number | null;
+    targetScore: number | null;
+  } | null;
   actionGoals: ActionGoal[];
   role: 'teacher' | 'manager';
   isMeeting: boolean;
@@ -964,10 +1008,13 @@ function TextbookCard({
   const tint = SUBJECT_COLOR[subjectColumn];
 
   const seasonColor =
-    textbook.season === 'spring' ? 'border-l-[#f472b6]'
-      : textbook.season === 'summer' ? 'border-l-[#fbbf24]'
-      : textbook.season === 'winter' ? 'border-l-[#60a5fa]'
-      : 'border-l-transparent';
+    textbook.season === 'spring'
+      ? 'border-l-[#f472b6]'
+      : textbook.season === 'summer'
+        ? 'border-l-[#fbbf24]'
+        : textbook.season === 'winter'
+          ? 'border-l-[#60a5fa]'
+          : 'border-l-transparent';
 
   return (
     <div
@@ -997,7 +1044,11 @@ function TextbookCard({
                   ? 'bg-gray-200 border-gray-400 text-gray-600 hover:bg-gray-300'
                   : 'bg-white border-[#e5e7eb] text-[#1e40af] hover:bg-[#eff6ff]'
               }`}
-              title={textbook.is_draft ? '講師に非公開（クリックで公開）' : '講師に公開中（クリックで非公開）'}
+              title={
+                textbook.is_draft
+                  ? '講師に非公開（クリックで公開）'
+                  : '講師に公開中（クリックで非公開）'
+              }
             >
               {textbook.is_draft ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
             </button>
@@ -1031,37 +1082,49 @@ function TextbookCard({
       {/* バッジ（学年 / 季節 / 非公開） */}
       <div className="flex items-center gap-1 mb-1.5 flex-wrap">
         {textbook.textbook?.grade && (
-          <span className={`text-xs px-2 py-0.5 rounded-md ${tint.bg} ${tint.text} font-bold border ${tint.accent}`}>
+          <span
+            className={`text-xs px-2 py-0.5 rounded-md ${tint.bg} ${tint.text} font-bold border ${tint.accent}`}
+          >
             {textbook.textbook.grade}
           </span>
         )}
         {season && (
           <span
             className={`text-xs px-2 py-0.5 rounded-md font-bold border ${
-              textbook.season === 'spring' ? 'bg-pink-100 text-pink-800 border-pink-300'
-                : textbook.season === 'summer' ? 'bg-orange-100 text-orange-800 border-orange-300'
-                : 'bg-sky-100 text-sky-800 border-sky-300'
+              textbook.season === 'spring'
+                ? 'bg-pink-100 text-pink-800 border-pink-300'
+                : textbook.season === 'summer'
+                  ? 'bg-orange-100 text-orange-800 border-orange-300'
+                  : 'bg-sky-100 text-sky-800 border-sky-300'
             }`}
           >
             {season}
           </span>
         )}
-        {textbook.is_draft && <span className="text-[11px] px-1.5 py-0.5 bg-gray-200 text-gray-700 rounded font-bold border border-gray-400">非公開</span>}
+        {textbook.is_draft && (
+          <span className="text-[11px] px-1.5 py-0.5 bg-gray-200 text-gray-700 rounded font-bold border border-gray-400">
+            非公開
+          </span>
+        )}
       </div>
 
       {/* 目標設定（コンパクト） */}
       {activeExam ? (
         <div className="mb-1.5 p-1.5 bg-gradient-to-br from-[#eff6ff] to-[#dbeafe]/50 border border-[#1e40af]/20 rounded">
-          <div className="text-[11px] font-semibold text-[#1e3a5f] truncate mb-0.5">{activeExam.name}</div>
+          <div className="text-[11px] font-semibold text-[#1e3a5f] truncate mb-0.5">
+            {activeExam.name}
+          </div>
           <div className="flex items-center justify-between gap-1 text-[11px] text-[#1e3a5f]">
             <span>
               残<strong className="text-sm font-bold ml-0.5">{activeExam.daysLeft ?? '—'}</strong>日
             </span>
             <span>
-              目標<strong className="text-sm font-bold ml-0.5">{activeExam.targetScore ?? '—'}</strong>
+              目標
+              <strong className="text-sm font-bold ml-0.5">{activeExam.targetScore ?? '—'}</strong>
             </span>
             <span>
-              行動<strong className="text-sm font-bold ml-0.5">{achievedCount}</strong>/{actionGoals.length}
+              行動<strong className="text-sm font-bold ml-0.5">{achievedCount}</strong>/
+              {actionGoals.length}
             </span>
           </div>
         </div>
@@ -1133,24 +1196,46 @@ function TableView({
 }) {
   const isMeeting = viewMode === 'meeting';
   const activeExam = activeExamOf(textbook, examTypes);
-  const activeExamGoals = activeExam ? actionGoalsByExam[activeExam.id] ?? [] : [];
+  const activeExamGoals = activeExam ? (actionGoalsByExam[activeExam.id] ?? []) : [];
   // 目標設定編集モーダル
   const [goalModalOpen, setGoalModalOpen] = useState(false);
   const [goalModalEditingId, setGoalModalEditingId] = useState<string | null>(null);
   const [rangeModalOpen, setRangeModalOpen] = useState(false);
   /** 編集中の試験範囲 (rangeId) と対象試験 (examTypeId)。新規の場合は rangeId=null */
-  const [rangeModalEditing, setRangeModalEditing] = useState<{ rangeId: string | null; examTypeId: string | null }>({ rangeId: null, examTypeId: null });
+  const [rangeModalEditing, setRangeModalEditing] = useState<{
+    rangeId: string | null;
+    examTypeId: string | null;
+  }>({ rangeId: null, examTypeId: null });
 
   // 列可視化: 管理モード / 面談モード共通の1つの設定として保存。
   // 申込・引継ぎ・講師名は面談モードでは列設定に関係なく常時非表示（内部情報のため）。
-  type MeetingCol = 'proposal' | 'application' | 'examRange' | 'schoolProgress' | 'lesson1' | 'lesson2' | 'lesson3' | 'handover' | 'homeworkNotDone' | 'tardy' | 'teacherName';
+  type MeetingCol =
+    | 'proposal'
+    | 'application'
+    | 'examRange'
+    | 'schoolProgress'
+    | 'lesson1'
+    | 'lesson2'
+    | 'lesson3'
+    | 'handover'
+    | 'homeworkNotDone'
+    | 'tardy'
+    | 'teacherName';
   const colsKey = `progress-cols:${studentId}:${textbook.id}`;
   // デフォルトは「試験範囲・学校進度・1回目・2回目・引継ぎ・宿題未・遅刻・講師名」を表示
   // 提案コマ数／申込コマ数／3回目はデフォルトでは非表示
   const DEFAULT_COLS: Record<MeetingCol, boolean> = {
-    proposal: false, application: true, examRange: true, schoolProgress: true,
-    lesson1: true, lesson2: true, lesson3: false, handover: true,
-    homeworkNotDone: true, tardy: true, teacherName: true,
+    proposal: false,
+    application: true,
+    examRange: true,
+    schoolProgress: true,
+    lesson1: true,
+    lesson2: true,
+    lesson3: false,
+    handover: true,
+    homeworkNotDone: true,
+    tardy: true,
+    teacherName: true,
   };
   const [meetingCols, setMeetingCols] = useState<Record<MeetingCol, boolean>>(DEFAULT_COLS);
   const [colMenuOpen, setColMenuOpen] = useState(false);
@@ -1225,92 +1310,109 @@ function TableView({
   }, [paintMode, paintValue]);
 
   // 一括塗りを適用: progress 配列のインデックス [lo..hi] の行に paintValue を設定
-  const applyPaint = useCallback(async (startRowId: string, endRowId: string) => {
-    if (!paintMode || !paintValue) return;
-    const sIdx = progress.findIndex((r) => String(r.id) === startRowId);
-    const eIdx = progress.findIndex((r) => String(r.id) === endRowId);
-    if (sIdx < 0 || eIdx < 0) return;
-    const lo = Math.min(sIdx, eIdx);
-    const hi = Math.max(sIdx, eIdx);
-    const sliceIds = new Set(progress.slice(lo, hi + 1).map((r) => String(r.id)));
-    try {
-      if (paintMode === 'examRange') {
-        // 独立テーブル登録用: スライスの中で item_number を持つ行から min/max を算出
-        const nums = progress
-          .slice(lo, hi + 1)
-          .map((r) => itemNo(r))
-          .filter((n): n is number => n != null);
-        if (nums.length > 0) {
-          const loN = Math.min(...nums);
-          const hiN = Math.max(...nums);
-          // 新規セグメントとして追加（複数区間対応: 既存セグメントは保持）
-          await createExamRange({
-            student_textbook_id: textbook.id,
-            exam_type_id: paintValue,
-            range_start_item_number: loN,
-            range_end_item_number: hiN,
-          });
+  const applyPaint = useCallback(
+    async (startRowId: string, endRowId: string) => {
+      if (!paintMode || !paintValue) return;
+      const sIdx = progress.findIndex((r) => String(r.id) === startRowId);
+      const eIdx = progress.findIndex((r) => String(r.id) === endRowId);
+      if (sIdx < 0 || eIdx < 0) return;
+      const lo = Math.min(sIdx, eIdx);
+      const hi = Math.max(sIdx, eIdx);
+      const sliceIds = new Set(progress.slice(lo, hi + 1).map((r) => String(r.id)));
+      try {
+        if (paintMode === 'examRange') {
+          // 独立テーブル登録用: スライスの中で item_number を持つ行から min/max を算出
+          const nums = progress
+            .slice(lo, hi + 1)
+            .map((r) => itemNo(r))
+            .filter((n): n is number => n != null);
+          if (nums.length > 0) {
+            const loN = Math.min(...nums);
+            const hiN = Math.max(...nums);
+            // 新規セグメントとして追加（複数区間対応: 既存セグメントは保持）
+            await createExamRange({
+              student_textbook_id: textbook.id,
+              exam_type_id: paintValue,
+              range_start_item_number: loN,
+              range_end_item_number: hiN,
+            });
+          }
+          // per-row 同期: スライス内は付与のみ。スライス外は他セグメントを保護するため解除しない
+          await Promise.all(
+            progress.map(async (row) => {
+              const inSlice = sliceIds.has(String(row.id));
+              if (!inSlice) return;
+              const hasThis = row.progress?.exam_range_exam_type_id === paintValue;
+              if (hasThis) return;
+              if (row.progress?.id) {
+                await updateStudentProgress(row.progress.id, {
+                  exam_range_exam_type_id: paintValue,
+                });
+              } else {
+                await upsertStudentProgress({
+                  student_textbook_id: textbook.id,
+                  curriculum_item_id: row.id,
+                  exam_range_exam_type_id: paintValue,
+                });
+              }
+            })
+          );
+          const newRanges = await getExamRanges(textbook.id);
+          setExamRangesForTextbook(newRanges);
+        } else if (paintMode === 'intent') {
+          await Promise.all(
+            progress.slice(lo, hi + 1).map(async (row) => {
+              if (row.progress?.id) {
+                await updateStudentProgress(row.progress.id, { intent_tag: paintValue });
+              } else {
+                await upsertStudentProgress({
+                  student_textbook_id: textbook.id,
+                  curriculum_item_id: row.id,
+                  intent_tag: paintValue,
+                });
+              }
+            })
+          );
         }
-        // per-row 同期: スライス内は付与のみ。スライス外は他セグメントを保護するため解除しない
-        await Promise.all(
-          progress.map(async (row) => {
-            const inSlice = sliceIds.has(String(row.id));
-            if (!inSlice) return;
-            const hasThis = row.progress?.exam_range_exam_type_id === paintValue;
-            if (hasThis) return;
-            if (row.progress?.id) {
-              await updateStudentProgress(row.progress.id, { exam_range_exam_type_id: paintValue });
-            } else {
-              await upsertStudentProgress({
-                student_textbook_id: textbook.id,
-                curriculum_item_id: row.id,
-                exam_range_exam_type_id: paintValue,
-              });
-            }
-          })
-        );
-        const newRanges = await getExamRanges(textbook.id);
-        setExamRangesForTextbook(newRanges);
-      } else if (paintMode === 'intent') {
-        await Promise.all(
-          progress.slice(lo, hi + 1).map(async (row) => {
-            if (row.progress?.id) {
-              await updateStudentProgress(row.progress.id, { intent_tag: paintValue });
-            } else {
-              await upsertStudentProgress({
-                student_textbook_id: textbook.id,
-                curriculum_item_id: row.id,
-                intent_tag: paintValue,
-              });
-            }
-          })
-        );
+        // progress 再取得
+        const rows = await getStudentProgress(textbook.id);
+        setProgress(rows || []);
+        success(`${hi - lo + 1}件に一括適用しました`);
+        // 適用後は自動でモードを解除
+        setPaintMode(null);
+        setPaintValue('');
+        setPaintStart(null);
+      } catch (e) {
+        console.error(e);
+        toastError('一括適用に失敗しました');
+        setPaintStart(null);
       }
-      // progress 再取得
-      const rows = await getStudentProgress(textbook.id);
-      setProgress(rows || []);
-      success(`${hi - lo + 1}件に一括適用しました`);
-      // 適用後は自動でモードを解除
-      setPaintMode(null);
-      setPaintValue('');
-      setPaintStart(null);
-    } catch (e) {
-      console.error(e);
-      toastError('一括適用に失敗しました');
-      setPaintStart(null);
-    }
-  }, [paintMode, paintValue, progress, textbook.id, setProgress, setExamRangesForTextbook, success, toastError]);
+    },
+    [
+      paintMode,
+      paintValue,
+      progress,
+      textbook.id,
+      setProgress,
+      setExamRangesForTextbook,
+      success,
+      toastError,
+    ]
+  );
 
   // 行クリック時: paint モード中なら開始→終了の2クリックで適用
-  const handlePaintRowClick = useCallback((rowId: string) => {
-    if (!paintMode || !paintValue) return false;
-    if (paintStart == null) {
-      setPaintStart(rowId);
-    } else {
-      applyPaint(paintStart, rowId);
-    }
-    return true;
-  }, [paintMode, paintValue, paintStart, applyPaint]);
+  const handlePaintRowClick = useCallback(
+    (rowId: string) => {
+      if (!paintMode || !paintValue) return false;
+      if (paintStart == null) {
+        setPaintStart(rowId);
+      } else {
+        applyPaint(paintStart, rowId);
+      }
+      return true;
+    },
+    [paintMode, paintValue, paintStart, applyPaint]
+  );
 
   // ─── セッション記録モード（新UI）───
   const [sessionMode, setSessionMode] = useState(false);
@@ -1340,18 +1442,24 @@ function TableView({
   const [idleAlert, setIdleAlert] = useState(false);
 
   // テキスト切替時に dirty をリセット
-  useEffect(() => { setDirtyRows(new Set()); setIdleAlert(false); }, [textbook.id]);
+  useEffect(() => {
+    setDirtyRows(new Set());
+    setIdleAlert(false);
+  }, [textbook.id]);
 
-  const markDirty = useCallback((rowId: string) => {
-    if (sessionMode) return; // セッション記録モード中は追跡しない
-    setIdleAlert(false); // 編集が入ったらアラートを解除
-    setDirtyRows(prev => {
-      if (prev.has(rowId)) return prev;
-      const next = new Set(prev);
-      next.add(rowId);
-      return next;
-    });
-  }, [sessionMode]);
+  const markDirty = useCallback(
+    (rowId: string) => {
+      if (sessionMode) return; // セッション記録モード中は追跡しない
+      setIdleAlert(false); // 編集が入ったらアラートを解除
+      setDirtyRows((prev) => {
+        if (prev.has(rowId)) return prev;
+        const next = new Set(prev);
+        next.add(rowId);
+        return next;
+      });
+    },
+    [sessionMode]
+  );
 
   // 編集が1件以上ある状態で 1時間 (3,600,000ms) 提出されなかったら idleAlert を立てる。
   // markDirty で再編集された場合は idleAlert=false に戻り、タイマーも貼り直し。
@@ -1401,7 +1509,10 @@ function TableView({
               ...row,
               progress: row.progress
                 ? { ...row.progress, ...patch }
-                : ({ ...(patch as object), curriculum_item_id: row.id } as unknown as CurriculumItemWithProgress['progress']),
+                : ({
+                    ...(patch as object),
+                    curriculum_item_id: row.id,
+                  } as unknown as CurriculumItemWithProgress['progress']),
             }
           : row
       )
@@ -1423,11 +1534,19 @@ function TableView({
         }
         // 保存結果を local state に反映（id や null→record への昇格を確定させる）
         if (saved) {
-          setProgress((prev: CurriculumItemWithProgress[]) => prev.map((r) =>
-            r.id === row.id
-              ? { ...r, progress: { ...(r.progress || {}), ...(saved as object) } as CurriculumItemWithProgress['progress'] }
-              : r
-          ));
+          setProgress((prev: CurriculumItemWithProgress[]) =>
+            prev.map((r) =>
+              r.id === row.id
+                ? {
+                    ...r,
+                    progress: {
+                      ...(r.progress || {}),
+                      ...(saved as object),
+                    } as CurriculumItemWithProgress['progress'],
+                  }
+                : r
+            )
+          );
         }
         // セッション共有フィールドが変更されたら progress_sessions にも同期（フィード反映）
         const progressId = row.progress?.id || (saved as { id?: string })?.id;
@@ -1469,8 +1588,12 @@ function TableView({
       {/* ヘッダ */}
       <div className="mb-4 flex items-center justify-between flex-wrap gap-2">
         <div className="flex items-center gap-3 flex-wrap">
-          <button onClick={onBack} className="text-sm text-[#4b5563] hover:text-[#1f2937]">← テキスト一覧</button>
-          <h2 className="text-base font-semibold text-[#1f2937]">{textbook.textbook?.name ?? '教科書'}</h2>
+          <button onClick={onBack} className="text-sm text-[#4b5563] hover:text-[#1f2937]">
+            ← テキスト一覧
+          </button>
+          <h2 className="text-base font-semibold text-[#1f2937]">
+            {textbook.textbook?.name ?? '教科書'}
+          </h2>
           {textbook.is_draft && (
             <span className="px-2 py-0.5 bg-gray-200 text-gray-700 rounded text-[11px] font-bold border border-gray-400">
               非公開
@@ -1493,7 +1616,11 @@ function TableView({
               }`}
               title={textbook.is_draft ? '講師に公開する' : '講師に非公開にする'}
             >
-              {textbook.is_draft ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+              {textbook.is_draft ? (
+                <EyeOff className="w-3.5 h-3.5" />
+              ) : (
+                <Eye className="w-3.5 h-3.5" />
+              )}
               {textbook.is_draft ? '講師非公開中' : '講師に公開中'}
             </button>
           )}
@@ -1509,23 +1636,34 @@ function TableView({
               <Settings2 className="w-3.5 h-3.5" />
               列設定
               {hiddenColCount > 0 && (
-                <span className="px-1 py-0.5 text-[11px] bg-gray-200 text-gray-700 rounded font-medium">{hiddenColCount}</span>
+                <span className="px-1 py-0.5 text-[11px] bg-gray-200 text-gray-700 rounded font-medium">
+                  {hiddenColCount}
+                </span>
               )}
             </button>
             {colMenuOpen && (
               <>
                 <div className="fixed inset-0 z-30" onClick={() => setColMenuOpen(false)} />
-                <div role="menu" className="dropdown-enter absolute right-0 top-full mt-1 w-56 bg-white border border-[#e5e7eb] rounded-lg shadow-lg z-40 overflow-hidden">
+                <div
+                  role="menu"
+                  className="dropdown-enter absolute right-0 top-full mt-1 w-56 bg-white border border-[#e5e7eb] rounded-lg shadow-lg z-40 overflow-hidden"
+                >
                   <div className="px-3 py-2 text-[11px] text-[#6b7280] uppercase tracking-wider border-b border-[#f3f4f6] bg-[#f9fafb] flex items-center justify-between">
                     <span>{isMeeting ? '保護者に見せる列を選択' : '表示する列を選択'}</span>
                     {hiddenColCount > 0 && (
-                      <button onClick={resetCols} className="text-[11px] text-[#1e40af] hover:underline normal-case">
+                      <button
+                        onClick={resetCols}
+                        className="text-[11px] text-[#1e40af] hover:underline normal-case"
+                      >
                         全表示
                       </button>
                     )}
                   </div>
                   {colOptions.map((c) => (
-                    <label key={c.key} className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-[#f9fafb] cursor-pointer">
+                    <label
+                      key={c.key}
+                      className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-[#f9fafb] cursor-pointer"
+                    >
                       <input
                         type="checkbox"
                         checked={meetingCols[c.key]}
@@ -1544,15 +1682,20 @@ function TableView({
           {!isMeeting && (
             <div className="flex items-center gap-1.5">
               <button
-                onClick={() => { setSessionMode((v) => { if (v) setSessionSelection(null); return !v; }); }}
+                onClick={() => {
+                  setSessionMode((v) => {
+                    if (v) setSessionSelection(null);
+                    return !v;
+                  });
+                }}
                 disabled={!activeExam && !sessionMode && role === 'teacher'}
                 title={!activeExam && role === 'teacher' ? '目標を設定してください' : undefined}
                 className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-[background-color,transform] duration-150 ease-out ${
                   sessionMode
                     ? 'bg-[#dc2626] text-white hover:bg-[#b91c1c] active:scale-[0.97]'
-                    : (!activeExam && role === 'teacher')
-                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    : 'bg-[#1e3a5f] text-white hover:bg-[#2a4d7a] active:scale-[0.97]'
+                    : !activeExam && role === 'teacher'
+                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                      : 'bg-[#1e3a5f] text-white hover:bg-[#2a4d7a] active:scale-[0.97]'
                 }`}
               >
                 {sessionMode ? 'セッション終了' : '授業を記録'}
@@ -1603,11 +1746,16 @@ function TableView({
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
                 <span className="text-xs font-bold text-[#1e3a5f]">{activeExam.name}</span>
-                {activeExam.date && <span className="text-[11px] text-[#6b7280]">{activeExam.date}</span>}
+                {activeExam.date && (
+                  <span className="text-[11px] text-[#6b7280]">{activeExam.date}</span>
+                )}
               </div>
               {!isMeeting && (
                 <button
-                  onClick={() => { setGoalModalEditingId(activeExam.id); setGoalModalOpen(true); }}
+                  onClick={() => {
+                    setGoalModalEditingId(activeExam.id);
+                    setGoalModalOpen(true);
+                  }}
                   className="px-2 py-0.5 text-[11px] bg-white border border-[#1e40af]/20 rounded text-[#1e40af] hover:bg-[#1e40af] hover:text-white transition-[background-color,color] duration-150 ease-out active:scale-[0.97]"
                 >
                   編集
@@ -1617,17 +1765,27 @@ function TableView({
             <div className="flex items-center gap-4">
               <div className="text-center">
                 <div className="text-[9px] text-[#6b7280] font-semibold uppercase">残り</div>
-                <span className="text-lg font-bold text-[#1e3a5f]">{activeExam.daysLeft ?? '—'}</span>
-                {activeExam.daysLeft != null && <span className="text-[11px] text-[#6b7280]">日</span>}
+                <span className="text-lg font-bold text-[#1e3a5f]">
+                  {activeExam.daysLeft ?? '—'}
+                </span>
+                {activeExam.daysLeft != null && (
+                  <span className="text-[11px] text-[#6b7280]">日</span>
+                )}
               </div>
               <div className="text-center">
                 <div className="text-[9px] text-[#6b7280] font-semibold uppercase">目標</div>
-                <span className="text-lg font-bold text-[#1e3a5f]">{activeExam.targetScore ?? '—'}</span>
-                {activeExam.targetScore != null && <span className="text-[11px] text-[#6b7280]">点</span>}
+                <span className="text-lg font-bold text-[#1e3a5f]">
+                  {activeExam.targetScore ?? '—'}
+                </span>
+                {activeExam.targetScore != null && (
+                  <span className="text-[11px] text-[#6b7280]">点</span>
+                )}
               </div>
               <div className="text-center">
                 <div className="text-[9px] text-[#6b7280] font-semibold uppercase">行動目標</div>
-                <span className="text-lg font-bold text-[#1e3a5f]">{activeExamGoals.filter((g) => g.achieved).length}</span>
+                <span className="text-lg font-bold text-[#1e3a5f]">
+                  {activeExamGoals.filter((g) => g.achieved).length}
+                </span>
                 <span className="text-xs text-[#6b7280]">/{activeExamGoals.length}</span>
               </div>
             </div>
@@ -1648,11 +1806,16 @@ function TableView({
           <div className="bg-amber-50 border-2 border-amber-400 rounded-lg px-4 py-3 flex items-center justify-between">
             <div>
               <div className="text-sm font-bold text-amber-800">目標が設定されていません</div>
-              <div className="text-[11px] text-amber-600 mt-0.5">目標を設定しないと進捗の入力・記録ができません。先に目標を設定してください。</div>
+              <div className="text-[11px] text-amber-600 mt-0.5">
+                目標を設定しないと進捗の入力・記録ができません。先に目標を設定してください。
+              </div>
             </div>
             {!isMeeting && (
               <button
-                onClick={() => { setGoalModalEditingId(null); setGoalModalOpen(true); }}
+                onClick={() => {
+                  setGoalModalEditingId(null);
+                  setGoalModalOpen(true);
+                }}
                 className="px-4 py-2 bg-amber-500 text-white text-xs font-bold rounded-lg hover:bg-amber-600 transition-[background-color] duration-150 ease-out active:scale-[0.97] whitespace-nowrap"
               >
                 目標を設定する
@@ -1695,14 +1858,17 @@ function TableView({
                     await Promise.all(
                       progress.map(async (row) => {
                         const n = itemNo(row);
-                        const hasThis = row.progress?.exam_range_exam_type_id === target.exam_type_id;
+                        const hasThis =
+                          row.progress?.exam_range_exam_type_id === target.exam_type_id;
                         if (!hasThis) return;
                         const inDeleted =
                           n != null &&
                           n >= target.range_start_item_number &&
                           n <= target.range_end_item_number;
                         if (inDeleted && !inOther(n) && row.progress?.id) {
-                          await updateStudentProgress(row.progress.id, { exam_range_exam_type_id: null });
+                          await updateStudentProgress(row.progress.id, {
+                            exam_range_exam_type_id: null,
+                          });
                         }
                       })
                     );
@@ -1731,7 +1897,6 @@ function TableView({
             onDelete={() => {}}
           />
         )}
-
       </div>
 
       {/* セッション記録モード（新UI） */}
@@ -1761,16 +1926,28 @@ function TableView({
               <th className="px-3 py-2 text-left w-10">#</th>
               <th className="px-3 py-2 text-left min-w-[180px]">単元名</th>
               {meetingCols.proposal && <th className="px-3 py-2 text-left w-20">提案</th>}
-              {!isMeeting && meetingCols.application && <th className="px-3 py-2 text-left w-20">申込</th>}
-              {meetingCols.examRange && <th className="px-3 py-2 text-left min-w-[140px] whitespace-nowrap">試験範囲</th>}
+              {!isMeeting && meetingCols.application && (
+                <th className="px-3 py-2 text-left w-20">申込</th>
+              )}
+              {meetingCols.examRange && (
+                <th className="px-3 py-2 text-left min-w-[140px] whitespace-nowrap">試験範囲</th>
+              )}
               {meetingCols.schoolProgress && <th className="px-3 py-2 text-left w-28">学校進度</th>}
               {meetingCols.lesson1 && <th className="px-3 py-2 text-left w-28">1回目</th>}
               {meetingCols.lesson2 && <th className="px-3 py-2 text-left w-28">2回目</th>}
               {meetingCols.lesson3 && <th className="px-3 py-2 text-left w-28">3回目</th>}
-              {!isMeeting && meetingCols.handover && <th className="px-3 py-2 text-left min-w-[160px]">引継ぎ</th>}
-              {!isMeeting && meetingCols.homeworkNotDone && <th className="px-3 py-2 text-center w-16">宿題未</th>}
-              {!isMeeting && meetingCols.tardy && <th className="px-3 py-2 text-center w-16">遅刻</th>}
-              {!isMeeting && meetingCols.teacherName && <th className="px-3 py-2 text-left w-24">講師名</th>}
+              {!isMeeting && meetingCols.handover && (
+                <th className="px-3 py-2 text-left min-w-[160px]">引継ぎ</th>
+              )}
+              {!isMeeting && meetingCols.homeworkNotDone && (
+                <th className="px-3 py-2 text-center w-16">宿題未</th>
+              )}
+              {!isMeeting && meetingCols.tardy && (
+                <th className="px-3 py-2 text-center w-16">遅刻</th>
+              )}
+              {!isMeeting && meetingCols.teacherName && (
+                <th className="px-3 py-2 text-left w-24">講師名</th>
+              )}
             </tr>
           </thead>
           <tbody>
@@ -1795,21 +1972,33 @@ function TableView({
                 // 結合グループは sort_order 連続なので、前行と番号が変われば先頭。
                 const curApplied = row.progress?.applied_group_number ?? null;
                 const prevApplied = prev?.progress?.applied_group_number ?? null;
-                const appliedGroupStart = curApplied == null || prevApplied == null || prevApplied !== curApplied;
+                const appliedGroupStart =
+                  curApplied == null || prevApplied == null || prevApplied !== curApplied;
                 // 結合グループの先頭行は、提案/申込セルを後続行ぶん縦結合(rowSpan)して合計を中央表示する。
                 // グループ行は sort_order 連続なので、同番号が続く限り数える。
                 let proposalGroupSpan = 1;
                 if (curGroup != null && groupStart) {
-                  for (let j = idx + 1; j < progress.length && (progress[j].progress?.group_number ?? null) === curGroup; j++) proposalGroupSpan++;
+                  for (
+                    let j = idx + 1;
+                    j < progress.length &&
+                    (progress[j].progress?.group_number ?? null) === curGroup;
+                    j++
+                  )
+                    proposalGroupSpan++;
                 }
                 let appliedGroupSpan = 1;
                 if (curApplied != null && appliedGroupStart) {
-                  for (let j = idx + 1; j < progress.length && (progress[j].progress?.applied_group_number ?? null) === curApplied; j++) appliedGroupSpan++;
+                  for (
+                    let j = idx + 1;
+                    j < progress.length &&
+                    (progress[j].progress?.applied_group_number ?? null) === curApplied;
+                    j++
+                  )
+                    appliedGroupSpan++;
                 }
                 // 非先頭行でも同グループの指導意図を継承表示
-                const inheritedTag: IntentTag | null = !groupStart && curGroup != null
-                  ? (groupIntentMap.get(curGroup) ?? null)
-                  : null;
+                const inheritedTag: IntentTag | null =
+                  !groupStart && curGroup != null ? (groupIntentMap.get(curGroup) ?? null) : null;
                 const paintActive = !!paintMode && !!paintValue;
                 const rowIdStr = String(row.id);
                 const isPaintStart = paintStart != null && rowIdStr === paintStart;
@@ -1839,7 +2028,11 @@ function TableView({
                     onLocalPatch={(patch) => updateLocal(rowIdStr, patch)}
                     onSaveProgress={(patch) => saveProgressField(row, patch)}
                     onSaveLesson={(n, date) => saveLessonField(row, n, date)}
-                    onSessionCellToggle={sessionMode ? (cid, col) => sessionPanelRef.current?.handleCellToggle(cid, col) : undefined}
+                    onSessionCellToggle={
+                      sessionMode
+                        ? (cid, col) => sessionPanelRef.current?.handleCellToggle(cid, col)
+                        : undefined
+                    }
                   />
                 );
               });
@@ -1853,7 +2046,11 @@ function TableView({
         <ExamGoalEditModal
           textbookId={textbook.id}
           examTypes={examTypes}
-          editing={goalModalEditingId ? (textbook.exams || []).find((e) => e.id === goalModalEditingId) ?? null : null}
+          editing={
+            goalModalEditingId
+              ? ((textbook.exams || []).find((e) => e.id === goalModalEditingId) ?? null)
+              : null
+          }
           onClose={() => setGoalModalOpen(false)}
           onSaved={async () => {
             setGoalModalOpen(false);
@@ -1892,7 +2089,9 @@ function TableView({
             try {
               const rows = await getStudentProgress(textbook.id);
               setProgress(rows || []);
-            } catch { /* noop */ }
+            } catch {
+              /* noop */
+            }
           }}
           toastError={toastError}
         />
@@ -1911,14 +2110,18 @@ function TableView({
           <div className="flex items-center gap-1.5">
             <span className="text-[11px] font-medium text-gray-600">一括:</span>
             <div className="inline-flex rounded overflow-hidden border border-gray-200 text-[11px]">
-              {([
+              {[
                 { key: null, label: 'OFF' },
                 { key: 'examRange' as const, label: '試験範囲' },
                 { key: 'intent' as const, label: '指導意図' },
-              ]).map((m) => (
+              ].map((m) => (
                 <button
                   key={m.label}
-                  onClick={() => { setPaintMode(m.key); setPaintValue(''); setPaintStart(null); }}
+                  onClick={() => {
+                    setPaintMode(m.key);
+                    setPaintValue('');
+                    setPaintStart(null);
+                  }}
                   className={`px-2 py-0.5 transition-[background-color,color] duration-150 ease-out ${
                     paintMode === m.key
                       ? 'bg-[#1e3a5f] text-white'
@@ -1930,24 +2133,63 @@ function TableView({
               ))}
             </div>
             {paintMode === 'examRange' && (
-              <select value={paintValue} onChange={(e) => { setPaintValue(e.target.value); setPaintStart(null); }} className="px-1.5 py-0.5 text-[11px] border border-gray-200 rounded bg-white">
+              <select
+                value={paintValue}
+                onChange={(e) => {
+                  setPaintValue(e.target.value);
+                  setPaintStart(null);
+                }}
+                className="px-1.5 py-0.5 text-[11px] border border-gray-200 rounded bg-white"
+              >
                 <option value="">試験を選択</option>
-                {examTypes.map((et) => <option key={et.id} value={et.id}>{et.name}</option>)}
+                {examTypes.map((et) => (
+                  <option key={et.id} value={et.id}>
+                    {et.name}
+                  </option>
+                ))}
               </select>
             )}
             {paintMode === 'intent' && (
-              <select value={paintValue} onChange={(e) => { setPaintValue(e.target.value); setPaintStart(null); }} className="px-1.5 py-0.5 text-[11px] border border-gray-200 rounded bg-white">
+              <select
+                value={paintValue}
+                onChange={(e) => {
+                  setPaintValue(e.target.value);
+                  setPaintStart(null);
+                }}
+                className="px-1.5 py-0.5 text-[11px] border border-gray-200 rounded bg-white"
+              >
                 <option value="">意図を選択</option>
-                {INTENT_TAGS.map((t) => <option key={t} value={t}>{t}</option>)}
+                {INTENT_TAGS.map((t) => (
+                  <option key={t} value={t}>
+                    {t}
+                  </option>
+                ))}
               </select>
             )}
-            {paintMode && paintValue && (() => {
-              const startRow = paintStart ? progress.find((r) => String(r.id) === paintStart) : null;
-              const startLabel = startRow ? (itemNo(startRow) != null ? `項目${itemNo(startRow)}` : (startRow.title ?? '行')) : null;
-              return <span className="text-[11px] text-[#1e40af] font-medium">{paintStart == null ? '開始行をクリック' : `${startLabel} → 終了行をクリック`}</span>;
-            })()}
+            {paintMode &&
+              paintValue &&
+              (() => {
+                const startRow = paintStart
+                  ? progress.find((r) => String(r.id) === paintStart)
+                  : null;
+                const startLabel = startRow
+                  ? itemNo(startRow) != null
+                    ? `項目${itemNo(startRow)}`
+                    : (startRow.title ?? '行')
+                  : null;
+                return (
+                  <span className="text-[11px] text-[#1e40af] font-medium">
+                    {paintStart == null ? '開始行をクリック' : `${startLabel} → 終了行をクリック`}
+                  </span>
+                );
+              })()}
             {paintStart != null && (
-              <button onClick={() => setPaintStart(null)} className="text-[11px] text-gray-500 hover:text-gray-800 underline">リセット</button>
+              <button
+                onClick={() => setPaintStart(null)}
+                className="text-[11px] text-gray-500 hover:text-gray-800 underline"
+              >
+                リセット
+              </button>
             )}
           </div>
 
@@ -1956,20 +2198,25 @@ function TableView({
             <span
               aria-live="polite"
               className={`text-xs ${
-                idleAlert ? 'text-[#dc2626] font-semibold' :
-                dirtyRows.size > 0 ? 'text-gray-700 font-medium' : 'text-gray-500'
+                idleAlert
+                  ? 'text-[#dc2626] font-semibold'
+                  : dirtyRows.size > 0
+                    ? 'text-gray-700 font-medium'
+                    : 'text-gray-500'
               }`}
             >
               {idleAlert
                 ? '未提出の入力があります'
                 : dirtyRows.size > 0
-                ? `${dirtyRows.size}件の編集があります`
-                : '入力完了後 提出'}
+                  ? `${dirtyRows.size}件の編集があります`
+                  : '入力完了後 提出'}
             </span>
             <button
               onClick={handleSubmit}
               disabled={submitting || dirtyRows.size === 0}
-              aria-label={dirtyRows.size > 0 ? `${dirtyRows.size}件の編集を提出` : '提出（編集なし）'}
+              aria-label={
+                dirtyRows.size > 0 ? `${dirtyRows.size}件の編集を提出` : '提出（編集なし）'
+              }
               className={`inline-flex items-center gap-1.5 px-5 py-2 rounded-lg text-sm font-semibold transition-[background-color,transform] duration-150 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1e3a5f]/40 ${
                 dirtyRows.size > 0
                   ? 'bg-[#1e3a5f] text-white hover:bg-[#2a4d7a] active:scale-[0.97] shadow-sm'
@@ -2073,33 +2320,55 @@ function ExamGoalEditModal({
 
   return (
     <>
-      <div className="fixed inset-0 bg-black/40 z-40 animate-[fade-in_150ms_ease-out]" onClick={onClose} />
+      <div
+        className="fixed inset-0 bg-black/40 z-40 animate-[fade-in_150ms_ease-out]"
+        onClick={onClose}
+      />
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
         <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col pointer-events-auto animate-[popover-enter_150ms_cubic-bezier(0.23,1,0.32,1)]">
           <header className="px-6 py-4 border-b border-[#e5e7eb] flex items-center justify-between">
-            <h2 className="font-bold text-[#1f2937] text-lg">{editing ? '目標を編集' : '目標を設定'}</h2>
-            <button onClick={onClose} className="w-8 h-8 rounded hover:bg-[#f3f4f6] text-[#6b7280] transition-[color] duration-150 ease-out active:scale-[0.97]">✕</button>
+            <h2 className="font-bold text-[#1f2937] text-lg">
+              {editing ? '目標を編集' : '目標を設定'}
+            </h2>
+            <button
+              onClick={onClose}
+              className="w-8 h-8 rounded hover:bg-[#f3f4f6] text-[#6b7280] transition-[color] duration-150 ease-out active:scale-[0.97]"
+            >
+              ✕
+            </button>
           </header>
           <div className="flex-1 overflow-y-auto p-6 space-y-4">
             <div>
-              <label className="block text-xs font-medium text-[#6b7280] mb-1">試験名（マスタから選択）</label>
+              <label className="block text-xs font-medium text-[#6b7280] mb-1">
+                試験名（マスタから選択）
+              </label>
               <select
                 value={examTypeId}
-                onChange={(e) => { setExamTypeId(e.target.value); if (e.target.value) setCustomName(''); }}
+                onChange={(e) => {
+                  setExamTypeId(e.target.value);
+                  if (e.target.value) setCustomName('');
+                }}
                 className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-white"
               >
                 <option value="">（マスタから選択）</option>
                 {examTypes.map((et) => (
-                  <option key={et.id} value={et.id}>{et.name}</option>
+                  <option key={et.id} value={et.id}>
+                    {et.name}
+                  </option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-[#6b7280] mb-1">または 試験名を自由入力</label>
+              <label className="block text-xs font-medium text-[#6b7280] mb-1">
+                または 試験名を自由入力
+              </label>
               <input
                 type="text"
                 value={customName}
-                onChange={(e) => { setCustomName(e.target.value); if (e.target.value) setExamTypeId(''); }}
+                onChange={(e) => {
+                  setCustomName(e.target.value);
+                  if (e.target.value) setExamTypeId('');
+                }}
                 placeholder="例: 第1回模試"
                 className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm"
               />
@@ -2136,9 +2405,16 @@ function ExamGoalEditModal({
               >
                 削除
               </button>
-            ) : <div />}
+            ) : (
+              <div />
+            )}
             <div className="flex gap-2">
-              <button onClick={onClose} className="px-3 py-1.5 text-sm text-[#4b5563] hover:bg-[#f3f4f6] rounded-lg">キャンセル</button>
+              <button
+                onClick={onClose}
+                className="px-3 py-1.5 text-sm text-[#4b5563] hover:bg-[#f3f4f6] rounded-lg"
+              >
+                キャンセル
+              </button>
               <button
                 onClick={save}
                 disabled={saving}
@@ -2158,9 +2434,17 @@ function ExamGoalEditModal({
 // 進行表の1行
 // ─────────────────────────────────────────────
 type MeetingColMap = {
-  proposal: boolean; application: boolean; examRange: boolean; schoolProgress: boolean;
-  lesson1: boolean; lesson2: boolean; lesson3: boolean; handover: boolean;
-  homeworkNotDone: boolean; tardy: boolean; teacherName: boolean;
+  proposal: boolean;
+  application: boolean;
+  examRange: boolean;
+  schoolProgress: boolean;
+  lesson1: boolean;
+  lesson2: boolean;
+  lesson3: boolean;
+  handover: boolean;
+  homeworkNotDone: boolean;
+  tardy: boolean;
+  teacherName: boolean;
 };
 
 /** 今日の日付 (YYYY-MM-DD) */
@@ -2217,7 +2501,11 @@ function ProgressRow({
   /** セッション記録モード */
   sessionMode?: boolean;
   /** セッションの選択状態（ハイライト用） */
-  sessionSelection?: { unitActions: Record<number, 1 | 2 | 3>; schoolUnits: Set<number>; sessionDate?: string } | null;
+  sessionSelection?: {
+    unitActions: Record<number, 1 | 2 | 3>;
+    schoolUnits: Set<number>;
+    sessionDate?: string;
+  } | null;
   /** 目標が設定されているか（未設定時は入力を無効化） */
   hasGoal?: boolean;
   onPaintRowClick?: () => void;
@@ -2245,7 +2533,7 @@ function ProgressRow({
 
   // セッション選択状態
   const isSessionSelected = sessionSelection
-    ? (row.id in (sessionSelection.unitActions || {})) || sessionSelection.schoolUnits?.has(row.id)
+    ? row.id in (sessionSelection.unitActions || {}) || sessionSelection.schoolUnits?.has(row.id)
     : false;
 
   const rowClass = isPaintStart
@@ -2271,11 +2559,12 @@ function ProgressRow({
   const showTeacherName = !isMeeting && meetingCols.teacherName;
 
   return (
-    <tr
-      className={rowClass}
-      onClick={paintActive ? onPaintRowClick : undefined}
-    >
-      <td className={`px-3 py-2.5 text-[#6b7280] text-xs ${isGroupedRow ? 'border-l-2 border-l-[#cbd5e1]' : ''}`}>{row.item_number ?? ''}</td>
+    <tr className={rowClass} onClick={paintActive ? onPaintRowClick : undefined}>
+      <td
+        className={`px-3 py-2.5 text-[#6b7280] text-xs ${isGroupedRow ? 'border-l-2 border-l-[#cbd5e1]' : ''}`}
+      >
+        {row.item_number ?? ''}
+      </td>
       <td className="px-3 py-2.5 text-[#1f2937]">
         <div className="flex items-center gap-1.5 flex-wrap">
           <span>{row.title}</span>
@@ -2283,16 +2572,18 @@ function ProgressRow({
           {groupStart ? (
             isMeeting ? (
               (() => {
-                const tag = isIntentTag(p?.intent_tag) ? p?.intent_tag as IntentTag : null;
+                const tag = isIntentTag(p?.intent_tag) ? (p?.intent_tag as IntentTag) : null;
                 return tag ? (
-                  <span className={`inline-block px-1.5 py-0 border rounded-full text-[11px] bg-white ${INTENT_TAG_COLOR[tag]}`}>
+                  <span
+                    className={`inline-block px-1.5 py-0 border rounded-full text-[11px] bg-white ${INTENT_TAG_COLOR[tag]}`}
+                  >
                     {tag}
                   </span>
                 ) : null;
               })()
             ) : (
               <IntentTagPicker
-                currentTag={isIntentTag(p?.intent_tag) ? p?.intent_tag as IntentTag : null}
+                currentTag={isIntentTag(p?.intent_tag) ? (p?.intent_tag as IntentTag) : null}
                 onChange={(t) => {
                   onLocalPatch({ intent_tag: t ?? undefined });
                   onSaveProgress({ intent_tag: t });
@@ -2320,7 +2611,9 @@ function ProgressRow({
           rowSpan={isProposalGroupHead ? proposalGroupSpan : undefined}
         >
           {isMeeting ? (
-            <span className="text-[#1f2937] text-xs">{p?.proposal_count != null ? `${p.proposal_count}コマ` : '—'}</span>
+            <span className="text-[#1f2937] text-xs">
+              {p?.proposal_count != null ? `${p.proposal_count}コマ` : '—'}
+            </span>
           ) : (
             <input
               type="number"
@@ -2378,39 +2671,48 @@ function ProgressRow({
             >
               <option value="">—</option>
               {examTypes.map((et) => (
-                <option key={et.id} value={et.id}>{et.name}</option>
+                <option key={et.id} value={et.id}>
+                  {et.name}
+                </option>
               ))}
             </select>
           )}
         </td>
       )}
       {/* 学校進度 */}
-      {showSchoolProgress && (() => {
-        const schoolSelected = sessionSelection?.schoolUnits?.has(row.id);
-        return (
-        <td
-          className={`px-3 py-2.5 text-xs ${sessionMode ? 'cursor-pointer' : ''} ${schoolSelected ? 'bg-[#1e3a5f]/15' : sessionMode ? 'hover:bg-[#1e3a5f]/5' : ''}`}
-          onClick={sessionMode ? () => onSessionCellToggle?.(row.id, 'school') : undefined}
-        >
-          {isMeeting ? (
-            <span className="text-[#4b5563]">{p?.school_progress_date ?? '—'}</span>
-          ) : sessionMode ? (
-            <span className={`inline-block px-1.5 py-0.5 rounded text-xs ${schoolSelected ? 'bg-[#1e3a5f] text-white font-medium' : p?.school_progress_date ? 'bg-[#1e3a5f]/10 text-[#1e3a5f] font-medium' : 'text-gray-400'}`}>
-              {schoolSelected ? '学校' : p?.school_progress_date ? (p.school_progress_date as string).replace(/^\d{4}-/, '').replace('-', '/') : '—'}
-            </span>
-          ) : (
-            <DateInputWithToday
-              value={p?.school_progress_date ?? ''}
-              onSave={(v) => {
-                onLocalPatch({ school_progress_date: v ?? undefined });
-                onSaveProgress({ school_progress_date: v });
-              }}
-              disabled={!hasGoal}
-            />
-          )}
-        </td>
-        );
-      })()}
+      {showSchoolProgress &&
+        (() => {
+          const schoolSelected = sessionSelection?.schoolUnits?.has(row.id);
+          return (
+            <td
+              className={`px-3 py-2.5 text-xs ${sessionMode ? 'cursor-pointer' : ''} ${schoolSelected ? 'bg-[#1e3a5f]/15' : sessionMode ? 'hover:bg-[#1e3a5f]/5' : ''}`}
+              onClick={sessionMode ? () => onSessionCellToggle?.(row.id, 'school') : undefined}
+            >
+              {isMeeting ? (
+                <span className="text-[#4b5563]">{p?.school_progress_date ?? '—'}</span>
+              ) : sessionMode ? (
+                <span
+                  className={`inline-block px-1.5 py-0.5 rounded text-xs ${schoolSelected ? 'bg-[#1e3a5f] text-white font-medium' : p?.school_progress_date ? 'bg-[#1e3a5f]/10 text-[#1e3a5f] font-medium' : 'text-gray-400'}`}
+                >
+                  {schoolSelected
+                    ? '学校'
+                    : p?.school_progress_date
+                      ? (p.school_progress_date as string).replace(/^\d{4}-/, '').replace('-', '/')
+                      : '—'}
+                </span>
+              ) : (
+                <DateInputWithToday
+                  value={p?.school_progress_date ?? ''}
+                  onSave={(v) => {
+                    onLocalPatch({ school_progress_date: v ?? undefined });
+                    onSaveProgress({ school_progress_date: v });
+                  }}
+                  disabled={!hasGoal}
+                />
+              )}
+            </td>
+          );
+        })()}
       {/* 1回目 / 2回目 / 3回目 */}
       {([1, 2, 3] as const).map((n) => {
         const lessonSelected = sessionSelection?.unitActions?.[row.id] === n;
@@ -2421,12 +2723,22 @@ function ProgressRow({
             onClick={sessionMode ? () => onSessionCellToggle?.(row.id, n) : undefined}
           >
             {isMeeting ? (
-              <span className="text-[#1f2937]">{(lessonDate(n) || '').replace(/^\d{4}-/, '') || '—'}</span>
+              <span className="text-[#1f2937]">
+                {(lessonDate(n) || '').replace(/^\d{4}-/, '') || '—'}
+              </span>
             ) : sessionMode ? (
-              <span className={`inline-block px-1.5 py-0.5 rounded text-xs ${lessonSelected ? 'bg-[#1e3a5f] text-white font-medium' : lessonDate(n) ? 'bg-[#1e3a5f]/10 text-[#1e3a5f] font-medium' : 'text-gray-400'}`}>
+              <span
+                className={`inline-block px-1.5 py-0.5 rounded text-xs ${lessonSelected ? 'bg-[#1e3a5f] text-white font-medium' : lessonDate(n) ? 'bg-[#1e3a5f]/10 text-[#1e3a5f] font-medium' : 'text-gray-400'}`}
+              >
                 {lessonSelected
-                  ? (sessionSelection?.sessionDate ?? '').replace(/^\d{4}-/, '').replace('-', '/') || `${n}回目`
-                  : lessonDate(n) ? lessonDate(n).replace(/^\d{4}-/, '').replace('-', '/') : '—'}
+                  ? (sessionSelection?.sessionDate ?? '')
+                      .replace(/^\d{4}-/, '')
+                      .replace('-', '/') || `${n}回目`
+                  : lessonDate(n)
+                    ? lessonDate(n)
+                        .replace(/^\d{4}-/, '')
+                        .replace('-', '/')
+                    : '—'}
               </span>
             ) : (
               <DateInputWithToday
@@ -2539,11 +2851,16 @@ function IntentTagPicker({
         <>
           <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
           <div className="absolute left-0 top-full mt-1 w-44 bg-white border border-[#e5e7eb] rounded-lg shadow-lg z-20 overflow-hidden origin-top-left animate-[popover-enter_150ms_cubic-bezier(0.23,1,0.32,1)]">
-            <div className="px-3 py-1.5 text-[11px] text-[#6b7280] uppercase tracking-wider border-b border-[#f3f4f6]">指導意図を選ぶ</div>
+            <div className="px-3 py-1.5 text-[11px] text-[#6b7280] uppercase tracking-wider border-b border-[#f3f4f6]">
+              指導意図を選ぶ
+            </div>
             {INTENT_TAGS.map((t) => (
               <button
                 key={t}
-                onClick={() => { onChange(t); setOpen(false); }}
+                onClick={() => {
+                  onChange(t);
+                  setOpen(false);
+                }}
                 className={`w-full px-3 py-1.5 text-left text-xs hover:bg-[#f9fafb] ${currentTag === t ? 'bg-[#eff6ff] font-semibold' : ''}`}
               >
                 {t}
@@ -2551,7 +2868,10 @@ function IntentTagPicker({
             ))}
             {currentTag && (
               <button
-                onClick={() => { onChange(null); setOpen(false); }}
+                onClick={() => {
+                  onChange(null);
+                  setOpen(false);
+                }}
                 className="w-full px-3 py-1.5 text-left text-[11px] text-[#6b7280] hover:bg-red-50 border-t border-[#f3f4f6]"
               >
                 指導意図を外す
@@ -2586,9 +2906,7 @@ function DateInputWithToday({
   const isEmpty = !localVal;
 
   if (disabled) {
-    return (
-      <span className="px-1.5 py-1 text-xs text-[#d1d5db]">—</span>
-    );
+    return <span className="px-1.5 py-1 text-xs text-[#d1d5db]">—</span>;
   }
 
   const commit = (v: string) => {
@@ -2602,14 +2920,22 @@ function DateInputWithToday({
     return (
       <div className="flex items-center gap-0.5 group">
         <button
-          onClick={(e) => { e.stopPropagation(); setEditing(true); setTimeout(() => inputRef.current?.showPicker?.(), 50); }}
+          onClick={(e) => {
+            e.stopPropagation();
+            setEditing(true);
+            setTimeout(() => inputRef.current?.showPicker?.(), 50);
+          }}
           className="px-1.5 py-1 text-xs text-[#1f2937] hover:bg-[#f3f4f6] rounded transition-[background-color] duration-150 ease-out cursor-pointer"
           title="クリックで日付を変更"
         >
           {localVal.replace(/^\d{4}-/, '').replace('-', '/')}
         </button>
         <button
-          onClick={(e) => { e.stopPropagation(); setLocalVal(''); onSave(null); }}
+          onClick={(e) => {
+            e.stopPropagation();
+            setLocalVal('');
+            onSave(null);
+          }}
           className="px-1 py-0.5 text-[11px] text-[#9ca3af] hover:text-red-500 rounded opacity-0 group-hover:opacity-100 transition-opacity"
           title="日付をクリア"
         >
@@ -2627,15 +2953,24 @@ function DateInputWithToday({
         type="date"
         value={localVal}
         autoFocus={editing}
-        onChange={(e) => { setLocalVal(e.target.value); }}
+        onChange={(e) => {
+          setLocalVal(e.target.value);
+        }}
         onBlur={(e) => commit(e.target.value)}
-        onKeyDown={(e) => { if (e.key === 'Enter') commit((e.target as HTMLInputElement).value); }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') commit((e.target as HTMLInputElement).value);
+        }}
         onClick={(e) => e.stopPropagation()}
         className="flex-1 min-w-0 px-1.5 py-1 text-xs border border-[#1e3a5f] bg-white rounded outline-none"
       />
       {isEmpty && !editing && (
         <button
-          onClick={(e) => { e.stopPropagation(); const t = todayIso(); setLocalVal(t); onSave(t); }}
+          onClick={(e) => {
+            e.stopPropagation();
+            const t = todayIso();
+            setLocalVal(t);
+            onSave(t);
+          }}
           className="px-1.5 py-0.5 text-[11px] bg-[#eff6ff] text-[#1e40af] border border-[#dbeafe] rounded hover:bg-[#dbeafe] whitespace-nowrap"
           title="今日の日付を入力"
         >
@@ -2644,7 +2979,12 @@ function DateInputWithToday({
       )}
       {editing && (
         <button
-          onClick={(e) => { e.stopPropagation(); setLocalVal(''); onSave(null); setEditing(false); }}
+          onClick={(e) => {
+            e.stopPropagation();
+            setLocalVal('');
+            onSave(null);
+            setEditing(false);
+          }}
           className="px-1.5 py-0.5 text-[11px] text-red-600 hover:bg-red-50 rounded"
           title="日付をクリア"
         >
@@ -2686,7 +3026,11 @@ function TeacherNameInput({
       />
       {isEmpty && selfName && (
         <button
-          onClick={(e) => { e.stopPropagation(); setLocalVal(selfName); onSave(selfName); }}
+          onClick={(e) => {
+            e.stopPropagation();
+            setLocalVal(selfName);
+            onSave(selfName);
+          }}
           className="px-1.5 py-0.5 text-[11px] bg-[#eff6ff] text-[#1e40af] border border-[#dbeafe] rounded hover:bg-[#dbeafe] whitespace-nowrap"
           title={`${selfName}（自分）を入力`}
         >
@@ -2754,7 +3098,7 @@ function ActionGoalsSection({
 
   const patch = async (id: string, patchData: Partial<ActionGoal>) => {
     const prevList = goals;
-    const optimistic = goals.map((g) => (g.id === id ? { ...g, ...patchData } as ActionGoal : g));
+    const optimistic = goals.map((g) => (g.id === id ? ({ ...g, ...patchData } as ActionGoal) : g));
     onChange(optimistic);
     try {
       const updated = await updateActionGoal(id, patchData);
@@ -2816,7 +3160,9 @@ function ActionGoalsSection({
             type="text"
             value={newTitle}
             onChange={(e) => setNewTitle(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter') add(); }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') add();
+            }}
             placeholder="例: 毎朝英単語50個を覚える"
             className="flex-1 min-w-[200px] px-2 py-1.5 text-sm bg-white border border-[#e5e7eb] rounded focus:outline-none focus:border-[#1e3a5f]"
           />
@@ -2848,7 +3194,10 @@ function ActionGoalsSection({
                   <div className="fixed inset-0 z-10" onClick={() => setCopyOpen(false)} />
                   <div className="absolute right-0 top-full mt-1 w-64 bg-white border border-[#e5e7eb] rounded-lg shadow-lg z-20 overflow-hidden origin-top-right animate-[popover-enter_150ms_cubic-bezier(0.23,1,0.32,1)]">
                     {copySources.map((e) => {
-                      const name = examTypes.find((t) => t.id === e.exam_type_id)?.name || e.custom_exam_name || '試験';
+                      const name =
+                        examTypes.find((t) => t.id === e.exam_type_id)?.name ||
+                        e.custom_exam_name ||
+                        '試験';
                       return (
                         <button
                           key={e.id}
@@ -2856,7 +3205,9 @@ function ActionGoalsSection({
                           className="w-full px-3 py-2 text-left text-sm hover:bg-[#f9fafb] border-b border-[#f3f4f6] last:border-0"
                         >
                           <div className="font-medium text-[#1f2937]">{name}</div>
-                          <div className="text-[11px] text-[#6b7280] mt-0.5">{e.exam_date} / 目標{e.target_score ?? '—'}点</div>
+                          <div className="text-[11px] text-[#6b7280] mt-0.5">
+                            {e.exam_date} / 目標{e.target_score ?? '—'}点
+                          </div>
                         </button>
                       );
                     })}
@@ -2891,7 +3242,10 @@ function ActionGoalRow({
   const decCounter = () => {
     if (goal.counter_target == null) return;
     const next = Math.max(0, (goal.counter_current ?? 0) - 1);
-    onPatch({ counter_current: next, achieved: goal.counter_target != null && next >= goal.counter_target });
+    onPatch({
+      counter_current: next,
+      achieved: goal.counter_target != null && next >= goal.counter_target,
+    });
   };
 
   return (
@@ -2905,19 +3259,31 @@ function ActionGoalRow({
       >
         {goal.achieved ? '✓' : ''}
       </button>
-      <span className={`flex-1 text-sm ${goal.achieved ? 'line-through text-[#9ca3af]' : 'text-[#1f2937]'}`}>
+      <span
+        className={`flex-1 text-sm ${goal.achieved ? 'line-through text-[#9ca3af]' : 'text-[#1f2937]'}`}
+      >
         {goal.title}
       </span>
       {goal.counter_target != null && (
         <div className="flex items-center gap-1 bg-[#f3f4f6] rounded px-1 py-0.5">
           {!isMeeting && (
-            <button onClick={decCounter} className="w-5 h-5 rounded hover:bg-white text-[#6b7280] text-xs">−</button>
+            <button
+              onClick={decCounter}
+              className="w-5 h-5 rounded hover:bg-white text-[#6b7280] text-xs"
+            >
+              −
+            </button>
           )}
           <span className="text-xs font-medium text-[#1f2937] font-mono min-w-[40px] text-center">
             {goal.counter_current ?? 0}/{goal.counter_target}
           </span>
           {!isMeeting && (
-            <button onClick={incCounter} className="w-5 h-5 rounded hover:bg-white text-[#6b7280] text-xs">＋</button>
+            <button
+              onClick={incCounter}
+              className="w-5 h-5 rounded hover:bg-white text-[#6b7280] text-xs"
+            >
+              ＋
+            </button>
           )}
         </div>
       )}
@@ -2956,7 +3322,9 @@ function TextbookSettingsInline({
   return (
     <>
       <div>
-        <label className="block text-[11px] font-semibold text-[#6b7280] uppercase tracking-wider mb-1">進め方</label>
+        <label className="block text-[11px] font-semibold text-[#6b7280] uppercase tracking-wider mb-1">
+          進め方
+        </label>
         <textarea
           className="w-full px-2 py-1.5 border border-[#e5e7eb] rounded text-sm resize-none"
           rows={2}
@@ -2965,7 +3333,9 @@ function TextbookSettingsInline({
         />
       </div>
       <div>
-        <label className="block text-[11px] font-semibold text-[#6b7280] uppercase tracking-wider mb-1">宿題の出し方</label>
+        <label className="block text-[11px] font-semibold text-[#6b7280] uppercase tracking-wider mb-1">
+          宿題の出し方
+        </label>
         <textarea
           className="w-full px-2 py-1.5 border border-[#e5e7eb] rounded text-sm resize-none"
           rows={2}
@@ -2998,8 +3368,7 @@ function _ExamRangesSection({
   onOpenEdit: (rangeId: string | null, examTypeId: string | null) => void;
   onDelete: (rangeId: string) => void;
 }) {
-  const titleOfItem = (no: number) =>
-    progress.find((p) => itemNo(p) === no)?.title ?? `項目${no}`;
+  const titleOfItem = (no: number) => progress.find((p) => itemNo(p) === no)?.title ?? `項目${no}`;
 
   return (
     <div className="mb-4 bg-white border border-[#e5e7eb] rounded-lg overflow-hidden">
@@ -3025,11 +3394,15 @@ function _ExamRangesSection({
               const name = examTypes.find((t) => t.id === r.exam_type_id)?.name ?? '試験';
               const startTitle = titleOfItem(r.range_start_item_number);
               const endTitle = titleOfItem(r.range_end_item_number);
-              const label = r.range_start_item_number === r.range_end_item_number
-                ? startTitle
-                : `${startTitle} 〜 ${endTitle}`;
+              const label =
+                r.range_start_item_number === r.range_end_item_number
+                  ? startTitle
+                  : `${startTitle} 〜 ${endTitle}`;
               return (
-                <div key={r.id} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#eff6ff] border border-[#dbeafe] rounded-lg text-xs">
+                <div
+                  key={r.id}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#eff6ff] border border-[#dbeafe] rounded-lg text-xs"
+                >
                   <strong className="text-[#1e3a5f]">{name}</strong>
                   <span className="text-[#6b7280]">|</span>
                   <span className="text-[#1f2937]">{label}</span>
@@ -3081,13 +3454,14 @@ function ExamRangesInline({
   onOpenEdit: (rangeId: string | null, examTypeId: string | null) => void;
   onDelete: (rangeId: string) => void;
 }) {
-  const titleOfItem = (no: number) =>
-    progress.find((p) => itemNo(p) === no)?.title ?? `項目${no}`;
+  const titleOfItem = (no: number) => progress.find((p) => itemNo(p) === no)?.title ?? `項目${no}`;
 
   return (
     <div>
       <div className="flex items-center gap-2 mb-1.5">
-        <label className="text-[11px] font-semibold text-[#6b7280] uppercase tracking-wider">試験範囲</label>
+        <label className="text-[11px] font-semibold text-[#6b7280] uppercase tracking-wider">
+          試験範囲
+        </label>
         {!isMeeting && (
           <button
             onClick={() => onOpenEdit(null, null)}
@@ -3105,19 +3479,35 @@ function ExamRangesInline({
             const name = examTypes.find((t) => t.id === r.exam_type_id)?.name ?? '試験';
             const startTitle = titleOfItem(r.range_start_item_number);
             const endTitle = titleOfItem(r.range_end_item_number);
-            const label = r.range_start_item_number === r.range_end_item_number
-              ? startTitle
-              : `${startTitle} 〜 ${endTitle}`;
+            const label =
+              r.range_start_item_number === r.range_end_item_number
+                ? startTitle
+                : `${startTitle} 〜 ${endTitle}`;
             return (
-              <span key={r.id} className="inline-flex items-center gap-1 px-2 py-1 bg-[#eff6ff] border border-[#dbeafe] rounded text-[11px]">
+              <span
+                key={r.id}
+                className="inline-flex items-center gap-1 px-2 py-1 bg-[#eff6ff] border border-[#dbeafe] rounded text-[11px]"
+              >
                 <strong className="text-[#1e3a5f]">{name}</strong>
                 <span className="text-[#6b7280]">|</span>
                 <span className="text-[#1f2937]">{label}</span>
-                <span className="text-[11px] text-[#6b7280]">（{r.range_start_item_number}〜{r.range_end_item_number}）</span>
+                <span className="text-[11px] text-[#6b7280]">
+                  （{r.range_start_item_number}〜{r.range_end_item_number}）
+                </span>
                 {!isMeeting && (
                   <>
-                    <button onClick={() => onOpenEdit(r.id, r.exam_type_id)} className="px-1 text-[11px] text-[#1e40af] hover:underline">編集</button>
-                    <button onClick={() => onDelete(r.id)} className="px-1 text-[11px] text-red-500 hover:underline">削除</button>
+                    <button
+                      onClick={() => onOpenEdit(r.id, r.exam_type_id)}
+                      className="px-1 text-[11px] text-[#1e40af] hover:underline"
+                    >
+                      編集
+                    </button>
+                    <button
+                      onClick={() => onDelete(r.id)}
+                      className="px-1 text-[11px] text-red-500 hover:underline"
+                    >
+                      削除
+                    </button>
                   </>
                 )}
               </span>
@@ -3156,7 +3546,9 @@ function ExamRangeModal({
   onSaved: (saved: StudentTextbookExamRange) => void;
   toastError: (m: string) => void;
 }) {
-  const sorted = [...progress].filter((p) => itemNo(p) != null).sort((a, b) => (itemNo(a) ?? 0) - (itemNo(b) ?? 0));
+  const sorted = [...progress]
+    .filter((p) => itemNo(p) != null)
+    .sort((a, b) => (itemNo(a) ?? 0) - (itemNo(b) ?? 0));
   const min = (sorted[0] ? itemNo(sorted[0]) : null) ?? 1;
   const max = (sorted[sorted.length - 1] ? itemNo(sorted[sorted.length - 1]) : null) ?? min;
 
@@ -3165,7 +3557,9 @@ function ExamRangeModal({
   const initExisting = initialRangeId
     ? existingRanges.find((r) => r.id === initialRangeId)
     : undefined;
-  const [rangeStart, setRangeStart] = useState<number>(initExisting?.range_start_item_number ?? min);
+  const [rangeStart, setRangeStart] = useState<number>(
+    initExisting?.range_start_item_number ?? min
+  );
   const [rangeEnd, setRangeEnd] = useState<number>(initExisting?.range_end_item_number ?? max);
   const [saving, setSaving] = useState(false);
 
@@ -3178,7 +3572,10 @@ function ExamRangeModal({
   }, [examTypeId]);
 
   const save = async () => {
-    if (!examTypeId) { toastError('試験を選択してください'); return; }
+    if (!examTypeId) {
+      toastError('試験を選択してください');
+      return;
+    }
     setSaving(true);
     try {
       // 1. 独立テーブルに保存（id があれば update、無ければ新規 insert）
@@ -3196,7 +3593,9 @@ function ExamRangeModal({
       );
       const inOther = (n: number | null): boolean => {
         if (n == null) return false;
-        return otherSegments.some((r) => n >= r.range_start_item_number && n <= r.range_end_item_number);
+        return otherSegments.some(
+          (r) => n >= r.range_start_item_number && n <= r.range_end_item_number
+        );
       };
       // 今回保存した範囲に含まれる行（番号なし中間行も内包）
       let startIdx = -1;
@@ -3220,13 +3619,17 @@ function ExamRangeModal({
         const hasThis = row.progress?.exam_range_exam_type_id === examTypeId;
         if (inRange && !hasThis) {
           if (row.progress?.id) {
-            tasks.push(updateStudentProgress(row.progress.id, { exam_range_exam_type_id: examTypeId }));
+            tasks.push(
+              updateStudentProgress(row.progress.id, { exam_range_exam_type_id: examTypeId })
+            );
           } else {
-            tasks.push(upsertStudentProgress({
-              student_textbook_id: textbookId,
-              curriculum_item_id: row.id,
-              exam_range_exam_type_id: examTypeId,
-            }));
+            tasks.push(
+              upsertStudentProgress({
+                student_textbook_id: textbookId,
+                curriculum_item_id: row.id,
+                exam_range_exam_type_id: examTypeId,
+              })
+            );
           }
         } else if (!inRange && hasThis && !inOther(n)) {
           // 他セグメントに含まれない行のみ解除
@@ -3246,17 +3649,29 @@ function ExamRangeModal({
 
   return (
     <>
-      <div className="fixed inset-0 bg-black/40 z-40 animate-[fade-in_150ms_ease-out]" onClick={onClose} />
+      <div
+        className="fixed inset-0 bg-black/40 z-40 animate-[fade-in_150ms_ease-out]"
+        onClick={onClose}
+      />
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
         <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col pointer-events-auto animate-[popover-enter_150ms_cubic-bezier(0.23,1,0.32,1)]">
           <header className="px-6 py-4 border-b border-[#e5e7eb] flex items-center justify-between">
-            <h2 className="font-bold text-[#1f2937] text-lg">{initialRangeId ? '試験範囲を編集' : '試験範囲を設定'}</h2>
-            <button onClick={onClose} className="w-8 h-8 rounded hover:bg-[#f3f4f6] text-[#6b7280] transition-[color] duration-150 ease-out active:scale-[0.97]">✕</button>
+            <h2 className="font-bold text-[#1f2937] text-lg">
+              {initialRangeId ? '試験範囲を編集' : '試験範囲を設定'}
+            </h2>
+            <button
+              onClick={onClose}
+              className="w-8 h-8 rounded hover:bg-[#f3f4f6] text-[#6b7280] transition-[color] duration-150 ease-out active:scale-[0.97]"
+            >
+              ✕
+            </button>
           </header>
           <div className="flex-1 overflow-y-auto p-6 space-y-5">
             {/* 対象の試験（マスタから選択） */}
             <div>
-              <label className="block text-xs font-medium text-[#6b7280] mb-1.5">対象の試験（マスタから選択）</label>
+              <label className="block text-xs font-medium text-[#6b7280] mb-1.5">
+                対象の試験（マスタから選択）
+              </label>
               <select
                 value={examTypeId}
                 onChange={(e) => setExamTypeId(e.target.value)}
@@ -3266,14 +3681,16 @@ function ExamRangeModal({
                 <option value="">選択してください</option>
                 {examTypes.map((et) => {
                   const segs = existingRanges.filter((r) => r.exam_type_id === et.id);
-                  const hint = segs.length === 0
-                    ? ''
-                    : segs.length === 1
-                      ? ` （設定済: 項目${segs[0].range_start_item_number}〜${segs[0].range_end_item_number}）`
-                      : ` （設定済: ${segs.length}区間）`;
+                  const hint =
+                    segs.length === 0
+                      ? ''
+                      : segs.length === 1
+                        ? ` （設定済: 項目${segs[0].range_start_item_number}〜${segs[0].range_end_item_number}）`
+                        : ` （設定済: ${segs.length}区間）`;
                   return (
                     <option key={et.id} value={et.id}>
-                      {et.name}{hint}
+                      {et.name}
+                      {hint}
                     </option>
                   );
                 })}
@@ -3286,14 +3703,20 @@ function ExamRangeModal({
             {examTypeId && (
               <div>
                 <label className="block text-xs font-medium text-[#6b7280] mb-2">
-                  範囲 <span className="text-[#1f2937] ml-1">項目 {rangeStart} 〜 {rangeEnd}（{rangeEnd - rangeStart + 1}項目）</span>
+                  範囲{' '}
+                  <span className="text-[#1f2937] ml-1">
+                    項目 {rangeStart} 〜 {rangeEnd}（{rangeEnd - rangeStart + 1}項目）
+                  </span>
                 </label>
                 <RangeSlider
                   min={min}
                   max={max}
                   start={rangeStart}
                   end={rangeEnd}
-                  onChange={(s, e) => { setRangeStart(s); setRangeEnd(e); }}
+                  onChange={(s, e) => {
+                    setRangeStart(s);
+                    setRangeEnd(e);
+                  }}
                 />
                 <div className="mt-3 flex flex-wrap gap-1">
                   {sorted.map((r) => {
@@ -3321,14 +3744,35 @@ function ExamRangeModal({
                   })}
                 </div>
                 <div className="mt-2 flex gap-1">
-                  <button onClick={() => { setRangeStart(min); setRangeEnd(max); }} className="text-[11px] px-2 py-0.5 bg-[#f3f4f6] rounded hover:bg-[#e5e7eb]">全範囲</button>
-                  <button onClick={() => { setRangeStart(Math.max(min, max - 7)); setRangeEnd(max); }} className="text-[11px] px-2 py-0.5 bg-[#f3f4f6] rounded hover:bg-[#e5e7eb]">直近8項目</button>
+                  <button
+                    onClick={() => {
+                      setRangeStart(min);
+                      setRangeEnd(max);
+                    }}
+                    className="text-[11px] px-2 py-0.5 bg-[#f3f4f6] rounded hover:bg-[#e5e7eb]"
+                  >
+                    全範囲
+                  </button>
+                  <button
+                    onClick={() => {
+                      setRangeStart(Math.max(min, max - 7));
+                      setRangeEnd(max);
+                    }}
+                    className="text-[11px] px-2 py-0.5 bg-[#f3f4f6] rounded hover:bg-[#e5e7eb]"
+                  >
+                    直近8項目
+                  </button>
                 </div>
               </div>
             )}
           </div>
           <footer className="px-6 py-4 border-t border-[#e5e7eb] flex items-center justify-end gap-2 bg-[#f9fafb]">
-            <button onClick={onClose} className="px-3 py-1.5 text-sm text-[#4b5563] hover:bg-[#f3f4f6] rounded-lg">キャンセル</button>
+            <button
+              onClick={onClose}
+              className="px-3 py-1.5 text-sm text-[#4b5563] hover:bg-[#f3f4f6] rounded-lg"
+            >
+              キャンセル
+            </button>
             <button
               onClick={save}
               disabled={saving || !examTypeId}
@@ -3401,14 +3845,20 @@ function RangeSlider({
       />
       <button
         type="button"
-        onPointerDown={(e) => { e.preventDefault(); setDragging('start'); }}
+        onPointerDown={(e) => {
+          e.preventDefault();
+          setDragging('start');
+        }}
         className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-6 h-6 bg-white border-2 border-[#1e3a5f] rounded-full cursor-grab active:cursor-grabbing shadow-md hover:scale-110 transition-transform z-10"
         style={{ left: `${pct(start)}%` }}
         title={`開始: 項目${start}`}
       />
       <button
         type="button"
-        onPointerDown={(e) => { e.preventDefault(); setDragging('end'); }}
+        onPointerDown={(e) => {
+          e.preventDefault();
+          setDragging('end');
+        }}
         className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-6 h-6 bg-white border-2 border-[#1e3a5f] rounded-full cursor-grab active:cursor-grabbing shadow-md hover:scale-110 transition-transform z-10"
         style={{ left: `${pct(end)}%` }}
         title={`終了: 項目${end}`}

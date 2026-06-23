@@ -48,7 +48,14 @@ interface BadgeCardProps {
   compact?: boolean;
 }
 
-export function BadgeCard({ badge, earned, earnedDate, onClick, interactive = false, compact = false }: BadgeCardProps) {
+export function BadgeCard({
+  badge,
+  earned,
+  earnedDate,
+  onClick,
+  interactive = false,
+  compact = false,
+}: BadgeCardProps) {
   const style = earned ? rankStyles[badge.rank] : inactiveStyle;
   const rankConfig = BADGE_RANK_CONFIG[badge.rank];
 
@@ -80,12 +87,16 @@ export function BadgeCard({ badge, earned, earnedDate, onClick, interactive = fa
       `}
     >
       {/* ランクインジケーター */}
-      <span className={`absolute top-2 right-2 text-[10px] font-bold uppercase tracking-wider ${style.text}`}>
+      <span
+        className={`absolute top-2 right-2 text-[10px] font-bold uppercase tracking-wider ${style.text}`}
+      >
         {rankConfig.label}
       </span>
 
       {/* アイコン */}
-      <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${style.iconBg} transition-transform duration-200 ${interactive ? 'group-hover:scale-110' : ''}`}>
+      <div
+        className={`w-12 h-12 rounded-xl flex items-center justify-center ${style.iconBg} transition-transform duration-200 ${interactive ? 'group-hover:scale-110' : ''}`}
+      >
         <BadgeIcon icon={badge.icon} size={24} />
       </div>
 
@@ -96,7 +107,9 @@ export function BadgeCard({ badge, earned, earnedDate, onClick, interactive = fa
 
       {/* 説明文（獲得条件・内容の説明。設定されている場合のみ表示） */}
       {badge.description && (
-        <span className={`text-[11px] text-center leading-snug line-clamp-3 ${earned ? 'text-gray-500' : 'text-gray-400'}`}>
+        <span
+          className={`text-[11px] text-center leading-snug line-clamp-3 ${earned ? 'text-gray-500' : 'text-gray-400'}`}
+        >
           {badge.description}
         </span>
       )}

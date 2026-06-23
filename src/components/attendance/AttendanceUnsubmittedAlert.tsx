@@ -61,7 +61,7 @@ export function AttendanceUnsubmittedAlert() {
             <Button
               size="sm"
               variant="secondary"
-              onClick={() => window.location.href = attendanceLink}
+              onClick={() => (window.location.href = attendanceLink)}
             >
               出勤簿を開く
             </Button>

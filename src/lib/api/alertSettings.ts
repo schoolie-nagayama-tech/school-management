@@ -30,8 +30,7 @@ type AlertSettingRow = {
 
 /** 教室ごとの設定を取得（未保存のタイプはデフォルトで補完） */
 export async function getAlertSettings(schoolId: string): Promise<AlertSetting[]> {
-  const { data, error } = await (supabase
-    .from('alert_settings' as never) as any)
+  const { data, error } = await (supabase.from('alert_settings' as never) as any)
     .select('school_id, alert_type, enabled, thresholds')
     .eq('school_id', schoolId);
 
@@ -65,8 +64,7 @@ export async function getAlertSettingsBySchools(
   client: SupabaseClient<Database> = supabase
 ): Promise<Map<string, AlertSetting[]>> {
   if (schoolIds.length === 0) return new Map();
-  const { data, error } = await (client
-    .from('alert_settings' as never) as any)
+  const { data, error } = await (client.from('alert_settings' as never) as any)
     .select('school_id, alert_type, enabled, thresholds')
     .in('school_id', schoolIds);
 
@@ -119,8 +117,7 @@ export async function upsertAlertSetting(
 
 /** 教室の全設定をデフォルトに戻す */
 export async function resetAlertSettings(schoolId: string): Promise<void> {
-  const { error } = await (supabase
-    .from('alert_settings' as never) as any)
+  const { error } = await (supabase.from('alert_settings' as never) as any)
     .delete()
     .eq('school_id', schoolId);
   if (error) {
@@ -157,7 +154,7 @@ export function pickStrictestThreshold<K extends keyof AlertThresholds>(
     .map((s) => s.thresholds?.[key])
     .filter((v): v is NonNullable<AlertThresholds[K]> => v !== undefined && v !== null);
   if (values.length === 0) return DEFAULT_ALERT_THRESHOLDS[key] as NonNullable<AlertThresholds[K]>;
-  return (mode === 'min' ? Math.min(...(values as number[])) : Math.max(...(values as number[]))) as NonNullable<
-    AlertThresholds[K]
-  >;
+  return (
+    mode === 'min' ? Math.min(...(values as number[])) : Math.max(...(values as number[]))
+  ) as NonNullable<AlertThresholds[K]>;
 }

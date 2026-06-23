@@ -1,5 +1,5 @@
-import type { PrecacheEntry, SerwistGlobalConfig } from "serwist";
-import { Serwist, NetworkFirst, CacheFirst, StaleWhileRevalidate } from "serwist";
+import type { PrecacheEntry, SerwistGlobalConfig } from 'serwist';
+import { Serwist, NetworkFirst, CacheFirst, StaleWhileRevalidate } from 'serwist';
 
 declare global {
   interface WorkerGlobalScope extends SerwistGlobalConfig {
@@ -19,29 +19,29 @@ const serwist = new Serwist({
       // 静的アセット: Cache First
       matcher: /\.(?:js|css|woff2?)$/,
       handler: new CacheFirst({
-        cacheName: "static-assets",
+        cacheName: 'static-assets',
       }),
     },
     {
       // 画像: Stale While Revalidate
       matcher: /\.(?:png|jpg|jpeg|svg|gif|webp|ico)$/,
       handler: new StaleWhileRevalidate({
-        cacheName: "images",
+        cacheName: 'images',
       }),
     },
     {
       // Supabase API: Network First（認証・リアルタイムデータはキャッシュしない）
       matcher: /supabase\.co/,
       handler: new NetworkFirst({
-        cacheName: "supabase-api",
+        cacheName: 'supabase-api',
         networkTimeoutSeconds: 10,
       }),
     },
     {
       // ページナビゲーション: Network First + オフラインフォールバック
-      matcher: ({ request }) => request.mode === "navigate",
+      matcher: ({ request }) => request.mode === 'navigate',
       handler: new NetworkFirst({
-        cacheName: "pages",
+        cacheName: 'pages',
         networkTimeoutSeconds: 5,
       }),
     },
@@ -49,9 +49,9 @@ const serwist = new Serwist({
   fallbacks: {
     entries: [
       {
-        url: "/offline",
+        url: '/offline',
         matcher({ request }) {
-          return request.mode === "navigate";
+          return request.mode === 'navigate';
         },
       },
     ],
@@ -65,47 +65,55 @@ serwist.addEventListeners();
 // プッシュ通知受信
 // ServiceWorkerGlobalScope の型は tsconfig の lib に含まれないため any でキャスト
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-(self as any).addEventListener("push", (event: { data?: { json(): unknown }; waitUntil(p: Promise<unknown>): void }) => {
-  const data = (event.data?.json() ?? {}) as { title?: string; body?: string; url?: string };
-  const title = data.title ?? "NEST";
-  const options = {
-    body: data.body ?? "新しい通知があります",
-    icon: "/icons/icon-192.svg",
-    badge: "/icons/icon-192.svg",
-    data: { url: data.url ?? "/responses" },
-    tag: "nest-push",
-    renotify: true,
-  } as NotificationOptions;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  event.waitUntil((self as any).registration.showNotification(title, options));
-});
+(self as any).addEventListener(
+  'push',
+  (event: { data?: { json(): unknown }; waitUntil(p: Promise<unknown>): void }) => {
+    const data = (event.data?.json() ?? {}) as { title?: string; body?: string; url?: string };
+    const title = data.title ?? 'NEST';
+    const options = {
+      body: data.body ?? '新しい通知があります',
+      icon: '/icons/icon-192.svg',
+      badge: '/icons/icon-192.svg',
+      data: { url: data.url ?? '/responses' },
+      tag: 'nest-push',
+      renotify: true,
+    } as NotificationOptions;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    event.waitUntil((self as any).registration.showNotification(title, options));
+  }
+);
 
 // 通知クリック → PWA ウィンドウ内でページ遷移（新規ウィンドウを開かない）
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-(self as any).addEventListener("notificationclick", (event: {
-  notification: { close(): void; data?: { url?: string } };
-  waitUntil(p: Promise<unknown>): void;
-}) => {
-  event.notification.close();
-  const url: string = event.notification.data?.url ?? "/responses";
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const clients = (self as any).clients as {
-    matchAll(opts?: object): Promise<Array<{
-      url: string;
-      focus(): Promise<unknown>;
-      navigate(url: string): Promise<unknown>;
-    }>>;
-    openWindow(url: string): Promise<unknown>;
-  };
-  event.waitUntil(
-    clients.matchAll({ type: "window", includeUncontrolled: true }).then((list) => {
-      if (list.length > 0) {
-        // 既存の PWA/タブウィンドウ内でページ遷移（新規ウィンドウを開かない）
-        const client = list[0];
-        return client.navigate(url).then(() => client.focus());
-      }
-      // ウィンドウが何も開いていない場合のみ新規ウィンドウ
-      return clients.openWindow(url);
-    })
-  );
-});
+(self as any).addEventListener(
+  'notificationclick',
+  (event: {
+    notification: { close(): void; data?: { url?: string } };
+    waitUntil(p: Promise<unknown>): void;
+  }) => {
+    event.notification.close();
+    const url: string = event.notification.data?.url ?? '/responses';
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const clients = (self as any).clients as {
+      matchAll(opts?: object): Promise<
+        Array<{
+          url: string;
+          focus(): Promise<unknown>;
+          navigate(url: string): Promise<unknown>;
+        }>
+      >;
+      openWindow(url: string): Promise<unknown>;
+    };
+    event.waitUntil(
+      clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
+        if (list.length > 0) {
+          // 既存の PWA/タブウィンドウ内でページ遷移（新規ウィンドウを開かない）
+          const client = list[0];
+          return client.navigate(url).then(() => client.focus());
+        }
+        // ウィンドウが何も開いていない場合のみ新規ウィンドウ
+        return clients.openWindow(url);
+      })
+    );
+  }
+);

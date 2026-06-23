@@ -35,7 +35,8 @@ export function TransferModeBar({ entry, slotLabel, onCancel }: TransferModeBarP
       <div className="flex items-center gap-1.5">
         <RefreshCw className="text-blue-600 w-4 h-4" />
         <span className="text-xs text-[var(--headline)]">
-          <strong>振替モード:</strong> {studentName} {dateLabel} {slot} → 振替先の講師ブロックをクリック
+          <strong>振替モード:</strong> {studentName} {dateLabel} {slot} →
+          振替先の講師ブロックをクリック
         </span>
       </div>
       <Button variant="secondary" size="sm" className="text-xs h-7" onClick={onCancel}>

@@ -34,7 +34,10 @@ export async function POST(request: NextRequest) {
     // ただし requireAdmin は admin/owner を通すため、さらに admin に絞る
     const { userId, currentRefreshToken } = await request.json();
     if (!userId || !currentRefreshToken) {
-      return NextResponse.json({ error: 'userId と currentRefreshToken が必要です' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'userId と currentRefreshToken が必要です' },
+        { status: 400 }
+      );
     }
 
     const db = getSupabaseAdmin();
@@ -45,7 +48,9 @@ export async function POST(request: NextRequest) {
     if (!callerToken) {
       return NextResponse.json({ error: '認証が必要です' }, { status: 401 });
     }
-    const { data: { user: callerUser } } = await db.auth.getUser(callerToken);
+    const {
+      data: { user: callerUser },
+    } = await db.auth.getUser(callerToken);
     if (!callerUser) {
       return NextResponse.json({ error: '認証が必要です' }, { status: 401 });
     }
@@ -83,12 +88,14 @@ export async function POST(request: NextRequest) {
     const targetEmail = targetProfile.email;
 
     // 監査ログ
-    console.log(JSON.stringify({
-      type: 'IMPERSONATE',
-      adminId: callerUser.id,
-      targetId: userId,
-      timestamp: new Date().toISOString(),
-    }));
+    console.log(
+      JSON.stringify({
+        type: 'IMPERSONATE',
+        adminId: callerUser.id,
+        targetId: userId,
+        timestamp: new Date().toISOString(),
+      })
+    );
 
     // 呼び出し元 admin の refresh_token を httpOnly cookie に保存
     const res = NextResponse.json({ actionLink, hashedToken, email: targetEmail });

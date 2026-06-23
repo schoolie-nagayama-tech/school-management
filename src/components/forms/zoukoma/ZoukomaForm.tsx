@@ -4,15 +4,9 @@ import { useState, useMemo, useRef } from 'react';
 import { Input, Select } from '@/components/ui';
 import type { School } from '@/types/database';
 import { validateStudentName } from '@/lib/utils/validation';
-import type {
-  ZoukomaPeriod,
-  ZoukomaResponseData,
-  PriceTable,
-} from '@/types/forms/zoukoma';
+import type { ZoukomaPeriod, ZoukomaResponseData, PriceTable } from '@/types/forms/zoukoma';
 import { submitZoukomaResponse } from '@/lib/api/zoukoma';
-import {
-  GRADE_NAME_TO_NUMBER,
-} from '@/types/forms/zoukoma';
+import { GRADE_NAME_TO_NUMBER } from '@/types/forms/zoukoma';
 import { SubjectInput } from './SubjectInput';
 import { PriceQuote } from './PriceQuote';
 import { SlotTable, generateAllSlots, DEFAULT_WEEKS } from './SlotTable';
@@ -67,7 +61,15 @@ export function ZoukomaForm({ school, period, isPreview, initialValues }: Zoukom
   const { clearDraft } = usePortalFormDraft({
     storageKey: `zoukoma:${school.id}:${period.period_key}`,
     enabled: !isPreview,
-    value: { studentName, selectedGrade, email, subjectValues, selectedSlots: unavailableSlots, weeks, note },
+    value: {
+      studentName,
+      selectedGrade,
+      email,
+      subjectValues,
+      selectedSlots: unavailableSlots,
+      weeks,
+      note,
+    },
     onRestore: (d) => {
       if (d.studentName) setStudentName(d.studentName);
       if (d.selectedGrade) setSelectedGrade(d.selectedGrade);
@@ -80,21 +82,8 @@ export function ZoukomaForm({ school, period, isPreview, initialValues }: Zoukom
   });
 
   // デフォルト設定
-  const grades = settings.grades || [
-    '中1',
-    '中2',
-    '中3',
-    '高1',
-    '高2',
-    '高3',
-  ];
-  const subjects = settings.subjects || [
-    '英語',
-    '数学',
-    '国語',
-    '理科',
-    '社会',
-  ];
+  const grades = settings.grades || ['中1', '中2', '中3', '高1', '高2', '高3'];
+  const subjects = settings.subjects || ['英語', '数学', '国語', '理科', '社会'];
   const priceTable: PriceTable =
     settings.price_table ||
     ({
@@ -165,7 +154,7 @@ export function ZoukomaForm({ school, period, isPreview, initialValues }: Zoukom
     // バツ印モード: 全スロットが出席不可だとエラー
     const allSlots = generateAllSlots(settings, weeks);
     const unavailableSet = new Set(unavailableSlots);
-    const availableCount = allSlots.filter(s => !unavailableSet.has(s.id)).length;
+    const availableCount = allSlots.filter((s) => !unavailableSet.has(s.id)).length;
     if (availableCount === 0) {
       newErrors.slots = '全ての日程が出席不可になっています。出席できる日程を残してください。';
     }
@@ -222,9 +211,7 @@ export function ZoukomaForm({ school, period, isPreview, initialValues }: Zoukom
 
         let timeRange = '';
         if (settings.schedule?.periods) {
-          const periodConfig = settings.schedule.periods.find(
-            (p) => p.code === periodStr
-          );
+          const periodConfig = settings.schedule.periods.find((p) => p.code === periodStr);
           if (periodConfig) {
             timeRange = `${periodConfig.start_time}–${periodConfig.end_time}`;
           }
@@ -239,9 +226,7 @@ export function ZoukomaForm({ school, period, isPreview, initialValues }: Zoukom
       // 全スロットから出席不可を除外して出席可能スロットを算出
       const allSlots = generateAllSlots(settings, weeks);
       const unavailableSet = new Set(unavailableSlots);
-      const availableSlotIds = allSlots
-        .filter(s => !unavailableSet.has(s.id))
-        .map(s => s.id);
+      const availableSlotIds = allSlots.filter((s) => !unavailableSet.has(s.id)).map((s) => s.id);
 
       const selectedSlotDetails = availableSlotIds.map(buildSlotDetail);
       const unavailableSlotDetails = unavailableSlots.map(buildSlotDetail);
@@ -271,9 +256,7 @@ export function ZoukomaForm({ school, period, isPreview, initialValues }: Zoukom
     } catch (error) {
       console.error('Error submitting form:', error);
       setErrorMessage(
-        error instanceof Error
-          ? error.message
-          : '送信に失敗しました。もう一度お試しください。'
+        error instanceof Error ? error.message : '送信に失敗しました。もう一度お試しください。'
       );
     } finally {
       submittingRef.current = false;
@@ -302,38 +285,38 @@ export function ZoukomaForm({ school, period, isPreview, initialValues }: Zoukom
 
         <PortalFormSection title="基本情報">
           <div className="space-y-4">
-          <Input
-            label="生徒名"
-            type="text"
-            value={studentName}
-            onChange={(e) => setStudentName(e.target.value)}
-            error={errors.studentName}
-            required
-            disabled={isSubmitting}
-          />
+            <Input
+              label="生徒名"
+              type="text"
+              value={studentName}
+              onChange={(e) => setStudentName(e.target.value)}
+              error={errors.studentName}
+              required
+              disabled={isSubmitting}
+            />
 
-          <Select
-            label="学年"
-            value={selectedGrade}
-            onChange={(e) => setSelectedGrade(e.target.value)}
-            options={[
-              { value: '', label: '選択してください' },
-              ...grades.map((grade) => ({ value: grade, label: grade }))
-            ]}
-            error={errors.grade}
-            required
-            disabled={isSubmitting}
-          />
+            <Select
+              label="学年"
+              value={selectedGrade}
+              onChange={(e) => setSelectedGrade(e.target.value)}
+              options={[
+                { value: '', label: '選択してください' },
+                ...grades.map((grade) => ({ value: grade, label: grade })),
+              ]}
+              error={errors.grade}
+              required
+              disabled={isSubmitting}
+            />
 
-          <Input
-            label="保護者メールアドレス"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            error={errors.email}
-            required
-            disabled={isSubmitting}
-          />
+            <Input
+              label="保護者メールアドレス"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              error={errors.email}
+              required
+              disabled={isSubmitting}
+            />
           </div>
         </PortalFormSection>
 
@@ -371,13 +354,9 @@ export function ZoukomaForm({ school, period, isPreview, initialValues }: Zoukom
           </p>
         </PortalFormSection>
 
-        <PortalFormSection
-          title={`出席できない日程に✗をつけてください（${weeks}週間・PS2のみ）`}
-        >
+        <PortalFormSection title={`出席できない日程に✗をつけてください（${weeks}週間・PS2のみ）`}>
           <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4 space-y-2">
-            <p className="text-sm font-semibold text-[#92400e]">
-              PS2のみでの実施となります
-            </p>
+            <p className="text-sm font-semibold text-[#92400e]">PS2のみでの実施となります</p>
             <p className="text-sm text-[#4b5563]">
               ご都合の悪い日程に✗印をおつけください。✗のない日程にお申し込みいただいたコマ数を割り振ってご案内いたします。
             </p>

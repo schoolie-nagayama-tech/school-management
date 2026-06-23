@@ -127,7 +127,8 @@ export async function GET(request: NextRequest) {
             .range(from, to)
         );
 
-        const incompleteTasks: (TaskRow & { overdue: boolean; incompleteSchoolIds: string[] })[] = [];
+        const incompleteTasks: (TaskRow & { overdue: boolean; incompleteSchoolIds: string[] })[] =
+          [];
         let allComplete = true;
 
         if (allTasks.length > 0) {
@@ -193,7 +194,14 @@ export async function GET(request: NextRequest) {
         const futureLimitStr = futureLimit.toISOString().split('T')[0];
 
         // 複数教室の未完了・期限内タスクは件数が増えうるため全件ページング取得。
-        const schedTasks = await fetchAllPaged<{ id: string; name: string; deadline: string | null; start_date: string | null; end_date: string | null; major_category: string }>((from, to) =>
+        const schedTasks = await fetchAllPaged<{
+          id: string;
+          name: string;
+          deadline: string | null;
+          start_date: string | null;
+          end_date: string | null;
+          major_category: string;
+        }>((from, to) =>
           supabaseAdmin
             .from('course_prep_schedule_tasks')
             .select('id, name, deadline, start_date, end_date, major_category, is_completed')
@@ -227,7 +235,12 @@ export async function GET(request: NextRequest) {
         const currentYear = new Date().getFullYear();
         const currentMonth = new Date().getMonth() + 1;
 
-        const overdueTasks = await fetchAllPaged<{ id: string; task_date: string; task_name: string; category: string }>((from, to) =>
+        const overdueTasks = await fetchAllPaged<{
+          id: string;
+          task_date: string;
+          task_name: string;
+          category: string;
+        }>((from, to) =>
           supabaseAdmin
             .from('monthly_tasks')
             .select('id, task_date, task_name, category')
@@ -257,10 +270,14 @@ export async function GET(request: NextRequest) {
         const schoolIds = auth.schoolIds;
         const incompleteTasks = overdueTasks.filter((task) => {
           const taskChecks = checks.filter(
-            (c: Record<string, unknown>) => c.task_id === task.id && schoolIds.includes(c.school_id as string)
+            (c: Record<string, unknown>) =>
+              c.task_id === task.id && schoolIds.includes(c.school_id as string)
           );
           // チェックがない、またはいずれかの教室が未完了
-          return taskChecks.length === 0 || taskChecks.some((c: Record<string, unknown>) => !c.is_completed);
+          return (
+            taskChecks.length === 0 ||
+            taskChecks.some((c: Record<string, unknown>) => !c.is_completed)
+          );
         });
 
         return NextResponse.json({
@@ -307,7 +324,11 @@ export async function POST(request: NextRequest) {
         const { data, error } = await supabaseAdmin
           .from('monthly_tasks')
           .insert({
-            year, month, task_date, category, task_name,
+            year,
+            month,
+            task_date,
+            category,
+            task_name,
             sort_order: sort_order ?? 0,
             note: note || null,
             url: url || null,
@@ -369,21 +390,21 @@ export async function POST(request: NextRequest) {
 
         // schoolId が指定されている場合 → その教室だけ非表示にする
         if (deleteSchoolId) {
-          const { error } = await supabaseAdmin
-            .from('monthly_task_overrides')
-            .upsert(
-              { task_id: deleteId, school_id: deleteSchoolId, is_hidden: true, updated_at: new Date().toISOString() },
-              { onConflict: 'task_id,school_id' }
-            );
+          const { error } = await supabaseAdmin.from('monthly_task_overrides').upsert(
+            {
+              task_id: deleteId,
+              school_id: deleteSchoolId,
+              is_hidden: true,
+              updated_at: new Date().toISOString(),
+            },
+            { onConflict: 'task_id,school_id' }
+          );
           if (error) throw error;
           return NextResponse.json({ success: true, type: 'hidden' });
         }
 
         // schoolId なし → タスク自体を削除（全教室）
-        const { error } = await supabaseAdmin
-          .from('monthly_tasks')
-          .delete()
-          .eq('id', deleteId);
+        const { error } = await supabaseAdmin.from('monthly_tasks').delete().eq('id', deleteId);
         if (error) throw error;
         return NextResponse.json({ success: true });
       }
@@ -391,7 +412,8 @@ export async function POST(request: NextRequest) {
       case 'delete_course_tasks': {
         if (!canEdit) return NextResponse.json({ error: '権限がありません' }, { status: 403 });
         const { year: delYear, month: delMonth } = body;
-        if (!delYear || !delMonth) return NextResponse.json({ error: 'year, month は必須です' }, { status: 400 });
+        if (!delYear || !delMonth)
+          return NextResponse.json({ error: 'year, month は必須です' }, { status: 400 });
         const { data: deleted, error: delError } = await supabaseAdmin
           .from('monthly_tasks')
           .delete()
@@ -405,12 +427,23 @@ export async function POST(request: NextRequest) {
 
       case 'batch_toggle_check': {
         if (!canEdit) return NextResponse.json({ error: '権限がありません' }, { status: 403 });
-        const { taskId: batchTaskId, schoolIds: batchSchoolIds, isCompleted: batchCompleted } = body;
-        if (!batchTaskId || !batchSchoolIds || !Array.isArray(batchSchoolIds) || batchSchoolIds.length === 0) {
+        const {
+          taskId: batchTaskId,
+          schoolIds: batchSchoolIds,
+          isCompleted: batchCompleted,
+        } = body;
+        if (
+          !batchTaskId ||
+          !batchSchoolIds ||
+          !Array.isArray(batchSchoolIds) ||
+          batchSchoolIds.length === 0
+        ) {
           return NextResponse.json({ error: 'taskId, schoolIds は必須です' }, { status: 400 });
         }
 
-        const validSchoolIds = (batchSchoolIds as string[]).filter((s: string) => auth.schoolIds.includes(s));
+        const validSchoolIds = (batchSchoolIds as string[]).filter((s: string) =>
+          auth.schoolIds.includes(s)
+        );
         if (validSchoolIds.length === 0) {
           return NextResponse.json({ error: '権限のある教室がありません' }, { status: 403 });
         }
@@ -421,9 +454,17 @@ export async function POST(request: NextRequest) {
           .eq('task_id', batchTaskId)
           .in('school_id', validSchoolIds);
 
-        const existingMap = new Map((existingChecks || []).map((c: { id: string; school_id: string }) => [c.school_id, c.id]));
+        const existingMap = new Map(
+          (existingChecks || []).map((c: { id: string; school_id: string }) => [c.school_id, c.id])
+        );
         const toUpdate: string[] = [];
-        const toInsert: { task_id: string; school_id: string; is_completed: boolean; completed_at: string | null; completed_by: string | null }[] = [];
+        const toInsert: {
+          task_id: string;
+          school_id: string;
+          is_completed: boolean;
+          completed_at: string | null;
+          completed_by: string | null;
+        }[] = [];
 
         for (const sid of validSchoolIds) {
           if (existingMap.has(sid)) {
@@ -487,15 +528,13 @@ export async function POST(request: NextRequest) {
             })
             .eq('id', existing.id);
         } else {
-          await supabaseAdmin
-            .from('monthly_task_checks')
-            .insert({
-              task_id: checkTaskId,
-              school_id: schoolId,
-              is_completed: isCompleted,
-              completed_at: isCompleted ? new Date().toISOString() : null,
-              completed_by: isCompleted ? auth.userId : null,
-            });
+          await supabaseAdmin.from('monthly_task_checks').insert({
+            task_id: checkTaskId,
+            school_id: schoolId,
+            is_completed: isCompleted,
+            completed_at: isCompleted ? new Date().toISOString() : null,
+            completed_by: isCompleted ? auth.userId : null,
+          });
         }
 
         // 双方向同期: 講習スケジュールタスクのis_completedも更新
@@ -544,7 +583,10 @@ export async function POST(request: NextRequest) {
         if (!canEdit) return NextResponse.json({ error: '権限がありません' }, { status: 403 });
         const { year, month, templateId } = body;
         if (!year || !month || !templateId) {
-          return NextResponse.json({ error: 'year, month, templateId は必須です' }, { status: 400 });
+          return NextResponse.json(
+            { error: 'year, month, templateId は必須です' },
+            { status: 400 }
+          );
         }
 
         // テンプレート取得
@@ -628,7 +670,15 @@ export async function POST(request: NextRequest) {
         );
 
         // 教室横断でタスク名をユニーク化（同名タスクは1つだけ作成）
-        const taskNameMap = new Map<string, { name: string; date: string; scheduleTaskIds: string[]; schoolCompletions: Map<string, boolean> }>();
+        const taskNameMap = new Map<
+          string,
+          {
+            name: string;
+            date: string;
+            scheduleTaskIds: string[];
+            schoolCompletions: Map<string, boolean>;
+          }
+        >();
 
         for (const st of scheduleTasks) {
           if (linkedIds.has(st.id)) continue;
@@ -673,15 +723,15 @@ export async function POST(request: NextRequest) {
           if (insertErr || !newTask) continue;
 
           // 各教室のチェック状態を初期化
-          const completionEntries: [string, boolean][] = Array.from(entry.schoolCompletions.entries());
-          const checksToInsert = completionEntries.map(
-            ([schoolId, isCompleted]) => ({
-              task_id: newTask.id,
-              school_id: schoolId,
-              is_completed: isCompleted,
-              completed_at: isCompleted ? new Date().toISOString() : null,
-            })
+          const completionEntries: [string, boolean][] = Array.from(
+            entry.schoolCompletions.entries()
           );
+          const checksToInsert = completionEntries.map(([schoolId, isCompleted]) => ({
+            task_id: newTask.id,
+            school_id: schoolId,
+            is_completed: isCompleted,
+            completed_at: isCompleted ? new Date().toISOString() : null,
+          }));
 
           if (checksToInsert.length > 0) {
             await supabaseAdmin.from('monthly_task_checks').insert(checksToInsert);
@@ -744,7 +794,8 @@ export async function POST(request: NextRequest) {
       case 'update_template': {
         if (!canEdit) return NextResponse.json({ error: '権限がありません' }, { status: 403 });
         const { templateId: updTplId, name: updTplName, template_data: updTplData } = body;
-        if (!updTplId) return NextResponse.json({ error: 'templateId は必須です' }, { status: 400 });
+        if (!updTplId)
+          return NextResponse.json({ error: 'templateId は必須です' }, { status: 400 });
         const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
         if (updTplName !== undefined) updates.name = updTplName;
         if (updTplData !== undefined) updates.template_data = updTplData;
@@ -761,7 +812,8 @@ export async function POST(request: NextRequest) {
       case 'delete_template': {
         if (!canEdit) return NextResponse.json({ error: '権限がありません' }, { status: 403 });
         const { templateId: delTplId } = body;
-        if (!delTplId) return NextResponse.json({ error: 'templateId は必須です' }, { status: 400 });
+        if (!delTplId)
+          return NextResponse.json({ error: 'templateId は必須です' }, { status: 400 });
         const { error } = await supabaseAdmin
           .from('monthly_task_templates')
           .delete()

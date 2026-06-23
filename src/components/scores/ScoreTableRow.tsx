@@ -42,10 +42,7 @@ interface ScoreTableRowProps {
   onCancelEdit: () => void;
   onDelete: (assessmentId: string) => void;
   onCellTab: (assessmentId: string, subject: string) => void;
-  getCalculatedValue: (
-    assessment: AssessmentWithScores,
-    type: 'five_sum' | 'nine_sum'
-  ) => string;
+  getCalculatedValue: (assessment: AssessmentWithScores, type: 'five_sum' | 'nine_sum') => string;
   canEdit: boolean;
   naishinType?: NaishinType;
   showDragHandle?: boolean;
@@ -94,7 +91,9 @@ export function ScoreTableRow({
             type="text"
             value={cellValue}
             onChange={(e) => onCellChange(e.target.value)}
-            onFocus={() => { tabTriggeredRef.current = false; }}
+            onFocus={() => {
+              tabTriggeredRef.current = false;
+            }}
             onBlur={() => {
               if (tabTriggeredRef.current) {
                 tabTriggeredRef.current = false;
@@ -160,7 +159,10 @@ export function ScoreTableRow({
                 削除
               </Button>
               {showDragHandle && (
-                <span className="text-gray-300 hover:text-gray-500 cursor-grab transition-colors" title="ドラッグして並び替え">
+                <span
+                  className="text-gray-300 hover:text-gray-500 cursor-grab transition-colors"
+                  title="ドラッグして並び替え"
+                >
                   <GripVertical className="w-4 h-4" />
                 </span>
               )}
@@ -224,7 +226,10 @@ export function ScoreTableRow({
               削除
             </Button>
             {showDragHandle && (
-              <span className="text-gray-300 hover:text-gray-500 cursor-grab transition-colors" title="ドラッグして並び替え">
+              <span
+                className="text-gray-300 hover:text-gray-500 cursor-grab transition-colors"
+                title="ドラッグして並び替え"
+              >
                 <GripVertical className="w-4 h-4" />
               </span>
             )}

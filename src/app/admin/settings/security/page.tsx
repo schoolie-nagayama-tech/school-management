@@ -33,7 +33,8 @@ function parseTimeoutByRole(value: string | undefined): TimeoutByRole {
   if (!value) return { owner: DEFAULT_TIMEOUT, manager: DEFAULT_TIMEOUT };
   try {
     const parsed = JSON.parse(value);
-    if (typeof parsed !== 'object' || parsed === null) return { owner: DEFAULT_TIMEOUT, manager: DEFAULT_TIMEOUT };
+    if (typeof parsed !== 'object' || parsed === null)
+      return { owner: DEFAULT_TIMEOUT, manager: DEFAULT_TIMEOUT };
     const out: TimeoutByRole = {};
     for (const role of ROLES) {
       const v = parsed[role];
@@ -69,7 +70,11 @@ export default function SecuritySettingsPage() {
       if (!res.ok) {
         const errBody = await res.json().catch(() => ({}));
         const detail = (errBody?.detail ?? errBody?.error) as string | undefined;
-        toastError(detail ? `設定の取得に失敗しました (${res.status}): ${detail}` : `設定の取得に失敗しました (${res.status})`);
+        toastError(
+          detail
+            ? `設定の取得に失敗しました (${res.status}): ${detail}`
+            : `設定の取得に失敗しました (${res.status})`
+        );
         return;
       }
       const json = await res.json();
@@ -98,7 +103,9 @@ export default function SecuritySettingsPage() {
   };
 
   const handleSave = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
     const token = session?.access_token;
     if (!token) {
       toastError('セッションが切れています。再ログインしてください。');
@@ -172,7 +179,10 @@ export default function SecuritySettingsPage() {
     <AdminLayout headerTitle="講師勤怠">
       <div className="space-y-6">
         <div className="mb-4">
-          <Link href="/settings" className="inline-flex items-center gap-1 text-sm text-text-muted hover:text-text-heading transition-colors duration-150">
+          <Link
+            href="/settings"
+            className="inline-flex items-center gap-1 text-sm text-text-muted hover:text-text-heading transition-colors duration-150"
+          >
             <ChevronLeft className="w-4 h-4" />
             設定に戻る
           </Link>
@@ -212,10 +222,7 @@ export default function SecuritySettingsPage() {
                           max={MAX_TIMEOUT}
                           value={timeoutByRole[role] ?? 0}
                           onChange={(e) =>
-                            handleTimeoutChange(
-                              role,
-                              parseInt(e.target.value, 10) || 0
-                            )
+                            handleTimeoutChange(role, parseInt(e.target.value, 10) || 0)
                           }
                         />
                         <span className="text-sm text-text-muted">秒</span>

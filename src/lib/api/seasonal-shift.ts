@@ -60,10 +60,9 @@ export async function getPublishedSeasonalShiftSetting(
 export async function getPublishedSeasonalShiftSettingPublic(
   settingId: string
 ): Promise<{ setting: SeasonalShiftSetting; slotSettings: SlotSetting[] } | null> {
-  const res = await fetch(
-    `/api/seasonal-shift/public?settingId=${encodeURIComponent(settingId)}`,
-    { cache: 'no-store' }
-  );
+  const res = await fetch(`/api/seasonal-shift/public?settingId=${encodeURIComponent(settingId)}`, {
+    cache: 'no-store',
+  });
 
   if (res.status === 404) return null;
 
@@ -131,9 +130,7 @@ export async function deleteSeasonalShiftSetting(id: string): Promise<void> {
 
 // ========== Slot settings ==========
 
-export async function getSeasonalShiftSlotSettings(
-  settingId: string
-): Promise<SlotSetting[]> {
+export async function getSeasonalShiftSlotSettings(settingId: string): Promise<SlotSetting[]> {
   const { data, error } = await supabase
     .from('seasonal_shift_slot_settings')
     .select('*')

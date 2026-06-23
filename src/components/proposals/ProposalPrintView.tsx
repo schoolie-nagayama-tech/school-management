@@ -24,13 +24,13 @@ export interface ProposalPrintData {
 }
 
 const INTENT_TAG_PRINT_COLOR: Record<string, string> = {
-  '予習': 'text-purple-700 border-purple-200',
-  '復習': 'text-blue-700 border-blue-200',
-  '苦手克服': 'text-rose-700 border-rose-200',
-  '苦手補強': 'text-red-700 border-red-200',
-  '定着': 'text-emerald-700 border-emerald-200',
-  '直前演習': 'text-amber-700 border-amber-200',
-  '応用発展': 'text-indigo-700 border-indigo-200',
+  予習: 'text-purple-700 border-purple-200',
+  復習: 'text-blue-700 border-blue-200',
+  苦手克服: 'text-rose-700 border-rose-200',
+  苦手補強: 'text-red-700 border-red-200',
+  定着: 'text-emerald-700 border-emerald-200',
+  直前演習: 'text-amber-700 border-amber-200',
+  応用発展: 'text-indigo-700 border-indigo-200',
 };
 
 type GroupPos = 'first' | 'mid' | 'last' | 'solo';
@@ -38,7 +38,7 @@ type GroupPos = 'first' | 'mid' | 'last' | 'solo';
 function getGroupPos(
   allItems: CurriculumItem[],
   idx: number,
-  unitMap: Map<number, PrintUnitDraft>,
+  unitMap: Map<number, PrintUnitDraft>
 ): GroupPos | null {
   const unit = unitMap.get(allItems[idx].id);
   if (!unit || unit.group_id === 0) return null;
@@ -64,13 +64,17 @@ export function ProposalPrintView({
 }: ProposalPrintData) {
   const selectedIds = new Set(activeUnits.map((u) => u.curriculum_item_id));
   const unitMap = new Map(activeUnits.map((u) => [u.curriculum_item_id, u]));
-  const doneCount = allItems.filter((item) => !!progressMap.get(item.id)?.school_progress_date).length;
+  const doneCount = allItems.filter(
+    (item) => !!progressMap.get(item.id)?.school_progress_date
+  ).length;
 
   return (
     <div className="proposal-print-page space-y-5 print:space-y-1">
       {/* ヘッダー */}
       <div className="p-5 bg-ink text-text-on-primary rounded-2xl print:rounded-none print:bg-white print:text-text-heading print:border-b-2 print:border-ink print:p-0 print:pb-1">
-        <div className="text-lg font-bold print:text-sm">{year}年 {seasonLabel}講習のご提案</div>
+        <div className="text-lg font-bold print:text-sm">
+          {year}年 {seasonLabel}講習のご提案
+        </div>
         <div className="text-sm mt-1 opacity-90 print:opacity-100 print:text-[10px] print:mt-0">
           {studentName} さま / {textbookName}
         </div>
@@ -79,7 +83,9 @@ export function ProposalPrintView({
       {/* テーマ（印刷時も表示） */}
       {theme && (
         <section className="p-4 print:p-1 bg-surface-raised rounded-xl border border-border-default print:border-border-strong">
-          <h2 className="text-sm print:text-[10px] font-bold text-text-heading mb-1 print:mb-0">講習テーマ</h2>
+          <h2 className="text-sm print:text-[10px] font-bold text-text-heading mb-1 print:mb-0">
+            講習テーマ
+          </h2>
           <p className="text-sm print:text-[10px] text-text-body">{theme}</p>
         </section>
       )}
@@ -121,27 +127,35 @@ export function ProposalPrintView({
               const item = allItems.find((it) => it.id === unit.curriculum_item_id);
               if (!item) return null;
               const isGrouped = unit.group_id > 0;
-              const isGroupHead = isGrouped && (arr.findIndex((u) => u.group_id === unit.group_id) === _i);
-              const isGroupLast = isGrouped && (
-                _i === arr.length - 1 || arr[_i + 1]?.group_id !== unit.group_id
-              );
+              const isGroupHead =
+                isGrouped && arr.findIndex((u) => u.group_id === unit.group_id) === _i;
+              const isGroupLast =
+                isGrouped && (_i === arr.length - 1 || arr[_i + 1]?.group_id !== unit.group_id);
               const intentTag = unit.intent_tag ?? null;
 
               return (
                 <tr
                   key={item.id}
-                  className={isGrouped && !isGroupLast ? 'border-b border-transparent' : 'border-b border-border-subtle'}
+                  className={
+                    isGrouped && !isGroupLast
+                      ? 'border-b border-transparent'
+                      : 'border-b border-border-subtle'
+                  }
                 >
-                  <td className={`py-1.5 font-medium text-text-heading ${isGrouped ? 'pl-2 border-l-2 border-l-text-muted' : ''}`}>
+                  <td
+                    className={`py-1.5 font-medium text-text-heading ${isGrouped ? 'pl-2 border-l-2 border-l-text-muted' : ''}`}
+                  >
                     {item.title}
                     {intentTag && (
-                      <span className={`inline-block ml-1.5 px-1.5 py-0.5 border rounded-full text-[9px] font-medium align-middle ${INTENT_TAG_PRINT_COLOR[intentTag] ?? 'text-text-muted border-border-default'}`}>
+                      <span
+                        className={`inline-block ml-1.5 px-1.5 py-0.5 border rounded-full text-[9px] font-medium align-middle ${INTENT_TAG_PRINT_COLOR[intentTag] ?? 'text-text-muted border-border-default'}`}
+                      >
                         {intentTag}
                       </span>
                     )}
                   </td>
                   <td className="py-1.5 text-center font-bold text-text-heading">
-                    {(!isGrouped || isGroupHead) ? unit.koma_count : ''}
+                    {!isGrouped || isGroupHead ? unit.koma_count : ''}
                   </td>
                 </tr>
               );
@@ -235,9 +249,7 @@ export function ProposalPrintView({
       <section className="hidden print:block print:p-0">
         <div className="flex items-center justify-between mb-1 border-b border-black pb-0.5">
           <h2 className="text-[10px] font-bold">テキスト全単元</h2>
-          <span className="text-[10px] font-bold">
-            講習 {totalKoma}コマ
-          </span>
+          <span className="text-[10px] font-bold">講習 {totalKoma}コマ</span>
         </div>
         <div className="proposal-print-compact">
           {allItems.map((item, idx) => {

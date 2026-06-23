@@ -65,8 +65,8 @@ export const ScheduleCell = React.memo(function ScheduleCell({
   return (
     <td
       className={`border border-[var(--surface)] p-1 min-w-[120px] align-top ${
- isDragging ? 'opacity-50' : ''
- }`}
+        isDragging ? 'opacity-50' : ''
+      }`}
       onClick={(e) => {
         if (activeEntries.length === 0) onClick(e);
       }}
@@ -102,7 +102,9 @@ export const ScheduleCell = React.memo(function ScheduleCell({
               <div className="truncate line-through">{studentName}</div>
               <div className="text-[10px] line-through">→ 振替先へ</div>
               {chipLabel && (
-                <div className={`mt-1 inline-block rounded px-1.5 py-0.5 text-[10px] font-medium ${chipClass}`}>
+                <div
+                  className={`mt-1 inline-block rounded px-1.5 py-0.5 text-[10px] font-medium ${chipClass}`}
+                >
                   {chipLabel}
                 </div>
               )}
@@ -112,15 +114,16 @@ export const ScheduleCell = React.memo(function ScheduleCell({
         {activeEntries.map((entry) => {
           const isTransferIn = entry.status === 'transferred_in';
           const bg = entry.attendance_status
-            ? ATTENDANCE_BG[entry.attendance_status] ?? DEFAULT_BG
+            ? (ATTENDANCE_BG[entry.attendance_status] ?? DEFAULT_BG)
             : DEFAULT_BG;
           const studentName = entry.student
             ? `${entry.student.last_name} ${entry.student.first_name}（${gradeLabel(entry.student.grade)}）`
             : entry.student_id;
-          const subjectNames = (entry.subject_ids || [])
-            .map((id) => entry.subjects?.find((s) => s.id === id)?.name ?? '')
-            .filter(Boolean)
-            .join('・') || '—';
+          const subjectNames =
+            (entry.subject_ids || [])
+              .map((id) => entry.subjects?.find((s) => s.id === id)?.name ?? '')
+              .filter(Boolean)
+              .join('・') || '—';
 
           return (
             <div
@@ -141,7 +144,9 @@ export const ScheduleCell = React.memo(function ScheduleCell({
               </div>
               <div className="text-[10px] text-[#2a2a2a] truncate">{subjectNames}</div>
               {entry.seat_label && (
-                <div className="text-[10px] text-[var(--paragraph-light)]">[{entry.seat_label}]</div>
+                <div className="text-[10px] text-[var(--paragraph-light)]">
+                  [{entry.seat_label}]
+                </div>
               )}
             </div>
           );

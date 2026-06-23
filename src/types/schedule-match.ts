@@ -57,10 +57,21 @@ export interface MatchBatchInput {
   executed_by: string;
   mode: MatchBatchMode;
   notes?: string;
-  proposals: Array<Omit<
-    ScheduleMatchProposal,
-    'id' | 'batch_id' | 'school_id' | 'status' | 'schedule_entry_id'
-    | 'published_at' | 'published_by' | 'created_at' | 'updated_at'
-    | 'student' | 'teacher' | 'time_slot'
-  >>;
+  proposals: Array<
+    Omit<
+      ScheduleMatchProposal,
+      | 'id'
+      | 'batch_id'
+      | 'school_id'
+      | 'status'
+      | 'schedule_entry_id'
+      | 'published_at'
+      | 'published_by'
+      | 'created_at'
+      | 'updated_at'
+      | 'student'
+      | 'teacher'
+      | 'time_slot'
+    >
+  >;
 }

@@ -53,7 +53,14 @@ export function BadgeTemplateDialog({ open, onClose, onSave, initial }: BadgeTem
     if (!name.trim()) return;
     setSaving(true);
     try {
-      await onSave({ name: name.trim(), category, rank, icon, description: description.trim(), sort_order: sortOrder });
+      await onSave({
+        name: name.trim(),
+        category,
+        rank,
+        icon,
+        description: description.trim(),
+        sort_order: sortOrder,
+      });
       onClose();
     } finally {
       setSaving(false);
@@ -63,8 +70,14 @@ export function BadgeTemplateDialog({ open, onClose, onSave, initial }: BadgeTem
   const rankConfig = BADGE_RANK_CONFIG[rank];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
         <form onSubmit={handleSubmit}>
           <div className="p-6 space-y-5">
             <h2 className="text-lg font-bold text-gray-900">
@@ -94,7 +107,9 @@ export function BadgeTemplateDialog({ open, onClose, onSave, initial }: BadgeTem
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
                 >
                   {(Object.keys(BADGE_CATEGORY_CONFIG) as BadgeCategory[]).map((cat) => (
-                    <option key={cat} value={cat}>{BADGE_CATEGORY_CONFIG[cat].label}</option>
+                    <option key={cat} value={cat}>
+                      {BADGE_CATEGORY_CONFIG[cat].label}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -106,7 +121,9 @@ export function BadgeTemplateDialog({ open, onClose, onSave, initial }: BadgeTem
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
                 >
                   {(Object.keys(BADGE_RANK_CONFIG) as BadgeRank[]).map((r) => (
-                    <option key={r} value={r}>{BADGE_RANK_CONFIG[r].label}</option>
+                    <option key={r} value={r}>
+                      {BADGE_RANK_CONFIG[r].label}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -123,9 +140,10 @@ export function BadgeTemplateDialog({ open, onClose, onSave, initial }: BadgeTem
                     onClick={() => setIcon(ic)}
                     className={`
                       flex items-center justify-center w-10 h-10 rounded-lg border-2 transition-[border-color,background-color,color,transform] duration-150 ease-out
-                      ${icon === ic
-                        ? 'border-sky-500 bg-sky-50 text-sky-600 scale-110'
-                        : 'border-gray-200 text-gray-500 hover:border-gray-300 hover:bg-gray-50'
+                      ${
+                        icon === ic
+                          ? 'border-sky-500 bg-sky-50 text-sky-600 scale-110'
+                          : 'border-gray-200 text-gray-500 hover:border-gray-300 hover:bg-gray-50'
                       }
                     `}
                     title={ic}
@@ -148,7 +166,10 @@ export function BadgeTemplateDialog({ open, onClose, onSave, initial }: BadgeTem
                   <BadgeIcon icon={icon} size={28} />
                 </div>
                 <p className="text-sm font-semibold text-gray-700">{name || 'バッジ名'}</p>
-                <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: rankConfig.color }}>
+                <span
+                  className="text-[10px] font-bold uppercase tracking-wider"
+                  style={{ color: rankConfig.color }}
+                >
                   {rankConfig.label}
                 </span>
               </div>

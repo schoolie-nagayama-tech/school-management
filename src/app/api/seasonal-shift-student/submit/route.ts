@@ -197,7 +197,9 @@ export async function GET(req: NextRequest) {
   // 設定 + 開講日時マトリクスを取得
   const { data: setting, error: settingErr } = await adminDb
     .from('seasonal_shift_settings')
-    .select('id, school_id, name, start_date, end_date, deadline, status, description, weekday_slots, saturday_slots')
+    .select(
+      'id, school_id, name, start_date, end_date, deadline, status, description, weekday_slots, saturday_slots'
+    )
     .eq('id', settingId)
     .maybeSingle();
 

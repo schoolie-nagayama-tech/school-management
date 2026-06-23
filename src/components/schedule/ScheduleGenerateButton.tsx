@@ -79,9 +79,7 @@ export function ScheduleGenerateButton({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setConfirmOpen(false)}>
-              キャンセル
-            </AlertDialogCancel>
+            <AlertDialogCancel onClick={() => setConfirmOpen(false)}>キャンセル</AlertDialogCancel>
             <AlertDialogAction onClick={handleConfirm}>
               {loading ? '生成中...' : '生成する'}
             </AlertDialogAction>

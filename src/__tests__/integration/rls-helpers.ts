@@ -68,12 +68,11 @@ export async function createTestUser(
   const password = 'Test1234!';
 
   // ── 1. Auth ユーザー作成（email_confirm: true で即確認済み）
-  const { data: authData, error: authError } =
-    await admin.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true,
-    });
+  const { data: authData, error: authError } = await admin.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: true,
+  });
   if (authError || !authData.user) {
     throw new Error(`テストユーザー(Auth)の作成に失敗: ${authError?.message}`);
   }
@@ -87,9 +86,7 @@ export async function createTestUser(
   if (profileError) {
     // ロールバック: Auth ユーザーを削除してから例外を投げる
     await admin.auth.admin.deleteUser(userId);
-    throw new Error(
-      `テストユーザー(user_profiles)の作成に失敗: ${profileError.message}`
-    );
+    throw new Error(`テストユーザー(user_profiles)の作成に失敗: ${profileError.message}`);
   }
 
   // ── 3. user_schools に教室紐づけを insert
@@ -99,9 +96,7 @@ export async function createTestUser(
       .insert(opts.schoolIds.map((sid) => ({ user_id: userId, school_id: sid })));
     if (schoolsError) {
       await admin.auth.admin.deleteUser(userId);
-      throw new Error(
-        `テストユーザー(user_schools)の紐づけに失敗: ${schoolsError.message}`
-      );
+      throw new Error(`テストユーザー(user_schools)の紐づけに失敗: ${schoolsError.message}`);
     }
   }
 
@@ -119,10 +114,7 @@ export async function createTestUser(
  * @param email    ユーザーのメールアドレス
  * @param password パスワード
  */
-export async function signInAsUser(
-  email: string,
-  password: string
-): Promise<SupabaseClient> {
+export async function signInAsUser(email: string, password: string): Promise<SupabaseClient> {
   // まず匿名クライアントでサインイン
   const anonClient = getAnonClient();
   const { data, error } = await anonClient.auth.signInWithPassword({
@@ -155,10 +147,7 @@ export async function signInAsUser(
  * @param admin   service_role クライアント
  * @param userId  削除するユーザーのUUID
  */
-export async function cleanupTestUser(
-  admin: SupabaseClient,
-  userId: string
-): Promise<void> {
+export async function cleanupTestUser(admin: SupabaseClient, userId: string): Promise<void> {
   // 外部キー順: user_schools → user_profiles → Auth
   await admin.from('user_schools').delete().eq('user_id', userId);
   await admin.from('user_profiles').delete().eq('id', userId);

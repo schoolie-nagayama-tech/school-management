@@ -60,19 +60,12 @@ function getMockYDomain(data: ChartDataPoint[]): [number, number] {
 
 export function ScoreChart({ data, category }: ScoreChartProps) {
   const yDomain: [number, number] =
-    category === 'report_card'
-      ? [1, 5]
-      : category === 'mock'
-        ? getMockYDomain(data)
-        : [0, 100];
+    category === 'report_card' ? [1, 5] : category === 'mock' ? getMockYDomain(data) : [0, 100];
 
   return (
     <div className="w-full h-[320px]">
       <ResponsiveContainer width="100%" height="100%">
-        <LineChart
-          data={data}
-          margin={{ top: 8, right: 16, left: 0, bottom: 8 }}
-        >
+        <LineChart data={data} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
           <XAxis
             dataKey="label"

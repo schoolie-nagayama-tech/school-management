@@ -50,7 +50,12 @@ export function useConfirm() {
   }, [state]);
 
   const ConfirmDialog: ReactNode = state ? (
-    <AlertDialog open={true} onOpenChange={(open) => { if (!open) handleCancel(); }}>
+    <AlertDialog
+      open={true}
+      onOpenChange={(open) => {
+        if (!open) handleCancel();
+      }}
+    >
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>{state.title ?? '確認'}</AlertDialogTitle>

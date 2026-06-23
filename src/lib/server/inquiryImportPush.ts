@@ -39,7 +39,10 @@ const PAGE_SIZE = 1000;
  * fetchAllPaged と同じ方式だが、引数に service SupabaseClient を受け取る点が異なる。
  */
 async function fetchAllServicePaged<T>(
-  buildQuery: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: { message: string } | null }>
+  buildQuery: (
+    from: number,
+    to: number
+  ) => PromiseLike<{ data: T[] | null; error: { message: string } | null }>
 ): Promise<T[]> {
   const all: T[] = [];
   for (let from = 0; ; from += PAGE_SIZE) {
@@ -90,9 +93,7 @@ export async function importInquiryCsvText(
   }
 
   const schools = (schoolsData ?? []) as { id: string; name: string }[];
-  const schoolNameToId = new Map<string, string>(
-    schools.map((s) => [s.name, s.id])
-  );
+  const schoolNameToId = new Map<string, string>(schools.map((s) => [s.name, s.id]));
 
   // ---- 3. 各行の school_id を解決 ----
   type Resolvable = { schoolId: string; row: (typeof rows)[0] };
@@ -122,24 +123,19 @@ export async function importInquiryCsvText(
   await Promise.all(
     targetSchoolIds.map(async (sid) => {
       // 1000 件超え対策: ページングで全件取得
-      const existing = await fetchAllServicePaged<{ hp_inquiry_no: string | null }>(
-        (from, to) =>
-          serviceClient
-            .from('inquiries')
-            .select('hp_inquiry_no')
-            .eq('school_id', sid)
-            .not('hp_inquiry_no', 'is', null)
-            .order('id', { ascending: true })
-            .range(from, to)
+      const existing = await fetchAllServicePaged<{ hp_inquiry_no: string | null }>((from, to) =>
+        serviceClient
+          .from('inquiries')
+          .select('hp_inquiry_no')
+          .eq('school_id', sid)
+          .not('hp_inquiry_no', 'is', null)
+          .order('id', { ascending: true })
+          .range(from, to)
       );
 
       existingNoMap.set(
         sid,
-        new Set(
-          existing
-            .map((r) => r.hp_inquiry_no)
-            .filter((v): v is string => v !== null)
-        )
+        new Set(existing.map((r) => r.hp_inquiry_no).filter((v): v is string => v !== null))
       );
     })
   );

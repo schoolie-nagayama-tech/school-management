@@ -51,9 +51,7 @@ export function UpdatesBoard({ className = '' }: UpdatesBoardProps) {
         onClick={() => setIsExpanded(!isExpanded)}
       >
         <div className="flex items-center gap-2">
-          <span className="font-bold text-[#1a1a1a]">
-            アップデート情報
-          </span>
+          <span className="font-bold text-[#1a1a1a]">アップデート情報</span>
           {hasUnread && (
             <span className="px-1.5 py-0.5 text-[10px] font-bold bg-green-600 text-white rounded-full">
               NEW
@@ -74,7 +72,11 @@ export function UpdatesBoard({ className = '' }: UpdatesBoardProps) {
               確認済み
             </button>
           )}
-          {isExpanded ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
+          {isExpanded ? (
+            <ChevronUp className="w-5 h-5 text-gray-400" />
+          ) : (
+            <ChevronDown className="w-5 h-5 text-gray-400" />
+          )}
         </div>
       </div>
 

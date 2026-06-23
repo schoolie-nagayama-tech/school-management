@@ -42,17 +42,15 @@ describe('callCoursePrepApi (キャッシュ無効化)', () => {
       ok: true,
       json: () => Promise.resolve({ data: { progress_items: [] } }),
     });
-    await mod.batchFetchCoursePrepApi(
-      { schoolId: 'school-a', season: 'summer', year: '2026' },
-      ['progress_items']
-    );
+    await mod.batchFetchCoursePrepApi({ schoolId: 'school-a', season: 'summer', year: '2026' }, [
+      'progress_items',
+    ]);
     expect(fetchMock).toHaveBeenCalledTimes(1);
 
     // 2回目 batchFetch (同パラメータ): キャッシュヒットでネットワーク呼ばれない
-    await mod.batchFetchCoursePrepApi(
-      { schoolId: 'school-a', season: 'summer', year: '2026' },
-      ['progress_items']
-    );
+    await mod.batchFetchCoursePrepApi({ schoolId: 'school-a', season: 'summer', year: '2026' }, [
+      'progress_items',
+    ]);
     expect(fetchMock).toHaveBeenCalledTimes(1); // 増えていない
 
     // 書き込み: callCoursePrepApi 成功
@@ -68,10 +66,9 @@ describe('callCoursePrepApi (キャッシュ無効化)', () => {
       ok: true,
       json: () => Promise.resolve({ data: { progress_items: [{ id: 'new' }] } }),
     });
-    await mod.batchFetchCoursePrepApi(
-      { schoolId: 'school-a', season: 'summer', year: '2026' },
-      ['progress_items']
-    );
+    await mod.batchFetchCoursePrepApi({ schoolId: 'school-a', season: 'summer', year: '2026' }, [
+      'progress_items',
+    ]);
     expect(fetchMock).toHaveBeenCalledTimes(3); // 増えた = キャッシュが無効化された
   });
 
@@ -83,10 +80,9 @@ describe('callCoursePrepApi (キャッシュ無効化)', () => {
       ok: true,
       json: () => Promise.resolve({ data: { progress_items: [] } }),
     });
-    await mod.batchFetchCoursePrepApi(
-      { schoolId: 'school-a', season: 'summer', year: '2026' },
-      ['progress_items']
-    );
+    await mod.batchFetchCoursePrepApi({ schoolId: 'school-a', season: 'summer', year: '2026' }, [
+      'progress_items',
+    ]);
     expect(fetchMock).toHaveBeenCalledTimes(1);
 
     // school-b に書き込み
@@ -98,10 +94,9 @@ describe('callCoursePrepApi (キャッシュ無効化)', () => {
     expect(fetchMock).toHaveBeenCalledTimes(2);
 
     // school-a の batchFetch は引き続きキャッシュヒット
-    await mod.batchFetchCoursePrepApi(
-      { schoolId: 'school-a', season: 'summer', year: '2026' },
-      ['progress_items']
-    );
+    await mod.batchFetchCoursePrepApi({ schoolId: 'school-a', season: 'summer', year: '2026' }, [
+      'progress_items',
+    ]);
     expect(fetchMock).toHaveBeenCalledTimes(2); // 増えない
   });
 
@@ -113,10 +108,9 @@ describe('callCoursePrepApi (キャッシュ無効化)', () => {
       ok: true,
       json: () => Promise.resolve({ data: { progress_items: [] } }),
     });
-    await mod.batchFetchCoursePrepApi(
-      { schoolId: 'school-a', season: 'summer', year: '2026' },
-      ['progress_items']
-    );
+    await mod.batchFetchCoursePrepApi({ schoolId: 'school-a', season: 'summer', year: '2026' }, [
+      'progress_items',
+    ]);
 
     // 書き込み失敗
     fetchMock.mockResolvedValueOnce({
@@ -128,10 +122,9 @@ describe('callCoursePrepApi (キャッシュ無効化)', () => {
     ).rejects.toThrow('permission denied');
 
     // キャッシュは残っているのでフェッチ回数増えない
-    await mod.batchFetchCoursePrepApi(
-      { schoolId: 'school-a', season: 'summer', year: '2026' },
-      ['progress_items']
-    );
+    await mod.batchFetchCoursePrepApi({ schoolId: 'school-a', season: 'summer', year: '2026' }, [
+      'progress_items',
+    ]);
     expect(fetchMock).toHaveBeenCalledTimes(2); // batchFetch(1) + callApi失敗(1) のみ
   });
 });

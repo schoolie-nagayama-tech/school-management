@@ -187,10 +187,7 @@ export function ScheduleToolbar({
             <span className="text-sm text-[var(--paragraph)] ml-1">表示曜日:</span>
             <div className="flex flex-wrap items-center gap-1">
               {DAY_LABELS.map((d) => (
-                <label
-                  key={d.value}
-                  className="flex items-center gap-1 text-xs cursor-pointer"
-                >
+                <label key={d.value} className="flex items-center gap-1 text-xs cursor-pointer">
                   <input
                     type="checkbox"
                     checked={visibleDaysOfWeek.includes(d.value)}

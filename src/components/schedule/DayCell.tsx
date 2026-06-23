@@ -216,11 +216,7 @@ export const DayCell = React.memo(function DayCell({
             </div>
             <div className="flex flex-wrap gap-1">
               {unassigned.map((entry) => (
-                <UnassignedChip
-                  key={entry.id}
-                  entry={entry}
-                  subjectNameById={subjectNameById}
-                />
+                <UnassignedChip key={entry.id} entry={entry} subjectNameById={subjectNameById} />
               ))}
             </div>
           </div>

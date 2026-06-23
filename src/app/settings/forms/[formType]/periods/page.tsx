@@ -90,9 +90,7 @@ export default function FormPeriodsPage() {
       setPeriods(data);
     } catch (err) {
       console.error('Error fetching periods:', err);
-      setErrorMessage(
-        err instanceof Error ? err.message : '期間一覧の取得に失敗しました'
-      );
+      setErrorMessage(err instanceof Error ? err.message : '期間一覧の取得に失敗しました');
     } finally {
       setIsLoading(false);
     }
@@ -235,15 +233,17 @@ export default function FormPeriodsPage() {
             <div className="mb-4 p-4 bg-surfacember-50 border border-inkmber-200 rounded-lg text-sm text-text-headingmber-800">
               <p className="font-medium mb-1">複数教室を選択中です</p>
               <p>
-                新しい期間を作成すると、選択中の{selectedSchoolIds.length}教室に同じ期間が一括で作成されます。編集時に「他教室も同じ内容で更新」にチェックを入れると、選択中の全教室の同じ期間が更新されます。
+                新しい期間を作成すると、選択中の{selectedSchoolIds.length}
+                教室に同じ期間が一括で作成されます。編集時に「他教室も同じ内容で更新」にチェックを入れると、選択中の全教室の同じ期間が更新されます。
               </p>
             </div>
           )}
           <div className="mb-6 p-4 bg-info/10 border border-info/30 rounded-lg text-sm text-info">
-            <p className="font-medium mb-1 flex items-center gap-1"><Lightbulb className="h-4 w-4" />公開できる期間は1つだけです。</p>
-            <p>
-              新しい期間を公開すると、現在公開中の期間は自動で非公開になります。
+            <p className="font-medium mb-1 flex items-center gap-1">
+              <Lightbulb className="h-4 w-4" />
+              公開できる期間は1つだけです。
             </p>
+            <p>新しい期間を公開すると、現在公開中の期間は自動で非公開になります。</p>
           </div>
 
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">

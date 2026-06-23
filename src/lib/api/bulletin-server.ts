@@ -34,7 +34,9 @@ export async function prefetchBulletinInitial(): Promise<BulletinInitialData | n
   try {
     const client = await createSupabaseServerClient();
 
-    const { data: { user } } = await client.auth.getUser();
+    const {
+      data: { user },
+    } = await client.auth.getUser();
     if (!user) return null;
 
     // ロール（既読数の対象は講師のみ。BulletinBoard の canRead と揃える）
@@ -100,7 +102,10 @@ export async function prefetchBulletinInitial(): Promise<BulletinInitialData | n
     // DynamicServerError（ビルドの静的生成プローブが cookies() で投げる）は再 throw して Next に委ねる。
     if (isDynamicServerError(e)) throw e;
     // 事前取得は最適化。失敗してもページは従来のクライアント取得で動くので握りつぶす。
-    console.warn('[prefetchBulletinInitial] 事前取得に失敗。クライアント取得にフォールバックします:', e);
+    console.warn(
+      '[prefetchBulletinInitial] 事前取得に失敗。クライアント取得にフォールバックします:',
+      e
+    );
     return null;
   }
 }

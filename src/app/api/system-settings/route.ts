@@ -68,13 +68,13 @@ export async function GET(request: NextRequest) {
         console.warn('system-settings: DB error (migration may not be run):', error.message);
         if (category === 'security') {
           settings = [
-            { key: 'privacy_screen_timeout_by_role', value: '{"admin":0,"owner":60,"manager":60,"teacher":0,"parent":0}' },
+            {
+              key: 'privacy_screen_timeout_by_role',
+              value: '{"admin":0,"owner":60,"manager":60,"teacher":0,"parent":0}',
+            },
           ];
         } else {
-          return NextResponse.json(
-            { error: 'システム設定の取得に失敗しました' },
-            { status: 500 }
-          );
+          return NextResponse.json({ error: 'システム設定の取得に失敗しました' }, { status: 500 });
         }
       } else {
         settings = (data || []).map((row: { key: string; value: string }) => ({
@@ -86,13 +86,13 @@ export async function GET(request: NextRequest) {
       console.warn('system-settings: DB access failed:', dbErr);
       if (category === 'security') {
         settings = [
-          { key: 'privacy_screen_timeout_by_role', value: '{"admin":0,"owner":60,"manager":60,"teacher":0,"parent":0}' },
+          {
+            key: 'privacy_screen_timeout_by_role',
+            value: '{"admin":0,"owner":60,"manager":60,"teacher":0,"parent":0}',
+          },
         ];
       } else {
-        return NextResponse.json(
-          { error: 'システム設定の取得に失敗しました' },
-          { status: 500 }
-        );
+        return NextResponse.json({ error: 'システム設定の取得に失敗しました' }, { status: 500 });
       }
     }
 
@@ -114,13 +114,13 @@ export async function GET(request: NextRequest) {
     if (category === 'security') {
       return NextResponse.json({
         settings: [
-          { key: 'privacy_screen_timeout_by_role', value: '{"admin":0,"owner":60,"manager":60,"teacher":0,"parent":0}' },
+          {
+            key: 'privacy_screen_timeout_by_role',
+            value: '{"admin":0,"owner":60,"manager":60,"teacher":0,"parent":0}',
+          },
         ],
       });
     }
-    return NextResponse.json(
-      { error: 'サーバーエラーが発生しました' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'サーバーエラーが発生しました' }, { status: 500 });
   }
 }

@@ -34,11 +34,7 @@ import {
 } from '@/components/ui';
 import { useToast } from '@/hooks/useToast';
 import { useAuth } from '@/contexts/AuthContext';
-import {
-  getPendingReports,
-  approveClassReport,
-  rejectClassReport,
-} from '@/lib/api/class-reports';
+import { getPendingReports, approveClassReport, rejectClassReport } from '@/lib/api/class-reports';
 import type { ClassReport } from '@/types/class-report';
 import { CheckCircle, XCircle, ChevronRight, ChevronLeft } from 'lucide-react';
 import AccessDenied from '@/components/AccessDenied';
@@ -88,7 +84,12 @@ export default function PendingReportsPage() {
 
   const handleApprove = async (report: ClassReport) => {
     if (!profile) return;
-    if (!confirm(`「${report.student?.last_name} ${report.student?.first_name}」の報告書を承認します。よろしいですか？`)) return;
+    if (
+      !confirm(
+        `「${report.student?.last_name} ${report.student?.first_name}」の報告書を承認します。よろしいですか？`
+      )
+    )
+      return;
     setActingId(report.id);
     try {
       await approveClassReport(report.id, profile.id);
@@ -177,54 +178,54 @@ export default function PendingReportsPage() {
                   className="stagger-item"
                   style={{ '--stagger-index': Math.min(idx, 8) } as React.CSSProperties}
                 >
-                <Card className="hover:border-warning transition-[border-color] duration-150 ease-[var(--ease-out)]">
-                  <CardContent className="p-3 flex items-center gap-3">
-                    <button
-                      type="button"
-                      className="flex-1 flex items-center gap-3 text-left"
-                      onClick={() => router.push(`/lesson-reports/${r.schedule_entry_id}`)}
-                    >
-                      <div className="w-24 flex-shrink-0">
-                        <div className="text-sm font-bold tabular-nums">{r.lesson_date}</div>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="font-bold">
-                          {studentName}{' '}
-                          <span className="text-xs text-text-muted font-normal">（{grade}）</span>
+                  <Card className="hover:border-warning transition-[border-color] duration-150 ease-[var(--ease-out)]">
+                    <CardContent className="p-3 flex items-center gap-3">
+                      <button
+                        type="button"
+                        className="flex-1 flex items-center gap-3 text-left"
+                        onClick={() => router.push(`/lesson-reports/${r.schedule_entry_id}`)}
+                      >
+                        <div className="w-24 flex-shrink-0">
+                          <div className="text-sm font-bold tabular-nums">{r.lesson_date}</div>
                         </div>
-                        <div className="text-xs text-text-muted mt-0.5">
-                          講師: {teacherName} ・ 提出: {submittedAt}
-                        </div>
-                        {r.short_term_goal && (
-                          <div className="text-xs text-text-body mt-1 truncate">
-                            目標: {r.short_term_goal}
+                        <div className="flex-1 min-w-0">
+                          <div className="font-bold">
+                            {studentName}{' '}
+                            <span className="text-xs text-text-muted font-normal">（{grade}）</span>
                           </div>
-                        )}
-                      </div>
-                      <ChevronRight className="w-4 h-4 text-text-faint" />
-                    </button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setRejectTarget(r);
-                        setRejectReason('');
-                      }}
-                      disabled={actingId === r.id}
-                    >
-                      <XCircle className="w-4 h-4 mr-1" />
-                      差し戻し
-                    </Button>
-                    <Button
-                      size="sm"
-                      onClick={() => handleApprove(r)}
-                      disabled={actingId === r.id}
-                    >
-                      <CheckCircle className="w-4 h-4 mr-1" />
-                      承認
-                    </Button>
-                  </CardContent>
-                </Card>
+                          <div className="text-xs text-text-muted mt-0.5">
+                            講師: {teacherName} ・ 提出: {submittedAt}
+                          </div>
+                          {r.short_term_goal && (
+                            <div className="text-xs text-text-body mt-1 truncate">
+                              目標: {r.short_term_goal}
+                            </div>
+                          )}
+                        </div>
+                        <ChevronRight className="w-4 h-4 text-text-faint" />
+                      </button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setRejectTarget(r);
+                          setRejectReason('');
+                        }}
+                        disabled={actingId === r.id}
+                      >
+                        <XCircle className="w-4 h-4 mr-1" />
+                        差し戻し
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={() => handleApprove(r)}
+                        disabled={actingId === r.id}
+                      >
+                        <CheckCircle className="w-4 h-4 mr-1" />
+                        承認
+                      </Button>
+                    </CardContent>
+                  </Card>
                 </div>
               );
             })}

@@ -54,9 +54,7 @@ export function TaskAlert({ schoolId, onTaskClick }: TaskAlertProps) {
       fetchTasks();
     } catch (error) {
       console.error('Failed to complete task:', error);
-      toastError(
-        getUserErrorMessage(error, 'タスクの完了に失敗しました')
-      );
+      toastError(getUserErrorMessage(error, 'タスクの完了に失敗しました'));
     }
   };
 
@@ -94,9 +92,7 @@ export function TaskAlert({ schoolId, onTaskClick }: TaskAlertProps) {
             未完了のタスクが {tasks.length} 件あります
           </span>
         </div>
-        <span className="text-[#ef4444]/60">
-          {expanded ? '▲' : '▼'}
-        </span>
+        <span className="text-[#ef4444]/60">{expanded ? '▲' : '▼'}</span>
       </button>
 
       {/* タスクリスト（展開時） */}
@@ -113,9 +109,7 @@ export function TaskAlert({ schoolId, onTaskClick }: TaskAlertProps) {
                   {/* 期限 */}
                   <span
                     className={`text-sm font-medium ${
-                      isOverdue(task.interview_date)
-                        ? 'text-[#ef4444]'
-                        : 'text-[#4b5563]'
+                      isOverdue(task.interview_date) ? 'text-[#ef4444]' : 'text-[#4b5563]'
                     }`}
                   >
                     {formatDate(task.interview_date)}
@@ -127,9 +121,7 @@ export function TaskAlert({ schoolId, onTaskClick }: TaskAlertProps) {
                   </span>
                 </div>
                 {/* 内容 */}
-                <p className="text-sm text-[#4b5563] line-clamp-2">
-                  {task.content}
-                </p>
+                <p className="text-sm text-[#4b5563] line-clamp-2">{task.content}</p>
               </div>
               {/* 完了ボタン */}
               <button

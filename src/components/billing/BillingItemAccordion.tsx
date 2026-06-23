@@ -4,11 +4,7 @@ import { useState } from 'react';
 import type { BillingItem } from '@/types/database';
 import { ChevronDown } from 'lucide-react';
 import { BILLING_SOURCE_TYPE_LABELS } from '@/types/database';
-import {
-  createBillingItem,
-  updateBillingItem,
-  deleteBillingItem,
-} from '@/lib/api/billing';
+import { createBillingItem, updateBillingItem, deleteBillingItem } from '@/lib/api/billing';
 import { Button, Input } from '@/components/ui';
 import { useToast } from '@/hooks/useToast';
 import { useConfirm } from '@/hooks/useConfirm';
@@ -102,7 +98,14 @@ export function BillingItemAccordion({
       return;
     }
 
-    if (!(await confirm({ title: '削除確認', description: '本当に削除しますか？', confirmLabel: '削除', variant: 'danger' }))) {
+    if (
+      !(await confirm({
+        title: '削除確認',
+        description: '本当に削除しますか？',
+        confirmLabel: '削除',
+        variant: 'danger',
+      }))
+    ) {
       return;
     }
 
@@ -141,7 +144,9 @@ export function BillingItemAccordion({
         className="w-full flex items-center justify-between px-4 py-3 bg-[#f3f4f6] hover:bg-[#f3f4f6]/80 transition-[background-color] duration-150 ease-out"
       >
         <span className="text-sm font-semibold text-[#1f2937]">項目管理</span>
-        <ChevronDown className={`w-5 h-5 text-[#4b5563] transition-[transform] duration-150 ease-out ${isOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown
+          className={`w-5 h-5 text-[#4b5563] transition-[transform] duration-150 ease-out ${isOpen ? 'rotate-180' : ''}`}
+        />
       </button>
 
       {/* アコーディオンコンテンツ — CSS grid trick でスムーズに開閉 */}
@@ -150,110 +155,106 @@ export function BillingItemAccordion({
         style={{ gridTemplateRows: isOpen ? '1fr' : '0fr' }}
       >
         <div className="overflow-hidden">
-        <div className="p-4 space-y-6 border-t border-[#e5e7eb]">
-          {/* 新規追加 */}
-          <div>
-            <label className="block text-sm font-medium text-[#1f2937] mb-2">
-              新しい請求項目を追加
-            </label>
-            <div className="flex gap-2">
-              <Input
-                type="text"
-                value={newItemName}
-                onChange={(e) => setNewItemName(e.target.value)}
-                placeholder="例: 教材費"
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleAdd();
-                }}
-                disabled={isProcessing}
-              />
-              <Button onClick={handleAdd} disabled={isProcessing || !newItemName.trim()}>
-                追加
-              </Button>
+          <div className="p-4 space-y-6 border-t border-[#e5e7eb]">
+            {/* 新規追加 */}
+            <div>
+              <label className="block text-sm font-medium text-[#1f2937] mb-2">
+                新しい請求項目を追加
+              </label>
+              <div className="flex gap-2">
+                <Input
+                  type="text"
+                  value={newItemName}
+                  onChange={(e) => setNewItemName(e.target.value)}
+                  placeholder="例: 教材費"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleAdd();
+                  }}
+                  disabled={isProcessing}
+                />
+                <Button onClick={handleAdd} disabled={isProcessing || !newItemName.trim()}>
+                  追加
+                </Button>
+              </div>
             </div>
-          </div>
 
-          {/* 項目一覧 */}
-          <div>
-            <h3 className="text-sm font-medium text-[#1f2937] mb-3">
-              請求項目（{activeItems.length}件）
-            </h3>
-            <div className="space-y-2">
-              {activeItems.map((item) => (
-                <div
-                  key={item.id}
-                  className="flex items-center justify-between p-3 bg-[#f3f4f6] rounded-lg border border-[#e5e7eb]"
-                >
-                  {editingId === item.id ? (
-                    <div className="flex-1 flex gap-2">
-                      <Input
-                        type="text"
-                        value={editingName}
-                        onChange={(e) => setEditingName(e.target.value)}
-                        className="flex-1"
-                        autoFocus
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') handleRename(item.id);
-                          if (e.key === 'Escape') cancelEditing();
-                        }}
-                      />
-                      <Button
-                        onClick={() => handleRename(item.id)}
-                        size="sm"
-                        disabled={isProcessing || !editingName.trim()}
-                      >
-                        保存
-                      </Button>
-                      <Button
-                        onClick={cancelEditing}
-                        variant="secondary"
-                        size="sm"
-                      >
-                        キャンセル
-                      </Button>
-                    </div>
-                  ) : (
-                    <>
-                      <div className="flex-1 flex items-center gap-3">
-                        <span className="font-medium text-[#1f2937]">{item.name}</span>
-                        <span className={`text-[11px] px-2 py-0.5 rounded-full ${
-                          item.source_type === 'free'
-                            ? 'bg-gray-200 text-gray-600'
-                            : item.source_type === 'form_charged'
-                            ? 'bg-blue-100 text-blue-700'
-                            : 'bg-amber-100 text-amber-700'
-                        }`}>
-                          {BILLING_SOURCE_TYPE_LABELS[item.source_type] || item.source_type}
-                        </span>
-                      </div>
-                      <div className="flex gap-3">
-                        <button
-                          onClick={() => startEditing(item)}
-                          className="text-sm text-[#4b5563] hover:text-[#3b82f6] transition-[color] duration-150 ease-out"
-                          disabled={isProcessing}
+            {/* 項目一覧 */}
+            <div>
+              <h3 className="text-sm font-medium text-[#1f2937] mb-3">
+                請求項目（{activeItems.length}件）
+              </h3>
+              <div className="space-y-2">
+                {activeItems.map((item) => (
+                  <div
+                    key={item.id}
+                    className="flex items-center justify-between p-3 bg-[#f3f4f6] rounded-lg border border-[#e5e7eb]"
+                  >
+                    {editingId === item.id ? (
+                      <div className="flex-1 flex gap-2">
+                        <Input
+                          type="text"
+                          value={editingName}
+                          onChange={(e) => setEditingName(e.target.value)}
+                          className="flex-1"
+                          autoFocus
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') handleRename(item.id);
+                            if (e.key === 'Escape') cancelEditing();
+                          }}
+                        />
+                        <Button
+                          onClick={() => handleRename(item.id)}
+                          size="sm"
+                          disabled={isProcessing || !editingName.trim()}
                         >
-                          名前変更
-                        </button>
-                        <button
-                          onClick={() => handleDelete(item.id, item.name)}
-                          className="text-sm text-[#ef4444] hover:text-[#ef4444]/80 transition-[color] duration-150 ease-out"
-                          disabled={isProcessing}
-                        >
-                          削除
-                        </button>
+                          保存
+                        </Button>
+                        <Button onClick={cancelEditing} variant="secondary" size="sm">
+                          キャンセル
+                        </Button>
                       </div>
-                    </>
-                  )}
-                </div>
-              ))}
-              {activeItems.length === 0 && (
-                <p className="text-[#4b5563]/60 text-sm py-4 text-center">
-                  請求項目がありません
-                </p>
-              )}
+                    ) : (
+                      <>
+                        <div className="flex-1 flex items-center gap-3">
+                          <span className="font-medium text-[#1f2937]">{item.name}</span>
+                          <span
+                            className={`text-[11px] px-2 py-0.5 rounded-full ${
+                              item.source_type === 'free'
+                                ? 'bg-gray-200 text-gray-600'
+                                : item.source_type === 'form_charged'
+                                  ? 'bg-blue-100 text-blue-700'
+                                  : 'bg-amber-100 text-amber-700'
+                            }`}
+                          >
+                            {BILLING_SOURCE_TYPE_LABELS[item.source_type] || item.source_type}
+                          </span>
+                        </div>
+                        <div className="flex gap-3">
+                          <button
+                            onClick={() => startEditing(item)}
+                            className="text-sm text-[#4b5563] hover:text-[#3b82f6] transition-[color] duration-150 ease-out"
+                            disabled={isProcessing}
+                          >
+                            名前変更
+                          </button>
+                          <button
+                            onClick={() => handleDelete(item.id, item.name)}
+                            className="text-sm text-[#ef4444] hover:text-[#ef4444]/80 transition-[color] duration-150 ease-out"
+                            disabled={isProcessing}
+                          >
+                            削除
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                ))}
+                {activeItems.length === 0 && (
+                  <p className="text-[#4b5563]/60 text-sm py-4 text-center">請求項目がありません</p>
+                )}
+              </div>
             </div>
           </div>
-        </div>
         </div>
       </div>
       {ConfirmDialog}

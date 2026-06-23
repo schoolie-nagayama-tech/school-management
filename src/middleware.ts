@@ -37,7 +37,11 @@ function getClientIp(request: NextRequest): string {
 }
 
 function buildInAppBrowserPage(targetUrl: string): string {
-  const safeUrl = targetUrl.replace(/&/g, '&amp;').replace(/'/g, '&#39;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+  const safeUrl = targetUrl
+    .replace(/&/g, '&amp;')
+    .replace(/'/g, '&#39;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;');
   const jsUrl = targetUrl.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
 
   return `<!DOCTYPE html>

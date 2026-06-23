@@ -78,9 +78,10 @@ export default function TestPrepProposalsList() {
   const loadStudents = useCallback(async () => {
     setStudentsLoading(true);
     try {
-      const ids = selectedSchoolId && selectedSchoolId !== 'all'
-        ? [selectedSchoolId]
-        : getSelectedSchoolIds();
+      const ids =
+        selectedSchoolId && selectedSchoolId !== 'all'
+          ? [selectedSchoolId]
+          : getSelectedSchoolIds();
       if (ids.length === 0) {
         setStudents([]);
         return;
@@ -153,9 +154,7 @@ export default function TestPrepProposalsList() {
     router.push(`/students/${studentId}/test-prep/new`);
   };
 
-  const filtered = filter === 'all'
-    ? proposals
-    : proposals.filter((p) => p.status === filter);
+  const filtered = filter === 'all' ? proposals : proposals.filter((p) => p.status === filter);
 
   if (loading) {
     return (
@@ -205,7 +204,9 @@ export default function TestPrepProposalsList() {
                 {studentsLoading ? (
                   <div className="py-4 text-center text-xs text-text-faint">読み込み中...</div>
                 ) : filteredStudents.length === 0 ? (
-                  <div className="py-4 text-center text-xs text-text-faint">該当する生徒がいません</div>
+                  <div className="py-4 text-center text-xs text-text-faint">
+                    該当する生徒がいません
+                  </div>
                 ) : (
                   groupedByGrade.map(([grade, list]) => (
                     <div key={grade ?? 'unknown'}>
@@ -222,7 +223,9 @@ export default function TestPrepProposalsList() {
                           <span className="px-1.5 py-0.5 text-[10px] font-medium rounded bg-gray-100 text-gray-500 shrink-0">
                             {s.grade != null ? (GRADE_LABELS[s.grade] ?? `${s.grade}年`) : '—'}
                           </span>
-                          <span className="truncate">{s.last_name} {s.first_name}</span>
+                          <span className="truncate">
+                            {s.last_name} {s.first_name}
+                          </span>
                         </button>
                       ))}
                     </div>
@@ -237,9 +240,8 @@ export default function TestPrepProposalsList() {
       {/* ステータスフィルタ */}
       <div className="flex items-center gap-1.5 mb-4">
         {(['all', 'draft', 'sent', 'published'] as const).map((s) => {
-          const count = s === 'all'
-            ? proposals.length
-            : proposals.filter((p) => p.status === s).length;
+          const count =
+            s === 'all' ? proposals.length : proposals.filter((p) => p.status === s).length;
           return (
             <button
               key={s}
@@ -299,14 +301,14 @@ export default function TestPrepProposalsList() {
                       <span className="text-text-muted">---</span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-text-body">
-                    {p.title || '無題の提案書'}
-                  </td>
+                  <td className="px-4 py-3 text-text-body">{p.title || '無題の提案書'}</td>
                   <td className="px-4 py-3 text-text-muted text-xs">
                     {p.exam_type?.name || '---'}
                   </td>
                   <td className="px-4 py-3 text-center">
-                    <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${STATUS_STYLES[p.status]}`}>
+                    <span
+                      className={`px-2.5 py-1 rounded-full text-xs font-medium ${STATUS_STYLES[p.status]}`}
+                    >
                       {TEST_PREP_STATUS_LABELS[p.status]}
                     </span>
                   </td>

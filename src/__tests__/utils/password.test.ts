@@ -14,22 +14,22 @@ describe('generatePassword', () => {
   it('大文字を含む', () => {
     // 確率的テストなので複数回実行
     const passwords = Array.from({ length: 20 }, () => generatePassword());
-    expect(passwords.every(pw => /[A-Z]/.test(pw))).toBe(true);
+    expect(passwords.every((pw) => /[A-Z]/.test(pw))).toBe(true);
   });
 
   it('小文字を含む', () => {
     const passwords = Array.from({ length: 20 }, () => generatePassword());
-    expect(passwords.every(pw => /[a-z]/.test(pw))).toBe(true);
+    expect(passwords.every((pw) => /[a-z]/.test(pw))).toBe(true);
   });
 
   it('数字を含む', () => {
     const passwords = Array.from({ length: 20 }, () => generatePassword());
-    expect(passwords.every(pw => /[0-9]/.test(pw))).toBe(true);
+    expect(passwords.every((pw) => /[0-9]/.test(pw))).toBe(true);
   });
 
   it('紛らわしい文字（I,O,l,o,0,1）を含まない', () => {
     const passwords = Array.from({ length: 50 }, () => generatePassword(20));
     const forbidden = /[IOlo01]/;
-    expect(passwords.every(pw => !forbidden.test(pw))).toBe(true);
+    expect(passwords.every((pw) => !forbidden.test(pw))).toBe(true);
   });
 });

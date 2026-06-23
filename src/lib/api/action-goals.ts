@@ -25,7 +25,9 @@ export async function getActionGoals(examId: string): Promise<ActionGoal[]> {
 }
 
 /** 複数試験目標の行動目標を一括取得（カード表示で複数 examId 分まとめて） */
-export async function getActionGoalsByExams(examIds: string[]): Promise<Record<string, ActionGoal[]>> {
+export async function getActionGoalsByExams(
+  examIds: string[]
+): Promise<Record<string, ActionGoal[]>> {
   if (examIds.length === 0) return {};
   const { data, error } = await (client() as any)
     .from('action_goals')
@@ -71,10 +73,7 @@ export async function updateActionGoal(id: string, patch: ActionGoalUpdate): Pro
 }
 
 export async function deleteActionGoal(id: string): Promise<void> {
-  const { error } = await (client() as any)
-    .from('action_goals')
-    .delete()
-    .eq('id', id);
+  const { error } = await (client() as any).from('action_goals').delete().eq('id', id);
   if (error) throw error;
 }
 
@@ -96,10 +95,7 @@ export async function copyActionGoalsFromExam(
     achieved: false,
     sort_order: g.sort_order ?? i,
   }));
-  const { data, error } = await (client() as any)
-    .from('action_goals')
-    .insert(payloads)
-    .select('*');
+  const { data, error } = await (client() as any).from('action_goals').insert(payloads).select('*');
   if (error) throw error;
   return (data ?? []) as ActionGoal[];
 }

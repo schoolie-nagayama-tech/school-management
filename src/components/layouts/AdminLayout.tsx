@@ -40,13 +40,15 @@ export function AdminLayout({
           onBulkGradeUpdateClick={headerOnBulkGradeUpdateClick}
         />
       )}
-      <div className={`${
-        fullWidth
-          ? 'max-w-full px-4'
-          : narrow
-            ? 'max-w-7xl px-4 sm:px-6 lg:px-8'
-            : 'max-w-[1600px] px-4 sm:px-6 lg:px-8'
-      } mx-auto py-6`}>
+      <div
+        className={`${
+          fullWidth
+            ? 'max-w-full px-4'
+            : narrow
+              ? 'max-w-7xl px-4 sm:px-6 lg:px-8'
+              : 'max-w-[1600px] px-4 sm:px-6 lg:px-8'
+        } mx-auto py-6`}
+      >
         {/* ページヘッダー */}
         {(title || actions) && (
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
@@ -54,7 +56,7 @@ export function AdminLayout({
             {actions && <div className="flex flex-wrap gap-2 shrink-0">{actions}</div>}
           </div>
         )}
-        
+
         {/* コンテンツ */}
         {children}
       </div>

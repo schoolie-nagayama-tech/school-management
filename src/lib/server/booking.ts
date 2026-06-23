@@ -128,7 +128,9 @@ export function generateInterviewSlots(
   let cursor = new Date(now.getTime());
   // cursor をその日の 00:00 JST に揃える（切り捨て）
   const { year: y0, month: m0, day: d0 } = toJST(cursor);
-  cursor = new Date(`${y0}-${String(m0).padStart(2, '0')}-${String(d0).padStart(2, '0')}T00:00:00+09:00`);
+  cursor = new Date(
+    `${y0}-${String(m0).padStart(2, '0')}-${String(d0).padStart(2, '0')}T00:00:00+09:00`
+  );
 
   while (cursor.getTime() <= endMs) {
     const dateStr = dateToJstDateStr(cursor);
@@ -157,18 +159,14 @@ export function generateInterviewSlots(
         }
 
         // busy と重複チェック（枠の開始 < busy.end かつ 枠の終了 > busy.start）
-        const busyConflict = busyMs.some(
-          (b) => slotStartMs < b.end && slotEndMs > b.start
-        );
+        const busyConflict = busyMs.some((b) => slotStartMs < b.end && slotEndMs > b.start);
         if (busyConflict) {
           slotMinute += config.interview_duration_min;
           continue;
         }
 
         // 既存予約と重複チェック（同一 duration で重なり）
-        const existingConflict = existingMs.some(
-          (e) => slotStartMs < e.end && slotEndMs > e.start
-        );
+        const existingConflict = existingMs.some((e) => slotStartMs < e.end && slotEndMs > e.start);
         if (existingConflict) {
           slotMinute += config.interview_duration_min;
           continue;
@@ -220,7 +218,9 @@ export async function resolveBookingCalendarUserId(
         t.calendar_email?.toLowerCase() === target
     );
     if (matched) return matched.user_id;
-    console.log(`[booking] calendar_email(${config.calendar_email}) に一致するトークンがありません`);
+    console.log(
+      `[booking] calendar_email(${config.calendar_email}) に一致するトークンがありません`
+    );
     return null;
   }
 
@@ -313,9 +313,7 @@ export async function getInterviewAvailability(
     if (calResult.success && calResult.events) {
       calendarConnected = true;
       // allDay イベントはブロックしない仕様なので除外
-      busy = calResult.events
-        .filter((e) => !e.allDay)
-        .map((e) => ({ start: e.start, end: e.end }));
+      busy = calResult.events.filter((e) => !e.allDay).map((e) => ({ start: e.start, end: e.end }));
     } else {
       console.warn('[booking] カレンダー取得失敗（グレースフルデグレード）:', calResult.error);
     }

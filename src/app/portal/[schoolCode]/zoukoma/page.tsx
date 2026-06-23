@@ -24,10 +24,7 @@ interface ZoukomaPortalPageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
-export default async function ZoukomaPortalPage({
-  params,
-  searchParams,
-}: ZoukomaPortalPageProps) {
+export default async function ZoukomaPortalPage({ params, searchParams }: ZoukomaPortalPageProps) {
   const { schoolCode } = await params;
   const query = await searchParams;
 
@@ -46,9 +43,7 @@ export default async function ZoukomaPortalPage({
         {!period ? (
           // 公開期間外
           <div className="bg-white rounded-xl border border-[#e5e7eb] p-8 text-center">
-            <h1 className="text-2xl font-bold text-[#1f2937] mb-4">
-              テスト対策増コマ申し込み
-            </h1>
+            <h1 className="text-2xl font-bold text-[#1f2937] mb-4">テスト対策増コマ申し込み</h1>
             <p className="text-[#4b5563] mb-6">
               現在、テスト対策増コマ申し込みの受付は行っておりません。
             </p>
@@ -63,13 +58,9 @@ export default async function ZoukomaPortalPage({
           // フォーム表示（他フォームと同じレイアウト：ヘッダー＋白カード）
           <>
             <header className="mb-6 text-center">
-              <h1 className="text-2xl font-bold text-[#1f2937] mb-2">
-                {period.title}
-              </h1>
+              <h1 className="text-2xl font-bold text-[#1f2937] mb-2">{period.title}</h1>
               {period.settings?.description && (
-                <p className="text-[#4b5563] whitespace-pre-line">
-                  {period.settings.description}
-                </p>
+                <p className="text-[#4b5563] whitespace-pre-line">{period.settings.description}</p>
               )}
             </header>
             <div className="bg-white rounded-xl border border-[#e5e7eb] p-6">

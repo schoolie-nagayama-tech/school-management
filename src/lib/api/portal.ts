@@ -50,10 +50,7 @@ export async function getAllPortalMenusForPortal(schoolCode: string): Promise<Po
 /**
  * ポータルメニューを更新
  */
-export async function updatePortalMenu(
-  id: string,
-  data: PortalMenuUpdate
-): Promise<PortalMenu> {
+export async function updatePortalMenu(id: string, data: PortalMenuUpdate): Promise<PortalMenu> {
   const { data: updated, error } = await supabase
     .from('portal_menu')
     .update(data)
@@ -71,10 +68,7 @@ export async function updatePortalMenu(
 /**
  * ポータルメニューの並び替え
  */
-export async function reorderPortalMenus(
-  schoolId: string,
-  menuIds: string[]
-): Promise<void> {
+export async function reorderPortalMenus(schoolId: string, menuIds: string[]): Promise<void> {
   // 逐次実行で部分コミットを最小化（エラー発生時は残りをスキップ）
   for (let i = 0; i < menuIds.length; i++) {
     const { error } = await supabase

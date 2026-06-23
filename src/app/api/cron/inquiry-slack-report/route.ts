@@ -78,7 +78,9 @@ export async function GET(request: NextRequest) {
     const inquiries = await fetchAllPaged<InquiryRow>((from, to) =>
       supabaseAdmin
         .from('inquiries')
-        .select('school_id, inquired_at, student_name, guardian_name, status, trial_at, interview_at, enrolled_at')
+        .select(
+          'school_id, inquired_at, student_name, guardian_name, status, trial_at, interview_at, enrolled_at'
+        )
         .is('deleted_at', null)
         .order('id', { ascending: true })
         .range(from, to)
@@ -147,7 +149,11 @@ export async function GET(request: NextRequest) {
         if (isMonday) {
           if (new Date(r.inquired_at).getTime() + 9 * 3600000 >= weekAgoMs) weekNew++;
           if (r.trial_at && new Date(r.trial_at).getTime() + 9 * 3600000 >= weekAgoMs) weekTrials++;
-          if (r.enrolled_at && new Date(r.enrolled_at + 'T00:00:00+09:00').getTime() + 9 * 3600000 >= weekAgoMs) weekEnrolled++;
+          if (
+            r.enrolled_at &&
+            new Date(r.enrolled_at + 'T00:00:00+09:00').getTime() + 9 * 3600000 >= weekAgoMs
+          )
+            weekEnrolled++;
         }
       }
 

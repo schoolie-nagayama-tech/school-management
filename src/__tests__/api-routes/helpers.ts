@@ -48,7 +48,10 @@ export function createMockChain(resolvedData: unknown = null, resolvedError: unk
 
   // await 時の解決値
   Object.defineProperty(chain, 'then', {
-    get: () => vi.fn((resolve: (v: unknown) => void) => resolve({ data: resolvedData, error: resolvedError })),
+    get: () =>
+      vi.fn((resolve: (v: unknown) => void) =>
+        resolve({ data: resolvedData, error: resolvedError })
+      ),
     configurable: true,
   });
 
@@ -68,7 +71,10 @@ export function createMockSupabaseAdmin(chain?: ReturnType<typeof createMockChai
     from: vi.fn(() => mockChain),
     auth: {
       admin: {
-        createUser: vi.fn().mockResolvedValue({ data: { user: { id: 'new-user-id', email: 'test@example.com' } }, error: null }),
+        createUser: vi.fn().mockResolvedValue({
+          data: { user: { id: 'new-user-id', email: 'test@example.com' } },
+          error: null,
+        }),
         deleteUser: vi.fn().mockResolvedValue({ error: null }),
       },
     },
@@ -89,7 +95,11 @@ export function createMockSupabaseAdmin(chain?: ReturnType<typeof createMockChai
  * getApiAuth → { userId, role, schoolIds } を返す
  * isUserInScope → true（対象ユーザーはスコープ内）
  */
-export function authSuccessMocks(overrides?: { role?: string; userId?: string; schoolIds?: string[] }) {
+export function authSuccessMocks(overrides?: {
+  role?: string;
+  userId?: string;
+  schoolIds?: string[];
+}) {
   const role = overrides?.role ?? 'admin';
   const userId = overrides?.userId ?? 'test-user-id';
   const schoolIds = overrides?.schoolIds ?? ['test-school-id'];
@@ -112,12 +122,12 @@ export function authSuccessMocks(overrides?: { role?: string; userId?: string; s
  */
 export function authFailMocks() {
   return {
-    requireManager: vi.fn().mockResolvedValue(
-      NextResponse.json({ error: '認証が必要です' }, { status: 401 })
-    ),
-    requireAdmin: vi.fn().mockResolvedValue(
-      NextResponse.json({ error: '認証が必要です' }, { status: 401 })
-    ),
+    requireManager: vi
+      .fn()
+      .mockResolvedValue(NextResponse.json({ error: '認証が必要です' }, { status: 401 })),
+    requireAdmin: vi
+      .fn()
+      .mockResolvedValue(NextResponse.json({ error: '認証が必要です' }, { status: 401 })),
     getApiAuth: vi.fn().mockResolvedValue({
       auth: null,
       cookieResponse: NextResponse.next(),

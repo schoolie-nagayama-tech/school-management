@@ -14,7 +14,9 @@ function detectInAppBrowser(): boolean {
 }
 
 export function InAppBrowserGuard({ children }: { children: React.ReactNode }) {
-  const [status, setStatus] = useState<'checking' | 'normal' | 'redirecting' | 'fallback'>('checking');
+  const [status, setStatus] = useState<'checking' | 'normal' | 'redirecting' | 'fallback'>(
+    'checking'
+  );
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
@@ -80,11 +82,10 @@ export function InAppBrowserGuard({ children }: { children: React.ReactNode }) {
     return (
       <div className="min-h-screen flex items-center justify-center p-6 bg-gradient-to-b from-emerald-50 to-white">
         <div className="text-center space-y-5 max-w-sm">
-          <h1 className="text-lg font-bold text-gray-800">
-            ブラウザで開いてください
-          </h1>
+          <h1 className="text-lg font-bold text-gray-800">ブラウザで開いてください</h1>
           <p className="text-sm text-gray-600 leading-relaxed">
-            アプリ内ブラウザでは正常に表示できません。<br />
+            アプリ内ブラウザでは正常に表示できません。
+            <br />
             下のボタンからブラウザで開いてください。
           </p>
           <a
@@ -103,7 +104,9 @@ export function InAppBrowserGuard({ children }: { children: React.ReactNode }) {
             {copied ? 'コピーしました' : 'URLをコピーして貼り付ける'}
           </button>
           <p className="text-xs text-gray-400 leading-relaxed">
-            ボタンが動作しない場合は、右上のメニューから<br />「ブラウザで開く」を選択してください
+            ボタンが動作しない場合は、右上のメニューから
+            <br />
+            「ブラウザで開く」を選択してください
           </p>
           <button
             type="button"

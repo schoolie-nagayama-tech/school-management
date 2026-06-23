@@ -95,9 +95,7 @@ export default function TestPrepProposalMock() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-red-100 text-sm">{p.schoolName}</p>
-                <h1 className="text-xl font-bold text-white mt-0.5">
-                  {p.title}
-                </h1>
+                <h1 className="text-xl font-bold text-white mt-0.5">{p.title}</h1>
               </div>
               <div className="text-right text-sm text-red-100">
                 <p>担当: {p.teacherName}</p>
@@ -123,7 +121,10 @@ export default function TestPrepProposalMock() {
             </div>
             <div className="text-right">
               <span className="text-xs text-gray-400">提案コマ数合計</span>
-              <p className="text-2xl font-bold text-red-600">{totalKoma}<span className="text-sm font-normal text-gray-500 ml-1">コマ</span></p>
+              <p className="text-2xl font-bold text-red-600">
+                {totalKoma}
+                <span className="text-sm font-normal text-gray-500 ml-1">コマ</span>
+              </p>
             </div>
           </div>
 
@@ -237,11 +238,7 @@ export default function TestPrepProposalMock() {
 /* ------------------------------------------------------------------
    科目ブロック
    ------------------------------------------------------------------ */
-function SubjectBlock({
-  subject,
-}: {
-  subject: (typeof MOCK_PROPOSAL)['subjects'][number];
-}) {
+function SubjectBlock({ subject }: { subject: (typeof MOCK_PROPOSAL)['subjects'][number] }) {
   const totalKoma = subject.units.reduce((sum, u) => sum + u.koma, 0);
 
   return (
@@ -270,9 +267,7 @@ function SubjectBlock({
               <td className="px-2 py-1.5 text-gray-700">{unit.name}</td>
               <td className="text-center">
                 {unit.assessment && (
-                  <span className={ASSESSMENT_STYLES[unit.assessment]}>
-                    {unit.assessment}
-                  </span>
+                  <span className={ASSESSMENT_STYLES[unit.assessment]}>{unit.assessment}</span>
                 )}
               </td>
               <td className="text-center font-medium text-gray-800">{unit.koma}</td>
@@ -294,11 +289,7 @@ function SubjectBlock({
 /* ------------------------------------------------------------------
    増コマ申込フォーム（モック版・プレフィル済み）
    ------------------------------------------------------------------ */
-function MockZoukomaForm({
-  proposal,
-}: {
-  proposal: typeof MOCK_PROPOSAL;
-}) {
+function MockZoukomaForm({ proposal }: { proposal: typeof MOCK_PROPOSAL }) {
   const subjectKoma = proposal.subjects.map((s) => ({
     name: s.name,
     koma: s.units.reduce((sum, u) => sum + u.koma, 0),
@@ -326,9 +317,7 @@ function MockZoukomaForm({
 
       {/* 科目コマ数（プレフィル、編集可能） */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          科目ごとのコマ数
-        </label>
+        <label className="block text-sm font-medium text-gray-700 mb-2">科目ごとのコマ数</label>
         <div className="space-y-2">
           {subjectKoma.map((sk) => (
             <div key={sk.name} className="flex items-center gap-3">
@@ -363,9 +352,7 @@ function MockZoukomaForm({
 
       {/* メールアドレス */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          保護者メールアドレス
-        </label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">保護者メールアドレス</label>
         <input
           type="email"
           placeholder="example@email.com"
@@ -375,9 +362,7 @@ function MockZoukomaForm({
 
       {/* 備考 */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          備考
-        </label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">備考</label>
         <textarea
           rows={2}
           placeholder="ご質問やご要望があればお書きください"

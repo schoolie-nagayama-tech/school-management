@@ -41,7 +41,11 @@ export function Loading({ size = 'lg', label = '読み込み中...', className =
   );
 }
 
-export function InlineLoading({ size = 'sm', label = '読み込み中...', className = '' }: LoadingProps) {
+export function InlineLoading({
+  size = 'sm',
+  label = '読み込み中...',
+  className = '',
+}: LoadingProps) {
   return (
     <div className={`flex items-center gap-2 ${className}`}>
       <Spinner size={size} />

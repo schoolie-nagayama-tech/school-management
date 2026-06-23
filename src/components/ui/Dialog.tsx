@@ -76,11 +76,7 @@ interface DialogHeaderProps {
 }
 
 export function DialogHeader({ children, className = '' }: DialogHeaderProps) {
-  return (
-    <div className={`px-6 py-4 border-b border-border ${className}`}>
-      {children}
-    </div>
-  );
+  return <div className={`px-6 py-4 border-b border-border ${className}`}>{children}</div>;
 }
 
 interface DialogTitleProps {
@@ -104,7 +100,9 @@ interface DialogFooterProps {
 
 export function DialogFooter({ children, className = '' }: DialogFooterProps) {
   return (
-    <div className={`flex items-center justify-end gap-2 px-6 py-4 border-t border-border ${className}`}>
+    <div
+      className={`flex items-center justify-end gap-2 px-6 py-4 border-t border-border ${className}`}
+    >
       {children}
     </div>
   );

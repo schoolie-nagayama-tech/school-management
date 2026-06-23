@@ -39,7 +39,12 @@ describe('POST /api/admin/users/create', () => {
         return createMockChain(null) as never;
       }
       // 最後: 作成済みユーザー返却
-      return createMockChain({ id: 'new-user-id', email: 'test@example.com', display_name: 'テスト', role: 'teacher' }) as never;
+      return createMockChain({
+        id: 'new-user-id',
+        email: 'test@example.com',
+        display_name: 'テスト',
+        role: 'teacher',
+      }) as never;
     }) as unknown as () => Record<string, ReturnType<typeof vi.fn>>);
     mockAdmin.auth.admin.createUser.mockResolvedValue({
       data: { user: { id: 'new-user-id', email: 'test@example.com' } },
@@ -89,7 +94,13 @@ describe('POST /api/admin/users/create', () => {
     );
 
     const { POST } = await import('@/app/api/admin/users/create/route');
-    const req = makeCreateRequest({ email: 'x', password: 'p', displayName: 'd', role: 'teacher', schoolId: 's' });
+    const req = makeCreateRequest({
+      email: 'x',
+      password: 'p',
+      displayName: 'd',
+      role: 'teacher',
+      schoolId: 's',
+    });
     const res = await POST(req);
 
     expect(res.status).toBe(401);
@@ -98,7 +109,12 @@ describe('POST /api/admin/users/create', () => {
   it('必須項目がない場合に400を返す', async () => {
     const { POST } = await import('@/app/api/admin/users/create/route');
     // password が欠落
-    const req = makeCreateRequest({ email: 'x@x.com', displayName: 'd', role: 'teacher', schoolId: 's' });
+    const req = makeCreateRequest({
+      email: 'x@x.com',
+      displayName: 'd',
+      role: 'teacher',
+      schoolId: 's',
+    });
     const res = await POST(req);
 
     expect(res.status).toBe(400);
@@ -146,8 +162,8 @@ describe('POST /api/admin/users/create', () => {
 
   it('メール重複時に400を返す', async () => {
     // メール重複チェックで既存ユーザーが見つかる
-    mockAdmin.from.mockImplementation(() =>
-      createMockChain({ id: 'existing-id', email: 'dup@example.com' }) as never
+    mockAdmin.from.mockImplementation(
+      () => createMockChain({ id: 'existing-id', email: 'dup@example.com' }) as never
     );
 
     const { POST } = await import('@/app/api/admin/users/create/route');

@@ -16,11 +16,7 @@ const TEACHER_SLOT_DROP_PREFIX = 'teacher-slot-';
  */
 const AVAIL_TEACHER_DRAG_PREFIX = 'avail-teacher-';
 
-export function getAvailableTeacherDragId(
-  date: string,
-  slotId: string,
-  teacherId: string
-): string {
+export function getAvailableTeacherDragId(date: string, slotId: string, teacherId: string): string {
   return `${AVAIL_TEACHER_DRAG_PREFIX}${date}|${slotId}|${teacherId}`;
 }
 
@@ -151,11 +147,10 @@ export const TeacherCard = React.memo(function TeacherCard({
   const canAddStudent = !isClosed && activeEntries.length < maxStudents;
   // 担当未決定エントリのグループは特殊ID (__unassigned__ または __unassigned__:<entryId>) で識別。
   // 「講師」ではなく「担当未決定」の枠として配色を変えて見せる。
-  const isUnassigned =
-    teacher.id === '__unassigned__' || teacher.id.startsWith('__unassigned__:');
+  const isUnassigned = teacher.id === '__unassigned__' || teacher.id.startsWith('__unassigned__:');
   const displayName = isUnassigned
     ? teacher.display_name || '担当未決定'
-    : (teacher.display_name || teacher.email || '—');
+    : teacher.display_name || teacher.email || '—';
 
   // D&D 制約チェック。基本制約 + 講師×生徒の相性制約。
   // 不一致なら canDrop=false で赤 ring 表示、ドロップ無効。
@@ -221,8 +216,7 @@ export const TeacherCard = React.memo(function TeacherCard({
 
   // 講師の性別ラベル（M/F アイコン用）。
   // 指導可能科目は D&D 制約チェックには使うが、座席表カード上には表示しない方針。
-  const genderLabel =
-    teacher.gender === 'male' ? '男' : teacher.gender === 'female' ? '女' : '';
+  const genderLabel = teacher.gender === 'male' ? '男' : teacher.gender === 'female' ? '女' : '';
 
   const isOverAndCanDrop = isOver && (canDrop || canAcceptTeacherDrop);
   const isOverAndCannotDrop = isOver && !canDrop && !canAcceptTeacherDrop && activeDragEntry;
@@ -237,8 +231,7 @@ export const TeacherCard = React.memo(function TeacherCard({
     activeDragEntry.entry_date === date &&
     activeDragEntry.time_slot_id === timeSlotId &&
     activeDragEntry.teacher_id === teacher.id;
-  const isDimmedDuringDrag =
-    isDragInProgress && !canDrop && !canAcceptTeacherDrop && !isSameCell;
+  const isDimmedDuringDrag = isDragInProgress && !canDrop && !canAcceptTeacherDrop && !isSameCell;
 
   const handleTransferClick = () => {
     if (transferMode && onTransferTargetClick) onTransferTargetClick(date, timeSlotId, teacher.id);
@@ -276,15 +269,24 @@ export const TeacherCard = React.memo(function TeacherCard({
           ${isDimmedDuringDrag ? 'opacity-30 grayscale' : ''}
           ${koushuPlacing ? 'cursor-pointer ring-1 ring-info/50 hover:ring-2 hover:ring-info hover:bg-info-subtle' : ''}
         `}
-        onClick={koushuPlacing ? handleKoushuPlaceClick : transferMode ? handleTransferClick : undefined}
+        onClick={
+          koushuPlacing ? handleKoushuPlaceClick : transferMode ? handleTransferClick : undefined
+        }
         role={koushuPlacing || transferMode ? 'button' : undefined}
-        title={koushuPlacing ? 'クリックでこの講師に配置する' : 'ドラッグして担当未決定セルに割当できます'}
+        title={
+          koushuPlacing
+            ? 'クリックでこの講師に配置する'
+            : 'ドラッグして担当未決定セルに割当できます'
+        }
       >
         <GripVertical className="w-2.5 h-2.5 text-gray-300 flex-shrink-0" />
         <span className="text-[11px] truncate flex-1 min-w-0">{displayName}</span>
         <button
           type="button"
-          onClick={(e) => { e.stopPropagation(); onRemoveTeacher(); }}
+          onClick={(e) => {
+            e.stopPropagation();
+            onRemoveTeacher();
+          }}
           className="flex-shrink-0 w-3.5 h-3.5 flex items-center justify-center rounded text-gray-300 hover:text-red-400 text-[10px]"
           aria-label="講師を削除"
         >
@@ -302,10 +304,12 @@ export const TeacherCard = React.memo(function TeacherCard({
       ref={isUnassigned ? setNodeRef : undefined}
       className={`
         group relative rounded-xl border transition-[box-shadow,background-color,border-color] duration-150 ease-out
-        ${isUnassigned
-          // 担当未決定: 破線ボーダー + 薄い warning 着色で「決まっていない」を視覚化
-          ? 'border-dashed border-warning bg-warning-subtle/40 shadow-sm hover:shadow-md hover:bg-warning-subtle/60'
-          : 'border-[color:color-mix(in_oklch,var(--primary)_25%,#e5e7eb)] bg-white shadow-sm hover:shadow-md hover:bg-gray-50'}
+        ${
+          isUnassigned
+            ? // 担当未決定: 破線ボーダー + 薄い warning 着色で「決まっていない」を視覚化
+              'border-dashed border-warning bg-warning-subtle/40 shadow-sm hover:shadow-md hover:bg-warning-subtle/60'
+            : 'border-[color:color-mix(in_oklch,var(--primary)_25%,#e5e7eb)] bg-white shadow-sm hover:shadow-md hover:bg-gray-50'
+        }
         ${transferMode ? 'cursor-pointer hover:border-[var(--primary)]/40 hover:bg-gray-50/50' : ''}
         ${canAcceptTeacherDrop && !isOver ? 'ring-1 ring-info/30 ring-offset-1' : ''}
         ${canDrop && !isOver ? 'ring-1 ring-emerald-400/60 ring-offset-1' : ''}
@@ -322,7 +326,11 @@ export const TeacherCard = React.memo(function TeacherCard({
             ? handleTransferClick
             : undefined
       }
-      role={(koushuPlacing && onKoushuPlaceClick) || (transferMode && onTransferTargetClick) ? 'button' : undefined}
+      role={
+        (koushuPlacing && onKoushuPlaceClick) || (transferMode && onTransferTargetClick)
+          ? 'button'
+          : undefined
+      }
       title={
         koushuPlacing && onKoushuPlaceClick
           ? 'クリックでこの講師に配置する'
@@ -353,7 +361,9 @@ export const TeacherCard = React.memo(function TeacherCard({
           }
         }}
       >
-        <span className={`min-w-0 truncate flex-1 text-xs font-medium ${isUnassigned ? 'text-warning' : 'text-gray-700'}`}>
+        <span
+          className={`min-w-0 truncate flex-1 text-xs font-medium ${isUnassigned ? 'text-warning' : 'text-gray-700'}`}
+        >
           {displayName}
           {/* 性別アイコン（M/F） */}
           {genderLabel && (
@@ -367,7 +377,9 @@ export const TeacherCard = React.memo(function TeacherCard({
             </span>
           )}
         </span>
-        <span className="flex-shrink-0 ml-1 text-[10px] text-gray-400 tabular-nums">{slotLabel}</span>
+        <span className="flex-shrink-0 ml-1 text-[10px] text-gray-400 tabular-nums">
+          {slotLabel}
+        </span>
         {/* 欠勤トグル：欠勤なら UserCheck（出勤に戻す）、出勤なら UserX（欠勤にする） */}
         {onToggleAbsence && (
           <button

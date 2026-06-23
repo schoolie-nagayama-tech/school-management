@@ -43,11 +43,7 @@ export function FormLinkModal({ isOpen, onClose, form }: FormLinkModalProps) {
         setSchoolCode(school.code);
       } else {
         // 学校IDから直接取得できない場合は、schoolsテーブルから取得
-        const { data } = await supabase
-          .from('schools')
-          .select('code')
-          .eq('id', schoolId)
-          .single();
+        const { data } = await supabase.from('schools').select('code').eq('id', schoolId).single();
         if (data?.code) {
           setSchoolCode(data.code);
         }
@@ -83,9 +79,7 @@ export function FormLinkModal({ isOpen, onClose, form }: FormLinkModalProps) {
           </div>
         )}
         <div>
-          <label className="block text-sm font-medium text-[#4b5563] mb-2">
-            フォームタイトル
-          </label>
+          <label className="block text-sm font-medium text-[#4b5563] mb-2">フォームタイトル</label>
           <p className="text-[#1f2937] font-medium">{form.title}</p>
         </div>
 
@@ -94,9 +88,7 @@ export function FormLinkModal({ isOpen, onClose, form }: FormLinkModalProps) {
         ) : (
           <>
             <div>
-              <label className="block text-sm font-medium text-[#4b5563] mb-2">
-                公開URL
-              </label>
+              <label className="block text-sm font-medium text-[#4b5563] mb-2">公開URL</label>
               <div className="flex gap-2">
                 <input
                   type="text"
@@ -112,16 +104,14 @@ export function FormLinkModal({ isOpen, onClose, form }: FormLinkModalProps) {
                   {copied ? 'コピー済み' : 'コピー'}
                 </Button>
               </div>
-              <p className="text-xs text-[#4b5563]/60 mt-1">
-                このURLを保護者に共有してください
-              </p>
+              <p className="text-xs text-[#4b5563]/60 mt-1">このURLを保護者に共有してください</p>
             </div>
 
             {form.status !== 'published' && (
               <div className="bg-[#3b82f6]/20 text-[#1f2937] px-4 py-2 rounded border border-[#3b82f6]">
                 <p className="text-sm">
-                  注意: このフォームは現在「{form.status === 'draft' ? '下書き' : '終了'}」状態です。
-                  公開するにはフォームを編集して状態を「公開中」に変更してください。
+                  注意: このフォームは現在「{form.status === 'draft' ? '下書き' : '終了'}
+                  」状態です。 公開するにはフォームを編集して状態を「公開中」に変更してください。
                 </p>
               </div>
             )}

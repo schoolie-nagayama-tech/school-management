@@ -11,10 +11,9 @@ const BillingPeriodSelector = dynamic(
   () => import('@/components/billing').then((m) => m.BillingPeriodSelector),
   { ssr: false }
 );
-const BillingTable = dynamic(
-  () => import('@/components/billing').then((m) => m.BillingTable),
-  { ssr: false }
-);
+const BillingTable = dynamic(() => import('@/components/billing').then((m) => m.BillingTable), {
+  ssr: false,
+});
 const BillingItemAccordion = dynamic(
   () => import('@/components/billing').then((m) => m.BillingItemAccordion),
   { ssr: false }
@@ -28,17 +27,8 @@ const StudentDetailModal = dynamic(
   { ssr: false }
 );
 import { getStudents } from '@/lib/api/students';
-import {
-  getBillingPeriods,
-  getBillingItems,
-  getStudentBillings,
-} from '@/lib/api/billing';
-import type {
-  Student,
-  BillingPeriod,
-  BillingItem,
-  StudentBilling,
-} from '@/types/database';
+import { getBillingPeriods, getBillingItems, getStudentBillings } from '@/lib/api/billing';
+import type { Student, BillingPeriod, BillingItem, StudentBilling } from '@/types/database';
 import { GRADE_LABELS } from '@/types/database';
 import { useRequirePermission, useCanEdit } from '@/hooks/usePermissions';
 import AccessDenied from '@/components/AccessDenied';
@@ -57,7 +47,8 @@ export default function BillingPage() {
   const { getSelectedSchoolIds, selectedSchoolId, profile } = useAuth();
 
   // 教室長以上かどうかを判定
-  const isManagerOrAbove = profile?.role === 'manager' || profile?.role === 'owner' || profile?.role === 'admin';
+  const isManagerOrAbove =
+    profile?.role === 'manager' || profile?.role === 'owner' || profile?.role === 'admin';
 
   // 状態管理
   const [students, setStudents] = useState<Student[]>([]);
@@ -188,9 +179,7 @@ export default function BillingPage() {
           (b) => b.student_id === studentId && b.billing_item_id === billingItemId
         );
         if (existing) {
-          return prev.map((b) =>
-            b.id === existing.id ? { ...b, is_billed: isBilled } : b
-          );
+          return prev.map((b) => (b.id === existing.id ? { ...b, is_billed: isBilled } : b));
         } else {
           // 新規作成（仮のID）
           const newBilling: StudentBilling = {
@@ -285,22 +274,25 @@ export default function BillingPage() {
             />
             <select
               value={filters.grade ?? ''}
-              onChange={(e) => handleFilterChange({ grade: e.target.value ? Number(e.target.value) : null })}
+              onChange={(e) =>
+                handleFilterChange({ grade: e.target.value ? Number(e.target.value) : null })
+              }
               className="w-24 px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised text-text-heading focus:ring-2 focus:ring-ink/20"
             >
               <option value="">全学年</option>
-              {Array.from(new Set(students.map((s) => s.grade))).sort((a, b) => a - b).map((g) => (
-                <option key={g} value={g}>{GRADE_LABELS[g] || g}</option>
-              ))}
+              {Array.from(new Set(students.map((s) => s.grade)))
+                .sort((a, b) => a - b)
+                .map((g) => (
+                  <option key={g} value={g}>
+                    {GRADE_LABELS[g] || g}
+                  </option>
+                ))}
             </select>
           </>
         )}
         <div className="ml-auto">
           {selectedPeriodId && schoolIds.length > 0 && (
-            <VocabBookStockCard
-              schoolIds={schoolIds}
-              refreshKey={stockRefreshKey}
-            />
+            <VocabBookStockCard schoolIds={schoolIds} refreshKey={stockRefreshKey} />
           )}
         </div>
       </div>
@@ -332,7 +324,9 @@ export default function BillingPage() {
         <div className="bg-surface-raised rounded-xl border border-border p-8 text-center">
           <p className="text-text-body mb-4">請求項目がありません。</p>
           {canEdit && isManagerOrAbove && (
-            <p className="text-text-body text-sm">上の「項目管理」から請求項目を追加してください。</p>
+            <p className="text-text-body text-sm">
+              上の「項目管理」から請求項目を追加してください。
+            </p>
           )}
         </div>
       ) : (
@@ -344,12 +338,12 @@ export default function BillingPage() {
             onBillingChange={canEdit ? handleBillingChange : undefined}
             onStudentClick={handleStudentClick}
             onItemsChange={handleItemsUpdated}
-            periodStartDate={periods.find(p => p.id === selectedPeriodId)?.start_date}
-            periodEndDate={periods.find(p => p.id === selectedPeriodId)?.end_date}
+            periodStartDate={periods.find((p) => p.id === selectedPeriodId)?.start_date}
+            periodEndDate={periods.find((p) => p.id === selectedPeriodId)?.end_date}
             schoolIds={getSelectedSchoolIds()}
             billingPeriodId={selectedPeriodId || undefined}
-            billingPeriodName={periods.find(p => p.id === selectedPeriodId)?.name}
-            onStockUpdated={() => setStockRefreshKey(prev => prev + 1)}
+            billingPeriodName={periods.find((p) => p.id === selectedPeriodId)?.name}
+            onStockUpdated={() => setStockRefreshKey((prev) => prev + 1)}
           />
         </>
       )}

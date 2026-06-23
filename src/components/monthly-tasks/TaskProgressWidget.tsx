@@ -19,12 +19,21 @@ import type {
 } from '@/types/database';
 import { SEASON_LABELS } from '@/types/database';
 import type { AutoValues } from '@/lib/api/courseProgress';
-import { AlertTriangle, ArrowRight, BookOpen, Check, ChevronDown, GraduationCap, ListTodo, Trophy } from 'lucide-react';
+import {
+  AlertTriangle,
+  ArrowRight,
+  BookOpen,
+  Check,
+  ChevronDown,
+  GraduationCap,
+  ListTodo,
+  Trophy,
+} from 'lucide-react';
 import Link from 'next/link';
 
 function formatDate(dateStr: string) {
   const d = new Date(dateStr + 'T00:00:00');
-  return `${d.getMonth() + 1}/${d.getDate()}(${['日','月','火','水','木','金','土'][d.getDay()]})`;
+  return `${d.getMonth() + 1}/${d.getDate()}(${['日', '月', '火', '水', '木', '金', '土'][d.getDay()]})`;
 }
 
 function formatCoursePrepMessage(task: CoursePrepWidgetTask): string {
@@ -76,15 +85,17 @@ function CompletionParticles() {
         <span
           key={i}
           className="absolute left-1/2 top-1/2 rounded-full"
-          style={{
-            width: p.size,
-            height: p.size,
-            backgroundColor: p.color,
-            '--dx': `${p.dx}px`,
-            '--dy': `${p.dy}px`,
-            animation: `confetti-burst 0.8s ease-out ${p.delay}s forwards`,
-            opacity: 0,
-          } as React.CSSProperties}
+          style={
+            {
+              width: p.size,
+              height: p.size,
+              backgroundColor: p.color,
+              '--dx': `${p.dx}px`,
+              '--dy': `${p.dy}px`,
+              animation: `confetti-burst 0.8s ease-out ${p.delay}s forwards`,
+              opacity: 0,
+            } as React.CSSProperties
+          }
         />
       ))}
     </div>
@@ -132,7 +143,10 @@ function TaskCheckbox({
   );
 }
 
-function findItemByKeywords(items: CourseProgressItem[], keywords: string[]): CourseProgressItem | undefined {
+function findItemByKeywords(
+  items: CourseProgressItem[],
+  keywords: string[]
+): CourseProgressItem | undefined {
   for (const kw of keywords) {
     const exact = items.find((i) => i.name === kw);
     if (exact) return exact;
@@ -144,7 +158,10 @@ function findItemByKeywords(items: CourseProgressItem[], keywords: string[]): Co
   return undefined;
 }
 
-interface SchoolInfo { id: string; name: string }
+interface SchoolInfo {
+  id: string;
+  name: string;
+}
 
 interface PerSchoolCourseData {
   schoolId: string;
@@ -155,7 +172,11 @@ interface PerSchoolCourseData {
   autoValues: AutoValues;
 }
 
-export function TaskProgressWidget({ schoolIds, schoolId, schools: schoolsProp }: {
+export function TaskProgressWidget({
+  schoolIds,
+  schoolId,
+  schools: schoolsProp,
+}: {
   schoolIds?: string[];
   schoolId?: string;
   schools?: SchoolInfo[];
@@ -217,7 +238,10 @@ export function TaskProgressWidget({ schoolIds, schoolId, schools: schoolsProp }
 
   const schoolNameMap = useMemo(() => {
     const map: Record<string, string> = {};
-    if (schoolsProp) schoolsProp.forEach((s) => { map[s.id] = s.name; });
+    if (schoolsProp)
+      schoolsProp.forEach((s) => {
+        map[s.id] = s.name;
+      });
     return map;
   }, [schoolsProp]);
 
@@ -269,8 +293,12 @@ export function TaskProgressWidget({ schoolIds, schoolId, schools: schoolsProp }
   // ピーク同時実行数を下げ、結果的に全体を速くする。表示は自動ロードのまま（一段遅れて出る）。
   useEffect(() => {
     let cancelled = false;
-    whenNetworkIdle().then(() => { if (!cancelled) fetchCourseProgress(); });
-    return () => { cancelled = true; };
+    whenNetworkIdle().then(() => {
+      if (!cancelled) fetchCourseProgress();
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [fetchCourseProgress]);
 
   const handleComplete = useCallback((completed: ProgressWidgetTask) => {
@@ -290,8 +318,15 @@ export function TaskProgressWidget({ schoolIds, schoolId, schools: schoolsProp }
     const pcsItem = findItemByKeywords(sd.items, ['PCS回収', 'PCS']);
     const soudanItem = findItemByKeywords(sd.items, ['面談申込', '面談申し込み', '面談申込み']);
     const interviewItem = findItemByKeywords(sd.items, ['生徒面談実施', '生徒面談', '面談実施']);
-    const parentInterviewItem = findItemByKeywords(sd.items, ['父母面談実施', '父母面談', '保護者面談実施', '保護者面談']);
-    const subjectItems = sd.items.filter((i) => i.column_group === '教科別' && i.column_type === 'number');
+    const parentInterviewItem = findItemByKeywords(sd.items, [
+      '父母面談実施',
+      '父母面談',
+      '保護者面談実施',
+      '保護者面談',
+    ]);
+    const subjectItems = sd.items.filter(
+      (i) => i.column_group === '教科別' && i.column_type === 'number'
+    );
 
     const countCompleted = (item: CourseProgressItem | undefined) => {
       if (!item) return null;
@@ -307,8 +342,10 @@ export function TaskProgressWidget({ schoolIds, schoolId, schools: schoolsProp }
     const soudanStats = countCompleted(soudanItem);
     const interviewStats = countCompleted(interviewItem);
     const parentInterviewStats = countCompleted(parentInterviewItem);
-    const interviewRate = parentInterviewStats && parentInterviewStats.total > 0
-      ? Math.round((parentInterviewStats.completed / parentInterviewStats.total) * 100) : 0;
+    const interviewRate =
+      parentInterviewStats && parentInterviewStats.total > 0
+        ? Math.round((parentInterviewStats.completed / parentInterviewStats.total) * 100)
+        : 0;
 
     // Subject totals
     const subjectTotals: { name: string; total: number }[] = [];
@@ -319,8 +356,16 @@ export function TaskProgressWidget({ schoolIds, schoolId, schools: schoolsProp }
         if (item.auto_source === 'subject_proposal') {
           const sv = sd.autoValues[s.id];
           if (sv?.subject_proposals) {
-            if (sv.subject_proposals[item.name] !== undefined) sum += sv.subject_proposals[item.name];
-            else { for (const [subject, count] of Object.entries(sv.subject_proposals)) { if (item.name.includes(subject)) { sum += count; break; } } }
+            if (sv.subject_proposals[item.name] !== undefined)
+              sum += sv.subject_proposals[item.name];
+            else {
+              for (const [subject, count] of Object.entries(sv.subject_proposals)) {
+                if (item.name.includes(subject)) {
+                  sum += count;
+                  break;
+                }
+              }
+            }
           }
         } else {
           const d = sd.progress.find((p) => p.student_id === s.id && p.item_id === item.id);
@@ -332,13 +377,24 @@ export function TaskProgressWidget({ schoolIds, schoolId, schools: schoolsProp }
     }
 
     // Koma stats
-    const proposedKomaItem = sd.items.find((i) => i.auto_source === 'proposed_extra') || findItemByKeywords(sd.items, ['提案増コマ', '提示増コマ']);
-    const decidedKomaItem = sd.items.find((i) => i.id !== proposedKomaItem?.id && i.auto_source === 'applied_extra')
-      || sd.items.find(
-        (i) => i.id !== proposedKomaItem?.id && i.column_type === 'number' && (i.name.includes('増コマ回数') || i.name === '増コマ回数決定')
-      ) || findItemByKeywords(sd.items.filter((i) => i.id !== proposedKomaItem?.id), ['増コマ回数決定', '増コマ決定', '決定コマ', '増コマ回数']);
+    const proposedKomaItem =
+      sd.items.find((i) => i.auto_source === 'proposed_extra') ||
+      findItemByKeywords(sd.items, ['提案増コマ', '提示増コマ']);
+    const decidedKomaItem =
+      sd.items.find((i) => i.id !== proposedKomaItem?.id && i.auto_source === 'applied_extra') ||
+      sd.items.find(
+        (i) =>
+          i.id !== proposedKomaItem?.id &&
+          i.column_type === 'number' &&
+          (i.name.includes('増コマ回数') || i.name === '増コマ回数決定')
+      ) ||
+      findItemByKeywords(
+        sd.items.filter((i) => i.id !== proposedKomaItem?.id),
+        ['増コマ回数決定', '増コマ決定', '決定コマ', '増コマ回数']
+      );
 
-    let totalProposed = 0, totalDecided = 0;
+    let totalProposed = 0,
+      totalDecided = 0;
     for (const s of sd.students) {
       if (proposedKomaItem) {
         if (proposedKomaItem.auto_source === 'proposed_extra') {
@@ -347,7 +403,9 @@ export function TaskProgressWidget({ schoolIds, schoolId, schools: schoolsProp }
           const courseSessions = sv?.course_sessions ?? 0;
           totalProposed += Math.max(0, proposalTotal - courseSessions);
         } else {
-          const d = sd.progress.find((p) => p.student_id === s.id && p.item_id === proposedKomaItem.id);
+          const d = sd.progress.find(
+            (p) => p.student_id === s.id && p.item_id === proposedKomaItem.id
+          );
           totalProposed += d?.number_value ?? 0;
         }
       }
@@ -358,24 +416,39 @@ export function TaskProgressWidget({ schoolIds, schoolId, schools: schoolsProp }
           const courseSessions = sv?.course_sessions ?? 0;
           totalDecided += Math.max(0, appliedTotal - courseSessions);
         } else {
-          const d = sd.progress.find((p) => p.student_id === s.id && p.item_id === decidedKomaItem.id);
+          const d = sd.progress.find(
+            (p) => p.student_id === s.id && p.item_id === decidedKomaItem.id
+          );
           totalDecided += d?.number_value ?? 0;
         }
       }
     }
 
-    const hasData = !!(pcsStats || soudanStats || interviewStats || parentInterviewStats || grandTotal > 0 || totalProposed > 0 || totalDecided > 0);
+    const hasData = !!(
+      pcsStats ||
+      soudanStats ||
+      interviewStats ||
+      parentInterviewStats ||
+      grandTotal > 0 ||
+      totalProposed > 0 ||
+      totalDecided > 0
+    );
     return {
-      schoolId: sd.schoolId, schoolName: sd.schoolName,
-      pcsStats, soudanStats, interviewStats, parentInterviewStats, interviewRate,
+      schoolId: sd.schoolId,
+      schoolName: sd.schoolName,
+      pcsStats,
+      soudanStats,
+      interviewStats,
+      parentInterviewStats,
+      interviewRate,
       subjectTotals: { subjects: subjectTotals, grandTotal },
       komaStats: { proposed: totalProposed, decided: totalDecided },
       hasData,
     };
   }, []);
 
-  const allSchoolMetrics = useMemo(() =>
-    perSchoolData.map(computeSchoolMetrics).filter((m) => m.hasData),
+  const allSchoolMetrics = useMemo(
+    () => perSchoolData.map(computeSchoolMetrics).filter((m) => m.hasData),
     [perSchoolData, computeSchoolMetrics]
   );
 
@@ -400,7 +473,9 @@ export function TaskProgressWidget({ schoolIds, schoolId, schools: schoolsProp }
       <div className="flex items-center gap-2 mb-2">
         <GraduationCap className="w-3.5 h-3.5 text-indigo-500" />
         <span className="text-[11px] font-bold text-gray-600">講習進捗</span>
-        <span className="text-[11px] text-gray-400">{year}年 {seasonLabel}</span>
+        <span className="text-[11px] text-gray-400">
+          {year}年 {seasonLabel}
+        </span>
         <Link
           href="/courses/progress"
           className="ml-auto flex items-center gap-0.5 text-[11px] text-blue-500 hover:text-blue-700 font-medium transition-[color] duration-150 ease-out"
@@ -415,9 +490,30 @@ export function TaskProgressWidget({ schoolIds, schoolId, schools: schoolsProp }
             <div className="text-[11px] font-bold text-gray-500 mb-1.5">{m.schoolName}</div>
           )}
           <div className="flex flex-wrap gap-2">
-            {m.pcsStats && <CourseMetricChip label="PCS回収" value={m.pcsStats.completed} total={m.pcsStats.total} color="blue" />}
-            {m.soudanStats && <CourseMetricChip label="面談申込" value={m.soudanStats.completed} total={m.soudanStats.total} color="amber" />}
-            {m.interviewStats && <CourseMetricChip label="生徒面談" value={m.interviewStats.completed} total={m.interviewStats.total} color="green" />}
+            {m.pcsStats && (
+              <CourseMetricChip
+                label="PCS回収"
+                value={m.pcsStats.completed}
+                total={m.pcsStats.total}
+                color="blue"
+              />
+            )}
+            {m.soudanStats && (
+              <CourseMetricChip
+                label="面談申込"
+                value={m.soudanStats.completed}
+                total={m.soudanStats.total}
+                color="amber"
+              />
+            )}
+            {m.interviewStats && (
+              <CourseMetricChip
+                label="生徒面談"
+                value={m.interviewStats.completed}
+                total={m.interviewStats.total}
+                color="green"
+              />
+            )}
             {m.parentInterviewStats && (
               <div className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-emerald-200 bg-emerald-50 text-[11px]">
                 <span className="text-emerald-600 font-medium">面談実施率</span>
@@ -437,7 +533,10 @@ export function TaskProgressWidget({ schoolIds, schoolId, schools: schoolsProp }
             <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
               <span className="text-[11px] text-gray-400 mr-0.5">提案コマ:</span>
               {m.subjectTotals.subjects.map((s) => (
-                <span key={s.name} className="inline-flex items-center gap-1 px-2 py-0.5 rounded border border-gray-200 bg-gray-50 text-[11px]">
+                <span
+                  key={s.name}
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded border border-gray-200 bg-gray-50 text-[11px]"
+                >
                   <span className="text-gray-500">{s.name}</span>
                   <span className="text-gray-800 font-bold">{s.total}</span>
                 </span>
@@ -479,7 +578,8 @@ export function TaskProgressWidget({ schoolIds, schoolId, schools: schoolsProp }
         <div
           className="h-1"
           style={{
-            background: 'linear-gradient(90deg, #22c55e 0%, #4ade80 40%, #86efac 50%, #4ade80 60%, #22c55e 100%)',
+            background:
+              'linear-gradient(90deg, #22c55e 0%, #4ade80 40%, #86efac 50%, #4ade80 60%, #22c55e 100%)',
             backgroundSize: '200% 100%',
             animation: 'bar-shimmer 2s linear infinite',
           }}
@@ -499,13 +599,13 @@ export function TaskProgressWidget({ schoolIds, schoolId, schools: schoolsProp }
           onClick={() => setIsOpen((v) => !v)}
           className="flex items-center gap-2 hover:opacity-70 transition-opacity"
         >
-          <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${isOpen ? '' : '-rotate-90'}`} />
+          <ChevronDown
+            className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${isOpen ? '' : '-rotate-90'}`}
+          />
           <ListTodo className="w-4 h-4 text-gray-500" />
           <span className="text-sm font-bold text-gray-700">業務進捗</span>
           <span className="text-xs text-gray-400">{monthLabel}</span>
-          <span className="text-[11px] text-gray-400">
-            残 {data.tasks.length}件
-          </span>
+          <span className="text-[11px] text-gray-400">残 {data.tasks.length}件</span>
         </button>
         <Link
           href="/tasks"
@@ -559,7 +659,9 @@ export function TaskProgressWidget({ schoolIds, schoolId, schools: schoolsProp }
                   ct.overdue ? 'text-red-600' : 'text-blue-700'
                 }`}
               >
-                <BookOpen className={`w-3 h-3 mt-0.5 flex-shrink-0 ${ct.overdue ? 'text-red-400' : 'text-blue-400'}`} />
+                <BookOpen
+                  className={`w-3 h-3 mt-0.5 flex-shrink-0 ${ct.overdue ? 'text-red-400' : 'text-blue-400'}`}
+                />
                 <span>{formatCoursePrepMessage(ct)}</span>
               </div>
             ))}
@@ -573,17 +675,45 @@ export function TaskProgressWidget({ schoolIds, schoolId, schools: schoolsProp }
   );
 }
 
-function CourseMetricChip({ label, value, total, color }: {
-  label: string; value: number; total: number; color: 'blue' | 'amber' | 'green';
+function CourseMetricChip({
+  label,
+  value,
+  total,
+  color,
+}: {
+  label: string;
+  value: number;
+  total: number;
+  color: 'blue' | 'amber' | 'green';
 }) {
   const pct = total > 0 ? Math.round((value / total) * 100) : 0;
   const colors = {
-    blue: { border: 'border-blue-200', bg: 'bg-blue-50', label: 'text-blue-600', value: 'text-blue-800', sub: 'text-blue-400' },
-    amber: { border: 'border-amber-200', bg: 'bg-amber-50', label: 'text-amber-600', value: 'text-amber-800', sub: 'text-amber-400' },
-    green: { border: 'border-green-200', bg: 'bg-green-50', label: 'text-green-600', value: 'text-green-800', sub: 'text-green-400' },
+    blue: {
+      border: 'border-blue-200',
+      bg: 'bg-blue-50',
+      label: 'text-blue-600',
+      value: 'text-blue-800',
+      sub: 'text-blue-400',
+    },
+    amber: {
+      border: 'border-amber-200',
+      bg: 'bg-amber-50',
+      label: 'text-amber-600',
+      value: 'text-amber-800',
+      sub: 'text-amber-400',
+    },
+    green: {
+      border: 'border-green-200',
+      bg: 'bg-green-50',
+      label: 'text-green-600',
+      value: 'text-green-800',
+      sub: 'text-green-400',
+    },
   }[color];
   return (
-    <div className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border ${colors.border} ${colors.bg} text-[11px]`}>
+    <div
+      className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border ${colors.border} ${colors.bg} text-[11px]`}
+    >
       <span className={`${colors.label} font-medium`}>{label}</span>
       <span className={`${colors.value} font-bold`}>{value}</span>
       <span className={colors.sub}>/</span>

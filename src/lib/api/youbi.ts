@@ -9,14 +9,15 @@ import {
   archivePeriod,
   unarchivePeriod,
 } from './form-periods';
-import { createPublicFormResponse, getFormResponses, getFormResponse, updateFormResponseStatus } from './form-responses';
+import {
+  createPublicFormResponse,
+  getFormResponses,
+  getFormResponse,
+  updateFormResponseStatus,
+} from './form-responses';
 import { syncFormResponseToBilling } from './billing';
 import { getDefaultSchoolId, getSchoolByCode } from './schools';
-import type {
-  FormPeriodInsert,
-  FormPeriodUpdate,
-  FormResponseInsert,
-} from '@/types/database';
+import type { FormPeriodInsert, FormPeriodUpdate, FormResponseInsert } from '@/types/database';
 import type {
   YoubiPeriod,
   YoubiSettings,
@@ -49,9 +50,7 @@ export async function getYoubiPeriods(
 /**
  * 公開中の曜日変更期間を取得（ポータル用）
  */
-export async function getActiveYoubiPeriod(
-  schoolCode: string
-): Promise<YoubiPeriod | null> {
+export async function getActiveYoubiPeriod(schoolCode: string): Promise<YoubiPeriod | null> {
   const school = await getSchoolByCode(schoolCode);
   if (!school) {
     return null;
@@ -130,10 +129,7 @@ export async function createYoubiPeriod(
 /**
  * 曜日変更期間を更新
  */
-export async function updateYoubiPeriod(
-  id: string,
-  data: FormPeriodUpdate
-): Promise<YoubiPeriod> {
+export async function updateYoubiPeriod(id: string, data: FormPeriodUpdate): Promise<YoubiPeriod> {
   const updateData: FormPeriodUpdate = {
     ...data,
     settings: data.settings ? (data.settings as unknown as Record<string, unknown>) : undefined,
@@ -183,16 +179,14 @@ export async function unarchiveYoubiPeriod(
 /**
  * 曜日変更回答を送信
  */
-export async function submitYoubiResponse(
-  data: {
-    school_id: string;
-    period_key: string;
-    student_name: string;
-    grade: number;
-    email: string;
-    response_data: YoubiResponseData;
-  }
-): Promise<void> {
+export async function submitYoubiResponse(data: {
+  school_id: string;
+  period_key: string;
+  student_name: string;
+  grade: number;
+  email: string;
+  response_data: YoubiResponseData;
+}): Promise<void> {
   const responseData: FormResponseInsert = {
     school_id: data.school_id,
     form_type: 'youbi',
@@ -299,10 +293,7 @@ export async function updateYoubiStatusCheck(
 /**
  * 曜日変更期間の回答数を取得
  */
-export async function getYoubiResponseCount(
-  schoolId: string,
-  periodKey: string
-): Promise<number> {
+export async function getYoubiResponseCount(schoolId: string, periodKey: string): Promise<number> {
   const responses = await getYoubiResponses(schoolId, periodKey);
   return responses.length;
 }

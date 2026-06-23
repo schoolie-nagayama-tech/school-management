@@ -204,9 +204,7 @@ export default function QuickLinksSettingsPage() {
 
                 <div className="flex-1 grid grid-cols-1 sm:grid-cols-[1fr_2fr] gap-2">
                   <div>
-                    <label className="block text-xs font-medium text-text-muted mb-1">
-                      ラベル
-                    </label>
+                    <label className="block text-xs font-medium text-text-muted mb-1">ラベル</label>
                     <input
                       type="text"
                       value={link.label}
@@ -279,9 +277,7 @@ export default function QuickLinksSettingsPage() {
             リンクを追加
           </Button>
           <div className="flex items-center gap-3">
-            {dirty && (
-              <span className="text-xs text-text-muted">未保存の変更があります</span>
-            )}
+            {dirty && <span className="text-xs text-text-muted">未保存の変更があります</span>}
             <Button onClick={handleSave} isLoading={isSaving} disabled={!dirty || isSaving}>
               <Save className="w-4 h-4 mr-1.5" />
               保存

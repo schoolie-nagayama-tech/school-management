@@ -11,7 +11,11 @@ interface SlackBlock {
   elements?: { type: string; text: string }[];
 }
 
-async function sendWebhook(webhookUrl: string, blocks: SlackBlock[], text: string): Promise<boolean> {
+async function sendWebhook(
+  webhookUrl: string,
+  blocks: SlackBlock[],
+  text: string
+): Promise<boolean> {
   try {
     const res = await fetch(webhookUrl, {
       method: 'POST',
@@ -60,7 +64,11 @@ export async function notifyOrderPlaced(params: OrderNotificationParams): Promis
     },
   ];
 
-  return sendWebhook(WEBHOOK_MATERIALS, blocks, `📦 発注: ${params.materialName}（${params.studentName}）`);
+  return sendWebhook(
+    WEBHOOK_MATERIALS,
+    blocks,
+    `📦 発注: ${params.materialName}（${params.studentName}）`
+  );
 }
 
 /** 発送通知（発注済み → 発送済み） */
@@ -83,7 +91,11 @@ export async function notifyOrderDelivered(params: OrderNotificationParams): Pro
     },
   ];
 
-  return sendWebhook(WEBHOOK_MATERIALS, blocks, `🚚 発送: ${params.materialName}（${params.studentName}）`);
+  return sendWebhook(
+    WEBHOOK_MATERIALS,
+    blocks,
+    `🚚 発送: ${params.materialName}（${params.studentName}）`
+  );
 }
 
 /** 一括発注通知 */
@@ -94,9 +106,9 @@ export async function notifyBulkOrderPlaced(params: {
 }): Promise<boolean> {
   if (!WEBHOOK_MATERIALS) return false;
 
-  const itemLines = params.items.slice(0, 10).map(
-    (item) => `• ${item.materialName} → ${item.studentName}（${item.quantity}冊）`
-  );
+  const itemLines = params.items
+    .slice(0, 10)
+    .map((item) => `• ${item.materialName} → ${item.studentName}（${item.quantity}冊）`);
   if (params.items.length > 10) {
     itemLines.push(`…他 ${params.items.length - 10} 件`);
   }
@@ -104,7 +116,11 @@ export async function notifyBulkOrderPlaced(params: {
   const blocks: SlackBlock[] = [
     {
       type: 'header',
-      text: { type: 'plain_text', text: `📦 ${params.orderCount}件の教材を一括発注しました`, emoji: true },
+      text: {
+        type: 'plain_text',
+        text: `📦 ${params.orderCount}件の教材を一括発注しました`,
+        emoji: true,
+      },
     },
     {
       type: 'section',
@@ -116,7 +132,11 @@ export async function notifyBulkOrderPlaced(params: {
     },
   ];
 
-  return sendWebhook(WEBHOOK_MATERIALS, blocks, `📦 一括発注: ${params.orderCount}件（${params.schoolName}）`);
+  return sendWebhook(
+    WEBHOOK_MATERIALS,
+    blocks,
+    `📦 一括発注: ${params.orderCount}件（${params.schoolName}）`
+  );
 }
 
 /** 一括発送通知 */
@@ -127,9 +147,9 @@ export async function notifyBulkOrderDelivered(params: {
 }): Promise<boolean> {
   if (!WEBHOOK_MATERIALS) return false;
 
-  const itemLines = params.items.slice(0, 10).map(
-    (item) => `• ${item.materialName} → ${item.studentName}（${item.quantity}冊）`
-  );
+  const itemLines = params.items
+    .slice(0, 10)
+    .map((item) => `• ${item.materialName} → ${item.studentName}（${item.quantity}冊）`);
   if (params.items.length > 10) {
     itemLines.push(`…他 ${params.items.length - 10} 件`);
   }
@@ -137,7 +157,11 @@ export async function notifyBulkOrderDelivered(params: {
   const blocks: SlackBlock[] = [
     {
       type: 'header',
-      text: { type: 'plain_text', text: `🚚 ${params.orderCount}件の教材が発送されました`, emoji: true },
+      text: {
+        type: 'plain_text',
+        text: `🚚 ${params.orderCount}件の教材が発送されました`,
+        emoji: true,
+      },
     },
     {
       type: 'section',
@@ -149,7 +173,11 @@ export async function notifyBulkOrderDelivered(params: {
     },
   ];
 
-  return sendWebhook(WEBHOOK_MATERIALS, blocks, `🚚 一括発送: ${params.orderCount}件（${params.schoolName}）`);
+  return sendWebhook(
+    WEBHOOK_MATERIALS,
+    blocks,
+    `🚚 一括発送: ${params.orderCount}件（${params.schoolName}）`
+  );
 }
 
 /** 未確認リマインダー */
@@ -158,9 +186,9 @@ export async function notifyUnconfirmedReminder(params: {
 }): Promise<boolean> {
   if (!WEBHOOK_MATERIALS) return false;
 
-  const itemLines = params.orders.slice(0, 15).map(
-    (o) => `• ${o.schoolName} | ${o.materialName} → ${o.studentName}（${o.createdAt}）`
-  );
+  const itemLines = params.orders
+    .slice(0, 15)
+    .map((o) => `• ${o.schoolName} | ${o.materialName} → ${o.studentName}（${o.createdAt}）`);
   if (params.orders.length > 15) {
     itemLines.push(`…他 ${params.orders.length - 15} 件`);
   }
@@ -168,7 +196,11 @@ export async function notifyUnconfirmedReminder(params: {
   const blocks: SlackBlock[] = [
     {
       type: 'header',
-      text: { type: 'plain_text', text: `⚠️ 未確認の発注が ${params.orders.length} 件あります`, emoji: true },
+      text: {
+        type: 'plain_text',
+        text: `⚠️ 未確認の発注が ${params.orders.length} 件あります`,
+        emoji: true,
+      },
     },
     {
       type: 'section',
@@ -185,9 +217,11 @@ export async function notifyDistributionReminder(params: {
 }): Promise<boolean> {
   if (!WEBHOOK_MATERIALS) return false;
 
-  const itemLines = params.orders.slice(0, 15).map(
-    (o) => `• ${o.schoolName} | ${o.materialName} → ${o.studentName}（発送: ${o.deliveredAt}）`
-  );
+  const itemLines = params.orders
+    .slice(0, 15)
+    .map(
+      (o) => `• ${o.schoolName} | ${o.materialName} → ${o.studentName}（発送: ${o.deliveredAt}）`
+    );
   if (params.orders.length > 15) {
     itemLines.push(`…他 ${params.orders.length - 15} 件`);
   }
@@ -195,7 +229,11 @@ export async function notifyDistributionReminder(params: {
   const blocks: SlackBlock[] = [
     {
       type: 'header',
-      text: { type: 'plain_text', text: `⚠️ 発送後7日以上未配布の教材が ${params.orders.length} 件あります`, emoji: true },
+      text: {
+        type: 'plain_text',
+        text: `⚠️ 発送後7日以上未配布の教材が ${params.orders.length} 件あります`,
+        emoji: true,
+      },
     },
     {
       type: 'section',
@@ -236,7 +274,11 @@ export async function notifyDailyReport(params: {
   const blocks: SlackBlock[] = [
     {
       type: 'header',
-      text: { type: 'plain_text', text: `📋 教材管理デイリーレポート（${params.date}）`, emoji: true },
+      text: {
+        type: 'plain_text',
+        text: `📋 教材管理デイリーレポート（${params.date}）`,
+        emoji: true,
+      },
     },
   ];
 
@@ -250,9 +292,9 @@ export async function notifyDailyReport(params: {
     for (const school of params.schools) {
       if (school.unconfirmed.length === 0) continue;
       const mention = school.slackMentionId ? ` <@${school.slackMentionId}>` : '';
-      const lines = school.unconfirmed.slice(0, 10).map(
-        (o) => `　• ${o.materialName} → ${o.studentName}（${o.createdAt}）`
-      );
+      const lines = school.unconfirmed
+        .slice(0, 10)
+        .map((o) => `　• ${o.materialName} → ${o.studentName}（${o.createdAt}）`);
       if (school.unconfirmed.length > 10) {
         lines.push(`　…他 ${school.unconfirmed.length - 10} 件`);
       }
@@ -265,20 +307,17 @@ export async function notifyDailyReport(params: {
 
   // 配布遅延セクション
   if (totalOverdue > 0) {
-    blocks.push(
-      { type: 'divider' } as SlackBlock,
-      {
-        type: 'section',
-        text: { type: 'mrkdwn', text: `*🟡 発送後7日以上未配布: ${totalOverdue}件*` },
-      }
-    );
+    blocks.push({ type: 'divider' } as SlackBlock, {
+      type: 'section',
+      text: { type: 'mrkdwn', text: `*🟡 発送後7日以上未配布: ${totalOverdue}件*` },
+    });
 
     for (const school of params.schools) {
       if (school.overdueDistribution.length === 0) continue;
       const mention = school.slackMentionId ? ` <@${school.slackMentionId}>` : '';
-      const lines = school.overdueDistribution.slice(0, 10).map(
-        (o) => `　• ${o.materialName} → ${o.studentName}（発送: ${o.deliveredAt}）`
-      );
+      const lines = school.overdueDistribution
+        .slice(0, 10)
+        .map((o) => `　• ${o.materialName} → ${o.studentName}（発送: ${o.deliveredAt}）`);
       if (school.overdueDistribution.length > 10) {
         lines.push(`　…他 ${school.overdueDistribution.length - 10} 件`);
       }
@@ -308,12 +347,12 @@ export interface InquirySchoolReport {
   slackMentionId: string | null;
   /** 進捗サマリー */
   summary: {
-    inProgress: number;      // 対応中（体験・入面予定なし）
-    trialPlanned: number;    // 対応中のうち体験予定あり
+    inProgress: number; // 対応中（体験・入面予定なし）
+    trialPlanned: number; // 対応中のうち体験予定あり
     interviewPlanned: number; // 対応中のうち入面予定あり
-    unreachable: number;     // 連絡不通
-    monthInquiries: number;  // 今月の問合せ
-    monthEnrolled: number;   // 今月の入会
+    unreachable: number; // 連絡不通
+    monthInquiries: number; // 今月の問合せ
+    monthEnrolled: number; // 今月の入会
   };
   /** 対応遅延（3/5/7/10/14/21/30日経過）*/
   delays: { name: string; days: number; inquiredAt: string }[];
@@ -325,9 +364,14 @@ export interface InquirySchoolReport {
  * 問合せ管理のデイリーレポートをSlackへ送信する。
  * 教室ごとにサマリー＋遅延案件（メンション付き）を1メッセージにまとめる。
  */
-export async function notifyInquiryReport(params: { date: string; schools: InquirySchoolReport[] }): Promise<boolean> {
+export async function notifyInquiryReport(params: {
+  date: string;
+  schools: InquirySchoolReport[];
+}): Promise<boolean> {
   if (!WEBHOOK_INQUIRIES) {
-    console.warn('[slack] SLACK_WEBHOOK_INQUIRIES / SLACK_WEBHOOK_MATERIALS が未設定のためスキップ');
+    console.warn(
+      '[slack] SLACK_WEBHOOK_INQUIRIES / SLACK_WEBHOOK_MATERIALS が未設定のためスキップ'
+    );
     return false;
   }
 
@@ -355,7 +399,9 @@ export async function notifyInquiryReport(params: { date: string; schools: Inqui
       lines.push(`*対応遅延*${mention}`);
       // 日数の大きい順に最大10件
       for (const d of school.delays.slice(0, 10)) {
-        lines.push(`　• ${d.name} さん（${d.inquiredAt}問合せ）— ${d.days}日経過。次のアクションを実行してください`);
+        lines.push(
+          `　• ${d.name} さん（${d.inquiredAt}問合せ）— ${d.days}日経過。次のアクションを実行してください`
+        );
       }
       if (school.delays.length > 10) {
         lines.push(`　…他 ${school.delays.length - 10} 件`);
@@ -369,15 +415,11 @@ export async function notifyInquiryReport(params: { date: string; schools: Inqui
       );
     }
 
-    blocks.push(
-      { type: 'divider' } as SlackBlock,
-      { type: 'section', text: { type: 'mrkdwn', text: `*${school.schoolName}*\n${lines.join('\n')}` } }
-    );
+    blocks.push({ type: 'divider' } as SlackBlock, {
+      type: 'section',
+      text: { type: 'mrkdwn', text: `*${school.schoolName}*\n${lines.join('\n')}` },
+    });
   }
 
-  return sendWebhook(
-    WEBHOOK_INQUIRIES,
-    blocks,
-    `問合せデイリーレポート: 対応遅延${totalDelays}件`
-  );
+  return sendWebhook(WEBHOOK_INQUIRIES, blocks, `問合せデイリーレポート: 対応遅延${totalDelays}件`);
 }

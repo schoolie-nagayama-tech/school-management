@@ -65,17 +65,16 @@ export async function getClassPeriodsAsync(schoolId: string): Promise<ClassPerio
       setClassPeriods(schoolId, periods);
       return periods;
     }
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
   return [];
 }
 
 /**
  * 教室の授業の時間帯一覧を保存
  */
-export function setClassPeriods(
-  schoolId: string | undefined,
-  periods: ClassPeriodItem[]
-): void {
+export function setClassPeriods(schoolId: string | undefined, periods: ClassPeriodItem[]): void {
   if (!schoolId || typeof window === 'undefined') return;
   const valid = periods.filter((p) => p && p.code.trim() !== '' && p.label.trim() !== '');
   window.localStorage.setItem(STORAGE_KEY(schoolId), JSON.stringify(valid));
@@ -90,7 +89,7 @@ export function parsePeriodsText(text: string): ClassPeriodItem[] {
     .map((line) => {
       const [code, ...rest] = line.split(',');
       const label = rest.join(',').trim() || (code?.trim() ?? '');
-      return { code: (code?.trim() ?? ''), label };
+      return { code: code?.trim() ?? '', label };
     })
     .filter((p) => p.code !== '');
 }

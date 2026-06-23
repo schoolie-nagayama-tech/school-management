@@ -27,7 +27,12 @@ export default function TestPrepPublicPage() {
   const params = useParams();
   const token = params?.token as string;
   const [loading, setLoading] = useState(true);
-  const [proposal, setProposal] = useState<(TestPrepProposalWithDetails & { school?: { name: string; code: string | null; logo_url: string | null } }) | null>(null);
+  const [proposal, setProposal] = useState<
+    | (TestPrepProposalWithDetails & {
+        school?: { name: string; code: string | null; logo_url: string | null };
+      })
+    | null
+  >(null);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -69,7 +74,9 @@ export default function TestPrepPublicPage() {
     ? `${proposal.student.last_name} ${proposal.student.first_name}`
     : '---';
   const studentGrade = proposal.student ? gradeName(proposal.student.grade) : '---';
-  const schoolObj = (proposal as unknown as Record<string, unknown>).school as { name: string; code: string | null } | undefined;
+  const schoolObj = (proposal as unknown as Record<string, unknown>).school as
+    | { name: string; code: string | null }
+    | undefined;
   const schoolName = schoolObj?.name || '';
   const schoolCode = schoolObj?.code || null;
   // 保護者向けの書面では講師は姓のみ表示（個人情報配慮・社内の慣習に合わせる）
@@ -96,8 +103,12 @@ export default function TestPrepPublicPage() {
           <div className="bg-gradient-to-r from-red-600 to-red-500 px-6 py-5 print:py-4 print:bg-none print:bg-white print:border-b-4 print:border-red-600">
             <div className="flex items-center justify-between">
               <div>
-                {schoolName && <p className="text-red-100 text-sm print:text-gray-500">{schoolName}</p>}
-                <h1 className="text-xl font-bold text-white mt-0.5 print:text-gray-900">{proposal.title}</h1>
+                {schoolName && (
+                  <p className="text-red-100 text-sm print:text-gray-500">{schoolName}</p>
+                )}
+                <h1 className="text-xl font-bold text-white mt-0.5 print:text-gray-900">
+                  {proposal.title}
+                </h1>
               </div>
               {teacherName && (
                 <div className="text-right text-sm text-red-100 print:text-gray-600">
@@ -142,7 +153,8 @@ export default function TestPrepPublicPage() {
               本書は、次回の定期テストに向けて、担当講師がお子様の現在の到達状況をもとに作成した対策プランです。
               下記の科目・単元ごとに、目標点の達成に必要と考えられる対策コマ数の目安をまとめています。
               テストでの得点アップに向けて、ぜひ追加の対策コマ（増コマ）の受講をご検討ください。
-              お申し込みは{schoolCode ? 'ページ下部（印刷の場合はQRコード）の' : '末尾の'}増コマ申込フォームから承ります。
+              お申し込みは{schoolCode ? 'ページ下部（印刷の場合はQRコード）の' : '末尾の'}
+              増コマ申込フォームから承ります。
             </p>
           </div>
 
@@ -167,14 +179,18 @@ export default function TestPrepPublicPage() {
           {/* 科目ブロック群 */}
           <div className="px-6 pb-6">
             {topSubjects.length > 0 && (
-              <div className={`grid grid-cols-1 gap-4 mb-4 ${topSubjects.length >= 3 ? 'md:grid-cols-3 print:grid-cols-3' : topSubjects.length === 2 ? 'md:grid-cols-2 print:grid-cols-2' : ''}`}>
+              <div
+                className={`grid grid-cols-1 gap-4 mb-4 ${topSubjects.length >= 3 ? 'md:grid-cols-3 print:grid-cols-3' : topSubjects.length === 2 ? 'md:grid-cols-2 print:grid-cols-2' : ''}`}
+              >
                 {topSubjects.map((subject) => (
                   <SubjectBlock key={subject.id} subject={subject} />
                 ))}
               </div>
             )}
             {bottomSubjects.length > 0 && (
-              <div className={`grid grid-cols-1 gap-4 ${bottomSubjects.length >= 2 ? 'md:grid-cols-2 print:grid-cols-2' : ''}`}>
+              <div
+                className={`grid grid-cols-1 gap-4 ${bottomSubjects.length >= 2 ? 'md:grid-cols-2 print:grid-cols-2' : ''}`}
+              >
                 {bottomSubjects.map((subject) => (
                   <SubjectBlock key={subject.id} subject={subject} />
                 ))}
@@ -241,7 +257,12 @@ function buildGroupedRows(units: TestPrepProposalUnit[]) {
       while (i < list.length && list[i].group_id === gid) i++;
       const size = i - start;
       for (let j = start; j < i; j++) {
-        rows.push({ unit: list[j], isGroupStart: j === start, isGroupMember: true, groupSize: size });
+        rows.push({
+          unit: list[j],
+          isGroupStart: j === start,
+          isGroupMember: true,
+          groupSize: size,
+        });
       }
     } else {
       rows.push({ unit: u, isGroupStart: false, isGroupMember: false, groupSize: 1 });
@@ -252,11 +273,7 @@ function buildGroupedRows(units: TestPrepProposalUnit[]) {
 }
 
 // 科目ブロック
-function SubjectBlock({
-  subject,
-}: {
-  subject: TestPrepProposalWithDetails['subjects'][number];
-}) {
+function SubjectBlock({ subject }: { subject: TestPrepProposalWithDetails['subjects'][number] }) {
   const totalKoma = (subject.units || []).reduce((sum, u) => sum + u.koma_count, 0);
   const rows = buildGroupedRows(subject.units || []);
 
@@ -294,7 +311,10 @@ function SubjectBlock({
               </td>
               {row.isGroupMember ? (
                 row.isGroupStart ? (
-                  <td className="text-center font-medium text-gray-800 bg-blue-50/50" rowSpan={row.groupSize}>
+                  <td
+                    className="text-center font-medium text-gray-800 bg-blue-50/50"
+                    rowSpan={row.groupSize}
+                  >
                     {row.unit.koma_count}
                   </td>
                 ) : null
@@ -360,18 +380,26 @@ function ZoukomaSection({
         <div className="flex items-center gap-6 mb-4 text-sm">
           <div>
             <span className="text-gray-400 text-xs">生徒</span>
-            <p className="font-medium text-gray-900">{studentName} ({studentGrade})</p>
+            <p className="font-medium text-gray-900">
+              {studentName} ({studentGrade})
+            </p>
           </div>
           <div>
             <span className="text-gray-400 text-xs">提案コマ数</span>
-            <p className="font-bold text-red-600 text-lg">{totalKoma}<span className="text-sm font-normal text-gray-500 ml-0.5">コマ</span></p>
+            <p className="font-bold text-red-600 text-lg">
+              {totalKoma}
+              <span className="text-sm font-normal text-gray-500 ml-0.5">コマ</span>
+            </p>
           </div>
         </div>
 
         {/* 科目別内訳 */}
         <div className="flex flex-wrap gap-2 mb-5">
           {subjectKoma.map((sk) => (
-            <span key={sk.name} className="px-2.5 py-1 bg-gray-100 rounded-lg text-xs text-gray-700">
+            <span
+              key={sk.name}
+              className="px-2.5 py-1 bg-gray-100 rounded-lg text-xs text-gray-700"
+            >
               {sk.name} <span className="font-bold">{sk.koma}</span>コマ
             </span>
           ))}

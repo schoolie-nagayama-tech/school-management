@@ -14,7 +14,9 @@ type AnyClient = ReturnType<typeof createSupabaseBrowserClient>;
 const client = (): AnyClient => createSupabaseBrowserClient();
 
 /** 教科書の試験範囲を一覧取得 */
-export async function getExamRanges(studentTextbookId: string): Promise<StudentTextbookExamRange[]> {
+export async function getExamRanges(
+  studentTextbookId: string
+): Promise<StudentTextbookExamRange[]> {
   const { data, error } = await (client() as any)
     .from('student_textbook_exam_ranges')
     .select('*')
@@ -28,7 +30,9 @@ export async function getExamRanges(studentTextbookId: string): Promise<StudentT
  * 同一 (student_textbook_id, exam_type_id) でも複数レコードを許容し、
  * 「単元が飛ぶ」試験範囲（例: 1-3 と 8-10）を表現できる。
  */
-export async function createExamRange(payload: StudentTextbookExamRangeInsert): Promise<StudentTextbookExamRange> {
+export async function createExamRange(
+  payload: StudentTextbookExamRangeInsert
+): Promise<StudentTextbookExamRange> {
   const { data, error } = await (client() as any)
     .from('student_textbook_exam_ranges')
     .insert(payload)
@@ -54,7 +58,10 @@ export async function upsertExamRange(
   return createExamRange(payload);
 }
 
-export async function updateExamRange(id: string, patch: StudentTextbookExamRangeUpdate): Promise<StudentTextbookExamRange> {
+export async function updateExamRange(
+  id: string,
+  patch: StudentTextbookExamRangeUpdate
+): Promise<StudentTextbookExamRange> {
   const { data, error } = await (client() as any)
     .from('student_textbook_exam_ranges')
     .update(patch)

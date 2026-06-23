@@ -96,8 +96,8 @@ describe('GET /api/admin/users/[userId]', () => {
   });
 
   it('存在しないユーザーに404を返す', async () => {
-    mockAdmin.from.mockImplementation(() =>
-      createMockChain(null, { code: 'PGRST116', message: 'not found' }) as never
+    mockAdmin.from.mockImplementation(
+      () => createMockChain(null, { code: 'PGRST116', message: 'not found' }) as never
     );
 
     const { GET } = await import('@/app/api/admin/users/[userId]/route');
@@ -130,7 +130,7 @@ describe('PATCH /api/admin/users/[userId]', () => {
     const { PATCH } = await import('@/app/api/admin/users/[userId]/route');
     const res = await PATCH(
       makePatchRequest({ display_name: 'test', school_ids: ['s1'] }),
-      routeParams,
+      routeParams
     );
     expect(res.status).toBe(404);
   });
@@ -138,14 +138,12 @@ describe('PATCH /api/admin/users/[userId]', () => {
   it('同レベル以上のロールを編集しようとすると403を返す', async () => {
     // callerはadmin(level 5)、targetもadmin(level 5) → 編集不可
     const targetProfile = { role: 'admin' };
-    mockAdmin.from.mockImplementation(() =>
-      createMockChain(targetProfile) as never
-    );
+    mockAdmin.from.mockImplementation(() => createMockChain(targetProfile) as never);
 
     const { PATCH } = await import('@/app/api/admin/users/[userId]/route');
     const res = await PATCH(
       makePatchRequest({ display_name: 'test', school_ids: ['s1'] }),
-      routeParams,
+      routeParams
     );
     expect(res.status).toBe(403);
     const body = await res.json();
@@ -156,14 +154,12 @@ describe('PATCH /api/admin/users/[userId]', () => {
     // callerはmanager(level 3)として設定
     Object.assign(defaultAuthMocks, authSuccessMocks({ role: 'manager' }));
     const targetProfile = { role: 'owner' };
-    mockAdmin.from.mockImplementation(() =>
-      createMockChain(targetProfile) as never
-    );
+    mockAdmin.from.mockImplementation(() => createMockChain(targetProfile) as never);
 
     const { PATCH } = await import('@/app/api/admin/users/[userId]/route');
     const res = await PATCH(
       makePatchRequest({ display_name: 'test', school_ids: ['s1'] }),
-      routeParams,
+      routeParams
     );
     expect(res.status).toBe(403);
   });
@@ -210,7 +206,7 @@ describe('PATCH /api/admin/users/[userId]', () => {
         role: 'teacher',
         school_ids: ['s1', 's2'],
       }),
-      routeParams,
+      routeParams
     );
 
     expect(res.status).toBe(200);
@@ -283,8 +279,8 @@ describe('DELETE /api/admin/users/[userId]', () => {
   });
 
   it('カスケードステップでエラーが起きると500を返す', async () => {
-    mockAdmin.from.mockImplementation(() =>
-      createMockChain(null, { message: 'FK violation' }) as never
+    mockAdmin.from.mockImplementation(
+      () => createMockChain(null, { message: 'FK violation' }) as never
     );
 
     const { DELETE } = await import('@/app/api/admin/users/[userId]/route');

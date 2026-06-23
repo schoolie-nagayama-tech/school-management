@@ -26,7 +26,8 @@ export function MogiStats({ stats }: MogiStatsProps) {
   const allTypes = Object.keys(MOGI_EXAM_TYPE_LABELS) as MogiExamType[];
   for (const type of allTypes) {
     const matched = stats.date_venue_counts.filter((d) => d.exam_type === type);
-    if (matched.length > 0) groups.push({ key: type, label: MOGI_EXAM_TYPE_LABELS[type], dates: matched });
+    if (matched.length > 0)
+      groups.push({ key: type, label: MOGI_EXAM_TYPE_LABELS[type], dates: matched });
   }
   const unclassified = stats.date_venue_counts.filter((d) => !d.exam_type);
   if (unclassified.length > 0) {
@@ -39,21 +40,15 @@ export function MogiStats({ stats }: MogiStatsProps) {
       <div className="bg-white rounded-xl border border-[#e5e7eb] p-4 grid grid-cols-2 md:grid-cols-3 gap-4 text-center">
         <div>
           <p className="text-sm text-[#4b5563]">合計回答数</p>
-          <p className="text-xl font-bold text-[#1f2937]">
-            {stats.total_responses} 件
-          </p>
+          <p className="text-xl font-bold text-[#1f2937]">{stats.total_responses} 件</p>
         </div>
         <div>
           <p className="text-sm text-[#4b5563]">計上済み</p>
-          <p className="text-xl font-bold text-[#1f2937]">
-            {stats.charged_count} 件
-          </p>
+          <p className="text-xl font-bold text-[#1f2937]">{stats.charged_count} 件</p>
         </div>
         <div>
           <p className="text-sm text-[#4b5563]">紐付け済み</p>
-          <p className="text-xl font-bold text-[#1f2937]">
-            {stats.linked_count} 件
-          </p>
+          <p className="text-xl font-bold text-[#1f2937]">{stats.linked_count} 件</p>
         </div>
       </div>
 
@@ -137,9 +132,7 @@ export function MogiStats({ stats }: MogiStatsProps) {
                         {date.date_label}
                       </td>
                       {groupVenueIds.map((venueId) => {
-                        const venueCount = date.venue_counts.find(
-                          (v) => v.venue_id === venueId
-                        );
+                        const venueCount = date.venue_counts.find((v) => v.venue_id === venueId);
                         return (
                           <td
                             key={venueId}

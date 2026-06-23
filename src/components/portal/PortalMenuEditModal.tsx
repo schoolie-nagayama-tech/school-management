@@ -86,7 +86,8 @@ export function PortalMenuEditModal({
             } else {
               const urlValidation = validateUrl(link.url);
               if (!urlValidation.isValid) {
-                newErrors[`link_url_${index}`] = urlValidation.error || '正しいURL形式を入力してください';
+                newErrors[`link_url_${index}`] =
+                  urlValidation.error || '正しいURL形式を入力してください';
               }
             }
             if (!link.label.trim()) {
@@ -144,7 +145,9 @@ export function PortalMenuEditModal({
       const linkUrl =
         formData.link_type === 'internal'
           ? getLinkUrlFromMenuKey(menu.menu_key)
-          : isMendan ? null : formData.link_url.trim() || null;
+          : isMendan
+            ? null
+            : formData.link_url.trim() || null;
 
       const updateData: PortalMenuUpdate = {
         title: formData.title.trim(),
@@ -160,10 +163,7 @@ export function PortalMenuEditModal({
       onClose();
     } catch (err) {
       console.error('Error updating menu:', err);
-      const errorMessage =
-        err instanceof Error
-          ? err.message
-          : 'メニューの更新に失敗しました';
+      const errorMessage = err instanceof Error ? err.message : 'メニューの更新に失敗しました';
       const errorObj = new Error(errorMessage);
       if (onError) {
         onError(errorObj);
@@ -183,9 +183,7 @@ export function PortalMenuEditModal({
           <Input
             type="text"
             value={formData.title}
-            onChange={(e) =>
-              setFormData({ ...formData, title: e.target.value })
-            }
+            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
             error={errors.title}
             required
             disabled={isSubmitting}
@@ -193,14 +191,10 @@ export function PortalMenuEditModal({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-[#1f2937] mb-2">
-            説明文
-          </label>
+          <label className="block text-sm font-medium text-[#1f2937] mb-2">説明文</label>
           <textarea
             value={formData.description}
-            onChange={(e) =>
-              setFormData({ ...formData, description: e.target.value })
-            }
+            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
             className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#4b5563] focus:ring-2 focus:ring-[#3b82f6] focus:border-[#3b82f6] disabled:opacity-50"
             rows={3}
             disabled={isSubmitting}
@@ -323,9 +317,7 @@ export function PortalMenuEditModal({
                 <Input
                   type="text"
                   value={formData.link_url}
-                  onChange={(e) =>
-                    setFormData({ ...formData, link_url: e.target.value })
-                  }
+                  onChange={(e) => setFormData({ ...formData, link_url: e.target.value })}
                   placeholder="https://example.com"
                   error={errors.link_url}
                   required
@@ -358,27 +350,17 @@ export function PortalMenuEditModal({
             type="checkbox"
             id="is_visible"
             checked={formData.is_visible}
-            onChange={(e) =>
-              setFormData({ ...formData, is_visible: e.target.checked })
-            }
+            onChange={(e) => setFormData({ ...formData, is_visible: e.target.checked })}
             className="w-4 h-4 text-[#3b82f6] border-[#e5e7eb] rounded focus:ring-[#3b82f6]"
             disabled={isSubmitting}
           />
-          <label
-            htmlFor="is_visible"
-            className="ml-2 text-sm font-medium text-[#1f2937]"
-          >
+          <label htmlFor="is_visible" className="ml-2 text-sm font-medium text-[#1f2937]">
             表示する
           </label>
         </div>
 
         <div className="flex justify-end gap-2 pt-4 border-t border-[#e5e7eb]">
-          <Button
-            type="button"
-            onClick={onClose}
-            variant="secondary"
-            disabled={isSubmitting}
-          >
+          <Button type="button" onClick={onClose} variant="secondary" disabled={isSubmitting}>
             キャンセル
           </Button>
           <Button type="submit" disabled={isSubmitting}>

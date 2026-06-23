@@ -28,7 +28,9 @@ export function TranscriptDetailModal({ isOpen, onClose, transcript, onLink, onU
         <div className="grid grid-cols-2 gap-2 bg-[#f3f4f6] p-3 rounded">
           <div>
             <span className="text-[#4b5563]/60">録音日時: </span>
-            {transcript.recorded_at ? new Date(transcript.recorded_at).toLocaleString('ja-JP') : '-'}
+            {transcript.recorded_at
+              ? new Date(transcript.recorded_at).toLocaleString('ja-JP')
+              : '-'}
           </div>
           <div>
             <span className="text-[#4b5563]/60">尺: </span>
@@ -40,9 +42,13 @@ export function TranscriptDetailModal({ isOpen, onClose, transcript, onLink, onU
           </div>
           <div className="flex items-center gap-2">
             <span className="text-[#4b5563]/60">紐付け先: </span>
-            {transcript.student
-              ? <span className="text-green-700 font-medium">{transcript.student.last_name} {transcript.student.first_name}</span>
-              : <span className="text-yellow-700">未紐付け</span>}
+            {transcript.student ? (
+              <span className="text-green-700 font-medium">
+                {transcript.student.last_name} {transcript.student.first_name}
+              </span>
+            ) : (
+              <span className="text-yellow-700">未紐付け</span>
+            )}
           </div>
           {transcript.audio_url && (
             <div className="col-span-2">

@@ -21,7 +21,13 @@ interface MaterialCardProps {
   onStockIn: (material: Material) => void;
   onStockOut: (material: Material) => void;
   onHistory: (material: Material) => void;
-  onOrder: (materialId: string, studentId: string, quantity: number, notes: string, isSample?: boolean) => Promise<void>;
+  onOrder: (
+    materialId: string,
+    studentId: string,
+    quantity: number,
+    notes: string,
+    isSample?: boolean
+  ) => Promise<void>;
 }
 
 export function MaterialCard({
@@ -130,7 +136,9 @@ export function MaterialCard({
       {/* Stock Display */}
       <div className="px-4 py-2">
         <div className="bg-gray-50 rounded-lg p-3">
-          <div className={`text-sm font-medium mb-1.5 ${isLowStock ? 'text-red-600' : 'text-gray-800'}`}>
+          <div
+            className={`text-sm font-medium mb-1.5 ${isLowStock ? 'text-red-600' : 'text-gray-800'}`}
+          >
             在庫: {material.stock_quantity} {material.unit}
             {isLowStock && <span className="ml-1.5 text-xs text-red-500">(不足)</span>}
           </div>
@@ -155,20 +163,23 @@ export function MaterialCard({
           disabled={!canEdit}
           className="flex-1 text-xs py-1.5 rounded-lg border border-green-200 text-green-700 hover:bg-green-50 disabled:opacity-50 transition-[background-color,color] duration-150 ease-out"
         >
-          <Inbox className="inline h-3 w-3 mr-1" />入庫
+          <Inbox className="inline h-3 w-3 mr-1" />
+          入庫
         </button>
         <button
           onClick={() => onStockOut(material)}
           disabled={!canEdit}
           className="flex-1 text-xs py-1.5 rounded-lg border border-orange-200 text-orange-700 hover:bg-orange-50 disabled:opacity-50 transition-[background-color,color] duration-150 ease-out"
         >
-          <Send className="inline h-3 w-3 mr-1" />出庫
+          <Send className="inline h-3 w-3 mr-1" />
+          出庫
         </button>
         <button
           onClick={() => onHistory(material)}
           className="flex-1 text-xs py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 transition-[background-color,color] duration-150 ease-out"
         >
-          <ClipboardList className="inline h-3 w-3 mr-1" />履歴
+          <ClipboardList className="inline h-3 w-3 mr-1" />
+          履歴
         </button>
       </div>
 
@@ -243,7 +254,16 @@ export function MaterialCard({
                 : 'bg-[#1e3a5f] text-white hover:bg-[#162d4a] disabled:opacity-50 disabled:cursor-not-allowed'
             }`}
           >
-            {isOrdering ? '発注中...' : orderSuccess ? '発注しました!' : (<><ShoppingCart className="inline h-4 w-4 mr-1" />発注する</>)}
+            {isOrdering ? (
+              '発注中...'
+            ) : orderSuccess ? (
+              '発注しました!'
+            ) : (
+              <>
+                <ShoppingCart className="inline h-4 w-4 mr-1" />
+                発注する
+              </>
+            )}
           </button>
         </div>
       )}

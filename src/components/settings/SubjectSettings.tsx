@@ -49,9 +49,7 @@ export function SubjectSettings({ isOpen, onClose }: SubjectSettingsProps) {
       setSubjects({ elementary, middle, high });
     } catch (error) {
       console.error('Error fetching subjects:', error);
-      setErrorMessage(
-        getUserErrorMessage(error, '科目一覧の取得に失敗しました')
-      );
+      setErrorMessage(getUserErrorMessage(error, '科目一覧の取得に失敗しました'));
     } finally {
       setIsLoading(false);
     }
@@ -77,7 +75,15 @@ export function SubjectSettings({ isOpen, onClose }: SubjectSettingsProps) {
 
   // 科目を削除
   const handleDelete = async (id: string) => {
-    if (!(await confirm({ title: '削除確認', description: 'この科目を削除しますか？', confirmLabel: '削除', variant: 'danger' }))) return;
+    if (
+      !(await confirm({
+        title: '削除確認',
+        description: 'この科目を削除しますか？',
+        confirmLabel: '削除',
+        variant: 'danger',
+      }))
+    )
+      return;
 
     setIsSubmitting(true);
     setErrorMessage('');
@@ -86,9 +92,7 @@ export function SubjectSettings({ isOpen, onClose }: SubjectSettingsProps) {
       await fetchSubjects();
     } catch (error) {
       console.error('Error deleting subject:', error);
-      setErrorMessage(
-        getUserErrorMessage(error, '科目の削除に失敗しました')
-      );
+      setErrorMessage(getUserErrorMessage(error, '科目の削除に失敗しました'));
     } finally {
       setIsSubmitting(false);
     }
@@ -334,9 +338,7 @@ function SubjectEditModal({
       onSuccess();
     } catch (error) {
       console.error('Error saving subject:', error);
-      setError(
-        getUserErrorMessage(error, '科目の保存に失敗しました')
-      );
+      setError(getUserErrorMessage(error, '科目の保存に失敗しました'));
     } finally {
       setIsSubmitting(false);
     }
@@ -395,9 +397,7 @@ function SubjectEditModal({
             </button>
           </div>
           <p className="text-xs text-[#6b7280] mt-1">
-            {durationMinutes === 45
-              ? '主に小4以下の授業で使用します'
-              : '通常の90分授業です'}
+            {durationMinutes === 45 ? '主に小4以下の授業で使用します' : '通常の90分授業です'}
           </p>
         </div>
 

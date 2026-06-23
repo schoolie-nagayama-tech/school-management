@@ -25,14 +25,7 @@ import { TaskListPanel } from './TaskListPanel';
 import { TaskSummaryPanel } from './TaskSummaryPanel';
 import { TaskPool } from './TaskPool';
 import { TemplateDialog } from './TemplateDialog';
-import {
-  ChevronLeft,
-  ChevronRight,
-  Download,
-  Trash2,
-  Settings,
-  AlertTriangle,
-} from 'lucide-react';
+import { ChevronLeft, ChevronRight, Download, Trash2, Settings, AlertTriangle } from 'lucide-react';
 import { useConfirm } from '@/hooks/useConfirm';
 
 interface PoolItem {
@@ -66,7 +59,8 @@ export function MonthlyTaskPage() {
   const [googleCalendarEmail, setGoogleCalendarEmail] = useState<string | null>(null);
 
   // 編集権限
-  const canEdit = profile?.role === 'admin' || profile?.role === 'owner' || profile?.role === 'manager';
+  const canEdit =
+    profile?.role === 'admin' || profile?.role === 'owner' || profile?.role === 'manager';
 
   // 対象教室
   const activeSchools = useMemo(() => {
@@ -75,17 +69,20 @@ export function MonthlyTaskPage() {
   }, [schools, getSelectedSchoolIds]);
 
   // データ取得（silent=true: ローディング表示なしでバックグラウンド同期）
-  const fetchTasks = useCallback(async (silent = false) => {
-    if (!silent) setIsLoading(true);
-    try {
-      const data = await getMonthlyTasks(year, month);
-      setTasks(data);
-    } catch {
-      if (!silent) toastError('タスクの取得に失敗しました');
-    } finally {
-      if (!silent) setIsLoading(false);
-    }
-  }, [year, month, toastError]);
+  const fetchTasks = useCallback(
+    async (silent = false) => {
+      if (!silent) setIsLoading(true);
+      try {
+        const data = await getMonthlyTasks(year, month);
+        setTasks(data);
+      } catch {
+        if (!silent) toastError('タスクの取得に失敗しました');
+      } finally {
+        if (!silent) setIsLoading(false);
+      }
+    },
+    [year, month, toastError]
+  );
 
   useEffect(() => {
     fetchTasks();
@@ -97,18 +94,23 @@ export function MonthlyTaskPage() {
       try {
         const tpls = await getTemplates();
         setTemplates(tpls);
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
     })();
   }, []);
 
   // Googleカレンダー連携状態＋イベントを1回のAPI呼び出しで取得
-  const [calendarEvents, setCalendarEvents] = useState<Array<{ id: string; summary: string; start: string; end: string; allDay: boolean }>>([]);
+  const [calendarEvents, setCalendarEvents] = useState<
+    Array<{ id: string; summary: string; start: string; end: string; allDay: boolean }>
+  >([]);
   const [calendarLoading, setCalendarLoading] = useState(false);
 
   const fetchCalendarData = useCallback(async () => {
     setCalendarLoading(true);
     try {
-      const session = (await (await import('@/lib/supabase')).supabase.auth.getSession()).data.session;
+      const session = (await (await import('@/lib/supabase')).supabase.auth.getSession()).data
+        .session;
       if (!session) return;
       const lastDay = new Date(year, month, 0).getDate();
       const timeMin = `${year}-${String(month).padStart(2, '0')}-01T00:00:00+09:00`;
@@ -124,8 +126,11 @@ export function MonthlyTaskPage() {
         }
         setCalendarEvents(json.data || []);
       }
-    } catch { /* ignore */ }
-    finally { setCalendarLoading(false); }
+    } catch {
+      /* ignore */
+    } finally {
+      setCalendarLoading(false);
+    }
   }, [year, month]);
 
   useEffect(() => {
@@ -144,12 +149,16 @@ export function MonthlyTaskPage() {
 
   // 月切替
   const goToPrevMonth = () => {
-    if (month === 1) { setYear(year - 1); setMonth(12); }
-    else setMonth(month - 1);
+    if (month === 1) {
+      setYear(year - 1);
+      setMonth(12);
+    } else setMonth(month - 1);
   };
   const goToNextMonth = () => {
-    if (month === 12) { setYear(year + 1); setMonth(1); }
-    else setMonth(month + 1);
+    if (month === 12) {
+      setYear(year + 1);
+      setMonth(1);
+    } else setMonth(month + 1);
   };
   const goToCurrentMonth = () => {
     setYear(now.getFullYear());
@@ -159,25 +168,36 @@ export function MonthlyTaskPage() {
   // 進捗サマリー
   const progressSummary = useMemo(() => {
     const schoolIds = activeSchools.map((s) => s.id);
-    let total = 0, completed = 0, businessTotal = 0, businessCompleted = 0, courseTotal = 0, courseCompleted = 0;
+    let total = 0,
+      completed = 0,
+      businessTotal = 0,
+      businessCompleted = 0,
+      courseTotal = 0,
+      courseCompleted = 0;
 
     for (const task of tasks) {
       for (const sid of schoolIds) {
         const check = task.checks.find((c) => c.school_id === sid);
         const isBusiness = task.category === 'business';
         total++;
-        if (isBusiness) businessTotal++; else courseTotal++;
+        if (isBusiness) businessTotal++;
+        else courseTotal++;
         if (check?.is_completed) {
           completed++;
-          if (isBusiness) businessCompleted++; else courseCompleted++;
+          if (isBusiness) businessCompleted++;
+          else courseCompleted++;
         }
       }
     }
 
     return {
-      total, completed,
+      total,
+      completed,
       percent: total > 0 ? Math.round((completed / total) * 100) : 0,
-      businessTotal, businessCompleted, courseTotal, courseCompleted,
+      businessTotal,
+      businessCompleted,
+      courseTotal,
+      courseCompleted,
     };
   }, [tasks, activeSchools]);
 
@@ -194,19 +214,21 @@ export function MonthlyTaskPage() {
     }).length;
   }, [tasks, activeSchools, now]);
 
-
   // Unicode取り消し線を適用/除去する関数
   const applyStrikethrough = (text: string) =>
-    text.split('').map(c => c + '\u0336').join('');
-  const removeStrikethrough = (text: string) =>
-    text.replace(/\u0336/g, '');
+    text
+      .split('')
+      .map((c) => c + '\u0336')
+      .join('');
+  const removeStrikethrough = (text: string) => text.replace(/\u0336/g, '');
 
   // Googleカレンダーイベントのタイトルを更新（完了時に取り消し線）
   const updateCalendarEventTitle = useCallback(
     async (task: MonthlyTaskWithChecks, allCompleted: boolean) => {
       if (!task.google_event_id) return;
       try {
-        const session = (await (await import('@/lib/supabase')).supabase.auth.getSession()).data.session;
+        const session = (await (await import('@/lib/supabase')).supabase.auth.getSession()).data
+          .session;
         if (!session) return;
 
         const cleanName = removeStrikethrough(task.task_name);
@@ -241,14 +263,25 @@ export function MonthlyTaskPage() {
           const updatedChecks = existingCheck
             ? t.checks.map((c) =>
                 c.school_id === schoolId
-                  ? { ...c, is_completed: isCompleted, completed_at: isCompleted ? new Date().toISOString() : null }
+                  ? {
+                      ...c,
+                      is_completed: isCompleted,
+                      completed_at: isCompleted ? new Date().toISOString() : null,
+                    }
                   : c
               )
             : [
                 ...t.checks,
-                { id: `temp-${Date.now()}`, task_id: taskId, school_id: schoolId, is_completed: isCompleted,
-                  completed_at: isCompleted ? new Date().toISOString() : null, completed_by: null,
-                  created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+                {
+                  id: `temp-${Date.now()}`,
+                  task_id: taskId,
+                  school_id: schoolId,
+                  is_completed: isCompleted,
+                  completed_at: isCompleted ? new Date().toISOString() : null,
+                  completed_by: null,
+                  created_at: new Date().toISOString(),
+                  updated_at: new Date().toISOString(),
+                },
               ];
           updatedTask = { ...t, checks: updatedChecks };
           return updatedTask;
@@ -259,21 +292,29 @@ export function MonthlyTaskPage() {
 
         // Googleカレンダーイベントの取り消し線を更新
         if (updatedTask?.google_event_id) {
-          const schoolIds = activeSchools.map(s => s.id);
-          const allDone = schoolIds.every(sid =>
-            updatedTask!.checks.find(c => c.school_id === sid)?.is_completed
+          const schoolIds = activeSchools.map((s) => s.id);
+          const allDone = schoolIds.every(
+            (sid) => updatedTask!.checks.find((c) => c.school_id === sid)?.is_completed
           );
           updateCalendarEventTitle(updatedTask, allDone);
         }
+      } catch {
+        toastError('チェックの更新に失敗しました');
+        fetchTasks();
       }
-      catch { toastError('チェックの更新に失敗しました'); fetchTasks(); }
     },
     [fetchTasks, toastError, activeSchools, updateCalendarEventTitle]
   );
 
   // タスク追加（楽観的更新）
   const handleCreateTask = useCallback(
-    async (taskDate: string, taskName: string, category: 'business' | 'course', note?: string, url?: string) => {
+    async (
+      taskDate: string,
+      taskName: string,
+      category: 'business' | 'course',
+      note?: string,
+      url?: string
+    ) => {
       // 楽観的にローカルに追加
       const tempId = `temp-${Date.now()}`;
       const optimisticTask: MonthlyTaskWithChecks = {
@@ -298,7 +339,15 @@ export function MonthlyTaskPage() {
       setTasks((prev) => [...prev, optimisticTask]);
 
       try {
-        await createTask({ year, month, task_date: taskDate, category, task_name: taskName, note, url });
+        await createTask({
+          year,
+          month,
+          task_date: taskDate,
+          category,
+          task_name: taskName,
+          note,
+          url,
+        });
         success('タスクを追加しました');
         // サーバーから正しいデータをバックグラウンド同期（スピナーなし）
         fetchTasks(true);
@@ -320,9 +369,7 @@ export function MonthlyTaskPage() {
   const handleUpdateTask = useCallback(
     async (taskId: string, updates: Record<string, unknown>) => {
       // 楽観的にローカル更新
-      setTasks((prev) =>
-        prev.map((t) => (t.id === taskId ? { ...t, ...updates } : t))
-      );
+      setTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, ...updates } : t)));
       try {
         await updateTask(taskId, updates, singleSchoolId);
         success(singleSchoolId ? 'この教室のタスクを更新しました' : 'タスクを更新しました');
@@ -338,9 +385,7 @@ export function MonthlyTaskPage() {
   // タスク日付移動（ドラッグ&ドロップ）
   const handleMoveTask = useCallback(
     async (taskId: string, newDate: string) => {
-      setTasks((prev) =>
-        prev.map((t) => (t.id === taskId ? { ...t, task_date: newDate } : t))
-      );
+      setTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, task_date: newDate } : t)));
       try {
         await updateTask(taskId, { task_date: newDate }, singleSchoolId);
       } catch {
@@ -373,12 +418,16 @@ export function MonthlyTaskPage() {
   // Googleカレンダーにタスク登録
   const handleSyncTaskToCalendar = useCallback(
     async (taskId: string) => {
-      const task = tasks.find(t => t.id === taskId);
+      const task = tasks.find((t) => t.id === taskId);
       if (!task) return;
 
       try {
-        const session = (await (await import('@/lib/supabase')).supabase.auth.getSession()).data.session;
-        if (!session) { toastError('認証が必要です'); return; }
+        const session = (await (await import('@/lib/supabase')).supabase.auth.getSession()).data
+          .session;
+        if (!session) {
+          toastError('認証が必要です');
+          return;
+        }
 
         // 既に登録済みの場合は何もしない
         if (task.google_event_id) {
@@ -402,7 +451,7 @@ export function MonthlyTaskPage() {
             allDay: false,
             reminders: [
               { method: 'popup', minutes: 1440 }, // 前日13:00
-              { method: 'popup', minutes: 0 },    // 当日13:00
+              { method: 'popup', minutes: 0 }, // 当日13:00
             ],
           }),
         });
@@ -418,9 +467,9 @@ export function MonthlyTaskPage() {
         await setGoogleEventId(taskId, data.eventId);
 
         // ローカルステート更新
-        setTasks(prev => prev.map(t =>
-          t.id === taskId ? { ...t, google_event_id: data.eventId } : t
-        ));
+        setTasks((prev) =>
+          prev.map((t) => (t.id === taskId ? { ...t, google_event_id: data.eventId } : t))
+        );
 
         success('Googleカレンダーに登録しました');
         fetchCalendarData();
@@ -436,17 +485,28 @@ export function MonthlyTaskPage() {
     setIsSyncing(true);
     try {
       const result = await syncCourseTasks(year, month);
-      if (result.imported > 0) { success(`${result.imported}件の講習タスクを取り込みました`); fetchTasks(); }
-      else success('取り込み対象の講習タスクはありませんでした');
-    } catch { toastError('講習タスクの取り込みに失敗しました'); }
-    finally { setIsSyncing(false); }
+      if (result.imported > 0) {
+        success(`${result.imported}件の講習タスクを取り込みました`);
+        fetchTasks();
+      } else success('取り込み対象の講習タスクはありませんでした');
+    } catch {
+      toastError('講習タスクの取り込みに失敗しました');
+    } finally {
+      setIsSyncing(false);
+    }
   };
 
   // 講習タスク一括削除
-  const courseTaskCount = useMemo(() => tasks.filter(t => t.category === 'course').length, [tasks]);
+  const courseTaskCount = useMemo(
+    () => tasks.filter((t) => t.category === 'course').length,
+    [tasks]
+  );
 
   const handleDeleteCourseTasks = async () => {
-    if (courseTaskCount === 0) { toastError('削除対象の講習タスクがありません'); return; }
+    if (courseTaskCount === 0) {
+      toastError('削除対象の講習タスクがありません');
+      return;
+    }
     const confirmed = await confirm({
       title: '講習タスク一括削除',
       description: `${year}年${month}月の講習タスク${courseTaskCount}件をすべて削除しますか？\nこの操作は元に戻せません。`,
@@ -458,13 +518,19 @@ export function MonthlyTaskPage() {
       const result = await deleteCourseTasks(year, month);
       success(`${result.deleted}件の講習タスクを削除しました`);
       fetchTasks();
-    } catch { toastError('講習タスクの削除に失敗しました'); }
+    } catch {
+      toastError('講習タスクの削除に失敗しました');
+    }
   };
 
   // テンプレート操作
   const handleOpenTemplateDialog = async () => {
-    try { const tpls = await getTemplates(); setTemplates(tpls); }
-    catch { toastError('テンプレートの取得に失敗しました'); }
+    try {
+      const tpls = await getTemplates();
+      setTemplates(tpls);
+    } catch {
+      toastError('テンプレートの取得に失敗しました');
+    }
     setShowTemplateDialog(true);
   };
 
@@ -474,25 +540,51 @@ export function MonthlyTaskPage() {
       success(`${result.created}件のタスクを生成しました`);
       setShowTemplateDialog(false);
       fetchTasks();
-    } catch { toastError('テンプレートからの生成に失敗しました'); }
+    } catch {
+      toastError('テンプレートからの生成に失敗しました');
+    }
   };
 
   const handleSaveTemplate = async (name: string) => {
-    try { await saveTemplate(year, month, name); success('テンプレートを保存しました'); const tpls = await getTemplates(); setTemplates(tpls); }
-    catch { toastError('テンプレートの保存に失敗しました'); }
+    try {
+      await saveTemplate(year, month, name);
+      success('テンプレートを保存しました');
+      const tpls = await getTemplates();
+      setTemplates(tpls);
+    } catch {
+      toastError('テンプレートの保存に失敗しました');
+    }
   };
 
   const handleDeleteTemplate = async (templateId: string) => {
-    try { await deleteTemplateApi(templateId); success('テンプレートを削除しました'); setTemplates((prev) => prev.filter((t) => t.id !== templateId)); }
-    catch { toastError('テンプレートの削除に失敗しました'); }
+    try {
+      await deleteTemplateApi(templateId);
+      success('テンプレートを削除しました');
+      setTemplates((prev) => prev.filter((t) => t.id !== templateId));
+    } catch {
+      toastError('テンプレートの削除に失敗しました');
+    }
   };
 
-  const handleUpdateTemplate = async (templateId: string, updates: { name?: string; template_data?: Array<{ day_of_month: number; task_name: string; category: string; sort_order: number }> }) => {
+  const handleUpdateTemplate = async (
+    templateId: string,
+    updates: {
+      name?: string;
+      template_data?: Array<{
+        day_of_month: number;
+        task_name: string;
+        category: string;
+        sort_order: number;
+      }>;
+    }
+  ) => {
     try {
       const updated = await updateTemplateApi(templateId, updates);
       setTemplates((prev) => prev.map((t) => (t.id === templateId ? updated : t)));
       success('テンプレートを更新しました');
-    } catch { toastError('テンプレートの更新に失敗しました'); }
+    } catch {
+      toastError('テンプレートの更新に失敗しました');
+    }
   };
 
   // テンプレートプール: 一括配置
@@ -508,17 +600,26 @@ export function MonthlyTaskPage() {
       <div className="flex items-center gap-3 pb-3 border-b flex-shrink-0">
         {/* 月選択 */}
         <div className="flex items-center gap-1">
-          <button onClick={goToPrevMonth} className="p-1.5 rounded hover:bg-gray-100 transition-[background-color] duration-150 ease-out">
+          <button
+            onClick={goToPrevMonth}
+            className="p-1.5 rounded hover:bg-gray-100 transition-[background-color] duration-150 ease-out"
+          >
             <ChevronLeft className="w-5 h-5" />
           </button>
           <span className="text-lg font-bold min-w-[130px] text-center">
             {year}年{month}月
           </span>
-          <button onClick={goToNextMonth} className="p-1.5 rounded hover:bg-gray-100 transition-[background-color] duration-150 ease-out">
+          <button
+            onClick={goToNextMonth}
+            className="p-1.5 rounded hover:bg-gray-100 transition-[background-color] duration-150 ease-out"
+          >
             <ChevronRight className="w-5 h-5" />
           </button>
           {!isCurrentMonth && (
-            <button onClick={goToCurrentMonth} className="ml-1 px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded transition-[background-color] duration-150 ease-out">
+            <button
+              onClick={goToCurrentMonth}
+              className="ml-1 px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded transition-[background-color] duration-150 ease-out"
+            >
               今月
             </button>
           )}
@@ -526,11 +627,18 @@ export function MonthlyTaskPage() {
 
         {/* 進捗サマリー */}
         <div className="flex items-center gap-3 text-xs text-gray-600">
-          <span>業務: {progressSummary.businessCompleted}/{progressSummary.businessTotal}</span>
-          <span>講習: {progressSummary.courseCompleted}/{progressSummary.courseTotal}</span>
+          <span>
+            業務: {progressSummary.businessCompleted}/{progressSummary.businessTotal}
+          </span>
+          <span>
+            講習: {progressSummary.courseCompleted}/{progressSummary.courseTotal}
+          </span>
           <div className="flex items-center gap-1.5">
             <div className="w-20 h-2 bg-gray-200 rounded-full overflow-hidden">
-              <div className="h-full bg-[#d32f2f] rounded-full transition-[width] duration-500 ease-out" style={{ width: `${progressSummary.percent}%` }} />
+              <div
+                className="h-full bg-[#d32f2f] rounded-full transition-[width] duration-500 ease-out"
+                style={{ width: `${progressSummary.percent}%` }}
+              />
             </div>
             <span className="font-medium">{progressSummary.percent}%</span>
           </div>

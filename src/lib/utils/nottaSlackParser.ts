@@ -33,15 +33,17 @@ const LABEL_SPLIT_REGEX = /(?:タイトル|日時|長さ|時間|録音|文字起
  * Slack の mrkdwn から URL とプレーンテキストを抽出して整形する。
  */
 function stripSlackFormatting(text: string): string {
-  return text
-    // <url|label> → label
-    .replace(/<([^|>]+)\|([^>]+)>/g, '$2')
-    // <url> → url
-    .replace(/<(https?:[^>]+)>/g, '$1')
-    // &lt; &gt; &amp;
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&amp;/g, '&');
+  return (
+    text
+      // <url|label> → label
+      .replace(/<([^|>]+)\|([^>]+)>/g, '$2')
+      // <url> → url
+      .replace(/<(https?:[^>]+)>/g, '$1')
+      // &lt; &gt; &amp;
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&amp;/g, '&')
+  );
 }
 
 /**
@@ -50,9 +52,9 @@ function stripSlackFormatting(text: string): string {
  */
 function stripBoldMarkers(text: string): string {
   return text
-    .replace(/\*+/g, ' ')          // * を空白化
+    .replace(/\*+/g, ' ') // * を空白化
     .replace(/\r\n/g, '\n')
-    .replace(/[ \t]+/g, ' ');      // 連続スペース圧縮（改行は維持）
+    .replace(/[ \t]+/g, ' '); // 連続スペース圧縮（改行は維持）
 }
 
 /**
@@ -71,9 +73,7 @@ function extractFirstUrl(raw: string): string | null {
  */
 function parseNottaDate(raw: string): string | null {
   if (!raw) return null;
-  const cleaned = raw
-    .replace(/\(GMT([+-])(\d{2})(\d{2})\)/, '$1$2:$3')
-    .replace(/,(\d)/, ', $1');
+  const cleaned = raw.replace(/\(GMT([+-])(\d{2})(\d{2})\)/, '$1$2:$3').replace(/,(\d)/, ', $1');
   const d = new Date(cleaned);
   if (!isNaN(d.getTime())) return d.toISOString();
   return null;
@@ -109,9 +109,7 @@ function extractTitle(cleanedText: string): string | null {
 
   // 1) 明示タイトル（Zapier or Slack 直連携の「タイトル: xxx」）
   //    `.+?` を使い、次ラベル直前で止めて余計な本文を飲み込まない
-  const explicit = cleanedText.match(
-    new RegExp(`タイトル[:：]\\s*(.+?)${STOP.source}`)
-  );
+  const explicit = cleanedText.match(new RegExp(`タイトル[:：]\\s*(.+?)${STOP.source}`));
   if (explicit) {
     const t = explicit[1].trim();
     if (t) return t;
@@ -146,9 +144,7 @@ export function parseNottaSlackMessage(rawText: string): ParsedNottaSlackMessage
 
   // タイトル抽出
   const rawTitle = extractTitle(cleaned);
-  const title = rawTitle
-    ? rawTitle.replace(/\s+/g, ' ').trim().slice(0, 200) || null
-    : null;
+  const title = rawTitle ? rawTitle.replace(/\s+/g, ' ').trim().slice(0, 200) || null : null;
 
   // 日時 / 長さ（cleaned で * を気にせず抽出）
   const dateMatch = cleaned.match(/日時[:：]\s*(.+?)(?=\s*(?:長さ|時間|文字起こし|AI Notes|\n)|$)/);
@@ -158,10 +154,10 @@ export function parseNottaSlackMessage(rawText: string): ParsedNottaSlackMessage
   const durationSeconds = durMatch ? parseDuration(durMatch[1].trim()) : null;
 
   // 音声URL
-  const linkLineMatch = rawText.match(/文字起こしとAI要約を確認[\s\S]*?(<https?:\/\/[^|>]+(?:\|[^>]+)?>|https?:\/\/\S+)/);
-  const audioUrl = linkLineMatch
-    ? extractFirstUrl(linkLineMatch[1])
-    : extractFirstUrl(rawText);
+  const linkLineMatch = rawText.match(
+    /文字起こしとAI要約を確認[\s\S]*?(<https?:\/\/[^|>]+(?:\|[^>]+)?>|https?:\/\/\S+)/
+  );
+  const audioUrl = linkLineMatch ? extractFirstUrl(linkLineMatch[1]) : extractFirstUrl(rawText);
 
   // AI Notes 以降を summary とする
   const aiIdx = cleaned.indexOf('AI Notes');

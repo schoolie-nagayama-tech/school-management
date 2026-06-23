@@ -139,7 +139,8 @@ const settingsGroups: SettingsGroup[] = [
         href: '/settings/automation',
         icon: <Wand2 className="w-5 h-5" />,
         label: '自動入力ローダー',
-        description: '取次発注・スクールIE座席表など外部サイトへの自動入力に使う共通ブックマークレットの発行',
+        description:
+          '取次発注・スクールIE座席表など外部サイトへの自動入力に使う共通ブックマークレットの発行',
         requiresManager: true,
       },
     ],
@@ -251,10 +252,7 @@ export default function SettingsPage() {
               {
                 title: 'ポータルのURLを確認する',
                 description: '保護者ポータルの公開リンクを取得します。',
-                steps: [
-                  '「ポータル・フォーム設定」をクリック',
-                  '教室ごとのポータルURLをコピー',
-                ],
+                steps: ['「ポータル・フォーム設定」をクリック', '教室ごとのポータルURLをコピー'],
               },
             ]}
           />

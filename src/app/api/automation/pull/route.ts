@@ -39,7 +39,10 @@ export async function OPTIONS() {
 export async function GET(request: NextRequest) {
   const token = request.nextUrl.searchParams.get('token');
   if (!token) {
-    return NextResponse.json({ error: 'トークンが指定されていません' }, { status: 400, headers: CORS_HEADERS });
+    return NextResponse.json(
+      { error: 'トークンが指定されていません' },
+      { status: 400, headers: CORS_HEADERS }
+    );
   }
 
   const serviceClient = getServiceClient();
@@ -54,11 +57,17 @@ export async function GET(request: NextRequest) {
 
   if (error) {
     console.error('[automation/pull] token lookup error:', error);
-    return NextResponse.json({ error: 'トークン照合に失敗しました' }, { status: 500, headers: CORS_HEADERS });
+    return NextResponse.json(
+      { error: 'トークン照合に失敗しました' },
+      { status: 500, headers: CORS_HEADERS }
+    );
   }
 
   if (!row) {
-    return NextResponse.json({ error: '無効なトークンです' }, { status: 401, headers: CORS_HEADERS });
+    return NextResponse.json(
+      { error: '無効なトークンです' },
+      { status: 401, headers: CORS_HEADERS }
+    );
   }
 
   const payload = row.pending_payload ?? null;

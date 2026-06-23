@@ -236,12 +236,7 @@ export async function deleteClosedDay(id: string): Promise<void> {
 // ========================================
 
 /** 時間帯が重複するか（endA > startB && endB > startA） */
-function timeRangesOverlap(
-  startA: string,
-  endA: string,
-  startB: string,
-  endB: string
-): boolean {
+function timeRangesOverlap(startA: string, endA: string, startB: string, endB: string): boolean {
   const sA = startA.slice(0, 8);
   const eA = endA.slice(0, 8);
   const sB = startB.slice(0, 8);
@@ -285,21 +280,26 @@ export async function checkStudentTimeConflict(
     const teachersMap = new Map<string, string>();
 
     for (const row of entries as (ScheduleEntry & {
-      time_slot?: { start_time: string; end_time: string }[] | { start_time: string; end_time: string };
-      teacher?: { display_name: string | null; email: string | null }[] | { display_name: string | null; email: string | null };
+      time_slot?:
+        | { start_time: string; end_time: string }[]
+        | { start_time: string; end_time: string };
+      teacher?:
+        | { display_name: string | null; email: string | null }[]
+        | { display_name: string | null; email: string | null };
     })[]) {
       if (row.id === excludeEntryId) continue;
       const slot = Array.isArray(row.time_slot) ? row.time_slot[0] : row.time_slot;
       const teacher = Array.isArray(row.teacher) ? row.teacher[0] : row.teacher;
       if (slot) {
         timeSlotsMap.set(row.time_slot_id, slot);
-        if (teacher)
-          teachersMap.set(row.teacher_id, teacher.display_name || teacher.email || '—');
+        if (teacher) teachersMap.set(row.teacher_id, teacher.display_name || teacher.email || '—');
       }
     }
 
     for (const row of entries as (ScheduleEntry & {
-      time_slot?: { start_time: string; end_time: string }[] | { start_time: string; end_time: string };
+      time_slot?:
+        | { start_time: string; end_time: string }[]
+        | { start_time: string; end_time: string };
     })[]) {
       if (row.id === excludeEntryId) continue;
       const slot = timeSlotsMap.get(row.time_slot_id);
@@ -346,8 +346,12 @@ export async function checkStudentTimeConflict(
     day_of_week: number;
     time_slot_id: string;
     teacher_id: string;
-    time_slot?: { start_time: string; end_time: string }[] | { start_time: string; end_time: string };
-    teacher?: { display_name: string | null; email: string | null }[] | { display_name: string | null; email: string | null };
+    time_slot?:
+      | { start_time: string; end_time: string }[]
+      | { start_time: string; end_time: string };
+    teacher?:
+      | { display_name: string | null; email: string | null }[]
+      | { display_name: string | null; email: string | null };
   }[]) {
     if (row.id === excludePatternId) continue;
     const slot = Array.isArray(row.time_slot) ? row.time_slot[0] : row.time_slot;
@@ -553,7 +557,10 @@ export async function scheduleRegularPatternChangeFrom(
 
   if (error) {
     // ロールバック：旧パターンの effective_until を null に戻す
-    await db.from('schedule_regular_patterns').update({ effective_until: null }).eq('id', patternId);
+    await db
+      .from('schedule_regular_patterns')
+      .update({ effective_until: null })
+      .eq('id', patternId);
     console.error('Error creating new pattern for scheduled change:', error);
     throw new Error('新しい通塾日程の登録に失敗しました');
   }
@@ -583,7 +590,11 @@ export async function updateRegularPattern(
   id: string,
   form: Partial<ScheduleRegularPatternFormData>
 ): Promise<ScheduleRegularPattern> {
-  if (form.day_of_week !== undefined || form.time_slot_id !== undefined || form.student_id !== undefined) {
+  if (
+    form.day_of_week !== undefined ||
+    form.time_slot_id !== undefined ||
+    form.student_id !== undefined
+  ) {
     const existing = await db
       .from('schedule_regular_patterns')
       .select('student_id, day_of_week, time_slot_id')
@@ -592,7 +603,8 @@ export async function updateRegularPattern(
     if (!existing.error && existing.data) {
       const studentId = form.student_id ?? (existing.data as { student_id: string }).student_id;
       const dayOfWeek = form.day_of_week ?? (existing.data as { day_of_week: number }).day_of_week;
-      const timeSlotId = form.time_slot_id ?? (existing.data as { time_slot_id: string }).time_slot_id;
+      const timeSlotId =
+        form.time_slot_id ?? (existing.data as { time_slot_id: string }).time_slot_id;
       const timeSlot = await getTimeSlotById(timeSlotId);
       if (timeSlot) {
         const conflict = await checkStudentTimeConflict(
@@ -704,7 +716,9 @@ export async function getScheduleEntries(
       .order('time_slot_id');
 
     if (!tryWithoutJoins.error && tryWithoutJoins.data) {
-      console.warn('Schedule entries loaded without joins (relation error). Run migrations if needed.');
+      console.warn(
+        'Schedule entries loaded without joins (relation error). Run migrations if needed.'
+      );
       return (tryWithoutJoins.data || []) as ScheduleEntry[];
     }
 
@@ -717,8 +731,12 @@ export async function getScheduleEntries(
 
   const rows = (result.data || []) as (ScheduleEntry & {
     time_slot?: ScheduleTimeSlot[] | ScheduleTimeSlot;
-    student?: { id: string; last_name: string; first_name: string; grade: number }[] | { id: string; last_name: string; first_name: string; grade: number };
-    teacher?: { id: string; display_name: string | null; email: string | null }[] | { id: string; display_name: string | null; email: string | null };
+    student?:
+      | { id: string; last_name: string; first_name: string; grade: number }[]
+      | { id: string; last_name: string; first_name: string; grade: number };
+    teacher?:
+      | { id: string; display_name: string | null; email: string | null }[]
+      | { id: string; display_name: string | null; email: string | null };
   })[];
   return rows.map((r) => ({
     ...r,
@@ -816,14 +834,18 @@ export async function generateWeeklySchedule(
     .lte('entry_date', toStr)
     .or('kind.neq.regular,status.in.(transferred_out,transferred_in,cancelled)');
   const transferredKeys = new Set(
-    ((skipRows ?? []) as Array<{ entry_date: string; time_slot_id: string; student_id: string }>).map(
-      (e) => `${e.entry_date}-${e.time_slot_id}-${e.student_id}`
-    )
+    (
+      (skipRows ?? []) as Array<{ entry_date: string; time_slot_id: string; student_id: string }>
+    ).map((e) => `${e.entry_date}-${e.time_slot_id}-${e.student_id}`)
   );
 
   // teacher_id が NULL のものは ハイフン+null で識別。NULL 同士のキー衝突を防ぐ
-  const entryKey = (e: { entry_date: string; time_slot_id: string; teacher_id: string | null; student_id: string }) =>
-    `${e.entry_date}-${e.time_slot_id}-${e.teacher_id ?? 'null'}-${e.student_id}`;
+  const entryKey = (e: {
+    entry_date: string;
+    time_slot_id: string;
+    teacher_id: string | null;
+    student_id: string;
+  }) => `${e.entry_date}-${e.time_slot_id}-${e.teacher_id ?? 'null'}-${e.student_id}`;
   const entriesMap = new Map<string, EntryRow>();
 
   for (const p of patterns) {
@@ -897,7 +919,9 @@ export async function generateWeeklySchedule(
         insError && typeof insError === 'object' && 'message' in insError
           ? String((insError as { message: string }).message)
           : '';
-      throw new Error(msg ? `スケジュールの生成に失敗しました: ${msg}` : 'スケジュールの生成に失敗しました');
+      throw new Error(
+        msg ? `スケジュールの生成に失敗しました: ${msg}` : 'スケジュールの生成に失敗しました'
+      );
     }
   }
 
@@ -1095,8 +1119,12 @@ export async function checkTeacherTimeConflict(
     id: string;
     time_slot_id: string;
     student_id: string;
-    time_slot?: { start_time: string; end_time: string }[] | { start_time: string; end_time: string };
-    student?: { last_name: string; first_name: string }[] | { last_name: string; first_name: string };
+    time_slot?:
+      | { start_time: string; end_time: string }[]
+      | { start_time: string; end_time: string };
+    student?:
+      | { last_name: string; first_name: string }[]
+      | { last_name: string; first_name: string };
   }>) {
     if (row.id === excludeEntryId) continue;
     const slot = Array.isArray(row.time_slot) ? row.time_slot[0] : row.time_slot;
@@ -1133,7 +1161,9 @@ export async function createScheduleEntry(
   // 過去の日付には登録不可。なぜ登録できないかが分かる明示メッセージを返す（JST基準で判定）。
   const todayJst = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Tokyo' });
   if (date < todayJst) {
-    throw new Error(`過去の日付（${date}）には授業を登録できません。今日以降の日付を選んでください。`);
+    throw new Error(
+      `過去の日付（${date}）には授業を登録できません。今日以降の日付を選んでください。`
+    );
   }
 
   await ensureUserIsTeacher(form.teacher_id);
@@ -1192,7 +1222,10 @@ export async function createScheduleEntry(
 
   if (error) {
     console.error('Error creating schedule entry:', error);
-    const code = error && typeof error === 'object' && 'code' in error ? String((error as { code: string }).code) : '';
+    const code =
+      error && typeof error === 'object' && 'code' in error
+        ? String((error as { code: string }).code)
+        : '';
     if (code === '23505') {
       throw new Error('同じ生徒・講師・コマの組み合わせが既に登録されているため追加できません');
     }
@@ -1201,7 +1234,9 @@ export async function createScheduleEntry(
       error && typeof error === 'object' && 'message' in error
         ? String((error as { message: string }).message)
         : '';
-    throw new Error(detail ? `授業を追加できませんでした：${detail}` : '授業を追加できませんでした');
+    throw new Error(
+      detail ? `授業を追加できませんでした：${detail}` : '授業を追加できませんでした'
+    );
   }
   return data as ScheduleEntry;
 }
@@ -1244,7 +1279,8 @@ export async function createKoushuPlacement(
   // ※個別は同一講師に複数生徒を持てるので、createScheduleEntry の講師時間重複は使わず容量で判定する。
   if (teacherId) {
     await ensureUserIsTeacher(teacherId);
-    const { getClassCapacity, DEFAULT_CLASS_CAPACITY } = await import('@/lib/api/school-class-capacity');
+    const { getClassCapacity, DEFAULT_CLASS_CAPACITY } =
+      await import('@/lib/api/school-class-capacity');
     const cap = (await getClassCapacity(schoolId)) ?? DEFAULT_CLASS_CAPACITY;
     const { data: sameTeacher } = await db
       .from('schedule_entries')
@@ -1256,7 +1292,9 @@ export async function createKoushuPlacement(
       .eq('formation', 'individual')
       .in('status', ['scheduled', 'completed', 'transferred_in']);
     if ((sameTeacher?.length ?? 0) >= cap.max_students_per_teacher_individual) {
-      throw new Error(`この講師はこのコマで満員です（1講師あたり最大${cap.max_students_per_teacher_individual}名）`);
+      throw new Error(
+        `この講師はこのコマで満員です（1講師あたり最大${cap.max_students_per_teacher_individual}名）`
+      );
     }
   }
 
@@ -1300,7 +1338,15 @@ export async function createTestPrepPlacement(
   subjectIds: string[],
   teacherId: string | null = null
 ): Promise<ScheduleEntry> {
-  return createKoushuPlacement(schoolId, date, slotId, studentId, subjectIds, teacherId, 'test_prep');
+  return createKoushuPlacement(
+    schoolId,
+    date,
+    slotId,
+    studentId,
+    subjectIds,
+    teacherId,
+    'test_prep'
+  );
 }
 
 /** 授業を更新（講師・科目・座席・備考） */
@@ -1402,10 +1448,7 @@ export async function deleteScheduleEntry(id: string): Promise<void> {
     throw new Error('授業の削除に失敗しました');
   }
 
-  const { error } = await db
-    .from('schedule_entries')
-    .update({ status: 'cancelled' })
-    .eq('id', id);
+  const { error } = await db.from('schedule_entries').update({ status: 'cancelled' }).eq('id', id);
 
   if (error) {
     console.error('Error deleting schedule entry:', error);
@@ -1721,10 +1764,7 @@ export async function getShiftAvailableTeachers(schoolId: string): Promise<Shift
   );
   const emailToUserId = new Map<string, string>();
   if (emails.length > 0) {
-    const { data: users } = await db
-      .from('user_profiles')
-      .select('id, email')
-      .in('email', emails);
+    const { data: users } = await db.from('user_profiles').select('id, email').in('email', emails);
     for (const u of (users || []) as { id: string; email: string }[]) {
       if (u.email) emailToUserId.set(u.email.toLowerCase(), u.id);
     }
@@ -1756,9 +1796,7 @@ export async function getShiftAvailableTeachers(schoolId: string): Promise<Shift
       submissionToUserId.set(s.id, s.user_id);
       continue;
     }
-    const byEmail = s.teacher_email
-      ? emailToUserId.get(s.teacher_email.toLowerCase())
-      : undefined;
+    const byEmail = s.teacher_email ? emailToUserId.get(s.teacher_email.toLowerCase()) : undefined;
     if (byEmail) {
       submissionToUserId.set(s.id, byEmail);
       continue;
@@ -1843,8 +1881,12 @@ export async function getPendingTransfers(
   }
   type Row = ScheduleEntry & {
     time_slot?: ScheduleTimeSlot[] | ScheduleTimeSlot;
-    student?: { id: string; last_name: string; first_name: string; grade: number }[] | { id: string; last_name: string; first_name: string; grade: number };
-    teacher?: { id: string; display_name: string | null; email: string | null }[] | { id: string; display_name: string | null; email: string | null };
+    student?:
+      | { id: string; last_name: string; first_name: string; grade: number }[]
+      | { id: string; last_name: string; first_name: string; grade: number };
+    teacher?:
+      | { id: string; display_name: string | null; email: string | null }[]
+      | { id: string; display_name: string | null; email: string | null };
   };
   const rows = (data || []) as Row[];
   return rows.map((r) => ({
@@ -1913,7 +1955,11 @@ export async function detectScheduleDrift(
       .in('status', ['scheduled', 'completed']);
 
     const actualSet = new Set<string>();
-    for (const e of (entries || []) as { entry_date: string; time_slot_id: string; student_id: string }[]) {
+    for (const e of (entries || []) as {
+      entry_date: string;
+      time_slot_id: string;
+      student_id: string;
+    }[]) {
       actualSet.add(`${e.entry_date}-${e.time_slot_id}-${e.student_id}`);
     }
 

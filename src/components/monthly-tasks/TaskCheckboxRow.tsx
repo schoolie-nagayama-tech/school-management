@@ -76,7 +76,10 @@ export function TaskCheckboxRow({
             onBlur={handleEditSubmit}
             onKeyDown={(e) => {
               if (e.key === 'Enter') handleEditSubmit();
-              if (e.key === 'Escape') { setEditValue(task.task_name); setIsEditing(false); }
+              if (e.key === 'Escape') {
+                setEditValue(task.task_name);
+                setIsEditing(false);
+              }
             }}
             className="flex-1 px-1 py-0.5 border rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-300"
           />
@@ -117,7 +120,10 @@ export function TaskCheckboxRow({
           <>
             {showDeleteConfirm ? (
               <button
-                onClick={() => { onDeleteTask(task.id); setShowDeleteConfirm(false); }}
+                onClick={() => {
+                  onDeleteTask(task.id);
+                  setShowDeleteConfirm(false);
+                }}
                 className="flex-shrink-0 text-red-500 hover:text-red-700 opacity-0 group-hover:opacity-100 transition-opacity text-[11px]"
               >
                 削除

@@ -10,7 +10,10 @@ import {
   updateStudentTextbook,
 } from '@/lib/api/progress';
 import { getTextbooks } from '@/lib/api/textbooks';
-import { getStudentTextbooks as getDistributedMaterials, deleteDistributedMaterial } from '@/lib/api/ordering';
+import {
+  getStudentTextbooks as getDistributedMaterials,
+  deleteDistributedMaterial,
+} from '@/lib/api/ordering';
 import type { StudentTextbook as DistributedMaterial } from '@/lib/api/ordering';
 import { listAssessments } from '@/lib/api/assessments';
 import type { Student, Textbook, AssessmentWithScores } from '@/types/database';
@@ -44,7 +47,11 @@ type StudentTextbookRow = Awaited<ReturnType<typeof getStudentTextbooksForProgre
 // assessments の学年→ラベルのためのサブジェクト列
 const FIVE_SUBJECTS = ['english', 'math', 'japanese', 'social', 'science'] as const;
 
-function formatScoreRow(a: AssessmentWithScores): { label: string; subjects: Array<{ code: string; value: number | null }>; total: number | null } {
+function formatScoreRow(a: AssessmentWithScores): {
+  label: string;
+  subjects: Array<{ code: string; value: number | null }>;
+  total: number | null;
+} {
   const map = new Map<string, number | null>();
   for (const s of a.scores) map.set(s.subject, s.value);
   const subjects = FIVE_SUBJECTS.map((code) => ({ code, value: map.get(code) ?? null }));
@@ -137,9 +144,15 @@ export function StudentDetailModal({
 
   const filteredMasterTextbooks = useMemo(() => {
     const alreadyLinked = new Set(textbooks.map((t) => t.textbook_id));
-    const SCHOOL_ORDER: Record<string, number> = { '小学': 1, '中学': 2, '高校': 3 };
+    const SCHOOL_ORDER: Record<string, number> = { 小学: 1, 中学: 2, 高校: 3 };
     const GRADE_ORDER: Record<string, number> = {
-      '1年': 1, '2年': 2, '3年': 3, '4年': 4, '5年': 5, '6年': 6, '共通': 7,
+      '1年': 1,
+      '2年': 2,
+      '3年': 3,
+      '4年': 4,
+      '5年': 5,
+      '6年': 6,
+      共通: 7,
     };
     return availableTextbooks
       .filter((t) => !alreadyLinked.has(t.id))
@@ -246,8 +259,13 @@ export function StudentDetailModal({
   };
 
   // 所持(is_owned)・進行表管理(track_progress)を更新する共通ハンドラ（楽観更新→失敗時リロード）
-  const updateStTextbookFlag = async (tbId: string, patch: { track_progress?: boolean; is_owned?: boolean }) => {
-    setTextbooks((prev) => prev.map((row) => (row.id === tbId ? { ...row, ...patch } as typeof row : row)));
+  const updateStTextbookFlag = async (
+    tbId: string,
+    patch: { track_progress?: boolean; is_owned?: boolean }
+  ) => {
+    setTextbooks((prev) =>
+      prev.map((row) => (row.id === tbId ? ({ ...row, ...patch } as typeof row) : row))
+    );
     try {
       await updateStudentTextbook(tbId, patch);
     } catch (err) {
@@ -258,7 +276,7 @@ export function StudentDetailModal({
 
   // 教材1行（所持教材・進行表で管理中の両セクションで共用）。
   // 「所持」「進行表で管理」は独立トグル。所持ONの教材は発注候補から除外される。
-  const renderTextbookRow = (tb: typeof textbooks[number]) => {
+  const renderTextbookRow = (tb: (typeof textbooks)[number]) => {
     const tracked = (tb as { track_progress?: boolean }).track_progress ?? false;
     const owned = (tb as { is_owned?: boolean }).is_owned ?? false;
     return (
@@ -269,7 +287,15 @@ export function StudentDetailModal({
         <div className="flex items-center gap-2 min-w-0">
           <span className="text-sm text-[#1f2937] truncate">
             {tb.textbook
-              ? [tb.textbook.school_type, tb.textbook.grade, tb.textbook.subject, tb.textbook.name, tb.textbook.publisher].filter(Boolean).join(' / ')
+              ? [
+                  tb.textbook.school_type,
+                  tb.textbook.grade,
+                  tb.textbook.subject,
+                  tb.textbook.name,
+                  tb.textbook.publisher,
+                ]
+                  .filter(Boolean)
+                  .join(' / ')
               : '（不明な教材）'}
           </span>
           {tb.season && (
@@ -280,7 +306,10 @@ export function StudentDetailModal({
         </div>
         <div className="flex items-center gap-3 shrink-0">
           {!isTeacher && (
-            <label className="flex items-center gap-1 text-[11px] text-[#4b5563] cursor-pointer select-none" title="所持していると発注候補から除外されます">
+            <label
+              className="flex items-center gap-1 text-[11px] text-[#4b5563] cursor-pointer select-none"
+              title="所持していると発注候補から除外されます"
+            >
               <input
                 type="checkbox"
                 checked={owned}
@@ -291,7 +320,10 @@ export function StudentDetailModal({
             </label>
           )}
           {!isTeacher && (
-            <label className="flex items-center gap-1 text-[11px] text-[#4b5563] cursor-pointer select-none" title="進行表ページに進捗欄を出すか">
+            <label
+              className="flex items-center gap-1 text-[11px] text-[#4b5563] cursor-pointer select-none"
+              title="進行表ページに進捗欄を出すか"
+            >
               <input
                 type="checkbox"
                 checked={tracked}
@@ -318,10 +350,16 @@ export function StudentDetailModal({
 
   // 所持教材 = is_owned=true（発注配布/手動）。進行表で管理中 = track_progress=true（公開等）。独立軸なので両方に出ることがある。
   const ownedTextbooks = textbooks.filter((tb) => (tb as { is_owned?: boolean }).is_owned);
-  const progressTextbooks = textbooks.filter((tb) => (tb as { track_progress?: boolean }).track_progress);
+  const progressTextbooks = textbooks.filter(
+    (tb) => (tb as { track_progress?: boolean }).track_progress
+  );
 
   // 発注中（発注済・発送済。まだ未所持＝配布で is_owned=true になる）
-  const ORDER_STATUS_LABEL: Record<string, string> = { ordered: '発注済', delivered: '発送済', distributed: '配布済' };
+  const ORDER_STATUS_LABEL: Record<string, string> = {
+    ordered: '発注済',
+    delivered: '発送済',
+    distributed: '配布済',
+  };
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="生徒詳細" size="2xl">
@@ -436,10 +474,16 @@ export function StudentDetailModal({
                       value={selectedTextbookId}
                       onChange={(e) => setSelectedTextbookId(e.target.value)}
                       options={[
-                        { value: '', label: filteredMasterTextbooks.length === 0 ? '候補なし' : '選択してください' },
+                        {
+                          value: '',
+                          label:
+                            filteredMasterTextbooks.length === 0 ? '候補なし' : '選択してください',
+                        },
                         ...filteredMasterTextbooks.map((t) => ({
                           value: String(t.id),
-                          label: [t.school_type, t.grade, t.name, t.publisher].filter(Boolean).join(' / '),
+                          label: [t.school_type, t.grade, t.name, t.publisher]
+                            .filter(Boolean)
+                            .join(' / '),
                         })),
                       ]}
                       disabled={isAddingTextbook || filteredMasterTextbooks.length === 0}
@@ -457,22 +501,23 @@ export function StudentDetailModal({
               )}
 
               <p className="text-[11px] text-[#6b7280] mb-2">
-                物理的に所持している教材です（配布・手動追加で入る）。「所持」ON のものは発注候補から除外されます。「進行表で管理」は別軸で、ONにすると進行表に進捗欄が出ます。
+                物理的に所持している教材です（配布・手動追加で入る）。「所持」ON
+                のものは発注候補から除外されます。「進行表で管理」は別軸で、ONにすると進行表に進捗欄が出ます。
               </p>
               {isLoading ? (
                 <Loading size="md" />
-              ) : (ownedTextbooks.length === 0 && distributedMaterials.length === 0) ? (
+              ) : ownedTextbooks.length === 0 && distributedMaterials.length === 0 ? (
                 <p className="text-sm text-[#4b5563]/60">所持教材はありません</p>
               ) : (
-                <div className="space-y-1.5">
-                  {ownedTextbooks.map(renderTextbookRow)}
-                </div>
+                <div className="space-y-1.5">{ownedTextbooks.map(renderTextbookRow)}</div>
               )}
 
               {/* 発注中（発注済・発送済。配布すると所持教材に入る） */}
               {!isLoading && distributedMaterials.length > 0 && (
                 <div className="mt-3">
-                  <p className="text-[11px] text-[#6b7280] mb-1.5">発注中（配布すると所持教材に入ります）</p>
+                  <p className="text-[11px] text-[#6b7280] mb-1.5">
+                    発注中（配布すると所持教材に入ります）
+                  </p>
                   <div className="space-y-1">
                     {distributedMaterials.map((dm) => (
                       <div
@@ -481,7 +526,9 @@ export function StudentDetailModal({
                       >
                         <span className="text-sm text-[#1f2937] min-w-0 truncate">
                           {dm.textbookName}
-                          {dm.quantity > 1 && <span className="text-xs text-[#4b5563] ml-1">x{dm.quantity}</span>}
+                          {dm.quantity > 1 && (
+                            <span className="text-xs text-[#4b5563] ml-1">x{dm.quantity}</span>
+                          )}
                         </span>
                         <div className="flex items-center gap-2 shrink-0">
                           <span className="text-[10px] text-[#4b5563] bg-gray-100 px-1.5 py-0.5 rounded">
@@ -509,11 +556,10 @@ export function StudentDetailModal({
               <div>
                 <h3 className="text-sm font-semibold text-[#1f2937] mb-1.5">進行表で管理中</h3>
                 <p className="text-[11px] text-[#6b7280] mb-2">
-                  進行表に進捗欄が出る教材です。所持していれば「所持」も ON にしてください（発注候補から除外されます）。
+                  進行表に進捗欄が出る教材です。所持していれば「所持」も ON
+                  にしてください（発注候補から除外されます）。
                 </p>
-                <div className="space-y-1.5">
-                  {progressTextbooks.map(renderTextbookRow)}
-                </div>
+                <div className="space-y-1.5">{progressTextbooks.map(renderTextbookRow)}</div>
               </div>
             )}
 
@@ -545,7 +591,15 @@ export function StudentDetailModal({
                     variant="outline"
                     className="text-red-600 border-red-200 hover:bg-red-50"
                     onClick={async () => {
-                      if (!(await confirm({ title: '削除確認', description: `${student.last_name} ${student.first_name} を削除しますか？論理削除され、一覧から非表示になります。`, confirmLabel: '削除', variant: 'danger' }))) return;
+                      if (
+                        !(await confirm({
+                          title: '削除確認',
+                          description: `${student.last_name} ${student.first_name} を削除しますか？論理削除され、一覧から非表示になります。`,
+                          confirmLabel: '削除',
+                          variant: 'danger',
+                        }))
+                      )
+                        return;
                       await onDelete(student);
                       onClose();
                     }}
@@ -601,7 +655,10 @@ export function StudentDetailModal({
                     cat === 'regular_test' ? '定期テスト' : cat === 'report_card' ? '内申' : '模試';
                   if (!a) {
                     return (
-                      <div key={cat} className="bg-[#f8fafc] rounded-lg border border-[#e5e7eb] p-3">
+                      <div
+                        key={cat}
+                        className="bg-[#f8fafc] rounded-lg border border-[#e5e7eb] p-3"
+                      >
                         <div className="text-xs font-semibold text-[#6b7280] mb-1">{heading}</div>
                         <p className="text-sm text-[#9ca3af]">データなし</p>
                       </div>
@@ -631,9 +688,7 @@ export function StudentDetailModal({
                         ))}
                         <div>
                           <div className="text-[10px] text-[#6b7280]">5科合計</div>
-                          <div className="text-sm font-bold text-[#1e3a5f]">
-                            {row.total ?? '—'}
-                          </div>
+                          <div className="text-sm font-bold text-[#1e3a5f]">{row.total ?? '—'}</div>
                         </div>
                       </div>
                     </div>

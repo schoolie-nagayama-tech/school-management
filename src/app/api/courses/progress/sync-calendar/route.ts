@@ -38,7 +38,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: '認証が必要です' }, { status: 401 });
     }
     const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
+    const {
+      data: { user },
+      error: authError,
+    } = await supabaseAdmin.auth.getUser(token);
     if (authError || !user) {
       return NextResponse.json({ error: '認証が必要です' }, { status: 401 });
     }
@@ -64,15 +67,19 @@ export async function POST(request: Request) {
         .from('user_schools')
         .select('school_id')
         .eq('user_id', user.id);
-      const callerSchoolIds = (callerSchools || []).map((r: { school_id: string }) => String(r.school_id));
+      const callerSchoolIds = (callerSchools || []).map((r: { school_id: string }) =>
+        String(r.school_id)
+      );
       if (!callerSchoolIds.includes(String(schoolId))) {
-        console.error(JSON.stringify({
-          type: 'SCOPE_VIOLATION',
-          actorId: user.id,
-          path: '/api/courses/progress/sync-calendar',
-          schoolId,
-          timestamp: new Date().toISOString(),
-        }));
+        console.error(
+          JSON.stringify({
+            type: 'SCOPE_VIOLATION',
+            actorId: user.id,
+            path: '/api/courses/progress/sync-calendar',
+            schoolId,
+            timestamp: new Date().toISOString(),
+          })
+        );
         return NextResponse.json({ error: 'この教室を操作する権限がありません' }, { status: 403 });
       }
     }
@@ -103,7 +110,13 @@ export async function POST(request: Request) {
 
     // calendar_emailが教室メールと一致するトークンを検索。
     // 連携ユーザー数が 1000 を超えると一致トークンを取りこぼすため全件ページング取得。
-    type CalToken = { user_id: string; access_token: string; refresh_token: string; token_expiry: string; calendar_email: string | null };
+    type CalToken = {
+      user_id: string;
+      access_token: string;
+      refresh_token: string;
+      token_expiry: string;
+      calendar_email: string | null;
+    };
     const allTokens = await fetchAllPaged<CalToken>((from, to) =>
       supabaseAdmin
         .from('google_calendar_tokens')
@@ -113,9 +126,12 @@ export async function POST(request: Request) {
     ).catch(() => []);
 
     if (allTokens.length === 0) {
-      return NextResponse.json({
-        error: 'Googleカレンダー連携済みのユーザーがいません',
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          error: 'Googleカレンダー連携済みのユーザーがいません',
+        },
+        { status: 400 }
+      );
     }
 
     const matchedToken = allTokens.find(
@@ -124,9 +140,12 @@ export async function POST(request: Request) {
     );
 
     if (!matchedToken) {
-      return NextResponse.json({
-        error: `教室メール(${schoolEmails.join(', ')})と一致するカレンダー連携がありません`,
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          error: `教室メール(${schoolEmails.join(', ')})と一致するカレンダー連携がありません`,
+        },
+        { status: 400 }
+      );
     }
 
     // OAuth2クライアントを構築
@@ -152,9 +171,12 @@ export async function POST(request: Request) {
           .eq('user_id', matchedToken.user_id);
         oauth2Client.setCredentials(credentials);
       } catch {
-        return NextResponse.json({
-          error: 'Googleカレンダーのトークンリフレッシュに失敗しました。再連携が必要です。',
-        }, { status: 401 });
+        return NextResponse.json(
+          {
+            error: 'Googleカレンダーのトークンリフレッシュに失敗しました。再連携が必要です。',
+          },
+          { status: 401 }
+        );
       }
     }
 

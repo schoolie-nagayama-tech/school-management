@@ -25,7 +25,12 @@ interface TextbookCatalogProps {
   students: StudentOption[];
   canEdit: boolean;
   materials: Material[];
-  onOrder: (textbookName: string, studentId: string, quantity: number, notes: string) => Promise<void>;
+  onOrder: (
+    textbookName: string,
+    studentId: string,
+    quantity: number,
+    notes: string
+  ) => Promise<void>;
   onBulkOrder: (items: CartItem[]) => Promise<void>;
   onStockAdjust?: (material: Material) => void;
   onStockRegister?: (textbookName: string) => void;
@@ -35,11 +40,11 @@ const ITEMS_PER_PAGE = 60;
 
 // ─── Subject Color Coding ─────────────────────────────────
 const SUBJECT_COLORS: Record<string, { bg: string; text: string; dot: string }> = {
-  '英語': { bg: 'bg-blue-50', text: 'text-blue-700', dot: 'bg-blue-500' },
-  '数学': { bg: 'bg-red-50', text: 'text-red-700', dot: 'bg-red-500' },
-  '国語': { bg: 'bg-green-50', text: 'text-green-700', dot: 'bg-green-500' },
-  '理科': { bg: 'bg-purple-50', text: 'text-purple-700', dot: 'bg-purple-500' },
-  '社会': { bg: 'bg-orange-50', text: 'text-orange-700', dot: 'bg-orange-500' },
+  英語: { bg: 'bg-blue-50', text: 'text-blue-700', dot: 'bg-blue-500' },
+  数学: { bg: 'bg-red-50', text: 'text-red-700', dot: 'bg-red-500' },
+  国語: { bg: 'bg-green-50', text: 'text-green-700', dot: 'bg-green-500' },
+  理科: { bg: 'bg-purple-50', text: 'text-purple-700', dot: 'bg-purple-500' },
+  社会: { bg: 'bg-orange-50', text: 'text-orange-700', dot: 'bg-orange-500' },
 };
 const DEFAULT_COLOR = { bg: 'bg-gray-50', text: 'text-gray-700', dot: 'bg-gray-400' };
 
@@ -72,11 +77,24 @@ interface TextbookProductCardProps {
   students: StudentOption[];
   canEdit: boolean;
   stockQuantity: number | null;
-  onAddToCart: (textbook: Textbook, textbookName: string, studentId: string, studentLabel: string, quantity: number) => void;
+  onAddToCart: (
+    textbook: Textbook,
+    textbookName: string,
+    studentId: string,
+    studentLabel: string,
+    quantity: number
+  ) => void;
   onStockAdjust?: () => void;
 }
 
-function TextbookProductCard({ textbook, students, canEdit, stockQuantity, onAddToCart, onStockAdjust }: TextbookProductCardProps) {
+function TextbookProductCard({
+  textbook,
+  students,
+  canEdit,
+  stockQuantity,
+  onAddToCart,
+  onStockAdjust,
+}: TextbookProductCardProps) {
   // 冊数分の生徒スロット。1冊=1生徒（または見本）として、冊数を増やすと
   // その冊数分だけ生徒を割り当てられる。空欄の冊はカートに追加されない。
   const [studentIds, setStudentIds] = useState<string[]>(['']);
@@ -146,7 +164,9 @@ function TextbookProductCard({ textbook, students, canEdit, stockQuantity, onAdd
             : 'text-[#1e3a5f]';
 
   return (
-    <div className={`rounded-lg border ${stockQuantity !== null && stockQuantity >= 10 ? 'border-red-300' : stockQuantity !== null && stockQuantity >= 5 ? 'border-orange-300' : 'border-gray-200'} hover:shadow-md transition-[box-shadow] duration-150 ease-out flex flex-col overflow-hidden`}>
+    <div
+      className={`rounded-lg border ${stockQuantity !== null && stockQuantity >= 10 ? 'border-red-300' : stockQuantity !== null && stockQuantity >= 5 ? 'border-orange-300' : 'border-gray-200'} hover:shadow-md transition-[box-shadow] duration-150 ease-out flex flex-col overflow-hidden`}
+    >
       {/* Header: 学年 + 科目（色付き帯） */}
       <div className={`flex items-center justify-between px-3 py-1.5 ${color.bg}`}>
         {textbook.grade ? (
@@ -157,14 +177,15 @@ function TextbookProductCard({ textbook, students, canEdit, stockQuantity, onAdd
           <span className="text-[11px] text-gray-400">-</span>
         )}
         {textbook.subject && (
-          <span className={`text-xs font-semibold ${color.text}`}>
-            {textbook.subject}
-          </span>
+          <span className={`text-xs font-semibold ${color.text}`}>{textbook.subject}</span>
         )}
       </div>
       {/* Textbook Info */}
       <div className="px-3 pt-2 pb-1">
-        <div className="text-sm font-semibold text-[#1e3a5f] line-clamp-2 leading-tight" title={textbook.name}>
+        <div
+          className="text-sm font-semibold text-[#1e3a5f] line-clamp-2 leading-tight"
+          title={textbook.name}
+        >
           {textbook.name}
         </div>
         {textbook.publisher && (
@@ -228,7 +249,9 @@ function TextbookProductCard({ textbook, students, canEdit, stockQuantity, onAdd
                 <Plus className="w-3 h-3" />
               </button>
             </div>
-            <span className="text-[11px] text-gray-400 ml-auto">{filledCount}/{quantity}名</span>
+            <span className="text-[11px] text-gray-400 ml-auto">
+              {filledCount}/{quantity}名
+            </span>
           </div>
 
           {/* 冊数分の生徒スロット（1冊ごとに1名 or 見本） */}
@@ -236,7 +259,9 @@ function TextbookProductCard({ textbook, students, canEdit, stockQuantity, onAdd
             {studentIds.map((sid, index) => (
               <div key={index} className="flex items-center gap-1">
                 {quantity > 1 && (
-                  <span className="text-[10px] text-gray-400 w-4 text-right flex-shrink-0">{index + 1}</span>
+                  <span className="text-[10px] text-gray-400 w-4 text-right flex-shrink-0">
+                    {index + 1}
+                  </span>
                 )}
                 <select
                   value={sid}
@@ -244,7 +269,9 @@ function TextbookProductCard({ textbook, students, canEdit, stockQuantity, onAdd
                   className="flex-1 min-w-0 px-2 py-1.5 border border-gray-200 rounded-md text-xs bg-white text-gray-700 focus:ring-1 focus:ring-[#1e3a5f]/30 focus:border-[#1e3a5f] transition-[background-color,color] duration-150 ease-out"
                 >
                   <option value="">生徒を選択...</option>
-                  <option value={SAMPLE_VALUE} className="font-medium text-purple-700">見本（生徒なし）</option>
+                  <option value={SAMPLE_VALUE} className="font-medium text-purple-700">
+                    見本（生徒なし）
+                  </option>
                   {getAvailableStudents(index).map((s) => (
                     <option key={s.id} value={s.id}>
                       {gradeLabel(s.grade)} {s.last_name} {s.first_name}
@@ -330,7 +357,10 @@ function CartDrawer({
             <ShoppingCart className="w-5 h-5" />
             発注カート（{items.length}件）
           </h3>
-          <button onClick={onClose} className="p-1 rounded hover:bg-gray-100 transition-[background-color,color] duration-150 ease-out">
+          <button
+            onClick={onClose}
+            className="p-1 rounded hover:bg-gray-100 transition-[background-color,color] duration-150 ease-out"
+          >
             <X className="w-5 h-5 text-gray-500" />
           </button>
         </div>
@@ -351,12 +381,16 @@ function CartDrawer({
                   className={`flex items-start gap-3 p-3 rounded-lg border border-gray-200 bg-white`}
                 >
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium text-gray-900 truncate">{item.textbook.name}</div>
+                    <div className="text-sm font-medium text-gray-900 truncate">
+                      {item.textbook.name}
+                    </div>
                     <div className="text-xs text-gray-500 mt-0.5">
                       {item.studentLabel} × {item.quantity}冊
                     </div>
                     {item.textbook.subject && (
-                      <span className={`inline-block text-[11px] px-1.5 py-0.5 rounded mt-1 ${color.bg} ${color.text}`}>
+                      <span
+                        className={`inline-block text-[11px] px-1.5 py-0.5 rounded mt-1 ${color.bg} ${color.text}`}
+                      >
                         {item.textbook.grade} {item.textbook.subject}
                       </span>
                     )}
@@ -379,7 +413,9 @@ function CartDrawer({
           <div className="border-t border-gray-200 p-4 space-y-2">
             <div className="flex items-center justify-between text-sm text-gray-600">
               <span>合計</span>
-              <span className="font-bold text-gray-900">{items.length}件 / {items.reduce((sum, i) => sum + i.quantity, 0)}冊</span>
+              <span className="font-bold text-gray-900">
+                {items.length}件 / {items.reduce((sum, i) => sum + i.quantity, 0)}冊
+              </span>
             </div>
             <button
               onClick={onSubmit}
@@ -397,23 +433,41 @@ function CartDrawer({
 
 // ─── Main Catalog ───────────────────────────────────────────
 
-export function TextbookCatalog({ textbooks, students, canEdit, materials, onOrder: _onOrder, onBulkOrder, onStockAdjust, onStockRegister }: TextbookCatalogProps) {
+export function TextbookCatalog({
+  textbooks,
+  students,
+  canEdit,
+  materials,
+  onOrder: _onOrder,
+  onBulkOrder,
+  onStockAdjust,
+  onStockRegister,
+}: TextbookCatalogProps) {
   // Cart state
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleAddToCart = useCallback((textbook: Textbook, textbookName: string, studentId: string, studentLabel: string, quantity: number) => {
-    const newItem: CartItem = {
-      id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-      textbookName,
-      studentId,
-      studentLabel,
-      quantity,
-      textbook,
-    };
-    setCartItems((prev) => [...prev, newItem]);
-  }, []);
+  const handleAddToCart = useCallback(
+    (
+      textbook: Textbook,
+      textbookName: string,
+      studentId: string,
+      studentLabel: string,
+      quantity: number
+    ) => {
+      const newItem: CartItem = {
+        id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        textbookName,
+        studentId,
+        studentLabel,
+        quantity,
+        textbook,
+      };
+      setCartItems((prev) => [...prev, newItem]);
+    },
+    []
+  );
 
   const handleRemoveFromCart = useCallback((id: string) => {
     setCartItems((prev) => prev.filter((item) => item.id !== id));
@@ -566,7 +620,11 @@ export function TextbookCatalog({ textbooks, students, canEdit, materials, onOrd
   };
 
   const hasActiveFilters =
-    schoolTypeFilter !== 'all' || selectedGrades.size > 0 || selectedSubjects.size > 0 || selectedPublishers.size > 0 || search.trim() !== '';
+    schoolTypeFilter !== 'all' ||
+    selectedGrades.size > 0 ||
+    selectedSubjects.size > 0 ||
+    selectedPublishers.size > 0 ||
+    search.trim() !== '';
 
   // Page number buttons
   const pageNumbers = useMemo(() => {
@@ -580,12 +638,14 @@ export function TextbookCatalog({ textbooks, students, canEdit, materials, onOrd
   }, [safeCurrentPage, totalPages]);
 
   // Helper to get stock info for a textbook
-  const getStockInfo = useCallback((tb: Textbook) => {
-    const label = formatTextbookLabel(tb);
-    const entry = stockMap.get(label) ?? stockMap.get(tb.name);
-    return entry ?? null;
-  }, [stockMap]);
-
+  const getStockInfo = useCallback(
+    (tb: Textbook) => {
+      const label = formatTextbookLabel(tb);
+      const entry = stockMap.get(label) ?? stockMap.get(tb.name);
+      return entry ?? null;
+    },
+    [stockMap]
+  );
 
   return (
     <div className="flex gap-4">
@@ -601,7 +661,10 @@ export function TextbookCatalog({ textbooks, students, canEdit, materials, onOrd
                 { value: 'elementary', label: '小学' },
                 { value: 'middle', label: '中学' },
               ].map((opt) => (
-                <label key={opt.value} className="flex items-center gap-1.5 text-xs text-gray-600 cursor-pointer">
+                <label
+                  key={opt.value}
+                  className="flex items-center gap-1.5 text-xs text-gray-600 cursor-pointer"
+                >
                   <input
                     type="radio"
                     name="schoolType"
@@ -625,7 +688,10 @@ export function TextbookCatalog({ textbooks, students, canEdit, materials, onOrd
               <h4 className="text-xs font-semibold text-gray-700 mb-2">学年</h4>
               <div className="space-y-1 max-h-40 overflow-y-auto">
                 {grades.map((grade) => (
-                  <label key={grade} className="flex items-center gap-1.5 text-xs text-gray-600 cursor-pointer">
+                  <label
+                    key={grade}
+                    className="flex items-center gap-1.5 text-xs text-gray-600 cursor-pointer"
+                  >
                     <input
                       type="checkbox"
                       checked={selectedGrades.has(grade)}
@@ -645,7 +711,10 @@ export function TextbookCatalog({ textbooks, students, canEdit, materials, onOrd
               <h4 className="text-xs font-semibold text-gray-700 mb-2">科目</h4>
               <div className="space-y-1 max-h-40 overflow-y-auto">
                 {subjects.map((subject) => (
-                  <label key={subject} className="flex items-center gap-1.5 text-xs text-gray-600 cursor-pointer">
+                  <label
+                    key={subject}
+                    className="flex items-center gap-1.5 text-xs text-gray-600 cursor-pointer"
+                  >
                     <input
                       type="checkbox"
                       checked={selectedSubjects.has(subject)}
@@ -665,7 +734,10 @@ export function TextbookCatalog({ textbooks, students, canEdit, materials, onOrd
               <h4 className="text-xs font-semibold text-gray-700 mb-2">出版社</h4>
               <div className="space-y-1 max-h-40 overflow-y-auto">
                 {publishers.map((publisher) => (
-                  <label key={publisher} className="flex items-center gap-1.5 text-xs text-gray-600 cursor-pointer">
+                  <label
+                    key={publisher}
+                    className="flex items-center gap-1.5 text-xs text-gray-600 cursor-pointer"
+                  >
                     <input
                       type="checkbox"
                       checked={selectedPublishers.has(publisher)}
@@ -714,9 +786,7 @@ export function TextbookCatalog({ textbooks, students, canEdit, materials, onOrd
         <SubjectLegend />
 
         {/* Results count */}
-        <div className="text-xs text-gray-500 mb-2">
-          {filteredTextbooks.length}件の教材
-        </div>
+        <div className="text-xs text-gray-500 mb-2">{filteredTextbooks.length}件の教材</div>
 
         {/* Mobile Filters (visible on small screens) */}
         <div className="flex flex-wrap gap-2 mb-3 md:hidden">
@@ -739,7 +809,9 @@ export function TextbookCatalog({ textbooks, students, canEdit, materials, onOrd
           <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
             <Package className="w-10 h-10 text-gray-300 mx-auto mb-3" />
             <h3 className="text-lg font-semibold text-gray-800 mb-1">
-              {textbooks.length === 0 ? 'テキストが登録されていません' : '条件に一致するテキストがありません'}
+              {textbooks.length === 0
+                ? 'テキストが登録されていません'
+                : '条件に一致するテキストがありません'}
             </h3>
             <p className="text-sm text-gray-500">
               {textbooks.length === 0
@@ -805,7 +877,6 @@ export function TextbookCatalog({ textbooks, students, canEdit, materials, onOrd
           </div>
         )}
       </div>
-
 
       {/* Floating Cart Bar */}
       {canEdit && cartItems.length > 0 && (

@@ -72,9 +72,7 @@ export function ImportNottaModal({ isOpen, onClose, studentId, schoolId, onSucce
     if (!search) return transcripts;
     const q = search.toLowerCase();
     return transcripts.filter(
-      (t) =>
-        (t.title || '').toLowerCase().includes(q) ||
-        t.transcript.toLowerCase().includes(q)
+      (t) => (t.title || '').toLowerCase().includes(q) || t.transcript.toLowerCase().includes(q)
     );
   }, [transcripts, search]);
 
@@ -147,9 +145,7 @@ export function ImportNottaModal({ isOpen, onClose, studentId, schoolId, onSucce
                   <label
                     key={t.id}
                     className={`flex items-start gap-3 p-3 cursor-pointer transition-colors duration-150 ${
-                      selectedId === t.id
-                        ? 'bg-blue-50'
-                        : 'hover:bg-[#f3f4f6]'
+                      selectedId === t.id ? 'bg-blue-50' : 'hover:bg-[#f3f4f6]'
                     }`}
                   >
                     <input

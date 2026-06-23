@@ -23,10 +23,7 @@ import type {
   TestPrepStatus,
   SelfAssessment,
 } from '@/types/test-prep';
-import {
-  SELF_ASSESSMENTS,
-  GRADE_SUBJECT_TEMPLATES,
-} from '@/types/test-prep';
+import { SELF_ASSESSMENTS, GRADE_SUBJECT_TEMPLATES } from '@/types/test-prep';
 
 interface UnitDraft {
   tempId: string;
@@ -86,7 +83,9 @@ export default function TestPrepEditor() {
   const [notes, setNotes] = useState('');
   const [subjects, setSubjects] = useState<SubjectDraft[]>([]);
   const [status, setStatus] = useState<TestPrepStatus>('draft');
-  const [zoukomaPeriods, setZoukomaPeriods] = useState<Array<{ id: string; title: string; period_key: string }>>([]);
+  const [zoukomaPeriods, setZoukomaPeriods] = useState<
+    Array<{ id: string; title: string; period_key: string }>
+  >([]);
 
   // テキスト→単元選択用（全テキストから条件フィルタ）
   const [allTextbooks, setAllTextbooks] = useState<TextbookOption[]>([]);
@@ -128,7 +127,9 @@ export default function TestPrepEditor() {
           .eq('form_type', 'zoukoma')
           .eq('is_active', true)
           .order('publish_start', { ascending: false });
-        setZoukomaPeriods((periods || []) as Array<{ id: string; title: string; period_key: string }>);
+        setZoukomaPeriods(
+          (periods || []) as Array<{ id: string; title: string; period_key: string }>
+        );
       }
 
       // テキスト一覧を取得（科目・学年・準拠でフィルタ）+ 科目マスタ
@@ -225,11 +226,12 @@ export default function TestPrepEditor() {
 
     // 生徒の学年をテキストのgrade形式に変換（'1年','2年','3年'）
     // 中学: grade 7→1年, 8→2年, 9→3年  小学: grade 1→1年 ... 6→6年
-    const textbookGrade = cat === 'middle'
-      ? `${studentData.grade - 6}年`
-      : cat === 'elementary'
-        ? `${studentData.grade}年`
-        : null;
+    const textbookGrade =
+      cat === 'middle'
+        ? `${studentData.grade - 6}年`
+        : cat === 'elementary'
+          ? `${studentData.grade}年`
+          : null;
 
     let query = supabase
       .from('textbooks')
@@ -242,9 +244,7 @@ export default function TestPrepEditor() {
     if (isHighSchool) {
       query = query.eq('grade_category', 'high');
     } else {
-      query = query
-        .eq('grade_category', cat)
-        .not('publisher', 'is', null);
+      query = query.eq('grade_category', cat).not('publisher', 'is', null);
       if (textbookGrade) {
         query = query.eq('grade', textbookGrade);
       }
@@ -253,7 +253,13 @@ export default function TestPrepEditor() {
     const { data: textbooks } = await query;
 
     const tbOptions: TextbookOption[] = [];
-    for (const tb of (textbooks || []) as Array<{ id: number; name: string; subject: string | null; publisher: string | null; grade: string | null }>) {
+    for (const tb of (textbooks || []) as Array<{
+      id: number;
+      name: string;
+      subject: string | null;
+      publisher: string | null;
+      grade: string | null;
+    }>) {
       tbOptions.push({
         textbook_id: tb.id,
         textbook_name: tb.name,
@@ -297,7 +303,10 @@ export default function TestPrepEditor() {
     if (!student) return;
     const schoolIds = getSelectedSchoolIds();
     const schoolId = schoolIds[0];
-    if (!schoolId) { showError('教室が選択されていません'); return; }
+    if (!schoolId) {
+      showError('教室が選択されていません');
+      return;
+    }
 
     setSaving(true);
     try {
@@ -390,7 +399,10 @@ export default function TestPrepEditor() {
 
   const addSubject = (name: string) => {
     if (!name.trim() || addedSubjectNames.has(name.trim())) return;
-    setSubjects((prev) => [...prev, { tempId: genId(), subject_name: name.trim(), target_score: null, units: [] }]);
+    setSubjects((prev) => [
+      ...prev,
+      { tempId: genId(), subject_name: name.trim(), target_score: null, units: [] },
+    ]);
   };
 
   const removeSubject = (tempId: string) => {
@@ -404,9 +416,7 @@ export default function TestPrepEditor() {
   const addUnit = (subjectTempId: string, unit: Omit<UnitDraft, 'tempId'>) => {
     setSubjects((prev) =>
       prev.map((s) =>
-        s.tempId === subjectTempId
-          ? { ...s, units: [...s.units, { ...unit, tempId: genId() }] }
-          : s
+        s.tempId === subjectTempId ? { ...s, units: [...s.units, { ...unit, tempId: genId() }] } : s
       )
     );
   };
@@ -482,7 +492,12 @@ export default function TestPrepEditor() {
       prev.map((s) =>
         s.tempId !== subjectTempId
           ? s
-          : { ...s, units: s.units.map((u) => (u.group_id === groupId ? { ...u, group_id: null, koma_count: 1 } : u)) }
+          : {
+              ...s,
+              units: s.units.map((u) =>
+                u.group_id === groupId ? { ...u, group_id: null, koma_count: 1 } : u
+              ),
+            }
       )
     );
   };
@@ -528,7 +543,12 @@ export default function TestPrepEditor() {
       <div className="hidden print:block mb-4">
         <h1 className="text-lg font-bold text-gray-900">{title || 'テスト対策提案書'}</h1>
         <div className="flex items-center gap-4 mt-1 text-sm text-gray-600">
-          <span>生徒: <span className="font-medium text-gray-900">{student.last_name} {student.first_name}</span></span>
+          <span>
+            生徒:{' '}
+            <span className="font-medium text-gray-900">
+              {student.last_name} {student.first_name}
+            </span>
+          </span>
           <span>{GRADE_LABELS[student.grade] || `${student.grade}年`}</span>
           {teacherName && <span>担当: {teacherName}</span>}
           <span>合計 {totalKoma} コマ</span>
@@ -553,14 +573,20 @@ export default function TestPrepEditor() {
       <div className="space-y-6">
         {/* 基本情報 */}
         <section className="bg-surface-raised rounded-xl border border-border p-6 print:border-none print:p-0 print:rounded-none">
-          <h2 className="text-sm font-bold text-text-muted uppercase tracking-wide mb-4 print:hidden">基本情報</h2>
+          <h2 className="text-sm font-bold text-text-muted uppercase tracking-wide mb-4 print:hidden">
+            基本情報
+          </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 print:hidden">
             <div>
               <label className="block text-sm font-medium text-text-body mb-1">生徒</label>
               <div className="px-3 py-2 bg-surface rounded-lg border border-border text-sm">
                 {student.last_name} {student.first_name}
                 <span className="text-text-muted ml-2">
-                  {student.grade >= 10 ? `高${student.grade - 9}` : student.grade >= 7 ? `中${student.grade - 6}` : `小${student.grade}`}
+                  {student.grade >= 10
+                    ? `高${student.grade - 9}`
+                    : student.grade >= 7
+                      ? `中${student.grade - 6}`
+                      : `小${student.grade}`}
                 </span>
               </div>
             </div>
@@ -573,12 +599,16 @@ export default function TestPrepEditor() {
               >
                 <option value="">選択してください</option>
                 {examTypes.map((t) => (
-                  <option key={t.id} value={t.id}>{t.name}</option>
+                  <option key={t.id} value={t.id}>
+                    {t.name}
+                  </option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-text-body mb-1">増コマ申込期間</label>
+              <label className="block text-sm font-medium text-text-body mb-1">
+                増コマ申込期間
+              </label>
               <select
                 value={zoukomaPeriodId}
                 onChange={(e) => setZoukomaPeriodId(e.target.value)}
@@ -586,7 +616,9 @@ export default function TestPrepEditor() {
               >
                 <option value="">紐づけなし</option>
                 {zoukomaPeriods.map((p) => (
-                  <option key={p.id} value={p.id}>{p.title}</option>
+                  <option key={p.id} value={p.id}>
+                    {p.title}
+                  </option>
                 ))}
               </select>
             </div>
@@ -606,7 +638,9 @@ export default function TestPrepEditor() {
         {/* 科目・単元 */}
         <section className="space-y-4">
           <div className="flex items-center justify-between print:hidden">
-            <h2 className="text-sm font-bold text-text-muted uppercase tracking-wide">科目・単元</h2>
+            <h2 className="text-sm font-bold text-text-muted uppercase tracking-wide">
+              科目・単元
+            </h2>
             <div className="text-sm text-text-muted">
               合計: <span className="font-bold text-primary text-lg">{totalKoma}</span> コマ
             </div>
@@ -641,20 +675,28 @@ export default function TestPrepEditor() {
                 }}
                 className="flex-1 py-2.5 px-3 border-2 border-dashed border-border rounded-xl text-sm text-text-muted bg-transparent hover:border-text-faint focus:border-primary"
               >
-                <option value="" disabled>+ 科目を追加...</option>
+                <option value="" disabled>
+                  + 科目を追加...
+                </option>
                 {subjectOptions.map((s) => (
-                  <option key={s.id} value={s.name}>{s.name}</option>
+                  <option key={s.id} value={s.name}>
+                    {s.name}
+                  </option>
                 ))}
               </select>
             </div>
           ) : (
-            <p className="text-xs text-text-faint text-center py-2 print:hidden">追加可能な科目はありません</p>
+            <p className="text-xs text-text-faint text-center py-2 print:hidden">
+              追加可能な科目はありません
+            </p>
           )}
         </section>
 
         {/* メモ */}
         <section className="bg-surface-raised rounded-xl border border-border p-6 print:hidden">
-          <h2 className="text-sm font-bold text-text-muted uppercase tracking-wide mb-3">講師メモ</h2>
+          <h2 className="text-sm font-bold text-text-muted uppercase tracking-wide mb-3">
+            講師メモ
+          </h2>
           <textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
@@ -681,7 +723,9 @@ export default function TestPrepEditor() {
               </div>
             )}
             <div className="p-6">
-              <h2 className="text-sm font-bold text-text-muted uppercase tracking-wide mb-3">共有URL</h2>
+              <h2 className="text-sm font-bold text-text-muted uppercase tracking-wide mb-3">
+                共有URL
+              </h2>
               <div className="flex items-center gap-2">
                 <input
                   readOnly
@@ -825,9 +869,7 @@ function SubjectEditor({
   const totalKoma = subject.units.reduce((sum, u) => sum + u.koma_count, 0);
 
   // この科目に一致するテキストを抽出
-  const availableTextbooks = allTextbooks.filter(
-    (tb) => tb.subject === subject.subject_name
-  );
+  const availableTextbooks = allTextbooks.filter((tb) => tb.subject === subject.subject_name);
 
   // 選択中テキストの単元一覧（既に追加済みを除外）
   const addedItemIds = new Set(subject.units.map((u) => u.curriculum_item_id).filter(Boolean));
@@ -980,7 +1022,9 @@ function SubjectEditor({
                   >
                     <option value="">-</option>
                     {SELF_ASSESSMENTS.map((a) => (
-                      <option key={a} value={a}>{a}</option>
+                      <option key={a} value={a}>
+                        {a}
+                      </option>
                     ))}
                   </select>
                 </td>
@@ -994,7 +1038,9 @@ function SubjectEditor({
                           type="number"
                           value={row.unit.koma_count}
                           onChange={(e) =>
-                            onUpdateUnit(row.unit.tempId, { koma_count: Math.max(0, Number(e.target.value)) })
+                            onUpdateUnit(row.unit.tempId, {
+                              koma_count: Math.max(0, Number(e.target.value)),
+                            })
                           }
                           min={0}
                           className="w-16 px-2 py-1 border border-blue-200 rounded text-sm text-center bg-white"
@@ -1014,7 +1060,9 @@ function SubjectEditor({
                       type="number"
                       value={row.unit.koma_count}
                       onChange={(e) =>
-                        onUpdateUnit(row.unit.tempId, { koma_count: Math.max(0, Number(e.target.value)) })
+                        onUpdateUnit(row.unit.tempId, {
+                          koma_count: Math.max(0, Number(e.target.value)),
+                        })
                       }
                       min={0}
                       className="w-16 px-2 py-1 border border-border rounded text-sm text-center bg-surface-raised print:border-none print:bg-transparent"
@@ -1069,7 +1117,8 @@ function SubjectEditor({
             </button>
           </div>
           <p className="text-[11px] text-blue-600/80 mt-1 leading-relaxed">
-            選択した単元を1つの枠にまとめ、まとめて<span className="font-medium">1コマ分のコマ数</span>として扱います。
+            選択した単元を1つの枠にまとめ、まとめて
+            <span className="font-medium">1コマ分のコマ数</span>として扱います。
             1コマで複数単元を一緒に対策するときに使います（提案書・保護者ページでは1枠にまとまって表示されます）。解除は各行から行えます。
           </p>
         </div>
@@ -1098,7 +1147,9 @@ function SubjectEditor({
                         <span className="text-[10px] text-text-faint">{tb.publisher}</span>
                       )}
                       {tb.textbook_name}
-                      <ChevronDown className={`w-3 h-3 transition-transform ${selectedTextbookId === tb.textbook_id ? 'rotate-180' : ''}`} />
+                      <ChevronDown
+                        className={`w-3 h-3 transition-transform ${selectedTextbookId === tb.textbook_id ? 'rotate-180' : ''}`}
+                      />
                     </button>
                   ))}
                 </div>
@@ -1132,9 +1183,7 @@ function SubjectEditor({
               </div>
             )}
             {selectedTextbookId && textbookUnits.length === 0 && (
-              <p className="text-xs text-text-faint">
-                このテキストの単元はすべて追加済みです
-              </p>
+              <p className="text-xs text-text-faint">このテキストの単元はすべて追加済みです</p>
             )}
 
             {/* 手入力 */}
@@ -1178,7 +1227,10 @@ function SubjectEditor({
                 追加
               </button>
               <button
-                onClick={() => { setShowAddMenu(false); setSelectedTextbookId(null); }}
+                onClick={() => {
+                  setShowAddMenu(false);
+                  setSelectedTextbookId(null);
+                }}
                 className="px-3 py-1.5 text-xs text-text-faint hover:text-text-body transition-colors"
               >
                 閉じる

@@ -68,7 +68,12 @@ export async function POST(request: NextRequest) {
           sent++;
         } catch (err: unknown) {
           // 410 Gone = 期限切れサブスクリプション → 削除対象
-          if (err && typeof err === 'object' && 'statusCode' in err && (err as { statusCode: number }).statusCode === 410) {
+          if (
+            err &&
+            typeof err === 'object' &&
+            'statusCode' in err &&
+            (err as { statusCode: number }).statusCode === 410
+          ) {
             stale.push(sub.endpoint);
           } else {
             console.warn('[push/send] 送信失敗:', err);
@@ -79,10 +84,7 @@ export async function POST(request: NextRequest) {
 
     // 期限切れサブスクリプションを削除
     if (stale.length > 0) {
-      await supabaseAdmin
-        .from('push_subscriptions')
-        .delete()
-        .in('endpoint', stale);
+      await supabaseAdmin.from('push_subscriptions').delete().in('endpoint', stale);
     }
 
     return NextResponse.json({ sent });

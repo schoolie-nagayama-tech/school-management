@@ -4,10 +4,7 @@ import { useState, useRef } from 'react';
 import { Input, Select } from '@/components/ui';
 import type { School } from '@/types/database';
 import { validateStudentName } from '@/lib/utils/validation';
-import type {
-  MoshiPeriod,
-  MoshiResponseData,
-} from '@/types/forms/moshi';
+import type { MoshiPeriod, MoshiResponseData } from '@/types/forms/moshi';
 import { submitMoshiResponse } from '@/lib/api/moshi';
 import { MOSHI_GRADE_NAME_TO_NUMBER } from '@/types/forms/moshi';
 import {
@@ -99,8 +96,17 @@ export function MoshiForm({ school, period, isPreview }: MoshiFormProps) {
 
   // 時間選択肢
   const timeOptions = [
-    '14:00', '14:30', '15:00', '15:30', '16:00', '16:30',
-    '17:00', '17:30', '18:00', '18:30', '19:00'
+    '14:00',
+    '14:30',
+    '15:00',
+    '15:30',
+    '16:00',
+    '16:30',
+    '17:00',
+    '17:30',
+    '18:00',
+    '18:30',
+    '19:00',
   ];
 
   // バリデーション
@@ -187,9 +193,7 @@ export function MoshiForm({ school, period, isPreview }: MoshiFormProps) {
     } catch (error) {
       console.error('Failed to submit:', error);
       setErrorMessage(
-        error instanceof Error
-          ? error.message
-          : '送信に失敗しました。もう一度お試しください。'
+        error instanceof Error ? error.message : '送信に失敗しました。もう一度お試しください。'
       );
     } finally {
       submittingRef.current = false;
@@ -226,114 +230,96 @@ export function MoshiForm({ school, period, isPreview }: MoshiFormProps) {
         {isPreview && <PortalPreviewBanner />}
 
         <PortalFormSection title="基本情報">
-        <div className="space-y-4">
-          {/* 生徒名 */}
-          <div>
-            <label className="block text-sm font-medium mb-1 text-[#1f2937]">
-              生徒名 <span className="text-[color:var(--primary)]">*</span>
-            </label>
-            <Input
-              type="text"
-              value={studentName}
-              onChange={(e) => {
-                setStudentName(e.target.value);
-                if (errors.studentName) setErrors((prev) => { const n = { ...prev }; delete n.studentName; return n; });
-              }}
-              placeholder="例：山田 太郎"
-              className={errors.studentName ? 'border-[color:var(--primary)]' : ''}
-            />
-            {errors.studentName && (
-              <p className="text-[color:var(--primary)] text-xs mt-1">{errors.studentName}</p>
-            )}
-          </div>
+          <div className="space-y-4">
+            {/* 生徒名 */}
+            <div>
+              <label className="block text-sm font-medium mb-1 text-[#1f2937]">
+                生徒名 <span className="text-[color:var(--primary)]">*</span>
+              </label>
+              <Input
+                type="text"
+                value={studentName}
+                onChange={(e) => {
+                  setStudentName(e.target.value);
+                  if (errors.studentName)
+                    setErrors((prev) => {
+                      const n = { ...prev };
+                      delete n.studentName;
+                      return n;
+                    });
+                }}
+                placeholder="例：山田 太郎"
+                className={errors.studentName ? 'border-[color:var(--primary)]' : ''}
+              />
+              {errors.studentName && (
+                <p className="text-[color:var(--primary)] text-xs mt-1">{errors.studentName}</p>
+              )}
+            </div>
 
-          {/* 学年 */}
-          <div>
-            <label className="block text-sm font-medium mb-1 text-[#1f2937]">
-              学年 <span className="text-[color:var(--primary)]">*</span>
-            </label>
-            <Select
-              value={selectedGrade}
-              onChange={(e) => {
-                setSelectedGrade(e.target.value);
-                if (errors.grade) setErrors((prev) => { const n = { ...prev }; delete n.grade; return n; });
-              }}
-              options={[
-                { value: '', label: '選択してください' },
-                ...sortedGrades.map((g) => ({ value: g, label: g })),
-              ]}
-              className={errors.grade ? 'border-[color:var(--primary)]' : ''}
-            />
-            {errors.grade && (
-              <p className="text-[color:var(--primary)] text-xs mt-1">{errors.grade}</p>
-            )}
-          </div>
+            {/* 学年 */}
+            <div>
+              <label className="block text-sm font-medium mb-1 text-[#1f2937]">
+                学年 <span className="text-[color:var(--primary)]">*</span>
+              </label>
+              <Select
+                value={selectedGrade}
+                onChange={(e) => {
+                  setSelectedGrade(e.target.value);
+                  if (errors.grade)
+                    setErrors((prev) => {
+                      const n = { ...prev };
+                      delete n.grade;
+                      return n;
+                    });
+                }}
+                options={[
+                  { value: '', label: '選択してください' },
+                  ...sortedGrades.map((g) => ({ value: g, label: g })),
+                ]}
+                className={errors.grade ? 'border-[color:var(--primary)]' : ''}
+              />
+              {errors.grade && (
+                <p className="text-[color:var(--primary)] text-xs mt-1">{errors.grade}</p>
+              )}
+            </div>
 
-          {/* メールアドレス */}
-          <div>
-            <label className="block text-sm font-medium mb-1 text-[#1f2937]">
-              メールアドレス <span className="text-[color:var(--primary)]">*</span>
-            </label>
-            <Input
-              type="email"
-              value={email}
-              onChange={(e) => {
-                setEmail(e.target.value);
-                if (errors.email) setErrors((prev) => { const n = { ...prev }; delete n.email; return n; });
-              }}
-              placeholder="example@email.com"
-              className={errors.email ? 'border-[color:var(--primary)]' : ''}
-            />
-            {errors.email && (
-              <p className="text-[color:var(--primary)] text-xs mt-1">{errors.email}</p>
-            )}
+            {/* メールアドレス */}
+            <div>
+              <label className="block text-sm font-medium mb-1 text-[#1f2937]">
+                メールアドレス <span className="text-[color:var(--primary)]">*</span>
+              </label>
+              <Input
+                type="email"
+                value={email}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (errors.email)
+                    setErrors((prev) => {
+                      const n = { ...prev };
+                      delete n.email;
+                      return n;
+                    });
+                }}
+                placeholder="example@email.com"
+                className={errors.email ? 'border-[color:var(--primary)]' : ''}
+              />
+              {errors.email && (
+                <p className="text-[color:var(--primary)] text-xs mt-1">{errors.email}</p>
+              )}
+            </div>
           </div>
-        </div>
         </PortalFormSection>
 
         <PortalFormSection title="受験方法">
-        <div>
-          <label className="sr-only">
-            受験方法 <span className="text-[color:var(--primary)]">*</span>
-          </label>
+          <div>
+            <label className="sr-only">
+              受験方法 <span className="text-[color:var(--primary)]">*</span>
+            </label>
 
-          {/* 通常受験 */}
-          <label
-            className={`block p-4 border rounded-lg mb-3 cursor-pointer transition-colors ${
-              examType === 'regular'
-                ? 'border-[color:var(--primary)] bg-[color:var(--primary-subtle)]'
-                : 'border-gray-300 hover:bg-gray-50'
-            }`}
-          >
-            <div className="flex items-start gap-3">
-              <input
-                type="radio"
-                name="examType"
-                value="regular"
-                checked={examType === 'regular'}
-                onChange={(e) => {
-                  setExamType(e.target.value as ExamType);
-                  if (errors.examType) setErrors((prev) => { const n = { ...prev }; delete n.examType; return n; });
-                }}
-                className="mt-1"
-              />
-              <div>
-                <span className="font-medium text-[#1f2937]">
-                  {settings.exam_date_label}
-                  {settings.exam_time ? ` ${settings.exam_time}` : ''}
-                </span>
-                <span className="block text-sm text-[#4b5563] mt-1">
-                  の模試に参加します
-                </span>
-              </div>
-            </div>
-          </label>
-
-          {/* 振替受験 */}
-          {settings.furikae?.enabled && (
+            {/* 通常受験 */}
             <label
-              className={`block p-4 border rounded-lg cursor-pointer transition-colors ${
-                examType === 'furikae'
+              className={`block p-4 border rounded-lg mb-3 cursor-pointer transition-colors ${
+                examType === 'regular'
                   ? 'border-[color:var(--primary)] bg-[color:var(--primary-subtle)]'
                   : 'border-gray-300 hover:bg-gray-50'
               }`}
@@ -342,96 +328,148 @@ export function MoshiForm({ school, period, isPreview }: MoshiFormProps) {
                 <input
                   type="radio"
                   name="examType"
-                  value="furikae"
-                  checked={examType === 'furikae'}
+                  value="regular"
+                  checked={examType === 'regular'}
                   onChange={(e) => {
                     setExamType(e.target.value as ExamType);
-                    if (errors.examType) setErrors((prev) => { const n = { ...prev }; delete n.examType; return n; });
+                    if (errors.examType)
+                      setErrors((prev) => {
+                        const n = { ...prev };
+                        delete n.examType;
+                        return n;
+                      });
                   }}
                   className="mt-1"
                 />
                 <div>
-                  <span className="font-medium text-[#1f2937]">振替受験を希望します</span>
-                  <span className="block text-sm text-[#4b5563] mt-1">
-                    当日の時間変更を希望の場合もこちら
+                  <span className="font-medium text-[#1f2937]">
+                    {settings.exam_date_label}
+                    {settings.exam_time ? ` ${settings.exam_time}` : ''}
                   </span>
+                  <span className="block text-sm text-[#4b5563] mt-1">の模試に参加します</span>
                 </div>
               </div>
             </label>
-          )}
 
-          {errors.examType && (
-            <p className="text-[color:var(--primary)] text-xs mt-1">{errors.examType}</p>
-          )}
+            {/* 振替受験 */}
+            {settings.furikae?.enabled && (
+              <label
+                className={`block p-4 border rounded-lg cursor-pointer transition-colors ${
+                  examType === 'furikae'
+                    ? 'border-[color:var(--primary)] bg-[color:var(--primary-subtle)]'
+                    : 'border-gray-300 hover:bg-gray-50'
+                }`}
+              >
+                <div className="flex items-start gap-3">
+                  <input
+                    type="radio"
+                    name="examType"
+                    value="furikae"
+                    checked={examType === 'furikae'}
+                    onChange={(e) => {
+                      setExamType(e.target.value as ExamType);
+                      if (errors.examType)
+                        setErrors((prev) => {
+                          const n = { ...prev };
+                          delete n.examType;
+                          return n;
+                        });
+                    }}
+                    className="mt-1"
+                  />
+                  <div>
+                    <span className="font-medium text-[#1f2937]">振替受験を希望します</span>
+                    <span className="block text-sm text-[#4b5563] mt-1">
+                      当日の時間変更を希望の場合もこちら
+                    </span>
+                  </div>
+                </div>
+              </label>
+            )}
 
-          {/* 振替受験詳細入力 */}
-          {examType === 'furikae' && (
-            <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-              {/* 注意事項 */}
-              <div className="mb-4 text-sm text-[#4b5563]">
-                <p className="font-medium mb-2">振替受験について</p>
-                <ul className="list-disc list-inside space-y-1">
-                  {settings.furikae?.note && (
-                    <li>{settings.furikae.note}</li>
+            {errors.examType && (
+              <p className="text-[color:var(--primary)] text-xs mt-1">{errors.examType}</p>
+            )}
+
+            {/* 振替受験詳細入力 */}
+            {examType === 'furikae' && (
+              <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                {/* 注意事項 */}
+                <div className="mb-4 text-sm text-[#4b5563]">
+                  <p className="font-medium mb-2">振替受験について</p>
+                  <ul className="list-disc list-inside space-y-1">
+                    {settings.furikae?.note && <li>{settings.furikae.note}</li>}
+                    <li>
+                      小学生の目安時間：
+                      <strong>{settings.furikae?.time_guide?.elementary ?? '約2時間'}</strong>
+                    </li>
+                    <li>
+                      中学生の目安時間：
+                      <strong>{settings.furikae?.time_guide?.middle ?? '約3時間'}</strong>
+                    </li>
+                  </ul>
+                </div>
+
+                {/* 希望日 */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium mb-1 text-[#1f2937]">
+                    希望日 <span className="text-[color:var(--primary)]">*</span>
+                  </label>
+                  <Input
+                    type="date"
+                    value={furikaeDate}
+                    min={minFurikaeDate || undefined}
+                    onChange={(e) => {
+                      setFurikaeDate(e.target.value);
+                      if (errors.furikaeDate)
+                        setErrors((prev) => {
+                          const n = { ...prev };
+                          delete n.furikaeDate;
+                          return n;
+                        });
+                    }}
+                    className={errors.furikaeDate ? 'border-[color:var(--primary)]' : ''}
+                  />
+                  {minFurikaeDate && (
+                    <p className="text-xs text-[#6b7280] mt-1">
+                      ※ 受験日（{settings.exam_date_label || settings.exam_date}
+                      ）より後の日付を選択してください。
+                    </p>
                   )}
-                  <li>
-                    小学生の目安時間：<strong>{settings.furikae?.time_guide?.elementary ?? '約2時間'}</strong>
-                  </li>
-                  <li>
-                    中学生の目安時間：<strong>{settings.furikae?.time_guide?.middle ?? '約3時間'}</strong>
-                  </li>
-                </ul>
-              </div>
+                  {errors.furikaeDate && (
+                    <p className="text-[color:var(--primary)] text-xs mt-1">{errors.furikaeDate}</p>
+                  )}
+                </div>
 
-              {/* 希望日 */}
-              <div className="mb-4">
-                <label className="block text-sm font-medium mb-1 text-[#1f2937]">
-                  希望日 <span className="text-[color:var(--primary)]">*</span>
-                </label>
-                <Input
-                  type="date"
-                  value={furikaeDate}
-                  min={minFurikaeDate || undefined}
-                  onChange={(e) => {
-                    setFurikaeDate(e.target.value);
-                    if (errors.furikaeDate) setErrors((prev) => { const n = { ...prev }; delete n.furikaeDate; return n; });
-                  }}
-                  className={errors.furikaeDate ? 'border-[color:var(--primary)]' : ''}
-                />
-                {minFurikaeDate && (
-                  <p className="text-xs text-[#6b7280] mt-1">
-                    ※ 受験日（{settings.exam_date_label || settings.exam_date}）より後の日付を選択してください。
-                  </p>
-                )}
-                {errors.furikaeDate && (
-                  <p className="text-[color:var(--primary)] text-xs mt-1">{errors.furikaeDate}</p>
-                )}
+                {/* 希望時間 */}
+                <div>
+                  <label className="block text-sm font-medium mb-1 text-[#1f2937]">
+                    希望時間 <span className="text-[color:var(--primary)]">*</span>
+                  </label>
+                  <Select
+                    value={furikaeTime}
+                    onChange={(e) => {
+                      setFurikaeTime(e.target.value);
+                      if (errors.furikaeTime)
+                        setErrors((prev) => {
+                          const n = { ...prev };
+                          delete n.furikaeTime;
+                          return n;
+                        });
+                    }}
+                    options={[
+                      { value: '', label: '選択してください' },
+                      ...timeOptions.map((time) => ({ value: time, label: `${time}〜` })),
+                    ]}
+                    className={errors.furikaeTime ? 'border-[color:var(--primary)]' : ''}
+                  />
+                  {errors.furikaeTime && (
+                    <p className="text-[color:var(--primary)] text-xs mt-1">{errors.furikaeTime}</p>
+                  )}
+                </div>
               </div>
-
-              {/* 希望時間 */}
-              <div>
-                <label className="block text-sm font-medium mb-1 text-[#1f2937]">
-                  希望時間 <span className="text-[color:var(--primary)]">*</span>
-                </label>
-                <Select
-                  value={furikaeTime}
-                  onChange={(e) => {
-                    setFurikaeTime(e.target.value);
-                    if (errors.furikaeTime) setErrors((prev) => { const n = { ...prev }; delete n.furikaeTime; return n; });
-                  }}
-                  options={[
-                    { value: '', label: '選択してください' },
-                    ...timeOptions.map((time) => ({ value: time, label: `${time}〜` })),
-                  ]}
-                  className={errors.furikaeTime ? 'border-[color:var(--primary)]' : ''}
-                />
-                {errors.furikaeTime && (
-                  <p className="text-[color:var(--primary)] text-xs mt-1">{errors.furikaeTime}</p>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
         </PortalFormSection>
 
         {errorMessage && <PortalErrorBanner message={errorMessage} />}

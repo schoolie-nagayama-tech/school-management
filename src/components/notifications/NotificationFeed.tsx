@@ -25,32 +25,32 @@ const FORM_TYPE_TO_PATH: Record<string, string> = {
 };
 
 const FORM_TYPE_COLORS: Record<string, { bg: string; text: string }> = {
-  moshi:    { bg: 'bg-blue-100',   text: 'text-blue-800'   },
-  mogi:     { bg: 'bg-green-100',  text: 'text-green-800'  },
-  zoukoma:  { bg: 'bg-orange-100', text: 'text-orange-800' },
-  youbi:    { bg: 'bg-purple-100', text: 'text-purple-800' },
-  shukaisu: { bg: 'bg-rose-100',   text: 'text-rose-800'   },
-  soudan:   { bg: 'bg-teal-100',   text: 'text-teal-800'   },
-  kyozai:   { bg: 'bg-gray-100',   text: 'text-gray-700'   },
+  moshi: { bg: 'bg-blue-100', text: 'text-blue-800' },
+  mogi: { bg: 'bg-green-100', text: 'text-green-800' },
+  zoukoma: { bg: 'bg-orange-100', text: 'text-orange-800' },
+  youbi: { bg: 'bg-purple-100', text: 'text-purple-800' },
+  shukaisu: { bg: 'bg-rose-100', text: 'text-rose-800' },
+  soudan: { bg: 'bg-teal-100', text: 'text-teal-800' },
+  kyozai: { bg: 'bg-gray-100', text: 'text-gray-700' },
 };
 
 const SCHOOL_LABEL_COLORS = [
-  { bg: 'bg-sky-100',     text: 'text-sky-800' },
+  { bg: 'bg-sky-100', text: 'text-sky-800' },
   { bg: 'bg-emerald-100', text: 'text-emerald-800' },
-  { bg: 'bg-violet-100',  text: 'text-violet-800' },
-  { bg: 'bg-rose-100',    text: 'text-rose-800' },
-  { bg: 'bg-indigo-100',  text: 'text-indigo-800' },
-  { bg: 'bg-teal-100',    text: 'text-teal-800' },
+  { bg: 'bg-violet-100', text: 'text-violet-800' },
+  { bg: 'bg-rose-100', text: 'text-rose-800' },
+  { bg: 'bg-indigo-100', text: 'text-indigo-800' },
+  { bg: 'bg-teal-100', text: 'text-teal-800' },
   { bg: 'bg-fuchsia-100', text: 'text-fuchsia-800' },
-  { bg: 'bg-orange-100',  text: 'text-orange-800' },
+  { bg: 'bg-orange-100', text: 'text-orange-800' },
 ] as const;
 
 const ACTION_LABELS: Record<string, { label: string; className: string }> = {
-  created:        { label: '登録',       className: 'bg-green-100 text-green-700' },
-  updated:        { label: '編集',       className: 'bg-blue-100 text-blue-700' },
+  created: { label: '登録', className: 'bg-green-100 text-green-700' },
+  updated: { label: '編集', className: 'bg-blue-100 text-blue-700' },
   status_changed: { label: 'ステータス', className: 'bg-orange-100 text-orange-700' },
-  soft_deleted:   { label: '削除',       className: 'bg-red-100 text-red-700' },
-  restored:       { label: '復元',       className: 'bg-purple-100 text-purple-700' },
+  soft_deleted: { label: '削除', className: 'bg-red-100 text-red-700' },
+  restored: { label: '復元', className: 'bg-purple-100 text-purple-700' },
 };
 
 // ── ユーティリティ（描画専用） ──
@@ -128,7 +128,11 @@ interface NotificationFeedProps {
   initialData?: NotificationInitialData;
 }
 
-export function NotificationFeed({ className = '', onStudentClick, initialData }: NotificationFeedProps) {
+export function NotificationFeed({
+  className = '',
+  onStudentClick,
+  initialData,
+}: NotificationFeedProps) {
   const { getSelectedSchoolIds, selectedSchoolId, user } = useAuth();
   const { confirm, ConfirmDialog } = useConfirm();
   // 教室名はアプリ起動時にロード済みの MasterData から引く（旧: フィード取得後に
@@ -256,7 +260,18 @@ export function NotificationFeed({ className = '', onStudentClick, initialData }
       .filter((item) => filter === 'all' || item.type === filter);
     if (targetItems.length === 0) return;
 
-    const filterLabel = filter === 'all' ? '通知' : filter === 'response' ? '新着申込' : filter === 'update' ? '更新履歴' : filter === 'shift' ? 'シフト申請' : filter === 'transcript' ? '面談紐付け' : '期日';
+    const filterLabel =
+      filter === 'all'
+        ? '通知'
+        : filter === 'response'
+          ? '新着申込'
+          : filter === 'update'
+            ? '更新履歴'
+            : filter === 'shift'
+              ? 'シフト申請'
+              : filter === 'transcript'
+                ? '面談紐付け'
+                : '期日';
     const confirmed = await confirm({
       title: '一括確認',
       description: `${filterLabel} ${targetItems.length}件 をすべて確認済みにしますか？`,
@@ -304,7 +319,9 @@ export function NotificationFeed({ className = '', onStudentClick, initialData }
 
   return (
     <>
-      <div className={`bg-[#f8f8f8] rounded-xl border border-gray-200 overflow-hidden ${className}`}>
+      <div
+        className={`bg-[#f8f8f8] rounded-xl border border-gray-200 overflow-hidden ${className}`}
+      >
         {/* ヘッダー */}
         <div className="flex items-center justify-between px-4 py-2.5 bg-white border-b border-gray-200">
           <div className="flex items-center gap-3">
@@ -323,11 +340,11 @@ export function NotificationFeed({ className = '', onStudentClick, initialData }
                 >
                   {chip.label}
                   {chip.count > 0 && (
-                    <span className={`min-w-[16px] h-4 flex items-center justify-center rounded-full text-[10px] font-bold leading-none px-1 ${
-                      filter === chip.key
-                        ? 'bg-white/25 text-white'
-                        : 'bg-gray-200 text-gray-600'
-                    }`}>
+                    <span
+                      className={`min-w-[16px] h-4 flex items-center justify-center rounded-full text-[10px] font-bold leading-none px-1 ${
+                        filter === chip.key ? 'bg-white/25 text-white' : 'bg-gray-200 text-gray-600'
+                      }`}
+                    >
                       {chip.count}
                     </span>
                   )}
@@ -369,7 +386,9 @@ export function NotificationFeed({ className = '', onStudentClick, initialData }
           <div className="max-h-[640px] overflow-y-auto divide-y divide-gray-100">
             {visibleItems.length === 0 ? (
               <div className="p-6 text-center text-sm text-gray-400 italic">
-                {filter === 'all' ? '表示する通知はありません' : `${filter === 'response' ? '申込' : filter === 'update' ? '更新履歴' : filter === 'shift' ? 'シフト申請' : filter === 'transcript' ? '面談紐付け' : '期日通知'}はありません`}
+                {filter === 'all'
+                  ? '表示する通知はありません'
+                  : `${filter === 'response' ? '申込' : filter === 'update' ? '更新履歴' : filter === 'shift' ? 'シフト申請' : filter === 'transcript' ? '面談紐付け' : '期日通知'}はありません`}
               </div>
             ) : (
               visibleItems.map((item) => (
@@ -403,18 +422,56 @@ interface FeedItemRowProps {
   onStudentClick?: (info: StudentClickInfo) => void;
 }
 
-function FeedItemRow({ item, schoolNames, schoolColorBySchoolId, onDismiss, onCompleteMonthlyTask, onStudentClick }: FeedItemRowProps) {
+function FeedItemRow({
+  item,
+  schoolNames,
+  schoolColorBySchoolId,
+  onDismiss,
+  onCompleteMonthlyTask,
+  onStudentClick,
+}: FeedItemRowProps) {
   if (item.type === 'response') {
-    return <ResponseRow item={item} schoolNames={schoolNames} schoolColorBySchoolId={schoolColorBySchoolId} onDismiss={onDismiss} onStudentClick={onStudentClick} />;
+    return (
+      <ResponseRow
+        item={item}
+        schoolNames={schoolNames}
+        schoolColorBySchoolId={schoolColorBySchoolId}
+        onDismiss={onDismiss}
+        onStudentClick={onStudentClick}
+      />
+    );
   }
   if (item.type === 'shift') {
-    return <ShiftRow item={item} schoolNames={schoolNames} schoolColorBySchoolId={schoolColorBySchoolId} onDismiss={onDismiss} />;
+    return (
+      <ShiftRow
+        item={item}
+        schoolNames={schoolNames}
+        schoolColorBySchoolId={schoolColorBySchoolId}
+        onDismiss={onDismiss}
+      />
+    );
   }
   if (item.type === 'deadline') {
-    return <DeadlineRow item={item} schoolNames={schoolNames} schoolColorBySchoolId={schoolColorBySchoolId} onDismiss={onDismiss} onCompleteMonthlyTask={onCompleteMonthlyTask} />;
+    return (
+      <DeadlineRow
+        item={item}
+        schoolNames={schoolNames}
+        schoolColorBySchoolId={schoolColorBySchoolId}
+        onDismiss={onDismiss}
+        onCompleteMonthlyTask={onCompleteMonthlyTask}
+      />
+    );
   }
   if (item.type === 'transcript') {
-    return <TranscriptRow item={item} schoolNames={schoolNames} schoolColorBySchoolId={schoolColorBySchoolId} onDismiss={onDismiss} onStudentClick={onStudentClick} />;
+    return (
+      <TranscriptRow
+        item={item}
+        schoolNames={schoolNames}
+        schoolColorBySchoolId={schoolColorBySchoolId}
+        onDismiss={onDismiss}
+        onStudentClick={onStudentClick}
+      />
+    );
   }
   return <UpdateRow item={item} onDismiss={onDismiss} onStudentClick={onStudentClick} />;
 }
@@ -440,14 +497,23 @@ function TranscriptRow({
       <span className="text-xs text-gray-400 whitespace-nowrap w-[72px] shrink-0">
         {formatDateTime(item.timestamp)}
       </span>
-      <Link href="/transcriptions" className="px-1.5 py-0.5 bg-indigo-100 text-indigo-800 text-[11px] font-medium rounded whitespace-nowrap shrink-0 hover:opacity-80">
+      <Link
+        href="/transcriptions"
+        className="px-1.5 py-0.5 bg-indigo-100 text-indigo-800 text-[11px] font-medium rounded whitespace-nowrap shrink-0 hover:opacity-80"
+      >
         面談紐付け
       </Link>
       <div className="flex items-center gap-2 flex-1 min-w-0">
         {onStudentClick ? (
           <button
             type="button"
-            onClick={() => onStudentClick({ studentId: item.studentId, studentName: item.studentName, schoolId: item.schoolId })}
+            onClick={() =>
+              onStudentClick({
+                studentId: item.studentId,
+                studentName: item.studentName,
+                schoolId: item.schoolId,
+              })
+            }
             className="text-sm text-[#1a1a1a] hover:text-[#3b82f6] hover:underline cursor-pointer font-medium shrink-0"
           >
             {item.studentName}
@@ -456,7 +522,9 @@ function TranscriptRow({
           <span className="text-sm text-[#1a1a1a] font-medium shrink-0">{item.studentName}</span>
         )}
         {item.gradeLabel && (
-          <span className="text-xs text-gray-500 whitespace-nowrap shrink-0">{item.gradeLabel}</span>
+          <span className="text-xs text-gray-500 whitespace-nowrap shrink-0">
+            {item.gradeLabel}
+          </span>
         )}
         {item.transcriptTitle && (
           <span className="text-xs text-gray-500 truncate" title={item.transcriptTitle}>
@@ -464,7 +532,9 @@ function TranscriptRow({
           </span>
         )}
         {schoolName && schoolColor && (
-          <span className={`px-1.5 py-0.5 rounded text-[11px] font-medium whitespace-nowrap shrink-0 ${schoolColor.bg} ${schoolColor.text}`}>
+          <span
+            className={`px-1.5 py-0.5 rounded text-[11px] font-medium whitespace-nowrap shrink-0 ${schoolColor.bg} ${schoolColor.text}`}
+          >
             {schoolName}
           </span>
         )}
@@ -497,7 +567,10 @@ function ResponseRow({
   const href = item.schoolId
     ? `/forms/responses/${path}/${item.formPeriod}?schoolId=${item.schoolId}`
     : `/forms/responses/${path}/${item.formPeriod}`;
-  const color = FORM_TYPE_COLORS[item.formType ?? ''] ?? { bg: 'bg-gray-100', text: 'text-gray-700' };
+  const color = FORM_TYPE_COLORS[item.formType ?? ''] ?? {
+    bg: 'bg-gray-100',
+    text: 'text-gray-700',
+  };
   const schoolName = item.schoolId ? schoolNames[item.schoolId] : undefined;
   const schoolColor = item.schoolId ? schoolColorBySchoolId[item.schoolId] : undefined;
 
@@ -506,14 +579,23 @@ function ResponseRow({
       <span className="text-xs text-gray-400 whitespace-nowrap w-[72px] shrink-0">
         {formatDateTime(item.timestamp)}
       </span>
-      <Link href={href} className={`px-1.5 py-0.5 ${color.bg} ${color.text} text-[11px] font-medium rounded whitespace-nowrap shrink-0 hover:opacity-80`}>
+      <Link
+        href={href}
+        className={`px-1.5 py-0.5 ${color.bg} ${color.text} text-[11px] font-medium rounded whitespace-nowrap shrink-0 hover:opacity-80`}
+      >
         {item.formLabel}
       </Link>
       <div className="flex items-center gap-2 flex-1 min-w-0">
         {onStudentClick ? (
           <button
             type="button"
-            onClick={() => onStudentClick({ studentId: item.studentId, studentName: item.studentName, schoolId: item.schoolId })}
+            onClick={() =>
+              onStudentClick({
+                studentId: item.studentId,
+                studentName: item.studentName,
+                schoolId: item.schoolId,
+              })
+            }
             className="text-sm text-[#1a1a1a] hover:text-[#3b82f6] hover:underline cursor-pointer font-medium shrink-0"
           >
             {item.studentName}
@@ -522,10 +604,14 @@ function ResponseRow({
           <span className="text-sm text-[#1a1a1a] truncate">{item.studentName}</span>
         )}
         {item.gradeLabel && (
-          <span className="text-xs text-gray-500 whitespace-nowrap shrink-0">{item.gradeLabel}</span>
+          <span className="text-xs text-gray-500 whitespace-nowrap shrink-0">
+            {item.gradeLabel}
+          </span>
         )}
         {schoolName && schoolColor && (
-          <span className={`px-1.5 py-0.5 rounded text-[11px] font-medium whitespace-nowrap shrink-0 ${schoolColor.bg} ${schoolColor.text}`}>
+          <span
+            className={`px-1.5 py-0.5 rounded text-[11px] font-medium whitespace-nowrap shrink-0 ${schoolColor.bg} ${schoolColor.text}`}
+          >
             {schoolName}
           </span>
         )}
@@ -553,9 +639,10 @@ function ShiftRow({
   onDismiss: (id: string) => void;
 }) {
   const shiftLabel = item.shiftType === 'seasonal' ? '講習シフト' : '通常シフト';
-  const href = item.shiftType === 'seasonal'
-    ? `/settings/seasonal-shifts/${item.shiftSettingId}/submissions`
-    : `/settings/regular-shifts/${item.shiftSettingId}/submissions`;
+  const href =
+    item.shiftType === 'seasonal'
+      ? `/settings/seasonal-shifts/${item.shiftSettingId}/submissions`
+      : `/settings/regular-shifts/${item.shiftSettingId}/submissions`;
   const schoolName = item.schoolId ? schoolNames[item.schoolId] : undefined;
   const schoolColor = item.schoolId ? schoolColorBySchoolId[item.schoolId] : undefined;
 
@@ -564,7 +651,10 @@ function ShiftRow({
       <span className="text-xs text-gray-400 whitespace-nowrap w-[72px] shrink-0">
         {formatDateTime(item.timestamp)}
       </span>
-      <Link href={href} className="px-1.5 py-0.5 bg-cyan-100 text-cyan-800 text-[11px] font-medium rounded whitespace-nowrap shrink-0 hover:opacity-80">
+      <Link
+        href={href}
+        className="px-1.5 py-0.5 bg-cyan-100 text-cyan-800 text-[11px] font-medium rounded whitespace-nowrap shrink-0 hover:opacity-80"
+      >
         {shiftLabel}
       </Link>
       <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -575,7 +665,9 @@ function ShiftRow({
           </span>
         )}
         {schoolName && schoolColor && (
-          <span className={`px-1.5 py-0.5 rounded text-[11px] font-medium whitespace-nowrap shrink-0 ${schoolColor.bg} ${schoolColor.text}`}>
+          <span
+            className={`px-1.5 py-0.5 rounded text-[11px] font-medium whitespace-nowrap shrink-0 ${schoolColor.bg} ${schoolColor.text}`}
+          >
             {schoolName}
           </span>
         )}
@@ -600,21 +692,32 @@ function UpdateRow({
   onDismiss: (id: string) => void;
   onStudentClick?: (info: StudentClickInfo) => void;
 }) {
-  const actionInfo = ACTION_LABELS[item.action ?? ''] ?? { label: item.action ?? '', className: 'bg-gray-100 text-gray-600' };
+  const actionInfo = ACTION_LABELS[item.action ?? ''] ?? {
+    label: item.action ?? '',
+    className: 'bg-gray-100 text-gray-600',
+  };
 
   return (
     <div className="flex items-center gap-2 px-4 py-2 hover:bg-blue-50 transition-colors group">
       <span className="text-xs text-gray-400 whitespace-nowrap w-[72px] shrink-0">
         {formatDateTime(item.timestamp)}
       </span>
-      <span className={`px-1.5 py-0.5 rounded text-[11px] font-medium whitespace-nowrap shrink-0 ${actionInfo.className}`}>
+      <span
+        className={`px-1.5 py-0.5 rounded text-[11px] font-medium whitespace-nowrap shrink-0 ${actionInfo.className}`}
+      >
         {actionInfo.label}
       </span>
       <div className="flex items-center gap-2 flex-1 min-w-0">
         {onStudentClick ? (
           <button
             type="button"
-            onClick={() => onStudentClick({ studentId: item.studentId, studentName: item.studentName, schoolId: item.schoolId })}
+            onClick={() =>
+              onStudentClick({
+                studentId: item.studentId,
+                studentName: item.studentName,
+                schoolId: item.schoolId,
+              })
+            }
             className="text-sm text-[#1a1a1a] hover:text-[#3b82f6] hover:underline cursor-pointer font-medium shrink-0"
           >
             {item.studentName}
@@ -684,7 +787,9 @@ function DeadlineRow({
       <span className={`text-xs whitespace-nowrap w-[72px] shrink-0 ${dateClass}`}>
         {dateDisplay}
       </span>
-      <span className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-bold whitespace-nowrap shrink-0 ${badgeClass}`}>
+      <span
+        className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-bold whitespace-nowrap shrink-0 ${badgeClass}`}
+      >
         {isOverdue && <AlertTriangle className="w-3 h-3" />}
         {statusLabel}
       </span>
@@ -704,12 +809,16 @@ function DeadlineRow({
           <span className="text-sm text-[#1a1a1a] font-medium truncate">{item.studentName}</span>
         )}
         {dateDisplay && (
-          <span className={`px-1.5 py-0.5 rounded text-[11px] whitespace-nowrap shrink-0 ${inlineDateClass}`}>
+          <span
+            className={`px-1.5 py-0.5 rounded text-[11px] whitespace-nowrap shrink-0 ${inlineDateClass}`}
+          >
             期日 {dateDisplay}
           </span>
         )}
         {schoolName && schoolColor && (
-          <span className={`px-1.5 py-0.5 rounded text-[11px] font-medium whitespace-nowrap shrink-0 ${schoolColor.bg} ${schoolColor.text}`}>
+          <span
+            className={`px-1.5 py-0.5 rounded text-[11px] font-medium whitespace-nowrap shrink-0 ${schoolColor.bg} ${schoolColor.text}`}
+          >
             {schoolName}
           </span>
         )}
@@ -717,7 +826,9 @@ function DeadlineRow({
       {isMonthly ? (
         /* 業務タスク → 実施済みにする */
         <button
-          onClick={() => onCompleteMonthlyTask(item.id, actualTaskId, item.incompleteSchoolIds ?? [])}
+          onClick={() =>
+            onCompleteMonthlyTask(item.id, actualTaskId, item.incompleteSchoolIds ?? [])
+          }
           className="flex items-center text-gray-400 hover:text-green-600 p-1 rounded hover:bg-green-50 transition-colors opacity-0 group-hover:opacity-100 shrink-0"
           title="実施済みにする"
         >

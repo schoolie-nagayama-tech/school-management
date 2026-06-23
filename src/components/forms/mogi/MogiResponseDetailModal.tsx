@@ -23,12 +23,7 @@ export function MogiResponseDetailModal({
   };
 
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      title="回答詳細"
-      size="lg"
-    >
+    <Modal isOpen={isOpen} onClose={onClose} title="回答詳細" size="lg">
       <div className="space-y-6">
         {/* 基本情報 */}
         <div className="bg-[#f3f4f6] rounded-lg border border-[#e5e7eb] p-4">
@@ -56,9 +51,7 @@ export function MogiResponseDetailModal({
             </div>
             <div>
               <span className="text-[#4b5563]/60">メールアドレス:</span>
-              <span className="ml-2 text-[#1f2937] font-medium">
-                {response.email}
-              </span>
+              <span className="ml-2 text-[#1f2937] font-medium">{response.email}</span>
             </div>
             <div>
               <span className="text-[#4b5563]/60">計上状態:</span>
@@ -93,12 +86,8 @@ export function MogiResponseDetailModal({
                     <td className="border border-[#e5e7eb] px-4 py-2 text-xs text-[#4b5563]">
                       {selection.exam_type_label ?? '—'}
                     </td>
-                    <td className="border border-[#e5e7eb] px-4 py-2">
-                      {selection.date_label}
-                    </td>
-                    <td className="border border-[#e5e7eb] px-4 py-2">
-                      {selection.venue_label}
-                    </td>
+                    <td className="border border-[#e5e7eb] px-4 py-2">{selection.date_label}</td>
+                    <td className="border border-[#e5e7eb] px-4 py-2">{selection.venue_label}</td>
                   </tr>
                 ))}
               </tbody>

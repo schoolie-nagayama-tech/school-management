@@ -191,11 +191,7 @@ export async function POST(request: NextRequest) {
   if (event.type !== 'message') return NextResponse.json({ ok: true });
   // 編集/削除/スレッド返信以外の bot 投稿と通常投稿は受け付ける
   // Notta は incoming webhook / bot の可能性があるので subtype=bot_message も許可
-  if (
-    event.subtype &&
-    event.subtype !== 'bot_message' &&
-    event.subtype !== 'file_share'
-  ) {
+  if (event.subtype && event.subtype !== 'bot_message' && event.subtype !== 'file_share') {
     console.log('[slack-notta] skipped subtype', event.subtype);
     return NextResponse.json({ ok: true });
   }

@@ -46,10 +46,11 @@ export function StudentCardMenu({
   const studentName = entry.student
     ? `${entry.student.last_name}${entry.student.first_name}（${gradeLabel(entry.student.grade)}）`
     : entry.student_id;
-  const subjectNames = (entry.subjects ?? [])
-    .map((s) => (typeof s === 'object' && s && 'name' in s ? s.name : String(s)))
-    .filter(Boolean)
-    .join('・') || '—';
+  const subjectNames =
+    (entry.subjects ?? [])
+      .map((s) => (typeof s === 'object' && s && 'name' in s ? s.name : String(s)))
+      .filter(Boolean)
+      .join('・') || '—';
 
   const isTransferredOut = entry.status === 'transferred_out';
   const isCancelled = entry.status === 'cancelled';

@@ -12,11 +12,12 @@ interface StockTransactionModalProps {
   onSubmit: (data: { quantity: number; reason: string }) => Promise<void>;
 }
 
-const MODE_LABELS: Record<StockTransactionType, { title: string; action: string; color: string }> = {
-  in: { title: '入庫', action: '入庫する', color: 'text-green-600' },
-  out: { title: '出庫', action: '出庫する', color: 'text-[#ef4444]' },
-  adjust: { title: '在庫調整', action: '調整する', color: 'text-[#4b5563]' },
-};
+const MODE_LABELS: Record<StockTransactionType, { title: string; action: string; color: string }> =
+  {
+    in: { title: '入庫', action: '入庫する', color: 'text-green-600' },
+    out: { title: '出庫', action: '出庫する', color: 'text-[#ef4444]' },
+    adjust: { title: '在庫調整', action: '調整する', color: 'text-[#4b5563]' },
+  };
 
 export function StockTransactionModal({
   isOpen,
@@ -66,20 +67,14 @@ export function StockTransactionModal({
       await onSubmit({ quantity, reason: reason.trim() });
       onClose();
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : '処理に失敗しました'
-      );
+      setError(err instanceof Error ? err.message : '処理に失敗しました');
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      title={`${material.name} - ${modeInfo.title}`}
-    >
+    <Modal isOpen={isOpen} onClose={onClose} title={`${material.name} - ${modeInfo.title}`}>
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && (
           <div className="bg-[#ef4444]/20 text-[#ef4444] px-4 py-2 rounded border border-[#ef4444] text-sm">
@@ -92,9 +87,7 @@ export function StockTransactionModal({
           <div className="text-sm text-[#4b5563] mb-1">現在の在庫数</div>
           <div className="text-2xl font-bold text-[#1f2937]">
             {material.stock_quantity}{' '}
-            <span className="text-sm font-normal text-[#4b5563]">
-              {material.unit}
-            </span>
+            <span className="text-sm font-normal text-[#4b5563]">{material.unit}</span>
           </div>
         </div>
 
@@ -109,9 +102,7 @@ export function StockTransactionModal({
         />
 
         <div className="w-full">
-          <label className="block text-sm font-medium text-[#1f2937] mb-1">
-            理由
-          </label>
+          <label className="block text-sm font-medium text-[#1f2937] mb-1">理由</label>
           <textarea
             className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg bg-white text-[#4b5563] placeholder-[#4b5563]/40 transition-[border-color] duration-150 ease-out focus:ring-2 focus:ring-[#3b82f6] focus:border-[#3b82f6]"
             rows={2}
@@ -126,9 +117,7 @@ export function StockTransactionModal({
           <div className="bg-[#f9fafb] rounded-lg p-4 border border-[#e5e7eb]">
             <div className="text-sm text-[#4b5563] mb-1">処理後の在庫数</div>
             <div className="flex items-center gap-2">
-              <span className="text-lg text-[#4b5563]">
-                {material.stock_quantity}
-              </span>
+              <span className="text-lg text-[#4b5563]">{material.stock_quantity}</span>
               <span className={`text-lg ${modeInfo.color}`}>
                 {mode === 'in' && `+ ${quantity}`}
                 {mode === 'out' && `- ${quantity}`}

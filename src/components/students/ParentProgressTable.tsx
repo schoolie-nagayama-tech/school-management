@@ -3,7 +3,10 @@
 import type { ProgressRowDisplay } from '@/types/database';
 
 /** 表示用の拡張進捗（exam_range_exam_type, lessons を含む） */
-type ProgressForDisplay = { exam_range_exam_type?: { name?: string } | null; lessons?: Array<{ lesson_date?: string }> };
+type ProgressForDisplay = {
+  exam_range_exam_type?: { name?: string } | null;
+  lessons?: Array<{ lesson_date?: string }>;
+};
 
 interface Props {
   displayRows: ProgressRowDisplay[];
@@ -20,9 +23,9 @@ interface Props {
   onColumnVisibilityChange?: (column: string, visible: boolean) => void;
 }
 
-export default function ParentProgressTable({ 
-  displayRows, 
-  studentName, 
+export default function ParentProgressTable({
+  displayRows,
+  studentName,
   textbookName,
   showProposalCount = true,
   showApplicationCount = false,
@@ -36,15 +39,19 @@ export default function ParentProgressTable({
 }: Props) {
   // 合計計算
   const totalProposal = displayRows
-    .filter(row => row.isGroupStart)
+    .filter((row) => row.isGroupStart)
     .reduce((sum, row) => sum + row.groupProposalCount, 0);
-  
+
   const totalApplication = displayRows
-    .filter(row => row.isGroupStart)
+    .filter((row) => row.isGroupStart)
     .reduce((sum, row) => sum + row.groupApplicationCount, 0);
 
   // グループの境界線スタイルを取得
-  const getRowBorderClass = (row: ProgressRowDisplay, index: number, rows: ProgressRowDisplay[]): string => {
+  const getRowBorderClass = (
+    row: ProgressRowDisplay,
+    index: number,
+    rows: ProgressRowDisplay[]
+  ): string => {
     const groupNumber = row.progress?.group_number;
     if (groupNumber == null) {
       return 'border-b-2 border-gray-300';
@@ -53,7 +60,7 @@ export default function ParentProgressTable({
     // グループの最後の行かどうか
     const nextRow = rows[index + 1];
     const isLastInGroup = !nextRow || nextRow.progress?.group_number !== groupNumber;
-    
+
     return isLastInGroup ? 'border-b-2 border-gray-300' : 'border-b border-gray-200';
   };
 
@@ -73,10 +80,18 @@ export default function ParentProgressTable({
           <tr>
             <th className="border border-gray-400 p-4 text-left font-semibold">単元名</th>
             {showProposalCount && (
-              <th className="border border-gray-400 p-4 text-center font-semibold">ご提案<br/>コマ数</th>
+              <th className="border border-gray-400 p-4 text-center font-semibold">
+                ご提案
+                <br />
+                コマ数
+              </th>
             )}
             {showApplicationCount && (
-              <th className="border border-gray-400 p-4 text-center font-semibold">申込<br/>コマ数</th>
+              <th className="border border-gray-400 p-4 text-center font-semibold">
+                申込
+                <br />
+                コマ数
+              </th>
             )}
             {showExamRange && (
               <th className="border border-gray-400 p-4 text-center font-semibold">試験範囲</th>
@@ -104,18 +119,17 @@ export default function ParentProgressTable({
             const groupNumber = row.progress?.group_number;
 
             return (
-              <tr 
-                key={row.curriculumItem.id} 
-                className={borderClass}
-              >
+              <tr key={row.curriculumItem.id} className={borderClass}>
                 {/* 単元名 */}
                 <td className="border-x border-gray-400 p-4">
                   <div className="flex items-center">
                     {/* グループインジケーター */}
                     {groupNumber != null && (
-                      <div className={`w-1 h-6 mr-3 rounded ${
-                        row.isGroupStart ? 'bg-gray-400' : 'bg-gray-300'
-                      }`} />
+                      <div
+                        className={`w-1 h-6 mr-3 rounded ${
+                          row.isGroupStart ? 'bg-gray-400' : 'bg-gray-300'
+                        }`}
+                      />
                     )}
                     <span>
                       {row.curriculumItem.item_number && (
@@ -128,7 +142,7 @@ export default function ParentProgressTable({
 
                 {/* 提案コマ数（セル結合） */}
                 {showProposalCount && row.isGroupStart && (
-                  <td 
+                  <td
                     className="border-x border-gray-400 p-4 text-center text-lg font-medium"
                     rowSpan={row.groupRowSpan}
                     style={{
@@ -144,7 +158,7 @@ export default function ParentProgressTable({
                 )}
                 {/* 申込コマ数 */}
                 {showApplicationCount && row.isGroupStart && (
-                  <td 
+                  <td
                     className="border-x border-gray-400 p-4 text-center"
                     rowSpan={row.groupRowSpan}
                     style={{
@@ -161,8 +175,12 @@ export default function ParentProgressTable({
                 {/* 試験範囲 */}
                 {showExamRange && (
                   <td className="border-x border-gray-400 p-4 text-center text-sm">
-                    {(row.progress as unknown as ProgressForDisplay | null)?.exam_range_exam_type ? (
-                      <span>{(row.progress as unknown as ProgressForDisplay).exam_range_exam_type?.name ?? '-'}</span>
+                    {(row.progress as unknown as ProgressForDisplay | null)
+                      ?.exam_range_exam_type ? (
+                      <span>
+                        {(row.progress as unknown as ProgressForDisplay).exam_range_exam_type
+                          ?.name ?? '-'}
+                      </span>
                     ) : (
                       <span className="text-gray-400">-</span>
                     )}
@@ -181,8 +199,11 @@ export default function ParentProgressTable({
                 {/* 指導日① */}
                 {showLesson1 && (
                   <td className="border-x border-gray-400 p-4 text-center text-sm">
-                    {(row.progress as unknown as ProgressForDisplay | null)?.lessons?.[0]?.lesson_date ? (
-                      <span>{(row.progress as unknown as ProgressForDisplay).lessons?.[0]?.lesson_date}</span>
+                    {(row.progress as unknown as ProgressForDisplay | null)?.lessons?.[0]
+                      ?.lesson_date ? (
+                      <span>
+                        {(row.progress as unknown as ProgressForDisplay).lessons?.[0]?.lesson_date}
+                      </span>
                     ) : (
                       <span className="text-gray-400">-</span>
                     )}
@@ -191,8 +212,11 @@ export default function ParentProgressTable({
                 {/* 指導日② */}
                 {showLesson2 && (
                   <td className="border-x border-gray-400 p-4 text-center text-sm">
-                    {(row.progress as unknown as ProgressForDisplay | null)?.lessons?.[1]?.lesson_date ? (
-                      <span>{(row.progress as unknown as ProgressForDisplay).lessons?.[1]?.lesson_date}</span>
+                    {(row.progress as unknown as ProgressForDisplay | null)?.lessons?.[1]
+                      ?.lesson_date ? (
+                      <span>
+                        {(row.progress as unknown as ProgressForDisplay).lessons?.[1]?.lesson_date}
+                      </span>
                     ) : (
                       <span className="text-gray-400">-</span>
                     )}
@@ -201,8 +225,11 @@ export default function ParentProgressTable({
                 {/* 指導日③ */}
                 {showLesson3 && (
                   <td className="border-x border-gray-400 p-4 text-center text-sm">
-                    {(row.progress as unknown as ProgressForDisplay | null)?.lessons?.[2]?.lesson_date ? (
-                      <span>{(row.progress as unknown as ProgressForDisplay).lessons?.[2]?.lesson_date}</span>
+                    {(row.progress as unknown as ProgressForDisplay | null)?.lessons?.[2]
+                      ?.lesson_date ? (
+                      <span>
+                        {(row.progress as unknown as ProgressForDisplay).lessons?.[2]?.lesson_date}
+                      </span>
                     ) : (
                       <span className="text-gray-400">-</span>
                     )}

@@ -37,13 +37,7 @@ function parseTimeSlotLabel(slot: string): { left: string; right: string } {
   return { left: slot.slice(0, idx + 1), right: slot.slice(idx + 1) };
 }
 
-function ToggleButton({
-  onClick,
-  title,
-}: {
-  onClick: () => void;
-  title: string;
-}) {
+function ToggleButton({ onClick, title }: { onClick: () => void; title: string }) {
   return (
     <button
       type="button"
@@ -148,7 +142,10 @@ export function ShiftSlotMatrix({
               {timeSlots.map((slot) => {
                 const { left, right } = parseTimeSlotLabel(slot);
                 return (
-                  <th key={slot} className="px-1 py-2 text-center font-medium text-[#1f2937] min-w-[72px]">
+                  <th
+                    key={slot}
+                    className="px-1 py-2 text-center font-medium text-[#1f2937] min-w-[72px]"
+                  >
                     <div className="flex flex-col items-center gap-0.5">
                       <span className="text-xs">{left}</span>
                       <span className="text-xs text-[#6b7280]">{right}</span>
@@ -179,10 +176,7 @@ export function ShiftSlotMatrix({
                   <td className="px-1 py-2 text-[#1f2937]">
                     <div className="flex items-center gap-1">
                       {!isSunday && (
-                        <ToggleButton
-                          onClick={() => toggleRow(d)}
-                          title="この行を一括トグル"
-                        />
+                        <ToggleButton onClick={() => toggleRow(d)} title="この行を一括トグル" />
                       )}
                       <span>{label}</span>
                     </div>

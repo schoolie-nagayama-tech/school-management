@@ -1,13 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui';
 import { Button } from '@/components/ui';
 import { AlertTriangle } from 'lucide-react';
 import type { ScheduleEntry, ScheduleTimeSlot } from '@/types/schedule';
@@ -49,12 +43,12 @@ export function DeleteScheduleEntryModal({
   const studentName = entry.student
     ? `${entry.student.last_name} ${entry.student.first_name}（${gradeLabel(entry.student.grade)}）`
     : entry.student_id;
-  const subjectNames = (entry.subjects ?? [])
-    .map((s) => (typeof s === 'object' && s && 'name' in s ? s.name : String(s)))
-    .filter(Boolean)
-    .join('・') || '—';
-  const teacherName =
-    entry.teacher?.display_name || entry.teacher?.email || '—';
+  const subjectNames =
+    (entry.subjects ?? [])
+      .map((s) => (typeof s === 'object' && s && 'name' in s ? s.name : String(s)))
+      .filter(Boolean)
+      .join('・') || '—';
+  const teacherName = entry.teacher?.display_name || entry.teacher?.email || '—';
   const slotLabel = timeSlot
     ? `${timeSlot.slot_number}限 ${timeSlot.start_time?.slice(0, 5) ?? ''}-${timeSlot.end_time?.slice(0, 5) ?? ''}`
     : '—';
@@ -78,20 +72,18 @@ export function DeleteScheduleEntryModal({
         </DialogHeader>
 
         <div className="space-y-4 py-2">
-          <p className="text-sm text-[var(--paragraph)]">
-            以下の授業を削除しますか？
-          </p>
+          <p className="text-sm text-[var(--paragraph)]">以下の授業を削除しますか？</p>
           <div className="text-sm">
             <div>生徒: {studentName}</div>
-            <div>日時: {formatDay(entry.entry_date)} {slotLabel}</div>
+            <div>
+              日時: {formatDay(entry.entry_date)} {slotLabel}
+            </div>
             <div>講師: {teacherName}</div>
             <div>科目: {subjectNames}</div>
           </div>
 
           <div>
-            <div className="text-xs font-medium text-[var(--paragraph)] mb-2">
-              削除タイプ
-            </div>
+            <div className="text-xs font-medium text-[var(--paragraph)] mb-2">削除タイプ</div>
             <div className="space-y-2">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
@@ -112,9 +104,7 @@ export function DeleteScheduleEntryModal({
                     onChange={() => setDeleteType('regular')}
                     className="text-[#1e3a5f]"
                   />
-                  <span className="text-sm">
-                    通常授業から削除（以降この曜日・コマに入らない）
-                  </span>
+                  <span className="text-sm">通常授業から削除（以降この曜日・コマに入らない）</span>
                 </label>
               )}
             </div>
@@ -122,7 +112,8 @@ export function DeleteScheduleEntryModal({
 
           {deleteType === 'regular' && (
             <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-amber-700">
-              <AlertTriangle className="inline h-4 w-4 mr-1" />通常授業から削除すると、以降の週からもこの授業がなくなります。
+              <AlertTriangle className="inline h-4 w-4 mr-1" />
+              通常授業から削除すると、以降の週からもこの授業がなくなります。
             </div>
           )}
         </div>

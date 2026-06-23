@@ -34,7 +34,7 @@ export function FieldEditor({ isOpen, onClose, onSave, field }: FieldEditorProps
     if (field) {
       setFieldType(field.field_type);
       setLabel(field.label);
-      setPlaceholder(('placeholder' in field && field.placeholder) ? String(field.placeholder) : '');
+      setPlaceholder('placeholder' in field && field.placeholder ? String(field.placeholder) : '');
       setIsRequired(field.is_required);
       if (field.options && Array.isArray(field.options)) {
         setOptionsText((field.options as string[]).join('\n'));
@@ -90,11 +90,7 @@ export function FieldEditor({ isOpen, onClose, onSave, field }: FieldEditorProps
   };
 
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      title={field ? '項目を編集' : '項目を追加'}
-    >
+    <Modal isOpen={isOpen} onClose={onClose} title={field ? '項目を編集' : '項目を追加'}>
       <div className="space-y-4">
         {errorMessage && (
           <div className="bg-[#ef4444]/20 text-[#ef4444] px-4 py-2 rounded border border-[#ef4444] text-sm">
@@ -130,9 +126,7 @@ export function FieldEditor({ isOpen, onClose, onSave, field }: FieldEditorProps
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-[#4b5563] mb-2">
-            プレースホルダー
-          </label>
+          <label className="block text-sm font-medium text-[#4b5563] mb-2">プレースホルダー</label>
           <Input
             value={placeholder}
             onChange={(e) => setPlaceholder(e.target.value)}
@@ -173,11 +167,7 @@ export function FieldEditor({ isOpen, onClose, onSave, field }: FieldEditorProps
         </div>
 
         <div className="flex justify-end gap-2 pt-4 border-t border-[#e5e7eb]">
-          <Button
-            onClick={onClose}
-            variant="secondary"
-            disabled={isSubmitting}
-          >
+          <Button onClick={onClose} variant="secondary" disabled={isSubmitting}>
             キャンセル
           </Button>
           <Button onClick={handleSave} disabled={isSubmitting || !label.trim()}>

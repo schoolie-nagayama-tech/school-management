@@ -68,9 +68,7 @@ describe('DeleteConfirmDialog', () => {
   });
 
   it('studentがnullの場合は何もレンダリングしない', () => {
-    const { container } = render(
-      <DeleteConfirmDialog {...defaultProps} student={null} />
-    );
+    const { container } = render(<DeleteConfirmDialog {...defaultProps} student={null} />);
     expect(container.innerHTML).toBe('');
   });
 

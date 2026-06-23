@@ -203,12 +203,14 @@ export function KoushuControlPanel({
                   {result.unmatched.length > 0 && (
                     <div className="mt-1 rounded border border-warning/30 bg-warning-subtle/40 p-1.5">
                       <p className="text-warning font-semibold mb-0.5">
-                        未マッチ {result.unmatched.reduce((s, u) => s + u.remaining, 0)} コマ（{result.unmatched.length}名）— 出勤講師・空きコマが足りていません
+                        未マッチ {result.unmatched.reduce((s, u) => s + u.remaining, 0)} コマ（
+                        {result.unmatched.length}名）— 出勤講師・空きコマが足りていません
                       </p>
                       <ul className="max-h-28 overflow-y-auto space-y-0.5">
                         {result.unmatched.map((u) => (
                           <li key={u.student_id} className="text-text-muted">
-                            {u.student_name ?? u.student_id.slice(0, 8)}：残 {u.remaining} コマ（{u.reason}）
+                            {u.student_name ?? u.student_id.slice(0, 8)}：残 {u.remaining} コマ（
+                            {u.reason}）
                           </li>
                         ))}
                       </ul>
@@ -236,14 +238,18 @@ export function KoushuControlPanel({
                         return (
                           <tr key={p.id} className="border-t border-border-subtle">
                             <td className="py-1 pr-2 tabular-nums">{p.proposal_date.slice(5)}</td>
-                            <td className="py-1 pr-2">{p.time_slot ? `${p.time_slot.slot_number}限` : '—'}</td>
+                            <td className="py-1 pr-2">
+                              {p.time_slot ? `${p.time_slot.slot_number}限` : '—'}
+                            </td>
                             <td className="py-1 pr-2">
                               {p.student ? `${p.student.last_name}${p.student.first_name}` : '—'}
                             </td>
                             <td className="py-1 pr-2">
                               {p.teacher?.display_name || p.teacher?.email || '—'}
                               {conflicts.includes('教科外') && (
-                                <span className="ml-1 px-1 py-0.5 rounded bg-warning-subtle text-warning text-[9px]">教科外</span>
+                                <span className="ml-1 px-1 py-0.5 rounded bg-warning-subtle text-warning text-[9px]">
+                                  教科外
+                                </span>
                               )}
                             </td>
                             <td className="py-1 pr-2">
@@ -294,11 +300,7 @@ export function KoushuControlPanel({
 
             {/* 集団の配置進捗（進捗表示のみ。集団は集団レーンのモーダルで手動作成） */}
             {showGroupProgress && (
-              <KoushuPlacementPanel
-                period={period}
-                formation="group"
-                refreshKey={refreshKey}
-              />
+              <KoushuPlacementPanel period={period} formation="group" refreshKey={refreshKey} />
             )}
           </div>
         )}

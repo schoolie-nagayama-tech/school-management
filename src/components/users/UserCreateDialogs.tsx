@@ -5,7 +5,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Button } from '@/components/ui';
 import { Input } from '@/components/ui';
 import { Label } from '@/components/ui';
-import { SelectShadcn as Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui';
+import {
+  SelectShadcn as Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui';
 import { Copy, Check, Eye, EyeOff, AlertTriangle } from 'lucide-react';
 import type { School, UserRole } from '@/types/database';
 
@@ -15,7 +21,15 @@ interface UserCreateDialogsProps {
   isResultDialogOpen: boolean;
   onResultDialogChange: (open: boolean) => void;
   schools: School[];
-  onCreateUser: (formData: { email: string; displayName: string; lastName: string; firstName: string; password: string; role: UserRole; schoolId: string }) => Promise<void>;
+  onCreateUser: (formData: {
+    email: string;
+    displayName: string;
+    lastName: string;
+    firstName: string;
+    password: string;
+    role: UserRole;
+    schoolId: string;
+  }) => Promise<void>;
   createdUser: { email: string; password: string; displayName: string } | null;
   isSubmitting: boolean;
   onCopy: (text: string, field: string) => void;
@@ -47,7 +61,10 @@ export function UserCreateDialogs({
 
   const handleCreate = async () => {
     // displayName を姓名から生成して渡す
-    const merged = { ...formData, displayName: [formData.lastName, formData.firstName].filter(Boolean).join(' ') };
+    const merged = {
+      ...formData,
+      displayName: [formData.lastName, formData.firstName].filter(Boolean).join(' '),
+    };
     await onCreateUser(merged);
     setFormData({
       email: '',
@@ -78,12 +95,12 @@ export function UserCreateDialogs({
                 id="email"
                 type="text"
                 value={formData.email}
-                onChange={(e) =>
-                  setFormData({ ...formData, email: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 placeholder="未入力の場合は自動生成されます"
               />
-              <p className="text-xs text-[#4b5563]/70">ログイン時に使用するIDです。未入力の場合は自動生成されます。</p>
+              <p className="text-xs text-[#4b5563]/70">
+                ログイン時に使用するIDです。未入力の場合は自動生成されます。
+              </p>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
@@ -91,9 +108,7 @@ export function UserCreateDialogs({
                 <Input
                   id="lastName"
                   value={formData.lastName}
-                  onChange={(e) =>
-                    setFormData({ ...formData, lastName: e.target.value })
-                  }
+                  onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
                   placeholder="山田"
                 />
               </div>
@@ -102,9 +117,7 @@ export function UserCreateDialogs({
                 <Input
                   id="firstName"
                   value={formData.firstName}
-                  onChange={(e) =>
-                    setFormData({ ...formData, firstName: e.target.value })
-                  }
+                  onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
                   placeholder="太郎"
                 />
               </div>
@@ -115,9 +128,7 @@ export function UserCreateDialogs({
                 id="password"
                 type="password"
                 value={formData.password}
-                onChange={(e) =>
-                  setFormData({ ...formData, password: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                 placeholder="4文字以上"
               />
               <p className="text-xs text-[#4b5563]/70">パスワードは4文字以上で入力してください</p>
@@ -126,9 +137,7 @@ export function UserCreateDialogs({
               <Label htmlFor="role">権限 *</Label>
               <Select
                 value={formData.role}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, role: value as UserRole })
-                }
+                onValueChange={(value) => setFormData({ ...formData, role: value as UserRole })}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -144,9 +153,7 @@ export function UserCreateDialogs({
               <Label htmlFor="school">所属教室 *</Label>
               <Select
                 value={formData.schoolId}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, schoolId: value })
-                }
+                onValueChange={(value) => setFormData({ ...formData, schoolId: value })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="教室を選択（登録済みから選択）" />
@@ -159,15 +166,14 @@ export function UserCreateDialogs({
                   ))}
                 </SelectContent>
               </Select>
-              <p className="text-xs text-[#4b5563]/70">複数教室の権限は作成後に編集で設定できます。登録済みの教室から選択してください。</p>
+              <p className="text-xs text-[#4b5563]/70">
+                複数教室の権限は作成後に編集で設定できます。登録済みの教室から選択してください。
+              </p>
             </div>
           </div>
         </DialogContent>
         <DialogFooter>
-          <Button
-            variant="ghost"
-            onClick={() => onCreateDialogChange(false)}
-          >
+          <Button variant="ghost" onClick={() => onCreateDialogChange(false)}>
             キャンセル
           </Button>
           <Button onClick={handleCreate} disabled={isSubmitting}>
@@ -177,10 +183,7 @@ export function UserCreateDialogs({
       </Dialog>
 
       {/* 作成完了ダイアログ */}
-      <Dialog
-        open={isResultDialogOpen}
-        onOpenChange={onResultDialogChange}
-      >
+      <Dialog open={isResultDialogOpen} onOpenChange={onResultDialogChange}>
         <DialogHeader>
           <DialogTitle>ユーザーを作成しました</DialogTitle>
         </DialogHeader>
@@ -248,7 +251,8 @@ export function UserCreateDialogs({
                 </div>
                 <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3">
                   <p className="text-sm text-yellow-800">
-                    <AlertTriangle className="inline h-4 w-4 mr-1" />パスワードはこの画面を閉じると再表示できません。必ずメモしてください。
+                    <AlertTriangle className="inline h-4 w-4 mr-1" />
+                    パスワードはこの画面を閉じると再表示できません。必ずメモしてください。
                   </p>
                 </div>
               </>
@@ -256,9 +260,7 @@ export function UserCreateDialogs({
           </div>
         </DialogContent>
         <DialogFooter>
-          <Button onClick={() => onResultDialogChange(false)}>
-            閉じる
-          </Button>
+          <Button onClick={() => onResultDialogChange(false)}>閉じる</Button>
         </DialogFooter>
       </Dialog>
     </>

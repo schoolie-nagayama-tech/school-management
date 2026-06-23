@@ -3,12 +3,12 @@ import { NextRequest, NextResponse } from 'next/server';
 
 // 認証ガードをモック — デフォルトは未認証(401を返す)
 vi.mock('@/lib/api-auth', () => ({
-  requireManager: vi.fn().mockResolvedValue(
-    NextResponse.json({ error: '認証が必要です' }, { status: 401 })
-  ),
-  requireAdmin: vi.fn().mockResolvedValue(
-    NextResponse.json({ error: '認証が必要です' }, { status: 401 })
-  ),
+  requireManager: vi
+    .fn()
+    .mockResolvedValue(NextResponse.json({ error: '認証が必要です' }, { status: 401 })),
+  requireAdmin: vi
+    .fn()
+    .mockResolvedValue(NextResponse.json({ error: '認証が必要です' }, { status: 401 })),
   getApiAuth: vi.fn().mockResolvedValue({
     auth: null,
     cookieResponse: NextResponse.next(),

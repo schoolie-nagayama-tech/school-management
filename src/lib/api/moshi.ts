@@ -9,14 +9,15 @@ import {
   archivePeriod,
   unarchivePeriod,
 } from './form-periods';
-import { createPublicFormResponse, getFormResponses, getFormResponse, updateFormResponseStatus } from './form-responses';
+import {
+  createPublicFormResponse,
+  getFormResponses,
+  getFormResponse,
+  updateFormResponseStatus,
+} from './form-responses';
 import { syncFormResponseToBilling } from './billing';
 import { getDefaultSchoolId, getSchoolByCode } from './schools';
-import type {
-  FormPeriodInsert,
-  FormPeriodUpdate,
-  FormResponseInsert,
-} from '@/types/database';
+import type { FormPeriodInsert, FormPeriodUpdate, FormResponseInsert } from '@/types/database';
 import type {
   MoshiPeriod,
   MoshiSettings,
@@ -49,9 +50,7 @@ export async function getMoshiPeriods(
 /**
  * 公開中の模試期間を取得（ポータル用）
  */
-export async function getActiveMoshiPeriod(
-  schoolCode: string
-): Promise<MoshiPeriod | null> {
+export async function getActiveMoshiPeriod(schoolCode: string): Promise<MoshiPeriod | null> {
   const school = await getSchoolByCode(schoolCode);
   if (!school) {
     return null;
@@ -130,10 +129,7 @@ export async function createMoshiPeriod(
 /**
  * 模試期間を更新
  */
-export async function updateMoshiPeriod(
-  id: string,
-  data: FormPeriodUpdate
-): Promise<MoshiPeriod> {
+export async function updateMoshiPeriod(id: string, data: FormPeriodUpdate): Promise<MoshiPeriod> {
   const updateData: FormPeriodUpdate = {
     ...data,
     settings: data.settings ? (data.settings as unknown as Record<string, unknown>) : undefined,
@@ -183,16 +179,14 @@ export async function unarchiveMoshiPeriod(
 /**
  * 模試回答を送信
  */
-export async function submitMoshiResponse(
-  data: {
-    school_id: string;
-    period_key: string;
-    student_name: string;
-    grade: number;
-    email: string;
-    response_data: MoshiResponseData;
-  }
-): Promise<void> {
+export async function submitMoshiResponse(data: {
+  school_id: string;
+  period_key: string;
+  student_name: string;
+  grade: number;
+  email: string;
+  response_data: MoshiResponseData;
+}): Promise<void> {
   const responseData: FormResponseInsert = {
     school_id: data.school_id,
     form_type: 'moshi',
@@ -256,15 +250,9 @@ export async function getMoshiStats(
 ): Promise<MoshiStats> {
   const responses = await getMoshiResponses(schoolId, periodKey);
 
-  const regularCount = responses.filter(
-    (r) => r.response_data.exam_type === 'regular'
-  ).length;
-  const furikaeCount = responses.filter(
-    (r) => r.response_data.exam_type === 'furikae'
-  ).length;
-  const chargedCount = responses.filter(
-    (r) => r.status_checks?.charged === true
-  ).length;
+  const regularCount = responses.filter((r) => r.response_data.exam_type === 'regular').length;
+  const furikaeCount = responses.filter((r) => r.response_data.exam_type === 'furikae').length;
+  const chargedCount = responses.filter((r) => r.status_checks?.charged === true).length;
   const linkedCount = responses.filter((r) => r.linked_student_id !== null).length;
 
   return {
@@ -297,10 +285,7 @@ export async function updateMoshiChargedStatus(
 /**
  * 模試回答の発注状態を更新（既存の status_checks をマージ）
  */
-export async function updateMoshiOrderStatus(
-  responseId: string,
-  order: boolean
-): Promise<void> {
+export async function updateMoshiOrderStatus(responseId: string, order: boolean): Promise<void> {
   const response = await getFormResponse(responseId);
   const current = (response?.status_checks || {}) as Record<string, boolean>;
   await updateFormResponseStatus(responseId, { ...current, order });
@@ -309,10 +294,7 @@ export async function updateMoshiOrderStatus(
 /**
  * 模試期間の回答数を取得
  */
-export async function getMoshiResponseCount(
-  schoolId: string,
-  periodKey: string
-): Promise<number> {
+export async function getMoshiResponseCount(schoolId: string, periodKey: string): Promise<number> {
   const responses = await getMoshiResponses(schoolId, periodKey);
   return responses.length;
 }

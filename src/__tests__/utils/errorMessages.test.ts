@@ -209,21 +209,15 @@ describe('getUserErrorMessage', () => {
   // ── 日本語パススルー ──
   describe('日本語メッセージのパススルー', () => {
     it('日本語メッセージはそのまま返す', () => {
-      expect(getUserErrorMessage(new Error('保存に失敗しました'))).toBe(
-        '保存に失敗しました'
-      );
+      expect(getUserErrorMessage(new Error('保存に失敗しました'))).toBe('保存に失敗しました');
     });
 
     it('ひらがなを含むメッセージはそのまま返す', () => {
-      expect(getUserErrorMessage('データがありません')).toBe(
-        'データがありません'
-      );
+      expect(getUserErrorMessage('データがありません')).toBe('データがありません');
     });
 
     it('カタカナを含むメッセージはそのまま返す', () => {
-      expect(getUserErrorMessage('エラーが発生')).toBe(
-        'エラーが発生'
-      );
+      expect(getUserErrorMessage('エラーが発生')).toBe('エラーが発生');
     });
   });
 
@@ -260,15 +254,11 @@ describe('getUserErrorMessage', () => {
     });
 
     it('数値の場合はフォールバックを返す', () => {
-      expect(getUserErrorMessage(42)).toBe(
-        '予期しないエラーが発生しました。再度お試しください。'
-      );
+      expect(getUserErrorMessage(42)).toBe('予期しないエラーが発生しました。再度お試しください。');
     });
 
     it('空オブジェクトの場合はフォールバックを返す', () => {
-      expect(getUserErrorMessage({})).toBe(
-        '予期しないエラーが発生しました。再度お試しください。'
-      );
+      expect(getUserErrorMessage({})).toBe('予期しないエラーが発生しました。再度お試しください。');
     });
 
     it('カスタムフォールバックを使用する', () => {
@@ -284,9 +274,7 @@ describe('getUserErrorMessage', () => {
     });
 
     it('空文字列の場合はフォールバックを返す', () => {
-      expect(getUserErrorMessage('')).toBe(
-        '予期しないエラーが発生しました。再度お試しください。'
-      );
+      expect(getUserErrorMessage('')).toBe('予期しないエラーが発生しました。再度お試しください。');
     });
   });
 });

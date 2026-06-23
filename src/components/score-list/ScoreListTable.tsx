@@ -50,9 +50,12 @@ const MOCK_COLUMNS: ColumnDef[] = [
 
 function getColumns(category: ScoreListCategory): ColumnDef[] {
   switch (category) {
-    case 'report_card': return REPORT_CARD_COLUMNS;
-    case 'regular_test': return REGULAR_TEST_COLUMNS;
-    case 'mock': return MOCK_COLUMNS;
+    case 'report_card':
+      return REPORT_CARD_COLUMNS;
+    case 'regular_test':
+      return REGULAR_TEST_COLUMNS;
+    case 'mock':
+      return MOCK_COLUMNS;
   }
 }
 
@@ -92,14 +95,15 @@ export function ScoreListTable({
 
   if (students.length === 0) {
     return (
-      <div className="py-12 text-center text-sm text-gray-400 italic">
-        成績データがありません
-      </div>
+      <div className="py-12 text-center text-sm text-gray-400 italic">成績データがありません</div>
     );
   }
 
   return (
-    <div className="overflow-auto border border-gray-200 rounded-lg" style={{ maxHeight: 'calc(100vh - 220px)' }}>
+    <div
+      className="overflow-auto border border-gray-200 rounded-lg"
+      style={{ maxHeight: 'calc(100vh - 220px)' }}
+    >
       <table className="w-full border-collapse text-xs">
         <thead className="sticky top-0 z-10">
           <tr className="bg-gray-100">
@@ -218,10 +222,7 @@ function StudentGroup({
           )}
           {/* 名前（最初の行のみ） */}
           {rowIdx === 0 && (
-            <td
-              className="border border-gray-200 px-2 py-1 bg-white"
-              rowSpan={rowCount}
-            >
+            <td className="border border-gray-200 px-2 py-1 bg-white" rowSpan={rowCount}>
               <Link
                 href={`/students/${student.studentId}/scores`}
                 className="text-xs font-medium text-[#1e3a5f] hover:text-[#3b82f6] hover:underline whitespace-nowrap transition-colors duration-150"
@@ -263,11 +264,18 @@ function StudentGroup({
               return <ScoreListSumCell key={col.key} value={row.nineSum} diff={row.nineSumDiff} />;
             }
             if (col.key === 'convertedNaishin') {
-              return <ScoreListSumCell key={col.key} value={row.convertedNaishin} diff={row.convertedNaishinDiff} />;
+              return (
+                <ScoreListSumCell
+                  key={col.key}
+                  value={row.convertedNaishin}
+                  diff={row.convertedNaishinDiff}
+                />
+              );
             }
             if (col.key === 'hensa3') {
               const isEditing =
-                editingCell?.assessmentId === row.assessmentId && editingCell?.subject === 'hensa_3';
+                editingCell?.assessmentId === row.assessmentId &&
+                editingCell?.subject === 'hensa_3';
               return (
                 <ScoreListCell
                   key={col.key}
@@ -287,7 +295,8 @@ function StudentGroup({
             }
             if (col.key === 'hensa5') {
               const isEditing =
-                editingCell?.assessmentId === row.assessmentId && editingCell?.subject === 'hensa_5';
+                editingCell?.assessmentId === row.assessmentId &&
+                editingCell?.subject === 'hensa_5';
               return (
                 <ScoreListCell
                   key={col.key}

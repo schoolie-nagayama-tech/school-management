@@ -86,10 +86,7 @@ export async function POST(
     return NextResponse.json({ error: 'このリンクは無効です' }, { status: 410 });
   }
   if (tokenRow.used_at || tokenRow.expires_at < now) {
-    return NextResponse.json(
-      { error: 'このリンクは期限切れまたは使用済みです' },
-      { status: 410 }
-    );
+    return NextResponse.json({ error: 'このリンクは期限切れまたは使用済みです' }, { status: 410 });
   }
 
   // ---- inquiry 取得 ----
@@ -191,16 +188,14 @@ export async function POST(
   }
 
   // ---- inquiry_contacts にコンタクト記録 ----
-  const { error: contactError } = await serviceClient
-    .from('inquiry_contacts')
-    .insert({
-      school_id: inquiry.school_id,
-      inquiry_id: inquiry.id,
-      method: 'visit',
-      direction: 'inbound',
-      result: '面談予約',
-      note: `セルフ予約: ${slotStart}`,
-    });
+  const { error: contactError } = await serviceClient.from('inquiry_contacts').insert({
+    school_id: inquiry.school_id,
+    inquiry_id: inquiry.id,
+    method: 'visit',
+    direction: 'inbound',
+    result: '面談予約',
+    note: `セルフ予約: ${slotStart}`,
+  });
 
   if (contactError) {
     // コンタクト記録失敗は予約自体を失敗扱いにしない

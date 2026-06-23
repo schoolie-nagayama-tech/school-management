@@ -147,10 +147,7 @@ export async function GET(req: NextRequest) {
     }
     const allSubIds = Array.from(new Set(Array.from(entryToSubjects.values()).flat()));
     if (allSubIds.length > 0) {
-      const { data: subs } = await adminDb
-        .from('subjects')
-        .select('id, name')
-        .in('id', allSubIds);
+      const { data: subs } = await adminDb.from('subjects').select('id, name').in('id', allSubIds);
       const subMap = new Map<string, string>();
       for (const s of (subs || []) as { id: string; name: string }[]) subMap.set(s.id, s.name);
       for (const r of reportRows) {
@@ -179,9 +176,7 @@ export async function GET(req: NextRequest) {
       id: r.id,
       subject: r.subject,
       lesson_date: r.lesson_date,
-      teacher_name: Array.isArray(r.teacher)
-        ? r.teacher[0]?.display_name
-        : r.teacher?.display_name,
+      teacher_name: Array.isArray(r.teacher) ? r.teacher[0]?.display_name : r.teacher?.display_name,
       preview: r.review_comment || r.short_term_goal || '',
       homework_completion_pct: r.homework_completion_pct,
       vocab_test_score: r.vocab_test_score,

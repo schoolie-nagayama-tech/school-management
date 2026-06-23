@@ -32,9 +32,7 @@ export default function ForgotPasswordPage() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-text-heading">パスワードリセット</h1>
-          <p className="text-text-body mt-2">
-            登録済みのメールアドレスを入力してください
-          </p>
+          <p className="text-text-body mt-2">登録済みのメールアドレスを入力してください</p>
         </div>
 
         <div className="bg-surface-raised rounded-xl border border-border p-8 shadow-lg">
@@ -45,8 +43,10 @@ export default function ForgotPasswordPage() {
               </div>
               <h2 className="text-xl font-bold text-text-heading mb-2">メールを送信しました</h2>
               <p className="text-text-body mb-6">
-                パスワードリセット用のリンクを<br />
-                <span className="font-medium">{email}</span><br />
+                パスワードリセット用のリンクを
+                <br />
+                <span className="font-medium">{email}</span>
+                <br />
                 に送信しました。メールをご確認ください。
               </p>
               <Link
@@ -72,7 +72,7 @@ export default function ForgotPasswordPage() {
                   <input
                     type="email"
                     value={email}
-                    onChange={e => setEmail(e.target.value)}
+                    onChange={(e) => setEmail(e.target.value)}
                     required
                     className="w-full px-4 py-3 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                     placeholder="example@email.com"

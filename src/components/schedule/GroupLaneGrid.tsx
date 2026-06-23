@@ -69,19 +69,27 @@ export function GroupLaneGrid({
     <div className="mt-6">
       <div className="flex items-center gap-2 mb-2">
         <h3 className="text-sm font-semibold text-accent-ink">集団指導</h3>
-        <span className="text-xs text-accent-ink/70">1コマ最大{maxStudentsPerGroup}名・同時{maxConcurrentGroups}コマ</span>
+        <span className="text-xs text-accent-ink/70">
+          1コマ最大{maxStudentsPerGroup}名・同時{maxConcurrentGroups}コマ
+        </span>
       </div>
 
       <div className="overflow-x-auto">
         <div className="min-w-[640px]">
           {/* ヘッダー行 */}
-          <div className="grid border-b border-border-default" style={{ gridTemplateColumns: gridCols }}>
+          <div
+            className="grid border-b border-border-default"
+            style={{ gridTemplateColumns: gridCols }}
+          >
             <div className="px-1 py-1.5 text-[10px] text-text-muted">コマ</div>
             {weekDates.map((d) => {
               const { day, dow } = dateHeader(d);
               const closed = closedSet.has(d);
               return (
-                <div key={d} className={`px-1 py-1.5 text-center text-xs font-medium ${closed ? 'text-text-faint' : 'text-text-body'}`}>
+                <div
+                  key={d}
+                  className={`px-1 py-1.5 text-center text-xs font-medium ${closed ? 'text-text-faint' : 'text-text-body'}`}
+                >
                   {day}（{dow}）
                 </div>
               );
@@ -90,7 +98,11 @@ export function GroupLaneGrid({
 
           {/* コマごとの行 */}
           {groupSlots.map((slot) => (
-            <div key={slot.id} className="grid border-b border-border-subtle" style={{ gridTemplateColumns: gridCols }}>
+            <div
+              key={slot.id}
+              className="grid border-b border-border-subtle"
+              style={{ gridTemplateColumns: gridCols }}
+            >
               {/* 時間ラベル */}
               <div className="px-1 py-1.5 border-r border-border-subtle">
                 <div className="text-xs font-bold leading-none">{slot.slot_number}限</div>
@@ -105,7 +117,10 @@ export function GroupLaneGrid({
                 const groups = cellGroups(date, slot.id);
                 const canAdd = !closed && groups.size < maxConcurrentGroups;
                 return (
-                  <div key={date} className={`p-1 border-r border-border-subtle last:border-r-0 space-y-1 ${closed ? 'bg-surface/50' : ''}`}>
+                  <div
+                    key={date}
+                    className={`p-1 border-r border-border-subtle last:border-r-0 space-y-1 ${closed ? 'bg-surface/50' : ''}`}
+                  >
                     {Array.from(groups.entries()).map(([tid, list]) => (
                       <GroupCard
                         key={tid}

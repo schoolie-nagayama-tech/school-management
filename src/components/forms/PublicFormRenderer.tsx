@@ -73,7 +73,9 @@ export function PublicFormRenderer({
     if (submittingRef.current) return;
 
     if (isReadOnly) {
-      setErrorMessage('プレビューモードでは送信できません。実際のフォームページから送信してください。');
+      setErrorMessage(
+        'プレビューモードでは送信できません。実際のフォームページから送信してください。'
+      );
       return;
     }
 
@@ -84,7 +86,6 @@ export function PublicFormRenderer({
     submittingRef.current = true;
     setIsSubmitting(true);
     try {
-
       await submitFormResponse(form.id, {
         student_name: studentName.trim(),
         grade: grade === '' ? null : Number(grade),
@@ -134,12 +135,12 @@ export function PublicFormRenderer({
             <Input
               value={typeof value === 'string' ? value : ''}
               onChange={(e) => handleFieldChange(field.id, e.target.value)}
-              placeholder={('placeholder' in field && field.placeholder) ? String(field.placeholder) : ''}
+              placeholder={
+                'placeholder' in field && field.placeholder ? String(field.placeholder) : ''
+              }
               disabled={isSubmitting}
             />
-            {fieldError && (
-              <p className="text-sm text-[#ef4444] mt-1">{fieldError}</p>
-            )}
+            {fieldError && <p className="text-sm text-[#ef4444] mt-1">{fieldError}</p>}
           </div>
         );
 
@@ -153,14 +154,14 @@ export function PublicFormRenderer({
             <textarea
               value={typeof value === 'string' ? value : ''}
               onChange={(e) => handleFieldChange(field.id, e.target.value)}
-              placeholder={('placeholder' in field && field.placeholder) ? String(field.placeholder) : ''}
+              placeholder={
+                'placeholder' in field && field.placeholder ? String(field.placeholder) : ''
+              }
               rows={4}
               disabled={isSubmitting}
               className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#4b5563] focus:ring-2 focus:ring-[#3b82f6] focus:border-[#3b82f6] disabled:opacity-50"
             />
-            {fieldError && (
-              <p className="text-sm text-[#ef4444] mt-1">{fieldError}</p>
-            )}
+            {fieldError && <p className="text-sm text-[#ef4444] mt-1">{fieldError}</p>}
           </div>
         );
 
@@ -181,9 +182,7 @@ export function PublicFormRenderer({
                 ...options.map((opt) => ({ value: opt, label: opt })),
               ]}
             />
-            {fieldError && (
-              <p className="text-sm text-[#ef4444] mt-1">{fieldError}</p>
-            )}
+            {fieldError && <p className="text-sm text-[#ef4444] mt-1">{fieldError}</p>}
           </div>
         );
 
@@ -197,10 +196,7 @@ export function PublicFormRenderer({
             </label>
             <div className="space-y-2">
               {radioOptions.map((option, idx) => (
-                <label
-                  key={idx}
-                  className="flex items-center gap-2 cursor-pointer"
-                >
+                <label key={idx} className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="radio"
                     name={field.id}
@@ -214,9 +210,7 @@ export function PublicFormRenderer({
                 </label>
               ))}
             </div>
-            {fieldError && (
-              <p className="text-sm text-[#ef4444] mt-1">{fieldError}</p>
-            )}
+            {fieldError && <p className="text-sm text-[#ef4444] mt-1">{fieldError}</p>}
           </div>
         );
 
@@ -231,10 +225,7 @@ export function PublicFormRenderer({
             </label>
             <div className="space-y-2">
               {checkboxOptions.map((option, idx) => (
-                <label
-                  key={idx}
-                  className="flex items-center gap-2 cursor-pointer"
-                >
+                <label key={idx} className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
                     value={option}
@@ -252,9 +243,7 @@ export function PublicFormRenderer({
                 </label>
               ))}
             </div>
-            {fieldError && (
-              <p className="text-sm text-[#ef4444] mt-1">{fieldError}</p>
-            )}
+            {fieldError && <p className="text-sm text-[#ef4444] mt-1">{fieldError}</p>}
           </div>
         );
 
@@ -271,9 +260,7 @@ export function PublicFormRenderer({
               onChange={(e) => handleFieldChange(field.id, e.target.value)}
               disabled={isSubmitting}
             />
-            {fieldError && (
-              <p className="text-sm text-[#ef4444] mt-1">{fieldError}</p>
-            )}
+            {fieldError && <p className="text-sm text-[#ef4444] mt-1">{fieldError}</p>}
           </div>
         );
 
@@ -288,12 +275,12 @@ export function PublicFormRenderer({
               type="number"
               value={typeof value === 'string' ? value : ''}
               onChange={(e) => handleFieldChange(field.id, e.target.value)}
-              placeholder={('placeholder' in field && field.placeholder) ? String(field.placeholder) : ''}
+              placeholder={
+                'placeholder' in field && field.placeholder ? String(field.placeholder) : ''
+              }
               disabled={isSubmitting}
             />
-            {fieldError && (
-              <p className="text-sm text-[#ef4444] mt-1">{fieldError}</p>
-            )}
+            {fieldError && <p className="text-sm text-[#ef4444] mt-1">{fieldError}</p>}
           </div>
         );
 
@@ -359,9 +346,7 @@ export function PublicFormRenderer({
               ...Object.entries(GRADE_LABELS).map(([key, label]) => ({ value: key, label })),
             ]}
           />
-          {errors.grade && (
-            <p className="text-sm text-[#ef4444] mt-1">{errors.grade}</p>
-          )}
+          {errors.grade && <p className="text-sm text-[#ef4444] mt-1">{errors.grade}</p>}
         </div>
 
         <div>
@@ -384,9 +369,7 @@ export function PublicFormRenderer({
             placeholder="example@email.com"
             disabled={isSubmitting}
           />
-          {errors.email && (
-            <p className="text-sm text-[#ef4444] mt-1">{errors.email}</p>
-          )}
+          {errors.email && <p className="text-sm text-[#ef4444] mt-1">{errors.email}</p>}
         </div>
       </div>
 

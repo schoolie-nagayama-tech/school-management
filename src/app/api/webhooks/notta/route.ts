@@ -87,10 +87,7 @@ export async function POST(request: NextRequest) {
         );
       }
       if (error.code === '23503') {
-        return NextResponse.json(
-          { error: 'school_id が存在しません' },
-          { status: 400 }
-        );
+        return NextResponse.json({ error: 'school_id が存在しません' }, { status: 400 });
       }
       throw error;
     }
@@ -98,9 +95,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ data }, { status: 201 });
   } catch (error) {
     console.error('[notta-webhook] insert failed:', error);
-    return NextResponse.json(
-      { error: '文字起こしの取り込みに失敗しました' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: '文字起こしの取り込みに失敗しました' }, { status: 500 });
   }
 }

@@ -11,7 +11,7 @@ export function ErrorBoundary({ children }: { children: React.ReactNode }) {
     // 未処理のPromise拒否をキャッチ
     const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
       const error = event.reason;
-      
+
       // AbortErrorは無視
       if (
         error?.name === 'AbortError' ||
@@ -26,7 +26,7 @@ export function ErrorBoundary({ children }: { children: React.ReactNode }) {
     // 未処理のエラーをキャッチ
     const handleError = (event: ErrorEvent) => {
       const error = event.error;
-      
+
       // AbortErrorは無視
       if (
         error?.name === 'AbortError' ||

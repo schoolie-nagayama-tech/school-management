@@ -16,19 +16,10 @@
  */
 
 import { useEffect, useMemo, useState } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui';
 import { Button } from '@/components/ui';
 import type { ScheduleEntry } from '@/types/schedule';
-import {
-  getDailyBoothAssignments,
-  setDailyBoothAssignments,
-} from '@/lib/api/schedule-daily-booth';
+import { getDailyBoothAssignments, setDailyBoothAssignments } from '@/lib/api/schedule-daily-booth';
 import { useToast } from '@/hooks/useToast';
 import { Wand2 } from 'lucide-react';
 
@@ -107,7 +98,11 @@ export function BoothAssignmentModal({
     for (const r of rows) {
       if (r.boothNo > 0) counts.set(r.boothNo, (counts.get(r.boothNo) ?? 0) + 1);
     }
-    return new Set(Array.from(counts.entries()).filter(([, c]) => c > 1).map(([n]) => n));
+    return new Set(
+      Array.from(counts.entries())
+        .filter(([, c]) => c > 1)
+        .map(([n]) => n)
+    );
   }, [rows]);
 
   const hasDuplicates = duplicateBooths.size > 0;
@@ -193,10 +188,10 @@ export function BoothAssignmentModal({
                           value={r.boothNo || ''}
                           placeholder="未設定"
                           className={`w-20 px-2 py-1 border rounded ${
- duplicateBooths.has(r.boothNo)
- ? 'border-danger bg-danger-subtle'
- : 'border-border-default'
- }`}
+                            duplicateBooths.has(r.boothNo)
+                              ? 'border-danger bg-danger-subtle'
+                              : 'border-border-default'
+                          }`}
                           onChange={(e) => {
                             const v = parseInt(e.target.value, 10);
                             const next = Number.isNaN(v) ? 0 : Math.max(0, v);
@@ -217,7 +212,10 @@ export function BoothAssignmentModal({
 
           {hasDuplicates && (
             <div className="text-sm text-danger">
-              重複している番号: {Array.from(duplicateBooths).sort((a, b) => a - b).join(', ')}
+              重複している番号:{' '}
+              {Array.from(duplicateBooths)
+                .sort((a, b) => a - b)
+                .join(', ')}
             </div>
           )}
         </div>

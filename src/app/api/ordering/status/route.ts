@@ -48,11 +48,13 @@ export async function POST(request: NextRequest) {
       orders = await fetchInChunks<Record<string, unknown>>(orderIds, (chunk) =>
         supabaseAdmin
           .from('material_orders')
-          .select(`
+          .select(
+            `
             id, quantity, school_id,
             material:materials(name),
             student:students(last_name, first_name)
-          `)
+          `
+          )
           .in('id', chunk)
       );
     } catch {
@@ -75,7 +77,9 @@ export async function POST(request: NextRequest) {
     }
 
     // 教室名を取得
-    const schoolIds = Array.from(new Set(scopedOrders.map((o: Record<string, unknown>) => o.school_id as string)));
+    const schoolIds = Array.from(
+      new Set(scopedOrders.map((o: Record<string, unknown>) => o.school_id as string))
+    );
     const { data: schools } = await supabaseAdmin
       .from('schools')
       .select('id, name')

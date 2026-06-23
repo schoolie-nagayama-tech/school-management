@@ -24,8 +24,8 @@
   --primary-contrast: oklch(98% 0.005 27);
 
   /* === Background layers === */
-  --bg: oklch(99% 0.002 27);        /* 最下層 */
-  --surface: oklch(97% 0.003 27);   /* カード */
+  --bg: oklch(99% 0.002 27); /* 最下層 */
+  --surface: oklch(97% 0.003 27); /* カード */
   --surface-raised: oklch(100% 0 0); /* フローティング要素 */
   --surface-hover: oklch(95% 0.004 27);
 
@@ -161,16 +161,23 @@
   --info-subtle: oklch(30% 0.06 250);
 
   /* Accents: ダーク時は暗背景で沈まないよう明度を上げ、彩度も少し維持 */
-  --accent-ink: oklch(70% 0.10 257);
+  --accent-ink: oklch(70% 0.1 257);
   --accent-ink-subtle: oklch(30% 0.05 257);
 }
 
 body {
   color: var(--paragraph);
   background: var(--background);
-  font-family: var(--font-sans-jp), var(--font-geist-sans), -apple-system,
-    BlinkMacSystemFont, 'Segoe UI', 'Hiragino Kaku Gothic ProN', Meiryo, sans-serif;
-  font-feature-settings: "palt" 1;
+  font-family:
+    var(--font-sans-jp),
+    var(--font-geist-sans),
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    'Hiragino Kaku Gothic ProN',
+    Meiryo,
+    sans-serif;
+  font-feature-settings: 'palt' 1;
 }
 
 /*
@@ -266,7 +273,7 @@ body {
 :root.dark .bg-\[\#2a4a6f\],
 :root.dark .bg-\[\#2c5282\],
 :root.dark .bg-\[\#2d4a6f\] {
-  background-color: oklch(55% 0.10 250);
+  background-color: oklch(55% 0.1 250);
 }
 :root.dark .border-\[\#1e3a5f\],
 :root.dark .border-\[\#2d4a6f\] {
@@ -293,24 +300,42 @@ body {
 /* ステータス系の淡いtint背景はダーク用の subtle トークンへ */
 :root.dark .bg-red-50,
 :root.dark .bg-\[\#ffebee\],
-:root.dark .bg-\[\#fef2f2\] { background-color: var(--danger-subtle); }
+:root.dark .bg-\[\#fef2f2\] {
+  background-color: var(--danger-subtle);
+}
 :root.dark .bg-yellow-50,
-:root.dark .bg-\[\#fefce8\] { background-color: var(--warning-subtle); }
+:root.dark .bg-\[\#fefce8\] {
+  background-color: var(--warning-subtle);
+}
 :root.dark .bg-green-50,
 :root.dark .bg-\[\#e8f5e9\],
-:root.dark .bg-\[\#f0fdf4\] { background-color: var(--success-subtle); }
+:root.dark .bg-\[\#f0fdf4\] {
+  background-color: var(--success-subtle);
+}
 :root.dark .bg-blue-50,
-:root.dark .bg-\[\#eff6ff\] { background-color: var(--info-subtle); }
+:root.dark .bg-\[\#eff6ff\] {
+  background-color: var(--info-subtle);
+}
 :root.dark .bg-orange-50,
-:root.dark .bg-\[\#fff7ed\] { background-color: var(--warning-subtle); }
+:root.dark .bg-\[\#fff7ed\] {
+  background-color: var(--warning-subtle);
+}
 :root.dark .bg-purple-50,
-:root.dark .bg-\[\#faf5ff\] { background-color: oklch(30% 0.06 300); }
+:root.dark .bg-\[\#faf5ff\] {
+  background-color: oklch(30% 0.06 300);
+}
 :root.dark .bg-pink-50,
-:root.dark .bg-\[\#fdf2f8\] { background-color: oklch(30% 0.06 340); }
+:root.dark .bg-\[\#fdf2f8\] {
+  background-color: oklch(30% 0.06 340);
+}
 
 /* Material 系 100 番のトーン（連絡掲示板ヘッダ等で多用） */
-:root.dark .bg-\[\#ffcdd2\] { background-color: var(--danger-subtle); }
-:root.dark .border-\[\#ffcdd2\] { border-color: color-mix(in oklch, var(--danger) 40%, transparent); }
+:root.dark .bg-\[\#ffcdd2\] {
+  background-color: var(--danger-subtle);
+}
+:root.dark .border-\[\#ffcdd2\] {
+  border-color: color-mix(in oklch, var(--danger) 40%, transparent);
+}
 :root.dark .border-red-200,
 :root.dark .border-green-200,
 :root.dark .border-blue-200,
@@ -320,11 +345,22 @@ body {
 }
 
 /* スクロールバー（ダーク時は暗色系に） */
-:root.dark ::-webkit-scrollbar-track { background: var(--surface); }
-:root.dark ::-webkit-scrollbar-thumb { background: var(--border-strong); }
-:root.dark ::-webkit-scrollbar-thumb:hover { background: var(--text-faint); }
+:root.dark ::-webkit-scrollbar-track {
+  background: var(--surface);
+}
+:root.dark ::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+}
+:root.dark ::-webkit-scrollbar-thumb:hover {
+  background: var(--text-faint);
+}
 
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   color: var(--headline);
 }
 
@@ -342,7 +378,7 @@ input:focus-visible,
 select:focus-visible,
 textarea:focus-visible,
 button:focus-visible,
-[role="button"]:focus-visible,
+[role='button']:focus-visible,
 a:focus-visible {
   outline: 2px solid var(--primary);
   outline-offset: 2px;
@@ -475,7 +511,8 @@ a:focus-visible {
     padding: 8px !important;
   }
 
-  button, .no-print {
+  button,
+  .no-print {
     display: none !important;
   }
 
@@ -611,10 +648,20 @@ a:focus-visible {
 
 /* 講師ヒーローカード（バッジ14+）用きらめきアニメ */
 @keyframes hero-shine {
-  0% { transform: translateX(-120%) skewX(-20deg); opacity: 0; }
-  20% { opacity: 0.8; }
-  60% { opacity: 0.8; }
-  100% { transform: translateX(220%) skewX(-20deg); opacity: 0; }
+  0% {
+    transform: translateX(-120%) skewX(-20deg);
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.8;
+  }
+  60% {
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateX(220%) skewX(-20deg);
+    opacity: 0;
+  }
 }
 .hero-shine::before {
   content: '';
@@ -623,7 +670,14 @@ a:focus-visible {
   left: 0;
   width: 40%;
   height: 100%;
-  background: linear-gradient(100deg, transparent 0%, rgba(255,255,255,0.0) 30%, rgba(255,255,255,0.75) 50%, rgba(255,255,255,0.0) 70%, transparent 100%);
+  background: linear-gradient(
+    100deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0) 30%,
+    rgba(255, 255, 255, 0.75) 50%,
+    rgba(255, 255, 255, 0) 70%,
+    transparent 100%
+  );
   pointer-events: none;
   animation: hero-shine 3.5s ease-in-out infinite;
   animation-delay: 1s;
@@ -703,7 +757,9 @@ a:focus-visible {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .dropdown-menu { transition: none; }
+  .dropdown-menu {
+    transition: none;
+  }
 }
 
 /*
@@ -725,7 +781,9 @@ a:focus-visible {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .slide-in-bar { transition: none; }
+  .slide-in-bar {
+    transition: none;
+  }
 }
 
 /* Subject editor 出現アニメーション：開いたことをはっきり伝える */
@@ -743,13 +801,19 @@ a:focus-visible {
   }
 }
 .subject-editor-enter > * {
-  box-shadow: 0 0 0 2px color-mix(in oklch, var(--accent-ink) 15%, transparent), 0 4px 16px -4px color-mix(in oklch, var(--accent-ink) 18%, transparent);
+  box-shadow:
+    0 0 0 2px color-mix(in oklch, var(--accent-ink) 15%, transparent),
+    0 4px 16px -4px color-mix(in oklch, var(--accent-ink) 18%, transparent);
   transition: box-shadow 600ms ease-out;
   border-radius: 12px;
 }
 @media (prefers-reduced-motion: reduce) {
-  .subject-editor-enter { animation: none; }
-  .subject-editor-enter > * { transition: none; }
+  .subject-editor-enter {
+    animation: none;
+  }
+  .subject-editor-enter > * {
+    transition: none;
+  }
 }
 
 /* ─── 進行フィード: 確認カードがトレイへふわっと飛んでいくアニメーション ───
@@ -773,9 +837,15 @@ a:focus-visible {
   }
 }
 @keyframes session-fly-hop {
-  0%   { transform: translateY(0); }
-  50%  { transform: translateY(-110px); }
-  100% { transform: translateY(0); }
+  0% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-110px);
+  }
+  100% {
+    transform: translateY(0);
+  }
 }
 .session-fly {
   /* 投げ出しが速く、着地でふわっと減速する強めの ease-out */
@@ -789,7 +859,8 @@ a:focus-visible {
   will-change: transform;
 }
 @media (prefers-reduced-motion: reduce) {
-  .session-fly, .session-fly-hop {
+  .session-fly,
+  .session-fly-hop {
     animation: none;
   }
   .session-fly {
@@ -833,8 +904,12 @@ a:focus-visible {
 }
 
 @keyframes fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -882,7 +957,8 @@ a:focus-visible {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .submit-footer-enter, .dropdown-enter {
+  .submit-footer-enter,
+  .dropdown-enter {
     animation: none;
   }
 }
@@ -944,14 +1020,19 @@ a:focus-visible {
 }
 @keyframes assign-bar-attention {
   0% {
-    box-shadow: 0 0 0 0 color-mix(in oklch, var(--info) 55%, transparent),
+    box-shadow:
+      0 0 0 0 color-mix(in oklch, var(--info) 55%, transparent),
       0 20px 40px -12px rgba(0, 0, 0, 0.35);
   }
   70% {
-    box-shadow: 0 0 0 12px transparent, 0 20px 40px -12px rgba(0, 0, 0, 0.35);
+    box-shadow:
+      0 0 0 12px transparent,
+      0 20px 40px -12px rgba(0, 0, 0, 0.35);
   }
   100% {
-    box-shadow: 0 0 0 0 transparent, 0 20px 40px -12px rgba(0, 0, 0, 0.35);
+    box-shadow:
+      0 0 0 0 transparent,
+      0 20px 40px -12px rgba(0, 0, 0, 0.35);
   }
 }
 .assign-bar-enter {

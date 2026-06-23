@@ -22,7 +22,7 @@ export function resolveSelectedSchoolId(
   schoolIds: string[],
   demoSchoolIds: string[],
   savedSchoolId: string | null,
-  defaultSchoolId: string | null,
+  defaultSchoolId: string | null
 ): string | 'all' | null {
   if (schoolIds.length === 0) return null;
   if (schoolIds.length === 1) return schoolIds[0];
@@ -31,15 +31,12 @@ export function resolveSelectedSchoolId(
 
   // 1. 保存済みの選択（'all' か、アクセス権のある教室）
   const hasValidSaved =
-    !!savedSchoolId &&
-    (savedSchoolId === 'all' || schoolIds.includes(savedSchoolId));
+    !!savedSchoolId && (savedSchoolId === 'all' || schoolIds.includes(savedSchoolId));
   if (hasValidSaved) return savedSchoolId as string | 'all';
 
   // 2. default_school_id（デモは無効扱い）
   const hasValidDefault =
-    !!defaultSchoolId &&
-    schoolIds.includes(defaultSchoolId) &&
-    !demoSet.has(defaultSchoolId);
+    !!defaultSchoolId && schoolIds.includes(defaultSchoolId) && !demoSet.has(defaultSchoolId);
   if (hasValidDefault) return defaultSchoolId;
 
   // 3. デモ以外の先頭（無ければ先頭）

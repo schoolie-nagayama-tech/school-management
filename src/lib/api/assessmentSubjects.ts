@@ -26,13 +26,14 @@ export function gradeToSchoolType(grade: number): '小学' | '中学' | '高校'
  * 評価科目マスタを取得（学年・教室で絞り込み）
  * 教室カスタム（school_id 一致）と共通（school_id NULL）の両方を返す
  */
-export async function getAssessmentSubjects(opts: {
-  grade?: number;
-  schoolType?: '小学' | '中学' | '高校';
-  schoolId?: string | null;
-} = {}): Promise<AssessmentSubject[]> {
-  const { data, error } = await (supabase
-    .from('assessment_subjects' as never) as any)
+export async function getAssessmentSubjects(
+  opts: {
+    grade?: number;
+    schoolType?: '小学' | '中学' | '高校';
+    schoolId?: string | null;
+  } = {}
+): Promise<AssessmentSubject[]> {
+  const { data, error } = await (supabase.from('assessment_subjects' as never) as any)
     .select('*')
     .eq('is_active', true)
     .order('sort_order', { ascending: true });
@@ -72,9 +73,10 @@ export interface AssessmentSubjectInput {
 }
 
 /** 科目を作成 */
-export async function createAssessmentSubject(input: AssessmentSubjectInput): Promise<AssessmentSubject> {
-  const { data, error } = await (supabase
-    .from('assessment_subjects' as never) as any)
+export async function createAssessmentSubject(
+  input: AssessmentSubjectInput
+): Promise<AssessmentSubject> {
+  const { data, error } = await (supabase.from('assessment_subjects' as never) as any)
     .insert({
       school_id: input.school_id ?? null,
       code: input.code,
@@ -102,8 +104,7 @@ export async function updateAssessmentSubject(
   id: string,
   patch: Partial<Omit<AssessmentSubjectInput, 'school_id'>>
 ): Promise<void> {
-  const { error } = await (supabase
-    .from('assessment_subjects' as never) as any)
+  const { error } = await (supabase.from('assessment_subjects' as never) as any)
     .update({ ...patch, updated_at: new Date().toISOString() })
     .eq('id', id);
   if (error) throw new Error(`科目の更新に失敗しました: ${error.message}`);
@@ -111,8 +112,7 @@ export async function updateAssessmentSubject(
 
 /** 科目を削除（非アクティブ化） */
 export async function deactivateAssessmentSubject(id: string): Promise<void> {
-  const { error } = await (supabase
-    .from('assessment_subjects' as never) as any)
+  const { error } = await (supabase.from('assessment_subjects' as never) as any)
     .update({ is_active: false, updated_at: new Date().toISOString() })
     .eq('id', id);
   if (error) throw new Error(`科目の無効化に失敗しました: ${error.message}`);
@@ -120,8 +120,7 @@ export async function deactivateAssessmentSubject(id: string): Promise<void> {
 
 /** 科目を物理削除（システム科目は削除しない） */
 export async function deleteAssessmentSubject(id: string): Promise<void> {
-  const { error } = await (supabase
-    .from('assessment_subjects' as never) as any)
+  const { error } = await (supabase.from('assessment_subjects' as never) as any)
     .delete()
     .eq('id', id)
     .eq('is_system', false);
@@ -130,8 +129,7 @@ export async function deleteAssessmentSubject(id: string): Promise<void> {
 
 /** 全件（無効も含む）取得：管理画面用 */
 export async function getAllAssessmentSubjects(): Promise<AssessmentSubject[]> {
-  const { data, error } = await (supabase
-    .from('assessment_subjects' as never) as any)
+  const { data, error } = await (supabase.from('assessment_subjects' as never) as any)
     .select('*')
     .order('school_type', { ascending: true })
     .order('sort_order', { ascending: true });

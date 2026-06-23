@@ -16,7 +16,10 @@
  */
 
 import { useEffect, useState } from 'react';
-import { getScheduleCountsByMonth, type ScheduleCountsByDate } from '@/lib/api/schedule-vs-attendance';
+import {
+  getScheduleCountsByMonth,
+  type ScheduleCountsByDate,
+} from '@/lib/api/schedule-vs-attendance';
 import { Spinner } from '@/components/ui';
 
 interface Props {
@@ -112,9 +115,7 @@ export function ScheduleDriftCheckPanel({
         <div>
           <div className="text-xs text-text-muted">差分</div>
           <div
-            className={`text-lg font-semibold ${
- totalDiff === 0 ? 'text-success' : 'text-danger'
- }`}
+            className={`text-lg font-semibold ${totalDiff === 0 ? 'text-success' : 'text-danger'}`}
           >
             {totalDiff === 0 ? '一致 ✓' : totalDiff > 0 ? `+${totalDiff}` : `${totalDiff}`}
           </div>
@@ -158,8 +159,8 @@ export function ScheduleDriftCheckPanel({
                     </td>
                     <td
                       className={`px-3 py-2 text-right tabular-nums font-medium ${
- isMatch ? 'text-text-faint' : 'text-danger'
- }`}
+                        isMatch ? 'text-text-faint' : 'text-danger'
+                      }`}
                     >
                       {isMatch ? '✓' : diff > 0 ? `+${diff}` : `${diff}`}
                     </td>

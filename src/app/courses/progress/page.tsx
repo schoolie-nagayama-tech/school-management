@@ -67,26 +67,28 @@ export default function CourseProgressPage() {
   const canEdit = useCanEdit('canEditApplications');
   const { selectedSchoolId, profile } = useAuth();
   const { localSchoolId, setLocalSchoolId, isAllSelected, availableSchools } = useLocalSchoolId();
-  const isOwnerOrAbove =
-    profile?.role === 'owner' ||
-    profile?.role === 'admin';
-  const isManagerOrAbove =
-    isOwnerOrAbove ||
-    profile?.role === 'manager';
+  const isOwnerOrAbove = profile?.role === 'owner' || profile?.role === 'admin';
+  const isManagerOrAbove = isOwnerOrAbove || profile?.role === 'manager';
 
   // 期・年選択（localStorageから復元、工程表と共有）
   const [season, setSeasonRaw] = useState<SeasonType>(() => loadSavedSeasonYear().season);
   const [year, setYearRaw] = useState(() => loadSavedSeasonYear().year);
 
-  const setSeason = useCallback((s: SeasonType) => {
-    setSeasonRaw(s);
-    saveSavedSeasonYear(s, year);
-  }, [year]);
+  const setSeason = useCallback(
+    (s: SeasonType) => {
+      setSeasonRaw(s);
+      saveSavedSeasonYear(s, year);
+    },
+    [year]
+  );
 
-  const setYear = useCallback((y: number) => {
-    setYearRaw(y);
-    saveSavedSeasonYear(season, y);
-  }, [season]);
+  const setYear = useCallback(
+    (y: number) => {
+      setYearRaw(y);
+      saveSavedSeasonYear(season, y);
+    },
+    [season]
+  );
 
   const router = useRouter();
 
@@ -153,7 +155,12 @@ export default function CourseProgressPage() {
 
     // 表本体（軽いクエリ）と auto_values（提案書集計・通塾日程ページングで重い）を
     // 別リクエストで並列発行する。重い集計の完了を待たずにグリッドを先に描画して体感を上げる。
-    const lightPromise = batchFetchCoursePrepApi(params, ['students', 'progress_items', 'student_progress', 'period']);
+    const lightPromise = batchFetchCoursePrepApi(params, [
+      'students',
+      'progress_items',
+      'student_progress',
+      'period',
+    ]);
     const heavyPromise = batchFetchCoursePrepApi(params, ['auto_values', 'schedule_tasks']);
 
     // 重い集計は後追いで反映（ダッシュボードのカードはこれが届いてから表示）
@@ -173,20 +180,24 @@ export default function CourseProgressPage() {
 
       const studentsData = ((batchData.students as Record<string, unknown>[]) || []) as Student[];
 
-      const itemsData = ((batchData.progress_items as Record<string, unknown>[]) || []).map((item) => ({
-        ...item,
-        column_type: (item.column_type as string) || 'check',
-        manager_only: item.manager_only === true,
-        is_hidden: item.is_hidden === true,
-        deadline: (item.deadline as string) || null,
-        auto_source: (item.auto_source as string) || null,
-      })) as CourseProgressItem[];
+      const itemsData = ((batchData.progress_items as Record<string, unknown>[]) || []).map(
+        (item) => ({
+          ...item,
+          column_type: (item.column_type as string) || 'check',
+          manager_only: item.manager_only === true,
+          is_hidden: item.is_hidden === true,
+          deadline: (item.deadline as string) || null,
+          auto_source: (item.auto_source as string) || null,
+        })
+      ) as CourseProgressItem[];
 
-      const progressResult = ((batchData.student_progress as Record<string, unknown>[]) || []).map((d) => ({
-        ...d,
-        number_value: d.number_value ?? null,
-        date_value: d.date_value ?? null,
-      })) as StudentCourseProgress[];
+      const progressResult = ((batchData.student_progress as Record<string, unknown>[]) || []).map(
+        (d) => ({
+          ...d,
+          number_value: d.number_value ?? null,
+          date_value: d.date_value ?? null,
+        })
+      ) as StudentCourseProgress[];
 
       setStudents(studentsData);
       setItems(itemsData);
@@ -253,9 +264,7 @@ export default function CourseProgressPage() {
     const applyItem = items.find(
       (i) => i.column_type === 'check' && i.name.includes('面談申込') && !i.name.includes('未')
     );
-    const followUpItem = items.find(
-      (i) => i.column_type === 'check' && i.name.includes('未申込')
-    );
+    const followUpItem = items.find((i) => i.column_type === 'check' && i.name.includes('未申込'));
     return { applyItemId: applyItem?.id ?? null, followUpItemId: followUpItem?.id ?? null };
   }, [items]);
 
@@ -306,7 +315,8 @@ export default function CourseProgressPage() {
       // （申し込んだ人には“未申込対応”が不要なため、完了ではなく対象外にする）
       const { applyItemId, followUpItemId } = interviewLinkItemIds;
       if (applyItemId && followUpItemId && itemId === applyItemId) {
-        const linkedStatus: ApplicationStatus | null = status === 'completed' ? 'not_applicable' : null;
+        const linkedStatus: ApplicationStatus | null =
+          status === 'completed' ? 'not_applicable' : null;
         await updateSingleStatus(studentId, followUpItemId, linkedStatus);
       }
     },
@@ -393,7 +403,7 @@ export default function CourseProgressPage() {
   const handleBudgetKomaChange = useCallback(
     async (value: number) => {
       if (!localSchoolId) return;
-      setPeriod((prev) => prev ? { ...prev, budget_koma: value } : prev);
+      setPeriod((prev) => (prev ? { ...prev, budget_koma: value } : prev));
       try {
         await upsertCoursePrepPeriod(localSchoolId, season, year, { budget_koma: value });
       } catch (err) {
@@ -408,7 +418,7 @@ export default function CourseProgressPage() {
   const handleTargetKomaChange = useCallback(
     async (value: number) => {
       if (!localSchoolId) return;
-      setPeriod((prev) => prev ? { ...prev, target_koma: value } : prev);
+      setPeriod((prev) => (prev ? { ...prev, target_koma: value } : prev));
       try {
         await upsertCoursePrepPeriod(localSchoolId, season, year, { target_koma: value });
       } catch (err) {
@@ -423,7 +433,7 @@ export default function CourseProgressPage() {
   const handleExpectedRateChange = useCallback(
     async (value: number) => {
       if (!localSchoolId) return;
-      setPeriod((prev) => prev ? { ...prev, expected_rate: value } : prev);
+      setPeriod((prev) => (prev ? { ...prev, expected_rate: value } : prev));
       try {
         await upsertCoursePrepPeriod(localSchoolId, season, year, { expected_rate: value });
       } catch (err) {
@@ -436,7 +446,9 @@ export default function CourseProgressPage() {
 
   // 講習期間日付変更 → upsert後にperiod+auto_valuesだけバッチ再取得（1リクエスト）
   const handlePeriodDateChange = useCallback(
-    async (updates: Partial<Pick<CoursePrepPeriod, 'schedule_start_date' | 'schedule_end_date'>>) => {
+    async (
+      updates: Partial<Pick<CoursePrepPeriod, 'schedule_start_date' | 'schedule_end_date'>>
+    ) => {
       if (!localSchoolId) return;
       try {
         await upsertCoursePrepPeriod(localSchoolId, season, year, updates);
@@ -490,17 +502,20 @@ export default function CourseProgressPage() {
   }, [localSchoolId, season, year, saveTemplateName]);
 
   // テンプレート削除
-  const handleDeleteTemplate = useCallback(async (templateId: string) => {
-    if (!localSchoolId) return;
-    if (!confirm('このテンプレートを削除しますか？')) return;
-    try {
-      await deleteTemplate(templateId, localSchoolId);
-      const tpls = await getTemplates('progress', season, localSchoolId);
-      setTemplates(tpls);
-    } catch (err) {
-      console.error('Error deleting template:', err);
-    }
-  }, [localSchoolId, season]);
+  const handleDeleteTemplate = useCallback(
+    async (templateId: string) => {
+      if (!localSchoolId) return;
+      if (!confirm('このテンプレートを削除しますか？')) return;
+      try {
+        await deleteTemplate(templateId, localSchoolId);
+        const tpls = await getTemplates('progress', season, localSchoolId);
+        setTemplates(tpls);
+      } catch (err) {
+        console.error('Error deleting template:', err);
+      }
+    },
+    [localSchoolId, season]
+  );
 
   // スケジュールタスクとのリンク設定 → バッチ1リクエスト + 再取得1リクエスト
   const handleLinkScheduleTask = useCallback(
@@ -536,7 +551,9 @@ export default function CourseProgressPage() {
     setSyncing(true);
     setSyncMessage('');
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (!session?.access_token) {
         setSyncMessage('認証エラー: ログインし直してください');
         return;
@@ -582,15 +599,19 @@ export default function CourseProgressPage() {
         { schoolId: localSchoolId, season, year: String(year), includeHidden: String(showHidden) },
         ['progress_items', 'student_progress']
       );
-      const itemsData = ((batchResult.progress_items as Record<string, unknown>[]) || []).map((item) => ({
-        ...item,
-        column_type: (item.column_type as string) || 'check',
-        manager_only: item.manager_only === true,
-        is_hidden: item.is_hidden === true,
-        deadline: (item.deadline as string) || null,
-        auto_source: (item.auto_source as string) || null,
-      })) as CourseProgressItem[];
-      const progressResult = ((batchResult.student_progress as Record<string, unknown>[]) || []).map((d) => ({
+      const itemsData = ((batchResult.progress_items as Record<string, unknown>[]) || []).map(
+        (item) => ({
+          ...item,
+          column_type: (item.column_type as string) || 'check',
+          manager_only: item.manager_only === true,
+          is_hidden: item.is_hidden === true,
+          deadline: (item.deadline as string) || null,
+          auto_source: (item.auto_source as string) || null,
+        })
+      ) as CourseProgressItem[];
+      const progressResult = (
+        (batchResult.student_progress as Record<string, unknown>[]) || []
+      ).map((d) => ({
         ...d,
         number_value: d.number_value ?? null,
         date_value: d.date_value ?? null,
@@ -627,7 +648,16 @@ export default function CourseProgressPage() {
       console.error('Error creating item:', err);
       setErrorMessage(getUserErrorMessage(err, '項目の作成に失敗しました'));
     }
-  }, [newItemName, newItemType, newItemGroup, newItemAutoSource, localSchoolId, season, year, refetchItems]);
+  }, [
+    newItemName,
+    newItemType,
+    newItemGroup,
+    newItemAutoSource,
+    localSchoolId,
+    season,
+    year,
+    refetchItems,
+  ]);
 
   // 項目削除
   const handleDeleteItem = useCallback(
@@ -777,10 +807,7 @@ export default function CourseProgressPage() {
               {
                 title: 'ダッシュボードで全体把握する',
                 description: '教室全体の進捗状況をグラフで確認します。',
-                steps: [
-                  'ページ上部のダッシュボードで完了率を確認',
-                  '遅れている生徒を素早く特定',
-                ],
+                steps: ['ページ上部のダッシュボードで完了率を確認', '遅れている生徒を素早く特定'],
               },
             ]}
           />
@@ -812,7 +839,8 @@ export default function CourseProgressPage() {
                 </button>
                 <button
                   onClick={() => {
-                    const seasonLabel = season === 'spring' ? '春期' : season === 'summer' ? '夏期' : '冬期';
+                    const seasonLabel =
+                      season === 'spring' ? '春期' : season === 'summer' ? '夏期' : '冬期';
                     setSaveTemplateName(`${seasonLabel}${year} 進捗管理テンプレート`);
                     setShowSaveDialog(true);
                   }}
@@ -843,7 +871,12 @@ export default function CourseProgressPage() {
         {syncMessage && (
           <div className="mb-4 px-4 py-2 rounded border border-blue-200 bg-blue-50 text-sm text-blue-700 flex items-center justify-between">
             <span>{syncMessage}</span>
-            <button onClick={() => setSyncMessage('')} className="text-blue-400 hover:text-blue-600 ml-2">&times;</button>
+            <button
+              onClick={() => setSyncMessage('')}
+              className="text-blue-400 hover:text-blue-600 ml-2"
+            >
+              &times;
+            </button>
           </div>
         )}
 
@@ -856,8 +889,10 @@ export default function CourseProgressPage() {
 
         {/* ダッシュボード（教室長以上のみ表示）。集計(auto_values)が届いてから表示し、
             それまではグリッドを先に出す。集計中は控えめなプレースホルダを表示する。 */}
-        {!isLoading && displayItems.length > 0 && isManagerOrAbove && (
-          autoLoading ? (
+        {!isLoading &&
+          displayItems.length > 0 &&
+          isManagerOrAbove &&
+          (autoLoading ? (
             <div className="mb-4 bg-white rounded-xl border border-gray-200 p-6 flex items-center justify-center">
               <InlineLoading label="集計データを読み込み中…" />
             </div>
@@ -873,8 +908,7 @@ export default function CourseProgressPage() {
               onExpectedRateChange={isManagerOrAbove ? handleExpectedRateChange : undefined}
               onPeriodDateChange={isManagerOrAbove ? handlePeriodDateChange : undefined}
             />
-          )
-        )}
+          ))}
 
         {/* 設定パネル（アコーディオン: フィルター + 項目管理） */}
         {showSettings && (
@@ -1002,12 +1036,12 @@ export default function CourseProgressPage() {
                         自動計算
                         <HelpTooltip
                           text={
-                            "自動計算を設定すると値が自動で入ります（編集不可）\n\n" +
-                            "■ 通塾回数/週: 通塾パターンから週の回数\n" +
-                            "■ 講習期間通常回数: 講習期間中の通塾回数合計\n" +
-                            "■ 提示増コマ: 教科別コマ合計 - 講習期間通常回数\n" +
-                            "■ 進行表コマ数: 進行表の提案コマを科目名で自動集計\n" +
-                            "  ※ 項目名に科目名を含めてください（例: 英語, 数学）"
+                            '自動計算を設定すると値が自動で入ります（編集不可）\n\n' +
+                            '■ 通塾回数/週: 通塾パターンから週の回数\n' +
+                            '■ 講習期間通常回数: 講習期間中の通塾回数合計\n' +
+                            '■ 提示増コマ: 教科別コマ合計 - 講習期間通常回数\n' +
+                            '■ 進行表コマ数: 進行表の提案コマを科目名で自動集計\n' +
+                            '  ※ 項目名に科目名を含めてください（例: 英語, 数学）'
                           }
                           size={10}
                           position="bottom"
@@ -1038,30 +1072,49 @@ export default function CourseProgressPage() {
                   {/* 既存項目一覧 */}
                   <div className="space-y-0.5 max-h-80 overflow-y-auto">
                     {items.map((item) => {
-                      const linkedTask = scheduleTasks.find((t) => t.linked_progress_item_id === item.id);
+                      const linkedTask = scheduleTasks.find(
+                        (t) => t.linked_progress_item_id === item.id
+                      );
                       return (
                         <div
                           key={item.id}
                           draggable
                           onDragStart={() => setDragItemId(item.id)}
                           onDragEnd={() => setDragItemId(null)}
-                          onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
-                          onDrop={(e) => { e.preventDefault(); if (dragItemId) handleDropItem(dragItemId, item.id); }}
+                          onDragOver={(e) => {
+                            e.preventDefault();
+                            e.dataTransfer.dropEffect = 'move';
+                          }}
+                          onDrop={(e) => {
+                            e.preventDefault();
+                            if (dragItemId) handleDropItem(dragItemId, item.id);
+                          }}
                           className={`flex items-center justify-between gap-2 px-2 py-1.5 rounded text-xs transition-[opacity,transform,border-color,background-color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] ${
                             item.is_hidden ? 'bg-gray-50 text-gray-400' : ''
                           } ${dragItemId === item.id ? 'opacity-40 scale-95' : ''} ${dragItemId && dragItemId !== item.id ? 'border border-dashed border-blue-300' : 'border border-transparent'}`}
                         >
                           <div className="flex items-center gap-2 flex-1 min-w-0">
-                            <span className="cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-500 shrink-0 select-none" title="ドラッグで並び替え">⠿</span>
+                            <span
+                              className="cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-500 shrink-0 select-none"
+                              title="ドラッグで並び替え"
+                            >
+                              ⠿
+                            </span>
                             <span className="font-medium shrink-0">{item.name}</span>
                             <select
                               value={item.column_type}
                               onChange={async (e) => {
                                 if (!localSchoolId) return;
                                 const newType = e.target.value as ApplicationColumnType;
-                                setItems((prev) => prev.map((i) => i.id === item.id ? { ...i, column_type: newType } : i));
+                                setItems((prev) =>
+                                  prev.map((i) =>
+                                    i.id === item.id ? { ...i, column_type: newType } : i
+                                  )
+                                );
                                 try {
-                                  await updateCourseProgressItem(item.id, localSchoolId, { column_type: newType });
+                                  await updateCourseProgressItem(item.id, localSchoolId, {
+                                    column_type: newType,
+                                  });
                                 } catch (err) {
                                   console.error('Error updating type:', err);
                                   fetchData();
@@ -1078,20 +1131,29 @@ export default function CourseProgressPage() {
                                 className="text-[9px] px-1 py-0.5 rounded shrink-0"
                                 style={{
                                   backgroundColor:
-                                    (PROGRESS_COLUMN_GROUPS[item.column_group]?.color || '#6b7280') + '20',
-                                  color: PROGRESS_COLUMN_GROUPS[item.column_group]?.color || '#6b7280',
+                                    (PROGRESS_COLUMN_GROUPS[item.column_group]?.color ||
+                                      '#6b7280') + '20',
+                                  color:
+                                    PROGRESS_COLUMN_GROUPS[item.column_group]?.color || '#6b7280',
                                 }}
                               >
-                                {PROGRESS_COLUMN_GROUPS[item.column_group]?.label || item.column_group}
+                                {PROGRESS_COLUMN_GROUPS[item.column_group]?.label ||
+                                  item.column_group}
                               </span>
                             )}
                             {item.auto_source && (
                               <span className="text-[9px] px-1 py-0.5 bg-blue-100 text-blue-600 rounded shrink-0">
-                                {item.auto_source === 'regular_weekly' ? '通塾回数' :
-                                 item.auto_source === 'course_sessions' ? '通常回数' :
-                                 item.auto_source === 'proposed_extra' ? '提示増コマ' :
-                                 item.auto_source === 'applied_extra' ? '申込増コマ' :
-                                 item.auto_source === 'subject_proposal' ? '進行表コマ' : '自動'}
+                                {item.auto_source === 'regular_weekly'
+                                  ? '通塾回数'
+                                  : item.auto_source === 'course_sessions'
+                                    ? '通常回数'
+                                    : item.auto_source === 'proposed_extra'
+                                      ? '提示増コマ'
+                                      : item.auto_source === 'applied_extra'
+                                        ? '申込増コマ'
+                                        : item.auto_source === 'subject_proposal'
+                                          ? '進行表コマ'
+                                          : '自動'}
                               </span>
                             )}
                             {item.is_hidden && (
@@ -1103,9 +1165,15 @@ export default function CourseProgressPage() {
                             {item.column_type === 'check' && scheduleTasks.length > 0 && (
                               <select
                                 value={linkedTask?.id || ''}
-                                onChange={(e) => handleLinkScheduleTask(item.id, e.target.value || null)}
+                                onChange={(e) =>
+                                  handleLinkScheduleTask(item.id, e.target.value || null)
+                                }
                                 className="text-[10px] px-1 py-0.5 border border-gray-200 rounded bg-white text-gray-600 max-w-[140px] truncate"
-                                title={linkedTask ? `リンク: ${linkedTask.name}` : 'スケジュールタスクをリンク'}
+                                title={
+                                  linkedTask
+                                    ? `リンク: ${linkedTask.name}`
+                                    : 'スケジュールタスクをリンク'
+                                }
                               >
                                 <option value="">リンクなし</option>
                                 {scheduleTasks.map((t) => (

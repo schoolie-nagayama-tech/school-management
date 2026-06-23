@@ -24,7 +24,9 @@ export function MockCsvImportModal({
   const [rows, setRows] = useState<MockCsvRow[]>([]);
   const [fileName, setFileName] = useState('');
   const [isImporting, setIsImporting] = useState(false);
-  const [importResult, setImportResult] = useState<{ success: number; failed: number } | null>(null);
+  const [importResult, setImportResult] = useState<{ success: number; failed: number } | null>(
+    null
+  );
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFile = useCallback(async (file: File) => {
@@ -146,12 +148,8 @@ export function MockCsvImportModal({
           <>
             <div className="flex items-center gap-3 text-sm">
               <span className="text-[#1f2937]">{rows.length}件 読み込み</span>
-              {validCount > 0 && (
-                <span className="text-green-700">有効: {validCount}件</span>
-              )}
-              {errorCount > 0 && (
-                <span className="text-red-600">エラー: {errorCount}件</span>
-              )}
+              {validCount > 0 && <span className="text-green-700">有効: {validCount}件</span>}
+              {errorCount > 0 && <span className="text-red-600">エラー: {errorCount}件</span>}
             </div>
 
             <div className="overflow-x-auto max-h-[300px] overflow-y-auto rounded-lg border border-gray-200">
@@ -159,16 +157,36 @@ export function MockCsvImportModal({
                 <thead className="bg-gray-50 sticky top-0">
                   <tr>
                     <th className="px-2 py-1.5 text-left text-xs font-medium text-gray-500">行</th>
-                    <th className="px-2 py-1.5 text-left text-xs font-medium text-gray-500">テスト名</th>
-                    <th className="px-2 py-1.5 text-left text-xs font-medium text-gray-500">試験月</th>
-                    <th className="px-2 py-1.5 text-center text-xs font-medium text-gray-500">英</th>
-                    <th className="px-2 py-1.5 text-center text-xs font-medium text-gray-500">数</th>
-                    <th className="px-2 py-1.5 text-center text-xs font-medium text-gray-500">国</th>
-                    <th className="px-2 py-1.5 text-center text-xs font-medium text-gray-500">理</th>
-                    <th className="px-2 py-1.5 text-center text-xs font-medium text-gray-500">社</th>
-                    <th className="px-2 py-1.5 text-center text-xs font-medium text-gray-500">3科</th>
-                    <th className="px-2 py-1.5 text-center text-xs font-medium text-gray-500">5科</th>
-                    <th className="px-2 py-1.5 text-left text-xs font-medium text-gray-500">状態</th>
+                    <th className="px-2 py-1.5 text-left text-xs font-medium text-gray-500">
+                      テスト名
+                    </th>
+                    <th className="px-2 py-1.5 text-left text-xs font-medium text-gray-500">
+                      試験月
+                    </th>
+                    <th className="px-2 py-1.5 text-center text-xs font-medium text-gray-500">
+                      英
+                    </th>
+                    <th className="px-2 py-1.5 text-center text-xs font-medium text-gray-500">
+                      数
+                    </th>
+                    <th className="px-2 py-1.5 text-center text-xs font-medium text-gray-500">
+                      国
+                    </th>
+                    <th className="px-2 py-1.5 text-center text-xs font-medium text-gray-500">
+                      理
+                    </th>
+                    <th className="px-2 py-1.5 text-center text-xs font-medium text-gray-500">
+                      社
+                    </th>
+                    <th className="px-2 py-1.5 text-center text-xs font-medium text-gray-500">
+                      3科
+                    </th>
+                    <th className="px-2 py-1.5 text-center text-xs font-medium text-gray-500">
+                      5科
+                    </th>
+                    <th className="px-2 py-1.5 text-left text-xs font-medium text-gray-500">
+                      状態
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -178,11 +196,19 @@ export function MockCsvImportModal({
                       className={row.errors.length > 0 ? 'bg-red-50' : 'hover:bg-gray-50'}
                     >
                       <td className="px-2 py-1 text-xs text-gray-400">{row.rowIndex}</td>
-                      <td className="px-2 py-1 text-xs">{row.name_code === 'venue' ? '会場模試' : row.name_code === 'classroom' ? '教室模試' : row.name_code}</td>
+                      <td className="px-2 py-1 text-xs">
+                        {row.name_code === 'venue'
+                          ? '会場模試'
+                          : row.name_code === 'classroom'
+                            ? '教室模試'
+                            : row.name_code}
+                      </td>
                       <td className="px-2 py-1 text-xs">{row.exam_month}</td>
                       <td className="px-2 py-1 text-xs text-center">{row.scores.english ?? '—'}</td>
                       <td className="px-2 py-1 text-xs text-center">{row.scores.math ?? '—'}</td>
-                      <td className="px-2 py-1 text-xs text-center">{row.scores.japanese ?? '—'}</td>
+                      <td className="px-2 py-1 text-xs text-center">
+                        {row.scores.japanese ?? '—'}
+                      </td>
                       <td className="px-2 py-1 text-xs text-center">{row.scores.science ?? '—'}</td>
                       <td className="px-2 py-1 text-xs text-center">{row.scores.social ?? '—'}</td>
                       <td className="px-2 py-1 text-xs text-center">{row.scores.hensa_3 ?? '—'}</td>
@@ -206,7 +232,9 @@ export function MockCsvImportModal({
 
         {/* インポート結果 */}
         {importResult && (
-          <div className={`p-3 rounded-lg text-sm ${importResult.failed > 0 ? 'bg-amber-50 text-amber-800' : 'bg-green-50 text-green-800'}`}>
+          <div
+            className={`p-3 rounded-lg text-sm ${importResult.failed > 0 ? 'bg-amber-50 text-amber-800' : 'bg-green-50 text-green-800'}`}
+          >
             インポート完了: {importResult.success}件成功
             {importResult.failed > 0 && `、${importResult.failed}件失敗`}
           </div>

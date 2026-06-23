@@ -139,7 +139,9 @@ export function TrainingMastersPanel({ onSuccess, onError }: Props) {
   return (
     <>
       <div className="flex justify-between items-center mb-4">
-        <p className="text-sm text-gray-500">講師の研修参加履歴に使用するマスタデータを管理します</p>
+        <p className="text-sm text-gray-500">
+          講師の研修参加履歴に使用するマスタデータを管理します
+        </p>
         <button
           onClick={openCreate}
           className="px-4 py-2 text-sm font-medium text-white bg-ink rounded-lg hover:brightness-[0.85] transition-colors duration-150"
@@ -165,42 +167,76 @@ export function TrainingMastersPanel({ onSuccess, onError }: Props) {
           <table className="w-full">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-200">
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">研修名</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">期・ラベル</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">説明</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">順序</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">状態</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">操作</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  研修名
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  期・ラベル
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  説明
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  順序
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  状態
+                </th>
+                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  操作
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {items.map((m) => {
                 const inactive = !m.is_active;
                 return (
-                  <tr key={m.id} className={`hover:bg-gray-50/50 transition-colors duration-150 ${inactive ? 'opacity-60' : ''}`}>
+                  <tr
+                    key={m.id}
+                    className={`hover:bg-gray-50/50 transition-colors duration-150 ${inactive ? 'opacity-60' : ''}`}
+                  >
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium text-gray-900">{m.name}</span>
                         {inactive && (
-                          <span className="text-[10px] font-semibold text-gray-500 bg-gray-200 px-1.5 py-0.5 rounded">無効</span>
+                          <span className="text-[10px] font-semibold text-gray-500 bg-gray-200 px-1.5 py-0.5 rounded">
+                            無効
+                          </span>
                         )}
                       </div>
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-600">{m.period_label || '-'}</td>
-                    <td className="px-4 py-3 text-sm text-gray-500 max-w-xs truncate">{m.description || '-'}</td>
+                    <td className="px-4 py-3 text-sm text-gray-500 max-w-xs truncate">
+                      {m.description || '-'}
+                    </td>
                     <td className="px-4 py-3 text-sm text-gray-500">{m.sort_order}</td>
                     <td className="px-4 py-3">
-                      <span className={`text-xs font-medium px-2 py-0.5 rounded ${inactive ? 'bg-gray-100 text-gray-500' : 'bg-emerald-50 text-emerald-700'}`}>
+                      <span
+                        className={`text-xs font-medium px-2 py-0.5 rounded ${inactive ? 'bg-gray-100 text-gray-500' : 'bg-emerald-50 text-emerald-700'}`}
+                      >
                         {inactive ? '無効' : '有効'}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex justify-end gap-3">
-                        <button onClick={() => openEdit(m)} className="text-xs text-ink hover:underline transition-colors duration-150">編集</button>
-                        <button onClick={() => handleToggleActive(m)} className={`text-xs hover:underline transition-colors duration-150 ${inactive ? 'text-emerald-600' : 'text-amber-600'}`}>
+                        <button
+                          onClick={() => openEdit(m)}
+                          className="text-xs text-ink hover:underline transition-colors duration-150"
+                        >
+                          編集
+                        </button>
+                        <button
+                          onClick={() => handleToggleActive(m)}
+                          className={`text-xs hover:underline transition-colors duration-150 ${inactive ? 'text-emerald-600' : 'text-amber-600'}`}
+                        >
                           {inactive ? '再有効化' : '無効化'}
                         </button>
-                        <button onClick={() => handleDelete(m)} className="text-xs text-red-500 hover:underline transition-colors duration-150">削除</button>
+                        <button
+                          onClick={() => handleDelete(m)}
+                          className="text-xs text-red-500 hover:underline transition-colors duration-150"
+                        >
+                          削除
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -213,7 +249,10 @@ export function TrainingMastersPanel({ onSuccess, onError }: Props) {
 
       {/* 編集ダイアログ */}
       {dialogOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setDialogOpen(false)}>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          onClick={() => setDialogOpen(false)}
+        >
           <div
             className="bg-white rounded-xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
@@ -236,7 +275,9 @@ export function TrainingMastersPanel({ onSuccess, onError }: Props) {
                 />
               </div>
               <div>
-                <Label htmlFor="tm-period" className="text-xs">期・ラベル</Label>
+                <Label htmlFor="tm-period" className="text-xs">
+                  期・ラベル
+                </Label>
                 <Input
                   id="tm-period"
                   value={edit.period_label}
@@ -245,7 +286,9 @@ export function TrainingMastersPanel({ onSuccess, onError }: Props) {
                 />
               </div>
               <div>
-                <Label htmlFor="tm-desc" className="text-xs">説明</Label>
+                <Label htmlFor="tm-desc" className="text-xs">
+                  説明
+                </Label>
                 <Input
                   id="tm-desc"
                   value={edit.description}
@@ -254,7 +297,9 @@ export function TrainingMastersPanel({ onSuccess, onError }: Props) {
                 />
               </div>
               <div>
-                <Label htmlFor="tm-sort" className="text-xs">表示順</Label>
+                <Label htmlFor="tm-sort" className="text-xs">
+                  表示順
+                </Label>
                 <Input
                   id="tm-sort"
                   type="number"

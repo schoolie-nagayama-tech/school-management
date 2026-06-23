@@ -64,7 +64,10 @@ export async function upsertClassCapacity(
   form: SchoolClassCapacityFormData
 ): Promise<SchoolClassCapacity> {
   // 入力バリデーション（DBチェック制約と二重ガード）
-  if (form.max_students_per_teacher_individual < 1 || form.max_students_per_teacher_individual > 10) {
+  if (
+    form.max_students_per_teacher_individual < 1 ||
+    form.max_students_per_teacher_individual > 10
+  ) {
     throw new Error('1講師あたりの生徒数は 1〜10 の範囲で入力してください');
   }
   if (form.total_individual_seats < 1 || form.total_individual_seats > 100) {
@@ -79,10 +82,7 @@ export async function upsertClassCapacity(
 
   const { data, error } = await db
     .from('school_class_capacity')
-    .upsert(
-      { school_id: schoolId, ...form },
-      { onConflict: 'school_id' }
-    )
+    .upsert({ school_id: schoolId, ...form }, { onConflict: 'school_id' })
     .select()
     .single();
 

@@ -18,7 +18,7 @@ export function SchoolSelector() {
       try {
         const allSchools = await getSchools();
         // ユーザーが担当している教室のみをフィルタ
-        const userSchools = allSchools.filter(school => schoolIds.includes(school.id));
+        const userSchools = allSchools.filter((school) => schoolIds.includes(school.id));
         setSchools(userSchools);
       } catch (error) {
         console.error('Error loading schools:', error);
@@ -55,7 +55,7 @@ export function SchoolSelector() {
         <h2 className="text-xl font-bold text-[#1f2937] mb-6 text-center">
           教室を選択してください
         </h2>
-        
+
         <div className="space-y-3">
           {/* すべての教室を表示するオプション */}
           {schools.length > 1 && (
@@ -75,7 +75,7 @@ export function SchoolSelector() {
           )}
 
           {/* 各教室の選択ボタン */}
-          {schools.map(school => (
+          {schools.map((school) => (
             <button
               key={school.id}
               onClick={() => handleSelect(school.id)}

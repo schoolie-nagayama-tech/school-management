@@ -50,15 +50,18 @@ export function ContextHelp({ topics, searchQuery, position = 'inline' }: Contex
   const helpLink = searchQuery ? `/help?q=${encodeURIComponent(searchQuery)}` : '/help';
 
   return (
-    <div className={`relative ${position === 'fixed' ? 'fixed bottom-6 right-6 z-50' : 'inline-flex'}`}>
+    <div
+      className={`relative ${position === 'fixed' ? 'fixed bottom-6 right-6 z-50' : 'inline-flex'}`}
+    >
       <button
         ref={buttonRef}
         onClick={() => setIsOpen(!isOpen)}
         className={`
           inline-flex items-center justify-center rounded-full border transition-all duration-200
-          ${isOpen
-            ? 'bg-[var(--primary)] text-white border-[var(--primary)] shadow-lg'
-            : 'bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 border-gray-300 dark:border-gray-600 hover:border-[var(--primary)] hover:text-[var(--primary)]'
+          ${
+            isOpen
+              ? 'bg-[var(--primary)] text-white border-[var(--primary)] shadow-lg'
+              : 'bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 border-gray-300 dark:border-gray-600 hover:border-[var(--primary)] hover:text-[var(--primary)]'
           }
           ${position === 'fixed' ? 'w-12 h-12 shadow-lg' : 'w-7 h-7'}
         `}
@@ -73,10 +76,7 @@ export function ContextHelp({ topics, searchQuery, position = 'inline' }: Contex
           className={`
             absolute z-50 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700
             rounded-xl shadow-xl overflow-hidden
-            ${position === 'fixed'
-              ? 'bottom-16 right-0 w-80'
-              : 'top-full mt-2 right-0 w-80'
-            }
+            ${position === 'fixed' ? 'bottom-16 right-0 w-80' : 'top-full mt-2 right-0 w-80'}
           `}
         >
           {/* ヘッダー */}
@@ -85,10 +85,7 @@ export function ContextHelp({ topics, searchQuery, position = 'inline' }: Contex
               <HelpCircle className="w-4 h-4" />
               <span className="text-sm font-medium">このページの使い方</span>
             </div>
-            <button
-              onClick={() => setIsOpen(false)}
-              className="text-white/80 hover:text-white"
-            >
+            <button onClick={() => setIsOpen(false)} className="text-white/80 hover:text-white">
               <X className="w-4 h-4" />
             </button>
           </div>
@@ -121,10 +118,7 @@ function ContextHelpItem({ topic }: { topic: ContextHelpTopic }) {
 
   return (
     <div className="px-4 py-2.5">
-      <button
-        onClick={() => setExpanded(!expanded)}
-        className="w-full text-left group"
-      >
+      <button onClick={() => setExpanded(!expanded)} className="w-full text-left group">
         <p className="text-sm font-medium text-[var(--headline)] group-hover:text-[var(--primary)] transition-colors">
           {topic.title}
         </p>

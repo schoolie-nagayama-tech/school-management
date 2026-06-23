@@ -60,13 +60,11 @@ export function InquiryPeriodPicker({
           onChange={(e) => handlePresetChange(e.target.value as PeriodPreset)}
           className="border border-border rounded-lg px-3 py-1.5 text-sm text-text-body bg-surface focus:outline-none focus:ring-2 focus:ring-primary/30"
         >
-          {(Object.entries(PRESET_LABELS) as [PeriodPreset, string][]).map(
-            ([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            )
-          )}
+          {(Object.entries(PRESET_LABELS) as [PeriodPreset, string][]).map(([value, label]) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
         </select>
       </div>
 
@@ -96,9 +94,7 @@ export function InquiryPeriodPicker({
 
       {/* 解決済み期間ラベル */}
       <div className="flex items-end pb-0.5">
-        <span className="text-xs text-text-muted whitespace-nowrap">
-          {periodLabel}
-        </span>
+        <span className="text-xs text-text-muted whitespace-nowrap">{periodLabel}</span>
       </div>
 
       {/* 比較トグル（分析ページのみ） */}

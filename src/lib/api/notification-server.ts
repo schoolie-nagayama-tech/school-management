@@ -38,7 +38,9 @@ export async function prefetchNotificationInitial(): Promise<NotificationInitial
     const client = await createSupabaseServerClient();
 
     // 未ログインなら事前取得不可
-    const { data: { user } } = await client.auth.getUser();
+    const {
+      data: { user },
+    } = await client.auth.getUser();
     if (!user) return null;
 
     // 通知フィードは講師(teacher)には表示しない（生徒管理ページの非講師ブランチでのみ描画）。
@@ -81,7 +83,10 @@ export async function prefetchNotificationInitial(): Promise<NotificationInitial
     // DynamicServerError（ビルドの静的生成プローブが cookies() で投げる）は再 throw して Next に委ねる。
     if (isDynamicServerError(e)) throw e;
     // 事前取得は最適化。失敗してもページは従来のクライアント取得で動くので握りつぶす。
-    console.warn('[prefetchNotificationInitial] 事前取得に失敗。クライアント取得にフォールバックします:', e);
+    console.warn(
+      '[prefetchNotificationInitial] 事前取得に失敗。クライアント取得にフォールバックします:',
+      e
+    );
     return null;
   }
 }

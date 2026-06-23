@@ -11,9 +11,7 @@ interface TableProps {
 export function Table({ children, className = '' }: TableProps) {
   return (
     <div className={`w-full overflow-auto ${className}`}>
-      <table className="w-full border-collapse">
-        {children}
-      </table>
+      <table className="w-full border-collapse">{children}</table>
     </div>
   );
 }
@@ -24,11 +22,7 @@ interface TableHeaderProps {
 }
 
 export function TableHeader({ children, className = '' }: TableHeaderProps) {
-  return (
-    <thead className={className}>
-      {children}
-    </thead>
-  );
+  return <thead className={className}>{children}</thead>;
 }
 
 interface TableBodyProps {
@@ -37,11 +31,7 @@ interface TableBodyProps {
 }
 
 export function TableBody({ children, className = '' }: TableBodyProps) {
-  return (
-    <tbody className={className}>
-      {children}
-    </tbody>
-  );
+  return <tbody className={className}>{children}</tbody>;
 }
 
 interface TableRowProps {
@@ -68,7 +58,9 @@ interface TableHeadProps {
 
 export function TableHead({ children, className = '' }: TableHeadProps) {
   return (
-    <th className={`px-4 py-3 text-left text-sm font-semibold text-text-heading bg-surface-hover ${className}`}>
+    <th
+      className={`px-4 py-3 text-left text-sm font-semibold text-text-heading bg-surface-hover ${className}`}
+    >
       {children}
     </th>
   );

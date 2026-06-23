@@ -5,15 +5,14 @@ import { useRouter } from 'next/navigation';
 import { AdminLayout } from '@/components/layouts';
 import { Loading, InlineLoading } from '@/components/ui';
 import { ContextHelp } from '@/components/help/ContextHelp';
-import { ApplicationTable, ApplicationFiltersPanel, ApplicationItemAccordion } from '@/components/applications';
+import {
+  ApplicationTable,
+  ApplicationFiltersPanel,
+  ApplicationItemAccordion,
+} from '@/components/applications';
 import { StudentDetailModal } from '@/components/students/StudentDetailModal';
-import {
-  getStudents,
-} from '@/lib/api/students';
-import {
-  getApplicationItems,
-  getStudentApplications,
-} from '@/lib/api/applications';
+import { getStudents } from '@/lib/api/students';
+import { getApplicationItems, getStudentApplications } from '@/lib/api/applications';
 import type {
   Student,
   ApplicationItem,
@@ -36,10 +35,11 @@ export default function ApplicationsPage() {
   const router = useRouter();
   const canEdit = useCanEdit('canEditApplications');
   const { getSelectedSchoolIds, selectedSchoolId, profile } = useAuth();
-  
+
   // 教室長以上かどうかを判定（manager, owner, admin）
-  const isManagerOrAbove = profile?.role === 'manager' || profile?.role === 'owner' || profile?.role === 'admin';
-  
+  const isManagerOrAbove =
+    profile?.role === 'manager' || profile?.role === 'owner' || profile?.role === 'admin';
+
   // 状態管理
   const [students, setStudents] = useState<Student[]>([]);
   const [items, setItems] = useState<ApplicationItem[]>([]);
@@ -80,9 +80,7 @@ export default function ApplicationsPage() {
       setApplications(applicationsData);
     } catch (error) {
       console.error('Error fetching data:', error);
-      setErrorMessage(
-        getUserErrorMessage(error, 'データの取得に失敗しました')
-      );
+      setErrorMessage(getUserErrorMessage(error, 'データの取得に失敗しました'));
     } finally {
       setIsLoading(false);
     }
@@ -165,9 +163,7 @@ export default function ApplicationsPage() {
       if (status === null) {
         // 削除
         setApplications((prev) =>
-          prev.filter(
-            (app) => !(app.student_id === studentId && app.item_id === itemId)
-          )
+          prev.filter((app) => !(app.student_id === studentId && app.item_id === itemId))
         );
       } else {
         // 更新または追加
@@ -176,9 +172,7 @@ export default function ApplicationsPage() {
             (app) => app.student_id === studentId && app.item_id === itemId
           );
           if (existing) {
-            return prev.map((app) =>
-              app.id === existing.id ? { ...app, status } : app
-            );
+            return prev.map((app) => (app.id === existing.id ? { ...app, status } : app));
           } else {
             // 新規作成（実際のIDはAPIから返されるが、ここでは仮のIDを使用）
             const newApp: StudentApplication = {
@@ -206,9 +200,7 @@ export default function ApplicationsPage() {
       if (numberValue === null) {
         // 削除
         setApplications((prev) =>
-          prev.filter(
-            (app) => !(app.student_id === studentId && app.item_id === itemId)
-          )
+          prev.filter((app) => !(app.student_id === studentId && app.item_id === itemId))
         );
       } else {
         // 更新または追加
@@ -247,9 +239,7 @@ export default function ApplicationsPage() {
       if (dateValue === null) {
         // 削除
         setApplications((prev) =>
-          prev.filter(
-            (app) => !(app.student_id === studentId && app.item_id === itemId)
-          )
+          prev.filter((app) => !(app.student_id === studentId && app.item_id === itemId))
         );
       } else {
         // 更新または追加
@@ -313,9 +303,7 @@ export default function ApplicationsPage() {
   }
 
   return (
-    <AdminLayout
-      headerTitle="申込状況管理"
-    >
+    <AdminLayout headerTitle="申込状況管理">
       {/* コンテキストヘルプ */}
       <div className="flex justify-end mb-2">
         <ContextHelp
@@ -324,18 +312,12 @@ export default function ApplicationsPage() {
             {
               title: '申込状況を確認する',
               description: '生徒ごとの講習申込み状況を一覧で確認します。',
-              steps: [
-                '検索・学年・項目のフィルタで絞り込み',
-                '生徒行をクリックして詳細を確認',
-              ],
+              steps: ['検索・学年・項目のフィルタで絞り込み', '生徒行をクリックして詳細を確認'],
             },
             {
               title: '申込項目を管理する',
               description: '申込みの選択肢となる項目を追加・編集します。',
-              steps: [
-                '「項目管理」アコーディオンを開く',
-                '項目の追加・編集・削除を実行',
-              ],
+              steps: ['「項目管理」アコーディオンを開く', '項目の追加・編集・削除を実行'],
             },
           ]}
         />
@@ -350,30 +332,30 @@ export default function ApplicationsPage() {
 
       {/* フィルターパネル */}
       <ApplicationFiltersPanel
-          filters={filters}
-          items={displayItems}
-          onChange={handleFilterChange}
+        filters={filters}
+        items={displayItems}
+        onChange={handleFilterChange}
         onReset={handleResetFilters}
       />
 
       {/* 項目管理アコーディオン（教室長以上のみ） */}
-      {isManagerOrAbove && (() => {
-        const schoolIds = getSelectedSchoolIds();
-        const schoolId = schoolIds.length > 0 ? schoolIds[0] : null;
-        if (!schoolId) return null;
-        return (
-          <ApplicationItemAccordion
-            schoolId={schoolId}
-            items={items}
-            onUpdated={fetchData}
-          />
-        );
-      })()}
+      {isManagerOrAbove &&
+        (() => {
+          const schoolIds = getSelectedSchoolIds();
+          const schoolId = schoolIds.length > 0 ? schoolIds[0] : null;
+          if (!schoolId) return null;
+          return (
+            <ApplicationItemAccordion schoolId={schoolId} items={items} onUpdated={fetchData} />
+          );
+        })()}
 
       {/* 説明 */}
       {canEdit && (
         <div className="mb-4 text-text-body text-sm">
-          <p>セルをクリックして申込状況を切り替えます: 空白 → ×（未申込）→ ✓（申込済）→ -（対象外）→ 空白</p>
+          <p>
+            セルをクリックして申込状況を切り替えます: 空白 → ×（未申込）→ ✓（申込済）→ -（対象外）→
+            空白
+          </p>
         </div>
       )}
       {!canEdit && (
@@ -384,23 +366,25 @@ export default function ApplicationsPage() {
 
       {/* テーブル */}
       {isLoading ? (
-          <div className="bg-surface-raised rounded-xl border border-border p-8">
-            <InlineLoading />
-          </div>
-        ) : tableItems.length === 0 ? (
-          <div className="bg-surface-raised rounded-xl border border-border p-8 text-center">
-            <p className="text-text-body">申込項目がありません。</p>
-            {canEdit && isManagerOrAbove ? (
-              // 教室長以上: 項目管理で追加するよう案内
-              <p className="text-text-body/80 text-sm mt-2">
-                上部の「項目管理」から新しい項目を追加してください。
-              </p>
-            ) : !isManagerOrAbove && (
+        <div className="bg-surface-raised rounded-xl border border-border p-8">
+          <InlineLoading />
+        </div>
+      ) : tableItems.length === 0 ? (
+        <div className="bg-surface-raised rounded-xl border border-border p-8 text-center">
+          <p className="text-text-body">申込項目がありません。</p>
+          {canEdit && isManagerOrAbove ? (
+            // 教室長以上: 項目管理で追加するよう案内
+            <p className="text-text-body/80 text-sm mt-2">
+              上部の「項目管理」から新しい項目を追加してください。
+            </p>
+          ) : (
+            !isManagerOrAbove && (
               // 講師: 項目管理にアクセスできないため、教室長への依頼を促す
               <p className="text-text-body/80 text-sm mt-2">
                 申込項目がありません。教室長に項目の追加を依頼してください。
               </p>
-            )}
+            )
+          )}
         </div>
       ) : (
         <ApplicationTable

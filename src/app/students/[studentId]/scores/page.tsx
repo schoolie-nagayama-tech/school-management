@@ -28,11 +28,7 @@ import {
 } from '@/lib/api/assessments';
 import { getStudent } from '@/lib/api/students';
 import type { Student, AssessmentWithScores, AssessmentScore } from '@/types/database';
-import {
-  ASSESSMENT_NAME_LABELS,
-  ASSESSMENT_NAME_OPTIONS,
-  GRADE_LABELS,
-} from '@/types/database';
+import { ASSESSMENT_NAME_LABELS, ASSESSMENT_NAME_OPTIONS, GRADE_LABELS } from '@/types/database';
 import { useToast } from '@/hooks/useToast';
 import { useConfirm } from '@/hooks/useConfirm';
 import { useRequirePermission } from '@/hooks/usePermissions';
@@ -81,14 +77,18 @@ function convertToChartData(assessments: AssessmentWithScores[]): ChartDataPoint
 export default function StudentScoresPage() {
   const params = useParams();
   const studentId = params.studentId as string;
-  const { hasPermission, isLoading: permissionLoading } = useRequirePermission((p) => p.canAccessScores);
+  const { hasPermission, isLoading: permissionLoading } = useRequirePermission(
+    (p) => p.canAccessScores
+  );
   const { permissions, getSelectedSchoolIds } = useAuth();
   const canEditScores = !!permissions?.canEditScores;
   const { toasts, removeToast, success, error: toastError } = useToast();
   const { confirm, ConfirmDialog } = useConfirm();
 
   const [student, setStudent] = useState<Student | null>(null);
-  const [assessmentsByCategory, setAssessmentsByCategory] = useState<Record<Category, AssessmentWithScores[]>>({
+  const [assessmentsByCategory, setAssessmentsByCategory] = useState<
+    Record<Category, AssessmentWithScores[]>
+  >({
     regular_test: [],
     report_card: [],
     mock: [],
@@ -97,7 +97,9 @@ export default function StudentScoresPage() {
   const [errorMessage, setErrorMessage] = useState('');
   const [showGraph, setShowGraph] = useState(false);
   const [showMockGraph, setShowMockGraph] = useState(false);
-  const [editingCell, setEditingCell] = useState<{ assessmentId: string; subject: string } | null>(null);
+  const [editingCell, setEditingCell] = useState<{ assessmentId: string; subject: string } | null>(
+    null
+  );
   const [cellValue, setCellValue] = useState('');
   const [addingRowCategory, setAddingRowCategory] = useState<Category | null>(null);
   const [newRowNameCode, setNewRowNameCode] = useState('');
@@ -174,24 +176,30 @@ export default function StudentScoresPage() {
     }
 
     // オプティミスティック更新（再フェッチなしでスクロール位置を保持）
-    setAssessmentsByCategory(prev => {
+    setAssessmentsByCategory((prev) => {
       const next = { ...prev };
       for (const cat of Object.keys(next) as Category[]) {
-        const aIdx = next[cat].findIndex(a => a.id === assessmentId);
+        const aIdx = next[cat].findIndex((a) => a.id === assessmentId);
         if (aIdx === -1) continue;
         const assessment = next[cat][aIdx];
-        const scoreIdx = assessment.scores.findIndex(s => s.subject === subject);
+        const scoreIdx = assessment.scores.findIndex((s) => s.subject === subject);
         let newScores: AssessmentScore[];
         if (numValue === null) {
-          newScores = assessment.scores.filter(s => s.subject !== subject);
+          newScores = assessment.scores.filter((s) => s.subject !== subject);
         } else if (scoreIdx >= 0) {
-          newScores = assessment.scores.map(s =>
+          newScores = assessment.scores.map((s) =>
             s.subject === subject ? { ...s, value: numValue } : s
           );
         } else {
           newScores = [
             ...assessment.scores,
-            { id: `temp-${Date.now()}`, assessment_id: assessmentId, subject, value: numValue, created_at: new Date().toISOString() },
+            {
+              id: `temp-${Date.now()}`,
+              assessment_id: assessmentId,
+              subject,
+              value: numValue,
+              created_at: new Date().toISOString(),
+            },
           ];
         }
         const updated = [...next[cat]];
@@ -203,7 +211,7 @@ export default function StudentScoresPage() {
     });
     setEditingCell(null);
 
-    updateScore(assessmentId, subject, numValue).catch(e => {
+    updateScore(assessmentId, subject, numValue).catch((e) => {
       console.error(e);
       toastError('スコアの更新に失敗しました');
       fetchAllAssessments();
@@ -217,7 +225,13 @@ export default function StudentScoresPage() {
     }
     setIsSubmitting(true);
     try {
-      await createAssessmentRow(studentId, addingRowCategory, newRowNameCode, newRowGrade, newRowMonth || null);
+      await createAssessmentRow(
+        studentId,
+        addingRowCategory,
+        newRowNameCode,
+        newRowGrade,
+        newRowMonth || null
+      );
       setNewRowNameCode('');
       setNewRowMonth('');
       setAddingRowCategory(null);
@@ -242,7 +256,15 @@ export default function StudentScoresPage() {
   }, []);
 
   const handleDeleteRow = async (assessmentId: string) => {
-    if (!(await confirm({ title: '削除確認', description: 'この行を削除してもよろしいですか？', confirmLabel: '削除', variant: 'danger' }))) return;
+    if (
+      !(await confirm({
+        title: '削除確認',
+        description: 'この行を削除してもよろしいですか？',
+        confirmLabel: '削除',
+        variant: 'danger',
+      }))
+    )
+      return;
     try {
       await deleteAssessmentRow(assessmentId);
       await fetchAllAssessments();
@@ -332,12 +354,10 @@ export default function StudentScoresPage() {
           {showGraph && chartDataRegular.length > 0 && (
             <section className="bg-[var(--surface)] rounded-xl border border-gray-200 p-4">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-sm font-semibold text-[var(--headline)]">定期テスト 成績推移</h2>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => setShowGraph(!showGraph)}
-                >
+                <h2 className="text-sm font-semibold text-[var(--headline)]">
+                  定期テスト 成績推移
+                </h2>
+                <Button variant="secondary" size="sm" onClick={() => setShowGraph(!showGraph)}>
                   グラフを非表示
                 </Button>
               </div>
@@ -357,11 +377,7 @@ export default function StudentScoresPage() {
             <section className="bg-[var(--surface)] rounded-xl border border-gray-200 p-4">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-sm font-semibold text-[var(--headline)]">模試 偏差値の推移</h2>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => setShowMockGraph(false)}
-                >
+                <Button variant="secondary" size="sm" onClick={() => setShowMockGraph(false)}>
                   グラフを非表示
                 </Button>
               </div>
@@ -423,7 +439,9 @@ export default function StudentScoresPage() {
                         <div className="mb-4 p-3 bg-[var(--surface)] rounded-lg border border-gray-200">
                           <div className="flex flex-wrap items-end gap-3">
                             <div className="min-w-[120px]">
-                              <label className="block text-xs font-medium text-[var(--headline)] mb-1">テスト名</label>
+                              <label className="block text-xs font-medium text-[var(--headline)] mb-1">
+                                テスト名
+                              </label>
                               <select
                                 value={newRowNameCode}
                                 onChange={(e) => setNewRowNameCode(e.target.value)}
@@ -431,25 +449,33 @@ export default function StudentScoresPage() {
                               >
                                 <option value="">選択</option>
                                 {ASSESSMENT_NAME_OPTIONS[category].map((opt) => (
-                                  <option key={opt.code} value={opt.code}>{opt.label}</option>
+                                  <option key={opt.code} value={opt.code}>
+                                    {opt.label}
+                                  </option>
                                 ))}
                               </select>
                             </div>
                             <div className="min-w-[80px]">
-                              <label className="block text-xs font-medium text-[var(--headline)] mb-1">学年</label>
+                              <label className="block text-xs font-medium text-[var(--headline)] mb-1">
+                                学年
+                              </label>
                               <select
                                 value={newRowGrade}
                                 onChange={(e) => setNewRowGrade(parseInt(e.target.value, 10))}
                                 className="w-full px-2 py-1.5 border border-gray-200 rounded text-sm bg-white"
                               >
                                 {[7, 8, 9, 10, 11, 12].map((g) => (
-                                  <option key={g} value={g}>{GRADE_LABELS[g]}</option>
+                                  <option key={g} value={g}>
+                                    {GRADE_LABELS[g]}
+                                  </option>
                                 ))}
                               </select>
                             </div>
                             {category !== 'report_card' && (
                               <div className="min-w-[140px]">
-                                <label className="block text-xs font-medium text-[var(--headline)] mb-1">年月</label>
+                                <label className="block text-xs font-medium text-[var(--headline)] mb-1">
+                                  年月
+                                </label>
                                 <input
                                   type="month"
                                   value={newRowMonth}

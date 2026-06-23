@@ -53,7 +53,8 @@ export function BulletinPostModal({
   const [errorMessage, setErrorMessage] = useState('');
 
   const availableSchools = schools.filter((s) => schoolIds?.includes(s.id)) ?? [];
-  const allSelected = availableSchools.length > 0 && selectedSchoolIds.length >= availableSchools.length;
+  const allSelected =
+    availableSchools.length > 0 && selectedSchoolIds.length >= availableSchools.length;
 
   useEffect(() => {
     if (post) {
@@ -99,7 +100,11 @@ export function BulletinPostModal({
       return;
     }
 
-    const targetSchoolIds = post ? [post.school_id] : (selectedSchoolIds.length > 0 ? selectedSchoolIds : [schoolId]);
+    const targetSchoolIds = post
+      ? [post.school_id]
+      : selectedSchoolIds.length > 0
+        ? selectedSchoolIds
+        : [schoolId];
     if (targetSchoolIds.length === 0) {
       setErrorMessage('投稿先の教室を1つ以上選択してください');
       return;
@@ -110,18 +115,24 @@ export function BulletinPostModal({
       const { createBulletinPost, updateBulletinPost } = await import('@/lib/api/bulletin');
       const { supabase } = await import('@/lib/supabase');
 
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       const userId = user?.id;
 
-        const normalizedLink = normalizeLinkUrl(linkUrl);
-        if (post) {
-        await updateBulletinPost(post.id, {
-          title: title.trim(),
-          content: content,
-          link_url: normalizedLink,
-          label_id: labelId,
-          is_pinned: isPinned,
-        }, userId);
+      const normalizedLink = normalizeLinkUrl(linkUrl);
+      if (post) {
+        await updateBulletinPost(
+          post.id,
+          {
+            title: title.trim(),
+            content: content,
+            link_url: normalizedLink,
+            label_id: labelId,
+            is_pinned: isPinned,
+          },
+          userId
+        );
       } else {
         const payload = {
           title: title.trim(),
@@ -145,7 +156,8 @@ export function BulletinPostModal({
     }
   };
 
-  const showSchoolSelector = !post && schoolIds && schoolIds.length > 1 && availableSchools.length > 0;
+  const showSchoolSelector =
+    !post && schoolIds && schoolIds.length > 1 && availableSchools.length > 0;
 
   const toggleSchool = (id: string) => {
     if (selectedSchoolIds.includes(id)) {
@@ -217,9 +229,7 @@ export function BulletinPostModal({
 
         {(!showSchoolSelector || selectedSchoolIds.length <= 1) && (
           <div>
-            <label className="block text-sm font-medium text-[#1f2937] mb-1">
-              ラベル
-            </label>
+            <label className="block text-sm font-medium text-[#1f2937] mb-1">ラベル</label>
             <select
               value={labelId || ''}
               onChange={(e) => setLabelId(e.target.value || null)}

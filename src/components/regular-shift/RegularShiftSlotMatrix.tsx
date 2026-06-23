@@ -23,13 +23,7 @@ function parseTimeSlotLabel(slot: string): { left: string; right: string } {
   return { left: slot.slice(0, idx + 1), right: slot.slice(idx + 1) };
 }
 
-function ToggleButton({
-  onClick,
-  title,
-}: {
-  onClick: () => void;
-  title: string;
-}) {
+function ToggleButton({ onClick, title }: { onClick: () => void; title: string }) {
   return (
     <button
       type="button"
@@ -88,7 +82,7 @@ export function RegularShiftSlotMatrix({
         rows.push({
           day_of_week: day,
           time_slot: timeSlot,
-          is_open: map.get(k) ?? (mode === 'settings' ? (day !== 6) : false),
+          is_open: map.get(k) ?? (mode === 'settings' ? day !== 6 : false),
         });
       });
     });
@@ -105,9 +99,8 @@ export function RegularShiftSlotMatrix({
   }
 
   function toggleColumn(timeSlot: string) {
-    const daysInColumn = mode === 'submission'
-      ? DAYS.filter((d) => isSlotOpen(d, timeSlot))
-      : [...DAYS];
+    const daysInColumn =
+      mode === 'submission' ? DAYS.filter((d) => isSlotOpen(d, timeSlot)) : [...DAYS];
     const allChecked = daysInColumn.every((d) => getIsOpen(d, timeSlot));
     const newValue = !allChecked;
     const next = new Map(valueMap);
@@ -116,9 +109,8 @@ export function RegularShiftSlotMatrix({
   }
 
   function toggleRow(day: number) {
-    const slotsInRow = mode === 'submission'
-      ? timeSlots.filter((ts) => isSlotOpen(day, ts))
-      : timeSlots;
+    const slotsInRow =
+      mode === 'submission' ? timeSlots.filter((ts) => isSlotOpen(day, ts)) : timeSlots;
     const allChecked = slotsInRow.every((ts) => getIsOpen(day, ts));
     const newValue = !allChecked;
     const next = new Map(valueMap);
@@ -146,7 +138,10 @@ export function RegularShiftSlotMatrix({
               {timeSlots.map((slot) => {
                 const { left, right } = parseTimeSlotLabel(slot);
                 return (
-                  <th key={slot} className="px-1 py-2 text-center font-medium text-[#1f2937] min-w-[72px]">
+                  <th
+                    key={slot}
+                    className="px-1 py-2 text-center font-medium text-[#1f2937] min-w-[72px]"
+                  >
                     <div className="flex flex-col items-center gap-0.5">
                       <span className="text-xs">{left}</span>
                       <span className="text-xs text-[#6b7280]">{right}</span>
@@ -169,10 +164,7 @@ export function RegularShiftSlotMatrix({
                 <tr key={day} className="border-b border-[#e5e7eb]/60">
                   <td className="px-1 py-2 text-[#1f2937]">
                     <div className="flex items-center gap-1">
-                      <ToggleButton
-                        onClick={() => toggleRow(day)}
-                        title="この行を一括トグル"
-                      />
+                      <ToggleButton onClick={() => toggleRow(day)} title="この行を一括トグル" />
                       <span className="font-medium">{label}</span>
                     </div>
                   </td>

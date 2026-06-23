@@ -7,7 +7,12 @@ import { ToastContainer } from '@/components/ui';
 import { useToast } from '@/hooks/useToast';
 import type { TeacherBadge, BadgeCategory } from '@/types/database';
 import { BADGE_CATEGORY_CONFIG, BADGE_RANK_CONFIG } from '@/types/database';
-import { getTeacherBadges, createTeacherBadge, updateTeacherBadge, deleteTeacherBadge } from '@/lib/api/teacher-badges';
+import {
+  getTeacherBadges,
+  createTeacherBadge,
+  updateTeacherBadge,
+  deleteTeacherBadge,
+} from '@/lib/api/teacher-badges';
 import { BadgeIcon } from '@/components/teacher-badges/BadgeIcon';
 import { BadgeTemplateDialog } from '@/components/teacher-badges/BadgeTemplateDialog';
 import { BadgeAssignDialog } from '@/components/teacher-badges/BadgeAssignDialog';
@@ -43,7 +48,9 @@ export default function TeacherBadgesPage() {
     }
   }, []);
 
-  useEffect(() => { fetchBadges(); }, [fetchBadges]);
+  useEffect(() => {
+    fetchBadges();
+  }, [fetchBadges]);
 
   const handleCreate = () => {
     setEditTarget(null);
@@ -82,7 +89,12 @@ export default function TeacherBadgesPage() {
   };
 
   const handleDisable = async (badge: TeacherBadge) => {
-    if (!confirm(`「${badge.name}」を無効化しますか？\n（付与済みのデータは残りますが、新規付与はできなくなります）`)) return;
+    if (
+      !confirm(
+        `「${badge.name}」を無効化しますか？\n（付与済みのデータは残りますが、新規付与はできなくなります）`
+      )
+    )
+      return;
     try {
       await deleteTeacherBadge(badge.id);
       setBadges((prev) => prev.map((b) => (b.id === badge.id ? { ...b, is_active: false } : b)));
@@ -103,7 +115,12 @@ export default function TeacherBadgesPage() {
   };
 
   const handleHardDelete = async (badge: TeacherBadge) => {
-    if (!confirm(`「${badge.name}」を完全に削除しますか？\n付与済みの全データも削除されます。この操作は取り消せません。`)) return;
+    if (
+      !confirm(
+        `「${badge.name}」を完全に削除しますか？\n付与済みの全データも削除されます。この操作は取り消せません。`
+      )
+    )
+      return;
     try {
       await deleteTeacherBadge(badge.id, { hard: true });
       setBadges((prev) => prev.filter((b) => b.id !== badge.id));
@@ -149,185 +166,195 @@ export default function TeacherBadgesPage() {
         ) : undefined
       }
     >
-        {/* トップレベルタブ */}
-        <div className="flex gap-1 mb-6 border-b border-gray-200">
-          {topTabs.map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => setTopTab(tab.key)}
-              className={`
+      {/* トップレベルタブ */}
+      <div className="flex gap-1 mb-6 border-b border-gray-200">
+        {topTabs.map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => setTopTab(tab.key)}
+            className={`
                 flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors duration-150 -mb-px
-                ${topTab === tab.key
-                  ? 'border-ink text-ink'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                ${
+                  topTab === tab.key
+                    ? 'border-ink text-ink'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }
               `}
-            >
-              {tab.icon}
-              {tab.label}
-            </button>
-          ))}
-        </div>
+          >
+            {tab.icon}
+            {tab.label}
+          </button>
+        ))}
+      </div>
 
-        {/* バッジ管理タブ */}
-        {topTab === 'badges' && (
-          <>
-            {/* カテゴリフィルタ */}
-            <div className="flex gap-1 mb-6 p-1 bg-gray-100 rounded-lg w-fit">
-              {categoryTabs.map((tab) => (
-                <button
-                  key={tab.key}
-                  onClick={() => setFilter(tab.key)}
-                  className={`px-4 py-1.5 text-sm font-medium rounded-md transition-[background-color,color,box-shadow] duration-150 ease-out ${
-                    filter === tab.key
-                      ? 'bg-surface-raised text-gray-900 shadow-sm'
-                      : 'text-gray-500 hover:text-gray-700'
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
+      {/* バッジ管理タブ */}
+      {topTab === 'badges' && (
+        <>
+          {/* カテゴリフィルタ */}
+          <div className="flex gap-1 mb-6 p-1 bg-gray-100 rounded-lg w-fit">
+            {categoryTabs.map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => setFilter(tab.key)}
+                className={`px-4 py-1.5 text-sm font-medium rounded-md transition-[background-color,color,box-shadow] duration-150 ease-out ${
+                  filter === tab.key
+                    ? 'bg-surface-raised text-gray-900 shadow-sm'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          {/* テーブル */}
+          {loading ? (
+            <Loading size="md" />
+          ) : filtered.length === 0 ? (
+            <div className="text-center py-16 text-gray-400">
+              <p className="text-sm">バッジがまだありません</p>
+              <button onClick={handleCreate} className="mt-3 text-sm text-ink hover:underline">
+                最初のバッジを作成する
+              </button>
             </div>
-
-            {/* テーブル */}
-            {loading ? (
-              <Loading size="md" />
-            ) : filtered.length === 0 ? (
-              <div className="text-center py-16 text-gray-400">
-                <p className="text-sm">バッジがまだありません</p>
-                <button
-                  onClick={handleCreate}
-                  className="mt-3 text-sm text-ink hover:underline"
-                >
-                  最初のバッジを作成する
-                </button>
-              </div>
-            ) : (
-              <div className="bg-surface-raised rounded-xl border border-gray-200 overflow-hidden">
-                <table className="w-full">
-                  <thead>
-                    <tr className="bg-gray-50 border-b border-gray-200">
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">バッジ</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">カテゴリ</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">ランク</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">説明</th>
-                      <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">操作</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {filtered.map((badge) => {
-                      const rankConfig = BADGE_RANK_CONFIG[badge.rank];
-                      const inactive = !badge.is_active;
-                      return (
-                        <tr key={badge.id} className={`hover:bg-gray-50/50 transition-colors ${inactive ? 'opacity-50' : ''}`}>
-                          <td className="px-4 py-3">
-                            <div className="flex items-center gap-3">
-                              <div
-                                className="w-9 h-9 rounded-lg flex items-center justify-center text-white shadow-sm"
-                                style={{
-                                  background: `linear-gradient(135deg, ${rankConfig.color}, ${rankConfig.color}88)`,
-                                }}
-                              >
-                                <BadgeIcon icon={badge.icon} size={18} />
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <span className="text-sm font-medium text-gray-900">{badge.name}</span>
-                                {inactive && (
-                                  <span className="text-[10px] font-semibold text-gray-500 bg-gray-200 px-1.5 py-0.5 rounded">無効</span>
-                                )}
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-4 py-3">
-                            <span className="text-xs font-medium text-gray-600 bg-gray-100 px-2 py-0.5 rounded">
-                              {BADGE_CATEGORY_CONFIG[badge.category].label}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3">
-                            <span
-                              className="text-xs font-bold uppercase tracking-wider"
-                              style={{ color: rankConfig.color }}
+          ) : (
+            <div className="bg-surface-raised rounded-xl border border-gray-200 overflow-hidden">
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-gray-50 border-b border-gray-200">
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      バッジ
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      カテゴリ
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      ランク
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      説明
+                    </th>
+                    <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      操作
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {filtered.map((badge) => {
+                    const rankConfig = BADGE_RANK_CONFIG[badge.rank];
+                    const inactive = !badge.is_active;
+                    return (
+                      <tr
+                        key={badge.id}
+                        className={`hover:bg-gray-50/50 transition-colors ${inactive ? 'opacity-50' : ''}`}
+                      >
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-3">
+                            <div
+                              className="w-9 h-9 rounded-lg flex items-center justify-center text-white shadow-sm"
+                              style={{
+                                background: `linear-gradient(135deg, ${rankConfig.color}, ${rankConfig.color}88)`,
+                              }}
                             >
-                              {rankConfig.label}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3 text-sm text-gray-500 max-w-xs truncate">
-                            {badge.description || '-'}
-                          </td>
-                          <td className="px-4 py-3 text-right">
-                            <div className="flex justify-end gap-3">
-                              {!inactive && (
-                                <button
-                                  onClick={() => setAssignTarget(badge)}
-                                  className="text-xs text-sky-600 hover:underline font-medium"
-                                >
-                                  適用
-                                </button>
-                              )}
-                              <button
-                                onClick={() => handleEdit(badge)}
-                                className="text-xs text-ink hover:underline"
-                              >
-                                編集
-                              </button>
-                              {inactive ? (
-                                <button
-                                  onClick={() => handleEnable(badge)}
-                                  className="text-xs text-emerald-600 hover:underline"
-                                >
-                                  再有効化
-                                </button>
-                              ) : (
-                                <button
-                                  onClick={() => handleDisable(badge)}
-                                  className="text-xs text-amber-600 hover:underline"
-                                >
-                                  無効化
-                                </button>
-                              )}
-                              <button
-                                onClick={() => handleHardDelete(badge)}
-                                className="text-xs text-red-500 hover:underline"
-                              >
-                                削除
-                              </button>
+                              <BadgeIcon icon={badge.icon} size={18} />
                             </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </>
-        )}
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-medium text-gray-900">
+                                {badge.name}
+                              </span>
+                              {inactive && (
+                                <span className="text-[10px] font-semibold text-gray-500 bg-gray-200 px-1.5 py-0.5 rounded">
+                                  無効
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className="text-xs font-medium text-gray-600 bg-gray-100 px-2 py-0.5 rounded">
+                            {BADGE_CATEGORY_CONFIG[badge.category].label}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span
+                            className="text-xs font-bold uppercase tracking-wider"
+                            style={{ color: rankConfig.color }}
+                          >
+                            {rankConfig.label}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-500 max-w-xs truncate">
+                          {badge.description || '-'}
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <div className="flex justify-end gap-3">
+                            {!inactive && (
+                              <button
+                                onClick={() => setAssignTarget(badge)}
+                                className="text-xs text-sky-600 hover:underline font-medium"
+                              >
+                                適用
+                              </button>
+                            )}
+                            <button
+                              onClick={() => handleEdit(badge)}
+                              className="text-xs text-ink hover:underline"
+                            >
+                              編集
+                            </button>
+                            {inactive ? (
+                              <button
+                                onClick={() => handleEnable(badge)}
+                                className="text-xs text-emerald-600 hover:underline"
+                              >
+                                再有効化
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => handleDisable(badge)}
+                                className="text-xs text-amber-600 hover:underline"
+                              >
+                                無効化
+                              </button>
+                            )}
+                            <button
+                              onClick={() => handleHardDelete(badge)}
+                              className="text-xs text-red-500 hover:underline"
+                            >
+                              削除
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </>
+      )}
 
-        {/* 研修マスタタブ */}
-        {topTab === 'trainings' && (
-          <TrainingMastersPanel
-            onSuccess={success}
-            onError={toastError}
-          />
-        )}
+      {/* 研修マスタタブ */}
+      {topTab === 'trainings' && <TrainingMastersPanel onSuccess={success} onError={toastError} />}
 
-        <BadgeTemplateDialog
-          open={dialogOpen}
-          onClose={handleDialogClose}
-          onSave={handleSave}
-          initial={editTarget}
-        />
+      <BadgeTemplateDialog
+        open={dialogOpen}
+        onClose={handleDialogClose}
+        onSave={handleSave}
+        initial={editTarget}
+      />
 
-        <BadgeAssignDialog
-          open={!!assignTarget}
-          badge={assignTarget}
-          schoolIds={schoolIds}
-          onClose={() => setAssignTarget(null)}
-          onSuccess={success}
-          onError={toastError}
-        />
+      <BadgeAssignDialog
+        open={!!assignTarget}
+        badge={assignTarget}
+        schoolIds={schoolIds}
+        onClose={() => setAssignTarget(null)}
+        onSuccess={success}
+        onError={toastError}
+      />
 
-        <ToastContainer toasts={toasts} onRemove={removeToast} />
+      <ToastContainer toasts={toasts} onRemove={removeToast} />
     </AdminLayout>
   );
 }

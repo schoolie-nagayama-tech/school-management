@@ -29,7 +29,9 @@ export default function SeasonalShiftEditPage() {
   const editToken = params.editToken as string;
 
   const [setting, setSetting] = useState<SeasonalShiftSetting | null>(null);
-  const [slotSettings, setSlotSettings] = useState<{ slot_date: string; time_slot: string; is_open: boolean }[]>([]);
+  const [slotSettings, setSlotSettings] = useState<
+    { slot_date: string; time_slot: string; is_open: boolean }[]
+  >([]);
   const [selected, setSelected] = useState<Set<SlotKey>>(new Set());
   const [teacherName, setTeacherName] = useState('');
   const [teacherEmail, setTeacherEmail] = useState('');
@@ -68,7 +70,13 @@ export default function SeasonalShiftEditPage() {
         return;
       }
       setSetting(result.setting);
-      setSlotSettings(result.slotSettings.map((r) => ({ slot_date: r.slot_date, time_slot: r.time_slot, is_open: r.is_open })));
+      setSlotSettings(
+        result.slotSettings.map((r) => ({
+          slot_date: r.slot_date,
+          time_slot: r.time_slot,
+          is_open: r.is_open,
+        }))
+      );
       setTeacherName(submission.teacher_name ?? '');
       setTeacherEmail(submission.teacher_email ?? '');
       setNotes(submission.notes ?? '');
@@ -93,7 +101,10 @@ export default function SeasonalShiftEditPage() {
 
   const dates = setting ? getDatesBetween(setting.start_date, setting.end_date) : [];
   const timeSlots = setting
-    ? setting.weekday_slots.split(',').map((x) => x.trim()).filter(Boolean)
+    ? setting.weekday_slots
+        .split(',')
+        .map((x) => x.trim())
+        .filter(Boolean)
     : [];
   const slotMatrix: { date: string; slot: string; key: SlotKey; available: boolean }[] = [];
   if (setting) {
@@ -160,11 +171,15 @@ export default function SeasonalShiftEditPage() {
         const [date, timeSlot] = key.split('|');
         return { shift_date: date, time_slot: timeSlot, available: true };
       });
-      await updateSeasonalShiftSubmissionByToken(editToken, {
-        teacher_name: teacherName.trim(),
-        teacher_email: teacherEmail.trim(),
-        notes: notes.trim(),
-      }, slots);
+      await updateSeasonalShiftSubmissionByToken(
+        editToken,
+        {
+          teacher_name: teacherName.trim(),
+          teacher_email: teacherEmail.trim(),
+          notes: notes.trim(),
+        },
+        slots
+      );
       setSubmitted(true);
     } catch (err) {
       console.error(err);
@@ -186,9 +201,7 @@ export default function SeasonalShiftEditPage() {
     return (
       <div className="min-h-screen bg-surface-hover flex items-center justify-center p-4">
         <div className="text-center">
-          <h1 className="text-xl font-bold text-text-heading mb-2">
-            この修正用URLは無効です
-          </h1>
+          <h1 className="text-xl font-bold text-text-heading mb-2">この修正用URLは無効です</h1>
           <p className="text-text-body text-sm">
             修正が完了済みか、URLの有効期限が切れています。管理者にお問い合わせください。
           </p>
@@ -230,7 +243,10 @@ export default function SeasonalShiftEditPage() {
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-surface-raised rounded-xl border border-border p-6 space-y-6">
+        <form
+          onSubmit={handleSubmit}
+          className="bg-surface-raised rounded-xl border border-border p-6 space-y-6"
+        >
           <div>
             <label className="block text-sm font-medium text-text-heading mb-1">お名前 *</label>
             <input
@@ -242,7 +258,9 @@ export default function SeasonalShiftEditPage() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-text-heading mb-1">メールアドレス *</label>
+            <label className="block text-sm font-medium text-text-heading mb-1">
+              メールアドレス *
+            </label>
             <input
               type="email"
               required
@@ -340,9 +358,7 @@ export default function SeasonalShiftEditPage() {
             />
           </div>
 
-          {errorMessage && (
-            <p className="text-sm text-red-600">{errorMessage}</p>
-          )}
+          {errorMessage && <p className="text-sm text-red-600">{errorMessage}</p>}
 
           <button
             type="submit"

@@ -89,7 +89,9 @@ export default function TestPrepList() {
                     {new Date(p.updated_at).toLocaleDateString('ja-JP')} 更新
                   </p>
                 </div>
-                <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${STATUS_STYLES[p.status]}`}>
+                <span
+                  className={`px-2.5 py-1 rounded-full text-xs font-medium ${STATUS_STYLES[p.status]}`}
+                >
                   {TEST_PREP_STATUS_LABELS[p.status]}
                 </span>
               </div>

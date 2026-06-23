@@ -36,17 +36,22 @@ export function SchoolFormModal({
           {editingSchool ? '教室を編集' : '教室を追加'}
         </h2>
         <form
-          onSubmit={editingSchool ? (e) => { e.preventDefault(); onSubmitEdit(); } : onSubmitCreate}
+          onSubmit={
+            editingSchool
+              ? (e) => {
+                  e.preventDefault();
+                  onSubmitEdit();
+                }
+              : onSubmitCreate
+          }
           className="space-y-4"
         >
           <div>
-            <label className="block text-sm font-medium text-[#1f2937] mb-1">
-              教室名
-            </label>
+            <label className="block text-sm font-medium text-[#1f2937] mb-1">教室名</label>
             <input
               type="text"
               value={schoolName}
-              onChange={e => onSchoolNameChange(e.target.value)}
+              onChange={(e) => onSchoolNameChange(e.target.value)}
               required
               className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
               placeholder="例：長山教室"
@@ -59,7 +64,7 @@ export function SchoolFormModal({
             <input
               type="text"
               value={schoolCode}
-              onChange={e => onSchoolCodeChange(e.target.value)}
+              onChange={(e) => onSchoolCodeChange(e.target.value)}
               className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
               placeholder="例：NAGAYAMA"
             />
@@ -72,11 +77,13 @@ export function SchoolFormModal({
             <input
               type="email"
               value={notificationEmail}
-              onChange={e => onNotificationEmailChange(e.target.value)}
+              onChange={(e) => onNotificationEmailChange(e.target.value)}
               className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
               placeholder="manager@example.com"
             />
-            <p className="mt-1 text-xs text-[#4b5563]">フォームから申込があった際に通知を受け取るメールアドレスです</p>
+            <p className="mt-1 text-xs text-[#4b5563]">
+              フォームから申込があった際に通知を受け取るメールアドレスです
+            </p>
           </div>
           <div className="flex gap-3 pt-4">
             <button

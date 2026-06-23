@@ -1,6 +1,16 @@
 'use client';
 
-import { Button, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, Badge, Loading } from '@/components/ui';
+import {
+  Button,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+  Badge,
+  Loading,
+} from '@/components/ui';
 import { Pencil, Trash2, ArrowUp, ArrowDown } from 'lucide-react';
 import type { ScheduleTimeSlot } from '@/types/schedule';
 
@@ -18,11 +28,16 @@ interface TimeSlotTableProps {
   isLoading?: boolean;
 }
 
-export function TimeSlotTable({ slots, onEdit, onDelete, onAdd, onMove, isLoading }: TimeSlotTableProps) {
+export function TimeSlotTable({
+  slots,
+  onEdit,
+  onDelete,
+  onAdd,
+  onMove,
+  isLoading,
+}: TimeSlotTableProps) {
   if (isLoading) {
-    return (
-      <Loading size="md" />
-    );
+    return <Loading size="md" />;
   }
   if (slots.length === 0) {
     return (

@@ -2,7 +2,16 @@
 
 import { useRouter } from 'next/navigation';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui';
-import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogAction, AlertDialogCancel } from '@/components/ui';
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogAction,
+  AlertDialogCancel,
+} from '@/components/ui';
 import { Button, Spinner } from '@/components/ui';
 import {
   ScheduleEntryModal,
@@ -90,7 +99,12 @@ interface ScheduleDialogsProps {
   weekEndStr: string;
   closedDates: string[];
   initialTransferTarget: { date: string; slotId: string } | null;
-  onTransfer: (targetDate: string, targetSlotId: string, targetTeacherId: string, seatLabel?: string | null) => Promise<void>;
+  onTransfer: (
+    targetDate: string,
+    targetSlotId: string,
+    targetTeacherId: string,
+    seatLabel?: string | null
+  ) => Promise<void>;
 
   // Teacher detail modal
   teacherDetailOpen: boolean;
@@ -229,7 +243,10 @@ export function ScheduleDialogs({
         </DialogContent>
       </Dialog>
 
-      <AlertDialog open={scheduleGenerateConfirmOpen} onOpenChange={onScheduleGenerateConfirmChange}>
+      <AlertDialog
+        open={scheduleGenerateConfirmOpen}
+        onOpenChange={onScheduleGenerateConfirmChange}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>スケジュールを強制再生成しますか？</AlertDialogTitle>
@@ -265,7 +282,7 @@ export function ScheduleDialogs({
         entry={actionModalEntry}
         timeSlot={
           actionModalEntry
-            ? timeSlots.find((s) => s.id === actionModalEntry.time_slot_id) ?? null
+            ? (timeSlots.find((s) => s.id === actionModalEntry.time_slot_id) ?? null)
             : null
         }
         onTransfer={onTransferFromAction}
@@ -314,14 +331,10 @@ export function ScheduleDialogs({
         isOpen={!!addTarget}
         onClose={onAddTargetClose}
         date={addTarget?.date ?? ''}
-        dayOfWeek={
-          addTarget?.date
-            ? new Date(addTarget.date + 'Z').getUTCDay()
-            : 0
-        }
+        dayOfWeek={addTarget?.date ? new Date(addTarget.date + 'Z').getUTCDay() : 0}
         timeSlot={
           addTarget
-            ? timeSlots.find((s) => s.id === addTarget.slotId) ?? ({} as ScheduleTimeSlot)
+            ? (timeSlots.find((s) => s.id === addTarget.slotId) ?? ({} as ScheduleTimeSlot))
             : ({} as ScheduleTimeSlot)
         }
         teacherId={addTarget?.teacherId ?? ''}
@@ -336,8 +349,7 @@ export function ScheduleDialogs({
         subjects={subjects}
         teacherTeachableSubjectIds={
           addTarget
-            ? teachers.find((t) => t.id === addTarget.teacherId)
-                ?.teachable_subject_ids
+            ? teachers.find((t) => t.id === addTarget.teacherId)?.teachable_subject_ids
             : undefined
         }
         onSuccess={onAddSuccess}
@@ -371,7 +383,7 @@ export function ScheduleDialogs({
         entry={deletingEntry}
         timeSlot={
           deletingEntry
-            ? timeSlots.find((s) => s.id === deletingEntry.time_slot_id) ?? null
+            ? (timeSlots.find((s) => s.id === deletingEntry.time_slot_id) ?? null)
             : null
         }
         onConfirm={onDeleteConfirm}
@@ -392,9 +404,7 @@ export function ScheduleDialogs({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={onRemoveTeacherConfirmClose}>
-              キャンセル
-            </AlertDialogCancel>
+            <AlertDialogCancel onClick={onRemoveTeacherConfirmClose}>キャンセル</AlertDialogCancel>
             <AlertDialogAction
               onClick={onRemoveTeacherConfirm}
               className="bg-[#d9376e] text-white hover:bg-[#c02d5a]"

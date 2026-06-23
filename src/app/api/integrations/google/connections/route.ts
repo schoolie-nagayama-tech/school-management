@@ -22,7 +22,12 @@ export async function GET(request: NextRequest) {
 
   // google_calendar_tokens と user_profiles を結合。
   // 連携ユーザー数ぶん行があり、大規模組織では 1000 を超えうるため全件ページング取得。
-  type TokenRow = { user_id: string; calendar_email: string | null; created_at: string; token_expiry: string | null };
+  type TokenRow = {
+    user_id: string;
+    calendar_email: string | null;
+    created_at: string;
+    token_expiry: string | null;
+  };
   let tokens: TokenRow[];
   try {
     tokens = await fetchAllPaged<TokenRow>((from, to) =>
@@ -42,31 +47,30 @@ export async function GET(request: NextRequest) {
 
   // ユーザープロフィール取得（userIds が 1000 超でも .in() が切り捨てないようチャンク分割）
   const userIds = tokens.map((t) => t.user_id);
-  const profiles = await fetchInChunks<{ id: string; display_name: string | null; role: string | null }>(
-    userIds,
-    (chunk) =>
-      supabaseAdmin
-        .from('user_profiles')
-        .select('id, display_name, role')
-        .in('id', chunk)
+  const profiles = await fetchInChunks<{
+    id: string;
+    display_name: string | null;
+    role: string | null;
+  }>(userIds, (chunk) =>
+    supabaseAdmin.from('user_profiles').select('id, display_name, role').in('id', chunk)
   ).catch(() => []);
 
   // user_schools は 1 ユーザーに複数教室がありうるため、id チャンク分割＋チャンク内
   // ページングの fetchAllInChunks で取得する。
-  const userSchools = await fetchAllInChunks<{ user_id: string; school_id: string; schools: unknown }>(
-    userIds,
-    (chunk, from, to) =>
-      supabaseAdmin
-        .from('user_schools')
-        .select('user_id, school_id, schools(id, name), id')
-        .in('user_id', chunk)
-        .order('id', { ascending: true })
-        .range(from, to)
+  const userSchools = await fetchAllInChunks<{
+    user_id: string;
+    school_id: string;
+    schools: unknown;
+  }>(userIds, (chunk, from, to) =>
+    supabaseAdmin
+      .from('user_schools')
+      .select('user_id, school_id, schools(id, name), id')
+      .in('user_id', chunk)
+      .order('id', { ascending: true })
+      .range(from, to)
   ).catch(() => []);
 
-  const profileMap = new Map(
-    profiles.map((p) => [p.id, p])
-  );
+  const profileMap = new Map(profiles.map((p) => [p.id, p]));
 
   const schoolMap = new Map<string, Array<{ id: string; name: string }>>();
   for (const us of userSchools) {

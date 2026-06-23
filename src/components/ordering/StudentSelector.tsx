@@ -19,7 +19,13 @@ interface StudentSelectorProps {
   showSampleOption?: boolean;
 }
 
-export function StudentSelector({ students, value, onChange, disabled, showSampleOption }: StudentSelectorProps) {
+export function StudentSelector({
+  students,
+  value,
+  onChange,
+  disabled,
+  showSampleOption,
+}: StudentSelectorProps) {
   const [search, setSearch] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -126,7 +132,9 @@ export function StudentSelector({ students, value, onChange, disabled, showSampl
                 onClick={() => handleSelect(s.id)}
               >
                 <span className="text-xs text-gray-400 w-6">{gradeLabel(s.grade)}</span>
-                <span className="text-gray-800">{s.last_name} {s.first_name}</span>
+                <span className="text-gray-800">
+                  {s.last_name} {s.first_name}
+                </span>
               </button>
             ))
           )}

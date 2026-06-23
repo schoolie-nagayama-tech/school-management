@@ -45,7 +45,9 @@ export async function resolveServerAuth(): Promise<InitialAuth | null> {
   try {
     const client = await createSupabaseServerClient();
 
-    const { data: { user } } = await client.auth.getUser();
+    const {
+      data: { user },
+    } = await client.auth.getUser();
     if (!user) return null;
 
     // プロファイル（role / default_school_id を含む全カラム）
@@ -86,7 +88,7 @@ export async function resolveServerAuth(): Promise<InitialAuth | null> {
       schoolIds,
       demoSchoolIds,
       savedSchoolId,
-      profile.default_school_id ?? null,
+      profile.default_school_id ?? null
     );
 
     return { user, profile, permissions, schoolIds, demoSchoolIds, selectedSchoolId };
@@ -95,7 +97,10 @@ export async function resolveServerAuth(): Promise<InitialAuth | null> {
     // 再 throw して Next にルートを動的判定させる（握りつぶすと作法に反し、ログも汚れる）。
     if (isDynamicServerError(e)) throw e;
     // 事前解決は最適化。失敗してもクライアント側の従来フローで認証されるので握りつぶす。
-    console.warn('[resolveServerAuth] サーバー認証解決に失敗。クライアント解決にフォールバックします:', e);
+    console.warn(
+      '[resolveServerAuth] サーバー認証解決に失敗。クライアント解決にフォールバックします:',
+      e
+    );
     return null;
   }
 }

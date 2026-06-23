@@ -14,23 +14,24 @@ export async function ensureDefaultLabels(schoolId: string): Promise<void> {
 
     // テーブルが存在しない場合はエラーを無視（マイグレーション未実行）
     if (fetchError) {
-      console.warn('bulletin_labelsテーブルが見つかりません。マイグレーションを実行してください:', fetchError);
+      console.warn(
+        'bulletin_labelsテーブルが見つかりません。マイグレーションを実行してください:',
+        fetchError
+      );
       return;
     }
 
-    const existingNames = new Set((existingLabels || []).map(l => l.name));
+    const existingNames = new Set((existingLabels || []).map((l) => l.name));
 
     for (const defaultLabel of DEFAULT_LABELS) {
       if (!existingNames.has(defaultLabel.name)) {
-        const { error: insertError } = await supabase
-          .from('bulletin_labels')
-          .insert({
-            school_id: schoolId,
-            name: defaultLabel.name,
-            color: defaultLabel.color,
-            is_system: defaultLabel.is_system,
-            sort_order: existingNames.size,
-          });
+        const { error: insertError } = await supabase.from('bulletin_labels').insert({
+          school_id: schoolId,
+          name: defaultLabel.name,
+          color: defaultLabel.color,
+          is_system: defaultLabel.is_system,
+          sort_order: existingNames.size,
+        });
 
         // RLSエラーやその他のエラーは無視（マイグレーション未実行や権限不足の場合）
         // デフォルトラベルはマイグレーションで作成されるため、ここでの作成はオプショナル
@@ -38,9 +39,14 @@ export async function ensureDefaultLabels(schoolId: string): Promise<void> {
           // エラーコード42501はRLSポリシー違反、PGRST116はテーブル不存在
           if (insertError.code === '42501' || insertError.code === 'PGRST116') {
             // マイグレーション未実行またはRLSポリシーの問題 - 警告のみ
-            console.warn('デフォルトラベルの作成をスキップしました（マイグレーションを実行してください）');
+            console.warn(
+              'デフォルトラベルの作成をスキップしました（マイグレーションを実行してください）'
+            );
           } else {
-            console.warn('デフォルトラベルの作成に失敗しました（無視します）:', insertError.message);
+            console.warn(
+              'デフォルトラベルの作成に失敗しました（無視します）:',
+              insertError.message
+            );
           }
           // エラーを無視して続行
         }
@@ -67,7 +73,10 @@ export async function getBulletinLabels(schoolId: string): Promise<BulletinLabel
   // テーブルが存在しない場合はエラーを無視（マイグレーション未実行）
   if (error) {
     if (error.code === 'PGRST116' || error.message.includes('schema cache')) {
-      console.warn('bulletin_labelsテーブルが見つかりません。マイグレーションを実行してください:', error);
+      console.warn(
+        'bulletin_labelsテーブルが見つかりません。マイグレーションを実行してください:',
+        error
+      );
       return [];
     }
     throw new Error(`ラベルの取得に失敗しました: ${error.message}`);
@@ -105,7 +114,10 @@ export async function getBulletinLabelsBatch(
   if (error) {
     // テーブル未作成（マイグレーション未実行）は空で返す
     if (error.code === 'PGRST116' || error.message.includes('schema cache')) {
-      console.warn('bulletin_labelsテーブルが見つかりません。マイグレーションを実行してください:', error);
+      console.warn(
+        'bulletin_labelsテーブルが見つかりません。マイグレーションを実行してください:',
+        error
+      );
       return grouped;
     }
     throw new Error(`ラベルの取得に失敗しました: ${error.message}`);
@@ -180,10 +192,7 @@ export async function deleteBulletinLabel(id: string): Promise<void> {
     throw new Error('システム定義のラベルは削除できません');
   }
 
-  const { error } = await supabase
-    .from('bulletin_labels')
-    .delete()
-    .eq('id', id);
+  const { error } = await supabase.from('bulletin_labels').delete().eq('id', id);
 
   if (error) {
     throw new Error(`ラベルの削除に失敗しました: ${error.message}`);
@@ -202,11 +211,13 @@ export async function getBulletinPosts(
 ): Promise<BulletinPost[]> {
   let query = supabase
     .from('bulletin_posts')
-    .select(`
+    .select(
+      `
       *,
       label:bulletin_labels(*),
       creator:user_profiles!bulletin_posts_created_by_fkey(display_name, email)
-    `)
+    `
+    )
     .eq('school_id', schoolId)
     .order('is_pinned', { ascending: false })
     .order('created_at', { ascending: false });
@@ -220,7 +231,10 @@ export async function getBulletinPosts(
   if (error) {
     // テーブルが存在しない場合は空配列を返す
     if (error.code === 'PGRST116' || error.message.includes('schema cache')) {
-      console.warn('bulletin_postsテーブルが見つかりません。マイグレーションを実行してください:', error);
+      console.warn(
+        'bulletin_postsテーブルが見つかりません。マイグレーションを実行してください:',
+        error
+      );
       return [];
     }
     throw new Error(`投稿の取得に失敗しました: ${error.message}`);
@@ -230,7 +244,7 @@ export async function getBulletinPosts(
 
   // 既読情報を取得
   if (options?.userId) {
-    const postIds = posts.map(p => p.id);
+    const postIds = posts.map((p) => p.id);
     if (postIds.length > 0) {
       // 自分の既読と講師IDリストは独立しているので並列取得（シーケンシャル3クエリ → 2フェーズに削減）
       const [readsResult, teacherProfilesResult] = await Promise.all([
@@ -239,15 +253,12 @@ export async function getBulletinPosts(
           .select('post_id')
           .eq('user_id', options.userId)
           .in('post_id', postIds),
-        supabase
-          .from('user_profiles')
-          .select('id')
-          .eq('role', 'teacher'),
+        supabase.from('user_profiles').select('id').eq('role', 'teacher'),
       ]);
 
-      const readPostIds = new Set((readsResult.data || []).map(r => r.post_id));
+      const readPostIds = new Set((readsResult.data || []).map((r) => r.post_id));
       const teacherIds = teacherProfilesResult.data
-        ? teacherProfilesResult.data.map(p => p.id)
+        ? teacherProfilesResult.data.map((p) => p.id)
         : [];
 
       // 講師の既読数（前段の teacherIds に依存するため並列化不可）
@@ -255,14 +266,17 @@ export async function getBulletinPosts(
         .from('bulletin_reads')
         .select('post_id')
         .in('post_id', postIds)
-        .in('user_id', teacherIds.length > 0 ? teacherIds : ['00000000-0000-0000-0000-000000000000']); // 空配列を避けるためダミーID
+        .in(
+          'user_id',
+          teacherIds.length > 0 ? teacherIds : ['00000000-0000-0000-0000-000000000000']
+        ); // 空配列を避けるためダミーID
 
       const readCountMap = new Map<string, number>();
-      (readCounts || []).forEach(r => {
+      (readCounts || []).forEach((r) => {
         readCountMap.set(r.post_id, (readCountMap.get(r.post_id) || 0) + 1);
       });
 
-      return posts.map(post => ({
+      return posts.map((post) => ({
         ...post,
         label: post.label || null,
         creator: post.creator || null,
@@ -272,7 +286,7 @@ export async function getBulletinPosts(
     }
   }
 
-  return posts.map(post => ({
+  return posts.map((post) => ({
     ...post,
     label: post.label || null,
     creator: post.creator || null,
@@ -308,11 +322,13 @@ export async function getBulletinPostsBatch(
 
   let query = client
     .from('bulletin_posts')
-    .select(`
+    .select(
+      `
       *,
       label:bulletin_labels(*),
       creator:user_profiles!bulletin_posts_created_by_fkey(display_name, email)
-    `)
+    `
+    )
     .in('school_id', schoolIds)
     .order('is_pinned', { ascending: false })
     .order('created_at', { ascending: false });
@@ -326,7 +342,10 @@ export async function getBulletinPostsBatch(
   if (error) {
     // テーブル未作成（マイグレーション未実行）は空で返す
     if (error.code === 'PGRST116' || error.message.includes('schema cache')) {
-      console.warn('bulletin_postsテーブルが見つかりません。マイグレーションを実行してください:', error);
+      console.warn(
+        'bulletin_postsテーブルが見つかりません。マイグレーションを実行してください:',
+        error
+      );
       return {};
     }
     throw new Error(`投稿の取得に失敗しました: ${error.message}`);
@@ -408,17 +427,16 @@ export async function getBulletinPostsBatch(
 /**
  * 投稿を取得
  */
-export async function getBulletinPost(
-  id: string,
-  userId?: string
-): Promise<BulletinPost | null> {
+export async function getBulletinPost(id: string, userId?: string): Promise<BulletinPost | null> {
   const { data, error } = await supabase
     .from('bulletin_posts')
-    .select(`
+    .select(
+      `
       *,
       label:bulletin_labels(*),
       creator:user_profiles!bulletin_posts_created_by_fkey(display_name, email)
-    `)
+    `
+    )
     .eq('id', id)
     .single();
 
@@ -444,10 +462,7 @@ export async function getBulletinPost(
   }
 
   // 既読数
-  const { data: reads } = await supabase
-    .from('bulletin_reads')
-    .select('id')
-    .eq('post_id', id);
+  const { data: reads } = await supabase.from('bulletin_reads').select('id').eq('post_id', id);
 
   post.read_count = (reads || []).length;
 
@@ -486,17 +501,21 @@ export async function createBulletinPost(
       created_by: userId || null,
       updated_by: userId || null,
     })
-    .select(`
+    .select(
+      `
       *,
       label:bulletin_labels(*),
       creator:user_profiles!bulletin_posts_created_by_fkey(display_name, email)
-    `)
+    `
+    )
     .single();
 
   if (error) {
     // RLSエラーの場合は詳細なメッセージを表示
     if (error.code === '42501') {
-      throw new Error(`投稿の作成に失敗しました: RLSポリシー違反。マイグレーションを確認してください。${error.message}`);
+      throw new Error(
+        `投稿の作成に失敗しました: RLSポリシー違反。マイグレーションを確認してください。${error.message}`
+      );
     }
     throw new Error(`投稿の作成に失敗しました: ${error.message}`);
   }
@@ -533,11 +552,13 @@ export async function updateBulletinPost(
     .from('bulletin_posts')
     .update(updateData)
     .eq('id', id)
-    .select(`
+    .select(
+      `
       *,
       label:bulletin_labels(*),
       creator:user_profiles!bulletin_posts_created_by_fkey(display_name, email)
-    `)
+    `
+    )
     .single();
 
   if (error) {
@@ -572,10 +593,7 @@ export async function deleteBulletinPost(id: string): Promise<void> {
  * 投稿を物理削除（管理用・通常は論理削除を使用）
  */
 export async function hardDeleteBulletinPost(id: string): Promise<void> {
-  const { error } = await supabase
-    .from('bulletin_posts')
-    .delete()
-    .eq('id', id);
+  const { error } = await supabase.from('bulletin_posts').delete().eq('id', id);
 
   if (error) {
     throw new Error(`投稿の削除に失敗しました: ${error.message}`);
@@ -615,14 +633,16 @@ export async function getPostReaders(postId: string): Promise<BulletinRead[]> {
     return [];
   }
 
-  const teacherIds = teacherProfiles.map(p => p.id);
+  const teacherIds = teacherProfiles.map((p) => p.id);
 
   const { data, error } = await supabase
     .from('bulletin_reads')
-    .select(`
+    .select(
+      `
       *,
       user:user_profiles!bulletin_reads_user_id_fkey(display_name, email)
-    `)
+    `
+    )
     .eq('post_id', postId)
     .in('user_id', teacherIds)
     .order('read_at', { ascending: false });
@@ -652,7 +672,7 @@ export async function getUnreadCount(schoolId: string, userId: string): Promise<
     return 0;
   }
 
-  const postIds = posts.map(p => p.id);
+  const postIds = posts.map((p) => p.id);
 
   // URL長制限（8KB）回避のため200件ずつチャンク分割してDB側でカウント
   const CHUNK_SIZE = 200;

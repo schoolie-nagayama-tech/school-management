@@ -56,14 +56,16 @@ export async function getKoushuPeriods(schoolId: string): Promise<KoushuPeriodIn
     console.error('Error fetching koushu periods:', error);
     throw new Error('講習期間の取得に失敗しました');
   }
-  return ((data || []) as Array<{
-    id: string;
-    school_id: string;
-    season: SeasonType;
-    year: number;
-    schedule_start_date: string;
-    schedule_end_date: string;
-  }>).map((p) => ({
+  return (
+    (data || []) as Array<{
+      id: string;
+      school_id: string;
+      season: SeasonType;
+      year: number;
+      schedule_start_date: string;
+      schedule_end_date: string;
+    }>
+  ).map((p) => ({
     id: p.id,
     school_id: p.school_id,
     season: p.season,
@@ -103,19 +105,29 @@ export async function estimateRegularKomaInPeriod(
  * 生徒の通塾日程サマリ（個別の有効な通塾日程パターン）を取得。
  * 講習配置時に「この生徒は普段いつ来ているか」を見て落とし込む判断材料にする。
  */
-export async function getStudentRegularSchedule(
-  studentId: string
-): Promise<Array<{ day_of_week: number; slot_number: number; start_time: string; end_time: string; subject_ids: string[] }>> {
+export async function getStudentRegularSchedule(studentId: string): Promise<
+  Array<{
+    day_of_week: number;
+    slot_number: number;
+    start_time: string;
+    end_time: string;
+    subject_ids: string[];
+  }>
+> {
   const { data } = await db
     .from('schedule_regular_patterns')
-    .select('day_of_week, subject_ids, time_slot:schedule_time_slots(slot_number, start_time, end_time)')
+    .select(
+      'day_of_week, subject_ids, time_slot:schedule_time_slots(slot_number, start_time, end_time)'
+    )
     .eq('student_id', studentId)
     .eq('is_active', true)
     .eq('formation', 'individual');
   type Row = {
     day_of_week: number;
     subject_ids: string[] | null;
-    time_slot?: { slot_number: number; start_time: string; end_time: string } | Array<{ slot_number: number; start_time: string; end_time: string }>;
+    time_slot?:
+      | { slot_number: number; start_time: string; end_time: string }
+      | Array<{ slot_number: number; start_time: string; end_time: string }>;
   };
   return ((data ?? []) as Row[])
     .map((r) => {
@@ -166,7 +178,9 @@ export async function getKoushuPlacementProgressByPeriod(
   // 申込は期間(school + season)で直接取得（コース依存を廃止）。formation 指定時はその形態のみ。
   let enrollQuery = db
     .from('koushu_enrollments')
-    .select('student_id, koma_count, subject_ids, koma_by_subject, student:students(id, last_name, first_name, grade)')
+    .select(
+      'student_id, koma_count, subject_ids, koma_by_subject, student:students(id, last_name, first_name, grade)'
+    )
     .eq('school_id', period.school_id)
     .eq('season', period.season);
   if (formation) enrollQuery = enrollQuery.eq('formation', formation);

@@ -79,7 +79,9 @@ export async function deleteTeacherBadge(
 // バッジ付与（トグル）
 // =====================================================
 
-export async function getTeacherBadgeAssignments(teacherId: string): Promise<TeacherBadgeAssignment[]> {
+export async function getTeacherBadgeAssignments(
+  teacherId: string
+): Promise<TeacherBadgeAssignment[]> {
   const res = await fetchWithAuth(`/api/admin/teachers/${teacherId}/badges?t=${Date.now()}`);
   if (!res.ok) throw new Error('バッジ付与情報の取得に失敗しました');
   const json = await res.json();

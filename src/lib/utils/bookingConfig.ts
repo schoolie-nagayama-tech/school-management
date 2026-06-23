@@ -51,15 +51,13 @@ export function resolveBookingConfig(raw: unknown): BookingConfig {
     typeof r.calendar_email === 'string'
       ? r.calendar_email || null
       : r.calendar_email === null
-      ? null
-      : def.calendar_email;
+        ? null
+        : def.calendar_email;
 
   // interview_days: number[] (各要素が 0-6 の整数)
   const interviewDays =
     Array.isArray(r.interview_days) &&
-    r.interview_days.every(
-      (d) => typeof d === 'number' && Number.isInteger(d) && d >= 0 && d <= 6
-    )
+    r.interview_days.every((d) => typeof d === 'number' && Number.isInteger(d) && d >= 0 && d <= 6)
       ? (r.interview_days as number[])
       : def.interview_days;
 
@@ -85,17 +83,13 @@ export function resolveBookingConfig(raw: unknown): BookingConfig {
 
   // lead_hours: 非負整数
   const leadHours =
-    typeof r.lead_hours === 'number' &&
-    Number.isInteger(r.lead_hours) &&
-    r.lead_hours >= 0
+    typeof r.lead_hours === 'number' && Number.isInteger(r.lead_hours) && r.lead_hours >= 0
       ? r.lead_hours
       : def.lead_hours;
 
   // window_days: 正の整数
   const windowDays =
-    typeof r.window_days === 'number' &&
-    Number.isInteger(r.window_days) &&
-    r.window_days > 0
+    typeof r.window_days === 'number' && Number.isInteger(r.window_days) && r.window_days > 0
       ? r.window_days
       : def.window_days;
 

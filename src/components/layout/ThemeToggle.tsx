@@ -39,9 +39,11 @@ export function ThemeToggle() {
             onClick={() => setPreference(value)}
             className={`
               flex items-center justify-center w-7 h-7 rounded-md transition-colors
-              ${active
-                ? 'bg-[color:var(--surface-raised)] text-[color:var(--text-heading)] shadow-sm'
-                : 'text-[color:var(--text-muted)] hover:text-[color:var(--text-heading)]'}
+              ${
+                active
+                  ? 'bg-[color:var(--surface-raised)] text-[color:var(--text-heading)] shadow-sm'
+                  : 'text-[color:var(--text-muted)] hover:text-[color:var(--text-heading)]'
+              }
             `}
           >
             <Icon className="w-3.5 h-3.5" aria-hidden="true" />

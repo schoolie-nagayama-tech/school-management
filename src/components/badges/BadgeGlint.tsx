@@ -11,7 +11,11 @@ interface BadgeGlintProps {
   title?: string;
 }
 
-export function BadgeGlint({ size = 13, className = '', title = '今日 新しいバッジを獲得しました' }: BadgeGlintProps) {
+export function BadgeGlint({
+  size = 13,
+  className = '',
+  title = '今日 新しいバッジを獲得しました',
+}: BadgeGlintProps) {
   return (
     <span
       className={`inline-flex items-center align-middle ${className}`}

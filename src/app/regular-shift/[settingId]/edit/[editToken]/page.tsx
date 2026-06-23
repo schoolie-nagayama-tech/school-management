@@ -8,7 +8,10 @@ import {
   updateRegularShiftSubmission,
 } from '@/lib/api/regular-shift';
 import type { RegularShiftSetting, RegularShiftSlotSetting } from '@/types/regular-shift';
-import { RegularShiftSlotMatrix, type RegularSlotSettingRow } from '@/components/regular-shift/RegularShiftSlotMatrix';
+import {
+  RegularShiftSlotMatrix,
+  type RegularSlotSettingRow,
+} from '@/components/regular-shift/RegularShiftSlotMatrix';
 import { Loading } from '@/components/ui';
 
 const DAYS = [1, 2, 3, 4, 5, 6] as const;
@@ -54,7 +57,10 @@ export default function RegularShiftEditPage() {
       setNotes(submission.notes ?? '');
 
       // Build form slots from existing submission
-      const timeSlots = s.weekday_slots.split(',').map((x) => x.trim()).filter(Boolean);
+      const timeSlots = s.weekday_slots
+        .split(',')
+        .map((x) => x.trim())
+        .filter(Boolean);
       const existingSlots = submission.slots ?? [];
       const initial: RegularSlotSettingRow[] = [];
       DAYS.forEach((day) => {
@@ -83,7 +89,10 @@ export default function RegularShiftEditPage() {
   }, [fetchData]);
 
   const timeSlots = setting
-    ? setting.weekday_slots.split(',').map((x) => x.trim()).filter(Boolean)
+    ? setting.weekday_slots
+        .split(',')
+        .map((x) => x.trim())
+        .filter(Boolean)
     : [];
 
   const slotSettingsForMatrix: RegularSlotSettingRow[] = slotSettings.map((s) => ({
@@ -138,9 +147,7 @@ export default function RegularShiftEditPage() {
     return (
       <div className="min-h-screen bg-surface-hover flex items-center justify-center p-4">
         <div className="text-center">
-          <h1 className="text-xl font-bold text-text-heading mb-2">
-            この修正リンクは無効です
-          </h1>
+          <h1 className="text-xl font-bold text-text-heading mb-2">この修正リンクは無効です</h1>
           <p className="text-text-body text-sm">URLをご確認ください。</p>
         </div>
       </div>
@@ -153,9 +160,7 @@ export default function RegularShiftEditPage() {
         <div className="max-w-lg mx-auto px-4 py-8">
           <div className="bg-surface-raised rounded-xl border border-border p-8 text-center">
             <h2 className="text-xl font-bold text-text-heading mb-4">シフト修正が完了しました</h2>
-            <p className="text-text-body mb-6">
-              修正内容を保存しました。ご確認ください。
-            </p>
+            <p className="text-text-body mb-6">修正内容を保存しました。ご確認ください。</p>
           </div>
         </div>
       </div>
@@ -177,7 +182,10 @@ export default function RegularShiftEditPage() {
           )}
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-surface-raised rounded-xl border border-border p-6 space-y-6">
+        <form
+          onSubmit={handleSubmit}
+          className="bg-surface-raised rounded-xl border border-border p-6 space-y-6"
+        >
           <div>
             <label className="block text-sm font-medium text-text-heading mb-1">お名前 *</label>
             <input
@@ -189,7 +197,9 @@ export default function RegularShiftEditPage() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-text-heading mb-1">メールアドレス *</label>
+            <label className="block text-sm font-medium text-text-heading mb-1">
+              メールアドレス *
+            </label>
             <input
               type="email"
               required
@@ -219,9 +229,7 @@ export default function RegularShiftEditPage() {
             />
           </div>
 
-          {errorMessage && (
-            <p className="text-sm text-red-600">{errorMessage}</p>
-          )}
+          {errorMessage && <p className="text-sm text-red-600">{errorMessage}</p>}
 
           <button
             type="submit"

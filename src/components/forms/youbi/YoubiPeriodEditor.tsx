@@ -3,7 +3,12 @@
 import { useState, useEffect } from 'react';
 import { Modal, Input, Button, Select } from '@/components/ui';
 import { createYoubiPeriod, updateYoubiPeriod } from '@/lib/api/youbi';
-import { createFormPeriodForSchools, updateFormPeriodForSchools, generateUniquePeriodKey, getNextPeriodKey } from '@/lib/api/form-periods';
+import {
+  createFormPeriodForSchools,
+  updateFormPeriodForSchools,
+  generateUniquePeriodKey,
+  getNextPeriodKey,
+} from '@/lib/api/form-periods';
 import { getApplicationItems } from '@/lib/api/applications';
 import { getClassPeriodsAsync, type ClassPeriodItem } from '@/lib/api/class-periods';
 import type { YoubiPeriod, YoubiSettings } from '@/types/forms/youbi';
@@ -58,7 +63,6 @@ export function YoubiPeriodEditor({
   const [linkedApplicationItemId, setLinkedApplicationItemId] = useState<string>('');
   const [applicationItems, setApplicationItems] = useState<ApplicationItem[]>([]);
 
-
   // テキストをパース
   const parseLines = (text: string): string[] => {
     return text
@@ -70,10 +74,13 @@ export function YoubiPeriodEditor({
   // 初期値の設定
   useEffect(() => {
     if (isOpen) {
-      const targetIds = schoolIds && schoolIds.length > 0 ? schoolIds : schoolId ? [schoolId] : undefined;
+      const targetIds =
+        schoolIds && schoolIds.length > 0 ? schoolIds : schoolId ? [schoolId] : undefined;
       getApplicationItems(targetIds, true).then(setApplicationItems).catch(console.error);
       if (schoolId) {
-        getClassPeriodsAsync(schoolId).then(setClassPeriods).catch(() => {});
+        getClassPeriodsAsync(schoolId)
+          .then(setClassPeriods)
+          .catch(() => {});
       }
       if (period) {
         // 編集モード
@@ -83,14 +90,10 @@ export function YoubiPeriodEditor({
         setDescription(settings.description || DEFAULT_DESCRIPTION);
         setDaysText(settings.available_days?.join('\n') || '月\n火\n水\n木\n金\n土');
         setPublishStart(
-          period.publish_start
-            ? new Date(period.publish_start).toISOString().slice(0, 16)
-            : ''
+          period.publish_start ? new Date(period.publish_start).toISOString().slice(0, 16) : ''
         );
         setPublishEnd(
-          period.publish_end
-            ? new Date(period.publish_end).toISOString().slice(0, 16)
-            : ''
+          period.publish_end ? new Date(period.publish_end).toISOString().slice(0, 16) : ''
         );
         setCompletionMessage(
           settings.completion_message ||
@@ -100,13 +103,17 @@ export function YoubiPeriodEditor({
       } else {
         // 新規作成モード — 期間キーは自動生成（YYYY-MM、衝突時は連番）
         setPeriodKey(generateUniquePeriodKey([]));
-        getNextPeriodKey('youbi', targetIds ?? []).then(setPeriodKey).catch(() => {});
+        getNextPeriodKey('youbi', targetIds ?? [])
+          .then(setPeriodKey)
+          .catch(() => {});
         setTitle('曜日変更');
         setDescription(DEFAULT_DESCRIPTION);
         setDaysText('月\n火\n水\n木\n金\n土');
         setPublishStart('');
         setPublishEnd('');
-        setCompletionMessage('変更申請を受け付けました。\n内容を確認の上、Growにてご連絡いたします。');
+        setCompletionMessage(
+          '変更申請を受け付けました。\n内容を確認の上、Growにてご連絡いたします。'
+        );
         setLinkedApplicationItemId('');
       }
       setError('');
@@ -175,12 +182,7 @@ export function YoubiPeriodEditor({
               ? schoolIds
               : null;
         if (idsToUpdate && idsToUpdate.length > 1) {
-          await updateFormPeriodForSchools(
-            idsToUpdate,
-            'youbi',
-            period.period_key,
-            baseData
-          );
+          await updateFormPeriodForSchools(idsToUpdate, 'youbi', period.period_key, baseData);
         } else {
           await updateYoubiPeriod(period.id, baseData);
         }
@@ -208,9 +210,7 @@ export function YoubiPeriodEditor({
       onClose();
     } catch (error) {
       console.error('Failed to save:', error);
-      setError(
-        getUserErrorMessage(error, '保存に失敗しました')
-      );
+      setError(getUserErrorMessage(error, '保存に失敗しました'));
     } finally {
       setIsSubmitting(false);
     }
@@ -242,9 +242,7 @@ export function YoubiPeriodEditor({
 
           <div className="grid grid-cols-2 gap-4 mb-4">
             <div>
-              <label className="block text-sm font-medium mb-1 text-[#1f2937]">
-                期間キー
-              </label>
+              <label className="block text-sm font-medium mb-1 text-[#1f2937]">期間キー</label>
               <Input
                 type="text"
                 value={periodKey}
@@ -252,9 +250,7 @@ export function YoubiPeriodEditor({
                 disabled // 自動生成のため常に編集不可
                 className="disabled:bg-gray-100"
               />
-              <p className="text-xs text-[#4b5563]/60 mt-1">
-                ※ 自動で割り当てられます（変更不可）
-              </p>
+              <p className="text-xs text-[#4b5563]/60 mt-1">※ 自動で割り当てられます（変更不可）</p>
             </div>
             <div>
               <label className="block text-sm font-medium mb-1 text-[#1f2937]">
@@ -296,9 +292,7 @@ export function YoubiPeriodEditor({
                 value={publishEnd}
                 onChange={(e) => setPublishEnd(e.target.value)}
               />
-              <p className="text-xs text-[#4b5563]/60 mt-1">
-                ※空欄にすると永続的に公開されます
-              </p>
+              <p className="text-xs text-[#4b5563]/60 mt-1">※空欄にすると永続的に公開されます</p>
             </div>
           </div>
         </section>
@@ -335,7 +329,16 @@ export function YoubiPeriodEditor({
               ))}
             </div>
             <p className="text-xs text-[#4b5563]/70 mt-1">
-              時限は<a href="/settings/forms/class-periods" target="_blank" rel="noopener noreferrer" className="text-[#1e40af] underline">共通設定（授業の時間帯）</a>で管理します。保存時に最新の共通設定が適用されます。
+              時限は
+              <a
+                href="/settings/forms/class-periods"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[#1e40af] underline"
+              >
+                共通設定（授業の時間帯）
+              </a>
+              で管理します。保存時に最新の共通設定が適用されます。
             </p>
           </div>
         </section>
@@ -379,15 +382,10 @@ export function YoubiPeriodEditor({
 
         {!period && allowedSchools && allowedSchools.length > 1 && (
           <div className="p-3 bg-[#eff6ff] rounded-lg border border-[#bfdbfe]">
-            <p className="text-sm font-medium text-[#1f2937] mb-2">
-              作成する教室を選択
-            </p>
+            <p className="text-sm font-medium text-[#1f2937] mb-2">作成する教室を選択</p>
             <div className="flex flex-wrap gap-x-4 gap-y-2">
               {allowedSchools.map((school) => (
-                <label
-                  key={school.id}
-                  className="flex items-center gap-2 cursor-pointer"
-                >
+                <label key={school.id} className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={selectedSchoolIdsForCreate.includes(school.id)}
@@ -413,15 +411,10 @@ export function YoubiPeriodEditor({
         )}
         {period && allowedSchools && allowedSchools.length > 1 && (
           <div className="p-3 bg-[#eff6ff] rounded-lg border border-[#bfdbfe]">
-            <p className="text-sm font-medium text-[#1f2937] mb-2">
-              同じ内容で更新する教室を選択
-            </p>
+            <p className="text-sm font-medium text-[#1f2937] mb-2">同じ内容で更新する教室を選択</p>
             <div className="flex flex-wrap gap-x-4 gap-y-2">
               {allowedSchools.map((school) => (
-                <label
-                  key={school.id}
-                  className="flex items-center gap-2 cursor-pointer"
-                >
+                <label key={school.id} className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={selectedSchoolIdsForUpdate.includes(school.id)}

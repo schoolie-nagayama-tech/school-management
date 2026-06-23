@@ -45,9 +45,7 @@ export default function MoshiPortalPage() {
         setPeriod(periodData);
       } catch (error) {
         console.error('Error fetching data:', error);
-        setErrorMessage(
-          getUserErrorMessage(error, 'データの取得に失敗しました')
-        );
+        setErrorMessage(getUserErrorMessage(error, 'データの取得に失敗しました'));
       } finally {
         setIsLoading(false);
       }
@@ -70,9 +68,7 @@ export default function MoshiPortalPage() {
     return (
       <div className="min-h-screen bg-[#f8fafc] flex items-center justify-center p-4">
         <div className="bg-white rounded-xl border border-[#e5e7eb] p-8 max-w-md w-full text-center">
-          <h1 className="text-2xl font-bold text-[#1f2937] mb-4">
-            {school?.name || '教室'}
-          </h1>
+          <h1 className="text-2xl font-bold text-[#1f2937] mb-4">{school?.name || '教室'}</h1>
           <p className="text-[#4b5563] mb-6">{errorMessage || '現在受付していません'}</p>
           <Link
             href={`/portal/${schoolCode}`}
@@ -91,9 +87,7 @@ export default function MoshiPortalPage() {
         {!period ? (
           // 公開期間外
           <div className="bg-white rounded-xl border border-[#e5e7eb] p-8 text-center">
-            <h1 className="text-2xl font-bold text-[#1f2937] mb-4">
-              オープン模試申し込み
-            </h1>
+            <h1 className="text-2xl font-bold text-[#1f2937] mb-4">オープン模試申し込み</h1>
             <p className="text-[#4b5563] mb-6">
               現在、オープン模試申し込みの受付は行っておりません。
             </p>

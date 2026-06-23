@@ -131,20 +131,14 @@ export function WeeklyScheduleGridView(props: WeeklyScheduleGridViewProps) {
       return next;
     });
   };
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
-  );
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
   const gridCols = headerRightContent
     ? `5rem repeat(${weekDates.length}, minmax(0, 1fr)) auto`
     : `5rem repeat(${weekDates.length}, minmax(0, 1fr))`;
 
   return (
-    <DndContext
-      sensors={sensors}
-      onDragStart={onDragStart}
-      onDragEnd={onDragEnd}
-    >
+    <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd}>
       <div className="flex flex-col gap-0 w-full">
         {/* Header row: 縦ミニカード型の日付（Apple × Notion 風ミニマル） */}
         <div
@@ -171,7 +165,9 @@ export function WeeklyScheduleGridView(props: WeeklyScheduleGridViewProps) {
                     aria-hidden
                   />
                 )}
-                <span className={`text-lg tabular-nums ${isToday ? 'font-bold' : 'font-semibold'}`}>{dayNum}</span>
+                <span className={`text-lg tabular-nums ${isToday ? 'font-bold' : 'font-semibold'}`}>
+                  {dayNum}
+                </span>
                 <span className="text-xs text-gray-500">{weekday}</span>
                 {onBoothAssign && (
                   <button
@@ -221,7 +217,11 @@ export function WeeklyScheduleGridView(props: WeeklyScheduleGridViewProps) {
             return (
               sum +
               groups.reduce(
-                (s, g) => s + g.entries.filter((e) => e.status !== 'cancelled' && e.status !== 'transferred_out').length,
+                (s, g) =>
+                  s +
+                  g.entries.filter(
+                    (e) => e.status !== 'cancelled' && e.status !== 'transferred_out'
+                  ).length,
                 0
               )
             );
@@ -251,128 +251,125 @@ export function WeeklyScheduleGridView(props: WeeklyScheduleGridViewProps) {
                 <span className="text-[10px] text-gray-400 tabular-nums">
                   {slot.start_time?.slice(0, 5)}〜{slot.end_time?.slice(0, 5)}
                 </span>
-                <span className="ml-auto text-[11px] text-gray-400">授業なし（クリックで開く）</span>
+                <span className="ml-auto text-[11px] text-gray-400">
+                  授業なし（クリックで開く）
+                </span>
               </button>
             );
           }
 
           return (
-          <div
-            key={slot.id}
-            className={`border-t border-gray-200 pt-2 pb-3 ${slotIndex % 2 === 1 ? 'bg-gray-50' : ''}`}
-          >
             <div
-              className="grid gap-x-6 w-full"
-              style={{ gridTemplateColumns: gridCols }}
+              key={slot.id}
+              className={`border-t border-gray-200 pt-2 pb-3 ${slotIndex % 2 === 1 ? 'bg-gray-50' : ''}`}
             >
-              {/* 時間ラベル */}
-              <div className="flex flex-col justify-center pl-0 pr-2 border-r border-gray-200">
-                <div className="text-sm font-semibold text-gray-700 flex items-center gap-1">
-                  {/* 空コマ展開中は折りたたみアイコンを出す */}
-                  {isEmptySlot && isExpanded && (
-                    <button
-                      type="button"
-                      onClick={() => toggleEmptySlot(slot.id)}
-                      className="text-gray-300 hover:text-gray-500 transition-colors duration-150"
-                      aria-label="折りたたむ"
-                    >
-                      <ChevronDown className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-                  <span className="tabular-nums">{slot.slot_number}</span>限
-                </div>
-                <div className="text-[10px] text-gray-400 mt-0.5 tabular-nums">
-                  {slot.start_time?.slice(0, 5)}〜{slot.end_time?.slice(0, 5)}
-                </div>
-                {/* 未配置のあるコマは時間ラベル直下にバッジ表示 → 折りたたまれていなくても一目で把握 */}
-                {slotUnassignedCount > 0 && (
-                  <div className="mt-1 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-warning text-white text-[10px] font-bold w-fit">
-                    <span className="inline-block w-1 h-1 rounded-full bg-white animate-pulse" />
-                    未配置 {slotUnassignedCount}
-                  </div>
-                )}
-              </div>
-
-              {/* 各日のセル */}
-              {weekDates.map((dateStr) => {
-                const isClosed = closedDates.includes(dateStr);
-                const teacherGroups = getTeacherGroupsForCell(
-                  dateStr,
-                  slot.id,
-                  slot.slot_number
-                );
-                const cellKey = `${dateStr}-${slot.id}`;
-
-                // 講習の手動配置モード：セルをクリック可能な配置ターゲットにする。
-                // 緑=配置可 / 淡色=不可（理由つき）。セル背景クリック=担当未決定で落とす、
-                // 講師カードクリック=その講師で配置（バブリングは講師カード側で stopPropagation）。
-                const place = koushuPlacing ? getKoushuPlaceability?.(dateStr, slot.id) : undefined;
-
-                return (
-                  <div
-                    key={cellKey}
-                    className={`relative min-w-0 ${SLOT_ROW_MIN_H} border-l border-gray-100 pl-2 ${
-                      koushuPlacing ? (place?.ok ? 'cursor-pointer' : 'cursor-not-allowed') : ''
-                    }`}
-                    onClick={koushuPlacing ? () => onKoushuPlace?.(dateStr, slot.id) : undefined}
-                    title={
-                      koushuPlacing
-                        ? place?.ok
-                          ? '背景クリックで担当未決定として落とす／講師カードをクリックするとその講師で配置'
-                          : place?.reason ?? '配置できません'
-                        : undefined
-                    }
-                  >
-                    {koushuPlacing && (
-                      <div
-                        aria-hidden
-                        className={`pointer-events-none absolute inset-0 z-0 rounded-lg ${
-                          place?.ok ? 'ring-2 ring-success bg-success-subtle/20' : 'bg-gray-300/25'
-                        }`}
-                      />
+              <div className="grid gap-x-6 w-full" style={{ gridTemplateColumns: gridCols }}>
+                {/* 時間ラベル */}
+                <div className="flex flex-col justify-center pl-0 pr-2 border-r border-gray-200">
+                  <div className="text-sm font-semibold text-gray-700 flex items-center gap-1">
+                    {/* 空コマ展開中は折りたたみアイコンを出す */}
+                    {isEmptySlot && isExpanded && (
+                      <button
+                        type="button"
+                        onClick={() => toggleEmptySlot(slot.id)}
+                        className="text-gray-300 hover:text-gray-500 transition-colors duration-150"
+                        aria-label="折りたたむ"
+                      >
+                        <ChevronDown className="w-3.5 h-3.5" />
+                      </button>
                     )}
-                    <DayCell
-                      koushuPlacing={koushuPlacing}
-                      onKoushuPlaceWithTeacher={
-                        onKoushuPlaceWithTeacher
-                          ? (teacherId) => onKoushuPlaceWithTeacher(dateStr, slot.id, teacherId)
-                          : undefined
-                      }
-                      date={dateStr}
-                      timeSlot={slot}
-                      isClosed={isClosed}
-                      teacherGroups={teacherGroups}
-                      unassignedEntries={
-                        getUnassignedEntriesForCell?.(dateStr, slot.id) ?? []
-                      }
-                      maxStudentsPerTeacher={maxStudentsPerTeacher}
-                      activeDragId={activeId}
-                      activeDragEntry={activeEntry}
-                      transferMode={!!transferMode}
-                      onAddTeacher={(existingIds) => onAddTeacher(dateStr, slot.id, existingIds)}
-                      onAddStudent={(teacherId) => onAddStudent(dateStr, slot.id, teacherId)}
-                      onRemoveTeacher={(teacherId, entryCount) =>
-                        onRemoveTeacher(dateStr, slot.id, teacherId, entryCount)
-                      }
-                      onStudentClick={onStudentClick}
-                      onTransferClick={onTransferClick}
-                      onTransferTargetClick={
-                        onTransferTargetClick
-                          ? (_, slotId, teacherId) =>
-                              onTransferTargetClick(dateStr, slotId, teacherId)
-                          : undefined
-                      }
-                      getKoushuInfo={getKoushuInfo}
-                      subjectNameById={subjectNameById}
-                      absenceKeySet={absenceKeySet}
-                      onToggleAbsence={onToggleAbsence}
-                    />
+                    <span className="tabular-nums">{slot.slot_number}</span>限
                   </div>
-                );
-              })}
-              {headerRightContent && <div className="min-w-0" aria-hidden />}
+                  <div className="text-[10px] text-gray-400 mt-0.5 tabular-nums">
+                    {slot.start_time?.slice(0, 5)}〜{slot.end_time?.slice(0, 5)}
+                  </div>
+                  {/* 未配置のあるコマは時間ラベル直下にバッジ表示 → 折りたたまれていなくても一目で把握 */}
+                  {slotUnassignedCount > 0 && (
+                    <div className="mt-1 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-warning text-white text-[10px] font-bold w-fit">
+                      <span className="inline-block w-1 h-1 rounded-full bg-white animate-pulse" />
+                      未配置 {slotUnassignedCount}
+                    </div>
+                  )}
+                </div>
+
+                {/* 各日のセル */}
+                {weekDates.map((dateStr) => {
+                  const isClosed = closedDates.includes(dateStr);
+                  const teacherGroups = getTeacherGroupsForCell(dateStr, slot.id, slot.slot_number);
+                  const cellKey = `${dateStr}-${slot.id}`;
+
+                  // 講習の手動配置モード：セルをクリック可能な配置ターゲットにする。
+                  // 緑=配置可 / 淡色=不可（理由つき）。セル背景クリック=担当未決定で落とす、
+                  // 講師カードクリック=その講師で配置（バブリングは講師カード側で stopPropagation）。
+                  const place = koushuPlacing
+                    ? getKoushuPlaceability?.(dateStr, slot.id)
+                    : undefined;
+
+                  return (
+                    <div
+                      key={cellKey}
+                      className={`relative min-w-0 ${SLOT_ROW_MIN_H} border-l border-gray-100 pl-2 ${
+                        koushuPlacing ? (place?.ok ? 'cursor-pointer' : 'cursor-not-allowed') : ''
+                      }`}
+                      onClick={koushuPlacing ? () => onKoushuPlace?.(dateStr, slot.id) : undefined}
+                      title={
+                        koushuPlacing
+                          ? place?.ok
+                            ? '背景クリックで担当未決定として落とす／講師カードをクリックするとその講師で配置'
+                            : (place?.reason ?? '配置できません')
+                          : undefined
+                      }
+                    >
+                      {koushuPlacing && (
+                        <div
+                          aria-hidden
+                          className={`pointer-events-none absolute inset-0 z-0 rounded-lg ${
+                            place?.ok
+                              ? 'ring-2 ring-success bg-success-subtle/20'
+                              : 'bg-gray-300/25'
+                          }`}
+                        />
+                      )}
+                      <DayCell
+                        koushuPlacing={koushuPlacing}
+                        onKoushuPlaceWithTeacher={
+                          onKoushuPlaceWithTeacher
+                            ? (teacherId) => onKoushuPlaceWithTeacher(dateStr, slot.id, teacherId)
+                            : undefined
+                        }
+                        date={dateStr}
+                        timeSlot={slot}
+                        isClosed={isClosed}
+                        teacherGroups={teacherGroups}
+                        unassignedEntries={getUnassignedEntriesForCell?.(dateStr, slot.id) ?? []}
+                        maxStudentsPerTeacher={maxStudentsPerTeacher}
+                        activeDragId={activeId}
+                        activeDragEntry={activeEntry}
+                        transferMode={!!transferMode}
+                        onAddTeacher={(existingIds) => onAddTeacher(dateStr, slot.id, existingIds)}
+                        onAddStudent={(teacherId) => onAddStudent(dateStr, slot.id, teacherId)}
+                        onRemoveTeacher={(teacherId, entryCount) =>
+                          onRemoveTeacher(dateStr, slot.id, teacherId, entryCount)
+                        }
+                        onStudentClick={onStudentClick}
+                        onTransferClick={onTransferClick}
+                        onTransferTargetClick={
+                          onTransferTargetClick
+                            ? (_, slotId, teacherId) =>
+                                onTransferTargetClick(dateStr, slotId, teacherId)
+                            : undefined
+                        }
+                        getKoushuInfo={getKoushuInfo}
+                        subjectNameById={subjectNameById}
+                        absenceKeySet={absenceKeySet}
+                        onToggleAbsence={onToggleAbsence}
+                      />
+                    </div>
+                  );
+                })}
+                {headerRightContent && <div className="min-w-0" aria-hidden />}
+              </div>
             </div>
-          </div>
           );
         })}
       </div>

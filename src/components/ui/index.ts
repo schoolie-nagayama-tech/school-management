@@ -7,7 +7,16 @@ export type { Toast, ToastType } from './Toast';
 export { Card, CardHeader, CardTitle, CardContent } from './Card';
 export { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from './Table';
 export { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from './Dialog';
-export { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogAction, AlertDialogCancel } from './AlertDialog';
+export {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogAction,
+  AlertDialogCancel,
+} from './AlertDialog';
 export { Switch } from './Switch';
 export { Badge } from './Badge';
 export { Label } from './Label';
@@ -15,5 +24,11 @@ export { Checkbox } from './Checkbox';
 export { Textarea } from './Textarea';
 export { RichTextEditor } from './RichTextEditor';
 export type { RichTextEditorProps } from './RichTextEditor';
-export { Select as SelectShadcn, SelectTrigger, SelectValue, SelectContent, SelectItem } from './Select-shadcn';
+export {
+  Select as SelectShadcn,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from './Select-shadcn';
 export { Spinner, Loading, InlineLoading } from './Spinner';

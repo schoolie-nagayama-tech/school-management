@@ -52,7 +52,8 @@ export default function InquiryConnectPage() {
   const { profile } = useAuth();
 
   // ロールガード: admin / owner のみ
-  const isAdmin = profile?.role === 'admin' || profile?.role === 'owner' || profile?.role === 'manager';
+  const isAdmin =
+    profile?.role === 'admin' || profile?.role === 'owner' || profile?.role === 'manager';
 
   const [bookmarklet, setBookmarklet] = useState<string | null>(null);
   const [isIssuing, setIsIssuing] = useState(false);
@@ -69,7 +70,9 @@ export default function InquiryConnectPage() {
     setError('');
     try {
       // Bearer トークンは monthlyTasks.ts と同じパターンで取得
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (!session) throw new Error('ログインが必要です');
 
       const res = await fetch('/api/inquiry-import/token', {
@@ -81,7 +84,7 @@ export default function InquiryConnectPage() {
         body: JSON.stringify({ label: '管理画面発行' }),
       });
 
-      const data = await res.json() as { token?: string; error?: string };
+      const data = (await res.json()) as { token?: string; error?: string };
       if (!res.ok) throw new Error(data.error ?? '発行に失敗しました');
       if (!data.token) throw new Error('トークンが返されませんでした');
 
@@ -102,7 +105,9 @@ export default function InquiryConnectPage() {
     setIsRevoking(true);
     setError('');
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (!session) throw new Error('ログインが必要です');
 
       const authHeader = { Authorization: `Bearer ${session.access_token}` };
@@ -113,7 +118,7 @@ export default function InquiryConnectPage() {
         headers: authHeader,
       });
       if (!delRes.ok) {
-        const d = await delRes.json() as { error?: string };
+        const d = (await delRes.json()) as { error?: string };
         throw new Error(d.error ?? '失効に失敗しました');
       }
 
@@ -123,7 +128,7 @@ export default function InquiryConnectPage() {
         headers: { ...authHeader, 'Content-Type': 'application/json' },
         body: JSON.stringify({ label: '管理画面発行（再発行）' }),
       });
-      const postData = await postRes.json() as { token?: string; error?: string };
+      const postData = (await postRes.json()) as { token?: string; error?: string };
       if (!postRes.ok) throw new Error(postData.error ?? '再発行に失敗しました');
       if (!postData.token) throw new Error('トークンが返されませんでした');
 
@@ -148,7 +153,9 @@ export default function InquiryConnectPage() {
       setTimeout(() => setCopied(false), 2000);
     } catch {
       // clipboard API が使えない環境では手動コピーへ誘導
-      setError('自動コピーに失敗しました。下のリンクを右クリック→「リンクアドレスをコピー」してください。');
+      setError(
+        '自動コピーに失敗しました。下のリンクを右クリック→「リンクアドレスをコピー」してください。'
+      );
     }
   }
 
@@ -171,7 +178,6 @@ export default function InquiryConnectPage() {
   return (
     <AdminLayout headerTitle="HPから取込（ブックマークレット）">
       <div className="max-w-2xl mx-auto space-y-6">
-
         {/* 戻るリンク */}
         <div>
           <Link
@@ -212,11 +218,7 @@ export default function InquiryConnectPage() {
                 下のボタンを押すとブックマークレットのリンクを生成します。
                 既に発行済みのトークンがある場合は再利用されます。
               </p>
-              <Button
-                variant="primary"
-                onClick={issueToken}
-                disabled={isIssuing}
-              >
+              <Button variant="primary" onClick={issueToken} disabled={isIssuing}>
                 <Bookmark className="w-4 h-4 mr-1.5" />
                 {isIssuing ? '発行中...' : 'ブックマークレットを発行'}
               </Button>
@@ -241,7 +243,8 @@ export default function InquiryConnectPage() {
                   NESTに取込
                 </a>
                 <p className="text-xs text-blue-600 mt-2">
-                  ※ このリンクはクリックしても動きません。ブックマークバーにドラッグして登録してください。
+                  ※
+                  このリンクはクリックしても動きません。ブックマークバーにドラッグして登録してください。
                 </p>
               </div>
 
@@ -250,10 +253,7 @@ export default function InquiryConnectPage() {
                 <p className="text-sm text-text-body mb-2">
                   または、ブックマークレットのコードをコピーして手動で登録できます。
                 </p>
-                <Button
-                  variant="outline"
-                  onClick={copyBookmarklet}
-                >
+                <Button variant="outline" onClick={copyBookmarklet}>
                   {copied ? (
                     <>
                       <Check className="w-4 h-4 mr-1.5 text-green-600" />
@@ -274,11 +274,7 @@ export default function InquiryConnectPage() {
                   トークンが漏洩した場合や無効化したい場合は再発行してください。
                   古いトークンは即座に無効になります。
                 </p>
-                <Button
-                  variant="secondary"
-                  onClick={revokeAndReissue}
-                  disabled={isRevoking}
-                >
+                <Button variant="secondary" onClick={revokeAndReissue} disabled={isRevoking}>
                   <RefreshCw className="w-4 h-4 mr-1.5" />
                   {isRevoking ? '再発行中...' : 'トークンを再発行（古いものは無効化）'}
                 </Button>

@@ -27,7 +27,8 @@ export function CancelAgreement({
         <p className="text-sm text-[#1f2937] leading-relaxed">
           <strong className="font-semibold">重要:</strong>
           <br />
-          {examLabel}は申込後のキャンセル・返金ができません。日程・会場をよくご確認の上、お申し込みください。
+          {examLabel}
+          は申込後のキャンセル・返金ができません。日程・会場をよくご確認の上、お申し込みください。
         </p>
         <p className="text-sm text-[#1f2937] leading-relaxed">
           申込後受験票はご家庭で印刷をお願いいたします。
@@ -47,19 +48,14 @@ export function CancelAgreement({
           disabled={disabled}
           className="w-5 h-5 mt-0.5 text-[#3b82f6] border-[#e5e7eb] rounded focus:ring-[#3b82f6] cursor-pointer flex-shrink-0"
         />
-        <label
-          htmlFor="cancel-agreement"
-          className="text-sm text-[#1f2937] cursor-pointer flex-1"
-        >
+        <label htmlFor="cancel-agreement" className="text-sm text-[#1f2937] cursor-pointer flex-1">
           上記の内容を理解し、キャンセルできないことに同意します
           <span className="text-[#ef4444] ml-1">*</span>
         </label>
       </div>
 
       {/* エラーメッセージ */}
-      {error && (
-        <p className="text-sm text-[#ef4444] ml-8">{error}</p>
-      )}
+      {error && <p className="text-sm text-[#ef4444] ml-8">{error}</p>}
     </div>
   );
 }

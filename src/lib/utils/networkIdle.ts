@@ -29,7 +29,11 @@ export function whenNetworkIdle(quietMs = 700, maxWaitMs = 8000): Promise<void> 
       settled = true;
       if (quietTimer) clearTimeout(quietTimer);
       clearTimeout(hardCap);
-      try { observer.disconnect(); } catch { /* noop */ }
+      try {
+        observer.disconnect();
+      } catch {
+        /* noop */
+      }
       resolve();
     };
 

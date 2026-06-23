@@ -68,9 +68,7 @@ export function ApplicationItemAccordion({
       onUpdated();
     } catch (error) {
       console.error('Failed to create item:', error);
-      toastError(
-        getUserErrorMessage(error, '追加に失敗しました')
-      );
+      toastError(getUserErrorMessage(error, '追加に失敗しました'));
     } finally {
       setIsProcessing(false);
     }
@@ -92,9 +90,7 @@ export function ApplicationItemAccordion({
       onUpdated();
     } catch (error) {
       console.error('Failed to rename item:', error);
-      toastError(
-        getUserErrorMessage(error, '変更に失敗しました')
-      );
+      toastError(getUserErrorMessage(error, '変更に失敗しました'));
     } finally {
       setIsProcessing(false);
     }
@@ -102,7 +98,9 @@ export function ApplicationItemAccordion({
 
   // 非表示
   const handleHide = async (id: string) => {
-    if (!(await confirm({ description: 'この項目を非表示にしますか？（申込データは保持されます）' }))) {
+    if (
+      !(await confirm({ description: 'この項目を非表示にしますか？（申込データは保持されます）' }))
+    ) {
       return;
     }
 
@@ -113,9 +111,7 @@ export function ApplicationItemAccordion({
       onUpdated();
     } catch (error) {
       console.error('Failed to hide item:', error);
-      toastError(
-        getUserErrorMessage(error, '非表示に失敗しました')
-      );
+      toastError(getUserErrorMessage(error, '非表示に失敗しました'));
     } finally {
       setIsProcessing(false);
     }
@@ -130,9 +126,7 @@ export function ApplicationItemAccordion({
       onUpdated();
     } catch (error) {
       console.error('Failed to unhide item:', error);
-      toastError(
-        getUserErrorMessage(error, '再表示に失敗しました')
-      );
+      toastError(getUserErrorMessage(error, '再表示に失敗しました'));
     } finally {
       setIsProcessing(false);
     }
@@ -152,7 +146,14 @@ export function ApplicationItemAccordion({
     }
 
     // 二重確認
-    if (!(await confirm({ title: '削除確認', description: '本当に削除しますか？', confirmLabel: '削除', variant: 'danger' }))) {
+    if (
+      !(await confirm({
+        title: '削除確認',
+        description: '本当に削除しますか？',
+        confirmLabel: '削除',
+        variant: 'danger',
+      }))
+    ) {
       return;
     }
 
@@ -163,9 +164,7 @@ export function ApplicationItemAccordion({
       onUpdated();
     } catch (error) {
       console.error('Failed to delete item:', error);
-      toastError(
-        getUserErrorMessage(error, '削除に失敗しました')
-      );
+      toastError(getUserErrorMessage(error, '削除に失敗しました'));
     } finally {
       setIsProcessing(false);
     }
@@ -195,7 +194,9 @@ export function ApplicationItemAccordion({
         className="w-full flex items-center justify-between px-4 py-3 bg-[#f3f4f6] hover:bg-[#f3f4f6]/80 transition-colors duration-150"
       >
         <span className="text-sm font-semibold text-[#1f2937]">項目管理</span>
-        <ChevronDown className={`w-5 h-5 text-[#4b5563] transition-[transform] duration-150 ease-out ${isOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown
+          className={`w-5 h-5 text-[#4b5563] transition-[transform] duration-150 ease-out ${isOpen ? 'rotate-180' : ''}`}
+        />
       </button>
 
       {/* アコーディオンコンテンツ — CSS grid trick でスムーズに開閉 */}
@@ -204,68 +205,68 @@ export function ApplicationItemAccordion({
         style={{ gridTemplateRows: isOpen ? '1fr' : '0fr' }}
       >
         <div className="overflow-hidden">
-        <div className="p-4 space-y-6 border-t border-[#e5e7eb]">
-          {/* 新規追加 */}
-          <div>
-            <label className="block text-sm font-medium text-[#1f2937] mb-2">
-              新しい項目を追加
-            </label>
-            <div className="flex flex-col gap-2">
-              <div className="flex gap-2">
-                <Input
-                  type="text"
-                  value={newItemName}
-                  onChange={(e) => setNewItemName(e.target.value)}
-                  placeholder="例: 12月度 冬期講習"
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') handleAdd();
-                  }}
-                  disabled={isProcessing}
-                />
-                <Button onClick={handleAdd} disabled={isProcessing || !newItemName.trim()}>
-                  追加
-                </Button>
-              </div>
-              <div className="flex flex-wrap items-center gap-3">
-                <select
-                  value={newItemColumnType}
-                  onChange={(e) => setNewItemColumnType(e.target.value as ApplicationColumnType)}
-                  className="px-3 py-2 text-sm border border-[#e5e7eb] rounded-lg bg-white text-[#1f2937] focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
-                  disabled={isProcessing}
-                >
-                  <option value="check">チェック</option>
-                  <option value="number">数値</option>
-                  <option value="date">日付</option>
-                </select>
-                <input
-                  type="date"
-                  value={newItemDueDate}
-                  onChange={(e) => setNewItemDueDate(e.target.value)}
-                  className="px-3 py-2 text-sm border border-[#e5e7eb] rounded-lg bg-white text-[#1f2937] focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
-                  disabled={isProcessing}
-                  placeholder="期日（任意）"
-                />
-                <label className="flex items-center gap-2 text-sm text-[#4b5563]">
-                  <input
-                    type="checkbox"
-                    checked={newItemManagerOnly}
-                    onChange={(e) => setNewItemManagerOnly(e.target.checked)}
-                    className="w-4 h-4 text-[#3b82f6] border-[#e5e7eb] rounded focus:ring-[#3b82f6]"
+          <div className="p-4 space-y-6 border-t border-[#e5e7eb]">
+            {/* 新規追加 */}
+            <div>
+              <label className="block text-sm font-medium text-[#1f2937] mb-2">
+                新しい項目を追加
+              </label>
+              <div className="flex flex-col gap-2">
+                <div className="flex gap-2">
+                  <Input
+                    type="text"
+                    value={newItemName}
+                    onChange={(e) => setNewItemName(e.target.value)}
+                    placeholder="例: 12月度 冬期講習"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleAdd();
+                    }}
                     disabled={isProcessing}
                   />
-                  <span>室長以上のみ表示（講師には非表示）</span>
-                </label>
+                  <Button onClick={handleAdd} disabled={isProcessing || !newItemName.trim()}>
+                    追加
+                  </Button>
+                </div>
+                <div className="flex flex-wrap items-center gap-3">
+                  <select
+                    value={newItemColumnType}
+                    onChange={(e) => setNewItemColumnType(e.target.value as ApplicationColumnType)}
+                    className="px-3 py-2 text-sm border border-[#e5e7eb] rounded-lg bg-white text-[#1f2937] focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
+                    disabled={isProcessing}
+                  >
+                    <option value="check">チェック</option>
+                    <option value="number">数値</option>
+                    <option value="date">日付</option>
+                  </select>
+                  <input
+                    type="date"
+                    value={newItemDueDate}
+                    onChange={(e) => setNewItemDueDate(e.target.value)}
+                    className="px-3 py-2 text-sm border border-[#e5e7eb] rounded-lg bg-white text-[#1f2937] focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
+                    disabled={isProcessing}
+                    placeholder="期日（任意）"
+                  />
+                  <label className="flex items-center gap-2 text-sm text-[#4b5563]">
+                    <input
+                      type="checkbox"
+                      checked={newItemManagerOnly}
+                      onChange={(e) => setNewItemManagerOnly(e.target.checked)}
+                      className="w-4 h-4 text-[#3b82f6] border-[#e5e7eb] rounded focus:ring-[#3b82f6]"
+                      disabled={isProcessing}
+                    />
+                    <span>室長以上のみ表示（講師には非表示）</span>
+                  </label>
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* 表示中の項目 */}
-          <div>
-            <h3 className="text-sm font-medium text-[#1f2937] mb-3">
-              表示中の項目（{visibleItems.length}件）
-            </h3>
-            <div className="space-y-2">
-              {visibleItems.map((item) => (
+            {/* 表示中の項目 */}
+            <div>
+              <h3 className="text-sm font-medium text-[#1f2937] mb-3">
+                表示中の項目（{visibleItems.length}件）
+              </h3>
+              <div className="space-y-2">
+                {visibleItems.map((item) => (
                   <div
                     key={item.id}
                     className="flex items-center justify-between p-3 bg-[#f3f4f6] rounded-lg border border-[#e5e7eb]"
@@ -290,11 +291,7 @@ export function ApplicationItemAccordion({
                         >
                           保存
                         </Button>
-                        <Button
-                          onClick={cancelEditing}
-                          variant="secondary"
-                          size="sm"
-                        >
+                        <Button onClick={cancelEditing} variant="secondary" size="sm">
                           キャンセル
                         </Button>
                       </div>
@@ -309,8 +306,14 @@ export function ApplicationItemAccordion({
                               onChange={async (e) => {
                                 setIsProcessing(true);
                                 try {
-                                  await updateApplicationItem(item.id, { teacher_editable: e.target.checked });
-                                  success(e.target.checked ? '講師が編集可能に設定しました' : '講師の編集を無効にしました');
+                                  await updateApplicationItem(item.id, {
+                                    teacher_editable: e.target.checked,
+                                  });
+                                  success(
+                                    e.target.checked
+                                      ? '講師が編集可能に設定しました'
+                                      : '講師の編集を無効にしました'
+                                  );
                                   onUpdated();
                                 } catch (error) {
                                   console.error('Failed to update teacher_editable:', error);
@@ -333,8 +336,14 @@ export function ApplicationItemAccordion({
                               onChange={async (e) => {
                                 setIsProcessing(true);
                                 try {
-                                  await updateApplicationItem(item.id, { manager_only: e.target.checked });
-                                  success(e.target.checked ? '室長以上のみ表示にしました' : '全員に表示にしました');
+                                  await updateApplicationItem(item.id, {
+                                    manager_only: e.target.checked,
+                                  });
+                                  success(
+                                    e.target.checked
+                                      ? '室長以上のみ表示にしました'
+                                      : '全員に表示にしました'
+                                  );
                                   onUpdated();
                                 } catch (error) {
                                   console.error('Failed to update manager_only:', error);
@@ -378,49 +387,49 @@ export function ApplicationItemAccordion({
                     )}
                   </div>
                 ))}
-              {visibleItems.length === 0 && (
-                <p className="text-[#4b5563]/60 text-sm py-4 text-center">
-                  表示中の項目がありません
-                </p>
-              )}
-            </div>
-          </div>
-
-          {/* 非表示の項目 */}
-          {hiddenItems.length > 0 && (
-            <div>
-              <h3 className="text-sm font-medium text-[#1f2937] mb-3">
-                非表示の項目（{hiddenItems.length}件）
-              </h3>
-              <div className="space-y-2">
-                {hiddenItems.map((item) => (
-                  <div
-                    key={item.id}
-                    className="flex items-center justify-between p-3 bg-[#f3f4f6] rounded-lg border border-[#e5e7eb] opacity-60"
-                  >
-                    <span className="text-[#4b5563]">{item.name}</span>
-                    <div className="flex gap-3">
-                      <button
-                        onClick={() => handleUnhide(item.id)}
-                        className="text-sm text-[#4b5563] hover:text-[#3b82f6] transition-colors duration-150"
-                        disabled={isProcessing}
-                      >
-                        再表示
-                      </button>
-                      <button
-                        onClick={() => handleDelete(item.id, item.name)}
-                        className="text-sm text-[#ef4444] hover:text-[#ef4444]/80 transition-colors duration-150"
-                        disabled={isProcessing}
-                      >
-                        削除
-                      </button>
-                    </div>
-                  </div>
-                ))}
+                {visibleItems.length === 0 && (
+                  <p className="text-[#4b5563]/60 text-sm py-4 text-center">
+                    表示中の項目がありません
+                  </p>
+                )}
               </div>
             </div>
-          )}
-        </div>
+
+            {/* 非表示の項目 */}
+            {hiddenItems.length > 0 && (
+              <div>
+                <h3 className="text-sm font-medium text-[#1f2937] mb-3">
+                  非表示の項目（{hiddenItems.length}件）
+                </h3>
+                <div className="space-y-2">
+                  {hiddenItems.map((item) => (
+                    <div
+                      key={item.id}
+                      className="flex items-center justify-between p-3 bg-[#f3f4f6] rounded-lg border border-[#e5e7eb] opacity-60"
+                    >
+                      <span className="text-[#4b5563]">{item.name}</span>
+                      <div className="flex gap-3">
+                        <button
+                          onClick={() => handleUnhide(item.id)}
+                          className="text-sm text-[#4b5563] hover:text-[#3b82f6] transition-colors duration-150"
+                          disabled={isProcessing}
+                        >
+                          再表示
+                        </button>
+                        <button
+                          onClick={() => handleDelete(item.id, item.name)}
+                          className="text-sm text-[#ef4444] hover:text-[#ef4444]/80 transition-colors duration-150"
+                          disabled={isProcessing}
+                        >
+                          削除
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
       {ConfirmDialog}

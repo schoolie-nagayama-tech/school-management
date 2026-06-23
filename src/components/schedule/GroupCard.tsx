@@ -26,7 +26,13 @@ function gradeLabel(g: number): string {
   return `高${g - 9}`;
 }
 
-export function GroupCard({ entries, maxStudents, subjectNameById, onStudentClick, onRemoveEntry }: Props) {
+export function GroupCard({
+  entries,
+  maxStudents,
+  subjectNameById,
+  onStudentClick,
+  onRemoveEntry,
+}: Props) {
   if (entries.length === 0) return null;
   const teacher = entries[0].teacher;
   const teacherName = teacher?.display_name || teacher?.email || '担当未定';
@@ -47,14 +53,19 @@ export function GroupCard({ entries, maxStudents, subjectNameById, onStudentClic
         <span className="text-[11px] font-semibold text-accent-ink truncate flex-1 min-w-0">
           {teacherName}
         </span>
-        <span className={`text-[10px] tabular-nums ${isFull ? 'text-danger font-semibold' : 'text-accent-ink/70'}`}>
+        <span
+          className={`text-[10px] tabular-nums ${isFull ? 'text-danger font-semibold' : 'text-accent-ink/70'}`}
+        >
           {count}/{maxStudents}
         </span>
       </div>
       {subjectLabels.length > 0 && (
         <div className="flex flex-wrap gap-0.5 mb-1">
           {subjectLabels.map((label) => (
-            <span key={label} className="px-1 py-0 rounded text-[9px] leading-tight text-accent-ink bg-white border border-accent-ink/15">
+            <span
+              key={label}
+              className="px-1 py-0 rounded text-[9px] leading-tight text-accent-ink bg-white border border-accent-ink/15"
+            >
               {label}
             </span>
           ))}
@@ -76,7 +87,10 @@ export function GroupCard({ entries, maxStudents, subjectNameById, onStudentClic
               {onRemoveEntry && (
                 <button
                   type="button"
-                  onClick={(ev) => { ev.stopPropagation(); onRemoveEntry(e); }}
+                  onClick={(ev) => {
+                    ev.stopPropagation();
+                    onRemoveEntry(e);
+                  }}
                   className="opacity-0 group-hover/std:opacity-100 text-accent-ink/40 hover:text-danger transition-opacity"
                   aria-label="この生徒を外す"
                 >

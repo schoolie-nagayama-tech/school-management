@@ -47,7 +47,8 @@ const KoushuControlPanel = dynamic(
   { ssr: false }
 );
 const TestPrepPlacementPanel = dynamic(
-  () => import('@/components/schedule/TestPrepPlacementPanel').then((m) => m.TestPrepPlacementPanel),
+  () =>
+    import('@/components/schedule/TestPrepPlacementPanel').then((m) => m.TestPrepPlacementPanel),
   { ssr: false }
 );
 const ScheduleLegend = dynamic(
@@ -55,7 +56,10 @@ const ScheduleLegend = dynamic(
   { ssr: false }
 );
 const PlacementAvailabilityStrip = dynamic(
-  () => import('@/components/schedule/PlacementAvailabilityStrip').then((m) => m.PlacementAvailabilityStrip),
+  () =>
+    import('@/components/schedule/PlacementAvailabilityStrip').then(
+      (m) => m.PlacementAvailabilityStrip
+    ),
   { ssr: false }
 );
 const GroupLaneGrid = dynamic(
@@ -89,7 +93,12 @@ import {
 } from '@/lib/api/schedule';
 import { reassignTeacherFromToday } from '@/lib/api/pattern-matching';
 import { logScheduleChange } from '@/lib/api/schedule-change-logs';
-import type { ScheduleEntry, ScheduleEntryFormData, ScheduleTimeSlot, SchoolClassCapacityFormData } from '@/types/schedule';
+import type {
+  ScheduleEntry,
+  ScheduleEntryFormData,
+  ScheduleTimeSlot,
+  SchoolClassCapacityFormData,
+} from '@/types/schedule';
 import { getClassCapacity, DEFAULT_CLASS_CAPACITY } from '@/lib/api/school-class-capacity';
 import type { School, Student, Subject } from '@/types/database';
 import AccessDenied from '@/components/AccessDenied';
@@ -97,10 +106,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/useToast';
 import { Clock, BookOpen, FileText, ChevronLeft, ChevronRight } from 'lucide-react';
 import { SchoolSwitcher } from '@/components/SchoolSwitcher';
-import {
-  getKoushuScheduledCounts,
-  type KoushuEnrollment,
-} from '@/lib/api/seasonalCourses';
+import { getKoushuScheduledCounts, type KoushuEnrollment } from '@/lib/api/seasonalCourses';
 import { getKoushuPeriods, type KoushuPeriodInfo } from '@/lib/api/koushu-period';
 import {
   hasZoukomaForm,
@@ -176,12 +182,23 @@ export default function SchedulePage() {
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState<ScheduleEntry | null>(null);
   const [, setAddModalOpen] = useState(false);
-  const [addTarget, setAddTarget] = useState<{ date: string; slotId: string; teacherId: string } | null>(null);
+  const [addTarget, setAddTarget] = useState<{
+    date: string;
+    slotId: string;
+    teacherId: string;
+  } | null>(null);
   const [addTeacherModalOpen, setAddTeacherModalOpen] = useState(false);
-  const [addTeacherTarget, setAddTeacherTarget] = useState<{ date: string; slotId: string; existingTeacherIds: string[] } | null>(null);
+  const [addTeacherTarget, setAddTeacherTarget] = useState<{
+    date: string;
+    slotId: string;
+    existingTeacherIds: string[];
+  } | null>(null);
   const [transferModalOpen, setTransferModalOpen] = useState(false);
   const [transferringEntry, setTransferringEntry] = useState<ScheduleEntry | null>(null);
-  const [initialTransferTarget, setInitialTransferTarget] = useState<{ date: string; slotId: string } | null>(null);
+  const [initialTransferTarget, setInitialTransferTarget] = useState<{
+    date: string;
+    slotId: string;
+  } | null>(null);
   const [transferMode, setTransferMode] = useState<{ sourceEntry: ScheduleEntry } | null>(null);
   // 担当未決定エントリに講師カードを D&D したときの確定待ち状態。
   // floating action bar で「このコマだけ」「毎週このコマ」のワンクリック選択を表示する。
@@ -221,7 +238,7 @@ export default function SchedulePage() {
     entryCount: number;
   } | null>(null);
   const [teacherDetailOpen, setTeacherDetailOpen] = useState(false);
-  const [selectedTeacher, setSelectedTeacher] = useState<typeof teachers[0] | null>(null);
+  const [selectedTeacher, setSelectedTeacher] = useState<(typeof teachers)[0] | null>(null);
   const [printDay, setPrintDay] = useState<string | null>(null);
   // ブース番号設定モーダル：印刷時に講師名の隣に表示される番号を編集する
   const [boothAssignDate, setBoothAssignDate] = useState<string | null>(null);
@@ -246,8 +263,12 @@ export default function SchedulePage() {
   // seasonal_courses は座席表とは独立した「生徒別プラン」を扱うテーブルなのでここでは使わない。
   const [koushuList, setKoushuList] = useState<KoushuPeriodInfo[]>([]);
   const [selectedKoushu, setSelectedKoushu] = useState<KoushuPeriodInfo | null>(null);
-  const [koushuEnrollments, setKoushuEnrollments] = useState<Map<string, KoushuEnrollment>>(new Map());
-  const [koushuScheduledCounts, setKoushuScheduledCounts] = useState<Map<string, number>>(new Map());
+  const [koushuEnrollments, setKoushuEnrollments] = useState<Map<string, KoushuEnrollment>>(
+    new Map()
+  );
+  const [koushuScheduledCounts, setKoushuScheduledCounts] = useState<Map<string, number>>(
+    new Map()
+  );
   // マッチングの下書き提案（座席表に★で重ねる用）
   const [koushuDraftProposals, setKoushuDraftProposals] = useState<ScheduleMatchProposal[]>([]);
 
@@ -261,9 +282,9 @@ export default function SchedulePage() {
     studentId: string;
     subjectId: string;
     subjectName: string;
-    availableKeys: Set<string>;   // `${date}_${slotId}`（時限がコマに対応付いた枠）
+    availableKeys: Set<string>; // `${date}_${slotId}`（時限がコマに対応付いた枠）
     datesWithMapping: Set<string>; // 対応付いた枠を持つ日付
-    availableDates: Set<string>;  // 通塾可能日（対応付け不可時の日単位フォールバック）
+    availableDates: Set<string>; // 通塾可能日（対応付け不可時の日単位フォールバック）
     /** ストリップ構築に使う生の利用可能スロット（buildTestPrepPlacementStrip に渡す） */
     rawSlots: import('@/lib/api/zoukoma-placement').ZoukomaAvailableSlot[];
   } | null>(null);
@@ -271,7 +292,9 @@ export default function SchedulePage() {
 
   // ---- 配置ストリップ（出席可能日程ドットマトリクス） ----
   // 配置モード中（講習 / テスト対策）に生徒の出席可能日程をストリップ表示するためのデータ
-  const [stripData, setStripData] = useState<import('@/lib/api/placement-availability').PlacementStripData | null>(null);
+  const [stripData, setStripData] = useState<
+    import('@/lib/api/placement-availability').PlacementStripData | null
+  >(null);
   const [stripLoading, setStripLoading] = useState(false);
 
   const router = useRouter();
@@ -294,7 +317,8 @@ export default function SchedulePage() {
     }
   });
 
-  const schoolId = selectedSchoolId && selectedSchoolId !== 'all' ? selectedSchoolId : selectedSchoolIdLocal;
+  const schoolId =
+    selectedSchoolId && selectedSchoolId !== 'all' ? selectedSchoolId : selectedSchoolIdLocal;
 
   const weekDatesAll = useMemo(() => getWeekDates(weekStart), [weekStart]);
   const weekDates = useMemo(() => {
@@ -363,8 +387,7 @@ export default function SchedulePage() {
             .map((e) => `${e.entry_date}-${e.time_slot_id}-${e.student_id}`)
         );
         const outOfSync =
-          expected.size !== actual.size ||
-          Array.from(expected).some((k) => !actual.has(k));
+          expected.size !== actual.size || Array.from(expected).some((k) => !actual.has(k));
         if (outOfSync) {
           await generateWeeklySchedule(schoolId, weekStartStr, profile?.id ?? undefined);
           list = await getScheduleEntries(schoolId, weekStartStr, weekEndStr);
@@ -381,7 +404,8 @@ export default function SchedulePage() {
   useEffect(() => {
     if (masterSchools.length > 0) {
       const ids = getSelectedSchoolIds();
-      const filtered = ids.length > 0 ? masterSchools.filter((s) => ids.includes(s.id)) : masterSchools;
+      const filtered =
+        ids.length > 0 ? masterSchools.filter((s) => ids.includes(s.id)) : masterSchools;
       setSchools(filtered);
       if (filtered.length > 0 && !selectedSchoolIdLocal) {
         setSelectedSchoolIdLocal(filtered[0].id);
@@ -395,7 +419,9 @@ export default function SchedulePage() {
     Promise.all([
       getActiveTimeSlots(schoolId),
       getRegularPatterns(schoolId),
-      fetchWithAuth('/api/admin/users?role=teacher').then((r) => r.json()).then((d) => d.users || []),
+      fetchWithAuth('/api/admin/users?role=teacher')
+        .then((r) => r.json())
+        .then((d) => d.users || []),
     ])
       .then(([slots, patterns, users]) => {
         setTimeSlots(slots);
@@ -420,7 +446,9 @@ export default function SchedulePage() {
 
   useEffect(() => {
     if (!schoolId) return;
-    getStudents(undefined, [schoolId]).then(setStudents).catch(() => setStudents([]));
+    getStudents(undefined, [schoolId])
+      .then(setStudents)
+      .catch(() => setStudents([]));
   }, [schoolId]);
 
   // 「現在有効な講師の出勤可能曜日」を期間付きで取得。
@@ -460,19 +488,32 @@ export default function SchedulePage() {
   // 講習期間リストをロード（schoolId 変更時）
   // course_prep_periods から「設定済み（start/end あり）」を全部表示
   useEffect(() => {
-    if (!schoolId) { setKoushuList([]); return; }
-    getKoushuPeriods(schoolId).then(setKoushuList).catch(() => setKoushuList([]));
+    if (!schoolId) {
+      setKoushuList([]);
+      return;
+    }
+    getKoushuPeriods(schoolId)
+      .then(setKoushuList)
+      .catch(() => setKoushuList([]));
   }, [schoolId]);
 
   // 追加授業（テスト対策）モードを出すか：増コマフォームが設定済みかで判定（schoolId 変更時）
   useEffect(() => {
-    if (!schoolId) { setHasTestPrep(false); return; }
-    hasZoukomaForm(schoolId).then(setHasTestPrep).catch(() => setHasTestPrep(false));
+    if (!schoolId) {
+      setHasTestPrep(false);
+      return;
+    }
+    hasZoukomaForm(schoolId)
+      .then(setHasTestPrep)
+      .catch(() => setHasTestPrep(false));
   }, [schoolId]);
 
   // 授業生徒数設定をロード（schoolId 変更時）。失敗・未設定はデフォルト値で動かす。
   useEffect(() => {
-    if (!schoolId) { setCapacity(DEFAULT_CLASS_CAPACITY); return; }
+    if (!schoolId) {
+      setCapacity(DEFAULT_CLASS_CAPACITY);
+      return;
+    }
     getClassCapacity(schoolId)
       .then((c) => setCapacity(c ?? DEFAULT_CLASS_CAPACITY))
       .catch(() => setCapacity(DEFAULT_CLASS_CAPACITY));
@@ -480,64 +521,70 @@ export default function SchedulePage() {
 
   // 講習期間選択時: 該当 season の全 seasonal_courses から enrollments を集約
   // 同生徒が複数コース申込なら koma_count を合算
-  const handleKoushuSelect = useCallback(async (period: KoushuPeriodInfo | null) => {
-    setSelectedKoushu(period);
-    // 講習と追加授業（テスト対策）は排他。講習を選んだら追加授業モードを解除。
-    if (period) {
-      setTestPrepActive(false);
-      setPlacingTestPrep(null);
-    }
-    if (!period) {
-      setKoushuEnrollments(new Map());
-      setKoushuScheduledCounts(new Map());
-      setKoushuDraftProposals([]);
-      return;
-    }
-    // 講習モードに入ったら期間内の週へジャンプ（今日が期間内なら今週、そうでなければ期間開始週）。
-    // 通常授業の週（6月など）に居たまま講習配置しようとして「置けない」事故を防ぐ。
-    {
-      const todayJst = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Tokyo' });
-      const jumpStr =
-        todayJst >= period.schedule_start_date && todayJst <= period.schedule_end_date
-          ? todayJst
-          : period.schedule_start_date;
-      setWeekStart(getWeekStart(new Date(jumpStr + 'T12:00:00')));
-    }
-    // 申込は期間(school + season)で直接取得（コース依存を廃止）。個別のみ座席表モード対象。
-    const { getKoushuEnrollmentsForPeriod } = await import('@/lib/api/seasonalCourses');
-    const all = await getKoushuEnrollmentsForPeriod(period.school_id, period.season);
-    const enrollMap = new Map<string, KoushuEnrollment>();
-    for (const e of all) {
-      if (e.formation !== 'individual') continue;
-      // (school, season, student, formation) は一意なので生徒ごとに1行
-      enrollMap.set(e.student_id, e);
-    }
-    setKoushuEnrollments(enrollMap);
+  const handleKoushuSelect = useCallback(
+    async (period: KoushuPeriodInfo | null) => {
+      setSelectedKoushu(period);
+      // 講習と追加授業（テスト対策）は排他。講習を選んだら追加授業モードを解除。
+      if (period) {
+        setTestPrepActive(false);
+        setPlacingTestPrep(null);
+      }
+      if (!period) {
+        setKoushuEnrollments(new Map());
+        setKoushuScheduledCounts(new Map());
+        setKoushuDraftProposals([]);
+        return;
+      }
+      // 講習モードに入ったら期間内の週へジャンプ（今日が期間内なら今週、そうでなければ期間開始週）。
+      // 通常授業の週（6月など）に居たまま講習配置しようとして「置けない」事故を防ぐ。
+      {
+        const todayJst = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Tokyo' });
+        const jumpStr =
+          todayJst >= period.schedule_start_date && todayJst <= period.schedule_end_date
+            ? todayJst
+            : period.schedule_start_date;
+        setWeekStart(getWeekStart(new Date(jumpStr + 'T12:00:00')));
+      }
+      // 申込は期間(school + season)で直接取得（コース依存を廃止）。個別のみ座席表モード対象。
+      const { getKoushuEnrollmentsForPeriod } = await import('@/lib/api/seasonalCourses');
+      const all = await getKoushuEnrollmentsForPeriod(period.school_id, period.season);
+      const enrollMap = new Map<string, KoushuEnrollment>();
+      for (const e of all) {
+        if (e.formation !== 'individual') continue;
+        // (school, season, student, formation) は一意なので生徒ごとに1行
+        enrollMap.set(e.student_id, e);
+      }
+      setKoushuEnrollments(enrollMap);
 
-    if (enrollMap.size > 0) {
-      const counts = await getKoushuScheduledCounts(
-        schoolId,
-        period.schedule_start_date,
-        period.schedule_end_date,
-        Array.from(enrollMap.keys()),
-        'individual'
-      );
-      setKoushuScheduledCounts(counts);
-    } else {
-      setKoushuScheduledCounts(new Map());
-    }
-  }, [schoolId]);
+      if (enrollMap.size > 0) {
+        const counts = await getKoushuScheduledCounts(
+          schoolId,
+          period.schedule_start_date,
+          period.schedule_end_date,
+          Array.from(enrollMap.keys()),
+          'individual'
+        );
+        setKoushuScheduledCounts(counts);
+      } else {
+        setKoushuScheduledCounts(new Map());
+      }
+    },
+    [schoolId]
+  );
 
   // 講習モード用: 生徒IDから申し込み情報を返す
-  const getKoushuInfo = useCallback((studentId: string) => {
-    if (!selectedKoushu) return null;
-    const en = koushuEnrollments.get(studentId);
-    if (!en) return null;
-    return {
-      enrolled: en.koma_count,
-      scheduled: koushuScheduledCounts.get(studentId) ?? 0,
-    };
-  }, [selectedKoushu, koushuEnrollments, koushuScheduledCounts]);
+  const getKoushuInfo = useCallback(
+    (studentId: string) => {
+      if (!selectedKoushu) return null;
+      const en = koushuEnrollments.get(studentId);
+      if (!en) return null;
+      return {
+        enrolled: en.koma_count,
+        scheduled: koushuScheduledCounts.get(studentId) ?? 0,
+      };
+    },
+    [selectedKoushu, koushuEnrollments, koushuScheduledCounts]
+  );
 
   useEffect(() => {
     refreshEntries();
@@ -546,7 +593,10 @@ export default function SchedulePage() {
   // 配置ストリップデータの構築。配置モード切り替え・refreshKey 変更時に再取得。
   // 失敗しても座席表本体に影響しないよう、エラーは warn + null で飲み込む。
   useEffect(() => {
-    if (!schoolId) { setStripData(null); return; }
+    if (!schoolId) {
+      setStripData(null);
+      return;
+    }
 
     // 個別コマのスロット一覧（formation !== 'group'）。useMemo の individualSlots は
     // この useEffect より後で宣言されているため、timeSlots からインラインでフィルタする。
@@ -562,47 +612,80 @@ export default function SchedulePage() {
     if (placingKoushuStudent && selectedKoushu) {
       let cancelled = false;
       setStripLoading(true);
-      import('@/lib/api/placement-availability').then(({ buildKoushuPlacementStrip }) =>
-        buildKoushuPlacementStrip(
-          schoolId,
-          placingKoushuStudent.studentId,
-          { schedule_start_date: selectedKoushu.schedule_start_date, schedule_end_date: selectedKoushu.schedule_end_date },
-          indivSlotList
+      import('@/lib/api/placement-availability')
+        .then(({ buildKoushuPlacementStrip }) =>
+          buildKoushuPlacementStrip(
+            schoolId,
+            placingKoushuStudent.studentId,
+            {
+              schedule_start_date: selectedKoushu.schedule_start_date,
+              schedule_end_date: selectedKoushu.schedule_end_date,
+            },
+            indivSlotList
+          )
         )
-      ).then((data) => {
-        if (!cancelled) { setStripData(data); setStripLoading(false); }
-      }).catch((e) => {
-        console.warn('PlacementStrip build failed (koushu):', e);
-        if (!cancelled) { setStripData(null); setStripLoading(false); }
-      });
-      return () => { cancelled = true; };
+        .then((data) => {
+          if (!cancelled) {
+            setStripData(data);
+            setStripLoading(false);
+          }
+        })
+        .catch((e) => {
+          console.warn('PlacementStrip build failed (koushu):', e);
+          if (!cancelled) {
+            setStripData(null);
+            setStripLoading(false);
+          }
+        });
+      return () => {
+        cancelled = true;
+      };
     }
 
     // テスト対策配置モード
     if (placingTestPrep) {
       let cancelled = false;
       setStripLoading(true);
-      import('@/lib/api/placement-availability').then(({ buildTestPrepPlacementStrip }) =>
-        buildTestPrepPlacementStrip(
-          schoolId,
-          placingTestPrep.studentId,
-          placingTestPrep.rawSlots,
-          indivSlotList
+      import('@/lib/api/placement-availability')
+        .then(({ buildTestPrepPlacementStrip }) =>
+          buildTestPrepPlacementStrip(
+            schoolId,
+            placingTestPrep.studentId,
+            placingTestPrep.rawSlots,
+            indivSlotList
+          )
         )
-      ).then((data) => {
-        if (!cancelled) { setStripData(data); setStripLoading(false); }
-      }).catch((e) => {
-        console.warn('PlacementStrip build failed (test_prep):', e);
-        if (!cancelled) { setStripData(null); setStripLoading(false); }
-      });
-      return () => { cancelled = true; };
+        .then((data) => {
+          if (!cancelled) {
+            setStripData(data);
+            setStripLoading(false);
+          }
+        })
+        .catch((e) => {
+          console.warn('PlacementStrip build failed (test_prep):', e);
+          if (!cancelled) {
+            setStripData(null);
+            setStripLoading(false);
+          }
+        });
+      return () => {
+        cancelled = true;
+      };
     }
 
     // どちらでもなければ非表示
     setStripData(null);
-  // koushuPanelRefreshKey / zoukomaPanelRefreshKey を依存に含め、配置成功後に再構築
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [schoolId, placingKoushuStudent, placingTestPrep, selectedKoushu, timeSlots, koushuPanelRefreshKey, zoukomaPanelRefreshKey]);
+    // koushuPanelRefreshKey / zoukomaPanelRefreshKey を依存に含め、配置成功後に再構築
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    schoolId,
+    placingKoushuStudent,
+    placingTestPrep,
+    selectedKoushu,
+    timeSlots,
+    koushuPanelRefreshKey,
+    zoukomaPanelRefreshKey,
+  ]);
 
   // NOTE: 以前は window focus / visibilitychange で自動 refreshEntries していたが、
   // 「定期的に再読み込みが入って描画が重い」というフィードバックを受けて撤去。
@@ -633,21 +716,27 @@ export default function SchedulePage() {
     router.push(`/admin/teachers/${entry.teacher_id}`);
   }, [actionModalEntry, router]);
 
-  const handleAddTeacher = useCallback((date: string, slotId: string, existingTeacherIds: string[]) => {
-    setAddTeacherTarget({ date, slotId, existingTeacherIds });
-    setAddTeacherModalOpen(true);
-  }, []);
+  const handleAddTeacher = useCallback(
+    (date: string, slotId: string, existingTeacherIds: string[]) => {
+      setAddTeacherTarget({ date, slotId, existingTeacherIds });
+      setAddTeacherModalOpen(true);
+    },
+    []
+  );
 
-  const handleAddTeacherSelect = useCallback((teacherId: string) => {
-    if (!addTeacherTarget) return;
-    const cellKey = `${addTeacherTarget.date}-${addTeacherTarget.slotId}`;
-    setEmptyTeacherSlots((prev) => ({
-      ...prev,
-      [cellKey]: [...(prev[cellKey] ?? []), teacherId],
-    }));
-    setAddTeacherTarget(null);
-    setAddTeacherModalOpen(false);
-  }, [addTeacherTarget]);
+  const handleAddTeacherSelect = useCallback(
+    (teacherId: string) => {
+      if (!addTeacherTarget) return;
+      const cellKey = `${addTeacherTarget.date}-${addTeacherTarget.slotId}`;
+      setEmptyTeacherSlots((prev) => ({
+        ...prev,
+        [cellKey]: [...(prev[cellKey] ?? []), teacherId],
+      }));
+      setAddTeacherTarget(null);
+      setAddTeacherModalOpen(false);
+    },
+    [addTeacherTarget]
+  );
 
   const handleAddStudent = useCallback(
     async (date: string, slotId: string, teacherId: string) => {
@@ -679,7 +768,9 @@ export default function SchedulePage() {
   );
 
   // ---- 集団コマの手動作成（Phase 3） ----
-  const [groupKomaTarget, setGroupKomaTarget] = useState<{ date: string; slotId: string } | null>(null);
+  const [groupKomaTarget, setGroupKomaTarget] = useState<{ date: string; slotId: string } | null>(
+    null
+  );
 
   const handleCreateGroupKoma = useCallback((date: string, slotId: string) => {
     setGroupKomaTarget({ date, slotId });
@@ -708,76 +799,75 @@ export default function SchedulePage() {
     [groupKomaTarget, schoolId, success, refreshEntries]
   );
 
-  const handleRemoveTeacher = useCallback((
-    date: string,
-    slotId: string,
-    teacherId: string,
-    entryCount: number
-  ) => {
-    if (entryCount === 0) {
-      const cellKey = `${date}-${slotId}`;
-      setEmptyTeacherSlots((prev) => {
-        const next = { ...prev };
-        const arr = (next[cellKey] ?? []).filter((id) => id !== teacherId);
-        if (arr.length === 0) delete next[cellKey];
-        else next[cellKey] = arr;
-        return next;
-      });
-      return;
-    }
-    setRemoveTeacherConfirm({ date, slotId, teacherId, entryCount });
-  }, []);
+  const handleRemoveTeacher = useCallback(
+    (date: string, slotId: string, teacherId: string, entryCount: number) => {
+      if (entryCount === 0) {
+        const cellKey = `${date}-${slotId}`;
+        setEmptyTeacherSlots((prev) => {
+          const next = { ...prev };
+          const arr = (next[cellKey] ?? []).filter((id) => id !== teacherId);
+          if (arr.length === 0) delete next[cellKey];
+          else next[cellKey] = arr;
+          return next;
+        });
+        return;
+      }
+      setRemoveTeacherConfirm({ date, slotId, teacherId, entryCount });
+    },
+    []
+  );
 
-  const handleTeacherCardMove = useCallback(async (
-    source: { date: string; slotId: string; teacherId: string },
-    target: { date: string; slotId: string }
-  ) => {
-    const toMove = entries.filter(
-      (e) =>
-        e.entry_date === source.date &&
-        e.time_slot_id === source.slotId &&
-        e.teacher_id === source.teacherId &&
-        e.status !== 'cancelled' &&
-        e.status !== 'transferred_out'
-    );
-    for (const entry of toMove) {
-      await moveScheduleEntry(entry.id, target.date, target.slotId, source.teacherId);
-    }
-    success('講師カードを移動しました');
-    refreshEntries();
-  }, [entries, success, refreshEntries]);
+  const handleTeacherCardMove = useCallback(
+    async (
+      source: { date: string; slotId: string; teacherId: string },
+      target: { date: string; slotId: string }
+    ) => {
+      const toMove = entries.filter(
+        (e) =>
+          e.entry_date === source.date &&
+          e.time_slot_id === source.slotId &&
+          e.teacher_id === source.teacherId &&
+          e.status !== 'cancelled' &&
+          e.status !== 'transferred_out'
+      );
+      for (const entry of toMove) {
+        await moveScheduleEntry(entry.id, target.date, target.slotId, source.teacherId);
+      }
+      success('講師カードを移動しました');
+      refreshEntries();
+    },
+    [entries, success, refreshEntries]
+  );
 
   /** 振替モード時: 座席表の講師ブロックをクリックで振替先に選び、即実行。同日同時間帯は移動として扱う */
-  const handleTransferTargetClick = useCallback(async (
-    targetDate: string,
-    targetSlotId: string,
-    targetTeacherId: string
-  ) => {
-    if (!transferMode || !schoolId) return;
-    const entry = transferMode.sourceEntry;
-    try {
-      const isSameSlot =
-        entry.entry_date === targetDate && entry.time_slot_id === targetSlotId;
-      if (isSameSlot) {
-        await moveScheduleEntry(entry.id, targetDate, targetSlotId, targetTeacherId);
-        success('授業を移動しました');
-      } else {
-        await createTransferEntry(
-          schoolId,
-          entry.id,
-          targetDate,
-          targetSlotId,
-          targetTeacherId,
-          null
-        );
-        success('振替を登録しました');
+  const handleTransferTargetClick = useCallback(
+    async (targetDate: string, targetSlotId: string, targetTeacherId: string) => {
+      if (!transferMode || !schoolId) return;
+      const entry = transferMode.sourceEntry;
+      try {
+        const isSameSlot = entry.entry_date === targetDate && entry.time_slot_id === targetSlotId;
+        if (isSameSlot) {
+          await moveScheduleEntry(entry.id, targetDate, targetSlotId, targetTeacherId);
+          success('授業を移動しました');
+        } else {
+          await createTransferEntry(
+            schoolId,
+            entry.id,
+            targetDate,
+            targetSlotId,
+            targetTeacherId,
+            null
+          );
+          success('振替を登録しました');
+        }
+        setTransferMode(null);
+        refreshEntries();
+      } catch (e) {
+        toastError((e as Error).message);
       }
-      setTransferMode(null);
-      refreshEntries();
-    } catch (e) {
-      toastError((e as Error).message);
-    }
-  }, [transferMode, schoolId, success, refreshEntries, toastError]);
+    },
+    [transferMode, schoolId, success, refreshEntries, toastError]
+  );
 
   /** 日付横の印刷アイコン: その日だけ印刷用ビューを表示して印刷 */
   const handlePrintDay = useCallback((dateStr: string) => {
@@ -936,7 +1026,10 @@ export default function SchedulePage() {
 
   // 講習モードの2レーン分割: 個別レーン=既存グリッド、集団レーン=GroupLaneGrid。
   // formation でコマ時間を分け、個別グリッドには個別コマだけ渡す（集団コマが個別グリッドに混ざらないように）。
-  const individualSlots = useMemo(() => timeSlots.filter((t) => t.formation !== 'group'), [timeSlots]);
+  const individualSlots = useMemo(
+    () => timeSlots.filter((t) => t.formation !== 'group'),
+    [timeSlots]
+  );
   const groupSlots = useMemo(() => timeSlots.filter((t) => t.formation === 'group'), [timeSlots]);
   // 集団の講習エントリ（個別申込フィルタとは独立に、期間内の集団コマを全部出す）
   const groupEntries = useMemo(
@@ -945,7 +1038,10 @@ export default function SchedulePage() {
   );
 
   // 下書き提案を「擬似エントリ」に変換して個別グリッドに重ねる（isDraft=true で★/破線表示）。
-  const subjectById = useMemo(() => new Map(masterSubjects.map((s) => [s.id, s.name])), [masterSubjects]);
+  const subjectById = useMemo(
+    () => new Map(masterSubjects.map((s) => [s.id, s.name])),
+    [masterSubjects]
+  );
   const koushuDraftEntries = useMemo<ScheduleEntry[]>(() => {
     if (!selectedKoushu) return [];
     return koushuDraftProposals
@@ -987,10 +1083,19 @@ export default function SchedulePage() {
   const handleKoushuPlace = useCallback(
     async (date: string, slotId: string) => {
       if (!placingKoushuStudent || !schoolId) return;
-      if (closedDates.includes(date)) { toastError('休講日には配置できません'); return; }
+      if (closedDates.includes(date)) {
+        toastError('休講日には配置できません');
+        return;
+      }
       try {
         const { createKoushuPlacement } = await import('@/lib/api/schedule');
-        await createKoushuPlacement(schoolId, date, slotId, placingKoushuStudent.studentId, placingKoushuStudent.subjectIds);
+        await createKoushuPlacement(
+          schoolId,
+          date,
+          slotId,
+          placingKoushuStudent.studentId,
+          placingKoushuStudent.subjectIds
+        );
         success('講習コマを配置しました（担当未決定）');
         await refreshEntries();
         setKoushuPanelRefreshKey((k) => k + 1);
@@ -1011,8 +1116,12 @@ export default function SchedulePage() {
       if (date < todayJst) return { ok: false, reason: '過去の日付' };
       const sid = placingKoushuStudent.studentId;
       const dup = entriesWithSubjects.some(
-        (e) => e.student_id === sid && e.entry_date === date && e.time_slot_id === slotId
-          && e.status !== 'cancelled' && e.status !== 'transferred_out'
+        (e) =>
+          e.student_id === sid &&
+          e.entry_date === date &&
+          e.time_slot_id === slotId &&
+          e.status !== 'cancelled' &&
+          e.status !== 'transferred_out'
       );
       if (dup) return { ok: false, reason: 'この生徒は既にこのコマに配置済み' };
       return { ok: true, reason: null };
@@ -1024,10 +1133,20 @@ export default function SchedulePage() {
   const handleKoushuPlaceWithTeacher = useCallback(
     async (date: string, slotId: string, teacherId: string) => {
       if (!placingKoushuStudent || !schoolId) return;
-      if (closedDates.includes(date)) { toastError('休講日には配置できません'); return; }
+      if (closedDates.includes(date)) {
+        toastError('休講日には配置できません');
+        return;
+      }
       try {
         const { createKoushuPlacement } = await import('@/lib/api/schedule');
-        await createKoushuPlacement(schoolId, date, slotId, placingKoushuStudent.studentId, placingKoushuStudent.subjectIds, teacherId);
+        await createKoushuPlacement(
+          schoolId,
+          date,
+          slotId,
+          placingKoushuStudent.studentId,
+          placingKoushuStudent.subjectIds,
+          teacherId
+        );
         success('講習コマを配置しました');
         await refreshEntries();
         setKoushuPanelRefreshKey((k) => k + 1);
@@ -1041,30 +1160,35 @@ export default function SchedulePage() {
   // ===== 追加授業（テスト対策）モード =====
 
   // 追加授業（テスト対策）モードのON/OFF。講習モードと排他。最初の通塾可能日へジャンプ。
-  const handleTestPrepToggle = useCallback(async (active: boolean) => {
-    setTestPrepActive(active);
-    setPlacingTestPrep(null);
-    if (!active) return;
-    // 講習モードは解除
-    setSelectedKoushu(null);
-    setKoushuEnrollments(new Map());
-    setKoushuScheduledCounts(new Map());
-    setKoushuDraftProposals([]);
-    // 申込（全期間）の最初の通塾可能日へジャンプ（今日が枠より前なら最初の枠週へ）
-    try {
-      const map = await getZoukomaPlacementProgress(schoolId, masterSubjects);
-      const dates: string[] = [];
-      Array.from(map.values()).forEach((r) => r.availableSlots.forEach((s) => dates.push(s.date)));
-      if (dates.length > 0) {
-        const todayJst = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Tokyo' });
-        dates.sort();
-        const jump = dates.find((d) => d >= todayJst) ?? dates[0];
-        setWeekStart(getWeekStart(new Date(jump + 'T12:00:00')));
+  const handleTestPrepToggle = useCallback(
+    async (active: boolean) => {
+      setTestPrepActive(active);
+      setPlacingTestPrep(null);
+      if (!active) return;
+      // 講習モードは解除
+      setSelectedKoushu(null);
+      setKoushuEnrollments(new Map());
+      setKoushuScheduledCounts(new Map());
+      setKoushuDraftProposals([]);
+      // 申込（全期間）の最初の通塾可能日へジャンプ（今日が枠より前なら最初の枠週へ）
+      try {
+        const map = await getZoukomaPlacementProgress(schoolId, masterSubjects);
+        const dates: string[] = [];
+        Array.from(map.values()).forEach((r) =>
+          r.availableSlots.forEach((s) => dates.push(s.date))
+        );
+        if (dates.length > 0) {
+          const todayJst = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Tokyo' });
+          dates.sort();
+          const jump = dates.find((d) => d >= todayJst) ?? dates[0];
+          setWeekStart(getWeekStart(new Date(jump + 'T12:00:00')));
+        }
+      } catch {
+        /* ジャンプ失敗は致命的でない */
       }
-    } catch {
-      /* ジャンプ失敗は致命的でない */
-    }
-  }, [schoolId, masterSubjects]);
+    },
+    [schoolId, masterSubjects]
+  );
 
   // 配置モード開始：生徒の通塾可能枠を座席表コマ(time_slot)に対応付けて強調用セットを作る。
   const handleStartTestPrepPlacement = useCallback(
@@ -1091,7 +1215,15 @@ export default function SchedulePage() {
           datesWithMapping.add(s.date);
         }
       }
-      setPlacingTestPrep({ studentId, subjectId, subjectName, availableKeys, datesWithMapping, availableDates, rawSlots: slots });
+      setPlacingTestPrep({
+        studentId,
+        subjectId,
+        subjectName,
+        availableKeys,
+        datesWithMapping,
+        availableDates,
+        rawSlots: slots,
+      });
     },
     [placingTestPrep, timeSlots]
   );
@@ -1110,8 +1242,12 @@ export default function SchedulePage() {
       if (!okAvail) return { ok: false, reason: 'この生徒が通塾できる枠ではありません' };
       const sid = placingTestPrep.studentId;
       const dup = entriesWithSubjects.some(
-        (e) => e.student_id === sid && e.entry_date === date && e.time_slot_id === slotId
-          && e.status !== 'cancelled' && e.status !== 'transferred_out'
+        (e) =>
+          e.student_id === sid &&
+          e.entry_date === date &&
+          e.time_slot_id === slotId &&
+          e.status !== 'cancelled' &&
+          e.status !== 'transferred_out'
       );
       if (dup) return { ok: false, reason: 'この生徒は既にこのコマに配置済み' };
       return { ok: true, reason: null };
@@ -1123,10 +1259,15 @@ export default function SchedulePage() {
   const handleTestPrepPlace = useCallback(
     async (date: string, slotId: string) => {
       if (!placingTestPrep || !schoolId) return;
-      if (closedDates.includes(date)) { toastError('休講日には配置できません'); return; }
+      if (closedDates.includes(date)) {
+        toastError('休講日には配置できません');
+        return;
+      }
       try {
         const { createTestPrepPlacement } = await import('@/lib/api/schedule');
-        await createTestPrepPlacement(schoolId, date, slotId, placingTestPrep.studentId, [placingTestPrep.subjectId]);
+        await createTestPrepPlacement(schoolId, date, slotId, placingTestPrep.studentId, [
+          placingTestPrep.subjectId,
+        ]);
         success('テスト対策コマを配置しました（担当未決定）');
         await refreshEntries();
         setZoukomaPanelRefreshKey((k) => k + 1);
@@ -1141,10 +1282,20 @@ export default function SchedulePage() {
   const handleTestPrepPlaceWithTeacher = useCallback(
     async (date: string, slotId: string, teacherId: string) => {
       if (!placingTestPrep || !schoolId) return;
-      if (closedDates.includes(date)) { toastError('休講日には配置できません'); return; }
+      if (closedDates.includes(date)) {
+        toastError('休講日には配置できません');
+        return;
+      }
       try {
         const { createTestPrepPlacement } = await import('@/lib/api/schedule');
-        await createTestPrepPlacement(schoolId, date, slotId, placingTestPrep.studentId, [placingTestPrep.subjectId], teacherId);
+        await createTestPrepPlacement(
+          schoolId,
+          date,
+          slotId,
+          placingTestPrep.studentId,
+          [placingTestPrep.subjectId],
+          teacherId
+        );
         success('テスト対策コマを配置しました');
         await refreshEntries();
         setZoukomaPanelRefreshKey((k) => k + 1);
@@ -1159,152 +1310,171 @@ export default function SchedulePage() {
   const gridPlacing = !!placingKoushuStudent || !!placingTestPrep;
   const gridGetPlaceability = placingTestPrep ? getTestPrepPlaceability : getKoushuPlaceability;
   const gridPlace = placingTestPrep ? handleTestPrepPlace : handleKoushuPlace;
-  const gridPlaceWithTeacher = placingTestPrep ? handleTestPrepPlaceWithTeacher : handleKoushuPlaceWithTeacher;
+  const gridPlaceWithTeacher = placingTestPrep
+    ? handleTestPrepPlaceWithTeacher
+    : handleKoushuPlaceWithTeacher;
 
   // 週移動（座席表の左右端の縦長アイコンからも操作できるように）
   const goPrevWeek = useCallback(() => {
-    setWeekStart((d) => { const n = new Date(d); n.setDate(n.getDate() - 7); return n; });
+    setWeekStart((d) => {
+      const n = new Date(d);
+      n.setDate(n.getDate() - 7);
+      return n;
+    });
   }, []);
   const goNextWeek = useCallback(() => {
-    setWeekStart((d) => { const n = new Date(d); n.setDate(n.getDate() + 7); return n; });
+    setWeekStart((d) => {
+      const n = new Date(d);
+      n.setDate(n.getDate() + 7);
+      return n;
+    });
   }, []);
 
-  const handleStudentEntryDrop = useCallback(async (
-    entryId: string,
-    targetDate: string,
-    targetSlotId: string,
-    targetTeacherId: string
-  ) => {
-    const entry = entriesWithSubjects.find((e) => e.id === entryId);
-    if (!entry || !schoolId) return;
-    if (entry.status === 'cancelled' || entry.status === 'transferred_out') return;
-    try {
-      // 振替先を元のセル（振替元）にドロップ → 振替取り消し
-      if (entry.status === 'transferred_in' && entry.transfer_from_id) {
-        const fromEntry = entries.find((e) => e.id === entry.transfer_from_id);
-        if (
-          fromEntry &&
-          fromEntry.entry_date === targetDate &&
-          fromEntry.time_slot_id === targetSlotId &&
-          fromEntry.teacher_id === targetTeacherId
-        ) {
-          await revertTransferEntry(entry.id);
-          await logScheduleChange({
-            school_id: schoolId,
-            actor_user_id: profile?.id ?? null,
-            action_type: 'transfer_revert',
-            entry_id: entry.id,
-            student_id: entry.student_id,
-            before_teacher_id: entry.teacher_id ?? null,
-            after_teacher_id: null,
-            affected_date: entry.entry_date,
-            affected_slot_id: entry.time_slot_id,
-            description: '振替を取消',
-          });
-          success('元の授業に戻しました');
-          refreshEntries();
-          return;
-        }
-      }
-      // 同日・同時間帯 → 移動（振替ではない）
-      const isSameSlot =
-        entry.entry_date === targetDate && entry.time_slot_id === targetSlotId;
-      if (isSameSlot) {
-        // 【未定 → 講師確定】の D&D は「このコマだけ / 毎週このコマ」を確認する。
-        // 即時 moveScheduleEntry で write してしまうと「今後ずっと続くのか今回だけか」
-        // が分からないまま固定化される事故が起きるため、必ず確認 floating bar 経由にする。
-        if (!entry.teacher_id && targetTeacherId) {
-          const teacher = teachers.find((t) => t.id === targetTeacherId);
-          if (teacher) {
-            const studentName = entry.student
-              ? `${entry.student.last_name ?? ''}${entry.student.first_name ?? ''}`.trim() || '生徒'
-              : '生徒';
-            const slot = timeSlots.find((s) => s.id === targetSlotId);
-            const slotLabel = slot ? `${slot.slot_number}限` : '';
-            const dateLabel = `${targetDate.slice(5).replace('-', '/')} ${slotLabel}`;
-            setPendingAssignment({
-              entryId: entry.id,
-              teacherId: targetTeacherId,
-              teacherName: teacher.display_name || teacher.email || '講師',
-              studentName,
-              dateLabel,
-              regularPatternId: entry.regular_pattern_id ?? null,
+  const handleStudentEntryDrop = useCallback(
+    async (entryId: string, targetDate: string, targetSlotId: string, targetTeacherId: string) => {
+      const entry = entriesWithSubjects.find((e) => e.id === entryId);
+      if (!entry || !schoolId) return;
+      if (entry.status === 'cancelled' || entry.status === 'transferred_out') return;
+      try {
+        // 振替先を元のセル（振替元）にドロップ → 振替取り消し
+        if (entry.status === 'transferred_in' && entry.transfer_from_id) {
+          const fromEntry = entries.find((e) => e.id === entry.transfer_from_id);
+          if (
+            fromEntry &&
+            fromEntry.entry_date === targetDate &&
+            fromEntry.time_slot_id === targetSlotId &&
+            fromEntry.teacher_id === targetTeacherId
+          ) {
+            await revertTransferEntry(entry.id);
+            await logScheduleChange({
+              school_id: schoolId,
+              actor_user_id: profile?.id ?? null,
+              action_type: 'transfer_revert',
+              entry_id: entry.id,
+              student_id: entry.student_id,
+              before_teacher_id: entry.teacher_id ?? null,
+              after_teacher_id: null,
+              affected_date: entry.entry_date,
+              affected_slot_id: entry.time_slot_id,
+              description: '振替を取消',
             });
+            success('元の授業に戻しました');
+            refreshEntries();
             return;
           }
         }
-        await moveScheduleEntry(entry.id, targetDate, targetSlotId, targetTeacherId);
+        // 同日・同時間帯 → 移動（振替ではない）
+        const isSameSlot = entry.entry_date === targetDate && entry.time_slot_id === targetSlotId;
+        if (isSameSlot) {
+          // 【未定 → 講師確定】の D&D は「このコマだけ / 毎週このコマ」を確認する。
+          // 即時 moveScheduleEntry で write してしまうと「今後ずっと続くのか今回だけか」
+          // が分からないまま固定化される事故が起きるため、必ず確認 floating bar 経由にする。
+          if (!entry.teacher_id && targetTeacherId) {
+            const teacher = teachers.find((t) => t.id === targetTeacherId);
+            if (teacher) {
+              const studentName = entry.student
+                ? `${entry.student.last_name ?? ''}${entry.student.first_name ?? ''}`.trim() ||
+                  '生徒'
+                : '生徒';
+              const slot = timeSlots.find((s) => s.id === targetSlotId);
+              const slotLabel = slot ? `${slot.slot_number}限` : '';
+              const dateLabel = `${targetDate.slice(5).replace('-', '/')} ${slotLabel}`;
+              setPendingAssignment({
+                entryId: entry.id,
+                teacherId: targetTeacherId,
+                teacherName: teacher.display_name || teacher.email || '講師',
+                studentName,
+                dateLabel,
+                regularPatternId: entry.regular_pattern_id ?? null,
+              });
+              return;
+            }
+          }
+          await moveScheduleEntry(entry.id, targetDate, targetSlotId, targetTeacherId);
+          await logScheduleChange({
+            school_id: schoolId,
+            actor_user_id: profile?.id ?? null,
+            action_type: 'entry_reassign',
+            entry_id: entry.id,
+            student_id: entry.student_id,
+            before_teacher_id: entry.teacher_id ?? null,
+            after_teacher_id: targetTeacherId,
+            affected_date: targetDate,
+            affected_slot_id: targetSlotId,
+            description: '同日内の担当講師を変更（移動）',
+          });
+          success('授業を移動しました');
+          refreshEntries();
+          return;
+        }
+        // 別日または別コマ → 振替
+        // 月内振替上限を事前チェック。上限以上に達してたら確認モードへ。
+        // 「警告 → もう一度クリックで実行」フロー (transferOverLimitConfirm が立つ)。
+        const isAlreadyConfirmed =
+          transferOverLimitConfirm?.entryId === entry.id &&
+          transferOverLimitConfirm?.targetDate === targetDate &&
+          transferOverLimitConfirm?.targetSlotId === targetSlotId &&
+          transferOverLimitConfirm?.targetTeacherId === targetTeacherId;
+        if (!isAlreadyConfirmed) {
+          const usage = await getMonthlyTransferUsage(entry.student_id, entry.entry_date);
+          if (usage.used >= usage.limit) {
+            const studentName = entry.student
+              ? `${entry.student.last_name ?? ''}${entry.student.first_name ?? ''}`.trim() || '生徒'
+              : '生徒';
+            setTransferOverLimitConfirm({
+              entryId: entry.id,
+              targetDate,
+              targetSlotId,
+              targetTeacherId,
+              studentName,
+              usage,
+            });
+            toastError(
+              `${studentName} は ${usage.monthLabel} の振替が ${usage.used}/${usage.limit} 件で既に上限。もう一度ドラッグすれば例外で登録できます`
+            );
+            return;
+          }
+        }
+        await createTransferEntry(
+          schoolId,
+          entry.id,
+          targetDate,
+          targetSlotId,
+          targetTeacherId,
+          null
+        );
         await logScheduleChange({
           school_id: schoolId,
           actor_user_id: profile?.id ?? null,
-          action_type: 'entry_reassign',
+          action_type: 'transfer_create',
           entry_id: entry.id,
           student_id: entry.student_id,
           before_teacher_id: entry.teacher_id ?? null,
           after_teacher_id: targetTeacherId,
-          affected_date: targetDate,
-          affected_slot_id: targetSlotId,
-          description: '同日内の担当講師を変更（移動）',
+          affected_date: entry.entry_date,
+          affected_slot_id: entry.time_slot_id,
+          description: `${entry.entry_date} → ${targetDate} へ振替`,
         });
-        success('授業を移動しました');
+        success('振替を登録しました');
+        setTransferOverLimitConfirm(null);
         refreshEntries();
-        return;
+      } catch (e) {
+        toastError((e as Error).message);
       }
-      // 別日または別コマ → 振替
-      // 月内振替上限を事前チェック。上限以上に達してたら確認モードへ。
-      // 「警告 → もう一度クリックで実行」フロー (transferOverLimitConfirm が立つ)。
-      const isAlreadyConfirmed =
-        transferOverLimitConfirm?.entryId === entry.id &&
-        transferOverLimitConfirm?.targetDate === targetDate &&
-        transferOverLimitConfirm?.targetSlotId === targetSlotId &&
-        transferOverLimitConfirm?.targetTeacherId === targetTeacherId;
-      if (!isAlreadyConfirmed) {
-        const usage = await getMonthlyTransferUsage(entry.student_id, entry.entry_date);
-        if (usage.used >= usage.limit) {
-          const studentName = entry.student
-            ? `${entry.student.last_name ?? ''}${entry.student.first_name ?? ''}`.trim() || '生徒'
-            : '生徒';
-          setTransferOverLimitConfirm({
-            entryId: entry.id,
-            targetDate,
-            targetSlotId,
-            targetTeacherId,
-            studentName,
-            usage,
-          });
-          toastError(
-            `${studentName} は ${usage.monthLabel} の振替が ${usage.used}/${usage.limit} 件で既に上限。もう一度ドラッグすれば例外で登録できます`
-          );
-          return;
-        }
-      }
-      await createTransferEntry(
-        schoolId,
-        entry.id,
-        targetDate,
-        targetSlotId,
-        targetTeacherId,
-        null
-      );
-      await logScheduleChange({
-        school_id: schoolId,
-        actor_user_id: profile?.id ?? null,
-        action_type: 'transfer_create',
-        entry_id: entry.id,
-        student_id: entry.student_id,
-        before_teacher_id: entry.teacher_id ?? null,
-        after_teacher_id: targetTeacherId,
-        affected_date: entry.entry_date,
-        affected_slot_id: entry.time_slot_id,
-        description: `${entry.entry_date} → ${targetDate} へ振替`,
-      });
-      success('振替を登録しました');
-      setTransferOverLimitConfirm(null);
-      refreshEntries();
-    } catch (e) {
-      toastError((e as Error).message);
-    }
-  }, [entriesWithSubjects, entries, schoolId, success, refreshEntries, toastError, teachers, timeSlots, transferOverLimitConfirm, profile?.id]);
+    },
+    [
+      entriesWithSubjects,
+      entries,
+      schoolId,
+      success,
+      refreshEntries,
+      toastError,
+      teachers,
+      timeSlots,
+      transferOverLimitConfirm,
+      profile?.id,
+    ]
+  );
 
   // 出勤可能講師カードを担当未決定エントリにD&Dしたとき：
   // - 即時には確定せず、画面下に「このコマだけ / 毎週このコマ」の選択バーを出す
@@ -1369,7 +1539,15 @@ export default function SchedulePage() {
     } finally {
       setIsAssigning(false);
     }
-  }, [pendingAssignment, success, toastError, refreshEntries, entriesWithSubjects, schoolId, profile?.id]);
+  }, [
+    pendingAssignment,
+    success,
+    toastError,
+    refreshEntries,
+    entriesWithSubjects,
+    schoolId,
+    profile?.id,
+  ]);
 
   // 「毎週このコマ」: 通塾日程パターンと未来エントリを一括更新
   const confirmAssignPermanent = useCallback(async () => {
@@ -1422,15 +1600,23 @@ export default function SchedulePage() {
     } finally {
       setIsAssigning(false);
     }
-  }, [pendingAssignment, success, toastError, refreshEntries, confirmAssignTransient, entriesWithSubjects, schoolId, profile?.id]);
+  }, [
+    pendingAssignment,
+    success,
+    toastError,
+    refreshEntries,
+    confirmAssignTransient,
+    entriesWithSubjects,
+    schoolId,
+    profile?.id,
+  ]);
 
   // 講師欠勤トグル（コマ単位）。欠勤なら解除、出勤なら欠勤登録。生徒は触らない。
   const handleToggleAbsence = useCallback(
     async (date: string, slotId: string, teacherId: string) => {
       if (!schoolId) return;
-      const { markTeacherAbsent, unmarkTeacherAbsent, absenceKey } = await import(
-        '@/lib/api/teacher-absences'
-      );
+      const { markTeacherAbsent, unmarkTeacherAbsent, absenceKey } =
+        await import('@/lib/api/teacher-absences');
       const key = absenceKey(date, slotId, teacherId);
       const isAbsent = absenceKeySet.has(key);
       try {
@@ -1463,80 +1649,92 @@ export default function SchedulePage() {
   const selectedSchool = useMemo(() => schools.find((s) => s.id === schoolId), [schools, schoolId]);
 
   /** 講師が選択科目を指導可能か。teachable_subject_ids が空/未設定の講師は全科目可 */
-  const canTeacherTeachSubjects = useCallback((teacherId: string, subjectIds: string[]) => {
-    if (subjectIds.length === 0) return true;
-    const teacher = teachers.find((t) => t.id === teacherId);
-    const allowed = teacher?.teachable_subject_ids;
-    if (!allowed || allowed.length === 0) return true;
-    return subjectIds.every((id) => allowed.includes(id));
-  }, [teachers]);
+  const canTeacherTeachSubjects = useCallback(
+    (teacherId: string, subjectIds: string[]) => {
+      if (subjectIds.length === 0) return true;
+      const teacher = teachers.find((t) => t.id === teacherId);
+      const allowed = teacher?.teachable_subject_ids;
+      if (!allowed || allowed.length === 0) return true;
+      return subjectIds.every((id) => allowed.includes(id));
+    },
+    [teachers]
+  );
 
-  const handleEditSave = useCallback(async (form: ScheduleEntryFormData) => {
-    if (!editingEntry) return;
-    if (!canTeacherTeachSubjects(form.teacher_id, form.subject_ids)) {
-      toastError('この講師は選択した科目を指導できません。');
-      return;
-    }
-    try {
-      await updateScheduleEntry(editingEntry.id, form);
-      success('授業を更新しました');
-      setEditModalOpen(false);
-      setEditingEntry(null);
-      refreshEntries();
-    } catch (e) {
-      toastError((e as Error).message);
-    }
-  }, [editingEntry, canTeacherTeachSubjects, toastError, success, refreshEntries]);
-
-  const handleTransfer = useCallback(async (
-    targetDate: string,
-    targetSlotId: string,
-    targetTeacherId: string,
-    seatLabel?: string | null
-  ) => {
-    if (!schoolId || !transferringEntry) return;
-    try {
-      await createTransferEntry(
-        schoolId,
-        transferringEntry.id,
-        targetDate,
-        targetSlotId,
-        targetTeacherId,
-        seatLabel
-      );
-      success('振替を登録しました');
-      setTransferModalOpen(false);
-      setTransferringEntry(null);
-      refreshEntries();
-    } catch (e) {
-      toastError((e as Error).message);
-    }
-  }, [schoolId, transferringEntry, success, refreshEntries, toastError]);
-
-  const handleDeleteConfirm = useCallback(async (deleteType: 'single' | 'regular') => {
-    if (!deletingEntry) return;
-    try {
-      if (deleteType === 'single') {
-        await deleteScheduleEntry(deletingEntry.id);
-        success('この日の授業を削除しました');
-      } else if (deletingEntry.regular_pattern_id) {
-        await cancelFutureEntriesByRegularPatternId(
-          deletingEntry.regular_pattern_id,
-          deletingEntry.entry_date
-        );
-        await deleteRegularPattern(deletingEntry.regular_pattern_id);
-        success('通常授業から削除し、今後の授業も取消しました');
-      } else {
-        await deleteScheduleEntry(deletingEntry.id);
-        success('授業を削除しました');
+  const handleEditSave = useCallback(
+    async (form: ScheduleEntryFormData) => {
+      if (!editingEntry) return;
+      if (!canTeacherTeachSubjects(form.teacher_id, form.subject_ids)) {
+        toastError('この講師は選択した科目を指導できません。');
+        return;
       }
-      setDeleteDialogOpen(false);
-      setDeletingEntry(null);
-      refreshEntries();
-    } catch (e) {
-      toastError((e as Error).message);
-    }
-  }, [deletingEntry, success, refreshEntries, toastError]);
+      try {
+        await updateScheduleEntry(editingEntry.id, form);
+        success('授業を更新しました');
+        setEditModalOpen(false);
+        setEditingEntry(null);
+        refreshEntries();
+      } catch (e) {
+        toastError((e as Error).message);
+      }
+    },
+    [editingEntry, canTeacherTeachSubjects, toastError, success, refreshEntries]
+  );
+
+  const handleTransfer = useCallback(
+    async (
+      targetDate: string,
+      targetSlotId: string,
+      targetTeacherId: string,
+      seatLabel?: string | null
+    ) => {
+      if (!schoolId || !transferringEntry) return;
+      try {
+        await createTransferEntry(
+          schoolId,
+          transferringEntry.id,
+          targetDate,
+          targetSlotId,
+          targetTeacherId,
+          seatLabel
+        );
+        success('振替を登録しました');
+        setTransferModalOpen(false);
+        setTransferringEntry(null);
+        refreshEntries();
+      } catch (e) {
+        toastError((e as Error).message);
+      }
+    },
+    [schoolId, transferringEntry, success, refreshEntries, toastError]
+  );
+
+  const handleDeleteConfirm = useCallback(
+    async (deleteType: 'single' | 'regular') => {
+      if (!deletingEntry) return;
+      try {
+        if (deleteType === 'single') {
+          await deleteScheduleEntry(deletingEntry.id);
+          success('この日の授業を削除しました');
+        } else if (deletingEntry.regular_pattern_id) {
+          await cancelFutureEntriesByRegularPatternId(
+            deletingEntry.regular_pattern_id,
+            deletingEntry.entry_date
+          );
+          await deleteRegularPattern(deletingEntry.regular_pattern_id);
+          success('通常授業から削除し、今後の授業も取消しました');
+        } else {
+          await deleteScheduleEntry(deletingEntry.id);
+          success('授業を削除しました');
+        }
+        setDeleteDialogOpen(false);
+        setDeletingEntry(null);
+        refreshEntries();
+      } catch (e) {
+        toastError((e as Error).message);
+      }
+    },
+    [deletingEntry, success, refreshEntries, toastError]
+  );
 
   const handleRemoveTeacherConfirm = useCallback(async () => {
     if (!removeTeacherConfirm) return;
@@ -1571,7 +1769,8 @@ export default function SchedulePage() {
     }
   }, [removeTeacherConfirm, entries, success, refreshEntries, toastError]);
 
-  const isAdmin = profile?.role === 'admin' || profile?.role === 'owner' || profile?.role === 'manager';
+  const isAdmin =
+    profile?.role === 'admin' || profile?.role === 'owner' || profile?.role === 'manager';
   if (authLoading || !profile) {
     return (
       <AdminLayout headerTitle="座席表">
@@ -1634,10 +1833,7 @@ export default function SchedulePage() {
               {
                 title: '時間帯を設定する',
                 description: 'コマの開始・終了時間を管理します。',
-                steps: [
-                  '「設定」→「コマ時間設定」ページを開く',
-                  '時間帯の追加・編集・削除を実行',
-                ],
+                steps: ['「設定」→「コマ時間設定」ページを開く', '時間帯の追加・編集・削除を実行'],
               },
             ]}
           />
@@ -1870,75 +2066,75 @@ export default function SchedulePage() {
                     <Loading size="md" />
                   ) : (
                     <div className="print:hidden relative">
-                    {/* 左右端の縦長 週移動アイコン。
+                      {/* 左右端の縦長 週移動アイコン。
                         fixed で画面（ビューポート）の縦中央に固定し、スクロールしても
                         常に同じ位置に追従する（長い座席表でもどこからでも週を変えられる）。 */}
-                    <button
-                      type="button"
-                      onClick={goPrevWeek}
-                      aria-label="前週へ"
-                      title="前週へ"
-                      className="fixed left-1 top-1/2 -translate-y-1/2 z-40 w-7 hover:w-12 h-40 flex items-center justify-center rounded-lg bg-white/90 hover:bg-white border border-border-default text-text-muted shadow-md hover:shadow-lg hover:text-text-body transition-all duration-150 print:hidden"
-                    >
-                      <ChevronLeft className="w-5 h-5" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={goNextWeek}
-                      aria-label="次週へ"
-                      title="次週へ"
-                      className="fixed right-1 top-1/2 -translate-y-1/2 z-40 w-7 hover:w-12 h-40 flex items-center justify-center rounded-lg bg-white/90 hover:bg-white border border-border-default text-text-muted shadow-md hover:shadow-lg hover:text-text-body transition-all duration-150 print:hidden"
-                    >
-                      <ChevronRight className="w-5 h-5" />
-                    </button>
-                    <WeeklyScheduleGrid
-                      schoolId={schoolId ?? ''}
-                      weekDates={weekDates}
-                      timeSlots={selectedKoushu ? individualSlots : timeSlots}
-                      entries={individualGridEntries}
-                      closedDates={closedDates}
-                      teachers={teachers}
-                      emptyTeacherSlots={emptyTeacherSlots}
-                      shiftAvailableByDow={shiftByDow}
-                      maxStudentsPerTeacher={capacity.max_students_per_teacher_individual}
-                      transferMode={transferMode}
-                      onEmptyTeacherSlotsChange={setEmptyTeacherSlots}
-                      onAddTeacher={handleAddTeacher}
-                      onAddStudent={handleAddStudent}
-                      onRemoveTeacher={handleRemoveTeacher}
-                      onStudentClick={handleEntryClick}
-                      onTransferClick={handleTransferClickFromCard}
-                      onTeacherCardMove={handleTeacherCardMove}
-                      onStudentEntryDrop={handleStudentEntryDrop}
-                      onTeacherDropOnUnassigned={handleTeacherDropOnUnassigned}
-                      onConstraintViolation={(reason) => toastError(reason)}
-                      subjectNameById={new Map(masterSubjects.map((s) => [s.id, s.name]))}
-                      absenceKeySet={absenceKeySet}
-                      onToggleAbsence={handleToggleAbsence}
-                      onTransferTargetClick={handleTransferTargetClick}
-                      onPrintDay={handlePrintDay}
-                      onBoothAssign={handleBoothAssign}
-                      onTransferCancel={() => setTransferMode(null)}
-                      getKoushuInfo={selectedKoushu ? getKoushuInfo : undefined}
-                      koushuPlacing={gridPlacing}
-                      getKoushuPlaceability={gridGetPlaceability}
-                      onKoushuPlace={gridPlace}
-                      onKoushuPlaceWithTeacher={gridPlaceWithTeacher}
-                    />
-                    {/* 集団レーン（講習モードかつ集団コマ時間がある場合のみ）。集団は手動編成。 */}
-                    {selectedKoushu && groupSlots.length > 0 && (
-                      <GroupLaneGrid
+                      <button
+                        type="button"
+                        onClick={goPrevWeek}
+                        aria-label="前週へ"
+                        title="前週へ"
+                        className="fixed left-1 top-1/2 -translate-y-1/2 z-40 w-7 hover:w-12 h-40 flex items-center justify-center rounded-lg bg-white/90 hover:bg-white border border-border-default text-text-muted shadow-md hover:shadow-lg hover:text-text-body transition-all duration-150 print:hidden"
+                      >
+                        <ChevronLeft className="w-5 h-5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={goNextWeek}
+                        aria-label="次週へ"
+                        title="次週へ"
+                        className="fixed right-1 top-1/2 -translate-y-1/2 z-40 w-7 hover:w-12 h-40 flex items-center justify-center rounded-lg bg-white/90 hover:bg-white border border-border-default text-text-muted shadow-md hover:shadow-lg hover:text-text-body transition-all duration-150 print:hidden"
+                      >
+                        <ChevronRight className="w-5 h-5" />
+                      </button>
+                      <WeeklyScheduleGrid
+                        schoolId={schoolId ?? ''}
                         weekDates={weekDates}
-                        groupSlots={groupSlots}
-                        entries={groupEntries}
-                        maxStudentsPerGroup={capacity.max_students_per_group}
-                        maxConcurrentGroups={capacity.max_concurrent_groups}
+                        timeSlots={selectedKoushu ? individualSlots : timeSlots}
+                        entries={individualGridEntries}
                         closedDates={closedDates}
-                        subjectNameById={new Map(masterSubjects.map((s) => [s.id, s.name]))}
-                        onCreate={handleCreateGroupKoma}
+                        teachers={teachers}
+                        emptyTeacherSlots={emptyTeacherSlots}
+                        shiftAvailableByDow={shiftByDow}
+                        maxStudentsPerTeacher={capacity.max_students_per_teacher_individual}
+                        transferMode={transferMode}
+                        onEmptyTeacherSlotsChange={setEmptyTeacherSlots}
+                        onAddTeacher={handleAddTeacher}
+                        onAddStudent={handleAddStudent}
+                        onRemoveTeacher={handleRemoveTeacher}
                         onStudentClick={handleEntryClick}
+                        onTransferClick={handleTransferClickFromCard}
+                        onTeacherCardMove={handleTeacherCardMove}
+                        onStudentEntryDrop={handleStudentEntryDrop}
+                        onTeacherDropOnUnassigned={handleTeacherDropOnUnassigned}
+                        onConstraintViolation={(reason) => toastError(reason)}
+                        subjectNameById={new Map(masterSubjects.map((s) => [s.id, s.name]))}
+                        absenceKeySet={absenceKeySet}
+                        onToggleAbsence={handleToggleAbsence}
+                        onTransferTargetClick={handleTransferTargetClick}
+                        onPrintDay={handlePrintDay}
+                        onBoothAssign={handleBoothAssign}
+                        onTransferCancel={() => setTransferMode(null)}
+                        getKoushuInfo={selectedKoushu ? getKoushuInfo : undefined}
+                        koushuPlacing={gridPlacing}
+                        getKoushuPlaceability={gridGetPlaceability}
+                        onKoushuPlace={gridPlace}
+                        onKoushuPlaceWithTeacher={gridPlaceWithTeacher}
                       />
-                    )}
+                      {/* 集団レーン（講習モードかつ集団コマ時間がある場合のみ）。集団は手動編成。 */}
+                      {selectedKoushu && groupSlots.length > 0 && (
+                        <GroupLaneGrid
+                          weekDates={weekDates}
+                          groupSlots={groupSlots}
+                          entries={groupEntries}
+                          maxStudentsPerGroup={capacity.max_students_per_group}
+                          maxConcurrentGroups={capacity.max_concurrent_groups}
+                          closedDates={closedDates}
+                          subjectNameById={new Map(masterSubjects.map((s) => [s.id, s.name]))}
+                          onCreate={handleCreateGroupKoma}
+                          onStudentClick={handleEntryClick}
+                        />
+                      )}
                     </div>
                   )}
                 </CardContent>
@@ -2055,26 +2251,27 @@ export default function SchedulePage() {
       )}
 
       {/* 集団コマ作成モーダル（手動編成・Phase 3） */}
-      {groupKomaTarget && (() => {
-        const slot = groupSlots.find((s) => s.id === groupKomaTarget.slotId) ?? null;
-        // 対象日の曜日に出勤可能な講師のみ提示
-        const dow = new Date(groupKomaTarget.date + 'T12:00:00').getDay();
-        const availIds = new Set(shiftByDow.get(dow) ?? []);
-        const availableTeachers = teachers.filter((t) => availIds.has(t.id));
-        return (
-          <GroupKomaFormModal
-            open={!!groupKomaTarget}
-            onClose={() => setGroupKomaTarget(null)}
-            schoolId={schoolId ?? ''}
-            date={groupKomaTarget.date}
-            slot={slot}
-            subjects={masterSubjects}
-            maxStudents={capacity.max_students_per_group}
-            availableTeachers={availableTeachers}
-            onSubmit={handleSubmitGroupKoma}
-          />
-        );
-      })()}
+      {groupKomaTarget &&
+        (() => {
+          const slot = groupSlots.find((s) => s.id === groupKomaTarget.slotId) ?? null;
+          // 対象日の曜日に出勤可能な講師のみ提示
+          const dow = new Date(groupKomaTarget.date + 'T12:00:00').getDay();
+          const availIds = new Set(shiftByDow.get(dow) ?? []);
+          const availableTeachers = teachers.filter((t) => availIds.has(t.id));
+          return (
+            <GroupKomaFormModal
+              open={!!groupKomaTarget}
+              onClose={() => setGroupKomaTarget(null)}
+              schoolId={schoolId ?? ''}
+              date={groupKomaTarget.date}
+              slot={slot}
+              subjects={masterSubjects}
+              maxStudents={capacity.max_students_per_group}
+              availableTeachers={availableTeachers}
+              onSubmit={handleSubmitGroupKoma}
+            />
+          );
+        })()}
 
       <ToastContainer toasts={toasts} onRemove={removeToast} />
 

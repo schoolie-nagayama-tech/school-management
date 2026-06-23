@@ -46,14 +46,13 @@ export function ScheduleCellMenu({
   const studentName = entry.student
     ? `${entry.student.last_name}${entry.student.first_name}（${gradeLabel(entry.student.grade)}）`
     : entry.student_id;
-  const subjectNames = (entry.subject_ids || [])
-    .map((id) => entry.subjects?.find((s) => s.id === id)?.name ?? id)
-    .filter(Boolean)
-    .join('・') || '—';
+  const subjectNames =
+    (entry.subject_ids || [])
+      .map((id) => entry.subjects?.find((s) => s.id === id)?.name ?? id)
+      .filter(Boolean)
+      .join('・') || '—';
   const teacherName = entry.teacher?.display_name || entry.teacher?.email || '—';
-  const slotLabel = entry.time_slot
-    ? `${entry.time_slot.slot_number}限`
-    : '—';
+  const slotLabel = entry.time_slot ? `${entry.time_slot.slot_number}限` : '—';
   const seatLabel = entry.seat_label || '—';
 
   const isTransferredOut = entry.status === 'transferred_out';
@@ -67,7 +66,9 @@ export function ScheduleCellMenu({
       style={{ left: position.x, top: position.y }}
     >
       <div className="text-xs font-medium text-[var(--headline)] mb-2 border-b border-[var(--surface)] pb-2">
-        <div>{studentName} - {subjectNames}</div>
+        <div>
+          {studentName} - {subjectNames}
+        </div>
         <div className="text-[var(--paragraph)] font-normal mt-0.5">
           {teacherName} / {slotLabel} / {seatLabel}
         </div>
@@ -77,10 +78,7 @@ export function ScheduleCellMenu({
         <>
           <div className="mb-2">
             <div className="text-[10px] text-[var(--paragraph)] mb-1">出席を記録</div>
-            <AttendanceButtons
-              current={entry.attendance_status}
-              onSelect={onAttendance}
-            />
+            <AttendanceButtons current={entry.attendance_status} onSelect={onAttendance} />
           </div>
           <div className="border-t border-[var(--surface)] pt-2 space-y-1">
             <Button

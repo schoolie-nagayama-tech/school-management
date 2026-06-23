@@ -11,8 +11,14 @@ import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { AdminLayout } from '@/components/layouts';
 import {
-  Button, Card, CardHeader, CardTitle, CardContent,
-  Input, ToastContainer, Loading,
+  Button,
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+  Input,
+  ToastContainer,
+  Loading,
 } from '@/components/ui';
 import { useToast } from '@/hooks/useToast';
 import { useConfirm } from '@/hooks/useConfirm';
@@ -20,19 +26,14 @@ import { useRequirePermission } from '@/hooks/usePermissions';
 import { useAuth } from '@/contexts/AuthContext';
 import AccessDenied from '@/components/AccessDenied';
 import { ChevronLeft, Plus, Trash2, Pencil, Check, X } from 'lucide-react';
-import {
-  getExamTypes,
-  createExamType,
-  updateExamType,
-  deleteExamType,
-} from '@/lib/api/textbooks';
+import { getExamTypes, createExamType, updateExamType, deleteExamType } from '@/lib/api/textbooks';
 import { getSchools } from '@/lib/api/schools';
 import type { School, ExamType } from '@/types/database';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 
 export default function ExamTypesSettingsPage() {
   const { hasPermission, isLoading: permissionLoading } = useRequirePermission(
-    (p) => p.canAccessSettings,
+    (p) => p.canAccessSettings
   );
   const { toasts, removeToast, success, error: toastError } = useToast();
   const { confirm, ConfirmDialog } = useConfirm();
@@ -57,9 +58,11 @@ export default function ExamTypesSettingsPage() {
       const accessible = list.filter((s) => schoolIds.includes(s.id));
       setSchools(accessible);
       const initialId =
-        authSelectedSchoolId && authSelectedSchoolId !== 'all' && schoolIds.includes(authSelectedSchoolId)
+        authSelectedSchoolId &&
+        authSelectedSchoolId !== 'all' &&
+        schoolIds.includes(authSelectedSchoolId)
           ? authSelectedSchoolId
-          : accessible[0]?.id ?? null;
+          : (accessible[0]?.id ?? null);
       setSelectedSchoolId(initialId);
     });
   }, [authSelectedSchoolId, schoolIds]);
@@ -95,9 +98,8 @@ export default function ExamTypesSettingsPage() {
     setIsAdding(true);
     try {
       // sort_order は末尾
-      const maxOrder = examTypes.length > 0
-        ? Math.max(...examTypes.map((e) => e.sort_order)) + 1
-        : 0;
+      const maxOrder =
+        examTypes.length > 0 ? Math.max(...examTypes.map((e) => e.sort_order)) + 1 : 0;
       await createExamType({
         school_id: selectedSchoolId,
         name: newName.trim(),
@@ -143,7 +145,9 @@ export default function ExamTypesSettingsPage() {
       success('削除しました');
     } catch (e) {
       console.error(e);
-      toastError(getUserErrorMessage(e, '削除に失敗しました。使用中のデータがある場合は削除できません。'));
+      toastError(
+        getUserErrorMessage(e, '削除に失敗しました。使用中のデータがある場合は削除できません。')
+      );
     }
   };
 
@@ -168,16 +172,27 @@ export default function ExamTypesSettingsPage() {
   };
 
   if (permissionLoading) {
-    return <AdminLayout><Loading size="md" /></AdminLayout>;
+    return (
+      <AdminLayout>
+        <Loading size="md" />
+      </AdminLayout>
+    );
   }
   if (!hasPermission) {
-    return <AdminLayout><AccessDenied /></AdminLayout>;
+    return (
+      <AdminLayout>
+        <AccessDenied />
+      </AdminLayout>
+    );
   }
 
   return (
     <AdminLayout headerTitle="試験名マスタ">
       <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-        <Link href="/settings" className="inline-flex items-center text-sm text-text-faint hover:text-text-body">
+        <Link
+          href="/settings"
+          className="inline-flex items-center text-sm text-text-faint hover:text-text-body"
+        >
           <ChevronLeft className="w-4 h-4 mr-1" />
           設定一覧に戻る
         </Link>
@@ -201,7 +216,9 @@ export default function ExamTypesSettingsPage() {
                   className="flex-1 px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised"
                 >
                   {schools.map((s) => (
-                    <option key={s.id} value={s.id}>{s.name}</option>
+                    <option key={s.id} value={s.id}>
+                      {s.name}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -240,7 +257,15 @@ export default function ExamTypesSettingsPage() {
                         className="p-0.5 text-text-faint hover:text-text-body disabled:opacity-20 disabled:cursor-not-allowed"
                         title="上に移動"
                       >
-                        <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 15l-6-6-6 6"/></svg>
+                        <svg
+                          className="w-3.5 h-3.5"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <path d="M18 15l-6-6-6 6" />
+                        </svg>
                       </button>
                       <button
                         onClick={() => handleMove(index, 'down')}
@@ -248,7 +273,15 @@ export default function ExamTypesSettingsPage() {
                         className="p-0.5 text-text-faint hover:text-text-body disabled:opacity-20 disabled:cursor-not-allowed"
                         title="下に移動"
                       >
-                        <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9l6 6 6-6"/></svg>
+                        <svg
+                          className="w-3.5 h-3.5"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <path d="M6 9l6 6 6-6" />
+                        </svg>
                       </button>
                     </div>
 
@@ -285,7 +318,10 @@ export default function ExamTypesSettingsPage() {
                       <>
                         <span className="flex-1 text-sm text-text-heading">{item.name}</span>
                         <button
-                          onClick={() => { setEditingId(item.id); setEditingName(item.name); }}
+                          onClick={() => {
+                            setEditingId(item.id);
+                            setEditingName(item.name);
+                          }}
                           className="p-1.5 text-text-faint hover:text-text-body hover:bg-surface-hover rounded"
                           title="名前を編集"
                         >
@@ -311,7 +347,9 @@ export default function ExamTypesSettingsPage() {
               <Input
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Enter') handleAdd(); }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleAdd();
+                }}
                 placeholder="新しい試験名を入力（例: 中間テスト）"
                 className="flex-1 h-8 text-sm"
                 disabled={isAdding || !selectedSchoolId}

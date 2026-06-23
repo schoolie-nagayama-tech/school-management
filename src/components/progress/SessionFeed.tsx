@@ -131,10 +131,12 @@ export default function SessionFeed({ schoolIds: propSchoolIds }: Props) {
         new Set(data.map((s) => s.student_textbook?.id).filter((v): v is string => !!v))
       );
       if (textbookIds.length > 0) {
-        getFeedGoalsByTextbooks(textbookIds).then(setGoalMap).catch((e) => {
-          console.error('Failed to fetch feed goals:', e);
-          setGoalMap({});
-        });
+        getFeedGoalsByTextbooks(textbookIds)
+          .then(setGoalMap)
+          .catch((e) => {
+            console.error('Failed to fetch feed goals:', e);
+            setGoalMap({});
+          });
       } else {
         setGoalMap({});
       }
@@ -146,7 +148,9 @@ export default function SessionFeed({ schoolIds: propSchoolIds }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [schoolIdsKey, tab, studentFilter, dateFrom, dateTo]);
 
-  useEffect(() => { loadSessions(); }, [loadSessions]);
+  useEffect(() => {
+    loadSessions();
+  }, [loadSessions]);
 
   // ── 全データ更新（更新ボタン用） ──
   const refreshAll = useCallback(() => {
@@ -157,64 +161,71 @@ export default function SessionFeed({ schoolIds: propSchoolIds }: Props) {
   }, [schoolIdsKey, loadSessions]);
 
   // ── 確認ハンドラ ──
-  const handleConfirm = useCallback(async (sessionId: string) => {
-    if (!profile?.id) return;
-    setFlyingIds(prev => new Set(prev).add(sessionId));
+  const handleConfirm = useCallback(
+    async (sessionId: string) => {
+      if (!profile?.id) return;
+      setFlyingIds((prev) => new Set(prev).add(sessionId));
 
-    try {
-      await confirmProgressSession(sessionId, profile.id);
-    } catch (e) {
-      console.error(e);
-    }
+      try {
+        await confirmProgressSession(sessionId, profile.id);
+      } catch (e) {
+        console.error(e);
+      }
 
-    // アニメーション完了後にリストから除去
-    setTimeout(() => {
-      setSessions(prev => prev.filter(s => s.id !== sessionId));
-      setFlyingIds(prev => {
-        const next = new Set(prev);
-        next.delete(sessionId);
-        return next;
-      });
-    }, FLY_TO_TRAY_DURATION_MS);
-  }, [profile?.id]);
+      // アニメーション完了後にリストから除去
+      setTimeout(() => {
+        setSessions((prev) => prev.filter((s) => s.id !== sessionId));
+        setFlyingIds((prev) => {
+          const next = new Set(prev);
+          next.delete(sessionId);
+          return next;
+        });
+      }, FLY_TO_TRAY_DURATION_MS);
+    },
+    [profile?.id]
+  );
 
   const handleUnconfirm = useCallback(async (sessionId: string) => {
     try {
       await unconfirmProgressSession(sessionId);
-      setSessions(prev => prev.filter(s => s.id !== sessionId));
+      setSessions((prev) => prev.filter((s) => s.id !== sessionId));
     } catch (e) {
       console.error(e);
     }
   }, []);
 
   // ── インライン編集 ──
-  const handleInlineUpdate = useCallback(async (
-    sessionId: string,
-    patch: { handover?: string | null; homework_not_done?: boolean; tardy?: boolean }
-  ) => {
-    try {
-      await updateProgressSession(sessionId, patch);
-      // student_progress 側にも逆方向同期
-      syncSessionToProgress(sessionId, patch).catch(console.error);
-      // local state 更新
-      setSessions(prev => prev.map(s =>
-        s.id === sessionId ? { ...s, ...patch } : s
-      ));
-    } catch (e) {
-      console.error(e);
-    }
-  }, []);
+  const handleInlineUpdate = useCallback(
+    async (
+      sessionId: string,
+      patch: { handover?: string | null; homework_not_done?: boolean; tardy?: boolean }
+    ) => {
+      try {
+        await updateProgressSession(sessionId, patch);
+        // student_progress 側にも逆方向同期
+        syncSessionToProgress(sessionId, patch).catch(console.error);
+        // local state 更新
+        setSessions((prev) => prev.map((s) => (s.id === sessionId ? { ...s, ...patch } : s)));
+      } catch (e) {
+        console.error(e);
+      }
+    },
+    []
+  );
 
   // ── 生徒クリック → フィルタ ──
-  const handleStudentClick = useCallback((studentId: string, name: string) => {
-    if (studentFilter === studentId) {
-      setStudentFilter(null);
-      setStudentFilterName('');
-    } else {
-      setStudentFilter(studentId);
-      setStudentFilterName(name);
-    }
-  }, [studentFilter]);
+  const handleStudentClick = useCallback(
+    (studentId: string, name: string) => {
+      if (studentFilter === studentId) {
+        setStudentFilter(null);
+        setStudentFilterName('');
+      } else {
+        setStudentFilter(studentId);
+        setStudentFilterName(name);
+      }
+    },
+    [studentFilter]
+  );
 
   // トレイの参照位置（アニメーション先）
   const trayRef = useRef<HTMLDivElement>(null);
@@ -226,7 +237,7 @@ export default function SessionFeed({ schoolIds: propSchoolIds }: Props) {
         <SmartAlertBoard
           alerts={smartAlerts}
           expanded={alertsExpanded}
-          onToggle={() => setAlertsExpanded(v => !v)}
+          onToggle={() => setAlertsExpanded((v) => !v)}
         />
       )}
 
@@ -235,7 +246,7 @@ export default function SessionFeed({ schoolIds: propSchoolIds }: Props) {
         {/* タブ + 更新 */}
         <div className="flex items-center justify-between">
           <div className="flex gap-1">
-            {TABS.map(t => (
+            {TABS.map((t) => (
               <button
                 key={t.key}
                 onClick={() => setTab(t.key)}
@@ -266,7 +277,7 @@ export default function SessionFeed({ schoolIds: propSchoolIds }: Props) {
             <input
               type="date"
               value={dateFrom}
-              onChange={e => setDateFrom(e.target.value)}
+              onChange={(e) => setDateFrom(e.target.value)}
               className="px-2 py-1 text-xs border border-gray-200 rounded-lg bg-white"
               placeholder="開始日"
             />
@@ -274,14 +285,17 @@ export default function SessionFeed({ schoolIds: propSchoolIds }: Props) {
             <input
               type="date"
               value={dateTo}
-              onChange={e => setDateTo(e.target.value)}
+              onChange={(e) => setDateTo(e.target.value)}
               className="px-2 py-1 text-xs border border-gray-200 rounded-lg bg-white"
               placeholder="終了日"
             />
           </div>
           {studentFilter && (
             <button
-              onClick={() => { setStudentFilter(null); setStudentFilterName(''); }}
+              onClick={() => {
+                setStudentFilter(null);
+                setStudentFilterName('');
+              }}
               className="flex items-center gap-1 px-2 py-1 text-xs bg-[#1e3a5f] text-white rounded-lg active:scale-[0.97]"
             >
               <Search className="w-3 h-3" />
@@ -291,7 +305,10 @@ export default function SessionFeed({ schoolIds: propSchoolIds }: Props) {
           )}
           {(dateFrom || dateTo) && (
             <button
-              onClick={() => { setDateFrom(''); setDateTo(''); }}
+              onClick={() => {
+                setDateFrom('');
+                setDateTo('');
+              }}
               className="px-2 py-1 text-xs text-gray-400 hover:text-gray-600 hover:underline rounded"
             >
               日付クリア
@@ -310,10 +327,13 @@ export default function SessionFeed({ schoolIds: propSchoolIds }: Props) {
             <div className="py-16 text-center">
               <Archive className="w-8 h-8 text-gray-300 mx-auto mb-3" />
               <p className="text-sm text-gray-500">
-                {tab === 'alerts' ? '要注意のセッションはありません'
-                  : tab === 'confirmed' ? '確認済みのセッションはありません'
-                  : tab === 'unconfirmed' ? '未確認のセッションはありません'
-                  : 'セッションがありません'}
+                {tab === 'alerts'
+                  ? '要注意のセッションはありません'
+                  : tab === 'confirmed'
+                    ? '確認済みのセッションはありません'
+                    : tab === 'unconfirmed'
+                      ? '未確認のセッションはありません'
+                      : 'セッションがありません'}
               </p>
               <p className="text-xs text-gray-400 mt-1">条件を変更して再検索してください</p>
             </div>
@@ -333,7 +353,9 @@ export default function SessionFeed({ schoolIds: propSchoolIds }: Props) {
                   onInlineUpdate={(patch) => handleInlineUpdate(session.id, patch)}
                   onStudentClick={handleStudentClick}
                   trayRef={trayRef}
-                  goal={session.student_textbook?.id ? goalMap[session.student_textbook.id] : undefined}
+                  goal={
+                    session.student_textbook?.id ? goalMap[session.student_textbook.id] : undefined
+                  }
                 />
               ))}
             </div>
@@ -345,7 +367,7 @@ export default function SessionFeed({ schoolIds: propSchoolIds }: Props) {
           ref={trayRef}
           schoolIds={schoolIds}
           open={trayOpen}
-          onToggle={() => setTrayOpen(v => !v)}
+          onToggle={() => setTrayOpen((v) => !v)}
         />
       </div>
     </div>
@@ -362,7 +384,11 @@ interface SwipeableCardProps {
   showUnconfirmAction: boolean;
   onConfirm: () => void;
   onUnconfirm: () => void;
-  onInlineUpdate: (patch: { handover?: string | null; homework_not_done?: boolean; tardy?: boolean }) => void;
+  onInlineUpdate: (patch: {
+    handover?: string | null;
+    homework_not_done?: boolean;
+    tardy?: boolean;
+  }) => void;
   onStudentClick: (studentId: string, name: string) => void;
   trayRef: React.RefObject<HTMLDivElement | null>;
   /** 目標 / 行動目標サマリ（カード表示用、未取得時 undefined） */
@@ -372,9 +398,17 @@ interface SwipeableCardProps {
 }
 
 function SwipeableCard({
-  session, isTeacher, isFlying,
-  showConfirmAction, showUnconfirmAction,
-  onConfirm, onUnconfirm, onInlineUpdate, onStudentClick, trayRef, goal,
+  session,
+  isTeacher,
+  isFlying,
+  showConfirmAction,
+  showUnconfirmAction,
+  onConfirm,
+  onUnconfirm,
+  onInlineUpdate,
+  onStudentClick,
+  trayRef,
+  goal,
   staggerIndex = 0,
 }: SwipeableCardProps) {
   const cardRef = useRef<HTMLDivElement>(null);
@@ -433,8 +467,8 @@ function SwipeableCard({
     const trayRect = trayEl.getBoundingClientRect();
     const cardRect = cardEl.getBoundingClientRect();
     // トレイの中心に着地させる（カードもスケール後の中心が合うよう中心同士で計算）
-    const dx = (trayRect.left + trayRect.width / 2) - (cardRect.left + cardRect.width / 2);
-    const dy = (trayRect.top + trayRect.height / 2) - (cardRect.top + cardRect.height / 2);
+    const dx = trayRect.left + trayRect.width / 2 - (cardRect.left + cardRect.width / 2);
+    const dy = trayRect.top + trayRect.height / 2 - (cardRect.top + cardRect.height / 2);
     return {
       ['--fly-dx' as string]: `${dx}px`,
       ['--fly-dy' as string]: `${dy}px`,
@@ -447,10 +481,12 @@ function SwipeableCard({
       ref={cardRef}
       className={`relative ${isFlying ? 'session-fly' : 'feed-card-enter'}`}
       style={{
-        ...(isFlying ? flyStyle : {
-          transform: isDragging ? `translateX(${dragX}px) rotate(${rotation}deg)` : undefined,
-          transition: isDragging ? 'none' : 'transform 200ms cubic-bezier(0.23, 1, 0.32, 1)',
-        }),
+        ...(isFlying
+          ? flyStyle
+          : {
+              transform: isDragging ? `translateX(${dragX}px) rotate(${rotation}deg)` : undefined,
+              transition: isDragging ? 'none' : 'transform 200ms cubic-bezier(0.23, 1, 0.32, 1)',
+            }),
         // stagger: 最初の10枚のみ（それ以降は delay 不要）
         animationDelay: !isFlying && staggerIndex < 10 ? `${staggerIndex * 40}ms` : undefined,
       }}
@@ -498,7 +534,11 @@ interface FeedCardProps {
   showUnconfirmAction: boolean;
   onConfirm: () => void;
   onUnconfirm: () => void;
-  onInlineUpdate: (patch: { handover?: string | null; homework_not_done?: boolean; tardy?: boolean }) => void;
+  onInlineUpdate: (patch: {
+    handover?: string | null;
+    homework_not_done?: boolean;
+    tardy?: boolean;
+  }) => void;
   onStudentClick: (studentId: string, name: string) => void;
   /** コンパクト表示（ミニフィード用） */
   compact?: boolean;
@@ -507,32 +547,38 @@ interface FeedCardProps {
 }
 
 function FeedCard({
-  session, isTeacher,
-  showConfirmAction, showUnconfirmAction,
-  onConfirm, onUnconfirm, onInlineUpdate, onStudentClick,
-  compact, goal,
+  session,
+  isTeacher,
+  showConfirmAction,
+  showUnconfirmAction,
+  onConfirm,
+  onUnconfirm,
+  onInlineUpdate,
+  onStudentClick,
+  compact,
+  goal,
 }: FeedCardProps) {
   const hasIssue = session.homework_not_done || session.tardy;
   const [editing, setEditing] = useState(false);
   const [editHandover, setEditHandover] = useState(session.handover || '');
 
   const st = session.student_textbook;
-  const studentName = st?.student
-    ? `${st.student.last_name} ${st.student.first_name}`
-    : '—';
+  const studentName = st?.student ? `${st.student.last_name} ${st.student.first_name}` : '—';
   const studentId = st?.student?.id;
   const textbookName = st?.textbook?.name || '—';
 
   const displayTeacher = session.teacher_name
-    ? isTeacher ? toSurnameOnly(session.teacher_name) : session.teacher_name
+    ? isTeacher
+      ? toSurnameOnly(session.teacher_name)
+      : session.teacher_name
     : null;
 
   const lessonUnits = useMemo(() => {
     if (!session.lessons || session.lessons.length === 0) return [];
     return session.lessons
-      .filter(l => l.student_progress?.curriculum_item)
+      .filter((l) => l.student_progress?.curriculum_item)
       .sort((a, b) => (a.lesson_number ?? 0) - (b.lesson_number ?? 0))
-      .map(l => {
+      .map((l) => {
         const sp = l.student_progress!;
         const ci = sp.curriculum_item!;
         return {
@@ -559,9 +605,11 @@ function FeedCard({
   return (
     <div
       className={`rounded-xl border p-4 ${
-        isConfirmed ? 'border-green-200 bg-green-50/30' :
-        hasIssue ? 'border-2 border-amber-400 bg-amber-50/40' :
-        'border-gray-200 bg-white'
+        isConfirmed
+          ? 'border-green-200 bg-green-50/30'
+          : hasIssue
+            ? 'border-2 border-amber-400 bg-amber-50/40'
+            : 'border-gray-200 bg-white'
       } ${compact ? 'p-3' : ''}`}
     >
       {/* 上段: 生徒名（クリック可）/ 日付 / アクション */}
@@ -591,7 +639,10 @@ function FeedCard({
           <div className="flex items-center gap-1 ml-1" data-no-swipe>
             {!editing && !compact && (
               <button
-                onClick={() => { setEditing(true); setEditHandover(session.handover || ''); }}
+                onClick={() => {
+                  setEditing(true);
+                  setEditHandover(session.handover || '');
+                }}
                 className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded active:scale-95"
                 title="編集"
               >
@@ -600,7 +651,10 @@ function FeedCard({
             )}
             {showConfirmAction && (
               <button
-                onClick={(e) => { e.stopPropagation(); onConfirm(); }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onConfirm();
+                }}
                 className="p-1.5 text-green-500 hover:text-green-700 hover:bg-green-50 rounded-lg transition-[background-color,color] duration-150 ease-out active:scale-95"
                 title="確認"
               >
@@ -609,7 +663,10 @@ function FeedCard({
             )}
             {showUnconfirmAction && (
               <button
-                onClick={(e) => { e.stopPropagation(); onUnconfirm(); }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onUnconfirm();
+                }}
                 className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-[background-color,color] duration-150 ease-out active:scale-95"
                 title="確認を戻す"
               >
@@ -630,7 +687,7 @@ function FeedCard({
                 <input
                   type="checkbox"
                   checked={session.homework_not_done}
-                  onChange={e => onInlineUpdate({ homework_not_done: e.target.checked })}
+                  onChange={(e) => onInlineUpdate({ homework_not_done: e.target.checked })}
                   className="w-3 h-3 accent-amber-600 rounded"
                 />
                 宿題未提出
@@ -639,7 +696,7 @@ function FeedCard({
                 <input
                   type="checkbox"
                   checked={session.tardy}
-                  onChange={e => onInlineUpdate({ tardy: e.target.checked })}
+                  onChange={(e) => onInlineUpdate({ tardy: e.target.checked })}
                   className="w-3 h-3 accent-amber-600 rounded"
                 />
                 遅刻
@@ -648,10 +705,14 @@ function FeedCard({
           ) : (
             <>
               {session.homework_not_done && (
-                <span className="px-1.5 py-0.5 text-[11px] bg-amber-200 text-amber-900 rounded font-medium">宿題未提出</span>
+                <span className="px-1.5 py-0.5 text-[11px] bg-amber-200 text-amber-900 rounded font-medium">
+                  宿題未提出
+                </span>
               )}
               {session.tardy && (
-                <span className="px-1.5 py-0.5 text-[11px] bg-amber-200 text-amber-900 rounded font-medium">遅刻</span>
+                <span className="px-1.5 py-0.5 text-[11px] bg-amber-200 text-amber-900 rounded font-medium">
+                  遅刻
+                </span>
               )}
             </>
           )}
@@ -676,7 +737,10 @@ function FeedCard({
                 {u.schoolProgressDate && (
                   <GraduationCap className="w-3 h-3 text-blue-500" aria-label="学校進度あり" />
                 )}
-                {u.label} <span className={u.schoolProgressDate ? 'text-blue-400' : 'text-gray-400'}>({u.lessonNumber}回目)</span>
+                {u.label}{' '}
+                <span className={u.schoolProgressDate ? 'text-blue-400' : 'text-gray-400'}>
+                  ({u.lessonNumber}回目)
+                </span>
               </span>
             ))}
           </div>
@@ -704,7 +768,9 @@ function FeedCard({
           {goal && goal.totalCount > 0 && (
             <div
               className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-50 text-green-800 border border-green-200 rounded"
-              title={goal.actionGoals.map((g) => `${g.achieved ? '✓' : '・'} ${g.title}`).join('\n')}
+              title={goal.actionGoals
+                .map((g) => `${g.achieved ? '✓' : '・'} ${g.title}`)
+                .join('\n')}
             >
               <Check className="w-3 h-3 text-green-600" />
               <span className="font-medium">行動目標</span>
@@ -732,7 +798,7 @@ function FeedCard({
         <div className="mt-2 space-y-2" data-no-swipe>
           <textarea
             value={editHandover}
-            onChange={e => setEditHandover(e.target.value)}
+            onChange={(e) => setEditHandover(e.target.value)}
             rows={2}
             className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded-lg resize-none focus:border-[#1e3a5f] outline-none"
             placeholder="引継ぎ..."
@@ -792,26 +858,27 @@ const ConfirmedTray = React.forwardRef<
 
   useEffect(() => {
     if (!open || schoolIds.length === 0) return;
-    getSessionFeed(schoolIds, { confirmedOnly: true }, 20).then(data => {
-      setSessions(data);
-      setCount(data.length);
-    }).catch(console.error);
+    getSessionFeed(schoolIds, { confirmedOnly: true }, 20)
+      .then((data) => {
+        setSessions(data);
+        setCount(data.length);
+      })
+      .catch(console.error);
   }, [open, schoolIds]);
 
   // 未展開時もカウントだけ取得
   useEffect(() => {
     if (schoolIds.length === 0) return;
-    getSessionFeed(schoolIds, { confirmedOnly: true }, 1).then(data => {
-      // ヘッダー用のカウントはフルフェッチせず概算
-      if (data.length > 0) setCount(data.length);
-    }).catch(console.error);
+    getSessionFeed(schoolIds, { confirmedOnly: true }, 1)
+      .then((data) => {
+        // ヘッダー用のカウントはフルフェッチせず概算
+        if (data.length > 0) setCount(data.length);
+      })
+      .catch(console.error);
   }, [schoolIds]);
 
   return (
-    <div
-      ref={ref}
-      className="w-64 shrink-0 hidden lg:block"
-    >
+    <div ref={ref} className="w-64 shrink-0 hidden lg:block">
       <div className="sticky top-4">
         {/* トレイヘッダー */}
         <button
@@ -827,7 +894,11 @@ const ConfirmedTray = React.forwardRef<
             </div>
             <span className="text-sm font-medium text-gray-700">確認済み</span>
           </div>
-          {open ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
+          {open ? (
+            <ChevronUp className="w-4 h-4 text-gray-400" />
+          ) : (
+            <ChevronDown className="w-4 h-4 text-gray-400" />
+          )}
         </button>
 
         {/* トレイ本体: CSS Grid で高さをアニメーション（max-height ハックより正確） */}
@@ -845,7 +916,7 @@ const ConfirmedTray = React.forwardRef<
               </div>
             ) : (
               <div className="p-2 space-y-1.5 max-h-[560px] overflow-y-auto">
-                {sessions.map(s => (
+                {sessions.map((s) => (
                   <TrayCard key={s.id} session={s} />
                 ))}
               </div>
@@ -870,7 +941,9 @@ function TrayCard({ session }: { session: ProgressSessionWithDetails }) {
     >
       <div className="flex items-center justify-between">
         <span className="text-[11px] font-medium text-gray-800 truncate">{studentName}</span>
-        <span className="text-[10px] text-gray-400 shrink-0 ml-1">{session.session_date?.replace(/-/g, '/').slice(5)}</span>
+        <span className="text-[10px] text-gray-400 shrink-0 ml-1">
+          {session.session_date?.replace(/-/g, '/').slice(5)}
+        </span>
       </div>
       {session.handover && (
         <p className="text-[10px] text-gray-500 truncate mt-0.5">{session.handover}</p>
@@ -885,10 +958,7 @@ function TrayCard({ session }: { session: ProgressSessionWithDetails }) {
 
 // ─── スマートアラートボード ───
 
-const ALERT_CONFIG: Record<
-  SmartAlert['type'],
-  { icon: React.ReactNode; label: string }
-> = {
+const ALERT_CONFIG: Record<SmartAlert['type'], { icon: React.ReactNode; label: string }> = {
   school_catching_up: {
     icon: <GraduationCap className="w-4 h-4" />,
     label: '学校進度に追いつかれている',
@@ -912,7 +982,7 @@ function SmartAlertBoard({
   expanded: boolean;
   onToggle: () => void;
 }) {
-  const urgentCount = alerts.filter(a => a.severity === 'urgent').length;
+  const urgentCount = alerts.filter((a) => a.severity === 'urgent').length;
 
   return (
     <div className="rounded-xl border border-amber-200 bg-amber-50/50 overflow-hidden">
@@ -957,7 +1027,9 @@ function SmartAlertItem({ alert }: { alert: SmartAlert }) {
           isUrgent ? 'bg-red-50/60' : 'bg-white/60'
         }`}
       >
-        <div className={`p-1.5 rounded shrink-0 mt-0.5 ${isUrgent ? 'bg-red-100 text-red-600' : 'bg-amber-100 text-amber-600'}`}>
+        <div
+          className={`p-1.5 rounded shrink-0 mt-0.5 ${isUrgent ? 'bg-red-100 text-red-600' : 'bg-amber-100 text-amber-600'}`}
+        >
           {config.icon}
         </div>
         <div className="flex-1 min-w-0">
@@ -967,7 +1039,9 @@ function SmartAlertItem({ alert }: { alert: SmartAlert }) {
           </div>
           <p className="text-xs text-gray-600 mt-0.5">{alert.detail}</p>
         </div>
-        <span className={`px-1.5 py-0.5 text-[9px] font-bold rounded shrink-0 ${isUrgent ? 'bg-red-200 text-red-800' : 'bg-amber-200 text-amber-800'}`}>
+        <span
+          className={`px-1.5 py-0.5 text-[9px] font-bold rounded shrink-0 ${isUrgent ? 'bg-red-200 text-red-800' : 'bg-amber-200 text-amber-800'}`}
+        >
           {config.label}
         </span>
       </div>

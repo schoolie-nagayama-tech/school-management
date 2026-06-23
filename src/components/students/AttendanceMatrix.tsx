@@ -47,7 +47,13 @@ function getSubjectColor(subjectId: string, index: number) {
   return SUBJECT_COLORS[subjectId];
 }
 
-export function AttendanceMatrix({ studentId, schoolId, studentGrade, canEdit, onPatternChange }: AttendanceMatrixProps) {
+export function AttendanceMatrix({
+  studentId,
+  schoolId,
+  studentGrade,
+  canEdit,
+  onPatternChange,
+}: AttendanceMatrixProps) {
   const [patterns, setPatterns] = useState<ScheduleRegularPattern[]>([]);
   const [timeSlots, setTimeSlots] = useState<ScheduleTimeSlot[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
@@ -157,26 +163,26 @@ export function AttendanceMatrix({ studentId, schoolId, studentGrade, canEdit, o
       // 1コマには授業を1つだけ。2科目を同時に入れたい場合は「算/国」のような複合科目を使う。
       // 既に授業が入っているコマには重ねて登録できないようブロックし、その旨を通知する。
       if (existing) {
-        setNotice('このコマには既に授業が入っています。2科目を1コマで行う場合は「算/国」などの複合科目を選んでください。');
+        setNotice(
+          'このコマには既に授業が入っています。2科目を1コマで行う場合は「算/国」などの複合科目を選んでください。'
+        );
         window.setTimeout(() => setNotice(null), 4000);
         return;
       }
 
       setSaving(key);
       try {
-        const { error } = await (supabase as any)
-          .from('schedule_regular_patterns')
-          .insert({
-            school_id: schoolId,
-            student_id: studentId,
-            day_of_week: dayOfWeek,
-            time_slot_id: slotId,
-            teacher_id: null,
-            subject_ids: [subjectId],
-            seat_label: null,
-            period_type: 'regular',
-            is_active: true,
-          });
+        const { error } = await (supabase as any).from('schedule_regular_patterns').insert({
+          school_id: schoolId,
+          student_id: studentId,
+          day_of_week: dayOfWeek,
+          time_slot_id: slotId,
+          teacher_id: null,
+          subject_ids: [subjectId],
+          seat_label: null,
+          period_type: 'regular',
+          is_active: true,
+        });
         if (error) throw error;
         await fetchData();
         onPatternChange?.();
@@ -247,7 +253,9 @@ export function AttendanceMatrix({ studentId, schoolId, studentGrade, canEdit, o
         <div className="space-y-1.5">
           {subjects90.length > 0 && (
             <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="text-[10px] text-gray-400 font-medium w-[36px] flex-shrink-0">90分</span>
+              <span className="text-[10px] text-gray-400 font-medium w-[36px] flex-shrink-0">
+                90分
+              </span>
               {subjects90.map((sub) => {
                 const color = getSubjectColor(sub.id, subjects.indexOf(sub));
                 return (
@@ -265,7 +273,9 @@ export function AttendanceMatrix({ studentId, schoolId, studentGrade, canEdit, o
           )}
           {subjects45.length > 0 && (
             <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="text-[10px] text-gray-400 font-medium w-[36px] flex-shrink-0">45分</span>
+              <span className="text-[10px] text-gray-400 font-medium w-[36px] flex-shrink-0">
+                45分
+              </span>
               {subjects45.map((sub) => {
                 const color = getSubjectColor(sub.id, subjects.indexOf(sub));
                 return (
@@ -286,86 +296,95 @@ export function AttendanceMatrix({ studentId, schoolId, studentGrade, canEdit, o
 
       {/* マトリクス */}
       <div className="overflow-x-auto">
-          <table className="border-collapse text-xs w-full">
-            <thead>
-              <tr>
-                <th className="border border-gray-200 bg-gray-50 px-2 py-1.5 text-left text-[10px] text-gray-500 min-w-[80px]">
-                  コマ
+        <table className="border-collapse text-xs w-full">
+          <thead>
+            <tr>
+              <th className="border border-gray-200 bg-gray-50 px-2 py-1.5 text-left text-[10px] text-gray-500 min-w-[80px]">
+                コマ
+              </th>
+              {WEEKDAYS.map((day) => (
+                <th
+                  key={day}
+                  className={`border border-gray-200 bg-gray-50 px-2 py-1.5 text-center text-[10px] min-w-[56px] ${
+                    day === 6 ? 'text-blue-500' : 'text-gray-600'
+                  }`}
+                >
+                  {DAY_OF_WEEK_LABELS[day]}
                 </th>
-                {WEEKDAYS.map((day) => (
-                  <th
-                    key={day}
-                    className={`border border-gray-200 bg-gray-50 px-2 py-1.5 text-center text-[10px] min-w-[56px] ${
-                      day === 6 ? 'text-blue-500' : 'text-gray-600'
-                    }`}
-                  >
-                    {DAY_OF_WEEK_LABELS[day]}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {timeSlots.map((slot) => (
-                <tr key={slot.id}>
-                  <td className="border border-gray-200 bg-gray-50 px-2 py-1.5 text-[10px] text-gray-500 whitespace-nowrap">
-                    {slot.slot_number}限{' '}
-                    <span className="text-gray-400">
-                      {slot.start_time?.slice(0, 5)}-{slot.end_time?.slice(0, 5)}
-                    </span>
-                  </td>
-                  {WEEKDAYS.map((day) => {
-                    const key = `${day}-${slot.id}`;
-                    const pattern = patternMap.get(key);
-                    const isOn = !!pattern;
-                    const isSaving = saving === key;
-                    const isDragOver = dragOverCell === key && !isOn;
-
-                    // 科目名・時間・色を取得
-                    const firstSubjectId = pattern?.subject_ids?.[0];
-                    const subjectObj = firstSubjectId ? subjects.find((s) => s.id === firstSubjectId) : null;
-                    const subjectName = subjectObj?.name ?? (firstSubjectId ? subjectMap.get(firstSubjectId) : null);
-                    const is45 = subjectObj ? subjectObj.duration_minutes < 90 : false;
-                    const subjectIdx = firstSubjectId ? subjects.findIndex((s) => s.id === firstSubjectId) : 0;
-                    const color = firstSubjectId ? getSubjectColor(firstSubjectId, subjectIdx) : null;
-
-                    return (
-                      <td
-                        key={key}
-                        className={`border border-gray-200 px-0.5 py-0.5 text-center transition-[background-color,box-shadow] duration-150 ease-out relative h-[36px] ${
-                          isSaving ? 'opacity-50' : ''
-                        } ${isDragOver ? 'bg-blue-100 ring-2 ring-inset ring-blue-400' : ''} ${
-                          !isOn && !isDragOver ? 'bg-white' : ''
-                        }`}
-                        onDragOver={(e) => handleDragOver(e, key)}
-                        onDragLeave={handleDragLeave}
-                        onDrop={(e) => handleDrop(e, day, slot.id)}
-                      >
-                        {isOn && (
-                          <div className={`group relative flex flex-col items-center justify-center rounded mx-0.5 px-1 py-0.5 ${is45 ? 'border-2 border-dashed' : 'border'} ${color?.bg ?? 'bg-gray-100'} ${color?.border ?? 'border-gray-300'}`}>
-                            <span className={`text-[11px] font-medium leading-tight ${color?.text ?? 'text-gray-600'}`}>
-                              {subjectName ?? '●'}
-                            </span>
-                            {is45 && (
-                              <span className="text-[8px] text-gray-400 leading-none">45分</span>
-                            )}
-                            {canEdit && (
-                              <button
-                                onClick={(e) => handleRemovePattern(e, day, slot.id)}
-                                className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-gray-400 hover:bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-150"
-                              >
-                                <X className="w-2.5 h-2.5" />
-                              </button>
-                            )}
-                          </div>
-                        )}
-                      </td>
-                    );
-                  })}
-                </tr>
               ))}
-            </tbody>
-          </table>
-        </div>
+            </tr>
+          </thead>
+          <tbody>
+            {timeSlots.map((slot) => (
+              <tr key={slot.id}>
+                <td className="border border-gray-200 bg-gray-50 px-2 py-1.5 text-[10px] text-gray-500 whitespace-nowrap">
+                  {slot.slot_number}限{' '}
+                  <span className="text-gray-400">
+                    {slot.start_time?.slice(0, 5)}-{slot.end_time?.slice(0, 5)}
+                  </span>
+                </td>
+                {WEEKDAYS.map((day) => {
+                  const key = `${day}-${slot.id}`;
+                  const pattern = patternMap.get(key);
+                  const isOn = !!pattern;
+                  const isSaving = saving === key;
+                  const isDragOver = dragOverCell === key && !isOn;
+
+                  // 科目名・時間・色を取得
+                  const firstSubjectId = pattern?.subject_ids?.[0];
+                  const subjectObj = firstSubjectId
+                    ? subjects.find((s) => s.id === firstSubjectId)
+                    : null;
+                  const subjectName =
+                    subjectObj?.name ?? (firstSubjectId ? subjectMap.get(firstSubjectId) : null);
+                  const is45 = subjectObj ? subjectObj.duration_minutes < 90 : false;
+                  const subjectIdx = firstSubjectId
+                    ? subjects.findIndex((s) => s.id === firstSubjectId)
+                    : 0;
+                  const color = firstSubjectId ? getSubjectColor(firstSubjectId, subjectIdx) : null;
+
+                  return (
+                    <td
+                      key={key}
+                      className={`border border-gray-200 px-0.5 py-0.5 text-center transition-[background-color,box-shadow] duration-150 ease-out relative h-[36px] ${
+                        isSaving ? 'opacity-50' : ''
+                      } ${isDragOver ? 'bg-blue-100 ring-2 ring-inset ring-blue-400' : ''} ${
+                        !isOn && !isDragOver ? 'bg-white' : ''
+                      }`}
+                      onDragOver={(e) => handleDragOver(e, key)}
+                      onDragLeave={handleDragLeave}
+                      onDrop={(e) => handleDrop(e, day, slot.id)}
+                    >
+                      {isOn && (
+                        <div
+                          className={`group relative flex flex-col items-center justify-center rounded mx-0.5 px-1 py-0.5 ${is45 ? 'border-2 border-dashed' : 'border'} ${color?.bg ?? 'bg-gray-100'} ${color?.border ?? 'border-gray-300'}`}
+                        >
+                          <span
+                            className={`text-[11px] font-medium leading-tight ${color?.text ?? 'text-gray-600'}`}
+                          >
+                            {subjectName ?? '●'}
+                          </span>
+                          {is45 && (
+                            <span className="text-[8px] text-gray-400 leading-none">45分</span>
+                          )}
+                          {canEdit && (
+                            <button
+                              onClick={(e) => handleRemovePattern(e, day, slot.id)}
+                              className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-gray-400 hover:bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-150"
+                            >
+                              <X className="w-2.5 h-2.5" />
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
       {/* サマリ */}
       <div className="flex items-center gap-4 text-xs">

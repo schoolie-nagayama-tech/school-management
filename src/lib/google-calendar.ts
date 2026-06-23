@@ -33,11 +33,7 @@ export function getGoogleAuthUrl(userId: string, origin?: string): string {
   return oauth2Client.generateAuthUrl({
     access_type: 'offline',
     prompt: 'consent', // 毎回 refresh_token を取得するため
-    scope: [
-      'openid',
-      'email',
-      'https://www.googleapis.com/auth/calendar.events',
-    ],
+    scope: ['openid', 'email', 'https://www.googleapis.com/auth/calendar.events'],
     state: userId, // コールバックでユーザーを特定
   });
 }
@@ -51,16 +47,16 @@ export async function handleGoogleCallback(code: string, userId: string, origin?
   const { tokens } = await oauth2Client.getToken(code);
 
   if (!tokens.refresh_token) {
-    throw new Error('refresh_token が取得できませんでした。Google側で連携を解除してから再度お試しください。');
+    throw new Error(
+      'refresh_token が取得できませんでした。Google側で連携を解除してから再度お試しください。'
+    );
   }
 
   // id_token からメールアドレスを取得（userinfo APIを呼ばずに済む）
   let email: string | null = null;
   if (tokens.id_token) {
     try {
-      const payload = JSON.parse(
-        Buffer.from(tokens.id_token.split('.')[1], 'base64').toString()
-      );
+      const payload = JSON.parse(Buffer.from(tokens.id_token.split('.')[1], 'base64').toString());
       email = payload.email || null;
     } catch {
       // id_token のパースに失敗しても続行
@@ -68,15 +64,16 @@ export async function handleGoogleCallback(code: string, userId: string, origin?
   }
 
   const supabaseAdmin = getSupabaseAdmin();
-  const { error } = await supabaseAdmin
-    .from('google_calendar_tokens')
-    .upsert({
+  const { error } = await supabaseAdmin.from('google_calendar_tokens').upsert(
+    {
       user_id: userId,
       access_token: tokens.access_token!,
       refresh_token: tokens.refresh_token,
       token_expiry: new Date(tokens.expiry_date!).toISOString(),
       calendar_email: email,
-    }, { onConflict: 'user_id' });
+    },
+    { onConflict: 'user_id' }
+  );
 
   if (error) {
     throw new Error(`トークンの保存に失敗しました: ${error.message}`);
@@ -111,7 +108,8 @@ async function getAuthenticatedClient(userId: string) {
   // トークンの有効期限が切れている場合はリフレッシュ
   const now = Date.now();
   const expiry = new Date(tokenData.token_expiry).getTime();
-  if (now >= expiry - 60000) { // 1分前にリフレッシュ
+  if (now >= expiry - 60000) {
+    // 1分前にリフレッシュ
     try {
       const { credentials } = await oauth2Client.refreshAccessToken();
       // 新しいトークンを保存
@@ -126,10 +124,7 @@ async function getAuthenticatedClient(userId: string) {
     } catch (refreshError) {
       console.error('[google-calendar] トークンリフレッシュ失敗:', refreshError);
       // リフレッシュ失敗時はトークンを削除（再連携が必要）
-      await supabaseAdmin
-        .from('google_calendar_tokens')
-        .delete()
-        .eq('user_id', userId);
+      await supabaseAdmin.from('google_calendar_tokens').delete().eq('user_id', userId);
       return null;
     }
   }
@@ -142,12 +137,12 @@ async function getAuthenticatedClient(userId: string) {
 // ============================================
 
 interface CalendarEventParams {
-  summary: string;       // イベントタイトル
-  description: string;   // 詳細
-  date: string;          // YYYY-MM-DD
-  startTime: string;     // HH:mm
+  summary: string; // イベントタイトル
+  description: string; // 詳細
+  date: string; // YYYY-MM-DD
+  startTime: string; // HH:mm
   durationMinutes: number;
-  allDay?: boolean;      // 終日イベント
+  allDay?: boolean; // 終日イベント
   reminders?: Array<{ method: 'popup' | 'email'; minutes: number }>;
 }
 
@@ -171,9 +166,11 @@ export async function createCalendarEvent(
           start: { date: params.date },
           end: { date: params.date },
           transparency: 'transparent' as const,
-          ...(params.reminders?.length ? {
-            reminders: { useDefault: false, overrides: params.reminders },
-          } : {}),
+          ...(params.reminders?.length
+            ? {
+                reminders: { useDefault: false, overrides: params.reminders },
+              }
+            : {}),
         }
       : {
           summary: params.summary,
@@ -183,13 +180,18 @@ export async function createCalendarEvent(
             timeZone: 'Asia/Tokyo',
           },
           end: {
-            dateTime: new Date(new Date(`${params.date}T${params.startTime}:00+09:00`).getTime() + params.durationMinutes * 60 * 1000).toISOString(),
+            dateTime: new Date(
+              new Date(`${params.date}T${params.startTime}:00+09:00`).getTime() +
+                params.durationMinutes * 60 * 1000
+            ).toISOString(),
             timeZone: 'Asia/Tokyo',
           },
           transparency: 'transparent' as const,
-          ...(params.reminders?.length ? {
-            reminders: { useDefault: false, overrides: params.reminders },
-          } : {}),
+          ...(params.reminders?.length
+            ? {
+                reminders: { useDefault: false, overrides: params.reminders },
+              }
+            : {}),
         };
 
     const { data: event } = await calendar.events.insert({
@@ -270,7 +272,7 @@ export interface CalendarEvent {
   id: string;
   summary: string;
   start: string; // ISO string
-  end: string;   // ISO string
+  end: string; // ISO string
   allDay: boolean;
 }
 
@@ -340,10 +342,7 @@ export async function getCalendarConnectionStatus(userId: string): Promise<{
 
 export async function disconnectGoogleCalendar(userId: string): Promise<void> {
   const supabaseAdmin = getSupabaseAdmin();
-  await supabaseAdmin
-    .from('google_calendar_tokens')
-    .delete()
-    .eq('user_id', userId);
+  await supabaseAdmin.from('google_calendar_tokens').delete().eq('user_id', userId);
 }
 
 // ============================================
@@ -361,9 +360,9 @@ export async function createFurikaeCalendarEvents(params: {
   schoolId: string;
   studentName: string;
   grade: string;
-  furikaeDate: string;       // YYYY-MM-DD
-  furikaeDateLabel: string;  // "4月20日（月）"
-  furikaeTime: string;       // "18:30"
+  furikaeDate: string; // YYYY-MM-DD
+  furikaeDateLabel: string; // "4月20日（月）"
+  furikaeTime: string; // "18:30"
   periodTitle?: string;
 }): Promise<void> {
   const supabaseAdmin = getSupabaseAdmin();
@@ -416,7 +415,9 @@ export async function createFurikaeCalendarEvents(params: {
   );
 
   if (matchedTokens.length === 0) {
-    console.log(`[google-calendar] 教室メール(${schoolEmails.join(', ')})と一致するCalendar連携ユーザーがいません`);
+    console.log(
+      `[google-calendar] 教室メール(${schoolEmails.join(', ')})と一致するCalendar連携ユーザーがいません`
+    );
     return;
   }
 
@@ -429,7 +430,9 @@ export async function createFurikaeCalendarEvents(params: {
     `振替日: ${params.furikaeDateLabel}`,
     `時間: ${params.furikaeTime}`,
     params.periodTitle ? `模試: ${params.periodTitle}` : '',
-  ].filter(Boolean).join('\n');
+  ]
+    .filter(Boolean)
+    .join('\n');
 
   // 小学生は約2時間、中学生は約3時間（デフォルト）
   const isElementary = ['小4', '小5', '小6'].includes(params.grade);
@@ -445,9 +448,13 @@ export async function createFurikaeCalendarEvents(params: {
         durationMinutes,
       });
       if (result.success) {
-        console.log(`[google-calendar] イベント作成成功: user=${token.user_id} (${token.calendar_email}), event=${result.eventId}`);
+        console.log(
+          `[google-calendar] イベント作成成功: user=${token.user_id} (${token.calendar_email}), event=${result.eventId}`
+        );
       } else {
-        console.warn(`[google-calendar] イベント作成失敗: user=${token.user_id}, error=${result.error}`);
+        console.warn(
+          `[google-calendar] イベント作成失敗: user=${token.user_id}, error=${result.error}`
+        );
       }
     } catch (e) {
       console.warn(`[google-calendar] イベント作成エラー: user=${token.user_id}`, e);

@@ -82,7 +82,8 @@ interface StudentLogEntry {
 function formatValue(key: string, value: unknown): string {
   if (value === null || value === undefined || value === '') return '(なし)';
   if (key === 'grade' && typeof value === 'number') return GRADE_LABELS[value] ?? String(value);
-  if (key === 'status' && typeof value === 'string') return STATUS_LABELS[value as keyof typeof STATUS_LABELS] ?? value;
+  if (key === 'status' && typeof value === 'string')
+    return STATUS_LABELS[value as keyof typeof STATUS_LABELS] ?? value;
   if (key === 'is_programming') return value === true ? '受講中' : '未受講';
   if (typeof value === 'boolean') return value ? 'あり' : 'なし';
   return String(value);

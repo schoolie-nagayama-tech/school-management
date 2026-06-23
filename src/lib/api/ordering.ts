@@ -27,8 +27,8 @@ export async function getOrders(
   const targetSchoolIds = Array.isArray(schoolIds)
     ? schoolIds
     : schoolIds
-    ? [schoolIds]
-    : [getDefaultSchoolId()];
+      ? [schoolIds]
+      : [getDefaultSchoolId()];
 
   let query = supabase
     .from('material_orders')
@@ -55,7 +55,11 @@ export async function getOrders(
 
   if (error) {
     // テーブルが存在しない場合は空配列を返す
-    if (error.code === 'PGRST116' || error.code === '42501' || error.message.includes('schema cache')) {
+    if (
+      error.code === 'PGRST116' ||
+      error.code === '42501' ||
+      error.message.includes('schema cache')
+    ) {
       console.warn('material_ordersテーブルの取得に失敗しました（無視します）:', error);
       return [];
     }
@@ -100,7 +104,7 @@ export async function createOrder(
     .insert({
       school_id: targetSchoolId,
       material_id: order.material_id,
-      student_id: isSample ? null : (order.student_id || null),
+      student_id: isSample ? null : order.student_id || null,
       is_sample: isSample,
       quantity: order.quantity ?? 1,
       status: 'unconfirmed' as OrderStatus,
@@ -152,7 +156,9 @@ export async function buildDistributorOrderRows(
 ): Promise<DistributorOrderRow[]> {
   const isExcluded = (name: string) => EXCLUDED_MATERIAL_KEYWORDS.some((kw) => name.includes(kw));
   // 別取次の教材（フォレスタ等）は最初に除外する。materials.name は「教材名 | …」のラベルなので名前判定に使える。
-  const active = orders.filter((o) => o.status !== 'cancelled' && !isExcluded(o.material?.name ?? ''));
+  const active = orders.filter(
+    (o) => o.status !== 'cancelled' && !isExcluded(o.material?.name ?? '')
+  );
   if (active.length === 0) return [];
 
   // material_id → textbooks の構造化フィールド（版元/教材名/教科/学年）
@@ -173,15 +179,28 @@ export async function buildDistributorOrderRows(
     material_id: string | null;
   }[]) {
     if (t.material_id && !tbByMaterial.has(t.material_id)) {
-      tbByMaterial.set(t.material_id, { name: t.name, publisher: t.publisher, subject: t.subject, grade: t.grade });
+      tbByMaterial.set(t.material_id, {
+        name: t.name,
+        publisher: t.publisher,
+        subject: t.subject,
+        grade: t.grade,
+      });
     }
   }
 
   // materials.name ラベルの逆パース（textbooks を引けなかった場合のフォールバック）。
   // ラベル形式は formatTextbookLabel と同じ「名前 | [準拠 |] 学年 | 科目」（publisher=準拠は存在する時だけ index1 に入る）。
-  const parseLabel = (label: string): { name: string; publisher: string; grade: string; subject: string } => {
+  const parseLabel = (
+    label: string
+  ): { name: string; publisher: string; grade: string; subject: string } => {
     const p = label.split(' | ').map((s) => s.trim());
-    if (p.length >= 4) return { name: p.slice(0, p.length - 3).join(' | '), publisher: p[p.length - 3], grade: p[p.length - 2], subject: p[p.length - 1] };
+    if (p.length >= 4)
+      return {
+        name: p.slice(0, p.length - 3).join(' | '),
+        publisher: p[p.length - 3],
+        grade: p[p.length - 2],
+        subject: p[p.length - 1],
+      };
     if (p.length === 3) return { name: p[0], publisher: '', grade: p[1], subject: p[2] };
     if (p.length === 2) return { name: p[0], publisher: '', grade: '', subject: p[1] };
     return { name: label, publisher: '', grade: '', subject: '' };
@@ -258,17 +277,41 @@ export async function getProposalOrderCandidates(
 
   const studentIds = Array.from(new Set(inputs.map((i) => i.studentId)));
   const textbookIds = Array.from(new Set(inputs.map((i) => i.textbookId)));
-  const inputSchoolIds = Array.from(new Set(inputs.map((i) => i.schoolId).filter((s): s is string => !!s)));
+  const inputSchoolIds = Array.from(
+    new Set(inputs.map((i) => i.schoolId).filter((s): s is string => !!s))
+  );
 
   // テキスト詳細（material_id + 名前/学年/科目/出版社）。発注教材の名前照合に使う。
-  const tbDetail = new Map<number, { material_id: string | null; name: string; grade: string | null; subject: string | null; publisher: string | null }>();
+  const tbDetail = new Map<
+    number,
+    {
+      material_id: string | null;
+      name: string;
+      grade: string | null;
+      subject: string | null;
+      publisher: string | null;
+    }
+  >();
   {
     const { data } = await supabase
       .from('textbooks')
       .select('id, name, grade, subject, publisher, material_id')
       .in('id', textbookIds);
-    for (const t of (data ?? []) as { id: number; name: string; grade: string | null; subject: string | null; publisher: string | null; material_id: string | null }[]) {
-      tbDetail.set(t.id, { material_id: t.material_id, name: t.name, grade: t.grade, subject: t.subject, publisher: t.publisher });
+    for (const t of (data ?? []) as {
+      id: number;
+      name: string;
+      grade: string | null;
+      subject: string | null;
+      publisher: string | null;
+      material_id: string | null;
+    }[]) {
+      tbDetail.set(t.id, {
+        material_id: t.material_id,
+        name: t.name,
+        grade: t.grade,
+        subject: t.subject,
+        publisher: t.publisher,
+      });
     }
   }
 
@@ -298,7 +341,10 @@ export async function getProposalOrderCandidates(
     return parts.join(' | ');
   };
   // 既存 material の解決（material_id 優先、無ければラベル名で照合）。無ければ null（発注時に作成）。
-  const resolveExistingMaterialId = (textbookId: number, fallback: string | null): string | null => {
+  const resolveExistingMaterialId = (
+    textbookId: number,
+    fallback: string | null
+  ): string | null => {
     const tb = tbDetail.get(textbookId);
     if (tb?.material_id) return tb.material_id;
     const label = labelOf(textbookId);
@@ -311,7 +357,9 @@ export async function getProposalOrderCandidates(
     existingId: resolveExistingMaterialId(i.textbookId, i.materialId),
     label: labelOf(i.textbookId),
   }));
-  const materialIds = Array.from(new Set(perInput.map((p) => p.existingId).filter((m): m is string => !!m)));
+  const materialIds = Array.from(
+    new Set(perInput.map((p) => p.existingId).filter((m): m is string => !!m))
+  );
 
   // 「所持している(is_owned=true)」教材は発注しない。track_progress(進行表管理)とは独立。
   // 公開しただけ(所持してないけど管理する=is_owned=false)のテキストは発注候補に含める。
@@ -354,7 +402,7 @@ export async function getProposalOrderCandidates(
       // 既存があればその id、無ければ null（発注時に label から作成）
       materialId: existingId,
       // 表示・作成に使う教材名（既存があればその名、無ければラベル）
-      materialName: existingId ? matNameById.get(existingId) ?? label : label,
+      materialName: existingId ? (matNameById.get(existingId) ?? label) : label,
       alreadyOwned,
       hasOrder,
       needsOrder,
@@ -436,7 +484,13 @@ export async function createOrdersForCandidates(
  * 発注を作成し、「教材発注」請求項目の生徒セルに教材名を自動反映する
  */
 export async function createOrderWithBilling(
-  order: { material_id: string; student_id?: string | null; is_sample?: boolean; quantity?: number; notes?: string },
+  order: {
+    material_id: string;
+    student_id?: string | null;
+    is_sample?: boolean;
+    quantity?: number;
+    notes?: string;
+  },
   billingPeriodId: string,
   schoolId?: string
 ): Promise<{ order: MaterialOrder; billingItem: BillingItem | null }> {
@@ -535,15 +589,13 @@ export async function createOrderWithBilling(
         .update({ value_text: valueText, is_billed: false })
         .eq('id', existingBilling.id);
     } else {
-      await supabase
-        .from('student_billings')
-        .insert({
-          school_id: targetSchoolId,
-          student_id: order.student_id,
-          billing_item_id: billingItem.id,
-          is_billed: false,
-          value_text: valueText,
-        });
+      await supabase.from('student_billings').insert({
+        school_id: targetSchoolId,
+        student_id: order.student_id,
+        billing_item_id: billingItem.id,
+        is_billed: false,
+        value_text: valueText,
+      });
     }
   } catch (error) {
     // 請求連携に失敗しても発注自体は成功として返す
@@ -556,10 +608,7 @@ export async function createOrderWithBilling(
 /**
  * 発注ステータスを更新
  */
-export async function updateOrderStatus(
-  id: string,
-  status: OrderStatus
-): Promise<MaterialOrder> {
+export async function updateOrderStatus(id: string, status: OrderStatus): Promise<MaterialOrder> {
   const now = new Date().toISOString();
 
   // 在庫連携のため、先に発注情報を取得
@@ -641,7 +690,11 @@ export async function updateOrderStatus(
   // 配布時: 所持教材に「所持(is_owned=true)」として登録（配布したら所持済み）
   if (status === 'distributed' && existingOrder.student_id) {
     try {
-      await markMaterialOwned(existingOrder.material_id, existingOrder.student_id, existingOrder.school_id);
+      await markMaterialOwned(
+        existingOrder.material_id,
+        existingOrder.student_id,
+        existingOrder.school_id
+      );
     } catch (err) {
       console.error('配布時の所持登録に失敗しました:', err);
     }
@@ -669,10 +722,7 @@ export async function updateOrderStatus(
  * 発注を削除（unconfirmedのみ）
  */
 export async function deleteOrder(id: string): Promise<void> {
-  const { error } = await supabase
-    .from('material_orders')
-    .delete()
-    .eq('id', id);
+  const { error } = await supabase.from('material_orders').delete().eq('id', id);
 
   if (error) {
     throw new Error(getUserErrorMessage(error, '発注の削除に失敗しました'));
@@ -704,10 +754,7 @@ export async function createBulkOrders(
     distributed_at: null,
   }));
 
-  const { data, error } = await supabase
-    .from('material_orders')
-    .insert(inserts)
-    .select();
+  const { data, error } = await supabase.from('material_orders').insert(inserts).select();
 
   if (error) {
     throw new Error(getUserErrorMessage(error, '一括発注の作成に失敗しました'));
@@ -761,7 +808,10 @@ export async function getStudentTextbooks(
  * textbooks.material_id 優先、無ければ material 名のラベル(名前 | [出版社 |] 学年 | 科目)を
  * 分解して name/grade/subject で照合する。解決できなければ null。
  */
-async function resolveTextbookIdForMaterial(materialId: string, materialName?: string): Promise<number | null> {
+async function resolveTextbookIdForMaterial(
+  materialId: string,
+  materialName?: string
+): Promise<number | null> {
   const { data: linked } = await supabase
     .from('textbooks')
     .select('id')
@@ -772,13 +822,20 @@ async function resolveTextbookIdForMaterial(materialId: string, materialName?: s
 
   let name = materialName;
   if (!name) {
-    const { data: mat } = await supabase.from('materials').select('name').eq('id', materialId).maybeSingle();
+    const { data: mat } = await supabase
+      .from('materials')
+      .select('name')
+      .eq('id', materialId)
+      .maybeSingle();
     name = (mat as { name: string } | null)?.name;
   }
   if (!name) return null;
 
   // ラベルを分解: 末尾=科目、その前=学年、先頭=名前（出版社は無視）
-  const parts = name.split(' | ').map((s) => s.trim()).filter(Boolean);
+  const parts = name
+    .split(' | ')
+    .map((s) => s.trim())
+    .filter(Boolean);
   if (parts.length === 0) return null;
   const tbName = parts[0];
   const subject = parts.length >= 2 ? parts[parts.length - 1] : null;
@@ -795,7 +852,11 @@ async function resolveTextbookIdForMaterial(materialId: string, materialName?: s
  * 対応テキストを解決し、st があれば is_owned=true に更新、無ければ作成する（track_progress は触らない）。
  * 解決できない場合は静かにスキップ（フリーテキスト教材名など）。
  */
-async function markMaterialOwned(materialId: string, studentId: string, fallbackSchoolId: string): Promise<void> {
+async function markMaterialOwned(
+  materialId: string,
+  studentId: string,
+  fallbackSchoolId: string
+): Promise<void> {
   const textbookId = await resolveTextbookIdForMaterial(materialId);
   if (textbookId == null) return;
 
@@ -807,9 +868,16 @@ async function markMaterialOwned(materialId: string, studentId: string, fallback
     .maybeSingle();
 
   if (existing) {
-    await supabase.from('student_textbooks').update({ is_owned: true }).eq('id', (existing as { id: string }).id);
+    await supabase
+      .from('student_textbooks')
+      .update({ is_owned: true })
+      .eq('id', (existing as { id: string }).id);
   } else {
-    const { data: student } = await supabase.from('students').select('school_id').eq('id', studentId).maybeSingle();
+    const { data: student } = await supabase
+      .from('students')
+      .select('school_id')
+      .eq('id', studentId)
+      .maybeSingle();
     const stSchoolId = (student as { school_id: string } | null)?.school_id ?? fallbackSchoolId;
     await supabase.from('student_textbooks').insert({
       school_id: stSchoolId,
@@ -822,8 +890,14 @@ async function markMaterialOwned(materialId: string, studentId: string, fallback
 
   // 発注教材リンクを保存（次回以降の解決を確実に）
   try {
-    await supabase.from('textbooks').update({ material_id: materialId }).eq('id', textbookId).is('material_id', null);
-  } catch { /* リンク保存失敗は無視 */ }
+    await supabase
+      .from('textbooks')
+      .update({ material_id: materialId })
+      .eq('id', textbookId)
+      .is('material_id', null);
+  } catch {
+    /* リンク保存失敗は無視 */
+  }
 }
 
 /**
@@ -884,7 +958,9 @@ export async function setOrderedTextbookProgress(
       .update({ material_id: materialId })
       .eq('id', textbookId)
       .is('material_id', null);
-  } catch { /* リンク保存失敗は無視 */ }
+  } catch {
+    /* リンク保存失敗は無視 */
+  }
 }
 
 /**
@@ -986,15 +1062,13 @@ async function registerStudentTextbook(
         .maybeSingle();
       const stSchoolId = (student as { school_id: string } | null)?.school_id ?? schoolId;
 
-      await supabase
-        .from('student_textbooks')
-        .insert({
-          school_id: stSchoolId,
-          student_id: studentId,
-          textbook_id: textbook.id,
-          is_active: true,
-          track_progress: false,
-        });
+      await supabase.from('student_textbooks').insert({
+        school_id: stSchoolId,
+        student_id: studentId,
+        textbook_id: textbook.id,
+        is_active: true,
+        track_progress: false,
+      });
     }
   }
 }
@@ -1052,14 +1126,12 @@ async function onMaterialDistributed(
       .update({ value_number: 1, updated_at: new Date().toISOString() })
       .eq('id', existing.id);
   } else {
-    await supabase
-      .from('student_billings')
-      .insert({
-        school_id: schoolId,
-        student_id: studentId,
-        billing_item_id: vocabItem.id,
-        is_billed: false,
-        value_number: 1,
-      });
+    await supabase.from('student_billings').insert({
+      school_id: schoolId,
+      student_id: studentId,
+      billing_item_id: vocabItem.id,
+      is_billed: false,
+      value_number: 1,
+    });
   }
 }

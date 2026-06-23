@@ -14,21 +14,38 @@ import AccessDenied from '@/components/AccessDenied';
 import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { ChevronUp, ChevronDown, ChevronsUpDown, Search, X, Filter, List, Users, SlidersHorizontal } from 'lucide-react';
+import {
+  ChevronUp,
+  ChevronDown,
+  ChevronsUpDown,
+  Search,
+  X,
+  Filter,
+  List,
+  Users,
+  SlidersHorizontal,
+} from 'lucide-react';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 
 // フォーム種別 → フォーム詳細URLパス（/forms/responses/[path]/[period]）
 const FORM_TYPE_TO_PATH: Record<string, string> = {
-  mogi: 'mogi',       // Vもぎ申込
-  moshi: 'moshi',     // 模試申込
+  mogi: 'mogi', // Vもぎ申込
+  moshi: 'moshi', // 模試申込
   zoukoma: 'zoukoma', // 増コマ申込
-  youbi: 'youbi',     // 曜日変更
+  youbi: 'youbi', // 曜日変更
   shukaisu: 'shukaisu', // 週回数変更
-  soudan: 'soudan',   // お客様相談
-  kyozai: 'kyozai',   // 教材販売
+  soudan: 'soudan', // お客様相談
+  kyozai: 'kyozai', // 教材販売
 };
 
-type SortKey = 'created_at' | 'form_type' | 'form_period' | 'school' | 'student_name' | 'grade' | 'status';
+type SortKey =
+  | 'created_at'
+  | 'form_type'
+  | 'form_period'
+  | 'school'
+  | 'student_name'
+  | 'grade'
+  | 'status';
 type SortOrder = 'asc' | 'desc';
 
 type ProcessStatus = 'all' | 'unprocessed' | 'processed';
@@ -52,42 +69,85 @@ const QUICK_FILTERS: QuickFilter[] = [
     label: '未処理',
     color: 'border-yellow-300 text-yellow-800 bg-yellow-50 hover:bg-yellow-100',
     activeColor: 'bg-yellow-500 text-white border-yellow-500',
-    filters: { formType: 'all', period: 'all', grade: 'all', linkedStatus: 'all', chargedStatus: 'all', processStatus: 'unprocessed' },
+    filters: {
+      formType: 'all',
+      period: 'all',
+      grade: 'all',
+      linkedStatus: 'all',
+      chargedStatus: 'all',
+      processStatus: 'unprocessed',
+    },
   },
   {
     label: '未計上',
     color: 'border-red-300 text-red-700 bg-red-50 hover:bg-red-100',
     activeColor: 'bg-red-500 text-white border-red-500',
-    filters: { formType: 'all', period: 'all', grade: 'all', linkedStatus: 'all', chargedStatus: 'not_charged', processStatus: 'all' },
+    filters: {
+      formType: 'all',
+      period: 'all',
+      grade: 'all',
+      linkedStatus: 'all',
+      chargedStatus: 'not_charged',
+      processStatus: 'all',
+    },
   },
   {
     label: '計上済み',
     color: 'border-green-300 text-green-700 bg-green-50 hover:bg-green-100',
     activeColor: 'bg-green-500 text-white border-green-500',
-    filters: { formType: 'all', period: 'all', grade: 'all', linkedStatus: 'all', chargedStatus: 'charged', processStatus: 'all' },
+    filters: {
+      formType: 'all',
+      period: 'all',
+      grade: 'all',
+      linkedStatus: 'all',
+      chargedStatus: 'charged',
+      processStatus: 'all',
+    },
   },
   {
     label: '増コマ・未計上',
     color: 'border-gray-300 text-gray-700 bg-surface-raised hover:bg-gray-50',
     activeColor: 'bg-ink text-white border-ink',
-    filters: { formType: 'zoukoma', period: 'all', grade: 'all', linkedStatus: 'all', chargedStatus: 'not_charged', processStatus: 'all' },
+    filters: {
+      formType: 'zoukoma',
+      period: 'all',
+      grade: 'all',
+      linkedStatus: 'all',
+      chargedStatus: 'not_charged',
+      processStatus: 'all',
+    },
   },
   {
     label: '模試・未計上',
     color: 'border-gray-300 text-gray-700 bg-surface-raised hover:bg-gray-50',
     activeColor: 'bg-ink text-white border-ink',
-    filters: { formType: 'moshi', period: 'all', grade: 'all', linkedStatus: 'all', chargedStatus: 'not_charged', processStatus: 'all' },
+    filters: {
+      formType: 'moshi',
+      period: 'all',
+      grade: 'all',
+      linkedStatus: 'all',
+      chargedStatus: 'not_charged',
+      processStatus: 'all',
+    },
   },
   {
     label: 'Vもぎ・未計上',
     color: 'border-gray-300 text-gray-700 bg-surface-raised hover:bg-gray-50',
     activeColor: 'bg-ink text-white border-ink',
-    filters: { formType: 'mogi', period: 'all', grade: 'all', linkedStatus: 'all', chargedStatus: 'not_charged', processStatus: 'all' },
+    filters: {
+      formType: 'mogi',
+      period: 'all',
+      grade: 'all',
+      linkedStatus: 'all',
+      chargedStatus: 'not_charged',
+      processStatus: 'all',
+    },
   },
 ];
 
 function getSortIcon(currentKey: SortKey, key: SortKey, order: SortOrder) {
-  if (currentKey !== key) return <ChevronsUpDown className="h-4 w-4 inline-block ml-1 opacity-50" />;
+  if (currentKey !== key)
+    return <ChevronsUpDown className="h-4 w-4 inline-block ml-1 opacity-50" />;
   return order === 'asc' ? (
     <ChevronUp className="h-4 w-4 inline-block ml-1" />
   ) : (
@@ -225,19 +285,17 @@ export default function ResponsesPage() {
   const [filterFormType, setFilterFormType] = useState<FormType | 'all'>(
     (searchParams.get('type') as FormType) || 'all'
   );
-  const [filterPeriod, setFilterPeriod] = useState<string>(
-    searchParams.get('period') || 'all'
-  );
+  const [filterPeriod, setFilterPeriod] = useState<string>(searchParams.get('period') || 'all');
   const [filterGrade, setFilterGrade] = useState<number | 'all'>(() => {
     const g = searchParams.get('grade');
     return g ? Number(g) : 'all';
   });
-  const [filterLinkedStatus, setFilterLinkedStatus] = useState<
-    'all' | 'linked' | 'unlinked'
-  >((searchParams.get('linked') as 'all' | 'linked' | 'unlinked') || 'all');
-  const [filterChargedStatus, setFilterChargedStatus] = useState<
-    'all' | 'charged' | 'not_charged'
-  >((searchParams.get('charged') as 'all' | 'charged' | 'not_charged') || 'all');
+  const [filterLinkedStatus, setFilterLinkedStatus] = useState<'all' | 'linked' | 'unlinked'>(
+    (searchParams.get('linked') as 'all' | 'linked' | 'unlinked') || 'all'
+  );
+  const [filterChargedStatus, setFilterChargedStatus] = useState<'all' | 'charged' | 'not_charged'>(
+    (searchParams.get('charged') as 'all' | 'charged' | 'not_charged') || 'all'
+  );
   const [filterProcessStatus, setFilterProcessStatus] = useState<ProcessStatus>(
     (searchParams.get('process') as ProcessStatus) || 'unprocessed'
   );
@@ -276,7 +334,21 @@ export default function ResponsesPage() {
     const qs = params.toString();
     const newUrl = qs ? `?${qs}` : '/responses';
     router.replace(newUrl, { scroll: false });
-  }, [filterFormType, filterPeriod, filterGrade, filterLinkedStatus, filterChargedStatus, filterProcessStatus, filterDateFrom, filterDateTo, searchName, viewMode, sortKey, sortOrder, router]);
+  }, [
+    filterFormType,
+    filterPeriod,
+    filterGrade,
+    filterLinkedStatus,
+    filterChargedStatus,
+    filterProcessStatus,
+    filterDateFrom,
+    filterDateTo,
+    searchName,
+    viewMode,
+    sortKey,
+    sortOrder,
+    router,
+  ]);
 
   const handleSort = useCallback((key: SortKey) => {
     setSortKey((prev) => {
@@ -302,17 +374,28 @@ export default function ResponsesPage() {
   }, []);
 
   // 現在のフィルター状態がクイックフィルターと一致するか
-  const isQuickFilterActive = useCallback((qf: QuickFilter) => {
-    return (
-      filterFormType === qf.filters.formType &&
-      filterPeriod === qf.filters.period &&
-      filterGrade === qf.filters.grade &&
-      filterLinkedStatus === qf.filters.linkedStatus &&
-      filterChargedStatus === qf.filters.chargedStatus &&
-      filterProcessStatus === qf.filters.processStatus &&
-      !searchName
-    );
-  }, [filterFormType, filterPeriod, filterGrade, filterLinkedStatus, filterChargedStatus, filterProcessStatus, searchName]);
+  const isQuickFilterActive = useCallback(
+    (qf: QuickFilter) => {
+      return (
+        filterFormType === qf.filters.formType &&
+        filterPeriod === qf.filters.period &&
+        filterGrade === qf.filters.grade &&
+        filterLinkedStatus === qf.filters.linkedStatus &&
+        filterChargedStatus === qf.filters.chargedStatus &&
+        filterProcessStatus === qf.filters.processStatus &&
+        !searchName
+      );
+    },
+    [
+      filterFormType,
+      filterPeriod,
+      filterGrade,
+      filterLinkedStatus,
+      filterChargedStatus,
+      filterProcessStatus,
+      searchName,
+    ]
+  );
 
   // 処理状態フィルタを適用
   const processFilteredResponses = useMemo(() => {
@@ -331,7 +414,9 @@ export default function ResponsesPage() {
         case 'created_at':
           aVal = new Date(a.created_at).getTime();
           bVal = new Date(b.created_at).getTime();
-          return sortOrder === 'asc' ? (aVal as number) - (bVal as number) : (bVal as number) - (aVal as number);
+          return sortOrder === 'asc'
+            ? (aVal as number) - (bVal as number)
+            : (bVal as number) - (aVal as number);
         case 'form_type':
           aVal = FORM_TYPE_LABELS[a.form_type] ?? a.form_type;
           bVal = FORM_TYPE_LABELS[b.form_type] ?? b.form_type;
@@ -347,10 +432,10 @@ export default function ResponsesPage() {
         case 'student_name':
           aVal = a.linked_student
             ? `${a.linked_student.last_name} ${a.linked_student.first_name}`
-            : a.student_name ?? '';
+            : (a.student_name ?? '');
           bVal = b.linked_student
             ? `${b.linked_student.last_name} ${b.linked_student.first_name}`
-            : b.student_name ?? '';
+            : (b.student_name ?? '');
           break;
         case 'grade':
           aVal = a.grade ?? 0;
@@ -393,7 +478,7 @@ export default function ResponsesPage() {
       // 紐付け済みならlinked_student_idでグルーピング、なければstudent_name+school_idで
       const name = r.linked_student
         ? `${r.linked_student.last_name} ${r.linked_student.first_name}`
-        : r.student_name ?? '不明';
+        : (r.student_name ?? '不明');
       const key = r.linked_student_id
         ? `linked_${r.linked_student_id}`
         : `name_${name}_${r.school_id}`;
@@ -481,17 +566,28 @@ export default function ResponsesPage() {
 
       // 教室名マップを取得（一覧で教室名表示用）
       const map: Record<string, string> = {};
-      masterSchools.forEach((s) => { map[s.id] = s.name; });
+      masterSchools.forEach((s) => {
+        map[s.id] = s.name;
+      });
       setSchoolsMap(map);
     } catch (error) {
       console.error('Error fetching data:', error);
-      setErrorMessage(
-        getUserErrorMessage(error, 'データの取得に失敗しました')
-      );
+      setErrorMessage(getUserErrorMessage(error, 'データの取得に失敗しました'));
     } finally {
       setIsLoading(false);
     }
-  }, [getSelectedSchoolIds, filterFormType, filterPeriod, filterGrade, filterLinkedStatus, filterChargedStatus, filterDateFrom, filterDateTo, searchName, masterSchools]);
+  }, [
+    getSelectedSchoolIds,
+    filterFormType,
+    filterPeriod,
+    filterGrade,
+    filterLinkedStatus,
+    filterChargedStatus,
+    filterDateFrom,
+    filterDateTo,
+    searchName,
+    masterSchools,
+  ]);
 
   useEffect(() => {
     if (selectedSchoolId !== null) {
@@ -519,9 +615,7 @@ export default function ResponsesPage() {
       }
     });
     return Object.fromEntries(
-      Object.entries(byFormType).filter(
-        ([, stats]) => stats.total > 0 && stats.unprocessed > 0
-      )
+      Object.entries(byFormType).filter(([, stats]) => stats.total > 0 && stats.unprocessed > 0)
     );
   })();
 
@@ -638,7 +732,10 @@ export default function ResponsesPage() {
               {searchInput && (
                 <button
                   type="button"
-                  onClick={() => { setSearchInput(''); setSearchName(''); }}
+                  onClick={() => {
+                    setSearchInput('');
+                    setSearchName('');
+                  }}
                   className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                 >
                   <X className="h-4 w-4" />
@@ -679,12 +776,17 @@ export default function ResponsesPage() {
                 <label className="block text-xs font-medium text-text-heading mb-1">種別</label>
                 <select
                   value={filterFormType}
-                  onChange={(e) => { setFilterFormType(e.target.value as FormType | 'all'); setFilterPeriod('all'); }}
+                  onChange={(e) => {
+                    setFilterFormType(e.target.value as FormType | 'all');
+                    setFilterPeriod('all');
+                  }}
                   className="w-full px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary"
                 >
                   <option value="all">すべて</option>
                   {Object.entries(FORM_TYPE_LABELS).map(([key, label]) => (
-                    <option key={key} value={key}>{label}</option>
+                    <option key={key} value={key}>
+                      {label}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -697,7 +799,9 @@ export default function ResponsesPage() {
                   disabled={filterFormType === 'all' || formPeriods.length === 0}
                   className="w-full px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-surface-hover disabled:cursor-not-allowed"
                 >
-                  <option value="all">{filterFormType === 'all' ? '種別を先に選択' : 'すべて'}</option>
+                  <option value="all">
+                    {filterFormType === 'all' ? '種別を先に選択' : 'すべて'}
+                  </option>
                   {formPeriods.map((period) => (
                     <option key={period.period_key} value={period.period_key}>
                       {period.period_key} {period.title}
@@ -710,12 +814,16 @@ export default function ResponsesPage() {
                 <label className="block text-xs font-medium text-text-heading mb-1">学年</label>
                 <select
                   value={filterGrade}
-                  onChange={(e) => setFilterGrade(e.target.value === 'all' ? 'all' : parseInt(e.target.value, 10))}
+                  onChange={(e) =>
+                    setFilterGrade(e.target.value === 'all' ? 'all' : parseInt(e.target.value, 10))
+                  }
                   className="w-full px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary"
                 >
                   <option value="all">すべて</option>
                   {Object.entries(GRADE_LABELS).map(([key, label]) => (
-                    <option key={key} value={key}>{label}</option>
+                    <option key={key} value={key}>
+                      {label}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -724,7 +832,9 @@ export default function ResponsesPage() {
                 <label className="block text-xs font-medium text-text-heading mb-1">紐付け</label>
                 <select
                   value={filterLinkedStatus}
-                  onChange={(e) => setFilterLinkedStatus(e.target.value as 'all' | 'linked' | 'unlinked')}
+                  onChange={(e) =>
+                    setFilterLinkedStatus(e.target.value as 'all' | 'linked' | 'unlinked')
+                  }
                   className="w-full px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary"
                 >
                   <option value="all">すべて</option>
@@ -737,7 +847,9 @@ export default function ResponsesPage() {
                 <label className="block text-xs font-medium text-text-heading mb-1">計上</label>
                 <select
                   value={filterChargedStatus}
-                  onChange={(e) => setFilterChargedStatus(e.target.value as 'all' | 'charged' | 'not_charged')}
+                  onChange={(e) =>
+                    setFilterChargedStatus(e.target.value as 'all' | 'charged' | 'not_charged')
+                  }
                   className="w-full px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary"
                 >
                   <option value="all">すべて</option>
@@ -783,11 +895,16 @@ export default function ResponsesPage() {
               <button
                 type="button"
                 onClick={() => {
-                  setFilterFormType('all'); setFilterPeriod('all'); setFilterGrade('all');
-                  setFilterLinkedStatus('all'); setFilterChargedStatus('all');
+                  setFilterFormType('all');
+                  setFilterPeriod('all');
+                  setFilterGrade('all');
+                  setFilterLinkedStatus('all');
+                  setFilterChargedStatus('all');
                   setFilterProcessStatus('unprocessed');
-                  setFilterDateFrom(''); setFilterDateTo('');
-                  setSearchInput(''); setSearchName('');
+                  setFilterDateFrom('');
+                  setFilterDateTo('');
+                  setSearchInput('');
+                  setSearchName('');
                 }}
                 className="text-xs text-blue-600 hover:text-blue-800 transition-colors duration-150"
               >
@@ -857,11 +974,15 @@ export default function ResponsesPage() {
           {isLoading ? (
             <Loading size="md" />
           ) : processFilteredResponses.length === 0 ? (
-            <div className="text-center py-8 text-text-body">該当する回答がありません。フィルターを変更してください。</div>
+            <div className="text-center py-8 text-text-body">
+              該当する回答がありません。フィルターを変更してください。
+            </div>
           ) : viewMode === 'grouped' ? (
             /* 生徒別ビュー */
             <div className="space-y-3">
-              <p className="text-sm text-gray-500 mb-2">{groupedByStudent.length}名の生徒 / {processFilteredResponses.length}件の回答</p>
+              <p className="text-sm text-gray-500 mb-2">
+                {groupedByStudent.length}名の生徒 / {processFilteredResponses.length}件の回答
+              </p>
               {groupedByStudent.map((group) => (
                 <div
                   key={group.studentKey}
@@ -870,23 +991,33 @@ export default function ResponsesPage() {
                   }`}
                 >
                   {/* 生徒ヘッダー */}
-                  <div className={`px-4 py-2.5 flex items-center justify-between ${
-                    group.hasUncharged ? 'bg-red-50' : 'bg-gray-50'
-                  }`}>
+                  <div
+                    className={`px-4 py-2.5 flex items-center justify-between ${
+                      group.hasUncharged ? 'bg-red-50' : 'bg-gray-50'
+                    }`}
+                  >
                     <div className="flex items-center gap-2 min-w-0">
-                      <span className="font-semibold text-sm text-text-heading truncate">{group.studentName}</span>
+                      <span className="font-semibold text-sm text-text-heading truncate">
+                        {group.studentName}
+                      </span>
                       <span className="text-xs text-gray-500 bg-surface-raised px-1.5 py-0.5 rounded border border-gray-200 shrink-0">
                         {GRADE_LABELS[group.grade] || group.grade}
                       </span>
-                      <span className="hidden sm:inline text-xs text-gray-400 shrink-0">{group.schoolName}</span>
+                      <span className="hidden sm:inline text-xs text-gray-400 shrink-0">
+                        {group.schoolName}
+                      </span>
                     </div>
                     <div className="flex items-center gap-1.5 shrink-0 ml-2">
                       <span className="text-xs text-gray-400">{group.responses.length}件</span>
                       {group.hasUncharged && (
-                        <span className="px-1.5 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700">未計上</span>
+                        <span className="px-1.5 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700">
+                          未計上
+                        </span>
                       )}
                       {group.hasUnprocessed && !group.hasUncharged && (
-                        <span className="px-1.5 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">未処理</span>
+                        <span className="px-1.5 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
+                          未処理
+                        </span>
                       )}
                     </div>
                   </div>
@@ -902,11 +1033,15 @@ export default function ResponsesPage() {
                           <span className="text-xs font-medium text-text-heading shrink-0">
                             {FORM_TYPE_LABELS[response.form_type]}
                           </span>
-                          <span className="text-xs text-gray-400 shrink-0">{response.form_period}</span>
+                          <span className="text-xs text-gray-400 shrink-0">
+                            {response.form_period}
+                          </span>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
                           <ResponseStatusBadges response={response} />
-                          <span className="text-xs text-gray-400">{formatDateTime(response.created_at)}</span>
+                          <span className="text-xs text-gray-400">
+                            {formatDateTime(response.created_at)}
+                          </span>
                         </div>
                       </Link>
                     ))}
@@ -990,9 +1125,7 @@ export default function ResponsesPage() {
                         {getSortIcon(sortKey, 'status', sortOrder)}
                       </button>
                     </th>
-                    <th className="border border-border px-4 py-3 text-left">
-                      操作
-                    </th>
+                    <th className="border border-border px-4 py-3 text-left">操作</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1004,9 +1137,7 @@ export default function ResponsesPage() {
                       <td className="border border-border px-4 py-3">
                         {FORM_TYPE_LABELS[response.form_type]}
                       </td>
-                      <td className="border border-border px-4 py-3">
-                        {response.form_period}
-                      </td>
+                      <td className="border border-border px-4 py-3">{response.form_period}</td>
                       <td className="border border-border px-4 py-3">
                         {schoolsMap[response.school_id] ?? '-'}
                       </td>

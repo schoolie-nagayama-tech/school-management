@@ -5,11 +5,13 @@ export function getDaysInMonth(yearMonth: string): number {
 }
 
 // 年月から日付配列を生成
-export function getMonthDates(yearMonth: string): { date: string; dayOfWeek: number; dayLabel: string }[] {
+export function getMonthDates(
+  yearMonth: string
+): { date: string; dayOfWeek: number; dayLabel: string }[] {
   const [year, month] = yearMonth.split('-').map(Number);
   const daysInMonth = getDaysInMonth(yearMonth);
   const dayLabels = ['日', '月', '火', '水', '木', '金', '土'];
-  
+
   const dates = [];
   for (let day = 1; day <= daysInMonth; day++) {
     const date = new Date(year, month - 1, day);
@@ -20,7 +22,7 @@ export function getMonthDates(yearMonth: string): { date: string; dayOfWeek: num
       dayLabel: dayLabels[date.getDay()],
     });
   }
-  
+
   return dates;
 }
 

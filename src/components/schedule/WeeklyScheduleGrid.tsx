@@ -43,9 +43,7 @@ function groupEntriesByTeacher(
   slotId: string,
   teachersMap: Map<string, TeacherCardInfo>
 ): TeacherGroup[] {
-  const filtered = entries.filter(
-    (e) => e.entry_date === date && e.time_slot_id === slotId
-  );
+  const filtered = entries.filter((e) => e.entry_date === date && e.time_slot_id === slotId);
   const byTeacher = new Map<string, TeacherGroup>();
   for (const entry of filtered) {
     // 担当未決定エントリ (teacher_id NULL) は座席表本体から除外。
@@ -59,14 +57,12 @@ function groupEntriesByTeacher(
     const fromEntry = entry.teacher ?? { id: tid, display_name: null, email: null };
     // 講師一覧にいない場合：schedule_entries.teacher_id が user_profiles の誰かを指しているが、
     // role=teacher ではない可能性。JOIN で取得した名前を表示し、未登録であることを示す
-    const teacher =
-      fromList ??
-      {
-        ...fromEntry,
-        display_name: fromEntry.display_name
-          ? `${fromEntry.display_name}（講師未登録）`
-          : '講師未登録',
-      };
+    const teacher = fromList ?? {
+      ...fromEntry,
+      display_name: fromEntry.display_name
+        ? `${fromEntry.display_name}（講師未登録）`
+        : '講師未登録',
+    };
     if (!byTeacher.has(tid)) {
       byTeacher.set(tid, { teacher, entries: [], isAvailableOnly: false });
     }
@@ -87,7 +83,6 @@ export interface TeacherOption {
   teachable_subject_ids?: string[] | null;
   gender?: 'male' | 'female' | 'other' | null;
 }
-
 
 export interface WeeklyScheduleGridProps {
   schoolId: string;
@@ -288,7 +283,9 @@ export function WeeklyScheduleGrid(props: WeeklyScheduleGridProps) {
         // 性別希望
         const preferred = entry.student?.preferred_teacher_gender;
         if (preferred && targetTeacher.gender && targetTeacher.gender !== preferred) {
-          onConstraintViolation?.(`${preferred === 'male' ? '男性' : '女性'}講師希望のため割当不可`);
+          onConstraintViolation?.(
+            `${preferred === 'male' ? '男性' : '女性'}講師希望のため割当不可`
+          );
           return;
         }
       }
@@ -300,9 +297,7 @@ export function WeeklyScheduleGrid(props: WeeklyScheduleGridProps) {
   const teachersForSchool = useMemo(
     () =>
       teachers.filter(
-        (t) =>
-          t.is_active !== false &&
-          t.user_schools?.some((us) => us.school_id === schoolId)
+        (t) => t.is_active !== false && t.user_schools?.some((us) => us.school_id === schoolId)
       ),
     [teachers, schoolId]
   );
@@ -328,12 +323,7 @@ export function WeeklyScheduleGrid(props: WeeklyScheduleGridProps) {
   /** セル (dateStr, slotId) に出勤可能な講師を全員含む teacherGroups */
   const getTeacherGroupsForCell = useCallback(
     (dateStr: string, slotId: string, _slotNumber: number) => {
-      const fromEntries = groupEntriesByTeacher(
-        entries,
-        dateStr,
-        slotId,
-        teachersMap
-      );
+      const fromEntries = groupEntriesByTeacher(entries, dateStr, slotId, teachersMap);
       const cellKey = `${dateStr}-${slotId}`;
       const emptyIds = emptyTeacherSlots[cellKey] ?? [];
       const merged: TeacherGroup[] = [];
@@ -347,8 +337,7 @@ export function WeeklyScheduleGrid(props: WeeklyScheduleGridProps) {
       for (const tid of emptyIds) {
         if (merged.some((m) => m.teacher.id === tid)) continue;
         const teacher = teachersMap.get(tid);
-        if (teacher)
-          merged.push({ teacher, entries: [], isAvailableOnly: true });
+        if (teacher) merged.push({ teacher, entries: [], isAvailableOnly: true });
       }
 
       // (C) 通常シフト提出から「この曜日に出勤可能」な講師を空き枠で自動表示。
@@ -359,8 +348,7 @@ export function WeeklyScheduleGrid(props: WeeklyScheduleGridProps) {
         for (const tid of shiftIds) {
           if (merged.some((m) => m.teacher.id === tid)) continue;
           const teacher = teachersMap.get(tid);
-          if (teacher)
-            merged.push({ teacher, entries: [], isAvailableOnly: true });
+          if (teacher) merged.push({ teacher, entries: [], isAvailableOnly: true });
         }
       }
 
@@ -381,9 +369,7 @@ export function WeeklyScheduleGrid(props: WeeklyScheduleGridProps) {
       transferMode={transferMode}
       activeId={activeId}
       activeEntry={activeEntry}
-      groupEntriesByTeacher={(e, d, s) =>
-        groupEntriesByTeacher(e, d, s, teachersMap)
-      }
+      groupEntriesByTeacher={(e, d, s) => groupEntriesByTeacher(e, d, s, teachersMap)}
       getTeacherGroupsForCell={getTeacherGroupsForCell}
       getUnassignedEntriesForCell={getUnassignedEntriesForCell}
       onDragStart={(e) => setActiveId(String(e.active.id))}

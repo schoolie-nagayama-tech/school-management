@@ -1,10 +1,6 @@
 import { supabase } from '../supabase';
 import { createInterview } from './interviews';
-import type {
-  NottaTranscript,
-  NottaTranscriptWithStudent,
-  InterviewType,
-} from '@/types/database';
+import type { NottaTranscript, NottaTranscriptWithStudent, InterviewType } from '@/types/database';
 
 /**
  * 教室配下の文字起こし一覧を取得（新しい順）
@@ -138,14 +134,19 @@ export async function linkTranscriptToStudent(
   const interviewType = options.interviewType || 'other';
   const interviewDate =
     options.interviewDate ||
-    (transcript.recorded_at ? transcript.recorded_at.slice(0, 10) : new Date().toISOString().slice(0, 10));
+    (transcript.recorded_at
+      ? transcript.recorded_at.slice(0, 10)
+      : new Date().toISOString().slice(0, 10));
 
   // 録音日時は JST 表記に整形（DB は UTC 保存）
   const recordedAtJst = transcript.recorded_at
     ? new Date(transcript.recorded_at).toLocaleString('ja-JP', {
         timeZone: 'Asia/Tokyo',
-        year: 'numeric', month: '2-digit', day: '2-digit',
-        hour: '2-digit', minute: '2-digit',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
       })
     : null;
 
@@ -159,9 +160,7 @@ export async function linkTranscriptToStudent(
 
   const formattedBody = formatNottaTranscript(transcript.transcript);
 
-  const content = [header, '--- Notta 要約 ---', formattedBody]
-    .filter(Boolean)
-    .join('\n\n');
+  const content = [header, '--- Notta 要約 ---', formattedBody].filter(Boolean).join('\n\n');
 
   // 面談記録は「生徒の所属教室」に紐付ける必要がある。
   // transcript.school_id（アップロード時の教室）と student.school_id が違う場合

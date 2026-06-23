@@ -58,12 +58,12 @@ export default function MoshiResponsePage() {
   // フィルター
   const [filterGrade, setFilterGrade] = useState<number | 'all'>('all');
   const [filterExamType, setFilterExamType] = useState<'all' | 'regular' | 'furikae'>('all');
-  const [filterChargedStatus, setFilterChargedStatus] = useState<
-    'all' | 'charged' | 'not_charged'
-  >('all');
-  const [filterLinkedStatus, setFilterLinkedStatus] = useState<
-    'all' | 'linked' | 'unlinked'
-  >('all');
+  const [filterChargedStatus, setFilterChargedStatus] = useState<'all' | 'charged' | 'not_charged'>(
+    'all'
+  );
+  const [filterLinkedStatus, setFilterLinkedStatus] = useState<'all' | 'linked' | 'unlinked'>(
+    'all'
+  );
   const [showArchived, setShowArchived] = useState(false);
   const [archivedCount, setArchivedCount] = useState(0);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -74,7 +74,8 @@ export default function MoshiResponsePage() {
     setErrorMessage('');
     try {
       const schoolIds = getSelectedSchoolIds();
-      const schoolId: string | string[] = schoolIdParam || (schoolIds.length > 0 ? schoolIds : getDefaultSchoolId());
+      const schoolId: string | string[] =
+        schoolIdParam || (schoolIds.length > 0 ? schoolIds : getDefaultSchoolId());
       const filters: MoshiResponseFilters = {
         grade: filterGrade === 'all' ? undefined : filterGrade,
         examType: filterExamType === 'all' ? undefined : filterExamType,
@@ -94,13 +95,20 @@ export default function MoshiResponsePage() {
       setArchivedCount(archivedCountData);
     } catch (error) {
       console.error('Error fetching moshi responses:', error);
-      setErrorMessage(
-        getUserErrorMessage(error, '回答一覧の取得に失敗しました')
-      );
+      setErrorMessage(getUserErrorMessage(error, '回答一覧の取得に失敗しました'));
     } finally {
       setIsLoading(false);
     }
-  }, [getSelectedSchoolIds, schoolIdParam, periodKey, filterGrade, filterExamType, filterChargedStatus, filterLinkedStatus, showArchived]);
+  }, [
+    getSelectedSchoolIds,
+    schoolIdParam,
+    periodKey,
+    filterGrade,
+    filterExamType,
+    filterChargedStatus,
+    filterLinkedStatus,
+    showArchived,
+  ]);
 
   useEffect(() => {
     if (periodKey) {
@@ -117,7 +125,8 @@ export default function MoshiResponsePage() {
     if (response.response_data.exam_type === 'regular') {
       return '通常受験';
     } else {
-      const date = response.response_data.furikae_date_label || response.response_data.furikae_date || '';
+      const date =
+        response.response_data.furikae_date_label || response.response_data.furikae_date || '';
       const time = response.response_data.furikae_time || '';
       return `振替 ${date} ${time}`;
     }
@@ -129,9 +138,7 @@ export default function MoshiResponsePage() {
     const prevStats = stats;
     setResponses((prev) =>
       prev.map((r) =>
-        r.id === responseId
-          ? { ...r, status_checks: { ...r.status_checks, charged } }
-          : r
+        r.id === responseId ? { ...r, status_checks: { ...r.status_checks, charged } } : r
       )
     );
     setStats((s) => ({
@@ -146,11 +153,7 @@ export default function MoshiResponsePage() {
       console.error('Error updating charged status:', err);
       setResponses(prevResponses);
       setStats(prevStats);
-      error(
-        err instanceof Error
-          ? err.message
-          : '計上状態の更新に失敗しました'
-      );
+      error(err instanceof Error ? err.message : '計上状態の更新に失敗しました');
     }
   };
 
@@ -159,9 +162,7 @@ export default function MoshiResponsePage() {
     const prevResponses = responses;
     setResponses((prev) =>
       prev.map((r) =>
-        r.id === responseId
-          ? { ...r, status_checks: { ...r.status_checks, order } }
-          : r
+        r.id === responseId ? { ...r, status_checks: { ...r.status_checks, order } } : r
       )
     );
     try {
@@ -171,11 +172,7 @@ export default function MoshiResponsePage() {
     } catch (err) {
       console.error('Error updating order status:', err);
       setResponses(prevResponses);
-      error(
-        err instanceof Error
-          ? err.message
-          : '発注状態の更新に失敗しました'
-      );
+      error(err instanceof Error ? err.message : '発注状態の更新に失敗しました');
     }
   };
 
@@ -213,9 +210,7 @@ export default function MoshiResponsePage() {
       success('紐付けを解除しました');
     } catch (err) {
       console.error('Error unlinking student:', err);
-      error(
-        getUserErrorMessage(err, '紐付け解除に失敗しました')
-      );
+      error(getUserErrorMessage(err, '紐付け解除に失敗しました'));
     }
   };
 
@@ -254,7 +249,14 @@ export default function MoshiResponsePage() {
       return;
     }
 
-    if (!(await confirm({ title: 'アーカイブ確認', description: `${selectedIds.size}件の回答をアーカイブしますか？`, confirmLabel: 'アーカイブ', variant: 'warning' }))) {
+    if (
+      !(await confirm({
+        title: 'アーカイブ確認',
+        description: `${selectedIds.size}件の回答をアーカイブしますか？`,
+        confirmLabel: 'アーカイブ',
+        variant: 'warning',
+      }))
+    ) {
       return;
     }
 
@@ -276,7 +278,14 @@ export default function MoshiResponsePage() {
   // 回答を完全削除（マネージャー以上のみ）。アーカイブと違い物理削除で復元不可。
   const handleDelete = async (id: string) => {
     if (!permissions?.canDeleteFormResponses) return;
-    if (!(await confirm({ title: '回答削除', description: 'この回答を完全に削除しますか？この操作は取り消せません。', confirmLabel: '削除', variant: 'danger' }))) {
+    if (
+      !(await confirm({
+        title: '回答削除',
+        description: 'この回答を完全に削除しますか？この操作は取り消せません。',
+        confirmLabel: '削除',
+        variant: 'danger',
+      }))
+    ) {
       return;
     }
     setIsProcessing(true);
@@ -299,7 +308,14 @@ export default function MoshiResponsePage() {
       error('削除する回答を選択してください');
       return;
     }
-    if (!(await confirm({ title: '一括削除確認', description: `${selectedIds.size}件の回答を完全に削除しますか？この操作は取り消せません。`, confirmLabel: '削除', variant: 'danger' }))) {
+    if (
+      !(await confirm({
+        title: '一括削除確認',
+        description: `${selectedIds.size}件の回答を完全に削除しますか？この操作は取り消せません。`,
+        confirmLabel: '削除',
+        variant: 'danger',
+      }))
+    ) {
       return;
     }
     setIsProcessing(true);
@@ -319,8 +335,8 @@ export default function MoshiResponsePage() {
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      const activeResponses = responses.filter(r => !r.is_archived);
-      setSelectedIds(new Set(activeResponses.map(r => r.id)));
+      const activeResponses = responses.filter((r) => !r.is_archived);
+      setSelectedIds(new Set(activeResponses.map((r) => r.id)));
     } else {
       setSelectedIds(new Set());
     }
@@ -336,8 +352,9 @@ export default function MoshiResponsePage() {
     setSelectedIds(newSet);
   };
 
-  const activeResponses = responses.filter(r => !r.is_archived);
-  const allSelected = activeResponses.length > 0 && activeResponses.every(r => selectedIds.has(r.id));
+  const activeResponses = responses.filter((r) => !r.is_archived);
+  const allSelected =
+    activeResponses.length > 0 && activeResponses.every((r) => selectedIds.has(r.id));
 
   // テーブル並べ替え（列クリックでソート）
   type SortKey = 'created_at' | 'student_name' | 'grade' | 'exam_type' | 'charged' | 'linked';
@@ -360,8 +377,12 @@ export default function MoshiResponsePage() {
         cmp = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
         break;
       case 'student_name': {
-        const nameA = a.linked_student ? `${a.linked_student.last_name} ${a.linked_student.first_name}` : a.student_name;
-        const nameB = b.linked_student ? `${b.linked_student.last_name} ${b.linked_student.first_name}` : b.student_name;
+        const nameA = a.linked_student
+          ? `${a.linked_student.last_name} ${a.linked_student.first_name}`
+          : a.student_name;
+        const nameB = b.linked_student
+          ? `${b.linked_student.last_name} ${b.linked_student.first_name}`
+          : b.student_name;
         cmp = nameA.localeCompare(nameB, 'ja');
         break;
       }
@@ -369,8 +390,14 @@ export default function MoshiResponsePage() {
         cmp = a.grade - b.grade;
         break;
       case 'exam_type': {
-        const typeA = a.response_data.exam_type === 'regular' ? '0' : `1${a.response_data.furikae_date_label || ''}`;
-        const typeB = b.response_data.exam_type === 'regular' ? '0' : `1${b.response_data.furikae_date_label || ''}`;
+        const typeA =
+          a.response_data.exam_type === 'regular'
+            ? '0'
+            : `1${a.response_data.furikae_date_label || ''}`;
+        const typeB =
+          b.response_data.exam_type === 'regular'
+            ? '0'
+            : `1${b.response_data.furikae_date_label || ''}`;
         cmp = typeA.localeCompare(typeB);
         break;
       }
@@ -386,14 +413,30 @@ export default function MoshiResponsePage() {
     return sortOrder === 'asc' ? cmp : -cmp;
   });
 
-  const SortableTh = ({ label, sortKey: key, className = '' }: { label: string; sortKey: SortKey; className?: string }) => (
+  const SortableTh = ({
+    label,
+    sortKey: key,
+    className = '',
+  }: {
+    label: string;
+    sortKey: SortKey;
+    className?: string;
+  }) => (
     <th
       className={`px-4 py-3 text-left text-xs font-semibold text-text-heading uppercase cursor-pointer select-none hover:bg-border transition-colors duration-150 ${className}`}
       onClick={() => handleSort(key)}
     >
       <span className="inline-flex items-center gap-1">
         {label}
-        {sortKey === key ? (sortOrder === 'asc' ? <span className="text-info">↑</span> : <span className="text-info">↓</span>) : <span className="text-text-faint">↕</span>}
+        {sortKey === key ? (
+          sortOrder === 'asc' ? (
+            <span className="text-info">↑</span>
+          ) : (
+            <span className="text-info">↓</span>
+          )
+        ) : (
+          <span className="text-text-faint">↕</span>
+        )}
       </span>
     </th>
   );
@@ -415,15 +458,11 @@ export default function MoshiResponsePage() {
         <div className="mb-6 bg-surface-raised rounded-xl border border-border p-4">
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4">
             <div>
-              <label className="block text-sm font-medium text-text-heading mb-2">
-                学年
-              </label>
+              <label className="block text-sm font-medium text-text-heading mb-2">学年</label>
               <select
                 value={filterGrade}
                 onChange={(e) =>
-                  setFilterGrade(
-                    e.target.value === 'all' ? 'all' : Number(e.target.value)
-                  )
+                  setFilterGrade(e.target.value === 'all' ? 'all' : Number(e.target.value))
                 }
                 className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-surface-raised text-text-body"
               >
@@ -437,14 +476,10 @@ export default function MoshiResponsePage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-text-heading mb-2">
-                受験方法
-              </label>
+              <label className="block text-sm font-medium text-text-heading mb-2">受験方法</label>
               <select
                 value={filterExamType}
-                onChange={(e) =>
-                  setFilterExamType(e.target.value as 'all' | 'regular' | 'furikae')
-                }
+                onChange={(e) => setFilterExamType(e.target.value as 'all' | 'regular' | 'furikae')}
                 className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-surface-raised text-text-body"
               >
                 <option value="all">全て</option>
@@ -454,15 +489,11 @@ export default function MoshiResponsePage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-text-heading mb-2">
-                計上状態
-              </label>
+              <label className="block text-sm font-medium text-text-heading mb-2">計上状態</label>
               <select
                 value={filterChargedStatus}
                 onChange={(e) =>
-                  setFilterChargedStatus(
-                    e.target.value as 'all' | 'charged' | 'not_charged'
-                  )
+                  setFilterChargedStatus(e.target.value as 'all' | 'charged' | 'not_charged')
                 }
                 className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-surface-raised text-text-body"
               >
@@ -473,15 +504,11 @@ export default function MoshiResponsePage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-text-heading mb-2">
-                紐付け状態
-              </label>
+              <label className="block text-sm font-medium text-text-heading mb-2">紐付け状態</label>
               <select
                 value={filterLinkedStatus}
                 onChange={(e) =>
-                  setFilterLinkedStatus(
-                    e.target.value as 'all' | 'linked' | 'unlinked'
-                  )
+                  setFilterLinkedStatus(e.target.value as 'all' | 'linked' | 'unlinked')
                 }
                 className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-surface-raised text-text-body"
               >
@@ -513,9 +540,7 @@ export default function MoshiResponsePage() {
         {/* 一括操作バー */}
         {selectedIds.size > 0 && (
           <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between">
-            <span className="text-sm text-blue-800">
-              {selectedIds.size}件を選択中
-            </span>
+            <span className="text-sm text-blue-800">{selectedIds.size}件を選択中</span>
             <div className="flex gap-2">
               <button
                 onClick={handleBulkArchive}
@@ -551,7 +576,9 @@ export default function MoshiResponsePage() {
             </div>
           ) : responses.length === 0 ? (
             <div className="p-8 text-center">
-              <p className="text-text-body">回答がありません。保護者ポータルから申込が届くとここに表示されます。</p>
+              <p className="text-text-body">
+                回答がありません。保護者ポータルから申込が届くとここに表示されます。
+              </p>
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -710,45 +737,45 @@ export default function MoshiResponsePage() {
           )}
         </div>
 
-      {/* 紐付けモーダル */}
-      {linkingResponse && (
-        <LinkStudentModal
-          isOpen={!!linkingResponse}
-          onClose={() => setLinkingResponse(null)}
-          response={{
-            id: linkingResponse.id,
-            school_id: linkingResponse.school_id,
-            form_type: 'moshi',
-            form_period: linkingResponse.form_period,
-            student_name: linkingResponse.student_name,
-            grade: linkingResponse.grade,
-            email: linkingResponse.email,
-            response_data: linkingResponse.response_data as unknown as Record<string, unknown>,
-            linked_student_id: linkingResponse.linked_student_id,
-            linked_at: linkingResponse.linked_at,
-            status_checks: (linkingResponse.status_checks ?? {}) as Record<string, boolean>,
-            is_archived: linkingResponse.is_archived,
-            archived_at: linkingResponse.archived_at,
-            created_at: linkingResponse.created_at,
-            updated_at: linkingResponse.updated_at,
-          }}
-          students={students}
-          isLoadingStudents={isLoadingStudents}
-          onSuccess={handleLinkSuccess}
-        />
-      )}
+        {/* 紐付けモーダル */}
+        {linkingResponse && (
+          <LinkStudentModal
+            isOpen={!!linkingResponse}
+            onClose={() => setLinkingResponse(null)}
+            response={{
+              id: linkingResponse.id,
+              school_id: linkingResponse.school_id,
+              form_type: 'moshi',
+              form_period: linkingResponse.form_period,
+              student_name: linkingResponse.student_name,
+              grade: linkingResponse.grade,
+              email: linkingResponse.email,
+              response_data: linkingResponse.response_data as unknown as Record<string, unknown>,
+              linked_student_id: linkingResponse.linked_student_id,
+              linked_at: linkingResponse.linked_at,
+              status_checks: (linkingResponse.status_checks ?? {}) as Record<string, boolean>,
+              is_archived: linkingResponse.is_archived,
+              archived_at: linkingResponse.archived_at,
+              created_at: linkingResponse.created_at,
+              updated_at: linkingResponse.updated_at,
+            }}
+            students={students}
+            isLoadingStudents={isLoadingStudents}
+            onSuccess={handleLinkSuccess}
+          />
+        )}
 
-      {/* 回答詳細モーダル（一覧の最新状態を参照して計上・発注と連動） */}
-      {detailResponse && (
-        <MoshiResponseDetailModal
-          isOpen={!!detailResponse}
-          response={responses.find((r) => r.id === detailResponse.id) ?? detailResponse}
-          onClose={() => setDetailResponse(null)}
-          onChargedChange={handleChargedToggle}
-          onOrderChange={handleOrderToggle}
-        />
-      )}
-      {ConfirmDialog}
+        {/* 回答詳細モーダル（一覧の最新状態を参照して計上・発注と連動） */}
+        {detailResponse && (
+          <MoshiResponseDetailModal
+            isOpen={!!detailResponse}
+            response={responses.find((r) => r.id === detailResponse.id) ?? detailResponse}
+            onClose={() => setDetailResponse(null)}
+            onChargedChange={handleChargedToggle}
+            onOrderChange={handleOrderToggle}
+          />
+        )}
+        {ConfirmDialog}
       </AdminLayout>
     </>
   );

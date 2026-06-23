@@ -12,7 +12,12 @@ interface TaskTimelineProps {
   month: number;
   canEdit: boolean;
   onToggleCheck: (taskId: string, schoolId: string, isCompleted: boolean) => void;
-  onCreateTask: (taskDate: string, category: MonthlyTaskCategory, taskName: string, sortOrder: number) => void;
+  onCreateTask: (
+    taskDate: string,
+    category: MonthlyTaskCategory,
+    taskName: string,
+    sortOrder: number
+  ) => void;
   onUpdateTask: (taskId: string, updates: Record<string, unknown>) => void;
   onDeleteTask: (taskId: string) => void;
   onUpdateNote: (taskId: string, note: string | null) => void;
@@ -148,10 +153,10 @@ export function TaskTimeline({
               isToday
                 ? 'border-blue-400 bg-blue-50/30 shadow-sm'
                 : isPast && allDone
-                ? 'border-gray-200 bg-gray-50/50'
-                : isPast
-                ? 'border-orange-200 bg-orange-50/20'
-                : 'border-gray-200'
+                  ? 'border-gray-200 bg-gray-50/50'
+                  : isPast
+                    ? 'border-orange-200 bg-orange-50/20'
+                    : 'border-gray-200'
             }`}
           >
             {/* 日付ヘッダー */}
@@ -164,7 +169,9 @@ export function TaskTimeline({
               ) : (
                 <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0" />
               )}
-              <span className={`text-sm font-bold ${getWeekdayClass(date)} ${isPast && allDone ? 'text-gray-400' : ''}`}>
+              <span
+                className={`text-sm font-bold ${getWeekdayClass(date)} ${isPast && allDone ? 'text-gray-400' : ''}`}
+              >
                 {formatDateHeader(date)}
               </span>
               {isToday && (
@@ -186,8 +193,10 @@ export function TaskTimeline({
                 {/* 業務系 */}
                 {businessTasks.length > 0 && (
                   <div>
-                    {(businessTasks.length > 0 && courseTasks.length > 0) && (
-                      <div className="text-[11px] text-orange-600 font-medium mb-0.5 pl-1">業務</div>
+                    {businessTasks.length > 0 && courseTasks.length > 0 && (
+                      <div className="text-[11px] text-orange-600 font-medium mb-0.5 pl-1">
+                        業務
+                      </div>
                     )}
                     {businessTasks.map((task) => (
                       <TaskCheckboxRow
@@ -207,8 +216,10 @@ export function TaskTimeline({
                 {/* 講習系 */}
                 {courseTasks.length > 0 && (
                   <div>
-                    {(businessTasks.length > 0 && courseTasks.length > 0) && (
-                      <div className="text-[11px] text-purple-600 font-medium mb-0.5 pl-1 mt-1">講習</div>
+                    {businessTasks.length > 0 && courseTasks.length > 0 && (
+                      <div className="text-[11px] text-purple-600 font-medium mb-0.5 pl-1 mt-1">
+                        講習
+                      </div>
                     )}
                     {courseTasks.map((task) => (
                       <TaskCheckboxRow
@@ -232,7 +243,9 @@ export function TaskTimeline({
                       <div className="flex items-center gap-1.5 mt-1">
                         <select
                           value={newTaskCategory}
-                          onChange={(e) => setNewTaskCategory(e.target.value as MonthlyTaskCategory)}
+                          onChange={(e) =>
+                            setNewTaskCategory(e.target.value as MonthlyTaskCategory)
+                          }
                           className="text-[11px] px-1 py-1 border rounded bg-white"
                         >
                           <option value="business">業務</option>
@@ -244,7 +257,10 @@ export function TaskTimeline({
                           onChange={(e) => setNewTaskName(e.target.value)}
                           onKeyDown={(e) => {
                             if (e.key === 'Enter') handleAddSubmit(date);
-                            if (e.key === 'Escape') { setAddingForDate(null); setNewTaskName(''); }
+                            if (e.key === 'Escape') {
+                              setAddingForDate(null);
+                              setNewTaskName('');
+                            }
                           }}
                           placeholder="タスク名を入力..."
                           className="flex-1 text-xs px-2 py-1 border rounded focus:outline-none focus:ring-1 focus:ring-blue-300"
@@ -256,7 +272,10 @@ export function TaskTimeline({
                           追加
                         </button>
                         <button
-                          onClick={() => { setAddingForDate(null); setNewTaskName(''); }}
+                          onClick={() => {
+                            setAddingForDate(null);
+                            setNewTaskName('');
+                          }}
                           className="text-xs px-2 py-1 text-gray-500 hover:text-gray-700"
                         >
                           取消

@@ -23,7 +23,7 @@ export interface MonthlyMetricPoint {
  */
 export async function getSchoolMonthlyMetrics(
   schoolIds: string[],
-  years: number[],
+  years: number[]
 ): Promise<MonthlyMetricPoint[]> {
   if (schoolIds.length === 0 || years.length === 0) return [];
 
@@ -35,7 +35,10 @@ export async function getSchoolMonthlyMetrics(
 
   if (error) {
     // マイグレーション未適用などはダミー表示に委ねるため、握りつぶして空を返す
-    console.warn('school_monthly_metrics の取得に失敗（マイグレーション未適用の可能性）:', error.message);
+    console.warn(
+      'school_monthly_metrics の取得に失敗（マイグレーション未適用の可能性）:',
+      error.message
+    );
     return [];
   }
 
@@ -43,9 +46,14 @@ export async function getSchoolMonthlyMetrics(
   const merged = new Map<string, MonthlyMetricPoint>();
   for (const row of data ?? []) {
     const key = `${row.year}-${row.month}-${row.kind}`;
-    const cur =
-      merged.get(key) ??
-      { year: row.year, month: row.month, kind: row.kind as MetricKind, newCount: 0, leaveCount: 0, activeCount: 0 };
+    const cur = merged.get(key) ?? {
+      year: row.year,
+      month: row.month,
+      kind: row.kind as MetricKind,
+      newCount: 0,
+      leaveCount: 0,
+      activeCount: 0,
+    };
     cur.newCount += row.new_count;
     cur.leaveCount += row.leave_count;
     cur.activeCount += row.active_count;

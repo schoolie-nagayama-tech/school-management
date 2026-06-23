@@ -29,9 +29,7 @@ export function DeleteConfirmDialog({
             <AlertTriangle className="w-5 h-5 text-[#ef4444]" />
           </div>
           <div>
-            <p className="text-[#1f2937]">
-              以下の生徒を削除してもよろしいですか？
-            </p>
+            <p className="text-[#1f2937]">以下の生徒を削除してもよろしいですか？</p>
             <p className="mt-2 text-sm text-[#4b5563]">
               <span className="font-medium">
                 {student.last_name} {student.first_name}
@@ -47,12 +45,7 @@ export function DeleteConfirmDialog({
           <Button type="button" variant="secondary" onClick={onCancel}>
             キャンセル
           </Button>
-          <Button
-            type="button"
-            variant="danger"
-            onClick={onConfirm}
-            isLoading={isLoading}
-          >
+          <Button type="button" variant="danger" onClick={onConfirm} isLoading={isLoading}>
             削除する
           </Button>
         </div>

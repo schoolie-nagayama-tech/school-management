@@ -55,9 +55,9 @@ export function calcTokyoNaishin(scores: Record<string, number | null>): Naishin
  */
 export function calcKanagawaNaishin(scores: Record<string, number | null>): NaishinResult {
   const allSubjects = [...FIVE_SUBJECTS, ...FOUR_SUBJECTS] as const;
-  const values = allSubjects.map((s) => scores[s]).filter(
-    (v): v is number => v !== null && v !== undefined
-  );
+  const values = allSubjects
+    .map((s) => scores[s])
+    .filter((v): v is number => v !== null && v !== undefined);
 
   const fiveValues = FIVE_SUBJECTS.map((s) => scores[s]).filter(
     (v): v is number => v !== null && v !== undefined

@@ -11,7 +11,7 @@ export function getDefaultSchoolId(): string {
       '設定手順:',
       '1. SupabaseのSQL Editorで supabase/schema.sql を実行してください',
       '2. 以下のSQLでデフォルト教室のIDを取得してください:',
-      '   SELECT id FROM schools WHERE code = \'DEFAULT\';',
+      "   SELECT id FROM schools WHERE code = 'DEFAULT';",
       '3. .env.local に以下を追加してください:',
       '   NEXT_PUBLIC_DEFAULT_SCHOOL_ID=取得したUUID',
       '4. 開発サーバーを再起動してください',
@@ -23,11 +23,7 @@ export function getDefaultSchoolId(): string {
 
 // 教室を1件取得
 export async function getSchool(id: string): Promise<School | null> {
-  const { data, error } = await supabase
-    .from('schools')
-    .select('*')
-    .eq('id', id)
-    .maybeSingle();
+  const { data, error } = await supabase.from('schools').select('*').eq('id', id).maybeSingle();
 
   if (error) {
     console.error('Error fetching school:', error);
@@ -39,11 +35,7 @@ export async function getSchool(id: string): Promise<School | null> {
 
 // 教室コードで教室を取得
 export async function getSchoolByCode(code: string): Promise<School | null> {
-  const { data, error } = await supabase
-    .from('schools')
-    .select('*')
-    .eq('code', code)
-    .maybeSingle();
+  const { data, error } = await supabase.from('schools').select('*').eq('code', code).maybeSingle();
 
   if (error) {
     console.error('Error fetching school by code:', error);
@@ -81,9 +73,12 @@ export async function getSchools(): Promise<School[]> {
 }
 
 // 教室を作成
-export async function createSchool(
-  data: { name: string; code?: string | null; notification_email?: string | null; is_demo?: boolean }
-): Promise<School> {
+export async function createSchool(data: {
+  name: string;
+  code?: string | null;
+  notification_email?: string | null;
+  is_demo?: boolean;
+}): Promise<School> {
   const { data: school, error } = await supabase
     .from('schools')
     .insert({
@@ -109,7 +104,15 @@ export async function createSchool(
 // 教室を更新
 export async function updateSchool(
   id: string,
-  data: { name?: string; code?: string | null; notification_email?: string | null; notification_emails?: string[]; logo_url?: string | null; is_demo?: boolean; slack_mention_id?: string | null }
+  data: {
+    name?: string;
+    code?: string | null;
+    notification_email?: string | null;
+    notification_emails?: string[];
+    logo_url?: string | null;
+    is_demo?: boolean;
+    slack_mention_id?: string | null;
+  }
 ): Promise<School> {
   const { data: school, error } = await supabase
     .from('schools')
@@ -135,13 +138,19 @@ export async function updateSchool(
 /** 教室を参照している件数を取得（削除前に「何がブロックしているか」を表示するため）
  * 論理削除・アーカイブ済みは除外し、有効なデータのみカウントする。
  * 教室削除時に自動作除するもの（user_schools, portal_menu, exam_types, bulletin_*）はブロック対象に含めない。 */
-export async function getSchoolBlockingReferences(schoolId: string): Promise<{ label: string; count: number }[]> {
+export async function getSchoolBlockingReferences(
+  schoolId: string
+): Promise<{ label: string; count: number }[]> {
   type QueryFilter = (q: ReturnType<typeof supabase.from>) => ReturnType<typeof supabase.from>;
   const tables: { table: string; label: string; filter?: QueryFilter }[] = [
     { table: 'students', label: '生徒', filter: (q) => q.is('deleted_at', null) },
     { table: 'student_logs', label: '生徒ログ' },
     { table: 'assessments', label: 'テスト・成績' },
-    { table: 'form_periods', label: 'フォーム期間', filter: (q) => q.or('is_archived.eq.false,is_archived.is.null') },
+    {
+      table: 'form_periods',
+      label: 'フォーム期間',
+      filter: (q) => q.or('is_archived.eq.false,is_archived.is.null'),
+    },
     { table: 'form_responses', label: 'フォーム回答', filter: (q) => q.eq('is_archived', false) },
     { table: 'application_items', label: '申込項目' },
     { table: 'student_applications', label: '生徒申込' },
@@ -212,10 +221,7 @@ export async function deleteSchool(id: string): Promise<void> {
   }
 
   // portal_menu を先に削除（CASCADE で消える場合もあるが、明示的に削除）
-  const { error: menuError } = await supabase
-    .from('portal_menu')
-    .delete()
-    .eq('school_id', id);
+  const { error: menuError } = await supabase.from('portal_menu').delete().eq('school_id', id);
 
   if (menuError) {
     console.error('Error deleting portal_menu for school:', menuError);
@@ -238,18 +244,12 @@ export async function deleteSchool(id: string): Promise<void> {
   if (bulletinLabelsError) {
     console.warn('Error deleting bulletin_labels for school:', bulletinLabelsError);
   }
-  const { error: examTypesError } = await supabase
-    .from('exam_types')
-    .delete()
-    .eq('school_id', id);
+  const { error: examTypesError } = await supabase.from('exam_types').delete().eq('school_id', id);
   if (examTypesError) {
     console.warn('Error deleting exam_types for school:', examTypesError);
   }
 
-  const { error } = await supabase
-    .from('schools')
-    .delete()
-    .eq('id', id);
+  const { error } = await supabase.from('schools').delete().eq('id', id);
 
   if (error) {
     console.error('Error deleting school:', error);

@@ -10,7 +10,7 @@ import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 interface InterviewModalProps {
   studentId: string;
   schoolId: string;
-  interview: StudentInterview | null;  // nullなら新規作成
+  interview: StudentInterview | null; // nullなら新規作成
   onClose: () => void;
   onSaved: () => void;
 }
@@ -25,7 +25,13 @@ const INTERVIEW_TYPES: InterviewType[] = [
   'other',
 ];
 
-export function InterviewModal({ studentId, schoolId, interview, onClose, onSaved }: InterviewModalProps) {
+export function InterviewModal({
+  studentId,
+  schoolId,
+  interview,
+  onClose,
+  onSaved,
+}: InterviewModalProps) {
   const isEditing = !!interview;
   const { success, error: toastError } = useToast();
 
@@ -77,9 +83,7 @@ export function InterviewModal({ studentId, schoolId, interview, onClose, onSave
       onSaved();
     } catch (error) {
       console.error('Failed to save:', error);
-      toastError(
-        getUserErrorMessage(error, '保存に失敗しました')
-      );
+      toastError(getUserErrorMessage(error, '保存に失敗しました'));
     } finally {
       setIsSaving(false);
     }

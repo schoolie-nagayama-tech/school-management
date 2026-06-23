@@ -1,6 +1,10 @@
 'use client';
 
-import type { SeasonalShiftSetting, SlotSetting, SeasonalShiftSubmissionSlot } from '@/types/seasonal-shift';
+import type {
+  SeasonalShiftSetting,
+  SlotSetting,
+  SeasonalShiftSubmissionSlot,
+} from '@/types/seasonal-shift';
 
 function getDatesBetween(startDate: string, endDate: string): string[] {
   const dates: string[] = [];
@@ -42,9 +46,7 @@ export function SubmissionDetailMatrix({
   const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
 
   const getCellStatus = (date: string, timeSlot: string): CellStatus => {
-    const slotSetting = slotSettings.find(
-      (s) => s.slot_date === date && s.time_slot === timeSlot
-    );
+    const slotSetting = slotSettings.find((s) => s.slot_date === date && s.time_slot === timeSlot);
     if (!slotSetting?.is_open) {
       return 'closed';
     }
@@ -92,11 +94,7 @@ export function SubmissionDetailMatrix({
               <tr
                 key={dateStr}
                 className={
-                  dayOfWeek === 0
-                    ? 'bg-blue-50/50'
-                    : dayOfWeek === 6
-                      ? 'bg-blue-50/30'
-                      : ''
+                  dayOfWeek === 0 ? 'bg-blue-50/50' : dayOfWeek === 6 ? 'bg-blue-50/30' : ''
                 }
               >
                 <td className="border border-[#e5e7eb] p-2 whitespace-nowrap font-medium text-[#1f2937]">

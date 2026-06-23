@@ -92,8 +92,7 @@ export function UnassignedEntriesPool({
 
   // 担当未決定のみフィルタ（cancelled/transferred_out は除外）
   const unassigned = entries.filter(
-    (e) =>
-      !e.teacher_id && e.status !== 'cancelled' && e.status !== 'transferred_out'
+    (e) => !e.teacher_id && e.status !== 'cancelled' && e.status !== 'transferred_out'
   );
   if (unassigned.length === 0) return null;
 
@@ -129,9 +128,7 @@ export function UnassignedEntriesPool({
         <span className="px-1.5 py-0.5 text-[10px] rounded-full bg-warning text-white font-bold tabular-nums">
           {sorted.length}
         </span>
-        <span className="text-xs text-text-muted ml-1">
-          ドラッグして座席表の講師セルにドロップ
-        </span>
+        <span className="text-xs text-text-muted ml-1">ドラッグして座席表の講師セルにドロップ</span>
       </button>
 
       {isOpen && (

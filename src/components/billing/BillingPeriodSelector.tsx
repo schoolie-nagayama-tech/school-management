@@ -78,12 +78,32 @@ export function BillingPeriodSelector({
   };
 
   /** デフォルト請求項目 */
-  const DEFAULT_BILLING_ITEMS: Array<{ name: string; source_type: string; value_type: string; linked_form_type?: string }> = [
+  const DEFAULT_BILLING_ITEMS: Array<{
+    name: string;
+    source_type: string;
+    value_type: string;
+    linked_form_type?: string;
+  }> = [
     { name: '5週目', source_type: 'free', value_type: 'number' },
     { name: '単語練習帳', source_type: 'free', value_type: 'number' },
-    { name: '週回数変更', source_type: 'form_charged', value_type: 'number', linked_form_type: 'shukaisu' },
-    { name: '曜日変更', source_type: 'form_charged', value_type: 'number', linked_form_type: 'youbi' },
-    { name: '増コマ', source_type: 'form_charged', value_type: 'number', linked_form_type: 'zoukoma' },
+    {
+      name: '週回数変更',
+      source_type: 'form_charged',
+      value_type: 'number',
+      linked_form_type: 'shukaisu',
+    },
+    {
+      name: '曜日変更',
+      source_type: 'form_charged',
+      value_type: 'number',
+      linked_form_type: 'youbi',
+    },
+    {
+      name: '増コマ',
+      source_type: 'form_charged',
+      value_type: 'number',
+      linked_form_type: 'zoukoma',
+    },
     { name: '模擬', source_type: 'form_charged', value_type: 'number', linked_form_type: 'mogi' },
     { name: '模試', source_type: 'form_charged', value_type: 'number', linked_form_type: 'moshi' },
     { name: '教材発注', source_type: 'order', value_type: 'text' },
@@ -224,9 +244,7 @@ export function BillingPeriodSelector({
     <div>
       <div className="flex flex-wrap gap-3 items-center">
         {/* 期間選択（インライン） */}
-        <label className="text-sm font-medium text-[#1f2937] whitespace-nowrap">
-          請求期間
-        </label>
+        <label className="text-sm font-medium text-[#1f2937] whitespace-nowrap">請求期間</label>
         <select
           value={selectedPeriodId || ''}
           onChange={(e) => {
@@ -267,12 +285,7 @@ export function BillingPeriodSelector({
                 >
                   編集
                 </Button>
-                <Button
-                  size="sm"
-                  variant="danger"
-                  onClick={handleDelete}
-                  disabled={isProcessing}
-                >
+                <Button size="sm" variant="danger" onClick={handleDelete} disabled={isProcessing}>
                   削除
                 </Button>
               </>
@@ -295,7 +308,9 @@ export function BillingPeriodSelector({
                 className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#1f2937] focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
               >
                 {Array.from({ length: 5 }, (_, i) => currentYear - 1 + i).map((y) => (
-                  <option key={y} value={y}>{y}年</option>
+                  <option key={y} value={y}>
+                    {y}年
+                  </option>
                 ))}
               </select>
             </div>
@@ -308,7 +323,9 @@ export function BillingPeriodSelector({
                 className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#1f2937] focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
               >
                 {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
-                  <option key={m} value={m}>{m}月</option>
+                  <option key={m} value={m}>
+                    {m}月
+                  </option>
                 ))}
               </select>
             </div>
@@ -334,10 +351,7 @@ export function BillingPeriodSelector({
               <Button onClick={handleCreate} disabled={isProcessing}>
                 作成
               </Button>
-              <Button
-                variant="secondary"
-                onClick={() => setIsCreating(false)}
-              >
+              <Button variant="secondary" onClick={() => setIsCreating(false)}>
                 キャンセル
               </Button>
             </div>
@@ -381,7 +395,10 @@ export function BillingPeriodSelector({
               />
             </div>
             <div className="flex gap-2">
-              <Button onClick={handleEdit} disabled={isProcessing || !editName.trim() || !editStartDate || !editEndDate}>
+              <Button
+                onClick={handleEdit}
+                disabled={isProcessing || !editName.trim() || !editStartDate || !editEndDate}
+              >
                 保存
               </Button>
               <Button variant="secondary" onClick={() => setIsEditing(false)}>

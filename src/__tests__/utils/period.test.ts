@@ -76,26 +76,32 @@ describe('getPeriodStatus', () => {
   });
 
   it('常時公開のラベル', () => {
-    const result = getPeriodStatus(createPeriod({
-      publish_start: '2020-01-01T00:00:00Z',
-      publish_end: null,
-    }));
+    const result = getPeriodStatus(
+      createPeriod({
+        publish_start: '2020-01-01T00:00:00Z',
+        publish_end: null,
+      })
+    );
     expect(result.label).toBe('公開中（常時）');
   });
 
   it('公開中のラベル', () => {
-    const result = getPeriodStatus(createPeriod({
-      publish_start: '2020-01-01T00:00:00Z',
-      publish_end: '2099-12-31T23:59:59Z',
-    }));
+    const result = getPeriodStatus(
+      createPeriod({
+        publish_start: '2020-01-01T00:00:00Z',
+        publish_end: '2099-12-31T23:59:59Z',
+      })
+    );
     expect(result.label).toBe('公開中');
   });
 
   it('公開終了のラベル', () => {
-    const result = getPeriodStatus(createPeriod({
-      publish_start: '2020-01-01T00:00:00Z',
-      publish_end: '2020-12-31T23:59:59Z',
-    }));
+    const result = getPeriodStatus(
+      createPeriod({
+        publish_start: '2020-01-01T00:00:00Z',
+        publish_end: '2020-12-31T23:59:59Z',
+      })
+    );
     expect(result.label).toBe('公開終了');
   });
 });

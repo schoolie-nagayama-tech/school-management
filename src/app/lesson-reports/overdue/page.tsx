@@ -82,9 +82,7 @@ export default function OverdueReportsPage() {
       map.get(t.teacher_id)!.entries.push(t);
     }
     // 残数の多い順
-    return Array.from(map.entries()).sort(
-      ([, a], [, b]) => b.entries.length - a.entries.length
-    );
+    return Array.from(map.entries()).sort(([, a], [, b]) => b.entries.length - a.entries.length);
   }, [targets]);
 
   if (!isManager) return <AccessDenied />;
@@ -97,10 +95,7 @@ export default function OverdueReportsPage() {
           <h1 className="text-2xl font-bold">授業報告書 督促一覧</h1>
           <div className="flex items-center gap-2">
             <label className="text-sm text-text-muted">経過日数:</label>
-            <Select
-              value={String(threshold)}
-              onValueChange={(v) => setThreshold(parseInt(v, 10))}
-            >
+            <Select value={String(threshold)} onValueChange={(v) => setThreshold(parseInt(v, 10))}>
               <SelectTrigger className="w-32">
                 <SelectValue />
               </SelectTrigger>
@@ -153,9 +148,7 @@ export default function OverdueReportsPage() {
                           onClick={() => router.push(`/lesson-reports/${t.schedule_entry_id}`)}
                         >
                           <div className="w-24 flex-shrink-0">
-                            <div className="text-sm font-semibold tabular-nums">
-                              {t.entry_date}
-                            </div>
+                            <div className="text-sm font-semibold tabular-nums">{t.entry_date}</div>
                             <div className="text-xs text-text-muted">
                               {t.slot_number ? `${t.slot_number}限` : '-'}
                             </div>

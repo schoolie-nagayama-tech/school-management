@@ -37,7 +37,8 @@ export function RichTextEditor({
     },
     editorProps: {
       attributes: {
-        class: 'rich-text-editor-body min-h-[120px] px-3 py-2 focus:outline-none text-sm text-text-heading',
+        class:
+          'rich-text-editor-body min-h-[120px] px-3 py-2 focus:outline-none text-sm text-text-heading',
       },
     },
   });
@@ -59,9 +60,12 @@ export function RichTextEditor({
     editor?.chain().focus().setParagraph().run();
   }, [editor]);
 
-  const setHeading = useCallback((level: 1 | 2 | 3) => {
-    editor?.chain().focus().toggleHeading({ level }).run();
-  }, [editor]);
+  const setHeading = useCallback(
+    (level: 1 | 2 | 3) => {
+      editor?.chain().focus().toggleHeading({ level }).run();
+    },
+    [editor]
+  );
 
   if (!editor) {
     return (
@@ -103,11 +107,7 @@ export function RichTextEditor({
           <span className="text-sm line-through">S</span>
         </ToolbarButton>
         <span className="w-px h-5 bg-gray-200 mx-1" aria-hidden />
-        <ToolbarButton
-          onClick={setParagraph}
-          isActive={editor.isActive('paragraph')}
-          title="通常"
-        >
+        <ToolbarButton onClick={setParagraph} isActive={editor.isActive('paragraph')} title="通常">
           <span className="text-xs">段落</span>
         </ToolbarButton>
         <ToolbarButton

@@ -30,9 +30,7 @@ export function TeacherWorkloadPanel({
     const min = n > 0 ? Math.min(...counts) : 0;
     // 中央値（外れ値に強い「真ん中」の目安。平均と並べて偏りを見る）
     const asc = [...counts].sort((a, b) => a - b);
-    const median = n > 0
-      ? (n % 2 === 1 ? asc[(n - 1) / 2] : (asc[n / 2 - 1] + asc[n / 2]) / 2)
-      : 0;
+    const median = n > 0 ? (n % 2 === 1 ? asc[(n - 1) / 2] : (asc[n / 2 - 1] + asc[n / 2]) / 2) : 0;
     return { sorted, n, total, avg, max, min, median };
   }, [teachers]);
 
@@ -41,8 +39,10 @@ export function TeacherWorkloadPanel({
   // 平均との比較で「多い/少ない」を色分け（一目で偏りが分かるように）
   const levelOf = (count: number): { bar: string; tag: '多' | '少' | null; tagColor: string } => {
     if (stats.avg <= 0) return { bar: 'bg-slate-300', tag: null, tagColor: '' };
-    if (count >= stats.avg * 1.25) return { bar: 'bg-emerald-400', tag: '多', tagColor: 'text-emerald-600' };
-    if (count <= stats.avg * 0.6) return { bar: 'bg-amber-400', tag: '少', tagColor: 'text-amber-600' };
+    if (count >= stats.avg * 1.25)
+      return { bar: 'bg-emerald-400', tag: '多', tagColor: 'text-emerald-600' };
+    if (count <= stats.avg * 0.6)
+      return { bar: 'bg-amber-400', tag: '少', tagColor: 'text-amber-600' };
     return { bar: 'bg-slate-300', tag: null, tagColor: '' };
   };
 
@@ -55,11 +55,22 @@ export function TeacherWorkloadPanel({
 
       {/* サマリー統計 */}
       <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-600 mb-3">
-        <span>合計 <b className="text-slate-800 tabular-nums">{stats.total}</b> {unitLabel}</span>
-        <span>一人当たり平均 <b className="text-slate-800 tabular-nums">{stats.avg.toFixed(1)}</b> {unitLabel}</span>
-        <span>中央値 <b className="text-slate-800 tabular-nums">{stats.median}</b></span>
-        <span>最多 <b className="text-slate-800 tabular-nums">{stats.max}</b></span>
-        <span>最少 <b className="text-slate-800 tabular-nums">{stats.min}</b></span>
+        <span>
+          合計 <b className="text-slate-800 tabular-nums">{stats.total}</b> {unitLabel}
+        </span>
+        <span>
+          一人当たり平均 <b className="text-slate-800 tabular-nums">{stats.avg.toFixed(1)}</b>{' '}
+          {unitLabel}
+        </span>
+        <span>
+          中央値 <b className="text-slate-800 tabular-nums">{stats.median}</b>
+        </span>
+        <span>
+          最多 <b className="text-slate-800 tabular-nums">{stats.max}</b>
+        </span>
+        <span>
+          最少 <b className="text-slate-800 tabular-nums">{stats.min}</b>
+        </span>
       </div>
 
       {/* 講師別の分布（コマ数降順。多い順に並べ、平均ラインと多/少フラグで偏りを表示） */}
@@ -86,7 +97,9 @@ export function TeacherWorkloadPanel({
                 )}
               </div>
               <span className="w-7 shrink-0 text-right tabular-nums text-slate-700">{t.count}</span>
-              <span className={`w-4 shrink-0 text-center text-[10px] ${tagColor}`}>{tag ?? ''}</span>
+              <span className={`w-4 shrink-0 text-center text-[10px] ${tagColor}`}>
+                {tag ?? ''}
+              </span>
             </div>
           );
         })}

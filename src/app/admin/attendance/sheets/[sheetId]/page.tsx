@@ -3,9 +3,38 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { AdminLayout } from '@/components/layouts';
-import { Button, Input, Badge, Card, CardContent, Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, Textarea, Label, AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, Loading } from '@/components/ui';
+import {
+  Button,
+  Input,
+  Badge,
+  Card,
+  CardContent,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  Textarea,
+  Label,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  Loading,
+} from '@/components/ui';
 import { ToastContainer } from '@/components/ui';
-import { ArrowLeft, ChevronLeft, ChevronRight, CheckCircle, XCircle, RotateCcw } from 'lucide-react';
+import {
+  ArrowLeft,
+  ChevronLeft,
+  ChevronRight,
+  CheckCircle,
+  XCircle,
+  RotateCcw,
+} from 'lucide-react';
 import { useToast } from '@/hooks/useToast';
 import {
   getAttendanceSheetDetail,
@@ -17,12 +46,7 @@ import {
   rejectToManager,
   reopenAttendanceSheet,
 } from '@/lib/api/attendance';
-import {
-  formatYearMonth,
-  getMonthDates,
-  getPrevMonth,
-  getNextMonth,
-} from '@/lib/utils/date';
+import { formatYearMonth, getMonthDates, getPrevMonth, getNextMonth } from '@/lib/utils/date';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   ATTENDANCE_STATUS_LABELS,
@@ -48,9 +72,7 @@ export default function AttendanceSheetDetailPage() {
   const [sheet, setSheet] = useState<AttendanceSheet | null>(null);
   const [attendanceTypes, setAttendanceTypes] = useState<AttendanceType[]>([]);
   const [records, setRecords] = useState<Map<string, number>>(new Map());
-  const [notes, setNotes] = useState<Map<string, { lateEarly: string; note: string }>>(
-    new Map()
-  );
+  const [notes, setNotes] = useState<Map<string, { lateEarly: string; note: string }>>(new Map());
   const [isLoading, setIsLoading] = useState(true);
   const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false);
   const [isReopenDialogOpen, setIsReopenDialogOpen] = useState(false);
@@ -106,11 +128,7 @@ export default function AttendanceSheetDetailPage() {
   const status = sheet.status as AttendanceSheetStatus;
 
   // コマ数変更（管理者は常に編集可能）
-  const handleValueChange = async (
-    date: string,
-    typeId: string,
-    value: string
-  ) => {
+  const handleValueChange = async (date: string, typeId: string, value: string) => {
     const numValue = parseFloat(value) || 0;
     const key = `${date}_${typeId}`;
 
@@ -232,9 +250,7 @@ export default function AttendanceSheetDetailPage() {
   const navigateToMonth = async (newYearMonth: string) => {
     // 同じ講師・教室の別月の出勤簿を探す or 作成
     if (sheet.school?.code && sheet.teacher_id) {
-      router.push(
-        `/attendance/${sheet.school.code}/${sheet.teacher_id}?ym=${newYearMonth}`
-      );
+      router.push(`/attendance/${sheet.school.code}/${sheet.teacher_id}?ym=${newYearMonth}`);
     }
   };
 
@@ -317,9 +333,7 @@ export default function AttendanceSheetDetailPage() {
                   <th className="px-2 py-2 text-center font-medium border-b min-w-[100px]">
                     遅刻早退
                   </th>
-                  <th className="px-2 py-2 text-center font-medium border-b min-w-[120px]">
-                    備考
-                  </th>
+                  <th className="px-2 py-2 text-center font-medium border-b min-w-[120px]">備考</th>
                 </tr>
               </thead>
               <tbody>
@@ -342,8 +356,8 @@ export default function AttendanceSheetDetailPage() {
                             d.dayOfWeek === 0
                               ? 'text-red-600'
                               : d.dayOfWeek === 6
-                              ? 'text-blue-600'
-                              : ''
+                                ? 'text-blue-600'
+                                : ''
                           }`}
                         >
                           {parseInt(d.date.split('-')[2])}日({d.dayLabel})
@@ -360,9 +374,7 @@ export default function AttendanceSheetDetailPage() {
                               min="0"
                               step={type.unit === 'hours' ? '0.5' : '1'}
                               value={value}
-                              onChange={(e) =>
-                                handleValueChange(d.date, type.id, e.target.value)
-                              }
+                              onChange={(e) => handleValueChange(d.date, type.id, e.target.value)}
                               className="w-16 h-8 text-center mx-auto"
                             />
                           </td>
@@ -389,9 +401,7 @@ export default function AttendanceSheetDetailPage() {
                 })}
                 {/* 合計行 */}
                 <tr className="bg-gray-100 font-medium">
-                  <td className="px-2 py-2 border-b sticky left-0 bg-gray-100">
-                    合計
-                  </td>
+                  <td className="px-2 py-2 border-b sticky left-0 bg-gray-100">合計</td>
                   {attendanceTypes.map((type) => (
                     <td key={type.id} className="px-2 py-2 border-b text-center">
                       {getTypeTotal(type.id)}
@@ -410,10 +420,7 @@ export default function AttendanceSheetDetailPage() {
         <div className="flex justify-center gap-4">
           {/* 教室長: 提出済みの出勤簿を講師に差し戻し */}
           {isManager && status === 'submitted' && (
-            <Button
-              variant="danger"
-              onClick={() => setIsRejectDialogOpen(true)}
-            >
+            <Button variant="danger" onClick={() => setIsRejectDialogOpen(true)}>
               <XCircle className="h-4 w-4 mr-2" />
               講師に差し戻す
             </Button>
@@ -426,10 +433,7 @@ export default function AttendanceSheetDetailPage() {
                 承認する
               </Button>
               {status === 'reviewed' && (
-                <Button
-                  variant="danger"
-                  onClick={() => setIsRejectDialogOpen(true)}
-                >
+                <Button variant="danger" onClick={() => setIsRejectDialogOpen(true)}>
                   <XCircle className="h-4 w-4 mr-2" />
                   教室長に差し戻す
                 </Button>
@@ -437,10 +441,7 @@ export default function AttendanceSheetDetailPage() {
             </>
           )}
           {isAdmin && status === 'approved' && (
-            <Button
-              variant="secondary"
-              onClick={() => setIsReopenDialogOpen(true)}
-            >
+            <Button variant="secondary" onClick={() => setIsReopenDialogOpen(true)}>
               <RotateCcw className="h-4 w-4 mr-2" />
               承認を取り消して確認済みに戻す
             </Button>
@@ -488,9 +489,7 @@ export default function AttendanceSheetDetailPage() {
       <Dialog open={isRejectDialogOpen} onOpenChange={setIsRejectDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>
-              {isManager ? '講師に差し戻し' : '教室長に差し戻し'}
-            </DialogTitle>
+            <DialogTitle>{isManager ? '講師に差し戻し' : '教室長に差し戻し'}</DialogTitle>
           </DialogHeader>
           <div className="py-4">
             <div className="space-y-2">
@@ -528,9 +527,7 @@ export default function AttendanceSheetDetailPage() {
             <AlertDialogCancel onClick={() => setIsReopenDialogOpen(false)}>
               キャンセル
             </AlertDialogCancel>
-            <AlertDialogAction onClick={handleReopen}>
-              取り消す
-            </AlertDialogAction>
+            <AlertDialogAction onClick={handleReopen}>取り消す</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

@@ -66,7 +66,14 @@ export function PeriodListTable({
       setArchiveConfirm(period);
       return;
     }
-    if (await confirm({ title: '削除確認', description: `期間「${period.period_key} ${period.title}」を削除しますか？`, confirmLabel: '削除', variant: 'danger' })) {
+    if (
+      await confirm({
+        title: '削除確認',
+        description: `期間「${period.period_key} ${period.title}」を削除しますか？`,
+        confirmLabel: '削除',
+        variant: 'danger',
+      })
+    ) {
       setDeletingId(period.id);
       try {
         await onDelete(period);

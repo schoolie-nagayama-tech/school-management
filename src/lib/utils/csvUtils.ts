@@ -81,9 +81,7 @@ const STATUS_VALUES: Record<string, string> = {
 /**
  * 生徒一覧から CSV文字列を生成（subjects フィールドを含む）
  */
-export function generateStudentCSV(
-  students: (Student & { subjects?: Subject[] })[]
-): string {
+export function generateStudentCSV(students: (Student & { subjects?: Subject[] })[]): string {
   const rows = [
     csvRow([...STUDENT_CSV_HEADERS]),
     ...students.map((s) => {
@@ -148,9 +146,7 @@ export function parseStudentCSV(file: File): Promise<StudentCSVRow[]> {
         // ヘッダー行をスキップ（最初の行がヘッダーかどうかを確認）
         const firstRow = rawRows[0];
         const isHeader =
-          firstRow[0] === '生徒コード' ||
-          firstRow[1] === '姓' ||
-          firstRow[0] === 'student_code';
+          firstRow[0] === '生徒コード' || firstRow[1] === '姓' || firstRow[0] === 'student_code';
         const dataRows = isHeader ? rawRows.slice(1) : rawRows;
 
         const parsed: StudentCSVRow[] = dataRows.map((cols, i) => {
@@ -181,13 +177,14 @@ export function parseStudentCSV(file: File): Promise<StudentCSVRow[]> {
           }
 
           // 在籍状況
-          const statusMapped = STATUS_VALUES[statusRaw] as 'active' | 'inactive' | 'withdrawn' | undefined;
-          const status: 'active' | 'inactive' | 'withdrawn' =
-            statusMapped ?? 'active';
+          const statusMapped = STATUS_VALUES[statusRaw] as
+            | 'active'
+            | 'inactive'
+            | 'withdrawn'
+            | undefined;
+          const status: 'active' | 'inactive' | 'withdrawn' = statusMapped ?? 'active';
           if (statusRaw && !statusMapped) {
-            errors.push(
-              `在籍状況が無効です（在籍中/休会/退会）: "${statusRaw}"`
-            );
+            errors.push(`在籍状況が無効です（在籍中/休会/退会）: "${statusRaw}"`);
           }
 
           // 科目名
@@ -249,12 +246,7 @@ export function generateTeacherCSV(teachers: TeacherExportRow[]): string {
   const rows = [
     csvRow([...TEACHER_CSV_HEADERS]),
     ...teachers.map((t) =>
-      csvRow([
-        t.display_name,
-        t.email,
-        t.school_names.join('/'),
-        t.is_active ? '有効' : '無効',
-      ])
+      csvRow([t.display_name, t.email, t.school_names.join('/'), t.is_active ? '有効' : '無効'])
     ),
   ];
   return rows.join('\r\n');
@@ -284,15 +276,7 @@ export function getTeacherCSVTemplate(): string {
     '有効',
   ];
   // サンプル2: 既存システムのID + 個別パスワード（@なしでもOK）
-  const sample2 = [
-    '鈴木 花子',
-    'suzuki123',
-    'Suzuki@Pw',
-    'SCH001',
-    '国語',
-    '火/木',
-    '有効',
-  ];
+  const sample2 = ['鈴木 花子', 'suzuki123', 'Suzuki@Pw', 'SCH001', '国語', '火/木', '有効'];
   return (
     csvRow([...TEACHER_IMPORT_CSV_HEADERS]) +
     '\r\n' +
@@ -324,8 +308,20 @@ export interface TeacherCSVRow {
 }
 
 const DAY_OF_WEEK_MAP: Record<string, number> = {
-  '日': 0, '月': 1, '火': 2, '水': 3, '木': 4, '金': 5, '土': 6,
-  '日曜': 0, '月曜': 1, '火曜': 2, '水曜': 3, '木曜': 4, '金曜': 5, '土曜': 6,
+  日: 0,
+  月: 1,
+  火: 2,
+  水: 3,
+  木: 4,
+  金: 5,
+  土: 6,
+  日曜: 0,
+  月曜: 1,
+  火曜: 2,
+  水曜: 3,
+  木曜: 4,
+  金曜: 5,
+  土曜: 6,
 };
 
 function splitMulti(value: string): string[] {
@@ -352,9 +348,7 @@ export function parseTeacherCSV(file: File): Promise<TeacherCSVRow[]> {
         // ヘッダー行スキップ判定
         const firstRow = rawRows[0];
         const isHeader =
-          firstRow[0] === '表示名' ||
-          firstRow[0] === 'display_name' ||
-          firstRow[0] === '名前';
+          firstRow[0] === '表示名' || firstRow[0] === 'display_name' || firstRow[0] === '名前';
         const dataRows = isHeader ? rawRows.slice(1) : rawRows;
 
         const parsed: TeacherCSVRow[] = dataRows.map((cols, i) => {
@@ -422,17 +416,17 @@ export function parseTeacherCSV(file: File): Promise<TeacherCSVRow[]> {
 
 /** 成績CSVの科目カラム定義（全カテゴリ共通）*/
 const ASSESSMENT_SUBJECT_COLUMNS = [
-  { code: 'english',   label: '英語' },
-  { code: 'math',      label: '数学' },
-  { code: 'japanese',  label: '国語' },
-  { code: 'social',    label: '社会' },
-  { code: 'science',   label: '理科' },
-  { code: 'music',     label: '音楽' },
-  { code: 'art',       label: '美術' },
+  { code: 'english', label: '英語' },
+  { code: 'math', label: '数学' },
+  { code: 'japanese', label: '国語' },
+  { code: 'social', label: '社会' },
+  { code: 'science', label: '理科' },
+  { code: 'music', label: '音楽' },
+  { code: 'art', label: '美術' },
   { code: 'tech_home', label: '技術・家庭' },
-  { code: 'pe',        label: '保健体育' },
-  { code: 'hensa_3',   label: '偏差値(3科)' },
-  { code: 'hensa_5',   label: '偏差値(5科)' },
+  { code: 'pe', label: '保健体育' },
+  { code: 'hensa_3', label: '偏差値(3科)' },
+  { code: 'hensa_5', label: '偏差値(5科)' },
 ] as const;
 
 /**
@@ -445,7 +439,12 @@ export function generateAssessmentCSV(
 ): string {
   const subjectLabels = ASSESSMENT_SUBJECT_COLUMNS.map((s) => s.label);
   const header = csvRow([
-    '生徒コード', '生徒名', '学年', 'テスト種別', 'テスト名', '試験月',
+    '生徒コード',
+    '生徒名',
+    '学年',
+    'テスト種別',
+    'テスト名',
+    '試験月',
     ...subjectLabels,
   ]);
 
@@ -462,10 +461,8 @@ export function generateAssessmentCSV(
         assessment.scores.map((s) => [s.subject, s.value])
       );
 
-      const categoryLabel =
-        ASSESSMENT_CATEGORY_LABELS[assessment.category] ?? assessment.category;
-      const testNameLabel =
-        ASSESSMENT_NAME_LABELS[assessment.name_code] ?? assessment.name_code;
+      const categoryLabel = ASSESSMENT_CATEGORY_LABELS[assessment.category] ?? assessment.category;
+      const testNameLabel = ASSESSMENT_NAME_LABELS[assessment.name_code] ?? assessment.name_code;
       const examMonth = assessment.exam_month
         ? assessment.exam_month.slice(0, 7) // YYYY-MM
         : '';
@@ -505,7 +502,14 @@ export function generateInterviewCSV(
   interviewsByStudent: Map<string, StudentInterview[]>
 ): string {
   const header = csvRow([
-    '生徒コード', '生徒名', '学年', '面談日', '面談タイプ', '内容', 'タスク完了', '完了日時',
+    '生徒コード',
+    '生徒名',
+    '学年',
+    '面談日',
+    '面談タイプ',
+    '内容',
+    'タスク完了',
+    '完了日時',
   ]);
 
   const dataRows: string[] = [];
@@ -517,8 +521,8 @@ export function generateInterviewCSV(
 
     for (const interview of interviews) {
       const typeLabel =
-        INTERVIEW_TYPE_LABELS[interview.interview_type as keyof typeof INTERVIEW_TYPE_LABELS]
-        ?? interview.interview_type;
+        INTERVIEW_TYPE_LABELS[interview.interview_type as keyof typeof INTERVIEW_TYPE_LABELS] ??
+        interview.interview_type;
       const completed = interview.is_completed ? '完了' : '';
       const completedAt = interview.completed_at
         ? interview.completed_at.slice(0, 16).replace('T', ' ')
@@ -547,8 +551,8 @@ export function generateInterviewCSV(
 // ─────────────────────────────────────────────
 
 const MOCK_NAME_MAP: Record<string, string> = {
-  '会場模試': 'venue',
-  '教室模試': 'classroom',
+  会場模試: 'venue',
+  教室模試: 'classroom',
   venue: 'venue',
   classroom: 'classroom',
 };
@@ -582,7 +586,8 @@ export function parseMockCSV(file: File): Promise<MockCsvRow[]> {
           if (!name_code) errors.push(`テスト名「${rawName}」は無効です（会場模試 or 教室模試）`);
 
           const exam_month = (raw['試験月'] ?? '').trim();
-          if (!/^\d{4}-\d{2}$/.test(exam_month)) errors.push(`試験月「${exam_month}」はYYYY-MM形式で入力してください`);
+          if (!/^\d{4}-\d{2}$/.test(exam_month))
+            errors.push(`試験月「${exam_month}」はYYYY-MM形式で入力してください`);
 
           const scores: Record<string, number | null> = {};
           const subjectMap: [string, string][] = [

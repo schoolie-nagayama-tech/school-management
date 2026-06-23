@@ -17,11 +17,7 @@ import {
 } from './form-responses';
 import { syncFormResponseToBilling } from './billing';
 import { getDefaultSchoolId, getSchoolByCode } from './schools';
-import type {
-  FormPeriodInsert,
-  FormPeriodUpdate,
-  FormResponseInsert,
-} from '@/types/database';
+import type { FormPeriodInsert, FormPeriodUpdate, FormResponseInsert } from '@/types/database';
 import type {
   ZoukomaPeriod,
   ZoukomaSettings,
@@ -74,9 +70,7 @@ export async function unarchiveZoukomaPeriod(
 /**
  * 公開中の増コマ申込期間を取得（ポータル用）
  */
-export async function getActiveZoukomaPeriod(
-  schoolCode: string
-): Promise<ZoukomaPeriod | null> {
+export async function getActiveZoukomaPeriod(schoolCode: string): Promise<ZoukomaPeriod | null> {
   const school = await getSchoolByCode(schoolCode);
   if (!school) {
     return null;
@@ -96,9 +90,7 @@ export async function getActiveZoukomaPeriod(
 /**
  * 増コマ申込期間を1件取得
  */
-export async function getZoukomaPeriod(
-  id: string
-): Promise<ZoukomaPeriod | null> {
+export async function getZoukomaPeriod(id: string): Promise<ZoukomaPeriod | null> {
   const period = await getFormPeriod(id);
   if (!period || period.form_type !== 'zoukoma') {
     return null;
@@ -176,7 +168,8 @@ export async function updateZoukomaPeriod(
 ): Promise<ZoukomaPeriod> {
   const updateData: FormPeriodUpdate = {
     ...data,
-    settings: data.settings != null ? (data.settings as unknown as Record<string, unknown>) : undefined,
+    settings:
+      data.settings != null ? (data.settings as unknown as Record<string, unknown>) : undefined,
   };
 
   const period = await updateFormPeriod(id, updateData);
@@ -189,9 +182,7 @@ export async function updateZoukomaPeriod(
 /**
  * 前回の期間設定をコピーして新規作成
  */
-export async function copyZoukomaPeriod(
-  sourceId: string
-): Promise<ZoukomaPeriod> {
+export async function copyZoukomaPeriod(sourceId: string): Promise<ZoukomaPeriod> {
   const sourcePeriod = await getZoukomaPeriod(sourceId);
   if (!sourcePeriod) {
     throw new Error('コピー元の期間が見つかりません');
@@ -270,23 +261,15 @@ export async function getZoukomaResponses(
   }));
 
   if (filters?.chargedStatus === 'charged') {
-    filtered = filtered.filter(
-      (r) => r.status_checks && r.status_checks['charged'] === true
-    );
+    filtered = filtered.filter((r) => r.status_checks && r.status_checks['charged'] === true);
   } else if (filters?.chargedStatus === 'not_charged') {
-    filtered = filtered.filter(
-      (r) => !r.status_checks || r.status_checks['charged'] !== true
-    );
+    filtered = filtered.filter((r) => !r.status_checks || r.status_checks['charged'] !== true);
   }
 
   if (filters?.seatedStatus === 'seated') {
-    filtered = filtered.filter(
-      (r) => r.status_checks && r.status_checks['seated'] === true
-    );
+    filtered = filtered.filter((r) => r.status_checks && r.status_checks['seated'] === true);
   } else if (filters?.seatedStatus === 'not_seated') {
-    filtered = filtered.filter(
-      (r) => !r.status_checks || r.status_checks['seated'] !== true
-    );
+    filtered = filtered.filter((r) => !r.status_checks || r.status_checks['seated'] !== true);
   }
 
   return filtered as ZoukomaResponse[];

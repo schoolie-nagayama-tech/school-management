@@ -56,13 +56,9 @@ export function MaterialList({
           </thead>
           <tbody className="divide-y divide-[#e5e7eb]">
             {materials.map((material) => {
-              const isLowStock =
-                material.stock_quantity < material.low_stock_threshold;
+              const isLowStock = material.stock_quantity < material.low_stock_threshold;
               return (
-                <tr
-                  key={material.id}
-                  className={isLowStock ? 'bg-red-50' : 'hover:bg-[#f9fafb]'}
-                >
+                <tr key={material.id} className={isLowStock ? 'bg-red-50' : 'hover:bg-[#f9fafb]'}>
                   <td className="px-4 py-3 text-sm text-[#1f2937] font-medium">
                     {material.name}
                     {material.description && (
@@ -71,20 +67,10 @@ export function MaterialList({
                       </span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-sm text-[#4b5563]">
-                    {material.category || '-'}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-[#4b5563]">
-                    {material.unit}
-                  </td>
+                  <td className="px-4 py-3 text-sm text-[#4b5563]">{material.category || '-'}</td>
+                  <td className="px-4 py-3 text-sm text-[#4b5563]">{material.unit}</td>
                   <td className="px-4 py-3 text-sm text-right">
-                    <span
-                      className={
-                        isLowStock
-                          ? 'text-[#ef4444] font-bold'
-                          : 'text-[#1f2937]'
-                      }
-                    >
+                    <span className={isLowStock ? 'text-[#ef4444] font-bold' : 'text-[#1f2937]'}>
                       {material.stock_quantity}
                     </span>
                   </td>

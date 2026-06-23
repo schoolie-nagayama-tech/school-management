@@ -3,7 +3,16 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { AdminLayout } from '@/components/layouts';
-import { Button, Card, CardHeader, CardTitle, CardContent, Input, ToastContainer, Loading } from '@/components/ui';
+import {
+  Button,
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+  Input,
+  ToastContainer,
+  Loading,
+} from '@/components/ui';
 import { useToast } from '@/hooks/useToast';
 import { useConfirm } from '@/hooks/useConfirm';
 import { useRequirePermission } from '@/hooks/usePermissions';
@@ -68,9 +77,11 @@ export default function SubjectsSettingsPage() {
       const accessible = list.filter((s) => schoolIds.includes(s.id));
       setSchools(accessible);
       const initialId =
-        authSelectedSchoolId && authSelectedSchoolId !== 'all' && schoolIds.includes(authSelectedSchoolId)
+        authSelectedSchoolId &&
+        authSelectedSchoolId !== 'all' &&
+        schoolIds.includes(authSelectedSchoolId)
           ? authSelectedSchoolId
-          : accessible[0]?.id ?? null;
+          : (accessible[0]?.id ?? null);
       setSelectedSchoolId(initialId);
     });
   }, [authSelectedSchoolId, schoolIds]);
@@ -97,7 +108,9 @@ export default function SubjectsSettingsPage() {
       setIsLoading(false);
     }
   };
-  useEffect(() => { fetchAll(); }, []);
+  useEffect(() => {
+    fetchAll();
+  }, []);
 
   const filtered = useMemo(() => {
     return subjects
@@ -130,13 +143,20 @@ export default function SubjectsSettingsPage() {
     );
   }
   if (!hasPermission) {
-    return <AdminLayout><AccessDenied /></AdminLayout>;
+    return (
+      <AdminLayout>
+        <AccessDenied />
+      </AdminLayout>
+    );
   }
 
   return (
     <AdminLayout headerTitle="成績表科目マスタ">
       <div className="space-y-6">
-        <Link href="/settings" className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700">
+        <Link
+          href="/settings"
+          className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700"
+        >
           <ChevronLeft className="w-4 h-4 mr-1" />
           設定一覧に戻る
         </Link>
@@ -152,14 +172,21 @@ export default function SubjectsSettingsPage() {
             </p>
             {schools.length > 1 && (
               <div className="flex items-center gap-2 p-2.5 bg-surfacelue-50 border border-infoorderorderlue-200 rounded-lg">
-                <span className="text-sm text-text-text-mutedodylue-700 font-medium whitespace-nowrap">表示する教室:</span>
+                <span className="text-sm text-text-text-mutedodylue-700 font-medium whitespace-nowrap">
+                  表示する教室:
+                </span>
                 <select
                   value={selectedSchoolId ?? ''}
-                  onChange={(e) => { setSelectedSchoolId(e.target.value || null); setEditing(null); }}
+                  onChange={(e) => {
+                    setSelectedSchoolId(e.target.value || null);
+                    setEditing(null);
+                  }}
                   className="flex-1 px-2 py-1 border border-infoorderorderlue-300 rounded text-sm bg-surface-raised"
                 >
                   {schools.map((s) => (
-                    <option key={s.id} value={s.id}>{s.name}</option>
+                    <option key={s.id} value={s.id}>
+                      {s.name}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -174,11 +201,17 @@ export default function SubjectsSettingsPage() {
                 学校種別:
                 <select
                   value={filterType}
-                  onChange={(e) => setFilterType(e.target.value as AssessmentSubject['school_type'] | 'all')}
+                  onChange={(e) =>
+                    setFilterType(e.target.value as AssessmentSubject['school_type'] | 'all')
+                  }
                   className="px-2 py-1 border border-gray-300 rounded text-sm bg-surface-raised"
                 >
                   <option value="all">すべて</option>
-                  {SCHOOL_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+                  {SCHOOL_TYPES.map((t) => (
+                    <option key={t} value={t}>
+                      {t}
+                    </option>
+                  ))}
                 </select>
               </label>
               <label className="text-sm text-gray-700 flex items-center gap-1.5">
@@ -217,7 +250,9 @@ export default function SubjectsSettingsPage() {
           Array.from(groupedByType.entries()).map(([type, list]) => (
             <Card key={type}>
               <CardHeader>
-                <CardTitle className="text-text-text-mutedodyase">{type}（{list.length}件）</CardTitle>
+                <CardTitle className="text-text-text-mutedodyase">
+                  {type}（{list.length}件）
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="overflow-x-auto">
@@ -240,9 +275,21 @@ export default function SubjectsSettingsPage() {
                         >
                           <td className="px-2 py-2">
                             {s.name}
-                            {s.is_system && <span className="ml-2 text-[10px] text-gray-400 bg-gray-100 px-1 rounded">全教室共通</span>}
-                            {!s.is_system && s.school_id && <span className="ml-2 text-[10px] text-text-text-mutedodylue-600 bg-surfacelue-50 px-1 rounded">この教室のみ</span>}
-                            {s.is_required && <span className="ml-2 text-[10px] bg-red-50 text-red-600 px-1 rounded">必履修</span>}
+                            {s.is_system && (
+                              <span className="ml-2 text-[10px] text-gray-400 bg-gray-100 px-1 rounded">
+                                全教室共通
+                              </span>
+                            )}
+                            {!s.is_system && s.school_id && (
+                              <span className="ml-2 text-[10px] text-text-text-mutedodylue-600 bg-surfacelue-50 px-1 rounded">
+                                この教室のみ
+                              </span>
+                            )}
+                            {s.is_required && (
+                              <span className="ml-2 text-[10px] bg-red-50 text-red-600 px-1 rounded">
+                                必履修
+                              </span>
+                            )}
                           </td>
                           <td className="px-2 py-2 text-gray-600">{s.short_name ?? '-'}</td>
                           <td className="px-2 py-2 text-gray-600 text-xs">
@@ -283,9 +330,22 @@ export default function SubjectsSettingsPage() {
                               <button
                                 type="button"
                                 onClick={async () => {
-                                  if (!(await confirm({ title: '無効化', description: `${s.name} を無効化しますか？（標準科目のため削除はできません）`, confirmLabel: '無効化', variant: 'danger' }))) return;
-                                  try { await deactivateAssessmentSubject(s.id); await fetchAll(); success('無効化しました'); }
-                                  catch (e) { toastError(e instanceof Error ? e.message : '失敗しました'); }
+                                  if (
+                                    !(await confirm({
+                                      title: '無効化',
+                                      description: `${s.name} を無効化しますか？（標準科目のため削除はできません）`,
+                                      confirmLabel: '無効化',
+                                      variant: 'danger',
+                                    }))
+                                  )
+                                    return;
+                                  try {
+                                    await deactivateAssessmentSubject(s.id);
+                                    await fetchAll();
+                                    success('無効化しました');
+                                  } catch (e) {
+                                    toastError(e instanceof Error ? e.message : '失敗しました');
+                                  }
                                 }}
                                 className="text-xs text-text-headingmber-600 hover:text-text-headingmber-800 px-2 py-1"
                                 title="無効化"
@@ -296,9 +356,22 @@ export default function SubjectsSettingsPage() {
                               <button
                                 type="button"
                                 onClick={async () => {
-                                  if (!(await confirm({ title: '削除', description: `${s.name} を完全に削除しますか？`, confirmLabel: '削除', variant: 'danger' }))) return;
-                                  try { await deleteAssessmentSubject(s.id); await fetchAll(); success('削除しました'); }
-                                  catch (e) { toastError(e instanceof Error ? e.message : '失敗しました'); }
+                                  if (
+                                    !(await confirm({
+                                      title: '削除',
+                                      description: `${s.name} を完全に削除しますか？`,
+                                      confirmLabel: '削除',
+                                      variant: 'danger',
+                                    }))
+                                  )
+                                    return;
+                                  try {
+                                    await deleteAssessmentSubject(s.id);
+                                    await fetchAll();
+                                    success('削除しました');
+                                  } catch (e) {
+                                    toastError(e instanceof Error ? e.message : '失敗しました');
+                                  }
                                 }}
                                 className="text-xs text-red-600 hover:text-red-800 px-2 py-1"
                                 title="削除"
@@ -337,7 +410,9 @@ function SubjectEditor({
 }) {
   const [name, setName] = useState(initial.name);
   const [shortName, setShortName] = useState(initial.short_name ?? '');
-  const [schoolType, setSchoolType] = useState<AssessmentSubject['school_type']>(initial.school_type);
+  const [schoolType, setSchoolType] = useState<AssessmentSubject['school_type']>(
+    initial.school_type
+  );
   const [grades, setGrades] = useState<number[]>(initial.applicable_grades);
   const [category, setCategory] = useState(initial.category);
   const [isRequired, setIsRequired] = useState(initial.is_required);
@@ -345,7 +420,9 @@ function SubjectEditor({
   const [saving, setSaving] = useState(false);
 
   const toggleGrade = (g: number) => {
-    setGrades((prev) => prev.includes(g) ? prev.filter((x) => x !== g) : [...prev, g].sort((a, b) => a - b));
+    setGrades((prev) =>
+      prev.includes(g) ? prev.filter((x) => x !== g) : [...prev, g].sort((a, b) => a - b)
+    );
   };
 
   const save = async () => {
@@ -379,11 +456,19 @@ function SubjectEditor({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div>
             <label className="block text-xs font-medium text-gray-700 mb-1">科目名 *</label>
-            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="例：英語コミュニケーションⅠ" />
+            <Input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="例：英語コミュニケーションⅠ"
+            />
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-700 mb-1">略称</label>
-            <Input value={shortName} onChange={(e) => setShortName(e.target.value)} placeholder="例：英コⅠ" />
+            <Input
+              value={shortName}
+              onChange={(e) => setShortName(e.target.value)}
+              placeholder="例：英コⅠ"
+            />
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-700 mb-1">コード</label>
@@ -401,7 +486,11 @@ function SubjectEditor({
               }}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-surface-raised"
             >
-              {SCHOOL_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+              {SCHOOL_TYPES.map((t) => (
+                <option key={t} value={t}>
+                  {t}
+                </option>
+              ))}
             </select>
           </div>
           <div>
@@ -411,7 +500,11 @@ function SubjectEditor({
               onChange={(e) => setCategory(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-surface-raised"
             >
-              {CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+              {CATEGORIES.map((c) => (
+                <option key={c.value} value={c.value}>
+                  {c.label}
+                </option>
+              ))}
             </select>
           </div>
           <div>
@@ -455,7 +548,9 @@ function SubjectEditor({
         </label>
 
         <div className="flex justify-end gap-2 pt-2 border-t border-gray-100">
-          <Button variant="ghost" onClick={onCancel} disabled={saving}>キャンセル</Button>
+          <Button variant="ghost" onClick={onCancel} disabled={saving}>
+            キャンセル
+          </Button>
           <Button onClick={save} disabled={saving}>
             <Save className="w-4 h-4 mr-1" />
             {saving ? '保存中...' : '保存'}

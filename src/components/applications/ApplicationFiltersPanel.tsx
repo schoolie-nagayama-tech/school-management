@@ -27,19 +27,14 @@ export function ApplicationFiltersPanel({
   onReset,
 }: ApplicationFiltersPanelProps) {
   const hasActiveFilters =
-    filters.search ||
-    filters.grade !== null ||
-    filters.itemId ||
-    filters.showHidden;
+    filters.search || filters.grade !== null || filters.itemId || filters.showHidden;
 
   return (
     <div className="bg-white border border-[#e5e7eb] rounded-lg p-4 mb-6">
       <div className="flex flex-wrap gap-4 items-end">
         {/* 生徒名検索 */}
         <div className="flex-1 min-w-[200px]">
-          <label className="block text-sm font-medium text-[#1f2937] mb-1">
-            生徒名で検索
-          </label>
+          <label className="block text-sm font-medium text-[#1f2937] mb-1">生徒名で検索</label>
           <input
             type="text"
             value={filters.search || ''}
@@ -51,28 +46,22 @@ export function ApplicationFiltersPanel({
 
         {/* 学年フィルター */}
         <div className="w-32">
-          <label className="block text-sm font-medium text-[#1f2937] mb-1">
-            学年
-          </label>
+          <label className="block text-sm font-medium text-[#1f2937] mb-1">学年</label>
           <Select
-            value={filters.grade !== null && filters.grade !== undefined ? String(filters.grade) : ''}
-            onChange={(e) =>
-              onChange({ grade: e.target.value ? Number(e.target.value) : null })
+            value={
+              filters.grade !== null && filters.grade !== undefined ? String(filters.grade) : ''
             }
+            onChange={(e) => onChange({ grade: e.target.value ? Number(e.target.value) : null })}
             options={GRADES}
           />
         </div>
 
         {/* 申込項目フィルター */}
         <div className="w-48">
-          <label className="block text-sm font-medium text-[#1f2937] mb-1">
-            申込項目
-          </label>
+          <label className="block text-sm font-medium text-[#1f2937] mb-1">申込項目</label>
           <Select
             value={filters.itemId || ''}
-            onChange={(e) =>
-              onChange({ itemId: e.target.value || null })
-            }
+            onChange={(e) => onChange({ itemId: e.target.value || null })}
             options={[
               { value: '', label: 'すべての項目' },
               ...items

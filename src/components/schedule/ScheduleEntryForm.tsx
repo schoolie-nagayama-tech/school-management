@@ -2,7 +2,13 @@
 
 import { useState } from 'react';
 import { Input, Label } from '@/components/ui';
-import { SelectShadcn as Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui';
+import {
+  SelectShadcn as Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '@/components/ui';
 import { Checkbox } from '@/components/ui';
 import { Textarea } from '@/components/ui';
 import type { ScheduleEntryFormData, ScheduleEntry } from '@/types/schedule';
@@ -14,7 +20,9 @@ const GRADE_CATEGORY_LABELS: Record<string, string> = {
   high: '高校',
 };
 
-function groupSubjectsByGradeCategory(subjects: Subject[]): { category: string; label: string; items: Subject[] }[] {
+function groupSubjectsByGradeCategory(
+  subjects: Subject[]
+): { category: string; label: string; items: Subject[] }[] {
   const order: ('elementary' | 'middle' | 'high')[] = ['elementary', 'middle', 'high'];
   const map = new Map<string, Subject[]>();
   for (const s of subjects) {
@@ -24,7 +32,11 @@ function groupSubjectsByGradeCategory(subjects: Subject[]): { category: string; 
   }
   return order
     .filter((cat) => map.has(cat))
-    .map((cat) => ({ category: cat, label: GRADE_CATEGORY_LABELS[cat] ?? cat, items: map.get(cat)! }));
+    .map((cat) => ({
+      category: cat,
+      label: GRADE_CATEGORY_LABELS[cat] ?? cat,
+      items: map.get(cat)!,
+    }));
 }
 
 interface TeacherOption {
@@ -76,8 +88,8 @@ export function ScheduleEntryForm({
 }: ScheduleEntryFormProps) {
   const [studentSearch, setStudentSearch] = useState('');
 
-  const teachersForSchool = teachers.filter(
-    (t) => t.user_schools?.some((us) => us.school_id === selectedSchoolId)
+  const teachersForSchool = teachers.filter((t) =>
+    t.user_schools?.some((us) => us.school_id === selectedSchoolId)
   );
   const searchLower = studentSearch.trim().toLowerCase();
   const filteredStudents = searchLower
@@ -109,10 +121,7 @@ export function ScheduleEntryForm({
       </div>
       <div className="space-y-2">
         <Label>講師</Label>
-        <Select
-          value={form.teacher_id}
-          onValueChange={(v) => onChange({ ...form, teacher_id: v })}
-        >
+        <Select value={form.teacher_id} onValueChange={(v) => onChange({ ...form, teacher_id: v })}>
           <SelectTrigger>
             <SelectValue placeholder="講師を選択" />
           </SelectTrigger>

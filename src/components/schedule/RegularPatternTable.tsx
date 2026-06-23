@@ -1,6 +1,16 @@
 'use client';
 
-import { Button, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, Badge, Loading } from '@/components/ui';
+import {
+  Button,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+  Badge,
+  Loading,
+} from '@/components/ui';
 import { Pencil, Trash2, Plus } from 'lucide-react';
 import { DAY_OF_WEEK_LABELS, SCHEDULE_PERIOD_LABELS } from '@/types/schedule';
 import type { ScheduleRegularPattern } from '@/types/schedule';
@@ -29,9 +39,7 @@ export function RegularPatternTable({
   isLoading,
 }: RegularPatternTableProps) {
   if (isLoading) {
-    return (
-      <Loading size="md" />
-    );
+    return <Loading size="md" />;
   }
   return (
     <div className="space-y-4">
@@ -42,9 +50,7 @@ export function RegularPatternTable({
         </Button>
       </div>
       {patterns.length === 0 ? (
-        <div className="py-8 text-center text-[var(--paragraph)]">
-          通塾日程が登録されていません
-        </div>
+        <div className="py-8 text-center text-[var(--paragraph)]">通塾日程が登録されていません</div>
       ) : (
         <Table>
           <TableHeader>
@@ -73,9 +79,7 @@ export function RegularPatternTable({
                     ? `${p.time_slot.slot_number}限 ${p.time_slot.start_time?.slice(0, 5)}-${p.time_slot.end_time?.slice(0, 5)}`
                     : '—'}
                 </TableCell>
-                <TableCell>
-                  {p.teacher?.display_name || p.teacher?.email || p.teacher_id}
-                </TableCell>
+                <TableCell>{p.teacher?.display_name || p.teacher?.email || p.teacher_id}</TableCell>
                 <TableCell>
                   {(p.subject_ids || [])
                     .map((id) => subjectNames[id] || id)

@@ -7,7 +7,9 @@ import { fetchWithAuth } from '@/lib/api/auth';
  */
 export async function impersonateUser(userId: string): Promise<void> {
   const supabase = getSupabaseBrowserClient();
-  const { data: { session } } = await supabase.auth.getSession();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
   if (!session?.refresh_token) throw new Error('現在のセッションが取得できません');
 
   const res = await fetchWithAuth('/api/admin/impersonate', {

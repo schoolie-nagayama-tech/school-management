@@ -39,7 +39,7 @@ export async function findRelatedInquiries(inquiry: Inquiry): Promise<RelatedInq
       .from('inquiries')
       .select('*')
       .is('deleted_at', null) // 論理削除済みは除外
-      .neq('id', id)          // 自分自身を除く
+      .neq('id', id) // 自分自身を除く
       .order('inquired_at', { ascending: false })
       .limit(20);
 
@@ -65,8 +65,10 @@ export async function findRelatedInquiries(inquiry: Inquiry): Promise<RelatedInq
   ]);
 
   // エラーは静かに無視（呼び出し側が握り潰す設計だが、デバッグ用に console.warn）
-  if (phoneResult.error) console.warn('[inquiryDedup] phone query error:', phoneResult.error.message);
-  if (emailResult.error) console.warn('[inquiryDedup] email query error:', emailResult.error.message);
+  if (phoneResult.error)
+    console.warn('[inquiryDedup] phone query error:', phoneResult.error.message);
+  if (emailResult.error)
+    console.warn('[inquiryDedup] email query error:', emailResult.error.message);
   if (nameResult.error) console.warn('[inquiryDedup] name query error:', nameResult.error.message);
 
   // ---- id でマージして matchedBy を付与 ----

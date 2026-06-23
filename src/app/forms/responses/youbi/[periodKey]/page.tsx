@@ -3,11 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import { AdminLayout } from '@/components/layouts';
-import {
-  getYoubiResponses,
-  getYoubiStats,
-  updateYoubiStatusCheck,
-} from '@/lib/api/youbi';
+import { getYoubiResponses, getYoubiStats, updateYoubiStatusCheck } from '@/lib/api/youbi';
 import {
   unlinkResponseFromStudent,
   getArchivedCount,
@@ -54,12 +50,12 @@ export default function YoubiResponsePage() {
 
   // フィルター
   const [filterGrade, setFilterGrade] = useState<number | 'all'>('all');
-  const [filterHandledStatus, setFilterHandledStatus] = useState<
-    'all' | 'handled' | 'not_handled'
-  >('all');
-  const [filterLinkedStatus, setFilterLinkedStatus] = useState<
-    'all' | 'linked' | 'unlinked'
-  >('all');
+  const [filterHandledStatus, setFilterHandledStatus] = useState<'all' | 'handled' | 'not_handled'>(
+    'all'
+  );
+  const [filterLinkedStatus, setFilterLinkedStatus] = useState<'all' | 'linked' | 'unlinked'>(
+    'all'
+  );
   const [searchQuery, setSearchQuery] = useState('');
   const [showArchived, setShowArchived] = useState(false);
   const [archivedCount, setArchivedCount] = useState(0);
@@ -71,7 +67,8 @@ export default function YoubiResponsePage() {
     setErrorMessage('');
     try {
       const schoolIds = getSelectedSchoolIds();
-      const schoolId: string | string[] = schoolIdParam || (schoolIds.length > 0 ? schoolIds : getDefaultSchoolId());
+      const schoolId: string | string[] =
+        schoolIdParam || (schoolIds.length > 0 ? schoolIds : getDefaultSchoolId());
       const filters: YoubiResponseFilters = {
         grade: filterGrade === 'all' ? undefined : filterGrade,
         handledStatus: filterHandledStatus === 'all' ? undefined : filterHandledStatus,
@@ -91,13 +88,20 @@ export default function YoubiResponsePage() {
       setArchivedCount(archivedCountData);
     } catch (error) {
       console.error('Error fetching youbi responses:', error);
-      setErrorMessage(
-        getUserErrorMessage(error, '回答一覧の取得に失敗しました')
-      );
+      setErrorMessage(getUserErrorMessage(error, '回答一覧の取得に失敗しました'));
     } finally {
       setIsLoading(false);
     }
-  }, [getSelectedSchoolIds, schoolIdParam, periodKey, filterGrade, filterHandledStatus, filterLinkedStatus, searchQuery, showArchived]);
+  }, [
+    getSelectedSchoolIds,
+    schoolIdParam,
+    periodKey,
+    filterGrade,
+    filterHandledStatus,
+    filterLinkedStatus,
+    searchQuery,
+    showArchived,
+  ]);
 
   useEffect(() => {
     if (periodKey) {
@@ -128,11 +132,7 @@ export default function YoubiResponsePage() {
       success(`${checkType === 'charged' ? '計上' : '座席'}状態を更新しました`);
     } catch (err) {
       console.error('Error updating status:', err);
-      error(
-        err instanceof Error
-          ? err.message
-          : 'ステータスの更新に失敗しました'
-      );
+      error(err instanceof Error ? err.message : 'ステータスの更新に失敗しました');
     }
   };
 
@@ -170,9 +170,7 @@ export default function YoubiResponsePage() {
       success('紐付けを解除しました');
     } catch (err) {
       console.error('Error unlinking student:', err);
-      error(
-        getUserErrorMessage(err, '紐付け解除に失敗しました')
-      );
+      error(getUserErrorMessage(err, '紐付け解除に失敗しました'));
     }
   };
 
@@ -208,7 +206,14 @@ export default function YoubiResponsePage() {
   // 回答を完全削除（マネージャー以上のみ）。アーカイブと違い物理削除で復元不可。
   const handleDelete = async (id: string) => {
     if (!permissions?.canDeleteFormResponses) return;
-    if (!(await confirm({ title: '回答削除', description: 'この回答を完全に削除しますか？この操作は取り消せません。', confirmLabel: '削除', variant: 'danger' }))) {
+    if (
+      !(await confirm({
+        title: '回答削除',
+        description: 'この回答を完全に削除しますか？この操作は取り消せません。',
+        confirmLabel: '削除',
+        variant: 'danger',
+      }))
+    ) {
       return;
     }
     setIsProcessing(true);
@@ -231,7 +236,14 @@ export default function YoubiResponsePage() {
       error('削除する回答を選択してください');
       return;
     }
-    if (!(await confirm({ title: '一括削除確認', description: `${selectedIds.size}件の回答を完全に削除しますか？この操作は取り消せません。`, confirmLabel: '削除', variant: 'danger' }))) {
+    if (
+      !(await confirm({
+        title: '一括削除確認',
+        description: `${selectedIds.size}件の回答を完全に削除しますか？この操作は取り消せません。`,
+        confirmLabel: '削除',
+        variant: 'danger',
+      }))
+    ) {
       return;
     }
     setIsProcessing(true);
@@ -255,7 +267,14 @@ export default function YoubiResponsePage() {
       return;
     }
 
-    if (!(await confirm({ title: 'アーカイブ確認', description: `${selectedIds.size}件の回答をアーカイブしますか？`, confirmLabel: 'アーカイブ', variant: 'warning' }))) {
+    if (
+      !(await confirm({
+        title: 'アーカイブ確認',
+        description: `${selectedIds.size}件の回答をアーカイブしますか？`,
+        confirmLabel: 'アーカイブ',
+        variant: 'warning',
+      }))
+    ) {
       return;
     }
 
@@ -276,8 +295,8 @@ export default function YoubiResponsePage() {
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      const activeResponses = responses.filter(r => !r.is_archived);
-      setSelectedIds(new Set(activeResponses.map(r => r.id)));
+      const activeResponses = responses.filter((r) => !r.is_archived);
+      setSelectedIds(new Set(activeResponses.map((r) => r.id)));
     } else {
       setSelectedIds(new Set());
     }
@@ -293,8 +312,9 @@ export default function YoubiResponsePage() {
     setSelectedIds(newSet);
   };
 
-  const activeResponses = responses.filter(r => !r.is_archived);
-  const allSelected = activeResponses.length > 0 && activeResponses.every(r => selectedIds.has(r.id));
+  const activeResponses = responses.filter((r) => !r.is_archived);
+  const allSelected =
+    activeResponses.length > 0 && activeResponses.every((r) => selectedIds.has(r.id));
 
   return (
     <>
@@ -313,9 +333,7 @@ export default function YoubiResponsePage() {
         <div className="mb-6 bg-surface-raised rounded-xl border border-border p-4">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
             <div>
-              <label className="block text-sm font-medium text-text-heading mb-2">
-                生徒名検索
-              </label>
+              <label className="block text-sm font-medium text-text-heading mb-2">生徒名検索</label>
               <input
                 type="text"
                 value={searchQuery}
@@ -326,15 +344,11 @@ export default function YoubiResponsePage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-text-heading mb-2">
-                学年
-              </label>
+              <label className="block text-sm font-medium text-text-heading mb-2">学年</label>
               <select
                 value={filterGrade}
                 onChange={(e) =>
-                  setFilterGrade(
-                    e.target.value === 'all' ? 'all' : Number(e.target.value)
-                  )
+                  setFilterGrade(e.target.value === 'all' ? 'all' : Number(e.target.value))
                 }
                 className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-surface-raised text-text-body"
               >
@@ -348,15 +362,11 @@ export default function YoubiResponsePage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-text-heading mb-2">
-                対応状況
-              </label>
+              <label className="block text-sm font-medium text-text-heading mb-2">対応状況</label>
               <select
                 value={filterHandledStatus}
                 onChange={(e) =>
-                  setFilterHandledStatus(
-                    e.target.value as 'all' | 'handled' | 'not_handled'
-                  )
+                  setFilterHandledStatus(e.target.value as 'all' | 'handled' | 'not_handled')
                 }
                 className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-surface-raised text-text-body"
               >
@@ -367,15 +377,11 @@ export default function YoubiResponsePage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-text-heading mb-2">
-                紐付け状態
-              </label>
+              <label className="block text-sm font-medium text-text-heading mb-2">紐付け状態</label>
               <select
                 value={filterLinkedStatus}
                 onChange={(e) =>
-                  setFilterLinkedStatus(
-                    e.target.value as 'all' | 'linked' | 'unlinked'
-                  )
+                  setFilterLinkedStatus(e.target.value as 'all' | 'linked' | 'unlinked')
                 }
                 className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-surface-raised text-text-body"
               >
@@ -407,9 +413,7 @@ export default function YoubiResponsePage() {
         {/* 一括操作バー */}
         {selectedIds.size > 0 && (
           <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between">
-            <span className="text-sm text-blue-800">
-              {selectedIds.size}件を選択中
-            </span>
+            <span className="text-sm text-blue-800">{selectedIds.size}件を選択中</span>
             <div className="flex gap-2">
               <button
                 onClick={handleBulkArchive}
@@ -445,7 +449,9 @@ export default function YoubiResponsePage() {
             </div>
           ) : responses.length === 0 ? (
             <div className="p-8 text-center">
-              <p className="text-text-body">回答がありません。保護者ポータルから申込が届くとここに表示されます。</p>
+              <p className="text-text-body">
+                回答がありません。保護者ポータルから申込が届くとここに表示されます。
+              </p>
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -522,13 +528,16 @@ export default function YoubiResponsePage() {
                         {formatChangeSummary(response)}
                       </td>
                       <td className="px-4 py-3 text-sm text-text-body">
-                        {response.response_data.change_from_label || response.response_data.change_from}
+                        {response.response_data.change_from_label ||
+                          response.response_data.change_from}
                       </td>
                       <td className="px-4 py-3 text-center">
                         <input
                           type="checkbox"
                           checked={response.status_checks?.charged === true}
-                          onChange={(e) => handleStatusCheck(response.id, 'charged', e.target.checked)}
+                          onChange={(e) =>
+                            handleStatusCheck(response.id, 'charged', e.target.checked)
+                          }
                           className="w-4 h-4 text-info border-border rounded focus:ring-primary cursor-pointer"
                         />
                       </td>
@@ -536,7 +545,9 @@ export default function YoubiResponsePage() {
                         <input
                           type="checkbox"
                           checked={response.status_checks?.seated === true}
-                          onChange={(e) => handleStatusCheck(response.id, 'seated', e.target.checked)}
+                          onChange={(e) =>
+                            handleStatusCheck(response.id, 'seated', e.target.checked)
+                          }
                           className="w-4 h-4 text-info border-border rounded focus:ring-primary cursor-pointer"
                         />
                       </td>
@@ -622,43 +633,43 @@ export default function YoubiResponsePage() {
           )}
         </div>
 
-      {/* 紐付けモーダル */}
-      {linkingResponse && (
-        <LinkStudentModal
-          isOpen={!!linkingResponse}
-          onClose={() => setLinkingResponse(null)}
-          response={{
-            id: linkingResponse.id,
-            school_id: linkingResponse.school_id,
-            form_type: 'youbi',
-            form_period: linkingResponse.form_period,
-            student_name: linkingResponse.student_name,
-            grade: linkingResponse.grade,
-            email: linkingResponse.email,
-            response_data: linkingResponse.response_data as unknown as Record<string, unknown>,
-            linked_student_id: linkingResponse.linked_student_id,
-            linked_at: linkingResponse.linked_at,
-            status_checks: (linkingResponse.status_checks ?? {}) as Record<string, boolean>,
-            is_archived: linkingResponse.is_archived,
-            archived_at: linkingResponse.archived_at,
-            created_at: linkingResponse.created_at,
-            updated_at: linkingResponse.updated_at,
-          }}
-          students={students}
-          isLoadingStudents={isLoadingStudents}
-          onSuccess={handleLinkSuccess}
-        />
-      )}
+        {/* 紐付けモーダル */}
+        {linkingResponse && (
+          <LinkStudentModal
+            isOpen={!!linkingResponse}
+            onClose={() => setLinkingResponse(null)}
+            response={{
+              id: linkingResponse.id,
+              school_id: linkingResponse.school_id,
+              form_type: 'youbi',
+              form_period: linkingResponse.form_period,
+              student_name: linkingResponse.student_name,
+              grade: linkingResponse.grade,
+              email: linkingResponse.email,
+              response_data: linkingResponse.response_data as unknown as Record<string, unknown>,
+              linked_student_id: linkingResponse.linked_student_id,
+              linked_at: linkingResponse.linked_at,
+              status_checks: (linkingResponse.status_checks ?? {}) as Record<string, boolean>,
+              is_archived: linkingResponse.is_archived,
+              archived_at: linkingResponse.archived_at,
+              created_at: linkingResponse.created_at,
+              updated_at: linkingResponse.updated_at,
+            }}
+            students={students}
+            isLoadingStudents={isLoadingStudents}
+            onSuccess={handleLinkSuccess}
+          />
+        )}
 
-      {/* 回答詳細モーダル */}
-      {detailResponse && (
-        <YoubiResponseDetailModal
-          isOpen={!!detailResponse}
-          response={detailResponse}
-          onClose={() => setDetailResponse(null)}
-        />
-      )}
-      {ConfirmDialog}
+        {/* 回答詳細モーダル */}
+        {detailResponse && (
+          <YoubiResponseDetailModal
+            isOpen={!!detailResponse}
+            response={detailResponse}
+            onClose={() => setDetailResponse(null)}
+          />
+        )}
+        {ConfirmDialog}
       </AdminLayout>
     </>
   );

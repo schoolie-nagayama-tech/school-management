@@ -9,14 +9,17 @@ interface ScheduleBoardProps {
   season: SeasonType;
   year: number;
   onToggleComplete: (taskId: string, completed: boolean) => Promise<void>;
-  onUpdateTask: (taskId: string, updates: Partial<{
-    name: string;
-    description: string | null;
-    start_date: string | null;
-    end_date: string | null;
-    major_category: string;
-    sort_order: number;
-  }>) => Promise<void>;
+  onUpdateTask: (
+    taskId: string,
+    updates: Partial<{
+      name: string;
+      description: string | null;
+      start_date: string | null;
+      end_date: string | null;
+      major_category: string;
+      sort_order: number;
+    }>
+  ) => Promise<void>;
   onReorderTasks?: (reorderedIds: { id: string; sort_order: number }[]) => Promise<void>;
   onDeleteTask: (taskId: string) => Promise<void>;
   onAddTask: (majorCategory: string, name: string, description?: string) => Promise<void>;
@@ -53,7 +56,7 @@ function computeBarPosition(
   if (totalMs <= 0) return null;
 
   const s = startDate ? new Date(startDate) : rangeStart;
-  const e = endDate ? new Date(endDate) : (startDate ? new Date(startDate) : rangeEnd);
+  const e = endDate ? new Date(endDate) : startDate ? new Date(startDate) : rangeEnd;
 
   const leftMs = Math.max(0, s.getTime() - rangeStart.getTime());
   const rightMs = Math.min(totalMs, e.getTime() - rangeStart.getTime());
@@ -65,7 +68,10 @@ function computeBarPosition(
 }
 
 /** タイムライン上の週マーカーを生成 */
-function generateWeekMarkers(rangeStart: Date, rangeEnd: Date): { position: number; label: string }[] {
+function generateWeekMarkers(
+  rangeStart: Date,
+  rangeEnd: Date
+): { position: number; label: string }[] {
   const markers: { position: number; label: string }[] = [];
   const totalMs = rangeEnd.getTime() - rangeStart.getTime();
   if (totalMs <= 0) return markers;
@@ -153,7 +159,10 @@ function InlineEdit({
       onBlur={commit}
       onKeyDown={(e) => {
         if (e.key === 'Enter') commit();
-        if (e.key === 'Escape') { setDraft(value); setEditing(false); }
+        if (e.key === 'Escape') {
+          setDraft(value);
+          setEditing(false);
+        }
       }}
       className={`${className || ''} border border-blue-300 rounded px-1 py-0 outline-none focus:ring-1 focus:ring-blue-400`}
       placeholder={placeholder}
@@ -232,7 +241,12 @@ function TaskRow({
             >
               ▲
             </button>
-            <span className="cursor-grab active:cursor-grabbing text-gray-300 text-[10px] leading-none select-none" title="ドラッグで並べ替え">⠿</span>
+            <span
+              className="cursor-grab active:cursor-grabbing text-gray-300 text-[10px] leading-none select-none"
+              title="ドラッグで並べ替え"
+            >
+              ⠿
+            </span>
             <button
               onClick={onMoveDown}
               disabled={isLast}
@@ -253,7 +267,9 @@ function TaskRow({
             className="w-4 h-4 text-[#3b82f6] rounded shrink-0 cursor-pointer"
           />
         ) : (
-          <span className={`w-4 h-4 shrink-0 flex items-center justify-center text-xs ${isCompleted ? 'text-green-500' : 'text-gray-300'}`}>
+          <span
+            className={`w-4 h-4 shrink-0 flex items-center justify-center text-xs ${isCompleted ? 'text-green-500' : 'text-gray-300'}`}
+          >
             {isCompleted ? '✓' : '○'}
           </span>
         )}
@@ -434,7 +450,10 @@ function AddTaskInline({
         type="text"
         value={name}
         onChange={(e) => setName(e.target.value)}
-        onKeyDown={(e) => { if (e.key === 'Enter') handleAdd(); if (e.key === 'Escape') setIsOpen(false); }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') handleAdd();
+          if (e.key === 'Escape') setIsOpen(false);
+        }}
         placeholder="タスク名"
         className="flex-1 min-w-[120px] text-xs border border-gray-200 rounded px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-400"
       />
@@ -442,7 +461,10 @@ function AddTaskInline({
         type="text"
         value={desc}
         onChange={(e) => setDesc(e.target.value)}
-        onKeyDown={(e) => { if (e.key === 'Enter') handleAdd(); if (e.key === 'Escape') setIsOpen(false); }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') handleAdd();
+          if (e.key === 'Escape') setIsOpen(false);
+        }}
         placeholder="説明(任意)"
         className="flex-1 min-w-[100px] text-xs border border-gray-200 rounded px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-400"
       />
@@ -455,7 +477,11 @@ function AddTaskInline({
           {saving ? '...' : '追加'}
         </button>
         <button
-          onClick={() => { setIsOpen(false); setName(''); setDesc(''); }}
+          onClick={() => {
+            setIsOpen(false);
+            setName('');
+            setDesc('');
+          }}
           className="px-2 py-1.5 text-xs text-gray-400 hover:text-gray-600"
         >
           キャンセル
@@ -642,7 +668,10 @@ function CategorySection({
         className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50/50 transition-colors duration-150"
       >
         <div className="flex items-center gap-3">
-          <span className="text-xs text-gray-400 transition-transform duration-150" style={{ transform: collapsed ? 'rotate(-90deg)' : 'rotate(0deg)' }}>
+          <span
+            className="text-xs text-gray-400 transition-transform duration-150"
+            style={{ transform: collapsed ? 'rotate(-90deg)' : 'rotate(0deg)' }}
+          >
             ▼
           </span>
           <h3 className="text-sm font-bold text-[#1e3a5f]">{category}</h3>
@@ -656,7 +685,8 @@ function CategorySection({
               className="h-full rounded-full transition-[width] duration-500 ease-out"
               style={{
                 width: `${Math.round(progress * 100)}%`,
-                backgroundColor: progress >= 0.8 ? '#10b981' : progress >= 0.5 ? '#f59e0b' : '#ef4444',
+                backgroundColor:
+                  progress >= 0.8 ? '#10b981' : progress >= 0.5 ? '#f59e0b' : '#ef4444',
               }}
             />
           </div>
@@ -704,13 +734,7 @@ function CategorySection({
 }
 
 // ------- Timeline Header -------
-function TimelineHeader({
-  rangeStart,
-  rangeEnd,
-}: {
-  rangeStart: Date;
-  rangeEnd: Date;
-}) {
+function TimelineHeader({ rangeStart, rangeEnd }: { rangeStart: Date; rangeEnd: Date }) {
   const markers = generateWeekMarkers(rangeStart, rangeEnd);
   const todayPos = getTodayPosition(rangeStart, rangeEnd);
 
@@ -769,10 +793,7 @@ export function ScheduleBoard({
     return Array.from(map.entries());
   }, [tasks]);
 
-  const existingCategoryNames = useMemo(
-    () => categories.map(([name]) => name),
-    [categories]
-  );
+  const existingCategoryNames = useMemo(() => categories.map(([name]) => name), [categories]);
 
   // Overall progress
   const completionRate = useMemo(() => {
@@ -795,7 +816,11 @@ export function ScheduleBoard({
                 style={{
                   width: `${Math.round(completionRate * 100)}%`,
                   backgroundColor:
-                    completionRate >= 0.8 ? '#10b981' : completionRate >= 0.5 ? '#f59e0b' : '#ef4444',
+                    completionRate >= 0.8
+                      ? '#10b981'
+                      : completionRate >= 0.5
+                        ? '#f59e0b'
+                        : '#ef4444',
                 }}
               />
             </div>
@@ -828,10 +853,7 @@ export function ScheduleBoard({
 
       {/* Add new category */}
       {canEdit && (
-        <AddCategoryInline
-          existingCategories={existingCategoryNames}
-          onAdd={onAddTask}
-        />
+        <AddCategoryInline existingCategories={existingCategoryNames} onAdd={onAddTask} />
       )}
 
       {/* Empty state */}

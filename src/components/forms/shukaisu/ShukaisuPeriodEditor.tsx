@@ -3,7 +3,12 @@
 import { useState, useEffect } from 'react';
 import { Modal, Input, Button, Select } from '@/components/ui';
 import { createShukaisuPeriod, updateShukaisuPeriod } from '@/lib/api/shukaisu';
-import { createFormPeriodForSchools, updateFormPeriodForSchools, generateUniquePeriodKey, getNextPeriodKey } from '@/lib/api/form-periods';
+import {
+  createFormPeriodForSchools,
+  updateFormPeriodForSchools,
+  generateUniquePeriodKey,
+  getNextPeriodKey,
+} from '@/lib/api/form-periods';
 import { getApplicationItems } from '@/lib/api/applications';
 import { getClassPeriodsAsync, formatPeriodsToText } from '@/lib/api/class-periods';
 import type { ShukaisuPeriod, ShukaisuSettings } from '@/types/forms/shukaisu';
@@ -25,7 +30,6 @@ interface ShukaisuPeriodEditorProps {
 const DEFAULT_DESCRIPTION = `週回数・曜日・時間・科目の変更をご希望の方は、以下のフォームよりお申し込みください。
 
 ※変更が決まりましたら、Growにてご連絡いたします。`;
-
 
 export function ShukaisuPeriodEditor({
   isOpen,
@@ -57,7 +61,6 @@ export function ShukaisuPeriodEditor({
   const [linkedApplicationItemId, setLinkedApplicationItemId] = useState<string>('');
   const [applicationItems, setApplicationItems] = useState<ApplicationItem[]>([]);
 
-
   // テキストをパース
   const parseLines = (text: string): string[] => {
     return text
@@ -83,7 +86,8 @@ export function ShukaisuPeriodEditor({
   // 初期値の設定
   useEffect(() => {
     if (isOpen) {
-      const targetIds = schoolIds && schoolIds.length > 0 ? schoolIds : schoolId ? [schoolId] : undefined;
+      const targetIds =
+        schoolIds && schoolIds.length > 0 ? schoolIds : schoolId ? [schoolId] : undefined;
       getApplicationItems(targetIds, true).then(setApplicationItems).catch(console.error);
       // コマ時間マスタから時限リストを非同期で取得して初期化
       const initPeriods = async () => {
@@ -99,19 +103,14 @@ export function ShukaisuPeriodEditor({
           setDescription(settings.description || DEFAULT_DESCRIPTION);
           setDaysText(settings.available_days?.join('\n') || '月\n火\n水\n木\n金\n土');
           setPeriodsText(
-            settings.available_periods?.map((p) => `${p.code},${p.label}`).join('\n') ||
-            masterText
+            settings.available_periods?.map((p) => `${p.code},${p.label}`).join('\n') || masterText
           );
           setWeeklyOptionsText(settings.weekly_options?.join(',') || '1,2,3,4,5');
           setPublishStart(
-            period.publish_start
-              ? new Date(period.publish_start).toISOString().slice(0, 16)
-              : ''
+            period.publish_start ? new Date(period.publish_start).toISOString().slice(0, 16) : ''
           );
           setPublishEnd(
-            period.publish_end
-              ? new Date(period.publish_end).toISOString().slice(0, 16)
-              : ''
+            period.publish_end ? new Date(period.publish_end).toISOString().slice(0, 16) : ''
           );
           setCompletionMessage(
             settings.completion_message ||
@@ -121,7 +120,9 @@ export function ShukaisuPeriodEditor({
         } else {
           // 期間キーは自動生成（YYYY-MM、衝突時は連番）
           setPeriodKey(generateUniquePeriodKey([]));
-          getNextPeriodKey('shukaisu', targetIds ?? []).then(setPeriodKey).catch(() => {});
+          getNextPeriodKey('shukaisu', targetIds ?? [])
+            .then(setPeriodKey)
+            .catch(() => {});
           setTitle('週回数変更');
           setDescription(DEFAULT_DESCRIPTION);
           setDaysText('月\n火\n水\n木\n金\n土');
@@ -129,7 +130,9 @@ export function ShukaisuPeriodEditor({
           setWeeklyOptionsText('1,2,3,4,5');
           setPublishStart('');
           setPublishEnd('');
-          setCompletionMessage('変更申請を受け付けました。\n内容を確認の上、Growにてご連絡いたします。');
+          setCompletionMessage(
+            '変更申請を受け付けました。\n内容を確認の上、Growにてご連絡いたします。'
+          );
           setLinkedApplicationItemId('');
         }
       };
@@ -214,12 +217,7 @@ export function ShukaisuPeriodEditor({
               ? schoolIds
               : null;
         if (idsToUpdate && idsToUpdate.length > 1) {
-          await updateFormPeriodForSchools(
-            idsToUpdate,
-            'shukaisu',
-            period.period_key,
-            baseData
-          );
+          await updateFormPeriodForSchools(idsToUpdate, 'shukaisu', period.period_key, baseData);
         } else {
           await updateShukaisuPeriod(period.id, baseData);
         }
@@ -247,9 +245,7 @@ export function ShukaisuPeriodEditor({
       onClose();
     } catch (error) {
       console.error('Failed to save:', error);
-      setError(
-        getUserErrorMessage(error, '保存に失敗しました')
-      );
+      setError(getUserErrorMessage(error, '保存に失敗しました'));
     } finally {
       setIsSubmitting(false);
     }
@@ -281,9 +277,7 @@ export function ShukaisuPeriodEditor({
 
           <div className="grid grid-cols-2 gap-4 mb-4">
             <div>
-              <label className="block text-sm font-medium mb-1 text-[#1f2937]">
-                期間キー
-              </label>
+              <label className="block text-sm font-medium mb-1 text-[#1f2937]">期間キー</label>
               <Input
                 type="text"
                 value={periodKey}
@@ -291,9 +285,7 @@ export function ShukaisuPeriodEditor({
                 disabled // 自動生成のため常に編集不可
                 className="disabled:bg-gray-100"
               />
-              <p className="text-xs text-[#4b5563]/60 mt-1">
-                ※ 自動で割り当てられます（変更不可）
-              </p>
+              <p className="text-xs text-[#4b5563]/60 mt-1">※ 自動で割り当てられます（変更不可）</p>
             </div>
             <div>
               <label className="block text-sm font-medium mb-1 text-[#1f2937]">
@@ -335,9 +327,7 @@ export function ShukaisuPeriodEditor({
                 value={publishEnd}
                 onChange={(e) => setPublishEnd(e.target.value)}
               />
-              <p className="text-xs text-[#4b5563]/60 mt-1">
-                ※空欄にすると永続的に公開されます
-              </p>
+              <p className="text-xs text-[#4b5563]/60 mt-1">※空欄にすると永続的に公開されます</p>
             </div>
           </div>
         </section>
@@ -430,15 +420,10 @@ export function ShukaisuPeriodEditor({
 
         {!period && allowedSchools && allowedSchools.length > 1 && (
           <div className="p-3 bg-[#eff6ff] rounded-lg border border-[#bfdbfe]">
-            <p className="text-sm font-medium text-[#1f2937] mb-2">
-              作成する教室を選択
-            </p>
+            <p className="text-sm font-medium text-[#1f2937] mb-2">作成する教室を選択</p>
             <div className="flex flex-wrap gap-x-4 gap-y-2">
               {allowedSchools.map((school) => (
-                <label
-                  key={school.id}
-                  className="flex items-center gap-2 cursor-pointer"
-                >
+                <label key={school.id} className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={selectedSchoolIdsForCreate.includes(school.id)}
@@ -464,15 +449,10 @@ export function ShukaisuPeriodEditor({
         )}
         {period && allowedSchools && allowedSchools.length > 1 && (
           <div className="p-3 bg-[#eff6ff] rounded-lg border border-[#bfdbfe]">
-            <p className="text-sm font-medium text-[#1f2937] mb-2">
-              同じ内容で更新する教室を選択
-            </p>
+            <p className="text-sm font-medium text-[#1f2937] mb-2">同じ内容で更新する教室を選択</p>
             <div className="flex flex-wrap gap-x-4 gap-y-2">
               {allowedSchools.map((school) => (
-                <label
-                  key={school.id}
-                  className="flex items-center gap-2 cursor-pointer"
-                >
+                <label key={school.id} className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={selectedSchoolIdsForUpdate.includes(school.id)}

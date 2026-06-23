@@ -30,21 +30,11 @@ export async function POST(request: NextRequest) {
     const parsed = portalFormResponseSchema.safeParse(body);
     if (!parsed.success) {
       const messages = parsed.error.issues.map((i) => i.message).join(', ');
-      return NextResponse.json(
-        { error: `入力内容に不備があります: ${messages}` },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: `入力内容に不備があります: ${messages}` }, { status: 400 });
     }
 
-    const {
-      school_id,
-      form_type,
-      form_period,
-      student_name,
-      grade,
-      email,
-      response_data,
-    } = parsed.data;
+    const { school_id, form_type, form_period, student_name, grade, email, response_data } =
+      parsed.data;
     const status_checks = (body as Record<string, unknown>).status_checks;
 
     const supabaseAdmin = getSupabaseAdmin();
@@ -91,10 +81,7 @@ export async function POST(request: NextRequest) {
 
     if (error) {
       if (error.code === '23505') {
-        return NextResponse.json(
-          { error: 'この内容は既に送信されています。' },
-          { status: 409 }
-        );
+        return NextResponse.json({ error: 'この内容は既に送信されています。' }, { status: 409 });
       }
       throw error;
     }
@@ -120,7 +107,12 @@ export async function POST(request: NextRequest) {
         if (rd.exam_type === 'furikae' && rd.furikae_date && rd.furikae_time) {
           // 学年番号→表示名変換
           const gradeNames: Record<number, string> = {
-            4: '小4', 5: '小5', 6: '小6', 7: '中1', 8: '中2', 9: '中3',
+            4: '小4',
+            5: '小5',
+            6: '小6',
+            7: '中1',
+            8: '中2',
+            9: '中3',
           };
           // 期間タイトルを取得
           const { data: periodData } = await supabaseAdmin
@@ -142,7 +134,10 @@ export async function POST(request: NextRequest) {
           });
         }
       } catch (e) {
-        console.warn('[portal/form-responses] カレンダーイベント作成に失敗しました（無視します）:', e);
+        console.warn(
+          '[portal/form-responses] カレンダーイベント作成に失敗しました（無視します）:',
+          e
+        );
       }
     }
 
@@ -156,7 +151,10 @@ export async function POST(request: NextRequest) {
         .single();
 
       if (refetchError) {
-        console.warn('[portal/form-responses] 最新データの再取得に失敗（元データで通知します）:', refetchError);
+        console.warn(
+          '[portal/form-responses] 最新データの再取得に失敗（元データで通知します）:',
+          refetchError
+        );
       }
 
       const { error: invokeError } = await supabaseAdmin.functions.invoke(
@@ -194,10 +192,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ data: created });
   } catch (error) {
     console.error('[portal/form-responses] create failed:', error);
-    return NextResponse.json(
-      { error: 'フォーム回答の作成に失敗しました' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'フォーム回答の作成に失敗しました' }, { status: 500 });
   }
 }
 
@@ -207,8 +202,8 @@ export async function POST(request: NextRequest) {
 function normalizeName(name: string): string {
   // 全角スペース→半角スペース、連続スペースを除去、前後トリム、全て小文字化
   return name
-    .replace(/\u3000/g, ' ')  // 全角スペース→半角
-    .replace(/\s+/g, '')      // 全てのスペースを除去
+    .replace(/\u3000/g, ' ') // 全角スペース→半角
+    .replace(/\s+/g, '') // 全てのスペースを除去
     .trim()
     .toLowerCase();
 }
@@ -221,7 +216,14 @@ function normalizeName(name: string): string {
  */
 async function autoLinkAndUpdateApplication(
   supabaseAdmin: SupabaseClient,
-  response: { id: string; student_name: string; grade?: number; school_id?: string; form_type?: string; form_period?: string },
+  response: {
+    id: string;
+    student_name: string;
+    grade?: number;
+    school_id?: string;
+    form_type?: string;
+    form_period?: string;
+  },
   schoolId: string,
   formType: string,
   formPeriod: string
@@ -295,17 +297,17 @@ async function autoLinkAndUpdateApplication(
       .update({ status: 'completed' })
       .eq('id', existing.id);
   } else {
-    await supabaseAdmin
-      .from('student_applications')
-      .insert({
-        school_id: schoolId,
-        student_id: matchedStudent.id,
-        item_id: period.linked_application_item_id,
-        status: 'completed',
-      });
+    await supabaseAdmin.from('student_applications').insert({
+      school_id: schoolId,
+      student_id: matchedStudent.id,
+      item_id: period.linked_application_item_id,
+      status: 'completed',
+    });
   }
 
-  console.log(`[auto-link] 申込状況を自動更新: student=${matchedStudent.id}, item=${period.linked_application_item_id}`);
+  console.log(
+    `[auto-link] 申込状況を自動更新: student=${matchedStudent.id}, item=${period.linked_application_item_id}`
+  );
 }
 
 /**
@@ -403,7 +405,9 @@ async function autoSyncFormToBilling(
   );
 
   // 5. 回答数が1件以上ある項目だけを対象に、既存 is_billed を保持してバルク upsert
-  const targetItems = linkedItems.filter((it) => (countByPeriod.get(it.billing_period_id) || 0) > 0);
+  const targetItems = linkedItems.filter(
+    (it) => (countByPeriod.get(it.billing_period_id) || 0) > 0
+  );
   if (targetItems.length === 0) return;
 
   const itemIds = targetItems.map((it) => it.id);
@@ -413,7 +417,10 @@ async function autoSyncFormToBilling(
     .eq('student_id', studentId)
     .in('billing_item_id', itemIds);
   const billedMap = new Map<string, boolean>(
-    (existingBillings || []).map((r: { billing_item_id: string; is_billed: boolean }) => [r.billing_item_id, r.is_billed])
+    (existingBillings || []).map((r: { billing_item_id: string; is_billed: boolean }) => [
+      r.billing_item_id,
+      r.is_billed,
+    ])
   );
 
   const payload = targetItems.map((item) => ({
@@ -432,5 +439,7 @@ async function autoSyncFormToBilling(
     return;
   }
 
-  console.log(`[auto-billing] 請求自動反映: student=${studentId}, form_type=${formType}, items=${payload.length}`);
+  console.log(
+    `[auto-billing] 請求自動反映: student=${studentId}, form_type=${formType}, items=${payload.length}`
+  );
 }

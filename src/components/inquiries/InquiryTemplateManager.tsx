@@ -110,7 +110,9 @@ export function InquiryTemplateManager({ onChanged }: InquiryTemplateManagerProp
       setEditTarget(null);
       setFormName('');
       // 単一教室選択中ならその教室をデフォルトに
-      setFormSchoolId(typeof selectedSchoolId === 'string' && selectedSchoolId !== 'all' ? selectedSchoolId : '');
+      setFormSchoolId(
+        typeof selectedSchoolId === 'string' && selectedSchoolId !== 'all' ? selectedSchoolId : ''
+      );
       setFormTriggerDays('');
       setFormIsActive(true);
       setFormSubject('');
@@ -207,7 +209,9 @@ export function InquiryTemplateManager({ onChanged }: InquiryTemplateManagerProp
     setIsTestSending(true);
     setTestSendMessage('');
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user?.email) {
         setTestSendMessage('ログインユーザーのメールアドレスが取得できませんでした');
         return;
@@ -273,9 +277,13 @@ export function InquiryTemplateManager({ onChanged }: InquiryTemplateManagerProp
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border bg-surface-hover">
-                <th className="px-4 py-3 text-left text-xs font-medium text-text-muted">テンプレート名</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-text-muted">
+                  テンプレート名
+                </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-text-muted">対象</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-text-muted">自動送信日数</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-text-muted">
+                  自動送信日数
+                </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-text-muted">状態</th>
                 <th className="px-4 py-3 text-right text-xs font-medium text-text-muted">操作</th>
               </tr>
@@ -291,7 +299,9 @@ export function InquiryTemplateManager({ onChanged }: InquiryTemplateManagerProp
                       <Mail className="w-4 h-4 text-text-muted shrink-0" />
                       {t.name}
                     </div>
-                    <p className="text-xs text-text-muted mt-0.5 ml-6 truncate max-w-xs">{t.subject}</p>
+                    <p className="text-xs text-text-muted mt-0.5 ml-6 truncate max-w-xs">
+                      {t.subject}
+                    </p>
                   </td>
                   <td className="px-4 py-3 text-text-body">
                     {t.school_id ? (schoolNameMap.get(t.school_id) ?? t.school_id) : '全教室共通'}
@@ -300,16 +310,28 @@ export function InquiryTemplateManager({ onChanged }: InquiryTemplateManagerProp
                     {t.trigger_days != null ? `${t.trigger_days} 日後` : '手動専用'}
                   </td>
                   <td className="px-4 py-3">
-                    <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${t.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-500'}`}>
+                    <span
+                      className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${t.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-500'}`}
+                    >
                       {t.is_active ? '有効' : '無効'}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex items-center justify-end gap-1.5">
-                      <Button variant="ghost" size="sm" onClick={() => openModal(t)} aria-label="編集">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => openModal(t)}
+                        aria-label="編集"
+                      >
                         <Pencil className="w-4 h-4" />
                       </Button>
-                      <Button variant="ghost" size="sm" onClick={() => setDeleteTarget(t)} aria-label="削除">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setDeleteTarget(t)}
+                        aria-label="削除"
+                      >
                         <Trash2 className="w-4 h-4 text-danger" />
                       </Button>
                     </div>
@@ -353,9 +375,13 @@ export function InquiryTemplateManager({ onChanged }: InquiryTemplateManagerProp
                 className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary"
               >
                 <option value="">全教室共通</option>
-                {schools.filter((s) => !s.is_demo).map((s) => (
-                  <option key={s.id} value={s.id}>{s.name}</option>
-                ))}
+                {schools
+                  .filter((s) => !s.is_demo)
+                  .map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name}
+                    </option>
+                  ))}
               </select>
             </div>
 
@@ -415,7 +441,9 @@ export function InquiryTemplateManager({ onChanged }: InquiryTemplateManagerProp
               type="text"
               value={formSubject}
               onChange={(e) => setFormSubject(e.target.value)}
-              onFocus={() => { lastFocusedField.current = 'subject'; }}
+              onFocus={() => {
+                lastFocusedField.current = 'subject';
+              }}
               placeholder="例: 体験授業のご案内（{教室名}）"
               className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary"
             />
@@ -428,7 +456,9 @@ export function InquiryTemplateManager({ onChanged }: InquiryTemplateManagerProp
               ref={bodyRef}
               value={formBody}
               onChange={(e) => setFormBody(e.target.value)}
-              onFocus={() => { lastFocusedField.current = 'body'; }}
+              onFocus={() => {
+                lastFocusedField.current = 'body';
+              }}
               rows={8}
               placeholder="{保護者} 様&#10;&#10;お問い合わせいただきありがとうございます。&#10;{教室名} です。"
               className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary resize-none"
@@ -438,9 +468,13 @@ export function InquiryTemplateManager({ onChanged }: InquiryTemplateManagerProp
           {/* ライブプレビュー */}
           {(formSubject || formBody) && (
             <div className="border border-border rounded-lg p-4 bg-surface-hover">
-              <p className="text-xs font-medium text-text-muted mb-2">プレビュー（サンプルデータで置換済み）</p>
+              <p className="text-xs font-medium text-text-muted mb-2">
+                プレビュー（サンプルデータで置換済み）
+              </p>
               {previewSubject && (
-                <p className="text-sm font-medium text-text-heading mb-2 break-all">件名: {previewSubject}</p>
+                <p className="text-sm font-medium text-text-heading mb-2 break-all">
+                  件名: {previewSubject}
+                </p>
               )}
               {previewBody && (
                 <p className="text-sm text-text-body whitespace-pre-wrap">{previewBody}</p>
@@ -450,12 +484,19 @@ export function InquiryTemplateManager({ onChanged }: InquiryTemplateManagerProp
 
           {/* テスト送信 */}
           <div className="flex items-center gap-3 flex-wrap">
-            <Button variant="secondary" size="sm" onClick={handleTestSend} isLoading={isTestSending}>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={handleTestSend}
+              isLoading={isTestSending}
+            >
               <Mail className="w-4 h-4 mr-1.5" />
               自分宛てにテスト送信
             </Button>
             {testSendMessage && (
-              <span className={`text-xs ${testSendMessage.includes('失敗') ? 'text-danger' : 'text-text-muted'}`}>
+              <span
+                className={`text-xs ${testSendMessage.includes('失敗') ? 'text-danger' : 'text-text-muted'}`}
+              >
                 {testSendMessage}
               </span>
             )}
@@ -465,8 +506,12 @@ export function InquiryTemplateManager({ onChanged }: InquiryTemplateManagerProp
 
           {/* 保存・キャンセル */}
           <div className="flex justify-end gap-2 pt-2 border-t border-border">
-            <Button variant="ghost" size="sm" onClick={closeModal}>キャンセル</Button>
-            <Button size="sm" isLoading={isSaving} onClick={handleSave}>保存</Button>
+            <Button variant="ghost" size="sm" onClick={closeModal}>
+              キャンセル
+            </Button>
+            <Button size="sm" isLoading={isSaving} onClick={handleSave}>
+              保存
+            </Button>
           </div>
         </div>
       </Modal>
@@ -482,8 +527,12 @@ export function InquiryTemplateManager({ onChanged }: InquiryTemplateManagerProp
           「{deleteTarget?.name}」を削除します。この操作は取り消せません。よろしいですか？
         </p>
         <div className="flex justify-end gap-2">
-          <Button variant="ghost" size="sm" onClick={() => setDeleteTarget(null)}>キャンセル</Button>
-          <Button variant="danger" size="sm" onClick={handleDelete}>削除する</Button>
+          <Button variant="ghost" size="sm" onClick={() => setDeleteTarget(null)}>
+            キャンセル
+          </Button>
+          <Button variant="danger" size="sm" onClick={handleDelete}>
+            削除する
+          </Button>
         </div>
       </Modal>
     </div>

@@ -24,10 +24,10 @@ export function Select({ value, onValueChange, children }: SelectProps) {
   const [selectedLabel, setSelectedLabel] = useState<string>();
 
   return (
-    <SelectContext.Provider value={{ value, onValueChange, open, setOpen, selectedLabel, setSelectedLabel }}>
-      <div className="relative">
-        {children}
-      </div>
+    <SelectContext.Provider
+      value={{ value, onValueChange, open, setOpen, selectedLabel, setSelectedLabel }}
+    >
+      <div className="relative">{children}</div>
     </SelectContext.Provider>
   );
 }

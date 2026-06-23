@@ -8,7 +8,11 @@ interface ScheduleTaskEditorProps {
   onAdd: (majorCategory: string, name: string, description?: string) => Promise<void>;
   onDelete: (taskId: string) => Promise<void>;
   onToggleComplete: (taskId: string, completed: boolean) => Promise<void>;
-  onUpdateDates: (taskId: string, startDate: string | null, endDate: string | null) => Promise<void>;
+  onUpdateDates: (
+    taskId: string,
+    startDate: string | null,
+    endDate: string | null
+  ) => Promise<void>;
 }
 
 export function ScheduleTaskEditor({
@@ -48,7 +52,10 @@ export function ScheduleTaskEditor({
     <div className="mb-4 bg-white rounded-xl border border-gray-200 p-4">
       <div className="flex items-center justify-between mb-3">
         <h4 className="text-sm font-bold text-[#1e3a5f]">タスク管理</h4>
-        <button onClick={() => setIsOpen(false)} className="text-xs text-gray-400 hover:text-gray-600">
+        <button
+          onClick={() => setIsOpen(false)}
+          className="text-xs text-gray-400 hover:text-gray-600"
+        >
           閉じる
         </button>
       </div>
@@ -149,9 +156,7 @@ export function ScheduleTaskEditor({
           </div>
         ))}
         {tasks.length === 0 && (
-          <p className="text-xs text-gray-400 text-center py-4">
-            タスクがありません
-          </p>
+          <p className="text-xs text-gray-400 text-center py-4">タスクがありません</p>
         )}
       </div>
     </div>

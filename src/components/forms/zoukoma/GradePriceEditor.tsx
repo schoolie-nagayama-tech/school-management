@@ -61,15 +61,10 @@ export function GradePriceEditor({
     <div className="space-y-4">
       {/* 対象学年 */}
       <div>
-        <label className="block text-sm font-medium text-[#1f2937] mb-3">
-          対象学年
-        </label>
+        <label className="block text-sm font-medium text-[#1f2937] mb-3">対象学年</label>
         <div className="flex flex-wrap gap-3">
           {ALL_GRADES.map((grade) => (
-            <label
-              key={grade}
-              className="flex items-center gap-2 cursor-pointer"
-            >
+            <label key={grade} className="flex items-center gap-2 cursor-pointer">
               <input
                 type="checkbox"
                 checked={selectedGrades.includes(grade)}
@@ -87,9 +82,7 @@ export function GradePriceEditor({
       {selectedGrades.length > 0 && (
         <div>
           <div className="flex items-center justify-between mb-3">
-            <label className="block text-sm font-medium text-[#1f2937]">
-              学年別単価（税込）
-            </label>
+            <label className="block text-sm font-medium text-[#1f2937]">学年別単価（税込）</label>
             <Button
               type="button"
               variant="secondary"
@@ -104,9 +97,7 @@ export function GradePriceEditor({
             <table className="w-full">
               <thead>
                 <tr className="bg-[#f3f4f6] border-b border-[#e5e7eb]">
-                  <th className="px-4 py-2 text-left text-sm font-semibold text-[#1f2937]">
-                    学年
-                  </th>
+                  <th className="px-4 py-2 text-left text-sm font-semibold text-[#1f2937]">学年</th>
                   <th className="px-4 py-2 text-left text-sm font-semibold text-[#1f2937]">
                     単価（税込）
                   </th>
@@ -114,13 +105,8 @@ export function GradePriceEditor({
               </thead>
               <tbody>
                 {selectedGrades.map((grade) => (
-                  <tr
-                    key={grade}
-                    className="border-b border-[#e5e7eb]/20 last:border-b-0"
-                  >
-                    <td className="px-4 py-2 text-sm text-[#1f2937] font-medium">
-                      {grade}
-                    </td>
+                  <tr key={grade} className="border-b border-[#e5e7eb]/20 last:border-b-0">
+                    <td className="px-4 py-2 text-sm text-[#1f2937] font-medium">{grade}</td>
                     <td className="px-4 py-2">
                       <div className="flex items-center gap-2">
                         <span className="text-sm text-[#4b5563]">¥</span>
@@ -128,9 +114,7 @@ export function GradePriceEditor({
                           type="number"
                           min="0"
                           value={priceTable[grade] || 0}
-                          onChange={(e) =>
-                            handlePriceChange(grade, e.target.value)
-                          }
+                          onChange={(e) => handlePriceChange(grade, e.target.value)}
                           disabled={disabled}
                           className="w-32"
                         />

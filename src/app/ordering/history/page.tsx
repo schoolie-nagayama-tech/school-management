@@ -21,13 +21,15 @@ import { DistributorOrderDialog } from '@/components/ordering/DistributorOrderDi
 async function sendSlackNotification(orderIds: string[], newStatus: string) {
   try {
     const sb = getSupabaseBrowserClient();
-    const { data: { session } } = await sb.auth.getSession();
+    const {
+      data: { session },
+    } = await sb.auth.getSession();
     if (!session) return;
     await fetch('/api/ordering/status', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session.access_token}`,
+        Authorization: `Bearer ${session.access_token}`,
       },
       body: JSON.stringify({ orderIds, newStatus }),
     });
@@ -39,7 +41,9 @@ async function sendSlackNotification(orderIds: string[], newStatus: string) {
 const DISPLAY_STATUSES: OrderStatus[] = ['unconfirmed', 'ordered', 'delivered', 'distributed'];
 
 export default function OrderHistoryPage() {
-  const { hasPermission, isLoading: permLoading } = useRequirePermission((p) => p.canAccessOrdering);
+  const { hasPermission, isLoading: permLoading } = useRequirePermission(
+    (p) => p.canAccessOrdering
+  );
   const canEdit = useCanEdit('canEditOrdering');
   const { getSelectedSchoolIds, selectedSchoolId } = useAuth();
   const { schools: masterSchools } = useMasterData();
@@ -111,39 +115,50 @@ export default function OrderHistoryPage() {
     return { name: school?.name, email: school?.notification_email };
   }, [ordersByStatus.unconfirmed, masterSchools]);
 
-  const handleStatusChange = useCallback(async (orderId: string, newStatus: OrderStatus) => {
-    try {
-      await updateOrderStatus(orderId, newStatus);
-      setOrders((prev) => prev.map((o) => o.id === orderId ? { ...o, status: newStatus } : o));
-      success('ステータスを更新しました');
-      // Slack通知（発注・発送時のみ、バックグラウンド）
-      sendSlackNotification([orderId], newStatus);
-    } catch (err) {
-      toastError(getUserErrorMessage(err, 'ステータスの更新に失敗しました'));
-    }
-  }, [success, toastError]);
+  const handleStatusChange = useCallback(
+    async (orderId: string, newStatus: OrderStatus) => {
+      try {
+        await updateOrderStatus(orderId, newStatus);
+        setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o)));
+        success('ステータスを更新しました');
+        // Slack通知（発注・発送時のみ、バックグラウンド）
+        sendSlackNotification([orderId], newStatus);
+      } catch (err) {
+        toastError(getUserErrorMessage(err, 'ステータスの更新に失敗しました'));
+      }
+    },
+    [success, toastError]
+  );
 
-  const handleBulkStatusChange = useCallback(async (orderIds: string[], newStatus: OrderStatus) => {
-    try {
-      await Promise.all(orderIds.map((id) => updateOrderStatus(id, newStatus)));
-      setOrders((prev) => prev.map((o) => orderIds.includes(o.id) ? { ...o, status: newStatus } : o));
-      success(`${orderIds.length}件のステータスを更新しました`);
-      // Slack通知（発注・発送時のみ、バックグラウンド）
-      sendSlackNotification(orderIds, newStatus);
-    } catch (err) {
-      toastError(getUserErrorMessage(err, '一括ステータス更新に失敗しました'));
-    }
-  }, [success, toastError]);
+  const handleBulkStatusChange = useCallback(
+    async (orderIds: string[], newStatus: OrderStatus) => {
+      try {
+        await Promise.all(orderIds.map((id) => updateOrderStatus(id, newStatus)));
+        setOrders((prev) =>
+          prev.map((o) => (orderIds.includes(o.id) ? { ...o, status: newStatus } : o))
+        );
+        success(`${orderIds.length}件のステータスを更新しました`);
+        // Slack通知（発注・発送時のみ、バックグラウンド）
+        sendSlackNotification(orderIds, newStatus);
+      } catch (err) {
+        toastError(getUserErrorMessage(err, '一括ステータス更新に失敗しました'));
+      }
+    },
+    [success, toastError]
+  );
 
-  const handleDelete = useCallback(async (orderId: string) => {
-    try {
-      await deleteOrder(orderId);
-      setOrders((prev) => prev.filter((o) => o.id !== orderId));
-      success('発注を削除しました');
-    } catch (err) {
-      toastError(getUserErrorMessage(err, '削除に失敗しました'));
-    }
-  }, [success, toastError]);
+  const handleDelete = useCallback(
+    async (orderId: string) => {
+      try {
+        await deleteOrder(orderId);
+        setOrders((prev) => prev.filter((o) => o.id !== orderId));
+        success('発注を削除しました');
+      } catch (err) {
+        toastError(getUserErrorMessage(err, '削除に失敗しました'));
+      }
+    },
+    [success, toastError]
+  );
 
   if (permLoading) {
     return (
@@ -154,7 +169,11 @@ export default function OrderHistoryPage() {
   }
 
   if (!hasPermission) {
-    return <AdminLayout><AccessDenied /></AdminLayout>;
+    return (
+      <AdminLayout>
+        <AccessDenied />
+      </AdminLayout>
+    );
   }
 
   return (

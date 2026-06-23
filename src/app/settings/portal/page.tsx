@@ -23,7 +23,11 @@ import { ChevronLeft } from 'lucide-react';
 import { PortalMenuEditModal, SortableMenuRow } from '@/components/portal';
 import { useToast } from '@/hooks/useToast';
 import { useMasterData } from '@/contexts/MasterDataContext';
-import { initializePortalMenus, getPortalMenus, togglePortalMenuVisibility } from '@/lib/api/portal';
+import {
+  initializePortalMenus,
+  getPortalMenus,
+  togglePortalMenuVisibility,
+} from '@/lib/api/portal';
 import { getFormPeriods } from '@/lib/api/form-periods';
 import { reorderPortalMenus } from '@/lib/api/portal';
 import type { PortalMenu, FormType, FormPeriod, School } from '@/types/database';
@@ -91,7 +95,7 @@ export default function PortalSettingsPage() {
       // 教室コードを取得
       const codes: Record<string, string> = {};
       for (const schoolId of selectedSchoolIds) {
-        const school = masterSchools.find(s => s.id === schoolId);
+        const school = masterSchools.find((s) => s.id === schoolId);
         if (school?.code) {
           codes[schoolId] = school.code;
         }
@@ -100,7 +104,7 @@ export default function PortalSettingsPage() {
 
       // 複数教室が選択されている場合は最初の教室を使用（ポータル管理は単一教室のみ）
       const schoolId = selectedSchoolIds[0];
-      const school = masterSchools.find(s => s.id === schoolId);
+      const school = masterSchools.find((s) => s.id === schoolId);
 
       if (!school) {
         throw new Error('教室が見つかりません');
@@ -119,9 +123,7 @@ export default function PortalSettingsPage() {
       setFormPeriods(periodsData);
     } catch (error) {
       console.error('Error fetching data:', error);
-      setErrorMessage(
-        getUserErrorMessage(error, 'データの取得に失敗しました')
-      );
+      setErrorMessage(getUserErrorMessage(error, 'データの取得に失敗しました'));
     } finally {
       setIsLoading(false);
     }
@@ -177,9 +179,7 @@ export default function PortalSettingsPage() {
     } catch (err) {
       console.error('Error toggling visibility:', err);
       const errorMessage =
-        err instanceof Error
-          ? err.message
-          : '表示/非表示の切り替えに失敗しました';
+        err instanceof Error ? err.message : '表示/非表示の切り替えに失敗しました';
       error(errorMessage);
     } finally {
       setIsSubmitting(false);
@@ -193,7 +193,7 @@ export default function PortalSettingsPage() {
     if (selectedSchoolId === 'all') {
       // すべての教室を選択している場合
       for (const schoolId of schoolIds) {
-        const school = allSchools.find(s => s.id === schoolId);
+        const school = allSchools.find((s) => s.id === schoolId);
         if (school?.code) {
           urls.push({
             school,
@@ -203,7 +203,7 @@ export default function PortalSettingsPage() {
       }
     } else if (selectedSchoolId) {
       // 特定の教室を選択している場合
-      const school = allSchools.find(s => s.id === selectedSchoolId);
+      const school = allSchools.find((s) => s.id === selectedSchoolId);
       if (school?.code) {
         urls.push({
           school,
@@ -258,31 +258,31 @@ export default function PortalSettingsPage() {
       return;
     }
 
-      // 楽観的UI更新
-      const newMenus = arrayMove(menus, oldIndex, newIndex);
-      const previousMenus = [...menus]; // エラー時の復元用
-      setMenus(newMenus);
+    // 楽観的UI更新
+    const newMenus = arrayMove(menus, oldIndex, newIndex);
+    const previousMenus = [...menus]; // エラー時の復元用
+    setMenus(newMenus);
 
-      setIsSubmitting(true);
-      try {
-        const selectedSchoolIds = getSelectedSchoolIds();
-        if (selectedSchoolIds.length === 0) {
-          throw new Error('教室が選択されていません');
-        }
-        const schoolId = selectedSchoolIds[0];
-        await reorderPortalMenus(
-          schoolId,
-          newMenus.map((m) => m.id)
-        );
-        success('並び順を更新しました');
-      } catch (err) {
-        console.error('Error reordering menus:', err);
-        // エラー時は元に戻す
-        setMenus(previousMenus);
-        error('並び替えに失敗しました');
-      } finally {
-        setIsSubmitting(false);
+    setIsSubmitting(true);
+    try {
+      const selectedSchoolIds = getSelectedSchoolIds();
+      if (selectedSchoolIds.length === 0) {
+        throw new Error('教室が選択されていません');
       }
+      const schoolId = selectedSchoolIds[0];
+      await reorderPortalMenus(
+        schoolId,
+        newMenus.map((m) => m.id)
+      );
+      success('並び順を更新しました');
+    } catch (err) {
+      console.error('Error reordering menus:', err);
+      // エラー時は元に戻す
+      setMenus(previousMenus);
+      error('並び替えに失敗しました');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleEdit = (menu: PortalMenu) => {
@@ -299,10 +299,7 @@ export default function PortalSettingsPage() {
   };
 
   const handleMenuUpdateError = (err: unknown) => {
-    const errorMessage =
-      err instanceof Error
-        ? err.message
-        : 'メニューの更新に失敗しました';
+    const errorMessage = err instanceof Error ? err.message : 'メニューの更新に失敗しました';
     error(errorMessage);
   };
 
@@ -329,7 +326,10 @@ export default function PortalSettingsPage() {
       <ToastContainer toasts={toasts} onRemove={removeToast} />
       <AdminLayout headerTitle="ポータル設定">
         <div className="mb-4">
-          <Link href="/settings" className="inline-flex items-center gap-1 text-sm text-text-muted hover:text-text-heading transition-colors duration-150">
+          <Link
+            href="/settings"
+            className="inline-flex items-center gap-1 text-sm text-text-muted hover:text-text-heading transition-colors duration-150"
+          >
             <ChevronLeft className="w-4 h-4" />
             設定に戻る
           </Link>
@@ -347,9 +347,7 @@ export default function PortalSettingsPage() {
             {selectedSchoolId === 'all' ? (
               <div className="space-y-4">
                 <div className="p-4 bg-info/10 border border-info rounded-lg">
-                  <p className="text-sm font-medium text-text-heading mb-2">
-                    すべての教室を選択中
-                  </p>
+                  <p className="text-sm font-medium text-text-heading mb-2">すべての教室を選択中</p>
                   <p className="text-xs text-text-body">
                     各教室ごとにポータルURLが異なります。保護者には各教室のURLを共有してください。
                   </p>
@@ -398,13 +396,14 @@ export default function PortalSettingsPage() {
                   >
                     開く
                   </Button>
-                  <Button onClick={() => handleCopyUrl(portalUrls[0]?.url || '')} className="min-w-[100px]">
+                  <Button
+                    onClick={() => handleCopyUrl(portalUrls[0]?.url || '')}
+                    className="min-w-[100px]"
+                  >
                     コピー
                   </Button>
                 </div>
-                <p className="text-xs text-text-body/60">
-                  このURLを保護者に共有してください
-                </p>
+                <p className="text-xs text-text-body/60">このURLを保護者に共有してください</p>
               </div>
             )}
           </div>
@@ -433,7 +432,10 @@ export default function PortalSettingsPage() {
                           readOnly
                           className="flex-1 px-3 py-2 border border-border rounded-lg text-sm bg-surface-hover text-text-body font-mono"
                         />
-                        <Button onClick={() => handleCopyText(snippet, 'HTMLコード')} className="min-w-[100px]">
+                        <Button
+                          onClick={() => handleCopyText(snippet, 'HTMLコード')}
+                          className="min-w-[100px]"
+                        >
                           コピー
                         </Button>
                       </div>
@@ -453,7 +455,10 @@ export default function PortalSettingsPage() {
                         readOnly
                         className="flex-1 px-3 py-2 border border-border rounded-lg text-sm bg-surface-hover text-text-body font-mono"
                       />
-                      <Button onClick={() => handleCopyText(snippet, 'HTMLコード')} className="min-w-[100px]">
+                      <Button
+                        onClick={() => handleCopyText(snippet, 'HTMLコード')}
+                        className="min-w-[100px]"
+                      >
                         コピー
                       </Button>
                     </div>
@@ -489,9 +494,7 @@ export default function PortalSettingsPage() {
                   <thead>
                     <tr className="bg-surface-hover">
                       <th className="border border-border px-4 py-3 text-left">タイトル</th>
-                      <th className="border border-border px-4 py-3 text-left">
-                        現在の公開状況
-                      </th>
+                      <th className="border border-border px-4 py-3 text-left">現在の公開状況</th>
                       <th className="border border-border px-4 py-3 text-left">操作</th>
                     </tr>
                   </thead>
@@ -502,8 +505,9 @@ export default function PortalSettingsPage() {
                     >
                       {menus.map((menu, index) => {
                         const formType = MENU_KEY_TO_FORM_TYPE[menu.menu_key];
-                        const periodsPath =
-                          formType ? FORM_TYPE_TO_PERIODS_PATH[formType] : undefined;
+                        const periodsPath = formType
+                          ? FORM_TYPE_TO_PERIODS_PATH[formType]
+                          : undefined;
 
                         return (
                           <SortableMenuRow

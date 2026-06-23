@@ -57,7 +57,7 @@ export interface LeadTimeStat {
 
 /** 郵便番号エリア別集計（前3桁でグループ化）。count 降順上位15。 */
 export interface PostalStat {
-  postal: string;   // 例: "206-"
+  postal: string; // 例: "206-"
   count: number;
   enrolled: number;
 }
@@ -72,7 +72,7 @@ export interface SchoolNameStat {
 
 /** 失注理由別集計。lost / trial_lost のみ対象。count 降順。 */
 export interface LostReasonStat {
-  reason: string;  // lost_reason null/空 → '未記録'
+  reason: string; // lost_reason null/空 → '未記録'
   count: number;
 }
 
@@ -114,7 +114,15 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 /** ステータスの表示順（PieChart 等で並び順を安定させる）。 */
-const STATUS_ORDER = ['enrolled', 'trial_done', 'trial_waiting', 'in_progress', 'trial_lost', 'unreachable', 'lost'] as const;
+const STATUS_ORDER = [
+  'enrolled',
+  'trial_done',
+  'trial_waiting',
+  'in_progress',
+  'trial_lost',
+  'unreachable',
+  'lost',
+] as const;
 
 // ============================================================
 // ユーティリティ関数
@@ -233,9 +241,7 @@ export function computeInquiryAnalytics(inquiries: Inquiry[]): InquiryAnalytics 
       month,
       inquiries: acc.inquiries,
       enrolled: acc.enrolled,
-      rate: acc.inquiries > 0
-        ? Math.round((acc.enrolled / acc.inquiries) * 1000) / 10
-        : 0,
+      rate: acc.inquiries > 0 ? Math.round((acc.enrolled / acc.inquiries) * 1000) / 10 : 0,
     }));
 
   // ---- 4. 媒体別集計 ----
@@ -259,12 +265,8 @@ export function computeInquiryAnalytics(inquiries: Inquiry[]): InquiryAnalytics 
       media,
       count: acc.count,
       enrolled: acc.enrolled,
-      enrollRate: acc.count > 0
-        ? Math.round((acc.enrolled / acc.count) * 1000) / 10
-        : 0,
-      unreachableRate: acc.count > 0
-        ? Math.round((acc.unreachable / acc.count) * 1000) / 10
-        : 0,
+      enrollRate: acc.count > 0 ? Math.round((acc.enrolled / acc.count) * 1000) / 10 : 0,
+      unreachableRate: acc.count > 0 ? Math.round((acc.unreachable / acc.count) * 1000) / 10 : 0,
     }));
 
   // ---- 5. リードタイム ----
@@ -357,8 +359,7 @@ export function computeInquiryAnalytics(inquiries: Inquiry[]): InquiryAnalytics 
 
   for (const inq of inquiries) {
     if (inq.status !== 'lost' && inq.status !== 'trial_lost') continue;
-    const reason =
-      inq.lost_reason && inq.lost_reason.trim() ? inq.lost_reason.trim() : '未記録';
+    const reason = inq.lost_reason && inq.lost_reason.trim() ? inq.lost_reason.trim() : '未記録';
     lostReasonMap.set(reason, (lostReasonMap.get(reason) ?? 0) + 1);
   }
 
@@ -366,5 +367,15 @@ export function computeInquiryAnalytics(inquiries: Inquiry[]): InquiryAnalytics 
     .sort(([, a], [, b]) => b - a)
     .map(([reason, count]) => ({ reason, count }));
 
-  return { total, statusCounts, funnel, monthly, byMedia, leadTime, byPostal, bySchoolName, lostReasons };
+  return {
+    total,
+    statusCounts,
+    funnel,
+    monthly,
+    byMedia,
+    leadTime,
+    byPostal,
+    bySchoolName,
+    lostReasons,
+  };
 }

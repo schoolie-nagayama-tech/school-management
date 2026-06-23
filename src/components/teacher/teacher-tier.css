@@ -3,7 +3,7 @@
 
 .tier-medal {
   --mc1: oklch(38% 0.08 260);
-  --mc2: oklch(46% 0.10 260);
+  --mc2: oklch(46% 0.1 260);
   --mc-text: white;
   position: relative;
   display: inline-flex;
@@ -65,13 +65,13 @@
   margin: 0 1px;
 }
 .tier-medal-next-max {
-  color: oklch(92% 0.10 85);
+  color: oklch(92% 0.1 85);
 }
 
 /* ── 階梯別の配色 ── */
 .tier-medal-zero {
   --mc1: oklch(32% 0.07 260);
-  --mc2: oklch(42% 0.10 260);
+  --mc2: oklch(42% 0.1 260);
 }
 
 .tier-medal-slate {
@@ -139,46 +139,58 @@
   height: 7px;
   border-radius: 50%;
   vertical-align: middle;
-  background: oklch(42% 0.10 260);
+  background: oklch(42% 0.1 260);
   box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.5);
 }
 .tier-dot-zero {
-  background: oklch(42% 0.10 260);
+  background: oklch(42% 0.1 260);
 }
 .tier-dot-slate {
   background: oklch(58% 0.03 240);
 }
 .tier-dot-emerald {
   background: oklch(60% 0.13 185);
-  box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.5), 0 0 6px oklch(72% 0.16 175 / 0.55);
+  box-shadow:
+    0 0 0 1.5px rgba(255, 255, 255, 0.5),
+    0 0 6px oklch(72% 0.16 175 / 0.55);
 }
 .tier-dot-purple {
   background: oklch(56% 0.17 275);
-  box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.55), 0 0 8px oklch(70% 0.17 290 / 0.6);
+  box-shadow:
+    0 0 0 1.5px rgba(255, 255, 255, 0.55),
+    0 0 8px oklch(70% 0.17 290 / 0.6);
 }
 .tier-dot-gold {
   background: oklch(78% 0.15 75);
-  box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.7), 0 0 6px oklch(86% 0.15 80 / 0.7);
+  box-shadow:
+    0 0 0 1.5px rgba(255, 255, 255, 0.7),
+    0 0 6px oklch(86% 0.15 80 / 0.7);
 }
 .tier-dot-mythic {
   background: oklch(70% 0.18 30);
-  box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.8), 0 0 10px oklch(82% 0.2 55 / 0.8);
+  box-shadow:
+    0 0 0 1.5px rgba(255, 255, 255, 0.8),
+    0 0 10px oklch(82% 0.2 55 / 0.8);
   animation: tier-dot-mythic 2.6s ease-in-out infinite;
 }
 @keyframes tier-dot-mythic {
   0%,
   100% {
-    box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.7), 0 0 5px oklch(82% 0.2 55 / 0.5);
+    box-shadow:
+      0 0 0 1.5px rgba(255, 255, 255, 0.7),
+      0 0 5px oklch(82% 0.2 55 / 0.5);
   }
   50% {
-    box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.9), 0 0 12px oklch(82% 0.2 55 / 0.9);
+    box-shadow:
+      0 0 0 1.5px rgba(255, 255, 255, 0.9),
+      0 0 12px oklch(82% 0.2 55 / 0.9);
   }
 }
 
 /* (2) 閲覧専用モード バッジのティア化 */
 .tier-pill {
   --tp-bg: oklch(96% 0.02 260);
-  --tp-fg: oklch(42% 0.10 260);
+  --tp-fg: oklch(42% 0.1 260);
   --tp-bd: oklch(88% 0.04 260);
   background: var(--tp-bg);
   color: var(--tp-fg);
@@ -206,8 +218,8 @@
 }
 .tier-pill-gold {
   --tp-bg: oklch(96% 0.05 85);
-  --tp-fg: oklch(42% 0.10 75);
-  --tp-bd: oklch(84% 0.10 80);
+  --tp-fg: oklch(42% 0.1 75);
+  --tp-bd: oklch(84% 0.1 80);
 }
 .tier-pill-mythic {
   --tp-bg: oklch(96% 0.04 30);
@@ -218,10 +230,10 @@
 /* (3) 連絡掲示板カードのヘアライン
    BulletinBoard のルート要素に付けると、上辺 1px にティア色が入る。 */
 .tier-hairline {
-  box-shadow: inset 0 2px 0 0 oklch(42% 0.10 260 / 0.55);
+  box-shadow: inset 0 2px 0 0 oklch(42% 0.1 260 / 0.55);
 }
 .tier-hairline-zero {
-  box-shadow: inset 0 2px 0 0 oklch(42% 0.10 260 / 0.55);
+  box-shadow: inset 0 2px 0 0 oklch(42% 0.1 260 / 0.55);
 }
 .tier-hairline-slate {
   box-shadow: inset 0 2px 0 0 oklch(58% 0.03 240 / 0.55);
@@ -245,7 +257,7 @@
     box-shadow: inset 0 2px 0 0 oklch(70% 0.18 30 / 0.6);
   }
   33% {
-    box-shadow: inset 0 2px 0 0 oklch(66% 0.20 310 / 0.7);
+    box-shadow: inset 0 2px 0 0 oklch(66% 0.2 310 / 0.7);
   }
   66% {
     box-shadow: inset 0 2px 0 0 oklch(78% 0.15 75 / 0.75);
@@ -254,7 +266,8 @@
 
 /* "NEW" マーカー用の優しいパルス（acquire直後のバッジ向け） */
 @keyframes badge-pulse {
-  0%, 100% {
+  0%,
+  100% {
     transform: scale(1);
     box-shadow: 0 0 0 0 oklch(55% 0.19 27 / 0.55);
   }
@@ -275,7 +288,7 @@
   [data-teacher-tier='purple'] .tier-submit::before,
   [data-teacher-tier='gold'] .tier-submit::after,
   [data-teacher-tier='mythic'] .tier-submit,
-  [style*="badge-pulse"] {
+  [style*='badge-pulse'] {
     animation: none !important;
   }
 }
@@ -306,37 +319,47 @@
 [data-teacher-tier='emerald'].tier-attendance::before {
   opacity: 1;
   background:
-    radial-gradient(circle at 85% 10%, oklch(72% 0.16 175 / 0.10), transparent 50%),
+    radial-gradient(circle at 85% 10%, oklch(72% 0.16 175 / 0.1), transparent 50%),
     radial-gradient(circle at 15% 95%, oklch(60% 0.13 185 / 0.08), transparent 55%);
 }
 [data-teacher-tier='purple'].tier-attendance::before {
   opacity: 1;
   background:
     radial-gradient(circle at 85% 5%, oklch(68% 0.17 290 / 0.14), transparent 50%),
-    radial-gradient(circle at 10% 95%, oklch(56% 0.17 275 / 0.10), transparent 55%);
+    radial-gradient(circle at 10% 95%, oklch(56% 0.17 275 / 0.1), transparent 55%);
 }
 [data-teacher-tier='gold'].tier-attendance::before {
   opacity: 1;
   background:
     radial-gradient(circle at 50% 0%, oklch(86% 0.15 80 / 0.18), transparent 55%),
-    radial-gradient(circle at 10% 95%, oklch(78% 0.15 75 / 0.10), transparent 55%);
+    radial-gradient(circle at 10% 95%, oklch(78% 0.15 75 / 0.1), transparent 55%);
   animation: tier-aura-gold 8s ease-in-out infinite;
 }
 @keyframes tier-aura-gold {
-  0%, 100% { filter: brightness(1); }
-  50% { filter: brightness(1.08); }
+  0%,
+  100% {
+    filter: brightness(1);
+  }
+  50% {
+    filter: brightness(1.08);
+  }
 }
 [data-teacher-tier='mythic'].tier-attendance::before {
   opacity: 1;
   background:
-    radial-gradient(circle at 20% 10%, oklch(78% 0.16 85 / 0.20), transparent 50%),
-    radial-gradient(circle at 85% 15%, oklch(66% 0.20 15 / 0.18), transparent 50%),
+    radial-gradient(circle at 20% 10%, oklch(78% 0.16 85 / 0.2), transparent 50%),
+    radial-gradient(circle at 85% 15%, oklch(66% 0.2 15 / 0.18), transparent 50%),
     radial-gradient(circle at 50% 100%, oklch(56% 0.22 300 / 0.22), transparent 55%);
   animation: tier-aura-mythic 12s ease-in-out infinite;
 }
 @keyframes tier-aura-mythic {
-  0%, 100% { filter: hue-rotate(0deg) brightness(1); }
-  50% { filter: hue-rotate(25deg) brightness(1.1); }
+  0%,
+  100% {
+    filter: hue-rotate(0deg) brightness(1);
+  }
+  50% {
+    filter: hue-rotate(25deg) brightness(1.1);
+  }
 }
 .tier-attendance > * {
   position: relative;
@@ -361,7 +384,7 @@
   bottom: 0;
   height: 2px;
   border-radius: 2px;
-  background: oklch(42% 0.10 260);
+  background: oklch(42% 0.1 260);
   opacity: 0.25;
 }
 [data-teacher-tier='slate'] .tier-ym::after {
@@ -404,14 +427,14 @@
   height: 3px;
   background: linear-gradient(
     90deg,
-    oklch(66% 0.20 15),
+    oklch(66% 0.2 15),
     oklch(56% 0.22 300),
     oklch(78% 0.16 85),
-    oklch(66% 0.20 15)
+    oklch(66% 0.2 15)
   );
   background-size: 200% 100%;
   animation: tier-mythic-hue 6s ease-in-out infinite;
-  box-shadow: 0 0 14px oklch(66% 0.20 15 / 0.6);
+  box-shadow: 0 0 14px oklch(66% 0.2 15 / 0.6);
   opacity: 1;
 }
 
@@ -419,7 +442,9 @@
 .tier-submit {
   position: relative;
   overflow: hidden;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
 }
 .tier-submit:hover {
   transform: translateY(-1px);
@@ -449,8 +474,7 @@
   pointer-events: none;
 }
 [data-teacher-tier='gold'] .tier-submit {
-  background:
-    linear-gradient(135deg, oklch(72% 0.16 80), oklch(88% 0.14 75)) !important;
+  background: linear-gradient(135deg, oklch(72% 0.16 80), oklch(88% 0.14 75)) !important;
   color: oklch(25% 0.06 60) !important;
   font-weight: 700;
   box-shadow:
@@ -473,20 +497,19 @@
   pointer-events: none;
 }
 [data-teacher-tier='mythic'] .tier-submit {
-  background:
-    linear-gradient(
-      135deg,
-      oklch(78% 0.16 85) 0%,
-      oklch(66% 0.20 15) 35%,
-      oklch(56% 0.22 300) 75%,
-      oklch(60% 0.18 250) 100%
-    ) !important;
+  background: linear-gradient(
+    135deg,
+    oklch(78% 0.16 85) 0%,
+    oklch(66% 0.2 15) 35%,
+    oklch(56% 0.22 300) 75%,
+    oklch(60% 0.18 250) 100%
+  ) !important;
   background-size: 200% 200% !important;
   animation: tier-mythic-hue 6s ease-in-out infinite;
   color: white !important;
   font-weight: 700;
   border: 1px solid rgba(255, 255, 255, 0.4) !important;
-  box-shadow: 0 4px 22px oklch(66% 0.20 15 / 0.55);
+  box-shadow: 0 4px 22px oklch(66% 0.2 15 / 0.55);
 }
 .tier-submit > * {
   position: relative;

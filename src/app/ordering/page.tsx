@@ -8,10 +8,9 @@ import type { MaterialFormData } from '@/components/inventory';
 import Link from 'next/link';
 import type { CartItem } from '@/components/ordering/TextbookCatalog';
 
-const MaterialForm = dynamic(
-  () => import('@/components/inventory').then((m) => m.MaterialForm),
-  { ssr: false }
-);
+const MaterialForm = dynamic(() => import('@/components/inventory').then((m) => m.MaterialForm), {
+  ssr: false,
+});
 const StockTransactionModal = dynamic(
   () => import('@/components/inventory').then((m) => m.StockTransactionModal),
   { ssr: false }
@@ -35,12 +34,7 @@ import {
 import { getStudents } from '@/lib/api/students';
 import { getBillingPeriods } from '@/lib/api/billing';
 import { getTextbooks } from '@/lib/api/textbooks';
-import type {
-  Material,
-  MaterialOrderWithDetails,
-  BillingPeriod,
-  Textbook,
-} from '@/types/database';
+import type { Material, MaterialOrderWithDetails, BillingPeriod, Textbook } from '@/types/database';
 import { useRequirePermission, useCanEdit } from '@/hooks/usePermissions';
 import AccessDenied from '@/components/AccessDenied';
 import { useAuth } from '@/contexts/AuthContext';
@@ -57,7 +51,9 @@ export default function OrderingPage() {
   // Data state
   const [materials, setMaterials] = useState<Material[]>([]);
   const [orders, setOrders] = useState<MaterialOrderWithDetails[]>([]);
-  const [students, setStudents] = useState<{ id: string; school_id: string; last_name: string; first_name: string; grade: number | null }[]>([]);
+  const [students, setStudents] = useState<
+    { id: string; school_id: string; last_name: string; first_name: string; grade: number | null }[]
+  >([]);
   const [textbooks, setTextbooks] = useState<Textbook[]>([]);
   const [activeBillingPeriod, setActiveBillingPeriod] = useState<BillingPeriod | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -84,13 +80,14 @@ export default function OrderingPage() {
         return;
       }
 
-      const [materialsData, ordersData, studentsData, billingPeriods, textbooksData] = await Promise.all([
-        getMaterials(schoolIds),
-        getOrders(schoolIds).catch(() => [] as MaterialOrderWithDetails[]),
-        getStudents(undefined, schoolIds),
-        getBillingPeriods(schoolIds).catch(() => [] as BillingPeriod[]),
-        getTextbooks().catch(() => [] as Textbook[]),
-      ]);
+      const [materialsData, ordersData, studentsData, billingPeriods, textbooksData] =
+        await Promise.all([
+          getMaterials(schoolIds),
+          getOrders(schoolIds).catch(() => [] as MaterialOrderWithDetails[]),
+          getStudents(undefined, schoolIds),
+          getBillingPeriods(schoolIds).catch(() => [] as BillingPeriod[]),
+          getTextbooks().catch(() => [] as Textbook[]),
+        ]);
 
       setMaterials(materialsData);
       setOrders(ordersData);
@@ -193,25 +190,19 @@ export default function OrderingPage() {
       isVocab && student?.school_id
         ? student.school_id
         : schoolIds.length > 0
-        ? schoolIds[0]
-        : undefined;
+          ? schoolIds[0]
+          : undefined;
 
     // 該当教室の material を取得（単語練習帳は教室別レコードを正確に当てる必要がある）
     let material = materials.find(
-      (m) =>
-        m.name === textbookName &&
-        (targetSchoolId ? m.school_id === targetSchoolId : true)
+      (m) => m.name === textbookName && (targetSchoolId ? m.school_id === targetSchoolId : true)
     );
 
     if (!material) {
       // 該当教室分の material を作成（単語練習帳は targetSchoolId のみ、他は schoolIds 全体に作成）
       material = await createMaterial(
         { name: textbookName, category: 'テキスト', unit: '冊' },
-        isVocab && targetSchoolId
-          ? [targetSchoolId]
-          : schoolIds.length > 0
-          ? schoolIds
-          : undefined
+        isVocab && targetSchoolId ? [targetSchoolId] : schoolIds.length > 0 ? schoolIds : undefined
       );
     }
 
@@ -256,7 +247,8 @@ export default function OrderingPage() {
 
     // (school_id, material name) で材料をキャッシュ。単語練習帳は教室別レコードを使うので
     // material_name 単独では衝突するためキーに school_id を含める。
-    const materialKey = (name: string, schoolId: string | undefined) => `${schoolId ?? ''}::${name}`;
+    const materialKey = (name: string, schoolId: string | undefined) =>
+      `${schoolId ?? ''}::${name}`;
     const materialCache = new Map<string, Material>();
     for (const m of materials) {
       materialCache.set(materialKey(m.name, m.school_id), m);
@@ -276,8 +268,7 @@ export default function OrderingPage() {
       const isSample = item.studentId === SAMPLE_VALUE;
       const isVocab = item.textbookName === VOCAB_BOOK_NAME;
       const student = !isSample ? students.find((s) => s.id === item.studentId) : null;
-      const targetSchoolId =
-        isVocab && student?.school_id ? student.school_id : fallbackSchoolId;
+      const targetSchoolId = isVocab && student?.school_id ? student.school_id : fallbackSchoolId;
 
       let material = materialCache.get(materialKey(item.textbookName, targetSchoolId));
       if (!material) {
@@ -286,8 +277,8 @@ export default function OrderingPage() {
           isVocab && targetSchoolId
             ? [targetSchoolId]
             : schoolIds.length > 0
-            ? schoolIds
-            : undefined
+              ? schoolIds
+              : undefined
         );
         materialCache.set(materialKey(material.name, material.school_id), material);
       }
@@ -393,17 +384,26 @@ export default function OrderingPage() {
               return (
                 <>
                   {unconfirmed > 0 && (
-                    <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[11px] font-bold bg-yellow-100 text-yellow-700" title="未確認">
+                    <span
+                      className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[11px] font-bold bg-yellow-100 text-yellow-700"
+                      title="未確認"
+                    >
                       未確認 {unconfirmed}
                     </span>
                   )}
                   {ordered > 0 && (
-                    <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-100 text-blue-700" title="発注済み">
+                    <span
+                      className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-100 text-blue-700"
+                      title="発注済み"
+                    >
                       発注済 {ordered}
                     </span>
                   )}
                   {delivered > 0 && (
-                    <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[11px] font-bold bg-green-100 text-green-700" title="発送済み">
+                    <span
+                      className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[11px] font-bold bg-green-100 text-green-700"
+                      title="発送済み"
+                    >
                       発送済 {delivered}
                     </span>
                   )}

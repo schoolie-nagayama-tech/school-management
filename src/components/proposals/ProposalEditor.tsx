@@ -96,16 +96,16 @@ const INTENT_TAGS = [
   '直前演習',
   '応用発展',
 ] as const;
-type IntentTag = typeof INTENT_TAGS[number];
+type IntentTag = (typeof INTENT_TAGS)[number];
 
 const INTENT_TAG_COLOR: Record<IntentTag, string> = {
-  '予習': 'text-purple-700 border-purple-200',
-  '復習': 'text-blue-700 border-blue-200',
-  '苦手克服': 'text-rose-700 border-rose-200',
-  '苦手補強': 'text-red-700 border-red-200',
-  '定着': 'text-emerald-700 border-emerald-200',
-  '直前演習': 'text-amber-700 border-amber-200',
-  '応用発展': 'text-indigo-700 border-indigo-200',
+  予習: 'text-purple-700 border-purple-200',
+  復習: 'text-blue-700 border-blue-200',
+  苦手克服: 'text-rose-700 border-rose-200',
+  苦手補強: 'text-red-700 border-red-200',
+  定着: 'text-emerald-700 border-emerald-200',
+  直前演習: 'text-amber-700 border-amber-200',
+  応用発展: 'text-indigo-700 border-indigo-200',
 };
 
 const STATUS_FLOW: ProposalStatus[] = ['draft', 'sent', 'approved'];
@@ -155,16 +155,17 @@ const STATUS_COLORS: Record<string, { active: string }> = {
   sent: { active: 'bg-info text-white ring-2 ring-info/30' },
   approved: { active: 'bg-emerald-600 text-white ring-2 ring-emerald-600/30' },
 };
-const STATUS_INACTIVE = 'bg-transparent text-text-faint border border-border-default hover:bg-surface-hover hover:text-text-muted';
+const STATUS_INACTIVE =
+  'bg-transparent text-text-faint border border-border-default hover:bg-surface-hover hover:text-text-muted';
 
 // 科目バッジ配色（提案書一覧・講習一覧と統一）
 const SUBJECT_BADGE_COLORS: Record<string, { bg: string; text: string }> = {
-  '英語': { bg: 'bg-blue-50', text: 'text-blue-700' },
-  '数学': { bg: 'bg-red-50', text: 'text-red-700' },
-  '算数': { bg: 'bg-red-50', text: 'text-red-700' },
-  '国語': { bg: 'bg-green-50', text: 'text-green-700' },
-  '理科': { bg: 'bg-amber-50', text: 'text-amber-700' },
-  '社会': { bg: 'bg-purple-50', text: 'text-purple-700' },
+  英語: { bg: 'bg-blue-50', text: 'text-blue-700' },
+  数学: { bg: 'bg-red-50', text: 'text-red-700' },
+  算数: { bg: 'bg-red-50', text: 'text-red-700' },
+  国語: { bg: 'bg-green-50', text: 'text-green-700' },
+  理科: { bg: 'bg-amber-50', text: 'text-amber-700' },
+  社会: { bg: 'bg-purple-50', text: 'text-purple-700' },
 };
 const DEFAULT_SUBJECT_BADGE = { bg: 'bg-gray-100', text: 'text-gray-600' };
 
@@ -176,9 +177,7 @@ export default function ProposalEditor() {
   const { profile } = useAuth();
   // 公開・削除・講習登録は教室長以上(manager/owner/admin)のみ許可
   const isManagerOrAbove =
-    profile?.role === 'manager' ||
-    profile?.role === 'owner' ||
-    profile?.role === 'admin';
+    profile?.role === 'manager' || profile?.role === 'owner' || profile?.role === 'admin';
 
   const studentId = params?.studentId as string;
   const proposalId = params?.proposalId as string;
@@ -311,7 +310,7 @@ export default function ProposalEditor() {
         setSelectedTextbookId(tbId);
         setTextbookName(data.textbook?.name ?? '');
         setTextbookSubject(data.textbook?.subject ?? '');
-        setTextbookGrade((data.textbook as Record<string, unknown>)?.grade as string ?? '');
+        setTextbookGrade(((data.textbook as Record<string, unknown>)?.grade as string) ?? '');
       } else if (stbId) {
         const { data: stb } = await supabase
           .from('student_textbooks')
@@ -321,7 +320,12 @@ export default function ProposalEditor() {
 
         if (stb) {
           const st = stb as Record<string, unknown>;
-          const textbook = st.textbook as { id: number; name: string; subject?: string | null; grade?: string | null } | null;
+          const textbook = st.textbook as {
+            id: number;
+            name: string;
+            subject?: string | null;
+            grade?: string | null;
+          } | null;
           tbId = textbook?.id ?? 0;
           setSelectedTextbookId(tbId);
           setTextbookName(textbook?.name ?? '');
@@ -392,11 +396,11 @@ export default function ProposalEditor() {
             d.applied_group_id = u.applied_group_id ?? 0;
             d.intent_tag = u.intent_tag ?? null;
             if (u.group_id > maxGroup) maxGroup = u.group_id;
-            if ((u.applied_group_id ?? 0) > maxAppliedGroup) maxAppliedGroup = u.applied_group_id ?? 0;
+            if ((u.applied_group_id ?? 0) > maxAppliedGroup)
+              maxAppliedGroup = u.applied_group_id ?? 0;
           }
         }
       }
-
 
       setUnitDrafts(drafts);
       setNextGroupId(maxGroup + 1);
@@ -608,7 +612,10 @@ export default function ProposalEditor() {
     });
     setIntentMenuOpen(false);
     if (count > 0) {
-      addToast(tag ? `${count}単元に「${tag}」を設定` : `${count}単元の指導意図をクリア`, 'success');
+      addToast(
+        tag ? `${count}単元に「${tag}」を設定` : `${count}単元の指導意図をクリア`,
+        'success'
+      );
     }
   };
 
@@ -672,7 +679,7 @@ export default function ProposalEditor() {
             ...d,
             // グループ内は0コマでも1コマ扱いにして有効化（groupSelected と同じ挙動）。
             // グループ全体は calcTotalKoma で1回だけ計上されるため合計は増えない。
-            koma_count: inGroup ? (s.proposal_count || 1) : s.proposal_count,
+            koma_count: inGroup ? s.proposal_count || 1 : s.proposal_count,
             group_id: newGroupId,
             selected: d.selected,
           });
@@ -700,7 +707,7 @@ export default function ProposalEditor() {
     }
     const selectedSet = new Set(selected.map((d) => d.curriculum_item_id));
     const indices = allItems
-      .map((item, idx) => selectedSet.has(item.id) ? idx : -1)
+      .map((item, idx) => (selectedSet.has(item.id) ? idx : -1))
       .filter((i) => i >= 0);
     for (let i = 1; i < indices.length; i++) {
       if (indices[i] !== indices[i - 1] + 1) {
@@ -716,12 +723,13 @@ export default function ProposalEditor() {
       const affectedGroupIds = new Set(selected.map((d) => d.group_id).filter((g) => g > 0));
       for (const s of selected) {
         const d = next.get(s.curriculum_item_id);
-        if (d) next.set(s.curriculum_item_id, {
-          ...d,
-          group_id: gid,
-          koma_count: d.koma_count || 1,
-          selected: false,
-        });
+        if (d)
+          next.set(s.curriculum_item_id, {
+            ...d,
+            group_id: gid,
+            koma_count: d.koma_count || 1,
+            selected: false,
+          });
       }
       // 上書きで片割れだけ残ったグループ（メンバー1件）は単独グループになってしまうため解散
       for (const oldGid of Array.from(affectedGroupIds)) {
@@ -761,7 +769,7 @@ export default function ProposalEditor() {
     }
     const selectedSet = new Set(selected.map((d) => d.curriculum_item_id));
     const indices = allItems
-      .map((item, idx) => selectedSet.has(item.id) ? idx : -1)
+      .map((item, idx) => (selectedSet.has(item.id) ? idx : -1))
       .filter((i) => i >= 0);
     for (let i = 1; i < indices.length; i++) {
       if (indices[i] !== indices[i - 1] + 1) {
@@ -773,16 +781,19 @@ export default function ProposalEditor() {
     setNextAppliedGroupId(gid + 1);
     setUnitDrafts((prev) => {
       const next = new Map(prev);
-      const affectedGroupIds = new Set(selected.map((d) => d.applied_group_id).filter((g) => g > 0));
+      const affectedGroupIds = new Set(
+        selected.map((d) => d.applied_group_id).filter((g) => g > 0)
+      );
       for (const s of selected) {
         const d = next.get(s.curriculum_item_id);
         // 申込コマが未入力の単元も結合対象なら申込1で有効化（合計は head 1件のみ計上）
-        if (d) next.set(s.curriculum_item_id, {
-          ...d,
-          applied_group_id: gid,
-          applied_koma: d.applied_koma || 1,
-          selected: false,
-        });
+        if (d)
+          next.set(s.curriculum_item_id, {
+            ...d,
+            applied_group_id: gid,
+            applied_koma: d.applied_koma || 1,
+            selected: false,
+          });
       }
       // 片割れ1件だけ残った申込グループは解散
       for (const oldGid of Array.from(affectedGroupIds)) {
@@ -916,9 +927,7 @@ export default function ProposalEditor() {
     }
     const update = () => {
       const cont = listRef.current;
-      const el = cont?.querySelector(
-        `[data-unit-idx="${pillAnchorIdx}"]`
-      ) as HTMLElement | null;
+      const el = cont?.querySelector(`[data-unit-idx="${pillAnchorIdx}"]`) as HTMLElement | null;
       if (!cont || !el) {
         setPillPos(null);
         return;
@@ -1037,7 +1046,12 @@ export default function ProposalEditor() {
 
     // 公開は確認ダイアログ
     if (newStatus === 'approved') {
-      if (!window.confirm('提案書を公開しますか？\n\n以下が実行されます:\n・申込コマ数が生徒の進行表に反映されます\n・テキストが進行表に表示されるようになります\n・講師ビューに公開されます')) return;
+      if (
+        !window.confirm(
+          '提案書を公開しますか？\n\n以下が実行されます:\n・申込コマ数が生徒の進行表に反映されます\n・テキストが進行表に表示されるようになります\n・講師ビューに公開されます'
+        )
+      )
+        return;
     }
 
     setStatusChanging(true);
@@ -1073,7 +1087,9 @@ export default function ProposalEditor() {
             curriculum_item_id: u.curriculum_item_id,
             koma_count: u.koma_count,
             applied_koma: initializeApplied
-              ? (u.koma_count > 0 ? u.koma_count : u.applied_koma)
+              ? u.koma_count > 0
+                ? u.koma_count
+                : u.applied_koma
               : u.applied_koma, // 公開済み→提案済み: 確定値(0含む)を保持
             reason: u.reason,
             group_id: u.group_id,
@@ -1098,7 +1114,9 @@ export default function ProposalEditor() {
             koma_count: u.koma_count,
             applied_koma: publishingFromSent
               ? u.applied_koma
-              : (u.applied_koma > 0 ? u.applied_koma : u.koma_count),
+              : u.applied_koma > 0
+                ? u.applied_koma
+                : u.koma_count,
             reason: u.reason,
             group_id: u.group_id,
             applied_group_id: u.applied_group_id > 0 ? u.applied_group_id : u.group_id,
@@ -1115,15 +1133,18 @@ export default function ProposalEditor() {
         if (selectedTextbookId) {
           const tb = allTextbooks.find((t) => t.id === selectedTextbookId);
           try {
-            candidates = await getProposalOrderCandidates([{
-              proposalId,
-              studentId,
-              studentName,
-              schoolId: studentSchoolId,
-              textbookId: selectedTextbookId,
-              textbookName: [textbookSubject, textbookName].filter(Boolean).join(' ') || textbookName,
-              materialId: tb?.material_id ?? null,
-            }]);
+            candidates = await getProposalOrderCandidates([
+              {
+                proposalId,
+                studentId,
+                studentName,
+                schoolId: studentSchoolId,
+                textbookId: selectedTextbookId,
+                textbookName:
+                  [textbookSubject, textbookName].filter(Boolean).join(' ') || textbookName,
+                materialId: tb?.material_id ?? null,
+              },
+            ]);
           } catch (e) {
             console.error('発注候補の取得に失敗:', e);
           }
@@ -1132,7 +1153,9 @@ export default function ProposalEditor() {
         await publishProposal(proposalId);
 
         // 発注が要りそうな候補があればダイアログを開く
-        const relevant = candidates.filter((c) => c.needsOrder || (!c.alreadyOwned && !c.materialId));
+        const relevant = candidates.filter(
+          (c) => c.needsOrder || (!c.alreadyOwned && !c.materialId)
+        );
         if (relevant.length > 0) setOrderDialog(candidates);
       } else if (newStatus === 'draft') {
         // 下書きに戻す: 申込コマ数は未確定に戻す（提案済で入れた申込を0クリア）。
@@ -1160,7 +1183,7 @@ export default function ProposalEditor() {
         await updateProposal(proposalId, { status: newStatus });
       }
 
-      setProposal((prev) => prev ? { ...prev, status: newStatus } : prev);
+      setProposal((prev) => (prev ? { ...prev, status: newStatus } : prev));
       addToast(`ステータスを「${PROPOSAL_STATUS_LABELS[newStatus]}」に変更しました`, 'success');
     } catch (_e) {
       addToast('ステータス変更に失敗しました', 'error');
@@ -1188,7 +1211,11 @@ export default function ProposalEditor() {
   };
 
   if (loading) {
-    return <div className="p-8"><Loading size="md" /></div>;
+    return (
+      <div className="p-8">
+        <Loading size="md" />
+      </div>
+    );
   }
 
   const currentStatus = proposal?.status ?? 'draft';
@@ -1235,8 +1262,12 @@ export default function ProposalEditor() {
   // テキスト選択ピッカー
   // ════════════════════════════════════════
   if (showTextbookPicker || (!selectedTextbookId && isNew)) {
-    const schoolTypes = Array.from(new Set(allTextbooks.map((t) => t.school_type).filter((v): v is string => !!v))).sort();
-    const subjects = Array.from(new Set(allTextbooks.map((t) => t.subject).filter((v): v is string => !!v))).sort();
+    const schoolTypes = Array.from(
+      new Set(allTextbooks.map((t) => t.school_type).filter((v): v is string => !!v))
+    ).sort();
+    const subjects = Array.from(
+      new Set(allTextbooks.map((t) => t.subject).filter((v): v is string => !!v))
+    ).sort();
     const grades = Array.from(
       new Set(
         allTextbooks
@@ -1260,7 +1291,8 @@ export default function ProposalEditor() {
             !tb.name.toLowerCase().includes(q) &&
             !tb.subject?.toLowerCase().includes(q) &&
             !tb.publisher?.toLowerCase().includes(q)
-          ) return false;
+          )
+            return false;
         }
         return true;
       })
@@ -1293,7 +1325,9 @@ export default function ProposalEditor() {
             提案書一覧に戻る
           </Link>
           <h1 className="text-lg font-bold text-text-heading">テキストを選択</h1>
-          <p className="text-sm text-text-muted mt-0.5">{studentName} の講習提案書{textbookSubject ? ` (${textbookSubject})` : ''}</p>
+          <p className="text-sm text-text-muted mt-0.5">
+            {studentName} の講習提案書{textbookSubject ? ` (${textbookSubject})` : ''}
+          </p>
         </div>
 
         <div className="relative mb-3">
@@ -1310,11 +1344,18 @@ export default function ProposalEditor() {
         <div className="flex items-center gap-2 mb-4 flex-wrap">
           <select
             value={tbFilterSchoolType}
-            onChange={(e) => { setTbFilterSchoolType(e.target.value); setTbFilterGrade(''); }}
+            onChange={(e) => {
+              setTbFilterSchoolType(e.target.value);
+              setTbFilterGrade('');
+            }}
             className="px-2 py-1 border border-border-default rounded-lg text-xs bg-surface-raised text-text-body"
           >
             <option value="">学校種別</option>
-            {schoolTypes.map((st) => <option key={st} value={st}>{st}</option>)}
+            {schoolTypes.map((st) => (
+              <option key={st} value={st}>
+                {st}
+              </option>
+            ))}
           </select>
           <select
             value={tbFilterSubject}
@@ -1322,7 +1363,11 @@ export default function ProposalEditor() {
             className="px-2 py-1 border border-border-default rounded-lg text-xs bg-surface-raised text-text-body"
           >
             <option value="">教科</option>
-            {subjects.map((s) => <option key={s} value={s}>{s}</option>)}
+            {subjects.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
           </select>
           <select
             value={tbFilterGrade}
@@ -1330,11 +1375,19 @@ export default function ProposalEditor() {
             className="px-2 py-1 border border-border-default rounded-lg text-xs bg-surface-raised text-text-body"
           >
             <option value="">学年</option>
-            {grades.map((g) => <option key={g} value={g}>{g}</option>)}
+            {grades.map((g) => (
+              <option key={g} value={g}>
+                {g}
+              </option>
+            ))}
           </select>
           {(tbFilterSchoolType || tbFilterSubject || tbFilterGrade) && (
             <button
-              onClick={() => { setTbFilterSchoolType(''); setTbFilterSubject(''); setTbFilterGrade(''); }}
+              onClick={() => {
+                setTbFilterSchoolType('');
+                setTbFilterSubject('');
+                setTbFilterGrade('');
+              }}
               className="text-xs text-text-muted hover:text-text-heading transition-[color] duration-150 ease-out"
             >
               クリア
@@ -1359,14 +1412,17 @@ export default function ProposalEditor() {
                     className="w-full text-left pl-4 pr-12 py-3 bg-surface-raised rounded-lg border border-border-default hover:border-accent-ink/30 hover:bg-accent-ink-subtle active:scale-[0.99] transition-[background-color,border-color,transform] duration-150 ease-out"
                   >
                     <div className="flex items-center gap-1.5">
-                      {tb.subject && (() => {
-                        const c = SUBJECT_BADGE_COLORS[tb.subject] ?? DEFAULT_SUBJECT_BADGE;
-                        return (
-                          <span className={`inline-flex px-1.5 py-0.5 text-[10px] font-bold rounded shrink-0 ${c.bg} ${c.text}`}>
-                            {tb.subject}
-                          </span>
-                        );
-                      })()}
+                      {tb.subject &&
+                        (() => {
+                          const c = SUBJECT_BADGE_COLORS[tb.subject] ?? DEFAULT_SUBJECT_BADGE;
+                          return (
+                            <span
+                              className={`inline-flex px-1.5 py-0.5 text-[10px] font-bold rounded shrink-0 ${c.bg} ${c.text}`}
+                            >
+                              {tb.subject}
+                            </span>
+                          );
+                        })()}
                       <span className="text-sm font-medium text-text-heading">{tb.name}</span>
                     </div>
                     <div className="text-xs text-text-muted mt-0.5">
@@ -1398,7 +1454,9 @@ export default function ProposalEditor() {
             );
           })}
           {filtered.length === 0 && (
-            <div className="py-8 text-center text-sm text-text-faint">該当するテキストがありません</div>
+            <div className="py-8 text-center text-sm text-text-faint">
+              該当するテキストがありません
+            </div>
           )}
         </div>
         <ToastContainer toasts={toasts} onRemove={removeToast} />
@@ -1436,7 +1494,9 @@ export default function ProposalEditor() {
               {isNew ? '講習提案書を作成' : '講習提案書を編集'}
             </h1>
             <p className="text-sm text-text-muted mt-0.5">
-              {studentName} / {[textbookGrade, textbookSubject, textbookName].filter(Boolean).join(' ')} / {year}年 {seasonLabel}講習
+              {studentName} /{' '}
+              {[textbookGrade, textbookSubject, textbookName].filter(Boolean).join(' ')} / {year}年{' '}
+              {seasonLabel}講習
             </p>
           </div>
 
@@ -1521,7 +1581,9 @@ export default function ProposalEditor() {
           <section className="p-4 bg-surface-raised rounded-xl border border-border-default flex items-center justify-between">
             <div>
               <div className="text-xs font-bold text-text-muted mb-0.5">テキスト</div>
-              <div className="text-sm font-medium text-text-heading">{[textbookGrade, textbookSubject, textbookName].filter(Boolean).join(' ')}</div>
+              <div className="text-sm font-medium text-text-heading">
+                {[textbookGrade, textbookSubject, textbookName].filter(Boolean).join(' ')}
+              </div>
             </div>
             <Button variant="ghost" size="sm" onClick={() => setShowTextbookPicker(true)}>
               変更
@@ -1533,7 +1595,9 @@ export default function ProposalEditor() {
         <section className="p-4 bg-surface-raised rounded-xl border border-border-default">
           <label className="text-sm font-bold text-text-heading block mb-2">
             講習テーマ
-            <span className="ml-1 text-red-600" aria-hidden="true">*</span>
+            <span className="ml-1 text-red-600" aria-hidden="true">
+              *
+            </span>
             <span className="ml-1.5 align-middle text-[10px] font-bold text-red-600">必須</span>
           </label>
           <input
@@ -1565,7 +1629,10 @@ export default function ProposalEditor() {
                   </button>
                   {showCourseImport && (
                     <>
-                      <div className="fixed inset-0 z-10" onClick={() => setShowCourseImport(false)} />
+                      <div
+                        className="fixed inset-0 z-10"
+                        onClick={() => setShowCourseImport(false)}
+                      />
                       <div className="absolute right-0 top-full mt-1 w-56 bg-surface-raised border border-border-default rounded-lg shadow-lg z-20 overflow-hidden">
                         <div className="px-3 py-1.5 text-[10px] text-text-faint uppercase tracking-wider border-b border-border-subtle">
                           講習ひな形を選択
@@ -1588,7 +1655,9 @@ export default function ProposalEditor() {
                 </div>
               )}
               <div className="text-sm font-bold">
-                <span className="text-accent-ink">{activeUnits.length}単元 / {totalKoma}コマ</span>
+                <span className="text-accent-ink">
+                  {activeUnits.length}単元 / {totalKoma}コマ
+                </span>
                 {totalAppliedKoma != null && (
                   <span className="text-info ml-2">申込 {totalAppliedKoma}コマ</span>
                 )}
@@ -1609,7 +1678,10 @@ export default function ProposalEditor() {
               if (!draft) return null;
               const done = isDone(item.id);
               const groupMembers = draft.group_id > 0 ? groupMap.get(draft.group_id) : undefined;
-              const appliedGroupMembers = draft.applied_group_id > 0 ? appliedGroupMap.get(draft.applied_group_id) : undefined;
+              const appliedGroupMembers =
+                draft.applied_group_id > 0
+                  ? appliedGroupMap.get(draft.applied_group_id)
+                  : undefined;
 
               return (
                 <UnitRow
@@ -1628,7 +1700,9 @@ export default function ProposalEditor() {
                   onUngroup={() => ungroupUnit(item.id)}
                   onUngroupAll={() => draft.group_id > 0 && ungroupAll(draft.group_id)}
                   onUngroupApplied={() => ungroupAppliedUnit(item.id)}
-                  onUngroupAllApplied={() => draft.applied_group_id > 0 && ungroupAllApplied(draft.applied_group_id)}
+                  onUngroupAllApplied={() =>
+                    draft.applied_group_id > 0 && ungroupAllApplied(draft.applied_group_id)
+                  }
                 />
               );
             })}
@@ -1648,7 +1722,6 @@ export default function ProposalEditor() {
             placeholder="内部メモ"
           />
         </section>
-
       </div>
 
       {/* 選択脇のフローティング「まとめる」ピル。最後にチェックした行のチェックボックスの真横（縦中央）に出し、下部バーへの往復をなくす。 */}
@@ -1666,7 +1739,9 @@ export default function ProposalEditor() {
             >
               <Link2 className="w-3.5 h-3.5" />
               {selectionInfo.count}単元をまとめる
-              <kbd className="ml-0.5 rounded bg-white/20 px-1 text-[10px] font-semibold leading-tight">G</kbd>
+              <kbd className="ml-0.5 rounded bg-white/20 px-1 text-[10px] font-semibold leading-tight">
+                G
+              </kbd>
             </button>
           ) : (
             <div className="flex items-center gap-1.5 rounded-full bg-surface-raised text-text-muted text-[11px] font-medium px-3 py-1.5 shadow-lg ring-1 ring-border-default origin-left animate-[popover-enter_150ms_cubic-bezier(0.23,1,0.32,1)]">
@@ -1697,7 +1772,11 @@ export default function ProposalEditor() {
             >
               <Tag className="w-3.5 h-3.5" />
               指導意図
-              {intentMenuOpen ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+              {intentMenuOpen ? (
+                <ChevronUp className="w-3 h-3" />
+              ) : (
+                <ChevronDown className="w-3 h-3" />
+              )}
             </button>
             {intentMenuOpen && (
               <div className="absolute top-full left-0 mt-2 w-56 p-2 bg-surface-raised border border-border-default rounded-xl shadow-lg origin-top-left animate-[popover-enter_150ms_cubic-bezier(0.23,1,0.32,1)]">
@@ -1731,7 +1810,9 @@ export default function ProposalEditor() {
       <div className="fixed bottom-0 left-0 right-0 z-30 bg-surface-raised/95 backdrop-blur-sm border-t border-border-default print:hidden">
         <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-2.5 flex items-center gap-3">
           <div className="text-xs font-bold text-text-muted shrink-0">
-            <span className="text-accent-ink">{activeUnits.length}単元 / {totalKoma}コマ</span>
+            <span className="text-accent-ink">
+              {activeUnits.length}単元 / {totalKoma}コマ
+            </span>
             {totalAppliedKoma != null && totalAppliedKoma > 0 && (
               <span className="text-info ml-2">申込 {totalAppliedKoma}</span>
             )}
@@ -1848,10 +1929,21 @@ export default function ProposalEditor() {
               この提案書の内容をもとに講習一覧にコースを作成します。作成後は他の生徒にも展開できます。
             </AlertDialogDescription>
             <div className="mt-2 bg-surface-hover rounded-lg p-3 space-y-1 text-sm">
-              <p><span className="text-text-muted">コース名:</span> {theme}</p>
-              <p><span className="text-text-muted">テキスト:</span> {[textbookGrade, textbookSubject, textbookName].filter(Boolean).join(' ')}</p>
-              <p><span className="text-text-muted">対象学年:</span> {studentGrade ? (GRADE_LABELS[studentGrade] ?? `学年${studentGrade}`) : '不明'}</p>
-              <p><span className="text-text-muted">内容:</span> {activeUnits.length}単元 / {totalKoma}コマ</p>
+              <p>
+                <span className="text-text-muted">コース名:</span> {theme}
+              </p>
+              <p>
+                <span className="text-text-muted">テキスト:</span>{' '}
+                {[textbookGrade, textbookSubject, textbookName].filter(Boolean).join(' ')}
+              </p>
+              <p>
+                <span className="text-text-muted">対象学年:</span>{' '}
+                {studentGrade ? (GRADE_LABELS[studentGrade] ?? `学年${studentGrade}`) : '不明'}
+              </p>
+              <p>
+                <span className="text-text-muted">内容:</span> {activeUnits.length}単元 /{' '}
+                {totalKoma}コマ
+              </p>
             </div>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -1892,7 +1984,8 @@ export default function ProposalEditor() {
               テキスト発注が必要です
             </AlertDialogTitle>
             <AlertDialogDescription>
-              {studentName} さんの進行表に「{textbookSubject ? `${textbookSubject} ` : ''}{textbookName}」を新しく追加しました。テキストの発注を忘れずに行ってください。
+              {studentName} さんの進行表に「{textbookSubject ? `${textbookSubject} ` : ''}
+              {textbookName}」を新しく追加しました。テキストの発注を忘れずに行ってください。
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -1905,10 +1998,7 @@ export default function ProposalEditor() {
 
       {/* 公開後の教材発注ダイアログ */}
       {orderDialog && (
-        <PublishOrderDialog
-          candidates={orderDialog}
-          onClose={() => setOrderDialog(null)}
-        />
+        <PublishOrderDialog candidates={orderDialog} onClose={() => setOrderDialog(null)} />
       )}
 
       <ToastContainer toasts={toasts} onRemove={removeToast} />
@@ -1953,13 +2043,15 @@ function UnitRow({
 }) {
   const [expanded, setExpanded] = useState(false);
   const isGrouped = draft.group_id > 0;
-  const isGroupHead = groupMembers && groupMembers[0]?.curriculum_item_id === draft.curriculum_item_id;
+  const isGroupHead =
+    groupMembers && groupMembers[0]?.curriculum_item_id === draft.curriculum_item_id;
   const hasApplied = draft.applied_koma > 0;
   // 提案コマ・申込コマのどちらかが入っていれば有効（提案0・申込1の単元も操作可能に）
   const isActive = draft.koma_count > 0 || draft.applied_koma > 0;
   // 申込結合: applied_group_id でまとめた単元。head のみ申込±を出し、合計も head 1件で計上。
   const isAppliedGrouped = draft.applied_group_id > 0 && hasApplied;
-  const isAppliedGroupHead = appliedGroupMembers && appliedGroupMembers[0]?.curriculum_item_id === draft.curriculum_item_id;
+  const isAppliedGroupHead =
+    appliedGroupMembers && appliedGroupMembers[0]?.curriculum_item_id === draft.curriculum_item_id;
 
   const handleCardClick = () => {
     // 申込編集フェーズ（提案済み/公開済み）では行クリックで申込コマを足す。
@@ -2031,9 +2123,7 @@ function UnitRow({
           >
             {item.title}
           </span>
-          {done && (
-            <span className="ml-1.5 text-[10px] text-text-faint">指導済</span>
-          )}
+          {done && <span className="ml-1.5 text-[10px] text-text-faint">指導済</span>}
           {isGrouped && isActive && (
             <span className={`ml-1.5 text-[10px] font-bold ${GROUP_TEXT_COLORS[groupColorIdx]}`}>
               {GROUP_CIRCLE_NUMS[(draft.group_id - 1) % GROUP_CIRCLE_NUMS.length]}
@@ -2093,7 +2183,9 @@ function UnitRow({
                 >
                   <Minus className="w-3 h-3" />
                 </button>
-                <span className={`w-6 text-center text-sm font-bold ${hasApplied ? 'text-success' : 'text-text-faint'}`}>
+                <span
+                  className={`w-6 text-center text-sm font-bold ${hasApplied ? 'text-success' : 'text-text-faint'}`}
+                >
                   {draft.applied_koma}
                 </span>
                 <button
@@ -2184,7 +2276,6 @@ function UnitRow({
           </div>
         </div>
       )}
-
     </div>
   );
 }

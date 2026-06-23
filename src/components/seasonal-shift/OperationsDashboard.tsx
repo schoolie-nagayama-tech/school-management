@@ -61,7 +61,10 @@ export function OperationsDashboard({
     const d = new Date(date + 'T12:00:00');
     const day = d.getDay();
     if (day === 0) return false;
-    const saturdaySlots = setting.saturday_slots.split(',').map((s) => s.trim()).filter(Boolean);
+    const saturdaySlots = setting.saturday_slots
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
     if (day === 6) return saturdaySlots.includes(timeSlot);
     return true;
   };
@@ -139,9 +142,7 @@ export function OperationsDashboard({
         className="w-full flex items-center justify-between px-4 py-3 bg-slate-50 hover:bg-slate-100 text-left text-sm font-medium text-slate-700 transition-colors duration-150"
       >
         <span>運営判断用ダッシュボード</span>
-        <span className="text-slate-400 text-xs">
-          {isOpen ? '▲ 閉じる' : '▼ 開く'}
-        </span>
+        <span className="text-slate-400 text-xs">{isOpen ? '▲ 閉じる' : '▼ 開く'}</span>
       </button>
       {isOpen && (
         <div className="p-4 bg-white">
@@ -204,9 +205,7 @@ export function OperationsDashboard({
                                 !
                               </span>
                             )}
-                            <span className="text-xs text-slate-700">
-                              {isClosed ? '-' : count}
-                            </span>
+                            <span className="text-xs text-slate-700">{isClosed ? '-' : count}</span>
                           </td>
                         );
                       })}
@@ -221,9 +220,7 @@ export function OperationsDashboard({
                               }}
                             />
                           </div>
-                          <span className="text-xs text-slate-700 tabular-nums w-6">
-                            {total}
-                          </span>
+                          <span className="text-xs text-slate-700 tabular-nums w-6">{total}</span>
                         </div>
                       </td>
                     </tr>

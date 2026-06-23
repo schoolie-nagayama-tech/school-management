@@ -111,7 +111,7 @@ export async function upsertClassReport(
         ? existing?.submitted_at || new Date().toISOString()
         : form.status === 'draft'
           ? null
-          : existing?.submitted_at ?? null,
+          : (existing?.submitted_at ?? null),
   };
 
   let reportId: string;
@@ -128,11 +128,7 @@ export async function upsertClassReport(
     }
     reportId = (data as { id: string }).id;
   } else {
-    const { data, error } = await db
-      .from('class_reports')
-      .insert(reportPayload)
-      .select()
-      .single();
+    const { data, error } = await db.from('class_reports').insert(reportPayload).select().single();
     if (error) {
       console.error('Error creating class report:', error);
       throw new Error('授業報告書の作成に失敗しました');
@@ -247,9 +243,7 @@ export async function getApprovedReportsByStudent(
 ): Promise<ClassReport[]> {
   const { data, error } = await db
     .from('class_reports')
-    .select(
-      '*, teacher:user_profiles!class_reports_teacher_id_fkey(id, display_name, email)'
-    )
+    .select('*, teacher:user_profiles!class_reports_teacher_id_fkey(id, display_name, email)')
     .eq('student_id', studentId)
     .eq('status', 'approved')
     .order('lesson_date', { ascending: false })
@@ -352,9 +346,16 @@ export async function getOverdueReports(
     student_id: string;
     teacher_id: string;
     time_slot?: { slot_number: number }[] | { slot_number: number };
-    student?: { last_name: string; first_name: string; grade: number }[] | { last_name: string; first_name: string; grade: number };
-    teacher?: { display_name: string | null; email: string | null }[] | { display_name: string | null; email: string | null };
-    report?: { id: string; status: ClassReportStatus }[] | { id: string; status: ClassReportStatus } | null;
+    student?:
+      | { last_name: string; first_name: string; grade: number }[]
+      | { last_name: string; first_name: string; grade: number };
+    teacher?:
+      | { display_name: string | null; email: string | null }[]
+      | { display_name: string | null; email: string | null };
+    report?:
+      | { id: string; status: ClassReportStatus }[]
+      | { id: string; status: ClassReportStatus }
+      | null;
   };
 
   const now = new Date();

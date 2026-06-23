@@ -1,13 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui';
 import { Button } from '@/components/ui';
 import type { KoushuCourse } from '@/lib/api/seasonalCourses';
 
@@ -53,7 +47,10 @@ export function KoushuPeriodFormModal({
   }, [open, initialData]);
 
   const handleSubmit = async () => {
-    if (!name.trim()) { setError('講習名を入力してください'); return; }
+    if (!name.trim()) {
+      setError('講習名を入力してください');
+      return;
+    }
     setSaving(true);
     setError(null);
     try {
@@ -133,9 +130,7 @@ export function KoushuPeriodFormModal({
               />
             </div>
           </div>
-          {error && (
-            <p className="text-sm text-red-600 bg-red-50 rounded px-3 py-2">{error}</p>
-          )}
+          {error && <p className="text-sm text-red-600 bg-red-50 rounded px-3 py-2">{error}</p>}
         </div>
         <DialogFooter>
           <Button variant="secondary" onClick={onClose} disabled={saving}>

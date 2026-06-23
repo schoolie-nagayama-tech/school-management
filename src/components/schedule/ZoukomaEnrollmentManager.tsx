@@ -36,12 +36,20 @@ export function ZoukomaEnrollmentManager() {
   const templatePeriod = periods[0] ?? null;
 
   useEffect(() => {
-    if (!schoolId) { setPeriods([]); return; }
-    getZoukomaPeriods(schoolId).then(setPeriods).catch(() => setPeriods([]));
+    if (!schoolId) {
+      setPeriods([]);
+      return;
+    }
+    getZoukomaPeriods(schoolId)
+      .then(setPeriods)
+      .catch(() => setPeriods([]));
   }, [schoolId]);
 
   const loadResponses = useCallback(async () => {
-    if (!schoolId) { setResponses([]); return; }
+    if (!schoolId) {
+      setResponses([]);
+      return;
+    }
     setLoading(true);
     try {
       setResponses(await getAllZoukomaResponses(schoolId));
@@ -50,7 +58,9 @@ export function ZoukomaEnrollmentManager() {
     }
   }, [schoolId]);
 
-  useEffect(() => { loadResponses(); }, [loadResponses]);
+  useEffect(() => {
+    loadResponses();
+  }, [loadResponses]);
 
   const rows = useMemo(
     () => [...responses].sort((a, b) => (b.grade ?? 0) - (a.grade ?? 0)),
@@ -84,7 +94,13 @@ export function ZoukomaEnrollmentManager() {
           増コマフォームの申込（科目×コマ数＋通塾できる枠）。座席表のテスト対策モードで落とし込みます。
         </p>
         {templatePeriod && (
-          <Button onClick={() => { setEditing(null); setFormOpen(true); }} className="flex items-center gap-1">
+          <Button
+            onClick={() => {
+              setEditing(null);
+              setFormOpen(true);
+            }}
+            className="flex items-center gap-1"
+          >
             <Plus className="w-4 h-4" />
             生徒を追加
           </Button>
@@ -104,13 +120,19 @@ export function ZoukomaEnrollmentManager() {
         </div>
       )}
 
-      {schoolId && periods.length > 0 && (
-        loading ? (
+      {schoolId &&
+        periods.length > 0 &&
+        (loading ? (
           <Loading size="md" />
         ) : rows.length === 0 ? (
           <div className="text-center py-12 text-[var(--paragraph)]">
             <p className="mb-4">まだ申込がありません。</p>
-            <Button onClick={() => { setEditing(null); setFormOpen(true); }}>
+            <Button
+              onClick={() => {
+                setEditing(null);
+                setFormOpen(true);
+              }}
+            >
               <Plus className="w-4 h-4 mr-1" />
               最初の生徒を追加
             </Button>
@@ -130,26 +152,46 @@ export function ZoukomaEnrollmentManager() {
               </thead>
               <tbody>
                 {rows.map((r) => (
-                  <tr key={r.id} className="border-t border-gray-100 hover:bg-gray-50/60 transition-colors">
-                    <td className="px-3 py-2 font-medium text-[var(--headline)]">{r.student_name}</td>
+                  <tr
+                    key={r.id}
+                    className="border-t border-gray-100 hover:bg-gray-50/60 transition-colors"
+                  >
+                    <td className="px-3 py-2 font-medium text-[var(--headline)]">
+                      {r.student_name}
+                    </td>
                     <td className="px-3 py-2 text-[var(--paragraph)]">{gradeLabel(r.grade)}</td>
                     <td className="px-3 py-2 text-[var(--paragraph)]">{komaSummary(r)}</td>
                     <td className="px-3 py-2 text-[var(--paragraph)]">
-                      {(r.response_data?.selected_slots?.length ?? 0)} 枠
+                      {r.response_data?.selected_slots?.length ?? 0} 枠
                     </td>
                     <td className="px-3 py-2">
                       {r.linked_student_id ? (
-                        <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-medium bg-success-subtle text-success border border-success/20">紐付け済み</span>
+                        <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-medium bg-success-subtle text-success border border-success/20">
+                          紐付け済み
+                        </span>
                       ) : (
-                        <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-medium bg-warning-subtle text-warning border border-warning/20">未紐付け</span>
+                        <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-medium bg-warning-subtle text-warning border border-warning/20">
+                          未紐付け
+                        </span>
                       )}
                     </td>
                     <td className="px-3 py-2">
                       <div className="flex items-center gap-1 justify-end">
-                        <button onClick={() => { setEditing(r); setFormOpen(true); }} className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded" title="編集">
+                        <button
+                          onClick={() => {
+                            setEditing(r);
+                            setFormOpen(true);
+                          }}
+                          className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded"
+                          title="編集"
+                        >
                           <Pencil className="w-3.5 h-3.5" />
                         </button>
-                        <button onClick={() => setDeleting(r)} className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded" title="削除">
+                        <button
+                          onClick={() => setDeleting(r)}
+                          className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded"
+                          title="削除"
+                        >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
@@ -159,8 +201,7 @@ export function ZoukomaEnrollmentManager() {
               </tbody>
             </table>
           </div>
-        )
-      )}
+        ))}
 
       {schoolId && periods.length > 0 && rows.some((r) => !r.linked_student_id) && (
         <p className="text-xs text-[var(--paragraph)]">
@@ -171,7 +212,10 @@ export function ZoukomaEnrollmentManager() {
       {templatePeriod && (
         <ZoukomaEnrollmentFormModal
           open={formOpen}
-          onClose={() => { setFormOpen(false); setEditing(null); }}
+          onClose={() => {
+            setFormOpen(false);
+            setEditing(null);
+          }}
           schoolId={schoolId}
           period={templatePeriod}
           existingStudentIds={editing ? [] : existingStudentIds}
@@ -188,8 +232,12 @@ export function ZoukomaEnrollmentManager() {
               {deleting.student_name} の増コマ申込を削除（アーカイブ）します。
             </p>
             <div className="flex gap-2 justify-end">
-              <Button variant="secondary" onClick={() => setDeleting(null)}>キャンセル</Button>
-              <Button variant="danger" onClick={handleDelete}>削除する</Button>
+              <Button variant="secondary" onClick={() => setDeleting(null)}>
+                キャンセル
+              </Button>
+              <Button variant="danger" onClick={handleDelete}>
+                削除する
+              </Button>
             </div>
           </div>
         </div>

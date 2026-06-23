@@ -81,14 +81,24 @@ export function KoushuPlacementPanel({
   const [sched, setSched] = useState<StudentSchedule>([]);
   const [schedLoading, setSchedLoading] = useState(false);
 
-  const toggleDetail = useCallback(async (studentId: string) => {
-    if (openStudent === studentId) { setOpenStudent(null); return; }
-    setOpenStudent(studentId);
-    setSchedLoading(true);
-    try { setSched(await getStudentRegularSchedule(studentId)); }
-    catch { setSched([]); }
-    finally { setSchedLoading(false); }
-  }, [openStudent]);
+  const toggleDetail = useCallback(
+    async (studentId: string) => {
+      if (openStudent === studentId) {
+        setOpenStudent(null);
+        return;
+      }
+      setOpenStudent(studentId);
+      setSchedLoading(true);
+      try {
+        setSched(await getStudentRegularSchedule(studentId));
+      } catch {
+        setSched([]);
+      } finally {
+        setSchedLoading(false);
+      }
+    },
+    [openStudent]
+  );
 
   const load = useCallback(async () => {
     setIsLoading(true);
@@ -100,7 +110,9 @@ export function KoushuPlacementPanel({
         list.push({ student_id, ...v });
       });
       // 残コマ数が多い順 → 申込多い順
-      list.sort((a, b) => (b.enrolled - b.placed) - (a.enrolled - a.placed) || b.enrolled - a.enrolled);
+      list.sort(
+        (a, b) => b.enrolled - b.placed - (a.enrolled - a.placed) || b.enrolled - a.enrolled
+      );
       setRows(list);
     } catch (e) {
       console.error('Failed to load placement progress:', e);
@@ -143,7 +155,8 @@ export function KoushuPlacementPanel({
 
         {placingStudentId && (
           <div className="mb-2 px-2 py-1 bg-info-subtle border border-info rounded text-xs text-info">
-            <strong>配置モード中:</strong> 座席表の空きセルをクリックすると該当生徒の講習コマが追加されます。
+            <strong>配置モード中:</strong>{' '}
+            座席表の空きセルをクリックすると該当生徒の講習コマが追加されます。
             もう一度ボタンを押すと配置モードを終了します。
           </div>
         )}
@@ -168,100 +181,107 @@ export function KoushuPlacementPanel({
                   const subjEntries = Object.entries(r.bySubject);
                   return (
                     <React.Fragment key={r.student_id}>
-                    {/* 生徒ヘッダー行（名前クリックで通塾日程） */}
-                    <tr className="border-t border-border-subtle bg-surface/40">
-                      <td className="py-1 px-1" colSpan={2}>
-                        <button
-                          type="button"
-                          onClick={() => toggleDetail(r.student_id)}
-                          className="text-left hover:underline"
-                          title="クリックで通塾日程を表示"
-                        >
-                          <span className="font-medium">
-                            {r.student?.last_name} {r.student?.first_name}
-                          </span>
-                          <span className="text-text-muted ml-1">
-                            ({r.student ? gradeLabel(r.student.grade) : ''})
-                          </span>
-                        </button>
-                      </td>
-                      <td className="py-1 px-1 text-right tabular-nums text-text-muted">
-                        計{r.placed}/{r.enrolled}
-                      </td>
-                    </tr>
-                    {/* 科目別行（科目ごとに残コマと配置ボタン） */}
-                    {subjEntries.length === 0 ? (
-                      <tr>
-                        <td colSpan={3} className="py-1 pl-3 pr-1 text-text-muted text-[11px]">
-                          科目内訳なし（申込 {r.enrolled} コマ）
+                      {/* 生徒ヘッダー行（名前クリックで通塾日程） */}
+                      <tr className="border-t border-border-subtle bg-surface/40">
+                        <td className="py-1 px-1" colSpan={2}>
+                          <button
+                            type="button"
+                            onClick={() => toggleDetail(r.student_id)}
+                            className="text-left hover:underline"
+                            title="クリックで通塾日程を表示"
+                          >
+                            <span className="font-medium">
+                              {r.student?.last_name} {r.student?.first_name}
+                            </span>
+                            <span className="text-text-muted ml-1">
+                              ({r.student ? gradeLabel(r.student.grade) : ''})
+                            </span>
+                          </button>
+                        </td>
+                        <td className="py-1 px-1 text-right tabular-nums text-text-muted">
+                          計{r.placed}/{r.enrolled}
                         </td>
                       </tr>
-                    ) : (
-                      subjEntries.map(([sid, b]) => {
-                        const remaining = b.enrolled - b.placed;
-                        const isComplete = remaining <= 0;
-                        const isPlacing = placingStudentId === r.student_id && placingSubjectId === sid;
-                        return (
-                          <tr key={sid} className="border-t border-border-subtle/40">
-                            <td className="py-1 pl-3 pr-1 text-text-body">
-                              {subjectNameById?.get(sid) ?? sid.slice(0, 6)}
-                            </td>
-                            <td className="py-1 px-1 text-right tabular-nums">
-                              {isComplete ? (
-                                <span className="inline-flex items-center gap-1 text-success font-semibold">
-                                  <CheckCircle className="w-3 h-3" />
-                                  {b.placed}/{b.enrolled}
-                                </span>
-                              ) : (
-                                <span className={b.placed > 0 ? 'text-warning' : 'text-danger'}>
-                                  {b.placed}/{b.enrolled}
-                                  <span className="text-text-muted ml-1">(残{remaining})</span>
-                                </span>
-                              )}
-                            </td>
-                            <td className="py-1 px-1">
-                              {!isComplete && onStartPlacement && (
-                                <button
-                                  type="button"
-                                  onClick={() => onStartPlacement(r.student_id, [sid])}
-                                  className={`text-xs px-2 py-0.5 rounded ${
-                                    isPlacing
-                                      ? 'bg-info text-white'
-                                      : 'bg-white border border-info text-info hover:bg-info-subtle'
-                                  }`}
-                                >
-                                  {isPlacing ? '終了' : '配置'}
-                                </button>
-                              )}
-                            </td>
-                          </tr>
-                        );
-                      })
-                    )}
-                    {/* 通塾日程 detail */}
-                    {isOpen && (
-                      <tr className="bg-surface/60">
-                        <td colSpan={3} className="px-2 py-1.5">
-                          <div className="text-[11px] text-text-body">
-                            <span className="font-semibold">通塾日程:</span>{' '}
-                            {schedLoading ? (
-                              <span className="text-text-muted">読み込み中…</span>
-                            ) : sched.length === 0 ? (
-                              <span className="text-text-muted">登録なし</span>
-                            ) : (
-                              <span className="inline-flex flex-wrap gap-1 align-middle">
-                                {sched.map((s, i) => (
-                                  <span key={i} className="px-1.5 py-0.5 rounded bg-white border border-border-subtle text-[10px]">
-                                    {DOW_LABELS[s.day_of_week]}{s.slot_number}限
-                                    <span className="text-text-muted ml-0.5">{s.start_time?.slice(0, 5)}</span>
+                      {/* 科目別行（科目ごとに残コマと配置ボタン） */}
+                      {subjEntries.length === 0 ? (
+                        <tr>
+                          <td colSpan={3} className="py-1 pl-3 pr-1 text-text-muted text-[11px]">
+                            科目内訳なし（申込 {r.enrolled} コマ）
+                          </td>
+                        </tr>
+                      ) : (
+                        subjEntries.map(([sid, b]) => {
+                          const remaining = b.enrolled - b.placed;
+                          const isComplete = remaining <= 0;
+                          const isPlacing =
+                            placingStudentId === r.student_id && placingSubjectId === sid;
+                          return (
+                            <tr key={sid} className="border-t border-border-subtle/40">
+                              <td className="py-1 pl-3 pr-1 text-text-body">
+                                {subjectNameById?.get(sid) ?? sid.slice(0, 6)}
+                              </td>
+                              <td className="py-1 px-1 text-right tabular-nums">
+                                {isComplete ? (
+                                  <span className="inline-flex items-center gap-1 text-success font-semibold">
+                                    <CheckCircle className="w-3 h-3" />
+                                    {b.placed}/{b.enrolled}
                                   </span>
-                                ))}
-                              </span>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    )}
+                                ) : (
+                                  <span className={b.placed > 0 ? 'text-warning' : 'text-danger'}>
+                                    {b.placed}/{b.enrolled}
+                                    <span className="text-text-muted ml-1">(残{remaining})</span>
+                                  </span>
+                                )}
+                              </td>
+                              <td className="py-1 px-1">
+                                {!isComplete && onStartPlacement && (
+                                  <button
+                                    type="button"
+                                    onClick={() => onStartPlacement(r.student_id, [sid])}
+                                    className={`text-xs px-2 py-0.5 rounded ${
+                                      isPlacing
+                                        ? 'bg-info text-white'
+                                        : 'bg-white border border-info text-info hover:bg-info-subtle'
+                                    }`}
+                                  >
+                                    {isPlacing ? '終了' : '配置'}
+                                  </button>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })
+                      )}
+                      {/* 通塾日程 detail */}
+                      {isOpen && (
+                        <tr className="bg-surface/60">
+                          <td colSpan={3} className="px-2 py-1.5">
+                            <div className="text-[11px] text-text-body">
+                              <span className="font-semibold">通塾日程:</span>{' '}
+                              {schedLoading ? (
+                                <span className="text-text-muted">読み込み中…</span>
+                              ) : sched.length === 0 ? (
+                                <span className="text-text-muted">登録なし</span>
+                              ) : (
+                                <span className="inline-flex flex-wrap gap-1 align-middle">
+                                  {sched.map((s, i) => (
+                                    <span
+                                      key={i}
+                                      className="px-1.5 py-0.5 rounded bg-white border border-border-subtle text-[10px]"
+                                    >
+                                      {DOW_LABELS[s.day_of_week]}
+                                      {s.slot_number}限
+                                      <span className="text-text-muted ml-0.5">
+                                        {s.start_time?.slice(0, 5)}
+                                      </span>
+                                    </span>
+                                  ))}
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      )}
                     </React.Fragment>
                   );
                 })}

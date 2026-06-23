@@ -38,9 +38,9 @@ function makeEmptyRow(): string[] {
  */
 function makeHeaderRow(): string[] {
   const row = makeEmptyRow();
-  row[1]  = '送り状種類';
-  row[4]  = '出荷予定日';
-  row[8]  = 'お届け先電話番号';
+  row[1] = '送り状種類';
+  row[4] = '出荷予定日';
+  row[8] = 'お届け先電話番号';
   row[10] = 'お届け先郵便番号';
   row[11] = 'お届け先住所';
   row[15] = 'お届け先名';
@@ -63,9 +63,7 @@ function makeHeaderRow(): string[] {
  * 値内のダブルクォートは "" にエスケープ。
  */
 function rowToCsvLine(row: string[]): string {
-  return row
-    .map((v) => `"${v.replace(/"/g, '""')}"`)
-    .join(',');
+  return row.map((v) => `"${v.replace(/"/g, '""')}"`).join(',');
 }
 
 /**
@@ -149,11 +147,11 @@ export function generateNekoposCsv(
     const row = makeEmptyRow();
 
     // 送り状種類: 'A' = ネコポス(旧GASの'7'は誤り)
-    row[1]  = 'A';
+    row[1] = 'A';
     // 出荷予定日
-    row[4]  = todayStr;
+    row[4] = todayStr;
     // お届け先電話番号
-    row[8]  = inquiry.phone ?? '';
+    row[8] = inquiry.phone ?? '';
     // お届け先郵便番号: ハイフン除去
     row[10] = (inquiry.postal_code ?? '').replace(/-/g, '');
     // お届け先住所: 都道府県 + 番地 + 建物名

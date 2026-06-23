@@ -30,10 +30,7 @@ import { getDefaultSchoolId } from '@/lib/api/schools';
 import { exportProgressToPDF } from '@/lib/utils/pdfExport';
 import { ClipboardList, Package, Download } from 'lucide-react';
 import ParentProgressTable from '@/components/students/ParentProgressTable';
-import {
-  getSeasonalCourses,
-  applyCoursesToStudents,
-} from '@/lib/api/seasonalCourses';
+import { getSeasonalCourses, applyCoursesToStudents } from '@/lib/api/seasonalCourses';
 import type {
   Student,
   StudentTextbookWithDetails,
@@ -60,7 +57,7 @@ export default function LegacyProgressPage() {
   const { toasts, removeToast, success, error } = useToast();
   const { confirm, ConfirmDialog } = useConfirm();
   const { profile, getSelectedSchoolIds } = useAuth();
-  
+
   // 講師かどうかを判定（講師は下書きを見られない）
   const isTeacher = profile?.role === 'teacher';
 
@@ -81,7 +78,9 @@ export default function LegacyProgressPage() {
   const [showLesson1, setShowLesson1] = useState(true);
   const [showHandover, setShowHandover] = useState(true);
   const [isAddTextbookModalOpen, setIsAddTextbookModalOpen] = useState(false);
-  const [selectedGradeCategory, setSelectedGradeCategory] = useState<'elementary' | 'middle' | 'high' | ''>('');
+  const [selectedGradeCategory, setSelectedGradeCategory] = useState<
+    'elementary' | 'middle' | 'high' | ''
+  >('');
   const [selectedSubject, setSelectedSubject] = useState<string>('');
   const [isAddExamModalOpen, setIsAddExamModalOpen] = useState(false);
   const [newExamTypeId, setNewExamTypeId] = useState<string>('');
@@ -99,16 +98,16 @@ export default function LegacyProgressPage() {
   const [selectedCourseId, setSelectedCourseId] = useState<string>('');
   // 下書き登録では実質未使用だが、applyCoursesToStudents への履歴記録の applied_mode 値として渡す
   const [courseApplyMode] = useState<'overwrite' | 'add'>('overwrite');
-  
+
   // 引継ぎと講師名のローカルステート（各行ごと）
   const [localHandoverMap, setLocalHandoverMap] = useState<Map<number, string>>(new Map());
   const [localTeacherNameMap, setLocalTeacherNameMap] = useState<Map<number, string>>(new Map());
-  
+
   // progressDataが変更されたときにローカルステートを更新
   useEffect(() => {
     const newHandoverMap = new Map<number, string>();
     const newTeacherNameMap = new Map<number, string>();
-    progressData.forEach(item => {
+    progressData.forEach((item) => {
       if (item.progress) {
         if (item.progress.handover) {
           newHandoverMap.set(item.id, item.progress.handover);
@@ -145,9 +144,7 @@ export default function LegacyProgressPage() {
     try {
       const data = await getStudentTextbooks(studentId, true);
       // 講師の場合は下書きを除外
-      const filtered = isTeacher 
-        ? data.filter(st => !st.is_draft)
-        : data;
+      const filtered = isTeacher ? data.filter((st) => !st.is_draft) : data;
       // sort_orderでソート
       const sorted = [...filtered].sort((a, b) => {
         const orderA = a.sort_order ?? 0;
@@ -199,69 +196,75 @@ export default function LegacyProgressPage() {
   }, [selectedTextbookId, error]);
 
   // 楽観的ローカル更新: APIレスポンスを使ってprogressDataを直接更新（再取得なし）
-  const updateProgressLocal = useCallback((
-    curriculumItemId: number,
-    updater: (prev: StudentProgressWithDetails | null) => StudentProgressWithDetails | null,
-  ) => {
-    setProgressData(prev => prev.map(item =>
-      item.id === curriculumItemId
-        ? { ...item, progress: updater(item.progress ?? null) }
-        : item
-    ));
-  }, []);
+  const updateProgressLocal = useCallback(
+    (
+      curriculumItemId: number,
+      updater: (prev: StudentProgressWithDetails | null) => StudentProgressWithDetails | null
+    ) => {
+      setProgressData((prev) =>
+        prev.map((item) =>
+          item.id === curriculumItemId
+            ? { ...item, progress: updater(item.progress ?? null) }
+            : item
+        )
+      );
+    },
+    []
+  );
 
   // progress フィールドを更新し、ローカルstateに反映（fetchProgressなし）
-  const saveAndUpdateProgress = useCallback(async (
-    progressId: string,
-    updates: StudentProgressUpdate,
-    curriculumItemId: number,
-  ) => {
-    try {
-      const updated = await updateStudentProgress(progressId, updates);
-      updateProgressLocal(curriculumItemId, (prev) =>
-        prev ? { ...prev, ...updated } : null
-      );
-    } catch (err) {
-      console.error('Error updating progress:', err);
-      await fetchProgress(); // エラー時のみ再取得
-    }
-  }, [updateProgressLocal, fetchProgress]);
+  const saveAndUpdateProgress = useCallback(
+    async (progressId: string, updates: StudentProgressUpdate, curriculumItemId: number) => {
+      try {
+        const updated = await updateStudentProgress(progressId, updates);
+        updateProgressLocal(curriculumItemId, (prev) => (prev ? { ...prev, ...updated } : null));
+      } catch (err) {
+        console.error('Error updating progress:', err);
+        await fetchProgress(); // エラー時のみ再取得
+      }
+    },
+    [updateProgressLocal, fetchProgress]
+  );
 
   // lesson を更新し、ローカルstateに反映
-  const saveAndUpdateLesson = useCallback(async (
-    progressId: string,
-    curriculumItemId: number,
-    lessonNumber: number,
-    lessonDate: string | null,
-    teacherName: string | null,
-  ) => {
-    try {
-      const updated = await upsertStudentProgressLesson({
-        student_progress_id: progressId,
-        lesson_number: lessonNumber,
-        lesson_date: lessonDate,
-        teacher_name: teacherName,
-      });
-      updateProgressLocal(curriculumItemId, (prev) => {
-        if (!prev) return null;
-        const lessons = prev.lessons || [];
-        const existing = lessons.findIndex(l => l.lesson_number === lessonNumber);
-        const newLessons = existing >= 0
-          ? lessons.map((l, i) => i === existing ? updated : l)
-          : [...lessons, updated];
-        return { ...prev, lessons: newLessons };
-      });
-    } catch (err) {
-      console.error('Error updating lesson:', err);
-      await fetchProgress();
-    }
-  }, [updateProgressLocal, fetchProgress]);
+  const saveAndUpdateLesson = useCallback(
+    async (
+      progressId: string,
+      curriculumItemId: number,
+      lessonNumber: number,
+      lessonDate: string | null,
+      teacherName: string | null
+    ) => {
+      try {
+        const updated = await upsertStudentProgressLesson({
+          student_progress_id: progressId,
+          lesson_number: lessonNumber,
+          lesson_date: lessonDate,
+          teacher_name: teacherName,
+        });
+        updateProgressLocal(curriculumItemId, (prev) => {
+          if (!prev) return null;
+          const lessons = prev.lessons || [];
+          const existing = lessons.findIndex((l) => l.lesson_number === lessonNumber);
+          const newLessons =
+            existing >= 0
+              ? lessons.map((l, i) => (i === existing ? updated : l))
+              : [...lessons, updated];
+          return { ...prev, lessons: newLessons };
+        });
+      } catch (err) {
+        console.error('Error updating lesson:', err);
+        await fetchProgress();
+      }
+    },
+    [updateProgressLocal, fetchProgress]
+  );
 
   // 表示用データ変換（グループ化対応）
   const displayRows = useMemo(() => {
     if (progressData.length === 0) return [];
-    
-    const curriculumItems: CurriculumItem[] = progressData.map(item => ({
+
+    const curriculumItems: CurriculumItem[] = progressData.map((item) => ({
       id: item.id,
       textbook_id: item.textbook_id,
       sort_order: item.sort_order,
@@ -270,10 +273,13 @@ export default function LegacyProgressPage() {
       item_type: item.item_type,
       created_at: item.created_at,
     }));
-    
+
     const progressList = progressData
-      .filter((item): item is typeof item & { progress: NonNullable<typeof item.progress> } => !!item.progress)
-      .map(item => ({ ...item.progress, curriculum_item_id: item.id }));
+      .filter(
+        (item): item is typeof item & { progress: NonNullable<typeof item.progress> } =>
+          !!item.progress
+      )
+      .map((item) => ({ ...item.progress, curriculum_item_id: item.id }));
 
     return convertToDisplayRows(curriculumItems, progressList);
   }, [progressData]);
@@ -281,13 +287,13 @@ export default function LegacyProgressPage() {
   // 合計計算
   const totalProposalCount = useMemo(() => {
     return displayRows
-      .filter(row => row.isGroupStart)
+      .filter((row) => row.isGroupStart)
       .reduce((sum, row) => sum + row.groupProposalCount, 0);
   }, [displayRows]);
 
   const _totalApplicationCount = useMemo(() => {
     return displayRows
-      .filter(row => row.isGroupStart)
+      .filter((row) => row.isGroupStart)
       .reduce((sum, row) => sum + row.groupApplicationCount, 0);
   }, [displayRows]);
 
@@ -297,7 +303,7 @@ export default function LegacyProgressPage() {
       const textbookName = selectedTextbook?.textbook.name || 'テキスト';
       const studentNameStr = student ? `${student.last_name} ${student.first_name}` : '生徒';
       const filename = `進行表_${studentNameStr}_${textbookName}_${new Date().toISOString().slice(0, 10)}.pdf`;
-      
+
       await exportProgressToPDF('progress-table-container', filename, {
         fitToPage: true, // 1ページに収める
         orientation: 'portrait', // 縦向き
@@ -315,21 +321,22 @@ export default function LegacyProgressPage() {
       error('テキストを選択してください');
       return;
     }
-    
+
     try {
       const studentNameStr = `${student.last_name} ${student.first_name}`;
-      
+
       // 現在選択されているテキストの季節を取得
       const currentSeason = selectedTextbook.season;
-      
+
       if (!currentSeason) {
         error('選択中のテキストに季節が設定されていません');
         return;
       }
 
       // 同じ季節のテキストをフィルター
-      const textbooksInSeason = studentTextbooks
-        .filter(st => st.is_active && st.season === currentSeason);
+      const textbooksInSeason = studentTextbooks.filter(
+        (st) => st.is_active && st.season === currentSeason
+      );
 
       if (textbooksInSeason.length === 0) {
         error('同じ季節のテキストが見つかりません');
@@ -346,7 +353,7 @@ export default function LegacyProgressPage() {
         import('html2canvas-pro'),
         import('jspdf'),
       ]);
-      
+
       const html2canvas = html2canvasModule.default;
       const { jsPDF } = jsPDFModule;
 
@@ -359,35 +366,41 @@ export default function LegacyProgressPage() {
 
       // 同じ季節の各テキストごとに1ページのPDFを生成して結合
       for (const st of textbooksInSeason) {
-          // 各テキスト用の一時コンテナを作成
-          const tempContainer = document.createElement('div');
-          tempContainer.id = `temp-pdf-container-${currentSeason}-${st.id}`;
-          tempContainer.style.position = 'absolute';
-          tempContainer.style.left = '-9999px';
-          tempContainer.style.width = '800px';
-          document.body.appendChild(tempContainer);
+        // 各テキスト用の一時コンテナを作成
+        const tempContainer = document.createElement('div');
+        tempContainer.id = `temp-pdf-container-${currentSeason}-${st.id}`;
+        tempContainer.style.position = 'absolute';
+        tempContainer.style.left = '-9999px';
+        tempContainer.style.width = '800px';
+        document.body.appendChild(tempContainer);
 
-          try {
-            // 進行表データを取得
-            const progressData = await getStudentProgress(st.id);
-            const curriculumItems: CurriculumItem[] = progressData.map(item => ({
-              id: item.id,
-              textbook_id: item.textbook_id,
-              sort_order: item.sort_order,
-              item_number: item.item_number,
-              title: item.title,
-              item_type: item.item_type,
-              created_at: item.created_at,
-            }));
-            
-            const progressListForTextbook = progressData
-              .filter((item): item is typeof item & { progress: NonNullable<typeof item.progress> } => !!item.progress)
-              .map(item => ({ ...item.progress, curriculum_item_id: item.id }));
+        try {
+          // 進行表データを取得
+          const progressData = await getStudentProgress(st.id);
+          const curriculumItems: CurriculumItem[] = progressData.map((item) => ({
+            id: item.id,
+            textbook_id: item.textbook_id,
+            sort_order: item.sort_order,
+            item_number: item.item_number,
+            title: item.title,
+            item_type: item.item_type,
+            created_at: item.created_at,
+          }));
 
-            const displayRowsWithLessons = convertToDisplayRows(curriculumItems, progressListForTextbook);
-            
-            // HTMLを生成（1テキスト分）
-            tempContainer.innerHTML = `
+          const progressListForTextbook = progressData
+            .filter(
+              (item): item is typeof item & { progress: NonNullable<typeof item.progress> } =>
+                !!item.progress
+            )
+            .map((item) => ({ ...item.progress, curriculum_item_id: item.id }));
+
+          const displayRowsWithLessons = convertToDisplayRows(
+            curriculumItems,
+            progressListForTextbook
+          );
+
+          // HTMLを生成（1テキスト分）
+          tempContainer.innerHTML = `
               <div class="print-container" style="padding: 20px;">
                 <h2 style="text-align: center; font-size: 20px; font-weight: bold; margin-bottom: 20px;">
                   学習進行表（ご提案内容）
@@ -409,63 +422,63 @@ export default function LegacyProgressPage() {
               </div>
             `;
 
-            // フォントサイズを小さくして1ページに収める
-            const tables = tempContainer.querySelectorAll('table');
-            tables.forEach(table => {
-              table.style.fontSize = '10px';
-              const cells = table.querySelectorAll('th, td');
-              cells.forEach(cell => {
-                (cell as HTMLElement).style.fontSize = '10px';
-                (cell as HTMLElement).style.padding = '4px 6px';
-              });
+          // フォントサイズを小さくして1ページに収める
+          const tables = tempContainer.querySelectorAll('table');
+          tables.forEach((table) => {
+            table.style.fontSize = '10px';
+            const cells = table.querySelectorAll('th, td');
+            cells.forEach((cell) => {
+              (cell as HTMLElement).style.fontSize = '10px';
+              (cell as HTMLElement).style.padding = '4px 6px';
             });
+          });
 
-            // HTML要素をCanvasに変換
-            const canvas = await html2canvas(tempContainer, {
-              scale: 1.5,
-              useCORS: true,
-              logging: false,
-              backgroundColor: '#ffffff',
-            });
+          // HTML要素をCanvasに変換
+          const canvas = await html2canvas(tempContainer, {
+            scale: 1.5,
+            useCORS: true,
+            logging: false,
+            backgroundColor: '#ffffff',
+          });
 
-            // Canvas画像のサイズを計算
-            const imgHeight = (canvas.height * imgWidth) / canvas.width;
+          // Canvas画像のサイズを計算
+          const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
-            // 新しいページを追加（最初のページ以外）
-            if (!isFirstPage) {
-              pdf.addPage();
-            } else {
-              isFirstPage = false;
-            }
-
-            // 1ページに収まるようにスケール調整
-            let finalWidth = imgWidth;
-            let finalHeight = imgHeight;
-            let xOffset = 5;
-            let yOffset = 5;
-
-            if (imgHeight > pageHeight - 10) {
-              // 1ページに収まらない場合、スケールを調整
-              const scale = (pageHeight - 10) / imgHeight;
-              finalWidth = imgWidth * scale;
-              finalHeight = imgHeight * scale;
-              xOffset = (pageWidth - finalWidth) / 2;
-              yOffset = (pageHeight - finalHeight) / 2;
-            }
-
-            // PDFに画像を追加
-            pdf.addImage(
-              canvas.toDataURL('image/png'),
-              'PNG',
-              xOffset,
-              yOffset,
-              finalWidth,
-              finalHeight
-            );
-          } finally {
-            document.body.removeChild(tempContainer);
+          // 新しいページを追加（最初のページ以外）
+          if (!isFirstPage) {
+            pdf.addPage();
+          } else {
+            isFirstPage = false;
           }
+
+          // 1ページに収まるようにスケール調整
+          let finalWidth = imgWidth;
+          let finalHeight = imgHeight;
+          let xOffset = 5;
+          let yOffset = 5;
+
+          if (imgHeight > pageHeight - 10) {
+            // 1ページに収まらない場合、スケールを調整
+            const scale = (pageHeight - 10) / imgHeight;
+            finalWidth = imgWidth * scale;
+            finalHeight = imgHeight * scale;
+            xOffset = (pageWidth - finalWidth) / 2;
+            yOffset = (pageHeight - finalHeight) / 2;
+          }
+
+          // PDFに画像を追加
+          pdf.addImage(
+            canvas.toDataURL('image/png'),
+            'PNG',
+            xOffset,
+            yOffset,
+            finalWidth,
+            finalHeight
+          );
+        } finally {
+          document.body.removeChild(tempContainer);
         }
+      }
 
       // 現在の季節のテキストをまとめたPDFをダウンロード
       const filename = `進行表_${studentNameStr}_${seasonLabel}_${new Date().toISOString().slice(0, 10)}.pdf`;
@@ -493,11 +506,11 @@ export default function LegacyProgressPage() {
     }
   ): string => {
     const totalProposal = displayRows
-      .filter(row => row.isGroupStart)
+      .filter((row) => row.isGroupStart)
       .reduce((sum, row) => sum + row.groupProposalCount, 0);
-    
+
     const totalApplication = displayRows
-      .filter(row => row.isGroupStart)
+      .filter((row) => row.isGroupStart)
       .reduce((sum, row) => sum + row.groupApplicationCount, 0);
 
     let html = `
@@ -522,8 +535,12 @@ export default function LegacyProgressPage() {
     displayRows.forEach((row, index) => {
       const groupNumber = row.progress?.group_number;
       const nextRow = displayRows[index + 1];
-      const isLastInGroup = groupNumber != null && (!nextRow || nextRow.progress?.group_number !== groupNumber);
-      const borderBottom = isLastInGroup || groupNumber == null ? 'border-bottom: 2px solid #000;' : 'border-bottom: 1px solid #ccc;';
+      const isLastInGroup =
+        groupNumber != null && (!nextRow || nextRow.progress?.group_number !== groupNumber);
+      const borderBottom =
+        isLastInGroup || groupNumber == null
+          ? 'border-bottom: 2px solid #000;'
+          : 'border-bottom: 1px solid #ccc;';
 
       html += `
         <tr>
@@ -532,49 +549,81 @@ export default function LegacyProgressPage() {
             ${row.curriculumItem.item_number ? `<span style="color: #666; margin-right: 8px;">${row.curriculumItem.item_number}</span>` : ''}
             ${row.curriculumItem.title}
           </td>
-          ${columnVisibility.showProposalCount && row.isGroupStart ? `
+          ${
+            columnVisibility.showProposalCount && row.isGroupStart
+              ? `
             <td style="border: 1px solid #000; padding: 8px; text-align: center; ${borderBottom}" rowspan="${row.groupRowSpan}">
               ${row.groupProposalCount > 0 ? row.groupProposalCount : '-'}
             </td>
-          ` : ''}
-          ${columnVisibility.showApplicationCount && row.isGroupStart ? `
+          `
+              : ''
+          }
+          ${
+            columnVisibility.showApplicationCount && row.isGroupStart
+              ? `
             <td style="border: 1px solid #000; padding: 8px; text-align: center; ${borderBottom}" rowspan="${row.groupRowSpan}">
               ${row.groupApplicationCount > 0 ? row.groupApplicationCount : '-'}
             </td>
-          ` : ''}
-          ${columnVisibility.showExamRange ? `
+          `
+              : ''
+          }
+          ${
+            columnVisibility.showExamRange
+              ? `
             <td style="border: 1px solid #000; padding: 8px; text-align: center; ${borderBottom}">
               ${(row.progress as { exam_range_exam_type?: { name?: string } | null })?.exam_range_exam_type?.name ?? '-'}
             </td>
-          ` : ''}
-          ${columnVisibility.showSchoolProgress ? `
+          `
+              : ''
+          }
+          ${
+            columnVisibility.showSchoolProgress
+              ? `
             <td style="border: 1px solid #000; padding: 8px; text-align: center; ${borderBottom}">
               ${row.progress?.school_progress_date || '-'}
             </td>
-          ` : ''}
-          ${columnVisibility.showLesson1 ? `
+          `
+              : ''
+          }
+          ${
+            columnVisibility.showLesson1
+              ? `
             <td style="border: 1px solid #000; padding: 8px; text-align: center; ${borderBottom}">
               ${row.progress?.lessons?.[0]?.lesson_date ?? '-'}
             </td>
-          ` : ''}
-          ${columnVisibility.showLesson2 ? `
+          `
+              : ''
+          }
+          ${
+            columnVisibility.showLesson2
+              ? `
             <td style="border: 1px solid #000; padding: 8px; text-align: center; ${borderBottom}">
               ${row.progress?.lessons?.[1]?.lesson_date ?? '-'}
             </td>
-          ` : ''}
-          ${columnVisibility.showLesson3 ? `
+          `
+              : ''
+          }
+          ${
+            columnVisibility.showLesson3
+              ? `
             <td style="border: 1px solid #000; padding: 8px; text-align: center; ${borderBottom}">
               ${row.progress?.lessons?.[2]?.lesson_date ?? '-'}
             </td>
-          ` : ''}
-          ${columnVisibility.showHandover ? `
+          `
+              : ''
+          }
+          ${
+            columnVisibility.showHandover
+              ? `
             <td style="border: 1px solid #000; padding: 8px; ${borderBottom}">
               ${row.progress?.handover || '-'}
             </td>
             <td style="border: 1px solid #000; padding: 8px; ${borderBottom}">
               ${isTeacher ? toSurnameOnly(row.progress?.teacher_name) || '-' : row.progress?.teacher_name || '-'}
             </td>
-          ` : ''}
+          `
+              : ''
+          }
         </tr>
       `;
     });
@@ -611,7 +660,7 @@ export default function LegacyProgressPage() {
       const schoolId = getDefaultSchoolId();
       const courses = await getSeasonalCourses(schoolId);
       // 生徒の学年に対応するコースのみフィルター
-      const filtered = courses.filter(c => c.target_grades.includes(student.grade));
+      const filtered = courses.filter((c) => c.target_grades.includes(student.grade));
       setAvailableCourses(filtered);
     } catch (err) {
       console.error('Error fetching courses:', err);
@@ -661,11 +710,7 @@ export default function LegacyProgressPage() {
   useEffect(() => {
     const load = async () => {
       setIsLoading(true);
-      await Promise.all([
-        fetchStudent(),
-        fetchStudentTextbooks(),
-        fetchTextbooks(),
-      ]);
+      await Promise.all([fetchStudent(), fetchStudentTextbooks(), fetchTextbooks()]);
       setIsLoading(false);
     };
     load();
@@ -742,9 +787,9 @@ export default function LegacyProgressPage() {
         return examDate >= today;
       })
       .sort((a, b) => new Date(a.exam_date).getTime() - new Date(b.exam_date).getTime());
-    
+
     if (futureExams.length === 0) return null;
-    
+
     const nextExamDate = new Date(futureExams[0].exam_date);
     nextExamDate.setHours(0, 0, 0, 0);
     const diffTime = nextExamDate.getTime() - today.getTime();
@@ -753,7 +798,7 @@ export default function LegacyProgressPage() {
   };
 
   const selectedTextbook = studentTextbooks.find((st) => st.id === selectedTextbookId);
-  
+
   // 各テストの次回テストまでの日数を計算する関数
   const calculateDaysUntilExam = (examDate: string): number => {
     const today = new Date();
@@ -796,17 +841,14 @@ export default function LegacyProgressPage() {
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-lg font-bold text-[#1f2937]">
-                {student.last_name} {student.first_name} ({GRADE_LABELS[student.grade] || student.grade})
+                {student.last_name} {student.first_name} (
+                {GRADE_LABELS[student.grade] || student.grade})
               </h2>
               {student.school_name && (
                 <p className="text-sm text-[#4b5563] mt-1">{student.school_name}</p>
               )}
             </div>
-            <Button
-              onClick={() => router.push('/students')}
-              variant="secondary"
-              size="sm"
-            >
+            <Button onClick={() => router.push('/students')} variant="secondary" size="sm">
               一覧に戻る
             </Button>
           </div>
@@ -819,10 +861,22 @@ export default function LegacyProgressPage() {
               .filter((st) => st.is_active && (!isTeacher || !st.is_draft))
               .map((st) => {
                 const seasonColors = {
-                  spring: selectedTextbookId === st.id ? 'bg-[#ffeb3b] text-[#1f2937] border-2 border-[#ffc107]' : 'bg-[#fff9e5] text-[#4b5563] hover:bg-[#ffeb3b]',
-                  summer: selectedTextbookId === st.id ? 'bg-[#ffb3b3] text-[#1f2937] border-2 border-[#ff8e8e]' : 'bg-[#ffe5e5] text-[#4b5563] hover:bg-[#ffb3b3]',
-                  winter: selectedTextbookId === st.id ? 'bg-[#bae1ff] text-[#1f2937] border-2 border-[#8ec5ff]' : 'bg-[#e5f3ff] text-[#4b5563] hover:bg-[#bae1ff]',
-                  default: selectedTextbookId === st.id ? 'bg-[#3b82f6] text-white' : 'bg-[#f3f4f6] text-[#4b5563] hover:bg-[#e5e7eb]',
+                  spring:
+                    selectedTextbookId === st.id
+                      ? 'bg-[#ffeb3b] text-[#1f2937] border-2 border-[#ffc107]'
+                      : 'bg-[#fff9e5] text-[#4b5563] hover:bg-[#ffeb3b]',
+                  summer:
+                    selectedTextbookId === st.id
+                      ? 'bg-[#ffb3b3] text-[#1f2937] border-2 border-[#ff8e8e]'
+                      : 'bg-[#ffe5e5] text-[#4b5563] hover:bg-[#ffb3b3]',
+                  winter:
+                    selectedTextbookId === st.id
+                      ? 'bg-[#bae1ff] text-[#1f2937] border-2 border-[#8ec5ff]'
+                      : 'bg-[#e5f3ff] text-[#4b5563] hover:bg-[#bae1ff]',
+                  default:
+                    selectedTextbookId === st.id
+                      ? 'bg-[#3b82f6] text-white'
+                      : 'bg-[#f3f4f6] text-[#4b5563] hover:bg-[#e5e7eb]',
                 };
                 const colorClass = st.season ? seasonColors[st.season] : seasonColors.default;
                 return (
@@ -845,25 +899,23 @@ export default function LegacyProgressPage() {
                       e.preventDefault();
                       const draggedId = e.dataTransfer.getData('text/plain');
                       if (draggedId === st.id) return;
-                      
+
                       const draggedIndex = studentTextbooks.findIndex((s) => s.id === draggedId);
                       const targetIndex = studentTextbooks.findIndex((s) => s.id === st.id);
-                      
+
                       if (draggedIndex === -1 || targetIndex === -1) return;
-                      
+
                       // sort_orderを更新
                       const newTextbooks = [...studentTextbooks];
                       const [dragged] = newTextbooks.splice(draggedIndex, 1);
                       newTextbooks.splice(targetIndex, 0, dragged);
-                      
+
                       // sort_orderを再計算
                       try {
                         await Promise.all(
                           newTextbooks
                             .filter((s) => s.is_active)
-                            .map((s, index) =>
-                              updateStudentTextbook(s.id, { sort_order: index })
-                            )
+                            .map((s, index) => updateStudentTextbook(s.id, { sort_order: index }))
                         );
                         await fetchStudentTextbooks();
                       } catch (err) {
@@ -874,25 +926,15 @@ export default function LegacyProgressPage() {
                     className={`px-3 py-2 rounded-lg transition-colors cursor-move ${colorClass} ${st.is_draft ? 'opacity-60 border-dashed' : ''}`}
                   >
                     <div className="flex flex-col items-center gap-0.5">
-                      <div className="text-sm font-medium leading-tight">
-                        {st.textbook.name}
-                      </div>
+                      <div className="text-sm font-medium leading-tight">{st.textbook.name}</div>
                       <div className="flex items-center gap-1.5 text-[10px] leading-tight">
                         {st.textbook.subject && (
-                          <span className="font-normal opacity-90">
-                            [{st.textbook.subject}]
-                          </span>
+                          <span className="font-normal opacity-90">[{st.textbook.subject}]</span>
                         )}
                         {st.textbook.grade && (
-                          <span className="opacity-75">
-                            ({st.textbook.grade})
-                          </span>
+                          <span className="opacity-75">({st.textbook.grade})</span>
                         )}
-                        {st.is_draft && !isTeacher && (
-                          <span className="opacity-75">
-                            (下書き)
-                          </span>
-                        )}
+                        {st.is_draft && !isTeacher && <span className="opacity-75">(下書き)</span>}
                       </div>
                     </div>
                   </button>
@@ -908,7 +950,8 @@ export default function LegacyProgressPage() {
               onClick={handleOpenApplyCourseModal}
               className="px-4 py-2 rounded-lg font-medium whitespace-nowrap bg-[#3b82f6] text-white hover:bg-[#60a5fa]"
             >
-              <ClipboardList className="inline h-4 w-4 mr-1" />コース適用
+              <ClipboardList className="inline h-4 w-4 mr-1" />
+              コース適用
             </button>
             {/* 非表示テキスト（アーカイブ置き場） */}
             {studentTextbooks.filter((st) => !st.is_active).length > 0 && (
@@ -918,7 +961,9 @@ export default function LegacyProgressPage() {
                 title={`アーカイブ (${studentTextbooks.filter((st) => !st.is_active).length}件)`}
               >
                 <Package className="h-4 w-4" />
-                <span className="text-xs">({studentTextbooks.filter((st) => !st.is_active).length})</span>
+                <span className="text-xs">
+                  ({studentTextbooks.filter((st) => !st.is_active).length})
+                </span>
               </button>
             )}
           </div>
@@ -932,10 +977,10 @@ export default function LegacyProgressPage() {
                 selectedTextbook.season === 'spring'
                   ? 'bg-[#fff9e5] border-[#ffeb3b]'
                   : selectedTextbook.season === 'summer'
-                  ? 'bg-[#ffe5e5] border-[#ffb3b3]'
-                  : selectedTextbook.season === 'winter'
-                  ? 'bg-[#e5f3ff] border-[#bae1ff]'
-                  : 'bg-white border-[#3b82f6]'
+                    ? 'bg-[#ffe5e5] border-[#ffb3b3]'
+                    : selectedTextbook.season === 'winter'
+                      ? 'bg-[#e5f3ff] border-[#bae1ff]'
+                      : 'bg-white border-[#3b82f6]'
               }`}
             >
               <div className="flex items-center justify-between mb-6">
@@ -1007,13 +1052,21 @@ export default function LegacyProgressPage() {
                     <>
                       <Button
                         onClick={async () => {
-                          if (await confirm({ description: `${selectedTextbook.textbook.name}を${selectedTextbook.is_draft ? '公開' : '下書き'}にしますか？` })) {
+                          if (
+                            await confirm({
+                              description: `${selectedTextbook.textbook.name}を${selectedTextbook.is_draft ? '公開' : '下書き'}にしますか？`,
+                            })
+                          ) {
                             try {
                               await updateStudentTextbook(selectedTextbook.id, {
                                 is_draft: !selectedTextbook.is_draft,
                               });
                               await fetchStudentTextbooks();
-                              success(selectedTextbook.is_draft ? 'テキストを公開しました' : 'テキストを下書きにしました');
+                              success(
+                                selectedTextbook.is_draft
+                                  ? 'テキストを公開しました'
+                                  : 'テキストを下書きにしました'
+                              );
                             } catch (err) {
                               error(err instanceof Error ? err.message : '操作に失敗しました');
                             }
@@ -1027,13 +1080,21 @@ export default function LegacyProgressPage() {
                       </Button>
                       <Button
                         onClick={async () => {
-                          if (await confirm({ description: `${selectedTextbook.textbook.name}を${selectedTextbook.is_active ? '非表示' : '表示'}にしますか？` })) {
+                          if (
+                            await confirm({
+                              description: `${selectedTextbook.textbook.name}を${selectedTextbook.is_active ? '非表示' : '表示'}にしますか？`,
+                            })
+                          ) {
                             try {
                               await updateStudentTextbook(selectedTextbook.id, {
                                 is_active: !selectedTextbook.is_active,
                               });
                               await fetchStudentTextbooks();
-                              success(selectedTextbook.is_active ? 'テキストを非表示にしました' : 'テキストを表示しました');
+                              success(
+                                selectedTextbook.is_active
+                                  ? 'テキストを非表示にしました'
+                                  : 'テキストを表示しました'
+                              );
                             } catch (err) {
                               error(err instanceof Error ? err.message : '操作に失敗しました');
                             }
@@ -1046,7 +1107,14 @@ export default function LegacyProgressPage() {
                       </Button>
                       <Button
                         onClick={async () => {
-                          if (await confirm({ title: '削除確認', description: `${selectedTextbook.textbook.name}を削除しますか？\nこの操作は取り消せません。`, confirmLabel: '削除', variant: 'danger' })) {
+                          if (
+                            await confirm({
+                              title: '削除確認',
+                              description: `${selectedTextbook.textbook.name}を削除しますか？\nこの操作は取り消せません。`,
+                              confirmLabel: '削除',
+                              variant: 'danger',
+                            })
+                          ) {
                             try {
                               await deleteStudentTextbook(selectedTextbook.id);
                               await fetchStudentTextbooks();
@@ -1084,21 +1152,31 @@ export default function LegacyProgressPage() {
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex-1">
-                            <div className="font-bold text-[#1f2937] text-2xl mb-3">
-                              {examName}
-                            </div>
+                            <div className="font-bold text-[#1f2937] text-2xl mb-3">{examName}</div>
                             <div className="flex items-center gap-6 mb-2">
                               <div className="flex items-center gap-2">
-                                <span className="text-lg font-semibold text-[#4b5563]">テスト日:</span>
-                                <span className="text-2xl font-bold text-[#3b82f6]">{formattedDate}</span>
+                                <span className="text-lg font-semibold text-[#4b5563]">
+                                  テスト日:
+                                </span>
+                                <span className="text-2xl font-bold text-[#3b82f6]">
+                                  {formattedDate}
+                                </span>
                               </div>
                               <div className="flex items-center gap-2">
-                                <span className="text-lg font-semibold text-[#4b5563]">目標点:</span>
-                                <span className="text-2xl font-bold text-[#3b82f6]">{exam.target_score || '-'}点</span>
+                                <span className="text-lg font-semibold text-[#4b5563]">
+                                  目標点:
+                                </span>
+                                <span className="text-2xl font-bold text-[#3b82f6]">
+                                  {exam.target_score || '-'}点
+                                </span>
                               </div>
                               <div className="flex items-center gap-2">
-                                <span className="text-lg font-semibold text-[#4b5563]">次回テストまで:</span>
-                                <span className="text-2xl font-bold text-[#3b82f6]">{daysUntil}日</span>
+                                <span className="text-lg font-semibold text-[#4b5563]">
+                                  次回テストまで:
+                                </span>
+                                <span className="text-2xl font-bold text-[#3b82f6]">
+                                  {daysUntil}日
+                                </span>
                               </div>
                             </div>
                             {exam.exam_range && (
@@ -1145,9 +1223,7 @@ export default function LegacyProgressPage() {
               <div className="mt-6 pt-6 border-t border-[#e5e7eb]">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-[#4b5563] mb-1">
-                      進め方
-                    </label>
+                    <label className="block text-sm font-medium text-[#4b5563] mb-1">進め方</label>
                     <textarea
                       defaultValue={selectedTextbook.settings?.approach || ''}
                       onBlur={async (e) => {
@@ -1241,7 +1317,7 @@ export default function LegacyProgressPage() {
                         </Button>
                       </>
                     )}
-                    
+
                     {/* グループ化ボタン（管理モードのみ） */}
                     {viewMode === 'admin' && (
                       <>
@@ -1254,12 +1330,17 @@ export default function LegacyProgressPage() {
                             if (!selectedTextbookId) return;
                             setIsSaving(true);
                             try {
-                              await groupProgressItems(selectedTextbookId, Array.from(selectedItems));
+                              await groupProgressItems(
+                                selectedTextbookId,
+                                Array.from(selectedItems)
+                              );
                               await fetchProgress();
                               setSelectedItems(new Set());
                               success('グループ化しました');
                             } catch (err) {
-                              error(err instanceof Error ? err.message : 'グループ化に失敗しました');
+                              error(
+                                err instanceof Error ? err.message : 'グループ化に失敗しました'
+                              );
                             } finally {
                               setIsSaving(false);
                             }
@@ -1279,12 +1360,17 @@ export default function LegacyProgressPage() {
                             if (!selectedTextbookId) return;
                             setIsSaving(true);
                             try {
-                              await ungroupProgressItems(selectedTextbookId, Array.from(selectedItems));
+                              await ungroupProgressItems(
+                                selectedTextbookId,
+                                Array.from(selectedItems)
+                              );
                               await fetchProgress();
                               setSelectedItems(new Set());
                               success('グループ解除しました');
                             } catch (err) {
-                              error(err instanceof Error ? err.message : 'グループ解除に失敗しました');
+                              error(
+                                err instanceof Error ? err.message : 'グループ解除に失敗しました'
+                              );
                             } finally {
                               setIsSaving(false);
                             }
@@ -1302,7 +1388,9 @@ export default function LegacyProgressPage() {
 
                 {/* 下段: 表示列切替（講師には非表示またはグレーアウト） */}
                 {(viewMode === 'admin' || viewMode === 'parent') && (
-                  <div className={`flex items-center gap-4 flex-wrap pt-3 border-t border-[#f3f4f6] ${isTeacher ? 'opacity-50 pointer-events-none' : ''}`}>
+                  <div
+                    className={`flex items-center gap-4 flex-wrap pt-3 border-t border-[#f3f4f6] ${isTeacher ? 'opacity-50 pointer-events-none' : ''}`}
+                  >
                     <span className="text-sm font-medium text-[#4b5563]">表示列:</span>
                     <label className="flex items-center gap-1.5 cursor-pointer">
                       <input
@@ -1395,10 +1483,13 @@ export default function LegacyProgressPage() {
                           <th className="px-4 py-3 text-center text-xs font-semibold text-[#1f2937] border-r border-[#e5e7eb] w-10">
                             <input
                               type="checkbox"
-                              checked={progressData.length > 0 && selectedItems.size === progressData.length}
+                              checked={
+                                progressData.length > 0 &&
+                                selectedItems.size === progressData.length
+                              }
                               onChange={(e) => {
                                 if (e.target.checked) {
-                                  setSelectedItems(new Set(progressData.map(item => item.id)));
+                                  setSelectedItems(new Set(progressData.map((item) => item.id)));
                                 } else {
                                   setSelectedItems(new Set());
                                 }
@@ -1410,394 +1501,459 @@ export default function LegacyProgressPage() {
                         <th className="px-4 py-3 text-left text-xs font-semibold text-[#1f2937] border-r border-[#e5e7eb]">
                           単元名
                         </th>
-                      {showProposalCount && (
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-[#1f2937] border-r border-[#e5e7eb]">
-                          提案回数
-                        </th>
-                      )}
-                      {showApplicationCount && (
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-[#1f2937] border-r border-[#e5e7eb]">
-                          申込回数
-                        </th>
-                      )}
-                      {showExamRange && (
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-[#1f2937] border-r border-[#e5e7eb]">
-                          試験範囲
-                        </th>
-                      )}
-                      {showSchoolProgress && (
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-[#1f2937] border-r border-[#e5e7eb]">
-                          学校進度
-                        </th>
-                      )}
-                      {showLesson1 && (
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-[#1f2937] border-r border-[#e5e7eb]">
-                          指導日①
-                        </th>
-                      )}
-                      {showLesson2 && (
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-[#1f2937] border-r border-[#e5e7eb]">
-                          指導日②
-                        </th>
-                      )}
-                      {showLesson3 && (
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-[#1f2937] border-r border-[#e5e7eb]">
-                          指導日③
-                        </th>
-                      )}
-                      {showHandover && (
-                        <>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-[#1f2937]">
-                            引継ぎ
-                          </th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-[#1f2937]">
-                            講師名
-                          </th>
-                        </>
-                      )}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {displayRows.length === 0 ? (
-                      <tr>
-                        <td colSpan={viewMode === 'admin' ? 10 : 3} className="px-4 py-8 text-center text-sm text-[#4b5563]">
-                          目次項目が登録されていません
-                        </td>
-                      </tr>
-                    ) : (
-                      displayRows.map((row) => {
-                        const progress = row.progress as (StudentProgress & { lessons?: StudentProgressLesson[] }) | null;
-                        const lessons = progress?.lessons || [];
-                        // 指導日に日付が入っているかチェック
-                        const hasLessonDate = lessons.some((l) => l.lesson_date);
-                        const rowBgColor = hasLessonDate ? 'bg-[#d1fae5]' : 'bg-white';
-                        const isChecked = selectedItems.has(row.curriculumItem.id);
-                        
-                        // ローカルステートから値を取得（なければprogressから）
-                        const localHandover = localHandoverMap.get(row.curriculumItem.id) ?? (progress?.handover || '');
-                        const rawTeacherName = localTeacherNameMap.get(row.curriculumItem.id) ?? (progress?.teacher_name || '');
-                        const localTeacherName = isTeacher ? toSurnameOnly(rawTeacherName) : rawTeacherName;
-                        return (
-                          <tr
-                            key={row.curriculumItem.id}
-                            className={`border-b border-[#e5e7eb] hover:bg-[#f3f4f6] ${rowBgColor}`}
-                          >
-                            {/* チェックボックス（管理モードのみ） */}
-                            {viewMode === 'admin' && (
-                              <td className="px-4 py-3 text-center border-r border-[#e5e7eb]">
-                                <input
-                                  type="checkbox"
-                                  checked={isChecked}
-                                  onChange={(e) => {
-                                    const newSet = new Set(selectedItems);
-                                    if (e.target.checked) {
-                                      newSet.add(row.curriculumItem.id);
-                                    } else {
-                                      newSet.delete(row.curriculumItem.id);
-                                    }
-                                    setSelectedItems(newSet);
-                                  }}
-                                  className="w-4 h-4"
-                                />
-                              </td>
-                            )}
-                            {/* 単元名 */}
-                            <td className="px-4 py-3 text-sm text-[#1f2937] border-r border-[#e5e7eb] font-medium">
-                              {row.curriculumItem.title || `単元ID: ${row.curriculumItem.id}`}
-                            </td>
-                          {/* 提案回数（セル結合） */}
-                          {showProposalCount && row.isGroupStart && (
-                            <td 
-                              className="px-4 py-3 text-sm text-[#4b5563] border-r border-[#e5e7eb]"
-                              rowSpan={row.groupRowSpan}
-                            >
-                              <input
-                                type="number"
-                                min="0"
-                                value={row.groupProposalCount}
-                                onChange={async (e) => {
-                                  if (!selectedTextbookId) return;
-                                  const value = parseInt(e.target.value, 10) || 0;
-                                  const groupNumber = progress?.group_number;
-
-                                  if (groupNumber != null && row.isGroupStart) {
-                                    await updateGroupCounts(
-                                      selectedTextbookId, groupNumber, value, value, row.curriculumItem.id
-                                    );
-                                    await fetchProgress(); // グループ更新は複数行変更のため再取得
-                                  } else if (progress) {
-                                    await saveAndUpdateProgress(progress.id, {
-                                      proposal_count: value, application_count: value,
-                                    }, row.curriculumItem.id);
-                                  } else {
-                                    await upsertStudentProgress({
-                                      student_textbook_id: selectedTextbookId,
-                                      curriculum_item_id: row.curriculumItem.id,
-                                      proposal_count: value, application_count: value,
-                                    });
-                                    await fetchProgress(); // 新規作成時はID取得のため再取得
-                                  }
-                                }}
-                                className="w-16 px-2 py-1 border border-[#e5e7eb] rounded"
-                              />
-                            </td>
-                          )}
-                          {/* 申込回数（セル結合） */}
-                          {showApplicationCount && row.isGroupStart && (
-                            <td 
-                              className="px-4 py-3 text-sm text-[#4b5563] border-r border-[#e5e7eb]"
-                              rowSpan={row.groupRowSpan}
-                            >
-                              <input
-                                type="number"
-                                min="0"
-                                value={row.groupApplicationCount}
-                                onChange={async (e) => {
-                                  if (!selectedTextbookId) return;
-                                  const value = parseInt(e.target.value, 10) || 0;
-                                  const groupNumber = progress?.group_number;
-
-                                  if (groupNumber != null && row.isGroupStart) {
-                                    await updateGroupCounts(
-                                      selectedTextbookId, groupNumber, row.groupProposalCount, value, row.curriculumItem.id
-                                    );
-                                    await fetchProgress();
-                                  } else if (progress) {
-                                    await saveAndUpdateProgress(progress.id, { application_count: value }, row.curriculumItem.id);
-                                  } else {
-                                    await upsertStudentProgress({
-                                      student_textbook_id: selectedTextbookId,
-                                      curriculum_item_id: row.curriculumItem.id,
-                                      application_count: value,
-                                    });
-                                    await fetchProgress();
-                                  }
-                                }}
-                                className="w-16 px-2 py-1 border border-[#e5e7eb] rounded"
-                              />
-                            </td>
-                          )}
-                          {showExamRange && (
-                            <td className="px-4 py-3 text-sm text-[#4b5563] border-r border-[#e5e7eb]">
-                              <select
-                                value={progress?.exam_range_exam_type_id || ''}
-                                onChange={async (e) => {
-                                  if (selectedTextbookId && progress) {
-                                    await saveAndUpdateProgress(progress.id, {
-                                      exam_range_exam_type_id: e.target.value || null,
-                                    }, row.curriculumItem.id);
-                                  } else if (selectedTextbookId) {
-                                    await upsertStudentProgress({
-                                      student_textbook_id: selectedTextbookId,
-                                      curriculum_item_id: row.curriculumItem.id,
-                                      exam_range_exam_type_id: e.target.value || null,
-                                    });
-                                    await fetchProgress();
-                                  }
-                                }}
-                                className="w-full px-2 py-1 border border-[#e5e7eb] rounded"
-                              >
-                                <option value="">-</option>
-                                {examTypes.map((et) => (
-                                  <option key={et.id} value={et.id}>
-                                    {et.name}
-                                  </option>
-                                ))}
-                              </select>
-                            </td>
-                          )}
-                          {showSchoolProgress && (
-                            <td className="px-4 py-3 text-sm text-[#4b5563] border-r border-[#e5e7eb]">
-                              <input
-                                type="date"
-                                value={progress?.school_progress_date || ''}
-                                onChange={async (e) => {
-                                  if (selectedTextbookId && progress) {
-                                    await saveAndUpdateProgress(progress.id, {
-                                      school_progress_date: e.target.value || null,
-                                    }, row.curriculumItem.id);
-                                  } else if (selectedTextbookId) {
-                                    await upsertStudentProgress({
-                                      student_textbook_id: selectedTextbookId,
-                                      curriculum_item_id: row.curriculumItem.id,
-                                      school_progress_date: e.target.value || null,
-                                    });
-                                    await fetchProgress();
-                                  }
-                                }}
-                                className="w-32 px-2 py-1 border border-[#e5e7eb] rounded text-xs"
-                              />
-                            </td>
-                          )}
-                          {showLesson1 && (
-                            <td className="px-4 py-3 text-sm text-[#4b5563] border-r border-[#e5e7eb]">
-                              <input
-                                type="date"
-                                value={lessons.find((l) => l.lesson_number === 1)?.lesson_date || ''}
-                                onChange={async (e) => {
-                                  if (selectedTextbookId) {
-                                    let currentProgress = progress;
-                                    if (!currentProgress) {
-                                      currentProgress = await upsertStudentProgress({
-                                        student_textbook_id: selectedTextbookId,
-                                        curriculum_item_id: row.curriculumItem.id,
-                                      });
-                                    }
-                                    const lesson = lessons.find((l) => l.lesson_number === 1);
-                                    await saveAndUpdateLesson(
-                                      currentProgress.id, row.curriculumItem.id, 1,
-                                      e.target.value || null, lesson?.teacher_name || null,
-                                    );
-                                  }
-                                }}
-                                className="w-32 px-2 py-1 border border-[#e5e7eb] rounded text-xs"
-                              />
-                            </td>
-                          )}
-                          {showLesson2 && (
-                            <td className="px-4 py-3 text-sm text-[#4b5563] border-r border-[#e5e7eb]">
-                              <input
-                                type="date"
-                                value={lessons.find((l) => l.lesson_number === 2)?.lesson_date || ''}
-                                onChange={async (e) => {
-                                  if (selectedTextbookId) {
-                                    let currentProgress = progress;
-                                    if (!currentProgress) {
-                                      currentProgress = await upsertStudentProgress({
-                                        student_textbook_id: selectedTextbookId,
-                                        curriculum_item_id: row.curriculumItem.id,
-                                      });
-                                    }
-                                    const lesson = lessons.find((l) => l.lesson_number === 2);
-                                    await saveAndUpdateLesson(
-                                      currentProgress.id, row.curriculumItem.id, 2,
-                                      e.target.value || null, lesson?.teacher_name || null,
-                                    );
-                                  }
-                                }}
-                                className="w-32 px-2 py-1 border border-[#e5e7eb] rounded text-xs"
-                              />
-                            </td>
-                          )}
-                          {showLesson3 && (
-                            <td className="px-4 py-3 text-sm text-[#4b5563] border-r border-[#e5e7eb]">
-                              <input
-                                type="date"
-                                value={lessons.find((l) => l.lesson_number === 3)?.lesson_date || ''}
-                                onChange={async (e) => {
-                                  if (selectedTextbookId) {
-                                    let currentProgress = progress;
-                                    if (!currentProgress) {
-                                      currentProgress = await upsertStudentProgress({
-                                        student_textbook_id: selectedTextbookId,
-                                        curriculum_item_id: row.curriculumItem.id,
-                                      });
-                                    }
-                                    const lesson = lessons.find((l) => l.lesson_number === 3);
-                                    await saveAndUpdateLesson(
-                                      currentProgress.id, row.curriculumItem.id, 3,
-                                      e.target.value || null, lesson?.teacher_name || null,
-                                    );
-                                  }
-                                }}
-                                className="w-32 px-2 py-1 border border-[#e5e7eb] rounded text-xs"
-                              />
-                            </td>
-                          )}
-                          {showHandover && (
-                            <>
-                              <td className="px-4 py-3 text-sm text-[#4b5563]">
-                                <textarea
-                                  value={localHandover}
-                                  onChange={(e) => {
-                                    const newMap = new Map(localHandoverMap);
-                                    newMap.set(row.curriculumItem.id, e.target.value);
-                                    setLocalHandoverMap(newMap);
-                                  }}
-                                  onBlur={async (e) => {
-                                    if (selectedTextbookId && progress) {
-                                      await saveAndUpdateProgress(progress.id, {
-                                        handover: e.target.value || null,
-                                      }, row.curriculumItem.id);
-                                    } else if (selectedTextbookId) {
-                                      await upsertStudentProgress({
-                                        student_textbook_id: selectedTextbookId,
-                                        curriculum_item_id: row.curriculumItem.id,
-                                        handover: e.target.value || null,
-                                      });
-                                      await fetchProgress();
-                                    }
-                                  }}
-                                  rows={2}
-                                  className="w-full px-2 py-1 border border-[#e5e7eb] rounded"
-                                />
-                              </td>
-                              <td className="px-4 py-3 text-sm text-[#4b5563]">
-                                <input
-                                  type="text"
-                                  value={localTeacherName}
-                                  onChange={(e) => {
-                                    const newMap = new Map(localTeacherNameMap);
-                                    newMap.set(row.curriculumItem.id, e.target.value);
-                                    setLocalTeacherNameMap(newMap);
-                                  }}
-                                  onBlur={async (e) => {
-                                    if (selectedTextbookId && progress) {
-                                      await saveAndUpdateProgress(progress.id, {
-                                        teacher_name: e.target.value || null,
-                                      }, row.curriculumItem.id);
-                                    } else if (selectedTextbookId) {
-                                      await upsertStudentProgress({
-                                        student_textbook_id: selectedTextbookId,
-                                        curriculum_item_id: row.curriculumItem.id,
-                                        teacher_name: e.target.value || null,
-                                      });
-                                      await fetchProgress();
-                                    }
-                                  }}
-                                  placeholder="講師名"
-                                  className="w-full px-2 py-1 border border-[#e5e7eb] rounded"
-                                />
-                              </td>
-                            </>
-                          )}
-                        </tr>
-                      );
-                    })
-                    )}
-                    {/* 合計行 */}
-                    {displayRows.length > 0 && (showProposalCount || showApplicationCount) && (
-                      <tr className="border-t-2 border-[#e5e7eb] bg-[#f3f4f6] font-bold">
-                        <td colSpan={2} className="px-4 py-3 text-sm text-[#1f2937] border-r border-[#e5e7eb]">
-                          合計
-                        </td>
                         {showProposalCount && (
-                          <td className="px-4 py-3 text-sm text-[#1f2937] border-r border-[#e5e7eb]">
-                            {displayRows
-                              .filter(row => row.isGroupStart)
-                              .reduce((sum, row) => sum + row.groupProposalCount, 0)}
-                          </td>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-[#1f2937] border-r border-[#e5e7eb]">
+                            提案回数
+                          </th>
                         )}
                         {showApplicationCount && (
-                          <td className="px-4 py-3 text-sm text-[#1f2937] border-r border-[#e5e7eb]">
-                            {displayRows
-                              .filter(row => row.isGroupStart)
-                              .reduce((sum, row) => sum + row.groupApplicationCount, 0)}
-                          </td>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-[#1f2937] border-r border-[#e5e7eb]">
+                            申込回数
+                          </th>
                         )}
-                        <td colSpan={
-                          (showExamRange ? 1 : 0) + // 試験範囲
-                          (showSchoolProgress ? 1 : 0) + // 学校進度
-                          (showLesson1 ? 1 : 0) + // 指導日①
-                          (showLesson2 ? 1 : 0) + // 指導日②
-                          (showLesson3 ? 1 : 0) + // 指導日③
-                          (showHandover ? 2 : 0) // 引継ぎ + 講師名
-                        } className="px-4 py-3 text-sm text-[#1f2937]">
-                        </td>
+                        {showExamRange && (
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-[#1f2937] border-r border-[#e5e7eb]">
+                            試験範囲
+                          </th>
+                        )}
+                        {showSchoolProgress && (
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-[#1f2937] border-r border-[#e5e7eb]">
+                            学校進度
+                          </th>
+                        )}
+                        {showLesson1 && (
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-[#1f2937] border-r border-[#e5e7eb]">
+                            指導日①
+                          </th>
+                        )}
+                        {showLesson2 && (
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-[#1f2937] border-r border-[#e5e7eb]">
+                            指導日②
+                          </th>
+                        )}
+                        {showLesson3 && (
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-[#1f2937] border-r border-[#e5e7eb]">
+                            指導日③
+                          </th>
+                        )}
+                        {showHandover && (
+                          <>
+                            <th className="px-4 py-3 text-left text-xs font-semibold text-[#1f2937]">
+                              引継ぎ
+                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-semibold text-[#1f2937]">
+                              講師名
+                            </th>
+                          </>
+                        )}
                       </tr>
-                    )}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {displayRows.length === 0 ? (
+                        <tr>
+                          <td
+                            colSpan={viewMode === 'admin' ? 10 : 3}
+                            className="px-4 py-8 text-center text-sm text-[#4b5563]"
+                          >
+                            目次項目が登録されていません
+                          </td>
+                        </tr>
+                      ) : (
+                        displayRows.map((row) => {
+                          const progress = row.progress as
+                            | (StudentProgress & { lessons?: StudentProgressLesson[] })
+                            | null;
+                          const lessons = progress?.lessons || [];
+                          // 指導日に日付が入っているかチェック
+                          const hasLessonDate = lessons.some((l) => l.lesson_date);
+                          const rowBgColor = hasLessonDate ? 'bg-[#d1fae5]' : 'bg-white';
+                          const isChecked = selectedItems.has(row.curriculumItem.id);
+
+                          // ローカルステートから値を取得（なければprogressから）
+                          const localHandover =
+                            localHandoverMap.get(row.curriculumItem.id) ??
+                            (progress?.handover || '');
+                          const rawTeacherName =
+                            localTeacherNameMap.get(row.curriculumItem.id) ??
+                            (progress?.teacher_name || '');
+                          const localTeacherName = isTeacher
+                            ? toSurnameOnly(rawTeacherName)
+                            : rawTeacherName;
+                          return (
+                            <tr
+                              key={row.curriculumItem.id}
+                              className={`border-b border-[#e5e7eb] hover:bg-[#f3f4f6] ${rowBgColor}`}
+                            >
+                              {/* チェックボックス（管理モードのみ） */}
+                              {viewMode === 'admin' && (
+                                <td className="px-4 py-3 text-center border-r border-[#e5e7eb]">
+                                  <input
+                                    type="checkbox"
+                                    checked={isChecked}
+                                    onChange={(e) => {
+                                      const newSet = new Set(selectedItems);
+                                      if (e.target.checked) {
+                                        newSet.add(row.curriculumItem.id);
+                                      } else {
+                                        newSet.delete(row.curriculumItem.id);
+                                      }
+                                      setSelectedItems(newSet);
+                                    }}
+                                    className="w-4 h-4"
+                                  />
+                                </td>
+                              )}
+                              {/* 単元名 */}
+                              <td className="px-4 py-3 text-sm text-[#1f2937] border-r border-[#e5e7eb] font-medium">
+                                {row.curriculumItem.title || `単元ID: ${row.curriculumItem.id}`}
+                              </td>
+                              {/* 提案回数（セル結合） */}
+                              {showProposalCount && row.isGroupStart && (
+                                <td
+                                  className="px-4 py-3 text-sm text-[#4b5563] border-r border-[#e5e7eb]"
+                                  rowSpan={row.groupRowSpan}
+                                >
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    value={row.groupProposalCount}
+                                    onChange={async (e) => {
+                                      if (!selectedTextbookId) return;
+                                      const value = parseInt(e.target.value, 10) || 0;
+                                      const groupNumber = progress?.group_number;
+
+                                      if (groupNumber != null && row.isGroupStart) {
+                                        await updateGroupCounts(
+                                          selectedTextbookId,
+                                          groupNumber,
+                                          value,
+                                          value,
+                                          row.curriculumItem.id
+                                        );
+                                        await fetchProgress(); // グループ更新は複数行変更のため再取得
+                                      } else if (progress) {
+                                        await saveAndUpdateProgress(
+                                          progress.id,
+                                          {
+                                            proposal_count: value,
+                                            application_count: value,
+                                          },
+                                          row.curriculumItem.id
+                                        );
+                                      } else {
+                                        await upsertStudentProgress({
+                                          student_textbook_id: selectedTextbookId,
+                                          curriculum_item_id: row.curriculumItem.id,
+                                          proposal_count: value,
+                                          application_count: value,
+                                        });
+                                        await fetchProgress(); // 新規作成時はID取得のため再取得
+                                      }
+                                    }}
+                                    className="w-16 px-2 py-1 border border-[#e5e7eb] rounded"
+                                  />
+                                </td>
+                              )}
+                              {/* 申込回数（セル結合） */}
+                              {showApplicationCount && row.isGroupStart && (
+                                <td
+                                  className="px-4 py-3 text-sm text-[#4b5563] border-r border-[#e5e7eb]"
+                                  rowSpan={row.groupRowSpan}
+                                >
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    value={row.groupApplicationCount}
+                                    onChange={async (e) => {
+                                      if (!selectedTextbookId) return;
+                                      const value = parseInt(e.target.value, 10) || 0;
+                                      const groupNumber = progress?.group_number;
+
+                                      if (groupNumber != null && row.isGroupStart) {
+                                        await updateGroupCounts(
+                                          selectedTextbookId,
+                                          groupNumber,
+                                          row.groupProposalCount,
+                                          value,
+                                          row.curriculumItem.id
+                                        );
+                                        await fetchProgress();
+                                      } else if (progress) {
+                                        await saveAndUpdateProgress(
+                                          progress.id,
+                                          { application_count: value },
+                                          row.curriculumItem.id
+                                        );
+                                      } else {
+                                        await upsertStudentProgress({
+                                          student_textbook_id: selectedTextbookId,
+                                          curriculum_item_id: row.curriculumItem.id,
+                                          application_count: value,
+                                        });
+                                        await fetchProgress();
+                                      }
+                                    }}
+                                    className="w-16 px-2 py-1 border border-[#e5e7eb] rounded"
+                                  />
+                                </td>
+                              )}
+                              {showExamRange && (
+                                <td className="px-4 py-3 text-sm text-[#4b5563] border-r border-[#e5e7eb]">
+                                  <select
+                                    value={progress?.exam_range_exam_type_id || ''}
+                                    onChange={async (e) => {
+                                      if (selectedTextbookId && progress) {
+                                        await saveAndUpdateProgress(
+                                          progress.id,
+                                          {
+                                            exam_range_exam_type_id: e.target.value || null,
+                                          },
+                                          row.curriculumItem.id
+                                        );
+                                      } else if (selectedTextbookId) {
+                                        await upsertStudentProgress({
+                                          student_textbook_id: selectedTextbookId,
+                                          curriculum_item_id: row.curriculumItem.id,
+                                          exam_range_exam_type_id: e.target.value || null,
+                                        });
+                                        await fetchProgress();
+                                      }
+                                    }}
+                                    className="w-full px-2 py-1 border border-[#e5e7eb] rounded"
+                                  >
+                                    <option value="">-</option>
+                                    {examTypes.map((et) => (
+                                      <option key={et.id} value={et.id}>
+                                        {et.name}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </td>
+                              )}
+                              {showSchoolProgress && (
+                                <td className="px-4 py-3 text-sm text-[#4b5563] border-r border-[#e5e7eb]">
+                                  <input
+                                    type="date"
+                                    value={progress?.school_progress_date || ''}
+                                    onChange={async (e) => {
+                                      if (selectedTextbookId && progress) {
+                                        await saveAndUpdateProgress(
+                                          progress.id,
+                                          {
+                                            school_progress_date: e.target.value || null,
+                                          },
+                                          row.curriculumItem.id
+                                        );
+                                      } else if (selectedTextbookId) {
+                                        await upsertStudentProgress({
+                                          student_textbook_id: selectedTextbookId,
+                                          curriculum_item_id: row.curriculumItem.id,
+                                          school_progress_date: e.target.value || null,
+                                        });
+                                        await fetchProgress();
+                                      }
+                                    }}
+                                    className="w-32 px-2 py-1 border border-[#e5e7eb] rounded text-xs"
+                                  />
+                                </td>
+                              )}
+                              {showLesson1 && (
+                                <td className="px-4 py-3 text-sm text-[#4b5563] border-r border-[#e5e7eb]">
+                                  <input
+                                    type="date"
+                                    value={
+                                      lessons.find((l) => l.lesson_number === 1)?.lesson_date || ''
+                                    }
+                                    onChange={async (e) => {
+                                      if (selectedTextbookId) {
+                                        let currentProgress = progress;
+                                        if (!currentProgress) {
+                                          currentProgress = await upsertStudentProgress({
+                                            student_textbook_id: selectedTextbookId,
+                                            curriculum_item_id: row.curriculumItem.id,
+                                          });
+                                        }
+                                        const lesson = lessons.find((l) => l.lesson_number === 1);
+                                        await saveAndUpdateLesson(
+                                          currentProgress.id,
+                                          row.curriculumItem.id,
+                                          1,
+                                          e.target.value || null,
+                                          lesson?.teacher_name || null
+                                        );
+                                      }
+                                    }}
+                                    className="w-32 px-2 py-1 border border-[#e5e7eb] rounded text-xs"
+                                  />
+                                </td>
+                              )}
+                              {showLesson2 && (
+                                <td className="px-4 py-3 text-sm text-[#4b5563] border-r border-[#e5e7eb]">
+                                  <input
+                                    type="date"
+                                    value={
+                                      lessons.find((l) => l.lesson_number === 2)?.lesson_date || ''
+                                    }
+                                    onChange={async (e) => {
+                                      if (selectedTextbookId) {
+                                        let currentProgress = progress;
+                                        if (!currentProgress) {
+                                          currentProgress = await upsertStudentProgress({
+                                            student_textbook_id: selectedTextbookId,
+                                            curriculum_item_id: row.curriculumItem.id,
+                                          });
+                                        }
+                                        const lesson = lessons.find((l) => l.lesson_number === 2);
+                                        await saveAndUpdateLesson(
+                                          currentProgress.id,
+                                          row.curriculumItem.id,
+                                          2,
+                                          e.target.value || null,
+                                          lesson?.teacher_name || null
+                                        );
+                                      }
+                                    }}
+                                    className="w-32 px-2 py-1 border border-[#e5e7eb] rounded text-xs"
+                                  />
+                                </td>
+                              )}
+                              {showLesson3 && (
+                                <td className="px-4 py-3 text-sm text-[#4b5563] border-r border-[#e5e7eb]">
+                                  <input
+                                    type="date"
+                                    value={
+                                      lessons.find((l) => l.lesson_number === 3)?.lesson_date || ''
+                                    }
+                                    onChange={async (e) => {
+                                      if (selectedTextbookId) {
+                                        let currentProgress = progress;
+                                        if (!currentProgress) {
+                                          currentProgress = await upsertStudentProgress({
+                                            student_textbook_id: selectedTextbookId,
+                                            curriculum_item_id: row.curriculumItem.id,
+                                          });
+                                        }
+                                        const lesson = lessons.find((l) => l.lesson_number === 3);
+                                        await saveAndUpdateLesson(
+                                          currentProgress.id,
+                                          row.curriculumItem.id,
+                                          3,
+                                          e.target.value || null,
+                                          lesson?.teacher_name || null
+                                        );
+                                      }
+                                    }}
+                                    className="w-32 px-2 py-1 border border-[#e5e7eb] rounded text-xs"
+                                  />
+                                </td>
+                              )}
+                              {showHandover && (
+                                <>
+                                  <td className="px-4 py-3 text-sm text-[#4b5563]">
+                                    <textarea
+                                      value={localHandover}
+                                      onChange={(e) => {
+                                        const newMap = new Map(localHandoverMap);
+                                        newMap.set(row.curriculumItem.id, e.target.value);
+                                        setLocalHandoverMap(newMap);
+                                      }}
+                                      onBlur={async (e) => {
+                                        if (selectedTextbookId && progress) {
+                                          await saveAndUpdateProgress(
+                                            progress.id,
+                                            {
+                                              handover: e.target.value || null,
+                                            },
+                                            row.curriculumItem.id
+                                          );
+                                        } else if (selectedTextbookId) {
+                                          await upsertStudentProgress({
+                                            student_textbook_id: selectedTextbookId,
+                                            curriculum_item_id: row.curriculumItem.id,
+                                            handover: e.target.value || null,
+                                          });
+                                          await fetchProgress();
+                                        }
+                                      }}
+                                      rows={2}
+                                      className="w-full px-2 py-1 border border-[#e5e7eb] rounded"
+                                    />
+                                  </td>
+                                  <td className="px-4 py-3 text-sm text-[#4b5563]">
+                                    <input
+                                      type="text"
+                                      value={localTeacherName}
+                                      onChange={(e) => {
+                                        const newMap = new Map(localTeacherNameMap);
+                                        newMap.set(row.curriculumItem.id, e.target.value);
+                                        setLocalTeacherNameMap(newMap);
+                                      }}
+                                      onBlur={async (e) => {
+                                        if (selectedTextbookId && progress) {
+                                          await saveAndUpdateProgress(
+                                            progress.id,
+                                            {
+                                              teacher_name: e.target.value || null,
+                                            },
+                                            row.curriculumItem.id
+                                          );
+                                        } else if (selectedTextbookId) {
+                                          await upsertStudentProgress({
+                                            student_textbook_id: selectedTextbookId,
+                                            curriculum_item_id: row.curriculumItem.id,
+                                            teacher_name: e.target.value || null,
+                                          });
+                                          await fetchProgress();
+                                        }
+                                      }}
+                                      placeholder="講師名"
+                                      className="w-full px-2 py-1 border border-[#e5e7eb] rounded"
+                                    />
+                                  </td>
+                                </>
+                              )}
+                            </tr>
+                          );
+                        })
+                      )}
+                      {/* 合計行 */}
+                      {displayRows.length > 0 && (showProposalCount || showApplicationCount) && (
+                        <tr className="border-t-2 border-[#e5e7eb] bg-[#f3f4f6] font-bold">
+                          <td
+                            colSpan={2}
+                            className="px-4 py-3 text-sm text-[#1f2937] border-r border-[#e5e7eb]"
+                          >
+                            合計
+                          </td>
+                          {showProposalCount && (
+                            <td className="px-4 py-3 text-sm text-[#1f2937] border-r border-[#e5e7eb]">
+                              {displayRows
+                                .filter((row) => row.isGroupStart)
+                                .reduce((sum, row) => sum + row.groupProposalCount, 0)}
+                            </td>
+                          )}
+                          {showApplicationCount && (
+                            <td className="px-4 py-3 text-sm text-[#1f2937] border-r border-[#e5e7eb]">
+                              {displayRows
+                                .filter((row) => row.isGroupStart)
+                                .reduce((sum, row) => sum + row.groupApplicationCount, 0)}
+                            </td>
+                          )}
+                          <td
+                            colSpan={
+                              (showExamRange ? 1 : 0) + // 試験範囲
+                              (showSchoolProgress ? 1 : 0) + // 学校進度
+                              (showLesson1 ? 1 : 0) + // 指導日①
+                              (showLesson2 ? 1 : 0) + // 指導日②
+                              (showLesson3 ? 1 : 0) + // 指導日③
+                              (showHandover ? 2 : 0) // 引継ぎ + 講師名
+                            }
+                            className="px-4 py-3 text-sm text-[#1f2937]"
+                          ></td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
                 ) : (
                   <ParentProgressTable
                     displayRows={displayRows}
@@ -1819,7 +1975,8 @@ export default function LegacyProgressPage() {
                 <div className="p-4 bg-[#f3f4f6] border-t border-[#e5e7eb]">
                   <div className="flex justify-end text-lg font-medium">
                     <div>
-                      提案コマ数合計: <span className="text-[#3b82f6]">{totalProposalCount}コマ</span>
+                      提案コマ数合計:{' '}
+                      <span className="text-[#3b82f6]">{totalProposalCount}コマ</span>
                     </div>
                   </div>
                 </div>
@@ -1895,18 +2052,14 @@ export default function LegacyProgressPage() {
                                 科目: {textbook.subject}
                               </span>
                             )}
-                            {textbook.grade && (
-                              <span className="ml-2">
-                                学年: {textbook.grade}
-                              </span>
-                            )}
+                            {textbook.grade && <span className="ml-2">学年: {textbook.grade}</span>}
                             {textbook.grade_category && (
                               <span className="ml-2">
                                 {textbook.grade_category === 'elementary'
                                   ? '小学生'
                                   : textbook.grade_category === 'middle'
-                                  ? '中学生'
-                                  : '高校生'}
+                                    ? '中学生'
+                                    : '高校生'}
                               </span>
                             )}
                           </div>
@@ -1950,7 +2103,7 @@ export default function LegacyProgressPage() {
                     適用するコース
                   </label>
                   <div className="space-y-2 max-h-48 overflow-y-auto">
-                    {availableCourses.map(course => (
+                    {availableCourses.map((course) => (
                       <label
                         key={course.id}
                         className={`flex items-center p-3 rounded-lg border-2 cursor-pointer transition-colors ${
@@ -1970,7 +2123,8 @@ export default function LegacyProgressPage() {
                         <div className="flex-1">
                           <div className="font-medium text-[#1f2937]">{course.name}</div>
                           <div className="text-sm text-[#4b5563]">
-                            {SEASON_LABELS[course.season]} / {course.textbooks?.length || 0}冊 / {course.total_koma}コマ
+                            {SEASON_LABELS[course.season]} / {course.textbooks?.length || 0}冊 /{' '}
+                            {course.total_koma}コマ
                           </div>
                         </div>
                       </label>
@@ -1994,11 +2148,7 @@ export default function LegacyProgressPage() {
               >
                 キャンセル
               </Button>
-              <Button
-                variant="primary"
-                onClick={handleApplyCourse}
-                disabled={!selectedCourseId}
-              >
+              <Button variant="primary" onClick={handleApplyCourse} disabled={!selectedCourseId}>
                 下書き登録
               </Button>
             </div>
@@ -2071,9 +2221,7 @@ export default function LegacyProgressPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-[#1f2937] mb-1">
-                目標点
-              </label>
+              <label className="block text-sm font-medium text-[#1f2937] mb-1">目標点</label>
               <input
                 type="number"
                 value={newExamTargetScore}
@@ -2113,7 +2261,7 @@ export default function LegacyProgressPage() {
                   try {
                     let examTypeId: string | null = null;
                     let customExamName: string | null = null;
-                    
+
                     if (isCustomExamName) {
                       customExamName = newCustomExamName;
                     } else if (newExamTypeId === 'mogi') {
@@ -2122,7 +2270,7 @@ export default function LegacyProgressPage() {
                     } else {
                       examTypeId = newExamTypeId;
                     }
-                    
+
                     await createStudentTextbookExam({
                       student_textbook_id: selectedTextbookId,
                       exam_type_id: examTypeId,
@@ -2206,7 +2354,14 @@ export default function LegacyProgressPage() {
                       {!isTeacher && (
                         <Button
                           onClick={async () => {
-                            if (await confirm({ title: '削除確認', description: `${st.textbook.name}を削除しますか？\nこの操作は取り消せません。`, confirmLabel: '削除', variant: 'danger' })) {
+                            if (
+                              await confirm({
+                                title: '削除確認',
+                                description: `${st.textbook.name}を削除しますか？\nこの操作は取り消せません。`,
+                                confirmLabel: '削除',
+                                variant: 'danger',
+                              })
+                            ) {
                               try {
                                 await deleteStudentTextbook(st.id);
                                 await fetchStudentTextbooks();
@@ -2231,7 +2386,7 @@ export default function LegacyProgressPage() {
             )}
           </div>
         </Modal>
-      {ConfirmDialog}
+        {ConfirmDialog}
       </AdminLayout>
     </div>
   );

@@ -22,13 +22,14 @@ function getSupabaseAdmin() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { token, displayName, userId } = body as { token?: string; displayName?: string; userId?: string };
+    const { token, displayName, userId } = body as {
+      token?: string;
+      displayName?: string;
+      userId?: string;
+    };
 
     if (!token || typeof token !== 'string' || !userId || typeof userId !== 'string') {
-      return NextResponse.json(
-        { error: 'token と userId は必須です' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'token と userId は必須です' }, { status: 400 });
     }
 
     const supabaseAdmin = getSupabaseAdmin();
@@ -49,19 +50,13 @@ export async function POST(request: NextRequest) {
     }
 
     if (new Date(invitation.expires_at) < new Date()) {
-      return NextResponse.json(
-        { error: '招待の有効期限が切れています' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: '招待の有効期限が切れています' }, { status: 400 });
     }
 
     // 認証ユーザーを取得し、招待メールと一致するか確認
     const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.getUserById(userId);
     if (authError || !authUser?.user) {
-      return NextResponse.json(
-        { error: 'ユーザーを確認できませんでした' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'ユーザーを確認できませんでした' }, { status: 400 });
     }
 
     const authEmail = (authUser.user.email ?? '').toLowerCase().trim();
@@ -81,24 +76,19 @@ export async function POST(request: NextRequest) {
       .maybeSingle();
 
     if (!existingProfile) {
-      const { error: profileError } = await supabaseAdmin
-        .from('user_profiles')
-        .insert({
-          id: userId,
-          email: invitation.email,
-          display_name: displayName || null,
-          role: invitation.role,
-          is_active: true,
-          invited_by: invitation.invited_by || null,
-          invited_at: new Date().toISOString(),
-        });
+      const { error: profileError } = await supabaseAdmin.from('user_profiles').insert({
+        id: userId,
+        email: invitation.email,
+        display_name: displayName || null,
+        role: invitation.role,
+        is_active: true,
+        invited_by: invitation.invited_by || null,
+        invited_at: new Date().toISOString(),
+      });
 
       if (profileError) {
         console.error('Invite complete: user_profiles insert error', profileError);
-        return NextResponse.json(
-          { error: 'プロファイルの作成に失敗しました' },
-          { status: 500 }
-        );
+        return NextResponse.json({ error: 'プロファイルの作成に失敗しました' }, { status: 500 });
       }
     } else {
       // 既存プロファイルを招待内容で更新（二重承諾など）
@@ -125,9 +115,7 @@ export async function POST(request: NextRequest) {
         .maybeSingle();
 
       if (!existing) {
-        await supabaseAdmin
-          .from('user_schools')
-          .insert({ user_id: userId, school_id: schoolId });
+        await supabaseAdmin.from('user_schools').insert({ user_id: userId, school_id: schoolId });
       }
     }
 
@@ -140,9 +128,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: true });
   } catch (e) {
     console.error('Invite complete error:', e);
-    return NextResponse.json(
-      { error: '招待の完了処理に失敗しました' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: '招待の完了処理に失敗しました' }, { status: 500 });
   }
 }

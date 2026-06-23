@@ -23,7 +23,9 @@ export async function getFavoriteTextbookIds(): Promise<Set<number>> {
 
 /** お気に入り追加。RLS により user_id は auth.uid() で自動制限される */
 export async function addFavoriteTextbook(textbookId: number): Promise<void> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) throw new Error('ログインが必要です');
   const { error } = await fromFavorites().insert({ user_id: user.id, textbook_id: textbookId });
   // 既にお気に入り登録済みの場合の重複エラー（23505）は無視する
@@ -34,7 +36,9 @@ export async function addFavoriteTextbook(textbookId: number): Promise<void> {
 
 /** お気に入り解除 */
 export async function removeFavoriteTextbook(textbookId: number): Promise<void> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) throw new Error('ログインが必要です');
   const { error } = await fromFavorites()
     .delete()

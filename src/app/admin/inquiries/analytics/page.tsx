@@ -24,7 +24,16 @@ import {
   type PeriodPreset,
   type ResolvedPeriod,
 } from '@/lib/utils/inquiryPeriod';
-import { ArrowLeft, TrendingUp, Users, UserCheck, Clock, Activity, MapPin, XCircle } from 'lucide-react';
+import {
+  ArrowLeft,
+  TrendingUp,
+  Users,
+  UserCheck,
+  Clock,
+  Activity,
+  MapPin,
+  XCircle,
+} from 'lucide-react';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 import {
   ResponsiveContainer,
@@ -46,27 +55,27 @@ import {
 // カラーパレット（home-mock と同じ hex 固定方式）
 // ============================================================
 const C = {
-  primary:  '#2563eb', // 入会
-  green:    '#22c55e', // ポジティブ
-  amber:    '#f59e0b', // 対応中
-  orange:   '#f97316', // 体験没
-  slate:    '#94a3b8', // 没 / 補助
-  gray:     '#9ca3af', // 連絡不通
-  red:      '#ef4444', // ネガティブ
-  teal:     '#14b8a6', // 入会率ライン
+  primary: '#2563eb', // 入会
+  green: '#22c55e', // ポジティブ
+  amber: '#f59e0b', // 対応中
+  orange: '#f97316', // 体験没
+  slate: '#94a3b8', // 没 / 補助
+  gray: '#9ca3af', // 連絡不通
+  red: '#ef4444', // ネガティブ
+  teal: '#14b8a6', // 入会率ライン
   // 前年比較用（今年より薄い系列）
   primaryPrev: '#93c5fd',
-  greenPrev:   '#86efac',
-  tealPrev:    '#5eead4',
+  greenPrev: '#86efac',
+  tealPrev: '#5eead4',
 };
 
 /** ステータス別の Pie スライス色 */
 const STATUS_COLORS: Record<string, string> = {
-  enrolled:    C.primary,
+  enrolled: C.primary,
   in_progress: C.amber,
-  trial_lost:  C.orange,
+  trial_lost: C.orange,
   unreachable: C.slate,
-  lost:        C.gray,
+  lost: C.gray,
 };
 
 /** ファネル棒グラフの色（段階が進むほど濃いブルー系） */
@@ -133,9 +142,10 @@ function SummaryCard({
   // 前年比を数値で持てる場合に差分ラベルを出す
   const currentNum = parseFloat(value.replace(/[^0-9.-]/g, ''));
   const previousNum = prevValue ? parseFloat(prevValue.replace(/[^0-9.-]/g, '')) : null;
-  const diff = !isNaN(currentNum) && previousNum !== null && !isNaN(previousNum)
-    ? diffLabel(Math.round(currentNum), Math.round(previousNum), isRate)
-    : null;
+  const diff =
+    !isNaN(currentNum) && previousNum !== null && !isNaN(previousNum)
+      ? diffLabel(Math.round(currentNum), Math.round(previousNum), isRate)
+      : null;
 
   return (
     <Card>
@@ -152,14 +162,10 @@ function SummaryCard({
             {prevValue != null && (
               <div className="flex items-center gap-2 mt-1">
                 <span className="text-xs text-text-muted">前年: {prevValue}</span>
-                {diff && (
-                  <span className={`text-xs font-medium ${diff.cls}`}>{diff.text}</span>
-                )}
+                {diff && <span className={`text-xs font-medium ${diff.cls}`}>{diff.text}</span>}
               </div>
             )}
-            {sub && !prevValue && (
-              <div className="text-xs text-text-faint mt-0.5">{sub}</div>
-            )}
+            {sub && !prevValue && <div className="text-xs text-text-faint mt-0.5">{sub}</div>}
           </div>
         </div>
       </CardContent>
@@ -225,7 +231,7 @@ function PieLabel({
 function periodToFilters(period: ResolvedPeriod): { dateFrom?: string; dateTo?: string } {
   const f: { dateFrom?: string; dateTo?: string } = {};
   if (period.dateFrom) f.dateFrom = period.dateFrom;
-  if (period.dateTo)   f.dateTo   = period.dateTo;
+  if (period.dateTo) f.dateTo = period.dateTo;
   return f;
 }
 
@@ -237,7 +243,8 @@ export default function InquiryAnalyticsPage() {
   const { profile, getSelectedSchoolIds, selectedSchoolId } = useAuth();
 
   // ロールガード: admin / owner のみ
-  const isAdmin = profile?.role === 'admin' || profile?.role === 'owner' || profile?.role === 'manager';
+  const isAdmin =
+    profile?.role === 'admin' || profile?.role === 'owner' || profile?.role === 'manager';
 
   // ---- 分析結果ステート ----
   const [current, setCurrent] = useState<InquiryAnalytics | null>(null);
@@ -340,11 +347,11 @@ export default function InquiryAnalyticsPage() {
       return current.monthly.map((p) => ({
         month: p.month,
         inquiries: p.inquiries,
-        enrolled:  p.enrolled,
-        rate:      p.rate,
+        enrolled: p.enrolled,
+        rate: p.rate,
         inquiriesPrev: undefined as number | undefined,
-        enrolledPrev:  undefined as number | undefined,
-        ratePrev:      undefined as number | undefined,
+        enrolledPrev: undefined as number | undefined,
+        ratePrev: undefined as number | undefined,
       }));
     }
 
@@ -362,11 +369,11 @@ export default function InquiryAnalyticsPage() {
       return {
         month: p.month,
         inquiries: p.inquiries,
-        enrolled:  p.enrolled,
-        rate:      p.rate,
+        enrolled: p.enrolled,
+        rate: p.rate,
         inquiriesPrev: prev?.inquiries,
-        enrolledPrev:  prev?.enrolled,
-        ratePrev:      prev?.rate,
+        enrolledPrev: prev?.enrolled,
+        ratePrev: prev?.rate,
       };
     });
   })();
@@ -374,7 +381,6 @@ export default function InquiryAnalyticsPage() {
   return (
     <AdminLayout headerTitle="問合せ分析">
       <div className="max-w-5xl mx-auto px-4 py-6">
-
         {/* ---- 戻るリンク ---- */}
         <div className="mb-4">
           <Link
@@ -413,9 +419,7 @@ export default function InquiryAnalyticsPage() {
 
         {/* ---- データなし ---- */}
         {!isLoading && !errorMessage && current && current.total === 0 && (
-          <div className="py-20 text-center text-text-muted text-sm">
-            データがありません
-          </div>
+          <div className="py-20 text-center text-text-muted text-sm">データがありません</div>
         )}
 
         {/* ---- 分析コンテンツ ---- */}
@@ -450,7 +454,9 @@ export default function InquiryAnalyticsPage() {
                 value={current.total > 0 ? `${getEnrollRate(current)} %` : '— %'}
                 prevValue={
                   compare && previous
-                    ? previous.total > 0 ? `${getEnrollRate(previous)} %` : '— %'
+                    ? previous.total > 0
+                      ? `${getEnrollRate(previous)} %`
+                      : '— %'
                     : null
                 }
                 iconColor="text-teal-500"
@@ -474,7 +480,6 @@ export default function InquiryAnalyticsPage() {
             {/* == 2. 決着内訳(Pie) + 3. ファネル(Bar) == */}
             {/* 比較モードでも現期間のみ表示する */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-
               {/* 決着内訳 ドーナツ */}
               <Card>
                 <CardHeader>
@@ -505,21 +510,14 @@ export default function InquiryAnalyticsPage() {
                         )}
                       >
                         {current.statusCounts.map((entry) => (
-                          <Cell
-                            key={entry.status}
-                            fill={STATUS_COLORS[entry.status] ?? C.slate}
-                          />
+                          <Cell key={entry.status} fill={STATUS_COLORS[entry.status] ?? C.slate} />
                         ))}
                       </Pie>
                       <Tooltip
                         contentStyle={TOOLTIP_STYLE}
                         formatter={(value) => [`${value} 件`]}
                       />
-                      <Legend
-                        wrapperStyle={{ fontSize: 12 }}
-                        iconType="circle"
-                        iconSize={8}
-                      />
+                      <Legend wrapperStyle={{ fontSize: 12 }} iconType="circle" iconSize={8} />
                     </PieChart>
                   </ResponsiveContainer>
                 </CardContent>
@@ -695,7 +693,10 @@ export default function InquiryAnalyticsPage() {
             <SectionTitle icon={Activity}>媒体別</SectionTitle>
             <Card>
               <CardContent className="py-4">
-                <ResponsiveContainer width="100%" height={Math.max(200, current.byMedia.length * 40 + 60)}>
+                <ResponsiveContainer
+                  width="100%"
+                  height={Math.max(200, current.byMedia.length * 40 + 60)}
+                >
                   <BarChart
                     layout="vertical"
                     data={current.byMedia}
@@ -747,10 +748,16 @@ export default function InquiryAnalyticsPage() {
                     <thead>
                       <tr className="border-b border-border-subtle">
                         <th className="text-left py-1.5 pr-4 font-medium text-text-muted">媒体</th>
-                        <th className="text-right py-1.5 pr-4 font-medium text-text-muted">問合せ</th>
+                        <th className="text-right py-1.5 pr-4 font-medium text-text-muted">
+                          問合せ
+                        </th>
                         <th className="text-right py-1.5 pr-4 font-medium text-text-muted">入会</th>
-                        <th className="text-right py-1.5 pr-4 font-medium text-text-muted">入会率</th>
-                        <th className="text-right py-1.5 font-medium text-text-muted">連絡不通率</th>
+                        <th className="text-right py-1.5 pr-4 font-medium text-text-muted">
+                          入会率
+                        </th>
+                        <th className="text-right py-1.5 font-medium text-text-muted">
+                          連絡不通率
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
@@ -758,7 +765,9 @@ export default function InquiryAnalyticsPage() {
                         <tr key={row.media} className="border-b border-border-subtle last:border-0">
                           <td className="py-1.5 pr-4 font-medium">{row.media}</td>
                           <td className="text-right py-1.5 pr-4">{row.count.toLocaleString()}</td>
-                          <td className="text-right py-1.5 pr-4">{row.enrolled.toLocaleString()}</td>
+                          <td className="text-right py-1.5 pr-4">
+                            {row.enrolled.toLocaleString()}
+                          </td>
                           <td className="text-right py-1.5 pr-4">{row.enrollRate}%</td>
                           <td className="text-right py-1.5">{row.unreachableRate}%</td>
                         </tr>
@@ -831,7 +840,6 @@ export default function InquiryAnalyticsPage() {
                   チラシ配布エリアや重点校選定の参考に使えます
                 </p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-
                   {/* 郵便番号別（前3桁グループ、上位15） */}
                   {current.byPostal.length > 0 && (
                     <Card>
@@ -842,22 +850,38 @@ export default function InquiryAnalyticsPage() {
                         <table className="w-full text-xs text-text-body border-collapse">
                           <thead>
                             <tr className="border-b border-border-subtle">
-                              <th className="text-left py-1.5 pr-4 font-medium text-text-muted">エリア</th>
-                              <th className="text-right py-1.5 pr-4 font-medium text-text-muted">問合せ</th>
-                              <th className="text-right py-1.5 pr-4 font-medium text-text-muted">入会</th>
-                              <th className="text-right py-1.5 font-medium text-text-muted">入会率</th>
+                              <th className="text-left py-1.5 pr-4 font-medium text-text-muted">
+                                エリア
+                              </th>
+                              <th className="text-right py-1.5 pr-4 font-medium text-text-muted">
+                                問合せ
+                              </th>
+                              <th className="text-right py-1.5 pr-4 font-medium text-text-muted">
+                                入会
+                              </th>
+                              <th className="text-right py-1.5 font-medium text-text-muted">
+                                入会率
+                              </th>
                             </tr>
                           </thead>
                           <tbody>
                             {current.byPostal.map((row) => {
-                              const enrollRate = row.count > 0
-                                ? Math.round((row.enrolled / row.count) * 1000) / 10
-                                : 0;
+                              const enrollRate =
+                                row.count > 0
+                                  ? Math.round((row.enrolled / row.count) * 1000) / 10
+                                  : 0;
                               return (
-                                <tr key={row.postal} className="border-b border-border-subtle last:border-0">
+                                <tr
+                                  key={row.postal}
+                                  className="border-b border-border-subtle last:border-0"
+                                >
                                   <td className="py-1.5 pr-4 font-medium">{row.postal}</td>
-                                  <td className="text-right py-1.5 pr-4">{row.count.toLocaleString()}</td>
-                                  <td className="text-right py-1.5 pr-4">{row.enrolled.toLocaleString()}</td>
+                                  <td className="text-right py-1.5 pr-4">
+                                    {row.count.toLocaleString()}
+                                  </td>
+                                  <td className="text-right py-1.5 pr-4">
+                                    {row.enrolled.toLocaleString()}
+                                  </td>
                                   <td className="text-right py-1.5">{enrollRate}%</td>
                                 </tr>
                               );
@@ -878,18 +902,33 @@ export default function InquiryAnalyticsPage() {
                         <table className="w-full text-xs text-text-body border-collapse">
                           <thead>
                             <tr className="border-b border-border-subtle">
-                              <th className="text-left py-1.5 pr-4 font-medium text-text-muted">学校名</th>
-                              <th className="text-right py-1.5 pr-4 font-medium text-text-muted">問合せ</th>
-                              <th className="text-right py-1.5 pr-4 font-medium text-text-muted">入会</th>
-                              <th className="text-right py-1.5 font-medium text-text-muted">入会率</th>
+                              <th className="text-left py-1.5 pr-4 font-medium text-text-muted">
+                                学校名
+                              </th>
+                              <th className="text-right py-1.5 pr-4 font-medium text-text-muted">
+                                問合せ
+                              </th>
+                              <th className="text-right py-1.5 pr-4 font-medium text-text-muted">
+                                入会
+                              </th>
+                              <th className="text-right py-1.5 font-medium text-text-muted">
+                                入会率
+                              </th>
                             </tr>
                           </thead>
                           <tbody>
                             {current.bySchoolName.map((row) => (
-                              <tr key={row.schoolName} className="border-b border-border-subtle last:border-0">
+                              <tr
+                                key={row.schoolName}
+                                className="border-b border-border-subtle last:border-0"
+                              >
                                 <td className="py-1.5 pr-4 font-medium">{row.schoolName}</td>
-                                <td className="text-right py-1.5 pr-4">{row.count.toLocaleString()}</td>
-                                <td className="text-right py-1.5 pr-4">{row.enrolled.toLocaleString()}</td>
+                                <td className="text-right py-1.5 pr-4">
+                                  {row.count.toLocaleString()}
+                                </td>
+                                <td className="text-right py-1.5 pr-4">
+                                  {row.enrolled.toLocaleString()}
+                                </td>
                                 <td className="text-right py-1.5">{row.enrollRate}%</td>
                               </tr>
                             ))}
@@ -907,7 +946,6 @@ export default function InquiryAnalyticsPage() {
               <>
                 <SectionTitle icon={XCircle}>失注理由</SectionTitle>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-
                   {/* ドーナツグラフ */}
                   <Card>
                     <CardContent className="py-4">
@@ -945,11 +983,7 @@ export default function InquiryAnalyticsPage() {
                             contentStyle={TOOLTIP_STYLE}
                             formatter={(value) => [`${value} 件`]}
                           />
-                          <Legend
-                            wrapperStyle={{ fontSize: 12 }}
-                            iconType="circle"
-                            iconSize={8}
-                          />
+                          <Legend wrapperStyle={{ fontSize: 12 }} iconType="circle" iconSize={8} />
                         </PieChart>
                       </ResponsiveContainer>
                     </CardContent>
@@ -961,21 +995,31 @@ export default function InquiryAnalyticsPage() {
                       <table className="w-full text-xs text-text-body border-collapse">
                         <thead>
                           <tr className="border-b border-border-subtle">
-                            <th className="text-left py-1.5 pr-4 font-medium text-text-muted">理由</th>
+                            <th className="text-left py-1.5 pr-4 font-medium text-text-muted">
+                              理由
+                            </th>
                             <th className="text-right py-1.5 font-medium text-text-muted">件数</th>
                           </tr>
                         </thead>
                         <tbody>
                           {current.lostReasons.map((row, i) => (
-                            <tr key={row.reason} className="border-b border-border-subtle last:border-0">
+                            <tr
+                              key={row.reason}
+                              className="border-b border-border-subtle last:border-0"
+                            >
                               <td className="py-1.5 pr-4">
                                 <span
                                   className="inline-block w-2 h-2 rounded-full mr-2 shrink-0"
-                                  style={{ backgroundColor: LOST_REASON_COLORS[i % LOST_REASON_COLORS.length] }}
+                                  style={{
+                                    backgroundColor:
+                                      LOST_REASON_COLORS[i % LOST_REASON_COLORS.length],
+                                  }}
                                 />
                                 {row.reason}
                               </td>
-                              <td className="text-right py-1.5 font-medium">{row.count.toLocaleString()}</td>
+                              <td className="text-right py-1.5 font-medium">
+                                {row.count.toLocaleString()}
+                              </td>
                             </tr>
                           ))}
                         </tbody>
@@ -985,7 +1029,6 @@ export default function InquiryAnalyticsPage() {
                 </div>
               </>
             )}
-
           </>
         )}
       </div>

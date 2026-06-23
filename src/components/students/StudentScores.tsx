@@ -113,9 +113,7 @@ export function StudentScores({ student, isOpen, onClose }: StudentScoresProps) 
       });
     } catch (error) {
       console.error('Error fetching assessments:', error);
-      setErrorMessage(
-        getUserErrorMessage(error, '成績データの取得に失敗しました')
-      );
+      setErrorMessage(getUserErrorMessage(error, '成績データの取得に失敗しました'));
     } finally {
       setIsLoading(false);
     }
@@ -140,7 +138,9 @@ export function StudentScores({ student, isOpen, onClose }: StudentScoresProps) 
         if (!cancelled) setHsSubjects([]);
       }
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [isOpen, isHighSchool, student.grade]);
 
   /** 学校種別ごとに表示する科目コードを返す。HS は登録済みコードも含めて末尾に追加（自由記述や旧データを救済） */
@@ -192,9 +192,7 @@ export function StudentScores({ student, isOpen, onClose }: StudentScoresProps) 
       await fetchAssessments();
     } catch (error) {
       console.error('Error updating score:', error);
-      setErrorMessage(
-        getUserErrorMessage(error, 'スコアの更新に失敗しました')
-      );
+      setErrorMessage(getUserErrorMessage(error, 'スコアの更新に失敗しました'));
     } finally {
       setEditingCell(null);
     }
@@ -226,15 +224,20 @@ export function StudentScores({ student, isOpen, onClose }: StudentScoresProps) 
       await fetchAssessments();
     } catch (error) {
       console.error('Error creating assessment row:', error);
-      setErrorMessage(
-        getUserErrorMessage(error, '行の追加に失敗しました')
-      );
+      setErrorMessage(getUserErrorMessage(error, '行の追加に失敗しました'));
     }
   };
 
   // 行削除
   const handleDeleteRow = async (assessmentId: string) => {
-    if (!(await confirm({ title: '削除確認', description: 'この行を削除してもよろしいですか？', confirmLabel: '削除', variant: 'danger' }))) {
+    if (
+      !(await confirm({
+        title: '削除確認',
+        description: 'この行を削除してもよろしいですか？',
+        confirmLabel: '削除',
+        variant: 'danger',
+      }))
+    ) {
       return;
     }
 
@@ -243,9 +246,7 @@ export function StudentScores({ student, isOpen, onClose }: StudentScoresProps) 
       await fetchAssessments();
     } catch (error) {
       console.error('Error deleting assessment row:', error);
-      setErrorMessage(
-        getUserErrorMessage(error, '行の削除に失敗しました')
-      );
+      setErrorMessage(getUserErrorMessage(error, '行の削除に失敗しました'));
     }
   };
 
@@ -274,11 +275,7 @@ export function StudentScores({ student, isOpen, onClose }: StudentScoresProps) 
     }
 
     if (type === 'three_avg') {
-      const threeSubjects = [
-        SUBJECT_CODES.ENGLISH,
-        SUBJECT_CODES.MATH,
-        SUBJECT_CODES.JAPANESE,
-      ];
+      const threeSubjects = [SUBJECT_CODES.ENGLISH, SUBJECT_CODES.MATH, SUBJECT_CODES.JAPANESE];
       const values = threeSubjects
         .map((subj) => scoreMap.get(subj))
         .filter((v): v is number => v !== null && v !== undefined);
@@ -335,8 +332,8 @@ export function StudentScores({ student, isOpen, onClose }: StudentScoresProps) 
                   {category === 'regular_test'
                     ? 'テスト名'
                     : category === 'report_card'
-                    ? '内申名'
-                    : '模試名'}
+                      ? '内申名'
+                      : '模試名'}
                   <span className="text-[#ef4444] ml-1">*</span>
                 </label>
                 <select
@@ -371,9 +368,7 @@ export function StudentScores({ student, isOpen, onClose }: StudentScoresProps) 
                 </select>
               </div>
               <div className="md:col-span-1">
-                <label className="block text-sm font-medium text-[#1f2937] mb-1">
-                  年月
-                </label>
+                <label className="block text-sm font-medium text-[#1f2937] mb-1">年月</label>
                 <input
                   type="month"
                   value={newRowMonth}
@@ -415,8 +410,8 @@ export function StudentScores({ student, isOpen, onClose }: StudentScoresProps) 
                   {category === 'regular_test'
                     ? 'テスト名'
                     : category === 'report_card'
-                    ? '内申名'
-                    : '模試名'}
+                      ? '内申名'
+                      : '模試名'}
                 </th>
                 <th className="border border-[#e5e7eb] px-3 py-2 text-left text-sm font-semibold text-[#1f2937]">
                   学年
@@ -436,25 +431,26 @@ export function StudentScores({ student, isOpen, onClose }: StudentScoresProps) 
                     </th>
                   );
                 })}
-                {showAggregateColumns && (category === 'mock' ? (
-                  <>
-                    <th className="border border-[#e5e7eb] px-3 py-2 text-center text-sm font-semibold text-[#1f2937]">
-                      3科平均
-                    </th>
-                    <th className="border border-[#e5e7eb] px-3 py-2 text-center text-sm font-semibold text-[#1f2937]">
-                      5科平均
-                    </th>
-                  </>
-                ) : (
-                  <>
-                    <th className="border border-[#e5e7eb] px-3 py-2 text-center text-sm font-semibold text-[#1f2937]">
-                      5科合計
-                    </th>
-                    <th className="border border-[#e5e7eb] px-3 py-2 text-center text-sm font-semibold text-[#1f2937]">
-                      9科合計
-                    </th>
-                  </>
-                ))}
+                {showAggregateColumns &&
+                  (category === 'mock' ? (
+                    <>
+                      <th className="border border-[#e5e7eb] px-3 py-2 text-center text-sm font-semibold text-[#1f2937]">
+                        3科平均
+                      </th>
+                      <th className="border border-[#e5e7eb] px-3 py-2 text-center text-sm font-semibold text-[#1f2937]">
+                        5科平均
+                      </th>
+                    </>
+                  ) : (
+                    <>
+                      <th className="border border-[#e5e7eb] px-3 py-2 text-center text-sm font-semibold text-[#1f2937]">
+                        5科合計
+                      </th>
+                      <th className="border border-[#e5e7eb] px-3 py-2 text-center text-sm font-semibold text-[#1f2937]">
+                        9科合計
+                      </th>
+                    </>
+                  ))}
                 <th className="border border-[#e5e7eb] px-3 py-2 text-center text-sm font-semibold text-[#1f2937]">
                   操作
                 </th>
@@ -464,7 +460,12 @@ export function StudentScores({ student, isOpen, onClose }: StudentScoresProps) 
               {assessments.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={subjects.length + 3 + (showAggregateColumns ? 2 : 0) + (permissions?.canEditScores ? 1 : 0)}
+                    colSpan={
+                      subjects.length +
+                      3 +
+                      (showAggregateColumns ? 2 : 0) +
+                      (permissions?.canEditScores ? 1 : 0)
+                    }
                     className="border border-[#e5e7eb] px-3 py-4 text-center text-[#4b5563]"
                   >
                     データがありません
@@ -472,7 +473,10 @@ export function StudentScores({ student, isOpen, onClose }: StudentScoresProps) 
                 </tr>
               ) : (
                 assessments.map((assessment) => (
-                  <tr key={assessment.id} className="hover:bg-[#f3f4f6] transition-colors duration-150">
+                  <tr
+                    key={assessment.id}
+                    className="hover:bg-[#f3f4f6] transition-colors duration-150"
+                  >
                     <td className="border border-[#e5e7eb] px-3 py-2 text-sm text-[#1f2937] sticky left-0 z-10 bg-white">
                       {ASSESSMENT_NAME_LABELS[assessment.name_code] || assessment.name_code}
                     </td>
@@ -492,10 +496,7 @@ export function StudentScores({ student, isOpen, onClose }: StudentScoresProps) 
                         editingCell?.subject === subj;
 
                       return (
-                        <td
-                          key={subj}
-                          className="border border-[#e5e7eb] px-3 py-2 text-center"
-                        >
+                        <td key={subj} className="border border-[#e5e7eb] px-3 py-2 text-center">
                           {isEditing ? (
                             <input
                               type="text"
@@ -523,25 +524,26 @@ export function StudentScores({ student, isOpen, onClose }: StudentScoresProps) 
                         </td>
                       );
                     })}
-                    {showAggregateColumns && (category === 'mock' ? (
-                      <>
-                        <td className="border border-[#e5e7eb] px-3 py-2 text-center text-sm text-[#4b5563] font-medium">
-                          {getCalculatedValue(assessment, 'three_avg')}
-                        </td>
-                        <td className="border border-[#e5e7eb] px-3 py-2 text-center text-sm text-[#4b5563] font-medium">
-                          {getCalculatedValue(assessment, 'five_avg')}
-                        </td>
-                      </>
-                    ) : (
-                      <>
-                        <td className="border border-[#e5e7eb] px-3 py-2 text-center text-sm text-[#4b5563] font-medium">
-                          {getCalculatedValue(assessment, 'five_sum')}
-                        </td>
-                        <td className="border border-[#e5e7eb] px-3 py-2 text-center text-sm text-[#4b5563] font-medium">
-                          {getCalculatedValue(assessment, 'nine_sum')}
-                        </td>
-                      </>
-                    ))}
+                    {showAggregateColumns &&
+                      (category === 'mock' ? (
+                        <>
+                          <td className="border border-[#e5e7eb] px-3 py-2 text-center text-sm text-[#4b5563] font-medium">
+                            {getCalculatedValue(assessment, 'three_avg')}
+                          </td>
+                          <td className="border border-[#e5e7eb] px-3 py-2 text-center text-sm text-[#4b5563] font-medium">
+                            {getCalculatedValue(assessment, 'five_avg')}
+                          </td>
+                        </>
+                      ) : (
+                        <>
+                          <td className="border border-[#e5e7eb] px-3 py-2 text-center text-sm text-[#4b5563] font-medium">
+                            {getCalculatedValue(assessment, 'five_sum')}
+                          </td>
+                          <td className="border border-[#e5e7eb] px-3 py-2 text-center text-sm text-[#4b5563] font-medium">
+                            {getCalculatedValue(assessment, 'nine_sum')}
+                          </td>
+                        </>
+                      ))}
                     {permissions?.canEditScores && (
                       <td className="border border-[#e5e7eb] px-3 py-2 text-center">
                         <Button
@@ -564,7 +566,12 @@ export function StudentScores({ student, isOpen, onClose }: StudentScoresProps) 
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={`成績管理 - ${student.last_name} ${student.first_name}`} size="xl">
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={`成績管理 - ${student.last_name} ${student.first_name}`}
+      size="xl"
+    >
       {errorMessage && (
         <div className="mb-4 p-3 bg-[#ef4444]/10 border border-[#ef4444] rounded-lg text-sm text-[#ef4444]">
           {errorMessage}

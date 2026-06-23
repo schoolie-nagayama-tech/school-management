@@ -12,7 +12,7 @@ import { getTestPrepProposalsWithStudent } from './test-prep-proposals';
 
 // "中3" などの学年名 → 数値(GRADE_LABELS の逆引き)
 const NAME_TO_GRADE: Record<string, number> = Object.fromEntries(
-  Object.entries(GRADE_LABELS).map(([num, label]) => [label as string, Number(num)]),
+  Object.entries(GRADE_LABELS).map(([num, label]) => [label as string, Number(num)])
 );
 
 export type ParticipationFormType = 'moshi' | 'mogi' | 'zoukoma';
@@ -158,15 +158,20 @@ export async function getProposalFunnel(schoolIds: string[]): Promise<ProposalFu
 
   // 提案中/公開中のみ（下書きは除外）
   const proposals = (await getTestPrepProposalsWithStudent(schoolIds)).filter(
-    (p) => p.status === 'sent' || p.status === 'published',
+    (p) => p.status === 'sent' || p.status === 'published'
   );
   if (proposals.length === 0) return EMPTY_FUNNEL;
 
   // zoukoma_period_id → period_key の対応
-  const periodIds = Array.from(new Set(proposals.map((p) => p.zoukoma_period_id).filter(Boolean))) as string[];
+  const periodIds = Array.from(
+    new Set(proposals.map((p) => p.zoukoma_period_id).filter(Boolean))
+  ) as string[];
   const periodKeyById = new Map<string, string>();
   if (periodIds.length > 0) {
-    const { data: periods } = await supabase.from('form_periods').select('id, period_key').in('id', periodIds);
+    const { data: periods } = await supabase
+      .from('form_periods')
+      .select('id, period_key')
+      .in('id', periodIds);
     for (const p of periods ?? []) periodKeyById.set(p.id, p.period_key);
   }
 
@@ -246,7 +251,11 @@ export async function getProposalFunnel(schoolIds: string[]): Promise<ProposalFu
       .from('test_prep_proposal_subjects')
       .select('proposal_id, subject_name, proposed_koma')
       .in('proposal_id', proposalIds);
-    const rows = (subjectRows ?? []) as { proposal_id: string; subject_name: string; proposed_koma: number | null }[];
+    const rows = (subjectRows ?? []) as {
+      proposal_id: string;
+      subject_name: string;
+      proposed_koma: number | null;
+    }[];
     for (const s of rows) {
       if (!s.proposed_koma || s.proposed_koma <= 0) continue;
       const info = proposalInfo.get(s.proposal_id);
@@ -257,7 +266,8 @@ export async function getProposalFunnel(schoolIds: string[]): Promise<ProposalFu
       }
     }
   }
-  const subjectRate = proposedSubjects > 0 ? Math.round((acquiredSubjects / proposedSubjects) * 1000) / 10 : 0;
+  const subjectRate =
+    proposedSubjects > 0 ? Math.round((acquiredSubjects / proposedSubjects) * 1000) / 10 : 0;
 
   return {
     proposalCount: proposals.length,

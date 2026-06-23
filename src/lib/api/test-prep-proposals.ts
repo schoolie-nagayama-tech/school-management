@@ -29,9 +29,12 @@ export async function getTestPrepProposals(schoolId: string): Promise<TestPrepPr
 }
 
 /** 教室の提案書一覧（生徒名・試験名付き） */
-export async function getTestPrepProposalsWithStudent(
-  schoolId: string | string[]
-): Promise<(TestPrepProposal & { student: { last_name: string; first_name: string; grade: number } | null; exam_type: { name: string } | null })[]> {
+export async function getTestPrepProposalsWithStudent(schoolId: string | string[]): Promise<
+  (TestPrepProposal & {
+    student: { last_name: string; first_name: string; grade: number } | null;
+    exam_type: { name: string } | null;
+  })[]
+> {
   const query = db()
     .from('test_prep_proposals')
     .select('*, student:students(last_name, first_name, grade), exam_type:exam_types(name)')
@@ -49,7 +52,9 @@ export async function getTestPrepProposalsWithStudent(
 }
 
 /** 生徒の提案書一覧 */
-export async function getTestPrepProposalsByStudent(studentId: string): Promise<TestPrepProposal[]> {
+export async function getTestPrepProposalsByStudent(
+  studentId: string
+): Promise<TestPrepProposal[]> {
   const { data, error } = await db()
     .from('test_prep_proposals')
     .select('*')
@@ -65,11 +70,13 @@ export async function getTestPrepProposalWithDetails(
 ): Promise<TestPrepProposalWithDetails | null> {
   const { data, error } = await db()
     .from('test_prep_proposals')
-    .select(`
+    .select(
+      `
       *,
       student:students(*),
       exam_type:exam_types(id, name)
-    `)
+    `
+    )
     .eq('id', proposalId)
     .single();
   if (error) {
@@ -179,9 +186,7 @@ async function insertTestPrepSubjectsWithUnits(
   );
 
   if (allUnitRows.length > 0) {
-    const { error: unitError } = await db()
-      .from('test_prep_proposal_units')
-      .insert(allUnitRows);
+    const { error: unitError } = await db().from('test_prep_proposal_units').insert(allUnitRows);
     if (unitError) throw new Error(`Failed to create units: ${unitError.message}`);
   }
 }
@@ -207,7 +212,9 @@ export async function createTestPrepProposal(
 /** 提案書メタデータを更新 */
 export async function updateTestPrepProposal(
   id: string,
-  patch: Partial<Pick<TestPrepProposal, 'title' | 'status' | 'notes' | 'exam_type_id' | 'zoukoma_period_id'>>
+  patch: Partial<
+    Pick<TestPrepProposal, 'title' | 'status' | 'notes' | 'exam_type_id' | 'zoukoma_period_id'>
+  >
 ): Promise<TestPrepProposal> {
   const { data, error } = await db()
     .from('test_prep_proposals')
@@ -221,10 +228,7 @@ export async function updateTestPrepProposal(
 
 /** 提案書を削除（CASCADE で科目・単元も削除） */
 export async function deleteTestPrepProposal(id: string): Promise<void> {
-  const { error } = await db()
-    .from('test_prep_proposals')
-    .delete()
-    .eq('id', id);
+  const { error } = await db().from('test_prep_proposals').delete().eq('id', id);
   if (error) throw new Error(`Failed to delete proposal: ${error.message}`);
 }
 

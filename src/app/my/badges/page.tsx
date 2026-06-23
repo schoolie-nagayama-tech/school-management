@@ -3,7 +3,12 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Trophy, Star } from 'lucide-react';
-import type { TeacherBadge, TeacherBadgeAssignment, BadgeRank, TeacherTraining } from '@/types/database';
+import type {
+  TeacherBadge,
+  TeacherBadgeAssignment,
+  BadgeRank,
+  TeacherTraining,
+} from '@/types/database';
 import { BADGE_RANK_CONFIG } from '@/types/database';
 import { getMyBadges } from '@/lib/api/teacher-badges';
 import { getMyTrainings } from '@/lib/api/teacher-trainings';
@@ -53,11 +58,14 @@ export default function MyBadgesPage() {
     load();
   }, []);
 
-  const rankCounts = assignments.reduce((acc, a) => {
-    const badge = a.badge || badges.find((b) => b.id === a.badge_id);
-    if (badge) acc[badge.rank] = (acc[badge.rank] || 0) + 1;
-    return acc;
-  }, {} as Partial<Record<BadgeRank, number>>);
+  const rankCounts = assignments.reduce(
+    (acc, a) => {
+      const badge = a.badge || badges.find((b) => b.id === a.badge_id);
+      if (badge) acc[badge.rank] = (acc[badge.rank] || 0) + 1;
+      return acc;
+    },
+    {} as Partial<Record<BadgeRank, number>>
+  );
 
   // 最新の獲得バッジ（直近3件）
   const recentEarned = [...assignments]
@@ -74,10 +82,7 @@ export default function MyBadgesPage() {
   }
 
   return (
-    <div
-      className="min-h-screen bg-[#f8f9fa] tier-attendance"
-      data-teacher-tier={tier.key}
-    >
+    <div className="min-h-screen bg-[#f8f9fa] tier-attendance" data-teacher-tier={tier.key}>
       <AppHeader title="マイトロフィー" />
       <div className="relative max-w-4xl mx-auto px-4 py-8">
         <BadgeFlowerField count={assignments.length} placements={MY_BADGES_FLOWERS} />
@@ -106,13 +111,12 @@ export default function MyBadgesPage() {
               <div className="flex items-baseline justify-between gap-4 mb-3">
                 <span className="text-[40px] font-bold text-gray-900 tabular-nums leading-none">
                   {assignments.length}
-                  <span className="text-lg text-gray-400 font-normal ml-1">
-                    / {badges.length}
-                  </span>
+                  <span className="text-lg text-gray-400 font-normal ml-1">/ {badges.length}</span>
                 </span>
                 {nextTier && (
                   <span className="text-xs text-gray-500 text-right leading-tight">
-                    次の節目まで<br />
+                    次の節目まで
+                    <br />
                     <b className="text-gray-900 text-sm font-bold tabular-nums">
                       あと {remaining} 個
                     </b>
@@ -129,7 +133,9 @@ export default function MyBadgesPage() {
             {/* 直近の獲得 */}
             {recentEarned.length > 0 && (
               <div>
-                <h2 className="text-sm font-bold text-gray-600 mb-3 uppercase tracking-wider">最近の獲得</h2>
+                <h2 className="text-sm font-bold text-gray-600 mb-3 uppercase tracking-wider">
+                  最近の獲得
+                </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   {recentEarned.map((a, idx) => {
                     const badge = a.badge || badges.find((b) => b.id === a.badge_id);
@@ -154,7 +160,9 @@ export default function MyBadgesPage() {
                         )}
                         <div
                           className="w-10 h-10 rounded-lg flex items-center justify-center text-white shadow-sm flex-shrink-0"
-                          style={{ background: `linear-gradient(135deg, ${rankConfig.color}, ${rankConfig.color}88)` }}
+                          style={{
+                            background: `linear-gradient(135deg, ${rankConfig.color}, ${rankConfig.color}88)`,
+                          }}
                         >
                           {badge.icon === 'trophy' ? (
                             <Trophy className="w-5 h-5" />
@@ -163,7 +171,9 @@ export default function MyBadgesPage() {
                           )}
                         </div>
                         <div className="min-w-0">
-                          <p className="text-sm font-semibold text-gray-800 truncate">{badge.name}</p>
+                          <p className="text-sm font-semibold text-gray-800 truncate">
+                            {badge.name}
+                          </p>
                           <p className="text-xs text-gray-400">{a.completed_at}</p>
                         </div>
                       </div>
@@ -175,17 +185,17 @@ export default function MyBadgesPage() {
 
             {/* バッジ一覧 */}
             <div>
-              <h2 className="text-sm font-bold text-gray-600 mb-4 uppercase tracking-wider">すべてのバッジ</h2>
-              <BadgeGrid
-                badges={badges}
-                assignments={assignments}
-                groupByCategory
-              />
+              <h2 className="text-sm font-bold text-gray-600 mb-4 uppercase tracking-wider">
+                すべてのバッジ
+              </h2>
+              <BadgeGrid badges={badges} assignments={assignments} groupByCategory />
             </div>
 
             {/* ランク別集計 */}
             <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
-              <h2 className="text-sm font-bold text-gray-600 mb-4 uppercase tracking-wider">ランク別</h2>
+              <h2 className="text-sm font-bold text-gray-600 mb-4 uppercase tracking-wider">
+                ランク別
+              </h2>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 {(['platinum', 'gold', 'silver', 'bronze'] as BadgeRank[]).map((rank) => {
                   const config = BADGE_RANK_CONFIG[rank];
@@ -199,14 +209,21 @@ export default function MyBadgesPage() {
                     >
                       <div
                         className="w-10 h-10 rounded-full flex items-center justify-center text-white shadow-sm"
-                        style={{ background: `linear-gradient(135deg, ${config.color}, ${config.color}88)` }}
+                        style={{
+                          background: `linear-gradient(135deg, ${config.color}, ${config.color}88)`,
+                        }}
                       >
                         <span className="text-sm font-bold">{count}</span>
                       </div>
-                      <span className="text-xs font-bold uppercase tracking-wider" style={{ color: config.color }}>
+                      <span
+                        className="text-xs font-bold uppercase tracking-wider"
+                        style={{ color: config.color }}
+                      >
                         {config.label}
                       </span>
-                      <span className="text-[10px] text-gray-400">{count}/{total}</span>
+                      <span className="text-[10px] text-gray-400">
+                        {count}/{total}
+                      </span>
                     </div>
                   );
                 })}

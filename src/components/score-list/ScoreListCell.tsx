@@ -72,13 +72,7 @@ export function ScoreListCell({
 }
 
 /** 合計セル（編集不可） */
-export function ScoreListSumCell({
-  value,
-  diff,
-}: {
-  value: number | null;
-  diff: number | null;
-}) {
+export function ScoreListSumCell({ value, diff }: { value: number | null; diff: number | null }) {
   return (
     <td className="border border-gray-200 px-1 py-0.5 text-center min-w-[52px] bg-gray-50 font-medium">
       <div className="min-h-[24px] flex items-center justify-center text-xs">

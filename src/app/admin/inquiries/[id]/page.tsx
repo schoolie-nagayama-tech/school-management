@@ -101,7 +101,8 @@ export default function InquiryDetailPage() {
   const { profile } = useAuth();
 
   // ロールガード: admin / owner のみ
-  const isAdmin = profile?.role === 'admin' || profile?.role === 'owner' || profile?.role === 'manager';
+  const isAdmin =
+    profile?.role === 'admin' || profile?.role === 'owner' || profile?.role === 'manager';
 
   const [inquiry, setInquiry] = useState<Inquiry | null>(null);
   const [contacts, setContacts] = useState<InquiryContact[]>([]);
@@ -171,10 +172,7 @@ export default function InquiryDetailPage() {
     setIsLoading(true);
     setErrorMessage('');
     try {
-      const [inq, ctcs] = await Promise.all([
-        getInquiry(id),
-        getInquiryContacts(id),
-      ]);
+      const [inq, ctcs] = await Promise.all([getInquiry(id), getInquiryContacts(id)]);
       if (!inq) {
         setErrorMessage('問合せが見つかりません');
         setIsLoading(false);
@@ -219,7 +217,9 @@ export default function InquiryDetailPage() {
     setIsFetchingBooking(true);
     try {
       // 認証付き API のため Bearer トークンを付与（このアプリの既定パターン）
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       const res = await fetch(`/api/inquiries/${id}/booking-token`, {
         method: 'POST',
         headers: session ? { Authorization: `Bearer ${session.access_token}` } : {},
@@ -228,7 +228,7 @@ export default function InquiryDetailPage() {
         const body = await res.json().catch(() => ({}));
         throw new Error((body as { error?: string }).error ?? '発行に失敗しました');
       }
-      const data = await res.json() as { token: string; url: string };
+      const data = (await res.json()) as { token: string; url: string };
       setBookingUrl(data.url);
       toast.success('予約リンクを発行しました');
     } catch (err) {
@@ -240,10 +240,13 @@ export default function InquiryDetailPage() {
 
   // ---- 面談予約取消 ----
   const handleCancelBooking = async () => {
-    if (!inquiry || !window.confirm('面談の予約を取り消しますか？カレンダーの予定も更新されます。')) return;
+    if (!inquiry || !window.confirm('面談の予約を取り消しますか？カレンダーの予定も更新されます。'))
+      return;
     setIsCancellingBooking(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       const res = await fetch(`/api/inquiries/${id}/booking-token`, {
         method: 'DELETE',
         headers: session ? { Authorization: `Bearer ${session.access_token}` } : {},
@@ -538,7 +541,6 @@ export default function InquiryDetailPage() {
   return (
     <AdminLayout headerTitle="問合せ詳細">
       <div className="max-w-6xl">
-
         {/* 戻るリンク */}
         <Link
           href="/admin/inquiries"
@@ -558,12 +560,10 @@ export default function InquiryDetailPage() {
           <Loading size="md" />
         ) : !inquiry ? null : (
           <div className="space-y-6">
-
             {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
                 1. 顧客サマリーヘッダー（全幅）
                 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
             <section className="bg-surface-raised border border-border rounded-xl p-6">
-
               {/* 氏名 + ステータス + 学年 */}
               <div className="flex items-start gap-3 flex-wrap mb-4">
                 <h1 className="text-xl font-bold text-text-heading">
@@ -575,7 +575,9 @@ export default function InquiryDetailPage() {
                     保護者名（生徒名 未入力）
                   </span>
                 )}
-                <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium shrink-0 ${STATUS_CONFIG[inquiry.status].className}`}>
+                <span
+                  className={`px-2.5 py-0.5 rounded-full text-xs font-medium shrink-0 ${STATUS_CONFIG[inquiry.status].className}`}
+                >
                   {STATUS_CONFIG[inquiry.status].label}
                 </span>
                 {inquiry.grade && (
@@ -641,11 +643,10 @@ export default function InquiryDetailPage() {
               )}
 
               {/* 失注理由 */}
-              {(inquiry.status === 'lost' || inquiry.status === 'trial_lost') && inquiry.lost_reason && (
-                <p className="mt-3 text-xs text-text-muted">
-                  失注理由: {inquiry.lost_reason}
-                </p>
-              )}
+              {(inquiry.status === 'lost' || inquiry.status === 'trial_lost') &&
+                inquiry.lost_reason && (
+                  <p className="mt-3 text-xs text-text-muted">失注理由: {inquiry.lost_reason}</p>
+                )}
             </section>
 
             {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -654,12 +655,10 @@ export default function InquiryDetailPage() {
                 右(col-span-1): 参照
                 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
               {/* ────────────────────────────────
                   左カラム: ステータス・コンタクト・メール
                   ──────────────────────────────── */}
               <div className="lg:col-span-2 space-y-6">
-
                 {/* ── 追客タイムライン（ステータス+コンタクト履歴の統合ビュー） ── */}
                 <section className="bg-surface-raised border border-border rounded-xl p-6">
                   <h2 className="text-base font-bold text-text-heading mb-4">追客タイムライン</h2>
@@ -668,26 +667,31 @@ export default function InquiryDetailPage() {
                   <div className="mb-6 pb-6 border-b border-border">
                     <h3 className="text-sm font-semibold text-text-heading mb-3">現状</h3>
                     <div className="space-y-3">
-
                       {/* ステータス選択 */}
                       <div>
-                        <label className="block text-xs font-medium text-text-heading mb-1">ステータス</label>
+                        <label className="block text-xs font-medium text-text-heading mb-1">
+                          ステータス
+                        </label>
                         <select
                           value={editStatus}
                           onChange={(e) => setEditStatus(e.target.value as InquiryStatus)}
                           className="w-full sm:w-48 px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary"
                         >
                           {STATUS_OPTIONS.filter((o) => o.value !== 'all').map((o) => (
-                            <option key={o.value} value={o.value}>{o.label}</option>
+                            <option key={o.value} value={o.value}>
+                              {o.label}
+                            </option>
                           ))}
                         </select>
                       </div>
 
                       {/* 入会時: 入会日・週回数 */}
-                      {(editStatus === 'enrolled') && (
+                      {editStatus === 'enrolled' && (
                         <div className="grid grid-cols-2 gap-4">
                           <div>
-                            <label className="block text-xs font-medium text-text-heading mb-1">入会日</label>
+                            <label className="block text-xs font-medium text-text-heading mb-1">
+                              入会日
+                            </label>
                             <input
                               type="date"
                               value={editEnrolledAt}
@@ -696,7 +700,9 @@ export default function InquiryDetailPage() {
                             />
                           </div>
                           <div>
-                            <label className="block text-xs font-medium text-text-heading mb-1">週回数</label>
+                            <label className="block text-xs font-medium text-text-heading mb-1">
+                              週回数
+                            </label>
                             <input
                               type="number"
                               min={1}
@@ -711,9 +717,14 @@ export default function InquiryDetailPage() {
                       )}
 
                       {/* 体験待ち / 返事待ち / 体験没 / 入会: 体験日 */}
-                      {(editStatus === 'trial_waiting' || editStatus === 'trial_done' || editStatus === 'trial_lost' || editStatus === 'enrolled') && (
+                      {(editStatus === 'trial_waiting' ||
+                        editStatus === 'trial_done' ||
+                        editStatus === 'trial_lost' ||
+                        editStatus === 'enrolled') && (
                         <div>
-                          <label className="block text-xs font-medium text-text-heading mb-1">体験日</label>
+                          <label className="block text-xs font-medium text-text-heading mb-1">
+                            体験日
+                          </label>
                           <input
                             type="date"
                             value={editTrialAt}
@@ -726,7 +737,9 @@ export default function InquiryDetailPage() {
                       {/* 没 / 体験没: 失注理由 */}
                       {(editStatus === 'lost' || editStatus === 'trial_lost') && (
                         <div>
-                          <label className="block text-xs font-medium text-text-heading mb-1">失注理由</label>
+                          <label className="block text-xs font-medium text-text-heading mb-1">
+                            失注理由
+                          </label>
                           <select
                             value={editLostReason}
                             onChange={(e) => setEditLostReason(e.target.value)}
@@ -734,7 +747,9 @@ export default function InquiryDetailPage() {
                           >
                             <option value="">— 未選択 —</option>
                             {LOST_REASONS.map((r) => (
-                              <option key={r} value={r}>{r}</option>
+                              <option key={r} value={r}>
+                                {r}
+                              </option>
                             ))}
                           </select>
                         </div>
@@ -742,7 +757,9 @@ export default function InquiryDetailPage() {
 
                       {/* メモ */}
                       <div>
-                        <label className="block text-xs font-medium text-text-heading mb-1">メモ</label>
+                        <label className="block text-xs font-medium text-text-heading mb-1">
+                          メモ
+                        </label>
                         <textarea
                           value={editNote}
                           onChange={(e) => setEditNote(e.target.value)}
@@ -764,8 +781,12 @@ export default function InquiryDetailPage() {
                   {(() => {
                     // contacts と mailLogs を統合して contacted_at / sent_at で降順ソート
                     const items: TimelineItem[] = [
-                      ...contacts.map((c): TimelineItem => ({ kind: 'contact', at: c.contacted_at, data: c })),
-                      ...mailLogs.map((m): TimelineItem => ({ kind: 'mail_log', at: m.sent_at, data: m })),
+                      ...contacts.map(
+                        (c): TimelineItem => ({ kind: 'contact', at: c.contacted_at, data: c })
+                      ),
+                      ...mailLogs.map(
+                        (m): TimelineItem => ({ kind: 'mail_log', at: m.sent_at, data: m })
+                      ),
                     ].sort((a, b) => b.at.localeCompare(a.at));
 
                     if (items.length === 0) {
@@ -778,29 +799,36 @@ export default function InquiryDetailPage() {
                           if (item.kind === 'contact') {
                             const c = item.data;
                             // アイコン選択（method 別）
-                            const Icon = {
-                              tel:           Phone,
-                              email:         Mail,
-                              sms:           MessageSquare,
-                              visit:         Building2,
-                              interview:     Users,
-                              other:         Circle,
-                              material_sent: Package,
-                              status_change: ArrowRightLeft,
-                            }[c.method] ?? Circle;
+                            const Icon =
+                              {
+                                tel: Phone,
+                                email: Mail,
+                                sms: MessageSquare,
+                                visit: Building2,
+                                interview: Users,
+                                other: Circle,
+                                material_sent: Package,
+                                status_change: ArrowRightLeft,
+                              }[c.method] ?? Circle;
 
                             // 電話の result によるバッジ色
                             const resultBadgeClass = (() => {
-                              if (c.method !== 'tel' || !c.result) return 'bg-surface-hover text-text-body';
+                              if (c.method !== 'tel' || !c.result)
+                                return 'bg-surface-hover text-text-body';
                               if (c.result === 'つながった') return 'bg-green-100 text-green-800';
-                              if (c.result === '拒否' || c.result === '番号違い') return 'bg-red-100 text-red-700';
-                              if (c.result === '不在' || c.result === '留守電') return 'bg-yellow-100 text-yellow-700';
+                              if (c.result === '拒否' || c.result === '番号違い')
+                                return 'bg-red-100 text-red-700';
+                              if (c.result === '不在' || c.result === '留守電')
+                                return 'bg-yellow-100 text-yellow-700';
                               if (c.result === '折返し待ち') return 'bg-blue-100 text-blue-700';
                               return 'bg-surface-hover text-text-body';
                             })();
 
                             // direction は status_change / material_sent では表示しない
-                            const showDirection = c.direction && c.method !== 'status_change' && c.method !== 'material_sent';
+                            const showDirection =
+                              c.direction &&
+                              c.method !== 'status_change' &&
+                              c.method !== 'material_sent';
 
                             return (
                               <div key={`c-${c.id}`} className="flex gap-3">
@@ -812,17 +840,27 @@ export default function InquiryDetailPage() {
                                 </div>
                                 <div className="pb-3 min-w-0 flex-1">
                                   <div className="flex items-center gap-2 flex-wrap text-xs text-text-muted mb-0.5">
-                                    <span className="font-medium text-text-body">{CONTACT_METHOD_LABELS[c.method] ?? c.method}</span>
+                                    <span className="font-medium text-text-body">
+                                      {CONTACT_METHOD_LABELS[c.method] ?? c.method}
+                                    </span>
                                     {showDirection && (
-                                      <span>{CONTACT_DIRECTION_LABELS[c.direction!] ?? c.direction}</span>
+                                      <span>
+                                        {CONTACT_DIRECTION_LABELS[c.direction!] ?? c.direction}
+                                      </span>
                                     )}
                                     <span>{formatDate(c.contacted_at)}</span>
                                     {c.result && (
-                                      <span className={`px-1.5 py-0.5 rounded font-medium ${resultBadgeClass}`}>{c.result}</span>
+                                      <span
+                                        className={`px-1.5 py-0.5 rounded font-medium ${resultBadgeClass}`}
+                                      >
+                                        {c.result}
+                                      </span>
                                     )}
                                   </div>
                                   {c.note && (
-                                    <p className="text-sm text-text-body whitespace-pre-wrap">{c.note}</p>
+                                    <p className="text-sm text-text-body whitespace-pre-wrap">
+                                      {c.note}
+                                    </p>
                                   )}
                                 </div>
                               </div>
@@ -842,11 +880,15 @@ export default function InquiryDetailPage() {
                                   <div className="flex items-center gap-2 flex-wrap text-xs text-text-muted mb-0.5">
                                     <span className="font-medium text-text-body">メール送信</span>
                                     <span>{formatDateTime(m.sent_at)}</span>
-                                    <span className={`px-1.5 py-0.5 rounded font-medium ${m.status === 'sent' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-700'}`}>
+                                    <span
+                                      className={`px-1.5 py-0.5 rounded font-medium ${m.status === 'sent' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-700'}`}
+                                    >
                                       {m.status === 'sent' ? '送信済み' : '失敗'}
                                     </span>
                                     {m.opened_at && (
-                                      <span className="px-1.5 py-0.5 rounded font-medium bg-teal-100 text-teal-800">開封済み</span>
+                                      <span className="px-1.5 py-0.5 rounded font-medium bg-teal-100 text-teal-800">
+                                        開封済み
+                                      </span>
                                     )}
                                   </div>
                                   {m.subject && (
@@ -879,7 +921,9 @@ export default function InquiryDetailPage() {
                           className="w-full px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised focus:outline-none focus:ring-2 focus:ring-primary"
                         >
                           {MANUAL_CONTACT_METHODS.map((m) => (
-                            <option key={m} value={m}>{CONTACT_METHOD_LABELS[m]}</option>
+                            <option key={m} value={m}>
+                              {CONTACT_METHOD_LABELS[m]}
+                            </option>
                           ))}
                         </select>
                       </div>
@@ -887,7 +931,9 @@ export default function InquiryDetailPage() {
                         <label className="block text-xs text-text-muted mb-1">方向</label>
                         <select
                           value={contactDirection}
-                          onChange={(e) => setContactDirection(e.target.value as typeof contactDirection)}
+                          onChange={(e) =>
+                            setContactDirection(e.target.value as typeof contactDirection)
+                          }
                           className="w-full px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised focus:outline-none focus:ring-2 focus:ring-primary"
                         >
                           <option value="outbound">発信</option>
@@ -911,7 +957,11 @@ export default function InquiryDetailPage() {
                           list={`result-options-${contactMethod}`}
                           value={contactResult}
                           onChange={(e) => setContactResult(e.target.value)}
-                          placeholder={CONTACT_RESULT_OPTIONS[contactMethod].length > 0 ? '選択または入力' : '例: 折り返し待ち'}
+                          placeholder={
+                            CONTACT_RESULT_OPTIONS[contactMethod].length > 0
+                              ? '選択または入力'
+                              : '例: 折り返し待ち'
+                          }
                           className="w-full px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised focus:outline-none focus:ring-2 focus:ring-primary"
                         />
                         {CONTACT_RESULT_OPTIONS[contactMethod].length > 0 && (
@@ -932,7 +982,12 @@ export default function InquiryDetailPage() {
                         className="w-full px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised focus:outline-none focus:ring-2 focus:ring-primary resize-none"
                       />
                     </div>
-                    <Button onClick={handleAddContact} isLoading={isAddingContact} size="sm" variant="secondary">
+                    <Button
+                      onClick={handleAddContact}
+                      isLoading={isAddingContact}
+                      size="sm"
+                      variant="secondary"
+                    >
                       追加
                     </Button>
                   </div>
@@ -950,7 +1005,10 @@ export default function InquiryDetailPage() {
                       {/* 宛先表示 */}
                       <p className="text-sm text-text-muted">
                         宛先:{' '}
-                        <a href={`mailto:${inquiry.email}`} className="text-blue-700 hover:underline">
+                        <a
+                          href={`mailto:${inquiry.email}`}
+                          className="text-blue-700 hover:underline"
+                        >
                           {inquiry.email}
                         </a>
                       </p>
@@ -967,14 +1025,18 @@ export default function InquiryDetailPage() {
                         >
                           <option value="">— テンプレートを選択 —</option>
                           {mailTemplates.map((t) => (
-                            <option key={t.id} value={t.id}>{t.name}</option>
+                            <option key={t.id} value={t.id}>
+                              {t.name}
+                            </option>
                           ))}
                         </select>
                       </div>
 
                       {/* 件名 */}
                       <div>
-                        <label className="block text-xs font-medium text-text-heading mb-1">件名</label>
+                        <label className="block text-xs font-medium text-text-heading mb-1">
+                          件名
+                        </label>
                         <input
                           type="text"
                           value={mailSubject}
@@ -986,7 +1048,9 @@ export default function InquiryDetailPage() {
 
                       {/* 本文 */}
                       <div>
-                        <label className="block text-xs font-medium text-text-heading mb-1">本文</label>
+                        <label className="block text-xs font-medium text-text-heading mb-1">
+                          本文
+                        </label>
                         <textarea
                           value={mailBody}
                           onChange={(e) => setMailBody(e.target.value)}
@@ -1015,16 +1079,24 @@ export default function InquiryDetailPage() {
                       <h3 className="text-sm font-medium text-text-heading mb-3">送信履歴</h3>
                       <div className="space-y-2">
                         {mailLogs.map((log) => (
-                          <div key={log.id} className="flex items-center gap-3 flex-wrap text-xs text-text-muted">
+                          <div
+                            key={log.id}
+                            className="flex items-center gap-3 flex-wrap text-xs text-text-muted"
+                          >
                             <span>{formatDateTime(log.sent_at)}</span>
                             {/* 送信ステータスバッジ */}
-                            <span className={`px-1.5 py-0.5 rounded-full font-medium ${log.status === 'sent' ? 'bg-green-100 text-green-800' : 'bg-danger/20 text-danger'}`}>
+                            <span
+                              className={`px-1.5 py-0.5 rounded-full font-medium ${log.status === 'sent' ? 'bg-green-100 text-green-800' : 'bg-danger/20 text-danger'}`}
+                            >
                               {log.status === 'sent' ? '送信済み' : '失敗'}
                             </span>
                             {/* 開封バッジ: opened_at / clicked_at があれば表示。どちらも無く sent なら「未開封」 */}
                             {log.opened_at ? (
                               <span className="px-1.5 py-0.5 rounded-full font-medium bg-teal-100 text-teal-800">
-                                開封済み {formatDateTime(log.opened_at).replace(/^\d{4}\//, '').slice(0, 11)}
+                                開封済み{' '}
+                                {formatDateTime(log.opened_at)
+                                  .replace(/^\d{4}\//, '')
+                                  .slice(0, 11)}
                               </span>
                             ) : log.status === 'sent' ? (
                               <span className="px-1.5 py-0.5 rounded-full font-medium bg-gray-100 text-gray-500">
@@ -1037,7 +1109,9 @@ export default function InquiryDetailPage() {
                               </span>
                             )}
                             {log.subject && (
-                              <span className="truncate max-w-xs text-text-body">{log.subject}</span>
+                              <span className="truncate max-w-xs text-text-body">
+                                {log.subject}
+                              </span>
                             )}
                           </div>
                         ))}
@@ -1049,14 +1123,13 @@ export default function InquiryDetailPage() {
                     </div>
                   )}
                 </section>
-
-              </div>{/* /左カラム */}
+              </div>
+              {/* /左カラム */}
 
               {/* ────────────────────────────────
                   右カラム: 参照情報
                   ──────────────────────────────── */}
               <div className="lg:col-span-1 space-y-6">
-
                 {/* ── 顧客情報 ── */}
                 <section className="bg-surface-raised border border-border rounded-xl p-5">
                   <h2 className="text-base font-bold text-text-heading mb-3">顧客情報</h2>
@@ -1076,7 +1149,9 @@ export default function InquiryDetailPage() {
                           inquiry.address_pref,
                           inquiry.address_detail,
                           inquiry.address_building,
-                        ].filter(Boolean).join(' ') || '—'}
+                        ]
+                          .filter(Boolean)
+                          .join(' ') || '—'}
                       </dd>
                     </div>
 
@@ -1142,11 +1217,7 @@ export default function InquiryDetailPage() {
                           className="flex-1 min-w-0 px-2 py-1.5 border border-border rounded-lg text-xs bg-surface-hover text-text-body focus:outline-none"
                           onClick={(e) => (e.target as HTMLInputElement).select()}
                         />
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={handleCopyBookingUrl}
-                        >
+                        <Button variant="outline" size="sm" onClick={handleCopyBookingUrl}>
                           <Copy className="w-4 h-4 mr-1" />
                           {bookingCopied ? 'コピー済み' : 'コピー'}
                         </Button>
@@ -1180,7 +1251,9 @@ export default function InquiryDetailPage() {
                       onClick={() => setRawSourceOpen((v) => !v)}
                       className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-surface-hover transition-colors duration-150"
                     >
-                      <span className="text-sm font-medium text-text-heading">HP原文（全項目）</span>
+                      <span className="text-sm font-medium text-text-heading">
+                        HP原文（全項目）
+                      </span>
                       {rawSourceOpen ? (
                         <ChevronUp className="w-4 h-4 text-text-muted" />
                       ) : (
@@ -1192,14 +1265,20 @@ export default function InquiryDetailPage() {
                         <table className="w-full text-xs border-collapse border border-border">
                           <thead>
                             <tr className="bg-surface-hover">
-                              <th className="border border-border px-3 py-2 text-left font-medium text-text-heading w-1/3">項目</th>
-                              <th className="border border-border px-3 py-2 text-left font-medium text-text-heading">値</th>
+                              <th className="border border-border px-3 py-2 text-left font-medium text-text-heading w-1/3">
+                                項目
+                              </th>
+                              <th className="border border-border px-3 py-2 text-left font-medium text-text-heading">
+                                値
+                              </th>
                             </tr>
                           </thead>
                           <tbody>
                             {Object.entries(inquiry.raw_source).map(([k, v]) => (
                               <tr key={k} className="even:bg-surface-hover/50">
-                                <td className="border border-border px-3 py-1.5 text-text-muted">{k}</td>
+                                <td className="border border-border px-3 py-1.5 text-text-muted">
+                                  {k}
+                                </td>
                                 <td className="border border-border px-3 py-1.5 text-text-body break-all">
                                   {String(v ?? '')}
                                 </td>
@@ -1216,7 +1295,6 @@ export default function InquiryDetailPage() {
                 <section className="bg-surface-raised border border-border rounded-xl p-5">
                   <h2 className="text-base font-bold text-text-heading mb-3">操作</h2>
                   <div className="space-y-2">
-
                     {/* 生徒として登録（紐付け済みなら生徒詳細へのリンクを出す） */}
                     {inquiry.linked_student_id ? (
                       <Link href={`/students/${inquiry.linked_student_id}`}>
@@ -1250,10 +1328,10 @@ export default function InquiryDetailPage() {
                     </Button>
                   </div>
                 </section>
-
-              </div>{/* /右カラム */}
-            </div>{/* /grid */}
-
+              </div>
+              {/* /右カラム */}
+            </div>
+            {/* /grid */}
           </div>
         )}
       </div>
@@ -1304,7 +1382,12 @@ export default function InquiryDetailPage() {
           <Button variant="ghost" size="sm" onClick={() => setEnrollWarnOpen(false)}>
             キャンセル
           </Button>
-          <Button variant="outline" size="sm" isLoading={isEnrolling} onClick={handleEnrollAsStudent}>
+          <Button
+            variant="outline"
+            size="sm"
+            isLoading={isEnrolling}
+            onClick={handleEnrollAsStudent}
+          >
             このまま登録する
           </Button>
         </div>
@@ -1366,15 +1449,14 @@ export default function InquiryDetailPage() {
           </div>
 
           {/* 生徒名と保護者名が同じ場合の注意（取込で入れ違っている可能性） */}
-          {editStudentName.trim() !== '' &&
-            editStudentName.trim() === editGuardianName.trim() && (
-              <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 border border-amber-200">
-                <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                <p className="text-sm text-amber-800">
-                  生徒名と保護者名が同じです。取込時に入れ違っていないかご確認ください。
-                </p>
-              </div>
-            )}
+          {editStudentName.trim() !== '' && editStudentName.trim() === editGuardianName.trim() && (
+            <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 border border-amber-200">
+              <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+              <p className="text-sm text-amber-800">
+                生徒名と保護者名が同じです。取込時に入れ違っていないかご確認ください。
+              </p>
+            </div>
+          )}
 
           <div className="flex justify-end gap-2 pt-2 border-t border-border">
             <Button variant="ghost" size="sm" onClick={() => setNameEditOpen(false)}>

@@ -9,11 +9,7 @@
  */
 
 import type { InquiryInsert } from '@/types/database';
-import {
-  normalizeGrade,
-  parseJstToIso,
-  parseDateOnly,
-} from './inquiryCsv';
+import { normalizeGrade, parseJstToIso, parseDateOnly } from './inquiryCsv';
 
 // ============================================================
 // 公開型
@@ -191,8 +187,9 @@ function parseSchoolField(raw: string): { schoolCode: string; schoolName: string
   if (!raw || !raw.trim()) return { schoolCode: '', schoolName: '' };
   const trimmed = raw.trim();
   // 先頭の英数字部分を教室CDとして抽出（全角英数字も半角に変換）
-  const halfWidth = toHalfWidthDigits(trimmed)
-    .replace(/[Ａ-Ｚａ-ｚ]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfee0));
+  const halfWidth = toHalfWidthDigits(trimmed).replace(/[Ａ-Ｚａ-ｚ]/g, (c) =>
+    String.fromCharCode(c.charCodeAt(0) - 0xfee0)
+  );
   const codeMatch = halfWidth.match(/^([A-Za-z0-9]+)/);
   const schoolCode = codeMatch ? codeMatch[1] : '';
   // CDと後続の空白を除いた残りを教室名とする
@@ -364,16 +361,12 @@ export function parsePastedInquiry(text: string): PastedInquiry | null {
 
   // ---- メールアドレス ----
   const emailRaw = (fields['メールアドレス'] ?? '').trim();
-  const email = (emailRaw === 'なし' || emailRaw === '' ) ? null : emailRaw;
+  const email = emailRaw === 'なし' || emailRaw === '' ? null : emailRaw;
 
   // ---- 日付系フィールド ----
   const materialSentAt = parseDateOnly(fields['資料送付日'] ?? '');
-  const trialAt = parseJstToIso(
-    (fields['体験日時'] ?? '').replace(/\//g, '-')
-  );
-  const interviewAt = parseJstToIso(
-    (fields['面談日時'] ?? '').replace(/\//g, '-')
-  );
+  const trialAt = parseJstToIso((fields['体験日時'] ?? '').replace(/\//g, '-'));
+  const interviewAt = parseJstToIso((fields['面談日時'] ?? '').replace(/\//g, '-'));
   const enrolledAt = parseDateOnly(fields['入会成約日'] ?? '');
 
   // ---- 個別週回数 ----
@@ -383,24 +376,18 @@ export function parsePastedInquiry(text: string): PastedInquiry | null {
 
   // ---- ステータス（結果）----
   const statusRaw = fields['結果'] ?? '';
-  const status: InquiryInsert['status'] =
-    statusRaw === '入会' ? 'enrolled' : 'in_progress';
+  const status: InquiryInsert['status'] = statusRaw === '入会' ? 'enrolled' : 'in_progress';
 
   // ---- 氏名 ----
   const studentName =
-    (fields['生徒氏名(漢字)'] ?? '').trim() ||
-    (fields['生徒氏名(カナ)'] ?? '').trim() ||
-    null;
+    (fields['生徒氏名(漢字)'] ?? '').trim() || (fields['生徒氏名(カナ)'] ?? '').trim() || null;
   const studentNameKana = (fields['生徒氏名(カナ)'] ?? '').trim() || null;
   const guardianName =
-    (fields['保護者氏名(漢字)'] ?? '').trim() ||
-    (fields['保護者氏名(カナ)'] ?? '').trim() ||
-    null;
+    (fields['保護者氏名(漢字)'] ?? '').trim() || (fields['保護者氏名(カナ)'] ?? '').trim() || null;
   const guardianNameKana = (fields['保護者氏名(カナ)'] ?? '').trim() || null;
 
   // ---- 空文字 → null ヘルパー ----
-  const orNull = (v: string | undefined): string | null =>
-    v && v.trim() ? v.trim() : null;
+  const orNull = (v: string | undefined): string | null => (v && v.trim() ? v.trim() : null);
 
   // ---- 重要項目の欠落警告 ----
   if (!guardianName && !studentName) {

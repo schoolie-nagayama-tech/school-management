@@ -18,7 +18,8 @@ export default function MailTemplatesPage() {
   const { profile } = useAuth();
 
   // ロールガード: 教室長以上
-  const isAdmin = profile?.role === 'admin' || profile?.role === 'owner' || profile?.role === 'manager';
+  const isAdmin =
+    profile?.role === 'admin' || profile?.role === 'owner' || profile?.role === 'manager';
 
   if (profile === null) {
     return (

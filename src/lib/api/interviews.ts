@@ -114,14 +114,22 @@ export async function createInterview(
         .order('interview_date', { ascending: false })
         .limit(2);
 
-      const previousDate = existingInterviews && existingInterviews.length > 1
-        ? existingInterviews[1].interview_date
-        : null;
+      const previousDate =
+        existingInterviews && existingInterviews.length > 1
+          ? existingInterviews[1].interview_date
+          : null;
       const alertKey = `interview:${previousDate || 'never'}`;
 
       // dismiss は best-effort（unique 制約違反など）。失敗しても invalidate は実行する
       try {
-        await dismissAlert(schoolId, studentId, 'interview_overdue', alertKey, undefined, '面談記録の登録により自動消去');
+        await dismissAlert(
+          schoolId,
+          studentId,
+          'interview_overdue',
+          alertKey,
+          undefined,
+          '面談記録の登録により自動消去'
+        );
       } catch (_) {
         // 既に dismiss 済みなど。アラート計算側で新記録が反映されるため致命的ではない
       }
@@ -164,10 +172,7 @@ export async function updateInterview(
  * 面談記録を削除
  */
 export async function deleteInterview(id: string): Promise<void> {
-  const { error } = await supabase
-    .from('student_interviews')
-    .delete()
-    .eq('id', id);
+  const { error } = await supabase.from('student_interviews').delete().eq('id', id);
 
   if (error) {
     throw new Error(`面談記録の削除に失敗しました: ${error.message}`);
@@ -183,10 +188,12 @@ export async function getRecentInterviews(
 ): Promise<(StudentInterview & { student_name: string })[]> {
   const { data, error } = await supabase
     .from('student_interviews')
-    .select(`
+    .select(
+      `
       *,
       students!inner(last_name, first_name)
-    `)
+    `
+    )
     .eq('school_id', schoolId)
     .order('interview_date', { ascending: false })
     .order('created_at', { ascending: false })
@@ -196,10 +203,12 @@ export async function getRecentInterviews(
     throw new Error(`面談記録の取得に失敗しました: ${error.message}`);
   }
 
-  return (data || []).map((item: StudentInterview & { students: { last_name: string; first_name: string } }) => ({
-    ...item,
-    student_name: `${item.students.last_name} ${item.students.first_name}`,
-  })) as (StudentInterview & { student_name: string })[];
+  return (data || []).map(
+    (item: StudentInterview & { students: { last_name: string; first_name: string } }) => ({
+      ...item,
+      student_name: `${item.students.last_name} ${item.students.first_name}`,
+    })
+  ) as (StudentInterview & { student_name: string })[];
 }
 
 /**
@@ -210,10 +219,12 @@ export async function getPendingTasks(
 ): Promise<(StudentInterview & { student: { last_name: string; first_name: string } })[]> {
   const { data, error } = await supabase
     .from('student_interviews')
-    .select(`
+    .select(
+      `
       *,
       students!inner(last_name, first_name)
-    `)
+    `
+    )
     .eq('school_id', schoolId)
     .eq('interview_type', 'task')
     .eq('is_completed', false)
@@ -223,13 +234,15 @@ export async function getPendingTasks(
     throw new Error(`未完了タスクの取得に失敗しました: ${error.message}`);
   }
 
-  return (data || []).map((item: StudentInterview & { students: { last_name: string; first_name: string } }) => ({
-    ...item,
-    student: {
-      last_name: item.students.last_name,
-      first_name: item.students.first_name,
-    },
-  })) as (StudentInterview & { student: { last_name: string; first_name: string } })[];
+  return (data || []).map(
+    (item: StudentInterview & { students: { last_name: string; first_name: string } }) => ({
+      ...item,
+      student: {
+        last_name: item.students.last_name,
+        first_name: item.students.first_name,
+      },
+    })
+  ) as (StudentInterview & { student: { last_name: string; first_name: string } })[];
 }
 
 /**
@@ -247,10 +260,12 @@ export async function getPendingTasksBySchools(
 
   const { data, error } = await client
     .from('student_interviews')
-    .select(`
+    .select(
+      `
       *,
       students!inner(last_name, first_name)
-    `)
+    `
+    )
     .in('school_id', schoolIds)
     .eq('interview_type', 'task')
     .eq('is_completed', false)
@@ -260,13 +275,15 @@ export async function getPendingTasksBySchools(
     throw new Error(`未完了タスクの取得に失敗しました: ${error.message}`);
   }
 
-  return (data || []).map((item: StudentInterview & { students: { last_name: string; first_name: string } }) => ({
-    ...item,
-    student: {
-      last_name: item.students.last_name,
-      first_name: item.students.first_name,
-    },
-  })) as (StudentInterview & { student: { last_name: string; first_name: string } })[];
+  return (data || []).map(
+    (item: StudentInterview & { students: { last_name: string; first_name: string } }) => ({
+      ...item,
+      student: {
+        last_name: item.students.last_name,
+        first_name: item.students.first_name,
+      },
+    })
+  ) as (StudentInterview & { student: { last_name: string; first_name: string } })[];
 }
 
 /**

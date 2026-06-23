@@ -3,7 +3,12 @@
 import { useState, useEffect } from 'react';
 import { Modal, Input, Button, Select } from '@/components/ui';
 import { createZoukomaPeriod, updateZoukomaPeriod } from '@/lib/api/zoukoma';
-import { createFormPeriodForSchools, updateFormPeriodForSchools, generateUniquePeriodKey, getNextPeriodKey } from '@/lib/api/form-periods';
+import {
+  createFormPeriodForSchools,
+  updateFormPeriodForSchools,
+  generateUniquePeriodKey,
+  getNextPeriodKey,
+} from '@/lib/api/form-periods';
 import { getApplicationItems } from '@/lib/api/applications';
 import type { ZoukomaPeriod, ZoukomaSettings } from '@/types/forms/zoukoma';
 import type { ApplicationItem } from '@/types/database';
@@ -49,28 +54,27 @@ export function ZoukomaPeriodEditor({
   // 初期値の設定
   useEffect(() => {
     if (isOpen) {
-      const targetIds = schoolIds && schoolIds.length > 0 ? schoolIds : schoolId ? [schoolId] : undefined;
+      const targetIds =
+        schoolIds && schoolIds.length > 0 ? schoolIds : schoolId ? [schoolId] : undefined;
       getApplicationItems(targetIds, true).then(setApplicationItems).catch(console.error);
       if (period) {
         // 編集モード
         setPeriodKey(period.period_key);
         setTitle(period.title);
         setPublishStart(
-          period.publish_start
-            ? new Date(period.publish_start).toISOString().slice(0, 16)
-            : ''
+          period.publish_start ? new Date(period.publish_start).toISOString().slice(0, 16) : ''
         );
         setPublishEnd(
-          period.publish_end
-            ? new Date(period.publish_end).toISOString().slice(0, 16)
-            : ''
+          period.publish_end ? new Date(period.publish_end).toISOString().slice(0, 16) : ''
         );
         setIsActive(period.is_active);
         setLinkedApplicationItemId(period.linked_application_item_id || '');
       } else {
         // 新規作成モード — 期間キーは自動生成（YYYY-MM、衝突時は連番）
         setPeriodKey(generateUniquePeriodKey([]));
-        getNextPeriodKey('zoukoma', targetIds ?? []).then(setPeriodKey).catch(() => {});
+        getNextPeriodKey('zoukoma', targetIds ?? [])
+          .then(setPeriodKey)
+          .catch(() => {});
         setTitle('');
         setPublishStart('');
         setPublishEnd('');
@@ -143,12 +147,7 @@ export function ZoukomaPeriodEditor({
           applyToAllSchools,
         });
         if (idsToUpdate && idsToUpdate.length > 1) {
-          await updateFormPeriodForSchools(
-            idsToUpdate,
-            'zoukoma',
-            period.period_key,
-            updates
-          );
+          await updateFormPeriodForSchools(idsToUpdate, 'zoukoma', period.period_key, updates);
         } else {
           await updateZoukomaPeriod(period.id, updates);
         }
@@ -182,9 +181,7 @@ export function ZoukomaPeriodEditor({
       onClose();
     } catch (error) {
       console.error('Error saving period:', error);
-      setError(
-        getUserErrorMessage(error, '期間の保存に失敗しました')
-      );
+      setError(getUserErrorMessage(error, '期間の保存に失敗しました'));
     } finally {
       setIsSubmitting(false);
     }
@@ -214,7 +211,8 @@ export function ZoukomaPeriodEditor({
             className="bg-[#f3f4f6] cursor-not-allowed"
           />
           <p className="text-xs text-[#4b5563]/60 mt-1">
-            ※ 期間キーは自動で割り当てられます（変更不可）。表示名は下の「タイトル」で設定してください。
+            ※
+            期間キーは自動で割り当てられます（変更不可）。表示名は下の「タイトル」で設定してください。
           </p>
         </div>
 
@@ -243,9 +241,7 @@ export function ZoukomaPeriodEditor({
           onChange={(e) => setPublishEnd(e.target.value)}
           disabled={isSubmitting}
         />
-        <p className="text-xs text-[#4b5563]/60 mt-1">
-          ※空欄にすると永続的に公開されます
-        </p>
+        <p className="text-xs text-[#4b5563]/60 mt-1">※空欄にすると永続的に公開されます</p>
 
         <div className="flex items-center gap-3">
           <input
@@ -277,15 +273,10 @@ export function ZoukomaPeriodEditor({
 
         {!period && allowedSchools && allowedSchools.length > 1 && (
           <div className="p-3 bg-[#eff6ff] rounded-lg border border-[#bfdbfe]">
-            <p className="text-sm font-medium text-[#1f2937] mb-2">
-              作成する教室を選択
-            </p>
+            <p className="text-sm font-medium text-[#1f2937] mb-2">作成する教室を選択</p>
             <div className="flex flex-wrap gap-x-4 gap-y-2">
               {allowedSchools.map((school) => (
-                <label
-                  key={school.id}
-                  className="flex items-center gap-2 cursor-pointer"
-                >
+                <label key={school.id} className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={selectedSchoolIdsForCreate.includes(school.id)}
@@ -311,15 +302,10 @@ export function ZoukomaPeriodEditor({
         )}
         {period && allowedSchools && allowedSchools.length > 1 && (
           <div className="p-3 bg-[#eff6ff] rounded-lg border border-[#bfdbfe]">
-            <p className="text-sm font-medium text-[#1f2937] mb-2">
-              同じ内容で更新する教室を選択
-            </p>
+            <p className="text-sm font-medium text-[#1f2937] mb-2">同じ内容で更新する教室を選択</p>
             <div className="flex flex-wrap gap-x-4 gap-y-2">
               {allowedSchools.map((school) => (
-                <label
-                  key={school.id}
-                  className="flex items-center gap-2 cursor-pointer"
-                >
+                <label key={school.id} className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={selectedSchoolIdsForUpdate.includes(school.id)}

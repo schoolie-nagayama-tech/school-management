@@ -52,7 +52,9 @@ export function buildCheckActions(names: string[]): AutomationAction[] {
 }
 
 /** name→value のマップ → set アクション（取次フォームの顧客情報・明細など）。空値はスキップ。 */
-export function buildSetActions(fields: Record<string, string | null | undefined>): AutomationAction[] {
+export function buildSetActions(
+  fields: Record<string, string | null | undefined>
+): AutomationAction[] {
   const actions: AutomationAction[] = [];
   for (const [name, value] of Object.entries(fields)) {
     if (value == null || value === '') continue;

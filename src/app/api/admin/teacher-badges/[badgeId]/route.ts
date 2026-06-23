@@ -28,7 +28,15 @@ export async function PATCH(
     const body = await request.json();
 
     const updates: Record<string, unknown> = {};
-    for (const key of ['name', 'category', 'rank', 'icon', 'description', 'sort_order', 'is_active']) {
+    for (const key of [
+      'name',
+      'category',
+      'rank',
+      'icon',
+      'description',
+      'sort_order',
+      'is_active',
+    ]) {
       if (body[key] !== undefined) updates[key] = body[key];
     }
 
@@ -75,10 +83,7 @@ export async function DELETE(
 
     if (hard) {
       // 完全削除（割り当ても CASCADE で消える）
-      const { error } = await db
-        .from('teacher_badges')
-        .delete()
-        .eq('id', badgeId);
+      const { error } = await db.from('teacher_badges').delete().eq('id', badgeId);
       if (error) throw error;
     } else {
       // 論理削除（無効化）

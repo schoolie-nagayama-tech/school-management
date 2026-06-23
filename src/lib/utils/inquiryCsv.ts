@@ -128,11 +128,7 @@ function mapChannel(raw: string, memo: string): string {
  * 5. ホームページ     → "本部HP"
  * 6. どれにも当たらない → "" (warnings に追加)
  */
-function mapMedia(
-  rawMedia: string,
-  channel: string,
-  warnings: string[]
-): string {
+function mapMedia(rawMedia: string, channel: string, warnings: string[]): string {
   if (!rawMedia || !rawMedia.trim()) {
     warnings.push('媒体を判定できません（認知動機が空です）');
     return '';
@@ -206,7 +202,9 @@ export function parseInquiryCsvText(text: string): ParsedInquiryRow[] {
     const inquiredAt = parseJstToIso(inquiredAtRaw);
     if (!inquiredAt) {
       // パース不能な行はスキップ（正常な運用では受付日時は必ず存在する）
-      console.warn(`[inquiryCsv] 受付日時をパースできないためスキップ: 問合せNO=${hpNo}, 受付日時="${inquiredAtRaw}"`);
+      console.warn(
+        `[inquiryCsv] 受付日時をパースできないためスキップ: 問合せNO=${hpNo}, 受付日時="${inquiredAtRaw}"`
+      );
       continue;
     }
 
@@ -254,24 +252,18 @@ export function parseInquiryCsvText(text: string): ParsedInquiryRow[] {
     // ---- status（結果）----
     // CSVからは "入会" → enrolled, それ以外は in_progress のみ取込む
     const statusRaw = row['結果'] ?? '';
-    const status: InquiryInsert['status'] =
-      statusRaw === '入会' ? 'enrolled' : 'in_progress';
+    const status: InquiryInsert['status'] = statusRaw === '入会' ? 'enrolled' : 'in_progress';
 
     // ---- 生徒氏名（漢字優先、なければカナ）----
     const studentName =
-      (row['生徒氏名（漢字）'] ?? '').trim() ||
-      (row['生徒氏名（カナ）'] ?? '').trim() ||
-      null;
+      (row['生徒氏名（漢字）'] ?? '').trim() || (row['生徒氏名（カナ）'] ?? '').trim() || null;
 
     // ---- 保護者氏名（漢字優先、なければカナ）----
     const guardianName =
-      (row['保護者氏名（漢字）'] ?? '').trim() ||
-      (row['保護者氏名（カナ）'] ?? '').trim() ||
-      null;
+      (row['保護者氏名（漢字）'] ?? '').trim() || (row['保護者氏名（カナ）'] ?? '').trim() || null;
 
     // ---- null 変換ヘルパー（空文字 → null）----
-    const orNull = (v: string | undefined): string | null =>
-      v && v.trim() ? v.trim() : null;
+    const orNull = (v: string | undefined): string | null => (v && v.trim() ? v.trim() : null);
 
     const data: Omit<InquiryInsert, 'school_id'> = {
       hp_inquiry_no: hpNo,

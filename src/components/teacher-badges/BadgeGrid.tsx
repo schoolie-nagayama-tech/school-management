@@ -12,7 +12,13 @@ interface BadgeGridProps {
   groupByCategory?: boolean;
 }
 
-export function BadgeGrid({ badges, assignments, onBadgeClick, interactive = false, groupByCategory = true }: BadgeGridProps) {
+export function BadgeGrid({
+  badges,
+  assignments,
+  onBadgeClick,
+  interactive = false,
+  groupByCategory = true,
+}: BadgeGridProps) {
   const assignmentMap = new Map(assignments.map((a) => [a.badge_id, a]));
 
   if (!groupByCategory) {
@@ -35,8 +41,8 @@ export function BadgeGrid({ badges, assignments, onBadgeClick, interactive = fal
     );
   }
 
-  const categories = (['training', 'skill', 'achievement'] as BadgeCategory[]).filter(
-    (cat) => badges.some((b) => b.category === cat)
+  const categories = (['training', 'skill', 'achievement'] as BadgeCategory[]).filter((cat) =>
+    badges.some((b) => b.category === cat)
   );
 
   return (

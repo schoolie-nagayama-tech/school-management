@@ -26,8 +26,8 @@ export async function getApplicationItems(
   const targetSchoolIds = Array.isArray(schoolIds)
     ? schoolIds
     : schoolIds
-    ? [schoolIds]
-    : [getDefaultSchoolId()];
+      ? [schoolIds]
+      : [getDefaultSchoolId()];
 
   let query = client
     .from('application_items')
@@ -74,9 +74,7 @@ export async function createApplicationItem(
     .order('sort_order', { ascending: false })
     .limit(1);
 
-  const maxSortOrder = existingItems && existingItems.length > 0 
-    ? existingItems[0].sort_order 
-    : -1;
+  const maxSortOrder = existingItems && existingItems.length > 0 ? existingItems[0].sort_order : -1;
 
   const { data, error } = await supabase
     .from('application_items')
@@ -170,10 +168,7 @@ export async function unhideApplicationItem(id: string): Promise<void> {
  * 申込項目を削除
  */
 export async function deleteApplicationItem(id: string): Promise<void> {
-  const { error } = await supabase
-    .from('application_items')
-    .delete()
-    .eq('id', id);
+  const { error } = await supabase.from('application_items').delete().eq('id', id);
 
   if (error) {
     throw new Error(`申込項目の削除に失敗しました: ${error.message}`);
@@ -191,8 +186,8 @@ export async function updateApplicationItemSortOrder(
   const targetSchoolIds = Array.isArray(schoolIds)
     ? schoolIds
     : schoolIds
-    ? [schoolIds]
-    : [getDefaultSchoolId()];
+      ? [schoolIds]
+      : [getDefaultSchoolId()];
 
   // トランザクション的に更新（Supabaseでは個別に更新）
   const updates = items.map((item) =>
@@ -226,8 +221,8 @@ export async function getStudentApplications(
   const targetSchoolIds = Array.isArray(schoolIds)
     ? schoolIds
     : schoolIds
-    ? [schoolIds]
-    : [getDefaultSchoolId()];
+      ? [schoolIds]
+      : [getDefaultSchoolId()];
 
   // student_applications は (生徒数 × 項目数) でスケールし、複数教室選択時に 1000 行を
   // 超えうる。PostgREST のデフォルト上限で静かに切り捨てられると申込状況が一部欠落するため、
@@ -244,7 +239,11 @@ export async function getStudentApplications(
 
     if (error) {
       // テーブルが存在しない、またはRLSエラーの場合は空配列を返す
-      if (error.code === 'PGRST116' || error.code === '42501' || error.message.includes('schema cache')) {
+      if (
+        error.code === 'PGRST116' ||
+        error.code === '42501' ||
+        error.message.includes('schema cache')
+      ) {
         console.warn('student_applicationsテーブルの取得に失敗しました（無視します）:', error);
         return [];
       }
@@ -282,7 +281,9 @@ export async function updateStudentApplication(
     .single();
 
   if (studentError || !student) {
-    throw new Error(`生徒情報の取得に失敗しました: ${studentError?.message || '生徒が見つかりません'}`);
+    throw new Error(
+      `生徒情報の取得に失敗しました: ${studentError?.message || '生徒が見つかりません'}`
+    );
   }
 
   const schoolId = student.school_id;
@@ -313,7 +314,12 @@ export async function updateStudentApplication(
     .maybeSingle();
 
   // 406エラーやその他のエラーは無視（レコードが存在しない場合は新規作成）
-  if (existingError && existingError.code !== 'PGRST116' && existingError.code !== '42501' && existingError.code !== 'PGRST202') {
+  if (
+    existingError &&
+    existingError.code !== 'PGRST116' &&
+    existingError.code !== '42501' &&
+    existingError.code !== 'PGRST202'
+  ) {
     console.warn('既存レコードの確認に失敗しました（新規作成として処理します）:', existingError);
   }
 
@@ -378,7 +384,9 @@ export async function updateStudentApplicationNumber(
     .single();
 
   if (studentError || !student) {
-    throw new Error(`生徒情報の取得に失敗しました: ${studentError?.message || '生徒が見つかりません'}`);
+    throw new Error(
+      `生徒情報の取得に失敗しました: ${studentError?.message || '生徒が見つかりません'}`
+    );
   }
 
   const schoolId = student.school_id;
@@ -409,7 +417,12 @@ export async function updateStudentApplicationNumber(
     .maybeSingle();
 
   // 406エラーやその他のエラーは無視（レコードが存在しない場合は新規作成）
-  if (existingError && existingError.code !== 'PGRST116' && existingError.code !== '42501' && existingError.code !== 'PGRST202') {
+  if (
+    existingError &&
+    existingError.code !== 'PGRST116' &&
+    existingError.code !== '42501' &&
+    existingError.code !== 'PGRST202'
+  ) {
     console.warn('既存レコードの確認に失敗しました（新規作成として処理します）:', existingError);
   }
 
@@ -475,7 +488,9 @@ export async function updateStudentApplicationDate(
     .single();
 
   if (studentError || !student) {
-    throw new Error(`生徒情報の取得に失敗しました: ${studentError?.message || '生徒が見つかりません'}`);
+    throw new Error(
+      `生徒情報の取得に失敗しました: ${studentError?.message || '生徒が見つかりません'}`
+    );
   }
 
   const schoolId = student.school_id;
@@ -506,7 +521,12 @@ export async function updateStudentApplicationDate(
     .maybeSingle();
 
   // 406エラーやその他のエラーは無視（レコードが存在しない場合は新規作成）
-  if (existingError && existingError.code !== 'PGRST116' && existingError.code !== '42501' && existingError.code !== 'PGRST202') {
+  if (
+    existingError &&
+    existingError.code !== 'PGRST116' &&
+    existingError.code !== '42501' &&
+    existingError.code !== 'PGRST202'
+  ) {
     console.warn('既存レコードの確認に失敗しました（新規作成として処理します）:', existingError);
   }
 

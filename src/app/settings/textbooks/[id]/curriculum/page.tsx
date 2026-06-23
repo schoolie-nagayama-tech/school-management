@@ -15,7 +15,12 @@ import {
   deleteCurriculumItem,
   updateTextbook,
 } from '@/lib/api/textbooks';
-import type { Textbook, CurriculumItem, CurriculumItemInsert, TextbookUpdate } from '@/types/database';
+import type {
+  Textbook,
+  CurriculumItem,
+  CurriculumItemInsert,
+  TextbookUpdate,
+} from '@/types/database';
 import {
   Plus,
   Edit2,
@@ -51,7 +56,8 @@ export default function CurriculumPage() {
   const textbookId = Number(params.id);
   const { profile } = useAuth();
   const { toasts, removeToast, success: toastSuccess, error: toastError } = useToast();
-  const isManager = profile?.role === 'admin' || profile?.role === 'owner' || profile?.role === 'manager';
+  const isManager =
+    profile?.role === 'admin' || profile?.role === 'owner' || profile?.role === 'manager';
 
   const [textbook, setTextbook] = useState<Textbook | null>(null);
   const [items, setItems] = useState<CurriculumItem[]>([]);
@@ -137,7 +143,7 @@ export default function CurriculumPage() {
         });
         toastSuccess('項目を更新しました');
       } else {
-        const maxSort = items.length > 0 ? Math.max(...items.map(i => i.sort_order)) : 0;
+        const maxSort = items.length > 0 ? Math.max(...items.map((i) => i.sort_order)) : 0;
         const data: CurriculumItemInsert = {
           textbook_id: textbookId,
           item_number: form.item_number ? Number(form.item_number) : null,
@@ -170,14 +176,17 @@ export default function CurriculumPage() {
 
   // Bulk import
   const handleBulkImport = async () => {
-    const lines = bulkText.split('\n').map(l => l.trim()).filter(Boolean);
+    const lines = bulkText
+      .split('\n')
+      .map((l) => l.trim())
+      .filter(Boolean);
     if (lines.length === 0) {
       toastError('テキストを入力してください');
       return;
     }
     setBulkSaving(true);
     try {
-      const maxSort = items.length > 0 ? Math.max(...items.map(i => i.sort_order)) : 0;
+      const maxSort = items.length > 0 ? Math.max(...items.map((i) => i.sort_order)) : 0;
       let sortOrder = maxSort + 1;
 
       for (const line of lines) {
@@ -191,10 +200,14 @@ export default function CurriculumPage() {
           itemNumber = parts[0] ? Number(parts[0]) || null : null;
           title = parts[1];
           const typeMap: Record<string, string> = {
-            '通常単元': 'lesson', 'lesson': 'lesson',
-            '章タイトル': 'chapter', 'chapter': 'chapter',
-            'まとめ': 'summary', 'summary': 'summary',
-            '特別': 'special', 'special': 'special',
+            通常単元: 'lesson',
+            lesson: 'lesson',
+            章タイトル: 'chapter',
+            chapter: 'chapter',
+            まとめ: 'summary',
+            summary: 'summary',
+            特別: 'special',
+            special: 'special',
           };
           itemType = typeMap[parts[2]] || 'lesson';
         } else if (parts.length === 2) {
@@ -279,7 +292,7 @@ export default function CurriculumPage() {
 
   // 選択削除
   const toggleSelection = (id: number) => {
-    setSelectedIds(prev => {
+    setSelectedIds((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
@@ -291,7 +304,7 @@ export default function CurriculumPage() {
     if (selectedIds.size === items.length) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(items.map(i => i.id)));
+      setSelectedIds(new Set(items.map((i) => i.id)));
     }
   };
 
@@ -325,8 +338,8 @@ export default function CurriculumPage() {
     if (items.length === 0) return;
     const bom = '\uFEFF';
     const header = '教材名,番号,タイトル,種別';
-    const rows = items.map(i => {
-      const typeLabel = ITEM_TYPES.find(t => t.value === i.item_type)?.label || i.item_type || '';
+    const rows = items.map((i) => {
+      const typeLabel = ITEM_TYPES.find((t) => t.value === i.item_type)?.label || i.item_type || '';
       return [
         textbook?.name || '',
         i.item_number?.toString() || '',
@@ -344,7 +357,8 @@ export default function CurriculumPage() {
     URL.revokeObjectURL(url);
   };
 
-  const getTypeInfo = (type: string | null) => ITEM_TYPES.find(t => t.value === type) || ITEM_TYPES[0];
+  const getTypeInfo = (type: string | null) =>
+    ITEM_TYPES.find((t) => t.value === type) || ITEM_TYPES[0];
 
   if (!isManager) return <AccessDenied />;
 
@@ -353,8 +367,12 @@ export default function CurriculumPage() {
       <div>
         {/* Header */}
         <div className="mb-6">
-          <button onClick={() => router.back()} className="inline-flex items-center text-sm text-text-muted hover:text-text-heading mb-4 transition-colors duration-150">
-            <ChevronLeft className="w-4 h-4 mr-1" />教材マスタに戻る
+          <button
+            onClick={() => router.back()}
+            className="inline-flex items-center text-sm text-text-muted hover:text-text-heading mb-4 transition-colors duration-150"
+          >
+            <ChevronLeft className="w-4 h-4 mr-1" />
+            教材マスタに戻る
           </button>
           {loading ? (
             <Loading size="sm" label="読み込み中..." />
@@ -372,9 +390,17 @@ export default function CurriculumPage() {
               </div>
               <div className="flex items-center gap-2 mt-1 text-sm text-text-muted">
                 {textbook.publisher && <span>{textbook.publisher}</span>}
-                {textbook.school_type && <span className="px-1.5 py-0.5 bg-surface-hover rounded text-xs">{textbook.school_type}</span>}
+                {textbook.school_type && (
+                  <span className="px-1.5 py-0.5 bg-surface-hover rounded text-xs">
+                    {textbook.school_type}
+                  </span>
+                )}
                 {textbook.grade && <span>{textbook.grade}</span>}
-                {textbook.subject && <span className="px-1.5 py-0.5 bg-surfacelue-50 text-text-text-mutedodylue-700 rounded text-xs">{textbook.subject}</span>}
+                {textbook.subject && (
+                  <span className="px-1.5 py-0.5 bg-surfacelue-50 text-text-text-mutedodylue-700 rounded text-xs">
+                    {textbook.subject}
+                  </span>
+                )}
               </div>
             </>
           ) : (
@@ -411,13 +437,15 @@ export default function CurriculumPage() {
                   onClick={openAddModal}
                   className="inline-flex items-center gap-1.5 px-3 py-2 bg-ink text-white text-sm rounded-lg hover:bg-ink/80 transition-colors duration-150"
                 >
-                  <Plus className="w-4 h-4" />項目を追加
+                  <Plus className="w-4 h-4" />
+                  項目を追加
                 </button>
                 <button
                   onClick={() => setShowBulkModal(true)}
                   className="inline-flex items-center gap-1.5 px-3 py-2 border border-border text-sm text-text-heading rounded-lg hover:bg-surface transition-colors duration-150"
                 >
-                  <Upload className="w-4 h-4" />一括登録
+                  <Upload className="w-4 h-4" />
+                  一括登録
                 </button>
                 {items.length > 0 && (
                   <>
@@ -425,13 +453,15 @@ export default function CurriculumPage() {
                       onClick={handleExport}
                       className="inline-flex items-center gap-1.5 px-3 py-2 border border-border text-sm text-text-heading rounded-lg hover:bg-surface transition-colors duration-150"
                     >
-                      <Download className="w-4 h-4" />CSV出力
+                      <Download className="w-4 h-4" />
+                      CSV出力
                     </button>
                     <button
                       onClick={() => setSelectionMode(true)}
                       className="inline-flex items-center gap-1.5 px-3 py-2 border border-border text-sm text-text-heading rounded-lg hover:bg-surface transition-colors duration-150"
                     >
-                      <CheckSquare className="w-4 h-4" />選択削除
+                      <CheckSquare className="w-4 h-4" />
+                      選択削除
                     </button>
                   </>
                 )}
@@ -459,27 +489,40 @@ export default function CurriculumPage() {
                 <tr className="bg-surface border-infoorderorder border-border">
                   {selectionMode ? (
                     <th className="w-10 px-2 text-center">
-                      <button onClick={toggleSelectAll} className="p-1 text-text-muted hover:text-ink">
-                        {selectedIds.size === items.length
-                          ? <CheckSquare className="w-4 h-4 text-ink" />
-                          : selectedIds.size > 0
-                            ? <MinusSquare className="w-4 h-4 text-ink" />
-                            : <Square className="w-4 h-4" />}
+                      <button
+                        onClick={toggleSelectAll}
+                        className="p-1 text-text-muted hover:text-ink"
+                      >
+                        {selectedIds.size === items.length ? (
+                          <CheckSquare className="w-4 h-4 text-ink" />
+                        ) : selectedIds.size > 0 ? (
+                          <MinusSquare className="w-4 h-4 text-ink" />
+                        ) : (
+                          <Square className="w-4 h-4" />
+                        )}
                       </button>
                     </th>
                   ) : (
                     <th className="w-8 px-2"></th>
                   )}
-                  <th className="text-text-dangeraintenter px-3 py-2.5 text-xs font-medium text-text-muted w-16">No.</th>
-                  <th className="text-left px-3 py-2.5 text-xs font-medium text-text-muted">タイトル</th>
-                  <th className="text-text-dangeraintenter px-3 py-2.5 text-xs font-medium text-text-muted w-24">種別</th>
+                  <th className="text-text-dangeraintenter px-3 py-2.5 text-xs font-medium text-text-muted w-16">
+                    No.
+                  </th>
+                  <th className="text-left px-3 py-2.5 text-xs font-medium text-text-muted">
+                    タイトル
+                  </th>
+                  <th className="text-text-dangeraintenter px-3 py-2.5 text-xs font-medium text-text-muted w-24">
+                    種別
+                  </th>
                   {!selectionMode && (
-                    <th className="text-text-dangeraintenter px-3 py-2.5 text-xs font-medium text-text-muted w-24">操作</th>
+                    <th className="text-text-dangeraintenter px-3 py-2.5 text-xs font-medium text-text-muted w-24">
+                      操作
+                    </th>
                   )}
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {items.map(item => {
+                {items.map((item) => {
                   const typeInfo = getTypeInfo(item.item_type);
                   const isChapter = item.item_type === 'chapter';
                   const isSelected = selectedIds.has(item.id);
@@ -492,9 +535,11 @@ export default function CurriculumPage() {
                     >
                       {selectionMode ? (
                         <td className="px-2 text-center">
-                          {isSelected
-                            ? <CheckSquare className="w-4 h-4 inline text-ink" />
-                            : <Square className="w-4 h-4 inline text-text-muted" />}
+                          {isSelected ? (
+                            <CheckSquare className="w-4 h-4 inline text-ink" />
+                          ) : (
+                            <Square className="w-4 h-4 inline text-text-muted" />
+                          )}
                         </td>
                       ) : (
                         <td className="px-2 text-text-dangeraintenter text-border">
@@ -504,7 +549,9 @@ export default function CurriculumPage() {
                       <td className="px-3 py-2.5 text-text-dangeraintenter text-sm text-text-muted">
                         {item.item_number || '-'}
                       </td>
-                      <td className={`px-3 py-2.5 text-sm ${isChapter ? 'font-bold text-text-heading' : 'text-text-heading'}`}>
+                      <td
+                        className={`px-3 py-2.5 text-sm ${isChapter ? 'font-bold text-text-heading' : 'text-text-heading'}`}
+                      >
                         {item.title}
                       </td>
                       <td className="px-3 py-2.5 text-text-dangeraintenter">
@@ -540,8 +587,14 @@ export default function CurriculumPage() {
 
         {/* Add/Edit Modal */}
         {showModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-surfacelack/40" onClick={() => setShowModal(false)}>
-            <div className="bg-surface-raised rounded-xl shadow-xl w-full max-w-md mx-4 p-6" onClick={e => e.stopPropagation()}>
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-surfacelack/40"
+            onClick={() => setShowModal(false)}
+          >
+            <div
+              className="bg-surface-raised rounded-xl shadow-xl w-full max-w-md mx-4 p-6"
+              onClick={(e) => e.stopPropagation()}
+            >
               <h2 className="text-lg font-bold text-text-heading mb-4">
                 {editingId ? '項目を編集' : '項目を追加'}
               </h2>
@@ -552,7 +605,7 @@ export default function CurriculumPage() {
                     <input
                       type="text"
                       value={form.item_number}
-                      onChange={e => setForm({ ...form, item_number: e.target.value })}
+                      onChange={(e) => setForm({ ...form, item_number: e.target.value })}
                       className="w-full px-3 py-2 border border-border rounded-lg text-sm"
                       placeholder="1"
                     />
@@ -561,21 +614,25 @@ export default function CurriculumPage() {
                     <label className="block text-sm font-medium text-text-heading mb-1">種別</label>
                     <select
                       value={form.item_type}
-                      onChange={e => setForm({ ...form, item_type: e.target.value })}
+                      onChange={(e) => setForm({ ...form, item_type: e.target.value })}
                       className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-surface-raised"
                     >
-                      {ITEM_TYPES.map(t => (
-                        <option key={t.value} value={t.value}>{t.label}</option>
+                      {ITEM_TYPES.map((t) => (
+                        <option key={t.value} value={t.value}>
+                          {t.label}
+                        </option>
                       ))}
                     </select>
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-text-heading mb-1">タイトル *</label>
+                  <label className="block text-sm font-medium text-text-heading mb-1">
+                    タイトル *
+                  </label>
                   <input
                     type="text"
                     value={form.title}
-                    onChange={e => setForm({ ...form, title: e.target.value })}
+                    onChange={(e) => setForm({ ...form, title: e.target.value })}
                     className="w-full px-3 py-2 border border-border rounded-lg text-sm"
                     placeholder="例: be動詞の過去形"
                     autoFocus
@@ -583,7 +640,10 @@ export default function CurriculumPage() {
                 </div>
               </div>
               <div className="flex justify-end gap-2 mt-6">
-                <button onClick={() => setShowModal(false)} className="px-4 py-2 text-sm text-text-muted">
+                <button
+                  onClick={() => setShowModal(false)}
+                  className="px-4 py-2 text-sm text-text-muted"
+                >
                   キャンセル
                 </button>
                 <button
@@ -600,16 +660,24 @@ export default function CurriculumPage() {
 
         {/* Textbook Edit Modal */}
         {showTextbookModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-surfacelack/40" onClick={() => setShowTextbookModal(false)}>
-            <div className="bg-surface-raised rounded-xl shadow-xl w-full max-w-md mx-4 p-6" onClick={e => e.stopPropagation()}>
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-surfacelack/40"
+            onClick={() => setShowTextbookModal(false)}
+          >
+            <div
+              className="bg-surface-raised rounded-xl shadow-xl w-full max-w-md mx-4 p-6"
+              onClick={(e) => e.stopPropagation()}
+            >
               <h2 className="text-lg font-bold text-text-heading mb-4">教材情報を編集</h2>
               <div className="space-y-3">
                 <div>
-                  <label className="block text-sm font-medium text-text-heading mb-1">教材名 *</label>
+                  <label className="block text-sm font-medium text-text-heading mb-1">
+                    教材名 *
+                  </label>
                   <input
                     type="text"
                     value={textbookForm.name}
-                    onChange={e => setTextbookForm({ ...textbookForm, name: e.target.value })}
+                    onChange={(e) => setTextbookForm({ ...textbookForm, name: e.target.value })}
                     className="w-full px-3 py-2 border border-border rounded-lg text-sm"
                     autoFocus
                   />
@@ -619,16 +687,22 @@ export default function CurriculumPage() {
                   <input
                     type="text"
                     value={textbookForm.publisher}
-                    onChange={e => setTextbookForm({ ...textbookForm, publisher: e.target.value })}
+                    onChange={(e) =>
+                      setTextbookForm({ ...textbookForm, publisher: e.target.value })
+                    }
                     className="w-full px-3 py-2 border border-border rounded-lg text-sm"
                   />
                 </div>
                 <div className="grid grid-cols-3 gap-3">
                   <div>
-                    <label className="block text-sm font-medium text-text-heading mb-1">学校種別</label>
+                    <label className="block text-sm font-medium text-text-heading mb-1">
+                      学校種別
+                    </label>
                     <select
                       value={textbookForm.school_type}
-                      onChange={e => setTextbookForm({ ...textbookForm, school_type: e.target.value })}
+                      onChange={(e) =>
+                        setTextbookForm({ ...textbookForm, school_type: e.target.value })
+                      }
                       className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-surface-raised"
                     >
                       <option value="">未設定</option>
@@ -643,7 +717,7 @@ export default function CurriculumPage() {
                     <input
                       type="text"
                       value={textbookForm.grade}
-                      onChange={e => setTextbookForm({ ...textbookForm, grade: e.target.value })}
+                      onChange={(e) => setTextbookForm({ ...textbookForm, grade: e.target.value })}
                       className="w-full px-3 py-2 border border-border rounded-lg text-sm"
                       placeholder="例: 1年"
                     />
@@ -652,7 +726,9 @@ export default function CurriculumPage() {
                     <label className="block text-sm font-medium text-text-heading mb-1">教科</label>
                     <select
                       value={textbookForm.subject}
-                      onChange={e => setTextbookForm({ ...textbookForm, subject: e.target.value })}
+                      onChange={(e) =>
+                        setTextbookForm({ ...textbookForm, subject: e.target.value })
+                      }
                       className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-surface-raised"
                     >
                       <option value="">未設定</option>
@@ -667,7 +743,10 @@ export default function CurriculumPage() {
                 </div>
               </div>
               <div className="flex justify-end gap-2 mt-6">
-                <button onClick={() => setShowTextbookModal(false)} className="px-4 py-2 text-sm text-text-muted">
+                <button
+                  onClick={() => setShowTextbookModal(false)}
+                  className="px-4 py-2 text-sm text-text-muted"
+                >
                   キャンセル
                 </button>
                 <button
@@ -684,32 +763,51 @@ export default function CurriculumPage() {
 
         {/* Bulk Import Modal */}
         {showBulkModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-surfacelack/40" onClick={() => setShowBulkModal(false)}>
-            <div className="bg-surface-raised rounded-xl shadow-xl w-full max-w-lg mx-4 p-6" onClick={e => e.stopPropagation()}>
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-surfacelack/40"
+            onClick={() => setShowBulkModal(false)}
+          >
+            <div
+              className="bg-surface-raised rounded-xl shadow-xl w-full max-w-lg mx-4 p-6"
+              onClick={(e) => e.stopPropagation()}
+            >
               <h2 className="text-lg font-bold text-text-heading mb-2">一括登録</h2>
               <p className="text-sm text-text-muted mb-3">
                 1行に1項目を入力してください。Excelからの貼り付けにも対応しています。
               </p>
               <div className="bg-surface border border-border rounded-lg p-3 mb-3 text-xs text-text-muted space-y-1">
-                <div><strong>形式:</strong></div>
-                <div>・タイトルのみ: <code>be動詞の過去形</code></div>
-                <div>・番号 + タイトル（タブ区切り）: <code>1→be動詞の過去形</code></div>
-                <div>・番号 + タイトル + 種別: <code>1→be動詞の過去形→通常単元</code></div>
-                <div className="mt-1"><strong>自動判定:</strong> ◆ → まとめ、■ → 特別、【】→ 章タイトル</div>
+                <div>
+                  <strong>形式:</strong>
+                </div>
+                <div>
+                  ・タイトルのみ: <code>be動詞の過去形</code>
+                </div>
+                <div>
+                  ・番号 + タイトル（タブ区切り）: <code>1→be動詞の過去形</code>
+                </div>
+                <div>
+                  ・番号 + タイトル + 種別: <code>1→be動詞の過去形→通常単元</code>
+                </div>
+                <div className="mt-1">
+                  <strong>自動判定:</strong> ◆ → まとめ、■ → 特別、【】→ 章タイトル
+                </div>
               </div>
               <textarea
                 value={bulkText}
-                onChange={e => setBulkText(e.target.value)}
+                onChange={(e) => setBulkText(e.target.value)}
                 rows={10}
                 className="w-full px-3 py-2 border border-border rounded-lg text-sm font-mono resize-y"
                 placeholder={`【第1章 be動詞】\n1\tI am ～.\n2\tYou are ～.\n◆ まとめテスト`}
                 autoFocus
               />
               <div className="text-xs text-text-faint mt-1">
-                {bulkText.split('\n').filter(l => l.trim()).length}行
+                {bulkText.split('\n').filter((l) => l.trim()).length}行
               </div>
               <div className="flex justify-end gap-2 mt-4">
-                <button onClick={() => setShowBulkModal(false)} className="px-4 py-2 text-sm text-text-muted">
+                <button
+                  onClick={() => setShowBulkModal(false)}
+                  className="px-4 py-2 text-sm text-text-muted"
+                >
                   キャンセル
                 </button>
                 <button

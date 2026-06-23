@@ -29,7 +29,9 @@ import { fetchAllPaged } from '@/lib/utils/supabasePaging';
  *
  * @param schoolId 単一または複数の school_id（省略時は共通テンプレのみ）
  */
-export async function getMailTemplates(schoolId?: string | string[]): Promise<InquiryMailTemplate[]> {
+export async function getMailTemplates(
+  schoolId?: string | string[]
+): Promise<InquiryMailTemplate[]> {
   const { data, error } = await supabase
     .from('inquiry_mail_templates')
     .select('*')
@@ -56,7 +58,9 @@ export async function getMailTemplates(schoolId?: string | string[]): Promise<In
 /**
  * テンプレートを新規作成する。
  */
-export async function createMailTemplate(data: InquiryMailTemplateInsert): Promise<InquiryMailTemplate> {
+export async function createMailTemplate(
+  data: InquiryMailTemplateInsert
+): Promise<InquiryMailTemplate> {
   const { data: created, error } = await supabase
     .from('inquiry_mail_templates')
     .insert(data)
@@ -73,7 +77,10 @@ export async function createMailTemplate(data: InquiryMailTemplateInsert): Promi
 /**
  * テンプレートを更新する。
  */
-export async function updateMailTemplate(id: string, data: InquiryMailTemplateUpdate): Promise<InquiryMailTemplate> {
+export async function updateMailTemplate(
+  id: string,
+  data: InquiryMailTemplateUpdate
+): Promise<InquiryMailTemplate> {
   const { data: updated, error } = await supabase
     .from('inquiry_mail_templates')
     .update({ ...data, updated_at: new Date().toISOString() })
@@ -92,10 +99,7 @@ export async function updateMailTemplate(id: string, data: InquiryMailTemplateUp
  * テンプレートを物理削除する。
  */
 export async function deleteMailTemplate(id: string): Promise<void> {
-  const { error } = await supabase
-    .from('inquiry_mail_templates')
-    .delete()
-    .eq('id', id);
+  const { error } = await supabase.from('inquiry_mail_templates').delete().eq('id', id);
 
   if (error) {
     throw new Error(`テンプレートの削除に失敗しました: ${error.message}`);
@@ -110,7 +114,9 @@ export async function deleteMailTemplate(id: string): Promise<void> {
  * 教室別のメール送信設定を1件取得する。
  * レコードが存在しない場合は null を返す（PGRST116 は正常系）。
  */
-export async function getInquirySchoolSettings(schoolId: string): Promise<InquirySchoolSettings | null> {
+export async function getInquirySchoolSettings(
+  schoolId: string
+): Promise<InquirySchoolSettings | null> {
   const { data, error } = await supabase
     .from('inquiry_school_settings')
     .select('*')

@@ -127,7 +127,12 @@ export async function getZoukomaPlacementProgress(
       const master = subjectByName.get(name) ?? null;
       const key = master ? master.id : `name:${name}`;
       if (!row.bySubject[key]) {
-        row.bySubject[key] = { enrolled: 0, placed: 0, subjectName: name, subjectId: master?.id ?? null };
+        row.bySubject[key] = {
+          enrolled: 0,
+          placed: 0,
+          subjectName: name,
+          subjectId: master?.id ?? null,
+        };
       }
       row.bySubject[key].enrolled += n;
       row.enrolled += n;
@@ -140,7 +145,11 @@ export async function getZoukomaPlacementProgress(
       const date = raw.slice(0, us);
       const code = raw.slice(us + 1);
       if (!date) continue;
-      row.availableSlots.push({ date, periodCode: code, startTime: startTimeByCode.get(code) ?? null });
+      row.availableSlots.push({
+        date,
+        periodCode: code,
+        startTime: startTimeByCode.get(code) ?? null,
+      });
       allDates.add(date);
     }
   }
@@ -153,7 +162,12 @@ export async function getZoukomaPlacementProgress(
     .from('students')
     .select('id, last_name, first_name, grade')
     .in('id', ids);
-  for (const s of (students ?? []) as Array<{ id: string; last_name: string; first_name: string; grade: number }>) {
+  for (const s of (students ?? []) as Array<{
+    id: string;
+    last_name: string;
+    first_name: string;
+    grade: number;
+  }>) {
     const row = map.get(s.id);
     if (row) row.student = s;
   }
@@ -170,7 +184,10 @@ export async function getZoukomaPlacementProgress(
       .gte('entry_date', dates[0])
       .lte('entry_date', dates[dates.length - 1])
       .in('status', ['scheduled', 'completed', 'transferred_in']);
-    for (const e of (placedEntries ?? []) as Array<{ student_id: string; subject_ids: string[] | null }>) {
+    for (const e of (placedEntries ?? []) as Array<{
+      student_id: string;
+      subject_ids: string[] | null;
+    }>) {
       const row = map.get(e.student_id);
       if (!row) continue;
       row.placed += 1;

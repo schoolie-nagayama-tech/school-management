@@ -159,9 +159,17 @@ export async function deleteKoushu(courseId: string): Promise<void> {
  *
  * @returns Map<student_id, { enrolled: 申込コマ数, placed: 座席表配置済み, subject_ids }>
  */
-export async function getKoushuPlacementProgress(
-  course: KoushuCourse
-): Promise<Map<string, { enrolled: number; placed: number; subject_ids: string[]; student: KoushuEnrollment['student'] }>> {
+export async function getKoushuPlacementProgress(course: KoushuCourse): Promise<
+  Map<
+    string,
+    {
+      enrolled: number;
+      placed: number;
+      subject_ids: string[];
+      student: KoushuEnrollment['student'];
+    }
+  >
+> {
   if (!course.start_date || !course.end_date) {
     return new Map();
   }
@@ -186,7 +194,15 @@ export async function getKoushuPlacementProgress(
     placedMap.set(e.student_id, (placedMap.get(e.student_id) ?? 0) + 1);
   }
 
-  const result = new Map<string, { enrolled: number; placed: number; subject_ids: string[]; student: KoushuEnrollment['student'] }>();
+  const result = new Map<
+    string,
+    {
+      enrolled: number;
+      placed: number;
+      subject_ids: string[];
+      student: KoushuEnrollment['student'];
+    }
+  >();
   for (const en of enrollments) {
     result.set(en.student_id, {
       enrolled: en.koma_count,
@@ -243,22 +259,20 @@ export async function upsertKoushuEnrollment(
   const komaCount = entries.reduce((s, [, n]) => s + n, 0);
   const komaBySubjectClean = Object.fromEntries(entries);
 
-  const { error } = await db2
-    .from('koushu_enrollments')
-    .upsert(
-      {
-        school_id: schoolId,
-        season,
-        course_id: null,
-        student_id: studentId,
-        formation,
-        koma_count: komaCount,
-        subject_ids: subjectIds,
-        koma_by_subject: komaBySubjectClean,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: 'school_id,season,student_id,formation' }
-    );
+  const { error } = await db2.from('koushu_enrollments').upsert(
+    {
+      school_id: schoolId,
+      season,
+      course_id: null,
+      student_id: studentId,
+      formation,
+      koma_count: komaCount,
+      subject_ids: subjectIds,
+      koma_by_subject: komaBySubjectClean,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: 'school_id,season,student_id,formation' }
+  );
 
   if (error) throw error;
 }
@@ -348,11 +362,13 @@ export async function getKoushuScheduledCounts(
 export async function getSeasonalCourses(schoolId: string): Promise<SeasonalCourseWithDetails[]> {
   const { data, error } = await supabase
     .from('seasonal_courses')
-    .select(`
+    .select(
+      `
       *,
       textbooks:seasonal_course_textbooks(*, textbook:textbooks(*)),
       curriculum:seasonal_course_curriculum(*, curriculum_item:curriculum_items(*))
-    `)
+    `
+    )
     .eq('school_id', schoolId)
     .eq('is_active', true)
     .order('created_at', { ascending: false });
@@ -393,14 +409,18 @@ export const getCachedSeasonalCourses = withFetchCache(getSeasonalCourses, {
 });
 
 // コースを取得（単体）
-export async function getSeasonalCourse(courseId: string): Promise<SeasonalCourseWithDetails | null> {
+export async function getSeasonalCourse(
+  courseId: string
+): Promise<SeasonalCourseWithDetails | null> {
   const { data, error } = await supabase
     .from('seasonal_courses')
-    .select(`
+    .select(
+      `
       *,
       textbooks:seasonal_course_textbooks(*, textbook:textbooks(*)),
       curriculum:seasonal_course_curriculum(*, curriculum_item:curriculum_items(*))
-    `)
+    `
+    )
     .eq('id', courseId)
     .single();
 
@@ -527,9 +547,7 @@ export async function deployCourseToSchools(
         textbook_id: ct.textbook_id,
         sort_order: ct.sort_order,
       }));
-      const { error: tbErr } = await supabase
-        .from('seasonal_course_textbooks')
-        .insert(tbInserts);
+      const { error: tbErr } = await supabase.from('seasonal_course_textbooks').insert(tbInserts);
       if (tbErr) throw tbErr;
     }
 
@@ -649,15 +667,18 @@ export async function saveCourseCurriculum(
 ): Promise<SeasonalCourseCurriculum> {
   const { data: result, error } = await supabase
     .from('seasonal_course_curriculum')
-    .upsert({
-      course_id: courseId,
-      textbook_id: textbookId,
-      curriculum_item_id: curriculumItemId,
-      ...data,
-      updated_at: new Date().toISOString(),
-    }, {
-      onConflict: 'course_id,curriculum_item_id',
-    })
+    .upsert(
+      {
+        course_id: courseId,
+        textbook_id: textbookId,
+        curriculum_item_id: curriculumItemId,
+        ...data,
+        updated_at: new Date().toISOString(),
+      },
+      {
+        onConflict: 'course_id,curriculum_item_id',
+      }
+    )
     .select()
     .single();
 
@@ -675,7 +696,7 @@ export async function saveBulkCourseCurriculum(
     group_number: number | null;
   }>
 ): Promise<void> {
-  const records = settings.map(s => ({
+  const records = settings.map((s) => ({
     course_id: courseId,
     textbook_id: textbookId,
     curriculum_item_id: s.curriculum_item_id,
@@ -684,11 +705,9 @@ export async function saveBulkCourseCurriculum(
     updated_at: new Date().toISOString(),
   }));
 
-  const { error } = await supabase
-    .from('seasonal_course_curriculum')
-    .upsert(records, {
-      onConflict: 'course_id,curriculum_item_id',
-    });
+  const { error } = await supabase.from('seasonal_course_curriculum').upsert(records, {
+    onConflict: 'course_id,curriculum_item_id',
+  });
 
   if (error) throw error;
 }
@@ -716,18 +735,16 @@ export async function groupCourseCurriculumItems(
 
   // 各単元にグループ番号を設定（単元ごとの upsert を1回のバルク upsert に集約）
   const now = new Date().toISOString();
-  const { error: upsertError } = await supabase
-    .from('seasonal_course_curriculum')
-    .upsert(
-      curriculumItemIds.map((curriculumItemId) => ({
-        course_id: courseId,
-        textbook_id: textbookId,
-        curriculum_item_id: curriculumItemId,
-        group_number: nextGroupNumber,
-        updated_at: now,
-      })),
-      { onConflict: 'course_id,curriculum_item_id' }
-    );
+  const { error: upsertError } = await supabase.from('seasonal_course_curriculum').upsert(
+    curriculumItemIds.map((curriculumItemId) => ({
+      course_id: courseId,
+      textbook_id: textbookId,
+      curriculum_item_id: curriculumItemId,
+      group_number: nextGroupNumber,
+      updated_at: now,
+    })),
+    { onConflict: 'course_id,curriculum_item_id' }
+  );
   if (upsertError) throw upsertError;
 }
 
@@ -769,11 +786,18 @@ export async function applyCoursesToStudents(
   // student_textbook を作成/有効化する。こうすることで「実際には申し込まれていない下書き」が
   // 生徒の所持教材一覧に混入しないようにする（発注→所持教材の流れは ordering 側で維持）。
 
-  const curriculumByTextbook = new Map<number, { curriculum_item_id: number; proposal_count: number; group_number: number | null }[]>();
+  const curriculumByTextbook = new Map<
+    number,
+    { curriculum_item_id: number; proposal_count: number; group_number: number | null }[]
+  >();
   for (const ct of course.textbooks) {
     const items = course.curriculum
       .filter((c) => c.textbook_id === ct.textbook_id && c.proposal_count > 0)
-      .map((c) => ({ curriculum_item_id: c.curriculum_item_id, proposal_count: c.proposal_count, group_number: c.group_number }));
+      .map((c) => ({
+        curriculum_item_id: c.curriculum_item_id,
+        proposal_count: c.proposal_count,
+        group_number: c.group_number,
+      }));
     curriculumByTextbook.set(ct.textbook_id, items);
   }
 
@@ -792,12 +816,24 @@ export async function applyCoursesToStudents(
 
   const year = new Date().getFullYear();
   // 下書きでは student_textbook を紐付けない（null）。公開時に作成・紐付けされる。
-  type ProposalRow = { student_id: string; textbook_id: number; student_textbook_id: string | null; school_id: string | null; season: string; year: number; theme: string; status: string; applied_koma: number };
+  type ProposalRow = {
+    student_id: string;
+    textbook_id: number;
+    student_textbook_id: string | null;
+    school_id: string | null;
+    season: string;
+    year: number;
+    theme: string;
+    status: string;
+    applied_koma: number;
+  };
   const proposalInserts: ProposalRow[] = [];
 
   for (const studentId of studentIds) {
     for (const ct of course.textbooks) {
-      const settings = (curriculumByTextbook.get(ct.textbook_id) || []).filter((s) => s.proposal_count > 0);
+      const settings = (curriculumByTextbook.get(ct.textbook_id) || []).filter(
+        (s) => s.proposal_count > 0
+      );
       const hasCurriculum = !textbooksWithoutCurriculum.has(ct.textbook_id);
 
       if (settings.length === 0 && hasCurriculum) continue;
@@ -824,7 +860,11 @@ export async function applyCoursesToStudents(
     if (pError) throw pError;
 
     const proposalMap = new Map<string, string>();
-    for (const p of ((proposals || []) as unknown as { id: string; student_id: string; textbook_id: number }[])) {
+    for (const p of (proposals || []) as unknown as {
+      id: string;
+      student_id: string;
+      textbook_id: number;
+    }[]) {
       proposalMap.set(`${p.student_id}:${p.textbook_id}`, p.id);
     }
 
@@ -833,12 +873,23 @@ export async function applyCoursesToStudents(
       await fromProposalUnits().delete().in('proposal_id', proposalIds);
     }
 
-    const unitInserts: { proposal_id: string; curriculum_item_id: number; koma_count: number; applied_koma: number; reason: string; group_id: number; intent_tag: null; sort_order: number }[] = [];
+    const unitInserts: {
+      proposal_id: string;
+      curriculum_item_id: number;
+      koma_count: number;
+      applied_koma: number;
+      reason: string;
+      group_id: number;
+      intent_tag: null;
+      sort_order: number;
+    }[] = [];
     for (const studentId of studentIds) {
       for (const ct of course.textbooks) {
         const proposalId = proposalMap.get(`${studentId}:${ct.textbook_id}`);
         if (!proposalId) continue;
-        const settings = (curriculumByTextbook.get(ct.textbook_id) || []).filter((s) => s.proposal_count > 0);
+        const settings = (curriculumByTextbook.get(ct.textbook_id) || []).filter(
+          (s) => s.proposal_count > 0
+        );
         settings.forEach((s, i) => {
           unitInserts.push({
             proposal_id: proposalId,
@@ -875,7 +926,9 @@ export async function applyCoursesToStudents(
 }
 
 // コースの適用履歴を取得
-export async function getCourseApplications(courseId: string): Promise<SeasonalCourseApplication[]> {
+export async function getCourseApplications(
+  courseId: string
+): Promise<SeasonalCourseApplication[]> {
   const { data, error } = await supabase
     .from('seasonal_course_applications')
     .select('*, student:students(*)')

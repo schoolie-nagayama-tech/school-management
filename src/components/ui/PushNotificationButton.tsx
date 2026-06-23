@@ -105,15 +105,15 @@ export function PushNotificationButton({ schoolId, compact = false }: Props) {
   const label = isDenied
     ? '通知がブロックされています'
     : isSubscribed
-    ? '通知ON（タップで解除）'
-    : '通知をONにする';
+      ? '通知ON（タップで解除）'
+      : '通知をONにする';
 
   const Icon = isDenied ? BellOff : isSubscribed ? BellRing : Bell;
   const colorClass = isDenied
     ? 'text-text-faint cursor-not-allowed'
     : isSubscribed
-    ? 'text-primary'
-    : 'text-white/70 hover:text-white';
+      ? 'text-primary'
+      : 'text-white/70 hover:text-white';
 
   const handleClick = () => {
     if (isDenied || isLoading) return;
@@ -131,11 +131,7 @@ export function PushNotificationButton({ schoolId, compact = false }: Props) {
         aria-label={label}
         className={`inline-flex items-center justify-center w-9 h-9 rounded-lg transition-colors duration-150 ${colorClass} disabled:opacity-50`}
       >
-        {isLoading ? (
-          <Spinner size="sm" tone="current" />
-        ) : (
-          <Icon className="w-4 h-4" />
-        )}
+        {isLoading ? <Spinner size="sm" tone="current" /> : <Icon className="w-4 h-4" />}
       </button>
     );
   }
@@ -149,15 +145,11 @@ export function PushNotificationButton({ schoolId, compact = false }: Props) {
         isDenied
           ? 'text-text-faint cursor-not-allowed'
           : isSubscribed
-          ? 'text-primary hover:bg-primary/10'
-          : 'text-text-body hover:bg-surface-hover'
+            ? 'text-primary hover:bg-primary/10'
+            : 'text-text-body hover:bg-surface-hover'
       }`}
     >
-      {isLoading ? (
-        <Spinner size="sm" tone="current" />
-      ) : (
-        <Icon className="w-4 h-4" />
-      )}
+      {isLoading ? <Spinner size="sm" tone="current" /> : <Icon className="w-4 h-4" />}
       {label}
     </button>
   );

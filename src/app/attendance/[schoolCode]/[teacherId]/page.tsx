@@ -2,7 +2,20 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import { Button, Input, Badge, AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, Loading } from '@/components/ui';
+import {
+  Button,
+  Input,
+  Badge,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  Loading,
+} from '@/components/ui';
 import { ToastContainer } from '@/components/ui';
 import { AppHeader } from '@/components/layout/AppHeader';
 import { ArrowLeft, ChevronLeft, ChevronRight, Send, Undo2, AlertTriangle } from 'lucide-react';
@@ -102,7 +115,9 @@ function LateEarlySelect({
       >
         <option value="">なし</option>
         {LATE_EARLY_KINDS.map((k) => (
-          <option key={k} value={k}>{k}</option>
+          <option key={k} value={k}>
+            {k}
+          </option>
         ))}
       </select>
       {needsMinutes && (
@@ -144,17 +159,13 @@ export default function TeacherAttendancePage() {
   const tierKey = isOwner && badgeCount !== null ? getTier(badgeCount).key : null;
   const [school, setSchool] = useState<{ id: string; name: string } | null>(null);
   const [teacher, setTeacher] = useState<{ id: string; name: string } | null>(null);
-  const [yearMonth, setYearMonth] = useState(
-    searchParams.get('ym') || getCurrentYearMonth()
-  );
+  const [yearMonth, setYearMonth] = useState(searchParams.get('ym') || getCurrentYearMonth());
   const [sheetId, setSheetId] = useState<string | null>(null);
   const [status, setStatus] = useState<AttendanceSheetStatus>('draft');
   const [rejectionReason, setRejectionReason] = useState<string | null>(null);
   const [attendanceTypes, setAttendanceTypes] = useState<AttendanceType[]>([]);
   const [records, setRecords] = useState<Map<string, number>>(new Map());
-  const [notes, setNotes] = useState<Map<string, { lateEarly: string; note: string }>>(
-    new Map()
-  );
+  const [notes, setNotes] = useState<Map<string, { lateEarly: string; note: string }>>(new Map());
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isSubmitDialogOpen, setIsSubmitDialogOpen] = useState(false);
@@ -202,9 +213,13 @@ export default function TeacherAttendancePage() {
       }
       setTeacher({
         id: teacherData.id,
-        name: profile?.role === 'teacher'
-          ? (profile?.last_name || toSurnameOnly(teacherData.display_name)) || teacherData.email || '未設定'
-          : teacherData.display_name || teacherData.email || '未設定',
+        name:
+          profile?.role === 'teacher'
+            ? profile?.last_name ||
+              toSurnameOnly(teacherData.display_name) ||
+              teacherData.email ||
+              '未設定'
+            : teacherData.display_name || teacherData.email || '未設定',
       });
 
       // コマ種別 + 出勤簿（取得 or 作成）を並列
@@ -266,11 +281,7 @@ export default function TeacherAttendancePage() {
   };
 
   // コマ数変更
-  const handleValueChange = async (
-    date: string,
-    typeId: string,
-    value: string
-  ) => {
+  const handleValueChange = async (date: string, typeId: string, value: string) => {
     if (!sheetId || !canEdit) return;
 
     // 全角で入力された数字を半角に正規化してから数値化（全角だと 0 に化けるのを防ぐ）
@@ -400,11 +411,7 @@ export default function TeacherAttendancePage() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <p className="text-danger text-lg">{error}</p>
-          <Button
-            variant="secondary"
-            className="mt-4"
-            onClick={() => router.push('/students')}
-          >
+          <Button variant="secondary" className="mt-4" onClick={() => router.push('/students')}>
             戻る
           </Button>
         </div>
@@ -422,11 +429,7 @@ export default function TeacherAttendancePage() {
       <header className="bg-surface-raised border-b sticky top-0 z-10">
         <div className="max-w-6xl mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
-            <Button
-              variant="ghost"
-              onClick={() => router.push('/students')}
-              className="p-2"
-            >
+            <Button variant="ghost" onClick={() => router.push('/students')} className="p-2">
               <ArrowLeft className="h-4 w-4 mr-1" />
               戻る
             </Button>
@@ -525,9 +528,7 @@ export default function TeacherAttendancePage() {
                 <th className="px-2 py-2 text-center font-medium border-b min-w-[100px]">
                   遅刻早退
                 </th>
-                <th className="px-2 py-2 text-center font-medium border-b min-w-[120px]">
-                  備考
-                </th>
+                <th className="px-2 py-2 text-center font-medium border-b min-w-[120px]">備考</th>
               </tr>
             </thead>
             <tbody>
@@ -550,8 +551,8 @@ export default function TeacherAttendancePage() {
                           d.dayOfWeek === 0
                             ? 'text-red-600'
                             : d.dayOfWeek === 6
-                            ? 'text-blue-600'
-                            : ''
+                              ? 'text-blue-600'
+                              : ''
                         }`}
                       >
                         {parseInt(d.date.split('-')[2])}日({d.dayLabel})
@@ -568,9 +569,7 @@ export default function TeacherAttendancePage() {
                             min="0"
                             step={type.unit === 'hours' ? '0.5' : '1'}
                             value={value}
-                            onChange={(e) =>
-                              handleValueChange(d.date, type.id, e.target.value)
-                            }
+                            onChange={(e) => handleValueChange(d.date, type.id, e.target.value)}
                             disabled={!canEdit}
                             className="w-16 h-8 text-center mx-auto"
                           />
@@ -598,9 +597,7 @@ export default function TeacherAttendancePage() {
               })}
               {/* 合計行 */}
               <tr className="bg-gray-100 font-medium">
-                <td className="px-2 py-2 border-b sticky left-0 bg-gray-100">
-                  合計
-                </td>
+                <td className="px-2 py-2 border-b sticky left-0 bg-gray-100">合計</td>
                 {attendanceTypes.map((type) => (
                   <td key={type.id} className="px-2 py-2 border-b text-center">
                     {getTypeTotal(type.id)}
@@ -620,14 +617,25 @@ export default function TeacherAttendancePage() {
           {showThanks && (
             <div
               className="absolute left-1/2 -top-2 -translate-x-1/2 -translate-y-full z-30 pointer-events-none"
-              style={{ animation: 'thanks-pop 0.5s cubic-bezier(.34,1.56,.64,1) both, thanks-fade-out .5s ease-in 3.5s forwards' }}
+              style={{
+                animation:
+                  'thanks-pop 0.5s cubic-bezier(.34,1.56,.64,1) both, thanks-fade-out .5s ease-in 3.5s forwards',
+              }}
             >
               <div className="relative bg-gradient-to-br from-pink-50 to-white border border-pink-200 rounded-2xl shadow-lg px-5 py-3 whitespace-nowrap">
                 <p className="text-sm font-bold text-pink-700 leading-tight">提出しました！</p>
-                <p className="text-xs text-gray-600 mt-1 leading-tight">今月もありがとうございました！</p>
-                <span className="absolute -top-2 -right-2"><HiddenFlower size={16} rotate={20} opacity={0.85} /></span>
-                <span className="absolute -bottom-1 -left-1"><HiddenFlower size={12} rotate={-30} opacity={0.7} color="#F8BBD0" /></span>
-                <span className="absolute -top-1 left-3"><HiddenFlower size={10} rotate={45} opacity={0.6} color="#FCE4EC" /></span>
+                <p className="text-xs text-gray-600 mt-1 leading-tight">
+                  今月もありがとうございました！
+                </p>
+                <span className="absolute -top-2 -right-2">
+                  <HiddenFlower size={16} rotate={20} opacity={0.85} />
+                </span>
+                <span className="absolute -bottom-1 -left-1">
+                  <HiddenFlower size={12} rotate={-30} opacity={0.7} color="#F8BBD0" />
+                </span>
+                <span className="absolute -top-1 left-3">
+                  <HiddenFlower size={10} rotate={45} opacity={0.6} color="#FCE4EC" />
+                </span>
                 {/* 吹き出しの三角 */}
                 <span
                   className="absolute left-1/2 -translate-x-1/2 -bottom-2 w-3 h-3 bg-white border-r border-b border-pink-200 rotate-45"
@@ -665,9 +673,7 @@ export default function TeacherAttendancePage() {
               再提出する
             </Button>
           )}
-          {status === 'approved' && (
-            <p className="text-text-body">承認済みのため編集できません</p>
-          )}
+          {status === 'approved' && <p className="text-text-body">承認済みのため編集できません</p>}
         </div>
       </main>
 

@@ -109,17 +109,27 @@ export function PublishOrderDialog({
                       <div
                         key={c.proposalId}
                         className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg border ${
-                          ordered ? 'border-info/30 bg-info-subtle' : 'border-border-subtle opacity-60'
+                          ordered
+                            ? 'border-info/30 bg-info-subtle'
+                            : 'border-border-subtle opacity-60'
                         }`}
                       >
-                        <span className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 ${ordered ? 'bg-info text-white' : 'bg-border-default'}`}>
+                        <span
+                          className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 ${ordered ? 'bg-info text-white' : 'bg-border-default'}`}
+                        >
                           {ordered && <Check className="w-2.5 h-2.5" />}
                         </span>
                         <span className="flex-1 min-w-0">
-                          <span className="block text-sm font-medium text-text-heading truncate">{c.studentName}</span>
-                          <span className="block text-xs text-text-muted truncate">{c.materialName ?? c.textbookName}</span>
+                          <span className="block text-sm font-medium text-text-heading truncate">
+                            {c.studentName}
+                          </span>
+                          <span className="block text-xs text-text-muted truncate">
+                            {c.materialName ?? c.textbookName}
+                          </span>
                         </span>
-                        {!ordered && <span className="text-[10px] text-text-faint shrink-0">対象外</span>}
+                        {!ordered && (
+                          <span className="text-[10px] text-text-faint shrink-0">対象外</span>
+                        )}
                       </div>
                     );
                   }
@@ -129,7 +139,9 @@ export function PublishOrderDialog({
                       onClick={() => toggle(c.proposalId)}
                       disabled={creating}
                       className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg border text-left transition-colors duration-150 disabled:opacity-60 ${
-                        checked ? 'border-info/40 bg-info-subtle' : 'border-border-subtle hover:bg-surface-hover'
+                        checked
+                          ? 'border-info/40 bg-info-subtle'
+                          : 'border-border-subtle hover:bg-surface-hover'
                       }`}
                     >
                       <span
@@ -140,19 +152,27 @@ export function PublishOrderDialog({
                         {checked && <Check className="w-2.5 h-2.5" />}
                       </span>
                       <span className="flex-1 min-w-0">
-                        <span className="block text-sm font-medium text-text-heading truncate">{c.studentName}</span>
-                        <span className="block text-xs text-text-muted truncate">{c.materialName ?? c.textbookName}</span>
+                        <span className="block text-sm font-medium text-text-heading truncate">
+                          {c.studentName}
+                        </span>
+                        <span className="block text-xs text-text-muted truncate">
+                          {c.materialName ?? c.textbookName}
+                        </span>
                       </span>
                     </button>
                   );
                 })}
               </div>
               {done && result && result.failed > 0 && (
-                <p className="text-[11px] text-danger mt-1">{result.failed}件の発注に失敗しました。発注画面で確認してください。</p>
+                <p className="text-[11px] text-danger mt-1">
+                  {result.failed}件の発注に失敗しました。発注画面で確認してください。
+                </p>
               )}
             </div>
           ) : (
-            !done && <div className="text-sm text-text-muted py-2">発注が必要な教材はありません。</div>
+            !done && (
+              <div className="text-sm text-text-muted py-2">発注が必要な教材はありません。</div>
+            )
           )}
 
           {/* 既に発注あり / 所持済み */}
@@ -166,7 +186,9 @@ export function PublishOrderDialog({
           )}
 
           {done && (
-            <p className="text-[11px] text-text-faint">発注画面に「未確認」で追加しました。発注画面で確認のうえ発注してください（所持教材に入るのは発注後です）。</p>
+            <p className="text-[11px] text-text-faint">
+              発注画面に「未確認」で追加しました。発注画面で確認のうえ発注してください（所持教材に入るのは発注後です）。
+            </p>
           )}
         </div>
 
@@ -174,7 +196,10 @@ export function PublishOrderDialog({
         <div className="flex items-center gap-2 px-4 py-3 border-t border-border-subtle">
           {done ? (
             <>
-              <Link href="/ordering" className="text-[11px] font-medium text-text-muted hover:text-text-body underline">
+              <Link
+                href="/ordering"
+                className="text-[11px] font-medium text-text-muted hover:text-text-body underline"
+              >
                 発注画面で確認
               </Link>
               <div className="flex-1" />

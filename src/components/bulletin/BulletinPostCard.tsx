@@ -13,7 +13,22 @@ function isHtmlContent(content: string): boolean {
 /** 許可するタグのみでサニタイズ（掲示板のリッチテキスト用） */
 function sanitizeBulletinHtml(html: string): string {
   return DOMPurify.sanitize(html, {
-    ALLOWED_TAGS: ['p', 'br', 'strong', 'b', 'em', 'i', 's', 'strike', 'h1', 'h2', 'h3', 'ul', 'ol', 'li'],
+    ALLOWED_TAGS: [
+      'p',
+      'br',
+      'strong',
+      'b',
+      'em',
+      'i',
+      's',
+      'strike',
+      'h1',
+      'h2',
+      'h3',
+      'ul',
+      'ol',
+      'li',
+    ],
     ALLOWED_ATTR: [],
   });
 }
@@ -69,11 +84,7 @@ export function BulletinPostCard({
           )}
           <span className="font-semibold text-[#1a1a1a] truncate">{post.title}</span>
         </div>
-        {schoolName && (
-          <span className="shrink-0 text-xs text-gray-400 ml-2">
-            {schoolName}
-          </span>
-        )}
+        {schoolName && <span className="shrink-0 text-xs text-gray-400 ml-2">{schoolName}</span>}
       </div>
 
       {/* 本文を表示（リッチテキスト HTML または従来のプレーンテキスト） */}
@@ -116,36 +127,19 @@ export function BulletinPostCard({
 
       <div className="flex items-center gap-2">
         {canRead && !post.is_read && (
-          <Button
-            onClick={onRead}
-            variant="secondary"
-            size="sm"
-            className="text-xs px-2 py-1"
-          >
+          <Button onClick={onRead} variant="secondary" size="sm" className="text-xs px-2 py-1">
             <Check className="w-3 h-3 mr-1" />
             見ました
           </Button>
         )}
-        {canRead && post.is_read && (
-          <span className="text-xs text-gray-400">✓既読</span>
-        )}
+        {canRead && post.is_read && <span className="text-xs text-gray-400">✓既読</span>}
         {canEdit && (
           <>
-            <Button
-              onClick={onEdit}
-              variant="ghost"
-              size="sm"
-              className="text-xs px-2 py-1"
-            >
+            <Button onClick={onEdit} variant="ghost" size="sm" className="text-xs px-2 py-1">
               <Edit2 className="w-3 h-3 mr-1" />
               編集
             </Button>
-            <Button
-              onClick={onDelete}
-              variant="ghost"
-              size="sm"
-              className="text-xs px-2 py-1"
-            >
+            <Button onClick={onDelete} variant="ghost" size="sm" className="text-xs px-2 py-1">
               <Trash2 className="w-3 h-3 mr-1" />
               削除
             </Button>

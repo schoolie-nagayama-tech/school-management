@@ -5,8 +5,8 @@ interface AccessDeniedProps {
   message?: string;
 }
 
-export default function AccessDenied({ 
-  message = 'このページにアクセスする権限がありません' 
+export default function AccessDenied({
+  message = 'このページにアクセスする権限がありません',
 }: AccessDeniedProps) {
   return (
     <div className="min-h-[60vh] flex items-center justify-center p-6">

@@ -121,11 +121,7 @@ export async function getInquiries(
  * 見つからない場合は null を返す。
  */
 export async function getInquiry(id: string): Promise<Inquiry | null> {
-  const { data, error } = await supabase
-    .from('inquiries')
-    .select('*')
-    .eq('id', id)
-    .single();
+  const { data, error } = await supabase.from('inquiries').select('*').eq('id', id).single();
 
   if (error) {
     if (error.code === 'PGRST116') return null;
@@ -139,11 +135,7 @@ export async function getInquiry(id: string): Promise<Inquiry | null> {
  * 問合せを新規作成する。
  */
 export async function createInquiry(data: InquiryInsert): Promise<Inquiry> {
-  const { data: created, error } = await supabase
-    .from('inquiries')
-    .insert(data)
-    .select()
-    .single();
+  const { data: created, error } = await supabase.from('inquiries').insert(data).select().single();
 
   if (error) {
     throw new Error(`問合せの作成に失敗しました: ${error.message}`);
@@ -299,9 +291,7 @@ export async function addInquiryContact(data: InquiryContactInsert): Promise<Inq
  *
  * @param schoolId 単一または複数の school_id
  */
-export async function getContactedInquiryIds(
-  schoolId: string | string[]
-): Promise<Set<string>> {
+export async function getContactedInquiryIds(schoolId: string | string[]): Promise<Set<string>> {
   const schoolIds = Array.isArray(schoolId) ? schoolId : [schoolId];
 
   // inquiry_contacts は school_id を持つため .in() で一括取得する
@@ -342,9 +332,7 @@ export async function importInquiries(rows: ParsedInquiryRow[]): Promise<Inquiry
 
   // ---- 1. schools マップ（name → id）を構築 ----
   const schools = await getSchools();
-  const schoolNameToId = new Map<string, string>(
-    schools.map((s) => [s.name, s.id])
-  );
+  const schoolNameToId = new Map<string, string>(schools.map((s) => [s.name, s.id]));
 
   // ---- 2. 各行の school_id を解決。解決できない行をエラーに分類 ----
   // school_id が解決できた行のみ取込対象とする

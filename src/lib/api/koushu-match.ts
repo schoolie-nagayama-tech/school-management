@@ -54,7 +54,12 @@ export interface KoushuMatchInput {
 export interface KoushuMatchResult {
   batchId: string | null;
   proposalsCreated: number;
-  unmatched: Array<{ student_id: string; student_name?: string; remaining: number; reason: string }>;
+  unmatched: Array<{
+    student_id: string;
+    student_name?: string;
+    remaining: number;
+    reason: string;
+  }>;
 }
 
 interface TeacherProfile {
@@ -113,16 +118,28 @@ function scoreTeacher(opts: {
   const reasons: string[] = [];
   const conflicts: string[] = [];
 
-  if (fixedSet.has(teacher.id)) { score += w.fixedTeacher; reasons.push('担当固定'); }
-  if (pastSet.has(teacher.id)) { score += w.pastHistory; reasons.push('過去担当'); }
+  if (fixedSet.has(teacher.id)) {
+    score += w.fixedTeacher;
+    reasons.push('担当固定');
+  }
+  if (pastSet.has(teacher.id)) {
+    score += w.pastHistory;
+    reasons.push('過去担当');
+  }
 
   const teachable = new Set(teacher.teachable_subject_ids ?? []);
   const subjectKnown = teachable.size > 0 && subjectIds.length > 0;
   const subjectOut = subjectKnown && !subjectIds.some((sid) => teachable.has(sid));
-  if (subjectKnown && !subjectOut) { score += w.subjectMatch; reasons.push('教科対応'); }
+  if (subjectKnown && !subjectOut) {
+    score += w.subjectMatch;
+    reasons.push('教科対応');
+  }
   if (subjectOut) conflicts.push('教科外');
 
-  if (preferredGender && teacher.gender === preferredGender) { score += w.genderPref; reasons.push('希望性別一致'); }
+  if (preferredGender && teacher.gender === preferredGender) {
+    score += w.genderPref;
+    reasons.push('希望性別一致');
+  }
 
   score += w.available;
   reasons.push('出勤可能');
@@ -144,7 +161,8 @@ export async function generateKoushuIndividualProposals(
   // --- 入力収集 ---
   // 過去日付には配置しない（配置時の過去日付ガードと整合）。期間開始が過去でも今日以降のみ。
   const todayJst = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Tokyo' });
-  const effectiveStart = period.schedule_start_date > todayJst ? period.schedule_start_date : todayJst;
+  const effectiveStart =
+    period.schedule_start_date > todayJst ? period.schedule_start_date : todayJst;
   const dates = enumeratePeriodDates(effectiveStart, period.schedule_end_date, closed);
   const slots = (await getActiveTimeSlots(schoolId, 'individual')).sort(
     (a, b) => a.slot_number - b.slot_number
@@ -156,7 +174,12 @@ export async function generateKoushuIndividualProposals(
 
   // 生徒×科目別の個別残コマ（placed=既存の published を尊重）。1タスク=（生徒,科目）の残コマ。
   const progress = await getKoushuPlacementProgressByPeriod(period, 'individual');
-  const tasks: Array<{ student_id: string; subjectId: string; remaining: number; student?: { id: string; last_name: string; first_name: string; grade: number } }> = [];
+  const tasks: Array<{
+    student_id: string;
+    subjectId: string;
+    remaining: number;
+    student?: { id: string; last_name: string; first_name: string; grade: number };
+  }> = [];
   for (const [student_id, v] of Array.from(progress.entries())) {
     for (const [subjectId, b] of Object.entries(v.bySubject)) {
       const rem = b.enrolled - b.placed;
@@ -177,8 +200,16 @@ export async function generateKoushuIndividualProposals(
     .from('students')
     .select('id, preferred_teacher_gender, fixed_teacher_ids, excluded_teacher_ids')
     .in('id', studentIds);
-  const rulesByStudent = new Map<string, { fixed: Set<string>; excluded: Set<string>; gender: 'male' | 'female' | null }>();
-  for (const r of (studentRows ?? []) as Array<{ id: string; preferred_teacher_gender: 'male' | 'female' | null; fixed_teacher_ids: string[] | null; excluded_teacher_ids: string[] | null }>) {
+  const rulesByStudent = new Map<
+    string,
+    { fixed: Set<string>; excluded: Set<string>; gender: 'male' | 'female' | null }
+  >();
+  for (const r of (studentRows ?? []) as Array<{
+    id: string;
+    preferred_teacher_gender: 'male' | 'female' | null;
+    fixed_teacher_ids: string[] | null;
+    excluded_teacher_ids: string[] | null;
+  }>) {
     rulesByStudent.set(r.id, {
       fixed: new Set(r.fixed_teacher_ids ?? []),
       excluded: new Set(r.excluded_teacher_ids ?? []),
@@ -203,9 +234,7 @@ export async function generateKoushuIndividualProposals(
   }
 
   // 出勤可能講師の profile を一括取得
-  const allTeacherIds = Array.from(
-    new Set(Array.from(dayMap.byDayOfWeek.values()).flat())
-  );
+  const allTeacherIds = Array.from(new Set(Array.from(dayMap.byDayOfWeek.values()).flat()));
   const profileById = new Map<string, TeacherProfile>();
   if (allTeacherIds.length > 0) {
     const { data: profiles } = await db
@@ -230,10 +259,19 @@ export async function generateKoushuIndividualProposals(
     .gte('entry_date', period.schedule_start_date)
     .lte('entry_date', period.schedule_end_date)
     .in('status', ['scheduled', 'completed', 'transferred_in']);
-  for (const e of (existing ?? []) as Array<{ student_id: string; teacher_id: string | null; entry_date: string; time_slot_id: string }>) {
+  for (const e of (existing ?? []) as Array<{
+    student_id: string;
+    teacher_id: string | null;
+    entry_date: string;
+    time_slot_id: string;
+  }>) {
     const cell = `${e.entry_date}|${e.time_slot_id}`;
     seatsUsed.set(cell, (seatsUsed.get(cell) ?? 0) + 1);
-    if (e.teacher_id) teacherOccupancy.set(`${cell}|${e.teacher_id}`, (teacherOccupancy.get(`${cell}|${e.teacher_id}`) ?? 0) + 1);
+    if (e.teacher_id)
+      teacherOccupancy.set(
+        `${cell}|${e.teacher_id}`,
+        (teacherOccupancy.get(`${cell}|${e.teacher_id}`) ?? 0) + 1
+      );
     if (!studentSlotsUsed.has(e.student_id)) studentSlotsUsed.set(e.student_id, new Set());
     studentSlotsUsed.get(e.student_id)!.add(cell);
     const k = `${e.student_id}|${e.entry_date}`;
@@ -242,15 +280,24 @@ export async function generateKoushuIndividualProposals(
 
   // --- 配置（貪欲・ラウンド方式で期間内に均等分散） ---
   const proposals: Array<{
-    student_id: string; teacher_id: string; proposal_date: string; time_slot_id: string;
-    subject_ids: string[]; formation: 'individual'; kind: 'koushu';
+    student_id: string;
+    teacher_id: string;
+    proposal_date: string;
+    time_slot_id: string;
+    subject_ids: string[];
+    formation: 'individual';
+    kind: 'koushu';
     match_meta: { score: number; reasons: string[]; conflicts: string[] };
   }> = [];
   const unmatched: KoushuMatchResult['unmatched'] = [];
 
   for (const task of tasks) {
     const sid = task.student_id;
-    const rules = rulesByStudent.get(sid) ?? { fixed: new Set<string>(), excluded: new Set<string>(), gender: null };
+    const rules = rulesByStudent.get(sid) ?? {
+      fixed: new Set<string>(),
+      excluded: new Set<string>(),
+      gender: null,
+    };
     const pastSet = pastByStudent.get(sid) ?? new Set<string>();
     const subjectIds = [task.subjectId]; // この (生徒,科目) タスクは単一科目で配置
     let need = task.remaining;
@@ -271,7 +318,7 @@ export async function generateKoushuIndividualProposals(
 
         for (const slot of slots) {
           const cell = `${date}|${slot.id}`;
-          if ((studentSlotsUsed.get(sid)?.has(cell)) ?? false) continue; // 同生徒同コマ重複回避
+          if (studentSlotsUsed.get(sid)?.has(cell) ?? false) continue; // 同生徒同コマ重複回避
           if ((seatsUsed.get(cell) ?? 0) >= totalSeats) continue; // 教室席数
 
           // 候補講師：この曜日に出勤可能 ∩ このコマで担当上限未満
@@ -280,13 +327,20 @@ export async function generateKoushuIndividualProposals(
             if ((teacherOccupancy.get(`${cell}|${tid}`) ?? 0) >= maxPerTeacher) continue;
             const prof = profileById.get(tid);
             if (!prof) continue;
-            const s = scoreTeacher({ teacher: prof, fixedSet: rules.fixed, excludedSet: rules.excluded, preferredGender: rules.gender, pastSet, subjectIds });
+            const s = scoreTeacher({
+              teacher: prof,
+              fixedSet: rules.fixed,
+              excludedSet: rules.excluded,
+              preferredGender: rules.gender,
+              pastSet,
+              subjectIds,
+            });
             if (s) scored.push(s);
           }
           if (scored.length === 0) continue;
 
           // 科目一致を優先（subjectOut=false を上位に）。同条件ならスコア降順。
-          scored.sort((a, b) => (Number(a.subjectOut) - Number(b.subjectOut)) || (b.score - a.score));
+          scored.sort((a, b) => Number(a.subjectOut) - Number(b.subjectOut) || b.score - a.score);
           const best = scored[0];
 
           proposals.push({
@@ -301,7 +355,10 @@ export async function generateKoushuIndividualProposals(
           });
           // 状態更新
           seatsUsed.set(cell, (seatsUsed.get(cell) ?? 0) + 1);
-          teacherOccupancy.set(`${cell}|${best.teacherId}`, (teacherOccupancy.get(`${cell}|${best.teacherId}`) ?? 0) + 1);
+          teacherOccupancy.set(
+            `${cell}|${best.teacherId}`,
+            (teacherOccupancy.get(`${cell}|${best.teacherId}`) ?? 0) + 1
+          );
           if (!studentSlotsUsed.has(sid)) studentSlotsUsed.set(sid, new Set());
           studentSlotsUsed.get(sid)!.add(cell);
           studentKomaPerDay.set(perDayKey, (studentKomaPerDay.get(perDayKey) ?? 0) + 1);
@@ -314,7 +371,9 @@ export async function generateKoushuIndividualProposals(
     if (need > 0) {
       unmatched.push({
         student_id: sid,
-        student_name: task.student ? `${task.student.last_name}${task.student.first_name}` : undefined,
+        student_name: task.student
+          ? `${task.student.last_name}${task.student.first_name}`
+          : undefined,
         remaining: need,
         reason: '出勤可能な講師・空きコマが不足',
       });

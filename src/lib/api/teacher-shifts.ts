@@ -103,11 +103,13 @@ async function fetchRegularShifts(schoolId: string, asOf: string): Promise<Shift
     .eq('school_id', schoolId)
     .eq('status', 'published');
 
-  const validSettingIds = ((settings || []) as Array<{
-    id: string;
-    effective_from: string | null;
-    effective_until: string | null;
-  }>)
+  const validSettingIds = (
+    (settings || []) as Array<{
+      id: string;
+      effective_from: string | null;
+      effective_until: string | null;
+    }>
+  )
     .filter(
       (s) =>
         (!s.effective_from || s.effective_from <= asOf) &&
@@ -137,14 +139,14 @@ async function fetchSeasonalShifts(schoolId: string, asOf: string): Promise<Shif
     .eq('school_id', schoolId)
     .eq('status', 'published');
 
-  const validSettingIds = ((settings || []) as Array<{
-    id: string;
-    start_date: string | null;
-    end_date: string | null;
-  }>)
-    .filter(
-      (s) => (!s.start_date || s.start_date <= asOf) && (!s.end_date || s.end_date >= asOf)
-    )
+  const validSettingIds = (
+    (settings || []) as Array<{
+      id: string;
+      start_date: string | null;
+      end_date: string | null;
+    }>
+  )
+    .filter((s) => (!s.start_date || s.start_date <= asOf) && (!s.end_date || s.end_date >= asOf))
     .map((s) => s.id);
 
   if (validSettingIds.length === 0) return emptySubset();
@@ -252,10 +254,7 @@ async function resolveSubmissionUserIds(
 ): Promise<Map<string, string>> {
   const emailToUserId = new Map<string, string>();
   if (emails.length > 0) {
-    const { data: users } = await db
-      .from('user_profiles')
-      .select('id, email')
-      .in('email', emails);
+    const { data: users } = await db.from('user_profiles').select('id, email').in('email', emails);
     for (const u of (users || []) as Array<{ id: string; email: string }>) {
       if (u.email) emailToUserId.set(u.email.toLowerCase(), u.id);
     }

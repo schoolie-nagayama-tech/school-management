@@ -45,16 +45,19 @@ export async function GET(request: NextRequest) {
 
     // アクティブテンプレートに紐づく付与のみに絞り込み（管理者画面と一致させる）
     const activeBadgeIds = new Set((badges || []).map((b: { id: string }) => b.id));
-    const filteredAssignments = (assignments || []).filter(
-      (a: { badge_id: string }) => activeBadgeIds.has(a.badge_id)
+    const filteredAssignments = (assignments || []).filter((a: { badge_id: string }) =>
+      activeBadgeIds.has(a.badge_id)
     );
 
-    return NextResponse.json({
-      badges: badges || [],
-      assignments: filteredAssignments,
-    }, {
-      headers: { 'Cache-Control': 'private, max-age=15, stale-while-revalidate=30' },
-    });
+    return NextResponse.json(
+      {
+        badges: badges || [],
+        assignments: filteredAssignments,
+      },
+      {
+        headers: { 'Cache-Control': 'private, max-age=15, stale-while-revalidate=30' },
+      }
+    );
   } catch (err) {
     console.error('GET /api/my/badges error:', err);
     return NextResponse.json({ error: 'バッジ情報の取得に失敗しました' }, { status: 500 });

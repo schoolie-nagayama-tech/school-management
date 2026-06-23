@@ -3,10 +3,20 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui';
 import { Button, Input, Label } from '@/components/ui';
-import { SelectShadcn as Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui';
+import {
+  SelectShadcn as Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '@/components/ui';
 import { Checkbox } from '@/components/ui';
 import { SCHEDULE_PERIOD_LABELS, DAY_OF_WEEK_LABELS } from '@/types/schedule';
-import type { ScheduleRegularPattern, ScheduleRegularPatternFormData, SchedulePeriodType } from '@/types/schedule';
+import type {
+  ScheduleRegularPattern,
+  ScheduleRegularPatternFormData,
+  SchedulePeriodType,
+} from '@/types/schedule';
 import type { ScheduleTimeSlot } from '@/types/schedule';
 import type { Subject } from '@/types/database';
 
@@ -22,7 +32,9 @@ function gradeToCategory(grade: number): 'elementary' | 'middle' | 'high' {
   return 'high';
 }
 
-function groupSubjectsByGradeCategory(subjects: Subject[]): { category: string; label: string; items: Subject[] }[] {
+function groupSubjectsByGradeCategory(
+  subjects: Subject[]
+): { category: string; label: string; items: Subject[] }[] {
   const order: ('elementary' | 'middle' | 'high')[] = ['elementary', 'middle', 'high'];
   const map = new Map<string, Subject[]>();
   for (const s of subjects) {
@@ -32,7 +44,11 @@ function groupSubjectsByGradeCategory(subjects: Subject[]): { category: string; 
   }
   return order
     .filter((cat) => map.has(cat))
-    .map((cat) => ({ category: cat, label: GRADE_CATEGORY_LABELS[cat] ?? cat, items: map.get(cat)! }));
+    .map((cat) => ({
+      category: cat,
+      label: GRADE_CATEGORY_LABELS[cat] ?? cat,
+      items: map.get(cat)!,
+    }));
 }
 
 interface TeacherOption {
@@ -94,12 +110,11 @@ export function RegularPatternForm({
   const [studentSearch, setStudentSearch] = useState('');
   const [saving, setSaving] = useState(false);
 
-  const teachersForSchool = teachers.filter(
-    (t) => t.user_schools?.some((us) => us.school_id === selectedSchoolId)
+  const teachersForSchool = teachers.filter((t) =>
+    t.user_schools?.some((us) => us.school_id === selectedSchoolId)
   );
 
-  const selectedSlotNumber = timeSlots.find((s) => s.id === form.time_slot_id)
-    ?.slot_number;
+  const selectedSlotNumber = timeSlots.find((s) => s.id === form.time_slot_id)?.slot_number;
   const filteredTeachers = useMemo(() => {
     // 科目未選択時は講師を表示しない（科目→講師の順で選択させる）
     if (form.subject_ids.length === 0) return [];
@@ -141,13 +156,7 @@ export function RegularPatternForm({
     ) {
       setForm((f) => ({ ...f, teacher_id: '' }));
     }
-  }, [
-    form.teacher_id,
-    form.day_of_week,
-    form.time_slot_id,
-    form.subject_ids,
-    filteredTeachers,
-  ]);
+  }, [form.teacher_id, form.day_of_week, form.time_slot_id, form.subject_ids, filteredTeachers]);
 
   const searchLower = studentSearch.trim().toLowerCase();
   const filteredStudents = searchLower
@@ -170,7 +179,13 @@ export function RegularPatternForm({
     if (allowedGradeCategory) {
       const items = subjectsForStudent;
       return items.length > 0
-        ? [{ category: allowedGradeCategory, label: GRADE_CATEGORY_LABELS[allowedGradeCategory], items }]
+        ? [
+            {
+              category: allowedGradeCategory,
+              label: GRADE_CATEGORY_LABELS[allowedGradeCategory],
+              items,
+            },
+          ]
         : [];
     }
     return groupSubjectsByGradeCategory(subjects);
@@ -318,7 +333,9 @@ export function RegularPatternForm({
           <div className="space-y-2">
             <Label>科目（複数可）</Label>
             {!form.student_id ? (
-              <p className="text-xs text-[var(--paragraph-light)]">生徒を選択すると、該当学年の科目のみ表示されます</p>
+              <p className="text-xs text-[var(--paragraph-light)]">
+                生徒を選択すると、該当学年の科目のみ表示されます
+              </p>
             ) : null}
             <div className="space-y-3 border rounded-md p-2">
               {subjectGroupsForDisplay.map(({ label, items }) => (
@@ -342,7 +359,9 @@ export function RegularPatternForm({
           <div className="space-y-2">
             <Label>講師</Label>
             {form.subject_ids.length === 0 ? (
-              <p className="text-xs text-[var(--paragraph-light)]">科目を選択すると、担当可能な講師のみ表示されます</p>
+              <p className="text-xs text-[var(--paragraph-light)]">
+                科目を選択すると、担当可能な講師のみ表示されます
+              </p>
             ) : null}
             <Select
               value={form.teacher_id ?? undefined}
@@ -354,7 +373,9 @@ export function RegularPatternForm({
               <SelectContent>
                 {filteredTeachers.length === 0 ? (
                   <div className="px-3 py-2 text-sm text-gray-500">
-                    {form.subject_ids.length > 0 ? '選択した科目を担当できる講師がいません' : '科目を選択してください'}
+                    {form.subject_ids.length > 0
+                      ? '選択した科目を担当できる講師がいません'
+                      : '科目を選択してください'}
                   </div>
                 ) : (
                   filteredTeachers.map((t) => (

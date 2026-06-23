@@ -30,12 +30,7 @@ interface TeacherDetailModalProps {
   subjects: Subject[];
 }
 
-export function TeacherDetailModal({
-  open,
-  onClose,
-  teacher,
-  subjects,
-}: TeacherDetailModalProps) {
+export function TeacherDetailModal({ open, onClose, teacher, subjects }: TeacherDetailModalProps) {
   if (!teacher) return null;
 
   const subjectNames = (teacher.teachable_subject_ids ?? [])

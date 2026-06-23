@@ -1,5 +1,11 @@
 import { createSupabaseBrowserClient } from '@/lib/supabase';
-import type { UserProfile, UserSchool, UserInvitation, UserWithDetails, UserRole } from '@/types/database';
+import type {
+  UserProfile,
+  UserSchool,
+  UserInvitation,
+  UserWithDetails,
+  UserRole,
+} from '@/types/database';
 import { normalizeLoginEmail, normalizePassword } from '@/lib/utils/loginId';
 
 // =====================================================
@@ -39,10 +45,7 @@ export async function signInWithEmail(email: string, password: string) {
   // signInWithPassword はタイムアウトを持たないため、Promise.race で上限を設ける
   let timer: ReturnType<typeof setTimeout> | undefined;
   const timeout = new Promise<never>((_, reject) => {
-    timer = setTimeout(
-      () => reject(new LoginTimeoutError(LOGIN_TIMEOUT_MS)),
-      LOGIN_TIMEOUT_MS
-    );
+    timer = setTimeout(() => reject(new LoginTimeoutError(LOGIN_TIMEOUT_MS)), LOGIN_TIMEOUT_MS);
   });
 
   try {
@@ -83,12 +86,9 @@ export async function signOut() {
 // パスワードリセットメール送信
 export async function sendPasswordResetEmail(email: string) {
   const supabase = createSupabaseBrowserClient();
-  const { data, error } = await supabase.auth.resetPasswordForEmail(
-    normalizeLoginEmail(email),
-    {
-      redirectTo: `${window.location.origin}/auth/reset-password`,
-    }
-  );
+  const { data, error } = await supabase.auth.resetPasswordForEmail(normalizeLoginEmail(email), {
+    redirectTo: `${window.location.origin}/auth/reset-password`,
+  });
   if (error) throw error;
   return data;
 }
@@ -113,7 +113,11 @@ export async function getSession() {
   } catch (err: unknown) {
     // AbortErrorは再スローしない（コンポーネントがアンマウントされた場合）
     const errObj = err instanceof Error ? err : null;
-    if (errObj?.name === 'AbortError' || errObj?.message?.includes('aborted') || errObj?.message?.includes('signal is aborted')) {
+    if (
+      errObj?.name === 'AbortError' ||
+      errObj?.message?.includes('aborted') ||
+      errObj?.message?.includes('signal is aborted')
+    ) {
       return null;
     }
     throw err;
@@ -132,10 +136,7 @@ export async function getCurrentUser() {
  * 認証付きで fetch。API Route が Cookie でセッションを読めない場合のフォールバックとして
  * Authorization: Bearer ヘッダーを付与する。
  */
-export async function fetchWithAuth(
-  url: string,
-  options: RequestInit = {}
-): Promise<Response> {
+export async function fetchWithAuth(url: string, options: RequestInit = {}): Promise<Response> {
   const session = await getSession();
   const headers = new Headers(options.headers);
   if (session?.access_token) {
@@ -166,7 +167,11 @@ export async function getUserProfile(userId: string): Promise<UserProfile | null
   } catch (err: unknown) {
     // AbortErrorは無視
     const errObj = err instanceof Error ? err : null;
-    if (errObj?.name === 'AbortError' || errObj?.message?.includes('aborted') || errObj?.message?.includes('signal is aborted')) {
+    if (
+      errObj?.name === 'AbortError' ||
+      errObj?.message?.includes('aborted') ||
+      errObj?.message?.includes('signal is aborted')
+    ) {
       return null;
     }
     throw err;
@@ -181,13 +186,13 @@ export async function createUserProfile(
   displayName?: string,
   invitedBy?: string,
   lastName?: string,
-  firstName?: string,
+  firstName?: string
 ): Promise<UserProfile> {
   const supabase = createSupabaseBrowserClient();
   // 姓名が渡された場合は display_name を自動生成
   const effectiveDisplayName = lastName
     ? [lastName, firstName].filter(Boolean).join(' ')
-    : (displayName || null);
+    : displayName || null;
   const { data, error } = await supabase
     .from('user_profiles')
     .insert({
@@ -210,7 +215,21 @@ export async function createUserProfile(
 // プロファイルを更新
 export async function updateUserProfile(
   userId: string,
-  updates: Partial<Pick<UserProfile, 'display_name' | 'last_name' | 'first_name' | 'role' | 'is_active' | 'teachable_subject_ids' | 'available_days_of_week' | 'default_school_id' | 'employee_no' | 'is_teaching_staff'>>
+  updates: Partial<
+    Pick<
+      UserProfile,
+      | 'display_name'
+      | 'last_name'
+      | 'first_name'
+      | 'role'
+      | 'is_active'
+      | 'teachable_subject_ids'
+      | 'available_days_of_week'
+      | 'default_school_id'
+      | 'employee_no'
+      | 'is_teaching_staff'
+    >
+  >
 ): Promise<UserProfile> {
   const supabase = createSupabaseBrowserClient();
   const { data, error } = await supabase
@@ -239,7 +258,7 @@ export async function updateLastLogin(userId: string): Promise<void> {
 // ユーザー一覧を取得（管理者用）
 export async function getUsers(): Promise<UserWithDetails[]> {
   const supabase = createSupabaseBrowserClient();
-  
+
   // まずユーザープロファイルを取得
   const { data: profiles, error: profilesError } = await supabase
     .from('user_profiles')
@@ -259,10 +278,12 @@ export async function getUsers(): Promise<UserWithDetails[]> {
   const allUserIds = (profiles as UserProfile[]).map((p) => p.id);
   const { data: allUserSchools, error: schoolsError } = await supabase
     .from('user_schools')
-    .select(`
+    .select(
+      `
       *,
       school:schools(*)
-    `)
+    `
+    )
     .in('user_id', allUserIds);
 
   if (schoolsError) {
@@ -278,10 +299,13 @@ export async function getUsers(): Promise<UserWithDetails[]> {
     schoolsByUserId.set(userId, list);
   }
 
-  const usersWithSchools = (profiles as UserProfile[]).map((profile) => ({
-    ...profile,
-    schools: schoolsByUserId.get(profile.id) || [],
-  } as unknown as UserWithDetails));
+  const usersWithSchools = (profiles as UserProfile[]).map(
+    (profile) =>
+      ({
+        ...profile,
+        schools: schoolsByUserId.get(profile.id) || [],
+      }) as unknown as UserWithDetails
+  );
 
   return usersWithSchools;
 }
@@ -304,7 +328,11 @@ export async function getUserSchools(userId: string): Promise<UserSchool[]> {
   } catch (err: unknown) {
     // AbortErrorは無視
     const errObj = err instanceof Error ? err : null;
-    if (errObj?.name === 'AbortError' || errObj?.message?.includes('aborted') || errObj?.message?.includes('signal is aborted')) {
+    if (
+      errObj?.name === 'AbortError' ||
+      errObj?.message?.includes('aborted') ||
+      errObj?.message?.includes('signal is aborted')
+    ) {
       return [];
     }
     throw err;
@@ -312,7 +340,10 @@ export async function getUserSchools(userId: string): Promise<UserSchool[]> {
 }
 
 // ユーザーを教室に紐付け（既に紐づいている場合はスキップして 409 を防ぐ）
-export async function addUserToSchool(userId: string, schoolId: string): Promise<UserSchool | null> {
+export async function addUserToSchool(
+  userId: string,
+  schoolId: string
+): Promise<UserSchool | null> {
   const supabase = createSupabaseBrowserClient();
 
   const { data: existing } = await supabase
@@ -353,7 +384,7 @@ export async function removeUserFromSchool(userId: string, schoolId: string): Pr
 // 招待トークンを生成
 function generateToken(): string {
   return Array.from(crypto.getRandomValues(new Uint8Array(32)))
-    .map(b => b.toString(16).padStart(2, '0'))
+    .map((b) => b.toString(16).padStart(2, '0'))
     .join('');
 }
 
@@ -425,10 +456,7 @@ export async function getInvitations(): Promise<UserInvitation[]> {
 // 招待を削除
 export async function deleteInvitation(id: string): Promise<void> {
   const supabase = createSupabaseBrowserClient();
-  const { error } = await supabase
-    .from('user_invitations')
-    .delete()
-    .eq('id', id);
+  const { error } = await supabase.from('user_invitations').delete().eq('id', id);
 
   if (error) throw error;
 }

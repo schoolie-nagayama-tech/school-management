@@ -18,9 +18,7 @@ export function PriceQuote({
   if (!selectedGrade) {
     return (
       <div className="bg-[#f3f4f6] rounded-lg border border-[#e5e7eb] p-4">
-        <p className="text-sm text-[#4b5563] text-center">
-          学年を選択すると料金が表示されます
-        </p>
+        <p className="text-sm text-[#4b5563] text-center">学年を選択すると料金が表示されます</p>
       </div>
     );
   }
@@ -43,9 +41,7 @@ export function PriceQuote({
 
       {/* 該当学年の単価のみ表示 */}
       <div className="mb-4">
-        <p className="text-sm font-medium text-[#4b5563] mb-2">
-          {selectedGrade} 単価（1コマ）
-        </p>
+        <p className="text-sm font-medium text-[#4b5563] mb-2">{selectedGrade} 単価（1コマ）</p>
         <p className="text-lg font-semibold text-[#1f2937]">
           ¥{(priceTable[selectedGrade] ?? 0).toLocaleString()}
         </p>
@@ -57,10 +53,7 @@ export function PriceQuote({
         <div className="space-y-1">
           {subjectBreakdown.length > 0 ? (
             subjectBreakdown.map(({ subject, koma, fee }) => (
-              <div
-                key={subject}
-                className="flex justify-between text-sm text-[#4b5563]"
-              >
+              <div key={subject} className="flex justify-between text-sm text-[#4b5563]">
                 <span>
                   {subject} × {koma}コマ
                 </span>
@@ -68,9 +61,7 @@ export function PriceQuote({
               </div>
             ))
           ) : (
-            <p className="text-sm text-[#4b5563]/60 text-center py-2">
-              科目を選択してください
-            </p>
+            <p className="text-sm text-[#4b5563]/60 text-center py-2">科目を選択してください</p>
           )}
         </div>
       </div>
@@ -83,9 +74,7 @@ export function PriceQuote({
         </div>
         <div className="flex justify-between items-center">
           <span className="text-base font-bold text-[#1f2937]">合計金額</span>
-          <span className="text-2xl font-bold text-[#1f2937]">
-            ¥{totalFee.toLocaleString()}
-          </span>
+          <span className="text-2xl font-bold text-[#1f2937]">¥{totalFee.toLocaleString()}</span>
         </div>
         <p className="text-xs text-[#4b5563] mt-2">
           料金は次回お月謝と合わせてお引き落としとなります。

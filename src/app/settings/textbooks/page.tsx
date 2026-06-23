@@ -11,7 +11,18 @@ import AccessDenied from '@/components/AccessDenied';
 import { getTextbooks, createTextbook, updateTextbook, deleteTextbook } from '@/lib/api/textbooks';
 import { getMaterials } from '@/lib/api/inventory';
 import type { Textbook, TextbookInsert, Material } from '@/types/database';
-import { Plus, Search, Edit2, Trash2, BookOpen, ChevronLeft, ChevronRight, FileText, Eye, EyeOff } from 'lucide-react';
+import {
+  Plus,
+  Search,
+  Edit2,
+  Trash2,
+  BookOpen,
+  ChevronLeft,
+  ChevronRight,
+  FileText,
+  Eye,
+  EyeOff,
+} from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { fetchAllPaged } from '@/lib/utils/supabasePaging';
 
@@ -20,15 +31,40 @@ const GRADES = ['1年', '2年', '3年', '4年', '5年', '6年', '共通'];
 const SUBJECTS = ['英語', '数学', '算数', '国語', '理科', '社会'];
 
 const SUBJECT_COLORS: Record<string, { bg: string; text: string; border: string; dot: string }> = {
-  '英語': { bg: 'bg-surfacelue-50', text: 'text-text-text-mutedodylue-700', border: 'border-infoorderorderlue-200', dot: 'bg-surfacelue-500' },
-  '数学': { bg: 'bg-red-50', text: 'text-red-700', border: 'border-red-200', dot: 'bg-red-500' },
-  '算数': { bg: 'bg-red-50', text: 'text-red-700', border: 'border-red-200', dot: 'bg-red-500' },
-  '国語': { bg: 'bg-green-50', text: 'text-green-700', border: 'border-green-200', dot: 'bg-green-500' },
-  '理科': { bg: 'bg-purple-50', text: 'text-purple-700', border: 'border-purple-200', dot: 'bg-purple-500' },
-  '社会': { bg: 'bg-surfacember-50', text: 'text-text-headingmber-700', border: 'border-inkmber-200', dot: 'bg-surfacember-500' },
+  英語: {
+    bg: 'bg-surfacelue-50',
+    text: 'text-text-text-mutedodylue-700',
+    border: 'border-infoorderorderlue-200',
+    dot: 'bg-surfacelue-500',
+  },
+  数学: { bg: 'bg-red-50', text: 'text-red-700', border: 'border-red-200', dot: 'bg-red-500' },
+  算数: { bg: 'bg-red-50', text: 'text-red-700', border: 'border-red-200', dot: 'bg-red-500' },
+  国語: {
+    bg: 'bg-green-50',
+    text: 'text-green-700',
+    border: 'border-green-200',
+    dot: 'bg-green-500',
+  },
+  理科: {
+    bg: 'bg-purple-50',
+    text: 'text-purple-700',
+    border: 'border-purple-200',
+    dot: 'bg-purple-500',
+  },
+  社会: {
+    bg: 'bg-surfacember-50',
+    text: 'text-text-headingmber-700',
+    border: 'border-inkmber-200',
+    dot: 'bg-surfacember-500',
+  },
 };
 
-const DEFAULT_COLORS = { bg: 'bg-gray-50', text: 'text-gray-700', border: 'border-gray-200', dot: 'bg-gray-400' };
+const DEFAULT_COLORS = {
+  bg: 'bg-gray-50',
+  text: 'text-gray-700',
+  border: 'border-gray-200',
+  dot: 'bg-gray-400',
+};
 
 interface TextbookForm {
   name: string;
@@ -64,7 +100,8 @@ function TextbookMasterPage() {
   const searchParams = useSearchParams();
   const { profile, schoolIds, selectedSchoolId, isLoading: authLoading } = useAuth();
   const { toasts, removeToast, success: toastSuccess, error: toastError } = useToast();
-  const isManager = profile?.role === 'admin' || profile?.role === 'owner' || profile?.role === 'manager';
+  const isManager =
+    profile?.role === 'admin' || profile?.role === 'owner' || profile?.role === 'manager';
 
   const [textbooks, setTextbooks] = useState<Textbook[]>([]);
   const [materials, setMaterials] = useState<Material[]>([]);
@@ -84,39 +121,48 @@ function TextbookMasterPage() {
 
   // Proposal student picker
   const [proposalPickerTextbookId, setProposalPickerTextbookId] = useState<number | null>(null);
-  const [proposalStudents, setProposalStudents] = useState<{ id: string; last_name: string; first_name: string }[]>([]);
+  const [proposalStudents, setProposalStudents] = useState<
+    { id: string; last_name: string; first_name: string }[]
+  >([]);
   const [proposalStudentQuery, setProposalStudentQuery] = useState('');
   const [proposalStudentsLoading, setProposalStudentsLoading] = useState(false);
   const proposalPickerRef = useRef<HTMLDivElement>(null);
   const proposalInputRef = useRef<HTMLInputElement>(null);
 
-  const openProposalPicker = useCallback(async (e: React.MouseEvent, textbookId: number) => {
-    e.stopPropagation();
-    setProposalPickerTextbookId(textbookId);
-    setProposalStudentQuery('');
-    setProposalStudentsLoading(true);
-    try {
-      const ids = selectedSchoolId && selectedSchoolId !== 'all'
-        ? [selectedSchoolId]
-        : schoolIds;
-      if (ids.length === 0) { setProposalStudents([]); return; }
-      // 複数教室選択時は合計が 1000 名を超えうるため全件ページング取得（last_name は一意でないので id を加えて安定化）。
-      const data = await fetchAllPaged<{ id: string; last_name: string; first_name: string }>((from, to) =>
-        supabase
-          .from('students')
-          .select('id, last_name, first_name')
-          .in('school_id', ids)
-          .eq('status', 'active')
-          .order('last_name')
-          .order('id', { ascending: true })
-          .range(from, to)
-      );
-      setProposalStudents(data);
-    } catch { /* ignore */ } finally {
-      setProposalStudentsLoading(false);
-    }
-    setTimeout(() => proposalInputRef.current?.focus(), 50);
-  }, [schoolIds, selectedSchoolId]);
+  const openProposalPicker = useCallback(
+    async (e: React.MouseEvent, textbookId: number) => {
+      e.stopPropagation();
+      setProposalPickerTextbookId(textbookId);
+      setProposalStudentQuery('');
+      setProposalStudentsLoading(true);
+      try {
+        const ids = selectedSchoolId && selectedSchoolId !== 'all' ? [selectedSchoolId] : schoolIds;
+        if (ids.length === 0) {
+          setProposalStudents([]);
+          return;
+        }
+        // 複数教室選択時は合計が 1000 名を超えうるため全件ページング取得（last_name は一意でないので id を加えて安定化）。
+        const data = await fetchAllPaged<{ id: string; last_name: string; first_name: string }>(
+          (from, to) =>
+            supabase
+              .from('students')
+              .select('id, last_name, first_name')
+              .in('school_id', ids)
+              .eq('status', 'active')
+              .order('last_name')
+              .order('id', { ascending: true })
+              .range(from, to)
+        );
+        setProposalStudents(data);
+      } catch {
+        /* ignore */
+      } finally {
+        setProposalStudentsLoading(false);
+      }
+      setTimeout(() => proposalInputRef.current?.focus(), 50);
+    },
+    [schoolIds, selectedSchoolId]
+  );
 
   useEffect(() => {
     if (proposalPickerTextbookId === null) return;
@@ -130,15 +176,18 @@ function TextbookMasterPage() {
   }, [proposalPickerTextbookId]);
 
   const filteredProposalStudents = proposalStudentQuery
-    ? proposalStudents.filter(s => `${s.last_name}${s.first_name}`.includes(proposalStudentQuery))
+    ? proposalStudents.filter((s) => `${s.last_name}${s.first_name}`.includes(proposalStudentQuery))
     : proposalStudents;
 
   const handleSelectProposalStudent = (studentId: string) => {
     if (proposalPickerTextbookId === null) return;
     setProposalPickerTextbookId(null);
     const month = new Date().getMonth() + 1;
-    const season = month >= 2 && month <= 4 ? 'spring' : month >= 5 && month <= 9 ? 'summer' : 'winter';
-    router.push(`/students/${studentId}/proposals/new?textbookId=${proposalPickerTextbookId}&season=${season}&year=${new Date().getFullYear()}`);
+    const season =
+      month >= 2 && month <= 4 ? 'spring' : month >= 5 && month <= 9 ? 'summer' : 'winter';
+    router.push(
+      `/students/${studentId}/proposals/new?textbookId=${proposalPickerTextbookId}&season=${season}&year=${new Date().getFullYear()}`
+    );
   };
 
   const toastErrorRef = useRef(toastError);
@@ -154,9 +203,13 @@ function TextbookMasterPage() {
       try {
         const ids = selectedSchoolId && selectedSchoolId !== 'all' ? [selectedSchoolId] : schoolIds;
         if (ids.length > 0) setMaterials(await getMaterials(ids));
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
     } catch (e) {
-      toastErrorRef.current(`教材の読み込みに失敗しました: ${e instanceof Error ? e.message : '不明なエラー'}`);
+      toastErrorRef.current(
+        `教材の読み込みに失敗しました: ${e instanceof Error ? e.message : '不明なエラー'}`
+      );
     } finally {
       setLoading(false);
     }
@@ -185,14 +238,17 @@ function TextbookMasterPage() {
   // Filter & Sort
   const filtered = useMemo(() => {
     let result = textbooks;
-    if (schoolTypeFilter) result = result.filter(t => t.school_type === schoolTypeFilter);
-    if (gradeFilter) result = result.filter(t => t.grade === gradeFilter);
-    if (subjectFilter) result = result.filter(t => t.subject === subjectFilter);
+    if (schoolTypeFilter) result = result.filter((t) => t.school_type === schoolTypeFilter);
+    if (gradeFilter) result = result.filter((t) => t.grade === gradeFilter);
+    if (subjectFilter) result = result.filter((t) => t.subject === subjectFilter);
     if (search.trim()) {
       const terms = search.toLowerCase().split(/\s+/).filter(Boolean);
-      result = result.filter(t => {
-        const s = [t.name, t.publisher, t.school_type, t.grade, t.subject].filter(Boolean).join(' ').toLowerCase();
-        return terms.every(term => s.includes(term));
+      result = result.filter((t) => {
+        const s = [t.name, t.publisher, t.school_type, t.grade, t.subject]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase();
+        return terms.every((term) => s.includes(term));
       });
     }
     const SUBJECT_ORDER = ['英語', '数学', '算数', '国語', '理科', '社会'];
@@ -231,7 +287,8 @@ function TextbookMasterPage() {
   // Available grades based on school type
   const availableGrades = useMemo(() => {
     if (schoolTypeFilter === '小学') return ['1年', '2年', '3年', '4年', '5年', '6年', '共通'];
-    if (schoolTypeFilter === '中学' || schoolTypeFilter === '高校') return ['1年', '2年', '3年', '共通'];
+    if (schoolTypeFilter === '中学' || schoolTypeFilter === '高校')
+      return ['1年', '2年', '3年', '共通'];
     return GRADES;
   }, [schoolTypeFilter]);
 
@@ -268,7 +325,14 @@ function TextbookMasterPage() {
     }
     setSaving(true);
     try {
-      const gradeCategory = form.school_type === '小学' ? 'elementary' : form.school_type === '中学' ? 'middle' : form.school_type === '高校' ? 'high' : undefined;
+      const gradeCategory =
+        form.school_type === '小学'
+          ? 'elementary'
+          : form.school_type === '中学'
+            ? 'middle'
+            : form.school_type === '高校'
+              ? 'high'
+              : undefined;
       const data: TextbookInsert = {
         name: form.name.trim(),
         publisher: form.publisher.trim() || null,
@@ -297,7 +361,8 @@ function TextbookMasterPage() {
 
   const handleDelete = async (e: React.MouseEvent, id: number, name: string) => {
     e.stopPropagation();
-    if (!window.confirm(`「${name}」を削除しますか？\n紐づくカリキュラムも全て削除されます。`)) return;
+    if (!window.confirm(`「${name}」を削除しますか？\n紐づくカリキュラムも全て削除されます。`))
+      return;
     try {
       await deleteTextbook(id);
       toastSuccess('教材を削除しました');
@@ -328,19 +393,26 @@ function TextbookMasterPage() {
       <div className="max-w-[1600px] mx-auto py-6 px-4">
         {/* Header */}
         <div className="mb-6">
-          <Link href="/settings" className="inline-flex items-center text-sm text-text-muted hover:text-text-heading mb-4 transition-colors duration-150">
-            <ChevronLeft className="w-4 h-4 mr-1" />設定に戻る
+          <Link
+            href="/settings"
+            className="inline-flex items-center text-sm text-text-muted hover:text-text-heading mb-4 transition-colors duration-150"
+          >
+            <ChevronLeft className="w-4 h-4 mr-1" />
+            設定に戻る
           </Link>
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-xl font-bold text-text-heading">教材マスタ管理</h1>
-              <p className="text-sm text-text-muted mt-1">教材をクリックするとカリキュラム（目次）を管理できます</p>
+              <p className="text-sm text-text-muted mt-1">
+                教材をクリックするとカリキュラム（目次）を管理できます
+              </p>
             </div>
             <button
               onClick={openAddModal}
               className="inline-flex items-center gap-1.5 px-4 py-2 bg-ink text-white text-sm rounded-lg hover:bg-ink/80 transition-colors duration-150"
             >
-              <Plus className="w-4 h-4" />教材を追加
+              <Plus className="w-4 h-4" />
+              教材を追加
             </button>
           </div>
         </div>
@@ -353,34 +425,49 @@ function TextbookMasterPage() {
               <input
                 type="text"
                 value={search}
-                onChange={e => setSearch(e.target.value)}
+                onChange={(e) => setSearch(e.target.value)}
                 placeholder="教材名・出版社で検索..."
                 className="w-full pl-9 pr-3 py-1.5 border border-border rounded-lg text-sm focus:ring-ink focus:ring-ink/30 focus:border-ink"
               />
             </div>
             <select
               value={schoolTypeFilter}
-              onChange={e => { setSchoolTypeFilter(e.target.value); setGradeFilter(''); }}
+              onChange={(e) => {
+                setSchoolTypeFilter(e.target.value);
+                setGradeFilter('');
+              }}
               className="px-3 py-1.5 border border-border rounded-lg text-sm bg-surface-raised"
             >
               <option value="">種別: 全て</option>
-              {SCHOOL_TYPES.map(st => <option key={st} value={st}>{st}</option>)}
+              {SCHOOL_TYPES.map((st) => (
+                <option key={st} value={st}>
+                  {st}
+                </option>
+              ))}
             </select>
             <select
               value={gradeFilter}
-              onChange={e => setGradeFilter(e.target.value)}
+              onChange={(e) => setGradeFilter(e.target.value)}
               className="px-3 py-1.5 border border-border rounded-lg text-sm bg-surface-raised"
             >
               <option value="">学年: 全て</option>
-              {availableGrades.map(g => <option key={g} value={g}>{g}</option>)}
+              {availableGrades.map((g) => (
+                <option key={g} value={g}>
+                  {g}
+                </option>
+              ))}
             </select>
             <select
               value={subjectFilter}
-              onChange={e => setSubjectFilter(e.target.value)}
+              onChange={(e) => setSubjectFilter(e.target.value)}
               className="px-3 py-1.5 border border-border rounded-lg text-sm bg-surface-raised"
             >
               <option value="">科目: 全て</option>
-              {SUBJECTS.map(s => <option key={s} value={s}>{s}</option>)}
+              {SUBJECTS.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
             </select>
           </div>
         </div>
@@ -399,7 +486,7 @@ function TextbookMasterPage() {
           </div>
         ) : (
           <div className="space-y-6">
-            {grouped.map(group => {
+            {grouped.map((group) => {
               const colors = SUBJECT_COLORS[group.subject] || DEFAULT_COLORS;
               return (
                 <div key={group.key}>
@@ -414,7 +501,7 @@ function TextbookMasterPage() {
 
                   {/* Cards */}
                   <div className="space-y-1">
-                    {group.items.map(t => (
+                    {group.items.map((t) => (
                       <div
                         key={t.id}
                         onClick={() => router.push(`/settings/textbooks/${t.id}/curriculum`)}
@@ -424,17 +511,27 @@ function TextbookMasterPage() {
                           ${t.is_active ? '' : 'opacity-55'}`}
                       >
                         {/* Subject Indicator */}
-                        <div className={`flex-shrink-0 w-1 h-8 rounded-full ${colors.dot} opacity-40 group-hover:opacity-100 transition-opacity`} />
+                        <div
+                          className={`flex-shrink-0 w-1 h-8 rounded-full ${colors.dot} opacity-40 group-hover:opacity-100 transition-opacity`}
+                        />
 
                         {/* Info */}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
-                            <span className={`font-medium text-sm truncate ${t.is_active ? 'text-text-heading' : 'text-text-muted line-through'}`}>{t.name}</span>
+                            <span
+                              className={`font-medium text-sm truncate ${t.is_active ? 'text-text-heading' : 'text-text-muted line-through'}`}
+                            >
+                              {t.name}
+                            </span>
                             {!t.is_active && (
-                              <span className="flex-shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded bg-surface-hover text-text-faint border border-border-default">非表示</span>
+                              <span className="flex-shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded bg-surface-hover text-text-faint border border-border-default">
+                                非表示
+                              </span>
                             )}
                             {t.publisher && (
-                              <span className="flex-shrink-0 text-xs text-text-faint">{t.publisher}</span>
+                              <span className="flex-shrink-0 text-xs text-text-faint">
+                                {t.publisher}
+                              </span>
                             )}
                           </div>
                         </div>
@@ -454,14 +551,25 @@ function TextbookMasterPage() {
                               ? 'text-text-faint hover:text-ink hover:bg-surface-hover'
                               : 'text-amber-600 hover:bg-amber-50'
                           }`}
-                          title={t.is_active ? 'この教材を非表示にする（教材マスタには残ります）' : '再表示する'}
+                          title={
+                            t.is_active
+                              ? 'この教材を非表示にする（教材マスタには残ります）'
+                              : '再表示する'
+                          }
                         >
-                          {t.is_active ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+                          {t.is_active ? (
+                            <Eye className="w-3.5 h-3.5" />
+                          ) : (
+                            <EyeOff className="w-3.5 h-3.5" />
+                          )}
                         </button>
 
                         {/* Actions */}
                         <div className="flex items-center gap-0.5 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
-                          <div className="relative" ref={proposalPickerTextbookId === t.id ? proposalPickerRef : undefined}>
+                          <div
+                            className="relative"
+                            ref={proposalPickerTextbookId === t.id ? proposalPickerRef : undefined}
+                          >
                             <button
                               onClick={(e) => openProposalPicker(e, t.id)}
                               className="p-1.5 text-text-faint hover:text-ink hover:bg-surface-raised rounded transition-colors duration-150"
@@ -485,16 +593,26 @@ function TextbookMasterPage() {
                                     />
                                   </div>
                                 </div>
-                                <div className="max-h-60 overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+                                <div
+                                  className="max-h-60 overflow-y-auto"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
                                   {proposalStudentsLoading ? (
-                                    <div className="py-4 text-center text-xs text-text-faint">読み込み中...</div>
+                                    <div className="py-4 text-center text-xs text-text-faint">
+                                      読み込み中...
+                                    </div>
                                   ) : filteredProposalStudents.length === 0 ? (
-                                    <div className="py-4 text-center text-xs text-text-faint">該当する生徒がいません</div>
+                                    <div className="py-4 text-center text-xs text-text-faint">
+                                      該当する生徒がいません
+                                    </div>
                                   ) : (
                                     filteredProposalStudents.map((s) => (
                                       <button
                                         key={s.id}
-                                        onClick={(e) => { e.stopPropagation(); handleSelectProposalStudent(s.id); }}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleSelectProposalStudent(s.id);
+                                        }}
                                         className="w-full text-left px-3 py-2 text-sm text-text-body hover:bg-surface-hover transition-colors duration-150"
                                       >
                                         {s.last_name} {s.first_name}
@@ -534,19 +652,27 @@ function TextbookMasterPage() {
 
         {/* Modal */}
         {showModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-surfacelack/40" onClick={() => setShowModal(false)}>
-            <div className="bg-surface-raised rounded-xl shadow-xl w-full max-w-md mx-4 p-6" onClick={e => e.stopPropagation()}>
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-surfacelack/40"
+            onClick={() => setShowModal(false)}
+          >
+            <div
+              className="bg-surface-raised rounded-xl shadow-xl w-full max-w-md mx-4 p-6"
+              onClick={(e) => e.stopPropagation()}
+            >
               <h2 className="text-lg font-bold text-text-heading mb-4">
                 <BookOpen className="w-5 h-5 inline mr-2 text-ink" />
                 {editingId ? '教材を編集' : '教材を追加'}
               </h2>
               <div className="space-y-3">
                 <div>
-                  <label className="block text-sm font-medium text-text-heading mb-1">教材名 *</label>
+                  <label className="block text-sm font-medium text-text-heading mb-1">
+                    教材名 *
+                  </label>
                   <input
                     type="text"
                     value={form.name}
-                    onChange={e => setForm({ ...form, name: e.target.value })}
+                    onChange={(e) => setForm({ ...form, name: e.target.value })}
                     className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:ring-ink focus:ring-ink/30 focus:border-ink"
                     placeholder="例: フォレスタ 英語I"
                     autoFocus
@@ -557,28 +683,34 @@ function TextbookMasterPage() {
                   <input
                     type="text"
                     value={form.publisher}
-                    onChange={e => setForm({ ...form, publisher: e.target.value })}
+                    onChange={(e) => setForm({ ...form, publisher: e.target.value })}
                     className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:ring-ink focus:ring-ink/30 focus:border-ink"
                     placeholder="例: SPRIX"
                   />
                 </div>
                 <div className="grid grid-cols-3 gap-3">
                   <div>
-                    <label className="block text-sm font-medium text-text-heading mb-1">学校種別 *</label>
+                    <label className="block text-sm font-medium text-text-heading mb-1">
+                      学校種別 *
+                    </label>
                     <select
                       value={form.school_type}
-                      onChange={e => setForm({ ...form, school_type: e.target.value, grade: '' })}
+                      onChange={(e) => setForm({ ...form, school_type: e.target.value, grade: '' })}
                       className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-surface-raised"
                     >
                       <option value="">選択</option>
-                      {SCHOOL_TYPES.map(st => <option key={st} value={st}>{st}</option>)}
+                      {SCHOOL_TYPES.map((st) => (
+                        <option key={st} value={st}>
+                          {st}
+                        </option>
+                      ))}
                     </select>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-text-heading mb-1">学年</label>
                     <select
                       value={form.grade}
-                      onChange={e => setForm({ ...form, grade: e.target.value })}
+                      onChange={(e) => setForm({ ...form, grade: e.target.value })}
                       className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-surface-raised"
                     >
                       <option value="">選択</option>
@@ -587,18 +719,26 @@ function TextbookMasterPage() {
                         : form.school_type
                           ? ['1年', '2年', '3年', '共通']
                           : GRADES
-                      ).map(g => <option key={g} value={g}>{g}</option>)}
+                      ).map((g) => (
+                        <option key={g} value={g}>
+                          {g}
+                        </option>
+                      ))}
                     </select>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-text-heading mb-1">科目</label>
                     <select
                       value={form.subject}
-                      onChange={e => setForm({ ...form, subject: e.target.value })}
+                      onChange={(e) => setForm({ ...form, subject: e.target.value })}
                       className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-surface-raised"
                     >
                       <option value="">選択</option>
-                      {SUBJECTS.map(s => <option key={s} value={s}>{s}</option>)}
+                      {SUBJECTS.map((s) => (
+                        <option key={s} value={s}>
+                          {s}
+                        </option>
+                      ))}
                     </select>
                   </div>
                 </div>
@@ -607,23 +747,31 @@ function TextbookMasterPage() {
                   <input
                     type="text"
                     value={form.revision_date}
-                    onChange={e => setForm({ ...form, revision_date: e.target.value })}
+                    onChange={(e) => setForm({ ...form, revision_date: e.target.value })}
                     className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:ring-ink focus:ring-ink/30 focus:border-ink"
                     placeholder="例: 20250401"
                   />
                 </div>
                 {/* 発注教材の紐付け: 提案書公開時に自動発注の候補として使う */}
                 <div>
-                  <label className="block text-sm font-medium text-text-heading mb-1">発注教材（任意）</label>
+                  <label className="block text-sm font-medium text-text-heading mb-1">
+                    発注教材（任意）
+                  </label>
                   <select
                     value={form.material_id}
-                    onChange={e => setForm({ ...form, material_id: e.target.value })}
+                    onChange={(e) => setForm({ ...form, material_id: e.target.value })}
                     className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-surface-raised"
                   >
                     <option value="">紐付けなし（発注は手動）</option>
-                    {materials.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+                    {materials.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.name}
+                      </option>
+                    ))}
                   </select>
-                  <p className="text-[11px] text-text-faint mt-1">提案書を公開したとき、この教材の発注候補が自動で出ます。未設定なら手動発注になります。</p>
+                  <p className="text-[11px] text-text-faint mt-1">
+                    提案書を公開したとき、この教材の発注候補が自動で出ます。未設定なら手動発注になります。
+                  </p>
                 </div>
               </div>
               <div className="flex justify-end gap-2 mt-6">

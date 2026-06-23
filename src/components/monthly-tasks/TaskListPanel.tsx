@@ -2,7 +2,19 @@
 
 import { useState, useMemo, useRef, useEffect } from 'react';
 import type { MonthlyTaskWithChecks, MonthlyTaskOverride, School } from '@/types/database';
-import { CheckCircle2, Circle, GripVertical, Plus, ChevronDown, ChevronRight, Trash2, ExternalLink, StickyNote, Link2, Calendar } from 'lucide-react';
+import {
+  CheckCircle2,
+  Circle,
+  GripVertical,
+  Plus,
+  ChevronDown,
+  ChevronRight,
+  Trash2,
+  ExternalLink,
+  StickyNote,
+  Link2,
+  Calendar,
+} from 'lucide-react';
 import { Spinner } from '@/components/ui';
 
 interface TaskListPanelProps {
@@ -13,7 +25,13 @@ interface TaskListPanelProps {
   selectedDate: string | null;
   onSelectDate: (date: string) => void;
   onToggleCheck: (taskId: string, schoolId: string, isCompleted: boolean) => void;
-  onCreateTask?: (taskDate: string, taskName: string, category: 'business' | 'course', note?: string, url?: string) => Promise<void>;
+  onCreateTask?: (
+    taskDate: string,
+    taskName: string,
+    category: 'business' | 'course',
+    note?: string,
+    url?: string
+  ) => Promise<void>;
   onDeleteTask?: (taskId: string) => Promise<void>;
   onUpdateTask?: (taskId: string, updates: Record<string, unknown>) => Promise<void>;
   onMoveTask?: (taskId: string, newDate: string) => Promise<void>;
@@ -24,11 +42,15 @@ interface TaskListPanelProps {
 }
 
 /** オーバーライドを適用したタスクを返す */
-function applyOverride(task: MonthlyTaskWithChecks, schoolId?: string): MonthlyTaskWithChecks & { _overridden?: boolean } {
+function applyOverride(
+  task: MonthlyTaskWithChecks,
+  schoolId?: string
+): MonthlyTaskWithChecks & { _overridden?: boolean } {
   if (!schoolId || !task.overrides?.length) return task;
   const ov = task.overrides.find((o: MonthlyTaskOverride) => o.school_id === schoolId);
   if (!ov) return task;
-  if (ov.is_hidden) return { ...task, _hidden: true } as MonthlyTaskWithChecks & { _hidden: boolean };
+  if (ov.is_hidden)
+    return { ...task, _hidden: true } as MonthlyTaskWithChecks & { _hidden: boolean };
   return {
     ...task,
     task_name: ov.task_name ?? task.task_name,
@@ -88,7 +110,7 @@ export function TaskListPanel({
   const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null);
   const addInputRef = useRef<HTMLInputElement>(null);
   const today = getToday();
-  const schoolIds = schools.map(s => s.id);
+  const schoolIds = schools.map((s) => s.id);
 
   // フォームを開いたらフォーカス
   useEffect(() => {
@@ -111,13 +133,22 @@ export function TaskListPanel({
     if (!newTaskName.trim() || !newTaskDate || !onCreateTask) return;
     setIsCreating(true);
     try {
-      await onCreateTask(newTaskDate, newTaskName.trim(), newTaskCategory, newTaskNote.trim() || undefined, newTaskUrl.trim() || undefined);
+      await onCreateTask(
+        newTaskDate,
+        newTaskName.trim(),
+        newTaskCategory,
+        newTaskNote.trim() || undefined,
+        newTaskUrl.trim() || undefined
+      );
       setShowAddForm(false);
       setNewTaskName('');
       setNewTaskUrl('');
       setNewTaskNote('');
-    } catch { /* handled by parent */ }
-    finally { setIsCreating(false); }
+    } catch {
+      /* handled by parent */
+    } finally {
+      setIsCreating(false);
+    }
   };
 
   const handleExpandTask = (task: MonthlyTaskWithChecks) => {
@@ -145,8 +176,11 @@ export function TaskListPanel({
         note: editNote.trim() || null,
       });
       setExpandedTaskId(null);
-    } catch { /* handled by parent */ }
-    finally { setIsSaving(false); }
+    } catch {
+      /* handled by parent */
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   // ドラッグ&ドロップ: タスクを別の日付に移動
@@ -178,7 +212,9 @@ export function TaskListPanel({
       try {
         const poolItem = JSON.parse(poolRaw);
         await onCreateTask(targetDate, poolItem.task_name, poolItem.category);
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
       return;
     }
 
@@ -197,14 +233,14 @@ export function TaskListPanel({
   // オーバーライド適用済みタスク（教室別非表示を除外）
   const resolvedTasks = useMemo(() => {
     return tasks
-      .map(t => applyOverride(t, singleSchoolId))
-      .filter(t => !('_hidden' in t && (t as { _hidden?: boolean })._hidden));
+      .map((t) => applyOverride(t, singleSchoolId))
+      .filter((t) => !('_hidden' in t && (t as { _hidden?: boolean })._hidden));
   }, [tasks, singleSchoolId]);
 
   const filtered = useMemo(() => {
-    return resolvedTasks.filter(t => {
-      const allDone = schoolIds.every(sid =>
-        t.checks.find(c => c.school_id === sid)?.is_completed
+    return resolvedTasks.filter((t) => {
+      const allDone = schoolIds.every(
+        (sid) => t.checks.find((c) => c.school_id === sid)?.is_completed
       );
       if (filter === 'incomplete') return !allDone;
       if (filter === 'overdue') return t.task_date < today && !allDone;
@@ -229,7 +265,7 @@ export function TaskListPanel({
   const sortedDates = Object.keys(grouped).sort();
 
   const toggleCollapse = (date: string) => {
-    setCollapsedDates(prev => {
+    setCollapsedDates((prev) => {
       const next = new Set(prev);
       if (next.has(date)) next.delete(date);
       else next.add(date);
@@ -239,12 +275,12 @@ export function TaskListPanel({
 
   const filterCounts = useMemo(() => {
     const allCount = resolvedTasks.length;
-    const incompleteCount = resolvedTasks.filter(t =>
-      !schoolIds.every(sid => t.checks.find(c => c.school_id === sid)?.is_completed)
+    const incompleteCount = resolvedTasks.filter(
+      (t) => !schoolIds.every((sid) => t.checks.find((c) => c.school_id === sid)?.is_completed)
     ).length;
-    const overdueCount = resolvedTasks.filter(t => {
-      const allDone = schoolIds.every(sid =>
-        t.checks.find(c => c.school_id === sid)?.is_completed
+    const overdueCount = resolvedTasks.filter((t) => {
+      const allDone = schoolIds.every(
+        (sid) => t.checks.find((c) => c.school_id === sid)?.is_completed
       );
       return t.task_date < today && !allDone;
     }).length;
@@ -255,11 +291,11 @@ export function TaskListPanel({
     <div className="flex flex-col h-full bg-white rounded-lg border border-gray-200 overflow-hidden">
       {/* Header */}
       <div className="flex items-center gap-1 px-3 py-2 border-b bg-gray-50">
-        {([
+        {[
           { key: 'all' as const, label: '全て', count: filterCounts.allCount },
           { key: 'incomplete' as const, label: '未完了', count: filterCounts.incompleteCount },
           { key: 'overdue' as const, label: '超過', count: filterCounts.overdueCount },
-        ]).map(f => (
+        ].map((f) => (
           <button
             key={f.key}
             onClick={() => setFilter(f.key)}
@@ -371,7 +407,7 @@ export function TaskListPanel({
             {filter === 'all' ? 'タスクがありません' : '該当するタスクはありません'}
           </div>
         ) : (
-          sortedDates.map(date => {
+          sortedDates.map((date) => {
             const d = new Date(date + 'T00:00:00');
             const dayLabel = `${d.getMonth() + 1}/${d.getDate()}`;
             const dow = formatDow(date);
@@ -382,8 +418,8 @@ export function TaskListPanel({
 
             // Date group completion
             const dateTasks = grouped[date];
-            const dateCompleted = dateTasks.filter(t =>
-              schoolIds.every(sid => t.checks.find(c => c.school_id === sid)?.is_completed)
+            const dateCompleted = dateTasks.filter((t) =>
+              schoolIds.every((sid) => t.checks.find((c) => c.school_id === sid)?.is_completed)
             ).length;
             const allDateDone = dateCompleted === dateTasks.length;
 
@@ -392,11 +428,15 @@ export function TaskListPanel({
                 {/* Date header (drop target) */}
                 <div
                   className={`flex items-center gap-2 px-3 py-1.5 text-xs font-bold border-b sticky top-0 z-10 cursor-pointer select-none transition-[background-color,color] duration-150 ease-out ${
-                    dragOverDate === date ? 'bg-blue-100 border-blue-400 ring-1 ring-blue-400' :
-                    isToday ? 'bg-blue-50 text-blue-700 border-blue-200' :
-                    isSelected ? 'bg-indigo-50 text-indigo-700 border-indigo-200' :
-                    isOverdue && !allDateDone ? 'bg-red-50 text-red-600 border-red-100' :
-                    'bg-gray-50 text-gray-500 border-gray-100'
+                    dragOverDate === date
+                      ? 'bg-blue-100 border-blue-400 ring-1 ring-blue-400'
+                      : isToday
+                        ? 'bg-blue-50 text-blue-700 border-blue-200'
+                        : isSelected
+                          ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                          : isOverdue && !allDateDone
+                            ? 'bg-red-50 text-red-600 border-red-100'
+                            : 'bg-gray-50 text-gray-500 border-gray-100'
                   }`}
                   onClick={() => {
                     onSelectDate(date);
@@ -411,7 +451,9 @@ export function TaskListPanel({
                   ) : (
                     <ChevronDown className="w-3 h-3" />
                   )}
-                  <span>{dayLabel}（{dow}）</span>
+                  <span>
+                    {dayLabel}（{dow}）
+                  </span>
                   {isToday && (
                     <span className="px-1.5 py-0.5 bg-blue-500 text-white rounded text-[11px] font-normal">
                       今日
@@ -423,248 +465,278 @@ export function TaskListPanel({
                 </div>
 
                 {/* Tasks */}
-                {!isCollapsed && dateTasks.map(task => {
-                  const allDone = schoolIds.every(sid =>
-                    task.checks.find(c => c.school_id === sid)?.is_completed
-                  );
-                  const taskIsOverdue = task.task_date < today && !allDone;
-                  const isExpanded = expandedTaskId === task.id;
+                {!isCollapsed &&
+                  dateTasks.map((task) => {
+                    const allDone = schoolIds.every(
+                      (sid) => task.checks.find((c) => c.school_id === sid)?.is_completed
+                    );
+                    const taskIsOverdue = task.task_date < today && !allDone;
+                    const isExpanded = expandedTaskId === task.id;
 
-                  return (
-                    <div key={task.id}>
-                      <div
-                        className={`flex items-center gap-2 px-3 py-2 border-b border-gray-50 transition-[background-color] duration-150 ease-out group cursor-pointer ${
-                          isSelected ? 'bg-blue-50/30' : 'hover:bg-gray-50'
-                        } ${isExpanded ? 'bg-blue-50/50' : ''} ${draggingTaskId === task.id ? 'opacity-40' : ''}`}
-                        onClick={() => handleExpandTask(task)}
-                        draggable={canEdit && !!onMoveTask}
-                        onDragStart={(e) => handleDragStart(e, task.id, task.task_date)}
-                        onDragEnd={handleDragEnd}
-                      >
-                        <GripVertical className={`w-3 h-3 flex-shrink-0 ${canEdit && onMoveTask ? 'text-gray-400 cursor-grab active:cursor-grabbing' : 'text-gray-300'}`} />
-                        {/* 完了トグル */}
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            const newState = !allDone;
-                            for (const s of schools) {
-                              const check = task.checks.find(c => c.school_id === s.id);
-                              if ((check?.is_completed ?? false) !== newState) {
-                                onToggleCheck(task.id, s.id, newState);
-                              }
-                            }
-                          }}
-                          className="flex-shrink-0 hover:scale-110 transition-transform duration-150"
-                          title={allDone ? '未完了に戻す' : '完了にする'}
+                    return (
+                      <div key={task.id}>
+                        <div
+                          className={`flex items-center gap-2 px-3 py-2 border-b border-gray-50 transition-[background-color] duration-150 ease-out group cursor-pointer ${
+                            isSelected ? 'bg-blue-50/30' : 'hover:bg-gray-50'
+                          } ${isExpanded ? 'bg-blue-50/50' : ''} ${draggingTaskId === task.id ? 'opacity-40' : ''}`}
+                          onClick={() => handleExpandTask(task)}
+                          draggable={canEdit && !!onMoveTask}
+                          onDragStart={(e) => handleDragStart(e, task.id, task.task_date)}
+                          onDragEnd={handleDragEnd}
                         >
-                          {allDone ? (
-                            <CheckCircle2 className="w-4 h-4 text-green-500" />
-                          ) : (
-                            <Circle className={`w-4 h-4 ${taskIsOverdue ? 'text-red-400' : 'text-gray-300'}`} />
-                          )}
-                        </button>
-                        <div className="flex-1 min-w-0">
-                          <div className={`text-xs truncate ${allDone ? 'text-gray-400 line-through' : 'text-gray-800'}`}>
-                            {task.task_name}
-                          </div>
-                          <div className="flex items-center gap-2 mt-0.5">
-                            {task.note && (
-                              <span className="flex items-center gap-0.5 text-[11px] text-gray-400 truncate">
-                                <StickyNote className="w-2.5 h-2.5" />
-                                {task.note}
-                              </span>
-                            )}
-                            {task.url && (
-                              <a
-                                href={task.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                onClick={(e) => e.stopPropagation()}
-                                className="flex items-center gap-0.5 text-[11px] text-blue-500 hover:text-blue-700 flex-shrink-0"
-                                title={task.url}
-                              >
-                                <ExternalLink className="w-2.5 h-2.5" />
-                                リンク
-                              </a>
-                            )}
-                          </div>
-                        </div>
-                        <span className={`text-[11px] px-1.5 py-0.5 rounded flex-shrink-0 ${
-                          task.category === 'business' ? 'bg-orange-50 text-orange-600' : 'bg-purple-50 text-purple-600'
-                        }`}>
-                          {task.category === 'business' ? '業務' : '講習'}
-                        </span>
-                        {/* School completion indicators */}
-                        <div className="flex gap-0.5 flex-shrink-0 items-center">
-                          {schools.length > 1 ? (
-                            /* 複数教室: 頭文字+色で表示 */
-                            schools.map(s => {
-                              const check = task.checks.find(c => c.school_id === s.id);
-                              const initial = s.name.replace(/校$/, '').slice(0, 2);
-                              return (
-                                <span
-                                  key={s.id}
-                                  className={`text-[9px] leading-none px-1 py-0.5 rounded font-medium ${
-                                    check?.is_completed
-                                      ? 'bg-green-100 text-green-700'
-                                      : taskIsOverdue ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-400'
-                                  }`}
-                                  title={`${s.name}: ${check?.is_completed ? '完了' : '未完了'}`}
-                                >
-                                  {initial}
-                                </span>
-                              );
-                            })
-                          ) : (
-                            /* 1教室: ドットのみ */
-                            schools.map(s => {
-                              const check = task.checks.find(c => c.school_id === s.id);
-                              return (
-                                <div
-                                  key={s.id}
-                                  className={`w-2 h-2 rounded-full ${
-                                    check?.is_completed
-                                      ? 'bg-green-400'
-                                      : taskIsOverdue ? 'bg-red-300' : 'bg-gray-200'
-                                  }`}
-                                  title={`${s.name}: ${check?.is_completed ? '完了' : '未完了'}`}
-                                />
-                              );
-                            })
-                          )}
-                        </div>
-                        {/* Googleカレンダー登録ボタン */}
-                        {googleCalendarConnected && onSyncToCalendar && (
-                          <button
-                            onClick={async (e) => {
-                              e.stopPropagation();
-                              if (syncingTaskId === task.id) return;
-                              setSyncingTaskId(task.id);
-                              try { await onSyncToCalendar(task.id); }
-                              finally { setSyncingTaskId(null); }
-                            }}
-                            disabled={syncingTaskId === task.id}
-                            className={`flex-shrink-0 p-0.5 transition-[opacity,color] duration-150 ${
-                              task.google_event_id
-                                ? 'text-blue-500 hover:text-blue-700'
-                                : 'text-gray-300 hover:text-blue-500 opacity-0 group-hover:opacity-100'
-                            }`}
-                            title={task.google_event_id ? 'カレンダー登録済み' : 'Googleカレンダーに登録'}
-                          >
-                            {syncingTaskId === task.id ? (
-                              <Spinner size="xs" tone="current" />
-                            ) : (
-                              <Calendar className={`w-3 h-3 ${task.google_event_id ? 'fill-current' : ''}`} />
-                            )}
-                          </button>
-                        )}
-                        {/* 削除ボタン */}
-                        {canEdit && !task.linked_schedule_task_id && onDeleteTask && (
+                          <GripVertical
+                            className={`w-3 h-3 flex-shrink-0 ${canEdit && onMoveTask ? 'text-gray-400 cursor-grab active:cursor-grabbing' : 'text-gray-300'}`}
+                          />
+                          {/* 完了トグル */}
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              onDeleteTask(task.id);
+                              const newState = !allDone;
+                              for (const s of schools) {
+                                const check = task.checks.find((c) => c.school_id === s.id);
+                                if ((check?.is_completed ?? false) !== newState) {
+                                  onToggleCheck(task.id, s.id, newState);
+                                }
+                              }
                             }}
-                            className="flex-shrink-0 p-0.5 text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity duration-150"
-                            title="削除"
+                            className="flex-shrink-0 hover:scale-110 transition-transform duration-150"
+                            title={allDone ? '未完了に戻す' : '完了にする'}
                           >
-                            <Trash2 className="w-3 h-3" />
-                          </button>
-                        )}
-                      </div>
-                      {/* 展開詳細: タスク編集 */}
-                      {isExpanded && canEdit && (
-                        <div className="px-3 py-2 bg-gray-50 border-b border-gray-100 space-y-1.5">
-                          {/* タスク名 */}
-                          <input
-                            type="text"
-                            value={editName}
-                            onChange={(e) => setEditName(e.target.value)}
-                            onClick={(e) => e.stopPropagation()}
-                            placeholder="タスク名"
-                            className="w-full text-xs px-2 py-1.5 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-400 font-medium"
-                            disabled={isSaving}
-                          />
-                          {/* 日付・カテゴリ */}
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="date"
-                              value={editDate}
-                              onChange={(e) => setEditDate(e.target.value)}
-                              onClick={(e) => e.stopPropagation()}
-                              className="text-xs px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-400"
-                              disabled={isSaving}
-                            />
-                            <select
-                              value={editCategory}
-                              onChange={(e) => setEditCategory(e.target.value as 'business' | 'course')}
-                              onClick={(e) => e.stopPropagation()}
-                              className="text-xs px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-400"
-                              disabled={isSaving}
-                            >
-                              <option value="business">業務</option>
-                              <option value="course">講習</option>
-                            </select>
-                          </div>
-                          {/* URL */}
-                          <div className="flex items-center gap-1.5">
-                            <Link2 className="w-3 h-3 text-gray-400 flex-shrink-0" />
-                            <input
-                              type="url"
-                              placeholder="URL（研修リンク等）"
-                              value={editUrl}
-                              onChange={(e) => setEditUrl(e.target.value)}
-                              onClick={(e) => e.stopPropagation()}
-                              className="flex-1 text-xs px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-400"
-                              disabled={isSaving}
-                            />
-                            {editUrl && (
-                              <a
-                                href={editUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                onClick={(e) => e.stopPropagation()}
-                                className="p-1 text-blue-500 hover:text-blue-700"
-                                title="リンクを開く"
-                              >
-                                <ExternalLink className="w-3.5 h-3.5" />
-                              </a>
+                            {allDone ? (
+                              <CheckCircle2 className="w-4 h-4 text-green-500" />
+                            ) : (
+                              <Circle
+                                className={`w-4 h-4 ${taskIsOverdue ? 'text-red-400' : 'text-gray-300'}`}
+                              />
                             )}
+                          </button>
+                          <div className="flex-1 min-w-0">
+                            <div
+                              className={`text-xs truncate ${allDone ? 'text-gray-400 line-through' : 'text-gray-800'}`}
+                            >
+                              {task.task_name}
+                            </div>
+                            <div className="flex items-center gap-2 mt-0.5">
+                              {task.note && (
+                                <span className="flex items-center gap-0.5 text-[11px] text-gray-400 truncate">
+                                  <StickyNote className="w-2.5 h-2.5" />
+                                  {task.note}
+                                </span>
+                              )}
+                              {task.url && (
+                                <a
+                                  href={task.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="flex items-center gap-0.5 text-[11px] text-blue-500 hover:text-blue-700 flex-shrink-0"
+                                  title={task.url}
+                                >
+                                  <ExternalLink className="w-2.5 h-2.5" />
+                                  リンク
+                                </a>
+                              )}
+                            </div>
                           </div>
-                          {/* メモ */}
-                          <div className="flex items-center gap-1.5">
-                            <StickyNote className="w-3 h-3 text-gray-400 flex-shrink-0" />
+                          <span
+                            className={`text-[11px] px-1.5 py-0.5 rounded flex-shrink-0 ${
+                              task.category === 'business'
+                                ? 'bg-orange-50 text-orange-600'
+                                : 'bg-purple-50 text-purple-600'
+                            }`}
+                          >
+                            {task.category === 'business' ? '業務' : '講習'}
+                          </span>
+                          {/* School completion indicators */}
+                          <div className="flex gap-0.5 flex-shrink-0 items-center">
+                            {schools.length > 1
+                              ? /* 複数教室: 頭文字+色で表示 */
+                                schools.map((s) => {
+                                  const check = task.checks.find((c) => c.school_id === s.id);
+                                  const initial = s.name.replace(/校$/, '').slice(0, 2);
+                                  return (
+                                    <span
+                                      key={s.id}
+                                      className={`text-[9px] leading-none px-1 py-0.5 rounded font-medium ${
+                                        check?.is_completed
+                                          ? 'bg-green-100 text-green-700'
+                                          : taskIsOverdue
+                                            ? 'bg-red-100 text-red-600'
+                                            : 'bg-gray-100 text-gray-400'
+                                      }`}
+                                      title={`${s.name}: ${check?.is_completed ? '完了' : '未完了'}`}
+                                    >
+                                      {initial}
+                                    </span>
+                                  );
+                                })
+                              : /* 1教室: ドットのみ */
+                                schools.map((s) => {
+                                  const check = task.checks.find((c) => c.school_id === s.id);
+                                  return (
+                                    <div
+                                      key={s.id}
+                                      className={`w-2 h-2 rounded-full ${
+                                        check?.is_completed
+                                          ? 'bg-green-400'
+                                          : taskIsOverdue
+                                            ? 'bg-red-300'
+                                            : 'bg-gray-200'
+                                      }`}
+                                      title={`${s.name}: ${check?.is_completed ? '完了' : '未完了'}`}
+                                    />
+                                  );
+                                })}
+                          </div>
+                          {/* Googleカレンダー登録ボタン */}
+                          {googleCalendarConnected && onSyncToCalendar && (
+                            <button
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                if (syncingTaskId === task.id) return;
+                                setSyncingTaskId(task.id);
+                                try {
+                                  await onSyncToCalendar(task.id);
+                                } finally {
+                                  setSyncingTaskId(null);
+                                }
+                              }}
+                              disabled={syncingTaskId === task.id}
+                              className={`flex-shrink-0 p-0.5 transition-[opacity,color] duration-150 ${
+                                task.google_event_id
+                                  ? 'text-blue-500 hover:text-blue-700'
+                                  : 'text-gray-300 hover:text-blue-500 opacity-0 group-hover:opacity-100'
+                              }`}
+                              title={
+                                task.google_event_id
+                                  ? 'カレンダー登録済み'
+                                  : 'Googleカレンダーに登録'
+                              }
+                            >
+                              {syncingTaskId === task.id ? (
+                                <Spinner size="xs" tone="current" />
+                              ) : (
+                                <Calendar
+                                  className={`w-3 h-3 ${task.google_event_id ? 'fill-current' : ''}`}
+                                />
+                              )}
+                            </button>
+                          )}
+                          {/* 削除ボタン */}
+                          {canEdit && !task.linked_schedule_task_id && onDeleteTask && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onDeleteTask(task.id);
+                              }}
+                              className="flex-shrink-0 p-0.5 text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity duration-150"
+                              title="削除"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          )}
+                        </div>
+                        {/* 展開詳細: タスク編集 */}
+                        {isExpanded && canEdit && (
+                          <div className="px-3 py-2 bg-gray-50 border-b border-gray-100 space-y-1.5">
+                            {/* タスク名 */}
                             <input
                               type="text"
-                              placeholder="メモ（ID・パスワード等）"
-                              value={editNote}
-                              onChange={(e) => setEditNote(e.target.value)}
+                              value={editName}
+                              onChange={(e) => setEditName(e.target.value)}
                               onClick={(e) => e.stopPropagation()}
-                              className="flex-1 text-xs px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-400"
+                              placeholder="タスク名"
+                              className="w-full text-xs px-2 py-1.5 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-400 font-medium"
                               disabled={isSaving}
                             />
+                            {/* 日付・カテゴリ */}
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="date"
+                                value={editDate}
+                                onChange={(e) => setEditDate(e.target.value)}
+                                onClick={(e) => e.stopPropagation()}
+                                className="text-xs px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-400"
+                                disabled={isSaving}
+                              />
+                              <select
+                                value={editCategory}
+                                onChange={(e) =>
+                                  setEditCategory(e.target.value as 'business' | 'course')
+                                }
+                                onClick={(e) => e.stopPropagation()}
+                                className="text-xs px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-400"
+                                disabled={isSaving}
+                              >
+                                <option value="business">業務</option>
+                                <option value="course">講習</option>
+                              </select>
+                            </div>
+                            {/* URL */}
+                            <div className="flex items-center gap-1.5">
+                              <Link2 className="w-3 h-3 text-gray-400 flex-shrink-0" />
+                              <input
+                                type="url"
+                                placeholder="URL（研修リンク等）"
+                                value={editUrl}
+                                onChange={(e) => setEditUrl(e.target.value)}
+                                onClick={(e) => e.stopPropagation()}
+                                className="flex-1 text-xs px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-400"
+                                disabled={isSaving}
+                              />
+                              {editUrl && (
+                                <a
+                                  href={editUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="p-1 text-blue-500 hover:text-blue-700"
+                                  title="リンクを開く"
+                                >
+                                  <ExternalLink className="w-3.5 h-3.5" />
+                                </a>
+                              )}
+                            </div>
+                            {/* メモ */}
+                            <div className="flex items-center gap-1.5">
+                              <StickyNote className="w-3 h-3 text-gray-400 flex-shrink-0" />
+                              <input
+                                type="text"
+                                placeholder="メモ（ID・パスワード等）"
+                                value={editNote}
+                                onChange={(e) => setEditNote(e.target.value)}
+                                onClick={(e) => e.stopPropagation()}
+                                className="flex-1 text-xs px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-400"
+                                disabled={isSaving}
+                              />
+                            </div>
+                            {/* ボタン */}
+                            <div className="flex justify-end gap-2 pt-0.5">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setExpandedTaskId(null);
+                                }}
+                                className="text-xs px-2 py-1 text-gray-500 hover:text-gray-700 transition-[background-color,color] duration-150 ease-out"
+                              >
+                                キャンセル
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleSaveTaskDetail(task.id);
+                                }}
+                                disabled={isSaving || !editName.trim()}
+                                className="text-xs px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 transition-[background-color,color] duration-150 ease-out"
+                              >
+                                {isSaving ? '保存中...' : '保存'}
+                              </button>
+                            </div>
                           </div>
-                          {/* ボタン */}
-                          <div className="flex justify-end gap-2 pt-0.5">
-                            <button
-                              onClick={(e) => { e.stopPropagation(); setExpandedTaskId(null); }}
-                              className="text-xs px-2 py-1 text-gray-500 hover:text-gray-700 transition-[background-color,color] duration-150 ease-out"
-                            >
-                              キャンセル
-                            </button>
-                            <button
-                              onClick={(e) => { e.stopPropagation(); handleSaveTaskDetail(task.id); }}
-                              disabled={isSaving || !editName.trim()}
-                              className="text-xs px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 transition-[background-color,color] duration-150 ease-out"
-                            >
-                              {isSaving ? '保存中...' : '保存'}
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
+                        )}
+                      </div>
+                    );
+                  })}
               </div>
             );
           })

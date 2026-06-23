@@ -80,10 +80,7 @@ export async function createTestStudent(
  * テストデータをクリーンアップ
  * 指定した教室とその関連データ（生徒、ログ等）を削除する
  */
-export async function cleanupTestSchool(
-  client: SupabaseClient,
-  schoolId: string
-): Promise<void> {
+export async function cleanupTestSchool(client: SupabaseClient, schoolId: string): Promise<void> {
   // 生徒関連テーブル（CASCADE で連鎖削除されるものが多い）
   // student_logs は student_id FK CASCADE あり
   // students は school_id FK RESTRICT なので先に生徒を削除

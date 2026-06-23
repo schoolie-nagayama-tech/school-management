@@ -31,14 +31,10 @@ export function PeriodPublishEditor({
   useEffect(() => {
     if (isOpen && period) {
       setPublishStart(
-        period.publish_start
-          ? new Date(period.publish_start).toISOString().slice(0, 16)
-          : ''
+        period.publish_start ? new Date(period.publish_start).toISOString().slice(0, 16) : ''
       );
       setPublishEnd(
-        period.publish_end
-          ? new Date(period.publish_end).toISOString().slice(0, 16)
-          : ''
+        period.publish_end ? new Date(period.publish_end).toISOString().slice(0, 16) : ''
       );
       setError('');
     }
@@ -92,10 +88,7 @@ export function PeriodPublishEditor({
       onClose();
     } catch (err) {
       console.error('Error updating period:', err);
-      const errorMessage =
-        err instanceof Error
-          ? err.message
-          : '公開期間の更新に失敗しました';
+      const errorMessage = err instanceof Error ? err.message : '公開期間の更新に失敗しました';
       setError(errorMessage);
       showError(errorMessage);
     } finally {
@@ -104,12 +97,7 @@ export function PeriodPublishEditor({
   };
 
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      title="公開期間の設定"
-      size="md"
-    >
+    <Modal isOpen={isOpen} onClose={onClose} title="公開期間の設定" size="md">
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && (
           <div className="p-3 bg-[#ef4444]/10 border border-[#ef4444] rounded-lg">
@@ -123,7 +111,8 @@ export function PeriodPublishEditor({
               {period.title || period.period_key}
             </p>
             <p className="text-xs text-[#4b5563]">
-              フォーム種別: {formType === 'zoukoma' ? '増コマ申込' : formType === 'mogi' ? 'Vもぎ申込' : formType}
+              フォーム種別:{' '}
+              {formType === 'zoukoma' ? '増コマ申込' : formType === 'mogi' ? 'Vもぎ申込' : formType}
             </p>
           </div>
         )}
@@ -146,38 +135,31 @@ export function PeriodPublishEditor({
           disabled={isSubmitting}
         />
 
-        {publishStart && publishEnd && (() => {
-          const now = new Date();
-          const startDate = new Date(publishStart);
-          const endDate = new Date(publishEnd);
-          const isActive = startDate <= now && endDate >= now;
-          const statusColor = isActive
-            ? 'text-emerald-600'
-            : startDate > now
-            ? 'text-yellow-600'
-            : 'text-gray-600';
-          const statusText = isActive
-            ? '公開中'
-            : startDate > now
-            ? '公開前'
-            : '公開終了';
+        {publishStart &&
+          publishEnd &&
+          (() => {
+            const now = new Date();
+            const startDate = new Date(publishStart);
+            const endDate = new Date(publishEnd);
+            const isActive = startDate <= now && endDate >= now;
+            const statusColor = isActive
+              ? 'text-emerald-600'
+              : startDate > now
+                ? 'text-yellow-600'
+                : 'text-gray-600';
+            const statusText = isActive ? '公開中' : startDate > now ? '公開前' : '公開終了';
 
-          return (
-            <div className="p-3 bg-[#f3f4f6] rounded-lg border border-[#e5e7eb]">
-              <p className="text-sm text-[#4b5563]">
-                現在の状態: <span className={`font-medium ${statusColor}`}>{statusText}</span>
-              </p>
-            </div>
-          );
-        })()}
+            return (
+              <div className="p-3 bg-[#f3f4f6] rounded-lg border border-[#e5e7eb]">
+                <p className="text-sm text-[#4b5563]">
+                  現在の状態: <span className={`font-medium ${statusColor}`}>{statusText}</span>
+                </p>
+              </div>
+            );
+          })()}
 
         <div className="flex justify-end gap-2 pt-4 border-t border-[#e5e7eb]">
-          <Button
-            type="button"
-            onClick={onClose}
-            variant="secondary"
-            disabled={isSubmitting}
-          >
+          <Button type="button" onClick={onClose} variant="secondary" disabled={isSubmitting}>
             キャンセル
           </Button>
           <Button type="submit" disabled={isSubmitting} isLoading={isSubmitting}>

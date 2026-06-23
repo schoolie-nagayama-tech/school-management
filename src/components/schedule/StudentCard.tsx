@@ -52,10 +52,11 @@ export const StudentCard = React.memo(function StudentCard({
     ? `${entry.student.last_name} ${entry.student.first_name}`
     : entry.student_id;
   const grade = entry.student ? gradeLabel(entry.student.grade) : '—';
-  const subjectNames = (entry.subjects ?? [])
-    .map((s) => (typeof s === 'object' && s && 'name' in s ? s.name : String(s)))
-    .filter(Boolean)
-    .join('/') || '—';
+  const subjectNames =
+    (entry.subjects ?? [])
+      .map((s) => (typeof s === 'object' && s && 'name' in s ? s.name : String(s)))
+      .filter(Boolean)
+      .join('/') || '—';
 
   const isTransferredOut = entry.status === 'transferred_out';
   const isTransferredIn = entry.status === 'transferred_in';
@@ -63,7 +64,8 @@ export const StudentCard = React.memo(function StudentCard({
   // 追加授業（テスト対策/追加授業/体験）は種別バッジで通常授業と区別する
   const isExtra = isExtraLessonKind(entry.kind);
   const extraBadgeClass = extraKindBadgeClass(entry.kind);
-  const canTransfer = onTransferClick && !isTransferredOut && entry.status !== 'cancelled' && !isDraft;
+  const canTransfer =
+    onTransferClick && !isTransferredOut && entry.status !== 'cancelled' && !isDraft;
 
   return (
     <div
@@ -76,7 +78,11 @@ export const StudentCard = React.memo(function StudentCard({
           onClick(e as unknown as React.MouseEvent);
         }
       }}
-      title={isDraft ? '自動マッチングの仮配置（未公開）。コントロールパネルで公開すると確定します' : undefined}
+      title={
+        isDraft
+          ? '自動マッチングの仮配置（未公開）。コントロールパネルで公開すると確定します'
+          : undefined
+      }
       className={`
         px-1.5 py-1 rounded-lg border text-left shadow-sm
         cursor-pointer hover:shadow-md transition-[box-shadow,border-color,background-color] duration-150
@@ -102,7 +108,9 @@ export const StudentCard = React.memo(function StudentCard({
             {SCHEDULE_ENTRY_KIND_LABELS[entry.kind]}
           </span>
         )}
-        <p className={`text-sm font-semibold leading-tight truncate flex-1 min-w-0 ${isTransferredOut ? 'text-gray-500' : 'text-gray-900'}`}>
+        <p
+          className={`text-sm font-semibold leading-tight truncate flex-1 min-w-0 ${isTransferredOut ? 'text-gray-500' : 'text-gray-900'}`}
+        >
           {studentName}
           {/* 学年は名前のすぐ右に括弧書きでくっつける。
               フォントは少し小さく抑えるが、視認できる程度のコントラストを保つ。 */}
@@ -124,9 +132,13 @@ export const StudentCard = React.memo(function StudentCard({
         )}
         <span
           className={`flex-shrink-0 text-xs ${
-            statusKey === 'present' ? 'text-green-600' :
-            statusKey === 'absent' ? 'text-red-600' :
-            statusKey === 'late' ? 'text-yellow-600' : 'text-gray-400'
+            statusKey === 'present'
+              ? 'text-green-600'
+              : statusKey === 'absent'
+                ? 'text-red-600'
+                : statusKey === 'late'
+                  ? 'text-yellow-600'
+                  : 'text-gray-400'
           }`}
         >
           {icon}

@@ -28,9 +28,7 @@ export function SubmissionAccountLinkCell({
 }: Props) {
   const [open, setOpen] = useState(false);
 
-  const linkedAccount = userId
-    ? teacherAccounts.find((a) => a.id === userId) ?? null
-    : null;
+  const linkedAccount = userId ? (teacherAccounts.find((a) => a.id === userId) ?? null) : null;
 
   if (userId && linkedAccount) {
     return (

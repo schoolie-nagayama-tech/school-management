@@ -1,11 +1,6 @@
 'use client';
 
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui';
 import { Button } from '@/components/ui';
 import { Calendar, XCircle, Pencil, Trash2, RotateCcw } from 'lucide-react';
 import type { ScheduleEntry, ScheduleTimeSlot } from '@/types/schedule';
@@ -56,12 +51,12 @@ export function StudentActionModal({
   const studentName = entry.student
     ? `${entry.student.last_name} ${entry.student.first_name}（${gradeLabel(entry.student.grade)}）`
     : entry.student_id;
-  const subjectNames = (entry.subjects ?? [])
-    .map((s) => (typeof s === 'object' && s && 'name' in s ? s.name : String(s)))
-    .filter(Boolean)
-    .join('・') || '—';
-  const teacherName =
-    entry.teacher?.display_name || entry.teacher?.email || '—';
+  const subjectNames =
+    (entry.subjects ?? [])
+      .map((s) => (typeof s === 'object' && s && 'name' in s ? s.name : String(s)))
+      .filter(Boolean)
+      .join('・') || '—';
+  const teacherName = entry.teacher?.display_name || entry.teacher?.email || '—';
   const slotLabel = timeSlot
     ? `${timeSlot.slot_number}限 ${timeSlot.start_time?.slice(0, 5) ?? ''}-${timeSlot.end_time?.slice(0, 5) ?? ''}`
     : '—';
@@ -94,7 +89,9 @@ export function StudentActionModal({
                 studentName
               )}
             </div>
-            <div>日時: {formatDay(entry.entry_date)} {slotLabel}</div>
+            <div>
+              日時: {formatDay(entry.entry_date)} {slotLabel}
+            </div>
             <div>
               講師:{' '}
               {onTeacherClick ? (
@@ -149,12 +146,7 @@ export function StudentActionModal({
               </div>
 
               <div className="border-t border-[var(--surface)] pt-2 flex gap-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-xs"
-                  onClick={() => onEdit()}
-                >
+                <Button variant="ghost" size="sm" className="text-xs" onClick={() => onEdit()}>
                   <Pencil className="h-3 w-3 mr-2" />
                   編集
                 </Button>

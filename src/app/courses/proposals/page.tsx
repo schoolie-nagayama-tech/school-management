@@ -10,8 +10,20 @@ import { InlineLoading, Loading } from '@/components/ui';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRequirePermission } from '@/hooks/usePermissions';
 import AccessDenied from '@/components/AccessDenied';
-import { getProposalsBySchool, getTextbookUnitsWithProgress, calcTotalKoma, calcTotalAppliedKoma, deleteProposal, bulkPublishProposals, bulkMarkProposalsSent } from '@/lib/api/proposals';
-import { getProposalOrderCandidates, type OrderCandidate, type ProposalOrderInput } from '@/lib/api/ordering';
+import {
+  getProposalsBySchool,
+  getTextbookUnitsWithProgress,
+  calcTotalKoma,
+  calcTotalAppliedKoma,
+  deleteProposal,
+  bulkPublishProposals,
+  bulkMarkProposalsSent,
+} from '@/lib/api/proposals';
+import {
+  getProposalOrderCandidates,
+  type OrderCandidate,
+  type ProposalOrderInput,
+} from '@/lib/api/ordering';
 import { PublishOrderDialog } from '@/components/proposals/PublishOrderDialog';
 import { supabase } from '@/lib/supabase';
 import { fetchAllPaged } from '@/lib/utils/supabasePaging';
@@ -65,7 +77,9 @@ function toOrderInputs(proposals: SeasonalProposalWithDetails[]): ProposalOrderI
     studentName: p.student ? `${p.student.last_name} ${p.student.first_name}` : '不明',
     schoolId: p.school_id ?? null,
     textbookId: p.textbook_id,
-    textbookName: p.textbook?.subject ? `${p.textbook.subject} ${p.textbook.name}` : (p.textbook?.name ?? '不明'),
+    textbookName: p.textbook?.subject
+      ? `${p.textbook.subject} ${p.textbook.name}`
+      : (p.textbook?.name ?? '不明'),
     materialId: p.textbook?.material_id ?? null,
   }));
 }
@@ -116,7 +130,11 @@ export default function CourseProposalsPage() {
   const [printData, setPrintData] = useState<ProposalPrintData[]>([]);
   const [printStudentName, setPrintStudentName] = useState('');
 
-  const handlePrintStudent = async (studentId: string, studentName: string, studentProposals: SeasonalProposalWithDetails[]) => {
+  const handlePrintStudent = async (
+    studentId: string,
+    studentName: string,
+    studentProposals: SeasonalProposalWithDetails[]
+  ) => {
     if (studentProposals.length === 0) return;
     setPrintLoading(studentId);
     try {
@@ -154,7 +172,7 @@ export default function CourseProposalsPage() {
         }
         const tbName = p.textbook?.subject
           ? `${p.textbook.subject} ${p.textbook.name}`
-          : p.textbook?.name ?? '';
+          : (p.textbook?.name ?? '');
         results.push({
           studentName,
           textbookName: tbName,
@@ -217,9 +235,10 @@ export default function CourseProposalsPage() {
   const loadStudents = useCallback(async () => {
     setStudentsLoading(true);
     try {
-      const ids = selectedSchoolId && selectedSchoolId !== 'all'
-        ? [selectedSchoolId]
-        : getSelectedSchoolIds();
+      const ids =
+        selectedSchoolId && selectedSchoolId !== 'all'
+          ? [selectedSchoolId]
+          : getSelectedSchoolIds();
       if (ids.length === 0) {
         setStudents([]);
         return;
@@ -326,7 +345,9 @@ export default function CourseProposalsPage() {
     };
   }, [proposals]);
 
-  const activeFilterCount = [filterSubject, filterGrade, filterPublisher, searchQuery].filter(Boolean).length;
+  const activeFilterCount = [filterSubject, filterGrade, filterPublisher, searchQuery].filter(
+    Boolean
+  ).length;
 
   const clearAllFilters = () => {
     setSearchQuery('');
@@ -362,8 +383,9 @@ export default function CourseProposalsPage() {
         const subject = p.textbook?.subject ?? '';
         const publisher = p.textbook?.publisher ?? '';
         const theme = p.theme ?? '';
-        return [studentName, textbookName, subject, publisher, theme]
-          .some((v) => v.toLowerCase().includes(q));
+        return [studentName, textbookName, subject, publisher, theme].some((v) =>
+          v.toLowerCase().includes(q)
+        );
       });
     }
     return result;
@@ -372,7 +394,9 @@ export default function CourseProposalsPage() {
   // ── 一括選択（公開 / 提案済み） ──
   // 選択対象は表示中(filtered)の未公開(draft/sent)。提案済み化は draft のみ対象。
   const selectable = useMemo(() => filtered.filter((p) => p.status !== 'approved'), [filtered]);
-  const selectedCount = Array.from(selected).filter((id) => selectable.some((p) => p.id === id)).length;
+  const selectedCount = Array.from(selected).filter((id) =>
+    selectable.some((p) => p.id === id)
+  ).length;
   const selectedDraftCount = Array.from(selected).filter((id) =>
     filtered.some((p) => p.id === id && p.status === 'draft')
   ).length;
@@ -393,9 +417,12 @@ export default function CourseProposalsPage() {
     if (!isManagerOrAbove) return;
     const ids = Array.from(selected).filter((id) => selectable.some((p) => p.id === id));
     if (ids.length === 0) return;
-    if (!window.confirm(
-      `${ids.length}件の提案書を公開しますか？\n\n申込コマ数が進行表に反映され、講師に公開されます。`
-    )) return;
+    if (
+      !window.confirm(
+        `${ids.length}件の提案書を公開しますか？\n\n申込コマ数が進行表に反映され、講師に公開されます。`
+      )
+    )
+      return;
     setPublishing(true);
     try {
       // 公開前に発注候補をスナップショット（所持判定は is_draft=false 化の前に取る必要がある）
@@ -426,9 +453,12 @@ export default function CourseProposalsPage() {
       filtered.some((p) => p.id === id && p.status === 'draft')
     );
     if (ids.length === 0) return;
-    if (!window.confirm(
-      `${ids.length}件の提案書を「提案済み」にしますか？\n\n申込コマ数を入力できる状態になります（進行表への反映は公開時）。`
-    )) return;
+    if (
+      !window.confirm(
+        `${ids.length}件の提案書を「提案済み」にしますか？\n\n申込コマ数を入力できる状態になります（進行表への反映は公開時）。`
+      )
+    )
+      return;
     setSending(true);
     try {
       const { success, failed } = await bulkMarkProposalsSent(ids);
@@ -442,14 +472,25 @@ export default function CourseProposalsPage() {
   };
 
   const byStudent = useMemo(() => {
-    const map = new Map<string, { name: string; studentId: string; grade: number | null; proposals: SeasonalProposalWithDetails[] }>();
+    const map = new Map<
+      string,
+      {
+        name: string;
+        studentId: string;
+        grade: number | null;
+        proposals: SeasonalProposalWithDetails[];
+      }
+    >();
     for (const p of filtered) {
       const sid = p.student_id;
-      const sName = p.student
-        ? `${p.student.last_name} ${p.student.first_name}`
-        : '不明';
+      const sName = p.student ? `${p.student.last_name} ${p.student.first_name}` : '不明';
       if (!map.has(sid)) {
-        map.set(sid, { name: sName, studentId: sid, grade: p.student?.grade ?? null, proposals: [] });
+        map.set(sid, {
+          name: sName,
+          studentId: sid,
+          grade: p.student?.grade ?? null,
+          proposals: [],
+        });
       }
       map.get(sid)!.proposals.push(p);
     }
@@ -508,7 +549,9 @@ export default function CourseProposalsPage() {
               <Printer className="w-3.5 h-3.5" />
               印刷
             </button>
-            <span className="text-sm text-text-muted self-center ml-2">{printStudentName} ({printData.length}件)</span>
+            <span className="text-sm text-text-muted self-center ml-2">
+              {printStudentName} ({printData.length}件)
+            </span>
           </div>
           <div className="space-y-8">
             {printData.map((data, i) => (
@@ -602,46 +645,60 @@ export default function CourseProposalsPage() {
                     {studentsLoading ? (
                       <div className="py-4 text-center text-xs text-text-faint">読み込み中...</div>
                     ) : filteredStudents.length === 0 ? (
-                      <div className="py-4 text-center text-xs text-text-faint">該当する生徒がいません</div>
+                      <div className="py-4 text-center text-xs text-text-faint">
+                        該当する生徒がいません
+                      </div>
                     ) : (
                       groupedByGrade.map(([grade, list]) => {
                         // この学年でまだ提案書が無い生徒の数（残り作業の目安）
-                        const pendingCount = list.filter((s) => !proposalStatsByStudent.has(s.id)).length;
+                        const pendingCount = list.filter(
+                          (s) => !proposalStatsByStudent.has(s.id)
+                        ).length;
                         return (
-                        <div key={grade ?? 'unknown'}>
-                          <div className="sticky top-0 px-3 py-1 bg-surface-hover/95 backdrop-blur text-[10px] font-bold text-text-muted border-b border-border-subtle flex items-center gap-1">
-                            <span>{grade != null ? (GRADE_LABELS[grade] ?? `${grade}年`) : '学年未設定'}</span>
-                            <span className="font-normal text-text-faint">{list.length}名</span>
-                            {pendingCount > 0 && (
-                              <span className="ml-auto font-normal text-text-faint">未作成 {pendingCount}名</span>
-                            )}
-                          </div>
-                          {list.map((s) => {
-                            // 現在の年度・シーズンでこの生徒が提案書を持っているか
-                            const stats = proposalStatsByStudent.get(s.id);
-                            return (
-                              <button
-                                key={s.id}
-                                onClick={() => handleSelectStudent(s.id)}
-                                className="w-full text-left px-3 py-2 text-sm text-text-body hover:bg-surface-hover transition-[background-color] duration-150 ease-out active:bg-surface-hover flex items-center gap-2"
-                              >
-                                <span className="px-1.5 py-0.5 text-[11px] font-medium rounded bg-gray-100 text-gray-500 shrink-0">
-                                  {s.grade != null ? (GRADE_LABELS[s.grade] ?? `${s.grade}年`) : '—'}
+                          <div key={grade ?? 'unknown'}>
+                            <div className="sticky top-0 px-3 py-1 bg-surface-hover/95 backdrop-blur text-[10px] font-bold text-text-muted border-b border-border-subtle flex items-center gap-1">
+                              <span>
+                                {grade != null
+                                  ? (GRADE_LABELS[grade] ?? `${grade}年`)
+                                  : '学年未設定'}
+                              </span>
+                              <span className="font-normal text-text-faint">{list.length}名</span>
+                              {pendingCount > 0 && (
+                                <span className="ml-auto font-normal text-text-faint">
+                                  未作成 {pendingCount}名
                                 </span>
-                                <span className="truncate flex-1">{s.last_name} {s.first_name}</span>
-                                {stats ? (
-                                  <span className="shrink-0 px-1.5 py-0.5 text-[10px] font-medium rounded bg-info-subtle text-info">
-                                    {stats.count}件 · {stats.totalKoma}コマ
+                              )}
+                            </div>
+                            {list.map((s) => {
+                              // 現在の年度・シーズンでこの生徒が提案書を持っているか
+                              const stats = proposalStatsByStudent.get(s.id);
+                              return (
+                                <button
+                                  key={s.id}
+                                  onClick={() => handleSelectStudent(s.id)}
+                                  className="w-full text-left px-3 py-2 text-sm text-text-body hover:bg-surface-hover transition-[background-color] duration-150 ease-out active:bg-surface-hover flex items-center gap-2"
+                                >
+                                  <span className="px-1.5 py-0.5 text-[11px] font-medium rounded bg-gray-100 text-gray-500 shrink-0">
+                                    {s.grade != null
+                                      ? (GRADE_LABELS[s.grade] ?? `${s.grade}年`)
+                                      : '—'}
                                   </span>
-                                ) : (
-                                  <span className="shrink-0 px-1.5 py-0.5 text-[10px] font-medium rounded bg-surface-hover text-text-faint">
-                                    未作成
+                                  <span className="truncate flex-1">
+                                    {s.last_name} {s.first_name}
                                   </span>
-                                )}
-                              </button>
-                            );
-                          })}
-                        </div>
+                                  {stats ? (
+                                    <span className="shrink-0 px-1.5 py-0.5 text-[10px] font-medium rounded bg-info-subtle text-info">
+                                      {stats.count}件 · {stats.totalKoma}コマ
+                                    </span>
+                                  ) : (
+                                    <span className="shrink-0 px-1.5 py-0.5 text-[10px] font-medium rounded bg-surface-hover text-text-faint">
+                                      未作成
+                                    </span>
+                                  )}
+                                </button>
+                              );
+                            })}
+                          </div>
                         );
                       })
                     )}
@@ -665,7 +722,10 @@ export default function CourseProposalsPage() {
               className="w-full pl-9 pr-8 py-2 text-sm border border-border-default rounded-lg bg-surface-raised text-text-body placeholder:text-text-faint focus:outline-none focus:ring-1 focus:ring-ink/30"
             />
             {searchQuery && (
-              <button onClick={() => setSearchQuery('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-text-faint hover:text-text-heading">
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-text-faint hover:text-text-heading"
+              >
                 <X className="w-4 h-4" />
               </button>
             )}
@@ -696,7 +756,9 @@ export default function CourseProposalsPage() {
               className="px-2 py-1.5 border border-border-default rounded-lg text-xs bg-surface-raised text-text-body"
             >
               {[currentYear + 1, currentYear, currentYear - 1].map((y) => (
-                <option key={y} value={y}>{y}年</option>
+                <option key={y} value={y}>
+                  {y}年
+                </option>
               ))}
             </select>
             <select
@@ -706,7 +768,9 @@ export default function CourseProposalsPage() {
             >
               <option value="">全シーズン</option>
               {(['spring', 'summer', 'winter'] as SeasonType[]).map((s) => (
-                <option key={s} value={s}>{SEASON_LABELS[s]}</option>
+                <option key={s} value={s}>
+                  {SEASON_LABELS[s]}
+                </option>
               ))}
             </select>
 
@@ -718,7 +782,9 @@ export default function CourseProposalsPage() {
               >
                 <option value="">全科目</option>
                 {filterOptions.subjects.map((s) => (
-                  <option key={s} value={s}>{s}</option>
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
                 ))}
               </select>
             )}
@@ -731,7 +797,9 @@ export default function CourseProposalsPage() {
               >
                 <option value="">全学年</option>
                 {filterOptions.grades.map((g) => (
-                  <option key={g} value={String(g)}>{GRADE_LABELS[g] ?? `${g}年`}</option>
+                  <option key={g} value={String(g)}>
+                    {GRADE_LABELS[g] ?? `${g}年`}
+                  </option>
                 ))}
               </select>
             )}
@@ -744,7 +812,9 @@ export default function CourseProposalsPage() {
               >
                 <option value="">全準拠</option>
                 {filterOptions.publishers.map((pub) => (
-                  <option key={pub} value={pub}>{pub}</option>
+                  <option key={pub} value={pub}>
+                    {pub}
+                  </option>
                 ))}
               </select>
             )}
@@ -781,7 +851,7 @@ export default function CourseProposalsPage() {
                 }`}
               >
                 <button
-                  onClick={() => hasSelection ? clearSelection() : selectAllSelectable()}
+                  onClick={() => (hasSelection ? clearSelection() : selectAllSelectable())}
                   className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors duration-150 ${
                     hasSelection
                       ? 'bg-emerald-600 border-emerald-600 text-white'
@@ -794,7 +864,9 @@ export default function CourseProposalsPage() {
 
                 {hasSelection ? (
                   <>
-                    <span className="text-xs font-medium text-emerald-800">{selectedCount}件選択</span>
+                    <span className="text-xs font-medium text-emerald-800">
+                      {selectedCount}件選択
+                    </span>
                     <button
                       onClick={clearSelection}
                       className="text-[11px] text-emerald-600 hover:text-emerald-800 transition-colors"
@@ -805,7 +877,11 @@ export default function CourseProposalsPage() {
                     <button
                       onClick={handleBulkSent}
                       disabled={sending || publishing || selectedDraftCount === 0}
-                      title={selectedDraftCount === 0 ? '下書きの提案書を選択してください' : `${selectedDraftCount}件を提案済みにする`}
+                      title={
+                        selectedDraftCount === 0
+                          ? '下書きの提案書を選択してください'
+                          : `${selectedDraftCount}件を提案済みにする`
+                      }
                       className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-bold bg-info text-white rounded-lg hover:brightness-95 active:scale-[0.97] transition-[filter,transform] duration-150 disabled:opacity-50"
                     >
                       {sending ? (
@@ -820,11 +896,7 @@ export default function CourseProposalsPage() {
                         disabled={publishing || sending || selectedCount === 0}
                         className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-bold bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 active:scale-[0.97] transition-[colors,transform] duration-150 disabled:opacity-50"
                       >
-                        {publishing ? (
-                          <InlineLoading size="sm" label="公開中..." />
-                        ) : (
-                          `公開する`
-                        )}
+                        {publishing ? <InlineLoading size="sm" label="公開中..." /> : `公開する`}
                       </button>
                     )}
                   </>
@@ -842,144 +914,157 @@ export default function CourseProposalsPage() {
                 )}
               </div>
             )}
-            {studentGroups.map(({ name, studentId, grade, proposals: studentProposals }, groupIndex) => {
-              // 生徒の全提案書の合計コマ数（名前横に表示）
-              const totalKoma = studentProposals.reduce((sum, p) => sum + calcTotalKoma(p.units), 0);
-              return (
-              <div
-                key={studentId}
-                className="bg-surface-raised rounded-xl border border-border-default overflow-hidden feed-card-enter"
-                style={{ animationDelay: groupIndex < 10 ? `${groupIndex * 40}ms` : undefined }}
-              >
-                <div className="px-4 py-2.5 border-b border-border-subtle bg-surface-hover/50 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Link
-                      href={`/students/${studentId}/proposals`}
-                      className="font-semibold text-sm text-text-heading hover:text-accent-ink transition-[color] duration-150 ease-out"
-                    >
-                      {name}
-                    </Link>
-                    {grade != null && (
-                      <span className="px-1.5 py-0.5 text-[11px] font-medium rounded bg-gray-100 text-gray-500">
-                        {GRADE_LABELS[grade] ?? `${grade}年`}
-                      </span>
-                    )}
-                    <span className="px-1.5 py-0.5 text-[11px] font-bold rounded bg-info-subtle text-info">
-                      合計 {totalKoma}コマ
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      onClick={() => handlePrintStudent(studentId, name, studentProposals)}
-                      disabled={printLoading === studentId}
-                      className="p-1 text-text-faint hover:text-text-heading transition-[color,transform] duration-150 ease-out active:scale-[0.97] disabled:opacity-50"
-                      title="この生徒の提案書を印刷"
-                    >
-                      {printLoading === studentId ? (
-                        <InlineLoading size="sm" />
-                      ) : (
-                        <Printer className="w-3.5 h-3.5" />
-                      )}
-                    </button>
-                    <Link
-                      href={`/students/${studentId}/proposals/new?season=${getCurrentSeason()}&year=${currentYear}`}
-                      className="text-text-muted hover:text-text-heading transition-[color,transform] duration-150 ease-out active:scale-[0.97]"
-                      title="この生徒の提案書を作成"
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                    </Link>
-                  </div>
-                </div>
-                <div className="divide-y divide-border-subtle">
-                  {studentProposals.map((p) => {
-                    const koma = calcTotalKoma(p.units);
-                    const appliedKoma = calcTotalAppliedKoma(p.units);
-                    const isApproved = p.status === 'approved';
-                    const isChecked = selected.has(p.id);
-                    return (
-                      <div
-                        key={p.id}
-                        className={`flex items-center gap-3 px-4 py-2.5 transition-[background-color] duration-100 ease-out group ${
-                          isChecked ? 'bg-emerald-50/60' : 'hover:bg-surface-hover'
-                        }`}
-                      >
-                        {/* 一括選択チェックボックス（公開済みは選択不可、チェック表示のみ） */}
-                        {!isApproved ? (
-                          <button
-                            onClick={() => toggleSelect(p.id)}
-                            className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors duration-150 ${
-                              isChecked
-                                ? 'bg-emerald-600 border-emerald-600 text-white'
-                                : 'border-border-default hover:border-text-muted'
-                            }`}
-                            title={isChecked ? '選択解除' : '選択'}
-                          >
-                            {isChecked && <Check className="w-2.5 h-2.5" />}
-                          </button>
-                        ) : (
-                          <div className="w-4 h-4 shrink-0 flex items-center justify-center" title="公開済み">
-                            <Check className="w-3 h-3 text-emerald-500" />
-                          </div>
-                        )}
-                        <Link href={`/students/${studentId}/proposals/${p.id}`} className="flex items-center gap-3 flex-1 min-w-0">
-                          <FileText className="w-4 h-4 text-text-faint shrink-0" />
-                          <div className="flex-1 min-w-0">
-                            <div className="text-sm font-medium text-text-heading truncate flex items-center gap-1.5">
-                              {p.textbook?.subject && (() => {
-                                const colors = getSubjectBadgeColor(p.textbook!.subject!);
-                                return (
-                                  <span className={`inline-flex px-1.5 py-0.5 text-[11px] font-bold rounded shrink-0 ${colors.bg} ${colors.text}`}>
-                                    {p.textbook!.subject}
-                                  </span>
-                                );
-                              })()}
-                              <span className="truncate">{p.textbook?.name ?? '不明'}</span>
-                            </div>
-                            <div className="text-xs text-text-muted flex gap-2">
-                              <span>{p.theme || `${p.year}年 ${SEASON_LABELS[p.season]}`}</span>
-                              {p.units.length > 0 ? (
-                                <>
-                                  <span>{p.units.length}単元 / {koma}コマ</span>
-                                  {appliedKoma != null && (
-                                    <span className="text-info">申込 {appliedKoma}コマ</span>
-                                  )}
-                                </>
-                              ) : (
-                                <span className="text-text-faint">未設定</span>
-                              )}
-                            </div>
-                          </div>
+            {studentGroups.map(
+              ({ name, studentId, grade, proposals: studentProposals }, groupIndex) => {
+                // 生徒の全提案書の合計コマ数（名前横に表示）
+                const totalKoma = studentProposals.reduce(
+                  (sum, p) => sum + calcTotalKoma(p.units),
+                  0
+                );
+                return (
+                  <div
+                    key={studentId}
+                    className="bg-surface-raised rounded-xl border border-border-default overflow-hidden feed-card-enter"
+                    style={{ animationDelay: groupIndex < 10 ? `${groupIndex * 40}ms` : undefined }}
+                  >
+                    <div className="px-4 py-2.5 border-b border-border-subtle bg-surface-hover/50 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Link
+                          href={`/students/${studentId}/proposals`}
+                          className="font-semibold text-sm text-text-heading hover:text-accent-ink transition-[color] duration-150 ease-out"
+                        >
+                          {name}
                         </Link>
-                        <span
-                          className={`px-2 py-0.5 text-[11px] font-bold rounded shrink-0 ${STATUS_BADGE[p.status]}`}
-                        >
-                          {PROPOSAL_STATUS_LABELS[p.status]}
+                        {grade != null && (
+                          <span className="px-1.5 py-0.5 text-[11px] font-medium rounded bg-gray-100 text-gray-500">
+                            {GRADE_LABELS[grade] ?? `${grade}年`}
+                          </span>
+                        )}
+                        <span className="px-1.5 py-0.5 text-[11px] font-bold rounded bg-info-subtle text-info">
+                          合計 {totalKoma}コマ
                         </span>
-                        <button
-                          onClick={() => handleDelete(p.id)}
-                          disabled={deletingId === p.id}
-                          className="sm:opacity-0 sm:group-hover:opacity-100 p-1 text-text-faint hover:text-danger transition-[color,opacity,transform] duration-150 ease-out active:scale-[0.97] shrink-0 disabled:opacity-50"
-                          title="削除"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
                       </div>
-                    );
-                  })}
-                </div>
-              </div>
-              );
-            })}
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          onClick={() => handlePrintStudent(studentId, name, studentProposals)}
+                          disabled={printLoading === studentId}
+                          className="p-1 text-text-faint hover:text-text-heading transition-[color,transform] duration-150 ease-out active:scale-[0.97] disabled:opacity-50"
+                          title="この生徒の提案書を印刷"
+                        >
+                          {printLoading === studentId ? (
+                            <InlineLoading size="sm" />
+                          ) : (
+                            <Printer className="w-3.5 h-3.5" />
+                          )}
+                        </button>
+                        <Link
+                          href={`/students/${studentId}/proposals/new?season=${getCurrentSeason()}&year=${currentYear}`}
+                          className="text-text-muted hover:text-text-heading transition-[color,transform] duration-150 ease-out active:scale-[0.97]"
+                          title="この生徒の提案書を作成"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                        </Link>
+                      </div>
+                    </div>
+                    <div className="divide-y divide-border-subtle">
+                      {studentProposals.map((p) => {
+                        const koma = calcTotalKoma(p.units);
+                        const appliedKoma = calcTotalAppliedKoma(p.units);
+                        const isApproved = p.status === 'approved';
+                        const isChecked = selected.has(p.id);
+                        return (
+                          <div
+                            key={p.id}
+                            className={`flex items-center gap-3 px-4 py-2.5 transition-[background-color] duration-100 ease-out group ${
+                              isChecked ? 'bg-emerald-50/60' : 'hover:bg-surface-hover'
+                            }`}
+                          >
+                            {/* 一括選択チェックボックス（公開済みは選択不可、チェック表示のみ） */}
+                            {!isApproved ? (
+                              <button
+                                onClick={() => toggleSelect(p.id)}
+                                className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors duration-150 ${
+                                  isChecked
+                                    ? 'bg-emerald-600 border-emerald-600 text-white'
+                                    : 'border-border-default hover:border-text-muted'
+                                }`}
+                                title={isChecked ? '選択解除' : '選択'}
+                              >
+                                {isChecked && <Check className="w-2.5 h-2.5" />}
+                              </button>
+                            ) : (
+                              <div
+                                className="w-4 h-4 shrink-0 flex items-center justify-center"
+                                title="公開済み"
+                              >
+                                <Check className="w-3 h-3 text-emerald-500" />
+                              </div>
+                            )}
+                            <Link
+                              href={`/students/${studentId}/proposals/${p.id}`}
+                              className="flex items-center gap-3 flex-1 min-w-0"
+                            >
+                              <FileText className="w-4 h-4 text-text-faint shrink-0" />
+                              <div className="flex-1 min-w-0">
+                                <div className="text-sm font-medium text-text-heading truncate flex items-center gap-1.5">
+                                  {p.textbook?.subject &&
+                                    (() => {
+                                      const colors = getSubjectBadgeColor(p.textbook!.subject!);
+                                      return (
+                                        <span
+                                          className={`inline-flex px-1.5 py-0.5 text-[11px] font-bold rounded shrink-0 ${colors.bg} ${colors.text}`}
+                                        >
+                                          {p.textbook!.subject}
+                                        </span>
+                                      );
+                                    })()}
+                                  <span className="truncate">{p.textbook?.name ?? '不明'}</span>
+                                </div>
+                                <div className="text-xs text-text-muted flex gap-2">
+                                  <span>{p.theme || `${p.year}年 ${SEASON_LABELS[p.season]}`}</span>
+                                  {p.units.length > 0 ? (
+                                    <>
+                                      <span>
+                                        {p.units.length}単元 / {koma}コマ
+                                      </span>
+                                      {appliedKoma != null && (
+                                        <span className="text-info">申込 {appliedKoma}コマ</span>
+                                      )}
+                                    </>
+                                  ) : (
+                                    <span className="text-text-faint">未設定</span>
+                                  )}
+                                </div>
+                              </div>
+                            </Link>
+                            <span
+                              className={`px-2 py-0.5 text-[11px] font-bold rounded shrink-0 ${STATUS_BADGE[p.status]}`}
+                            >
+                              {PROPOSAL_STATUS_LABELS[p.status]}
+                            </span>
+                            <button
+                              onClick={() => handleDelete(p.id)}
+                              disabled={deletingId === p.id}
+                              className="sm:opacity-0 sm:group-hover:opacity-100 p-1 text-text-faint hover:text-danger transition-[color,opacity,transform] duration-150 ease-out active:scale-[0.97] shrink-0 disabled:opacity-50"
+                              title="削除"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              }
+            )}
           </div>
         )}
       </div>
 
       {/* 公開後の教材発注ダイアログ */}
       {orderDialog && (
-        <PublishOrderDialog
-          candidates={orderDialog}
-          onClose={() => setOrderDialog(null)}
-        />
+        <PublishOrderDialog candidates={orderDialog} onClose={() => setOrderDialog(null)} />
       )}
     </AdminLayout>
   );

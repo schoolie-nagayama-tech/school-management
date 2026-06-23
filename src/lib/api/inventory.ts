@@ -19,8 +19,8 @@ export async function getMaterials(
   const targetSchoolIds = Array.isArray(schoolIds)
     ? schoolIds
     : schoolIds
-    ? [schoolIds]
-    : [getDefaultSchoolId()];
+      ? [schoolIds]
+      : [getDefaultSchoolId()];
 
   let query = supabase
     .from('materials')
@@ -49,9 +49,7 @@ export async function createMaterial(
   item: Omit<MaterialInsert, 'school_id'>,
   schoolId?: string | string[]
 ): Promise<Material> {
-  const targetSchoolIds = Array.isArray(schoolId)
-    ? schoolId
-    : [schoolId || getDefaultSchoolId()];
+  const targetSchoolIds = Array.isArray(schoolId) ? schoolId : [schoolId || getDefaultSchoolId()];
 
   const insertData = targetSchoolIds.map((sid) => ({
     ...item,
@@ -62,10 +60,7 @@ export async function createMaterial(
     is_active: item.is_active ?? true,
   }));
 
-  const { data, error } = await supabase
-    .from('materials')
-    .insert(insertData)
-    .select();
+  const { data, error } = await supabase.from('materials').insert(insertData).select();
 
   if (error) {
     throw new Error(getUserErrorMessage(error, '教材の作成に失敗しました'));
@@ -77,10 +72,7 @@ export async function createMaterial(
 /**
  * 教材を更新
  */
-export async function updateMaterial(
-  id: string,
-  updates: MaterialUpdate
-): Promise<Material> {
+export async function updateMaterial(id: string, updates: MaterialUpdate): Promise<Material> {
   const { data, error } = await supabase
     .from('materials')
     .update({
@@ -102,10 +94,7 @@ export async function updateMaterial(
  * 教材を削除
  */
 export async function deleteMaterial(id: string): Promise<void> {
-  const { error } = await supabase
-    .from('materials')
-    .delete()
-    .eq('id', id);
+  const { error } = await supabase.from('materials').delete().eq('id', id);
 
   if (error) {
     throw new Error(getUserErrorMessage(error, '教材の削除に失敗しました'));
@@ -208,14 +197,12 @@ export async function createStockTransaction(
 /**
  * 在庫不足教材を取得（stock_quantity < low_stock_threshold の教材）
  */
-export async function getLowStockMaterials(
-  schoolIds?: string | string[]
-): Promise<Material[]> {
+export async function getLowStockMaterials(schoolIds?: string | string[]): Promise<Material[]> {
   const targetSchoolIds = Array.isArray(schoolIds)
     ? schoolIds
     : schoolIds
-    ? [schoolIds]
-    : [getDefaultSchoolId()];
+      ? [schoolIds]
+      : [getDefaultSchoolId()];
 
   // Supabase では stock_quantity < low_stock_threshold を直接フィルタリングできないため、
   // 全件取得後にクライアント側でフィルタリング
@@ -230,7 +217,5 @@ export async function getLowStockMaterials(
     throw new Error(getUserErrorMessage(error, '在庫不足教材の取得に失敗しました'));
   }
 
-  return ((data || []) as Material[]).filter(
-    (m) => m.stock_quantity < m.low_stock_threshold
-  );
+  return ((data || []) as Material[]).filter((m) => m.stock_quantity < m.low_stock_threshold);
 }

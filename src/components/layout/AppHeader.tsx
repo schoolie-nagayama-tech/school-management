@@ -7,7 +7,16 @@ import { getUnreadCount } from '@/lib/api/bulletin';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMasterData } from '@/contexts/MasterDataContext';
 import { USER_ROLE_LABELS } from '@/types/database';
-import { Megaphone, ChevronDown, X, Menu, LogOut, Settings, LayoutDashboard, MessageSquare } from 'lucide-react';
+import {
+  Megaphone,
+  ChevronDown,
+  X,
+  Menu,
+  LogOut,
+  Settings,
+  LayoutDashboard,
+  MessageSquare,
+} from 'lucide-react';
 import { TierMedal } from '@/components/teacher/TierMedal';
 import { useTeacherBadgeCount } from '@/hooks/useTeacherBadgeCount';
 import { BadgeFlowerField } from '@/components/badges/HiddenFlower';
@@ -29,7 +38,8 @@ interface AppHeaderProps {
 // 常時DOMに残し、opacity + scale の CSS transitionで開閉する。
 // enter: 150ms ease-out（即時反応）/ exit: 100ms（より速く閉じて応答感を高める）
 function dropdownPanelClass(open: boolean, align: 'left' | 'right' = 'left') {
-  const base = 'absolute top-full mt-1 bg-white rounded-lg border border-gray-200 shadow-xl transition-[opacity,transform] ease-out';
+  const base =
+    'absolute top-full mt-1 bg-white rounded-lg border border-gray-200 shadow-xl transition-[opacity,transform] ease-out';
   const origin = align === 'right' ? 'origin-top-right right-0' : 'origin-top-left left-0';
   // open: opacity 1 → full / closed: opacity 0 + scale 95 + pointer-events none（exit後クリック不可）
   const state = open
@@ -63,10 +73,24 @@ function dropdownItemClass(active: boolean) {
   }`;
 }
 
-export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBulkGradeUpdateClick }: AppHeaderProps) {
+export function AppHeader({
+  title: _title,
+  onSettingsClick,
+  settingsLabel,
+  onBulkGradeUpdateClick,
+}: AppHeaderProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const { profile, permissions, signOut, isLoading: authLoading, schoolIds, selectedSchoolId, setSelectedSchoolId, getSelectedSchoolIds } = useAuth();
+  const {
+    profile,
+    permissions,
+    signOut,
+    isLoading: authLoading,
+    schoolIds,
+    selectedSchoolId,
+    setSelectedSchoolId,
+    getSelectedSchoolIds,
+  } = useAuth();
   const { schools: masterSchools } = useMasterData();
 
   const handleSchoolChange = (schoolId: string | 'all') => {
@@ -91,26 +115,38 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
 
   // ナビドロップダウン: ホバーで開閉（150ms遅延で閉じる）
   const navCloseTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
-  const navSetters = useMemo(() => ({
-    form: setShowFormDropdown,
-    course: setShowCourseDropdown,
-    teacher: setShowTeacherDropdown,
-    business: setShowBusinessDropdown,
-  }), []);
+  const navSetters = useMemo(
+    () => ({
+      form: setShowFormDropdown,
+      course: setShowCourseDropdown,
+      teacher: setShowTeacherDropdown,
+      business: setShowBusinessDropdown,
+    }),
+    []
+  );
 
-  const handleNavEnter = useCallback((key: string) => {
-    clearTimeout(navCloseTimers.current[key]);
-    Object.entries(navSetters).forEach(([k, setter]) => {
-      if (k !== key) { clearTimeout(navCloseTimers.current[k]); setter(false); }
-    });
-    navSetters[key as keyof typeof navSetters](true);
-  }, [navSetters]);
+  const handleNavEnter = useCallback(
+    (key: string) => {
+      clearTimeout(navCloseTimers.current[key]);
+      Object.entries(navSetters).forEach(([k, setter]) => {
+        if (k !== key) {
+          clearTimeout(navCloseTimers.current[k]);
+          setter(false);
+        }
+      });
+      navSetters[key as keyof typeof navSetters](true);
+    },
+    [navSetters]
+  );
 
-  const handleNavLeave = useCallback((key: string) => {
-    navCloseTimers.current[key] = setTimeout(() => {
-      navSetters[key as keyof typeof navSetters](false);
-    }, 150);
-  }, [navSetters]);
+  const handleNavLeave = useCallback(
+    (key: string) => {
+      navCloseTimers.current[key] = setTimeout(() => {
+        navSetters[key as keyof typeof navSetters](false);
+      }, 150);
+    },
+    [navSetters]
+  );
 
   // ルート変更時にモバイルメニューを自動で閉じる
   useEffect(() => {
@@ -143,7 +179,9 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
         if (!cancelled) setBulletinUnreadCount(0);
       }
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [getSelectedSchoolIds, profile?.id, profile?.role, selectedSchoolId, schoolIds]);
 
   useEffect(() => {
@@ -172,7 +210,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
       return 'すべての教室';
     }
     if (selectedSchoolId) {
-      const school = schools.find(s => s.id === selectedSchoolId);
+      const school = schools.find((s) => s.id === selectedSchoolId);
       if (school) {
         return school.code === 'DEFAULT' ? 'デフォルト' : school.name;
       }
@@ -221,8 +259,12 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
               className="lg:hidden p-1.5 text-white hover:bg-white/10 rounded-lg transition-[color,background-color,transform] duration-150 ease-out active:scale-[0.97]"
             >
               <div className="relative w-5 h-5">
-                <Menu className={`absolute inset-0 w-5 h-5 transition-[opacity,transform] duration-150 ease-out ${showMobileMenu ? 'opacity-0 rotate-90 scale-75' : 'opacity-100 rotate-0 scale-100'}`} />
-                <X className={`absolute inset-0 w-5 h-5 transition-[opacity,transform] duration-150 ease-out ${showMobileMenu ? 'opacity-100 rotate-0 scale-100' : 'opacity-0 -rotate-90 scale-75'}`} />
+                <Menu
+                  className={`absolute inset-0 w-5 h-5 transition-[opacity,transform] duration-150 ease-out ${showMobileMenu ? 'opacity-0 rotate-90 scale-75' : 'opacity-100 rotate-0 scale-100'}`}
+                />
+                <X
+                  className={`absolute inset-0 w-5 h-5 transition-[opacity,transform] duration-150 ease-out ${showMobileMenu ? 'opacity-100 rotate-0 scale-100' : 'opacity-0 -rotate-90 scale-75'}`}
+                />
               </div>
             </button>
             {/* NESTロゴ */}
@@ -234,26 +276,18 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
             <div className="hidden lg:block h-6 w-px bg-white/30"></div>
             <nav className="hidden lg:flex items-center gap-3">
               {(showAllLinks || permissions?.canAccessStudents) && (
-                <Link
-                  href="/students"
-                  className={navLinkClass(pathname === '/students')}
-                >
+                <Link href="/students" className={navLinkClass(pathname === '/students')}>
                   生徒管理
                 </Link>
               )}
-              {(showAllLinks || (permissions?.canAccessStudents && profile?.role !== 'teacher')) && (
-                <Link
-                  href="/progress-feed"
-                  className={navLinkClass(pathname === '/progress-feed')}
-                >
+              {(showAllLinks ||
+                (permissions?.canAccessStudents && profile?.role !== 'teacher')) && (
+                <Link href="/progress-feed" className={navLinkClass(pathname === '/progress-feed')}>
                   進行表確認
                 </Link>
               )}
               {(showAllLinks || permissions?.canAccessApplications) && (
-                <Link
-                  href="/applications"
-                  className={navLinkClass(pathname === '/applications')}
-                >
+                <Link href="/applications" className={navLinkClass(pathname === '/applications')}>
                   申込状況
                 </Link>
               )}
@@ -276,16 +310,20 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                 >
                   <button
                     className={navDropdownTriggerClass(
-                      !!(pathname?.startsWith('/responses') ||
-                      pathname?.startsWith('/forms/responses') ||
-                      pathname === '/settings/portal' ||
-                      pathname?.startsWith('/settings/portal') ||
-                      pathname?.startsWith('/transcriptions') ||
-                      pathname?.startsWith('/test-prep-proposals'))
+                      !!(
+                        pathname?.startsWith('/responses') ||
+                        pathname?.startsWith('/forms/responses') ||
+                        pathname === '/settings/portal' ||
+                        pathname?.startsWith('/settings/portal') ||
+                        pathname?.startsWith('/transcriptions') ||
+                        pathname?.startsWith('/test-prep-proposals')
+                      )
                     )}
                   >
                     フォーム管理
-                    <ChevronDown className={`w-3 h-3 transition-[transform] duration-150 ease-out ${showFormDropdown ? 'rotate-180' : ''}`} />
+                    <ChevronDown
+                      className={`w-3 h-3 transition-[transform] duration-150 ease-out ${showFormDropdown ? 'rotate-180' : ''}`}
+                    />
                   </button>
                   <div
                     className={`${dropdownPanelClass(showFormDropdown)} z-50 min-w-[150px]`}
@@ -294,7 +332,12 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                     <div className="py-1">
                       <Link
                         href="/responses"
-                        className={dropdownItemClass(!!(pathname?.startsWith('/responses') || pathname?.startsWith('/forms/responses')))}
+                        className={dropdownItemClass(
+                          !!(
+                            pathname?.startsWith('/responses') ||
+                            pathname?.startsWith('/forms/responses')
+                          )
+                        )}
                       >
                         回答一覧
                       </Link>
@@ -307,14 +350,21 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                       {(showAllLinks || permissions?.canAccessPortal) && (
                         <Link
                           href="/settings/portal"
-                          className={dropdownItemClass(!!(pathname === '/settings/portal' || pathname?.startsWith('/settings/portal')))}
+                          className={dropdownItemClass(
+                            !!(
+                              pathname === '/settings/portal' ||
+                              pathname?.startsWith('/settings/portal')
+                            )
+                          )}
                         >
                           ポータル設定
                         </Link>
                       )}
                       <Link
                         href="/test-prep-proposals"
-                        className={dropdownItemClass(!!pathname?.startsWith('/test-prep-proposals'))}
+                        className={dropdownItemClass(
+                          !!pathname?.startsWith('/test-prep-proposals')
+                        )}
                       >
                         テスト対策
                       </Link>
@@ -330,10 +380,14 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                   onMouseLeave={() => handleNavLeave('course')}
                 >
                   <button
-                    className={navDropdownTriggerClass(!!(pathname === '/courses' || pathname?.startsWith('/courses/')))}
+                    className={navDropdownTriggerClass(
+                      !!(pathname === '/courses' || pathname?.startsWith('/courses/'))
+                    )}
                   >
                     講習管理
-                    <ChevronDown className={`w-3 h-3 transition-[transform] duration-150 ease-out ${showCourseDropdown ? 'rotate-180' : ''}`} />
+                    <ChevronDown
+                      className={`w-3 h-3 transition-[transform] duration-150 ease-out ${showCourseDropdown ? 'rotate-180' : ''}`}
+                    />
                   </button>
                   <div
                     className={`${dropdownPanelClass(showCourseDropdown)} z-50 min-w-[150px]`}
@@ -342,7 +396,9 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                     <div className="py-1">
                       <Link
                         href="/courses"
-                        className={dropdownItemClass(!!(pathname === '/courses' && !pathname?.startsWith('/courses/')))}
+                        className={dropdownItemClass(
+                          !!(pathname === '/courses' && !pathname?.startsWith('/courses/'))
+                        )}
                       >
                         講習一覧
                       </Link>
@@ -376,16 +432,20 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                   onMouseLeave={() => handleNavLeave('teacher')}
                 >
                   <button
-                    className={navDropdownTriggerClass(!!(
-                      pathname?.startsWith('/admin/teachers') ||
-                      pathname?.startsWith('/admin/attendance') ||
-                      pathname?.startsWith('/admin/teacher-badges') ||
-                      pathname === '/settings/seasonal-shifts' ||
-                      pathname?.startsWith('/settings/seasonal-shifts')
-                    ))}
+                    className={navDropdownTriggerClass(
+                      !!(
+                        pathname?.startsWith('/admin/teachers') ||
+                        pathname?.startsWith('/admin/attendance') ||
+                        pathname?.startsWith('/admin/teacher-badges') ||
+                        pathname === '/settings/seasonal-shifts' ||
+                        pathname?.startsWith('/settings/seasonal-shifts')
+                      )
+                    )}
                   >
                     講師
-                    <ChevronDown className={`w-3 h-3 transition-[transform] duration-150 ease-out ${showTeacherDropdown ? 'rotate-180' : ''}`} />
+                    <ChevronDown
+                      className={`w-3 h-3 transition-[transform] duration-150 ease-out ${showTeacherDropdown ? 'rotate-180' : ''}`}
+                    />
                   </button>
                   <div
                     className={`${dropdownPanelClass(showTeacherDropdown)} z-50 min-w-[180px]`}
@@ -394,25 +454,45 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                     <div className="py-1">
                       <Link
                         href="/admin/teachers"
-                        className={dropdownItemClass(!!(pathname === '/admin/teachers' || pathname?.startsWith('/admin/teachers')))}
+                        className={dropdownItemClass(
+                          !!(
+                            pathname === '/admin/teachers' ||
+                            pathname?.startsWith('/admin/teachers')
+                          )
+                        )}
                       >
                         講師一覧
                       </Link>
                       <Link
                         href="/admin/attendance"
-                        className={dropdownItemClass(!!(pathname === '/admin/attendance' || pathname?.startsWith('/admin/attendance/')))}
+                        className={dropdownItemClass(
+                          !!(
+                            pathname === '/admin/attendance' ||
+                            pathname?.startsWith('/admin/attendance/')
+                          )
+                        )}
                       >
                         出勤簿管理
                       </Link>
                       <Link
                         href="/settings/seasonal-shifts"
-                        className={dropdownItemClass(!!(pathname === '/settings/seasonal-shifts' || pathname?.startsWith('/settings/seasonal-shifts')))}
+                        className={dropdownItemClass(
+                          !!(
+                            pathname === '/settings/seasonal-shifts' ||
+                            pathname?.startsWith('/settings/seasonal-shifts')
+                          )
+                        )}
                       >
                         シフト設定
                       </Link>
                       <Link
                         href="/admin/teacher-badges"
-                        className={dropdownItemClass(!!(pathname === '/admin/teacher-badges' || pathname?.startsWith('/admin/teacher-badges')))}
+                        className={dropdownItemClass(
+                          !!(
+                            pathname === '/admin/teacher-badges' ||
+                            pathname?.startsWith('/admin/teacher-badges')
+                          )
+                        )}
                       >
                         研修バッジ管理
                       </Link>
@@ -440,15 +520,19 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                   onMouseLeave={() => handleNavLeave('business')}
                 >
                   <button
-                    className={navDropdownTriggerClass(!!(
-                      pathname?.startsWith('/billing') ||
-                      pathname?.startsWith('/ordering') ||
-                      pathname?.startsWith('/inventory') ||
-                      pathname?.startsWith('/tasks')
-                    ))}
+                    className={navDropdownTriggerClass(
+                      !!(
+                        pathname?.startsWith('/billing') ||
+                        pathname?.startsWith('/ordering') ||
+                        pathname?.startsWith('/inventory') ||
+                        pathname?.startsWith('/tasks')
+                      )
+                    )}
                   >
                     業務管理
-                    <ChevronDown className={`w-3 h-3 transition-[transform] duration-150 ease-out ${showBusinessDropdown ? 'rotate-180' : ''}`} />
+                    <ChevronDown
+                      className={`w-3 h-3 transition-[transform] duration-150 ease-out ${showBusinessDropdown ? 'rotate-180' : ''}`}
+                    />
                   </button>
                   <div
                     className={`${dropdownPanelClass(showBusinessDropdown)} z-[9999] min-w-[150px]`}
@@ -463,7 +547,11 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                       </Link>
                       <Link
                         href="/ordering"
-                        className={dropdownItemClass(!!(pathname?.startsWith('/ordering') || pathname?.startsWith('/inventory')))}
+                        className={dropdownItemClass(
+                          !!(
+                            pathname?.startsWith('/ordering') || pathname?.startsWith('/inventory')
+                          )
+                        )}
                       >
                         教材・発注管理
                       </Link>
@@ -490,7 +578,9 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                   className="text-white px-2.5 py-1.5 bg-white/20 rounded-lg hover:bg-white/30 transition-[color,background-color,transform] duration-150 ease-out active:scale-[0.97] flex items-center gap-1 text-xs font-medium shrink-0 whitespace-nowrap max-w-[110px] sm:max-w-none"
                 >
                   <span className="truncate">{schoolDisplayName}</span>
-                  <ChevronDown className={`w-3 h-3 transition-[transform] duration-150 ease-out ${showSchoolDropdown ? 'rotate-180' : ''}`} />
+                  <ChevronDown
+                    className={`w-3 h-3 transition-[transform] duration-150 ease-out ${showSchoolDropdown ? 'rotate-180' : ''}`}
+                  />
                 </button>
                 <div
                   className={`${dropdownPanelClass(showSchoolDropdown, 'right')} z-50 min-w-[200px] ring-1 ring-black/5`}
@@ -509,7 +599,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                     >
                       すべての教室
                     </button>
-                    {displaySchools.map(school => (
+                    {displaySchools.map((school) => (
                       <button
                         key={school.id}
                         onClick={(e) => {
@@ -517,7 +607,9 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                           handleSchoolChange(school.id);
                         }}
                         className={`w-full text-left px-3 py-2 text-xs hover:bg-gray-50 transition-colors flex items-center gap-2 ${
-                          selectedSchoolId === school.id ? 'bg-primary/10 text-primary font-semibold' : ''
+                          selectedSchoolId === school.id
+                            ? 'bg-primary/10 text-primary font-semibold'
+                            : ''
                         }`}
                       >
                         <span>{school.code === 'DEFAULT' ? 'デフォルト' : school.name}</span>
@@ -533,13 +625,14 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
               </div>
             )}
             {displaySchools.length === 1 && schoolDisplayName && (
-              <div className="text-xs font-medium text-white/90 px-3 py-1.5 bg-white/20 rounded-lg max-w-[120px] truncate" title={schoolDisplayName}>
+              <div
+                className="text-xs font-medium text-white/90 px-3 py-1.5 bg-white/20 rounded-lg max-w-[120px] truncate"
+                title={schoolDisplayName}
+              >
                 {schoolDisplayName}
               </div>
             )}
-            {isTeacher && badgeCount !== null && (
-              <TierMedal count={badgeCount} />
-            )}
+            {isTeacher && badgeCount !== null && <TierMedal count={badgeCount} />}
             {profile && !authLoading && (
               <button
                 onClick={signOut}
@@ -571,7 +664,9 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                     {profile && !authLoading && (
                       <div className="px-3 py-2.5 border-b border-gray-100">
                         <div className="text-xs font-semibold text-gray-900 leading-tight">
-                          {isTeacher ? getSurname(profile) || profile.email : profile.display_name || profile.email}
+                          {isTeacher
+                            ? getSurname(profile) || profile.email
+                            : profile.display_name || profile.email}
                         </div>
                         <div className="text-[10px] text-gray-500 leading-tight mt-0.5">
                           {USER_ROLE_LABELS[profile.role]}
@@ -628,7 +723,9 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                       </>
                     )}
                     {/* 問合せ管理（教室長以上・ベータ。ダッシュボードと同様ここを入口にする） */}
-                    {(profile?.role === 'admin' || profile?.role === 'owner' || profile?.role === 'manager') && (
+                    {(profile?.role === 'admin' ||
+                      profile?.role === 'owner' ||
+                      profile?.role === 'manager') && (
                       <>
                         <Link
                           href="/admin/inquiries"
@@ -694,7 +791,8 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
           style={{
             maxHeight: showMobileMenu ? '800px' : 0,
             opacity: showMobileMenu ? 1 : 0,
-            transition: 'max-height 280ms cubic-bezier(0.23, 1, 0.32, 1), opacity 200ms cubic-bezier(0.23, 1, 0.32, 1)',
+            transition:
+              'max-height 280ms cubic-bezier(0.23, 1, 0.32, 1), opacity 200ms cubic-bezier(0.23, 1, 0.32, 1)',
           }}
         >
           <nav
@@ -703,20 +801,77 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
             aria-hidden={!showMobileMenu}
           >
             {[
-              { href: '/students', label: '生徒管理', show: showAllLinks || permissions?.canAccessStudents },
-              { href: '/applications', label: '申込状況', show: showAllLinks || permissions?.canAccessApplications },
-              { href: '/responses', label: '回答一覧', show: showAllLinks || permissions?.canAccessPortal },
-              { href: '/forms/responses', label: 'フォーム回答', show: showAllLinks || permissions?.canAccessPortal },
-              { href: '/settings/portal', label: 'ポータル設定', show: showAllLinks || permissions?.canAccessPortal },
-              { href: '/transcriptions', label: '面談記録追加', show: showAllLinks || permissions?.canAccessPortal },
-              { href: '/progress-feed', label: '進行表確認', show: showAllLinks || (permissions?.canAccessStudents && profile?.role !== 'teacher') },
-              { href: '/courses', label: '講習一覧', show: showAllLinks || permissions?.canAccessPortal },
-              { href: '/courses/progress', label: '講習進行', show: showAllLinks || permissions?.canAccessPortal },
-              { href: '/courses/schedule', label: '講習日程', show: showAllLinks || permissions?.canAccessPortal },
-              { href: '/admin/teachers', label: '講師一覧', show: showAllLinks || permissions?.canAccessUsers },
-              { href: '/billing', label: '請求管理', show: showAllLinks || permissions?.canAccessBilling },
-              { href: '/ordering', label: '教材・発注管理', show: showAllLinks || permissions?.canAccessBilling },
-              { href: '/tasks', label: '業務進捗', show: showAllLinks || permissions?.canAccessBilling },
+              {
+                href: '/students',
+                label: '生徒管理',
+                show: showAllLinks || permissions?.canAccessStudents,
+              },
+              {
+                href: '/applications',
+                label: '申込状況',
+                show: showAllLinks || permissions?.canAccessApplications,
+              },
+              {
+                href: '/responses',
+                label: '回答一覧',
+                show: showAllLinks || permissions?.canAccessPortal,
+              },
+              {
+                href: '/forms/responses',
+                label: 'フォーム回答',
+                show: showAllLinks || permissions?.canAccessPortal,
+              },
+              {
+                href: '/settings/portal',
+                label: 'ポータル設定',
+                show: showAllLinks || permissions?.canAccessPortal,
+              },
+              {
+                href: '/transcriptions',
+                label: '面談記録追加',
+                show: showAllLinks || permissions?.canAccessPortal,
+              },
+              {
+                href: '/progress-feed',
+                label: '進行表確認',
+                show:
+                  showAllLinks || (permissions?.canAccessStudents && profile?.role !== 'teacher'),
+              },
+              {
+                href: '/courses',
+                label: '講習一覧',
+                show: showAllLinks || permissions?.canAccessPortal,
+              },
+              {
+                href: '/courses/progress',
+                label: '講習進行',
+                show: showAllLinks || permissions?.canAccessPortal,
+              },
+              {
+                href: '/courses/schedule',
+                label: '講習日程',
+                show: showAllLinks || permissions?.canAccessPortal,
+              },
+              {
+                href: '/admin/teachers',
+                label: '講師一覧',
+                show: showAllLinks || permissions?.canAccessUsers,
+              },
+              {
+                href: '/billing',
+                label: '請求管理',
+                show: showAllLinks || permissions?.canAccessBilling,
+              },
+              {
+                href: '/ordering',
+                label: '教材・発注管理',
+                show: showAllLinks || permissions?.canAccessBilling,
+              },
+              {
+                href: '/tasks',
+                label: '業務進捗',
+                show: showAllLinks || permissions?.canAccessBilling,
+              },
             ]
               .filter((item) => item.show)
               .map((item) => {
@@ -751,7 +906,9 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
             {profile && (
               <div className="px-4 pt-2 mt-1 border-t border-white/20 text-[11px] text-white/80">
                 <div className="font-semibold text-white">
-                  {isTeacher ? getSurname(profile) || profile.email : profile.display_name || profile.email}
+                  {isTeacher
+                    ? getSurname(profile) || profile.email
+                    : profile.display_name || profile.email}
                 </div>
                 <div>{USER_ROLE_LABELS[profile.role]}</div>
               </div>
@@ -765,7 +922,8 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
             href="/students"
             className="slide-in-bar block py-2 px-4 bg-amber-400 text-amber-950 font-bold text-sm text-center hover:bg-amber-500 transition-colors duration-150"
           >
-            <Megaphone className="inline h-4 w-4 mr-1" />連絡掲示板に未読が{bulletinUnreadCount}件あります
+            <Megaphone className="inline h-4 w-4 mr-1" />
+            連絡掲示板に未読が{bulletinUnreadCount}件あります
           </Link>
         )}
       </div>

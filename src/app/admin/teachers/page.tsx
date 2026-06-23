@@ -9,11 +9,26 @@ import { useMasterData } from '@/contexts/MasterDataContext';
 import { useToast } from '@/hooks/useToast';
 import { ToastContainer, Loading } from '@/components/ui';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui';
-import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogAction, AlertDialogCancel } from '@/components/ui';
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogAction,
+  AlertDialogCancel,
+} from '@/components/ui';
 import { Button } from '@/components/ui';
 import { Input } from '@/components/ui';
 import { Label } from '@/components/ui';
-import { SelectShadcn as Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui';
+import {
+  SelectShadcn as Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui';
 import { Copy, Check, Eye, EyeOff, Trash2, LogIn, AlertTriangle, Home } from 'lucide-react';
 import { impersonateUser } from '@/lib/impersonate';
 import type { School, UserProfile, TeacherBadge, TeacherBadgeAssignment } from '@/types/database';
@@ -47,7 +62,15 @@ interface TeacherWithDetails extends UserProfile {
 }
 
 export default function TeachersPage() {
-  const { user, profile, permissions, isLoading: authLoading, getSelectedSchoolIds, selectedSchoolId, demoSchoolIds } = useAuth();
+  const {
+    user,
+    profile,
+    permissions,
+    isLoading: authLoading,
+    getSelectedSchoolIds,
+    selectedSchoolId,
+    demoSchoolIds,
+  } = useAuth();
   const { schools: masterSchools } = useMasterData();
   const { toasts, removeToast, success, error: toastError } = useToast();
   const [teachers, setTeachers] = useState<TeacherWithDetails[]>([]);
@@ -57,10 +80,10 @@ export default function TeachersPage() {
   const lastLoadAtRef = useRef<number>(0);
   /** フォーカス復帰時に再読込をスキップする閾値 (ms)。30秒以内なら何もしない。 */
   const FOCUS_REFRESH_MIN_INTERVAL_MS = 30_000;
-  
+
   // 教室長かどうかを判定
   const isManager = profile?.role === 'manager';
-  
+
   // 講師作成フォーム
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isResultDialogOpen, setIsResultDialogOpen] = useState(false);
@@ -89,7 +112,9 @@ export default function TeachersPage() {
 
   // バッジ
   const [allBadges, setAllBadges] = useState<TeacherBadge[]>([]);
-  const [teacherBadgeMap, setTeacherBadgeMap] = useState<Map<string, TeacherBadgeAssignment[]>>(new Map());
+  const [teacherBadgeMap, setTeacherBadgeMap] = useState<Map<string, TeacherBadgeAssignment[]>>(
+    new Map()
+  );
   const [badgeFilter, setBadgeFilter] = useState<string>('all');
   // ページ内「教室:」フィルタ。ヘッダーの教室セレクタ (selectedSchoolId) と同期させ、
   // 編集→保存→一覧に戻ったときも選択中教室に絞り込まれた状態を維持する。
@@ -123,9 +148,10 @@ export default function TeachersPage() {
       // 権限が講師かつ、その教室に所属する人のみ表示（選択中の教室に紐づく講師に絞る）
       const userSchoolIds = getSelectedSchoolIds();
       if (userSchoolIds.length > 0) {
-        teachersList = teachersList.filter(
-          (t: TeacherWithDetails) =>
-            (t.user_schools || []).some((us: { school_id: string }) => userSchoolIds.includes(us.school_id))
+        teachersList = teachersList.filter((t: TeacherWithDetails) =>
+          (t.user_schools || []).some((us: { school_id: string }) =>
+            userSchoolIds.includes(us.school_id)
+          )
         );
       }
       setTeachers(teachersList);
@@ -134,12 +160,14 @@ export default function TeachersPage() {
       const demoSet = new Set(demoSchoolIds);
       let availableSchools = masterSchools.filter((s) => !demoSet.has(s.id));
       if (isManager) {
-        availableSchools = availableSchools.filter(school => userSchoolIds.includes(school.id));
+        availableSchools = availableSchools.filter((school) => userSchoolIds.includes(school.id));
       }
       setSchools(availableSchools);
 
       if (availableSchools.length > 0) {
-        setFormData(prev => prev.schoolId ? prev : { ...prev, schoolId: availableSchools[0].id });
+        setFormData((prev) =>
+          prev.schoolId ? prev : { ...prev, schoolId: availableSchools[0].id }
+        );
       }
 
       // バッジ割当（teacherIds が必要なので講師取得後に実行）
@@ -152,7 +180,8 @@ export default function TeachersPage() {
           const badgeMap = new Map<string, TeacherBadgeAssignment[]>();
           if (batchRes.ok) {
             const data = await batchRes.json();
-            const byTeacher: Record<string, TeacherBadgeAssignment[]> = data.assignmentsByTeacher || {};
+            const byTeacher: Record<string, TeacherBadgeAssignment[]> =
+              data.assignmentsByTeacher || {};
             for (const [tid, assignments] of Object.entries(byTeacher)) {
               badgeMap.set(tid, assignments);
             }
@@ -161,7 +190,9 @@ export default function TeachersPage() {
         } else {
           setTeacherBadgeMap(new Map());
         }
-      } catch { /* バッジ割当取得失敗は致命的ではない */ }
+      } catch {
+        /* バッジ割当取得失敗は致命的ではない */
+      }
 
       lastLoadAtRef.current = Date.now();
     } catch (err) {
@@ -189,7 +220,9 @@ export default function TeachersPage() {
           next.set(teacherId, assignments);
           return next;
         });
-      } catch { /* noop */ }
+      } catch {
+        /* noop */
+      }
     };
     const offEvent = onTeacherBadgesChanged((tid) => {
       refetchBadgesForTeacher(tid);
@@ -324,9 +357,7 @@ export default function TeachersPage() {
   const handleToggleActive = async (teacher: TeacherWithDetails) => {
     const newIsActive = !teacher.is_active;
     setTeachers((prev) =>
-      prev.map((t) =>
-        t.id === teacher.id ? { ...t, is_active: newIsActive } : t
-      )
+      prev.map((t) => (t.id === teacher.id ? { ...t, is_active: newIsActive } : t))
     );
     try {
       await updateUserProfile(teacher.id, { is_active: newIsActive });
@@ -334,9 +365,7 @@ export default function TeachersPage() {
     } catch (err) {
       console.error('Error toggling teacher:', err);
       setTeachers((prev) =>
-        prev.map((t) =>
-          t.id === teacher.id ? { ...t, is_active: teacher.is_active } : t
-        )
+        prev.map((t) => (t.id === teacher.id ? { ...t, is_active: teacher.is_active } : t))
       );
       toastError('講師の更新に失敗しました');
     }
@@ -386,7 +415,9 @@ export default function TeachersPage() {
                   display_name: t.display_name,
                   // 内部ドメインを除いてIDだけエクスポート（再インポート時に normalizeLoginEmail で復元される）
                   email: displayLoginId(t.email),
-                  school_names: (t.user_schools || []).map((us) => us.school?.name ?? '').filter(Boolean),
+                  school_names: (t.user_schools || [])
+                    .map((us) => us.school?.name ?? '')
+                    .filter(Boolean),
                   is_active: t.is_active ?? true,
                 }));
                 const csv = generateTeacherCSV(exportRows);
@@ -396,16 +427,10 @@ export default function TeachersPage() {
             >
               CSVエクスポート
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsCsvImportModalOpen(true)}
-            >
+            <Button variant="outline" size="sm" onClick={() => setIsCsvImportModalOpen(true)}>
               CSVインポート
             </Button>
-            <Button onClick={() => setIsCreateDialogOpen(true)}>
-              + 講師を追加
-            </Button>
+            <Button onClick={() => setIsCreateDialogOpen(true)}>+ 講師を追加</Button>
           </div>
         </div>
 
@@ -426,7 +451,9 @@ export default function TeachersPage() {
                     >
                       <option value="all">すべて</option>
                       {schools.map((s) => (
-                        <option key={s.id} value={s.id}>{s.name}</option>
+                        <option key={s.id} value={s.id}>
+                          {s.name}
+                        </option>
                       ))}
                     </select>
                   </div>
@@ -442,7 +469,9 @@ export default function TeachersPage() {
                       >
                         <option value="all">すべて</option>
                         {allBadges.map((b) => (
-                          <option key={b.id} value={b.id}>{b.name}</option>
+                          <option key={b.id} value={b.id}>
+                            {b.name}
+                          </option>
                         ))}
                       </select>
                     </div>
@@ -468,15 +497,29 @@ export default function TeachersPage() {
                 <table className="w-full">
                   <thead className="bg-surface-hover border-b border-border">
                     <tr>
-                      <th className="px-4 py-3 text-left text-sm font-bold text-text-heading">名前</th>
-                      <th className="px-4 py-3 text-left text-sm font-bold text-text-heading">ログインID</th>
-                      <th className="px-4 py-3 text-left text-sm font-bold text-text-heading">担当教室</th>
+                      <th className="px-4 py-3 text-left text-sm font-bold text-text-heading">
+                        名前
+                      </th>
+                      <th className="px-4 py-3 text-left text-sm font-bold text-text-heading">
+                        ログインID
+                      </th>
+                      <th className="px-4 py-3 text-left text-sm font-bold text-text-heading">
+                        担当教室
+                      </th>
                       {allBadges.length > 0 && (
-                        <th className="px-4 py-3 text-left text-sm font-bold text-text-heading">バッジ</th>
+                        <th className="px-4 py-3 text-left text-sm font-bold text-text-heading">
+                          バッジ
+                        </th>
                       )}
-                      <th className="px-4 py-3 text-left text-sm font-bold text-text-heading">状態</th>
-                      <th className="px-4 py-3 text-left text-sm font-bold text-text-heading">最終ログイン</th>
-                      <th className="px-4 py-3 text-right text-sm font-bold text-text-heading">操作</th>
+                      <th className="px-4 py-3 text-left text-sm font-bold text-text-heading">
+                        状態
+                      </th>
+                      <th className="px-4 py-3 text-left text-sm font-bold text-text-heading">
+                        最終ログイン
+                      </th>
+                      <th className="px-4 py-3 text-right text-sm font-bold text-text-heading">
+                        操作
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border/10">
@@ -497,23 +540,35 @@ export default function TeachersPage() {
                       }
                       // バッジ数ソート
                       if (sortByBadges) {
-                        list.sort((a, b) => (teacherBadgeMap.get(b.id)?.length || 0) - (teacherBadgeMap.get(a.id)?.length || 0));
+                        list.sort(
+                          (a, b) =>
+                            (teacherBadgeMap.get(b.id)?.length || 0) -
+                            (teacherBadgeMap.get(a.id)?.length || 0)
+                        );
                       }
                       return list;
-                    })().map(teacher => (
-                      <tr key={teacher.id} className="hover:bg-surface-hover/50 transition-[background-color] duration-100 ease-out">
+                    })().map((teacher) => (
+                      <tr
+                        key={teacher.id}
+                        className="hover:bg-surface-hover/50 transition-[background-color] duration-100 ease-out"
+                      >
                         <td className="px-4 py-3 text-sm text-text-heading">
                           <span className="inline-flex items-center gap-1.5">
                             {teacher.display_name || '-'}
                             {freshBadgeTeacherIds.has(teacher.id) && <BadgeGlint />}
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-sm text-text-body">{displayLoginId(teacher.email)}</td>
+                        <td className="px-4 py-3 text-sm text-text-body">
+                          {displayLoginId(teacher.email)}
+                        </td>
                         <td className="px-4 py-3 text-sm text-text-body">
                           {teacher.user_schools && teacher.user_schools.length > 0 ? (
                             <div className="flex flex-wrap gap-1">
-                              {teacher.user_schools.map(us => (
-                                <span key={us.id} className="inline-block px-2 py-0.5 text-xs bg-surface-hover rounded">
+                              {teacher.user_schools.map((us) => (
+                                <span
+                                  key={us.id}
+                                  className="inline-block px-2 py-0.5 text-xs bg-surface-hover rounded"
+                                >
                                   {us.school?.name || '不明'}
                                 </span>
                               ))}
@@ -526,20 +581,25 @@ export default function TeachersPage() {
                           <td className="px-4 py-3">
                             {(() => {
                               const assignments = teacherBadgeMap.get(teacher.id) || [];
-                              if (assignments.length === 0) return <span className="text-xs text-gray-300">-</span>;
+                              if (assignments.length === 0)
+                                return <span className="text-xs text-gray-300">-</span>;
                               const show = assignments.slice(0, 3);
                               const rest = assignments.length - 3;
                               return (
                                 <div className="flex items-center gap-1 flex-wrap">
                                   {show.map((a) => {
-                                    const badge = a.badge || allBadges.find((b) => b.id === a.badge_id);
+                                    const badge =
+                                      a.badge || allBadges.find((b) => b.id === a.badge_id);
                                     if (!badge) return null;
                                     const rankConfig = BADGE_RANK_CONFIG[badge.rank];
                                     return (
                                       <span
                                         key={a.id}
                                         className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-medium border"
-                                        style={{ color: rankConfig.color, borderColor: `${rankConfig.color}40` }}
+                                        style={{
+                                          color: rankConfig.color,
+                                          borderColor: `${rankConfig.color}40`,
+                                        }}
                                         title={badge.name}
                                       >
                                         <BadgeIcon icon={badge.icon} size={12} />
@@ -567,7 +627,9 @@ export default function TeachersPage() {
                           )}
                         </td>
                         <td className="px-4 py-3 text-sm text-text-body">
-                          {teacher.last_login_at ? new Date(teacher.last_login_at).toLocaleDateString('ja-JP') : '-'}
+                          {teacher.last_login_at
+                            ? new Date(teacher.last_login_at).toLocaleDateString('ja-JP')
+                            : '-'}
                         </td>
                         <td className="px-4 py-3 text-right">
                           <div className="flex items-center justify-end gap-2">
@@ -592,7 +654,12 @@ export default function TeachersPage() {
                               <button
                                 type="button"
                                 onClick={async () => {
-                                  if (!confirm(`${teacher.display_name || displayLoginId(teacher.email)}としてログインしますか？\n（元のアカウントにはバナーから戻れます）`)) return;
+                                  if (
+                                    !confirm(
+                                      `${teacher.display_name || displayLoginId(teacher.email)}としてログインしますか？\n（元のアカウントにはバナーから戻れます）`
+                                    )
+                                  )
+                                    return;
                                   try {
                                     await impersonateUser(teacher.id);
                                   } catch (e) {
@@ -643,12 +710,12 @@ export default function TeachersPage() {
                   id="email"
                   type="text"
                   value={formData.email}
-                  onChange={(e) =>
-                    setFormData({ ...formData, email: e.target.value })
-                  }
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   placeholder="未入力の場合は自動生成されます"
                 />
-                <p className="text-xs text-text-body/70">GrowのID・パスワードと同じものを入力してください。未入力の場合は自動生成されます。</p>
+                <p className="text-xs text-text-body/70">
+                  GrowのID・パスワードと同じものを入力してください。未入力の場合は自動生成されます。
+                </p>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
@@ -656,9 +723,7 @@ export default function TeachersPage() {
                   <Input
                     id="lastName"
                     value={formData.lastName}
-                    onChange={(e) =>
-                      setFormData({ ...formData, lastName: e.target.value })
-                    }
+                    onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
                     placeholder="山田"
                   />
                 </div>
@@ -667,9 +732,7 @@ export default function TeachersPage() {
                   <Input
                     id="firstName"
                     value={formData.firstName}
-                    onChange={(e) =>
-                      setFormData({ ...formData, firstName: e.target.value })
-                    }
+                    onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
                     placeholder="太郎"
                   />
                 </div>
@@ -680,27 +743,25 @@ export default function TeachersPage() {
                   id="password"
                   type="password"
                   value={formData.password}
-                  onChange={(e) =>
-                    setFormData({ ...formData, password: e.target.value })
-                  }
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                   placeholder="4文字以上"
                 />
-                <p className="text-xs text-text-body/70">Growと同じパスワードを入力してください（4文字以上）</p>
+                <p className="text-xs text-text-body/70">
+                  Growと同じパスワードを入力してください（4文字以上）
+                </p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="school">所属教室 *</Label>
                 <Select
                   value={formData.schoolId}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, schoolId: value })
-                  }
+                  onValueChange={(value) => setFormData({ ...formData, schoolId: value })}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="教室を選択" />
                   </SelectTrigger>
                   <SelectContent>
                     {schools
-                      .filter(school => {
+                      .filter((school) => {
                         // 教室長の場合は自分の権限がある教室のみ表示
                         if (isManager) {
                           const userSchoolIds = getSelectedSchoolIds();
@@ -719,10 +780,7 @@ export default function TeachersPage() {
             </div>
           </DialogContent>
           <DialogFooter>
-            <Button
-              variant="ghost"
-              onClick={() => setIsCreateDialogOpen(false)}
-            >
+            <Button variant="ghost" onClick={() => setIsCreateDialogOpen(false)}>
               キャンセル
             </Button>
             <Button onClick={handleCreate} disabled={isSubmitting}>
@@ -750,7 +808,11 @@ export default function TeachersPage() {
                   <div className="space-y-2">
                     <Label>ログインID</Label>
                     <div className="flex items-center gap-2">
-                      <Input value={displayLoginId(createdTeacher.email)} readOnly className="flex-1" />
+                      <Input
+                        value={displayLoginId(createdTeacher.email)}
+                        readOnly
+                        className="flex-1"
+                      />
                       <Button
                         variant="ghost"
                         onClick={() => handleCopy(displayLoginId(createdTeacher.email), 'email')}
@@ -800,7 +862,8 @@ export default function TeachersPage() {
                   </div>
                   <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3">
                     <p className="text-sm text-yellow-800">
-                      <AlertTriangle className="inline h-4 w-4 mr-1" />パスワードはこの画面を閉じると再表示できません。必ずメモしてください。
+                      <AlertTriangle className="inline h-4 w-4 mr-1" />
+                      パスワードはこの画面を閉じると再表示できません。必ずメモしてください。
                     </p>
                   </div>
                 </>
@@ -808,9 +871,7 @@ export default function TeachersPage() {
             </div>
           </DialogContent>
           <DialogFooter>
-            <Button onClick={() => setIsResultDialogOpen(false)}>
-              閉じる
-            </Button>
+            <Button onClick={() => setIsResultDialogOpen(false)}>閉じる</Button>
           </DialogFooter>
         </Dialog>
 
@@ -824,7 +885,14 @@ export default function TeachersPage() {
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel onClick={() => { setIsDeleteDialogOpen(false); setDeletingTeacher(null); }}>キャンセル</AlertDialogCancel>
+              <AlertDialogCancel
+                onClick={() => {
+                  setIsDeleteDialogOpen(false);
+                  setDeletingTeacher(null);
+                }}
+              >
+                キャンセル
+              </AlertDialogCancel>
               <AlertDialogAction
                 onClick={handleDelete}
                 className="bg-danger text-white hover:bg-red-700"
@@ -834,7 +902,6 @@ export default function TeachersPage() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
-
       </div>
       {/* CSVインポートモーダル */}
       <TeacherCsvImportModal

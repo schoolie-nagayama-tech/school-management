@@ -34,9 +34,7 @@ export function useMasterTimeSlots(): {
     getActiveTimeSlots(schoolId)
       .then((rows) => {
         if (cancelled) return;
-        setSlots(
-          rows.map((r) => `${r.start_time.slice(0, 5)}-${r.end_time.slice(0, 5)}`)
-        );
+        setSlots(rows.map((r) => `${r.start_time.slice(0, 5)}-${r.end_time.slice(0, 5)}`));
       })
       .catch(() => {
         if (cancelled) return;

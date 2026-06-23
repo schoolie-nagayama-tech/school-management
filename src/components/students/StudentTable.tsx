@@ -1,7 +1,17 @@
 'use client';
 
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
-import { BookOpen, MessageCircle, FileText, Calendar, Pencil, Trash2, MoreVertical, Users, Code2 } from 'lucide-react';
+import {
+  BookOpen,
+  MessageCircle,
+  FileText,
+  Calendar,
+  Pencil,
+  Trash2,
+  MoreVertical,
+  Users,
+  Code2,
+} from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { InlineLoading } from '@/components/ui';
 import type { Student, Subject } from '@/types/database';
@@ -148,10 +158,7 @@ function StudentRowActions({
   };
 
   return (
-    <div
-      className="flex justify-end gap-0.5 items-center"
-      onClick={(e) => e.stopPropagation()}
-    >
+    <div className="flex justify-end gap-0.5 items-center" onClick={(e) => e.stopPropagation()}>
       {primaryActions.map((action) => {
         const ActionIcon = action.icon;
         return (
@@ -197,7 +204,10 @@ function StudentRowActions({
                       : 'text-gray-700 hover:bg-ink-subtle hover:text-ink'
                   }`}
                 >
-                  {(() => { const ItemIcon = item.icon; return <ItemIcon className="w-4 h-4 shrink-0" />; })()}
+                  {(() => {
+                    const ItemIcon = item.icon;
+                    return <ItemIcon className="w-4 h-4 shrink-0" />;
+                  })()}
                   {item.label}
                 </button>
               ))}
@@ -224,9 +234,8 @@ const StudentTableRow = memo(function StudentTableRow({
 }: StudentTableRowProps) {
   const schedulePatterns = student.schedulePatterns || [];
   // 週回数: 同じ曜日×コマ（例: 国/理 のように 2 科目を 1 コマで実施）は週 1 回として数える。
-  const weeklyCount = new Set(
-    schedulePatterns.map((p) => `${p.day_of_week}-${p.time_slot_id}`)
-  ).size;
+  const weeklyCount = new Set(schedulePatterns.map((p) => `${p.day_of_week}-${p.time_slot_id}`))
+    .size;
   return (
     <tr
       className={`transition-colors duration-150 ${
@@ -337,7 +346,8 @@ export function StudentTable({
 }: StudentTableProps) {
   const selectable = !!selectedIds && !!onSelectionChange;
 
-  const allSelected = selectable && students.length > 0 && students.every((s) => selectedIds.has(s.id));
+  const allSelected =
+    selectable && students.length > 0 && students.every((s) => selectedIds.has(s.id));
   const someSelected = selectable && students.some((s) => selectedIds.has(s.id));
 
   const handleToggleAll = () => {
@@ -387,9 +397,7 @@ export function StudentTable({
           ) : (
             <>
               <p className="mt-4 text-gray-600">生徒が登録されていません</p>
-              <p className="text-sm text-gray-400">
-                「新規登録」ボタンから生徒を追加してください
-              </p>
+              <p className="text-sm text-gray-400">「新規登録」ボタンから生徒を追加してください</p>
             </>
           )}
         </div>
@@ -431,8 +439,7 @@ export function StudentTable({
               <th className="hidden lg:table-cell px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap">
                 通塾日程
               </th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap w-6">
-              </th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap w-6"></th>
               <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap">
                 操作
               </th>
@@ -464,9 +471,7 @@ export function StudentTable({
         <p className="text-sm text-[#4b5563]">
           全 <span className="font-semibold">{students.length}</span> 件
           {selectable && selectedIds.size > 0 && (
-            <span className="ml-2 text-[#1e3a5f] font-medium">
-              （{selectedIds.size}件選択中）
-            </span>
+            <span className="ml-2 text-[#1e3a5f] font-medium">（{selectedIds.size}件選択中）</span>
           )}
         </p>
       </div>

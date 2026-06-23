@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
   // リクエストボディからオプションの label を取得
   let label: string | null = '管理画面発行';
   try {
-    const body = await request.json() as { label?: string };
+    const body = (await request.json()) as { label?: string };
     if (body.label && typeof body.label === 'string') {
       label = body.label.trim() || '管理画面発行';
     }
@@ -68,10 +68,7 @@ export async function POST(request: NextRequest) {
 
   if (lookupError) {
     console.error('[inquiry-import/token] POST lookup error:', lookupError);
-    return NextResponse.json(
-      { error: 'トークン照合に失敗しました' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'トークン照合に失敗しました' }, { status: 500 });
   }
 
   if (existing?.token) {
@@ -82,21 +79,16 @@ export async function POST(request: NextRequest) {
   // ---- 新規トークン生成（base64url: URL-safe かつ予測不能） ----
   const newToken = crypto.randomBytes(24).toString('base64url');
 
-  const { error: insertError } = await serviceClient
-    .from('inquiry_import_tokens')
-    .insert({
-      token: newToken,
-      label,
-      created_by: userId,
-      revoked: false,
-    });
+  const { error: insertError } = await serviceClient.from('inquiry_import_tokens').insert({
+    token: newToken,
+    label,
+    created_by: userId,
+    revoked: false,
+  });
 
   if (insertError) {
     console.error('[inquiry-import/token] POST insert error:', insertError);
-    return NextResponse.json(
-      { error: 'トークンの作成に失敗しました' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'トークンの作成に失敗しました' }, { status: 500 });
   }
 
   return NextResponse.json({ token: newToken });
@@ -127,10 +119,7 @@ export async function DELETE(request: NextRequest) {
 
   if (error) {
     console.error('[inquiry-import/token] DELETE error:', error);
-    return NextResponse.json(
-      { error: 'トークンの失効に失敗しました' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'トークンの失効に失敗しました' }, { status: 500 });
   }
 
   return NextResponse.json({ success: true });

@@ -4,11 +4,7 @@ import { useState, useRef } from 'react';
 import { Input, Select } from '@/components/ui';
 import type { School } from '@/types/database';
 import { validateStudentName } from '@/lib/utils/validation';
-import type {
-  MogiPeriod,
-  MogiResponseData,
-  DateVenueSelection,
-} from '@/types/forms/mogi';
+import type { MogiPeriod, MogiResponseData, DateVenueSelection } from '@/types/forms/mogi';
 import { submitMogiResponse } from '@/lib/api/mogi';
 import { GRADE_NAME_TO_NUMBER, MOGI_REGION_FORM_TITLES } from '@/types/forms/mogi';
 import { DateVenueSelector } from './DateVenueSelector';

@@ -97,10 +97,7 @@ export async function POST(
 
     if (existing) {
       // 剥奪
-      const { error } = await db
-        .from('teacher_badge_assignments')
-        .delete()
-        .eq('id', existing.id);
+      const { error } = await db.from('teacher_badge_assignments').delete().eq('id', existing.id);
       if (error) throw error;
       return NextResponse.json({ action: 'revoked' });
     } else {

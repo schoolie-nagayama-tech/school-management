@@ -100,11 +100,7 @@ export function StudentSearchInput({
       </div>
       {open && (query.trim() || results.length > 0) && (
         <>
-          <div
-            className="fixed inset-0 z-10"
-            aria-hidden
-            onClick={() => setOpen(false)}
-          />
+          <div className="fixed inset-0 z-10" aria-hidden onClick={() => setOpen(false)} />
           <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-white border border-[var(--stroke)] rounded-lg shadow-lg max-h-60 overflow-y-auto">
             {loading ? (
               <div className="py-4 text-center text-sm text-[var(--paragraph-light)]">

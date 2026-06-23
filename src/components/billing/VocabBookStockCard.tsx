@@ -26,7 +26,7 @@ export function VocabBookStockCard({ schoolIds, refreshKey }: VocabBookStockCard
     if (schoolIds.length === 0) return;
     try {
       const materials = await getMaterials(schoolIds);
-      const vocabBook = materials.find(m => m.name === '単語練習帳') || null;
+      const vocabBook = materials.find((m) => m.name === '単語練習帳') || null;
       setMaterial(vocabBook);
     } catch {
       // silent fail
@@ -70,11 +70,13 @@ export function VocabBookStockCard({ schoolIds, refreshKey }: VocabBookStockCard
   const isLowStock = material.stock_quantity <= material.low_stock_threshold;
 
   return (
-    <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm ${
-      isLowStock
-        ? 'bg-red-50 border-red-200 text-red-700'
-        : 'bg-blue-50 border-blue-200 text-blue-700'
-    }`}>
+    <div
+      className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm ${
+        isLowStock
+          ? 'bg-red-50 border-red-200 text-red-700'
+          : 'bg-blue-50 border-blue-200 text-blue-700'
+      }`}
+    >
       <span className="font-medium">単語練習帳</span>
       <span className="text-xs text-gray-500">在庫</span>
       {isEditing ? (

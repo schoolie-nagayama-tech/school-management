@@ -11,7 +11,10 @@ interface TaskCalendarProps {
   selectedDate: string | null;
   onSelectDate: (date: string) => void;
   onDropTask: (taskId: string, newDate: string) => void;
-  onDropPoolItem?: (item: { task_name: string; category: string; sort_order: number }, date: string) => void;
+  onDropPoolItem?: (
+    item: { task_name: string; category: string; sort_order: number },
+    date: string
+  ) => void;
   canEdit: boolean;
 }
 
@@ -68,10 +71,19 @@ export function TaskCalendar({
   // 日付ごとのタスク集計
   const dateStats = useMemo(() => {
     const schoolIds = schools.map((s) => s.id);
-    const stats = new Map<string, { total: number; completed: number; overdue: boolean; business: number; course: number }>();
+    const stats = new Map<
+      string,
+      { total: number; completed: number; overdue: boolean; business: number; course: number }
+    >();
 
     for (const task of tasks) {
-      const existing = stats.get(task.task_date) || { total: 0, completed: 0, overdue: false, business: 0, course: 0 };
+      const existing = stats.get(task.task_date) || {
+        total: 0,
+        completed: 0,
+        overdue: false,
+        business: 0,
+        course: 0,
+      };
       existing.total++;
       if (task.category === 'business') existing.business++;
       else existing.course++;
@@ -104,7 +116,9 @@ export function TaskCalendar({
       try {
         const item = JSON.parse(poolItemData);
         onDropPoolItem(item, date);
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
     }
   };
 
@@ -146,11 +160,12 @@ export function TaskCalendar({
             } else if (stat.total === stat.completed && stat.total > 0) {
               bgClass = 'bg-green-50 hover:bg-green-100';
             } else if (stat.total > 0) {
-              bgClass = stat.total >= 5
-                ? 'bg-blue-100 hover:bg-blue-150'
-                : stat.total >= 3
-                ? 'bg-blue-50 hover:bg-blue-100'
-                : 'bg-slate-50 hover:bg-slate-100';
+              bgClass =
+                stat.total >= 5
+                  ? 'bg-blue-100 hover:bg-blue-150'
+                  : stat.total >= 3
+                    ? 'bg-blue-50 hover:bg-blue-100'
+                    : 'bg-slate-50 hover:bg-slate-100';
             }
           }
 
@@ -161,9 +176,7 @@ export function TaskCalendar({
               onDragOver={handleDragOver}
               onDrop={(e) => handleDrop(e, dateStr)}
               className={`aspect-square rounded cursor-pointer transition-[background-color,box-shadow] duration-150 ease-out flex flex-col p-1 relative ${bgClass} ${
-                isSelected
-                  ? 'ring-2 ring-blue-500 shadow-md z-10'
-                  : ''
+                isSelected ? 'ring-2 ring-blue-500 shadow-md z-10' : ''
               } ${isToday ? 'ring-2 ring-blue-400' : ''}`}
             >
               {/* 日付数字 */}
@@ -173,20 +186,26 @@ export function TaskCalendar({
                     isToday
                       ? 'bg-blue-500 text-white w-5 h-5 rounded-full flex items-center justify-center text-[11px]'
                       : dow === 5
-                      ? 'text-blue-600'
-                      : dow === 6
-                      ? 'text-red-500'
-                      : isPast
-                      ? 'text-gray-400'
-                      : 'text-gray-700'
+                        ? 'text-blue-600'
+                        : dow === 6
+                          ? 'text-red-500'
+                          : isPast
+                            ? 'text-gray-400'
+                            : 'text-gray-700'
                   }`}
                 >
                   {day}
                 </span>
                 {stat && stat.total > 0 && (
-                  <span className={`text-[8px] font-medium ${
-                    stat.completed === stat.total ? 'text-green-500' : stat.overdue ? 'text-red-500' : 'text-gray-400'
-                  }`}>
+                  <span
+                    className={`text-[8px] font-medium ${
+                      stat.completed === stat.total
+                        ? 'text-green-500'
+                        : stat.overdue
+                          ? 'text-red-500'
+                          : 'text-gray-400'
+                    }`}
+                  >
                     {stat.completed}/{stat.total}
                   </span>
                 )}

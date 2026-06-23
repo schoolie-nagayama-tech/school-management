@@ -37,9 +37,7 @@ type InputMode = 'file' | 'paste';
 function normalizeName(name: string): string {
   return name
     .replace(/[\s　]+/g, '')
-    .replace(/[Ａ-Ｚａ-ｚ０-９]/g, (c) =>
-      String.fromCharCode(c.charCodeAt(0) - 0xfee0)
-    )
+    .replace(/[Ａ-Ｚａ-ｚ０-９]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfee0))
     .trim();
 }
 
@@ -142,8 +140,20 @@ function parsePastedData(text: string, students: Student[]): ParsedMockRow[] {
   const lines = text.split('\n').map((l) => l.replace(/\r$/, ''));
 
   const headerKeywords = [
-    '塾内', '番号', '性別', '氏名', '得点', 'ＳＳ', 'SS',
-    '志望校', '合格', '可能性', '年度', '商品', '学年', '回号',
+    '塾内',
+    '番号',
+    '性別',
+    '氏名',
+    '得点',
+    'ＳＳ',
+    'SS',
+    '志望校',
+    '合格',
+    '可能性',
+    '年度',
+    '商品',
+    '学年',
+    '回号',
     '偏差値',
   ];
 
@@ -343,17 +353,20 @@ export function MockPasteImportModal({
     e.stopPropagation();
   }, []);
 
-  const handleDrop = useCallback(async (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    dragCountRef.current = 0;
-    setIsDragging(false);
+  const handleDrop = useCallback(
+    async (e: React.DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      dragCountRef.current = 0;
+      setIsDragging(false);
 
-    const droppedFiles = Array.from(e.dataTransfer.files);
-    if (droppedFiles.length > 0) {
-      await processFiles(droppedFiles);
-    }
-  }, [processFiles]);
+      const droppedFiles = Array.from(e.dataTransfer.files);
+      if (droppedFiles.length > 0) {
+        await processFiles(droppedFiles);
+      }
+    },
+    [processFiles]
+  );
 
   const handleImport = async () => {
     const importable = parsed.filter((r) => r.matchedStudent);
@@ -409,9 +422,7 @@ export function MockPasteImportModal({
         {/* テスト情報 */}
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs font-medium text-text-heading mb-1">
-              テスト種別
-            </label>
+            <label className="block text-xs font-medium text-text-heading mb-1">テスト種別</label>
             <select
               value={nameCode}
               onChange={(e) => setNameCode(e.target.value as 'venue' | 'classroom')}
@@ -422,9 +433,7 @@ export function MockPasteImportModal({
             </select>
           </div>
           <div>
-            <label className="block text-xs font-medium text-text-heading mb-1">
-              試験月
-            </label>
+            <label className="block text-xs font-medium text-text-heading mb-1">試験月</label>
             <input
               type="month"
               value={examMonth}
@@ -488,23 +497,22 @@ export function MockPasteImportModal({
                 onChange={handleFileChange}
                 className="hidden"
               />
-              <Upload className={`w-6 h-6 mx-auto mb-2 ${isDragging ? 'text-primary' : 'text-text-muted'}`} />
+              <Upload
+                className={`w-6 h-6 mx-auto mb-2 ${isDragging ? 'text-primary' : 'text-text-muted'}`}
+              />
               {isDragging ? (
-                <p className="text-sm text-primary font-medium">
-                  ここにドロップ
-                </p>
+                <p className="text-sm text-primary font-medium">ここにドロップ</p>
               ) : fileName ? (
                 <p className="text-sm text-text-heading font-medium">{fileName}</p>
               ) : (
                 <p className="text-sm text-text-muted">
-                  ファイルをドラッグ&ドロップ、またはクリックして選択（複数可）<br />
+                  ファイルをドラッグ&ドロップ、またはクリックして選択（複数可）
+                  <br />
                   学年別ファイルをまとめて取り込めます
                 </p>
               )}
             </div>
-            {fileError && (
-              <p className="text-xs text-red-600 mt-1">{fileError}</p>
-            )}
+            {fileError && <p className="text-xs text-red-600 mt-1">{fileError}</p>}
             <p className="text-[11px] text-text-muted mt-1">
               進研テスト等のダウンロードファイルに対応（学年別ファイルを複数同時選択可）。偏差値のみ取り込みます（得点は除外）。
             </p>
@@ -556,31 +564,45 @@ export function MockPasteImportModal({
               <table className="w-full text-sm border-collapse">
                 <thead className="bg-surface-hover sticky top-0">
                   <tr>
-                    <th className="px-2 py-1.5 text-left text-xs font-medium text-text-muted">氏名</th>
-                    <th className="px-2 py-1.5 text-left text-xs font-medium text-text-muted">NEST生徒</th>
-                    <th className="px-2 py-1.5 text-center text-xs font-medium text-text-muted">国</th>
-                    <th className="px-2 py-1.5 text-center text-xs font-medium text-text-muted">数</th>
-                    <th className="px-2 py-1.5 text-center text-xs font-medium text-text-muted">英</th>
-                    <th className="px-2 py-1.5 text-center text-xs font-medium text-text-muted">社</th>
-                    <th className="px-2 py-1.5 text-center text-xs font-medium text-text-muted">理</th>
-                    <th className="px-2 py-1.5 text-center text-xs font-medium text-text-muted">3科SS</th>
-                    <th className="px-2 py-1.5 text-center text-xs font-medium text-text-muted">5科SS</th>
-                    <th className="px-2 py-1.5 text-left text-xs font-medium text-text-muted">志望校</th>
+                    <th className="px-2 py-1.5 text-left text-xs font-medium text-text-muted">
+                      氏名
+                    </th>
+                    <th className="px-2 py-1.5 text-left text-xs font-medium text-text-muted">
+                      NEST生徒
+                    </th>
+                    <th className="px-2 py-1.5 text-center text-xs font-medium text-text-muted">
+                      国
+                    </th>
+                    <th className="px-2 py-1.5 text-center text-xs font-medium text-text-muted">
+                      数
+                    </th>
+                    <th className="px-2 py-1.5 text-center text-xs font-medium text-text-muted">
+                      英
+                    </th>
+                    <th className="px-2 py-1.5 text-center text-xs font-medium text-text-muted">
+                      社
+                    </th>
+                    <th className="px-2 py-1.5 text-center text-xs font-medium text-text-muted">
+                      理
+                    </th>
+                    <th className="px-2 py-1.5 text-center text-xs font-medium text-text-muted">
+                      3科SS
+                    </th>
+                    <th className="px-2 py-1.5 text-center text-xs font-medium text-text-muted">
+                      5科SS
+                    </th>
+                    <th className="px-2 py-1.5 text-left text-xs font-medium text-text-muted">
+                      志望校
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {parsed.map((row, idx) => (
                     <tr
                       key={idx}
-                      className={
-                        row.matchedStudent
-                          ? 'hover:bg-surface-hover'
-                          : 'bg-amber-50'
-                      }
+                      className={row.matchedStudent ? 'hover:bg-surface-hover' : 'bg-amber-50'}
                     >
-                      <td className="px-2 py-1.5 text-xs whitespace-nowrap">
-                        {row.originalName}
-                      </td>
+                      <td className="px-2 py-1.5 text-xs whitespace-nowrap">{row.originalName}</td>
                       <td className="px-2 py-1.5 text-xs whitespace-nowrap">
                         {row.matchedStudent ? (
                           <span className="text-green-700 flex items-center gap-1">
@@ -618,7 +640,10 @@ export function MockPasteImportModal({
                       <td className="px-2 py-1.5 text-xs text-center tabular-nums font-medium">
                         {row.scores.hensa_5 ?? '—'}
                       </td>
-                      <td className="px-2 py-1.5 text-xs text-text-muted max-w-[200px] truncate" title={row.schools.join(', ')}>
+                      <td
+                        className="px-2 py-1.5 text-xs text-text-muted max-w-[200px] truncate"
+                        title={row.schools.join(', ')}
+                      >
                         {row.schools.join(', ') || '—'}
                       </td>
                     </tr>
@@ -654,9 +679,7 @@ export function MockPasteImportModal({
             onClick={handleImport}
             disabled={matchedCount === 0 || isImporting || !!importResult}
           >
-            {isImporting
-              ? '取り込み中...'
-              : `${matchedCount}名分を取り込む`}
+            {isImporting ? '取り込み中...' : `${matchedCount}名分を取り込む`}
           </Button>
         </div>
       </div>

@@ -29,7 +29,12 @@ export async function upsertCoursePrepPeriod(
   schoolId: string,
   season: SeasonType,
   year: number,
-  updates: Partial<Pick<CoursePrepPeriod, 'budget_koma' | 'target_koma' | 'expected_rate' | 'schedule_start_date' | 'schedule_end_date'>>
+  updates: Partial<
+    Pick<
+      CoursePrepPeriod,
+      'budget_koma' | 'target_koma' | 'expected_rate' | 'schedule_start_date' | 'schedule_end_date'
+    >
+  >
 ): Promise<void> {
   await callCoursePrepApi('upsert_period', schoolId, {
     season,
@@ -82,9 +87,7 @@ export async function createCourseProgressItem(
   year: number
 ): Promise<CourseProgressItem> {
   const items = await getCourseProgressItems(schoolId, season, year, true);
-  const maxSortOrder = items.length > 0
-    ? Math.max(...items.map(i => i.sort_order))
-    : -1;
+  const maxSortOrder = items.length > 0 ? Math.max(...items.map((i) => i.sort_order)) : -1;
 
   const result = await callCoursePrepApi('create_progress_item', schoolId, {
     season,
@@ -102,7 +105,12 @@ export async function createCourseProgressItem(
 export async function updateCourseProgressItem(
   id: string,
   schoolId: string,
-  updates: Partial<Pick<CourseProgressItem, 'name' | 'column_type' | 'deadline' | 'auto_source' | 'sort_order' | 'column_group'>>
+  updates: Partial<
+    Pick<
+      CourseProgressItem,
+      'name' | 'column_type' | 'deadline' | 'auto_source' | 'sort_order' | 'column_group'
+    >
+  >
 ): Promise<CourseProgressItem> {
   const result = await callCoursePrepApi('update_progress_item', schoolId, {
     itemId: id,
@@ -191,5 +199,15 @@ export async function updateStudentProgressDate(
 // 自動計算値（通常週回数・講習回数）
 // =============================================
 
-export type AutoValues = Record<string, { regular_weekly: number; course_sessions: number; proposal_total?: number; subject_proposals?: Record<string, number>; applied_total?: number; subject_applied?: Record<string, number> }>;
+export type AutoValues = Record<
+  string,
+  {
+    regular_weekly: number;
+    course_sessions: number;
+    proposal_total?: number;
+    subject_proposals?: Record<string, number>;
+    applied_total?: number;
+    subject_applied?: Record<string, number>;
+  }
+>;
 // 単独取得関数 getAutoValues は廃止。batchFetchCoursePrepApi で 'auto_values' ターゲットを使うこと。
