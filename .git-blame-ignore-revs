@@ -1,0 +1,6 @@
+# git blame でフォーマット専用コミットを無視するためのリスト。
+# 有効化(ローカル): git config blame.ignoreRevsFile .git-blame-ignore-revs
+# GitHub は自動でこのファイルを参照する。
+
+# style: Prettierでsrcと設定ファイルを一括整形
+a91bfa6
