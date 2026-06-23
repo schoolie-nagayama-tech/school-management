@@ -8,10 +8,10 @@
 
 | 要素 | 現状 | あるべき |
 | --- | --- | --- |
-| Vercel 関数 | `hnd1`（東京） | 東京のまま |
+| Vercel 関数 | `iad1`（米国東部 / x-vercel-id=`hnd1::iad1`） | 今回は変更しない（将来 `hnd1` 推奨） |
 | Supabase DB | `ap-southeast-1`（**シンガポール**） | `ap-northeast-1`（**東京**） |
 
-東京↔シンガポールの RTT は **約70〜90ms/往復**。アプリは1ページ表示で何度も DB と往復するため、これが体感速度のボトルネックになっている（同一リージョン内なら 1〜2ms）。DB を東京へ移すことで全クエリが一律に高速化する。コード側の往復削減やサマリ化は「シンガポールのまま往復を減らす」緩和策であり、これが根治策。
+本番は **`school-management-pj`（www.school-ie.com / `schoolie-nagayama-3785` チーム）**。関数（米国東部）と DB（シンガポール）が地球の反対側にあり、RTT は **約200〜250ms/往復**。これが体感速度のボトルネック。DB を東京へ移すと、関数（米東部）↔DB が 米東部↔東京（約150ms）に縮む。さらに将来 Vercel 関数も `hnd1`（東京）に寄せれば関数↔DBが同一リージョン（数ms）になるが、**今回はDB移行のみ**進める。
 
 詳細な計測経緯はメモリ `project_perf_course_progress` を参照。
 
@@ -135,7 +135,14 @@ env を**旧プロジェクトの値に戻して再デプロイするだけ**で
 - [x] 新DBリセット（public作り直し＋auth全クリア。**空を確認: public_tables=0/auth.users=0**）
 - [x] storage調査（バケット `avatars`/`public-assets` は新DBにも存在。ロゴ5枚のULのみ必要）
 - [x] env対象キー確認（下記3キー）
-- [ ] 【夜・本番】最新ダンプ→リストア→ロゴUL→env差替→再デプロイ→検証
+- [x] 【夜・本番】最新ダンプ→リストア→env差替→再デプロイ（2026-06-23 カットオーバー実施）
+- [x] **本番が新DBを向いていることを確定**（2026-06-23 検証）:
+  - 本番JSバンドル（`/login` のチャンク）が `bniistrbylypnwpfqszb.supabase.co`（新・東京）を参照。旧 `mzxysqkuuxcfffwlfsvj` はどのチャンクにも無し。
+  - 新DBの API ログに本番からのライブ PostgREST トラフィック（students/schools/seasonal_proposals/course_prep 等）が **全件 200 OK** で着弾（14:56–14:57 UTC）。
+  - 新DBで実セッション発行を確認（永山アカウントのシークレット窓ログイン 13:37 UTC）。
+- [x] **メール疎通の実テスト**（2026-06-23 確認済み）。両 Edge Function は ACTIVE・Webhook も新URL/JWTを指す。`RESEND_API_KEY` も新プロジェクトに設定済みで通知メール到達を確認。
+- [ ] **ロゴ5枚を新 `public-assets` にUL**。旧公開URLからローカル `~/Desktop/db-migration/logos/` にDL済み（同一パスでドラッグ&ドロップするだけ）。
+- [ ] **書き込みの実確認**（進捗チェック保存等）。読み取りRLSはライブ200で確認済み。カットオーバー後はまだ書き込み未発生（深夜帯）。
 - [ ] 旧DB停止（成功を数日確認後）
 
 ---
@@ -145,11 +152,11 @@ env を**旧プロジェクトの値に戻して再デプロイするだけ**で
 > 利用者がいない時間に、上から順に。所要15〜30分。`$OLD`/`$NEW` は新しいGit Bashなら再設定（シングルでなくダブルクオート＋記号なしPWで）。
 
 ### 0. メンテナンス開始（利用を停止）
-- [ ] Vercel `klasly-app` → Settings → Environment Variables（Production）に追加:
+- [ ] Vercel `school-management-pj` → Settings → Environment Variables（Production）に追加:
   - `MAINTENANCE_MODE` = `true`
   - `MAINTENANCE_BYPASS_TOKEN` = `<任意の長い文字列>`（管理者の動作確認用）
-- [ ] 再デプロイ → `https://app.klasly.app/` で**メンテ画面が出る**ことを確認
-- [ ] 自分は `https://app.klasly.app/?maint_bypass=<token>` で中に入れる（任意）
+- [ ] 再デプロイ → `https://www.school-ie.com/` で**メンテ画面が出る**ことを確認
+- [ ] 自分は `https://www.school-ie.com/?maint_bypass=<token>` で中に入れる（任意）
 > これ以降は利用者がアクセスしてもメンテ画面なので、安心して入れ替え作業ができる。
 
 ### A. 最新ダンプ（今日の更新分を反映）
@@ -190,7 +197,7 @@ env を**旧プロジェクトの値に戻して再デプロイするだけ**で
 | `SUPABASE_SERVICE_ROLE_KEY` | 新プロジェクトの service_role（ユーザー保有・機密）|
 
 - [ ] `.env.local` を新値に（ClaudeがURL/anonは編集可。service_roleはユーザー）
-- [ ] **Vercel** `klasly-app` → Environment Variables（Production）の Supabase3キーを新値に更新 ← 本番切替の本体
+- [ ] **Vercel** `school-management-pj` → Environment Variables（Production）の Supabase3キーを新値に更新 ← 本番切替の本体
 - [ ] **同時に `MAINTENANCE_MODE` を `false`（または削除）** してメンテ解除
 - [ ] 再デプロイ（Vercel）← これで「新DB接続＋メンテ解除」が一度に反映される
 
@@ -199,7 +206,7 @@ env を**旧プロジェクトの値に戻して再デプロイするだけ**で
 - [ ] 役割別（admin/manager/teacher）でRLSが効く
 - [ ] 生徒一覧・講習進捗・座席表・提案書が表示／書き込みできる
 - [ ] ロゴが表示される
-- [ ] `curl -sI https://app.klasly.app | grep x-vercel-id` が `hnd1`、体感が速い
+- [ ] 体感が速くなった（DBが東京になり、関数↔DBの往復が短縮）。※関数は今回 `iad1` のまま
 - [ ] 件数が旧と一致
 
 ### ロールバック
