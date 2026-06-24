@@ -88,6 +88,7 @@ import {
   Pencil,
   Users,
   Truck,
+  Mic,
 } from 'lucide-react';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 import { supabase } from '@/lib/supabase';
@@ -122,6 +123,11 @@ export default function InquiryDetailPage() {
   const [editLostReason, setEditLostReason] = useState('');
   const [editNote, setEditNote] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+
+  // ---- Notta記録（文字起こしリンク）追加フォーム ----
+  const [nottaUrl, setNottaUrl] = useState('');
+  const [nottaLabel, setNottaLabel] = useState('');
+  const [isSavingNotta, setIsSavingNotta] = useState(false);
 
   // ---- 氏名編集モーダル ----
   // HP 取込では生徒名が空・保護者名と入れ違い等があるため、後から修正できるようにする。
@@ -617,6 +623,49 @@ export default function InquiryDetailPage() {
     }
   }, [inquiry, editStudentName, editStudentNameKana, editGuardianName, editGuardianNameKana]);
 
+  // ---- Notta記録の追加・削除 ----
+  // notta_records(jsonb配列)を丸ごと更新する。各要素は { url, label, added_at }。
+  const handleAddNotta = async () => {
+    if (!inquiry) return;
+    const url = nottaUrl.trim();
+    if (!url) return;
+    if (!/^https?:\/\//i.test(url)) {
+      toast.error('URLは http:// または https:// で始めてください');
+      return;
+    }
+    setIsSavingNotta(true);
+    try {
+      const next = [
+        ...(inquiry.notta_records ?? []),
+        { url, label: nottaLabel.trim() || 'Notta記録', added_at: new Date().toISOString() },
+      ];
+      const updated = await updateInquiry(inquiry.id, { notta_records: next });
+      setInquiry(updated);
+      setNottaUrl('');
+      setNottaLabel('');
+      toast.success('Notta記録を追加しました');
+    } catch (err) {
+      toast.error(getUserErrorMessage(err, 'Notta記録の追加に失敗しました'));
+    } finally {
+      setIsSavingNotta(false);
+    }
+  };
+
+  const handleRemoveNotta = async (index: number) => {
+    if (!inquiry) return;
+    setIsSavingNotta(true);
+    try {
+      const next = (inquiry.notta_records ?? []).filter((_, i) => i !== index);
+      const updated = await updateInquiry(inquiry.id, { notta_records: next });
+      setInquiry(updated);
+      toast.success('Notta記録を削除しました');
+    } catch (err) {
+      toast.error(getUserErrorMessage(err, 'Notta記録の削除に失敗しました'));
+    } finally {
+      setIsSavingNotta(false);
+    }
+  };
+
   // ---- ローディング / 権限 ----
   if (profile === null) {
     return (
@@ -868,6 +917,73 @@ export default function InquiryDetailPage() {
                         <Button onClick={handleSave} isLoading={isSaving} size="sm">
                           保存
                         </Button>
+                      </div>
+
+                      {/* ── Notta記録（文字起こしリンク。追加・削除は即時保存） ── */}
+                      <div className="pt-3 mt-1 border-t border-border">
+                        <label className="flex items-center gap-1.5 text-xs font-medium text-text-heading mb-2">
+                          <Mic className="w-3.5 h-3.5 text-text-muted" />
+                          Notta記録
+                        </label>
+
+                        {/* 既存の記録一覧 */}
+                        {inquiry.notta_records && inquiry.notta_records.length > 0 && (
+                          <ul className="space-y-1 mb-2">
+                            {inquiry.notta_records.map((rec, i) => (
+                              <li key={i} className="flex items-center gap-2 text-sm group">
+                                <Mic className="w-3.5 h-3.5 text-text-muted shrink-0" />
+                                <a
+                                  href={rec.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-blue-600 hover:underline truncate flex-1"
+                                  title={rec.url}
+                                >
+                                  {rec.label || rec.url}
+                                </a>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveNotta(i)}
+                                  disabled={isSavingNotta}
+                                  aria-label="このNotta記録を削除"
+                                  className="p-1 rounded text-text-faint hover:text-danger hover:bg-surface-hover transition-colors shrink-0"
+                                >
+                                  <X className="w-3.5 h-3.5" />
+                                </button>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+
+                        {/* 追加フォーム（URL + ラベル） */}
+                        <div className="flex flex-col sm:flex-row gap-2">
+                          <input
+                            type="url"
+                            value={nottaUrl}
+                            onChange={(e) => setNottaUrl(e.target.value)}
+                            placeholder="NottaのURLを貼り付け"
+                            className="flex-1 min-w-0 px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary"
+                          />
+                          <input
+                            type="text"
+                            value={nottaLabel}
+                            onChange={(e) => setNottaLabel(e.target.value)}
+                            placeholder="ラベル（任意・例: 6/22 電話）"
+                            className="sm:w-44 px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary"
+                          />
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={handleAddNotta}
+                            isLoading={isSavingNotta}
+                            disabled={!nottaUrl.trim() || isSavingNotta}
+                          >
+                            追加
+                          </Button>
+                        </div>
+                        <p className="text-[11px] text-text-muted mt-1.5">
+                          Notta の共有リンク（文字起こし/録音）を貼ると、この問合せから開けます。複数追加できます。
+                        </p>
                       </div>
                     </div>
                   </div>

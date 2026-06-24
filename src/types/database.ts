@@ -89,6 +89,8 @@ export type Database = {
           trial_event_id: string | null;
           raw_source: Record<string, unknown> | null;
           note: string | null;
+          /** Nottaの記録リンク配列（文字起こし共有URL + ラベル） */
+          notta_records: { url: string; label: string; added_at: string }[];
           created_by: string | null;
           created_at: string;
           updated_at: string;
@@ -135,6 +137,7 @@ export type Database = {
           trial_event_id?: string | null;
           raw_source?: Record<string, unknown> | null;
           note?: string | null;
+          notta_records?: { url: string; label: string; added_at: string }[];
           created_by?: string | null;
           created_at?: string;
           updated_at?: string;
@@ -3082,6 +3085,8 @@ export type Inquiry = Database['public']['Tables']['inquiries']['Row'];
 export type InquiryInsert = Database['public']['Tables']['inquiries']['Insert'];
 export type InquiryUpdate = Database['public']['Tables']['inquiries']['Update'];
 export type InquiryStatus = Inquiry['status'];
+/** Notta の記録リンク1件 */
+export type NottaRecord = Inquiry['notta_records'][number];
 
 export type InquiryContact = Database['public']['Tables']['inquiry_contacts']['Row'];
 export type InquiryContactInsert = Database['public']['Tables']['inquiry_contacts']['Insert'];
