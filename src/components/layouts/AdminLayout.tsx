@@ -52,7 +52,7 @@ export function AdminLayout({
         {/* ページヘッダー */}
         {(title || actions) && (
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
-            {title && <h1 className="text-xl sm:text-2xl font-bold text-[#1a1a1a]">{title}</h1>}
+            {title && <h1 className="text-xl sm:text-2xl font-bold text-text-heading">{title}</h1>}
             {actions && <div className="flex flex-wrap gap-2 shrink-0">{actions}</div>}
           </div>
         )}

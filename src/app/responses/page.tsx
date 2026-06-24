@@ -67,8 +67,8 @@ interface QuickFilter {
 const QUICK_FILTERS: QuickFilter[] = [
   {
     label: '未処理',
-    color: 'border-yellow-300 text-yellow-800 bg-yellow-50 hover:bg-yellow-100',
-    activeColor: 'bg-yellow-500 text-white border-yellow-500',
+    color: 'border-warning text-warning bg-warning-subtle hover:bg-warning-subtle/80',
+    activeColor: 'bg-warning text-text-on-primary border-warning',
     filters: {
       formType: 'all',
       period: 'all',
@@ -80,8 +80,8 @@ const QUICK_FILTERS: QuickFilter[] = [
   },
   {
     label: '未計上',
-    color: 'border-red-300 text-red-700 bg-red-50 hover:bg-red-100',
-    activeColor: 'bg-red-500 text-white border-red-500',
+    color: 'border-danger text-danger bg-danger-subtle hover:bg-danger-subtle/80',
+    activeColor: 'bg-danger text-text-on-primary border-danger',
     filters: {
       formType: 'all',
       period: 'all',
@@ -93,8 +93,8 @@ const QUICK_FILTERS: QuickFilter[] = [
   },
   {
     label: '計上済み',
-    color: 'border-green-300 text-green-700 bg-green-50 hover:bg-green-100',
-    activeColor: 'bg-green-500 text-white border-green-500',
+    color: 'border-success text-success bg-success-subtle hover:bg-success-subtle/80',
+    activeColor: 'bg-success text-text-on-primary border-success',
     filters: {
       formType: 'all',
       period: 'all',
@@ -106,7 +106,7 @@ const QUICK_FILTERS: QuickFilter[] = [
   },
   {
     label: '増コマ・未計上',
-    color: 'border-gray-300 text-gray-700 bg-surface-raised hover:bg-gray-50',
+    color: 'border-border text-text-body bg-surface-raised hover:bg-surface-hover',
     activeColor: 'bg-ink text-white border-ink',
     filters: {
       formType: 'zoukoma',
@@ -119,7 +119,7 @@ const QUICK_FILTERS: QuickFilter[] = [
   },
   {
     label: '模試・未計上',
-    color: 'border-gray-300 text-gray-700 bg-surface-raised hover:bg-gray-50',
+    color: 'border-border text-text-body bg-surface-raised hover:bg-surface-hover',
     activeColor: 'bg-ink text-white border-ink',
     filters: {
       formType: 'moshi',
@@ -132,7 +132,7 @@ const QUICK_FILTERS: QuickFilter[] = [
   },
   {
     label: 'Vもぎ・未計上',
-    color: 'border-gray-300 text-gray-700 bg-surface-raised hover:bg-gray-50',
+    color: 'border-border text-text-body bg-surface-raised hover:bg-surface-hover',
     activeColor: 'bg-ink text-white border-ink',
     filters: {
       formType: 'mogi',
@@ -189,10 +189,10 @@ function ResponseStatusBadges({ response }: { response: FormResponseWithStudent 
     case 'moshi':
       return (
         <span className="inline-flex flex-wrap items-center gap-1">
-          {linked && badge('紐付け済み', 'bg-green-100 text-green-800')}
-          {sc.charged && badge('計上済み', 'bg-blue-100 text-blue-800')}
-          {sc.order && badge('発注済み', 'bg-purple-100 text-purple-800')}
-          {(!sc.charged || !sc.order) && badge('未処理', 'bg-yellow-100 text-yellow-800')}
+          {linked && badge('紐付け済み', 'bg-success-subtle text-success')}
+          {sc.charged && badge('計上済み', 'bg-info-subtle text-info')}
+          {sc.order && badge('発注済み', 'bg-info-subtle text-info')}
+          {(!sc.charged || !sc.order) && badge('未処理', 'bg-warning-subtle text-warning')}
         </span>
       );
     case 'zoukoma':
@@ -200,33 +200,33 @@ function ResponseStatusBadges({ response }: { response: FormResponseWithStudent 
     case 'shukaisu':
       return (
         <span className="inline-flex flex-wrap items-center gap-1">
-          {linked && badge('紐付け済み', 'bg-green-100 text-green-800')}
-          {sc.charged && badge('計上済み', 'bg-blue-100 text-blue-800')}
-          {sc.seated && badge('座席済み', 'bg-indigo-100 text-indigo-800')}
-          {(!sc.charged || !sc.seated) && badge('未処理', 'bg-yellow-100 text-yellow-800')}
+          {linked && badge('紐付け済み', 'bg-success-subtle text-success')}
+          {sc.charged && badge('計上済み', 'bg-info-subtle text-info')}
+          {sc.seated && badge('座席済み', 'bg-info-subtle text-info')}
+          {(!sc.charged || !sc.seated) && badge('未処理', 'bg-warning-subtle text-warning')}
         </span>
       );
     case 'mogi':
       return (
         <span className="inline-flex flex-wrap items-center gap-1">
-          {linked && badge('紐付け済み', 'bg-green-100 text-green-800')}
-          {sc.charged && badge('計上済み', 'bg-blue-100 text-blue-800')}
-          {!sc.charged && badge('未処理', 'bg-yellow-100 text-yellow-800')}
+          {linked && badge('紐付け済み', 'bg-success-subtle text-success')}
+          {sc.charged && badge('計上済み', 'bg-info-subtle text-info')}
+          {!sc.charged && badge('未処理', 'bg-warning-subtle text-warning')}
         </span>
       );
     case 'soudan':
       return (
         <span className="inline-flex flex-wrap items-center gap-1">
-          {linked && badge('紐付け済み', 'bg-green-100 text-green-800')}
-          {sc.handled && badge('対応済み', 'bg-blue-100 text-blue-800')}
-          {!sc.handled && badge('未処理', 'bg-yellow-100 text-yellow-800')}
+          {linked && badge('紐付け済み', 'bg-success-subtle text-success')}
+          {sc.handled && badge('対応済み', 'bg-info-subtle text-info')}
+          {!sc.handled && badge('未処理', 'bg-warning-subtle text-warning')}
         </span>
       );
     default:
       // kyozai など、計上/座席/発注のチェックを持たないフォーム
       return (
         <span className="inline-flex flex-wrap items-center gap-1">
-          {linked && badge('紐付け済み', 'bg-green-100 text-green-800')}
+          {linked && badge('紐付け済み', 'bg-success-subtle text-success')}
         </span>
       );
   }
@@ -254,11 +254,11 @@ function SummaryCard({
 
   return (
     <Link href={href}>
-      <div className="p-4 bg-surface-raised border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 cursor-pointer transition-colors duration-150">
-        <h3 className="font-semibold text-gray-900">
+      <div className="p-4 bg-surface-raised border border-border rounded-lg hover:bg-surface-hover hover:border-border-strong cursor-pointer transition-colors duration-150">
+        <h3 className="font-semibold text-text-heading">
           {formTypeLabel} ({periodLabel})
         </h3>
-        <p className="text-sm text-gray-600">
+        <p className="text-sm text-text-muted">
           {totalCount}件（未処理: {unprocessedCount}件）
         </p>
       </div>
@@ -682,7 +682,7 @@ export default function ResponsesPage() {
 
         {/* クイックフィルター */}
         <div className="mb-4 flex flex-wrap items-center gap-2">
-          <Filter className="h-4 w-4 text-gray-400 mr-1" />
+          <Filter className="h-4 w-4 text-text-faint mr-1" />
           {QUICK_FILTERS.map((qf) => {
             const active = isQuickFilterActive(qf);
             return (
@@ -721,13 +721,13 @@ export default function ResponsesPage() {
             className="flex items-center gap-2"
           >
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-faint" />
               <input
                 type="text"
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
                 placeholder="生徒名で検索"
-                className="w-full pl-9 pr-8 py-2 border border-border rounded-lg text-sm bg-surface-raised text-text-heading focus:outline-none focus:ring-2 focus:ring-primary placeholder:text-gray-400"
+                className="w-full pl-9 pr-8 py-2 border border-border rounded-lg text-sm bg-surface-raised text-text-heading focus:outline-none focus:ring-2 focus:ring-primary placeholder:text-text-faint"
               />
               {searchInput && (
                 <button
@@ -736,7 +736,7 @@ export default function ResponsesPage() {
                     setSearchInput('');
                     setSearchName('');
                   }}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-text-faint hover:text-text-muted"
                 >
                   <X className="h-4 w-4" />
                 </button>
@@ -754,7 +754,7 @@ export default function ResponsesPage() {
               className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium border transition-colors duration-150 shrink-0 ${
                 showFilters
                   ? 'bg-ink text-white border-ink'
-                  : 'bg-surface-raised text-gray-600 border-border hover:bg-gray-50'
+                  : 'bg-surface-raised text-text-muted border-border hover:bg-surface-hover'
               }`}
             >
               <SlidersHorizontal className="h-4 w-4" />
@@ -762,7 +762,7 @@ export default function ResponsesPage() {
             </button>
           </form>
           {searchName && (
-            <p className="mt-2 text-xs text-gray-500">
+            <p className="mt-2 text-xs text-text-muted">
               「{searchName}」: {processFilteredResponses.length}件
             </p>
           )}
@@ -880,7 +880,7 @@ export default function ResponsesPage() {
                     onChange={(e) => setFilterDateFrom(e.target.value)}
                     className="w-full px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary"
                   />
-                  <span className="text-xs text-gray-400 shrink-0">〜</span>
+                  <span className="text-xs text-text-faint shrink-0">〜</span>
                   <input
                     type="date"
                     value={filterDateTo}
@@ -891,7 +891,7 @@ export default function ResponsesPage() {
               </div>
             </div>
             <div className="mt-3 flex items-center justify-between">
-              <p className="text-xs text-gray-500">{processFilteredResponses.length}件表示</p>
+              <p className="text-xs text-text-muted">{processFilteredResponses.length}件表示</p>
               <button
                 type="button"
                 onClick={() => {
@@ -906,7 +906,7 @@ export default function ResponsesPage() {
                   setSearchInput('');
                   setSearchName('');
                 }}
-                className="text-xs text-blue-600 hover:text-blue-800 transition-colors duration-150"
+                className="text-xs text-info hover:text-info/80 transition-colors duration-150"
               >
                 リセット
               </button>
@@ -916,8 +916,8 @@ export default function ResponsesPage() {
 
         {/* サマリーセクション */}
         {Object.keys(summary).length > 0 && (
-          <div className="mb-6 bg-surface-raised rounded-xl border border-gray-200 p-6">
-            <h2 className="text-lg font-bold text-gray-900 mb-4">サマリー</h2>
+          <div className="mb-6 bg-surface-raised rounded-xl border border-border p-6">
+            <h2 className="text-lg font-bold text-text-heading mb-4">サマリー</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {Object.entries(summary).map(([key, stats]) => {
                 const [formType, periodKey] = key.split('_');
@@ -944,14 +944,14 @@ export default function ResponsesPage() {
         <div className="bg-surface-raised rounded-xl border border-border p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-bold text-text-heading">回答一覧</h2>
-            <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden">
+            <div className="flex items-center border border-border rounded-lg overflow-hidden">
               <button
                 type="button"
                 onClick={() => setViewMode('grouped')}
                 className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium transition-colors duration-150 ${
                   viewMode === 'grouped'
                     ? 'bg-ink text-white'
-                    : 'bg-surface-raised text-gray-600 hover:bg-gray-50'
+                    : 'bg-surface-raised text-text-muted hover:bg-surface-hover'
                 }`}
               >
                 <Users className="h-4 w-4" />
@@ -963,7 +963,7 @@ export default function ResponsesPage() {
                 className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium transition-colors duration-150 ${
                   viewMode === 'list'
                     ? 'bg-ink text-white'
-                    : 'bg-surface-raised text-gray-600 hover:bg-gray-50'
+                    : 'bg-surface-raised text-text-muted hover:bg-surface-hover'
                 }`}
               >
                 <List className="h-4 w-4" />
@@ -980,66 +980,66 @@ export default function ResponsesPage() {
           ) : viewMode === 'grouped' ? (
             /* 生徒別ビュー */
             <div className="space-y-3">
-              <p className="text-sm text-gray-500 mb-2">
+              <p className="text-sm text-text-muted mb-2">
                 {groupedByStudent.length}名の生徒 / {processFilteredResponses.length}件の回答
               </p>
               {groupedByStudent.map((group) => (
                 <div
                   key={group.studentKey}
                   className={`border rounded-lg overflow-hidden ${
-                    group.hasUncharged ? 'border-red-200' : 'border-gray-200'
+                    group.hasUncharged ? 'border-danger-subtle' : 'border-border'
                   }`}
                 >
                   {/* 生徒ヘッダー */}
                   <div
                     className={`px-4 py-2.5 flex items-center justify-between ${
-                      group.hasUncharged ? 'bg-red-50' : 'bg-gray-50'
+                      group.hasUncharged ? 'bg-danger-subtle' : 'bg-surface-hover'
                     }`}
                   >
                     <div className="flex items-center gap-2 min-w-0">
                       <span className="font-semibold text-sm text-text-heading truncate">
                         {group.studentName}
                       </span>
-                      <span className="text-xs text-gray-500 bg-surface-raised px-1.5 py-0.5 rounded border border-gray-200 shrink-0">
+                      <span className="text-xs text-text-muted bg-surface-raised px-1.5 py-0.5 rounded border border-border shrink-0">
                         {GRADE_LABELS[group.grade] || group.grade}
                       </span>
-                      <span className="hidden sm:inline text-xs text-gray-400 shrink-0">
+                      <span className="hidden sm:inline text-xs text-text-faint shrink-0">
                         {group.schoolName}
                       </span>
                     </div>
                     <div className="flex items-center gap-1.5 shrink-0 ml-2">
-                      <span className="text-xs text-gray-400">{group.responses.length}件</span>
+                      <span className="text-xs text-text-faint">{group.responses.length}件</span>
                       {group.hasUncharged && (
-                        <span className="px-1.5 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700">
+                        <span className="px-1.5 py-0.5 rounded text-xs font-medium bg-danger-subtle text-danger">
                           未計上
                         </span>
                       )}
                       {group.hasUnprocessed && !group.hasUncharged && (
-                        <span className="px-1.5 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
+                        <span className="px-1.5 py-0.5 rounded text-xs font-medium bg-warning-subtle text-warning">
                           未処理
                         </span>
                       )}
                     </div>
                   </div>
                   {/* 回答リスト */}
-                  <div className="divide-y divide-gray-100">
+                  <div className="divide-y divide-border-subtle">
                     {group.responses.map((response) => (
                       <Link
                         key={response.id}
                         href={`/forms/responses/${FORM_TYPE_TO_PATH[response.form_type] ?? response.form_type}/${response.form_period}?schoolId=${response.school_id}`}
-                        className="flex items-center justify-between px-4 py-2 hover:bg-gray-50 transition-colors duration-150 gap-3"
+                        className="flex items-center justify-between px-4 py-2 hover:bg-surface-hover transition-colors duration-150 gap-3"
                       >
                         <div className="flex items-center gap-2 min-w-0">
                           <span className="text-xs font-medium text-text-heading shrink-0">
                             {FORM_TYPE_LABELS[response.form_type]}
                           </span>
-                          <span className="text-xs text-gray-400 shrink-0">
+                          <span className="text-xs text-text-faint shrink-0">
                             {response.form_period}
                           </span>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
                           <ResponseStatusBadges response={response} />
-                          <span className="text-xs text-gray-400">
+                          <span className="text-xs text-text-faint">
                             {formatDateTime(response.created_at)}
                           </span>
                         </div>

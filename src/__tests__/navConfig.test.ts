@@ -106,6 +106,22 @@ describe('buildNavEntries: 教室長(manager)', () => {
     expect(k).not.toContain('my-attendance');
   });
 
+  it('回答一覧をトップレベルに出し、申込状況はトップから外す', () => {
+    const k = keys(entries);
+    expect(k).toContain('responses');
+    expect(k).not.toContain('applications'); // トップレベルには無い
+  });
+
+  it('申込状況はフォーム管理グループ内に残し、回答一覧は群から外す', () => {
+    const form = entries.find((e) => e.key === 'form') as NavGroup;
+    expect(form.items.map((i) => i.key)).toEqual([
+      'applications',
+      'transcriptions',
+      'portal',
+      'test-prep',
+    ]);
+  });
+
   it('講習グループに4項目が正しいラベルで入る', () => {
     const course = entries.find((e) => e.key === 'course') as NavGroup;
     expect(course.items.map((i) => i.label)).toEqual([
