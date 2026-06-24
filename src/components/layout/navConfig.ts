@@ -72,17 +72,8 @@ export function buildNavEntries(ctx: NavContext): NavEntry[] {
     });
   }
 
-  // 回答一覧（教室長以上のトップレベル）。
-  // 講師は回答一覧が権限外（canAccessPortal=false）のため、代わりに申込状況を出す。
-  if (showAll || p?.canAccessPortal) {
-    entries.push({
-      kind: 'link',
-      key: 'responses',
-      label: '回答一覧',
-      href: '/responses',
-      matchPrefixes: ['/forms/responses'],
-    });
-  } else if (p?.canAccessApplications) {
+  // 申込状況
+  if (showAll || p?.canAccessApplications) {
     entries.push({
       kind: 'link',
       key: 'applications',
@@ -108,11 +99,14 @@ export function buildNavEntries(ctx: NavContext): NavEntry[] {
       kind: 'group',
       key: 'form',
       label: 'フォーム管理',
-      // 回答一覧はトップレベルへ昇格。申込状況はトップから外し、この群に置いて
-      // デスクトップでも到達できるようにする（講師は別途トップレベルに出している）。
-      matchPrefixes: ['/applications', '/transcriptions', '/settings/portal'],
+      matchPrefixes: ['/responses', '/forms/responses', '/transcriptions', '/settings/portal'],
       items: [
-        { key: 'applications', label: '申込状況', href: '/applications', exact: true },
+        {
+          key: 'responses',
+          label: '回答一覧',
+          href: '/responses',
+          matchPrefixes: ['/forms/responses'],
+        },
         { key: 'transcriptions', label: '面談記録追加', href: '/transcriptions' },
         { key: 'portal', label: 'ポータル設定', href: '/settings/portal' },
         { key: 'test-prep', label: 'テスト対策', href: '/test-prep-proposals' },

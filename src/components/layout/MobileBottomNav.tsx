@@ -94,10 +94,16 @@ export function MobileBottomNav({ menuOpen, onMenuToggle }: MobileBottomNavProps
       return list;
     }
 
-    // 教室長以上: 生徒 / 申込 / 進行表 / 問合せ
+    // 教室長以上: 生徒 / 回答一覧 / 進行表 / 問合せ
     const list: BottomTab[] = [{ key: 'students', label: '生徒', href: '/students', icon: Users }];
-    if (permissions?.canAccessApplications) {
-      list.push({ key: 'applications', label: '申込', href: '/applications', icon: ClipboardList });
+    if (permissions?.canAccessPortal) {
+      list.push({
+        key: 'responses',
+        label: '回答一覧',
+        href: '/responses',
+        icon: ClipboardList,
+        match: '/responses',
+      });
     }
     list.push({ key: 'progress-feed', label: '進行表', href: '/progress-feed', icon: ListChecks });
     if (isManagerOrAbove(profile.role)) {

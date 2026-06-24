@@ -106,16 +106,12 @@ describe('buildNavEntries: 教室長(manager)', () => {
     expect(k).not.toContain('my-attendance');
   });
 
-  it('回答一覧をトップレベルに出し、申込状況はトップから外す', () => {
+  it('申込状況をトップレベルに出し、回答一覧はフォーム管理グループ内に置く', () => {
     const k = keys(entries);
-    expect(k).toContain('responses');
-    expect(k).not.toContain('applications'); // トップレベルには無い
-  });
-
-  it('申込状況はフォーム管理グループ内に残し、回答一覧は群から外す', () => {
+    expect(k).toContain('applications');
     const form = entries.find((e) => e.key === 'form') as NavGroup;
     expect(form.items.map((i) => i.key)).toEqual([
-      'applications',
+      'responses',
       'transcriptions',
       'portal',
       'test-prep',
