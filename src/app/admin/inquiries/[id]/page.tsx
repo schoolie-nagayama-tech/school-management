@@ -29,6 +29,8 @@ import {
   softDeleteInquiry,
   getInquiryContacts,
   addInquiryContact,
+  updateInquiryContact,
+  deleteInquiryContact,
 } from '@/lib/api/inquiries';
 import {
   getMailTemplates,
@@ -40,6 +42,7 @@ import {
 } from '@/lib/api/inquiryMail';
 import { getSchool } from '@/lib/api/schools';
 import { createStudent } from '@/lib/api/students';
+import { generateNekoposCsv, downloadCsvNoBom } from '@/lib/utils/yamatoB2';
 import type {
   Inquiry,
   InquiryStatus,
@@ -84,6 +87,7 @@ import {
   AlertTriangle,
   Pencil,
   Users,
+  Truck,
 } from 'lucide-react';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 import { supabase } from '@/lib/supabase';
@@ -135,6 +139,19 @@ export default function InquiryDetailPage() {
   const [contactResult, setContactResult] = useState('');
   const [contactNote, setContactNote] = useState('');
   const [isAddingContact, setIsAddingContact] = useState(false);
+
+  // ---- コンタクト編集／削除 ----
+  const [contactEditTarget, setContactEditTarget] = useState<InquiryContact | null>(null);
+  const [editContactMethod, setEditContactMethod] = useState<ManualContactMethod>('tel');
+  const [editContactDirection, setEditContactDirection] = useState<'outbound' | 'inbound'>(
+    'outbound'
+  );
+  const [editContactDate, setEditContactDate] = useState('');
+  const [editContactResult, setEditContactResult] = useState('');
+  const [editContactNote, setEditContactNote] = useState('');
+  const [isSavingContactEdit, setIsSavingContactEdit] = useState(false);
+  const [contactDeleteTarget, setContactDeleteTarget] = useState<InquiryContact | null>(null);
+  const [isDeletingContact, setIsDeletingContact] = useState(false);
 
   // ---- HP原文の開閉 ----
   const [rawSourceOpen, setRawSourceOpen] = useState(false);
@@ -404,6 +421,59 @@ export default function InquiryDetailPage() {
     }
   };
 
+  // ---- コンタクト編集 ----
+  // 編集モーダルを開き、現在値をフォームへ流し込む（status_change は編集対象外）。
+  const openContactEdit = (c: InquiryContact) => {
+    setContactEditTarget(c);
+    // method が手入力選択肢に無い場合（理論上 status_change のみ）は other に寄せる
+    const isManual = (MANUAL_CONTACT_METHODS as readonly string[]).includes(c.method);
+    setEditContactMethod(isManual ? (c.method as ManualContactMethod) : 'other');
+    setEditContactDirection(c.direction === 'inbound' ? 'inbound' : 'outbound');
+    setEditContactDate(c.contacted_at ? c.contacted_at.slice(0, 10) : '');
+    setEditContactResult(c.result ?? '');
+    setEditContactNote(c.note ?? '');
+  };
+
+  const handleSaveContactEdit = async () => {
+    if (!contactEditTarget) return;
+    setIsSavingContactEdit(true);
+    try {
+      await updateInquiryContact(contactEditTarget.id, {
+        method: editContactMethod,
+        direction: editContactDirection,
+        // 追加フォームと同じく JST 正午で保存する
+        contacted_at: editContactDate
+          ? new Date(editContactDate + 'T12:00:00+09:00').toISOString()
+          : contactEditTarget.contacted_at,
+        result: editContactResult.trim() || null,
+        note: editContactNote.trim() || null,
+      });
+      toast.success('コンタクト履歴を更新しました');
+      setContactEditTarget(null);
+      await fetchData();
+    } catch (err) {
+      toast.error(getUserErrorMessage(err, 'コンタクト履歴の更新に失敗しました'));
+    } finally {
+      setIsSavingContactEdit(false);
+    }
+  };
+
+  // ---- コンタクト削除 ----
+  const handleDeleteContact = async () => {
+    if (!contactDeleteTarget) return;
+    setIsDeletingContact(true);
+    try {
+      await deleteInquiryContact(contactDeleteTarget.id);
+      toast.success('コンタクト履歴を削除しました');
+      setContactDeleteTarget(null);
+      await fetchData();
+    } catch (err) {
+      toast.error(getUserErrorMessage(err, 'コンタクト履歴の削除に失敗しました'));
+    } finally {
+      setIsDeletingContact(false);
+    }
+  };
+
   // ---- 削除 ----
   const handleDelete = async () => {
     setIsDeleting(true);
@@ -476,6 +546,31 @@ export default function InquiryDetailPage() {
       setEnrollWarnOpen(false);
     }
   }, [inquiry, router]);
+
+  // ---- ヤマトB2(ネコポス)CSV出力 ----
+  // 資料発送ページの一括出力と同じ generateNekoposCsv を、この1件だけで呼ぶ。
+  // 教室の発送設定(mailSettings)と住所・宛名が揃っていれば1行のCSVをDLする。
+  const handleExportNekopos = useCallback(() => {
+    if (!inquiry) return;
+    if (!mailSettings || !mailSettings.yamato_customer_code) {
+      toast.error(
+        '教室の発送設定（ヤマト顧客コード等）が未登録です。「資料発送 → 教室別発送設定」で登録してください'
+      );
+      return;
+    }
+    const map = new Map([[inquiry.school_id, mailSettings]]);
+    const result = generateNekoposCsv([inquiry], map, new Date());
+    if (result.count === 0) {
+      const reason = result.skipped[0]?.reason ?? '出力対象外';
+      toast.error(`CSVを出力できません（${reason}）`);
+      return;
+    }
+    const name = (inquiry.student_name || inquiry.guardian_name || 'inquiry').replace(/\s+/g, '');
+    const d = new Date();
+    const stamp = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
+    downloadCsvNoBom(result.csv, `nekopos_${name}_${stamp}.csv`);
+    toast.success('ヤマトB2用CSVを出力しました');
+  }, [inquiry, mailSettings]);
 
   // ---- 生徒として登録ボタンのクリック ----
   // 生徒名が未入力だと保護者名で生徒が作られてしまうため、その場合は確認モーダルを挟む。
@@ -839,29 +934,54 @@ export default function InquiryDetailPage() {
                                   <div className="flex-1 w-px bg-border" />
                                 </div>
                                 <div className="pb-3 min-w-0 flex-1">
-                                  <div className="flex items-center gap-2 flex-wrap text-xs text-text-muted mb-0.5">
-                                    <span className="font-medium text-text-body">
-                                      {CONTACT_METHOD_LABELS[c.method] ?? c.method}
-                                    </span>
-                                    {showDirection && (
-                                      <span>
-                                        {CONTACT_DIRECTION_LABELS[c.direction!] ?? c.direction}
-                                      </span>
-                                    )}
-                                    <span>{formatDate(c.contacted_at)}</span>
-                                    {c.result && (
-                                      <span
-                                        className={`px-1.5 py-0.5 rounded font-medium ${resultBadgeClass}`}
+                                  <div className="flex items-start justify-between gap-2">
+                                    <div className="min-w-0">
+                                      <div className="flex items-center gap-2 flex-wrap text-xs text-text-muted mb-0.5">
+                                        <span className="font-medium text-text-body">
+                                          {CONTACT_METHOD_LABELS[c.method] ?? c.method}
+                                        </span>
+                                        {showDirection && (
+                                          <span>
+                                            {CONTACT_DIRECTION_LABELS[c.direction!] ?? c.direction}
+                                          </span>
+                                        )}
+                                        <span>{formatDate(c.contacted_at)}</span>
+                                        {c.result && (
+                                          <span
+                                            className={`px-1.5 py-0.5 rounded font-medium ${resultBadgeClass}`}
+                                          >
+                                            {c.result}
+                                          </span>
+                                        )}
+                                      </div>
+                                      {c.note && (
+                                        <p className="text-sm text-text-body whitespace-pre-wrap">
+                                          {c.note}
+                                        </p>
+                                      )}
+                                    </div>
+                                    {/* 編集・削除（status_change は自動記録のため編集不可、削除のみ） */}
+                                    <div className="flex items-center gap-0.5 shrink-0">
+                                      {c.method !== 'status_change' && (
+                                        <button
+                                          type="button"
+                                          onClick={() => openContactEdit(c)}
+                                          aria-label="このコンタクトを編集"
+                                          className="p-1 rounded text-text-faint hover:text-text-heading hover:bg-surface-hover transition-colors"
+                                        >
+                                          <Pencil className="w-3.5 h-3.5" />
+                                        </button>
+                                      )}
+                                      <button
+                                        type="button"
+                                        onClick={() => setContactDeleteTarget(c)}
+                                        aria-label="このコンタクトを削除"
+                                        className="p-1 rounded text-text-faint hover:text-danger hover:bg-surface-hover transition-colors"
                                       >
-                                        {c.result}
-                                      </span>
-                                    )}
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                      </button>
+                                    </div>
                                   </div>
-                                  {c.note && (
-                                    <p className="text-sm text-text-body whitespace-pre-wrap">
-                                      {c.note}
-                                    </p>
-                                  )}
                                 </div>
                               </div>
                             );
@@ -1316,6 +1436,17 @@ export default function InquiryDetailPage() {
                       </Button>
                     )}
 
+                    {/* ヤマトB2(ネコポス)CSV出力 — この1件分の送り状CSVをDL */}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleExportNekopos}
+                      className="w-full justify-start"
+                    >
+                      <Truck className="w-4 h-4 mr-1.5" />
+                      ヤマトCSV出力（ネコポス）
+                    </Button>
+
                     {/* 論理削除 */}
                     <Button
                       variant="danger"
@@ -1496,6 +1627,131 @@ export default function InquiryDetailPage() {
           <Button size="sm" isLoading={isSendingMail} onClick={handleSendMail}>
             <Send className="w-4 h-4 mr-1.5" />
             送信する
+          </Button>
+        </div>
+      </Modal>
+
+      {/* コンタクト履歴 編集モーダル */}
+      <Modal
+        isOpen={!!contactEditTarget}
+        onClose={() => setContactEditTarget(null)}
+        title="コンタクト履歴の編集"
+        size="md"
+      >
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-medium text-text-heading mb-1">方法</label>
+              <select
+                value={editContactMethod}
+                onChange={(e) => {
+                  const m = e.target.value as ManualContactMethod;
+                  setEditContactMethod(m);
+                  // 方法に応じて方向の既定値を合わせる（追加フォームと同じ挙動）
+                  setEditContactDirection(METHOD_DEFAULT_DIRECTION[m]);
+                }}
+                className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary"
+              >
+                {MANUAL_CONTACT_METHODS.map((m) => (
+                  <option key={m} value={m}>
+                    {CONTACT_METHOD_LABELS[m]}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-text-heading mb-1">方向</label>
+              <select
+                value={editContactDirection}
+                onChange={(e) =>
+                  setEditContactDirection(e.target.value as typeof editContactDirection)
+                }
+                className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary"
+              >
+                <option value="outbound">発信</option>
+                <option value="inbound">着信・受信</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-text-heading mb-1">日付</label>
+              <input
+                type="date"
+                value={editContactDate}
+                onChange={(e) => setEditContactDate(e.target.value)}
+                className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-text-heading mb-1">結果</label>
+              <input
+                type="text"
+                list="edit-contact-result-options"
+                value={editContactResult}
+                onChange={(e) => setEditContactResult(e.target.value)}
+                placeholder={
+                  CONTACT_RESULT_OPTIONS[editContactMethod].length > 0
+                    ? '選択または入力'
+                    : '例: 折り返し待ち'
+                }
+                className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+              {CONTACT_RESULT_OPTIONS[editContactMethod].length > 0 && (
+                <datalist id="edit-contact-result-options">
+                  {CONTACT_RESULT_OPTIONS[editContactMethod].map((opt) => (
+                    <option key={opt} value={opt} />
+                  ))}
+                </datalist>
+              )}
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-text-heading mb-1">メモ</label>
+            <textarea
+              value={editContactNote}
+              onChange={(e) => setEditContactNote(e.target.value)}
+              rows={3}
+              className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+            />
+          </div>
+          <div className="flex justify-end gap-2 pt-2 border-t border-border">
+            <Button variant="ghost" size="sm" onClick={() => setContactEditTarget(null)}>
+              キャンセル
+            </Button>
+            <Button size="sm" isLoading={isSavingContactEdit} onClick={handleSaveContactEdit}>
+              保存
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* コンタクト履歴 削除確認モーダル */}
+      <Modal
+        isOpen={!!contactDeleteTarget}
+        onClose={() => setContactDeleteTarget(null)}
+        title="コンタクト履歴の削除"
+        size="sm"
+      >
+        <p className="text-sm text-text-body mb-6">
+          このコンタクト履歴
+          {contactDeleteTarget && (
+            <span className="font-medium text-text-heading">
+              （{CONTACT_METHOD_LABELS[contactDeleteTarget.method] ?? contactDeleteTarget.method}・
+              {formatDate(contactDeleteTarget.contacted_at)}）
+            </span>
+          )}
+          を削除します。この操作は取り消せません。よろしいですか？
+        </p>
+        <div className="flex justify-end gap-2">
+          <Button variant="ghost" size="sm" onClick={() => setContactDeleteTarget(null)}>
+            キャンセル
+          </Button>
+          <Button
+            variant="danger"
+            size="sm"
+            isLoading={isDeletingContact}
+            onClick={handleDeleteContact}
+          >
+            削除する
           </Button>
         </div>
       </Modal>

@@ -14,6 +14,7 @@ import type {
   InquiryStatus,
   InquiryContact,
   InquiryContactInsert,
+  InquiryContactUpdate,
   InquiryMailLogInsert,
 } from '@/types/database';
 import { getSchools } from './schools';
@@ -279,6 +280,38 @@ export async function addInquiryContact(data: InquiryContactInsert): Promise<Inq
   }
 
   return created as InquiryContact;
+}
+
+/**
+ * コンタクト履歴を1件更新する。
+ */
+export async function updateInquiryContact(
+  id: string,
+  patch: InquiryContactUpdate
+): Promise<InquiryContact> {
+  const { data: updated, error } = await supabase
+    .from('inquiry_contacts')
+    .update(patch)
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) {
+    throw new Error(`コンタクト履歴の更新に失敗しました: ${error.message}`);
+  }
+
+  return updated as InquiryContact;
+}
+
+/**
+ * コンタクト履歴を1件削除する（物理削除）。
+ */
+export async function deleteInquiryContact(id: string): Promise<void> {
+  const { error } = await supabase.from('inquiry_contacts').delete().eq('id', id);
+
+  if (error) {
+    throw new Error(`コンタクト履歴の削除に失敗しました: ${error.message}`);
+  }
 }
 
 // ============================================================
