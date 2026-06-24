@@ -605,7 +605,7 @@ export default function InquiryMailPage() {
           </p>
           <div className="mt-2 h-2 bg-blue-100 rounded-full overflow-hidden">
             <div
-              className="h-full bg-blue-500 rounded-full transition-all duration-300"
+              className="h-full bg-blue-500 rounded-full transition-[width] duration-300 ease-out"
               style={{ width: `${Math.round((sendProgress.current / sendProgress.total) * 100)}%` }}
             />
           </div>
@@ -961,11 +961,11 @@ export default function InquiryMailPage() {
       ============================================================ */}
       {editTarget && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          className="modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4"
           onClick={() => setEditTarget(null)}
         >
           <div
-            className="bg-surface-raised rounded-xl border border-border shadow-xl w-full max-w-2xl max-h-[85vh] flex flex-col"
+            className="modal-panel bg-surface-raised rounded-xl border border-border shadow-xl w-full max-w-2xl max-h-[85vh] flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between px-6 py-4 border-b border-border">
@@ -1052,11 +1052,11 @@ export default function InquiryMailPage() {
       ============================================================ */}
       {pendingSend && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          className="modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4"
           onClick={() => setPendingSend(null)}
         >
           <div
-            className="bg-surface-raised rounded-xl border border-border shadow-xl w-full max-w-sm"
+            className="modal-panel bg-surface-raised rounded-xl border border-border shadow-xl w-full max-w-sm"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between px-6 py-4 border-b border-border">

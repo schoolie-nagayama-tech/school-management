@@ -52,7 +52,7 @@ export function InquiryPeriodSegmented({
         {/* スライドするハイライト（p-1=4px 分を差し引いた等幅で移動） */}
         <span
           aria-hidden
-          className="absolute top-1 bottom-1 rounded-md bg-surface-raised shadow-sm ring-1 ring-border transition-transform duration-200 ease-out"
+          className="absolute top-1 bottom-1 rounded-md bg-surface-raised shadow-sm ring-1 ring-border transition-transform duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none"
           style={{
             left: 4,
             width: `calc((100% - 8px) / ${n})`,
@@ -68,7 +68,7 @@ export function InquiryPeriodSegmented({
               role="tab"
               aria-selected={active}
               onClick={() => onChange(s.value, customFrom, customTo)}
-              className={`relative z-10 px-3 py-1.5 text-xs font-medium rounded-md whitespace-nowrap transition-colors duration-150 ${
+              className={`relative z-10 px-3 py-1.5 text-xs font-medium rounded-md whitespace-nowrap transition-colors duration-150 active:scale-[0.97] ${
                 active ? 'text-text-heading' : 'text-text-muted hover:text-text-body'
               }`}
             >

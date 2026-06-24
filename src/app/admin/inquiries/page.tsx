@@ -468,7 +468,7 @@ export default function InquiriesPage() {
             <button
               type="button"
               onClick={() => setFilterStatus('all')}
-              className={`text-left rounded-lg border p-3 transition-colors duration-150 ${
+              className={`text-left rounded-lg border p-3 transition-[transform,background-color,border-color,box-shadow] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.98] ${
                 filterStatus === 'all'
                   ? 'border-ink bg-surface-hover ring-1 ring-ink/30'
                   : 'border-border bg-surface-raised hover:bg-surface-hover'
@@ -487,7 +487,7 @@ export default function InquiriesPage() {
                   type="button"
                   // 再クリックで解除（'all' に戻す）
                   onClick={() => setFilterStatus(active ? 'all' : s)}
-                  className={`text-left rounded-lg border p-3 transition-colors duration-150 ${
+                  className={`text-left rounded-lg border p-3 transition-[transform,background-color,border-color,box-shadow] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.98] ${
                     active
                       ? 'border-ink bg-surface-hover ring-1 ring-ink/30'
                       : 'border-border bg-surface-raised hover:bg-surface-hover'
