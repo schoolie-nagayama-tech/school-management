@@ -42,6 +42,7 @@ import {
 } from '@/lib/api/inquiryMail';
 import { getSchool } from '@/lib/api/schools';
 import { createStudent } from '@/lib/api/students';
+import { createInterview } from '@/lib/api/interviews';
 import { generateNekoposCsv, downloadCsvNoBom } from '@/lib/utils/yamatoB2';
 import type {
   Inquiry,
@@ -534,6 +535,27 @@ export default function InquiryDetailPage() {
 
       const created = await createStudent(studentData);
 
+      // 問合せに紐づいた Notta記録を、生徒の面談記録(student_interviews)へ転記する。
+      // 1件＝1面談記録（type=その他、タイトル=ラベル、本文=ラベル+URL）。
+      // 1件失敗しても登録自体は止めない。
+      const nottaRecords = inquiry.notta_records ?? [];
+      let nottaMoved = 0;
+      for (const rec of nottaRecords) {
+        try {
+          await createInterview(created.school_id, created.id, {
+            interview_date: (rec.added_at || new Date().toISOString()).slice(0, 10),
+            interview_type: 'other',
+            title: rec.label || 'Notta記録',
+            content: ['問合せから引き継いだ Notta記録', rec.label || null, rec.url]
+              .filter(Boolean)
+              .join('\n'),
+          });
+          nottaMoved += 1;
+        } catch {
+          // 個別失敗は無視して続行（生徒登録は成功扱い）
+        }
+      }
+
       // 問合せ側を入会ステータスにして生徒と紐付け
       const updated = await updateInquiry(inquiry.id, {
         linked_student_id: created.id,
@@ -542,7 +564,11 @@ export default function InquiryDetailPage() {
       });
       setInquiry(updated);
       setEditStatus(updated.status);
-      toast.success('生徒として登録しました。内容をご確認ください');
+      toast.success(
+        nottaMoved > 0
+          ? `生徒として登録しました（Notta記録 ${nottaMoved}件を面談記録に転記）`
+          : '生徒として登録しました。内容をご確認ください'
+      );
       // 生徒一覧の編集モーダルを開く（転記された学年・姓名などを確認・修正できる）
       router.push(`/students?edit=${created.id}`);
     } catch (err) {
