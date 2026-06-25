@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo, type CSSProperties } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef, type CSSProperties } from 'react';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { AdminLayout } from '@/components/layouts';
@@ -28,6 +28,7 @@ import {
   batchFetchCoursePrepApi,
   batchFetchCoursePrepApiMulti,
   callCoursePrepApi,
+  invalidateCoursePrepCache,
 } from '@/lib/api/coursePrepApi';
 import { computeSchoolKpis } from '@/lib/coursePrepKpis';
 import type { SchoolOverviewRow } from '@/components/course-progress';
@@ -121,6 +122,11 @@ export default function CourseProgressPage() {
   const [viewAllSchools, setViewAllSchools] = useState(true);
   const [allSchoolsKpis, setAllSchoolsKpis] = useState<SchoolOverviewRow[]>([]);
   const [allSchoolsLoading, setAllSchoolsLoading] = useState(true);
+  // バックグラウンド更新中（カードは残したままボタンにスピナーを出す。初回ロードのスケルトンとは区別）
+  const [allSchoolsRefreshing, setAllSchoolsRefreshing] = useState(false);
+  const [allSchoolsUpdatedAt, setAllSchoolsUpdatedAt] = useState<Date | null>(null);
+  // タブ復帰の自動更新を間引くための最終取得時刻（連続フォーカスでの過剰リクエストを防ぐ）
+  const lastAllFetchAtRef = useRef(0);
   // 横断サマリーを表示する条件（全教室選択 かつ サマリーモード）
   const showAllSchoolsOverview = isAllSelected && viewAllSchools;
 
@@ -248,51 +254,78 @@ export default function CourseProgressPage() {
   // 全教室横断サマリー用のデータ取得。
   // 各校分を batch_get_multi で1リクエストにまとめ、校ごとにKPIを算出する。
   // 進捗項目（列）は校ごとに別管理のため、提案/決定コマ列の特定も校ごとに行う（computeSchoolKpis 内）。
-  const fetchAllSchools = useCallback(async () => {
-    if (availableSchools.length === 0) {
-      setAllSchoolsKpis([]);
-      setAllSchoolsLoading(false);
-      return;
-    }
-    setAllSchoolsLoading(true);
-    const today = new Date().toISOString().slice(0, 10);
-    try {
-      const multi = await batchFetchCoursePrepApiMulti(
-        {
-          schoolIds: availableSchools.map((s) => s.id),
-          season,
-          year: String(year),
-          includeHidden: String(showHidden),
-        },
-        ['students', 'progress_items', 'student_progress', 'period', 'auto_values']
-      );
-      const rows: SchoolOverviewRow[] = availableSchools.map((school) => {
-        const batch = multi[school.id] || {};
-        const students = (batch.students as Parameters<typeof computeSchoolKpis>[0]) || [];
-        const items = (batch.progress_items as Parameters<typeof computeSchoolKpis>[1]) || [];
-        const progress = (batch.student_progress as Parameters<typeof computeSchoolKpis>[2]) || [];
-        const autoValues = (batch.auto_values as Parameters<typeof computeSchoolKpis>[3]) || {};
-        const period = (batch.period as Parameters<typeof computeSchoolKpis>[4]) || null;
-        return {
-          schoolId: school.id,
-          schoolName: school.name,
-          kpis: computeSchoolKpis(students, items, progress, autoValues, period, today),
-        };
-      });
-      setAllSchoolsKpis(rows);
-    } catch (error) {
-      console.error('Error fetching all-schools overview:', error);
-      setErrorMessage(getUserErrorMessage(error, '横断サマリーの取得に失敗しました'));
-    } finally {
-      setAllSchoolsLoading(false);
-    }
-  }, [availableSchools, season, year, showHidden]);
+  const fetchAllSchools = useCallback(
+    async (background = false) => {
+      if (availableSchools.length === 0) {
+        setAllSchoolsKpis([]);
+        setAllSchoolsLoading(false);
+        return;
+      }
+      // background=true（更新ボタン/タブ復帰）はカードを残してスピナーだけ。初回はスケルトン。
+      if (background) setAllSchoolsRefreshing(true);
+      else setAllSchoolsLoading(true);
+      const today = new Date().toISOString().slice(0, 10);
+      try {
+        const multi = await batchFetchCoursePrepApiMulti(
+          {
+            schoolIds: availableSchools.map((s) => s.id),
+            season,
+            year: String(year),
+            includeHidden: String(showHidden),
+          },
+          ['students', 'progress_items', 'student_progress', 'period', 'auto_values']
+        );
+        const rows: SchoolOverviewRow[] = availableSchools.map((school) => {
+          const batch = multi[school.id] || {};
+          const students = (batch.students as Parameters<typeof computeSchoolKpis>[0]) || [];
+          const items = (batch.progress_items as Parameters<typeof computeSchoolKpis>[1]) || [];
+          const progress =
+            (batch.student_progress as Parameters<typeof computeSchoolKpis>[2]) || [];
+          const autoValues = (batch.auto_values as Parameters<typeof computeSchoolKpis>[3]) || {};
+          const period = (batch.period as Parameters<typeof computeSchoolKpis>[4]) || null;
+          return {
+            schoolId: school.id,
+            schoolName: school.name,
+            kpis: computeSchoolKpis(students, items, progress, autoValues, period, today),
+          };
+        });
+        setAllSchoolsKpis(rows);
+        setAllSchoolsUpdatedAt(new Date());
+        lastAllFetchAtRef.current = Date.now();
+      } catch (error) {
+        console.error('Error fetching all-schools overview:', error);
+        setErrorMessage(getUserErrorMessage(error, '横断サマリーの取得に失敗しました'));
+      } finally {
+        if (background) setAllSchoolsRefreshing(false);
+        else setAllSchoolsLoading(false);
+      }
+    },
+    [availableSchools, season, year, showHidden]
+  );
+
+  // 手動「更新」: マルチ取得キャッシュを無効化し、横断ビューだけ取り直す（リロード不要）。
+  const refreshAllSchools = useCallback(() => {
+    invalidateCoursePrepCache();
+    fetchAllSchools(true);
+  }, [fetchAllSchools]);
 
   useEffect(() => {
     if (showAllSchoolsOverview) {
       fetchAllSchools();
     }
   }, [showAllSchoolsOverview, fetchAllSchools]);
+
+  // タブ復帰時に自動更新。直近20秒以内に取得済みならスキップして過剰リクエストを防ぐ。
+  useEffect(() => {
+    if (!showAllSchoolsOverview) return;
+    const onVisible = () => {
+      if (document.visibilityState !== 'visible') return;
+      if (Date.now() - lastAllFetchAtRef.current < 20_000) return;
+      refreshAllSchools();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [showAllSchoolsOverview, refreshAllSchools]);
 
   // 表示用項目（講師はmanager_only除外 / 非表示除外）
   const displayItems = useMemo(() => {
@@ -970,6 +1003,9 @@ export default function CourseProgressPage() {
           <AllSchoolsOverview
             rows={allSchoolsKpis}
             loading={allSchoolsLoading}
+            refreshing={allSchoolsRefreshing}
+            updatedAt={allSchoolsUpdatedAt}
+            onRefresh={refreshAllSchools}
             onSelectSchool={(id) => {
               setViewAllSchools(false);
               setLocalSchoolId(id);

@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, type CSSProperties } from 'react';
-import { ChevronRight, AlertTriangle } from 'lucide-react';
+import { ChevronRight, AlertTriangle, RefreshCw } from 'lucide-react';
 import type { SchoolKpis } from '@/lib/coursePrepKpis';
 
 export interface SchoolOverviewRow {
@@ -15,6 +15,15 @@ interface AllSchoolsOverviewProps {
   loading: boolean;
   // カードクリックでその教室の詳細表に切り替える
   onSelectSchool: (schoolId: string) => void;
+  // バックグラウンド更新（リロード不要の数値更新）
+  refreshing?: boolean;
+  updatedAt?: Date | null;
+  onRefresh?: () => void;
+}
+
+// 最終更新時刻の HH:MM 表示
+function formatUpdatedAt(d: Date): string {
+  return `${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`;
 }
 
 // 達成度に応じた色。70%以上=緑 / 40%以上=アンバー / 未満=赤。
@@ -38,7 +47,14 @@ function ProgressBar({ value, color }: { value: number; color: string }) {
   );
 }
 
-export function AllSchoolsOverview({ rows, loading, onSelectSchool }: AllSchoolsOverviewProps) {
+export function AllSchoolsOverview({
+  rows,
+  loading,
+  onSelectSchool,
+  refreshing = false,
+  updatedAt = null,
+  onRefresh,
+}: AllSchoolsOverviewProps) {
   // 全校合計サマリー
   const totals = useMemo(() => {
     const studentCount = rows.reduce((a, r) => a + r.kpis.studentCount, 0);
@@ -71,6 +87,23 @@ export function AllSchoolsOverview({ rows, loading, onSelectSchool }: AllSchools
 
   return (
     <div className="mb-6 space-y-4">
+      {/* 更新ツールバー: 最終更新時刻＋手動更新ボタン（リロード不要で数値を取り直す） */}
+      {onRefresh && (
+        <div className="flex items-center justify-end gap-3">
+          {updatedAt && (
+            <span className="text-[11px] text-gray-400">最終更新 {formatUpdatedAt(updatedAt)}</span>
+          )}
+          <button
+            onClick={onRefresh}
+            disabled={refreshing}
+            className="flex items-center gap-1 px-2.5 py-1 text-xs text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 transition-[background-color,transform] duration-150 ease-out active:scale-[0.97]"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
+            更新
+          </button>
+        </div>
+      )}
+
       {/* 全校合計: 在籍 / 目標コマ / 取得コマ / 提案コマ / 取得率 ＋ 目標への取得バー */}
       <div className="bg-white rounded-xl border border-gray-200 p-4">
         <div className="flex items-center justify-between mb-3">
