@@ -54,14 +54,15 @@ export default function ParentProgressTable({
   ): string => {
     const groupNumber = row.progress?.group_number;
     if (groupNumber == null) {
-      return 'border-b-2 border-gray-300';
+      return 'border-b-2 border-border-strong';
     }
 
     // グループの最後の行かどうか
     const nextRow = rows[index + 1];
     const isLastInGroup = !nextRow || nextRow.progress?.group_number !== groupNumber;
 
-    return isLastInGroup ? 'border-b-2 border-gray-300' : 'border-b border-gray-200';
+    // グループ末尾は濃い区切り、グループ内は薄い区切りで濃淡差を維持する
+    return isLastInGroup ? 'border-b-2 border-border-strong' : 'border-b border-border';
   };
 
   return (
@@ -69,7 +70,7 @@ export default function ParentProgressTable({
       {/* ヘッダー（PDF用） */}
       <div className="mb-8 print:mb-6">
         <h2 className="text-2xl font-bold text-center mb-4">学習進行表（ご提案内容）</h2>
-        <div className="flex justify-between text-base text-[#4b5563]">
+        <div className="flex justify-between text-base text-text-muted">
           <div>生徒名: {studentName}</div>
           <div>教材: {textbookName}</div>
         </div>
@@ -78,38 +79,42 @@ export default function ParentProgressTable({
       <table className="w-full border-collapse progress-table-parent">
         <thead>
           <tr>
-            <th className="border border-gray-400 p-4 text-left font-semibold">単元名</th>
+            <th className="border border-border-strong p-4 text-left font-semibold">単元名</th>
             {showProposalCount && (
-              <th className="border border-gray-400 p-4 text-center font-semibold">
+              <th className="border border-border-strong p-4 text-center font-semibold">
                 ご提案
                 <br />
                 コマ数
               </th>
             )}
             {showApplicationCount && (
-              <th className="border border-gray-400 p-4 text-center font-semibold">
+              <th className="border border-border-strong p-4 text-center font-semibold">
                 申込
                 <br />
                 コマ数
               </th>
             )}
             {showExamRange && (
-              <th className="border border-gray-400 p-4 text-center font-semibold">試験範囲</th>
+              <th className="border border-border-strong p-4 text-center font-semibold">
+                試験範囲
+              </th>
             )}
             {showSchoolProgress && (
-              <th className="border border-gray-400 p-4 text-center font-semibold">学校進度</th>
+              <th className="border border-border-strong p-4 text-center font-semibold">
+                学校進度
+              </th>
             )}
             {showLesson1 && (
-              <th className="border border-gray-400 p-4 text-center font-semibold">指導日①</th>
+              <th className="border border-border-strong p-4 text-center font-semibold">指導日①</th>
             )}
             {showLesson2 && (
-              <th className="border border-gray-400 p-4 text-center font-semibold">指導日②</th>
+              <th className="border border-border-strong p-4 text-center font-semibold">指導日②</th>
             )}
             {showLesson3 && (
-              <th className="border border-gray-400 p-4 text-center font-semibold">指導日③</th>
+              <th className="border border-border-strong p-4 text-center font-semibold">指導日③</th>
             )}
             {showHandover && (
-              <th className="border border-gray-400 p-4 text-center font-semibold">引継ぎ</th>
+              <th className="border border-border-strong p-4 text-center font-semibold">引継ぎ</th>
             )}
           </tr>
         </thead>
@@ -121,19 +126,22 @@ export default function ParentProgressTable({
             return (
               <tr key={row.curriculumItem.id} className={borderClass}>
                 {/* 単元名 */}
-                <td className="border-x border-gray-400 p-4">
+                <td className="border-x border-border-strong p-4">
                   <div className="flex items-center">
                     {/* グループインジケーター */}
                     {groupNumber != null && (
                       <div
                         className={`w-1 h-6 mr-3 rounded ${
-                          row.isGroupStart ? 'bg-gray-400' : 'bg-gray-300'
+                          // グループ先頭は濃い色、後続行は薄い色で視覚的な階層を維持
+                          row.isGroupStart ? 'bg-border-strong' : 'bg-border'
                         }`}
                       />
                     )}
                     <span>
                       {row.curriculumItem.item_number && (
-                        <span className="text-gray-600 mr-2">{row.curriculumItem.item_number}</span>
+                        <span className="text-text-muted mr-2">
+                          {row.curriculumItem.item_number}
+                        </span>
                       )}
                       {row.curriculumItem.title}
                     </span>
@@ -143,7 +151,7 @@ export default function ParentProgressTable({
                 {/* 提案コマ数（セル結合） */}
                 {showProposalCount && row.isGroupStart && (
                   <td
-                    className="border-x border-gray-400 p-4 text-center text-lg font-medium"
+                    className="border-x border-border-strong p-4 text-center text-lg font-medium"
                     rowSpan={row.groupRowSpan}
                     style={{
                       verticalAlign: 'middle',
@@ -152,14 +160,14 @@ export default function ParentProgressTable({
                     {row.groupProposalCount > 0 ? (
                       <span>{row.groupProposalCount}</span>
                     ) : (
-                      <span className="text-gray-400">-</span>
+                      <span className="text-text-faint">-</span>
                     )}
                   </td>
                 )}
                 {/* 申込コマ数 */}
                 {showApplicationCount && row.isGroupStart && (
                   <td
-                    className="border-x border-gray-400 p-4 text-center"
+                    className="border-x border-border-strong p-4 text-center"
                     rowSpan={row.groupRowSpan}
                     style={{
                       verticalAlign: 'middle',
@@ -168,13 +176,13 @@ export default function ParentProgressTable({
                     {row.groupApplicationCount > 0 ? (
                       <span>{row.groupApplicationCount}</span>
                     ) : (
-                      <span className="text-gray-400">-</span>
+                      <span className="text-text-faint">-</span>
                     )}
                   </td>
                 )}
                 {/* 試験範囲 */}
                 {showExamRange && (
-                  <td className="border-x border-gray-400 p-4 text-center text-sm">
+                  <td className="border-x border-border-strong p-4 text-center text-sm">
                     {(row.progress as unknown as ProgressForDisplay | null)
                       ?.exam_range_exam_type ? (
                       <span>
@@ -182,66 +190,66 @@ export default function ParentProgressTable({
                           ?.name ?? '-'}
                       </span>
                     ) : (
-                      <span className="text-gray-400">-</span>
+                      <span className="text-text-faint">-</span>
                     )}
                   </td>
                 )}
                 {/* 学校進度 */}
                 {showSchoolProgress && (
-                  <td className="border-x border-gray-400 p-4 text-center text-sm">
+                  <td className="border-x border-border-strong p-4 text-center text-sm">
                     {row.progress?.school_progress_date ? (
                       <span>{row.progress.school_progress_date}</span>
                     ) : (
-                      <span className="text-gray-400">-</span>
+                      <span className="text-text-faint">-</span>
                     )}
                   </td>
                 )}
                 {/* 指導日① */}
                 {showLesson1 && (
-                  <td className="border-x border-gray-400 p-4 text-center text-sm">
+                  <td className="border-x border-border-strong p-4 text-center text-sm">
                     {(row.progress as unknown as ProgressForDisplay | null)?.lessons?.[0]
                       ?.lesson_date ? (
                       <span>
                         {(row.progress as unknown as ProgressForDisplay).lessons?.[0]?.lesson_date}
                       </span>
                     ) : (
-                      <span className="text-gray-400">-</span>
+                      <span className="text-text-faint">-</span>
                     )}
                   </td>
                 )}
                 {/* 指導日② */}
                 {showLesson2 && (
-                  <td className="border-x border-gray-400 p-4 text-center text-sm">
+                  <td className="border-x border-border-strong p-4 text-center text-sm">
                     {(row.progress as unknown as ProgressForDisplay | null)?.lessons?.[1]
                       ?.lesson_date ? (
                       <span>
                         {(row.progress as unknown as ProgressForDisplay).lessons?.[1]?.lesson_date}
                       </span>
                     ) : (
-                      <span className="text-gray-400">-</span>
+                      <span className="text-text-faint">-</span>
                     )}
                   </td>
                 )}
                 {/* 指導日③ */}
                 {showLesson3 && (
-                  <td className="border-x border-gray-400 p-4 text-center text-sm">
+                  <td className="border-x border-border-strong p-4 text-center text-sm">
                     {(row.progress as unknown as ProgressForDisplay | null)?.lessons?.[2]
                       ?.lesson_date ? (
                       <span>
                         {(row.progress as unknown as ProgressForDisplay).lessons?.[2]?.lesson_date}
                       </span>
                     ) : (
-                      <span className="text-gray-400">-</span>
+                      <span className="text-text-faint">-</span>
                     )}
                   </td>
                 )}
                 {/* 引継ぎ */}
                 {showHandover && (
-                  <td className="border-x border-gray-400 p-4 text-sm">
+                  <td className="border-x border-border-strong p-4 text-sm">
                     {row.progress?.handover ? (
                       <span>{row.progress.handover}</span>
                     ) : (
-                      <span className="text-gray-400">-</span>
+                      <span className="text-text-faint">-</span>
                     )}
                   </td>
                 )}
@@ -251,29 +259,29 @@ export default function ParentProgressTable({
         </tbody>
         <tfoot>
           <tr className="font-bold">
-            <td className="border border-gray-400 p-4 text-right">合計</td>
+            <td className="border border-border-strong p-4 text-right">合計</td>
             {showProposalCount && (
-              <td className="border border-gray-400 p-4 text-center text-lg">
+              <td className="border border-border-strong p-4 text-center text-lg">
                 {totalProposal}コマ
               </td>
             )}
             {showApplicationCount && (
-              <td className="border border-gray-400 p-4 text-center text-lg">
+              <td className="border border-border-strong p-4 text-center text-lg">
                 {totalApplication}コマ
               </td>
             )}
-            {showExamRange && <td className="border border-gray-400 p-4"></td>}
-            {showSchoolProgress && <td className="border border-gray-400 p-4"></td>}
-            {showLesson1 && <td className="border border-gray-400 p-4"></td>}
-            {showLesson2 && <td className="border border-gray-400 p-4"></td>}
-            {showLesson3 && <td className="border border-gray-400 p-4"></td>}
-            {showHandover && <td className="border border-gray-400 p-4"></td>}
+            {showExamRange && <td className="border border-border-strong p-4"></td>}
+            {showSchoolProgress && <td className="border border-border-strong p-4"></td>}
+            {showLesson1 && <td className="border border-border-strong p-4"></td>}
+            {showLesson2 && <td className="border border-border-strong p-4"></td>}
+            {showLesson3 && <td className="border border-border-strong p-4"></td>}
+            {showHandover && <td className="border border-border-strong p-4"></td>}
           </tr>
         </tfoot>
       </table>
 
       {/* 注意書き */}
-      <div className="mt-8 text-sm text-[#4b5563] print:mt-4">
+      <div className="mt-8 text-sm text-text-muted print:mt-4">
         <p>※ 同じ背景色でまとまっている単元は、まとめて1コマで授業を行います。</p>
       </div>
     </div>

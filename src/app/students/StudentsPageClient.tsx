@@ -19,6 +19,7 @@ import { ContextHelp } from '@/components/help/ContextHelp';
 import {
   StudentForm,
   StudentTable,
+  StudentCardList,
   DeleteConfirmDialog,
   StudentDetailModal,
 } from '@/components/students';
@@ -626,7 +627,7 @@ export function StudentsPageClient({
 
       {/* エラーメッセージ */}
       {errorMessage && (
-        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
+        <div className="mb-6 p-4 bg-danger-subtle border border-danger-subtle rounded-xl">
           <div className="flex items-center gap-2">
             <AlertCircle className="w-5 h-5 text-danger" />
             <p className="text-sm text-danger">{errorMessage}</p>
@@ -948,21 +949,37 @@ export function StudentsPageClient({
             </div>
           )}
 
-          {/* 生徒一覧テーブル */}
-          <StudentTable
-            students={rosterRows}
-            onEdit={!isTeacher ? handleOpenEditModal : undefined}
-            onDelete={!isTeacher ? handleOpenDeleteDialog : undefined}
-            onRowClick={handleOpenDetailModal}
-            onScores={handleOpenScores}
-            onProgress={handleOpenProgress}
-            onInterviews={handleOpenInterviews}
-            onSchedule={!isTeacher ? handleOpenSchedule : undefined}
-            isLoading={isLoading}
-            selectedIds={!isTeacher ? selectedIds : undefined}
-            onSelectionChange={!isTeacher ? setSelectedIds : undefined}
-            isTeacher={isTeacher}
-          />
+          {/* 生徒一覧: PC=テーブル / スマホ(lg未満)=カード（同一データ・同一ハンドラのアダプティブ表示） */}
+          <div className="hidden lg:block">
+            <StudentTable
+              students={rosterRows}
+              onEdit={!isTeacher ? handleOpenEditModal : undefined}
+              onDelete={!isTeacher ? handleOpenDeleteDialog : undefined}
+              onRowClick={handleOpenDetailModal}
+              onScores={handleOpenScores}
+              onProgress={handleOpenProgress}
+              onInterviews={handleOpenInterviews}
+              onSchedule={!isTeacher ? handleOpenSchedule : undefined}
+              isLoading={isLoading}
+              selectedIds={!isTeacher ? selectedIds : undefined}
+              onSelectionChange={!isTeacher ? setSelectedIds : undefined}
+              isTeacher={isTeacher}
+            />
+          </div>
+          <div className="lg:hidden">
+            <StudentCardList
+              students={rosterRows}
+              onEdit={!isTeacher ? handleOpenEditModal : undefined}
+              onDelete={!isTeacher ? handleOpenDeleteDialog : undefined}
+              onRowClick={handleOpenDetailModal}
+              onScores={handleOpenScores}
+              onProgress={handleOpenProgress}
+              onInterviews={handleOpenInterviews}
+              onSchedule={!isTeacher ? handleOpenSchedule : undefined}
+              isLoading={isLoading}
+              isTeacher={isTeacher}
+            />
+          </div>
 
           {/* ページネーション */}
           {rosterTotalPages > 1 && (

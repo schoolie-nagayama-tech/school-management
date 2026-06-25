@@ -95,40 +95,40 @@ export function ScoreListTable({
 
   if (students.length === 0) {
     return (
-      <div className="py-12 text-center text-sm text-gray-400 italic">成績データがありません</div>
+      <div className="py-12 text-center text-sm text-text-faint italic">成績データがありません</div>
     );
   }
 
   return (
     <div
-      className="overflow-auto border border-gray-200 rounded-lg"
+      className="overflow-auto border border-border rounded-lg"
       style={{ maxHeight: 'calc(100vh - 220px)' }}
     >
       <table className="w-full border-collapse text-xs">
         <thead className="sticky top-0 z-10">
-          <tr className="bg-gray-100">
-            <th className="border border-gray-200 px-2 py-2 text-left font-medium text-gray-700 bg-gray-100 w-[72px] min-w-[72px] max-w-[96px]">
+          <tr className="bg-surface-hover">
+            <th className="border border-border px-2 py-2 text-left font-medium text-text-muted bg-surface-hover w-[72px] min-w-[72px] max-w-[96px]">
               学校
             </th>
-            <th className="border border-gray-200 px-2 py-2 text-left font-medium text-gray-700 bg-gray-100 min-w-[48px]">
+            <th className="border border-border px-2 py-2 text-left font-medium text-text-muted bg-surface-hover min-w-[48px]">
               学年
             </th>
-            <th className="border border-gray-200 px-2 py-2 text-left font-medium text-gray-700 bg-gray-100 min-w-[80px]">
+            <th className="border border-border px-2 py-2 text-left font-medium text-text-muted bg-surface-hover min-w-[80px]">
               名前（リンク）
             </th>
-            <th className="border border-gray-200 px-2 py-2 text-center font-medium text-gray-700 bg-gray-100 min-w-[80px]">
+            <th className="border border-border px-2 py-2 text-center font-medium text-text-muted bg-surface-hover min-w-[80px]">
               テスト名
             </th>
             {columns.map((col) => (
               <th
                 key={col.key}
-                className={`border border-gray-200 px-2 py-2 text-center font-medium text-gray-700 min-w-[52px] whitespace-nowrap ${
-                  col.type === 'sum' || col.type === 'special' ? 'bg-gray-50' : 'bg-gray-100'
+                className={`border border-border px-2 py-2 text-center font-medium text-text-muted min-w-[52px] whitespace-nowrap ${
+                  col.type === 'sum' || col.type === 'special' ? 'bg-surface' : 'bg-surface-hover'
                 }`}
               >
                 {col.label}
                 {col.key === 'convertedNaishin' && naishinType && (
-                  <span className="block text-[10px] text-gray-400 font-normal">
+                  <span className="block text-[10px] text-text-faint font-normal">
                     ({naishinType === 'tokyo' ? '都立' : '神奈川'})
                   </span>
                 )}
@@ -193,19 +193,22 @@ function StudentGroup({
       {student.rows.map((row, rowIdx) => (
         <tr
           key={row.assessmentId}
-          className={`${rowIdx === rowCount - 1 ? 'border-b-2 border-b-gray-300' : ''} hover:bg-blue-50/30 transition-colors duration-150`}
+          className={`${rowIdx === rowCount - 1 ? 'border-b-2 border-b-border-strong' : ''} hover:bg-info/5 transition-colors duration-150`}
         >
           {/* 学校（最初の行のみ） */}
           {rowIdx === 0 && (
             <td
-              className="border border-gray-200 px-2 py-1 text-[11px] text-gray-700 bg-white align-top"
+              className="border border-border px-2 py-1 text-[11px] text-text-body bg-surface-raised align-top"
               rowSpan={rowCount}
             >
               <div className="leading-tight break-words" title={student.schoolName ?? undefined}>
-                {student.schoolName || <span className="text-gray-300">—</span>}
+                {student.schoolName || <span className="text-text-faint">—</span>}
               </div>
               {classroomName && (
-                <div className="text-[10px] text-gray-400 mt-0.5 break-words" title={classroomName}>
+                <div
+                  className="text-[10px] text-text-faint mt-0.5 break-words"
+                  title={classroomName}
+                >
                   {classroomName}
                 </div>
               )}
@@ -214,7 +217,7 @@ function StudentGroup({
           {/* 学年（最初の行のみ） */}
           {rowIdx === 0 && (
             <td
-              className="border border-gray-200 px-2 py-1 text-center text-xs font-medium text-gray-600 bg-white"
+              className="border border-border px-2 py-1 text-center text-xs font-medium text-text-muted bg-surface-raised"
               rowSpan={rowCount}
             >
               {getGradeLabel(student.grade)}
@@ -222,17 +225,17 @@ function StudentGroup({
           )}
           {/* 名前（最初の行のみ） */}
           {rowIdx === 0 && (
-            <td className="border border-gray-200 px-2 py-1 bg-white" rowSpan={rowCount}>
+            <td className="border border-border px-2 py-1 bg-surface-raised" rowSpan={rowCount}>
               <Link
                 href={`/students/${student.studentId}/scores`}
-                className="text-xs font-medium text-[#1e3a5f] hover:text-[#3b82f6] hover:underline whitespace-nowrap transition-colors duration-150"
+                className="text-xs font-medium text-ink hover:text-info hover:underline whitespace-nowrap transition-colors duration-150"
               >
                 {student.lastName} {student.firstName}
               </Link>
             </td>
           )}
           {/* 学期 / テスト名 */}
-          <td className="border border-gray-200 px-2 py-1 text-center text-xs text-gray-600 whitespace-nowrap">
+          <td className="border border-border px-2 py-1 text-center text-xs text-text-muted whitespace-nowrap">
             {row.label}
           </td>
           {/* スコアカラム */}

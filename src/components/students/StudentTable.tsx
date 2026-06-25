@@ -19,19 +19,19 @@ import { GRADE_LABELS, STATUS_LABELS } from '@/types/database';
 import type { SchedulePatternSummary } from '@/lib/api/students';
 import { DAY_OF_WEEK_LABELS } from '@/types/schedule';
 
-type StudentRow = Student & {
+export type StudentRow = Student & {
   subjects?: Subject[];
   schedulePatterns?: SchedulePatternSummary[];
 };
 
-// 状況を小さなドットで表示（在籍中=青、休会=黄、退会=グレー）
+// 状況を小さなドットで表示（在籍中=info青、休会=warning黄、退会=非アクティブグレー）
 const STATUS_DOT_COLORS: Record<Student['status'], string> = {
-  active: 'bg-[#3b82f6]',
-  inactive: 'bg-[#f59e0b]',
-  withdrawn: 'bg-[#d1d5db]',
+  active: 'bg-info',
+  inactive: 'bg-warning',
+  withdrawn: 'bg-border-strong',
 };
 
-function StatusDot({ status }: { status: Student['status'] }) {
+export function StatusDot({ status }: { status: Student['status'] }) {
   return (
     <span
       title={STATUS_LABELS[status]}
@@ -77,7 +77,7 @@ type PrimaryAction = {
   icon: LucideIcon;
 };
 
-function StudentRowActions({
+export function StudentRowActions({
   student,
   onEdit,
   onDelete,
@@ -167,7 +167,7 @@ function StudentRowActions({
             onClick={action.onClick}
             aria-label={action.label}
             title={action.label}
-            className="inline-flex flex-col items-center justify-center gap-0.5 px-1.5 sm:px-2 py-1.5 text-gray-600 hover:text-ink hover:bg-ink-subtle rounded-lg transition-colors duration-150"
+            className="inline-flex flex-col items-center justify-center gap-0.5 px-1.5 sm:px-2 py-1.5 text-text-muted hover:text-ink hover:bg-ink-subtle rounded-lg transition-colors duration-150"
           >
             <ActionIcon className="w-4 h-4" />
             <span className="hidden sm:block text-[10px] leading-none">{action.label}</span>
@@ -183,14 +183,14 @@ function StudentRowActions({
             aria-haspopup="menu"
             aria-expanded={open}
             title="編集・削除"
-            className="inline-flex items-center justify-center w-9 h-9 text-gray-600 hover:text-ink hover:bg-ink-subtle rounded-lg transition-colors duration-150"
+            className="inline-flex items-center justify-center w-9 h-9 text-text-muted hover:text-ink hover:bg-ink-subtle rounded-lg transition-colors duration-150"
           >
             <MoreVertical className="w-4 h-4" />
           </button>
           {open && (
             <div
               role="menu"
-              className="absolute right-0 top-full mt-1 min-w-[140px] bg-white rounded-lg border border-gray-200 shadow-lg z-10 py-1 dropdown-menu dropdown-menu-right"
+              className="absolute right-0 top-full mt-1 min-w-[140px] bg-surface-raised rounded-lg border border-border shadow-lg z-10 py-1 dropdown-menu dropdown-menu-right"
             >
               {menuItems.map((item) => (
                 <button
@@ -200,8 +200,8 @@ function StudentRowActions({
                   onClick={(e) => handleMenuClick(item, e)}
                   className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2.5 transition-colors ${
                     item.danger
-                      ? 'text-[#ef4444] hover:bg-[#ef4444]/10'
-                      : 'text-gray-700 hover:bg-ink-subtle hover:text-ink'
+                      ? 'text-danger hover:bg-danger/10'
+                      : 'text-text-body hover:bg-ink-subtle hover:text-ink'
                   }`}
                 >
                   {(() => {
@@ -239,8 +239,8 @@ const StudentTableRow = memo(function StudentTableRow({
   return (
     <tr
       className={`transition-colors duration-150 ${
-        isChecked ? 'bg-[#1e3a5f]/5' : ''
-      } ${onRowClick ? 'cursor-pointer hover:bg-gray-50' : ''}`}
+        isChecked ? 'bg-info/5' : ''
+      } ${onRowClick ? 'cursor-pointer hover:bg-surface-hover' : ''}`}
       onClick={() => onRowClick?.(student)}
     >
       {selectable && (
@@ -249,13 +249,13 @@ const StudentTableRow = memo(function StudentTableRow({
             type="checkbox"
             checked={isChecked}
             onChange={() => onToggle(student.id)}
-            className="w-4 h-4 rounded border-gray-300 text-[#1e3a5f] focus:ring-[#1e3a5f]/30"
+            className="w-4 h-4 rounded border-border text-info accent-info focus:ring-info/30"
           />
         </td>
       )}
       <td className="px-4 py-3 whitespace-nowrap">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-medium text-[#1a1a1a]">
+          <span className="text-sm font-medium text-text-heading">
             {student.last_name} {student.first_name}
           </span>
           {student.is_programming && (
@@ -270,30 +270,30 @@ const StudentTableRow = memo(function StudentTableRow({
           )}
         </div>
       </td>
-      <td className="hidden sm:table-cell px-4 py-3 text-sm text-[#4b5563]">
+      <td className="hidden sm:table-cell px-4 py-3 text-sm text-text-muted">
         {student.last_name_kana} {student.first_name_kana}
       </td>
-      <td className="px-4 py-3 text-sm text-[#4b5563] whitespace-nowrap">
+      <td className="px-4 py-3 text-sm text-text-muted whitespace-nowrap">
         {GRADE_LABELS[student.grade] || student.grade}
       </td>
-      <td className="hidden md:table-cell px-4 py-3 text-sm text-[#4b5563]">
-        {student.school_name || <span className="text-[#4b5563]/30">-</span>}
+      <td className="hidden md:table-cell px-4 py-3 text-sm text-text-muted">
+        {student.school_name || <span className="text-text-muted/30">-</span>}
       </td>
-      <td className="hidden lg:table-cell px-4 py-3 text-sm text-[#4b5563]">
+      <td className="hidden lg:table-cell px-4 py-3 text-sm text-text-muted">
         {schedulePatterns.length > 0 ? (
           <div className="flex flex-wrap gap-x-2 gap-y-0.5 items-center">
             {schedulePatterns.map((p, i) => (
               <span key={i} className="inline-flex text-xs">
-                <span className="text-[#6b7280]">{DAY_OF_WEEK_LABELS[p.day_of_week]}</span>
+                <span className="text-text-faint">{DAY_OF_WEEK_LABELS[p.day_of_week]}</span>
                 {p.subject_names?.[0] && (
-                  <span className="text-[#3b82f6] ml-0.5">{p.subject_names[0]}</span>
+                  <span className="text-info ml-0.5">{p.subject_names[0]}</span>
                 )}
               </span>
             ))}
-            <span className="text-[10px] text-[#9ca3af]">週{weeklyCount}回</span>
+            <span className="text-[10px] text-text-faint">週{weeklyCount}回</span>
           </div>
         ) : (
-          <span className="text-[#4b5563]/30">-</span>
+          <span className="text-text-muted/30">-</span>
         )}
       </td>
       <td className="px-4 py-3">
@@ -380,7 +380,7 @@ export function StudentTable({
 
   if (isLoading) {
     return (
-      <div className="bg-[#f8f8f8] rounded-xl border border-gray-200 p-8">
+      <div className="bg-surface rounded-xl border border-border p-8">
         <InlineLoading />
       </div>
     );
@@ -388,16 +388,18 @@ export function StudentTable({
 
   if (students.length === 0) {
     return (
-      <div className="bg-[#f8f8f8] rounded-xl border border-gray-200 p-8">
+      <div className="bg-surface rounded-xl border border-border p-8">
         <div className="text-center">
-          <Users className="mx-auto h-12 w-12 text-gray-300" />
+          <Users className="mx-auto h-12 w-12 text-text-faint" />
           {isTeacher ? (
             // 講師は登録・追加操作ができないため、ボタン名を案内しない中立的な文言にする
-            <p className="mt-4 text-gray-600">表示できる生徒がいません</p>
+            <p className="mt-4 text-text-muted">表示できる生徒がいません</p>
           ) : (
             <>
-              <p className="mt-4 text-gray-600">生徒が登録されていません</p>
-              <p className="text-sm text-gray-400">「新規登録」ボタンから生徒を追加してください</p>
+              <p className="mt-4 text-text-muted">生徒が登録されていません</p>
+              <p className="text-sm text-text-faint">
+                「新規登録」ボタンから生徒を追加してください
+              </p>
             </>
           )}
         </div>
@@ -406,11 +408,11 @@ export function StudentTable({
   }
 
   return (
-    <div className="bg-[#f8f8f8] rounded-xl border border-gray-200 overflow-hidden">
+    <div className="bg-surface rounded-xl border border-border overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
-            <tr className="bg-gray-50 border-b border-gray-200">
+            <tr className="bg-surface-hover border-b border-border">
               {selectable && (
                 <th className="hidden sm:table-cell px-3 py-3 w-10">
                   <input
@@ -420,32 +422,32 @@ export function StudentTable({
                       if (el) el.indeterminate = someSelected && !allSelected;
                     }}
                     onChange={handleToggleAll}
-                    className="w-4 h-4 rounded border-gray-300 text-[#1e3a5f] focus:ring-[#1e3a5f]/30"
+                    className="w-4 h-4 rounded border-border text-info accent-info focus:ring-info/30"
                   />
                 </th>
               )}
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap">
+              <th className="px-4 py-3 text-left text-xs font-semibold text-text-muted uppercase tracking-wider whitespace-nowrap">
                 氏名
               </th>
-              <th className="hidden sm:table-cell px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap">
+              <th className="hidden sm:table-cell px-4 py-3 text-left text-xs font-semibold text-text-muted uppercase tracking-wider whitespace-nowrap">
                 フリガナ
               </th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap">
+              <th className="px-4 py-3 text-left text-xs font-semibold text-text-muted uppercase tracking-wider whitespace-nowrap">
                 学年
               </th>
-              <th className="hidden md:table-cell px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap">
+              <th className="hidden md:table-cell px-4 py-3 text-left text-xs font-semibold text-text-muted uppercase tracking-wider whitespace-nowrap">
                 学校名
               </th>
-              <th className="hidden lg:table-cell px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap">
+              <th className="hidden lg:table-cell px-4 py-3 text-left text-xs font-semibold text-text-muted uppercase tracking-wider whitespace-nowrap">
                 通塾日程
               </th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap w-6"></th>
-              <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap">
+              <th className="px-4 py-3 text-left text-xs font-semibold text-text-muted uppercase tracking-wider whitespace-nowrap w-6"></th>
+              <th className="px-4 py-3 text-right text-xs font-semibold text-text-muted uppercase tracking-wider whitespace-nowrap">
                 操作
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-border-subtle">
             {students.map((student) => (
               <StudentTableRow
                 key={student.id}
@@ -467,11 +469,11 @@ export function StudentTable({
       </div>
 
       {/* フッター：件数表示 */}
-      <div className="px-4 py-3 bg-gray-50 border-t border-gray-200">
-        <p className="text-sm text-[#4b5563]">
+      <div className="px-4 py-3 bg-surface-hover border-t border-border">
+        <p className="text-sm text-text-muted">
           全 <span className="font-semibold">{students.length}</span> 件
           {selectable && selectedIds.size > 0 && (
-            <span className="ml-2 text-[#1e3a5f] font-medium">（{selectedIds.size}件選択中）</span>
+            <span className="ml-2 text-ink font-medium">（{selectedIds.size}件選択中）</span>
           )}
         </p>
       </div>
