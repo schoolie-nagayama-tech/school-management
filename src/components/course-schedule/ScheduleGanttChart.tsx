@@ -220,7 +220,13 @@ function TaskNameCell({
   const [showLinkMenu, setShowLinkMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const linkBtnRef = useRef<HTMLButtonElement>(null);
-  const [menuPos, setMenuPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
+  // リンクメニューの配置。openUp=true のとき下に収まらないので上向きに開く（画面下から bottom でアンカー）。
+  const [menuPos, setMenuPos] = useState<{
+    top: number;
+    left: number;
+    bottomOffset: number;
+    openUp: boolean;
+  }>({ top: 0, left: 0, bottomOffset: 0, openUp: false });
 
   useEffect(() => {
     if (!showLinkMenu) return;
@@ -241,7 +247,15 @@ function TaskNameCell({
   const openLinkMenu = useCallback(() => {
     if (linkBtnRef.current) {
       const rect = linkBtnRef.current.getBoundingClientRect();
-      setMenuPos({ top: rect.bottom + 4, left: Math.max(rect.right - 180, 8) });
+      // メニュー高さの上限は max-h-48(192px)。下に収まらなければ上向きに開く。
+      const ESTIMATED_MENU_HEIGHT = 200;
+      const openUp = window.innerHeight - rect.bottom < ESTIMATED_MENU_HEIGHT;
+      setMenuPos({
+        top: rect.bottom + 4,
+        left: Math.max(rect.right - 180, 8),
+        bottomOffset: window.innerHeight - rect.top + 4,
+        openUp,
+      });
     }
     setShowLinkMenu((v) => !v);
   }, []);
@@ -308,7 +322,11 @@ function TaskNameCell({
               <div
                 ref={menuRef}
                 className="fixed z-[9999] bg-white border border-gray-200 rounded-lg shadow-xl py-1 min-w-[180px] max-h-48 overflow-y-auto"
-                style={{ top: menuPos.top, left: menuPos.left }}
+                style={
+                  menuPos.openUp
+                    ? { bottom: menuPos.bottomOffset, left: menuPos.left }
+                    : { top: menuPos.top, left: menuPos.left }
+                }
               >
                 <div className="px-2 py-1 text-[9px] text-gray-400 border-b border-gray-100">
                   進捗項目をリンク
