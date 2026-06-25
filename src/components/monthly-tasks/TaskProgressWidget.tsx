@@ -47,18 +47,23 @@ function formatCoursePrepMessage(task: CoursePrepWidgetTask): string {
 const CELEBRATION_STYLE_ID = 'task-progress-celebration';
 const CELEBRATION_CSS = `
 @keyframes confetti-burst {
-  0% { transform: translate(-50%, -50%) scale(0); opacity: 1; }
+  0% { transform: translate(-50%, -50%) scale(0.96); opacity: 1; }
   60% { opacity: 1; }
   100% { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(1); opacity: 0; }
 }
 @keyframes badge-pop {
-  0% { transform: scale(0) rotate(-12deg); opacity: 0; }
+  0% { transform: scale(0.96) rotate(-12deg); opacity: 0; }
   60% { transform: scale(1.15) rotate(2deg); opacity: 1; }
   100% { transform: scale(1) rotate(0deg); opacity: 1; }
 }
 @keyframes bar-shimmer {
   0% { background-position: -200% 0; }
   100% { background-position: 200% 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .confetti-particle { animation: none !important; opacity: 0 !important; }
+  [style*="badge-pop"] { animation: none !important; transform: none !important; opacity: 1 !important; }
+  [style*="bar-shimmer"] { animation: none !important; }
 }
 `;
 
@@ -84,7 +89,7 @@ function CompletionParticles() {
       {particles.map((p, i) => (
         <span
           key={i}
-          className="absolute left-1/2 top-1/2 rounded-full"
+          className="confetti-particle absolute left-1/2 top-1/2 rounded-full"
           style={
             {
               width: p.size,

@@ -121,7 +121,8 @@ export default function InquiryForm({ schoolCode, schoolName, src }: InquiryForm
   // ---- 送信完了画面 ----
   if (formState === 'done') {
     return (
-      <div className="bg-white rounded-2xl border border-[#e5e7eb] p-8 text-center">
+      // 送信完了カード: stagger-item で軽くフェードイン
+      <div className="stagger-item bg-white rounded-2xl border border-[#e5e7eb] p-8 text-center">
         <div className="w-14 h-14 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
           <svg
             className="w-7 h-7 text-green-600"
@@ -299,10 +300,10 @@ export default function InquiryForm({ schoolCode, schoolName, src }: InquiryForm
       <button
         type="submit"
         disabled={isSubmitting}
-        className={`w-full py-4 rounded-xl text-base font-bold transition-all duration-150 ${
+        className={`w-full py-4 rounded-xl text-base font-bold transition-[transform,background-color,opacity] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] ${
           isSubmitting
             ? 'bg-[#9ca3af] text-white cursor-not-allowed'
-            : 'bg-[#1a1a1a] text-white hover:bg-[#374151] active:scale-[0.98]'
+            : 'bg-[#1a1a1a] text-white hover:bg-[#374151] active:scale-[0.97]'
         }`}
       >
         {isSubmitting ? '送信中...' : '送信する'}

@@ -46,7 +46,7 @@ export function IntentTagPicker({
                   onChange(t);
                   setOpen(false);
                 }}
-                className={`w-full px-3 py-1.5 text-left text-xs hover:bg-[#f9fafb] ${currentTag === t ? 'bg-[#eff6ff] font-semibold' : ''}`}
+                className={`w-full px-3 py-1.5 text-left text-xs hover:bg-[#f9fafb] transition-[background-color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] ${currentTag === t ? 'bg-[#eff6ff] font-semibold' : ''}`}
               >
                 {t}
               </button>
@@ -57,7 +57,7 @@ export function IntentTagPicker({
                   onChange(null);
                   setOpen(false);
                 }}
-                className="w-full px-3 py-1.5 text-left text-[11px] text-[#6b7280] hover:bg-red-50 border-t border-[#f3f4f6]"
+                className="w-full px-3 py-1.5 text-left text-[11px] text-[#6b7280] hover:bg-red-50 border-t border-[#f3f4f6] transition-[background-color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)]"
               >
                 指導意図を外す
               </button>

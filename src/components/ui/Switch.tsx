@@ -19,7 +19,8 @@ export const Switch = forwardRef<HTMLInputElement, SwitchProps>(
           className="sr-only peer"
           {...props}
         />
-        <div className="w-11 h-6 bg-border peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-[transform] after:duration-150 after:ease-out transition-colors duration-150 peer-checked:bg-info"></div>
+        {/* after:ease-[...]: --ease-out トークンと同じカーブでつまみの移動を揃える */}
+        <div className="w-11 h-6 bg-border peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-[transform] after:duration-150 after:ease-[cubic-bezier(0.23,1,0.32,1)] transition-colors duration-150 peer-checked:bg-info"></div>
       </label>
     );
   }

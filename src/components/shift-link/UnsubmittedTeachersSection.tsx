@@ -25,7 +25,7 @@ export function UnsubmittedTeachersSection({
 
   return (
     <details className="bg-surface-raised rounded-xl border border-border overflow-hidden mb-6">
-      <summary className="cursor-pointer px-4 py-3 font-medium text-text-heading hover:bg-surface-hover transition-colors">
+      <summary className="cursor-pointer px-4 py-3 font-medium text-text-heading hover:bg-surface-hover active:bg-surface-hover/70 transition-[background-color] duration-150">
         未提出講師
         <span className="ml-2 text-sm text-text-muted">
           {isLoading ? '...' : `${unsubmitted.length} 名 / 教室登録 ${teacherAccounts.length} 名`}

@@ -332,7 +332,7 @@ export function NotificationFeed({
                 <button
                   key={chip.key}
                   onClick={() => setFilter(chip.key)}
-                  className={`flex items-center gap-1 text-[11px] h-6 px-2 rounded transition-colors whitespace-nowrap ${
+                  className={`flex items-center gap-1 text-[11px] h-6 px-2 rounded transition-[color,background-color,transform] duration-150 ease-out active:scale-[0.97] whitespace-nowrap ${
                     filter === chip.key
                       ? 'bg-[#1e3a5f] text-white font-medium'
                       : 'text-gray-500 hover:bg-gray-100'
@@ -364,7 +364,7 @@ export function NotificationFeed({
             {/* 一括確認 */}
             <button
               onClick={handleDismissAll}
-              className="flex items-center gap-0.5 text-[11px] text-gray-400 hover:text-gray-600 px-1.5 py-1 rounded hover:bg-gray-50 transition-colors whitespace-nowrap"
+              className="flex items-center gap-0.5 text-[11px] text-gray-400 hover:text-gray-600 px-1.5 py-1 rounded hover:bg-gray-50 transition-[color,background-color,transform] duration-150 ease-out active:scale-[0.97] whitespace-nowrap"
               title="すべて確認済みにする"
             >
               <CheckCheck className="w-3 h-3" />
@@ -374,7 +374,7 @@ export function NotificationFeed({
             {/* 折りたたみ */}
             <button
               onClick={() => setIsExpanded(!isExpanded)}
-              className="text-gray-400 hover:text-gray-600 transition-colors p-0.5"
+              className="text-gray-400 hover:text-gray-600 transition-[color,transform] duration-150 ease-out active:scale-[0.97] p-0.5"
             >
               {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
             </button>

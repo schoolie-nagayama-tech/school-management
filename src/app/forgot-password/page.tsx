@@ -51,7 +51,7 @@ export default function ForgotPasswordPage() {
               </p>
               <Link
                 href="/login"
-                className="inline-block px-6 py-3 bg-info text-white font-bold rounded-lg hover:bg-info/80 transition-colors duration-150"
+                className="inline-block px-6 py-3 bg-info text-white font-bold rounded-lg hover:bg-info/80 active:scale-[0.97] transition-[background-color,transform] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)]"
               >
                 ログイン画面に戻る
               </Link>
@@ -81,7 +81,7 @@ export default function ForgotPasswordPage() {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full py-3 bg-info text-white font-bold rounded-lg hover:bg-info/80 transition-colors disabled:opacity-50"
+                  className="w-full py-3 bg-info text-white font-bold rounded-lg hover:bg-info/80 active:scale-[0.97] transition-[background-color,transform] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] disabled:opacity-50"
                 >
                   {isLoading ? '送信中...' : 'リセットメールを送信'}
                 </button>

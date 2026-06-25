@@ -923,6 +923,16 @@ a:focus-visible {
   }
 }
 
+/* ドロワー（右端から）スライドイン。--ease-drawer と合わせて使う */
+@keyframes drawer-slide-in {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .feed-card-enter {
     animation: none;

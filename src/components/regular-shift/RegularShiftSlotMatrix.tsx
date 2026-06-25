@@ -29,7 +29,7 @@ function ToggleButton({ onClick, title }: { onClick: () => void; title: string }
       type="button"
       onClick={onClick}
       title={title}
-      className="w-5 h-5 rounded-full bg-gray-300 hover:bg-gray-400 transition-colors flex items-center justify-center shrink-0"
+      className="w-5 h-5 rounded-full bg-gray-300 hover:bg-gray-400 active:scale-[0.97] transition-[transform,background-color] duration-150 flex items-center justify-center shrink-0"
       aria-label={title}
     />
   );

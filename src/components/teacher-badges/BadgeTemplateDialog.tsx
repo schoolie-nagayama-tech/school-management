@@ -71,11 +71,11 @@ export function BadgeTemplateDialog({ open, onClose, onSave, initial }: BadgeTem
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+      className="modal-overlay fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto"
+        className="modal-panel bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <form onSubmit={handleSubmit}>
@@ -139,7 +139,7 @@ export function BadgeTemplateDialog({ open, onClose, onSave, initial }: BadgeTem
                     type="button"
                     onClick={() => setIcon(ic)}
                     className={`
-                      flex items-center justify-center w-10 h-10 rounded-lg border-2 transition-[border-color,background-color,color,transform] duration-150 ease-out
+                      flex items-center justify-center w-10 h-10 rounded-lg border-2 transition-[border-color,background-color,color,transform] duration-150 ease-out active:scale-[0.97]
                       ${
                         icon === ic
                           ? 'border-sky-500 bg-sky-50 text-sky-600 scale-110'

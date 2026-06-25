@@ -654,7 +654,7 @@ export default function LessonReportFormPage() {
                     {!u.is_main && (
                       <button
                         type="button"
-                        className="text-text-faint hover:text-danger"
+                        className="text-text-faint hover:text-danger transition-colors duration-150 active:scale-[0.90]"
                         onClick={() => removeUnit(idx)}
                         title="このセットを削除"
                       >
@@ -756,7 +756,7 @@ export default function LessonReportFormPage() {
             <button
               type="button"
               onClick={() => addUnit(false)}
-              className="w-full py-2 border-2 border-dashed border-info rounded-md text-sm text-info hover:bg-info-subtle"
+              className="w-full py-2 border-2 border-dashed border-info rounded-md text-sm text-info hover:bg-info-subtle transition-colors duration-150 active:scale-[0.98] ease-[cubic-bezier(0.23,1,0.32,1)]"
             >
               <Plus className="inline w-4 h-4 mr-1" />
               サブ教材セットを追加（補助教材）
@@ -821,7 +821,7 @@ export default function LessonReportFormPage() {
             <button
               type="button"
               onClick={autoDistributeHomeworkDates}
-              className="ml-2 px-2 py-0.5 text-xs bg-info text-white rounded"
+              className="ml-2 px-2 py-0.5 text-xs bg-info text-white rounded transition-[opacity,transform] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.95]"
             >
               <Wand2 className="inline w-3 h-3 mr-1" />
               次回授業日まで日付を入れる
@@ -846,7 +846,7 @@ export default function LessonReportFormPage() {
                 <button
                   type="button"
                   onClick={() => removeHomeworkRow(idx)}
-                  className="text-text-faint hover:text-danger"
+                  className="text-text-faint hover:text-danger transition-colors duration-150 active:scale-[0.90]"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -855,7 +855,7 @@ export default function LessonReportFormPage() {
             <button
               type="button"
               onClick={addHomeworkRow}
-              className="w-full py-2 border-2 border-dashed border-info rounded text-sm text-info hover:bg-info-subtle"
+              className="w-full py-2 border-2 border-dashed border-info rounded text-sm text-info hover:bg-info-subtle transition-colors duration-150 active:scale-[0.98] ease-[cubic-bezier(0.23,1,0.32,1)]"
             >
               <Plus className="inline w-4 h-4 mr-1" />
               宿題枠を追加
@@ -997,14 +997,14 @@ function TestRow({
         <button
           type="button"
           onClick={() => onPassedChange(true)}
-          className={`flex-1 py-1 text-xs font-bold ${passed === true ? 'bg-success text-white' : 'text-text-muted'}`}
+          className={`flex-1 py-1 text-xs font-bold transition-[background-color,color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97] ${passed === true ? 'bg-success text-white' : 'text-text-muted'}`}
         >
           合格
         </button>
         <button
           type="button"
           onClick={() => onPassedChange(false)}
-          className={`flex-1 py-1 text-xs font-bold ${passed === false ? 'bg-danger text-white' : 'text-text-muted'}`}
+          className={`flex-1 py-1 text-xs font-bold transition-[background-color,color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97] ${passed === false ? 'bg-danger text-white' : 'text-text-muted'}`}
         >
           不合格
         </button>

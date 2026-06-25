@@ -57,7 +57,7 @@ export function ContextHelp({ topics, searchQuery, position = 'inline' }: Contex
         ref={buttonRef}
         onClick={() => setIsOpen(!isOpen)}
         className={`
-          inline-flex items-center justify-center rounded-full border transition-all duration-200
+          inline-flex items-center justify-center rounded-full border transition-[background-color,border-color,color,transform] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.93]
           ${
             isOpen
               ? 'bg-[var(--primary)] text-white border-[var(--primary)] shadow-lg'
@@ -75,7 +75,7 @@ export function ContextHelp({ topics, searchQuery, position = 'inline' }: Contex
           ref={panelRef}
           className={`
             absolute z-50 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700
-            rounded-xl shadow-xl overflow-hidden
+            rounded-xl shadow-xl overflow-hidden dropdown-menu-right
             ${position === 'fixed' ? 'bottom-16 right-0 w-80' : 'top-full mt-2 right-0 w-80'}
           `}
         >

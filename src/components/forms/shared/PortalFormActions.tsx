@@ -25,7 +25,7 @@ export function PortalFormActions({
           type="button"
           onClick={onReset}
           disabled={isSubmitting}
-          className="px-5 py-3 text-sm text-[#4b5563] font-medium rounded-lg border border-[#e5e7eb] hover:bg-[#f8f8f8] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="px-5 py-3 text-sm text-[#4b5563] font-medium rounded-lg border border-[#e5e7eb] hover:bg-[#f8f8f8] active:scale-[0.97] transition-[transform,background-color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] disabled:opacity-50 disabled:cursor-not-allowed"
         >
           リセット
         </button>
@@ -33,7 +33,7 @@ export function PortalFormActions({
       <button
         type="submit"
         disabled={isSubmitting || submitDisabled}
-        className="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 bg-[color:var(--primary)] text-white font-semibold rounded-lg hover:bg-[color:var(--primary-dark)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        className="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 bg-[color:var(--primary)] text-white font-semibold rounded-lg hover:bg-[color:var(--primary-dark)] active:scale-[0.97] transition-[transform,background-color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {isSubmitting && (
           <svg

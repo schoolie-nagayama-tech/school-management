@@ -363,7 +363,7 @@ export default function ProposalList() {
               <button
                 onClick={handleBulkPrint}
                 disabled={printLoading}
-                className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium border border-border-default text-text-body rounded-lg hover:bg-surface-hover active:scale-[0.97] transition-[colors,transform] duration-150 disabled:opacity-50"
+                className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium border border-border-default text-text-body rounded-lg hover:bg-surface-hover active:scale-[0.97] transition-[background-color,transform] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] disabled:opacity-50"
               >
                 {printLoading ? (
                   <InlineLoading size="sm" label="読み込み中..." />
@@ -425,7 +425,7 @@ export default function ProposalList() {
       {/* 一括バー: 提案済みは全スタッフ可、公開は教室長以上のみ */}
       {!loading && publishable.length > 0 && (
         <div
-          className={`mb-4 flex items-center gap-3 px-3.5 py-2 rounded-xl border transition-all duration-200 ${
+          className={`mb-4 flex items-center gap-3 px-3.5 py-2 rounded-xl border transition-[background-color,border-color,box-shadow] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] ${
             hasSelection
               ? 'bg-emerald-50 border-emerald-200 shadow-sm'
               : 'bg-surface-raised border-border-subtle'
@@ -474,7 +474,7 @@ export default function ProposalList() {
                 <button
                   onClick={handleBulkPublish}
                   disabled={publishing || sending || selectedCount === 0}
-                  className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-bold bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 active:scale-[0.97] transition-[colors,transform] duration-150 disabled:opacity-50"
+                  className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-bold bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 active:scale-[0.97] transition-[background-color,transform] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] disabled:opacity-50"
                 >
                   {publishing ? <InlineLoading size="sm" label="公開中..." /> : `公開する`}
                 </button>
@@ -499,13 +499,20 @@ export default function ProposalList() {
       {loading ? (
         <Loading size="md" />
       ) : proposals.length === 0 ? (
-        <div className="py-12 text-center text-sm text-text-faint">提案書はまだありません</div>
+        <div
+          className="stagger-item py-12 text-center text-sm text-text-faint"
+          style={{ '--stagger-index': 0 } as React.CSSProperties}
+        >
+          提案書はまだありません
+        </div>
       ) : (
         <div className="space-y-6">
-          {sortedTextbooks.map(([tbId, { name, subject, proposals: tbProposals }]) => (
+          {sortedTextbooks.map(([tbId, { name, subject, proposals: tbProposals }], i) => (
             <div
               key={tbId}
-              className="bg-surface-raised rounded-xl border border-border-default overflow-hidden"
+              // stagger-item: テキストグループ単位で40ms刻みフェードイン（最大8グループでクランプ）
+              className="stagger-item bg-surface-raised rounded-xl border border-border-default overflow-hidden"
+              style={{ '--stagger-index': Math.min(i, 7) } as React.CSSProperties}
             >
               <div className="px-4 py-3 border-b border-border-subtle">
                 <div className="font-semibold text-sm text-text-heading flex items-center gap-1.5">

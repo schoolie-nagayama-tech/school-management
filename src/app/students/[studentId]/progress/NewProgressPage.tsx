@@ -378,7 +378,7 @@ export default function NewProgressPage() {
           {!isTeacher && (
             <Link
               href={`/students/${studentId}/proposals`}
-              className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium border border-[#e5e7eb] text-[#4b5563] rounded-lg hover:bg-[#f3f4f6] active:scale-[0.97] transition-[colors,transform] duration-150"
+              className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium border border-[#e5e7eb] text-[#4b5563] rounded-lg hover:bg-[#f3f4f6] active:scale-[0.97] transition-[background-color,transform] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)]"
             >
               <FileText className="w-3.5 h-3.5" />
               講習提案
@@ -387,7 +387,7 @@ export default function NewProgressPage() {
           {/* テスト対策は講師も提案作成の業務があるため全ロールに表示 */}
           <Link
             href={`/students/${studentId}/test-prep`}
-            className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium border border-[#e5e7eb] text-[#4b5563] rounded-lg hover:bg-[#f3f4f6] active:scale-[0.97] transition-[colors,transform] duration-150"
+            className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium border border-[#e5e7eb] text-[#4b5563] rounded-lg hover:bg-[#f3f4f6] active:scale-[0.97] transition-[background-color,transform] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)]"
           >
             <FileText className="w-3.5 h-3.5" />
             テスト対策

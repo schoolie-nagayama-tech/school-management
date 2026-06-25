@@ -249,10 +249,12 @@ export default function BookingClient({ token }: BookingClientProps) {
           </div>
         ) : (
           <div className="space-y-5">
-            {Array.from(slotsByDate.entries()).map(([date, daySlots]) => (
+            {Array.from(slotsByDate.entries()).map(([date, daySlots], index) => (
+              // stagger-item: 日付グループカードを 40ms 刻みでフェードイン
               <div
                 key={date}
-                className="bg-white rounded-2xl border border-[#e5e7eb] overflow-hidden"
+                className="stagger-item bg-white rounded-2xl border border-[#e5e7eb] overflow-hidden"
+                style={{ '--stagger-index': Math.min(index, 7) } as React.CSSProperties}
               >
                 {/* 日付見出し */}
                 <div className="px-4 py-3 bg-[#f9fafb] border-b border-[#e5e7eb]">
@@ -273,7 +275,9 @@ export default function BookingClient({ token }: BookingClientProps) {
                         }}
                         disabled={isConfirming}
                         className={`
-                          flex items-center gap-1.5 px-4 py-2 rounded-xl border text-sm font-medium transition-colors duration-150
+                          flex items-center gap-1.5 px-4 py-2 rounded-xl border text-sm font-medium
+                          transition-[transform,background-color,border-color,color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)]
+                          active:scale-[0.97]
                           ${
                             isSelected
                               ? 'bg-[#1a1a1a] text-white border-[#1a1a1a]'
@@ -306,7 +310,7 @@ export default function BookingClient({ token }: BookingClientProps) {
               type="button"
               onClick={handleConfirm}
               disabled={isConfirming}
-              className="w-full py-3 rounded-xl bg-[#1a1a1a] text-white text-sm font-semibold hover:bg-[#333] transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full py-3 rounded-xl bg-[#1a1a1a] text-white text-sm font-semibold hover:bg-[#333] active:scale-[0.97] transition-[transform,background-color,opacity] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isConfirming ? '予約処理中...' : 'この日時で予約する'}
             </button>

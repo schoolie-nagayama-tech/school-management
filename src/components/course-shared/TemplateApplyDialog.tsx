@@ -56,8 +56,8 @@ export function TemplateApplyDialog({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-xl border border-gray-200 shadow-2xl max-w-md w-full mx-4">
+    <div className="modal-overlay fixed inset-0 flex items-center justify-center z-50">
+      <div className="modal-panel bg-white rounded-xl border border-gray-200 shadow-2xl max-w-md w-full mx-4">
         <div className="px-6 py-4 border-b border-gray-200">
           <h3 className="text-lg font-bold text-[#1e3a5f]">テンプレートから作成</h3>
           <p className="text-sm text-gray-500 mt-1">テンプレートを選択して項目を初期化します</p>
@@ -72,7 +72,7 @@ export function TemplateApplyDialog({
               {templates.map((t) => (
                 <label
                   key={t.id}
-                  className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                  className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-[border-color,background-color,transform] duration-150 ease-out active:scale-[0.99] ${
                     selectedId === t.id
                       ? 'border-[#3b82f6] bg-blue-50'
                       : 'border-gray-200 hover:bg-gray-50'
@@ -126,7 +126,7 @@ export function TemplateApplyDialog({
         <div className="px-6 py-4 border-t border-gray-200 flex justify-end gap-2">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 rounded-lg"
+            className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 rounded-lg transition-[background-color,transform] duration-150 ease-out active:scale-[0.97]"
             disabled={applying || isLoading}
           >
             キャンセル
@@ -134,7 +134,7 @@ export function TemplateApplyDialog({
           <button
             onClick={handleApply}
             disabled={!selectedId || applying || isLoading || templates.length === 0}
-            className="px-4 py-2 text-sm bg-[#1e3a5f] text-white rounded-lg hover:bg-[#2c5282] disabled:opacity-50"
+            className="px-4 py-2 text-sm bg-[#1e3a5f] text-white rounded-lg hover:bg-[#2c5282] disabled:opacity-50 transition-[background-color,transform] duration-150 ease-out active:scale-[0.97]"
           >
             {applying ? '適用中...' : '適用'}
           </button>

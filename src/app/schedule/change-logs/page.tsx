@@ -126,7 +126,7 @@ export default function ScheduleChangeLogsPage() {
                   key={opt.key}
                   type="button"
                   onClick={() => setFilterAction(opt.key)}
-                  className={`px-2 py-1 text-xs rounded border transition-colors ${
+                  className={`px-2 py-1 text-xs rounded border transition-[background-color,color,border-color,transform] duration-150 active:scale-[0.97] ${
                     filterAction === opt.key
                       ? 'bg-info text-white border-info'
                       : 'bg-white text-text-muted border-border-default hover:bg-surface'

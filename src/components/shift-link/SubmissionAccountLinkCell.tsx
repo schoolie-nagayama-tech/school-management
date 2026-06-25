@@ -40,7 +40,7 @@ export function SubmissionAccountLinkCell({
           type="button"
           disabled={isUpdating}
           onClick={() => onChange(null)}
-          className="text-xs text-text-muted hover:text-red-600 hover:underline disabled:opacity-50"
+          className="text-xs text-text-muted hover:text-red-600 hover:underline active:scale-[0.97] transition-[transform,color] duration-150 disabled:opacity-50"
         >
           {isUpdating ? '更新中...' : '解除'}
         </button>
@@ -57,7 +57,7 @@ export function SubmissionAccountLinkCell({
           type="button"
           disabled={isUpdating}
           onClick={() => onChange(null)}
-          className="text-xs text-text-muted hover:text-red-600 hover:underline disabled:opacity-50"
+          className="text-xs text-text-muted hover:text-red-600 hover:underline active:scale-[0.97] transition-[transform,color] duration-150 disabled:opacity-50"
         >
           {isUpdating ? '更新中...' : '解除'}
         </button>
@@ -102,7 +102,7 @@ export function SubmissionAccountLinkCell({
           type="button"
           disabled={isUpdating}
           onClick={() => setOpen(true)}
-          className="text-xs px-2 py-1 rounded border border-border text-text-body hover:bg-surface hover:text-text-heading disabled:opacity-50"
+          className="text-xs px-2 py-1 rounded border border-border text-text-body hover:bg-surface hover:text-text-heading active:scale-[0.97] transition-[transform,background-color,color] duration-150 disabled:opacity-50"
         >
           {isUpdating ? '更新中...' : '未リンク（紐づける）'}
         </button>

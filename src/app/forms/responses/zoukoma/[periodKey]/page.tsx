@@ -334,28 +334,28 @@ export default function ZoukomaResponsePage() {
                           <div className="flex gap-2">
                             <button
                               onClick={() => setDetailResponse(response)}
-                              className="text-sm text-text-body hover:text-text-heading transition-colors duration-150"
+                              className="px-3 py-1 text-xs bg-surface-hover text-text-body rounded hover:bg-border active:scale-[0.97] transition-[transform,background-color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)]"
                             >
                               詳細
                             </button>
                             {response.linked_student_id ? (
                               <button
                                 onClick={() => handleUnlinkStudent(response.id)}
-                                className="text-sm text-danger hover:text-red-700 transition-colors duration-150"
+                                className="px-3 py-1 text-xs bg-surface-hover text-text-body rounded hover:bg-border active:scale-[0.97] transition-[transform,background-color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)]"
                               >
                                 解除
                               </button>
                             ) : (
                               <button
                                 onClick={() => handleOpenLinkModal(response)}
-                                className="text-sm text-text-body hover:text-text-heading transition-colors duration-150"
+                                className="px-3 py-1 text-xs bg-surface-hover text-text-body rounded hover:bg-border active:scale-[0.97] transition-[transform,background-color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)]"
                               >
                                 紐付け
                               </button>
                             )}
                             {permissions?.canDeleteFormResponses && (
                               <button
-                                className="px-3 py-1 text-xs bg-surface-hover text-[#ef4444] rounded hover:bg-[#ef4444]/10 transition-colors duration-150"
+                                className="px-3 py-1 text-xs bg-surface-hover text-danger rounded hover:bg-danger-subtle active:scale-[0.97] transition-[transform,background-color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)]"
                                 onClick={() => handleDelete(response.id)}
                                 disabled={isProcessing}
                               >

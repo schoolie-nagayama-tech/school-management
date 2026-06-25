@@ -85,7 +85,7 @@ export const StudentCard = React.memo(function StudentCard({
       }
       className={`
         px-1.5 py-1 rounded-lg border text-left shadow-sm
-        cursor-pointer hover:shadow-md transition-[box-shadow,border-color,background-color] duration-150
+        cursor-pointer hover:shadow-md active:scale-[0.97] transition-[box-shadow,border-color,background-color,transform] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)]
         ${isDraft ? 'border-dashed border-2 border-info bg-info-subtle' : colorClass}
         ${isTransferredOut ? 'opacity-60 line-through' : ''}
       `}

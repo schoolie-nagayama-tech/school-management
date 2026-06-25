@@ -38,7 +38,7 @@ export function ThemeToggle() {
             title={label}
             onClick={() => setPreference(value)}
             className={`
-              flex items-center justify-center w-7 h-7 rounded-md transition-colors
+              flex items-center justify-center w-7 h-7 rounded-md transition-[color,background-color,transform] duration-150 ease-out active:scale-[0.97]
               ${
                 active
                   ? 'bg-[color:var(--surface-raised)] text-[color:var(--text-heading)] shadow-sm'

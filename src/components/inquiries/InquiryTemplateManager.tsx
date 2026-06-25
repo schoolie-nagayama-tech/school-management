@@ -407,10 +407,10 @@ export function InquiryTemplateManager({ onChanged }: InquiryTemplateManagerProp
               role="switch"
               aria-checked={formIsActive}
               onClick={() => setFormIsActive((v) => !v)}
-              className={`relative inline-flex w-10 h-6 rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary ${formIsActive ? 'bg-primary' : 'bg-border'}`}
+              className={`relative inline-flex w-10 h-6 rounded-full transition-[transform,background-color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.95] focus:outline-none focus:ring-2 focus:ring-primary ${formIsActive ? 'bg-primary' : 'bg-border'}`}
             >
               <span
-                className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white shadow transition-transform duration-200 ${formIsActive ? 'translate-x-4' : 'translate-x-0'}`}
+                className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white shadow transition-transform duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] ${formIsActive ? 'translate-x-4' : 'translate-x-0'}`}
               />
             </button>
             <span className="text-sm text-text-body">{formIsActive ? '有効' : '無効'}</span>

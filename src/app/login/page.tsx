@@ -150,7 +150,7 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="w-full px-3 py-2.5 text-sm border border-border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-colors"
+                className="w-full px-3 py-2.5 text-sm border border-border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-[border-color,box-shadow]"
                 placeholder="メールアドレスまたはユーザーID"
               />
             </div>
@@ -162,7 +162,7 @@ export default function LoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  className="w-full px-3 py-2.5 pr-10 text-sm border border-border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-colors"
+                  className="w-full px-3 py-2.5 pr-10 text-sm border border-border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-[border-color,box-shadow]"
                   placeholder="••••••••"
                 />
                 <button
@@ -178,7 +178,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full py-2.5 bg-primary text-white text-sm font-semibold rounded-lg hover:bg-primary-dark active:scale-[0.98] transition-all disabled:opacity-50"
+              className="w-full py-2.5 bg-primary text-white text-sm font-semibold rounded-lg hover:bg-primary-dark active:scale-[0.98] transition-[background-color,transform,opacity] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] disabled:opacity-50"
             >
               {isLoading ? 'ログイン中...' : 'ログイン'}
             </button>
@@ -194,7 +194,7 @@ export default function LoginPage() {
           {/* Googleログイン */}
           <button
             onClick={handleGoogleLogin}
-            className="w-full py-2.5 bg-white border border-border rounded-lg hover:bg-surface-hover active:scale-[0.98] transition-all flex items-center justify-center gap-2.5"
+            className="w-full py-2.5 bg-white border border-border rounded-lg hover:bg-surface-hover active:scale-[0.98] transition-[background-color,transform] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] flex items-center justify-center gap-2.5"
           >
             <svg className="w-4 h-4" viewBox="0 0 24 24">
               <path

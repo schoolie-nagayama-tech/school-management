@@ -129,7 +129,7 @@ export function PushNotificationButton({ schoolId, compact = false }: Props) {
         disabled={isLoading || isDenied}
         title={label}
         aria-label={label}
-        className={`inline-flex items-center justify-center w-9 h-9 rounded-lg transition-colors duration-150 ${colorClass} disabled:opacity-50`}
+        className={`inline-flex items-center justify-center w-9 h-9 rounded-lg transition-[transform,color,background-color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97] disabled:active:scale-100 ${colorClass} disabled:opacity-50`}
       >
         {isLoading ? <Spinner size="sm" tone="current" /> : <Icon className="w-4 h-4" />}
       </button>

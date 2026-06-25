@@ -18,7 +18,7 @@ export function ModeSwitcher({
         <button
           key={m}
           onClick={() => onChange(m)}
-          className={`px-2.5 py-1.5 transition-[background-color,color] duration-150 ease-out ${
+          className={`px-2.5 py-1.5 transition-[background-color,color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97] ${
             mode === m ? 'bg-[#1e3a5f] text-white' : 'text-[#4b5563] hover:bg-[#f3f4f6]'
           }`}
         >

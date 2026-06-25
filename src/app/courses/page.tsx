@@ -874,8 +874,8 @@ export default function CoursesPage() {
 
       {/* 新規作成モーダル */}
       {isCreateModalOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-surface-raised rounded-xl border border-border p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
+        <div className="modal-overlay fixed inset-0 flex items-center justify-center p-4 z-50">
+          <div className="modal-panel bg-surface-raised rounded-xl border border-border p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
             <h2 className="text-xl font-bold text-text-heading mb-4">新規講習を作成</h2>
             <form onSubmit={handleCreate} className="space-y-4">
               <div>

@@ -198,7 +198,7 @@ export function StudentRowActions({
                   role="menuitem"
                   type="button"
                   onClick={(e) => handleMenuClick(item, e)}
-                  className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2.5 transition-colors ${
+                  className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2.5 transition-[background-color,color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] ${
                     item.danger
                       ? 'text-danger hover:bg-danger/10'
                       : 'text-text-body hover:bg-ink-subtle hover:text-ink'

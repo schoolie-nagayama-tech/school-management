@@ -307,7 +307,7 @@ export default function SeasonalShiftEditPage() {
                           type="button"
                           onClick={() => toggleRow(dateStr)}
                           title="この日を一括選択"
-                          className="w-7 h-7 rounded-full bg-gray-300 hover:bg-gray-400 active:bg-gray-500 transition-colors shrink-0 flex items-center justify-center"
+                          className="w-7 h-7 rounded-full bg-gray-300 hover:bg-gray-400 active:bg-gray-500 active:scale-[0.97] transition-[transform,background-color] duration-150 shrink-0 flex items-center justify-center"
                           aria-label="この日を一括選択"
                         >
                           <span className="text-xs text-gray-600 font-medium">全</span>
@@ -363,7 +363,7 @@ export default function SeasonalShiftEditPage() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="px-6 py-3 bg-[#d32f2f] hover:bg-[#b71c1c] disabled:opacity-50 text-white font-semibold rounded-lg transition-colors duration-150"
+            className="px-6 py-3 bg-[#d32f2f] hover:bg-[#b71c1c] active:scale-[0.97] disabled:opacity-50 text-white font-semibold rounded-lg transition-[transform,background-color] duration-150"
           >
             {isSubmitting ? '送信中...' : '修正を送信する'}
           </button>

@@ -37,9 +37,12 @@ export function BadgeStars({
       ))}
       <style>{`
         @keyframes badge-star-twinkle {
-          0% { opacity: 0; transform: scale(.4) rotate(-20deg); }
+          0% { opacity: 0; transform: scale(0.95) rotate(-20deg); }
           70% { opacity: 1; transform: scale(1.15) rotate(2deg); }
           100% { opacity: 1; transform: scale(1) rotate(0); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .badge-star { animation: none !important; opacity: 1 !important; transform: none !important; }
         }
       `}</style>
     </div>
@@ -61,6 +64,7 @@ function BadgeStar({ idx, size }: BadgeStarProps) {
       width={actualSize}
       height={actualSize}
       viewBox="0 0 12 12"
+      className="badge-star"
       style={{
         animation: `badge-star-twinkle .55s cubic-bezier(.34,1.56,.64,1) both`,
         animationDelay: `${Math.min(idx * 40, 600)}ms`,

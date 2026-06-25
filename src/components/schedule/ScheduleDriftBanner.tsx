@@ -149,7 +149,7 @@ export function ScheduleDriftBanner({
           type="button"
           onClick={() => handleResync(false)}
           disabled={resyncing}
-          className="inline-flex items-center gap-1 px-3 py-1.5 rounded text-xs font-medium bg-amber-600 text-white hover:bg-amber-700 disabled:opacity-60"
+          className="inline-flex items-center gap-1 px-3 py-1.5 rounded text-xs font-medium bg-amber-600 text-white hover:bg-amber-700 active:scale-[0.97] transition-[background-color,transform] duration-150 disabled:opacity-60"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${resyncing ? 'animate-spin' : ''}`} />
           {resyncing ? '反映中...' : '反映する'}

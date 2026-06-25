@@ -81,7 +81,7 @@ export function BadgeCard({
       className={`
         group relative flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-[transform,box-shadow,border-color,opacity] duration-200 ease-out
         ${style.card}
-        ${interactive ? 'cursor-pointer hover:scale-[1.03] hover:shadow-md active:scale-[0.97]' : 'cursor-default'}
+        ${interactive ? 'cursor-pointer [@media(hover:hover)]:hover:scale-[1.03] [@media(hover:hover)]:hover:shadow-md active:scale-[0.97]' : 'cursor-default'}
         ${!earned ? 'opacity-50' : ''}
         w-full
       `}
@@ -95,7 +95,7 @@ export function BadgeCard({
 
       {/* アイコン */}
       <div
-        className={`w-12 h-12 rounded-xl flex items-center justify-center ${style.iconBg} transition-transform duration-200 ${interactive ? 'group-hover:scale-110' : ''}`}
+        className={`w-12 h-12 rounded-xl flex items-center justify-center ${style.iconBg} transition-transform duration-200 ${interactive ? '[@media(hover:hover)]:group-hover:scale-110' : ''}`}
       >
         <BadgeIcon icon={badge.icon} size={24} />
       </div>

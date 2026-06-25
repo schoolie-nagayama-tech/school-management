@@ -627,7 +627,7 @@ export function AppHeader({
                     maxHeight: openMobileGroups.has(entry.key)
                       ? `${entry.items.length * 44 + 8}px`
                       : 0,
-                    transition: 'max-height 220ms cubic-bezier(0.23, 1, 0.32, 1)',
+                    transition: 'max-height 220ms var(--ease-out)',
                   }}
                   aria-hidden={!openMobileGroups.has(entry.key)}
                 >

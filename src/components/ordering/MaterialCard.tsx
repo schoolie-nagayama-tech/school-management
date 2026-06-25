@@ -108,13 +108,14 @@ export function MaterialCard({
               </svg>
             </button>
             {showMenu && (
-              <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-[100px]">
+              /* dropdown-menu-right: top-right の origin で出現 */
+              <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-[100px] dropdown-menu dropdown-menu-right">
                 <button
                   onClick={() => {
                     setShowMenu(false);
                     onEdit(material);
                   }}
-                  className="block w-full text-left px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-50"
+                  className="block w-full text-left px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-50 transition-[background-color] duration-100 ease-out"
                 >
                   編集
                 </button>
@@ -123,7 +124,7 @@ export function MaterialCard({
                     setShowMenu(false);
                     onDelete(material);
                   }}
-                  className="block w-full text-left px-3 py-1.5 text-xs text-red-600 hover:bg-red-50"
+                  className="block w-full text-left px-3 py-1.5 text-xs text-red-600 hover:bg-red-50 transition-[background-color] duration-100 ease-out"
                 >
                   削除
                 </button>
@@ -161,7 +162,7 @@ export function MaterialCard({
         <button
           onClick={() => onStockIn(material)}
           disabled={!canEdit}
-          className="flex-1 text-xs py-1.5 rounded-lg border border-green-200 text-green-700 hover:bg-green-50 disabled:opacity-50 transition-[background-color,color] duration-150 ease-out"
+          className="flex-1 text-xs py-1.5 rounded-lg border border-green-200 text-green-700 hover:bg-green-50 disabled:opacity-50 transition-[background-color,color,transform] duration-150 ease-out active:scale-[0.97]"
         >
           <Inbox className="inline h-3 w-3 mr-1" />
           入庫
@@ -169,14 +170,14 @@ export function MaterialCard({
         <button
           onClick={() => onStockOut(material)}
           disabled={!canEdit}
-          className="flex-1 text-xs py-1.5 rounded-lg border border-orange-200 text-orange-700 hover:bg-orange-50 disabled:opacity-50 transition-[background-color,color] duration-150 ease-out"
+          className="flex-1 text-xs py-1.5 rounded-lg border border-orange-200 text-orange-700 hover:bg-orange-50 disabled:opacity-50 transition-[background-color,color,transform] duration-150 ease-out active:scale-[0.97]"
         >
           <Send className="inline h-3 w-3 mr-1" />
           出庫
         </button>
         <button
           onClick={() => onHistory(material)}
-          className="flex-1 text-xs py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 transition-[background-color,color] duration-150 ease-out"
+          className="flex-1 text-xs py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 transition-[background-color,color,transform] duration-150 ease-out active:scale-[0.97]"
         >
           <ClipboardList className="inline h-3 w-3 mr-1" />
           履歴
@@ -208,7 +209,7 @@ export function MaterialCard({
                 type="button"
                 onClick={() => setQuantity((q) => Math.max(1, q - 1))}
                 disabled={isOrdering || quantity <= 1}
-                className="w-7 h-7 rounded border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-50 disabled:opacity-40 text-sm"
+                className="w-7 h-7 rounded border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-50 disabled:opacity-40 text-sm transition-[background-color,transform] duration-150 ease-out active:scale-[0.97]"
               >
                 −
               </button>
@@ -224,7 +225,7 @@ export function MaterialCard({
                 type="button"
                 onClick={() => setQuantity((q) => q + 1)}
                 disabled={isOrdering}
-                className="w-7 h-7 rounded border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-50 disabled:opacity-40 text-sm"
+                className="w-7 h-7 rounded border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-50 disabled:opacity-40 text-sm transition-[background-color,transform] duration-150 ease-out active:scale-[0.97]"
               >
                 ＋
               </button>
@@ -248,7 +249,7 @@ export function MaterialCard({
           <button
             onClick={handleOrder}
             disabled={!selectedStudentId || isOrdering}
-            className={`w-full py-2 rounded-lg font-medium text-sm transition-[background-color,color] duration-150 ease-out ${
+            className={`w-full py-2 rounded-lg font-medium text-sm transition-[background-color,color,transform] duration-150 ease-out active:scale-[0.97] ${
               orderSuccess
                 ? 'bg-green-600 text-white'
                 : 'bg-[#1e3a5f] text-white hover:bg-[#162d4a] disabled:opacity-50 disabled:cursor-not-allowed'

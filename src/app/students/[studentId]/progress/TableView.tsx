@@ -549,7 +549,7 @@ export function TableView({
                   {colOptions.map((c) => (
                     <label
                       key={c.key}
-                      className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-[#f9fafb] cursor-pointer"
+                      className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-[#f9fafb] cursor-pointer transition-[background-color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)]"
                     >
                       <input
                         type="checkbox"

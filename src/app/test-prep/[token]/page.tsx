@@ -410,7 +410,7 @@ function ZoukomaSection({
             文言・矢印アイコン・補足テキストで「フォームに移動する」ことを明示する。 */}
         <a
           href={zoukomaUrl}
-          className="flex items-center justify-center gap-1.5 w-full py-3 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition-[colors,transform] active:scale-[0.97] text-sm text-center"
+          className="flex items-center justify-center gap-1.5 w-full py-3 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition-[background-color,transform] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97] text-sm text-center"
         >
           増コマ申込フォームへ進む
           <ArrowRight className="w-4 h-4" />

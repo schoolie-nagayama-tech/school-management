@@ -21,7 +21,7 @@ function ActiveCard({
 }) {
   return (
     <div
-      className={`bg-white rounded-xl border border-[#e5e7eb] shadow-sm hover:shadow-md hover:border-[#d1d5db] active:scale-[0.99] transition-[transform,box-shadow,border-color] duration-150 ease-out ${className}`}
+      className={`bg-white rounded-xl border border-[#e5e7eb] shadow-sm hover:shadow-md hover:border-[#d1d5db] active:scale-[0.97] transition-[transform,box-shadow,border-color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] ${className}`}
     >
       {children}
     </div>

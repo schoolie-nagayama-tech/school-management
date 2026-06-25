@@ -620,7 +620,7 @@ export default function CourseDetailPage() {
                         <button
                           key={s}
                           onClick={() => setEditSeason(s)}
-                          className={`px-3 py-1.5 text-xs rounded-lg font-medium transition-colors duration-150 ${
+                          className={`px-3 py-1.5 text-xs rounded-lg font-medium transition-[background-color,color,transform] duration-150 ease-out active:scale-[0.97] ${
                             editSeason === s
                               ? 'bg-ink text-text-on-primary'
                               : 'bg-surface-hover text-text-body hover:bg-border-default'
@@ -638,7 +638,7 @@ export default function CourseDetailPage() {
                         <button
                           key={grade}
                           onClick={() => toggleGrade(grade)}
-                          className={`px-2 py-1 text-[11px] rounded-md transition-colors duration-150 ${
+                          className={`px-2 py-1 text-[11px] rounded-md transition-[background-color,color,transform] duration-150 ease-out active:scale-[0.97] ${
                             editTargetGrades.includes(grade)
                               ? 'bg-ink text-text-on-primary font-bold'
                               : 'bg-surface-hover text-text-muted hover:bg-border-default'

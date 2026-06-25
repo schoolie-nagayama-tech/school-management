@@ -112,7 +112,7 @@ export function OrderStatusSection({
       {/* Section Header */}
       <button
         onClick={() => setOpen(!open)}
-        className={`w-full flex items-center justify-between px-4 py-3 border border-gray-200 ${style.bg} rounded-t-lg ${!open ? 'rounded-b-lg' : ''} hover:opacity-90 transition-opacity`}
+        className={`w-full flex items-center justify-between px-4 py-3 border border-gray-200 ${style.bg} rounded-t-lg ${!open ? 'rounded-b-lg' : ''} hover:opacity-90 transition-[opacity] duration-150 ease-out`}
       >
         <div className="flex items-center gap-2">
           {open ? (
@@ -133,7 +133,7 @@ export function OrderStatusSection({
               e.stopPropagation();
               handleBulkAction();
             }}
-            className={`text-xs px-3 py-1.5 rounded-md font-medium transition-[background-color,color] duration-150 ease-out ${
+            className={`text-xs px-3 py-1.5 rounded-md font-medium transition-[background-color,color,transform] duration-150 ease-out active:scale-[0.97] ${
               bulkLoading
                 ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
                 : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300 cursor-pointer'

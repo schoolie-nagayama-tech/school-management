@@ -253,15 +253,17 @@ function SummaryCard({
   const href = `/forms/responses/${path}/${periodKey}`;
 
   return (
-    <Link href={href}>
-      <div className="p-4 bg-surface-raised border border-border rounded-lg hover:bg-surface-hover hover:border-border-strong cursor-pointer transition-colors duration-150">
-        <h3 className="font-semibold text-text-heading">
-          {formTypeLabel} ({periodLabel})
-        </h3>
-        <p className="text-sm text-text-muted">
-          {totalCount}件（未処理: {unprocessedCount}件）
-        </p>
-      </div>
+    // active:scale-[0.97]: クリック可能カードの押下フィードバック
+    <Link
+      href={href}
+      className="block p-4 bg-surface-raised border border-border rounded-lg hover:bg-surface-hover hover:border-border-strong cursor-pointer transition-[transform,background-color,border-color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97]"
+    >
+      <h3 className="font-semibold text-text-heading">
+        {formTypeLabel} ({periodLabel})
+      </h3>
+      <p className="text-sm text-text-muted">
+        {totalCount}件（未処理: {unprocessedCount}件）
+      </p>
     </Link>
   );
 }
@@ -701,7 +703,7 @@ export default function ResponsesPage() {
                     applyQuickFilter(qf);
                   }
                 }}
-                className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-colors duration-150 ${
+                className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-[transform,background-color,color,border-color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97] ${
                   active ? qf.activeColor : qf.color
                 }`}
               >
@@ -1027,7 +1029,7 @@ export default function ResponsesPage() {
                       <Link
                         key={response.id}
                         href={`/forms/responses/${FORM_TYPE_TO_PATH[response.form_type] ?? response.form_type}/${response.form_period}?schoolId=${response.school_id}`}
-                        className="flex items-center justify-between px-4 py-2 hover:bg-surface-hover transition-colors duration-150 gap-3"
+                        className="flex items-center justify-between px-4 py-2 hover:bg-surface-hover transition-[background-color] duration-150 gap-3"
                       >
                         <div className="flex items-center gap-2 min-w-0">
                           <span className="text-xs font-medium text-text-heading shrink-0">

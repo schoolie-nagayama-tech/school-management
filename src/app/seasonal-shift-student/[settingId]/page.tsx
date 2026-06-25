@@ -358,7 +358,7 @@ export default function StudentShiftFormPage() {
                               <button
                                 type="button"
                                 onClick={() => toggleAllInDay(d)}
-                                className={`block w-full text-center px-1 py-0.5 rounded ${
+                                className={`block w-full text-center px-1 py-0.5 rounded transition-colors duration-150 ${
                                   allOn ? 'bg-info-subtle text-info' : 'hover:bg-surface'
                                 }`}
                               >

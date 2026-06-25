@@ -241,10 +241,10 @@ export function WeeklyScheduleGridView(props: WeeklyScheduleGridViewProps) {
                 key={slot.id}
                 type="button"
                 onClick={() => toggleEmptySlot(slot.id)}
-                className={`w-full text-left border-t border-gray-200 px-2 py-1.5 flex items-center gap-2 hover:bg-gray-50 transition-[background-color] duration-150 ease-[var(--ease-out)] ${slotIndex % 2 === 1 ? 'bg-gray-50' : ''}`}
+                className={`w-full text-left border-t border-gray-200 px-2 py-1.5 flex items-center gap-2 hover:bg-gray-50 active:scale-[0.99] transition-[background-color,transform] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] ${slotIndex % 2 === 1 ? 'bg-gray-50' : ''}`}
                 aria-expanded={false}
               >
-                <ChevronDown className="w-3.5 h-3.5 text-gray-300 -rotate-90 transition-transform duration-150" />
+                <ChevronDown className="w-3.5 h-3.5 text-gray-300 -rotate-90 transition-transform duration-150 ease-[cubic-bezier(0.23,1,0.32,1)]" />
                 <span className="text-sm font-semibold text-gray-500">
                   <span className="tabular-nums">{slot.slot_number}</span>限
                 </span>

@@ -72,7 +72,7 @@ export function SortableAttendanceTypeRow({
             type="button"
             onClick={() => onEdit(item)}
             disabled={isSubmitting}
-            className="p-2 text-[#4b5563] hover:bg-[#f3f4f6] rounded-lg transition-colors disabled:opacity-50"
+            className="p-2 text-[#4b5563] hover:bg-[#f3f4f6] rounded-lg transition-[transform,background-color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97] disabled:opacity-50"
             title="編集"
           >
             <Pencil className="h-4 w-4" />
@@ -81,7 +81,7 @@ export function SortableAttendanceTypeRow({
             type="button"
             onClick={() => onDeleteClick(item)}
             disabled={isSubmitting}
-            className="p-2 text-[#4b5563] hover:text-[#ef4444] hover:bg-[#fef2f2] rounded-lg transition-colors disabled:opacity-50"
+            className="p-2 text-[#4b5563] hover:text-[#ef4444] hover:bg-[#fef2f2] rounded-lg transition-[transform,color,background-color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97] disabled:opacity-50"
             title="削除"
           >
             <Trash2 className="h-4 w-4" />

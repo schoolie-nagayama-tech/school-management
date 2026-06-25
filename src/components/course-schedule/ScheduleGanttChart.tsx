@@ -321,7 +321,7 @@ function TaskNameCell({
             createPortal(
               <div
                 ref={menuRef}
-                className="fixed z-[9999] bg-white border border-gray-200 rounded-lg shadow-xl py-1 min-w-[180px] max-h-48 overflow-y-auto"
+                className="dropdown-menu-right dropdown-menu fixed z-[9999] bg-white border border-gray-200 rounded-lg shadow-xl py-1 min-w-[180px] max-h-48 overflow-y-auto"
                 style={
                   menuPos.openUp
                     ? { bottom: menuPos.bottomOffset, left: menuPos.left }

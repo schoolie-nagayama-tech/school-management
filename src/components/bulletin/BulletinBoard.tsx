@@ -339,18 +339,24 @@ export function BulletinBoard({ className = '', initialData }: BulletinBoardProp
                 投稿はありません。{canEdit ? '「新規投稿」ボタンから投稿を作成できます。' : ''}
               </div>
             ) : (
-              posts.map((post) => (
-                <BulletinPostCard
+              posts.map((post, idx) => (
+                // stagger-item で 40ms 刻みのフェードイン（8件超はindex頭打ち）
+                <div
                   key={post.id}
-                  post={post}
-                  schoolName={post.school_name}
-                  canEdit={canEdit}
-                  canRead={canRead}
-                  onRead={() => handleRead(post)}
-                  onEdit={() => handleEdit(post)}
-                  onDelete={() => handleDelete(post)}
-                  onShowReaders={() => handleShowReaders(post)}
-                />
+                  className="stagger-item"
+                  style={{ '--stagger-index': Math.min(idx, 8) } as React.CSSProperties}
+                >
+                  <BulletinPostCard
+                    post={post}
+                    schoolName={post.school_name}
+                    canEdit={canEdit}
+                    canRead={canRead}
+                    onRead={() => handleRead(post)}
+                    onEdit={() => handleEdit(post)}
+                    onDelete={() => handleDelete(post)}
+                    onShowReaders={() => handleShowReaders(post)}
+                  />
+                </div>
               ))
             )}
           </div>

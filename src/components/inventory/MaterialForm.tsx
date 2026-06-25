@@ -114,7 +114,7 @@ export function MaterialForm({ isOpen, onClose, onSubmit, material }: MaterialFo
             placeholder="カテゴリを入力"
           />
           {showSuggestions && filteredSuggestions.length > 0 && (
-            <div className="absolute z-10 w-full mt-1 bg-white border border-[#e5e7eb] rounded-lg shadow-lg max-h-40 overflow-y-auto">
+            <div className="absolute z-10 w-full mt-1 bg-white border border-[#e5e7eb] rounded-lg shadow-lg max-h-40 overflow-y-auto dropdown-menu">
               {filteredSuggestions.map((suggestion) => (
                 <button
                   key={suggestion}

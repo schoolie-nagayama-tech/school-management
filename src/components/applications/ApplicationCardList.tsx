@@ -144,17 +144,19 @@ export function ApplicationCardList({
 
   return (
     <div className="space-y-2.5">
-      {students.map((student) => (
+      {students.map((student, idx) => (
+        // stagger-item で初回表示時に 40ms 刻みフェードイン（8件超は頭打ち）
         <div
           key={student.id}
-          className="overflow-hidden rounded-xl border border-border bg-surface-raised"
+          className="overflow-hidden rounded-xl border border-border bg-surface-raised stagger-item"
+          style={{ '--stagger-index': Math.min(idx, 8) } as React.CSSProperties}
         >
           {/* カードヘッダー: 学年 + 氏名（タップで詳細） */}
           <button
             type="button"
             onClick={() => onStudentClick?.(student)}
             disabled={!onStudentClick}
-            className={`flex w-full items-center gap-2 border-b border-border-subtle px-3.5 py-2.5 text-left transition-colors duration-150 ${
+            className={`flex w-full items-center gap-2 border-b border-border-subtle px-3.5 py-2.5 text-left transition-[background-color,transform] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] ${
               onStudentClick ? 'hover:bg-surface-hover active:scale-[0.99]' : ''
             }`}
           >

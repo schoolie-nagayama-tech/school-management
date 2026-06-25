@@ -174,7 +174,9 @@ export function InterviewList({ studentId, schoolId }: InterviewListProps) {
       {/* 記録一覧 */}
       {filteredInterviews.length === 0 ? (
         <div className="text-center py-12 bg-[#f3f4f6] rounded-lg border border-[#e5e7eb]">
-          <p className="text-[#4b5563] mb-4">まだ面談記録がありません</p>
+          <p className="text-[#4b5563] mb-4 animate-[stagger-fade-in_240ms_var(--ease-out)_forwards]">
+            まだ面談記録がありません
+          </p>
           {canEdit && <Button onClick={handleAdd}>+ 最初の記録を追加</Button>}
         </div>
       ) : (
@@ -248,13 +250,13 @@ export function InterviewList({ studentId, schoolId }: InterviewListProps) {
                           <div className="flex gap-2">
                             <button
                               onClick={() => handleEdit(interview)}
-                              className="text-sm text-[#4b5563] hover:text-[#3b82f6] transition-colors duration-150"
+                              className="text-sm text-[#4b5563] hover:text-[#3b82f6] transition-[color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)]"
                             >
                               編集
                             </button>
                             <button
                               onClick={() => handleDelete(interview.id)}
-                              className="text-sm text-[#ef4444] hover:text-[#ef4444]/80 transition-colors duration-150"
+                              className="text-sm text-[#ef4444] hover:text-[#ef4444]/80 transition-[color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)]"
                             >
                               削除
                             </button>

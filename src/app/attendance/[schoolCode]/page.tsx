@@ -132,10 +132,11 @@ export default function AttendancePortalPage() {
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-            {teachers.map((teacher) => (
+            {teachers.map((teacher, idx) => (
               <Card
                 key={teacher.id}
-                className="cursor-pointer hover:shadow-md transition-shadow duration-150"
+                className="stagger-item cursor-pointer hover:shadow-md transition-[transform,box-shadow] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97] [@media(hover:hover)]:hover:scale-[1.01]"
+                style={{ '--stagger-index': Math.min(idx, 7) } as React.CSSProperties}
                 onClick={() => handleTeacherClick(teacher.id)}
               >
                 <CardContent className="p-4 text-center">

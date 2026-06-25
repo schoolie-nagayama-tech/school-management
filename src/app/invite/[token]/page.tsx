@@ -190,7 +190,7 @@ export default function InvitePage() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full py-3 bg-info text-white font-bold rounded-lg hover:bg-info/80 transition-colors disabled:opacity-50"
+                  className="w-full py-3 bg-info text-white font-bold rounded-lg hover:bg-info/80 active:scale-[0.97] transition-[background-color,transform] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] disabled:opacity-50"
                 >
                   {isSubmitting ? 'アカウント作成中...' : 'アカウントを作成'}
                 </button>

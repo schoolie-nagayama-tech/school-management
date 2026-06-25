@@ -298,83 +298,84 @@ export function CourseProgressWidget({ schoolId }: CourseProgressWidgetProps) {
         </Link>
       </div>
 
-      {/* Content */}
+      {/* Content — grid-rows で height を GPU に乗せず、opacity のみトランジション（逸脱10対策） */}
       <div
-        className="overflow-hidden transition-[max-height,opacity] duration-200 ease-out"
-        style={{ maxHeight: isOpen ? '500px' : '0', opacity: isOpen ? 1 : 0 }}
+        className={`grid transition-[grid-template-rows,opacity] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] ${isOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}
       >
-        <div className="px-4 py-3 border-t border-gray-100">
-          <div className="flex flex-wrap gap-3">
-            {/* PCS回収 */}
-            {pcsStats && (
-              <MetricChip
-                label="PCS回収"
-                value={pcsStats.completed}
-                total={pcsStats.total}
-                color="blue"
-              />
-            )}
+        <div className="overflow-hidden">
+          <div className="px-4 py-3 border-t border-gray-100">
+            <div className="flex flex-wrap gap-3">
+              {/* PCS回収 */}
+              {pcsStats && (
+                <MetricChip
+                  label="PCS回収"
+                  value={pcsStats.completed}
+                  total={pcsStats.total}
+                  color="blue"
+                />
+              )}
 
-            {/* 面談申込 */}
-            {soudanStats && (
-              <MetricChip
-                label="面談申込"
-                value={soudanStats.completed}
-                total={soudanStats.total}
-                color="amber"
-              />
-            )}
+              {/* 面談申込 */}
+              {soudanStats && (
+                <MetricChip
+                  label="面談申込"
+                  value={soudanStats.completed}
+                  total={soudanStats.total}
+                  color="amber"
+                />
+              )}
 
-            {/* 生徒面談実施 */}
-            {studentInterviewStats && (
-              <MetricChip
-                label="生徒面談"
-                value={studentInterviewStats.completed}
-                total={studentInterviewStats.total}
-                color="green"
-              />
-            )}
+              {/* 生徒面談実施 */}
+              {studentInterviewStats && (
+                <MetricChip
+                  label="生徒面談"
+                  value={studentInterviewStats.completed}
+                  total={studentInterviewStats.total}
+                  color="green"
+                />
+              )}
 
-            {/* 父母面談実施 */}
-            {parentInterviewStats && (
-              <MetricChip
-                label="父母面談"
-                value={parentInterviewStats.completed}
-                total={parentInterviewStats.total}
-                color="green"
-              />
-            )}
+              {/* 父母面談実施 */}
+              {parentInterviewStats && (
+                <MetricChip
+                  label="父母面談"
+                  value={parentInterviewStats.completed}
+                  total={parentInterviewStats.total}
+                  color="green"
+                />
+              )}
 
-            {/* 増コマ回数 */}
-            {(komaStats.proposed > 0 || komaStats.decided > 0) && (
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-purple-200 bg-purple-50 text-[11px]">
-                <span className="text-purple-600 font-medium">増コマ</span>
-                <span className="text-purple-800 font-bold">{komaStats.decided}</span>
-                <span className="text-purple-400">/</span>
-                <span className="text-purple-600">{komaStats.proposed}</span>
+              {/* 増コマ回数 */}
+              {(komaStats.proposed > 0 || komaStats.decided > 0) && (
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-purple-200 bg-purple-50 text-[11px]">
+                  <span className="text-purple-600 font-medium">増コマ</span>
+                  <span className="text-purple-800 font-bold">{komaStats.decided}</span>
+                  <span className="text-purple-400">/</span>
+                  <span className="text-purple-600">{komaStats.proposed}</span>
+                </div>
+              )}
+            </div>
+
+            {/* 教科別提案コマ数 */}
+            {subjectTotals.subjects.length > 0 && (
+              <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                <span className="text-[10px] text-gray-400 mr-0.5">提案コマ:</span>
+                {subjectTotals.subjects.map((s) => (
+                  <span
+                    key={s.name}
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded border border-gray-200 bg-gray-50 text-[10px]"
+                  >
+                    <span className="text-gray-500">{s.name}</span>
+                    <span className="text-gray-800 font-bold">{s.total}</span>
+                  </span>
+                ))}
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded border border-indigo-200 bg-indigo-50 text-[10px]">
+                  <span className="text-indigo-600 font-medium">合計</span>
+                  <span className="text-indigo-800 font-bold">{subjectTotals.grandTotal}</span>
+                </span>
               </div>
             )}
           </div>
-
-          {/* 教科別提案コマ数 */}
-          {subjectTotals.subjects.length > 0 && (
-            <div className="mt-2 flex flex-wrap items-center gap-1.5">
-              <span className="text-[10px] text-gray-400 mr-0.5">提案コマ:</span>
-              {subjectTotals.subjects.map((s) => (
-                <span
-                  key={s.name}
-                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded border border-gray-200 bg-gray-50 text-[10px]"
-                >
-                  <span className="text-gray-500">{s.name}</span>
-                  <span className="text-gray-800 font-bold">{s.total}</span>
-                </span>
-              ))}
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded border border-indigo-200 bg-indigo-50 text-[10px]">
-                <span className="text-indigo-600 font-medium">合計</span>
-                <span className="text-indigo-800 font-bold">{subjectTotals.grandTotal}</span>
-              </span>
-            </div>
-          )}
         </div>
       </div>
     </div>

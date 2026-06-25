@@ -376,7 +376,7 @@ function SubjectEditModal({
             <button
               type="button"
               onClick={() => setDurationMinutes(90)}
-              className={`flex-1 py-2 text-sm font-medium rounded-lg border transition-colors ${
+              className={`flex-1 py-2 text-sm font-medium rounded-lg border transition-[background-color,border-color,transform] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97] ${
                 durationMinutes === 90
                   ? 'bg-[#1e3a5f] text-white border-[#1e3a5f]'
                   : 'bg-white text-[#4b5563] border-[#e5e7eb] hover:border-[#1e3a5f]'
@@ -387,7 +387,7 @@ function SubjectEditModal({
             <button
               type="button"
               onClick={() => setDurationMinutes(45)}
-              className={`flex-1 py-2 text-sm font-medium rounded-lg border transition-colors ${
+              className={`flex-1 py-2 text-sm font-medium rounded-lg border transition-[background-color,border-color,transform] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97] ${
                 durationMinutes === 45
                   ? 'bg-blue-600 text-white border-blue-600'
                   : 'bg-white text-[#4b5563] border-[#e5e7eb] hover:border-blue-600'

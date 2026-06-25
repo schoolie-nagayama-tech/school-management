@@ -139,13 +139,14 @@ export function OperationsDashboard({
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between px-4 py-3 bg-slate-50 hover:bg-slate-100 text-left text-sm font-medium text-slate-700 transition-colors duration-150"
+        className="w-full flex items-center justify-between px-4 py-3 bg-slate-50 hover:bg-slate-100 active:bg-slate-200 text-left text-sm font-medium text-slate-700 transition-[background-color] duration-150"
       >
         <span>運営判断用ダッシュボード</span>
         <span className="text-slate-400 text-xs">{isOpen ? '▲ 閉じる' : '▼ 開く'}</span>
       </button>
       {isOpen && (
-        <div className="p-4 bg-white">
+        // 展開時に feed-card-enter で軽いフェードスライドイン
+        <div className="p-4 bg-white feed-card-enter">
           <div className="overflow-x-auto -mx-1">
             <table className="min-w-full border-collapse text-sm border border-slate-200">
               <thead>

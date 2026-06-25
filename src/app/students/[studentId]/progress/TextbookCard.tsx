@@ -82,7 +82,7 @@ export function TextbookCard({
             <button
               type="button"
               onClick={onTogglePublish}
-              className={`w-5 h-5 rounded border leading-none flex items-center justify-center ${
+              className={`w-5 h-5 rounded border leading-none flex items-center justify-center transition-[background-color,border-color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97] ${
                 textbook.is_draft
                   ? 'bg-gray-200 border-gray-400 text-gray-600 hover:bg-gray-300'
                   : 'bg-white border-[#e5e7eb] text-[#1e40af] hover:bg-[#eff6ff]'
@@ -100,7 +100,7 @@ export function TextbookCard({
             type="button"
             disabled={!canMoveUp}
             onClick={() => onReorder('up')}
-            className="w-5 h-5 rounded border border-[#e5e7eb] bg-white text-[11px] text-[#6b7280] hover:bg-[#f3f4f6] disabled:opacity-30 disabled:hover:bg-white"
+            className="w-5 h-5 rounded border border-[#e5e7eb] bg-white text-[11px] text-[#6b7280] hover:bg-[#f3f4f6] disabled:opacity-30 disabled:hover:bg-white transition-[background-color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97]"
             title="上へ"
           >
             ▲
@@ -109,7 +109,7 @@ export function TextbookCard({
             type="button"
             disabled={!canMoveDown}
             onClick={() => onReorder('down')}
-            className="w-5 h-5 rounded border border-[#e5e7eb] bg-white text-[11px] text-[#6b7280] hover:bg-[#f3f4f6] disabled:opacity-30 disabled:hover:bg-white"
+            className="w-5 h-5 rounded border border-[#e5e7eb] bg-white text-[11px] text-[#6b7280] hover:bg-[#f3f4f6] disabled:opacity-30 disabled:hover:bg-white transition-[background-color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97]"
             title="下へ"
           >
             ▼

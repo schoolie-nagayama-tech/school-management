@@ -917,7 +917,7 @@ export function StudentsPageClient({
                 </Button>
                 <Link
                   href="/transcriptions"
-                  className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-text-body border border-border-default rounded-lg hover:bg-surface-hover transition-[background-color] duration-150 ease-out"
+                  className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-text-body border border-border-default rounded-lg hover:bg-surface-hover transition-[background-color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97]"
                 >
                   <Mic className="w-3.5 h-3.5" />
                   面談記録追加

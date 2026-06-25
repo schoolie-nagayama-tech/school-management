@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, useRef, useCallback } from 'react';
+import { useMemo, useState, useRef, useCallback, type CSSProperties } from 'react';
 import type { CourseProgressItem, StudentCourseProgress, CoursePrepPeriod } from '@/types/database';
 import type { Student } from '@/types/database';
 import { GRADE_LABELS } from '@/types/database';
@@ -952,10 +952,12 @@ export function CourseProgressDashboard({
 
           {categoryOpen && (
             <div className="px-4 pb-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {categoryAnalysis.map((cat) => (
+              {/* 学校種別カードを stagger-item で順次フェードイン */}
+              {categoryAnalysis.map((cat, idx) => (
                 <div
                   key={cat.category}
-                  className={`${cat.colors.bg} rounded-xl border ${cat.colors.border} p-4`}
+                  className={`stagger-item ${cat.colors.bg} rounded-xl border ${cat.colors.border} p-4`}
+                  style={{ '--stagger-index': idx } as CSSProperties}
                 >
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
@@ -1101,7 +1103,10 @@ export function CourseProgressDashboard({
               </button>
 
               {subjectOpen && (
-                <div className="px-4 pb-4">
+                <div
+                  className="px-4 pb-4 stagger-item"
+                  style={{ '--stagger-index': 0 } as CSSProperties}
+                >
                   {/* 学校種別タブ */}
                   <div className="flex flex-wrap gap-1 mb-3">
                     {tabs.map((t) => (

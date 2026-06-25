@@ -9,9 +9,13 @@ interface CardProps {
 }
 
 export function Card({ children, className = '', onClick }: CardProps) {
+  // クリッカブル時: active:scale で押下フィードバック、--ease-out カーブで揃える
+  const interactiveClass = onClick
+    ? 'cursor-pointer transition-[transform,box-shadow] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.98]'
+    : '';
   return (
     <div
-      className={`bg-surface rounded-xl border border-border ${className}`}
+      className={`bg-surface rounded-xl border border-border ${interactiveClass} ${className}`}
       onClick={onClick}
       role={onClick ? 'button' : undefined}
       tabIndex={onClick ? 0 : undefined}

@@ -232,14 +232,14 @@ export function BillingItemAccordion({
                         <div className="flex gap-3">
                           <button
                             onClick={() => startEditing(item)}
-                            className="text-sm text-[#4b5563] hover:text-[#3b82f6] transition-[color] duration-150 ease-out"
+                            className="text-sm text-[#4b5563] hover:text-[#3b82f6] transition-[color,transform] duration-150 ease-out active:scale-[0.97]"
                             disabled={isProcessing}
                           >
                             名前変更
                           </button>
                           <button
                             onClick={() => handleDelete(item.id, item.name)}
-                            className="text-sm text-[#ef4444] hover:text-[#ef4444]/80 transition-[color] duration-150 ease-out"
+                            className="text-sm text-[#ef4444] hover:text-[#ef4444]/80 transition-[color,transform] duration-150 ease-out active:scale-[0.97]"
                             disabled={isProcessing}
                           >
                             削除

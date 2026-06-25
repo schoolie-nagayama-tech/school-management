@@ -186,7 +186,8 @@ export default function TestPrepProposalsList() {
             新規作成
           </button>
           {pickerOpen && (
-            <div className="absolute right-0 top-full mt-1 w-80 bg-surface-raised border border-border-default rounded-xl shadow-lg z-50 overflow-hidden">
+            {/* dropdown-menu-right: origin top-right で scale(0.95) から出現 */}
+            <div className="dropdown-menu dropdown-menu-right absolute right-0 top-full mt-1 w-80 bg-surface-raised border border-border-default rounded-xl shadow-lg z-50 overflow-hidden">
               <div className="p-2 border-b border-border-subtle">
                 <div className="relative">
                   <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-text-faint" />
@@ -246,7 +247,7 @@ export default function TestPrepProposalsList() {
             <button
               key={s}
               onClick={() => setFilter(s)}
-              className={`px-2.5 py-1 text-[11px] font-medium rounded-lg transition-colors ${
+              className={`px-2.5 py-1 text-[11px] font-medium rounded-lg transition-[background-color,color,transform] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97] ${
                 filter === s
                   ? 'bg-primary text-primary-contrast'
                   : 'bg-surface-hover text-text-muted hover:text-text-body'
@@ -261,7 +262,7 @@ export default function TestPrepProposalsList() {
 
       {/* 一覧 */}
       {filtered.length === 0 ? (
-        <div className="bg-surface-raised rounded-xl border border-border p-12 text-center">
+        <div className="stagger-item bg-surface-raised rounded-xl border border-border p-12 text-center" style={{ '--stagger-index': 0 } as React.CSSProperties}>
           <p className="text-text-muted">
             {proposals.length === 0
               ? 'テスト対策提案書はまだありません'
@@ -281,11 +282,13 @@ export default function TestPrepProposalsList() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((p) => (
+              {filtered.map((p, i) => (
                 <tr
                   key={p.id}
                   onClick={() => router.push(`/students/${p.student_id}/test-prep/${p.id}`)}
-                  className="border-t border-border hover:bg-surface-hover cursor-pointer transition-colors"
+                  // stagger-item: 初回表示の行に40ms刻みのフェードイン（最大8件でクランプ）
+                  className="stagger-item border-t border-border hover:bg-surface-hover cursor-pointer transition-colors"
+                  style={{ '--stagger-index': Math.min(i, 7) } as React.CSSProperties}
                 >
                   <td className="px-4 py-3">
                     {p.student ? (

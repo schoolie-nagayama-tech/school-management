@@ -47,7 +47,7 @@ export function AttendanceUnsubmittedAlert() {
   if (!unsubmittedMonth) return null;
 
   return (
-    <div className="flex items-start gap-3 rounded-lg border border-amber-300 bg-amber-50 p-4 mb-4">
+    <div className="feed-card-enter flex items-start gap-3 rounded-lg border border-amber-300 bg-amber-50 p-4 mb-4">
       <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
       <div className="flex-1">
         <p className="text-sm font-semibold text-amber-900">

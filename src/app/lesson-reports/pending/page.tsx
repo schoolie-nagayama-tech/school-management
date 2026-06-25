@@ -182,7 +182,7 @@ export default function PendingReportsPage() {
                     <CardContent className="p-3 flex items-center gap-3">
                       <button
                         type="button"
-                        className="flex-1 flex items-center gap-3 text-left"
+                        className="flex-1 flex items-center gap-3 text-left transition-[opacity] duration-150 active:opacity-70"
                         onClick={() => router.push(`/lesson-reports/${r.schedule_entry_id}`)}
                       >
                         <div className="w-24 flex-shrink-0">

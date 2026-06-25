@@ -176,10 +176,10 @@ export function FormList({
       <div className="flex items-center justify-between">
         <button
           onClick={() => setShowArchived(!showArchived)}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-150 ${
+          className={`px-4 py-2 rounded-lg text-sm font-medium active:scale-[0.97] transition-[transform,background-color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] ${
             showArchived
-              ? 'bg-[#3b82f6]/20 text-[#1f2937]'
-              : 'bg-[#f3f4f6] text-[#4b5563] hover:bg-white'
+              ? 'bg-info-subtle text-text-heading'
+              : 'bg-surface-hover text-text-muted hover:bg-surface-raised'
           }`}
         >
           {showArchived ? 'アーカイブ済みを非表示' : 'アーカイブ済みを表示'}

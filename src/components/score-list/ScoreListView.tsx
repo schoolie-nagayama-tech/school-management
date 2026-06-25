@@ -554,7 +554,7 @@ export function ScoreListView({ category, students, schoolIds }: ScoreListViewPr
                   onClick={() => setNaishinType(type)}
                   role="radio"
                   aria-checked={naishinType === type}
-                  className={`px-2.5 py-0.5 text-xs rounded transition-colors duration-150 ${
+                  className={`px-2.5 py-0.5 text-xs rounded transition-[background-color,color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97] ${
                     naishinType === type
                       ? 'bg-surface-raised text-ink font-medium shadow-sm'
                       : 'text-text-muted hover:text-text-body'
@@ -594,7 +594,7 @@ export function ScoreListView({ category, students, schoolIds }: ScoreListViewPr
               <button
                 onClick={handleSave}
                 disabled={isSaving}
-                className="ml-auto flex items-center gap-1.5 px-3 py-1.5 bg-info text-white text-xs font-medium rounded-md hover:bg-info/90 disabled:opacity-50 transition-colors duration-150"
+                className="ml-auto flex items-center gap-1.5 px-3 py-1.5 bg-info text-white text-xs font-medium rounded-md hover:bg-info/90 disabled:opacity-50 transition-[background-color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97]"
               >
                 <Save className="w-3.5 h-3.5" />
                 {isSaving ? '保存中...' : '保存'}
@@ -630,14 +630,14 @@ export function ScoreListView({ category, students, schoolIds }: ScoreListViewPr
             <button
               onClick={() => setCurrentPage(1)}
               disabled={currentPage === 1}
-              className="px-2 py-1 text-sm rounded border border-border disabled:opacity-40 hover:bg-surface-hover transition-colors duration-150"
+              className="px-2 py-1 text-sm rounded border border-border disabled:opacity-40 hover:bg-surface-hover transition-[background-color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97]"
             >
               «
             </button>
             <button
               onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
               disabled={currentPage === 1}
-              className="px-3 py-1 text-sm rounded border border-border disabled:opacity-40 hover:bg-surface-hover transition-colors duration-150"
+              className="px-3 py-1 text-sm rounded border border-border disabled:opacity-40 hover:bg-surface-hover transition-[background-color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97]"
             >
               ‹ 前
             </button>
@@ -647,14 +647,14 @@ export function ScoreListView({ category, students, schoolIds }: ScoreListViewPr
             <button
               onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
               disabled={currentPage === totalPages}
-              className="px-3 py-1 text-sm rounded border border-border disabled:opacity-40 hover:bg-surface-hover transition-colors duration-150"
+              className="px-3 py-1 text-sm rounded border border-border disabled:opacity-40 hover:bg-surface-hover transition-[background-color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97]"
             >
               次 ›
             </button>
             <button
               onClick={() => setCurrentPage(totalPages)}
               disabled={currentPage === totalPages}
-              className="px-2 py-1 text-sm rounded border border-border disabled:opacity-40 hover:bg-surface-hover transition-colors duration-150"
+              className="px-2 py-1 text-sm rounded border border-border disabled:opacity-40 hover:bg-surface-hover transition-[background-color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97]"
             >
               »
             </button>

@@ -1512,7 +1512,7 @@ export default function InquiryDetailPage() {
                     <button
                       type="button"
                       onClick={() => setRawSourceOpen((v) => !v)}
-                      className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-surface-hover transition-colors duration-150"
+                      className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-surface-hover transition-[transform,background-color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.99]"
                     >
                       <span className="text-sm font-medium text-text-heading">
                         HP原文（全項目）

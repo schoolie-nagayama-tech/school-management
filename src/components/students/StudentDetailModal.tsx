@@ -337,7 +337,7 @@ export function StudentDetailModal({
             <button
               type="button"
               onClick={() => handleRemoveTextbook(tb)}
-              className="p-1 text-gray-400 hover:text-red-500 rounded transition-colors"
+              className="p-1 text-gray-400 hover:text-red-500 rounded transition-[color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97]"
               aria-label="教材を削除"
             >
               <Trash2 className="w-4 h-4" />
@@ -378,7 +378,7 @@ export function StudentDetailModal({
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
-              className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+              className={`px-4 py-2 text-sm font-medium border-b-2 transition-[color,border-color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] ${
                 activeTab === tab.key
                   ? 'border-[#3b82f6] text-[#3b82f6]'
                   : 'border-transparent text-[#4b5563] hover:text-[#1f2937]'
@@ -545,7 +545,7 @@ export function StudentDetailModal({
                           {!isTeacher && (
                             <button
                               onClick={() => handleRemoveDistributed(dm)}
-                              className="p-0.5 text-gray-300 hover:text-red-500 transition-colors"
+                              className="p-0.5 text-gray-300 hover:text-red-500 transition-[color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97]"
                               title="発注を取り消す"
                             >
                               <Trash2 className="w-3.5 h-3.5" />

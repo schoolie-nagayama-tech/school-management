@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, type CSSProperties } from 'react';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { AdminLayout } from '@/components/layouts';
@@ -1003,7 +1003,10 @@ export default function CourseProgressPage() {
 
         {/* 設定パネル（アコーディオン: フィルター + 項目管理） */}
         {!showAllSchoolsOverview && showSettings && (
-          <div className="mb-4 bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <div
+            className="stagger-item mb-4 bg-white rounded-xl border border-gray-200 overflow-hidden"
+            style={{ '--stagger-index': 0 } as CSSProperties}
+          >
             {/* タブ切り替え */}
             <div className="flex border-b border-gray-200">
               <button
@@ -1360,8 +1363,8 @@ export default function CourseProgressPage() {
 
       {/* テンプレート保存ダイアログ */}
       {showSaveDialog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white rounded-xl shadow-xl p-6 w-96 max-w-[90vw]">
+        <div className="modal-overlay fixed inset-0 z-50 flex items-center justify-center">
+          <div className="modal-panel bg-white rounded-xl shadow-xl p-6 w-96 max-w-[90vw]">
             <h3 className="text-sm font-bold text-ink mb-4">テンプレートとして保存</h3>
             <p className="text-xs text-gray-500 mb-3">
               現在の進捗管理項目をテンプレートとして保存します。

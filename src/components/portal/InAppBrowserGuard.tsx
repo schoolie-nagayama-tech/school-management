@@ -92,14 +92,14 @@ export function InAppBrowserGuard({ children }: { children: React.ReactNode }) {
             href={currentUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="block w-full px-6 py-3.5 bg-emerald-600 text-white font-bold rounded-xl text-center shadow-sm active:bg-emerald-700 transition-colors"
+            className="block w-full px-6 py-3.5 bg-emerald-600 text-white font-bold rounded-xl text-center shadow-sm active:bg-emerald-700 active:scale-[0.97] transition-[transform,background-color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)]"
           >
             ブラウザで開く
           </a>
           <button
             type="button"
             onClick={handleCopyUrl}
-            className="block w-full px-6 py-3 border-2 border-gray-300 text-gray-700 font-medium rounded-xl text-center active:bg-gray-100 transition-colors"
+            className="block w-full px-6 py-3 border-2 border-gray-300 text-gray-700 font-medium rounded-xl text-center active:bg-gray-100 active:scale-[0.97] transition-[transform,background-color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)]"
           >
             {copied ? 'コピーしました' : 'URLをコピーして貼り付ける'}
           </button>

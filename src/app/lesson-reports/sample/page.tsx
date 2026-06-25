@@ -138,7 +138,7 @@ export default function LessonReportSamplePage() {
           <button
             type="button"
             onClick={() => setMode('form')}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md transition-[colors,transform] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.96] ${
               mode === 'form'
                 ? 'bg-white shadow-sm text-info'
                 : 'text-text-muted hover:text-text-body'
@@ -150,7 +150,7 @@ export default function LessonReportSamplePage() {
           <button
             type="button"
             onClick={() => setMode('preview')}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md transition-[colors,transform] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.96] ${
               mode === 'preview'
                 ? 'bg-white shadow-sm text-info'
                 : 'text-text-muted hover:text-text-body'
@@ -162,7 +162,7 @@ export default function LessonReportSamplePage() {
           <button
             type="button"
             onClick={() => setMode('portal')}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md transition-[colors,transform] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.96] ${
               mode === 'portal'
                 ? 'bg-white shadow-sm text-info'
                 : 'text-text-muted hover:text-text-body'

@@ -25,23 +25,23 @@ export function TranscriptDetailModal({ isOpen, onClose, transcript, onLink, onU
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={transcript.title || '文字起こし詳細'}>
       <div className="space-y-3 text-sm">
-        <div className="grid grid-cols-2 gap-2 bg-[#f3f4f6] p-3 rounded">
+        <div className="grid grid-cols-2 gap-2 bg-surface p-3 rounded">
           <div>
-            <span className="text-[#4b5563]/60">録音日時: </span>
+            <span className="text-text-muted">録音日時: </span>
             {transcript.recorded_at
               ? new Date(transcript.recorded_at).toLocaleString('ja-JP')
               : '-'}
           </div>
           <div>
-            <span className="text-[#4b5563]/60">尺: </span>
+            <span className="text-text-muted">尺: </span>
             {formatDuration(transcript.duration_seconds)}
           </div>
           <div>
-            <span className="text-[#4b5563]/60">取り込み: </span>
+            <span className="text-text-muted">取り込み: </span>
             {new Date(transcript.created_at).toLocaleString('ja-JP')}
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-[#4b5563]/60">紐付け先: </span>
+            <span className="text-text-muted">紐付け先: </span>
             {transcript.student ? (
               <span className="text-green-700 font-medium">
                 {transcript.student.last_name} {transcript.student.first_name}
@@ -65,13 +65,13 @@ export function TranscriptDetailModal({ isOpen, onClose, transcript, onLink, onU
         </div>
 
         <div>
-          <div className="text-[#4b5563]/60 mb-1">文字起こし</div>
-          <div className="whitespace-pre-wrap bg-white border border-[#e5e7eb] rounded p-3 max-h-96 overflow-y-auto">
+          <div className="text-text-muted mb-1">文字起こし</div>
+          <div className="whitespace-pre-wrap bg-surface-raised border border-border-default rounded p-3 max-h-96 overflow-y-auto">
             {transcript.transcript}
           </div>
         </div>
 
-        <div className="flex items-center justify-between pt-2 border-t border-[#e5e7eb]">
+        <div className="flex items-center justify-between pt-2 border-t border-border-default">
           <div>
             {!transcript.linked_student_id && onLink && (
               <Button onClick={onLink}>

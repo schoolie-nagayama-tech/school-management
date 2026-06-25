@@ -710,7 +710,7 @@ export default function TestPrepEditor() {
         {!isNew && proposal?.token && status !== 'draft' && (
           <section
             ref={urlSectionRef}
-            className={`rounded-xl border overflow-hidden print:hidden transition-all duration-500 ${
+            className={`rounded-xl border overflow-hidden print:hidden transition-[background-color,border-color,box-shadow] duration-300 ease-[cubic-bezier(0.23,1,0.32,1)] ${
               justPublished
                 ? 'bg-success-subtle border-green-300 ring-2 ring-green-200'
                 : 'bg-surface-raised border-border'
@@ -734,14 +734,14 @@ export default function TestPrepEditor() {
                 />
                 <button
                   onClick={handleCopyUrl}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 text-sm bg-primary text-primary-contrast rounded-lg hover:bg-primary-dark transition-[colors,transform] active:scale-[0.97]"
+                  className="inline-flex items-center gap-1.5 px-4 py-2 text-sm bg-primary text-primary-contrast rounded-lg hover:bg-primary-dark transition-[background-color,transform] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97]"
                 >
                   {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                   {copied ? 'コピー済' : 'コピー'}
                 </button>
                 <button
                   onClick={handlePrint}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 text-sm border border-border rounded-lg hover:bg-surface-hover transition-[colors,transform] active:scale-[0.97]"
+                  className="inline-flex items-center gap-1.5 px-4 py-2 text-sm border border-border rounded-lg hover:bg-surface-hover transition-[background-color,transform] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97]"
                 >
                   <Printer className="w-3.5 h-3.5" />
                   印刷
@@ -767,14 +767,14 @@ export default function TestPrepEditor() {
             <button
               onClick={() => handleSave('draft')}
               disabled={saving}
-              className="px-4 py-2 text-sm border border-border rounded-lg hover:bg-surface-hover transition-[colors,transform] active:scale-[0.97] disabled:opacity-50"
+              className="px-4 py-2 text-sm border border-border rounded-lg hover:bg-surface-hover transition-[background-color,transform] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97] disabled:opacity-50"
             >
               下書き保存
             </button>
             <button
               onClick={() => handleSave('published')}
               disabled={saving}
-              className="px-4 py-2 text-sm bg-primary text-primary-contrast font-medium rounded-lg hover:bg-primary-dark transition-[colors,transform] active:scale-[0.97] disabled:opacity-50"
+              className="px-4 py-2 text-sm bg-primary text-primary-contrast font-medium rounded-lg hover:bg-primary-dark transition-[background-color,transform] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97] disabled:opacity-50"
             >
               保存して公開
             </button>
@@ -1111,7 +1111,7 @@ function SubjectEditor({
             <span className="text-xs text-blue-700">{selectedUnitIds.size}件の単元を選択中</span>
             <button
               onClick={handleGroup}
-              className="px-3 py-1 text-xs font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-[colors,transform] active:scale-[0.97]"
+              className="px-3 py-1 text-xs font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-[background-color,transform] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97]"
             >
               まとめる
             </button>

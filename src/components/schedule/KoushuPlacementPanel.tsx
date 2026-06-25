@@ -238,7 +238,7 @@ export function KoushuPlacementPanel({
                                   <button
                                     type="button"
                                     onClick={() => onStartPlacement(r.student_id, [sid])}
-                                    className={`text-xs px-2 py-0.5 rounded ${
+                                    className={`text-xs px-2 py-0.5 rounded active:scale-[0.97] transition-[background-color,transform] duration-150 ${
                                       isPlacing
                                         ? 'bg-info text-white'
                                         : 'bg-white border border-info text-info hover:bg-info-subtle'

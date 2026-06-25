@@ -26,7 +26,7 @@ export function SeasonYearSelector({
           <button
             key={s}
             onClick={() => onSeasonChange(s)}
-            className={`px-3 py-1.5 text-xs rounded-md transition-colors ${
+            className={`px-3 py-1.5 text-xs rounded-md transition-[color,background-color,transform] duration-150 ease-out active:scale-[0.97] ${
               season === s
                 ? 'bg-white text-[#1e3a5f] font-semibold shadow-sm'
                 : 'text-gray-500 hover:text-gray-700'

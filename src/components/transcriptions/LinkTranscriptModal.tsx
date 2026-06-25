@@ -91,14 +91,14 @@ export function LinkTranscriptModal({ isOpen, onClose, transcript, onSuccess }: 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="文字起こしを生徒に紐付け">
       <div className="space-y-4">
-        <div className="bg-[#f3f4f6] p-3 rounded border border-[#e5e7eb] text-sm space-y-1">
-          <div className="font-semibold text-[#1f2937]">{transcript.title || '(無題)'}</div>
+        <div className="bg-surface p-3 rounded border border-border-default text-sm space-y-1">
+          <div className="font-semibold text-text-heading">{transcript.title || '(無題)'}</div>
           {transcript.recorded_at && (
-            <div className="text-[#4b5563]/70">
+            <div className="text-text-muted">
               録音: {new Date(transcript.recorded_at).toLocaleString('ja-JP')}
             </div>
           )}
-          <div className="text-[#4b5563] line-clamp-3 whitespace-pre-wrap">
+          <div className="text-text-body line-clamp-3 whitespace-pre-wrap">
             {transcript.transcript.slice(0, 200)}
             {transcript.transcript.length > 200 && '...'}
           </div>
@@ -112,7 +112,7 @@ export function LinkTranscriptModal({ isOpen, onClose, transcript, onSuccess }: 
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-sm font-medium text-[#4b5563] mb-1">面談種別</label>
+            <label className="block text-sm font-medium text-text-body mb-1">面談種別</label>
             <Select
               value={interviewType}
               onChange={(e) => setInterviewType(e.target.value as InterviewType)}
@@ -123,7 +123,7 @@ export function LinkTranscriptModal({ isOpen, onClose, transcript, onSuccess }: 
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-[#4b5563] mb-1">面談日</label>
+            <label className="block text-sm font-medium text-text-body mb-1">面談日</label>
             <Input
               type="date"
               value={interviewDate}
@@ -133,7 +133,7 @@ export function LinkTranscriptModal({ isOpen, onClose, transcript, onSuccess }: 
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-[#4b5563] mb-1">生徒を選択</label>
+          <label className="block text-sm font-medium text-text-body mb-1">生徒を選択</label>
           <Input
             placeholder="名前・かな・コードで検索"
             value={search}
@@ -142,15 +142,15 @@ export function LinkTranscriptModal({ isOpen, onClose, transcript, onSuccess }: 
           {isLoadingStudents ? (
             <Loading size="md" />
           ) : filtered.length === 0 ? (
-            <div className="text-center py-6 text-[#4b5563]/60 text-sm">
+            <div className="text-center py-6 text-text-muted text-sm">
               {students.length === 0 ? '生徒が登録されていません' : '該当する生徒がいません'}
             </div>
           ) : (
-            <div className="space-y-1 max-h-64 overflow-y-auto border border-[#e5e7eb] rounded mt-2 p-2">
+            <div className="space-y-1 max-h-64 overflow-y-auto border border-border-default rounded mt-2 p-2">
               {filtered.slice(0, 100).map((s) => (
                 <label
                   key={s.id}
-                  className="flex items-center gap-2 p-2 hover:bg-[#f3f4f6] rounded cursor-pointer text-sm"
+                  className="flex items-center gap-2 p-2 hover:bg-surface rounded cursor-pointer text-sm transition-colors duration-150"
                 >
                   <input
                     type="radio"
@@ -165,7 +165,7 @@ export function LinkTranscriptModal({ isOpen, onClose, transcript, onSuccess }: 
                   />
                   <span className="flex-1">
                     {s.last_name} {s.first_name}
-                    <span className="text-[#4b5563]/60 ml-2">({GRADE_LABELS[s.grade]})</span>
+                    <span className="text-text-faint ml-2">({GRADE_LABELS[s.grade]})</span>
                   </span>
                 </label>
               ))}
@@ -173,7 +173,7 @@ export function LinkTranscriptModal({ isOpen, onClose, transcript, onSuccess }: 
           )}
         </div>
 
-        <div className="flex justify-end gap-2 pt-3 border-t border-[#e5e7eb]">
+        <div className="flex justify-end gap-2 pt-3 border-t border-border-default">
           <Button onClick={onClose} variant="secondary" disabled={isSubmitting}>
             キャンセル
           </Button>

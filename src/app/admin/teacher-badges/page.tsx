@@ -159,7 +159,7 @@ export default function TeacherBadgesPage() {
         topTab === 'badges' ? (
           <button
             onClick={handleCreate}
-            className="px-4 py-2 text-sm font-medium text-white bg-ink rounded-lg hover:brightness-[0.85] transition-colors duration-150"
+            className="px-4 py-2 text-sm font-medium text-white bg-ink rounded-lg hover:brightness-[0.85] transition-[transform,filter] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97]"
           >
             + 新規作成
           </button>
@@ -173,7 +173,7 @@ export default function TeacherBadgesPage() {
             key={tab.key}
             onClick={() => setTopTab(tab.key)}
             className={`
-                flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors duration-150 -mb-px
+                flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-[color,border-color] duration-150 active:scale-[0.98] -mb-px
                 ${
                   topTab === tab.key
                     ? 'border-ink text-ink'

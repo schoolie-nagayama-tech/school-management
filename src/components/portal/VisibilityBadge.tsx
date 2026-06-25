@@ -36,7 +36,7 @@ function ToggleButton({
     <button
       type="button"
       onClick={onToggle}
-      className={`px-2.5 py-0.5 rounded text-xs font-medium transition-colors ${
+      className={`px-2.5 py-0.5 rounded text-xs font-medium transition-[transform,background-color] duration-100 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.93] ${
         isVisible
           ? 'bg-[#f3f4f6] text-[#4b5563] hover:bg-[#e5e7eb]'
           : 'bg-[#10b981] text-white hover:bg-[#059669]'

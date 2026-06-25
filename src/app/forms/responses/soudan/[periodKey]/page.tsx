@@ -443,15 +443,15 @@ export default function SoudanResponsePage() {
           </div>
         </div>
 
-        {/* 一括操作バー */}
+        {/* 一括操作バー: slide-in-bar で @starting-style スライドイン */}
         {selectedIds.size > 0 && (
-          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between">
-            <span className="text-sm text-blue-800">{selectedIds.size}件を選択中</span>
+          <div className="slide-in-bar mb-4 p-3 bg-info-subtle border border-info/30 rounded-lg flex items-center justify-between">
+            <span className="text-sm text-info">{selectedIds.size}件を選択中</span>
             <div className="flex gap-2">
               <button
                 onClick={handleBulkArchive}
                 disabled={isProcessing}
-                className="px-3 py-1 bg-gray-600 text-white text-sm rounded hover:bg-gray-700 disabled:opacity-50 transition-colors duration-150"
+                className="px-3 py-1 bg-surface-hover text-text-body text-sm rounded hover:bg-border active:scale-[0.97] disabled:opacity-50 transition-[transform,background-color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)]"
               >
                 一括アーカイブ
               </button>
@@ -459,14 +459,14 @@ export default function SoudanResponsePage() {
                 <button
                   onClick={handleBulkDelete}
                   disabled={isProcessing}
-                  className="px-3 py-1 bg-[#ef4444] text-white text-sm rounded hover:bg-[#dc2626] disabled:opacity-50 transition-colors duration-150"
+                  className="px-3 py-1 bg-danger text-white text-sm rounded hover:bg-danger/90 active:scale-[0.97] disabled:opacity-50 transition-[transform,background-color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)]"
                 >
                   一括削除
                 </button>
               )}
               <button
                 onClick={() => setSelectedIds(new Set())}
-                className="px-3 py-1 text-gray-600 text-sm hover:underline transition-colors duration-150"
+                className="px-3 py-1 text-text-muted text-sm hover:text-text-body transition-colors duration-150"
               >
                 選択解除
               </button>
@@ -586,11 +586,11 @@ export default function SoudanResponsePage() {
                         <div className="flex gap-2">
                           {response.is_archived ? (
                             <>
-                              <span className="px-2 py-1 text-xs bg-gray-200 text-gray-600 rounded">
+                              <span className="px-2 py-1 text-xs bg-surface-hover text-text-muted rounded">
                                 アーカイブ済
                               </span>
                               <button
-                                className="px-3 py-1 text-xs bg-surface-hover text-blue-600 rounded hover:bg-blue-50 transition-colors duration-150"
+                                className="px-3 py-1 text-xs bg-surface-hover text-info rounded hover:bg-info-subtle active:scale-[0.97] transition-[transform,background-color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)]"
                                 onClick={() => handleUnarchive(response.id)}
                                 disabled={isProcessing}
                               >
@@ -598,7 +598,7 @@ export default function SoudanResponsePage() {
                               </button>
                               {permissions?.canDeleteFormResponses && (
                                 <button
-                                  className="px-3 py-1 text-xs bg-surface-hover text-[#ef4444] rounded hover:bg-[#ef4444]/10 transition-colors duration-150"
+                                  className="px-3 py-1 text-xs bg-surface-hover text-danger rounded hover:bg-danger-subtle active:scale-[0.97] transition-[transform,background-color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)]"
                                   onClick={() => handleDelete(response.id)}
                                   disabled={isProcessing}
                                 >
@@ -609,28 +609,28 @@ export default function SoudanResponsePage() {
                           ) : (
                             <>
                               <button
-                                className="px-3 py-1 text-xs bg-surface-hover text-text-body rounded hover:bg-border transition-colors duration-150"
+                                className="px-3 py-1 text-xs bg-surface-hover text-text-body rounded hover:bg-border active:scale-[0.97] transition-[transform,background-color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)]"
                                 onClick={() => setDetailResponse(response)}
                               >
                                 詳細
                               </button>
                               {response.linked_student_id ? (
                                 <button
-                                  className="px-3 py-1 text-xs bg-surface-hover text-text-body rounded hover:bg-border transition-colors duration-150"
+                                  className="px-3 py-1 text-xs bg-surface-hover text-text-body rounded hover:bg-border active:scale-[0.97] transition-[transform,background-color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)]"
                                   onClick={() => handleUnlinkStudent(response.id)}
                                 >
                                   解除
                                 </button>
                               ) : (
                                 <button
-                                  className="px-3 py-1 text-xs bg-surface-hover text-text-body rounded hover:bg-border transition-colors duration-150"
+                                  className="px-3 py-1 text-xs bg-surface-hover text-text-body rounded hover:bg-border active:scale-[0.97] transition-[transform,background-color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)]"
                                   onClick={() => handleOpenLinkModal(response)}
                                 >
                                   紐付け
                                 </button>
                               )}
                               <button
-                                className="px-3 py-1 text-xs bg-surface-hover text-gray-500 rounded hover:bg-gray-100 transition-colors duration-150"
+                                className="px-3 py-1 text-xs bg-surface-hover text-text-muted rounded hover:bg-border active:scale-[0.97] transition-[transform,background-color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)]"
                                 onClick={() => handleArchive(response.id)}
                                 disabled={isProcessing}
                               >
@@ -638,7 +638,7 @@ export default function SoudanResponsePage() {
                               </button>
                               {permissions?.canDeleteFormResponses && (
                                 <button
-                                  className="px-3 py-1 text-xs bg-surface-hover text-[#ef4444] rounded hover:bg-[#ef4444]/10 transition-colors duration-150"
+                                  className="px-3 py-1 text-xs bg-surface-hover text-danger rounded hover:bg-danger-subtle active:scale-[0.97] transition-[transform,background-color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)]"
                                   onClick={() => handleDelete(response.id)}
                                   disabled={isProcessing}
                                 >

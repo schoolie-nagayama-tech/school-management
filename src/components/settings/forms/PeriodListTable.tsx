@@ -238,8 +238,10 @@ export function PeriodListTable({
 
       {/* アーカイブ確認モーダル */}
       {archiveConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white rounded-xl shadow-lg p-6 max-w-md mx-4">
+        /* modal-overlay: @starting-style フェードイン */
+        <div className="modal-overlay fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          {/* modal-panel: @starting-style scale(0.96)+opacity:0 から出現 */}
+          <div className="modal-panel bg-white rounded-xl shadow-lg p-6 max-w-md mx-4">
             <h3 className="text-lg font-bold text-[#1f2937] mb-2">削除できません</h3>
             <p className="text-sm text-[#4b5563] mb-4">
               この期間には回答があるため削除できません。アーカイブしますか？（回答もアーカイブされます）

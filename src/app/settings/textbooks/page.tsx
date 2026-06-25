@@ -409,7 +409,7 @@ function TextbookMasterPage() {
             </div>
             <button
               onClick={openAddModal}
-              className="inline-flex items-center gap-1.5 px-4 py-2 bg-ink text-white text-sm rounded-lg hover:bg-ink/80 transition-colors duration-150"
+              className="inline-flex items-center gap-1.5 px-4 py-2 bg-ink text-white text-sm rounded-lg hover:bg-ink/80 transition-[background-color,transform] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97]"
             >
               <Plus className="w-4 h-4" />
               教材を追加
@@ -578,7 +578,8 @@ function TextbookMasterPage() {
                               <FileText className="w-3.5 h-3.5" />
                             </button>
                             {proposalPickerTextbookId === t.id && (
-                              <div className="absolute right-0 top-full mt-1 w-64 bg-surface-raised border border-border-default rounded-xl shadow-lg z-50 overflow-hidden">
+                              /* dropdown-menu-right: transform-origin を top-right に設定し @starting-style スケール+フェードを適用 */
+                              <div className="dropdown-menu dropdown-menu-right absolute right-0 top-full mt-1 w-64 bg-surface-raised border border-border-default rounded-xl shadow-lg z-50 overflow-hidden">
                                 <div className="p-2 border-b border-border-subtle">
                                   <div className="relative">
                                     <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-text-faint" />
@@ -652,12 +653,14 @@ function TextbookMasterPage() {
 
         {/* Modal */}
         {showModal && (
+          /* modal-overlay: @starting-style で opacity:0 → 1 にフェードイン */
           <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-surfacelack/40"
+            className="modal-overlay fixed inset-0 z-50 flex items-center justify-center bg-black/40"
             onClick={() => setShowModal(false)}
           >
+            {/* modal-panel: @starting-style で scale(0.96)+opacity:0 から出現 */}
             <div
-              className="bg-surface-raised rounded-xl shadow-xl w-full max-w-md mx-4 p-6"
+              className="modal-panel bg-surface-raised rounded-xl shadow-xl w-full max-w-md mx-4 p-6"
               onClick={(e) => e.stopPropagation()}
             >
               <h2 className="text-lg font-bold text-text-heading mb-4">
@@ -777,14 +780,14 @@ function TextbookMasterPage() {
               <div className="flex justify-end gap-2 mt-6">
                 <button
                   onClick={() => setShowModal(false)}
-                  className="px-4 py-2 text-sm text-text-muted hover:text-text-heading transition-colors duration-150"
+                  className="px-4 py-2 text-sm text-text-muted hover:text-text-heading transition-[color,transform] duration-150 active:scale-[0.97]"
                 >
                   キャンセル
                 </button>
                 <button
                   onClick={handleSave}
                   disabled={saving}
-                  className="px-4 py-2 bg-ink text-white text-sm rounded-lg hover:bg-ink/80 disabled:opacity-50 transition-colors duration-150"
+                  className="px-4 py-2 bg-ink text-white text-sm rounded-lg hover:bg-ink/80 disabled:opacity-50 transition-[background-color,transform] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97]"
                 >
                   {saving ? '保存中...' : editingId ? '更新' : '追加'}
                 </button>

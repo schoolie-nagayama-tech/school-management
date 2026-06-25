@@ -450,7 +450,7 @@ export default function InquiriesPage() {
               <button
                 type="button"
                 onClick={() => setShowFilters((v) => !v)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors duration-150 shrink-0 ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium border transition-[transform,background-color,border-color,color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97] shrink-0 ${
                   showFilters
                     ? 'bg-ink text-white border-ink'
                     : 'bg-surface-raised text-gray-600 border-border hover:bg-gray-50'

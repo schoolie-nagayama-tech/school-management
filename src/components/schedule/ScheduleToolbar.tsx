@@ -143,7 +143,7 @@ export function ScheduleToolbar({
             <button
               type="button"
               onClick={() => setWeekPickerOpen(true)}
-              className="text-sm text-[var(--paragraph)] min-w-[180px] py-1 px-2 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
+              className="text-sm text-[var(--paragraph)] min-w-[180px] py-1 px-2 rounded-lg hover:bg-gray-100 transition-colors active:scale-[0.97] cursor-pointer"
               title="クリックで週を選択"
             >
               {formatWeekLabel(weekStart)}
@@ -267,7 +267,8 @@ export function ScheduleToolbar({
                   className="fixed inset-0 z-40 cursor-default"
                   onClick={() => setMgmtOpen(false)}
                 />
-                <div className="absolute right-0 mt-1 z-50 w-52 rounded-lg border border-[var(--stroke)] bg-white shadow-lg overflow-hidden py-1">
+                {/* dropdown-menu-right: 右起点の出現アニメ（globals.css） */}
+                <div className="dropdown-menu dropdown-menu-right absolute right-0 mt-1 z-50 w-52 rounded-lg border border-[var(--stroke)] bg-white shadow-lg overflow-hidden py-1">
                   {[
                     { href: '/schedule/regular-patterns', label: '通塾日程の登録' },
                     { href: '/schedule/enrollments', label: '申込管理（講習・テスト対策）' },

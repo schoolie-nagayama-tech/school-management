@@ -347,10 +347,13 @@ function CartDrawer({
 
   return (
     <>
-      {/* Overlay */}
-      <div className="fixed inset-0 bg-black/30 z-40" onClick={onClose} />
-      {/* Drawer */}
-      <div className="fixed right-0 top-0 bottom-0 w-full max-w-md bg-white shadow-xl z-50 flex flex-col">
+      {/* Overlay: opacity フェードのみ（GPU合成） */}
+      <div
+        className="fixed inset-0 bg-black/30 z-40 animate-[fade-in_200ms_ease-out_forwards]"
+        onClick={onClose}
+      />
+      {/* Drawer: --ease-drawer でスライドイン */}
+      <div className="fixed right-0 top-0 bottom-0 w-full max-w-md bg-white shadow-xl z-50 flex flex-col animate-[drawer-slide-in_300ms_cubic-bezier(0.32,0.72,0,1)_forwards]">
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
           <h3 className="text-base font-bold text-gray-900 flex items-center gap-2">
@@ -397,7 +400,7 @@ function CartDrawer({
                   </div>
                   <button
                     onClick={() => onRemove(item.id)}
-                    className="p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 transition-[background-color,color] duration-150 ease-out"
+                    className="p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 transition-[background-color,color,transform] duration-150 ease-out active:scale-[0.97]"
                     title="削除"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -420,7 +423,7 @@ function CartDrawer({
             <button
               onClick={onSubmit}
               disabled={isSubmitting}
-              className="w-full py-2.5 rounded-lg font-bold text-sm bg-[#1e3a5f] text-white hover:bg-[#2d4a6f] disabled:opacity-50 transition-[background-color,color] duration-150 ease-out"
+              className="w-full py-2.5 rounded-lg font-bold text-sm bg-[#1e3a5f] text-white hover:bg-[#2d4a6f] disabled:opacity-50 transition-[background-color,color,transform] duration-150 ease-out active:scale-[0.97]"
             >
               {isSubmitting ? '発注中...' : 'まとめて発注する'}
             </button>
@@ -806,7 +809,7 @@ export function TextbookCatalog({
 
         {/* Grid */}
         {paginatedTextbooks.length === 0 ? (
-          <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
+          <div className="bg-white rounded-xl border border-gray-200 p-12 text-center animate-[stagger-fade-in_240ms_var(--ease-out)_forwards]">
             <Package className="w-10 h-10 text-gray-300 mx-auto mb-3" />
             <h3 className="text-lg font-semibold text-gray-800 mb-1">
               {textbooks.length === 0
@@ -905,7 +908,7 @@ export function TextbookCatalog({
               </button>
               <button
                 onClick={() => setIsCartOpen(true)}
-                className="px-4 py-1.5 text-sm rounded-lg font-bold bg-[#1e3a5f] text-white hover:bg-[#2d4a6f] transition-[background-color,color] duration-150 ease-out"
+                className="px-4 py-1.5 text-sm rounded-lg font-bold bg-[#1e3a5f] text-white hover:bg-[#2d4a6f] transition-[background-color,color,transform] duration-150 ease-out active:scale-[0.97]"
               >
                 まとめて発注
               </button>

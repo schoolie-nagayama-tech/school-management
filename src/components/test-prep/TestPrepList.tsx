@@ -58,29 +58,35 @@ export default function TestPrepList() {
         </div>
         <button
           onClick={() => router.push(`/students/${studentId}/test-prep/new`)}
-          className="px-4 py-2 text-sm bg-primary text-primary-contrast font-medium rounded-lg hover:bg-primary-dark transition-[colors,transform] active:scale-[0.97]"
+          className="px-4 py-2 text-sm bg-primary text-primary-contrast font-medium rounded-lg hover:bg-primary-dark transition-[background-color,transform] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97]"
         >
           + 新規作成
         </button>
       </div>
 
       {proposals.length === 0 ? (
-        <div className="bg-surface-raised rounded-xl border border-border p-12 text-center">
+        // 空状態に軽いフェードイン
+        <div
+          className="bg-surface-raised rounded-xl border border-border p-12 text-center stagger-item"
+          style={{ '--stagger-index': 0 } as React.CSSProperties}
+        >
           <p className="text-text-muted mb-4">テスト対策提案書はまだありません</p>
           <button
             onClick={() => router.push(`/students/${studentId}/test-prep/new`)}
-            className="px-4 py-2 text-sm bg-primary text-primary-contrast rounded-lg hover:bg-primary-dark transition-[colors,transform] active:scale-[0.97]"
+            className="px-4 py-2 text-sm bg-primary text-primary-contrast rounded-lg hover:bg-primary-dark transition-[background-color,transform] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97]"
           >
             提案書を作成
           </button>
         </div>
       ) : (
         <div className="space-y-3">
-          {proposals.map((p) => (
+          {proposals.map((p, i) => (
             <button
               key={p.id}
               onClick={() => router.push(`/students/${studentId}/test-prep/${p.id}`)}
-              className="w-full text-left bg-surface-raised rounded-xl border border-border p-4 hover:bg-surface-hover hover:-translate-y-px transition-[colors,transform] active:scale-[0.99]"
+              // stagger-item: 初回表示のカードに40ms刻みのフェードイン（最大8件でクランプ）
+              className="stagger-item w-full text-left bg-surface-raised rounded-xl border border-border p-4 hover:bg-surface-hover active:scale-[0.99] transition-[background-color,transform] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)]"
+              style={{ '--stagger-index': Math.min(i, 7) } as React.CSSProperties}
             >
               <div className="flex items-center justify-between">
                 <div>

@@ -619,7 +619,7 @@ export default function TeacherAttendancePage() {
               className="absolute left-1/2 -top-2 -translate-x-1/2 -translate-y-full z-30 pointer-events-none"
               style={{
                 animation:
-                  'thanks-pop 0.5s cubic-bezier(.34,1.56,.64,1) both, thanks-fade-out .5s ease-in 3.5s forwards',
+                  'thanks-pop 0.5s cubic-bezier(.34,1.56,.64,1) both, thanks-fade-out .5s cubic-bezier(0.23,1,0.32,1) 3.5s forwards',
               }}
             >
               <div className="relative bg-gradient-to-br from-pink-50 to-white border border-pink-200 rounded-2xl shadow-lg px-5 py-3 whitespace-nowrap">

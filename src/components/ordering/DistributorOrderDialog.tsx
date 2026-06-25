@@ -262,7 +262,7 @@ export function DistributorOrderDialog({
           <h2 className="text-sm font-bold text-text-heading">取次サイトへ発注（日本教材出版）</h2>
           <button
             onClick={onClose}
-            className="ml-auto p-1 text-text-faint hover:text-text-body rounded hover:bg-surface-hover transition-colors"
+            className="ml-auto p-1 text-text-faint hover:text-text-body rounded hover:bg-surface-hover transition-[background-color,color,transform] duration-150 ease-out active:scale-[0.97]"
             aria-label="閉じる"
           >
             <X className="w-4 h-4" />
@@ -427,7 +427,7 @@ export function DistributorOrderDialog({
           <div className="flex items-center gap-2">
             <button
               onClick={onClose}
-              className="px-3 py-1.5 text-xs font-medium text-text-muted hover:text-text-body rounded-lg hover:bg-surface-hover transition-colors"
+              className="px-3 py-1.5 text-xs font-medium text-text-muted hover:text-text-body rounded-lg hover:bg-surface-hover transition-[background-color,color] duration-150 ease-out"
             >
               閉じる
             </button>
@@ -435,7 +435,7 @@ export function DistributorOrderDialog({
             <button
               onClick={handleQueue}
               disabled={loadingRows || rows.length === 0 || queuing}
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold border border-border-default rounded-lg hover:bg-surface-hover transition-colors disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold border border-border-default rounded-lg hover:bg-surface-hover transition-[background-color,color,transform] duration-150 ease-out active:scale-[0.97] disabled:opacity-50"
             >
               {queuing ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />

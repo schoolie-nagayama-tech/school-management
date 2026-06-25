@@ -29,7 +29,7 @@ export function Tooltip({ text, children, position = 'top', multiline = false }:
         className={`absolute ${positionClasses[position]} z-50 pointer-events-none
           opacity-0 scale-95
           group-hover/tip:opacity-100 group-hover/tip:scale-100
-          transition-[opacity,transform] duration-[125ms] ease-out`}
+          transition-[opacity,transform] duration-[125ms] ease-[cubic-bezier(0.23,1,0.32,1)]`}
       >
         <div
           className={`bg-text-heading text-text-on-primary text-[10px] px-2 py-1 rounded shadow-lg ${

@@ -153,7 +153,11 @@ export default function TranscriptionsPage() {
         {isLoading ? (
           <Loading size="md" />
         ) : items.length === 0 ? (
-          <div className="text-center py-16 border border-dashed border-border rounded-lg bg-surface">
+          /* 空状態: stagger-item で軽いフェードイン */
+          <div
+            className="text-center py-16 border border-dashed border-border rounded-lg bg-surface stagger-item"
+            style={{ '--stagger-index': 0 } as React.CSSProperties}
+          >
             <div className="text-sm text-text-body">該当する文字起こしがありません</div>
             <div className="text-xs text-text-body/60 mt-1">
               NottaがSlackに投稿するとここに表示されます

@@ -146,7 +146,7 @@ export function ActionGoalsSection({
           <button
             onClick={add}
             disabled={!newTitle.trim()}
-            className="px-3 py-1.5 text-xs bg-[#1e3a5f] text-white rounded hover:bg-[#2a4d7a] disabled:bg-[#9ca3af]"
+            className="px-3 py-1.5 text-xs bg-[#1e3a5f] text-white rounded hover:bg-[#2a4d7a] disabled:bg-[#9ca3af] transition-[background-color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97]"
           >
             追加
           </button>
@@ -154,7 +154,7 @@ export function ActionGoalsSection({
             <div className="relative">
               <button
                 onClick={() => setCopyOpen((v) => !v)}
-                className="px-3 py-1.5 text-xs bg-white border border-[#1e40af]/20 text-[#1e40af] rounded hover:bg-[#eff6ff]"
+                className="px-3 py-1.5 text-xs bg-white border border-[#1e40af]/20 text-[#1e40af] rounded hover:bg-[#eff6ff] transition-[background-color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97]"
               >
                 過去の目標から複製 ▾
               </button>

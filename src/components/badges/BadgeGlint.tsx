@@ -26,6 +26,7 @@ export function BadgeGlint({
         width={size}
         height={size}
         viewBox="0 0 14 14"
+        className="badge-glint-svg"
         style={{ animation: 'badge-glint-twinkle 2.4s ease-in-out infinite' }}
       >
         {/* メインの4方向バースト */}
@@ -55,6 +56,9 @@ export function BadgeGlint({
             opacity: 1;
             filter: drop-shadow(0 0 2.5px rgba(245,158,11,0.7));
           }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .badge-glint-svg { animation: none !important; transform: none !important; }
         }
       `}</style>
     </span>

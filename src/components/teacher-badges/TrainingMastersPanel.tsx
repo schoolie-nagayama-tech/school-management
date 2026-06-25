@@ -250,11 +250,11 @@ export function TrainingMastersPanel({ onSuccess, onError }: Props) {
       {/* 編集ダイアログ */}
       {dialogOpen && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          className="modal-overlay fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
           onClick={() => setDialogOpen(false)}
         >
           <div
-            className="bg-white rounded-xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
+            className="modal-panel bg-white rounded-xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="px-6 py-4 border-b border-gray-200">

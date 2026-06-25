@@ -138,11 +138,11 @@ export function BadgeAssignDialog({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+      className="modal-overlay fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 max-h-[80vh] flex flex-col"
+        className="modal-panel bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 max-h-[80vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* ヘッダー: バッジ情報 */}
@@ -196,7 +196,7 @@ export function BadgeAssignDialog({
                   <label
                     key={t.id}
                     className={`
-                      flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-colors
+                      flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-[background-color] duration-150 ease-out
                       ${assigned ? 'bg-sky-50' : 'hover:bg-gray-50'}
                       ${toggling ? 'opacity-60 pointer-events-none' : ''}
                     `}

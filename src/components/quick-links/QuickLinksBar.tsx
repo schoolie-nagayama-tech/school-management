@@ -78,7 +78,7 @@ export function QuickLinksBar({ className = '' }: QuickLinksBarProps) {
             href={link.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-[#fff5f5] text-[#b91c1c] border border-[#fecaca] hover:bg-[#fee2e2] hover:border-[#fca5a5] transition-colors duration-150"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-[#fff5f5] text-[#b91c1c] border border-[#fecaca] hover:bg-[#fee2e2] hover:border-[#fca5a5] transition-[color,background-color,border-color,transform] duration-150 ease-out active:scale-[0.97]"
             title={link.url}
           >
             <span className="truncate max-w-[200px]">{link.label}</span>

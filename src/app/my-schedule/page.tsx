@@ -260,7 +260,7 @@ export default function MySchedulePage() {
               <button
                 type="button"
                 onClick={() => setMode('week')}
-                className={`px-3 py-1 text-xs font-semibold flex items-center gap-1 ${
+                className={`px-3 py-1 text-xs font-semibold flex items-center gap-1 transition-[background-color,color] duration-150 active:scale-[0.95] ${
                   mode === 'week' ? 'bg-info text-white' : 'bg-white text-text-muted'
                 }`}
               >
@@ -269,7 +269,7 @@ export default function MySchedulePage() {
               <button
                 type="button"
                 onClick={() => setMode('month')}
-                className={`px-3 py-1 text-xs font-semibold flex items-center gap-1 ${
+                className={`px-3 py-1 text-xs font-semibold flex items-center gap-1 transition-[background-color,color] duration-150 active:scale-[0.95] ${
                   mode === 'month' ? 'bg-info text-white' : 'bg-white text-text-muted'
                 }`}
               >

@@ -41,7 +41,7 @@ export default function EnrollmentsPage() {
         {/* ヘッダー */}
         <div className="flex items-center gap-3">
           <Link href="/schedule">
-            <button className="p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
+            <button className="p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors active:scale-[0.97]">
               <ArrowLeft className="w-5 h-5" />
             </button>
           </Link>
@@ -54,7 +54,7 @@ export default function EnrollmentsPage() {
             <button
               key={t.key}
               onClick={() => setTab(t.key)}
-              className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
+              className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors active:scale-[0.97] ${
                 tab === t.key
                   ? 'border-[var(--headline)] text-[var(--headline)]'
                   : 'border-transparent text-[var(--paragraph)] hover:text-[var(--headline)]'

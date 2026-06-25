@@ -151,7 +151,7 @@ export default function HomePage() {
               <Link
                 key={card.key}
                 href={card.href}
-                className="block rounded-xl border border-gray-200 bg-white p-4 transition-transform duration-150 ease-out active:scale-[0.98]"
+                className="block rounded-xl border border-gray-200 bg-white p-4 transition-[transform,background-color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] [@media(hover:hover)]:hover:bg-surface active:scale-[0.98]"
               >
                 <div className="flex items-center justify-between">
                   <span

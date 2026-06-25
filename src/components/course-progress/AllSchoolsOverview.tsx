@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, type CSSProperties } from 'react';
 import { ChevronRight, AlertTriangle } from 'lucide-react';
 import type { SchoolKpis } from '@/lib/coursePrepKpis';
 
@@ -121,9 +121,9 @@ export function AllSchoolsOverview({ rows, loading, onSelectSchool }: AllSchools
         </div>
       </div>
 
-      {/* 教室別カード */}
+      {/* 教室別カード: stagger-item で順次フェードイン（最大8件でインデックスをクランプ） */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {rows.map((row) => {
+        {rows.map((row, idx) => {
           const k = row.kpis;
           const acqPct = Math.round(k.acquisitionRate * 100);
           // 目標進捗（取得 ÷ 目標）。目標未設定(0)はバーなし扱い。
@@ -138,7 +138,8 @@ export function AllSchoolsOverview({ rows, loading, onSelectSchool }: AllSchools
             <button
               key={row.schoolId}
               onClick={() => onSelectSchool(row.schoolId)}
-              className="group text-left bg-white rounded-xl border border-gray-200 p-4 hover:border-[#1e3a5f]/40 hover:shadow-sm transition-[border-color,box-shadow,transform] duration-150 ease-out active:scale-[0.99]"
+              className="stagger-item group text-left bg-white rounded-xl border border-gray-200 p-4 hover:border-[#1e3a5f]/40 hover:shadow-sm transition-[border-color,box-shadow,transform] duration-150 ease-out active:scale-[0.99]"
+              style={{ '--stagger-index': Math.min(idx, 7) } as CSSProperties}
             >
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2 min-w-0">

@@ -151,7 +151,7 @@ export function KoushuControlPanel({
           <button
             type="button"
             onClick={() => setOpen((v) => !v)}
-            className="flex items-center gap-1.5 font-semibold text-sm text-info"
+            className="flex items-center gap-1.5 font-semibold text-sm text-info transition-opacity duration-150 hover:opacity-80 active:scale-[0.97]"
           >
             {open ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
             <GraduationCap className="w-4 h-4" />
@@ -179,7 +179,7 @@ export function KoushuControlPanel({
                   type="button"
                   onClick={handleRunMatching}
                   disabled={running}
-                  className="ml-auto inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md bg-info text-white hover:bg-info/90 disabled:opacity-50"
+                  className="ml-auto inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md bg-info text-white hover:bg-info/90 active:scale-[0.97] transition-[background-color,transform] duration-150 disabled:opacity-50"
                 >
                   <Wand2 className="w-3.5 h-3.5" />
                   {running ? '実行中…' : 'マッチング実行'}
@@ -189,7 +189,7 @@ export function KoushuControlPanel({
                     type="button"
                     onClick={handlePublishAll}
                     disabled={running}
-                    className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md border border-success text-success hover:bg-success-subtle disabled:opacity-50"
+                    className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md border border-success text-success hover:bg-success-subtle active:scale-[0.97] transition-[background-color,transform] duration-150 disabled:opacity-50"
                   >
                     <Check className="w-3.5 h-3.5" />
                     下書きを全公開（{drafts.length}）

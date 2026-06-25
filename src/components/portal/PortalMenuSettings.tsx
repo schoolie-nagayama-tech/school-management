@@ -126,14 +126,14 @@ export function PortalMenuSettings({ menus, onUpdate }: PortalMenuSettingsProps)
                   <button
                     onClick={() => handleMoveUp(index)}
                     disabled={index === 0 || isSubmitting}
-                    className="px-2 py-1 text-xs bg-[#f3f4f6] text-[#4b5563] rounded hover:bg-[#e5e7eb] disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-2 py-1 text-xs bg-[#f3f4f6] text-[#4b5563] rounded hover:bg-[#e5e7eb] active:scale-[0.92] transition-[transform,background-color] duration-100 ease-[cubic-bezier(0.23,1,0.32,1)] disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     ↑
                   </button>
                   <button
                     onClick={() => handleMoveDown(index)}
                     disabled={index === menus.length - 1 || isSubmitting}
-                    className="px-2 py-1 text-xs bg-[#f3f4f6] text-[#4b5563] rounded hover:bg-[#e5e7eb] disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-2 py-1 text-xs bg-[#f3f4f6] text-[#4b5563] rounded hover:bg-[#e5e7eb] active:scale-[0.92] transition-[transform,background-color] duration-100 ease-[cubic-bezier(0.23,1,0.32,1)] disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     ↓
                   </button>

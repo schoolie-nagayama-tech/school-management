@@ -96,7 +96,7 @@ export function CardsView({
         {onAddTextbook && !isMeeting && (
           <button
             onClick={() => onAddTextbook()}
-            className="px-3 py-1.5 bg-[#1e3a5f] text-white rounded-lg text-sm hover:bg-[#2a4d7a]"
+            className="px-3 py-1.5 bg-[#1e3a5f] text-white rounded-lg text-sm hover:bg-[#2a4d7a] transition-[background-color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97]"
           >
             + テキスト追加
           </button>

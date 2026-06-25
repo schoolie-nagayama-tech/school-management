@@ -118,6 +118,7 @@ export function SelectContent({ children, className = '' }: SelectContentProps) 
         absolute z-50 w-full mt-1
         bg-surface-raised border border-border rounded-lg shadow-lg
         max-h-60 overflow-auto
+        dropdown-menu
         ${className}
       `}
     >

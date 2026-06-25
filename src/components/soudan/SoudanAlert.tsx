@@ -53,7 +53,8 @@ export function SoudanAlert() {
     : '/responses?type=soudan&linked=unlinked';
 
   return (
-    <div className="mb-6 bg-[#ef4444] border-2 border-[#e5e7eb] rounded-lg p-4 shadow-lg animate-pulse">
+    // slide-in-bar: @starting-style でスライドイン。animate-pulse（keyframes連続）は高頻度UIには不適のため除去
+    <div className="slide-in-bar mb-6 bg-danger border border-danger rounded-lg p-4 shadow-md">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <AlertTriangle className="w-7 h-7 text-white" />
@@ -66,7 +67,7 @@ export function SoudanAlert() {
         </div>
         <Link
           href={linkHref}
-          className="px-4 py-2 bg-white text-[#ef4444] font-bold rounded-lg hover:bg-gray-100 transition-colors duration-150 whitespace-nowrap"
+          className="px-4 py-2 bg-white text-danger font-bold rounded-lg hover:bg-white/90 active:scale-[0.97] transition-[transform,background-color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] whitespace-nowrap"
         >
           確認する →
         </Link>

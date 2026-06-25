@@ -112,8 +112,8 @@ export function TemplateDialog({
   // 編集画面
   if (editingTemplate) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-        <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg mx-4 max-h-[80vh] flex flex-col">
+      <div className="modal-overlay fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+        <div className="modal-panel bg-white rounded-xl shadow-2xl w-full max-w-lg mx-4 max-h-[80vh] flex flex-col">
           {/* ヘッダー */}
           <div className="flex items-center gap-2 px-5 py-3 border-b flex-shrink-0">
             <button
@@ -232,8 +232,8 @@ export function TemplateDialog({
 
   // 一覧画面
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 max-h-[80vh] flex flex-col">
+    <div className="modal-overlay fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+      <div className="modal-panel bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 max-h-[80vh] flex flex-col">
         {/* ヘッダー */}
         <div className="flex items-center justify-between px-5 py-3 border-b flex-shrink-0">
           <h2 className="text-sm font-bold">テンプレート管理</h2>

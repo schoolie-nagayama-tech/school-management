@@ -2074,7 +2074,7 @@ export default function SchedulePage() {
                         onClick={goPrevWeek}
                         aria-label="前週へ"
                         title="前週へ"
-                        className="fixed left-1 top-1/2 -translate-y-1/2 z-40 w-7 hover:w-12 h-40 flex items-center justify-center rounded-lg bg-white/90 hover:bg-white border border-border-default text-text-muted shadow-md hover:shadow-lg hover:text-text-body transition-all duration-150 print:hidden"
+                        className="fixed left-1 top-1/2 -translate-y-1/2 z-40 w-7 hover:w-12 h-40 flex items-center justify-center rounded-lg bg-white/90 hover:bg-white border border-border-default text-text-muted shadow-md hover:shadow-lg hover:text-text-body transition-[width,background-color,box-shadow,color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97] print:hidden"
                       >
                         <ChevronLeft className="w-5 h-5" />
                       </button>
@@ -2083,7 +2083,7 @@ export default function SchedulePage() {
                         onClick={goNextWeek}
                         aria-label="次週へ"
                         title="次週へ"
-                        className="fixed right-1 top-1/2 -translate-y-1/2 z-40 w-7 hover:w-12 h-40 flex items-center justify-center rounded-lg bg-white/90 hover:bg-white border border-border-default text-text-muted shadow-md hover:shadow-lg hover:text-text-body transition-all duration-150 print:hidden"
+                        className="fixed right-1 top-1/2 -translate-y-1/2 z-40 w-7 hover:w-12 h-40 flex items-center justify-center rounded-lg bg-white/90 hover:bg-white border border-border-default text-text-muted shadow-md hover:shadow-lg hover:text-text-body transition-[width,background-color,box-shadow,color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97] print:hidden"
                       >
                         <ChevronRight className="w-5 h-5" />
                       </button>
@@ -2302,7 +2302,7 @@ export default function SchedulePage() {
               type="button"
               onClick={confirmAssignTransient}
               disabled={isAssigning}
-              className="px-3 py-1.5 text-xs rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 transition-colors"
+              className="px-3 py-1.5 text-xs rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 active:scale-[0.97] disabled:opacity-50 transition-[background-color,transform] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)]"
               title="このコマだけ teacher_id を埋める（パターン未変更、翌週は再び未決定）"
             >
               このコマだけ
@@ -2311,7 +2311,7 @@ export default function SchedulePage() {
               type="button"
               onClick={confirmAssignPermanent}
               disabled={isAssigning || !pendingAssignment.regularPatternId}
-              className="px-3 py-1.5 text-xs rounded-lg bg-info text-white hover:bg-info/90 disabled:opacity-50 transition-colors font-semibold"
+              className="px-3 py-1.5 text-xs rounded-lg bg-info text-white hover:bg-info/90 active:scale-[0.97] disabled:opacity-50 transition-[background-color,transform] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] font-semibold"
               title="通塾日程パターンに紐付け、未来のコマも一括更新"
             >
               毎週このコマ
