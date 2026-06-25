@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, type CSSProperties } from 'react';
-import { ChevronRight, AlertTriangle, RefreshCw } from 'lucide-react';
+import { ChevronRight, AlertTriangle, RefreshCw, Trophy } from 'lucide-react';
 import type { SchoolKpis } from '@/lib/coursePrepKpis';
 
 export interface SchoolOverviewRow {
@@ -37,12 +37,31 @@ function rateColor(rate: number): string {
 }
 
 // 目標進捗バー（主役）。背を高くし、25/50/75 の目盛りを入れて達成度を読み取りやすくする。
-function TargetBar({ pct, color }: { pct: number; color: string }) {
+// achieved=true（目標到達）のときは gold→emerald のグラデ＋きらめきで達成感を出す。
+function TargetBar({
+  pct,
+  color,
+  achieved = false,
+}: {
+  pct: number;
+  color: string;
+  achieved?: boolean;
+}) {
   return (
-    <div className="relative w-full bg-gray-100 rounded-full h-3.5 overflow-hidden">
+    <div
+      className={`relative w-full bg-gray-100 rounded-full h-3.5 overflow-hidden ${
+        achieved ? 'achieve-bar-shine' : ''
+      }`}
+    >
       <div
         className="h-full rounded-full transition-[width] duration-500 ease-out"
-        style={{ width: `${Math.min(Math.max(pct, 0), 100)}%`, backgroundColor: color }}
+        style={{
+          width: `${Math.min(Math.max(pct, 0), 100)}%`,
+          backgroundColor: color,
+          ...(achieved
+            ? { backgroundImage: 'linear-gradient(90deg, #10b981 0%, #f59e0b 100%)' }
+            : {}),
+        }}
       />
       {/* 25/50/75% の目盛り（塗り・地の両方の上に薄く重ねる） */}
       {[25, 50, 75].map((t) => (
@@ -53,6 +72,16 @@ function TargetBar({ pct, color }: { pct: number; color: string }) {
         />
       ))}
     </div>
+  );
+}
+
+// 目標達成バッジ（トロフィー）。登場ポップ＋アイコンの小刻みな弾み。
+function AchieveBadge() {
+  return (
+    <span className="achieve-badge inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold text-amber-700 bg-gradient-to-r from-amber-100 to-emerald-100 border border-amber-300 shrink-0 whitespace-nowrap">
+      <Trophy className="achieve-icon w-3 h-3 text-amber-500" />
+      目標達成
+    </span>
   );
 }
 
@@ -107,6 +136,8 @@ export function AllSchoolsOverview({
   const totalsHasTarget = totals.totalTarget > 0;
   const totalsTargetPct = Math.round(totals.targetRate * 100);
   const totalsTargetColor = totalsHasTarget ? rateColor(totals.targetRate) : '#d1d5db';
+  // 全校で目標到達なら祝祭演出
+  const totalsAchieved = totalsHasTarget && totals.totalDecided >= totals.totalTarget;
 
   return (
     <div className="mb-6 space-y-4">
@@ -128,10 +159,19 @@ export function AllSchoolsOverview({
       )}
 
       {/* 全校合計: 主役＝取得コマ／目標進捗。提案コマ・取得率はサブ行に落とす。 */}
-      <div className="bg-white rounded-xl border border-gray-200 p-4">
-        <div className="flex items-center justify-between mb-3">
+      <div
+        className={`rounded-xl border p-4 ${
+          totalsAchieved
+            ? 'achieve-card border-amber-300 bg-gradient-to-br from-amber-50 via-white to-emerald-50'
+            : 'bg-white border-gray-200'
+        }`}
+      >
+        <div className="flex items-center justify-between mb-3 gap-2">
           <span className="text-xs font-medium text-gray-600">全校合計</span>
-          <span className="text-[11px] text-gray-400">{rows.length}教室</span>
+          <div className="flex items-center gap-2 shrink-0">
+            {totalsAchieved && <AchieveBadge />}
+            <span className="text-[11px] text-gray-400">{rows.length}教室</span>
+          </div>
         </div>
 
         {/* ヒーロー: 取得コマ（大）＋ 目標進捗率（大） */}
@@ -154,7 +194,11 @@ export function AllSchoolsOverview({
             </div>
           </div>
         </div>
-        <TargetBar pct={totalsHasTarget ? totalsTargetPct : 0} color={totalsTargetColor} />
+        <TargetBar
+          pct={totalsHasTarget ? totalsTargetPct : 0}
+          color={totalsTargetColor}
+          achieved={totalsAchieved}
+        />
 
         {/* サブ指標: 在籍 / 提案コマ / 取得率（小さく1行に） */}
         <div className="mt-3 pt-2 border-t border-gray-100 flex flex-wrap gap-x-5 gap-y-1 text-[11px] text-gray-400">
@@ -183,6 +227,8 @@ export function AllSchoolsOverview({
           const targetRate = hasTarget ? k.totalDecided / k.targetKoma : 0;
           const targetPct = Math.round(targetRate * 100);
           const targetColor = hasTarget ? rateColor(targetRate) : '#d1d5db';
+          // 目標到達なら祝祭演出
+          const achieved = hasTarget && k.totalDecided >= k.targetKoma;
           // 申込（申込済 ÷ 在籍）
           const applyPct =
             k.studentCount > 0 ? Math.round((k.decidedStudentCount / k.studentCount) * 100) : 0;
@@ -190,17 +236,24 @@ export function AllSchoolsOverview({
             <button
               key={row.schoolId}
               onClick={() => onSelectSchool(row.schoolId)}
-              className="stagger-item group text-left bg-white rounded-xl border border-gray-200 p-4 hover:border-[#1e3a5f]/40 hover:shadow-sm transition-[border-color,box-shadow,transform] duration-150 ease-out active:scale-[0.99]"
+              className={`stagger-item group text-left rounded-xl border p-4 transition-[border-color,box-shadow,transform] duration-150 ease-out active:scale-[0.99] ${
+                achieved
+                  ? 'achieve-card border-amber-300 bg-gradient-to-br from-amber-50 via-white to-emerald-50'
+                  : 'bg-white border-gray-200 hover:border-[#1e3a5f]/40 hover:shadow-sm'
+              }`}
               style={{ '--stagger-index': Math.min(idx, 7) } as CSSProperties}
             >
-              <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center justify-between mb-3 gap-2">
                 <div className="flex items-center gap-2 min-w-0">
                   <span className="text-sm font-bold text-[#1e3a5f] truncate">
                     {row.schoolName}
                   </span>
                   <span className="text-[11px] text-gray-400 shrink-0">{k.studentCount}名</span>
                 </div>
-                <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-[#1e3a5f] transition-colors shrink-0" />
+                <div className="flex items-center gap-1.5 shrink-0">
+                  {achieved && <AchieveBadge />}
+                  <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-[#1e3a5f] transition-colors shrink-0" />
+                </div>
               </div>
 
               {/* ヒーロー: 取得コマ（大）＋ 目標進捗率（大） */}
@@ -223,7 +276,7 @@ export function AllSchoolsOverview({
                   </div>
                 </div>
               </div>
-              <TargetBar pct={hasTarget ? targetPct : 0} color={targetColor} />
+              <TargetBar pct={hasTarget ? targetPct : 0} color={targetColor} achieved={achieved} />
 
               {/* 申込バー（サブ） */}
               <div className="mt-2.5">
