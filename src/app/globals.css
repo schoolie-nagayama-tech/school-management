@@ -1085,7 +1085,12 @@ a:focus-visible {
   }
 }
 .achieve-card {
-  animation: achieve-glow 2.4s ease-in-out infinite;
+  /* stagger-item と同じ要素に付くと animation を上書きしてしまうため、
+     入場フェード(stagger-fade-in)とグローの両方をここで回す（fade完了後もグロー継続）。
+     animation-delay は .stagger-item 側（--stagger-index）の指定がそのまま効く。 */
+  animation:
+    stagger-fade-in 240ms var(--ease-out) forwards,
+    achieve-glow 2.4s ease-in-out infinite;
 }
 
 /* 達成バーを横切る gold のきらめき（バー親に relative+overflow-hidden が必要） */
