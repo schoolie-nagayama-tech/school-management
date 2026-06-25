@@ -38,7 +38,8 @@ interface ApplicationTableProps {
 }
 
 // ステータスのサイクル: 空白 → pending → completed → not_applicable → 空白
-function getNextStatus(currentStatus: ApplicationStatus | null): ApplicationStatus | null {
+// （モバイルのカード表示 ApplicationCardList でも同じ循環を使うため export する）
+export function getNextStatus(currentStatus: ApplicationStatus | null): ApplicationStatus | null {
   if (currentStatus === null) return 'pending';
   if (currentStatus === 'pending') return 'completed';
   if (currentStatus === 'completed') return 'not_applicable';
@@ -47,7 +48,7 @@ function getNextStatus(currentStatus: ApplicationStatus | null): ApplicationStat
 }
 
 // ステータスの表示記号を取得
-function getStatusSymbol(status: ApplicationStatus | null): string {
+export function getStatusSymbol(status: ApplicationStatus | null): string {
   if (status === null) return '';
   return APPLICATION_STATUS_SYMBOLS[status] || '';
 }

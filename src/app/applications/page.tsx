@@ -7,6 +7,7 @@ import { Loading, InlineLoading } from '@/components/ui';
 import { ContextHelp } from '@/components/help/ContextHelp';
 import {
   ApplicationTable,
+  ApplicationCardList,
   ApplicationFiltersPanel,
   ApplicationItemAccordion,
 } from '@/components/applications';
@@ -387,16 +388,33 @@ export default function ApplicationsPage() {
           )}
         </div>
       ) : (
-        <ApplicationTable
-          students={filteredStudents}
-          items={tableItems}
-          applications={applications}
-          onStatusChange={canEdit ? handleStatusChange : undefined}
-          onNumberChange={canEdit ? handleNumberChange : undefined}
-          onDateChange={canEdit ? handleDateChange : undefined}
-          onStudentClick={handleStudentClick}
-          onItemsChange={fetchData}
-        />
+        <>
+          {/* PC=テーブル / スマホ(lg未満)=カード（同一データ・同一ハンドラのアダプティブ表示）。
+              列の追加/編集/削除は管理操作のためテーブル側のみ。 */}
+          <div className="hidden lg:block">
+            <ApplicationTable
+              students={filteredStudents}
+              items={tableItems}
+              applications={applications}
+              onStatusChange={canEdit ? handleStatusChange : undefined}
+              onNumberChange={canEdit ? handleNumberChange : undefined}
+              onDateChange={canEdit ? handleDateChange : undefined}
+              onStudentClick={handleStudentClick}
+              onItemsChange={fetchData}
+            />
+          </div>
+          <div className="lg:hidden">
+            <ApplicationCardList
+              students={filteredStudents}
+              items={tableItems}
+              applications={applications}
+              onStatusChange={canEdit ? handleStatusChange : undefined}
+              onNumberChange={canEdit ? handleNumberChange : undefined}
+              onDateChange={canEdit ? handleDateChange : undefined}
+              onStudentClick={handleStudentClick}
+            />
+          </div>
+        </>
       )}
 
       {/* 生徒詳細モーダル */}
