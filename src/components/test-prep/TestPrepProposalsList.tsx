@@ -185,8 +185,8 @@ export default function TestPrepProposalsList() {
             <Plus className="w-3 h-3" />
             新規作成
           </button>
+          {/* dropdown-menu-right: origin top-right で scale(0.95) から出現 */}
           {pickerOpen && (
-            {/* dropdown-menu-right: origin top-right で scale(0.95) から出現 */}
             <div className="dropdown-menu dropdown-menu-right absolute right-0 top-full mt-1 w-80 bg-surface-raised border border-border-default rounded-xl shadow-lg z-50 overflow-hidden">
               <div className="p-2 border-b border-border-subtle">
                 <div className="relative">
@@ -262,7 +262,10 @@ export default function TestPrepProposalsList() {
 
       {/* 一覧 */}
       {filtered.length === 0 ? (
-        <div className="stagger-item bg-surface-raised rounded-xl border border-border p-12 text-center" style={{ '--stagger-index': 0 } as React.CSSProperties}>
+        <div
+          className="stagger-item bg-surface-raised rounded-xl border border-border p-12 text-center"
+          style={{ '--stagger-index': 0 } as React.CSSProperties}
+        >
           <p className="text-text-muted">
             {proposals.length === 0
               ? 'テスト対策提案書はまだありません'
