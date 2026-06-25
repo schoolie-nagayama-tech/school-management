@@ -353,6 +353,14 @@ export function StudentDetailModal({
   const progressTextbooks = textbooks.filter(
     (tb) => (tb as { track_progress?: boolean }).track_progress
   );
+  // 「所持」も「進行表で管理」も OFF のレコード。チェックを外しても自動削除はしない方針のため、
+  // どちらのセクションにも出ず宙に浮く（手動追加の候補からも textbook_id 重複で外れる）と
+  // 画面から触れなくなる。ここで未分類として可視化し、ゴミ箱からのみ削除できるようにする。
+  const orphanTextbooks = textbooks.filter(
+    (tb) =>
+      !(tb as { is_owned?: boolean }).is_owned &&
+      !(tb as { track_progress?: boolean }).track_progress
+  );
 
   // 発注中（発注済・発送済。まだ未所持＝配布で is_owned=true になる）
   const ORDER_STATUS_LABEL: Record<string, string> = {
@@ -560,6 +568,19 @@ export function StudentDetailModal({
                   にしてください（発注候補から除外されます）。
                 </p>
                 <div className="space-y-1.5">{progressTextbooks.map(renderTextbookRow)}</div>
+              </div>
+            )}
+
+            {/* 未分類（所持・進行表どちらも OFF）。チェックを外しても自動では消えないので、
+                不要なものはゴミ箱から削除する。手動追加時に候補へ戻すにはここから削除する。 */}
+            {!isLoading && orphanTextbooks.length > 0 && (
+              <div>
+                <h3 className="text-sm font-semibold text-[#1f2937] mb-1.5">未分類</h3>
+                <p className="text-[11px] text-[#6b7280] mb-2">
+                  「所持」も「進行表で管理」も OFF
+                  の教材です。チェックを外しても自動では消えません。不要ならゴミ箱から削除してください（削除すると手動追加の候補に戻ります）。
+                </p>
+                <div className="space-y-1.5">{orphanTextbooks.map(renderTextbookRow)}</div>
               </div>
             )}
 
