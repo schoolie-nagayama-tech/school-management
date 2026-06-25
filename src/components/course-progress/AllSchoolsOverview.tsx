@@ -21,27 +21,48 @@ interface AllSchoolsOverviewProps {
   onRefresh?: () => void;
 }
 
+// 取得コマ（このページの主役指標）の色
+const ACQUIRED_COLOR = '#3b82f6';
+
 // 最終更新時刻の HH:MM 表示
 function formatUpdatedAt(d: Date): string {
   return `${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`;
 }
 
-// 達成度に応じた色。70%以上=緑 / 40%以上=アンバー / 未満=赤。
+// 目標達成度に応じた色。70%以上=緑 / 40%以上=アンバー / 未満=赤。
 function rateColor(rate: number): string {
   if (rate >= 0.7) return '#10b981';
   if (rate >= 0.4) return '#f59e0b';
   return '#ef4444';
 }
 
-// 申込バーの色（取得率の温度感とは別物なので固定のブルー）
-const APPLY_BAR_COLOR = '#3b82f6';
-
-function ProgressBar({ value, color }: { value: number; color: string }) {
+// 目標進捗バー（主役）。背を高くし、25/50/75 の目盛りを入れて達成度を読み取りやすくする。
+function TargetBar({ pct, color }: { pct: number; color: string }) {
   return (
-    <div className="w-full bg-gray-100 rounded-full h-2">
+    <div className="relative w-full bg-gray-100 rounded-full h-3.5 overflow-hidden">
       <div
-        className="h-2 rounded-full transition-[width] duration-500 ease-out"
-        style={{ width: `${Math.min(Math.max(value, 0), 100)}%`, backgroundColor: color }}
+        className="h-full rounded-full transition-[width] duration-500 ease-out"
+        style={{ width: `${Math.min(Math.max(pct, 0), 100)}%`, backgroundColor: color }}
+      />
+      {/* 25/50/75% の目盛り（塗り・地の両方の上に薄く重ねる） */}
+      {[25, 50, 75].map((t) => (
+        <div
+          key={t}
+          className="absolute top-0 bottom-0 w-px bg-white/60"
+          style={{ left: `${t}%` }}
+        />
+      ))}
+    </div>
+  );
+}
+
+// 申込バー（サブ指標）。細めにして主役の目標バーと差をつける。
+function ThinBar({ pct, color }: { pct: number; color: string }) {
+  return (
+    <div className="w-full bg-gray-100 rounded-full h-1.5">
+      <div
+        className="h-1.5 rounded-full transition-[width] duration-500 ease-out"
+        style={{ width: `${Math.min(Math.max(pct, 0), 100)}%`, backgroundColor: color }}
       />
     </div>
   );
@@ -77,13 +98,15 @@ export function AllSchoolsOverview({
     return (
       <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="h-48 rounded-xl bg-gray-50 animate-pulse" />
+          <div key={i} className="h-52 rounded-xl bg-gray-50 animate-pulse" />
         ))}
       </div>
     );
   }
 
+  const totalsHasTarget = totals.totalTarget > 0;
   const totalsTargetPct = Math.round(totals.targetRate * 100);
+  const totalsTargetColor = totalsHasTarget ? rateColor(totals.targetRate) : '#d1d5db';
 
   return (
     <div className="mb-6 space-y-4">
@@ -104,53 +127,49 @@ export function AllSchoolsOverview({
         </div>
       )}
 
-      {/* 全校合計: 在籍 / 目標コマ / 取得コマ / 提案コマ / 取得率 ＋ 目標への取得バー */}
+      {/* 全校合計: 主役＝取得コマ／目標進捗。提案コマ・取得率はサブ行に落とす。 */}
       <div className="bg-white rounded-xl border border-gray-200 p-4">
         <div className="flex items-center justify-between mb-3">
           <span className="text-xs font-medium text-gray-600">全校合計</span>
           <span className="text-[11px] text-gray-400">{rows.length}教室</span>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-4">
+
+        {/* ヒーロー: 取得コマ（大）＋ 目標進捗率（大） */}
+        <div className="flex items-end justify-between gap-4 mb-2">
           <div>
-            <div className="text-[10px] text-gray-400">在籍</div>
-            <div className="text-xl font-bold text-[#1e3a5f]">{totals.studentCount}名</div>
-          </div>
-          <div>
-            <div className="text-[10px] text-gray-400">目標コマ</div>
-            <div className="text-xl font-bold text-[#1e3a5f]">
-              {totals.totalTarget > 0 ? totals.totalTarget : '–'}
+            <div className="text-[11px] text-gray-400">取得コマ</div>
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-3xl font-bold" style={{ color: ACQUIRED_COLOR }}>
+                {totals.totalDecided}
+              </span>
+              <span className="text-sm text-gray-400">
+                / 目標 {totalsHasTarget ? totals.totalTarget : '–'} コマ
+              </span>
             </div>
           </div>
-          <div>
-            <div className="text-[10px] text-gray-400">取得コマ</div>
-            <div className="text-xl font-bold text-[#3b82f6]">{totals.totalDecided}</div>
-          </div>
-          <div>
-            <div className="text-[10px] text-gray-400">提案コマ</div>
-            <div className="text-xl font-bold text-[#1e3a5f]">{totals.totalProposed}</div>
-          </div>
-          <div>
-            <div className="text-[10px] text-gray-400">取得率</div>
-            <div className="text-xl font-bold" style={{ color: rateColor(totals.acquisitionRate) }}>
-              {Math.round(totals.acquisitionRate * 100)}%
+          <div className="text-right">
+            <div className="text-[11px] text-gray-400">目標進捗</div>
+            <div className="text-3xl font-bold leading-none" style={{ color: totalsTargetColor }}>
+              {totalsHasTarget ? `${totalsTargetPct}%` : '–'}
             </div>
           </div>
         </div>
-        {/* 目標への取得コマ数の進捗バー */}
-        <div>
-          <div className="flex items-center justify-between text-[11px] mb-1">
-            <span className="text-gray-400">目標進捗（取得 / 目標）</span>
-            <span className="text-gray-600">
-              取得 {totals.totalDecided} / 目標 {totals.totalTarget > 0 ? totals.totalTarget : '–'}{' '}
-              コマ
-              {totals.totalTarget > 0 && (
-                <span className="ml-1 font-bold" style={{ color: rateColor(totals.targetRate) }}>
-                  {totalsTargetPct}%
-                </span>
-              )}
+        <TargetBar pct={totalsHasTarget ? totalsTargetPct : 0} color={totalsTargetColor} />
+
+        {/* サブ指標: 在籍 / 提案コマ / 取得率（小さく1行に） */}
+        <div className="mt-3 pt-2 border-t border-gray-100 flex flex-wrap gap-x-5 gap-y-1 text-[11px] text-gray-400">
+          <span>
+            在籍 <span className="text-gray-600 font-medium">{totals.studentCount}名</span>
+          </span>
+          <span>
+            提案コマ <span className="text-gray-600 font-medium">{totals.totalProposed}</span>
+          </span>
+          <span>
+            取得率{' '}
+            <span className="font-medium" style={{ color: rateColor(totals.acquisitionRate) }}>
+              {Math.round(totals.acquisitionRate * 100)}%
             </span>
-          </div>
-          <ProgressBar value={totalsTargetPct} color={rateColor(totals.targetRate)} />
+          </span>
         </div>
       </div>
 
@@ -184,63 +203,66 @@ export function AllSchoolsOverview({
                 <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-[#1e3a5f] transition-colors shrink-0" />
               </div>
 
-              {/* 目標への取得コマ数バー（メイン指標） */}
-              <div className="mb-2.5">
-                <div className="flex items-center justify-between text-[11px] mb-1">
-                  <span className="text-gray-400">目標進捗</span>
-                  <span className="text-gray-600">
-                    取得 {k.totalDecided} / 目標 {hasTarget ? k.targetKoma : '–'} コマ
-                    {hasTarget && (
-                      <span className="ml-1 font-bold" style={{ color: targetColor }}>
-                        {targetPct}%
-                      </span>
-                    )}
-                  </span>
-                </div>
-                <ProgressBar value={hasTarget ? targetPct : 0} color={targetColor} />
-              </div>
-
-              {/* 申込バー */}
-              <div className="mb-3">
-                <div className="flex items-center justify-between text-[11px] mb-1">
-                  <span className="text-gray-400">申込</span>
-                  <span className="text-gray-600">
-                    {k.decidedStudentCount} / {k.studentCount}名
-                    <span className="ml-1 font-bold" style={{ color: APPLY_BAR_COLOR }}>
-                      {applyPct}%
+              {/* ヒーロー: 取得コマ（大）＋ 目標進捗率（大） */}
+              <div className="flex items-end justify-between gap-2 mb-1.5">
+                <div>
+                  <div className="text-[10px] text-gray-400">取得コマ</div>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-2xl font-bold" style={{ color: ACQUIRED_COLOR }}>
+                      {k.totalDecided}
                     </span>
+                    <span className="text-[11px] text-gray-400">
+                      / 目標 {hasTarget ? k.targetKoma : '–'}
+                    </span>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-[10px] text-gray-400">目標進捗</div>
+                  <div className="text-2xl font-bold leading-none" style={{ color: targetColor }}>
+                    {hasTarget ? `${targetPct}%` : '–'}
+                  </div>
+                </div>
+              </div>
+              <TargetBar pct={hasTarget ? targetPct : 0} color={targetColor} />
+
+              {/* 申込バー（サブ） */}
+              <div className="mt-2.5">
+                <div className="flex items-center justify-between text-[10px] text-gray-400 mb-1">
+                  <span>申込</span>
+                  <span>
+                    {k.decidedStudentCount} / {k.studentCount}名
+                    <span className="ml-1 font-medium text-[#3b82f6]">{applyPct}%</span>
                   </span>
                 </div>
-                <ProgressBar value={applyPct} color={APPLY_BAR_COLOR} />
+                <ThinBar pct={applyPct} color="#93c5fd" />
               </div>
 
-              {/* 残りは数値だけ並べる */}
-              <div className="grid grid-cols-2 gap-y-1.5 gap-x-3 text-xs pt-2 border-t border-gray-100">
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-400">取得率</span>
+              {/* サブ指標: 取得率 / 提案 / 作成済 / 期日超過（小さく） */}
+              <div className="mt-2.5 pt-2 border-t border-gray-100 flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-gray-400">
+                <span>
+                  取得率{' '}
                   <span className="font-medium" style={{ color: rateColor(k.acquisitionRate) }}>
                     {acqPct}%
                   </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-400">提案コマ</span>
-                  <span className="text-gray-700 font-medium">{k.totalProposed}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-400">作成済</span>
-                  <span className="text-gray-700 font-medium">
+                </span>
+                <span>
+                  提案 <span className="text-gray-600 font-medium">{k.totalProposed}</span>
+                </span>
+                <span>
+                  作成済{' '}
+                  <span className="text-gray-600 font-medium">
                     {k.proposedStudentCount}/{k.studentCount}
                   </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-400">期日超過</span>
+                </span>
+                <span className="inline-flex items-center gap-0.5">
+                  期日超過{' '}
+                  {k.overdueCount > 0 && <AlertTriangle className="w-2.5 h-2.5 text-red-500" />}
                   <span
-                    className={`font-medium flex items-center gap-0.5 ${k.overdueCount > 0 ? 'text-red-500' : 'text-gray-300'}`}
+                    className={`font-medium ${k.overdueCount > 0 ? 'text-red-500' : 'text-gray-600'}`}
                   >
-                    {k.overdueCount > 0 && <AlertTriangle className="w-3 h-3" />}
                     {k.overdueCount}件
                   </span>
-                </div>
+                </span>
               </div>
             </button>
           );
