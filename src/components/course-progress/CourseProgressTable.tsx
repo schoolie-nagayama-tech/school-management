@@ -198,9 +198,14 @@ export function CourseProgressTable({
   const [headerEditPosition, setHeaderEditPosition] = useState({ top: 0, left: 0 });
   // 生徒名クリックで開くポップオーバー（生徒情報 / 提案書一覧への導線）。
   // テーブルは overflow スクロールするので、クリップされないよう fixed 配置でアンカーする。
-  const [nameMenu, setNameMenu] = useState<{ student: Student; top: number; left: number } | null>(
-    null
-  );
+  // openUp=true のときは下に収まらないので上向きに開く（bottomOffset で画面下からアンカー）。
+  const [nameMenu, setNameMenu] = useState<{
+    student: Student;
+    top: number;
+    left: number;
+    bottomOffset: number;
+    openUp: boolean;
+  } | null>(null);
 
   // ポップオーバーは外側クリック・Esc・スクロールで閉じる（スクロールするとアンカーから外れるため）。
   useEffect(() => {
@@ -873,7 +878,16 @@ export function CourseProgressTable({
                       type="button"
                       onClick={(e) => {
                         const r = e.currentTarget.getBoundingClientRect();
-                        setNameMenu({ student, top: r.bottom + 4, left: r.left });
+                        // メニュー高さの概算（ヘッダー＋2項目で約110px）。下に収まらなければ上向きに開く。
+                        const ESTIMATED_MENU_HEIGHT = 110;
+                        const openUp = window.innerHeight - r.bottom < ESTIMATED_MENU_HEIGHT;
+                        setNameMenu({
+                          student,
+                          top: r.bottom + 4,
+                          left: r.left,
+                          bottomOffset: window.innerHeight - r.top + 4,
+                          openUp,
+                        });
                       }}
                       className="text-[11px] font-medium text-[#1e3a5f] whitespace-nowrap hover:underline focus:outline-none focus-visible:underline cursor-pointer"
                       title="生徒情報・提案書一覧を開く"
@@ -1098,8 +1112,14 @@ export function CourseProgressTable({
         <>
           <div className="fixed inset-0 z-40" onClick={() => setNameMenu(null)} />
           <div
-            className="fixed z-50 min-w-[160px] py-1 bg-white border border-gray-200 rounded-lg shadow-lg origin-top-left animate-[popover-enter_150ms_cubic-bezier(0.23,1,0.32,1)]"
-            style={{ top: nameMenu.top, left: nameMenu.left }}
+            className={`fixed z-50 min-w-[160px] py-1 bg-white border border-gray-200 rounded-lg shadow-lg animate-[popover-enter_150ms_cubic-bezier(0.23,1,0.32,1)] ${
+              nameMenu.openUp ? 'origin-bottom-left' : 'origin-top-left'
+            }`}
+            style={
+              nameMenu.openUp
+                ? { bottom: nameMenu.bottomOffset, left: nameMenu.left }
+                : { top: nameMenu.top, left: nameMenu.left }
+            }
           >
             <div className="px-3 py-1 text-[10px] font-bold text-gray-400 truncate max-w-[200px]">
               {nameMenu.student.last_name} {nameMenu.student.first_name}
