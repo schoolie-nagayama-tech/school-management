@@ -17,10 +17,20 @@ const CourseProgressTable = dynamic(
   () => import('@/components/course-progress').then((m) => m.CourseProgressTable),
   { ssr: false, loading: () => <div className="h-96 rounded-xl bg-gray-50 animate-pulse" /> }
 );
+const AllSchoolsOverview = dynamic(
+  () => import('@/components/course-progress').then((m) => m.AllSchoolsOverview),
+  { ssr: false, loading: () => <div className="h-44 rounded-xl bg-gray-50 animate-pulse" /> }
+);
 import { SeasonYearSelector } from '@/components/course-shared/SeasonYearSelector';
 import { TemplateApplyDialog } from '@/components/course-shared/TemplateApplyDialog';
 import { supabase } from '@/lib/supabase';
-import { batchFetchCoursePrepApi, callCoursePrepApi } from '@/lib/api/coursePrepApi';
+import {
+  batchFetchCoursePrepApi,
+  batchFetchCoursePrepApiMulti,
+  callCoursePrepApi,
+} from '@/lib/api/coursePrepApi';
+import { computeSchoolKpis } from '@/lib/coursePrepKpis';
+import type { SchoolOverviewRow } from '@/components/course-progress';
 import {
   upsertCoursePrepPeriod,
   updateStudentProgress,
@@ -105,6 +115,14 @@ export default function CourseProgressPage() {
   // 重い auto_values 集計の読み込み状態。表本体より遅れて到着するので分けて持つ。
   const [autoLoading, setAutoLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
+
+  // 「すべての教室」横断サマリー表示の状態。
+  // isAllSelected（ヘッダーで全教室）のときのみ意味を持つ。既定は横断サマリーを先頭に出す。
+  const [viewAllSchools, setViewAllSchools] = useState(true);
+  const [allSchoolsKpis, setAllSchoolsKpis] = useState<SchoolOverviewRow[]>([]);
+  const [allSchoolsLoading, setAllSchoolsLoading] = useState(true);
+  // 横断サマリーを表示する条件（全教室選択 かつ サマリーモード）
+  const showAllSchoolsOverview = isAllSelected && viewAllSchools;
 
   // テンプレート
   const [templates, setTemplates] = useState<CourseTemplate[]>([]);
@@ -221,10 +239,60 @@ export default function CourseProgressPage() {
   }, [localSchoolId, season, year, showHidden, isOwnerOrAbove]);
 
   useEffect(() => {
-    if (selectedSchoolId !== null) {
+    // 横断サマリー表示中は単一校の取得をスキップ（無駄なリクエストを避ける）
+    if (selectedSchoolId !== null && !showAllSchoolsOverview) {
       fetchData();
     }
-  }, [fetchData, localSchoolId]);
+  }, [fetchData, localSchoolId, showAllSchoolsOverview]);
+
+  // 全教室横断サマリー用のデータ取得。
+  // 各校分を batch_get_multi で1リクエストにまとめ、校ごとにKPIを算出する。
+  // 進捗項目（列）は校ごとに別管理のため、提案/決定コマ列の特定も校ごとに行う（computeSchoolKpis 内）。
+  const fetchAllSchools = useCallback(async () => {
+    if (availableSchools.length === 0) {
+      setAllSchoolsKpis([]);
+      setAllSchoolsLoading(false);
+      return;
+    }
+    setAllSchoolsLoading(true);
+    const today = new Date().toISOString().slice(0, 10);
+    try {
+      const multi = await batchFetchCoursePrepApiMulti(
+        {
+          schoolIds: availableSchools.map((s) => s.id),
+          season,
+          year: String(year),
+          includeHidden: String(showHidden),
+        },
+        ['students', 'progress_items', 'student_progress', 'period', 'auto_values']
+      );
+      const rows: SchoolOverviewRow[] = availableSchools.map((school) => {
+        const batch = multi[school.id] || {};
+        const students = (batch.students as Parameters<typeof computeSchoolKpis>[0]) || [];
+        const items = (batch.progress_items as Parameters<typeof computeSchoolKpis>[1]) || [];
+        const progress = (batch.student_progress as Parameters<typeof computeSchoolKpis>[2]) || [];
+        const autoValues = (batch.auto_values as Parameters<typeof computeSchoolKpis>[3]) || {};
+        const period = (batch.period as Parameters<typeof computeSchoolKpis>[4]) || null;
+        return {
+          schoolId: school.id,
+          schoolName: school.name,
+          kpis: computeSchoolKpis(students, items, progress, autoValues, period, today),
+        };
+      });
+      setAllSchoolsKpis(rows);
+    } catch (error) {
+      console.error('Error fetching all-schools overview:', error);
+      setErrorMessage(getUserErrorMessage(error, '横断サマリーの取得に失敗しました'));
+    } finally {
+      setAllSchoolsLoading(false);
+    }
+  }, [availableSchools, season, year, showHidden]);
+
+  useEffect(() => {
+    if (showAllSchoolsOverview) {
+      fetchAllSchools();
+    }
+  }, [showAllSchoolsOverview, fetchAllSchools]);
 
   // 表示用項目（講師はmanager_only除外 / 非表示除外）
   const displayItems = useMemo(() => {
@@ -817,7 +885,14 @@ export default function CourseProgressPage() {
           <SchoolSwitcher
             schools={availableSchools}
             selectedSchoolId={localSchoolId}
-            onChange={setLocalSchoolId}
+            onChange={(id) => {
+              // 個別教室を選んだら横断サマリーを抜けてその校の詳細表に切り替える
+              setViewAllSchools(false);
+              setLocalSchoolId(id);
+            }}
+            allowAll
+            isAllActive={viewAllSchools}
+            onSelectAll={() => setViewAllSchools(true)}
           />
         )}
         {/* ヘッダー: 期・年選択 + アクション */}
@@ -828,7 +903,8 @@ export default function CourseProgressPage() {
             onSeasonChange={setSeason}
             onYearChange={setYear}
           />
-          <div className="flex items-center gap-2">
+          {/* アクションは単一校（特定教室の詳細表）のときだけ。横断サマリーでは非表示。 */}
+          <div className={`flex items-center gap-2 ${showAllSchoolsOverview ? 'hidden' : ''}`}>
             {isOwnerOrAbove && (
               <>
                 <button
@@ -887,9 +963,24 @@ export default function CourseProgressPage() {
           </div>
         )}
 
+        {/* 全教室横断サマリー（案A: 教室別KPIダッシュボード）。
+            「すべての教室」選択時はこれを出し、個別校の詳細表・編集UIは出さない。
+            カードクリックでその校の詳細表に切り替わる。 */}
+        {showAllSchoolsOverview && (
+          <AllSchoolsOverview
+            rows={allSchoolsKpis}
+            loading={allSchoolsLoading}
+            onSelectSchool={(id) => {
+              setViewAllSchools(false);
+              setLocalSchoolId(id);
+            }}
+          />
+        )}
+
         {/* ダッシュボード（教室長以上のみ表示）。集計(auto_values)が届いてから表示し、
             それまではグリッドを先に出す。集計中は控えめなプレースホルダを表示する。 */}
-        {!isLoading &&
+        {!showAllSchoolsOverview &&
+          !isLoading &&
           displayItems.length > 0 &&
           isManagerOrAbove &&
           (autoLoading ? (
@@ -911,7 +1002,7 @@ export default function CourseProgressPage() {
           ))}
 
         {/* 設定パネル（アコーディオン: フィルター + 項目管理） */}
-        {showSettings && (
+        {!showAllSchoolsOverview && showSettings && (
           <div className="mb-4 bg-white rounded-xl border border-gray-200 overflow-hidden">
             {/* タブ切り替え */}
             <div className="flex border-b border-gray-200">
@@ -1213,38 +1304,39 @@ export default function CourseProgressPage() {
           </div>
         )}
 
-        {/* テーブル */}
-        {isLoading ? (
-          <div className="bg-white rounded-xl border border-gray-200 p-8">
-            <InlineLoading />
-          </div>
-        ) : displayItems.length === 0 ? (
-          <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
-            <p className="text-text-body mb-4">進捗管理項目がありません。</p>
-            {isOwnerOrAbove && (
-              <button
-                onClick={handleOpenTemplateDialog}
-                className="px-4 py-2 text-sm bg-ink text-white rounded-lg hover:bg-ink/80 transition-[background-color,transform] duration-150 ease-out active:scale-[0.97]"
-              >
-                テンプレートから作成
-              </button>
-            )}
-          </div>
-        ) : (
-          <CourseProgressTable
-            students={filteredStudents}
-            items={displayItems}
-            progressData={progressData}
-            autoValues={autoValuesData}
-            canEdit={canEdit}
-            onStatusChange={handleStatusChange}
-            onNumberChange={handleNumberChange}
-            onDateChange={handleDateChange}
-            onItemNameChange={isOwnerOrAbove ? handleItemNameChange : undefined}
-            onItemDeadlineChange={isOwnerOrAbove ? handleItemDeadlineChange : undefined}
-            onShowStudentInfo={setInfoStudent}
-          />
-        )}
+        {/* テーブル（横断サマリー表示中は出さない） */}
+        {!showAllSchoolsOverview &&
+          (isLoading ? (
+            <div className="bg-white rounded-xl border border-gray-200 p-8">
+              <InlineLoading />
+            </div>
+          ) : displayItems.length === 0 ? (
+            <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
+              <p className="text-text-body mb-4">進捗管理項目がありません。</p>
+              {isOwnerOrAbove && (
+                <button
+                  onClick={handleOpenTemplateDialog}
+                  className="px-4 py-2 text-sm bg-ink text-white rounded-lg hover:bg-ink/80 transition-[background-color,transform] duration-150 ease-out active:scale-[0.97]"
+                >
+                  テンプレートから作成
+                </button>
+              )}
+            </div>
+          ) : (
+            <CourseProgressTable
+              students={filteredStudents}
+              items={displayItems}
+              progressData={progressData}
+              autoValues={autoValuesData}
+              canEdit={canEdit}
+              onStatusChange={handleStatusChange}
+              onNumberChange={handleNumberChange}
+              onDateChange={handleDateChange}
+              onItemNameChange={isOwnerOrAbove ? handleItemNameChange : undefined}
+              onItemDeadlineChange={isOwnerOrAbove ? handleItemDeadlineChange : undefined}
+              onShowStudentInfo={setInfoStudent}
+            />
+          ))}
       </div>
 
       {/* 生徒情報モーダル（進捗表の生徒名クリックで開く）。編集は既存機構を再利用し生徒管理ページへ。 */}
