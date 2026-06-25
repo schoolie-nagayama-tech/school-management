@@ -1008,7 +1008,8 @@ export default function InquiryDetailPage() {
                           </Button>
                         </div>
                         <p className="text-[11px] text-text-muted mt-1.5">
-                          Notta の共有リンク（文字起こし/録音）を貼ると、この問合せから開けます。複数追加できます。
+                          Notta
+                          の共有リンク（文字起こし/録音）を貼ると、この問合せから開けます。複数追加できます。
                         </p>
                       </div>
                     </div>
