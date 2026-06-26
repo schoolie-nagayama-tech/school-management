@@ -26,6 +26,7 @@ import {
 } from '@/types/database';
 import { InterviewList } from './InterviewList';
 import { AttendanceMatrix } from './AttendanceMatrix';
+import { StudentKoushuTab } from './StudentKoushuTab';
 import { useAuth } from '@/contexts/AuthContext';
 import { useConfirm } from '@/hooks/useConfirm';
 import { useToast } from '@/hooks/useToast';
@@ -40,7 +41,7 @@ interface StudentDetailModalProps {
   onDelete?: (student: Student) => Promise<void>;
 }
 
-type TabType = 'basic' | 'scores' | 'interviews' | 'schedule';
+type TabType = 'basic' | 'scores' | 'interviews' | 'schedule' | 'koushu';
 
 type StudentTextbookRow = Awaited<ReturnType<typeof getStudentTextbooksForProgress>>[number];
 
@@ -92,6 +93,8 @@ export function StudentDetailModal({
     { key: 'basic', label: '基本情報' },
     { key: 'scores', label: '成績' },
     ...(isTeacher ? [] : [{ key: 'schedule' as const, label: '通塾日程' }]),
+    // 講習タブは全ロールに表示（その生徒の講習提案・申込の簡易まとめ）
+    { key: 'koushu', label: '講習' },
     { key: 'interviews', label: '面談記録' },
   ];
 
@@ -717,6 +720,12 @@ export function StudentDetailModal({
                 })}
               </div>
             )}
+          </div>
+        )}
+
+        {activeTab === 'koushu' && student && (
+          <div className="h-[60vh] overflow-y-auto pr-2">
+            <StudentKoushuTab studentId={student.id} />
           </div>
         )}
 

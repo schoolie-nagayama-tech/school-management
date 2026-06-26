@@ -307,6 +307,26 @@ export async function getKoushuEnrollmentsForPeriod(
   return all;
 }
 
+/**
+ * 生徒1人の講習申込を全シーズン分取得する（生徒詳細「講習」タブ用）。
+ * koushu_enrollments は (school+season+student+formation) で一意。年度カラムは持たない。
+ * 生徒あたりの行数は少ないのでページングは不要。
+ */
+export async function getKoushuEnrollmentsByStudent(
+  studentId: string
+): Promise<KoushuEnrollment[]> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase as any)
+    .from('koushu_enrollments')
+    .select('*')
+    .eq('student_id', studentId)
+    .order('season', { ascending: true })
+    .order('created_at', { ascending: true });
+
+  if (error) throw error;
+  return (data || []) as KoushuEnrollment[];
+}
+
 /** 申し込みを削除 */
 export async function deleteKoushuEnrollment(enrollmentId: string): Promise<void> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
