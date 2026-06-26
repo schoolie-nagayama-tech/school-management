@@ -91,8 +91,11 @@ export default function ProposalList() {
     });
   };
 
+  // 一括操作の対象は「未公開（下書き or 提案済み）」。バー表示・全選択の母集団。
+  const actionable = proposals.filter((p) => p.status !== 'approved');
   // 公開対象は「提案済み(sent)」のみ。下書きからの直接公開は禁止（提案済みを経由させる）。
   const publishable = proposals.filter((p) => p.status === 'sent');
+  // 公開ボタン用: 選択中のうち sent（公開できる）件数
   const selectedCount = Array.from(selected).filter((id) =>
     publishable.some((p) => p.id === id)
   ).length;
@@ -100,8 +103,12 @@ export default function ProposalList() {
   const selectedDraftCount = Array.from(selected).filter((id) =>
     proposals.some((p) => p.id === id && p.status === 'draft')
   ).length;
+  // 「○件選択」表示用: 未公開のうち選択中の件数
+  const selectedActionableCount = Array.from(selected).filter((id) =>
+    actionable.some((p) => p.id === id)
+  ).length;
 
-  const selectAllPublishable = () => setSelected(new Set(publishable.map((p) => p.id)));
+  const selectAllActionable = () => setSelected(new Set(actionable.map((p) => p.id)));
   const clearSelection = () => setSelected(new Set());
 
   const handleBulkPublish = async () => {
@@ -423,8 +430,8 @@ export default function ProposalList() {
         </div>
       )}
 
-      {/* 一括バー: 提案済みは全スタッフ可、公開は教室長以上のみ */}
-      {!loading && publishable.length > 0 && (
+      {/* 一括バー: 提案済みは全スタッフ可、公開は教室長以上のみ。未公開(下書き/提案済み)があれば表示 */}
+      {!loading && actionable.length > 0 && (
         <div
           className={`mb-4 flex items-center gap-3 px-3.5 py-2 rounded-xl border transition-[background-color,border-color,box-shadow] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] ${
             hasSelection
@@ -433,7 +440,7 @@ export default function ProposalList() {
           }`}
         >
           <button
-            onClick={() => (hasSelection ? clearSelection() : selectAllPublishable())}
+            onClick={() => (hasSelection ? clearSelection() : selectAllActionable())}
             className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors duration-150 ${
               hasSelection
                 ? 'bg-emerald-600 border-emerald-600 text-white'
@@ -445,7 +452,9 @@ export default function ProposalList() {
 
           {hasSelection ? (
             <>
-              <span className="text-xs font-medium text-emerald-800">{selectedCount}件選択</span>
+              <span className="text-xs font-medium text-emerald-800">
+                {selectedActionableCount}件選択
+              </span>
               <button
                 onClick={clearSelection}
                 className="text-[11px] text-emerald-600 hover:text-emerald-800 transition-colors"
@@ -483,10 +492,10 @@ export default function ProposalList() {
             </>
           ) : (
             <>
-              <span className="text-xs text-text-faint">未公開 {publishable.length}件</span>
+              <span className="text-xs text-text-faint">未公開 {actionable.length}件</span>
               <div className="flex-1" />
               <button
-                onClick={selectAllPublishable}
+                onClick={selectAllActionable}
                 className="text-[11px] text-text-faint hover:text-text-muted transition-colors"
               >
                 すべて選択
