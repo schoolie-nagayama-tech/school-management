@@ -74,7 +74,7 @@ import {
 // 講習進捗「すべての教室」カード（/courses/progress と同じコンポーネント。重いので遅延ロード）
 const AllSchoolsOverview = dynamic(
   () => import('@/components/course-progress').then((m) => m.AllSchoolsOverview),
-  { ssr: false, loading: () => <div className="h-44 animate-pulse rounded-xl bg-surface" /> },
+  { ssr: false, loading: () => <div className="h-44 animate-pulse rounded-xl bg-surface" /> }
 );
 
 /* ============================================================
@@ -1435,7 +1435,7 @@ function OverviewView() {
     const today = new Date().toISOString().slice(0, 10);
     batchFetchCoursePrepApiMulti(
       { schoolIds: target.map((s) => s.id), season, year: String(year), includeHidden: 'false' },
-      ['students', 'progress_items', 'student_progress', 'period', 'auto_values'],
+      ['students', 'progress_items', 'student_progress', 'period', 'auto_values']
     )
       .then((multi) => {
         if (!active) return;
@@ -1450,7 +1450,7 @@ function OverviewView() {
               (batch.student_progress as Parameters<typeof computeSchoolKpis>[2]) || [],
               (batch.auto_values as Parameters<typeof computeSchoolKpis>[3]) || {},
               (batch.period as Parameters<typeof computeSchoolKpis>[4]) || null,
-              today,
+              today
             ),
           };
         });
