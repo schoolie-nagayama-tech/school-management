@@ -14,7 +14,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useMasterData } from '@/contexts/MasterDataContext';
 import { getOverview, type Overview } from '@/lib/api/overview';
 import dynamic from 'next/dynamic';
-import { batchFetchCoursePrepApiMulti } from '@/lib/api/coursePrepApi';
+import { batchFetchCoursePrepApi, batchFetchCoursePrepApiMulti } from '@/lib/api/coursePrepApi';
 import { computeSchoolKpis } from '@/lib/coursePrepKpis';
 import type { SchoolOverviewRow } from '@/components/course-progress';
 import { loadSavedSeasonYear } from '@/lib/utils/coursePrepStorage';
@@ -33,6 +33,13 @@ import {
   type ProposalFunnel,
 } from '@/lib/api/dashboardForms';
 import { GRADE_LABELS } from '@/types/database';
+import type {
+  Student,
+  CourseProgressItem,
+  StudentCourseProgress,
+  CoursePrepPeriod,
+} from '@/types/database';
+import type { AutoValues } from '@/lib/api/courseProgress';
 import { AdminLayout } from '@/components/layouts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui';
 import {
@@ -56,6 +63,7 @@ import {
   CalendarPlus,
   ClipboardList,
   Pin,
+  ListTodo,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -74,6 +82,18 @@ import {
 // 講習進捗「すべての教室」カード（/courses/progress と同じコンポーネント。重いので遅延ロード）
 const AllSchoolsOverview = dynamic(
   () => import('@/components/course-progress').then((m) => m.AllSchoolsOverview),
+  { ssr: false, loading: () => <div className="h-44 animate-pulse rounded-xl bg-surface" /> }
+);
+
+// 個別校の講習進捗ダッシュボード（読み取り専用で使う。重いので遅延ロード）
+const CourseProgressDashboard = dynamic(
+  () => import('@/components/course-progress').then((m) => m.CourseProgressDashboard),
+  { ssr: false, loading: () => <div className="h-44 animate-pulse rounded-xl bg-surface" /> }
+);
+
+// 業務進捗（今月の月次タスク）ウィジェット。schoolIds を渡すだけで自前取得＋達成演出
+const TaskProgressWidget = dynamic(
+  () => import('@/components/monthly-tasks/TaskProgressWidget').then((m) => m.TaskProgressWidget),
   { ssr: false, loading: () => <div className="h-44 animate-pulse rounded-xl bg-surface" /> }
 );
 
@@ -692,6 +712,44 @@ function DetailView() {
     getFormParticipation(ids)
       .then((p) => active && setParticipation(p))
       .catch(() => setParticipation([]));
+    return () => {
+      active = false;
+    };
+  }, [getSelectedSchoolIds]);
+
+  // ① 個別校の講習進捗データ（単一校。軽いデータ先行・auto_values 後追い）
+  const [coursePrep, setCoursePrep] = useState<{
+    students: Student[];
+    items: CourseProgressItem[];
+    progress: StudentCourseProgress[];
+    period: CoursePrepPeriod | null;
+    autoValues?: AutoValues;
+  } | null>(null);
+  useEffect(() => {
+    const sid = getSelectedSchoolIds()[0];
+    if (!sid) return;
+    let active = true;
+    const { season, year } = loadSavedSeasonYear();
+    const params = { schoolId: sid, season, year: String(year), includeHidden: 'false' };
+    batchFetchCoursePrepApi(params, ['students', 'progress_items', 'student_progress', 'period'])
+      .then((light) => {
+        if (!active) return;
+        setCoursePrep({
+          students: (light.students as Student[]) || [],
+          items: (light.progress_items as CourseProgressItem[]) || [],
+          progress: (light.student_progress as StudentCourseProgress[]) || [],
+          period: (light.period as CoursePrepPeriod | null) || null,
+        });
+        batchFetchCoursePrepApi(params, ['auto_values'])
+          .then((heavy) => {
+            if (!active) return;
+            setCoursePrep((prev) =>
+              prev ? { ...prev, autoValues: (heavy.auto_values as AutoValues) || {} } : prev
+            );
+          })
+          .catch(() => {});
+      })
+      .catch(() => {});
     return () => {
       active = false;
     };
@@ -1378,6 +1436,28 @@ function DetailView() {
           </CardContent>
         </Card>
       )}
+
+      {/* ① 講習進捗（この教室）— /courses/progress と同じ単一校ダッシュボードを読み取り専用で */}
+      <div className="mt-6">
+        <SectionLabel icon={GraduationCap}>講習進捗（この教室）</SectionLabel>
+        {coursePrep ? (
+          <CourseProgressDashboard
+            students={coursePrep.students}
+            items={coursePrep.items}
+            progressData={coursePrep.progress}
+            period={coursePrep.period}
+            autoValues={coursePrep.autoValues}
+          />
+        ) : (
+          <div className="h-44 animate-pulse rounded-xl bg-surface" />
+        )}
+      </div>
+
+      {/* ② 業務進捗（今月のタスク）— 達成演出つきウィジェット（/tasks の TaskProgressWidget） */}
+      <div className="mt-6">
+        <SectionLabel icon={ListTodo}>業務進捗（今月のタスク）</SectionLabel>
+        <TaskProgressWidget schoolIds={getSelectedSchoolIds()} />
+      </div>
     </AdminLayout>
   );
 }
