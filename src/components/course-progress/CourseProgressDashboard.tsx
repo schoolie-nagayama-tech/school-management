@@ -847,11 +847,17 @@ export function CourseProgressDashboard({
               </div>
             </div>
           </div>
-          <div className="mt-2 pt-2 border-t border-gray-100 text-xs text-gray-400">
+          <div className="mt-2 pt-2 border-t border-gray-100 text-xs text-gray-400 space-y-0.5">
             <div className="flex justify-between">
               <span>平均提案</span>
               <span className="text-gray-600">
                 {students.length > 0 ? (totalProposed / students.length).toFixed(1) : 0}コマ/人
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span>平均取得</span>
+              <span className="text-gray-600">
+                {students.length > 0 ? (totalDecided / students.length).toFixed(1) : 0}コマ/人
               </span>
             </div>
           </div>

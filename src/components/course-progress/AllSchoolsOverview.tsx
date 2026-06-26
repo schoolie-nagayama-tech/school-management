@@ -214,6 +214,22 @@ export function AllSchoolsOverview({
               {Math.round(totals.acquisitionRate * 100)}%
             </span>
           </span>
+          <span>
+            平均提案{' '}
+            <span className="text-gray-600 font-medium">
+              {totals.studentCount > 0
+                ? (totals.totalProposed / totals.studentCount).toFixed(1)
+                : 0}
+              コマ/人
+            </span>
+          </span>
+          <span>
+            平均取得{' '}
+            <span className="text-gray-600 font-medium">
+              {totals.studentCount > 0 ? (totals.totalDecided / totals.studentCount).toFixed(1) : 0}
+              コマ/人
+            </span>
+          </span>
         </div>
       </div>
 
@@ -300,6 +316,18 @@ export function AllSchoolsOverview({
                 </span>
                 <span>
                   提案 <span className="text-gray-600 font-medium">{k.totalProposed}</span>
+                </span>
+                <span>
+                  平均提案{' '}
+                  <span className="text-gray-600 font-medium">
+                    {k.studentCount > 0 ? (k.totalProposed / k.studentCount).toFixed(1) : 0}
+                  </span>
+                </span>
+                <span>
+                  平均取得{' '}
+                  <span className="text-gray-600 font-medium">
+                    {k.studentCount > 0 ? (k.totalDecided / k.studentCount).toFixed(1) : 0}
+                  </span>
                 </span>
                 <span>
                   作成済{' '}
