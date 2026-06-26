@@ -222,3 +222,22 @@ export async function deleteCurriculumItem(id: number): Promise<void> {
     throw new Error(`目次項目の削除に失敗しました: ${error.message}`);
   }
 }
+
+/**
+ * 目次項目の並び順をまとめて更新する（ドラッグ&ドロップ後の保存用）。
+ * RPC が無いので個別 UPDATE を順次実行する（件数は教材1冊分なので許容範囲）。
+ */
+export async function updateCurriculumOrder(
+  items: { id: number; sort_order: number }[]
+): Promise<void> {
+  for (const item of items) {
+    const { error } = await supabase
+      .from('curriculum_items')
+      .update({ sort_order: item.sort_order })
+      .eq('id', item.id);
+
+    if (error) {
+      throw new Error(`並び順の更新に失敗しました: ${error.message}`);
+    }
+  }
+}

@@ -13,8 +13,25 @@ import {
   createCurriculumItem,
   updateCurriculumItem,
   deleteCurriculumItem,
+  updateCurriculumOrder,
   updateTextbook,
 } from '@/lib/api/textbooks';
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  KeyboardSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  arrayMove,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { SortableCurriculumRow } from '@/components/textbooks/SortableCurriculumRow';
 import type {
   Textbook,
   CurriculumItem,
@@ -23,10 +40,8 @@ import type {
 } from '@/types/database';
 import {
   Plus,
-  Edit2,
   Trash2,
   ChevronLeft,
-  GripVertical,
   Download,
   Upload,
   Settings,
@@ -89,6 +104,14 @@ export default function CurriculumPage() {
   const [showBulkModal, setShowBulkModal] = useState(false);
   const [bulkText, setBulkText] = useState('');
   const [bulkSaving, setBulkSaving] = useState(false);
+
+  // 並べ替え（D&D）
+  const [isReordering, setIsReordering] = useState(false);
+  const sensors = useSensors(
+    // ボタン上のクリック（編集/削除）と区別するため、8px動かしてからドラッグ開始
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
 
   const loadData = useCallback(async () => {
     try {
@@ -171,6 +194,28 @@ export default function CurriculumPage() {
       loadData();
     } catch (e) {
       toastError(`削除に失敗しました: ${e instanceof Error ? e.message : '不明なエラー'}`);
+    }
+  };
+
+  // 並べ替え確定: 楽観的に並べ替え→sort_orderを保存。失敗時は元に戻す。
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = items.findIndex((i) => i.id === active.id);
+    const newIndex = items.findIndex((i) => i.id === over.id);
+    if (oldIndex < 0 || newIndex < 0) return;
+
+    const newItems = arrayMove(items, oldIndex, newIndex);
+    const previous = items;
+    setItems(newItems); // 楽観的更新
+    setIsReordering(true);
+    try {
+      await updateCurriculumOrder(newItems.map((it, idx) => ({ id: it.id, sort_order: idx + 1 })));
+    } catch (e) {
+      setItems(previous); // 失敗したら元の順序に戻す
+      toastError(`並び順の保存に失敗しました: ${e instanceof Error ? e.message : '不明なエラー'}`);
+    } finally {
+      setIsReordering(false);
     }
   };
 
@@ -484,104 +529,110 @@ export default function CurriculumPage() {
               </button>
             </div>
           ) : (
-            <table className="w-full">
-              <thead>
-                <tr className="bg-surface border-infoorderorder border-border">
-                  {selectionMode ? (
-                    <th className="w-10 px-2 text-center">
-                      <button
-                        onClick={toggleSelectAll}
-                        className="p-1 text-text-muted hover:text-ink"
-                      >
-                        {selectedIds.size === items.length ? (
-                          <CheckSquare className="w-4 h-4 text-ink" />
-                        ) : selectedIds.size > 0 ? (
-                          <MinusSquare className="w-4 h-4 text-ink" />
-                        ) : (
-                          <Square className="w-4 h-4" />
-                        )}
-                      </button>
-                    </th>
-                  ) : (
-                    <th className="w-8 px-2"></th>
-                  )}
-                  <th className="text-text-dangeraintenter px-3 py-2.5 text-xs font-medium text-text-muted w-16">
-                    No.
-                  </th>
-                  <th className="text-left px-3 py-2.5 text-xs font-medium text-text-muted">
-                    タイトル
-                  </th>
-                  <th className="text-text-dangeraintenter px-3 py-2.5 text-xs font-medium text-text-muted w-24">
-                    種別
-                  </th>
-                  {!selectionMode && (
-                    <th className="text-text-dangeraintenter px-3 py-2.5 text-xs font-medium text-text-muted w-24">
-                      操作
-                    </th>
-                  )}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {items.map((item) => {
-                  const typeInfo = getTypeInfo(item.item_type);
-                  const isChapter = item.item_type === 'chapter';
-                  const isSelected = selectedIds.has(item.id);
-                  return (
-                    <tr
-                      key={item.id}
-                      className={`hover:bg-surface transition-colors ${isChapter ? 'bg-surface-hover' : ''} ${isSelected ? 'bg-blue-50' : ''}`}
-                      onClick={selectionMode ? () => toggleSelection(item.id) : undefined}
-                      style={selectionMode ? { cursor: 'pointer' } : undefined}
-                    >
-                      {selectionMode ? (
-                        <td className="px-2 text-center">
-                          {isSelected ? (
-                            <CheckSquare className="w-4 h-4 inline text-ink" />
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-surface border-infoorderorder border-border">
+                    {selectionMode ? (
+                      <th className="w-10 px-2 text-center">
+                        <button
+                          onClick={toggleSelectAll}
+                          className="p-1 text-text-muted hover:text-ink"
+                        >
+                          {selectedIds.size === items.length ? (
+                            <CheckSquare className="w-4 h-4 text-ink" />
+                          ) : selectedIds.size > 0 ? (
+                            <MinusSquare className="w-4 h-4 text-ink" />
                           ) : (
-                            <Square className="w-4 h-4 inline text-text-muted" />
+                            <Square className="w-4 h-4" />
                           )}
-                        </td>
-                      ) : (
-                        <td className="px-2 text-text-dangeraintenter text-border">
-                          <GripVertical className="w-4 h-4 inline" />
-                        </td>
-                      )}
-                      <td className="px-3 py-2.5 text-text-dangeraintenter text-sm text-text-muted">
-                        {item.item_number || '-'}
-                      </td>
-                      <td
-                        className={`px-3 py-2.5 text-sm ${isChapter ? 'font-bold text-text-heading' : 'text-text-heading'}`}
-                      >
-                        {item.title}
-                      </td>
-                      <td className="px-3 py-2.5 text-text-dangeraintenter">
-                        <span className={`text-xs px-2 py-0.5 rounded ${typeInfo.color}`}>
-                          {typeInfo.label}
-                        </span>
-                      </td>
-                      {!selectionMode && (
-                        <td className="px-3 py-2.5 text-text-dangeraintenter">
-                          <div className="flex items-center justify-center gap-1">
-                            <button
-                              onClick={() => openEditModal(item)}
-                              className="p-1.5 text-text-muted hover:text-ink hover:bg-surface-hover rounded transition-colors duration-150"
+                        </button>
+                      </th>
+                    ) : (
+                      <th className="w-8 px-2"></th>
+                    )}
+                    <th className="px-3 py-2.5 text-center text-xs font-medium text-text-muted w-16">
+                      No.
+                    </th>
+                    <th className="text-left px-3 py-2.5 text-xs font-medium text-text-muted">
+                      タイトル
+                    </th>
+                    <th className="px-3 py-2.5 text-center text-xs font-medium text-text-muted w-24">
+                      種別
+                    </th>
+                    {!selectionMode && (
+                      <th className="px-3 py-2.5 text-center text-xs font-medium text-text-muted w-24">
+                        操作
+                      </th>
+                    )}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {selectionMode
+                    ? items.map((item) => {
+                        const typeInfo = getTypeInfo(item.item_type);
+                        const isChapter = item.item_type === 'chapter';
+                        const isSelected = selectedIds.has(item.id);
+                        return (
+                          <tr
+                            key={item.id}
+                            className={`hover:bg-surface transition-colors ${isChapter ? 'bg-surface-hover' : ''} ${isSelected ? 'bg-blue-50' : ''}`}
+                            onClick={() => toggleSelection(item.id)}
+                            style={{ cursor: 'pointer' }}
+                          >
+                            <td className="px-2 text-center">
+                              {isSelected ? (
+                                <CheckSquare className="w-4 h-4 inline text-ink" />
+                              ) : (
+                                <Square className="w-4 h-4 inline text-text-muted" />
+                              )}
+                            </td>
+                            <td className="px-3 py-2.5 text-center text-sm text-text-muted">
+                              {item.item_number || '-'}
+                            </td>
+                            <td
+                              className={`px-3 py-2.5 text-sm ${isChapter ? 'font-bold text-text-heading' : 'text-text-heading'}`}
                             >
-                              <Edit2 className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              onClick={() => handleDelete(item.id)}
-                              className="p-1.5 text-text-muted hover:text-red-600 hover:bg-red-50 rounded transition-colors duration-150"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        </td>
-                      )}
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                              {item.title}
+                            </td>
+                            <td className="px-3 py-2.5 text-center">
+                              <span className={`text-xs px-2 py-0.5 rounded ${typeInfo.color}`}>
+                                {typeInfo.label}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    : null}
+                  {!selectionMode && (
+                    <SortableContext
+                      items={items.map((i) => i.id)}
+                      strategy={verticalListSortingStrategy}
+                    >
+                      {items.map((item) => {
+                        const typeInfo = getTypeInfo(item.item_type);
+                        return (
+                          <SortableCurriculumRow
+                            key={item.id}
+                            item={item}
+                            typeLabel={typeInfo.label}
+                            typeColor={typeInfo.color}
+                            isChapter={item.item_type === 'chapter'}
+                            disabled={isReordering}
+                            onEdit={openEditModal}
+                            onDelete={handleDelete}
+                          />
+                        );
+                      })}
+                    </SortableContext>
+                  )}
+                </tbody>
+              </table>
+            </DndContext>
           )}
         </div>
 
