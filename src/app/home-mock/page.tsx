@@ -20,7 +20,7 @@ import type { SchoolOverviewRow } from '@/components/course-progress';
 import { loadSavedSeasonYear } from '@/lib/utils/coursePrepStorage';
 import { getSchoolMonthlyMetrics, type MonthlyMetricPoint } from '@/lib/api/schoolMetrics';
 import { getAlertsLight, getAlertsHeavy, mergeStudentAlerts } from '@/lib/api/alerts';
-import { ALERT_TYPE_LABELS, type Alert, type StudentAlerts, type AlertType } from '@/types/alerts';
+import { ALERT_TYPE_LABELS, type Alert, type StudentAlerts } from '@/types/alerts';
 import { getStudents, type EnrichedStudent } from '@/lib/api/students';
 import { getRecentUnprocessedResponses } from '@/lib/api/form-responses';
 import { getBulletinPosts } from '@/lib/api/bulletin';
@@ -133,11 +133,26 @@ const TASK_TYPES: Record<
 
 // 期日グループ（カレンダーに入れる優先度の帯）。この順で上から表示する
 const DUE_GROUPS = [
-  { key: 'overdue', label: '期限超過', tone: 'danger' as const, range: '対応を急ぐ' },
-  { key: 'thisWeek', label: '今週', tone: 'warning' as const, range: '〜6/13' },
-  { key: 'nextWeek', label: '来週', tone: 'info' as const, range: '6/14〜6/20' },
-  { key: 'later', label: 'それ以降', tone: 'primary' as const, range: '6/21〜' },
+  { key: 'overdue', label: '期限超過', tone: 'danger' as const },
+  { key: 'thisWeek', label: '今週', tone: 'warning' as const },
+  { key: 'nextWeek', label: '来週', tone: 'info' as const },
+  { key: 'later', label: 'それ以降', tone: 'primary' as const },
 ];
+
+// 今日基準で期日帯の日付レンジ表示を作る。
+// 旧モックは固定日付（〜6/13 等）だったため今週/来週帯が実日付とズレ、「超過しか出ない」ように見えていた。
+function dueGroupHint(key: string): string {
+  const today = new Date();
+  const md = (offset: number) => {
+    const d = new Date(today);
+    d.setDate(d.getDate() + offset);
+    return `${d.getMonth() + 1}/${d.getDate()}`;
+  };
+  if (key === 'overdue') return '対応を急ぐ';
+  if (key === 'thisWeek') return `〜${md(6)}`;
+  if (key === 'nextWeek') return `${md(7)}〜${md(13)}`;
+  return `${md(14)}〜`;
+}
 
 // [A] KPI サマリーカード
 const KPIS = [
@@ -642,7 +657,6 @@ function DetailView() {
 
   // アラート（生徒モニタリング）の実データ。light を先に表示し、heavy(成績低下等)は背後でマージ
   const [alertData, setAlertData] = useState<StudentAlerts[] | null>(null);
-  const [filterType, setFilterType] = useState<AlertType | null>(null);
   useEffect(() => {
     const ids = getSelectedSchoolIds();
     if (ids.length === 0) return;
@@ -667,16 +681,7 @@ function DetailView() {
   const alertCount = allAlerts.length;
   const hasRealAlerts = alertData !== null && alertData.length > 0;
 
-  // 種別ごと件数（重要度順）。クリックでこの種別に絞り込む
-  const typeCountMap = new Map<AlertType, number>();
-  allAlerts.forEach((a) =>
-    typeCountMap.set(a.alert_type, (typeCountMap.get(a.alert_type) ?? 0) + 1)
-  );
-  const typeSummary = Array.from(typeCountMap.entries())
-    .map(([type, count]) => ({ type, count }))
-    .sort((a, b) => (TYPE_PRIORITY[a.type] ?? 99) - (TYPE_PRIORITY[b.type] ?? 99));
-
-  // 生徒ごとに集約し、最重要種別→最重要severity の順で並べる
+  // 生徒ごとに集約し、最重要種別→最重要severity の順で並べる（気になる生徒の並びに使う）
   const studentsSorted = (alertData ?? [])
     .map((s) => ({
       data: s,
@@ -684,11 +689,6 @@ function DetailView() {
       topSeverity: Math.min(...s.alerts.map((a) => SEVERITY_RANK[a.severity ?? 'info'] ?? 2)),
     }))
     .sort((a, b) => a.topPriority - b.topPriority || a.topSeverity - b.topSeverity);
-
-  // 種別フィルタ適用後の生徒
-  const visibleStudents = filterType
-    ? studentsSorted.filter((s) => s.data.alerts.some((a) => a.alert_type === filterType))
-    : studentsSorted;
 
   // 気になる生徒（期日のないアラート: 成績低下/成績未入力/宿題/遅刻）を持つ生徒
   const watchStudents = studentsSorted
@@ -701,6 +701,13 @@ function DetailView() {
   // 要対応・期日一覧：アラートの期日系を生徒ごとに集約。未対応 = 未チェックの生徒数
   const dueStudents = alertData ? buildDueStudents(alertData) : [];
   const openCount = dueStudents.filter((s) => !doneIds.has(s.studentId)).length;
+  // 期日帯ごとの未対応件数。超過の前（今週/来週/以降）を最上部サマリーで前面に出す
+  const tierCounts = DUE_GROUPS.map((g) => ({
+    key: g.key,
+    label: g.label,
+    tone: g.tone,
+    count: dueStudents.filter((s) => s.group === g.key && !doneIds.has(s.studentId)).length,
+  }));
   const gradeColor = (cat: string) => (cat === 'elem' ? C.blue : cat === 'mid' ? C.primary : C.ink);
 
   // 生徒データ（経営スナップショット集計用）と未処理申込件数の実データ
@@ -1008,7 +1015,11 @@ function DetailView() {
 
         {/* ── 右カラム：やること ── */}
         <div>
-          {/* [★] 要対応・期日一覧（網羅表示）。期日帯でグルーピングし、各行からカレンダー登録できる */}
+          {/* 業務進捗（今月のタスク）— 室長が毎月追う主役。やることの最上位に置く（達成演出つき） */}
+          <SectionLabel icon={ListTodo}>業務進捗（今月のタスク）</SectionLabel>
+          <TaskProgressWidget schoolIds={getSelectedSchoolIds()} />
+
+          {/* [★] 要対応（アラート統合）。期日帯でグルーピングし超過前から網羅、各行からカレンダー登録 */}
           <SectionLabel
             icon={CalendarDays}
             right={
@@ -1021,8 +1032,26 @@ function DetailView() {
           </SectionLabel>
           <Card>
             <CardContent className="py-2">
-              <p className="border-b border-border-subtle pb-2 text-xs text-text-muted">
-                期日が来るもの・アラート予兆を網羅。カレンダーにいつ入れるかの判断材料。
+              {/* 期日帯サマリー：超過の前（今週/来週/以降）の件数を最初に見せ、先回りで気づけるようにする */}
+              {dueStudents.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 border-b border-border-subtle pb-2">
+                  {tierCounts.map((t) => {
+                    const tn = TONE[t.tone];
+                    return (
+                      <span
+                        key={t.key}
+                        className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${
+                          t.count > 0 ? `${tn.bg} ${tn.text}` : 'bg-surface-hover text-text-faint'
+                        }`}
+                      >
+                        {t.label} {t.count}
+                      </span>
+                    );
+                  })}
+                </div>
+              )}
+              <p className="border-b border-border-subtle py-2 text-xs text-text-muted">
+                期日が来る前から網羅（アラート予兆を含む）。いつカレンダーに入れるかの判断材料。
               </p>
               {dueStudents.length === 0 ? (
                 <div className="py-3 text-sm text-text-muted">
@@ -1048,7 +1077,7 @@ function DetailView() {
                           {g.label}
                         </span>
                         <span className="text-xs text-text-faint">
-                          {g.range}・{inGroup.length}名
+                          {dueGroupHint(g.key)}・{inGroup.length}名
                         </span>
                       </div>
                       {inGroup.map((s) => {
@@ -1151,89 +1180,6 @@ function DetailView() {
               </Card>
             </>
           )}
-
-          {/* [E] アラート（種別サマリで絞り込み・生徒ごと集約） */}
-          <SectionLabel
-            icon={AlertTriangle}
-            right={
-              hasRealAlerts ? (
-                <span className="text-xs text-text-muted">{alertCount}件</span>
-              ) : undefined
-            }
-          >
-            アラート
-          </SectionLabel>
-          <Card>
-            <CardContent className="py-2">
-              {!hasRealAlerts ? (
-                <div className="py-2 text-sm text-text-muted">
-                  {alertData === null ? '読み込み中…' : '現在アラートはありません'}
-                </div>
-              ) : (
-                <>
-                  {/* 種別サマリ（重要度順）。クリックでその種別だけに絞り込み */}
-                  <div className="flex flex-wrap gap-1.5 pb-2 mb-2 border-b border-border-subtle">
-                    {typeSummary.map(({ type, count }) => {
-                      const activeF = filterType === type;
-                      return (
-                        <button
-                          key={type}
-                          type="button"
-                          onClick={() => setFilterType(activeF ? null : type)}
-                          className={`px-2 py-0.5 rounded-full text-xs font-medium transition-colors ${
-                            activeF
-                              ? 'bg-ink text-text-on-primary'
-                              : 'bg-surface-hover text-text-body hover:bg-surface-raised'
-                          }`}
-                        >
-                          {ALERT_TYPE_LABELS[type]} {count}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  {/* 生徒ごと集約（最重要順・上位8名）。各生徒の種別を件数チップで */}
-                  {visibleStudents.slice(0, 8).map(({ data: s, topSeverity }) => {
-                    const sevTone =
-                      topSeverity === 0 ? 'danger' : topSeverity === 1 ? 'warning' : 'info';
-                    const byType = new Map<AlertType, number>();
-                    s.alerts
-                      .filter((a) => !filterType || a.alert_type === filterType)
-                      .forEach((a) =>
-                        byType.set(a.alert_type, (byType.get(a.alert_type) ?? 0) + 1)
-                      );
-                    const chips = Array.from(byType.entries()).sort(
-                      (a, b) => (TYPE_PRIORITY[a[0]] ?? 99) - (TYPE_PRIORITY[b[0]] ?? 99)
-                    );
-                    return (
-                      <div
-                        key={s.student_id}
-                        className="flex items-center gap-2 py-2 border-b border-border-subtle last:border-0"
-                      >
-                        <span className={`w-2 h-2 rounded-full shrink-0 ${TONE[sevTone].bar}`} />
-                        <span className="text-sm text-text-body shrink-0">{s.student_name}</span>
-                        <div className="flex flex-wrap gap-1 justify-end flex-1">
-                          {chips.map(([type, cnt]) => (
-                            <span
-                              key={type}
-                              className="px-1.5 py-0.5 rounded text-xs bg-surface-hover text-text-muted"
-                            >
-                              {ALERT_TYPE_LABELS[type]}
-                              {cnt > 1 ? ` ${cnt}` : ''}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  })}
-                  {visibleStudents.length > 8 && (
-                    <div className="pt-2 text-xs text-text-muted">
-                      ほか {visibleStudents.length - 8} 名
-                    </div>
-                  )}
-                </>
-              )}
-            </CardContent>
-          </Card>
 
           {/* 最近の動き（活動フィード）。/students 上部の通知フィードを移行 */}
           <SectionLabel icon={History}>最近の動き</SectionLabel>
@@ -1344,10 +1290,6 @@ function DetailView() {
       ) : (
         <div className="h-44 animate-pulse rounded-xl bg-surface" />
       )}
-
-      {/* ② 業務進捗（今月のタスク）— 達成演出つきウィジェット（/tasks の TaskProgressWidget） */}
-      <SectionLabel icon={ListTodo}>業務進捗（今月のタスク）</SectionLabel>
-      <TaskProgressWidget schoolIds={getSelectedSchoolIds()} />
 
       {/* ===== 経営指標 — 動き（増減・予実・見込み） ===== */}
       <SectionLabel icon={TrendingUp}>経営指標 — 動き（増減・予実）</SectionLabel>
