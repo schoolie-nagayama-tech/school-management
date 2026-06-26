@@ -516,6 +516,23 @@ export async function syncProposalToProgress(
     if (upsertError) throw new Error(`進行表への反映に失敗しました: ${upsertError.message}`);
   }
 
+  // 上書きセマンティクス: 今回の提案単元に含まれない行の提案コマ転記をクリアする。
+  // 公開後に単元を削除/差し替えると、旧 proposal_count/group_number が student_progress に
+  // 残り進行表が実際の提案より過大表示になる（再公開でも当該行は上書きされない）ため。
+  {
+    const unitIds = proposal.units.map((u) => u.curriculum_item_id);
+    let clearQ = supabase
+      .from('student_progress')
+      .update({ proposal_count: 0, group_number: null })
+      .eq('student_textbook_id', stbId!)
+      .or('proposal_count.gt.0,group_number.not.is.null');
+    if (unitIds.length > 0) {
+      clearQ = clearQ.not('curriculum_item_id', 'in', `(${unitIds.join(',')})`);
+    }
+    const { error: clearErr } = await clearQ;
+    if (clearErr) throw new Error(`進行表の取り残しクリアに失敗しました: ${clearErr.message}`);
+  }
+
   return { studentTextbookId: stbId!, textbookCreated };
 }
 
@@ -581,6 +598,23 @@ export async function syncApplicationToProgress(proposalId: string): Promise<voi
         .in('curriculum_item_id', ids);
     })
   );
+
+  // 上書きセマンティクス: 今回の単元に含まれない行の申込コマ転記をクリアする。
+  // syncProposalToProgress と同様、削除済み単元の旧 application_count/applied_group_number が
+  // 残って進行表の申込コマが過大になるのを防ぐ。
+  {
+    const unitIds = proposal.units.map((u) => u.curriculum_item_id);
+    let clearQ = supabase
+      .from('student_progress')
+      .update({ application_count: 0, applied_group_number: null })
+      .eq('student_textbook_id', proposal.student_textbook_id!)
+      .or('application_count.gt.0,applied_group_number.not.is.null');
+    if (unitIds.length > 0) {
+      clearQ = clearQ.not('curriculum_item_id', 'in', `(${unitIds.join(',')})`);
+    }
+    const { error: clearErr } = await clearQ;
+    if (clearErr) throw new Error(`進行表の申込取り残しクリアに失敗しました: ${clearErr.message}`);
+  }
 }
 
 // ============================================
