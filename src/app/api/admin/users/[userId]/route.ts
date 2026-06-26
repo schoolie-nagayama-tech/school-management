@@ -331,13 +331,6 @@ export async function PATCH(request: NextRequest, { params }: { params: { userId
       });
     }
 
-    const slotNumbersByDay =
-      body.available_slot_numbers_by_day != null &&
-      typeof body.available_slot_numbers_by_day === 'object' &&
-      !Array.isArray(body.available_slot_numbers_by_day)
-        ? body.available_slot_numbers_by_day
-        : {};
-
     const profileUpdates: Record<string, unknown> = {
       updated_at: new Date().toISOString(),
     };
@@ -355,7 +348,17 @@ export async function PATCH(request: NextRequest, { params }: { params: { userId
     if (Array.isArray(body.available_days_of_week)) {
       profileUpdates.available_days_of_week = body.available_days_of_week;
     }
-    profileUpdates.available_slot_numbers_by_day = slotNumbersByDay;
+    // 出勤可能コマは teacher_availability_periods 側で版管理に移行したため、
+    // リクエストに含まれているときだけ更新する。未指定なら既存値を保持し、
+    // 名前変更など無関係な保存で user_profiles 側の値が空に潰れるのを防ぐ。
+    if ('available_slot_numbers_by_day' in body) {
+      profileUpdates.available_slot_numbers_by_day =
+        body.available_slot_numbers_by_day != null &&
+        typeof body.available_slot_numbers_by_day === 'object' &&
+        !Array.isArray(body.available_slot_numbers_by_day)
+          ? body.available_slot_numbers_by_day
+          : {};
+    }
 
     const { data, error } = await supabaseAdmin
       .from('user_profiles')

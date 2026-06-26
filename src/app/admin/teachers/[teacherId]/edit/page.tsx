@@ -26,7 +26,12 @@ import {
   getTeacherBadgeAssignments,
   toggleTeacherBadge,
 } from '@/lib/api/teacher-badges';
-import { upsertManualAvailability } from '@/lib/api/teacher-availability';
+import {
+  getAvailabilityPeriods,
+  syncAllRegularShifts,
+  type TeacherAvailabilityPeriod,
+} from '@/lib/api/teacher-availability';
+import { AvailabilityPeriodsPanel } from '@/components/teachers/AvailabilityPeriodsPanel';
 import { emitTeacherBadgesChanged } from '@/lib/teacher-badge-events';
 import type {
   School,
@@ -41,16 +46,6 @@ import { BadgeProgress } from '@/components/teacher-badges/BadgeProgress';
 import { BadgeTemplateDialog } from '@/components/teacher-badges/BadgeTemplateDialog';
 import type { BadgeRank } from '@/types/database';
 import { createTeacherBadge } from '@/lib/api/teacher-badges';
-
-const DAY_LABELS: { value: number; label: string }[] = [
-  { value: 0, label: '日' },
-  { value: 1, label: '月' },
-  { value: 2, label: '火' },
-  { value: 3, label: '水' },
-  { value: 4, label: '木' },
-  { value: 5, label: '金' },
-  { value: 6, label: '土' },
-];
 
 const GRADE_CATEGORY_LABELS: Record<string, string> = {
   elementary: '小学',
@@ -80,34 +75,6 @@ function normalizeToStrArray(v: unknown): string[] {
     return trimmed.split(',').map((s) => s.trim().replace(/^"|"$/g, ''));
   }
   return [];
-}
-
-function normalizeToNumArray(v: unknown): number[] {
-  if (Array.isArray(v)) return v.map((x) => Number(x)).filter((n) => !Number.isNaN(n));
-  if (typeof v === 'string') {
-    const trimmed = v.replace(/^\{|\}$/g, '').trim();
-    if (!trimmed) return [];
-    return trimmed
-      .split(',')
-      .map((s) => Number(s.trim()))
-      .filter((n) => !Number.isNaN(n));
-  }
-  return [];
-}
-
-/** 曜日別コマを Record<string, number[]> に正規化（キー "0"〜"6"、値は 1〜7） */
-function normalizeToSlotNumbersByDay(v: unknown): Record<string, number[]> {
-  if (v !== null && typeof v === 'object' && !Array.isArray(v)) {
-    const out: Record<string, number[]> = {};
-    for (const key of Object.keys(v as object)) {
-      const arr = normalizeToNumArray((v as Record<string, unknown>)[key]).filter(
-        (n) => n >= 1 && n <= 7
-      );
-      if (arr.length > 0) out[key] = arr;
-    }
-    return out;
-  }
-  return {};
 }
 
 interface TeacherWithDetails extends UserProfile {
@@ -141,9 +108,10 @@ export default function TeacherEditPage() {
   const [editFirstName, setEditFirstName] = useState('');
   const [editSchoolIds, setEditSchoolIds] = useState<string[]>([]);
   const [editTeachableSubjectIds, setEditTeachableSubjectIds] = useState<string[]>([]);
-  const [editAvailableSlotNumbersByDay, setEditAvailableSlotNumbersByDay] = useState<
-    Record<string, number[]>
-  >({});
+  // 出勤可能（曜日×コマ）は teacher_availability_periods（シフト申請由来＋手動）で版管理する。
+  // 旧 user_profiles.available_slot_numbers_by_day 直編集は廃止し、期間パネルへ一本化。
+  const [availabilityPeriods, setAvailabilityPeriods] = useState<TeacherAvailabilityPeriod[]>([]);
+  const [isResyncing, setIsResyncing] = useState(false);
   const [allBadges, setAllBadges] = useState<TeacherBadge[]>([]);
   const [badgeAssignments, setBadgeAssignments] = useState<TeacherBadgeAssignment[]>([]);
   const [badgeCreateDialogOpen, setBadgeCreateDialogOpen] = useState(false);
@@ -225,13 +193,15 @@ export default function TeacherEditPage() {
 
     (async () => {
       try {
-        const [teacherRes, masters, trainingsList, badges, assignments] = await Promise.all([
-          fetchWithAuth(`/api/admin/users/${teacherId}`),
-          getTrainingMasters(true).catch(() => [] as TrainingMaster[]),
-          getTeacherTrainings(teacherId).catch(() => [] as TeacherTraining[]),
-          getTeacherBadges().catch(() => [] as TeacherBadge[]),
-          getTeacherBadgeAssignments(teacherId).catch(() => [] as TeacherBadgeAssignment[]),
-        ]);
+        const [teacherRes, masters, trainingsList, badges, assignments, periods] =
+          await Promise.all([
+            fetchWithAuth(`/api/admin/users/${teacherId}`),
+            getTrainingMasters(true).catch(() => [] as TrainingMaster[]),
+            getTeacherTrainings(teacherId).catch(() => [] as TeacherTraining[]),
+            getTeacherBadges().catch(() => [] as TeacherBadge[]),
+            getTeacherBadgeAssignments(teacherId).catch(() => [] as TeacherBadgeAssignment[]),
+            getAvailabilityPeriods(teacherId).catch(() => [] as TeacherAvailabilityPeriod[]),
+          ]);
 
         if (cancelled) return;
 
@@ -252,6 +222,7 @@ export default function TeacherEditPage() {
         setTrainings(trainingsList);
         setAllBadges(badges);
         setBadgeAssignments(assignments);
+        setAvailabilityPeriods(periods);
 
         setEditLastName(found.last_name || found.display_name || '');
         setEditFirstName(found.first_name || '');
@@ -264,9 +235,6 @@ export default function TeacherEditPage() {
         }
         const subjectIds = normalizeToStrArray(found.teachable_subject_ids);
         setEditTeachableSubjectIds(subjectIds);
-        setEditAvailableSlotNumbersByDay(
-          normalizeToSlotNumbersByDay(found.available_slot_numbers_by_day)
-        );
       } catch (e) {
         if (!cancelled) toastError((e as Error).message);
       } finally {
@@ -360,14 +328,9 @@ export default function TeacherEditPage() {
     if (!teacher) return;
     setIsSaving(true);
     try {
-      // 出勤可能曜日はグリッドから自動導出（選択したコマがある曜日）
-      const derivedDays = new Set<number>();
-      for (const [dayKey, slotNums] of Object.entries(editAvailableSlotNumbersByDay)) {
-        if (slotNums?.length) derivedDays.add(parseInt(dayKey, 10));
-      }
-      const available_days_of_week = Array.from(derivedDays).sort((a, b) => a - b);
-
-      // プロファイル（表示名・指導可能科目・出勤可能曜日・出勤可能コマ）は API 経由で RPC 更新
+      // プロファイル（表示名・指導可能科目）は API 経由で RPC 更新。
+      // 出勤可能（曜日×コマ）は下の「出勤可能期間」パネルで teacher_availability_periods
+      // として版管理するため、ここでは送らない（送らなければ API 側でも上書きしない）。
       const profileRes = await fetchWithAuth(`/api/admin/users/${teacher.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -376,8 +339,6 @@ export default function TeacherEditPage() {
           last_name: editLastName,
           first_name: editFirstName,
           teachable_subject_ids: editTeachableSubjectIds,
-          available_days_of_week,
-          available_slot_numbers_by_day: editAvailableSlotNumbersByDay,
         }),
       });
       const errBody = (await profileRes.json().catch(() => ({}))) as {
@@ -400,28 +361,6 @@ export default function TeacherEditPage() {
       }
       for (const schoolId of toRemove) {
         await removeUserFromSchool(teacher.id, schoolId);
-      }
-
-      // 出勤可能期間 (teacher_availability_periods) を manual ソースで保存。
-      // 期間：今日〜無期限。シフト由来 (regular_shift) より優先される。
-      // 編集UIに期間ピッカーがないので、運用上は「最新の手動編集が以降ずっと有効」になる。
-      // 期間粒度の編集は将来 /admin/teachers/[id] の出勤可能期間パネルから可能にする。
-      try {
-        const today = new Date().toISOString().slice(0, 10);
-        for (const schoolId of editSchoolIds) {
-          await upsertManualAvailability({
-            user_id: teacher.id,
-            school_id: schoolId,
-            effective_from: today,
-            effective_until: null,
-            available_days_of_week,
-            available_slot_numbers_by_day: editAvailableSlotNumbersByDay,
-            notes: '講師詳細編集から保存',
-          });
-        }
-      } catch (availErr) {
-        // 出勤可能期間の保存失敗は user_profiles 更新には影響させない（互換のため）
-        console.warn('[teachers/edit] availability period upsert failed:', availErr);
       }
 
       success('講師を更新しました');
@@ -668,77 +607,39 @@ export default function TeacherEditPage() {
               </div>
             </div>
 
-            <div className="bg-surface-raised rounded-xl border border-border p-6 shadow-sm">
-              <h2 className="text-base font-semibold text-text-heading mb-4 pb-2 border-b border-border">
-                出勤可能コマ
-              </h2>
-              <p className="text-xs text-text-muted mb-4">
-                担当教室の座席表に設定されているコマのみ表示されます。各曜日で出勤可能なコマを選択してください。選択した曜日・コマのみ座席表に表示され、未選択の曜日・コマは表示されません。
-              </p>
-              {scheduleTimeSlots.length === 0 ? (
-                <p className="text-sm text-text-faint py-4">
-                  担当教室を選択するか、担当教室の座席表でコマ時間を設定すると表示されます。
-                </p>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full min-w-[360px] text-sm">
-                    <thead>
-                      <tr className="border-b border-border">
-                        <th className="text-left py-2 pr-4 font-medium text-text-muted w-10">
-                          曜日
-                        </th>
-                        {scheduleTimeSlots.map((slot) => (
-                          <th
-                            key={slot.id}
-                            className="text-center py-2 px-1 font-medium text-text-muted min-w-[5rem]"
-                          >
-                            <div>{slot.slot_number}限</div>
-                            <div className="text-[11px] font-normal text-text-faint tabular-nums mt-0.5">
-                              {slot.start_time?.slice(0, 5)}〜{slot.end_time?.slice(0, 5)}
-                            </div>
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {DAY_LABELS.map((d) => {
-                        const dayKey = String(d.value);
-                        const slotNums = editAvailableSlotNumbersByDay[dayKey] ?? [];
-                        const toggleSlot = (n: number) => {
-                          setEditAvailableSlotNumbersByDay((prev) => {
-                            const arr = prev[dayKey] ?? [];
-                            const next = arr.includes(n)
-                              ? arr.filter((x) => x !== n)
-                              : [...arr, n].sort((a, b) => a - b);
-                            const nextMap = { ...prev };
-                            if (next.length === 0) delete nextMap[dayKey];
-                            else nextMap[dayKey] = next;
-                            return nextMap;
-                          });
-                        };
-                        return (
-                          <tr key={d.value} className="border-b border-border/50 hover:bg-surface">
-                            <td className="py-2 pr-4 font-medium text-text-heading">{d.label}</td>
-                            {scheduleTimeSlots.map((slot) => (
-                              <td key={slot.id} className="py-2 px-1 text-center">
-                                <label className="flex items-center justify-center cursor-pointer">
-                                  <input
-                                    type="checkbox"
-                                    checked={slotNums.includes(slot.slot_number)}
-                                    onChange={() => toggleSlot(slot.slot_number)}
-                                    className="rounded border-text-faint text-[#ff8e3c] focus:ring-[#ff8e3c] w-4 h-4"
-                                  />
-                                </label>
-                              </td>
-                            ))}
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
+            {/* 出勤可能（曜日×コマ）: teacher_availability_periods で版管理。
+                シフト申請由来 (regular_shift) の期間が自動で表に入り、手動 (manual) の期間で
+                上書きできる。期間（いつからいつまで）も表示。閲覧ページと同じ共有パネル。
+                ※このパネルの保存は即時 DB 反映で、上部の「保存」ボタンとは独立。 */}
+            <AvailabilityPeriodsPanel
+              periods={availabilityPeriods}
+              teacherId={teacher.id}
+              schoolIds={(teacher.user_schools || []).map((us) => us.school_id)}
+              schoolNames={Object.fromEntries(
+                (teacher.user_schools || []).map((us) => [us.school_id, us.school?.name ?? '校舎'])
               )}
-            </div>
+              timeSlots={scheduleTimeSlots}
+              isResyncing={isResyncing}
+              onResync={async () => {
+                const sids = (teacher.user_schools || []).map((us) => us.school_id);
+                if (sids.length === 0) return;
+                setIsResyncing(true);
+                try {
+                  for (const sid of sids) {
+                    await syncAllRegularShifts(sid);
+                  }
+                  setAvailabilityPeriods(await getAvailabilityPeriods(teacher.id));
+                } catch (e) {
+                  console.error('resync failed', e);
+                  toastError('シフトからの再同期に失敗しました');
+                } finally {
+                  setIsResyncing(false);
+                }
+              }}
+              onChanged={async () => {
+                setAvailabilityPeriods(await getAvailabilityPeriods(teacher.id));
+              }}
+            />
 
             {/* バッジ / トロフィー */}
             <div className="bg-surface-raised rounded-xl border border-border p-6 shadow-sm">
