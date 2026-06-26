@@ -463,6 +463,18 @@ a:focus-visible {
     margin: 10mm;
   }
 
+  /* アプリ外枠(AdminLayout)が印刷で余分なページ・余白を生まないよう無効化する。
+     min-h-screen の全画面高や py-6 等の余白が、名前付きページ(proposal=縦/座席表=横)の
+     手前にデフォルト向きの空ページを差し込む原因になるため、印刷時は外枠を素通しにする。 */
+  .app-shell-root {
+    min-height: 0 !important;
+  }
+  .app-shell-main {
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
   /* 講習提案書: A4縦1枚に収める */
   .proposal-print-page {
     page: proposal;

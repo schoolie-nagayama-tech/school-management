@@ -31,7 +31,7 @@ export function AdminLayout({
   useAuth();
 
   return (
-    <div className="min-h-screen bg-bg">
+    <div className="app-shell-root min-h-screen bg-bg">
       {headerTitle && (
         <AppHeader
           title={headerTitle}
@@ -41,7 +41,7 @@ export function AdminLayout({
         />
       )}
       <div
-        className={`${
+        className={`app-shell-main ${
           fullWidth
             ? 'max-w-full px-4'
             : narrow
