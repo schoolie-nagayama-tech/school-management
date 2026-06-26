@@ -13,6 +13,11 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMasterData } from '@/contexts/MasterDataContext';
 import { getOverview, type Overview } from '@/lib/api/overview';
+import dynamic from 'next/dynamic';
+import { batchFetchCoursePrepApiMulti } from '@/lib/api/coursePrepApi';
+import { computeSchoolKpis } from '@/lib/coursePrepKpis';
+import type { SchoolOverviewRow } from '@/components/course-progress';
+import { loadSavedSeasonYear } from '@/lib/utils/coursePrepStorage';
 import { getSchoolMonthlyMetrics, type MonthlyMetricPoint } from '@/lib/api/schoolMetrics';
 import { getAlertsLight, getAlertsHeavy, mergeStudentAlerts } from '@/lib/api/alerts';
 import { ALERT_TYPE_LABELS, type Alert, type StudentAlerts, type AlertType } from '@/types/alerts';
@@ -65,6 +70,12 @@ import {
   Legend,
   Cell,
 } from 'recharts';
+
+// 講習進捗「すべての教室」カード（/courses/progress と同じコンポーネント。重いので遅延ロード）
+const AllSchoolsOverview = dynamic(
+  () => import('@/components/course-progress').then((m) => m.AllSchoolsOverview),
+  { ssr: false, loading: () => <div className="h-44 animate-pulse rounded-xl bg-surface" /> },
+);
 
 /* ============================================================
  * ダミーデータ（本番では API 取得に差し替え）
@@ -1408,6 +1419,50 @@ function OverviewView() {
     };
   }, [getSelectedSchoolIds, schools]);
 
+  // 講習進捗「すべての教室」カード用データ（/courses/progress と同じ取得・KPI算出）
+  const [coursePrepRows, setCoursePrepRows] = useState<SchoolOverviewRow[]>([]);
+  const [coursePrepLoading, setCoursePrepLoading] = useState(true);
+  useEffect(() => {
+    const ids = new Set(getSelectedSchoolIds());
+    const target = schools.filter((s) => ids.has(s.id));
+    if (target.length === 0) {
+      setCoursePrepLoading(false);
+      return;
+    }
+    let active = true;
+    setCoursePrepLoading(true);
+    const { season, year } = loadSavedSeasonYear();
+    const today = new Date().toISOString().slice(0, 10);
+    batchFetchCoursePrepApiMulti(
+      { schoolIds: target.map((s) => s.id), season, year: String(year), includeHidden: 'false' },
+      ['students', 'progress_items', 'student_progress', 'period', 'auto_values'],
+    )
+      .then((multi) => {
+        if (!active) return;
+        const rows: SchoolOverviewRow[] = target.map((school) => {
+          const batch = multi[school.id] || {};
+          return {
+            schoolId: school.id,
+            schoolName: school.name,
+            kpis: computeSchoolKpis(
+              (batch.students as Parameters<typeof computeSchoolKpis>[0]) || [],
+              (batch.progress_items as Parameters<typeof computeSchoolKpis>[1]) || [],
+              (batch.student_progress as Parameters<typeof computeSchoolKpis>[2]) || [],
+              (batch.auto_values as Parameters<typeof computeSchoolKpis>[3]) || {},
+              (batch.period as Parameters<typeof computeSchoolKpis>[4]) || null,
+              today,
+            ),
+          };
+        });
+        setCoursePrepRows(rows);
+        setCoursePrepLoading(false);
+      })
+      .catch(() => active && setCoursePrepLoading(false));
+    return () => {
+      active = false;
+    };
+  }, [getSelectedSchoolIds, schools]);
+
   const fmtNet = (n: number | null) => (n == null ? '—' : n > 0 ? `+${n}` : `${n}`);
   const fmtPct = (n: number | null) => (n == null ? '—' : `${n}%`);
 
@@ -1546,6 +1601,16 @@ function OverviewView() {
           )}
         </CardContent>
       </Card>
+
+      {/* 講習進捗（すべての教室）— /courses/progress と同じ全教室カードをそのまま組み込み */}
+      <div className="mt-6">
+        <SectionLabel icon={GraduationCap}>講習進捗（すべての教室）</SectionLabel>
+        <AllSchoolsOverview
+          rows={coursePrepRows}
+          loading={coursePrepLoading}
+          onSelectSchool={(id) => setSelectedSchoolId(id)}
+        />
+      </div>
     </AdminLayout>
   );
 }
