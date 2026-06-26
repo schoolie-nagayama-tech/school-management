@@ -271,7 +271,7 @@ export default function ProposalList() {
   // ── 印刷モード ──
   if (printMode) {
     return (
-      <div className="max-w-5xl mx-auto">
+      <div className="proposal-print-root max-w-5xl mx-auto">
         <div className="mb-4 flex items-center gap-2 print:hidden">
           <button
             onClick={() => setPrintMode(false)}

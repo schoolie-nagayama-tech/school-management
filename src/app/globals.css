@@ -463,16 +463,19 @@ a:focus-visible {
     margin: 10mm;
   }
 
-  /* アプリ外枠(AdminLayout)が印刷で余分なページ・余白を生まないよう無効化する。
-     min-h-screen の全画面高や py-6 等の余白が、名前付きページ(proposal=縦/座席表=横)の
-     手前にデフォルト向きの空ページを差し込む原因になるため、印刷時は外枠を素通しにする。 */
-  .app-shell-root {
-    min-height: 0 !important;
-  }
+  /* アプリ外枠(AdminLayout)が印刷で余分なページを生まないよう、ボックス自体を消す。
+     min-h-screen の全画面高や、デフォルト向き(@page landscape)の外枠ボックスが
+     名前付きページ(proposal=縦)の前後に空ページ(特に末尾の横向き白紙)を差し込むため、
+     display:contents で外枠の箱を無くし、中身のページ指定だけを効かせる。 */
+  .app-shell-root,
   .app-shell-main {
-    max-width: none !important;
-    margin: 0 !important;
-    padding: 0 !important;
+    display: contents !important;
+  }
+
+  /* 提案書印刷のサブツリー全体を縦ページに統一（page は継承するので子の包装divも縦になり、
+     末尾に横向きの空ページが残らない）。 */
+  .proposal-print-root {
+    page: proposal;
   }
 
   /* 講習提案書: A4縦1枚に収める */
