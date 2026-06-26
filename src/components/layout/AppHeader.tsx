@@ -540,7 +540,7 @@ export function AppHeader({
           scrim ＋ 下からスライドする白パネル。常時DOMに残し transform でアニメート。
           リンク遷移時は pathname 変更の useEffect が showMobileMenu を false にして自動で閉じる。 */}
       <div
-        className={`lg:hidden fixed inset-0 z-40 bg-black/40 transition-opacity duration-200 ${
+        className={`lg:hidden print:hidden fixed inset-0 z-40 bg-black/40 transition-opacity duration-200 ${
           showMobileMenu ? 'opacity-100' : 'pointer-events-none opacity-0'
         }`}
         onClick={() => setShowMobileMenu(false)}
@@ -552,7 +552,7 @@ export function AppHeader({
         aria-modal="true"
         aria-label="メニュー"
         aria-hidden={!showMobileMenu}
-        className={`lg:hidden fixed bottom-0 left-0 right-0 z-50 max-h-[82vh] overflow-y-auto rounded-t-2xl bg-white shadow-2xl transition-transform duration-300 ease-out ${
+        className={`lg:hidden print:hidden fixed bottom-0 left-0 right-0 z-50 max-h-[82vh] overflow-y-auto rounded-t-2xl bg-white shadow-2xl transition-transform duration-300 ease-out ${
           showMobileMenu ? 'translate-y-0' : 'translate-y-full'
         }`}
       >
