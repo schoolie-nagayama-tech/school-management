@@ -268,18 +268,21 @@ const TONE: Record<string, { text: string; bg: string; bar: string }> = {
  * 小コンポーネント
  * ========================================================== */
 
-// セクション見出し
+// セクション見出し（right に件数バッジ等を置ける。全セクションで見出し様式を統一する）
 function SectionLabel({
   icon: Icon,
   children,
+  right,
 }: {
   icon: React.ElementType;
   children: React.ReactNode;
+  right?: React.ReactNode;
 }) {
   return (
     <div className="flex items-center gap-2 mt-8 mb-3">
       <Icon className="w-5 h-5 text-text-muted" />
       <h2 className="text-base font-bold text-text-heading">{children}</h2>
+      {right && <div className="ml-auto shrink-0">{right}</div>}
     </div>
   );
 }
@@ -826,466 +829,587 @@ function DetailView() {
       actions={<QuickLinksBar />}
     >
       {/* モック明示バナー */}
-      <div className="mb-6 flex items-center gap-2 rounded-lg border border-warning bg-warning-subtle px-4 py-2 text-sm text-warning">
+      <div className="mb-2 flex items-center gap-2 rounded-lg border border-warning bg-warning-subtle px-4 py-2 text-sm text-warning">
         <Flag className="w-4 h-4 shrink-0" />
         これは検討用モックです。すべてダミーデータで、実データは未接続です。
       </div>
 
-      {/* 今月の動き（入会/退会/純増/予実）。室長が追う月次サマリーを最上段に */}
-      {thisMonthMove && (
-        <div className="mb-6">
-          <SectionLabel icon={TrendingUp}>今月の動き</SectionLabel>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <Card>
-              <CardContent className="py-3">
-                <div className="text-xs text-text-muted">入会</div>
-                <div className="text-2xl font-bold text-success">+{thisMonthMove.newCount}</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="py-3">
-                <div className="text-xs text-text-muted">退会(休会)</div>
-                <div className="text-2xl font-bold text-danger">−{thisMonthMove.leaveCount}</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="py-3">
-                <div className="text-xs text-text-muted">純増</div>
-                <div className="text-2xl font-bold text-text-heading">
-                  {thisMonthMove.netChange > 0 ? '+' : ''}
-                  {thisMonthMove.netChange}
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="py-3">
-                <div className="text-xs text-text-muted">予実達成</div>
-                <div className="text-2xl font-bold text-text-heading">
-                  {thisMonthMove.targetRate != null ? `${thisMonthMove.targetRate}%` : '—'}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      )}
-
-      {/* ===== 上段：業務系 ===== */}
-
-      {/* [★] 要対応・期日一覧（網羅表示）。期日帯でグルーピングし、各行からカレンダー登録できる */}
-      <Card className="mb-6">
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div>
-            <CardTitle>要対応・期日一覧</CardTitle>
-            <p className="text-xs text-text-muted mt-0.5">
-              期日が来るもの・アラート予兆を網羅。カレンダーにいつ入れるかの判断材料。
-            </p>
-          </div>
-          <span className="text-sm text-text-muted shrink-0">
-            未対応 <span className="font-bold text-text-heading">{openCount}</span> 件
-          </span>
-        </CardHeader>
+      {/* ① 連絡事項（掲示板）— 最上部・全幅 */}
+      <SectionLabel icon={Pin}>連絡事項</SectionLabel>
+      <Card>
         <CardContent className="py-2">
-          {dueStudents.length === 0 ? (
-            <div className="py-3 text-sm text-text-muted">
-              {alertData === null ? '読み込み中…' : '対応が必要な期日はありません'}
-            </div>
+          {bulletins === null ? (
+            <div className="py-2 text-sm text-text-muted">読み込み中…</div>
+          ) : bulletins.length === 0 ? (
+            <div className="py-2 text-sm text-text-muted">連絡はありません</div>
           ) : (
-            DUE_GROUPS.map((g) => {
-              // この期日帯の生徒（未対応を上、対応済みを下）
-              const inGroup = dueStudents
-                .filter((s) => s.group === g.key)
-                .sort(
-                  (a, b) => Number(doneIds.has(a.studentId)) - Number(doneIds.has(b.studentId))
-                );
-              if (inGroup.length === 0) return null;
-              const gt = TONE[g.tone];
-              return (
-                <div key={g.key} className="py-2">
-                  {/* グループ見出し（期日帯） */}
-                  <div className="flex items-center gap-2 mb-1">
-                    <span
-                      className={`text-xs font-bold px-2 py-0.5 rounded-full ${gt.bg} ${gt.text}`}
-                    >
-                      {g.label}
-                    </span>
-                    <span className="text-xs text-text-faint">
-                      {g.range}・{inGroup.length}名
-                    </span>
-                  </div>
-                  {inGroup.map((s) => {
-                    const done = doneIds.has(s.studentId);
-                    const overdue = g.key === 'overdue' && !done;
-                    return (
-                      <div
-                        key={s.studentId}
-                        onClick={() => toggleTask(s.studentId)}
-                        className="flex items-center gap-3 py-2.5 border-b border-border-subtle last:border-0 cursor-pointer hover:bg-surface-hover -mx-2 px-2 rounded-lg transition-colors"
-                      >
-                        {/* チェック（対応済みにする） */}
-                        {done ? (
-                          <CheckCircle2 className="w-5 h-5 text-success shrink-0" />
-                        ) : (
-                          <Circle className="w-5 h-5 text-text-faint shrink-0" />
-                        )}
-                        {/* 生徒名 + 最緊急の期日 */}
-                        <div className="flex items-center gap-2 shrink-0">
-                          <span
-                            className={`text-sm font-medium ${done ? 'line-through text-text-faint' : 'text-text-body'}`}
-                          >
-                            {s.studentName}
-                          </span>
-                          <span
-                            className={`flex items-center gap-1 text-xs ${overdue ? 'text-danger font-medium' : 'text-text-faint'}`}
-                          >
-                            <Clock className="w-3 h-3" />
-                            {s.soonestText}
-                          </span>
-                        </div>
-                        {/* 種別チップ群（件数つき） */}
-                        <div className="hidden flex-1 flex-wrap justify-end gap-1 sm:flex">
-                          {s.types.map((ty) => {
-                            const def = TASK_TYPES[ty.type];
-                            const tn = TONE[def.tone];
-                            return (
-                              <span
-                                key={ty.type}
-                                className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs font-medium ${tn.bg} ${tn.text}`}
-                              >
-                                <def.icon className="w-3 h-3" />
-                                {def.label}
-                                {ty.count > 1 ? ` ${ty.count}` : ''}
-                              </span>
-                            );
-                          })}
-                        </div>
-                        {/* カレンダー登録（将来 Google カレンダー連携の入口。今は見た目のみ） */}
-                        {!done && (
-                          <button
-                            type="button"
-                            onClick={(e) => e.stopPropagation()}
-                            className="flex items-center gap-1 text-xs px-2 py-1 rounded-md border border-border text-text-muted hover:bg-surface-hover hover:text-primary transition-colors shrink-0"
-                          >
-                            <CalendarPlus className="w-3.5 h-3.5" />
-                            <span className="hidden sm:inline">予定に追加</span>
-                          </button>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              );
-            })
+            bulletins.slice(0, 4).map((b) => (
+              <div
+                key={b.id}
+                className="flex items-center gap-2 py-2 border-b border-border-subtle last:border-0"
+              >
+                {b.is_pinned && <Pin className="w-3.5 h-3.5 text-warning shrink-0" />}
+                <span className="flex-1 truncate text-sm text-text-body">{b.title}</span>
+                <span className="shrink-0 text-xs text-text-faint">
+                  {(b.created_at ?? '').slice(5, 10).replace('-', '/')}
+                </span>
+              </div>
+            ))
           )}
         </CardContent>
       </Card>
 
-      {/* 気になる生徒（期日のないアラート: 成績低下/宿題/遅刻）。AlertBoard の非期日系を移行 */}
-      {watchStudents.length > 0 && (
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>気になる生徒</CardTitle>
-            <p className="mt-0.5 text-xs text-text-muted">
-              成績低下・宿題・遅刻など、期日のない注意点
-            </p>
-          </CardHeader>
-          <CardContent className="py-2">
-            {watchStudents.slice(0, 10).map((s) => (
-              <div
-                key={s.data.student_id}
-                className="flex items-center gap-2 border-b border-border-subtle py-2 last:border-0"
-              >
-                <span className="flex-1 text-sm font-medium text-text-body">
-                  {s.data.student_name}
-                </span>
-                <div className="flex flex-wrap justify-end gap-1">
-                  {s.watch.map((a) => (
-                    <span
-                      key={a.id}
-                      className="rounded-full bg-surface-hover px-2 py-0.5 text-xs text-text-muted"
-                    >
-                      {ALERT_TYPE_LABELS[a.alert_type]}
-                    </span>
-                  ))}
-                </div>
+      {/* ②③ 2カラム: 左＝数値（今を把握）/ 右＝やること（さばく）。lg未満は縦積み */}
+      <div className="grid gap-x-6 lg:grid-cols-2 lg:items-start">
+        {/* ── 左カラム：数値 ── */}
+        <div>
+          {/* 今月の動き（最新実績月の入会/退会/純増/予実）。室長が追う月次が主役 */}
+          {thisMonthMove && (
+            <>
+              <SectionLabel icon={TrendingUp}>今月の動き</SectionLabel>
+              <div className="grid grid-cols-2 gap-3">
+                <Card>
+                  <CardContent className="py-3">
+                    <div className="text-xs text-text-muted">入会</div>
+                    <div className="text-2xl font-bold text-success">+{thisMonthMove.newCount}</div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="py-3">
+                    <div className="text-xs text-text-muted">退会(休会)</div>
+                    <div className="text-2xl font-bold text-danger">
+                      −{thisMonthMove.leaveCount}
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="py-3">
+                    <div className="text-xs text-text-muted">純増</div>
+                    <div className="text-2xl font-bold text-text-heading">
+                      {thisMonthMove.netChange > 0 ? '+' : ''}
+                      {thisMonthMove.netChange}
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="py-3">
+                    <div className="text-xs text-text-muted">予実達成</div>
+                    <div className="text-2xl font-bold text-text-heading">
+                      {thisMonthMove.targetRate != null ? `${thisMonthMove.targetRate}%` : '—'}
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
-            ))}
-          </CardContent>
-        </Card>
-      )}
+            </>
+          )}
 
-      {/* [A] KPI サマリーカード */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        {KPIS.map((k) => {
-          const t = TONE[k.tone];
-          // 要対応アラートの件数だけ実データで上書き（他はダミーのまま）
-          const value =
-            k.key === 'alert' && hasRealAlerts
-              ? alertCount
-              : k.key === 'students' && hasStudents
-                ? activeStudents.length
-                : k.key === 'pending' && unprocessedCount !== null
-                  ? unprocessedCount
-                  : k.key === 'today' && todayClasses
-                    ? todayClasses.total
-                    : k.value;
-          return (
-            <Card key={k.key} className="cursor-pointer hover:bg-surface-hover transition-colors">
-              <CardContent className="py-4">
-                <div className="flex items-start justify-between">
-                  <div className={`rounded-lg p-2 ${t.bg}`}>
-                    <k.icon className={`w-5 h-5 ${t.text}`} />
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-text-faint" />
-                </div>
-                <div className="mt-3 flex items-baseline gap-1">
-                  <span className="text-3xl font-bold text-text-heading">{value}</span>
-                  <span className="text-sm text-text-muted">{k.unit}</span>
-                </div>
-                <div className="mt-0.5 text-sm text-text-body">{k.label}</div>
-                <div className="text-xs text-text-faint">
-                  {k.key === 'today' && todayClasses
-                    ? `出欠未入力 ${todayClasses.unrecorded}`
-                    : k.sub}
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
-
-      {/* [D] 掲示板 / [E] アラート（要対応カードはタスクに一本化したため廃止） */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>連絡掲示板</CardTitle>
-          </CardHeader>
-          <CardContent className="py-2">
-            {bulletins === null ? (
-              <div className="py-2 text-sm text-text-muted">読み込み中…</div>
-            ) : bulletins.length === 0 ? (
-              <div className="py-2 text-sm text-text-muted">連絡はありません</div>
-            ) : (
-              bulletins.slice(0, 4).map((b) => (
-                <div
-                  key={b.id}
-                  className="flex items-center gap-2 py-2 border-b border-border-subtle last:border-0"
+          {/* 今この瞬間（KPI: 未処理申込/本日授業/アラート/在籍）。「今の数値」軸 */}
+          <SectionLabel icon={Inbox}>今この瞬間</SectionLabel>
+          <div className="grid grid-cols-2 gap-4">
+            {KPIS.map((k) => {
+              const t = TONE[k.tone];
+              // 要対応アラート/在籍/未処理申込/本日授業は実データで上書き（他はダミーのまま）
+              const value =
+                k.key === 'alert' && hasRealAlerts
+                  ? alertCount
+                  : k.key === 'students' && hasStudents
+                    ? activeStudents.length
+                    : k.key === 'pending' && unprocessedCount !== null
+                      ? unprocessedCount
+                      : k.key === 'today' && todayClasses
+                        ? todayClasses.total
+                        : k.value;
+              return (
+                <Card
+                  key={k.key}
+                  className="cursor-pointer hover:bg-surface-hover transition-colors"
                 >
-                  {b.is_pinned && <Pin className="w-3.5 h-3.5 text-warning shrink-0" />}
-                  <span className="flex-1 truncate text-sm text-text-body">{b.title}</span>
-                  <span className="shrink-0 text-xs text-text-faint">
-                    {(b.created_at ?? '').slice(5, 10).replace('-', '/')}
-                  </span>
-                </div>
-              ))
-            )}
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>アラート</CardTitle>
-            {hasRealAlerts && <span className="text-xs text-text-muted">{alertCount}件</span>}
-          </CardHeader>
-          <CardContent className="py-2">
-            {!hasRealAlerts ? (
-              <div className="py-2 text-sm text-text-muted">
-                {alertData === null ? '読み込み中…' : '現在アラートはありません'}
+                  <CardContent className="py-4">
+                    <div className="flex items-start justify-between">
+                      <div className={`rounded-lg p-2 ${t.bg}`}>
+                        <k.icon className={`w-5 h-5 ${t.text}`} />
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-text-faint" />
+                    </div>
+                    <div className="mt-3 flex items-baseline gap-1">
+                      <span className="text-3xl font-bold text-text-heading">{value}</span>
+                      <span className="text-sm text-text-muted">{k.unit}</span>
+                    </div>
+                    <div className="mt-0.5 text-sm text-text-body">{k.label}</div>
+                    <div className="text-xs text-text-faint">
+                      {k.key === 'today' && todayClasses
+                        ? `出欠未入力 ${todayClasses.unrecorded}`
+                        : k.sub}
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+
+          {/* 在籍数の推移（昨対比）。経営の頭出しとして数値カラムに置く */}
+          <SectionLabel icon={TrendingUp}>在籍数の推移（昨対比）</SectionLabel>
+          {!isRealData && (
+            <p className="-mt-2 mb-3 text-xs text-text-faint">
+              ※
+              この教室の月次データが未取得のためサンプル表示です（永山校を選択し月次データのマイグレーションを適用すると実データになります）。
+            </p>
+          )}
+          <Card>
+            <CardContent>
+              <div className="w-full h-[260px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={trend} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                    <XAxis
+                      dataKey="month"
+                      tick={{ fontSize: 11, fill: '#4b5563' }}
+                      tickLine={false}
+                    />
+                    <YAxis
+                      domain={[90, 130]}
+                      tick={{ fontSize: 11, fill: '#4b5563' }}
+                      tickLine={false}
+                      axisLine={false}
+                      width={32}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: '#fff',
+                        border: '1px solid #e5e7eb',
+                        borderRadius: 8,
+                        fontSize: 12,
+                      }}
+                    />
+                    <Legend wrapperStyle={{ fontSize: 12 }} iconType="circle" iconSize={8} />
+                    <Line
+                      type="monotone"
+                      dataKey="thisYear"
+                      name="今年"
+                      stroke={C.primary}
+                      strokeWidth={2.5}
+                      dot={{ r: 2 }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="lastYear"
+                      name="昨年"
+                      stroke={C.slate}
+                      strokeWidth={2}
+                      strokeDasharray="5 4"
+                      dot={false}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
               </div>
-            ) : (
-              <>
-                {/* 種別サマリ（重要度順）。クリックでその種別だけに絞り込み */}
-                <div className="flex flex-wrap gap-1.5 pb-2 mb-2 border-b border-border-subtle">
-                  {typeSummary.map(({ type, count }) => {
-                    const activeF = filterType === type;
-                    return (
-                      <button
-                        key={type}
-                        type="button"
-                        onClick={() => setFilterType(activeF ? null : type)}
-                        className={`px-2 py-0.5 rounded-full text-xs font-medium transition-colors ${
-                          activeF
-                            ? 'bg-ink text-text-on-primary'
-                            : 'bg-surface-hover text-text-body hover:bg-surface-raised'
-                        }`}
-                      >
-                        {ALERT_TYPE_LABELS[type]} {count}
-                      </button>
-                    );
-                  })}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* ── 右カラム：やること ── */}
+        <div>
+          {/* [★] 要対応・期日一覧（網羅表示）。期日帯でグルーピングし、各行からカレンダー登録できる */}
+          <SectionLabel
+            icon={CalendarDays}
+            right={
+              <span className="text-sm text-text-muted">
+                未対応 <span className="font-bold text-text-heading">{openCount}</span> 件
+              </span>
+            }
+          >
+            要対応・期日一覧
+          </SectionLabel>
+          <Card>
+            <CardContent className="py-2">
+              <p className="border-b border-border-subtle pb-2 text-xs text-text-muted">
+                期日が来るもの・アラート予兆を網羅。カレンダーにいつ入れるかの判断材料。
+              </p>
+              {dueStudents.length === 0 ? (
+                <div className="py-3 text-sm text-text-muted">
+                  {alertData === null ? '読み込み中…' : '対応が必要な期日はありません'}
                 </div>
-                {/* 生徒ごと集約（最重要順・上位8名）。各生徒の種別を件数チップで */}
-                {visibleStudents.slice(0, 8).map(({ data: s, topSeverity }) => {
-                  const sevTone =
-                    topSeverity === 0 ? 'danger' : topSeverity === 1 ? 'warning' : 'info';
-                  const byType = new Map<AlertType, number>();
-                  s.alerts
-                    .filter((a) => !filterType || a.alert_type === filterType)
-                    .forEach((a) => byType.set(a.alert_type, (byType.get(a.alert_type) ?? 0) + 1));
-                  const chips = Array.from(byType.entries()).sort(
-                    (a, b) => (TYPE_PRIORITY[a[0]] ?? 99) - (TYPE_PRIORITY[b[0]] ?? 99)
-                  );
+              ) : (
+                DUE_GROUPS.map((g) => {
+                  // この期日帯の生徒（未対応を上、対応済みを下）
+                  const inGroup = dueStudents
+                    .filter((s) => s.group === g.key)
+                    .sort(
+                      (a, b) => Number(doneIds.has(a.studentId)) - Number(doneIds.has(b.studentId))
+                    );
+                  if (inGroup.length === 0) return null;
+                  const gt = TONE[g.tone];
                   return (
-                    <div
-                      key={s.student_id}
-                      className="flex items-center gap-2 py-2 border-b border-border-subtle last:border-0"
-                    >
-                      <span className={`w-2 h-2 rounded-full shrink-0 ${TONE[sevTone].bar}`} />
-                      <span className="text-sm text-text-body shrink-0">{s.student_name}</span>
-                      <div className="flex flex-wrap gap-1 justify-end flex-1">
-                        {chips.map(([type, cnt]) => (
-                          <span
-                            key={type}
-                            className="px-1.5 py-0.5 rounded text-xs bg-surface-hover text-text-muted"
+                    <div key={g.key} className="py-2">
+                      {/* グループ見出し（期日帯） */}
+                      <div className="flex items-center gap-2 mb-1">
+                        <span
+                          className={`text-xs font-bold px-2 py-0.5 rounded-full ${gt.bg} ${gt.text}`}
+                        >
+                          {g.label}
+                        </span>
+                        <span className="text-xs text-text-faint">
+                          {g.range}・{inGroup.length}名
+                        </span>
+                      </div>
+                      {inGroup.map((s) => {
+                        const done = doneIds.has(s.studentId);
+                        const overdue = g.key === 'overdue' && !done;
+                        return (
+                          <div
+                            key={s.studentId}
+                            onClick={() => toggleTask(s.studentId)}
+                            className="flex items-center gap-3 py-2.5 border-b border-border-subtle last:border-0 cursor-pointer hover:bg-surface-hover -mx-2 px-2 rounded-lg transition-colors"
                           >
-                            {ALERT_TYPE_LABELS[type]}
-                            {cnt > 1 ? ` ${cnt}` : ''}
+                            {/* チェック（対応済みにする） */}
+                            {done ? (
+                              <CheckCircle2 className="w-5 h-5 text-success shrink-0" />
+                            ) : (
+                              <Circle className="w-5 h-5 text-text-faint shrink-0" />
+                            )}
+                            {/* 生徒名 + 最緊急の期日 */}
+                            <div className="flex items-center gap-2 shrink-0">
+                              <span
+                                className={`text-sm font-medium ${done ? 'line-through text-text-faint' : 'text-text-body'}`}
+                              >
+                                {s.studentName}
+                              </span>
+                              <span
+                                className={`flex items-center gap-1 text-xs ${overdue ? 'text-danger font-medium' : 'text-text-faint'}`}
+                              >
+                                <Clock className="w-3 h-3" />
+                                {s.soonestText}
+                              </span>
+                            </div>
+                            {/* 種別チップ群（件数つき） */}
+                            <div className="hidden flex-1 flex-wrap justify-end gap-1 sm:flex">
+                              {s.types.map((ty) => {
+                                const def = TASK_TYPES[ty.type];
+                                const tn = TONE[def.tone];
+                                return (
+                                  <span
+                                    key={ty.type}
+                                    className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs font-medium ${tn.bg} ${tn.text}`}
+                                  >
+                                    <def.icon className="w-3 h-3" />
+                                    {def.label}
+                                    {ty.count > 1 ? ` ${ty.count}` : ''}
+                                  </span>
+                                );
+                              })}
+                            </div>
+                            {/* カレンダー登録（将来 Google カレンダー連携の入口。今は見た目のみ） */}
+                            {!done && (
+                              <button
+                                type="button"
+                                onClick={(e) => e.stopPropagation()}
+                                className="flex items-center gap-1 text-xs px-2 py-1 rounded-md border border-border text-text-muted hover:bg-surface-hover hover:text-primary transition-colors shrink-0"
+                              >
+                                <CalendarPlus className="w-3.5 h-3.5" />
+                                <span className="hidden sm:inline">予定に追加</span>
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })
+              )}
+            </CardContent>
+          </Card>
+
+          {/* 気になる生徒（期日のないアラート: 成績低下/宿題/遅刻）。AlertBoard の非期日系を移行 */}
+          {watchStudents.length > 0 && (
+            <>
+              <SectionLabel icon={AlertTriangle}>気になる生徒</SectionLabel>
+              <Card>
+                <CardContent className="py-2">
+                  <p className="border-b border-border-subtle pb-2 text-xs text-text-muted">
+                    成績低下・宿題・遅刻など、期日のない注意点
+                  </p>
+                  {watchStudents.slice(0, 10).map((s) => (
+                    <div
+                      key={s.data.student_id}
+                      className="flex items-center gap-2 border-b border-border-subtle py-2 last:border-0"
+                    >
+                      <span className="flex-1 text-sm font-medium text-text-body">
+                        {s.data.student_name}
+                      </span>
+                      <div className="flex flex-wrap justify-end gap-1">
+                        {s.watch.map((a) => (
+                          <span
+                            key={a.id}
+                            className="rounded-full bg-surface-hover px-2 py-0.5 text-xs text-text-muted"
+                          >
+                            {ALERT_TYPE_LABELS[a.alert_type]}
                           </span>
                         ))}
                       </div>
                     </div>
-                  );
-                })}
-                {visibleStudents.length > 8 && (
-                  <div className="pt-2 text-xs text-text-muted">
-                    ほか {visibleStudents.length - 8} 名
+                  ))}
+                </CardContent>
+              </Card>
+            </>
+          )}
+
+          {/* [E] アラート（種別サマリで絞り込み・生徒ごと集約） */}
+          <SectionLabel
+            icon={AlertTriangle}
+            right={
+              hasRealAlerts ? (
+                <span className="text-xs text-text-muted">{alertCount}件</span>
+              ) : undefined
+            }
+          >
+            アラート
+          </SectionLabel>
+          <Card>
+            <CardContent className="py-2">
+              {!hasRealAlerts ? (
+                <div className="py-2 text-sm text-text-muted">
+                  {alertData === null ? '読み込み中…' : '現在アラートはありません'}
+                </div>
+              ) : (
+                <>
+                  {/* 種別サマリ（重要度順）。クリックでその種別だけに絞り込み */}
+                  <div className="flex flex-wrap gap-1.5 pb-2 mb-2 border-b border-border-subtle">
+                    {typeSummary.map(({ type, count }) => {
+                      const activeF = filterType === type;
+                      return (
+                        <button
+                          key={type}
+                          type="button"
+                          onClick={() => setFilterType(activeF ? null : type)}
+                          className={`px-2 py-0.5 rounded-full text-xs font-medium transition-colors ${
+                            activeF
+                              ? 'bg-ink text-text-on-primary'
+                              : 'bg-surface-hover text-text-body hover:bg-surface-raised'
+                          }`}
+                        >
+                          {ALERT_TYPE_LABELS[type]} {count}
+                        </button>
+                      );
+                    })}
                   </div>
-                )}
-              </>
+                  {/* 生徒ごと集約（最重要順・上位8名）。各生徒の種別を件数チップで */}
+                  {visibleStudents.slice(0, 8).map(({ data: s, topSeverity }) => {
+                    const sevTone =
+                      topSeverity === 0 ? 'danger' : topSeverity === 1 ? 'warning' : 'info';
+                    const byType = new Map<AlertType, number>();
+                    s.alerts
+                      .filter((a) => !filterType || a.alert_type === filterType)
+                      .forEach((a) =>
+                        byType.set(a.alert_type, (byType.get(a.alert_type) ?? 0) + 1)
+                      );
+                    const chips = Array.from(byType.entries()).sort(
+                      (a, b) => (TYPE_PRIORITY[a[0]] ?? 99) - (TYPE_PRIORITY[b[0]] ?? 99)
+                    );
+                    return (
+                      <div
+                        key={s.student_id}
+                        className="flex items-center gap-2 py-2 border-b border-border-subtle last:border-0"
+                      >
+                        <span className={`w-2 h-2 rounded-full shrink-0 ${TONE[sevTone].bar}`} />
+                        <span className="text-sm text-text-body shrink-0">{s.student_name}</span>
+                        <div className="flex flex-wrap gap-1 justify-end flex-1">
+                          {chips.map(([type, cnt]) => (
+                            <span
+                              key={type}
+                              className="px-1.5 py-0.5 rounded text-xs bg-surface-hover text-text-muted"
+                            >
+                              {ALERT_TYPE_LABELS[type]}
+                              {cnt > 1 ? ` ${cnt}` : ''}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {visibleStudents.length > 8 && (
+                    <div className="pt-2 text-xs text-text-muted">
+                      ほか {visibleStudents.length - 8} 名
+                    </div>
+                  )}
+                </>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* 最近の動き（活動フィード）。/students 上部の通知フィードを移行 */}
+          <SectionLabel icon={History}>最近の動き</SectionLabel>
+          <NotificationFeed />
+        </div>
+      </div>
+
+      {/* ===== ④ 下段：見える化（フォーム参加率 / 提案 / 講習 / 業務 / 経営） ===== */}
+
+      {/* フォーム参加率（受験率・取得率） */}
+      <SectionLabel icon={ClipboardList}>フォーム参加率（受験率・取得率）</SectionLabel>
+      <p className="-mt-2 mb-3 text-xs text-text-faint">
+        紐付け済みの回答で集計（各フォームの直近の回が対象。分母は対象学年の在籍数）。
+      </p>
+      <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
+        {participation === null ? (
+          <div className="py-3 text-sm text-text-muted">読み込み中…</div>
+        ) : participation.length === 0 ? (
+          <div className="py-3 text-sm text-text-muted">対象のフォーム期間がありません</div>
+        ) : (
+          participation.map((p) => (
+            <Card key={p.formType}>
+              <CardContent className="py-4">
+                <div className="text-sm text-text-muted">{p.label}</div>
+                <div className="mt-1 flex items-baseline gap-2">
+                  <span className="text-3xl font-bold text-text-heading">{p.rate}%</span>
+                  <span className="text-xs text-text-faint">
+                    {p.numerator} / {p.denominator} 名
+                  </span>
+                </div>
+                <div className="mt-1 truncate text-xs text-text-faint">{p.periodTitle || '—'}</div>
+              </CardContent>
+            </Card>
+          ))
+        )}
+      </div>
+
+      {/* テスト対策 提案→取得ファネル（7月運用開始予定） */}
+      <SectionLabel icon={ClipboardList}>テスト対策 提案→取得ファネル</SectionLabel>
+      {funnel === null ? (
+        <div className="mb-4 py-3 text-sm text-text-muted">読み込み中…</div>
+      ) : funnel.proposalCount === 0 ? (
+        <Card className="mb-4">
+          <CardContent className="py-5 text-sm text-text-muted">
+            提案データはまだありません（テスト対策提案書は7月運用開始予定）。提案が入ると、提案数・提案人数・取得率と学年別の内訳が自動で表示されます。
+          </CardContent>
+        </Card>
+      ) : (
+        <Card className="mb-4">
+          <CardContent className="py-4">
+            {/* 全体ファネル */}
+            <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+              <span className="text-sm text-text-muted">
+                提案 <b className="text-text-heading">{funnel.proposalCount}</b> 件
+              </span>
+              <span className="text-sm text-text-muted">
+                提案人数 <b className="text-text-heading">{funnel.proposedStudents}</b> 名
+              </span>
+              <ChevronRight className="w-4 h-4 text-text-faint" />
+              <span className="text-sm text-text-muted">
+                取得 <b className="text-text-heading">{funnel.acquiredStudents}</b> 名
+              </span>
+              <span className="ml-auto text-2xl font-bold text-primary">{funnel.rate}%</span>
+            </div>
+            {/* 科目ベースの取得率 */}
+            <div className="mt-2 text-sm text-text-muted">
+              科目：提案 <b className="text-text-heading">{funnel.proposedSubjects}</b> 科目
+              <ChevronRight className="mx-1 inline h-3 w-3 text-text-faint" />
+              取得 <b className="text-text-heading">{funnel.acquiredSubjects}</b> 科目
+              <span className="ml-2 font-bold text-primary">{funnel.subjectRate}%</span>
+            </div>
+            {/* 学年別の取得率 */}
+            {funnel.byGrade.length > 0 && (
+              <div className="mt-4 space-y-2">
+                <div className="text-xs font-medium text-text-muted">学年別の取得率</div>
+                {funnel.byGrade.map((g) => (
+                  <div key={g.grade} className="flex items-center gap-3">
+                    <div className="w-10 shrink-0 text-sm text-text-body">
+                      {GRADE_LABELS[g.grade] ?? g.grade}
+                    </div>
+                    <div className="h-5 flex-1 overflow-hidden rounded-md bg-surface-hover">
+                      <div
+                        className="h-full rounded-md bg-primary"
+                        style={{ width: `${g.rate}%` }}
+                      />
+                    </div>
+                    <div className="w-28 text-right text-xs text-text-faint">
+                      {g.acquired}/{g.proposed} 名（{g.rate}%）
+                    </div>
+                  </div>
+                ))}
+              </div>
             )}
           </CardContent>
         </Card>
-      </div>
-
-      {/* 最近の動き（活動フィード）。/students 上部の通知フィードを移行 */}
-      <div className="mb-6">
-        <SectionLabel icon={History}>最近の動き</SectionLabel>
-        <NotificationFeed />
-      </div>
-
-      {/* ===== 下段：経営系 ===== */}
-      <SectionLabel icon={TrendingUp}>経営指標 — 動き（フロー・昨対・予実）</SectionLabel>
-      {!isRealData && (
-        <p className="-mt-2 mb-3 text-xs text-text-faint">
-          ※
-          この教室の月次データが未取得のためサンプル表示です（教室で永山校を選択し、月次データのマイグレーションを適用すると実データになります）。
-        </p>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* 在籍数トレンド（昨対比） */}
-        <Card>
-          <CardHeader>
-            <CardTitle>在籍数の推移（昨対比）</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="w-full h-[260px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={trend} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                  <XAxis
-                    dataKey="month"
-                    tick={{ fontSize: 11, fill: '#4b5563' }}
-                    tickLine={false}
-                  />
-                  <YAxis
-                    domain={[90, 130]}
-                    tick={{ fontSize: 11, fill: '#4b5563' }}
-                    tickLine={false}
-                    axisLine={false}
-                    width={32}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: '#fff',
-                      border: '1px solid #e5e7eb',
-                      borderRadius: 8,
-                      fontSize: 12,
-                    }}
-                  />
-                  <Legend wrapperStyle={{ fontSize: 12 }} iconType="circle" iconSize={8} />
-                  <Line
-                    type="monotone"
-                    dataKey="thisYear"
-                    name="今年"
-                    stroke={C.primary}
-                    strokeWidth={2.5}
-                    dot={{ r: 2 }}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="lastYear"
-                    name="昨年"
-                    stroke={C.slate}
-                    strokeWidth={2}
-                    strokeDasharray="5 4"
-                    dot={false}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
+      {/* ① 講習進捗（この教室）— /courses/progress と同じ単一校ダッシュボードを読み取り専用で */}
+      <SectionLabel icon={GraduationCap}>講習進捗（この教室）</SectionLabel>
+      {coursePrep ? (
+        <CourseProgressDashboard
+          students={coursePrep.students}
+          items={coursePrep.items}
+          progressData={coursePrep.progress}
+          period={coursePrep.period}
+          autoValues={coursePrep.autoValues}
+        />
+      ) : (
+        <div className="h-44 animate-pulse rounded-xl bg-surface" />
+      )}
 
-        {/* 増減ウォーターフォール */}
-        <Card>
-          <CardHeader>
-            <CardTitle>今月の増減内訳</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="w-full h-[260px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={waterfall} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
-                  <XAxis
-                    dataKey="name"
-                    tick={{ fontSize: 11, fill: '#4b5563' }}
-                    tickLine={false}
-                    interval={0}
-                  />
-                  <YAxis
-                    domain={[100, 130]}
-                    tick={{ fontSize: 11, fill: '#4b5563' }}
-                    tickLine={false}
-                    axisLine={false}
-                    width={32}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: '#fff',
-                      border: '1px solid #e5e7eb',
-                      borderRadius: 8,
-                      fontSize: 12,
-                    }}
-                  />
-                  <Bar dataKey="range" radius={[4, 4, 4, 4]}>
-                    {waterfall.map((w, i) => (
-                      <Cell
-                        key={i}
-                        fill={w.kind === 'up' ? C.green : w.kind === 'down' ? C.red : C.slate}
-                      />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-            <div className="flex justify-between px-2 -mt-2 text-xs">
-              {waterfall.map((w) => (
-                <span
-                  key={w.name}
-                  className={
-                    w.kind === 'up'
-                      ? 'text-success'
-                      : w.kind === 'down'
-                        ? 'text-danger'
-                        : 'text-text-muted'
-                  }
-                >
-                  {w.delta}
-                </span>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      {/* ② 業務進捗（今月のタスク）— 達成演出つきウィジェット（/tasks の TaskProgressWidget） */}
+      <SectionLabel icon={ListTodo}>業務進捗（今月のタスク）</SectionLabel>
+      <TaskProgressWidget schoolIds={getSelectedSchoolIds()} />
+
+      {/* ===== 経営指標 — 動き（増減・予実・見込み） ===== */}
+      <SectionLabel icon={TrendingUp}>経営指標 — 動き（増減・予実）</SectionLabel>
+      <Card>
+        <CardHeader>
+          <CardTitle>今月の増減内訳</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="w-full h-[260px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={waterfall} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
+                <XAxis
+                  dataKey="name"
+                  tick={{ fontSize: 11, fill: '#4b5563' }}
+                  tickLine={false}
+                  interval={0}
+                />
+                <YAxis
+                  domain={[100, 130]}
+                  tick={{ fontSize: 11, fill: '#4b5563' }}
+                  tickLine={false}
+                  axisLine={false}
+                  width={32}
+                />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: '#fff',
+                    border: '1px solid #e5e7eb',
+                    borderRadius: 8,
+                    fontSize: 12,
+                  }}
+                />
+                <Bar dataKey="range" radius={[4, 4, 4, 4]}>
+                  {waterfall.map((w, i) => (
+                    <Cell
+                      key={i}
+                      fill={w.kind === 'up' ? C.green : w.kind === 'down' ? C.red : C.slate}
+                    />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="flex justify-between px-2 -mt-2 text-xs">
+            {waterfall.map((w) => (
+              <span
+                key={w.name}
+                className={
+                  w.kind === 'up'
+                    ? 'text-success'
+                    : w.kind === 'down'
+                      ? 'text-danger'
+                      : 'text-text-muted'
+                }
+              >
+                {w.delta}
+              </span>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* 率・予実・見込み（3つの小カード） */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
@@ -1479,116 +1603,6 @@ function DetailView() {
             <div className="text-xs text-text-faint mt-1">CSV/Excel 一括取り込みで整備予定</div>
           </CardContent>
         </Card>
-      </div>
-
-      {/* フォーム参加率（受験率・取得率） */}
-      <SectionLabel icon={ClipboardList}>フォーム参加率（受験率・取得率）</SectionLabel>
-      <p className="-mt-2 mb-3 text-xs text-text-faint">
-        紐付け済みの回答で集計（各フォームの直近の回が対象。分母は対象学年の在籍数）。
-      </p>
-      <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
-        {participation === null ? (
-          <div className="py-3 text-sm text-text-muted">読み込み中…</div>
-        ) : participation.length === 0 ? (
-          <div className="py-3 text-sm text-text-muted">対象のフォーム期間がありません</div>
-        ) : (
-          participation.map((p) => (
-            <Card key={p.formType}>
-              <CardContent className="py-4">
-                <div className="text-sm text-text-muted">{p.label}</div>
-                <div className="mt-1 flex items-baseline gap-2">
-                  <span className="text-3xl font-bold text-text-heading">{p.rate}%</span>
-                  <span className="text-xs text-text-faint">
-                    {p.numerator} / {p.denominator} 名
-                  </span>
-                </div>
-                <div className="mt-1 truncate text-xs text-text-faint">{p.periodTitle || '—'}</div>
-              </CardContent>
-            </Card>
-          ))
-        )}
-      </div>
-
-      {/* テスト対策 提案→取得ファネル（7月運用開始予定） */}
-      <SectionLabel icon={ClipboardList}>テスト対策 提案→取得ファネル</SectionLabel>
-      {funnel === null ? (
-        <div className="mb-4 py-3 text-sm text-text-muted">読み込み中…</div>
-      ) : funnel.proposalCount === 0 ? (
-        <Card className="mb-4">
-          <CardContent className="py-5 text-sm text-text-muted">
-            提案データはまだありません（テスト対策提案書は7月運用開始予定）。提案が入ると、提案数・提案人数・取得率と学年別の内訳が自動で表示されます。
-          </CardContent>
-        </Card>
-      ) : (
-        <Card className="mb-4">
-          <CardContent className="py-4">
-            {/* 全体ファネル */}
-            <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
-              <span className="text-sm text-text-muted">
-                提案 <b className="text-text-heading">{funnel.proposalCount}</b> 件
-              </span>
-              <span className="text-sm text-text-muted">
-                提案人数 <b className="text-text-heading">{funnel.proposedStudents}</b> 名
-              </span>
-              <ChevronRight className="w-4 h-4 text-text-faint" />
-              <span className="text-sm text-text-muted">
-                取得 <b className="text-text-heading">{funnel.acquiredStudents}</b> 名
-              </span>
-              <span className="ml-auto text-2xl font-bold text-primary">{funnel.rate}%</span>
-            </div>
-            {/* 科目ベースの取得率 */}
-            <div className="mt-2 text-sm text-text-muted">
-              科目：提案 <b className="text-text-heading">{funnel.proposedSubjects}</b> 科目
-              <ChevronRight className="mx-1 inline h-3 w-3 text-text-faint" />
-              取得 <b className="text-text-heading">{funnel.acquiredSubjects}</b> 科目
-              <span className="ml-2 font-bold text-primary">{funnel.subjectRate}%</span>
-            </div>
-            {/* 学年別の取得率 */}
-            {funnel.byGrade.length > 0 && (
-              <div className="mt-4 space-y-2">
-                <div className="text-xs font-medium text-text-muted">学年別の取得率</div>
-                {funnel.byGrade.map((g) => (
-                  <div key={g.grade} className="flex items-center gap-3">
-                    <div className="w-10 shrink-0 text-sm text-text-body">
-                      {GRADE_LABELS[g.grade] ?? g.grade}
-                    </div>
-                    <div className="h-5 flex-1 overflow-hidden rounded-md bg-surface-hover">
-                      <div
-                        className="h-full rounded-md bg-primary"
-                        style={{ width: `${g.rate}%` }}
-                      />
-                    </div>
-                    <div className="w-28 text-right text-xs text-text-faint">
-                      {g.acquired}/{g.proposed} 名（{g.rate}%）
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* ① 講習進捗（この教室）— /courses/progress と同じ単一校ダッシュボードを読み取り専用で */}
-      <div className="mt-6">
-        <SectionLabel icon={GraduationCap}>講習進捗（この教室）</SectionLabel>
-        {coursePrep ? (
-          <CourseProgressDashboard
-            students={coursePrep.students}
-            items={coursePrep.items}
-            progressData={coursePrep.progress}
-            period={coursePrep.period}
-            autoValues={coursePrep.autoValues}
-          />
-        ) : (
-          <div className="h-44 animate-pulse rounded-xl bg-surface" />
-        )}
-      </div>
-
-      {/* ② 業務進捗（今月のタスク）— 達成演出つきウィジェット（/tasks の TaskProgressWidget） */}
-      <div className="mt-6">
-        <SectionLabel icon={ListTodo}>業務進捗（今月のタスク）</SectionLabel>
-        <TaskProgressWidget schoolIds={getSelectedSchoolIds()} />
       </div>
     </AdminLayout>
   );
