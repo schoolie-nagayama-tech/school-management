@@ -84,11 +84,13 @@ export function UserEditModal({
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-xl border border-[#e5e7eb] p-6 max-w-md w-full">
-        <h2 className="text-xl font-bold text-[#1f2937] mb-4">
+      {/* 縦に長くてもビューポート内に収め、フォーム部分だけスクロールさせる（見切れ防止）。
+          タイトルと操作ボタンは常に見える位置に固定する。 */}
+      <div className="bg-white rounded-xl border border-[#e5e7eb] max-w-md w-full max-h-[90vh] flex flex-col">
+        <h2 className="text-xl font-bold text-[#1f2937] px-6 pt-6 pb-4 shrink-0">
           {isEditingSelf ? '自分の情報を編集' : 'ユーザー編集'}
         </h2>
-        <div className="space-y-4">
+        <div className="space-y-4 overflow-y-auto px-6 pb-2 flex-1">
           <div>
             <label className="block text-sm font-medium text-[#1f2937] mb-1">メールアドレス</label>
             <input
@@ -234,32 +236,33 @@ export function UserEditModal({
               </select>
             </div>
           )}
-          <div className="flex gap-3 pt-4">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-4 py-2 bg-[#f3f4f6] text-[#1f2937] rounded-lg hover:bg-[#e5e7eb] transition-colors duration-150"
-            >
-              キャンセル
-            </button>
-            <button
-              onClick={() =>
-                onSave(
-                  editLastName,
-                  editFirstName,
-                  editRole,
-                  editSchoolIds,
-                  editDefaultSchoolId,
-                  editEmployeeNo.trim() || null,
-                  editIsTeachingStaff
-                )
-              }
-              disabled={isSaving}
-              className="flex-1 px-4 py-2 bg-[#3b82f6] text-white font-bold rounded-lg hover:bg-[#60a5fa] transition-colors duration-150 disabled:opacity-50"
-            >
-              {isSaving ? '保存中...' : '保存'}
-            </button>
-          </div>
+        </div>
+        {/* 操作ボタンはスクロール領域の外に出して常時表示 */}
+        <div className="flex gap-3 px-6 py-4 border-t border-[#e5e7eb] shrink-0">
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex-1 px-4 py-2 bg-[#f3f4f6] text-[#1f2937] rounded-lg hover:bg-[#e5e7eb] transition-colors duration-150"
+          >
+            キャンセル
+          </button>
+          <button
+            onClick={() =>
+              onSave(
+                editLastName,
+                editFirstName,
+                editRole,
+                editSchoolIds,
+                editDefaultSchoolId,
+                editEmployeeNo.trim() || null,
+                editIsTeachingStaff
+              )
+            }
+            disabled={isSaving}
+            className="flex-1 px-4 py-2 bg-[#3b82f6] text-white font-bold rounded-lg hover:bg-[#60a5fa] transition-colors duration-150 disabled:opacity-50"
+          >
+            {isSaving ? '保存中...' : '保存'}
+          </button>
         </div>
       </div>
     </div>
