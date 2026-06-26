@@ -64,6 +64,7 @@ import {
   ClipboardList,
   Pin,
   ListTodo,
+  History,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -95,6 +96,18 @@ const CourseProgressDashboard = dynamic(
 const TaskProgressWidget = dynamic(
   () => import('@/components/monthly-tasks/TaskProgressWidget').then((m) => m.TaskProgressWidget),
   { ssr: false, loading: () => <div className="h-44 animate-pulse rounded-xl bg-surface" /> }
+);
+
+// 最近の動き（活動フィード）。/students 上部の通知フィードを移植。自前取得・props不要
+const NotificationFeed = dynamic(
+  () => import('@/components/notifications/NotificationFeed').then((m) => m.NotificationFeed),
+  { ssr: false, loading: () => <div className="h-48 animate-pulse rounded-xl bg-surface" /> }
+);
+
+// 外部ツールへのクイックリンク（Grow/らくプリ等）。/students 上部から移植
+const QuickLinksBar = dynamic(
+  () => import('@/components/quick-links/QuickLinksBar').then((m) => m.QuickLinksBar),
+  { ssr: false }
 );
 
 /* ============================================================
@@ -486,6 +499,14 @@ const DUE_ALERT_TO_TYPE: Record<string, string> = {
   exam_overdue: 'procedure',
 };
 
+// 期日のないアラート種別（成績低下/成績未入力/宿題/遅刻）＝「気になる生徒」に回す
+const WATCH_ALERT_TYPES = new Set<string>([
+  'score_drop',
+  'score_missing',
+  'homework_not_done',
+  'tardy',
+]);
+
 const GROUP_RANK: Record<string, number> = { overdue: 0, thisWeek: 1, nextWeek: 2, later: 3 };
 const TASK_TYPE_RANK: Record<string, number> = {
   apply: 0,
@@ -595,6 +616,27 @@ function DetailView() {
 
   const targetPct = Math.round((target.current / target.target) * 100);
 
+  // 今月の動き（最新実績月の入会/退会/純増/予実）。室長が追う月次サマリー
+  const thisMonthMove = (() => {
+    if (!metrics || metrics.length === 0) return null;
+    const y = new Date().getFullYear();
+    const actual = metrics
+      .filter((m) => m.kind === 'actual' && m.year === y)
+      .sort((a, b) => a.month - b.month);
+    const budget = metrics.filter((m) => m.kind === 'budget' && m.year === y);
+    if (actual.length === 0) return null;
+    const last = actual[actual.length - 1];
+    const prev = actual.length >= 2 ? actual[actual.length - 2] : null;
+    const b = budget.find((x) => x.month === last.month);
+    return {
+      newCount: last.newCount,
+      leaveCount: last.leaveCount,
+      netChange: prev ? last.activeCount - prev.activeCount : last.newCount - last.leaveCount,
+      targetRate:
+        b && b.activeCount > 0 ? Math.round((last.activeCount / b.activeCount) * 1000) / 10 : null,
+    };
+  })();
+
   // アラート（生徒モニタリング）の実データ。light を先に表示し、heavy(成績低下等)は背後でマージ
   const [alertData, setAlertData] = useState<StudentAlerts[] | null>(null);
   const [filterType, setFilterType] = useState<AlertType | null>(null);
@@ -644,6 +686,14 @@ function DetailView() {
   const visibleStudents = filterType
     ? studentsSorted.filter((s) => s.data.alerts.some((a) => a.alert_type === filterType))
     : studentsSorted;
+
+  // 気になる生徒（期日のないアラート: 成績低下/成績未入力/宿題/遅刻）を持つ生徒
+  const watchStudents = studentsSorted
+    .map((s) => ({
+      data: s.data,
+      watch: s.data.alerts.filter((a) => WATCH_ALERT_TYPES.has(a.alert_type)),
+    }))
+    .filter((s) => s.watch.length > 0);
 
   // 要対応・期日一覧：アラートの期日系を生徒ごとに集約。未対応 = 未チェックの生徒数
   const dueStudents = alertData ? buildDueStudents(alertData) : [];
@@ -770,12 +820,54 @@ function DetailView() {
   }, [getSelectedSchoolIds]);
 
   return (
-    <AdminLayout headerTitle="ホーム" title="サンプル教室 ダッシュボード">
+    <AdminLayout
+      headerTitle="ホーム"
+      title="サンプル教室 ダッシュボード"
+      actions={<QuickLinksBar />}
+    >
       {/* モック明示バナー */}
       <div className="mb-6 flex items-center gap-2 rounded-lg border border-warning bg-warning-subtle px-4 py-2 text-sm text-warning">
         <Flag className="w-4 h-4 shrink-0" />
         これは検討用モックです。すべてダミーデータで、実データは未接続です。
       </div>
+
+      {/* 今月の動き（入会/退会/純増/予実）。室長が追う月次サマリーを最上段に */}
+      {thisMonthMove && (
+        <div className="mb-6">
+          <SectionLabel icon={TrendingUp}>今月の動き</SectionLabel>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <Card>
+              <CardContent className="py-3">
+                <div className="text-xs text-text-muted">入会</div>
+                <div className="text-2xl font-bold text-success">+{thisMonthMove.newCount}</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="py-3">
+                <div className="text-xs text-text-muted">退会(休会)</div>
+                <div className="text-2xl font-bold text-danger">−{thisMonthMove.leaveCount}</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="py-3">
+                <div className="text-xs text-text-muted">純増</div>
+                <div className="text-2xl font-bold text-text-heading">
+                  {thisMonthMove.netChange > 0 ? '+' : ''}
+                  {thisMonthMove.netChange}
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="py-3">
+                <div className="text-xs text-text-muted">予実達成</div>
+                <div className="text-2xl font-bold text-text-heading">
+                  {thisMonthMove.targetRate != null ? `${thisMonthMove.targetRate}%` : '—'}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      )}
 
       {/* ===== 上段：業務系 ===== */}
 
@@ -886,6 +978,40 @@ function DetailView() {
           )}
         </CardContent>
       </Card>
+
+      {/* 気になる生徒（期日のないアラート: 成績低下/宿題/遅刻）。AlertBoard の非期日系を移行 */}
+      {watchStudents.length > 0 && (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>気になる生徒</CardTitle>
+            <p className="mt-0.5 text-xs text-text-muted">
+              成績低下・宿題・遅刻など、期日のない注意点
+            </p>
+          </CardHeader>
+          <CardContent className="py-2">
+            {watchStudents.slice(0, 10).map((s) => (
+              <div
+                key={s.data.student_id}
+                className="flex items-center gap-2 border-b border-border-subtle py-2 last:border-0"
+              >
+                <span className="flex-1 text-sm font-medium text-text-body">
+                  {s.data.student_name}
+                </span>
+                <div className="flex flex-wrap justify-end gap-1">
+                  {s.watch.map((a) => (
+                    <span
+                      key={a.id}
+                      className="rounded-full bg-surface-hover px-2 py-0.5 text-xs text-text-muted"
+                    >
+                      {ALERT_TYPE_LABELS[a.alert_type]}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
 
       {/* [A] KPI サマリーカード */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -1027,6 +1153,12 @@ function DetailView() {
             )}
           </CardContent>
         </Card>
+      </div>
+
+      {/* 最近の動き（活動フィード）。/students 上部の通知フィードを移行 */}
+      <div className="mb-6">
+        <SectionLabel icon={History}>最近の動き</SectionLabel>
+        <NotificationFeed />
       </div>
 
       {/* ===== 下段：経営系 ===== */}
