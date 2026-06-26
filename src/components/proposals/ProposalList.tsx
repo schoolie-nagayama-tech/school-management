@@ -91,7 +91,8 @@ export default function ProposalList() {
     });
   };
 
-  const publishable = proposals.filter((p) => p.status !== 'approved');
+  // 公開対象は「提案済み(sent)」のみ。下書きからの直接公開は禁止（提案済みを経由させる）。
+  const publishable = proposals.filter((p) => p.status === 'sent');
   const selectedCount = Array.from(selected).filter((id) =>
     publishable.some((p) => p.id === id)
   ).length;

@@ -595,6 +595,13 @@ export async function syncApplicationToProgress(proposalId: string): Promise<voi
  * 4. ステータスを approved に更新
  */
 export async function publishProposal(proposalId: string): Promise<void> {
+  // 下書きからの直接公開は禁止（必ず「提案済み(sent)」を経由させる）。
+  // UI でもガードしているが、一括公開・API 直叩きでも飛ばせないよう二重で防ぐ。
+  const existing = await getProposal(proposalId);
+  if (existing?.status === 'draft') {
+    throw new Error('下書きからは直接公開できません。先に「提案済み」にしてください');
+  }
+
   // 進行表に反映（未反映の場合のみ内部で作成）
   const { studentTextbookId } = await syncProposalToProgress(proposalId);
 

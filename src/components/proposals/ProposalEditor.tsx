@@ -961,6 +961,13 @@ export default function ProposalEditor() {
       return;
     }
 
+    // 下書きから直接公開は禁止（必ず「提案済み」を経由させる）。
+    // 申込コマの確認・調整ステップを飛ばして進行表へ転記されるのを防ぐ。
+    if (newStatus === 'approved' && proposal?.status === 'draft') {
+      addToast('下書きからは直接公開できません。先に「提案済み」にしてください', 'error');
+      return;
+    }
+
     // 公開は確認ダイアログ
     if (newStatus === 'approved') {
       if (
@@ -1428,12 +1435,20 @@ export default function ProposalEditor() {
                   const isCurrent = currentStatus === s;
                   // approved への変更は教室長以上のみ操作可能
                   const isApprovedRestricted = s === 'approved' && !isManagerOrAbove;
+                  // 下書きからは直接公開不可（提案済みを経由させる）
+                  const isApprovedFromDraft = s === 'approved' && currentStatus === 'draft';
                   return (
                     <button
                       key={s}
                       onClick={() => handleStatusChange(s)}
-                      disabled={statusChanging || isApprovedRestricted}
-                      title={isApprovedRestricted ? '公開は教室長以上のみ可能です' : undefined}
+                      disabled={statusChanging || isApprovedRestricted || isApprovedFromDraft}
+                      title={
+                        isApprovedRestricted
+                          ? '公開は教室長以上のみ可能です'
+                          : isApprovedFromDraft
+                            ? '下書きからは直接公開できません。先に「提案済み」にしてください'
+                            : undefined
+                      }
                       aria-pressed={isCurrent}
                       className={`inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold rounded-full active:scale-95 transition-[background-color,color,box-shadow,transform] duration-150 ease-out disabled:opacity-40 disabled:cursor-not-allowed ${
                         isCurrent ? STATUS_COLORS[s].active : STATUS_INACTIVE
