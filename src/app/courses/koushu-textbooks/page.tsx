@@ -19,7 +19,14 @@ import { SEASON_LABELS, GRADE_LABELS } from '@/types/database';
 interface TextbookRow {
   textbookId: number;
   subject: string;
+  // テキストの対象学年（学校種別＋学年）。例: 中学3年
+  grade: string;
   name: string;
+}
+
+// テキストの対象学年表示（学校種別＋学年）
+function textbookGradeLabel(schoolType?: string | null, grade?: string | null): string {
+  return [schoolType ?? '', grade ?? ''].join('').trim() || '—';
 }
 
 interface StudentRoster {
@@ -48,6 +55,7 @@ function buildRoster(proposals: SeasonalProposalWithDetails[]): StudentRoster[] 
     r.textbooks.push({
       textbookId: p.textbook_id,
       subject: p.textbook.subject ?? '—',
+      grade: textbookGradeLabel(p.textbook.school_type, p.textbook.grade),
       name: p.textbook.name ?? '（名称未設定）',
     });
   }
@@ -208,6 +216,9 @@ export default function KoushuTextbookRosterPage() {
                   <th className="text-left font-semibold px-4 py-2 w-44 print:py-1">生徒名</th>
                   <th className="text-left font-semibold px-4 py-2 w-20 print:py-1">学年</th>
                   <th className="text-left font-semibold px-4 py-2 w-24 print:py-1">科目</th>
+                  <th className="text-left font-semibold px-4 py-2 w-24 print:py-1">
+                    テキスト学年
+                  </th>
                   <th className="text-left font-semibold px-4 py-2 print:py-1">テキスト名</th>
                 </tr>
               </thead>
@@ -241,6 +252,7 @@ export default function KoushuTextbookRosterPage() {
                             {t.subject}
                           </span>
                         </td>
+                        <td className="px-4 py-2 text-text-body print:py-1">{t.grade}</td>
                         <td className="px-4 py-2 text-text-heading print:py-1">{t.name}</td>
                       </tr>
                     ))}
