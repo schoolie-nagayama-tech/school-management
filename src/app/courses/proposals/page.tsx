@@ -618,6 +618,12 @@ export default function CourseProposalsPage() {
                 onChange={setLocalSchoolId}
               />
             )}
+            <Link
+              href="/courses/koushu-textbooks"
+              className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium border border-border-default text-text-body rounded-lg hover:bg-surface-hover transition-colors duration-150"
+            >
+              使用テキスト一覧
+            </Link>
             <div className="relative" ref={pickerRef}>
               <button
                 onClick={openPicker}
