@@ -141,9 +141,12 @@ export async function getProposal(id: string): Promise<SeasonalProposalWithDetai
 
 /**
  * 生徒の提案書一覧を取得
+ * includeUnits=false にすると単元(seasonal_proposal_units)の取得をスキップする。
+ * 使用テキスト一覧など単元を使わない画面で、無駄な単元クエリを省いて軽くするため。
  */
 export async function getProposalsByStudent(
-  studentId: string
+  studentId: string,
+  includeUnits = true
 ): Promise<SeasonalProposalWithDetails[]> {
   const { data, error } = await fromProposals()
     .select(
@@ -164,14 +167,15 @@ export async function getProposalsByStudent(
   const proposals = (data ?? []) as unknown as (SeasonalProposal & Record<string, unknown>)[];
   if (proposals.length === 0) return [];
 
-  const proposalIds = proposals.map((d) => d.id);
-  const allUnits = await fetchAllUnitsByProposalIds(proposalIds);
-
   const unitsByProposal = new Map<string, SeasonalProposalUnit[]>();
-  for (const u of allUnits) {
-    const list = unitsByProposal.get(u.proposal_id) ?? [];
-    list.push(u);
-    unitsByProposal.set(u.proposal_id, list);
+  if (includeUnits) {
+    const proposalIds = proposals.map((d) => d.id);
+    const allUnits = await fetchAllUnitsByProposalIds(proposalIds);
+    for (const u of allUnits) {
+      const list = unitsByProposal.get(u.proposal_id) ?? [];
+      list.push(u);
+      unitsByProposal.set(u.proposal_id, list);
+    }
   }
 
   return proposals.map((d) => ({
@@ -188,7 +192,8 @@ export async function getProposalsByStudent(
 export async function getProposalsBySchool(
   schoolIds: string[],
   season?: SeasonType,
-  year?: number
+  year?: number,
+  includeUnits = true
 ): Promise<SeasonalProposalWithDetails[]> {
   if (schoolIds.length === 0) return [];
 
@@ -227,13 +232,15 @@ export async function getProposalsBySchool(
   const proposalIds = (data as { id: string }[]).map((d) => d.id);
   if (proposalIds.length === 0) return [];
 
-  const allUnits = await fetchAllUnitsByProposalIds(proposalIds);
-
   const unitsByProposal = new Map<string, SeasonalProposalUnit[]>();
-  for (const u of allUnits) {
-    const list = unitsByProposal.get(u.proposal_id) ?? [];
-    list.push(u);
-    unitsByProposal.set(u.proposal_id, list);
+  // 単元を使わない画面（使用テキスト一覧など）では単元クエリ自体をスキップして軽くする。
+  if (includeUnits) {
+    const allUnits = await fetchAllUnitsByProposalIds(proposalIds);
+    for (const u of allUnits) {
+      const list = unitsByProposal.get(u.proposal_id) ?? [];
+      list.push(u);
+      unitsByProposal.set(u.proposal_id, list);
+    }
   }
 
   return (data as unknown as (SeasonalProposal & Record<string, unknown>)[]).map((d) => ({

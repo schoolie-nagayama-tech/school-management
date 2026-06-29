@@ -96,7 +96,8 @@ export default function KoushuTextbookList() {
     try {
       const [{ data: student }, list, { data: ownedRows }] = await Promise.all([
         supabase.from('students').select('last_name, first_name').eq('id', studentId).single(),
-        getProposalsByStudent(studentId),
+        // 単元は使わないので取得しない（includeUnits=false で軽量化）
+        getProposalsByStudent(studentId, false),
         supabase
           .from('student_textbooks')
           .select('textbook_id')

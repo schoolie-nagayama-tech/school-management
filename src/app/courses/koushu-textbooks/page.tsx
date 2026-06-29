@@ -12,6 +12,7 @@ import { useLocalSchoolId } from '@/hooks/useLocalSchoolId';
 import { SchoolSwitcher } from '@/components/SchoolSwitcher';
 import { SeasonYearSelector } from '@/components/course-shared/SeasonYearSelector';
 import { supabase } from '@/lib/supabase';
+import { fetchAllPaged } from '@/lib/utils/supabasePaging';
 import { getProposalsBySchool } from '@/lib/api/proposals';
 import { getCurrentSeason } from '@/components/proposals/proposalEditor.shared';
 import type { SeasonalProposalWithDetails, SeasonType, Student } from '@/types/database';
@@ -103,32 +104,28 @@ export default function KoushuTextbookRosterPage() {
     setLoading(true);
     try {
       const schoolIds = getSelectedSchoolIds();
-      const data = await getProposalsBySchool(schoolIds, season, year);
-      setProposals(data);
-
-      // 表示対象の生徒について、所持済み(is_owned)テキストを引いて所持セットを作る
-      const studentIds = Array.from(
-        new Set(data.map((p) => p.student?.id).filter((id): id is string => !!id))
-      );
-      if (studentIds.length > 0) {
-        const owned = new Set<string>();
-        // student_id の IN は件数次第で長くなるため 500 件ずつ分割
-        const CHUNK = 500;
-        for (let i = 0; i < studentIds.length; i += CHUNK) {
-          const chunk = studentIds.slice(i, i + CHUNK);
-          const { data: rows } = await supabase
+      if (schoolIds.length === 0) {
+        setProposals([]);
+        setOwnedKeys(new Set());
+        return;
+      }
+      // 提案書（単元は使わないので取得しない）と所持済みテキストを並列取得。
+      // 所持は school_id 基準で1本にまとめ、生徒ID列挙のクエリ分割を不要にする。
+      const [data, ownedRows] = await Promise.all([
+        getProposalsBySchool(schoolIds, season, year, false),
+        fetchAllPaged<{ student_id: string; textbook_id: number }>((from, to) =>
+          supabase
             .from('student_textbooks')
             .select('student_id, textbook_id')
-            .in('student_id', chunk)
-            .eq('is_owned', true);
-          for (const r of (rows ?? []) as { student_id: string; textbook_id: number }[]) {
-            owned.add(`${r.student_id}:${r.textbook_id}`);
-          }
-        }
-        setOwnedKeys(owned);
-      } else {
-        setOwnedKeys(new Set());
-      }
+            .in('school_id', schoolIds)
+            .eq('is_owned', true)
+            .order('student_id', { ascending: true })
+            .order('textbook_id', { ascending: true })
+            .range(from, to)
+        ),
+      ]);
+      setProposals(data);
+      setOwnedKeys(new Set(ownedRows.map((r) => `${r.student_id}:${r.textbook_id}`)));
     } catch (e) {
       console.error('使用テキスト一覧の取得に失敗:', e);
       setProposals([]);
