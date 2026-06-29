@@ -473,8 +473,9 @@ a:focus-visible {
   }
 
   /* 提案書印刷のサブツリー全体を縦ページに統一（page は継承するので子の包装divも縦になり、
-     末尾に横向きの空ページが残らない）。 */
-  .proposal-print-root {
+     末尾に横向きの空ページが残らない）。講習使用テキストページも同じ縦ページを使う。 */
+  .proposal-print-root,
+  .koushu-textbook-print {
     page: proposal;
   }
 

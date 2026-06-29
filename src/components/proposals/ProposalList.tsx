@@ -384,6 +384,12 @@ export default function ProposalList() {
               </button>
             )}
             <Link
+              href={`/students/${studentId}/koushu-textbooks`}
+              className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium border border-border-default text-text-body rounded-lg hover:bg-surface-hover transition-colors duration-150"
+            >
+              使用テキスト
+            </Link>
+            <Link
               href={`/students/${studentId}/test-prep`}
               className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium border border-border-default text-text-body rounded-lg hover:bg-surface-hover transition-colors duration-150"
             >
