@@ -11,6 +11,7 @@ import { useRequirePermission } from '@/hooks/usePermissions';
 import { useLocalSchoolId } from '@/hooks/useLocalSchoolId';
 import { SchoolSwitcher } from '@/components/SchoolSwitcher';
 import { SeasonYearSelector } from '@/components/course-shared/SeasonYearSelector';
+import { supabase } from '@/lib/supabase';
 import { getProposalsBySchool } from '@/lib/api/proposals';
 import { getCurrentSeason } from '@/components/proposals/proposalEditor.shared';
 import type { SeasonalProposalWithDetails, SeasonType, Student } from '@/types/database';
@@ -22,6 +23,8 @@ interface TextbookRow {
   // テキストの対象学年（学校種別＋学年）。例: 中学3年
   grade: string;
   name: string;
+  // 生徒がそのテキストを既に所持しているか（student_textbooks.is_owned）
+  owned: boolean;
 }
 
 // テキストの対象学年表示（学校種別＋学年）
@@ -35,8 +38,12 @@ interface StudentRoster {
   textbooks: TextbookRow[];
 }
 
-// 提案書を生徒ごとにまとめ、使用テキストを重複排除して並べる
-function buildRoster(proposals: SeasonalProposalWithDetails[]): StudentRoster[] {
+// 提案書を生徒ごとにまとめ、使用テキストを重複排除して並べる。
+// ownedKeys: `${studentId}:${textbookId}` で所持済みのテキストを引けるセット。
+function buildRoster(
+  proposals: SeasonalProposalWithDetails[],
+  ownedKeys: Set<string>
+): StudentRoster[] {
   const map = new Map<string, StudentRoster>();
   for (const p of proposals) {
     const student = p.student;
@@ -57,6 +64,7 @@ function buildRoster(proposals: SeasonalProposalWithDetails[]): StudentRoster[] 
       subject: p.textbook.subject ?? '—',
       grade: textbookGradeLabel(p.textbook.school_type, p.textbook.grade),
       name: p.textbook.name ?? '（名称未設定）',
+      owned: ownedKeys.has(`${student.id}:${p.textbook_id}`),
     });
   }
 
@@ -86,6 +94,8 @@ export default function KoushuTextbookRosterPage() {
   const [season, setSeason] = useState<SeasonType>(() => getCurrentSeason());
   const [year, setYear] = useState<number>(() => new Date().getFullYear());
   const [proposals, setProposals] = useState<SeasonalProposalWithDetails[]>([]);
+  // 所持済みテキスト: `${studentId}:${textbookId}`
+  const [ownedKeys, setOwnedKeys] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
 
@@ -95,9 +105,34 @@ export default function KoushuTextbookRosterPage() {
       const schoolIds = getSelectedSchoolIds();
       const data = await getProposalsBySchool(schoolIds, season, year);
       setProposals(data);
+
+      // 表示対象の生徒について、所持済み(is_owned)テキストを引いて所持セットを作る
+      const studentIds = Array.from(
+        new Set(data.map((p) => p.student?.id).filter((id): id is string => !!id))
+      );
+      if (studentIds.length > 0) {
+        const owned = new Set<string>();
+        // student_id の IN は件数次第で長くなるため 500 件ずつ分割
+        const CHUNK = 500;
+        for (let i = 0; i < studentIds.length; i += CHUNK) {
+          const chunk = studentIds.slice(i, i + CHUNK);
+          const { data: rows } = await supabase
+            .from('student_textbooks')
+            .select('student_id, textbook_id')
+            .in('student_id', chunk)
+            .eq('is_owned', true);
+          for (const r of (rows ?? []) as { student_id: string; textbook_id: number }[]) {
+            owned.add(`${r.student_id}:${r.textbook_id}`);
+          }
+        }
+        setOwnedKeys(owned);
+      } else {
+        setOwnedKeys(new Set());
+      }
     } catch (e) {
       console.error('使用テキスト一覧の取得に失敗:', e);
       setProposals([]);
+      setOwnedKeys(new Set());
     } finally {
       setLoading(false);
     }
@@ -107,7 +142,7 @@ export default function KoushuTextbookRosterPage() {
     if (hasPermission) load();
   }, [hasPermission, load]);
 
-  const roster = useMemo(() => buildRoster(proposals), [proposals]);
+  const roster = useMemo(() => buildRoster(proposals, ownedKeys), [proposals, ownedKeys]);
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return roster;
@@ -253,7 +288,16 @@ export default function KoushuTextbookRosterPage() {
                           </span>
                         </td>
                         <td className="px-4 py-2 text-text-body print:py-1">{t.grade}</td>
-                        <td className="px-4 py-2 text-text-heading print:py-1">{t.name}</td>
+                        <td className="px-4 py-2 text-text-heading print:py-1">
+                          <span className="inline-flex items-center gap-1.5">
+                            {t.name}
+                            {t.owned && (
+                              <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-medium bg-emerald-100 text-emerald-700 border border-emerald-200 print:border print:border-text-heading print:bg-white print:text-text-heading">
+                                所持
+                              </span>
+                            )}
+                          </span>
+                        </td>
                       </tr>
                     ))}
                   </Fragment>

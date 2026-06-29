@@ -15,6 +15,8 @@ interface TextbookRow {
   subject: string;
   grade: string;
   name: string;
+  // 生徒がそのテキストを既に所持しているか（student_textbooks.is_owned）
+  owned: boolean;
 }
 
 interface SeasonGroup {
@@ -32,8 +34,12 @@ function gradeLabel(schoolType?: string | null, grade?: string | null): string {
   return [schoolType ?? '', grade ?? ''].join('').trim() || '—';
 }
 
-// 提案書を期(season+year)ごとにまとめ、使用テキストを重複排除して並べる
-function groupTextbooks(proposals: SeasonalProposalWithDetails[]): SeasonGroup[] {
+// 提案書を期(season+year)ごとにまとめ、使用テキストを重複排除して並べる。
+// ownedTextbookIds: その生徒が所持済み(is_owned)のテキストID集合。
+function groupTextbooks(
+  proposals: SeasonalProposalWithDetails[],
+  ownedTextbookIds: Set<number>
+): SeasonGroup[] {
   const groups = new Map<string, SeasonGroup>();
   for (const p of proposals) {
     const key = `${p.year}-${p.season}`;
@@ -56,6 +62,7 @@ function groupTextbooks(proposals: SeasonalProposalWithDetails[]): SeasonGroup[]
       subject: p.textbook.subject ?? '—',
       grade: gradeLabel(p.textbook.school_type, p.textbook.grade),
       name: p.textbook.name ?? '（名称未設定）',
+      owned: ownedTextbookIds.has(p.textbook_id),
     });
   }
 
@@ -81,22 +88,33 @@ export default function KoushuTextbookList() {
   const [loading, setLoading] = useState(true);
   const [studentName, setStudentName] = useState('');
   const [proposals, setProposals] = useState<SeasonalProposalWithDetails[]>([]);
+  // 所持済み(is_owned)テキストID
+  const [ownedIds, setOwnedIds] = useState<Set<number>>(new Set());
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [{ data: student }, list] = await Promise.all([
+      const [{ data: student }, list, { data: ownedRows }] = await Promise.all([
         supabase.from('students').select('last_name, first_name').eq('id', studentId).single(),
         getProposalsByStudent(studentId),
+        supabase
+          .from('student_textbooks')
+          .select('textbook_id')
+          .eq('student_id', studentId)
+          .eq('is_owned', true),
       ]);
       if (student) {
         const s = student as { last_name: string; first_name: string };
         setStudentName(`${s.last_name} ${s.first_name}`);
       }
       setProposals(list);
+      setOwnedIds(
+        new Set(((ownedRows ?? []) as { textbook_id: number }[]).map((r) => r.textbook_id))
+      );
     } catch (e) {
       console.error('使用テキストの取得に失敗:', e);
       setProposals([]);
+      setOwnedIds(new Set());
     } finally {
       setLoading(false);
     }
@@ -106,7 +124,7 @@ export default function KoushuTextbookList() {
     if (studentId) load();
   }, [studentId, load]);
 
-  const groups = useMemo(() => groupTextbooks(proposals), [proposals]);
+  const groups = useMemo(() => groupTextbooks(proposals, ownedIds), [proposals, ownedIds]);
   const totalTextbooks = useMemo(() => groups.reduce((a, g) => a + g.rows.length, 0), [groups]);
 
   if (loading) {
@@ -188,6 +206,11 @@ export default function KoushuTextbookList() {
                         <span className="inline-flex items-center gap-1.5">
                           <BookOpen className="w-3.5 h-3.5 text-text-faint shrink-0 print:hidden" />
                           {r.name}
+                          {r.owned && (
+                            <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-medium bg-emerald-100 text-emerald-700 border border-emerald-200 print:border print:border-text-heading print:bg-white print:text-text-heading">
+                              所持
+                            </span>
+                          )}
                         </span>
                       </td>
                     </tr>
