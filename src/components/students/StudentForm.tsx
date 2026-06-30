@@ -259,7 +259,7 @@ export function StudentForm({
             className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-white"
           />
           <p className="text-xs text-[#6b7280] mt-1">
-            この日以降は座席表・5週目請求から自動的に除外されます。空欄なら在籍中扱い。
+            この日以降は座席表・5週目請求から自動的に除外されます。さらに退塾日の翌日に在籍状況が自動で「退会」へ切り替わります。空欄なら在籍中扱い。
           </p>
         </div>
       )}
