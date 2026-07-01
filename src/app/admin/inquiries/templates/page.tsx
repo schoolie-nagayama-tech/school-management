@@ -13,13 +13,13 @@ import { useAuth } from '@/contexts/AuthContext';
 import AccessDenied from '@/components/AccessDenied';
 import { InquiryTemplateManager } from '@/components/inquiries/InquiryTemplateManager';
 import { ChevronLeft } from 'lucide-react';
+import { isManagerOrAbove } from '@/lib/utils/roles';
 
 export default function MailTemplatesPage() {
   const { profile } = useAuth();
 
-  // ロールガード: 教室長以上
-  const isAdmin =
-    profile?.role === 'admin' || profile?.role === 'owner' || profile?.role === 'manager';
+  // ロールガード: 教室長以上（manager / owner / admin）。判定は roles.ts に一元化。
+  const isAdmin = isManagerOrAbove(profile?.role);
 
   if (profile === null) {
     return (

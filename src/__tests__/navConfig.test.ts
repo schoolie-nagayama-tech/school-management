@@ -75,6 +75,7 @@ describe('buildNavEntries: 講師', () => {
     expect(k).not.toContain('teacher');
     expect(k).not.toContain('business');
     expect(k).not.toContain('progress-feed');
+    expect(k).not.toContain('inquiries');
   });
 
   it('自分の出勤簿リンクは教室コードと講師IDで生成される', () => {
@@ -98,6 +99,14 @@ describe('buildNavEntries: 教室長(manager)', () => {
     expect(keys(entries)).toEqual(
       expect.arrayContaining(['form', 'course', 'teacher', 'business', 'progress-feed'])
     );
+  });
+
+  it('問合せ管理をトップレベルの単独リンクとして出す', () => {
+    const inquiry = entries.find((e) => e.key === 'inquiries');
+    expect(inquiry?.kind).toBe('link');
+    if (inquiry?.kind === 'link') {
+      expect(inquiry.href).toBe('/admin/inquiries');
+    }
   });
 
   it('講師向けのトップレベル テスト対策/出勤簿は出さない', () => {

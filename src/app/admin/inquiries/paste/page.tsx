@@ -36,6 +36,7 @@ import {
   Search,
 } from 'lucide-react';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
+import { isManagerOrAbove } from '@/lib/utils/roles';
 
 /** 3ステップ */
 type Step = 'paste' | 'confirm' | 'done';
@@ -175,9 +176,8 @@ const GRADE_OPTIONS = [
 export default function InquiriesPastePage() {
   const { profile } = useAuth();
 
-  // ロールガード: admin / owner のみ
-  const isAdmin =
-    profile?.role === 'admin' || profile?.role === 'owner' || profile?.role === 'manager';
+  // ロールガード: 教室長以上（manager / owner / admin）。判定は roles.ts に一元化。
+  const isAdmin = isManagerOrAbove(profile?.role);
 
   // ---- ステップ状態 ----
   const [step, setStep] = useState<Step>('paste');
@@ -427,7 +427,7 @@ export default function InquiriesPastePage() {
                   <div
                     className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold border-2 transition-colors duration-150 ${
                       isDone
-                        ? 'bg-green-600 border-green-600 text-white'
+                        ? 'bg-success border-success text-white'
                         : isCurrent
                           ? 'bg-ink border-ink text-white'
                           : 'bg-surface-raised border-border text-text-muted'
@@ -446,7 +446,7 @@ export default function InquiriesPastePage() {
                 {i < steps.length - 1 && (
                   <div
                     className={`h-0.5 w-16 mx-1 mt-[-1rem] transition-colors duration-150 ${
-                      isDone ? 'bg-green-400' : 'bg-border'
+                      isDone ? 'bg-success/60' : 'bg-border'
                     }`}
                   />
                 )}
@@ -458,9 +458,9 @@ export default function InquiriesPastePage() {
         {/* ── STEP 1: 貼り付け ── */}
         {step === 'paste' && (
           <div className="space-y-4">
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex gap-3">
-              <Info className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
-              <div className="text-sm text-blue-700 space-y-1">
+            <div className="bg-info-subtle border border-info/30 rounded-lg p-4 flex gap-3">
+              <Info className="w-4 h-4 text-info shrink-0 mt-0.5" />
+              <div className="text-sm text-info space-y-1">
                 <p className="font-medium">HPの問合せ詳細ページから貼り付け</p>
                 <p>
                   問合せ詳細ページを開き、全選択（Ctrl+A /
@@ -509,26 +509,26 @@ export default function InquiriesPastePage() {
         {step === 'confirm' && parsed && form && (
           <div className="space-y-5">
             {/* パース成功バナー */}
-            <div className="bg-green-50 border border-green-200 rounded-lg px-4 py-3 flex items-center gap-3">
-              <CheckCircle className="w-4 h-4 text-green-600 shrink-0" />
-              <p className="text-sm text-green-800">
+            <div className="bg-success-subtle border border-success/30 rounded-lg px-4 py-3 flex items-center gap-3">
+              <CheckCircle className="w-4 h-4 text-success shrink-0" />
+              <p className="text-sm text-success">
                 <span className="font-semibold">{parsedFieldCount} 項目</span>を読み取りました
                 {parsed.schoolRaw && (
-                  <span className="ml-2 text-green-700">（教室: {parsed.schoolRaw}）</span>
+                  <span className="ml-2 text-success/80">（教室: {parsed.schoolRaw}）</span>
                 )}
               </p>
             </div>
 
             {/* パース警告 */}
             {parsed.warnings.length > 0 && (
-              <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+              <div className="bg-warning-subtle border border-warning/30 rounded-lg p-4">
                 <div className="flex items-center gap-2 mb-2">
-                  <AlertTriangle className="w-4 h-4 text-orange-600" />
-                  <p className="text-sm font-medium text-orange-800">確認事項</p>
+                  <AlertTriangle className="w-4 h-4 text-warning" />
+                  <p className="text-sm font-medium text-text-heading">確認事項</p>
                 </div>
                 <ul className="space-y-1">
                   {parsed.warnings.map((w, i) => (
-                    <li key={i} className="text-xs text-orange-700 flex gap-1.5">
+                    <li key={i} className="text-xs text-text-body flex gap-1.5">
                       <span>・</span>
                       <span>{w}</span>
                     </li>
@@ -545,10 +545,10 @@ export default function InquiriesPastePage() {
               </div>
             )}
             {!isChecking && dupInquiries.length > 0 && (
-              <div className="bg-yellow-50 border border-yellow-300 rounded-lg p-4">
+              <div className="bg-warning-subtle border border-warning/40 rounded-lg p-4">
                 <div className="flex items-center gap-2 mb-3">
-                  <AlertTriangle className="w-4 h-4 text-yellow-600" />
-                  <p className="text-sm font-medium text-yellow-800">
+                  <AlertTriangle className="w-4 h-4 text-warning" />
+                  <p className="text-sm font-medium text-text-heading">
                     同じ電話番号/メールの問合せが {dupInquiries.length}{' '}
                     件あります（登録はブロックされません）
                   </p>
@@ -561,7 +561,7 @@ export default function InquiriesPastePage() {
                         key={inq.id}
                         href={`/admin/inquiries/${inq.id}`}
                         target="_blank"
-                        className="flex items-center gap-3 p-2 bg-white border border-yellow-200 rounded-lg text-xs hover:bg-yellow-50 transition-colors duration-150"
+                        className="flex items-center gap-3 p-2 bg-surface-raised border border-warning/30 rounded-lg text-xs hover:bg-surface-hover transition-colors duration-150"
                       >
                         <span className="text-text-muted shrink-0">
                           {formatDate(inq.inquired_at)}
@@ -584,7 +584,7 @@ export default function InquiriesPastePage() {
 
             {/* 教室選択エラー */}
             {schoolError && (
-              <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 flex items-start gap-2 text-sm text-red-700">
+              <div className="bg-danger-subtle border border-danger/30 rounded-lg px-4 py-3 flex items-start gap-2 text-sm text-danger">
                 <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
                 <span>{schoolError}</span>
               </div>
@@ -1067,7 +1067,7 @@ export default function InquiriesPastePage() {
         {step === 'done' && (
           <div className="bg-surface-raised border border-border rounded-xl p-8">
             <div className="flex items-center gap-2 mb-6">
-              <CheckCircle className="w-6 h-6 text-green-600" />
+              <CheckCircle className="w-6 h-6 text-success" />
               <h2 className="text-lg font-bold text-text-heading">問合せを登録しました</h2>
             </div>
 

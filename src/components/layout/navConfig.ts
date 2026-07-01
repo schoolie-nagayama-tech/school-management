@@ -1,5 +1,5 @@
 import type { Permission, UserProfile } from '@/types/database';
-import { isTeacher } from '@/lib/utils/roles';
+import { isTeacher, isManagerOrAbove } from '@/lib/utils/roles';
 
 /**
  * ヘッダーナビゲーションの構造定義（単一の情報源）。
@@ -80,6 +80,19 @@ export function buildNavEntries(ctx: NavContext): NavEntry[] {
       label: '申込状況',
       href: '/applications',
       exact: true,
+    });
+  }
+
+  // 問合せ管理（教室長以上）。ページ側のガードがロール基準（manager/owner/admin）の
+  // ため、ナビの可視判定も permission ではなくロールで合わせる。サブ機能（分析・
+  // 取込・追客メール等）は一覧ページ内のツールバーから辿るので、ナビは単独リンク1本。
+  if (showAll || isManagerOrAbove(profile?.role)) {
+    entries.push({
+      kind: 'link',
+      key: 'inquiries',
+      label: '問合せ管理',
+      href: '/admin/inquiries',
+      matchPrefixes: ['/admin/inquiries'],
     });
   }
 

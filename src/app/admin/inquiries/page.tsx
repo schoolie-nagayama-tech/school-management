@@ -56,6 +56,7 @@ import {
   Users,
 } from 'lucide-react';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
+import { isManagerOrAbove } from '@/lib/utils/roles';
 import { InquiryReminders } from '@/components/inquiries/InquiryReminders';
 import { InquiryManualAddModal } from '@/components/inquiries/InquiryManualAddModal';
 import { InquiryPeriodSegmented } from '@/components/inquiries/InquiryPeriodSegmented';
@@ -65,9 +66,9 @@ export default function InquiriesPage() {
   const { profile, getSelectedSchoolIds, selectedSchoolId } = useAuth();
   const { schools: masterSchools } = useMasterData();
 
-  // ロールガード: admin / owner のみ
-  const isAdmin =
-    profile?.role === 'admin' || profile?.role === 'owner' || profile?.role === 'manager';
+  // ロールガード: 教室長以上（manager / owner / admin）。
+  // ロール階層判定は roles.ts に一元化し、ページ間でゲートがズレないようにする。
+  const isAdmin = isManagerOrAbove(profile?.role);
 
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -205,6 +206,10 @@ export default function InquiriesPage() {
       prevSchoolKeyRef.current = schoolKey;
       setRemindersReady(false);
       setHasLoaded(false);
+      // 旧教室で開いた行のタイムラインキャッシュ・展開状態を破棄する。
+      // 残すと教室を戻したときに再取得されず古い履歴が出るおそれがある。
+      setTimelineCache(new Map());
+      setExpandedIds(new Set());
     }
   }, [schoolKey]);
 
@@ -404,7 +409,7 @@ export default function InquiriesPage() {
                 </span>
               </span>
               <span>
-                入会率 <span className="font-bold text-green-700 text-sm">{enrollRate}%</span>
+                入会率 <span className="font-bold text-success text-sm">{enrollRate}%</span>
               </span>
             </div>
 
@@ -424,13 +429,13 @@ export default function InquiriesPage() {
                 }}
                 className="relative"
               >
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-faint" />
                 <input
                   type="text"
                   value={searchInput}
                   onChange={(e) => setSearchInput(e.target.value)}
                   placeholder="氏名・電話・メールで検索"
-                  className="w-52 sm:w-60 pl-9 pr-8 py-1.5 border border-border rounded-lg text-sm bg-surface-raised text-text-heading focus:outline-none focus:ring-2 focus:ring-primary placeholder:text-gray-400"
+                  className="w-52 sm:w-60 pl-9 pr-8 py-1.5 border border-border rounded-lg text-sm bg-surface-raised text-text-heading focus:outline-none focus:ring-2 focus:ring-primary placeholder:text-text-faint"
                 />
                 {searchInput && (
                   <button
@@ -439,7 +444,7 @@ export default function InquiriesPage() {
                       setSearchInput('');
                       setSearchQuery('');
                     }}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-text-faint hover:text-text-muted transition-[color,transform] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-90"
                     aria-label="検索をクリア"
                   >
                     <X className="h-4 w-4" />
@@ -453,7 +458,7 @@ export default function InquiriesPage() {
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium border transition-[transform,background-color,border-color,color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97] shrink-0 ${
                   showFilters
                     ? 'bg-ink text-white border-ink'
-                    : 'bg-surface-raised text-gray-600 border-border hover:bg-gray-50'
+                    : 'bg-surface-raised text-text-muted border-border hover:bg-surface-hover'
                 }`}
               >
                 <SlidersHorizontal className="h-4 w-4" />
@@ -553,7 +558,7 @@ export default function InquiriesPage() {
                 </div>
               </div>
               <div className="mt-3 flex items-center justify-between">
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-text-muted">
                   {displayedInquiries.length}件表示
                   <span className="ml-2 text-text-faint">
                     期間は画面上部の期間セレクタで切り替えできます
@@ -575,7 +580,7 @@ export default function InquiriesPage() {
                     setSearchInput('');
                     setSearchQuery('');
                   }}
-                  className="text-xs text-blue-600 hover:text-blue-800 transition-colors duration-150"
+                  className="text-xs text-text-muted hover:text-text-heading transition-colors duration-150"
                 >
                   リセット
                 </button>
@@ -674,7 +679,7 @@ export default function InquiriesPage() {
                                   <span className="italic font-normal text-text-body">
                                     {inquiry.guardian_name}
                                   </span>
-                                  <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-100 text-amber-700 shrink-0">
+                                  <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-warning-subtle text-text-body shrink-0">
                                     保護者名
                                   </span>
                                 </span>
@@ -724,7 +729,7 @@ export default function InquiriesPage() {
                               <a
                                 href={`/admin/inquiries/${inquiry.id}`}
                                 aria-label="詳細を開く"
-                                className="inline-flex items-center justify-center w-7 h-7 rounded hover:bg-surface-hover text-text-muted hover:text-text-heading transition-colors"
+                                className="inline-flex items-center justify-center w-7 h-7 rounded hover:bg-surface-hover text-text-muted hover:text-text-heading transition-[color,background-color,transform] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-90"
                               >
                                 <ExternalLink className="w-4 h-4" />
                               </a>
@@ -803,7 +808,7 @@ export default function InquiriesPage() {
                                               {formatDateTime(m.sent_at)}
                                             </span>
                                             <span
-                                              className={`px-1.5 py-0.5 rounded ${m.status === 'sent' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-700'}`}
+                                              className={`px-1.5 py-0.5 rounded ${m.status === 'sent' ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger'}`}
                                             >
                                               {m.status === 'sent' ? '送信済み' : '失敗'}
                                             </span>

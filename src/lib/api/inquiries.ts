@@ -102,7 +102,11 @@ export async function getInquiries(
 
     // 氏名・電話・メールの部分一致検索（PostgREST の or フィルタを使用）
     if (filters?.search) {
-      const like = `%${filters.search}%`;
+      // LIKE のメタ文字（\ % _）をエスケープしてリテラル検索にする。
+      // 未エスケープだと「%」入力で意図せず広範囲にマッチしたり、PostgREST が
+      // エラーを返したりする。\ を最初に処理しないと二重エスケープになる点に注意。
+      const escaped = filters.search.replace(/[\\%_]/g, (c) => `\\${c}`);
+      const like = `%${escaped}%`;
       query = query.or(
         `student_name.ilike.${like},guardian_name.ilike.${like},phone.ilike.${like},email.ilike.${like}`
       );
@@ -122,7 +126,14 @@ export async function getInquiries(
  * 見つからない場合は null を返す。
  */
 export async function getInquiry(id: string): Promise<Inquiry | null> {
-  const { data, error } = await supabase.from('inquiries').select('*').eq('id', id).single();
+  // 一覧（getInquiries）と対称に論理削除済みは除外する。これがないと削除済み
+  // 問合せの URL を直打ちすると個人情報が詳細ページに表示されてしまう。
+  const { data, error } = await supabase
+    .from('inquiries')
+    .select('*')
+    .eq('id', id)
+    .is('deleted_at', null)
+    .single();
 
   if (error) {
     if (error.code === 'PGRST116') return null;

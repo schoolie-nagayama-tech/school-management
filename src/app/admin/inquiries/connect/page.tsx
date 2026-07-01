@@ -23,6 +23,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import AccessDenied from '@/components/AccessDenied';
 import { supabase } from '@/lib/supabase';
 import { Bookmark, Copy, Check, RefreshCw, ArrowLeft, AlertTriangle } from 'lucide-react';
+import { isManagerOrAbove } from '@/lib/utils/roles';
 
 // ============================================================
 // ブックマークレット生成
@@ -51,9 +52,8 @@ function buildBookmarklet(token: string, origin: string): string {
 export default function InquiryConnectPage() {
   const { profile } = useAuth();
 
-  // ロールガード: admin / owner のみ
-  const isAdmin =
-    profile?.role === 'admin' || profile?.role === 'owner' || profile?.role === 'manager';
+  // ロールガード: 教室長以上（manager / owner / admin）。判定は roles.ts に一元化。
+  const isAdmin = isManagerOrAbove(profile?.role);
 
   const [bookmarklet, setBookmarklet] = useState<string | null>(null);
   const [isIssuing, setIsIssuing] = useState(false);
@@ -227,8 +227,8 @@ export default function InquiryConnectPage() {
             /* 発行済み状態 */
             <div className="space-y-4">
               {/* ドラッグ用リンク */}
-              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <p className="text-xs font-medium text-blue-700 mb-2">
+              <div className="p-4 bg-info-subtle border border-info/30 rounded-lg">
+                <p className="text-xs font-medium text-info mb-2">
                   下のリンクをブックマークバーにドラッグして登録してください
                 </p>
                 {/* eslint-disable-next-line react/jsx-no-target-blank */}
@@ -236,13 +236,13 @@ export default function InquiryConnectPage() {
                   href={bookmarklet}
                   // javascript: URL の onClick を防止（ページ内クリックでなくブックマーク登録用）
                   onClick={(e) => e.preventDefault()}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg cursor-grab active:cursor-grabbing select-none hover:bg-blue-700 transition-colors duration-150"
+                  className="inline-flex items-center gap-1.5 px-4 py-2 bg-ink text-white text-sm font-medium rounded-lg cursor-grab active:cursor-grabbing select-none hover:bg-ink/90 transition-colors duration-150"
                   draggable
                 >
                   <Bookmark className="w-4 h-4" />
                   NESTに取込
                 </a>
-                <p className="text-xs text-blue-600 mt-2">
+                <p className="text-xs text-info mt-2">
                   ※
                   このリンクはクリックしても動きません。ブックマークバーにドラッグして登録してください。
                 </p>
@@ -256,7 +256,7 @@ export default function InquiryConnectPage() {
                 <Button variant="outline" onClick={copyBookmarklet}>
                   {copied ? (
                     <>
-                      <Check className="w-4 h-4 mr-1.5 text-green-600" />
+                      <Check className="w-4 h-4 mr-1.5 text-success" />
                       コピーしました
                     </>
                   ) : (
@@ -293,9 +293,9 @@ export default function InquiryConnectPage() {
             <li>ブックマークバーの「NESTに取込」をクリック → 完了アラートが表示される</li>
             <li>教室を切り替えて繰り返す</li>
           </ol>
-          <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-            <p className="text-xs text-amber-800 font-medium">注意事項</p>
-            <ul className="mt-1 space-y-1 text-xs text-amber-700 list-disc list-inside">
+          <div className="mt-4 p-3 bg-warning-subtle border border-warning/30 rounded-lg">
+            <p className="text-xs text-text-heading font-medium">注意事項</p>
+            <ul className="mt-1 space-y-1 text-xs text-text-body list-disc list-inside">
               <li>トークンは秘密情報です。他の人と共有しないでください。</li>
               <li>漏洩した場合は「トークンを再発行」で古いものを無効化してください。</li>
               <li>同一の問合せNOは重複スキップされるので、何度実行しても二重登録になりません。</li>

@@ -15,6 +15,10 @@ const PUBLIC_RATE_LIMITS: Array<{
 }> = [
   // フォーム送信系（保護者ポータル）— 1IPあたり 30リクエスト/分
   { path: '/api/portal/form-responses', limit: 30, windowSeconds: 60 },
+  // 公開問合せフォーム（チラシ・看板のQR経由）— 1IPあたり 5リクエスト/分。
+  // 保護者の正常送信は数回で十分。service role で insert する無認証 POST のため、
+  // ハニーポットに加えてレート制限でスパム・DoS による inquiries 汚染を防ぐ。
+  { path: '/api/inquiry-form', limit: 5, windowSeconds: 60 },
   // シフト提出系 — 1IPあたり 20リクエスト/分
   { path: '/api/regular-shift/public', limit: 20, windowSeconds: 60 },
   { path: '/api/seasonal-shift/public', limit: 20, windowSeconds: 60 },
@@ -213,6 +217,11 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/portal/') ||
     pathname.startsWith('/seasonal-shift/') ||
     pathname.startsWith('/regular-shift/') ||
+    // 公開問合せフォーム・面談セルフ予約（保護者がログインなしでアクセス）
+    pathname.startsWith('/inquiry/') ||
+    pathname.startsWith('/booking/') ||
+    pathname.startsWith('/api/inquiry-form') ||
+    pathname.startsWith('/api/booking/') ||
     pathname.startsWith('/login') ||
     pathname.startsWith('/forgot-password') ||
     pathname.startsWith('/auth/') ||

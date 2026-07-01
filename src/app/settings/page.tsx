@@ -165,9 +165,9 @@ const settingsGroups: SettingsGroup[] = [
     ],
   },
   {
-    // ベータ版機能。教室長以上（manager/owner/admin）に表示する。
-    // 入り口は設定のみ・ナビには出さない（ダッシュボード機能と同じ方針）。
-    title: '問合せ管理（ベータ）',
+    // 教室長以上（manager/owner/admin）に表示する。トップナビからも入れるが、
+    // 設定一覧にも掲載しておき横断的に機能を見つけられるようにする。
+    title: '問合せ管理',
     items: [
       {
         href: '/admin/inquiries',

@@ -35,6 +35,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
+import { isManagerOrAbove } from '@/lib/utils/roles';
 import {
   ResponsiveContainer,
   PieChart,
@@ -242,9 +243,8 @@ function periodToFilters(period: ResolvedPeriod): { dateFrom?: string; dateTo?: 
 export default function InquiryAnalyticsPage() {
   const { profile, getSelectedSchoolIds, selectedSchoolId } = useAuth();
 
-  // ロールガード: admin / owner のみ
-  const isAdmin =
-    profile?.role === 'admin' || profile?.role === 'owner' || profile?.role === 'manager';
+  // ロールガード: 教室長以上（manager / owner / admin）。判定は roles.ts に一元化。
+  const isAdmin = isManagerOrAbove(profile?.role);
 
   // ---- 分析結果ステート ----
   const [current, setCurrent] = useState<InquiryAnalytics | null>(null);
@@ -459,8 +459,8 @@ export default function InquiryAnalyticsPage() {
                       : '— %'
                     : null
                 }
-                iconColor="text-teal-500"
-                iconBg="bg-teal-50"
+                iconColor="text-info"
+                iconBg="bg-info-subtle"
                 isRate={true}
               />
               <SummaryCard

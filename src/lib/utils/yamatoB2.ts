@@ -21,6 +21,12 @@ export interface YamatoCsvResult {
   count: number;
   /** 出力対象外となった行の詳細 */
   skipped: { name: string; reason: string }[];
+  /**
+   * 実際にCSV行として出力された問合せのID一覧。
+   * 発送日記録(material_sent_at)の更新対象を、宛名一致ではなくIDで
+   * 正確に突合するために返す（同名複数の誤更新を防ぐ）。
+   */
+  includedIds: string[];
 }
 
 // ────────────────────────────────────────────────────────
@@ -110,6 +116,7 @@ export function generateNekoposCsv(
   today: Date
 ): YamatoCsvResult {
   const skipped: YamatoCsvResult['skipped'] = [];
+  const includedIds: string[] = [];
   const dataLines: string[] = [];
   const todayStr = formatDate(today);
 
@@ -179,6 +186,7 @@ export function generateNekoposCsv(
     row[41] = settings.yamato_fare_code ?? '01';
 
     dataLines.push(rowToCsvLine(row));
+    includedIds.push(inquiry.id);
   }
 
   // ヘッダー行 + データ行を CRLF で結合(GAS互換)
@@ -189,6 +197,7 @@ export function generateNekoposCsv(
     csv,
     count: dataLines.length,
     skipped,
+    includedIds,
   };
 }
 

@@ -27,6 +27,7 @@ import {
 } from '@/lib/api/inquirySettings';
 import { generateNekoposCsv, downloadCsvNoBom } from '@/lib/utils/yamatoB2';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
+import { isManagerOrAbove } from '@/lib/utils/roles';
 import { updateInquiry } from '@/lib/api/inquiries';
 import type { Inquiry, InquirySchoolSettings, InquirySchoolSettingsInsert } from '@/types/database';
 import { resolveBookingConfig } from '@/lib/utils/bookingConfig';
@@ -177,9 +178,8 @@ export default function ShippingPage() {
     return map;
   }, [masterSchools]);
 
-  // ロールガード: admin / owner のみ
-  const isAdmin =
-    profile?.role === 'admin' || profile?.role === 'owner' || profile?.role === 'manager';
+  // ロールガード: 教室長以上（manager / owner / admin）。判定は roles.ts に一元化。
+  const isAdmin = isManagerOrAbove(profile?.role);
 
   // ── セクション1 ──
   /** 全未発送フラグ(true=material_sent_at null の全status、false=資料請求+in_progress) */
@@ -315,19 +315,13 @@ export default function ShippingPage() {
         downloadCsvNoBom(result.csv, `ヤマト送り状_${ts}.csv`);
       }
 
-      // 「発送日を記録する」がONの場合、出力成功行の material_sent_at を今日に更新
-      if (recordSentAt && result.count > 0) {
-        // skipped の名前セットを使って除外: skipped には宛名なし/設定なしの行が含まれる
-        // 正確にはgenerateNekoposCsvの内部ロジックと一致させる必要があるため、
-        // 宛名なし/設定なし/住所なしの行を除いた targets を出力成功行と見なす
-        const skippedNames = new Set(result.skipped.map((r) => r.name));
-        // inquiry.student_name or guardian_name で判定: 同名が複数ある場合は全件対象にする
-        // (安全側倒しで、設定不備が直っていれば問題ない)
+      // 「発送日を記録する」がONの場合、出力成功行の material_sent_at を今日に更新。
+      // generateNekoposCsv が「実際にCSV行になった問合せID」を返すので、宛名一致では
+      // なくIDで突合する（同名の問合せが複数あっても誤って発送済みにしない）。
+      if (recordSentAt && result.includedIds.length > 0) {
         const todayStr = today.toISOString().slice(0, 10); // YYYY-MM-DD
-        const updateTargets = targets.filter((q) => {
-          const displayName = q.student_name ?? q.guardian_name ?? '—';
-          return !skippedNames.has(displayName);
-        });
+        const includedIdSet = new Set(result.includedIds);
+        const updateTargets = targets.filter((q) => includedIdSet.has(q.id));
         await Promise.all(
           updateTargets.map((q) => updateInquiry(q.id, { material_sent_at: todayStr }))
         );
@@ -504,7 +498,7 @@ export default function ShippingPage() {
                       });
                       setChecked(all);
                     }}
-                    className="text-blue-600 hover:text-blue-800 transition-colors duration-150"
+                    className="text-text-muted hover:text-text-heading transition-colors duration-150"
                   >
                     すべて選択
                   </button>
@@ -517,7 +511,7 @@ export default function ShippingPage() {
                       });
                       setChecked(none);
                     }}
-                    className="text-gray-500 hover:text-gray-700 transition-colors duration-150"
+                    className="text-text-muted hover:text-text-heading transition-colors duration-150"
                   >
                     すべて解除
                   </button>
@@ -587,7 +581,7 @@ export default function ShippingPage() {
                               <div className="flex items-center gap-1.5">
                                 <span className="text-text-body">{addressee}</span>
                                 {!q.guardian_name && !q.student_name && (
-                                  <span className="inline-flex items-center gap-1 text-xs text-amber-600">
+                                  <span className="inline-flex items-center gap-1 text-xs text-warning">
                                     <AlertTriangle className="w-3 h-3" />
                                     宛名なし
                                   </span>
@@ -603,7 +597,7 @@ export default function ShippingPage() {
                               <div className="flex items-center gap-1.5">
                                 <span>{address}</span>
                                 {warn && address === '—' && (
-                                  <span className="inline-flex items-center gap-1 text-xs text-amber-600">
+                                  <span className="inline-flex items-center gap-1 text-xs text-warning">
                                     <AlertTriangle className="w-3 h-3" />
                                     住所なし
                                   </span>
@@ -650,17 +644,17 @@ export default function ShippingPage() {
             {/* 出力結果フィードバック */}
             {exportCount !== null && (
               <div className="mt-4 space-y-2">
-                <div className="p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-800">
+                <div className="p-3 bg-success-subtle border border-success/40 rounded-lg text-sm text-success">
                   {exportCount > 0
                     ? `${exportCount} 件の送り状データをCSVに出力しました。`
                     : '出力対象の件数が0件でした。'}
                 </div>
                 {skippedRows.length > 0 && (
-                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm">
-                    <p className="font-medium text-amber-800 mb-1">
+                  <div className="p-3 bg-warning-subtle border border-warning/30 rounded-lg text-sm">
+                    <p className="font-medium text-text-heading mb-1">
                       以下の {skippedRows.length} 件は出力対象外となりました:
                     </p>
-                    <ul className="list-disc list-inside space-y-0.5 text-amber-700">
+                    <ul className="list-disc list-inside space-y-0.5 text-text-body">
                       {skippedRows.map((r, i) => (
                         <li key={i}>
                           {r.name ? `${r.name} — ` : ''}
@@ -703,7 +697,7 @@ export default function ShippingPage() {
                       <div className="flex items-center justify-between flex-wrap gap-2">
                         <CardTitle>{schoolName}</CardTitle>
                         {isSaved && (
-                          <span className="text-xs text-green-600 font-medium">保存しました</span>
+                          <span className="text-xs text-success font-medium">保存しました</span>
                         )}
                         <Button
                           variant="primary"
@@ -854,8 +848,8 @@ export default function ShippingPage() {
                                       flex items-center justify-center w-10 h-10 rounded-lg border cursor-pointer text-sm font-medium transition-colors duration-150 select-none
                                       ${
                                         checked
-                                          ? 'bg-[#1a1a1a] text-white border-[#1a1a1a]'
-                                          : 'bg-white text-text-body border-border hover:border-[#1a1a1a]'
+                                          ? 'bg-ink text-white border-ink'
+                                          : 'bg-surface-raised text-text-body border-border hover:border-ink'
                                       }
                                     `}
                                   >

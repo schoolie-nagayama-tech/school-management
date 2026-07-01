@@ -33,25 +33,22 @@ const KIND_META: Record<
   trial_followup: { icon: AlertTriangle, label: '体験フォロー' },
 };
 
-/** severity ごとの色クラス */
+/**
+ * severity ごとの先頭ドット色（重要度はこのドットと件数バッジで表す）。
+ * 行に色の左ストライプは敷かない——業務UIで多用される手垢のついた表現を避け、
+ * トークン化した静かなドット＋ホバーだけで重要度を伝える。
+ */
 const SEVERITY_DOT: Record<InquiryReminder['severity'], string> = {
-  danger: 'bg-red-500',
-  warning: 'bg-amber-400',
-  info: 'bg-blue-400',
+  danger: 'bg-danger',
+  warning: 'bg-warning',
+  info: 'bg-info',
 };
 
-/** severity ごとの行ハイライト */
-const SEVERITY_ROW: Record<InquiryReminder['severity'], string> = {
-  danger: 'border-l-2 border-red-400 bg-red-50',
-  warning: 'border-l-2 border-amber-400 bg-amber-50',
-  info: 'border-l-2 border-blue-300 bg-blue-50/50',
-};
-
-/** severity 件数バッジの色 */
+/** severity 件数バッジの色（subtle 面に同系色。warning だけは明度の都合で本文色） */
 const SEVERITY_BADGE: Record<InquiryReminder['severity'], string> = {
-  danger: 'bg-red-100 text-red-700',
-  warning: 'bg-amber-100 text-amber-700',
-  info: 'bg-blue-100 text-blue-700',
+  danger: 'bg-danger-subtle text-danger',
+  warning: 'bg-warning-subtle text-text-body',
+  info: 'bg-info-subtle text-info',
 };
 
 // ============================================================
@@ -142,7 +139,7 @@ export function InquiryReminders({ schoolIds, onReady }: Props): JSX.Element | n
       {/* ヘッダー */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-border">
         <div className="flex items-center gap-2">
-          <AlertTriangle className="w-4 h-4 text-amber-500" />
+          <AlertTriangle className="w-4 h-4 text-warning" />
           <span className="text-sm font-semibold text-text-heading">要対応リマインド</span>
         </div>
         {/* severity 別件数バッジ */}
@@ -176,7 +173,7 @@ export function InquiryReminders({ schoolIds, onReady }: Props): JSX.Element | n
           return (
             <li
               key={`${r.inquiryId}-${r.kind}-${idx}`}
-              className={`flex items-center gap-3 px-4 py-2.5 ${SEVERITY_ROW[r.severity]}`}
+              className="flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-surface-hover"
             >
               {/* severity ドット */}
               <span
@@ -201,7 +198,7 @@ export function InquiryReminders({ schoolIds, onReady }: Props): JSX.Element | n
               {/* 対応するリンク */}
               <Link
                 href={`/admin/inquiries/${r.inquiryId}`}
-                className="shrink-0 text-xs text-blue-600 hover:text-blue-800 hover:underline transition-colors duration-150"
+                className="shrink-0 text-xs font-medium text-text-muted hover:text-text-heading hover:underline transition-colors duration-150"
                 onClick={(e) => e.stopPropagation()}
               >
                 対応する

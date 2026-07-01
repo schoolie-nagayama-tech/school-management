@@ -133,6 +133,7 @@ export function computeInquiryReminders(
     // 条件: status が in_progress か unreachable かつ trial_at=null かつ interview_at=null
     //        かつ daysSince が DELAY_MILESTONES のいずれかに一致
     if (
+      withinWindow &&
       (inquiry.status === 'in_progress' || inquiry.status === 'unreachable') &&
       !inquiry.trial_at &&
       !inquiry.interview_at &&

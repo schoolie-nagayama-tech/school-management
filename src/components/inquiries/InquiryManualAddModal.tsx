@@ -223,7 +223,7 @@ export function InquiryManualAddModal({
 
   const labelCls = 'block text-xs font-medium text-text-heading mb-1';
   const inputCls =
-    'w-full px-3 py-2 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary placeholder:text-gray-400';
+    'w-full px-3 py-2 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary placeholder:text-text-faint';
   const selectCls = inputCls;
 
   // ============================================================

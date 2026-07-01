@@ -7,15 +7,7 @@ import { getUnreadCount } from '@/lib/api/bulletin';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMasterData } from '@/contexts/MasterDataContext';
 import { USER_ROLE_LABELS } from '@/types/database';
-import {
-  Megaphone,
-  ChevronDown,
-  X,
-  LogOut,
-  Settings,
-  LayoutDashboard,
-  MessageSquare,
-} from 'lucide-react';
+import { Megaphone, ChevronDown, X, LogOut, Settings, LayoutDashboard } from 'lucide-react';
 import { TierMedal } from '@/components/teacher/TierMedal';
 import { useTeacherBadgeCount } from '@/hooks/useTeacherBadgeCount';
 import { BadgeFlowerField } from '@/components/badges/HiddenFlower';
@@ -24,7 +16,7 @@ import { ThemeToggle } from './ThemeToggle';
 import { getSurname } from '@/lib/utils/teacherName';
 import { PushNotificationButton } from '@/components/ui/PushNotificationButton';
 import { buildNavEntries, isLinkActive, isGroupActive } from './navConfig';
-import { isManagerOrAbove, isSystemAdmin } from '@/lib/utils/roles';
+import { isSystemAdmin } from '@/lib/utils/roles';
 import { MobileBottomNav } from './MobileBottomNav';
 import { useStandalone } from '@/lib/utils/useStandalone';
 
@@ -460,20 +452,6 @@ export function AppHeader({
                           >
                             <LayoutDashboard className="w-3.5 h-3.5" aria-hidden />
                             教室長ダッシュボード（試作）
-                          </Link>
-                          <div className="border-t border-border my-1" />
-                        </>
-                      )}
-                      {/* 問合せ管理（教室長以上・ベータ。ダッシュボードと同様ここを入口にする） */}
-                      {isManagerOrAbove(profile?.role) && (
-                        <>
-                          <Link
-                            href="/admin/inquiries"
-                            className="flex items-center gap-2 px-3 py-2 text-xs text-text-heading hover:bg-gray-50 transition-colors"
-                            onClick={() => setShowSettingsDropdown(false)}
-                          >
-                            <MessageSquare className="w-3.5 h-3.5" aria-hidden />
-                            問合せ管理（ベータ）
                           </Link>
                           <div className="border-t border-border my-1" />
                         </>

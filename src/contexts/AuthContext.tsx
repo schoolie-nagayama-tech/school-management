@@ -59,6 +59,10 @@ const PUBLIC_PATHS = [
   '/seasonal-shift',
   '/regular-shift',
   '/test-prep',
+  // 公開問合せフォーム（チラシ・看板のQRから保護者が直接送信）と
+  // 面談セルフ予約ページ（保護者がトークンURLから予約）。いずれもログイン不要。
+  '/inquiry',
+  '/booking',
 ];
 
 // 招待からの登録パス

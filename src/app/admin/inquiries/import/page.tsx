@@ -35,6 +35,7 @@ import {
   FileSpreadsheet,
 } from 'lucide-react';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
+import { isManagerOrAbove } from '@/lib/utils/roles';
 
 /** CSV取込の3ステップ */
 type Step = 'select' | 'preview' | 'done';
@@ -45,9 +46,8 @@ type MigStep = 'select' | 'preview' | 'done';
 export default function InquiriesImportPage() {
   const { profile } = useAuth();
 
-  // ロールガード: admin / owner のみ
-  const isAdmin =
-    profile?.role === 'admin' || profile?.role === 'owner' || profile?.role === 'manager';
+  // ロールガード: 教室長以上（manager / owner / admin）。判定は roles.ts に一元化。
+  const isAdmin = isManagerOrAbove(profile?.role);
 
   // ---- CSV取込の状態 ----
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -247,9 +247,9 @@ export default function InquiriesImportPage() {
         </Link>
 
         {/* 注意書き */}
-        <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg flex gap-3">
-          <Info className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
-          <p className="text-sm text-blue-700">
+        <div className="mb-6 p-4 bg-info-subtle border border-info/30 rounded-lg flex gap-3">
+          <Info className="w-4 h-4 text-info shrink-0 mt-0.5" />
+          <p className="text-sm text-info">
             HPシステムからエクスポートした <code className="font-mono">boshu_applicant_*.csv</code>
             （教室別）をアップロードしてください。問合せNOで重複は自動スキップされます。
           </p>
@@ -292,8 +292,8 @@ export default function InquiriesImportPage() {
                 件をパース
               </div>
               {warningRowCount > 0 && (
-                <div className="flex items-center gap-1.5 text-sm text-orange-700">
-                  <AlertTriangle className="w-4 h-4" />
+                <div className="flex items-center gap-1.5 text-sm text-text-body">
+                  <AlertTriangle className="w-4 h-4 text-warning" />
                   <span>警告あり: {warningRowCount}件</span>
                 </div>
               )}
@@ -374,7 +374,7 @@ export default function InquiriesImportPage() {
                     return (
                       <tr
                         key={i}
-                        className={`${hasWarning ? 'bg-orange-50/60' : ''} ${!checkedRows[i] ? 'opacity-40' : ''}`}
+                        className={`${hasWarning ? 'bg-warning-subtle/50' : ''} ${!checkedRows[i] ? 'opacity-40' : ''}`}
                       >
                         <td className="border border-border px-2 py-1.5 text-center">
                           <input
@@ -422,8 +422,8 @@ export default function InquiriesImportPage() {
                         <td className="border border-border px-3 py-1.5">
                           {hasWarning ? (
                             <div className="flex items-start gap-1">
-                              <AlertTriangle className="w-3.5 h-3.5 text-orange-600 shrink-0 mt-0.5" />
-                              <span className="text-orange-700 text-xs">
+                              <AlertTriangle className="w-3.5 h-3.5 text-warning shrink-0 mt-0.5" />
+                              <span className="text-text-body text-xs">
                                 {row.warnings.join(' / ')}
                               </span>
                             </div>
@@ -444,30 +444,30 @@ export default function InquiriesImportPage() {
         {step === 'done' && importResult && (
           <div className="bg-surface-raised border border-border rounded-xl p-8">
             <div className="flex items-center gap-2 mb-6">
-              <CheckCircle className="w-6 h-6 text-green-600" />
+              <CheckCircle className="w-6 h-6 text-success" />
               <h2 className="text-lg font-bold text-text-heading">取込完了</h2>
             </div>
 
             {/* 結果サマリー */}
             <div className="grid grid-cols-3 gap-4 mb-6">
-              <div className="p-4 bg-green-50 border border-green-200 rounded-lg text-center">
-                <p className="text-xs text-green-700 mb-1">新規登録</p>
-                <p className="text-2xl font-bold text-green-700">{importResult.created}</p>
+              <div className="p-4 bg-success-subtle border border-success/30 rounded-lg text-center">
+                <p className="text-xs text-success mb-1">新規登録</p>
+                <p className="text-2xl font-bold text-success">{importResult.created}</p>
               </div>
-              <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg text-center">
-                <p className="text-xs text-gray-600 mb-1">スキップ（重複）</p>
-                <p className="text-2xl font-bold text-gray-600">{importResult.skipped}</p>
+              <div className="p-4 bg-surface-hover border border-border rounded-lg text-center">
+                <p className="text-xs text-text-muted mb-1">スキップ（重複）</p>
+                <p className="text-2xl font-bold text-text-muted">{importResult.skipped}</p>
               </div>
               <div
-                className={`p-4 border rounded-lg text-center ${importResult.errors.length > 0 ? 'bg-red-50 border-red-200' : 'bg-gray-50 border-gray-200'}`}
+                className={`p-4 border rounded-lg text-center ${importResult.errors.length > 0 ? 'bg-danger-subtle border-danger/30' : 'bg-surface-hover border-border'}`}
               >
                 <p
-                  className={`text-xs mb-1 ${importResult.errors.length > 0 ? 'text-red-700' : 'text-gray-600'}`}
+                  className={`text-xs mb-1 ${importResult.errors.length > 0 ? 'text-danger' : 'text-text-muted'}`}
                 >
                   エラー
                 </p>
                 <p
-                  className={`text-2xl font-bold ${importResult.errors.length > 0 ? 'text-red-700' : 'text-gray-600'}`}
+                  className={`text-2xl font-bold ${importResult.errors.length > 0 ? 'text-danger' : 'text-text-muted'}`}
                 >
                   {importResult.errors.length}
                 </p>
@@ -482,10 +482,10 @@ export default function InquiriesImportPage() {
                   {importResult.errors.map((e, i) => (
                     <div
                       key={i}
-                      className="flex gap-2 text-xs p-2 bg-red-50 border border-red-200 rounded"
+                      className="flex gap-2 text-xs p-2 bg-danger-subtle border border-danger/30 rounded"
                     >
-                      <AlertTriangle className="w-3.5 h-3.5 text-red-600 shrink-0 mt-0.5" />
-                      <span className="text-red-800">
+                      <AlertTriangle className="w-3.5 h-3.5 text-danger shrink-0 mt-0.5" />
+                      <span className="text-danger">
                         【{e.schoolName || '不明'} / NO: {e.hpNo || '不明'}】{e.message}
                       </span>
                     </div>
@@ -515,9 +515,9 @@ export default function InquiriesImportPage() {
           </div>
 
           {/* 注意書き */}
-          <div className="mb-5 p-4 bg-amber-50 border border-amber-200 rounded-lg flex gap-3">
-            <Info className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-            <div className="text-sm text-amber-800 space-y-1">
+          <div className="mb-5 p-4 bg-warning-subtle border border-warning/30 rounded-lg flex gap-3">
+            <Info className="w-4 h-4 text-warning shrink-0 mt-0.5" />
+            <div className="text-sm text-text-heading space-y-1">
               <p>
                 問合せ管理表.xlsxをアップロードしてください。シート名「問合せ管理」を読み込みます。
               </p>
@@ -562,8 +562,8 @@ export default function InquiriesImportPage() {
                   <span className="font-semibold text-text-heading">{migRows.length}</span>件
                 </div>
                 {migSkippedNoDate > 0 && (
-                  <div className="flex items-center gap-1.5 text-sm text-orange-700">
-                    <AlertTriangle className="w-4 h-4" />
+                  <div className="flex items-center gap-1.5 text-sm text-text-body">
+                    <AlertTriangle className="w-4 h-4 text-warning" />
                     <span>問合日なしスキップ: {migSkippedNoDate}件</span>
                   </div>
                 )}
@@ -623,14 +623,14 @@ export default function InquiriesImportPage() {
 
               {/* 警告上位10件 */}
               {migWarningRows.length > 0 && (
-                <div className="bg-orange-50 border border-orange-200 rounded-xl p-4">
-                  <h3 className="text-xs font-semibold text-orange-800 mb-2 flex items-center gap-1">
-                    <AlertTriangle className="w-3.5 h-3.5" />
+                <div className="bg-warning-subtle border border-warning/30 rounded-xl p-4">
+                  <h3 className="text-xs font-semibold text-text-heading mb-2 flex items-center gap-1">
+                    <AlertTriangle className="w-3.5 h-3.5 text-warning" />
                     警告（上位10件）
                   </h3>
                   <div className="space-y-1">
                     {migWarningRows.map((w, i) => (
-                      <p key={i} className="text-xs text-orange-700">
+                      <p key={i} className="text-xs text-text-body">
                         行{w.rowNo}: {w.warning}
                       </p>
                     ))}
@@ -679,7 +679,7 @@ export default function InquiriesImportPage() {
                       const status = row.data.status ?? 'in_progress';
                       const sc = STATUS_CONFIG[status];
                       return (
-                        <tr key={i} className={hasWarning ? 'bg-orange-50/60' : ''}>
+                        <tr key={i} className={hasWarning ? 'bg-warning-subtle/50' : ''}>
                           <td className="border border-border px-3 py-1.5 whitespace-nowrap text-text-body">
                             {row.data.inquired_at ? formatDate(row.data.inquired_at) : '—'}
                           </td>
@@ -711,8 +711,8 @@ export default function InquiriesImportPage() {
                           <td className="border border-border px-3 py-1.5">
                             {hasWarning ? (
                               <div className="flex items-start gap-1">
-                                <AlertTriangle className="w-3.5 h-3.5 text-orange-600 shrink-0 mt-0.5" />
-                                <span className="text-orange-700 text-xs">
+                                <AlertTriangle className="w-3.5 h-3.5 text-warning shrink-0 mt-0.5" />
+                                <span className="text-text-body text-xs">
                                   {row.warnings.join(' / ')}
                                 </span>
                               </div>
@@ -733,30 +733,30 @@ export default function InquiriesImportPage() {
           {migStep === 'done' && migImportResult && (
             <div className="bg-surface-raised border border-border rounded-xl p-8">
               <div className="flex items-center gap-2 mb-6">
-                <CheckCircle className="w-6 h-6 text-green-600" />
+                <CheckCircle className="w-6 h-6 text-success" />
                 <h3 className="text-lg font-bold text-text-heading">移行完了</h3>
               </div>
 
               {/* 結果サマリー */}
               <div className="grid grid-cols-3 gap-4 mb-6">
-                <div className="p-4 bg-green-50 border border-green-200 rounded-lg text-center">
-                  <p className="text-xs text-green-700 mb-1">新規登録</p>
-                  <p className="text-2xl font-bold text-green-700">{migImportResult.created}</p>
+                <div className="p-4 bg-success-subtle border border-success/30 rounded-lg text-center">
+                  <p className="text-xs text-success mb-1">新規登録</p>
+                  <p className="text-2xl font-bold text-success">{migImportResult.created}</p>
                 </div>
-                <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg text-center">
-                  <p className="text-xs text-gray-600 mb-1">スキップ（重複）</p>
-                  <p className="text-2xl font-bold text-gray-600">{migImportResult.skipped}</p>
+                <div className="p-4 bg-surface-hover border border-border rounded-lg text-center">
+                  <p className="text-xs text-text-muted mb-1">スキップ（重複）</p>
+                  <p className="text-2xl font-bold text-text-muted">{migImportResult.skipped}</p>
                 </div>
                 <div
-                  className={`p-4 border rounded-lg text-center ${migImportResult.errors.length > 0 ? 'bg-red-50 border-red-200' : 'bg-gray-50 border-gray-200'}`}
+                  className={`p-4 border rounded-lg text-center ${migImportResult.errors.length > 0 ? 'bg-danger-subtle border-danger/30' : 'bg-surface-hover border-border'}`}
                 >
                   <p
-                    className={`text-xs mb-1 ${migImportResult.errors.length > 0 ? 'text-red-700' : 'text-gray-600'}`}
+                    className={`text-xs mb-1 ${migImportResult.errors.length > 0 ? 'text-danger' : 'text-text-muted'}`}
                   >
                     エラー
                   </p>
                   <p
-                    className={`text-2xl font-bold ${migImportResult.errors.length > 0 ? 'text-red-700' : 'text-gray-600'}`}
+                    className={`text-2xl font-bold ${migImportResult.errors.length > 0 ? 'text-danger' : 'text-text-muted'}`}
                   >
                     {migImportResult.errors.length}
                   </p>
@@ -771,10 +771,10 @@ export default function InquiriesImportPage() {
                     {migImportResult.errors.map((e, i) => (
                       <div
                         key={i}
-                        className="flex gap-2 text-xs p-2 bg-red-50 border border-red-200 rounded"
+                        className="flex gap-2 text-xs p-2 bg-danger-subtle border border-danger/30 rounded"
                       >
-                        <AlertTriangle className="w-3.5 h-3.5 text-red-600 shrink-0 mt-0.5" />
-                        <span className="text-red-800">
+                        <AlertTriangle className="w-3.5 h-3.5 text-danger shrink-0 mt-0.5" />
+                        <span className="text-danger">
                           【{e.school || '不明'} / {e.name || '不明'}】{e.message}
                         </span>
                       </div>

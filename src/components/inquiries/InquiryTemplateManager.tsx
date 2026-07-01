@@ -34,10 +34,11 @@ const SAMPLE_VARS = {
   教室名: 'スクールIE永山校',
   教室電話: '042-000-0000',
   署名: 'スクールIE永山校 高橋',
+  面談設定URL: 'https://calendar.app.google/xxxxxxxx',
 };
 
 // 変数チップのリスト（ボタンクリックで挿入）
-const VAR_CHIPS = ['{保護者}', '{生徒}', '{教室名}', '{教室電話}', '{署名}'];
+const VAR_CHIPS = ['{保護者}', '{生徒}', '{教室名}', '{教室電話}', '{署名}', '{面談設定URL}'];
 
 interface InquiryTemplateManagerProps {
   /** テンプレートの作成・更新・削除が完了したら呼ばれる */
@@ -311,7 +312,7 @@ export function InquiryTemplateManager({ onChanged }: InquiryTemplateManagerProp
                   </td>
                   <td className="px-4 py-3">
                     <span
-                      className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${t.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-500'}`}
+                      className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${t.is_active ? 'bg-success-subtle text-success' : 'bg-surface-hover text-text-muted'}`}
                     >
                       {t.is_active ? '有効' : '無効'}
                     </span>

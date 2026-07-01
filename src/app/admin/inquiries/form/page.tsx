@@ -15,6 +15,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useMasterData } from '@/contexts/MasterDataContext';
 import AccessDenied from '@/components/AccessDenied';
 import { ArrowLeft, Copy, Check, Download } from 'lucide-react';
+import { isManagerOrAbove } from '@/lib/utils/roles';
 
 /** URL の src パラメータバリエーション */
 const SRC_VARIANTS = [
@@ -80,7 +81,7 @@ function QrCard({ url, label }: { url: string; label: string }) {
   }
 
   return (
-    <div className="border border-border rounded-xl p-4 flex flex-col items-center gap-3 bg-white">
+    <div className="border border-border rounded-xl p-4 flex flex-col items-center gap-3 bg-surface-raised">
       <p className="text-sm font-medium text-text-heading text-center">{label}</p>
 
       {/* QRコード */}
@@ -100,8 +101,8 @@ function QrCard({ url, label }: { url: string; label: string }) {
         >
           {copied ? (
             <>
-              <Check className="w-4 h-4 text-green-600" />
-              <span className="text-green-600">コピー済み</span>
+              <Check className="w-4 h-4 text-success" />
+              <span className="text-success">コピー済み</span>
             </>
           ) : (
             <>
@@ -159,9 +160,8 @@ export default function InquiryFormPage() {
   const { profile, getSelectedSchoolIds } = useAuth();
   const { schools: masterSchools } = useMasterData();
 
-  // ロールガード: admin / owner のみ
-  const isAdmin =
-    profile?.role === 'admin' || profile?.role === 'owner' || profile?.role === 'manager';
+  // ロールガード: 教室長以上（manager / owner / admin）。判定は roles.ts に一元化。
+  const isAdmin = isManagerOrAbove(profile?.role);
 
   // 選択中の教室を絞り込み
   const [schools, setSchools] = useState<SchoolInfo[]>([]);
@@ -212,12 +212,12 @@ export default function InquiryFormPage() {
         </div>
 
         {/* 説明文 */}
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-5">
-          <p className="text-sm text-blue-800 leading-relaxed">
+        <div className="bg-info-subtle border border-info/30 rounded-xl p-5">
+          <p className="text-sm text-info leading-relaxed">
             チラシや看板にQRコードを載せると、保護者が直接問合せでき、HPからの転記が不要になります。
             流入元（src）別に媒体が自動記録されます。
           </p>
-          <ul className="mt-3 space-y-1 text-xs text-blue-700">
+          <ul className="mt-3 space-y-1 text-xs text-info">
             <li>
               ・ <strong>自社フォーム（srcなし）</strong>: チラシ以外の汎用URL（HPへの掲載など）
             </li>

@@ -92,6 +92,7 @@ import {
   Mic,
 } from 'lucide-react';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
+import { isManagerOrAbove } from '@/lib/utils/roles';
 import { supabase } from '@/lib/supabase';
 
 /** コンタクト履歴とメールログを統合したタイムラインアイテム */
@@ -106,9 +107,8 @@ export default function InquiryDetailPage() {
 
   const { profile } = useAuth();
 
-  // ロールガード: admin / owner のみ
-  const isAdmin =
-    profile?.role === 'admin' || profile?.role === 'owner' || profile?.role === 'manager';
+  // ロールガード: 教室長以上（manager / owner / admin）。判定は roles.ts に一元化。
+  const isAdmin = isManagerOrAbove(profile?.role);
 
   const [inquiry, setInquiry] = useState<Inquiry | null>(null);
   const [contacts, setContacts] = useState<InquiryContact[]>([]);
@@ -183,6 +183,8 @@ export default function InquiryDetailPage() {
   const [mailTemplates, setMailTemplates] = useState<InquiryMailTemplate[]>([]);
   const [mailSettings, setMailSettings] = useState<InquirySchoolSettings | null>(null);
   const [schoolName, setSchoolName] = useState('');
+  // 教室コード（メール変数 {面談設定URL} の解決に使う）
+  const [schoolCode, setSchoolCode] = useState<string | null>(null);
   const [selectedTemplateId, setSelectedTemplateId] = useState(''); // '' = テンプレ未選択
   const [mailSubject, setMailSubject] = useState('');
   const [mailBody, setMailBody] = useState('');
@@ -223,6 +225,7 @@ export default function InquiryDetailPage() {
       setMailTemplates(templates);
       setMailSettings(settings);
       setSchoolName(school?.name ?? '');
+      setSchoolCode(school?.code ?? null);
       setMailLogs(logs);
     } catch (err) {
       setErrorMessage(getUserErrorMessage(err, 'データの取得に失敗しました'));
@@ -320,7 +323,7 @@ export default function InquiryDetailPage() {
     }
     const tpl = mailTemplates.find((t) => t.id === templateId);
     if (!tpl) return;
-    const vars = buildMailVars(inquiry, schoolName, mailSettings);
+    const vars = buildMailVars(inquiry, schoolName, mailSettings, schoolCode);
     setMailSubject(renderTemplate(tpl.subject, vars));
     setMailBody(renderTemplate(tpl.body, vars));
   };
@@ -360,7 +363,10 @@ export default function InquiryDetailPage() {
       // 入会時は enrolled_at / weekly_count を保存
       if (editStatus === 'enrolled') {
         update.enrolled_at = editEnrolledAt || null;
-        update.weekly_count = editWeeklyCount ? parseInt(editWeeklyCount, 10) : null;
+        // 全角数字や非数値が紛れても NaN を DB に流さない（NaN は integer 列で
+        // エラーになるか NULL に落ちて静かに失われる）。数値化できなければ null。
+        const parsedWeekly = parseInt(editWeeklyCount, 10);
+        update.weekly_count = Number.isFinite(parsedWeekly) ? parsedWeekly : null;
       }
       // 体験フェーズ（体験待ち/返事待ち/体験没）・入会時は trial_at も保存
       if (
@@ -741,7 +747,7 @@ export default function InquiryDetailPage() {
                 </h1>
                 {/* 生徒名が無く保護者名を表示している場合は明示する */}
                 {getInquiryDisplayName(inquiry).isGuardianFallback && (
-                  <span className="px-2.5 py-0.5 rounded-full text-xs font-medium shrink-0 bg-amber-100 text-amber-700 border border-amber-200">
+                  <span className="px-2.5 py-0.5 rounded-full text-xs font-medium shrink-0 bg-warning-subtle text-text-body border border-warning/30">
                     保護者名（生徒名 未入力）
                   </span>
                 )}
@@ -962,7 +968,7 @@ export default function InquiryDetailPage() {
                                   href={rec.url}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="text-blue-600 hover:underline truncate flex-1"
+                                  className="text-info hover:underline truncate flex-1"
                                   title={rec.url}
                                 >
                                   {rec.label || rec.url}
@@ -972,7 +978,7 @@ export default function InquiryDetailPage() {
                                   onClick={() => handleRemoveNotta(i)}
                                   disabled={isSavingNotta}
                                   aria-label="このNotta記録を削除"
-                                  className="p-1 rounded text-text-faint hover:text-danger hover:bg-surface-hover transition-colors shrink-0"
+                                  className="p-1 rounded text-text-faint hover:text-danger hover:bg-surface-hover transition-[color,background-color,transform] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-90 disabled:active:scale-100 shrink-0"
                                 >
                                   <X className="w-3.5 h-3.5" />
                                 </button>
@@ -1053,12 +1059,13 @@ export default function InquiryDetailPage() {
                             const resultBadgeClass = (() => {
                               if (c.method !== 'tel' || !c.result)
                                 return 'bg-surface-hover text-text-body';
-                              if (c.result === 'つながった') return 'bg-green-100 text-green-800';
+                              if (c.result === 'つながった')
+                                return 'bg-success-subtle text-success';
                               if (c.result === '拒否' || c.result === '番号違い')
-                                return 'bg-red-100 text-red-700';
+                                return 'bg-danger-subtle text-danger';
                               if (c.result === '不在' || c.result === '留守電')
-                                return 'bg-yellow-100 text-yellow-700';
-                              if (c.result === '折返し待ち') return 'bg-blue-100 text-blue-700';
+                                return 'bg-warning-subtle text-text-body';
+                              if (c.result === '折返し待ち') return 'bg-info-subtle text-info';
                               return 'bg-surface-hover text-text-body';
                             })();
 
@@ -1110,7 +1117,7 @@ export default function InquiryDetailPage() {
                                           type="button"
                                           onClick={() => openContactEdit(c)}
                                           aria-label="このコンタクトを編集"
-                                          className="p-1 rounded text-text-faint hover:text-text-heading hover:bg-surface-hover transition-colors"
+                                          className="p-1 rounded text-text-faint hover:text-text-heading hover:bg-surface-hover transition-[color,background-color,transform] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-90"
                                         >
                                           <Pencil className="w-3.5 h-3.5" />
                                         </button>
@@ -1119,7 +1126,7 @@ export default function InquiryDetailPage() {
                                         type="button"
                                         onClick={() => setContactDeleteTarget(c)}
                                         aria-label="このコンタクトを削除"
-                                        className="p-1 rounded text-text-faint hover:text-danger hover:bg-surface-hover transition-colors"
+                                        className="p-1 rounded text-text-faint hover:text-danger hover:bg-surface-hover transition-[color,background-color,transform] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-90"
                                       >
                                         <Trash2 className="w-3.5 h-3.5" />
                                       </button>
@@ -1144,12 +1151,12 @@ export default function InquiryDetailPage() {
                                     <span className="font-medium text-text-body">メール送信</span>
                                     <span>{formatDateTime(m.sent_at)}</span>
                                     <span
-                                      className={`px-1.5 py-0.5 rounded font-medium ${m.status === 'sent' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-700'}`}
+                                      className={`px-1.5 py-0.5 rounded font-medium ${m.status === 'sent' ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger'}`}
                                     >
                                       {m.status === 'sent' ? '送信済み' : '失敗'}
                                     </span>
                                     {m.opened_at && (
-                                      <span className="px-1.5 py-0.5 rounded font-medium bg-teal-100 text-teal-800">
+                                      <span className="px-1.5 py-0.5 rounded font-medium bg-info-subtle text-info">
                                         開封済み
                                       </span>
                                     )}
@@ -1268,10 +1275,7 @@ export default function InquiryDetailPage() {
                       {/* 宛先表示 */}
                       <p className="text-sm text-text-muted">
                         宛先:{' '}
-                        <a
-                          href={`mailto:${inquiry.email}`}
-                          className="text-blue-700 hover:underline"
-                        >
+                        <a href={`mailto:${inquiry.email}`} className="text-info hover:underline">
                           {inquiry.email}
                         </a>
                       </p>
@@ -1349,25 +1353,25 @@ export default function InquiryDetailPage() {
                             <span>{formatDateTime(log.sent_at)}</span>
                             {/* 送信ステータスバッジ */}
                             <span
-                              className={`px-1.5 py-0.5 rounded-full font-medium ${log.status === 'sent' ? 'bg-green-100 text-green-800' : 'bg-danger/20 text-danger'}`}
+                              className={`px-1.5 py-0.5 rounded-full font-medium ${log.status === 'sent' ? 'bg-success-subtle text-success' : 'bg-danger/20 text-danger'}`}
                             >
                               {log.status === 'sent' ? '送信済み' : '失敗'}
                             </span>
                             {/* 開封バッジ: opened_at / clicked_at があれば表示。どちらも無く sent なら「未開封」 */}
                             {log.opened_at ? (
-                              <span className="px-1.5 py-0.5 rounded-full font-medium bg-teal-100 text-teal-800">
+                              <span className="px-1.5 py-0.5 rounded-full font-medium bg-info-subtle text-info">
                                 開封済み{' '}
                                 {formatDateTime(log.opened_at)
                                   .replace(/^\d{4}\//, '')
                                   .slice(0, 11)}
                               </span>
                             ) : log.status === 'sent' ? (
-                              <span className="px-1.5 py-0.5 rounded-full font-medium bg-gray-100 text-gray-500">
+                              <span className="px-1.5 py-0.5 rounded-full font-medium bg-surface-hover text-text-muted">
                                 未開封
                               </span>
                             ) : null}
                             {log.clicked_at && (
-                              <span className="px-1.5 py-0.5 rounded-full font-medium bg-blue-100 text-blue-800">
+                              <span className="px-1.5 py-0.5 rounded-full font-medium bg-info-subtle text-info">
                                 リンククリック
                               </span>
                             )}
@@ -1639,9 +1643,9 @@ export default function InquiryDetailPage() {
         size="sm"
       >
         <div className="mb-6 space-y-3">
-          <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 border border-amber-200">
-            <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-            <p className="text-sm text-amber-800">
+          <div className="flex items-start gap-2 p-3 rounded-lg bg-warning-subtle border border-warning/30">
+            <AlertTriangle className="w-4 h-4 text-warning shrink-0 mt-0.5" />
+            <p className="text-sm text-text-body">
               この問合せには生徒名が入力されていません。このまま登録すると
               {inquiry?.guardian_name ? `保護者名「${inquiry.guardian_name}」` : '保護者名'}
               が生徒の氏名として登録されます。
@@ -1724,9 +1728,9 @@ export default function InquiryDetailPage() {
 
           {/* 生徒名と保護者名が同じ場合の注意（取込で入れ違っている可能性） */}
           {editStudentName.trim() !== '' && editStudentName.trim() === editGuardianName.trim() && (
-            <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 border border-amber-200">
-              <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-              <p className="text-sm text-amber-800">
+            <div className="flex items-start gap-2 p-3 rounded-lg bg-warning-subtle border border-warning/30">
+              <AlertTriangle className="w-4 h-4 text-warning shrink-0 mt-0.5" />
+              <p className="text-sm text-text-body">
                 生徒名と保護者名が同じです。取込時に入れ違っていないかご確認ください。
               </p>
             </div>

@@ -123,15 +123,44 @@ export async function POST(
     );
   }
 
-  // ---- inquiry.interview_at を更新 ----
-  const { error: updateInquiryError } = await serviceClient
+  // ---- inquiry.interview_at を原子的に確定（同一問合せの二重予約防止） ----
+  // interview_at が空のときだけ書き込む。確認の連打・別タブからの再送信は
+  // 2回目以降が0行更新になりここで弾かれる（チェック→更新のTOCTOUを閉じる）。
+  const { data: claimed, error: updateInquiryError } = await serviceClient
     .from('inquiries')
     .update({ interview_at: slotStart })
-    .eq('id', inquiry.id);
+    .eq('id', inquiry.id)
+    .is('interview_at', null)
+    .select('id');
 
   if (updateInquiryError) {
     console.error('[booking/confirm] inquiry 更新エラー:', updateInquiryError.message);
     return NextResponse.json({ error: '予約の保存に失敗しました' }, { status: 500 });
+  }
+  if (!claimed || claimed.length === 0) {
+    return NextResponse.json({ error: 'すでに面談予約が確定しています。' }, { status: 409 });
+  }
+
+  // ---- 同一スロットの取り合い（別の問合せが同時刻を同時予約）を解消 ----
+  // 空き確認と書き込みの間に別リクエストが同じ枠を確保すると両者が成立しうる。
+  // 書き込み後に同校・同時刻の他予約を確認し、衝突時は inquiry.id が小さい方を
+  // 勝ちとする決定的タイブレークで、負けた側だけ予約を取り消して 409 を返す。
+  // （カレンダーイベントはこの後に作るので、負けても孤児イベントは残らない）
+  const { data: clashes } = await serviceClient
+    .from('inquiries')
+    .select('id')
+    .eq('school_id', inquiry.school_id)
+    .eq('interview_at', slotStart)
+    .is('deleted_at', null)
+    .neq('id', inquiry.id);
+
+  const lostRace = (clashes ?? []).some((c) => String(c.id) < String(inquiry.id));
+  if (lostRace) {
+    await serviceClient.from('inquiries').update({ interview_at: null }).eq('id', inquiry.id);
+    return NextResponse.json(
+      { error: 'この枠は埋まりました。別の日時を選択してください。' },
+      { status: 409 }
+    );
   }
 
   // ---- Google カレンダーにイベント作成 ----

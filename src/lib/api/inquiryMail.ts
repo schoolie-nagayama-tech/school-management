@@ -136,6 +136,24 @@ export async function getInquirySchoolSettings(
 // 変数差し込み（純関数）
 // ============================================================
 
+/**
+ * 教室コード → 面談予約（Googleカレンダーの予約ページ）URL。
+ * {面談設定URL} 変数の差し込み元。リンクは静的なので定数で持つ
+ * （教室別設定への移設が必要になったら inquiry_school_settings に列追加）。
+ */
+export const INTERVIEW_BOOKING_URLS: Record<string, string> = {
+  nagayama: 'https://calendar.app.google/YihD3Rrzw7ikrSYc8',
+  horinouchi: 'https://calendar.app.google/braDFmT9VdN1c47n6',
+  kiyose: 'https://calendar.app.google/mJ3H4DCtrK8FAesu8',
+  ryokuentoshi: 'https://calendar.app.google/yFL3WgxgyVxYqtXs9',
+};
+
+/** 教室コードから面談予約URLを引く。未登録・未指定は空文字。 */
+export function interviewBookingUrlForCode(code?: string | null): string {
+  if (!code) return '';
+  return INTERVIEW_BOOKING_URLS[code] ?? '';
+}
+
 /** テンプレート本文に差し込む変数セット */
 export interface InquiryMailVars {
   保護者: string;
@@ -143,6 +161,7 @@ export interface InquiryMailVars {
   教室名: string;
   教室電話: string;
   署名: string;
+  面談設定URL: string;
 }
 
 /**
@@ -155,7 +174,8 @@ export function renderTemplate(text: string, vars: InquiryMailVars): string {
     .replace(/\{生徒\}/g, vars.生徒)
     .replace(/\{教室名\}/g, vars.教室名)
     .replace(/\{教室電話\}/g, vars.教室電話)
-    .replace(/\{署名\}/g, vars.署名);
+    .replace(/\{署名\}/g, vars.署名)
+    .replace(/\{面談設定URL\}/g, vars.面談設定URL);
 }
 
 /**
@@ -170,7 +190,9 @@ export function renderTemplate(text: string, vars: InquiryMailVars): string {
 export function buildMailVars(
   inquiry: Inquiry,
   schoolName: string,
-  settings: InquirySchoolSettings | null
+  settings: InquirySchoolSettings | null,
+  /** 教室コード（{面談設定URL} の解決に使用）。未指定なら面談URLは空文字。 */
+  schoolCode?: string | null
 ): InquiryMailVars {
   return {
     保護者: inquiry.guardian_name || inquiry.student_name || 'お客様',
@@ -178,6 +200,7 @@ export function buildMailVars(
     教室名: settings?.sender_name || schoolName,
     教室電話: settings?.sender_tel || '',
     署名: settings?.mail_signature || '',
+    面談設定URL: interviewBookingUrlForCode(schoolCode),
   };
 }
 

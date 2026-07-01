@@ -49,6 +49,7 @@ import type {
   InquiryStatus,
 } from '@/types/database';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
+import { isManagerOrAbove } from '@/lib/utils/roles';
 import { InquiryTemplateManager } from '@/components/inquiries/InquiryTemplateManager';
 import { STATUS_CONFIG, STATUS_OPTIONS } from '../inquiryConstants';
 
@@ -78,7 +79,7 @@ interface EditTarget {
   body: string;
 }
 
-const VAR_CHIPS = ['{保護者}', '{生徒}', '{教室名}', '{教室電話}', '{署名}'];
+const VAR_CHIPS = ['{保護者}', '{生徒}', '{教室名}', '{教室電話}', '{署名}', '{面談設定URL}'];
 
 // ============================================================
 // ページ本体
@@ -87,9 +88,8 @@ const VAR_CHIPS = ['{保護者}', '{生徒}', '{教室名}', '{教室電話}', '
 export default function InquiryMailPage() {
   const { profile, getSelectedSchoolIds, selectedSchoolId } = useAuth();
 
-  // ロールガード: 教室長以上
-  const isAdmin =
-    profile?.role === 'admin' || profile?.role === 'owner' || profile?.role === 'manager';
+  // ロールガード: 教室長以上（manager / owner / admin）。判定は roles.ts に一元化。
+  const isAdmin = isManagerOrAbove(profile?.role);
 
   const [activeTab, setActiveTab] = useState<TabKey>('candidates');
 
@@ -102,6 +102,7 @@ export default function InquiryMailPage() {
 
   // プレビュー用補助データ（schoolName マップ・settings マップ）
   const [schoolNameMap, setSchoolNameMap] = useState<Record<string, string>>({});
+  const [schoolCodeMap, setSchoolCodeMap] = useState<Record<string, string>>({});
   const [settingsMap, setSettingsMap] = useState<Record<string, InquirySchoolSettings | null>>({});
 
   // ---- 送信候補タブ: 選択状態・編集オーバーライド ----
@@ -124,6 +125,9 @@ export default function InquiryMailPage() {
   const composeSubjectRef = useRef<HTMLInputElement>(null);
   const composeBodyRef = useRef<HTMLTextAreaElement>(null);
   const lastComposeField = useRef<'subject' | 'body'>('body');
+  // 一括送信の再入ガード。isSending(state) は更新が非同期で連打に間に合わないため、
+  // 同期的に判定できる ref で「送信処理が走っている間の再呼び出し」を弾く。
+  const sendingRef = useRef(false);
 
   // ---- 送信フロー（全タブ共通） ----
   const [pendingSend, setPendingSend] = useState<SendTarget[] | null>(null);
@@ -161,6 +165,11 @@ export default function InquiryMailPage() {
       const nameMap: Record<string, string> = {};
       for (const s of schools) nameMap[s.id] = s.name;
       setSchoolNameMap(nameMap);
+
+      // 教室コードマップ（{面談設定URL} の解決に使う）
+      const codeMap: Record<string, string> = {};
+      for (const s of schools) if (s.code) codeMap[s.id] = s.code;
+      setSchoolCodeMap(codeMap);
 
       // 教室別設定マップ
       const settingsEntries = await Promise.all(
@@ -216,13 +225,13 @@ export default function InquiryMailPage() {
       const schoolId = inquiry.school_id;
       const schoolName = schoolNameMap[schoolId] ?? '（教室名不明）';
       const settings = settingsMap[schoolId] ?? null;
-      const vars = buildMailVars(inquiry, schoolName, settings);
+      const vars = buildMailVars(inquiry, schoolName, settings, schoolCodeMap[schoolId]);
       return {
         subject: renderTemplate(subjectTpl, vars),
         body: renderTemplate(bodyTpl, vars),
       };
     },
-    [schoolNameMap, settingsMap]
+    [schoolNameMap, settingsMap, schoolCodeMap]
   );
 
   /** 送信候補の最終的な件名・本文（編集オーバーライド優先） */
@@ -426,6 +435,10 @@ export default function InquiryMailPage() {
 
   async function executeSend() {
     if (!pendingSend) return;
+    // 再入ガード: 確認ダイアログの連打や送信中の再呼び出しによる二重送信を防ぐ。
+    if (sendingRef.current) return;
+    sendingRef.current = true;
+
     const targets = pendingSend;
     setPendingSend(null);
     setIsSending(true);
@@ -435,42 +448,47 @@ export default function InquiryMailPage() {
     let success = 0;
     const errors: { label: string; message: string }[] = [];
 
-    for (let i = 0; i < targets.length; i++) {
-      const t = targets[i];
-      setSendProgress({ current: i + 1, total: targets.length });
-      try {
-        const settings = settingsMap[t.inquiry.school_id] ?? null;
-        const schoolName = schoolNameMap[t.inquiry.school_id] ?? '';
-        await sendInquiryMail({
-          inquiry: t.inquiry,
-          subject: t.subject,
-          body: t.body,
-          fromName: settings?.sender_name || schoolName || undefined,
-          replyTo: settings?.mail_reply_to || undefined,
-          templateId: t.templateId,
-        });
-        success++;
-      } catch (err) {
-        errors.push({
-          label: t.label,
-          message: getUserErrorMessage(err, 'メール送信に失敗しました'),
-        });
+    try {
+      for (let i = 0; i < targets.length; i++) {
+        const t = targets[i];
+        setSendProgress({ current: i + 1, total: targets.length });
+        try {
+          const settings = settingsMap[t.inquiry.school_id] ?? null;
+          const schoolName = schoolNameMap[t.inquiry.school_id] ?? '';
+          await sendInquiryMail({
+            inquiry: t.inquiry,
+            subject: t.subject,
+            body: t.body,
+            fromName: settings?.sender_name || schoolName || undefined,
+            replyTo: settings?.mail_reply_to || undefined,
+            templateId: t.templateId,
+          });
+          success++;
+        } catch (err) {
+          errors.push({
+            label: t.label,
+            message: getUserErrorMessage(err, 'メール送信に失敗しました'),
+          });
+        }
+        // 最後の1件は待機不要
+        if (i < targets.length - 1) {
+          await new Promise((res) => setTimeout(res, 700));
+        }
       }
-      // 最後の1件は待機不要
-      if (i < targets.length - 1) {
-        await new Promise((res) => setTimeout(res, 700));
-      }
+
+      setSendResult({ success, failed: errors.length, errors });
+
+      // 選んで送信タブは送信済みの選択をクリアする
+      setSelectedRecipientIds(new Set());
+
+      // ログ再取得 → 送信候補を再計算（送信済みが除外される）
+      await fetchData();
+    } finally {
+      // 例外時もガード・送信中フラグを必ず解除する
+      sendingRef.current = false;
+      setIsSending(false);
+      setSendProgress(null);
     }
-
-    setSendResult({ success, failed: errors.length, errors });
-    setIsSending(false);
-    setSendProgress(null);
-
-    // 選んで送信タブは送信済みの選択をクリアする
-    setSelectedRecipientIds(new Set());
-
-    // ログ再取得 → 送信候補を再計算（送信済みが除外される）
-    await fetchData();
   }
 
   // ============================================================
@@ -510,6 +528,7 @@ export default function InquiryMailPage() {
         教室名: 'スクールIE○○校',
         教室電話: '000-0000-0000',
         署名: '担当',
+        面談設定URL: 'https://calendar.app.google/xxxxxxxx',
       }),
       body: renderTemplate(composeBody, {
         保護者: '山田 花子',
@@ -517,6 +536,7 @@ export default function InquiryMailPage() {
         教室名: 'スクールIE○○校',
         教室電話: '000-0000-0000',
         署名: '担当',
+        面談設定URL: 'https://calendar.app.google/xxxxxxxx',
       }),
     };
   })();
@@ -573,13 +593,13 @@ export default function InquiryMailPage() {
       {/* 送信結果バナー（タブ共通） */}
       {sendResult && (
         <div
-          className={`mb-4 p-4 rounded-lg border ${sendResult.failed === 0 ? 'bg-green-50 border-green-300' : 'bg-yellow-50 border-yellow-300'}`}
+          className={`mb-4 p-4 rounded-lg border ${sendResult.failed === 0 ? 'bg-success-subtle border-success/40' : 'bg-warning-subtle border-warning/40'}`}
         >
           <div className="flex items-center gap-2 mb-2">
             {sendResult.failed === 0 ? (
-              <CheckCircle className="w-4 h-4 text-green-600" />
+              <CheckCircle className="w-4 h-4 text-success" />
             ) : (
-              <AlertCircle className="w-4 h-4 text-yellow-600" />
+              <AlertCircle className="w-4 h-4 text-warning" />
             )}
             <span className="text-sm font-medium text-text-heading">
               送信完了: 成功 {sendResult.success}件 / 失敗 {sendResult.failed}件
@@ -599,13 +619,13 @@ export default function InquiryMailPage() {
 
       {/* 送信進捗（タブ共通） */}
       {isSending && sendProgress && (
-        <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          <p className="text-sm text-blue-700 font-medium">
+        <div className="mb-4 p-4 bg-info-subtle border border-info/40 rounded-lg">
+          <p className="text-sm text-info font-medium">
             送信中 {sendProgress.current} / {sendProgress.total} 件...
           </p>
-          <div className="mt-2 h-2 bg-blue-100 rounded-full overflow-hidden">
+          <div className="mt-2 h-2 bg-info/20 rounded-full overflow-hidden">
             <div
-              className="h-full bg-blue-500 rounded-full transition-[width] duration-300 ease-out"
+              className="h-full bg-info rounded-full transition-[width] duration-300 ease-out"
               style={{ width: `${Math.round((sendProgress.current / sendProgress.total) * 100)}%` }}
             />
           </div>
@@ -698,7 +718,7 @@ export default function InquiryMailPage() {
                         <td className="border border-border px-3 py-2.5 font-medium text-text-heading">
                           {toName(c.inquiry)}
                           {edited && (
-                            <span className="ml-1.5 px-1.5 py-0.5 rounded text-[10px] bg-amber-100 text-amber-700 align-middle">
+                            <span className="ml-1.5 px-1.5 py-0.5 rounded text-[10px] bg-warning-subtle text-text-body align-middle">
                               編集済
                             </span>
                           )}
@@ -722,7 +742,7 @@ export default function InquiryMailPage() {
                           <button
                             type="button"
                             onClick={() => openEdit(c)}
-                            className="inline-flex items-center gap-1 px-2 py-1 text-xs text-blue-600 hover:text-blue-800 border border-blue-200 rounded hover:bg-blue-50 transition-colors duration-150"
+                            className="inline-flex items-center gap-1 px-2 py-1 text-xs text-text-muted hover:text-text-heading border border-border rounded hover:bg-surface-hover transition-colors duration-150"
                           >
                             <Eye className="w-3.5 h-3.5" />
                             確認
@@ -849,13 +869,13 @@ export default function InquiryMailPage() {
             {/* 検索 + ステータス絞り込み */}
             <div className="flex items-center gap-2 mb-2">
               <div className="relative flex-1">
-                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-text-faint" />
                 <input
                   type="text"
                   value={recipientSearch}
                   onChange={(e) => setRecipientSearch(e.target.value)}
                   placeholder="氏名・電話・メールで検索"
-                  className="w-full pl-8 pr-3 py-1.5 border border-border rounded-lg text-sm bg-surface-raised text-text-heading focus:outline-none focus:ring-2 focus:ring-primary placeholder:text-gray-400"
+                  className="w-full pl-8 pr-3 py-1.5 border border-border rounded-lg text-sm bg-surface-raised text-text-heading focus:outline-none focus:ring-2 focus:ring-primary placeholder:text-text-faint"
                 />
               </div>
               <select
@@ -896,7 +916,7 @@ export default function InquiryMailPage() {
                   return (
                     <label
                       key={q.id}
-                      className={`flex items-center gap-2.5 px-3 py-2 cursor-pointer transition-colors duration-100 ${checked ? 'bg-blue-50' : 'hover:bg-surface-hover'}`}
+                      className={`flex items-center gap-2.5 px-3 py-2 cursor-pointer transition-colors duration-100 ${checked ? 'bg-primary/10' : 'hover:bg-surface-hover'}`}
                     >
                       <input
                         type="checkbox"
