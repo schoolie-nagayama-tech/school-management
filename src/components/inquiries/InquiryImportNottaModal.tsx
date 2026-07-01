@@ -33,7 +33,13 @@ function formatDuration(seconds: number | null): string {
   return `${m}分${s}秒`;
 }
 
-export function InquiryImportNottaModal({ isOpen, onClose, inquiryId, schoolId, onSuccess }: Props) {
+export function InquiryImportNottaModal({
+  isOpen,
+  onClose,
+  inquiryId,
+  schoolId,
+  onSuccess,
+}: Props) {
   const [transcripts, setTranscripts] = useState<NottaTranscript[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedId, setSelectedId] = useState('');

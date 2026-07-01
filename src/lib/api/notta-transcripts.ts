@@ -291,7 +291,10 @@ export async function getAvailableTranscriptsForInquiry(
 /**
  * 文字起こしを問合せに紐付ける。
  */
-export async function linkTranscriptToInquiry(transcriptId: string, inquiryId: string): Promise<void> {
+export async function linkTranscriptToInquiry(
+  transcriptId: string,
+  inquiryId: string
+): Promise<void> {
   const { error } = await supabase
     .from('notta_transcripts')
     .update({ linked_inquiry_id: inquiryId, updated_at: new Date().toISOString() })

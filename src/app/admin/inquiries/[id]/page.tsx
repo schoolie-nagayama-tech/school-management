@@ -978,7 +978,8 @@ export default function InquiryDetailPage() {
                           </ul>
                         ) : (
                           <p className="text-[11px] text-text-muted">
-                            取り込み済みの Notta 文字起こしを紐付けられます。入会（生徒登録）時に、生徒の面談記録へ本文ごと引き継がれます。
+                            取り込み済みの Notta
+                            文字起こしを紐付けられます。入会（生徒登録）時に、生徒の面談記録へ本文ごと引き継がれます。
                           </p>
                         )}
                       </div>
