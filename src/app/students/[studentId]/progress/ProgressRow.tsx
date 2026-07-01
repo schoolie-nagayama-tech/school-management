@@ -92,8 +92,8 @@ export function ProgressRow({
   const isProposalGroupHead = p?.group_number != null && groupStart;
   const isAppliedGroupHead = p?.applied_group_number != null && appliedGroupStart;
   const isGroupedRow = p?.group_number != null || p?.applied_group_number != null;
-  // 縦結合したセルの見た目（中央寄せ＋淡い背景＋左右の細罫線でセル結合と分かるように）
-  const mergedHeadClass = 'text-center align-middle bg-[#f8fafc] border-x border-[#eef2f7]';
+  // 縦結合したセルの見た目（中央寄せ＋淡い背景＋四辺を濃いめの罫線で囲み、グループの範囲が一目で分かるように）
+  const mergedHeadClass = 'text-center align-middle bg-[#f8fafc] border-2 border-[#94a3b8]';
   const examRangeName = examTypes.find((et) => et.id === p?.exam_range_exam_type_id)?.name ?? '';
 
   // セッション選択状態
@@ -318,15 +318,15 @@ export function ProgressRow({
       {showHandover && (
         <td className="px-3 py-2.5">
           {hasGoal ? (
-            <input
-              type="text"
+            <textarea
               defaultValue={p?.handover ?? ''}
               placeholder="引継ぎメモ"
+              rows={1}
               onBlur={(e) => {
                 onLocalPatch({ handover: e.target.value || undefined });
                 onSaveProgress({ handover: e.target.value || null });
               }}
-              className="w-full px-1.5 py-1 text-xs bg-transparent border border-transparent hover:border-[#e5e7eb] focus:border-[#1e3a5f] focus:bg-white rounded outline-none"
+              className="w-full min-h-[28px] px-1.5 py-1 text-xs bg-transparent border border-transparent hover:border-[#e5e7eb] focus:border-[#1e3a5f] focus:bg-white rounded outline-none resize-y align-top"
             />
           ) : (
             <span className="px-1.5 py-1 text-xs text-[#d1d5db]">—</span>
