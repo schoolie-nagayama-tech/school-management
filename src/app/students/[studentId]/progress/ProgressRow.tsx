@@ -203,7 +203,7 @@ export function ProgressRow({
           <input
             type="number"
             min={0}
-            defaultValue={p?.application_count ?? ''}
+            defaultValue={p?.application_count || ''}
             onBlur={(e) => {
               const v = e.target.value === '' ? null : Number(e.target.value);
               onLocalPatch({ application_count: v ?? undefined });
