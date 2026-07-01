@@ -1214,7 +1214,7 @@ export default function InquiryDetailPage() {
                         value={contactNote}
                         onChange={(e) => setContactNote(e.target.value)}
                         rows={2}
-                        className="w-full px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+                        className="w-full px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised focus:outline-none focus:ring-2 focus:ring-primary resize-y"
                       />
                     </div>
                     <Button
