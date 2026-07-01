@@ -1516,6 +1516,7 @@ export type Database = {
           external_id: string | null;
           linked_student_id: string | null;
           linked_interview_id: string | null;
+          linked_inquiry_id: string | null;
           linked_at: string | null;
           is_archived: boolean;
           archived_at: string | null;
@@ -1535,6 +1536,7 @@ export type Database = {
           external_id?: string | null;
           linked_student_id?: string | null;
           linked_interview_id?: string | null;
+          linked_inquiry_id?: string | null;
           linked_at?: string | null;
           is_archived?: boolean;
           archived_at?: string | null;
@@ -1554,6 +1556,7 @@ export type Database = {
           external_id?: string | null;
           linked_student_id?: string | null;
           linked_interview_id?: string | null;
+          linked_inquiry_id?: string | null;
           linked_at?: string | null;
           is_archived?: boolean;
           archived_at?: string | null;

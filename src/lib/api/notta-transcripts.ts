@@ -241,3 +241,95 @@ export async function deleteTranscript(id: string): Promise<void> {
   const { error } = await supabase.from('notta_transcripts').delete().eq('id', id);
   if (error) throw new Error(`削除に失敗しました: ${error.message}`);
 }
+
+// ============================================================
+// 問合せ(inquiry)への紐付け
+// ─────────────────────────────────────────────
+// 入会前の問合せに文字起こしを紐付けておき、入会(生徒登録)時に
+// linkTranscriptToStudent へ引き継いで面談記録化する。
+// ============================================================
+
+/**
+ * 問合せに紐付いた文字起こし一覧（新しい順）。
+ */
+export async function getInquiryTranscripts(inquiryId: string): Promise<NottaTranscript[]> {
+  const { data, error } = await supabase
+    .from('notta_transcripts')
+    .select('*')
+    .eq('linked_inquiry_id', inquiryId)
+    .order('recorded_at', { ascending: false })
+    .order('created_at', { ascending: false });
+  if (error) {
+    throw new Error(`文字起こしの取得に失敗しました: ${error.message}`);
+  }
+  return (data || []) as NottaTranscript[];
+}
+
+/**
+ * 問合せに取り込める文字起こし（未紐付け：生徒にも問合せにも紐付いておらず、未アーカイブ）。
+ */
+export async function getAvailableTranscriptsForInquiry(
+  schoolIds: string[],
+  limit: number = 200
+): Promise<NottaTranscript[]> {
+  if (schoolIds.length === 0) return [];
+  const { data, error } = await supabase
+    .from('notta_transcripts')
+    .select('*')
+    .in('school_id', schoolIds)
+    .is('linked_student_id', null)
+    .is('linked_inquiry_id', null)
+    .eq('is_archived', false)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+  if (error) {
+    throw new Error(`文字起こしの取得に失敗しました: ${error.message}`);
+  }
+  return (data || []) as NottaTranscript[];
+}
+
+/**
+ * 文字起こしを問合せに紐付ける。
+ */
+export async function linkTranscriptToInquiry(transcriptId: string, inquiryId: string): Promise<void> {
+  const { error } = await supabase
+    .from('notta_transcripts')
+    .update({ linked_inquiry_id: inquiryId, updated_at: new Date().toISOString() })
+    .eq('id', transcriptId);
+  if (error) throw new Error(`問合せへの紐付けに失敗しました: ${error.message}`);
+}
+
+/**
+ * 問合せへの紐付けを解除する。
+ */
+export async function unlinkTranscriptFromInquiry(transcriptId: string): Promise<void> {
+  const { error } = await supabase
+    .from('notta_transcripts')
+    .update({ linked_inquiry_id: null, updated_at: new Date().toISOString() })
+    .eq('id', transcriptId);
+  if (error) throw new Error(`紐付け解除に失敗しました: ${error.message}`);
+}
+
+/**
+ * 入会時の引き継ぎ：問合せに紐付いた文字起こしを、生徒の面談記録へ転記する。
+ * 各文字起こしを linkTranscriptToStudent で面談記録化し、問合せ側の紐付けは解除する。
+ * 1件失敗しても他は続行し、成功件数を返す。
+ */
+export async function transferInquiryTranscriptsToStudent(
+  inquiryId: string,
+  studentId: string
+): Promise<number> {
+  const transcripts = await getInquiryTranscripts(inquiryId);
+  let moved = 0;
+  for (const t of transcripts) {
+    try {
+      await linkTranscriptToStudent(t, studentId, { interviewType: 'other' });
+      // 生徒に紐付いたので問合せ側の一時紐付けは外す
+      await unlinkTranscriptFromInquiry(t.id);
+      moved += 1;
+    } catch {
+      // 個別失敗は無視して続行
+    }
+  }
+  return moved;
+}
