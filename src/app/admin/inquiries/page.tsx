@@ -165,13 +165,16 @@ export default function InquiriesPage() {
   const [filterStatus, setFilterStatus] = useState<InquiryStatus | 'all'>('all');
   const [filterGrade, setFilterGrade] = useState('');
   const [filterMedia, setFilterMedia] = useState('');
-  // 期間セレクタの状態。一覧のデフォルトは「今月」。
-  const [filterPreset, setFilterPreset] = useState<PeriodPreset>('this_month');
+  // 期間セレクタの状態。一覧のデフォルトは「直近3か月(90日)」。
+  // 月またぎの問合せ（先月末〜今月頭など）が今月表示で切れないよう、回転窓の3か月にする。
+  const [filterPreset, setFilterPreset] = useState<PeriodPreset>('last_90_days');
   const [filterCustomFrom, setFilterCustomFrom] = useState('');
   const [filterCustomTo, setFilterCustomTo] = useState('');
-  // 解決済み日付フィルタ（fetchData の依存に使う）。初期値は当月境界で揃える。
-  const [filterDateFrom, setFilterDateFrom] = useState(() => resolvePeriod('this_month').dateFrom);
-  const [filterDateTo, setFilterDateTo] = useState(() => resolvePeriod('this_month').dateTo);
+  // 解決済み日付フィルタ（fetchData の依存に使う）。初期値は直近90日境界で揃える。
+  const [filterDateFrom, setFilterDateFrom] = useState(
+    () => resolvePeriod('last_90_days').dateFrom
+  );
+  const [filterDateTo, setFilterDateTo] = useState(() => resolvePeriod('last_90_days').dateTo);
   const [searchInput, setSearchInput] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [showFilters, setShowFilters] = useState(false);
@@ -570,9 +573,9 @@ export default function InquiriesPage() {
                     setFilterStatus('all');
                     setFilterGrade('');
                     setFilterMedia('');
-                    // 期間は既定の「今月」に戻す
-                    const def = resolvePeriod('this_month');
-                    setFilterPreset('this_month');
+                    // 期間は既定の「直近3か月(90日)」に戻す
+                    const def = resolvePeriod('last_90_days');
+                    setFilterPreset('last_90_days');
                     setFilterCustomFrom('');
                     setFilterCustomTo('');
                     setFilterDateFrom(def.dateFrom);

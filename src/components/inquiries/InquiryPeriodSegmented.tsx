@@ -16,7 +16,7 @@ import { type PeriodPreset } from '@/lib/utils/inquiryPeriod';
 const SEGMENTS: { value: PeriodPreset; label: string }[] = [
   { value: 'this_month', label: '今月' },
   { value: 'last_month', label: '先月' },
-  { value: 'last_30_days', label: '直近30日' },
+  { value: 'last_90_days', label: '直近3か月' },
   { value: 'this_year', label: '今年' },
   { value: 'all_time', label: '全期間' },
   { value: 'custom', label: 'カスタム' },
