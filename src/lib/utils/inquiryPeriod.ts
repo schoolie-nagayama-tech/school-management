@@ -253,6 +253,15 @@ const SPAN_MONTHS: Record<'month' | 'quarter' | 'half', number> = {
   half: 6,
 };
 
+/**
+ * 指定の年月(1-indexed)を、現在の月からのオフセット(月数, 負で過去)に変換する。
+ * 「月」スパンで年・月を直接選ばせる UI 用。前年同月は年を -1 するだけで表せる。
+ */
+export function monthToOffset(year: number, month1: number, now: Date = new Date()): number {
+  const { year: cy, month: cm } = jstParts(now);
+  return (year - cy) * 12 + (month1 - cm);
+}
+
 /** base(year, month1) から deltaMonths ずらした年月を返す（1-indexed month） */
 function monthYearAt(
   baseYear: number,

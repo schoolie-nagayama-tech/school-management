@@ -8,7 +8,13 @@
  *        カスタムのときは日付入力2本、全期間のときは2段目なし。
  */
 
-import { type PeriodSpan, SPAN_LABELS, spanWindowOptions } from '@/lib/utils/inquiryPeriod';
+import {
+  type PeriodSpan,
+  SPAN_LABELS,
+  spanWindowOptions,
+  resolveSpanPeriod,
+  monthToOffset,
+} from '@/lib/utils/inquiryPeriod';
 
 // スライダーに並べるスパンの順番。
 const SPANS: PeriodSpan[] = ['month', 'quarter', 'half', 'year', 'all', 'custom'];
@@ -72,8 +78,11 @@ export function InquiryPeriodSegmented({
         })}
       </div>
 
-      {/* 2段目: いつの分（プルダウン） */}
-      {windows.length > 0 && (
+      {/* 2段目（月）: 年＋月ドロップダウン。年を変えるだけで前年同月・一昨年同月へ飛べる */}
+      {span === 'month' && <MonthYearSelect offset={offset} onChange={onChange} />}
+
+      {/* 2段目（3か月/半年/1年）: いつの分のプルダウン */}
+      {span !== 'month' && windows.length > 0 && (
         <select
           value={offset}
           onChange={(e) => onChange(span, Number(e.target.value), customFrom, customTo)}
@@ -106,6 +115,58 @@ export function InquiryPeriodSegmented({
           />
         </div>
       )}
+    </div>
+  );
+}
+
+/**
+ * 「月」スパンの2段目。年＋月のプルダウンで任意の年月を直接選べる。
+ * 年を1つ戻すだけで前年同月、2つ戻せば一昨年同月になる。
+ */
+function MonthYearSelect({
+  offset,
+  onChange,
+}: {
+  offset: number;
+  onChange: InquiryPeriodSegmentedProps['onChange'];
+}) {
+  const [selY, selM] = resolveSpanPeriod('month', offset).dateFrom.split('-').map(Number);
+  const curY = Number(resolveSpanPeriod('month', 0).dateFrom.slice(0, 4));
+
+  // 今年から10年分。選択年がそれより古い/未来なら候補に足す。
+  const years: number[] = [];
+  for (let y = curY; y >= curY - 9; y--) years.push(y);
+  if (!years.includes(selY)) years.unshift(selY);
+
+  const cls =
+    'border border-border rounded-lg px-2 py-1 text-sm text-text-body bg-surface-raised focus:outline-none focus:ring-2 focus:ring-primary/30';
+
+  return (
+    <div className="flex items-center gap-1.5">
+      <select
+        value={selY}
+        aria-label="年"
+        className={cls}
+        onChange={(e) => onChange('month', monthToOffset(Number(e.target.value), selM), '', '')}
+      >
+        {years.map((y) => (
+          <option key={y} value={y}>
+            {y}年
+          </option>
+        ))}
+      </select>
+      <select
+        value={selM}
+        aria-label="月"
+        className={cls}
+        onChange={(e) => onChange('month', monthToOffset(selY, Number(e.target.value)), '', '')}
+      >
+        {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
+          <option key={m} value={m}>
+            {m}月
+          </option>
+        ))}
+      </select>
     </div>
   );
 }

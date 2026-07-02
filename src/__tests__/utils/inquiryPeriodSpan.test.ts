@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { resolveSpanPeriod, spanWindowOptions } from '@/lib/utils/inquiryPeriod';
+import { resolveSpanPeriod, spanWindowOptions, monthToOffset } from '@/lib/utils/inquiryPeriod';
 
 // 2026-07-15 12:00 JST を基準にする（jstParts が +9h するので UTC は 03:00Z）
 const NOW = new Date('2026-07-15T03:00:00Z');
@@ -86,5 +86,22 @@ describe('spanWindowOptions', () => {
   it('all / custom は空配列', () => {
     expect(spanWindowOptions('all', NOW)).toEqual([]);
     expect(spanWindowOptions('custom', NOW)).toEqual([]);
+  });
+});
+
+describe('monthToOffset', () => {
+  it('今月は0、前年同月は-12、一昨年同月は-24', () => {
+    expect(monthToOffset(2026, 7, NOW)).toBe(0);
+    expect(monthToOffset(2025, 7, NOW)).toBe(-12); // 前年同月
+    expect(monthToOffset(2024, 7, NOW)).toBe(-24); // 一昨年同月
+    expect(monthToOffset(2026, 6, NOW)).toBe(-1); // 先月
+  });
+
+  it('resolveSpanPeriod と往復して前年同月が取れる', () => {
+    const off = monthToOffset(2025, 7, NOW);
+    expect(resolveSpanPeriod('month', off, '', '', NOW)).toEqual({
+      dateFrom: '2025-07-01',
+      dateTo: '2025-07-31',
+    });
   });
 });
