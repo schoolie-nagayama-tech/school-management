@@ -60,7 +60,7 @@ import { isManagerOrAbove } from '@/lib/utils/roles';
 import { InquiryReminders } from '@/components/inquiries/InquiryReminders';
 import { InquiryManualAddModal } from '@/components/inquiries/InquiryManualAddModal';
 import { InquiryPeriodSegmented } from '@/components/inquiries/InquiryPeriodSegmented';
-import { resolvePeriod, formatPeriodLabel, type PeriodPreset } from '@/lib/utils/inquiryPeriod';
+import { resolveSpanPeriod, formatPeriodLabel, type PeriodSpan } from '@/lib/utils/inquiryPeriod';
 
 export default function InquiriesPage() {
   const { profile, getSelectedSchoolIds, selectedSchoolId } = useAuth();
@@ -165,30 +165,37 @@ export default function InquiriesPage() {
   const [filterStatus, setFilterStatus] = useState<InquiryStatus | 'all'>('all');
   const [filterGrade, setFilterGrade] = useState('');
   const [filterMedia, setFilterMedia] = useState('');
-  // 期間セレクタの状態。一覧のデフォルトは「直近3か月(90日)」。
-  // 月またぎの問合せ（先月末〜今月頭など）が今月表示で切れないよう、回転窓の3か月にする。
-  const [filterPreset, setFilterPreset] = useState<PeriodPreset>('last_90_days');
+  // 期間セレクタの状態（2段階: スパン + オフセット）。
+  // デフォルトは「3か月」の直近（offset 0）。月またぎの問合せが切れないよう回転3か月。
+  const [periodSpan, setPeriodSpan] = useState<PeriodSpan>('quarter');
+  const [periodOffset, setPeriodOffset] = useState(0);
   const [filterCustomFrom, setFilterCustomFrom] = useState('');
   const [filterCustomTo, setFilterCustomTo] = useState('');
-  // 解決済み日付フィルタ（fetchData の依存に使う）。初期値は直近90日境界で揃える。
+  // 解決済み日付フィルタ（fetchData の依存に使う）。初期値は直近3か月境界で揃える。
   const [filterDateFrom, setFilterDateFrom] = useState(
-    () => resolvePeriod('last_90_days').dateFrom
+    () => resolveSpanPeriod('quarter', 0).dateFrom
   );
-  const [filterDateTo, setFilterDateTo] = useState(() => resolvePeriod('last_90_days').dateTo);
+  const [filterDateTo, setFilterDateTo] = useState(() => resolveSpanPeriod('quarter', 0).dateTo);
   const [searchInput, setSearchInput] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [showFilters, setShowFilters] = useState(false);
 
   /**
-   * 期間ピッカーの onChange ハンドラ。
-   * プリセット変更時に resolvePeriod で日付境界を解決し、
+   * 期間セレクタの onChange。
+   * スパン/オフセット/カスタム日付を resolveSpanPeriod で境界解決し、
    * filterDateFrom / filterDateTo に流してデータ再取得をトリガーする。
    */
-  const handlePeriodChange = (preset: PeriodPreset, customFrom: string, customTo: string) => {
-    setFilterPreset(preset);
+  const handlePeriodChange = (
+    span: PeriodSpan,
+    offset: number,
+    customFrom: string,
+    customTo: string
+  ) => {
+    setPeriodSpan(span);
+    setPeriodOffset(offset);
     setFilterCustomFrom(customFrom);
     setFilterCustomTo(customTo);
-    const { dateFrom, dateTo } = resolvePeriod(preset, customFrom, customTo);
+    const { dateFrom, dateTo } = resolveSpanPeriod(span, offset, customFrom, customTo);
     setFilterDateFrom(dateFrom);
     setFilterDateTo(dateTo);
   };
@@ -417,9 +424,10 @@ export default function InquiriesPage() {
             </div>
 
             <div className="flex flex-wrap items-center justify-end gap-2">
-              {/* 期間セレクタ（スライド式） */}
+              {/* 期間セレクタ（2段階: スパン + いつの分） */}
               <InquiryPeriodSegmented
-                preset={filterPreset}
+                span={periodSpan}
+                offset={periodOffset}
                 customFrom={filterCustomFrom}
                 customTo={filterCustomTo}
                 onChange={handlePeriodChange}
@@ -573,9 +581,10 @@ export default function InquiriesPage() {
                     setFilterStatus('all');
                     setFilterGrade('');
                     setFilterMedia('');
-                    // 期間は既定の「直近3か月(90日)」に戻す
-                    const def = resolvePeriod('last_90_days');
-                    setFilterPreset('last_90_days');
+                    // 期間は既定の「3か月・直近」に戻す
+                    const def = resolveSpanPeriod('quarter', 0);
+                    setPeriodSpan('quarter');
+                    setPeriodOffset(0);
                     setFilterCustomFrom('');
                     setFilterCustomTo('');
                     setFilterDateFrom(def.dateFrom);

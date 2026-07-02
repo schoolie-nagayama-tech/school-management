@@ -224,3 +224,124 @@ export function formatPeriodLabel(period: ResolvedPeriod): string {
   if (!period.dateTo) return `${fmt(period.dateFrom)} 〜`;
   return `${fmt(period.dateFrom)} 〜 ${fmt(period.dateTo)}`;
 }
+
+// ============================================================
+// 2段階の期間選択（スパン + オフセット）
+// ─────────────────────────────────────────────
+// 1段目: スパン（月/3か月/半年/1年/全期間/カスタム）を選ぶ。
+// 2段目: そのスパンの中で「いつの分」を offset で選ぶ（0=直近, -1=1つ前, ...）。
+//   月/年 はカレンダー基準（今月・今年）、3か月/半年 は「直近◯か月」の
+//   カレンダー月そろえの回転ブロック（月またぎで切れない）。
+// ============================================================
+
+export type PeriodSpan = 'month' | 'quarter' | 'half' | 'year' | 'all' | 'custom';
+
+/** スパンのスライダー表示ラベル */
+export const SPAN_LABELS: Record<PeriodSpan, string> = {
+  month: '月',
+  quarter: '3か月',
+  half: '半年',
+  year: '1年',
+  all: '全期間',
+  custom: 'カスタム',
+};
+
+/** month/quarter/half の月数 */
+const SPAN_MONTHS: Record<'month' | 'quarter' | 'half', number> = {
+  month: 1,
+  quarter: 3,
+  half: 6,
+};
+
+/** base(year, month1) から deltaMonths ずらした年月を返す（1-indexed month） */
+function monthYearAt(
+  baseYear: number,
+  baseMonth1: number,
+  deltaMonths: number
+): { year: number; month1: number } {
+  const d = new Date(Date.UTC(baseYear, baseMonth1 - 1 + deltaMonths, 1));
+  return { year: d.getUTCFullYear(), month1: d.getUTCMonth() + 1 };
+}
+
+/**
+ * スパン + オフセットから JST の日付境界を解決する。
+ * offset は 0=直近, 負で過去へ。スパンサイズ単位でずれる（重複しないタイル）。
+ */
+export function resolveSpanPeriod(
+  span: PeriodSpan,
+  offset: number,
+  customFrom = '',
+  customTo = '',
+  now: Date = new Date()
+): ResolvedPeriod {
+  if (span === 'all') return { dateFrom: '', dateTo: '' };
+  if (span === 'custom') return { dateFrom: customFrom, dateTo: customTo };
+
+  const { year, month } = jstParts(now);
+
+  if (span === 'year') {
+    const y = year + offset;
+    return { dateFrom: ymd(y, 1, 1), dateTo: ymd(y, 12, 31) };
+  }
+
+  // month / quarter / half: 「直近◯か月」ブロックを offset*サイズ 月ずつ過去へ
+  const size = SPAN_MONTHS[span];
+  const end = monthYearAt(year, month, offset * size); // ブロックの末尾の月
+  const start = monthYearAt(end.year, end.month1, -(size - 1)); // ブロックの先頭の月
+  return {
+    dateFrom: ymd(start.year, start.month1, 1),
+    dateTo: ymd(end.year, end.month1, lastDayOfMonth(end.year, end.month1)),
+  };
+}
+
+/** 2段目の1候補のラベルを作る */
+function spanWindowLabel(
+  span: PeriodSpan,
+  offset: number,
+  dateFrom: string,
+  dateTo: string
+): string {
+  const [y1, m1] = dateFrom.split('-').map(Number);
+  const [y2, m2] = dateTo.split('-').map(Number);
+
+  if (span === 'year') {
+    if (offset === 0) return `今年（${y1}）`;
+    if (offset === -1) return `去年（${y1}）`;
+    return `${y1}年`;
+  }
+  if (span === 'month') {
+    const base = `${y1}年${m1}月`;
+    if (offset === 0) return `今月（${base}）`;
+    if (offset === -1) return `先月（${base}）`;
+    return base;
+  }
+  // quarter / half
+  const range = y1 === y2 ? `${y1}年${m1}〜${m2}月` : `${y1}年${m1}月〜${y2}年${m2}月`;
+  if (offset === 0) return `${span === 'quarter' ? '直近3か月' : '直近半年'}（${range}）`;
+  return range;
+}
+
+/**
+ * 指定スパンの「いつの分」候補（新しい順、offset 0 から過去へ）を返す。
+ * all / custom は空配列。
+ */
+export function spanWindowOptions(
+  span: PeriodSpan,
+  now: Date = new Date()
+): { offset: number; label: string }[] {
+  if (span === 'all' || span === 'custom') return [];
+  const counts: Record<'month' | 'quarter' | 'half' | 'year', number> = {
+    month: 12,
+    quarter: 8,
+    half: 4,
+    year: 6,
+  };
+  const count = counts[span];
+  const opts: { offset: number; label: string }[] = [];
+  for (let i = 0; i < count; i++) {
+    const offset = i === 0 ? 0 : -i; // -0 を避ける
+    const { dateFrom, dateTo } = resolveSpanPeriod(span, offset, '', '', now);
+    opts.push({ offset, label: spanWindowLabel(span, offset, dateFrom, dateTo) });
+  }
+  return opts;
+}

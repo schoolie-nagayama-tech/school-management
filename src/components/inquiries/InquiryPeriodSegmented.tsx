@@ -1,55 +1,48 @@
 'use client';
 
 /**
- * 問合せ一覧の期間セレクタ（セグメント／スライド式）。
+ * 問合せ一覧の期間セレクタ（2段階）。
  *
- * よく使う期間プリセットを横並びのピル型で表示し、選択中はハイライトが
- * スライドして移動する。絞り込みパネルに埋もれていた期間選択を、画面上部で
- * ワンタップで切り替えられるようにするためのもの。
- *
- * 「カスタム」選択時のみ、日付入力2本を直下に表示する。
+ * 1段目: スパンのスライド式スライダー（月 / 3か月 / 半年 / 1年 / 全期間 / カスタム）。
+ * 2段目: 選んだスパンの中で「いつの分」を選ぶプルダウン（今月/先月… 今年/去年… 等）。
+ *        カスタムのときは日付入力2本、全期間のときは2段目なし。
  */
 
-import { type PeriodPreset } from '@/lib/utils/inquiryPeriod';
+import { type PeriodSpan, SPAN_LABELS, spanWindowOptions } from '@/lib/utils/inquiryPeriod';
 
-// 上部に出す代表的なプリセット（多すぎると幅を取るので厳選）。
-const SEGMENTS: { value: PeriodPreset; label: string }[] = [
-  { value: 'this_month', label: '今月' },
-  { value: 'last_month', label: '先月' },
-  { value: 'last_90_days', label: '直近3か月' },
-  { value: 'this_year', label: '今年' },
-  { value: 'all_time', label: '全期間' },
-  { value: 'custom', label: 'カスタム' },
-];
+// スライダーに並べるスパンの順番。
+const SPANS: PeriodSpan[] = ['month', 'quarter', 'half', 'year', 'all', 'custom'];
 
 export interface InquiryPeriodSegmentedProps {
-  preset: PeriodPreset;
+  span: PeriodSpan;
+  offset: number;
   customFrom: string;
   customTo: string;
-  onChange: (preset: PeriodPreset, customFrom: string, customTo: string) => void;
+  onChange: (span: PeriodSpan, offset: number, customFrom: string, customTo: string) => void;
 }
 
 export function InquiryPeriodSegmented({
-  preset,
+  span,
+  offset,
   customFrom,
   customTo,
   onChange,
 }: InquiryPeriodSegmentedProps) {
-  const n = SEGMENTS.length;
-  // ハイライト位置。SEGMENTS にないプリセット（this_quarter/last_year 等）は先頭扱い。
-  let activeIndex = SEGMENTS.findIndex((s) => s.value === preset);
-  if (activeIndex < 0) activeIndex = 0;
+  const n = SPANS.length;
+  const activeIndex = Math.max(0, SPANS.indexOf(span));
+  // 2段目の候補（month/quarter/half/year のみ。all/custom は空）
+  const windows = spanWindowOptions(span);
 
   return (
     <div className="inline-flex flex-col items-end gap-2">
-      {/* セグメント本体。等幅カラム + 絶対配置のハイライトを translateX でスライドさせる */}
+      {/* 1段目: スパンのスライダー */}
       <div
         className="relative grid rounded-lg bg-surface-hover p-1 border border-border"
         style={{ gridTemplateColumns: `repeat(${n}, minmax(0, 1fr))` }}
         role="tablist"
-        aria-label="期間"
+        aria-label="期間スパン"
       >
-        {/* スライドするハイライト（p-1=4px 分を差し引いた等幅で移動） */}
+        {/* スライドするハイライト */}
         <span
           aria-hidden
           className="absolute top-1 bottom-1 rounded-md bg-surface-raised shadow-sm ring-1 ring-border transition-transform duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none"
@@ -59,39 +52,56 @@ export function InquiryPeriodSegmented({
             transform: `translateX(${activeIndex * 100}%)`,
           }}
         />
-        {SEGMENTS.map((s) => {
-          const active = s.value === preset;
+        {SPANS.map((s) => {
+          const active = s === span;
           return (
             <button
-              key={s.value}
+              key={s}
               type="button"
               role="tab"
               aria-selected={active}
-              onClick={() => onChange(s.value, customFrom, customTo)}
+              // スパンを変えたら offset は 0(直近) に戻す
+              onClick={() => onChange(s, 0, customFrom, customTo)}
               className={`relative z-10 px-3 py-1.5 text-xs font-medium rounded-md whitespace-nowrap transition-colors duration-150 active:scale-[0.97] ${
                 active ? 'text-text-heading' : 'text-text-muted hover:text-text-body'
               }`}
             >
-              {s.label}
+              {SPAN_LABELS[s]}
             </button>
           );
         })}
       </div>
 
-      {/* カスタム期間入力（preset=custom のときのみ） */}
-      {preset === 'custom' && (
+      {/* 2段目: いつの分（プルダウン） */}
+      {windows.length > 0 && (
+        <select
+          value={offset}
+          onChange={(e) => onChange(span, Number(e.target.value), customFrom, customTo)}
+          className="border border-border rounded-lg px-2.5 py-1 text-sm text-text-body bg-surface-raised focus:outline-none focus:ring-2 focus:ring-primary/30"
+          aria-label="表示する期間"
+        >
+          {windows.map((w) => (
+            <option key={w.offset} value={w.offset}>
+              {w.label}
+            </option>
+          ))}
+        </select>
+      )}
+
+      {/* カスタム期間入力 */}
+      {span === 'custom' && (
         <div className="flex items-center gap-2">
           <input
             type="date"
             value={customFrom}
-            onChange={(e) => onChange('custom', e.target.value, customTo)}
+            onChange={(e) => onChange('custom', 0, e.target.value, customTo)}
             className="border border-border rounded-lg px-2.5 py-1 text-sm text-text-body bg-surface-raised focus:outline-none focus:ring-2 focus:ring-primary/30"
           />
           <span className="text-xs text-text-muted">〜</span>
           <input
             type="date"
             value={customTo}
-            onChange={(e) => onChange('custom', customFrom, e.target.value)}
+            onChange={(e) => onChange('custom', 0, customFrom, e.target.value)}
             className="border border-border rounded-lg px-2.5 py-1 text-sm text-text-body bg-surface-raised focus:outline-none focus:ring-2 focus:ring-primary/30"
           />
         </div>
