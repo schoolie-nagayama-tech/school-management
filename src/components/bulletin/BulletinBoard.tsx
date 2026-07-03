@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { BulletinPostCard } from './BulletinPostCard';
 import { BulletinPostModal } from './BulletinPostModal';
 import { BulletinReadersModal } from './BulletinReadersModal';
@@ -35,6 +35,26 @@ interface BulletinBoardProps {
   };
 }
 
+/**
+ * 複数教室に同一内容で投稿されたものを1枚のカードにまとめた単位。
+ * 掲示板は投稿時に教室ごとの別レコードを作るため（group_id を持たない）、
+ * 投稿者＋タイトル＋本文＋リンクが一致するものを「同じ連絡」とみなして束ねる。
+ */
+interface GroupedBulletinPost {
+  /** 代表レコード（編集モーダル・既読モーダルの基準に使う） */
+  rep: BulletinPost;
+  /** このグループに属する全投稿のID（編集・削除・既読を全教室へ適用するため） */
+  memberIds: string[];
+  /** このグループがカバーする教室ID一覧（既読モーダルの未読集計に使う） */
+  schoolIds: string[];
+  /** 表示用の教室名一覧 */
+  schoolNames: string[];
+  /** 既読数の合計（全教室分） */
+  readCount: number;
+  /** 全教室分が既読か（講師の既読表示用） */
+  isReadAll: boolean;
+}
+
 export function BulletinBoard({ className = '', initialData }: BulletinBoardProps) {
   const { getSelectedSchoolIds, profile } = useAuth();
   const { success, error: toastError } = useToast();
@@ -50,7 +70,14 @@ export function BulletinBoard({ className = '', initialData }: BulletinBoardProp
   const [isExpanded, setIsExpanded] = useState(true);
   const [isPostModalOpen, setIsPostModalOpen] = useState(false);
   const [editingPost, setEditingPost] = useState<BulletinPost | null>(null);
-  const [readersModalPost, setReadersModalPost] = useState<BulletinPost | null>(null);
+  /** 編集対象がまとめカードの場合、同一内容の全教室分の投稿ID。編集を全教室へ反映するために使う。 */
+  const [editingGroupIds, setEditingGroupIds] = useState<string[] | undefined>(undefined);
+  /** 既読状況モーダル（まとめ対応：複数の投稿ID・教室IDを渡す） */
+  const [readersModal, setReadersModal] = useState<{
+    postIds: string[];
+    schoolIds: string[];
+    title: string;
+  } | null>(null);
   const [unreadCount, setUnreadCount] = useState(initialData?.unreadCount ?? 0);
   /** 新規投稿で選択中の教室ID（複数選択可） */
   const [postingSchoolIds, setPostingSchoolIds] = useState<string[]>([]);
@@ -149,12 +176,42 @@ export function BulletinBoard({ className = '', initialData }: BulletinBoardProp
     fetchData();
   }, [fetchData]);
 
-  const handleRead = useCallback(
-    async (post: BulletinPost) => {
-      if (!userId) return;
+  // 同一内容の投稿（＝複数教室への同報）を1枚にまとめる。
+  // posts は既に「ピン留め→新しい順」でソート済みなので、代表は各グループの先頭になる。
+  const groupedPosts = useMemo<GroupedBulletinPost[]>(() => {
+    const groups = new Map<string, GroupedBulletinPost>();
+    const order: string[] = [];
+    for (const post of posts) {
+      // group_id が無いため内容で同一判定する（投稿者＋タイトル＋本文＋リンク）
+      const key = [post.created_by ?? '', post.title, post.content, post.link_url ?? ''].join(' ');
+      let group = groups.get(key);
+      if (!group) {
+        group = {
+          rep: post,
+          memberIds: [],
+          schoolIds: [],
+          schoolNames: [],
+          readCount: 0,
+          isReadAll: true,
+        };
+        groups.set(key, group);
+        order.push(key);
+      }
+      group.memberIds.push(post.id);
+      if (post.school_id) group.schoolIds.push(post.school_id);
+      if (post.school_name) group.schoolNames.push(post.school_name);
+      group.readCount += post.read_count ?? 0;
+      group.isReadAll = group.isReadAll && !!post.is_read;
+    }
+    return order.map((k) => groups.get(k)!);
+  }, [posts]);
 
+  const handleReadGroup = useCallback(
+    async (group: GroupedBulletinPost) => {
+      if (!userId) return;
       try {
-        await markAsRead(post.id, userId);
+        // 全教室分の投稿を既読にする（講師は通常1教室なのでほぼ1件）
+        await Promise.all(group.memberIds.map((id) => markAsRead(id, userId)));
         success('既読にしました');
         await fetchData();
         if (typeof window !== 'undefined') {
@@ -168,17 +225,22 @@ export function BulletinBoard({ className = '', initialData }: BulletinBoardProp
     [userId, success, toastError, fetchData]
   );
 
-  const handleEdit = useCallback((post: BulletinPost) => {
-    setEditingPost(post);
+  const handleEditGroup = useCallback((group: GroupedBulletinPost) => {
+    setEditingPost(group.rep);
+    // まとめカードの編集は全教室分へ反映するため、メンバーIDを渡す
+    setEditingGroupIds(group.memberIds.length > 1 ? group.memberIds : undefined);
     setIsPostModalOpen(true);
   }, []);
 
-  const handleDelete = useCallback(
-    async (post: BulletinPost) => {
+  const handleDeleteGroup = useCallback(
+    async (group: GroupedBulletinPost) => {
+      const multi = group.memberIds.length > 1;
       if (
         !(await confirm({
           title: '削除確認',
-          description: 'この投稿を削除しますか？',
+          description: multi
+            ? `この連絡を${group.memberIds.length}教室分すべて削除しますか？`
+            : 'この投稿を削除しますか？',
           confirmLabel: '削除',
           variant: 'danger',
         }))
@@ -187,7 +249,8 @@ export function BulletinBoard({ className = '', initialData }: BulletinBoardProp
       }
 
       try {
-        await deleteBulletinPost(post.id);
+        // 全教室分をまとめて削除する
+        await Promise.all(group.memberIds.map((id) => deleteBulletinPost(id)));
         success('削除しました');
         await fetchData();
       } catch (error) {
@@ -198,12 +261,17 @@ export function BulletinBoard({ className = '', initialData }: BulletinBoardProp
     [confirm, success, toastError, fetchData]
   );
 
-  const handleShowReaders = useCallback((post: BulletinPost) => {
-    setReadersModalPost(post);
+  const handleShowReadersGroup = useCallback((group: GroupedBulletinPost) => {
+    setReadersModal({
+      postIds: group.memberIds,
+      schoolIds: group.schoolIds,
+      title: group.rep.title,
+    });
   }, []);
 
   const handleNewPost = useCallback(() => {
     setEditingPost(null);
+    setEditingGroupIds(undefined);
     setPostingSchoolIds(getSelectedSchoolIds());
     setIsPostModalOpen(true);
   }, [getSelectedSchoolIds]);
@@ -264,30 +332,43 @@ export function BulletinBoard({ className = '', initialData }: BulletinBoardProp
         {/* 投稿一覧 */}
         {isExpanded && (
           <div className="p-4 space-y-3">
-            {posts.length === 0 ? (
+            {groupedPosts.length === 0 ? (
               <div className="text-center text-sm text-gray-400 py-8">
                 投稿はありません。{canEdit ? '「新規投稿」ボタンから投稿を作成できます。' : ''}
               </div>
             ) : (
-              posts.map((post, idx) => (
-                // stagger-item で 40ms 刻みのフェードイン（8件超はindex頭打ち）
-                <div
-                  key={post.id}
-                  className="stagger-item"
-                  style={{ '--stagger-index': Math.min(idx, 8) } as React.CSSProperties}
-                >
-                  <BulletinPostCard
-                    post={post}
-                    schoolName={post.school_name}
-                    canEdit={canEdit}
-                    canRead={canRead}
-                    onRead={() => handleRead(post)}
-                    onEdit={() => handleEdit(post)}
-                    onDelete={() => handleDelete(post)}
-                    onShowReaders={() => handleShowReaders(post)}
-                  />
-                </div>
-              ))
+              groupedPosts.map((group, idx) => {
+                // 既読数は全教室分の合計、is_read は全教室既読かで上書きしたカードを表示する
+                const displayPost: BulletinPost = {
+                  ...group.rep,
+                  read_count: group.readCount,
+                  is_read: group.isReadAll,
+                };
+                // まとめ表示のときは教室名を連結（例: 清瀬校・緑園都市校・…）
+                const combinedSchoolName =
+                  group.schoolNames.length > 0
+                    ? group.schoolNames.join('・')
+                    : group.rep.school_name;
+                return (
+                  // stagger-item で 40ms 刻みのフェードイン（8件超はindex頭打ち）
+                  <div
+                    key={group.rep.id}
+                    className="stagger-item"
+                    style={{ '--stagger-index': Math.min(idx, 8) } as React.CSSProperties}
+                  >
+                    <BulletinPostCard
+                      post={displayPost}
+                      schoolName={combinedSchoolName}
+                      canEdit={canEdit}
+                      canRead={canRead}
+                      onRead={() => handleReadGroup(group)}
+                      onEdit={() => handleEditGroup(group)}
+                      onDelete={() => handleDeleteGroup(group)}
+                      onShowReaders={() => handleShowReadersGroup(group)}
+                    />
+                  </div>
+                );
+              })
             )}
           </div>
         )}
@@ -300,8 +381,10 @@ export function BulletinBoard({ className = '', initialData }: BulletinBoardProp
           onClose={() => {
             setIsPostModalOpen(false);
             setEditingPost(null);
+            setEditingGroupIds(undefined);
           }}
           post={editingPost}
+          groupPostIds={editingGroupIds}
           labels={
             editingPost
               ? (labelsBySchool[editingPost.school_id] ?? [])
@@ -320,14 +403,14 @@ export function BulletinBoard({ className = '', initialData }: BulletinBoardProp
 
       {ConfirmDialog}
 
-      {/* 既読者一覧モーダル */}
-      {readersModalPost && (
+      {/* 既読者一覧モーダル（まとめカードは全教室分を集計して表示） */}
+      {readersModal && (
         <BulletinReadersModal
-          isOpen={!!readersModalPost}
-          onClose={() => setReadersModalPost(null)}
-          postId={readersModalPost.id}
-          postTitle={readersModalPost.title}
-          schoolId={readersModalPost.school_id}
+          isOpen={!!readersModal}
+          onClose={() => setReadersModal(null)}
+          postIds={readersModal.postIds}
+          postTitle={readersModal.title}
+          schoolIds={readersModal.schoolIds}
         />
       )}
     </>

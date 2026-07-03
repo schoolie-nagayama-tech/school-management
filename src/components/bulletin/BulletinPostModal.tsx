@@ -21,6 +21,12 @@ interface BulletinPostModalProps {
   isOpen: boolean;
   onClose: () => void;
   post?: BulletinPost | null;
+  /**
+   * 編集対象がまとめカード（複数教室への同報）の場合の、全教室分の投稿ID。
+   * 指定時は編集内容（タイトル・本文・リンク・ピン留め）を全教室分へ反映する。
+   * ラベルは教室ごとに異なるため代表（post.id）の教室のみ更新する。
+   */
+  groupPostIds?: string[];
   labels: BulletinLabel[];
   schoolId: string;
   /** 複数教室時に投稿先を選択するための教室一覧 */
@@ -36,6 +42,7 @@ export function BulletinPostModal({
   isOpen,
   onClose,
   post,
+  groupPostIds,
   labels,
   schoolId,
   schoolIds,
@@ -122,6 +129,7 @@ export function BulletinPostModal({
 
       const normalizedLink = normalizeLinkUrl(linkUrl);
       if (post) {
+        // 代表の教室はラベルも含めて更新する
         await updateBulletinPost(
           post.id,
           {
@@ -133,6 +141,20 @@ export function BulletinPostModal({
           },
           userId
         );
+        // まとめカードの編集は、他教室分にも内容を反映する（ラベルは各教室のを維持）
+        const siblingIds = (groupPostIds ?? []).filter((id) => id !== post.id);
+        for (const sid of siblingIds) {
+          await updateBulletinPost(
+            sid,
+            {
+              title: title.trim(),
+              content: content,
+              link_url: normalizedLink,
+              is_pinned: isPinned,
+            },
+            userId
+          );
+        }
       } else {
         const payload = {
           title: title.trim(),

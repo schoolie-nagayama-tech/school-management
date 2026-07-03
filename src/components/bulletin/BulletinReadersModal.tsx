@@ -9,39 +9,48 @@ import { supabase } from '@/lib/supabase';
 interface BulletinReadersModalProps {
   isOpen: boolean;
   onClose: () => void;
-  postId: string;
+  /** 対象の投稿ID一覧（まとめカードは複数教室分をまとめて渡す） */
+  postIds: string[];
   postTitle: string;
-  schoolId: string;
+  /** 未読集計に使う対象教室ID一覧（まとめカードは複数） */
+  schoolIds: string[];
 }
 
 export function BulletinReadersModal({
   isOpen,
   onClose,
-  postId,
+  postIds,
   postTitle,
-  schoolId,
+  schoolIds,
 }: BulletinReadersModalProps) {
   const [readers, setReaders] = useState<BulletinRead[]>([]);
   const [unreadUsers, setUnreadUsers] = useState<Array<{ id: string; name: string }>>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  // postIds/schoolIds は配列なので依存を安定化させるためキー文字列化する
+  const postIdsKey = postIds.join(',');
+  const schoolIdsKey = schoolIds.join(',');
+
   useEffect(() => {
-    if (isOpen && postId) {
+    if (isOpen && postIds.length > 0) {
       fetchReaders();
     }
-  }, [isOpen, postId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, postIdsKey, schoolIdsKey]);
 
   const fetchReaders = async () => {
     setIsLoading(true);
     try {
-      const readersData = await getPostReaders(postId);
+      // 全教室分の既読を集計する
+      const readersArrays = await Promise.all(postIds.map((pid) => getPostReaders(pid)));
+      const readersData = readersArrays.flat();
       setReaders(readersData);
 
-      // 教室の全ユーザーを取得（user_schools経由）
+      // 対象教室すべての全ユーザーを取得（user_schools経由）
       const { data: userSchools, error: userSchoolsError } = await supabase
         .from('user_schools')
         .select('user_id')
-        .eq('school_id', schoolId);
+        .in('school_id', schoolIds);
 
       if (userSchoolsError) {
         console.warn('user_schoolsの取得に失敗しました:', userSchoolsError);
