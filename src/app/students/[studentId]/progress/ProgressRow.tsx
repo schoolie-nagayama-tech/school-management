@@ -200,17 +200,24 @@ export function ProgressRow({
           className={`px-3 py-2.5 ${isAppliedGroupHead ? mergedHeadClass : ''}`}
           rowSpan={isAppliedGroupHead ? appliedGroupSpan : undefined}
         >
-          <input
-            type="number"
-            min={0}
-            defaultValue={p?.application_count || ''}
-            onBlur={(e) => {
-              const v = e.target.value === '' ? null : Number(e.target.value);
-              onLocalPatch({ application_count: v ?? undefined });
-              onSaveProgress({ application_count: v });
-            }}
-            className="w-14 px-1.5 py-1 text-xs bg-transparent border border-transparent hover:border-[#e5e7eb] focus:border-[#1e3a5f] focus:bg-white rounded outline-none text-center"
-          />
+          {isTeacher ? (
+            // 講師は申込コマ数を編集不可（閲覧のみ）。申込は教室長の業務のため。
+            <span className="block text-xs text-center text-[#1f2937]">
+              {p?.application_count ? `${p.application_count}コマ` : '—'}
+            </span>
+          ) : (
+            <input
+              type="number"
+              min={0}
+              defaultValue={p?.application_count || ''}
+              onBlur={(e) => {
+                const v = e.target.value === '' ? null : Number(e.target.value);
+                onLocalPatch({ application_count: v ?? undefined });
+                onSaveProgress({ application_count: v });
+              }}
+              className="w-14 px-1.5 py-1 text-xs bg-transparent border border-transparent hover:border-[#e5e7eb] focus:border-[#1e3a5f] focus:bg-white rounded outline-none text-center"
+            />
+          )}
         </td>
       )}
       {/* 試験範囲 */}

@@ -1,8 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import Link from 'next/link';
-import { Eye, EyeOff, FileText, Plus, RefreshCw, Send, Settings2 } from 'lucide-react';
+import { Eye, EyeOff, RefreshCw, Send, Settings2 } from 'lucide-react';
 import {
   getStudentProgress,
   updateStudentProgress,
@@ -592,20 +591,7 @@ export function TableView({
               >
                 {sessionMode ? '提出' : '授業を記録'}
               </button>
-              <Link
-                href={`/students/${studentId}/proposals`}
-                className="px-2.5 py-1.5 rounded-lg text-xs font-medium border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 transition-[background-color] duration-150 ease-out active:scale-[0.97] flex items-center gap-1"
-              >
-                <FileText className="w-3.5 h-3.5" />
-                提案書一覧
-              </Link>
-              <Link
-                href={`/students/${studentId}/proposals/new?stbId=${textbook.id}&textbookId=${textbook.textbook_id}&season=${textbook.season || 'summer'}&year=${new Date().getFullYear()}`}
-                className="px-2.5 py-1.5 rounded-lg text-xs font-medium border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 transition-[background-color] duration-150 ease-out active:scale-[0.97] flex items-center gap-1"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                提案書作成
-              </Link>
+              {/* 提案書一覧・作成はページ上部の「講習提案書」ボタンに統合した（重複解消） */}
             </div>
           )}
         </div>
