@@ -131,6 +131,10 @@ export default function QuickLinksSettingsPage() {
       setLinks(saved);
       setDirty(false);
       success('クイックリンクを保存しました');
+      // 生徒管理ページ上部のクイックリンクバーに即時反映させる（バーは初回マウント時しか取得しないため）
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('quick-links-updated'));
+      }
     } catch (e) {
       toastError(e instanceof Error ? e.message : '保存に失敗しました');
     } finally {

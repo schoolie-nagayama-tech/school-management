@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ExternalLink, Settings, Link as LinkIcon } from 'lucide-react';
 import { getQuickLinks, type QuickLink } from '@/lib/api/quick-links';
@@ -24,23 +24,36 @@ export function QuickLinksBar({ className = '' }: QuickLinksBarProps) {
   const canManage =
     profile?.role === 'admin' || profile?.role === 'owner' || profile?.role === 'manager';
 
+  // リンクを取得して反映する（初回・タブ復帰・設定保存後の再取得で共用）
+  const load = useCallback(async () => {
+    const data = await getQuickLinks();
+    setLinks(data);
+    setLoaded(true);
+  }, []);
+
   // 認証ロードが終わってからフェッチする（セッション未取得の状態で叩くと
   // Authorization ヘッダーが付かず、API 側で 401 → 空配列が確定してしまうため）。
   // profile?.id を依存に入れることで、ログイン直後にも自動で再取得される。
   useEffect(() => {
     if (authLoading || !profile?.id) return;
-    let cancelled = false;
-    void (async () => {
-      const data = await getQuickLinks();
-      if (!cancelled) {
-        setLinks(data);
-        setLoaded(true);
-      }
-    })();
-    return () => {
-      cancelled = true;
+    void load();
+    // バーは初回マウント時にしか取得しないため、設定ページで追加・保存しても
+    // ハードリロードするまで反映されない問題があった。設定保存時に発火する
+    // quick-links-updated イベントと、タブ復帰（focus / visibilitychange）で
+    // 最新のリンクへ追従させる。
+    const revalidate = () => void load();
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') void load();
     };
-  }, [authLoading, profile?.id]);
+    window.addEventListener('quick-links-updated', revalidate);
+    window.addEventListener('focus', revalidate);
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      window.removeEventListener('quick-links-updated', revalidate);
+      window.removeEventListener('focus', revalidate);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [authLoading, profile?.id, load]);
 
   // 初回ロード前は描画しない（CLS抑制）
   if (!loaded) return null;
