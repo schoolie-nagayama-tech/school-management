@@ -1,5 +1,5 @@
 import type { PrecacheEntry, SerwistGlobalConfig } from 'serwist';
-import { Serwist, NetworkFirst, CacheFirst, StaleWhileRevalidate } from 'serwist';
+import { Serwist, NetworkFirst, StaleWhileRevalidate } from 'serwist';
 
 declare global {
   interface WorkerGlobalScope extends SerwistGlobalConfig {
@@ -16,9 +16,13 @@ const serwist = new Serwist({
   navigationPreload: true,
   runtimeCaching: [
     {
-      // 静的アセット: Cache First
+      // 静的アセット(JS/CSS/フォント): Stale While Revalidate
+      // 以前は CacheFirst にしていたが、それだと古いバンドルを配り続け、
+      // 新しくデプロイしても更新を拾えず「クイックリンクが反映されない」等の
+      // “古いJSが動き続ける”問題が起きた（要 caches.delete + reload）。
+      // SWR ならキャッシュを即返しつつ裏で最新を取得し、次回読み込みで最新化される。
       matcher: /\.(?:js|css|woff2?)$/,
-      handler: new CacheFirst({
+      handler: new StaleWhileRevalidate({
         cacheName: 'static-assets',
       }),
     },
