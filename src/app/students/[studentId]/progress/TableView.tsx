@@ -590,7 +590,7 @@ export function TableView({
                       : 'bg-[#1e3a5f] text-white hover:bg-[#2a4d7a] active:scale-[0.97]'
                 }`}
               >
-                {sessionMode ? 'セッション終了' : '授業を記録'}
+                {sessionMode ? '提出' : '授業を記録'}
               </button>
               <Link
                 href={`/students/${studentId}/proposals`}
