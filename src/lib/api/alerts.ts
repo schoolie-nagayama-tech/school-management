@@ -73,7 +73,12 @@ export interface ScheduleChangeResponse {
 // Phase 1: fetchAlertSources（DBアクセス専用）
 // ============================================
 
-/** student_progress から生徒ごとの宿題未実施・遅刻のカウントを取得 */
+/**
+ * student_progress から生徒ごとの宿題未実施・遅刻のカウントを取得。
+ * 累積カウント（月リセットなし）。対応済みにしても回数自体はリセットされず、
+ * 対応済み後に新たなチェックが付いて回数が増えると再度アラートに表示される
+ * （dismiss は alert_key に回数を含めているため、回数が増えた時点で別アラート扱いになる）。
+ */
 async function fetchProgressFlagsByStudent(
   schoolIds: string[]
 ): Promise<{ homework: Map<string, number>; tardy: Map<string, number> }> {
@@ -410,6 +415,10 @@ function buildScoreDropCandidates(sources: AlertSources): Alert[] {
   const unitFor = (cat: 'regular_test' | 'report_card' | 'mock') =>
     cat === 'regular_test' ? '点' : cat === 'mock' ? 'pt' : '段階';
 
+  // 成績低下は次のテストを待っても対応しようがないため、1ヶ月経過したら自動的に消す
+  const scoreDropExpiry = new Date();
+  scoreDropExpiry.setMonth(scoreDropExpiry.getMonth() - 1);
+
   for (const student of sources.students) {
     const allAssessments = sources.assessmentsByStudent.get(student.id) ?? [];
     for (const category of categories) {
@@ -437,6 +446,7 @@ function buildScoreDropCandidates(sources: AlertSources): Alert[] {
         if (previousScore == null) continue;
         const diff = latestScore - previousScore;
         if (diff > -threshold) continue;
+        if (latest.exam_month && new Date(latest.exam_month) < scoreDropExpiry) continue;
 
         // 連続下降回数を計算
         let consecutive = 1;
@@ -820,14 +830,17 @@ function buildOccurrenceAlert(
     if (count < warn) continue;
     const severity: AlertSeverity =
       count >= danger ? 'danger' : count >= warn + 1 ? 'warning' : 'info';
+    // alert_key に回数を含めることで、対応済み後にチェックが増えて回数が変わると
+    // 別アラート扱いになり再表示される（回数が同じ間は対応済みのまま消えている）
+    const alertKey = `count:${count}`;
     alerts.push({
-      id: `${student.id}:${alertType}:count`,
+      id: `${student.id}:${alertType}:${alertKey}`,
       student_id: student.id,
       student_name: `${student.last_name} ${student.first_name}`,
       grade: student.grade,
       school_id: student.school_id,
       alert_type: alertType,
-      alert_key: 'count',
+      alert_key: alertKey,
       message: `${label} ${count}回`,
       details: { occurrence_count: count },
       severity,

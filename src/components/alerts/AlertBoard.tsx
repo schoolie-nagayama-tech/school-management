@@ -91,8 +91,9 @@ export function AlertBoard({ className = '', initialData }: AlertBoardProps) {
     application_overdue: '期日が過ぎている申込項目がある',
     interview_task: '未完了の面談タスクがある',
     exam_overdue: 'テスト日を過ぎたが目標点・行動目標が未設定',
-    homework_not_done: '宿題未実施の回数がしきい値を超えている',
-    tardy: '遅刻の回数がしきい値を超えている',
+    homework_not_done:
+      '宿題未実施の累積回数がしきい値を超えている（対応済み後、回数が増えると再表示）',
+    tardy: '遅刻の累積回数がしきい値を超えている（対応済み後、回数が増えると再表示）',
     course_prep_overdue: '講習準備の期日が近い、または超過',
   };
 

@@ -134,7 +134,7 @@ export function StudentsPageClient({
 
   // 講師かどうかを判定
   const isTeacher = profile?.role === 'teacher';
-  const { toasts, removeToast, success } = useToast();
+  const { toasts, removeToast, success, error: toastError } = useToast();
   // 状態管理（名簿タブはサーバページング、成績タブは従来どおり全件）
   const [rosterRows, setRosterRows] = useState<(Student & { subjects?: Subject[] })[]>([]);
   const [rosterTotalCount, setRosterTotalCount] = useState(0);
@@ -309,6 +309,13 @@ export function StudentsPageClient({
     if (selectedSchoolId === null || activeTab === 'roster') return;
     void reloadScoresStudents();
   }, [selectedSchoolId, activeTab, debouncedSearch, reloadScoresStudents]);
+
+  // 権限不足でリダイレクトされてきた場合（?denied=1）、無言で戻すのではなくトーストで理由を伝える
+  useEffect(() => {
+    if (searchParams.get('denied') !== '1') return;
+    toastError('この操作を行う権限がありません');
+    router.replace('/students', { scroll: false });
+  }, [searchParams, router, toastError]);
 
   // URLパラメータ ?edit=studentId で編集モーダルを自動起動（1 editId につき 1 回のみ）
   const handledEditIdRef = useRef<string | null>(null);

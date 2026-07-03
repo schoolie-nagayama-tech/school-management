@@ -21,7 +21,9 @@ export function useRequirePermission(
     }
     if (!isLoading && permissions) {
       if (!checkPermission(permissions)) {
-        router.replace(redirectTo);
+        // 遷移先で「権限がなく戻された」ことをトースト表示できるよう、無言リダイレクトを避ける
+        const separator = redirectTo.includes('?') ? '&' : '?';
+        router.replace(`${redirectTo}${separator}denied=1`);
       }
     }
   }, [permissions, isLoading, user, router, redirectTo, checkPermission]);

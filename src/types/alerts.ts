@@ -105,10 +105,10 @@ export interface AlertThresholds {
   application_warn_days?: number; // 申込：N日前から黄（デフォ 7）
   application_alert_days?: number; // 申込：N日前から橙（デフォ 3）
   exam_overdue_days?: number; // 目標未設定：テスト日からN日経過（デフォ 1）
-  homework_warn_count?: number; // 宿題未実施：N回で黄（デフォ 1）
-  homework_danger_count?: number; // 宿題未実施：N回で赤（デフォ 3）
-  tardy_warn_count?: number; // 遅刻：N回で黄（デフォ 1）
-  tardy_danger_count?: number; // 遅刻：N回で赤（デフォ 3）
+  homework_warn_count?: number; // 宿題未実施：累積N回で黄（デフォ 1、対応済み後に回数が増えると再表示）
+  homework_danger_count?: number; // 宿題未実施：累積N回で赤（デフォ 3、対応済み後に回数が増えると再表示）
+  tardy_warn_count?: number; // 遅刻：累積N回で黄（デフォ 1、対応済み後に回数が増えると再表示）
+  tardy_danger_count?: number; // 遅刻：累積N回で赤（デフォ 3、対応済み後に回数が増えると再表示）
   trend_window_months?: number; // 長期トレンド判定の月数（デフォ 6）
   course_prep_warn_days?: number; // 講習準備：N日前から黄（デフォ 3）
   course_prep_alert_days?: number; // 講習準備：N日前から橙（デフォ 0 = 当日）
@@ -128,10 +128,12 @@ export const SENSITIVE_ALERT_TYPES: ReadonlySet<AlertType> = new Set<AlertType>(
 /**
  * 講師画面には一切表示しないアラートタイプ。
  * SENSITIVE_ALERT_TYPES が「マスク（伏字で表示）」なのに対し、こちらは行ごと非表示にする。
- * 講習運営（講習準備など）は講師の担当業務外のため出さない。
+ * 講習運営（講習準備）・面談運営（面談未更新・面談タスク）は講師の担当業務外のため出さない。
  */
 export const TEACHER_HIDDEN_ALERT_TYPES: ReadonlySet<AlertType> = new Set<AlertType>([
   'course_prep_overdue', // 講習準備
+  'interview_overdue', // 面談未更新
+  'interview_task', // 面談タスク
 ]);
 
 /**
