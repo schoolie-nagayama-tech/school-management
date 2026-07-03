@@ -24,14 +24,16 @@ export type StudentRow = Student & {
   schedulePatterns?: SchedulePatternSummary[];
 };
 
-// 状況を小さなドットで表示（在籍中=info青、休会=warning黄、退会=非アクティブグレー）
-const STATUS_DOT_COLORS: Record<Student['status'], string> = {
-  active: 'bg-info',
+// 状況を小さなドットで表示（休会=warning黄、退会=非アクティブグレー）。
+// 在籍中(active)は大多数で情報量が無く「意味のない青丸」がノイズになるため出さない。
+const STATUS_DOT_COLORS: Record<Exclude<Student['status'], 'active'>, string> = {
   inactive: 'bg-warning',
   withdrawn: 'bg-border-strong',
 };
 
 export function StatusDot({ status }: { status: Student['status'] }) {
+  // 在籍中はドットを出さない（休会・退会のときだけ色付きで示す）
+  if (status === 'active') return null;
   return (
     <span
       title={STATUS_LABELS[status]}
@@ -158,7 +160,7 @@ export function StudentRowActions({
   };
 
   return (
-    <div className="flex justify-end gap-0.5 items-center" onClick={(e) => e.stopPropagation()}>
+    <div className="flex justify-end gap-1.5 items-center" onClick={(e) => e.stopPropagation()}>
       {primaryActions.map((action) => {
         const ActionIcon = action.icon;
         return (
@@ -167,10 +169,10 @@ export function StudentRowActions({
             onClick={action.onClick}
             aria-label={action.label}
             title={action.label}
-            className="inline-flex flex-col items-center justify-center gap-0.5 px-1.5 sm:px-2 py-1.5 text-text-muted hover:text-ink hover:bg-ink-subtle rounded-lg transition-colors duration-150"
+            className="inline-flex flex-col items-center justify-center gap-1 px-3 sm:px-4 py-2 min-w-[52px] text-text-muted hover:text-ink hover:bg-ink-subtle rounded-lg transition-colors duration-150"
           >
-            <ActionIcon className="w-4 h-4" />
-            <span className="hidden sm:block text-[10px] leading-none">{action.label}</span>
+            <ActionIcon className="w-[18px] h-[18px]" />
+            <span className="hidden sm:block text-[11px] leading-none">{action.label}</span>
           </button>
         );
       })}
@@ -268,6 +270,8 @@ const StudentTableRow = memo(function StudentTableRow({
               <Users className="w-3.5 h-3.5 text-teal-500 shrink-0" />
             </span>
           )}
+          {/* 休会・退会のときだけ状況ドットを氏名の横に表示（在籍中は非表示） */}
+          <StatusDot status={student.status} />
         </div>
       </td>
       <td className="hidden sm:table-cell px-4 py-3 text-sm text-text-muted">
@@ -295,9 +299,6 @@ const StudentTableRow = memo(function StudentTableRow({
         ) : (
           <span className="text-text-muted/30">-</span>
         )}
-      </td>
-      <td className="px-4 py-3">
-        <StatusDot status={student.status} />
       </td>
       <td className="px-4 py-3 text-right">
         <StudentRowActions
@@ -441,7 +442,6 @@ export function StudentTable({
               <th className="hidden lg:table-cell px-4 py-3 text-left text-xs font-semibold text-text-muted uppercase tracking-wider whitespace-nowrap">
                 通塾日程
               </th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-text-muted uppercase tracking-wider whitespace-nowrap w-6"></th>
               <th className="px-4 py-3 text-right text-xs font-semibold text-text-muted uppercase tracking-wider whitespace-nowrap">
                 操作
               </th>
