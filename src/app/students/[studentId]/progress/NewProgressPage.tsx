@@ -25,8 +25,6 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'next/navigation';
-import Link from 'next/link';
-import { FileText } from 'lucide-react';
 import { AdminLayout } from '@/components/layouts';
 import { ToastContainer, Loading } from '@/components/ui';
 import { useToast } from '@/hooks/useToast';
@@ -375,15 +373,7 @@ export default function NewProgressPage() {
           </h1>
         </div>
         <div className="flex items-center gap-2">
-          {/* 講習提案書はテーブルのツールバー側に配置（上部メニューには置かない） */}
-          {/* テスト対策は講師も提案作成の業務があるため全ロールに表示 */}
-          <Link
-            href={`/students/${studentId}/test-prep`}
-            className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium border border-[#e5e7eb] text-[#4b5563] rounded-lg hover:bg-[#f3f4f6] active:scale-[0.97] transition-[background-color,transform] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)]"
-          >
-            <FileText className="w-3.5 h-3.5" />
-            テスト対策
-          </Link>
+          {/* テスト対策・講習提案書はテーブルのツールバー側に配置（上部メニューには置かない） */}
           {!isTeacher && <ModeSwitcher mode={viewMode} onChange={setViewMode} />}
           <ViewSwitcher view={view} onChange={setView} />
         </div>

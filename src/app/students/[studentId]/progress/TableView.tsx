@@ -592,6 +592,14 @@ export function TableView({
               >
                 {sessionMode ? '提出' : '授業を記録'}
               </button>
+              {/* テスト対策提案書。講師も作成する業務のため全ロールに表示 */}
+              <Link
+                href={`/students/${studentId}/test-prep`}
+                className="px-2.5 py-1.5 rounded-lg text-xs font-medium border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 transition-[background-color] duration-150 ease-out active:scale-[0.97] flex items-center gap-1"
+              >
+                <FileText className="w-3.5 h-3.5" />
+                テスト対策
+              </Link>
               {/* 講習提案書（一覧・作成を統合）。講師も利用する業務のため全ロールに表示。作成は一覧ページの「新規作成」から。 */}
               <Link
                 href={`/students/${studentId}/proposals`}

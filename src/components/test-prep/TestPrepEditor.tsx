@@ -23,7 +23,11 @@ import type {
   TestPrepStatus,
   SelfAssessment,
 } from '@/types/test-prep';
-import { SELF_ASSESSMENTS, GRADE_SUBJECT_TEMPLATES } from '@/types/test-prep';
+import {
+  SELF_ASSESSMENTS,
+  GRADE_SUBJECT_TEMPLATES,
+  SELF_ASSESSMENT_LABELS,
+} from '@/types/test-prep';
 
 interface UnitDraft {
   tempId: string;
@@ -555,6 +559,27 @@ export default function TestPrepEditor() {
         </div>
       </div>
 
+      {/* 印刷用: 保護者向けの案内（この書面が何かの説明）。紙で渡されても目的が伝わるようにする */}
+      <div className="hidden print:block mb-4 p-3 border border-gray-300 rounded-lg text-sm text-gray-700 leading-relaxed">
+        <p className="font-bold text-gray-900 mb-1">保護者の皆様へ — テスト対策のご提案</p>
+        <p>
+          本書は、次回の定期テストに向けて、担当講師がお子様の現在の到達状況をもとに作成した対策プランです。
+          科目・単元ごとに、目標点の達成に必要と考えられる対策コマ数の目安をまとめています。
+          テストでの得点アップに向けて、ぜひ追加の対策コマ（増コマ）の受講をご検討ください。
+          お申し込み・詳細の確認は本紙下部のQRコードからお願いいたします。
+        </p>
+      </div>
+      {/* 印刷用: 自己評価の凡例（生徒の自己評価マークの意味） */}
+      <div className="hidden print:flex mb-3 items-center gap-4 text-xs text-gray-600">
+        <span className="text-gray-500">自己評価:</span>
+        {Object.entries(SELF_ASSESSMENT_LABELS).map(([mark, label]) => (
+          <span key={mark} className="flex items-center gap-1">
+            <span className="font-bold">{mark}</span>
+            <span>{label}</span>
+          </span>
+        ))}
+      </div>
+
       {/* ヘッダー（タイトルのみ、ボタンは下へ移動） */}
       <div className="flex items-center gap-3 mb-6 print:hidden">
         <button
@@ -792,9 +817,10 @@ export default function TestPrepEditor() {
               className="w-28 h-28"
             />
             <div>
-              <p className="font-bold text-gray-900">テスト対策 提案書</p>
+              <p className="font-bold text-gray-900">提案内容の確認・増コマのお申し込み</p>
               <p className="text-sm text-gray-600 mt-1">
-                上のQRコードを読み取るか、以下のURLからご確認ください。
+                スマートフォンで上のQRコードを読み取るか、以下のURLにアクセスすると、
+                この提案内容の確認と対策コマ（増コマ）のお申し込みができます。
               </p>
               <p className="text-sm text-blue-600 mt-1 font-mono break-all">{publicUrl}</p>
             </div>
