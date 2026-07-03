@@ -42,6 +42,17 @@ export function StatusDot({ status }: { status: Student['status'] }) {
   );
 }
 
+/**
+ * 学年バッジの配色。小/中/高の区分ごとに淡い色を割り当て、
+ * 一覧を上から流し見たときに学年帯を判別しやすくする（落ち着いたパステル基調）。
+ */
+function gradeBadgeClass(grade: number | null | undefined): string {
+  if (grade == null) return 'bg-surface-hover text-text-muted';
+  if (grade <= 6) return 'bg-emerald-50 text-emerald-700'; // 小学生
+  if (grade <= 9) return 'bg-sky-50 text-sky-700'; // 中学生
+  return 'bg-violet-50 text-violet-700'; // 高校生
+}
+
 interface StudentTableRowProps {
   student: StudentRow;
   selectable: boolean;
@@ -241,7 +252,8 @@ const StudentTableRow = memo(function StudentTableRow({
   return (
     <tr
       className={`transition-colors duration-150 ${
-        isChecked ? 'bg-info/5' : ''
+        // ゼブラ縞（選択中は選択色を優先）。行を目で追いやすくする
+        isChecked ? 'bg-info/5' : 'odd:bg-surface-hover/30'
       } ${onRowClick ? 'cursor-pointer hover:bg-surface-hover' : ''}`}
       onClick={() => onRowClick?.(student)}
     >
@@ -255,12 +267,17 @@ const StudentTableRow = memo(function StudentTableRow({
           />
         </td>
       )}
-      <td className="px-4 py-3 text-sm text-text-muted whitespace-nowrap">
-        {GRADE_LABELS[student.grade] || student.grade}
+      <td className="px-4 py-3 whitespace-nowrap">
+        {/* 学年は小/中/高で淡い色分けのバッジにして一覧を目で追いやすくする */}
+        <span
+          className={`inline-block min-w-[2.75rem] text-center px-1.5 py-0.5 rounded-md text-xs font-semibold ${gradeBadgeClass(student.grade)}`}
+        >
+          {GRADE_LABELS[student.grade] || student.grade}
+        </span>
       </td>
       <td className="px-4 py-3 whitespace-nowrap">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-medium text-text-heading">
+          <span className="text-sm font-semibold text-text-heading">
             {student.last_name} {student.first_name}
           </span>
           {student.is_programming && (
@@ -277,7 +294,8 @@ const StudentTableRow = memo(function StudentTableRow({
           <StatusDot status={student.status} />
         </div>
       </td>
-      <td className="hidden sm:table-cell px-4 py-3 text-sm text-text-muted">
+      {/* フリガナは補助情報なので一段引いた表示にして氏名との強弱を付ける */}
+      <td className="hidden sm:table-cell px-4 py-3 text-xs text-text-faint">
         {student.last_name_kana} {student.first_name_kana}
       </td>
       <td className="hidden md:table-cell px-4 py-3 text-sm text-text-muted">
@@ -285,12 +303,15 @@ const StudentTableRow = memo(function StudentTableRow({
       </td>
       <td className="hidden lg:table-cell px-4 py-3 text-sm text-text-muted">
         {schedulePatterns.length > 0 ? (
-          <div className="flex flex-wrap gap-x-2 gap-y-0.5 items-center">
+          <div className="flex flex-wrap gap-x-1.5 gap-y-1 items-center">
             {schedulePatterns.map((p, i) => (
-              <span key={i} className="inline-flex text-xs">
-                <span className="text-text-faint">{DAY_OF_WEEK_LABELS[p.day_of_week]}</span>
+              <span key={i} className="inline-flex items-center text-xs">
+                {/* 曜日は小さなチップにして「曜日＋科目」の組を判別しやすくする */}
+                <span className="inline-block w-4 text-center rounded bg-surface-hover text-text-muted text-[10px] leading-4">
+                  {DAY_OF_WEEK_LABELS[p.day_of_week]}
+                </span>
                 {p.subject_names?.[0] && (
-                  <span className="text-info ml-0.5">{p.subject_names[0]}</span>
+                  <span className="text-info font-medium ml-0.5">{p.subject_names[0]}</span>
                 )}
               </span>
             ))}
