@@ -138,6 +138,7 @@ export const TEACHER_HIDDEN_ALERT_TYPES: ReadonlySet<AlertType> = new Set<AlertT
   'course_prep_overdue', // 講習準備
   'interview_overdue', // 面談未更新
   'interview_task', // 面談タスク
+  'schedule_change_unapplied', // 日程変更未反映（通塾日程の変更は教室長の業務のため講師には出さない）
 ]);
 
 /**
