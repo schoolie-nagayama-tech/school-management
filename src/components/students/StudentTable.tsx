@@ -255,6 +255,9 @@ const StudentTableRow = memo(function StudentTableRow({
           />
         </td>
       )}
+      <td className="px-4 py-3 text-sm text-text-muted whitespace-nowrap">
+        {GRADE_LABELS[student.grade] || student.grade}
+      </td>
       <td className="px-4 py-3 whitespace-nowrap">
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium text-text-heading">
@@ -276,9 +279,6 @@ const StudentTableRow = memo(function StudentTableRow({
       </td>
       <td className="hidden sm:table-cell px-4 py-3 text-sm text-text-muted">
         {student.last_name_kana} {student.first_name_kana}
-      </td>
-      <td className="px-4 py-3 text-sm text-text-muted whitespace-nowrap">
-        {GRADE_LABELS[student.grade] || student.grade}
       </td>
       <td className="hidden md:table-cell px-4 py-3 text-sm text-text-muted">
         {student.school_name || <span className="text-text-muted/30">-</span>}
@@ -428,13 +428,13 @@ export function StudentTable({
                 </th>
               )}
               <th className="px-4 py-3 text-left text-xs font-semibold text-text-muted uppercase tracking-wider whitespace-nowrap">
+                学年
+              </th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-text-muted uppercase tracking-wider whitespace-nowrap">
                 氏名
               </th>
               <th className="hidden sm:table-cell px-4 py-3 text-left text-xs font-semibold text-text-muted uppercase tracking-wider whitespace-nowrap">
                 フリガナ
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-text-muted uppercase tracking-wider whitespace-nowrap">
-                学年
               </th>
               <th className="hidden md:table-cell px-4 py-3 text-left text-xs font-semibold text-text-muted uppercase tracking-wider whitespace-nowrap">
                 学校名
