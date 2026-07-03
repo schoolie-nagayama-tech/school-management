@@ -757,7 +757,14 @@ export function TableView({
         {!isMeeting && (
           <div className="bg-white border border-[#e5e7eb] rounded-lg p-3">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-              <TextbookSettingsInline textbookId={textbook.id} toastError={toastError} />
+              {/* key={textbook.id} でテキスト切り替え時に再マウントし、保存済みの初期値を入れ直す */}
+              <TextbookSettingsInline
+                key={textbook.id}
+                textbookId={textbook.id}
+                approach={textbook.settings?.approach}
+                homeworkStyle={textbook.settings?.homework_style}
+                toastError={toastError}
+              />
             </div>
             <ExamRangesInline
               textbookId={textbook.id}
