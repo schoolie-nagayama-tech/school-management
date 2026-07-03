@@ -964,7 +964,12 @@ function SubjectEditor({
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-surface text-text-muted text-xs">
-              <th className="w-8 print:hidden" />
+              {/* チェックボックス列の見出し。複数単元を1コマにまとめる操作であることを明示する */}
+              <th className="px-1 py-2 font-medium text-center leading-tight print:hidden">
+                単元
+                <br />
+                まとめ
+              </th>
               <th className="text-left px-4 py-2 font-medium w-1/2">単元名</th>
               <th className="text-center px-2 py-2 font-medium w-24">自己評価</th>
               <th className="text-center px-2 py-2 font-medium w-24">コマ数</th>
