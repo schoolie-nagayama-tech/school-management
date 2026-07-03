@@ -23,6 +23,7 @@ import {
   DISMISSABLE_ALERT_TYPES,
   SENSITIVE_ALERT_TYPES,
   TEACHER_HIDDEN_ALERT_TYPES,
+  TEACHER_ONLY_ALERT_TYPES,
 } from '@/types/alerts';
 import type { AlertType } from '@/types/alerts';
 import { whenNetworkIdle } from '@/lib/utils/networkIdle';
@@ -95,6 +96,7 @@ export function AlertBoard({ className = '', initialData }: AlertBoardProps) {
       '宿題未実施の累積回数がしきい値を超えている（対応済み後、回数が増えると再表示）',
     tardy: '遅刻の累積回数がしきい値を超えている（対応済み後、回数が増えると再表示）',
     course_prep_overdue: '講習準備の期日が近い、または超過',
+    interview_recent: '面談記録が最近更新された生徒（7日間表示）',
   };
 
   // 講師画面でアイコン併記＋具体メッセージを伏せる際の補足説明
@@ -271,13 +273,14 @@ export function AlertBoard({ className = '', initialData }: AlertBoardProps) {
   );
 
   // 講師には講習関連など担当外のアラートを表示しない（行ごと除外）。
+  // 逆に「面談更新」は講師にのみ表示するポジティブ通知のため、非講師（教室長以上）では除外する。
   // 取得・dismiss は raw な studentAlerts を使い、表示系のみこの絞り込みビューを参照する。
   const visibleStudentAlerts = useMemo(() => {
-    if (!isTeacher) return studentAlerts;
+    const hiddenTypes = isTeacher ? TEACHER_HIDDEN_ALERT_TYPES : TEACHER_ONLY_ALERT_TYPES;
     return studentAlerts
       .map((sa) => ({
         ...sa,
-        alerts: sa.alerts.filter((a) => !TEACHER_HIDDEN_ALERT_TYPES.has(a.alert_type)),
+        alerts: sa.alerts.filter((a) => !hiddenTypes.has(a.alert_type)),
       }))
       .filter((sa) => sa.alerts.length > 0);
   }, [studentAlerts, isTeacher]);
@@ -397,6 +400,8 @@ export function AlertBoard({ className = '', initialData }: AlertBoardProps) {
                 const alertType = type as AlertType;
                 // 講師には非表示のアラートタイプ（講習関連など）は説明一覧からも除外
                 if (isTeacher && TEACHER_HIDDEN_ALERT_TYPES.has(alertType)) return null;
+                // 逆に講師にのみ表示するアラートタイプ（面談更新）は非講師の説明一覧からは除外
+                if (!isTeacher && TEACHER_ONLY_ALERT_TYPES.has(alertType)) return null;
                 const isSensitiveType = SENSITIVE_ALERT_TYPES.has(alertType);
                 const Icon = isTeacher && isSensitiveType ? SENSITIVE_ALERT_ICONS[alertType] : null;
                 const displayLabel =

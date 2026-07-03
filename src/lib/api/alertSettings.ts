@@ -19,6 +19,7 @@ const ALL_ALERT_TYPES: AlertType[] = [
   'tardy',
   'course_prep_overdue',
   'schedule_change_unapplied',
+  'interview_recent',
 ];
 
 type AlertSettingRow = {

@@ -8,7 +8,8 @@ export type AlertType =
   | 'homework_not_done' // 宿題未実施
   | 'tardy' // 遅刻
   | 'course_prep_overdue' // 講習準備未完了
-  | 'schedule_change_unapplied'; // 週回数/曜日変更の申込が通塾日程に未反映
+  | 'schedule_change_unapplied' // 週回数/曜日変更の申込が通塾日程に未反映
+  | 'interview_recent'; // 面談更新(講師向け)
 
 export const ALERT_TYPE_LABELS: Record<AlertType, string> = {
   score_drop: '成績低下',
@@ -21,6 +22,7 @@ export const ALERT_TYPE_LABELS: Record<AlertType, string> = {
   tardy: '遅刻',
   course_prep_overdue: '講習準備',
   schedule_change_unapplied: '日程変更未反映',
+  interview_recent: '面談更新',
 };
 
 /** アラートラベル用：明るいトーンに統一 */
@@ -35,6 +37,7 @@ export const ALERT_TYPE_COLORS: Record<AlertType, string> = {
   tardy: 'bg-orange-100 text-orange-700',
   course_prep_overdue: 'bg-indigo-100 text-indigo-700',
   schedule_change_unapplied: 'bg-teal-100 text-teal-700',
+  interview_recent: 'bg-emerald-100 text-emerald-700',
 };
 
 /** 段階レベル（バッジの色や強調表現に使用） */
@@ -112,6 +115,7 @@ export interface AlertThresholds {
   trend_window_months?: number; // 長期トレンド判定の月数（デフォ 6）
   course_prep_warn_days?: number; // 講習準備：N日前から黄（デフォ 3）
   course_prep_alert_days?: number; // 講習準備：N日前から橙（デフォ 0 = 当日）
+  interview_recent_days?: number; // 面談更新: 記録更新からN日間表示（デフォ 7）。講師のみ表示
 }
 
 /**
@@ -149,6 +153,15 @@ export const DISMISSABLE_ALERT_TYPES: ReadonlySet<AlertType> = new Set<AlertType
   'schedule_change_unapplied',
 ]);
 
+/**
+ * 講師画面にのみ表示するアラートタイプ。
+ * 面談更新は「面談に同席しない講師が新しい面談情報に気づく」ための通知で、
+ * 面談を記録する側の教室長以上には不要なノイズになるため出さない。
+ */
+export const TEACHER_ONLY_ALERT_TYPES: ReadonlySet<AlertType> = new Set<AlertType>([
+  'interview_recent',
+]);
+
 export const DEFAULT_ALERT_THRESHOLDS: Required<AlertThresholds> = {
   score_drop_regular: 10,
   score_drop_mock: 5,
@@ -164,6 +177,7 @@ export const DEFAULT_ALERT_THRESHOLDS: Required<AlertThresholds> = {
   trend_window_months: 6,
   course_prep_warn_days: 3,
   course_prep_alert_days: 0,
+  interview_recent_days: 7,
 };
 
 export interface AlertSetting {

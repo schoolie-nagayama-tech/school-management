@@ -618,6 +618,67 @@ function buildInterviewOverdueCandidates(sources: AlertSources): Alert[] {
   return alerts;
 }
 
+/**
+ * 面談更新（講師向けポジティブ通知）。
+ * 講師は面談に同席しないため、担当生徒の面談記録に新しい情報（指導方針等）が
+ * 入ったことに気づける導線として、直近更新された面談を検出する。
+ * タスク（interview_type === 'task'）は面談記録ではないため対象外
+ * （buildInterviewTaskCandidates が別途扱う）。
+ */
+function buildInterviewRecentCandidates(sources: AlertSources): Alert[] {
+  if (!isAlertEnabled(sources.settingsBySchool, 'interview_recent')) return [];
+  const alerts: Alert[] = [];
+  const recentDays = getStrictestThreshold(
+    sources.settingsBySchool,
+    'interview_recent',
+    'interview_recent_days'
+  );
+  const now = Date.now();
+  const thresholdMs = recentDays * 24 * 60 * 60 * 1000;
+
+  for (const student of sources.students) {
+    const interviews = (sources.interviewsByStudent.get(student.id) ?? []).filter(
+      (i) => i.interview_type !== 'task'
+    );
+    if (interviews.length === 0) continue;
+
+    // 面談日ではなく記録の作成/更新時刻が最新の1件を選ぶ。過去の面談を後から記録した
+    // 場合でも「新しい情報が入った」ことを講師に伝えるのが目的のため。
+    let latest = interviews[0];
+    let latestTouched = Date.parse(latest.updated_at ?? latest.created_at);
+    for (const interview of interviews.slice(1)) {
+      const touched = Date.parse(interview.updated_at ?? interview.created_at);
+      if (touched > latestTouched) {
+        latest = interview;
+        latestTouched = touched;
+      }
+    }
+
+    if (isNaN(latestTouched) || now - latestTouched > thresholdMs) continue;
+
+    // alert_key は面談レコードIDで一意化。同じ面談が再編集されても同一キーのままになる。
+    const alertKey = `recent:${latest.id}`;
+    // 生の "YYYY-MM-DD" 文字列を split して組み立てる。Date 経由（toISOString）は
+    // buildInterviewOverdueCandidates 内のコメントの通り JST タイムゾーンで1日ずれる罠があるため使わない。
+    const [, m, d] = latest.interview_date.split('-');
+    const dateLabel = `${Number(m)}/${Number(d)}`;
+
+    alerts.push({
+      id: `${student.id}:interview_recent:${alertKey}`,
+      student_id: student.id,
+      student_name: `${student.last_name} ${student.first_name}`,
+      grade: student.grade,
+      school_id: student.school_id,
+      alert_type: 'interview_recent',
+      alert_key: alertKey,
+      message: `面談記録が更新されました（${dateLabel}）`,
+      details: { interview_date: latest.interview_date },
+      severity: 'info',
+    });
+  }
+  return alerts;
+}
+
 function buildApplicationOverdueCandidates(sources: AlertSources): Alert[] {
   if (!isAlertEnabled(sources.settingsBySchool, 'application_overdue')) return [];
   const alerts: Alert[] = [];
@@ -1078,6 +1139,7 @@ export const ALERT_DEFINITIONS: Record<
     level: 'warning',
     evaluator: buildScheduleChangeUnappliedCandidates,
   },
+  interview_recent: { level: 'info', evaluator: buildInterviewRecentCandidates },
 };
 
 /** Light 用の alert types */
@@ -1086,6 +1148,7 @@ const LIGHT_ALERT_TYPES: AlertType[] = [
   'application_overdue',
   'interview_task',
   'schedule_change_unapplied',
+  'interview_recent',
 ];
 
 /** Heavy 用の alert types */

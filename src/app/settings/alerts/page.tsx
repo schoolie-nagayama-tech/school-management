@@ -86,6 +86,15 @@ const FIELDS_BY_TYPE: Partial<Record<AlertType, FieldDef[]>> = {
     { key: 'course_prep_warn_days', label: '何日前から表示', unit: '日', min: 0, max: 60 },
     { key: 'course_prep_alert_days', label: '何日前から警告', unit: '日', min: 0, max: 30 },
   ],
+  interview_recent: [
+    {
+      key: 'interview_recent_days',
+      label: '面談記録の更新から何日間表示',
+      unit: '日',
+      min: 1,
+      max: 60,
+    },
+  ],
 };
 
 const ALERT_DESCRIPTIONS: Record<AlertType, string> = {
@@ -101,6 +110,8 @@ const ALERT_DESCRIPTIONS: Record<AlertType, string> = {
   course_prep_overdue: '講習準備の進捗項目で期日超過・間近の未完了生徒を段階表示。',
   schedule_change_unapplied:
     '週回数変更・曜日変更フォームの申込があったのに、通塾日程がまだ更新されていない生徒を検出。通塾日程を編集すると自動で消えます。',
+  interview_recent:
+    '面談記録が最近更新された生徒を検出（講師のみ表示）。面談に同席しない講師が新しい面談情報に気づくための通知です。',
 };
 
 export default function AlertsSettingsPage() {
