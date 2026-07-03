@@ -375,15 +375,7 @@ export default function NewProgressPage() {
           </h1>
         </div>
         <div className="flex items-center gap-2">
-          {!isTeacher && (
-            <Link
-              href={`/students/${studentId}/proposals`}
-              className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium border border-[#e5e7eb] text-[#4b5563] rounded-lg hover:bg-[#f3f4f6] active:scale-[0.97] transition-[background-color,transform] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)]"
-            >
-              <FileText className="w-3.5 h-3.5" />
-              講習提案書
-            </Link>
-          )}
+          {/* 講習提案書はテーブルのツールバー側に配置（上部メニューには置かない） */}
           {/* テスト対策は講師も提案作成の業務があるため全ロールに表示 */}
           <Link
             href={`/students/${studentId}/test-prep`}
