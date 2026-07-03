@@ -79,6 +79,8 @@ interface Props {
   onSelectionChange?: (sel: SessionSelection) => void;
   /** 保存済みセッションを再編集可能にするか（現在は常に編集可能だが prop は後方互換で残す） */
   canEditSaved?: boolean;
+  /** 講習（季節講習）のテキストか。講習は学校がないため学校進度を必須表示にしない。 */
+  isKoushu?: boolean;
 }
 
 export interface SessionRecordingPanelHandle {
@@ -96,6 +98,7 @@ const SessionRecordingPanel = forwardRef<SessionRecordingPanelHandle, Props>(
       onComplete,
       onSelectionChange,
       canEditSaved: _canEditSaved = false,
+      isKoushu = false,
     },
     ref
   ) {
@@ -419,7 +422,12 @@ const SessionRecordingPanel = forwardRef<SessionRecordingPanelHandle, Props>(
                     {/* 学校進度（自動反映） */}
                     <div>
                       <label className="text-[10px] font-semibold text-gray-500">
-                        学校進度 <span className="text-amber-600">*</span>
+                        学校進度 {/* 講習は学校がないため必須マークを出さない（任意扱い） */}
+                        {isKoushu ? (
+                          <span className="text-gray-400 font-normal">（任意）</span>
+                        ) : (
+                          <span className="text-amber-600">*</span>
+                        )}
                         <span className="text-gray-400 font-normal ml-1">
                           下の表で学校列をクリック
                         </span>

@@ -832,6 +832,8 @@ export function TableView({
           onSessionSaved={handleSessionSaved}
           onSelectionChange={setSessionSelection}
           canEditSaved={true}
+          // 講習（季節講習）は学校がないため学校進度を必須にしない
+          isKoushu={!!textbook.season}
           onComplete={() => {
             // 全セッションが保存済みになったら授業記録モードを終了しセレクションをクリア
             setSessionMode(false);
