@@ -9,6 +9,7 @@ import {
   SENSITIVE_ALERT_TYPES,
 } from '@/types/alerts';
 import { Button } from '@/components/ui';
+import { SUBJECT_LABELS } from '@/types/database';
 import { TrendingDown, BookOpen, Clock, MessageCircle } from 'lucide-react';
 
 /** マスク時にラベル横に出すアイコン（ネガティブ系アラート） */
@@ -29,7 +30,8 @@ export const MASKED_ALERT_LABEL_OVERRIDES: Partial<Record<AlertType, string>> = 
 /** マスク時に表示する代替メッセージ。個人情報（点数や回数など）を含まない要素のみ返す */
 export function getMaskedMessage(alert: Alert): string | null {
   if (alert.alert_type === 'score_drop' && alert.details?.subject) {
-    return alert.details.subject;
+    // details.subject は 'science' 等の生コード。日本語の科目名で表示する
+    return SUBJECT_LABELS[alert.details.subject] || alert.details.subject;
   }
   return null;
 }
