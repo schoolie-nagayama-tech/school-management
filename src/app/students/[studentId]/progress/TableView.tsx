@@ -33,6 +33,7 @@ import { TextbookSettingsInline } from './TextbookSettingsInline';
 import { ExamRangesInline } from './ExamRangesInline';
 import { ProgressRow } from './ProgressRow';
 import { ExamGoalEditModal } from './ExamGoalEditModal';
+import { NextGoalModal } from './NextGoalModal';
 import { ExamRangeModal } from './ExamRangeModal';
 
 // ─────────────────────────────────────────────
@@ -84,9 +85,13 @@ export function TableView({
   const isMeeting = viewMode === 'meeting';
   const activeExam = activeExamOf(textbook, examTypes);
   const activeExamGoals = activeExam ? (actionGoalsByExam[activeExam.id] ?? []) : [];
+  // 試験日を過ぎている（daysLeft が負）かどうか。過ぎている場合は「次の目標へ」の導線を強調する。
+  const isExpired = activeExam?.daysLeft != null && activeExam.daysLeft < 0;
   // 目標設定編集モーダル
   const [goalModalOpen, setGoalModalOpen] = useState(false);
   const [goalModalEditingId, setGoalModalEditingId] = useState<string | null>(null);
+  // 「次の目標へ」モーダル（前回結果の記録→次の目標作成→行動目標引き継ぎを1フローで行う）
+  const [nextGoalOpen, setNextGoalOpen] = useState(false);
   const [rangeModalOpen, setRangeModalOpen] = useState(false);
   /** 編集中の試験範囲 (rangeId) と対象試験 (examTypeId)。新規の場合は rangeId=null */
   const [rangeModalEditing, setRangeModalEditing] = useState<{
@@ -636,27 +641,50 @@ export function TableView({
                 {activeExam.date && (
                   <span className="text-[11px] text-[#6b7280]">{activeExam.date}</span>
                 )}
+                {isExpired && (
+                  <span className="text-[10px] px-1.5 py-0.5 bg-amber-100 text-amber-800 border border-amber-300 rounded font-bold">
+                    終了
+                  </span>
+                )}
               </div>
               {!isMeeting && (
-                <button
-                  onClick={() => {
-                    setGoalModalEditingId(activeExam.id);
-                    setGoalModalOpen(true);
-                  }}
-                  className="px-2 py-0.5 text-[11px] bg-white border border-[#1e40af]/20 rounded text-[#1e40af] hover:bg-[#1e40af] hover:text-white transition-[background-color,color] duration-150 ease-out active:scale-[0.97]"
-                >
-                  編集
-                </button>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => setNextGoalOpen(true)}
+                    className={`px-2 py-0.5 text-[11px] rounded transition-[background-color,color] duration-150 ease-out active:scale-[0.97] ${
+                      isExpired
+                        ? 'bg-amber-500 text-white hover:bg-amber-600 font-bold'
+                        : 'bg-white border border-[#1e40af]/20 text-[#1e40af] hover:bg-[#1e40af] hover:text-white'
+                    }`}
+                  >
+                    次の目標へ
+                  </button>
+                  <button
+                    onClick={() => {
+                      setGoalModalEditingId(activeExam.id);
+                      setGoalModalOpen(true);
+                    }}
+                    className="px-2 py-0.5 text-[11px] bg-white border border-[#1e40af]/20 rounded text-[#1e40af] hover:bg-[#1e40af] hover:text-white transition-[background-color,color] duration-150 ease-out active:scale-[0.97]"
+                  >
+                    編集
+                  </button>
+                </div>
               )}
             </div>
             <div className="flex items-center gap-4">
               <div className="text-center">
                 <div className="text-[9px] text-[#6b7280] font-semibold uppercase">残り</div>
-                <span className="text-lg font-bold text-[#1e3a5f]">
-                  {activeExam.daysLeft ?? '—'}
-                </span>
-                {activeExam.daysLeft != null && (
-                  <span className="text-[11px] text-[#6b7280]">日</span>
+                {isExpired ? (
+                  <span className="text-sm font-bold text-amber-600">終了</span>
+                ) : (
+                  <>
+                    <span className="text-lg font-bold text-[#1e3a5f]">
+                      {activeExam.daysLeft ?? '—'}
+                    </span>
+                    {activeExam.daysLeft != null && (
+                      <span className="text-[11px] text-[#6b7280]">日</span>
+                    )}
+                  </>
                 )}
               </div>
               <div className="text-center">
@@ -668,6 +696,20 @@ export function TableView({
                   <span className="text-[11px] text-[#6b7280]">点</span>
                 )}
               </div>
+              {(() => {
+                // 目標の隣に前回結果を表示（result_score は元の exam レコードにのみ存在する）
+                const currentExam = (textbook.exams || []).find((e) => e.id === activeExam.id);
+                if (currentExam?.result_score == null) return null;
+                return (
+                  <div className="text-center">
+                    <div className="text-[9px] text-[#6b7280] font-semibold uppercase">結果</div>
+                    <span className="text-lg font-bold text-[#1e3a5f]">
+                      {currentExam.result_score}
+                    </span>
+                    <span className="text-[11px] text-[#6b7280]">点</span>
+                  </div>
+                );
+              })()}
               <div className="text-center">
                 <div className="text-[9px] text-[#6b7280] font-semibold uppercase">行動目標</div>
                 <span className="text-lg font-bold text-[#1e3a5f]">
@@ -952,6 +994,28 @@ export function TableView({
           toastError={toastError}
         />
       )}
+
+      {/* 「次の目標へ」モーダル：前回の試験（activeExam）を振り返りつつ次の目標を作成する */}
+      {nextGoalOpen &&
+        activeExam &&
+        (() => {
+          const prev = (textbook.exams || []).find((e) => e.id === activeExam.id);
+          return prev ? (
+            <NextGoalModal
+              textbookId={textbook.id}
+              prevExam={prev}
+              prevExamName={activeExam.name}
+              examTypes={examTypes}
+              onClose={() => setNextGoalOpen(false)}
+              onSaved={async () => {
+                setNextGoalOpen(false);
+                success('次の目標を設定しました');
+                await onRefresh();
+              }}
+              toastError={toastError}
+            />
+          ) : null;
+        })()}
 
       {/* 試験範囲スライダーモーダル（独立セクションから呼び出し） */}
       {rangeModalOpen && (

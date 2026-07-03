@@ -158,9 +158,14 @@ export function TextbookCard({
             {activeExam.name}
           </div>
           <div className="flex items-center justify-between gap-1 text-[11px] text-[#1e3a5f]">
-            <span>
-              残<strong className="text-sm font-bold ml-0.5">{activeExam.daysLeft ?? '—'}</strong>日
-            </span>
+            {activeExam.daysLeft != null && activeExam.daysLeft < 0 ? (
+              <span className="font-bold text-amber-600">試験終了</span>
+            ) : (
+              <span>
+                残<strong className="text-sm font-bold ml-0.5">{activeExam.daysLeft ?? '—'}</strong>
+                日
+              </span>
+            )}
             <span>
               目標
               <strong className="text-sm font-bold ml-0.5">{activeExam.targetScore ?? '—'}</strong>

@@ -176,6 +176,7 @@ export function ActionGoalsSection({
                           <div className="font-medium text-[#1f2937]">{name}</div>
                           <div className="text-[11px] text-[#6b7280] mt-0.5">
                             {e.exam_date} / 目標{e.target_score ?? '—'}点
+                            {e.result_score != null && ` → 結果${e.result_score}点`}
                           </div>
                         </button>
                       );

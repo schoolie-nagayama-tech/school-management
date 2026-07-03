@@ -979,6 +979,7 @@ export type Database = {
           custom_exam_name: string | null;
           exam_date: string;
           target_score: number | null;
+          result_score: number | null;
           exam_range: string | null;
           created_at: string;
           updated_at: string;
@@ -990,6 +991,7 @@ export type Database = {
           custom_exam_name?: string | null;
           exam_date: string;
           target_score?: number | null;
+          result_score?: number | null;
           exam_range?: string | null;
           created_at?: string;
           updated_at?: string;
@@ -1001,6 +1003,7 @@ export type Database = {
           custom_exam_name?: string | null;
           exam_date?: string;
           target_score?: number | null;
+          result_score?: number | null;
           exam_range?: string | null;
           created_at?: string;
           updated_at?: string;
