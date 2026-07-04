@@ -13,11 +13,22 @@
  * 進行表との連携は親コンポーネント経由で行う。
  */
 
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useState } from 'react';
-import { Check, AlertTriangle, ChevronDown, ChevronUp, MessageSquare, Plus } from 'lucide-react';
+import {
+  forwardRef,
+  Fragment,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useState,
+} from 'react';
+import { Check, AlertTriangle, ChevronDown, ChevronUp, Plus } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { getLastSession, recordSession, type SessionUnitAction } from '@/lib/api/progress-sessions';
-import type { ProgressSession, CurriculumItem } from '@/types/database';
+import {
+  getSessionsForEdit,
+  recordSession,
+  type SessionUnitAction,
+} from '@/lib/api/progress-sessions';
+import type { CurriculumItem } from '@/types/database';
 import { getSurname, toSurnameOnly } from '@/lib/utils/teacherName';
 
 // ─── 型定義 ───
@@ -37,6 +48,8 @@ export interface SessionDraft {
   saved: boolean;
   /** 保存済みセッションの ID（再保存時に既存セッションを上書きするために保持） */
   savedSessionId: string | null;
+  /** 読込時点で学校進度がついていた単元ID（編集で外されたものを検出してクリアするため） */
+  origSchoolUnitIds: number[];
 }
 
 const todayIso = () => new Date().toISOString().slice(0, 10);
@@ -53,7 +66,19 @@ function createDraft(teacherName = ''): SessionDraft {
     schoolUnits: new Set(),
     saved: false,
     savedSessionId: null,
+    origSchoolUnitIds: [],
   };
+}
+
+/** ドラフトに未保存の実入力があるか（空のまま閉じるのは未保存扱いにしない） */
+function draftHasContent(s: SessionDraft): boolean {
+  return (
+    !!s.handover ||
+    Object.keys(s.unitActions).length > 0 ||
+    s.schoolUnits.size > 0 ||
+    s.homeworkNotDone ||
+    s.tardy
+  );
 }
 
 /** セッション選択状態（親に通知用） */
@@ -85,6 +110,8 @@ interface Props {
 
 export interface SessionRecordingPanelHandle {
   handleCellToggle: SessionCellToggleHandler;
+  /** 未保存の記入があるか（記録モードを閉じる前の確認用） */
+  hasUnsavedChanges: () => boolean;
 }
 
 const SessionRecordingPanel = forwardRef<SessionRecordingPanelHandle, Props>(
@@ -107,19 +134,50 @@ const SessionRecordingPanel = forwardRef<SessionRecordingPanelHandle, Props>(
     const isTeacher = profile?.role === 'teacher';
     const myName = isTeacher ? getSurname(profile) : profile?.display_name || '';
 
-    // 前回の引継ぎ
-    const [lastSession, setLastSession] = useState<ProgressSession | null>(null);
-
     // セッション一覧（複数コマ対応）
     const [sessions, setSessions] = useState<SessionDraft[]>(() => [createDraft(myName)]);
     const [activeIdx, setActiveIdx] = useState(0);
     const [expandedId, setExpandedId] = useState<string | null>(null);
     const [saving, setSaving] = useState(false);
 
-    // 初回: 前回の引継ぎ取得
+    // 初回: 過去の保存済みセッション（再編集用）を取得
     useEffect(() => {
       if (!studentTextbookId) return;
-      getLastSession(studentTextbookId).then(setLastSession).catch(console.error);
+      let cancelled = false;
+      (async () => {
+        try {
+          const editable = await getSessionsForEdit(studentTextbookId);
+          if (cancelled) return;
+          if (editable.length > 0) {
+            // 過去コマを編集可能なカードとして復元。先頭は新規入力用の空ドラフトを維持する
+            const loaded: SessionDraft[] = editable.map((e) => ({
+              id: `saved-${e.session.id}`,
+              date: e.session.session_date,
+              teacherName: e.session.teacher_name ?? '',
+              handover: e.session.handover ?? '',
+              homeworkNotDone: e.session.homework_not_done,
+              tardy: e.session.tardy,
+              unitActions: e.unitActions,
+              schoolUnits: new Set(e.schoolUnitIds),
+              saved: true,
+              savedSessionId: e.session.id,
+              origSchoolUnitIds: e.schoolUnitIds,
+            }));
+            setSessions((prev) => {
+              // 初期の空ドラフト（未入力・未保存）だけを引き継ぎ、過去コマを続けて表示
+              const blanks = prev.filter((s) => !s.saved && !draftHasContent(s));
+              return [...(blanks.length > 0 ? [blanks[0]] : [createDraft(myName)]), ...loaded];
+            });
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      })();
+      return () => {
+        cancelled = true;
+      };
+      // myName は初回描画で確定させたいので依存に含めない（後から変わっても再読込しない）
+      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [studentTextbookId]);
 
     // 初回: 初期セッションのexpand
@@ -163,6 +221,7 @@ const SessionRecordingPanel = forwardRef<SessionRecordingPanelHandle, Props>(
         setSessions((prev) =>
           prev.map((s, i) => {
             if (i !== activeIdx) return s;
+            // セルを触ったら未保存（saved:false）に戻す
             if (column === 'school') {
               const next = new Set(s.schoolUnits);
               if (next.has(curriculumItemId)) {
@@ -170,7 +229,7 @@ const SessionRecordingPanel = forwardRef<SessionRecordingPanelHandle, Props>(
               } else {
                 next.add(curriculumItemId);
               }
-              return { ...s, schoolUnits: next };
+              return { ...s, schoolUnits: next, saved: false };
             } else {
               const next = { ...s.unitActions };
               if (next[curriculumItemId] === column) {
@@ -178,7 +237,7 @@ const SessionRecordingPanel = forwardRef<SessionRecordingPanelHandle, Props>(
               } else {
                 next[curriculumItemId] = column;
               }
-              return { ...s, unitActions: next };
+              return { ...s, unitActions: next, saved: false };
             }
           })
         );
@@ -187,7 +246,15 @@ const SessionRecordingPanel = forwardRef<SessionRecordingPanelHandle, Props>(
     );
 
     // Expose handleCellToggle to parent via ref
-    useImperativeHandle(ref, () => ({ handleCellToggle }), [handleCellToggle]);
+    useImperativeHandle(
+      ref,
+      () => ({
+        handleCellToggle,
+        // 未保存の実入力があるコマが1つでもあれば true（記録モードを閉じる前の警告に使う）
+        hasUnsavedChanges: () => sessions.some((s) => !s.saved && draftHasContent(s)),
+      }),
+      [handleCellToggle, sessions]
+    );
 
     // ─── セッション操作 ───
 
@@ -199,7 +266,8 @@ const SessionRecordingPanel = forwardRef<SessionRecordingPanelHandle, Props>(
     }, [myName, sessions.length]);
 
     const updateField = useCallback((idx: number, patch: Partial<SessionDraft>) => {
-      setSessions((prev) => prev.map((s, i) => (i === idx ? { ...s, ...patch } : s)));
+      // 保存済みカードを編集したら未保存（saved:false）に戻す。再度「記入完了」で上書き保存される
+      setSessions((prev) => prev.map((s, i) => (i === idx ? { ...s, ...patch, saved: false } : s)));
     }, []);
 
     // ─── 保存 ───
@@ -241,6 +309,11 @@ const SessionRecordingPanel = forwardRef<SessionRecordingPanelHandle, Props>(
             }
           }
 
+          // 編集で学校進度から外された単元（読込時にはあったが今は無い）を検出してクリアする
+          const clearSchoolProgressUnits = s.origSchoolUnitIds.filter(
+            (id) => !s.schoolUnits.has(id)
+          );
+
           // セッション保存（savedSessionId があれば既存セッションを上書き更新して二重作成を防ぐ）
           const session = await recordSession({
             studentTextbookId,
@@ -254,13 +327,23 @@ const SessionRecordingPanel = forwardRef<SessionRecordingPanelHandle, Props>(
             schoolProgressUnits: Array.from(s.schoolUnits),
             sessionId: s.savedSessionId,
             primaryCurriculumItemId,
+            clearSchoolProgressUnits,
           });
 
-          // 保存成功後、savedSessionId を記憶して再保存時の上書き更新に使う
+          // 保存成功後、savedSessionId を記憶して再保存時の上書き更新に使う。
+          // origSchoolUnitIds も現在値に更新し、続けて編集しても差分検出が正しく効くようにする
           const next = sessions.map((ss, i) =>
-            i === idx ? { ...ss, saved: true, savedSessionId: session.id } : ss
+            i === idx
+              ? {
+                  ...ss,
+                  saved: true,
+                  savedSessionId: session.id,
+                  origSchoolUnitIds: Array.from(ss.schoolUnits),
+                }
+              : ss
           );
           setSessions(next);
+          // 親（TableView）が進行表を再取得し、「前回の引継ぎ」カードも最新化する
           onSessionSaved();
 
           // 全セッションが保存済みになったら親へ通知して授業記録モードを自動終了する
@@ -294,39 +377,38 @@ const SessionRecordingPanel = forwardRef<SessionRecordingPanelHandle, Props>(
 
     return (
       <div className="space-y-3 mb-6">
-        {/* 前回の引継ぎ */}
-        {lastSession && lastSession.handover && (
-          <div className="px-4 py-3 bg-white border border-gray-200 rounded-xl">
-            <div className="flex items-center gap-2 mb-1">
-              <MessageSquare className="w-3.5 h-3.5 text-gray-400" />
-              <span className="text-[11px] font-semibold text-gray-500">前回の引継ぎ</span>
-              <span className="text-[11px] text-gray-400">
-                {lastSession.session_date?.replace(/-/g, '/')}{' '}
-                {isTeacher ? toSurnameOnly(lastSession.teacher_name) : lastSession.teacher_name}
-              </span>
-            </div>
-            <p className="text-sm text-gray-800">{lastSession.handover}</p>
-          </div>
-        )}
+        {/* 前回の引継ぎは記録モードに関わらず常時表示したいので、親（TableView）の
+            LastHandoverCard に移設。ここでは扱わない */}
 
         {/* セッション一覧 */}
         <div className="space-y-2">
-          {sessions.map((session, idx) => {
-            const isExpanded = expandedId === session.id;
-            const isActive = activeIdx === idx;
-            const schoolItems = schoolUnitsForSession(session);
-            const lessonItems = lessonUnitsForSession(session);
-            const isFilled = session.teacherName && schoolItems.length > 0 && session.handover;
+          {(() => {
+            // 過去の保存済みコマ（読込分）の先頭位置。区切りラベル表示に使う
+            const firstSavedIdx = sessions.findIndex((s) => s.id.startsWith('saved-'));
+            return sessions.map((session, idx) => {
+              const isExpanded = expandedId === session.id;
+              const isActive = activeIdx === idx;
+              const schoolItems = schoolUnitsForSession(session);
+              const lessonItems = lessonUnitsForSession(session);
+              const isFilled = session.teacherName && schoolItems.length > 0 && session.handover;
 
-            return (
-              <div
-                key={session.id}
-                className={`rounded-xl border overflow-hidden transition-colors ${
-                  isActive
-                    ? 'border-[#1e3a5f] ring-1 ring-[#1e3a5f]/20 bg-white'
-                    : 'border-gray-200 bg-white'
-                }`}
-              >
+              return (
+                <Fragment key={session.id}>
+                  {idx === firstSavedIdx && (
+                    <div className="flex items-center gap-2 pt-2 pb-0.5">
+                      <span className="text-[11px] font-semibold text-gray-400">
+                        過去のコマ（タップで編集）
+                      </span>
+                      <div className="flex-1 border-t border-gray-200" />
+                    </div>
+                  )}
+                  <div
+                    className={`rounded-xl border overflow-hidden transition-colors ${
+                      isActive
+                        ? 'border-[#1e3a5f] ring-1 ring-[#1e3a5f]/20 bg-white'
+                        : 'border-gray-200 bg-white'
+                    }`}
+                  >
                 {/* アコーディオンヘッダー */}
                 <button
                   onClick={() => {
@@ -533,11 +615,13 @@ const SessionRecordingPanel = forwardRef<SessionRecordingPanelHandle, Props>(
                     >
                       {saving ? '保存中...' : '記入完了'}
                     </button>
+                    </div>
+                  )}
                   </div>
-                )}
-              </div>
-            );
-          })}
+                </Fragment>
+              );
+            });
+          })()}
         </div>
 
         {/* コマ追加ボタン */}

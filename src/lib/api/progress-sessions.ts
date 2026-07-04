@@ -173,13 +173,104 @@ export async function getStudentSessionFeed(
   return (data || []) as unknown as ProgressSessionWithDetails[];
 }
 
+/** 記録パネルで再編集するためのセッション復元データ */
+export interface EditableSession {
+  session: ProgressSession;
+  /** curriculum_item_id → 指導回（lesson_number） */
+  unitActions: Record<number, 1 | 2 | 3>;
+  /** このセッション日に学校進度がついている単元ID（学校進度はセッションに直接紐づかないため session_date で近似） */
+  schoolUnitIds: number[];
+}
+
 /**
- * 直前のセッション（引継ぎ表示用）
+ * 記録パネルでの再編集用に、直近の保存済みセッションを復元して返す。
+ * - session 本体（日付・講師・引継ぎ・宿題/遅刻）は progress_sessions から
+ * - 指導単元（unitActions）は student_progress_lessons(session_id) から
+ * - 学校進度（schoolUnitIds）は student_progress.school_progress_date == session_date で近似的に紐付け
+ *   （学校進度は単元ごとに1日付しか持たずセッションに直接紐づかないため、同日の別セッションと混同しうる点に注意）
  */
-export async function getLastSession(studentTextbookId: string): Promise<ProgressSession | null> {
-  const { data, error } = await supabase
+export async function getSessionsForEdit(
+  studentTextbookId: string,
+  limit = 10
+): Promise<EditableSession[]> {
+  const { data: sessions, error } = await supabase
     .from('progress_sessions')
     .select('*')
+    .eq('student_textbook_id', studentTextbookId)
+    .order('session_date', { ascending: false })
+    .order('created_at', { ascending: false })
+    .limit(limit);
+  if (error) throw new Error(`編集用セッションの取得に失敗しました: ${error.message}`);
+  if (!sessions || sessions.length === 0) return [];
+
+  const sessionRows = sessions as ProgressSession[];
+  const sessionIds = sessionRows.map((s) => s.id);
+
+  // このテキストの student_progress: id → 単元ID / 学校進度日付
+  const { data: progressRows } = await supabase
+    .from('student_progress')
+    .select('id, curriculum_item_id, school_progress_date')
+    .eq('student_textbook_id', studentTextbookId);
+  const progById = new Map<string, { curriculumItemId: number; schoolDate: string | null }>();
+  for (const p of (progressRows || []) as Array<{
+    id: string;
+    curriculum_item_id: number;
+    school_progress_date: string | null;
+  }>) {
+    progById.set(p.id, {
+      curriculumItemId: p.curriculum_item_id,
+      schoolDate: p.school_progress_date,
+    });
+  }
+
+  // セッションに紐づくレッスンから unitActions を復元
+  const { data: lessons } = await supabase
+    .from('student_progress_lessons')
+    .select('session_id, lesson_number, student_progress_id')
+    .in('session_id', sessionIds);
+  const unitActionsBySession = new Map<string, Record<number, 1 | 2 | 3>>();
+  for (const l of (lessons || []) as Array<{
+    session_id: string | null;
+    lesson_number: number;
+    student_progress_id: string;
+  }>) {
+    if (!l.session_id) continue;
+    const prog = progById.get(l.student_progress_id);
+    if (!prog) continue;
+    const rec = unitActionsBySession.get(l.session_id) ?? {};
+    rec[prog.curriculumItemId] = l.lesson_number as 1 | 2 | 3;
+    unitActionsBySession.set(l.session_id, rec);
+  }
+
+  // 学校進度を日付ごとにバケツ分け（session_date で近似紐付け）
+  const schoolByDate = new Map<string, number[]>();
+  for (const p of (progressRows || []) as Array<{
+    curriculum_item_id: number;
+    school_progress_date: string | null;
+  }>) {
+    if (!p.school_progress_date) continue;
+    const arr = schoolByDate.get(p.school_progress_date) ?? [];
+    arr.push(p.curriculum_item_id);
+    schoolByDate.set(p.school_progress_date, arr);
+  }
+
+  return sessionRows.map((s) => ({
+    session: s,
+    unitActions: unitActionsBySession.get(s.id) ?? {},
+    schoolUnitIds: schoolByDate.get(s.session_date) ?? [],
+  }));
+}
+
+/**
+ * 直前のセッションを、指導単元・学校進度まで含めて取得（進行表の「前回の引継ぎ」カードを
+ * 室長の進行表確認カードと同じ情報量で表示するため）。
+ */
+export async function getLastSessionDetail(
+  studentTextbookId: string
+): Promise<ProgressSessionWithDetails | null> {
+  const { data, error } = await supabase
+    .from('progress_sessions')
+    .select(FEED_SELECT)
     .eq('student_textbook_id', studentTextbookId)
     .order('session_date', { ascending: false })
     .order('created_at', { ascending: false })
@@ -189,7 +280,7 @@ export async function getLastSession(studentTextbookId: string): Promise<Progres
   if (error) {
     throw new Error(`直前セッションの取得に失敗しました: ${error.message}`);
   }
-  return (data as ProgressSession) || null;
+  return (data as unknown as ProgressSessionWithDetails) || null;
 }
 
 // ============================================
@@ -225,6 +316,8 @@ export async function recordSession(params: {
   primaryCurriculumItemId?: number | null;
   /** 既存セッションの上書き更新用。指定時は新規作成せず更新する（編集時の二重作成防止） */
   sessionId?: string | null;
+  /** 編集時に「学校進度から外された」単元ID。指定行の school_progress_date を null に戻す */
+  clearSchoolProgressUnits?: number[];
 }): Promise<ProgressSession> {
   const {
     studentTextbookId,
@@ -239,6 +332,7 @@ export async function recordSession(params: {
     scheduleEntryId,
     primaryCurriculumItemId,
     sessionId,
+    clearSchoolProgressUnits,
   } = params;
 
   // 1. セッション作成 or 更新（sessionId がある場合は既存セッションを上書きして二重作成を防ぐ）
@@ -270,6 +364,8 @@ export async function recordSession(params: {
   // 2. 各単元の student_progress を upsert + lesson 記録
   // primaryCurriculumItemId の行にだけ引継ぎ・遅刻・宿題も書く（授業記録パネルが主入力源）
   const touchedCurriculumItemIds = new Set<number>();
+  // 編集時に「残すべきレッスン」を (student_progress_id:lesson_number) で控える。ループ後に stale を削除する
+  const desiredLessonKeys = new Set<string>();
   for (const action of unitActions) {
     touchedCurriculumItemIds.add(action.curriculumItemId);
     // primaryCurriculumItemId に一致する場合は引継ぎ・フラグも含めて upsert
@@ -318,6 +414,34 @@ export async function recordSession(params: {
     if (lessonError) {
       console.error('student_progress_lessons upsert error:', lessonError);
     }
+    desiredLessonKeys.add(`${progress.id}:${action.lessonNumber}`);
+  }
+
+  // 2b. 編集時: このセッションに紐づくレッスンのうち、今回の指導単元から外されたものを削除する
+  //     （新規作成時は既存レッスンが無いのでスキップ）
+  if (sessionId) {
+    const { data: existingLessons } = await supabase
+      .from('student_progress_lessons')
+      .select('id, student_progress_id, lesson_number')
+      .eq('session_id', sessionId);
+    for (const l of (existingLessons || []) as Array<{
+      id: string;
+      student_progress_id: string;
+      lesson_number: number;
+    }>) {
+      if (!desiredLessonKeys.has(`${l.student_progress_id}:${l.lesson_number}`)) {
+        await supabase.from('student_progress_lessons').delete().eq('id', l.id);
+      }
+    }
+  }
+
+  // 2c. 編集時: 学校進度から外された単元は school_progress_date を null に戻す
+  if (clearSchoolProgressUnits && clearSchoolProgressUnits.length > 0) {
+    await supabase
+      .from('student_progress')
+      .update({ school_progress_date: null })
+      .eq('student_textbook_id', studentTextbookId)
+      .in('curriculum_item_id', clearSchoolProgressUnits);
   }
 
   // 3. 学校進度を更新

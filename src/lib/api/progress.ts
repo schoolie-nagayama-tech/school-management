@@ -14,6 +14,7 @@ import type {
   StudentProgressUpdate,
   StudentProgressLesson,
   StudentProgressLessonInsert,
+  SeasonType,
   StudentTextbookWithDetails,
   StudentProgressWithDetails,
   CurriculumItemWithProgress,
@@ -243,6 +244,29 @@ export async function updateStudentTextbook(
 
   if (error) {
     throw new Error(`生徒テキストの更新に失敗しました: ${error.message}`);
+  }
+
+  return data as StudentTextbook;
+}
+
+/**
+ * 生徒×テキストの季節ラベル（season）を更新する。
+ * 講習提案書の公開で付いた季節ラベル（夏期等）を、講習終了後に手動で外す（null にする）用途。
+ * season は 'spring' | 'summer' | 'winter' などの文字列、または解除用の null を受け取る。
+ */
+export async function updateStudentTextbookSeason(
+  id: string,
+  season: SeasonType | null
+): Promise<StudentTextbook> {
+  const { data, error } = await supabase
+    .from('student_textbooks')
+    .update({ season })
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) {
+    throw new Error(`季節ラベルの更新に失敗しました: ${error.message}`);
   }
 
   return data as StudentTextbook;

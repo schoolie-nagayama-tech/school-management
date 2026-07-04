@@ -2,15 +2,17 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { Eye, EyeOff, FileText, RefreshCw, Send, Settings2 } from 'lucide-react';
+import { Eye, EyeOff, FileText, RefreshCw, Send, Settings2, X } from 'lucide-react';
 import {
   getStudentProgress,
   updateStudentProgress,
+  updateStudentTextbookSeason,
   upsertStudentProgress,
   upsertStudentProgressLesson,
 } from '@/lib/api/progress';
 import SessionRecordingPanel from '@/components/progress/SessionRecordingPanel';
 import type { SessionRecordingPanelHandle } from '@/components/progress/SessionRecordingPanel';
+import LastHandoverCard from '@/components/progress/LastHandoverCard';
 import { syncProgressToSession, submitDirectInput } from '@/lib/api/progress-sessions';
 import { createExamRange, deleteExamRange, getExamRanges } from '@/lib/api/exam-ranges';
 import type {
@@ -25,6 +27,7 @@ import {
   activeExamOf,
   isIntentTag,
   itemNo,
+  seasonLabel,
   type IntentTag,
   type ViewMode,
 } from './newProgress.shared';
@@ -315,11 +318,46 @@ export function TableView({
     schoolUnits: Set<number>;
   } | null>(null);
 
+  // 「前回の引継ぎ」カードの再取得トリガー（記入完了のたびに最新化する）
+  const [lastHandoverRefresh, setLastHandoverRefresh] = useState(0);
+
+  // 季節ラベルを手動解除したら即座にチップを消すためのローカルフラグ。
+  // 親(textbook.season)の再取得は onRefresh 経由で反映されるが、
+  // 反映までのラグでチップが残らないようローカルでも隠す。テキスト切替でリセット。
+  const [seasonCleared, setSeasonCleared] = useState(false);
+  useEffect(() => {
+    setSeasonCleared(false);
+  }, [textbook.id]);
+
+  // 季節ラベル（夏期等）の手動解除。講習終了後の整理用。
+  // student_textbooks.season を null に更新し、成功したらチップを消す。
+  const handleClearSeason = useCallback(async () => {
+    if (!textbook.season) return;
+    if (
+      !window.confirm(
+        `「${seasonLabel(textbook.season)}」ラベルを外しますか？（講習終了後の整理用）`
+      )
+    ) {
+      return;
+    }
+    try {
+      await updateStudentTextbookSeason(textbook.id, null);
+      setSeasonCleared(true); // 即座にチップを消す
+      success('季節ラベルを外しました');
+      // 親の textbook.season も最新化（他ビューとの整合のため）
+      await onRefresh();
+    } catch (e) {
+      console.error(e);
+      toastError('季節ラベルの解除に失敗しました');
+    }
+  }, [textbook.id, textbook.season, success, toastError, onRefresh]);
+
   // セッション保存後にデータ再読込
   const handleSessionSaved = useCallback(async () => {
     try {
       const rows = await getStudentProgress(textbook.id);
       setProgress(rows || []);
+      setLastHandoverRefresh((k) => k + 1);
       success('セッションを保存しました');
     } catch {
       // noop
@@ -575,10 +613,22 @@ export function TableView({
             <div className="flex items-center gap-1.5">
               <button
                 onClick={() => {
-                  setSessionMode((v) => {
-                    if (v) setSessionSelection(null);
-                    return !v;
-                  });
+                  if (sessionMode) {
+                    // 記録モードを閉じる前に、未保存（記入完了していない）コマがあれば確認する。
+                    // このボタンは保存しない（保存は各コマの「記入完了」）ため、押すと未保存入力は破棄される
+                    if (
+                      sessionPanelRef.current?.hasUnsavedChanges() &&
+                      !window.confirm(
+                        '記入完了していないコマがあります。保存せずに記録を終了しますか？（入力は破棄されます）'
+                      )
+                    ) {
+                      return;
+                    }
+                    setSessionSelection(null);
+                    setSessionMode(false);
+                  } else {
+                    setSessionMode(true);
+                  }
                 }}
                 disabled={!activeExam && !sessionMode && role === 'teacher'}
                 title={!activeExam && role === 'teacher' ? '目標を設定してください' : undefined}
@@ -590,7 +640,7 @@ export function TableView({
                       : 'bg-[#1e3a5f] text-white hover:bg-[#2a4d7a] active:scale-[0.97]'
                 }`}
               >
-                {sessionMode ? '提出' : '授業を記録'}
+                {sessionMode ? '記録を終了' : '授業を記録'}
               </button>
               {/* テスト対策提案書。講師も作成する業務のため全ロールに表示 */}
               <Link
@@ -629,6 +679,47 @@ export function TableView({
               {tb.textbook?.name ?? '—'}
             </button>
           ))}
+        </div>
+      )}
+
+      {/* 前回の引継ぎ（記録モードに関わらず常時表示）＋季節ラベルチップ。
+          テキスト詳細を開いた最上部＝ファーストビューに入れて見落とされないようにする。 */}
+      {!isMeeting && (
+        <div className="mb-3 space-y-2">
+          {/* 季節ラベル（夏期等）のチップ。公開した講習提案書で付与され、
+              講習終了後は×（教室長以上のみ）で手動解除する運用。 */}
+          {textbook.season && !seasonCleared && seasonLabel(textbook.season) && (
+            <div>
+              <span
+                className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-md font-bold border ${
+                  textbook.season === 'spring'
+                    ? 'bg-pink-100 text-pink-800 border-pink-300'
+                    : textbook.season === 'summer'
+                      ? 'bg-orange-100 text-orange-800 border-orange-300'
+                      : 'bg-sky-100 text-sky-800 border-sky-300'
+                }`}
+              >
+                {seasonLabel(textbook.season)}
+                {/* 講師には解除ボタンを出さない（表示のみ） */}
+                {role !== 'teacher' && (
+                  <button
+                    type="button"
+                    onClick={handleClearSeason}
+                    className="rounded hover:bg-black/10 transition-[background-color] duration-150 ease-out active:scale-[0.9]"
+                    title="季節ラベルを外す（講習終了後の整理用）"
+                    aria-label="季節ラベルを外す"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                )}
+              </span>
+            </div>
+          )}
+          <LastHandoverCard
+            studentTextbookId={textbook.id}
+            isTeacher={role === 'teacher'}
+            refreshKey={lastHandoverRefresh}
+          />
         </div>
       )}
 
