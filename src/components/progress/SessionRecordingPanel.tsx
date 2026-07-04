@@ -13,14 +13,7 @@
  * 進行表との連携は親コンポーネント経由で行う。
  */
 
-import {
-  forwardRef,
-  Fragment,
-  useCallback,
-  useEffect,
-  useImperativeHandle,
-  useState,
-} from 'react';
+import { forwardRef, Fragment, useCallback, useEffect, useImperativeHandle, useState } from 'react';
 import { Check, AlertTriangle, ChevronDown, ChevronUp, Plus } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import {
@@ -409,214 +402,216 @@ const SessionRecordingPanel = forwardRef<SessionRecordingPanelHandle, Props>(
                         : 'border-gray-200 bg-white'
                     }`}
                   >
-                {/* アコーディオンヘッダー */}
-                <button
-                  onClick={() => {
-                    setExpandedId(isExpanded ? null : session.id);
-                    setActiveIdx(idx);
-                  }}
-                  className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-50/50 transition-colors"
-                >
-                  <div
-                    className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold ${
-                      session.saved
-                        ? 'bg-green-100 text-green-700'
-                        : isActive
-                          ? 'bg-[#1e3a5f] text-white'
-                          : 'bg-gray-100 text-gray-600'
-                    }`}
-                  >
-                    {/* 保存済みはチェックアイコン。展開で再編集可能 */}
-                    {session.saved ? <Check className="w-4 h-4" /> : idx + 1}
-                  </div>
-                  <div className="flex-1 text-left">
-                    <div className="text-sm font-medium">
-                      {session.date.replace(/-/g, '/')}
-                      {session.teacherName && (
-                        <span className="ml-2 text-gray-500">
-                          {isTeacher ? toSurnameOnly(session.teacherName) : session.teacherName}
-                        </span>
-                      )}
-                      {session.saved && (
-                        <span className="ml-2 text-xs font-medium text-green-600">保存済</span>
-                      )}
-                    </div>
-                    {session.handover && (
-                      <div className="text-xs text-gray-500 truncate max-w-md">
-                        引継: {session.handover}
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {isFilled ? (
-                      <Check className="w-4 h-4 text-[#1e3a5f]" />
-                    ) : (
-                      <AlertTriangle className="w-4 h-4 text-amber-500" />
-                    )}
-                    {isExpanded ? (
-                      <ChevronUp className="w-4 h-4 text-gray-400" />
-                    ) : (
-                      <ChevronDown className="w-4 h-4 text-gray-400" />
-                    )}
-                  </div>
-                </button>
-
-                {/* 展開コンテンツ */}
-                {isExpanded && (
-                  <div className="border-t border-gray-200 px-4 py-3 space-y-3 bg-white">
-                    {/* 日付 / 講師名 */}
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="text-[10px] font-semibold text-gray-500">
-                          指導日 <span className="text-amber-600">*</span>
-                        </label>
-                        <input
-                          type="date"
-                          value={session.date}
-                          onChange={(e) => updateField(idx, { date: e.target.value })}
-                          disabled={false}
-                          className="mt-1 w-full px-2 py-1.5 text-sm border border-gray-200 rounded-lg disabled:bg-gray-100"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-[10px] font-semibold text-gray-500">
-                          講師名 <span className="text-amber-600">*</span>
-                        </label>
-                        <div className="mt-1 flex gap-1">
-                          <input
-                            value={session.teacherName}
-                            onChange={(e) => updateField(idx, { teacherName: e.target.value })}
-                            placeholder="講師名"
-                            disabled={false}
-                            className="flex-1 px-2 py-1.5 text-sm border border-gray-200 rounded-lg disabled:bg-gray-100"
-                          />
-                          <button
-                            onClick={() => updateField(idx, { teacherName: myName })}
-                            disabled={false}
-                            className="px-3 py-1.5 text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg border border-gray-200 whitespace-nowrap disabled:opacity-50"
-                          >
-                            自分
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* 学校進度（自動反映） */}
-                    <div>
-                      <label className="text-[10px] font-semibold text-gray-500">
-                        学校進度 {/* 講習は学校がないため必須マークを出さない（任意扱い） */}
-                        {isKoushu ? (
-                          <span className="text-gray-400 font-normal">（任意）</span>
-                        ) : (
-                          <span className="text-amber-600">*</span>
-                        )}
-                        <span className="text-gray-400 font-normal ml-1">
-                          下の表で学校列をクリック
-                        </span>
-                      </label>
-                      <div className="mt-1 min-h-[32px] px-2 py-1.5 border border-gray-200 rounded-lg bg-gray-50 flex flex-wrap gap-1">
-                        {schoolItems.length === 0 ? (
-                          <span className="text-xs text-gray-400">
-                            下の表で学校列をクリックすると反映されます
-                          </span>
-                        ) : (
-                          schoolItems.map((u) => (
-                            <span
-                              key={u.id}
-                              className="px-2 py-0.5 text-[11px] bg-white border border-gray-200 rounded text-gray-700"
-                            >
-                              {u.item_number ?? ''} {u.title ?? ''}
-                            </span>
-                          ))
-                        )}
-                      </div>
-                    </div>
-
-                    {/* 指導単元（自動反映） */}
-                    <div>
-                      <label className="text-[10px] font-semibold text-gray-500">
-                        指導単元
-                        <span className="text-gray-400 font-normal ml-1">
-                          下の表で指導列をクリック
-                        </span>
-                      </label>
-                      <div className="mt-1 min-h-[32px] px-2 py-1.5 border border-gray-200 rounded-lg bg-gray-50 flex flex-wrap gap-1">
-                        {lessonItems.length === 0 ? (
-                          <span className="text-xs text-gray-400">
-                            下の表で指導列をクリックすると反映されます
-                          </span>
-                        ) : (
-                          lessonItems.map(({ item, lessonNumber }) => (
-                            <span
-                              key={item.id}
-                              className="px-2 py-0.5 text-[11px] bg-white border border-gray-200 rounded text-gray-700"
-                            >
-                              {item.item_number ?? ''} {item.title ?? ''}{' '}
-                              <span className="text-gray-400">({lessonNumber}回目)</span>
-                              {session.date && (
-                                <span className="ml-1 text-gray-400">
-                                  {session.date.replace(/^\d{4}-/, '').replace('-', '/')}
-                                </span>
-                              )}
-                            </span>
-                          ))
-                        )}
-                      </div>
-                    </div>
-
-                    {/* 引継ぎ */}
-                    <div>
-                      <label className="text-[10px] font-semibold text-gray-500">
-                        引継ぎ <span className="text-amber-600">*</span>
-                      </label>
-                      <textarea
-                        value={session.handover}
-                        onChange={(e) => updateField(idx, { handover: e.target.value })}
-                        placeholder="次の講師への引継ぎを入力..."
-                        disabled={false}
-                        rows={2}
-                        className="mt-1 w-full px-2 py-1.5 text-sm border border-gray-200 rounded-lg resize-none disabled:bg-gray-100"
-                      />
-                    </div>
-
-                    {/* 宿題未提出・遅刻チェックボックス（授業記録パネルで主入力） */}
-                    <div className="flex items-center gap-4">
-                      <label className="flex items-center gap-2 cursor-pointer select-none">
-                        <input
-                          type="checkbox"
-                          checked={session.homeworkNotDone}
-                          onChange={(e) => updateField(idx, { homeworkNotDone: e.target.checked })}
-                          className="w-4 h-4 rounded border-gray-300 text-amber-600 focus:ring-amber-500"
-                        />
-                        <span className="text-sm text-gray-700 flex items-center gap-1">
-                          <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
-                          宿題未提出
-                        </span>
-                      </label>
-                      <label className="flex items-center gap-2 cursor-pointer select-none">
-                        <input
-                          type="checkbox"
-                          checked={session.tardy}
-                          onChange={(e) => updateField(idx, { tardy: e.target.checked })}
-                          className="w-4 h-4 rounded border-gray-300 text-amber-600 focus:ring-amber-500"
-                        />
-                        <span className="text-sm text-gray-700 flex items-center gap-1">
-                          <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
-                          遅刻
-                        </span>
-                      </label>
-                    </div>
-
-                    {/* 保存ボタン（保存済み・未保存とも「記入完了」で統一。保存中は「保存中...」） */}
+                    {/* アコーディオンヘッダー */}
                     <button
-                      onClick={() => saveSession(idx)}
-                      disabled={saving}
-                      className="w-full py-2 bg-[#1e3a5f] text-white text-sm font-medium rounded-lg hover:bg-[#2a4a6f] disabled:opacity-50 transition-colors"
+                      onClick={() => {
+                        setExpandedId(isExpanded ? null : session.id);
+                        setActiveIdx(idx);
+                      }}
+                      className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-50/50 transition-colors"
                     >
-                      {saving ? '保存中...' : '記入完了'}
+                      <div
+                        className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold ${
+                          session.saved
+                            ? 'bg-green-100 text-green-700'
+                            : isActive
+                              ? 'bg-[#1e3a5f] text-white'
+                              : 'bg-gray-100 text-gray-600'
+                        }`}
+                      >
+                        {/* 保存済みはチェックアイコン。展開で再編集可能 */}
+                        {session.saved ? <Check className="w-4 h-4" /> : idx + 1}
+                      </div>
+                      <div className="flex-1 text-left">
+                        <div className="text-sm font-medium">
+                          {session.date.replace(/-/g, '/')}
+                          {session.teacherName && (
+                            <span className="ml-2 text-gray-500">
+                              {isTeacher ? toSurnameOnly(session.teacherName) : session.teacherName}
+                            </span>
+                          )}
+                          {session.saved && (
+                            <span className="ml-2 text-xs font-medium text-green-600">保存済</span>
+                          )}
+                        </div>
+                        {session.handover && (
+                          <div className="text-xs text-gray-500 truncate max-w-md">
+                            引継: {session.handover}
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {isFilled ? (
+                          <Check className="w-4 h-4 text-[#1e3a5f]" />
+                        ) : (
+                          <AlertTriangle className="w-4 h-4 text-amber-500" />
+                        )}
+                        {isExpanded ? (
+                          <ChevronUp className="w-4 h-4 text-gray-400" />
+                        ) : (
+                          <ChevronDown className="w-4 h-4 text-gray-400" />
+                        )}
+                      </div>
                     </button>
-                    </div>
-                  )}
+
+                    {/* 展開コンテンツ */}
+                    {isExpanded && (
+                      <div className="border-t border-gray-200 px-4 py-3 space-y-3 bg-white">
+                        {/* 日付 / 講師名 */}
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="text-[10px] font-semibold text-gray-500">
+                              指導日 <span className="text-amber-600">*</span>
+                            </label>
+                            <input
+                              type="date"
+                              value={session.date}
+                              onChange={(e) => updateField(idx, { date: e.target.value })}
+                              disabled={false}
+                              className="mt-1 w-full px-2 py-1.5 text-sm border border-gray-200 rounded-lg disabled:bg-gray-100"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[10px] font-semibold text-gray-500">
+                              講師名 <span className="text-amber-600">*</span>
+                            </label>
+                            <div className="mt-1 flex gap-1">
+                              <input
+                                value={session.teacherName}
+                                onChange={(e) => updateField(idx, { teacherName: e.target.value })}
+                                placeholder="講師名"
+                                disabled={false}
+                                className="flex-1 px-2 py-1.5 text-sm border border-gray-200 rounded-lg disabled:bg-gray-100"
+                              />
+                              <button
+                                onClick={() => updateField(idx, { teacherName: myName })}
+                                disabled={false}
+                                className="px-3 py-1.5 text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg border border-gray-200 whitespace-nowrap disabled:opacity-50"
+                              >
+                                自分
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* 学校進度（自動反映） */}
+                        <div>
+                          <label className="text-[10px] font-semibold text-gray-500">
+                            学校進度 {/* 講習は学校がないため必須マークを出さない（任意扱い） */}
+                            {isKoushu ? (
+                              <span className="text-gray-400 font-normal">（任意）</span>
+                            ) : (
+                              <span className="text-amber-600">*</span>
+                            )}
+                            <span className="text-gray-400 font-normal ml-1">
+                              下の表で学校列をクリック
+                            </span>
+                          </label>
+                          <div className="mt-1 min-h-[32px] px-2 py-1.5 border border-gray-200 rounded-lg bg-gray-50 flex flex-wrap gap-1">
+                            {schoolItems.length === 0 ? (
+                              <span className="text-xs text-gray-400">
+                                下の表で学校列をクリックすると反映されます
+                              </span>
+                            ) : (
+                              schoolItems.map((u) => (
+                                <span
+                                  key={u.id}
+                                  className="px-2 py-0.5 text-[11px] bg-white border border-gray-200 rounded text-gray-700"
+                                >
+                                  {u.item_number ?? ''} {u.title ?? ''}
+                                </span>
+                              ))
+                            )}
+                          </div>
+                        </div>
+
+                        {/* 指導単元（自動反映） */}
+                        <div>
+                          <label className="text-[10px] font-semibold text-gray-500">
+                            指導単元
+                            <span className="text-gray-400 font-normal ml-1">
+                              下の表で指導列をクリック
+                            </span>
+                          </label>
+                          <div className="mt-1 min-h-[32px] px-2 py-1.5 border border-gray-200 rounded-lg bg-gray-50 flex flex-wrap gap-1">
+                            {lessonItems.length === 0 ? (
+                              <span className="text-xs text-gray-400">
+                                下の表で指導列をクリックすると反映されます
+                              </span>
+                            ) : (
+                              lessonItems.map(({ item, lessonNumber }) => (
+                                <span
+                                  key={item.id}
+                                  className="px-2 py-0.5 text-[11px] bg-white border border-gray-200 rounded text-gray-700"
+                                >
+                                  {item.item_number ?? ''} {item.title ?? ''}{' '}
+                                  <span className="text-gray-400">({lessonNumber}回目)</span>
+                                  {session.date && (
+                                    <span className="ml-1 text-gray-400">
+                                      {session.date.replace(/^\d{4}-/, '').replace('-', '/')}
+                                    </span>
+                                  )}
+                                </span>
+                              ))
+                            )}
+                          </div>
+                        </div>
+
+                        {/* 引継ぎ */}
+                        <div>
+                          <label className="text-[10px] font-semibold text-gray-500">
+                            引継ぎ <span className="text-amber-600">*</span>
+                          </label>
+                          <textarea
+                            value={session.handover}
+                            onChange={(e) => updateField(idx, { handover: e.target.value })}
+                            placeholder="次の講師への引継ぎを入力..."
+                            disabled={false}
+                            rows={2}
+                            className="mt-1 w-full px-2 py-1.5 text-sm border border-gray-200 rounded-lg resize-none disabled:bg-gray-100"
+                          />
+                        </div>
+
+                        {/* 宿題未提出・遅刻チェックボックス（授業記録パネルで主入力） */}
+                        <div className="flex items-center gap-4">
+                          <label className="flex items-center gap-2 cursor-pointer select-none">
+                            <input
+                              type="checkbox"
+                              checked={session.homeworkNotDone}
+                              onChange={(e) =>
+                                updateField(idx, { homeworkNotDone: e.target.checked })
+                              }
+                              className="w-4 h-4 rounded border-gray-300 text-amber-600 focus:ring-amber-500"
+                            />
+                            <span className="text-sm text-gray-700 flex items-center gap-1">
+                              <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
+                              宿題未提出
+                            </span>
+                          </label>
+                          <label className="flex items-center gap-2 cursor-pointer select-none">
+                            <input
+                              type="checkbox"
+                              checked={session.tardy}
+                              onChange={(e) => updateField(idx, { tardy: e.target.checked })}
+                              className="w-4 h-4 rounded border-gray-300 text-amber-600 focus:ring-amber-500"
+                            />
+                            <span className="text-sm text-gray-700 flex items-center gap-1">
+                              <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
+                              遅刻
+                            </span>
+                          </label>
+                        </div>
+
+                        {/* 保存ボタン（保存済み・未保存とも「記入完了」で統一。保存中は「保存中...」） */}
+                        <button
+                          onClick={() => saveSession(idx)}
+                          disabled={saving}
+                          className="w-full py-2 bg-[#1e3a5f] text-white text-sm font-medium rounded-lg hover:bg-[#2a4a6f] disabled:opacity-50 transition-colors"
+                        >
+                          {saving ? '保存中...' : '記入完了'}
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </Fragment>
               );

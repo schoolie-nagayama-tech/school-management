@@ -452,7 +452,9 @@ export async function syncProposalToProgress(
       // 既所持の教材でも講習提案書の公開で季節ラベル（夏期等）を付ける（2026-07-04仕様変更）。
       // 講習終了後はチップの×で手動解除する運用。
       // season が null の提案（通常提案）では既存の season を壊さないよう触らない。
-      const reuseUpdate: { track_progress: boolean; season?: SeasonType } = { track_progress: true };
+      const reuseUpdate: { track_progress: boolean; season?: SeasonType } = {
+        track_progress: true,
+      };
       if (proposal.season) reuseUpdate.season = proposal.season;
       await supabase.from('student_textbooks').update(reuseUpdate).eq('id', stbId);
     } else {
