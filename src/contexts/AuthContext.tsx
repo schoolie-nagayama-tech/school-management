@@ -20,6 +20,10 @@ import { Loading } from '@/components/ui';
 import { clearAllFetchCache } from '@/lib/utils/fetchCache';
 import { resolveSelectedSchoolId } from '@/lib/auth/selectedSchool';
 import { useInactivityLogout } from '@/hooks/useInactivityLogout';
+import {
+  isStaleSessionAfterBrowserClose,
+  setBrowserSessionMarker,
+} from '@/lib/utils/browserSessionGuard';
 // 型のみの import。resolveServerAuth は 'server-only' だが import type は
 // コンパイル時に消えるためクライアントバンドルには入らない（実行時 import なし）。
 import type { InitialAuth } from '@/lib/auth/resolveServerAuth';
@@ -317,6 +321,17 @@ export function AuthProvider({ children, initialAuth }: AuthProviderProps) {
           return;
         }
 
+        // ブラウザ完全終了検知: マーカー cookie（セッション限定）が無いのに
+        // Supabase セッション（永続 cookie）が残っている＝前回ブラウザを閉じた後の
+        // 再訪問とみなし、明示的にサインアウトしてログイン状態を持ち越さない。
+        // マーカーはこのチェックの後（分岐に関わらず）必ず立て直す。
+        if (session?.user && isStaleSessionAfterBrowserClose()) {
+          setBrowserSessionMarker();
+          await performSignOut('/login');
+          return;
+        }
+        setBrowserSessionMarker();
+
         if (session?.user) {
           if (mounted) {
             setUser(session.user);
@@ -431,7 +446,9 @@ export function AuthProvider({ children, initialAuth }: AuthProviderProps) {
         subscription.unsubscribe();
       }
     };
-  }, [fetchProfile]);
+    // performSignOut は useCallback([router]) で安定しているため、追加しても
+    // 実質的な再購読は発生しない（router 自体は不変参照）。
+  }, [fetchProfile, performSignOut]);
 
   // 認証チェック & リダイレクト
   useEffect(() => {
