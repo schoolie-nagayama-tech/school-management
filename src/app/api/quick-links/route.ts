@@ -3,6 +3,10 @@ import { createClient } from '@supabase/supabase-js';
 import { getApiAuth, requireManager } from '@/lib/api-auth';
 
 export const dynamic = 'force-dynamic';
+// Next.js の Data Cache に載せない（このルート内の fetch を常に no-store 扱いにする）。
+// これが無いと supabase-js の GET(select) が Data Cache にキャッシュされ、
+// PUT で保存しても GET が古い値を返し続ける（＝「保存されるが読み込まれない」）不具合になる。
+export const fetchCache = 'force-no-store';
 
 // Service Role クライアント（RLS をバイパスして system_settings を読み書きする）
 function getSupabaseAdmin() {
@@ -13,6 +17,12 @@ function getSupabaseAdmin() {
   }
   return createClient(supabaseUrl, serviceRoleKey, {
     auth: { autoRefreshToken: false, persistSession: false },
+    // 保険: supabase-js の内部 fetch を明示的に no-store にして、
+    // Next.js の Data Cache による GET のキャッシュ（保存が読み込みに反映されない問題）を確実に防ぐ。
+    global: {
+      fetch: ((input: RequestInfo | URL, init?: RequestInit) =>
+        fetch(input, { ...init, cache: 'no-store' })) as typeof fetch,
+    },
   });
 }
 
