@@ -20,6 +20,7 @@ import { useParams, useSearchParams } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui';
 import { Button } from '@/components/ui';
 import { Loading } from '@/components/ui';
+import { toSurnameOnly } from '@/lib/utils/teacherName';
 
 interface DashboardData {
   school: { name: string };
@@ -181,7 +182,9 @@ export default function StudentDashboardPage() {
                       <span className="text-xs text-text-muted w-16 flex-shrink-0">
                         {slot ? `${slot.start_time?.slice(0, 5)}〜` : ''}
                       </span>
-                      <span className="flex-1 min-w-0">担当: {teacher?.display_name ?? '-'}</span>
+                      <span className="flex-1 min-w-0">
+                        担当: {toSurnameOnly(teacher?.display_name) || '-'}
+                      </span>
                       {u.kind === 'koushu' && (
                         <span className="px-1.5 py-0.5 bg-warning-subtle text-warning text-[10px] rounded font-semibold">
                           講習
@@ -239,7 +242,7 @@ export default function StudentDashboardPage() {
                       </span>
                     </div>
                     <div className="text-xs text-text-muted mb-1">
-                      担当: {r.teacher_name ?? '-'}
+                      担当: {toSurnameOnly(r.teacher_name) || '-'}
                     </div>
                     <div className="text-xs text-text-body line-clamp-2 mb-1">
                       {r.preview || '記述なし'}

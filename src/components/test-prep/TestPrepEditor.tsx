@@ -16,6 +16,7 @@ import {
 } from '@/lib/api/test-prep-proposals';
 import { getExamTypes } from '@/lib/api/textbooks';
 import { getSubjects } from '@/lib/api/subjects';
+import { getSurname } from '@/lib/utils/teacherName';
 import type { Student, ExamType, CurriculumItem, Subject } from '@/types/database';
 import { GRADE_LABELS } from '@/types/database';
 import type {
@@ -144,14 +145,15 @@ export default function TestPrepEditor() {
         setAvailableSubjects(subs);
       }
 
-      // 講師名（印刷用）
+      // 講師名（印刷用）。保護者に渡る書面なので個人情報保護のため苗字のみ表示する（給与関連以外はフルネーム非表示）
       if (user?.id) {
         const { data: profile } = await supabase
           .from('user_profiles')
-          .select('display_name')
+          .select('last_name, display_name')
           .eq('id', user.id)
-          .single();
-        if (profile?.display_name) setTeacherName(profile.display_name);
+          .single<{ last_name: string | null; display_name: string | null }>();
+        const surname = getSurname(profile);
+        if (surname) setTeacherName(surname);
       }
 
       if (!isNew && proposalId) {
