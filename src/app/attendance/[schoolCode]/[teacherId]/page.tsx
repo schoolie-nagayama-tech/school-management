@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import {
   Button,
@@ -18,7 +18,16 @@ import {
 } from '@/components/ui';
 import { ToastContainer } from '@/components/ui';
 import { AppHeader } from '@/components/layout/AppHeader';
-import { ArrowLeft, ChevronLeft, ChevronRight, Send, Undo2, AlertTriangle } from 'lucide-react';
+import {
+  ArrowLeft,
+  ChevronLeft,
+  ChevronRight,
+  Send,
+  Undo2,
+  AlertTriangle,
+  Check,
+  Loader2,
+} from 'lucide-react';
 import { useToast } from '@/hooks/useToast';
 import { getSchoolByCode } from '@/lib/api/schools';
 import { getSupabaseBrowserClient } from '@/lib/supabase';
@@ -173,6 +182,35 @@ export default function TeacherAttendancePage() {
   const [isWithdrawDialogOpen, setIsWithdrawDialogOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [prevMonthUnsubmitted, setPrevMonthUnsubmitted] = useState<string | null>(null);
+  // セル入力は自動保存。保存された確証（インジケータ）が無く「保存できたか分からない」という
+  // 声への対応として、保存中／保存済み／失敗の状態を画面に出す。
+  const [autoSaveState, setAutoSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // 自動保存の共通ラッパ。保存中→保存済み(2.5秒後にidle)を表示し、失敗はトースト＋赤表示。
+  const runAutoSave = useCallback(
+    async (fn: () => Promise<unknown>) => {
+      setAutoSaveState('saving');
+      try {
+        await fn();
+        setAutoSaveState('saved');
+        if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
+        savedTimerRef.current = setTimeout(() => setAutoSaveState('idle'), 2500);
+      } catch (err) {
+        console.error('Auto-save failed:', err);
+        setAutoSaveState('error');
+        toastError('保存に失敗しました');
+      }
+    },
+    [toastError]
+  );
+
+  // アンマウント時にタイマーを掃除する
+  useEffect(() => {
+    return () => {
+      if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
+    };
+  }, []);
 
   const dates = getMonthDates(yearMonth);
 
@@ -280,8 +318,8 @@ export default function TeacherAttendancePage() {
     router.push(`/attendance/${schoolCode}/${teacherId}?ym=${newYearMonth}`);
   };
 
-  // コマ数変更
-  const handleValueChange = async (date: string, typeId: string, value: string) => {
+  // コマ数変更（即UI反映 → 自動保存）
+  const handleValueChange = (date: string, typeId: string, value: string) => {
     if (!sheetId || !canEdit) return;
 
     // 全角で入力された数字を半角に正規化してから数値化（全角だと 0 に化けるのを防ぐ）
@@ -295,17 +333,11 @@ export default function TeacherAttendancePage() {
       return newMap;
     });
 
-    // DBに保存
-    try {
-      await saveAttendanceRecord(sheetId, date, typeId, numValue);
-    } catch (err) {
-      console.error('Failed to save record:', err);
-      toastError('保存に失敗しました');
-    }
+    void runAutoSave(() => saveAttendanceRecord(sheetId, date, typeId, numValue));
   };
 
   // 遅刻早退変更
-  const handleLateEarlyChange = async (date: string, value: string) => {
+  const handleLateEarlyChange = (date: string, value: string) => {
     if (!sheetId || !canEdit) return;
 
     const currentNote = notes.get(date);
@@ -319,16 +351,13 @@ export default function TeacherAttendancePage() {
       return newMap;
     });
 
-    try {
-      await saveAttendanceNote(sheetId, date, value || null, currentNote?.note || null);
-    } catch (err) {
-      console.error('Failed to save note:', err);
-      toastError('保存に失敗しました');
-    }
+    void runAutoSave(() =>
+      saveAttendanceNote(sheetId, date, value || null, currentNote?.note || null)
+    );
   };
 
   // 備考変更
-  const handleNoteChange = async (date: string, value: string) => {
+  const handleNoteChange = (date: string, value: string) => {
     if (!sheetId || !canEdit) return;
 
     const currentNote = notes.get(date);
@@ -342,12 +371,9 @@ export default function TeacherAttendancePage() {
       return newMap;
     });
 
-    try {
-      await saveAttendanceNote(sheetId, date, currentNote?.lateEarly || null, value || null);
-    } catch (err) {
-      console.error('Failed to save note:', err);
-      toastError('保存に失敗しました');
-    }
+    void runAutoSave(() =>
+      saveAttendanceNote(sheetId, date, currentNote?.lateEarly || null, value || null)
+    );
   };
 
   // 提出
@@ -507,6 +533,27 @@ export default function TeacherAttendancePage() {
 
       {/* 入力テーブル */}
       <main className="max-w-6xl mx-auto px-4 py-4">
+        {/* 自動保存ステータス（編集可能なときだけ）。入力が保存されたか一目で分かるようにする。 */}
+        {canEdit && (
+          <div className="mb-2 flex justify-end items-center gap-1 h-5 text-xs">
+            {autoSaveState === 'saving' && (
+              <span className="flex items-center gap-1 text-text-muted">
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                保存中…
+              </span>
+            )}
+            {autoSaveState === 'saved' && (
+              <span className="flex items-center gap-1 text-green-600">
+                <Check className="w-3.5 h-3.5" />
+                保存しました
+              </span>
+            )}
+            {autoSaveState === 'error' && <span className="text-danger">保存に失敗しました</span>}
+            {autoSaveState === 'idle' && (
+              <span className="text-text-faint">入力すると自動で保存されます</span>
+            )}
+          </div>
+        )}
         <div className="bg-surface-raised rounded-lg shadow overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-gray-50">
