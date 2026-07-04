@@ -57,6 +57,8 @@ interface StudentTableRowProps {
   student: StudentRow;
   selectable: boolean;
   isChecked: boolean;
+  /** 学年帯ジャンプ用アンカー。この行が帯（小/中/高）の先頭のとき tr の id になる */
+  anchorId?: string;
   onToggle: (id: string) => void;
   onRowClick?: (student: Student) => void;
   onEdit?: (student: Student) => void;
@@ -236,6 +238,7 @@ const StudentTableRow = memo(function StudentTableRow({
   student,
   selectable,
   isChecked,
+  anchorId,
   onToggle,
   onRowClick,
   onEdit,
@@ -251,7 +254,8 @@ const StudentTableRow = memo(function StudentTableRow({
     .size;
   return (
     <tr
-      className={`transition-colors duration-150 ${
+      id={anchorId}
+      className={`scroll-mt-20 transition-colors duration-150 ${
         // ゼブラ縞（選択中は選択色を優先）。行を目で追いやすくする
         isChecked ? 'bg-info/5' : 'odd:bg-surface-hover/30'
       } ${onRowClick ? 'cursor-pointer hover:bg-surface-hover' : ''}`}
@@ -368,6 +372,26 @@ export function StudentTable({
 }: StudentTableProps) {
   const selectable = !!selectedIds && !!onSelectionChange;
 
+  // 学年帯（小/中/高）ジャンプ: 一覧は学年昇順なので、各帯の最初の行にアンカーを付け、
+  // 上部のボタンからスクロールで飛べるようにする（高校生まで下スクロールする手間の解消）。
+  const gradeBand = (grade: number | null | undefined): 'elementary' | 'middle' | 'high' | null =>
+    grade == null ? null : grade <= 6 ? 'elementary' : grade <= 9 ? 'middle' : 'high';
+  const BAND_LABELS = { elementary: '小学生', middle: '中学生', high: '高校生' } as const;
+  const anchorByStudentId = new Map<string, string>();
+  const presentBands: Array<'elementary' | 'middle' | 'high'> = [];
+  for (const s of students) {
+    const band = gradeBand(s.grade);
+    if (band && !presentBands.includes(band)) {
+      presentBands.push(band);
+      anchorByStudentId.set(s.id, `grade-band-${band}`);
+    }
+  }
+  const jumpToBand = (band: string) => {
+    document
+      .getElementById(`grade-band-${band}`)
+      ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
   const allSelected =
     selectable && students.length > 0 && students.every((s) => selectedIds.has(s.id));
   const someSelected = selectable && students.some((s) => selectedIds.has(s.id));
@@ -431,6 +455,24 @@ export function StudentTable({
 
   return (
     <div className="bg-surface rounded-xl border border-border overflow-hidden">
+      {/* 学年帯ジャンプバー（2帯以上あるときだけ表示。1帯ならスクロールの悩みがないため出さない） */}
+      {presentBands.length >= 2 && (
+        <div className="flex items-center gap-1.5 px-4 py-2 border-b border-border-subtle">
+          <span className="text-xs text-text-faint mr-1">移動:</span>
+          {presentBands.map((band) => (
+            <button
+              key={band}
+              type="button"
+              onClick={() => jumpToBand(band)}
+              className={`px-2.5 py-1 rounded-md text-xs font-medium transition-[background-color] duration-150 ease-out active:scale-[0.97] hover:brightness-95 ${gradeBadgeClass(
+                band === 'elementary' ? 1 : band === 'middle' ? 7 : 10
+              )}`}
+            >
+              {BAND_LABELS[band]}
+            </button>
+          ))}
+        </div>
+      )}
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
@@ -475,6 +517,7 @@ export function StudentTable({
                 student={student}
                 selectable={selectable}
                 isChecked={!!selectedIds?.has(student.id)}
+                anchorId={anchorByStudentId.get(student.id)}
                 onToggle={handleToggle}
                 onRowClick={onRowClick}
                 onEdit={onEdit}
