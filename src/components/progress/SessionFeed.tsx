@@ -1134,8 +1134,13 @@ function SmartAlertItem({ alert }: { alert: SmartAlert }) {
   const config = ALERT_CONFIG[alert.type];
   const isUrgent = alert.severity === 'urgent';
 
+  // 該当教材・単元まで一意に絞れる場合は直接ジャンプできるようクエリを付与する
+  const href = alert.curriculumItemId
+    ? `/students/${alert.studentId}/progress?tb=${alert.studentTextbookId}&item=${alert.curriculumItemId}`
+    : `/students/${alert.studentId}/progress`;
+
   return (
-    <Link href={`/students/${alert.studentId}/progress`} className="block">
+    <Link href={href} className="block">
       <div
         className={`flex items-start gap-3 px-3 py-2.5 rounded-lg transition-[background-color] duration-150 ease-out hover:bg-white ${
           isUrgent ? 'bg-red-50/60' : 'bg-white/60'

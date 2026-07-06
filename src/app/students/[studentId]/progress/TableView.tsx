@@ -64,6 +64,7 @@ export function TableView({
   toastError,
   toastInfo,
   onTogglePublish,
+  highlightItemId,
 }: {
   textbook: StudentTextbookWithDetails;
   progress: CurriculumItemWithProgress[];
@@ -87,6 +88,8 @@ export function TableView({
   /** 中立的な案内トースト（青）。提出対象が無いときの穏やかな通知に使う */
   toastInfo: (m: string) => void;
   onTogglePublish?: (id: string) => void;
+  /** 注意事項カード等からのディープリンク先。この curriculum_item_id の行までスクロールしてハイライトする */
+  highlightItemId?: number;
 }) {
   const isMeeting = viewMode === 'meeting';
   const activeExam = activeExamOf(textbook, examTypes);
@@ -323,6 +326,21 @@ export function TableView({
 
   // 「前回の引継ぎ」カードの再取得トリガー（記入完了のたびに最新化する）
   const [lastHandoverRefresh, setLastHandoverRefresh] = useState(0);
+
+  // ディープリンク: 対象単元行までスクロールして一時的にハイライトする。
+  // progress の描画完了後に DOM を探すため、対象行が存在する場合だけ実行。
+  const [highlightFlash, setHighlightFlash] = useState(false);
+  useEffect(() => {
+    if (highlightItemId == null) return;
+    if (!progress.some((row) => row.id === highlightItemId)) return;
+    const el = document.getElementById(`progress-row-${highlightItemId}`);
+    if (!el) return;
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    setHighlightFlash(true);
+    const timer = setTimeout(() => setHighlightFlash(false), 2400);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [highlightItemId, progress.length]);
 
   // 季節ラベルを手動解除したら即座にチップを消すためのローカルフラグ。
   // 親(textbook.season)の再取得は onRefresh 経由で反映されるが、
@@ -1072,6 +1090,8 @@ export function TableView({
                 return (
                   <ProgressRow
                     key={row.id}
+                    rowId={`progress-row-${row.id}`}
+                    highlighted={highlightItemId === row.id ? highlightFlash : false}
                     row={row}
                     examTypes={examTypes}
                     isMeeting={isMeeting}

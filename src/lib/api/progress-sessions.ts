@@ -725,6 +725,8 @@ export interface SmartAlert {
   detail: string;
   /** exam_date（テスト系アラートの場合） */
   examDate?: string;
+  /** 該当単元の curriculum_item_id（school_catching_up の場合。進行表への直接ジャンプに使う） */
+  curriculumItemId?: number;
 }
 
 /**
@@ -798,6 +800,7 @@ export async function getSmartAlerts(schoolIds: string[]): Promise<SmartAlert[]>
         textbookName: st.textbook?.name ?? '',
         studentTextbookId: p.student_textbook_id,
         detail: '学校が進んだ単元で塾の指導が追いついていません',
+        curriculumItemId: p.curriculum_item_id,
       });
     }
   }

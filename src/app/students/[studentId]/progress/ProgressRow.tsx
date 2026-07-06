@@ -17,6 +17,8 @@ import { TeacherNameInput } from './TeacherNameInput';
 // ─────────────────────────────────────────────
 export function ProgressRow({
   row,
+  rowId,
+  highlighted = false,
   examTypes,
   isMeeting,
   meetingCols,
@@ -41,6 +43,10 @@ export function ProgressRow({
   onSessionCellToggle,
 }: {
   row: CurriculumItemWithProgress;
+  /** DOM id（他画面からのディープリンクでこの行までスクロールするためのアンカー） */
+  rowId?: string;
+  /** ディープリンク遷移直後の一時的なハイライト表示 */
+  highlighted?: boolean;
   examTypes: ExamType[];
   isMeeting: boolean;
   meetingCols: MeetingColMap;
@@ -128,7 +134,11 @@ export function ProgressRow({
   const showTeacherName = !isMeeting && meetingCols.teacherName;
 
   return (
-    <tr className={rowClass} onClick={paintActive ? onPaintRowClick : undefined}>
+    <tr
+      id={rowId}
+      className={`${rowClass} ${highlighted ? 'progress-row-highlight' : ''}`}
+      onClick={paintActive ? onPaintRowClick : undefined}
+    >
       <td
         className={`px-3 py-2.5 text-[#6b7280] text-xs ${isGroupedRow ? 'border-l-2 border-l-[#cbd5e1]' : ''}`}
       >

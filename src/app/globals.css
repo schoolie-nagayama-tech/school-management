@@ -1262,10 +1262,26 @@ a:focus-visible {
   animation-delay: 0.5s;
 }
 
+/* 進行表ディープリンク: 遷移先の単元行を一時的に琥珀色でフラッシュして目を引く */
+@keyframes progress-row-highlight {
+  0%,
+  100% {
+    background-color: transparent;
+  }
+  15%,
+  70% {
+    background-color: rgba(245, 158, 11, 0.18);
+  }
+}
+.progress-row-highlight {
+  animation: progress-row-highlight 2.4s ease-in-out;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .achieve-card,
   .achieve-badge,
-  .achieve-icon {
+  .achieve-icon,
+  .progress-row-highlight {
     animation: none;
   }
   .achieve-bar-shine::after {

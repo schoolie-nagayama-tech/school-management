@@ -23,8 +23,8 @@
  * - student_textbook_settings
  */
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useParams, useSearchParams } from 'next/navigation';
 import { AdminLayout } from '@/components/layouts';
 import { ToastContainer, Loading } from '@/components/ui';
 import { useToast } from '@/hooks/useToast';
@@ -72,6 +72,12 @@ import { TableView } from './TableView';
 export default function NewProgressPage() {
   const params = useParams();
   const studentId = params?.studentId as string;
+  // 注意事項カード等から `?tb=<student_textbook_id>&item=<curriculum_item_id>` で
+  // 遷移してきた場合、該当テキストのテーブルを開いて単元行まで直接ジャンプする。
+  const searchParams = useSearchParams();
+  const targetTextbookId = searchParams?.get('tb') ?? null;
+  const targetItemId = searchParams?.get('item') ?? null;
+  const appliedDeepLinkRef = useRef(false);
   const { toasts, removeToast, success, error: toastError, info: toastInfo } = useToast();
   const { profile, getSelectedSchoolIds, isLoading: authLoading } = useAuth();
   const isTeacher = profile?.role === 'teacher';
@@ -182,6 +188,16 @@ export default function NewProgressPage() {
     setSelectedTextbookId(id);
     setView('table');
   };
+
+  // ディープリンク: テキスト一覧が揃ったら一度だけ対象テキストを開く
+  useEffect(() => {
+    if (appliedDeepLinkRef.current) return;
+    if (!targetTextbookId || studentTextbooks.length === 0) return;
+    if (!studentTextbooks.some((t) => t.id === targetTextbookId)) return;
+    appliedDeepLinkRef.current = true;
+    openTextbook(targetTextbookId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [targetTextbookId, studentTextbooks]);
 
   // テキスト追加モーダルを開く時にテキスト一覧をロード
   const openAddTextbookModal = useCallback(
@@ -452,6 +468,9 @@ export default function NewProgressPage() {
             }
             textbookTabs={studentTextbooks}
             onSelectTab={setSelectedTextbookId}
+            highlightItemId={
+              selectedTb.id === targetTextbookId && targetItemId ? Number(targetItemId) : undefined
+            }
             onTogglePublish={!isTeacher ? handleTogglePublish : undefined}
             role={isTeacher ? 'teacher' : 'manager'}
             viewMode={effectiveViewMode}
