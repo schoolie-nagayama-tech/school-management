@@ -37,9 +37,10 @@ export interface FeedItem {
   shiftSettingId?: string;
   shiftSettingName?: string;
   teacherEmail?: string;
-  // deadline 系
+  // deadline 系（monthly_tasks 由来のみ。講習準備スケジュールは monthly_tasks に
+  // category='course' として取り込まれるため、通知フィードでは別ソースとして扱わない）
   deadlineType?: 'overdue' | 'upcoming';
-  deadlineSource?: 'monthly' | 'schedule';
+  deadlineSource?: 'monthly';
   deadlineDate?: string;
   deadlineHref?: string;
   incompleteSchoolIds?: string[];
@@ -186,13 +187,16 @@ export async function loadNotificationFeed(
   const currentMonth = new Date().getMonth() + 1;
 
   // ── 並行取得 ──
+  // 講習準備スケジュール(course_prep_schedule_tasks)は sync_course_tasks により
+  // category='course' として monthly_tasks に取り込まれ「業務進捗」ボードに出るため、
+  // ここで別途取得すると同じタスクが通知フィードに二重表示されてしまう。
+  // そのため course_prep_schedule_tasks は取得しない（monthly_tasks 側だけを見る）。
   const [
     responsesResult,
     logsResult,
     seasonalShiftResult,
     regularShiftResult,
     monthlyTasksResult,
-    scheduleTasksResult,
     transcriptsResult,
   ] = await Promise.allSettled([
     // 新着未処理フォーム回答（DI化した client を渡す）
@@ -238,15 +242,6 @@ export async function loadNotificationFeed(
         .eq('year', currentYear)
         .eq('month', currentMonth)
         .lte('task_date', upcomingStr);
-      return tasks || [];
-    })(),
-    // 講習準備スケジュール: 期日超過 + 3日以内の未完了タスク
-    (async () => {
-      const { data: tasks } = await client
-        .from('course_prep_schedule_tasks')
-        .select('id, name, deadline, end_date, is_completed, school_id')
-        .in('school_id', schoolIds)
-        .eq('is_completed', false);
       return tasks || [];
     })(),
     // 文字起こし紐付け
@@ -371,43 +366,6 @@ export async function loadNotificationFeed(
         deadlineHref: '/tasks',
         studentName: task.task_name,
         incompleteSchoolIds,
-      });
-    });
-  }
-
-  // ── 講習準備スケジュール: 超過 + 期日3日以内の未完了タスク → FeedItem ──
-  if (scheduleTasksResult.status === 'fulfilled') {
-    const tasks = scheduleTasksResult.value as Array<{
-      id: string;
-      name: string;
-      deadline: string | null;
-      end_date: string | null;
-      is_completed: boolean;
-      school_id: string;
-    }>;
-    // タスク名でグループ化（同名タスクは1つに集約）
-    const seenNames = new Set<string>();
-    tasks.forEach((task) => {
-      if (task.is_completed) return;
-      const dueDate = task.deadline || task.end_date;
-      if (!dueDate) return;
-      if (seenNames.has(task.name)) return;
-
-      const isOverdue = dueDate < todayStr;
-      const isUpcoming = !isOverdue && dueDate <= upcomingStr;
-      if (!isOverdue && !isUpcoming) return;
-
-      seenNames.add(task.name);
-      items.push({
-        id: `deadline_schedule_${task.id}`,
-        type: 'deadline',
-        timestamp: dueDate + 'T00:00:00',
-        deadlineType: isOverdue ? 'overdue' : 'upcoming',
-        deadlineSource: 'schedule',
-        deadlineDate: dueDate,
-        deadlineHref: '/courses/schedule',
-        schoolId: task.school_id,
-        studentName: task.name,
       });
     });
   }

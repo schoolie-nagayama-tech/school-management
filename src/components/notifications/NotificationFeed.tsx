@@ -457,7 +457,6 @@ function FeedItemRow({
         item={item}
         schoolNames={schoolNames}
         schoolColorBySchoolId={schoolColorBySchoolId}
-        onDismiss={onDismiss}
         onCompleteMonthlyTask={onCompleteMonthlyTask}
       />
     );
@@ -746,18 +745,16 @@ function DeadlineRow({
   item,
   schoolNames,
   schoolColorBySchoolId,
-  onDismiss,
   onCompleteMonthlyTask,
 }: {
   item: FeedItem;
   schoolNames: Record<string, string>;
   schoolColorBySchoolId: Record<string, { bg: string; text: string }>;
-  onDismiss: (id: string) => void;
   onCompleteMonthlyTask: (feedId: string, taskId: string, incompleteSchoolIds: string[]) => void;
 }) {
+  // deadline系フィードは monthly_tasks 由来のみ（講習準備スケジュールは monthly_tasks に
+  // category='course' として取り込まれるため、通知フィードでは別ソースとして扱わない）
   const isOverdue = item.deadlineType === 'overdue';
-  const isMonthly = item.deadlineSource === 'monthly';
-  const sourceLabel = isMonthly ? '業務' : '講習準備';
   const statusLabel = isOverdue ? '超過' : '期日近';
   const badgeClass = isOverdue
     ? 'bg-red-600 text-white shadow-sm ring-1 ring-red-700'
@@ -773,7 +770,7 @@ function DeadlineRow({
   const schoolColor = item.schoolId ? schoolColorBySchoolId[item.schoolId] : undefined;
 
   // feedId から実際のtask IDを抽出
-  const actualTaskId = item.id.replace('deadline_monthly_', '').replace('deadline_schedule_', '');
+  const actualTaskId = item.id.replace('deadline_monthly_', '');
 
   const dateDisplay = item.deadlineDate
     ? (() => {
@@ -794,7 +791,7 @@ function DeadlineRow({
         {statusLabel}
       </span>
       <span className="px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded text-[11px] font-medium whitespace-nowrap shrink-0">
-        {sourceLabel}
+        業務
       </span>
       <div className="flex items-center gap-2 flex-1 min-w-0">
         {item.deadlineHref ? (
@@ -823,27 +820,13 @@ function DeadlineRow({
           </span>
         )}
       </div>
-      {isMonthly ? (
-        /* 業務タスク → 実施済みにする */
-        <button
-          onClick={() =>
-            onCompleteMonthlyTask(item.id, actualTaskId, item.incompleteSchoolIds ?? [])
-          }
-          className="flex items-center text-gray-400 hover:text-green-600 p-1 rounded hover:bg-green-50 transition-colors opacity-0 group-hover:opacity-100 shrink-0"
-          title="実施済みにする"
-        >
-          <Check className="w-3.5 h-3.5" />
-        </button>
-      ) : (
-        /* 準備スケジュール → 確認済み（非表示） */
-        <button
-          onClick={() => onDismiss(item.id)}
-          className="flex items-center text-gray-400 hover:text-green-600 p-1 rounded hover:bg-green-50 transition-colors opacity-0 group-hover:opacity-100 shrink-0"
-          title="確認済みにする"
-        >
-          <Check className="w-3.5 h-3.5" />
-        </button>
-      )}
+      <button
+        onClick={() => onCompleteMonthlyTask(item.id, actualTaskId, item.incompleteSchoolIds ?? [])}
+        className="flex items-center text-gray-400 hover:text-green-600 p-1 rounded hover:bg-green-50 transition-colors opacity-0 group-hover:opacity-100 shrink-0"
+        title="実施済みにする"
+      >
+        <Check className="w-3.5 h-3.5" />
+      </button>
     </div>
   );
 }
