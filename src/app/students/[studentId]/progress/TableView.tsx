@@ -62,6 +62,7 @@ export function TableView({
   onRefresh,
   success,
   toastError,
+  toastInfo,
   onTogglePublish,
 }: {
   textbook: StudentTextbookWithDetails;
@@ -83,6 +84,8 @@ export function TableView({
   onRefresh: () => Promise<void>;
   success: (m: string) => void;
   toastError: (m: string) => void;
+  /** 中立的な案内トースト（青）。提出対象が無いときの穏やかな通知に使う */
+  toastInfo: (m: string) => void;
   onTogglePublish?: (id: string) => void;
 }) {
   const isMeeting = viewMode === 'meeting';
@@ -419,7 +422,13 @@ export function TableView({
         const rows = await getStudentProgress(textbook.id);
         setProgress(rows || []);
       } else {
-        toastError('提出対象の指導記録がありません（指導日を入力してください）');
+        // 引継ぎメモ・宿題/遅刻などの編集はその場で即保存済みで、消えていない。
+        // 「提出」は指導日を入れた行をセッション化する操作なので、指導日が無い場合は
+        // 失敗（赤）ではなく「保存済み・提出対象なし」の穏やかな案内にする。
+        // dirty も解除してアラート／未提出バッジを止める（未保存ではないため）。
+        setDirtyRows(new Set());
+        setIdleAlert(false);
+        toastInfo('入力内容は保存済みです（提出できる指導日はありません）');
       }
     } catch (e) {
       console.error(e);
@@ -427,7 +436,7 @@ export function TableView({
     } finally {
       setSubmitting(false);
     }
-  }, [textbook.id, selfName, setProgress, success, toastError]);
+  }, [textbook.id, selfName, setProgress, success, toastError, toastInfo]);
 
   // 編集ハンドラ（既存API呼出し、楽観的更新）
   // progress が null の場合も shell を作って UI を即反映できるようにする
@@ -494,13 +503,39 @@ export function TableView({
 
   const saveLessonField = useCallback(
     async (row: CurriculumItemWithProgress, lessonNumber: 1 | 2 | 3, date: string | null) => {
-      if (!row.progress?.id) {
-        toastError('先に他の項目を埋めて進捗レコードを作成してください');
-        return;
-      }
       try {
+        // 直接編集は「全項目なくても加筆修正できる」用途。指導日だけを入れたい場合でも
+        // 進捗レコードが無ければ先に作成してから指導日を保存する（旧: 事前に他項目必須で弾いていた）。
+        let progressId = row.progress?.id;
+        if (!progressId) {
+          const created = await upsertStudentProgress({
+            student_textbook_id: textbook.id,
+            curriculum_item_id: row.id,
+          });
+          progressId = (created as { id?: string })?.id;
+          // 作成した進捗レコードをローカルへ反映（id を確定させ以後の編集を成立させる）
+          if (created) {
+            setProgress((prev: CurriculumItemWithProgress[]) =>
+              prev.map((r) =>
+                r.id === row.id
+                  ? {
+                      ...r,
+                      progress: {
+                        ...(r.progress || {}),
+                        ...(created as object),
+                      } as CurriculumItemWithProgress['progress'],
+                    }
+                  : r
+              )
+            );
+          }
+        }
+        if (!progressId) {
+          toastError('指導日の保存に失敗しました');
+          return;
+        }
         await upsertStudentProgressLesson({
-          student_progress_id: row.progress.id,
+          student_progress_id: progressId,
           lesson_number: lessonNumber,
           lesson_date: date,
         });
@@ -510,7 +545,7 @@ export function TableView({
         toastError('指導日の保存に失敗しました');
       }
     },
-    [toastError, markDirty]
+    [textbook.id, toastError, markDirty, setProgress]
   );
 
   return (
@@ -1054,7 +1089,9 @@ export function TableView({
                     isPaintCandidate={isPaintCandidate}
                     sessionMode={sessionMode && !isMeeting}
                     sessionSelection={sessionMode && !isMeeting ? sessionSelection : null}
-                    hasGoal={!!activeExam || role === 'manager'}
+                    // 表の直接編集は「既存項目の加筆修正」用途なので、目標やロールに関わらず常に可能にする。
+                    // 目標必須なのはセッション記録（「授業を記録」）側だけ（下のボタンでガード）。
+                    canDirectEdit={true}
                     onPaintRowClick={() => handlePaintRowClick(rowIdStr)}
                     onLocalPatch={(patch) => updateLocal(rowIdStr, patch)}
                     onSaveProgress={(patch) => saveProgressField(row, patch)}

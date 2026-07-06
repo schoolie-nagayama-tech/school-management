@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import type { ActionGoal, ExamType, StudentTextbookWithDetails } from '@/types/database';
 import {
   SUBJECT_COLOR,
@@ -24,6 +24,7 @@ export function CardsView({
   viewMode,
   onSelect,
   onReorder,
+  onReorderDrag,
   onAddTextbook,
   onTogglePublish,
   onDelete,
@@ -35,11 +36,18 @@ export function CardsView({
   viewMode: ViewMode;
   onSelect: (id: string) => void;
   onReorder: (id: string, direction: 'up' | 'down') => void;
+  /** ドラッグ&ドロップでの並び替え（教室長以上のみ使用可）。未指定ならD&D自体を無効化する。 */
+  onReorderDrag?: (fromId: string, toId: string) => void;
   onAddTextbook?: (presetSubject?: string) => void;
   onTogglePublish?: (id: string) => void;
   onDelete?: (id: string) => void;
 }) {
   const isMeeting = viewMode === 'meeting';
+  // 並べ替え（▲▼・D&D共通）は教室長以上のみ。役割はページ側で 'manager' に丸めて渡されている。
+  const canReorder = role === 'manager' && !!onReorderDrag;
+  // ドラッグ中のテキストID（列をまたいでも状態は1つで良い。異なる列へのドロップは実処理側で無視される）
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
 
   // 科目ごとにグループ化
   const groups = useMemo(() => {
@@ -90,7 +98,7 @@ export function CardsView({
           <p className="text-xs text-[#6b7280] mt-0.5">
             {isMeeting
               ? '保護者面談で画面共有 / PDF配布するためのプレゼンビュー'
-              : '科目別表示 / カードをクリックで詳細テーブルへ / ▲▼で並べ替え'}
+              : `科目別表示 / カードをクリックで詳細テーブルへ${canReorder ? ' / ▲▼・ドラッグで並べ替え' : ''}`}
           </p>
         </div>
         {onAddTextbook && !isMeeting && (
@@ -117,6 +125,13 @@ export function CardsView({
               {items.map((tb, i) => {
                 const ae = activeExamOf(tb, examTypes);
                 const goals = ae ? (actionGoalsByExam[ae.id] ?? []) : [];
+                // ドラッグ中のカードが同じ列（同科目グループ）にあるときだけドロップ対象として扱う。
+                // 異なる列へのドロップは並び順の意味が無いため、見た目上も反応させない。
+                const draggingItem = draggingId
+                  ? textbooks.find((t) => t.id === draggingId)
+                  : undefined;
+                const isDraggingInThisColumn =
+                  !!draggingItem && categorizeSubject(draggingItem.textbook?.subject) === col;
                 return (
                   <TextbookCard
                     key={tb.id}
@@ -130,6 +145,26 @@ export function CardsView({
                     canMoveUp={i > 0}
                     canMoveDown={i < items.length - 1}
                     onReorder={(dir) => onReorder(tb.id, dir)}
+                    canDrag={canReorder}
+                    isDragging={draggingId === tb.id}
+                    isDragOver={
+                      isDraggingInThisColumn && dragOverId === tb.id && draggingId !== tb.id
+                    }
+                    onDragStartCard={() => setDraggingId(tb.id)}
+                    onDragOverCard={() => {
+                      if (isDraggingInThisColumn) setDragOverId(tb.id);
+                    }}
+                    onDropCard={() => {
+                      if (draggingId && draggingId !== tb.id && isDraggingInThisColumn) {
+                        onReorderDrag?.(draggingId, tb.id);
+                      }
+                      setDraggingId(null);
+                      setDragOverId(null);
+                    }}
+                    onDragEndCard={() => {
+                      setDraggingId(null);
+                      setDragOverId(null);
+                    }}
                     onTogglePublish={onTogglePublish ? () => onTogglePublish(tb.id) : undefined}
                     onDelete={onDelete ? () => onDelete(tb.id) : undefined}
                   />

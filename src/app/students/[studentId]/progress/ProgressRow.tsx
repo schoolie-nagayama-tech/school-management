@@ -33,7 +33,7 @@ export function ProgressRow({
   isPaintCandidate = false,
   sessionMode = false,
   sessionSelection = null,
-  hasGoal = true,
+  canDirectEdit = true,
   onPaintRowClick,
   onLocalPatch,
   onSaveProgress,
@@ -71,8 +71,12 @@ export function ProgressRow({
     schoolUnits: Set<number>;
     sessionDate?: string;
   } | null;
-  /** 目標が設定されているか（未設定時は入力を無効化） */
-  hasGoal?: boolean;
+  /**
+   * 表のセルを直接編集できるか（false のとき指導日・引継ぎ・宿題/遅刻・講師名を「—」で入力無効化）。
+   * 直接編集は「既存項目の加筆修正」用途なので基本は常に true。目標必須なのは
+   * セッション記録（「授業を記録」）側だけで、そちらは TableView のボタン側でガードする。
+   */
+  canDirectEdit?: boolean;
   onPaintRowClick?: () => void;
   onLocalPatch: (patch: Partial<CurriculumItemWithProgress['progress']>) => void;
   onSaveProgress: (patch: Record<string, unknown>) => Promise<void>;
@@ -279,7 +283,7 @@ export function ProgressRow({
                     onLocalPatch({ school_progress_date: v ?? undefined });
                     onSaveProgress({ school_progress_date: v });
                   }}
-                  disabled={!hasGoal}
+                  disabled={!canDirectEdit}
                 />
               )}
             </td>
@@ -316,7 +320,7 @@ export function ProgressRow({
               <DateInputWithToday
                 value={lessonDate(n)}
                 onSave={(v) => onSaveLesson(n, v)}
-                disabled={!hasGoal}
+                disabled={!canDirectEdit}
               />
             )}
           </td>
@@ -324,7 +328,7 @@ export function ProgressRow({
       })}
       {showHandover && (
         <td className="px-3 py-2.5">
-          {hasGoal ? (
+          {canDirectEdit ? (
             <textarea
               defaultValue={p?.handover ?? ''}
               placeholder="引継ぎメモ"
@@ -351,7 +355,7 @@ export function ProgressRow({
               onSaveProgress({ homework_not_done: next });
             }}
             className="w-4 h-4 accent-[#d97706] cursor-pointer"
-            disabled={!hasGoal}
+            disabled={!canDirectEdit}
           />
         </td>
       )}
@@ -366,13 +370,13 @@ export function ProgressRow({
               onSaveProgress({ tardy: next });
             }}
             className="w-4 h-4 accent-[#d97706] cursor-pointer"
-            disabled={!hasGoal}
+            disabled={!canDirectEdit}
           />
         </td>
       )}
       {showTeacherName && (
         <td className="px-3 py-2.5">
-          {hasGoal ? (
+          {canDirectEdit ? (
             <TeacherNameInput
               value={isTeacher ? toSurnameOnly(p?.teacher_name) : (p?.teacher_name ?? '')}
               selfName={selfName}

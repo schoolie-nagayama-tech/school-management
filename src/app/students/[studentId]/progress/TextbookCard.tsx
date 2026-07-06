@@ -1,6 +1,6 @@
 'use client';
 
-import { Eye, EyeOff, Trash2 } from 'lucide-react';
+import { Eye, EyeOff, GripVertical, Trash2 } from 'lucide-react';
 import type { ActionGoal, StudentTextbookWithDetails } from '@/types/database';
 import {
   SUBJECT_COLOR,
@@ -15,12 +15,19 @@ export function TextbookCard({
   subjectColumn,
   activeExam,
   actionGoals,
-  role: _role,
+  role,
   isMeeting: _isMeeting,
   onOpen,
   canMoveUp,
   canMoveDown,
   onReorder,
+  canDrag = false,
+  isDragging = false,
+  isDragOver = false,
+  onDragStartCard,
+  onDragOverCard,
+  onDropCard,
+  onDragEndCard,
   onTogglePublish,
   onDelete,
 }: {
@@ -41,6 +48,14 @@ export function TextbookCard({
   canMoveUp: boolean;
   canMoveDown: boolean;
   onReorder: (dir: 'up' | 'down') => void;
+  /** ドラッグ&ドロップでの並び替えを許可するか（教室長以上のみ。CardsView 側で判定して渡す） */
+  canDrag?: boolean;
+  isDragging?: boolean;
+  isDragOver?: boolean;
+  onDragStartCard?: () => void;
+  onDragOverCard?: () => void;
+  onDropCard?: () => void;
+  onDragEndCard?: () => void;
   onTogglePublish?: () => void;
   onDelete?: () => void;
 }) {
@@ -49,6 +64,8 @@ export function TextbookCard({
   const season = seasonLabel(textbook.season);
   const achievedCount = actionGoals.filter((g) => g.achieved).length;
   const tint = SUBJECT_COLOR[subjectColumn];
+  // ▲▼・D&Dによる並べ替えは教室長以上のみ（講師には両方とも出さない）
+  const canReorder = role === 'manager';
 
   const seasonColor =
     textbook.season === 'spring'
@@ -62,7 +79,34 @@ export function TextbookCard({
   return (
     <div
       onClick={onOpen}
-      className={`bg-white rounded-lg border border-l-4 ${seasonColor} ${stalled ? 'border-amber-300' : 'border-[#e5e7eb]'} ${textbook.is_draft ? 'opacity-70 bg-[#fafafa]' : ''} p-2 shadow-sm hover:shadow-md transition-[box-shadow] duration-150 ease-out cursor-pointer text-xs`}
+      draggable={canReorder && canDrag}
+      onDragStart={
+        canReorder && canDrag
+          ? (e) => {
+              // 本体クリック(onOpen)を誘発しないよう、ドラッグ中である旨だけ伝える
+              e.dataTransfer.effectAllowed = 'move';
+              onDragStartCard?.();
+            }
+          : undefined
+      }
+      onDragOver={
+        canReorder && canDrag
+          ? (e) => {
+              e.preventDefault();
+              onDragOverCard?.();
+            }
+          : undefined
+      }
+      onDrop={
+        canReorder && canDrag
+          ? (e) => {
+              e.preventDefault();
+              onDropCard?.();
+            }
+          : undefined
+      }
+      onDragEnd={canReorder && canDrag ? onDragEndCard : undefined}
+      className={`bg-white rounded-lg border border-l-4 ${seasonColor} ${stalled ? 'border-amber-300' : 'border-[#e5e7eb]'} ${textbook.is_draft ? 'opacity-70 bg-[#fafafa]' : ''} ${isDragging ? 'opacity-40' : ''} ${isDragOver ? 'ring-2 ring-[#1e3a5f]/40' : ''} p-2 shadow-sm hover:shadow-md transition-[box-shadow] duration-150 ease-out cursor-pointer text-xs`}
     >
       {/* 並べ替えボタン（右上） */}
       <div className="flex items-start justify-between gap-1 mb-1">
@@ -96,24 +140,36 @@ export function TextbookCard({
               {textbook.is_draft ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
             </button>
           )}
-          <button
-            type="button"
-            disabled={!canMoveUp}
-            onClick={() => onReorder('up')}
-            className="w-5 h-5 rounded border border-[#e5e7eb] bg-white text-[11px] text-[#6b7280] hover:bg-[#f3f4f6] disabled:opacity-30 disabled:hover:bg-white transition-[background-color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97]"
-            title="上へ"
-          >
-            ▲
-          </button>
-          <button
-            type="button"
-            disabled={!canMoveDown}
-            onClick={() => onReorder('down')}
-            className="w-5 h-5 rounded border border-[#e5e7eb] bg-white text-[11px] text-[#6b7280] hover:bg-[#f3f4f6] disabled:opacity-30 disabled:hover:bg-white transition-[background-color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97]"
-            title="下へ"
-          >
-            ▼
-          </button>
+          {canReorder && (
+            <>
+              <button
+                type="button"
+                disabled={!canMoveUp}
+                onClick={() => onReorder('up')}
+                className="w-5 h-5 rounded border border-[#e5e7eb] bg-white text-[11px] text-[#6b7280] hover:bg-[#f3f4f6] disabled:opacity-30 disabled:hover:bg-white transition-[background-color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97]"
+                title="上へ"
+              >
+                ▲
+              </button>
+              <button
+                type="button"
+                disabled={!canMoveDown}
+                onClick={() => onReorder('down')}
+                className="w-5 h-5 rounded border border-[#e5e7eb] bg-white text-[11px] text-[#6b7280] hover:bg-[#f3f4f6] disabled:opacity-30 disabled:hover:bg-white transition-[background-color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97]"
+                title="下へ"
+              >
+                ▼
+              </button>
+              {canDrag && (
+                <span
+                  className="w-5 h-5 flex items-center justify-center text-[#9ca3af] cursor-grab"
+                  title="ドラッグして並び替え"
+                >
+                  <GripVertical className="w-3 h-3" />
+                </span>
+              )}
+            </>
+          )}
         </div>
       </div>
 

@@ -72,7 +72,7 @@ import { TableView } from './TableView';
 export default function NewProgressPage() {
   const params = useParams();
   const studentId = params?.studentId as string;
-  const { toasts, removeToast, success, error: toastError } = useToast();
+  const { toasts, removeToast, success, error: toastError, info: toastInfo } = useToast();
   const { profile, getSelectedSchoolIds, isLoading: authLoading } = useAuth();
   const isTeacher = profile?.role === 'teacher';
 
@@ -314,32 +314,18 @@ export default function NewProgressPage() {
     }
   }, [studentId, isTeacher, selectedTextbookId]);
 
-  // 同一科目グループ内で並び順を入れ替え、sort_order を永続化
-  const handleReorder = useCallback(
-    async (textbookId: string, direction: 'up' | 'down') => {
-      const target = studentTextbooks.find((t) => t.id === textbookId);
-      if (!target) return;
-      const group = categorizeSubject(target.textbook?.subject);
-      const siblings = sortByOrder(
-        studentTextbooks.filter((t) => categorizeSubject(t.textbook?.subject) === group)
-      );
-      const idx = siblings.findIndex((t) => t.id === textbookId);
-      if (idx < 0) return;
-      const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
-      if (swapIdx < 0 || swapIdx >= siblings.length) return;
-
-      const reordered = [...siblings];
-      [reordered[idx], reordered[swapIdx]] = [reordered[swapIdx], reordered[idx]];
-
-      // 連番で正規化して差分があるものだけ更新
+  // 並べ替え後の配列を sort_order へ正規化して永続化する（差分があるものだけ更新）。
+  // 楽観更新してから保存し、失敗時はトーストのみ（次回取得時に実データへ揃う）。
+  const persistReorder = useCallback(
+    async (reordered: StudentTextbookWithDetails[]) => {
       const updates = reordered
         .map((t, i) => ({ id: t.id, order: i }))
         .filter(({ id, order }) => {
           const cur = studentTextbooks.find((x) => x.id === id)?.sort_order;
           return cur !== order;
         });
+      if (updates.length === 0) return;
 
-      // 楽観更新
       setStudentTextbooks((prev) =>
         prev.map((t) => {
           const u = updates.find((x) => x.id === t.id);
@@ -355,6 +341,53 @@ export default function NewProgressPage() {
       }
     },
     [studentTextbooks, toastError]
+  );
+
+  // 同一科目グループ内で並び順を1つ入れ替え（▲▼ボタン用）
+  const handleReorder = useCallback(
+    async (textbookId: string, direction: 'up' | 'down') => {
+      const target = studentTextbooks.find((t) => t.id === textbookId);
+      if (!target) return;
+      const group = categorizeSubject(target.textbook?.subject);
+      const siblings = sortByOrder(
+        studentTextbooks.filter((t) => categorizeSubject(t.textbook?.subject) === group)
+      );
+      const idx = siblings.findIndex((t) => t.id === textbookId);
+      if (idx < 0) return;
+      const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
+      if (swapIdx < 0 || swapIdx >= siblings.length) return;
+
+      const reordered = [...siblings];
+      [reordered[idx], reordered[swapIdx]] = [reordered[swapIdx], reordered[idx]];
+      await persistReorder(reordered);
+    },
+    [studentTextbooks, persistReorder]
+  );
+
+  // 同一科目グループ内でドラッグ&ドロップ並び替え（教室長以上のみ。TextbookCard/CardsView で権限ガード済み）。
+  // 異なる科目グループ間のドロップは並び順の意味が無いため無視する。
+  const handleReorderDrag = useCallback(
+    async (fromId: string, toId: string) => {
+      if (fromId === toId) return;
+      const from = studentTextbooks.find((t) => t.id === fromId);
+      const to = studentTextbooks.find((t) => t.id === toId);
+      if (!from || !to) return;
+      const group = categorizeSubject(from.textbook?.subject);
+      if (categorizeSubject(to.textbook?.subject) !== group) return;
+
+      const siblings = sortByOrder(
+        studentTextbooks.filter((t) => categorizeSubject(t.textbook?.subject) === group)
+      );
+      const fromIdx = siblings.findIndex((t) => t.id === fromId);
+      const toIdx = siblings.findIndex((t) => t.id === toId);
+      if (fromIdx < 0 || toIdx < 0) return;
+
+      const reordered = [...siblings];
+      const [moved] = reordered.splice(fromIdx, 1);
+      reordered.splice(toIdx, 0, moved);
+      await persistReorder(reordered);
+    },
+    [studentTextbooks, persistReorder]
   );
 
   return (
@@ -399,6 +432,7 @@ export default function NewProgressPage() {
           viewMode={effectiveViewMode}
           onSelect={openTextbook}
           onReorder={handleReorder}
+          onReorderDrag={!isTeacher ? handleReorderDrag : undefined}
           onAddTextbook={!isTeacher ? openAddTextbookModal : undefined}
           onTogglePublish={!isTeacher ? handleTogglePublish : undefined}
           onDelete={!isTeacher ? handleDeleteTextbook : undefined}
@@ -428,6 +462,7 @@ export default function NewProgressPage() {
             onRefresh={refreshTextbooks}
             success={success}
             toastError={toastError}
+            toastInfo={toastInfo}
           />
         )
       )}
