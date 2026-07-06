@@ -16,13 +16,13 @@ import Link from 'next/link';
 import {
   AlertTriangle,
   Archive,
-  BookOpen,
   Calendar,
   Check,
   ChevronDown,
   ChevronUp,
+  Circle,
+  CircleCheck,
   GraduationCap,
-  MessageSquare,
   Pencil,
   RefreshCw,
   Search,
@@ -39,8 +39,16 @@ import {
   updateProgressSession,
   syncSessionToProgress,
 } from '@/lib/api/progress-sessions';
-import type { SmartAlert, SessionFeedFilter, FeedGoalSummary } from '@/lib/api/progress-sessions';
-import { getFeedGoalsByTextbooks } from '@/lib/api/progress-sessions';
+import type {
+  SmartAlert,
+  SessionFeedFilter,
+  FeedGoalSummary,
+  SchoolProgressUnit,
+} from '@/lib/api/progress-sessions';
+import {
+  getFeedGoalsByTextbooks,
+  getSchoolProgressUnitsByTextbooks,
+} from '@/lib/api/progress-sessions';
 import type { ProgressSessionWithDetails } from '@/types/database';
 import { toSurnameOnly } from '@/lib/utils/teacherName';
 
@@ -82,6 +90,8 @@ export default function SessionFeed({ schoolIds: propSchoolIds }: Props) {
   const [smartAlerts, setSmartAlerts] = useState<SmartAlert[]>([]);
   // 目標 / 行動目標サマリ: student_textbook_id をキーに表示用情報を保持
   const [goalMap, setGoalMap] = useState<Record<string, FeedGoalSummary>>({});
+  // 学校進度がついている単元: student_textbook_id をキーに保持（確認カードの学校単元行に使う）
+  const [schoolUnitMap, setSchoolUnitMap] = useState<Record<string, SchoolProgressUnit[]>>({});
   const [tab, setTab] = useState<TabKey>('unconfirmed');
   const [loading, setLoading] = useState(true);
   const [alertsExpanded, setAlertsExpanded] = useState(true);
@@ -140,8 +150,15 @@ export default function SessionFeed({ schoolIds: propSchoolIds }: Props) {
             console.error('Failed to fetch feed goals:', e);
             setGoalMap({});
           });
+        getSchoolProgressUnitsByTextbooks(textbookIds)
+          .then(setSchoolUnitMap)
+          .catch((e) => {
+            console.error('Failed to fetch school progress units:', e);
+            setSchoolUnitMap({});
+          });
       } else {
         setGoalMap({});
+        setSchoolUnitMap({});
       }
     } catch (e) {
       console.error(e);
@@ -360,6 +377,11 @@ export default function SessionFeed({ schoolIds: propSchoolIds }: Props) {
                   goal={
                     session.student_textbook?.id ? goalMap[session.student_textbook.id] : undefined
                   }
+                  schoolUnits={
+                    session.student_textbook?.id
+                      ? schoolUnitMap[session.student_textbook.id]
+                      : undefined
+                  }
                 />
               ))}
             </div>
@@ -398,6 +420,8 @@ interface SwipeableCardProps {
   trayRef: React.RefObject<HTMLDivElement | null>;
   /** 目標 / 行動目標サマリ（カード表示用、未取得時 undefined） */
   goal?: FeedGoalSummary;
+  /** 学校進度がついている単元（学校単元行に表示） */
+  schoolUnits?: SchoolProgressUnit[];
   /** stagger animation index */
   staggerIndex?: number;
 }
@@ -414,6 +438,7 @@ function SwipeableCard({
   onStudentClick,
   trayRef,
   goal,
+  schoolUnits,
   staggerIndex = 0,
 }: SwipeableCardProps) {
   const cardRef = useRef<HTMLDivElement>(null);
@@ -515,6 +540,7 @@ function SwipeableCard({
                     onInlineUpdate={onInlineUpdate}
                     onStudentClick={onStudentClick}
                     goal={goal}
+                    schoolUnits={schoolUnits}
                   />
                 </div>
               </div>
@@ -561,6 +587,7 @@ function SwipeableCard({
         onInlineUpdate={onInlineUpdate}
         onStudentClick={onStudentClick}
         goal={goal}
+        schoolUnits={schoolUnits}
       />
     </div>
   );
@@ -585,6 +612,8 @@ interface FeedCardProps {
   compact?: boolean;
   /** 目標 / 行動目標サマリ */
   goal?: FeedGoalSummary;
+  /** 学校進度がついている単元（進行表の学校進度列由来）。学校単元行に表示 */
+  schoolUnits?: SchoolProgressUnit[];
 }
 
 function FeedCard({
@@ -598,6 +627,7 @@ function FeedCard({
   onStudentClick,
   compact,
   goal,
+  schoolUnits = [],
 }: FeedCardProps) {
   const hasIssue = session.homework_not_done || session.tardy;
   const [editing, setEditing] = useState(false);
@@ -630,11 +660,12 @@ function FeedCard({
       });
   }, [session.lessons]);
 
-  // 学校進度サマリ: 学校で進んだ単元数 / 全体（session の lessons の student_progress 由来）
-  const schoolReachedCount = useMemo(
-    () => lessonUnits.filter((u) => !!u.schoolProgressDate).length,
-    [lessonUnits]
-  );
+  // 指導単元の回数（1回目/2回目…）。全単元が同じ回なら見出しに1回だけ出し、
+  // 混在するときだけ各単元に「（N回目）」を付ける（②の仕様）
+  const uniformLesson = useMemo(() => {
+    const nums = new Set(lessonUnits.map((u) => u.lessonNumber));
+    return nums.size === 1 ? (lessonUnits[0]?.lessonNumber ?? null) : null;
+  }, [lessonUnits]);
 
   const isConfirmed = !!session.confirmed_at;
 
@@ -643,19 +674,144 @@ function FeedCard({
     setEditing(false);
   };
 
+  // 左ラベル列付きの行（ラベル / 内容）。案A の見出し行に共通で使う
+  const labelCls = 'w-16 shrink-0 text-[11px] text-gray-400 pt-0.5';
+
+  // 本文セクション（目標＋行動目標 / 指導＋学校単元 / 引継ぎ）。存在するものだけを並べ、
+  // 各セクションの上に細い罫線を引いてヘッダーと区切る（案A: 線で仕切る）。
+  const sections: React.ReactNode[] = [];
+
+  if (!compact && (goal?.exam || (goal && goal.totalCount > 0))) {
+    sections.push(
+      <div key="goal" className="flex flex-col gap-2">
+        {goal?.exam && (
+          <div className="flex gap-3">
+            <div className={labelCls}>目標</div>
+            <div className="flex-1 text-[13px] text-gray-800">
+              {goal.exam.label}
+              {goal.exam.examDate && (
+                <span className="text-gray-400"> ({goal.exam.examDate.replace(/-/g, '/')})</span>
+              )}
+              {goal.exam.targetScore != null && <span> · 目標 {goal.exam.targetScore}点</span>}
+            </div>
+          </div>
+        )}
+        {goal && goal.totalCount > 0 && (
+          <div className="flex gap-3">
+            <div className={labelCls}>
+              行動目標{' '}
+              <span className="text-gray-400">
+                {goal.achievedCount}/{goal.totalCount}
+              </span>
+            </div>
+            <div className="flex-1 flex flex-col gap-0.5 text-[13px] text-gray-800">
+              {goal.actionGoals.map((g) => (
+                <div key={g.id} className="flex items-start gap-1.5">
+                  {g.achieved ? (
+                    <CircleCheck className="w-3.5 h-3.5 text-green-600 mt-0.5 shrink-0" />
+                  ) : (
+                    <Circle className="w-3.5 h-3.5 text-gray-300 mt-0.5 shrink-0" />
+                  )}
+                  <span className={g.achieved ? 'text-gray-400 line-through' : ''}>{g.title}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  if (lessonUnits.length > 0) {
+    sections.push(
+      <div key="units" className="flex flex-col gap-2">
+        <div className="flex gap-3">
+          <div className={labelCls}>
+            指導単元
+            {uniformLesson != null && <span className="text-gray-400"> {uniformLesson}回目</span>}
+          </div>
+          <div className="flex-1 text-[13px] text-gray-800 leading-relaxed">
+            {lessonUnits.map((u, i) => (
+              <React.Fragment key={i}>
+                {i > 0 && <span className="text-gray-300"> · </span>}
+                {u.label}
+                {uniformLesson == null && (
+                  <span className="text-gray-400">（{u.lessonNumber}回目）</span>
+                )}
+              </React.Fragment>
+            ))}
+          </div>
+        </div>
+        {!compact && (
+          <div className="flex gap-3">
+            <div className="w-16 shrink-0 pt-0.5 text-[11px] text-[#1e40af] flex items-center gap-1">
+              <GraduationCap className="w-3 h-3" aria-hidden="true" /> 学校
+            </div>
+            <div className="flex-1 text-[13px] leading-relaxed">
+              {schoolUnits.length > 0 ? (
+                schoolUnits.map((u, i) => (
+                  <React.Fragment key={u.curriculumItemId}>
+                    {i > 0 && <span className="text-gray-300"> · </span>}
+                    <span className="text-gray-800">{u.label}</span>
+                  </React.Fragment>
+                ))
+              ) : (
+                <span className="text-gray-400">なし</span>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  sections.push(
+    editing ? (
+      <div key="handover" className="flex gap-3" data-no-swipe>
+        <div className="w-16 shrink-0 pt-1 text-[11px] text-gray-400">引継ぎ</div>
+        <div className="flex-1 space-y-2">
+          <textarea
+            value={editHandover}
+            onChange={(e) => setEditHandover(e.target.value)}
+            rows={2}
+            className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded-lg resize-none focus:border-[#1e3a5f] outline-none"
+            placeholder="引継ぎ..."
+          />
+          <div className="flex gap-1 justify-end">
+            <button
+              onClick={() => setEditing(false)}
+              className="px-3 py-1 text-xs text-gray-500 hover:bg-gray-100 rounded-lg active:scale-[0.97]"
+            >
+              キャンセル
+            </button>
+            <button
+              onClick={handleSaveEdit}
+              className="px-3 py-1 text-xs bg-[#1e3a5f] text-white rounded-lg hover:bg-[#2a4a6f] active:scale-[0.97]"
+            >
+              保存
+            </button>
+          </div>
+        </div>
+      </div>
+    ) : (
+      <div key="handover" className="flex gap-3">
+        <div className={labelCls}>引継ぎ</div>
+        <div className="flex-1 text-sm text-gray-800 leading-relaxed whitespace-pre-wrap">
+          {session.handover || <span className="text-gray-400">—</span>}
+        </div>
+      </div>
+    )
+  );
+
   return (
     <div
       className={`rounded-xl border p-4 ${
-        isConfirmed
-          ? 'border-green-200 bg-green-50/30'
-          : hasIssue
-            ? 'border-2 border-amber-400 bg-amber-50/40'
-            : 'border-gray-200 bg-white'
+        isConfirmed ? 'border-green-200 bg-green-50/30' : 'border-gray-200 bg-white'
       } ${compact ? 'p-3' : ''}`}
     >
-      {/* 上段: 生徒名（クリック可）/ 日付 / アクション */}
-      <div className="flex items-start justify-between mb-2">
-        <div>
+      {/* ヘッダー: 生徒名 / 教材 / 日付・講師 / アクション */}
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
           {studentId ? (
             <button
               data-no-swipe
@@ -672,12 +828,13 @@ function FeedCard({
           )}
           <div className="text-xs text-gray-500">{textbookName}</div>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="text-xs text-gray-500">{session.session_date?.replace(/-/g, '/')}</div>
-          {displayTeacher && <div className="text-xs text-gray-400">{displayTeacher}</div>}
-
+        <div className="flex items-center gap-2 shrink-0">
+          <div className="text-xs text-gray-500 whitespace-nowrap">
+            {session.session_date?.replace(/-/g, '/')}
+            {displayTeacher ? ` ${displayTeacher}` : ''}
+          </div>
           {/* アクションボタン */}
-          <div className="flex items-center gap-1 ml-1" data-no-swipe>
+          <div className="flex items-center gap-1" data-no-swipe>
             {!editing && !compact && (
               <button
                 onClick={() => {
@@ -718,153 +875,48 @@ function FeedCard({
         </div>
       </div>
 
-      {/* フラグ（インライン編集可） */}
-      {(hasIssue || editing) && (
-        <div className="flex items-center gap-2 mb-2" data-no-swipe>
-          <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
-          {editing ? (
-            <>
-              <label className="flex items-center gap-1 text-[10px] cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={session.homework_not_done}
-                  onChange={(e) => onInlineUpdate({ homework_not_done: e.target.checked })}
-                  className="w-3 h-3 accent-amber-600 rounded"
-                />
-                宿題未提出
-              </label>
-              <label className="flex items-center gap-1 text-[10px] cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={session.tardy}
-                  onChange={(e) => onInlineUpdate({ tardy: e.target.checked })}
-                  className="w-3 h-3 accent-amber-600 rounded"
-                />
-                遅刻
-              </label>
-            </>
-          ) : (
-            <>
-              {session.homework_not_done && (
-                <span className="px-1.5 py-0.5 text-[11px] bg-amber-200 text-amber-900 rounded font-medium">
-                  宿題未提出
-                </span>
-              )}
-              {session.tardy && (
-                <span className="px-1.5 py-0.5 text-[11px] bg-amber-200 text-amber-900 rounded font-medium">
-                  遅刻
-                </span>
-              )}
-            </>
-          )}
-        </div>
-      )}
-
-      {/* 指導単元（学校進度がある単元には小さい校マーカーを付与） */}
-      {lessonUnits.length > 0 && (
-        <div className="flex items-start gap-1.5 mb-1">
-          <BookOpen className="w-3.5 h-3.5 text-gray-400 mt-0.5 shrink-0" />
-          <div className="flex flex-wrap gap-1">
-            {lessonUnits.map((u, i) => (
-              <span
-                key={i}
-                className={`inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] rounded ${
-                  u.schoolProgressDate
-                    ? 'bg-blue-50 text-blue-800 border border-blue-200'
-                    : 'bg-gray-100 text-gray-700'
-                }`}
-                title={u.schoolProgressDate ? `学校進度: ${u.schoolProgressDate}` : undefined}
-              >
-                {u.schoolProgressDate && (
-                  <GraduationCap className="w-3 h-3 text-blue-500" aria-label="学校進度あり" />
-                )}
-                {u.label}{' '}
-                <span className={u.schoolProgressDate ? 'text-blue-400' : 'text-gray-400'}>
-                  ({u.lessonNumber}回目)
-                </span>
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* 目標 + 行動目標 + 学校進度サマリ */}
-      {!compact && (goal?.exam || schoolReachedCount > 0) && (
-        <div className="mt-2 mb-1 flex flex-wrap items-center gap-2 text-[11px]">
-          {/* 試験目標 */}
-          {goal?.exam && (
-            <div className="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-50 text-purple-800 border border-purple-200 rounded">
-              <Target className="w-3 h-3 text-purple-500" />
-              <span className="font-medium">{goal.exam.label}</span>
-              {goal.exam.examDate && (
-                <span className="text-purple-500">({goal.exam.examDate.replace(/-/g, '/')})</span>
-              )}
-              {goal.exam.targetScore != null && (
-                <span className="text-purple-600">目標 {goal.exam.targetScore}点</span>
-              )}
-            </div>
-          )}
-
-          {/* 行動目標 達成率 */}
-          {goal && goal.totalCount > 0 && (
-            <div
-              className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-50 text-green-800 border border-green-200 rounded"
-              title={goal.actionGoals
-                .map((g) => `${g.achieved ? '✓' : '・'} ${g.title}`)
-                .join('\n')}
-            >
-              <Check className="w-3 h-3 text-green-600" />
-              <span className="font-medium">行動目標</span>
-              <span className="text-green-700">
-                {goal.achievedCount}/{goal.totalCount}
-              </span>
-            </div>
-          )}
-
-          {/* 学校進度サマリ（このセッションの単元のうち何件が学校で進行済か） */}
-          {schoolReachedCount > 0 && (
-            <div className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-800 border border-blue-200 rounded">
-              <GraduationCap className="w-3 h-3 text-blue-500" />
-              <span className="font-medium">学校進度</span>
-              <span className="text-blue-700">
-                {schoolReachedCount}/{lessonUnits.length}件
-              </span>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* 引継ぎ（表示 or 編集） */}
+      {/* 要注意（宿題未提出・遅刻）。編集中はチェックで切替、通常時は琥珀の注意バーだけ目立たせる */}
       {editing ? (
-        <div className="mt-2 space-y-2" data-no-swipe>
-          <textarea
-            value={editHandover}
-            onChange={(e) => setEditHandover(e.target.value)}
-            rows={2}
-            className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded-lg resize-none focus:border-[#1e3a5f] outline-none"
-            placeholder="引継ぎ..."
-          />
-          <div className="flex gap-1 justify-end">
-            <button
-              onClick={() => setEditing(false)}
-              className="px-3 py-1 text-xs text-gray-500 hover:bg-gray-100 rounded-lg active:scale-[0.97]"
-            >
-              キャンセル
-            </button>
-            <button
-              onClick={handleSaveEdit}
-              className="px-3 py-1 text-xs bg-[#1e3a5f] text-white rounded-lg hover:bg-[#2a4a6f] active:scale-[0.97]"
-            >
-              保存
-            </button>
-          </div>
+        <div className="flex items-center gap-2 mt-2" data-no-swipe>
+          <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
+          <label className="flex items-center gap-1 text-[11px] cursor-pointer">
+            <input
+              type="checkbox"
+              checked={session.homework_not_done}
+              onChange={(e) => onInlineUpdate({ homework_not_done: e.target.checked })}
+              className="w-3 h-3 accent-amber-600 rounded"
+            />
+            宿題未提出
+          </label>
+          <label className="flex items-center gap-1 text-[11px] cursor-pointer">
+            <input
+              type="checkbox"
+              checked={session.tardy}
+              onChange={(e) => onInlineUpdate({ tardy: e.target.checked })}
+              className="w-3 h-3 accent-amber-600 rounded"
+            />
+            遅刻
+          </label>
         </div>
-      ) : session.handover ? (
-        <div className="flex items-start gap-1.5 mt-2">
-          <MessageSquare className="w-3.5 h-3.5 text-gray-400 mt-0.5 shrink-0" />
-          <p className="text-sm text-gray-700 line-clamp-2">{session.handover}</p>
+      ) : hasIssue ? (
+        <div className="flex items-center gap-1.5 mt-2 px-2.5 py-1.5 bg-amber-50 border border-amber-300 rounded-lg">
+          <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+          <span className="text-[13px] font-medium text-amber-800">
+            {[session.homework_not_done && '宿題未提出', session.tardy && '遅刻']
+              .filter(Boolean)
+              .join(' · ')}
+          </span>
         </div>
       ) : null}
+
+      {/* 本文セクション（各セクション上に罫線を引いて仕切る） */}
+      <div>
+        {sections.map((s, i) => (
+          <div key={i} className="border-t border-gray-200 pt-2.5 mt-2.5">
+            {s}
+          </div>
+        ))}
+      </div>
 
       {/* 確認済みバッジ */}
       {isConfirmed && (

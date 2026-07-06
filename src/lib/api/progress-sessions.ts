@@ -1014,3 +1014,72 @@ export async function getFeedGoalsByTextbooks(
   }
   return out;
 }
+
+/** 学校進度がついている単元（進行表の「学校進度」列由来）。確認カードの学校単元行に使う */
+export interface SchoolProgressUnit {
+  curriculumItemId: number;
+  /** 表示ラベル（item_number + title） */
+  label: string;
+  /** 学校進度の日付 YYYY-MM-DD */
+  schoolDate: string;
+}
+
+/**
+ * 教材(student_textbook)ごとに、学校進度がついている単元を一括取得する。
+ * セッションの指導単元とは別に「学校進度の列」のデータをそのまま出したいので、
+ * student_progress.school_progress_date が入っている行を curriculum_items 順で返す。
+ * （本番実測で1教材あたり最大2件程度と少ないため単一クエリで取得。）
+ */
+export async function getSchoolProgressUnitsByTextbooks(
+  studentTextbookIds: string[]
+): Promise<Record<string, SchoolProgressUnit[]>> {
+  const out: Record<string, SchoolProgressUnit[]> = {};
+  for (const id of studentTextbookIds) out[id] = [];
+  if (studentTextbookIds.length === 0) return out;
+
+  const { data, error } = await supabase
+    .from('student_progress')
+    .select(
+      'student_textbook_id, curriculum_item_id, school_progress_date, curriculum_item:curriculum_items(item_number, title, sort_order)'
+    )
+    .in('student_textbook_id', studentTextbookIds)
+    .not('school_progress_date', 'is', null);
+
+  if (error) {
+    console.error('Failed to fetch school progress units:', error);
+    return out;
+  }
+
+  type CurriculumMeta = {
+    item_number: string | null;
+    title: string | null;
+    sort_order: number | null;
+  };
+  const rows = (data || []) as Array<{
+    student_textbook_id: string;
+    curriculum_item_id: number;
+    school_progress_date: string;
+    curriculum_item: CurriculumMeta | CurriculumMeta[] | null;
+  }>;
+
+  // カリキュラム順（sort_order）で安定表示するため、いったん sort_order を保持して並べてから整形する
+  const withOrder: Record<string, Array<SchoolProgressUnit & { sortOrder: number }>> = {};
+  for (const id of studentTextbookIds) withOrder[id] = [];
+  for (const r of rows) {
+    const ci = Array.isArray(r.curriculum_item) ? r.curriculum_item[0] : r.curriculum_item;
+    const label = `${ci?.item_number ?? ''} ${ci?.title ?? ''}`.trim();
+    (withOrder[r.student_textbook_id] ||= []).push({
+      curriculumItemId: r.curriculum_item_id,
+      label,
+      schoolDate: r.school_progress_date,
+      sortOrder: ci?.sort_order ?? Number.MAX_SAFE_INTEGER,
+    });
+  }
+
+  for (const id of Object.keys(withOrder)) {
+    out[id] = withOrder[id]
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+      .map(({ curriculumItemId, label, schoolDate }) => ({ curriculumItemId, label, schoolDate }));
+  }
+  return out;
+}
