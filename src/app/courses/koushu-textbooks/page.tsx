@@ -124,7 +124,9 @@ export default function KoushuTextbookRosterPage() {
             .range(from, to)
         ),
       ]);
-      setProposals(data);
+      // 使用テキスト一覧は「実際に使うことが確定したテキスト」を示す一覧のため、
+      // 公開済み(approved)の提案書のみを対象にする（下書き・提案済のテキストは含めない）
+      setProposals(data.filter((p) => p.status === 'approved'));
       setOwnedKeys(new Set(ownedRows.map((r) => `${r.student_id}:${r.textbook_id}`)));
     } catch (e) {
       console.error('使用テキスト一覧の取得に失敗:', e);
@@ -238,7 +240,7 @@ export default function KoushuTextbookRosterPage() {
           <Loading className="min-h-[40vh]" label="使用テキストを読み込み中..." />
         ) : filtered.length === 0 ? (
           <div className="py-12 text-center text-sm text-text-faint border border-border-default rounded-xl">
-            {year} {SEASON_LABELS[season]}講習の提案書がありません
+            {year} {SEASON_LABELS[season]}講習の公開済み提案書がありません
           </div>
         ) : (
           <div className="rounded-xl border border-border-default overflow-hidden">

@@ -108,7 +108,9 @@ export default function KoushuTextbookList() {
         const s = student as { last_name: string; first_name: string };
         setStudentName(`${s.last_name} ${s.first_name}`);
       }
-      setProposals(list);
+      // 使用テキスト一覧は「実際に使うことが確定したテキスト」を示す一覧のため、
+      // 公開済み(approved)の提案書のみを対象にする（下書き・提案済のテキストは含めない）
+      setProposals(list.filter((p) => p.status === 'approved'));
       setOwnedIds(
         new Set(((ownedRows ?? []) as { textbook_id: number }[]).map((r) => r.textbook_id))
       );
@@ -168,7 +170,7 @@ export default function KoushuTextbookList() {
 
       {groups.length === 0 ? (
         <div className="py-12 text-center text-sm text-text-faint border border-border-default rounded-xl">
-          講習の提案書がまだありません
+          公開済みの講習提案書がまだありません
         </div>
       ) : (
         <div className="space-y-6 print:space-y-3">
