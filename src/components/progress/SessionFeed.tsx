@@ -55,9 +55,10 @@ const TABS: { key: TabKey; label: string }[] = [
   { key: 'confirmed', label: '確認済' },
 ];
 
-// カード→トレイへ飛んでいくアニメーションの所要時間（globals.css の
-// .session-fly / .session-fly-hop と一致させる必要がある）。
-const FLY_TO_TRAY_DURATION_MS = 500;
+// 確認アニメーションのタイムライン（globals.css の session-* keyframes と一致させること）:
+// 折りたたみ 0–380ms / 放物線飛行 300–980ms（60ms 重ねて畳み終わりから滑らかに射出）/
+// 980ms で着地 → トレイの受け止めバウンド + カード除去。
+const CONFIRM_FLY_TOTAL_MS = 980;
 
 // ─── メインコンポーネント ───
 
@@ -95,6 +96,8 @@ export default function SessionFeed({ schoolIds: propSchoolIds }: Props) {
   const [flyingIds, setFlyingIds] = useState<Set<string>>(new Set());
   // 確認済みトレイの展開
   const [trayOpen, setTrayOpen] = useState(false);
+  // カードがトレイに着地した回数（トレイの受け止めバウンド + カウント即時反映のトリガー）
+  const [trayCatchSignal, setTrayCatchSignal] = useState(0);
 
   // ── スマートアラート取得（タブ・フィルタと独立、schoolIds 変更時のみ再取得） ──
   useEffect(() => {
@@ -172,7 +175,7 @@ export default function SessionFeed({ schoolIds: propSchoolIds }: Props) {
         console.error(e);
       }
 
-      // アニメーション完了後にリストから除去
+      // 着地のタイミングでリストから除去し、トレイに受け止めさせる
       setTimeout(() => {
         setSessions((prev) => prev.filter((s) => s.id !== sessionId));
         setFlyingIds((prev) => {
@@ -180,7 +183,8 @@ export default function SessionFeed({ schoolIds: propSchoolIds }: Props) {
           next.delete(sessionId);
           return next;
         });
-      }, FLY_TO_TRAY_DURATION_MS);
+        setTrayCatchSignal((n) => n + 1);
+      }, CONFIRM_FLY_TOTAL_MS);
     },
     [profile?.id]
   );
@@ -368,6 +372,7 @@ export default function SessionFeed({ schoolIds: propSchoolIds }: Props) {
           schoolIds={schoolIds}
           open={trayOpen}
           onToggle={() => setTrayOpen((v) => !v)}
+          catchSignal={trayCatchSignal}
         />
       </div>
     </div>
@@ -449,46 +454,86 @@ function SwipeableCard({
   const swipeIsRight = dragX > 0;
   const rotation = isDragging ? dragX * 0.02 : 0;
 
-  // 飛んでいくアニメーション: トレイへ放物線軌道で吸い込まれる
-  // dx/dy は CSS 変数として渡し、keyframes (session-fly-to-tray) 側で
-  // 頂点を上に持ち上げ・段階的にスケールダウンする弧を描く。
-  const flyStyle = useMemo<React.CSSProperties>(() => {
-    if (!isFlying) return {};
-    const trayEl = trayRef.current;
-    const cardEl = cardRef.current;
-    if (!trayEl || !cardEl) {
-      // フォールバック: 参照が取れない場合は右斜め上に吸い込む簡易軌道
-      return {
-        ['--fly-dx' as string]: '320px',
-        ['--fly-dy' as string]: '-40px',
-        position: 'relative',
-      };
+  // 飛行ジオメトリ: isFlying に切り替わったレンダー中に「fixed 化される前の」
+  // DOM からカード位置とトレイ位置を測る（レンダー中の getBoundingClientRect は
+  // コミット前の旧レイアウトを読める、という性質を意図的に使うパターン）。
+  const flyGeom = useMemo(() => {
+    if (!isFlying) return null;
+    const rect = cardRef.current?.getBoundingClientRect();
+    if (!rect) return null;
+    // フォールバック軌道（トレイ非表示 = スマホ幅など）: 右上へ放り投げる
+    let dx = 320;
+    let dy = -40;
+    const trayRect = trayRef.current?.getBoundingClientRect();
+    if (trayRect && trayRect.width > 0) {
+      // 着地点はトレイヘッダー（Archive アイコン付近）
+      dx = trayRect.left + trayRect.width / 2 - (rect.left + rect.width / 2);
+      dy = trayRect.top + 32 - (rect.top + rect.height / 2);
     }
-    const trayRect = trayEl.getBoundingClientRect();
-    const cardRect = cardEl.getBoundingClientRect();
-    // トレイの中心に着地させる（カードもスケール後の中心が合うよう中心同士で計算）
-    const dx = trayRect.left + trayRect.width / 2 - (cardRect.left + cardRect.width / 2);
-    const dy = trayRect.top + trayRect.height / 2 - (cardRect.top + cardRect.height / 2);
-    return {
-      ['--fly-dx' as string]: `${dx}px`,
-      ['--fly-dy' as string]: `${dy}px`,
-      position: 'relative',
-    };
+    // 放物線の頂点: 始点・着地点の高い方からさらに持ち上げる（飛距離に応じて 90〜170px）。
+    // ただし画面上端付近のカードで弧が画面外へ突き抜けないよう、上方向の余白でクランプ。
+    const higherEndY = rect.top + rect.height / 2 + Math.min(dy, 0);
+    const headroom = Math.max(32, higherEndY - 16);
+    const lift = Math.min(Math.max(90, Math.min(170, Math.abs(dx) * 0.2)), headroom);
+    const peak = Math.min(dy, 0) - lift;
+    return { rect, dx, dy, peak };
   }, [isFlying, trayRef]);
+
+  // ── 飛行中: fixed のゴーストが折りたたみ → 放物線でトレイへ。
+  // レイアウト上の行は .session-slot が高さを閉じて下のカードを詰める。
+  // 軸ごとに要素を分離: Y(放物線) > X(直線) > 縮小回転 > 折りたたみ の入れ子で、
+  // translate 距離がスケールの影響を受けず、回転が非等方スケールで歪まない。
+  if (isFlying && flyGeom) {
+    const { rect, dx, dy, peak } = flyGeom;
+    return (
+      <div
+        className="session-slot"
+        style={{ height: rect.height, ['--slot-h' as string]: `${rect.height}px` }}
+      >
+        <div
+          className="session-ghost"
+          style={{
+            left: rect.left,
+            top: rect.top,
+            width: rect.width,
+            ['--fly-dx' as string]: `${dx}px`,
+            ['--fly-dy' as string]: `${dy}px`,
+            ['--fly-peak' as string]: `${peak}px`,
+          }}
+        >
+          <div className="session-fly-y">
+            <div className="session-fly-x">
+              <div className="session-shrink">
+                <div className="session-fold">
+                  <FeedCard
+                    session={session}
+                    isTeacher={isTeacher}
+                    showConfirmAction={showConfirmAction}
+                    showUnconfirmAction={showUnconfirmAction}
+                    onConfirm={onConfirm}
+                    onUnconfirm={onUnconfirm}
+                    onInlineUpdate={onInlineUpdate}
+                    onStudentClick={onStudentClick}
+                    goal={goal}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
       ref={cardRef}
-      className={`relative ${isFlying ? 'session-fly' : 'feed-card-enter'}`}
+      className="relative feed-card-enter"
       style={{
-        ...(isFlying
-          ? flyStyle
-          : {
-              transform: isDragging ? `translateX(${dragX}px) rotate(${rotation}deg)` : undefined,
-              transition: isDragging ? 'none' : 'transform 200ms cubic-bezier(0.23, 1, 0.32, 1)',
-            }),
+        transform: isDragging ? `translateX(${dragX}px) rotate(${rotation}deg)` : undefined,
+        transition: isDragging ? 'none' : 'transform 200ms cubic-bezier(0.23, 1, 0.32, 1)',
         // stagger: 最初の10枚のみ（それ以降は delay 不要）
-        animationDelay: !isFlying && staggerIndex < 10 ? `${staggerIndex * 40}ms` : undefined,
+        animationDelay: staggerIndex < 10 ? `${staggerIndex * 40}ms` : undefined,
       }}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
@@ -506,21 +551,17 @@ function SwipeableCard({
         </div>
       )}
 
-      {/* 飛んでいくとき、内側要素で Y方向の弧だけ別アニメーションに分離。
-       * 外側=直線(translate+scale+rotate)、内側=上下のhop のみ → 弧が滑らかになる */}
-      <div className={isFlying ? 'session-fly-hop' : undefined}>
-        <FeedCard
-          session={session}
-          isTeacher={isTeacher}
-          showConfirmAction={showConfirmAction}
-          showUnconfirmAction={showUnconfirmAction}
-          onConfirm={onConfirm}
-          onUnconfirm={onUnconfirm}
-          onInlineUpdate={onInlineUpdate}
-          onStudentClick={onStudentClick}
-          goal={goal}
-        />
-      </div>
+      <FeedCard
+        session={session}
+        isTeacher={isTeacher}
+        showConfirmAction={showConfirmAction}
+        showUnconfirmAction={showUnconfirmAction}
+        onConfirm={onConfirm}
+        onUnconfirm={onUnconfirm}
+        onInlineUpdate={onInlineUpdate}
+        onStudentClick={onStudentClick}
+        goal={goal}
+      />
     </div>
   );
 }
@@ -851,10 +892,31 @@ function FeedCard({
 
 const ConfirmedTray = React.forwardRef<
   HTMLDivElement,
-  { schoolIds: string[]; open: boolean; onToggle: () => void }
->(function ConfirmedTray({ schoolIds, open, onToggle }, ref) {
+  {
+    schoolIds: string[];
+    open: boolean;
+    onToggle: () => void;
+    /** カード着地のたびにインクリメントされる（受け止めバウンドのトリガー） */
+    catchSignal: number;
+  }
+>(function ConfirmedTray({ schoolIds, open, onToggle, catchSignal }, ref) {
   const [sessions, setSessions] = useState<ProgressSessionWithDetails[]>([]);
   const [count, setCount] = useState(0);
+  const [catching, setCatching] = useState(false);
+
+  // カードが着地したら: カウントを即時反映し、トレイを沈み込ませて受け止める。
+  // 展開中なら中身も取り直して、投げ込んだカードがトレイ内に現れるようにする。
+  useEffect(() => {
+    if (catchSignal === 0) return;
+    setCount((c) => c + 1);
+    setCatching(true);
+    const timer = setTimeout(() => setCatching(false), 450);
+    if (open && schoolIds.length > 0) {
+      getSessionFeed(schoolIds, { confirmedOnly: true }, 20).then(setSessions).catch(console.error);
+    }
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [catchSignal]);
 
   useEffect(() => {
     if (!open || schoolIds.length === 0) return;
@@ -879,7 +941,7 @@ const ConfirmedTray = React.forwardRef<
 
   return (
     <div ref={ref} className="w-64 shrink-0 hidden lg:block">
-      <div className="sticky top-4">
+      <div className={`sticky top-4 ${catching ? 'tray-catch' : ''}`}>
         {/* トレイヘッダー */}
         <button
           onClick={onToggle}

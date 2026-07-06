@@ -843,56 +843,137 @@ a:focus-visible {
   }
 }
 
-/* ─── 進行フィード: 確認カードがトレイへふわっと飛んでいくアニメーション ───
- * ゴミ箱に紙を投げ入れるイメージ。
- * カクつきを完全に消すため、X と Y の動きを別要素に分離して合成する:
- *  - 外側 (.session-fly): 0%→100% の単一段階で diagonal translate + scale + rotate + fade
- *  - 内側 (.session-fly-hop): translateY のみで上下に弧を描く
- * 外側は中間キーフレームがないため進路が変わらず、内側は単一軸の往復のみで
- * 物理的な滑らかさが出る。
- * --fly-dx / --fly-dy はカード中心 → トレイ中心の差分(px)。
- * transform / opacity のみで GPU 加速され軽量。
+/* ─── 進行フィード: 確認カードの「折りたたみ → 放物線投函」アニメーション ───
+ * 紙の報告書を折りたたんで書類トレイへ放り込むメタファー。3幕構成:
+ *  1) 折りたたみ (0–380ms): .session-fold が rotateX を交えて紙を畳む。
+ *     並行して .session-slot が行の高さを閉じ、下のカードが静かに詰める。
+ *  2) 放物線飛行 (300–980ms): 軸を要素で分離して合成する。
+ *     X軸 (.session-fly-x) はほぼ等速の直線、Y軸 (.session-fly-y) は
+ *     keyframe 内の timing-function 切替で「減速上昇 → 頂点 → 重力加速で
+ *     落下」を作る（本物の投射軌道の速度プロファイル）。
+ *     縮小・回転 (.session-shrink) は translate より内側に置き、
+ *     移動距離がスケールの影響を受けないよう分離する。
+ *  3) 着地: トレイ側が .tray-catch で受け止めて沈み込む。
+ * --fly-dx / --fly-dy = カード中心 → トレイ着地点の差分(px)。
+ * --fly-peak = 弧の頂点の高さ(px, 負値)。いずれも TSX 側で算出。
+ * .session-slot の height 以外は transform / opacity のみで GPU 合成。
+ * タイムライン定数は SessionFeed.tsx の CONFIRM_FLY_TOTAL_MS と一致させること。
  */
-@keyframes session-fly-translate {
-  from {
-    transform: translate(0, 0) rotate(0deg) scale(1);
-    opacity: 1;
-  }
-  to {
-    transform: translate(var(--fly-dx), var(--fly-dy)) rotate(12deg) scale(0.1);
-    opacity: 0;
-  }
-}
-@keyframes session-fly-hop {
+@keyframes session-fold {
   0% {
-    transform: translateY(0);
+    transform: perspective(1000px) rotateX(0deg) scale(1, 1);
   }
-  50% {
-    transform: translateY(-110px);
+  55% {
+    transform: perspective(1000px) rotateX(-26deg) scale(0.94, 0.52);
   }
   100% {
-    transform: translateY(0);
+    transform: perspective(1000px) rotateX(0deg) scale(0.72, 0.18);
   }
 }
-.session-fly {
-  /* 投げ出しが速く、着地でふわっと減速する強めの ease-out */
-  animation: session-fly-translate 500ms cubic-bezier(0.23, 1, 0.32, 1) forwards;
-  will-change: transform, opacity;
-  z-index: 50;
-}
-.session-fly-hop {
-  /* 弧の頂点は対称な ease-in-out で滑らかに（上→ピーク→下が一筆書きに） */
-  animation: session-fly-hop 500ms cubic-bezier(0.33, 0, 0.67, 1) forwards;
+.session-fold {
+  transform-origin: 50% 12%;
+  animation: session-fold 380ms cubic-bezier(0.55, 0, 0.35, 1) forwards;
   will-change: transform;
 }
+@keyframes session-fly-x {
+  0% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(var(--fly-dx));
+    opacity: 0;
+  }
+}
+.session-fly-x {
+  animation: session-fly-x 680ms cubic-bezier(0.36, 0, 0.64, 1) 300ms both;
+  will-change: transform, opacity;
+}
+@keyframes session-fly-y {
+  0% {
+    transform: translateY(0);
+    /* 打ち上げ: 初速から減速しながら頂点へ */
+    animation-timing-function: cubic-bezier(0.18, 0.6, 0.44, 1);
+  }
+  46% {
+    transform: translateY(var(--fly-peak));
+    /* 落下: 頂点から重力で加速 */
+    animation-timing-function: cubic-bezier(0.56, 0, 0.82, 0.42);
+  }
+  100% {
+    transform: translateY(var(--fly-dy));
+  }
+}
+.session-fly-y {
+  /* 全体は linear にして、各区間の timing-function に速度を委ねる */
+  animation: session-fly-y 680ms linear 300ms both;
+  will-change: transform;
+}
+@keyframes session-shrink {
+  from {
+    transform: rotate(0deg) scale(1);
+  }
+  to {
+    transform: rotate(9deg) scale(0.34);
+  }
+}
+.session-shrink {
+  animation: session-shrink 680ms cubic-bezier(0.4, 0, 0.7, 1) 300ms both;
+  will-change: transform;
+}
+/* 飛行中の実体: 元のカード位置に fixed で浮かせ、リストのレイアウトから切り離す */
+.session-ghost {
+  position: fixed;
+  z-index: 50;
+  pointer-events: none;
+  filter: drop-shadow(0 14px 24px rgb(0 0 0 / 0.14));
+}
+/* 空いた行を閉じる: margin-top を -8px まで動かして space-y-2 の隙間ごと消し、
+ * アニメ完了時とカード除去後のレイアウトが一致するようにする（除去時のガタつき防止） */
+@keyframes session-slot-collapse {
+  from {
+    height: var(--slot-h);
+  }
+  to {
+    height: 0;
+    margin-top: -8px;
+  }
+}
+.session-slot {
+  animation: session-slot-collapse 420ms cubic-bezier(0.4, 0, 0.2, 1) 240ms forwards;
+}
+/* トレイがカードを受け止めたときの沈み込みバウンド */
+@keyframes tray-catch {
+  0% {
+    transform: scale(1) translateY(0);
+  }
+  35% {
+    transform: scale(1.045) translateY(3px);
+  }
+  70% {
+    transform: scale(0.995) translateY(-1px);
+  }
+  100% {
+    transform: scale(1) translateY(0);
+  }
+}
+.tray-catch {
+  animation: tray-catch 420ms cubic-bezier(0.34, 1.3, 0.64, 1);
+}
 @media (prefers-reduced-motion: reduce) {
-  .session-fly,
-  .session-fly-hop {
+  .session-fold,
+  .session-fly-x,
+  .session-fly-y,
+  .session-shrink,
+  .tray-catch {
     animation: none;
   }
-  .session-fly {
+  /* 飛行は省略して即座に消し、行閉じ（session-slot）だけ残す */
+  .session-ghost {
     opacity: 0;
-    transition: opacity 0.2s ease;
   }
 }
 
