@@ -104,6 +104,8 @@ const FIELD_LABELS_FOR_TRANSFORM: Record<string, string> = {
   student_code: '生徒コード',
   subject_other: 'その他科目',
   is_programming: 'プログラミング受講',
+  is_sibling: '兄弟・姉妹あり',
+  withdrawal_date: '退塾予定日',
 };
 
 /**
