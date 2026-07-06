@@ -82,6 +82,8 @@ export default function StudentScoresPage() {
   );
   const { permissions, getSelectedSchoolIds } = useAuth();
   const canEditScores = !!permissions?.canEditScores;
+  // 成績行の削除は編集権限より狭い（講師は編集できるが削除はできない）
+  const canDeleteScores = !!permissions?.canDeleteScores;
   const { toasts, removeToast, success, error: toastError } = useToast();
   const { confirm, ConfirmDialog } = useConfirm();
 
@@ -520,6 +522,7 @@ export default function StudentScoresPage() {
                         onCancelEdit={() => setEditingCell(null)}
                         onDelete={handleDeleteRow}
                         canEdit={canEditScores}
+                        canDelete={canDeleteScores}
                         studentGrade={student?.grade}
                         schoolId={student?.school_id}
                         onReorder={(fromIdx, toIdx) => handleReorder(category, fromIdx, toIdx)}

@@ -4086,6 +4086,8 @@ export interface Permission {
   canEditHandover: boolean;
   canEditGrouping: boolean;
   canEditScores: boolean;
+  // 成績行の削除（教室長以上のみ。講師は編集はできるが削除はできない）
+  canDeleteScores: boolean;
   canEditInterviews: boolean;
   canEditApplications: boolean;
   canAccessBilling: boolean;
@@ -4119,6 +4121,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission> = {
     canEditHandover: true,
     canEditGrouping: true,
     canEditScores: true,
+    canDeleteScores: true,
     canEditInterviews: true,
     canEditApplications: true,
     canAccessBilling: true,
@@ -4148,6 +4151,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission> = {
     canEditHandover: true,
     canEditGrouping: true,
     canEditScores: true,
+    canDeleteScores: true,
     canEditInterviews: true,
     canEditApplications: true,
     canAccessBilling: true,
@@ -4177,6 +4181,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission> = {
     canEditHandover: true,
     canEditGrouping: true,
     canEditScores: true,
+    canDeleteScores: true,
     canEditInterviews: true,
     canEditApplications: true,
     canAccessBilling: true,
@@ -4206,6 +4211,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission> = {
     canEditHandover: true,
     canEditGrouping: false,
     canEditScores: true,
+    canDeleteScores: false,
     canEditInterviews: false,
     canEditApplications: true,
     canAccessBilling: false,
@@ -4235,6 +4241,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission> = {
     canEditHandover: false,
     canEditGrouping: false,
     canEditScores: false,
+    canDeleteScores: false,
     canEditInterviews: false,
     canEditApplications: false,
     canAccessBilling: false,

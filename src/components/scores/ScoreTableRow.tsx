@@ -44,6 +44,8 @@ interface ScoreTableRowProps {
   onCellTab: (assessmentId: string, subject: string) => void;
   getCalculatedValue: (assessment: AssessmentWithScores, type: 'five_sum' | 'nine_sum') => string;
   canEdit: boolean;
+  /** 行削除の可否（canEdit より狭い。講師は編集はできるが削除はできない） */
+  canDelete: boolean;
   naishinType?: NaishinType;
   showDragHandle?: boolean;
   isDragging?: boolean;
@@ -67,6 +69,7 @@ export function ScoreTableRow({
   onCellTab,
   getCalculatedValue,
   canEdit,
+  canDelete,
   naishinType,
   showDragHandle,
   isDragging,
@@ -155,9 +158,11 @@ export function ScoreTableRow({
         {canEdit && (
           <td className="border border-gray-200 px-2 py-1.5 text-center">
             <div className="flex items-center justify-center gap-1.5">
-              <Button variant="danger" size="sm" onClick={() => onDelete(assessment.id)}>
-                削除
-              </Button>
+              {canDelete && (
+                <Button variant="danger" size="sm" onClick={() => onDelete(assessment.id)}>
+                  削除
+                </Button>
+              )}
               {showDragHandle && (
                 <span
                   className="text-gray-300 hover:text-gray-500 cursor-grab transition-colors"

@@ -451,9 +451,13 @@ export function StudentScores({ student, isOpen, onClose }: StudentScoresProps) 
                       </th>
                     </>
                   ))}
-                <th className="border border-border px-3 py-2 text-center text-sm font-semibold text-text-heading">
-                  操作
-                </th>
+                {/* この列は削除ボタンのみ（ドラッグ等の他操作は無い）ため、
+                    canEditScores ではなく canDeleteScores で列自体の有無を揃える */}
+                {permissions?.canDeleteScores && (
+                  <th className="border border-border px-3 py-2 text-center text-sm font-semibold text-text-heading">
+                    操作
+                  </th>
+                )}
               </tr>
             </thead>
             <tbody>
@@ -464,7 +468,7 @@ export function StudentScores({ student, isOpen, onClose }: StudentScoresProps) 
                       subjects.length +
                       3 +
                       (showAggregateColumns ? 2 : 0) +
-                      (permissions?.canEditScores ? 1 : 0)
+                      (permissions?.canDeleteScores ? 1 : 0)
                     }
                     className="border border-border px-3 py-4 text-center text-text-muted"
                   >
@@ -544,7 +548,7 @@ export function StudentScores({ student, isOpen, onClose }: StudentScoresProps) 
                           </td>
                         </>
                       ))}
-                    {permissions?.canEditScores && (
+                    {permissions?.canDeleteScores && (
                       <td className="border border-border px-3 py-2 text-center">
                         <Button
                           variant="danger"

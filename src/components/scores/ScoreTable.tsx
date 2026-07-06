@@ -31,6 +31,8 @@ interface ScoreTableProps {
   onCancelEdit: () => void;
   onDelete: (assessmentId: string) => void;
   canEdit: boolean;
+  /** 行削除の可否（canEdit より狭い。講師は編集はできるが削除はできない） */
+  canDelete: boolean;
   /** 生徒の学年。10以上のとき高校生用の動的科目を使用 */
   studentGrade?: number;
   /** 生徒の所属教室ID。科目マスタの絞り込みに使用 */
@@ -50,6 +52,7 @@ export function ScoreTable({
   onCancelEdit,
   onDelete,
   canEdit,
+  canDelete,
   studentGrade,
   schoolId,
   onReorder,
@@ -268,9 +271,11 @@ export function ScoreTable({
                     {canEdit && (
                       <td className="border border-gray-200 px-2 py-1.5 text-center">
                         <div className="flex items-center justify-center gap-1.5">
-                          <Button variant="danger" size="sm" onClick={() => onDelete(a.id)}>
-                            削除
-                          </Button>
+                          {canDelete && (
+                            <Button variant="danger" size="sm" onClick={() => onDelete(a.id)}>
+                              削除
+                            </Button>
+                          )}
                           {onReorder && (
                             <span
                               className="text-gray-300 hover:text-gray-500 cursor-grab transition-colors"
@@ -354,6 +359,7 @@ export function ScoreTable({
                   onDelete={onDelete}
                   getCalculatedValue={getCalculatedValue}
                   canEdit={canEdit}
+                  canDelete={canDelete}
                   onCellTab={(aId, subj) =>
                     handleCellTabForRow(aId, subj, [
                       'english',
@@ -491,6 +497,7 @@ export function ScoreTable({
                 onDelete={onDelete}
                 getCalculatedValue={getCalculatedValue}
                 canEdit={canEdit}
+                canDelete={canDelete}
                 naishinType={isReportCard ? naishinType : undefined}
                 onCellTab={(aId, subj) =>
                   handleCellTabForRow(aId, subj, [
