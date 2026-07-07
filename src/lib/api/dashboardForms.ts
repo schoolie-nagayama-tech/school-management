@@ -1,6 +1,7 @@
 import { supabase } from '../supabase';
 import { GRADE_LABELS } from '@/types/database';
 import { getTestPrepProposalsWithStudent } from './test-prep-proposals';
+import { fetchAllPaged } from '@/lib/utils/supabasePaging';
 
 /**
  * 教室長ダッシュボード用：フォーム参加率（模試/Vもぎ/増コマ）の集計。
@@ -74,16 +75,25 @@ export async function getFormParticipation(schoolIds: string[]): Promise<FormPar
       .filter((g): g is number => typeof g === 'number');
 
     // 紐付き済みの受験/取得者（生徒単位で重複排除）
-    const { data: responses } = await supabase
-      .from('form_responses')
-      .select('linked_student_id, response_data')
-      .in('school_id', schoolIds)
-      .eq('form_type', ft)
-      .eq('form_period', period.period_key)
-      .not('linked_student_id', 'is', null);
+    // form_responses は教室×期間でスケールし1000行を超えうるため全件ページング取得
+    // （切り捨てると分子=参加者数が過小になり参加率が誤る）。id 昇順で安定ページング。
+    const responses = await fetchAllPaged<{
+      linked_student_id: string | null;
+      response_data: unknown;
+    }>((from, to) =>
+      supabase
+        .from('form_responses')
+        .select('linked_student_id, response_data')
+        .in('school_id', schoolIds)
+        .eq('form_type', ft)
+        .eq('form_period', period.period_key)
+        .not('linked_student_id', 'is', null)
+        .order('id', { ascending: true })
+        .range(from, to)
+    );
 
     const examinees = new Set<string>();
-    for (const r of responses ?? []) {
+    for (const r of responses) {
       if (r.linked_student_id && isParticipated(ft, r.response_data)) {
         examinees.add(r.linked_student_id);
       }
@@ -176,15 +186,25 @@ export async function getProposalFunnel(schoolIds: string[]): Promise<ProposalFu
   }
 
   // 増コマ取得集合: `${student_id}|${period_key}`（total_koma>0 の紐付き回答）
-  const { data: responses } = await supabase
-    .from('form_responses')
-    .select('linked_student_id, form_period, response_data')
-    .in('school_id', schoolIds)
-    .eq('form_type', 'zoukoma')
-    .not('linked_student_id', 'is', null);
+  // form_responses は教室横断・全期間でスケールし1000行を超えうるため全件ページング取得
+  // （切り捨てると取得者集合が欠けてファネルの取得率が誤る）。id 昇順で安定ページング。
+  const responses = await fetchAllPaged<{
+    linked_student_id: string | null;
+    form_period: string | null;
+    response_data: unknown;
+  }>((from, to) =>
+    supabase
+      .from('form_responses')
+      .select('linked_student_id, form_period, response_data')
+      .in('school_id', schoolIds)
+      .eq('form_type', 'zoukoma')
+      .not('linked_student_id', 'is', null)
+      .order('id', { ascending: true })
+      .range(from, to)
+  );
   const acquiredSet = new Set<string>(); // `${student}|${period_key}`（増コマ取得した生徒×期間）
   const acquiredSubjectSet = new Set<string>(); // `${student}|${period_key}|${科目名}`（取得した科目）
-  for (const r of responses ?? []) {
+  for (const r of responses) {
     const rd = (r.response_data as Record<string, unknown> | null) ?? {};
     const koma = rd.total_koma;
     if (r.linked_student_id && typeof koma === 'number' && koma > 0) {

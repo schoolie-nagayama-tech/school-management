@@ -9,6 +9,7 @@
  */
 
 import { supabase } from '@/lib/supabase';
+import { fetchAllPaged } from '@/lib/utils/supabasePaging';
 import type {
   ClassReport,
   ClassReportFormData,
@@ -217,19 +218,25 @@ export async function rejectClassReport(
  */
 export async function getPendingReports(schoolIds: string[]): Promise<ClassReport[]> {
   if (schoolIds.length === 0) return [];
-  const { data, error } = await db
-    .from('class_reports')
-    .select(
-      '*, student:students(id, last_name, first_name, grade), teacher:user_profiles!class_reports_teacher_id_fkey(id, display_name, email)'
-    )
-    .in('school_id', schoolIds)
-    .eq('status', 'submitted')
-    .order('lesson_date', { ascending: true });
-  if (error) {
-    console.error('Error fetching pending reports:', error);
+  // 承認待ちは滞留すると教室横断で1000行を超えうるため全件ページング取得。
+  // lesson_date 昇順を保ちつつ id を第2ソートキーにして安定ページング。
+  try {
+    return await fetchAllPaged<ClassReport>((from, to) =>
+      db
+        .from('class_reports')
+        .select(
+          '*, student:students(id, last_name, first_name, grade), teacher:user_profiles!class_reports_teacher_id_fkey(id, display_name, email)'
+        )
+        .in('school_id', schoolIds)
+        .eq('status', 'submitted')
+        .order('lesson_date', { ascending: true })
+        .order('id', { ascending: true })
+        .range(from, to)
+    );
+  } catch (e) {
+    console.error('Error fetching pending reports:', e);
     throw new Error('承認待ち報告書の取得に失敗しました');
   }
-  return (data || []) as ClassReport[];
 }
 
 /**
@@ -273,20 +280,25 @@ export async function getOverdueDraftReports(
   limit.setDate(limit.getDate() - daysOverdueThreshold);
   const limitStr = limit.toISOString().slice(0, 10);
 
-  const { data, error } = await db
-    .from('class_reports')
-    .select(
-      '*, student:students(id, last_name, first_name, grade), teacher:user_profiles!class_reports_teacher_id_fkey(id, display_name, email)'
-    )
-    .in('school_id', schoolIds)
-    .eq('status', 'draft')
-    .lte('lesson_date', limitStr)
-    .order('lesson_date', { ascending: true });
-  if (error) {
-    console.error('Error fetching overdue drafts:', error);
+  // draft も滞留すると教室横断で1000行を超えうるため全件ページング取得（id で安定化）
+  try {
+    return await fetchAllPaged<ClassReport>((from, to) =>
+      db
+        .from('class_reports')
+        .select(
+          '*, student:students(id, last_name, first_name, grade), teacher:user_profiles!class_reports_teacher_id_fkey(id, display_name, email)'
+        )
+        .in('school_id', schoolIds)
+        .eq('status', 'draft')
+        .lte('lesson_date', limitStr)
+        .order('lesson_date', { ascending: true })
+        .order('id', { ascending: true })
+        .range(from, to)
+    );
+  } catch (e) {
+    console.error('Error fetching overdue drafts:', e);
     throw new Error('期限切れ報告書の取得に失敗しました');
   }
-  return (data || []) as ClassReport[];
 }
 
 /**
@@ -322,24 +334,6 @@ export async function getOverdueReports(
   limit.setDate(limit.getDate() - daysOverdueThreshold);
   const limitStr = limit.toISOString().slice(0, 10);
 
-  // schedule_entries × class_reports を LEFT JOIN で取得
-  const { data, error } = await db
-    .from('schedule_entries')
-    .select(
-      'id, entry_date, student_id, teacher_id, time_slot:schedule_time_slots(slot_number), student:students(last_name, first_name, grade), teacher:user_profiles!schedule_entries_teacher_id_fkey(display_name, email), report:class_reports(id, status)'
-    )
-    .in('school_id', schoolIds)
-    .lte('entry_date', limitStr)
-    .in('status', ['scheduled', 'completed', 'transferred_in'])
-    // 集団は個別の報告書対象外（将来別途簡易版）
-    .eq('formation', 'individual')
-    .order('entry_date', { ascending: true });
-
-  if (error) {
-    console.error('Error fetching overdue reports:', error);
-    throw new Error('未提出報告書の取得に失敗しました');
-  }
-
   type Row = {
     id: string;
     entry_date: string;
@@ -358,11 +352,36 @@ export async function getOverdueReports(
       | null;
   };
 
+  // schedule_entries × class_reports を LEFT JOIN で取得。schedule_entries は最大級の
+  // テーブルで、教室横断・期日以前の全件は1000行を超えうるため全件ページング取得する
+  // （切り捨てると督促対象の一部が静かに漏れる）。entry_date 昇順 + id で安定ページング。
+  let rows: Row[];
+  try {
+    rows = await fetchAllPaged<Row>((from, to) =>
+      db
+        .from('schedule_entries')
+        .select(
+          'id, entry_date, student_id, teacher_id, time_slot:schedule_time_slots(slot_number), student:students(last_name, first_name, grade), teacher:user_profiles!schedule_entries_teacher_id_fkey(display_name, email), report:class_reports(id, status)'
+        )
+        .in('school_id', schoolIds)
+        .lte('entry_date', limitStr)
+        .in('status', ['scheduled', 'completed', 'transferred_in'])
+        // 集団は個別の報告書対象外（将来別途簡易版）
+        .eq('formation', 'individual')
+        .order('entry_date', { ascending: true })
+        .order('id', { ascending: true })
+        .range(from, to)
+    );
+  } catch (e) {
+    console.error('Error fetching overdue reports:', e);
+    throw new Error('未提出報告書の取得に失敗しました');
+  }
+
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
   const targets: OverdueReportTarget[] = [];
-  for (const r of (data || []) as Row[]) {
+  for (const r of rows) {
     const rep = Array.isArray(r.report) ? r.report[0] : r.report;
     const reportStatus = rep?.status ?? null;
     // 「報告書なし」または「draft」だけが督促対象。submitted/approved は除外

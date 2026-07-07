@@ -11,6 +11,7 @@ import type {
 import { setStudentSubjects } from './subjects';
 import { getDefaultSchoolId } from './schools';
 import { withFetchCache } from '@/lib/utils/fetchCache';
+import { fetchAllPaged } from '@/lib/utils/supabasePaging';
 
 /** 一覧取得用（Row の列と一致。将来の列追加時は型と同期すること） */
 const STUDENT_LIST_COLUMNS =
@@ -307,23 +308,25 @@ export async function getStudents(
 ): Promise<EnrichedStudent[]> {
   const targetSchoolIds = schoolIds && schoolIds.length > 0 ? schoolIds : [getDefaultSchoolId()];
 
-  const query = buildStudentsBaseQuery(
-    searchQuery,
-    targetSchoolIds,
-    {},
-    STUDENT_LIST_COLUMNS,
-    client
-  );
-  const { data: students, error } = await query;
-
-  if (error) {
-    console.error('Error fetching students:', error);
+  // この全件版 getStudents は一覧・アラート・請求など多数の呼び出し元が使う。
+  // 複数教室選択時や生徒数増で1000行を超えると一部生徒が静かに欠落するため、
+  // .range() で全件ページング取得する。buildStudentsBaseQuery の並び順に id を
+  // 第2ソートキーとして足して安定ページング（student_code は複数校では非一意）。
+  let students: Student[];
+  try {
+    students = await fetchAllPaged<Student>((from, to) =>
+      buildStudentsBaseQuery(searchQuery, targetSchoolIds, {}, STUDENT_LIST_COLUMNS, client)
+        .order('id', { ascending: true })
+        .range(from, to)
+    );
+  } catch (e) {
+    console.error('Error fetching students:', e);
     throw new Error('生徒一覧の取得に失敗しました');
   }
 
-  if (!students || students.length === 0) return [];
+  if (students.length === 0) return [];
 
-  return enrichStudentsWithRelations(students as Student[], client);
+  return enrichStudentsWithRelations(students, client);
 }
 
 /** 30秒TTLのキャッシュ付き getStudents。読み取り専用ページ向け。 */
