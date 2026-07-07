@@ -886,65 +886,9 @@ export default function InquiryDetailPage() {
                     </button>
                   </div>
                   {/* 内部メモ（永続・保護者には見えない） */}
-                  <p className="text-xs text-text-muted mb-4 whitespace-pre-wrap">
+                  <p className="text-xs text-text-muted mb-6 whitespace-pre-wrap">
                     {inquiry.note || '内部メモなし'}
                   </p>
-
-                  {/* ── Notta文字起こし（取り込み済みから紐付け。入会で面談記録へ引き継ぐ） ── */}
-                  <div className="mb-6 pb-6 border-b border-border">
-                    <div className="flex items-center justify-between mb-2">
-                      <label className="flex items-center gap-1.5 text-xs font-medium text-text-heading">
-                        <Mic className="w-3.5 h-3.5 text-text-muted" />
-                        Notta文字起こし
-                      </label>
-                      <button
-                        type="button"
-                        onClick={() => setNottaImportOpen(true)}
-                        className="text-xs text-info hover:underline"
-                      >
-                        文字起こしから取り込み
-                      </button>
-                    </div>
-
-                    {linkedTranscripts.length > 0 ? (
-                      <ul className="space-y-1.5">
-                        {linkedTranscripts.map((t) => (
-                          <li key={t.id} className="flex items-start gap-2 text-sm group">
-                            <Mic className="w-3.5 h-3.5 text-text-muted shrink-0 mt-0.5" />
-                            <div className="flex-1 min-w-0">
-                              <div className="font-medium text-text-heading truncate">
-                                {t.title || '(無題)'}
-                              </div>
-                              <div className="text-xs text-text-muted">
-                                {t.recorded_at
-                                  ? new Date(t.recorded_at).toLocaleString('ja-JP', {
-                                      month: 'numeric',
-                                      day: 'numeric',
-                                      hour: '2-digit',
-                                      minute: '2-digit',
-                                    })
-                                  : '録音日時なし'}
-                              </div>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => handleUnlinkTranscript(t.id)}
-                              disabled={unlinkingTranscriptId === t.id}
-                              aria-label="紐付けを解除"
-                              className="p-1 rounded text-text-faint hover:text-danger hover:bg-surface-hover transition-colors shrink-0"
-                            >
-                              <X className="w-3.5 h-3.5" />
-                            </button>
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <p className="text-[11px] text-text-muted">
-                        取り込み済みの Notta
-                        文字起こしを紐付けられます。入会（生徒登録）時に、生徒の面談記録へ本文ごと引き継がれます。
-                      </p>
-                    )}
-                  </div>
 
                   {/* ── タイムライン（contacts + mail_logs を at 降順に統合） ── */}
                   {(() => {
@@ -1097,6 +1041,62 @@ export default function InquiryDetailPage() {
                       </div>
                     );
                   })()}
+
+                  {/* ── Notta文字起こし（取り込み済みから紐付け。入会で面談記録へ引き継ぐ） ── */}
+                  <div className="mb-6 pb-6 border-b border-border">
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="flex items-center gap-1.5 text-xs font-medium text-text-heading">
+                        <Mic className="w-3.5 h-3.5 text-text-muted" />
+                        Notta文字起こし
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => setNottaImportOpen(true)}
+                        className="text-xs text-info hover:underline"
+                      >
+                        文字起こしから取り込み
+                      </button>
+                    </div>
+
+                    {linkedTranscripts.length > 0 ? (
+                      <ul className="space-y-1.5">
+                        {linkedTranscripts.map((t) => (
+                          <li key={t.id} className="flex items-start gap-2 text-sm group">
+                            <Mic className="w-3.5 h-3.5 text-text-muted shrink-0 mt-0.5" />
+                            <div className="flex-1 min-w-0">
+                              <div className="font-medium text-text-heading truncate">
+                                {t.title || '(無題)'}
+                              </div>
+                              <div className="text-xs text-text-muted">
+                                {t.recorded_at
+                                  ? new Date(t.recorded_at).toLocaleString('ja-JP', {
+                                      month: 'numeric',
+                                      day: 'numeric',
+                                      hour: '2-digit',
+                                      minute: '2-digit',
+                                    })
+                                  : '録音日時なし'}
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleUnlinkTranscript(t.id)}
+                              disabled={unlinkingTranscriptId === t.id}
+                              aria-label="紐付けを解除"
+                              className="p-1 rounded text-text-faint hover:text-danger hover:bg-surface-hover transition-colors shrink-0"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-[11px] text-text-muted">
+                        取り込み済みの Notta
+                        文字起こしを紐付けられます。入会（生徒登録）時に、生徒の面談記録へ本文ごと引き継がれます。
+                      </p>
+                    )}
+                  </div>
 
                   {/* ── コンタクト追加フォーム（ステータス変更もここから行う） ── */}
                   <div className="border border-border rounded-lg p-4 bg-surface-hover">
