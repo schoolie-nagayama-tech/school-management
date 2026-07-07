@@ -385,6 +385,8 @@ export default function InquiryMailPage() {
     const kw = recipientSearch.trim().toLowerCase();
     return inquiries.filter((q) => {
       if (!hasEmail(q)) return false;
+      // 配信停止した宛先は選べないようにする（オプトアウトの尊重）
+      if (q.email_opt_out) return false;
       if (recipientStatus !== 'all' && q.status !== recipientStatus) return false;
       if (kw) {
         const hay =
@@ -902,7 +904,9 @@ export default function InquiryMailPage() {
                 />
                 表示中の {recipientList.length} 件を全選択
               </label>
-              <p className="text-xs text-text-muted">メールアドレスのある問合せのみ表示</p>
+              <p className="text-xs text-text-muted">
+                メールアドレスあり・配信停止でない問合せのみ表示
+              </p>
             </div>
 
             {/* 宛先リスト */}

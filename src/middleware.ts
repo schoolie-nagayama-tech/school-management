@@ -29,6 +29,8 @@ const PUBLIC_RATE_LIMITS: Array<{
   // 招待情報取得（トークン照合）— 1IPあたり 30リクエスト/分（トークン総当たりの多層防御）
   // 注: /api/invite/complete を先に評価するため complete は上の専用ルールが適用される
   { path: '/api/invite/', limit: 30, windowSeconds: 60 },
+  // 配信停止（メール内リンク）— 1IPあたり 30リクエスト/分（トークン総当たり対策）
+  { path: '/api/inquiries/unsubscribe', limit: 30, windowSeconds: 60 },
 ];
 
 function getClientIp(request: NextRequest): string {
@@ -220,6 +222,9 @@ export async function middleware(request: NextRequest) {
     // 公開問合せフォーム・面談セルフ予約（保護者がログインなしでアクセス）
     pathname.startsWith('/inquiry/') ||
     pathname.startsWith('/booking/') ||
+    // 追客メールの配信停止（メール内リンクからログインなしでアクセス）
+    pathname.startsWith('/inquiries/unsubscribe') ||
+    pathname.startsWith('/api/inquiries/unsubscribe') ||
     pathname.startsWith('/api/inquiry-form') ||
     pathname.startsWith('/api/booking/') ||
     pathname.startsWith('/login') ||

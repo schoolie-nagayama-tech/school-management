@@ -20,6 +20,7 @@ export interface MailCandidate {
  *  1. ステータスが 'in_progress' または 'unreachable'
  *  2. trial_at・interview_at がいずれも null（体験・面談設定済みは対象外）
  *  3. email が存在し、かつ 'なし' ではない（実質的な連絡先チェック）
+ *  3b. 配信停止(email_opt_out)されていない
  *  4. テンプレートが is_active かつ trigger_days が null でない
  *  5. テンプレートの school_id が null（全教室共通）または inquiry.school_id と一致
  *  6. daysSince >= trigger_days かつ daysSince <= trigger_days + 13
@@ -62,6 +63,9 @@ export function computeMailCandidates(
     // 条件3: メールアドレスチェック
     const email = inquiry.email;
     if (!email || email.trim() === '' || email === 'なし') continue;
+
+    // 条件3b: 配信停止された宛先は候補から除外（オプトアウトの尊重）
+    if (inquiry.email_opt_out) continue;
 
     // 経過日数を計算（ミリ秒 → 日数。小数を切り捨て）
     const daysSince = Math.floor(

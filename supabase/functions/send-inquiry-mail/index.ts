@@ -10,6 +10,8 @@
 //     school-ie.com を共用（Resend の制約上 from のドメインは固定）。
 //   - reply_to に教室メールを設定し、保護者がそのまま返信できるようにする。
 //   - 「送信専用です」フッターは付けない（返信してもらう前提のため）。
+//   - unsubscribeUrl が渡されたときは、特定電子メール法のオプトアウト導線として
+//     本文末尾にワンクリック配信停止リンクのフッターを付ける。
 //
 // 本文はプレーンテキスト(改行入り)で受け取り、<br> に変換して送る。
 // ============================================================
@@ -35,13 +37,39 @@ function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-/** プレーンテキストの本文を最小限の HTML に変換する（改行→<br>、HTMLエスケープ） */
-function textToHtml(text: string): string {
-  const escaped = String(text ?? '')
+/** HTML属性・テキストのエスケープ（最小限） */
+function escapeHtml(text: string): string {
+  return String(text ?? '')
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
-  return `<div style="font-size:14px;line-height:1.7;color:#222;white-space:normal;">${escaped.replace(/\n/g, '<br>')}</div>`
+    .replace(/"/g, '&quot;')
+}
+
+/**
+ * 配信停止フッター（特定電子メール法のオプトアウト導線）。
+ * unsubscribeUrl が渡されたときだけ本文末尾に追記する。
+ * 「問合せ元に送っている旨」＋「ワンクリック配信停止リンク」を明示する。
+ */
+function unsubscribeFooterHtml(unsubscribeUrl?: string): string {
+  if (!unsubscribeUrl) return ''
+  const url = escapeHtml(unsubscribeUrl)
+  return (
+    `<div style="margin-top:24px;padding-top:12px;border-top:1px solid #e5e7eb;font-size:12px;line-height:1.6;color:#9ca3af;">` +
+    `※このメールは、スクールIEへお問い合わせ・資料請求をいただいた方にお送りしています。<br>` +
+    `今後このようなメールの配信を希望されない場合は、下記からお手続きください。<br>` +
+    `<a href="${url}" style="color:#6b7280;text-decoration:underline;">配信を停止する</a>` +
+    `</div>`
+  )
+}
+
+/** プレーンテキストの本文を最小限の HTML に変換する（改行→<br>、HTMLエスケープ） */
+function textToHtml(text: string, unsubscribeUrl?: string): string {
+  const escaped = escapeHtml(text).replace(/\n/g, '<br>')
+  return (
+    `<div style="font-size:14px;line-height:1.7;color:#222;white-space:normal;">${escaped}</div>` +
+    unsubscribeFooterHtml(unsubscribeUrl)
+  )
 }
 
 // メール1通送信（429 のときは1回だけリトライ）
@@ -97,7 +125,7 @@ serve(async (req) => {
 
   try {
     const body = await req.json()
-    const { to, subject, body: mailBody, fromName, replyTo } = body ?? {}
+    const { to, subject, body: mailBody, fromName, replyTo, unsubscribeUrl } = body ?? {}
 
     // 必須項目の検証
     if (!to || !subject || !mailBody) {
@@ -110,7 +138,7 @@ serve(async (req) => {
     const result = await sendEmail({
       to,
       subject,
-      html: textToHtml(mailBody),
+      html: textToHtml(mailBody, unsubscribeUrl || undefined),
       fromName: fromName || DEFAULT_FROM_NAME,
       replyTo: replyTo || undefined,
     })

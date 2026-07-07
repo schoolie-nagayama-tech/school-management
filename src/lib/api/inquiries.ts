@@ -175,6 +175,30 @@ export async function updateInquiry(id: string, data: InquiryUpdate): Promise<In
 }
 
 /**
+ * 追客メールの配信停止（オプトアウト）状態を切り替える。
+ *
+ * - optOut=true: 以後の追客メールを一律ブロック（送信フローで除外）。
+ *   停止日時を記録し、経路（'unsubscribe_link' | 'manual'）を残す。
+ * - optOut=false: 配信を再開（電話等で再開希望を受けた場合の手動戻し）。
+ *   日時・経路はクリアする。
+ *
+ * @param id      問合せID
+ * @param optOut  true=配信停止 / false=配信再開
+ * @param source  停止経路（既定 'manual'）。配信再開時は無視される。
+ */
+export async function setInquiryOptOut(
+  id: string,
+  optOut: boolean,
+  source: 'manual' | 'unsubscribe_link' = 'manual'
+): Promise<Inquiry> {
+  return updateInquiry(id, {
+    email_opt_out: optOut,
+    email_opt_out_at: optOut ? new Date().toISOString() : null,
+    email_opt_out_source: optOut ? source : null,
+  });
+}
+
+/**
  * 問合せを更新し、ステータス・資料発送日の変化を自動でコンタクト履歴に記録する。
  *
  * 追客タイムラインに「いつ何が起きたか」が時系列で残るようにするための薄いラッパー。

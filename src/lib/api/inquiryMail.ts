@@ -223,6 +223,31 @@ export interface SendInquiryMailParams {
 }
 
 /**
+ * 追客メールのリンク等に使う本番サイトのオリジンを解決する。
+ * NEXT_PUBLIC_SITE_URL を優先（スキーム無しの値は https:// を補う）し、
+ * 無ければブラウザの現在オリジンにフォールバックする。
+ */
+function resolveSiteOrigin(): string {
+  const env = process.env.NEXT_PUBLIC_SITE_URL;
+  if (env && env.trim() !== '') {
+    const v = env.trim();
+    return /^https?:\/\//i.test(v) ? v.replace(/\/+$/, '') : `https://${v.replace(/\/+$/, '')}`;
+  }
+  if (typeof window !== 'undefined') return window.location.origin;
+  return '';
+}
+
+/**
+ * 問合せのワンクリック配信停止リンク（メール本文フッターに埋め込む）を作る。
+ * トークンは inquiries.email_opt_out_token（公開・推測不能）。
+ */
+export function buildUnsubscribeUrl(inquiry: Inquiry): string {
+  const origin = resolveSiteOrigin();
+  if (!origin || !inquiry.email_opt_out_token) return '';
+  return `${origin}/inquiries/unsubscribe?token=${encodeURIComponent(inquiry.email_opt_out_token)}`;
+}
+
+/**
  * Edge Function 'send-inquiry-mail' を invoke してメールを送信し、
  * 結果を inquiry_mail_logs に記録する。
  *
@@ -238,6 +263,17 @@ export async function sendInquiryMail(p: SendInquiryMailParams): Promise<void> {
     throw new Error('メールアドレスがありません');
   }
 
+  // 配信停止ガード（最終防衛線）。
+  // UI 側で候補・宛先から除外しているが、詳細ページからの個別送信など
+  // あらゆる経路がこの関数を通るため、ここで確実にブロックする。
+  if (inquiry.email_opt_out) {
+    throw new Error('配信停止済みの宛先には送信できません');
+  }
+
+  // ワンクリック配信停止リンク（特定電子メール法のオプトアウト導線）。
+  // Edge Function 側で本文フッターに追記される。
+  const unsubscribeUrl = buildUnsubscribeUrl(inquiry);
+
   // Edge Function 呼び出し
   const { data, error } = await supabase.functions.invoke('send-inquiry-mail', {
     body: {
@@ -246,6 +282,7 @@ export async function sendInquiryMail(p: SendInquiryMailParams): Promise<void> {
       body,
       ...(fromName ? { fromName } : {}),
       ...(replyTo ? { replyTo } : {}),
+      ...(unsubscribeUrl ? { unsubscribeUrl } : {}),
     },
   });
 

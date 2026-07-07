@@ -91,6 +91,14 @@ export type Database = {
           note: string | null;
           /** Nottaの記録リンク配列（文字起こし共有URL + ラベル） */
           notta_records: { url: string; label: string; added_at: string }[];
+          /** 追客メールの配信停止フラグ。true の宛先には送信しない。 */
+          email_opt_out: boolean;
+          /** 配信停止された日時 */
+          email_opt_out_at: string | null;
+          /** 配信停止の経路（'unsubscribe_link' | 'manual'） */
+          email_opt_out_source: string | null;
+          /** メール内ワンクリック配信停止リンクの照合トークン（公開・推測不能） */
+          email_opt_out_token: string;
           created_by: string | null;
           created_at: string;
           updated_at: string;
@@ -138,6 +146,10 @@ export type Database = {
           raw_source?: Record<string, unknown> | null;
           note?: string | null;
           notta_records?: { url: string; label: string; added_at: string }[];
+          email_opt_out?: boolean;
+          email_opt_out_at?: string | null;
+          email_opt_out_source?: string | null;
+          email_opt_out_token?: string;
           created_by?: string | null;
           created_at?: string;
           updated_at?: string;

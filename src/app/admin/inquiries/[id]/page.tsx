@@ -31,6 +31,7 @@ import {
   addInquiryContact,
   updateInquiryContact,
   deleteInquiryContact,
+  setInquiryOptOut,
 } from '@/lib/api/inquiries';
 import {
   getMailTemplates,
@@ -96,6 +97,7 @@ import {
   Users,
   Truck,
   Mic,
+  MailX,
 } from 'lucide-react';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 import { isManagerOrAbove } from '@/lib/utils/roles';
@@ -198,6 +200,8 @@ export default function InquiryDetailPage() {
   const [mailLogs, setMailLogs] = useState<InquiryMailLog[]>([]);
   // 送信前の確認モーダル（誤送信防止）
   const [mailConfirmOpen, setMailConfirmOpen] = useState(false);
+  // 配信停止（オプトアウト）トグルの処理中フラグ
+  const [isTogglingOptOut, setIsTogglingOptOut] = useState(false);
 
   // ---- データ取得 ----
   const fetchData = useCallback(async () => {
@@ -359,6 +363,23 @@ export default function InquiryDetailPage() {
     } finally {
       setIsSendingMail(false);
       setMailConfirmOpen(false);
+    }
+  };
+
+  // ---- 配信停止（オプトアウト）の切り替え ----
+  // 電話等で「もう要らない」と言われた場合の手動停止／再開に使う。
+  // 停止中の宛先には送信フローが一律で送らない（sendInquiryMail 側でもブロック）。
+  const handleToggleOptOut = async (next: boolean) => {
+    if (!inquiry) return;
+    setIsTogglingOptOut(true);
+    try {
+      const updated = await setInquiryOptOut(inquiry.id, next, 'manual');
+      setInquiry(updated);
+      toast.success(next ? '配信を停止しました' : '配信を再開しました');
+    } catch (err) {
+      toast.error(getUserErrorMessage(err, '更新に失敗しました'));
+    } finally {
+      setIsTogglingOptOut(false);
     }
   };
 
@@ -1232,10 +1253,38 @@ export default function InquiryDetailPage() {
                 <section className="bg-surface-raised border border-border rounded-xl p-6">
                   <h2 className="text-base font-bold text-text-heading mb-4">メール送信</h2>
 
+                  {/* 配信停止中バナー（オプトアウト）: 送信フォームは出さず、再開のみ可能 */}
+                  {inquiry.email_opt_out && (
+                    <div className="mb-4 flex items-start gap-2.5 p-3 rounded-lg bg-danger/10 border border-danger/30">
+                      <MailX className="w-4 h-4 text-danger shrink-0 mt-0.5" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-text-heading font-medium">
+                          この宛先は配信停止中です
+                        </p>
+                        <p className="text-xs text-text-muted mt-0.5">
+                          {inquiry.email_opt_out_source === 'unsubscribe_link'
+                            ? 'メール内リンクから配信停止されました。'
+                            : '手動で配信停止に設定されています。'}
+                          {inquiry.email_opt_out_at &&
+                            `（${formatDateTime(inquiry.email_opt_out_at)}）`}
+                          追客メールは送信できません。
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => handleToggleOptOut(false)}
+                          disabled={isTogglingOptOut}
+                          className="mt-2 text-xs font-medium text-info hover:underline disabled:opacity-60"
+                        >
+                          配信を再開する
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
                   {!inquiry.email ? (
                     // メールアドレス未登録時はフォームを出さない
                     <p className="text-sm text-text-muted">メールアドレスが登録されていません</p>
-                  ) : (
+                  ) : inquiry.email_opt_out ? null : (
                     <div className="space-y-4">
                       {/* 宛先表示 */}
                       <p className="text-sm text-text-muted">
@@ -1292,16 +1341,28 @@ export default function InquiryDetailPage() {
                         />
                       </div>
 
-                      {/* 送信ボタン（押すと確認モーダルを挟む） */}
-                      <Button
-                        onClick={() => setMailConfirmOpen(true)}
-                        isLoading={isSendingMail}
-                        disabled={isSendingMail || !mailSubject.trim() || !mailBody.trim()}
-                        size="sm"
-                      >
-                        <Send className="w-4 h-4 mr-1.5" />
-                        送信
-                      </Button>
+                      {/* 送信ボタン（押すと確認モーダルを挟む）＋ 配信停止 */}
+                      <div className="flex items-center justify-between gap-2">
+                        <Button
+                          onClick={() => setMailConfirmOpen(true)}
+                          isLoading={isSendingMail}
+                          disabled={isSendingMail || !mailSubject.trim() || !mailBody.trim()}
+                          size="sm"
+                        >
+                          <Send className="w-4 h-4 mr-1.5" />
+                          送信
+                        </Button>
+                        {/* 相手から「送らないで」と言われた場合の手動オプトアウト */}
+                        <button
+                          type="button"
+                          onClick={() => handleToggleOptOut(true)}
+                          disabled={isTogglingOptOut}
+                          className="inline-flex items-center gap-1 text-xs text-text-muted hover:text-danger transition-colors duration-150 disabled:opacity-60"
+                        >
+                          <MailX className="w-3.5 h-3.5" />
+                          配信停止にする
+                        </button>
+                      </div>
                     </div>
                   )}
 
