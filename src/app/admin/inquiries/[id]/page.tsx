@@ -70,12 +70,10 @@ import {
   formatDate,
   formatDateTime,
   MANUAL_CONTACT_METHODS,
-  ADD_CONTACT_METHODS,
   CONTACT_RESULT_OPTIONS,
   METHOD_DEFAULT_DIRECTION,
   getInquiryDisplayName,
   type ManualContactMethod,
-  type AddContactMethod,
 } from '../inquiryConstants';
 import {
   ChevronLeft,
@@ -155,8 +153,7 @@ export default function InquiryDetailPage() {
   const [isSavingName, setIsSavingName] = useState(false);
 
   // ---- コンタクト追加フォーム ----
-  // status_change を選ぶと、現状ブロック廃止に伴いステータス変更もこのフォームから行う。
-  const [contactMethod, setContactMethod] = useState<AddContactMethod>('tel');
+  const [contactMethod, setContactMethod] = useState<ManualContactMethod>('tel');
   const [contactDirection, setContactDirection] = useState<'outbound' | 'inbound'>('outbound');
   const [contactDate, setContactDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [contactResult, setContactResult] = useState('');
@@ -390,7 +387,7 @@ export default function InquiryDetailPage() {
     }
   };
 
-  // ---- ステータス保存（「コンタクトを追加」フォームの method=status_change から呼ばれる） ----
+  // ---- ステータス保存（「コンタクトを追加」の横のステータス変更パネルから呼ばれる） ----
   const handleSaveStatusChange = async () => {
     if (!inquiry) return;
     setIsSaving(true);
@@ -425,8 +422,6 @@ export default function InquiryDetailPage() {
       await updateInquiryWithTimeline(inquiry, update);
       // contacts も再取得してタイムラインを最新化する
       await fetchData();
-      // フォームを次回入力しやすい状態（通常のコンタクト方法）に戻す
-      setContactMethod('tel');
       toast.success('ステータスを保存しました');
     } catch (err) {
       toast.error(getUserErrorMessage(err, '保存に失敗しました'));
@@ -1096,42 +1091,19 @@ export default function InquiryDetailPage() {
                     )}
                   </div>
 
-                  {/* ── コンタクト追加フォーム（ステータス変更もここから行う） ── */}
-                  <div className="border border-border rounded-lg p-4 bg-surface-hover">
-                    <h3 className="text-sm font-medium text-text-heading mb-3">コンタクトを追加</h3>
-
-                    {/* 方法（ステータス変更を選ぶと以降の入力欄が切り替わる） */}
-                    <div className="mb-3">
-                      <label className="block text-xs text-text-muted mb-1">方法</label>
-                      <select
-                        value={contactMethod}
-                        onChange={(e) => {
-                          const m = e.target.value as AddContactMethod;
-                          setContactMethod(m);
-                          if (m === 'status_change') return;
-                          // method が変わったら result をリセットし、方向も方法の既定値に合わせる
-                          setContactResult('');
-                          setContactDirection(METHOD_DEFAULT_DIRECTION[m]);
-                        }}
-                        className="w-full sm:w-48 px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised focus:outline-none focus:ring-2 focus:ring-primary"
-                      >
-                        {ADD_CONTACT_METHODS.map((m) => (
-                          <option key={m} value={m}>
-                            {CONTACT_METHOD_LABELS[m]}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    {contactMethod === 'status_change' ? (
-                      /* ── ステータス変更（旧「現状」ブロックの入力欄をここに統合） ── */
+                  {/* ── 入力エリア: ステータス変更（左）とコンタクト追加（右）を横並び ──
+                      どちらも保存するとタイムラインに履歴として積まれる。 */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    {/* ── ステータス変更（旧「現状」ブロック） ── */}
+                    <div className="border border-border rounded-lg p-4 bg-surface-hover">
+                      <h3 className="text-sm font-medium text-text-heading mb-3">ステータス変更</h3>
                       <div className="space-y-3 mb-3">
                         <div>
                           <label className="block text-xs text-text-muted mb-1">ステータス</label>
                           <select
                             value={editStatus}
                             onChange={(e) => setEditStatus(e.target.value as InquiryStatus)}
-                            className="w-full sm:w-48 px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised focus:outline-none focus:ring-2 focus:ring-primary"
+                            className="w-full px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised focus:outline-none focus:ring-2 focus:ring-primary"
                           >
                             {STATUS_OPTIONS.filter((o) => o.value !== 'all').map((o) => (
                               <option key={o.value} value={o.value}>
@@ -1143,7 +1115,7 @@ export default function InquiryDetailPage() {
 
                         {/* 入会時: 入会日・週回数 */}
                         {editStatus === 'enrolled' && (
-                          <div className="grid grid-cols-2 gap-4">
+                          <div className="grid grid-cols-2 gap-3">
                             <div>
                               <label className="block text-xs text-text-muted mb-1">入会日</label>
                               <input
@@ -1179,7 +1151,7 @@ export default function InquiryDetailPage() {
                               type="date"
                               value={editTrialAt}
                               onChange={(e) => setEditTrialAt(e.target.value)}
-                              className="w-full sm:w-48 px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised focus:outline-none focus:ring-2 focus:ring-primary"
+                              className="w-full px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised focus:outline-none focus:ring-2 focus:ring-primary"
                             />
                           </div>
                         )}
@@ -1191,7 +1163,7 @@ export default function InquiryDetailPage() {
                             <select
                               value={editLostReason}
                               onChange={(e) => setEditLostReason(e.target.value)}
-                              className="w-full sm:w-56 px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised focus:outline-none focus:ring-2 focus:ring-primary"
+                              className="w-full px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised focus:outline-none focus:ring-2 focus:ring-primary"
                             >
                               <option value="">— 未選択 —</option>
                               {LOST_REASONS.map((r) => (
@@ -1203,80 +1175,106 @@ export default function InquiryDetailPage() {
                           </div>
                         )}
                       </div>
-                    ) : (
-                      /* ── 通常のコンタクト入力欄 ── */
-                      <>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-3">
-                          <div>
-                            <label className="block text-xs text-text-muted mb-1">方向</label>
-                            <select
-                              value={contactDirection}
-                              onChange={(e) =>
-                                setContactDirection(e.target.value as typeof contactDirection)
-                              }
-                              className="w-full px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised focus:outline-none focus:ring-2 focus:ring-primary"
-                            >
-                              <option value="outbound">発信</option>
-                              <option value="inbound">着信・受信</option>
-                            </select>
-                          </div>
-                          <div>
-                            <label className="block text-xs text-text-muted mb-1">日付</label>
-                            <input
-                              type="date"
-                              value={contactDate}
-                              onChange={(e) => setContactDate(e.target.value)}
-                              className="w-full px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised focus:outline-none focus:ring-2 focus:ring-primary"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-xs text-text-muted mb-1">結果</label>
-                            {/* method に選択肢がある場合は datalist で候補表示、自由記述も可 */}
-                            <input
-                              type="text"
-                              list={`result-options-${contactMethod}`}
-                              value={contactResult}
-                              onChange={(e) => setContactResult(e.target.value)}
-                              placeholder={
-                                CONTACT_RESULT_OPTIONS[contactMethod].length > 0
-                                  ? '選択または入力'
-                                  : '例: 折り返し待ち'
-                              }
-                              className="w-full px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised focus:outline-none focus:ring-2 focus:ring-primary"
-                            />
-                            {CONTACT_RESULT_OPTIONS[contactMethod].length > 0 && (
-                              <datalist id={`result-options-${contactMethod}`}>
-                                {CONTACT_RESULT_OPTIONS[contactMethod].map((opt) => (
-                                  <option key={opt} value={opt} />
-                                ))}
-                              </datalist>
-                            )}
-                          </div>
+                      <Button
+                        onClick={handleSaveStatusChange}
+                        isLoading={isSaving}
+                        size="sm"
+                        variant="secondary"
+                      >
+                        保存
+                      </Button>
+                    </div>
+
+                    {/* ── コンタクト追加フォーム ── */}
+                    <div className="border border-border rounded-lg p-4 bg-surface-hover">
+                      <h3 className="text-sm font-medium text-text-heading mb-3">
+                        コンタクトを追加
+                      </h3>
+                      <div className="grid grid-cols-2 gap-3 mb-3">
+                        <div>
+                          <label className="block text-xs text-text-muted mb-1">方法</label>
+                          <select
+                            value={contactMethod}
+                            onChange={(e) => {
+                              const m = e.target.value as ManualContactMethod;
+                              setContactMethod(m);
+                              // method が変わったら result をリセットし、方向も方法の既定値に合わせる
+                              setContactResult('');
+                              setContactDirection(METHOD_DEFAULT_DIRECTION[m]);
+                            }}
+                            className="w-full px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised focus:outline-none focus:ring-2 focus:ring-primary"
+                          >
+                            {MANUAL_CONTACT_METHODS.map((m) => (
+                              <option key={m} value={m}>
+                                {CONTACT_METHOD_LABELS[m]}
+                              </option>
+                            ))}
+                          </select>
                         </div>
-                        <div className="mb-3">
-                          <label className="block text-xs text-text-muted mb-1">メモ</label>
-                          <textarea
-                            value={contactNote}
-                            onChange={(e) => setContactNote(e.target.value)}
-                            rows={2}
-                            className="w-full px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised focus:outline-none focus:ring-2 focus:ring-primary resize-y"
+                        <div>
+                          <label className="block text-xs text-text-muted mb-1">方向</label>
+                          <select
+                            value={contactDirection}
+                            onChange={(e) =>
+                              setContactDirection(e.target.value as typeof contactDirection)
+                            }
+                            className="w-full px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised focus:outline-none focus:ring-2 focus:ring-primary"
+                          >
+                            <option value="outbound">発信</option>
+                            <option value="inbound">着信・受信</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-xs text-text-muted mb-1">日付</label>
+                          <input
+                            type="date"
+                            value={contactDate}
+                            onChange={(e) => setContactDate(e.target.value)}
+                            className="w-full px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised focus:outline-none focus:ring-2 focus:ring-primary"
                           />
                         </div>
-                      </>
-                    )}
-
-                    <Button
-                      onClick={
-                        contactMethod === 'status_change'
-                          ? handleSaveStatusChange
-                          : handleAddContact
-                      }
-                      isLoading={contactMethod === 'status_change' ? isSaving : isAddingContact}
-                      size="sm"
-                      variant="secondary"
-                    >
-                      {contactMethod === 'status_change' ? '保存' : '追加'}
-                    </Button>
+                        <div>
+                          <label className="block text-xs text-text-muted mb-1">結果</label>
+                          {/* method に選択肢がある場合は datalist で候補表示、自由記述も可 */}
+                          <input
+                            type="text"
+                            list={`result-options-${contactMethod}`}
+                            value={contactResult}
+                            onChange={(e) => setContactResult(e.target.value)}
+                            placeholder={
+                              CONTACT_RESULT_OPTIONS[contactMethod].length > 0
+                                ? '選択または入力'
+                                : '例: 折り返し待ち'
+                            }
+                            className="w-full px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised focus:outline-none focus:ring-2 focus:ring-primary"
+                          />
+                          {CONTACT_RESULT_OPTIONS[contactMethod].length > 0 && (
+                            <datalist id={`result-options-${contactMethod}`}>
+                              {CONTACT_RESULT_OPTIONS[contactMethod].map((opt) => (
+                                <option key={opt} value={opt} />
+                              ))}
+                            </datalist>
+                          )}
+                        </div>
+                      </div>
+                      <div className="mb-3">
+                        <label className="block text-xs text-text-muted mb-1">メモ</label>
+                        <textarea
+                          value={contactNote}
+                          onChange={(e) => setContactNote(e.target.value)}
+                          rows={2}
+                          className="w-full px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised focus:outline-none focus:ring-2 focus:ring-primary resize-y"
+                        />
+                      </div>
+                      <Button
+                        onClick={handleAddContact}
+                        isLoading={isAddingContact}
+                        size="sm"
+                        variant="secondary"
+                      >
+                        追加
+                      </Button>
+                    </div>
                   </div>
                 </section>
 
