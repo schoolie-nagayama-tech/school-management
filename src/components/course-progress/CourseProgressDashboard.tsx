@@ -1124,8 +1124,8 @@ export function CourseProgressDashboard({
                         onClick={() => setSubjectCat(t.key)}
                         className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors duration-150 ${
                           subjectCat === t.key
-                            ? 'bg-gray-800 text-white'
-                            : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                            ? 'bg-ink text-text-on-primary'
+                            : 'bg-surface-hover text-text-muted hover:bg-surface-raised'
                         }`}
                       >
                         {t.label}
