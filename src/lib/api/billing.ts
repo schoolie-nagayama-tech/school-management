@@ -698,38 +698,50 @@ export async function syncFormToBilling(
   let synced = 0;
 
   for (const item of linkedItems) {
-    // 3a. 今期の日付範囲内の回答を取得（全件 — charged判定は後で行う）
-    const { data: currentResponsesAll, error: respError } = await supabase
-      .from('form_responses')
-      .select('linked_student_id, status_checks, response_data')
-      .eq('form_type', item.linked_form_type!)
-      .not('linked_student_id', 'is', null)
-      .in('school_id', targetSchoolIds)
-      .gte('created_at', `${periodStart}T00:00:00`)
-      .lt('created_at', `${periodEndPlusOne}T00:00:00`);
+    // form_responses は (生徒数 × 回答) でスケールし 1000 行を超えうる。切り捨てると
+    // 一部生徒の回答が計上から漏れる（過去の請求計上消失事故と同型）ため、今期分・
+    // キャリーオーバー分とも .range() で全件ページング取得する。id 昇順で安定ページング。
+    type CarryResp = {
+      linked_student_id: string | null;
+      status_checks: Record<string, boolean> | null;
+      response_data: unknown;
+    };
 
-    if (respError) {
-      console.warn(`フォーム回答の取得に失敗 (${item.linked_form_type}):`, respError);
+    // 3a. 今期の日付範囲内の回答を取得（全件 — charged判定は後で行う）
+    let currentResponsesAll: CarryResp[];
+    try {
+      currentResponsesAll = await fetchAllPaged<CarryResp>((from, to) =>
+        supabase
+          .from('form_responses')
+          .select('linked_student_id, status_checks, response_data')
+          .eq('form_type', item.linked_form_type!)
+          .not('linked_student_id', 'is', null)
+          .in('school_id', targetSchoolIds)
+          .gte('created_at', `${periodStart}T00:00:00`)
+          .lt('created_at', `${periodEndPlusOne}T00:00:00`)
+          .order('id', { ascending: true })
+          .range(from, to)
+      );
+    } catch (respErr) {
+      console.warn(`フォーム回答の取得に失敗 (${item.linked_form_type}):`, respErr);
       continue;
     }
 
     // 3b. 前期以前の回答も取得（キャリーオーバー）
     //     charged/非charged 両方取得し、カウント段階で判定する
-    let carryOverResponses: Array<{
-      linked_student_id: string | null;
-      status_checks: Record<string, boolean> | null;
-      response_data: unknown;
-    }> = [];
+    let carryOverResponses: CarryResp[] = [];
     try {
-      const { data: olderResponsesRaw } = await supabase
-        .from('form_responses')
-        .select('linked_student_id, status_checks, response_data')
-        .eq('form_type', item.linked_form_type!)
-        .not('linked_student_id', 'is', null)
-        .in('school_id', targetSchoolIds)
-        .lt('created_at', `${periodStart}T00:00:00`);
-
-      const olderAll = (olderResponsesRaw || []) as typeof carryOverResponses;
+      const olderAll = await fetchAllPaged<CarryResp>((from, to) =>
+        supabase
+          .from('form_responses')
+          .select('linked_student_id, status_checks, response_data')
+          .eq('form_type', item.linked_form_type!)
+          .not('linked_student_id', 'is', null)
+          .in('school_id', targetSchoolIds)
+          .lt('created_at', `${periodStart}T00:00:00`)
+          .order('id', { ascending: true })
+          .range(from, to)
+      );
 
       if (olderAll.length > 0) {
         const { data: pastPeriods } = await supabase
