@@ -10,6 +10,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   aggregateChargedSplit,
+  computeCourseExtraSplit,
   toJstDateString,
   type BillingResponseLike,
 } from '@/lib/utils/billingCharged';
@@ -114,6 +115,51 @@ describe('aggregateChargedSplit（増コマ: 1回答=申込コマ数で重み付
   it('通常フォームでは response_data を無視して1回答=1件で数える', () => {
     const result = aggregateChargedSplit([resp('s1', false, { total_koma: 99 })], false);
     expect(result.get('s1')?.total).toBe(1);
+  });
+});
+
+describe('computeCourseExtraSplit（講習増コマ→請求の計上/未計上）', () => {
+  it('新規（計上済み0）: 全量が未計上に出る', () => {
+    expect(computeCourseExtraSplit(0, 5)).toEqual({
+      charged: 0,
+      pending: 5,
+      allCharged: false,
+    });
+  });
+
+  it('計上済みを保持し、増えた差分だけ未計上に出す', () => {
+    // 既に3計上済み、新しい合計5 → 計上済み3維持・未計上2
+    expect(computeCourseExtraSplit(3, 5)).toEqual({
+      charged: 3,
+      pending: 2,
+      allCharged: false,
+    });
+  });
+
+  it('合計と計上済みが一致: 全計上（未計上0）', () => {
+    expect(computeCourseExtraSplit(4, 4)).toEqual({
+      charged: 4,
+      pending: 0,
+      allCharged: true,
+    });
+  });
+
+  it('合計が計上済みを下回ると計上済みを合計まで切り下げる（意図的な挙動・要注意）', () => {
+    // 既に5計上済みだが新しい合計は2 → 計上済みが2に切り下がる（3コマ分が黙って消える）
+    expect(computeCourseExtraSplit(5, 2)).toEqual({
+      charged: 2,
+      pending: 0,
+      allCharged: true,
+    });
+  });
+
+  it('合計0（計上済みあり）: charged=0 かつ allCharged=false', () => {
+    // 呼び出し側は total<=0 をスキップするが、純粋関数としては0を負にせず返す
+    expect(computeCourseExtraSplit(3, 0)).toEqual({
+      charged: 0,
+      pending: 0,
+      allCharged: false,
+    });
   });
 });
 

@@ -14,7 +14,11 @@ import type {
 import { getDefaultSchoolId } from './schools';
 import { getFifthWeekDays, calcFifthWeekSlots } from '@/lib/utils/fifthWeek';
 import { zoukomaKomaCount } from '@/lib/utils/zoukomaKoma';
-import { aggregateChargedSplit, toJstDateString } from '@/lib/utils/billingCharged';
+import {
+  aggregateChargedSplit,
+  computeCourseExtraSplit,
+  toJstDateString,
+} from '@/lib/utils/billingCharged';
 import { fetchAllPaged } from '@/lib/utils/supabasePaging';
 import { batchFetchCoursePrepApiMulti } from './coursePrepApi';
 import type { AutoValues } from './courseProgress';
@@ -1478,11 +1482,10 @@ export async function syncCourseExtraToBilling(
         .maybeSingle();
 
       // 計上済み(quantity)は保持し、新しい合計との差分だけ未計上(value_number)に出す。
-      // 合計が減った場合でも計上済みは合計を超えないように丸める。
+      // 合計が減った場合でも計上済みは合計を超えないように丸める（純粋ロジックは
+      // billingCharged.ts でテスト）。
       const prevCharged = existing?.quantity ?? 0;
-      const charged = Math.min(prevCharged, total);
-      const pending = total - charged;
-      const allCharged = pending === 0 && charged > 0;
+      const { charged, pending, allCharged } = computeCourseExtraSplit(prevCharged, total);
 
       if (existing) {
         await supabase

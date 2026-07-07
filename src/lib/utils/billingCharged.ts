@@ -77,6 +77,31 @@ export function aggregateChargedSplit(
   return result;
 }
 
+/** 講習の取得増コマを請求へ同期する際の内訳（syncCourseExtraToBilling 用） */
+export type CourseExtraSplit = {
+  /** quantity: 計上済みコマ数（合計を超えないよう切り下げる） */
+  charged: number;
+  /** value_number: 未計上（新規差分）コマ数 */
+  pending: number;
+  /** is_billed: 全て計上済みか（pending===0 && charged>0） */
+  allCharged: boolean;
+};
+
+/**
+ * 講習の取得増コマ(total)を請求へ同期する際の、計上済み/未計上の内訳を計算する。
+ *
+ * 既存の計上済み(prevCharged = 既存 quantity)は保持しつつ、合計との差分だけを未計上に出す。
+ * 合計が計上済みを下回った場合は、計上済みを合計まで切り下げる（Math.min）。
+ *
+ * 注意（意図的な挙動）: この切り下げにより「請求確定後に増コマが減ると、計上済みが
+ * 警告なく減る」。これは値を負にしないための丸めで、業務上は再同期のタイミングに依存する。
+ */
+export function computeCourseExtraSplit(prevCharged: number, total: number): CourseExtraSplit {
+  const charged = Math.min(prevCharged, total);
+  const pending = total - charged;
+  return { charged, pending, allCharged: pending === 0 && charged > 0 };
+}
+
 /**
  * UTC の ISO タイムスタンプ(created_at)を JST(+9h) の暦日(YYYY-MM-DD)に変換する。
  *
