@@ -79,7 +79,8 @@ interface ScoredTeacher {
 }
 
 /** 期間内の日付一覧（YYYY-MM-DD）。休講日は除外。 */
-function enumeratePeriodDates(start: string, end: string, closed: Set<string>): string[] {
+// テスト対象（配置の元になる営業日展開）のため export
+export function enumeratePeriodDates(start: string, end: string, closed: Set<string>): string[] {
   const dates: string[] = [];
   const cur = new Date(start + 'T12:00:00');
   const last = new Date(end + 'T12:00:00');
@@ -101,7 +102,8 @@ function dowOf(dateStr: string): number {
  * ハード除外（指名NG / 性別希望不一致）の場合は null。
  * 指導科目外は subjectOut=true で返し（除外はしない）、呼び出し側が科目一致を優先する。
  */
-function scoreTeacher(opts: {
+// テスト対象（指名NG/性別のハード除外・加重和スコア）のため export
+export function scoreTeacher(opts: {
   teacher: TeacherProfile;
   fixedSet: Set<string>;
   excludedSet: Set<string>;
