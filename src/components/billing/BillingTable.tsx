@@ -40,10 +40,22 @@ function isCourseExtraItem(item: BillingItem): boolean {
 
 /**
  * 計上済み/未計上の内訳（quantity/value_number）表示を使う項目か。
- * フォーム連携項目に加え、取得増コマ列も同じ内訳表示・計上トグルを使う。
+ * フォーム連携項目・取得増コマ列に加え、既に内訳データ(quantity)が入っている
+ * number項目（発注同期の教材発注は除く）も引き続きsplit表示にする。
+ *
+ * 罠: isCourseExtraItem は項目名（「講習」を含むか）で判定している。項目名を変えたり
+ * 判定条件を後から変更したりすると、既に計上済み（quantity側に集約済み）のデータが
+ * 名前ベースの判定から外れ、通常セル（value_number基準の表示）に「消えた」ように
+ * 見えてしまう（実際は quantity に残っているが読まれない）。billing?.quantity != null
+ * を fallback 条件に含めることで、分類が変わっても既存の計上済みデータは表示され続ける。
  */
-function usesChargedSplit(item: BillingItem): boolean {
-  return !!item.linked_form_type || isCourseExtraItem(item);
+function usesChargedSplit(item: BillingItem, billing?: StudentBilling): boolean {
+  if (item.linked_form_type || isCourseExtraItem(item)) return true;
+  return (
+    (item.value_type || 'check') === 'number' &&
+    item.source_type !== 'order' &&
+    billing?.quantity != null
+  );
 }
 
 interface BillingTableProps {
@@ -342,7 +354,8 @@ export function BillingTable({
     setUpdatingCells((prev) => new Set(prev).add(key));
     try {
       const newIsBilled = !currentBilling?.is_billed;
-      if (item && usesChargedSplit(item)) {
+      // split 扱いにするかは呼び出し側で usesChargedSplit(item, billing) 済み判定を渡している
+      if (item) {
         // 計上済み + 未計上 = 総コマ数。計上で全部 quantity 側へ、解除で全部 value_number 側へ。
         const total = (currentBilling?.value_number ?? 0) + (currentBilling?.quantity ?? 0);
         await updateBillingValue(
@@ -896,7 +909,7 @@ export function BillingTable({
                       // 同期しても計上済み(✓計上 N・緑)は残り、新規分だけ別に出るので「計上済みが消えて分からなくなる」を防ぐ。
                       // quantity が未設定(=新ロジックで未同期の旧データ)の行は従来表示にフォールバックし、
                       // 同期 or 計上で quantity が入った後に内訳表示へ切り替わる（旧計上済みが新規に化けるのを防ぐ）。
-                      if (usesChargedSplit(item) && billing?.quantity != null) {
+                      if (usesChargedSplit(item, billing) && billing?.quantity != null) {
                         const charged = billing?.quantity ?? 0;
                         const pending = billing?.value_number ?? 0;
                         const total = charged + pending;
@@ -1038,7 +1051,7 @@ export function BillingTable({
                                       student.id,
                                       item.id,
                                       billing,
-                                      usesChargedSplit(item) ? item : undefined
+                                      usesChargedSplit(item, billing) ? item : undefined
                                     );
                                   }}
                                   title={
@@ -1126,7 +1139,7 @@ export function BillingTable({
                                       student.id,
                                       item.id,
                                       billing,
-                                      usesChargedSplit(item) ? item : undefined
+                                      usesChargedSplit(item, billing) ? item : undefined
                                     );
                                   }}
                                   title={
