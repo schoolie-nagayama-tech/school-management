@@ -971,14 +971,24 @@ async function fetchCoursePrepAlertData(schoolIds: string[]): Promise<{
     if (!items || items.length === 0) return { items: [], studentProgress: [] };
 
     const itemIds = items.map((i: { id: string }) => i.id);
-    const { data: progress } = await supabase
-      .from('course_prep_student_progress')
-      .select('student_id, item_id, status')
-      .in('item_id', itemIds);
+    // 進捗は (生徒 × 講習準備項目) でスケールし1000行を超えうる。itemIds も多いと
+    // .in() の URL が長くなるため、チャンク分割 + チャンク内ページングで取得する（id 昇順で安定）。
+    const progress = await fetchAllInChunks<{
+      student_id: string;
+      item_id: string;
+      status: string | null;
+    }>(itemIds, (chunk, from, to) =>
+      supabase
+        .from('course_prep_student_progress')
+        .select('student_id, item_id, status')
+        .in('item_id', chunk)
+        .order('id', { ascending: true })
+        .range(from, to)
+    );
 
     return {
       items: items as AlertSources['coursePrepItems'],
-      studentProgress: (progress || []) as AlertSources['coursePrepStudentProgress'],
+      studentProgress: progress,
     };
   } catch (e) {
     console.warn('講習準備アラートデータ取得エラー:', e);
