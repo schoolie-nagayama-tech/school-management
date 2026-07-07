@@ -25,17 +25,16 @@ import { Pencil, Trash2, Zap, Inbox, GraduationCap } from 'lucide-react';
 /**
  * 講習の「取得増コマ」列かどうかの判定。
  * 進捗ダッシュボードと同じく名前ベースで検出する（DBスキーマ変更を避けるため）。
- * value_type='number' で名前に「講習」と「増コマ」を両方含み、フォーム連携でない請求項目を
+ * value_type='number' で名前に「講習」を含み、フォーム連携でない請求項目を
  * 講習の増コマ同期対象とみなす。
- * 「講習」を必須にするのは、テスト対策の増コマ列など別種の「増コマ」を誤検出しないため
+ * 「講習」で判定するのは、テスト対策の増コマ列など別種の「増コマ」を誤検出しないため
  * （zoukoma フォーム連携列とも同期ボタンが競合しないよう除外）。
  */
 function isCourseExtraItem(item: BillingItem): boolean {
   return (
     (item.value_type || 'check') === 'number' &&
     !item.linked_form_type &&
-    item.name.includes('講習') &&
-    item.name.includes('増コマ')
+    item.name.includes('講習')
   );
 }
 
