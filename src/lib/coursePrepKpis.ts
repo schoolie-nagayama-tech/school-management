@@ -33,6 +33,75 @@ export function findItemByKeywords(
   return undefined;
 }
 
+/** 提案（提示）増コマ列を特定する。proposed_extra 自動列を最優先で採用。 */
+export function findProposedKomaItem(items: CourseProgressItem[]): CourseProgressItem | undefined {
+  return (
+    items.find((i) => i.auto_source === 'proposed_extra') ??
+    findItemByKeywords(items, ['提案増コマ', '提示増コマ', '提案増コマ回数', '提示増コマ回数'])
+  );
+}
+
+/**
+ * 決定（取得）増コマ列を特定する。applied_extra 自動列を最優先で採用。
+ * 提案増コマ列と同一列を選ばないよう、除外対象を渡せる。
+ */
+export function findDecidedKomaItem(
+  items: CourseProgressItem[],
+  excludeItemId?: string
+): CourseProgressItem | undefined {
+  return (
+    items.find((i) => i.id !== excludeItemId && i.auto_source === 'applied_extra') ??
+    items.find(
+      (i) =>
+        i.id !== excludeItemId &&
+        i.column_type === 'number' &&
+        (i.name.includes('増コマ回数') || i.name === '増コマ回数決定')
+    ) ??
+    findItemByKeywords(
+      items.filter((i) => i.id !== excludeItemId),
+      ['増コマ回数決定', '増コマ決定', '決定コマ']
+    )
+  );
+}
+
+/**
+ * 生徒ごとの「決定（取得）増コマ」を算出して返す。
+ *
+ * 進捗ダッシュボードの studentDecidedKoma と同じ定義:
+ * - applied_extra 自動列: max(0, applied_total - course_sessions)
+ * - 手入力の「増コマ回数」列: number_value（未入力は0）
+ *
+ * 請求への同期など、ダッシュボード外からも同じ数え方を使うために切り出している。
+ * students は id さえあればよいので軽量なオブジェクト配列でも渡せる。
+ */
+export function computeDecidedKomaByStudent(
+  students: { id: string }[],
+  items: CourseProgressItem[],
+  progressData: StudentCourseProgress[],
+  autoValues: AutoValues
+): Record<string, number> {
+  const proposedKomaItem = findProposedKomaItem(items);
+  const decidedKomaItem = findDecidedKomaItem(items, proposedKomaItem?.id);
+
+  const vals: Record<string, number> = {};
+  for (const s of students) {
+    if (!decidedKomaItem) {
+      vals[s.id] = 0;
+      continue;
+    }
+    if (decidedKomaItem.auto_source === 'applied_extra') {
+      const sv = autoValues?.[s.id];
+      const appliedTotal = sv?.applied_total ?? 0;
+      const courseSessions = sv?.course_sessions ?? 0;
+      vals[s.id] = Math.max(0, appliedTotal - courseSessions);
+    } else {
+      const d = progressData.find((p) => p.student_id === s.id && p.item_id === decidedKomaItem.id);
+      vals[s.id] = d?.number_value ?? 0;
+    }
+  }
+  return vals;
+}
+
 export interface SchoolKpis {
   studentCount: number;
   // 提案増コマ合計 / 取得（決定）増コマ合計
@@ -63,24 +132,9 @@ export function computeSchoolKpis(
   period: CoursePrepPeriod | null,
   today: string
 ): SchoolKpis {
-  // --- 提案増コマ列の特定 ---
-  const proposedKomaItem =
-    items.find((i) => i.auto_source === 'proposed_extra') ??
-    findItemByKeywords(items, ['提案増コマ', '提示増コマ', '提案増コマ回数', '提示増コマ回数']);
-
-  // --- 決定（取得）増コマ列の特定。applied_extra 自動列を最優先で採用 ---
-  const decidedKomaItem =
-    items.find((i) => i.id !== proposedKomaItem?.id && i.auto_source === 'applied_extra') ??
-    items.find(
-      (i) =>
-        i.id !== proposedKomaItem?.id &&
-        i.column_type === 'number' &&
-        (i.name.includes('増コマ回数') || i.name === '増コマ回数決定')
-    ) ??
-    findItemByKeywords(
-      items.filter((i) => i.id !== proposedKomaItem?.id),
-      ['増コマ回数決定', '増コマ決定', '決定コマ']
-    );
+  // --- 提案増コマ列・決定（取得）増コマ列の特定（finder は共通関数に集約） ---
+  const proposedKomaItem = findProposedKomaItem(items);
+  const decidedKomaItem = findDecidedKomaItem(items, proposedKomaItem?.id);
 
   // 生徒ごと 提案増コマ
   const proposedByStudent: Record<string, number> = {};

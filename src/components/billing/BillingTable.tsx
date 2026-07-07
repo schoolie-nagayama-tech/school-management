@@ -1,12 +1,13 @@
 'use client';
 
-import type { Student, BillingItem, StudentBilling } from '@/types/database';
-import { GRADE_LABELS } from '@/types/database';
+import type { Student, BillingItem, StudentBilling, SeasonType } from '@/types/database';
+import { GRADE_LABELS, SEASON_LABELS } from '@/types/database';
 import {
   toggleStudentBilling,
   updateBillingItem,
   deleteBillingItem,
   syncOrdersToBilling,
+  syncCourseExtraToBilling,
   autoFillFifthWeekBilling,
   updateBillingValue,
   syncFormToBilling,
@@ -19,7 +20,29 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useState } from 'react';
 import { useToast } from '@/hooks/useToast';
 import { useConfirm } from '@/hooks/useConfirm';
-import { Pencil, Trash2, Zap, Inbox } from 'lucide-react';
+import { Pencil, Trash2, Zap, Inbox, GraduationCap } from 'lucide-react';
+
+/**
+ * 「取得増コマ」列かどうかの判定。
+ * 進捗ダッシュボードと同じく名前ベースで検出する（DBスキーマ変更を避けるため）。
+ * value_type='number' で名前に「増コマ」を含み、フォーム連携でない請求項目を
+ * 講習の増コマ同期対象とみなす（zoukoma フォーム連携列と同期ボタンが競合しないよう除外）。
+ */
+function isCourseExtraItem(item: BillingItem): boolean {
+  return (
+    (item.value_type || 'check') === 'number' &&
+    !item.linked_form_type &&
+    item.name.includes('増コマ')
+  );
+}
+
+/**
+ * 計上済み/未計上の内訳（quantity/value_number）表示を使う項目か。
+ * フォーム連携項目に加え、取得増コマ列も同じ内訳表示・計上トグルを使う。
+ */
+function usesChargedSplit(item: BillingItem): boolean {
+  return !!item.linked_form_type || isCourseExtraItem(item);
+}
 
 interface BillingTableProps {
   students: Student[];
@@ -64,8 +87,34 @@ export function BillingTable({
     null
   );
   const [editingValue, setEditingValue] = useState<string>('');
+  // 取得増コマ同期ダイアログ（対象請求項目 + 選択中の季節・年）
+  const [courseExtraSyncItemId, setCourseExtraSyncItemId] = useState<string | null>(null);
+  const [syncSeason, setSyncSeason] = useState<SeasonType>('summer');
+  const [syncYear, setSyncYear] = useState<number>(new Date().getFullYear());
+  const [courseExtraSyncing, setCourseExtraSyncing] = useState(false);
   const { success, error: toastError } = useToast();
   const { confirm, ConfirmDialog } = useConfirm();
+
+  // 取得増コマを進捗管理表から同期する（季節・年を明示指定）
+  const handleCourseExtraSync = async () => {
+    if (!courseExtraSyncItemId || !schoolIds) return;
+    setCourseExtraSyncing(true);
+    try {
+      const result = await syncCourseExtraToBilling(
+        courseExtraSyncItemId,
+        schoolIds,
+        syncSeason,
+        syncYear
+      );
+      success(`${result.synced}名の取得増コマを同期しました`);
+      setCourseExtraSyncItemId(null);
+      onItemsChange?.();
+    } catch (err) {
+      toastError(getUserErrorMessage(err, '同期に失敗しました'));
+    } finally {
+      setCourseExtraSyncing(false);
+    }
+  };
 
   // 請求状況をマップ化（student_id + billing_item_id -> billing）
   const billingMap = new Map<string, StudentBilling>();
@@ -291,7 +340,7 @@ export function BillingTable({
     setUpdatingCells((prev) => new Set(prev).add(key));
     try {
       const newIsBilled = !currentBilling?.is_billed;
-      if (item?.linked_form_type) {
+      if (item && usesChargedSplit(item)) {
         // 計上済み + 未計上 = 総コマ数。計上で全部 quantity 側へ、解除で全部 value_number 側へ。
         const total = (currentBilling?.value_number ?? 0) + (currentBilling?.quantity ?? 0);
         await updateBillingValue(
@@ -587,7 +636,8 @@ export function BillingTable({
                           (item.source_type === 'order' &&
                             !isTeacher &&
                             periodStartDate &&
-                            schoolIds)) && (
+                            schoolIds) ||
+                          (isCourseExtraItem(item) && !isTeacher && schoolIds)) && (
                           <div className="flex items-center gap-1">
                             {showAutoFillButton && (
                               <button
@@ -671,6 +721,20 @@ export function BillingTable({
                                   同期
                                 </button>
                               )}
+                            {/* 取得増コマ列: 進捗管理表から同期（季節・年はダイアログで選ぶ） */}
+                            {isCourseExtraItem(item) && !isTeacher && schoolIds && (
+                              <button
+                                className="text-[11px] px-1.5 py-0.5 rounded-full bg-emerald-400/30 text-emerald-200 hover:bg-emerald-400/50 transition-[background-color] duration-150 ease-out"
+                                title="進捗管理表の取得増コマを同期"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setCourseExtraSyncItemId(item.id);
+                                }}
+                              >
+                                <GraduationCap className="inline h-3 w-3 mr-0.5" />
+                                進捗から同期
+                              </button>
+                            )}
                           </div>
                         )}
                       </div>
@@ -828,7 +892,7 @@ export function BillingTable({
                       // 同期しても計上済み(✓計上 N・緑)は残り、新規分だけ別に出るので「計上済みが消えて分からなくなる」を防ぐ。
                       // quantity が未設定(=新ロジックで未同期の旧データ)の行は従来表示にフォールバックし、
                       // 同期 or 計上で quantity が入った後に内訳表示へ切り替わる（旧計上済みが新規に化けるのを防ぐ）。
-                      if (item.linked_form_type && billing?.quantity != null) {
+                      if (usesChargedSplit(item) && billing?.quantity != null) {
                         const charged = billing?.quantity ?? 0;
                         const pending = billing?.value_number ?? 0;
                         const total = charged + pending;
@@ -964,13 +1028,13 @@ export function BillingTable({
                                   }`}
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    // フォーム連携項目なら item を渡して計上済み/未計上の内訳(quantity)も付与し、
-                                    // 旧データを新表示へ移行させる。非連携項目は従来どおり is_billed のみ更新。
+                                    // フォーム連携・取得増コマ項目なら item を渡して計上済み/未計上の内訳(quantity)も付与し、
+                                    // 旧データを新表示へ移行させる。それ以外は従来どおり is_billed のみ更新。
                                     handleChargedToggle(
                                       student.id,
                                       item.id,
                                       billing,
-                                      item.linked_form_type ? item : undefined
+                                      usesChargedSplit(item) ? item : undefined
                                     );
                                   }}
                                   title={
@@ -1052,13 +1116,13 @@ export function BillingTable({
                                   }`}
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    // フォーム連携項目なら item を渡して計上済み/未計上の内訳(quantity)も付与し、
-                                    // 旧データを新表示へ移行させる。非連携項目は従来どおり is_billed のみ更新。
+                                    // フォーム連携・取得増コマ項目なら item を渡して計上済み/未計上の内訳(quantity)も付与し、
+                                    // 旧データを新表示へ移行させる。それ以外は従来どおり is_billed のみ更新。
                                     handleChargedToggle(
                                       student.id,
                                       item.id,
                                       billing,
-                                      item.linked_form_type ? item : undefined
+                                      usesChargedSplit(item) ? item : undefined
                                     );
                                   }}
                                   title={
@@ -1129,6 +1193,64 @@ export function BillingTable({
         </table>
       </div>
       {ConfirmDialog}
+
+      {/* 取得増コマ 同期ダイアログ（対象の講習を季節・年で選ぶ） */}
+      {courseExtraSyncItemId && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-sm rounded-xl bg-white shadow-xl border border-[#e5e7eb]">
+            <div className="px-5 py-4 border-b border-[#e5e7eb]">
+              <h3 className="text-sm font-bold text-[#1f2937] flex items-center gap-1.5">
+                <GraduationCap className="h-4 w-4 text-emerald-600" />
+                進捗管理表から取得増コマを同期
+              </h3>
+              <p className="text-xs text-[#6b7280] mt-1">
+                対象の講習を選んでください。各生徒の取得増コマ数がこの列に反映されます。
+              </p>
+            </div>
+            <div className="px-5 py-4 space-y-3">
+              <div>
+                <label className="block text-xs text-[#6b7280] mb-1">季節</label>
+                <select
+                  value={syncSeason}
+                  onChange={(e) => setSyncSeason(e.target.value as SeasonType)}
+                  className="w-full px-2 py-1.5 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#1f2937] focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                >
+                  {(Object.keys(SEASON_LABELS) as SeasonType[]).map((s) => (
+                    <option key={s} value={s}>
+                      {SEASON_LABELS[s]}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs text-[#6b7280] mb-1">年</label>
+                <input
+                  type="number"
+                  value={syncYear}
+                  onChange={(e) => setSyncYear(parseInt(e.target.value, 10) || syncYear)}
+                  className="w-full px-2 py-1.5 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#1f2937] focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                />
+              </div>
+            </div>
+            <div className="px-5 py-4 border-t border-[#e5e7eb] flex justify-end gap-2">
+              <button
+                onClick={() => setCourseExtraSyncItemId(null)}
+                disabled={courseExtraSyncing}
+                className="px-3 py-1.5 rounded-lg text-sm text-[#4b5563] hover:bg-[#f3f4f6] transition-[background-color] duration-150 ease-out disabled:opacity-50"
+              >
+                キャンセル
+              </button>
+              <button
+                onClick={handleCourseExtraSync}
+                disabled={courseExtraSyncing}
+                className="px-3 py-1.5 rounded-lg text-sm font-medium bg-emerald-600 text-white hover:bg-emerald-700 transition-[background-color] duration-150 ease-out disabled:opacity-50"
+              >
+                {courseExtraSyncing ? '同期中...' : '同期する'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

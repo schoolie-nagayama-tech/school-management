@@ -7,11 +7,17 @@ import type {
   BillingItemInsert,
   BillingItemUpdate,
   StudentBilling,
+  SeasonType,
+  CourseProgressItem,
+  StudentCourseProgress,
 } from '@/types/database';
 import { getDefaultSchoolId } from './schools';
 import { getFifthWeekDays, calcFifthWeekSlots } from '@/lib/utils/fifthWeek';
 import { zoukomaKomaCount } from '@/lib/utils/zoukomaKoma';
 import { fetchAllPaged } from '@/lib/utils/supabasePaging';
+import { batchFetchCoursePrepApiMulti } from './coursePrepApi';
+import type { AutoValues } from './courseProgress';
+import { computeDecidedKomaByStudent } from '@/lib/coursePrepKpis';
 
 // ============================================
 // 請求期間 (Billing Periods)
@@ -1397,6 +1403,112 @@ export async function syncOrdersToBilling(
       });
     }
     synced++;
+  }
+
+  return { synced };
+}
+
+/**
+ * 講習の「取得増コマ」を請求項目に同期する。
+ *
+ * 進捗管理表（講習）の「増コマ回数」列と同じ定義で、生徒ごとの取得増コマ数を算出し、
+ * 指定の請求項目（value_type='number'）へ流し込む。教材発注の「発注管理から同期」と同じ
+ * 使い勝手で、講習の増コマを請求に載せられるようにするためのもの。
+ *
+ * 数え方は coursePrepKpis.computeDecidedKomaByStudent に集約（ダッシュボードと同一定義）:
+ *   - applied_extra 自動列: max(0, applied_total - course_sessions)
+ *   - 手入力の「増コマ回数」列: number_value
+ *
+ * 計上済み/未計上の扱いはフォーム同期（syncFormToBilling）と揃える:
+ *   - value_number = 未計上（新規）コマ数、quantity = 計上済みコマ数
+ *   - 再同期しても計上済み分（quantity）は保持し、増えた差分だけ未計上に出す
+ *
+ * 請求は月次・講習は季節単位でズレるため、対象の講習は season/year で明示指定する
+ * （呼び出し側で季節・年を選ばせる）。
+ *
+ * @param billingItemId 流し込み先の請求項目ID
+ * @param schoolIds     対象教室（単一/複数）
+ * @param season        講習の季節（spring/summer/winter）
+ * @param year          講習の年
+ */
+export async function syncCourseExtraToBilling(
+  billingItemId: string,
+  schoolIds: string | string[],
+  season: SeasonType,
+  year: number
+): Promise<{ synced: number }> {
+  const targetSchoolIds = Array.isArray(schoolIds) ? schoolIds : [schoolIds];
+
+  // 進捗データ（項目・生徒進捗・自動値）を教室ごとに一括取得
+  const multi = await batchFetchCoursePrepApiMulti(
+    { schoolIds: targetSchoolIds, season, year: String(year) },
+    ['progress_items', 'student_progress', 'auto_values']
+  );
+
+  let synced = 0;
+
+  for (const schoolId of targetSchoolIds) {
+    const result = multi[schoolId];
+    if (!result) continue;
+
+    const items = (result.progress_items as CourseProgressItem[]) ?? [];
+    const progressData = (result.student_progress as StudentCourseProgress[]) ?? [];
+    const autoValues = (result.auto_values as AutoValues) ?? {};
+
+    // この教室に登場する生徒IDを進捗行・自動値の両方から集める
+    const studentIds = new Set<string>();
+    for (const p of progressData) if (p.student_id) studentIds.add(p.student_id);
+    for (const sid of Object.keys(autoValues)) studentIds.add(sid);
+    if (studentIds.size === 0) continue;
+
+    // 生徒ごとの取得増コマ（ダッシュボードと同一定義）
+    const decided = computeDecidedKomaByStudent(
+      Array.from(studentIds).map((id) => ({ id })),
+      items,
+      progressData,
+      autoValues
+    );
+
+    for (const [studentId, total] of Object.entries(decided)) {
+      // 0コマの生徒は請求に載せない（教材発注の同期と同様、対象のみ upsert）
+      if (!total || total <= 0) continue;
+
+      const { data: existing } = await supabase
+        .from('student_billings')
+        .select('id, quantity')
+        .eq('student_id', studentId)
+        .eq('billing_item_id', billingItemId)
+        .maybeSingle();
+
+      // 計上済み(quantity)は保持し、新しい合計との差分だけ未計上(value_number)に出す。
+      // 合計が減った場合でも計上済みは合計を超えないように丸める。
+      const prevCharged = existing?.quantity ?? 0;
+      const charged = Math.min(prevCharged, total);
+      const pending = total - charged;
+      const allCharged = pending === 0 && charged > 0;
+
+      if (existing) {
+        await supabase
+          .from('student_billings')
+          .update({
+            value_number: pending,
+            quantity: charged,
+            is_billed: allCharged,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', existing.id);
+      } else {
+        await supabase.from('student_billings').insert({
+          school_id: schoolId,
+          student_id: studentId,
+          billing_item_id: billingItemId,
+          is_billed: allCharged,
+          value_number: pending,
+          quantity: charged,
+        });
+      }
+      synced++;
+    }
   }
 
   return { synced };
