@@ -120,7 +120,7 @@ export default function ClassCapacitySettingsPage() {
   }
 
   return (
-    <AdminLayout>
+    <AdminLayout documentTitle="授業生徒数設定">
       <ToastContainer toasts={toasts} onRemove={removeToast} />
       <div className="space-y-6">
         <div className="flex items-center gap-3">

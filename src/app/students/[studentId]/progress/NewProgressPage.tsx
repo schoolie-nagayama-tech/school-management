@@ -407,7 +407,10 @@ export default function NewProgressPage() {
   );
 
   return (
-    <AdminLayout headerTitle="進捗管理">
+    <AdminLayout
+      headerTitle="進捗管理"
+      documentTitle={student ? `${student.last_name} ${student.first_name}｜進行表` : '進行表'}
+    >
       {/* ヘッダ */}
       <div className="mb-4 flex items-center justify-between gap-3 flex-wrap">
         <div>

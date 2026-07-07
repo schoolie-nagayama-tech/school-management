@@ -70,10 +70,12 @@ import {
   formatDate,
   formatDateTime,
   MANUAL_CONTACT_METHODS,
+  ADD_CONTACT_METHODS,
   CONTACT_RESULT_OPTIONS,
   METHOD_DEFAULT_DIRECTION,
   getInquiryDisplayName,
   type ManualContactMethod,
+  type AddContactMethod,
 } from '../inquiryConstants';
 import {
   ChevronLeft,
@@ -130,8 +132,13 @@ export default function InquiryDetailPage() {
   const [editTrialAt, setEditTrialAt] = useState('');
   /** 失注理由。lost / trial_lost のときのみ保存・表示する */
   const [editLostReason, setEditLostReason] = useState('');
-  const [editNote, setEditNote] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+
+  // ---- 内部メモ編集モーダル ----
+  // 現状ブロック廃止に伴い、氏名編集と同様の小さな編集ボタン/モーダルに移した。
+  const [memoEditOpen, setMemoEditOpen] = useState(false);
+  const [editMemoText, setEditMemoText] = useState('');
+  const [isSavingMemo, setIsSavingMemo] = useState(false);
 
   // ---- Notta文字起こし（取り込み済みから紐付け） ----
   const [linkedTranscripts, setLinkedTranscripts] = useState<NottaTranscript[]>([]);
@@ -148,7 +155,8 @@ export default function InquiryDetailPage() {
   const [isSavingName, setIsSavingName] = useState(false);
 
   // ---- コンタクト追加フォーム ----
-  const [contactMethod, setContactMethod] = useState<ManualContactMethod>('tel');
+  // status_change を選ぶと、現状ブロック廃止に伴いステータス変更もこのフォームから行う。
+  const [contactMethod, setContactMethod] = useState<AddContactMethod>('tel');
   const [contactDirection, setContactDirection] = useState<'outbound' | 'inbound'>('outbound');
   const [contactDate, setContactDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [contactResult, setContactResult] = useState('');
@@ -228,7 +236,6 @@ export default function InquiryDetailPage() {
       setEditWeeklyCount(inq.weekly_count != null ? String(inq.weekly_count) : '');
       setEditTrialAt(inq.trial_at ? inq.trial_at.slice(0, 10) : '');
       setEditLostReason(inq.lost_reason ?? '');
-      setEditNote(inq.note ?? '');
 
       // メール関連データを並行取得
       const [templates, settings, school, logs] = await Promise.all([
@@ -383,14 +390,13 @@ export default function InquiryDetailPage() {
     }
   };
 
-  // ---- ステータス保存 ----
-  const handleSave = async () => {
+  // ---- ステータス保存（「コンタクトを追加」フォームの method=status_change から呼ばれる） ----
+  const handleSaveStatusChange = async () => {
     if (!inquiry) return;
     setIsSaving(true);
     try {
       const update: Parameters<typeof updateInquiryWithTimeline>[1] = {
         status: editStatus,
-        note: editNote || null,
       };
       // 入会時は enrolled_at / weekly_count を保存
       if (editStatus === 'enrolled') {
@@ -419,11 +425,38 @@ export default function InquiryDetailPage() {
       await updateInquiryWithTimeline(inquiry, update);
       // contacts も再取得してタイムラインを最新化する
       await fetchData();
-      toast.success('保存しました');
+      // フォームを次回入力しやすい状態（通常のコンタクト方法）に戻す
+      setContactMethod('tel');
+      toast.success('ステータスを保存しました');
     } catch (err) {
       toast.error(getUserErrorMessage(err, '保存に失敗しました'));
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  // ---- 内部メモ編集 ----
+  // 現状ブロック廃止に伴い、氏名編集と同じ「小さな編集ボタン→モーダル」方式に変更。
+  // コンタクト単位のメモとは別物（永続的な内部メモ）なので updateInquiryWithTimeline は使わない。
+  const openMemoEdit = () => {
+    if (!inquiry) return;
+    setEditMemoText(inquiry.note ?? '');
+    setMemoEditOpen(true);
+  };
+
+  const handleSaveMemo = async () => {
+    if (!inquiry) return;
+    setIsSavingMemo(true);
+    try {
+      const trimmed = editMemoText.trim();
+      const updated = await updateInquiry(inquiry.id, { note: trimmed || null });
+      setInquiry(updated);
+      toast.success('メモを更新しました');
+      setMemoEditOpen(false);
+    } catch (err) {
+      toast.error(getUserErrorMessage(err, 'メモの更新に失敗しました'));
+    } finally {
+      setIsSavingMemo(false);
     }
   };
 
@@ -713,7 +746,12 @@ export default function InquiryDetailPage() {
   }
 
   return (
-    <AdminLayout headerTitle="問合せ詳細">
+    <AdminLayout
+      headerTitle="問合せ詳細"
+      documentTitle={
+        inquiry ? `${getInquiryDisplayName(inquiry).name}｜問合せ詳細` : '問合せ詳細'
+      }
+    >
       <div className="max-w-6xl">
         {/* 戻るリンク */}
         <Link
@@ -835,176 +873,77 @@ export default function InquiryDetailPage() {
               <div className="lg:col-span-2 space-y-6">
                 {/* ── 追客タイムライン（ステータス+コンタクト履歴の統合ビュー） ── */}
                 <section className="bg-surface-raised border border-border rounded-xl p-6">
-                  <h2 className="text-base font-bold text-text-heading mb-4">追客タイムライン</h2>
+                  <div className="flex items-start justify-between gap-2 mb-1">
+                    <h2 className="text-base font-bold text-text-heading">追客タイムライン</h2>
+                    {/* 内部メモの編集（氏名編集と同じ小さなボタン→モーダル方式） */}
+                    <button
+                      type="button"
+                      onClick={openMemoEdit}
+                      className="inline-flex items-center gap-1 text-xs text-text-muted hover:text-text-heading transition-colors duration-150 shrink-0"
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                      メモを編集
+                    </button>
+                  </div>
+                  {/* 内部メモ（永続・保護者には見えない） */}
+                  <p className="text-xs text-text-muted mb-4 whitespace-pre-wrap">
+                    {inquiry.note || '内部メモなし'}
+                  </p>
 
-                  {/* ── 現状ブロック（ステータス・追客情報） ── */}
+                  {/* ── Notta文字起こし（取り込み済みから紐付け。入会で面談記録へ引き継ぐ） ── */}
                   <div className="mb-6 pb-6 border-b border-border">
-                    <h3 className="text-sm font-semibold text-text-heading mb-3">現状</h3>
-                    <div className="space-y-3">
-                      {/* ステータス選択 */}
-                      <div>
-                        <label className="block text-xs font-medium text-text-heading mb-1">
-                          ステータス
-                        </label>
-                        <select
-                          value={editStatus}
-                          onChange={(e) => setEditStatus(e.target.value as InquiryStatus)}
-                          className="w-full sm:w-48 px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary"
-                        >
-                          {STATUS_OPTIONS.filter((o) => o.value !== 'all').map((o) => (
-                            <option key={o.value} value={o.value}>
-                              {o.label}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-
-                      {/* 入会時: 入会日・週回数 */}
-                      {editStatus === 'enrolled' && (
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <label className="block text-xs font-medium text-text-heading mb-1">
-                              入会日
-                            </label>
-                            <input
-                              type="date"
-                              value={editEnrolledAt}
-                              onChange={(e) => setEditEnrolledAt(e.target.value)}
-                              className="w-full px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-xs font-medium text-text-heading mb-1">
-                              週回数
-                            </label>
-                            <input
-                              type="number"
-                              min={1}
-                              max={10}
-                              value={editWeeklyCount}
-                              onChange={(e) => setEditWeeklyCount(e.target.value)}
-                              placeholder="例: 2"
-                              className="w-full px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary"
-                            />
-                          </div>
-                        </div>
-                      )}
-
-                      {/* 体験待ち / 返事待ち / 体験没 / 入会: 体験日 */}
-                      {(editStatus === 'trial_waiting' ||
-                        editStatus === 'trial_done' ||
-                        editStatus === 'trial_lost' ||
-                        editStatus === 'enrolled') && (
-                        <div>
-                          <label className="block text-xs font-medium text-text-heading mb-1">
-                            体験日
-                          </label>
-                          <input
-                            type="date"
-                            value={editTrialAt}
-                            onChange={(e) => setEditTrialAt(e.target.value)}
-                            className="w-full sm:w-48 px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary"
-                          />
-                        </div>
-                      )}
-
-                      {/* 没 / 体験没: 失注理由 */}
-                      {(editStatus === 'lost' || editStatus === 'trial_lost') && (
-                        <div>
-                          <label className="block text-xs font-medium text-text-heading mb-1">
-                            失注理由
-                          </label>
-                          <select
-                            value={editLostReason}
-                            onChange={(e) => setEditLostReason(e.target.value)}
-                            className="w-full sm:w-56 px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary"
-                          >
-                            <option value="">— 未選択 —</option>
-                            {LOST_REASONS.map((r) => (
-                              <option key={r} value={r}>
-                                {r}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      )}
-
-                      {/* メモ */}
-                      <div>
-                        <label className="block text-xs font-medium text-text-heading mb-1">
-                          メモ
-                        </label>
-                        <textarea
-                          value={editNote}
-                          onChange={(e) => setEditNote(e.target.value)}
-                          rows={3}
-                          className="w-full px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary resize-none"
-                          placeholder="内部メモ（保護者には見えません）"
-                        />
-                      </div>
-
-                      <div className="flex gap-2">
-                        <Button onClick={handleSave} isLoading={isSaving} size="sm">
-                          保存
-                        </Button>
-                      </div>
-
-                      {/* ── Notta文字起こし（取り込み済みから紐付け。入会で面談記録へ引き継ぐ） ── */}
-                      <div className="pt-3 mt-1 border-t border-border">
-                        <div className="flex items-center justify-between mb-2">
-                          <label className="flex items-center gap-1.5 text-xs font-medium text-text-heading">
-                            <Mic className="w-3.5 h-3.5 text-text-muted" />
-                            Notta文字起こし
-                          </label>
-                          <button
-                            type="button"
-                            onClick={() => setNottaImportOpen(true)}
-                            className="text-xs text-info hover:underline"
-                          >
-                            文字起こしから取り込み
-                          </button>
-                        </div>
-
-                        {linkedTranscripts.length > 0 ? (
-                          <ul className="space-y-1.5">
-                            {linkedTranscripts.map((t) => (
-                              <li key={t.id} className="flex items-start gap-2 text-sm group">
-                                <Mic className="w-3.5 h-3.5 text-text-muted shrink-0 mt-0.5" />
-                                <div className="flex-1 min-w-0">
-                                  <div className="font-medium text-text-heading truncate">
-                                    {t.title || '(無題)'}
-                                  </div>
-                                  <div className="text-xs text-text-muted">
-                                    {t.recorded_at
-                                      ? new Date(t.recorded_at).toLocaleString('ja-JP', {
-                                          month: 'numeric',
-                                          day: 'numeric',
-                                          hour: '2-digit',
-                                          minute: '2-digit',
-                                        })
-                                      : '録音日時なし'}
-                                  </div>
-                                </div>
-                                <button
-                                  type="button"
-                                  onClick={() => handleUnlinkTranscript(t.id)}
-                                  disabled={unlinkingTranscriptId === t.id}
-                                  aria-label="紐付けを解除"
-                                  className="p-1 rounded text-text-faint hover:text-danger hover:bg-surface-hover transition-colors shrink-0"
-                                >
-                                  <X className="w-3.5 h-3.5" />
-                                </button>
-                              </li>
-                            ))}
-                          </ul>
-                        ) : (
-                          <p className="text-[11px] text-text-muted">
-                            取り込み済みの Notta
-                            文字起こしを紐付けられます。入会（生徒登録）時に、生徒の面談記録へ本文ごと引き継がれます。
-                          </p>
-                        )}
-                      </div>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="flex items-center gap-1.5 text-xs font-medium text-text-heading">
+                        <Mic className="w-3.5 h-3.5 text-text-muted" />
+                        Notta文字起こし
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => setNottaImportOpen(true)}
+                        className="text-xs text-info hover:underline"
+                      >
+                        文字起こしから取り込み
+                      </button>
                     </div>
+
+                    {linkedTranscripts.length > 0 ? (
+                      <ul className="space-y-1.5">
+                        {linkedTranscripts.map((t) => (
+                          <li key={t.id} className="flex items-start gap-2 text-sm group">
+                            <Mic className="w-3.5 h-3.5 text-text-muted shrink-0 mt-0.5" />
+                            <div className="flex-1 min-w-0">
+                              <div className="font-medium text-text-heading truncate">
+                                {t.title || '(無題)'}
+                              </div>
+                              <div className="text-xs text-text-muted">
+                                {t.recorded_at
+                                  ? new Date(t.recorded_at).toLocaleString('ja-JP', {
+                                      month: 'numeric',
+                                      day: 'numeric',
+                                      hour: '2-digit',
+                                      minute: '2-digit',
+                                    })
+                                  : '録音日時なし'}
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleUnlinkTranscript(t.id)}
+                              disabled={unlinkingTranscriptId === t.id}
+                              aria-label="紐付けを解除"
+                              className="p-1 rounded text-text-faint hover:text-danger hover:bg-surface-hover transition-colors shrink-0"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-[11px] text-text-muted">
+                        取り込み済みの Notta
+                        文字起こしを紐付けられます。入会（生徒登録）時に、生徒の面談記録へ本文ごと引き継がれます。
+                      </p>
+                    )}
                   </div>
 
                   {/* ── タイムライン（contacts + mail_logs を at 降順に統合） ── */}
@@ -1159,92 +1098,184 @@ export default function InquiryDetailPage() {
                     );
                   })()}
 
-                  {/* ── コンタクト追加フォーム ── */}
+                  {/* ── コンタクト追加フォーム（ステータス変更もここから行う） ── */}
                   <div className="border border-border rounded-lg p-4 bg-surface-hover">
                     <h3 className="text-sm font-medium text-text-heading mb-3">コンタクトを追加</h3>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
-                      <div>
-                        <label className="block text-xs text-text-muted mb-1">方法</label>
-                        <select
-                          value={contactMethod}
-                          onChange={(e) => {
-                            const m = e.target.value as ManualContactMethod;
-                            setContactMethod(m);
-                            // method が変わったら result をリセットし、方向も方法の既定値に合わせる
-                            setContactResult('');
-                            setContactDirection(METHOD_DEFAULT_DIRECTION[m]);
-                          }}
-                          className="w-full px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised focus:outline-none focus:ring-2 focus:ring-primary"
-                        >
-                          {MANUAL_CONTACT_METHODS.map((m) => (
-                            <option key={m} value={m}>
-                              {CONTACT_METHOD_LABELS[m]}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-xs text-text-muted mb-1">方向</label>
-                        <select
-                          value={contactDirection}
-                          onChange={(e) =>
-                            setContactDirection(e.target.value as typeof contactDirection)
-                          }
-                          className="w-full px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised focus:outline-none focus:ring-2 focus:ring-primary"
-                        >
-                          <option value="outbound">発信</option>
-                          <option value="inbound">着信・受信</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-xs text-text-muted mb-1">日付</label>
-                        <input
-                          type="date"
-                          value={contactDate}
-                          onChange={(e) => setContactDate(e.target.value)}
-                          className="w-full px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised focus:outline-none focus:ring-2 focus:ring-primary"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs text-text-muted mb-1">結果</label>
-                        {/* method に選択肢がある場合は datalist で候補表示、自由記述も可 */}
-                        <input
-                          type="text"
-                          list={`result-options-${contactMethod}`}
-                          value={contactResult}
-                          onChange={(e) => setContactResult(e.target.value)}
-                          placeholder={
-                            CONTACT_RESULT_OPTIONS[contactMethod].length > 0
-                              ? '選択または入力'
-                              : '例: 折り返し待ち'
-                          }
-                          className="w-full px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised focus:outline-none focus:ring-2 focus:ring-primary"
-                        />
-                        {CONTACT_RESULT_OPTIONS[contactMethod].length > 0 && (
-                          <datalist id={`result-options-${contactMethod}`}>
-                            {CONTACT_RESULT_OPTIONS[contactMethod].map((opt) => (
-                              <option key={opt} value={opt} />
+
+                    {/* 方法（ステータス変更を選ぶと以降の入力欄が切り替わる） */}
+                    <div className="mb-3">
+                      <label className="block text-xs text-text-muted mb-1">方法</label>
+                      <select
+                        value={contactMethod}
+                        onChange={(e) => {
+                          const m = e.target.value as AddContactMethod;
+                          setContactMethod(m);
+                          if (m === 'status_change') return;
+                          // method が変わったら result をリセットし、方向も方法の既定値に合わせる
+                          setContactResult('');
+                          setContactDirection(METHOD_DEFAULT_DIRECTION[m]);
+                        }}
+                        className="w-full sm:w-48 px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised focus:outline-none focus:ring-2 focus:ring-primary"
+                      >
+                        {ADD_CONTACT_METHODS.map((m) => (
+                          <option key={m} value={m}>
+                            {CONTACT_METHOD_LABELS[m]}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {contactMethod === 'status_change' ? (
+                      /* ── ステータス変更（旧「現状」ブロックの入力欄をここに統合） ── */
+                      <div className="space-y-3 mb-3">
+                        <div>
+                          <label className="block text-xs text-text-muted mb-1">ステータス</label>
+                          <select
+                            value={editStatus}
+                            onChange={(e) => setEditStatus(e.target.value as InquiryStatus)}
+                            className="w-full sm:w-48 px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised focus:outline-none focus:ring-2 focus:ring-primary"
+                          >
+                            {STATUS_OPTIONS.filter((o) => o.value !== 'all').map((o) => (
+                              <option key={o.value} value={o.value}>
+                                {o.label}
+                              </option>
                             ))}
-                          </datalist>
+                          </select>
+                        </div>
+
+                        {/* 入会時: 入会日・週回数 */}
+                        {editStatus === 'enrolled' && (
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-xs text-text-muted mb-1">入会日</label>
+                              <input
+                                type="date"
+                                value={editEnrolledAt}
+                                onChange={(e) => setEditEnrolledAt(e.target.value)}
+                                className="w-full px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised focus:outline-none focus:ring-2 focus:ring-primary"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs text-text-muted mb-1">週回数</label>
+                              <input
+                                type="number"
+                                min={1}
+                                max={10}
+                                value={editWeeklyCount}
+                                onChange={(e) => setEditWeeklyCount(e.target.value)}
+                                placeholder="例: 2"
+                                className="w-full px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised focus:outline-none focus:ring-2 focus:ring-primary"
+                              />
+                            </div>
+                          </div>
+                        )}
+
+                        {/* 体験待ち / 返事待ち / 体験没 / 入会: 体験日 */}
+                        {(editStatus === 'trial_waiting' ||
+                          editStatus === 'trial_done' ||
+                          editStatus === 'trial_lost' ||
+                          editStatus === 'enrolled') && (
+                          <div>
+                            <label className="block text-xs text-text-muted mb-1">体験日</label>
+                            <input
+                              type="date"
+                              value={editTrialAt}
+                              onChange={(e) => setEditTrialAt(e.target.value)}
+                              className="w-full sm:w-48 px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised focus:outline-none focus:ring-2 focus:ring-primary"
+                            />
+                          </div>
+                        )}
+
+                        {/* 没 / 体験没: 失注理由 */}
+                        {(editStatus === 'lost' || editStatus === 'trial_lost') && (
+                          <div>
+                            <label className="block text-xs text-text-muted mb-1">失注理由</label>
+                            <select
+                              value={editLostReason}
+                              onChange={(e) => setEditLostReason(e.target.value)}
+                              className="w-full sm:w-56 px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised focus:outline-none focus:ring-2 focus:ring-primary"
+                            >
+                              <option value="">— 未選択 —</option>
+                              {LOST_REASONS.map((r) => (
+                                <option key={r} value={r}>
+                                  {r}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
                         )}
                       </div>
-                    </div>
-                    <div className="mb-3">
-                      <label className="block text-xs text-text-muted mb-1">メモ</label>
-                      <textarea
-                        value={contactNote}
-                        onChange={(e) => setContactNote(e.target.value)}
-                        rows={2}
-                        className="w-full px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised focus:outline-none focus:ring-2 focus:ring-primary resize-y"
-                      />
-                    </div>
+                    ) : (
+                      /* ── 通常のコンタクト入力欄 ── */
+                      <>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-3">
+                          <div>
+                            <label className="block text-xs text-text-muted mb-1">方向</label>
+                            <select
+                              value={contactDirection}
+                              onChange={(e) =>
+                                setContactDirection(e.target.value as typeof contactDirection)
+                              }
+                              className="w-full px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised focus:outline-none focus:ring-2 focus:ring-primary"
+                            >
+                              <option value="outbound">発信</option>
+                              <option value="inbound">着信・受信</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-xs text-text-muted mb-1">日付</label>
+                            <input
+                              type="date"
+                              value={contactDate}
+                              onChange={(e) => setContactDate(e.target.value)}
+                              className="w-full px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised focus:outline-none focus:ring-2 focus:ring-primary"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs text-text-muted mb-1">結果</label>
+                            {/* method に選択肢がある場合は datalist で候補表示、自由記述も可 */}
+                            <input
+                              type="text"
+                              list={`result-options-${contactMethod}`}
+                              value={contactResult}
+                              onChange={(e) => setContactResult(e.target.value)}
+                              placeholder={
+                                CONTACT_RESULT_OPTIONS[contactMethod].length > 0
+                                  ? '選択または入力'
+                                  : '例: 折り返し待ち'
+                              }
+                              className="w-full px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised focus:outline-none focus:ring-2 focus:ring-primary"
+                            />
+                            {CONTACT_RESULT_OPTIONS[contactMethod].length > 0 && (
+                              <datalist id={`result-options-${contactMethod}`}>
+                                {CONTACT_RESULT_OPTIONS[contactMethod].map((opt) => (
+                                  <option key={opt} value={opt} />
+                                ))}
+                              </datalist>
+                            )}
+                          </div>
+                        </div>
+                        <div className="mb-3">
+                          <label className="block text-xs text-text-muted mb-1">メモ</label>
+                          <textarea
+                            value={contactNote}
+                            onChange={(e) => setContactNote(e.target.value)}
+                            rows={2}
+                            className="w-full px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised focus:outline-none focus:ring-2 focus:ring-primary resize-y"
+                          />
+                        </div>
+                      </>
+                    )}
+
                     <Button
-                      onClick={handleAddContact}
-                      isLoading={isAddingContact}
+                      onClick={
+                        contactMethod === 'status_change' ? handleSaveStatusChange : handleAddContact
+                      }
+                      isLoading={contactMethod === 'status_change' ? isSaving : isAddingContact}
                       size="sm"
                       variant="secondary"
                     >
-                      追加
+                      {contactMethod === 'status_change' ? '保存' : '追加'}
                     </Button>
                   </div>
                 </section>
@@ -1767,6 +1798,27 @@ export default function InquiryDetailPage() {
               キャンセル
             </Button>
             <Button size="sm" isLoading={isSavingName} onClick={handleSaveName}>
+              保存
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* 内部メモ編集モーダル（現状ブロック廃止に伴い氏名編集と同じ方式へ） */}
+      <Modal isOpen={memoEditOpen} onClose={() => setMemoEditOpen(false)} title="メモの編集" size="md">
+        <div className="space-y-4">
+          <textarea
+            value={editMemoText}
+            onChange={(e) => setEditMemoText(e.target.value)}
+            rows={5}
+            placeholder="内部メモ（保護者には見えません）"
+            className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+          />
+          <div className="flex justify-end gap-2 pt-2 border-t border-border">
+            <Button variant="ghost" size="sm" onClick={() => setMemoEditOpen(false)}>
+              キャンセル
+            </Button>
+            <Button size="sm" isLoading={isSavingMemo} onClick={handleSaveMemo}>
               保存
             </Button>
           </div>

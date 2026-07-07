@@ -159,7 +159,11 @@ export default function StudentLessonReportsPage() {
   }
 
   return (
-    <AdminLayout>
+    <AdminLayout
+      documentTitle={
+        student ? `${student.last_name} ${student.first_name}｜授業報告` : '授業報告'
+      }
+    >
       <ToastContainer toasts={toasts} onRemove={removeToast} />
       <div className="space-y-4">
         <Button variant="ghost" size="sm" onClick={() => router.back()}>

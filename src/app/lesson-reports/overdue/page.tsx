@@ -88,7 +88,7 @@ export default function OverdueReportsPage() {
   if (!isManager) return <AccessDenied />;
 
   return (
-    <AdminLayout>
+    <AdminLayout documentTitle="授業報告書 督促一覧">
       <ToastContainer toasts={toasts} onRemove={removeToast} />
       <div className="space-y-4">
         <div className="flex items-center justify-between gap-3">

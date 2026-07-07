@@ -476,7 +476,7 @@ export default function LessonReportFormPage() {
   const slotLabel = entry.time_slot ? `${entry.time_slot.slot_number}限` : '';
 
   return (
-    <AdminLayout>
+    <AdminLayout documentTitle={`${studentName}｜授業報告書`}>
       <ToastContainer toasts={toasts} onRemove={removeToast} />
       <div className="space-y-4">
         {/* デモモードの注記バナー */}

@@ -1,6 +1,6 @@
 'use client';
 
-import { ReactNode } from 'react';
+import { ReactNode, useEffect } from 'react';
 import { AppHeader } from '@/components/layout';
 import { PrivacyScreen } from '@/components/privacy-screen';
 import { useAuth } from '@/contexts/AuthContext';
@@ -15,6 +15,13 @@ interface AdminLayoutProps {
   actions?: ReactNode; // 右上のボタン類
   fullWidth?: boolean; // コンテナ幅制限を解除
   narrow?: boolean; // 従来の max-w-7xl 幅（フォーム系ページ向け）
+  /**
+   * ブラウザタブ名（document.title）に使う識別用の文字列。
+   * 詳細ページ等、同じ画面を複数タブで開くと区別がつかなくなるため、
+   * 生徒名・問合せ名など内容に応じた値を渡すとタブが見分けやすくなる。
+   * 未指定なら見た目の title / headerTitle にフォールバックする。
+   */
+  documentTitle?: string;
 }
 
 export function AdminLayout({
@@ -27,8 +34,20 @@ export function AdminLayout({
   actions,
   fullWidth,
   narrow,
+  documentTitle,
 }: AdminLayoutProps) {
   useAuth();
+
+  // タブタイトルを画面内容に合わせて変える。離脱時は既定の "NEST" に戻す。
+  useEffect(() => {
+    const resolved = documentTitle || title || headerTitle;
+    if (resolved) {
+      document.title = `${resolved} - NEST`;
+    }
+    return () => {
+      document.title = 'NEST';
+    };
+  }, [documentTitle, title, headerTitle]);
 
   return (
     <div className="app-shell-root min-h-screen bg-bg">

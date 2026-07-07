@@ -130,7 +130,7 @@ export default function TransferNotificationsPage() {
   };
 
   return (
-    <AdminLayout>
+    <AdminLayout documentTitle="振替確定通知">
       <ToastContainer toasts={toasts} onRemove={removeToast} />
       <div className="space-y-4">
         <div className="flex items-center justify-between">

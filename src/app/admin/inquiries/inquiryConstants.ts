@@ -88,6 +88,14 @@ export const MANUAL_CONTACT_METHODS = [
 export type ManualContactMethod = (typeof MANUAL_CONTACT_METHODS)[number];
 
 /**
+ * 「コンタクトを追加」フォーム専用の方法一覧。
+ * 現状ブロックを廃止し、ステータス変更もこのフォームから行えるようにするため
+ * status_change を末尾に追加する（編集モーダルの MANUAL_CONTACT_METHODS には含めない）。
+ */
+export const ADD_CONTACT_METHODS = [...MANUAL_CONTACT_METHODS, 'status_change'] as const;
+export type AddContactMethod = (typeof ADD_CONTACT_METHODS)[number];
+
+/**
  * 結果の選択肢（method ごと）。free text 入力も併用できるようにする。
  * 電話の追客状況がひと目で分かるよう選択式を充実させた。
  */

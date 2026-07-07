@@ -229,7 +229,7 @@ export default function MySchedulePage() {
   }, [entries]);
 
   return (
-    <AdminLayout>
+    <AdminLayout documentTitle="授業スケジュール">
       <ToastContainer toasts={toasts} onRemove={removeToast} />
       <div className="max-w-4xl mx-auto p-4 space-y-4">
         <div className="flex items-center justify-between">

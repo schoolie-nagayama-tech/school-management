@@ -194,7 +194,7 @@ export default function TodayPage() {
   const drafts = entries.filter((e) => e.report?.status === 'draft').length;
 
   return (
-    <AdminLayout>
+    <AdminLayout documentTitle="本日の授業">
       <ToastContainer toasts={toasts} onRemove={removeToast} />
       <div className="space-y-4">
         <div className="flex items-center gap-3">
