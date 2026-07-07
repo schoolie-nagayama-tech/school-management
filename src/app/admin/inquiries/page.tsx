@@ -333,7 +333,7 @@ export default function InquiriesPage() {
       headerTitle="問合せ管理"
       actions={
         <div className="flex items-center gap-2">
-          {/* 貼り付けて追加 — 目玉機能につき primary で先頭配置 */}
+          {/* 追加系: 貼り付け（目玉機能）/ 手入力 / CSV取込。追加手段としてまとめて先頭に配置 */}
           <Link href="/admin/inquiries/paste">
             <Button variant="primary" size="sm">
               <ClipboardPaste className="w-4 h-4 mr-1.5" />
@@ -341,10 +341,20 @@ export default function InquiriesPage() {
             </Button>
           </Link>
           {/* 手入力で追加 — 電話・直来など HP に元データが無い問合せを直接登録する */}
-          <Button variant="secondary" size="sm" onClick={() => setIsManualAddOpen(true)}>
+          <Button variant="outline" size="sm" onClick={() => setIsManualAddOpen(true)}>
             <UserPlus className="w-4 h-4 mr-1.5" />
             手入力で追加
           </Button>
+          <Link href="/admin/inquiries/import">
+            <Button variant="outline" size="sm">
+              <Upload className="w-4 h-4 mr-1.5" />
+              CSV取込
+            </Button>
+          </Link>
+
+          {/* 区切り: ここから下は分析・ツール系 */}
+          <div className="w-px h-5 bg-border mx-1" aria-hidden="true" />
+
           <Link href="/admin/inquiries/analytics">
             <Button variant="outline" size="sm">
               <BarChart3 className="w-4 h-4 mr-1.5" />
@@ -370,12 +380,6 @@ export default function InquiriesPage() {
             <Button variant="outline" size="sm">
               <QrCode className="w-4 h-4 mr-1.5" />
               公開フォーム
-            </Button>
-          </Link>
-          <Link href="/admin/inquiries/import">
-            <Button variant="secondary" size="sm">
-              <Upload className="w-4 h-4 mr-1.5" />
-              CSV取込
             </Button>
           </Link>
           {/* 本部HP ブックマークレット取込設定 */}
