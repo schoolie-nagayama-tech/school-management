@@ -14,6 +14,7 @@ import type {
 import { getDefaultSchoolId } from './schools';
 import { getFifthWeekDays, calcFifthWeekSlots } from '@/lib/utils/fifthWeek';
 import { zoukomaKomaCount } from '@/lib/utils/zoukomaKoma';
+import { aggregateChargedSplit, toJstDateString } from '@/lib/utils/billingCharged';
 import { fetchAllPaged } from '@/lib/utils/supabasePaging';
 import { batchFetchCoursePrepApiMulti } from './coursePrepApi';
 import type { AutoValues } from './courseProgress';
@@ -791,40 +792,16 @@ export async function syncFormToBilling(
     // 増コマは「申込コマ数」を請求数として扱う。それ以外のフォームは1回答=1件。
     const isZoukoma = item.linked_form_type === 'zoukoma';
 
-    // 1回答あたりの計上数。増コマは申込コマ数（zoukomaKomaCount）を採用、
-    // それ以外のフォームは1回答=1件。
-    const responseWeight = (resp: { response_data?: unknown }): number =>
-      isZoukoma ? zoukomaKomaCount(resp.response_data) : 1;
-
-    // 4. 生徒ごとに全コマ数・非計上コマ数を集計
-    const studentTotalCounts = new Map<string, number>();
-    const studentNonChargedCounts = new Map<string, number>();
-    for (const resp of allResponses) {
-      if (resp.linked_student_id) {
-        const weight = responseWeight(resp);
-        studentTotalCounts.set(
-          resp.linked_student_id,
-          (studentTotalCounts.get(resp.linked_student_id) || 0) + weight
-        );
-        const sc = (resp.status_checks || {}) as Record<string, boolean>;
-        if (!sc.charged) {
-          studentNonChargedCounts.set(
-            resp.linked_student_id,
-            (studentNonChargedCounts.get(resp.linked_student_id) || 0) + weight
-          );
-        }
-      }
-    }
+    // 4. 生徒ごとに計上済み/未計上コマ数へ集計（純粋ロジックは billingCharged.ts でテスト）
+    const splitByStudent = aggregateChargedSplit(allResponses, isZoukoma);
 
     // 5. Upsert into student_billings
     //    value_number = 未計上（新規）コマ数、quantity = 計上済みコマ数。
     //    こうすると同期で計上済み分が消えず、請求表セルで「✓計上 N」を残したまま
     //    新規分だけ別表示できる（計上済みが0=空欄に潰れて見えなくなる問題の対策）。
-    for (const [studentId, total] of Array.from(studentTotalCounts.entries())) {
-      const nonCharged = studentNonChargedCounts.get(studentId) || 0;
-      const charged = total - nonCharged;
-      const allCharged = nonCharged === 0 && total > 0;
-
+    for (const [studentId, { nonCharged, charged, allCharged }] of Array.from(
+      splitByStudent.entries()
+    )) {
       const { data: existing } = await supabase
         .from('student_billings')
         .select('id')
@@ -949,11 +926,7 @@ export async function syncFormResponseToBilling(responseId: string): Promise<voi
 
   // created_at(UTC) を JST 暦日に変換してから期間を引き当てる。素の UTC 日付で引くと、
   // JST 深夜0〜9時の回答が前日扱いになり、下の JST アンカーの sibling 取得と期間がズレる。
-  const createdDate = new Date(
-    new Date(response.created_at as string).getTime() + 9 * 60 * 60 * 1000
-  )
-    .toISOString()
-    .split('T')[0];
+  const createdDate = toJstDateString(response.created_at as string);
 
   // 回答日を含む billing_period を探す
   const { data: periods } = await supabase
