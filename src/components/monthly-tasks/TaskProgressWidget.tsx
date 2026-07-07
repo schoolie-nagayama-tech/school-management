@@ -462,8 +462,8 @@ export function TaskProgressWidget({
 
   if (isLoading) {
     return (
-      <div className="mb-4 rounded-xl border border-gray-200 bg-white p-4">
-        <div className="h-10 animate-pulse rounded bg-gray-100" />
+      <div className="mb-4 rounded-xl border border-border bg-surface p-4">
+        <div className="h-10 animate-pulse rounded bg-surface-hover" />
       </div>
     );
   }
@@ -474,25 +474,28 @@ export function TaskProgressWidget({
   const monthLabel = `${now.getMonth() + 1}月`;
 
   const courseProgressSection = hasCourseData ? (
-    <div className="px-4 py-3 border-t border-gray-100">
+    <div className="px-4 py-3 border-t border-border-subtle">
       <div className="flex items-center gap-2 mb-2">
         <GraduationCap className="w-3.5 h-3.5 text-indigo-500" />
-        <span className="text-[11px] font-bold text-gray-600">講習進捗</span>
-        <span className="text-[11px] text-gray-400">
+        <span className="text-xs font-bold text-text-muted">講習進捗</span>
+        <span className="text-xs text-text-faint">
           {year}年 {seasonLabel}
         </span>
         <Link
           href="/courses/progress"
-          className="ml-auto flex items-center gap-0.5 text-[11px] text-blue-500 hover:text-blue-700 font-medium transition-[color] duration-150 ease-out"
+          className="ml-auto flex items-center gap-0.5 text-xs text-blue-500 hover:text-blue-700 font-medium transition-[color] duration-150 ease-out"
         >
           詳細
           <ArrowRight className="w-3 h-3" />
         </Link>
       </div>
       {allSchoolMetrics.map((m, idx) => (
-        <div key={m.schoolId} className={idx > 0 ? 'mt-2.5 pt-2.5 border-t border-gray-100' : ''}>
+        <div
+          key={m.schoolId}
+          className={idx > 0 ? 'mt-2.5 pt-2.5 border-t border-border-subtle' : ''}
+        >
           {allSchoolMetrics.length > 1 && (
-            <div className="text-[11px] font-bold text-gray-500 mb-1.5">{m.schoolName}</div>
+            <div className="text-xs font-bold text-text-muted mb-1.5">{m.schoolName}</div>
           )}
           <div className="flex flex-wrap gap-2">
             {m.pcsStats && (
@@ -520,13 +523,13 @@ export function TaskProgressWidget({
               />
             )}
             {m.parentInterviewStats && (
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-emerald-200 bg-emerald-50 text-[11px]">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-emerald-200 bg-emerald-50 text-xs">
                 <span className="text-emerald-600 font-medium">面談実施率</span>
                 <span className="text-emerald-800 font-bold">{m.interviewRate}%</span>
               </div>
             )}
             {(m.komaStats.proposed > 0 || m.komaStats.decided > 0) && (
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-purple-200 bg-purple-50 text-[11px]">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-purple-200 bg-purple-50 text-xs">
                 <span className="text-purple-600 font-medium">増コマ</span>
                 <span className="text-purple-800 font-bold">{m.komaStats.decided}</span>
                 <span className="text-purple-400">/</span>
@@ -536,17 +539,17 @@ export function TaskProgressWidget({
           </div>
           {m.subjectTotals.subjects.length > 0 && (
             <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-              <span className="text-[11px] text-gray-400 mr-0.5">提案コマ:</span>
+              <span className="text-xs text-text-faint mr-0.5">提案コマ:</span>
               {m.subjectTotals.subjects.map((s) => (
                 <span
                   key={s.name}
-                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded border border-gray-200 bg-gray-50 text-[11px]"
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded border border-border bg-surface-hover text-xs"
                 >
-                  <span className="text-gray-500">{s.name}</span>
-                  <span className="text-gray-800 font-bold">{s.total}</span>
+                  <span className="text-text-muted">{s.name}</span>
+                  <span className="text-text-heading font-bold">{s.total}</span>
                 </span>
               ))}
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded border border-indigo-200 bg-indigo-50 text-[11px]">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded border border-indigo-200 bg-indigo-50 text-xs">
                 <span className="text-indigo-600 font-medium">合計</span>
                 <span className="text-indigo-800 font-bold">{m.subjectTotals.grandTotal}</span>
               </span>
@@ -597,7 +600,7 @@ export function TaskProgressWidget({
   const upcomingTasks = data.tasks.filter((t) => !t.overdue);
 
   return (
-    <div className="mb-4 rounded-xl border border-gray-200 bg-white shadow-sm">
+    <div className="mb-4 rounded-xl border border-border bg-surface shadow-sm">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-2">
         <button
@@ -605,12 +608,12 @@ export function TaskProgressWidget({
           className="flex items-center gap-2 hover:opacity-70 transition-opacity"
         >
           <ChevronDown
-            className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${isOpen ? '' : '-rotate-90'}`}
+            className={`w-4 h-4 text-text-faint transition-transform duration-200 ${isOpen ? '' : '-rotate-90'}`}
           />
-          <ListTodo className="w-4 h-4 text-gray-500" />
-          <span className="text-sm font-bold text-gray-700">業務進捗</span>
-          <span className="text-xs text-gray-400">{monthLabel}</span>
-          <span className="text-[11px] text-gray-400">残 {data.tasks.length}件</span>
+          <ListTodo className="w-4 h-4 text-text-muted" />
+          <span className="text-sm font-bold text-text-body">業務進捗</span>
+          <span className="text-xs text-text-faint">{monthLabel}</span>
+          <span className="text-xs text-text-faint">残 {data.tasks.length}件</span>
         </button>
         <Link
           href="/tasks"
@@ -627,11 +630,11 @@ export function TaskProgressWidget({
         style={{ maxHeight: isOpen ? '800px' : '0', opacity: isOpen ? 1 : 0 }}
       >
         {/* 業務タスク */}
-        <div className="px-4 py-2.5 flex flex-wrap gap-1.5 border-t border-gray-100">
+        <div className="px-4 py-2.5 flex flex-wrap gap-1.5 border-t border-border-subtle">
           {overdueTasks.map((task) => (
             <span
               key={task.id}
-              className="inline-flex items-center gap-1 px-2 py-1 rounded border border-red-200 bg-red-50 text-[11px]"
+              className="inline-flex items-center gap-1 px-2 py-1 rounded border border-red-200 bg-red-50 text-xs"
             >
               <TaskCheckbox task={task} onComplete={handleComplete} />
               <AlertTriangle className="w-3 h-3 text-red-500 flex-shrink-0" />
@@ -642,7 +645,7 @@ export function TaskProgressWidget({
           {upcomingTasks.map((task) => (
             <span
               key={task.id}
-              className={`inline-flex items-center gap-1 px-2 py-1 rounded text-[11px] border ${
+              className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs border ${
                 task.category === 'business'
                   ? 'bg-orange-50 border-orange-200 text-orange-700'
                   : 'bg-purple-50 border-purple-200 text-purple-700'
@@ -656,11 +659,11 @@ export function TaskProgressWidget({
         </div>
         {/* 講習準備タスク */}
         {data.coursePrepTasks && data.coursePrepTasks.length > 0 && (
-          <div className="px-4 py-2 border-t border-gray-100 space-y-1">
+          <div className="px-4 py-2 border-t border-border-subtle space-y-1">
             {data.coursePrepTasks.map((ct) => (
               <div
                 key={ct.id}
-                className={`flex items-start gap-2 text-[11px] leading-relaxed ${
+                className={`flex items-start gap-2 text-xs leading-relaxed ${
                   ct.overdue ? 'text-red-600' : 'text-blue-700'
                 }`}
               >
@@ -717,13 +720,13 @@ function CourseMetricChip({
   }[color];
   return (
     <div
-      className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border ${colors.border} ${colors.bg} text-[11px]`}
+      className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border ${colors.border} ${colors.bg} text-xs`}
     >
       <span className={`${colors.label} font-medium`}>{label}</span>
       <span className={`${colors.value} font-bold`}>{value}</span>
       <span className={colors.sub}>/</span>
       <span className={colors.label}>{total}</span>
-      <span className={`${colors.sub} text-[11px]`}>({pct}%)</span>
+      <span className={`${colors.sub} text-xs`}>({pct}%)</span>
     </div>
   );
 }

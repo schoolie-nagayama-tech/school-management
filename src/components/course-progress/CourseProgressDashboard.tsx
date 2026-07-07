@@ -134,7 +134,7 @@ function BlurSaveInput({
         max={max}
         step={step}
       />
-      {suffix && <span className="text-[10px] text-gray-400">{suffix}</span>}
+      {suffix && <span className="text-[10px] text-text-faint">{suffix}</span>}
     </span>
   );
 }
@@ -533,15 +533,15 @@ export function CourseProgressDashboard({
   }, [proposedKomaItem, decidedKomaItem]);
 
   const inputClass =
-    'w-20 px-2 py-1 text-sm border border-gray-200 rounded-lg text-center focus:outline-none focus:ring-1 focus:ring-blue-300';
+    'w-20 px-2 py-1 text-sm border border-border rounded-lg text-center focus:outline-none focus:ring-1 focus:ring-blue-300';
 
   return (
     <div className="space-y-4 mb-6">
       {/* 講習期間設定 */}
       {onPeriodDateChange && (
-        <div className="bg-white rounded-xl border border-gray-200 px-4 py-3">
+        <div className="bg-surface rounded-xl border border-border px-4 py-3">
           <div className="flex flex-wrap items-center gap-4">
-            <span className="text-xs text-gray-500 font-medium">講習期間</span>
+            <span className="text-xs text-text-muted font-medium">講習期間</span>
             <div className="flex items-center gap-2">
               <input
                 type="date"
@@ -549,18 +549,18 @@ export function CourseProgressDashboard({
                 onChange={(e) =>
                   onPeriodDateChange({ schedule_start_date: e.target.value || null })
                 }
-                className="px-2 py-1 text-xs border border-gray-200 rounded-lg"
+                className="px-2 py-1 text-xs border border-border rounded-lg"
               />
-              <span className="text-xs text-gray-400">〜</span>
+              <span className="text-xs text-text-faint">〜</span>
               <input
                 type="date"
                 value={period?.schedule_end_date || ''}
                 onChange={(e) => onPeriodDateChange({ schedule_end_date: e.target.value || null })}
-                className="px-2 py-1 text-xs border border-gray-200 rounded-lg"
+                className="px-2 py-1 text-xs border border-border rounded-lg"
               />
             </div>
             {hasScheduleDates && (
-              <span className="text-[10px] text-gray-400">
+              <span className="text-[10px] text-text-faint">
                 (
                 {Math.max(
                   1,
@@ -582,13 +582,13 @@ export function CourseProgressDashboard({
         </div>
       )}
       {!onPeriodDateChange && hasScheduleDates && (
-        <div className="bg-white rounded-xl border border-gray-200 px-4 py-3">
+        <div className="bg-surface rounded-xl border border-border px-4 py-3">
           <div className="flex items-center gap-4">
-            <span className="text-xs text-gray-500 font-medium">講習期間</span>
+            <span className="text-xs text-text-muted font-medium">講習期間</span>
             <span className="text-xs text-[#1e3a5f]">
               {period!.schedule_start_date} 〜 {period!.schedule_end_date}
             </span>
-            <span className="text-[10px] text-gray-400">
+            <span className="text-[10px] text-text-faint">
               (
               {Math.max(
                 1,
@@ -619,8 +619,8 @@ export function CourseProgressDashboard({
       {/* ===== 1段目: メイン指標 ===== */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         {/* 増コマ達成度 */}
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
-          <div className="text-xs text-gray-500 mb-1 flex items-center gap-1">
+        <div className="bg-surface rounded-xl border border-border p-4">
+          <div className="text-xs text-text-muted mb-1 flex items-center gap-1">
             増コマ達成度
             <HelpTooltip
               text={
@@ -631,19 +631,19 @@ export function CourseProgressDashboard({
           </div>
           <div className="flex items-baseline gap-2">
             <span className="text-2xl font-bold text-[#1e3a5f]">{totalDecided}</span>
-            <span className="text-sm text-gray-400">
+            <span className="text-sm text-text-faint">
               / {targetKoma > 0 ? targetKoma : '–'} コマ
             </span>
           </div>
           {targetKoma > 0 && (
             <>
-              <div className="mt-2 w-full bg-gray-100 rounded-full h-2">
+              <div className="mt-2 w-full bg-surface-hover rounded-full h-2">
                 <div
                   className="h-2 rounded-full bg-[#3b82f6] transition-[width] duration-500 ease-out"
                   style={{ width: `${Math.min(Math.round(targetRate * 100), 100)}%` }}
                 />
               </div>
-              <div className="text-xs text-gray-400 mt-1">
+              <div className="text-xs text-text-faint mt-1">
                 目標比 {Math.round(targetRate * 100)}%
               </div>
             </>
@@ -652,7 +652,7 @@ export function CourseProgressDashboard({
             <div className="mt-3 space-y-1.5">
               {onTargetKomaChange && (
                 <div className="flex items-center gap-2">
-                  <span className="text-[11px] text-gray-500 w-8 shrink-0">目標</span>
+                  <span className="text-xs text-text-muted w-8 shrink-0">目標</span>
                   <BlurSaveInput
                     value={targetKoma}
                     onSave={onTargetKomaChange}
@@ -664,7 +664,7 @@ export function CourseProgressDashboard({
               )}
               {onBudgetKomaChange && (
                 <div className="flex items-center gap-2">
-                  <span className="text-[11px] text-gray-500 w-8 shrink-0">予算</span>
+                  <span className="text-xs text-text-muted w-8 shrink-0">予算</span>
                   <BlurSaveInput
                     value={budgetKoma}
                     onSave={onBudgetKomaChange}
@@ -676,16 +676,16 @@ export function CourseProgressDashboard({
               )}
             </div>
           ) : (
-            <div className="mt-2 space-y-0.5 text-xs text-gray-400">
+            <div className="mt-2 space-y-0.5 text-xs text-text-faint">
               {targetKoma > 0 && <div>目標: {targetKoma}コマ</div>}
               {budgetKoma > 0 && <div>予算: {budgetKoma}コマ</div>}
             </div>
           )}
           {budgetKoma > 0 && (
             <div className="mt-1.5 flex items-center gap-1">
-              <span className="text-[10px] text-gray-400">予算達成:</span>
+              <span className="text-[10px] text-text-faint">予算達成:</span>
               <span
-                className={`text-[11px] font-bold ${budgetRate >= 1 ? 'text-green-600' : budgetRate >= 0.7 ? 'text-amber-600' : 'text-red-500'}`}
+                className={`text-xs font-bold ${budgetRate >= 1 ? 'text-green-600' : budgetRate >= 0.7 ? 'text-amber-600' : 'text-red-500'}`}
               >
                 {Math.round(budgetRate * 100)}%
               </span>
@@ -694,8 +694,8 @@ export function CourseProgressDashboard({
         </div>
 
         {/* 予想増コマ（想定 vs 実績） */}
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
-          <div className="text-xs text-gray-500 mb-2 flex items-center gap-1">
+        <div className="bg-surface rounded-xl border border-border p-4">
+          <div className="text-xs text-text-muted mb-2 flex items-center gap-1">
             予想増コマ
             <HelpTooltip
               text={
@@ -707,48 +707,48 @@ export function CourseProgressDashboard({
           <div className="grid grid-cols-2 gap-3">
             {/* 想定 */}
             <div className="text-center">
-              <div className="text-[10px] text-gray-400 mb-0.5">想定</div>
+              <div className="text-[10px] text-text-faint mb-0.5">想定</div>
               <div className="text-xl font-bold text-[#f59e0b]">{expectedKoma}</div>
-              <div className="text-[10px] text-gray-400">コマ</div>
+              <div className="text-[10px] text-text-faint">コマ</div>
             </div>
             {/* 実績ベース */}
             <div className="text-center">
-              <div className="text-[10px] text-gray-400 mb-0.5">実績</div>
+              <div className="text-[10px] text-text-faint mb-0.5">実績</div>
               <div className="text-xl font-bold text-[#3b82f6]">{totalDecided}</div>
-              <div className="text-[10px] text-gray-400">コマ</div>
+              <div className="text-[10px] text-text-faint">コマ</div>
             </div>
           </div>
-          <div className="mt-3 pt-2 border-t border-gray-100 space-y-1.5">
+          <div className="mt-3 pt-2 border-t border-border-subtle space-y-1.5">
             <div className="flex items-center justify-between text-xs">
-              <span className="text-gray-400">想定取得率</span>
+              <span className="text-text-faint">想定取得率</span>
               {onExpectedRateChange ? (
                 <BlurSaveInput
                   value={expectedRate}
                   onSave={onExpectedRateChange}
                   placeholder="0"
-                  className="w-14 px-1 py-0.5 text-xs border border-gray-200 rounded text-center focus:outline-none focus:ring-1 focus:ring-amber-300"
+                  className="w-14 px-1 py-0.5 text-xs border border-border rounded text-center focus:outline-none focus:ring-1 focus:ring-amber-300"
                   suffix="%"
                   min={0}
                   max={100}
                 />
               ) : (
-                <span className="text-gray-600 font-medium">{expectedRate}%</span>
+                <span className="text-text-muted font-medium">{expectedRate}%</span>
               )}
             </div>
             <div className="flex items-center justify-between text-xs">
-              <span className="text-gray-400">実績取得率</span>
-              <span className="text-gray-600 font-medium">{actualRatePct}%</span>
+              <span className="text-text-faint">実績取得率</span>
+              <span className="text-text-muted font-medium">{actualRatePct}%</span>
             </div>
             <div className="flex items-center justify-between text-xs">
-              <span className="text-gray-400">提案合計</span>
-              <span className="text-gray-600 font-medium">{totalProposed}コマ</span>
+              <span className="text-text-faint">提案合計</span>
+              <span className="text-text-muted font-medium">{totalProposed}コマ</span>
             </div>
           </div>
         </div>
 
         {/* 進捗状況 */}
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
-          <div className="text-xs text-gray-500 mb-2 flex items-center gap-1">
+        <div className="bg-surface rounded-xl border border-border p-4">
+          <div className="text-xs text-text-muted mb-2 flex items-center gap-1">
             進捗状況
             <HelpTooltip
               text={
@@ -761,16 +761,16 @@ export function CourseProgressDashboard({
             {/* 作成済み */}
             <div>
               <div className="flex items-center justify-between text-xs mb-0.5">
-                <span className="text-gray-500">作成済</span>
-                <span className="text-gray-700 font-medium">
+                <span className="text-text-muted">作成済</span>
+                <span className="text-text-body font-medium">
                   {proposedStudentCount}
-                  <span className="text-gray-400 font-normal"> / {students.length}名</span>
-                  <span className="text-gray-400 font-normal ml-1">
+                  <span className="text-text-faint font-normal"> / {students.length}名</span>
+                  <span className="text-text-faint font-normal ml-1">
                     ({pct(proposedStudentCount, students.length)}%)
                   </span>
                 </span>
               </div>
-              <div className="w-full bg-gray-100 rounded-full h-1.5">
+              <div className="w-full bg-surface-hover rounded-full h-1.5">
                 <div
                   className="h-1.5 rounded-full bg-[#f59e0b] transition-[width] duration-500 ease-out"
                   style={{
@@ -783,16 +783,16 @@ export function CourseProgressDashboard({
             {studentInterviewItem && (
               <div>
                 <div className="flex items-center justify-between text-xs mb-0.5">
-                  <span className="text-gray-500">生徒面談</span>
-                  <span className="text-gray-700 font-medium">
+                  <span className="text-text-muted">生徒面談</span>
+                  <span className="text-text-body font-medium">
                     {studentInterviewCount}
-                    <span className="text-gray-400 font-normal"> / {students.length}名</span>
-                    <span className="text-gray-400 font-normal ml-1">
+                    <span className="text-text-faint font-normal"> / {students.length}名</span>
+                    <span className="text-text-faint font-normal ml-1">
                       ({pct(studentInterviewCount, students.length)}%)
                     </span>
                   </span>
                 </div>
-                <div className="w-full bg-gray-100 rounded-full h-1.5">
+                <div className="w-full bg-surface-hover rounded-full h-1.5">
                   <div
                     className="h-1.5 rounded-full bg-[#10b981] transition-[width] duration-500 ease-out"
                     style={{
@@ -806,16 +806,16 @@ export function CourseProgressDashboard({
             {parentInterviewItem && (
               <div>
                 <div className="flex items-center justify-between text-xs mb-0.5">
-                  <span className="text-gray-500">父母面談</span>
-                  <span className="text-gray-700 font-medium">
+                  <span className="text-text-muted">父母面談</span>
+                  <span className="text-text-body font-medium">
                     {parentInterviewCount}
-                    <span className="text-gray-400 font-normal"> / {students.length}名</span>
-                    <span className="text-gray-400 font-normal ml-1">
+                    <span className="text-text-faint font-normal"> / {students.length}名</span>
+                    <span className="text-text-faint font-normal ml-1">
                       ({pct(parentInterviewCount, students.length)}%)
                     </span>
                   </span>
                 </div>
-                <div className="w-full bg-gray-100 rounded-full h-1.5">
+                <div className="w-full bg-surface-hover rounded-full h-1.5">
                   <div
                     className="h-1.5 rounded-full bg-[#059669] transition-[width] duration-500 ease-out"
                     style={{
@@ -828,16 +828,16 @@ export function CourseProgressDashboard({
             {/* 申込済み */}
             <div>
               <div className="flex items-center justify-between text-xs mb-0.5">
-                <span className="text-gray-500">申込済</span>
-                <span className="text-gray-700 font-medium">
+                <span className="text-text-muted">申込済</span>
+                <span className="text-text-body font-medium">
                   {decidedStudentCount}
-                  <span className="text-gray-400 font-normal"> / {students.length}名</span>
-                  <span className="text-gray-400 font-normal ml-1">
+                  <span className="text-text-faint font-normal"> / {students.length}名</span>
+                  <span className="text-text-faint font-normal ml-1">
                     ({pct(decidedStudentCount, students.length)}%)
                   </span>
                 </span>
               </div>
-              <div className="w-full bg-gray-100 rounded-full h-1.5">
+              <div className="w-full bg-surface-hover rounded-full h-1.5">
                 <div
                   className="h-1.5 rounded-full bg-[#3b82f6] transition-[width] duration-500 ease-out"
                   style={{
@@ -847,16 +847,16 @@ export function CourseProgressDashboard({
               </div>
             </div>
           </div>
-          <div className="mt-2 pt-2 border-t border-gray-100 text-xs text-gray-400 space-y-0.5">
+          <div className="mt-2 pt-2 border-t border-border-subtle text-xs text-text-faint space-y-0.5">
             <div className="flex justify-between">
               <span>平均提案</span>
-              <span className="text-gray-600">
+              <span className="text-text-muted">
                 {students.length > 0 ? (totalProposed / students.length).toFixed(1) : 0}コマ/人
               </span>
             </div>
             <div className="flex justify-between">
               <span>平均取得</span>
-              <span className="text-gray-600">
+              <span className="text-text-muted">
                 {students.length > 0 ? (totalDecided / students.length).toFixed(1) : 0}コマ/人
               </span>
             </div>
@@ -864,8 +864,8 @@ export function CourseProgressDashboard({
         </div>
 
         {/* 在籍数 */}
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
-          <div className="text-xs text-gray-500 mb-1">在籍生徒数</div>
+        <div className="bg-surface rounded-xl border border-border p-4">
+          <div className="text-xs text-text-muted mb-1">在籍生徒数</div>
           <div className="text-2xl font-bold text-[#1e3a5f]">{students.length}名</div>
           <div className="mt-2 space-y-1">
             {(['elementary', 'middle', 'high'] as SchoolCategory[]).map((cat) => {
@@ -873,8 +873,8 @@ export function CourseProgressDashboard({
               if (count === 0) return null;
               return (
                 <div key={cat} className="flex items-center justify-between text-xs">
-                  <span className="text-gray-400">{CATEGORY_LABELS[cat]}</span>
-                  <span className="text-gray-600 font-medium">{count}名</span>
+                  <span className="text-text-faint">{CATEGORY_LABELS[cat]}</span>
+                  <span className="text-text-muted font-medium">{count}名</span>
                 </div>
               );
             })}
@@ -883,22 +883,22 @@ export function CourseProgressDashboard({
 
         {/* 進捗・期日超過 */}
         <div
-          className={`bg-white rounded-xl border ${overdueData.list.length > 0 ? 'border-red-200' : 'border-gray-200'} p-4`}
+          className={`bg-surface rounded-xl border ${overdueData.list.length > 0 ? 'border-danger' : 'border-border'} p-4`}
         >
           <div className="flex items-center gap-1.5 mb-1">
             {overdueData.list.length > 0 && <AlertTriangle className="text-red-500 w-3 h-3" />}
-            <span className="text-xs text-gray-500">期日超過</span>
+            <span className="text-xs text-text-muted">期日超過</span>
             <HelpTooltip
               text={'項目に設定された期日を過ぎても\n未完了（チェックなし）の生徒とタスクを表示'}
               size={10}
             />
           </div>
           {overdueData.list.length === 0 ? (
-            <div className="text-sm text-gray-400 mt-2">期日超過なし ✓</div>
+            <div className="text-sm text-text-faint mt-2">期日超過なし ✓</div>
           ) : (
             <>
               <div className="text-2xl font-bold text-red-500">{overdueData.list.length}件</div>
-              <div className="text-[10px] text-gray-400 mt-1">
+              <div className="text-[10px] text-text-faint mt-1">
                 {overdueData.items.length}タスク × 未完了生徒
               </div>
               <div className="mt-2 max-h-28 overflow-y-auto space-y-1 pr-1">
@@ -913,11 +913,11 @@ export function CourseProgressDashboard({
                         >
                           {item.name}
                         </span>
-                        <span className="text-gray-400 shrink-0 ml-1">
+                        <span className="text-text-faint shrink-0 ml-1">
                           〜{item.deadline?.slice(5).replace('-', '/')}
                         </span>
                       </div>
-                      <div className="text-gray-500 pl-1 truncate">
+                      <div className="text-text-muted pl-1 truncate">
                         {overdueStudents
                           .slice(0, 3)
                           .map((o) => `${o.student.last_name}`)
@@ -935,13 +935,13 @@ export function CourseProgressDashboard({
 
       {/* ===== 2段目: 学校種別分析（アコーディオン） ===== */}
       {categoryAnalysis.length > 0 && (
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <div className="bg-surface rounded-xl border border-border overflow-hidden">
           <button
             onClick={() => setCategoryOpen(!categoryOpen)}
-            className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-gray-50 transition-colors duration-150"
+            className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-surface-hover transition-colors duration-150"
           >
             <div className="flex items-center gap-2">
-              <span className="text-xs font-medium text-gray-600">学校種別分析</span>
+              <span className="text-xs font-medium text-text-muted">学校種別分析</span>
               {categoryAnalysis.map((cat) => (
                 <span
                   key={cat.category}
@@ -952,7 +952,7 @@ export function CourseProgressDashboard({
               ))}
             </div>
             <ChevronDown
-              className={`w-4 h-4 text-gray-400 transition-[transform] duration-150 ease-out ${categoryOpen ? 'rotate-180' : ''}`}
+              className={`w-4 h-4 text-text-faint transition-[transform] duration-150 ease-out ${categoryOpen ? 'rotate-180' : ''}`}
             />
           </button>
 
@@ -968,7 +968,7 @@ export function CourseProgressDashboard({
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
                       <span className={`text-sm font-bold ${cat.colors.text}`}>{cat.label}</span>
-                      <span className="text-xs text-gray-400">{cat.studentCount}名</span>
+                      <span className="text-xs text-text-faint">{cat.studentCount}名</span>
                     </div>
                     <span className={`text-xs font-medium ${cat.colors.text}`}>
                       取得率 {Math.round(cat.acquisitionRate * 100)}%
@@ -977,31 +977,34 @@ export function CourseProgressDashboard({
 
                   <div className="grid grid-cols-4 gap-2 mb-3">
                     <div className="text-center">
-                      <div className="text-[10px] text-gray-500">提案</div>
+                      <div className="text-[10px] text-text-muted">提案</div>
                       <div className={`text-sm font-bold ${cat.colors.text}`}>
                         {cat.totalProposed}
                       </div>
-                      <div className="text-[10px] text-gray-400">{cat.proposedCount}名</div>
+                      <div className="text-[10px] text-text-faint">{cat.proposedCount}名</div>
                     </div>
                     <div className="text-center">
-                      <div className="text-[10px] text-gray-500">決定</div>
+                      <div className="text-[10px] text-text-muted">決定</div>
                       <div className={`text-sm font-bold ${cat.colors.text}`}>
                         {cat.totalDecided}
                       </div>
-                      <div className="text-[10px] text-gray-400">{cat.decidedCount}名</div>
+                      <div className="text-[10px] text-text-faint">{cat.decidedCount}名</div>
                     </div>
                     <div className="text-center">
-                      <div className="text-[10px] text-gray-500" title="在籍1人あたりの提案コマ数">
+                      <div
+                        className="text-[10px] text-text-muted"
+                        title="在籍1人あたりの提案コマ数"
+                      >
                         平均提案
                       </div>
                       <div className={`text-sm font-bold ${cat.colors.text}`}>
                         {cat.avgProposed.toFixed(1)}
                       </div>
-                      <div className="text-[10px] text-gray-400">コマ/人</div>
+                      <div className="text-[10px] text-text-faint">コマ/人</div>
                     </div>
                     <div className="text-center">
                       <div
-                        className="text-[10px] text-gray-500"
+                        className="text-[10px] text-text-muted"
                         title="在籍1人あたりの取得（決定）増コマ数"
                       >
                         平均取得
@@ -1009,7 +1012,7 @@ export function CourseProgressDashboard({
                       <div className={`text-sm font-bold ${cat.colors.text}`}>
                         {cat.avgDecided.toFixed(1)}
                       </div>
-                      <div className="text-[10px] text-gray-400">コマ/人</div>
+                      <div className="text-[10px] text-text-faint">コマ/人</div>
                     </div>
                   </div>
 
@@ -1030,11 +1033,11 @@ export function CourseProgressDashboard({
                           key={g.grade}
                           className="flex items-center justify-between text-[10px]"
                         >
-                          <span className="text-gray-500 w-6">{g.label}</span>
-                          <span className="text-gray-400 w-7 text-right">{g.count}名</span>
-                          <span className="text-gray-500 w-11 text-right">提案{g.proposed}</span>
+                          <span className="text-text-muted w-6">{g.label}</span>
+                          <span className="text-text-faint w-7 text-right">{g.count}名</span>
+                          <span className="text-text-muted w-11 text-right">提案{g.proposed}</span>
                           <span
-                            className="text-gray-400 w-10 text-right"
+                            className="text-text-faint w-10 text-right"
                             title="提案増コマ平均（提案コマ÷人数）"
                           >
                             提{g.avgProposed.toFixed(1)}
@@ -1043,7 +1046,7 @@ export function CourseProgressDashboard({
                             決定{g.decided}
                           </span>
                           <span
-                            className="text-gray-400 w-10 text-right"
+                            className="text-text-faint w-10 text-right"
                             title="取得増コマ平均（決定コマ÷人数）"
                           >
                             取{g.avgDecided.toFixed(1)}
@@ -1092,19 +1095,19 @@ export function CourseProgressDashboard({
           const barColor =
             subjectCat === 'overall' ? '#475569' : CATEGORY_COLORS[subjectCat].accent;
           return (
-            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div className="bg-surface rounded-xl border border-border overflow-hidden">
               <button
                 onClick={() => setSubjectOpen(!subjectOpen)}
-                className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-gray-50 transition-colors duration-150"
+                className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-surface-hover transition-colors duration-150"
               >
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-medium text-gray-600">教科別 提案 vs 取得</span>
-                  <span className="text-[10px] text-gray-400">
+                  <span className="text-xs font-medium text-text-muted">教科別 提案 vs 取得</span>
+                  <span className="text-[10px] text-text-faint">
                     提案{ovProposed} → 取得{ovApplied}・取得率{Math.round(ovRate * 100)}%
                   </span>
                 </div>
                 <ChevronDown
-                  className={`w-4 h-4 text-gray-400 transition-[transform] duration-150 ease-out ${subjectOpen ? 'rotate-180' : ''}`}
+                  className={`w-4 h-4 text-text-faint transition-[transform] duration-150 ease-out ${subjectOpen ? 'rotate-180' : ''}`}
                 />
               </button>
 
@@ -1119,7 +1122,7 @@ export function CourseProgressDashboard({
                       <button
                         key={t.key}
                         onClick={() => setSubjectCat(t.key)}
-                        className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition-colors duration-150 ${
+                        className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors duration-150 ${
                           subjectCat === t.key
                             ? 'bg-gray-800 text-white'
                             : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
@@ -1133,7 +1136,7 @@ export function CourseProgressDashboard({
                   {/* 教科別テーブル: 提案コマ / 取得コマ / 差 / 取得率 */}
                   <table className="w-full text-xs">
                     <thead>
-                      <tr className="text-gray-400 border-b border-gray-100">
+                      <tr className="text-text-faint border-b border-border-subtle">
                         <th className="text-left font-medium py-1.5 pl-1">教科</th>
                         <th className="text-right font-medium py-1.5">提案</th>
                         <th className="text-right font-medium py-1.5">取得</th>
@@ -1151,20 +1154,20 @@ export function CourseProgressDashboard({
                         const diff = r.applied - r.proposed;
                         const ratePct = Math.round(r.rate * 100);
                         return (
-                          <tr key={r.subject} className="border-b border-gray-50">
-                            <td className="py-1.5 pl-1 text-gray-700 font-medium">{r.subject}</td>
-                            <td className="py-1.5 text-right text-gray-600">{r.proposed}</td>
-                            <td className="py-1.5 text-right text-gray-800 font-medium">
+                          <tr key={r.subject} className="border-b border-border-subtle">
+                            <td className="py-1.5 pl-1 text-text-body font-medium">{r.subject}</td>
+                            <td className="py-1.5 text-right text-text-muted">{r.proposed}</td>
+                            <td className="py-1.5 text-right text-text-heading font-medium">
                               {r.applied}
                             </td>
                             <td
-                              className={`py-1.5 text-right ${diff < 0 ? 'text-amber-600' : 'text-gray-400'}`}
+                              className={`py-1.5 text-right ${diff < 0 ? 'text-amber-600' : 'text-text-faint'}`}
                             >
                               {diff > 0 ? `+${diff}` : diff}
                             </td>
                             <td className="py-1.5 pr-1">
                               <div className="flex items-center gap-2 justify-end">
-                                <div className="flex-1 bg-gray-100 rounded-full h-1.5 max-w-[120px]">
+                                <div className="flex-1 bg-surface-hover rounded-full h-1.5 max-w-[120px]">
                                   <div
                                     className="h-1.5 rounded-full transition-[width] duration-500 ease-out"
                                     style={{
@@ -1173,7 +1176,7 @@ export function CourseProgressDashboard({
                                     }}
                                   />
                                 </div>
-                                <span className="text-gray-700 font-medium w-9 text-right">
+                                <span className="text-text-body font-medium w-9 text-right">
                                   {ratePct}%
                                 </span>
                               </div>
@@ -1183,18 +1186,20 @@ export function CourseProgressDashboard({
                       })}
                     </tbody>
                     <tfoot>
-                      <tr className="border-t border-gray-200">
-                        <td className="py-1.5 pl-1 text-gray-500 font-medium">合計</td>
-                        <td className="py-1.5 text-right text-gray-600 font-medium">
+                      <tr className="border-t border-border">
+                        <td className="py-1.5 pl-1 text-text-muted font-medium">合計</td>
+                        <td className="py-1.5 text-right text-text-muted font-medium">
                           {sumProposed}
                         </td>
-                        <td className="py-1.5 text-right text-gray-800 font-bold">{sumApplied}</td>
+                        <td className="py-1.5 text-right text-text-heading font-bold">
+                          {sumApplied}
+                        </td>
                         <td
-                          className={`py-1.5 text-right font-medium ${sumDiff < 0 ? 'text-amber-600' : 'text-gray-400'}`}
+                          className={`py-1.5 text-right font-medium ${sumDiff < 0 ? 'text-amber-600' : 'text-text-faint'}`}
                         >
                           {sumDiff > 0 ? `+${sumDiff}` : sumDiff}
                         </td>
-                        <td className="py-1.5 pr-1 text-right text-gray-800 font-bold">
+                        <td className="py-1.5 pr-1 text-right text-text-heading font-bold">
                           {Math.round(sumRate * 100)}%
                         </td>
                       </tr>

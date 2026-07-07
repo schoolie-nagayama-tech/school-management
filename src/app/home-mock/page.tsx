@@ -10,6 +10,7 @@
  */
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMasterData } from '@/contexts/MasterDataContext';
 import { getOverview, type Overview } from '@/lib/api/overview';
@@ -271,12 +272,33 @@ const C = {
 };
 
 // tone → Tailwind クラス対応
-const TONE: Record<string, { text: string; bg: string; bar: string }> = {
-  danger: { text: 'text-danger', bg: 'bg-danger-subtle', bar: 'bg-danger' },
-  warning: { text: 'text-warning', bg: 'bg-warning-subtle', bar: 'bg-warning' },
-  info: { text: 'text-info', bg: 'bg-info-subtle', bar: 'bg-info' },
-  primary: { text: 'text-primary', bg: 'bg-primary-subtle', bar: 'bg-primary' },
-  neutral: { text: 'text-text-muted', bg: 'bg-surface-hover', bar: 'bg-text-muted' },
+// borderL はカード左端のアクセントバー（border-l-4 と併用）。tone の視覚的な帰属を一目で示す
+const TONE: Record<string, { text: string; bg: string; bar: string; borderL: string }> = {
+  danger: {
+    text: 'text-danger',
+    bg: 'bg-danger-subtle',
+    bar: 'bg-danger',
+    borderL: 'border-l-danger',
+  },
+  warning: {
+    text: 'text-warning',
+    bg: 'bg-warning-subtle',
+    bar: 'bg-warning',
+    borderL: 'border-l-warning',
+  },
+  info: { text: 'text-info', bg: 'bg-info-subtle', bar: 'bg-info', borderL: 'border-l-info' },
+  primary: {
+    text: 'text-primary',
+    bg: 'bg-primary-subtle',
+    bar: 'bg-primary',
+    borderL: 'border-l-primary',
+  },
+  neutral: {
+    text: 'text-text-muted',
+    bg: 'bg-surface-hover',
+    bar: 'bg-text-muted',
+    borderL: 'border-l-border',
+  },
 };
 
 /* ============================================================
@@ -843,7 +865,8 @@ function DetailView() {
 
       {/* ① 連絡事項（掲示板）— 最上部・全幅 */}
       <SectionLabel icon={Pin}>連絡事項</SectionLabel>
-      <Card>
+      {/* 左アクセント: primary（全体連絡＝ブランド色で最上部を引き締める） */}
+      <Card className="border-l-4 border-l-primary">
         <CardContent className="py-2">
           {bulletins === null ? (
             <div className="py-2 text-sm text-text-muted">読み込み中…</div>
@@ -874,14 +897,15 @@ function DetailView() {
           {thisMonthMove && (
             <>
               <SectionLabel icon={TrendingUp}>今月の動き</SectionLabel>
+              {/* tone付き背景で4枚を色分けし、白カード群の中で月次サマリーを際立たせる */}
               <div className="grid grid-cols-2 gap-3">
-                <Card>
+                <Card className="border-success bg-success-subtle">
                   <CardContent className="py-3">
                     <div className="text-xs text-text-muted">入会</div>
                     <div className="text-2xl font-bold text-success">+{thisMonthMove.newCount}</div>
                   </CardContent>
                 </Card>
-                <Card>
+                <Card className="border-danger bg-danger-subtle">
                   <CardContent className="py-3">
                     <div className="text-xs text-text-muted">退会(休会)</div>
                     <div className="text-2xl font-bold text-danger">
@@ -889,7 +913,7 @@ function DetailView() {
                     </div>
                   </CardContent>
                 </Card>
-                <Card>
+                <Card className="border-info bg-info-subtle">
                   <CardContent className="py-3">
                     <div className="text-xs text-text-muted">純増</div>
                     <div className="text-2xl font-bold text-text-heading">
@@ -898,7 +922,7 @@ function DetailView() {
                     </div>
                   </CardContent>
                 </Card>
-                <Card>
+                <Card className="border-primary bg-primary-subtle">
                   <CardContent className="py-3">
                     <div className="text-xs text-text-muted">予実達成</div>
                     <div className="text-2xl font-bold text-text-heading">
@@ -929,7 +953,7 @@ function DetailView() {
               return (
                 <Card
                   key={k.key}
-                  className="cursor-pointer hover:bg-surface-hover transition-colors"
+                  className={`cursor-pointer hover:bg-surface-hover transition-colors border-l-4 ${t.borderL}`}
                 >
                   <CardContent className="py-4">
                     <div className="flex items-start justify-between">
@@ -955,7 +979,20 @@ function DetailView() {
           </div>
 
           {/* 在籍数の推移（昨対比）。経営の頭出しとして数値カラムに置く */}
-          <SectionLabel icon={TrendingUp}>在籍数の推移（昨対比）</SectionLabel>
+          <SectionLabel
+            icon={TrendingUp}
+            right={
+              <Link
+                href="/settings/school-metrics"
+                className="flex items-center gap-1 text-xs text-text-muted hover:text-primary transition-colors"
+              >
+                データ入力
+                <ChevronRight className="w-3 h-3" />
+              </Link>
+            }
+          >
+            在籍数の推移（昨対比）
+          </SectionLabel>
           {!isRealData && (
             <p className="-mt-2 mb-3 text-xs text-text-faint">
               ※
@@ -1030,7 +1067,8 @@ function DetailView() {
           >
             要対応・期日一覧
           </SectionLabel>
-          <Card>
+          {/* 左アクセント: warning（期日系＝注意して捌く） */}
+          <Card className="border-l-4 border-l-warning">
             <CardContent className="py-2">
               {/* 期日帯サマリー：超過の前（今週/来週/以降）の件数を最初に見せ、先回りで気づけるようにする */}
               {dueStudents.length > 0 && (
@@ -1151,7 +1189,8 @@ function DetailView() {
           {watchStudents.length > 0 && (
             <>
               <SectionLabel icon={AlertTriangle}>気になる生徒</SectionLabel>
-              <Card>
+              {/* 左アクセント: info（期日はないが目配りしたい情報） */}
+              <Card className="border-l-4 border-l-info">
                 <CardContent className="py-2">
                   <p className="border-b border-border-subtle pb-2 text-xs text-text-muted">
                     成績低下・宿題・遅刻など、期日のない注意点
