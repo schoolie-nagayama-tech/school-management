@@ -23,6 +23,7 @@ import {
   Link as LinkIcon,
   MessageSquare,
   Wand2,
+  BarChart3,
 } from 'lucide-react';
 
 interface SettingsItem {
@@ -69,6 +70,13 @@ const settingsGroups: SettingsGroup[] = [
         icon: <LinkIcon className="w-5 h-5" />,
         label: 'クイックリンク',
         description: '生徒管理ページ上部に表示する外部ツール（Grow・らくプリ等）へのリンク',
+        requiresManager: true,
+      },
+      {
+        href: '/settings/school-metrics',
+        icon: <BarChart3 className="w-5 h-5" />,
+        label: '月次経営指標の入力',
+        description: '教室長ダッシュボードで使う入会・退会・在籍の月次実績/予算データの入力',
         requiresManager: true,
       },
     ],
