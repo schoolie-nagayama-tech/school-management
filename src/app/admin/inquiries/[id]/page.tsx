@@ -748,9 +748,7 @@ export default function InquiryDetailPage() {
   return (
     <AdminLayout
       headerTitle="問合せ詳細"
-      documentTitle={
-        inquiry ? `${getInquiryDisplayName(inquiry).name}｜問合せ詳細` : '問合せ詳細'
-      }
+      documentTitle={inquiry ? `${getInquiryDisplayName(inquiry).name}｜問合せ詳細` : '問合せ詳細'}
     >
       <div className="max-w-6xl">
         {/* 戻るリンク */}
@@ -1269,7 +1267,9 @@ export default function InquiryDetailPage() {
 
                     <Button
                       onClick={
-                        contactMethod === 'status_change' ? handleSaveStatusChange : handleAddContact
+                        contactMethod === 'status_change'
+                          ? handleSaveStatusChange
+                          : handleAddContact
                       }
                       isLoading={contactMethod === 'status_change' ? isSaving : isAddingContact}
                       size="sm"
@@ -1805,7 +1805,12 @@ export default function InquiryDetailPage() {
       </Modal>
 
       {/* 内部メモ編集モーダル（現状ブロック廃止に伴い氏名編集と同じ方式へ） */}
-      <Modal isOpen={memoEditOpen} onClose={() => setMemoEditOpen(false)} title="メモの編集" size="md">
+      <Modal
+        isOpen={memoEditOpen}
+        onClose={() => setMemoEditOpen(false)}
+        title="メモの編集"
+        size="md"
+      >
         <div className="space-y-4">
           <textarea
             value={editMemoText}
