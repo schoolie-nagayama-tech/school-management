@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import { fetchAllPaged, fetchAllInChunks } from '@/lib/utils/supabasePaging';
 import type {
   AttendanceType,
   AttendanceTypeFormData,
@@ -753,23 +754,26 @@ export async function getAttendanceSummary(
   yearMonth: string,
   allowedSchoolIds?: string[]
 ) {
-  let query = supabase.from('attendance_sheets').select('*').eq('year_month', yearMonth);
-
-  if (schoolId) {
-    query = query.eq('school_id', schoolId);
-  } else if (allowedSchoolIds && allowedSchoolIds.length > 0) {
-    query = query.in('school_id', allowedSchoolIds);
-  } else if (!schoolId) {
-    // 全教室指定だが allowedSchoolIds が空 → 権限なしのため0件
-    query = query.eq('school_id', '00000000-0000-0000-0000-000000000000');
-  }
-
-  const { data: sheetsData, error: sheetsError } = await query;
-  if (sheetsError) {
+  // 出勤簿は (教室 × 講師) で、全教室指定(管理者)だと1000行に接近しうる。records の
+  // 元になるため切り捨てると集計全体が欠けるので全件ページング取得（id 昇順で安定）。
+  let sheets: AttendanceSheet[];
+  try {
+    sheets = await fetchAllPaged<AttendanceSheet>((from, to) => {
+      let query = supabase.from('attendance_sheets').select('*').eq('year_month', yearMonth);
+      if (schoolId) {
+        query = query.eq('school_id', schoolId);
+      } else if (allowedSchoolIds && allowedSchoolIds.length > 0) {
+        query = query.in('school_id', allowedSchoolIds);
+      } else {
+        // 全教室指定だが allowedSchoolIds が空 → 権限なしのため0件
+        query = query.eq('school_id', '00000000-0000-0000-0000-000000000000');
+      }
+      return query.order('id', { ascending: true }).range(from, to);
+    });
+  } catch (sheetsError) {
     console.error('Error fetching attendance sheets:', sheetsError);
     throw new Error('出勤簿の取得に失敗しました');
   }
-  const sheets = (sheetsData || []) as AttendanceSheet[];
 
   // 講師情報をまとめて取得（employee_no は出勤簿一覧の並び順に、exit_date は退職状態表示に使用）
   const teacherIds = Array.from(new Set(sheets.map((s) => s.teacher_id).filter(Boolean)));
@@ -818,18 +822,26 @@ export async function getAttendanceSummary(
   const summarySheetIds = sheets.map((s) => s.id);
   const recordsBySheet3 = new Map<string, any[]>();
   if (summarySheetIds.length > 0) {
-    const { data: allRecords } = await supabase
-      .from('attendance_records')
-      .select(
-        `
+    // records は (シート × 日数 × 種別) で1000行を容易に超える。sheetIds も多いと
+    // .in() の URL が長くなるため、チャンク分割 + チャンク内ページングで取得する。
+    const allRecords = await fetchAllInChunks<Record<string, unknown>>(
+      summarySheetIds,
+      (chunk, from, to) =>
+        supabase
+          .from('attendance_records')
+          .select(
+            `
         sheet_id,
         date,
         value,
         attendance_type:attendance_types(id, name, unit, unit_price, is_class_type)
       `
-      )
-      .in('sheet_id', summarySheetIds);
-    (allRecords || []).forEach((r: Record<string, unknown>) => {
+          )
+          .in('sheet_id', chunk)
+          .order('id', { ascending: true })
+          .range(from, to)
+    );
+    allRecords.forEach((r) => {
       const list = recordsBySheet3.get(r.sheet_id as string) || [];
       list.push(r);
       recordsBySheet3.set(r.sheet_id as string, list);
@@ -907,21 +919,24 @@ export async function getAttendanceSummary(
 // 遅刻早退一覧を取得
 export async function getLateEarlyList(schoolId: string | null, yearMonth: string) {
   // まず対象の出勤簿を取得
-  let sheetsQuery = supabase
-    .from('attendance_sheets')
-    .select('id, teacher_id, school_id')
-    .eq('year_month', yearMonth);
-
-  if (schoolId) {
-    sheetsQuery = sheetsQuery.eq('school_id', schoolId);
-  }
-
-  const { data: sheetsData, error: sheetsError } = await sheetsQuery;
-  if (sheetsError) {
+  // 出勤簿は (教室 × 講師) で全教室指定だと1000行に接近しうるため全件ページング取得
+  // （id 昇順で安定）。notes の元になるので切り捨てると遅刻早退が欠落する。
+  let sheets: Pick<AttendanceSheet, 'id' | 'teacher_id' | 'school_id'>[];
+  try {
+    sheets = await fetchAllPaged<Pick<AttendanceSheet, 'id' | 'teacher_id' | 'school_id'>>(
+      (from, to) => {
+        let sheetsQuery = supabase
+          .from('attendance_sheets')
+          .select('id, teacher_id, school_id')
+          .eq('year_month', yearMonth);
+        if (schoolId) sheetsQuery = sheetsQuery.eq('school_id', schoolId);
+        return sheetsQuery.order('id', { ascending: true }).range(from, to);
+      }
+    );
+  } catch (sheetsError) {
     console.error('Error fetching attendance sheets:', sheetsError);
     throw new Error('出勤簿の取得に失敗しました');
   }
-  const sheets = (sheetsData || []) as Pick<AttendanceSheet, 'id' | 'teacher_id' | 'school_id'>[];
 
   if (sheets.length === 0) return [];
 
@@ -961,22 +976,26 @@ export async function getLateEarlyList(schoolId: string | null, yearMonth: strin
     }
   }
 
-  // 遅刻早退データを取得
-  const { data: notes, error: notesError } = await supabase
-    .from('attendance_notes')
-    .select('*')
-    .in('sheet_id', sheetIds)
-    .not('late_early', 'is', null)
-    .neq('late_early', '')
-    .order('date', { ascending: true });
-
-  if (notesError) {
+  // 遅刻早退データを取得。全教室・全講師分でスケールし、sheetIds も多いと .in() の
+  // URL が長くなるため、チャンク分割 + チャンク内ページングで取得する（id 昇順で安定）。
+  let typedNotes: AttendanceNote[];
+  try {
+    typedNotes = await fetchAllInChunks<AttendanceNote>(sheetIds, (chunk, from, to) =>
+      supabase
+        .from('attendance_notes')
+        .select('*')
+        .in('sheet_id', chunk)
+        .not('late_early', 'is', null)
+        .neq('late_early', '')
+        .order('id', { ascending: true })
+        .range(from, to)
+    );
+  } catch (notesError) {
     console.error('Error fetching late early list:', notesError);
     throw new Error('遅刻早退データの取得に失敗しました');
   }
-
-  // ノートにシート・講師・教室情報を付与
-  const typedNotes = (notes || []) as AttendanceNote[];
+  // チャンク分割で失われる全体の日付順を復元（元は .order('date') で日付昇順を返していた）
+  typedNotes.sort((a, b) => String(a.date ?? '').localeCompare(String(b.date ?? '')));
   return typedNotes.map((note) => {
     const sheet = sheets.find((s) => s.id === note.sheet_id);
     const teacher = sheet?.teacher_id ? teacherMap[sheet.teacher_id] || null : null;
