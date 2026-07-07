@@ -16,6 +16,7 @@
  */
 
 import { supabase } from '@/lib/supabase';
+import { fetchAllPaged } from '@/lib/utils/supabasePaging';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -201,10 +202,13 @@ export async function syncAllRegularShifts(
   options?: { client?: AnyClient }
 ): Promise<{ total: number; synced: number; skipped: number }> {
   const db: AnyClient = options?.client ?? supabase;
-  let query = db.from('regular_shift_submissions').select('id, school_id');
-  if (schoolId) query = query.eq('school_id', schoolId);
-  const { data: subs } = await query;
-  const list = (subs ?? []) as Array<{ id: string }>;
+  // 提出は全期間累積し1000行を超えうる。切り捨てると再同期対象が漏れるため全件
+  // ページング取得（id 昇順で安定ページング）。
+  const list = await fetchAllPaged<{ id: string }>((from, to) => {
+    let query = db.from('regular_shift_submissions').select('id, school_id');
+    if (schoolId) query = query.eq('school_id', schoolId);
+    return query.order('id', { ascending: true }).range(from, to);
+  });
 
   let synced = 0;
   let skipped = 0;

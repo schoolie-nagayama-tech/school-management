@@ -20,6 +20,7 @@
  */
 
 import { supabase } from '@/lib/supabase';
+import { fetchAllPaged } from '@/lib/utils/supabasePaging';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabase as any;
@@ -307,24 +308,6 @@ export async function getTeacherShiftHistory(
   const email = (profile as { email?: string } | null)?.email?.toLowerCase();
   if (!email) return [];
 
-  // 2. 通常シフト: setting + submission + slots を一括取得
-  const { data: regularSubs } = await db
-    .from('regular_shift_submissions')
-    .select(
-      'id, teacher_email, submitted_at, setting:regular_shift_settings(id, name, effective_from, effective_until, status), slots:regular_shift_submission_slots(day_of_week, time_slot, available)'
-    )
-    .eq('school_id', schoolId);
-
-  // 3. 講習シフト
-  const { data: seasonalSubs } = await db
-    .from('seasonal_shift_submissions')
-    .select(
-      'id, teacher_email, submitted_at, setting:seasonal_shift_settings(id, name, start_date, end_date, status), slots:seasonal_shift_submission_slots(shift_date, time_slot, available)'
-    )
-    .eq('school_id', schoolId);
-
-  const result: TeacherShiftHistoryEntry[] = [];
-
   type RegularSetting = {
     id: string;
     name: string | null;
@@ -339,7 +322,51 @@ export async function getTeacherShiftHistory(
     setting: RegularSetting | RegularSetting[] | null;
     slots: Array<{ day_of_week: number; time_slot: string; available: boolean }> | null;
   };
-  for (const s of (regularSubs || []) as RegularRow[]) {
+  type SeasonalSetting = {
+    id: string;
+    name: string | null;
+    start_date: string | null;
+    end_date: string | null;
+    status: string;
+  };
+  type SeasonalRow = {
+    id: string;
+    teacher_email: string | null;
+    submitted_at: string | null;
+    setting: SeasonalSetting | SeasonalSetting[] | null;
+    slots: Array<{ shift_date: string; time_slot: string; available: boolean }> | null;
+  };
+
+  // 提出は1教室でも (シフト設定期間 × 講師) で全期間累積し、運用が長期化すると
+  // 1000行を超えうる。切り捨てると過去のシフト履歴が欠落するため全件ページング取得
+  // （id 昇順で安定ページング）。JS 側で対象講師のメアドに絞り込む前段の全取得。
+  // 2. 通常シフト: setting + submission + slots を一括取得
+  const regularSubs = await fetchAllPaged<RegularRow>((from, to) =>
+    db
+      .from('regular_shift_submissions')
+      .select(
+        'id, teacher_email, submitted_at, setting:regular_shift_settings(id, name, effective_from, effective_until, status), slots:regular_shift_submission_slots(day_of_week, time_slot, available)'
+      )
+      .eq('school_id', schoolId)
+      .order('id', { ascending: true })
+      .range(from, to)
+  );
+
+  // 3. 講習シフト
+  const seasonalSubs = await fetchAllPaged<SeasonalRow>((from, to) =>
+    db
+      .from('seasonal_shift_submissions')
+      .select(
+        'id, teacher_email, submitted_at, setting:seasonal_shift_settings(id, name, start_date, end_date, status), slots:seasonal_shift_submission_slots(shift_date, time_slot, available)'
+      )
+      .eq('school_id', schoolId)
+      .order('id', { ascending: true })
+      .range(from, to)
+  );
+
+  const result: TeacherShiftHistoryEntry[] = [];
+
+  for (const s of regularSubs) {
     if (s.teacher_email?.toLowerCase() !== email) continue;
     const setting = Array.isArray(s.setting) ? s.setting[0] : s.setting;
     if (!setting) continue;
@@ -357,21 +384,7 @@ export async function getTeacherShiftHistory(
     });
   }
 
-  type SeasonalSetting = {
-    id: string;
-    name: string | null;
-    start_date: string | null;
-    end_date: string | null;
-    status: string;
-  };
-  type SeasonalRow = {
-    id: string;
-    teacher_email: string | null;
-    submitted_at: string | null;
-    setting: SeasonalSetting | SeasonalSetting[] | null;
-    slots: Array<{ shift_date: string; time_slot: string; available: boolean }> | null;
-  };
-  for (const s of (seasonalSubs || []) as SeasonalRow[]) {
+  for (const s of seasonalSubs) {
     if (s.teacher_email?.toLowerCase() !== email) continue;
     const setting = Array.isArray(s.setting) ? s.setting[0] : s.setting;
     if (!setting) continue;
