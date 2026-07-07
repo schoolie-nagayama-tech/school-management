@@ -23,15 +23,18 @@ import { useConfirm } from '@/hooks/useConfirm';
 import { Pencil, Trash2, Zap, Inbox, GraduationCap } from 'lucide-react';
 
 /**
- * 「取得増コマ」列かどうかの判定。
+ * 講習の「取得増コマ」列かどうかの判定。
  * 進捗ダッシュボードと同じく名前ベースで検出する（DBスキーマ変更を避けるため）。
- * value_type='number' で名前に「増コマ」を含み、フォーム連携でない請求項目を
- * 講習の増コマ同期対象とみなす（zoukoma フォーム連携列と同期ボタンが競合しないよう除外）。
+ * value_type='number' で名前に「講習」と「増コマ」を両方含み、フォーム連携でない請求項目を
+ * 講習の増コマ同期対象とみなす。
+ * 「講習」を必須にするのは、テスト対策の増コマ列など別種の「増コマ」を誤検出しないため
+ * （zoukoma フォーム連携列とも同期ボタンが競合しないよう除外）。
  */
 function isCourseExtraItem(item: BillingItem): boolean {
   return (
     (item.value_type || 'check') === 'number' &&
     !item.linked_form_type &&
+    item.name.includes('講習') &&
     item.name.includes('増コマ')
   );
 }
@@ -758,14 +761,15 @@ export function BillingTable({
                   className="px-3 py-1.5 text-center text-[#4b5563] text-[11px] border-r border-[#e5e7eb] bg-[#f0f4f8]"
                 >
                   {summary.valueType === 'number' ? (
+                    // 合計コマ数（上・太字）＋ 計上済みは人数でカウント（下）
                     <div className="flex flex-col items-center">
                       <span className="text-[11px] font-bold text-[#1e3a5f]">
-                        {summary.numberHasValueCount}名
+                        合計 {summary.numberSum}コマ
                       </span>
                       <span
                         className={`text-[11px] ${summary.numberBilledCount === summary.numberHasValueCount && summary.numberHasValueCount > 0 ? 'text-green-600' : 'text-orange-500'}`}
                       >
-                        計上 {summary.numberBilledCount}/{summary.numberHasValueCount}
+                        計上 {summary.numberBilledCount}/{summary.numberHasValueCount}名
                       </span>
                     </div>
                   ) : summary.valueType === 'text' ? (

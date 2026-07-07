@@ -45,10 +45,11 @@ export function BillingItemAccordion({
 
     setIsProcessing(true);
     try {
-      // 名前に「増コマ」を含む項目は、講習の取得増コマを流し込む数値列として作る。
-      // （請求表側で value_type='number' かつ名前に「増コマ」を含む列を同期対象と判定する）
+      // 名前に「講習」と「増コマ」を両方含む項目は、講習の取得増コマを流し込む数値列として作る。
+      // （請求表側で value_type='number' かつ名前に「講習」「増コマ」を含む列を同期対象と判定する。
+      //   テスト対策など別種の「増コマ」を誤検出しないよう「講習」を必須にしている）
       const trimmedName = newItemName.trim();
-      const isCourseExtra = trimmedName.includes('増コマ');
+      const isCourseExtra = trimmedName.includes('講習') && trimmedName.includes('増コマ');
       await createBillingItem(
         {
           billing_period_id: periodId,
@@ -59,7 +60,7 @@ export function BillingItemAccordion({
       );
       success(
         isCourseExtra
-          ? '取得増コマ列を追加しました（列見出しの「進捗から同期」で反映できます）'
+          ? '講習増コマ列を追加しました（列見出しの「進捗から同期」で反映できます）'
           : '項目を追加しました'
       );
       setNewItemName('');
@@ -186,8 +187,8 @@ export function BillingItemAccordion({
                 </Button>
               </div>
               <p className="text-[11px] text-[#6b7280] mt-1.5">
-                名前に「増コマ」を含めると、講習の取得増コマを進捗管理表から同期できる数値列になります（例:
-                取得増コマ）。
+                名前に「講習」と「増コマ」を両方含めると、講習の取得増コマを進捗管理表から同期できる数値列になります（例:
+                講習増コマ）。
               </p>
             </div>
 
