@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import { fetchAllPaged } from '@/lib/utils/supabasePaging';
 import { normalizePersonName } from '@/lib/utils/personName';
 import type {
   ScheduleTimeSlot,
@@ -394,42 +395,53 @@ export async function getRegularPatterns(
   schoolId: string,
   filters?: { studentId?: string; dayOfWeek?: number; periodType?: string; asOfDate?: string }
 ): Promise<ScheduleRegularPattern[]> {
-  let query = db
-    .from('schedule_regular_patterns')
-    .select(
-      `
-      *,
-      time_slot:schedule_time_slots(*),
-      student:students(id, last_name, first_name, grade),
-      teacher:user_profiles(id, display_name, email)
-    `
-    )
-    .eq('school_id', schoolId)
-    .eq('is_active', true);
-
-  if (filters?.studentId) query = query.eq('student_id', filters.studentId);
-  if (filters?.dayOfWeek !== undefined) query = query.eq('day_of_week', filters.dayOfWeek);
-  if (filters?.periodType) query = query.eq('period_type', filters.periodType);
-  if (filters?.asOfDate) {
-    // effective_from <= asOfDate AND (effective_until IS NULL OR effective_until >= asOfDate)
-    query = query
-      .lte('effective_from', filters.asOfDate)
-      .or(`effective_until.is.null,effective_until.gte.${filters.asOfDate}`);
-  }
-
-  query = query.order('day_of_week').order('time_slot_id');
-
-  const { data, error } = await query;
-  if (error) {
-    console.error('Error fetching regular patterns:', error);
-    throw new Error('通塾日程の取得に失敗しました');
-  }
-
-  const rows = (data || []) as (ScheduleRegularPattern & {
+  type RawRow = ScheduleRegularPattern & {
     time_slot?: ScheduleTimeSlot[];
     student?: { id: string; last_name: string; first_name: string; grade: number }[];
     teacher?: { id: string; display_name: string | null; email: string | null }[];
-  })[];
+  };
+
+  // schedule_regular_patterns は (生徒数 × 曜日 × 履歴) でスケールし1000行を超えうる。
+  // studentId 未指定（座席表の週次生成・ズレ検知）で全件走査されるため、切り捨てると
+  // 一部生徒の通塾日程が座席表生成から静かに欠落する。全件ページング取得し、既存の
+  // 並び順(day_of_week, time_slot_id)に id を第2ソートキーとして足して安定ページング。
+  let rows: RawRow[];
+  try {
+    rows = await fetchAllPaged<RawRow>((from, to) => {
+      let query = db
+        .from('schedule_regular_patterns')
+        .select(
+          `
+        *,
+        time_slot:schedule_time_slots(*),
+        student:students(id, last_name, first_name, grade),
+        teacher:user_profiles(id, display_name, email)
+      `
+        )
+        .eq('school_id', schoolId)
+        .eq('is_active', true);
+
+      if (filters?.studentId) query = query.eq('student_id', filters.studentId);
+      if (filters?.dayOfWeek !== undefined) query = query.eq('day_of_week', filters.dayOfWeek);
+      if (filters?.periodType) query = query.eq('period_type', filters.periodType);
+      if (filters?.asOfDate) {
+        // effective_from <= asOfDate AND (effective_until IS NULL OR effective_until >= asOfDate)
+        query = query
+          .lte('effective_from', filters.asOfDate)
+          .or(`effective_until.is.null,effective_until.gte.${filters.asOfDate}`);
+      }
+
+      return query
+        .order('day_of_week')
+        .order('time_slot_id')
+        .order('id', { ascending: true })
+        .range(from, to);
+    });
+  } catch (e) {
+    console.error('Error fetching regular patterns:', e);
+    throw new Error('通塾日程の取得に失敗しました');
+  }
+
   return rows.map((r) => ({
     ...r,
     time_slot: Array.isArray(r.time_slot) ? r.time_slot[0] : r.time_slot,

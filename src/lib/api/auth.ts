@@ -1,4 +1,5 @@
 import { createSupabaseBrowserClient } from '@/lib/supabase';
+import { fetchAllPaged, fetchInChunks } from '@/lib/utils/supabasePaging';
 import type {
   UserProfile,
   UserSchool,
@@ -259,47 +260,50 @@ export async function updateLastLogin(userId: string): Promise<void> {
 export async function getUsers(): Promise<UserWithDetails[]> {
   const supabase = createSupabaseBrowserClient();
 
-  // まずユーザープロファイルを取得
-  const { data: profiles, error: profilesError } = await supabase
-    .from('user_profiles')
-    .select('*')
-    .order('created_at', { ascending: false });
-
-  if (profilesError) {
+  // まずユーザープロファイルを取得。user_profiles は school 絞りなしの全ユーザー対象で、
+  // ユーザー数増で1000行を超えると管理画面の一覧から一部ユーザーが静かに欠落するため、
+  // 全件ページング取得する（created_at desc + id で安定ページング）。
+  let profiles: UserProfile[];
+  try {
+    profiles = await fetchAllPaged<UserProfile>((from, to) =>
+      supabase
+        .from('user_profiles')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .order('id', { ascending: true })
+        .range(from, to)
+    );
+  } catch (profilesError) {
     console.error('Error fetching user profiles:', profilesError);
     throw profilesError;
   }
 
-  if (!profiles || profiles.length === 0) {
+  if (profiles.length === 0) {
     return [];
   }
 
-  // 全ユーザーの教室情報を一括取得（N+1クエリ解消）
-  const allUserIds = (profiles as UserProfile[]).map((p) => p.id);
-  const { data: allUserSchools, error: schoolsError } = await supabase
-    .from('user_schools')
-    .select(
-      `
-      *,
-      school:schools(*)
-    `
-    )
-    .in('user_id', allUserIds);
-
-  if (schoolsError) {
+  // 全ユーザーの教室情報を一括取得（N+1クエリ解消）。allUserIds が多いと .in() の
+  // URL が長くなりすぎるためチャンク分割で取得（1ユーザー数校なので各チャンク1000行未満）。
+  const allUserIds = profiles.map((p) => p.id);
+  let allUserSchools: Array<Record<string, unknown>> = [];
+  try {
+    allUserSchools = await fetchInChunks<Record<string, unknown>>(allUserIds, (chunk) =>
+      supabase.from('user_schools').select('*, school:schools(*)').in('user_id', chunk)
+    );
+  } catch (schoolsError) {
     console.error('Error fetching user schools:', schoolsError);
   }
 
   // ユーザーIDごとに教室情報をグループ化
   const schoolsByUserId = new Map<string, Record<string, unknown>[]>();
-  for (const us of (allUserSchools || []) as Array<Record<string, unknown>>) {
+  for (const us of allUserSchools) {
     const userId = us.user_id as string;
     const list = schoolsByUserId.get(userId) || [];
     list.push(us);
     schoolsByUserId.set(userId, list);
   }
 
-  const usersWithSchools = (profiles as UserProfile[]).map(
+  const usersWithSchools = profiles.map(
     (profile) =>
       ({
         ...profile,

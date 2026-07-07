@@ -14,6 +14,7 @@
  */
 
 import { supabase } from '@/lib/supabase';
+import { fetchAllPaged, fetchAllInChunks } from '@/lib/utils/supabasePaging';
 import type { SeasonType } from '@/types/database';
 import type { ScheduleEntryFormation } from '@/types/schedule';
 
@@ -175,17 +176,6 @@ export async function getKoushuPlacementProgressByPeriod(
   period: KoushuPeriodInfo,
   formation?: ScheduleEntryFormation
 ): Promise<Map<string, KoushuPlacementRow>> {
-  // 申込は期間(school + season)で直接取得（コース依存を廃止）。formation 指定時はその形態のみ。
-  let enrollQuery = db
-    .from('koushu_enrollments')
-    .select(
-      'student_id, koma_count, subject_ids, koma_by_subject, student:students(id, last_name, first_name, grade)'
-    )
-    .eq('school_id', period.school_id)
-    .eq('season', period.season);
-  if (formation) enrollQuery = enrollQuery.eq('formation', formation);
-  const { data: enrollments } = await enrollQuery;
-
   type EnrollmentRow = {
     student_id: string;
     koma_count: number;
@@ -196,6 +186,21 @@ export async function getKoushuPlacementProgressByPeriod(
       | Array<{ id: string; last_name: string; first_name: string; grade: number }>;
   };
 
+  // 申込は期間(school + season)で直接取得（コース依存を廃止）。formation 指定時はその形態のみ。
+  // 講習申込は (生徒数 × 科目) でスケールし1000行を超えうるため全件ページング取得する
+  // （切り捨てると座席表の講習配置パネルの申込数・残数が誤る）。id 昇順で安定ページング。
+  const enrollments = await fetchAllPaged<EnrollmentRow>((from, to) => {
+    let q = db
+      .from('koushu_enrollments')
+      .select(
+        'student_id, koma_count, subject_ids, koma_by_subject, student:students(id, last_name, first_name, grade)'
+      )
+      .eq('school_id', period.school_id)
+      .eq('season', period.season);
+    if (formation) q = q.eq('formation', formation);
+    return q.order('id', { ascending: true }).range(from, to);
+  });
+
   // 申込の科目別コマ数（koma_by_subject 優先。無ければ単一科目に総コマ数を寄せる後方互換）
   const subjectEnrollOf = (e: EnrollmentRow): Record<string, number> => {
     if (e.koma_by_subject && Object.keys(e.koma_by_subject).length > 0) return e.koma_by_subject;
@@ -204,7 +209,7 @@ export async function getKoushuPlacementProgressByPeriod(
   };
 
   const aggregated = new Map<string, KoushuPlacementRow>();
-  for (const e of (enrollments || []) as EnrollmentRow[]) {
+  for (const e of enrollments) {
     const studentObj = Array.isArray(e.student) ? e.student[0] : e.student;
     let agg = aggregated.get(e.student_id);
     if (!agg) {
@@ -223,19 +228,26 @@ export async function getKoushuPlacementProgressByPeriod(
 
   // 3. 期間内の koushu 配置済みコマ数を student_id 別にカウント
   const studentIds = Array.from(aggregated.keys());
-  let placedQuery = db
-    .from('schedule_entries')
-    .select('student_id, subject_ids')
-    .eq('school_id', period.school_id)
-    .eq('kind', 'koushu')
-    .in('student_id', studentIds)
-    .gte('entry_date', period.schedule_start_date)
-    .lte('entry_date', period.schedule_end_date)
-    .in('status', ['scheduled', 'completed', 'transferred_in']);
-  if (formation) placedQuery = placedQuery.eq('formation', formation);
-  const { data: placedEntries } = await placedQuery;
+  // 配置済みは (生徒数 × 配置コマ) でスケールし1000行を超えうる。studentIds も多いと
+  // .in() の URL が長くなるため、チャンク分割 + チャンク内ページングの両対応で取得する。
+  const placedEntries = await fetchAllInChunks<{
+    student_id: string;
+    subject_ids: string[] | null;
+  }>(studentIds, (chunk, from, to) => {
+    let q = db
+      .from('schedule_entries')
+      .select('student_id, subject_ids')
+      .eq('school_id', period.school_id)
+      .eq('kind', 'koushu')
+      .in('student_id', chunk)
+      .gte('entry_date', period.schedule_start_date)
+      .lte('entry_date', period.schedule_end_date)
+      .in('status', ['scheduled', 'completed', 'transferred_in']);
+    if (formation) q = q.eq('formation', formation);
+    return q.order('id', { ascending: true }).range(from, to);
+  });
 
-  for (const e of (placedEntries || []) as { student_id: string; subject_ids: string[] | null }[]) {
+  for (const e of placedEntries) {
     const agg = aggregated.get(e.student_id);
     if (!agg) continue;
     agg.placed += 1;
