@@ -1075,7 +1075,7 @@ function TrayCard({ session }: { session: ProgressSessionWithDetails }) {
 const ALERT_CONFIG: Record<SmartAlert['type'], { icon: React.ReactNode; label: string }> = {
   school_catching_up: {
     icon: <GraduationCap className="w-4 h-4" />,
-    label: '学校進度に追いつかれている',
+    label: '学校に追い抜かれている',
   },
   exam_soon: {
     icon: <Calendar className="w-4 h-4" />,

@@ -732,7 +732,7 @@ export interface SmartAlert {
 
 /**
  * 教室単位のスマートアラートを取得
- * - 学校進度に追いつかれている
+ * - 学校に追い抜かれている（school_progress_date が今日以前なのに未指導）
  * - 近い試験に目標が未設定
  * - 14日以内に試験がある
  */
@@ -772,8 +772,11 @@ export async function getSmartAlerts(schoolIds: string[]): Promise<SmartAlert[]>
   const stIds = stRows.map((st) => st.id);
   const stMap = new Map(stRows.map((st) => [st.id, st]));
 
-  // ── 1. 学校進度に追いつかれている ──
-  // student_progress に school_progress_date があり lesson1 が完了していない = 追いつかれ
+  // ── 1. 学校に追い抜かれている ──
+  // student_progress に school_progress_date があり、その日付が今日以前（=学校が実際に
+  // 到達済み）で lesson1 が完了していない = 追い抜かれている。
+  // school_progress_date は手入力欄（学校の進度予定を先に入れておけるため）なので、
+  // 未来日の予定入力まで「追い抜かれた」扱いにしないよう today 以前に限定する。
   // student_progress は (教材 × 単元) でスケールし stIds も多いため、チャンク分割 +
   // チャンク内ページングの両対応で取得する（id 昇順で安定ページング）。
   const progressRows = await fetchAllInChunks<{
@@ -787,6 +790,7 @@ export async function getSmartAlerts(schoolIds: string[]): Promise<SmartAlert[]>
       .select('id, student_textbook_id, curriculum_item_id, school_progress_date')
       .in('student_textbook_id', chunk)
       .not('school_progress_date', 'is', null)
+      .lte('school_progress_date', today)
       .order('id', { ascending: true })
       .range(from, to)
   );
@@ -811,7 +815,7 @@ export async function getSmartAlerts(schoolIds: string[]): Promise<SmartAlert[]>
 
     const hasLesson1 = new Set(lessons.map((l) => l.student_progress_id));
 
-    // school_progress_date がある単元で lesson1 が未完了 = 追いつかれている
+    // school_progress_date が今日以前の単元で lesson1 が未完了 = 追い抜かれている
     const seenSt = new Set<string>();
     for (const p of progressRows) {
       if (hasLesson1.has(p.id)) continue; // 指導済み
@@ -828,7 +832,7 @@ export async function getSmartAlerts(schoolIds: string[]): Promise<SmartAlert[]>
         studentId: st.student.id,
         textbookName: st.textbook?.name ?? '',
         studentTextbookId: p.student_textbook_id,
-        detail: '学校が進んだ単元で塾の指導が追いついていません',
+        detail: '学校が既に進んだ単元で塾の指導が追いついていません',
         curriculumItemId: p.curriculum_item_id,
       });
     }
