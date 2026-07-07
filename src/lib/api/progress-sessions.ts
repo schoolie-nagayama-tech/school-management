@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import { fetchAllPaged, fetchAllInChunks, fetchInChunks } from '@/lib/utils/supabasePaging';
 import type {
   ProgressSession,
   ProgressSessionInsert,
@@ -742,45 +743,73 @@ export async function getSmartAlerts(schoolIds: string[]): Promise<SmartAlert[]>
   const today = new Date().toISOString().slice(0, 10);
   const in14Days = new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10);
 
-  // active student_textbooks with student & textbook info
-  const { data: stList, error: stError } = await supabase
-    .from('student_textbooks')
-    .select('id, student:students(id, last_name, first_name), textbook:textbooks(name)')
-    .in('school_id', schoolIds)
-    .eq('is_active', true);
-
-  if (stError || !stList || stList.length === 0) return [];
-
   type STRow = {
     id: string;
     student: { id: string; last_name: string; first_name: string } | null;
     textbook: { name: string } | null;
   };
-  const stRows = stList as unknown as STRow[];
+
+  // active student_textbooks with student & textbook info。
+  // (生徒数 × 教材) でスケールし教室横断で1000行を超えうるため全件ページング取得
+  // （切り捨てるとアラート対象の生徒・教材が静かに欠落する）。id 昇順で安定ページング。
+  let stRows: STRow[];
+  try {
+    stRows = await fetchAllPaged<STRow>((from, to) =>
+      supabase
+        .from('student_textbooks')
+        .select('id, student:students(id, last_name, first_name), textbook:textbooks(name)')
+        .in('school_id', schoolIds)
+        .eq('is_active', true)
+        .order('id', { ascending: true })
+        .range(from, to)
+    );
+  } catch (stError) {
+    console.error('Failed to fetch student_textbooks for smart alerts:', stError);
+    return [];
+  }
+  if (stRows.length === 0) return [];
 
   const stIds = stRows.map((st) => st.id);
   const stMap = new Map(stRows.map((st) => [st.id, st]));
 
   // ── 1. 学校進度に追いつかれている ──
   // student_progress に school_progress_date があり lesson1 が完了していない = 追いつかれ
-  const { data: progressRows } = await supabase
-    .from('student_progress')
-    .select('id, student_textbook_id, curriculum_item_id, school_progress_date')
-    .in('student_textbook_id', stIds)
-    .not('school_progress_date', 'is', null);
+  // student_progress は (教材 × 単元) でスケールし stIds も多いため、チャンク分割 +
+  // チャンク内ページングの両対応で取得する（id 昇順で安定ページング）。
+  const progressRows = await fetchAllInChunks<{
+    id: string;
+    student_textbook_id: string;
+    curriculum_item_id: number;
+    school_progress_date: string | null;
+  }>(stIds, (chunk, from, to) =>
+    supabase
+      .from('student_progress')
+      .select('id, student_textbook_id, curriculum_item_id, school_progress_date')
+      .in('student_textbook_id', chunk)
+      .not('school_progress_date', 'is', null)
+      .order('id', { ascending: true })
+      .range(from, to)
+  );
 
-  if (progressRows && progressRows.length > 0) {
+  if (progressRows.length > 0) {
     const progressIdList = progressRows.map((r) => r.id);
 
-    // lesson1 完了済みの student_progress_id を取得
-    const { data: lessons } = await supabase
-      .from('student_progress_lessons')
-      .select('student_progress_id, lesson_number, lesson_date')
-      .in('student_progress_id', progressIdList)
-      .eq('lesson_number', 1)
-      .not('lesson_date', 'is', null);
+    // lesson1 完了済みの student_progress_id を取得。
+    // 1 progress につき lesson1 は高々1行なのでチャンク分割のみで足りる（fetchInChunks）。
+    const lessons = await fetchInChunks<{
+      student_progress_id: string;
+      lesson_number: number;
+      lesson_date: string | null;
+    }>(progressIdList, (chunk) =>
+      supabase
+        .from('student_progress_lessons')
+        .select('student_progress_id, lesson_number, lesson_date')
+        .in('student_progress_id', chunk)
+        .eq('lesson_number', 1)
+        .not('lesson_date', 'is', null)
+    );
 
-    const hasLesson1 = new Set((lessons ?? []).map((l) => l.student_progress_id));
+    const hasLesson1 = new Set(lessons.map((l) => l.student_progress_id));
 
     // school_progress_date がある単元で lesson1 が未完了 = 追いつかれている
     const seenSt = new Set<string>();
@@ -806,48 +835,57 @@ export async function getSmartAlerts(schoolIds: string[]): Promise<SmartAlert[]>
   }
 
   // ── 2. 近い試験（14日以内） + 目標未設定チェック ──
-  const { data: exams } = await supabase
-    .from('student_textbook_exams')
-    .select('id, student_textbook_id, exam_date, target_score, custom_exam_name, exam_type_id')
-    .in('student_textbook_id', stIds)
-    .gte('exam_date', today)
-    .lte('exam_date', in14Days)
-    .order('exam_date', { ascending: true });
+  // 14日以内の試験のみ。stIds が多いと .in() の URL が長くなるためチャンク分割で取得
+  // （期間が14日と短く 1 チャンクの結果は 1000 行未満に収まるため fetchInChunks で十分）。
+  const exams = await fetchInChunks<{
+    id: string;
+    student_textbook_id: string;
+    exam_date: string;
+    target_score: number | null;
+    custom_exam_name: string | null;
+    exam_type_id: string | null;
+  }>(stIds, (chunk) =>
+    supabase
+      .from('student_textbook_exams')
+      .select('id, student_textbook_id, exam_date, target_score, custom_exam_name, exam_type_id')
+      .in('student_textbook_id', chunk)
+      .gte('exam_date', today)
+      .lte('exam_date', in14Days)
+      .order('exam_date', { ascending: true })
+  );
 
-  if (exams) {
-    for (const exam of exams) {
-      const st = stMap.get(exam.student_textbook_id);
-      if (!st?.student) continue;
-      const name = `${st.student.last_name} ${st.student.first_name}`;
+  for (const exam of exams) {
+    const st = stMap.get(exam.student_textbook_id);
+    if (!st?.student) continue;
+    const name = `${st.student.last_name} ${st.student.first_name}`;
 
-      const daysLeft = Math.ceil((new Date(exam.exam_date).getTime() - Date.now()) / 86400000);
-      const examLabel = exam.custom_exam_name || 'テスト';
+    const daysLeft = Math.ceil((new Date(exam.exam_date).getTime() - Date.now()) / 86400000);
+    const examLabel = exam.custom_exam_name || 'テスト';
 
-      // テストが近い
+    // テストが近い
+    alerts.push({
+      type: 'exam_soon',
+      severity: daysLeft <= 7 ? 'urgent' : 'warning',
+      studentName: name,
+      studentId: st.student.id,
+      textbookName: st.textbook?.name ?? '',
+      studentTextbookId: exam.student_textbook_id,
+      detail: `${examLabel}まであと${daysLeft}日（${exam.exam_date.replace(/-/g, '/')}）`,
+      examDate: exam.exam_date,
+    });
+
+    // 目標未設定
+    if (exam.target_score == null) {
       alerts.push({
-        type: 'exam_soon',
-        severity: daysLeft <= 7 ? 'urgent' : 'warning',
+        type: 'no_exam_goal',
+        severity: 'warning',
         studentName: name,
         studentId: st.student.id,
         textbookName: st.textbook?.name ?? '',
         studentTextbookId: exam.student_textbook_id,
-        detail: `${examLabel}まであと${daysLeft}日（${exam.exam_date.replace(/-/g, '/')}）`,
+        detail: `${examLabel}（${exam.exam_date.replace(/-/g, '/')}）の目標点が未設定`,
         examDate: exam.exam_date,
       });
-
-      // 目標未設定
-      if (exam.target_score == null) {
-        alerts.push({
-          type: 'no_exam_goal',
-          severity: 'warning',
-          studentName: name,
-          studentId: st.student.id,
-          textbookName: st.textbook?.name ?? '',
-          studentTextbookId: exam.student_textbook_id,
-          detail: `${examLabel}（${exam.exam_date.replace(/-/g, '/')}）の目標点が未設定`,
-          examDate: exam.exam_date,
-        });
-      }
     }
   }
 

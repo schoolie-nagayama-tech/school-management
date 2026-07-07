@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import { fetchAllPaged } from '@/lib/utils/supabasePaging';
 import { withFetchCache } from '@/lib/utils/fetchCache';
 import type {
   SeasonalCourse,
@@ -79,12 +80,18 @@ export async function getSchoolKoushu(schoolId: string): Promise<KoushuCourse[]>
   // 全講習分の enrollment を course_id のみで1クエリ取得し、JS で件数を数える。
   const courseIds = courses.map((c) => c.id);
   const countByCourse = new Map<string, number>();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: enrollments } = await (supabase as any)
-    .from('koushu_enrollments')
-    .select('course_id')
-    .in('course_id', courseIds);
-  for (const e of (enrollments || []) as Array<{ course_id: string }>) {
+  // 申込は (生徒数 × 講習) でスケールし、大規模校では1000行を超えて登録人数が
+  // 過小カウントされうるため全件ページング取得する。id 昇順で安定ページング。
+  const enrollments = await fetchAllPaged<{ course_id: string }>((from, to) =>
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (supabase as any)
+      .from('koushu_enrollments')
+      .select('course_id')
+      .in('course_id', courseIds)
+      .order('id', { ascending: true })
+      .range(from, to)
+  );
+  for (const e of enrollments) {
     countByCourse.set(e.course_id, (countByCourse.get(e.course_id) ?? 0) + 1);
   }
 
