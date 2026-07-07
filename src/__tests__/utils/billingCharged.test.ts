@@ -10,7 +10,9 @@
 import { describe, it, expect } from 'vitest';
 import {
   aggregateChargedSplit,
+  aggregateOrderQuantitiesByStudent,
   computeCourseExtraSplit,
+  resolveCompletedApplicationStudents,
   toJstDateString,
   type BillingResponseLike,
 } from '@/lib/utils/billingCharged';
@@ -115,6 +117,80 @@ describe('aggregateChargedSplit（増コマ: 1回答=申込コマ数で重み付
   it('通常フォームでは response_data を無視して1回答=1件で数える', () => {
     const result = aggregateChargedSplit([resp('s1', false, { total_koma: 99 })], false);
     expect(result.get('s1')?.total).toBe(1);
+  });
+});
+
+describe('resolveCompletedApplicationStudents（完了申込→生徒別 school）', () => {
+  it('completed のみを集約し、それ以外は無視する', () => {
+    const result = resolveCompletedApplicationStudents([
+      { student_id: 's1', status: 'completed', school_id: 'sc1' },
+      { student_id: 's2', status: 'pending', school_id: 'sc1' },
+      { student_id: 's3', status: null, school_id: 'sc1' },
+    ]);
+    expect(Array.from(result.keys())).toEqual(['s1']);
+    expect(result.get('s1')).toBe('sc1');
+  });
+
+  it('同一生徒の複数完了申込は1件に集約する（後勝ちで school を保持）', () => {
+    const result = resolveCompletedApplicationStudents([
+      { student_id: 's1', status: 'completed', school_id: 'sc1' },
+      { student_id: 's1', status: 'completed', school_id: 'sc2' },
+    ]);
+    expect(result.size).toBe(1);
+    expect(result.get('s1')).toBe('sc2');
+  });
+
+  it('完了が無ければ空', () => {
+    const result = resolveCompletedApplicationStudents([
+      { student_id: 's1', status: 'pending', school_id: 'sc1' },
+    ]);
+    expect(result.size).toBe(0);
+  });
+});
+
+describe('aggregateOrderQuantitiesByStudent（発注→生徒別の数量/教材名）', () => {
+  const order = (
+    student_id: string | null,
+    quantity: number | null,
+    materialName: string | null,
+    school_id = 'sc1'
+  ) => ({ student_id, school_id, quantity, materialName });
+
+  it('生徒ごとに数量を合算し、教材名は重複を除いて集める', () => {
+    const result = aggregateOrderQuantitiesByStudent([
+      order('s1', 2, '数学ワーク'),
+      order('s1', 3, '英語ワーク'),
+      order('s1', 1, '数学ワーク'), // 教材名は重複除外
+    ]);
+    expect(result.get('s1')).toEqual({
+      quantity: 6,
+      school_id: 'sc1',
+      textbookNames: ['数学ワーク', '英語ワーク'],
+    });
+  });
+
+  it('quantity 未指定(null/0)は1として数える', () => {
+    const result = aggregateOrderQuantitiesByStudent([order('s1', null, 'A'), order('s1', 0, 'B')]);
+    expect(result.get('s1')?.quantity).toBe(2);
+  });
+
+  it('student_id が無い発注は無視する', () => {
+    const result = aggregateOrderQuantitiesByStudent([order(null, 5, 'A'), order('s1', 1, 'B')]);
+    expect(result.size).toBe(1);
+    expect(result.has('s1')).toBe(true);
+  });
+
+  it('教材名が無い発注は textbookNames を空のままにする', () => {
+    const result = aggregateOrderQuantitiesByStudent([order('s1', 1, null)]);
+    expect(result.get('s1')).toEqual({ quantity: 1, school_id: 'sc1', textbookNames: [] });
+  });
+
+  it('school_id は最初に現れた発注のものを採用する', () => {
+    const result = aggregateOrderQuantitiesByStudent([
+      order('s1', 1, 'A', 'scFirst'),
+      order('s1', 1, 'B', 'scSecond'),
+    ]);
+    expect(result.get('s1')?.school_id).toBe('scFirst');
   });
 });
 

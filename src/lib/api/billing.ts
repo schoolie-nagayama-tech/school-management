@@ -16,7 +16,9 @@ import { getFifthWeekDays, calcFifthWeekSlots } from '@/lib/utils/fifthWeek';
 import { zoukomaKomaCount } from '@/lib/utils/zoukomaKoma';
 import {
   aggregateChargedSplit,
+  aggregateOrderQuantitiesByStudent,
   computeCourseExtraSplit,
+  resolveCompletedApplicationStudents,
   toJstDateString,
 } from '@/lib/utils/billingCharged';
 import { fetchAllPaged } from '@/lib/utils/supabasePaging';
@@ -607,11 +609,8 @@ export async function syncApplicationToBilling(
   if (appError) throw new Error(`申込状況の取得に失敗: ${appError.message}`);
   if (!applications) return { synced: 0, total: 0 };
 
-  // 3. Filter to only completed applications（生徒重複は1件に集約）
-  const schoolByStudent = new Map<string, string>();
-  for (const app of applications) {
-    if (app.status === 'completed') schoolByStudent.set(app.student_id, app.school_id);
-  }
+  // 3. Filter to only completed applications（生徒重複は1件に集約。純粋ロジックはテスト済み）
+  const schoolByStudent = resolveCompletedApplicationStudents(applications);
   const checkedStudentIds = Array.from(schoolByStudent.keys());
   if (checkedStudentIds.length === 0) return { synced: 0, total: 0 };
 
@@ -1348,30 +1347,17 @@ export async function syncOrdersToBilling(
   if (orderError) throw new Error(`発注データの取得に失敗: ${orderError.message}`);
   if (!orders || orders.length === 0) return { synced: 0 };
 
-  // Group by student_id, sum quantities and collect textbook names
-  const studentData = new Map<
-    string,
-    { quantity: number; school_id: string; textbookNames: string[] }
-  >();
-  for (const order of orders) {
-    if (!order.student_id) continue;
-    const materialName = (order as Record<string, unknown>).materials
-      ? ((order as Record<string, unknown>).materials as { name: string })?.name
-      : null;
-    const existing = studentData.get(order.student_id);
-    if (existing) {
-      existing.quantity += order.quantity || 1;
-      if (materialName && !existing.textbookNames.includes(materialName)) {
-        existing.textbookNames.push(materialName);
-      }
-    } else {
-      studentData.set(order.student_id, {
-        quantity: order.quantity || 1,
-        school_id: order.school_id,
-        textbookNames: materialName ? [materialName] : [],
-      });
-    }
-  }
+  // Group by student_id, sum quantities and collect textbook names（純粋ロジックはテスト済み）
+  const studentData = aggregateOrderQuantitiesByStudent(
+    orders.map((order) => ({
+      student_id: order.student_id,
+      school_id: order.school_id,
+      quantity: order.quantity,
+      materialName: (order as Record<string, unknown>).materials
+        ? (((order as Record<string, unknown>).materials as { name: string })?.name ?? null)
+        : null,
+    }))
+  );
 
   // Upsert billing records
   let synced = 0;

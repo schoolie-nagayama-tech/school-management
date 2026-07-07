@@ -77,6 +77,75 @@ export function aggregateChargedSplit(
   return result;
 }
 
+/** 申込（student_applications）1行分の最小形（syncApplicationToBilling 用） */
+export type ApplicationLike = {
+  student_id: string;
+  status: string | null | undefined;
+  school_id: string;
+};
+
+/**
+ * 完了(status==='completed')の申込を生徒単位に集約し、student_id → school_id を返す。
+ * 同一生徒の複数申込は1件に集約する（後勝ちで school_id を保持）。完了以外は無視。
+ */
+export function resolveCompletedApplicationStudents(
+  applications: ApplicationLike[]
+): Map<string, string> {
+  const schoolByStudent = new Map<string, string>();
+  for (const app of applications) {
+    if (app.status === 'completed') schoolByStudent.set(app.student_id, app.school_id);
+  }
+  return schoolByStudent;
+}
+
+/** 発注（material_orders）1行分の最小形（syncOrdersToBilling 用） */
+export type OrderLike = {
+  student_id: string | null;
+  school_id: string;
+  quantity: number | null;
+  materialName: string | null;
+};
+
+/** 発注を生徒単位に集約した結果 */
+export type StudentOrderAgg = {
+  /** 発注数の合計（quantity 未指定は1として数える） */
+  quantity: number;
+  school_id: string;
+  /** 重複を除いた教材名（value_text 用） */
+  textbookNames: string[];
+};
+
+/**
+ * 発注を生徒ごとに集約し、数量合計と教材名リストを返す。
+ * - quantity が未指定(null/0)の発注は1件として数える。
+ * - 教材名は重複を除いて収集する。
+ * - student_id が無い発注は無視する。
+ * - school_id はその生徒で最初に現れた発注のものを採用する。
+ */
+export function aggregateOrderQuantitiesByStudent(
+  orders: OrderLike[]
+): Map<string, StudentOrderAgg> {
+  const result = new Map<string, StudentOrderAgg>();
+  for (const order of orders) {
+    if (!order.student_id) continue;
+    const qty = order.quantity || 1;
+    const existing = result.get(order.student_id);
+    if (existing) {
+      existing.quantity += qty;
+      if (order.materialName && !existing.textbookNames.includes(order.materialName)) {
+        existing.textbookNames.push(order.materialName);
+      }
+    } else {
+      result.set(order.student_id, {
+        quantity: qty,
+        school_id: order.school_id,
+        textbookNames: order.materialName ? [order.materialName] : [],
+      });
+    }
+  }
+  return result;
+}
+
 /** 講習の取得増コマを請求へ同期する際の内訳（syncCourseExtraToBilling 用） */
 export type CourseExtraSplit = {
   /** quantity: 計上済みコマ数（合計を超えないよう切り下げる） */
