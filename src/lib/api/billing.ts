@@ -688,6 +688,9 @@ export async function syncFormToBilling(
   if (periodError || !period) throw new Error(`請求期間の取得に失敗: ${periodError?.message}`);
 
   // 請求期間の開始日〜終了日+1日（終了日の23:59:59までを含む）
+  // created_at は timestamptz(UTC) 格納・DBセッションTZはUTCのため、境界比較は必ず
+  // JST(+09:00)でアンカーする。素の "T00:00:00"(=UTC0時) で比較すると、JST深夜0〜9時に
+  // 作成された回答が UTC では前日扱いになり、月初・期末で1つ前の請求期間に誤計上される。
   const periodStart = period.start_date; // e.g. "2026-03-01"
   const periodEndPlusOne = (() => {
     const d = new Date(period.end_date);
@@ -717,8 +720,8 @@ export async function syncFormToBilling(
           .eq('form_type', item.linked_form_type!)
           .not('linked_student_id', 'is', null)
           .in('school_id', targetSchoolIds)
-          .gte('created_at', `${periodStart}T00:00:00`)
-          .lt('created_at', `${periodEndPlusOne}T00:00:00`)
+          .gte('created_at', `${periodStart}T00:00:00+09:00`)
+          .lt('created_at', `${periodEndPlusOne}T00:00:00+09:00`)
           .order('id', { ascending: true })
           .range(from, to)
       );
@@ -738,7 +741,7 @@ export async function syncFormToBilling(
           .eq('form_type', item.linked_form_type!)
           .not('linked_student_id', 'is', null)
           .in('school_id', targetSchoolIds)
-          .lt('created_at', `${periodStart}T00:00:00`)
+          .lt('created_at', `${periodStart}T00:00:00+09:00`)
           .order('id', { ascending: true })
           .range(from, to)
       );
@@ -896,7 +899,9 @@ export async function syncBillingToFormResponses(
     .maybeSingle();
   if (periodError || !period) return;
 
-  // end_date の 23:59:59 までを含むため +1 日
+  // end_date の 23:59:59 までを含むため +1 日。境界比較は syncFormToBilling と同じく
+  // JST(+09:00)アンカー。書き込み側(syncFormToBilling)と期間境界を一致させないと、
+  // 同期方向によって回答の帰属期間がズレて is_billed が食い違う。
   const periodEndPlusOne = (() => {
     const d = new Date(period.end_date);
     d.setDate(d.getDate() + 1);
@@ -908,8 +913,8 @@ export async function syncBillingToFormResponses(
     .select('id, status_checks')
     .eq('linked_student_id', studentId)
     .eq('form_type', item.linked_form_type)
-    .gte('created_at', `${period.start_date}T00:00:00`)
-    .lt('created_at', `${periodEndPlusOne}T00:00:00`);
+    .gte('created_at', `${period.start_date}T00:00:00+09:00`)
+    .lt('created_at', `${periodEndPlusOne}T00:00:00+09:00`);
 
   if (respError || !responses || responses.length === 0) return;
 
@@ -942,7 +947,13 @@ export async function syncFormResponseToBilling(responseId: string): Promise<voi
     .maybeSingle();
   if (respError || !response || !response.linked_student_id) return;
 
-  const createdDate = String(response.created_at).split('T')[0];
+  // created_at(UTC) を JST 暦日に変換してから期間を引き当てる。素の UTC 日付で引くと、
+  // JST 深夜0〜9時の回答が前日扱いになり、下の JST アンカーの sibling 取得と期間がズレる。
+  const createdDate = new Date(
+    new Date(response.created_at as string).getTime() + 9 * 60 * 60 * 1000
+  )
+    .toISOString()
+    .split('T')[0];
 
   // 回答日を含む billing_period を探す
   const { data: periods } = await supabase
@@ -968,6 +979,7 @@ export async function syncFormResponseToBilling(responseId: string): Promise<voi
   if (!items || items.length === 0) return;
   const itemId = items[0].id;
 
+  // 境界比較は JST(+09:00)アンカー（syncFormToBilling と統一。理由は同関数のコメント参照）
   const periodEndPlusOne = (() => {
     const d = new Date(period.end_date);
     d.setDate(d.getDate() + 1);
@@ -980,8 +992,8 @@ export async function syncFormResponseToBilling(responseId: string): Promise<voi
     .select('id, status_checks, response_data')
     .eq('linked_student_id', response.linked_student_id)
     .eq('form_type', response.form_type)
-    .gte('created_at', `${period.start_date}T00:00:00`)
-    .lt('created_at', `${periodEndPlusOne}T00:00:00`);
+    .gte('created_at', `${period.start_date}T00:00:00+09:00`)
+    .lt('created_at', `${periodEndPlusOne}T00:00:00+09:00`);
 
   if (!siblings || siblings.length === 0) return;
 
