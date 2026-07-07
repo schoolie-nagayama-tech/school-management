@@ -773,10 +773,13 @@ export async function getSmartAlerts(schoolIds: string[]): Promise<SmartAlert[]>
   const stMap = new Map(stRows.map((st) => [st.id, st]));
 
   // ── 1. 学校に追い抜かれている ──
-  // student_progress に school_progress_date があり、その日付が今日以前（=学校が実際に
-  // 到達済み）で lesson1 が完了していない = 追い抜かれている。
+  // 「未指導の単元に学校日付が付いているか」を単元ごとに見ると、まだ習っていない
+  // 先の単元（正常な進度差）まで大量に誤検知してしまう。正しくは「生徒の指導済み
+  // 最深部（1回目実施済みの最大 sort_order）」と「学校の到達済み最深部（今日以前の
+  // school_progress_date が付いた最大 sort_order）」を比べ、学校側が上回っている
+  // 場合だけ「追い抜かれた」とみなす（教材ごとに最大1件のアラート）。
   // school_progress_date は手入力欄（学校の進度予定を先に入れておけるため）なので、
-  // 未来日の予定入力まで「追い抜かれた」扱いにしないよう today 以前に限定する。
+  // 未来日の予定入力は学校の到達済み最深部に含めない（today 以前のみ集計）。
   // student_progress は (教材 × 単元) でスケールし stIds も多いため、チャンク分割 +
   // チャンク内ページングの両対応で取得する（id 昇順で安定ページング）。
   const progressRows = await fetchAllInChunks<{
@@ -784,13 +787,15 @@ export async function getSmartAlerts(schoolIds: string[]): Promise<SmartAlert[]>
     student_textbook_id: string;
     curriculum_item_id: number;
     school_progress_date: string | null;
+    // PostgREST の embed は関係の解釈によりオブジェクト/配列どちらでも返り得るため両対応する
+    curriculum_item: { sort_order: number } | { sort_order: number }[] | null;
   }>(stIds, (chunk, from, to) =>
     supabase
       .from('student_progress')
-      .select('id, student_textbook_id, curriculum_item_id, school_progress_date')
+      .select(
+        'id, student_textbook_id, curriculum_item_id, school_progress_date, curriculum_item:curriculum_items(sort_order)'
+      )
       .in('student_textbook_id', chunk)
-      .not('school_progress_date', 'is', null)
-      .lte('school_progress_date', today)
       .order('id', { ascending: true })
       .range(from, to)
   );
@@ -815,14 +820,42 @@ export async function getSmartAlerts(schoolIds: string[]): Promise<SmartAlert[]>
 
     const hasLesson1 = new Set(lessons.map((l) => l.student_progress_id));
 
-    // school_progress_date が今日以前の単元で lesson1 が未完了 = 追い抜かれている
-    const seenSt = new Set<string>();
+    // 教材（student_textbook）ごとに「指導済み最深部」と「学校到達済み最深部」を求める
+    type Frontier = {
+      taughtMaxSort: number;
+      schoolMaxSort: number;
+      schoolMaxItemId: number | null;
+    };
+    const frontierMap = new Map<string, Frontier>();
     for (const p of progressRows) {
-      if (hasLesson1.has(p.id)) continue; // 指導済み
-      if (seenSt.has(p.student_textbook_id)) continue; // 重複抑止
-      seenSt.add(p.student_textbook_id);
+      const ci = Array.isArray(p.curriculum_item) ? p.curriculum_item[0] : p.curriculum_item;
+      const sortOrder = ci?.sort_order;
+      if (sortOrder == null) continue;
+      const f = frontierMap.get(p.student_textbook_id) ?? {
+        taughtMaxSort: -1,
+        schoolMaxSort: -1,
+        schoolMaxItemId: null,
+      };
+      if (hasLesson1.has(p.id) && sortOrder > f.taughtMaxSort) {
+        f.taughtMaxSort = sortOrder;
+      }
+      if (
+        p.school_progress_date &&
+        p.school_progress_date <= today &&
+        sortOrder > f.schoolMaxSort
+      ) {
+        f.schoolMaxSort = sortOrder;
+        f.schoolMaxItemId = p.curriculum_item_id;
+      }
+      frontierMap.set(p.student_textbook_id, f);
+    }
 
-      const st = stMap.get(p.student_textbook_id);
+    // 学校の到達済み最深部が生徒の指導済み最深部を上回っている教材だけを対象にする
+    for (const [studentTextbookId, f] of Array.from(frontierMap.entries())) {
+      if (f.schoolMaxSort <= f.taughtMaxSort) continue; // 追い抜かれていない
+      if (f.schoolMaxItemId == null) continue;
+
+      const st = stMap.get(studentTextbookId);
       if (!st?.student) continue;
 
       alerts.push({
@@ -831,9 +864,9 @@ export async function getSmartAlerts(schoolIds: string[]): Promise<SmartAlert[]>
         studentName: `${st.student.last_name} ${st.student.first_name}`,
         studentId: st.student.id,
         textbookName: st.textbook?.name ?? '',
-        studentTextbookId: p.student_textbook_id,
+        studentTextbookId,
         detail: '学校が既に進んだ単元で塾の指導が追いついていません',
-        curriculumItemId: p.curriculum_item_id,
+        curriculumItemId: f.schoolMaxItemId,
       });
     }
   }
