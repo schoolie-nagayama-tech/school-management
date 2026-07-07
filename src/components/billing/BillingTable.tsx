@@ -760,10 +760,11 @@ export function BillingTable({
                   className="px-3 py-1.5 text-center text-[#4b5563] text-[11px] border-r border-[#e5e7eb] bg-[#f0f4f8]"
                 >
                   {summary.valueType === 'number' ? (
-                    // 合計コマ数（上・太字）＋ 計上済みは人数でカウント（下）
+                    // 合計値（上・太字）＋ 計上済みは人数でカウント（下）
+                    // 数値項目は「コマ」とは限らない（金額等もあり得る）ため単位は付けない
                     <div className="flex flex-col items-center">
                       <span className="text-[11px] font-bold text-[#1e3a5f]">
-                        合計 {summary.numberSum}コマ
+                        合計 {summary.numberSum}
                       </span>
                       <span
                         className={`text-[11px] ${summary.numberBilledCount === summary.numberHasValueCount && summary.numberHasValueCount > 0 ? 'text-green-600' : 'text-orange-500'}`}
