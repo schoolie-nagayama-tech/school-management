@@ -29,6 +29,9 @@ yarn-error.log*
 .env*.local
 .env.test
 
+# Claude Code のローカル専用設定（許可リストに curl 等でシークレットが混入しうるため追跡しない）
+.claude/settings.local.json
+
 # vercel
 .vercel
 
