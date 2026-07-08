@@ -7,7 +7,7 @@ import { getApplicationItems, getStudentApplications } from './applications';
 import { getStudents } from './students';
 import { getStudentTextbooksExamsBySchool } from './progress';
 import { getAlertSettingsBySchools, pickStrictestThreshold } from './alertSettings';
-import { fetchAllInChunks } from '@/lib/utils/supabasePaging';
+import { fetchAllInChunks, fetchAllPaged } from '@/lib/utils/supabasePaging';
 import type {
   Alert,
   AlertDismissal,
@@ -1284,24 +1284,29 @@ export async function getAlertDismissals(
   // （省略時はブラウザ用シングルトン。既存のクライアント呼び出しと完全互換）
   client: SupabaseClient<Database> = supabase
 ): Promise<AlertDismissal[]> {
-  const { data, error } = await client
-    .from('alert_dismissals')
-    .select('*')
-    .in('school_id', schoolIds)
-    .limit(5000);
-
-  if (error) {
-    if (error.code === 'PGRST116' || error.message.includes('schema cache')) {
+  // 対応済み記録は教室横断で蓄積し1000行を超えうるため全件ページング取得
+  // （旧実装の .limit(5000) は暫定上限で、超過分は静かに切り捨てられていた）。
+  // テーブル未作成の環境では schema cache エラーを握り潰して空で返す（従来動作）。
+  try {
+    return await fetchAllPaged<AlertDismissal>((from, to) =>
+      client
+        .from('alert_dismissals')
+        .select('*')
+        .in('school_id', schoolIds)
+        .order('id', { ascending: true })
+        .range(from, to)
+    );
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    if (msg.includes('schema cache') || msg.includes('does not exist')) {
       console.warn(
         'alert_dismissalsテーブルが見つかりません。マイグレーションを実行してください:',
-        error
+        e
       );
       return [];
     }
-    throw new Error(`対応済み記録の取得に失敗しました: ${error.message}`);
+    throw new Error(`対応済み記録の取得に失敗しました: ${msg}`);
   }
-
-  return (data || []) as AlertDismissal[];
 }
 
 /**

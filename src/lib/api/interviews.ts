@@ -2,6 +2,7 @@ import { supabase } from '../supabase';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database, StudentInterview, StudentInterviewInput } from '@/types/database';
 import { dismissAlert, invalidateAlertCache } from './alerts';
+import { fetchAllPaged } from '@/lib/utils/supabasePaging';
 
 /**
  * 教室単位で面談記録をバッチ取得（アラート用）
@@ -16,20 +17,27 @@ export async function getInterviewsBySchool(
 ): Promise<Map<string, StudentInterview[]>> {
   if (schoolIds.length === 0) return new Map();
 
-  const { data, error } = await client
-    .from('student_interviews')
-    .select('*')
-    .in('school_id', schoolIds)
-    .order('interview_date', { ascending: false })
-    .order('created_at', { ascending: false })
-    .limit(5000);
-
-  if (error) {
-    throw new Error(`面談記録の取得に失敗しました: ${error.message}`);
+  // 面談記録は教室横断で蓄積し1000行を超えうるため全件ページング取得
+  // （旧実装の .limit(5000) は暫定上限で、超過分は静かに切り捨てられていた）。
+  // interview_date/created_at は一意でないため id を第2ソートキーに足して安定ページング。
+  let rows: StudentInterview[];
+  try {
+    rows = await fetchAllPaged<StudentInterview>((from, to) =>
+      client
+        .from('student_interviews')
+        .select('*')
+        .in('school_id', schoolIds)
+        .order('interview_date', { ascending: false })
+        .order('created_at', { ascending: false })
+        .order('id', { ascending: true })
+        .range(from, to)
+    );
+  } catch (e) {
+    throw new Error(`面談記録の取得に失敗しました: ${e instanceof Error ? e.message : String(e)}`);
   }
 
   const byStudent = new Map<string, StudentInterview[]>();
-  for (const interview of (data || []) as StudentInterview[]) {
+  for (const interview of rows) {
     const list = byStudent.get(interview.student_id) || [];
     list.push(interview);
     byStudent.set(interview.student_id, list);
