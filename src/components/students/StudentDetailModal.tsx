@@ -13,6 +13,7 @@ import { getTextbooks } from '@/lib/api/textbooks';
 import {
   getStudentTextbooks as getDistributedMaterials,
   deleteDistributedMaterial,
+  updateOrderStatus,
 } from '@/lib/api/ordering';
 import type { StudentTextbook as DistributedMaterial } from '@/lib/api/ordering';
 import { listAssessments } from '@/lib/api/assessments';
@@ -30,7 +31,7 @@ import { StudentKoushuTab } from './StudentKoushuTab';
 import { useAuth } from '@/contexts/AuthContext';
 import { useConfirm } from '@/hooks/useConfirm';
 import { useToast } from '@/hooks/useToast';
-import { Trash2, ExternalLink } from 'lucide-react';
+import { Trash2, ExternalLink, PackageCheck } from 'lucide-react';
 
 interface StudentDetailModalProps {
   isOpen: boolean;
@@ -75,6 +76,8 @@ export function StudentDetailModal({
   const isTeacher = profile?.role === 'teacher';
   const [textbooks, setTextbooks] = useState<StudentTextbookRow[]>([]);
   const [distributedMaterials, setDistributedMaterials] = useState<DistributedMaterial[]>([]);
+  // 「配布済みにする」処理中の発注ID（連打防止・ボタンのローディング表示用）
+  const [distributingOrderId, setDistributingOrderId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>('basic');
   const schoolId = getDefaultSchoolId();
@@ -258,6 +261,31 @@ export function StudentDetailModal({
     } catch (e) {
       console.error('Error deleting distributed material:', e);
       toastError('配布教材の削除に失敗しました');
+    }
+  };
+
+  // 発注中の教材を「配布済み」にする。従来は教材発注画面からしか変更できず不便だったため、
+  // 生徒詳細からも（講師含む全ロールで）操作できるようにした。
+  // updateOrderStatus が material_orders.status=distributed・所持(is_owned)付与・在庫出庫・
+  // 請求連携までまとめて行う（在庫/請求は権限が無ければ内部で握りつぶされ、配布自体は成立する）。
+  const handleMarkDistributed = async (dm: DistributedMaterial) => {
+    if (!student) return;
+    const ok = await confirm({
+      title: '配布済みにする',
+      description: `「${dm.textbookName}」を配布済みにしますか？`,
+      confirmLabel: '配布済みにする',
+    });
+    if (!ok) return;
+    setDistributingOrderId(dm.orderId);
+    try {
+      await updateOrderStatus(dm.orderId, 'distributed');
+      await loadTextbooks(student.id);
+      success('配布済みにしました');
+    } catch (e) {
+      console.error('Error marking distributed:', e);
+      toastError(e instanceof Error ? e.message : '配布済みへの変更に失敗しました');
+    } finally {
+      setDistributingOrderId(null);
     }
   };
 
@@ -545,6 +573,17 @@ export function StudentDetailModal({
                           <span className="text-[10px] text-[#4b5563] bg-gray-100 px-1.5 py-0.5 rounded">
                             {ORDER_STATUS_LABEL[dm.status] ?? '発注'}
                           </span>
+                          {/* 配布済みにする（全ロール可）。押すと所持教材に移動する */}
+                          <button
+                            type="button"
+                            onClick={() => handleMarkDistributed(dm)}
+                            disabled={distributingOrderId === dm.orderId}
+                            className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-medium text-white bg-[#1e3a5f] rounded hover:bg-[#16304d] disabled:opacity-50 transition-[background-color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97]"
+                            title="配布済みにする（所持教材に移動）"
+                          >
+                            <PackageCheck className="w-3 h-3" />
+                            {distributingOrderId === dm.orderId ? '処理中…' : '配布済みにする'}
+                          </button>
                           {!isTeacher && (
                             <button
                               onClick={() => handleRemoveDistributed(dm)}
