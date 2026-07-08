@@ -1,6 +1,6 @@
 'use client';
 
-import { Code2, Users } from 'lucide-react';
+import { Code2, Users, FlaskConical } from 'lucide-react';
 import { InlineLoading } from '@/components/ui';
 import type { Student } from '@/types/database';
 import { GRADE_LABELS } from '@/types/database';
@@ -96,6 +96,16 @@ export function StudentCardList({
                 {student.is_sibling && (
                   <span title="兄弟・姉妹あり" aria-label="兄弟・姉妹あり">
                     <Users className="h-3.5 w-3.5 shrink-0 text-teal-500" />
+                  </span>
+                )}
+                {student.is_test && (
+                  <span
+                    className="inline-flex items-center gap-0.5 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 shrink-0"
+                    title="研修用のテスト生徒（業務の集計には反映されません）"
+                    aria-label="研修用テスト生徒"
+                  >
+                    <FlaskConical className="h-3 w-3" />
+                    研修用
                   </span>
                 )}
               </div>

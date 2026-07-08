@@ -237,6 +237,7 @@ async function runBatchForSchool(
             .eq('school_id', schoolId)
             .is('deleted_at', null)
             .neq('status', 'withdrawn')
+            .neq('is_test', true) // 研修用テスト生徒は講習進捗に出さない
             .order('grade', { ascending: true })
             .order('last_name_kana', { ascending: true, nullsFirst: false })
             .order('first_name_kana', { ascending: true, nullsFirst: false })
@@ -447,6 +448,7 @@ async function runBatchForSchool(
                 .eq('school_id', schoolId)
                 .is('deleted_at', null)
                 .neq('status', 'withdrawn')
+                .neq('is_test', true) // 研修用テスト生徒は母数に含めない
                 .then(({ count }) => count || 0)
             : Promise.resolve(0),
           uniqueLinkedIds.length > 0
@@ -705,7 +707,8 @@ export async function GET(request: NextRequest) {
             .from('students')
             .select('id', { count: 'exact', head: true })
             .eq('school_id', schoolId)
-            .is('deleted_at', null);
+            .is('deleted_at', null)
+            .neq('is_test', true); // 研修用テスト生徒は母数に含めない
 
           const totalStudents = studentCount || 0;
 
@@ -1398,7 +1401,8 @@ async function syncScheduleTaskCompletionFromProgress(
       .from('students')
       .select('id', { count: 'exact', head: true })
       .eq('school_id', schoolId)
-      .is('deleted_at', null),
+      .is('deleted_at', null)
+      .neq('is_test', true), // 研修用テスト生徒は母数に含めない
     supabaseAdmin
       .from('course_prep_student_progress')
       .select('id', { count: 'exact', head: true })

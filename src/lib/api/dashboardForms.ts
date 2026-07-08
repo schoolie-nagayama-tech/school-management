@@ -107,6 +107,7 @@ export async function getFormParticipation(schoolIds: string[]): Promise<FormPar
         .select('id', { count: 'exact', head: true })
         .in('school_id', schoolIds)
         .eq('status', 'active')
+        .neq('is_test', true) // 研修用テスト生徒は回答率の母数に含めない
         .in('grade', targetGrades);
       denominator = count ?? 0;
     }

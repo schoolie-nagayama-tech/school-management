@@ -390,6 +390,8 @@ export type Database = {
           subject_other: string | null;
           is_programming: boolean;
           is_sibling: boolean;
+          /** 研修用テスト生徒。true はアラート・進捗などの業務集計から除外し名簿のみ表示 */
+          is_test: boolean;
           /** 退塾予定日 'YYYY-MM-DD'。この日以降は座席表生成・5週目計算から除外。NULLは在籍中 */
           withdrawal_date: string | null;
           // 講師希望（マッチング/手動配置のフィルタ用）
@@ -419,6 +421,7 @@ export type Database = {
           subject_other?: string | null;
           is_programming?: boolean;
           is_sibling?: boolean;
+          is_test?: boolean;
           withdrawal_date?: string | null;
           preferred_teacher_gender?: 'male' | 'female' | null;
           fixed_teacher_ids?: string[];
@@ -443,6 +446,7 @@ export type Database = {
           subject_other?: string | null;
           is_programming?: boolean;
           is_sibling?: boolean;
+          is_test?: boolean;
           withdrawal_date?: string | null;
           preferred_teacher_gender?: 'male' | 'female' | null;
           fixed_teacher_ids?: string[];

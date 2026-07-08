@@ -11,6 +11,7 @@ import {
   MoreVertical,
   Users,
   Code2,
+  FlaskConical,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { InlineLoading } from '@/components/ui';
@@ -292,6 +293,16 @@ const StudentTableRow = memo(function StudentTableRow({
           {student.is_sibling && (
             <span title="兄弟・姉妹あり" aria-label="兄弟・姉妹あり">
               <Users className="w-3.5 h-3.5 text-teal-500 shrink-0" />
+            </span>
+          )}
+          {student.is_test && (
+            <span
+              className="inline-flex items-center gap-0.5 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 shrink-0"
+              title="研修用のテスト生徒（業務の集計には反映されません）"
+              aria-label="研修用テスト生徒"
+            >
+              <FlaskConical className="w-3 h-3" />
+              研修用
             </span>
           )}
           {/* 休会・退会のときだけ状況ドットを氏名の横に表示（在籍中は非表示） */}

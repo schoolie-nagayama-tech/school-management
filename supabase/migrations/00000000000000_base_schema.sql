@@ -2172,6 +2172,7 @@ CREATE TABLE IF NOT EXISTS "public"."students" (
     "deleted_at" timestamp with time zone,
     "is_programming" boolean DEFAULT false NOT NULL,
     "is_sibling" boolean DEFAULT false NOT NULL,
+    "is_test" boolean DEFAULT false NOT NULL,
     "withdrawal_date" "date",
     "preferred_teacher_gender" "text",
     "fixed_teacher_ids" "uuid"[] DEFAULT '{}'::"uuid"[] NOT NULL,
@@ -2186,6 +2187,9 @@ ALTER TABLE "public"."students" OWNER TO "postgres";
 
 
 COMMENT ON COLUMN "public"."students"."is_sibling" IS '兄弟・姉妹がいる場合 true';
+
+
+COMMENT ON COLUMN "public"."students"."is_test" IS '研修用テスト生徒。業務集計から除外し名簿のみ表示する。';
 
 
 

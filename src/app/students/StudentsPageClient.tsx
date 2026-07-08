@@ -227,6 +227,8 @@ export function StudentsPageClient({
           schoolIds,
           activeOnly: !showInactive,
           grade: selectedGrade,
+          // 名簿は研修用テスト生徒も表示する（講師が研修時に見つけて練習できるように）
+          includeTest: true,
           offset: (currentPage - 1) * ITEMS_PER_PAGE,
           limit: ITEMS_PER_PAGE,
         });
@@ -254,7 +256,10 @@ export function StudentsPageClient({
           if (!silent) setIsLoading(false);
           return;
         }
-        const data = await getStudents(debouncedSearch, schoolIds);
+        // 成績タブも名簿同様に研修用テスト生徒を含める（研修で成績入力も練習できるように）
+        const data = await getStudents(debouncedSearch, schoolIds, undefined, {
+          includeTest: true,
+        });
         setStudentsForScores(data);
       } catch (error) {
         console.error('Error fetching students for scores:', error);

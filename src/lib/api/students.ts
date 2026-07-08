@@ -15,7 +15,7 @@ import { fetchAllPaged } from '@/lib/utils/supabasePaging';
 
 /** 一覧取得用（Row の列と一致。将来の列追加時は型と同期すること） */
 const STUDENT_LIST_COLUMNS =
-  'id,school_id,student_code,last_name,first_name,last_name_kana,first_name_kana,grade,status,school_name,class_name,club,subject_other,is_programming,is_sibling,deleted_at,created_at,updated_at';
+  'id,school_id,student_code,last_name,first_name,last_name_kana,first_name_kana,grade,status,school_name,class_name,club,subject_other,is_programming,is_sibling,is_test,deleted_at,created_at,updated_at';
 
 const SUBJECT_LIST_COLUMNS = 'id,name,grade_category,sort_order,duration_minutes,created_at';
 
@@ -64,6 +64,9 @@ export type EnrichedStudent = Student & {
 type StudentListFilterOptions = {
   activeOnly?: boolean;
   grade?: number | 'all';
+  // 研修用テスト生徒(is_test=true)を含めるか。既定は false（＝除外）。
+  // 業務系の集計は既定のまま除外され、名簿など「講師が研修生徒を見つける」画面だけ true を渡す。
+  includeTest?: boolean;
 };
 
 function buildStudentsBaseQuery(
@@ -81,6 +84,11 @@ function buildStudentsBaseQuery(
       : client.from('students').select(STUDENT_LIST_COLUMNS, selectClause);
 
   query = query.in('school_id', targetSchoolIds).is('deleted_at', null);
+
+  // 研修用テスト生徒は既定で除外（業務集計に混ぜない）。名簿など明示的に含めたい画面だけ includeTest。
+  if (!listFilters.includeTest) {
+    query = query.neq('is_test', true);
+  }
 
   if (listFilters.activeOnly) {
     query = query.eq('status', 'active');
@@ -203,6 +211,8 @@ export interface GetStudentsPageOptions {
   schoolIds?: string[];
   activeOnly?: boolean;
   grade?: number | 'all';
+  /** 研修用テスト生徒を含めるか（名簿タブは true）。既定 false=除外 */
+  includeTest?: boolean;
   offset: number;
   limit: number;
 }
@@ -228,6 +238,7 @@ export async function getStudentsPage(
   const listFilters: StudentListFilterOptions = {
     activeOnly: opts.activeOnly,
     grade: opts.grade,
+    includeTest: opts.includeTest,
   };
 
   const query = buildStudentsBaseQuery(opts.searchQuery, targetSchoolIds, listFilters, {
@@ -304,7 +315,10 @@ export async function getStudents(
   schoolIds?: string[], // 複数教室IDを指定可能（未指定の場合はデフォルト教室）
   // サーバー RLS 認証のため client を DI できるようにする（省略時はブラウザシングルトン）
   // 広く使われる関数のため末尾 optional で後方互換を維持する
-  client: SupabaseClient<Database> = supabase
+  client: SupabaseClient<Database> = supabase,
+  // 研修用テスト生徒を含めるか。既定 false=除外（アラート/請求など業務用途はそのまま安全側）。
+  // 名簿など「講師が研修生徒を見つける」画面だけ includeTest:true を渡す。
+  opts?: { includeTest?: boolean }
 ): Promise<EnrichedStudent[]> {
   const targetSchoolIds = schoolIds && schoolIds.length > 0 ? schoolIds : [getDefaultSchoolId()];
 
@@ -315,7 +329,13 @@ export async function getStudents(
   let students: Student[];
   try {
     students = await fetchAllPaged<Student>((from, to) =>
-      buildStudentsBaseQuery(searchQuery, targetSchoolIds, {}, STUDENT_LIST_COLUMNS, client)
+      buildStudentsBaseQuery(
+        searchQuery,
+        targetSchoolIds,
+        { includeTest: opts?.includeTest },
+        STUDENT_LIST_COLUMNS,
+        client
+      )
         .order('id', { ascending: true })
         .range(from, to)
     );
