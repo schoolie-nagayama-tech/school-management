@@ -4,9 +4,11 @@ import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   getProgressWidget,
   batchToggleCheck,
+  toggleCheck,
   type ProgressWidgetData,
   type ProgressWidgetTask,
   type CoursePrepWidgetTask,
+  type SchoolTaskSummary,
 } from '@/lib/api/monthlyTasks';
 import { batchFetchCoursePrepApiMulti } from '@/lib/api/coursePrepApi';
 import { getEnabledSchoolIdsForWidget } from '@/lib/api/widgetSettings';
@@ -191,6 +193,8 @@ export function TaskProgressWidget({
   const [isLoading, setIsLoading] = useState(true);
   const [showCelebration, setShowCelebration] = useState(false);
   const [isOpen, setIsOpen] = useState(true);
+  // 教室別ビューでの楽観的完了（`taskId:schoolId`）。チェック時に即座に消し、進捗率も更新する。
+  const [doneKeys, setDoneKeys] = useState<Set<string>>(new Set());
 
   // --- Course progress state (per-school) ---
   const [perSchoolData, setPerSchoolData] = useState<PerSchoolCourseData[]>([]);
@@ -223,6 +227,7 @@ export function TaskProgressWidget({
     try {
       const result = await getProgressWidget(stableSchoolIds);
       setData(result);
+      setDoneKeys(new Set()); // 最新データに合わせて楽観的完了をリセット
       if (result.allComplete) {
         setShowCelebration(true);
       }
@@ -327,6 +332,18 @@ export function TaskProgressWidget({
       cancelled = true;
     };
   }, [fetchCourseProgress]);
+
+  // 教室別ビューで1タスクをその教室だけ完了にする（バッチではなく単一教室）。
+  const handleSchoolTaskComplete = useCallback((taskId: string, schoolId: string) => {
+    const key = `${taskId}:${schoolId}`;
+    setDoneKeys((prev) => {
+      const next = new Set(prev);
+      next.add(key);
+      return next;
+    });
+    // 楽観的更新済み。失敗しても次回リフェッチで整合するため握りつぶす。
+    toggleCheck(taskId, schoolId, true).catch(() => {});
+  }, []);
 
   const handleComplete = useCallback((completed: ProgressWidgetTask) => {
     setData((prev) => {
@@ -622,6 +639,61 @@ export function TaskProgressWidget({
   const overdueTasks = data.tasks.filter((t) => t.overdue);
   const upcomingTasks = data.tasks.filter((t) => !t.overdue);
 
+  // 「すべての教室」表示かつ複数教室分のサマリーがある場合は、教室別の進捗率＋未完了業務を出す。
+  // 単一教室ではどの教室か自明なので従来のフラットなタスクチップ表示のままにする。
+  const showPerSchool =
+    isMultiSchool && !!data.schoolSummaries && data.schoolSummaries.length > 1;
+
+  const flatTaskSection = (
+    <div className="px-4 py-2.5 flex flex-wrap gap-1.5 border-t border-border-subtle">
+      {overdueTasks.map((task) => (
+        <span
+          key={task.id}
+          className="inline-flex items-center gap-1 px-2 py-1 rounded border border-red-200 bg-red-50 text-xs"
+        >
+          <TaskCheckbox task={task} onComplete={handleComplete} />
+          <AlertTriangle className="w-3 h-3 text-red-500 flex-shrink-0" />
+          <span className="font-medium text-red-600">{formatDate(task.task_date)}</span>
+          <span className="text-red-700 max-w-[120px] truncate">{task.task_name}</span>
+        </span>
+      ))}
+      {upcomingTasks.map((task) => (
+        <span
+          key={task.id}
+          className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs border ${
+            task.category === 'business'
+              ? 'bg-orange-50 border-orange-200 text-orange-700'
+              : 'bg-purple-50 border-purple-200 text-purple-700'
+          }`}
+        >
+          <TaskCheckbox task={task} onComplete={handleComplete} />
+          <span className="font-medium">{formatDate(task.task_date)}</span>
+          <span className="max-w-[120px] truncate">{task.task_name}</span>
+        </span>
+      ))}
+    </div>
+  );
+
+  const perSchoolTaskSection = (
+    <div className="px-4 py-2.5 border-t border-border-subtle">
+      {(data.schoolSummaries ?? []).map((summary, idx) => (
+        <div
+          key={summary.schoolId}
+          className={idx > 0 ? 'mt-2 pt-2 border-t border-border-subtle' : ''}
+        >
+          <SchoolTaskRow
+            summary={summary}
+            schoolName={schoolNameMap[summary.schoolId] || summary.schoolId}
+            doneKeys={doneKeys}
+            onComplete={handleSchoolTaskComplete}
+          />
+        </div>
+      ))}
+    </div>
+  );
+
+  const businessTaskSection = showPerSchool ? perSchoolTaskSection : flatTaskSection;
+
   return (
     <div className="mb-4 rounded-xl border border-border bg-surface shadow-sm">
       {/* Header */}
@@ -650,36 +722,10 @@ export function TaskProgressWidget({
       {/* Collapsible content */}
       <div
         className="overflow-hidden transition-[max-height,opacity] duration-200 ease-out"
-        style={{ maxHeight: isOpen ? '800px' : '0', opacity: isOpen ? 1 : 0 }}
+        style={{ maxHeight: isOpen ? '2000px' : '0', opacity: isOpen ? 1 : 0 }}
       >
-        {/* 業務タスク */}
-        <div className="px-4 py-2.5 flex flex-wrap gap-1.5 border-t border-border-subtle">
-          {overdueTasks.map((task) => (
-            <span
-              key={task.id}
-              className="inline-flex items-center gap-1 px-2 py-1 rounded border border-red-200 bg-red-50 text-xs"
-            >
-              <TaskCheckbox task={task} onComplete={handleComplete} />
-              <AlertTriangle className="w-3 h-3 text-red-500 flex-shrink-0" />
-              <span className="font-medium text-red-600">{formatDate(task.task_date)}</span>
-              <span className="text-red-700 max-w-[120px] truncate">{task.task_name}</span>
-            </span>
-          ))}
-          {upcomingTasks.map((task) => (
-            <span
-              key={task.id}
-              className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs border ${
-                task.category === 'business'
-                  ? 'bg-orange-50 border-orange-200 text-orange-700'
-                  : 'bg-purple-50 border-purple-200 text-purple-700'
-              }`}
-            >
-              <TaskCheckbox task={task} onComplete={handleComplete} />
-              <span className="font-medium">{formatDate(task.task_date)}</span>
-              <span className="max-w-[120px] truncate">{task.task_name}</span>
-            </span>
-          ))}
-        </div>
+        {/* 業務タスク（単一教室=フラット / すべての教室=教室別の進捗率＋未完了） */}
+        {businessTaskSection}
         {/* 講習準備タスク */}
         {data.coursePrepTasks && data.coursePrepTasks.length > 0 && (
           <div className="px-4 py-2 border-t border-border-subtle space-y-1">
@@ -702,6 +748,121 @@ export function TaskProgressWidget({
         {/* 講習進捗 */}
         {courseProgressSection}
       </div>
+    </div>
+  );
+}
+
+/** 教室別ビューの1タスク用チェックボックス（その教室だけ完了にする） */
+function SchoolTaskCheckbox({
+  overdue,
+  onComplete,
+}: {
+  overdue: boolean;
+  onComplete: () => void;
+}) {
+  const [completing, setCompleting] = useState(false);
+  const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (completing) return;
+    setCompleting(true);
+    onComplete();
+  };
+  return (
+    <button
+      onClick={handleClick}
+      disabled={completing}
+      className={`flex-shrink-0 w-4 h-4 rounded border transition-[background-color,border-color] duration-150 ease-out flex items-center justify-center ${
+        completing
+          ? 'bg-green-500 border-green-500'
+          : overdue
+            ? 'border-red-300 hover:border-red-500 hover:bg-red-50'
+            : 'border-orange-300 hover:border-orange-500 hover:bg-orange-50'
+      }`}
+      title="この教室で完了にする"
+    >
+      {completing && <Check className="w-3 h-3 text-white" />}
+    </button>
+  );
+}
+
+/** 教室ごとの当月業務タスクの進捗率＋未完了タスクを表示する行 */
+function SchoolTaskRow({
+  summary,
+  schoolName,
+  doneKeys,
+  onComplete,
+}: {
+  summary: SchoolTaskSummary;
+  schoolName: string;
+  doneKeys: Set<string>;
+  onComplete: (taskId: string, schoolId: string) => void;
+}) {
+  // 楽観的完了を差し引いた残りの未完了タスク（進捗率はこの全体を母数にする）
+  const remaining = summary.incompleteTasks.filter(
+    (t) => !doneKeys.has(`${t.id}:${summary.schoolId}`)
+  );
+  // 一覧に出すのは「期限を過ぎた未完了タスク」だけ（未来日のタスクはノイズなので出さない）
+  const overdueRemaining = remaining.filter((t) => t.overdue);
+  const completed = summary.total - remaining.length;
+  const pct = summary.total > 0 ? Math.round((completed / summary.total) * 100) : null;
+  const allDone = remaining.length === 0;
+
+  return (
+    // 講習進捗セクションと揃えて、進捗バーの右隣に残りの期限超過タスクを並べる。
+    // 教室名 → 件数 → % → バー（左の固定クラスタ）／その右にタスクチップ。
+    <div className="flex items-start gap-x-3 gap-y-1.5 flex-wrap">
+      {/* 左クラスタ: 名前 + 件数 + % + バー（列幅を固定して各教室で桁を揃える） */}
+      <div className="flex items-center gap-2 shrink-0">
+        <span className="w-24 shrink-0 text-xs font-bold text-text-muted truncate">
+          {schoolName}
+        </span>
+        {pct === null ? (
+          <span className="text-xs text-text-faint">対象タスクなし</span>
+        ) : (
+          <>
+            <span className="w-12 shrink-0 text-xs text-text-muted tabular-nums text-right">
+              {completed}/{summary.total}
+            </span>
+            <span
+              className={`w-9 shrink-0 text-xs font-bold tabular-nums text-right ${allDone ? 'text-green-600' : 'text-text-body'}`}
+            >
+              {pct}%
+            </span>
+            <div className="h-1.5 w-28 shrink-0 rounded-full bg-surface-hover overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-[width] duration-300 ease-out ${allDone ? 'bg-green-500' : 'bg-blue-500'}`}
+                style={{ width: `${pct}%` }}
+              />
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* 右: 期限超過の未完了タスク（バーの横に並べる）。完了済みなら✓、超過なしは静かに畳む */}
+      {allDone ? (
+        summary.total > 0 && (
+          <div className="flex items-center gap-1 text-xs text-green-600 pt-0.5">
+            <Check className="w-3 h-3" />
+            <span>すべて完了</span>
+          </div>
+        )
+      ) : overdueRemaining.length > 0 ? (
+        <div className="flex flex-1 flex-wrap gap-1.5 min-w-0">
+          {overdueRemaining.map((t, idx) => (
+            <span
+              key={`${t.id}-${idx}`}
+              className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs border bg-red-50 border-red-200 text-red-700"
+            >
+              <SchoolTaskCheckbox overdue onComplete={() => onComplete(t.id, summary.schoolId)} />
+              <AlertTriangle className="w-3 h-3 text-red-500 flex-shrink-0" />
+              <span className="font-medium">{formatDate(t.task_date)}</span>
+              <span className="max-w-[140px] truncate">{t.task_name}</span>
+            </span>
+          ))}
+        </div>
+      ) : (
+        <span className="text-xs text-text-faint pt-1">期限超過なし</span>
+      )}
     </div>
   );
 }

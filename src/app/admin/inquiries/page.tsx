@@ -411,7 +411,11 @@ export default function InquiriesPage() {
             InquiryReminders は hidden 中もマウントされ取得を進め、完了を onReady で通知する。 */}
         <div className={showContent ? '' : 'hidden'}>
           {/* リマインドボード（要対応アラート）— リマインドがなければ何も表示しない */}
-          <InquiryReminders schoolIds={schoolIds} onReady={handleRemindersReady} />
+          <InquiryReminders
+            schoolIds={schoolIds}
+            schools={masterSchools}
+            onReady={handleRemindersReady}
+          />
 
           {/* 操作バー: 左=集計コンテキスト（期間・入会率） / 右=期間切替・検索・絞り込み */}
           <div className="mb-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">

@@ -75,10 +75,22 @@ export interface CoursePrepWidgetTask {
   overdue: boolean;
 }
 
+/** 教室ごとの当月業務タスクの進捗サマリー（「すべての教室」表示時に使う） */
+export interface SchoolTaskSummary {
+  schoolId: string;
+  /** その教室で非表示にしていない当月タスク数 */
+  total: number;
+  /** そのうち未完了の数 */
+  incomplete: number;
+  /** 未完了タスクの一覧（日付昇順） */
+  incompleteTasks: { id: string; task_name: string; task_date: string; overdue: boolean }[];
+}
+
 export interface ProgressWidgetData {
   allComplete: boolean;
   tasks: ProgressWidgetTask[];
   coursePrepTasks?: CoursePrepWidgetTask[];
+  schoolSummaries?: SchoolTaskSummary[];
 }
 
 const WIDGET_CACHE_TTL_MS = 30_000;

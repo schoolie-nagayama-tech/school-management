@@ -59,6 +59,11 @@ interface Props {
   /** 表示対象の school_id 配列 */
   schoolIds: string[];
   /**
+   * 教室名解決用（id→name）。複数教室を表示しているときに各行へ教室名を出す。
+   * 単一教室のときはどの教室か自明なので教室名は出さない。
+   */
+  schools?: { id: string; name: string }[];
+  /**
    * 初回の取得が完了したら一度呼ばれる（0件でも呼ぶ）。
    * 親が「リマインドの読み込みが終わったか」を知り、一覧と同時に
    * 描画してレイアウトシフトを防ぐために使う。
@@ -66,7 +71,7 @@ interface Props {
   onReady?: () => void;
 }
 
-export function InquiryReminders({ schoolIds, onReady }: Props): JSX.Element | null {
+export function InquiryReminders({ schoolIds, schools, onReady }: Props): JSX.Element | null {
   const [reminders, setReminders] = useState<InquiryReminder[]>([]);
   /** 初回取得が完了したか（完了後は再取得中もボードを消さずちらつきを防ぐ） */
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
@@ -75,6 +80,10 @@ export function InquiryReminders({ schoolIds, onReady }: Props): JSX.Element | n
   const hasSchools = schoolIds.length > 0;
   // 配列参照は毎レンダリング変わるので、文字列キーで effect の再実行を安定化する
   const schoolKey = schoolIds.join(',');
+
+  // 複数教室を表示しているときだけ各行に教室名を出す（単一教室は自明なので出さない）
+  const showSchoolName = schoolIds.length > 1;
+  const schoolNameMap = new Map((schools ?? []).map((s) => [s.id, s.name]));
 
   // onReady は ref 経由で呼ぶ（識別子が変わっても effect を再実行させない）
   const onReadyRef = useRef(onReady);
@@ -191,6 +200,13 @@ export function InquiryReminders({ schoolIds, onReady }: Props): JSX.Element | n
               <span className="shrink-0 text-sm font-medium text-text-heading w-24 truncate">
                 {r.name}
               </span>
+
+              {/* 教室名（複数教室表示時のみ・どの教室の案件か分かるように） */}
+              {showSchoolName && (
+                <span className="shrink-0 text-xs text-text-muted bg-surface-hover border border-border rounded px-1.5 py-0.5 max-w-[7rem] truncate">
+                  {schoolNameMap.get(r.schoolId) ?? '—'}
+                </span>
+              )}
 
               {/* メッセージ */}
               <span className="flex-1 text-sm text-text-body truncate">{r.message}</span>

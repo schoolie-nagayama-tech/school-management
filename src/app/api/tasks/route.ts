@@ -110,7 +110,9 @@ export async function GET(request: NextRequest) {
           : auth.schoolIds;
 
         if (sids.length === 0) {
-          return NextResponse.json({ data: { allComplete: true, tasks: [], coursePrepTasks: [] } });
+          return NextResponse.json({
+            data: { allComplete: true, tasks: [], coursePrepTasks: [], schoolSummaries: [] },
+          });
         }
 
         // タスク・チェック・オーバーライドを並列取得（いずれも全件ページング取得）
@@ -130,6 +132,19 @@ export async function GET(request: NextRequest) {
         const incompleteTasks: (TaskRow & { overdue: boolean; incompleteSchoolIds: string[] })[] =
           [];
         let allComplete = true;
+
+        // 教室ごとの進捗サマリー（「すべての教室」表示時に教室別の進捗率・未完了業務を出すため）。
+        // total = その教室で非表示にしていない当月タスク数、incomplete = そのうち未完了数。
+        type SchoolTaskSummary = {
+          schoolId: string;
+          total: number;
+          incomplete: number;
+          incompleteTasks: { id: string; task_name: string; task_date: string; overdue: boolean }[];
+        };
+        const schoolSummaryMap = new Map<string, SchoolTaskSummary>();
+        for (const sid of sids) {
+          schoolSummaryMap.set(sid, { schoolId: sid, total: 0, incomplete: 0, incompleteTasks: [] });
+        }
 
         if (allTasks.length > 0) {
           const allIds = allTasks.map((t) => t.id);
@@ -165,13 +180,26 @@ export async function GET(request: NextRequest) {
 
           for (const task of allTasks) {
             const incomplete: string[] = [];
+            const isOverdue = task.task_date < today;
             for (const sid of sids) {
               if (hiddenSet.has(`${task.id}:${sid}`)) continue;
+              // 非表示でない＝この教室の対象タスク。total に計上する。
+              const summary = schoolSummaryMap.get(sid);
+              if (summary) summary.total++;
               const check = allChecks.find(
                 (c: Record<string, unknown>) => c.task_id === task.id && c.school_id === sid
               );
               if (!check || !check.is_completed) {
                 incomplete.push(sid);
+                if (summary) {
+                  summary.incomplete++;
+                  summary.incompleteTasks.push({
+                    id: task.id,
+                    task_name: task.task_name,
+                    task_date: task.task_date,
+                    overdue: isOverdue,
+                  });
+                }
               }
             }
             if (incomplete.length > 0) {
@@ -181,12 +209,17 @@ export async function GET(request: NextRequest) {
                 task_date: task.task_date,
                 task_name: task.task_name,
                 category: task.category,
-                overdue: task.task_date < today,
+                overdue: isOverdue,
                 incompleteSchoolIds: incomplete,
               });
             }
           }
         }
+
+        // 教室順を安定させる（未完了件数の多い教室を先頭に＝要対応の教室が上に来る）。
+        const schoolSummaries = Array.from(schoolSummaryMap.values()).sort(
+          (a, b) => b.incomplete - a.incomplete
+        );
 
         // 講習準備スケジュールタスク: 未完了 & 期限が今日から14日以内 or 期限超過
         const futureLimit = new Date();
@@ -225,7 +258,7 @@ export async function GET(request: NextRequest) {
         }));
 
         return NextResponse.json({
-          data: { allComplete, tasks: incompleteTasks, coursePrepTasks },
+          data: { allComplete, tasks: incompleteTasks, coursePrepTasks, schoolSummaries },
         });
       }
 
