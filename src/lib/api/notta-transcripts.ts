@@ -1,5 +1,6 @@
 import { supabase } from '../supabase';
 import { createInterview } from './interviews';
+import { fetchAllPaged } from '@/lib/utils/supabasePaging';
 import type { NottaTranscript, NottaTranscriptWithStudent, InterviewType } from '@/types/database';
 
 /**
@@ -267,25 +268,29 @@ export async function getInquiryTranscripts(inquiryId: string): Promise<NottaTra
 
 /**
  * 問合せに取り込める文字起こし（未紐付け：生徒にも問合せにも紐付いておらず、未アーカイブ）。
+ *
+ * 並び順は録音日（recorded_at）の新しい順。録音日が無いものは末尾に回し、
+ * created_at → id で安定させる（ページ境界での重複・欠落を防ぐ）。
+ * 未紐付けは 200 件を超えることがあるため、limit で切り捨てず fetchAllPaged で
+ * 全件取得する（上限で古い分が「出てこない」のを防ぐ）。
  */
 export async function getAvailableTranscriptsForInquiry(
-  schoolIds: string[],
-  limit: number = 200
+  schoolIds: string[]
 ): Promise<NottaTranscript[]> {
   if (schoolIds.length === 0) return [];
-  const { data, error } = await supabase
-    .from('notta_transcripts')
-    .select('*')
-    .in('school_id', schoolIds)
-    .is('linked_student_id', null)
-    .is('linked_inquiry_id', null)
-    .eq('is_archived', false)
-    .order('created_at', { ascending: false })
-    .limit(limit);
-  if (error) {
-    throw new Error(`文字起こしの取得に失敗しました: ${error.message}`);
-  }
-  return (data || []) as NottaTranscript[];
+  return fetchAllPaged<NottaTranscript>((from, to) =>
+    supabase
+      .from('notta_transcripts')
+      .select('*')
+      .in('school_id', schoolIds)
+      .is('linked_student_id', null)
+      .is('linked_inquiry_id', null)
+      .eq('is_archived', false)
+      .order('recorded_at', { ascending: false, nullsFirst: false })
+      .order('created_at', { ascending: false })
+      .order('id', { ascending: true })
+      .range(from, to)
+  );
 }
 
 /**

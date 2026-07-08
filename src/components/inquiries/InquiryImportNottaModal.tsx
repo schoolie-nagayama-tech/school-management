@@ -22,7 +22,11 @@ interface Props {
   isOpen: boolean;
   onClose: () => void;
   inquiryId: string;
-  schoolId: string;
+  /**
+   * 取込候補を探す教室ID群。問合せの1教室に限らず、ユーザーがアクセスできる
+   * 全教室を渡す（録音が別教室にタグ付けされていても拾えるようにするため）。
+   */
+  schoolIds: string[];
   onSuccess: () => void;
 }
 
@@ -37,7 +41,7 @@ export function InquiryImportNottaModal({
   isOpen,
   onClose,
   inquiryId,
-  schoolId,
+  schoolIds,
   onSuccess,
 }: Props) {
   const [transcripts, setTranscripts] = useState<NottaTranscript[]>([]);
@@ -56,7 +60,7 @@ export function InquiryImportNottaModal({
     (async () => {
       setIsLoading(true);
       try {
-        const data = await getAvailableTranscriptsForInquiry([schoolId]);
+        const data = await getAvailableTranscriptsForInquiry(schoolIds);
         setTranscripts(data);
       } catch (e) {
         setError(getUserErrorMessage(e, '文字起こしの取得に失敗しました'));
@@ -64,7 +68,8 @@ export function InquiryImportNottaModal({
         setIsLoading(false);
       }
     })();
-  }, [isOpen, schoolId]);
+    // schoolIds は親で useMemo 済みの安定参照を渡す前提（毎レンダー再取得を避ける）
+  }, [isOpen, schoolIds]);
 
   const filtered = useMemo(() => {
     if (!search) return transcripts;

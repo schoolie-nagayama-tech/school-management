@@ -13,7 +13,7 @@
  * 操作の成功/失敗は sonner トーストで通知する。
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { toast } from 'sonner';
@@ -113,7 +113,7 @@ export default function InquiryDetailPage() {
   const router = useRouter();
   const id = params.id as string;
 
-  const { profile } = useAuth();
+  const { profile, schoolIds } = useAuth();
 
   // ロールガード: 教室長以上（manager / owner / admin）。判定は roles.ts に一元化。
   const isAdmin = isManagerOrAbove(profile?.role);
@@ -122,6 +122,14 @@ export default function InquiryDetailPage() {
   const [contacts, setContacts] = useState<InquiryContact[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
+
+  // Notta 取込モーダルの検索対象教室。問合せの教室に限らずアクセス可能な全教室を
+  // 対象にする（録音が別教室にタグ付けされていても拾えるように）。安定参照にして
+  // モーダルの毎レンダー再取得を防ぐ。
+  const nottaSchoolIds = useMemo(
+    () => Array.from(new Set([inquiry?.school_id, ...schoolIds].filter(Boolean))) as string[],
+    [inquiry?.school_id, schoolIds]
+  );
 
   // ---- ステータス変更フォーム ----
   const [editStatus, setEditStatus] = useState<InquiryStatus>('in_progress');
@@ -1990,7 +1998,7 @@ export default function InquiryDetailPage() {
           isOpen={nottaImportOpen}
           onClose={() => setNottaImportOpen(false)}
           inquiryId={inquiry.id}
-          schoolId={inquiry.school_id}
+          schoolIds={nottaSchoolIds}
           onSuccess={() => {
             setNottaImportOpen(false);
             void reloadTranscripts();
