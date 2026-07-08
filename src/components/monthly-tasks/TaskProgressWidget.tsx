@@ -9,6 +9,7 @@ import {
   type CoursePrepWidgetTask,
 } from '@/lib/api/monthlyTasks';
 import { batchFetchCoursePrepApiMulti } from '@/lib/api/coursePrepApi';
+import { getEnabledSchoolIdsForWidget } from '@/lib/api/widgetSettings';
 import { loadSavedSeasonYear } from '@/lib/utils/coursePrepStorage';
 import { whenNetworkIdle } from '@/lib/utils/networkIdle';
 import type {
@@ -194,6 +195,9 @@ export function TaskProgressWidget({
   // --- Course progress state (per-school) ---
   const [perSchoolData, setPerSchoolData] = useState<PerSchoolCourseData[]>([]);
   const [cpLoading, setCpLoading] = useState(false);
+  // 講習進捗サマリーを非表示にした教室のID集合（設定/settings/dashboard-widgets）。
+  // 未取得の間は null（=全教室表示）としてちらつきを避ける。
+  const [courseWidgetEnabledIds, setCourseWidgetEnabledIds] = useState<Set<string> | null>(null);
   const [season] = useState<SeasonType>(() => loadSavedSeasonYear().season);
   const [year] = useState(() => loadSavedSeasonYear().year);
 
@@ -240,6 +244,24 @@ export function TaskProgressWidget({
     if (schoolId && schoolId !== 'all') return [schoolId];
     return [];
   }, [isMultiSchool, schoolsProp, schoolId]);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (targetSchoolIds.length === 0) {
+      setCourseWidgetEnabledIds(null);
+      return;
+    }
+    getEnabledSchoolIdsForWidget(targetSchoolIds, 'course_progress_summary')
+      .then((ids) => {
+        if (!cancelled) setCourseWidgetEnabledIds(ids);
+      })
+      .catch(() => {
+        if (!cancelled) setCourseWidgetEnabledIds(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [targetSchoolIds]);
 
   const schoolNameMap = useMemo(() => {
     const map: Record<string, string> = {};
@@ -452,10 +474,11 @@ export function TaskProgressWidget({
     };
   }, []);
 
-  const allSchoolMetrics = useMemo(
-    () => perSchoolData.map(computeSchoolMetrics).filter((m) => m.hasData),
-    [perSchoolData, computeSchoolMetrics]
-  );
+  const allSchoolMetrics = useMemo(() => {
+    const metrics = perSchoolData.map(computeSchoolMetrics).filter((m) => m.hasData);
+    if (!courseWidgetEnabledIds) return metrics;
+    return metrics.filter((m) => courseWidgetEnabledIds.has(m.schoolId));
+  }, [perSchoolData, computeSchoolMetrics, courseWidgetEnabledIds]);
 
   const hasCourseData = !cpLoading && allSchoolMetrics.length > 0;
   const seasonLabel = SEASON_LABELS[season];

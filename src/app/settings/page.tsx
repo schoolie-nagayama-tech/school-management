@@ -79,6 +79,13 @@ const settingsGroups: SettingsGroup[] = [
         description: '教室長ダッシュボードで使う入会・退会・在籍の月次実績/予算データの入力',
         requiresManager: true,
       },
+      {
+        href: '/settings/dashboard-widgets',
+        icon: <Wand2 className="w-5 h-5" />,
+        label: 'ダッシュボード表示設定',
+        description: '生徒管理ページ上部の講習進捗サマリーなど、ウィジェットの表示ON/OFF',
+        requiresManager: true,
+      },
     ],
   },
   {

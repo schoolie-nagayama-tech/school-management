@@ -160,6 +160,14 @@ export default function InquiryDetailPage() {
   const [editGuardianNameKana, setEditGuardianNameKana] = useState('');
   const [isSavingName, setIsSavingName] = useState(false);
 
+  // ---- 住所編集モーダル ----
+  const [addressEditOpen, setAddressEditOpen] = useState(false);
+  const [editPostalCode, setEditPostalCode] = useState('');
+  const [editAddressPref, setEditAddressPref] = useState('');
+  const [editAddressDetail, setEditAddressDetail] = useState('');
+  const [editAddressBuilding, setEditAddressBuilding] = useState('');
+  const [isSavingAddress, setIsSavingAddress] = useState(false);
+
   // ---- コンタクト追加フォーム ----
   const [contactMethod, setContactMethod] = useState<ManualContactMethod>('tel');
   const [contactDirection, setContactDirection] = useState<'outbound' | 'inbound'>('outbound');
@@ -705,6 +713,39 @@ export default function InquiryDetailPage() {
       setIsSavingName(false);
     }
   }, [inquiry, editStudentName, editStudentNameKana, editGuardianName, editGuardianNameKana]);
+
+  // ---- 住所編集 ----
+  // モーダルを開く際に現在値をフォームに流し込む。
+  const openAddressEdit = useCallback(() => {
+    if (!inquiry) return;
+    setEditPostalCode(inquiry.postal_code ?? '');
+    setEditAddressPref(inquiry.address_pref ?? '');
+    setEditAddressDetail(inquiry.address_detail ?? '');
+    setEditAddressBuilding(inquiry.address_building ?? '');
+    setAddressEditOpen(true);
+  }, [inquiry]);
+
+  // 郵便番号・都道府県・ご住所・建物名を保存する。空欄は null として保存する。
+  const handleSaveAddress = useCallback(async () => {
+    if (!inquiry) return;
+    setIsSavingAddress(true);
+    try {
+      const trimOrNull = (v: string) => (v.trim() === '' ? null : v.trim());
+      const updated = await updateInquiry(inquiry.id, {
+        postal_code: trimOrNull(editPostalCode),
+        address_pref: trimOrNull(editAddressPref),
+        address_detail: trimOrNull(editAddressDetail),
+        address_building: trimOrNull(editAddressBuilding),
+      });
+      setInquiry(updated);
+      toast.success('住所を更新しました');
+      setAddressEditOpen(false);
+    } catch (err) {
+      toast.error(getUserErrorMessage(err, '住所の更新に失敗しました'));
+    } finally {
+      setIsSavingAddress(false);
+    }
+  }, [inquiry, editPostalCode, editAddressPref, editAddressDetail, editAddressBuilding]);
 
   // ---- Notta文字起こしの紐付け ----
   // 紐付け済みの文字起こしを再取得する。
@@ -1472,7 +1513,17 @@ export default function InquiryDetailPage() {
 
                     {/* 住所（複数フィールドを連結して表示） */}
                     <div>
-                      <dt className="text-xs text-text-muted">住所</dt>
+                      <dt className="text-xs text-text-muted flex items-center justify-between gap-2">
+                        住所
+                        <button
+                          type="button"
+                          onClick={openAddressEdit}
+                          className="inline-flex items-center gap-1 text-text-muted hover:text-text-heading transition-colors duration-150"
+                        >
+                          <Pencil className="w-3 h-3" />
+                          編集
+                        </button>
+                      </dt>
                       <dd className="text-text-heading break-all">
                         {[
                           inquiry.postal_code ? `〒${inquiry.postal_code}` : null,
@@ -1804,6 +1855,72 @@ export default function InquiryDetailPage() {
               キャンセル
             </Button>
             <Button size="sm" isLoading={isSavingName} onClick={handleSaveName}>
+              保存
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* 住所編集モーダル（郵便番号・都道府県・ご住所・建物名を修正） */}
+      <Modal
+        isOpen={addressEditOpen}
+        onClose={() => setAddressEditOpen(false)}
+        title="住所の編集"
+        size="md"
+      >
+        <div className="space-y-4">
+          <p className="text-xs text-text-muted">
+            郵便番号・都道府県・ご住所・建物名を修正できます。空欄にすると未入力として保存されます。
+          </p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-medium text-text-heading mb-1">郵便番号</label>
+              <input
+                type="text"
+                value={editPostalCode}
+                onChange={(e) => setEditPostalCode(e.target.value)}
+                placeholder="例: 123-4567"
+                className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-text-heading mb-1">都道府県</label>
+              <input
+                type="text"
+                value={editAddressPref}
+                onChange={(e) => setEditAddressPref(e.target.value)}
+                placeholder="例: 東京都"
+                className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <label className="block text-xs font-medium text-text-heading mb-1">ご住所</label>
+              <input
+                type="text"
+                value={editAddressDetail}
+                onChange={(e) => setEditAddressDetail(e.target.value)}
+                placeholder="例: 千代田区丸の内1-1-1"
+                className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <label className="block text-xs font-medium text-text-heading mb-1">建物名</label>
+              <input
+                type="text"
+                value={editAddressBuilding}
+                onChange={(e) => setEditAddressBuilding(e.target.value)}
+                placeholder="例: 〇〇マンション101"
+                className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2 border-t border-border">
+            <Button variant="ghost" size="sm" onClick={() => setAddressEditOpen(false)}>
+              キャンセル
+            </Button>
+            <Button size="sm" isLoading={isSavingAddress} onClick={handleSaveAddress}>
               保存
             </Button>
           </div>
