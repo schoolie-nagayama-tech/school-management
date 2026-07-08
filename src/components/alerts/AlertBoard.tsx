@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef, type ComponentType } from 'react';
 import { AlertItem, SENSITIVE_ALERT_ICONS, MASKED_ALERT_LABEL_OVERRIDES } from './AlertItem';
 import {
   getAlertsLight,
@@ -25,10 +25,37 @@ import {
   TEACHER_HIDDEN_ALERT_TYPES,
   TEACHER_ONLY_ALERT_TYPES,
 } from '@/types/alerts';
-import type { AlertType } from '@/types/alerts';
+import type { AlertType, AlertSeverity } from '@/types/alerts';
 import { whenNetworkIdle } from '@/lib/utils/networkIdle';
+import {
+  groupAlertsBySeries,
+  groupByStudentThenSeries,
+  type StudentAlertGroup,
+  type StudentSeriesRow,
+} from '@/lib/alerts/grouping';
 
 import type { AlertInitialData } from '@/lib/api/alert-server';
+
+/** severity → 行頭ドットの色 */
+function severityDotClass(s: AlertSeverity): string {
+  return s === 'danger' ? 'bg-red-500' : s === 'warning' ? 'bg-orange-400' : 'bg-yellow-300';
+}
+
+/** severity → 行の枠線・背景（重いものほど濃く） */
+function severityRowClass(s: AlertSeverity): string {
+  return s === 'danger'
+    ? 'border-red-300 bg-red-50'
+    : s === 'warning'
+      ? 'border-orange-200 bg-orange-50/60'
+      : 'border-gray-200 bg-white';
+}
+
+/** 系列フィルターチップの共通クラス（通知フィードのチップと同じトーン） */
+function chipClass(active: boolean): string {
+  return `flex items-center gap-1 text-[11px] h-6 px-2 rounded transition-[color,background-color,transform] duration-150 ease-out active:scale-[0.97] whitespace-nowrap ${
+    active ? 'bg-[#1e3a5f] text-white font-medium' : 'text-gray-600 hover:bg-gray-100'
+  }`;
+}
 
 interface AlertBoardProps {
   className?: string;
@@ -66,6 +93,8 @@ export function AlertBoard({ className = '', initialData }: AlertBoardProps) {
   const [isLoading, setIsLoading] = useState(!initialData);
   const [isExpanded, setIsExpanded] = useState(true);
   const [showInfoPopup, setShowInfoPopup] = useState(false);
+  // 系列（alert_type）フィルター。'all' は全系列表示。
+  const [seriesFilter, setSeriesFilter] = useState<AlertType | 'all'>('all');
   /** Heavy アラート（成績・テスト）の取得状態 */
   const [heavyLoadState, setHeavyLoadState] = useState<'idle' | 'loading' | 'done' | 'error'>(
     'idle'
@@ -325,6 +354,59 @@ export function AlertBoard({ className = '', initialData }: AlertBoardProps) {
     return Array.from(map.entries()).sort((a, b) => b[1].count - a[1].count);
   }, [isMultiSchool, visibleStudentAlerts, schoolNameMap]);
 
+  // 系列（alert_type）ごとに再編したセクション。チップの並び順・件数と、
+  // 単一校表示時の本体描画に使う（severity の高い系列が先頭）。
+  const globalSections = useMemo(
+    () => groupAlertsBySeries(visibleStudentAlerts),
+    [visibleStudentAlerts]
+  );
+
+  // 選択中の系列フィルターが、再取得や対応済みで消えた場合は 'all' に戻す
+  useEffect(() => {
+    if (seriesFilter === 'all') return;
+    if (!globalSections.some((sec) => sec.alert_type === seriesFilter)) {
+      setSeriesFilter('all');
+    }
+  }, [globalSections, seriesFilter]);
+
+  // 講師画面ではネガティブ系のラベルを婉曲化しアイコンを併記する
+  const typeDisplay = useCallback(
+    (type: AlertType) => {
+      const sensitive = isTeacher && SENSITIVE_ALERT_TYPES.has(type);
+      const label = sensitive
+        ? MASKED_ALERT_LABEL_OVERRIDES[type] || ALERT_TYPE_LABELS[type]
+        : ALERT_TYPE_LABELS[type];
+      const Icon = sensitive ? (SENSITIVE_ALERT_ICONS[type] ?? null) : null;
+      return { label, Icon };
+    },
+    [isTeacher]
+  );
+
+  // 生徒（人）ごとのカード群を描画（単一校 / マルチ校の各教室内で共通利用）。
+  // 各カード内は同一系列を1行に集約。系列フィルターで行を絞り込む。
+  const renderStudentCards = (students: StudentAlerts[]) => {
+    const groups = groupByStudentThenSeries(students);
+    const visibleGroups = groups.filter((g) =>
+      g.rows.some((r) => seriesFilter === 'all' || r.alert_type === seriesFilter)
+    );
+    if (visibleGroups.length === 0) return null;
+    return (
+      <div className="space-y-1.5">
+        {visibleGroups.map((group) => (
+          <StudentAlertCardView
+            key={group.student_id}
+            group={group}
+            seriesFilter={seriesFilter}
+            masked={isTeacher}
+            canDismiss={canDismiss}
+            onDismiss={handleDismiss}
+            typeDisplay={typeDisplay}
+          />
+        ))}
+      </div>
+    );
+  };
+
   if (isLoading) {
     return (
       <div className={`bg-[#f8f8f8] rounded-xl border border-gray-200 p-4 ${className}`}>
@@ -457,12 +539,42 @@ export function AlertBoard({ className = '', initialData }: AlertBoardProps) {
         </div>
       )}
 
-      {/* アラート一覧 */}
+      {/* 系列フィルターチップ（通知フィードと同じ操作感で系列ごとに絞り込む） */}
+      {isExpanded && globalSections.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1 px-3 pt-3">
+          <button
+            onClick={() => setSeriesFilter('all')}
+            className={chipClass(seriesFilter === 'all')}
+          >
+            すべて
+            <ChipCount active={seriesFilter === 'all'} count={totalAlerts} />
+          </button>
+          {globalSections.map((sec) => {
+            const { label, Icon } = typeDisplay(sec.alert_type);
+            const active = seriesFilter === sec.alert_type;
+            return (
+              <button
+                key={sec.alert_type}
+                onClick={() => setSeriesFilter(active ? 'all' : sec.alert_type)}
+                className={chipClass(active)}
+              >
+                {Icon && <Icon className="w-3 h-3" />}
+                {label}
+                <ChipCount active={active} count={sec.studentCount} />
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {/* アラート一覧（生徒＝人ごとにカード。各カード内は同系列を1行に集約） */}
       {isExpanded && (
-        <div className="p-3 space-y-2 max-h-[640px] overflow-y-auto">
+        <div className="p-3 space-y-3 max-h-[640px] overflow-y-auto">
           {isMultiSchool && alertsBySchool
             ? alertsBySchool.map(([schoolId, group]) => {
                 const color = schoolColorMap[schoolId];
+                const body = renderStudentCards(group.alerts);
+                if (!body) return null; // フィルターでこの教室に該当が無ければ教室見出しごと省く
                 return (
                   <div key={schoolId}>
                     <div
@@ -473,73 +585,162 @@ export function AlertBoard({ className = '', initialData }: AlertBoardProps) {
                       </span>
                       <span className="text-[10px] text-gray-500">{group.count}件</span>
                     </div>
-                    <div className="space-y-1.5 mb-3">
-                      {group.alerts.map((studentAlert) => (
-                        <StudentAlertCard
-                          key={studentAlert.student_id}
-                          studentAlert={studentAlert}
-                          handleDismiss={handleDismiss}
-                          canDismiss={canDismiss}
-                          masked={isTeacher}
-                        />
-                      ))}
-                    </div>
+                    {body}
                   </div>
                 );
               })
-            : visibleStudentAlerts.map((studentAlert) => (
-                <StudentAlertCard
-                  key={studentAlert.student_id}
-                  studentAlert={studentAlert}
-                  handleDismiss={handleDismiss}
-                  canDismiss={canDismiss}
-                  masked={isTeacher}
-                />
-              ))}
+            : renderStudentCards(visibleStudentAlerts)}
         </div>
       )}
     </div>
   );
 }
 
-function StudentAlertCard({
-  studentAlert,
-  handleDismiss,
+/** チップの件数バッジ */
+function ChipCount({ active, count }: { active: boolean; count: number }) {
+  if (count <= 0) return null;
+  return (
+    <span
+      className={`min-w-[16px] h-4 flex items-center justify-center rounded-full text-[10px] font-bold leading-none px-1 ${
+        active ? 'bg-white/25 text-white' : 'bg-gray-200 text-gray-600'
+      }`}
+    >
+      {count}
+    </span>
+  );
+}
+
+/** 生徒（人）ごとのカード。見出し（氏名＋学年）＋系列行を並べる */
+function StudentAlertCardView({
+  group,
+  seriesFilter,
+  masked,
   canDismiss,
-  masked = false,
+  onDismiss,
+  typeDisplay,
 }: {
-  studentAlert: StudentAlerts;
-  handleDismiss: (alert: Alert) => void;
+  group: StudentAlertGroup;
+  seriesFilter: AlertType | 'all';
+  masked: boolean;
   canDismiss: boolean;
-  /** 講師画面：姓＋学年のみ表示、ネガティブ情報マスク */
-  masked?: boolean;
+  onDismiss: (alert: Alert) => void;
+  typeDisplay: (type: AlertType) => {
+    label: string;
+    Icon: ComponentType<{ className?: string }> | null;
+  };
 }) {
+  const rows = group.rows.filter((r) => seriesFilter === 'all' || r.alert_type === seriesFilter);
+  if (rows.length === 0) return null;
+
   // 講師画面では学年＋姓のみ（"田中 太郎" → "田中"）
   const displayName = masked
-    ? `${GRADE_LABELS[studentAlert.grade] || studentAlert.grade} ${studentAlert.student_name.split(/\s+/)[0]}`
-    : studentAlert.student_name;
+    ? `${GRADE_LABELS[group.grade] || group.grade} ${group.student_name.split(/\s+/)[0]}`
+    : group.student_name;
 
   return (
     <div className="rounded-lg border border-gray-200 overflow-hidden bg-white">
       <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 border-b border-gray-200">
-        <span className="font-semibold text-sm text-[#1a1a1a]">{displayName}</span>
+        {/* 生徒の最大 severity を色ドットで示す */}
+        <span
+          className={`h-2 w-2 shrink-0 rounded-full ${severityDotClass(group.severity)}`}
+          aria-hidden
+        />
+        <span
+          className={`text-sm text-[#1a1a1a] ${group.severity === 'danger' ? 'font-bold' : 'font-semibold'}`}
+        >
+          {displayName}
+        </span>
         {!masked && (
           <span className="text-xs text-gray-500">
-            ({GRADE_LABELS[studentAlert.grade] || studentAlert.grade})
+            ({GRADE_LABELS[group.grade] || group.grade})
           </span>
         )}
       </div>
       <div className="p-2 space-y-1">
-        {studentAlert.alerts.map((alert) => (
-          <AlertItem
-            key={alert.id}
-            alert={alert}
-            onDismiss={handleDismiss}
-            canDismiss={canDismiss}
+        {rows.map((row) => (
+          <StudentSeriesRowView
+            key={row.alert_type}
+            row={row}
             masked={masked}
+            canDismiss={canDismiss}
+            onDismiss={onDismiss}
+            typeDisplay={typeDisplay}
           />
         ))}
       </div>
+    </div>
+  );
+}
+
+/** 生徒カード内の1系列＝1行。1件はそのまま、複数件は系列ラベル＋件数で畳んで展開表示 */
+function StudentSeriesRowView({
+  row,
+  masked,
+  canDismiss,
+  onDismiss,
+  typeDisplay,
+}: {
+  row: StudentSeriesRow;
+  masked: boolean;
+  canDismiss: boolean;
+  onDismiss: (alert: Alert) => void;
+  typeDisplay: (type: AlertType) => {
+    label: string;
+    Icon: ComponentType<{ className?: string }> | null;
+  };
+}) {
+  const [expanded, setExpanded] = useState(false);
+
+  // 1件だけなら従来どおり系列ラベル付きの行として表示（AlertItem がラベル・マスク・対応済みを内包）
+  if (row.alerts.length === 1) {
+    return (
+      <AlertItem
+        alert={row.alerts[0]}
+        masked={masked}
+        canDismiss={canDismiss}
+        onDismiss={onDismiss}
+      />
+    );
+  }
+
+  // 複数件は「系列ラベル ＋ N件」に集約し、クリックで個別展開
+  const { label, Icon } = typeDisplay(row.alert_type);
+  return (
+    <div className={`rounded-lg border ${severityRowClass(row.severity)}`}>
+      <button
+        onClick={() => setExpanded((v) => !v)}
+        aria-expanded={expanded}
+        className="flex w-full items-center gap-2 rounded px-2 py-1.5 transition-colors duration-150 hover:bg-black/[0.03]"
+      >
+        <span
+          className={`shrink-0 inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium ${ALERT_TYPE_COLORS[row.alert_type]}`}
+        >
+          {Icon && <Icon className="w-3 h-3" />}
+          {label}
+        </span>
+        <span className="text-xs text-gray-600">{row.alerts.length}件</span>
+        {/* アイコンの差し替えではなく回転で開閉を示す（AppHeaderのナビドロップダウンと同じパターン） */}
+        <ChevronDown
+          className={`ml-auto h-3 w-3 shrink-0 text-gray-500 transition-transform duration-150 ease-out ${
+            expanded ? 'rotate-180' : ''
+          }`}
+          aria-hidden
+        />
+      </button>
+      {expanded && (
+        <div className="space-y-1 border-t border-gray-200/70 px-2 py-1.5">
+          {row.alerts.map((alert) => (
+            <AlertItem
+              key={alert.id}
+              alert={alert}
+              masked={masked}
+              canDismiss={canDismiss}
+              onDismiss={onDismiss}
+              hideLabel
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

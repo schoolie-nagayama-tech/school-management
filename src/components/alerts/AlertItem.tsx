@@ -42,6 +42,12 @@ interface AlertItemProps {
   canDismiss?: boolean;
   /** 講師画面：ネガティブ情報の具体メッセージを非表示にしアイコンを併記 */
   masked?: boolean;
+  /**
+   * 種類ラベル・枠線を省いてメッセージ＋対応済みだけを出す軽量表示。
+   * 系列（alert_type）ごとのセクション内で使うと、行頭のラベルが重複しないため
+   * すっきり見せられる。severity の色はセクション/行側で表現する。
+   */
+  hideLabel?: boolean;
 }
 
 /** 期日ベースの緊急度スタイルを返す */
@@ -88,6 +94,7 @@ export function AlertItem({
   onDismiss,
   canDismiss = false,
   masked = false,
+  hideLabel = false,
 }: AlertItemProps) {
   const urgencyStyle = getAlertUrgencyStyle(alert);
   const editHref = getEditHref(alert);
@@ -117,6 +124,28 @@ export function AlertItem({
   const displayLabel =
     (isSensitive && MASKED_ALERT_LABEL_OVERRIDES[alert.alert_type]) ||
     ALERT_TYPE_LABELS[alert.alert_type];
+
+  // 系列セクション内での軽量表示：ラベル・枠線を省き、メッセージ＋対応済みだけ出す
+  if (hideLabel) {
+    return (
+      <div className="flex items-center justify-between gap-2 min-w-0">
+        <div className="flex min-w-0 flex-1 items-center gap-1.5">
+          {isSensitive && Icon && <Icon className="w-3 h-3 shrink-0 text-gray-500" />}
+          {messageNode ?? <span className="text-xs text-gray-400">—</span>}
+        </div>
+        {canDismiss && onDismiss && DISMISSABLE_ALERT_TYPES.has(alert.alert_type) && (
+          <Button
+            onClick={() => onDismiss(alert)}
+            variant="primary"
+            size="sm"
+            className="shrink-0 text-xs px-2 py-1"
+          >
+            対応済み
+          </Button>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div
