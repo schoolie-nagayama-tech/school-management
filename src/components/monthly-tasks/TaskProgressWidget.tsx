@@ -641,8 +641,7 @@ export function TaskProgressWidget({
 
   // 「すべての教室」表示かつ複数教室分のサマリーがある場合は、教室別の進捗率＋未完了業務を出す。
   // 単一教室ではどの教室か自明なので従来のフラットなタスクチップ表示のままにする。
-  const showPerSchool =
-    isMultiSchool && !!data.schoolSummaries && data.schoolSummaries.length > 1;
+  const showPerSchool = isMultiSchool && !!data.schoolSummaries && data.schoolSummaries.length > 1;
 
   const flatTaskSection = (
     <div className="px-4 py-2.5 flex flex-wrap gap-1.5 border-t border-border-subtle">
@@ -753,13 +752,7 @@ export function TaskProgressWidget({
 }
 
 /** 教室別ビューの1タスク用チェックボックス（その教室だけ完了にする） */
-function SchoolTaskCheckbox({
-  overdue,
-  onComplete,
-}: {
-  overdue: boolean;
-  onComplete: () => void;
-}) {
+function SchoolTaskCheckbox({ overdue, onComplete }: { overdue: boolean; onComplete: () => void }) {
   const [completing, setCompleting] = useState(false);
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();

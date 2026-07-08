@@ -2,7 +2,15 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { AdminLayout } from '@/components/layouts';
-import { Button, Card, CardHeader, CardTitle, CardContent, ToastContainer, Loading } from '@/components/ui';
+import {
+  Button,
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+  ToastContainer,
+  Loading,
+} from '@/components/ui';
 import Link from 'next/link';
 import { useToast } from '@/hooks/useToast';
 import { useRequirePermission } from '@/hooks/usePermissions';

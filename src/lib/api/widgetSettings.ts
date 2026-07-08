@@ -64,9 +64,7 @@ export async function getEnabledSchoolIdsForWidget(
   }
 
   const disabled = new Set(
-    ((data ?? []) as WidgetSettingRow[])
-      .filter((row) => !row.enabled)
-      .map((row) => row.school_id)
+    ((data ?? []) as WidgetSettingRow[]).filter((row) => !row.enabled).map((row) => row.school_id)
   );
   return new Set(schoolIds.filter((id) => !disabled.has(id)));
 }

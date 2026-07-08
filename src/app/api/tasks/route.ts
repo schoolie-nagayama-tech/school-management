@@ -143,7 +143,12 @@ export async function GET(request: NextRequest) {
         };
         const schoolSummaryMap = new Map<string, SchoolTaskSummary>();
         for (const sid of sids) {
-          schoolSummaryMap.set(sid, { schoolId: sid, total: 0, incomplete: 0, incompleteTasks: [] });
+          schoolSummaryMap.set(sid, {
+            schoolId: sid,
+            total: 0,
+            incomplete: 0,
+            incompleteTasks: [],
+          });
         }
 
         if (allTasks.length > 0) {
