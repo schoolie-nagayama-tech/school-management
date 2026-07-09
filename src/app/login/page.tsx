@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { signInWithEmail, signInWithGoogle } from '@/lib/api/auth';
-import { Eye, EyeOff } from 'lucide-react';
+import { getLoginLinks, type LoginLink } from '@/lib/api/login-links';
+import { Eye, EyeOff, ExternalLink } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -18,6 +19,20 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   // エラーではない情報通知（無操作ログアウト等）。赤字で警告しないよう error と分ける。
   const [notice, setNotice] = useState('');
+  // ログインせずにアクセスできる業務用サイトへのリンク（設定＞ログイン画面のリンクで管理）
+  const [loginLinks, setLoginLinks] = useState<LoginLink[]>([]);
+
+  // ログインリンクを未認証で取得（失敗しても画面は壊さない）
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const links = await getLoginLinks();
+      if (!cancelled) setLoginLinks(links);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // URLパラメータからエラー・通知を取得
   useEffect(() => {
@@ -230,6 +245,25 @@ export default function LoginPage() {
             パスワードをお忘れですか？
           </Link>
         </div>
+
+        {/* 業務用サイトへのリンク（設定で管理・ログイン不要でアクセス可）。
+            パスワードリセットと同程度の控えめな見た目にする。 */}
+        {loginLinks.length > 0 && (
+          <div className="mt-3 flex flex-wrap items-center justify-center gap-x-3 gap-y-1.5">
+            {loginLinks.map((link) => (
+              <a
+                key={link.id}
+                href={link.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-xs text-text-muted hover:text-primary transition-colors"
+              >
+                {link.label}
+                <ExternalLink className="w-3 h-3 opacity-60" />
+              </a>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

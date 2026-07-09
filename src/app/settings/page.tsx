@@ -24,6 +24,7 @@ import {
   MessageSquare,
   Wand2,
   BarChart3,
+  LogIn,
 } from 'lucide-react';
 
 interface SettingsItem {
@@ -70,6 +71,13 @@ const settingsGroups: SettingsGroup[] = [
         icon: <LinkIcon className="w-5 h-5" />,
         label: 'クイックリンク',
         description: '生徒管理ページ上部に表示する外部ツール（Grow・らくプリ等）へのリンク',
+        requiresManager: true,
+      },
+      {
+        href: '/settings/login-links',
+        icon: <LogIn className="w-5 h-5" />,
+        label: 'ログイン画面のリンク',
+        description: 'ログイン画面に表示する、ログイン不要でアクセスできる業務用サイトへのリンク',
         requiresManager: true,
       },
       {

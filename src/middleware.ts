@@ -31,6 +31,8 @@ const PUBLIC_RATE_LIMITS: Array<{
   { path: '/api/invite/', limit: 30, windowSeconds: 60 },
   // 配信停止（メール内リンク）— 1IPあたり 30リクエスト/分（トークン総当たり対策）
   { path: '/api/inquiries/unsubscribe', limit: 30, windowSeconds: 60 },
+  // ログイン画面のリンク取得（未認証GET）— 1IPあたり 60リクエスト/分
+  { path: '/api/login-links', limit: 60, windowSeconds: 60 },
 ];
 
 function getClientIp(request: NextRequest): string {
@@ -228,6 +230,8 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/api/inquiry-form') ||
     pathname.startsWith('/api/booking/') ||
     pathname.startsWith('/login') ||
+    // ログイン画面のリンク取得（ログイン前に叩く公開GET）
+    pathname.startsWith('/api/login-links') ||
     pathname.startsWith('/forgot-password') ||
     pathname.startsWith('/auth/') ||
     pathname.startsWith('/invite/') ||
