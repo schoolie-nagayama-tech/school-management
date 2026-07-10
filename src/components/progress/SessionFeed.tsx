@@ -22,7 +22,9 @@ import {
   ChevronUp,
   Circle,
   CircleCheck,
+  Clock,
   GraduationCap,
+  NotebookPen,
   Pencil,
   RefreshCw,
   Search,
@@ -33,7 +35,7 @@ import { Loading } from '@/components/ui';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   getSessionFeed,
-  getSmartAlerts,
+  getHomeworkTardyAlerts,
   confirmProgressSession,
   unconfirmProgressSession,
   updateProgressSession,
@@ -109,13 +111,13 @@ export default function SessionFeed({ schoolIds: propSchoolIds }: Props) {
   // カードがトレイに着地した回数（トレイの受け止めバウンド + カウント即時反映のトリガー）
   const [trayCatchSignal, setTrayCatchSignal] = useState(0);
 
-  // ── スマートアラート取得（タブ・フィルタと独立、schoolIds 変更時のみ再取得） ──
+  // ── 注意事項（宿題未提出・遅刻）取得（タブ・フィルタと独立、schoolIds 変更時のみ再取得） ──
   useEffect(() => {
     if (schoolIds.length === 0) {
       setSmartAlerts([]);
       return;
     }
-    getSmartAlerts(schoolIds).then(setSmartAlerts).catch(console.error);
+    getHomeworkTardyAlerts(schoolIds).then(setSmartAlerts).catch(console.error);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [schoolIdsKey]);
 
@@ -175,7 +177,7 @@ export default function SessionFeed({ schoolIds: propSchoolIds }: Props) {
   // ── 全データ更新（更新ボタン用） ──
   const refreshAll = useCallback(() => {
     if (schoolIds.length === 0) return;
-    getSmartAlerts(schoolIds).then(setSmartAlerts).catch(console.error);
+    getHomeworkTardyAlerts(schoolIds).then(setSmartAlerts).catch(console.error);
     loadSessions();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [schoolIdsKey, loadSessions]);
@@ -1073,6 +1075,16 @@ function TrayCard({ session }: { session: ProgressSessionWithDetails }) {
 // ─── スマートアラートボード ───
 
 const ALERT_CONFIG: Record<SmartAlert['type'], { icon: React.ReactNode; label: string }> = {
+  // 現用（宿題未提出・遅刻）
+  homework_not_done: {
+    icon: <NotebookPen className="w-4 h-4" />,
+    label: '宿題未提出',
+  },
+  tardy: {
+    icon: <Clock className="w-4 h-4" />,
+    label: '遅刻',
+  },
+  // ペンディング中のスマートアラート（現在は板に出さないが、型の網羅性のため定義は残す）
   school_catching_up: {
     icon: <GraduationCap className="w-4 h-4" />,
     label: '学校に追い抜かれている',
@@ -1134,10 +1146,13 @@ function SmartAlertItem({ alert }: { alert: SmartAlert }) {
   const config = ALERT_CONFIG[alert.type];
   const isUrgent = alert.severity === 'urgent';
 
-  // 該当教材・単元まで一意に絞れる場合は直接ジャンプできるようクエリを付与する
+  // 該当教材・単元まで一意に絞れる場合は直接ジャンプできるようクエリを付与する。
+  // 宿題・遅刻は単元までは絞れないが、教材（tb）までは飛べるようにする。
   const href = alert.curriculumItemId
     ? `/students/${alert.studentId}/progress?tb=${alert.studentTextbookId}&item=${alert.curriculumItemId}`
-    : `/students/${alert.studentId}/progress`;
+    : alert.studentTextbookId
+      ? `/students/${alert.studentId}/progress?tb=${alert.studentTextbookId}`
+      : `/students/${alert.studentId}/progress`;
 
   return (
     <Link href={href} className="block">

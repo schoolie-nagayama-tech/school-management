@@ -717,7 +717,9 @@ export async function getAlertSessionFeed(
 // ============================================
 
 export interface SmartAlert {
-  type: 'school_catching_up' | 'no_exam_goal' | 'exam_soon';
+  // homework_not_done / tardy は進行表確認の「注意事項」板で現用の種類。
+  // school_catching_up / no_exam_goal / exam_soon は精度不足のためペンディング（getSmartAlerts参照）。
+  type: 'homework_not_done' | 'tardy' | 'school_catching_up' | 'no_exam_goal' | 'exam_soon';
   severity: 'urgent' | 'warning';
   studentName: string;
   studentId: string;
@@ -731,10 +733,59 @@ export interface SmartAlert {
 }
 
 /**
- * 教室単位のスマートアラートを取得
+ * 進行表確認「注意事項」板のアラートを取得（現用）。
+ *
+ * 宿題未提出・遅刻フラグの付いた直近セッションを、板に出すアラートへ変換する。
+ * 講師が入力したフラグ由来で確実に動く指標のみを扱う（学校追い抜き等のスマート
+ * アラートは精度不足のためペンディング。getSmartAlerts 参照）。
+ * 1セッションに両方のフラグが付いていれば宿題・遅刻の2件に分けて出す。
+ */
+export async function getHomeworkTardyAlerts(
+  schoolIds: string[],
+  limit = 30
+): Promise<SmartAlert[]> {
+  if (schoolIds.length === 0) return [];
+
+  // 「要注意」タブと同じソース（homework_not_done or tardy の付いた直近セッション）。
+  const sessions = await getAlertSessionFeed(schoolIds, limit);
+  const alerts: SmartAlert[] = [];
+
+  for (const s of sessions) {
+    const st = s.student_textbook;
+    if (!st?.student) continue;
+    const base = {
+      studentName: `${st.student.last_name} ${st.student.first_name}`,
+      studentId: st.student.id,
+      textbookName: st.textbook?.name ?? '',
+      studentTextbookId: s.student_textbook_id,
+      // 緊急ではなく警告扱い（緊急判定はペンディングのため赤バッジは出さない）
+      severity: 'warning' as const,
+    };
+    const dateLabel = s.session_date ? s.session_date.replace(/-/g, '/') : '';
+    if (s.homework_not_done) {
+      alerts.push({
+        ...base,
+        type: 'homework_not_done',
+        detail: `${dateLabel} の授業で宿題未提出`,
+      });
+    }
+    if (s.tardy) {
+      alerts.push({ ...base, type: 'tardy', detail: `${dateLabel} の授業で遅刻` });
+    }
+  }
+
+  return alerts;
+}
+
+/**
+ * 【ペンディング】教室単位のスマートアラートを取得
  * - 学校に追い抜かれている（school_progress_date が今日以前なのに未指導）
  * - 近い試験に目標が未設定
  * - 14日以内に試験がある
+ *
+ * 「緊急（学校追い抜き等）」の検知精度が不足しており誤検知が多いため、進行表確認の
+ * 注意事項板からは一旦外している（現在は getHomeworkTardyAlerts を使用）。
+ * ロジックは将来の再有効化に備えて温存する。呼び出しを復活させれば元に戻せる。
  */
 export async function getSmartAlerts(schoolIds: string[]): Promise<SmartAlert[]> {
   if (schoolIds.length === 0) return [];
