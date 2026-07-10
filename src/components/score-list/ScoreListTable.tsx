@@ -188,6 +188,49 @@ function StudentGroup({
 }) {
   const rowCount = student.rows.length;
 
+  // 該当するテスト行が無い生徒（未入力・絞り込みで該当なし）。「誰が入れていないか」を
+  // 一覧で把握できるよう、学校・学年・氏名は出しつつ「未実施」の1行だけ描画する。
+  if (rowCount === 0) {
+    return (
+      <tr className="border-b-2 border-b-border-strong hover:bg-info/5 transition-colors duration-150">
+        <td className="border border-border px-2 py-1 text-[11px] text-text-body bg-surface-raised align-top">
+          <div className="leading-tight break-words" title={student.schoolName ?? undefined}>
+            {student.schoolName || <span className="text-text-faint">—</span>}
+          </div>
+          {classroomName && (
+            <div className="text-[10px] text-text-faint mt-0.5 break-words" title={classroomName}>
+              {classroomName}
+            </div>
+          )}
+        </td>
+        <td className="border border-border px-2 py-1 text-center text-xs font-medium text-text-muted bg-surface-raised">
+          {getGradeLabel(student.grade)}
+        </td>
+        <td className="border border-border px-2 py-1 bg-surface-raised">
+          <Link
+            href={`/students/${student.studentId}/scores`}
+            className="text-xs font-medium text-ink hover:text-info hover:underline whitespace-nowrap transition-colors duration-150"
+          >
+            {student.lastName} {student.firstName}
+          </Link>
+        </td>
+        <td className="border border-border px-2 py-1 text-center text-xs text-text-faint italic whitespace-nowrap">
+          未実施
+        </td>
+        {columns.map((col) => (
+          <td
+            key={col.key}
+            className={`border border-border px-2 py-1 text-center text-xs text-text-faint ${
+              col.type === 'sum' || col.type === 'special' ? 'bg-surface' : ''
+            }`}
+          >
+            —
+          </td>
+        ))}
+      </tr>
+    );
+  }
+
   return (
     <>
       {student.rows.map((row, rowIdx) => (

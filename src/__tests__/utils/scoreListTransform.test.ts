@@ -132,7 +132,7 @@ describe('transformToScoreList - 定期テスト(regular_test)', () => {
     expect(result[0].rows[0].fiveSum).toBeNull();
   });
 
-  it('assessment が無い生徒は結果に含めない', () => {
+  it('assessment が無い生徒も rows: [] で結果に含める（未入力を一覧で把握できるように）', () => {
     const s1 = makeStudent({ id: 's1', grade: 8 });
     const s2 = makeStudent({ id: 's2', grade: 8 });
     const result = transformToScoreList(
@@ -152,8 +152,10 @@ describe('transformToScoreList - 定期テスト(regular_test)', () => {
       ]),
       'regular_test'
     );
-    // s2 は assessments が無いので除外される
-    expect(result.map((r) => r.studentId)).toEqual(['s1']);
+    // s2 は assessments が無くても除外されず、rows: [] で残る
+    expect(result.map((r) => r.studentId)).toEqual(['s1', 's2']);
+    const s2Result = result.find((r) => r.studentId === 's2');
+    expect(s2Result?.rows).toEqual([]);
   });
 });
 

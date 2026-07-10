@@ -131,8 +131,10 @@ export function transformToScoreList(
   const result: ScoreListStudent[] = [];
 
   for (const student of students) {
-    const assessments = assessmentsByStudent.get(student.id);
-    if (!assessments || assessments.length === 0) continue;
+    // assessments が無い生徒（未入力）・絞り込みで該当が無い生徒も rows: [] として結果に含める。
+    // 「誰がテストの点数を入れていないか」を一覧で把握できるようにするため、
+    // ここでスキップせず全生徒を対象にする（表示側は StudentGroup が rows.length===0 を「未実施」行にする）。
+    const assessments = assessmentsByStudent.get(student.id) ?? [];
 
     // 時系列順にソート（古い順 → 新しい順）
     const sorted = [...assessments].sort((a, b) =>
