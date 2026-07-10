@@ -8,6 +8,7 @@ import { getStudents } from './students';
 import { getStudentTextbooksExamsBySchool } from './progress';
 import { getAlertSettingsBySchools, pickStrictestThreshold } from './alertSettings';
 import { fetchAllInChunks, fetchAllPaged } from '@/lib/utils/supabasePaging';
+import { compareByRoster } from '@/lib/alerts/grouping';
 import type {
   Alert,
   AlertDismissal,
@@ -1238,10 +1239,24 @@ export function invalidateAlertCache(schoolIds: string[]): void {
 /**
  * dismiss でフィルタし、生徒ごとにグループ化・ソート（同一 id は重複除去）
  */
+/** 名簿順ソート用に生徒の氏名かな・学籍番号を引くための最小情報 */
+type RosterInfo = {
+  id: string;
+  last_name_kana?: string | null;
+  first_name_kana?: string | null;
+  student_code?: string | null;
+};
+
 export function applyDismissAndSort(
   candidates: Alert[],
-  dismissedSet: Set<string>
+  dismissedSet: Set<string>,
+  // 生徒管理ページと同じ名簿順（学年→氏名かな）で並べるための生徒一覧。
+  // 省略時は氏名の localeCompare にフォールバックする（かな不明時の保険）。
+  students?: ReadonlyArray<RosterInfo>
 ): StudentAlerts[] {
+  const rosterById = new Map<string, RosterInfo>();
+  for (const s of students ?? []) rosterById.set(s.id, s);
+
   const filtered = candidates.filter((a) => !dismissedSet.has(a.id));
   const studentAlertsMap = new Map<string, StudentAlerts>();
   const seenAlertIds = new Set<string>();
@@ -1251,21 +1266,22 @@ export function applyDismissAndSort(
     seenAlertIds.add(alert.id);
 
     if (!studentAlertsMap.has(alert.student_id)) {
+      const roster = rosterById.get(alert.student_id);
       studentAlertsMap.set(alert.student_id, {
         student_id: alert.student_id,
         student_name: alert.student_name,
         grade: alert.grade,
         school_id: alert.school_id,
+        last_name_kana: roster?.last_name_kana,
+        first_name_kana: roster?.first_name_kana,
+        student_code: roster?.student_code,
         alerts: [],
       });
     }
     studentAlertsMap.get(alert.student_id)!.alerts.push(alert);
   }
 
-  return Array.from(studentAlertsMap.values()).sort((a, b) => {
-    if (a.grade !== b.grade) return a.grade - b.grade;
-    return a.student_name.localeCompare(b.student_name, 'ja');
-  });
+  return Array.from(studentAlertsMap.values()).sort(compareByRoster);
 }
 
 // ============================================
@@ -1604,7 +1620,7 @@ export async function getAlertsLight(
     dismissals.map((d) => `${d.student_id}:${d.alert_type}:${d.alert_key}`)
   );
   const candidates = buildAlertCandidatesLight(sources);
-  const result = applyDismissAndSort(candidates, dismissedSet);
+  const result = applyDismissAndSort(candidates, dismissedSet, sources.students);
 
   // サーバー実行時はキャッシュに書き込まない（ユーザー間データ混在を防ぐ）
   if (!isServerExecution) {
@@ -1635,7 +1651,7 @@ export async function getAlertsHeavy(
     dismissals.map((d) => `${d.student_id}:${d.alert_type}:${d.alert_key}`)
   );
   const candidates = buildAlertCandidatesHeavy(sources);
-  const result = applyDismissAndSort(candidates, dismissedSet);
+  const result = applyDismissAndSort(candidates, dismissedSet, sources.students);
   setCached(cacheHeavy, key, result);
   return result;
 }
@@ -1659,10 +1675,8 @@ export function mergeStudentAlerts(a: StudentAlerts[], b: StudentAlerts[]): Stud
       map.set(sa.student_id, { ...sa, alerts: [...sa.alerts] });
     }
   }
-  return Array.from(map.values()).sort((x, y) => {
-    if (x.grade !== y.grade) return x.grade - y.grade;
-    return x.student_name.localeCompare(y.student_name, 'ja');
-  });
+  // 名簿順（学年→氏名かな）で並べる。kana は StudentAlerts のスプレッドで引き継がれている。
+  return Array.from(map.values()).sort(compareByRoster);
 }
 
 /**
@@ -1678,5 +1692,5 @@ export async function getAlerts(schoolIds: string[]): Promise<StudentAlerts[]> {
     dismissals.map((d) => `${d.student_id}:${d.alert_type}:${d.alert_key}`)
   );
   const candidates = buildAlertCandidates(sources);
-  return applyDismissAndSort(candidates, dismissedSet);
+  return applyDismissAndSort(candidates, dismissedSet, sources.students);
 }

@@ -49,6 +49,11 @@ export interface Alert {
   student_name: string;
   grade: number;
   school_id?: string;
+  // 名簿順（生徒管理ページと同じ並び）でソートするための識別情報。
+  // 名簿は氏名かなの五十音順で並ぶため、アラート側にもかなを持たせて突き合わせられるようにする。
+  last_name_kana?: string | null;
+  first_name_kana?: string | null;
+  student_code?: string | null;
   alert_type: AlertType;
   alert_key: string;
   message: string; // 表示メッセージ（例: "英語 -12点"）
@@ -96,6 +101,10 @@ export interface StudentAlerts {
   student_name: string;
   grade: number;
   school_id?: string;
+  // 名簿順ソート用（氏名かな・学籍番号）。生徒管理ページの名簿と同じ並びにするために持つ。
+  last_name_kana?: string | null;
+  first_name_kana?: string | null;
+  student_code?: string | null;
   alerts: Alert[];
 }
 

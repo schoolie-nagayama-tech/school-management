@@ -26,8 +26,23 @@ function makeAlert(
 }
 
 /** 1生徒＝1 StudentAlerts に畳む */
-function student(id: string, name: string, grade: number, alerts: Alert[]): StudentAlerts {
-  return { student_id: id, student_name: name, grade, school_id: alerts[0]?.school_id, alerts };
+function student(
+  id: string,
+  name: string,
+  grade: number,
+  alerts: Alert[],
+  kana?: { last_name_kana?: string; first_name_kana?: string; student_code?: string }
+): StudentAlerts {
+  return {
+    student_id: id,
+    student_name: name,
+    grade,
+    school_id: alerts[0]?.school_id,
+    last_name_kana: kana?.last_name_kana,
+    first_name_kana: kana?.first_name_kana,
+    student_code: kana?.student_code,
+    alerts,
+  };
 }
 
 describe('resolveSeverity', () => {
@@ -174,18 +189,40 @@ describe('groupByStudentThenSeries', () => {
     expect(scoreRow?.alerts).toHaveLength(2);
   });
 
-  it('生徒は severity の高い順に並ぶ', () => {
+  it('生徒は名簿順（学年→氏名かな）に並ぶ。severity は並び順に影響しない', () => {
     const students = [
-      student('s1', '青木', 8, [
-        makeAlert({ alert_type: 'interview_recent', student_id: 's1', severity: 'info' }),
-      ]),
-      student('s2', '井上', 8, [
-        makeAlert({ alert_type: 'homework_not_done', student_id: 's2', severity: 'danger' }),
-      ]),
+      // severity は s2(danger) の方が高いが、名簿順では かな「あおき」<「いのうえ」で s1 が先頭
+      student(
+        's1',
+        '青木',
+        8,
+        [makeAlert({ alert_type: 'interview_recent', student_id: 's1', severity: 'info' })],
+        { last_name_kana: 'あおき', first_name_kana: 'たろう' }
+      ),
+      student(
+        's2',
+        '井上',
+        8,
+        [makeAlert({ alert_type: 'homework_not_done', student_id: 's2', severity: 'danger' })],
+        { last_name_kana: 'いのうえ', first_name_kana: 'はなこ' }
+      ),
     ];
     const groups = groupByStudentThenSeries(students);
-    expect(groups[0].student_id).toBe('s2'); // danger の生徒が先頭
-    expect(groups[0].severity).toBe('danger');
+    expect(groups.map((g) => g.student_id)).toEqual(['s1', 's2']); // 件数/severity でなく名簿順
+  });
+
+  it('学年が違えば学年の小さい方が先（名簿順）', () => {
+    const students = [
+      student('s2', '安藤', 9, [makeAlert({ alert_type: 'homework_not_done', student_id: 's2' })], {
+        last_name_kana: 'あんどう',
+      }),
+      student('s1', '渡辺', 7, [makeAlert({ alert_type: 'homework_not_done', student_id: 's1' })], {
+        last_name_kana: 'わたなべ',
+      }),
+    ];
+    const groups = groupByStudentThenSeries(students);
+    // 学年 7 の渡辺が、かなでは後ろでも学年が小さいので先頭
+    expect(groups.map((g) => g.student_id)).toEqual(['s1', 's2']);
   });
 
   it('生徒内の系列行は severity の高い順に並ぶ', () => {
