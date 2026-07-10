@@ -316,6 +316,16 @@ export function StudentsPageClient({
     void reloadScoresStudents();
   }, [selectedSchoolId, activeTab, debouncedSearch, reloadScoresStudents]);
 
+  // 成績タブ（内申/テスト/模試集計）は小学生が対象外。名簿タブで小学生の学年を選んだ状態から
+  // 成績タブへ切り替えると、学年セレクトに存在しない値が selectedGrade に残り空欄に見えるため、
+  // 成績タブに入るタイミングで小学生の学年選択なら全学年にリセットする。
+  useEffect(() => {
+    if (activeTab === 'roster') return;
+    if (typeof selectedGrade === 'number' && selectedGrade < 7) {
+      setSelectedGrade('all');
+    }
+  }, [activeTab, selectedGrade]);
+
   // 権限不足でリダイレクトされてきた場合（?denied=1）、無言で戻すのではなくトーストで理由を伝える
   useEffect(() => {
     if (searchParams.get('denied') !== '1') return;
@@ -352,6 +362,9 @@ export function StudentsPageClient({
   // 成績タブ用（クライアント側で在籍・学年フィルタ）
   const filteredStudents = useMemo(() => {
     let filtered = studentsForScores;
+
+    // テスト点数集計・内申集計・模試結果集計は中学生以上のみが対象（小学生は定期テスト・内申・模試を実施しないため）
+    filtered = filtered.filter((student) => student.grade >= 7);
 
     if (!showInactive) {
       filtered = filtered.filter((student) => student.status === 'active');
@@ -792,7 +805,8 @@ export function StudentsPageClient({
               className="px-4 py-2 border border-border-strong rounded-lg text-sm bg-surface-raised text-text-heading focus:ring-2 focus:ring-ink/30 focus:border-ink"
             >
               <option value="all">全学年</option>
-              {Array.from({ length: 13 }, (_, i) => i + 1).map((grade) => (
+              {/* テスト集計は小学生を対象外にするため、選択肢も中学生以上（7〜13）のみにする */}
+              {Array.from({ length: 7 }, (_, i) => i + 7).map((grade) => (
                 <option key={grade} value={grade}>
                   {GRADE_LABELS[grade] || `学年${grade}`}
                 </option>
