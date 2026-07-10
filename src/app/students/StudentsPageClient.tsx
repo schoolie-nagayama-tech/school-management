@@ -14,6 +14,7 @@ import {
   Mic,
   Search,
   ClipboardPaste,
+  FileSpreadsheet,
 } from 'lucide-react';
 import { ContextHelp } from '@/components/help/ContextHelp';
 import {
@@ -864,7 +865,7 @@ export function StudentsPageClient({
                           grade: selectedGrade,
                         });
                         if (inactiveCount === 0) {
-                          success('現在、休会・退会の生徒はいません');
+                          success('現在、退会の生徒はいません');
                         }
                       }
                     })();
@@ -886,7 +887,7 @@ export function StudentsPageClient({
                   ) : (
                     <>
                       <EyeOff className="w-4 h-4" />
-                      休会・退会を表示
+                      退会を表示
                     </>
                   )}
                 </button>
@@ -896,18 +897,24 @@ export function StudentsPageClient({
             {/* CSV / 新規登録ボタン（講師には非表示） */}
             {!isTeacher && (
               <div className="flex flex-wrap items-center gap-2">
-                {/* CSVエクスポート ドロップダウン */}
+                {/* CSV エクスポート／インポート（普段は使わないためアイコン1つに集約） */}
                 <div className="relative" ref={exportMenuRef}>
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => setExportMenuOpen((prev) => !prev)}
                     disabled={isExporting}
+                    title="CSV エクスポート・インポート"
+                    aria-label="CSV エクスポート・インポート"
                   >
-                    {isExporting ? 'エクスポート中...' : 'CSVエクスポート ▾'}
+                    <FileSpreadsheet className="w-4 h-4" />
                   </Button>
                   {exportMenuOpen && (
-                    <div className="absolute right-0 top-full mt-1 bg-surface-raised rounded-lg shadow-lg border border-border z-50 min-w-[140px] overflow-hidden origin-top-right animate-[popover-enter_150ms_cubic-bezier(0.23,1,0.32,1)]">
+                    <div className="absolute right-0 top-full mt-1 bg-surface-raised rounded-lg shadow-lg border border-border z-50 min-w-[160px] overflow-hidden origin-top-right animate-[popover-enter_150ms_cubic-bezier(0.23,1,0.32,1)]">
+                      {/* エクスポート */}
+                      <div className="px-4 pt-2 pb-1 text-[11px] font-semibold text-text-muted uppercase tracking-wider">
+                        エクスポート
+                      </div>
                       {[
                         { label: '生徒一覧', onClick: handleExportStudents },
                         { label: '成績', onClick: handleExportAssessments },
@@ -915,18 +922,32 @@ export function StudentsPageClient({
                       ].map((item) => (
                         <button
                           key={item.label}
-                          onClick={item.onClick}
+                          onClick={() => {
+                            setExportMenuOpen(false);
+                            item.onClick();
+                          }}
                           className="w-full text-left px-4 py-2 text-sm text-text-heading hover:bg-surface-hover transition-[background-color] duration-150 ease-out"
                         >
                           {item.label}
                         </button>
                       ))}
+                      {/* インポート */}
+                      <div className="mt-1 border-t border-border" />
+                      <div className="px-4 pt-2 pb-1 text-[11px] font-semibold text-text-muted uppercase tracking-wider">
+                        インポート
+                      </div>
+                      <button
+                        onClick={() => {
+                          setExportMenuOpen(false);
+                          setIsCsvImportModalOpen(true);
+                        }}
+                        className="w-full text-left px-4 py-2 text-sm text-text-heading hover:bg-surface-hover transition-[background-color] duration-150 ease-out"
+                      >
+                        CSVインポート
+                      </button>
                     </div>
                   )}
                 </div>
-                <Button variant="outline" size="sm" onClick={() => setIsCsvImportModalOpen(true)}>
-                  CSVインポート
-                </Button>
                 <Link
                   href="/transcriptions"
                   className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-text-body border border-border-default rounded-lg hover:bg-surface-hover transition-[background-color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97]"
