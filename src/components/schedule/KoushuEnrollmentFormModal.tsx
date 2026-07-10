@@ -7,6 +7,11 @@ import { StudentSearchInput, type StudentWithSubjects } from './StudentSearchInp
 import { estimateRegularKomaInPeriod, type KoushuPeriodInfo } from '@/lib/api/koushu-period';
 import type { Subject } from '@/types/database';
 import type { ScheduleEntryFormation } from '@/types/schedule';
+// Phase A: 講習申込は個別/集団の2列固定。マトリクスのキー型は2値のまま保つ（他形態はここに来ない）。
+import { INDIVIDUAL_FORMATION, GROUP_FORMATION } from '@/types/schedule';
+
+/** 講習申込マトリクスの列キー。講習は個別/集団の2列のみ（ユーザー定義形態は対象外）。 */
+type KoushuFormationColumn = 'individual' | 'group';
 
 function gradeLabel(grade: number): string {
   if (grade <= 6) return `小${grade}`;
@@ -63,9 +68,13 @@ export function KoushuEnrollmentFormModal({
     setRegularHint(null);
     const init: Record<string, { individual: number; group: number }> = {};
     for (const row of initialRows ?? []) {
+      // 講習申込は個別/集団の2列固定。混入した他形態行は無視して2列を汚さない。
+      if (row.formation !== INDIVIDUAL_FORMATION && row.formation !== GROUP_FORMATION) continue;
+      const col: KoushuFormationColumn =
+        row.formation === GROUP_FORMATION ? GROUP_FORMATION : INDIVIDUAL_FORMATION;
       for (const [sid, n] of Object.entries(row.komaBySubject)) {
         if (!init[sid]) init[sid] = { individual: 0, group: 0 };
-        init[sid][row.formation] = n;
+        init[sid][col] = n;
       }
     }
     setMatrix(init);
@@ -83,7 +92,7 @@ export function KoushuEnrollmentFormModal({
     }
   };
 
-  const setCell = (subjectId: string, formation: ScheduleEntryFormation, value: number) => {
+  const setCell = (subjectId: string, formation: KoushuFormationColumn, value: number) => {
     setMatrix((prev) => {
       const cur = prev[subjectId] ?? { individual: 0, group: 0 };
       const base = { individual: cur.individual, group: cur.group };
@@ -108,8 +117,8 @@ export function KoushuEnrollmentFormModal({
 
     // 個別/集団それぞれ行を作る。空（全0）でも upsert 側で削除扱いになるよう、編集時は両方渡す。
     const rows: EnrollmentRow[] = [
-      { formation: 'individual', komaBySubject: indiv },
-      { formation: 'group', komaBySubject: group },
+      { formation: INDIVIDUAL_FORMATION, komaBySubject: indiv },
+      { formation: GROUP_FORMATION, komaBySubject: group },
     ];
     if (!isEditMode && Object.keys(indiv).length === 0 && Object.keys(group).length === 0) {
       setError('いずれかの科目にコマ数を1以上で入力してください');
@@ -205,7 +214,9 @@ export function KoushuEnrollmentFormModal({
                               min={0}
                               max={99}
                               value={cell.individual || 0}
-                              onChange={(e) => setCell(s.id, 'individual', Number(e.target.value))}
+                              onChange={(e) =>
+                                setCell(s.id, INDIVIDUAL_FORMATION, Number(e.target.value))
+                              }
                               className="w-14 px-2 py-1 border border-[var(--stroke)] rounded text-sm text-center focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
                             />
                           </td>
@@ -215,7 +226,9 @@ export function KoushuEnrollmentFormModal({
                               min={0}
                               max={99}
                               value={cell.group || 0}
-                              onChange={(e) => setCell(s.id, 'group', Number(e.target.value))}
+                              onChange={(e) =>
+                                setCell(s.id, GROUP_FORMATION, Number(e.target.value))
+                              }
                               className="w-14 px-2 py-1 border border-[var(--stroke)] rounded text-sm text-center focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
                             />
                           </td>

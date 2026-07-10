@@ -37,7 +37,12 @@ import {
   deleteRegularPattern,
   regenerateCurrentWeekIfNeeded,
 } from '@/lib/api/schedule';
-import type { ScheduleRegularPattern, ScheduleRegularPatternFormData } from '@/types/schedule';
+import { getFormations } from '@/lib/api/schedule-formations';
+import type {
+  ScheduleRegularPattern,
+  ScheduleRegularPatternFormData,
+  ScheduleFormation,
+} from '@/types/schedule';
 import type { School } from '@/types/database';
 import type { Subject } from '@/types/database';
 import AccessDenied from '@/components/AccessDenied';
@@ -73,8 +78,21 @@ export default function RegularPatternsPage() {
   const [deletingPattern, setDeletingPattern] = useState<ScheduleRegularPattern | null>(null);
   const [dayFilter, setDayFilter] = useState<string>('all');
   const [periodFilter, setPeriodFilter] = useState<string>('regular');
+  const [formationFilter, setFormationFilter] = useState<string>('all');
+  const [formations, setFormations] = useState<ScheduleFormation[]>([]);
 
   const { schools: masterSchools, subjects: masterSubjects } = useMasterData();
+
+  // 形態マスタ（無効含む＝過去の無効形態のパターンもバッジ表示できるように）
+  useEffect(() => {
+    getFormations(true)
+      .then(setFormations)
+      .catch(() => setFormations([]));
+  }, []);
+  const formationLabels: Record<string, string> = {};
+  formations.forEach((f) => {
+    formationLabels[f.key] = f.label;
+  });
 
   useEffect(() => {
     if (masterSchools.length > 0) {
@@ -261,6 +279,20 @@ export default function RegularPatternsPage() {
                 <SelectItem value="winter">冬期</SelectItem>
               </SelectContent>
             </Select>
+            {/* 形態フィルタ（既定=全形態）。個別・集団＋ユーザー定義形態 */}
+            <Select value={formationFilter} onValueChange={setFormationFilter}>
+              <SelectTrigger className="w-32">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">全形態</SelectItem>
+                {formations.map((f) => (
+                  <SelectItem key={f.key} value={f.key}>
+                    {f.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
@@ -273,8 +305,13 @@ export default function RegularPatternsPage() {
           </CardHeader>
           <CardContent>
             <RegularPatternTable
-              patterns={patterns}
+              patterns={
+                formationFilter === 'all'
+                  ? patterns
+                  : patterns.filter((p) => p.formation === formationFilter)
+              }
               subjectNames={subjectNames}
+              formationLabels={formationLabels}
               onEdit={(p) => {
                 setEditingPattern(p);
                 setFormOpen(true);

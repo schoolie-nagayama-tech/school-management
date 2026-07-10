@@ -10,6 +10,8 @@
 
 import { supabase } from '@/lib/supabase';
 import { fetchAllPaged } from '@/lib/utils/supabasePaging';
+// Phase A: 報告書は個別のみ対象（現状維持）。'individual' 直値を定数参照に置換。
+import { INDIVIDUAL_FORMATION } from '@/types/schedule';
 import type {
   ClassReport,
   ClassReportFormData,
@@ -366,8 +368,8 @@ export async function getOverdueReports(
         .in('school_id', schoolIds)
         .lte('entry_date', limitStr)
         .in('status', ['scheduled', 'completed', 'transferred_in'])
-        // 集団は個別の報告書対象外（将来別途簡易版）
-        .eq('formation', 'individual')
+        // 集団は個別の報告書対象外（将来別途簡易版）。報告書は個別のみ対象。
+        .eq('formation', INDIVIDUAL_FORMATION)
         .order('entry_date', { ascending: true })
         .order('id', { ascending: true })
         .range(from, to)

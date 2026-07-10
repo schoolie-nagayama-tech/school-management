@@ -1780,7 +1780,7 @@ export type Database = {
           is_active: boolean;
           display_order: number;
           // 個別/集団でコマ時間を別建てにするためのフラグ
-          formation: 'individual' | 'group';
+          formation: string; // Phase A: 形態の動的マスタ化で union → string に緩和（値は schedule_formations が管理）
           created_at: string | null;
           updated_at: string | null;
         };
@@ -1792,7 +1792,7 @@ export type Database = {
           end_time: string;
           is_active?: boolean;
           display_order?: number;
-          formation?: 'individual' | 'group';
+          formation?: string; // Phase A: 形態の動的マスタ化で union → string に緩和（値は schedule_formations が管理）
           created_at?: string | null;
           updated_at?: string | null;
         };
@@ -1804,7 +1804,7 @@ export type Database = {
           end_time?: string;
           is_active?: boolean;
           display_order?: number;
-          formation?: 'individual' | 'group';
+          formation?: string; // Phase A: 形態の動的マスタ化で union → string に緩和（値は schedule_formations が管理）
           created_at?: string | null;
           updated_at?: string | null;
         };
@@ -1854,7 +1854,7 @@ export type Database = {
           /** 適用終了日 'YYYY-MM-DD' or null。NULLは無期限 */
           effective_until: string | null;
           // 形態: schedule_entries.formation に引き継がれる
-          formation: 'individual' | 'group';
+          formation: string; // Phase A: 形態の動的マスタ化で union → string に緩和（値は schedule_formations が管理）
           created_at: string | null;
           updated_at: string | null;
         };
@@ -1871,7 +1871,7 @@ export type Database = {
           is_active?: boolean;
           effective_from?: string;
           effective_until?: string | null;
-          formation?: 'individual' | 'group';
+          formation?: string; // Phase A: 形態の動的マスタ化で union → string に緩和（値は schedule_formations が管理）
           created_at?: string | null;
           updated_at?: string | null;
         };
@@ -1888,7 +1888,7 @@ export type Database = {
           is_active?: boolean;
           effective_from?: string;
           effective_until?: string | null;
-          formation?: 'individual' | 'group';
+          formation?: string; // Phase A: 形態の動的マスタ化で union → string に緩和（値は schedule_formations が管理）
           created_at?: string | null;
           updated_at?: string | null;
         };
@@ -1909,7 +1909,7 @@ export type Database = {
           // 種別: 通常授業=regular / 講習=koushu
           kind: 'regular' | 'koushu';
           // 形態: 個別=individual / 集団=group
-          formation: 'individual' | 'group';
+          formation: string; // Phase A: 形態の動的マスタ化で union → string に緩和（値は schedule_formations が管理）
           status: 'scheduled' | 'completed' | 'cancelled' | 'transferred_out' | 'transferred_in';
           attendance_status: string | null;
           attendance_recorded_at: string | null;
@@ -1936,7 +1936,7 @@ export type Database = {
           // 未指定時は regular（DBデフォルト）
           kind?: 'regular' | 'koushu';
           // 未指定時は individual（DBデフォルト）
-          formation?: 'individual' | 'group';
+          formation?: string; // Phase A: 形態の動的マスタ化で union → string に緩和（値は schedule_formations が管理）
           status?: 'scheduled' | 'completed' | 'cancelled' | 'transferred_out' | 'transferred_in';
           attendance_status?: string | null;
           attendance_recorded_at?: string | null;
@@ -1959,7 +1959,7 @@ export type Database = {
           seat_label?: string | null;
           regular_pattern_id?: string | null;
           kind?: 'regular' | 'koushu';
-          formation?: 'individual' | 'group';
+          formation?: string; // Phase A: 形態の動的マスタ化で union → string に緩和（値は schedule_formations が管理）
           status?: 'scheduled' | 'completed' | 'cancelled' | 'transferred_out' | 'transferred_in';
           attendance_status?: string | null;
           attendance_recorded_at?: string | null;

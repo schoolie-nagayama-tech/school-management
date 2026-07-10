@@ -21,6 +21,9 @@ import { Card, CardContent } from '@/components/ui';
 import { Button } from '@/components/ui';
 import { Loading } from '@/components/ui';
 import { toSurnameOnly } from '@/lib/utils/teacherName';
+// Phase A: 形態キーの直書きを定数参照に置換。
+// TODO(Phase E): 集団バッジ表示はマスタ label 参照へ差し替える（新形態も表示できるように）。
+import { GROUP_FORMATION } from '@/types/schedule';
 
 interface DashboardData {
   school: { name: string };
@@ -34,7 +37,7 @@ interface DashboardData {
     subject_ids: string[];
     teacher?: { display_name: string | null } | { display_name: string | null }[];
     kind: 'regular' | 'koushu';
-    formation: 'individual' | 'group';
+    formation: string; // Phase A: 動的マスタ化で union → string に緩和
     transfer_from_id: string | null;
   }>;
   attendance_this_month: { present: number; absent: number; late: number; transfer: number };
@@ -190,7 +193,7 @@ export default function StudentDashboardPage() {
                           講習
                         </span>
                       )}
-                      {u.formation === 'group' && (
+                      {u.formation === GROUP_FORMATION && (
                         <span className="px-1.5 py-0.5 bg-ink-subtle text-ink text-[10px] rounded font-semibold">
                           集団
                         </span>

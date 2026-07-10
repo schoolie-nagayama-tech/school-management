@@ -11,7 +11,11 @@ import {
   checkStudentTimeConflict,
   regenerateWeekForDate,
 } from '@/lib/api/schedule';
-import type { ScheduleTimeSlot } from '@/types/schedule';
+import {
+  getStudentContractRatioMap,
+  upsertStudentContract,
+} from '@/lib/api/student-subject-contracts';
+import type { ScheduleTimeSlot, HalfPosition } from '@/types/schedule';
 import type { ScheduleEntryFormData, ScheduleEntryKind } from '@/types/schedule';
 import type { Subject } from '@/types/database';
 import { DAY_OF_WEEK_LABELS } from '@/types/schedule';
@@ -67,6 +71,15 @@ export function AddStudentToSlotModal({
   const [singleKind, setSingleKind] = useState<ScheduleEntryKind>('additional');
   const [saving, setSaving] = useState(false);
   const [conflictError, setConflictError] = useState<string | null>(null);
+  // Phase R: 指導比率（1対1/1対2）と45分の前後半。
+  const [ratio, setRatio] = useState<1 | 2>(2);
+  const [halfPosition, setHalfPosition] = useState<HalfPosition>(null);
+  // 生徒×科目の契約比率マップ（科目選択時の ratio 初期値）。
+  const [contractRatioMap, setContractRatioMap] = useState<Map<string, 1 | 2>>(new Map());
+
+  // 選択科目の授業時間（45分なら前後半セレクトを出す）。
+  const selectedSubject = subjects.find((s) => s.id === subjectId);
+  const is45 = selectedSubject?.duration_minutes === 45;
 
   const availableSubjects = useMemo(() => {
     if (!teacherTeachableSubjectIds || teacherTeachableSubjectIds.length === 0) {
@@ -82,8 +95,32 @@ export function AddStudentToSlotModal({
       setRegisterType('regular');
       setSingleKind('additional');
       setConflictError(null);
+      setRatio(2);
+      setHalfPosition(null);
+      setContractRatioMap(new Map());
     }
   }, [isOpen, availableSubjects]);
+
+  // Phase R: 生徒選択時に契約比率マップを読み込む（科目選択時の ratio 初期値に使う）。
+  useEffect(() => {
+    if (!selectedStudent) {
+      setContractRatioMap(new Map());
+      return;
+    }
+    let cancelled = false;
+    getStudentContractRatioMap(selectedStudent.id).then((m) => {
+      if (!cancelled) setContractRatioMap(m);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedStudent]);
+
+  // Phase R: 科目が変わったら ratio は契約から初期化、half は45分科目なら前半を既定に。
+  useEffect(() => {
+    setRatio(contractRatioMap.get(subjectId) ?? 2);
+    setHalfPosition(selectedSubject?.duration_minutes === 45 ? 'first' : null);
+  }, [subjectId, contractRatioMap, selectedSubject?.duration_minutes]);
 
   const slotLabel = `${DAY_OF_WEEK_LABELS[dayOfWeek] ?? ''}曜日 ${timeSlot.slot_number}限 ${timeSlot.start_time?.slice(0, 5) ?? ''}-${timeSlot.end_time?.slice(0, 5) ?? ''}`;
 
@@ -94,12 +131,18 @@ export function AddStudentToSlotModal({
     try {
       const startTime = timeSlot.start_time ?? '00:00:00';
       const endTime = timeSlot.end_time ?? '23:59:59';
+      // Phase R: 45分科目のみ半コマ、それ以外は全コマ(null)。duration は科目からスナップショット。
+      const effHalf: HalfPosition = is45 ? halfPosition : null;
+      const effDuration = selectedSubject?.duration_minutes ?? null;
       const form: ScheduleEntryFormData = {
         teacher_id: teacherId,
         student_id: selectedStudent.id,
         subject_ids: [subjectId],
         seat_label: '',
         note: '',
+        ratio,
+        duration_minutes: effDuration,
+        half_position: effHalf,
       };
 
       if (registerType === 'regular') {
@@ -107,13 +150,16 @@ export function AddStudentToSlotModal({
           selectedStudent.id,
           dayOfWeek,
           startTime,
-          endTime
+          endTime,
+          { durationMinutes: effDuration, halfPosition: effHalf }
         );
         if (conflict) {
           setConflictError(conflict.message);
           setSaving(false);
           return;
         }
+        // 契約=正の設計。通常授業として登録するときは選んだ比率を契約にも反映（upsert）。
+        await upsertStudentContract(schoolId, selectedStudent.id, subjectId, ratio);
         const pattern = await createRegularPattern(schoolId, {
           student_id: selectedStudent.id,
           day_of_week: dayOfWeek,
@@ -122,6 +168,9 @@ export function AddStudentToSlotModal({
           subject_ids: [subjectId],
           seat_label: '',
           period_type: 'regular',
+          ratio,
+          duration_minutes: effDuration,
+          half_position: effHalf,
         });
         await createScheduleEntry(schoolId, date, timeSlot.id, form, {
           regular_pattern_id: pattern.id,
@@ -134,7 +183,7 @@ export function AddStudentToSlotModal({
           dayOfWeek,
           startTime,
           endTime,
-          { specificDate: date }
+          { specificDate: date, durationMinutes: effDuration, halfPosition: effHalf }
         );
         if (conflict) {
           setConflictError(conflict.message);
@@ -208,6 +257,44 @@ export function AddStudentToSlotModal({
                 ))
               )}
             </select>
+          </div>
+
+          {/* Phase R: 指導比率（契約から初期化・変更可）＋45分科目の前後半 */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-[var(--paragraph)] mb-1">
+                指導比率
+              </label>
+              <select
+                value={String(ratio)}
+                onChange={(e) => setRatio(e.target.value === '1' ? 1 : 2)}
+                className="w-full px-3 py-2 border border-[var(--stroke)] rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
+              >
+                <option value="2">1対2</option>
+                <option value="1">1対1（1名で満席）</option>
+              </select>
+              <p className="mt-1 text-[10px] text-[var(--paragraph-light)]">
+                契約（生徒×科目）の比率。変更すると契約も更新されます
+              </p>
+            </div>
+            {is45 && (
+              <div>
+                <label className="block text-xs font-medium text-[var(--paragraph)] mb-1">
+                  45分の前後半
+                </label>
+                <select
+                  value={halfPosition ?? 'first'}
+                  onChange={(e) => setHalfPosition(e.target.value as HalfPosition)}
+                  className="w-full px-3 py-2 border border-[var(--stroke)] rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
+                >
+                  <option value="first">前半（コマ開始〜+45分）</option>
+                  <option value="second">後半（コマ終了−45分〜終了）</option>
+                </select>
+                <p className="mt-1 text-[10px] text-[var(--paragraph-light)]">
+                  45分授業。同じ席の反対側にもう1人入れられます
+                </p>
+              </div>
+            )}
           </div>
 
           <div>

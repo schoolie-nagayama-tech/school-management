@@ -28,6 +28,8 @@ interface RegularPatternTableProps {
   onDelete: (p: ScheduleRegularPattern) => void;
   onAdd: () => void;
   isLoading?: boolean;
+  /** 形態キー → 表示名（形態バッジ用）。未指定なら形態列を出さない。 */
+  formationLabels?: Record<string, string>;
 }
 
 export function RegularPatternTable({
@@ -37,7 +39,9 @@ export function RegularPatternTable({
   onDelete,
   onAdd,
   isLoading,
+  formationLabels,
 }: RegularPatternTableProps) {
+  const showFormation = !!formationLabels;
   if (isLoading) {
     return <Loading size="md" />;
   }
@@ -56,6 +60,7 @@ export function RegularPatternTable({
           <TableHeader>
             <TableRow>
               <TableHead>生徒</TableHead>
+              {showFormation && <TableHead>形態</TableHead>}
               <TableHead>曜日</TableHead>
               <TableHead>コマ</TableHead>
               <TableHead>講師</TableHead>
@@ -73,6 +78,11 @@ export function RegularPatternTable({
                     ? `${p.student.last_name} ${p.student.first_name}（${gradeLabel(p.student.grade)}）`
                     : p.student_id}
                 </TableCell>
+                {showFormation && (
+                  <TableCell>
+                    <Badge variant="outline">{formationLabels?.[p.formation] ?? p.formation}</Badge>
+                  </TableCell>
+                )}
                 <TableCell>{DAY_OF_WEEK_LABELS[p.day_of_week] ?? p.day_of_week}</TableCell>
                 <TableCell>
                   {p.time_slot

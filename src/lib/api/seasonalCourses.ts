@@ -12,6 +12,8 @@ import type {
   CourseCurriculumRow,
 } from '@/types/database';
 import type { ScheduleEntryFormation } from '@/types/schedule';
+// Phase A: 形態キーの直書きを定数参照に置換（既定値は個別）
+import { INDIVIDUAL_FORMATION } from '@/types/schedule';
 
 // =====================================================
 // 講習機能（座席表連携）用の型定義
@@ -244,7 +246,7 @@ export async function upsertKoushuEnrollment(
   season: string,
   studentId: string,
   komaBySubject: Record<string, number>,
-  formation: ScheduleEntryFormation = 'individual'
+  formation: ScheduleEntryFormation = INDIVIDUAL_FORMATION
 ): Promise<void> {
   const entries = Object.entries(komaBySubject).filter(([, n]) => (n ?? 0) > 0);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

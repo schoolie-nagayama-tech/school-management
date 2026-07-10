@@ -22,6 +22,8 @@ import {
   type KoushuPeriodInfo,
 } from '@/lib/api/koushu-period';
 import type { ScheduleEntryFormation } from '@/types/schedule';
+// Phase A: 形態キーの直書きを定数参照に置換（配置パネルの既定は個別）
+import { INDIVIDUAL_FORMATION } from '@/types/schedule';
 import { CheckCircle, Target, X } from 'lucide-react';
 
 const DOW_LABELS = ['日', '月', '火', '水', '木', '金', '土'];
@@ -66,7 +68,7 @@ function gradeLabel(g: number): string {
 
 export function KoushuPlacementPanel({
   period,
-  formation = 'individual',
+  formation = INDIVIDUAL_FORMATION,
   onStartPlacement,
   placingStudentId,
   placingSubjectId,

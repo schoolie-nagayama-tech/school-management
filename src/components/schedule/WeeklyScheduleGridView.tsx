@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
-import { ChevronDown } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Printer, Hash } from 'lucide-react';
 import {
   DndContext,
   DragOverlay,
@@ -15,7 +15,7 @@ import { DayCell } from './DayCell';
 import { StudentCard } from './StudentCard';
 import type { ScheduleEntry, ScheduleTimeSlot } from '@/types/schedule';
 import type { TeacherGroup } from './DayCell';
-import { Printer } from 'lucide-react';
+import styles from './scheduleDensity.module.css';
 
 /** 表示用：ローカル日付で解釈して日付・曜日を返す */
 function formatDayHeader(dateStr: string): { dayNum: number; dateLong: string; weekday: string } {
@@ -23,11 +23,7 @@ function formatDayHeader(dateStr: string): { dayNum: number; dateLong: string; w
   const month = d.getMonth() + 1;
   const date = d.getDate();
   const week = ['日', '月', '火', '水', '木', '金', '土'][d.getDay()];
-  return {
-    dayNum: date,
-    dateLong: `${month}月${date}日`,
-    weekday: week,
-  };
+  return { dayNum: date, dateLong: `${month}月${date}日`, weekday: week };
 }
 
 function getTodayLocalDateStr(): string {
@@ -38,7 +34,7 @@ function getTodayLocalDateStr(): string {
   return `${y}-${m}-${day}`;
 }
 
-const SLOT_ROW_MIN_H = 'min-h-[60px]';
+export type ScheduleOrientation = 'cols' | 'rows';
 
 export interface WeeklyScheduleGridViewProps {
   schoolId: string;
@@ -53,7 +49,6 @@ export interface WeeklyScheduleGridViewProps {
   activeEntry: ScheduleEntry | null;
   groupEntriesByTeacher: (entries: ScheduleEntry[], date: string, slotId: string) => TeacherGroup[];
   getTeacherGroupsForCell: (dateStr: string, slotId: string, slotNumber: number) => TeacherGroup[];
-  /** セル別の未配置エントリ (teacher_id NULL) を取得 */
   getUnassignedEntriesForCell?: (dateStr: string, slotId: string) => ScheduleEntry[];
   onDragStart: (e: DragStartEvent) => void;
   onDragEnd: (event: DragEndEvent) => void;
@@ -61,40 +56,39 @@ export interface WeeklyScheduleGridViewProps {
   onAddStudent: (date: string, slotId: string, teacherId: string) => void;
   onRemoveTeacher: (date: string, slotId: string, teacherId: string, entryCount: number) => void;
   onStudentClick: (entry: ScheduleEntry, e: React.MouseEvent) => void;
-  onTransferClick?: (entry: ScheduleEntry) => void;
   onTransferTargetClick?: (date: string, slotId: string, teacherId: string) => void;
   onPrintDay?: (date: string) => void;
-  /** 日付横のブース番号設定アイコン。印刷時に講師名の隣に表示される番号を編集するモーダルを開く */
   onBoothAssign?: (date: string) => void;
-  /** 曜日ヘッダー行の一番右に表示する要素（例: 通塾日程ボタン） */
   headerRightContent?: React.ReactNode;
   getKoushuInfo?: (studentId: string) => { enrolled: number; scheduled: number } | null;
   subjectNameById?: Map<string, string>;
   absenceKeySet?: Set<string>;
   onToggleAbsence?: (date: string, slotId: string, teacherId: string) => void;
-  /** 講習の手動配置モード中か（true でセルがクリック可能な配置ターゲットになる） */
   koushuPlacing?: boolean;
-  /** 配置モード中、各セルの配置可否と理由 */
   getKoushuPlaceability?: (date: string, slotId: string) => { ok: boolean; reason: string | null };
-  /** 配置モード中にセルをクリックしたとき（担当未決定で落とす） */
   onKoushuPlace?: (date: string, slotId: string) => void;
-  /** 配置モード中に講師カードをクリックしたとき（その講師で配置） */
   onKoushuPlaceWithTeacher?: (date: string, slotId: string, teacherId: string) => void;
+  /** 向き: 'cols'=日=列(週俯瞰) / 'rows'=日=行(転置・既定) */
+  orientation: ScheduleOrientation;
+  /** 日=列モードのセル内カラム数（1 or 2）。転置モードでは無視 */
+  colMode: 1 | 2;
+  /** 座席番号（印刷ブース番号）: 日付 → 講師ID → 番号 */
+  boothMapByDate?: Map<string, Map<string, number>>;
+  /** 座席番号の保存（日付, 講師ID, 値） */
+  onSeatNoChange?: (date: string, teacherId: string, value: string) => void;
+  /** sticky ツールバーの実測高さ(px)。時限見出しの sticky top / 日行スナップの頭出しに使う */
+  stickyOffset?: number;
 }
 
 export function WeeklyScheduleGridView(props: WeeklyScheduleGridViewProps) {
   const {
-    schoolId: _schoolId,
     weekDates,
     timeSlots,
-    entries: _entries,
     closedDates,
-    emptyTeacherSlots: _emptyTeacherSlots,
     maxStudentsPerTeacher,
     transferMode,
     activeId,
     activeEntry,
-    groupEntriesByTeacher: _groupEntriesByTeacher,
     getTeacherGroupsForCell,
     getUnassignedEntriesForCell,
     onDragStart,
@@ -103,11 +97,9 @@ export function WeeklyScheduleGridView(props: WeeklyScheduleGridViewProps) {
     onAddStudent,
     onRemoveTeacher,
     onStudentClick,
-    onTransferClick,
     onTransferTargetClick,
     onPrintDay,
     onBoothAssign,
-    headerRightContent,
     getKoushuInfo,
     subjectNameById,
     absenceKeySet,
@@ -116,12 +108,30 @@ export function WeeklyScheduleGridView(props: WeeklyScheduleGridViewProps) {
     getKoushuPlaceability,
     onKoushuPlace,
     onKoushuPlaceWithTeacher,
+    orientation,
+    colMode,
+    boothMapByDate,
+    onSeatNoChange,
+    stickyOffset = 0,
   } = props;
 
   const todayLocal = getTodayLocalDateStr();
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
-  // 「生徒0コマのスロット」をアコーディオン折りたたみする状態。
-  // デフォルトは折りたたみ。ユーザーが手動で開いたものだけ記録する（slot.id をキーに）
+  // 転置モードの日行スナップはページ全体（document）スクロールに載せる。
+  // mandatory はツールバーやパネルが絡むページ全体では引っかかりやすいため proximity で運用。
+  // アンマウント・向き切替時は必ず元へ戻す（他ページに snap を残さない）。
+  useEffect(() => {
+    if (orientation !== 'rows') return;
+    const el = document.documentElement;
+    const prev = el.style.scrollSnapType;
+    el.style.scrollSnapType = 'y proximity';
+    return () => {
+      el.style.scrollSnapType = prev;
+    };
+  }, [orientation]);
+
+  // 手動で開いた「授業なし」スロット（slot.id をキー）
   const [expandedEmptySlots, setExpandedEmptySlots] = useState<Set<string>>(new Set());
   const toggleEmptySlot = (slotId: string) => {
     setExpandedEmptySlots((prev) => {
@@ -131,252 +141,269 @@ export function WeeklyScheduleGridView(props: WeeklyScheduleGridViewProps) {
       return next;
     });
   };
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
-  const gridCols = headerRightContent
-    ? `5rem repeat(${weekDates.length}, minmax(0, 1fr)) auto`
-    : `5rem repeat(${weekDates.length}, minmax(0, 1fr))`;
+  // 各スロットが「授業あり」か（週内のどこかに生徒/未配置があるか）を判定
+  const slotHasContent = useMemo(() => {
+    const map = new Map<string, boolean>();
+    for (const slot of timeSlots) {
+      let has = false;
+      for (const d of weekDates) {
+        const groups = getTeacherGroupsForCell(d, slot.id, slot.slot_number);
+        const students = groups.reduce(
+          (s, g) =>
+            s +
+            g.entries.filter((e) => e.status !== 'cancelled' && e.status !== 'transferred_out')
+              .length,
+          0
+        );
+        const un = getUnassignedEntriesForCell?.(d, slot.id).length ?? 0;
+        if (students + un > 0) {
+          has = true;
+          break;
+        }
+      }
+      map.set(slot.id, has);
+    }
+    return map;
+  }, [timeSlots, weekDates, getTeacherGroupsForCell, getUnassignedEntriesForCell]);
 
-  return (
-    <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd}>
-      <div className="flex flex-col gap-0 w-full">
-        {/* Header row: 縦ミニカード型の日付（Apple × Notion 風ミニマル） */}
+  // 表示するスロット（授業あり / 手動展開 / 配置モードは全表示）と折りたたむスロット
+  const shownSlots = timeSlots.filter(
+    (s) => koushuPlacing || slotHasContent.get(s.id) || expandedEmptySlots.has(s.id)
+  );
+  const collapsedSlots = timeSlots.filter((s) => !shownSlots.includes(s));
+
+  const cellLayout: 'pack' | 'col1' | 'col2' =
+    orientation === 'rows' ? 'pack' : colMode === 2 ? 'col2' : 'col1';
+
+  // 1セルを描画する共通関数
+  const renderCell = (dateStr: string, slot: ScheduleTimeSlot) => {
+    const isClosed = closedDates.includes(dateStr);
+    const teacherGroups = getTeacherGroupsForCell(dateStr, slot.id, slot.slot_number);
+    const place = koushuPlacing ? getKoushuPlaceability?.(dateStr, slot.id) : undefined;
+    return (
+      <DayCell
+        key={`${dateStr}-${slot.id}`}
+        date={dateStr}
+        timeSlot={slot}
+        isClosed={isClosed}
+        teacherGroups={teacherGroups}
+        unassignedEntries={getUnassignedEntriesForCell?.(dateStr, slot.id) ?? []}
+        maxStudentsPerTeacher={maxStudentsPerTeacher}
+        activeDragId={activeId}
+        activeDragEntry={activeEntry}
+        transferMode={!!transferMode}
+        layout={cellLayout}
+        onAddTeacher={(existingIds) => onAddTeacher(dateStr, slot.id, existingIds)}
+        onAddStudent={(teacherId) => onAddStudent(dateStr, slot.id, teacherId)}
+        onRemoveTeacher={(teacherId, entryCount) =>
+          onRemoveTeacher(dateStr, slot.id, teacherId, entryCount)
+        }
+        onStudentClick={onStudentClick}
+        onTransferTargetClick={
+          onTransferTargetClick
+            ? (_, slotId, teacherId) => onTransferTargetClick(dateStr, slotId, teacherId)
+            : undefined
+        }
+        getKoushuInfo={getKoushuInfo}
+        subjectNameById={subjectNameById}
+        absenceKeySet={absenceKeySet}
+        onToggleAbsence={onToggleAbsence}
+        koushuPlacing={koushuPlacing}
+        onKoushuPlaceWithTeacher={
+          onKoushuPlaceWithTeacher
+            ? (teacherId) => onKoushuPlaceWithTeacher(dateStr, slot.id, teacherId)
+            : undefined
+        }
+        boothMap={boothMapByDate?.get(dateStr)}
+        onSeatNoChange={
+          onSeatNoChange
+            ? (teacherId, value) => onSeatNoChange(dateStr, teacherId, value)
+            : undefined
+        }
+        isToday={dateStr === todayLocal}
+        placeability={place}
+        onCellPlace={onKoushuPlace ? () => onKoushuPlace(dateStr, slot.id) : undefined}
+      />
+    );
+  };
+
+  const slotTimeLabel = (slot: ScheduleTimeSlot) =>
+    `${slot.start_time?.slice(0, 5) ?? ''}〜${slot.end_time?.slice(0, 5) ?? ''}`;
+
+  // ============ 日=列（週俯瞰） ============
+  const renderColsBoard = () => {
+    const gridCols = `44px repeat(${weekDates.length}, minmax(0, 1fr))`;
+    return (
+      <div className={styles.weekGrid} style={{ gridTemplateColumns: gridCols }}>
+        {/* 曜日ヘッダー行 */}
+        <div className={styles.cornerCell} />
+        {weekDates.map((dateStr) => {
+          const { dayNum, dateLong, weekday } = formatDayHeader(dateStr);
+          const isToday = dateStr === todayLocal;
+          return (
+            <div
+              key={dateStr}
+              className={`${styles.dayHead} ${isToday ? styles.today : ''}`}
+              title={dateLong}
+            >
+              <span className={styles.dDate}>{dayNum}</span>
+              <span className={styles.dDay}>{weekday}</span>
+              {onBoothAssign && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onBoothAssign(dateStr);
+                  }}
+                  className={styles.headBtn}
+                  title={`${dateLong} のブース番号を一括設定`}
+                >
+                  <Hash size={11} />
+                </button>
+              )}
+              {onPrintDay && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onPrintDay(dateStr);
+                  }}
+                  className={styles.headBtn}
+                  title={`${dateLong} を印刷`}
+                >
+                  <Printer size={11} />
+                </button>
+              )}
+            </div>
+          );
+        })}
+
+        {/* スロット行（授業ありは全開、授業なしは折りたたみバー） */}
+        {timeSlots.map((slot) => {
+          const shown = shownSlots.includes(slot);
+          if (!shown) {
+            return (
+              <div
+                key={slot.id}
+                className={styles.slotCollapsed}
+                style={{ gridTemplateColumns: gridCols }}
+              >
+                <div className={styles.slotCollapsedLabel}>{slot.slot_number}限</div>
+                <button
+                  type="button"
+                  onClick={() => toggleEmptySlot(slot.id)}
+                  className={styles.collapsedBar}
+                  style={{ gridColumn: `2 / -1` }}
+                >
+                  <span className={styles.chev}>▸</span>
+                  {slot.slot_number}限 {slotTimeLabel(slot)} — 授業なし（クリックで開く）
+                </button>
+              </div>
+            );
+          }
+          return (
+            <React.Fragment key={slot.id}>
+              <div className={styles.slotLabelMain}>
+                {slot.slot_number}限
+                <span className={styles.slotTime}>
+                  {slot.start_time?.slice(0, 5)}
+                  <br />
+                  <span className={styles.slotTimeArrow}>↓</span>
+                  <br />
+                  {slot.end_time?.slice(0, 5)}
+                </span>
+              </div>
+              {weekDates.map((dateStr) => renderCell(dateStr, slot))}
+            </React.Fragment>
+          );
+        })}
+      </div>
+    );
+  };
+
+  // ============ 日=行（転置・既定） ============
+  const renderRowsBoard = () => {
+    const hasCollapsed = collapsedSlots.length > 0;
+    const gridCols = `44px ${hasCollapsed ? '24px ' : ''}repeat(${shownSlots.length}, minmax(0, 1fr))`;
+    return (
+      <>
+        {/* sticky 時限ヘッダー（本体と同じ列定義） */}
         <div
-          className="grid gap-x-4 py-3 pr-2 border-b border-gray-200"
+          className={`${styles.weekGridT} ${styles.tStickyHead}`}
           style={{ gridTemplateColumns: gridCols }}
         >
-          <div className="text-xs text-gray-500 font-medium self-center">コマ</div>
+          <div className={styles.cornerCell} />
+          {hasCollapsed && <div className={styles.vbarHead} />}
+          {shownSlots.map((slot) => (
+            <div key={slot.id} className={styles.slotHeadT}>
+              {slot.slot_number}限<span className={styles.slotHeadTime}>{slotTimeLabel(slot)}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* 本体グリッド：折りたたみ縦バー（日行を縦断）＋ 各曜日行 */}
+        <div className={styles.weekGridT} style={{ gridTemplateColumns: gridCols }}>
+          {hasCollapsed && (
+            <button
+              type="button"
+              className={styles.collapsedVbar}
+              style={{ gridColumn: 2, gridRow: `1 / ${weekDates.length + 1}` }}
+              onClick={() => collapsedSlots.forEach((s) => toggleEmptySlot(s.id))}
+              title={`${collapsedSlots.map((s) => `${s.slot_number}限`).join('・')} — 授業なし（クリックで開く）`}
+            >
+              {collapsedSlots.map((s) => `${s.slot_number}限`).join('・')} — 授業なし
+            </button>
+          )}
           {weekDates.map((dateStr) => {
             const { dayNum, dateLong, weekday } = formatDayHeader(dateStr);
             const isToday = dateStr === todayLocal;
             return (
-              <div
-                key={dateStr}
-                className={`relative min-w-0 rounded-xl border px-3 py-2 flex flex-row items-center justify-center gap-1.5 transition-[background-color,border-color,box-shadow] duration-150 ease-out ${
-                  isToday
-                    ? 'bg-gray-100 text-gray-900 border-gray-300 scale-105'
-                    : 'border-gray-200 bg-white hover:bg-gray-50 text-gray-700'
-                }`}
-                title={dateLong}
-              >
-                {isToday && (
-                  <span
-                    className="absolute top-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-gray-700"
-                    aria-hidden
-                  />
-                )}
-                <span className={`text-lg tabular-nums ${isToday ? 'font-bold' : 'font-semibold'}`}>
-                  {dayNum}
-                </span>
-                <span className="text-xs text-gray-500">{weekday}</span>
-                {onBoothAssign && (
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onBoothAssign(dateStr);
-                    }}
-                    className="ml-0.5 p-0.5 rounded text-gray-400 hover:text-indigo-600 hover:bg-gray-200/80 no-print transition-colors duration-150 text-[10px] font-bold w-5 h-5 flex items-center justify-center border border-gray-300"
-                    title={`${dateLong} のブース番号を設定`}
-                    aria-label={`${dateLong} のブース番号を設定`}
-                  >
-                    #
-                  </button>
-                )}
-                {onPrintDay && (
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onPrintDay(dateStr);
-                    }}
-                    className="ml-0.5 p-0.5 rounded text-gray-400 hover:text-gray-600 hover:bg-gray-200/80 no-print transition-colors duration-150"
-                    title={`${dateLong} を印刷`}
-                    aria-label={`${dateLong} を印刷`}
-                  >
-                    <Printer className="w-3.5 h-3.5" />
-                  </button>
-                )}
-              </div>
-            );
-          })}
-          {headerRightContent && (
-            <div className="flex items-center justify-end pl-2 border-b border-transparent">
-              {headerRightContent}
-            </div>
-          )}
-        </div>
-
-        {/* 時間帯ごとに横セクション（横ライン・zebra・余白） */}
-        {timeSlots.map((slot, slotIndex) => {
-          // この slot で1週間分のすべてのセルに生徒が居るか先に判定。
-          // 全部 empty なら折りたたみ表示（ノイズになる空白行を抑える）。
-          // ただし「未配置エントリがある」コマは絶対に折りたたまない：見逃しを避けるため。
-          const slotTotalStudents = weekDates.reduce((sum, d) => {
-            const groups = getTeacherGroupsForCell(d, slot.id, slot.slot_number);
-            return (
-              sum +
-              groups.reduce(
-                (s, g) =>
-                  s +
-                  g.entries.filter(
-                    (e) => e.status !== 'cancelled' && e.status !== 'transferred_out'
-                  ).length,
-                0
-              )
-            );
-          }, 0);
-          const slotUnassignedCount = weekDates.reduce(
-            (sum, d) => sum + (getUnassignedEntriesForCell?.(d, slot.id).length ?? 0),
-            0
-          );
-          const isEmptySlot = slotTotalStudents === 0 && slotUnassignedCount === 0;
-          const isExpanded = expandedEmptySlots.has(slot.id);
-
-          // 空コマ × 折りたたみ中 → コンパクトな見出し1行だけ。
-          // ただし講習の配置モード中は折りたたまない（畳まれたセルには落とし込めないため）。
-          if (isEmptySlot && !isExpanded && !koushuPlacing) {
-            return (
-              <button
-                key={slot.id}
-                type="button"
-                onClick={() => toggleEmptySlot(slot.id)}
-                className={`w-full text-left border-t border-gray-200 px-2 py-1.5 flex items-center gap-2 hover:bg-gray-50 active:scale-[0.99] transition-[background-color,transform] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] ${slotIndex % 2 === 1 ? 'bg-gray-50' : ''}`}
-                aria-expanded={false}
-              >
-                <ChevronDown className="w-3.5 h-3.5 text-gray-300 -rotate-90 transition-transform duration-150 ease-[cubic-bezier(0.23,1,0.32,1)]" />
-                <span className="text-sm font-semibold text-gray-500">
-                  <span className="tabular-nums">{slot.slot_number}</span>限
-                </span>
-                <span className="text-[10px] text-gray-400 tabular-nums">
-                  {slot.start_time?.slice(0, 5)}〜{slot.end_time?.slice(0, 5)}
-                </span>
-                <span className="ml-auto text-[11px] text-gray-400">
-                  授業なし（クリックで開く）
-                </span>
-              </button>
-            );
-          }
-
-          return (
-            <div
-              key={slot.id}
-              className={`border-t border-gray-200 pt-2 pb-3 ${slotIndex % 2 === 1 ? 'bg-gray-50' : ''}`}
-            >
-              <div className="grid gap-x-6 w-full" style={{ gridTemplateColumns: gridCols }}>
-                {/* 時間ラベル */}
-                <div className="flex flex-col justify-center pl-0 pr-2 border-r border-gray-200">
-                  <div className="text-sm font-semibold text-gray-700 flex items-center gap-1">
-                    {/* 空コマ展開中は折りたたみアイコンを出す */}
-                    {isEmptySlot && isExpanded && (
-                      <button
-                        type="button"
-                        onClick={() => toggleEmptySlot(slot.id)}
-                        className="text-gray-300 hover:text-gray-500 transition-colors duration-150"
-                        aria-label="折りたたむ"
-                      >
-                        <ChevronDown className="w-3.5 h-3.5" />
-                      </button>
-                    )}
-                    <span className="tabular-nums">{slot.slot_number}</span>限
-                  </div>
-                  <div className="text-[10px] text-gray-400 mt-0.5 tabular-nums">
-                    {slot.start_time?.slice(0, 5)}〜{slot.end_time?.slice(0, 5)}
-                  </div>
-                  {/* 未配置のあるコマは時間ラベル直下にバッジ表示 → 折りたたまれていなくても一目で把握 */}
-                  {slotUnassignedCount > 0 && (
-                    <div className="mt-1 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-warning text-white text-[10px] font-bold w-fit">
-                      <span className="inline-block w-1 h-1 rounded-full bg-white animate-pulse" />
-                      未配置 {slotUnassignedCount}
-                    </div>
+              <React.Fragment key={dateStr}>
+                <div
+                  className={`${styles.dayLabelT} ${isToday ? styles.today : ''}`}
+                  title={dateLong}
+                >
+                  <span className={styles.dDate}>{dayNum}</span>
+                  <span className={styles.dDay}>{weekday}</span>
+                  {onPrintDay && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onPrintDay(dateStr);
+                      }}
+                      className={styles.headBtn}
+                      title={`${dateLong} を印刷`}
+                    >
+                      <Printer size={10} />
+                    </button>
                   )}
                 </div>
+                {shownSlots.map((slot) => renderCell(dateStr, slot))}
+              </React.Fragment>
+            );
+          })}
+        </div>
+      </>
+    );
+  };
 
-                {/* 各日のセル */}
-                {weekDates.map((dateStr) => {
-                  const isClosed = closedDates.includes(dateStr);
-                  const teacherGroups = getTeacherGroupsForCell(dateStr, slot.id, slot.slot_number);
-                  const cellKey = `${dateStr}-${slot.id}`;
-
-                  // 講習の手動配置モード：セルをクリック可能な配置ターゲットにする。
-                  // 緑=配置可 / 淡色=不可（理由つき）。セル背景クリック=担当未決定で落とす、
-                  // 講師カードクリック=その講師で配置（バブリングは講師カード側で stopPropagation）。
-                  const place = koushuPlacing
-                    ? getKoushuPlaceability?.(dateStr, slot.id)
-                    : undefined;
-
-                  return (
-                    <div
-                      key={cellKey}
-                      className={`relative min-w-0 ${SLOT_ROW_MIN_H} border-l border-gray-100 pl-2 ${
-                        koushuPlacing ? (place?.ok ? 'cursor-pointer' : 'cursor-not-allowed') : ''
-                      }`}
-                      onClick={koushuPlacing ? () => onKoushuPlace?.(dateStr, slot.id) : undefined}
-                      title={
-                        koushuPlacing
-                          ? place?.ok
-                            ? '背景クリックで担当未決定として落とす／講師カードをクリックするとその講師で配置'
-                            : (place?.reason ?? '配置できません')
-                          : undefined
-                      }
-                    >
-                      {koushuPlacing && (
-                        <div
-                          aria-hidden
-                          className={`pointer-events-none absolute inset-0 z-0 rounded-lg ${
-                            place?.ok
-                              ? 'ring-2 ring-success bg-success-subtle/20'
-                              : 'bg-gray-300/25'
-                          }`}
-                        />
-                      )}
-                      <DayCell
-                        koushuPlacing={koushuPlacing}
-                        onKoushuPlaceWithTeacher={
-                          onKoushuPlaceWithTeacher
-                            ? (teacherId) => onKoushuPlaceWithTeacher(dateStr, slot.id, teacherId)
-                            : undefined
-                        }
-                        date={dateStr}
-                        timeSlot={slot}
-                        isClosed={isClosed}
-                        teacherGroups={teacherGroups}
-                        unassignedEntries={getUnassignedEntriesForCell?.(dateStr, slot.id) ?? []}
-                        maxStudentsPerTeacher={maxStudentsPerTeacher}
-                        activeDragId={activeId}
-                        activeDragEntry={activeEntry}
-                        transferMode={!!transferMode}
-                        onAddTeacher={(existingIds) => onAddTeacher(dateStr, slot.id, existingIds)}
-                        onAddStudent={(teacherId) => onAddStudent(dateStr, slot.id, teacherId)}
-                        onRemoveTeacher={(teacherId, entryCount) =>
-                          onRemoveTeacher(dateStr, slot.id, teacherId, entryCount)
-                        }
-                        onStudentClick={onStudentClick}
-                        onTransferClick={onTransferClick}
-                        onTransferTargetClick={
-                          onTransferTargetClick
-                            ? (_, slotId, teacherId) =>
-                                onTransferTargetClick(dateStr, slotId, teacherId)
-                            : undefined
-                        }
-                        getKoushuInfo={getKoushuInfo}
-                        subjectNameById={subjectNameById}
-                        absenceKeySet={absenceKeySet}
-                        onToggleAbsence={onToggleAbsence}
-                      />
-                    </div>
-                  );
-                })}
-                {headerRightContent && <div className="min-w-0" aria-hidden />}
-              </div>
-            </div>
-          );
-        })}
+  return (
+    <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd}>
+      {/* --sd-sticky-top: sticky ツールバーの実測高さ。時限見出しの top / 日行 scroll-margin が参照 */}
+      <div
+        className={`${styles.root} ${styles.boardCanvas}`}
+        style={{ '--sd-sticky-top': `${stickyOffset}px` } as React.CSSProperties}
+      >
+        <div className={styles.boardArea}>
+          {orientation === 'rows' ? renderRowsBoard() : renderColsBoard()}
+        </div>
       </div>
 
       <DragOverlay>
         {activeEntry ? (
-          <div className="opacity-95 shadow-sm cursor-grabbing rounded-xl border border-gray-200 bg-white">
+          <div className={styles.root} style={{ opacity: 0.95 }}>
             <StudentCard entry={activeEntry} onClick={() => {}} />
           </div>
         ) : null}

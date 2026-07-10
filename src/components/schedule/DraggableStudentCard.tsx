@@ -8,7 +8,6 @@ import type { ScheduleEntry } from '@/types/schedule';
 export interface DraggableStudentCardProps {
   entry: ScheduleEntry;
   onStudentClick: (entry: ScheduleEntry, e: React.MouseEvent) => void;
-  onTransferClick?: (entry: ScheduleEntry) => void;
   koushuEnrolled?: number;
   koushuScheduled?: number;
 }
@@ -16,7 +15,6 @@ export interface DraggableStudentCardProps {
 export const DraggableStudentCard = React.memo(function DraggableStudentCard({
   entry,
   onStudentClick,
-  onTransferClick,
   koushuEnrolled,
   koushuScheduled,
 }: DraggableStudentCardProps) {
@@ -46,7 +44,6 @@ export const DraggableStudentCard = React.memo(function DraggableStudentCard({
           e.stopPropagation();
           onStudentClick(entry, e);
         }}
-        onTransferClick={onTransferClick}
         koushuEnrolled={koushuEnrolled}
         koushuScheduled={koushuScheduled}
       />

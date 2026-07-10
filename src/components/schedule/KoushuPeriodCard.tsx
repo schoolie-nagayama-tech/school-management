@@ -5,6 +5,9 @@ import { ChevronDown, ChevronUp, Pencil, Trash2, Plus, Users } from 'lucide-reac
 import { Button, Loading } from '@/components/ui';
 import type { KoushuCourse, KoushuEnrollment } from '@/lib/api/seasonalCourses';
 import type { Subject } from '@/types/database';
+// Phase A: 形態キーの直書きを定数参照に置換。
+// TODO(Phase B以降): 表示ラベルは SCHEDULE_ENTRY_FORMATION_LABELS/マスタ label 参照へ差し替える。
+import { GROUP_FORMATION } from '@/types/schedule';
 
 const SEASON_LABELS: Record<string, string> = {
   spring: '春期',
@@ -153,12 +156,12 @@ export function KoushuPeriodCard({
                           <td className="px-4 py-2 text-[var(--paragraph)]">
                             <span
                               className={`mr-1.5 inline-block px-1.5 py-0.5 rounded text-[10px] font-medium align-middle ${
-                                en.formation === 'group'
+                                en.formation === GROUP_FORMATION
                                   ? 'bg-accent-ink-subtle text-accent-ink border border-accent-ink/15'
                                   : 'bg-info-subtle text-info border border-info/20'
                               }`}
                             >
-                              {en.formation === 'group' ? '集団' : '個別'}
+                              {en.formation === GROUP_FORMATION ? '集団' : '個別'}
                             </span>
                             <span className="font-semibold text-[var(--headline)]">
                               {en.koma_count}

@@ -1,0 +1,1610 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>座席表 高密度 v8 — 転置レイアウト比較（日=列 / 日=行）</title>
+<style>
+  /* v8: v7からの派生。「向き」トグルで 日=列(現行) / 日=行(転置) を切替比較する。
+     転置モード: 行=曜日6行、列=時限。1・2限は細い縦バーに折りたたみ、
+     セル内の講師ブロックは列幅~122pxを保ったまま横に複数列パッキング(順序保存・自然な折り返し) */
+  :root {
+    --primary: oklch(55% 0.19 27);
+    --primary-dark: oklch(45% 0.18 27);
+    --bg: oklch(99% 0.002 27);
+    --surface: oklch(97% 0.003 27);
+    --surface-raised: oklch(100% 0 0);
+    --surface-hover: oklch(95% 0.004 27);
+    --text-heading: oklch(22% 0.01 27);
+    --text-body: oklch(38% 0.008 27);
+    --text-muted: oklch(55% 0.008 27);
+    --text-faint: oklch(68% 0.006 27);
+    --text-on-primary: oklch(98% 0.005 27);
+    --border-default: oklch(90% 0.005 27);
+    --border-subtle: oklch(94% 0.004 27);
+    --border-strong: oklch(82% 0.008 27);
+    --success: oklch(55% 0.14 145);
+    --success-subtle: oklch(95% 0.04 145);
+    --warning: oklch(72% 0.15 80);
+    --warning-subtle: oklch(96% 0.05 80);
+    --danger: oklch(55% 0.19 27);
+    --danger-subtle: oklch(96% 0.03 27);
+    --info: oklch(55% 0.15 250);
+    --info-subtle: oklch(96% 0.03 250);
+    --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+    --canvas: oklch(90.5% 0.004 27);
+    --cell-bg: oklch(97.5% 0.003 27);
+    --cell-border: oklch(84% 0.007 27);
+    --card-border: oklch(76% 0.01 27);
+    --head-bg: oklch(93.5% 0.005 27);
+    --chip-bg: oklch(93% 0.004 27);
+    --chip-text: var(--text-muted);
+    --stripe: oklch(97.5% 0.003 27);
+    --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.10);
+    --ok-bg: oklch(93% 0.05 145);
+    --ok-border: var(--success);
+    --ok-text: oklch(42% 0.12 145);
+    --ok-accent: var(--success);
+    --warn-bg: var(--warning-subtle);
+    --warn-text: oklch(48% 0.11 80);
+    --warn-border: oklch(80% 0.11 80);
+    --danger-bg: var(--danger-subtle);
+    --danger-text: oklch(45% 0.16 27);
+    --danger-border: oklch(82% 0.09 27);
+    --today-bg: var(--info-subtle);
+    --today-text: var(--info);
+    --today-border: oklch(80% 0.07 250);
+    --transfer-row-bg: oklch(94.5% 0.035 250);
+    --absent-row-bg: oklch(93% 0.004 27);
+    --fs-name: 11px;
+    --fs-tname: 12px;
+    --fs-meta: 10px;
+    --fs-chip: 10px;
+    --fs-tiny: 9.5px;
+    --row-h: 20px;
+  }
+  :root.fs-small {
+    --fs-name: 10.5px;
+    --fs-tname: 11.5px;
+    --fs-meta: 9.5px;
+    --fs-chip: 9px;
+    --fs-tiny: 9px;
+    --row-h: 18px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --primary: oklch(68% 0.17 27);
+      --primary-dark: oklch(58% 0.18 27);
+      --bg: oklch(17% 0.01 27);
+      --surface: oklch(21% 0.012 27);
+      --surface-raised: oklch(25% 0.013 27);
+      --surface-hover: oklch(28% 0.014 27);
+      --text-heading: oklch(96% 0.005 27);
+      --text-body: oklch(86% 0.006 27);
+      --text-muted: oklch(72% 0.008 27);
+      --text-faint: oklch(62% 0.008 27);
+      --text-on-primary: oklch(18% 0.02 27);
+      --border-default: oklch(42% 0.014 27);
+      --border-subtle: oklch(34% 0.011 27);
+      --border-strong: oklch(54% 0.016 27);
+      --success: oklch(68% 0.15 145);
+      --success-subtle: oklch(30% 0.06 145);
+      --warning: oklch(78% 0.15 80);
+      --warning-subtle: oklch(30% 0.06 80);
+      --danger: oklch(68% 0.17 27);
+      --danger-subtle: oklch(30% 0.07 27);
+      --info: oklch(70% 0.14 250);
+      --info-subtle: oklch(30% 0.06 250);
+      --canvas: oklch(13% 0.008 27);
+      --cell-bg: oklch(20% 0.011 27);
+      --cell-border: oklch(36% 0.012 27);
+      --card-border: oklch(48% 0.014 27);
+      --head-bg: oklch(31% 0.013 27);
+      --chip-bg: oklch(30% 0.012 27);
+      --stripe: oklch(27% 0.012 27);
+      --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+      --ok-bg: oklch(32% 0.06 145);
+      --ok-border: oklch(60% 0.13 145);
+      --ok-text: oklch(80% 0.13 145);
+      --ok-accent: oklch(68% 0.15 145);
+      --warn-bg: oklch(30% 0.06 80);
+      --warn-text: oklch(78% 0.15 80);
+      --warn-border: oklch(45% 0.1 80);
+      --danger-bg: oklch(30% 0.07 27);
+      --danger-text: oklch(72% 0.15 27);
+      --danger-border: oklch(45% 0.12 27);
+      --today-bg: oklch(28% 0.055 250);
+      --today-text: oklch(75% 0.12 250);
+      --today-border: oklch(45% 0.1 250);
+      --transfer-row-bg: oklch(32% 0.07 250);
+      --absent-row-bg: oklch(35% 0.012 27);
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: "Noto Sans JP", "Hiragino Kaku Gothic ProN", "Yu Gothic", -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text-body);
+    font-size: 13px;
+    -webkit-font-smoothing: antialiased;
+  }
+  button { font-family: inherit; }
+  a { text-decoration: none; }
+
+  .page { height: 100vh; display: flex; flex-direction: column; }
+
+  /* ============ アプリヘッダー(AppHeader.tsx 再現) ============ */
+  .app-header {
+    height: 56px;
+    background: var(--primary);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12);
+    flex-shrink: 0;
+    position: relative;
+    z-index: 50;
+  }
+  .app-header-inner {
+    max-width: 80rem; margin: 0 auto; padding: 0 32px;
+    height: 100%;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .header-left { display: flex; align-items: center; gap: 16px; min-width: 0; }
+  .nest-logo {
+    color: #fff; font-weight: 900; font-size: 24px;
+    letter-spacing: 0.4em; padding-right: 0.4em;
+    user-select: none; flex-shrink: 0;
+  }
+  .header-divider { height: 24px; width: 1px; background: rgba(255,255,255,.3); flex-shrink: 0; }
+  .app-nav { display: flex; align-items: center; gap: 12px; }
+  .nav-link {
+    padding: 4px 10px; border-radius: 4px;
+    font-size: 12px; font-weight: 500;
+    color: rgba(255,255,255,.9);
+    white-space: nowrap; cursor: pointer;
+    transition: background .15s var(--ease-out), color .15s var(--ease-out);
+    display: flex; align-items: center; gap: 4px;
+    border: none; background: transparent;
+  }
+  .nav-link:hover { background: rgba(255,255,255,.1); color: #fff; }
+  .nav-group { position: relative; }
+  .nav-dropdown {
+    position: absolute; top: 100%; left: 0; margin-top: 4px;
+    background: var(--surface-raised);
+    border: 1px solid var(--border-default);
+    border-radius: 8px;
+    box-shadow: 0 10px 25px rgba(0,0,0,.15);
+    min-width: 160px; padding: 4px 0;
+    opacity: 0; pointer-events: none; transform: scale(.95);
+    transform-origin: top left;
+    transition: opacity .15s var(--ease-out), transform .15s var(--ease-out);
+    z-index: 60;
+  }
+  .nav-group:hover .nav-dropdown { opacity: 1; pointer-events: auto; transform: scale(1); }
+  .nav-dropdown a { display: block; padding: 8px 12px; font-size: 12px; color: var(--text-body); cursor: pointer; }
+  .nav-dropdown a:hover { background: var(--surface); }
+  .header-right { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+  .school-pill {
+    background: rgba(255,255,255,.2); color: #fff;
+    font-size: 12px; font-weight: 500;
+    padding: 6px 10px; border-radius: 8px;
+    border: none; cursor: pointer;
+    display: flex; align-items: center; gap: 4px;
+    white-space: nowrap;
+    transition: background .15s var(--ease-out);
+  }
+  .school-pill:hover { background: rgba(255,255,255,.3); }
+  .header-icon-btn {
+    padding: 6px; border: none; background: transparent;
+    color: rgba(255,255,255,.8); border-radius: 8px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background .15s var(--ease-out), color .15s var(--ease-out);
+  }
+  .header-icon-btn:hover { color: #fff; background: rgba(255,255,255,.1); }
+  .header-icon-btn.active { background: #fff; color: var(--primary); }
+  .header-icon-btn.active:hover { background: #fff; color: var(--primary); }
+
+  /* ============ ページツールバー(白クローム) ============ */
+  .chrome {
+    background: var(--bg);
+    flex-shrink: 0;
+    border-bottom: 1px solid var(--border-strong);
+  }
+  .tb-row {
+    max-width: 1700px; margin: 0 auto; padding: 4px 14px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .tb-row1 { padding-top: 4px; padding-bottom: 3px; }
+  .tb-row2 { padding-top: 2px; padding-bottom: 4px; }
+  .page-title { font-size: 15px; font-weight: 700; color: var(--text-heading); margin: 0 2px 0 0; white-space: nowrap; }
+  .tb-btn {
+    border: 1px solid var(--border-default);
+    background: var(--surface-raised);
+    color: var(--text-body);
+    font-size: 12px; font-weight: 500;
+    padding: 4px 10px; height: 26px;
+    border-radius: 8px; cursor: pointer;
+    display: flex; align-items: center; gap: 4px;
+    white-space: nowrap;
+    transition: background .15s var(--ease-out), border-color .15s var(--ease-out);
+  }
+  .tb-btn:hover { background: var(--surface); border-color: var(--border-strong); }
+  .week-label-btn {
+    border: none; background: transparent;
+    font-size: 12.5px; color: var(--text-body);
+    min-width: 150px; text-align: center;
+    padding: 4px 8px; border-radius: 8px; cursor: pointer;
+  }
+  .week-label-btn:hover { background: var(--surface-hover); }
+  .tb-sep { height: 18px; width: 1px; background: var(--border-default); }
+  .tb-label { font-size: 11.5px; color: var(--text-muted); white-space: nowrap; }
+  .day-checks { display: flex; align-items: center; gap: 6px; }
+  .day-checks label { display: flex; align-items: center; gap: 2px; font-size: 11px; color: var(--text-heading); cursor: pointer; white-space: nowrap; }
+  .day-checks input { width: 12px; height: 12px; accent-color: var(--primary); }
+  .mode-select {
+    font-size: 12px; padding: 3px 6px; height: 26px;
+    border: 1px solid var(--border-default); border-radius: 6px;
+    background: var(--surface-raised); color: var(--text-body);
+    font-family: inherit;
+  }
+  .spacer { flex: 1; }
+  .mgmt-wrap { position: relative; }
+  .mgmt-dropdown {
+    position: absolute; top: calc(100% + 4px); right: 0;
+    width: 208px;
+    background: var(--surface-raised);
+    border: 1px solid var(--border-default);
+    border-radius: 8px;
+    box-shadow: 0 8px 20px rgba(0,0,0,.14);
+    padding: 4px 0; z-index: 40; display: none;
+  }
+  .mgmt-dropdown.open { display: block; }
+  .mgmt-dropdown a { display: block; padding: 8px 12px; font-size: 12.5px; color: var(--text-body); cursor: pointer; }
+  .mgmt-dropdown a:hover { background: var(--surface); }
+  .help-icon { border: none; background: transparent; color: var(--text-faint); padding: 4px; border-radius: 6px; cursor: pointer; display: flex; }
+  .help-icon:hover { color: var(--text-muted); background: var(--surface-hover); }
+
+  .form-tabs { display: flex; background: var(--chip-bg); border-radius: 999px; padding: 2px; gap: 2px; }
+  .form-tabs button {
+    border: none; background: transparent;
+    padding: 2px 12px; border-radius: 999px;
+    font-size: 12px; font-weight: 500; color: var(--text-muted); cursor: pointer;
+    transition: background .15s var(--ease-out), color .15s var(--ease-out);
+  }
+  .form-tabs button:hover { color: var(--text-heading); }
+  .form-tabs button.active { background: var(--text-heading); color: var(--bg); font-weight: 700; }
+  .col-toggle { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text-muted); }
+  .col-toggle .pills { display: flex; background: var(--chip-bg); border-radius: 999px; padding: 2px; gap: 2px; }
+  .col-toggle .pills button {
+    border: none; background: transparent; padding: 2px 10px; border-radius: 999px;
+    font-size: 11px; font-weight: 500; color: var(--text-muted); cursor: pointer;
+    transition: background .15s var(--ease-out), color .15s var(--ease-out);
+  }
+  .col-toggle .pills button.active { background: var(--surface-raised); color: var(--text-heading); font-weight: 700; box-shadow: var(--card-shadow); }
+
+  .legend-toggle {
+    border: none; background: transparent; cursor: pointer;
+    font-size: 11px; color: var(--text-muted);
+    display: flex; align-items: center; gap: 4px; padding: 2px;
+  }
+  .legend-toggle:hover { color: var(--text-heading); }
+  .legend-toggle .chev { transition: transform .15s var(--ease-out); display: inline-flex; }
+  .legend-toggle.open .chev { transform: rotate(90deg); }
+  .legend-content {
+    display: none;
+    flex-wrap: wrap;
+    gap: 14px;
+    font-size: 11px;
+    color: var(--text-muted);
+    max-width: 1700px; margin: 0 auto;
+    padding: 2px 14px 8px;
+  }
+  .legend-content.open { display: flex; }
+  .legend-item { display: flex; align-items: center; gap: 5px; }
+  .legend-swatch { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+  .legend-seat {
+    display: inline-block; width: 44px; height: 16px; line-height: 13px;
+    background: var(--ok-bg);
+    border: 1.5px dashed var(--ok-border); border-radius: 2px;
+    color: var(--ok-text); font-size: 10px; font-weight: 600; padding: 0 4px;
+  }
+
+  /* ============ 盤面キャンバス ============ */
+  .board-canvas {
+    flex: 1; min-height: 0;
+    background: var(--canvas);
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.07);
+    display: flex; flex-direction: column;
+    padding: 4px 14px 0;
+  }
+  .board-area { flex: 1; min-height: 0; overflow-y: auto; }
+  /* 転置モード: 縦スクロールを許容する代わりに日行単位でスナップさせ、
+     「1日が途中で切れた」状態で止まらないようにする */
+  .board-area.snap-rows {
+    scroll-snap-type: y mandatory;
+    scroll-padding-top: 26px; /* sticky時限ヘッダーの高さぶん逃がす */
+  }
+  .board { display: none; }
+  .board.active { display: block; }
+
+  /* --- 現行(日=列) --- */
+  .week-grid {
+    display: grid;
+    grid-template-columns: 44px repeat(6, minmax(0, 1fr));
+    gap: 1px 10px;
+    height: 100%;
+    align-content: start;
+    max-width: 1700px;
+    margin: 0 auto;
+  }
+
+  /* --- 転置(日=行): 行=曜日6行、列=時限3列＋細い1・2限縦バー --- */
+  .week-grid-t {
+    display: grid;
+    grid-template-columns: 44px 24px repeat(3, minmax(0, 1fr));
+    gap: 2px 8px;
+    align-content: start;
+    max-width: 1700px;
+    margin: 0 auto;
+  }
+  .week-grid-t.group-t { grid-template-columns: 44px repeat(3, minmax(0, 1fr)); }
+  .week-grid-t.prog-t { grid-template-columns: 44px repeat(2, minmax(0, 1fr)); }
+  /* 時限ヘッダーは本体グリッドから分離した sticky 行(スクロールしても常に見える) */
+  .t-sticky-head {
+    position: sticky;
+    top: 0;
+    z-index: 15;
+    background: var(--canvas);
+    padding-bottom: 4px;
+  }
+  .slot-head-t {
+    background: var(--head-bg);
+    border: 1px solid var(--cell-border);
+    border-radius: 4px;
+    height: 20px;
+    display: flex; align-items: center; justify-content: center; gap: 5px;
+    font-size: 11.5px; font-weight: 700; color: var(--text-heading);
+  }
+  .slot-head-t .t { font-size: 10px; font-weight: 500; color: var(--text-muted); }
+  /* 縦バー列のヘッダーセル(空面) */
+  .vbar-head {
+    background: var(--head-bg);
+    border: 1px solid var(--cell-border);
+    border-radius: 4px;
+    height: 20px;
+  }
+  /* 日行単位のスナップ位置(行ヘッダーを代表点にする) */
+  .week-grid-t .day-label-t { scroll-snap-align: start; }
+  /* 曜日行ヘッダー(左端の縦積みラベル)。当日行は薄青 */
+  .day-label-t {
+    background: var(--head-bg);
+    border: 1px solid var(--cell-border);
+    border-radius: 4px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 0;
+  }
+  .day-label-t .d-date { font-size: 13px; font-weight: 700; color: var(--text-heading); line-height: 1.2; }
+  .day-label-t .d-day { font-size: 10px; font-weight: 500; color: var(--text-muted); }
+  .day-label-t.today { background: var(--today-bg); border-color: var(--today-border); }
+  .day-label-t.today .d-date, .day-label-t.today .d-day { color: var(--today-text); }
+  /* 転置時の当日行: セルにも薄青の面を敷いて行ごとハイライト */
+  .day-cell.today-row { background: var(--today-bg); border-color: var(--today-border); }
+  /* 1・2限の細い縦バー(本体グリッドの6日行を縦断。ヘッダーは分離済み) */
+  .collapsed-vbar {
+    grid-column: 2;
+    grid-row: 1 / 7;
+    background: var(--cell-bg);
+    border: 1px solid var(--cell-border);
+    border-radius: 4px;
+    writing-mode: vertical-rl;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px;
+    letter-spacing: .12em;
+    color: var(--text-faint);
+    padding: 8px 2px;
+    cursor: default;
+  }
+  /* セル内の動的パッキング: 列幅~122pxを保って入るだけ横に並べ、順序保存で折り返す */
+  .t-pack {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(122px, 1fr));
+    gap: 3px;
+    align-items: start;
+  }
+  /* 転置は1画面制約なし: 日行の中身に空気を入れて読みやすさ優先 */
+  .week-grid-t .day-cell { padding: 4px; gap: 4px; }
+  .week-grid-t .add-teacher-bar { height: 14px; font-size: 9px; }
+  /* 転置時の集団カードはセルが広いため幅を上限で抑える */
+  .week-grid-t .g-card { max-width: 280px; }
+  .week-grid-t .group-cell { padding: 5px; }
+
+  .day-head {
+    background: var(--head-bg);
+    border: 1px solid var(--cell-border);
+    border-radius: 4px;
+    text-align: center;
+    padding: 1px;
+    font-size: 11px; font-weight: 700; color: var(--text-heading);
+    height: 18px;
+    display: flex; align-items: center; justify-content: center; gap: 4px;
+  }
+  .day-head .d-date { font-size: 11.5px; }
+  .day-head .d-day { font-size: 10px; color: var(--text-muted); font-weight: 500; }
+  .day-head.today { background: var(--today-bg); border-color: var(--today-border); color: var(--today-text); }
+  .day-head.today .d-day { color: var(--today-text); opacity: .75; }
+
+  .slot-collapsed { grid-column: 1 / -1; display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 1px 10px; }
+  .slot-collapsed .slot-label {
+    background: var(--head-bg);
+    border: 1px solid var(--cell-border);
+    border-radius: 4px;
+    font-size: 9px; font-weight: 700;
+    color: var(--text-muted);
+    display: flex; align-items: center; justify-content: center;
+    text-align: center; line-height: 1.15;
+  }
+  .collapsed-bar {
+    background: var(--cell-bg);
+    border: 1px solid var(--cell-border);
+    border-radius: 4px;
+    height: 14px;
+    display: flex; align-items: center; gap: 6px;
+    padding: 0 10px;
+    font-size: 10.5px;
+    color: var(--text-faint);
+    cursor: pointer;
+    transition: background .15s var(--ease-out);
+  }
+  .collapsed-bar:hover { background: var(--surface-raised); }
+  .collapsed-bar .chev { transition: transform .15s var(--ease-out); display: inline-flex; }
+  .collapsed-bar.open .chev { transform: rotate(90deg); }
+  .collapsed-expand {
+    display: none;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 2px 10px;
+    margin-top: 2px;
+  }
+  .collapsed-expand.open { display: grid; }
+  .collapsed-expand .mini-add {
+    height: 20px;
+    border: 1px dashed var(--cell-border);
+    border-radius: 4px;
+    font-size: 10.5px; color: var(--text-faint);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+  }
+  .collapsed-expand .mini-add:hover { background: var(--cell-bg); color: var(--text-muted); }
+
+  .slot-label-main {
+    background: var(--head-bg);
+    border: 1px solid var(--cell-border);
+    border-radius: 4px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700; color: var(--text-heading);
+    text-align: center; gap: 2px; padding: 4px 1px;
+  }
+  .slot-label-main .t {
+    font-size: 10px; font-weight: 500;
+    color: var(--text-muted);
+    line-height: 1.25;
+  }
+  .slot-label-main .t .arrow { color: var(--text-faint); font-size: 9px; }
+
+  .day-cell {
+    background: var(--cell-bg);
+    border: 1px solid var(--cell-border);
+    border-radius: 4px;
+    padding: 2px;
+    display: flex; flex-direction: column; gap: 2px;
+  }
+  .day-cell.empty { background: transparent; border-style: dashed; }
+
+  .cell-cols { display: flex; gap: 5px; align-items: flex-start; }
+  .cell-col { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+
+  .t-block {
+    border: 1px solid var(--card-border);
+    border-radius: 3px;
+    overflow: hidden;
+    background: var(--surface-raised);
+    box-shadow: var(--card-shadow);
+  }
+  .t-block.has-vacancy { border-left: 3px solid var(--ok-accent); }
+  .t-head {
+    position: relative;
+    display: flex; align-items: center;
+    padding: 0 42px 0 6px;
+    background: var(--head-bg);
+    height: 22px;
+  }
+  .t-name {
+    flex: 1; min-width: 0;
+    font-size: var(--fs-tname); font-weight: 600; color: var(--text-heading);
+    text-align: center;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .head-right {
+    position: absolute; right: 3px; top: 50%; transform: translateY(-50%);
+    display: flex; align-items: center; gap: 3px;
+  }
+  .seat-input {
+    width: 24px; height: 15px; flex-shrink: 0;
+    border: 1px solid var(--border-default); border-radius: 3px;
+    background: var(--surface-raised); color: var(--text-muted);
+    font-size: 10px; text-align: center; padding: 0;
+    font-family: inherit;
+  }
+  .seat-input::placeholder { color: var(--text-faint); }
+  .seat-input:hover { border-color: var(--border-strong); }
+  .seat-input:focus { outline: none; border-color: var(--today-border); color: var(--text-heading); }
+  .t-close {
+    border: none; background: transparent; color: var(--text-faint);
+    width: 13px; height: 13px; display: flex; align-items: center; justify-content: center;
+    border-radius: 3px; cursor: pointer; flex-shrink: 0;
+    opacity: 0;
+    transition: background .15s var(--ease-out), color .15s var(--ease-out), opacity .15s var(--ease-out);
+  }
+  .t-block:hover .t-close { opacity: 1; }
+  .t-close:hover { background: var(--danger-bg); color: var(--danger-text); }
+
+  .s-row {
+    position: relative;
+    display: flex; align-items: center; gap: 3px;
+    height: var(--row-h);
+    padding: 0 4px;
+    font-size: var(--fs-name);
+    line-height: var(--row-h);
+    border-top: 1px solid var(--border-subtle);
+    white-space: nowrap;
+  }
+  .s-row:nth-child(even) { background: var(--stripe); }
+  .s-row.clickable { cursor: pointer; }
+  .s-row.clickable:hover { background: var(--surface-hover); }
+  .s-name { font-weight: 500; color: var(--text-heading); flex-shrink: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+  .s-grade { color: var(--text-muted); font-size: var(--fs-meta); flex-shrink: 0; }
+  .ratio-mark { font-size: var(--fs-tiny); color: var(--text-faint); flex-shrink: 0; }
+  .s-badge { font-size: 8.5px; font-weight: 700; padding: 0 3px; border-radius: 2px; flex-shrink: 0; line-height: 12px; }
+  .s-badge.trial { background: var(--warn-bg); color: var(--warn-text); }
+
+  .s-row.transfer-row { background: var(--transfer-row-bg); }
+  .s-row.clickable.transfer-row:hover { background: var(--transfer-row-bg); filter: brightness(.96); }
+  .due-text { font-size: var(--fs-tiny); font-weight: 700; color: var(--danger-text); flex-shrink: 0; margin-left: auto; }
+  .s-row.absent { background: var(--absent-row-bg); }
+  .s-row.clickable.absent:hover { background: var(--absent-row-bg); filter: brightness(.96); }
+  .s-row.absent .s-name { text-decoration: line-through; color: var(--text-faint); }
+  .s-row.absent .s-grade,
+  .s-row.absent .subj-chip,
+  .s-row.absent .ratio-mark { opacity: .55; }
+
+  .s-row.over-seat { box-shadow: inset 2px 0 0 var(--danger-border); }
+
+  .s-row.seat-empty {
+    background: var(--ok-bg);
+    border: 1.5px dashed var(--ok-border);
+    border-radius: 2px;
+    margin: 1px 2px;
+    height: var(--row-h);
+    color: var(--ok-text);
+    font-size: var(--fs-meta);
+    font-weight: 600;
+    cursor: default;
+  }
+
+  .subj-chip {
+    font-size: var(--fs-chip); font-weight: 600;
+    padding: 0 3px; height: 14px; line-height: 12px;
+    border: 1px solid transparent;
+    border-radius: 3px; flex-shrink: 0;
+  }
+  .subj-chip.c-indigo  { background: #e9e9fb; color: #4547b0; border-color: #cdcdf0; }
+  .subj-chip.c-blue    { background: #e5eefb; color: #2c5fb0; border-color: #c6d8f2; }
+  .subj-chip.c-emerald { background: #e3f4e9; color: #1e7a45; border-color: #c0e3cd; }
+  .subj-chip.c-teal    { background: #d5efef; color: #136a72; border-color: #aedddd; }
+  .subj-chip.c-amber   { background: #f8e9cd; color: #8a5f0a; border-color: #ecd4a2; }
+  .subj-chip.c-violet  { background: #eeeafa; color: #6243b5; border-color: #d7cdf2; }
+  .subj-chip.c-gray    { background: #efedec; color: #6b6462; border-color: #dcd8d6; }
+  .subj-chip.half-chip { background: #eceef2; color: #5a6272; border-color: #d3d7df; }
+  @media (prefers-color-scheme: dark) {
+    .subj-chip.c-indigo  { background: #26264a; color: #a3a5ee; border-color: #3d3d6b; }
+    .subj-chip.c-blue    { background: #1e2c44; color: #8fb4ee; border-color: #2e4468; }
+    .subj-chip.c-emerald { background: #1c322a; color: #7fd0a0; border-color: #2a4a3a; }
+    .subj-chip.c-teal    { background: #163233; color: #7fcdd4; border-color: #24494b; }
+    .subj-chip.c-amber   { background: #3a2f14; color: #e5c069; border-color: #55461f; }
+    .subj-chip.c-violet  { background: #2b2440; color: #b6a0ee; border-color: #3f355c; }
+    .subj-chip.c-gray    { background: #2a2830; color: #b6b1b7; border-color: #3b3942; }
+    .subj-chip.half-chip { background: #262a33; color: #9aa4b5; border-color: #3a4150; }
+  }
+
+  .add-teacher-bar {
+    height: 10px;
+    border: 1px dashed var(--cell-border);
+    border-radius: 3px;
+    font-size: 8px;
+    color: var(--text-faint);
+    display: flex; align-items: center; justify-content: center; gap: 3px;
+    cursor: pointer;
+    transition: background .15s var(--ease-out), color .15s var(--ease-out);
+    margin-top: auto;
+  }
+  .add-teacher-bar:hover { background: var(--surface-raised); color: var(--text-muted); }
+
+  .unplaced-badge {
+    align-self: flex-start;
+    font-size: 10px; font-weight: 700;
+    padding: 1px 6px; border-radius: 999px;
+    background: var(--warn-bg); color: var(--warn-text);
+    cursor: pointer; border: 1px solid var(--warn-border);
+  }
+  .unplaced-badge:hover { filter: brightness(0.97); }
+  .unplaced-chips { display: none; flex-wrap: wrap; gap: 3px; padding: 2px 0; }
+  .unplaced-chips.open { display: flex; }
+  .unplaced-chip {
+    font-size: 9.5px; padding: 1px 5px; border-radius: 3px;
+    border: 1px dashed var(--text-faint); color: var(--text-muted); background: var(--surface-raised);
+  }
+
+  .row-menu {
+    position: fixed; z-index: 100;
+    min-width: 152px;
+    background: var(--surface-raised);
+    border: 1px solid var(--border-default);
+    border-radius: 8px;
+    box-shadow: 0 6px 20px rgba(0,0,0,.2);
+    padding: 4px;
+    display: none;
+  }
+  .row-menu.open { display: block; }
+  .row-menu .rm-head {
+    font-size: 11px; font-weight: 700; color: var(--text-heading);
+    padding: 5px 8px 5px;
+    border-bottom: 1px solid var(--border-subtle);
+    margin-bottom: 3px;
+    white-space: nowrap;
+  }
+  .row-menu button {
+    display: block; width: 100%; text-align: left;
+    border: none; background: transparent;
+    padding: 6px 8px;
+    font-size: 12px; color: var(--text-body);
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  .row-menu button:hover { background: var(--surface); }
+  .row-menu button.rm-danger:hover { background: var(--danger-bg); color: var(--danger-text); }
+
+  .week-grid.group-grid { grid-template-rows: 18px repeat(3, 1fr); }
+  .week-grid.prog-grid { grid-template-rows: 18px repeat(2, 1fr); }
+  .group-cell {
+    background: var(--cell-bg);
+    border: 1px solid var(--cell-border);
+    border-radius: 4px;
+    padding: 4px;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .group-cell.empty { background: transparent; border-style: dashed; }
+  .group-cell.today-row { background: var(--today-bg); border-color: var(--today-border); }
+  .group-slot-label {
+    background: var(--head-bg);
+    border: 1px solid var(--cell-border);
+    border-radius: 4px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700; color: var(--text-heading); text-align: center; gap: 2px; padding: 3px 1px;
+  }
+  .group-slot-label .t { font-size: 10px; font-weight: 500; color: var(--text-muted); line-height: 1.25; }
+  .group-slot-label .t .arrow { color: var(--text-faint); font-size: 9px; }
+  .add-class-bar {
+    flex: 1;
+    min-height: 26px;
+    border: 1px dashed var(--cell-border);
+    border-radius: 4px;
+    font-size: 10.5px; color: var(--text-faint);
+    display: flex; align-items: center; justify-content: center; gap: 4px;
+    cursor: pointer;
+    transition: background .15s var(--ease-out), color .15s var(--ease-out);
+  }
+  .add-class-bar:hover { background: var(--cell-bg); color: var(--text-muted); }
+
+  .g-card {
+    border: 1px solid var(--card-border);
+    border-radius: 3px;
+    overflow: hidden;
+    background: var(--surface-raised);
+    box-shadow: var(--card-shadow);
+    display: flex; flex-direction: column;
+  }
+  .g-card.has-vacancy { border-left: 3px solid var(--ok-accent); }
+  .g-card-head {
+    display: flex; align-items: center; gap: 6px;
+    padding: 3px 6px;
+    background: var(--head-bg);
+    height: 22px;
+  }
+  .g-card-head .g-title { font-size: 12px; font-weight: 700; color: var(--text-heading); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .g-cap {
+    font-size: 9.5px; font-weight: 700; padding: 1px 5px; border-radius: 999px;
+    background: var(--chip-bg); color: var(--chip-text); flex-shrink: 0;
+  }
+  .g-cap.open-slots { background: var(--ok-bg); color: var(--ok-text); }
+  .g-teacher { font-size: 9.5px; color: var(--text-muted); padding: 2px 6px 0; }
+  .g-students { padding: 1px 0 3px; }
+
+  .page-footer {
+    flex-shrink: 0;
+    text-align: center;
+    font-size: 9.5px;
+    line-height: 12px;
+    color: var(--text-faint);
+    padding: 0 0 2px;
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="app-header">
+    <div class="app-header-inner">
+      <div class="header-left">
+        <span class="nest-logo">NEST</span>
+        <div class="header-divider"></div>
+        <nav class="app-nav">
+          <a class="nav-link">生徒管理</a>
+          <a class="nav-link">進行表確認</a>
+          <a class="nav-link">申込状況</a>
+          <a class="nav-link">問合せ管理</a>
+          <div class="nav-group">
+            <button class="nav-link">フォーム管理 <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>
+            <div class="nav-dropdown">
+              <a>回答一覧</a><a>面談記録追加</a><a>ポータル設定</a><a>テスト対策</a>
+            </div>
+          </div>
+          <div class="nav-group">
+            <button class="nav-link">講習管理 <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>
+            <div class="nav-dropdown">
+              <a>講習一覧</a><a>進捗管理</a><a>準備スケジュール</a><a>講習提案書</a>
+            </div>
+          </div>
+          <div class="nav-group">
+            <button class="nav-link">講師 <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>
+            <div class="nav-dropdown">
+              <a>講師一覧</a><a>出勤簿管理</a><a>シフト設定</a><a>研修バッジ管理</a>
+            </div>
+          </div>
+          <div class="nav-group">
+            <button class="nav-link">業務管理 <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>
+            <div class="nav-dropdown">
+              <a>請求管理</a><a>教材・発注管理</a><a>業務進捗管理表</a>
+            </div>
+          </div>
+        </nav>
+      </div>
+      <div class="header-right">
+        <button class="school-pill">永山校 <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>
+        <button class="header-icon-btn" title="ログアウト">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
+        </button>
+        <button class="header-icon-btn" title="設定">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+        </button>
+        <button class="header-icon-btn active" title="座席表（開発中）">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <div class="chrome">
+    <div class="tb-row tb-row1">
+      <h1 class="page-title">座席表</h1>
+      <button class="help-icon" title="この画面のヘルプ">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
+      </button>
+      <div class="tb-sep"></div>
+      <button class="tb-btn" id="prevWeek">前週</button>
+      <button class="week-label-btn" id="weekLabel" title="クリックで週を選択">2026年7月 6〜12日</button>
+      <button class="tb-btn" id="nextWeek">次週</button>
+      <button class="tb-btn" id="thisWeek">今週</button>
+      <div class="tb-sep"></div>
+      <button class="tb-btn">
+        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+        座席表の設定
+        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="opacity:.7"><path d="m6 9 6 6 6-6"/></svg>
+      </button>
+      <span class="tb-label">表示曜日:</span>
+      <div class="day-checks">
+        <label><input type="checkbox">日</label>
+        <label><input type="checkbox" checked>月</label>
+        <label><input type="checkbox" checked>火</label>
+        <label><input type="checkbox" checked>水</label>
+        <label><input type="checkbox" checked>木</label>
+        <label><input type="checkbox" checked>金</label>
+        <label><input type="checkbox" checked>土</label>
+      </div>
+      <div class="spacer"></div>
+      <span class="tb-label">モード:</span>
+      <select class="mode-select">
+        <option value="">通常</option>
+        <optgroup label="講習">
+          <option>2026年夏期講習</option>
+        </optgroup>
+        <optgroup label="テスト対策">
+          <option>テスト対策（増コマ申込）</option>
+        </optgroup>
+      </select>
+      <div class="mgmt-wrap">
+        <button class="tb-btn" id="mgmtBtn">管理
+          <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="opacity:.7"><path d="m6 9 6 6 6-6"/></svg>
+        </button>
+        <div class="mgmt-dropdown" id="mgmtDropdown">
+          <a>通塾日程の登録</a>
+          <a>申込管理（講習・テスト対策）</a>
+          <a>一括マッチング</a>
+        </div>
+      </div>
+      <button class="tb-btn" title="最新のデータを再取得">
+        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
+        再取得
+      </button>
+      <button class="tb-btn" title="印刷">
+        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg>
+        印刷
+      </button>
+      <button class="tb-btn" title="授業報告書の見本（ダミー）を開く">
+        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>
+        報告書見本
+      </button>
+    </div>
+    <div class="tb-row tb-row2">
+      <span class="tb-label">形態:</span>
+      <div class="form-tabs" id="formTabs">
+        <button class="active" data-board="individual">個別</button>
+        <button data-board="group">小集団</button>
+        <button data-board="programming">プログラミング</button>
+      </div>
+      <div class="col-toggle">
+        <span>向き:</span>
+        <div class="pills" id="orientToggle">
+          <button data-orient="cols" class="active">日=列</button>
+          <button data-orient="rows">日=行</button>
+        </div>
+      </div>
+      <div class="col-toggle" id="colToggleWrap">
+        <span>表示:</span>
+        <div class="pills" id="colToggle">
+          <button data-cols="1">1列</button>
+          <button data-cols="2" class="active">2列</button>
+        </div>
+      </div>
+      <div class="col-toggle">
+        <span>文字:</span>
+        <div class="pills" id="fontToggle">
+          <button data-fs="std" class="active">標準</button>
+          <button data-fs="small">小</button>
+        </div>
+      </div>
+      <button class="legend-toggle" id="legendToggle"><span class="chev">▸</span>凡例</button>
+      <div class="spacer"></div>
+    </div>
+    <div class="legend-content" id="legendContent">
+      <div class="legend-item"><strong style="color:var(--text-heading);">行の色:</strong>
+        <span class="legend-swatch" style="background:var(--surface-raised); border:1px solid var(--border-default);"></span>白=通常 /
+        <span class="legend-swatch" style="background:var(--transfer-row-bg); border:1px solid var(--today-border);"></span>青=振替 /
+        <span class="legend-swatch" style="background:var(--absent-row-bg); border:1px solid var(--border-default);"></span>グレー＋打消し線=欠席 /
+        <span class="legend-seat">空席</span>緑破線=空席
+      </div>
+      <div class="legend-item"><strong style="color:var(--text-heading);">色の意味:</strong> <span style="color:var(--ok-text); font-weight:700;">緑=入れる</span> / <span style="color:var(--warn-text); font-weight:700;">琥珀=対応必要</span> / <span style="color:var(--danger-text); font-weight:700;">赤=異常</span></div>
+      <div class="legend-item"><span class="legend-swatch" style="background:var(--surface-raised); border:1px solid var(--card-border); box-shadow: inset 3px 0 0 var(--ok-accent);"></span>空きのある講師(左縁緑)</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:var(--warn-bg); border:1px solid var(--warn-border);"></span>未配置あり(対応必要)</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:var(--surface-raised); box-shadow: inset 2px 0 0 var(--danger-border); border:1px solid var(--border-subtle);"></span>定員超過の行 / <span class="due-text" style="margin:0;">~7/31</span>振替期限切迫(赤字)</div>
+      <div class="legend-item"><span class="ratio-mark">1:1</span>1対1契約(1名で満席)</div>
+      <div class="legend-item"><span class="subj-chip half-chip">前</span><span class="subj-chip half-chip">後</span>45分授業(前半/後半)</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:var(--today-bg); border:1px solid var(--today-border);"></span>本日</div>
+      <div class="legend-item"><span class="subj-chip c-indigo">国</span><span class="subj-chip c-blue">数</span><span class="subj-chip c-emerald">英</span><span class="subj-chip c-teal">理</span><span class="subj-chip c-amber">社</span><span class="subj-chip c-violet">HAL</span>科目チップ</div>
+      <div class="legend-item"><span class="s-badge trial" style="position:static;">体</span>体験</div>
+      <div class="legend-item">生徒行クリックで欠席・振替メニュー / 氏名ホバーで全名表示 / 振替行ホバーで元日程表示</div>
+    </div>
+  </div>
+
+  <div class="board-canvas">
+    <div class="board-area">
+      <div class="board active" id="board-individual"></div>
+      <div class="board" id="board-group"></div>
+      <div class="board" id="board-programming"></div>
+    </div>
+    <div class="page-footer">schedule-density-v8 — 2026-07-10 密度確認用モック（転置レイアウト比較: 日=列 / 日=行）</div>
+  </div>
+</div>
+
+<div class="row-menu" id="rowMenu">
+  <div class="rm-head" id="rowMenuHead"></div>
+  <button class="rm-danger">欠席にする</button>
+  <button>振替</button>
+  <button>取り消し</button>
+</div>
+
+<script>
+(function () {
+  const ICON_X = '<svg viewBox="0 0 24 24" width="9" height="9" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>';
+  const ICON_PLUS = '<svg viewBox="0 0 24 24" width="9" height="9" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>';
+
+  const TEACHERS = ["北村由衣","杉浦駿","平澤未来","西舘季紀","川俣建","水上歩乃歌","瀧川怜生","坂田英俊","浅井遼介","佐藤朱華"];
+
+  const STUDENTS = [
+    { name: "野中朔也", grade: "小6", subject: "国語" },
+    { name: "宇佐美乃葵", grade: "小5", subject: "算数" },
+    { name: "田嶋健", grade: "小5", subject: "国理" },
+    { name: "大崎透", grade: "小3", subject: "算数" },
+    { name: "鳥居宗生", grade: "小6", subject: "HAL" },
+    { name: "ダニエル マーガレット", grade: "中2", subject: "英語" },
+    { name: "松尾玲衣", grade: "中1", subject: "数学" },
+    { name: "永井祐吏", grade: "中2", subject: "数学" },
+    { name: "萩野結愛", grade: "中2", subject: "数学" },
+    { name: "大塚好倖", grade: "中1", subject: "英語" },
+    { name: "川原彩葉", grade: "中3", subject: "英語" },
+    { name: "伊坂華", grade: "小6", subject: "算数" },
+    { name: "相沢陽向", grade: "小4", subject: "算数" },
+    { name: "遠藤蒼太", grade: "中3", subject: "理科" },
+    { name: "小野寺茜", grade: "小6", subject: "英語" },
+    { name: "加藤悠人", grade: "中1", subject: "国語" },
+    { name: "木下彩", grade: "小5", subject: "算数" },
+    { name: "桜井蓮", grade: "中2", subject: "英語" },
+    { name: "白石美月", grade: "小3", subject: "国語" },
+    { name: "高田航", grade: "中3", subject: "数学" },
+    { name: "長谷川杏珠", grade: "中1", subject: "社会" },
+  ];
+
+  const DAYS = [
+    { date: "6", day: "月" },
+    { date: "7", day: "火" },
+    { date: "8", day: "水" },
+    { date: "9", day: "木", today: true },
+    { date: "10", day: "金" },
+    { date: "11", day: "土" },
+  ];
+
+  const SUBJECT_MAP = {
+    "国語": ["国", "indigo"],
+    "算数": ["算", "blue"],
+    "数学": ["数", "blue"],
+    "英語": ["英", "emerald"],
+    "理科": ["理", "teal"],
+    "社会": ["社", "amber"],
+    "国理": ["国理", "indigo"],
+    "HAL": ["HAL", "violet"],
+  };
+  function subjectChipHtml(subject) {
+    let label, color;
+    const m = SUBJECT_MAP[subject];
+    if (m) { label = m[0]; color = m[1]; }
+    else if (subject.indexOf("HAL") === 0) { label = subject; color = "violet"; }
+    else { label = subject.slice(0, 2); color = "gray"; }
+    return `<span class="subj-chip c-${color}" title="${escapeHtml(subject)}">${escapeHtml(label)}</span>`;
+  }
+
+  const ABSENT_COUNTERS = [8, 30, 56];
+  function stateFor(counter) {
+    const transfer =
+      counter === 18
+        ? { urgent: true, due: "7/31", origin: "7/3(木) 3限" }
+        : counter % 7 === 4
+          ? { urgent: false, origin: "7/2(水) 4限" }
+          : null;
+    return {
+      transfer,
+      trial: counter % 11 === 6,
+      absent: ABSENT_COUNTERS.indexOf(counter) !== -1,
+    };
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  }
+
+  const SLOTS_INDIVIDUAL = [
+    { key: "s12", label: "1・2限", time: "12:50〜16:00", collapsed: true },
+    { key: "s3", label: "3限", time: "16:20〜17:50", counts: [6, 6, 5, 6, 6, 10], stressDay: 5 },
+    { key: "s4", label: "4限", time: "18:00〜19:30", counts: [5, 4, 6, 4, 5, 4] },
+    { key: "s5", label: "5限", time: "19:40〜21:10", counts: [4, 3, 5, 3, 4, 3] },
+  ];
+  const ACTIVE_SLOTS = SLOTS_INDIVIDUAL.filter((s) => !s.collapsed);
+  const UNPLACED = {
+    s3: { 0: 2, 3: 1 },
+    s4: { 3: 1 },
+    s5: { 4: 1 },
+  };
+
+  const SPECIAL_BLOCKS = {
+    3: "1:1",
+    5: "45pair",
+    9: "45front",
+    14: "overload",
+    16: "45mix",
+    21: "1:1",
+    47: "1:1",
+  };
+
+  const H_BLOCK_BASE = 24;
+  const H_GAP = 1;
+  function rowH() {
+    return document.documentElement.classList.contains("fs-small") ? 18 : 20;
+  }
+
+  let teacherCursor = 0;
+  let studentCursor = 0;
+  let studentsPerTeacherToggle = 0;
+  let blockCounter = 0;
+
+  function resetCursors() {
+    teacherCursor = 0;
+    studentCursor = 0;
+    studentsPerTeacherToggle = 0;
+    blockCounter = 0;
+  }
+  function nextTeacher() {
+    const t = TEACHERS[teacherCursor % TEACHERS.length];
+    teacherCursor++;
+    return t;
+  }
+  function nextStudent() {
+    const s = STUDENTS[studentCursor % STUDENTS.length];
+    const state = stateFor(studentCursor);
+    studentCursor++;
+    return { ...s, ...state };
+  }
+  function studentsCountForTeacher() {
+    studentsPerTeacherToggle++;
+    return studentsPerTeacherToggle % 3 === 0 ? 1 : 2;
+  }
+
+  window.__half1 = true;
+
+  function renderSeatRow(row, ratio, noChip) {
+    if (row.kind === "empty") {
+      return `<div class="s-row seat-empty">${escapeHtml(row.label)}</div>`;
+    }
+    const stu = row.stu;
+    const trialBadge = stu.trial ? `<span class="s-badge trial">体</span>` : "";
+    const halfLabel = row.half
+      ? (window.__half1 === false
+          ? (row.half === "front" ? "45前" : "45後")
+          : (row.half === "front" ? "前" : "後"))
+      : "";
+    const halfChip = row.half
+      ? `<span class="subj-chip half-chip" title="45分授業(${row.half === "front" ? "前半" : "後半"})">${halfLabel}</span>`
+      : "";
+    const ratioMark = ratio === "1:1"
+      ? `<span class="ratio-mark" title="1対1契約(1名で満席)">1:1</span>`
+      : "";
+    const dueText = stu.transfer && stu.transfer.urgent
+      ? `<span class="due-text" title="振替期限 ${stu.transfer.due}">~${stu.transfer.due}</span>`
+      : "";
+    const cls = ["s-row", "clickable"];
+    if (stu.absent) cls.push("absent");
+    if (stu.transfer) cls.push("transfer-row");
+    if (row.over) cls.push("over-seat");
+    const rowTitle = stu.transfer ? ` title="${escapeHtml(`振替: 元${stu.transfer.origin}`)}"` : "";
+    return `
+      <div class="${cls.join(" ")}" data-student="${escapeHtml(stu.name)}"${rowTitle}>
+        <span class="s-name" title="${escapeHtml(stu.name)}">${escapeHtml(stu.name)}</span>
+        <span class="s-grade">${stu.grade}</span>
+        ${ratioMark}
+        ${noChip ? "" : subjectChipHtml(stu.subject)}
+        ${halfChip}
+        ${trialBadge}
+        ${dueText}
+      </div>`;
+  }
+
+  function makeTeacherBlock(forceTwo) {
+    blockCounter++;
+    const special = SPECIAL_BLOCKS[blockCounter];
+    const teacher = nextTeacher();
+    const rows = [];
+    let ratio = "1:2";
+
+    if (special === "1:1") {
+      ratio = "1:1";
+      rows.push({ kind: "student", stu: nextStudent() });
+    } else if (special === "overload") {
+      rows.push({ kind: "student", stu: nextStudent() });
+      rows.push({ kind: "student", stu: nextStudent() });
+      rows.push({ kind: "student", stu: nextStudent(), over: true });
+    } else if (special === "45pair") {
+      rows.push({ kind: "student", stu: nextStudent(), half: "front" });
+      rows.push({ kind: "student", stu: nextStudent(), half: "back" });
+      rows.push({ kind: "empty", label: "空席" });
+    } else if (special === "45front") {
+      ratio = "1:1";
+      rows.push({ kind: "student", stu: nextStudent(), half: "front" });
+      rows.push({ kind: "empty", label: "空席（後45）" });
+    } else if (special === "45mix") {
+      rows.push({ kind: "student", stu: nextStudent() });
+      rows.push({ kind: "student", stu: nextStudent(), half: "front" });
+      rows.push({ kind: "student", stu: nextStudent(), half: "back" });
+    } else {
+      const n = forceTwo ? 2 : studentsCountForTeacher();
+      for (let i = 0; i < n; i++) rows.push({ kind: "student", stu: nextStudent() });
+      if (n < 2) rows.push({ kind: "empty", label: "空席" });
+    }
+
+    const hasVacancy = rows.some((r) => r.kind === "empty");
+    return { teacher, ratio, rows, hasVacancy, estHeight: H_BLOCK_BASE + rowH() * rows.length };
+  }
+
+  function seatNoFor(teacher) {
+    if (teacher === "佐藤朱華") return "";
+    return String(TEACHERS.indexOf(teacher) + 1);
+  }
+
+  function renderTeacherBlockHtml(block) {
+    return `
+      <div class="t-block ${block.hasVacancy ? "has-vacancy" : ""}">
+        <div class="t-head">
+          <span class="t-name" title="${escapeHtml(block.teacher)}">${escapeHtml(block.teacher)}</span>
+          <span class="head-right">
+            <input class="seat-input" title="座席番号" maxlength="2" placeholder="-" value="${seatNoFor(block.teacher)}">
+            <button class="t-close" title="この講師枠を削除">${ICON_X}</button>
+          </span>
+        </div>
+        ${block.rows.map((r) => renderSeatRow(r, block.ratio, false)).join("")}
+      </div>`;
+  }
+
+  function splitPreservingOrder(blocks) {
+    if (blocks.length <= 1) return [blocks, []];
+    const total = blocks.reduce((s, b) => s + b.estHeight + H_GAP, 0);
+    let acc = 0;
+    let splitIdx = blocks.length;
+    let bestDiff = Infinity;
+    blocks.forEach((b, i) => {
+      acc += b.estHeight + H_GAP;
+      const diff = Math.abs(acc - total / 2);
+      if (diff < bestDiff) {
+        bestDiff = diff;
+        splitIdx = i + 1;
+      }
+    });
+    return [blocks.slice(0, splitIdx), blocks.slice(splitIdx)];
+  }
+
+  // ---------------------------------------------------------------
+  // データ生成を描画から分離: 両向きで同一のサンプルデータを保証する。
+  // 生成順は常に正準順(時限→曜日)で、カーソル消費が向きに依存しない
+  // ---------------------------------------------------------------
+  function generateBoardData() {
+    resetCursors();
+    const data = {};
+    SLOTS_INDIVIDUAL.forEach((slot) => {
+      if (slot.collapsed) return;
+      data[slot.key] = DAYS.map((_, dayIdx) => {
+        const count = slot.counts[dayIdx];
+        const blocks = count
+          ? Array.from({ length: count }, () => makeTeacherBlock(slot.stressDay === dayIdx))
+          : [];
+        const n = (UNPLACED[slot.key] || {})[dayIdx] || 0;
+        const unplacedStudents = Array.from({ length: n }, () => nextStudent());
+        return { blocks, unplacedStudents };
+      });
+    });
+    return data;
+  }
+
+  function renderUnplacedBadge(slotKey, dayIdx, students) {
+    if (!students.length) return "";
+    const uid = `unp-${slotKey}-${dayIdx}`;
+    return `
+      <button class="unplaced-badge" data-target="${uid}">未配置 ${students.length}</button>
+      <div class="unplaced-chips" id="${uid}">
+        ${students.map((s) => `<span class="unplaced-chip">${escapeHtml(s.name)} ${s.grade} ${escapeHtml(s.subject)}</span>`).join("")}
+      </div>`;
+  }
+
+  // --- 現行(日=列)の描画 ---
+  function renderIndividualDayCell(slot, dayIdx, colMode, cellData) {
+    if (!cellData.blocks.length) {
+      return `<div class="day-cell empty"><div class="add-teacher-bar">${ICON_PLUS} 講師</div></div>`;
+    }
+    let colsHtml;
+    if (colMode === 1) {
+      colsHtml = `<div class="cell-cols"><div class="cell-col">${cellData.blocks.map(renderTeacherBlockHtml).join("")}</div></div>`;
+    } else {
+      const cols = splitPreservingOrder(cellData.blocks);
+      colsHtml = `<div class="cell-cols">${cols
+        .map((items) => `<div class="cell-col">${items.map(renderTeacherBlockHtml).join("")}</div>`)
+        .join("")}</div>`;
+    }
+    const unplaced = renderUnplacedBadge(slot.key, dayIdx, cellData.unplacedStudents);
+    return `
+      <div class="day-cell">
+        ${unplaced}
+        ${colsHtml}
+        <div class="add-teacher-bar">${ICON_PLUS} 講師</div>
+      </div>`;
+  }
+
+  function renderDayHeadRow() {
+    let html = `<div class="grid-corner"></div>`;
+    DAYS.forEach((d) => {
+      html += `<div class="day-head ${d.today ? "today" : ""}"><span class="d-date">${d.date}</span><span class="d-day">${d.day}</span></div>`;
+    });
+    return html;
+  }
+
+  function slotLabelHtml(label, time) {
+    const parts = time.split("〜");
+    return `${escapeHtml(label)}<span class="t">${escapeHtml(parts[0])}<br><span class="arrow">↓</span><br>${escapeHtml(parts[1] || "")}</span>`;
+  }
+
+  function renderCollapsedRow(slot) {
+    const uid = `collapsed-${slot.key}`;
+    let html = `
+      <div class="slot-collapsed">
+        <div class="slot-label">${slot.label}</div>
+        <div class="collapsed-bar" data-target="${uid}">
+          <span class="chev">▸</span>${slot.label} ${slot.time} — 授業なし
+        </div>
+      </div>
+      <div class="collapsed-expand" id="${uid}" style="grid-column: 1 / -1;">`;
+    DAYS.forEach(() => {
+      html += `<div class="mini-add">${ICON_PLUS} 授業を追加</div>`;
+    });
+    html += `</div>`;
+    return html;
+  }
+
+  function buildIndividualBoardCols(data, colMode) {
+    let html = `<div class="week-grid">`;
+    html += renderDayHeadRow();
+    SLOTS_INDIVIDUAL.forEach((slot) => {
+      if (slot.collapsed) {
+        html += renderCollapsedRow(slot);
+        return;
+      }
+      html += `<div class="slot-label-main">${slotLabelHtml(slot.label, slot.time)}</div>`;
+      DAYS.forEach((_, dayIdx) => {
+        html += renderIndividualDayCell(slot, dayIdx, colMode, data[slot.key][dayIdx]);
+      });
+    });
+    html += `</div>`;
+    document.getElementById("board-individual").innerHTML = html;
+  }
+
+  // --- 転置(日=行)の描画: 行=曜日、列=時限。ブロックは横に自然パッキング。
+  //     時限ヘッダーは sticky の別グリッドに分離(スクロールしても常に見える) ---
+  function buildIndividualBoardRows(data) {
+    // sticky ヘッダーグリッド(本体と同じ列定義)
+    let html = `<div class="week-grid-t t-sticky-head">`;
+    html += `<div class="grid-corner"></div>`;
+    html += `<div class="vbar-head"></div>`;
+    ACTIVE_SLOTS.forEach((slot) => {
+      html += `<div class="slot-head-t">${escapeHtml(slot.label)}<span class="t">${escapeHtml(slot.time)}</span></div>`;
+    });
+    html += `</div>`;
+    // 本体グリッド: 1・2限縦バー(6日行を縦断) + 曜日行
+    html += `<div class="week-grid-t">`;
+    html += `<div class="collapsed-vbar" title="1・2限 12:50〜16:00 — 授業なし">1・2限 12:50〜16:00 — 授業なし</div>`;
+    DAYS.forEach((d, dayIdx) => {
+      html += `<div class="day-label-t ${d.today ? "today" : ""}"><span class="d-date">${d.date}</span><span class="d-day">${d.day}</span></div>`;
+      ACTIVE_SLOTS.forEach((slot) => {
+        const cd = data[slot.key][dayIdx];
+        const unplaced = renderUnplacedBadge(slot.key, dayIdx, cd.unplacedStudents);
+        html += `
+          <div class="day-cell ${d.today ? "today-row" : ""}">
+            ${unplaced}
+            <div class="t-pack">${cd.blocks.map(renderTeacherBlockHtml).join("")}</div>
+            <div class="add-teacher-bar">${ICON_PLUS} 講師</div>
+          </div>`;
+      });
+    });
+    html += `</div>`;
+    document.getElementById("board-individual").innerHTML = html;
+  }
+
+  // ---------------------------------------------------------------
+  // Board 2 / 3: 小集団・プログラミング(向きに追随)
+  // ---------------------------------------------------------------
+  function renderGroupCard(card) {
+    const full = card.students.length >= card.capacity;
+    const headChip = card.subject && card.subject !== card.title ? subjectChipHtml(card.subject) : "";
+    return `
+      <div class="g-card ${full ? "" : "has-vacancy"}">
+        <div class="g-card-head">
+          <span class="g-title">${escapeHtml(card.title)}</span>
+          ${headChip}
+          <span class="g-cap ${full ? "" : "open-slots"}">${card.students.length}/${card.capacity}</span>
+        </div>
+        <div class="g-teacher">講師: ${escapeHtml(card.teacher)}</div>
+        <div class="g-students">
+          ${card.students.map((s) => renderSeatRow({ kind: "student", stu: s }, "group", true)).join("")}
+        </div>
+      </div>`;
+  }
+
+  function buildGroupLikeBoardCols(containerId, slots, cardMap, addLabel, rowsCls) {
+    let html = `<div class="week-grid ${rowsCls}">`;
+    html += renderDayHeadRow();
+    slots.forEach((slot, slotIdx) => {
+      html += `<div class="group-slot-label">${slotLabelHtml(slot.label, slot.time)}</div>`;
+      DAYS.forEach((_, dayIdx) => {
+        const card = cardMap[`${slotIdx}-${dayIdx}`];
+        if (card) {
+          html += `<div class="group-cell">${renderGroupCard(card)}</div>`;
+        } else {
+          html += `<div class="group-cell empty"><div class="add-class-bar">${ICON_PLUS} ${addLabel}</div></div>`;
+        }
+      });
+    });
+    html += `</div>`;
+    document.getElementById(containerId).innerHTML = html;
+  }
+
+  function buildGroupLikeBoardRows(containerId, slots, cardMap, addLabel, colsCls) {
+    // sticky ヘッダーグリッド + 本体グリッド(個別と同じ分離パターン)
+    let html = `<div class="week-grid-t ${colsCls} t-sticky-head">`;
+    html += `<div class="grid-corner"></div>`;
+    slots.forEach((slot) => {
+      html += `<div class="slot-head-t">${escapeHtml(slot.label)}<span class="t">${escapeHtml(slot.time)}</span></div>`;
+    });
+    html += `</div>`;
+    html += `<div class="week-grid-t ${colsCls}">`;
+    DAYS.forEach((d, dayIdx) => {
+      html += `<div class="day-label-t ${d.today ? "today" : ""}"><span class="d-date">${d.date}</span><span class="d-day">${d.day}</span></div>`;
+      slots.forEach((slot, slotIdx) => {
+        const card = cardMap[`${slotIdx}-${dayIdx}`];
+        if (card) {
+          html += `<div class="group-cell ${d.today ? "today-row" : ""}">${renderGroupCard(card)}</div>`;
+        } else {
+          html += `<div class="group-cell empty"><div class="add-class-bar">${ICON_PLUS} ${addLabel}</div></div>`;
+        }
+      });
+    });
+    html += `</div>`;
+    document.getElementById(containerId).innerHTML = html;
+  }
+
+  const GROUP_SLOTS = [
+    { label: "1コマ", time: "18:00〜19:00" },
+    { label: "2コマ", time: "19:10〜20:10" },
+    { label: "3コマ", time: "20:20〜21:20" },
+  ];
+  const sIdx = (i) => STUDENTS[i % STUDENTS.length];
+  const GROUP_CARDS = {
+    "0-1": {
+      title: "小5 算数クラス",
+      subject: "算数",
+      teacher: "北村由衣",
+      capacity: 8,
+      students: [sIdx(1), sIdx(3), sIdx(11), sIdx(16), sIdx(2), sIdx(0)],
+    },
+    "1-3": {
+      title: "中2 国語クラス",
+      subject: "国語",
+      teacher: "平澤未来",
+      capacity: 6,
+      students: [sIdx(0), sIdx(15), sIdx(18), sIdx(4)],
+    },
+    "2-2": {
+      title: "中1 英語集中",
+      subject: "英語",
+      teacher: "浅井遼介",
+      capacity: 5,
+      students: [sIdx(9), sIdx(10), sIdx(17), sIdx(14), sIdx(5)],
+    },
+  };
+  const PROG_SLOTS = [
+    { label: "1コマ", time: "17:00〜17:50" },
+    { label: "2コマ", time: "18:00〜18:50" },
+  ];
+  const PROG_CARDS = {
+    "0-2": {
+      title: "HAL初級",
+      teacher: "水上歩乃歌",
+      capacity: 6,
+      students: [
+        { name: "鳥居宗生", grade: "小6", subject: "HAL初級" },
+        { name: "大崎透", grade: "小3", subject: "HAL初級" },
+        { name: "白石美月", grade: "小3", subject: "HAL初級" },
+      ],
+    },
+    "0-5": {
+      title: "HAL初級",
+      teacher: "水上歩乃歌",
+      capacity: 6,
+      students: [
+        { name: "伊坂華", grade: "小6", subject: "HAL初級" },
+        { name: "相沢陽向", grade: "小4", subject: "HAL初級" },
+      ],
+    },
+    "1-5": {
+      title: "HAL中級",
+      teacher: "瀧川怜生",
+      capacity: 6,
+      students: [
+        { name: "松尾玲衣", grade: "中1", subject: "HAL中級" },
+        { name: "永井祐吏", grade: "中2", subject: "HAL中級" },
+        { name: "萩野結愛", grade: "中2", subject: "HAL中級" },
+      ],
+    },
+  };
+
+  // ---------------------------------------------------------------
+  // Interactions
+  // ---------------------------------------------------------------
+  let currentColMode = 2;
+  let currentOrient = "cols"; // 'cols'=日=列(現行) / 'rows'=日=行(転置)
+  let activeTab = "individual";
+
+  function rebuildIndividual() {
+    const data = generateBoardData();
+    if (currentOrient === "cols") buildIndividualBoardCols(data, currentColMode);
+    else buildIndividualBoardRows(data);
+  }
+  function rebuildGroupBoards() {
+    if (currentOrient === "cols") {
+      buildGroupLikeBoardCols("board-group", GROUP_SLOTS, GROUP_CARDS, "クラス枠", "group-grid");
+      buildGroupLikeBoardCols("board-programming", PROG_SLOTS, PROG_CARDS, "コース枠", "prog-grid");
+    } else {
+      buildGroupLikeBoardRows("board-group", GROUP_SLOTS, GROUP_CARDS, "クラス枠", "group-t");
+      buildGroupLikeBoardRows("board-programming", PROG_SLOTS, PROG_CARDS, "コース枠", "prog-t");
+    }
+  }
+  window.__rebuild = rebuildIndividual;
+
+  function updateColToggleVis() {
+    // 1列/2列は「個別×日=列」のときだけ意味を持つ(転置はパッキングが動的)
+    document.getElementById("colToggleWrap").style.display =
+      activeTab === "individual" && currentOrient === "cols" ? "flex" : "none";
+    // 転置時のみ日行スナップを有効化(現行モードはスクロール自体が無い想定)
+    document.querySelector(".board-area").classList.toggle("snap-rows", currentOrient === "rows");
+  }
+
+  function initTabs() {
+    const tabs = document.querySelectorAll("#formTabs button");
+    const boards = {
+      individual: document.getElementById("board-individual"),
+      group: document.getElementById("board-group"),
+      programming: document.getElementById("board-programming"),
+    };
+    tabs.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        tabs.forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        Object.values(boards).forEach((b) => b.classList.remove("active"));
+        boards[btn.dataset.board].classList.add("active");
+        activeTab = btn.dataset.board;
+        updateColToggleVis();
+      });
+    });
+  }
+
+  function initOrientToggle() {
+    const btns = document.querySelectorAll("#orientToggle button");
+    btns.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const orient = btn.dataset.orient;
+        if (orient === currentOrient) return;
+        currentOrient = orient;
+        btns.forEach((b) => b.classList.toggle("active", b === btn));
+        rebuildIndividual();
+        rebuildGroupBoards();
+        updateColToggleVis();
+      });
+    });
+  }
+
+  function initColToggle() {
+    const btns = document.querySelectorAll("#colToggle button");
+    btns.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const mode = Number(btn.dataset.cols);
+        if (mode === currentColMode) return;
+        currentColMode = mode;
+        btns.forEach((b) => b.classList.toggle("active", b === btn));
+        rebuildIndividual();
+      });
+    });
+  }
+
+  function initFontToggle() {
+    const btns = document.querySelectorAll("#fontToggle button");
+    btns.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const small = btn.dataset.fs === "small";
+        if (document.documentElement.classList.contains("fs-small") === small) return;
+        document.documentElement.classList.toggle("fs-small", small);
+        btns.forEach((b) => b.classList.toggle("active", b === btn));
+        rebuildIndividual();
+      });
+    });
+  }
+
+  function initWeekNav() {
+    const weeks = ["2026年6月29日〜7月5日", "2026年7月 6〜12日", "2026年7月 13〜19日"];
+    let idx = 1;
+    const label = document.getElementById("weekLabel");
+    document.getElementById("prevWeek").addEventListener("click", () => {
+      idx = Math.max(0, idx - 1);
+      label.textContent = weeks[idx];
+    });
+    document.getElementById("nextWeek").addEventListener("click", () => {
+      idx = Math.min(weeks.length - 1, idx + 1);
+      label.textContent = weeks[idx];
+    });
+    document.getElementById("thisWeek").addEventListener("click", () => {
+      idx = 1;
+      label.textContent = weeks[idx];
+    });
+  }
+
+  function initMgmtMenu() {
+    const btn = document.getElementById("mgmtBtn");
+    const menu = document.getElementById("mgmtDropdown");
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      menu.classList.toggle("open");
+    });
+    document.addEventListener("click", () => menu.classList.remove("open"));
+  }
+
+  function initLegend() {
+    const toggle = document.getElementById("legendToggle");
+    const content = document.getElementById("legendContent");
+    toggle.addEventListener("click", () => {
+      const open = content.classList.toggle("open");
+      toggle.classList.toggle("open", open);
+    });
+  }
+
+  function initRowMenu() {
+    const menu = document.getElementById("rowMenu");
+    const head = document.getElementById("rowMenuHead");
+    document.addEventListener("click", (e) => {
+      const row = e.target.closest(".s-row.clickable");
+      if (row) {
+        head.textContent = row.dataset.student;
+        menu.classList.add("open");
+        const mw = 160;
+        const mh = menu.offsetHeight || 128;
+        let x = e.clientX + 4;
+        let y = e.clientY + 4;
+        if (x + mw > window.innerWidth) x = window.innerWidth - mw - 8;
+        if (y + mh > window.innerHeight) y = e.clientY - mh - 4;
+        menu.style.left = x + "px";
+        menu.style.top = y + "px";
+        return;
+      }
+      menu.classList.remove("open");
+    });
+  }
+
+  function initDelegatedToggles() {
+    document.querySelector(".board-area").addEventListener("click", (e) => {
+      const unp = e.target.closest(".unplaced-badge");
+      if (unp) {
+        const target = document.getElementById(unp.dataset.target);
+        if (target) target.classList.toggle("open");
+        return;
+      }
+      const collapsedBar = e.target.closest(".collapsed-bar");
+      if (collapsedBar) {
+        collapsedBar.classList.toggle("open");
+        const target = document.getElementById(collapsedBar.dataset.target);
+        if (target) target.classList.toggle("open");
+        return;
+      }
+    });
+  }
+
+  rebuildIndividual();
+  rebuildGroupBoards();
+  initTabs();
+  initOrientToggle();
+  initColToggle();
+  initFontToggle();
+  initWeekNav();
+  initMgmtMenu();
+  initLegend();
+  initRowMenu();
+  initDelegatedToggles();
+})();
+</script>
+</body>
+</html>

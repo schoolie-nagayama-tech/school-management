@@ -12,6 +12,8 @@
  */
 
 import { supabase } from '@/lib/supabase';
+// Phase A: 形態キーの直書きを定数参照に置換
+import { INDIVIDUAL_FORMATION } from '@/types/schedule';
 import { getCurrentTeacherShifts } from '@/lib/api/teacher-shifts';
 import { getAvailabilityDayMap } from '@/lib/api/teacher-availability';
 
@@ -339,7 +341,7 @@ export async function reassignTeacherFromToday(
       is_active: true,
       effective_from: today,
       effective_until: pat.effective_until ?? null,
-      formation: pat.formation ?? 'individual',
+      formation: pat.formation ?? INDIVIDUAL_FORMATION,
     })
     .select('id')
     .single();

@@ -14,6 +14,17 @@ import type {
   ScheduleGenerationResult,
   TimeConflictResult,
 } from '@/types/schedule';
+// Phase A: 形態キーの直書きを定数参照に置換。lane_type ベース判定は isGroupLane を使う。
+import { INDIVIDUAL_FORMATION } from '@/types/schedule';
+import type { HalfPosition } from '@/types/schedule';
+import { isGroupLane } from '@/lib/utils/formations';
+// Phase R: 個別の席占有（1対1/1対2・45分半コマ）
+import {
+  computeEffectiveTimeRange,
+  canPlaceEntry,
+  type SeatEntryInput,
+} from '@/lib/utils/seatOccupancy';
+import { getClassCapacity, DEFAULT_CLASS_CAPACITY } from '@/lib/api/school-class-capacity';
 
 // 座席表テーブルは Database 型に未定義のため、any でクエリ
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -123,7 +134,7 @@ export async function createTimeSlot(
       is_active: form.is_active,
       display_order: form.display_order,
       // 形態：未指定は個別（既存マスタとの互換）。集団用は明示的に渡す。
-      formation: form.formation ?? 'individual',
+      formation: form.formation ?? INDIVIDUAL_FORMATION,
     })
     .select()
     .single();
@@ -258,18 +269,29 @@ export async function checkStudentTimeConflict(
     excludeRegularPatternId?: string;
     excludeScheduleEntryId?: string;
     specificDate?: string;
+    // Phase R: 追加しようとしているコマの実効時間帯を絞るための半コマ情報。
+    // 未指定なら (startTime,endTime) をそのまま使う＝コマ丸ごと＝既存挙動不変。
+    durationMinutes?: number | null;
+    halfPosition?: HalfPosition;
   }
 ): Promise<TimeConflictResult | null> {
   const excludePatternId = options?.excludeRegularPatternId;
   const excludeEntryId = options?.excludeScheduleEntryId;
   const specificDate = options?.specificDate;
+  // Phase R: 追加側の実効時間帯（前半/後半なら45分に絞る。全コマなら (startTime,endTime)）。
+  const incoming = computeEffectiveTimeRange(
+    startTime,
+    endTime,
+    options?.durationMinutes ?? null,
+    options?.halfPosition ?? null
+  );
 
   if (specificDate) {
     // 特定日の schedule_entries をチェック
     const { data: entries, error } = await db
       .from('schedule_entries')
       .select(
-        'id, entry_date, time_slot_id, teacher_id, subject_ids, time_slot:schedule_time_slots(start_time, end_time), teacher:user_profiles(display_name, email)'
+        'id, entry_date, time_slot_id, teacher_id, subject_ids, duration_minutes, half_position, time_slot:schedule_time_slots(start_time, end_time), teacher:user_profiles(display_name, email)'
       )
       .eq('student_id', studentId)
       .eq('entry_date', specificDate)
@@ -307,7 +329,9 @@ export async function checkStudentTimeConflict(
       if (!slot) continue;
       const st = slot.start_time ?? '';
       const et = slot.end_time ?? '';
-      if (timeRangesOverlap(startTime, endTime, st, et)) {
+      // Phase R: 既存エントリ側も半コマなら実効時間帯に絞る（前半45と後半45は重ならない）。
+      const rowEff = computeEffectiveTimeRange(st, et, row.duration_minutes, row.half_position);
+      if (timeRangesOverlap(incoming.start, incoming.end, rowEff.start, rowEff.end)) {
         const teacherName = teachersMap.get(row.teacher_id) ?? '—';
         const subjectName = (row.subject_ids?.length ? '科目' : '—') as string;
         return {
@@ -331,7 +355,7 @@ export async function checkStudentTimeConflict(
   const { data: patternRows, error: patError } = await db
     .from('schedule_regular_patterns')
     .select(
-      'id, day_of_week, time_slot_id, teacher_id, time_slot:schedule_time_slots(start_time, end_time), teacher:user_profiles(display_name, email)'
+      'id, day_of_week, time_slot_id, teacher_id, duration_minutes, half_position, time_slot:schedule_time_slots(start_time, end_time), teacher:user_profiles(display_name, email)'
     )
     .eq('student_id', studentId)
     .eq('day_of_week', dayOfWeek)
@@ -347,6 +371,8 @@ export async function checkStudentTimeConflict(
     day_of_week: number;
     time_slot_id: string;
     teacher_id: string;
+    duration_minutes: number | null;
+    half_position: HalfPosition;
     time_slot?:
       | { start_time: string; end_time: string }[]
       | { start_time: string; end_time: string };
@@ -360,7 +386,9 @@ export async function checkStudentTimeConflict(
     if (!slot) continue;
     const st = slot.start_time ?? '';
     const et = slot.end_time ?? '';
-    if (timeRangesOverlap(startTime, endTime, st, et)) {
+    // Phase R: 既存パターン側も半コマなら実効時間帯に絞って比較。
+    const rowEff = computeEffectiveTimeRange(st, et, row.duration_minutes, row.half_position);
+    if (timeRangesOverlap(incoming.start, incoming.end, rowEff.start, rowEff.end)) {
       const teacherName = teacher?.display_name || teacher?.email || '—';
       return {
         type: 'regular_pattern',
@@ -463,7 +491,9 @@ export async function createRegularPattern(
       form.student_id,
       form.day_of_week,
       timeSlot.start_time,
-      timeSlot.end_time
+      timeSlot.end_time,
+      // Phase R: 半コマ授業なら実効時間帯で重複判定（前半45/後半45を別コマ扱いにする）。
+      { durationMinutes: form.duration_minutes ?? null, halfPosition: form.half_position ?? null }
     );
     if (conflict) throw new Error(conflict.message);
   }
@@ -483,7 +513,11 @@ export async function createRegularPattern(
       effective_from: form.effective_from || todayStr(),
       effective_until: form.effective_until ?? null,
       // 形態：未指定は個別。集団パターンを作るときは form.formation='group' を渡す。
-      formation: form.formation ?? 'individual',
+      formation: form.formation ?? INDIVIDUAL_FORMATION,
+      // Phase R: 指導比率・半コマ。未指定は ratio=2・全コマ（既存挙動不変）。
+      ratio: form.ratio ?? 2,
+      duration_minutes: form.duration_minutes ?? null,
+      half_position: form.half_position ?? null,
     })
     .select()
     .single();
@@ -562,7 +596,11 @@ export async function scheduleRegularPatternChangeFrom(
       effective_from: fromDate,
       effective_until: form.effective_until ?? null,
       // 形態：未指定なら個別。指定日から「個別→集団」や「集団→個別」へ切り替えるシナリオもありえる
-      formation: form.formation ?? 'individual',
+      formation: form.formation ?? INDIVIDUAL_FORMATION,
+      // Phase R: 指導比率・半コマも指定日から切り替えられる（1対2→1対1 等）。未指定は据え置きの既定。
+      ratio: form.ratio ?? 2,
+      duration_minutes: form.duration_minutes ?? null,
+      half_position: form.half_position ?? null,
     })
     .select()
     .single();
@@ -800,10 +838,15 @@ export async function generateWeeklySchedule(
     seat_label: string | null;
     regular_pattern_id: string;
     status: string;
-    // 種別（regular/koushu）と形態（individual/group）
-    // 通塾日程からの生成は常に regular。formation は将来 p.formation を引き継ぐ予定。
+    // 種別（regular/koushu）と形態。
+    // 通塾日程からの生成は常に regular。formation はパターン側 p.formation を引き継ぐ。
+    // Phase A: 形態は動的マスタ化したため union ではなく string。
     kind: 'regular' | 'koushu';
-    formation: 'individual' | 'group';
+    formation: string;
+    // Phase R: 指導比率・授業時間・半コマもパターンからスナップショット継承する。
+    ratio: 1 | 2;
+    duration_minutes: number | null;
+    half_position: HalfPosition;
   };
   // 【重要】再生成は対象週を全削除→再INSERT する破壊的処理。
   // 「このコマだけ」割当 (schedule_entries.teacher_id を直接更新するが
@@ -892,7 +935,11 @@ export async function generateWeeklySchedule(
         // 通塾日程から生成される=通常授業。
         // formation はパターン側の値を引き継ぐ（個別パターンなら個別、集団パターンなら集団のエントリに）。
         kind: 'regular',
-        formation: p.formation ?? 'individual',
+        formation: p.formation ?? INDIVIDUAL_FORMATION,
+        // Phase R: ratio/duration/half をパターンから継承。既存パターンは ratio=2・全コマなので挙動不変。
+        ratio: p.ratio ?? 2,
+        duration_minutes: p.duration_minutes ?? null,
+        half_position: p.half_position ?? null,
       };
       entriesMap.set(entryKey(e), e);
     }
@@ -1112,14 +1159,28 @@ export async function checkTeacherTimeConflict(
   entryDate: string,
   startTime: string,
   endTime: string,
-  options?: { excludeScheduleEntryId?: string }
+  options?: {
+    excludeScheduleEntryId?: string;
+    // Phase R: 追加側の半コマ情報。未指定ならコマ丸ごと＝既存挙動不変。
+    durationMinutes?: number | null;
+    halfPosition?: HalfPosition;
+    // Phase R: このコマ(time_slot_id)の重複は除外する。同一コマ内の複数生徒（1対2・半コマ順次）は
+    // 容量計算(computeSeatOccupancy)側で扱うため、講師の「別コマとの物理重複」だけをここで弾く用途。
+    excludeSlotId?: string;
+  }
 ): Promise<TimeConflictResult | null> {
   const excludeEntryId = options?.excludeScheduleEntryId;
+  const incoming = computeEffectiveTimeRange(
+    startTime,
+    endTime,
+    options?.durationMinutes ?? null,
+    options?.halfPosition ?? null
+  );
 
   const { data: entries, error } = await db
     .from('schedule_entries')
     .select(
-      'id, entry_date, time_slot_id, student_id, time_slot:schedule_time_slots(start_time, end_time), student:students(last_name, first_name)'
+      'id, entry_date, time_slot_id, student_id, duration_minutes, half_position, time_slot:schedule_time_slots(start_time, end_time), student:students(last_name, first_name)'
     )
     .eq('teacher_id', teacherId)
     .eq('entry_date', entryDate)
@@ -1131,6 +1192,8 @@ export async function checkTeacherTimeConflict(
     id: string;
     time_slot_id: string;
     student_id: string;
+    duration_minutes: number | null;
+    half_position: HalfPosition;
     time_slot?:
       | { start_time: string; end_time: string }[]
       | { start_time: string; end_time: string };
@@ -1139,10 +1202,18 @@ export async function checkTeacherTimeConflict(
       | { last_name: string; first_name: string };
   }>) {
     if (row.id === excludeEntryId) continue;
+    // 同一コマは容量計算に委譲するので、ここではスキップ（別コマとの物理重複のみ判定）。
+    if (options?.excludeSlotId && row.time_slot_id === options.excludeSlotId) continue;
     const slot = Array.isArray(row.time_slot) ? row.time_slot[0] : row.time_slot;
     const student = Array.isArray(row.student) ? row.student[0] : row.student;
     if (!slot) continue;
-    if (timeRangesOverlap(startTime, endTime, slot.start_time ?? '', slot.end_time ?? '')) {
+    const rowEff = computeEffectiveTimeRange(
+      slot.start_time ?? '',
+      slot.end_time ?? '',
+      row.duration_minutes,
+      row.half_position
+    );
+    if (timeRangesOverlap(incoming.start, incoming.end, rowEff.start, rowEff.end)) {
       const studentName = student ? `${student.last_name}${student.first_name}` : '別の生徒';
       return {
         type: 'schedule_entry',
@@ -1182,6 +1253,9 @@ export async function createScheduleEntry(
 
   // 同時刻重複チェック：個別と集団でコマ時間が違っても、時刻範囲が重なれば配置不可
   const targetSlot = await getTimeSlotById(slotId);
+  const incomingHalf = form.half_position ?? null;
+  const incomingDuration = form.duration_minutes ?? null;
+  const incomingRatio: 1 | 2 = form.ratio === 1 ? 1 : 2;
   if (targetSlot) {
     const studentConflict = await checkStudentTimeConflict(
       form.student_id,
@@ -1189,20 +1263,59 @@ export async function createScheduleEntry(
       new Date(date + 'T12:00:00').getDay(),
       targetSlot.start_time,
       targetSlot.end_time,
-      { specificDate: date }
+      // Phase R: 半コマなら実効時間帯で判定（前半45と後半45を別枠扱い）。
+      { specificDate: date, durationMinutes: incomingDuration, halfPosition: incomingHalf }
     );
     if (studentConflict) {
       // メッセージ自体が「なぜ登録できないか」を説明するので接頭辞は付けない
       throw new Error(studentConflict.message);
     }
-    // 集団は「1講師に複数生徒が同じコマ」が前提なので、講師の時間重複チェックはしない
-    // （個別だけ講師の二重予約を弾く）。生徒側の重複は集団でも引き続きチェックする。
-    if (form.formation !== 'group') {
+    // group レーン（集団・小集団・プログラミング等）は「1講師に複数生徒が同じコマ」が前提なので、
+    // 講師の重複チェックはしない（生徒側の重複だけ全形態でチェック済み）。
+    // Phase A: 'group' 直値ではなく lane_type ベース判定。
+    if (!isGroupLane(form.formation ?? INDIVIDUAL_FORMATION)) {
+      // Phase R: 個別は「1講師に最大N名（1対2）＋45分の前後半詰め」を許すため、
+      // 同一コマは席占有(computeSeatOccupancy)で、別コマとの物理重複は checkTeacherTimeConflict で判定する。
+      // (a) 同一（講師×日付×コマ）の席が空いているか
+      const { data: sameSlotRows } = await db
+        .from('schedule_entries')
+        .select('ratio, half_position')
+        .eq('school_id', schoolId)
+        .eq('entry_date', date)
+        .eq('time_slot_id', slotId)
+        .eq('teacher_id', form.teacher_id)
+        .eq('formation', INDIVIDUAL_FORMATION)
+        .in('status', ['scheduled', 'completed', 'transferred_in']);
+      const existingSeats: SeatEntryInput[] = (
+        (sameSlotRows ?? []) as Array<{ ratio: number | null; half_position: HalfPosition }>
+      ).map((r) => ({
+        ratio: r.ratio === 1 ? 1 : 2,
+        halfPosition: r.half_position ?? null,
+      }));
+      const cap = (await getClassCapacity(schoolId)) ?? DEFAULT_CLASS_CAPACITY;
+      const canPlace = canPlaceEntry(
+        existingSeats,
+        { ratio: incomingRatio, halfPosition: incomingHalf },
+        cap.max_students_per_teacher_individual
+      );
+      if (!canPlace) {
+        throw new Error(
+          existingSeats.some((s) => s.ratio === 1)
+            ? 'この講師のこのコマは1対1授業のため、他の生徒を追加できません'
+            : `この講師はこのコマで満席です（1講師あたり最大${cap.max_students_per_teacher_individual}名／45分は前後半で1席共有）`
+        );
+      }
+      // (b) 別コマとの物理的な時間重複（例: 個別19:30-21:00 と別コマ20:20-21:20）。同一コマは除外。
       const teacherConflict = await checkTeacherTimeConflict(
         form.teacher_id,
         date,
         targetSlot.start_time,
-        targetSlot.end_time
+        targetSlot.end_time,
+        {
+          durationMinutes: incomingDuration,
+          halfPosition: incomingHalf,
+          excludeSlotId: slotId,
+        }
       );
       if (teacherConflict) {
         throw new Error(teacherConflict.message);
@@ -1227,7 +1340,11 @@ export async function createScheduleEntry(
       // 講習コマを手動配置する場合は呼び出し側で kind='koushu' を渡す。
       // 集団コマを作る場合は formation='group' を渡す。
       kind: form.kind ?? 'regular',
-      formation: form.formation ?? 'individual',
+      formation: form.formation ?? INDIVIDUAL_FORMATION,
+      // Phase R: 指導比率・半コマ。未指定は ratio=2・全コマ（既存挙動不変）。
+      ratio: incomingRatio,
+      duration_minutes: incomingDuration,
+      half_position: incomingHalf,
     })
     .select()
     .single();
@@ -1291,8 +1408,6 @@ export async function createKoushuPlacement(
   // ※個別は同一講師に複数生徒を持てるので、createScheduleEntry の講師時間重複は使わず容量で判定する。
   if (teacherId) {
     await ensureUserIsTeacher(teacherId);
-    const { getClassCapacity, DEFAULT_CLASS_CAPACITY } =
-      await import('@/lib/api/school-class-capacity');
     const cap = (await getClassCapacity(schoolId)) ?? DEFAULT_CLASS_CAPACITY;
     const { data: sameTeacher } = await db
       .from('schedule_entries')
@@ -1301,7 +1416,8 @@ export async function createKoushuPlacement(
       .eq('entry_date', date)
       .eq('time_slot_id', slotId)
       .eq('teacher_id', teacherId)
-      .eq('formation', 'individual')
+      // 講習・テスト対策の落とし込みは個別のみ対象なので individual 固定で数える（現状維持が正しい）
+      .eq('formation', INDIVIDUAL_FORMATION)
       .in('status', ['scheduled', 'completed', 'transferred_in']);
     if ((sameTeacher?.length ?? 0) >= cap.max_students_per_teacher_individual) {
       throw new Error(
@@ -1321,7 +1437,8 @@ export async function createKoushuPlacement(
       subject_ids: subjectIds || [],
       status: 'scheduled',
       kind,
-      formation: 'individual',
+      // 講習・テスト対策の落とし込みは個別レーン固定（集団は別経路）
+      formation: INDIVIDUAL_FORMATION,
     })
     .select()
     .single();
@@ -1546,6 +1663,13 @@ export async function createTransferEntry(
       regular_pattern_id: fromEntry.regular_pattern_id,
       status: 'transferred_in',
       transfer_from_id: fromEntryId,
+      // 形態も引き継ぐ（形態ボードの振替先が個別ボードに化けるのを防ぐ）。
+      // 未設定なら DB デフォルト individual だが、明示継承で形態タブ内の振替を正しく表示する。
+      formation: fromEntry.formation ?? INDIVIDUAL_FORMATION,
+      // Phase R: 指導比率・半コマは振替先にも引き継ぐ（45分/1対1が全コマ1対2に化けないように）。
+      ratio: fromEntry.ratio ?? 2,
+      duration_minutes: fromEntry.duration_minutes ?? null,
+      half_position: fromEntry.half_position ?? null,
     })
     .select()
     .single();

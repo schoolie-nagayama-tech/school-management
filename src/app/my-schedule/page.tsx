@@ -26,6 +26,9 @@ import { Button } from '@/components/ui';
 import { ToastContainer, Loading } from '@/components/ui';
 import { useToast } from '@/hooks/useToast';
 import { useAuth } from '@/contexts/AuthContext';
+// Phase A: 形態キーの直書きを定数参照に置換。
+// TODO(Phase E): 集団バッジ表示はマスタ label 参照へ差し替える（新形態も表示できるように）。
+import { GROUP_FORMATION } from '@/types/schedule';
 import { supabase } from '@/lib/supabase';
 import { recordAttendance } from '@/lib/api/schedule';
 import {
@@ -49,7 +52,7 @@ interface MyEntry {
   student_id: string;
   teacher_id: string;
   kind: 'regular' | 'koushu';
-  formation: 'individual' | 'group';
+  formation: string; // Phase A: 動的マスタ化で union → string に緩和
   status: string;
   attendance_status: 'present' | 'absent' | 'late' | null;
   time_slot?: { slot_number: number; start_time: string; end_time: string };
@@ -441,7 +444,7 @@ function EntryRow({
               講習
             </span>
           )}
-          {entry.formation === 'group' && (
+          {entry.formation === GROUP_FORMATION && (
             <span className="ml-1 px-1 bg-ink-subtle text-ink text-[10px] rounded font-semibold">
               集団
             </span>

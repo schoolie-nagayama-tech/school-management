@@ -16,9 +16,14 @@ import type {
   ScheduleRegularPattern,
   ScheduleRegularPatternFormData,
   SchedulePeriodType,
+  HalfPosition,
 } from '@/types/schedule';
 import type { ScheduleTimeSlot } from '@/types/schedule';
 import type { Subject } from '@/types/database';
+import {
+  getStudentContractRatioMap,
+  upsertStudentContract,
+} from '@/lib/api/student-subject-contracts';
 
 const GRADE_CATEGORY_LABELS: Record<string, string> = {
   elementary: '小学',
@@ -106,9 +111,21 @@ export function RegularPatternForm({
     subject_ids: [],
     seat_label: '',
     period_type: 'regular',
+    ratio: 2,
+    duration_minutes: null,
+    half_position: null,
   });
   const [studentSearch, setStudentSearch] = useState('');
   const [saving, setSaving] = useState(false);
+  // Phase R: 生徒×科目の契約比率マップ（科目選択時の ratio 初期値）。
+  const [contractRatioMap, setContractRatioMap] = useState<Map<string, 1 | 2>>(new Map());
+
+  // 半コマは「単一科目 かつ その科目が45分」のときだけ扱う（複数科目は全コマ）。
+  const singleSubjectId = form.subject_ids.length === 1 ? form.subject_ids[0] : null;
+  const singleSubject = singleSubjectId
+    ? (subjects.find((s) => s.id === singleSubjectId) ?? null)
+    : null;
+  const is45 = singleSubject?.duration_minutes === 45;
 
   const teachersForSchool = teachers.filter((t) =>
     t.user_schools?.some((us) => us.school_id === selectedSchoolId)
@@ -219,6 +236,10 @@ export function RegularPatternForm({
           subject_ids: editingPattern.subject_ids || [],
           seat_label: editingPattern.seat_label || '',
           period_type: editingPattern.period_type,
+          // Phase R: 保存済みの比率・半コマを尊重（編集時は契約で上書きしない）。
+          ratio: editingPattern.ratio ?? 2,
+          duration_minutes: editingPattern.duration_minutes ?? null,
+          half_position: editingPattern.half_position ?? null,
         });
       } else {
         setForm({
@@ -229,17 +250,73 @@ export function RegularPatternForm({
           subject_ids: [],
           seat_label: '',
           period_type: 'regular',
+          ratio: 2,
+          duration_minutes: null,
+          half_position: null,
         });
       }
       setStudentSearch('');
     }
   }, [open, editingPattern, timeSlots, initialStudentId]);
 
+  // Phase R: 生徒選択時に契約比率マップを読み込む。
+  useEffect(() => {
+    if (!form.student_id) {
+      setContractRatioMap(new Map());
+      return;
+    }
+    let cancelled = false;
+    getStudentContractRatioMap(form.student_id).then((m) => {
+      if (!cancelled) setContractRatioMap(m);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [form.student_id]);
+
+  // Phase R: 新規登録時のみ、単一科目に応じて ratio(契約)・duration/half(科目)を初期化する。
+  // 編集時は保存値を尊重するのでスキップ（送信時に duration/half は科目から決定的に再計算する）。
+  useEffect(() => {
+    if (editingPattern) return;
+    if (!singleSubjectId) {
+      setForm((f) => ({ ...f, duration_minutes: null, half_position: null }));
+      return;
+    }
+    const dur = singleSubject?.duration_minutes ?? null;
+    setForm((f) => ({
+      ...f,
+      ratio: contractRatioMap.get(singleSubjectId) ?? 2,
+      duration_minutes: dur,
+      half_position: dur === 45 ? (f.half_position ?? 'first') : null,
+    }));
+    // singleSubject は id から都度引けるので依存は id と duration で十分。
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [singleSubjectId, contractRatioMap, editingPattern, singleSubject?.duration_minutes]);
+
   const handleSubmit = async () => {
     if (!form.student_id || !form.time_slot_id || !form.teacher_id) return;
     setSaving(true);
     try {
-      await onSubmit(form);
+      // Phase R: duration/half は科目から決定的に再計算（単一45分科目のみ半コマ）。
+      const effDuration = singleSubject?.duration_minutes ?? null;
+      const effHalf: HalfPosition = is45 ? (form.half_position ?? 'first') : null;
+      const ratio = form.ratio ?? 2;
+      const finalForm: ScheduleRegularPatternFormData = {
+        ...form,
+        ratio,
+        duration_minutes: effDuration,
+        half_position: effHalf,
+      };
+      // 契約=正の設計：単一科目のときはその科目の契約比率も更新（upsert）。
+      if (singleSubjectId) {
+        try {
+          await upsertStudentContract(selectedSchoolId, form.student_id, singleSubjectId, ratio);
+        } catch (e) {
+          // 契約保存の失敗はパターン登録自体を止めない（比率は finalForm 側にも載る）。
+          console.warn('契約比率の保存に失敗しました:', e);
+        }
+      }
+      await onSubmit(finalForm);
       onClose();
     } finally {
       setSaving(false);
@@ -355,6 +432,47 @@ export function RegularPatternForm({
                 </div>
               ))}
             </div>
+          </div>
+          {/* Phase R: 指導比率（契約から初期化）＋単一45分科目の前後半 */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>指導比率</Label>
+              <Select
+                value={String(form.ratio ?? 2)}
+                onValueChange={(v) => setForm({ ...form, ratio: v === '1' ? 1 : 2 })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="2">1対2</SelectItem>
+                  <SelectItem value="1">1対1（1名で満席）</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-[var(--paragraph-light)]">
+                契約（生徒×科目）の比率。変更で契約も更新
+              </p>
+            </div>
+            {is45 && (
+              <div className="space-y-2">
+                <Label>45分の前後半</Label>
+                <Select
+                  value={form.half_position ?? 'first'}
+                  onValueChange={(v) => setForm({ ...form, half_position: v as HalfPosition })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="first">前半（開始〜+45分）</SelectItem>
+                    <SelectItem value="second">後半（終了−45分〜終了）</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-[var(--paragraph-light)]">
+                  45分授業。反対側の半コマに別生徒を入れられます
+                </p>
+              </div>
+            )}
           </div>
           <div className="space-y-2">
             <Label>講師</Label>

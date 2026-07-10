@@ -1,10 +1,10 @@
 'use client';
 
 import React from 'react';
-import { ArrowRightLeft } from 'lucide-react';
 import type { ScheduleEntry } from '@/types/schedule';
 import { SCHEDULE_ENTRY_KIND_LABELS, isExtraLessonKind } from '@/types/schedule';
-import { extraKindBadgeClass } from './scheduleBadges';
+import { extraKindBadgeClass, getSubjectChip, type SubjectChipTone } from './scheduleBadges';
+import styles from './scheduleDensity.module.css';
 
 function gradeLabel(grade: number): string {
   if (grade <= 6) return `小${grade}`;
@@ -12,60 +12,86 @@ function gradeLabel(grade: number): string {
   return `高${grade - 9}`;
 }
 
-const STATUS_ICON: Record<string, string> = {
-  present: '■',
-  absent: '×',
-  late: '△',
-  null: '□',
+/** 科目チップの色トーン → CSS モジュールクラス。scheduleBadges.getSubjectChip と対で使う。 */
+const TONE_CLASS: Record<SubjectChipTone, string> = {
+  indigo: styles.subjIndigo,
+  blue: styles.subjBlue,
+  emerald: styles.subjEmerald,
+  teal: styles.subjTeal,
+  amber: styles.subjAmber,
+  violet: styles.subjViolet,
+  gray: styles.subjGray,
 };
 
-const STATUS_COLOR: Record<string, string> = {
-  present: 'bg-green-50 border-green-200 text-green-800',
-  absent: 'bg-red-50 border-red-200 text-red-800',
-  late: 'bg-yellow-50 border-yellow-200 text-yellow-800',
-  null: 'bg-white border-gray-200 text-gray-900',
-};
+function SubjectChip({ name }: { name: string }) {
+  const { label, tone } = getSubjectChip(name);
+  if (!label) return null;
+  return (
+    <span className={`${styles.subjChip} ${TONE_CLASS[tone]}`} title={name}>
+      {label}
+    </span>
+  );
+}
 
 export interface StudentCardProps {
   entry: ScheduleEntry;
   onClick: (e: React.MouseEvent) => void;
-  onTransferClick?: (entry: ScheduleEntry) => void;
   /** 講習モード: 申し込みコマ数 */
   koushuEnrolled?: number;
   /** 講習モード: 期間内の受講済みコマ数 */
   koushuScheduled?: number;
 }
 
+/**
+ * 生徒行（1行表示・Phase U 密度改修）。
+ * 「氏名 学年 [科目色チップ]」を1行に収める。出欠・振替・体験は「行色」で表現し、
+ * 状態バッジ（振/欠/体）は廃止（凡例に行色の意味を集約）。
+ * テスト対策・追加授業などの kind バッジは現行どおり残す。
+ * 行クリックで親が授業操作メニュー（StudentActionModal）を開く。
+ */
 export const StudentCard = React.memo(function StudentCard({
   entry,
   onClick,
-  onTransferClick,
   koushuEnrolled,
   koushuScheduled,
 }: StudentCardProps) {
-  const status = entry.attendance_status ?? null;
-  const statusKey = status === null ? 'null' : status;
-  const icon = STATUS_ICON[statusKey] ?? '□';
-  const colorClass = STATUS_COLOR[statusKey] ?? STATUS_COLOR.null;
-
   const studentName = entry.student
     ? `${entry.student.last_name} ${entry.student.first_name}`
     : entry.student_id;
   const grade = entry.student ? gradeLabel(entry.student.grade) : '—';
-  const subjectNames =
-    (entry.subjects ?? [])
-      .map((s) => (typeof s === 'object' && s && 'name' in s ? s.name : String(s)))
-      .filter(Boolean)
-      .join('/') || '—';
+  const subjectNames = (entry.subjects ?? [])
+    .map((s) => (typeof s === 'object' && s && 'name' in s ? s.name : String(s)))
+    .filter((n): n is string => !!n);
 
   const isTransferredOut = entry.status === 'transferred_out';
   const isTransferredIn = entry.status === 'transferred_in';
   const isDraft = !!entry.isDraft;
-  // 追加授業（テスト対策/追加授業/体験）は種別バッジで通常授業と区別する
-  const isExtra = isExtraLessonKind(entry.kind);
-  const extraBadgeClass = extraKindBadgeClass(entry.kind);
-  const canTransfer =
-    onTransferClick && !isTransferredOut && entry.status !== 'cancelled' && !isDraft;
+  const isAbsent = entry.attendance_status === 'absent';
+  const isTrial = entry.kind === 'trial';
+  // 追加授業の種別バッジ（体験は行色にするのでバッジからは除外）
+  const showKindBadge = isExtraLessonKind(entry.kind) && entry.kind !== 'trial';
+
+  // 行色（状態）: 優先度 = 欠席 > 振替元 > 振替先 > 体験 > 通常
+  const stateClass = isAbsent
+    ? styles.absent
+    : isTransferredOut
+      ? styles.transferredOut
+      : isTransferredIn
+        ? styles.transferRow
+        : isTrial
+          ? styles.trialRow
+          : '';
+
+  // 振替先は元日程を title に出す（バッジ廃止のぶんの情報を hover で補う）
+  const rowTitle = isTransferredIn ? '振替で入ったコマ' : studentName;
+
+  const koushuRemain =
+    koushuEnrolled !== undefined ? Math.max(0, koushuEnrolled - (koushuScheduled ?? 0)) : null;
+
+  // Phase R: 45分授業の前後半チップ（グレー系）と 1対1 マーカー。
+  const halfLabel =
+    entry.half_position === 'first' ? '前' : entry.half_position === 'second' ? '後' : null;
+  const isOneToOne = entry.ratio === 1;
 
   return (
     <div
@@ -81,82 +107,47 @@ export const StudentCard = React.memo(function StudentCard({
       title={
         isDraft
           ? '自動マッチングの仮配置（未公開）。コントロールパネルで公開すると確定します'
-          : undefined
+          : rowTitle
       }
-      className={`
-        px-1.5 py-1 rounded-lg border text-left shadow-sm
-        cursor-pointer hover:shadow-md active:scale-[0.97] transition-[box-shadow,border-color,background-color,transform] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)]
-        ${isDraft ? 'border-dashed border-2 border-info bg-info-subtle' : colorClass}
-        ${isTransferredOut ? 'opacity-60 line-through' : ''}
-      `}
+      className={`${styles.sRow} ${styles.clickable} ${stateClass} ${isDraft ? styles.draftRow : ''}`}
     >
-      {/* 1行目: 生徒名 + 学年 + 操作アイコン */}
-      <div className="flex items-center gap-1">
-        {isDraft && (
-          <span
-            className="flex-shrink-0 px-1 py-0.5 rounded text-[9px] font-bold bg-info text-white leading-none"
-            title="自動マッチングの仮配置（未公開）"
-          >
-            仮
-          </span>
-        )}
-        {isExtra && (
-          <span
-            className={`flex-shrink-0 px-1 py-0.5 rounded text-[9px] font-bold leading-none ${extraBadgeClass}`}
-            title={`${SCHEDULE_ENTRY_KIND_LABELS[entry.kind]}（単発の追加授業）`}
-          >
-            {SCHEDULE_ENTRY_KIND_LABELS[entry.kind]}
-          </span>
-        )}
-        <p
-          className={`text-sm font-semibold leading-tight truncate flex-1 min-w-0 ${isTransferredOut ? 'text-gray-500' : 'text-gray-900'}`}
-        >
-          {studentName}
-          {/* 学年は名前のすぐ右に括弧書きでくっつける。
-              フォントは少し小さく抑えるが、視認できる程度のコントラストを保つ。 */}
-          <span className="ml-1 text-xs font-normal text-gray-500">({grade})</span>
-        </p>
-        {canTransfer && (
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onTransferClick(entry);
-            }}
-            className="flex-shrink-0 p-0.5 rounded hover:bg-gray-100 text-gray-400 hover:text-[var(--primary)]"
-            title="振替"
-            aria-label="振替"
-          >
-            <ArrowRightLeft className="w-3 h-3" />
-          </button>
-        )}
+      {isDraft && (
         <span
-          className={`flex-shrink-0 text-xs ${
-            statusKey === 'present'
-              ? 'text-green-600'
-              : statusKey === 'absent'
-                ? 'text-red-600'
-                : statusKey === 'late'
-                  ? 'text-yellow-600'
-                  : 'text-gray-400'
-          }`}
+          className={styles.kindBadge}
+          style={{ background: 'var(--info)', color: '#fff' }}
+          title="自動マッチングの仮配置（未公開）"
         >
-          {icon}
+          仮
         </span>
-      </div>
-      {/* 2行目: 科目 + 講習残コマバッジ */}
-      <div className="flex items-center gap-1">
-        <p className="text-xs text-gray-700 font-medium leading-tight truncate flex-1 min-w-0">
-          {subjectNames}
-          {isTransferredIn && <span className="ml-1 text-blue-500 font-normal">振替</span>}
-          {isTransferredOut && <span className="ml-1 text-gray-400 font-normal">→振替済</span>}
-        </p>
-        {koushuEnrolled !== undefined && (
-          <span className="flex-shrink-0 text-[10px] font-semibold text-blue-600 bg-blue-50 px-1 py-0.5 rounded leading-none">
-            残{Math.max(0, koushuEnrolled - (koushuScheduled ?? 0))}
-          </span>
-        )}
-      </div>
+      )}
+      {showKindBadge && (
+        <span
+          className={`${styles.kindBadge} ${extraKindBadgeClass(entry.kind)}`}
+          title={`${SCHEDULE_ENTRY_KIND_LABELS[entry.kind]}（単発の追加授業）`}
+        >
+          {SCHEDULE_ENTRY_KIND_LABELS[entry.kind]}
+        </span>
+      )}
+      <span className={styles.sName}>{studentName}</span>
+      <span className={styles.sGrade}>{grade}</span>
+      {isOneToOne && (
+        <span className={styles.ratioTag} title="1対1授業（生徒1名で満席）">
+          1:1
+        </span>
+      )}
+      {halfLabel && (
+        <span
+          className={styles.halfChip}
+          title={entry.half_position === 'first' ? '前半45分' : '後半45分'}
+        >
+          {halfLabel}
+        </span>
+      )}
+      {subjectNames.map((name, i) => (
+        <SubjectChip key={`${name}-${i}`} name={name} />
+      ))}
+      {isTransferredIn && <span className={styles.metaTag}>振替</span>}
+      {koushuRemain !== null && <span className={styles.koushuTag}>残{koushuRemain}</span>}
     </div>
   );
 });

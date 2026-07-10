@@ -34,3 +34,5 @@ export { ScheduleToolbar } from './ScheduleToolbar';
 export { ScheduleDialogs } from './ScheduleDialogs';
 export { UnassignedEntriesPool } from './UnassignedEntriesPool';
 export { PlacementAvailabilityStrip } from './PlacementAvailabilityStrip';
+export { FormationBoard } from './FormationBoard';
+export { FormationKomaFormModal } from './FormationKomaFormModal';

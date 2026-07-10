@@ -152,6 +152,16 @@ export interface WeeklyScheduleGridProps {
   onKoushuPlace?: (date: string, slotId: string) => void;
   /** 配置モード中に講師カードをクリックしたとき（その講師で配置） */
   onKoushuPlaceWithTeacher?: (date: string, slotId: string, teacherId: string) => void;
+  /** 向き: 'cols'=日=列(週俯瞰) / 'rows'=日=行(転置・既定) */
+  orientation: 'cols' | 'rows';
+  /** 日=列モードのセル内カラム数（1 or 2）。転置モードでは無視 */
+  colMode: 1 | 2;
+  /** 座席番号（印刷ブース番号）: 日付 → 講師ID → 番号 */
+  boothMapByDate?: Map<string, Map<string, number>>;
+  /** 座席番号の保存（日付, 講師ID, 値） */
+  onSeatNoChange?: (date: string, teacherId: string, value: string) => void;
+  /** sticky ツールバーの実測高さ(px)。時限見出しの sticky top に使う */
+  stickyOffset?: number;
 }
 
 export function WeeklyScheduleGrid(props: WeeklyScheduleGridProps) {
@@ -170,7 +180,7 @@ export function WeeklyScheduleGrid(props: WeeklyScheduleGridProps) {
     onAddStudent,
     onRemoveTeacher,
     onStudentClick,
-    onTransferClick,
+    onTransferClick: _onTransferClick,
     onTeacherCardMove: _onTeacherCardMove,
     onStudentEntryDrop,
     onTeacherDropOnUnassigned,
@@ -178,7 +188,7 @@ export function WeeklyScheduleGrid(props: WeeklyScheduleGridProps) {
     onTransferTargetClick,
     onPrintDay,
     onBoothAssign,
-    headerRightContent,
+    headerRightContent: _headerRightContent,
     getKoushuInfo,
     subjectNameById,
     absenceKeySet,
@@ -187,6 +197,11 @@ export function WeeklyScheduleGrid(props: WeeklyScheduleGridProps) {
     getKoushuPlaceability,
     onKoushuPlace,
     onKoushuPlaceWithTeacher,
+    orientation,
+    colMode,
+    boothMapByDate,
+    onSeatNoChange,
+    stickyOffset,
   } = props;
 
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -378,11 +393,9 @@ export function WeeklyScheduleGrid(props: WeeklyScheduleGridProps) {
       onAddStudent={onAddStudent}
       onRemoveTeacher={onRemoveTeacher}
       onStudentClick={onStudentClick}
-      onTransferClick={onTransferClick}
       onTransferTargetClick={onTransferTargetClick}
       onPrintDay={onPrintDay}
       onBoothAssign={onBoothAssign}
-      headerRightContent={headerRightContent}
       getKoushuInfo={getKoushuInfo}
       subjectNameById={subjectNameById}
       absenceKeySet={absenceKeySet}
@@ -391,6 +404,11 @@ export function WeeklyScheduleGrid(props: WeeklyScheduleGridProps) {
       getKoushuPlaceability={getKoushuPlaceability}
       onKoushuPlace={onKoushuPlace}
       onKoushuPlaceWithTeacher={onKoushuPlaceWithTeacher}
+      orientation={orientation}
+      colMode={colMode}
+      boothMapByDate={boothMapByDate}
+      onSeatNoChange={onSeatNoChange}
+      stickyOffset={stickyOffset}
     />
   );
 }

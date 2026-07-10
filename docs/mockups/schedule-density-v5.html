@@ -1,0 +1,1297 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>座席表 高密度 v5 — 強コントラスト・空き緑表示</title>
+<style>
+  /* v5: 層の明度差を「誰でも分かる」レベルに増幅。
+     ページ背景=はっきりグレー < 日セル=白に近い面+明確なボーダー < カード=純白+濃ボーダー+影。
+     グレースケール化しても3層+表構造が判別できることを合格基準とする。
+     色の意味は3値に整理: 緑=入れる / 琥珀=対応必要 / 赤=異常 */
+  :root {
+    --bg: #e2e4e9;
+    --cell-bg: #f7f8fa;
+    --cell-border: #c8ccd4;
+    --surface: #ffffff;
+    --head-bg: #e6e9ee;
+    --border: #b4b9c4;
+    --border-faint: #e4e7ec;
+    --text: #1c1a1a;
+    --text-muted: #71717a;
+    --text-faint: #9d9da6;
+    --primary: #d32f2f;
+    --primary-weak: #fbe9e9;
+    --today-bg: #e3effd;
+    --today-text: #1d5fb8;
+    --today-border: #a9cdf2;
+    --warn-bg: #fdf0d8;
+    --warn-text: #8f5d08;
+    --warn-border: #eccd8c;
+    --danger-bg: #fdeceb;
+    --danger-text: #ab2a24;
+    --danger-border: #f3c3bf;
+    /* 空き=緑。面(明度差あり)+濃い破線+濃い文字で色相以外でも識別できるようにする */
+    --ok-bg: #d9f2e3;
+    --ok-border: #3f9e68;
+    --ok-text: #1c7a43;
+    --ok-accent: #2f9e58;
+    --chip-bg: #e8eaef;
+    --chip-text: #64646d;
+    --stripe: #f5f6f8;
+    --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.10);
+    --radius-sm: 4px;
+    --radius-md: 6px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f0f13;
+      --cell-bg: #1c1d23;
+      --cell-border: #35373f;
+      --surface: #26272e;
+      --head-bg: #33353d;
+      --border: #4b4e59;
+      --border-faint: #33353c;
+      --text: #edecef;
+      --text-muted: #a0a0a8;
+      --text-faint: #74747d;
+      --primary: #e8534d;
+      --primary-weak: #3a2020;
+      --today-bg: #16283e;
+      --today-text: #7fb2ee;
+      --today-border: #2d5480;
+      --warn-bg: #3a2c11;
+      --warn-text: #eab86a;
+      --warn-border: #5a441c;
+      --danger-bg: #3a1e1c;
+      --danger-text: #ef8a84;
+      --danger-border: #5a2c28;
+      --ok-bg: #1b3a26;
+      --ok-border: #3f9e68;
+      --ok-text: #74d09b;
+      --ok-accent: #46b374;
+      --chip-bg: #383a42;
+      --chip-text: #b6b6bd;
+      --stripe: #2b2c33;
+      --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", "Noto Sans JP", -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 13px;
+    -webkit-font-smoothing: antialiased;
+  }
+  button { font-family: inherit; }
+
+  .page {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    padding: 10px 14px 6px;
+  }
+
+  /* ---------- Top toolbar : 1 row ---------- */
+  .toolbar {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    height: 34px;
+    flex-shrink: 0;
+  }
+  .form-tabs {
+    display: flex;
+    background: var(--chip-bg);
+    border-radius: 999px;
+    padding: 3px;
+    gap: 2px;
+  }
+  .form-tabs button {
+    border: none;
+    background: transparent;
+    padding: 5px 14px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: background .15s ease, color .15s ease;
+  }
+  .form-tabs button:hover { color: var(--text); }
+  .form-tabs button.active {
+    background: var(--text);
+    color: var(--surface);
+    font-weight: 700;
+  }
+  .week-nav {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--text);
+  }
+  .week-nav .week-label { font-weight: 600; min-width: 92px; text-align: center; }
+  .icon-btn {
+    width: 24px; height: 24px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    border-radius: var(--radius-sm);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: background .15s ease, border-color .15s ease, color .15s ease;
+  }
+  .icon-btn:hover { background: var(--cell-bg); color: var(--text); border-color: var(--text-faint); }
+
+  /* 1列⇔2列トグル(比較検討用・個別タブ専用) */
+  .col-toggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+  .col-toggle .pills {
+    display: flex;
+    background: var(--chip-bg);
+    border-radius: 999px;
+    padding: 2px;
+    gap: 2px;
+  }
+  .col-toggle .pills button {
+    border: none;
+    background: transparent;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: background .15s ease, color .15s ease;
+  }
+  .col-toggle .pills button.active {
+    background: var(--surface);
+    color: var(--text);
+    font-weight: 700;
+    box-shadow: var(--card-shadow);
+  }
+
+  .spacer { flex: 1; }
+  .admin-wrap { position: relative; }
+  .btn-ghost {
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    font-size: 12px;
+    font-weight: 500;
+    padding: 5px 10px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    display: flex; align-items: center; gap: 5px;
+    transition: background .15s ease, border-color .15s ease;
+  }
+  .btn-ghost:hover { background: var(--cell-bg); border-color: var(--text-faint); }
+  .admin-dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    right: 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    box-shadow: 0 4px 16px rgba(20,16,16,0.18);
+    min-width: 150px;
+    padding: 4px;
+    z-index: 20;
+    display: none;
+  }
+  .admin-dropdown.open { display: block; }
+  .admin-dropdown button {
+    display: block; width: 100%; text-align: left;
+    border: none; background: transparent; padding: 6px 8px;
+    font-size: 12px; color: var(--text); border-radius: var(--radius-sm);
+    cursor: pointer;
+  }
+  .admin-dropdown button:hover { background: var(--cell-bg); }
+
+  /* ---------- Legend bar ---------- */
+  .legend-bar { flex-shrink: 0; }
+  .legend-toggle {
+    border: none; background: transparent; cursor: pointer;
+    font-size: 11px; color: var(--text-muted);
+    display: flex; align-items: center; gap: 4px;
+    height: 20px; padding: 0 2px;
+  }
+  .legend-toggle:hover { color: var(--text); }
+  .legend-toggle .chev { transition: transform .15s ease; display: inline-flex; }
+  .legend-toggle.open .chev { transform: rotate(90deg); }
+  .legend-content {
+    display: none;
+    flex-wrap: wrap;
+    gap: 14px;
+    font-size: 11px;
+    color: var(--text-muted);
+    padding: 6px 2px 10px;
+    border-bottom: 1px solid var(--cell-border);
+  }
+  .legend-content.open { display: flex; }
+  .legend-item { display: flex; align-items: center; gap: 5px; }
+  .legend-swatch { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+  .legend-seat {
+    display: inline-block; width: 44px; height: 16px; line-height: 13px;
+    background: var(--ok-bg);
+    border: 1.5px dashed var(--ok-border); border-radius: 2px;
+    color: var(--ok-text); font-size: 10px; font-weight: 600; padding: 0 4px;
+  }
+
+  /* ---------- Board area ---------- */
+  .board-area {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    margin-top: 2px;
+  }
+  .board { display: none; height: 100%; }
+  .board.active { display: block; }
+
+  .week-grid {
+    display: grid;
+    /* minmax(0,1fr): min-content に列幅を押し広げさせず6日を等幅に保つ */
+    grid-template-columns: 64px repeat(6, minmax(0, 1fr));
+    gap: 2px 10px;
+    height: 100%;
+    align-content: start;
+    /* 1640px(列幅121px)ではellipsis率9.7%>8%だったため1700px(列幅127px)に緩和 */
+    max-width: 1700px;
+    margin: 0 auto;
+  }
+
+  /* 日ヘッダー・時限ラベル: 面とボーダーを強めて「表の構造」を見せる */
+  .day-head {
+    background: var(--head-bg);
+    border: 1px solid var(--cell-border);
+    border-radius: var(--radius-sm);
+    text-align: center;
+    padding: 2px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text);
+    height: 20px;
+    display: flex; align-items: center; justify-content: center; gap: 4px;
+  }
+  .day-head .d-date { font-size: 12px; }
+  .day-head .d-day { font-size: 10px; color: var(--text-muted); font-weight: 500; }
+  .day-head.today {
+    background: var(--today-bg);
+    border-color: var(--today-border);
+    color: var(--today-text);
+  }
+  .day-head.today .d-day { color: var(--today-text); opacity: .75; }
+
+  /* Collapsed slot rows (1限/2限) */
+  .slot-collapsed { grid-column: 1 / -1; display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 2px 10px; }
+  .slot-collapsed .slot-label {
+    background: var(--head-bg);
+    border: 1px solid var(--cell-border);
+    border-radius: var(--radius-sm);
+    font-size: 9.5px;
+    color: var(--text-muted);
+    display: flex; align-items: center; justify-content: center;
+    text-align: center; line-height: 1.2;
+  }
+  .collapsed-bar {
+    background: var(--cell-bg);
+    border: 1px solid var(--cell-border);
+    border-radius: var(--radius-sm);
+    height: 16px;
+    display: flex; align-items: center; gap: 6px;
+    padding: 0 10px;
+    font-size: 10.5px;
+    color: var(--text-faint);
+    cursor: pointer;
+    transition: background .15s ease;
+  }
+  .collapsed-bar:hover { background: var(--surface); }
+  .collapsed-bar .chev { transition: transform .15s ease; display: inline-flex; }
+  .collapsed-bar.open .chev { transform: rotate(90deg); }
+  .collapsed-expand {
+    display: none;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 2px 10px;
+    margin-top: 2px;
+  }
+  .collapsed-expand.open { display: grid; }
+  .collapsed-expand .mini-add {
+    height: 20px;
+    border: 1px dashed var(--cell-border);
+    border-radius: var(--radius-sm);
+    font-size: 10.5px;
+    color: var(--text-faint);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+  }
+  .collapsed-expand .mini-add:hover { background: var(--cell-bg); color: var(--text-muted); }
+
+  /* Slot labels */
+  .slot-label-main {
+    background: var(--head-bg);
+    border: 1px solid var(--cell-border);
+    border-radius: var(--radius-sm);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    font-size: 10.5px; font-weight: 700; color: var(--text);
+    text-align: center; gap: 1px; padding: 4px 2px;
+  }
+  .slot-label-main .t { font-size: 8.5px; font-weight: 500; color: var(--text-muted); line-height: 1.25; }
+
+  /* ---------- Day cell (individual board) ---------- */
+  /* 日セル = 中間層。明確なボーダーで面として見せる */
+  .day-cell {
+    background: var(--cell-bg);
+    border: 1px solid var(--cell-border);
+    border-radius: var(--radius-sm);
+    padding: 2px;
+    display: flex; flex-direction: column; gap: 2px;
+  }
+  .day-cell.empty { background: transparent; border-style: dashed; }
+
+  /* 2列レイアウト: 列間は隙間で区切る(線は引かない) */
+  .cell-cols {
+    display: flex;
+    gap: 5px;
+    align-items: flex-start;
+  }
+  .cell-col {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  /* 講師ブロック = 純白サーフェス。2段濃いボーダー+影で確実に浮かせる */
+  .t-block {
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    overflow: hidden;
+    background: var(--surface);
+    box-shadow: var(--card-shadow);
+  }
+  /* 空きのある講師カード: 左縁の緑アクセント。
+     ズームアウトでも「緑の縦線=入れる場所」と分かる */
+  .t-block.has-vacancy { border-left: 3px solid var(--ok-accent); }
+  /* 講師ヘッダー: 中央寄せ+濃い面で生徒行(白・左寄せ)と明確に区別 */
+  .t-head {
+    position: relative;
+    display: flex; align-items: center;
+    padding: 0 42px 0 6px;
+    background: var(--head-bg);
+    height: 22px;
+  }
+  .t-name {
+    flex: 1; min-width: 0;
+    font-size: 12px; font-weight: 600; color: var(--text);
+    text-align: center;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  /* 座席番号+✕は右端に絶対配置(中央寄せの計算から外す) */
+  .head-right {
+    position: absolute; right: 3px; top: 50%; transform: translateY(-50%);
+    display: flex; align-items: center; gap: 3px;
+  }
+  /* 座席番号入力: 粒度は講師×日付(同講師の同日ブロックは同番号想定) */
+  .seat-input {
+    width: 24px; height: 15px; flex-shrink: 0;
+    border: 1px solid var(--cell-border); border-radius: 3px;
+    background: var(--surface); color: var(--text-muted);
+    font-size: 10px; text-align: center; padding: 0;
+    font-family: inherit;
+  }
+  .seat-input::placeholder { color: var(--text-faint); }
+  .seat-input:hover { border-color: var(--border); }
+  .seat-input:focus { outline: none; border-color: var(--today-border); color: var(--text); }
+  /* 講師✕はブロックホバー時のみ表示(誤クリック防止・視覚ノイズ削減) */
+  .t-close {
+    border: none; background: transparent; color: var(--text-faint);
+    width: 13px; height: 13px; display: flex; align-items: center; justify-content: center;
+    border-radius: 3px; cursor: pointer; flex-shrink: 0;
+    opacity: 0;
+    transition: background .15s ease, color .15s ease, opacity .15s ease;
+  }
+  .t-block:hover .t-close { opacity: 1; }
+  .t-close:hover { background: var(--danger-bg); color: var(--danger-text); }
+
+  .s-row {
+    position: relative;
+    display: flex; align-items: center; gap: 3px;
+    height: 20px;
+    padding: 0 4px;
+    font-size: 11px;
+    line-height: 20px;
+    border-top: 1px solid var(--border-faint);
+    white-space: nowrap;
+  }
+  .s-row:nth-child(even) { background: var(--stripe); }
+  /* 生徒行クリックでアクションメニュー(欠席/振替/取り消し) */
+  .s-row.clickable { cursor: pointer; }
+  .s-row.clickable:hover { background: var(--chip-bg); }
+  /* 氏名は縮んでellipsis。ホバーでtitle(全名)が出る */
+  .s-name { font-weight: 500; color: var(--text); flex-shrink: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+  .s-grade { color: var(--text-muted); font-size: 10px; flex-shrink: 0; }
+  /* 1対1契約: 生徒1名で満席。満席理由を示す極小マーク */
+  .ratio-mark { font-size: 9.5px; color: var(--text-faint); flex-shrink: 0; }
+  .s-badge {
+    font-size: 8.5px; font-weight: 700; padding: 0 3px; border-radius: 2px; flex-shrink: 0; line-height: 12px;
+  }
+  .s-badge.transfer { background: var(--today-bg); color: var(--today-text); }
+  /* 期限が近い振替は状態色(rose)で緊急度を上げる */
+  .s-badge.transfer.urgent { background: var(--danger-bg); color: var(--danger-text); }
+  .s-badge.trial { background: var(--warn-bg); color: var(--warn-text); }
+  .s-badge.absent-badge { background: var(--chip-bg); color: var(--text-muted); }
+
+  /* 欠席行: 打消し線＋グレーアウト。行自体は残す(取り消し可能) */
+  .s-row.absent .s-name { text-decoration: line-through; color: var(--text-faint); }
+  .s-row.absent .s-grade,
+  .s-row.absent .subj-chip,
+  .s-row.absent .ratio-mark { opacity: .55; }
+
+  /* 定員超過の行: 薄roseの左縁のみ(異常であることを静かに示す) */
+  .s-row.over-seat { box-shadow: inset 2px 0 0 var(--danger-border); }
+
+  /* 空席プレースホルダ行 = 緑。「どこが空いているか」の視線を1色に集約する。
+     緑面+濃い破線+濃い文字で、グレースケールでも周囲の白と区別できる輝度差を持たせる */
+  .s-row.seat-empty {
+    background: var(--ok-bg);
+    border: 1.5px dashed var(--ok-border);
+    border-radius: 2px;
+    margin: 1px 2px;
+    height: 20px;
+    color: var(--ok-text);
+    font-size: 10px;
+    font-weight: 600;
+    cursor: default;
+  }
+
+  /* 科目色チップ: 前注意的に知覚される色で科目スキャンを高速化しつつ幅を節約。
+     roseは状態色(異常)専用に予約するため国語はindigo。
+     自色相の薄縁でP/D型色覚でも輪郭から分離できるようにする。背景輝度は段階化 */
+  .subj-chip {
+    font-size: 10px; font-weight: 600;
+    padding: 0 3px; height: 14px; line-height: 12px;
+    border: 1px solid transparent;
+    border-radius: 3px; flex-shrink: 0;
+  }
+  .subj-chip.c-indigo  { background: #e9e9fb; color: #4547b0; border-color: #cdcdf0; }
+  .subj-chip.c-blue    { background: #e5eefb; color: #2c5fb0; border-color: #c6d8f2; }
+  .subj-chip.c-emerald { background: #e3f4e9; color: #1e7a45; border-color: #c0e3cd; }
+  .subj-chip.c-teal    { background: #d5efef; color: #136a72; border-color: #aedddd; }
+  .subj-chip.c-amber   { background: #f8e9cd; color: #8a5f0a; border-color: #ecd4a2; }
+  .subj-chip.c-violet  { background: #eeeafa; color: #6243b5; border-color: #d7cdf2; }
+  .subj-chip.c-gray    { background: #efedec; color: #6b6462; border-color: #dcd8d6; }
+  /* 45分授業チップ(45前/45後): 科目と系統を分けたグレー系 */
+  .subj-chip.half-chip { background: #eceef2; color: #5a6272; border-color: #d3d7df; }
+  @media (prefers-color-scheme: dark) {
+    .subj-chip.c-indigo  { background: #26264a; color: #a3a5ee; border-color: #3d3d6b; }
+    .subj-chip.c-blue    { background: #1e2c44; color: #8fb4ee; border-color: #2e4468; }
+    .subj-chip.c-emerald { background: #1c322a; color: #7fd0a0; border-color: #2a4a3a; }
+    .subj-chip.c-teal    { background: #163233; color: #7fcdd4; border-color: #24494b; }
+    .subj-chip.c-amber   { background: #3a2f14; color: #e5c069; border-color: #55461f; }
+    .subj-chip.c-violet  { background: #2b2440; color: #b6a0ee; border-color: #3f355c; }
+    .subj-chip.c-gray    { background: #2a2830; color: #b6b1b7; border-color: #3b3942; }
+    .subj-chip.half-chip { background: #262a33; color: #9aa4b5; border-color: #3a4150; }
+  }
+
+  .add-teacher-bar {
+    height: 12px;
+    border: 1px dashed var(--cell-border);
+    border-radius: 3px;
+    font-size: 9px;
+    color: var(--text-faint);
+    display: flex; align-items: center; justify-content: center; gap: 3px;
+    cursor: pointer;
+    transition: background .15s ease, color .15s ease, border-color .15s ease;
+    margin-top: auto;
+  }
+  .add-teacher-bar:hover { background: var(--surface); color: var(--text-muted); border-color: var(--text-faint); }
+
+  .unplaced-badge {
+    align-self: flex-start;
+    font-size: 10px; font-weight: 700;
+    padding: 1px 6px; border-radius: 999px;
+    background: var(--warn-bg); color: var(--warn-text);
+    cursor: pointer; border: 1px solid var(--warn-border);
+  }
+  .unplaced-badge:hover { filter: brightness(0.97); }
+  .unplaced-chips { display: none; flex-wrap: wrap; gap: 3px; padding: 2px 0; }
+  .unplaced-chips.open { display: flex; }
+  .unplaced-chip {
+    font-size: 9.5px; padding: 1px 5px; border-radius: 3px;
+    border: 1px dashed var(--text-faint); color: var(--text-muted); background: var(--surface);
+  }
+
+  /* ---------- 生徒行アクションメニュー(ポップオーバー) ---------- */
+  .row-menu {
+    position: fixed; z-index: 100;
+    min-width: 152px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    box-shadow: 0 6px 20px rgba(20,16,16,0.2);
+    padding: 4px;
+    display: none;
+  }
+  .row-menu.open { display: block; }
+  .row-menu .rm-head {
+    font-size: 11px; font-weight: 700; color: var(--text);
+    padding: 5px 8px 5px;
+    border-bottom: 1px solid var(--border-faint);
+    margin-bottom: 3px;
+    white-space: nowrap;
+  }
+  .row-menu button {
+    display: block; width: 100%; text-align: left;
+    border: none; background: transparent;
+    padding: 6px 8px;
+    font-size: 12px; color: var(--text);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+  }
+  .row-menu button:hover { background: var(--cell-bg); }
+  .row-menu button.rm-danger:hover { background: var(--danger-bg); color: var(--danger-text); }
+
+  /* ---------- Group-style boards ---------- */
+  .week-grid.group-grid { grid-template-rows: 20px repeat(3, 1fr); }
+  .week-grid.prog-grid { grid-template-rows: 20px repeat(2, 1fr); }
+  .group-cell {
+    background: var(--cell-bg);
+    border: 1px solid var(--cell-border);
+    border-radius: var(--radius-sm);
+    padding: 4px;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .group-cell.empty { background: transparent; border-style: dashed; }
+  .group-slot-label {
+    background: var(--head-bg);
+    border: 1px solid var(--cell-border);
+    border-radius: var(--radius-sm);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    font-size: 10.5px; font-weight: 700; color: var(--text); text-align: center; gap: 1px; padding: 3px;
+  }
+  .group-slot-label .t { font-size: 8.5px; font-weight: 500; color: var(--text-muted); }
+  .add-class-bar {
+    flex: 1;
+    min-height: 26px;
+    border: 1px dashed var(--cell-border);
+    border-radius: var(--radius-sm);
+    font-size: 10.5px; color: var(--text-faint);
+    display: flex; align-items: center; justify-content: center; gap: 4px;
+    cursor: pointer;
+    transition: background .15s ease, color .15s ease, border-color .15s ease;
+  }
+  .add-class-bar:hover { background: var(--cell-bg); color: var(--text-muted); border-color: var(--text-faint); }
+
+  /* 集団カードも同じ層構造(純白サーフェス+濃ボーダー+影)。空きあり=緑左縁 */
+  .g-card {
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    overflow: hidden;
+    background: var(--surface);
+    box-shadow: var(--card-shadow);
+    display: flex; flex-direction: column;
+  }
+  .g-card.has-vacancy { border-left: 3px solid var(--ok-accent); }
+  .g-card-head {
+    display: flex; align-items: center; gap: 6px;
+    padding: 3px 6px;
+    background: var(--head-bg);
+    height: 22px;
+  }
+  .g-card-head .g-title { font-size: 12px; font-weight: 700; color: var(--text); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .g-cap {
+    font-size: 9.5px; font-weight: 700; padding: 1px 5px; border-radius: 999px;
+    background: var(--chip-bg); color: var(--chip-text); flex-shrink: 0;
+  }
+  .g-cap.open-slots { background: var(--ok-bg); color: var(--ok-text); }
+  .g-teacher { font-size: 9.5px; color: var(--text-muted); padding: 2px 6px 0; }
+  .g-students { padding: 1px 0 3px; }
+
+  /* ---------- Footer ---------- */
+  .page-footer {
+    flex-shrink: 0;
+    text-align: center;
+    font-size: 10px;
+    color: var(--text-faint);
+    padding-top: 2px;
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="toolbar">
+    <div class="form-tabs" id="formTabs">
+      <button class="active" data-board="individual">個別</button>
+      <button data-board="group">小集団</button>
+      <button data-board="programming">プログラミング</button>
+    </div>
+    <div class="week-nav">
+      <button class="icon-btn" id="prevWeek" title="前週">◀</button>
+      <span class="week-label" id="weekLabel">2026/7/6週</span>
+      <button class="icon-btn" id="nextWeek" title="次週">▶</button>
+    </div>
+    <div class="col-toggle" id="colToggleWrap">
+      <span>表示:</span>
+      <div class="pills" id="colToggle">
+        <button data-cols="1">1列</button>
+        <button data-cols="2" class="active">2列</button>
+      </div>
+    </div>
+    <div class="spacer"></div>
+    <div class="admin-wrap">
+      <button class="btn-ghost" id="adminBtn">管理 <span style="font-size:9px;">▾</span></button>
+      <div class="admin-dropdown" id="adminDropdown">
+        <button>表示設定</button>
+        <button>印刷</button>
+        <button>CSV出力</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="legend-bar">
+    <button class="legend-toggle" id="legendToggle"><span class="chev">▸</span>凡例</button>
+    <div class="legend-content" id="legendContent">
+      <div class="legend-item"><strong style="color:var(--text);">色の意味:</strong> <span style="color:var(--ok-text); font-weight:700;">緑=入れる</span> / <span style="color:var(--warn-text); font-weight:700;">琥珀=対応必要</span> / <span style="color:var(--danger-text); font-weight:700;">赤=異常</span></div>
+      <div class="legend-item"><span class="legend-seat">空席</span>空き座席(配置先)</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:var(--surface); border:1px solid var(--border); box-shadow: inset 3px 0 0 var(--ok-accent);"></span>空きのある講師(左縁緑)</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:var(--warn-bg); border:1px solid var(--warn-border);"></span>未配置あり(対応必要)</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:var(--surface); box-shadow: inset 2px 0 0 var(--danger-border); border:1px solid var(--border-faint);"></span>定員超過の行(異常)</div>
+      <div class="legend-item"><span class="ratio-mark">1:1</span>1対1契約(1名で満席)</div>
+      <div class="legend-item"><span class="subj-chip half-chip">45前</span><span class="subj-chip half-chip">45後</span>45分授業(前半/後半)</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:var(--today-bg); border:1px solid var(--today-border);"></span>本日</div>
+      <div class="legend-item"><span class="subj-chip c-indigo">国</span><span class="subj-chip c-blue">数</span><span class="subj-chip c-emerald">英</span><span class="subj-chip c-teal">理</span><span class="subj-chip c-amber">社</span><span class="subj-chip c-violet">HAL</span>科目チップ</div>
+      <div class="legend-item"><span class="s-badge transfer" style="position:static;">振</span>振替 / <span class="s-badge transfer urgent" style="position:static;">振</span>期限接近 / <span class="s-badge trial" style="position:static;">体</span>体験 / <span class="s-badge absent-badge" style="position:static;">欠</span>欠席</div>
+      <div class="legend-item">生徒行クリックで欠席・振替メニュー / 氏名ホバーで全名表示</div>
+    </div>
+  </div>
+
+  <div class="board-area">
+    <div class="board active" id="board-individual"></div>
+    <div class="board" id="board-group"></div>
+    <div class="board" id="board-programming"></div>
+  </div>
+
+  <div class="page-footer">schedule-density-v5 — 2026-07-09 密度確認用モック（強コントラスト層構造・空き=緑の直感表示）</div>
+</div>
+
+<!-- 生徒行アクションメニュー(欠席のみ登録する運用。出席チェックは廃止) -->
+<div class="row-menu" id="rowMenu">
+  <div class="rm-head" id="rowMenuHead"></div>
+  <button class="rm-danger">欠席にする</button>
+  <button>振替</button>
+  <button>取り消し</button>
+</div>
+
+<script>
+(function () {
+  // ---------------------------------------------------------------
+  // Icons (inline SVG, lucide-style line icons)
+  // ---------------------------------------------------------------
+  const ICON_X = '<svg viewBox="0 0 24 24" width="9" height="9" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>';
+  const ICON_PLUS = '<svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>';
+
+  // ---------------------------------------------------------------
+  // Master data
+  // ---------------------------------------------------------------
+  const TEACHERS = ["北村由衣","杉浦駿","平澤未来","西舘季紀","川俣建","水上歩乃歌","瀧川怜生","坂田英俊","浅井遼介","佐藤朱華"];
+
+  // 生徒は学年・科目を固定属性として持つ
+  // ダニエル マーガレット = 長名のellipsis確認用サンプル
+  const STUDENTS = [
+    { name: "野中朔也", grade: "小6", subject: "国語" },
+    { name: "宇佐美乃葵", grade: "小5", subject: "算数" },
+    { name: "田嶋健", grade: "小5", subject: "国理" },
+    { name: "大崎透", grade: "小3", subject: "算数" },
+    { name: "鳥居宗生", grade: "小6", subject: "HAL" },
+    { name: "ダニエル マーガレット", grade: "中2", subject: "英語" },
+    { name: "松尾玲衣", grade: "中1", subject: "数学" },
+    { name: "永井祐吏", grade: "中2", subject: "数学" },
+    { name: "萩野結愛", grade: "中2", subject: "数学" },
+    { name: "大塚好倖", grade: "中1", subject: "英語" },
+    { name: "川原彩葉", grade: "中3", subject: "英語" },
+    { name: "伊坂華", grade: "小6", subject: "算数" },
+    { name: "相沢陽向", grade: "小4", subject: "算数" },
+    { name: "遠藤蒼太", grade: "中3", subject: "理科" },
+    { name: "小野寺茜", grade: "小6", subject: "英語" },
+    { name: "加藤悠人", grade: "中1", subject: "国語" },
+    { name: "木下彩", grade: "小5", subject: "算数" },
+    { name: "桜井蓮", grade: "中2", subject: "英語" },
+    { name: "白石美月", grade: "小3", subject: "国語" },
+    { name: "高田航", grade: "中3", subject: "数学" },
+    { name: "長谷川杏珠", grade: "中1", subject: "社会" },
+  ];
+
+  const DAYS = [
+    { date: "6", day: "月" },
+    { date: "7", day: "火" },
+    { date: "8", day: "水" },
+    { date: "9", day: "木", today: true },
+    { date: "10", day: "金" },
+    { date: "11", day: "土" },
+  ];
+
+  // 科目 → チップ表記＋色。テキストより色が先に知覚される(前注意的処理)ので
+  // 幅を節約しながら科目のスキャン速度をむしろ上げる狙い。
+  // roseは状態色(定員超過・期限接近)専用に予約するため国語はindigo。
+  const SUBJECT_MAP = {
+    "国語": ["国", "indigo"],
+    "算数": ["算", "blue"],
+    "数学": ["数", "blue"],
+    "英語": ["英", "emerald"],
+    "理科": ["理", "teal"],
+    "社会": ["社", "amber"],
+    "国理": ["国理", "indigo"],
+    "HAL": ["HAL", "violet"],
+  };
+  function subjectChipHtml(subject) {
+    let label, color;
+    const m = SUBJECT_MAP[subject];
+    if (m) { label = m[0]; color = m[1]; }
+    else if (subject.indexOf("HAL") === 0) { label = subject; color = "violet"; }
+    else { label = subject.slice(0, 2); color = "gray"; }
+    return `<span class="subj-chip c-${color}" title="${escapeHtml(subject)}">${escapeHtml(label)}</span>`;
+  }
+
+  // 決定的にバッジ・欠席を振る(毎回同じ見た目になるよう乱数は使わない)
+  function badgeFor(counter) {
+    // 期限が近い振替のサンプルを1件だけ混ぜる(rose版バッジ)
+    if (counter === 18) return { cls: "transfer urgent", label: "振", title: "振替期限 7/31" };
+    if (counter % 7 === 4) return { cls: "transfer", label: "振" };
+    if (counter % 11 === 6) return { cls: "trial", label: "体" };
+    return null;
+  }
+  // 欠席サンプル(打消し線+欠バッジ)を3件。バッジ付与カウンターと重ならない値を選ぶ
+  const ABSENT_COUNTERS = [8, 30, 56];
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  }
+
+  // ---------------------------------------------------------------
+  // Board 1: 個別指導
+  // ---------------------------------------------------------------
+  // 実データ規模: 1コマ最大 講師10名/生徒20名、平均は講師6名程度。
+  // 土曜3限を講師10名×生徒2名=20名のストレステストにしている。
+  const SLOTS_INDIVIDUAL = [
+    { key: "s1", label: "1限", time: "12:50〜14:20", collapsed: true },
+    { key: "s2", label: "2限", time: "14:30〜16:00", collapsed: true },
+    { key: "s3", label: "3限", time: "16:20〜17:50", counts: [6, 6, 5, 6, 6, 10], stressDay: 5 },
+    { key: "s4", label: "4限", time: "18:00〜19:30", counts: [5, 4, 6, 4, 5, 4] },
+    { key: "s5", label: "5限", time: "19:40〜21:10", counts: [4, 3, 5, 3, 4, 3] },
+  ];
+  // 未配置サンプルは行高を圧迫しないよう、各時限の最混雑日を避けた日に置く
+  const UNPLACED = {
+    s3: { 0: 2, 3: 1 },
+    s4: { 3: 1 },
+    s5: { 4: 1 },
+  };
+
+  // 特殊ブロックのサンプル(通しblockCounter基準):
+  //   3 = 月3限#3: 1対1(生徒1名で満席、空席行なし)
+  //   5 = 月3限#5: 45分ペア(1席に45前+45後、もう1席は空席)
+  //   9 = 火3限#3: 1対1×45前のみ(後半45分が空き)
+  //  14 = 水3限#2: 定員超過(3名、超過行に薄rose左縁)
+  //  16 = 水3限#4: 90分と45分の混在1対2(席1=90分、席2=45前+45後)
+  //  21 = 木3限#4: 1対1
+  //  47 = 火4限#3: 1対1
+  const SPECIAL_BLOCKS = {
+    3: "1:1",
+    5: "45pair",
+    9: "45front",
+    14: "overload",
+    16: "45mix",
+    21: "1:1",
+    47: "1:1",
+  };
+
+  // 高さ見積り定数(CSSと一致させること): ヘッダー22px+枠2px、席行20px、列内gap2px
+  const H_BLOCK_BASE = 24;
+  const H_ROW = 20;
+  const H_GAP = 2;
+
+  let teacherCursor = 0;
+  let studentCursor = 0;
+  let studentsPerTeacherToggle = 0;
+  let blockCounter = 0;
+
+  function resetCursors() {
+    teacherCursor = 0;
+    studentCursor = 0;
+    studentsPerTeacherToggle = 0;
+    blockCounter = 0;
+  }
+  function nextTeacher() {
+    const t = TEACHERS[teacherCursor % TEACHERS.length];
+    teacherCursor++;
+    return t;
+  }
+  function nextStudent() {
+    const s = STUDENTS[studentCursor % STUDENTS.length];
+    const badge = badgeFor(studentCursor);
+    const absent = ABSENT_COUNTERS.indexOf(studentCursor) !== -1;
+    studentCursor++;
+    return { ...s, badge, absent };
+  }
+  function studentsCountForTeacher() {
+    studentsPerTeacherToggle++;
+    return studentsPerTeacherToggle % 3 === 0 ? 1 : 2;
+  }
+
+  // 席行(生徒 or 空席)のレンダリング。
+  // row: { kind:'student', stu, half:'front'|'back'|null, over:bool } | { kind:'empty', label }
+  function renderSeatRow(row, ratio, noChip) {
+    if (row.kind === "empty") {
+      return `<div class="s-row seat-empty">${escapeHtml(row.label)}</div>`;
+    }
+    const stu = row.stu;
+    const badgeHtml = stu.badge
+      ? `<span class="s-badge ${stu.badge.cls}"${stu.badge.title ? ` title="${escapeHtml(stu.badge.title)}"` : ""}>${stu.badge.label}</span>`
+      : "";
+    const absentBadge = stu.absent ? `<span class="s-badge absent-badge">欠</span>` : "";
+    const halfChip = row.half
+      ? `<span class="subj-chip half-chip">${row.half === "front" ? "45前" : "45後"}</span>`
+      : "";
+    const ratioMark = ratio === "1:1"
+      ? `<span class="ratio-mark" title="1対1契約(1名で満席)">1:1</span>`
+      : "";
+    const cls = ["s-row", "clickable"];
+    if (stu.absent) cls.push("absent");
+    if (row.over) cls.push("over-seat");
+    return `
+      <div class="${cls.join(" ")}" data-student="${escapeHtml(stu.name)}">
+        <span class="s-name" title="${escapeHtml(stu.name)}">${escapeHtml(stu.name)}</span>
+        <span class="s-grade">${stu.grade}</span>
+        ${ratioMark}
+        ${noChip ? "" : subjectChipHtml(stu.subject)}
+        ${halfChip}
+        ${badgeHtml}
+        ${absentBadge}
+      </div>`;
+  }
+
+  // ブロック生成: 席モデル。1対2=2席(生徒 or 空席)、1対1=1席。
+  // 45分授業は1席を前半/後半で2名が順次使えるため行が席数を超えることがある。
+  function makeTeacherBlock(forceTwo) {
+    blockCounter++;
+    const special = SPECIAL_BLOCKS[blockCounter];
+    const teacher = nextTeacher();
+    const rows = [];
+    let ratio = "1:2";
+
+    if (special === "1:1") {
+      ratio = "1:1";
+      rows.push({ kind: "student", stu: nextStudent() });
+    } else if (special === "overload") {
+      rows.push({ kind: "student", stu: nextStudent() });
+      rows.push({ kind: "student", stu: nextStudent() });
+      rows.push({ kind: "student", stu: nextStudent(), over: true });
+    } else if (special === "45pair") {
+      // 席1: 45前+45後で順次使用 / 席2: 空席
+      rows.push({ kind: "student", stu: nextStudent(), half: "front" });
+      rows.push({ kind: "student", stu: nextStudent(), half: "back" });
+      rows.push({ kind: "empty", label: "空席" });
+    } else if (special === "45front") {
+      // 1対1契約の45分授業: 前半のみ使用、後半45分が空き
+      ratio = "1:1";
+      rows.push({ kind: "student", stu: nextStudent(), half: "front" });
+      rows.push({ kind: "empty", label: "空席（後45）" });
+    } else if (special === "45mix") {
+      // 席1: 90分生徒 / 席2: 45前+45後(満席)
+      rows.push({ kind: "student", stu: nextStudent() });
+      rows.push({ kind: "student", stu: nextStudent(), half: "front" });
+      rows.push({ kind: "student", stu: nextStudent(), half: "back" });
+    } else {
+      const n = forceTwo ? 2 : studentsCountForTeacher();
+      for (let i = 0; i < n; i++) rows.push({ kind: "student", stu: nextStudent() });
+      // 1対2で1名のみ → 空席プレースホルダ(将来のD&Dドロップ先)
+      if (n < 2) rows.push({ kind: "empty", label: "空席" });
+    }
+
+    // 空席行を持つカードは左縁の緑アクセント対象
+    const hasVacancy = rows.some((r) => r.kind === "empty");
+    return { teacher, ratio, rows, hasVacancy, estHeight: H_BLOCK_BASE + H_ROW * rows.length };
+  }
+
+  // 座席番号: 粒度は講師×日付。モックでは講師インデックス由来の固定値(未割当サンプル1名)
+  function seatNoFor(teacher) {
+    if (teacher === "佐藤朱華") return "";
+    return String(TEACHERS.indexOf(teacher) + 1);
+  }
+
+  function renderTeacherBlockHtml(block) {
+    return `
+      <div class="t-block ${block.hasVacancy ? "has-vacancy" : ""}">
+        <div class="t-head">
+          <span class="t-name" title="${escapeHtml(block.teacher)}">${escapeHtml(block.teacher)}</span>
+          <span class="head-right">
+            <input class="seat-input" title="座席番号" maxlength="2" placeholder="-" value="${seatNoFor(block.teacher)}">
+            <button class="t-close" title="この講師枠を削除">${ICON_X}</button>
+          </span>
+        </div>
+        ${block.rows.map((r) => renderSeatRow(r, block.ratio, false)).join("")}
+      </div>`;
+  }
+
+  // 順序保存の二分割: 講師の表示順を保ったまま、累積高さが全体のほぼ半分に
+  // なる位置で前半(左列)/後半(右列)に分ける。貪欲法より均衡はやや劣るが、
+  // 「上から下→左から右」の探索順が予測できることを優先する。
+  function splitPreservingOrder(blocks) {
+    if (blocks.length <= 1) return [blocks, []];
+    const total = blocks.reduce((s, b) => s + b.estHeight + H_GAP, 0);
+    let acc = 0;
+    let splitIdx = blocks.length;
+    let bestDiff = Infinity;
+    blocks.forEach((b, i) => {
+      acc += b.estHeight + H_GAP;
+      const diff = Math.abs(acc - total / 2);
+      if (diff < bestDiff) {
+        bestDiff = diff;
+        splitIdx = i + 1;
+      }
+    });
+    return [blocks.slice(0, splitIdx), blocks.slice(splitIdx)];
+  }
+
+  function renderUnplacedBadge(slotKey, dayIdx) {
+    const n = (UNPLACED[slotKey] || {})[dayIdx];
+    if (!n) return "";
+    const chips = Array.from({ length: n }, () => nextStudent());
+    const uid = `unp-${slotKey}-${dayIdx}`;
+    return `
+      <button class="unplaced-badge" data-target="${uid}">未配置 ${n}</button>
+      <div class="unplaced-chips" id="${uid}">
+        ${chips.map((s) => `<span class="unplaced-chip">${escapeHtml(s.name)} ${s.grade} ${escapeHtml(s.subject)}</span>`).join("")}
+      </div>`;
+  }
+
+  function renderIndividualDayCell(slot, dayIdx, colMode) {
+    const count = slot.counts[dayIdx];
+    if (!count) {
+      return `<div class="day-cell empty"><div class="add-teacher-bar">${ICON_PLUS} 講師</div></div>`;
+    }
+    const forceTwo = slot.stressDay === dayIdx;
+    const blocks = Array.from({ length: count }, () => makeTeacherBlock(forceTwo));
+
+    let colsHtml;
+    if (colMode === 1) {
+      colsHtml = `<div class="cell-cols"><div class="cell-col">${blocks.map(renderTeacherBlockHtml).join("")}</div></div>`;
+    } else {
+      const cols = splitPreservingOrder(blocks);
+      colsHtml = `<div class="cell-cols">${cols
+        .map((items) => `<div class="cell-col">${items.map(renderTeacherBlockHtml).join("")}</div>`)
+        .join("")}</div>`;
+    }
+
+    // 未配置バッジはセル最上部: 背の高いセルでも視界から沈まない
+    const unplaced = renderUnplacedBadge(slot.key, dayIdx);
+    return `
+      <div class="day-cell">
+        ${unplaced}
+        ${colsHtml}
+        <div class="add-teacher-bar">${ICON_PLUS} 講師</div>
+      </div>`;
+  }
+
+  function renderDayHeadRow() {
+    let html = `<div class="grid-corner"></div>`;
+    DAYS.forEach((d) => {
+      html += `<div class="day-head ${d.today ? "today" : ""}"><span class="d-date">${d.date}</span><span class="d-day">${d.day}</span></div>`;
+    });
+    return html;
+  }
+
+  function renderCollapsedRow(slot) {
+    const uid = `collapsed-${slot.key}`;
+    let html = `
+      <div class="slot-collapsed">
+        <div class="slot-label">${slot.label}</div>
+        <div class="collapsed-bar" data-target="${uid}">
+          <span class="chev">▸</span>${slot.label} ${slot.time} — 授業なし
+        </div>
+      </div>
+      <div class="collapsed-expand" id="${uid}" style="grid-column: 1 / -1;">`;
+    DAYS.forEach(() => {
+      html += `<div class="mini-add">${ICON_PLUS} 授業を追加</div>`;
+    });
+    html += `</div>`;
+    return html;
+  }
+
+  // colMode: 1 or 2。トグルで再描画するため、カーソルを毎回リセットして
+  // どちらのモードでも同一のサンプルデータになるようにしている。
+  function buildIndividualBoard(colMode) {
+    resetCursors();
+    let html = `<div class="week-grid">`;
+    html += renderDayHeadRow();
+
+    SLOTS_INDIVIDUAL.forEach((slot) => {
+      if (slot.collapsed) {
+        html += renderCollapsedRow(slot);
+        return;
+      }
+      html += `<div class="slot-label-main">${slot.label}<span class="t">${slot.time}</span></div>`;
+      DAYS.forEach((_, dayIdx) => {
+        html += renderIndividualDayCell(slot, dayIdx, colMode);
+      });
+    });
+
+    html += `</div>`;
+    document.getElementById("board-individual").innerHTML = html;
+  }
+
+  // ---------------------------------------------------------------
+  // Board 2 / 3: 小集団・プログラミング(1列カード。科目チップは見出しに1個)
+  // ---------------------------------------------------------------
+  function renderGroupCard(card) {
+    const full = card.students.length >= card.capacity;
+    // 科目チップは見出しに1個だけ。タイトル自体がコース名の場合(プログラミング)は省く
+    const headChip = card.subject && card.subject !== card.title ? subjectChipHtml(card.subject) : "";
+    return `
+      <div class="g-card ${full ? "" : "has-vacancy"}">
+        <div class="g-card-head">
+          <span class="g-title">${escapeHtml(card.title)}</span>
+          ${headChip}
+          <span class="g-cap ${full ? "" : "open-slots"}">${card.students.length}/${card.capacity}</span>
+        </div>
+        <div class="g-teacher">講師: ${escapeHtml(card.teacher)}</div>
+        <div class="g-students">
+          ${card.students.map((s) => renderSeatRow({ kind: "student", stu: s }, "group", true)).join("")}
+        </div>
+      </div>`;
+  }
+
+  function buildGroupLikeBoard(containerId, slots, days, cardMap, addLabel, rowsCls) {
+    let html = `<div class="week-grid ${rowsCls}">`;
+    html += `<div class="grid-corner"></div>`;
+    days.forEach((d) => {
+      html += `<div class="day-head ${d.today ? "today" : ""}"><span class="d-date">${d.date}</span><span class="d-day">${d.day}</span></div>`;
+    });
+    slots.forEach((slot, slotIdx) => {
+      html += `<div class="group-slot-label">${slot.label}<span class="t">${slot.time}</span></div>`;
+      days.forEach((_, dayIdx) => {
+        const key = `${slotIdx}-${dayIdx}`;
+        const card = cardMap[key];
+        if (card) {
+          html += `<div class="group-cell">${renderGroupCard(card)}</div>`;
+        } else {
+          html += `<div class="group-cell empty"><div class="add-class-bar">${ICON_PLUS} ${addLabel}</div></div>`;
+        }
+      });
+    });
+    html += `</div>`;
+    document.getElementById(containerId).innerHTML = html;
+  }
+
+  function buildGroupBoard() {
+    const slots = [
+      { label: "1コマ", time: "18:00〜19:00" },
+      { label: "2コマ", time: "19:10〜20:10" },
+      { label: "3コマ", time: "20:20〜21:20" },
+    ];
+    const s = (i) => STUDENTS[i % STUDENTS.length];
+    const cardMap = {
+      "0-1": {
+        title: "小5 算数クラス",
+        subject: "算数",
+        teacher: "北村由衣",
+        capacity: 8,
+        students: [s(1), s(3), s(11), s(16), s(2), s(0)],
+      },
+      "1-3": {
+        title: "中2 国語クラス",
+        subject: "国語",
+        teacher: "平澤未来",
+        capacity: 6,
+        students: [s(0), s(15), s(18), s(4)],
+      },
+      "2-2": {
+        title: "中1 英語集中",
+        subject: "英語",
+        teacher: "浅井遼介",
+        capacity: 5,
+        students: [s(9), s(10), s(17), s(14), s(5)],
+      },
+    };
+    buildGroupLikeBoard("board-group", slots, DAYS, cardMap, "クラス枠", "group-grid");
+  }
+
+  function buildProgrammingBoard() {
+    const slots = [
+      { label: "1コマ", time: "17:00〜17:50" },
+      { label: "2コマ", time: "18:00〜18:50" },
+    ];
+    const cardMap = {
+      "0-2": {
+        title: "HAL初級",
+        teacher: "水上歩乃歌",
+        capacity: 6,
+        students: [
+          { name: "鳥居宗生", grade: "小6", subject: "HAL初級" },
+          { name: "大崎透", grade: "小3", subject: "HAL初級" },
+          { name: "白石美月", grade: "小3", subject: "HAL初級" },
+        ],
+      },
+      "0-5": {
+        title: "HAL初級",
+        teacher: "水上歩乃歌",
+        capacity: 6,
+        students: [
+          { name: "伊坂華", grade: "小6", subject: "HAL初級" },
+          { name: "相沢陽向", grade: "小4", subject: "HAL初級" },
+        ],
+      },
+      "1-5": {
+        title: "HAL中級",
+        teacher: "瀧川怜生",
+        capacity: 6,
+        students: [
+          { name: "松尾玲衣", grade: "中1", subject: "HAL中級" },
+          { name: "永井祐吏", grade: "中2", subject: "HAL中級" },
+          { name: "萩野結愛", grade: "中2", subject: "HAL中級" },
+        ],
+      },
+    };
+    buildGroupLikeBoard("board-programming", slots, DAYS, cardMap, "コース枠", "prog-grid");
+  }
+
+  // ---------------------------------------------------------------
+  // Interactions
+  // ---------------------------------------------------------------
+  let currentColMode = 2; // 既定は2列
+
+  function initTabs() {
+    const tabs = document.querySelectorAll("#formTabs button");
+    const boards = {
+      individual: document.getElementById("board-individual"),
+      group: document.getElementById("board-group"),
+      programming: document.getElementById("board-programming"),
+    };
+    const colToggleWrap = document.getElementById("colToggleWrap");
+    tabs.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        tabs.forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        Object.values(boards).forEach((b) => b.classList.remove("active"));
+        boards[btn.dataset.board].classList.add("active");
+        // 1列/2列トグルは個別タブ専用(集団カードは2列化しないため)
+        colToggleWrap.style.display = btn.dataset.board === "individual" ? "flex" : "none";
+      });
+    });
+  }
+
+  function initColToggle() {
+    const btns = document.querySelectorAll("#colToggle button");
+    btns.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const mode = Number(btn.dataset.cols);
+        if (mode === currentColMode) return;
+        currentColMode = mode;
+        btns.forEach((b) => b.classList.toggle("active", b === btn));
+        buildIndividualBoard(currentColMode);
+      });
+    });
+  }
+
+  function initWeekNav() {
+    const weeks = ["2026/6/29週", "2026/7/6週", "2026/7/13週"];
+    let idx = 1;
+    const label = document.getElementById("weekLabel");
+    document.getElementById("prevWeek").addEventListener("click", () => {
+      idx = Math.max(0, idx - 1);
+      label.textContent = weeks[idx];
+    });
+    document.getElementById("nextWeek").addEventListener("click", () => {
+      idx = Math.min(weeks.length - 1, idx + 1);
+      label.textContent = weeks[idx];
+    });
+  }
+
+  function initAdminMenu() {
+    const btn = document.getElementById("adminBtn");
+    const menu = document.getElementById("adminDropdown");
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      menu.classList.toggle("open");
+    });
+    document.addEventListener("click", () => menu.classList.remove("open"));
+  }
+
+  function initLegend() {
+    const toggle = document.getElementById("legendToggle");
+    const content = document.getElementById("legendContent");
+    toggle.addEventListener("click", () => {
+      const open = content.classList.toggle("open");
+      toggle.classList.toggle("open", open);
+    });
+  }
+
+  // 生徒行クリック → アクションメニュー(欠席にする/振替/取り消し)。
+  // 外側クリック・メニュー項目クリックで閉じる。再描画に耐えるようdocumentに委譲
+  function initRowMenu() {
+    const menu = document.getElementById("rowMenu");
+    const head = document.getElementById("rowMenuHead");
+    document.addEventListener("click", (e) => {
+      // 座席番号入力・講師✕はメニュー対象外(t-head内なのでs-rowに該当しない)
+      const row = e.target.closest(".s-row.clickable");
+      if (row) {
+        head.textContent = row.dataset.student;
+        menu.classList.add("open");
+        // クリック位置近傍に表示。右端・下端では画面内にクランプ
+        const mw = 160;
+        const mh = menu.offsetHeight || 128;
+        let x = e.clientX + 4;
+        let y = e.clientY + 4;
+        if (x + mw > window.innerWidth) x = window.innerWidth - mw - 8;
+        if (y + mh > window.innerHeight) y = e.clientY - mh - 4;
+        menu.style.left = x + "px";
+        menu.style.top = y + "px";
+        return;
+      }
+      // メニュー項目クリック(モックでは閉じるだけ)・外側クリックの両方で閉じる
+      menu.classList.remove("open");
+    });
+  }
+
+  // JS再描画後もリスナーを付け直さなくて済むようイベント委譲で処理
+  function initDelegatedToggles() {
+    document.querySelector(".board-area").addEventListener("click", (e) => {
+      const unp = e.target.closest(".unplaced-badge");
+      if (unp) {
+        const target = document.getElementById(unp.dataset.target);
+        if (target) target.classList.toggle("open");
+        return;
+      }
+      const collapsedBar = e.target.closest(".collapsed-bar");
+      if (collapsedBar) {
+        collapsedBar.classList.toggle("open");
+        const target = document.getElementById(collapsedBar.dataset.target);
+        if (target) target.classList.toggle("open");
+        return;
+      }
+    });
+  }
+
+  buildIndividualBoard(currentColMode);
+  buildGroupBoard();
+  buildProgrammingBoard();
+  initTabs();
+  initColToggle();
+  initWeekNav();
+  initAdminMenu();
+  initLegend();
+  initRowMenu();
+  initDelegatedToggles();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>座席表 高密度・1画面化リデザイン v1</title>
+<style>
+  :root {
+    --bg: #f6f5f5;
+    --surface: #ffffff;
+    --surface-2: #fbfafa;
+    --border: #e4e1e1;
+    --border-faint: #edeaea;
+    --text: #1c1a1a;
+    --text-muted: #77716f;
+    --text-faint: #a39d9b;
+    --primary: #d32f2f;
+    --primary-weak: #fbe9e9;
+    --today-bg: #eaf2fd;
+    --today-text: #1d5fb8;
+    --today-border: #bcd8f5;
+    --warn-bg: #fef3e0;
+    --warn-text: #93600a;
+    --warn-border: #f3d49a;
+    --warn-dot: #e0972a;
+    --danger-bg: #fdeceb;
+    --danger-text: #ab2a24;
+    --danger-border: #f3c3bf;
+    --ok-dot: #2f9e58;
+    --chip-bg: #f1eeec;
+    --chip-text: #6b6462;
+    --stripe: #faf9f8;
+    --shadow-sm: 0 1px 2px rgba(20,16,16,0.05);
+    --radius-sm: 4px;
+    --radius-md: 6px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #17161a;
+      --surface: #1e1d22;
+      --surface-2: #232227;
+      --border: #34323a;
+      --border-faint: #2b2a30;
+      --text: #edecef;
+      --text-muted: #9b969c;
+      --text-faint: #716d73;
+      --primary: #e8534d;
+      --primary-weak: #3a2020;
+      --today-bg: #172a3f;
+      --today-text: #7fb2ee;
+      --today-border: #274a6e;
+      --warn-bg: #3a2c11;
+      --warn-text: #eab86a;
+      --warn-border: #5a441c;
+      --warn-dot: #eab86a;
+      --danger-bg: #3a1e1c;
+      --danger-text: #ef8a84;
+      --danger-border: #5a2c28;
+      --ok-dot: #55c07f;
+      --chip-bg: #2a2830;
+      --chip-text: #b6b1b7;
+      --stripe: #232227;
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", "Noto Sans JP", -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 13px;
+    -webkit-font-smoothing: antialiased;
+  }
+  button { font-family: inherit; }
+
+  .page {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    padding: 10px 14px 8px;
+  }
+
+  /* ---------- Top toolbar (tabs + week nav + admin) : 1 row ---------- */
+  .toolbar {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    height: 34px;
+    flex-shrink: 0;
+  }
+  .form-tabs {
+    display: flex;
+    background: var(--chip-bg);
+    border-radius: 999px;
+    padding: 3px;
+    gap: 2px;
+  }
+  .form-tabs button {
+    border: none;
+    background: transparent;
+    padding: 5px 14px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: background .15s ease, color .15s ease;
+  }
+  .form-tabs button:hover { color: var(--text); }
+  .form-tabs button.active {
+    background: var(--text);
+    color: var(--surface);
+    font-weight: 700;
+  }
+  .week-nav {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--text);
+  }
+  .week-nav .week-label { font-weight: 600; min-width: 92px; text-align: center; }
+  .icon-btn {
+    width: 24px; height: 24px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    border-radius: var(--radius-sm);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: background .15s ease, border-color .15s ease, color .15s ease;
+  }
+  .icon-btn:hover { background: var(--surface-2); color: var(--text); border-color: var(--text-faint); }
+  .spacer { flex: 1; }
+  .admin-wrap { position: relative; }
+  .btn-ghost {
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    font-size: 12px;
+    font-weight: 500;
+    padding: 5px 10px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    display: flex; align-items: center; gap: 5px;
+    transition: background .15s ease, border-color .15s ease;
+  }
+  .btn-ghost:hover { background: var(--surface-2); border-color: var(--text-faint); }
+  .admin-dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    right: 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    box-shadow: 0 4px 16px rgba(20,16,16,0.12);
+    min-width: 150px;
+    padding: 4px;
+    z-index: 20;
+    display: none;
+  }
+  .admin-dropdown.open { display: block; }
+  .admin-dropdown button {
+    display: block; width: 100%; text-align: left;
+    border: none; background: transparent; padding: 6px 8px;
+    font-size: 12px; color: var(--text); border-radius: var(--radius-sm);
+    cursor: pointer;
+  }
+  .admin-dropdown button:hover { background: var(--surface-2); }
+
+  /* ---------- Legend bar (collapsed by default) ---------- */
+  .legend-bar { flex-shrink: 0; }
+  .legend-toggle {
+    border: none; background: transparent; cursor: pointer;
+    font-size: 11px; color: var(--text-muted);
+    display: flex; align-items: center; gap: 4px;
+    height: 22px; padding: 0 2px;
+  }
+  .legend-toggle:hover { color: var(--text); }
+  .legend-toggle .chev { transition: transform .15s ease; display: inline-flex; }
+  .legend-toggle.open .chev { transform: rotate(90deg); }
+  .legend-content {
+    display: none;
+    flex-wrap: wrap;
+    gap: 14px;
+    font-size: 11px;
+    color: var(--text-muted);
+    padding: 6px 2px 10px;
+    border-bottom: 1px solid var(--border-faint);
+  }
+  .legend-content.open { display: flex; }
+  .legend-item { display: flex; align-items: center; gap: 5px; }
+  .legend-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+  .legend-swatch { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+
+  /* ---------- Board area ---------- */
+  .board-area {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    margin-top: 4px;
+  }
+  .board { display: none; height: 100%; }
+  .board.active { display: block; }
+
+  .week-grid {
+    display: grid;
+    grid-template-columns: 68px repeat(6, 1fr);
+    gap: 3px;
+    height: 100%;
+    align-content: start;
+  }
+
+  .day-head {
+    background: var(--surface-2);
+    border: 1px solid var(--border-faint);
+    border-radius: var(--radius-sm);
+    text-align: center;
+    padding: 4px 2px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text);
+    height: 26px;
+    display: flex; align-items: center; justify-content: center; gap: 4px;
+  }
+  .day-head .d-date { font-size: 12px; }
+  .day-head .d-day { font-size: 10px; color: var(--text-muted); font-weight: 500; }
+  .day-head.today {
+    background: var(--today-bg);
+    border-color: var(--today-border);
+    color: var(--today-text);
+  }
+  .day-head.today .d-day { color: var(--today-text); opacity: .75; }
+  .grid-corner { }
+
+  /* Collapsed slot row (1限/2限) */
+  .slot-collapsed { grid-column: 1 / -1; display: grid; grid-template-columns: 68px 1fr; gap: 3px; }
+  .slot-collapsed .slot-label {
+    background: var(--surface-2);
+    border: 1px solid var(--border-faint);
+    border-radius: var(--radius-sm);
+    font-size: 9.5px;
+    color: var(--text-faint);
+    display: flex; align-items: center; justify-content: center;
+    text-align: center; line-height: 1.2;
+  }
+  .collapsed-bar {
+    background: var(--surface-2);
+    border: 1px solid var(--border-faint);
+    border-radius: var(--radius-sm);
+    height: 22px;
+    display: flex; align-items: center; gap: 6px;
+    padding: 0 10px;
+    font-size: 11px;
+    color: var(--text-faint);
+    cursor: pointer;
+    transition: background .15s ease;
+  }
+  .collapsed-bar:hover { background: var(--stripe); }
+  .collapsed-bar .chev { transition: transform .15s ease; display: inline-flex; }
+  .collapsed-bar.open .chev { transform: rotate(90deg); }
+  .collapsed-expand {
+    display: none;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 3px;
+    margin-top: 3px;
+  }
+  .collapsed-expand.open { display: grid; }
+  .collapsed-expand .mini-add {
+    height: 22px;
+    border: 1px dashed var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 10.5px;
+    color: var(--text-faint);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+  }
+  .collapsed-expand .mini-add:hover { background: var(--surface-2); color: var(--text-muted); }
+
+  /* Slot label (3限/4限/5限) */
+  .slot-label-main {
+    background: var(--surface-2);
+    border: 1px solid var(--border-faint);
+    border-radius: var(--radius-sm);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    font-size: 10.5px; font-weight: 700; color: var(--text);
+    text-align: center; gap: 1px; padding: 4px 2px;
+  }
+  .slot-label-main .t { font-size: 8.5px; font-weight: 500; color: var(--text-faint); line-height: 1.25; }
+
+  /* Day cell (individual board) */
+  .day-cell {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 3px;
+    display: flex; flex-direction: column; gap: 2px;
+  }
+  .day-cell.empty { background: var(--surface-2); border-style: dashed; }
+
+  .t-block {
+    border: 1px solid var(--border-faint);
+    border-radius: 3px;
+    overflow: hidden;
+    background: var(--surface);
+  }
+  .t-head {
+    display: flex; align-items: center; gap: 4px;
+    padding: 1.5px 4px;
+    background: var(--surface-2);
+    height: 16px;
+  }
+  .t-name { font-size: 11.5px; font-weight: 600; color: var(--text); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .t-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .t-dot.ok { background: var(--ok-dot); }
+  .t-dot.full { background: var(--danger-text); }
+  .t-close {
+    border: none; background: transparent; color: var(--text-faint);
+    width: 13px; height: 13px; display: flex; align-items: center; justify-content: center;
+    border-radius: 3px; cursor: pointer; flex-shrink: 0;
+    transition: background .15s ease, color .15s ease;
+  }
+  .t-close:hover { background: var(--danger-bg); color: var(--danger-text); }
+
+  .s-row {
+    position: relative;
+    display: flex; align-items: center; gap: 5px;
+    height: 15px;
+    padding: 0 4px;
+    font-size: 10.5px;
+    line-height: 15px;
+    border-top: 1px solid var(--border-faint);
+    white-space: nowrap;
+  }
+  .s-row:nth-child(even) { background: var(--stripe); }
+  .s-name { font-weight: 500; color: var(--text); overflow: hidden; text-overflow: ellipsis; }
+  .s-grade, .s-subject { color: var(--text-muted); font-size: 9.5px; flex-shrink: 0; }
+  .s-badge {
+    font-size: 8.5px; font-weight: 700; padding: 0 3px; border-radius: 2px; flex-shrink: 0; line-height: 12px;
+  }
+  .s-badge.transfer { background: var(--today-bg); color: var(--today-text); }
+  .s-badge.trial { background: var(--warn-bg); color: var(--warn-text); }
+  .s-actions {
+    position: absolute; right: 3px; top: 50%; transform: translateY(-50%);
+    display: flex; gap: 2px;
+    opacity: 0; pointer-events: none;
+    transition: opacity .15s ease;
+    background: linear-gradient(to right, transparent, var(--surface) 22%);
+    padding-left: 10px;
+  }
+  .s-row:hover .s-actions { opacity: 1; pointer-events: auto; }
+  .s-row:nth-child(even):hover .s-actions { background: linear-gradient(to right, transparent, var(--stripe) 22%); }
+  .s-action {
+    width: 15px; height: 15px; border: none; border-radius: 3px;
+    background: var(--surface-2); color: var(--text-muted);
+    display: flex; align-items: center; justify-content: center; cursor: pointer;
+    transition: background .15s ease, color .15s ease;
+  }
+  .s-action:hover { background: var(--today-bg); color: var(--today-text); }
+
+  .add-teacher-bar {
+    height: 18px;
+    border: 1px dashed var(--border);
+    border-radius: 3px;
+    font-size: 10px;
+    color: var(--text-faint);
+    display: flex; align-items: center; justify-content: center; gap: 3px;
+    cursor: pointer;
+    transition: background .15s ease, color .15s ease, border-color .15s ease;
+    margin-top: auto;
+  }
+  .add-teacher-bar:hover { background: var(--surface-2); color: var(--text-muted); border-color: var(--text-faint); }
+
+  .unplaced-badge {
+    align-self: flex-start;
+    font-size: 10px; font-weight: 700;
+    padding: 1px 6px; border-radius: 999px;
+    background: var(--warn-bg); color: var(--warn-text);
+    cursor: pointer; border: 1px solid var(--warn-border);
+  }
+  .unplaced-badge:hover { filter: brightness(0.97); }
+  .unplaced-chips { display: none; flex-wrap: wrap; gap: 3px; padding: 2px 0; }
+  .unplaced-chips.open { display: flex; }
+  .unplaced-chip {
+    font-size: 9.5px; padding: 1px 5px; border-radius: 3px;
+    border: 1px dashed var(--text-faint); color: var(--text-muted); background: var(--surface-2);
+  }
+
+  /* ---------- Group-style boards (小集団 / プログラミング) ---------- */
+  .week-grid.group-grid { grid-template-rows: 26px repeat(3, 1fr); }
+  .week-grid.prog-grid { grid-template-rows: 26px repeat(2, 1fr); }
+  .group-cell {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 4px;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .group-cell.empty { background: var(--surface-2); }
+  .group-slot-label {
+    background: var(--surface-2);
+    border: 1px solid var(--border-faint);
+    border-radius: var(--radius-sm);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    font-size: 10.5px; font-weight: 700; color: var(--text); text-align: center; gap: 1px; padding: 3px;
+  }
+  .group-slot-label .t { font-size: 8.5px; font-weight: 500; color: var(--text-faint); }
+  .add-class-bar {
+    flex: 1;
+    min-height: 26px;
+    border: 1px dashed var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 10.5px; color: var(--text-faint);
+    display: flex; align-items: center; justify-content: center; gap: 4px;
+    cursor: pointer;
+    transition: background .15s ease, color .15s ease, border-color .15s ease;
+  }
+  .add-class-bar:hover { background: var(--surface-2); color: var(--text-muted); border-color: var(--text-faint); }
+
+  .g-card {
+    border: 1px solid var(--border-faint);
+    border-radius: 3px;
+    overflow: hidden;
+    background: var(--surface);
+    display: flex; flex-direction: column;
+  }
+  .g-card-head {
+    display: flex; align-items: center; gap: 6px;
+    padding: 3px 6px;
+    background: var(--surface-2);
+    height: 20px;
+  }
+  .g-card-head .g-title { font-size: 11.5px; font-weight: 700; color: var(--text); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .g-cap {
+    font-size: 9.5px; font-weight: 700; padding: 1px 5px; border-radius: 999px;
+    background: var(--chip-bg); color: var(--chip-text); flex-shrink: 0;
+  }
+  .g-cap.full { background: var(--danger-bg); color: var(--danger-text); }
+  .g-teacher { font-size: 9.5px; color: var(--text-muted); padding: 2px 6px 0; }
+  .g-students { padding: 1px 0 3px; }
+
+  /* ---------- Footer ---------- */
+  .page-footer {
+    flex-shrink: 0;
+    text-align: center;
+    font-size: 10px;
+    color: var(--text-faint);
+    padding-top: 4px;
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="toolbar">
+    <div class="form-tabs" id="formTabs">
+      <button class="active" data-board="individual">個別</button>
+      <button data-board="group">小集団</button>
+      <button data-board="programming">プログラミング</button>
+    </div>
+    <div class="week-nav">
+      <button class="icon-btn" id="prevWeek" title="前週">◀</button>
+      <span class="week-label" id="weekLabel">2026/7/6週</span>
+      <button class="icon-btn" id="nextWeek" title="次週">▶</button>
+    </div>
+    <div class="spacer"></div>
+    <div class="admin-wrap">
+      <button class="btn-ghost" id="adminBtn">管理 <span style="font-size:9px;">▾</span></button>
+      <div class="admin-dropdown" id="adminDropdown">
+        <button>表示設定</button>
+        <button>印刷</button>
+        <button>CSV出力</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="legend-bar">
+    <button class="legend-toggle" id="legendToggle"><span class="chev">▸</span>凡例</button>
+    <div class="legend-content" id="legendContent">
+      <div class="legend-item"><span class="legend-dot" style="background:var(--ok-dot);"></span>空きあり</div>
+      <div class="legend-item"><span class="legend-dot" style="background:var(--danger-text);"></span>満員</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:var(--today-bg); border:1px solid var(--today-border);"></span>本日</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:var(--warn-bg); border:1px solid var(--warn-border);"></span>未配置あり</div>
+      <div class="legend-item"><span class="s-badge transfer" style="position:static;">振</span>振替</div>
+      <div class="legend-item"><span class="s-badge trial" style="position:static;">体</span>体験</div>
+      <div class="legend-item">行にカーソルを合わせると振替・出欠アイコンが表示されます</div>
+    </div>
+  </div>
+
+  <div class="board-area">
+    <div class="board active" id="board-individual"></div>
+    <div class="board" id="board-group"></div>
+    <div class="board" id="board-programming"></div>
+  </div>
+
+  <div class="page-footer">schedule-density-v1 — 2026-07-09 密度確認用モック</div>
+</div>
+
+<script>
+(function () {
+  // ---------------------------------------------------------------
+  // Icons (inline SVG, lucide-style line icons)
+  // ---------------------------------------------------------------
+  const ICON_X = '<svg viewBox="0 0 24 24" width="9" height="9" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>';
+  const ICON_PLUS = '<svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>';
+  const ICON_SWAP = '<svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 3 4 4-4 4"/><path d="M4 7h16"/><path d="m8 21-4-4 4-4"/><path d="M20 17H4"/></svg>';
+  const ICON_CHECK = '<svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
+
+  // ---------------------------------------------------------------
+  // Master data
+  // ---------------------------------------------------------------
+  const TEACHERS = ["北村由衣","杉浦駿","平澤未来","西舘季紀","川俣建","水上歩乃歌","瀧川怜生","坂田英俊","浅井遼介","佐藤朱華"];
+
+  // 生徒は学年・科目を固定属性として持つ(同じ生徒はどの時限に出てきても学年・科目は同じ)
+  const STUDENTS = [
+    { name: "野中朔也", grade: "小6", subject: "国語" },
+    { name: "宇佐美乃葵", grade: "小5", subject: "算数" },
+    { name: "田嶋健", grade: "小5", subject: "国理" },
+    { name: "大崎透", grade: "小3", subject: "算数" },
+    { name: "鳥居宗生", grade: "小6", subject: "HAL" },
+    { name: "松尾玲衣", grade: "中1", subject: "数学" },
+    { name: "永井祐吏", grade: "中2", subject: "数学" },
+    { name: "萩野結愛", grade: "中2", subject: "数学" },
+    { name: "大塚好倖", grade: "中1", subject: "英語" },
+    { name: "川原彩葉", grade: "中3", subject: "英語" },
+    { name: "伊坂華", grade: "小6", subject: "算数" },
+    { name: "相沢陽向", grade: "小4", subject: "算数" },
+    { name: "遠藤蒼太", grade: "中3", subject: "理科" },
+    { name: "小野寺茜", grade: "小6", subject: "英語" },
+    { name: "加藤悠人", grade: "中1", subject: "国語" },
+    { name: "木下彩", grade: "小5", subject: "算数" },
+    { name: "桜井蓮", grade: "中2", subject: "英語" },
+    { name: "白石美月", grade: "小3", subject: "国語" },
+    { name: "高田航", grade: "中3", subject: "数学" },
+  ];
+
+  const DAYS = [
+    { date: "6", day: "月" },
+    { date: "7", day: "火" },
+    { date: "8", day: "水" },
+    { date: "9", day: "木", today: true },
+    { date: "10", day: "金" },
+    { date: "11", day: "土" },
+  ];
+
+  // 決定的にバッジを振る(毎回同じ見た目になるよう乱数は使わない)
+  function badgeFor(counter) {
+    if (counter % 7 === 4) return { cls: "transfer", label: "振" };
+    if (counter % 11 === 6) return { cls: "trial", label: "体" };
+    return null;
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  }
+
+  // ---------------------------------------------------------------
+  // Board 1: 個別指導
+  // ---------------------------------------------------------------
+  const SLOTS_INDIVIDUAL = [
+    { key: "s1", label: "1限", time: "12:50〜14:20", collapsed: true },
+    { key: "s2", label: "2限", time: "14:30〜16:00", collapsed: true },
+    { key: "s3", label: "3限", time: "16:20〜17:50", counts: [5, 4, 6, 4, 5, 4] },
+    { key: "s4", label: "4限", time: "18:00〜19:30", counts: [4, 3, 5, 4, 3, 4] },
+    { key: "s5", label: "5限", time: "19:40〜21:10", counts: [3, 2, 4, 3, 2, 3] },
+  ];
+  // 未配置(day index -> 人数) ※3限/4限/5限の3枠それぞれに個別設定
+  const UNPLACED = {
+    s3: { 0: 2, 3: 1 },
+    s4: { 2: 1 },
+    s5: { 4: 1 },
+  };
+
+  let teacherCursor = 0;
+  let studentCursor = 0;
+  let studentsPerTeacherToggle = 0;
+
+  function nextTeacher() {
+    const t = TEACHERS[teacherCursor % TEACHERS.length];
+    teacherCursor++;
+    return t;
+  }
+  function nextStudent() {
+    const s = STUDENTS[studentCursor % STUDENTS.length];
+    const badge = badgeFor(studentCursor);
+    studentCursor++;
+    return { ...s, badge };
+  }
+  function studentsCountForTeacher() {
+    // 1〜2名を交互ベースで割り当て(講師あたり生徒1〜2名の指定を満たす)
+    studentsPerTeacherToggle++;
+    return studentsPerTeacherToggle % 3 === 0 ? 1 : 2;
+  }
+
+  function renderStudentRow(stu) {
+    const badgeHtml = stu.badge ? `<span class="s-badge ${stu.badge.cls}">${stu.badge.label}</span>` : "";
+    return `
+      <div class="s-row">
+        <span class="s-name">${escapeHtml(stu.name)}</span>
+        <span class="s-grade">(${stu.grade})</span>
+        <span class="s-subject">${escapeHtml(stu.subject)}</span>
+        ${badgeHtml}
+        <span class="s-actions">
+          <button class="s-action" title="振替">${ICON_SWAP}</button>
+          <button class="s-action" title="出欠チェック">${ICON_CHECK}</button>
+        </span>
+      </div>`;
+  }
+
+  function renderTeacherBlock() {
+    const n = studentsCountForTeacher();
+    const teacher = nextTeacher();
+    const students = Array.from({ length: n }, () => nextStudent());
+    const dotCls = n >= 2 ? "full" : "ok";
+    const dotTitle = n >= 2 ? "満員 (2/2)" : "空きあり (1/2)";
+    return `
+      <div class="t-block">
+        <div class="t-head">
+          <span class="t-name">${escapeHtml(teacher)}</span>
+          <span class="t-dot ${dotCls}" title="${dotTitle}"></span>
+          <button class="t-close" title="この講師枠を削除">${ICON_X}</button>
+        </div>
+        ${students.map(renderStudentRow).join("")}
+      </div>`;
+  }
+
+  function renderUnplacedBadge(slotKey, dayIdx) {
+    const n = (UNPLACED[slotKey] || {})[dayIdx];
+    if (!n) return "";
+    const chips = Array.from({ length: n }, () => nextStudent());
+    const uid = `unp-${slotKey}-${dayIdx}`;
+    return `
+      <button class="unplaced-badge" data-target="${uid}">未配置 ${n}</button>
+      <div class="unplaced-chips" id="${uid}">
+        ${chips.map((s) => `<span class="unplaced-chip">${escapeHtml(s.name)} (${s.grade}) ${escapeHtml(s.subject)}</span>`).join("")}
+      </div>`;
+  }
+
+  function renderIndividualDayCell(slot, dayIdx) {
+    const count = slot.counts[dayIdx];
+    if (!count) {
+      return `<div class="day-cell empty"><div class="add-teacher-bar">${ICON_PLUS} 講師</div></div>`;
+    }
+    const blocks = Array.from({ length: count }, renderTeacherBlock).join("");
+    const unplaced = renderUnplacedBadge(slot.key, dayIdx);
+    return `
+      <div class="day-cell">
+        ${blocks}
+        ${unplaced}
+        <div class="add-teacher-bar">${ICON_PLUS} 講師</div>
+      </div>`;
+  }
+
+  function renderDayHeadRow() {
+    let html = `<div class="grid-corner"></div>`;
+    DAYS.forEach((d) => {
+      html += `<div class="day-head ${d.today ? "today" : ""}"><span class="d-date">${d.date}</span><span class="d-day">${d.day}</span></div>`;
+    });
+    return html;
+  }
+
+  function renderCollapsedRow(slot) {
+    const uid = `collapsed-${slot.key}`;
+    let html = `
+      <div class="slot-collapsed">
+        <div class="slot-label">${slot.label}<br>${slot.time}</div>
+        <div class="collapsed-bar" data-target="${uid}">
+          <span class="chev">▸</span>${slot.label} ${slot.time} — 授業なし
+        </div>
+      </div>
+      <div class="collapsed-expand" id="${uid}" style="grid-column: 1 / -1;">`;
+    DAYS.forEach(() => {
+      html += `<div class="mini-add">${ICON_PLUS} 授業を追加</div>`;
+    });
+    html += `</div>`;
+    return html;
+  }
+
+  function buildIndividualBoard() {
+    let html = `<div class="week-grid">`;
+    html += renderDayHeadRow();
+
+    SLOTS_INDIVIDUAL.forEach((slot) => {
+      if (slot.collapsed) {
+        html += renderCollapsedRow(slot);
+        return;
+      }
+      html += `<div class="slot-label-main">${slot.label}<span class="t">${slot.time}</span></div>`;
+      DAYS.forEach((_, dayIdx) => {
+        html += renderIndividualDayCell(slot, dayIdx);
+      });
+    });
+
+    html += `</div>`;
+    document.getElementById("board-individual").innerHTML = html;
+  }
+
+  // ---------------------------------------------------------------
+  // Board 2 / 3: 小集団・プログラミング(共通のグループカード方式)
+  // ---------------------------------------------------------------
+  function renderGroupCard(title, teacher, students, capacity) {
+    const full = students.length >= capacity;
+    return `
+      <div class="g-card">
+        <div class="g-card-head">
+          <span class="g-title">${escapeHtml(title)}</span>
+          <span class="g-cap ${full ? "full" : ""}">${students.length}/${capacity}</span>
+        </div>
+        <div class="g-teacher">講師: ${escapeHtml(teacher)}</div>
+        <div class="g-students">
+          ${students.map(renderStudentRow).join("")}
+        </div>
+      </div>`;
+  }
+
+  function buildGroupLikeBoard(containerId, slots, days, cardMap, addLabel, rowsCls) {
+    let html = `<div class="week-grid ${rowsCls}">`;
+    html += `<div class="grid-corner"></div>`;
+    days.forEach((d) => {
+      html += `<div class="day-head ${d.today ? "today" : ""}"><span class="d-date">${d.date}</span><span class="d-day">${d.day}</span></div>`;
+    });
+    slots.forEach((slot, slotIdx) => {
+      html += `<div class="group-slot-label">${slot.label}<span class="t">${slot.time}</span></div>`;
+      days.forEach((_, dayIdx) => {
+        const key = `${slotIdx}-${dayIdx}`;
+        const card = cardMap[key];
+        if (card) {
+          html += `<div class="group-cell">${renderGroupCard(card.title, card.teacher, card.students, card.capacity)}</div>`;
+        } else {
+          html += `<div class="group-cell empty"><div class="add-class-bar">${ICON_PLUS} ${addLabel}</div></div>`;
+        }
+      });
+    });
+    html += `</div>`;
+    document.getElementById(containerId).innerHTML = html;
+  }
+
+  function buildGroupBoard() {
+    const slots = [
+      { label: "1コマ", time: "18:00〜19:00" },
+      { label: "2コマ", time: "19:10〜20:10" },
+      { label: "3コマ", time: "20:20〜21:20" },
+    ];
+    const s = (i) => STUDENTS[i % STUDENTS.length];
+    const cardMap = {
+      // 火曜(index1) 1コマ: 算数クラス 講師1名+生徒6名
+      "0-1": {
+        title: "小5 算数クラス",
+        teacher: "北村由衣",
+        capacity: 8,
+        students: [s(1), s(3), s(11), s(15), s(2), s(0)],
+      },
+      // 木曜(index3) 2コマ: 国語クラス 生徒4名
+      "1-3": {
+        title: "中2 国語クラス",
+        teacher: "平澤未来",
+        capacity: 6,
+        students: [s(0), s(14), s(17), s(4)],
+      },
+      // 水曜(index2) 3コマ: 英語クラス 生徒5名(満員に近い例)
+      "2-2": {
+        title: "中1 英語集中",
+        teacher: "浅井遼介",
+        capacity: 5,
+        students: [s(8), s(9), s(16), s(13), s(9)],
+      },
+    };
+    buildGroupLikeBoard("board-group", slots, DAYS, cardMap, "クラス枠", "group-grid");
+  }
+
+  function buildProgrammingBoard() {
+    const slots = [
+      { label: "1コマ", time: "17:00〜17:50" },
+      { label: "2コマ", time: "18:00〜18:50" },
+    ];
+    const s = (i) => STUDENTS[i % STUDENTS.length];
+    const progStudents = (names) => names.map((n) => ({ ...n, subject: n.course }));
+    const cardMap = {
+      // 水曜(index2) 1コマ: HAL初級
+      "0-2": {
+        title: "HAL初級",
+        teacher: "水上歩乃歌",
+        capacity: 6,
+        students: [
+          { name: "鳥居宗生", grade: "小6", subject: "HAL初級" },
+          { name: "大崎透", grade: "小3", subject: "HAL初級" },
+          { name: "白石美月", grade: "小3", subject: "HAL初級" },
+        ],
+      },
+      // 土曜(index5) 1コマ: HAL初級
+      "0-5": {
+        title: "HAL初級",
+        teacher: "水上歩乃歌",
+        capacity: 6,
+        students: [
+          { name: "伊坂華", grade: "小6", subject: "HAL初級" },
+          { name: "相沢陽向", grade: "小4", subject: "HAL初級" },
+        ],
+      },
+      // 土曜(index5) 2コマ: HAL中級
+      "1-5": {
+        title: "HAL中級",
+        teacher: "瀧川怜生",
+        capacity: 6,
+        students: [
+          { name: "松尾玲衣", grade: "中1", subject: "HAL中級" },
+          { name: "永井祐吏", grade: "中2", subject: "HAL中級" },
+          { name: "萩野結愛", grade: "中2", subject: "HAL中級" },
+        ],
+      },
+    };
+    buildGroupLikeBoard("board-programming", slots, DAYS, cardMap, "コース枠", "prog-grid");
+  }
+
+  // ---------------------------------------------------------------
+  // Interactions
+  // ---------------------------------------------------------------
+  function initTabs() {
+    const tabs = document.querySelectorAll("#formTabs button");
+    const boards = {
+      individual: document.getElementById("board-individual"),
+      group: document.getElementById("board-group"),
+      programming: document.getElementById("board-programming"),
+    };
+    tabs.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        tabs.forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        Object.values(boards).forEach((b) => b.classList.remove("active"));
+        boards[btn.dataset.board].classList.add("active");
+      });
+    });
+  }
+
+  function initWeekNav() {
+    const weeks = ["2026/6/29週", "2026/7/6週", "2026/7/13週"];
+    let idx = 1;
+    const label = document.getElementById("weekLabel");
+    document.getElementById("prevWeek").addEventListener("click", () => {
+      idx = Math.max(0, idx - 1);
+      label.textContent = weeks[idx];
+    });
+    document.getElementById("nextWeek").addEventListener("click", () => {
+      idx = Math.min(weeks.length - 1, idx + 1);
+      label.textContent = weeks[idx];
+    });
+  }
+
+  function initAdminMenu() {
+    const btn = document.getElementById("adminBtn");
+    const menu = document.getElementById("adminDropdown");
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      menu.classList.toggle("open");
+    });
+    document.addEventListener("click", () => menu.classList.remove("open"));
+  }
+
+  function initLegend() {
+    const toggle = document.getElementById("legendToggle");
+    const content = document.getElementById("legendContent");
+    toggle.addEventListener("click", () => {
+      const open = content.classList.toggle("open");
+      toggle.classList.toggle("open", open);
+    });
+  }
+
+  // 未配置バッジ・折りたたみ行トグルはボード全体へのイベント委譲で処理
+  // (JS再生成後もリスナーを付け直す必要がないようにするため)
+  function initDelegatedToggles() {
+    document.querySelector(".board-area").addEventListener("click", (e) => {
+      const unp = e.target.closest(".unplaced-badge");
+      if (unp) {
+        const target = document.getElementById(unp.dataset.target);
+        if (target) target.classList.toggle("open");
+        return;
+      }
+      const collapsedBar = e.target.closest(".collapsed-bar");
+      if (collapsedBar) {
+        collapsedBar.classList.toggle("open");
+        const target = document.getElementById(collapsedBar.dataset.target);
+        if (target) target.classList.toggle("open");
+        return;
+      }
+    });
+  }
+
+  buildIndividualBoard();
+  buildGroupBoard();
+  buildProgrammingBoard();
+  initTabs();
+  initWeekNav();
+  initAdminMenu();
+  initLegend();
+  initDelegatedToggles();
+})();
+</script>
+</body>
+</html>

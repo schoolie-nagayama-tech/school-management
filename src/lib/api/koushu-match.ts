@@ -18,6 +18,8 @@ import { getKoushuPlacementProgressByPeriod, type KoushuPeriodInfo } from '@/lib
 import { getClassCapacity, DEFAULT_CLASS_CAPACITY } from '@/lib/api/school-class-capacity';
 import { createMatchBatch } from '@/lib/api/schedule-match';
 import type { MatchBatchMode } from '@/types/schedule-match';
+// Phase A: 自動マッチングは個別のみ対象（現状維持）。'individual' 直値を定数参照に置換。
+import { INDIVIDUAL_FORMATION } from '@/types/schedule';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabase as any;
@@ -166,7 +168,7 @@ export async function generateKoushuIndividualProposals(
   const effectiveStart =
     period.schedule_start_date > todayJst ? period.schedule_start_date : todayJst;
   const dates = enumeratePeriodDates(effectiveStart, period.schedule_end_date, closed);
-  const slots = (await getActiveTimeSlots(schoolId, 'individual')).sort(
+  const slots = (await getActiveTimeSlots(schoolId, INDIVIDUAL_FORMATION)).sort(
     (a, b) => a.slot_number - b.slot_number
   );
   const dayMap = await getAvailabilityDayMap(schoolId, period.schedule_start_date);
@@ -175,7 +177,7 @@ export async function generateKoushuIndividualProposals(
   const totalSeats = capacity.total_individual_seats;
 
   // 生徒×科目別の個別残コマ（placed=既存の published を尊重）。1タスク=（生徒,科目）の残コマ。
-  const progress = await getKoushuPlacementProgressByPeriod(period, 'individual');
+  const progress = await getKoushuPlacementProgressByPeriod(period, INDIVIDUAL_FORMATION);
   const tasks: Array<{
     student_id: string;
     subjectId: string;
@@ -257,7 +259,8 @@ export async function generateKoushuIndividualProposals(
     .select('student_id, teacher_id, entry_date, time_slot_id')
     .eq('school_id', schoolId)
     .eq('kind', 'koushu')
-    .eq('formation', 'individual')
+    // 講習の自動マッチングは個別のみ対象（集団はマッチング対象外）
+    .eq('formation', INDIVIDUAL_FORMATION)
     .gte('entry_date', period.schedule_start_date)
     .lte('entry_date', period.schedule_end_date)
     .in('status', ['scheduled', 'completed', 'transferred_in']);
@@ -351,7 +354,7 @@ export async function generateKoushuIndividualProposals(
             proposal_date: date,
             time_slot_id: slot.id,
             subject_ids: subjectIds, // 単一科目
-            formation: 'individual',
+            formation: INDIVIDUAL_FORMATION,
             kind: 'koushu',
             match_meta: { score: best.score, reasons: best.reasons, conflicts: best.conflicts },
           });

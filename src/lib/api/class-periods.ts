@@ -7,6 +7,8 @@
 import { getActiveTimeSlots } from '@/lib/api/schedule';
 import { formatSlotsForPeriods } from '@/lib/utils/timeSlotDefaults';
 import type { ScheduleEntryFormation } from '@/types/schedule';
+// Phase A: 形態キーの直書きを定数参照に置換（既定値は個別）
+import { INDIVIDUAL_FORMATION } from '@/types/schedule';
 
 export interface ClassPeriodItem {
   code: string;
@@ -41,7 +43,7 @@ export function getClassPeriods(schoolId: string | undefined): ClassPeriodItem[]
  */
 export async function fetchClassPeriodsLive(
   schoolId: string,
-  formation: ScheduleEntryFormation = 'individual'
+  formation: ScheduleEntryFormation = INDIVIDUAL_FORMATION
 ): Promise<ClassPeriodItem[]> {
   if (!schoolId) return [];
   try {

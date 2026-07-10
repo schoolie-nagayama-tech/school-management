@@ -108,6 +108,12 @@ export interface ScheduleRegularPattern {
    * 1人の生徒が個別パターンと集団パターンの両方を持つこともあるため、行ごとに違って良い。
    */
   formation: ScheduleEntryFormation;
+  /** Phase R: 指導比率。1=1対1（生徒1名で満席） / 2=1対2（既定）。生徒×科目契約由来。 */
+  ratio: 1 | 2;
+  /** Phase R: 授業時間(分)。45 or 90。NULL=全コマ(90分)扱い。subjects.duration_minutes のスナップショット。 */
+  duration_minutes: number | null;
+  /** Phase R: 45分授業の占有半コマ。'first'=前半 / 'second'=後半 / NULL=全コマ。 */
+  half_position: HalfPosition;
   created_at: string;
   updated_at: string;
   // リレーション
@@ -142,7 +148,16 @@ export interface ScheduleRegularPatternFormData {
   effective_until?: string | null;
   /** 授業形態。省略時は 'individual' */
   formation?: ScheduleEntryFormation;
+  /** Phase R: 指導比率。省略時は 2（1対2）。 */
+  ratio?: 1 | 2;
+  /** Phase R: 授業時間(分)。45 or 90。省略/NULL=全コマ扱い。 */
+  duration_minutes?: number | null;
+  /** Phase R: 45分授業の占有半コマ。省略/NULL=全コマ。 */
+  half_position?: HalfPosition;
 }
+
+/** Phase R: 45分授業の占有半コマ位置。null=全コマ。seatOccupancy と共有する型。 */
+export type HalfPosition = 'first' | 'second' | null;
 
 // スケジュールエントリ（週次生成された授業）
 export type AttendanceStatusType = 'present' | 'absent' | 'late' | null;
@@ -182,20 +197,76 @@ export function isExtraLessonKind(kind: ScheduleEntryKind): kind is ExtraLessonK
 }
 
 /**
- * 授業形態
- * - individual: 個別指導（1講師あたり生徒数名、ブース運用）
- * - group     : 集団指導（1講師あたり多人数、教室まるごと）
+ * 授業形態。
  *
- * 重要：個別と集団はコマ時間自体が違うため、同じセルに混在しない。
+ * Phase A（指導形態の動的マスタ化）で union から string へ緩めた。
+ * 形態は schedule_formations テーブルで自由に作成・削除できるため、
+ * コンパイル時に値を固定できない（'individual'/'group' 以外に 'f_xxxxxxxx' 等が入る）。
+ * タイポ検出の代わりに、以下の定数を直書きの代替として使い、DB側は FK で正当性を守る。
+ *
+ * - individual: 個別指導（1講師あたり生徒数名、ブース運用）。is_system。座席表メイングリッド。
+ * - group     : 集団指導（1講師あたり多人数）。is_system。講習の集団レーンが依存。
+ *
+ * 重要：形態ごとにコマ時間自体が違うため、同じセルに混在しない。
  * ただし時間帯が重なる場合があり（個別19:30-21:00 と 集団20:20-21:20 等）、
  * 同一生徒・同一講師は同時刻の重複コマには入れない（排他制約）。
  */
-export type ScheduleEntryFormation = 'individual' | 'group';
+export type ScheduleEntryFormation = string;
 
-export const SCHEDULE_ENTRY_FORMATION_LABELS: Record<ScheduleEntryFormation, string> = {
+/**
+ * 直書き禁止のための形態キー定数。
+ * ScheduleEntryFormation を string に緩めたことで失われたタイポ検出を、
+ * この2定数を参照させることで最小限に補う（新規のユーザー定義形態は DB マスタ側で管理）。
+ */
+export const INDIVIDUAL_FORMATION = 'individual';
+export const GROUP_FORMATION = 'group';
+
+export const SCHEDULE_ENTRY_FORMATION_LABELS: Record<string, string> = {
   individual: '個別',
   group: '集団',
 };
+
+/**
+ * 形態のレーン型（描画・講師重複ポリシーの型）。
+ * - individual: 1講師1-2名の座席グリッド型
+ * - group     : 1講師N名のカードレーン型（小集団/プログラミング等はこちら）
+ */
+export type FormationLaneType = 'individual' | 'group';
+
+/** 指導形態マスタ（schedule_formations テーブル）。Phase A で新設した動的マスタ。 */
+export interface ScheduleFormation {
+  /** 主キー。'individual'/'group'（is_system）またはユーザー定義の自動生成キー 'f_xxxxxxxx'。 */
+  key: string;
+  /** 表示名。個別 / 集団 / 小集団 / プログラミング… */
+  label: string;
+  /** レーン型。描画方式と講師重複ポリシーの分岐に使う。 */
+  lane_type: FormationLaneType;
+  /** individual/group は true（削除・改名不可）。 */
+  is_system: boolean;
+  /** false でタブ非表示（ソフト削除）。 */
+  is_active: boolean;
+  /** タブ・一覧の並び順。 */
+  sort_order: number;
+  created_at: string;
+}
+
+/** 形態別の定員設定（school_formation_capacity テーブル）。Phase A で新設。 */
+export interface SchoolFormationCapacity {
+  id: string;
+  school_id: string;
+  formation: string;
+  /** 1枠あたり生徒数上限（デフォルト8） */
+  max_students_per_group: number;
+  /** 同時刻の枠数上限（デフォルト1） */
+  max_concurrent_groups: number;
+  created_at: string;
+  updated_at: string;
+}
+
+/** 形態作成・更新フォーム用（ユーザーが触るのは label のみ） */
+export interface ScheduleFormationFormData {
+  label: string;
+}
 
 export type ScheduleEntryStatus =
   | 'scheduled'
@@ -227,6 +298,12 @@ export interface ScheduleEntry {
   kind: ScheduleEntryKind;
   /** 授業形態（個別 / 集団） */
   formation: ScheduleEntryFormation;
+  /** Phase R: 指導比率。1=1対1 / 2=1対2（既定）。パターンからスナップショット継承。 */
+  ratio: 1 | 2;
+  /** Phase R: 授業時間(分)。45 or 90。NULL=全コマ扱い。 */
+  duration_minutes: number | null;
+  /** Phase R: 45分授業の占有半コマ。'first' / 'second' / NULL=全コマ。 */
+  half_position: HalfPosition;
   // 注意: 上の teacher_id は型上 string になっているが、
   // 「担当未決定」エントリでは NULL になる場合がある。
   // 既存呼び出し側との互換のため string 表記のまま運用し、null チェックを使用側で行う。
@@ -281,6 +358,12 @@ export interface ScheduleEntryFormData {
    * 集団指導コマは 'group' を指定（コマ時間マスタも別建てになる）。
    */
   formation?: ScheduleEntryFormation;
+  /** Phase R: 指導比率。省略時は 2（1対2）。 */
+  ratio?: 1 | 2;
+  /** Phase R: 授業時間(分)。45 or 90。省略/NULL=全コマ扱い。 */
+  duration_minutes?: number | null;
+  /** Phase R: 45分授業の占有半コマ。省略/NULL=全コマ。 */
+  half_position?: HalfPosition;
 }
 
 // スケジュール生成結果

@@ -70,6 +70,15 @@ const GroupKomaFormModal = dynamic(
   () => import('@/components/schedule/GroupKomaFormModal').then((m) => m.GroupKomaFormModal),
   { ssr: false }
 );
+const FormationBoard = dynamic(
+  () => import('@/components/schedule/FormationBoard').then((m) => m.FormationBoard),
+  { ssr: false }
+);
+const FormationKomaFormModal = dynamic(
+  () =>
+    import('@/components/schedule/FormationKomaFormModal').then((m) => m.FormationKomaFormModal),
+  { ssr: false }
+);
 import { fetchWithAuth } from '@/lib/api/auth';
 import { useMasterData } from '@/contexts/MasterDataContext';
 import { getStudents } from '@/lib/api/students';
@@ -90,8 +99,12 @@ import {
   deleteRegularPattern,
   cancelFutureEntriesByRegularPatternId,
   getMonthlyTransferUsage,
+  regenerateCurrentWeekIfNeeded,
 } from '@/lib/api/schedule';
 import { reassignTeacherFromToday } from '@/lib/api/pattern-matching';
+import { getFormations, getFormationCapacity } from '@/lib/api/schedule-formations';
+import { createFormationClassPatterns } from '@/lib/api/formation-patterns';
+import type { ScheduleFormation, SchoolFormationCapacity } from '@/types/schedule';
 import { logScheduleChange } from '@/lib/api/schedule-change-logs';
 import type {
   ScheduleEntry,
@@ -99,12 +112,14 @@ import type {
   ScheduleTimeSlot,
   SchoolClassCapacityFormData,
 } from '@/types/schedule';
+// Phase A: 形態キーの直書きを定数参照に置換（'individual'/'group' のタイポ検出代替）
+import { INDIVIDUAL_FORMATION, GROUP_FORMATION } from '@/types/schedule';
 import { getClassCapacity, DEFAULT_CLASS_CAPACITY } from '@/lib/api/school-class-capacity';
 import type { School, Student, Subject } from '@/types/database';
 import AccessDenied from '@/components/AccessDenied';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/useToast';
-import { Clock, BookOpen, FileText, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Clock, BookOpen, ChevronLeft, ChevronRight } from 'lucide-react';
 import { SchoolSwitcher } from '@/components/SchoolSwitcher';
 import { getKoushuScheduledCounts, type KoushuEnrollment } from '@/lib/api/seasonalCourses';
 import { getKoushuPeriods, type KoushuPeriodInfo } from '@/lib/api/koushu-period';
@@ -302,6 +317,21 @@ export default function SchedulePage() {
   // 授業生徒数設定（個別の1講師あたり上限・教室座席数・集団上限）。schoolId 変更時に読み込み、未設定校は DEFAULT。
   const [capacity, setCapacity] = useState<SchoolClassCapacityFormData>(DEFAULT_CLASS_CAPACITY);
 
+  // ---- 指導形態タブ（Phase D） ----
+  // 形態マスタ（getFormations, sort_order順）。個別＋ユーザー定義形態でタブを描画する。
+  const [formations, setFormations] = useState<ScheduleFormation[]>([]);
+  // アクティブな形態タブ。既定=個別（localStorage 永続化はしない方針）。
+  const [activeFormation, setActiveFormation] = useState<string>(INDIVIDUAL_FORMATION);
+  // アクティブ形態の定員（school_formation_capacity。未設定なら max_students_per_group=8 / max_concurrent_groups=1）。
+  const [formationCapacity, setFormationCapacity] = useState<SchoolFormationCapacity | null>(null);
+  // クラス枠登録モーダルの対象（セル起点で自動設定）。mode='create'=新規枠 / 'add'=既存クラスへ追加。
+  const [formationTarget, setFormationTarget] = useState<{
+    date: string;
+    slotId: string;
+    mode: 'create' | 'add';
+    teacherId: string | null;
+  } | null>(null);
+
   const VISIBLE_DAYS_STORAGE_KEY = 'schedule_visible_days';
   const defaultVisibleDays = [1, 2, 3, 4, 5, 6]; // 月〜土
 
@@ -337,6 +367,55 @@ export default function SchedulePage() {
       // ignore
     }
   }, []);
+
+  // 座席表の「向き」（既定=転置 日=行）と「列数」（日=列モードのセル内カラム）をユーザー設定として永続化。
+  // 既存の表示曜日と同じ localStorage パターンに合わせる。
+  const ORIENTATION_STORAGE_KEY = 'schedule_orientation';
+  const COL_MODE_STORAGE_KEY = 'schedule_col_mode';
+  const [orientation, setOrientation] = useState<'cols' | 'rows'>(() => {
+    if (typeof window === 'undefined') return 'rows';
+    const raw = localStorage.getItem(ORIENTATION_STORAGE_KEY);
+    return raw === 'cols' || raw === 'rows' ? raw : 'rows';
+  });
+  const [colMode, setColMode] = useState<1 | 2>(() => {
+    if (typeof window === 'undefined') return 2;
+    return localStorage.getItem(COL_MODE_STORAGE_KEY) === '1' ? 1 : 2;
+  });
+  const setOrientationPersist = useCallback((next: 'cols' | 'rows') => {
+    setOrientation(next);
+    try {
+      localStorage.setItem(ORIENTATION_STORAGE_KEY, next);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+  const setColModePersist = useCallback((next: 1 | 2) => {
+    setColMode(next);
+    try {
+      localStorage.setItem(COL_MODE_STORAGE_KEY, String(next));
+    } catch {
+      /* ignore */
+    }
+  }, []);
+  // 週内の座席番号（印刷ブース番号）マップ。講師ヘッダーのインライン入力で表示・編集する。
+  const [weekBoothMap, setWeekBoothMap] = useState<Map<string, Map<string, number>>>(new Map());
+
+  // 未配置サマリバナーの展開状態。既定=折りたたみ（コンパクトなチップだけ表示）。永続化しない。
+  const [unplacedBannerOpen, setUnplacedBannerOpen] = useState(false);
+
+  // sticky ツールバーの実測高さ。転置モードの時限見出し（sticky）が
+  // ツールバーの下に正しく貼り付くよう、オフセットとしてグリッドに渡す。
+  // 認証ロード中はツールバーが描画されないため、callback ref + state で要素の出現を追跡する。
+  const [toolbarEl, setToolbarEl] = useState<HTMLDivElement | null>(null);
+  const [stickyOffset, setStickyOffset] = useState(0);
+  useEffect(() => {
+    if (!toolbarEl || typeof ResizeObserver === 'undefined') return;
+    const update = () => setStickyOffset(toolbarEl.offsetHeight);
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(toolbarEl);
+    return () => ro.disconnect();
+  }, [toolbarEl]);
   const weekStartStr = toLocalDateStr(weekStart);
   const weekEnd = new Date(weekStart);
   weekEnd.setDate(weekEnd.getDate() + 6);
@@ -519,6 +598,99 @@ export default function SchedulePage() {
       .catch(() => setCapacity(DEFAULT_CLASS_CAPACITY));
   }, [schoolId]);
 
+  // 指導形態マスタをロード（is_active のみ）。ユーザー定義形態が0件なら形態タブは出ない。
+  useEffect(() => {
+    getFormations()
+      .then(setFormations)
+      .catch(() => setFormations([]));
+  }, []);
+
+  // アクティブ形態の定員をロード（個別タブでは不要）。schoolId / activeFormation 変更時。
+  useEffect(() => {
+    if (!schoolId || activeFormation === INDIVIDUAL_FORMATION) {
+      setFormationCapacity(null);
+      return;
+    }
+    getFormationCapacity(schoolId, activeFormation)
+      .then(setFormationCapacity)
+      .catch(() => setFormationCapacity(null));
+  }, [schoolId, activeFormation]);
+
+  // 形態タブへ切替時は個別専用の講習/テスト対策モードを解除（形態ボードに残らないように）。
+  const handleFormationChange = useCallback((key: string) => {
+    setActiveFormation(key);
+    if (key !== INDIVIDUAL_FORMATION) {
+      setSelectedKoushu(null);
+      setKoushuEnrollments(new Map());
+      setKoushuScheduledCounts(new Map());
+      setKoushuDraftProposals([]);
+      setPlacingKoushuStudent(null);
+      setTestPrepActive(false);
+      setPlacingTestPrep(null);
+      setTransferMode(null);
+    }
+  }, []);
+
+  // 週内の座席番号（ブース番号）を全表示日ぶん取得して講師ヘッダーのインライン入力に反映。
+  // 失敗しても座席表本体には影響させない（番号無しで動く）。
+  useEffect(() => {
+    if (!schoolId || weekDates.length === 0) {
+      setWeekBoothMap(new Map());
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const { getBoothNoMapForDate } = await import('@/lib/api/schedule-daily-booth');
+        const pairs = await Promise.all(
+          weekDates.map(async (d) => [d, await getBoothNoMapForDate(schoolId, d)] as const)
+        );
+        if (!cancelled) setWeekBoothMap(new Map(pairs));
+      } catch (e) {
+        console.warn('Failed to fetch weekly booth assignments:', e);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [schoolId, weekDates]);
+
+  // 講師ヘッダーの座席番号インライン入力を保存。
+  // ブース番号は (school×date) 内で一意。その日の割当セットを読み直し、対象講師だけ更新して置換する。
+  const handleSeatNoChange = useCallback(
+    async (date: string, teacherId: string, value: string) => {
+      if (!schoolId) return;
+      try {
+        const { getDailyBoothAssignments, setDailyBoothAssignments } =
+          await import('@/lib/api/schedule-daily-booth');
+        const current = await getDailyBoothAssignments(schoolId, date);
+        const map = new Map<string, number>(current.map((a) => [a.teacher_id, a.booth_no]));
+        const num = parseInt(value, 10);
+        if (!value || Number.isNaN(num)) map.delete(teacherId);
+        else map.set(teacherId, num);
+        const assignments = Array.from(map.entries()).map(([tid, booth_no]) => ({
+          teacher_id: tid,
+          booth_no,
+        }));
+        await setDailyBoothAssignments(schoolId, date, assignments);
+        // 週マップ・印刷マップを同期更新
+        setWeekBoothMap((prev) => {
+          const next = new Map(prev);
+          next.set(date, new Map(map));
+          return next;
+        });
+        setPrintBoothMap((prev) => {
+          const next = new Map(prev);
+          next.set(date, new Map(map));
+          return next;
+        });
+      } catch (e) {
+        toastError((e as Error).message);
+      }
+    },
+    [schoolId, toastError]
+  );
+
   // 講習期間選択時: 該当 season の全 seasonal_courses から enrollments を集約
   // 同生徒が複数コース申込なら koma_count を合算
   const handleKoushuSelect = useCallback(
@@ -550,7 +722,8 @@ export default function SchedulePage() {
       const all = await getKoushuEnrollmentsForPeriod(period.school_id, period.season);
       const enrollMap = new Map<string, KoushuEnrollment>();
       for (const e of all) {
-        if (e.formation !== 'individual') continue;
+        // 講習の座席表モードは個別のみ対象（集団は GroupLaneGrid で別処理）。ここは現状維持が正しい。
+        if (e.formation !== INDIVIDUAL_FORMATION) continue;
         // (school, season, student, formation) は一意なので生徒ごとに1行
         enrollMap.set(e.student_id, e);
       }
@@ -562,7 +735,8 @@ export default function SchedulePage() {
           period.schedule_start_date,
           period.schedule_end_date,
           Array.from(enrollMap.keys()),
-          'individual'
+          // 講習は個別のみ座席表モード対象
+          INDIVIDUAL_FORMATION
         );
         setKoushuScheduledCounts(counts);
       } else {
@@ -598,10 +772,11 @@ export default function SchedulePage() {
       return;
     }
 
-    // 個別コマのスロット一覧（formation !== 'group'）。useMemo の individualSlots は
+    // 個別コマのスロット一覧。useMemo の individualSlots は
     // この useEffect より後で宣言されているため、timeSlots からインラインでフィルタする。
+    // Phase A: 「group 以外」ではなく「individual に一致」で判定。新形態が個別ストリップへ混入するのを防ぐ。
     const indivSlotList = timeSlots
-      .filter((s) => s.formation !== 'group')
+      .filter((s) => s.formation === INDIVIDUAL_FORMATION)
       .map((s) => ({
         id: s.id,
         slot_number: s.slot_number,
@@ -751,7 +926,7 @@ export default function SchedulePage() {
             seat_label: '',
             note: '',
             kind: 'koushu',
-            formation: 'individual',
+            formation: INDIVIDUAL_FORMATION,
           });
           success('講習コマを配置しました');
           await refreshEntries();
@@ -789,7 +964,7 @@ export default function SchedulePage() {
           seat_label: '',
           note: '',
           kind: 'koushu',
-          formation: 'group',
+          formation: GROUP_FORMATION,
         });
       }
       success('集団コマを作成しました');
@@ -962,9 +1137,17 @@ export default function SchedulePage() {
   /** 振替モードに切り替え（座席表の講師ブロックをクリックで振替先を選ぶ） */
   const handleTransferFromAction = useCallback(() => {
     if (!actionModalEntry) return;
+    // 形態ボードにはグリッドの講師ブロックが無いため、振替先はモーダルで選ぶ（候補コマは
+    // その形態のコマに限定される＝ScheduleDialogs へ渡す timeSlots を形態別にしているため）。
+    if (activeFormation !== INDIVIDUAL_FORMATION) {
+      setTransferringEntry(actionModalEntry);
+      setTransferModalOpen(true);
+      setActionModalEntry(null);
+      return;
+    }
     setTransferMode({ sourceEntry: actionModalEntry });
     setActionModalEntry(null);
-  }, [actionModalEntry]);
+  }, [actionModalEntry, activeFormation]);
 
   const handleAbsentFromAction = useCallback(async () => {
     const entry = actionModalEntry;
@@ -1026,15 +1209,97 @@ export default function SchedulePage() {
 
   // 講習モードの2レーン分割: 個別レーン=既存グリッド、集団レーン=GroupLaneGrid。
   // formation でコマ時間を分け、個別グリッドには個別コマだけ渡す（集団コマが個別グリッドに混ざらないように）。
+  // Phase A: 「group 以外」ではなく「individual に一致」で判定。新形態が個別グリッドへ混入するのを防ぐ。
   const individualSlots = useMemo(
-    () => timeSlots.filter((t) => t.formation !== 'group'),
+    () => timeSlots.filter((t) => t.formation === INDIVIDUAL_FORMATION),
     [timeSlots]
   );
-  const groupSlots = useMemo(() => timeSlots.filter((t) => t.formation === 'group'), [timeSlots]);
+  // 集団レーンは講習の集団コマ専用（group 固定）。ユーザー定義形態はここには乗らない（Phase D で別タブ）。
+  const groupSlots = useMemo(
+    () => timeSlots.filter((t) => t.formation === GROUP_FORMATION),
+    [timeSlots]
+  );
   // 集団の講習エントリ（個別申込フィルタとは独立に、期間内の集団コマを全部出す）
   const groupEntries = useMemo(
-    () => entriesWithSubjects.filter((e) => e.kind === 'koushu' && e.formation === 'group'),
+    () => entriesWithSubjects.filter((e) => e.kind === 'koushu' && e.formation === GROUP_FORMATION),
     [entriesWithSubjects]
+  );
+
+  // ---- 指導形態タブ（Phase D） ----
+  // タブ = 個別 ＋ is_active なユーザー定義形態（group は講習専用レーンなので出さない）。
+  const formationTabs = useMemo(
+    () => [
+      { key: INDIVIDUAL_FORMATION, label: '個別' },
+      ...formations
+        .filter((f) => !f.is_system && f.is_active)
+        .map((f) => ({ key: f.key, label: f.label })),
+    ],
+    [formations]
+  );
+  const activeFormationMeta = useMemo(
+    () => formations.find((f) => f.key === activeFormation) ?? null,
+    [formations, activeFormation]
+  );
+  const isFormationBoard = activeFormation !== INDIVIDUAL_FORMATION;
+  // アクティブ形態のコマ時間（設定画面で登録済みのもの）。
+  const formationSlots = useMemo(
+    () => timeSlots.filter((t) => t.formation === activeFormation),
+    [timeSlots, activeFormation]
+  );
+  // アクティブ形態の週次エントリ（通塾日程から生成された regular のみ）。
+  const formationEntries = useMemo(
+    () =>
+      entriesWithSubjects.filter((e) => e.formation === activeFormation && e.kind === 'regular'),
+    [entriesWithSubjects, activeFormation]
+  );
+  // 定員（未設定なら 1枠8名・同時1枠）。
+  const formationMaxStudents = formationCapacity?.max_students_per_group ?? 8;
+  const formationMaxConcurrent = formationCapacity?.max_concurrent_groups ?? 1;
+
+  // 空セルの「＋クラス枠」→ 新規クラス枠モーダル
+  const handleFormationCreate = useCallback((date: string, slotId: string) => {
+    setFormationTarget({ date, slotId, mode: 'create', teacherId: null });
+  }, []);
+
+  // 空席プレースホルダ行 → 既存クラスへ生徒追加モーダル（講師固定）
+  const handleFormationAddStudent = useCallback(
+    (date: string, slotId: string, teacherId: string | null) => {
+      setFormationTarget({ date, slotId, mode: 'add', teacherId });
+    },
+    []
+  );
+
+  // モーダル送信：生徒ごとに formation 付き週次パターンを作成し、当週以降の座席表を再生成。
+  const handleSubmitFormationKoma = useCallback(
+    async (data: { teacherId: string | null; subjectIds: string[]; studentIds: string[] }) => {
+      if (!formationTarget || !schoolId) return;
+      const dow = new Date(formationTarget.date + 'T12:00:00').getDay();
+      await createFormationClassPatterns({
+        schoolId,
+        formation: activeFormation,
+        timeSlotId: formationTarget.slotId,
+        dayOfWeek: dow,
+        teacherId: data.teacherId,
+        subjectIds: data.subjectIds,
+        studentIds: data.studentIds,
+        maxStudentsPerGroup: formationMaxStudents,
+        maxConcurrentGroups: formationMaxConcurrent,
+      });
+      success('クラス枠を登録しました');
+      // 通塾日程→座席表の反映（今週から4週）＋表示中の週を同期。
+      await regenerateCurrentWeekIfNeeded(schoolId, profile?.id);
+      await refreshEntries();
+    },
+    [
+      formationTarget,
+      schoolId,
+      activeFormation,
+      formationMaxStudents,
+      formationMaxConcurrent,
+      success,
+      profile?.id,
+      refreshEntries,
+    ]
   );
 
   // 下書き提案を「擬似エントリ」に変換して個別グリッドに重ねる（isDraft=true で★/破線表示）。
@@ -1044,33 +1309,40 @@ export default function SchedulePage() {
   );
   const koushuDraftEntries = useMemo<ScheduleEntry[]>(() => {
     if (!selectedKoushu) return [];
-    return koushuDraftProposals
-      .filter((p) => p.formation === 'individual')
-      .map((p) => ({
-        id: `draft-${p.id}`,
-        school_id: p.school_id,
-        entry_date: p.proposal_date,
-        time_slot_id: p.time_slot_id,
-        teacher_id: p.teacher_id,
-        student_id: p.student_id,
-        subject_ids: p.subject_ids,
-        seat_label: null,
-        regular_pattern_id: null,
-        kind: 'koushu',
-        formation: 'individual',
-        attendance_status: null,
-        status: 'scheduled',
-        created_at: '',
-        updated_at: '',
-        student: p.student,
-        teacher: p.teacher
-          ? { id: p.teacher.id, display_name: p.teacher.display_name, email: p.teacher.email }
-          : undefined,
-        subjects: (p.subject_ids || [])
-          .map((id) => (subjectById.has(id) ? { id, name: subjectById.get(id)! } : null))
-          .filter((x): x is { id: string; name: string } => !!x),
-        isDraft: true,
-      }));
+    return (
+      koushuDraftProposals
+        // 講習の下書き提案は個別のみ個別グリッドに重ねる（集団は別レーン）
+        .filter((p) => p.formation === INDIVIDUAL_FORMATION)
+        .map((p) => ({
+          id: `draft-${p.id}`,
+          school_id: p.school_id,
+          entry_date: p.proposal_date,
+          time_slot_id: p.time_slot_id,
+          teacher_id: p.teacher_id,
+          student_id: p.student_id,
+          subject_ids: p.subject_ids,
+          seat_label: null,
+          regular_pattern_id: null,
+          kind: 'koushu',
+          formation: INDIVIDUAL_FORMATION,
+          // Phase R: 講習の下書き擬似エントリは常に 1対2・全コマ（講習は半コマ非対象）。
+          ratio: 2,
+          duration_minutes: null,
+          half_position: null,
+          attendance_status: null,
+          status: 'scheduled',
+          created_at: '',
+          updated_at: '',
+          student: p.student,
+          teacher: p.teacher
+            ? { id: p.teacher.id, display_name: p.teacher.display_name, email: p.teacher.email }
+            : undefined,
+          subjects: (p.subject_ids || [])
+            .map((id) => (subjectById.has(id) ? { id, name: subjectById.get(id)! } : null))
+            .filter((x): x is { id: string; name: string } => !!x),
+          isDraft: true,
+        }))
+    );
   }, [selectedKoushu, koushuDraftProposals, subjectById]);
 
   // 個別グリッドに渡すエントリ。講習モードでは下書き擬似エントリを重ねる。
@@ -1201,7 +1473,8 @@ export default function SchedulePage() {
       // 個別コマの開始時刻(HH:MM)→slotId マップ
       const timeToSlotId = new Map<string, string>();
       for (const t of timeSlots) {
-        if (t.formation === 'group') continue;
+        // 個別コマだけを対象にする（テスト対策は個別レーンへ配置）。新形態が混ざらないよう individual 一致で判定。
+        if (t.formation !== INDIVIDUAL_FORMATION) continue;
         if (t.start_time) timeToSlotId.set(t.start_time.slice(0, 5), t.id);
       }
       const availableKeys = new Set<string>();
@@ -1786,27 +2059,12 @@ export default function SchedulePage() {
     );
   }
 
-  // 右上の入口ボタン（講習モード切替・報告書）
-  // 「講習」は座席表内の講習モードを ON/OFF するトグル。
-  //  - 講習期間あり: 最初の期間を選択して座席表を講習モードに（選択中なら解除）
-  //  - 講習期間なし: 講習管理ページ (/schedule/koushu) へ誘導してまず期間を作ってもらう
-  // 講習モードはツールバーの「講習:」セレクトから入る（上部のトグルボタンは廃止）。
-  const headerActions = (
-    <div className="flex items-center gap-2">
-      <Link
-        href="/lesson-reports/sample"
-        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border border-border-default rounded-lg bg-white text-text-body hover:bg-surface hover:border-info/40 hover:text-info transition-colors"
-        title="授業報告書の見本（ダミー）を開く"
-      >
-        <FileText className="w-3.5 h-3.5" />
-        報告書見本
-      </Link>
-    </div>
-  );
-
+  // NOTE: 「報告書見本」は上部の独立ボタンを廃止し、ツールバーの「管理▾」メニュー項目へ移動した（上部圧縮）。
+  // fullWidth: 盤面を画面いっぱいに使う（コンテナ幅制限を解除）。盤面セクション自体は
+  // さらに負マージンで px-4 を打ち消してフルブリードにする（下の schedule-board-bleed 参照）。
   return (
-    <AdminLayout headerTitle="座席表" actions={headerActions}>
-      <div className="space-y-6">
+    <AdminLayout headerTitle="座席表" fullWidth>
+      <div className="space-y-4">
         {/* コンテキストヘルプ */}
         <div className="flex justify-end -mb-4">
           <ContextHelp
@@ -1846,23 +2104,38 @@ export default function SchedulePage() {
             onChange={setSelectedSchoolIdLocal}
           />
         )}
-        <ScheduleToolbar
-          weekStart={weekStart}
-          weekStartStr={weekStartStr}
-          schoolId={schoolId ?? ''}
-          visibleDaysOfWeek={visibleDaysOfWeek}
-          koushuList={koushuList}
-          selectedKoushu={selectedKoushu}
-          hasTestPrep={hasTestPrep}
-          testPrepActive={testPrepActive}
-          onWeekChange={setWeekStart}
-          onSettingsOpen={() => setScheduleSettingsOpen(true)}
-          onVisibleDaysChange={setVisibleDaysPersist}
-          onKoushuSelect={handleKoushuSelect}
-          onTestPrepToggle={handleTestPrepToggle}
-        />
+        {/* ツールバー（週ナビ・モード・向き）は作業中に常時必要なので sticky。
+            AppHeader は relative（スクロールで流れる）ため top-0 でよい。
+            転置モードの時限見出しはこの実測高さぶん下に貼り付く（stickyOffset）。 */}
+        <div
+          ref={setToolbarEl}
+          className="sticky top-0 z-30 -mx-4 px-4 py-1.5 bg-bg/95 backdrop-blur-sm border-b border-border-default print:static print:border-0"
+        >
+          <ScheduleToolbar
+            weekStart={weekStart}
+            weekStartStr={weekStartStr}
+            schoolId={schoolId ?? ''}
+            visibleDaysOfWeek={visibleDaysOfWeek}
+            koushuList={koushuList}
+            selectedKoushu={selectedKoushu}
+            hasTestPrep={hasTestPrep}
+            testPrepActive={testPrepActive}
+            onWeekChange={setWeekStart}
+            onSettingsOpen={() => setScheduleSettingsOpen(true)}
+            onVisibleDaysChange={setVisibleDaysPersist}
+            onKoushuSelect={handleKoushuSelect}
+            onTestPrepToggle={handleTestPrepToggle}
+            orientation={orientation}
+            onOrientationChange={setOrientationPersist}
+            colMode={colMode}
+            onColModeChange={setColModePersist}
+            formationTabs={formationTabs}
+            activeFormation={activeFormation}
+            onFormationChange={handleFormationChange}
+          />
+        </div>
 
-        {schoolId && (
+        {schoolId && !isFormationBoard && (
           <ScheduleDriftBanner
             schoolId={schoolId}
             userId={profile?.id}
@@ -1870,32 +2143,51 @@ export default function SchedulePage() {
           />
         )}
 
-        {/* 担当未決定エントリのサマリ：未配置の合計数 + 一括マッチング画面への導線。
-            実際の未配置生徒は各 DayCell の下部にミニチップで表示されるので、
-            ここは「全体の進捗」と「機械的に決めたい場合の導線」だけ */}
-        {(() => {
-          const unassignedCount = displayEntries.filter(
-            (e) => !e.teacher_id && e.status !== 'cancelled' && e.status !== 'transferred_out'
-          ).length;
-          if (unassignedCount === 0) return null;
-          return (
-            <div className="flex items-center gap-3 px-3 py-1.5 rounded-lg bg-warning-subtle/40 border border-warning/30 text-xs print:hidden">
-              <span className="text-warning font-semibold flex items-center gap-1.5">
-                <span className="inline-block w-1.5 h-1.5 rounded-full bg-warning animate-pulse" />
-                今週の未配置: {unassignedCount} コマ
-              </span>
-              <span className="text-text-muted">
-                各コマ下部のチップを上の講師カードへドラッグして割当
-              </span>
-              <Link
-                href="/schedule/regular-patterns/match"
-                className="ml-auto text-info hover:underline font-semibold"
-              >
-                一括マッチング画面で機械的に決める →
-              </Link>
-            </div>
-          );
-        })()}
+        {/* 担当未決定エントリのサマリ：既定はコンパクトなチップ1個（上部圧縮）。
+            クリックで説明文＋一括マッチング導線つきのフルバナーに展開する。個別タブ専用。 */}
+        {!isFormationBoard &&
+          (() => {
+            const unassignedCount = displayEntries.filter(
+              (e) => !e.teacher_id && e.status !== 'cancelled' && e.status !== 'transferred_out'
+            ).length;
+            if (unassignedCount === 0) return null;
+            if (!unplacedBannerOpen) {
+              return (
+                <button
+                  type="button"
+                  onClick={() => setUnplacedBannerOpen(true)}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-warning-subtle/60 border border-warning/40 text-xs text-warning font-semibold hover:bg-warning-subtle transition-colors print:hidden"
+                  title="クリックで詳細（一括マッチング導線）を表示"
+                >
+                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-warning animate-pulse" />
+                  未配置 {unassignedCount}
+                  <ChevronRight className="w-3 h-3 opacity-70" />
+                </button>
+              );
+            }
+            return (
+              <div className="flex items-center gap-3 px-3 py-1.5 rounded-lg bg-warning-subtle/40 border border-warning/30 text-xs print:hidden">
+                <button
+                  type="button"
+                  onClick={() => setUnplacedBannerOpen(false)}
+                  className="text-warning font-semibold flex items-center gap-1.5"
+                  title="折りたたむ"
+                >
+                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-warning animate-pulse" />
+                  今週の未配置: {unassignedCount} コマ
+                </button>
+                <span className="text-text-muted">
+                  各コマ下部のチップを上の講師カードへドラッグして割当
+                </span>
+                <Link
+                  href="/schedule/regular-patterns/match"
+                  className="ml-auto text-info hover:underline font-semibold"
+                >
+                  一括マッチング画面で機械的に決める →
+                </Link>
+              </div>
+            );
+          })()}
 
         {/* 座席表の凡例（バッジ・色の意味）。折りたたみ式。 */}
         <ScheduleLegend />
@@ -1974,7 +2266,7 @@ export default function SchedulePage() {
 
         {/* 振替期限切れ間近の督促ボード。
             0件のときは内部で何も描画しないので、空ボードでスペースを食わない */}
-        {schoolId && (
+        {schoolId && !isFormationBoard && (
           <PendingTransfersBoard
             schoolIds={[schoolId]}
             onSelectEntry={(entry) => {
@@ -1995,6 +2287,51 @@ export default function SchedulePage() {
               教室を選択してください。
             </CardContent>
           </Card>
+        ) : isFormationBoard ? (
+          /* ===== 形態ボード（小集団・プログラミング等） ===== */
+          formationSlots.length === 0 ? (
+            <Card className="border-[var(--primary)]/40 bg-[var(--primary-subtle)]">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-[var(--headline)]">
+                  <Clock className="h-5 w-5" />
+                  {activeFormationMeta?.label ?? 'この形態'}のコマ時間が未設定です
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-[var(--paragraph)] mb-4">
+                  この形態のクラス枠を登録するには、まずコマ時間を設定してください。
+                </p>
+                <Link href="/settings/time-slots">
+                  <Button>コマ時間設定へ</Button>
+                </Link>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="schedule-print -mx-4 -mb-6">
+              {entriesLoading ? (
+                <div className="py-8">
+                  <Loading size="md" />
+                </div>
+              ) : (
+                <div className="print:hidden">
+                  <FormationBoard
+                    weekDates={weekDates}
+                    slots={formationSlots}
+                    entries={formationEntries}
+                    closedDates={closedDates}
+                    maxStudentsPerGroup={formationMaxStudents}
+                    subjectNameById={new Map(masterSubjects.map((s) => [s.id, s.name]))}
+                    addLabel="クラス枠"
+                    orientation={orientation}
+                    stickyOffset={stickyOffset}
+                    onCreate={handleFormationCreate}
+                    onAddStudent={handleFormationAddStudent}
+                    onStudentClick={handleEntryClick}
+                  />
+                </div>
+              )}
+            </div>
+          )
         ) : (
           <>
             {bootstrapped && timeSlotsCount === 0 && (
@@ -2036,22 +2373,25 @@ export default function SchedulePage() {
             )}
 
             {timeSlotsCount > 0 && patternsCount > 0 && (
-              <Card>
-                <CardContent className="schedule-print pt-6">
-                  {/* 日付横の印刷アイコンで指定した日だけ印刷時表示 */}
-                  {printDay && timeSlotsCount > 0 && patternsCount > 0 && (
-                    <div className="hidden print:block">
-                      <ScheduleDailyPrintView
-                        weekDates={[printDay]}
-                        timeSlots={timeSlots}
-                        entries={entriesWithSubjects}
-                        schoolName={selectedSchool?.name}
-                        singleDate={printDay}
-                        boothMapByDate={printBoothMap}
-                      />
-                    </div>
-                  )}
-                  {transferMode && (
+              /* 盤面セクション（フルブリード）: Card の枠に入れず、負マージンで
+                 AdminLayout(fullWidth) の px-4 / 下端 py-6 を打ち消して画面いっぱいに広げる。
+                 キャンバス色（--sd-canvas）はグリッド側の boardCanvas がページ端まで塗る。 */
+              <div className="schedule-print -mx-4 -mb-6">
+                {/* 日付横の印刷アイコンで指定した日だけ印刷時表示 */}
+                {printDay && timeSlotsCount > 0 && patternsCount > 0 && (
+                  <div className="hidden print:block">
+                    <ScheduleDailyPrintView
+                      weekDates={[printDay]}
+                      timeSlots={timeSlots}
+                      entries={entriesWithSubjects}
+                      schoolName={selectedSchool?.name}
+                      singleDate={printDay}
+                      boothMapByDate={printBoothMap}
+                    />
+                  </div>
+                )}
+                {transferMode && (
+                  <div className="px-3 pb-2">
                     <TransferModeBar
                       entry={transferMode.sourceEntry}
                       slotLabel={
@@ -2061,68 +2401,84 @@ export default function SchedulePage() {
                       }
                       onCancel={() => setTransferMode(null)}
                     />
-                  )}
-                  {entriesLoading ? (
+                  </div>
+                )}
+                {entriesLoading ? (
+                  <div className="py-8">
                     <Loading size="md" />
-                  ) : (
-                    <div className="print:hidden relative">
-                      {/* 左右端の縦長 週移動アイコン。
-                        fixed で画面（ビューポート）の縦中央に固定し、スクロールしても
-                        常に同じ位置に追従する（長い座席表でもどこからでも週を変えられる）。 */}
+                  </div>
+                ) : (
+                  <div className="print:hidden relative">
+                    {/* 左右端の週移動。通常は不可視で、画面端の細いホットゾーンに
+                        カーソルが近づいたときだけフェードイン。
+                        フルブリード化で盤面右端のカード操作（✕・座席番号入力）が画面端
+                        ~15px まで迫るため、ホットゾーンは 12px(w-3) に抑えて重なりを避ける。
+                        タッチ環境はツールバーの前週/次週で操作できるため問題なし。 */}
+                    <div className="group fixed left-0 top-0 bottom-0 w-3 z-40 print:hidden">
                       <button
                         type="button"
                         onClick={goPrevWeek}
                         aria-label="前週へ"
                         title="前週へ"
-                        className="fixed left-1 top-1/2 -translate-y-1/2 z-40 w-7 hover:w-12 h-40 flex items-center justify-center rounded-lg bg-white/90 hover:bg-white border border-border-default text-text-muted shadow-md hover:shadow-lg hover:text-text-body transition-[width,background-color,box-shadow,color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97] print:hidden"
+                        className="absolute left-1 top-1/2 -translate-y-1/2 w-7 hover:w-12 h-40 flex items-center justify-center rounded-lg bg-white/90 hover:bg-white border border-border-default text-text-muted shadow-md hover:shadow-lg hover:text-text-body opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-[opacity,width,background-color,box-shadow,color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97]"
                       >
                         <ChevronLeft className="w-5 h-5" />
                       </button>
+                    </div>
+                    <div className="group fixed right-0 top-0 bottom-0 w-3 z-40 print:hidden">
                       <button
                         type="button"
                         onClick={goNextWeek}
                         aria-label="次週へ"
                         title="次週へ"
-                        className="fixed right-1 top-1/2 -translate-y-1/2 z-40 w-7 hover:w-12 h-40 flex items-center justify-center rounded-lg bg-white/90 hover:bg-white border border-border-default text-text-muted shadow-md hover:shadow-lg hover:text-text-body transition-[width,background-color,box-shadow,color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97] print:hidden"
+                        className="absolute right-1 top-1/2 -translate-y-1/2 w-7 hover:w-12 h-40 flex items-center justify-center rounded-lg bg-white/90 hover:bg-white border border-border-default text-text-muted shadow-md hover:shadow-lg hover:text-text-body opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-[opacity,width,background-color,box-shadow,color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97]"
                       >
                         <ChevronRight className="w-5 h-5" />
                       </button>
-                      <WeeklyScheduleGrid
-                        schoolId={schoolId ?? ''}
-                        weekDates={weekDates}
-                        timeSlots={selectedKoushu ? individualSlots : timeSlots}
-                        entries={individualGridEntries}
-                        closedDates={closedDates}
-                        teachers={teachers}
-                        emptyTeacherSlots={emptyTeacherSlots}
-                        shiftAvailableByDow={shiftByDow}
-                        maxStudentsPerTeacher={capacity.max_students_per_teacher_individual}
-                        transferMode={transferMode}
-                        onEmptyTeacherSlotsChange={setEmptyTeacherSlots}
-                        onAddTeacher={handleAddTeacher}
-                        onAddStudent={handleAddStudent}
-                        onRemoveTeacher={handleRemoveTeacher}
-                        onStudentClick={handleEntryClick}
-                        onTransferClick={handleTransferClickFromCard}
-                        onTeacherCardMove={handleTeacherCardMove}
-                        onStudentEntryDrop={handleStudentEntryDrop}
-                        onTeacherDropOnUnassigned={handleTeacherDropOnUnassigned}
-                        onConstraintViolation={(reason) => toastError(reason)}
-                        subjectNameById={new Map(masterSubjects.map((s) => [s.id, s.name]))}
-                        absenceKeySet={absenceKeySet}
-                        onToggleAbsence={handleToggleAbsence}
-                        onTransferTargetClick={handleTransferTargetClick}
-                        onPrintDay={handlePrintDay}
-                        onBoothAssign={handleBoothAssign}
-                        onTransferCancel={() => setTransferMode(null)}
-                        getKoushuInfo={selectedKoushu ? getKoushuInfo : undefined}
-                        koushuPlacing={gridPlacing}
-                        getKoushuPlaceability={gridGetPlaceability}
-                        onKoushuPlace={gridPlace}
-                        onKoushuPlaceWithTeacher={gridPlaceWithTeacher}
-                      />
-                      {/* 集団レーン（講習モードかつ集団コマ時間がある場合のみ）。集団は手動編成。 */}
-                      {selectedKoushu && groupSlots.length > 0 && (
+                    </div>
+                    <WeeklyScheduleGrid
+                      schoolId={schoolId ?? ''}
+                      weekDates={weekDates}
+                      timeSlots={selectedKoushu ? individualSlots : timeSlots}
+                      entries={individualGridEntries}
+                      closedDates={closedDates}
+                      teachers={teachers}
+                      emptyTeacherSlots={emptyTeacherSlots}
+                      shiftAvailableByDow={shiftByDow}
+                      maxStudentsPerTeacher={capacity.max_students_per_teacher_individual}
+                      transferMode={transferMode}
+                      onEmptyTeacherSlotsChange={setEmptyTeacherSlots}
+                      onAddTeacher={handleAddTeacher}
+                      onAddStudent={handleAddStudent}
+                      onRemoveTeacher={handleRemoveTeacher}
+                      onStudentClick={handleEntryClick}
+                      onTransferClick={handleTransferClickFromCard}
+                      onTeacherCardMove={handleTeacherCardMove}
+                      onStudentEntryDrop={handleStudentEntryDrop}
+                      onTeacherDropOnUnassigned={handleTeacherDropOnUnassigned}
+                      onConstraintViolation={(reason) => toastError(reason)}
+                      subjectNameById={new Map(masterSubjects.map((s) => [s.id, s.name]))}
+                      absenceKeySet={absenceKeySet}
+                      onToggleAbsence={handleToggleAbsence}
+                      onTransferTargetClick={handleTransferTargetClick}
+                      onPrintDay={handlePrintDay}
+                      onBoothAssign={handleBoothAssign}
+                      onTransferCancel={() => setTransferMode(null)}
+                      getKoushuInfo={selectedKoushu ? getKoushuInfo : undefined}
+                      koushuPlacing={gridPlacing}
+                      getKoushuPlaceability={gridGetPlaceability}
+                      onKoushuPlace={gridPlace}
+                      onKoushuPlaceWithTeacher={gridPlaceWithTeacher}
+                      orientation={orientation}
+                      colMode={colMode}
+                      boothMapByDate={weekBoothMap}
+                      onSeatNoChange={handleSeatNoChange}
+                      stickyOffset={stickyOffset}
+                    />
+                    {/* 集団レーン（講習モードかつ集団コマ時間がある場合のみ）。集団は手動編成。
+                          フルブリード化に伴い、端に張り付かないよう横パディングだけ入れる。 */}
+                    {selectedKoushu && groupSlots.length > 0 && (
+                      <div className="px-3">
                         <GroupLaneGrid
                           weekDates={weekDates}
                           groupSlots={groupSlots}
@@ -2134,11 +2490,11 @@ export default function SchedulePage() {
                           onCreate={handleCreateGroupKoma}
                           onStudentClick={handleEntryClick}
                         />
-                      )}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             )}
           </>
         )}
@@ -2157,7 +2513,8 @@ export default function SchedulePage() {
         onScheduleGenerateConfirm={handleScheduleGenerateConfirm}
         actionModalEntry={actionModalEntry}
         onActionModalClose={() => setActionModalEntry(null)}
-        timeSlots={timeSlots}
+        // 形態タブでは振替候補コマ・スロットラベルをその形態に限定する
+        timeSlots={isFormationBoard ? formationSlots : timeSlots}
         onTransferFromAction={handleTransferFromAction}
         onRevertTransfer={handleRevertTransfer}
         onAbsentFromAction={handleAbsentFromAction}
@@ -2272,6 +2629,26 @@ export default function SchedulePage() {
             />
           );
         })()}
+
+      {/* 形態別クラス枠 登録モーダル（Phase C）。セル起点で曜日×コマ自動設定。 */}
+      {formationTarget && (
+        <FormationKomaFormModal
+          open={!!formationTarget}
+          onClose={() => setFormationTarget(null)}
+          schoolId={schoolId ?? ''}
+          formationLabel={activeFormationMeta?.label ?? '形態'}
+          date={formationTarget.date}
+          slot={formationSlots.find((s) => s.id === formationTarget.slotId) ?? null}
+          subjects={masterSubjects}
+          maxStudents={formationMaxStudents}
+          teachers={teachers
+            .filter((t) => t.user_schools?.some((us) => us.school_id === schoolId))
+            .map((t) => ({ id: t.id, display_name: t.display_name, email: t.email }))}
+          mode={formationTarget.mode}
+          lockedTeacherId={formationTarget.teacherId}
+          onSubmit={handleSubmitFormationKoma}
+        />
+      )}
 
       <ToastContainer toasts={toasts} onRemove={removeToast} />
 

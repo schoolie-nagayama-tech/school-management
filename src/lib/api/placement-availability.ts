@@ -16,6 +16,8 @@ import { getScheduleEntries } from '@/lib/api/schedule';
 import { getClassCapacity, DEFAULT_CLASS_CAPACITY } from '@/lib/api/school-class-capacity';
 import { getAvailabilityDayMap } from '@/lib/api/teacher-availability';
 import type { ZoukomaAvailableSlot } from '@/lib/api/zoukoma-placement';
+// Phase A: 講習・テスト対策の配置ストリップは個別のみ対象。'individual' 直値を定数参照に置換。
+import { INDIVIDUAL_FORMATION } from '@/types/schedule';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabase as any;
@@ -125,7 +127,8 @@ function computeFullKeys(
   // teacherId → 担当生徒数
   const occupancyByKey = new Map<string, Map<string, number>>();
   for (const e of allEntries) {
-    if (e.formation !== 'individual') continue;
+    // 個別の占有だけを数える（講習・テスト対策は個別レーンへ配置するため）
+    if (e.formation !== INDIVIDUAL_FORMATION) continue;
     if (!['scheduled', 'completed', 'transferred_in'].includes(e.status)) continue;
     if (!e.teacher_id) continue;
     const key = `${e.entry_date}_${e.time_slot_id}`;
@@ -301,7 +304,7 @@ export async function buildKoushuPlacementStrip(
       entry_date: e.entry_date,
       time_slot_id: e.time_slot_id,
       teacher_id: e.teacher_id ?? null,
-      formation: e.formation ?? 'individual',
+      formation: e.formation ?? INDIVIDUAL_FORMATION,
       // status は型上 string | undefined だが実際は常に文字列なので空文字でフォールバック
       status: e.status ?? '',
     })),
@@ -412,7 +415,7 @@ export async function buildTestPrepPlacementStrip(
       entry_date: e.entry_date,
       time_slot_id: e.time_slot_id,
       teacher_id: e.teacher_id ?? null,
-      formation: e.formation ?? 'individual',
+      formation: e.formation ?? INDIVIDUAL_FORMATION,
       // status は型上 string | undefined だが実際は常に文字列なので空文字でフォールバック
       status: e.status ?? '',
     })),

@@ -1,8 +1,12 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useDraggable } from '@dnd-kit/core';
+import { Plus } from 'lucide-react';
 import { TeacherCard } from './TeacherCard';
+import { getSubjectChip } from './scheduleBadges';
+import { computeSeatOccupancy } from '@/lib/utils/seatOccupancy';
+import styles from './scheduleDensity.module.css';
 import type { ScheduleEntry, ScheduleTimeSlot } from '@/types/schedule';
 
 export interface TeacherGroup {
@@ -33,9 +37,8 @@ export function parseDayCellId(id: string): { date: string; slotId: string } | n
 }
 
 /**
- * セル内の未配置エントリミニチップ。
- * ドラッグソース。ID は entry.id で、WeeklyScheduleGrid.handleDragEnd の
- * 既存「生徒エントリ → 講師セル」ドロップ処理がそのまま流れる。
+ * セル内の未配置エントリミニチップ（ドラッグソース）。
+ * ID は entry.id で、既存「生徒エントリ → 講師セル」ドロップ処理がそのまま流れる。
  */
 function UnassignedChip({
   entry,
@@ -57,29 +60,41 @@ function UnassignedChip({
           ? `中${grade - 6}`
           : `高${grade - 9}`
       : '';
-  const subjects = (entry.subject_ids ?? [])
+  const firstSubject = (entry.subject_ids ?? [])
     .map((sid) => subjectNameById?.get(sid))
-    .filter((n): n is string => !!n);
+    .find((n): n is string => !!n);
+  const chip = firstSubject ? getSubjectChip(firstSubject) : null;
   return (
-    <div
+    <span
       ref={setNodeRef}
       {...attributes}
       {...listeners}
-      title={`未設定 ${studentName} ${gradeLabel} ${subjects.join('・')}`}
-      className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md border border-dashed border-warning bg-warning-subtle/60 text-[11px] cursor-grab active:cursor-grabbing transition-opacity duration-150 ${
-        isDragging ? 'opacity-30' : 'hover:bg-warning-subtle hover:shadow-sm'
-      }`}
+      title={`未設定 ${studentName} ${gradeLabel} ${firstSubject ?? ''}`}
+      className={`${styles.unplacedChip}${isDragging ? ' ' + styles.dragging : ''}`}
     >
-      <span className="font-semibold text-text-body truncate max-w-[5.5rem]">{studentName}</span>
-      {gradeLabel && <span className="text-[9px] text-text-muted">{gradeLabel}</span>}
-      {subjects.length > 0 && (
-        <span className="text-[9px] text-sky-700 truncate max-w-[4rem]">
-          {subjects[0]}
-          {subjects.length > 1 && `+${subjects.length - 1}`}
-        </span>
-      )}
-    </div>
+      {studentName}
+      {gradeLabel && <span className={styles.sGrade}> {gradeLabel}</span>}
+      {chip && ` ${chip.label}`}
+    </span>
   );
+}
+
+/** 順序保存の二分割: 講師の表示順を保ち、累積高さが半分の位置で分ける。 */
+function splitPreservingOrder<T extends { estHeight: number }>(blocks: T[]): [T[], T[]] {
+  if (blocks.length <= 1) return [blocks, []];
+  const total = blocks.reduce((s, b) => s + b.estHeight, 0);
+  let acc = 0;
+  let splitIdx = blocks.length;
+  let bestDiff = Infinity;
+  blocks.forEach((b, i) => {
+    acc += b.estHeight;
+    const diff = Math.abs(acc - total / 2);
+    if (diff < bestDiff) {
+      bestDiff = diff;
+      splitIdx = i + 1;
+    }
+  });
+  return [blocks.slice(0, splitIdx), blocks.slice(splitIdx)];
 }
 
 export interface DayCellProps {
@@ -93,11 +108,12 @@ export interface DayCellProps {
   activeDragId: string | null;
   activeDragEntry: ScheduleEntry | null;
   transferMode: boolean;
+  /** セル内レイアウト: 'pack'=横パッキング(転置) / 'col1'/'col2'=順序保存分割(日=列) */
+  layout: 'pack' | 'col1' | 'col2';
   onAddTeacher: (existingTeacherIds: string[]) => void;
   onAddStudent: (teacherId: string) => void;
   onRemoveTeacher: (teacherId: string, entryCount: number) => void;
   onStudentClick: (entry: ScheduleEntry, e: React.MouseEvent) => void;
-  onTransferClick?: (entry: ScheduleEntry) => void;
   onTransferTargetClick?: (date: string, slotId: string, teacherId: string) => void;
   getKoushuInfo?: (studentId: string) => { enrolled: number; scheduled: number } | null;
   subjectNameById?: Map<string, string>;
@@ -108,120 +124,198 @@ export interface DayCellProps {
   koushuPlacing?: boolean;
   /** 配置モード中に講師カードをクリック→その講師で配置 */
   onKoushuPlaceWithTeacher?: (teacherId: string) => void;
+  /** 座席番号マップ（この日付の 講師ID → 番号）。印刷用ブース番号のインライン編集に使う */
+  boothMap?: Map<string, number>;
+  /** 座席番号の保存（講師ID, 値） */
+  onSeatNoChange?: (teacherId: string, value: string) => void;
+  /** 当日行/列か（薄青ハイライト） */
+  isToday?: boolean;
+  /** 配置モード中の配置可否（緑=可 / 淡色=不可）。未指定なら配置モードでない */
+  placeability?: { ok: boolean; reason: string | null };
+  /** 配置モード中、セル背景クリックで担当未決定として落とす */
+  onCellPlace?: () => void;
 }
 
-export const DayCell = React.memo(function DayCell({
-  date,
-  timeSlot,
-  isClosed,
-  teacherGroups,
-  unassignedEntries,
-  maxStudentsPerTeacher,
-  activeDragId,
-  activeDragEntry,
-  transferMode,
-  onAddTeacher,
-  onAddStudent,
-  onRemoveTeacher,
-  onStudentClick,
-  onTransferClick,
-  onTransferTargetClick,
-  getKoushuInfo,
-  subjectNameById,
-  absenceKeySet,
-  onToggleAbsence,
-  koushuPlacing,
-  onKoushuPlaceWithTeacher,
-}: DayCellProps) {
+export const DayCell = React.memo(function DayCell(props: DayCellProps) {
+  const {
+    date,
+    timeSlot,
+    isClosed,
+    teacherGroups,
+    unassignedEntries,
+    maxStudentsPerTeacher,
+    activeDragId,
+    activeDragEntry,
+    transferMode,
+    layout,
+    onAddTeacher,
+    onAddStudent,
+    onRemoveTeacher,
+    onStudentClick,
+    onTransferTargetClick,
+    getKoushuInfo,
+    subjectNameById,
+    absenceKeySet,
+    onToggleAbsence,
+    koushuPlacing,
+    onKoushuPlaceWithTeacher,
+    boothMap,
+    onSeatNoChange,
+    isToday,
+    placeability,
+    onCellPlace,
+  } = props;
+
+  const [unplacedOpen, setUnplacedOpen] = useState(false);
+
   if (isClosed) {
-    return (
-      <div className="py-2 rounded-lg bg-gray-100 text-gray-400 text-xs text-center flex items-center justify-center min-h-[40px]">
-        休講日
+    return <div className={styles.dayCellClosed}>休講日</div>;
+  }
+
+  const unassigned = unassignedEntries ?? [];
+
+  const renderBlock = (group: TeacherGroup) => (
+    <TeacherCard
+      key={group.teacher.id}
+      teacher={group.teacher}
+      entries={group.entries}
+      isAvailableOnly={group.isAvailableOnly}
+      date={date}
+      timeSlotId={timeSlot.id}
+      maxStudents={maxStudentsPerTeacher}
+      isClosed={false}
+      onAddStudent={() => onAddStudent(group.teacher.id)}
+      onRemoveTeacher={() =>
+        onRemoveTeacher(
+          group.teacher.id,
+          group.entries.filter((e) => e.status !== 'cancelled' && e.status !== 'transferred_out')
+            .length
+        )
+      }
+      onStudentClick={onStudentClick}
+      activeDragId={activeDragId}
+      activeDragEntry={activeDragEntry}
+      transferMode={transferMode}
+      onTransferTargetClick={onTransferTargetClick}
+      getKoushuInfo={getKoushuInfo}
+      isAbsent={absenceKeySet?.has(`${date}|${timeSlot.id}|${group.teacher.id}`) ?? false}
+      onToggleAbsence={
+        onToggleAbsence && !group.teacher.id.startsWith('__unassigned__')
+          ? () => onToggleAbsence(date, timeSlot.id, group.teacher.id)
+          : undefined
+      }
+      koushuPlacing={koushuPlacing}
+      onKoushuPlaceClick={
+        onKoushuPlaceWithTeacher && !group.teacher.id.startsWith('__unassigned__')
+          ? () => onKoushuPlaceWithTeacher(group.teacher.id)
+          : undefined
+      }
+      seatNo={boothMap?.get(group.teacher.id) != null ? String(boothMap.get(group.teacher.id)) : ''}
+      onSeatNoChange={
+        onSeatNoChange && !group.teacher.id.startsWith('__unassigned__')
+          ? (value) => onSeatNoChange(group.teacher.id, value)
+          : undefined
+      }
+    />
+  );
+
+  // 分割用の推定高さ（生徒行 + 空席プレースホルダ行）。
+  // Phase R: 空席数は席占有（1対1/1対2・45分半コマ）の vacancies 数と一致させる。
+  const withHeight = teacherGroups.map((g) => {
+    const displayCount = g.entries.filter((e) => e.status !== 'cancelled').length;
+    const active = g.entries.filter(
+      (e) => e.status !== 'cancelled' && e.status !== 'transferred_out'
+    );
+    const occ = computeSeatOccupancy(
+      active.map((e) => ({ ratio: e.ratio === 1 ? 1 : 2, halfPosition: e.half_position ?? null })),
+      maxStudentsPerTeacher
+    );
+    const rows = displayCount + occ.vacancies.length;
+    return { group: g, estHeight: 24 + 18 * Math.max(1, rows) };
+  });
+
+  let blocksNode: React.ReactNode;
+  if (layout === 'pack') {
+    blocksNode = <div className={styles.tPack}>{teacherGroups.map(renderBlock)}</div>;
+  } else if (layout === 'col2') {
+    const [left, right] = splitPreservingOrder(withHeight);
+    blocksNode = (
+      <div className={styles.cellCols}>
+        <div className={styles.cellCol}>{left.map((x) => renderBlock(x.group))}</div>
+        {right.length > 0 && (
+          <div className={styles.cellCol}>{right.map((x) => renderBlock(x.group))}</div>
+        )}
+      </div>
+    );
+  } else {
+    blocksNode = (
+      <div className={styles.cellCols}>
+        <div className={styles.cellCol}>{teacherGroups.map(renderBlock)}</div>
       </div>
     );
   }
 
-  // 講師カードを 1 列で並べた直後に、未配置エントリの mini チップを表示。
-  // その日・その時間で「まだ担当が決まっていない生徒」が一目で分かり、
-  // すぐ隣の講師カードにドラッグして割り当てられる。
-  const unassigned = unassignedEntries ?? [];
+  const isEmptyCell = teacherGroups.length === 0 && unassigned.length === 0;
+  const cellClass = [
+    styles.dayCell,
+    isEmptyCell ? styles.empty : '',
+    isToday ? styles.todayRow : '',
+    koushuPlacing ? (placeability?.ok ? styles.dropOk : styles.dropDim) : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
 
   return (
-    <div className="py-1 min-h-[40px]">
-      <div className="space-y-1">
-        {teacherGroups.map((group) => (
-          <TeacherCard
-            key={group.teacher.id}
-            teacher={group.teacher}
-            entries={group.entries}
-            isAvailableOnly={group.isAvailableOnly}
-            date={date}
-            timeSlotId={timeSlot.id}
-            maxStudents={maxStudentsPerTeacher}
-            isClosed={false}
-            onAddStudent={() => onAddStudent(group.teacher.id)}
-            onRemoveTeacher={() =>
-              onRemoveTeacher(
-                group.teacher.id,
-                group.entries.filter(
-                  (e) => e.status !== 'cancelled' && e.status !== 'transferred_out'
-                ).length
-              )
-            }
-            onStudentClick={onStudentClick}
-            onTransferClick={onTransferClick}
-            activeDragId={activeDragId}
-            activeDragEntry={activeDragEntry}
-            transferMode={transferMode}
-            onTransferTargetClick={onTransferTargetClick}
-            getKoushuInfo={getKoushuInfo}
-            isAbsent={absenceKeySet?.has(`${date}|${timeSlot.id}|${group.teacher.id}`) ?? false}
-            onToggleAbsence={
-              onToggleAbsence && !group.teacher.id.startsWith('__unassigned__')
-                ? () => onToggleAbsence(date, timeSlot.id, group.teacher.id)
-                : undefined
-            }
-            koushuPlacing={koushuPlacing}
-            onKoushuPlaceClick={
-              onKoushuPlaceWithTeacher && !group.teacher.id.startsWith('__unassigned__')
-                ? () => onKoushuPlaceWithTeacher(group.teacher.id)
-                : undefined
-            }
-          />
-        ))}
-        {!transferMode && (
+    <div
+      className={cellClass}
+      onClick={koushuPlacing && onCellPlace ? () => onCellPlace() : undefined}
+      title={
+        koushuPlacing
+          ? placeability?.ok
+            ? '背景クリックで担当未決定として落とす／講師カードをクリックするとその講師で配置'
+            : (placeability?.reason ?? '配置できません')
+          : undefined
+      }
+    >
+      {/* 未配置カウントバッジ（セル最上部）。クリックでチップ展開 */}
+      {unassigned.length > 0 && (
+        <>
           <button
             type="button"
+            className={styles.unplacedBadge}
             onClick={(e) => {
               e.stopPropagation();
-              onAddTeacher(teacherGroups.map((g) => g.teacher.id));
+              setUnplacedOpen((v) => !v);
             }}
-            className="w-full py-1 text-[10px] text-gray-300 hover:text-gray-500 rounded-lg transition-colors duration-200"
+            title="このコマの未配置生徒。展開してチップを講師カードへドラッグ"
           >
-            + 講師追加
+            <span className={styles.unplacedDot} />
+            未配置 {unassigned.length}
           </button>
-        )}
-
-        {/* 未配置エントリプール (このコマ分)
-            講師カードの直下に置き、「ここの未配置」を即座に視認できるようにする。
-            チップをドラッグして上の講師カードに落とすと割当できる。 */}
-        {unassigned.length > 0 && (
-          <div
-            className="pt-1 mt-1 border-t border-dashed border-warning/40"
-            title="このコマの未配置生徒。講師カードへドラッグして割当"
-          >
-            <div className="flex items-center gap-1 mb-1 text-[10px] text-warning font-semibold">
-              <span className="inline-block w-1 h-1 rounded-full bg-warning animate-pulse" />
-              未配置 {unassigned.length}
-            </div>
-            <div className="flex flex-wrap gap-1">
+          {unplacedOpen && (
+            <div className={styles.unplacedChips}>
               {unassigned.map((entry) => (
                 <UnassignedChip key={entry.id} entry={entry} subjectNameById={subjectNameById} />
               ))}
             </div>
-          </div>
-        )}
-      </div>
+          )}
+        </>
+      )}
+
+      {blocksNode}
+
+      {!transferMode && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onAddTeacher(teacherGroups.map((g) => g.teacher.id));
+          }}
+          className={styles.addTeacherBar}
+        >
+          <Plus size={9} /> 講師
+        </button>
+      )}
     </div>
   );
 });

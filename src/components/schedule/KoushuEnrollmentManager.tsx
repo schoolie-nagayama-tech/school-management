@@ -19,6 +19,9 @@ import {
   getStudentRegularSchedule,
   type KoushuPeriodInfo,
 } from '@/lib/api/koushu-period';
+// Phase A: 講習申込は individual/group の2列固定（ユーザー定義形態は講習スコープ外）。
+// 他形態データが来ても混入しないよう定数で判定する。
+import { INDIVIDUAL_FORMATION, GROUP_FORMATION } from '@/types/schedule';
 import { useMasterData } from '@/contexts/MasterDataContext';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -99,8 +102,10 @@ export function KoushuEnrollmentManager() {
   const studentRows = useMemo<StudentRow[]>(() => {
     const map = new Map<string, StudentRow>();
     for (const e of enrollments) {
+      // 講習申込は個別/集団の2値のみ扱う。ユーザー定義形態が混ざっても無視して2列を汚さない。
+      if (e.formation !== INDIVIDUAL_FORMATION && e.formation !== GROUP_FORMATION) continue;
       const g = map.get(e.student_id) ?? { student_id: e.student_id, student: e.student };
-      if (e.formation === 'group') g.group = e;
+      if (e.formation === GROUP_FORMATION) g.group = e;
       else g.individual = e;
       map.set(e.student_id, g);
     }
@@ -164,9 +169,9 @@ export function KoushuEnrollmentManager() {
   const editInitialRows = (r: StudentRow): EnrollmentRow[] => {
     const rows: EnrollmentRow[] = [];
     if (r.individual?.koma_by_subject)
-      rows.push({ formation: 'individual', komaBySubject: r.individual.koma_by_subject });
+      rows.push({ formation: INDIVIDUAL_FORMATION, komaBySubject: r.individual.koma_by_subject });
     if (r.group?.koma_by_subject)
-      rows.push({ formation: 'group', komaBySubject: r.group.koma_by_subject });
+      rows.push({ formation: GROUP_FORMATION, komaBySubject: r.group.koma_by_subject });
     return rows;
   };
 

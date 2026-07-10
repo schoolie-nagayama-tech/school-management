@@ -1,0 +1,1037 @@
+/*
+ * 座席表 高密度レイアウト（Phase U）。
+ * 正典モック docs/mockups/schedule-density-v8.html の CSS を CSS Module へ移植したもの。
+ * 文字サイズは「小」固定（モックの :root.fs-small 相当）。標準/小トグルは実装しない方針。
+ *
+ * 3層サーフェス:
+ *   ボード領域 = グレーキャンバス(--sd-canvas) / 日セル = 薄面(--sd-cell-bg) / 講師カード = 白(--surface-raised)+輪郭+影
+ * 派生トークン(--sd-*) は globals.css の oklch 体系から派生（モック v6 以降と同一系）。
+ */
+
+/* ルート要素に密度用の派生トークンを載せる（子へカスケード） */
+.root {
+  --sd-canvas: oklch(90.5% 0.004 27);
+  --sd-cell-bg: oklch(97.5% 0.003 27);
+  --sd-cell-border: oklch(84% 0.007 27);
+  --sd-card-border: oklch(76% 0.01 27);
+  --sd-head-bg: oklch(93.5% 0.005 27);
+  --sd-chip-bg: oklch(93% 0.004 27);
+  --sd-stripe: oklch(97.5% 0.003 27);
+  --sd-card-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  --sd-ok-bg: oklch(93% 0.05 145);
+  --sd-ok-border: var(--success);
+  --sd-ok-text: oklch(42% 0.12 145);
+  --sd-ok-accent: var(--success);
+  --sd-warn-bg: var(--warning-subtle);
+  --sd-warn-text: oklch(48% 0.11 80);
+  --sd-warn-border: oklch(80% 0.11 80);
+  --sd-danger-bg: var(--danger-subtle);
+  --sd-danger-text: oklch(45% 0.16 27);
+  --sd-danger-border: oklch(82% 0.09 27);
+  --sd-today-bg: var(--info-subtle);
+  --sd-today-text: var(--info);
+  --sd-today-border: oklch(80% 0.07 250);
+  --sd-transfer-row-bg: oklch(94.5% 0.035 250);
+  --sd-absent-row-bg: oklch(93% 0.004 27);
+  --sd-fs-name: 10.5px;
+  --sd-fs-tname: 11.5px;
+  --sd-fs-meta: 9.5px;
+  --sd-fs-chip: 9px;
+  --sd-fs-tiny: 9px;
+  --sd-row-h: 18px;
+  --sd-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+@media (prefers-color-scheme: dark) {
+  .root {
+    --sd-canvas: oklch(13% 0.008 27);
+    --sd-cell-bg: oklch(20% 0.011 27);
+    --sd-cell-border: oklch(36% 0.012 27);
+    --sd-card-border: oklch(48% 0.014 27);
+    --sd-head-bg: oklch(31% 0.013 27);
+    --sd-chip-bg: oklch(30% 0.012 27);
+    --sd-stripe: oklch(27% 0.012 27);
+    --sd-card-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+    --sd-ok-bg: oklch(32% 0.06 145);
+    --sd-ok-border: oklch(60% 0.13 145);
+    --sd-ok-text: oklch(80% 0.13 145);
+    --sd-ok-accent: oklch(68% 0.15 145);
+    --sd-warn-bg: oklch(30% 0.06 80);
+    --sd-warn-text: oklch(78% 0.15 80);
+    --sd-warn-border: oklch(45% 0.1 80);
+    --sd-danger-bg: oklch(30% 0.07 27);
+    --sd-danger-text: oklch(72% 0.15 27);
+    --sd-danger-border: oklch(45% 0.12 27);
+    --sd-today-bg: oklch(28% 0.055 250);
+    --sd-today-text: oklch(75% 0.12 250);
+    --sd-today-border: oklch(45% 0.1 250);
+    --sd-transfer-row-bg: oklch(32% 0.07 250);
+    --sd-absent-row-bg: oklch(35% 0.012 27);
+  }
+}
+
+/* ============ 盤面キャンバス（フルブリード） ============
+   角丸・枠・影は付けず、ページ背景そのものをキャンバス色として画面端まで塗る。
+   上端の境界は sticky ツールバーの下端ボーダーが担う。左右余白は最小(10px)。
+   盤面が短くてもキャンバス色が下に途切れないよう最低高さを確保する。 */
+.boardCanvas {
+  background: var(--sd-canvas);
+  padding: 6px 10px 16px;
+  min-height: calc(100vh - 180px);
+}
+/* ボード本体。内部スクロールはやめ、ページ全体のスクロールで流す。
+   転置モードの日行スナップは document スクロールへ移設
+   （scroll-snap-type はビュー側の useEffect で html 要素に 'y proximity' を設定）。 */
+.boardArea {
+  min-width: 0;
+}
+
+/* --- 現行(日=列): 行=時限、列=曜日 --- */
+.weekGrid {
+  display: grid;
+  gap: 2px 10px;
+  align-content: start;
+}
+
+/* --- 転置(日=行): 行=曜日、列=時限（＋細い折りたたみ縦バー列） --- */
+.weekGridT {
+  display: grid;
+  gap: 2px 8px;
+  align-content: start;
+}
+/* 時限ヘッダーは本体グリッドから分離した sticky 行（ページスクロール基準）。
+   sticky ツールバーの実測高さぶん下に貼り付く（--sd-sticky-top はビュー側で注入）。 */
+.tStickyHead {
+  position: sticky;
+  top: var(--sd-sticky-top, 0px);
+  z-index: 15;
+  background: var(--sd-canvas);
+  padding-bottom: 4px;
+}
+.slotHeadT {
+  background: var(--sd-head-bg);
+  border: 1px solid var(--sd-cell-border);
+  border-radius: 4px;
+  min-height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  font-size: var(--sd-fs-tname);
+  font-weight: 700;
+  color: var(--text-heading);
+  padding: 2px 4px;
+}
+.slotHeadT .slotHeadTime {
+  font-size: var(--sd-fs-meta);
+  font-weight: 500;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+.vbarHead {
+  background: var(--sd-head-bg);
+  border: 1px solid var(--sd-cell-border);
+  border-radius: 4px;
+  min-height: 20px;
+}
+/* 曜日行ヘッダー（左端の縦積みラベル）。日単位スナップの代表点 */
+.dayLabelT {
+  background: var(--sd-head-bg);
+  border: 1px solid var(--sd-cell-border);
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  scroll-snap-align: start;
+  /* ページスクロールのスナップ時に sticky ツールバー＋時限見出しの下に頭出しする */
+  scroll-margin-top: calc(var(--sd-sticky-top, 0px) + 32px);
+  position: relative;
+}
+.dayLabelT .dDate {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-heading);
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+.dayLabelT .dDay {
+  font-size: var(--sd-fs-meta);
+  font-weight: 500;
+  color: var(--text-muted);
+}
+.dayLabelT.today {
+  background: var(--sd-today-bg);
+  border-color: var(--sd-today-border);
+}
+.dayLabelT.today .dDate,
+.dayLabelT.today .dDay {
+  color: var(--sd-today-text);
+}
+/* 転置時の当日行: セルにも薄青の面を敷いて行ごとハイライト */
+.dayCell.todayRow {
+  background: var(--sd-today-bg);
+  border-color: var(--sd-today-border);
+}
+/* 1・2限の細い縦バー（本体グリッドの日行を縦断） */
+.collapsedVbar {
+  background: var(--sd-cell-bg);
+  border: 1px solid var(--sd-cell-border);
+  border-radius: 4px;
+  writing-mode: vertical-rl;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--sd-fs-meta);
+  letter-spacing: 0.12em;
+  color: var(--text-faint);
+  padding: 8px 2px;
+  cursor: default;
+}
+/* セル内の動的パッキング: 列幅~128pxを保って入るだけ横に並べ、順序保存で折り返す */
+.tPack {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(128px, 1fr));
+  gap: 3px;
+  align-items: start;
+}
+
+/* 曜日ヘッダー（日=列モード） */
+.dayHead {
+  background: var(--sd-head-bg);
+  border: 1px solid var(--sd-cell-border);
+  border-radius: 4px;
+  text-align: center;
+  padding: 1px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-heading);
+  min-height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  position: relative;
+}
+.dayHead .dDate {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.dayHead .dDay {
+  font-size: var(--sd-fs-meta);
+  color: var(--text-muted);
+  font-weight: 500;
+}
+.dayHead.today {
+  background: var(--sd-today-bg);
+  border-color: var(--sd-today-border);
+  color: var(--sd-today-text);
+}
+.dayHead.today .dDay {
+  color: var(--sd-today-text);
+  opacity: 0.75;
+}
+.cornerCell {
+  min-height: 20px;
+}
+
+/* 折りたたみ行（日=列モード：授業なし時限の横バー） */
+.slotCollapsed {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 1px 10px;
+}
+.slotCollapsedLabel {
+  background: var(--sd-head-bg);
+  border: 1px solid var(--sd-cell-border);
+  border-radius: 4px;
+  font-size: var(--sd-fs-meta);
+  font-weight: 700;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  line-height: 1.15;
+}
+.collapsedBar {
+  background: var(--sd-cell-bg);
+  border: 1px solid var(--sd-cell-border);
+  border-radius: 4px;
+  min-height: 16px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 10px;
+  font-size: 10px;
+  color: var(--text-faint);
+  cursor: pointer;
+  transition: background 0.15s var(--sd-ease-out);
+  width: 100%;
+  text-align: left;
+}
+.collapsedBar:hover {
+  background: var(--surface-raised);
+}
+.chev {
+  transition: transform 0.15s var(--sd-ease-out);
+  display: inline-flex;
+}
+.chevOpen {
+  transform: rotate(90deg);
+}
+
+/* 時限ラベル（日=列モード・縦積みの細幅） */
+.slotLabelMain {
+  background: var(--sd-head-bg);
+  border: 1px solid var(--sd-cell-border);
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-heading);
+  text-align: center;
+  gap: 2px;
+  padding: 4px 1px;
+}
+.slotLabelMain .slotTime {
+  font-size: var(--sd-fs-meta);
+  font-weight: 500;
+  color: var(--text-muted);
+  line-height: 1.25;
+  font-variant-numeric: tabular-nums;
+}
+.slotLabelMain .slotTimeArrow {
+  color: var(--text-faint);
+  font-size: 9px;
+}
+
+/* 日セル（薄面） */
+.dayCell {
+  background: var(--sd-cell-bg);
+  border: 1px solid var(--sd-cell-border);
+  border-radius: 4px;
+  padding: 3px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.dayCell.empty {
+  background: transparent;
+  border-style: dashed;
+}
+.dayCellClosed {
+  background: var(--sd-cell-bg);
+  border: 1px solid var(--sd-cell-border);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-faint);
+  font-size: var(--sd-fs-meta);
+  min-height: 34px;
+}
+
+/* 日=列モードのセル内2列分割 */
+.cellCols {
+  display: flex;
+  gap: 5px;
+  align-items: flex-start;
+}
+.cellCol {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+/* ============ 講師ブロック（白カード + 輪郭 + 影） ============ */
+.tBlock {
+  border: 1px solid var(--sd-card-border);
+  border-radius: 3px;
+  overflow: hidden;
+  background: var(--surface-raised);
+  box-shadow: var(--sd-card-shadow);
+  transition: box-shadow 0.15s var(--sd-ease-out);
+}
+.tBlock.hasVacancy {
+  border-left: 3px solid var(--sd-ok-accent);
+}
+/* 担当未決定ブロック: 破線 + 薄 warning 着色 */
+.tBlock.unassigned {
+  border-style: dashed;
+  border-color: var(--sd-warn-border);
+  background: color-mix(in oklch, var(--warning-subtle) 55%, var(--surface-raised));
+}
+.tBlock.availableOnly {
+  background: color-mix(in oklch, var(--sd-cell-bg) 60%, var(--surface-raised));
+}
+/* 欠勤: 斜線パターン + 減光 */
+.tBlock.absentTeacher {
+  opacity: 0.7;
+  background-image: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 6px,
+    color-mix(in oklch, var(--danger) 8%, transparent) 6px,
+    color-mix(in oklch, var(--danger) 8%, transparent) 12px
+  );
+  border-color: color-mix(in oklch, var(--danger) 40%, transparent);
+}
+/* D&D / 配置モードのハイライト */
+.dropOk {
+  outline: 2px solid var(--success);
+  outline-offset: -1px;
+}
+.dropNg {
+  outline: 2px solid var(--danger);
+  outline-offset: -1px;
+  cursor: not-allowed;
+}
+.dropCandidate {
+  outline: 1px solid color-mix(in oklch, var(--success) 60%, transparent);
+  outline-offset: 1px;
+}
+.dropDim {
+  opacity: 0.3;
+  filter: grayscale(1);
+}
+.placeTarget {
+  cursor: pointer;
+  outline: 1px solid color-mix(in oklch, var(--info) 50%, transparent);
+}
+.placeTarget:hover {
+  outline: 2px solid var(--info);
+  background: var(--info-subtle);
+}
+
+.tHead {
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding: 0 44px 0 6px;
+  background: var(--sd-head-bg);
+  min-height: 22px;
+}
+.tHead.unassignedHead {
+  background: color-mix(in oklch, var(--warning-subtle) 70%, transparent);
+}
+.tName {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--sd-fs-tname);
+  font-weight: 600;
+  color: var(--text-heading);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tName.unassignedName {
+  color: var(--sd-warn-text);
+}
+.genderMark {
+  margin-left: 4px;
+  font-size: 9px;
+  font-weight: 700;
+}
+.genderMale {
+  color: oklch(55% 0.15 250);
+}
+.genderFemale {
+  color: oklch(60% 0.16 350);
+}
+.headRight {
+  position: absolute;
+  right: 3px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+.seatInput {
+  width: 24px;
+  height: 15px;
+  flex-shrink: 0;
+  border: 1px solid var(--border-default);
+  border-radius: 3px;
+  background: var(--surface-raised);
+  color: var(--text-muted);
+  font-size: 10px;
+  text-align: center;
+  padding: 0;
+  font-family: inherit;
+}
+.seatInput::placeholder {
+  color: var(--text-faint);
+}
+.seatInput:hover {
+  border-color: var(--border-strong);
+}
+.seatInput:focus {
+  outline: none;
+  border-color: var(--sd-today-border);
+  color: var(--text-heading);
+}
+.headBtn {
+  border: none;
+  background: transparent;
+  color: var(--text-faint);
+  width: 14px;
+  height: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 3px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition:
+    background 0.15s var(--sd-ease-out),
+    color 0.15s var(--sd-ease-out),
+    opacity 0.15s var(--sd-ease-out);
+}
+/* ✕ は通常時は隠し、カードホバーで出す */
+.tCloseBtn {
+  opacity: 0;
+}
+.tBlock:hover .tCloseBtn {
+  opacity: 1;
+}
+.tCloseBtn:hover {
+  background: var(--sd-danger-bg);
+  color: var(--sd-danger-text);
+}
+.absenceBtn:hover {
+  background: var(--sd-danger-bg);
+  color: var(--sd-danger-text);
+}
+.absenceBtn.on {
+  color: var(--danger);
+  opacity: 1;
+}
+.absentBadge {
+  position: absolute;
+  top: -7px;
+  left: 6px;
+  z-index: 10;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--danger);
+  color: #fff;
+  font-size: 8.5px;
+  font-weight: 700;
+  line-height: 13px;
+  pointer-events: none;
+}
+.reasonBadge {
+  position: absolute;
+  top: -7px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--danger);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 14px;
+  white-space: nowrap;
+  box-shadow: var(--sd-card-shadow);
+  pointer-events: none;
+}
+
+/* ============ 生徒行（1行表示） ============ */
+.sRow {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  min-height: var(--sd-row-h);
+  padding: 0 4px;
+  font-size: var(--sd-fs-name);
+  line-height: var(--sd-row-h);
+  border-top: 1px solid var(--border-default);
+  white-space: nowrap;
+  background: var(--surface-raised);
+}
+.sRow:nth-child(even) {
+  background: var(--sd-stripe);
+}
+.clickable {
+  cursor: pointer;
+}
+.clickable:hover {
+  background: var(--surface-hover);
+}
+.sName {
+  font-weight: 500;
+  color: var(--text-heading);
+  flex-shrink: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sGrade {
+  color: var(--text-muted);
+  font-size: var(--sd-fs-meta);
+  flex-shrink: 0;
+}
+.sBadge {
+  font-size: 8.5px;
+  font-weight: 700;
+  padding: 0 3px;
+  border-radius: 2px;
+  flex-shrink: 0;
+  line-height: 12px;
+}
+.sBadge.trial {
+  background: var(--sd-warn-bg);
+  color: var(--sd-warn-text);
+}
+/* 種別バッジ（テスト対策/追加授業/体験/仮）は Tailwind の scheduleBadges 色をそのまま使うため、
+   ここでは配置だけ整える最小のラッパを用意 */
+.kindBadge {
+  flex-shrink: 0;
+  padding: 0 3px;
+  border-radius: 2px;
+  font-size: 8.5px;
+  font-weight: 700;
+  line-height: 12px;
+}
+
+/* Phase R: 45分授業の前後半チップ（グレー系。科目チップより控えめ）。 */
+.halfChip {
+  flex-shrink: 0;
+  padding: 0 3px;
+  height: 14px;
+  line-height: 12px;
+  display: inline-flex;
+  align-items: center;
+  font-size: var(--sd-fs-chip);
+  font-weight: 700;
+  border-radius: 3px;
+  border: 1px solid var(--border-default);
+  background: var(--surface-sunken, var(--sd-cell-bg));
+  color: var(--text-muted);
+}
+/* Phase R: 1対1マーカー（極小テキスト。学年の隣）。 */
+.ratioTag {
+  flex-shrink: 0;
+  font-size: 8.5px;
+  font-weight: 700;
+  line-height: 12px;
+  letter-spacing: -0.02em;
+  color: var(--text-muted);
+}
+/* Phase R: 片半だけ空いた空席（前45/後45）は全空席より控えめに（面を薄く）。 */
+.seatEmptyHalf {
+  opacity: 0.85;
+  border-style: dashed;
+}
+
+/* 行色（状態）: 振替=青 / 欠席=グレー+打消し / 体験=success系 */
+.transferRow {
+  background: var(--sd-transfer-row-bg);
+}
+.clickable.transferRow:hover {
+  background: var(--sd-transfer-row-bg);
+  filter: brightness(0.96);
+}
+.trialRow {
+  background: var(--success-subtle);
+}
+.clickable.trialRow:hover {
+  background: var(--success-subtle);
+  filter: brightness(0.97);
+}
+.absent {
+  background: var(--sd-absent-row-bg);
+}
+.clickable.absent:hover {
+  background: var(--sd-absent-row-bg);
+  filter: brightness(0.96);
+}
+.absent .sName {
+  text-decoration: line-through;
+  color: var(--text-faint);
+}
+.absent .sGrade,
+.absent .subjChip {
+  opacity: 0.55;
+}
+/* 振替元（移動済み）: 減光 + 打消し */
+.transferredOut {
+  opacity: 0.6;
+}
+.transferredOut .sName {
+  text-decoration: line-through;
+  color: var(--text-faint);
+}
+/* 下書き（仮配置） */
+.draftRow {
+  border: 1px dashed var(--info);
+  background: var(--info-subtle);
+}
+.dueText {
+  font-size: var(--sd-fs-tiny);
+  font-weight: 700;
+  color: var(--sd-danger-text);
+  flex-shrink: 0;
+  margin-left: auto;
+}
+.metaTag {
+  font-size: var(--sd-fs-tiny);
+  color: var(--info);
+  flex-shrink: 0;
+}
+.koushuTag {
+  flex-shrink: 0;
+  margin-left: auto;
+  font-size: var(--sd-fs-tiny);
+  font-weight: 700;
+  color: var(--info);
+  background: var(--info-subtle);
+  padding: 0 3px;
+  border-radius: 3px;
+}
+
+/* 空席プレースホルダ行（破線 + 緑面）。D&D ドロップ先 / クリックで生徒追加 */
+.seatEmpty {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--sd-ok-bg);
+  border: 1.5px dashed var(--sd-ok-border);
+  border-radius: 2px;
+  margin: 1px 2px;
+  min-height: var(--sd-row-h);
+  padding: 0 4px;
+  color: var(--sd-ok-text);
+  font-size: var(--sd-fs-meta);
+  font-weight: 600;
+  cursor: pointer;
+  transition: filter 0.15s var(--sd-ease-out);
+}
+.seatEmpty:hover {
+  filter: brightness(0.97);
+}
+
+/* 科目カラーチップ（漢字ラベル併記） */
+.subjChip {
+  font-size: var(--sd-fs-chip);
+  font-weight: 600;
+  padding: 0 3px;
+  height: 14px;
+  line-height: 12px;
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  flex-shrink: 0;
+  max-width: 60px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.subjIndigo {
+  background: #e9e9fb;
+  color: #4547b0;
+  border-color: #cdcdf0;
+}
+.subjBlue {
+  background: #e5eefb;
+  color: #2c5fb0;
+  border-color: #c6d8f2;
+}
+.subjEmerald {
+  background: #e3f4e9;
+  color: #1e7a45;
+  border-color: #c0e3cd;
+}
+.subjTeal {
+  background: #d5efef;
+  color: #136a72;
+  border-color: #aedddd;
+}
+.subjAmber {
+  background: #f8e9cd;
+  color: #8a5f0a;
+  border-color: #ecd4a2;
+}
+.subjViolet {
+  background: #eeeafa;
+  color: #6243b5;
+  border-color: #d7cdf2;
+}
+.subjGray {
+  background: #efedec;
+  color: #6b6462;
+  border-color: #dcd8d6;
+}
+@media (prefers-color-scheme: dark) {
+  .subjIndigo {
+    background: #26264a;
+    color: #a3a5ee;
+    border-color: #3d3d6b;
+  }
+  .subjBlue {
+    background: #1e2c44;
+    color: #8fb4ee;
+    border-color: #2e4468;
+  }
+  .subjEmerald {
+    background: #1c322a;
+    color: #7fd0a0;
+    border-color: #2a4a3a;
+  }
+  .subjTeal {
+    background: #163233;
+    color: #7fcdd4;
+    border-color: #24494b;
+  }
+  .subjAmber {
+    background: #3a2f14;
+    color: #e5c069;
+    border-color: #55461f;
+  }
+  .subjViolet {
+    background: #2b2440;
+    color: #b6a0ee;
+    border-color: #3f355c;
+  }
+  .subjGray {
+    background: #2a2830;
+    color: #b6b1b7;
+    border-color: #3b3942;
+  }
+}
+
+/* 講師追加の細バー */
+.addTeacherBar {
+  min-height: 14px;
+  border: 1px dashed var(--sd-cell-border);
+  border-radius: 3px;
+  font-size: 9px;
+  color: var(--text-faint);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  cursor: pointer;
+  transition:
+    background 0.15s var(--sd-ease-out),
+    color 0.15s var(--sd-ease-out);
+  margin-top: auto;
+  width: 100%;
+}
+.addTeacherBar:hover {
+  background: var(--surface-raised);
+  color: var(--text-muted);
+}
+
+/* 未配置カウントバッジ + 展開チップ */
+.unplacedBadge {
+  align-self: flex-start;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--sd-warn-bg);
+  color: var(--sd-warn-text);
+  cursor: pointer;
+  border: 1px solid var(--sd-warn-border);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.unplacedBadge:hover {
+  filter: brightness(0.97);
+}
+.unplacedDot {
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  background: var(--warning);
+  display: inline-block;
+}
+.unplacedChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  padding: 2px 0;
+}
+.unplacedChip {
+  font-size: var(--sd-fs-tiny);
+  padding: 1px 5px;
+  border-radius: 3px;
+  border: 1px dashed var(--text-faint);
+  color: var(--text-muted);
+  background: var(--surface-raised);
+  cursor: grab;
+}
+.unplacedChip:active {
+  cursor: grabbing;
+}
+.unplacedChip.dragging {
+  opacity: 0.3;
+}
+
+/* 転置モードのセルは1画面制約なしなので空気を入れて読みやすく */
+.weekGridT .dayCell {
+  padding: 4px;
+  gap: 4px;
+}
+.weekGridT .addTeacherBar {
+  min-height: 14px;
+  font-size: 9px;
+}
+
+/* ============ 形態ボード（小集団・プログラミング等のクラス枠カード） ============
+   正典モック docs/mockups/schedule-density-v8.html の .group-cell / .g-card を移植。
+   1セル = その (日付×コマ) の全クラス枠。1カード = 1講師のクラス（講師1名＋生徒N名）。 */
+.groupCell {
+  background: var(--sd-cell-bg);
+  border: 1px solid var(--sd-cell-border);
+  border-radius: 4px;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.groupCell.empty {
+  background: transparent;
+  border-style: dashed;
+}
+.groupCell.todayRow {
+  background: var(--sd-today-bg);
+  border-color: var(--sd-today-border);
+}
+/* 転置（日=行）時はセルが広いのでカード幅を上限で抑える */
+.weekGridT .groupCell {
+  padding: 5px;
+}
+.weekGridT .gCard {
+  max-width: 280px;
+}
+
+/* コマ時間ラベル（形態ボード用。個別の slotLabelMain と同型） */
+.groupSlotLabel {
+  background: var(--sd-head-bg);
+  border: 1px solid var(--sd-cell-border);
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-heading);
+  text-align: center;
+  gap: 2px;
+  padding: 3px 1px;
+}
+.groupSlotLabel .groupSlotTime {
+  font-size: var(--sd-fs-meta);
+  font-weight: 500;
+  color: var(--text-muted);
+  line-height: 1.25;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ＋クラス枠 の細バー */
+.addClassBar {
+  flex: 1;
+  min-height: 26px;
+  border: 1px dashed var(--sd-cell-border);
+  border-radius: 4px;
+  font-size: 10.5px;
+  color: var(--text-faint);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  cursor: pointer;
+  transition:
+    background 0.15s var(--sd-ease-out),
+    color 0.15s var(--sd-ease-out);
+  width: 100%;
+}
+.addClassBar:hover {
+  background: var(--sd-cell-bg);
+  color: var(--text-muted);
+}
+
+/* クラス枠カード（白カード + 輪郭 + 影） */
+.gCard {
+  border: 1px solid var(--sd-card-border);
+  border-radius: 3px;
+  overflow: hidden;
+  background: var(--surface-raised);
+  box-shadow: var(--sd-card-shadow);
+  display: flex;
+  flex-direction: column;
+}
+.gCard.hasVacancy {
+  border-left: 3px solid var(--sd-ok-accent);
+}
+.gCardHead {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 6px;
+  background: var(--sd-head-bg);
+  min-height: 22px;
+}
+.gTitle {
+  font-size: var(--sd-fs-tname);
+  font-weight: 700;
+  color: var(--text-heading);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.gCap {
+  font-size: var(--sd-fs-chip);
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 999px;
+  background: var(--sd-chip-bg);
+  color: var(--text-muted);
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+.gCap.openSlots {
+  background: var(--sd-ok-bg);
+  color: var(--sd-ok-text);
+}
+.gTeacher {
+  font-size: var(--sd-fs-meta);
+  color: var(--text-muted);
+  padding: 2px 6px 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.gTeacher.unassignedName {
+  color: var(--sd-warn-text);
+}
+.gStudents {
+  padding: 1px 0 3px;
+}
+/* 残席の圧縮表記（空席行を最大2行 + 「残N」） */
+.gRemain {
+  font-size: var(--sd-fs-tiny);
+  color: var(--sd-ok-text);
+  font-weight: 700;
+  padding: 1px 6px 2px;
+}

@@ -17,6 +17,8 @@ import { supabase } from '@/lib/supabase';
 import { fetchAllPaged, fetchAllInChunks } from '@/lib/utils/supabasePaging';
 import type { SeasonType } from '@/types/database';
 import type { ScheduleEntryFormation } from '@/types/schedule';
+// Phase A: 講習は個別のみ対象。'individual' 直値を定数参照に置換（意図は現状維持）。
+import { INDIVIDUAL_FORMATION } from '@/types/schedule';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabase as any;
@@ -97,7 +99,8 @@ export async function estimateRegularKomaInPeriod(
     .from('schedule_regular_patterns')
     .select('id')
     .eq('student_id', studentId)
-    .eq('formation', 'individual');
+    // 講習の増コマ概算は個別コマ数を基準にする（講習は個別のみ対象）
+    .eq('formation', INDIVIDUAL_FORMATION);
   const weekly = (data ?? []).length;
   return weekly * weeks;
 }
@@ -122,7 +125,8 @@ export async function getStudentRegularSchedule(studentId: string): Promise<
     )
     .eq('student_id', studentId)
     .eq('is_active', true)
-    .eq('formation', 'individual');
+    // 講習配置の参考にする通塾日程は個別のみ（講習は個別レーン）
+    .eq('formation', INDIVIDUAL_FORMATION);
   type Row = {
     day_of_week: number;
     subject_ids: string[] | null;

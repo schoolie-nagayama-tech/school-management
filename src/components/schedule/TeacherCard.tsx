@@ -1,18 +1,28 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useDroppable, useDraggable } from '@dnd-kit/core';
 import { DraggableStudentCard } from './DraggableStudentCard';
-import { Plus, GripVertical, UserX, UserCheck } from 'lucide-react';
+import { UserX, UserCheck, X, Plus } from 'lucide-react';
 import type { ScheduleEntry } from '@/types/schedule';
+import {
+  computeSeatOccupancy,
+  canPlaceEntry,
+  type SeatEntryInput,
+} from '@/lib/utils/seatOccupancy';
+import styles from './scheduleDensity.module.css';
+
+/** ScheduleEntry → 席計算入力（ratio/half_position）。 */
+function toSeatInput(e: ScheduleEntry): SeatEntryInput {
+  return { ratio: e.ratio === 1 ? 1 : 2, halfPosition: e.half_position ?? null };
+}
 
 /** 講師ブロックをドロップ先として識別するID（生徒D&D用） */
 const TEACHER_SLOT_DROP_PREFIX = 'teacher-slot-';
 
 /**
  * 「出勤可能だが授業なし」講師カードをドラッグソースとして識別するID。
- * D&Dで担当未決定セルに割当できるようにするため。
- * ドラッグペイロードは teacherId そのもの。
+ * D&Dで担当未決定セルに割当できるようにするため。ドラッグペイロードは teacherId そのもの。
  */
 const AVAIL_TEACHER_DRAG_PREFIX = 'avail-teacher-';
 
@@ -79,7 +89,6 @@ export interface TeacherCardProps {
   onAddStudent: () => void;
   onRemoveTeacher: () => void;
   onStudentClick: (entry: ScheduleEntry, e: React.MouseEvent) => void;
-  onTransferClick?: (entry: ScheduleEntry) => void;
   activeDragId: string | null;
   /** ドラッグ中の生徒エントリ（ドロップ可否・視覚フィードバック用） */
   activeDragEntry: ScheduleEntry | null;
@@ -96,6 +105,10 @@ export interface TeacherCardProps {
   koushuPlacing?: boolean;
   /** 配置モード中にこのカードをクリック→この講師で配置 */
   onKoushuPlaceClick?: () => void;
+  /** 座席番号（講師×日付、schedule_daily_booth_assignments 由来）。未指定なら入力欄を出さない */
+  seatNo?: string;
+  /** 座席番号の変更（保存）。未指定なら入力欄を出さない */
+  onSeatNoChange?: (value: string) => void;
 }
 
 export const TeacherCard = React.memo(function TeacherCard({
@@ -109,7 +122,6 @@ export const TeacherCard = React.memo(function TeacherCard({
   onAddStudent,
   onRemoveTeacher,
   onStudentClick,
-  onTransferClick,
   activeDragId: _activeDragId,
   activeDragEntry,
   transferMode,
@@ -119,12 +131,13 @@ export const TeacherCard = React.memo(function TeacherCard({
   onToggleAbsence,
   koushuPlacing,
   onKoushuPlaceClick,
+  seatNo,
+  onSeatNoChange,
 }: TeacherCardProps) {
   const dropId = getTeacherSlotId(date, timeSlotId, teacher.id);
   const { isOver, setNodeRef } = useDroppable({ id: dropId });
 
   // 「出勤可能だが授業なし」のカードはドラッグ可能（担当未決定セルへ割当する用途）。
-  // ドラッグソースID には date / slotId / teacherId を埋め込み、ドロップ受け側で同期解析できる形に。
   const dragId = getAvailableTeacherDragId(date, timeSlotId, teacher.id);
   const {
     attributes: dragAttrs,
@@ -135,58 +148,51 @@ export const TeacherCard = React.memo(function TeacherCard({
     id: dragId,
     disabled:
       !isAvailableOnly ||
-      !!koushuPlacing || // 配置モード中はドラッグ無効（クリックで配置するため）
+      !!koushuPlacing ||
       teacher.id === '__unassigned__' ||
       teacher.id.startsWith('__unassigned__:'),
   });
 
-  // 表示対象: キャンセル以外すべて（振替元 transferred_out も表示して取り消し線スタイルで見せる）
+  // 表示対象: キャンセル以外すべて（振替元 transferred_out も取り消し線で見せる）
   const displayEntries = entries.filter((e) => e.status !== 'cancelled');
   // 有効生徒数（満員・残席カウント用: 振替元は除く）
   const activeEntries = displayEntries.filter((e) => e.status !== 'transferred_out');
-  const canAddStudent = !isClosed && activeEntries.length < maxStudents;
-  // 担当未決定エントリのグループは特殊ID (__unassigned__ または __unassigned__:<entryId>) で識別。
-  // 「講師」ではなく「担当未決定」の枠として配色を変えて見せる。
+  // Phase R: 席占有（1対1/1対2・45分半コマ）。空席プレースホルダはこの vacancies を描画する。
+  const occupancy = useMemo(
+    () => computeSeatOccupancy(activeEntries.map(toSeatInput), maxStudents),
+    [activeEntries, maxStudents]
+  );
+  const canAddStudent = !isClosed && !occupancy.isFull;
   const isUnassigned = teacher.id === '__unassigned__' || teacher.id.startsWith('__unassigned__:');
   const displayName = isUnassigned
     ? teacher.display_name || '担当未決定'
     : teacher.display_name || teacher.email || '—';
 
   // D&D 制約チェック。基本制約 + 講師×生徒の相性制約。
-  // 不一致なら canDrop=false で赤 ring 表示、ドロップ無効。
-  const dropConstraint = useMemo<{
-    canDrop: boolean;
-    reason: string | null;
-  }>(() => {
+  const dropConstraint = useMemo<{ canDrop: boolean; reason: string | null }>(() => {
     if (!activeDragEntry) return { canDrop: false, reason: null };
-    // 同じセル（移動元）にドロップ → 無意味
     const isSourceBlock =
       activeDragEntry.entry_date === date &&
       activeDragEntry.time_slot_id === timeSlotId &&
       activeDragEntry.teacher_id === teacher.id;
     if (isSourceBlock) return { canDrop: false, reason: null };
-    // 既に同生徒がこの講師にいる → 二重不可
     const hasStudent = activeEntries.some((e) => e.student_id === activeDragEntry.student_id);
     if (hasStudent) return { canDrop: false, reason: '同じ生徒が既に在籍' };
-    // 満員
-    if (activeEntries.length >= maxStudents) return { canDrop: false, reason: '満員' };
-
-    // 担当未決定セルへの講師D&D（旧フロー）はそもそも生徒エントリでないのでここに来ない
-
-    // 講師の指導可能科目チェック (生徒の subject_ids と1つも重複しなければ不可)
-    // teachable_subject_ids が空/未設定の講師は「全科目可」扱い
+    // Phase R: 単純な人数比較ではなく席占有で判定（1対1は満席・45分は前後半で1席共有）。
+    if (!canPlaceEntry(activeEntries.map(toSeatInput), toSeatInput(activeDragEntry), maxStudents)) {
+      return {
+        canDrop: false,
+        reason: activeEntries.some((e) => e.ratio === 1) ? '1対1のため不可' : '満員',
+      };
+    }
     const teachable = teacher.teachable_subject_ids ?? [];
     if (teachable.length > 0 && activeDragEntry.subject_ids?.length > 0) {
       const teachableSet = new Set(teachable);
       const matches = activeDragEntry.subject_ids.some((sid) => teachableSet.has(sid));
       if (!matches) return { canDrop: false, reason: '指導科目外' };
     }
-
-    // 担当除外講師にこの講師が含まれていれば不可
     const excluded = activeDragEntry.student?.excluded_teacher_ids ?? [];
     if (excluded.includes(teacher.id)) return { canDrop: false, reason: '担当除外指定' };
-
-    // 性別希望チェック (希望ありで講師性別が不一致なら不可)
     const preferred = activeDragEntry.student?.preferred_teacher_gender;
     if (preferred && teacher.gender && teacher.gender !== preferred) {
       return { canDrop: false, reason: `${preferred === 'male' ? '男性' : '女性'}講師希望` };
@@ -204,27 +210,18 @@ export const TeacherCard = React.memo(function TeacherCard({
   ]);
   const canDrop = dropConstraint.canDrop;
 
-  // 「出勤可能講師カードを担当未決定セルにドロップする」ためのフラグ。
-  // この間は対象セルをハイライトして「ここに落とせる」と伝える。
   const isUnassignedDropTarget =
     teacher.id === '__unassigned__' || teacher.id.startsWith('__unassigned__:');
   const isTeacherDragActive = _activeDragId?.startsWith('avail-teacher-') ?? false;
   const canAcceptTeacherDrop = isUnassignedDropTarget && isTeacherDragActive;
 
-  const remaining = maxStudents - activeEntries.length;
-  const slotLabel = remaining === 0 ? '満員' : `残${remaining}`;
+  const hasVacancy = !occupancy.isFull;
 
-  // 講師の性別ラベル（M/F アイコン用）。
-  // 指導可能科目は D&D 制約チェックには使うが、座席表カード上には表示しない方針。
   const genderLabel = teacher.gender === 'male' ? '男' : teacher.gender === 'female' ? '女' : '';
 
   const isOverAndCanDrop = isOver && (canDrop || canAcceptTeacherDrop);
   const isOverAndCannotDrop = isOver && !canDrop && !canAcceptTeacherDrop && activeDragEntry;
 
-  // K-2: ドラッグ中の「探索ハイライト」
-  // 生徒カードをドラッグしている最中、ドロップ可能なセルは ring を出して目立たせ、
-  // 不可能なセルは半透明 + グレースケールで目立たなくする（ノイズ削減）。
-  // canDrop=true（同じセル除く）以外で false の場合だけ抑制をかける。
   const isDragInProgress = !!activeDragEntry;
   const isSameCell =
     activeDragEntry &&
@@ -237,212 +234,187 @@ export const TeacherCard = React.memo(function TeacherCard({
     if (transferMode && onTransferTargetClick) onTransferTargetClick(date, timeSlotId, teacher.id);
   };
 
-  // 講習配置モード：このカードをクリック→この講師で配置（バブリングでセルの担当未決定配置が発火しないよう止める）
+  // 講習配置モード：このカードをクリック→この講師で配置
   const handleKoushuPlaceClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     onKoushuPlaceClick?.();
   };
 
-  // 出勤可能だが授業なし → コンパクトな1行バッジ表示。
-  // ドラッグ可能。担当未決定セル（破線warningの「未定: 生徒名」）にドロップすると割当できる。
-  if (isAvailableOnly) {
-    // ドラッグソース (setDragRef) とドロップターゲット (setNodeRef) を同じ要素に統合する。
-    // 自分自身に落とすことは canDrop の同セル判定で弾かれるので問題ない。
-    const combinedRef = (node: HTMLDivElement | null) => {
-      setDragRef(node);
-      setNodeRef(node);
-    };
-    return (
-      <div
-        ref={combinedRef}
-        {...dragAttrs}
-        {...dragListeners}
-        className={`
-          flex items-center gap-0.5 px-1.5 py-0.5 rounded-md border border-dashed border-gray-200
-          bg-gray-50/50 text-gray-400 cursor-grab active:cursor-grabbing
-          transition-[opacity,box-shadow,background-color] duration-150
-          ${isDragging ? 'opacity-40' : 'hover:bg-white hover:border-gray-300 hover:text-gray-600 hover:shadow-sm'}
-          ${transferMode ? 'cursor-pointer hover:border-[var(--primary)]/40 hover:bg-gray-50' : ''}
-          ${canDrop && !isOver ? 'ring-1 ring-emerald-400/60 ring-offset-1' : ''}
-          ${isOverAndCanDrop ? 'ring-2 ring-green-400 bg-green-50' : ''}
-          ${isOverAndCannotDrop ? 'ring-2 ring-red-400 bg-red-50 cursor-not-allowed' : ''}
-          ${isDimmedDuringDrag ? 'opacity-30 grayscale' : ''}
-          ${koushuPlacing ? 'cursor-pointer ring-1 ring-info/50 hover:ring-2 hover:ring-info hover:bg-info-subtle' : ''}
-        `}
-        onClick={
-          koushuPlacing ? handleKoushuPlaceClick : transferMode ? handleTransferClick : undefined
-        }
-        role={koushuPlacing || transferMode ? 'button' : undefined}
-        title={
-          koushuPlacing
-            ? 'クリックでこの講師に配置する'
-            : 'ドラッグして担当未決定セルに割当できます'
-        }
-      >
-        <GripVertical className="w-2.5 h-2.5 text-gray-300 flex-shrink-0" />
-        <span className="text-[11px] truncate flex-1 min-w-0">{displayName}</span>
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            onRemoveTeacher();
-          }}
-          className="flex-shrink-0 w-3.5 h-3.5 flex items-center justify-center rounded text-gray-300 hover:text-red-400 text-[10px]"
-          aria-label="講師を削除"
-        >
-          ×
-        </button>
-      </div>
-    );
-  }
+  // 座席番号のローカル状態（外部値が変わったら同期）。onBlur / Enter で親へ保存。
+  const [seatValue, setSeatValue] = useState(seatNo ?? '');
+  useEffect(() => {
+    setSeatValue(seatNo ?? '');
+  }, [seatNo]);
+  const commitSeat = () => {
+    if (onSeatNoChange && (seatValue ?? '') !== (seatNo ?? '')) onSeatNoChange(seatValue.trim());
+  };
+
+  const showSeatInput = !!onSeatNoChange && !isUnassigned && !isAvailableOnly;
+
+  const blockClass = [
+    styles.tBlock,
+    hasVacancy && !isUnassigned ? styles.hasVacancy : '',
+    isUnassigned ? styles.unassigned : '',
+    isAvailableOnly ? styles.availableOnly : '',
+    isAbsent ? styles.absentTeacher : '',
+    isOverAndCanDrop ? styles.dropOk : '',
+    isOverAndCannotDrop ? styles.dropNg : '',
+    (canDrop || canAcceptTeacherDrop) && !isOver ? styles.dropCandidate : '',
+    isDimmedDuringDrag ? styles.dropDim : '',
+    koushuPlacing && (onKoushuPlaceClick || isAvailableOnly) ? styles.placeTarget : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
+
+  const clickable = koushuPlacing
+    ? onKoushuPlaceClick
+      ? handleKoushuPlaceClick
+      : undefined
+    : transferMode && onTransferTargetClick
+      ? handleTransferClick
+      : undefined;
+
+  // 「出勤可能だが授業なし」→ ドラッグ可能ソース。ドロップターゲットも兼ねる（combinedRef）。
+  const combinedRef = (node: HTMLDivElement | null) => {
+    if (isAvailableOnly) setDragRef(node);
+    setNodeRef(node);
+  };
 
   return (
-    // 担当未決定セルのときは「セル全体」をドロップターゲットにする (ヘッダーも含む)。
-    // 通常の TeacherCard は body 内部 (.setNodeRef) だけが droppable で問題ないが、
-    // 担当未決定は学生1名で隙間が狭く、ヘッダー上に落としやすいので拡張する。
     <div
-      ref={isUnassigned ? setNodeRef : undefined}
-      className={`
-        group relative rounded-xl border transition-[box-shadow,background-color,border-color] duration-150 ease-out
-        ${
-          isUnassigned
-            ? // 担当未決定: 破線ボーダー + 薄い warning 着色で「決まっていない」を視覚化
-              'border-dashed border-warning bg-warning-subtle/40 shadow-sm hover:shadow-md hover:bg-warning-subtle/60'
-            : 'border-[color:color-mix(in_oklch,var(--primary)_25%,#e5e7eb)] bg-white shadow-sm hover:shadow-md hover:bg-gray-50'
-        }
-        ${transferMode ? 'cursor-pointer hover:border-[var(--primary)]/40 hover:bg-gray-50/50' : ''}
-        ${canAcceptTeacherDrop && !isOver ? 'ring-1 ring-info/30 ring-offset-1' : ''}
-        ${canDrop && !isOver ? 'ring-1 ring-emerald-400/60 ring-offset-1' : ''}
-        ${isDimmedDuringDrag ? 'opacity-30 grayscale' : ''}
-        ${isOverAndCanDrop ? 'ring-2 ring-green-400 bg-green-50/50' : ''}
-        ${isOverAndCannotDrop ? 'ring-2 ring-red-400 bg-red-50/50 cursor-not-allowed' : ''}
-        ${isAbsent ? 'opacity-60 bg-[repeating-linear-gradient(45deg,transparent,transparent_6px,color-mix(in_oklch,var(--danger)_8%,transparent)_6px,color-mix(in_oklch,var(--danger)_8%,transparent)_12px)] border-danger/40' : ''}
-        ${koushuPlacing && onKoushuPlaceClick ? 'cursor-pointer ring-1 ring-info/50 hover:ring-2 hover:ring-info' : ''}
-      `}
-      onClick={
-        koushuPlacing && onKoushuPlaceClick
-          ? handleKoushuPlaceClick
-          : transferMode && onTransferTargetClick
-            ? handleTransferClick
-            : undefined
-      }
-      role={
-        (koushuPlacing && onKoushuPlaceClick) || (transferMode && onTransferTargetClick)
-          ? 'button'
-          : undefined
-      }
+      ref={isUnassigned || isAvailableOnly ? combinedRef : undefined}
+      {...(isAvailableOnly ? dragAttrs : {})}
+      {...(isAvailableOnly && !koushuPlacing ? dragListeners : {})}
+      className={`${blockClass}${isDragging ? ' ' + styles.dropDim : ''}`}
+      onClick={clickable}
+      role={clickable ? 'button' : undefined}
       title={
-        koushuPlacing && onKoushuPlaceClick
+        koushuPlacing && (onKoushuPlaceClick || isAvailableOnly)
           ? 'クリックでこの講師に配置する'
           : isOverAndCannotDrop && dropConstraint.reason
-            ? `この講師には割当不可: ${dropConstraint.reason}`
-            : undefined
+            ? `割当不可: ${dropConstraint.reason}`
+            : isAvailableOnly
+              ? 'ドラッグして担当未決定セルに割当できます'
+              : undefined
       }
     >
-      {/* 欠勤バッジ：このコマで欠勤の講師に赤バッジを重ねる */}
-      {isAbsent && (
-        <div className="absolute -top-2 left-2 z-10 px-1.5 py-0.5 rounded-full bg-danger text-white text-[9px] font-bold shadow pointer-events-none">
-          欠勤
-        </div>
-      )}
-      {/* ドロップ拒否時に理由バッジを表示。短時間だけ出すミニトースト的な見せ方。 */}
+      {isAbsent && <div className={styles.absentBadge}>欠勤</div>}
       {isOverAndCannotDrop && dropConstraint.reason && (
-        <div className="absolute -top-2 left-1/2 -translate-x-1/2 z-10 px-2 py-0.5 rounded-full bg-red-500 text-white text-[10px] font-semibold shadow whitespace-nowrap pointer-events-none">
-          {dropConstraint.reason}
-        </div>
+        <div className={styles.reasonBadge}>{dropConstraint.reason}</div>
       )}
-      {/* ヘッダー：振替モード中もクリックで振替先を選べるよう onClick を設定 */}
+
+      {/* ヘッダー：講師名は中央寄せ、背景は生徒行より濃い（--sd-head-bg） */}
       <div
-        className="flex justify-between items-center px-1.5 py-1 border-b border-gray-100"
+        className={`${styles.tHead} ${isUnassigned ? styles.unassignedHead : ''}`}
         onClick={(e) => {
-          if (transferMode) {
+          if (transferMode && onTransferTargetClick) {
             e.stopPropagation();
-            if (onTransferTargetClick) onTransferTargetClick(date, timeSlotId, teacher.id);
+            onTransferTargetClick(date, timeSlotId, teacher.id);
           }
         }}
       >
-        <span
-          className={`min-w-0 truncate flex-1 text-xs font-medium ${isUnassigned ? 'text-warning' : 'text-gray-700'}`}
-        >
+        <span className={`${styles.tName} ${isUnassigned ? styles.unassignedName : ''}`}>
           {displayName}
-          {/* 性別アイコン（M/F） */}
           {genderLabel && (
             <span
-              className={`ml-1 inline-block text-[9px] font-bold align-middle ${
-                teacher.gender === 'male' ? 'text-blue-500' : 'text-pink-500'
-              }`}
+              className={`${styles.genderMark} ${teacher.gender === 'male' ? styles.genderMale : styles.genderFemale}`}
               title={`${genderLabel}性`}
             >
               {genderLabel}
             </span>
           )}
         </span>
-        <span className="flex-shrink-0 ml-1 text-[10px] text-gray-400 tabular-nums">
-          {slotLabel}
-        </span>
-        {/* 欠勤トグル：欠勤なら UserCheck（出勤に戻す）、出勤なら UserX（欠勤にする） */}
-        {onToggleAbsence && (
+        <span className={styles.headRight}>
+          {showSeatInput && (
+            <input
+              className={styles.seatInput}
+              title="座席番号（印刷時に講師名の隣に表示）"
+              maxLength={2}
+              placeholder="-"
+              value={seatValue}
+              onClick={(e) => e.stopPropagation()}
+              onChange={(e) => setSeatValue(e.target.value.replace(/[^0-9]/g, ''))}
+              onBlur={commitSeat}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+              }}
+            />
+          )}
+          {onToggleAbsence && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onToggleAbsence();
+              }}
+              className={`${styles.headBtn} ${styles.absenceBtn} ${isAbsent ? styles.on : ''}`}
+              aria-label={isAbsent ? '出勤に戻す' : '欠勤にする'}
+              title={isAbsent ? '出勤に戻す' : 'このコマを欠勤にする'}
+            >
+              {isAbsent ? <UserCheck size={11} /> : <UserX size={11} />}
+            </button>
+          )}
           <button
             type="button"
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              onToggleAbsence();
+              onRemoveTeacher();
             }}
-            className={`flex-shrink-0 ml-1 w-4 h-4 flex items-center justify-center rounded transition-colors ${
-              isAbsent
-                ? 'text-danger hover:bg-danger/10'
-                : 'text-gray-300 hover:text-danger hover:bg-danger/5'
-            }`}
-            aria-label={isAbsent ? '出勤に戻す' : '欠勤にする'}
-            title={isAbsent ? '出勤に戻す' : 'このコマを欠勤にする'}
+            className={`${styles.headBtn} ${styles.tCloseBtn}`}
+            aria-label="講師を削除"
+            title="この講師枠を削除"
           >
-            {isAbsent ? <UserCheck className="w-3 h-3" /> : <UserX className="w-3 h-3" />}
+            <X size={11} />
           </button>
-        )}
-        <button
-          type="button"
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            onRemoveTeacher();
-          }}
-          className="flex-shrink-0 ml-1 w-4 h-4 flex items-center justify-center rounded text-gray-300 hover:text-red-500 hover:bg-red-50 text-[10px]"
-          aria-label="講師を削除"
-        >
-          ×
-        </button>
+        </span>
       </div>
-      <div ref={setNodeRef} className="relative p-1 rounded-b-xl">
-        <div className="space-y-1">
-          {displayEntries.map((entry) => {
-            const ki = getKoushuInfo?.(entry.student_id);
+
+      {/* 本体（ドロップターゲット）。availableOnly は combinedRef で既にドロップ可能なので二重指定しない */}
+      <div ref={isUnassigned || isAvailableOnly ? undefined : setNodeRef}>
+        {displayEntries.map((entry) => {
+          const ki = getKoushuInfo?.(entry.student_id);
+          return (
+            <DraggableStudentCard
+              key={entry.id}
+              entry={entry}
+              onStudentClick={onStudentClick}
+              koushuEnrolled={ki?.enrolled}
+              koushuScheduled={ki?.scheduled}
+            />
+          );
+        })}
+
+        {/* 空席プレースホルダ行（破線+緑面）。Phase R: 席占有の vacancies を描画する。
+            'full'=丸ごと空き / 'first'=前半だけ空き / 'second'=後半だけ空き。
+            D&D のドロップ先はカード本体全体なので、この行に落としても割当が成立する。 */}
+        {!transferMode &&
+          !koushuPlacing &&
+          canAddStudent &&
+          occupancy.vacancies.map((v, i) => {
+            const label =
+              v.kind === 'first' ? '空席（前45）' : v.kind === 'second' ? '空席（後45）' : '空席';
+            const title =
+              v.kind === 'full'
+                ? '空席（クリックで生徒を追加 / 生徒行をドラッグしてここに割当）'
+                : `${label}（クリックで生徒を追加）`;
             return (
-              <DraggableStudentCard
-                key={entry.id}
-                entry={entry}
-                onStudentClick={onStudentClick}
-                onTransferClick={onTransferClick}
-                koushuEnrolled={ki?.enrolled}
-                koushuScheduled={ki?.scheduled}
-              />
+              <div
+                key={`empty-${v.kind}-${i}`}
+                className={`${styles.seatEmpty}${v.kind !== 'full' ? ' ' + styles.seatEmptyHalf : ''}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onAddStudent();
+                }}
+                role="button"
+                title={title}
+              >
+                <Plus size={10} />
+                {label}
+              </div>
             );
           })}
-        </div>
-
-        {canAddStudent && !transferMode && (
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onAddStudent();
-            }}
-            className="absolute bottom-1 right-1 w-6 h-6 rounded-full flex items-center justify-center bg-white border border-gray-200 text-gray-500 hover:text-[var(--primary)] hover:border-[var(--primary)]/30 opacity-0 group-hover:opacity-100 transition-opacity duration-200 shadow-sm"
-            aria-label="生徒を追加"
-          >
-            <Plus className="w-3.5 h-3.5" />
-          </button>
-        )}
       </div>
     </div>
   );

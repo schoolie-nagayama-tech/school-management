@@ -35,7 +35,8 @@ export interface ScheduleMatchProposal {
   proposal_date: string;
   time_slot_id: string;
   subject_ids: string[];
-  formation: 'individual' | 'group';
+  // Phase A: 形態の動的マスタ化に伴い union → string へ緩和（値は schedule_formations が管理）。
+  formation: string;
   kind: 'regular' | 'koushu';
   status: MatchProposalStatus;
   schedule_entry_id: string | null;
