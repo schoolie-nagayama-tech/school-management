@@ -27,6 +27,7 @@ import { getRecentUnprocessedResponses } from '@/lib/api/form-responses';
 import { getBulletinPosts } from '@/lib/api/bulletin';
 import type { BulletinPost } from '@/types/bulletin';
 import { getScheduleEntries } from '@/lib/api/schedule';
+import { getHomeworkTardyCounts, type HomeworkTardyCounts } from '@/lib/api/progress-sessions';
 import {
   getFormParticipation,
   getProposalFunnel,
@@ -785,6 +786,21 @@ function DetailView() {
     };
   }, [getSelectedSchoolIds]);
 
+  // 宿題忘れ・遅刻の期間集計（既定は直近1週間。トグルで1ヶ月に切り替え）
+  const [behaviorDays, setBehaviorDays] = useState<7 | 30>(7);
+  const [behavior, setBehavior] = useState<HomeworkTardyCounts | null>(null);
+  useEffect(() => {
+    const ids = getSelectedSchoolIds();
+    if (ids.length === 0) return;
+    let active = true;
+    getHomeworkTardyCounts(ids, behaviorDays)
+      .then((c) => active && setBehavior(c))
+      .catch(() => active && setBehavior({ homework: 0, tardy: 0, days: behaviorDays }));
+    return () => {
+      active = false;
+    };
+  }, [getSelectedSchoolIds, behaviorDays]);
+
   // フォーム参加率（模試/Vもぎ/増コマ の直近回。紐付き生徒/対象学年在籍）
   const [participation, setParticipation] = useState<FormParticipation[] | null>(null);
   useEffect(() => {
@@ -976,6 +992,67 @@ function DetailView() {
                 </Card>
               );
             })}
+          </div>
+
+          {/* 宿題忘れ・遅刻の件数集計（既定1週間 / トグルで1ヶ月）。授業単位の発生件数 */}
+          <SectionLabel
+            icon={ClipboardList}
+            right={
+              <div className="inline-flex overflow-hidden rounded-lg border border-border text-xs">
+                {([7, 30] as const).map((d) => (
+                  <button
+                    key={d}
+                    type="button"
+                    onClick={() => setBehaviorDays(d)}
+                    className={`px-2.5 py-1 font-medium transition-colors ${
+                      behaviorDays === d
+                        ? 'bg-ink text-text-on-primary'
+                        : 'bg-surface text-text-muted hover:bg-surface-hover'
+                    }`}
+                  >
+                    {d === 7 ? '1週間' : '1ヶ月'}
+                  </button>
+                ))}
+              </div>
+            }
+          >
+            宿題忘れ・遅刻
+          </SectionLabel>
+          <div className="grid grid-cols-2 gap-4">
+            <Card className="border-l-4 border-l-warning">
+              <CardContent className="py-4">
+                <div className="flex items-center gap-1.5 text-xs text-text-muted">
+                  <ClipboardList className="h-3.5 w-3.5" />
+                  宿題忘れ
+                </div>
+                <div className="mt-1 flex items-baseline gap-1">
+                  <span className="text-3xl font-bold text-text-heading">
+                    {behavior ? behavior.homework : '—'}
+                  </span>
+                  <span className="text-sm text-text-muted">件</span>
+                </div>
+                <div className="mt-0.5 text-xs text-text-faint">
+                  直近{behaviorDays === 7 ? '1週間' : '1ヶ月'}
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="border-l-4 border-l-danger">
+              <CardContent className="py-4">
+                <div className="flex items-center gap-1.5 text-xs text-text-muted">
+                  <Clock className="h-3.5 w-3.5" />
+                  遅刻
+                </div>
+                <div className="mt-1 flex items-baseline gap-1">
+                  <span className="text-3xl font-bold text-text-heading">
+                    {behavior ? behavior.tardy : '—'}
+                  </span>
+                  <span className="text-sm text-text-muted">件</span>
+                </div>
+                <div className="mt-0.5 text-xs text-text-faint">
+                  直近{behaviorDays === 7 ? '1週間' : '1ヶ月'}
+                </div>
+              </CardContent>
+            </Card>
           </div>
 
           {/* 在籍数の推移（昨対比）。経営の頭出しとして数値カラムに置く */}

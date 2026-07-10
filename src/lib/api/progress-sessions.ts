@@ -777,6 +777,57 @@ export async function getHomeworkTardyAlerts(
   return alerts;
 }
 
+/** 宿題忘れ・遅刻の期間集計（教室長ダッシュボードの集計項目用） */
+export interface HomeworkTardyCounts {
+  /** 集計対象期間内に「宿題未提出」フラグが付いた授業（セッション）の件数 */
+  homework: number;
+  /** 集計対象期間内に「遅刻」フラグが付いた授業（セッション）の件数 */
+  tardy: number;
+  /** 集計に使った日数（7=直近1週間 / 30=直近1ヶ月） */
+  days: number;
+}
+
+/**
+ * 直近 days 日間の宿題忘れ・遅刻の件数を教室（複数可）横断で集計する。
+ *
+ * データ源は progress_sessions（1 授業 = 1 行、session_date と homework_not_done / tardy を持つ）。
+ * student_textbooks を内部結合して school_id で絞り込み、フラグごとに head カウントだけを取る
+ * （行本体は取得しないので PostgREST の1000行上限に触れない）。
+ * 「宿題忘れの数」「遅刻の数」は授業単位の発生件数であり、生徒数ではない点に注意。
+ */
+export async function getHomeworkTardyCounts(
+  schoolIds: string[],
+  days: number
+): Promise<HomeworkTardyCounts> {
+  if (schoolIds.length === 0) return { homework: 0, tardy: 0, days };
+
+  // 期間の開始日（今日を含む直近 days 日）。7 → 今日-6, 30 → 今日-29
+  const from = new Date();
+  from.setDate(from.getDate() - (days - 1));
+  const fromStr = from.toISOString().slice(0, 10);
+
+  // 内部結合で school_id を絞ったうえで、フラグごとに件数のみ取得（head:true）
+  const countFor = async (column: 'homework_not_done' | 'tardy'): Promise<number> => {
+    const { count, error } = await supabase
+      .from('progress_sessions')
+      .select('id, student_textbook:student_textbooks!inner(school_id)', {
+        count: 'exact',
+        head: true,
+      })
+      .in('student_textbook.school_id', schoolIds)
+      .gte('session_date', fromStr)
+      .eq(column, true);
+    if (error) {
+      console.warn(`${column} の件数取得に失敗:`, error.message);
+      return 0;
+    }
+    return count ?? 0;
+  };
+
+  const [homework, tardy] = await Promise.all([countFor('homework_not_done'), countFor('tardy')]);
+  return { homework, tardy, days };
+}
+
 /**
  * 【ペンディング】教室単位のスマートアラートを取得
  * - 学校に追い抜かれている（school_progress_date が今日以前なのに未指導）
