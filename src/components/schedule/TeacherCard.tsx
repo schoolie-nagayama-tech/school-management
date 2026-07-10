@@ -5,6 +5,7 @@ import { useDroppable, useDraggable } from '@dnd-kit/core';
 import { DraggableStudentCard } from './DraggableStudentCard';
 import { UserX, UserCheck, X, Plus } from 'lucide-react';
 import type { ScheduleEntry } from '@/types/schedule';
+import { getSurname } from '@/lib/utils/teacherName';
 import {
   computeSeatOccupancy,
   canPlaceEntry,
@@ -73,6 +74,8 @@ export interface TeacherCardProps {
   teacher: {
     id: string;
     display_name: string | null;
+    /** 姓（座席表ボードは密度優先で姓のみ表示） */
+    last_name?: string | null;
     email: string | null;
     /** D&D制約チェックに使用：指導可能科目 (空/未設定なら全科目可) */
     teachable_subject_ids?: string[] | null;
@@ -164,9 +167,11 @@ export const TeacherCard = React.memo(function TeacherCard({
   );
   const canAddStudent = !isClosed && !occupancy.isFull;
   const isUnassigned = teacher.id === '__unassigned__' || teacher.id.startsWith('__unassigned__:');
-  const displayName = isUnassigned
+  // 座席表ボードは密度優先のため姓のみ表示（フルネームは title 属性で確認できる）
+  const fullName = isUnassigned
     ? teacher.display_name || '担当未決定'
     : teacher.display_name || teacher.email || '—';
+  const displayName = isUnassigned ? fullName : getSurname(teacher) || fullName;
 
   // D&D 制約チェック。基本制約 + 講師×生徒の相性制約。
   const dropConstraint = useMemo<{ canDrop: boolean; reason: string | null }>(() => {
@@ -313,7 +318,10 @@ export const TeacherCard = React.memo(function TeacherCard({
           }
         }}
       >
-        <span className={`${styles.tName} ${isUnassigned ? styles.unassignedName : ''}`}>
+        <span
+          className={`${styles.tName} ${isUnassigned ? styles.unassignedName : ''}`}
+          title={isUnassigned ? undefined : fullName}
+        >
           {displayName}
           {genderLabel && (
             <span

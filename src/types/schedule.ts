@@ -130,7 +130,13 @@ export interface ScheduleRegularPattern {
     excluded_teacher_ids?: string[] | null;
   };
   time_slot?: ScheduleTimeSlot;
-  teacher?: { id: string; display_name: string | null; email: string | null } | null;
+  teacher?: {
+    id: string;
+    display_name: string | null;
+    /** 姓（座席表ボードは密度優先で姓のみ表示） */
+    last_name?: string | null;
+    email: string | null;
+  } | null;
   subjects?: { id: string; name: string }[];
 }
 
@@ -335,7 +341,13 @@ export interface ScheduleEntry {
     excluded_teacher_ids?: string[] | null;
   };
   time_slot?: ScheduleTimeSlot;
-  teacher?: { id: string; display_name: string | null; email: string | null };
+  teacher?: {
+    id: string;
+    display_name: string | null;
+    /** 姓（座席表ボードは密度優先で姓のみ表示） */
+    last_name?: string | null;
+    email: string | null;
+  };
   subjects?: { id: string; name: string }[];
   /** マッチング下書き提案を座席表に重ねるための擬似エントリ印（実DBエントリではない） */
   isDraft?: boolean;

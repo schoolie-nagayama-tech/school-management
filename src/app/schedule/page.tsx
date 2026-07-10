@@ -178,6 +178,8 @@ export default function SchedulePage() {
     Array<{
       id: string;
       display_name: string | null;
+      /** 姓（座席表ボードは密度優先で姓のみ表示） */
+      last_name?: string | null;
       email: string | null;
       user_schools?: Array<{ school_id: string; school?: { name: string } }>;
       teachable_subject_ids?: string[] | null;

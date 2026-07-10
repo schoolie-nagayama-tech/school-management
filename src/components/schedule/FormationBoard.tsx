@@ -14,6 +14,7 @@
 import React from 'react';
 import { Plus } from 'lucide-react';
 import type { ScheduleEntry, ScheduleTimeSlot } from '@/types/schedule';
+import { getSurname } from '@/lib/utils/teacherName';
 import styles from './scheduleDensity.module.css';
 
 const DOW_LABELS = ['日', '月', '火', '水', '木', '金', '土'];
@@ -84,7 +85,9 @@ function ClassCard({
   if (entries.length === 0) return null;
   const teacherId = entries[0].teacher_id ?? null;
   const teacher = entries[0].teacher;
-  const teacherName = teacher?.display_name || teacher?.email || null;
+  const teacherFullName = teacher?.display_name || teacher?.email || null;
+  // 座席表ボードは密度優先のため姓のみ表示（フルネームは title 属性で確認できる）
+  const teacherName = teacher ? getSurname(teacher) || teacherFullName : null;
 
   // 科目はクラス内の全エントリの和集合を見出しに（小集団は見出しに科目、生徒行にチップなし）
   const subjectIds = Array.from(new Set(entries.flatMap((e) => e.subject_ids ?? [])));
@@ -111,7 +114,14 @@ function ClassCard({
           {count}/{maxStudents}
         </span>
       </div>
-      <div className={`${styles.gTeacher} ${teacherName ? '' : styles.unassignedName}`}>
+      <div
+        className={`${styles.gTeacher} ${teacherName ? '' : styles.unassignedName}`}
+        title={
+          teacherName && teacherFullName !== teacherName
+            ? (teacherFullName ?? undefined)
+            : undefined
+        }
+      >
         講師: {teacherName ?? '担当未決定'}
       </div>
       <div className={styles.gStudents}>
