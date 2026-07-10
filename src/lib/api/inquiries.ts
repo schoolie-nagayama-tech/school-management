@@ -263,6 +263,30 @@ export async function updateInquiryWithTimeline(
 }
 
 /**
+ * 体験コマ登録に伴い、問合せを「体験予約済み」状態に更新する（Phase T）。
+ *
+ * - trial_at にコマ日時（timestamptz）をセットする。
+ * - status は現在が in_progress（対応中）のときだけ trial_waiting（体験待ち）へ引き上げる。
+ *   既に trial_done（返事待ち）/ enrolled（入会）/ 失注系などの場合はステータスを下げない
+ *   （体験を複数回組む・入会後に追加体験を組む等でも段階が巻き戻らないようにする guard）。
+ * - ステータス変更は updateInquiryWithTimeline 経由でコンタクト履歴にも自動記録する。
+ *
+ * @param inquiryId 問合せID
+ * @param trialAt   体験コマ日時（ISO / timestamptz 文字列）
+ */
+export async function markInquiryTrialScheduled(inquiryId: string, trialAt: string): Promise<void> {
+  const current = await getInquiry(inquiryId);
+  if (!current) return; // 削除済み等。体験コマ自体は登録済みなので黙って無視する。
+
+  const patch: InquiryUpdate = { trial_at: trialAt };
+  // 対応中 → 体験待ち だけ引き上げる（進んだ段階は下げない）。
+  if (current.status === 'in_progress') {
+    patch.status = 'trial_waiting';
+  }
+  await updateInquiryWithTimeline(current, patch);
+}
+
+/**
  * 問合せを論理削除する（deleted_at = now()）。
  * 物理削除はしない。
  */

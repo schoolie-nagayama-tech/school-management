@@ -170,6 +170,27 @@ school_formation_capacity (
 
 **フェーズへの影響**: #3,4,5 は Phase U（UI改修）。#6,7 は座席表エンジン（容量計算・重複チェック・パターン生成）に踏み込むため**新フェーズ R（授業モデル拡張: ratio＋45分半コマ）**として Phase A の後に実施（形態マスタとは独立、個別指導のみに効く）。マイグレ: patterns/entries への ratio・duration_minutes・half_position 追加＋生徒×科目契約テーブル（既存データ確認後に設計）。
 
+### 2.10 体験授業・追加授業の追加UI（2026-07-10 追加要件・確定）
+
+モードセレクトの隣に「授業を追加」ボタンを置き、単発コマ（追加授業/体験授業）を登録できるようにする。既存の空きセルクリック起点（AddStudentToSlotModal）に加え、講師・日付・コマも選べる独立モーダルを新設。
+
+**a. 体験の見込み客（未入会）= 問合せ名簿から選ぶ（inquiry_id 方式・確定）**
+
+- 体験は入会前の見込み客も受けるため、`students` に存在しない人を扱う必要がある
+- **`students` に仮レコードを作らない**（is_test 方式は不採用）。見込み客を名簿・請求・集計に構造的に出さないため、`schedule_entries` に `inquiry_id` を持たせて問合せを直接参照する
+- マイグレ:
+  - `schedule_entries.student_id` を **NULL 許容化**
+  - `schedule_entries.inquiry_id uuid REFERENCES inquiries(id) ON DELETE SET NULL` 追加
+  - CHECK: **student_id / inquiry_id はどちらか一方のみ**（`(student_id IS NOT NULL AND inquiry_id IS NULL) OR (student_id IS NULL AND inquiry_id IS NOT NULL)`）。既存行は全て student_id 有り・inquiry_id NULL で通る
+  - 部分ユニークインデックス `(school_id, entry_date, time_slot_id, teacher_id, inquiry_id) WHERE inquiry_id IS NOT NULL`（NULL 複数許容の穴を塞ぐ）
+- 入会したら既存の `inquiries.linked_student_id` フローで生徒化（このコマの student_id 移行は将来課題、当面は体験履歴として残す）
+
+**b. 問合せ連動（確定）**: 体験コマ登録時に `inquiries.trial_at` にコマ日時をセットし、status を `trial_waiting`（体験待ち）へ自動更新（既に enrolled/trial_done 等の場合は status を下げない guard）
+
+**c. 影響範囲（student_id を nullable にする波及）**: 体験×問合せのコマは終端的（出欠集計・振替・請求の対象外）。既存の student_id 前提ロジックは「student_id が無ければ体験×問合せとして扱う/スキップ」の null ガードで対応。主要な表示は StudentCard が inquiry フォールバックを持つ。checkStudentTimeConflict は見込み客には適用しない（他コマを持たない）
+
+**フェーズ**: 新フェーズ **T（体験・追加授業UI）**。Phase R の授業モデルとは独立。
+
 ## 3. フェーズ計画
 
 ### Phase A: 基盤（既存挙動を変えずに土台を作る）

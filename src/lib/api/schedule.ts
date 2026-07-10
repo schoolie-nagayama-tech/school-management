@@ -739,8 +739,9 @@ export async function getScheduleEntries(
   fromDate: string,
   toDate: string
 ): Promise<ScheduleEntry[]> {
+  // Phase T: 体験の見込み客（student を持たない行）向けに inquiry リレーションも取得する。
   const selectWithJoins =
-    '*, time_slot:schedule_time_slots(*), student:students(id, last_name, first_name, grade, preferred_teacher_gender, fixed_teacher_ids, excluded_teacher_ids), teacher:user_profiles!schedule_entries_teacher_id_fkey(id, display_name, last_name, email)';
+    '*, time_slot:schedule_time_slots(*), student:students(id, last_name, first_name, grade, preferred_teacher_gender, fixed_teacher_ids, excluded_teacher_ids), teacher:user_profiles!schedule_entries_teacher_id_fkey(id, display_name, last_name, email), inquiry:inquiries(id, student_name, student_name_kana, grade)';
   const result = await db
     .from('schedule_entries')
     .select(selectWithJoins)
@@ -779,6 +780,12 @@ export async function getScheduleEntries(
     );
   }
 
+  type InquiryRel = {
+    id: string;
+    student_name: string | null;
+    student_name_kana: string | null;
+    grade: string | null;
+  };
   const rows = (result.data || []) as (ScheduleEntry & {
     time_slot?: ScheduleTimeSlot[] | ScheduleTimeSlot;
     student?:
@@ -787,12 +794,15 @@ export async function getScheduleEntries(
     teacher?:
       | { id: string; display_name: string | null; email: string | null }[]
       | { id: string; display_name: string | null; email: string | null };
+    inquiry?: InquiryRel[] | InquiryRel | null;
   })[];
   return rows.map((r) => ({
     ...r,
     time_slot: Array.isArray(r.time_slot) ? r.time_slot[0] : r.time_slot,
     student: Array.isArray(r.student) ? r.student[0] : r.student,
     teacher: Array.isArray(r.teacher) ? r.teacher[0] : r.teacher,
+    // Phase T: PostgREST は 1:1 リレーションも配列で返すことがあるため単一化する。
+    inquiry: Array.isArray(r.inquiry) ? (r.inquiry[0] ?? null) : (r.inquiry ?? null),
   })) as ScheduleEntry[];
 }
 
@@ -1251,12 +1261,20 @@ export async function createScheduleEntry(
 
   await ensureUserIsTeacher(form.teacher_id);
 
+  // Phase T: 体験の見込み客（未入会）は inquiry_id で参照し student_id を持たない。
+  // 見込み客は他コマを持たない＝生徒重複チェックの対象外、席占有もハードブロックしない
+  //（体験は例外扱い）。よって時刻重複・容量チェックを丸ごとスキップする。
+  // 講師確認（ensureUserIsTeacher）は上で実施済み＝維持。
+  const isInquiryTrial = !!form.inquiry_id && !form.student_id;
+
   // 同時刻重複チェック：個別と集団でコマ時間が違っても、時刻範囲が重なれば配置不可
   const targetSlot = await getTimeSlotById(slotId);
   const incomingHalf = form.half_position ?? null;
   const incomingDuration = form.duration_minutes ?? null;
   const incomingRatio: 1 | 2 = form.ratio === 1 ? 1 : 2;
-  if (targetSlot) {
+  // form.student_id を条件に含めることで、以降のブロック内では student_id が string に絞られる
+  //（inquiry 経路は上でスキップ済み・既存の生徒経路は挙動不変）。
+  if (targetSlot && form.student_id && !isInquiryTrial) {
     const studentConflict = await checkStudentTimeConflict(
       form.student_id,
       // dayOfWeek は specificDate を渡せば使われないが、型上必須なので date から計算
@@ -1330,7 +1348,9 @@ export async function createScheduleEntry(
       entry_date: date,
       time_slot_id: slotId,
       teacher_id: form.teacher_id,
-      student_id: form.student_id,
+      // Phase T: 体験×問合せは student_id=NULL / inquiry_id=値。既存経路は student_id のみ（inquiry_id=NULL）。
+      student_id: form.student_id ?? null,
+      inquiry_id: form.inquiry_id ?? null,
       subject_ids: form.subject_ids || [],
       seat_label: form.seat_label || null,
       note: form.note || null,

@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useRef, useEffect, useState } from 'react';
 import { Button } from '@/components/ui';
-import { Settings, ChevronDown } from 'lucide-react';
+import { Settings, ChevronDown, CalendarPlus } from 'lucide-react';
 import type { KoushuPeriodInfo } from '@/lib/api/koushu-period';
 
 const DAY_LABELS: { value: number; label: string }[] = [
@@ -69,6 +69,8 @@ interface ScheduleToolbarProps {
   formationTabs: { key: string; label: string }[];
   activeFormation: string;
   onFormationChange: (key: string) => void;
+  /** 「授業を追加」ボタン（追加授業・体験授業の単発コマ登録モーダルを開く）。個別タブ専用。 */
+  onAddLesson: () => void;
 }
 
 export function ScheduleToolbar({
@@ -92,6 +94,7 @@ export function ScheduleToolbar({
   formationTabs,
   activeFormation,
   onFormationChange,
+  onAddLesson,
 }: ScheduleToolbarProps) {
   const [weekPickerOpen, setWeekPickerOpen] = useState(false);
   const weekPickerInputRef = useRef<HTMLInputElement>(null);
@@ -298,6 +301,18 @@ export function ScheduleToolbar({
                   ))}
                 </div>
               </div>
+            )}
+            {/* 授業を追加：追加授業・体験授業の単発コマ登録。個別タブ専用（形態ボードでは非表示）。 */}
+            {isIndividualTab && (
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={onAddLesson}
+                className="flex items-center gap-1"
+              >
+                <CalendarPlus className="h-4 w-4" />
+                授業を追加
+              </Button>
             )}
             {/* モード切替：通常 / 講習(期間) / テスト対策。個別タブ専用（形態ボードでは非表示）。 */}
             {isIndividualTab && (koushuList.length > 0 || hasTestPrep) && (

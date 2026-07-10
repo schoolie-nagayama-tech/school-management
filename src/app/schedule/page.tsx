@@ -79,6 +79,11 @@ const FormationKomaFormModal = dynamic(
     import('@/components/schedule/FormationKomaFormModal').then((m) => m.FormationKomaFormModal),
   { ssr: false }
 );
+// Phase T: ツールバー起点の「授業を追加」モーダル（追加授業・体験授業の単発コマ登録）。
+const AddLessonModal = dynamic(
+  () => import('@/components/schedule/AddLessonModal').then((m) => m.AddLessonModal),
+  { ssr: false }
+);
 import { fetchWithAuth } from '@/lib/api/auth';
 import { useMasterData } from '@/contexts/MasterDataContext';
 import { getStudents } from '@/lib/api/students';
@@ -270,6 +275,8 @@ export default function SchedulePage() {
     subjectIds: string[];
   } | null>(null);
   const [koushuPanelRefreshKey, setKoushuPanelRefreshKey] = useState(0);
+  // Phase T: 「授業を追加」モーダル（追加授業・体験授業の単発コマ登録）の開閉。
+  const [addLessonOpen, setAddLessonOpen] = useState(false);
   const [scheduleSettingsOpen, setScheduleSettingsOpen] = useState(false);
   const [scheduleGenerateConfirmOpen, setScheduleGenerateConfirmOpen] = useState(false);
   const [scheduleGenerateHasExisting, setScheduleGenerateHasExisting] = useState(false);
@@ -878,6 +885,8 @@ export default function SchedulePage() {
     const entry = actionModalEntry;
     if (!entry) return;
     setActionModalEntry(null);
+    // Phase T: 体験の見込み客（student_id 無し）は生徒詳細を持たないので何もしない。
+    if (!entry.student_id) return;
     const found = students.find((s) => s.id === entry.student_id);
     if (found) {
       setStudentDetailStudent(found);
@@ -1206,7 +1215,7 @@ export default function SchedulePage() {
   // 講習モード: 講習登録済み生徒のみにフィルタリング
   const displayEntries = useMemo(() => {
     if (!selectedKoushu || koushuEnrollments.size === 0) return entriesWithSubjects;
-    return entriesWithSubjects.filter((e) => koushuEnrollments.has(e.student_id));
+    return entriesWithSubjects.filter((e) => !!e.student_id && koushuEnrollments.has(e.student_id));
   }, [entriesWithSubjects, selectedKoushu, koushuEnrollments]);
 
   // 講習モードの2レーン分割: 個別レーン=既存グリッド、集団レーン=GroupLaneGrid。
@@ -1691,7 +1700,8 @@ export default function SchedulePage() {
           transferOverLimitConfirm?.targetSlotId === targetSlotId &&
           transferOverLimitConfirm?.targetTeacherId === targetTeacherId;
         if (!isAlreadyConfirmed) {
-          const usage = await getMonthlyTransferUsage(entry.student_id, entry.entry_date);
+          // 見込み客（student_id 無し）は振替対象外。空文字なら使用量0扱いで先へ進む（実質発生しない経路）。
+          const usage = await getMonthlyTransferUsage(entry.student_id ?? '', entry.entry_date);
           if (usage.used >= usage.limit) {
             const studentName = entry.student
               ? `${entry.student.last_name ?? ''}${entry.student.first_name ?? ''}`.trim() || '生徒'
@@ -2134,6 +2144,7 @@ export default function SchedulePage() {
             formationTabs={formationTabs}
             activeFormation={activeFormation}
             onFormationChange={handleFormationChange}
+            onAddLesson={() => setAddLessonOpen(true)}
           />
         </div>
 
@@ -2582,6 +2593,25 @@ export default function SchedulePage() {
         onRemoveTeacherConfirmClose={() => setRemoveTeacherConfirm(null)}
         onRemoveTeacherConfirm={handleRemoveTeacherConfirm}
       />
+
+      {/* Phase T: 授業を追加（追加授業・体験授業の単発コマ）モーダル。個別のコマ時間・講師から選ぶ。 */}
+      {schoolId && (
+        <AddLessonModal
+          isOpen={addLessonOpen}
+          onClose={() => setAddLessonOpen(false)}
+          schoolId={schoolId}
+          timeSlots={individualSlots}
+          teachers={teachers
+            .filter((t) => t.user_schools?.some((us) => us.school_id === schoolId))
+            .map((t) => ({ id: t.id, display_name: t.display_name, email: t.email }))}
+          subjects={masterSubjects}
+          weekStart={weekStart}
+          onSuccess={() => {
+            refreshEntries();
+            setAddLessonOpen(false);
+          }}
+        />
+      )}
 
       {/* 日次ブース番号設定モーダル：印刷時に講師名の隣に番号を出すための事前設定 */}
       {boothAssignDate && schoolId && (

@@ -73,7 +73,8 @@ export function ScheduleEntryModal({
       if (mode === 'edit' && entry) {
         setForm({
           teacher_id: entry.teacher_id,
-          student_id: entry.student_id,
+          // Phase T: 体験の見込み客（student_id 無し）はこの編集フォームの対象外。空文字で受ける。
+          student_id: entry.student_id ?? '',
           subject_ids: entry.subject_ids || [],
           seat_label: entry.seat_label || '',
           note: entry.note || '',

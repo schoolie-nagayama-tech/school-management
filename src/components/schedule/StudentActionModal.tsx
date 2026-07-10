@@ -48,9 +48,14 @@ export function StudentActionModal({
 }: StudentActionModalProps) {
   if (!entry) return null;
 
+  // Phase T: 体験の見込み客（student_id 無し・inquiry_id 参照）は終端的なコマ。
+  // 振替・出欠・編集の対象外で、取消（削除）のみ許可する。
+  const isInquiry = !entry.student_id && !!entry.inquiry_id;
   const studentName = entry.student
     ? `${entry.student.last_name} ${entry.student.first_name}（${gradeLabel(entry.student.grade)}）`
-    : entry.student_id;
+    : entry.inquiry
+      ? `${entry.inquiry.student_name || '（氏名未登録）'}（見込み客）`
+      : (entry.student_id ?? '—');
   const subjectNames =
     (entry.subjects ?? [])
       .map((s) => (typeof s === 'object' && s && 'name' in s ? s.name : String(s)))
@@ -122,7 +127,26 @@ export function StudentActionModal({
               </Button>
             </div>
           )}
-          {canAct && (
+          {/* 見込み客（体験）は振替・出欠・編集の対象外。取消のみ許可する。 */}
+          {canAct && isInquiry && (
+            <>
+              <p className="text-xs text-[var(--paragraph)]">
+                問合せ名簿の見込み客（未入会）の体験です。振替・出欠・編集の対象外です。
+              </p>
+              <div className="border-t border-[var(--surface)] pt-2 flex gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs text-[#c62828] hover:bg-red-50"
+                  onClick={() => onDelete()}
+                >
+                  <Trash2 className="h-3 w-3 mr-2" />
+                  取消
+                </Button>
+              </div>
+            </>
+          )}
+          {canAct && !isInquiry && (
             <>
               <div className="flex flex-wrap gap-2">
                 <Button

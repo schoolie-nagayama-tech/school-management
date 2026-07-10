@@ -295,7 +295,16 @@ export interface ScheduleEntry {
   entry_date: string;
   time_slot_id: string;
   teacher_id: string;
-  student_id: string;
+  /**
+   * 生徒ID。
+   * Phase T（体験・追加授業UI）で NULL 許容化した。
+   * 体験授業の見込み客（未入会）は students を持たず inquiry_id で参照するため、
+   * その行では student_id=NULL / inquiry_id=値 になる（DB の XOR CHECK 制約でどちらか一方のみ）。
+   * 既存の通常授業・講習・テスト対策・振替は全て student_id 有り（挙動不変）。
+   */
+  student_id: string | null;
+  /** Phase T: 体験の見込み客（問合せ）への参照。student_id と排他（どちらか一方のみ）。 */
+  inquiry_id?: string | null;
   subject_ids: string[];
   seat_label: string | null;
   note?: string | null;
@@ -348,6 +357,16 @@ export interface ScheduleEntry {
     last_name?: string | null;
     email: string | null;
   };
+  /**
+   * Phase T: 体験の見込み客（問合せ）リレーション。
+   * student が無く inquiry がある行＝未入会の見込み客の体験コマ。StudentCard がフォールバック表示に使う。
+   */
+  inquiry?: {
+    id: string;
+    student_name: string | null;
+    student_name_kana: string | null;
+    grade: string | null;
+  } | null;
   subjects?: { id: string; name: string }[];
   /** マッチング下書き提案を座席表に重ねるための擬似エントリ印（実DBエントリではない） */
   isDraft?: boolean;
@@ -356,7 +375,14 @@ export interface ScheduleEntry {
 /** 授業追加・編集フォーム用 */
 export interface ScheduleEntryFormData {
   teacher_id: string;
-  student_id: string;
+  /**
+   * 生徒ID。
+   * Phase T で optional 化。通常授業・追加授業・講習は必須で渡す（従来どおり）。
+   * 体験×問合せ（見込み客）のときだけ省略し、代わりに inquiry_id を渡す。
+   */
+  student_id?: string;
+  /** Phase T: 体験の見込み客（問合せ）ID。student_id と排他（どちらか一方のみ）。 */
+  inquiry_id?: string | null;
   subject_ids: string[];
   seat_label: string;
   note: string;

@@ -382,7 +382,7 @@ export const TeacherCard = React.memo(function TeacherCard({
       {/* 本体（ドロップターゲット）。availableOnly は combinedRef で既にドロップ可能なので二重指定しない */}
       <div ref={isUnassigned || isAvailableOnly ? undefined : setNodeRef}>
         {displayEntries.map((entry) => {
-          const ki = getKoushuInfo?.(entry.student_id);
+          const ki = entry.student_id ? getKoushuInfo?.(entry.student_id) : null;
           return (
             <DraggableStudentCard
               key={entry.id}

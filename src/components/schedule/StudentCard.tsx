@@ -55,10 +55,19 @@ export const StudentCard = React.memo(function StudentCard({
   koushuEnrolled,
   koushuScheduled,
 }: StudentCardProps) {
+  // Phase T: 体験の見込み客（student を持たず inquiry を参照する行）は inquiry からフォールバック表示する。
+  const isInquiry = !entry.student && !!entry.inquiry;
   const studentName = entry.student
     ? `${entry.student.last_name} ${entry.student.first_name}`
-    : entry.student_id;
-  const grade = entry.student ? gradeLabel(entry.student.grade) : '—';
+    : entry.inquiry
+      ? entry.inquiry.student_name || '（氏名未登録）'
+      : (entry.student_id ?? '—');
+  // 生徒は数値学年、見込み客(inquiry.grade)は text。student/inquiry いずれも無ければ「—」。
+  const grade = entry.student
+    ? gradeLabel(entry.student.grade)
+    : entry.inquiry
+      ? entry.inquiry.grade || '—'
+      : '—';
   const subjectNames = (entry.subjects ?? [])
     .map((s) => (typeof s === 'object' && s && 'name' in s ? s.name : String(s)))
     .filter((n): n is string => !!n);
@@ -126,6 +135,15 @@ export const StudentCard = React.memo(function StudentCard({
           title={`${SCHEDULE_ENTRY_KIND_LABELS[entry.kind]}（単発の追加授業）`}
         >
           {SCHEDULE_ENTRY_KIND_LABELS[entry.kind]}
+        </span>
+      )}
+      {isInquiry && (
+        <span
+          className={styles.kindBadge}
+          style={{ background: 'var(--success)', color: '#fff' }}
+          title="問合せ名簿の見込み客（未入会）の体験授業"
+        >
+          見込
         </span>
       )}
       <span className={styles.sName}>{studentName}</span>

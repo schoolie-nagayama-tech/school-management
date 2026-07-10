@@ -75,7 +75,7 @@ export const ScheduleCell = React.memo(function ScheduleCell({
         {transferredOutEntries.map((entry) => {
           const studentName = entry.student
             ? `${entry.student.last_name} ${entry.student.first_name}（${gradeLabel(entry.student.grade)}）`
-            : entry.student_id;
+            : entry.inquiry?.student_name || entry.student_id || '—';
           // 振替期限チップ表示用：未消化（transfer_to_id 無し）かつ期限ありのものだけ
           const isUnresolved = !entry.transfer_to_id;
           const deadline = entry.transfer_deadline ?? null;
@@ -118,7 +118,7 @@ export const ScheduleCell = React.memo(function ScheduleCell({
             : DEFAULT_BG;
           const studentName = entry.student
             ? `${entry.student.last_name} ${entry.student.first_name}（${gradeLabel(entry.student.grade)}）`
-            : entry.student_id;
+            : entry.inquiry?.student_name || entry.student_id || '—';
           const subjectNames =
             (entry.subject_ids || [])
               .map((id) => entry.subjects?.find((s) => s.id === id)?.name ?? '')
