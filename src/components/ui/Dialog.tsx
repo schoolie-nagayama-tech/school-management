@@ -4,15 +4,25 @@ import { ReactNode, useEffect, useId, createContext, useContext } from 'react';
 
 const DialogTitleIdContext = createContext<string | undefined>(undefined);
 
+/** ダイアログ全体の横幅。既定は 'md'（従来どおり max-w-lg = 512px）で挙動を変えない。 */
+const DIALOG_SIZE_CLASS = {
+  sm: 'max-w-sm',
+  md: 'max-w-lg',
+  lg: 'max-w-2xl',
+  xl: 'max-w-4xl',
+} as const;
+
 interface DialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   children: ReactNode;
   /** スクリーンリーダー用のラベル。DialogTitle を使わない場合に指定 */
   ariaLabel?: string;
+  /** ダイアログの横幅。未指定は従来どおり 'md'（max-w-lg） */
+  size?: keyof typeof DIALOG_SIZE_CLASS;
 }
 
-export function Dialog({ open, onOpenChange, children, ariaLabel }: DialogProps) {
+export function Dialog({ open, onOpenChange, children, ariaLabel, size = 'md' }: DialogProps) {
   const titleId = useId();
   useEffect(() => {
     if (open) {
@@ -53,7 +63,7 @@ export function Dialog({ open, onOpenChange, children, ariaLabel }: DialogProps)
         aria-modal="true"
         aria-labelledby={ariaLabel ? undefined : titleId}
         aria-label={ariaLabel}
-        className="relative z-50 w-full max-w-lg bg-surface-raised rounded-xl shadow-2xl border border-border ring-1 ring-black/5 max-h-[95vh] overflow-hidden flex flex-col modal-panel"
+        className={`relative z-50 w-full ${DIALOG_SIZE_CLASS[size]} bg-surface-raised rounded-xl shadow-2xl border border-border ring-1 ring-black/5 max-h-[95vh] overflow-hidden flex flex-col modal-panel`}
       >
         <DialogTitleIdContext.Provider value={titleId}>{children}</DialogTitleIdContext.Provider>
       </div>

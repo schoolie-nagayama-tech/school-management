@@ -62,8 +62,8 @@ export function AddTeacherModal({
   };
 
   return (
-    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-md w-full">
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()} size="lg">
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>講師を追加</DialogTitle>
         </DialogHeader>
@@ -76,12 +76,13 @@ export function AddTeacherModal({
             <div className="space-y-2">
               <label className="text-sm font-medium text-[var(--headline)]">講師を選択</label>
               <Select value={teacherId} onValueChange={setTeacherId}>
-                <SelectTrigger className="w-full">
+                <SelectTrigger className="w-full text-base py-2.5">
                   <SelectValue placeholder="講師を選択" />
                 </SelectTrigger>
-                <SelectContent>
+                {/* 講師が多い教室でも一度に見渡せるよう、既定(max-h-60)より高くする */}
+                <SelectContent className="max-h-80">
                   {availableTeachers.map((t) => (
-                    <SelectItem key={t.id} value={t.id}>
+                    <SelectItem key={t.id} value={t.id} className="text-base py-2.5">
                       {t.display_name || t.email || t.id}
                     </SelectItem>
                   ))}
