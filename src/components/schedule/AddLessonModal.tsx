@@ -12,6 +12,7 @@ import type { HalfPosition } from '@/types/schedule';
 import type { Subject } from '@/types/database';
 import type { Inquiry } from '@/types/database';
 import { getInquiryDisplayName } from '@/app/admin/inquiries/inquiryConstants';
+import { groupSubjectsForSelect, subjectOptionLabel } from '@/lib/utils/subjectOptions';
 
 /** 種別タブ。追加授業（additional）/ 体験授業（trial）。 */
 type LessonKind = 'additional' | 'trial';
@@ -271,10 +272,14 @@ export function AddLessonModal({
               {subjects.length === 0 ? (
                 <option value="">科目が登録されていません</option>
               ) : (
-                subjects.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name}
-                  </option>
+                groupSubjectsForSelect(subjects).map((g) => (
+                  <optgroup key={g.label} label={g.label}>
+                    {g.subjects.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {subjectOptionLabel(s)}
+                      </option>
+                    ))}
+                  </optgroup>
                 ))
               )}
             </select>

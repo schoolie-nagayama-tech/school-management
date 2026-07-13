@@ -19,6 +19,7 @@ import type { ScheduleTimeSlot, HalfPosition } from '@/types/schedule';
 import type { ScheduleEntryFormData, ScheduleEntryKind } from '@/types/schedule';
 import type { Subject } from '@/types/database';
 import { DAY_OF_WEEK_LABELS } from '@/types/schedule';
+import { groupSubjectsForSelect, subjectOptionLabel } from '@/lib/utils/subjectOptions';
 
 /**
  * 「この日のみ追加」で選べる授業種別。
@@ -250,10 +251,14 @@ export function AddStudentToSlotModal({
               {availableSubjects.length === 0 ? (
                 <option value="">この講師の指導可能科目が設定されていません</option>
               ) : (
-                availableSubjects.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name}
-                  </option>
+                groupSubjectsForSelect(availableSubjects).map((g) => (
+                  <optgroup key={g.label} label={g.label}>
+                    {g.subjects.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {subjectOptionLabel(s)}
+                      </option>
+                    ))}
+                  </optgroup>
                 ))
               )}
             </select>
