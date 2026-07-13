@@ -60,6 +60,8 @@ interface ScheduleDialogsProps {
   onTransferFromAction: () => void;
   onRevertTransfer: () => void;
   onAbsentFromAction: () => void;
+  /** §2.12 入れ替えモード開始（個別タブ・通常モードのときだけ渡す。未指定でボタン非表示） */
+  onSwapFromAction?: () => void;
   onEditClick: () => void;
   onDeleteClick: () => void;
   onStudentClickFromAction: () => void;
@@ -149,6 +151,7 @@ export function ScheduleDialogs({
   onTransferFromAction,
   onRevertTransfer,
   onAbsentFromAction,
+  onSwapFromAction,
   onEditClick,
   onDeleteClick,
   onStudentClickFromAction,
@@ -291,6 +294,7 @@ export function ScheduleDialogs({
         onTransfer={onTransferFromAction}
         onRevertTransfer={onRevertTransfer}
         onAbsent={onAbsentFromAction}
+        onSwap={onSwapFromAction}
         onEdit={onEditClick}
         onDelete={onDeleteClick}
         onStudentClick={onStudentClickFromAction}

@@ -226,6 +226,16 @@ school_formation_capacity (
 5. **追加授業もバッジ→行色**（体験と同様。バッジは test_prep のみ残す。凡例更新）
 6. 振替の月内回数制限（週N回=月N回上限・超過は警告後に例外可）は既存実装・保留配置経路でも適用済み＝変更なし
 
+### 2.12 生徒の入れ替え（同コマ内・別講師）— 2026-07-13 確定
+
+両方満席の講師間で生徒AとBを交換したい。現状は一方を別講師に退避→移動→戻す手間。ワンアクションの入れ替えを追加。
+
+- **範囲 = 同じ日・同じコマ・別講師の2人**（時間は変わらない＝teacher_id の交換のみ。ユーザー確定: 同コマ内のみ）
+- **指導科目外はブロック**（ユーザー確定）: 受け入れ側講師が相手の科目を指導できない場合は入れ替え不可（エラー表示）。teacher.teachable_subject_ids が空/未設定なら全科目可（既存慣習）
+- UI: StudentActionModal に「入れ替え」→ 入れ替えモード（TransferModeBar と同系のバー）。同コマ・別講師の生徒行を候補として強調、それ以外を淡色、対象Aを選択表示。候補の生徒行クリックで交換確定→モード終了。指導科目外なら toast で理由表示しモード継続
+- API `swapScheduleEntries(entryAId, entryBId)`（schedule.ts）: 同一 school/date/time_slot・別 teacher を検証→teachable 双方向検証→teacher_id を交換（2回の UPDATE。UNIQUE(school,date,slot,teacher,student) は student が異なるため衝突しない）。cancelled/transferred_out は対象外
+- 個別タブ専用。講習/テスト対策/配置/振替モード中は無効（モード排他）。マイグレ不要
+
 ## 3. フェーズ計画
 
 ### Phase A: 基盤（既存挙動を変えずに土台を作る）

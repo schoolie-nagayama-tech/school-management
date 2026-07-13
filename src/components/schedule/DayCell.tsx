@@ -139,6 +139,8 @@ export interface DayCellProps {
    * 講習/テスト対策では渡さない（未指定＝全カードクリック可の従来挙動）。
    */
   getTeacherPlaceConstraint?: (teacherId: string) => { ok: boolean; reason: string | null };
+  /** §2.12 入れ替えモードの選択中エントリ（生徒A）。生徒行のハイライト算出に使う。 */
+  swapSource?: ScheduleEntry | null;
 }
 
 export const DayCell = React.memo(function DayCell(props: DayCellProps) {
@@ -170,6 +172,7 @@ export const DayCell = React.memo(function DayCell(props: DayCellProps) {
     placeability,
     onCellPlace,
     getTeacherPlaceConstraint,
+    swapSource,
   } = props;
 
   const [unplacedOpen, setUnplacedOpen] = useState(false);
@@ -228,6 +231,7 @@ export const DayCell = React.memo(function DayCell(props: DayCellProps) {
           ? getTeacherPlaceConstraint(group.teacher.id)
           : undefined
       }
+      swapSource={swapSource}
     />
   );
 

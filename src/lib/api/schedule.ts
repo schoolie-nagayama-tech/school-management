@@ -1659,6 +1659,190 @@ export async function moveScheduleEntry(
   return data as ScheduleEntry;
 }
 
+// ========================================
+// 生徒の入れ替え（同コマ内・別講師）— §2.12
+// ========================================
+
+/** 入れ替え検証に使うエントリの最小形（純関数テスト用に DB 非依存で切り出す）。 */
+export interface SwapEntryData {
+  id: string;
+  school_id: string;
+  entry_date: string;
+  time_slot_id: string;
+  teacher_id: string | null;
+  student_id: string | null;
+  subject_ids: string[] | null;
+  status: string;
+}
+
+/** 入れ替え検証に使う講師の最小形。teachable_subject_ids が空/未設定なら全科目可（既存慣習）。 */
+export interface SwapTeacherData {
+  id: string;
+  name: string;
+  teachable_subject_ids: string[] | null | undefined;
+}
+
+/**
+ * 講師が対象コマの科目を指導できるか。
+ * teachable が空/未設定なら全科目可。subject_ids が空なら制約なし＝可。
+ * 既存 D&D（TeacherCard）と同じく「1つでも指導可能な科目があれば可（some）」で判定する。
+ */
+function teacherCanTeachSubjects(
+  teachable: string[] | null | undefined,
+  subjectIds: string[] | null
+): boolean {
+  if (!teachable || teachable.length === 0) return true;
+  if (!subjectIds || subjectIds.length === 0) return true;
+  const set = new Set(teachable);
+  return subjectIds.some((sid) => set.has(sid));
+}
+
+/**
+ * 入れ替えの検証（純関数・DB非依存）。違反時は分かりやすい日本語エラーを throw。
+ *
+ * 検証順序（先に失敗するものほど基本的な前提）:
+ *  1. 同一エントリ同士でない
+ *  2. 同一 school_id
+ *  3. 同一 entry_date かつ 同一 time_slot_id（＝同じ日・同じコマ）
+ *  4. 両方 teacher_id が非NULL
+ *  5. teacher_id が互いに異なる（別講師）
+ *  6. 両方 status が cancelled/transferred_out でない（振替元・取消は対象外）
+ *  7. teachable 双方向: 受け入れ側 T_B が A の科目を、T_A が B の科目を指導できる
+ *
+ * teacherA/teacherB は entryA/entryB の現担当講師（入れ替え後の受け入れ側は逆になる）。
+ */
+export function validateSwapEntries(
+  entryA: SwapEntryData,
+  entryB: SwapEntryData,
+  teacherA: SwapTeacherData,
+  teacherB: SwapTeacherData,
+  subjectNameById: Map<string, string>
+): void {
+  if (entryA.id === entryB.id) {
+    throw new Error('同じ授業同士は入れ替えできません');
+  }
+  if (entryA.school_id !== entryB.school_id) {
+    throw new Error('別の教室の授業とは入れ替えできません');
+  }
+  if (entryA.entry_date !== entryB.entry_date || entryA.time_slot_id !== entryB.time_slot_id) {
+    throw new Error('入れ替えは同じ日・同じコマの授業同士でのみできます');
+  }
+  if (!entryA.teacher_id || !entryB.teacher_id) {
+    throw new Error('担当講師が未決定の授業は入れ替えできません');
+  }
+  if (entryA.teacher_id === entryB.teacher_id) {
+    throw new Error('同じ講師の授業同士は入れ替えできません');
+  }
+  const cannotSwapStatus = (s: string) => s === 'cancelled' || s === 'transferred_out';
+  if (cannotSwapStatus(entryA.status) || cannotSwapStatus(entryB.status)) {
+    throw new Error('取消・振替元の授業は入れ替えできません');
+  }
+
+  const subjLabel = (ids: string[] | null) =>
+    (ids ?? []).map((id) => subjectNameById.get(id) ?? id).join('・') || '担当科目';
+
+  // 受け入れ側 T_B は A の生徒（＝Aの科目）を担当することになるので、A の科目を指導できる必要がある。
+  if (!teacherCanTeachSubjects(teacherB.teachable_subject_ids, entryA.subject_ids)) {
+    throw new Error(
+      `${teacherB.name}は${subjLabel(entryA.subject_ids)}を指導できないため入れ替えできません`
+    );
+  }
+  // 逆方向: T_A は B の科目を指導できる必要がある。
+  if (!teacherCanTeachSubjects(teacherA.teachable_subject_ids, entryB.subject_ids)) {
+    throw new Error(
+      `${teacherA.name}は${subjLabel(entryB.subject_ids)}を指導できないため入れ替えできません`
+    );
+  }
+}
+
+/**
+ * 生徒の入れ替え（§2.12）。同じ日・同じコマ・別講師の2エントリの teacher_id を交換する。
+ * 時間は変わらず担当講師だけが入れ替わる（同コマ内のみ）。
+ *
+ * UNIQUE(school_id, entry_date, time_slot_id, teacher_id, student_id) との衝突回避:
+ *   A(student_a, T_A) と B(student_b, T_B) を交換する。student_a ≠ student_b なので
+ *   1回目の UPDATE で A→T_B にした時点でも (T_B, student_a) と既存 (T_B, student_b) は
+ *   student が異なり衝突しない。2回目で B→T_A にしても同様。よって順次 UPDATE で安全
+ *   （中間状態でユニークキーが重複しない）。
+ */
+export async function swapScheduleEntries(entryAId: string, entryBId: string): Promise<void> {
+  const { data: rows, error } = await db
+    .from('schedule_entries')
+    .select('id, school_id, entry_date, time_slot_id, teacher_id, student_id, subject_ids, status')
+    .in('id', [entryAId, entryBId]);
+  if (error || !rows || rows.length !== 2) {
+    console.error('Error fetching entries for swap:', error);
+    throw new Error('入れ替え対象の授業の取得に失敗しました');
+  }
+  const list = rows as SwapEntryData[];
+  const a = list.find((r) => r.id === entryAId);
+  const b = list.find((r) => r.id === entryBId);
+  if (!a || !b) {
+    throw new Error('入れ替え対象の授業の取得に失敗しました');
+  }
+
+  // 担当講師のプロファイル（指導可能科目・表示名）を取得。
+  const teacherIds = [a.teacher_id, b.teacher_id].filter((id): id is string => !!id);
+  const { data: profiles } = await db
+    .from('user_profiles')
+    .select('id, display_name, email, teachable_subject_ids')
+    .in('id', teacherIds);
+  const profileById = new Map<
+    string,
+    { display_name?: string; email?: string; teachable_subject_ids?: string[] | null }
+  >(
+    (
+      (profiles ?? []) as Array<{
+        id: string;
+        display_name?: string;
+        email?: string;
+        teachable_subject_ids?: string[] | null;
+      }>
+    ).map((p) => [p.id, p])
+  );
+  const toTeacher = (id: string | null): SwapTeacherData => {
+    const p = id ? profileById.get(id) : undefined;
+    return {
+      id: id ?? '',
+      name: p?.display_name || p?.email || '講師',
+      teachable_subject_ids: p?.teachable_subject_ids ?? null,
+    };
+  };
+
+  // メッセージ用の科目名。両エントリの subject_ids をまとめて解決する。
+  const subjIds = Array.from(new Set([...(a.subject_ids ?? []), ...(b.subject_ids ?? [])]));
+  const subjectNameById = new Map<string, string>();
+  if (subjIds.length > 0) {
+    const { data: subs } = await db.from('subjects').select('id, name').in('id', subjIds);
+    for (const s of (subs ?? []) as Array<{ id: string; name: string }>) {
+      subjectNameById.set(s.id, s.name);
+    }
+  }
+
+  // 検証（違反時は throw）。
+  validateSwapEntries(a, b, toTeacher(a.teacher_id), toTeacher(b.teacher_id), subjectNameById);
+
+  // teacher_id を交換する2回の UPDATE。上のコメントの根拠により順次でも UNIQUE 衝突しない。
+  const { error: e1 } = await db
+    .from('schedule_entries')
+    .update({ teacher_id: b.teacher_id })
+    .eq('id', a.id);
+  if (e1) {
+    console.error('Error swapping entry A:', e1);
+    throw new Error('入れ替えに失敗しました');
+  }
+  const { error: e2 } = await db
+    .from('schedule_entries')
+    .update({ teacher_id: a.teacher_id })
+    .eq('id', b.id);
+  if (e2) {
+    console.error('Error swapping entry B:', e2);
+    // 2回目が失敗したら1回目を元に戻し、両者が同じ講師になる不整合を避ける。
+    await db.from('schedule_entries').update({ teacher_id: a.teacher_id }).eq('id', a.id);
+    throw new Error('入れ替えに失敗しました');
+  }
+}
+
 /** 出席を記録（attendance_status, attendance_recorded_at, attendance_recorded_by, status = 'completed'） */
 export async function recordAttendance(
   id: string,

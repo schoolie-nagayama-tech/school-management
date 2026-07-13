@@ -2,7 +2,7 @@
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui';
 import { Button } from '@/components/ui';
-import { Calendar, XCircle, Pencil, Trash2, RotateCcw } from 'lucide-react';
+import { Calendar, XCircle, Pencil, Trash2, RotateCcw, ArrowLeftRight } from 'lucide-react';
 import type { ScheduleEntry, ScheduleTimeSlot } from '@/types/schedule';
 
 function gradeLabel(g: number): string {
@@ -25,6 +25,11 @@ export interface StudentActionModalProps {
   onTransfer: () => void;
   onRevertTransfer?: () => void;
   onAbsent: () => void;
+  /**
+   * §2.12 生徒の入れ替えモードを開始する。個別タブ・通常モードでのみ親が渡す
+   * （未指定なら「入れ替え」ボタンを表示しない）。見込み客・振替元・キャンセルでは常に非表示。
+   */
+  onSwap?: () => void;
   onEdit: () => void;
   onDelete: () => void;
   /** 生徒名クリック時（親で授業操作モーダルを閉じてから開くこと） */
@@ -41,6 +46,7 @@ export function StudentActionModal({
   onTransfer,
   onRevertTransfer,
   onAbsent,
+  onSwap,
   onEdit,
   onDelete,
   onStudentClick,
@@ -167,6 +173,18 @@ export function StudentActionModal({
                   <XCircle className="h-4 w-4 mr-2" />
                   欠席にする
                 </Button>
+                {/* §2.12 入れ替え: 個別タブ・通常モードのときだけ親が onSwap を渡す */}
+                {onSwap && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onSwap()}
+                    className="border-emerald-300 text-emerald-700 hover:bg-emerald-50"
+                  >
+                    <ArrowLeftRight className="h-4 w-4 mr-2" />
+                    入れ替え
+                  </Button>
+                )}
               </div>
 
               <div className="border-t border-[var(--surface)] pt-2 flex gap-2">

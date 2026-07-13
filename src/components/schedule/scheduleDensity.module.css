@@ -421,6 +421,26 @@
   cursor: not-allowed;
 }
 
+/* §2.12 入れ替えモードの生徒行ハイライト（D&D の可能セルと同系の emerald）。
+   source=選択中のA / candidate=交換可能な相手（同コマ別講師）/ dimmed=対象外を淡色化。 */
+.swapSource {
+  outline: 2px solid var(--info);
+  outline-offset: -1px;
+  background: var(--info-subtle);
+}
+.swapCandidate {
+  outline: 2px solid var(--success);
+  outline-offset: -1px;
+  cursor: pointer;
+}
+.swapCandidate:hover {
+  background: var(--success-subtle);
+}
+.swapDimmed {
+  opacity: 0.35;
+  filter: grayscale(0.7);
+}
+
 .tHead {
   position: relative;
   display: flex;

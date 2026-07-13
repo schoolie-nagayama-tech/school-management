@@ -100,6 +100,8 @@ export interface WeeklyScheduleGridProps {
   shiftAvailableByDow?: Map<number, string[]>;
   maxStudentsPerTeacher: number;
   transferMode: { sourceEntry: ScheduleEntry } | null;
+  /** §2.12 入れ替えモードの選択中エントリ（生徒A）。null=通常 */
+  swapMode?: { sourceEntry: ScheduleEntry } | null;
   onEmptyTeacherSlotsChange: (next: Record<string, string[]>) => void;
   onAddTeacher: (date: string, slotId: string, existingTeacherIds: string[]) => void;
   onAddStudent: (date: string, slotId: string, teacherId: string) => void;
@@ -182,6 +184,7 @@ export function WeeklyScheduleGrid(props: WeeklyScheduleGridProps) {
     shiftAvailableByDow,
     maxStudentsPerTeacher,
     transferMode,
+    swapMode,
     onAddTeacher,
     onAddStudent,
     onRemoveTeacher,
@@ -389,6 +392,7 @@ export function WeeklyScheduleGrid(props: WeeklyScheduleGridProps) {
       emptyTeacherSlots={emptyTeacherSlots}
       maxStudentsPerTeacher={maxStudentsPerTeacher}
       transferMode={transferMode}
+      swapMode={swapMode}
       activeId={activeId}
       activeEntry={activeEntry}
       groupEntriesByTeacher={(e, d, s) => groupEntriesByTeacher(e, d, s, teachersMap)}

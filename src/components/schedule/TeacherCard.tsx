@@ -3,6 +3,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useDroppable, useDraggable } from '@dnd-kit/core';
 import { DraggableStudentCard } from './DraggableStudentCard';
+import type { SwapState } from './StudentCard';
 import { UserX, UserCheck, X, Plus } from 'lucide-react';
 import type { ScheduleEntry } from '@/types/schedule';
 import { getSurname } from '@/lib/utils/teacherName';
@@ -118,6 +119,11 @@ export interface TeacherCardProps {
    * 講習/テスト対策の配置では渡さない（未指定＝従来どおり全カードクリック可）。
    */
   placeConstraint?: { ok: boolean; reason: string | null };
+  /**
+   * §2.12 入れ替えモードの選択中エントリ（生徒A）。指定時、各生徒行の swapState を算出して
+   * ハイライトする（同じ日・同じコマ・別講師の非取消/非振替元＝候補、A自身＝選択中、他＝淡色）。
+   */
+  swapSource?: ScheduleEntry | null;
 }
 
 export const TeacherCard = React.memo(function TeacherCard({
@@ -143,6 +149,7 @@ export const TeacherCard = React.memo(function TeacherCard({
   seatNo,
   onSeatNoChange,
   placeConstraint,
+  swapSource,
 }: TeacherCardProps) {
   const dropId = getTeacherSlotId(date, timeSlotId, teacher.id);
   const { isOver, setNodeRef } = useDroppable({ id: dropId });
@@ -262,6 +269,22 @@ export const TeacherCard = React.memo(function TeacherCard({
   };
 
   const showSeatInput = !!onSeatNoChange && !isUnassigned && !isAvailableOnly;
+
+  // §2.12 入れ替えモードでの各生徒行のハイライト状態を算出する。
+  // 判定は「同じ日・同じコマ・別講師」（このカードは date/timeSlotId/teacher.id を持つ）。
+  const getSwapState = (entry: ScheduleEntry): SwapState => {
+    if (!swapSource) return null;
+    if (entry.id === swapSource.id) return 'source';
+    const sameCell = date === swapSource.entry_date && timeSlotId === swapSource.time_slot_id;
+    const isCandidate =
+      sameCell &&
+      !!teacher.id &&
+      teacher.id !== swapSource.teacher_id &&
+      entry.status !== 'cancelled' &&
+      entry.status !== 'transferred_out' &&
+      !!entry.student_id;
+    return isCandidate ? 'candidate' : 'dimmed';
+  };
 
   // P2改訂: 汎用配置モード中に「配置不可」と判定された講師カードは淡色＋クリック無効にする。
   // placeConstraint 未指定（講習/テスト対策）のときは従来どおり全カードが配置ターゲット。
@@ -405,6 +428,7 @@ export const TeacherCard = React.memo(function TeacherCard({
               onStudentClick={onStudentClick}
               koushuEnrolled={ki?.enrolled}
               koushuScheduled={ki?.scheduled}
+              swapState={getSwapState(entry)}
             />
           );
         })}
@@ -414,6 +438,7 @@ export const TeacherCard = React.memo(function TeacherCard({
             D&D のドロップ先はカード本体全体なので、この行に落としても割当が成立する。 */}
         {!transferMode &&
           !koushuPlacing &&
+          !swapSource &&
           canAddStudent &&
           occupancy.vacancies.map((v, i) => {
             const label =

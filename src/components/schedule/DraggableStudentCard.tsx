@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useDraggable } from '@dnd-kit/core';
-import { StudentCard } from './StudentCard';
+import { StudentCard, type SwapState } from './StudentCard';
 import type { ScheduleEntry } from '@/types/schedule';
 
 export interface DraggableStudentCardProps {
@@ -10,6 +10,8 @@ export interface DraggableStudentCardProps {
   onStudentClick: (entry: ScheduleEntry, e: React.MouseEvent) => void;
   koushuEnrolled?: number;
   koushuScheduled?: number;
+  /** §2.12 入れ替えモード時の行ハイライト状態 */
+  swapState?: SwapState;
 }
 
 export const DraggableStudentCard = React.memo(function DraggableStudentCard({
@@ -17,6 +19,7 @@ export const DraggableStudentCard = React.memo(function DraggableStudentCard({
   onStudentClick,
   koushuEnrolled,
   koushuScheduled,
+  swapState,
 }: DraggableStudentCardProps) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: entry.id,
@@ -46,6 +49,7 @@ export const DraggableStudentCard = React.memo(function DraggableStudentCard({
         }}
         koushuEnrolled={koushuEnrolled}
         koushuScheduled={koushuScheduled}
+        swapState={swapState}
       />
     </div>
   );

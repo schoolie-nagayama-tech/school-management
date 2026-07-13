@@ -32,6 +32,7 @@ export { InquirySearchInput } from './InquirySearchInput';
 export { DeleteScheduleEntryModal } from './DeleteScheduleEntryModal';
 export type { DeleteType } from './DeleteScheduleEntryModal';
 export { TransferModeBar } from './TransferModeBar';
+export { SwapModeBar } from './SwapModeBar';
 export { ScheduleDailyPrintView } from './ScheduleDailyPrintView';
 export { ScheduleToolbar } from './ScheduleToolbar';
 export { ScheduleDialogs } from './ScheduleDialogs';

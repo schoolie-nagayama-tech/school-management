@@ -45,6 +45,8 @@ export interface WeeklyScheduleGridViewProps {
   emptyTeacherSlots: Record<string, string[]>;
   maxStudentsPerTeacher: number;
   transferMode: { sourceEntry: ScheduleEntry } | null;
+  /** §2.12 入れ替えモードの選択中エントリ（生徒A）。null=通常 */
+  swapMode?: { sourceEntry: ScheduleEntry } | null;
   activeId: string | null;
   activeEntry: ScheduleEntry | null;
   groupEntriesByTeacher: (entries: ScheduleEntry[], date: string, slotId: string) => TeacherGroup[];
@@ -93,6 +95,7 @@ export function WeeklyScheduleGridView(props: WeeklyScheduleGridViewProps) {
     closedDates,
     maxStudentsPerTeacher,
     transferMode,
+    swapMode,
     activeId,
     activeEntry,
     getTeacherGroupsForCell,
@@ -236,6 +239,7 @@ export function WeeklyScheduleGridView(props: WeeklyScheduleGridViewProps) {
             ? (teacherId) => getTeacherPlaceConstraint(dateStr, slot.id, teacherId)
             : undefined
         }
+        swapSource={swapMode?.sourceEntry ?? null}
       />
     );
   };

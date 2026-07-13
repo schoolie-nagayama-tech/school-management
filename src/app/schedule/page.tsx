@@ -18,6 +18,9 @@ const TransferModeBar = dynamic(
   () => import('@/components/schedule').then((m) => m.TransferModeBar),
   { ssr: false }
 );
+const SwapModeBar = dynamic(() => import('@/components/schedule').then((m) => m.SwapModeBar), {
+  ssr: false,
+});
 const ScheduleDailyPrintView = dynamic(
   () => import('@/components/schedule').then((m) => m.ScheduleDailyPrintView),
   { ssr: false }
@@ -115,6 +118,7 @@ import {
   cancelFutureEntriesByRegularPatternId,
   getMonthlyTransferUsage,
   regenerateCurrentWeekIfNeeded,
+  swapScheduleEntries,
 } from '@/lib/api/schedule';
 import { reassignTeacherFromToday } from '@/lib/api/pattern-matching';
 import { markInquiryTrialScheduled } from '@/lib/api/inquiries';
@@ -237,6 +241,8 @@ export default function SchedulePage() {
     slotId: string;
   } | null>(null);
   const [transferMode, setTransferMode] = useState<{ sourceEntry: ScheduleEntry } | null>(null);
+  // §2.12 生徒の入れ替えモード（同コマ・別講師の生徒Aを選択中）。候補クリックで teacher_id を交換。
+  const [swapMode, setSwapMode] = useState<{ sourceEntry: ScheduleEntry } | null>(null);
   // 担当未決定エントリに講師カードを D&D したときの確定待ち状態。
   // floating action bar で「このコマだけ」「毎週このコマ」のワンクリック選択を表示する。
   const [pendingAssignment, setPendingAssignment] = useState<{
@@ -937,10 +943,86 @@ export default function SchedulePage() {
   // 他画面（マッチング等）の変更を取り込みたい場合は、ツールバーの「再取得」ボタンや
   // 週の切替で明示的にリロードする運用とする。
 
-  const handleEntryClick = useCallback((entry: ScheduleEntry, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setActionModalEntry(entry);
-  }, []);
+  // §2.12 入れ替えの確定。候補（同じ日・同じコマ・別講師・非取消/非振替元・生徒コマ）なら
+  // teacher_id を交換して成功トースト＋モード解除。指導科目外等の違反は toast 表示しモード継続。
+  const handleSwapTargetClick = useCallback(
+    async (target: ScheduleEntry) => {
+      if (!swapMode) return;
+      const source = swapMode.sourceEntry;
+      // 自分自身のクリックは無視（モード継続）。
+      if (target.id === source.id) return;
+      const isCandidate =
+        target.entry_date === source.entry_date &&
+        target.time_slot_id === source.time_slot_id &&
+        !!target.teacher_id &&
+        !!source.teacher_id &&
+        target.teacher_id !== source.teacher_id &&
+        target.status !== 'cancelled' &&
+        target.status !== 'transferred_out' &&
+        !!target.student_id;
+      if (!isCandidate) {
+        // 非候補は軽い警告のみ（モード継続で相手を選び直せる）。
+        toastError('入れ替えできる相手は、同じコマの別講師の生徒です');
+        return;
+      }
+      try {
+        await swapScheduleEntries(source.id, target.id);
+        const nameOf = (en: ScheduleEntry) =>
+          en.student ? `${en.student.last_name}${en.student.first_name}` : '生徒';
+        const aName = nameOf(source);
+        const bName = nameOf(target);
+        // 監査ログ（既存の move/transfer と同様、失敗してもメインは成立扱い）。
+        // action_type は既存の 'entry_reassign' を流用（新規 action 追加はマイグレを伴うため避ける）。
+        if (schoolId) {
+          await logScheduleChange({
+            school_id: schoolId,
+            actor_user_id: profile?.id ?? null,
+            action_type: 'entry_reassign',
+            entry_id: source.id,
+            student_id: source.student_id,
+            before_teacher_id: source.teacher_id ?? null,
+            after_teacher_id: target.teacher_id ?? null,
+            affected_date: source.entry_date,
+            affected_slot_id: source.time_slot_id,
+            description: `生徒の入れ替え（${aName} ⇄ ${bName}）`,
+          });
+          await logScheduleChange({
+            school_id: schoolId,
+            actor_user_id: profile?.id ?? null,
+            action_type: 'entry_reassign',
+            entry_id: target.id,
+            student_id: target.student_id,
+            before_teacher_id: target.teacher_id ?? null,
+            after_teacher_id: source.teacher_id ?? null,
+            affected_date: target.entry_date,
+            affected_slot_id: target.time_slot_id,
+            description: `生徒の入れ替え（${bName} ⇄ ${aName}）`,
+          });
+        }
+        success(`${aName}と${bName}を入れ替えました`);
+        setSwapMode(null);
+        refreshEntries();
+      } catch (err) {
+        // 指導科目外などの検証エラーは理由を出してモード継続。
+        toastError(err instanceof Error ? err.message : '入れ替えに失敗しました');
+      }
+    },
+    [swapMode, schoolId, profile?.id, success, refreshEntries, toastError]
+  );
+
+  const handleEntryClick = useCallback(
+    (entry: ScheduleEntry, e: React.MouseEvent) => {
+      e.stopPropagation();
+      // §2.12 入れ替えモード中は生徒行クリックを横取りしてスワップ確定に回す。
+      // 通常モード（swapMode=null）では従来どおり授業操作モーダルを開く。
+      if (swapMode) {
+        void handleSwapTargetClick(entry);
+        return;
+      }
+      setActionModalEntry(entry);
+    },
+    [swapMode, handleSwapTargetClick]
+  );
 
   const handleStudentClickFromAction = useCallback(() => {
     const entry = actionModalEntry;
@@ -1220,6 +1302,44 @@ export default function SchedulePage() {
     setTransferMode({ sourceEntry: actionModalEntry });
     setActionModalEntry(null);
   }, [actionModalEntry, activeFormation]);
+
+  // §2.12 入れ替えモードに切り替え（同コマ・別講師の相手を座席表でクリックして交換）。
+  // 個別タブのみ・他モード非アクティブ時のみ（onSwapFromAction を渡す条件で担保）。
+  const handleSwapFromAction = useCallback(() => {
+    if (!actionModalEntry) return;
+    setSwapMode({ sourceEntry: actionModalEntry });
+    setActionModalEntry(null);
+  }, [actionModalEntry]);
+
+  // §2.12 排他の安全網: 入れ替え以外のモードが立ったら入れ替えモードを自動解除する
+  // （講習/テスト対策/配置/振替。開始経路が複数あるため個別の解除漏れを一括で吸収）。
+  useEffect(() => {
+    if (
+      swapMode &&
+      (transferMode ||
+        selectedKoushu ||
+        testPrepActive ||
+        placingKoushuStudent ||
+        placingTestPrep ||
+        placingAdhoc)
+    ) {
+      setSwapMode(null);
+    }
+  }, [
+    swapMode,
+    transferMode,
+    selectedKoushu,
+    testPrepActive,
+    placingKoushuStudent,
+    placingTestPrep,
+    placingAdhoc,
+  ]);
+
+  // §2.12 入れ替えは個別タブ専用。形態ボードへ切り替えたら入れ替えモードを解除する
+  // （バーは個別ボードにしか出ないため、状態とクリック横取りが残らないように）。
+  useEffect(() => {
+    if (swapMode && activeFormation !== INDIVIDUAL_FORMATION) setSwapMode(null);
+  }, [swapMode, activeFormation]);
 
   // Phase P2: TransferModal（別週へ振替ダイアログ）から「保留にする」。
   // 振替先を決めずに元コマだけ transferred_out 化し、保留プールへ入れる。
@@ -1934,6 +2054,7 @@ export default function SchedulePage() {
       setTestPrepActive(false);
       setPlacingTestPrep(null);
       setTransferMode(null);
+      setSwapMode(null);
       const name = entry.student
         ? `${entry.student.last_name}${entry.student.first_name}`.trim() || '生徒'
         : '生徒';
@@ -1971,6 +2092,7 @@ export default function SchedulePage() {
     setTestPrepActive(false);
     setPlacingTestPrep(null);
     setTransferMode(null);
+    setSwapMode(null);
   }, []);
 
   // 「授業を追加」モーダルの Step1 確定 → 授業追加の配置モードを開始。
@@ -2910,6 +3032,20 @@ export default function SchedulePage() {
                     />
                   </div>
                 )}
+                {/* §2.12 生徒の入れ替えモードのバー */}
+                {swapMode && (
+                  <div className="px-3 pb-2">
+                    <SwapModeBar
+                      entry={swapMode.sourceEntry}
+                      teacherName={
+                        swapMode.sourceEntry.teacher?.display_name ??
+                        swapMode.sourceEntry.teacher?.email ??
+                        undefined
+                      }
+                      onCancel={() => setSwapMode(null)}
+                    />
+                  </div>
+                )}
                 {entriesLoading ? (
                   <div className="py-8">
                     <Loading size="md" />
@@ -2954,6 +3090,7 @@ export default function SchedulePage() {
                       shiftAvailableByDow={shiftByDow}
                       maxStudentsPerTeacher={capacity.max_students_per_teacher_individual}
                       transferMode={transferMode}
+                      swapMode={swapMode}
                       onEmptyTeacherSlotsChange={setEmptyTeacherSlots}
                       onAddTeacher={handleAddTeacher}
                       onAddStudent={handleAddStudent}
@@ -3024,6 +3161,16 @@ export default function SchedulePage() {
         // 形態タブでは振替候補コマ・スロットラベルをその形態に限定する
         timeSlots={isFormationBoard ? formationSlots : timeSlots}
         onTransferFromAction={handleTransferFromAction}
+        // §2.12 入れ替えは個別タブ・かつ他モード非アクティブのときだけ「入れ替え」ボタンを出す。
+        onSwapFromAction={
+          activeFormation === INDIVIDUAL_FORMATION &&
+          !gridPlacing &&
+          !transferMode &&
+          !selectedKoushu &&
+          !testPrepActive
+            ? handleSwapFromAction
+            : undefined
+        }
         onRevertTransfer={handleRevertTransfer}
         onAbsentFromAction={handleAbsentFromAction}
         onEditClick={handleEditClick}

@@ -33,6 +33,9 @@ function SubjectChip({ name }: { name: string }) {
   );
 }
 
+/** §2.12 入れ替えモードでの行の状態。null=通常。 */
+export type SwapState = 'source' | 'candidate' | 'dimmed' | null;
+
 export interface StudentCardProps {
   entry: ScheduleEntry;
   onClick: (e: React.MouseEvent) => void;
@@ -40,6 +43,8 @@ export interface StudentCardProps {
   koushuEnrolled?: number;
   /** 講習モード: 期間内の受講済みコマ数 */
   koushuScheduled?: number;
+  /** §2.12 入れ替えモード時の行ハイライト状態 */
+  swapState?: SwapState;
 }
 
 /**
@@ -54,6 +59,7 @@ export const StudentCard = React.memo(function StudentCard({
   onClick,
   koushuEnrolled,
   koushuScheduled,
+  swapState,
 }: StudentCardProps) {
   // Phase T: 体験の見込み客（student を持たず inquiry を参照する行）は inquiry からフォールバック表示する。
   const isInquiry = !entry.student && !!entry.inquiry;
@@ -97,6 +103,16 @@ export const StudentCard = React.memo(function StudentCard({
   // 振替先は元日程を title に出す（バッジ廃止のぶんの情報を hover で補う）
   const rowTitle = isTransferredIn ? '振替で入ったコマ' : studentName;
 
+  // §2.12 入れ替えモードの行ハイライト（source/candidate/dimmed）。
+  const swapClass =
+    swapState === 'source'
+      ? styles.swapSource
+      : swapState === 'candidate'
+        ? styles.swapCandidate
+        : swapState === 'dimmed'
+          ? styles.swapDimmed
+          : '';
+
   const koushuRemain =
     koushuEnrolled !== undefined ? Math.max(0, koushuEnrolled - (koushuScheduled ?? 0)) : null;
 
@@ -121,7 +137,7 @@ export const StudentCard = React.memo(function StudentCard({
           ? '自動マッチングの仮配置（未公開）。コントロールパネルで公開すると確定します'
           : rowTitle
       }
-      className={`${styles.sRow} ${styles.clickable} ${stateClass} ${isDraft ? styles.draftRow : ''}`}
+      className={`${styles.sRow} ${styles.clickable} ${stateClass} ${swapClass} ${isDraft ? styles.draftRow : ''}`}
     >
       {isDraft && (
         <span
