@@ -253,7 +253,7 @@ export async function getBulletinPosts(
           .select('post_id')
           .eq('user_id', options.userId)
           .in('post_id', postIds),
-        supabase.from('user_profiles').select('id').eq('role', 'teacher'),
+        supabase.from('user_profiles').select('id').eq('role', 'teacher').eq('is_active', true),
       ]);
 
       const readPostIds = new Set((readsResult.data || []).map((r) => r.post_id));
@@ -384,7 +384,7 @@ export async function getBulletinPostsBatch(
             .then((r) => r.data || [])
         )
       ),
-      client.from('user_profiles').select('id').eq('role', 'teacher'),
+      client.from('user_profiles').select('id').eq('role', 'teacher').eq('is_active', true),
     ]);
 
     readPostIds = new Set(myReadChunks.flat().map((r) => r.post_id));
@@ -651,11 +651,12 @@ export async function markAsRead(postId: string, userId: string): Promise<void> 
  * 既読者一覧を取得（講師のみ）
  */
 export async function getPostReaders(postId: string): Promise<BulletinRead[]> {
-  // まず講師のuser_idを取得
+  // まず講師のuser_idを取得（無効化された講師は既読集計の対象外）
   const { data: teacherProfiles } = await supabase
     .from('user_profiles')
     .select('id')
-    .eq('role', 'teacher');
+    .eq('role', 'teacher')
+    .eq('is_active', true);
 
   if (!teacherProfiles || teacherProfiles.length === 0) {
     return [];

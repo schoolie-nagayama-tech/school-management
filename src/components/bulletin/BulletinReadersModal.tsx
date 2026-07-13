@@ -71,7 +71,8 @@ export function BulletinReadersModal({
         .from('user_profiles')
         .select('id, display_name, email, role')
         .in('id', userIds)
-        .eq('role', 'teacher'); // 講師のみ
+        .eq('role', 'teacher') // 講師のみ
+        .eq('is_active', true); // 無効化された講師は未読集計に含めない
 
       const userMap = new Map(
         (userProfiles || []).map((up) => [
