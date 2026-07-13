@@ -7,20 +7,32 @@ import { cookies } from 'next/headers';
  *
  * - NODE_ENV !== 'development' のときは 404 を返して本番では無効化
  * - .env.local の DEV_LOGIN_EMAIL / DEV_LOGIN_PASSWORD を使って signInWithPassword
+ * - ?role= で複数ロールのデモアカウントを切り替え可能（パスワードは共通で env のもの）
  * - 成功したら ?redirect= で指定されたページ (デフォルト /students) にリダイレクト
  *
  * 使い方:
- *   http://localhost:3000/api/dev/login
- *   http://localhost:3000/api/dev/login?redirect=/applications
+ *   http://localhost:3000/api/dev/login                     … 既定 (DEV_LOGIN_EMAIL)
+ *   http://localhost:3000/api/dev/login?role=teacher        … teacher@test.com でログイン
+ *   http://localhost:3000/api/dev/login?role=manager&redirect=/students
  */
 export const dynamic = 'force-dynamic';
+
+// デモアカウントのロール→メール対応（パスワードは全ロール共通で DEV_LOGIN_PASSWORD を使う）
+const DEMO_ROLE_EMAILS: Record<string, string> = {
+  admin: 'admin@test.com',
+  manager: 'manager@test.com',
+  owner: 'owner@test.com',
+  teacher: 'teacher@test.com',
+};
 
 export async function GET(request: NextRequest) {
   if (process.env.NODE_ENV !== 'development') {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
 
-  const email = process.env.DEV_LOGIN_EMAIL;
+  // ?role= が指定され既知のロールならそのデモアカウントを、なければ既定の DEV_LOGIN_EMAIL を使う
+  const role = request.nextUrl.searchParams.get('role');
+  const email = (role && DEMO_ROLE_EMAILS[role]) || process.env.DEV_LOGIN_EMAIL;
   const password = process.env.DEV_LOGIN_PASSWORD;
 
   if (!email || !password) {
