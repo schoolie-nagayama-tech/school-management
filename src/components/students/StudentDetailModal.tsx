@@ -1,8 +1,10 @@
 'use client';
 
 import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import { Modal, Button, Select, Loading } from '@/components/ui';
 import { getDefaultSchoolId } from '@/lib/api/schools';
+import { countActiveRegularPatterns } from '@/lib/api/schedule';
 import {
   getStudentTextbooks as getStudentTextbooksForProgress,
   createStudentTextbook,
@@ -31,7 +33,7 @@ import { StudentKoushuTab } from './StudentKoushuTab';
 import { useAuth } from '@/contexts/AuthContext';
 import { useConfirm } from '@/hooks/useConfirm';
 import { useToast } from '@/hooks/useToast';
-import { Trash2, ExternalLink, PackageCheck } from 'lucide-react';
+import { Trash2, ExternalLink, PackageCheck, CalendarPlus } from 'lucide-react';
 
 interface StudentDetailModalProps {
   isOpen: boolean;
@@ -71,9 +73,12 @@ export function StudentDetailModal({
   onDelete,
 }: StudentDetailModalProps) {
   const { profile } = useAuth();
+  const router = useRouter();
   const { confirm, ConfirmDialog } = useConfirm();
   const { success, error: toastError } = useToast();
   const isTeacher = profile?.role === 'teacher';
+  // 入会オンボーディング導線: 通塾日程が0件の生徒にだけ「通塾セットアップ」ボタンを出す。
+  const [hasPatterns, setHasPatterns] = useState<boolean | null>(null);
   const [textbooks, setTextbooks] = useState<StudentTextbookRow[]>([]);
   const [distributedMaterials, setDistributedMaterials] = useState<DistributedMaterial[]>([]);
   // 「配布済みにする」処理中の発注ID（連打防止・ボタンのローディング表示用）
@@ -128,6 +133,18 @@ export function StudentDetailModal({
       setSelectedTextbookId('');
     }
   }, [isOpen, student, loadTextbooks]);
+
+  // 通塾日程の有無を軽量チェック（0件なら「通塾セットアップ」導線を出す）。教室長以上のみ。
+  useEffect(() => {
+    if (isOpen && student && !isTeacher) {
+      setHasPatterns(null);
+      countActiveRegularPatterns(student.id)
+        .then((n) => setHasPatterns(n > 0))
+        .catch(() => setHasPatterns(true)); // 取得失敗時はボタンを出さない（安全側）
+    } else {
+      setHasPatterns(null);
+    }
+  }, [isOpen, student, isTeacher]);
 
   // 成績データを読み込み（成績タブに切り替えたときに取得）
   useEffect(() => {
@@ -675,6 +692,17 @@ export function StudentDetailModal({
                 <Button type="button" variant="secondary" onClick={onClose}>
                   閉じる
                 </Button>
+                {/* 通塾日程が0件の生徒だけに出す「通塾セットアップ」導線（入会オンボーディング） */}
+                {!isTeacher && student && hasPatterns === false && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => router.push(`/students/${student.id}/onboarding`)}
+                  >
+                    <CalendarPlus className="w-4 h-4 mr-1.5" />
+                    通塾セットアップ
+                  </Button>
+                )}
                 {!isTeacher && (
                   <Button type="button" onClick={handleEdit}>
                     編集

@@ -624,7 +624,8 @@ export default function InquiryDetailPage() {
   // ---- 生徒として登録 ----
   // 入会確定時に問合せ情報から students レコードを作り、linked_student_id で紐付ける。
   // 学年・姓名・カナ・在籍校を生徒情報に転記する（students 表に列がある項目のみ）。
-  // 登録後は生徒一覧の編集モーダル（?edit=）へ遷移し、転記内容をその場で確認・修正できるようにする。
+  // 登録後は入会オンボーディングのウィザード（/students/[id]/onboarding）へ遷移し、
+  // Step1 で転記内容を確認・修正 → 受講科目・通塾日程・担当講師まで設定できるようにする。
   const handleEnrollAsStudent = useCallback(async () => {
     if (!inquiry) return;
     setIsEnrolling(true);
@@ -676,8 +677,10 @@ export default function InquiryDetailPage() {
           ? `生徒として登録しました（Notta ${nottaMoved}件を面談記録に取り込み）`
           : '生徒として登録しました。内容をご確認ください'
       );
-      // 生徒一覧の編集モーダルを開く（転記された学年・姓名などを確認・修正できる）
-      router.push(`/students?edit=${created.id}`);
+      // 入会オンボーディングのウィザードへ遷移（Step1 で転記内容を確認・修正し、
+      // 受講科目→通塾日程→担当講師まで一気通貫で設定する）。inquiryId を渡すと
+      // Step5 の一括保存時に体験コマの引き継ぎも行われる。
+      router.push(`/students/${created.id}/onboarding?inquiryId=${inquiry.id}`);
     } catch (err) {
       toast.error(getUserErrorMessage(err, '生徒登録に失敗しました'));
     } finally {

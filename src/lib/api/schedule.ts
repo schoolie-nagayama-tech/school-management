@@ -2533,3 +2533,72 @@ export async function detectScheduleDrift(
 
   return results;
 }
+
+/**
+ * 生徒の有効な通塾日程パターン数を返す（軽量）。
+ * 入会オンボーディング導線の「通塾日程が0件のときだけボタンを出す」判定に使う。
+ */
+export async function countActiveRegularPatterns(studentId: string): Promise<number> {
+  const { count, error } = await db
+    .from('schedule_regular_patterns')
+    .select('id', { count: 'exact', head: true })
+    .eq('student_id', studentId)
+    .eq('is_active', true);
+  if (error) {
+    console.warn('通塾日程パターン数の取得に失敗:', error);
+    return 0;
+  }
+  return count ?? 0;
+}
+
+/**
+ * 入会オンボーディング：問合せの体験コマを新規生徒に引き継ぐ。
+ *
+ * 体験授業の見込み客（未入会）は schedule_entries.inquiry_id で参照され student_id は NULL。
+ * 入会して生徒レコードができたら、その体験コマを「生徒の実績」として残すために
+ * inquiry_id=対象 の行を student_id=生徒 / inquiry_id=NULL へ付け替える（XOR CHECK を満たす）。
+ *
+ * 罠：schedule_entries は UNIQUE(school, entry_date, time_slot, teacher, student) を持つ。
+ * 既に同じ枠に同一生徒の行がある（例：体験当日に既存の通常授業がある等）と衝突するため、
+ * 一括 UPDATE ではなく 1 行ずつ付け替え、23505（unique_violation）はスキップして件数を返す。
+ *
+ * @returns converted=付け替えた件数 / skipped=衝突等でスキップした件数
+ */
+export async function convertInquiryTrialEntriesToStudent(
+  inquiryId: string,
+  studentId: string
+): Promise<{ converted: number; skipped: number }> {
+  // 対象の体験コマ（inquiry_id で紐づく行）を取得。student_id は必ず NULL 側。
+  const { data: rows, error } = await db
+    .from('schedule_entries')
+    .select('id')
+    .eq('inquiry_id', inquiryId);
+  if (error) {
+    console.error('体験コマの取得に失敗しました:', error);
+    throw new Error('体験コマの引き継ぎに失敗しました');
+  }
+
+  const entryIds = ((rows || []) as Array<{ id: string }>).map((r) => r.id);
+  let converted = 0;
+  let skipped = 0;
+
+  // 1 行ずつ付け替える（UNIQUE 衝突を局所化してスキップ判定するため）。
+  for (const id of entryIds) {
+    const { error: updErr } = await db
+      .from('schedule_entries')
+      .update({ student_id: studentId, inquiry_id: null })
+      .eq('id', id);
+    if (updErr) {
+      // 23505=unique_violation（同一枠に既に同じ生徒の行がある）はスキップして継続。
+      // それ以外の想定外エラーもオンボーディング完了を止めないよう skip 扱いにする。
+      if (updErr.code !== '23505') {
+        console.warn('体験コマの付け替えに失敗（スキップ）:', updErr);
+      }
+      skipped++;
+      continue;
+    }
+    converted++;
+  }
+
+  return { converted, skipped };
+}
