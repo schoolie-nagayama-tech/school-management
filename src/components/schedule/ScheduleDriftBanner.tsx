@@ -79,11 +79,11 @@ export function ScheduleDriftBanner({
         for (const d of drifts) {
           await generateWeeklySchedule(schoolId, d.weekStart, userId);
         }
-        success(
-          auto
-            ? `通塾日程の変更を座席表に自動反映しました（${drifts.length}週分）`
-            : `${drifts.length}週分の座席表を再生成しました`
-        );
+        // 自動反映（開いたタイミングのバックグラウンド処理）は成功トーストを出さない。
+        // 手動「反映する」を押したときだけ完了を知らせる。
+        if (!auto) {
+          success(`${drifts.length}週分の座席表を再生成しました`);
+        }
         setDrifts([]);
         onResynced?.();
       } catch (e) {
@@ -111,16 +111,10 @@ export function ScheduleDriftBanner({
   const totalMissing = drifts.reduce((sum, d) => sum + d.missingCount, 0);
   const totalExtra = drifts.reduce((sum, d) => sum + d.extraCount, 0);
 
-  // 自動反映モードで失敗していない間は、控えめな「自動反映中」表示にする（手動操作を促さない）
+  // 自動反映モードで失敗していない間は何も表示しない（バックグラウンドで静かに反映する）。
+  // 開いたタイミングで「同期しています」が出るのを避けるため、進行中バナーは出さない。
   if (autoResync && !autoFailed) {
-    return (
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4 flex items-center gap-3">
-        <RefreshCw className="w-4 h-4 text-blue-600 shrink-0 animate-spin" />
-        <p className="text-sm text-blue-900">
-          通塾日程の変更を座席表に自動反映しています（{drifts.length}週分）…
-        </p>
-      </div>
-    );
+    return null;
   }
 
   // 自動反映に失敗した場合のみ、手動ボタン付きの警告を表示

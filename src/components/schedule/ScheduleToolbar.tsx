@@ -228,32 +228,6 @@ export function ScheduleToolbar({
               <ChevronDown className="h-4 w-4 opacity-70" />
             </Button>
           )}
-          {schoolId && (
-            <>
-              <span className="text-sm text-[var(--paragraph)] ml-1">表示曜日:</span>
-              <div className="flex flex-wrap items-center gap-1">
-                {DAY_LABELS.map((d) => (
-                  <label key={d.value} className="flex items-center gap-1 text-xs cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={visibleDaysOfWeek.includes(d.value)}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          onVisibleDaysChange(
-                            [...visibleDaysOfWeek, d.value].sort((a, b) => a - b)
-                          );
-                        } else {
-                          onVisibleDaysChange(visibleDaysOfWeek.filter((x) => x !== d.value));
-                        }
-                      }}
-                      className="rounded border-[var(--stroke)]"
-                    />
-                    <span className="text-[var(--headline)]">{d.label}</span>
-                  </label>
-                ))}
-              </div>
-            </>
-          )}
         </div>
         {schoolId && (
           <div className="flex items-center gap-2 flex-wrap">
@@ -373,7 +347,44 @@ export function ScheduleToolbar({
                     onClick={() => setMgmtOpen(false)}
                   />
                   {/* dropdown-menu-right: 右起点の出現アニメ（globals.css） */}
-                  <div className="dropdown-menu dropdown-menu-right absolute right-0 mt-1 z-50 w-52 rounded-lg border border-[var(--stroke)] bg-white shadow-lg overflow-hidden py-1">
+                  <div className="dropdown-menu dropdown-menu-right absolute right-0 mt-1 z-50 w-56 rounded-lg border border-[var(--stroke)] bg-white shadow-lg overflow-hidden py-1">
+                    {/* 表示曜日: ツールバーから移設（上部の混雑を解消）。チェックしても閉じない */}
+                    <div className="px-3 py-2">
+                      <div className="text-[11px] font-medium text-[var(--paragraph-light)] mb-1.5">
+                        表示曜日
+                      </div>
+                      <div className="flex flex-wrap gap-1">
+                        {DAY_LABELS.map((d) => {
+                          const on = visibleDaysOfWeek.includes(d.value);
+                          return (
+                            <button
+                              key={d.value}
+                              type="button"
+                              onClick={() => {
+                                if (on) {
+                                  onVisibleDaysChange(
+                                    visibleDaysOfWeek.filter((x) => x !== d.value)
+                                  );
+                                } else {
+                                  onVisibleDaysChange(
+                                    [...visibleDaysOfWeek, d.value].sort((a, b) => a - b)
+                                  );
+                                }
+                              }}
+                              aria-pressed={on}
+                              className={`w-6 h-6 rounded text-xs font-medium transition-colors ${
+                                on
+                                  ? 'bg-[var(--headline)] text-white'
+                                  : 'bg-[var(--surface)] text-[var(--paragraph-light)] hover:text-[var(--headline)]'
+                              }`}
+                            >
+                              {d.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                    <div className="my-1 border-t border-[var(--stroke)]" />
                     {[
                       { href: '/schedule/regular-patterns', label: '通塾日程の登録' },
                       { href: '/schedule/enrollments', label: '申込管理（講習・テスト対策）' },
