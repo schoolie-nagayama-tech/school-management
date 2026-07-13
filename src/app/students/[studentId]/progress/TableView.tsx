@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { Eye, EyeOff, FileText, RefreshCw, Send, Settings2, X } from 'lucide-react';
+import { Eye, EyeOff, FileText, RefreshCw, Send, Settings2 } from 'lucide-react';
 import {
   getStudentProgress,
   updateStudentProgress,
@@ -25,6 +25,7 @@ import type {
 import {
   INTENT_TAGS,
   activeExamOf,
+  gradeLabel,
   isIntentTag,
   itemNo,
   seasonLabel,
@@ -51,12 +52,11 @@ export function TableView({
   setActionGoalsByExam,
   examRanges,
   setExamRangesForTextbook,
-  textbookTabs,
-  onSelectTab,
   role,
   viewMode,
   studentId,
   studentName,
+  studentGrade,
   selfName,
   onBack,
   onRefresh,
@@ -74,12 +74,11 @@ export function TableView({
   setActionGoalsByExam: React.Dispatch<React.SetStateAction<Record<string, ActionGoal[]>>>;
   examRanges: StudentTextbookExamRange[];
   setExamRangesForTextbook: (ranges: StudentTextbookExamRange[]) => void;
-  textbookTabs: StudentTextbookWithDetails[];
-  onSelectTab: (id: string) => void;
   role: 'teacher' | 'manager';
   viewMode: ViewMode;
   studentId: string;
   studentName: string;
+  studentGrade?: number;
   selfName: string;
   onBack: () => void;
   onRefresh: () => Promise<void>;
@@ -318,6 +317,8 @@ export function TableView({
   // ─── セッション記録モード（新UI）───
   const [sessionMode, setSessionMode] = useState(false);
   const sessionPanelRef = useRef<SessionRecordingPanelHandle | null>(null);
+  // 記録パネルのラッパー。「授業を記録」を押したときにここへ自動スクロールする。
+  const sessionPanelWrapperRef = useRef<HTMLDivElement | null>(null);
   // セッション選択状態（テーブル行ハイライト用）
   const [sessionSelection, setSessionSelection] = useState<{
     unitActions: Record<number, 1 | 2 | 3>;
@@ -342,36 +343,47 @@ export function TableView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [highlightItemId, progress.length]);
 
-  // 季節ラベルを手動解除したら即座にチップを消すためのローカルフラグ。
-  // 親(textbook.season)の再取得は onRefresh 経由で反映されるが、
-  // 反映までのラグでチップが残らないようローカルでも隠す。テキスト切替でリセット。
-  const [seasonCleared, setSeasonCleared] = useState(false);
+  // 「授業を記録」で記録モードに入ったら、記録パネルまで自動スクロールする。
+  // パネルはゴール/設定カードの下に出るため、画面が長いとボタンを押しても
+  // 記入欄がどこに現れたか分からず気づけない、という声への対応。
   useEffect(() => {
-    setSeasonCleared(false);
-  }, [textbook.id]);
+    if (!sessionMode || isMeeting) return;
+    // パネルのマウント直後に位置が確定してからスクロールする
+    const raf = requestAnimationFrame(() => {
+      sessionPanelWrapperRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [sessionMode, isMeeting]);
 
-  // 季節ラベル（夏期等）の手動解除。講習終了後の整理用。
-  // student_textbooks.season を null に更新し、成功したらチップを消す。
-  const handleClearSeason = useCallback(async () => {
-    if (!textbook.season) return;
-    if (
-      !window.confirm(
-        `「${seasonLabel(textbook.season)}」ラベルを外しますか？（講習終了後の整理用）`
-      )
-    ) {
-      return;
-    }
-    try {
-      await updateStudentTextbookSeason(textbook.id, null);
-      setSeasonCleared(true); // 即座にチップを消す
-      success('季節ラベルを外しました');
-      // 親の textbook.season も最新化（他ビューとの整合のため）
-      await onRefresh();
-    } catch (e) {
-      console.error(e);
-      toastError('季節ラベルの解除に失敗しました');
-    }
-  }, [textbook.id, textbook.season, success, toastError, onRefresh]);
+  // 季節ラベルの楽観的表示値。undefined のときは親の textbook.season を使う。
+  // 手動で設定/解除した直後、onRefresh 反映までのラグでチップがちらつかないようにする。
+  // テキスト切替でリセット。
+  const [seasonOverride, setSeasonOverride] = useState<
+    'spring' | 'summer' | 'winter' | null | undefined
+  >(undefined);
+  useEffect(() => {
+    setSeasonOverride(undefined);
+  }, [textbook.id]);
+  const displaySeason = seasonOverride !== undefined ? seasonOverride : (textbook.season ?? null);
+
+  // 季節ラベル（夏期等）の設定・解除。教室長以上のみ、テキスト設定カードから操作する。
+  // 講習提案書の公開でも自動付与されるが、手動でも付け外しできるようにする。null で解除。
+  const handleSetSeason = useCallback(
+    async (season: 'spring' | 'summer' | 'winter' | null) => {
+      try {
+        await updateStudentTextbookSeason(textbook.id, season);
+        // 反映ラグ中もチップ表示を即時に整合させる（楽観更新）
+        setSeasonOverride(season);
+        success(season ? `${seasonLabel(season)}ラベルを設定しました` : '季節ラベルを外しました');
+        // 親の textbook.season も最新化（他ビューとの整合のため）
+        await onRefresh();
+      } catch (e) {
+        console.error(e);
+        toastError('季節ラベルの更新に失敗しました');
+      }
+    },
+    [textbook.id, success, toastError, onRefresh]
+  );
 
   // セッション保存後にデータ再読込
   const handleSessionSaved = useCallback(async () => {
@@ -570,21 +582,55 @@ export function TableView({
     <div>
       {/* ヘッダ */}
       <div className="mb-4 flex items-center justify-between flex-wrap gap-2">
-        <div className="flex items-center gap-3 flex-wrap">
-          <button onClick={onBack} className="text-sm text-[#4b5563] hover:text-[#1f2937]">
+        {/* 一覧への遷移・生徒名・テキスト名を左上に1か所へまとめて配置（散らばりを解消） */}
+        <div className="flex items-center gap-x-2.5 gap-y-1 flex-wrap min-w-0">
+          <button
+            onClick={onBack}
+            className="text-xs text-[#6b7280] hover:text-[#1f2937] transition-colors whitespace-nowrap"
+          >
             ← テキスト一覧
           </button>
-          <h2 className="text-base font-semibold text-[#1f2937]">
+          <span className="text-gray-300" aria-hidden>
+            /
+          </span>
+          {/* 一次情報: 生徒名（大・濃） */}
+          <span className="text-lg font-bold text-[#1f2937] whitespace-nowrap">
+            {studentName || '—'}
+            {studentGrade != null && (
+              <span className="text-xs font-normal text-[#6b7280] ml-1.5">
+                {gradeLabel(studentGrade)}
+              </span>
+            )}
+          </span>
+          <span className="text-gray-300" aria-hidden>
+            ·
+          </span>
+          {/* 一次情報: テキスト名（大・濃） */}
+          <h2 className="text-lg font-semibold text-[#1f2937] truncate">
             {textbook.textbook?.name ?? '教科書'}
           </h2>
           {textbook.is_draft && (
-            <span className="px-2 py-0.5 bg-gray-200 text-gray-700 rounded text-[11px] font-bold border border-gray-400">
+            <span className="px-2 py-0.5 bg-gray-200 text-gray-700 rounded text-[11px] font-bold border border-gray-400 whitespace-nowrap">
               非公開
             </span>
           )}
           {isMeeting && (
-            <span className="px-2 py-0.5 bg-[#fef3c7] text-[#92400e] rounded-full text-[11px] font-semibold uppercase tracking-wider">
+            <span className="px-2 py-0.5 bg-[#fef3c7] text-[#92400e] rounded-full text-[11px] font-semibold uppercase tracking-wider whitespace-nowrap">
               面談用・プラン表示
+            </span>
+          )}
+          {/* 季節バッジ（表示のみ。付け外しは下の設定カードから教室長以上が行う） */}
+          {displaySeason && seasonLabel(displaySeason) && (
+            <span
+              className={`inline-flex items-center text-[11px] px-2 py-0.5 rounded-md font-bold border whitespace-nowrap ${
+                displaySeason === 'spring'
+                  ? 'bg-pink-100 text-pink-800 border-pink-300'
+                  : displaySeason === 'summer'
+                    ? 'bg-orange-100 text-orange-800 border-orange-300'
+                    : 'bg-sky-100 text-sky-800 border-sky-300'
+              }`}
+            >
+              {seasonLabel(displaySeason)}
             </span>
           )}
         </div>
@@ -640,22 +686,26 @@ export function TableView({
               >
                 {sessionMode ? '記録を終了' : '授業を記録'}
               </button>
-              {/* テスト対策提案書。講師も作成する業務のため全ロールに表示 */}
-              <Link
-                href={`/students/${studentId}/test-prep`}
-                className="px-2.5 py-1.5 rounded-lg text-xs font-medium border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 transition-[background-color] duration-150 ease-out active:scale-[0.97] flex items-center gap-1"
-              >
-                <FileText className="w-3.5 h-3.5" />
-                テスト対策
-              </Link>
-              {/* 講習提案書（一覧・作成を統合）。講師も利用する業務のため全ロールに表示。作成は一覧ページの「新規作成」から。 */}
-              <Link
-                href={`/students/${studentId}/proposals`}
-                className="px-2.5 py-1.5 rounded-lg text-xs font-medium border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 transition-[background-color] duration-150 ease-out active:scale-[0.97] flex items-center gap-1"
-              >
-                <FileText className="w-3.5 h-3.5" />
-                講習提案書
-              </Link>
+              {/* テスト対策・講習提案書は教室長以上の業務のため講師には非表示 */}
+              {role !== 'teacher' && (
+                <>
+                  <Link
+                    href={`/students/${studentId}/test-prep`}
+                    className="px-2.5 py-1.5 rounded-lg text-xs font-medium border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 transition-[background-color] duration-150 ease-out active:scale-[0.97] flex items-center gap-1"
+                  >
+                    <FileText className="w-3.5 h-3.5" />
+                    テスト対策
+                  </Link>
+                  {/* 講習提案書（一覧・作成を統合）。作成は一覧ページの「新規作成」から。 */}
+                  <Link
+                    href={`/students/${studentId}/proposals`}
+                    className="px-2.5 py-1.5 rounded-lg text-xs font-medium border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 transition-[background-color] duration-150 ease-out active:scale-[0.97] flex items-center gap-1"
+                  >
+                    <FileText className="w-3.5 h-3.5" />
+                    講習提案書
+                  </Link>
+                </>
+              )}
             </div>
           )}
           {/* 設定（列表示切替）ドロップダウン（面談/通常 両モードで使用可能）。常に右端に配置 */}
@@ -716,58 +766,14 @@ export function TableView({
         </div>
       </div>
 
-      {/* 教科書タブ（横並び・サクッと切替） */}
-      {textbookTabs.length > 1 && (
-        <div className="mb-3 flex gap-1 overflow-x-auto pb-1">
-          {textbookTabs.map((tb) => (
-            <button
-              key={tb.id}
-              onClick={() => onSelectTab(tb.id)}
-              className={`px-3 py-1.5 text-xs rounded-lg whitespace-nowrap transition-[background-color,color] duration-150 ease-out ${
-                tb.id === textbook.id
-                  ? 'bg-[#1e3a5f] text-white'
-                  : 'bg-white text-[#4b5563] border border-[#e5e7eb] hover:bg-[#f3f4f6]'
-              }`}
-            >
-              {tb.textbook?.name ?? '—'}
-            </button>
-          ))}
-        </div>
-      )}
+      {/* テキストの切替は「← テキスト一覧」からのみ行う方針のため、
+          以前あった教科書タブ（横並び切替）は廃止した。
+          季節ラベルはヘッダーに表示し、付け外しは下の設定カードで教室長以上が行う。 */}
 
-      {/* 前回の引継ぎ（記録モードに関わらず常時表示）＋季節ラベルチップ。
+      {/* 前回の引継ぎ（記録モードに関わらず常時表示）。
           テキスト詳細を開いた最上部＝ファーストビューに入れて見落とされないようにする。 */}
       {!isMeeting && (
-        <div className="mb-3 space-y-2">
-          {/* 季節ラベル（夏期等）のチップ。公開した講習提案書で付与され、
-              講習終了後は×（教室長以上のみ）で手動解除する運用。 */}
-          {textbook.season && !seasonCleared && seasonLabel(textbook.season) && (
-            <div>
-              <span
-                className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-md font-bold border ${
-                  textbook.season === 'spring'
-                    ? 'bg-pink-100 text-pink-800 border-pink-300'
-                    : textbook.season === 'summer'
-                      ? 'bg-orange-100 text-orange-800 border-orange-300'
-                      : 'bg-sky-100 text-sky-800 border-sky-300'
-                }`}
-              >
-                {seasonLabel(textbook.season)}
-                {/* 講師には解除ボタンを出さない（表示のみ） */}
-                {role !== 'teacher' && (
-                  <button
-                    type="button"
-                    onClick={handleClearSeason}
-                    className="rounded hover:bg-black/10 transition-[background-color] duration-150 ease-out active:scale-[0.9]"
-                    title="季節ラベルを外す（講習終了後の整理用）"
-                    aria-label="季節ラベルを外す"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                )}
-              </span>
-            </div>
-          )}
+        <div className="mb-3">
           <LastHandoverCard
             studentTextbookId={textbook.id}
             isTeacher={role === 'teacher'}
@@ -817,29 +823,30 @@ export function TableView({
                 </div>
               )}
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-end gap-5">
               <div className="text-center">
-                <div className="text-[9px] text-[#6b7280] font-semibold uppercase">残り</div>
+                <div className="text-[10px] text-[#6b7280] font-semibold uppercase">残り</div>
                 {isExpired ? (
-                  <span className="text-sm font-bold text-amber-600">終了</span>
+                  <span className="text-xl font-bold text-amber-600">終了</span>
                 ) : (
                   <>
-                    <span className="text-lg font-bold text-[#1e3a5f]">
+                    <span className="text-3xl font-bold text-[#1e3a5f] leading-none">
                       {activeExam.daysLeft ?? '—'}
                     </span>
                     {activeExam.daysLeft != null && (
-                      <span className="text-[11px] text-[#6b7280]">日</span>
+                      <span className="text-xs text-[#6b7280] ml-0.5">日</span>
                     )}
                   </>
                 )}
               </div>
+              {/* 目標は最重要指標なので他より一段大きく強調する */}
               <div className="text-center">
-                <div className="text-[9px] text-[#6b7280] font-semibold uppercase">目標</div>
-                <span className="text-lg font-bold text-[#1e3a5f]">
+                <div className="text-[10px] text-[#1e40af] font-bold uppercase">目標</div>
+                <span className="text-4xl font-extrabold text-[#1e3a5f] leading-none">
                   {activeExam.targetScore ?? '—'}
                 </span>
                 {activeExam.targetScore != null && (
-                  <span className="text-[11px] text-[#6b7280]">点</span>
+                  <span className="text-sm font-bold text-[#1e3a5f] ml-0.5">点</span>
                 )}
               </div>
               {(() => {
@@ -848,17 +855,17 @@ export function TableView({
                 if (currentExam?.result_score == null) return null;
                 return (
                   <div className="text-center">
-                    <div className="text-[9px] text-[#6b7280] font-semibold uppercase">結果</div>
-                    <span className="text-lg font-bold text-[#1e3a5f]">
+                    <div className="text-[10px] text-[#6b7280] font-semibold uppercase">結果</div>
+                    <span className="text-3xl font-bold text-[#1e3a5f] leading-none">
                       {currentExam.result_score}
                     </span>
-                    <span className="text-[11px] text-[#6b7280]">点</span>
+                    <span className="text-xs text-[#6b7280] ml-0.5">点</span>
                   </div>
                 );
               })()}
               <div className="text-center">
-                <div className="text-[9px] text-[#6b7280] font-semibold uppercase">行動目標</div>
-                <span className="text-lg font-bold text-[#1e3a5f]">
+                <div className="text-[10px] text-[#6b7280] font-semibold uppercase">行動目標</div>
+                <span className="text-3xl font-bold text-[#1e3a5f] leading-none">
                   {activeExamGoals.filter((g) => g.achieved).length}
                 </span>
                 <span className="text-xs text-[#6b7280]">/{activeExamGoals.length}</span>
@@ -902,6 +909,39 @@ export function TableView({
         {/* 進め方 / 宿題 / 試験範囲 — 1つのカードにまとめる */}
         {!isMeeting && (
           <div className="bg-white border border-[#e5e7eb] rounded-lg p-3">
+            {/* 季節ラベルの設定（教室長以上のみ）。講習提案書の公開でも自動付与されるが、
+                ここから手動でも付け外しできる。講師には出さない。 */}
+            {role !== 'teacher' && (
+              <div className="mb-3 flex items-center gap-2 flex-wrap">
+                <span className="text-[11px] font-semibold text-[#6b7280] uppercase tracking-wider">
+                  季節ラベル
+                </span>
+                {(
+                  [
+                    { key: null, label: 'なし' },
+                    { key: 'spring', label: '春期' },
+                    { key: 'summer', label: '夏期' },
+                    { key: 'winter', label: '冬期' },
+                  ] as const
+                ).map((opt) => {
+                  const active = displaySeason === opt.key;
+                  return (
+                    <button
+                      key={opt.label}
+                      type="button"
+                      onClick={() => handleSetSeason(opt.key)}
+                      className={`px-2.5 py-1 text-xs rounded-md border transition-[background-color,color] duration-150 ease-out active:scale-[0.97] ${
+                        active
+                          ? 'bg-[#1e3a5f] text-white border-[#1e3a5f]'
+                          : 'bg-white text-[#4b5563] border-[#e5e7eb] hover:bg-[#f3f4f6]'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
               {/* key={textbook.id} でテキスト切り替え時に再マウントし、保存済みの初期値を入れ直す */}
               <TextbookSettingsInline
@@ -983,23 +1023,25 @@ export function TableView({
 
       {/* セッション記録モード（新UI） */}
       {sessionMode && !isMeeting && (
-        <SessionRecordingPanel
-          ref={sessionPanelRef}
-          studentTextbookId={textbook.id}
-          studentName={studentName}
-          textbookName={textbook.textbook?.name ?? '教科書'}
-          curriculumItems={progress}
-          onSessionSaved={handleSessionSaved}
-          onSelectionChange={setSessionSelection}
-          canEditSaved={true}
-          // 講習（季節講習）は学校がないため学校進度を必須にしない
-          isKoushu={!!textbook.season}
-          onComplete={() => {
-            // 全セッションが保存済みになったら授業記録モードを終了しセレクションをクリア
-            setSessionMode(false);
-            setSessionSelection(null);
-          }}
-        />
+        <div ref={sessionPanelWrapperRef} className="scroll-mt-4">
+          <SessionRecordingPanel
+            ref={sessionPanelRef}
+            studentTextbookId={textbook.id}
+            studentName={studentName}
+            textbookName={textbook.textbook?.name ?? '教科書'}
+            curriculumItems={progress}
+            onSessionSaved={handleSessionSaved}
+            onSelectionChange={setSessionSelection}
+            canEditSaved={true}
+            // 講習（季節講習）は学校がないため学校進度を必須にしない
+            isKoushu={!!textbook.season}
+            onComplete={() => {
+              // 全セッションが保存済みになったら授業記録モードを終了しセレクションをクリア
+              setSessionMode(false);
+              setSessionSelection(null);
+            }}
+          />
+        </div>
       )}
 
       {/* 進捗テーブル */}

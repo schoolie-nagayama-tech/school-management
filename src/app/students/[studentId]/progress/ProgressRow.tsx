@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useRef, useState } from 'react';
 import type { CurriculumItemWithProgress, ExamType } from '@/types/database';
 import { toSurnameOnly } from '@/lib/utils/teacherName';
 import {
@@ -111,15 +112,22 @@ export function ProgressRow({
     ? row.id in (sessionSelection.unitActions || {}) || sessionSelection.schoolUnits?.has(row.id)
     : false;
 
+  // 指導日（1〜3回目）がいずれか入っている＝授業実施済みの行。
+  // 実施済み行に薄い緑の帯を敷くことで、スクロールしても「どこまで進んだか（最下層）」が
+  // 色の切れ目で一目で分かるようにする。
+  const hasAnyLesson = ([1, 2, 3] as const).some((n) => !!lessonDate(n));
+
   const rowClass = isPaintStart
-    ? 'border-b border-[#f3f4f6] bg-[#dbeafe] ring-2 ring-[#1e40af] cursor-pointer'
+    ? 'border-b border-[#d1d5db] bg-[#dbeafe] ring-2 ring-[#1e40af] cursor-pointer'
     : isPaintCandidate
-      ? 'border-b border-[#f3f4f6] hover:bg-[#eff6ff] cursor-pointer'
+      ? 'border-b border-[#d1d5db] hover:bg-[#eff6ff] cursor-pointer'
       : paintActive
-        ? 'border-b border-[#f3f4f6] hover:bg-[#eff6ff] cursor-pointer'
+        ? 'border-b border-[#d1d5db] hover:bg-[#eff6ff] cursor-pointer'
         : isSessionSelected
-          ? 'border-b border-[#f3f4f6] bg-[#1e3a5f]/5'
-          : 'border-b border-[#f3f4f6] hover:bg-[#f9fafb]';
+          ? 'border-b border-[#d1d5db] bg-[#1e3a5f]/5'
+          : hasAnyLesson
+            ? 'border-b border-[#d1d5db] bg-[#f0fdf4] hover:bg-[#dcfce7]'
+            : 'border-b border-[#d1d5db] hover:bg-[#f9fafb]';
 
   // 列表示判定（管理モードでも meetingCols で制御）
   const showProposal = meetingCols.proposal;
@@ -191,7 +199,7 @@ export function ProgressRow({
         >
           {isMeeting ? (
             <span className="text-[#1f2937] text-xs">
-              {p?.proposal_count != null ? `${p.proposal_count}コマ` : '—'}
+              {p?.proposal_count != null ? `${p.proposal_count}` : '—'}
             </span>
           ) : (
             <input
@@ -215,9 +223,9 @@ export function ProgressRow({
           rowSpan={isAppliedGroupHead ? appliedGroupSpan : undefined}
         >
           {isTeacher ? (
-            // 講師は申込コマ数を編集不可（閲覧のみ）。申込は教室長の業務のため。
+            // 講師は申込コマ数を編集不可（閲覧のみ）。申込は教室長の業務のため。数字のみ表示。
             <span className="block text-xs text-center text-[#1f2937]">
-              {p?.application_count ? `${p.application_count}コマ` : '—'}
+              {p?.application_count ? `${p.application_count}` : '—'}
             </span>
           ) : (
             <input
@@ -337,17 +345,14 @@ export function ProgressRow({
         ) : null;
       })}
       {showHandover && (
-        <td className="px-3 py-2.5">
+        <td className="px-3 py-2.5 align-top">
           {canDirectEdit ? (
-            <textarea
-              defaultValue={p?.handover ?? ''}
-              placeholder="引継ぎメモ"
-              rows={1}
-              onBlur={(e) => {
-                onLocalPatch({ handover: e.target.value || undefined });
-                onSaveProgress({ handover: e.target.value || null });
+            <HandoverCell
+              value={p?.handover ?? ''}
+              onSave={(v) => {
+                onLocalPatch({ handover: v ?? undefined });
+                onSaveProgress({ handover: v });
               }}
-              className="w-full min-h-[28px] px-1.5 py-1 text-xs bg-transparent border border-transparent hover:border-[#e5e7eb] focus:border-[#1e3a5f] focus:bg-white rounded outline-none resize-y align-top"
             />
           ) : (
             <span className="px-1.5 py-1 text-xs text-[#d1d5db]">—</span>
@@ -401,5 +406,70 @@ export function ProgressRow({
         </td>
       )}
     </tr>
+  );
+}
+
+/**
+ * 表内の引継ぎメモセル。
+ * 従来は1行のテキストエリアで、入力済みでも1行に切れて読みづらかった。
+ * 入力済み・非編集時は全文を折り返して読みやすく表示し（クリックで編集）、
+ * 編集時は内容量に合わせて高さが自動で伸びるテキストエリアにする。
+ */
+function HandoverCell({ value, onSave }: { value: string; onSave: (v: string | null) => void }) {
+  const [editing, setEditing] = useState(false);
+  const [text, setText] = useState(value);
+  const taRef = useRef<HTMLTextAreaElement>(null);
+  useEffect(() => setText(value), [value]);
+
+  // 編集開始時にフォーカスし、内容量に合わせて高さを合わせる
+  useEffect(() => {
+    if (editing && taRef.current) {
+      const el = taRef.current;
+      el.focus();
+      el.style.height = 'auto';
+      el.style.height = `${el.scrollHeight}px`;
+    }
+  }, [editing]);
+
+  const commit = () => {
+    const next = text.trim() || null;
+    if ((next ?? '') !== (value ?? '')) onSave(next);
+    setEditing(false);
+  };
+
+  // 入力済み・非編集: 全文を折り返して表示（クリックで編集に入る）
+  if (!editing && value) {
+    return (
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          setEditing(true);
+        }}
+        className="w-full min-w-[9rem] cursor-text whitespace-pre-wrap rounded border border-transparent bg-[#f8fafc] px-1.5 py-1 text-left text-[13px] leading-snug text-gray-800 transition-colors duration-150 ease-out hover:border-[#e5e7eb]"
+        title="クリックで編集"
+      >
+        {value}
+      </button>
+    );
+  }
+
+  // 空欄 or 編集中: 高さ自動調整のテキストエリア
+  return (
+    <textarea
+      ref={taRef}
+      value={text}
+      placeholder="引継ぎメモ"
+      rows={1}
+      onFocus={() => setEditing(true)}
+      onChange={(e) => {
+        setText(e.target.value);
+        e.target.style.height = 'auto';
+        e.target.style.height = `${e.target.scrollHeight}px`;
+      }}
+      onBlur={commit}
+      onClick={(e) => e.stopPropagation()}
+      className="w-full min-h-[30px] min-w-[9rem] resize-none overflow-hidden rounded border border-transparent bg-transparent px-1.5 py-1 align-top text-[13px] leading-snug outline-none hover:border-[#e5e7eb] focus:border-[#1e3a5f] focus:bg-white"
+    />
   );
 }

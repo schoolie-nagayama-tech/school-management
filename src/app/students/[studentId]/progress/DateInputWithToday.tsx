@@ -38,13 +38,15 @@ export function DateInputWithToday({
   if (!isEmpty && !editing) {
     return (
       <div className="flex items-center gap-0.5 group">
+        {/* 入力済みの日付は色付きチップで強調。スクロールしても「どこまで進んだか」が
+            一目で分かる（色が付いている行＝実施済み）。 */}
         <button
           onClick={(e) => {
             e.stopPropagation();
             setEditing(true);
             setTimeout(() => inputRef.current?.showPicker?.(), 50);
           }}
-          className="px-1.5 py-1 text-xs text-[#1f2937] hover:bg-[#f3f4f6] rounded transition-[background-color] duration-150 ease-out cursor-pointer"
+          className="px-2.5 py-1 text-sm font-bold text-[#1e40af] bg-[#dbeafe] border border-[#bfdbfe] hover:bg-[#bfdbfe] active:scale-[0.97] rounded transition-[background-color,transform] duration-150 ease-out cursor-pointer whitespace-nowrap"
           title="クリックで日付を変更"
         >
           {localVal.replace(/^\d{4}-/, '').replace('-', '/')}

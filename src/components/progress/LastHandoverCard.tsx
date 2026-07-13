@@ -64,6 +64,10 @@ export default function LastHandoverCard({ studentTextbookId, isTeacher, refresh
   const hasContent = !!(lastSession.handover || lessonUnits.length > 0 || hasIssue);
   if (!hasContent) return null;
 
+  const dateTeacher = `${lastSession.session_date?.replace(/-/g, '/') ?? ''} ${
+    isTeacher ? toSurnameOnly(lastSession.teacher_name) : lastSession.teacher_name
+  }`.trim();
+
   return (
     <div
       className={`rounded-xl border-l-4 shadow-sm px-4 py-3 ${
@@ -72,69 +76,84 @@ export default function LastHandoverCard({ studentTextbookId, isTeacher, refresh
           : 'border-l-[#1e3a5f] border border-[#dbe3ee] bg-[#eef2f7]'
       }`}
     >
-      {/* ヘッダー: ラベル / 日付・講師 */}
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-1.5">
-          <MessageSquare className="w-4 h-4 text-[#1e3a5f]" />
-          <span className="text-xs font-bold text-[#1e3a5f]">前回の引継ぎ</span>
-        </div>
-        <span className="text-[11px] text-gray-500">
-          {lastSession.session_date?.replace(/-/g, '/')}{' '}
-          {isTeacher ? toSurnameOnly(lastSession.teacher_name) : lastSession.teacher_name}
-        </span>
-      </div>
-
-      {/* フラグ（宿題未提出・遅刻） */}
-      {hasIssue && (
-        <div className="flex items-center gap-1.5 mb-2">
-          <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
-          {lastSession.homework_not_done && (
-            <span className="px-1.5 py-0.5 text-[11px] bg-amber-200 text-amber-900 rounded font-medium">
-              宿題未提出
-            </span>
-          )}
-          {lastSession.tardy && (
-            <span className="px-1.5 py-0.5 text-[11px] bg-amber-200 text-amber-900 rounded font-medium">
-              遅刻
-            </span>
-          )}
-        </div>
-      )}
-
-      {/* 指導単元（学校進度がある単元には校マーカー） */}
-      {lessonUnits.length > 0 && (
-        <div className="flex items-start gap-1.5 mb-2">
-          <BookOpen className="w-3.5 h-3.5 text-gray-400 mt-0.5 shrink-0" />
-          <div className="flex flex-wrap gap-1">
-            {lessonUnits.map((u, i) => (
-              <span
-                key={i}
-                className={`inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] rounded ${
-                  u.schoolProgressDate
-                    ? 'bg-blue-50 text-blue-800 border border-blue-200'
-                    : 'bg-white text-gray-700 border border-gray-200'
-                }`}
-                title={u.schoolProgressDate ? `学校進度: ${u.schoolProgressDate}` : undefined}
-              >
-                {u.schoolProgressDate && (
-                  <GraduationCap className="w-3 h-3 text-blue-500" aria-label="学校進度あり" />
-                )}
-                {u.label}{' '}
-                <span className={u.schoolProgressDate ? 'text-blue-400' : 'text-gray-400'}>
-                  ({u.lessonNumber}回目)
-                </span>
-              </span>
-            ))}
+      {/* 横に広く読めるよう2カラム構成: 左=メタ（狭い固定幅）/ 右=単元＋本文（全幅）。
+          狭い画面では縦積みにフォールバックする。 */}
+      <div className="flex flex-col sm:flex-row sm:gap-4">
+        {/* 左: メタ情報（三次情報として小さめ・グレー） */}
+        <div className="mb-2 sm:mb-0 sm:w-40 sm:shrink-0">
+          <div className="flex items-center gap-1.5">
+            <MessageSquare className="w-4 h-4 text-[#1e3a5f]" />
+            <span className="text-xs font-bold text-[#1e3a5f]">前回の引継ぎ</span>
           </div>
+          <div className="mt-0.5 text-[11px] text-gray-500">{dateTeacher}</div>
+          {/* フラグ（宿題未提出・遅刻） */}
+          {hasIssue && (
+            <div className="mt-1.5 flex flex-wrap items-center gap-1">
+              <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
+              {lastSession.homework_not_done && (
+                <span className="px-1.5 py-0.5 text-[11px] bg-amber-200 text-amber-900 rounded font-medium">
+                  宿題未提出
+                </span>
+              )}
+              {lastSession.tardy && (
+                <span className="px-1.5 py-0.5 text-[11px] bg-amber-200 text-amber-900 rounded font-medium">
+                  遅刻
+                </span>
+              )}
+            </div>
+          )}
         </div>
-      )}
 
-      {/* 引継ぎ本文（前回情報の主役なので大きめ・太字で目立たせる） */}
-      {lastSession.handover && (
-        <p className="text-sm font-medium text-gray-900 whitespace-pre-wrap">
-          {lastSession.handover}
-        </p>
-      )}
+        {/* 右: 指導単元＋引継ぎ本文（横幅いっぱいに広げる） */}
+        <div className="min-w-0 flex-1">
+          {/* 指導単元（学校進度がある単元には校マーカー） */}
+          {lessonUnits.length > 0 && (
+            <div className="mb-2 flex items-start gap-1.5">
+              <BookOpen className="w-3.5 h-3.5 text-gray-400 mt-0.5 shrink-0" />
+              <div className="flex flex-wrap gap-1">
+                {lessonUnits.map((u, i) => (
+                  <span
+                    key={i}
+                    className={`inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] rounded ${
+                      u.schoolProgressDate
+                        ? 'bg-blue-50 text-blue-800 border border-blue-200'
+                        : 'bg-white text-gray-700 border border-gray-200'
+                    }`}
+                    title={u.schoolProgressDate ? `学校進度: ${u.schoolProgressDate}` : undefined}
+                  >
+                    {u.schoolProgressDate && (
+                      <GraduationCap className="w-3 h-3 text-blue-500" aria-label="学校進度あり" />
+                    )}
+                    {u.label}{' '}
+                    <span className={u.schoolProgressDate ? 'text-blue-400' : 'text-gray-400'}>
+                      ({u.lessonNumber}回目)
+                    </span>
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* 引継ぎ本文。目標パネルを主役にするため控えめ（text-sm）にしつつ、
+              「次回:」「確認テスト:」等の既知ラベル前で改行して読みやすさは保つ（表示のみ）。 */}
+          {lastSession.handover && (
+            <p className="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">
+              {formatHandover(lastSession.handover)}
+            </p>
+          )}
+        </div>
+      </div>
     </div>
   );
+}
+
+/**
+ * 引継ぎ本文を読みやすく整形する（表示のみ・データは変更しない）。
+ * 「次回:」「確認テスト:」「宿題:」等の既知ラベルの直前で改行し、意味の区切りを立てる。
+ */
+function formatHandover(text: string): string {
+  return text
+    .replace(/\s*(次回|確認テスト|宿題|補足|備考|連絡)\s*[:：]/g, '\n$1：')
+    .replace(/^\n+/, '')
+    .trim();
 }

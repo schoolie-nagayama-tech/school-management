@@ -415,14 +415,18 @@ export default function NewProgressPage() {
       <div className="mb-4 flex items-center justify-between gap-3 flex-wrap">
         <div>
           <div className="text-xs text-[#6b7280]">生徒詳細 › 進捗管理</div>
-          <h1 className="text-lg font-bold text-[#1f2937]">
-            {student ? `${student.last_name} ${student.first_name}` : '—'}
-            {student?.grade && (
-              <span className="text-sm font-normal text-[#6b7280] ml-2">
-                {gradeLabel(student.grade)}
-              </span>
-            )}
-          </h1>
+          {/* テーブル表示中は生徒名・テキスト名をテーブル側ヘッダーに1か所へまとめるため、
+              ここ（ページヘッダー）では生徒名を出さない。カード表示では従来どおり見出しに出す。 */}
+          {view === 'cards' && (
+            <h1 className="text-xl font-bold text-[#1f2937]">
+              {student ? `${student.last_name} ${student.first_name}` : '—'}
+              {student?.grade && (
+                <span className="text-sm font-normal text-[#6b7280] ml-2">
+                  {gradeLabel(student.grade)}
+                </span>
+              )}
+            </h1>
+          )}
         </div>
         <div className="flex items-center gap-2">
           {/* テスト対策・講習提案書はテーブルのツールバー側に配置（上部メニューには置かない） */}
@@ -469,8 +473,6 @@ export default function NewProgressPage() {
             setExamRangesForTextbook={(ranges) =>
               setExamRangesByTextbook((prev) => ({ ...prev, [selectedTb.id]: ranges }))
             }
-            textbookTabs={studentTextbooks}
-            onSelectTab={setSelectedTextbookId}
             highlightItemId={
               selectedTb.id === targetTextbookId && targetItemId ? Number(targetItemId) : undefined
             }
@@ -479,6 +481,7 @@ export default function NewProgressPage() {
             viewMode={effectiveViewMode}
             studentId={studentId}
             studentName={student ? `${student.last_name} ${student.first_name}` : ''}
+            studentGrade={student?.grade}
             selfName={isTeacher ? getSurname(profile) : (profile?.display_name ?? '')}
             onBack={() => setView('cards')}
             onRefresh={refreshTextbooks}
