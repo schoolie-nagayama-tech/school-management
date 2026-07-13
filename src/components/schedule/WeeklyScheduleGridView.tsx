@@ -6,8 +6,11 @@ import {
   DndContext,
   DragOverlay,
   PointerSensor,
+  pointerWithin,
+  rectIntersection,
   useSensor,
   useSensors,
+  type CollisionDetection,
   type DragStartEvent,
   type DragEndEvent,
 } from '@dnd-kit/core';
@@ -16,6 +19,25 @@ import { StudentCard } from './StudentCard';
 import type { ScheduleEntry, ScheduleTimeSlot } from '@/types/schedule';
 import type { TeacherGroup } from './DayCell';
 import styles from './scheduleDensity.module.css';
+
+/**
+ * D&Dの当たり判定。
+ *
+ * 既定の rectIntersection は「ドラッグ中要素の矩形と最も重なる面積のドロップ先」を選ぶため、
+ * 同じコマ内で隣の講師カードへ生徒を短距離ドラッグすると、掴んだ生徒行がまだ元カードに
+ * 大きく重なっており over が元カード（＝isSourceBlock）に解決され、移動が無反応になる
+ * （＝「同じコマ内の授業移動ができない」バグの根因）。
+ *
+ * そこでポインタ位置優先の pointerWithin を第一候補にし、ポインタがどのドロップ先にも
+ * 入っていない（隙間に落とした等）場合のみ rectIntersection にフォールバックする。
+ * これで「カーソルが乗っている講師カード」が確実にドロップ先になり、同コマ内・別コマ問わず
+ * 直感どおりに解決する。クリック起点の各配置モードは D&D を使わないため挙動不変。
+ */
+const boardCollisionDetection: CollisionDetection = (args) => {
+  const pointerCollisions = pointerWithin(args);
+  if (pointerCollisions.length > 0) return pointerCollisions;
+  return rectIntersection(args);
+};
 
 /** 表示用：ローカル日付で解釈して日付・曜日を返す */
 function formatDayHeader(dateStr: string): { dayNum: number; dateLong: string; weekday: string } {
@@ -406,7 +428,12 @@ export function WeeklyScheduleGridView(props: WeeklyScheduleGridViewProps) {
   };
 
   return (
-    <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd}>
+    <DndContext
+      sensors={sensors}
+      collisionDetection={boardCollisionDetection}
+      onDragStart={onDragStart}
+      onDragEnd={onDragEnd}
+    >
       {/* --sd-sticky-top: sticky ツールバーの実測高さ。時限見出しの top / 日行 scroll-margin が参照 */}
       <div
         className={`${styles.root} ${styles.boardCanvas}`}

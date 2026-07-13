@@ -2,18 +2,26 @@
 
 import React from 'react';
 import type { ScheduleEntry, ScheduleTimeSlot } from '@/types/schedule';
+import { getSurname } from '@/lib/utils/teacherName';
 
 /**
  * 日次印刷ビュー（A4縦・1日1ページ・コマ縦積み）
  *
- * 設計（2026-07-13 改訂）:
+ * 設計（2026-07-13 改訂2）:
  *  - 用紙: A4 縦 (210mm × 297mm)、1ページ1日
+ *  - コンテンツ幅は A4 印刷可能幅 194mm（= 210mm − 左右マージン 8mm×2）に固定し、
+ *    フルブリードな画面幅の影響を受けず右端が切れないようにする（②）
  *  - コマは縦に積む（1列）。上から 1限→最終限
- *  - 講師名・担当未定は出さない。生徒名を主役に大きく表示する（配布用途）
- *  - 生徒は各コマ内で複数列に流し、名前を大きく保ちつつ紙面に収める
- *  - ブース番号は表示しないが、席のまとまりを保つため並び順のソートには使う
+ *  - コマ内は講師（席）ごとにグループ化し、見出しに「姓のみ」を小さく表示（①）。
+ *    生徒名は主役として大きく保つ。担当未定は出さない（配布用途では確定分のみ）
+ *  - 「講師見出し＋その生徒たち」を1ユニットとして CSS 段組で 2〜3 列に流し、
+ *    ユニットが列跨ぎで割れないようにする（break-inside-avoid）
+ *  - ブース番号は表示しないが、席順を保つため講師グループの並び順ソートに使う
  *  - 最終日には改ページを付けない（末尾の白紙ページを防ぐ）
  */
+
+/** A4 印刷可能幅: 210mm − 左右マージン 8mm×2 = 194mm（@page margin と整合）。 */
+const PRINTABLE_WIDTH_MM = 194;
 
 function formatDateHeader(dateStr: string): string {
   const d = new Date(dateStr + 'T12:00:00');
@@ -23,18 +31,27 @@ function formatDateHeader(dateStr: string): string {
   return `${d.getFullYear()}年${m}月${day}日 (${week})`;
 }
 
+/** 講師グループ（席）: 見出し表示名（姓のみ）＋その生徒エントリ群。 */
+interface TeacherGroup {
+  teacherId: string;
+  /** 見出しに出す姓（フォールバックは display_name の先頭語）。 */
+  surname: string;
+  students: ScheduleEntry[];
+}
+
 /**
- * そのコマに座っている生徒を集める。
+ * そのコマを講師（席）ごとのグループに集約する。
  * - 担当未定（teacher_id なし）は印刷に出さない（配布用途では確定分のみ）
  * - キャンセル・振替元も除外
- * - ブース番号（講師×日付）→ 氏名 の順でソートし、席のまとまりを保つ
+ * - グループはブース番号（講師×日付）→ 姓 の順に並べ、席のまとまり・席順を保つ
+ * - 各グループ内の生徒は氏名でソート
  */
-function collectStudents(
+function collectTeacherGroups(
   entries: ScheduleEntry[],
   date: string,
   slotId: string,
   boothMap: Map<string, number>
-): ScheduleEntry[] {
+): TeacherGroup[] {
   const filtered = entries.filter(
     (e) =>
       e.entry_date === date &&
@@ -42,17 +59,44 @@ function collectStudents(
       e.status !== 'cancelled' &&
       e.status !== 'transferred_out' &&
       !!e.teacher_id &&
-      e.teacher_id !== '__unassigned__'
+      e.teacher_id !== '__unassigned__' &&
+      !e.teacher_id.startsWith('__unassigned__:')
   );
 
-  return filtered.sort((a, b) => {
-    const ba = boothMap.get(a.teacher_id!) ?? Number.MAX_SAFE_INTEGER;
-    const bb = boothMap.get(b.teacher_id!) ?? Number.MAX_SAFE_INTEGER;
+  // teacher_id でグループ化。見出し名は最初に見つかった entry.teacher から姓を取る。
+  const byTeacher = new Map<string, TeacherGroup>();
+  for (const e of filtered) {
+    const tid = e.teacher_id!;
+    let group = byTeacher.get(tid);
+    if (!group) {
+      const surname = e.teacher
+        ? getSurname({ last_name: e.teacher.last_name, display_name: e.teacher.display_name }) ||
+          e.teacher.display_name ||
+          '担当'
+        : '担当';
+      group = { teacherId: tid, surname, students: [] };
+      byTeacher.set(tid, group);
+    }
+    group.students.push(e);
+  }
+
+  const groups = Array.from(byTeacher.values());
+  // グループ内は氏名順。
+  for (const g of groups) {
+    g.students.sort((a, b) => {
+      const na = a.student ? `${a.student.last_name}${a.student.first_name}` : '';
+      const nb = b.student ? `${b.student.last_name}${b.student.first_name}` : '';
+      return na.localeCompare(nb, 'ja');
+    });
+  }
+  // グループはブース番号→姓の順（席順を保つ）。
+  groups.sort((a, b) => {
+    const ba = boothMap.get(a.teacherId) ?? Number.MAX_SAFE_INTEGER;
+    const bb = boothMap.get(b.teacherId) ?? Number.MAX_SAFE_INTEGER;
     if (ba !== bb) return ba - bb;
-    const na = a.student ? `${a.student.last_name}${a.student.first_name}` : '';
-    const nb = b.student ? `${b.student.last_name}${b.student.first_name}` : '';
-    return na.localeCompare(nb, 'ja');
+    return a.surname.localeCompare(b.surname, 'ja');
   });
+  return groups;
 }
 
 export interface ScheduleDailyPrintViewProps {
@@ -81,7 +125,9 @@ export function ScheduleDailyPrintView({
 
   return (
     <>
-      {/* A4 縦サイズ指定: @page で印刷時の用紙とマージンを最適化 */}
+      {/* A4 縦サイズ指定: @page で印刷時の用紙とマージンを最適化。
+          コンテンツ幅は印刷可能幅 194mm に固定し、フルブリードな画面幅で右端が
+          切れるのを防ぐ（②）。内部要素の overflow も抑止する。 */}
       <style jsx global>{`
         @media print {
           @page {
@@ -90,6 +136,24 @@ export function ScheduleDailyPrintView({
           }
           #schedule-daily-print {
             font-family: 'Hiragino Sans', 'Yu Gothic', sans-serif;
+            width: ${PRINTABLE_WIDTH_MM}mm;
+            max-width: 100%;
+            margin: 0 auto;
+            box-sizing: border-box;
+            overflow: hidden;
+          }
+          #schedule-daily-print * {
+            box-sizing: border-box;
+          }
+          /* CSS 段組で講師ユニットを 2〜3 列に流す（Tailwind の columns ユーティリティは
+             印刷計算が読みにくいので、幅基準の段組をここで明示する）。 */
+          #schedule-daily-print .print-teacher-flow {
+            column-width: 60mm;
+            column-gap: 4mm;
+          }
+          #schedule-daily-print .print-teacher-unit {
+            break-inside: avoid;
+            -webkit-column-break-inside: avoid;
           }
         }
       `}</style>
@@ -98,12 +162,13 @@ export function ScheduleDailyPrintView({
         {datesToShow.map((dateStr, dateIdx) => {
           const boothMap = boothMapByDate?.get(dateStr) ?? new Map<string, number>();
           // 生徒が1人でもいるコマだけ出す（配置ゼロのコマは紙面を詰めるため省く）
-          const slotsWithStudents = timeSlots
-            .map((slot) => ({
-              slot,
-              students: collectStudents(entries, dateStr, slot.id, boothMap),
-            }))
-            .filter(({ students }) => students.length > 0);
+          const slotsWithGroups = timeSlots
+            .map((slot) => {
+              const groups = collectTeacherGroups(entries, dateStr, slot.id, boothMap);
+              const count = groups.reduce((n, g) => n + g.students.length, 0);
+              return { slot, groups, count };
+            })
+            .filter(({ count }) => count > 0);
 
           // 末尾の白紙ページ対策: 最終日には改ページを付けない
           const isLast = dateIdx === datesToShow.length - 1;
@@ -122,7 +187,7 @@ export function ScheduleDailyPrintView({
                 )}
               </div>
 
-              {slotsWithStudents.length === 0 && (
+              {slotsWithGroups.length === 0 && (
                 <div className="text-xs text-gray-400 py-4 text-center">
                   この日に配置された授業はありません
                 </div>
@@ -130,7 +195,7 @@ export function ScheduleDailyPrintView({
 
               {/* コマを縦に積む（1列）。上から 1限→最終限。 */}
               <div className="space-y-2">
-                {slotsWithStudents.map(({ slot, students }) => (
+                {slotsWithGroups.map(({ slot, groups, count }) => (
                   <div key={slot.id} className="border border-gray-400 rounded break-inside-avoid">
                     {/* コマヘッダー: 限数 + 時間帯 + 人数 */}
                     <div className="flex items-baseline gap-2 border-b border-gray-300 bg-gray-100 px-2 py-1">
@@ -138,29 +203,40 @@ export function ScheduleDailyPrintView({
                       <span className="text-[11px] text-gray-600 tabular-nums">
                         {slot.start_time?.slice(0, 5)}〜{slot.end_time?.slice(0, 5)}
                       </span>
-                      <span className="ml-auto text-[11px] text-gray-600">
-                        {students.length} 名
-                      </span>
+                      <span className="ml-auto text-[11px] text-gray-600">{count} 名</span>
                     </div>
 
-                    {/* 生徒名を主役に大きく。名前を保ちつつ収めるため複数列に流す。 */}
-                    <ul className="grid grid-cols-3 gap-x-3 gap-y-0.5 px-2 py-1.5">
-                      {students.map((e) => {
-                        const studentName = e.student
-                          ? `${e.student.last_name}${e.student.first_name}`
-                          : (e.inquiry?.student_name ?? '');
-                        const subj = (e.subjects ?? [])
-                          .map((s: { name?: string }) => s?.name)
-                          .filter(Boolean)
-                          .join('/');
-                        return (
-                          <li key={e.id} className="flex items-baseline gap-1 leading-tight">
-                            <span className="text-[15px] font-bold">{studentName}</span>
-                            {subj && <span className="text-[10px] text-gray-500">({subj})</span>}
-                          </li>
-                        );
-                      })}
-                    </ul>
+                    {/* 講師（席）ごとのユニットを段組で 2〜3 列に流す。
+                        各ユニット＝「姓の見出し（小）＋生徒名（大）」。ユニットは列跨ぎで割らない。 */}
+                    <div className="print-teacher-flow px-2 py-1.5">
+                      {groups.map((g) => (
+                        <div key={g.teacherId} className="print-teacher-unit mb-1.5">
+                          {/* 講師見出し: 姓のみ・小さめ。下に細い区切り。 */}
+                          <div className="text-[10px] font-semibold text-gray-500 border-b border-gray-200 leading-tight">
+                            {g.surname}
+                          </div>
+                          <ul className="pt-0.5">
+                            {g.students.map((e) => {
+                              const studentName = e.student
+                                ? `${e.student.last_name}${e.student.first_name}`
+                                : (e.inquiry?.student_name ?? '');
+                              const subj = (e.subjects ?? [])
+                                .map((s: { name?: string }) => s?.name)
+                                .filter(Boolean)
+                                .join('/');
+                              return (
+                                <li key={e.id} className="flex items-baseline gap-1 leading-tight">
+                                  <span className="text-[15px] font-bold">{studentName}</span>
+                                  {subj && (
+                                    <span className="text-[10px] text-gray-500">({subj})</span>
+                                  )}
+                                </li>
+                              );
+                            })}
+                          </ul>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 ))}
               </div>

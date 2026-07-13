@@ -6,6 +6,7 @@ import { parseTeacherSlotId, parseAvailableTeacherDragId } from './TeacherCard';
 import { WeeklyScheduleGridView } from './WeeklyScheduleGridView';
 import type { ScheduleEntry, ScheduleTimeSlot } from '@/types/schedule';
 import type { TeacherGroup } from './DayCell';
+import { evaluateStudentDrop } from '@/lib/utils/scheduleDrop';
 
 /**
  * 担当未決定エントリは個別ドロップターゲットにするため、teacher.id を
@@ -268,16 +269,12 @@ export function WeeklyScheduleGrid(props: WeeklyScheduleGridProps) {
       }
     }
 
-    // [2] 生徒カードのドロップ → 講師ブロックに振替
+    // [2] 生徒カードのドロップ → 講師ブロックに割当（同コマ内=移動 / 別コマ=振替）
     if (overSlot && onStudentEntryDrop) {
       const entry = entries.find((e) => e.id === String(active.id));
-      if (!entry || closedDates.includes(overSlot.date)) return;
-      const isSourceBlock =
-        entry.entry_date === overSlot.date &&
-        entry.time_slot_id === overSlot.slotId &&
-        entry.teacher_id === overSlot.teacherId;
-      if (isSourceBlock) return;
-      const targetEntries = entries.filter(
+      if (!entry) return;
+      // 移動先セルの有効エントリ（cancelled/transferred_out を除く）。満席・重複判定に使う。
+      const targetActiveEntries = entries.filter(
         (e) =>
           e.entry_date === overSlot.date &&
           e.time_slot_id === overSlot.slotId &&
@@ -285,35 +282,20 @@ export function WeeklyScheduleGrid(props: WeeklyScheduleGridProps) {
           e.status !== 'cancelled' &&
           e.status !== 'transferred_out'
       );
-      if (targetEntries.some((e) => e.student_id === entry.student_id)) return;
-      if (targetEntries.length >= maxStudentsPerTeacher) return;
-      // 制約チェック（最終ガード）: 視覚的に拒否表示しているものは実体でも止める
-      const targetTeacher = teachers.find((t) => t.id === overSlot.teacherId);
-      if (targetTeacher) {
-        // 指導科目
-        const teachable = targetTeacher.teachable_subject_ids ?? [];
-        if (teachable.length > 0 && entry.subject_ids?.length > 0) {
-          const teachableSet = new Set(teachable);
-          if (!entry.subject_ids.some((sid) => teachableSet.has(sid))) {
-            onConstraintViolation?.('指導科目外の講師です');
-            return;
-          }
-        }
-        // 除外指定
-        const excluded = entry.student?.excluded_teacher_ids ?? [];
-        if (excluded.includes(overSlot.teacherId)) {
-          onConstraintViolation?.('担当除外指定の講師です');
-          return;
-        }
-        // 性別希望
-        const preferred = entry.student?.preferred_teacher_gender;
-        if (preferred && targetTeacher.gender && targetTeacher.gender !== preferred) {
-          onConstraintViolation?.(
-            `${preferred === 'male' ? '男性' : '女性'}講師希望のため割当不可`
-          );
-          return;
-        }
+      // 可否判定は純関数へ委譲（同一ブロック・満席・重複・制約違反をここで一元判定）。
+      const decision = evaluateStudentDrop({
+        entry,
+        target: { date: overSlot.date, slotId: overSlot.slotId, teacherId: overSlot.teacherId },
+        targetActiveEntries,
+        targetTeacher: teachers.find((t) => t.id === overSlot.teacherId) ?? null,
+        maxStudentsPerTeacher,
+        isClosed: closedDates.includes(overSlot.date),
+      });
+      if (decision.kind === 'violation') {
+        onConstraintViolation?.(decision.reason);
+        return;
       }
+      if (decision.kind !== 'drop') return;
       onStudentEntryDrop(String(active.id), overSlot.date, overSlot.slotId, overSlot.teacherId);
       return;
     }

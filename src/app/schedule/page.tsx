@@ -2661,7 +2661,10 @@ export default function SchedulePage() {
   // さらに負マージンで px-4 を打ち消してフルブリードにする（下の schedule-board-bleed 参照）。
   return (
     <AdminLayout headerTitle="座席表" fullWidth>
-      <div className="space-y-4">
+      {/* 画面コンテンツ一式を print:hidden で包む。印刷時はこの下の #schedule-daily-print
+          だけを出す（ツールバー・タブ・凡例・各パネル・盤面はすべて隠す）。AppHeader は
+          AppHeader 側で既に print:hidden。日次印刷ビューはこのラッパーの外（下）に置く。 */}
+      <div className="space-y-4 print:hidden">
         {/* コンテキストヘルプ */}
         <div className="flex justify-end -mb-4">
           <ContextHelp
@@ -3005,19 +3008,6 @@ export default function SchedulePage() {
                  AdminLayout(fullWidth) の px-4 / 下端 py-6 を打ち消して画面いっぱいに広げる。
                  キャンバス色（--sd-canvas）はグリッド側の boardCanvas がページ端まで塗る。 */
               <div className="schedule-print -mx-4 -mb-6">
-                {/* 日付横の印刷アイコンで指定した日だけ印刷時表示 */}
-                {printDay && timeSlotsCount > 0 && patternsCount > 0 && (
-                  <div className="hidden print:block">
-                    <ScheduleDailyPrintView
-                      weekDates={[printDay]}
-                      timeSlots={timeSlots}
-                      entries={entriesWithSubjects}
-                      schoolName={selectedSchool?.name}
-                      singleDate={printDay}
-                      boothMapByDate={printBoothMap}
-                    />
-                  </div>
-                )}
                 {transferMode && (
                   <div className="px-3 pb-2">
                     <TransferModeBar
@@ -3144,6 +3134,22 @@ export default function SchedulePage() {
           </>
         )}
       </div>
+
+      {/* 日次印刷ビュー。画面では hidden、印刷時のみ表示（print:block）。
+          上の print:hidden ラッパーの外に置くことで、印刷時にこれだけが出る。
+          日付横の印刷アイコンで指定した日（printDay）を1ページに出力する。 */}
+      {printDay && timeSlotsCount > 0 && patternsCount > 0 && (
+        <div className="hidden print:block">
+          <ScheduleDailyPrintView
+            weekDates={[printDay]}
+            timeSlots={timeSlots}
+            entries={entriesWithSubjects}
+            schoolName={selectedSchool?.name}
+            singleDate={printDay}
+            boothMapByDate={printBoothMap}
+          />
+        </div>
+      )}
 
       <ScheduleDialogs
         schoolId={schoolId ?? ''}
