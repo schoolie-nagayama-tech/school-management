@@ -4,14 +4,15 @@ import React from 'react';
 import type { ScheduleEntry, ScheduleTimeSlot } from '@/types/schedule';
 
 /**
- * 日次印刷ビュー（A4縦・1日1ページ・2列レイアウト）
+ * 日次印刷ビュー（A4縦・1日1ページ・コマ縦積み）
  *
- * 設計:
- *  - 用紙: A4 縦 (210mm × 297mm)
- *  - 1ページ1日。複数日指定なら page-break-after で改ページ
- *  - コマ枠を 2 列 grid で配置（縦圧縮）。コマ数 5〜7 で 3 行に収まる
- *  - 各コマ内: 講師ごとに mini card、ブース番号 + 講師名 + 生徒一覧
- *  - 文字小さめ + 密度高めで A4 1 枚に収める
+ * 設計（2026-07-13 改訂）:
+ *  - 用紙: A4 縦 (210mm × 297mm)、1ページ1日
+ *  - コマは縦に積む（1列）。上から 1限→最終限
+ *  - 講師名・担当未定は出さない。生徒名を主役に大きく表示する（配布用途）
+ *  - 生徒は各コマ内で複数列に流し、名前を大きく保ちつつ紙面に収める
+ *  - ブース番号は表示しないが、席のまとまりを保つため並び順のソートには使う
+ *  - 最終日には改ページを付けない（末尾の白紙ページを防ぐ）
  */
 
 function formatDateHeader(dateStr: string): string {
@@ -22,25 +23,36 @@ function formatDateHeader(dateStr: string): string {
   return `${d.getFullYear()}年${m}月${day}日 (${week})`;
 }
 
-function groupByTeacher(
+/**
+ * そのコマに座っている生徒を集める。
+ * - 担当未定（teacher_id なし）は印刷に出さない（配布用途では確定分のみ）
+ * - キャンセル・振替元も除外
+ * - ブース番号（講師×日付）→ 氏名 の順でソートし、席のまとまりを保つ
+ */
+function collectStudents(
   entries: ScheduleEntry[],
   date: string,
-  slotId: string
-): Map<string, ScheduleEntry[]> {
+  slotId: string,
+  boothMap: Map<string, number>
+): ScheduleEntry[] {
   const filtered = entries.filter(
     (e) =>
       e.entry_date === date &&
       e.time_slot_id === slotId &&
       e.status !== 'cancelled' &&
-      e.status !== 'transferred_out'
+      e.status !== 'transferred_out' &&
+      !!e.teacher_id &&
+      e.teacher_id !== '__unassigned__'
   );
-  const byTeacher = new Map<string, ScheduleEntry[]>();
-  for (const entry of filtered) {
-    const tid = entry.teacher_id ?? '__unassigned__';
-    if (!byTeacher.has(tid)) byTeacher.set(tid, []);
-    byTeacher.get(tid)!.push(entry);
-  }
-  return byTeacher;
+
+  return filtered.sort((a, b) => {
+    const ba = boothMap.get(a.teacher_id!) ?? Number.MAX_SAFE_INTEGER;
+    const bb = boothMap.get(b.teacher_id!) ?? Number.MAX_SAFE_INTEGER;
+    if (ba !== bb) return ba - bb;
+    const na = a.student ? `${a.student.last_name}${a.student.first_name}` : '';
+    const nb = b.student ? `${b.student.last_name}${b.student.first_name}` : '';
+    return na.localeCompare(nb, 'ja');
+  });
 }
 
 export interface ScheduleDailyPrintViewProps {
@@ -52,8 +64,7 @@ export interface ScheduleDailyPrintViewProps {
   singleDate?: string;
   /**
    * 日次のブース番号マップ。{ [date]: Map<teacherId, boothNo> } の形式。
-   * 指定された講師にだけブース番号 [N] を講師名の隣に表示する。
-   * 渡されなかった日 or 講師は番号無し（後方互換）。
+   * 表示はしないが、生徒の並び順（席のまとまり）を保つソートに使う。
    */
   boothMapByDate?: Map<string, Map<string, number>>;
 }
@@ -84,20 +95,26 @@ export function ScheduleDailyPrintView({
       `}</style>
 
       <div id="schedule-daily-print" className="hidden print:block bg-white text-black">
-        {datesToShow.map((dateStr) => {
+        {datesToShow.map((dateStr, dateIdx) => {
           const boothMap = boothMapByDate?.get(dateStr) ?? new Map<string, number>();
-          // 印刷では中身の無いコマ（配置ゼロ）は省いて紙面を詰める。
-          // groupByTeacher は配置のある entry だけを束ねるので、groups.size > 0 = そのコマに誰か座っている。
-          const slotsWithGroups = timeSlots
+          // 生徒が1人でもいるコマだけ出す（配置ゼロのコマは紙面を詰めるため省く）
+          const slotsWithStudents = timeSlots
             .map((slot) => ({
               slot,
-              groups: groupByTeacher(entries, dateStr, slot.id),
+              students: collectStudents(entries, dateStr, slot.id, boothMap),
             }))
-            .filter(({ groups }) => groups.size > 0);
+            .filter(({ students }) => students.length > 0);
+
+          // 末尾の白紙ページ対策: 最終日には改ページを付けない
+          const isLast = dateIdx === datesToShow.length - 1;
 
           return (
-            <div key={dateStr} className="p-2" style={{ pageBreakAfter: 'always' }}>
-              {/* ヘッダー: 教室名 + 日付。1行に収めて縦スペース節約 */}
+            <div
+              key={dateStr}
+              className="p-2"
+              style={isLast ? undefined : { pageBreakAfter: 'always' }}
+            >
+              {/* ヘッダー: 日付 + 教室名。1行に収めて縦スペース節約 */}
               <div className="flex items-end justify-between border-b-2 border-black pb-1 mb-2">
                 <h2 className="text-lg font-bold leading-tight">{formatDateHeader(dateStr)}</h2>
                 {schoolName && (
@@ -105,98 +122,47 @@ export function ScheduleDailyPrintView({
                 )}
               </div>
 
-              {/* コマを 2 列で並べる。コマ数 6 でも 3 行で収まり、A4縦1枚に余裕 */}
-              {/* 空コマを省いた結果その日の配置が全く無い場合は、空グリッドで紙面を浪費しないよう一言だけ出す */}
-              {slotsWithGroups.length === 0 && (
+              {slotsWithStudents.length === 0 && (
                 <div className="text-xs text-gray-400 py-4 text-center">
                   この日に配置された授業はありません
                 </div>
               )}
-              <div className="grid grid-cols-2 gap-2">
-                {slotsWithGroups.map(({ slot, groups }) => {
-                  const sortedGroups = Array.from(groups.entries()).sort(([aId], [bId]) => {
-                    const a = boothMap.get(aId);
-                    const b = boothMap.get(bId);
-                    if (a == null && b == null) return 0;
-                    if (a == null) return 1;
-                    if (b == null) return -1;
-                    return a - b;
-                  });
 
-                  return (
-                    <div
-                      key={slot.id}
-                      className="border border-gray-400 rounded p-1.5 break-inside-avoid"
-                    >
-                      {/* コマヘッダー: 限数 + 時間帯 */}
-                      <div className="flex items-baseline gap-2 border-b border-gray-300 pb-1 mb-1">
-                        <span className="text-base font-bold leading-none">
-                          {slot.slot_number}限
-                        </span>
-                        <span className="text-[10px] text-gray-600 tabular-nums">
-                          {slot.start_time?.slice(0, 5)}〜{slot.end_time?.slice(0, 5)}
-                        </span>
-                        <span className="ml-auto text-[10px] text-gray-500">
-                          {Array.from(groups.values()).reduce((sum, arr) => sum + arr.length, 0)} 名
-                        </span>
-                      </div>
-
-                      {sortedGroups.length === 0 ? (
-                        <div className="text-[10px] text-gray-300 py-2 text-center">—</div>
-                      ) : (
-                        <ul className="space-y-0.5">
-                          {sortedGroups.map(([teacherId, slotEntries]) => {
-                            const teacher = slotEntries[0]?.teacher;
-                            const name =
-                              teacherId === '__unassigned__'
-                                ? '担当未定'
-                                : teacher?.display_name || teacher?.email || teacherId;
-                            const boothNo = boothMap.get(teacherId);
-                            return (
-                              <li key={teacherId} className="text-[10px] leading-tight">
-                                <div className="flex items-center gap-1">
-                                  {boothNo != null && (
-                                    <span
-                                      className="inline-flex items-center justify-center min-w-[16px] h-[16px] px-1 text-[9px] font-bold border border-black bg-black text-white rounded-sm"
-                                      style={{ fontVariantNumeric: 'tabular-nums' }}
-                                    >
-                                      {boothNo}
-                                    </span>
-                                  )}
-                                  <span
-                                    className={`font-semibold ${
-                                      teacherId === '__unassigned__' ? 'text-gray-500' : ''
-                                    }`}
-                                  >
-                                    {name}
-                                  </span>
-                                </div>
-                                <div className="ml-[20px] text-gray-700">
-                                  {slotEntries.map((e, i) => {
-                                    const studentName = e.student
-                                      ? `${e.student.last_name}${e.student.first_name}`
-                                      : e.student_id;
-                                    const subj = (e.subjects ?? [])
-                                      ?.map((s: { name?: string }) => s?.name)
-                                      .filter(Boolean)
-                                      .join('/');
-                                    return (
-                                      <span key={e.id}>
-                                        {i > 0 && <span className="text-gray-300">、</span>}
-                                        {studentName}
-                                        {subj && <span className="text-gray-500">({subj})</span>}
-                                      </span>
-                                    );
-                                  })}
-                                </div>
-                              </li>
-                            );
-                          })}
-                        </ul>
-                      )}
+              {/* コマを縦に積む（1列）。上から 1限→最終限。 */}
+              <div className="space-y-2">
+                {slotsWithStudents.map(({ slot, students }) => (
+                  <div key={slot.id} className="border border-gray-400 rounded break-inside-avoid">
+                    {/* コマヘッダー: 限数 + 時間帯 + 人数 */}
+                    <div className="flex items-baseline gap-2 border-b border-gray-300 bg-gray-100 px-2 py-1">
+                      <span className="text-base font-bold leading-none">{slot.slot_number}限</span>
+                      <span className="text-[11px] text-gray-600 tabular-nums">
+                        {slot.start_time?.slice(0, 5)}〜{slot.end_time?.slice(0, 5)}
+                      </span>
+                      <span className="ml-auto text-[11px] text-gray-600">
+                        {students.length} 名
+                      </span>
                     </div>
-                  );
-                })}
+
+                    {/* 生徒名を主役に大きく。名前を保ちつつ収めるため複数列に流す。 */}
+                    <ul className="grid grid-cols-3 gap-x-3 gap-y-0.5 px-2 py-1.5">
+                      {students.map((e) => {
+                        const studentName = e.student
+                          ? `${e.student.last_name}${e.student.first_name}`
+                          : (e.inquiry?.student_name ?? '');
+                        const subj = (e.subjects ?? [])
+                          .map((s: { name?: string }) => s?.name)
+                          .filter(Boolean)
+                          .join('/');
+                        return (
+                          <li key={e.id} className="flex items-baseline gap-1 leading-tight">
+                            <span className="text-[15px] font-bold">{studentName}</span>
+                            {subj && <span className="text-[10px] text-gray-500">({subj})</span>}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                ))}
               </div>
             </div>
           );
