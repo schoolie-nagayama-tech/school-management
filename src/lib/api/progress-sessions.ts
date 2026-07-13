@@ -9,9 +9,12 @@ import type {
 } from '@/types/database';
 
 /** Supabase select 句（フィード共通） */
+// student_textbooks は !inner。これにより getSessionFeed で school_id を
+// 埋め込み側のフィルタ（student_textbook.school_id=in.(...)）で絞れる。
+// progress_sessions.student_textbook_id は常に存在するので inner でも件数は変わらない。
 const FEED_SELECT = `
   *,
-  student_textbook:student_textbooks(
+  student_textbook:student_textbooks!inner(
     *,
     textbook:textbooks(*),
     student:students(*)
@@ -638,27 +641,13 @@ export interface SessionFeedFilter {
 }
 
 /**
- * student_textbook_ids を school_id + 任意の student_id で取得
- */
-async function getTextbookIds(schoolIds: string[], studentId?: string): Promise<string[]> {
-  const q = supabase
-    .from('student_textbooks')
-    .select('id, student_id')
-    .in('school_id', schoolIds)
-    .eq('is_active', true);
-
-  const { data, error } = await q;
-  if (error || !data || data.length === 0) return [];
-
-  let ids = data as { id: string; student_id: string | null }[];
-  if (studentId) {
-    ids = ids.filter((st) => st.student_id === studentId);
-  }
-  return ids.map((st) => st.id);
-}
-
-/**
  * 統合フィード取得（フィルタ対応）
+ *
+ * 教室の絞り込みは student_textbooks への inner join（FEED_SELECT）で行う。
+ * かつて student_textbook_id を全件取得して .in(...) に流し込んでいたが、
+ * 「すべての教室」だと ID が数千件になり (1) 1000行上限で切り捨て
+ * (2) .in() のURLが長大化して 400 になる、の二重の罠でフィードが空になった。
+ * 埋め込みフィルタならサーバー側の join で絞れるので教室数に依らず動く。
  */
 export async function getSessionFeed(
   schoolIds: string[],
@@ -668,17 +657,19 @@ export async function getSessionFeed(
 ): Promise<ProgressSessionWithDetails[]> {
   if (schoolIds.length === 0) return [];
 
-  const stIds = await getTextbookIds(schoolIds, filter.studentId);
-  if (stIds.length === 0) return [];
-
   let q = supabase
     .from('progress_sessions')
     .select(FEED_SELECT)
-    .in('student_textbook_id', stIds)
+    // student_textbooks!inner 側のカラムで教室・在籍・生徒を絞る
+    .in('student_textbook.school_id', schoolIds)
+    .eq('student_textbook.is_active', true)
     .order('session_date', { ascending: false })
     .order('created_at', { ascending: false })
     .range(offset, offset + limit - 1);
 
+  if (filter.studentId) {
+    q = q.eq('student_textbook.student_id', filter.studentId);
+  }
   if (filter.alertsOnly) {
     q = q.or('homework_not_done.eq.true,tardy.eq.true');
   }
