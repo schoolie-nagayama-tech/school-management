@@ -39,6 +39,8 @@ interface TransferModalProps {
     targetTeacherId: string,
     seatLabel?: string | null
   ) => Promise<void>;
+  /** Phase P2: 振替先が未定のまま保留プールへ入れる。指定時のみボタンを表示。 */
+  onHold?: () => void;
 }
 
 export function TransferModal({
@@ -54,6 +56,7 @@ export function TransferModal({
   initialTargetDate,
   initialTargetSlotId,
   onTransfer,
+  onHold,
 }: TransferModalProps) {
   const [targetDate, setTargetDate] = useState('');
   const [targetSlotId, setTargetSlotId] = useState('');
@@ -143,13 +146,29 @@ export function TransferModal({
             />
           </div>
         </div>
-        <DialogFooter>
-          <Button variant="secondary" onClick={onClose}>
-            キャンセル
-          </Button>
-          <Button onClick={handleSubmit} disabled={saving}>
-            {saving ? '振替中...' : '振替する'}
-          </Button>
+        <DialogFooter className="flex-col sm:flex-row sm:justify-between gap-2">
+          {/* Phase P2: 振替先が未定なら保留プールへ。左端に置いて確定操作と視覚的に分ける。 */}
+          {onHold ? (
+            <Button
+              variant="outline"
+              onClick={onHold}
+              disabled={saving}
+              className="sm:mr-auto"
+              title="振替先を決めずに保留プールに入れる（後で座席表から配置）"
+            >
+              振替先が未定（保留にする）
+            </Button>
+          ) : (
+            <span />
+          )}
+          <div className="flex gap-2 justify-end">
+            <Button variant="secondary" onClick={onClose}>
+              キャンセル
+            </Button>
+            <Button onClick={handleSubmit} disabled={saving}>
+              {saving ? '振替中...' : '振替する'}
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>

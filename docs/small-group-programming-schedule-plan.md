@@ -191,6 +191,33 @@ school_formation_capacity (
 
 **フェーズ**: 新フェーズ **T（体験・追加授業UI）**。Phase R の授業モデルとは独立。
 
+### 2.11 汎用配置モード（振替保留プール・授業追加の座席表配置・検索統一）— 2026-07-13 追加要件
+
+①振替の保留プール ②授業追加のカレンダー配置・複数コマ一括 ③生徒検索の提案書仕様統一。3件とも講習/テスト対策の配置モードUI（セルハイライト＋クリック配置）に乗せる。
+
+**a. 汎用配置セッション（基盤）**
+- 既存の講習（placingKoushuStudent）/テスト対策（placingTestPrep）は**触らず**、第3の並列ステート `placingAdhoc`（mode: 'transfer' | 'lesson'）を追加し、gridPlacing / gridGetPlaceability / gridPlace / gridPlaceWithTeacher の三項連鎖に合流させる
+- placeability: 過去日・休講日・生徒の時間重複（振替は excludeScheduleEntryId で元コマ除外、問合せ見込み客はスキップ）。セル背景クリック=担当未決定、講師カードクリック=講師指定（既存文化どおり）
+- 配置中は上部にミニバナー（対象者名・科目・登録済みN コマ・「完了」ボタン）。出席可能ストリップは汎用ビルダーで対応（可能枠=全セル、配置済み/満席判定は既存3点セット流用）
+- 個別タブ専用（形態ボードは対象外）
+
+**b. ①振替保留プール（マイグレ不要）**
+- 「保留」= 振替元を transferred_out 化し transfer_to_id を張らない状態（**既存スキーマで表現可能**。督促ボード getPendingTransfers と同じ条件）
+- 保留の入口: TransferModal と TransferModeBar に「振替先が未定 → 保留にする」ボタン。API `holdTransfer`（createTransferEntry の前半を分離）
+- プールUI: 座席表上部の折りたたみパネル（テスト対策パネルと同系）に保留中一覧（生徒・元日程・科目・期限残チップ）＋「配置」ボタン → placingAdhoc('transfer') 開始
+- 確定: `completeHeldTransfer(fromEntryId, date, slotId, teacherId|null)` — transferred_in 作成＋transfer_to_id リンク（createTransferEntry の後半を分離・teacherId nullable 化で担当未決定振替も許容）。月内回数チェックは既存フロー踏襲
+
+**c. ②授業追加の配置モード化・複数コマ一括**
+- AddLessonModal を2ステップ化: Step1=種別・対象者（生徒/問合せ）・科目・比率/45分 →「座席表から日程を選ぶ」で placingAdhoc('lesson') 開始
+- セルクリックごとに即1コマ登録（講習の落とし込みと同じ方式）。モード継続でクリックを重ねる=複数コマ一括。「完了」で終了
+- 体験×問合せ: 最初の登録で trial_at セット＋体験待ち化（既存 markInquiryTrialScheduled）
+
+**d. ③生徒検索の提案書仕様統一**
+- 提案書ピッカーの仕様 = 全生徒事前ロード（active のみ）＋クライアント側フィルタ（姓名+かな連結の部分一致）＋学年グルーピング・sticky見出し
+- この仕様の共通コンポーネントを新設し AddLessonModal の生徒選択を置換（提案書側は現状維持=同仕様の重複実装は将来統合）。問合せ検索（InquirySearchInput）は対象が異なるため現状のまま
+
+**フェーズ**: **P2（配置モード拡張）**。マイグレ不要。
+
 ## 3. フェーズ計画
 
 ### Phase A: 基盤（既存挙動を変えずに土台を作る）

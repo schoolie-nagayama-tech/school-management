@@ -15,9 +15,11 @@ export interface TransferModeBarProps {
   entry: ScheduleEntry;
   slotLabel?: string;
   onCancel: () => void;
+  /** Phase P2: 振替先を決めずに保留プールへ入れる。指定時のみボタンを表示。 */
+  onHold?: () => void;
 }
 
-export function TransferModeBar({ entry, slotLabel, onCancel }: TransferModeBarProps) {
+export function TransferModeBar({ entry, slotLabel, onCancel, onHold }: TransferModeBarProps) {
   const studentName = entry.student
     ? `${entry.student.last_name}${entry.student.first_name}（${gradeLabel(entry.student.grade)}）`
     : entry.student_id;
@@ -39,9 +41,22 @@ export function TransferModeBar({ entry, slotLabel, onCancel }: TransferModeBarP
           振替先の講師ブロックをクリック
         </span>
       </div>
-      <Button variant="secondary" size="sm" className="text-xs h-7" onClick={onCancel}>
-        キャンセル
-      </Button>
+      <div className="flex items-center gap-2">
+        {onHold && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="text-xs h-7"
+            onClick={onHold}
+            title="振替先を決めずに保留プールに入れる（後で座席表から配置）"
+          >
+            保留にする
+          </Button>
+        )}
+        <Button variant="secondary" size="sm" className="text-xs h-7" onClick={onCancel}>
+          キャンセル
+        </Button>
+      </div>
     </div>
   );
 }

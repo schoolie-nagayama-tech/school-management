@@ -42,6 +42,16 @@ const PendingTransfersBoard = dynamic(
   () => import('@/components/schedule/PendingTransfersBoard').then((m) => m.PendingTransfersBoard),
   { ssr: false }
 );
+// Phase P2: 振替の保留プール一覧（個別タブ・通常モード時に表示）。
+const HeldTransfersPanel = dynamic(
+  () => import('@/components/schedule/HeldTransfersPanel').then((m) => m.HeldTransfersPanel),
+  { ssr: false }
+);
+// Phase P2: 汎用配置モード（振替保留の配置 / 授業追加の配置）中の上部ミニバナー。
+const AdhocPlacementBar = dynamic(
+  () => import('@/components/schedule/AdhocPlacementBar').then((m) => m.AdhocPlacementBar),
+  { ssr: false }
+);
 const KoushuControlPanel = dynamic(
   () => import('@/components/schedule/KoushuControlPanel').then((m) => m.KoushuControlPanel),
   { ssr: false }
@@ -107,6 +117,9 @@ import {
   regenerateCurrentWeekIfNeeded,
 } from '@/lib/api/schedule';
 import { reassignTeacherFromToday } from '@/lib/api/pattern-matching';
+import { markInquiryTrialScheduled } from '@/lib/api/inquiries';
+import type { AddLessonPlacementPayload } from '@/components/schedule';
+import type { HalfPosition } from '@/types/schedule';
 import { getFormations, getFormationCapacity } from '@/lib/api/schedule-formations';
 import { createFormationClassPatterns } from '@/lib/api/formation-patterns';
 import type { ScheduleFormation, SchoolFormationCapacity } from '@/types/schedule';
@@ -277,6 +290,39 @@ export default function SchedulePage() {
   const [koushuPanelRefreshKey, setKoushuPanelRefreshKey] = useState(0);
   // Phase T: 「授業を追加」モーダル（追加授業・体験授業の単発コマ登録）の開閉。
   const [addLessonOpen, setAddLessonOpen] = useState(false);
+
+  // ---- Phase P2: 汎用配置モード（振替保留の配置 / 授業追加の座席表配置） ----
+  // 講習(placingKoushuStudent)・テスト対策(placingTestPrep)とは独立した第3の配置ステート。
+  // gridPlacing 等の三項連鎖に最優先分岐として合流する（既存2モードの挙動は不変）。
+  const [placingAdhoc, setPlacingAdhoc] = useState<{
+    /** transfer=保留振替の配置（1件で終了） / lesson=授業追加（連続配置） */
+    mode: 'transfer' | 'lesson';
+    /** バナー・重複チェックに使う対象者名 */
+    displayName: string;
+    /** バナー表示用の科目名（連結済み・空可） */
+    subjectName: string;
+    /** これまで登録したコマ数（lesson の連続配置カウント） */
+    placedCount: number;
+    /** 重複チェック対象の生徒ID（見込み客=inquiry のときは null＝チェックしない） */
+    studentId: string | null;
+    /** 重複判定から除外する自身のエントリID（振替元。lesson は null） */
+    excludeEntryId: string | null;
+    // --- transfer 用 ---
+    fromEntryId?: string;
+    /** 月内振替回数の判定に使う振替元の元日付 */
+    sourceEntryDate?: string;
+    // --- lesson 用 ---
+    inquiryId?: string | null;
+    subjectIds?: string[];
+    kind?: 'additional' | 'trial';
+    ratio?: 1 | 2;
+    durationMinutes?: number | null;
+    halfPosition?: HalfPosition;
+    /** 体験×問合せの trial_at 連動を最初の1件だけ実行するためのフラグ */
+    trialMarked?: boolean;
+  } | null>(null);
+  // 保留プールパネルの再取得トリガ（保留追加・配置確定時にインクリメント）。
+  const [heldRefreshKey, setHeldRefreshKey] = useState(0);
   const [scheduleSettingsOpen, setScheduleSettingsOpen] = useState(false);
   const [scheduleGenerateConfirmOpen, setScheduleGenerateConfirmOpen] = useState(false);
   const [scheduleGenerateHasExisting, setScheduleGenerateHasExisting] = useState(false);
@@ -637,6 +683,8 @@ export default function SchedulePage() {
       setTestPrepActive(false);
       setPlacingTestPrep(null);
       setTransferMode(null);
+      // Phase P2: 形態ボードは汎用配置の対象外。切替時に配置モードを解除する。
+      setPlacingAdhoc(null);
     }
   }, []);
 
@@ -706,9 +754,11 @@ export default function SchedulePage() {
     async (period: KoushuPeriodInfo | null) => {
       setSelectedKoushu(period);
       // 講習と追加授業（テスト対策）は排他。講習を選んだら追加授業モードを解除。
+      // Phase P2: 汎用配置モードとも排他（講習に入ったら配置モードを解除）。
       if (period) {
         setTestPrepActive(false);
         setPlacingTestPrep(null);
+        setPlacingAdhoc(null);
       }
       if (!period) {
         setKoushuEnrollments(new Map());
@@ -1160,6 +1210,38 @@ export default function SchedulePage() {
     setActionModalEntry(null);
   }, [actionModalEntry, activeFormation]);
 
+  // Phase P2: TransferModal（別週へ振替ダイアログ）から「保留にする」。
+  // 振替先を決めずに元コマだけ transferred_out 化し、保留プールへ入れる。
+  const handleTransferHold = useCallback(async () => {
+    if (!schoolId || !transferringEntry) return;
+    try {
+      const { holdTransfer } = await import('@/lib/api/schedule');
+      await holdTransfer(schoolId, transferringEntry.id);
+      success('振替を保留にしました');
+      setTransferModalOpen(false);
+      setTransferringEntry(null);
+      setHeldRefreshKey((k) => k + 1);
+      refreshEntries();
+    } catch (e) {
+      toastError((e as Error).message);
+    }
+  }, [schoolId, transferringEntry, success, refreshEntries, toastError]);
+
+  // Phase P2: 振替モードバー（座席表クリックで振替先を選ぶモード）から「保留にする」。
+  const handleTransferModeHold = useCallback(async () => {
+    if (!schoolId || !transferMode) return;
+    try {
+      const { holdTransfer } = await import('@/lib/api/schedule');
+      await holdTransfer(schoolId, transferMode.sourceEntry.id);
+      success('振替を保留にしました');
+      setTransferMode(null);
+      setHeldRefreshKey((k) => k + 1);
+      refreshEntries();
+    } catch (e) {
+      toastError((e as Error).message);
+    }
+  }, [schoolId, transferMode, success, refreshEntries, toastError]);
+
   const handleAbsentFromAction = useCallback(async () => {
     const entry = actionModalEntry;
     if (!entry || !profile) return;
@@ -1448,6 +1530,8 @@ export default function SchedulePage() {
       setTestPrepActive(active);
       setPlacingTestPrep(null);
       if (!active) return;
+      // Phase P2: テスト対策に入ったら汎用配置モードを解除（排他）。
+      setPlacingAdhoc(null);
       // 講習モードは解除
       setSelectedKoushu(null);
       setKoushuEnrollments(new Map());
@@ -1590,13 +1674,206 @@ export default function SchedulePage() {
     [placingTestPrep, schoolId, closedDates, success, refreshEntries, toastError]
   );
 
-  // 座席表グリッドへ渡す「配置モード」プロップは講習/テスト対策を一本化（排他なのでどちらか有効）
-  const gridPlacing = !!placingKoushuStudent || !!placingTestPrep;
-  const gridGetPlaceability = placingTestPrep ? getTestPrepPlaceability : getKoushuPlaceability;
-  const gridPlace = placingTestPrep ? handleTestPrepPlace : handleKoushuPlace;
-  const gridPlaceWithTeacher = placingTestPrep
-    ? handleTestPrepPlaceWithTeacher
-    : handleKoushuPlaceWithTeacher;
+  // ===== Phase P2: 汎用配置モード（振替保留の配置 / 授業追加の配置） =====
+
+  // 配置可否（緑=可 / 淡色=不可）。過去日・休講日・生徒の同一コマ重複をチェック。
+  // 振替は excludeEntryId で元コマを除外、lesson×問合せ（見込み客）は生徒重複をスキップ。
+  // 休講/過去日の判定は getKoushuPlaceability と同じ実装を流用。
+  const getAdhocPlaceability = useCallback(
+    (date: string, slotId: string): { ok: boolean; reason: string | null } => {
+      if (!placingAdhoc) return { ok: false, reason: null };
+      if (closedDates.includes(date)) return { ok: false, reason: '休講日' };
+      const todayJst = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Tokyo' });
+      if (date < todayJst) return { ok: false, reason: '過去の日付' };
+      const sid = placingAdhoc.studentId;
+      if (sid) {
+        const dup = entriesWithSubjects.some(
+          (e) =>
+            e.student_id === sid &&
+            e.id !== placingAdhoc.excludeEntryId &&
+            e.entry_date === date &&
+            e.time_slot_id === slotId &&
+            e.status !== 'cancelled' &&
+            e.status !== 'transferred_out'
+        );
+        if (dup) return { ok: false, reason: 'この生徒は既にこのコマに配置済み' };
+      }
+      return { ok: true, reason: null };
+    },
+    [placingAdhoc, closedDates, entriesWithSubjects]
+  );
+
+  // 配置確定の共通処理。teacherId=null=セル背景クリック（担当未決定） / 非null=講師カードクリック。
+  const doAdhocPlace = useCallback(
+    async (date: string, slotId: string, teacherId: string | null) => {
+      if (!placingAdhoc || !schoolId) return;
+      if (closedDates.includes(date)) {
+        toastError('休講日には配置できません');
+        return;
+      }
+      try {
+        if (placingAdhoc.mode === 'transfer') {
+          if (!placingAdhoc.fromEntryId) return;
+          // 月内振替回数チェック。上限超過なら確認（既存フロー同様に例外登録を許す）。
+          if (placingAdhoc.studentId) {
+            const usage = await getMonthlyTransferUsage(
+              placingAdhoc.studentId,
+              placingAdhoc.sourceEntryDate
+            );
+            if (usage.used >= usage.limit) {
+              const ok = window.confirm(
+                `${placingAdhoc.displayName} は ${usage.monthLabel} の振替が ${usage.used}/${usage.limit} 件で上限です。例外として振替を登録しますか？`
+              );
+              if (!ok) return;
+            }
+          }
+          const { completeHeldTransfer } = await import('@/lib/api/schedule');
+          await completeHeldTransfer(schoolId, placingAdhoc.fromEntryId, date, slotId, teacherId);
+          success('振替を登録しました');
+          // 振替は1件=1配置。配置後は自動でモード終了し、保留プールを再取得。
+          setPlacingAdhoc(null);
+          setHeldRefreshKey((k) => k + 1);
+          refreshEntries();
+          return;
+        }
+
+        // lesson モード：授業追加の1コマ配置（連続配置）
+        const { createLessonPlacement } = await import('@/lib/api/schedule');
+        await createLessonPlacement(schoolId, date, slotId, {
+          studentId: placingAdhoc.studentId,
+          inquiryId: placingAdhoc.inquiryId ?? null,
+          subjectIds: placingAdhoc.subjectIds ?? [],
+          teacherId,
+          kind: placingAdhoc.kind ?? 'additional',
+          ratio: placingAdhoc.ratio,
+          durationMinutes: placingAdhoc.durationMinutes ?? null,
+          halfPosition: placingAdhoc.halfPosition ?? null,
+        });
+        // 体験×問合せ（見込み客）は最初の1件登録時のみ trial_at をセット＋体験待ち化。
+        const shouldMarkTrial =
+          placingAdhoc.kind === 'trial' && !!placingAdhoc.inquiryId && !placingAdhoc.trialMarked;
+        if (shouldMarkTrial) {
+          const slot = individualSlots.find((s) => s.id === slotId);
+          const startTime = slot?.start_time ?? '00:00:00';
+          try {
+            await markInquiryTrialScheduled(placingAdhoc.inquiryId!, `${date}T${startTime}+09:00`);
+          } catch (e) {
+            console.warn('問合せの体験予約連動に失敗しました（体験コマは登録済み）:', e);
+          }
+        }
+        success('授業を配置しました');
+        // バナーの「N コマ」を増やし、体験の trial 連動済みフラグを立てる。モードは継続（連続配置）。
+        setPlacingAdhoc((prev) =>
+          prev
+            ? {
+                ...prev,
+                placedCount: prev.placedCount + 1,
+                trialMarked: prev.trialMarked || shouldMarkTrial,
+              }
+            : prev
+        );
+        refreshEntries();
+      } catch (e) {
+        toastError(e instanceof Error ? e.message : '配置できませんでした');
+      }
+    },
+    [placingAdhoc, schoolId, closedDates, success, toastError, refreshEntries, individualSlots]
+  );
+
+  // セル背景クリック=担当未決定。講師カードクリック=講師指定。
+  const handleAdhocPlace = useCallback(
+    (date: string, slotId: string) => doAdhocPlace(date, slotId, null),
+    [doAdhocPlace]
+  );
+  const handleAdhocPlaceWithTeacher = useCallback(
+    (date: string, slotId: string, teacherId: string) => doAdhocPlace(date, slotId, teacherId),
+    [doAdhocPlace]
+  );
+
+  // 保留プールの「配置」→ 振替の汎用配置モードを開始（同じ行の再クリックで解除）。
+  const handleStartHeldTransferPlacement = useCallback(
+    (entry: ScheduleEntry) => {
+      if (placingAdhoc?.mode === 'transfer' && placingAdhoc.fromEntryId === entry.id) {
+        setPlacingAdhoc(null);
+        return;
+      }
+      // 排他：講習/テスト対策モードを解除してから配置モードに入る。
+      setSelectedKoushu(null);
+      setKoushuEnrollments(new Map());
+      setKoushuScheduledCounts(new Map());
+      setKoushuDraftProposals([]);
+      setPlacingKoushuStudent(null);
+      setTestPrepActive(false);
+      setPlacingTestPrep(null);
+      setTransferMode(null);
+      const name = entry.student
+        ? `${entry.student.last_name}${entry.student.first_name}`.trim() || '生徒'
+        : '生徒';
+      const subjName = (entry.subject_ids ?? [])
+        .map((id) => subjectById.get(id))
+        .filter((n): n is string => !!n)
+        .join('・');
+      setPlacingAdhoc({
+        mode: 'transfer',
+        displayName: name,
+        subjectName: subjName,
+        placedCount: 0,
+        studentId: entry.student_id,
+        excludeEntryId: entry.id,
+        fromEntryId: entry.id,
+        sourceEntryDate: entry.entry_date,
+      });
+    },
+    [placingAdhoc, subjectById]
+  );
+
+  // 「授業を追加」モーダルの Step1 確定 → 授業追加の配置モードを開始。
+  const handleStartLessonPlacement = useCallback((payload: AddLessonPlacementPayload) => {
+    // 排他：講習/テスト対策/振替モードを解除。
+    setSelectedKoushu(null);
+    setKoushuEnrollments(new Map());
+    setKoushuScheduledCounts(new Map());
+    setKoushuDraftProposals([]);
+    setPlacingKoushuStudent(null);
+    setTestPrepActive(false);
+    setPlacingTestPrep(null);
+    setTransferMode(null);
+    setPlacingAdhoc({
+      mode: 'lesson',
+      displayName: payload.displayName,
+      subjectName: payload.subjectName,
+      placedCount: 0,
+      studentId: payload.studentId,
+      excludeEntryId: null,
+      inquiryId: payload.inquiryId,
+      subjectIds: [payload.subjectId],
+      kind: payload.kind,
+      ratio: payload.ratio,
+      durationMinutes: payload.durationMinutes,
+      halfPosition: payload.halfPosition,
+      trialMarked: false,
+    });
+    setAddLessonOpen(false);
+  }, []);
+
+  // 座席表グリッドへ渡す「配置モード」プロップ。優先度: 汎用配置 > テスト対策 > 講習。
+  // 三者は排他なので同時に有効にはならないが、汎用配置を最優先分岐にして既存2モードの挙動を保つ。
+  const gridPlacing = !!placingKoushuStudent || !!placingTestPrep || !!placingAdhoc;
+  const gridGetPlaceability = placingAdhoc
+    ? getAdhocPlaceability
+    : placingTestPrep
+      ? getTestPrepPlaceability
+      : getKoushuPlaceability;
+  const gridPlace = placingAdhoc
+    ? handleAdhocPlace
+    : placingTestPrep
+      ? handleTestPrepPlace
+      : handleKoushuPlace;
+  const gridPlaceWithTeacher = placingAdhoc
+    ? handleAdhocPlaceWithTeacher
+    : placingTestPrep
+      ? handleTestPrepPlaceWithTeacher
+      : handleKoushuPlaceWithTeacher;
 
   // 週移動（座席表の左右端の縦長アイコンからも操作できるように）
   const goPrevWeek = useCallback(() => {
@@ -2205,6 +2482,17 @@ export default function SchedulePage() {
         {/* 座席表の凡例（バッジ・色の意味）。折りたたみ式。 */}
         <ScheduleLegend />
 
+        {/* Phase P2: 汎用配置モード（振替保留の配置 / 授業追加の配置）中の上部ミニバナー。個別タブ専用。 */}
+        {!isFormationBoard && placingAdhoc && (
+          <AdhocPlacementBar
+            mode={placingAdhoc.mode}
+            displayName={placingAdhoc.displayName}
+            subjectName={placingAdhoc.subjectName}
+            placedCount={placingAdhoc.placedCount}
+            onDone={() => setPlacingAdhoc(null)}
+          />
+        )}
+
         {/* 講習選択中はコントロールパネルを表示（マッチング・下書き公開・配置進捗を集約）。
             空きセルクリックで講習コマを追加できる「配置モード」も内包。 */}
         {selectedKoushu && (
@@ -2291,6 +2579,18 @@ export default function SchedulePage() {
               monday.setDate(d.getDate() - diff);
               setWeekStart(monday);
             }}
+          />
+        )}
+
+        {/* Phase P2: 振替の保留プール。個別タブ・通常モード時（講習/テスト対策でない）に表示。
+            「配置」で汎用配置モードを開始。0件のときは内部で何も描画しない。 */}
+        {schoolId && !isFormationBoard && !selectedKoushu && !testPrepActive && (
+          <HeldTransfersPanel
+            schoolIds={[schoolId]}
+            refreshKey={heldRefreshKey}
+            subjectNameById={subjectById}
+            placingEntryId={placingAdhoc?.mode === 'transfer' ? placingAdhoc.fromEntryId : null}
+            onStartPlacement={handleStartHeldTransferPlacement}
           />
         )}
 
@@ -2413,6 +2713,7 @@ export default function SchedulePage() {
                           : undefined
                       }
                       onCancel={() => setTransferMode(null)}
+                      onHold={handleTransferModeHold}
                     />
                   </div>
                 )}
@@ -2576,6 +2877,7 @@ export default function SchedulePage() {
         closedDates={closedDates}
         initialTransferTarget={initialTransferTarget}
         onTransfer={handleTransfer}
+        onTransferHold={handleTransferHold}
         teacherDetailOpen={teacherDetailOpen}
         onTeacherDetailClose={() => {
           setTeacherDetailOpen(false);
@@ -2594,22 +2896,15 @@ export default function SchedulePage() {
         onRemoveTeacherConfirm={handleRemoveTeacherConfirm}
       />
 
-      {/* Phase T: 授業を追加（追加授業・体験授業の単発コマ）モーダル。個別のコマ時間・講師から選ぶ。 */}
+      {/* Phase T→P2: 授業を追加モーダル。Step1（種別・対象者・科目・比率/45分）を選び、
+          「座席表から日程を選ぶ」で配置モード（placingAdhoc:'lesson'）を開始する。 */}
       {schoolId && (
         <AddLessonModal
           isOpen={addLessonOpen}
           onClose={() => setAddLessonOpen(false)}
           schoolId={schoolId}
-          timeSlots={individualSlots}
-          teachers={teachers
-            .filter((t) => t.user_schools?.some((us) => us.school_id === schoolId))
-            .map((t) => ({ id: t.id, display_name: t.display_name, email: t.email }))}
           subjects={masterSubjects}
-          weekStart={weekStart}
-          onSuccess={() => {
-            refreshEntries();
-            setAddLessonOpen(false);
-          }}
+          onStartPlacement={handleStartLessonPlacement}
         />
       )}
 

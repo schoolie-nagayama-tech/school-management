@@ -105,6 +105,8 @@ interface ScheduleDialogsProps {
     targetTeacherId: string,
     seatLabel?: string | null
   ) => Promise<void>;
+  /** Phase P2: 振替先未定のまま保留プールへ入れる。 */
+  onTransferHold?: () => void;
 
   // Teacher detail modal
   teacherDetailOpen: boolean;
@@ -180,6 +182,7 @@ export function ScheduleDialogs({
   closedDates,
   initialTransferTarget,
   onTransfer,
+  onTransferHold,
 
   teacherDetailOpen,
   onTeacherDetailClose,
@@ -368,6 +371,7 @@ export function ScheduleDialogs({
         initialTargetDate={initialTransferTarget?.date}
         initialTargetSlotId={initialTransferTarget?.slotId}
         onTransfer={onTransfer}
+        onHold={onTransferHold}
       />
 
       <TeacherDetailModal

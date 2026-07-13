@@ -276,13 +276,20 @@ export function ScheduleToolbar({
                 </div>
               </div>
             )}
-            {/* 授業を追加：追加授業・体験授業の単発コマ登録。個別タブ専用（形態ボードでは非表示）。 */}
+            {/* 授業を追加：追加授業・体験授業の座席表配置。個別タブ専用（形態ボードでは非表示）。
+                Phase P2: 講習/テスト対策モード中は排他のため無効化。 */}
             {isIndividualTab && (
               <Button
                 variant="secondary"
                 size="sm"
                 onClick={onAddLesson}
+                disabled={!!selectedKoushu || testPrepActive}
                 className="flex items-center gap-1"
+                title={
+                  !!selectedKoushu || testPrepActive
+                    ? '講習・テスト対策モード中は使用できません'
+                    : undefined
+                }
               >
                 <CalendarPlus className="h-4 w-4" />
                 授業を追加

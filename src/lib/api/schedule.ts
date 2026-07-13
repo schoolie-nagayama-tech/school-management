@@ -1498,6 +1498,106 @@ export async function createTestPrepPlacement(
   );
 }
 
+/**
+ * Phase P2: 授業追加（追加授業 / 体験授業）の座席表配置用の1コマ登録。
+ *
+ * 「授業を追加」モーダルの Step1 を確定後、座席表のセル/講師カードをクリックするたびに呼ばれる。
+ * - teacherId 指定あり（講師カードクリック）: createScheduleEntry に委譲し、
+ *   生徒重複・容量チェック・体験×問合せ(inquiry XOR)・比率/半コマを既存ロジックで処理する。
+ * - teacherId=null（セル背景クリック=担当未決定）: createScheduleEntry は講師必須のため使えず、
+ *   ここで直接 INSERT する。生徒重複だけチェック（見込み客=inquiry はスキップ）。
+ */
+export async function createLessonPlacement(
+  schoolId: string,
+  date: string,
+  slotId: string,
+  opts: {
+    /** 既存生徒（追加授業 / 体験×既存生徒）。見込み客のときは null。 */
+    studentId?: string | null;
+    /** 体験の見込み客（問合せ）。studentId と排他。 */
+    inquiryId?: string | null;
+    subjectIds: string[];
+    /** 講師。null=担当未決定（セル背景クリック）。 */
+    teacherId?: string | null;
+    /** 授業種別。追加授業='additional' / 体験='trial'。 */
+    kind: 'additional' | 'trial';
+    ratio?: 1 | 2;
+    durationMinutes?: number | null;
+    halfPosition?: HalfPosition;
+  }
+): Promise<ScheduleEntry> {
+  // 講師指定あり: createScheduleEntry に委譲（重複・容量・inquiry XOR・比率/半コマを再利用）
+  if (opts.teacherId) {
+    return createScheduleEntry(schoolId, date, slotId, {
+      teacher_id: opts.teacherId,
+      student_id: opts.studentId ?? undefined,
+      inquiry_id: opts.inquiryId ?? null,
+      subject_ids: opts.subjectIds,
+      seat_label: '',
+      note: '',
+      kind: opts.kind,
+      formation: INDIVIDUAL_FORMATION,
+      ratio: opts.ratio,
+      duration_minutes: opts.durationMinutes ?? null,
+      half_position: opts.halfPosition ?? null,
+    });
+  }
+
+  // 担当未決定（teacher null）: 過去日ガード＋生徒重複チェック後に直接 INSERT。
+  const todayJst = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Tokyo' });
+  if (date < todayJst) {
+    throw new Error(`過去の日付（${date}）には配置できません。今日以降の日付を選んでください。`);
+  }
+  // 見込み客（inquiry のみ）は他コマを持たない＝重複チェック対象外（体験は例外扱い）。
+  const isInquiry = !!opts.inquiryId && !opts.studentId;
+  const targetSlot = await getTimeSlotById(slotId);
+  if (targetSlot && opts.studentId && !isInquiry) {
+    const studentConflict = await checkStudentTimeConflict(
+      opts.studentId,
+      new Date(date + 'T12:00:00').getDay(),
+      targetSlot.start_time,
+      targetSlot.end_time,
+      {
+        specificDate: date,
+        durationMinutes: opts.durationMinutes ?? null,
+        halfPosition: opts.halfPosition ?? null,
+      }
+    );
+    if (studentConflict) throw new Error(studentConflict.message);
+  }
+
+  const { data, error } = await db
+    .from('schedule_entries')
+    .insert({
+      school_id: schoolId,
+      entry_date: date,
+      time_slot_id: slotId,
+      teacher_id: null, // 担当未決定
+      // 体験×問合せは student_id=NULL / inquiry_id=値（DB の XOR CHECK 準拠）
+      student_id: opts.studentId ?? null,
+      inquiry_id: opts.inquiryId ?? null,
+      subject_ids: opts.subjectIds || [],
+      status: 'scheduled',
+      kind: opts.kind,
+      formation: INDIVIDUAL_FORMATION,
+      ratio: opts.ratio === 1 ? 1 : 2,
+      duration_minutes: opts.durationMinutes ?? null,
+      half_position: opts.halfPosition ?? null,
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error creating lesson placement:', error);
+    const detail =
+      error && typeof error === 'object' && 'message' in error
+        ? String((error as { message: string }).message)
+        : '';
+    throw new Error(detail ? `配置できませんでした：${detail}` : '配置できませんでした');
+  }
+  return data as ScheduleEntry;
+}
+
 /** 授業を更新（講師・科目・座席・備考） */
 export async function updateScheduleEntry(
   id: string,
@@ -1629,53 +1729,79 @@ export function calcTransferDeadline(originalDateStr: string): string {
   return `${y}-${m}-${dd}`;
 }
 
-/** 振替: 元を transferred_out にし、振替先を transferred_in で作成し相互リンク */
-export async function createTransferEntry(
-  schoolId: string,
-  fromEntryId: string,
-  targetDate: string,
-  targetSlotId: string,
-  targetTeacherId: string,
-  seatLabel?: string | null
-): Promise<{ from: ScheduleEntry; to: ScheduleEntry }> {
-  await ensureUserIsTeacher(targetTeacherId);
-
-  // 元エントリの日付を先に取得（期限計算のため）
+/**
+ * Phase P2: 振替の「保留（プール入り）」。
+ * 元エントリを transferred_out にして振替期限だけ設定する（transfer_to_id は張らない＝振替先未定）。
+ * createTransferEntry の前半を切り出したもので、保留プールの入口としても使う。
+ * 既に transferred_out なら二重処理せず no-op（期限も上書きしない）。
+ *
+ * @param schoolId シグネチャ統一のため受けるが、id が一意なので更新自体には使わない。
+ */
+export async function holdTransfer(schoolId: string, fromEntryId: string): Promise<void> {
+  void schoolId;
   const { data: srcRow, error: srcErr } = await db
     .from('schedule_entries')
-    .select('entry_date')
+    .select('entry_date, status')
     .eq('id', fromEntryId)
     .single();
   if (srcErr || !srcRow) {
-    console.error('Error fetching transfer source:', srcErr);
+    console.error('Error fetching transfer source (hold):', srcErr);
     throw new Error('振替元の取得に失敗しました');
   }
-  const deadline = calcTransferDeadline((srcRow as { entry_date: string }).entry_date);
-
-  const { data: fromRow, error: updateErr } = await db
+  const row = srcRow as { entry_date: string; status: string };
+  // 既に振替元化されている場合は何もしない（保留の再登録で期限を上書きしないため）
+  if (row.status === 'transferred_out') return;
+  const deadline = calcTransferDeadline(row.entry_date);
+  const { error: updateErr } = await db
     .from('schedule_entries')
     .update({
       status: 'transferred_out',
       // 振替期限：元授業日の翌月末日。空きコマで未消化のままだと督促対象になる
       transfer_deadline: deadline,
     })
-    .eq('id', fromEntryId)
-    .select()
-    .single();
-
-  if (updateErr || !fromRow) {
-    console.error('Error updating transfer source:', updateErr);
+    .eq('id', fromEntryId);
+  if (updateErr) {
+    console.error('Error holding transfer source:', updateErr);
     throw new Error('振替元の更新に失敗しました');
   }
+}
 
+/**
+ * Phase P2: 保留中（または通常フローの）振替を確定する。
+ * 振替先を transferred_in で作成し、元エントリと相互リンクする。createTransferEntry の後半を切り出したもの。
+ * targetTeacherId=null で「担当未決定の振替」も作れる（保留プールからの配置で講師を後回しにできる）。
+ * targetTeacherId 指定時のみ講師ロール検証を行う（null 時はスキップ）。
+ */
+export async function completeHeldTransfer(
+  schoolId: string,
+  fromEntryId: string,
+  targetDate: string,
+  targetSlotId: string,
+  targetTeacherId: string | null,
+  seatLabel?: string | null
+): Promise<{ from: ScheduleEntry; to: ScheduleEntry }> {
+  // 担当未決定(null)のときは講師検証をスキップ。指定ありなら従来どおり teacher ロールを確認する。
+  if (targetTeacherId) await ensureUserIsTeacher(targetTeacherId);
+
+  // 振替元の全カラムを取得（比率・半コマ・形態などを振替先へ引き継ぐため）
+  const { data: fromRow, error: fromErr } = await db
+    .from('schedule_entries')
+    .select('*')
+    .eq('id', fromEntryId)
+    .single();
+  if (fromErr || !fromRow) {
+    console.error('Error fetching transfer source (complete):', fromErr);
+    throw new Error('振替元の取得に失敗しました');
+  }
   const fromEntry = fromRow as ScheduleEntry;
+
   const { data: toRow, error: insertErr } = await db
     .from('schedule_entries')
     .insert({
       school_id: schoolId,
       entry_date: targetDate,
       time_slot_id: targetSlotId,
-      teacher_id: targetTeacherId,
+      teacher_id: targetTeacherId, // null=担当未決定 / 指定あり=その講師
       student_id: fromEntry.student_id,
       subject_ids: fromEntry.subject_ids || [],
       seat_label: seatLabel ?? fromEntry.seat_label,
@@ -1711,9 +1837,15 @@ export async function createTransferEntry(
   // 実際の送信は将来 Edge Function が pending 状態のものを拾って送る運用。
   // ここでINSERTが失敗しても振替自体は成立しているので、警告だけにしてthrowしない。
   try {
-    // 時刻ラベルを冗長で残す（後でエントリが消えても情報を保持）
-    const fromSlotLabel = fromEntry.time_slot
-      ? `${fromEntry.time_slot.start_time?.slice(0, 5)}〜${fromEntry.time_slot.end_time?.slice(0, 5)}`
+    // 時刻ラベルを冗長で残す（後でエントリが消えても情報を保持）。
+    // select('*') では time_slot リレーションが無いので元コマの時刻は別途引く。
+    const { data: srcSlot } = await db
+      .from('schedule_time_slots')
+      .select('start_time, end_time')
+      .eq('id', fromEntry.time_slot_id)
+      .maybeSingle();
+    const fromSlotLabel = srcSlot
+      ? `${(srcSlot as { start_time: string }).start_time?.slice(0, 5)}〜${(srcSlot as { end_time: string }).end_time?.slice(0, 5)}`
       : null;
     const { data: targetSlot } = await db
       .from('schedule_time_slots')
@@ -1740,6 +1872,33 @@ export async function createTransferEntry(
   }
 
   return { from: fromEntry, to: toEntry };
+}
+
+/**
+ * 振替: 元を transferred_out にし、振替先を transferred_in で作成し相互リンク。
+ *
+ * Phase P2 で内部を holdTransfer(前半) + completeHeldTransfer(後半) の2段に分割したが、
+ * 外部シグネチャ（targetTeacherId は必須 string）と成功時の挙動は不変：
+ *   holdTransfer が元を transferred_out＋期限化 → completeHeldTransfer が振替先作成＋リンク＋通知。
+ * teacher ロール検証は completeHeldTransfer 内（targetTeacherId 非null時）で従来どおり実施される。
+ */
+export async function createTransferEntry(
+  schoolId: string,
+  fromEntryId: string,
+  targetDate: string,
+  targetSlotId: string,
+  targetTeacherId: string,
+  seatLabel?: string | null
+): Promise<{ from: ScheduleEntry; to: ScheduleEntry }> {
+  await holdTransfer(schoolId, fromEntryId);
+  return completeHeldTransfer(
+    schoolId,
+    fromEntryId,
+    targetDate,
+    targetSlotId,
+    targetTeacherId,
+    seatLabel
+  );
 }
 
 /**
@@ -2034,6 +2193,48 @@ export async function getPendingTransfers(
   if (error) {
     console.error('Error fetching pending transfers:', error);
     throw new Error('未消化振替の取得に失敗しました');
+  }
+  type Row = ScheduleEntry & {
+    time_slot?: ScheduleTimeSlot[] | ScheduleTimeSlot;
+    student?:
+      | { id: string; last_name: string; first_name: string; grade: number }[]
+      | { id: string; last_name: string; first_name: string; grade: number };
+    teacher?:
+      | { id: string; display_name: string | null; email: string | null }[]
+      | { id: string; display_name: string | null; email: string | null };
+  };
+  const rows = (data || []) as Row[];
+  return rows.map((r) => ({
+    ...r,
+    time_slot: Array.isArray(r.time_slot) ? r.time_slot[0] : r.time_slot,
+    student: Array.isArray(r.student) ? r.student[0] : r.student,
+    teacher: Array.isArray(r.teacher) ? r.teacher[0] : r.teacher,
+  })) as ScheduleEntry[];
+}
+
+/**
+ * Phase P2: 保留中の振替（振替先未定）を「期限制限なし」で全件取得。
+ *
+ * getPendingTransfers は期限14日以内フィルタ付き（督促ボード用）で現状のまま。
+ * こちらは保留プールUI用で、期限が先でも「まだ配置していない振替」を全部見せる。
+ * 条件: status='transferred_out' AND transfer_to_id IS NULL。
+ */
+export async function getHeldTransfers(schoolIds: string[]): Promise<ScheduleEntry[]> {
+  if (schoolIds.length === 0) return [];
+
+  const { data, error } = await db
+    .from('schedule_entries')
+    .select(
+      '*, time_slot:schedule_time_slots(*), student:students(id, last_name, first_name, grade, preferred_teacher_gender, fixed_teacher_ids, excluded_teacher_ids), teacher:user_profiles!schedule_entries_teacher_id_fkey(id, display_name, last_name, email)'
+    )
+    .in('school_id', schoolIds)
+    .eq('status', 'transferred_out')
+    .is('transfer_to_id', null) // 振替先未確定のみ
+    .order('transfer_deadline', { ascending: true });
+
+  if (error) {
+    console.error('Error fetching held transfers:', error);
+    throw new Error('保留中の振替の取得に失敗しました');
   }
   type Row = ScheduleEntry & {
     time_slot?: ScheduleTimeSlot[] | ScheduleTimeSlot;
