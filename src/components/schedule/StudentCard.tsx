@@ -183,7 +183,8 @@ export const StudentCard = React.memo(function StudentCard({
       {subjectNames.map((name, i) => (
         <SubjectChip key={`${name}-${i}`} name={name} />
       ))}
-      {isTransferredIn && <span className={styles.metaTag}>振替</span>}
+      {/* 振替先は行の青色で表現する（「振替」テキストは行を圧迫するので出さない。
+          由来は hover の title「振替で入ったコマ」で補う）。 */}
       {koushuRemain !== null && <span className={styles.koushuTag}>残{koushuRemain}</span>}
     </div>
   );

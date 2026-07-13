@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import type React from 'react';
 import { useRef, useEffect, useState } from 'react';
 import { Button } from '@/components/ui';
 import { Settings, ChevronDown, CalendarPlus } from 'lucide-react';
@@ -71,6 +72,8 @@ interface ScheduleToolbarProps {
   onFormationChange: (key: string) => void;
   /** 「授業を追加」ボタン（追加授業・体験授業の単発コマ登録モーダルを開く）。個別タブ専用。 */
   onAddLesson: () => void;
+  /** コンテキストヘルプ（?）。管理ボタンの右に描画する。 */
+  helpSlot?: React.ReactNode;
 }
 
 export function ScheduleToolbar({
@@ -95,6 +98,7 @@ export function ScheduleToolbar({
   activeFormation,
   onFormationChange,
   onAddLesson,
+  helpSlot,
 }: ScheduleToolbarProps) {
   const [weekPickerOpen, setWeekPickerOpen] = useState(false);
   const weekPickerInputRef = useRef<HTMLInputElement>(null);
@@ -412,6 +416,8 @@ export function ScheduleToolbar({
                 </>
               )}
             </div>
+            {/* コンテキストヘルプ（?）は管理ボタンの右に置く。 */}
+            {helpSlot}
           </div>
         )}
       </div>

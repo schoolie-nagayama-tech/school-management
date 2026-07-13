@@ -2658,44 +2658,45 @@ export default function SchedulePage() {
   // NOTE: 「報告書見本」は上部の独立ボタンを廃止し、ツールバーの「管理▾」メニュー項目へ移動した（上部圧縮）。
   // fullWidth: 盤面を画面いっぱいに使う（コンテナ幅制限を解除）。盤面セクション自体は
   // さらに負マージンで px-4 を打ち消してフルブリードにする（下の schedule-board-bleed 参照）。
+
+  // コンテキストヘルプ（?）。上部の独立配置をやめ、ツールバーの「管理」ボタンの右へ置く。
+  const contextHelp = (
+    <ContextHelp
+      searchQuery="座席表"
+      topics={[
+        {
+          title: '座席表の見方',
+          description: '日付ごとの時間帯×座席マスを表示します。',
+          steps: [
+            '週カレンダーで表示週を切替',
+            '各マスをクリックして生徒を配置',
+            '講習フィルタで講習コマのみ表示も可能',
+          ],
+        },
+        {
+          title: '生徒をコマに配置する',
+          description: '空きマスに生徒を割り当てます。',
+          steps: [
+            '空いているマスをクリック',
+            '生徒選択ダイアログから生徒を選ぶ',
+            '教科を選択して配置を確定',
+          ],
+        },
+        {
+          title: '時間帯を設定する',
+          description: 'コマの開始・終了時間を管理します。',
+          steps: ['「設定」→「コマ時間設定」ページを開く', '時間帯の追加・編集・削除を実行'],
+        },
+      ]}
+    />
+  );
+
   return (
     <AdminLayout headerTitle="座席表" fullWidth>
       {/* 画面コンテンツ一式を print:hidden で包む。印刷時はこの下の #schedule-daily-print
           だけを出す（ツールバー・タブ・凡例・各パネル・盤面はすべて隠す）。AppHeader は
           AppHeader 側で既に print:hidden。日次印刷ビューはこのラッパーの外（下）に置く。 */}
       <div className="space-y-4 print:hidden">
-        {/* コンテキストヘルプ */}
-        <div className="flex justify-end -mb-4">
-          <ContextHelp
-            searchQuery="座席表"
-            topics={[
-              {
-                title: '座席表の見方',
-                description: '日付ごとの時間帯×座席マスを表示します。',
-                steps: [
-                  '週カレンダーで表示週を切替',
-                  '各マスをクリックして生徒を配置',
-                  '講習フィルタで講習コマのみ表示も可能',
-                ],
-              },
-              {
-                title: '生徒をコマに配置する',
-                description: '空きマスに生徒を割り当てます。',
-                steps: [
-                  '空いているマスをクリック',
-                  '生徒選択ダイアログから生徒を選ぶ',
-                  '教科を選択して配置を確定',
-                ],
-              },
-              {
-                title: '時間帯を設定する',
-                description: 'コマの開始・終了時間を管理します。',
-                steps: ['「設定」→「コマ時間設定」ページを開く', '時間帯の追加・編集・削除を実行'],
-              },
-            ]}
-          />
-        </div>
-
         {selectedSchoolId === 'all' && (
           <SchoolSwitcher
             schools={schools}
@@ -2732,6 +2733,7 @@ export default function SchedulePage() {
             activeFormation={activeFormation}
             onFormationChange={handleFormationChange}
             onAddLesson={() => setAddLessonOpen(true)}
+            helpSlot={contextHelp}
           />
         </div>
 
@@ -2743,51 +2745,70 @@ export default function SchedulePage() {
           />
         )}
 
-        {/* 担当未決定エントリのサマリ：既定はコンパクトなチップ1個（上部圧縮）。
-            クリックで説明文＋一括マッチング導線つきのフルバナーに展開する。個別タブ専用。 */}
-        {!isFormationBoard &&
-          (() => {
-            const unassignedCount = displayEntries.filter(
-              (e) => !e.teacher_id && e.status !== 'cancelled' && e.status !== 'transferred_out'
-            ).length;
-            if (unassignedCount === 0) return null;
-            if (!unplacedBannerOpen) {
+        {/* 上部の配置状況チップ行: 未配置サマリ＋振替保留（配置待ちプール）。
+            どちらも既定はコンパクトなチップで横並び。展開はフル幅で下に回り込む。個別タブ専用。 */}
+        {!isFormationBoard && (
+          <div className="flex flex-wrap items-center gap-2">
+            {(() => {
+              const unassignedCount = displayEntries.filter(
+                (e) => !e.teacher_id && e.status !== 'cancelled' && e.status !== 'transferred_out'
+              ).length;
+              if (unassignedCount === 0) return null;
+              if (!unplacedBannerOpen) {
+                return (
+                  <button
+                    type="button"
+                    onClick={() => setUnplacedBannerOpen(true)}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-warning-subtle/60 border border-warning/40 text-xs text-warning font-semibold hover:bg-warning-subtle transition-colors print:hidden"
+                    title="クリックで詳細（一括マッチング導線）を表示"
+                  >
+                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-warning animate-pulse" />
+                    未配置 {unassignedCount}
+                    <ChevronRight className="w-3 h-3 opacity-70" />
+                  </button>
+                );
+              }
               return (
-                <button
-                  type="button"
-                  onClick={() => setUnplacedBannerOpen(true)}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-warning-subtle/60 border border-warning/40 text-xs text-warning font-semibold hover:bg-warning-subtle transition-colors print:hidden"
-                  title="クリックで詳細（一括マッチング導線）を表示"
-                >
-                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-warning animate-pulse" />
-                  未配置 {unassignedCount}
-                  <ChevronRight className="w-3 h-3 opacity-70" />
-                </button>
+                <div className="w-full flex items-center gap-3 px-3 py-1.5 rounded-lg bg-warning-subtle/40 border border-warning/30 text-xs print:hidden">
+                  <button
+                    type="button"
+                    onClick={() => setUnplacedBannerOpen(false)}
+                    className="text-warning font-semibold flex items-center gap-1.5"
+                    title="折りたたむ"
+                  >
+                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-warning animate-pulse" />
+                    今週の未配置: {unassignedCount} コマ
+                  </button>
+                  <span className="text-text-muted">
+                    各コマ下部のチップを上の講師カードへドラッグして割当
+                  </span>
+                  <Link
+                    href="/schedule/regular-patterns/match"
+                    className="ml-auto text-info hover:underline font-semibold"
+                  >
+                    一括マッチング画面で機械的に決める →
+                  </Link>
+                </div>
               );
-            }
-            return (
-              <div className="flex items-center gap-3 px-3 py-1.5 rounded-lg bg-warning-subtle/40 border border-warning/30 text-xs print:hidden">
-                <button
-                  type="button"
-                  onClick={() => setUnplacedBannerOpen(false)}
-                  className="text-warning font-semibold flex items-center gap-1.5"
-                  title="折りたたむ"
-                >
-                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-warning animate-pulse" />
-                  今週の未配置: {unassignedCount} コマ
-                </button>
-                <span className="text-text-muted">
-                  各コマ下部のチップを上の講師カードへドラッグして割当
-                </span>
-                <Link
-                  href="/schedule/regular-patterns/match"
-                  className="ml-auto text-info hover:underline font-semibold"
-                >
-                  一括マッチング画面で機械的に決める →
-                </Link>
-              </div>
-            );
-          })()}
+            })()}
+
+            {/* 振替の保留（配置待ちプール）: 未配置チップの隣に同テイストの小チップ。
+                「配置」で汎用配置モードを開始。0件のときは内部で null を返す。 */}
+            {schoolId && !selectedKoushu && !testPrepActive && (
+              <HeldTransfersPanel
+                schoolIds={[schoolId]}
+                refreshKey={heldRefreshKey}
+                subjectNameById={subjectById}
+                placingEntryId={placingAdhoc?.mode === 'transfer' ? placingAdhoc.fromEntryId : null}
+                placingPendingLessonId={
+                  placingAdhoc?.mode === 'lesson' ? (placingAdhoc.pendingLessonId ?? null) : null
+                }
+                onStartPlacement={handleStartHeldTransferPlacement}
+                onStartPendingPlacement={handleStartPendingLessonPlacement}
+              />
+            )}
+          </div>
+        )}
 
         {/* 座席表の凡例（バッジ・色の意味）。折りたたみ式。 */}
         <ScheduleLegend />
@@ -2892,22 +2913,6 @@ export default function SchedulePage() {
               monday.setDate(d.getDate() - diff);
               setWeekStart(monday);
             }}
-          />
-        )}
-
-        {/* Phase P2: 振替の保留プール。個別タブ・通常モード時（講習/テスト対策でない）に表示。
-            「配置」で汎用配置モードを開始。0件のときは内部で何も描画しない。 */}
-        {schoolId && !isFormationBoard && !selectedKoushu && !testPrepActive && (
-          <HeldTransfersPanel
-            schoolIds={[schoolId]}
-            refreshKey={heldRefreshKey}
-            subjectNameById={subjectById}
-            placingEntryId={placingAdhoc?.mode === 'transfer' ? placingAdhoc.fromEntryId : null}
-            placingPendingLessonId={
-              placingAdhoc?.mode === 'lesson' ? (placingAdhoc.pendingLessonId ?? null) : null
-            }
-            onStartPlacement={handleStartHeldTransferPlacement}
-            onStartPendingPlacement={handleStartPendingLessonPlacement}
           />
         )}
 
