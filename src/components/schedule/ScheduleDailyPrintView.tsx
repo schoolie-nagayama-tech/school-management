@@ -12,11 +12,12 @@ import { getSurname } from '@/lib/utils/teacherName';
  *  - コンテンツ幅は A4 印刷可能幅 194mm（= 210mm − 左右マージン 8mm×2）に固定し、
  *    フルブリードな画面幅の影響を受けず右端が切れないようにする（②）
  *  - コマは縦に積む（1列）。上から 1限→最終限
- *  - コマ内は講師（席）ごとにグループ化し、見出しに「姓のみ」を小さく表示（①）。
+ *  - コマ内は講師（席）ごとにグループ化し、見出しに「座席番号＋姓のみ」を小さく表示（①）。
  *    生徒名は主役として大きく保つ。担当未定は出さない（配布用途では確定分のみ）
- *  - 「講師見出し＋その生徒たち」を1ユニットとして CSS 段組で 2〜3 列に流し、
+ *  - 同じ座席（＝同じ講師）の生徒は枠で囲み、一目でまとまりが分かるようにする（①）
+ *  - 「席見出し＋その生徒たち」を1ユニットとして CSS 段組で 2〜3 列に流し、
  *    ユニットが列跨ぎで割れないようにする（break-inside-avoid）
- *  - ブース番号は表示しないが、席順を保つため講師グループの並び順ソートに使う
+ *  - 座席番号順（未設定は末尾）で並べ、席順を保つ
  *  - 最終日には改ページを付けない（末尾の白紙ページを防ぐ）
  */
 
@@ -31,9 +32,11 @@ function formatDateHeader(dateStr: string): string {
   return `${d.getFullYear()}年${m}月${day}日 (${week})`;
 }
 
-/** 講師グループ（席）: 見出し表示名（姓のみ）＋その生徒エントリ群。 */
+/** 講師グループ（席）: 座席番号＋見出し表示名（姓のみ）＋その生徒エントリ群。 */
 interface TeacherGroup {
   teacherId: string;
+  /** 座席番号（ブース番号）。未設定なら null。 */
+  boothNo: number | null;
   /** 見出しに出す姓（フォールバックは display_name の先頭語）。 */
   surname: string;
   students: ScheduleEntry[];
@@ -74,7 +77,7 @@ function collectTeacherGroups(
           e.teacher.display_name ||
           '担当'
         : '担当';
-      group = { teacherId: tid, surname, students: [] };
+      group = { teacherId: tid, boothNo: boothMap.get(tid) ?? null, surname, students: [] };
       byTeacher.set(tid, group);
     }
     group.students.push(e);
@@ -107,8 +110,8 @@ export interface ScheduleDailyPrintViewProps {
   /** 指定時はその日付のみ出力（日付横の印刷アイコン用） */
   singleDate?: string;
   /**
-   * 日次のブース番号マップ。{ [date]: Map<teacherId, boothNo> } の形式。
-   * 表示はしないが、生徒の並び順（席のまとまり）を保つソートに使う。
+   * 日次の座席番号マップ。{ [date]: Map<teacherId, boothNo> } の形式。
+   * 席見出しに番号を表示し、並び順（席順）にも使う。
    */
   boothMapByDate?: Map<string, Map<string, number>>;
 }
@@ -206,16 +209,27 @@ export function ScheduleDailyPrintView({
                       <span className="ml-auto text-[11px] text-gray-600">{count} 名</span>
                     </div>
 
-                    {/* 講師（席）ごとのユニットを段組で 2〜3 列に流す。
-                        各ユニット＝「姓の見出し（小）＋生徒名（大）」。ユニットは列跨ぎで割らない。 */}
+                    {/* 席（＝講師）ごとのユニットを段組で 2〜3 列に流す。
+                        各ユニット＝「座席番号＋姓の見出し（小）＋生徒名（大）」を枠で囲む。
+                        同じ座席のまとまりが一目で分かる。ユニットは列跨ぎで割らない。 */}
                     <div className="print-teacher-flow px-2 py-1.5">
                       {groups.map((g) => (
-                        <div key={g.teacherId} className="print-teacher-unit mb-1.5">
-                          {/* 講師見出し: 姓のみ・小さめ。下に細い区切り。 */}
-                          <div className="text-[10px] font-semibold text-gray-500 border-b border-gray-200 leading-tight">
-                            {g.surname}
+                        <div
+                          key={g.teacherId}
+                          className="print-teacher-unit mb-1.5 border border-gray-400 rounded"
+                        >
+                          {/* 席見出し: 座席番号（あれば）＋姓のみ・小さめ。下に細い区切り。 */}
+                          <div className="flex items-center gap-1 bg-gray-100 border-b border-gray-300 px-1 py-0.5 leading-tight">
+                            {g.boothNo != null && (
+                              <span className="inline-flex items-center justify-center min-w-[15px] h-[15px] px-0.5 text-[9px] font-bold border border-black bg-black text-white rounded-sm tabular-nums">
+                                {g.boothNo}
+                              </span>
+                            )}
+                            <span className="text-[10px] font-semibold text-gray-600">
+                              {g.surname}
+                            </span>
                           </div>
-                          <ul className="pt-0.5">
+                          <ul className="px-1 py-0.5">
                             {g.students.map((e) => {
                               const studentName = e.student
                                 ? `${e.student.last_name}${e.student.first_name}`
