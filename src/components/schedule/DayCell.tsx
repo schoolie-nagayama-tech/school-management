@@ -276,7 +276,8 @@ export const DayCell = React.memo(function DayCell(props: DayCellProps) {
     styles.dayCell,
     isEmptyCell ? styles.empty : '',
     isToday ? styles.todayRow : '',
-    koushuPlacing ? (placeability?.ok ? styles.dropOk : styles.dropDim) : '',
+    // 実機フィードバック①: 可のセルは無装飾（緑枠廃止）。不可セルのみ全体を淡色化。
+    koushuPlacing && !placeability?.ok ? styles.dropDim : '',
   ]
     .filter(Boolean)
     .join(' ');
@@ -320,7 +321,23 @@ export const DayCell = React.memo(function DayCell(props: DayCellProps) {
 
       {blocksNode}
 
-      {!transferMode && (
+      {/* 配置モード中・配置可能セルのみ: 「＋ 担当未決定で配置」の細い緑破線バー。
+          セル背景クリックと同じハンドラ（onCellPlace）を呼ぶ視覚的受け皿。 */}
+      {koushuPlacing && placeability?.ok && onCellPlace && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onCellPlace();
+          }}
+          className={styles.placeUnassignedBar}
+          title="担当未決定として配置する"
+        >
+          <Plus size={9} /> 担当未決定で配置
+        </button>
+      )}
+
+      {!transferMode && !koushuPlacing && (
         <button
           type="button"
           onClick={(e) => {

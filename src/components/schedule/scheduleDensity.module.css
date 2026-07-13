@@ -405,13 +405,22 @@
   opacity: 0.3;
   filter: grayscale(1);
 }
+/* 配置モードの「配置可能」講師カード（実機フィードバック①で緑に一本化）。
+   セル枠の緑（旧 dropOk）は廃止し、配置可否の主役をカード単位に集約する。
+   緑の枠線＋ヘッダーの薄い緑背景で「入れられるカード」をはっきり示す。 */
 .placeTarget {
   cursor: pointer;
-  outline: 1px solid color-mix(in oklch, var(--info) 50%, transparent);
+  outline: 2px solid var(--sd-ok-border);
+  outline-offset: -1px;
+}
+.placeTarget .tHead {
+  background: var(--sd-ok-bg);
 }
 .placeTarget:hover {
-  outline: 2px solid var(--info);
-  background: var(--info-subtle);
+  outline-color: var(--success);
+}
+.placeTarget:hover .tHead {
+  background: color-mix(in oklch, var(--sd-ok-bg) 55%, var(--success));
 }
 /* P2改訂: 汎用配置モードで「配置不可」の講師カード（指導科目外/満員/1対1/欠勤/希望外）。
    D&D の不可表示（dropDim）と同系の淡色＋グレースケールにし、クリック不可を示す。 */
@@ -419,6 +428,44 @@
   opacity: 0.32;
   filter: grayscale(1);
   cursor: not-allowed;
+}
+/* 配置モード: 配置可能な空カード（生徒0人）のクリック領域を広げる行。
+   空席行(seatEmpty)と同じ高さ・緑破線。カード全体クリックにバブリングする視覚的受け皿。 */
+.placeRow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  background: var(--sd-ok-bg);
+  border: 1.5px dashed var(--sd-ok-border);
+  border-radius: 2px;
+  margin: 1px 2px;
+  min-height: var(--sd-row-h);
+  padding: 0 4px;
+  color: var(--sd-ok-text);
+  font-size: var(--sd-fs-meta);
+  font-weight: 600;
+}
+/* 配置モード: セル背景クリック（担当未決定で配置）の視覚的受け皿。
+   ＋講師バーの位置に出す緑破線の細バー。配置可能セルのときだけ表示。 */
+.placeUnassignedBar {
+  min-height: 16px;
+  border: 1px dashed var(--sd-ok-border);
+  border-radius: 3px;
+  font-size: 9px;
+  color: var(--sd-ok-text);
+  background: var(--sd-ok-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  cursor: pointer;
+  margin-top: auto;
+  width: 100%;
+  transition: filter 0.15s var(--sd-ease-out);
+}
+.placeUnassignedBar:hover {
+  filter: brightness(0.97);
 }
 
 /* §2.12 入れ替えモードの生徒行ハイライト（D&D の可能セルと同系の emerald）。

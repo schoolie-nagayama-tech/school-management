@@ -290,6 +290,10 @@ export const TeacherCard = React.memo(function TeacherCard({
   // placeConstraint 未指定（講習/テスト対策）のときは従来どおり全カードが配置ターゲット。
   const placeBlocked = !!koushuPlacing && !!placeConstraint && !placeConstraint.ok;
   const isPlaceTarget = !!koushuPlacing && (onKoushuPlaceClick || isAvailableOnly) && !placeBlocked;
+  // 実機フィードバック①: 生徒0人の配置可能カードはヘッダーだけで背が低くクリックしづらい。
+  // カード内に「＋ ここに配置」の行（空席行と同高・緑破線）を出してクリック領域を広げる。
+  // カード全体クリックは維持（この行のクリックもカードの onClick へバブリングする）。
+  const showPlaceRow = isPlaceTarget && displayEntries.length === 0;
 
   const blockClass = [
     styles.tBlock,
@@ -463,6 +467,14 @@ export const TeacherCard = React.memo(function TeacherCard({
               </div>
             );
           })}
+
+        {/* 配置モード: 生徒0人の配置可能カードのクリック領域拡張行（カード onClick へバブリング）。 */}
+        {showPlaceRow && (
+          <div className={styles.placeRow} aria-hidden="true">
+            <Plus size={10} />
+            ここに配置
+          </div>
+        )}
       </div>
     </div>
   );

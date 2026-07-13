@@ -220,18 +220,6 @@ export function ScheduleToolbar({
               </Button>
             )}
           </div>
-          {schoolId && (
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={onSettingsOpen}
-              className="flex items-center gap-1"
-            >
-              <Settings className="h-4 w-4" />
-              座席表の設定
-              <ChevronDown className="h-4 w-4 opacity-70" />
-            </Button>
-          )}
         </div>
         {schoolId && (
           <div className="flex items-center gap-2 flex-wrap">
@@ -395,6 +383,19 @@ export function ScheduleToolbar({
                         })}
                       </div>
                     </div>
+                    <div className="my-1 border-t border-[var(--stroke)]" />
+                    {/* 座席表の設定: 旧・独立ボタンから移設（上部ツールバーの混雑を解消）。 */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onSettingsOpen();
+                        setMgmtOpen(false);
+                      }}
+                      className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-[var(--paragraph)] hover:bg-[var(--surface)]"
+                    >
+                      <Settings className="h-4 w-4 opacity-70" />
+                      座席表の設定…
+                    </button>
                     <div className="my-1 border-t border-[var(--stroke)]" />
                     {[
                       { href: '/schedule/regular-patterns', label: '通塾日程の登録' },
