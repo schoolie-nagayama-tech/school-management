@@ -73,6 +73,8 @@ import {
   CONTACT_RESULT_OPTIONS,
   METHOD_DEFAULT_DIRECTION,
   getInquiryDisplayName,
+  CONTACT_TIME_OPTIONS,
+  CONTACT_TIME_OTHER_KEY,
   type ManualContactMethod,
 } from '../inquiryConstants';
 import {
@@ -224,6 +226,11 @@ export default function InquiryDetailPage() {
   // 配信停止（オプトアウト）トグルの処理中フラグ
   const [isTogglingOptOut, setIsTogglingOptOut] = useState(false);
 
+  // ---- つながりやすい時間帯（複数選択＋その他自由記述） ----
+  const [ctSlots, setCtSlots] = useState<Set<string>>(new Set());
+  const [ctNote, setCtNote] = useState('');
+  const [ctSaving, setCtSaving] = useState(false);
+
   // ---- データ取得 ----
   const fetchData = useCallback(async () => {
     setIsLoading(true);
@@ -249,6 +256,10 @@ export default function InquiryDetailPage() {
       setEditWeeklyCount(inq.weekly_count != null ? String(inq.weekly_count) : '');
       setEditTrialAt(inq.trial_at ? inq.trial_at.slice(0, 10) : '');
       setEditLostReason(inq.lost_reason ?? '');
+
+      // つながりやすい時間帯の初期値
+      setCtSlots(new Set(inq.contactable_times?.slots ?? []));
+      setCtNote(inq.contactable_times?.note ?? '');
 
       // メール関連データを並行取得
       const [templates, settings, school, logs] = await Promise.all([
@@ -401,6 +412,37 @@ export default function InquiryDetailPage() {
     } finally {
       setIsTogglingOptOut(false);
     }
+  };
+
+  // ---- つながりやすい時間帯の保存（チェック/自由記述の変更で即保存） ----
+  const persistContactableTimes = async (slots: Set<string>, note: string) => {
+    if (!inquiry) return;
+    setCtSaving(true);
+    try {
+      const updated = await updateInquiry(inquiry.id, {
+        contactable_times: { slots: Array.from(slots), note },
+      });
+      setInquiry(updated);
+    } catch (err) {
+      toast.error(getUserErrorMessage(err, '保存に失敗しました'));
+    } finally {
+      setCtSaving(false);
+    }
+  };
+
+  const toggleContactSlot = (key: string) => {
+    const next = new Set(ctSlots);
+    let nextNote = ctNote;
+    if (next.has(key)) {
+      next.delete(key);
+      // 「その他」を外したら自由記述もクリアする
+      if (key === CONTACT_TIME_OTHER_KEY) nextNote = '';
+    } else {
+      next.add(key);
+    }
+    setCtSlots(next);
+    if (nextNote !== ctNote) setCtNote(nextNote);
+    void persistContactableTimes(next, nextNote);
   };
 
   // ---- ステータス保存（「コンタクトを追加」の横のステータス変更パネルから呼ばれる） ----
@@ -1501,6 +1543,66 @@ export default function InquiryDetailPage() {
                   右カラム: 参照情報
                   ──────────────────────────────── */}
               <div className="lg:col-span-1 space-y-6">
+                {/* ── つながりやすい時間帯（架電タイミングの判断材料。変更で即保存） ── */}
+                <section className="bg-surface-raised border border-border rounded-xl p-5">
+                  <div className="flex items-center justify-between mb-3">
+                    <h2 className="text-base font-bold text-text-heading flex items-center gap-2">
+                      <Phone className="w-4 h-4 text-text-muted" />
+                      つながりやすい時間帯
+                    </h2>
+                    {ctSaving && <span className="text-xs text-text-muted">保存中…</span>}
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {CONTACT_TIME_OPTIONS.map((o) => {
+                      const checked = ctSlots.has(o.key);
+                      return (
+                        <label
+                          key={o.key}
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-sm cursor-pointer transition-colors duration-150 ${
+                            checked
+                              ? 'border-primary bg-primary/10 text-text-heading'
+                              : 'border-border text-text-body hover:bg-surface-hover'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() => toggleContactSlot(o.key)}
+                            className="cursor-pointer"
+                          />
+                          {o.label}
+                        </label>
+                      );
+                    })}
+                    {/* その他（チェックで自由記述欄を表示） */}
+                    <label
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-sm cursor-pointer transition-colors duration-150 ${
+                        ctSlots.has(CONTACT_TIME_OTHER_KEY)
+                          ? 'border-primary bg-primary/10 text-text-heading'
+                          : 'border-border text-text-body hover:bg-surface-hover'
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={ctSlots.has(CONTACT_TIME_OTHER_KEY)}
+                        onChange={() => toggleContactSlot(CONTACT_TIME_OTHER_KEY)}
+                        className="cursor-pointer"
+                      />
+                      その他
+                    </label>
+                  </div>
+                  {ctSlots.has(CONTACT_TIME_OTHER_KEY) && (
+                    <input
+                      type="text"
+                      value={ctNote}
+                      onChange={(e) => setCtNote(e.target.value)}
+                      onBlur={() => void persistContactableTimes(ctSlots, ctNote)}
+                      placeholder="例: 平日15時〜17時、水曜以外 など"
+                      className="mt-3 w-full px-3 py-2 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary"
+                    />
+                  )}
+                </section>
+
                 {/* ── 顧客情報 ── */}
                 <section className="bg-surface-raised border border-border rounded-xl p-5">
                   <h2 className="text-base font-bold text-text-heading mb-3">顧客情報</h2>

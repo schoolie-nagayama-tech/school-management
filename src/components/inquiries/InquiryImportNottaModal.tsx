@@ -16,6 +16,7 @@ import {
   getAvailableTranscriptsForInquiry,
   linkTranscriptToInquiry,
 } from '@/lib/api/notta-transcripts';
+import { getSchools } from '@/lib/api/schools';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 
 interface Props {
@@ -45,11 +46,15 @@ export function InquiryImportNottaModal({
   onSuccess,
 }: Props) {
   const [transcripts, setTranscripts] = useState<NottaTranscript[]>([]);
+  const [schoolNameMap, setSchoolNameMap] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [selectedId, setSelectedId] = useState('');
   const [search, setSearch] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // 複数教室から探すときだけ教室名バッジを出す（1教室なら自明なので省く）
+  const showSchoolBadge = schoolIds.length > 1;
 
   useEffect(() => {
     if (!isOpen) return;
@@ -60,8 +65,14 @@ export function InquiryImportNottaModal({
     (async () => {
       setIsLoading(true);
       try {
-        const data = await getAvailableTranscriptsForInquiry(schoolIds);
+        const [data, schools] = await Promise.all([
+          getAvailableTranscriptsForInquiry(schoolIds),
+          getSchools(),
+        ]);
         setTranscripts(data);
+        const map: Record<string, string> = {};
+        for (const s of schools) map[s.id] = s.name;
+        setSchoolNameMap(map);
       } catch (e) {
         setError(getUserErrorMessage(e, '文字起こしの取得に失敗しました'));
       } finally {
@@ -150,6 +161,11 @@ export function InquiryImportNottaModal({
                         <span className="text-sm font-medium text-text-heading truncate">
                           {t.title || '(無題)'}
                         </span>
+                        {showSchoolBadge && schoolNameMap[t.school_id] && (
+                          <span className="shrink-0 px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-surface-hover text-text-muted border border-border">
+                            {schoolNameMap[t.school_id]}
+                          </span>
+                        )}
                       </div>
                       <div className="flex items-center gap-3 mt-0.5 text-xs text-text-muted">
                         {t.recorded_at && (

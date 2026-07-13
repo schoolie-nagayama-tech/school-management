@@ -26,6 +26,23 @@ export const STATUS_CONFIG: Record<InquiryStatus, StatusConfig> = {
   trial_lost: { label: '体験没', className: 'bg-orange-100 text-orange-700' },
 };
 
+/**
+ * 電話がつながりやすい時間帯の選択肢（複数選択）。
+ * これに加えて「その他」は自由記述（note）で持つ。key は DB(jsonb slots)に保存する値。
+ */
+export const CONTACT_TIME_OPTIONS = [
+  { key: 'anytime', label: 'いつでも' },
+  { key: 'noon', label: 'ひる' },
+  { key: 'evening', label: '夕方' },
+  { key: 'night', label: '夜以降' },
+  { key: 'saturday', label: '土曜' },
+] as const;
+
+export type ContactTimeKey = (typeof CONTACT_TIME_OPTIONS)[number]['key'];
+
+/** 「その他」を表す slots のキー（チェックすると自由記述欄を出す） */
+export const CONTACT_TIME_OTHER_KEY = 'other';
+
 /** フィルタ用ステータス選択肢（"全て" を先頭に） */
 export const STATUS_OPTIONS: { value: InquiryStatus | 'all'; label: string }[] = [
   { value: 'all', label: 'すべて' },

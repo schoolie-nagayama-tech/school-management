@@ -91,6 +91,8 @@ export type Database = {
           note: string | null;
           /** Nottaの記録リンク配列（文字起こし共有URL + ラベル） */
           notta_records: { url: string; label: string; added_at: string }[];
+          /** 電話がつながりやすい時間帯（複数選択＋自由記述） */
+          contactable_times: { slots: string[]; note: string } | null;
           /** 追客メールの配信停止フラグ。true の宛先には送信しない。 */
           email_opt_out: boolean;
           /** 配信停止された日時 */
@@ -146,6 +148,7 @@ export type Database = {
           raw_source?: Record<string, unknown> | null;
           note?: string | null;
           notta_records?: { url: string; label: string; added_at: string }[];
+          contactable_times?: { slots: string[]; note: string } | null;
           email_opt_out?: boolean;
           email_opt_out_at?: string | null;
           email_opt_out_source?: string | null;
