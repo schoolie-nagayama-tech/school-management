@@ -9,15 +9,18 @@ import {
   getBulletinLabelsBatch,
   markAsRead,
   deleteBulletinPost,
+  unarchiveBulletinPost,
+  hardDeleteBulletinPost,
 } from '@/lib/api/bulletin';
 import { getSchools } from '@/lib/api/schools';
 import type { BulletinPost, BulletinLabel } from '@/types/bulletin';
+import { isPostPublished } from '@/types/bulletin';
 import type { School } from '@/types/database';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/useToast';
 import { useConfirm } from '@/hooks/useConfirm';
 import { Button, InlineLoading } from '@/components/ui';
-import { ChevronDown, ChevronUp, Plus, Megaphone } from 'lucide-react';
+import { ChevronDown, ChevronUp, Plus, Megaphone, Archive } from 'lucide-react';
 
 interface BulletinBoardProps {
   className?: string;
@@ -55,11 +58,47 @@ interface GroupedBulletinPost {
   isReadAll: boolean;
 }
 
+/**
+ * 同一内容の投稿（＝複数教室への同報）を1枚にまとめる。
+ * group_id を持たないため内容（投稿者＋タイトル＋本文＋リンク）で同一判定する。
+ * 通常一覧・アーカイブ一覧の両方で使う。
+ */
+function groupBulletinPosts(posts: BulletinPost[]): GroupedBulletinPost[] {
+  const groups = new Map<string, GroupedBulletinPost>();
+  const order: string[] = [];
+  for (const post of posts) {
+    const key = [post.created_by ?? '', post.title, post.content, post.link_url ?? ''].join(' ');
+    let group = groups.get(key);
+    if (!group) {
+      group = {
+        rep: post,
+        memberIds: [],
+        schoolIds: [],
+        schoolNames: [],
+        readCount: 0,
+        isReadAll: true,
+      };
+      groups.set(key, group);
+      order.push(key);
+    }
+    group.memberIds.push(post.id);
+    if (post.school_id) group.schoolIds.push(post.school_id);
+    if (post.school_name) group.schoolNames.push(post.school_name);
+    group.readCount += post.read_count ?? 0;
+    group.isReadAll = group.isReadAll && !!post.is_read;
+  }
+  return order.map((k) => groups.get(k)!);
+}
+
 export function BulletinBoard({ className = '', initialData }: BulletinBoardProps) {
   const { getSelectedSchoolIds, profile } = useAuth();
   const { success, error: toastError } = useToast();
   const { confirm, ConfirmDialog } = useConfirm();
-  const [posts, setPosts] = useState<BulletinPost[]>(initialData?.posts ?? []);
+  // SSRシード（初回 fetch をスキップする場合）でも、講師には公開中の投稿だけを見せる
+  const [posts, setPosts] = useState<BulletinPost[]>(() => {
+    const seed = initialData?.posts ?? [];
+    return profile?.role === 'teacher' ? seed.filter((p) => isPostPublished(p)) : seed;
+  });
   /** 教室IDごとのラベル一覧（複数教室対応） */
   const [labelsBySchool, setLabelsBySchool] = useState<Record<string, BulletinLabel[]>>(
     initialData?.labelsBySchool ?? {}
@@ -78,9 +117,17 @@ export function BulletinBoard({ className = '', initialData }: BulletinBoardProp
     schoolIds: string[];
     title: string;
   } | null>(null);
-  const [unreadCount, setUnreadCount] = useState(initialData?.unreadCount ?? 0);
+  const [unreadCount, setUnreadCount] = useState<number>(() => {
+    if (profile?.role !== 'teacher') return 0;
+    // 公開中の未読だけを数える（SSRシード時の一貫性のため）
+    return (initialData?.posts ?? []).filter((p) => isPostPublished(p) && !p.is_read).length;
+  });
   /** 新規投稿で選択中の教室ID（複数選択可） */
   const [postingSchoolIds, setPostingSchoolIds] = useState<string[]>([]);
+  /** アーカイブ閲覧の開閉と取得済みアーカイブ投稿 */
+  const [showArchived, setShowArchived] = useState(false);
+  const [archivedPosts, setArchivedPosts] = useState<BulletinPost[]>([]);
+  const [archivedLoading, setArchivedLoading] = useState(false);
   // 初期データ（SSR事前取得）を消費したかどうか。マウント直後の1回だけ fetch をスキップするためのフラグ。
   const skipInitialFetchRef = useRef<boolean>(!!initialData);
 
@@ -130,12 +177,17 @@ export function BulletinBoard({ className = '', initialData }: BulletinBoardProp
           return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
         });
 
+        // 講師には公開中の投稿だけを見せる（公開前・公開終了は非表示）。
+        // 管理者は全件見えてカード側のバッジで公開状態が分かる。
+        const now = Date.now();
+        const visiblePosts = canRead ? allPosts.filter((p) => isPostPublished(p, now)) : allPosts;
+
         setLabelsBySchool(labelsBySchoolMap);
-        setPosts(allPosts);
+        setPosts(visiblePosts);
 
         // 未読数は取得済みの is_read から算出（getUnreadCount の追加クエリを撤去）
         if (userId && canRead) {
-          setUnreadCount(allPosts.filter((p) => !p.is_read).length);
+          setUnreadCount(visiblePosts.filter((p) => !p.is_read).length);
         } else {
           setUnreadCount(0);
         }
@@ -178,33 +230,48 @@ export function BulletinBoard({ className = '', initialData }: BulletinBoardProp
 
   // 同一内容の投稿（＝複数教室への同報）を1枚にまとめる。
   // posts は既に「ピン留め→新しい順」でソート済みなので、代表は各グループの先頭になる。
-  const groupedPosts = useMemo<GroupedBulletinPost[]>(() => {
-    const groups = new Map<string, GroupedBulletinPost>();
-    const order: string[] = [];
-    for (const post of posts) {
-      // group_id が無いため内容で同一判定する（投稿者＋タイトル＋本文＋リンク）
-      const key = [post.created_by ?? '', post.title, post.content, post.link_url ?? ''].join(' ');
-      let group = groups.get(key);
-      if (!group) {
-        group = {
-          rep: post,
-          memberIds: [],
-          schoolIds: [],
-          schoolNames: [],
-          readCount: 0,
-          isReadAll: true,
-        };
-        groups.set(key, group);
-        order.push(key);
-      }
-      group.memberIds.push(post.id);
-      if (post.school_id) group.schoolIds.push(post.school_id);
-      if (post.school_name) group.schoolNames.push(post.school_name);
-      group.readCount += post.read_count ?? 0;
-      group.isReadAll = group.isReadAll && !!post.is_read;
+  const groupedPosts = useMemo<GroupedBulletinPost[]>(() => groupBulletinPosts(posts), [posts]);
+  const groupedArchived = useMemo<GroupedBulletinPost[]>(
+    () => groupBulletinPosts(archivedPosts),
+    [archivedPosts]
+  );
+
+  // アーカイブ済み投稿を取得する（アーカイブ閲覧を開いたときに呼ぶ）。
+  const loadArchived = useCallback(async () => {
+    const schoolIds = getSelectedSchoolIds();
+    if (schoolIds.length === 0) {
+      setArchivedPosts([]);
+      return;
     }
-    return order.map((k) => groups.get(k)!);
-  }, [posts]);
+    setArchivedLoading(true);
+    try {
+      const bySchool = await getBulletinPostsBatch(schoolIds, { archivedOnly: true, userId });
+      const schoolNameById = Object.fromEntries(schools.map((s) => [s.id, s.name]));
+      const all: BulletinPost[] = [];
+      for (const schoolId of schoolIds) {
+        for (const post of bySchool[schoolId] || []) {
+          all.push({ ...post, school_name: schoolNameById[schoolId] ?? null });
+        }
+      }
+      // アーカイブは新しくアーカイブした順に並べる
+      all.sort(
+        (a, b) =>
+          new Date(b.archived_at ?? b.created_at).getTime() -
+          new Date(a.archived_at ?? a.created_at).getTime()
+      );
+      setArchivedPosts(all);
+    } catch (error) {
+      console.error('Error fetching archived posts:', error);
+      toastError('アーカイブの取得に失敗しました');
+    } finally {
+      setArchivedLoading(false);
+    }
+  }, [getSelectedSchoolIds, userId, schools, toastError]);
+
+  // アーカイブ閲覧を開いたとき / 開いている状態で教室が変わったときに取得する
+  useEffect(() => {
+    if (showArchived) loadArchived();
+  }, [showArchived, loadArchived]);
 
   const handleReadGroup = useCallback(
     async (group: GroupedBulletinPost) => {
@@ -232,16 +299,62 @@ export function BulletinBoard({ className = '', initialData }: BulletinBoardProp
     setIsPostModalOpen(true);
   }, []);
 
-  const handleDeleteGroup = useCallback(
+  // アーカイブ（削除せず過去の連絡として残す）。deleteBulletinPost は論理削除（is_archived=true）。
+  const handleArchiveGroup = useCallback(
     async (group: GroupedBulletinPost) => {
       const multi = group.memberIds.length > 1;
       if (
         !(await confirm({
-          title: '削除確認',
+          title: 'アーカイブ確認',
           description: multi
-            ? `この連絡を${group.memberIds.length}教室分すべて削除しますか？`
-            : 'この投稿を削除しますか？',
-          confirmLabel: '削除',
+            ? `この連絡を${group.memberIds.length}教室分アーカイブしますか？（削除せず過去の連絡として残ります）`
+            : 'この連絡をアーカイブしますか？（削除せず過去の連絡として残ります）',
+          confirmLabel: 'アーカイブ',
+        }))
+      ) {
+        return;
+      }
+
+      try {
+        await Promise.all(group.memberIds.map((id) => deleteBulletinPost(id)));
+        success('アーカイブしました');
+        await fetchData();
+        if (showArchived) await loadArchived();
+      } catch (error) {
+        console.error('Error archiving post:', error);
+        toastError('アーカイブに失敗しました');
+      }
+    },
+    [confirm, success, toastError, fetchData, showArchived, loadArchived]
+  );
+
+  // アーカイブから通常一覧へ戻す
+  const handleRestoreGroup = useCallback(
+    async (group: GroupedBulletinPost) => {
+      try {
+        await Promise.all(group.memberIds.map((id) => unarchiveBulletinPost(id)));
+        success('元に戻しました');
+        await loadArchived();
+        await fetchData();
+      } catch (error) {
+        console.error('Error restoring post:', error);
+        toastError('復元に失敗しました');
+      }
+    },
+    [success, toastError, loadArchived, fetchData]
+  );
+
+  // アーカイブから完全に削除する（取り消し不可）
+  const handleHardDeleteGroup = useCallback(
+    async (group: GroupedBulletinPost) => {
+      const multi = group.memberIds.length > 1;
+      if (
+        !(await confirm({
+          title: '完全に削除',
+          description: multi
+            ? `この連絡を${group.memberIds.length}教室分、完全に削除しますか？この操作は取り消せません。`
+            : 'この連絡を完全に削除しますか？この操作は取り消せません。',
+          confirmLabel: '完全に削除',
           variant: 'danger',
         }))
       ) {
@@ -249,16 +362,15 @@ export function BulletinBoard({ className = '', initialData }: BulletinBoardProp
       }
 
       try {
-        // 全教室分をまとめて削除する
-        await Promise.all(group.memberIds.map((id) => deleteBulletinPost(id)));
-        success('削除しました');
-        await fetchData();
+        await Promise.all(group.memberIds.map((id) => hardDeleteBulletinPost(id)));
+        success('完全に削除しました');
+        await loadArchived();
       } catch (error) {
-        console.error('Error deleting post:', error);
+        console.error('Error hard-deleting post:', error);
         toastError('削除に失敗しました');
       }
     },
-    [confirm, success, toastError, fetchData]
+    [confirm, success, toastError, loadArchived]
   );
 
   const handleShowReadersGroup = useCallback((group: GroupedBulletinPost) => {
@@ -363,12 +475,71 @@ export function BulletinBoard({ className = '', initialData }: BulletinBoardProp
                       canRead={canRead}
                       onRead={() => handleReadGroup(group)}
                       onEdit={() => handleEditGroup(group)}
-                      onDelete={() => handleDeleteGroup(group)}
+                      onDelete={() => handleArchiveGroup(group)}
                       onShowReaders={() => handleShowReadersGroup(group)}
                     />
                   </div>
                 );
               })
+            )}
+
+            {/* アーカイブ（過去の連絡）: 教室長以上のみ。開くと取得して表示する。 */}
+            {canEdit && (
+              <div className="pt-2 border-t border-gray-200">
+                <button
+                  onClick={() => setShowArchived((v) => !v)}
+                  aria-expanded={showArchived}
+                  className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-700 transition-colors duration-150 py-1"
+                >
+                  <Archive className="w-3.5 h-3.5" />
+                  アーカイブ（過去の連絡）
+                  <ChevronDown
+                    className={`w-3.5 h-3.5 transition-transform duration-150 ease-out ${
+                      showArchived ? 'rotate-180' : ''
+                    }`}
+                  />
+                </button>
+
+                {showArchived && (
+                  <div className="mt-2 space-y-3">
+                    {archivedLoading ? (
+                      <InlineLoading label="アーカイブを読み込み中..." />
+                    ) : groupedArchived.length === 0 ? (
+                      <div className="text-center text-xs text-gray-400 py-4">
+                        アーカイブされた連絡はありません。
+                      </div>
+                    ) : (
+                      groupedArchived.map((group) => {
+                        const displayPost: BulletinPost = {
+                          ...group.rep,
+                          read_count: group.readCount,
+                          is_read: group.isReadAll,
+                        };
+                        const combinedSchoolName =
+                          group.schoolNames.length > 0
+                            ? group.schoolNames.join('・')
+                            : group.rep.school_name;
+                        return (
+                          <BulletinPostCard
+                            key={group.rep.id}
+                            post={displayPost}
+                            schoolName={combinedSchoolName}
+                            canEdit={canEdit}
+                            canRead={false}
+                            archived
+                            onRead={() => {}}
+                            onEdit={() => {}}
+                            onDelete={() => {}}
+                            onShowReaders={() => {}}
+                            onRestore={() => handleRestoreGroup(group)}
+                            onHardDelete={() => handleHardDeleteGroup(group)}
+                          />
+                        );
+                      })
+                    )}
+                  </div>
+                )}
+              </div>
             )}
           </div>
         )}

@@ -27,6 +27,8 @@ const basePost: BulletinPost = {
   is_pinned: false,
   is_archived: false,
   archived_at: null,
+  publish_start_at: null,
+  publish_end_at: null,
   created_by: 'user-1',
   updated_by: null,
   created_at: '2026-04-01T10:00:00Z',
@@ -124,10 +126,11 @@ describe('BulletinPostCard', () => {
 
   // ── canEdit: 管理者の編集機能 ──
 
-  it('canEdit=true の場合「編集」「削除」ボタンが表示される', () => {
+  it('canEdit=true の場合「編集」「アーカイブ」ボタンが表示される', () => {
     render(<BulletinPostCard {...defaultProps} canEdit={true} />);
     expect(screen.getByText('編集')).toBeInTheDocument();
-    expect(screen.getByText('削除')).toBeInTheDocument();
+    // 削除ではなくアーカイブ（削除せず過去の連絡として残す）
+    expect(screen.getByText('アーカイブ')).toBeInTheDocument();
   });
 
   it('canEdit=true の場合「既読: N人」が表示される', () => {
@@ -135,10 +138,10 @@ describe('BulletinPostCard', () => {
     expect(screen.getByText(/既読: 5人/)).toBeInTheDocument();
   });
 
-  it('canEdit=false の場合「編集」「削除」が表示されない', () => {
+  it('canEdit=false の場合「編集」「アーカイブ」が表示されない', () => {
     render(<BulletinPostCard {...defaultProps} canEdit={false} />);
     expect(screen.queryByText('編集')).not.toBeInTheDocument();
-    expect(screen.queryByText('削除')).not.toBeInTheDocument();
+    expect(screen.queryByText('アーカイブ')).not.toBeInTheDocument();
   });
 
   it('編集ボタンをクリックするとonEditが呼ばれる', async () => {
@@ -150,13 +153,31 @@ describe('BulletinPostCard', () => {
     expect(onEdit).toHaveBeenCalledTimes(1);
   });
 
-  it('削除ボタンをクリックするとonDeleteが呼ばれる', async () => {
+  it('アーカイブボタンをクリックするとonDeleteが呼ばれる', async () => {
     const user = userEvent.setup();
     const onDelete = vi.fn();
     render(<BulletinPostCard {...defaultProps} canEdit={true} onDelete={onDelete} />);
 
-    await user.click(screen.getByText('削除'));
+    await user.click(screen.getByText('アーカイブ'));
     expect(onDelete).toHaveBeenCalledTimes(1);
+  });
+
+  it('archived=true の場合「元に戻す」「完全に削除」が表示され、通常の操作は出ない', () => {
+    const onRestore = vi.fn();
+    const onHardDelete = vi.fn();
+    render(
+      <BulletinPostCard
+        {...defaultProps}
+        canEdit={true}
+        archived
+        onRestore={onRestore}
+        onHardDelete={onHardDelete}
+      />
+    );
+    expect(screen.getByText('元に戻す')).toBeInTheDocument();
+    expect(screen.getByText('完全に削除')).toBeInTheDocument();
+    expect(screen.queryByText('アーカイブ')).not.toBeInTheDocument();
+    expect(screen.queryByText('編集')).not.toBeInTheDocument();
   });
 
   it('既読人数をクリックするとonShowReadersが呼ばれる', async () => {

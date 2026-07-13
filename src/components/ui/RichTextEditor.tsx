@@ -12,6 +12,11 @@ export interface RichTextEditorProps {
   minHeight?: string;
   className?: string;
   disabled?: boolean;
+  /**
+   * 本文欄を縦にドラッグで広げられるようにする（右下のリサイズハンドル）。
+   * 長文の連絡を書くときに入力欄を大きくできるようにするためのオプション。
+   */
+  resizable?: boolean;
 }
 
 export function RichTextEditor({
@@ -21,6 +26,7 @@ export function RichTextEditor({
   minHeight = '200px',
   className = '',
   disabled = false,
+  resizable = false,
 }: RichTextEditorProps) {
   const editor = useEditor({
     immediatelyRender: false,
@@ -37,8 +43,10 @@ export function RichTextEditor({
     },
     editorProps: {
       attributes: {
-        class:
-          'rich-text-editor-body min-h-[120px] px-3 py-2 focus:outline-none text-sm text-text-heading',
+        // resizable のときは本文欄自体をドラッグで縦に広げられるようにする
+        class: `rich-text-editor-body px-3 py-2 focus:outline-none text-sm text-text-heading ${
+          resizable ? 'min-h-[240px] max-h-[70vh] overflow-y-auto resize-y' : 'min-h-[120px]'
+        }`,
       },
     },
   });

@@ -8,6 +8,8 @@ import { MasterDataProvider } from '@/contexts/MasterDataContext';
 import { ThemeProvider, themeInitScript } from '@/contexts/ThemeContext';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { ImpersonationBanner } from '@/components/ImpersonationBanner';
+import { BulletinUnreadProvider } from '@/contexts/BulletinUnreadContext';
+import { UnreadBulletinGate } from '@/components/bulletin/UnreadBulletinGate';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import { Toaster } from 'sonner';
 
@@ -76,11 +78,16 @@ export default async function RootLayout({
           <ThemeProvider>
             <AuthProvider initialAuth={initialAuth}>
               <MasterDataProvider>
-                <ImpersonationBanner />
-                {children}
-                {/* アプリ全体のトースト通知（ボタン操作のフィードバック用） */}
-                <Toaster richColors position="top-center" />
-                <SpeedInsights />
+                {/* 掲示板の未読状態を一元管理し、ヘッダーバッジと既読ゲートで共有する */}
+                <BulletinUnreadProvider>
+                  <ImpersonationBanner />
+                  {children}
+                  {/* 講師に未読の連絡があれば全画面で表示し既読を促す（未読0で自動的に閉じる） */}
+                  <UnreadBulletinGate />
+                  {/* アプリ全体のトースト通知（ボタン操作のフィードバック用） */}
+                  <Toaster richColors position="top-center" />
+                  <SpeedInsights />
+                </BulletinUnreadProvider>
               </MasterDataProvider>
             </AuthProvider>
           </ThemeProvider>

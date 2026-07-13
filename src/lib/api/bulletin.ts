@@ -1,6 +1,6 @@
 import { supabase } from '../supabase';
 import type { BulletinLabel, BulletinPost, BulletinRead } from '@/types/bulletin';
-import { DEFAULT_LABELS } from '@/types/bulletin';
+import { DEFAULT_LABELS, isPostPublished } from '@/types/bulletin';
 
 /**
  * デフォルトラベルを確保（存在しない場合のみ作成）
@@ -312,6 +312,8 @@ export async function getBulletinPostsBatch(
   schoolIds: string[],
   options?: {
     includeArchived?: boolean;
+    /** true のときはアーカイブ済み（is_archived=true）だけを返す（アーカイブ閲覧用） */
+    archivedOnly?: boolean;
     userId?: string;
   },
   // DI: サーバーコンポーネントから RLS 認証済みのサーバークライアントを渡せるようにする
@@ -333,7 +335,10 @@ export async function getBulletinPostsBatch(
     .order('is_pinned', { ascending: false })
     .order('created_at', { ascending: false });
 
-  if (!options?.includeArchived) {
+  if (options?.archivedOnly) {
+    // アーカイブ閲覧: アーカイブ済みのみ
+    query = query.eq('is_archived', true);
+  } else if (!options?.includeArchived) {
     query = query.eq('is_archived', false);
   }
 
@@ -486,6 +491,8 @@ export async function createBulletinPost(
     label_id?: string | null;
     is_pinned?: boolean;
     link_url?: string | null;
+    publish_start_at?: string | null;
+    publish_end_at?: string | null;
   },
   userId?: string
 ): Promise<BulletinPost> {
@@ -498,6 +505,8 @@ export async function createBulletinPost(
       content: data.content,
       link_url: data.link_url || null,
       is_pinned: data.is_pinned || false,
+      publish_start_at: data.publish_start_at ?? null,
+      publish_end_at: data.publish_end_at ?? null,
       created_by: userId || null,
       updated_by: userId || null,
     })
@@ -540,6 +549,8 @@ export async function updateBulletinPost(
     label_id?: string | null;
     is_pinned?: boolean;
     link_url?: string | null;
+    publish_start_at?: string | null;
+    publish_end_at?: string | null;
   },
   userId?: string
 ): Promise<BulletinPost> {
@@ -601,6 +612,23 @@ export async function hardDeleteBulletinPost(id: string): Promise<void> {
 }
 
 /**
+ * アーカイブを解除して投稿を通常一覧に戻す（削除の取り消し・復元）。
+ */
+export async function unarchiveBulletinPost(id: string): Promise<void> {
+  const { error } = await supabase
+    .from('bulletin_posts')
+    .update({
+      is_archived: false,
+      archived_at: null,
+    })
+    .eq('id', id);
+
+  if (error) {
+    throw new Error(`投稿の復元に失敗しました: ${error.message}`);
+  }
+}
+
+/**
  * 既読にする
  */
 export async function markAsRead(postId: string, userId: string): Promise<void> {
@@ -658,15 +686,49 @@ export async function getPostReaders(postId: string): Promise<BulletinRead[]> {
 }
 
 /**
+ * 未読の投稿一覧を取得（既読ゲート用）。
+ *
+ * getBulletinPostsBatch を再利用して is_read を算出し、未読(!is_read)だけを
+ * 平坦化して返す。既読ゲートは「未読があるときだけ本文を出す」ため、
+ * 呼び出し側は先に getUnreadCount で件数を見て、0 超のときだけ本関数を叩く運用にする
+ * （0 件のときは本文取得のクエリを走らせない＝従来のヘッダー未読バッジと同コスト）。
+ * 教室名は API 層では解決せず、表示側（MasterData）で school_id から引く。
+ */
+export async function getUnreadPosts(schoolIds: string[], userId: string): Promise<BulletinPost[]> {
+  if (schoolIds.length === 0) return [];
+
+  const grouped = await getBulletinPostsBatch(schoolIds, { userId });
+  const now = Date.now();
+  const unread: BulletinPost[] = [];
+  for (const posts of Object.values(grouped)) {
+    for (const post of posts) {
+      // 公開期間外（公開前・公開終了）の投稿は未読ゲートの対象外
+      if (!post.is_read && isPostPublished(post, now)) unread.push(post);
+    }
+  }
+
+  // 複数教室分をまたぐと school 単位でまとまるため、ゲートでは新しい順に整え直す
+  // （ピン留めは各教室内で先頭に来るが、未読ゲートでは日付の新しさを優先する）。
+  unread.sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
+  return unread;
+}
+
+/**
  * 未読件数を取得
  */
 export async function getUnreadCount(schoolId: string, userId: string): Promise<number> {
+  // 公開中の投稿だけを対象にする（公開前・公開終了は未読に数えない）
+  const nowIso = new Date().toISOString();
   // 投稿IDのみ取得（データ転送を最小化）
   const { data: posts } = await supabase
     .from('bulletin_posts')
     .select('id')
     .eq('school_id', schoolId)
-    .eq('is_archived', false);
+    .eq('is_archived', false)
+    // 公開開始: NULL（即時）または開始日時が現在以前
+    .or(`publish_start_at.is.null,publish_start_at.lte.${nowIso}`)
+    // 公開終了: NULL（無期限）または終了日時が現在以降
+    .or(`publish_end_at.is.null,publish_end_at.gte.${nowIso}`);
 
   if (!posts || posts.length === 0) {
     return 0;

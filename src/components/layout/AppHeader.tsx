@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { getUnreadCount } from '@/lib/api/bulletin';
+import { useBulletinUnread } from '@/contexts/BulletinUnreadContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMasterData } from '@/contexts/MasterDataContext';
 import { USER_ROLE_LABELS } from '@/types/database';
@@ -84,9 +84,10 @@ export function AppHeader({
     schoolIds,
     selectedSchoolId,
     setSelectedSchoolId,
-    getSelectedSchoolIds,
   } = useAuth();
   const { schools: masterSchools } = useMasterData();
+  // 未読件数は BulletinUnreadContext に一元化済み（自前のポーリングは廃止）
+  const { unreadCount: bulletinUnreadCount } = useBulletinUnread();
 
   const handleSchoolChange = (schoolId: string | 'all') => {
     setSelectedSchoolId(schoolId);
@@ -101,7 +102,6 @@ export function AppHeader({
   const displaySchools = schools;
   const [showSchoolDropdown, setShowSchoolDropdown] = useState(false);
   const [showSettingsDropdown, setShowSettingsDropdown] = useState(false);
-  const [bulletinUnreadCount, setBulletinUnreadCount] = useState(0);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   // PCナビ: 現在開いているドロップダウンのキー（同時に1つだけ開く）
   const [openDropdownKey, setOpenDropdownKey] = useState<string | null>(null);
@@ -156,50 +156,6 @@ export function AppHeader({
   const isStandalone = useStandalone();
   const showPwaHome = isStandalone && !isTeacher;
   const homeHref = showPwaHome ? '/home' : '/students';
-
-  // 連絡掲示板未読件数（講師のみ）
-  useEffect(() => {
-    const schoolIdsList = getSelectedSchoolIds();
-    if (profile?.role !== 'teacher' || !profile?.id || schoolIdsList.length === 0) {
-      setBulletinUnreadCount(0);
-      return;
-    }
-    let cancelled = false;
-    (async () => {
-      try {
-        const counts = await Promise.all(
-          schoolIdsList.map((schoolId) => getUnreadCount(schoolId, profile.id))
-        );
-        const total = counts.reduce((a, b) => a + b, 0);
-        if (!cancelled) setBulletinUnreadCount(total);
-      } catch {
-        if (!cancelled) setBulletinUnreadCount(0);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [getSelectedSchoolIds, profile?.id, profile?.role, selectedSchoolId, schoolIds]);
-
-  useEffect(() => {
-    if (profile?.role !== 'teacher') return;
-    const refetch = () => {
-      const schoolIdsList = getSelectedSchoolIds();
-      if (!profile?.id || schoolIdsList.length === 0) return;
-      (async () => {
-        try {
-          const counts = await Promise.all(
-            schoolIdsList.map((schoolId) => getUnreadCount(schoolId, profile!.id))
-          );
-          setBulletinUnreadCount(counts.reduce((a, b) => a + b, 0));
-        } catch {
-          setBulletinUnreadCount(0);
-        }
-      })();
-    };
-    window.addEventListener('bulletin-unread-changed', refetch);
-    return () => window.removeEventListener('bulletin-unread-changed', refetch);
-  }, [getSelectedSchoolIds, profile?.id, profile?.role]);
 
   // 現在選択中の教室名を取得
   const getCurrentSchoolDisplayName = (): string => {

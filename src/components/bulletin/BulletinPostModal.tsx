@@ -17,6 +17,25 @@ const RichTextEditor = dynamic(
   }
 );
 
+/** date input(YYYY-MM-DD, ローカル) → ISO timestamp。開始は 00:00:00、終了は 23:59:59。 */
+function dateToTimestamp(dateStr: string, boundary: 'start' | 'end'): string | null {
+  if (!dateStr) return null;
+  const d = new Date(`${dateStr}T${boundary === 'start' ? '00:00:00' : '23:59:59'}`);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toISOString();
+}
+
+/** ISO timestamp → date input(YYYY-MM-DD, ローカル) */
+function timestampToDate(iso: string | null | undefined): string {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
 interface BulletinPostModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -56,6 +75,9 @@ export function BulletinPostModal({
   const [linkUrl, setLinkUrl] = useState('');
   const [labelId, setLabelId] = useState<string | null>(null);
   const [isPinned, setIsPinned] = useState(false);
+  // 公開期間（任意）。空欄なら開始=即時 / 終了=無期限。
+  const [publishStartDate, setPublishStartDate] = useState('');
+  const [publishEndDate, setPublishEndDate] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -70,12 +92,16 @@ export function BulletinPostModal({
       setLinkUrl(post.link_url ?? '');
       setLabelId(post.label_id);
       setIsPinned(post.is_pinned);
+      setPublishStartDate(timestampToDate(post.publish_start_at));
+      setPublishEndDate(timestampToDate(post.publish_end_at));
     } else {
       setTitle('');
       setContent('');
       setLinkUrl('');
       setLabelId(null);
       setIsPinned(false);
+      setPublishStartDate('');
+      setPublishEndDate('');
     }
   }, [post, isOpen]);
 
@@ -102,8 +128,15 @@ export function BulletinPostModal({
     }
   })();
 
+  // 公開終了日が開始日より前は不正
+  const isInvalidPeriod = !!(
+    publishStartDate &&
+    publishEndDate &&
+    publishEndDate < publishStartDate
+  );
+
   const handleSubmit = async () => {
-    if (!title.trim() || isContentEmpty(content)) {
+    if (!title.trim() || isContentEmpty(content) || isInvalidPeriod) {
       return;
     }
 
@@ -128,6 +161,8 @@ export function BulletinPostModal({
       const userId = user?.id;
 
       const normalizedLink = normalizeLinkUrl(linkUrl);
+      const publishStartAt = dateToTimestamp(publishStartDate, 'start');
+      const publishEndAt = dateToTimestamp(publishEndDate, 'end');
       if (post) {
         // 代表の教室はラベルも含めて更新する
         await updateBulletinPost(
@@ -138,6 +173,8 @@ export function BulletinPostModal({
             link_url: normalizedLink,
             label_id: labelId,
             is_pinned: isPinned,
+            publish_start_at: publishStartAt,
+            publish_end_at: publishEndAt,
           },
           userId
         );
@@ -151,6 +188,8 @@ export function BulletinPostModal({
               content: content,
               link_url: normalizedLink,
               is_pinned: isPinned,
+              publish_start_at: publishStartAt,
+              publish_end_at: publishEndAt,
             },
             userId
           );
@@ -162,6 +201,8 @@ export function BulletinPostModal({
           link_url: normalizedLink,
           label_id: targetSchoolIds.length === 1 ? labelId : null,
           is_pinned: isPinned,
+          publish_start_at: publishStartAt,
+          publish_end_at: publishEndAt,
         };
         for (const sid of targetSchoolIds) {
           await createBulletinPost(sid, payload, userId);
@@ -198,7 +239,9 @@ export function BulletinPostModal({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={post ? '投稿を編集' : '新規投稿'}>
+    // 連絡は長文になりがちなので、入力欄を広く取れるよう横幅を lg に広げる
+    // （本文エディタ自体も右下ハンドルで縦に伸ばせる）。
+    <Modal isOpen={isOpen} onClose={onClose} title={post ? '投稿を編集' : '新規投稿'} size="lg">
       <div className="space-y-4">
         {errorMessage && (
           <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
@@ -279,7 +322,8 @@ export function BulletinPostModal({
             value={content}
             onChange={setContent}
             placeholder="本文を入力（太字・見出しなどが使えます）"
-            minHeight="200px"
+            minHeight="280px"
+            resizable
           />
         </div>
 
@@ -296,6 +340,47 @@ export function BulletinPostModal({
           />
           {isInvalidLinkUrl && (
             <p className="mt-1 text-xs text-[#ef4444]">URL の形式が正しくありません</p>
+          )}
+        </div>
+
+        {/* 公開期間（任意）。期間外は講師に表示されず未読にも数えない（データは残る）。 */}
+        <div>
+          <label className="block text-sm font-medium text-[#1f2937] mb-1">公開期間（任意）</label>
+          <div className="flex flex-wrap items-center gap-2">
+            <input
+              type="date"
+              value={publishStartDate}
+              onChange={(e) => setPublishStartDate(e.target.value)}
+              aria-label="公開開始日"
+              className="px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#1f2937] focus:ring-2 focus:ring-[#3b82f6] focus:border-[#3b82f6]"
+            />
+            <span className="text-sm text-gray-400">〜</span>
+            <input
+              type="date"
+              value={publishEndDate}
+              min={publishStartDate || undefined}
+              onChange={(e) => setPublishEndDate(e.target.value)}
+              aria-label="公開終了日"
+              className="px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#1f2937] focus:ring-2 focus:ring-[#3b82f6] focus:border-[#3b82f6]"
+            />
+            {(publishStartDate || publishEndDate) && (
+              <button
+                type="button"
+                onClick={() => {
+                  setPublishStartDate('');
+                  setPublishEndDate('');
+                }}
+                className="text-xs text-gray-500 hover:text-gray-700 underline"
+              >
+                クリア
+              </button>
+            )}
+          </div>
+          <p className="mt-1 text-xs text-gray-500">
+            未入力なら常時公開。期間を過ぎた連絡は講師には表示されなくなります（データは残るので管理者は引き続き確認できます）。
+          </p>
+          {isInvalidPeriod && (
+            <p className="mt-1 text-xs text-[#ef4444]">終了日は開始日以降にしてください</p>
           )}
         </div>
 
@@ -322,6 +407,7 @@ export function BulletinPostModal({
               !title.trim() ||
               isContentEmpty(content) ||
               isInvalidLinkUrl ||
+              isInvalidPeriod ||
               isSubmitting ||
               (!post && showSchoolSelector && selectedSchoolIds.length === 0)
             }
