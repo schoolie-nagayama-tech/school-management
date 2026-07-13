@@ -152,6 +152,12 @@ export interface WeeklyScheduleGridProps {
   onKoushuPlace?: (date: string, slotId: string) => void;
   /** 配置モード中に講師カードをクリックしたとき（その講師で配置） */
   onKoushuPlaceWithTeacher?: (date: string, slotId: string, teacherId: string) => void;
+  /** P2改訂: 汎用配置モード中の講師カード単位の配置可否（指導科目外/満員/欠勤等）。 */
+  getTeacherPlaceConstraint?: (
+    date: string,
+    slotId: string,
+    teacherId: string
+  ) => { ok: boolean; reason: string | null };
   /** 向き: 'cols'=日=列(週俯瞰) / 'rows'=日=行(転置・既定) */
   orientation: 'cols' | 'rows';
   /** 日=列モードのセル内カラム数（1 or 2）。転置モードでは無視 */
@@ -197,6 +203,7 @@ export function WeeklyScheduleGrid(props: WeeklyScheduleGridProps) {
     getKoushuPlaceability,
     onKoushuPlace,
     onKoushuPlaceWithTeacher,
+    getTeacherPlaceConstraint,
     orientation,
     colMode,
     boothMapByDate,
@@ -402,6 +409,7 @@ export function WeeklyScheduleGrid(props: WeeklyScheduleGridProps) {
       onToggleAbsence={onToggleAbsence}
       koushuPlacing={koushuPlacing}
       getKoushuPlaceability={getKoushuPlaceability}
+      getTeacherPlaceConstraint={getTeacherPlaceConstraint}
       onKoushuPlace={onKoushuPlace}
       onKoushuPlaceWithTeacher={onKoushuPlaceWithTeacher}
       orientation={orientation}

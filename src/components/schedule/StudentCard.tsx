@@ -77,10 +77,11 @@ export const StudentCard = React.memo(function StudentCard({
   const isDraft = !!entry.isDraft;
   const isAbsent = entry.attendance_status === 'absent';
   const isTrial = entry.kind === 'trial';
-  // 追加授業の種別バッジ（体験は行色にするのでバッジからは除外）
-  const showKindBadge = isExtraLessonKind(entry.kind) && entry.kind !== 'trial';
+  const isAdditional = entry.kind === 'additional';
+  // 種別バッジは test_prep のみ残す（体験・追加授業は行色で表現するのでバッジから除外）。
+  const showKindBadge = isExtraLessonKind(entry.kind) && entry.kind === 'test_prep';
 
-  // 行色（状態）: 優先度 = 欠席 > 振替元 > 振替先 > 体験 > 通常
+  // 行色（状態）: 優先度 = 欠席 > 振替元 > 振替先 > 体験 > 追加授業 > 通常
   const stateClass = isAbsent
     ? styles.absent
     : isTransferredOut
@@ -89,7 +90,9 @@ export const StudentCard = React.memo(function StudentCard({
         ? styles.transferRow
         : isTrial
           ? styles.trialRow
-          : '';
+          : isAdditional
+            ? styles.additionalRow
+            : '';
 
   // 振替先は元日程を title に出す（バッジ廃止のぶんの情報を hover で補う）
   const rowTitle = isTransferredIn ? '振替で入ったコマ' : studentName;

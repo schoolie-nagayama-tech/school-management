@@ -120,6 +120,8 @@ import { reassignTeacherFromToday } from '@/lib/api/pattern-matching';
 import { markInquiryTrialScheduled } from '@/lib/api/inquiries';
 import type { AddLessonPlacementPayload } from '@/components/schedule';
 import type { HalfPosition } from '@/types/schedule';
+import { canPlaceEntry, type SeatEntryInput } from '@/lib/utils/seatOccupancy';
+import type { PendingLesson } from '@/lib/api/pending-lessons';
 import { getFormations, getFormationCapacity } from '@/lib/api/schedule-formations';
 import { createFormationClassPatterns } from '@/lib/api/formation-patterns';
 import type { ScheduleFormation, SchoolFormationCapacity } from '@/types/schedule';
@@ -320,6 +322,15 @@ export default function SchedulePage() {
     halfPosition?: HalfPosition;
     /** 体験×問合せの trial_at 連動を最初の1件だけ実行するためのフラグ */
     trialMarked?: boolean;
+    /** P2改訂: 登録したいコマ数。達したら自動終了。lesson のみ（transfer は常に1件）。 */
+    targetCount?: number | null;
+    /** P2改訂: 未消化プール由来の再開のとき、その行ID（配置ごとに残数を減らし0で削除）。 */
+    pendingLessonId?: string | null;
+    // --- 講師カード配置可否（point 4）の判定材料。lesson/transfer 共通 ---
+    /** 対象生徒の担当除外講師（見込み客は空）。 */
+    excludedTeacherIds?: string[];
+    /** 対象生徒の希望講師性別（見込み客は null）。 */
+    preferredGender?: 'male' | 'female' | null;
   } | null>(null);
   // 保留プールパネルの再取得トリガ（保留追加・配置確定時にインクリメント）。
   const [heldRefreshKey, setHeldRefreshKey] = useState(0);
@@ -1703,6 +1714,67 @@ export default function SchedulePage() {
     [placingAdhoc, closedDates, entriesWithSubjects]
   );
 
+  // point 4: 汎用配置モード中、講師カード単位の配置可否（指導科目外/満員/1対1/欠勤/担当除外/希望性別）。
+  // 既存 D&D の dropConstraint（TeacherCard 176-）と同基準を per-teacher で計算する。
+  // adhoc 専用（gridGetTeacherConstraint 経由）。講習/テスト対策では渡さないので従来挙動不変。
+  const getAdhocTeacherConstraint = useCallback(
+    (date: string, slotId: string, teacherId: string): { ok: boolean; reason: string | null } => {
+      if (!placingAdhoc) return { ok: true, reason: null };
+      // 担当未決定カードは背景配置と同義なので制約対象にしない。
+      if (teacherId.startsWith('__unassigned__')) return { ok: true, reason: null };
+      const teacher = teachers.find((t) => t.id === teacherId);
+      if (!teacher) return { ok: true, reason: null };
+      // a. 欠勤
+      if (absenceKeySet.has(`${date}|${slotId}|${teacherId}`)) {
+        return { ok: false, reason: '欠勤' };
+      }
+      // b. 指導可能科目（teachable が空/未設定なら全科目可）
+      const subjIds = placingAdhoc.subjectIds ?? [];
+      const teachable = teacher.teachable_subject_ids;
+      if (teachable && teachable.length > 0 && subjIds.length > 0) {
+        const teachableSet = new Set(teachable);
+        if (!subjIds.some((id) => teachableSet.has(id))) {
+          return { ok: false, reason: '指導科目外' };
+        }
+      }
+      // c. 席占有（1対1専有・満席・45分半コマ）。canPlaceEntry で判定。
+      const active = entriesWithSubjects.filter(
+        (e) =>
+          e.entry_date === date &&
+          e.time_slot_id === slotId &&
+          e.teacher_id === teacherId &&
+          e.status !== 'cancelled' &&
+          e.status !== 'transferred_out'
+      );
+      const toSeat = (e: (typeof active)[number]): SeatEntryInput => ({
+        ratio: e.ratio === 1 ? 1 : 2,
+        halfPosition: e.half_position ?? null,
+      });
+      const incoming: SeatEntryInput = {
+        ratio: placingAdhoc.ratio === 1 ? 1 : 2,
+        halfPosition: placingAdhoc.halfPosition ?? null,
+      };
+      if (
+        !canPlaceEntry(active.map(toSeat), incoming, capacity.max_students_per_teacher_individual)
+      ) {
+        return {
+          ok: false,
+          reason: active.some((e) => e.ratio === 1) ? '1対1のため不可' : '満員',
+        };
+      }
+      // d. 生徒の担当除外・希望性別（見込み客は空/none で素通り）
+      if ((placingAdhoc.excludedTeacherIds ?? []).includes(teacherId)) {
+        return { ok: false, reason: '担当除外指定' };
+      }
+      const pref = placingAdhoc.preferredGender;
+      if (pref && teacher.gender && teacher.gender !== pref) {
+        return { ok: false, reason: `${pref === 'male' ? '男性' : '女性'}講師希望` };
+      }
+      return { ok: true, reason: null };
+    },
+    [placingAdhoc, teachers, absenceKeySet, entriesWithSubjects, capacity]
+  );
+
   // 配置確定の共通処理。teacherId=null=セル背景クリック（担当未決定） / 非null=講師カードクリック。
   const doAdhocPlace = useCallback(
     async (date: string, slotId: string, teacherId: string | null) => {
@@ -1761,8 +1833,28 @@ export default function SchedulePage() {
             console.warn('問合せの体験予約連動に失敗しました（体験コマは登録済み）:', e);
           }
         }
+        // 未消化プール由来の再開なら、この1コマぶんプールの残数を1減らす（0で行削除）。
+        if (placingAdhoc.pendingLessonId) {
+          try {
+            const { decrementPendingLesson } = await import('@/lib/api/pending-lessons');
+            await decrementPendingLesson(placingAdhoc.pendingLessonId);
+            setHeldRefreshKey((k) => k + 1);
+          } catch (e) {
+            console.warn('未消化プールの残数更新に失敗しました（コマは配置済み）:', e);
+          }
+        }
+        const newCount = placingAdhoc.placedCount + 1;
+        const target = placingAdhoc.targetCount ?? null;
+        // 指定コマ数に達したら自動終了。それ以外は連続配置のためモード継続。
+        if (target != null && newCount >= target) {
+          success(`${target} コマ登録しました`);
+          setPlacingAdhoc(null);
+          setHeldRefreshKey((k) => k + 1);
+          refreshEntries();
+          return;
+        }
         success('授業を配置しました');
-        // バナーの「N コマ」を増やし、体験の trial 連動済みフラグを立てる。モードは継続（連続配置）。
+        // バナーの「登録済み n / N コマ」を増やし、体験の trial 連動済みフラグを立てる。
         setPlacingAdhoc((prev) =>
           prev
             ? {
@@ -1779,6 +1871,42 @@ export default function SchedulePage() {
     },
     [placingAdhoc, schoolId, closedDates, success, toastError, refreshEntries, individualSlots]
   );
+
+  // 「完了」= 配置モード終了。lesson で残数がある場合、未消化プールへ退避する。
+  //  - プール由来の再開(pendingLessonId あり)は配置ごとに残数を減らしているので、追加退避は不要。
+  //  - 新規(pendingLessonId なし)で placedCount < targetCount のときだけ、残りを新規プール行にする。
+  const handleAdhocDone = useCallback(async () => {
+    const p = placingAdhoc;
+    if (!p) return;
+    if (
+      p.mode === 'lesson' &&
+      !p.pendingLessonId &&
+      p.targetCount != null &&
+      p.placedCount < p.targetCount &&
+      schoolId
+    ) {
+      const remaining = p.targetCount - p.placedCount;
+      try {
+        const { createPendingLesson } = await import('@/lib/api/pending-lessons');
+        await createPendingLesson({
+          schoolId,
+          studentId: p.studentId,
+          inquiryId: p.inquiryId ?? null,
+          subjectId: p.subjectIds?.[0] ?? '',
+          kind: p.kind ?? 'additional',
+          ratio: p.ratio === 1 ? 1 : 2,
+          durationMinutes: p.durationMinutes ?? null,
+          halfPosition: p.halfPosition ?? null,
+          remainingCount: remaining,
+        });
+        success(`残り ${remaining} コマを未消化プールに退避しました`);
+        setHeldRefreshKey((k) => k + 1);
+      } catch (e) {
+        toastError(e instanceof Error ? e.message : 'プールへの退避に失敗しました');
+      }
+    }
+    setPlacingAdhoc(null);
+  }, [placingAdhoc, schoolId, success, toastError]);
 
   // セル背景クリック=担当未決定。講師カードクリック=講師指定。
   const handleAdhocPlace = useCallback(
@@ -1822,14 +1950,19 @@ export default function SchedulePage() {
         excludeEntryId: entry.id,
         fromEntryId: entry.id,
         sourceEntryDate: entry.entry_date,
+        // 講師カード配置可否（point 4）の判定材料を振替元エントリから引き継ぐ。
+        subjectIds: entry.subject_ids ?? [],
+        ratio: entry.ratio === 1 ? 1 : 2,
+        halfPosition: entry.half_position ?? null,
+        excludedTeacherIds: entry.student?.excluded_teacher_ids ?? [],
+        preferredGender: entry.student?.preferred_teacher_gender ?? null,
       });
     },
     [placingAdhoc, subjectById]
   );
 
-  // 「授業を追加」モーダルの Step1 確定 → 授業追加の配置モードを開始。
-  const handleStartLessonPlacement = useCallback((payload: AddLessonPlacementPayload) => {
-    // 排他：講習/テスト対策/振替モードを解除。
+  // 排他：講習/テスト対策/振替モードを解除する共通処理（配置モード開始前に呼ぶ）。
+  const clearOtherModes = useCallback(() => {
     setSelectedKoushu(null);
     setKoushuEnrollments(new Map());
     setKoushuScheduledCounts(new Map());
@@ -1838,23 +1971,74 @@ export default function SchedulePage() {
     setTestPrepActive(false);
     setPlacingTestPrep(null);
     setTransferMode(null);
-    setPlacingAdhoc({
-      mode: 'lesson',
-      displayName: payload.displayName,
-      subjectName: payload.subjectName,
-      placedCount: 0,
-      studentId: payload.studentId,
-      excludeEntryId: null,
-      inquiryId: payload.inquiryId,
-      subjectIds: [payload.subjectId],
-      kind: payload.kind,
-      ratio: payload.ratio,
-      durationMinutes: payload.durationMinutes,
-      halfPosition: payload.halfPosition,
-      trialMarked: false,
-    });
-    setAddLessonOpen(false);
   }, []);
+
+  // 「授業を追加」モーダルの Step1 確定 → 授業追加の配置モードを開始。
+  const handleStartLessonPlacement = useCallback(
+    (payload: AddLessonPlacementPayload) => {
+      clearOtherModes();
+      // point 4 の判定材料（担当除外・希望性別）は既存生徒のときだけ生徒マスタから引く。
+      const stu = payload.studentId ? students.find((s) => s.id === payload.studentId) : null;
+      setPlacingAdhoc({
+        mode: 'lesson',
+        displayName: payload.displayName,
+        subjectName: payload.subjectName,
+        placedCount: 0,
+        studentId: payload.studentId,
+        excludeEntryId: null,
+        inquiryId: payload.inquiryId,
+        subjectIds: [payload.subjectId],
+        kind: payload.kind,
+        ratio: payload.ratio,
+        durationMinutes: payload.durationMinutes,
+        halfPosition: payload.halfPosition,
+        trialMarked: false,
+        targetCount: payload.targetCount,
+        pendingLessonId: null,
+        excludedTeacherIds: stu?.excluded_teacher_ids ?? [],
+        preferredGender: stu?.preferred_teacher_gender ?? null,
+      });
+      setAddLessonOpen(false);
+    },
+    [clearOtherModes, students]
+  );
+
+  // 未消化プールの「配置」→ 残数を target に授業追加の配置モードを再開する（配置ごとに残数減）。
+  const handleStartPendingLessonPlacement = useCallback(
+    (pl: PendingLesson) => {
+      // 同じプール行を再クリックで解除（トグル）。
+      if (placingAdhoc?.mode === 'lesson' && placingAdhoc.pendingLessonId === pl.id) {
+        setPlacingAdhoc(null);
+        return;
+      }
+      clearOtherModes();
+      const stu = pl.student_id ? students.find((s) => s.id === pl.student_id) : null;
+      const displayName = pl.student
+        ? `${pl.student.last_name}${pl.student.first_name}`.trim() || '生徒'
+        : (pl.inquiry?.student_name ?? '見込み客');
+      const subjName = subjectById.get(pl.subject_id) ?? '';
+      setPlacingAdhoc({
+        mode: 'lesson',
+        displayName,
+        subjectName: subjName,
+        placedCount: 0,
+        studentId: pl.student_id,
+        excludeEntryId: null,
+        inquiryId: pl.inquiry_id,
+        subjectIds: [pl.subject_id],
+        kind: pl.kind,
+        ratio: pl.ratio,
+        durationMinutes: pl.duration_minutes,
+        halfPosition: pl.half_position,
+        trialMarked: false,
+        targetCount: pl.remaining_count,
+        pendingLessonId: pl.id,
+        excludedTeacherIds: stu?.excluded_teacher_ids ?? [],
+        preferredGender: stu?.preferred_teacher_gender ?? null,
+      });
+    },
+    [placingAdhoc, clearOtherModes, students, subjectById]
+  );
 
   // 座席表グリッドへ渡す「配置モード」プロップ。優先度: 汎用配置 > テスト対策 > 講習。
   // 三者は排他なので同時に有効にはならないが、汎用配置を最優先分岐にして既存2モードの挙動を保つ。
@@ -1874,6 +2058,8 @@ export default function SchedulePage() {
     : placingTestPrep
       ? handleTestPrepPlaceWithTeacher
       : handleKoushuPlaceWithTeacher;
+  // point 4: 講師カード単位の配置可否は adhoc 配置中のみ渡す（講習/テスト対策は undefined＝従来挙動）。
+  const gridGetTeacherConstraint = placingAdhoc ? getAdhocTeacherConstraint : undefined;
 
   // 週移動（座席表の左右端の縦長アイコンからも操作できるように）
   const goPrevWeek = useCallback(() => {
@@ -2489,7 +2675,10 @@ export default function SchedulePage() {
             displayName={placingAdhoc.displayName}
             subjectName={placingAdhoc.subjectName}
             placedCount={placingAdhoc.placedCount}
-            onDone={() => setPlacingAdhoc(null)}
+            targetCount={
+              placingAdhoc.mode === 'lesson' ? (placingAdhoc.targetCount ?? undefined) : undefined
+            }
+            onDone={handleAdhocDone}
           />
         )}
 
@@ -2590,7 +2779,11 @@ export default function SchedulePage() {
             refreshKey={heldRefreshKey}
             subjectNameById={subjectById}
             placingEntryId={placingAdhoc?.mode === 'transfer' ? placingAdhoc.fromEntryId : null}
+            placingPendingLessonId={
+              placingAdhoc?.mode === 'lesson' ? (placingAdhoc.pendingLessonId ?? null) : null
+            }
             onStartPlacement={handleStartHeldTransferPlacement}
+            onStartPendingPlacement={handleStartPendingLessonPlacement}
           />
         )}
 
@@ -2783,6 +2976,7 @@ export default function SchedulePage() {
                       getKoushuPlaceability={gridGetPlaceability}
                       onKoushuPlace={gridPlace}
                       onKoushuPlaceWithTeacher={gridPlaceWithTeacher}
+                      getTeacherPlaceConstraint={gridGetTeacherConstraint}
                       orientation={orientation}
                       colMode={colMode}
                       boothMapByDate={weekBoothMap}

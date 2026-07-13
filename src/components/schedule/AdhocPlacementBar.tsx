@@ -20,6 +20,8 @@ export interface AdhocPlacementBarProps {
   subjectName: string;
   /** これまでに登録したコマ数（lesson は連続配置でカウント、transfer は1件で終了）。 */
   placedCount: number;
+  /** 目標コマ数（lesson のみ）。指定数に達したら親が自動終了する。 */
+  targetCount?: number;
   /** 「完了」= 配置モード終了。 */
   onDone: () => void;
 }
@@ -29,6 +31,7 @@ export function AdhocPlacementBar({
   displayName,
   subjectName,
   placedCount,
+  targetCount,
   onDone,
 }: AdhocPlacementBarProps) {
   return (
@@ -43,7 +46,8 @@ export function AdhocPlacementBar({
             <span className="text-[var(--paragraph)]">振替先のセル／講師ブロックをクリック</span>
           ) : (
             <span className="text-[var(--paragraph)]">
-              置きたいセル／講師をクリック（登録済み {placedCount} コマ）
+              置きたいセル／講師をクリック（登録済み {placedCount}
+              {targetCount != null ? ` / ${targetCount}` : ''} コマ）
             </span>
           )}
         </span>

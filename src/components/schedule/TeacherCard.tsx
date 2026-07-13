@@ -112,6 +112,12 @@ export interface TeacherCardProps {
   seatNo?: string;
   /** 座席番号の変更（保存）。未指定なら入力欄を出さない */
   onSeatNoChange?: (value: string) => void;
+  /**
+   * P2改訂: 汎用配置モード（adhoc）中のこの講師カードの配置可否。
+   * 指定あり＆ ok=false のとき淡色化＋クリック無効＋title に理由を出す。
+   * 講習/テスト対策の配置では渡さない（未指定＝従来どおり全カードクリック可）。
+   */
+  placeConstraint?: { ok: boolean; reason: string | null };
 }
 
 export const TeacherCard = React.memo(function TeacherCard({
@@ -136,6 +142,7 @@ export const TeacherCard = React.memo(function TeacherCard({
   onKoushuPlaceClick,
   seatNo,
   onSeatNoChange,
+  placeConstraint,
 }: TeacherCardProps) {
   const dropId = getTeacherSlotId(date, timeSlotId, teacher.id);
   const { isOver, setNodeRef } = useDroppable({ id: dropId });
@@ -256,6 +263,11 @@ export const TeacherCard = React.memo(function TeacherCard({
 
   const showSeatInput = !!onSeatNoChange && !isUnassigned && !isAvailableOnly;
 
+  // P2改訂: 汎用配置モード中に「配置不可」と判定された講師カードは淡色＋クリック無効にする。
+  // placeConstraint 未指定（講習/テスト対策）のときは従来どおり全カードが配置ターゲット。
+  const placeBlocked = !!koushuPlacing && !!placeConstraint && !placeConstraint.ok;
+  const isPlaceTarget = !!koushuPlacing && (onKoushuPlaceClick || isAvailableOnly) && !placeBlocked;
+
   const blockClass = [
     styles.tBlock,
     hasVacancy && !isUnassigned ? styles.hasVacancy : '',
@@ -266,13 +278,14 @@ export const TeacherCard = React.memo(function TeacherCard({
     isOverAndCannotDrop ? styles.dropNg : '',
     (canDrop || canAcceptTeacherDrop) && !isOver ? styles.dropCandidate : '',
     isDimmedDuringDrag ? styles.dropDim : '',
-    koushuPlacing && (onKoushuPlaceClick || isAvailableOnly) ? styles.placeTarget : '',
+    isPlaceTarget ? styles.placeTarget : '',
+    placeBlocked ? styles.placeNg : '',
   ]
     .filter(Boolean)
     .join(' ');
 
   const clickable = koushuPlacing
-    ? onKoushuPlaceClick
+    ? onKoushuPlaceClick && !placeBlocked
       ? handleKoushuPlaceClick
       : undefined
     : transferMode && onTransferTargetClick
@@ -294,13 +307,15 @@ export const TeacherCard = React.memo(function TeacherCard({
       onClick={clickable}
       role={clickable ? 'button' : undefined}
       title={
-        koushuPlacing && (onKoushuPlaceClick || isAvailableOnly)
-          ? 'クリックでこの講師に配置する'
-          : isOverAndCannotDrop && dropConstraint.reason
-            ? `割当不可: ${dropConstraint.reason}`
-            : isAvailableOnly
-              ? 'ドラッグして担当未決定セルに割当できます'
-              : undefined
+        placeBlocked
+          ? `配置不可: ${placeConstraint?.reason ?? ''}`
+          : koushuPlacing && (onKoushuPlaceClick || isAvailableOnly)
+            ? 'クリックでこの講師に配置する'
+            : isOverAndCannotDrop && dropConstraint.reason
+              ? `割当不可: ${dropConstraint.reason}`
+              : isAvailableOnly
+                ? 'ドラッグして担当未決定セルに割当できます'
+                : undefined
       }
     >
       {isAbsent && <div className={styles.absentBadge}>欠勤</div>}

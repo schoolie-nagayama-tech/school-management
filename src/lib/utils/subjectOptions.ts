@@ -28,6 +28,48 @@ export interface SubjectOptionGroup {
   subjects: Subject[];
 }
 
+/** 学年区分（科目の grade_category と対応）。 */
+export type SubjectGradeCategory = 'elementary' | 'middle' | 'high';
+
+/** 生徒の数値学年 → 学年区分（1-6=小 / 7-9=中 / 10+=高）。 */
+export function gradeCategoryFromStudentGrade(
+  grade: number | null | undefined
+): SubjectGradeCategory {
+  const g = grade ?? 0;
+  if (g <= 6) return 'elementary';
+  if (g <= 9) return 'middle';
+  return 'high';
+}
+
+/**
+ * 見込み客（inquiries.grade は「中2」「小5」「高1」等のテキスト）から学年区分を推定。
+ * 先頭文字（小/中/高）で判定し、推定不能なら null（＝絞り込まず全区分表示）を返す。
+ */
+export function gradeCategoryFromInquiryGrade(
+  gradeText: string | null | undefined
+): SubjectGradeCategory | null {
+  const t = (gradeText ?? '').trim();
+  if (!t) return null;
+  const head = t[0];
+  if (head === '小') return 'elementary';
+  if (head === '中') return 'middle';
+  if (head === '高') return 'high';
+  return null;
+}
+
+/**
+ * 科目を対象者の学年区分で絞り込む（P2改訂・2026-07-13）。
+ * gradeCategory が null（未選択・推定不能）のときは絞らず全件返す。
+ * 該当区分の科目がゼロの場合は空配列を返す（呼び出し側でフォールバック＝全表示＋注意文を出す）。
+ */
+export function filterSubjectsForGrade(
+  subjects: Subject[],
+  gradeCategory: SubjectGradeCategory | null
+): Subject[] {
+  if (!gradeCategory) return subjects;
+  return subjects.filter((s) => (s.grade_category ?? null) === gradeCategory);
+}
+
 /** 学年区分ごとにグルーピング（小→中→高→その他の順、区分内は入力順を維持）。 */
 export function groupSubjectsForSelect(subjects: Subject[]): SubjectOptionGroup[] {
   const byCategory = new Map<string, Subject[]>();

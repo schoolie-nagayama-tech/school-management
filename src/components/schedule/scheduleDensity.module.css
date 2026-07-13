@@ -33,6 +33,8 @@
   --sd-today-border: oklch(80% 0.07 250);
   --sd-transfer-row-bg: oklch(94.5% 0.035 250);
   --sd-absent-row-bg: oklch(93% 0.004 27);
+  /* 追加授業=ink/violet系の淡背景（振替の青250・体験の緑145と区別が付く紫寄り300） */
+  --sd-additional-row-bg: oklch(94.5% 0.03 300);
   --sd-fs-name: 10.5px;
   --sd-fs-tname: 11.5px;
   --sd-fs-meta: 9.5px;
@@ -67,6 +69,7 @@
     --sd-today-border: oklch(45% 0.1 250);
     --sd-transfer-row-bg: oklch(32% 0.07 250);
     --sd-absent-row-bg: oklch(35% 0.012 27);
+    --sd-additional-row-bg: oklch(32% 0.05 300);
   }
 }
 
@@ -410,6 +413,13 @@
   outline: 2px solid var(--info);
   background: var(--info-subtle);
 }
+/* P2改訂: 汎用配置モードで「配置不可」の講師カード（指導科目外/満員/1対1/欠勤/希望外）。
+   D&D の不可表示（dropDim）と同系の淡色＋グレースケールにし、クリック不可を示す。 */
+.placeNg {
+  opacity: 0.32;
+  filter: grayscale(1);
+  cursor: not-allowed;
+}
 
 .tHead {
   position: relative;
@@ -650,6 +660,14 @@
 }
 .clickable.trialRow:hover {
   background: var(--success-subtle);
+  filter: brightness(0.97);
+}
+/* 追加授業（単発の追加コマ）: ink/violet 系の淡背景。バッジ廃止のぶんを行色で示す */
+.additionalRow {
+  background: var(--sd-additional-row-bg);
+}
+.clickable.additionalRow:hover {
+  background: var(--sd-additional-row-bg);
   filter: brightness(0.97);
 }
 .absent {

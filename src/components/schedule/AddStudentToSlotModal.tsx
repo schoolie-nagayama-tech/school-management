@@ -19,7 +19,12 @@ import type { ScheduleTimeSlot, HalfPosition } from '@/types/schedule';
 import type { ScheduleEntryFormData, ScheduleEntryKind } from '@/types/schedule';
 import type { Subject } from '@/types/database';
 import { DAY_OF_WEEK_LABELS } from '@/types/schedule';
-import { groupSubjectsForSelect, subjectOptionLabel } from '@/lib/utils/subjectOptions';
+import {
+  groupSubjectsForSelect,
+  subjectOptionLabel,
+  filterSubjectsForGrade,
+  gradeCategoryFromStudentGrade,
+} from '@/lib/utils/subjectOptions';
 
 /**
  * 「この日のみ追加」で選べる授業種別。
@@ -89,6 +94,22 @@ export function AddStudentToSlotModal({
     return subjects.filter((s) => teacherTeachableSubjectIds.includes(s.id));
   }, [subjects, teacherTeachableSubjectIds]);
 
+  // P2改訂: 生徒を選んだら、その学年区分（小/中/高）でさらに科目を絞る。
+  // 区分内に該当ゼロなら全（＝講師の指導可能）科目へフォールバックし注意文を出す。
+  const filteredByGrade = useMemo(
+    () =>
+      selectedStudent
+        ? filterSubjectsForGrade(
+            availableSubjects,
+            gradeCategoryFromStudentGrade(selectedStudent.grade)
+          )
+        : availableSubjects,
+    [availableSubjects, selectedStudent]
+  );
+  const noneForGrade =
+    !!selectedStudent && availableSubjects.length > 0 && filteredByGrade.length === 0;
+  const shownSubjects = noneForGrade ? availableSubjects : filteredByGrade;
+
   useEffect(() => {
     if (isOpen) {
       setSelectedStudent(null);
@@ -122,6 +143,14 @@ export function AddStudentToSlotModal({
     setRatio(contractRatioMap.get(subjectId) ?? 2);
     setHalfPosition(selectedSubject?.duration_minutes === 45 ? 'first' : null);
   }, [subjectId, contractRatioMap, selectedSubject?.duration_minutes]);
+
+  // 学年区分の絞り込みで現在の選択が候補外になったら先頭へ寄せる。
+  useEffect(() => {
+    if (shownSubjects.length === 0) return;
+    if (!shownSubjects.some((s) => s.id === subjectId)) {
+      setSubjectId(shownSubjects[0].id);
+    }
+  }, [shownSubjects, subjectId]);
 
   const slotLabel = `${DAY_OF_WEEK_LABELS[dayOfWeek] ?? ''}曜日 ${timeSlot.slot_number}限 ${timeSlot.start_time?.slice(0, 5) ?? ''}-${timeSlot.end_time?.slice(0, 5) ?? ''}`;
 
@@ -251,7 +280,7 @@ export function AddStudentToSlotModal({
               {availableSubjects.length === 0 ? (
                 <option value="">この講師の指導可能科目が設定されていません</option>
               ) : (
-                groupSubjectsForSelect(availableSubjects).map((g) => (
+                groupSubjectsForSelect(shownSubjects).map((g) => (
                   <optgroup key={g.label} label={g.label}>
                     {g.subjects.map((s) => (
                       <option key={s.id} value={s.id}>
@@ -262,6 +291,11 @@ export function AddStudentToSlotModal({
                 ))
               )}
             </select>
+            {noneForGrade && (
+              <p className="mt-1 text-[11px] text-[var(--paragraph-light)]">
+                該当学年の科目がありません（指導可能科目を全て表示しています）
+              </p>
+            )}
           </div>
 
           {/* Phase R: 指導比率（契約から初期化・変更可）＋45分科目の前後半 */}

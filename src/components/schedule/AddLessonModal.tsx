@@ -12,7 +12,14 @@ import type { HalfPosition } from '@/types/schedule';
 import type { Subject } from '@/types/database';
 import type { Inquiry } from '@/types/database';
 import { getInquiryDisplayName } from '@/app/admin/inquiries/inquiryConstants';
-import { groupSubjectsForSelect, subjectOptionLabel } from '@/lib/utils/subjectOptions';
+import {
+  groupSubjectsForSelect,
+  subjectOptionLabel,
+  filterSubjectsForGrade,
+  gradeCategoryFromStudentGrade,
+  gradeCategoryFromInquiryGrade,
+  type SubjectGradeCategory,
+} from '@/lib/utils/subjectOptions';
 
 /** 種別タブ。追加授業（additional）/ 体験授業（trial）。 */
 type LessonKind = 'additional' | 'trial';
@@ -36,6 +43,8 @@ export interface AddLessonPlacementPayload {
   ratio: 1 | 2;
   durationMinutes: number | null;
   halfPosition: HalfPosition;
+  /** 登録したいコマ数（1〜20）。この数だけ配置したら配置モードを自動終了する。 */
+  targetCount: number;
 }
 
 export interface AddLessonModalProps {
@@ -72,7 +81,25 @@ export function AddLessonModal({
   const [ratio, setRatio] = useState<1 | 2>(2);
   const [halfPosition, setHalfPosition] = useState<HalfPosition>(null);
   const [contractRatioMap, setContractRatioMap] = useState<Map<string, 1 | 2>>(new Map());
+  // P2改訂: 登録したいコマ数（1〜20）。この数だけ配置したら配置モードを自動終了する。
+  const [targetCount, setTargetCount] = useState<number>(1);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  // P2改訂: 対象者の学年区分。選択済みのときだけ科目を絞る（未選択・推定不能なら全区分表示）。
+  const gradeCategory: SubjectGradeCategory | null = useMemo(() => {
+    if (kind === 'trial' && trialTarget === 'inquiry') {
+      return selectedInquiry ? gradeCategoryFromInquiryGrade(selectedInquiry.grade) : null;
+    }
+    return selectedStudent ? gradeCategoryFromStudentGrade(selectedStudent.grade) : null;
+  }, [kind, trialTarget, selectedInquiry, selectedStudent]);
+
+  // 学年区分で絞った科目。区分内に該当ゼロなら全表示へフォールバック（noneForGrade で注意文）。
+  const filteredForGrade = useMemo(
+    () => filterSubjectsForGrade(subjects, gradeCategory),
+    [subjects, gradeCategory]
+  );
+  const noneForGrade = !!gradeCategory && filteredForGrade.length === 0;
+  const shownSubjects = noneForGrade ? subjects : filteredForGrade;
 
   const selectedSubject = subjects.find((s) => s.id === subjectId);
   const is45 = selectedSubject?.duration_minutes === 45;
@@ -93,8 +120,17 @@ export function AddLessonModal({
     setRatio(2);
     setHalfPosition(null);
     setContractRatioMap(new Map());
+    setTargetCount(1);
     setErrorMsg(null);
   }, [isOpen, subjects]);
+
+  // 対象者の学年区分で科目を絞った結果、現在の選択が候補外になったら先頭へ寄せる。
+  useEffect(() => {
+    if (shownSubjects.length === 0) return;
+    if (!shownSubjects.some((s) => s.id === subjectId)) {
+      setSubjectId(shownSubjects[0].id);
+    }
+  }, [shownSubjects, subjectId]);
 
   // 追加授業の既存生徒選択時：契約比率マップを読み込む（科目選択時の ratio 初期値に使う）。
   useEffect(() => {
@@ -144,6 +180,7 @@ export function AddLessonModal({
         ratio: 2,
         durationMinutes: null,
         halfPosition: null,
+        targetCount,
       });
       onClose();
       return;
@@ -166,6 +203,7 @@ export function AddLessonModal({
       ratio: effRatio,
       durationMinutes: effDuration,
       halfPosition: effHalf,
+      targetCount,
     });
     onClose();
   };
@@ -269,10 +307,10 @@ export function AddLessonModal({
               onChange={(e) => setSubjectId(e.target.value)}
               className={selectClass}
             >
-              {subjects.length === 0 ? (
+              {shownSubjects.length === 0 ? (
                 <option value="">科目が登録されていません</option>
               ) : (
-                groupSubjectsForSelect(subjects).map((g) => (
+                groupSubjectsForSelect(shownSubjects).map((g) => (
                   <optgroup key={g.label} label={g.label}>
                     {g.subjects.map((s) => (
                       <option key={s.id} value={s.id}>
@@ -283,6 +321,31 @@ export function AddLessonModal({
                 ))
               )}
             </select>
+            {noneForGrade && (
+              // 対象者の学年区分に該当する科目が無い → 全科目にフォールバックしている旨を明示。
+              <p className="mt-1 text-[11px] text-[var(--paragraph-light)]">
+                該当学年の科目がありません（全科目を表示しています）
+              </p>
+            )}
+          </div>
+
+          {/* P2改訂: コマ数。この数だけ座席表に配置したら配置モードを自動終了する。 */}
+          <div>
+            <label className="block text-xs font-medium text-[var(--paragraph)] mb-1">コマ数</label>
+            <input
+              type="number"
+              min={1}
+              max={20}
+              value={targetCount}
+              onChange={(e) => {
+                const n = Math.floor(Number(e.target.value));
+                setTargetCount(Number.isFinite(n) ? Math.min(20, Math.max(1, n)) : 1);
+              }}
+              className={selectClass}
+            />
+            <p className="mt-1 text-[11px] text-[var(--paragraph-light)]">
+              指定した数だけ配置すると自動で終了します。途中で「完了」した残りは未消化プールに退避します
+            </p>
           </div>
 
           {/* Phase R: 追加授業（既存生徒）のみ 指導比率＋45分前後半 */}

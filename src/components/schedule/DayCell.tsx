@@ -134,6 +134,11 @@ export interface DayCellProps {
   placeability?: { ok: boolean; reason: string | null };
   /** 配置モード中、セル背景クリックで担当未決定として落とす */
   onCellPlace?: () => void;
+  /**
+   * P2改訂: 汎用配置（adhoc）モード中、各講師カードの配置可否。
+   * 講習/テスト対策では渡さない（未指定＝全カードクリック可の従来挙動）。
+   */
+  getTeacherPlaceConstraint?: (teacherId: string) => { ok: boolean; reason: string | null };
 }
 
 export const DayCell = React.memo(function DayCell(props: DayCellProps) {
@@ -164,6 +169,7 @@ export const DayCell = React.memo(function DayCell(props: DayCellProps) {
     isToday,
     placeability,
     onCellPlace,
+    getTeacherPlaceConstraint,
   } = props;
 
   const [unplacedOpen, setUnplacedOpen] = useState(false);
@@ -214,6 +220,12 @@ export const DayCell = React.memo(function DayCell(props: DayCellProps) {
       onSeatNoChange={
         onSeatNoChange && !group.teacher.id.startsWith('__unassigned__')
           ? (value) => onSeatNoChange(group.teacher.id, value)
+          : undefined
+      }
+      placeConstraint={
+        // 汎用配置モード中のみ、担当未決定以外の講師カードに可否を渡す（担当未決定は背景配置扱い）。
+        koushuPlacing && getTeacherPlaceConstraint && !group.teacher.id.startsWith('__unassigned__')
+          ? getTeacherPlaceConstraint(group.teacher.id)
           : undefined
       }
     />

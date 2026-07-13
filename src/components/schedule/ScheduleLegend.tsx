@@ -59,6 +59,13 @@ export function ScheduleLegend() {
             style={{ background: 'var(--success-subtle)', borderColor: 'var(--success)' }}
             label="緑=体験"
           />
+          <RowSwatch
+            style={{
+              background: 'var(--sd-additional-row-bg)',
+              borderColor: 'oklch(60% 0.15 300)',
+            }}
+            label="紫=追加授業"
+          />
           <span className="inline-flex items-center gap-1">
             <span className={styles.seatEmpty} style={{ minHeight: 16, width: 40, margin: 0 }}>
               空席
@@ -85,7 +92,6 @@ export function ScheduleLegend() {
           {/* 種別バッジ（単発の追加授業） */}
           <span className="text-[var(--paragraph)] font-medium">種別:</span>
           <LegendBadge className={EXTRA_KIND_BADGE.test_prep} label="テスト対策" />
-          <LegendBadge className={EXTRA_KIND_BADGE.additional} label="追加授業" />
           <LegendBadge className="bg-info text-white" label="仮" desc="自動マッチング下書き" />
 
           <span className="w-px h-4 bg-[var(--stroke)]" />
