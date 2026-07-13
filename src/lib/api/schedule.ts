@@ -2485,28 +2485,41 @@ export async function detectScheduleDrift(
     // 期待されるエントリキー
     const expected = await getExpectedEntryKeysFromPatterns(schoolId, weekStart);
 
-    // 実際の座席表エントリ（regular_pattern_id 付き・cancelled/transferred_out 以外）
+    // 週の全エントリを取得し、2つの観点で使い分ける:
+    //  - covered: kind・status を問わず「同一 (date-slot-student) に行があるか」。
+    //    generateWeeklySchedule の生成スキップ条件と同じ意味論（振替元/キャンセル/
+    //    単発コマが枠を占有していれば再生成対象外＝未反映ではない）。
+    //    以前は scheduled/completed のみで missing を数えていたため、振替や単発コマが
+    //    ある限り「常にズレあり」と誤検知し、ページを開くたびに週を自動再生成して
+    //    直前の手動移動がパターンの講師へ巻き戻される実バグの原因だった (2026-07-13)。
+    //  - actualSet: 「余分な行」検知用。パターン由来（regular_pattern_id 付き）の
+    //    現役エントリのみを対象にする（従来どおり）。
     const { data: entries } = await db
       .from('schedule_entries')
       .select('entry_date, time_slot_id, student_id, regular_pattern_id, status')
       .eq('school_id', schoolId)
       .gte('entry_date', weekStart)
-      .lte('entry_date', weekEndStr)
-      .not('regular_pattern_id', 'is', null)
-      .in('status', ['scheduled', 'completed']);
+      .lte('entry_date', weekEndStr);
 
+    const covered = new Set<string>();
     const actualSet = new Set<string>();
     for (const e of (entries || []) as {
       entry_date: string;
       time_slot_id: string;
-      student_id: string;
+      student_id: string | null;
+      regular_pattern_id: string | null;
+      status: string | null;
     }[]) {
-      actualSet.add(`${e.entry_date}-${e.time_slot_id}-${e.student_id}`);
+      const key = `${e.entry_date}-${e.time_slot_id}-${e.student_id}`;
+      covered.add(key);
+      if (e.regular_pattern_id && (e.status === 'scheduled' || e.status === 'completed')) {
+        actualSet.add(key);
+      }
     }
 
     let missing = 0;
     Array.from(expected).forEach((k) => {
-      if (!actualSet.has(k)) missing++;
+      if (!covered.has(k)) missing++;
     });
     let extra = 0;
     Array.from(actualSet).forEach((k) => {

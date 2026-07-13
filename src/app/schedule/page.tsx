@@ -521,24 +521,23 @@ export default function SchedulePage() {
       setEntries(list);
       setClosedDates(closed.map((c) => c.closed_date));
 
-      // 通塾日程と座席表の同期チェック：不一致なら自動で再生成（手動作業不要）
+      // 通塾日程と座席表の同期チェック：未生成の枠があれば自動で再生成（手動作業不要）
       if (patterns.length > 0) {
         const expected = await getExpectedEntryKeysFromPatterns(schoolId, weekStartStr);
-        const actual = new Set(
-          list
-            // transferred_out（振替元）も「枠は確保済み」とみなす。
-            // これを除外すると振替済みの枠が「空き」判定になり、再生成で重複エントリが
-            // 生まれ、振替を戻した時に同じ生徒が2件出るバグになる (N-4)。
-            .filter(
-              (e) =>
-                e.status === 'scheduled' ||
-                e.status === 'completed' ||
-                e.status === 'transferred_out'
-            )
-            .map((e) => `${e.entry_date}-${e.time_slot_id}-${e.student_id}`)
+        // 【重要】「枠が埋まっているか」は generateWeeklySchedule の生成スキップ条件と
+        // 同じ意味論で判定する: 同一 (date-slot-student) に行が1つでもあれば、
+        // kind・status を問わず生成対象外（=枠は確保済み）。
+        //  - 振替元 transferred_out / cancelled も行が残る限り再生成されない (N-4)
+        //  - 講習・テスト対策・追加授業・体験（kind≠regular）も同様に生成スキップされる
+        // 以前は status で絞った件数比較（expected.size !== actual.size）だったため、
+        // 週に単発コマが1件でもあると常に不一致 → 画面更新のたびに週全体を再生成し、
+        // 直前の手動移動（同コマ内の講師変更等）がパターンの講師へ巻き戻される
+        // 実バグの原因になった (2026-07-13)。「余分な行」の検知はドリフトバナー
+        // （detectScheduleDrift、regular_pattern_id で正しくスコープ済み）が担う。
+        const covered = new Set(
+          list.map((e) => `${e.entry_date}-${e.time_slot_id}-${e.student_id}`)
         );
-        const outOfSync =
-          expected.size !== actual.size || Array.from(expected).some((k) => !actual.has(k));
+        const outOfSync = Array.from(expected).some((k) => !covered.has(k));
         if (outOfSync) {
           await generateWeeklySchedule(schoolId, weekStartStr, profile?.id ?? undefined);
           list = await getScheduleEntries(schoolId, weekStartStr, weekEndStr);
