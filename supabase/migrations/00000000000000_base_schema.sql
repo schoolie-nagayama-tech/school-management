@@ -4414,7 +4414,12 @@ CREATE INDEX "user_textbook_favorites_user_id_idx" ON "public"."user_textbook_fa
 
 
 
-CREATE OR REPLACE TRIGGER "send-form-notification" AFTER INSERT ON "public"."form_responses" FOR EACH ROW EXECUTE FUNCTION "supabase_functions"."http_request"('https://mzxysqkuuxcfffwlfsvj.supabase.co/functions/v1/send-form-notification', 'POST', '{"Content-type":"application/json","Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im16eHlzcWt1dXhjZmZmd2xmc3ZqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2Nzc4NDkwMiwiZXhwIjoyMDgzMzYwOTAyfQ.n46O2j60kj475qyh55WDmPFcx0mygIbKSvzYa2fFoAE"}', '{}', '5000');
+-- NOTE(2026-07-14): この組み込みトリガー定義は、後続の
+-- 20260714_form_notification_webhook_vault_trigger.sql で Vault 参照版
+-- (public.trg_send_form_notification) に置き換えられる。ここに焼き込まれていた
+-- service_role JWT はセキュリティ上リポジトリから除去し、プレースホルダー化した。
+-- 実際の認証トークンは各環境の Vault(form_notification_auth_token)が唯一の入力源。
+CREATE OR REPLACE TRIGGER "send-form-notification" AFTER INSERT ON "public"."form_responses" FOR EACH ROW EXECUTE FUNCTION "supabase_functions"."http_request"('https://bniistrbylypnwpfqszb.supabase.co/functions/v1/send-form-notification', 'POST', '{"Content-type":"application/json","Authorization":"Bearer REMOVED_USE_VAULT_SEE_MIGRATION_20260714"}', '{}', '5000');
 
 
 
