@@ -2055,6 +2055,19 @@ export async function completeHeldTransfer(
     console.warn('Failed to record transfer notification:', notifyErr);
   }
 
+  // 保護者ポータルv2(Stage2): 振替確定を保護者スレッドへ system メッセージで自動発信する。
+  // ブラウザからのみ fire-and-forget で新設サーバールートを叩く（サーバー実行時は window 無し）。
+  // 紐づけ保護者が居なければ API 側で no-op、失敗しても振替登録は成功扱い（非致命・握りつぶす）。
+  if (typeof window !== 'undefined') {
+    void fetch('/api/mypage/chat/system/transfer', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ toEntryId: toEntry.id }),
+    }).catch(() => {
+      /* 非致命: 振替登録は既に成立しているので通知失敗は無視する */
+    });
+  }
+
   return { from: fromEntry, to: toEntry };
 }
 

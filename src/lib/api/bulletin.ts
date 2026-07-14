@@ -493,9 +493,25 @@ export async function createBulletinPost(
     link_url?: string | null;
     publish_start_at?: string | null;
     publish_end_at?: string | null;
+    /**
+     * 配信先集合（保護者ポータルv2 Stage2）。既定 ['社内']（省略時）で従来動作（社内のみ）。
+     * 保護者/生徒に出すには '保護者' / '生徒' を含める。
+     */
+    audience?: string[];
+    /** 配信範囲。'all'|'grade'|'individual'。省略時 'all'。 */
+    target_scope?: 'all' | 'grade' | 'individual';
+    /** target_scope='grade' の対象学年。 */
+    target_grade?: number[] | null;
+    /** target_scope='individual' の対象生徒ID（bulletin_post_targets に書く）。 */
+    target_student_ids?: string[];
   },
   userId?: string
 ): Promise<BulletinPost> {
+  // 既定は社内のみ（保護者/生徒に漏らさない安全側）。列は省略しても DB 既定で同じになるが、
+  // 明示指定時のみ送ることで「未指定＝従来動作」を保つ。
+  const audience = data.audience && data.audience.length > 0 ? data.audience : ['社内'];
+  const targetScope = data.target_scope ?? 'all';
+
   const { data: post, error } = await supabase
     .from('bulletin_posts')
     .insert({
@@ -507,6 +523,9 @@ export async function createBulletinPost(
       is_pinned: data.is_pinned || false,
       publish_start_at: data.publish_start_at ?? null,
       publish_end_at: data.publish_end_at ?? null,
+      audience,
+      target_scope: targetScope,
+      target_grade: targetScope === 'grade' ? (data.target_grade ?? null) : null,
       created_by: userId || null,
       updated_by: userId || null,
     })
@@ -527,6 +546,19 @@ export async function createBulletinPost(
       );
     }
     throw new Error(`投稿の作成に失敗しました: ${error.message}`);
+  }
+
+  // 個別配信の対象生徒を bulletin_post_targets に書く（individual のときだけ）。
+  if (targetScope === 'individual' && data.target_student_ids && data.target_student_ids.length > 0) {
+    const rows = data.target_student_ids.map((sid) => ({
+      post_id: (post as { id: string }).id,
+      student_id: sid,
+    }));
+    // bulletin_post_targets はまだ生成済み Database 型に含まれないため any 経由で書く。
+    const { error: tErr } = await (supabase as any).from('bulletin_post_targets').insert(rows);
+    if (tErr) {
+      console.warn('個別配信対象の登録に失敗しました:', tErr.message);
+    }
   }
 
   return {
@@ -551,12 +583,34 @@ export async function updateBulletinPost(
     link_url?: string | null;
     publish_start_at?: string | null;
     publish_end_at?: string | null;
+    audience?: string[];
+    target_scope?: 'all' | 'grade' | 'individual';
+    target_grade?: number[] | null;
+    /** 指定時は bulletin_post_targets を丸ごと置き換える（individual のとき）。 */
+    target_student_ids?: string[];
   },
   userId?: string
 ): Promise<BulletinPost> {
-  const updateData: Record<string, unknown> = { ...updates };
+  // target_student_ids は別テーブル更新なので分離する（本体 update には渡さない）。
+  const { target_student_ids, ...rest } = updates;
+  const updateData: Record<string, unknown> = { ...rest };
+  // grade 以外に切り替えたら学年指定はクリアする（取り残し防止）。
+  if (rest.target_scope && rest.target_scope !== 'grade') {
+    updateData.target_grade = null;
+  }
   if (userId) {
     updateData.updated_by = userId;
+  }
+
+  // 個別配信対象の置き換え（scope が individual のときのみ意味を持つ）。
+  // bulletin_post_targets はまだ生成済み Database 型に含まれないため any 経由で書く。
+  if (target_student_ids) {
+    await (supabase as any).from('bulletin_post_targets').delete().eq('post_id', id);
+    if (rest.target_scope === 'individual' && target_student_ids.length > 0) {
+      const rows = target_student_ids.map((sid) => ({ post_id: id, student_id: sid }));
+      const { error: tErr } = await (supabase as any).from('bulletin_post_targets').insert(rows);
+      if (tErr) console.warn('個別配信対象の更新に失敗しました:', tErr.message);
+    }
   }
 
   const { data, error } = await supabase

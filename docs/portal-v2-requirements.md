@@ -156,13 +156,54 @@ Grow で使っている機能がすべて v2 で代替できたら置換完了�
 |---|---|---|
 | **0. 認証スパイク** | ~~案3 PoC~~ **完了（2026-07-14）**。自前生成ES256鍵をSupabaseの JWT Signing Keys にインポート→Rotateで有効化→自前署名JWTを RLS が `auth.uid()` として正しく解決することを実機検証済み | ✅ PoC成功。`experiments/portal-auth-poc/` 参照 |
 | **1. 土台** | portal_accounts / portal_account_students / portal_invitations、ID/PW ログイン、招待発行（アドミン限定）＋受諾フロー、`/mypage` の器、全体スイッチ、失効 RLS | is_test 生徒でログイン→自分の生徒だけ見えるマイページが動き、RLS 境界テストが通る |
-| **2. コミュニケーション** | ④ 1対1チャット（保護者側＋スタッフ側受信/返信）、⑤ 掲示板 audience 拡張、画面内新着通知 | 保護者⇔教室のメッセージ往復＋お知らせ配信が動く（Grow の G1/G2/G3 を代替可能） |
+| **2. コミュニケーション** | ④ 1対1チャット（保護者側＋スタッフ側受信/返信）、テンプレ（欠席/振替/面談）＋自動受付返信、座席表からの振替自動発信、⑤ 掲示板 audience 拡張、画面内＋メール通知。**詳細は §7-2** | 保護者⇔教室のメッセージ往復＋お知らせ配信＋振替自動通知が動く（Grow の G1/G2/G3 を代替可能） |
 | **3. スケジュール** | 時間割・予定ビュー、欠席連絡導線、v1 フォーム取り込み（UI 温存可否をここで判断）、セルフ予約接続 | G4/G5 を代替可能 |
 | **4. 報告書** | 承認ワークフロー＋保護者ビュー（既存データ読み取りから） | G6 を代替可能 |
 | （後続） | LINE 取得後: LINE ログイン＋push チャネル接続。法務（ポリシー/規約/同意フロー）確定→公開ゲート | roadmap M2 に合流 |
 
 - 実施順の理由: Grow 置換の核＝双方向やり取り（C）を最初の機能ドメインに。報告書（R）は承認フローと P1-14 依存があるため最後。
 - 法務（プライバシーポリシー・利用規約・同意取得）は roadmap P3-L のまま。**クローズド期間（アドミンのみ・is_test 中心）は公開に当たらないため走りながら策定**するが、実在保護者を1人でも招待する前に同意フローを入れる。
+
+---
+
+## 7-2. Stage 2 詳細仕様（2026-07-14 確定・UIモック承認済み）
+
+UIモックで合意した設計。実装の契約。
+
+### チャット（生徒ごと1スレッド・相手＝教室）
+- テーブル: `chat_threads`(school_id/student_id/created_by/created_at, student_idにunique) / `chat_thread_participants`(thread_id/portal_account_id) / `chat_messages`(thread_id/**sender_kind: 'staff'|'portal'|'system'**/sender_id nullable/body/**template_kind** text nullable/**payload** jsonb nullable/created_at) / `chat_reads`(thread_id/reader_kind/reader_id/last_read_at)。
+- **単一スレッド維持**。混乱回避は (a)話題フィルタ（すべて/欠席・振替/面談 = template_kind で絞る）(b)テンプレの構造化カード表示。多スレッドは作らない。
+- 保護者からの初回送信でスレッド自動作成。相手は教室（室長）1本、講師個別宛にしない。
+- スタッフ側UI（室長の受信箱・返信）も対で作る。
+
+### テンプレ（構造化メッセージ）
+- 種別 `template_kind`: `absence`(欠席・遅刻) / `transfer_request`(振替希望) / `meeting_request`(面談希望)。payload に日付・時限・理由・振替希望等を持つ。
+- 保護者はクイックアクションから小フォームで送信 → payload 付き chat_message として投稿。
+- **振替ルール（2026-07-14 追加確定）**:
+  - **締切: 対象授業の前日 21:00（JST）まで**。締切後〜当日は振替不可＝**欠席のみ**受け付ける。UIで振替希望を無効化（理由表示）し、**サーバー側でも必ず検証**（クライアント改ざん対策）。
+  - **振替希望時は希望日時を第1〜第3希望まで入力**（第1必須、第2・第3も入力を促す）。payload に `candidates: [{date, slot}...]` として保持し、構造化カードに第1〜第3希望を表示。教室はその中から座席表で組む。
+  - 受付の自動返信は締切判定を文面に反映（例: 締切内=「希望日時を確認し、振替日が決まり次第ご案内します」／当日=「当日のご連絡のため欠席として承りました（振替対象外）」）。
+
+### 自動生成メッセージ（sender_kind='system'）★今回の追加要件
+- **受付の自動返信**: 保護者が absence/transfer_request を送ると、**payloadの実日付を当てはめた受付メッセージをシステムが即時自動投稿**（室長は手打ち不要）。文面はサーバーで生成。
+- **振替確定の座席表からの自動発信**: 座席表で振替コマを組んで確定した瞬間（`src/lib/api/schedule.ts` の `completeHeldTransfer`、既に `transfer_notifications` へpending行をINSERTしている箇所）をフックに、**実際の振替日・時限・科目を当てはめたシステムメッセージを保護者スレッドへ自動投稿**。
+  - フック方式: `completeHeldTransfer` 成功後にクライアントから新設サーバールート（例 `POST /api/mypage/chat/system/transfer`、requireManager）を叩く。サーバーは service role で該当生徒の紐付け保護者アカウント→スレッドを解決し system メッセージ投稿＋メール送信。**紐付け保護者が居なければ no-op**（クローズド期間の大半の生徒はポータル未登録なので静かにスキップ）。座席表本体への変更は「成功後に1関数呼ぶ」だけに留め、失敗しても振替登録は成功扱い（非致命）。
+  - 冪等性: `transfer_notifications.id` または toEntry.id をキーに二重投稿を防ぐ。
+
+### 掲示板 audience 拡張（唯一の既存テーブル変更）
+- `bulletin_posts` に列追加: `audience text[]`（既定 `{社内}`）/ `target_scope text`（'all'|'grade'|'individual', 既定'all'）/ `target_grade int[]`（学年指定用）。個別指定は別テーブル `bulletin_post_targets`(post_id/student_id)。
+- **既定 `{社内}` で既存投稿・既存動作は完全不変**。保護者に出すには明示選択。
+- ポータル既読は既存 `bulletin_reads`（スタッフ前提）を汚さず別テーブル `bulletin_portal_reads`(post_id/portal_account_id/read_at)。
+- ポータル用RLS: `portal` ロールに `grant select on bulletin_posts` ＋ audience に保護者/生徒を含み、かつ target_scope に応じて（all / 自分の紐付け生徒の学年 / bulletin_post_targets に自分の紐付け生徒）該当する投稿のみ可視。
+
+### メール通知（③の追加要件）
+- クローズド期間の通知は画面内バッジ＋**メール**（当初は画面内のみとしていたが、メール通知も付ける方針に変更）。
+- 既存 Resend 基盤に相乗り（`send-inquiry-mail` と同型の Edge Function か、既存の送信経路を再利用）。チャット新着・お知らせ配信・自動メッセージで送る。
+- 通知は1箇所のディスパッチャに集約し、チャネル（画面内/メール/将来LINE）を差し替え可能に。
+
+### 検証
+- Stage 1 と同じ: tsc / vitest / 実RLSエンジンでの境界テスト（ポータルは自分の紐付け生徒のスレッド・お知らせのみ可視、他は不可、退塾失効）。
+- チャット・掲示板audience・自動メッセージ（受付/振替）の各経路をローカルで通す。
 
 ---
 

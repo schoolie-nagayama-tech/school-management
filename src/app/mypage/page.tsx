@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
-import { MessageSquare, CalendarDays, FileText, User } from 'lucide-react';
+import Link from 'next/link';
+import { MessageSquare, CalendarDays, FileText, User, Megaphone } from 'lucide-react';
 import { getPortalContext } from '@/lib/mypage/supabase';
 import { LogoutButton } from '@/components/mypage/LogoutButton';
 
@@ -100,19 +101,26 @@ export default async function MyPage() {
         )}
       </section>
 
-      {/* 今後のドメイン（プレースホルダー） */}
+      {/* メニュー。連絡（チャット）・お知らせは Stage2 で有効化。他は準備中。 */}
       <section>
         <h2 className="mb-2 text-sm font-semibold text-text-heading">メニュー</h2>
         <div className="grid grid-cols-1 gap-3">
-          <PlaceholderCard
+          <LinkCard
+            href="/mypage/chat"
             icon={<MessageSquare className="h-5 w-5" />}
-            title="連絡"
-            description="教室とのやり取り・お知らせ（準備中）"
+            title="教室との連絡"
+            description="欠席・遅刻・振替・面談のご連絡"
+          />
+          <LinkCard
+            href="/mypage/announcements"
+            icon={<Megaphone className="h-5 w-5" />}
+            title="お知らせ"
+            description="教室からのお知らせ"
           />
           <PlaceholderCard
             icon={<CalendarDays className="h-5 w-5" />}
             title="スケジュール"
-            description="時間割・今後の予定・欠席連絡（準備中）"
+            description="時間割・今後の予定（準備中）"
           />
           <PlaceholderCard
             icon={<FileText className="h-5 w-5" />}
@@ -122,6 +130,34 @@ export default async function MyPage() {
         </div>
       </section>
     </div>
+  );
+}
+
+/** 遷移可能なメニューカード。 */
+function LinkCard({
+  href,
+  icon,
+  title,
+  description,
+}: {
+  href: string;
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+}) {
+  return (
+    <Link
+      href={href}
+      className="flex items-center gap-3 rounded-xl border border-border bg-surface-raised p-4 transition-colors hover:bg-surface-hover"
+    >
+      <span className="flex h-9 w-9 items-center justify-center rounded-full bg-surface-hover text-text-muted">
+        {icon}
+      </span>
+      <div>
+        <p className="font-medium text-text-heading">{title}</p>
+        <p className="text-xs text-text-muted">{description}</p>
+      </div>
+    </Link>
   );
 }
 
