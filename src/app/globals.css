@@ -508,6 +508,16 @@ a:focus-visible {
     border-bottom: none;
   }
 
+  /* 講習進捗レポート: A3縦1枚に収める（提案書と同じく名前付きページで向きを固定） */
+  .course-report-print-root,
+  .course-report-print-page {
+    page: coursereport;
+  }
+  @page coursereport {
+    size: A3 portrait;
+    margin: 10mm;
+  }
+
   body {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;

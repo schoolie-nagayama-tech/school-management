@@ -3,10 +3,12 @@
 import { useState, useEffect, useCallback, useMemo, useRef, type CSSProperties } from 'react';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
+import { Printer } from 'lucide-react';
 import { AdminLayout } from '@/components/layouts';
 import { Loading, InlineLoading } from '@/components/ui';
 import { StudentDetailModal } from '@/components/students';
 import { ContextHelp } from '@/components/help/ContextHelp';
+import { CourseProgressReport, AllSchoolsReport } from '@/components/course-progress';
 
 // 重いテーブル本体・ダッシュボードは初期バンドルに含めず、データ取得と並行して遅延ロード
 const CourseProgressDashboard = dynamic(
@@ -61,7 +63,7 @@ import type {
   SeasonType,
   ApplicationColumnType,
 } from '@/types/database';
-import { PROGRESS_COLUMN_GROUPS } from '@/types/database';
+import { PROGRESS_COLUMN_GROUPS, SEASON_LABELS } from '@/types/database';
 import { useRequirePermission, useCanEdit } from '@/hooks/usePermissions';
 import AccessDenied from '@/components/AccessDenied';
 import { useAuth } from '@/contexts/AuthContext';
@@ -105,6 +107,9 @@ export default function CourseProgressPage() {
 
   // 進捗表の生徒名クリックで開く「生徒情報」モーダル
   const [infoStudent, setInfoStudent] = useState<Student | null>(null);
+
+  // レポート印刷プレビュー（A3縦1枚）。'single'=表示中の1教室 / 'all'=全教室横断。
+  const [reportMode, setReportMode] = useState<'none' | 'single' | 'all'>('none');
 
   // データ
   const [students, setStudents] = useState<Student[]>([]);
@@ -879,6 +884,63 @@ export default function CourseProgressPage() {
     );
   }
 
+  // レポート印刷プレビュー: 画面をレポート単体に差し替え、印刷時はこのプレビューだけが用紙に載る。
+  // （提案書印刷と同じ方式。印刷ボタンで window.print() を呼ぶ）
+  if (reportMode !== 'none') {
+    const seasonLabel = SEASON_LABELS[season];
+    const reportToday = new Date().toISOString().slice(0, 10);
+    const schoolName = availableSchools.find((s) => s.id === localSchoolId)?.name ?? '';
+    return (
+      <AdminLayout headerTitle="講習 進捗レポート">
+        {/* ツールバー（印刷には出さない） */}
+        <div className="mb-4 flex items-center gap-2 print:hidden">
+          <button
+            onClick={() => setReportMode('none')}
+            className="px-3 py-1.5 text-xs border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600 transition-colors"
+          >
+            ← 戻る
+          </button>
+          <button
+            onClick={() => window.print()}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-ink text-white rounded-lg hover:bg-ink/80 transition-colors"
+          >
+            <Printer className="w-3.5 h-3.5" />
+            印刷する
+          </button>
+          <span className="text-xs text-gray-400">
+            A3縦1枚 / {seasonLabel}
+            {year}
+            {reportMode === 'single' && schoolName ? ` / ${schoolName}` : ''}
+          </span>
+        </div>
+
+        {/* レポート本体（印刷対象）。用紙イメージに合わせて白背景・中央寄せ。 */}
+        <div className="course-report-print-root mx-auto max-w-[297mm] bg-white p-6 shadow-sm rounded-lg border border-gray-200 print:shadow-none print:border-0 print:rounded-none print:p-0">
+          {reportMode === 'single' ? (
+            <CourseProgressReport
+              schoolName={schoolName}
+              seasonLabel={seasonLabel}
+              year={year}
+              students={students}
+              items={displayItems}
+              progressData={progressData}
+              autoValues={autoValuesData}
+              period={period}
+              today={reportToday}
+            />
+          ) : (
+            <AllSchoolsReport
+              seasonLabel={seasonLabel}
+              year={year}
+              rows={allSchoolsKpis}
+              today={reportToday}
+            />
+          )}
+        </div>
+      </AdminLayout>
+    );
+  }
+
   return (
     <AdminLayout headerTitle="講習 進捗管理">
       <div>
@@ -909,6 +971,15 @@ export default function CourseProgressPage() {
                 title: 'ダッシュボードで全体把握する',
                 description: '教室全体の進捗状況をグラフで確認します。',
                 steps: ['ページ上部のダッシュボードで完了率を確認', '遅れている生徒を素早く特定'],
+              },
+              {
+                title: 'レポートをA3縦1枚で印刷する',
+                description: '表示中の集計をA3縦1枚のレポートとして印刷します。',
+                steps: [
+                  '右上の「レポート印刷」をクリック（1教室表示＝単一校 / すべての教室＝横断サマリー）',
+                  'プレビューで内容を確認',
+                  '「印刷する」でブラウザの印刷ダイアログを開き、用紙をA3・向きを縦にして印刷',
+                ],
               },
             ]}
           />
@@ -967,6 +1038,17 @@ export default function CourseProgressPage() {
                 </button>
               </>
             )}
+            {isManagerOrAbove && (
+              <button
+                onClick={() => setReportMode('single')}
+                disabled={isLoading || autoLoading || displayItems.length === 0}
+                className="inline-flex items-center gap-1 px-3 py-1.5 text-xs border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600 disabled:opacity-50 transition-[background-color,transform] duration-150 ease-out active:scale-[0.97]"
+                title="表示中の教室の集計をA3縦1枚で印刷（集計の読み込み完了後に押せます）"
+              >
+                <Printer className="w-3.5 h-3.5" />
+                レポート印刷
+              </button>
+            )}
             <button
               onClick={() => setShowSettings(!showSettings)}
               className={`px-3 py-1.5 text-xs border rounded-lg transition-[background-color,color,transform] duration-150 ease-out active:scale-[0.97] ${showSettings ? 'border-ink bg-ink text-white' : 'border-gray-200 hover:bg-gray-50 text-gray-600'}`}
@@ -974,6 +1056,19 @@ export default function CourseProgressPage() {
               設定
             </button>
           </div>
+
+          {/* 全教室横断サマリー表示中のレポート印刷（上のアクション群は横断時に隠れるため別置き） */}
+          {showAllSchoolsOverview && isManagerOrAbove && (
+            <button
+              onClick={() => setReportMode('all')}
+              disabled={allSchoolsLoading || allSchoolsKpis.length === 0}
+              className="inline-flex items-center gap-1 px-3 py-1.5 text-xs border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600 disabled:opacity-50 transition-[background-color,transform] duration-150 ease-out active:scale-[0.97]"
+              title="全教室の横断サマリーをA3縦1枚で印刷"
+            >
+              <Printer className="w-3.5 h-3.5" />
+              レポート印刷
+            </button>
+          )}
         </div>
 
         {/* カレンダー同期結果 */}
