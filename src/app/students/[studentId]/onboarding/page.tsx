@@ -599,8 +599,11 @@ export default function OnboardingPage() {
     const parsed = parseDropId(String(e.over.id));
     if (!parsed) return;
     const { day, slotId, teacherId } = parsed;
-    // 掴んでいる科目のコマと違うミニ座席表には置けない。
-    if (day !== payload.day || slotId !== payload.slotId) return;
+    // 掴んでいる科目のコマと違うミニ座席表には置けない（理由を出す）。
+    if (day !== payload.day || slotId !== payload.slotId) {
+      toast.error('この授業は受講科目で選んだ曜日・コマにのみ配置できます');
+      return;
+    }
     // 同じ科目を二重配置しない（通常は配置済みカードが draggable でないので起きない）。
     if (placements.some((p) => p.subjectId === payload.subjectId)) return;
     const slot = timeSlots.find((s) => s.id === slotId);
@@ -640,20 +643,12 @@ export default function OnboardingPage() {
       isClosed: closedDates.has(date),
     });
 
-    if (decision.kind === 'violation') {
+    // 入れられない場合は理由をトースト表示（満席・重複・休講・相性）。noop だけ無反応。
+    if (decision.kind === 'violation' || decision.kind === 'blocked') {
       toast.error(decision.reason);
       return;
     }
-    if (decision.kind === 'noop') {
-      // noop は理由を返さないので、代表的な原因を推定してメッセージ化する。
-      const reason = closedDates.has(date)
-        ? '休講日です'
-        : targetActiveEntries.length >= maxStudents
-          ? '満席です'
-          : '配置できません';
-      toast.error(reason);
-      return;
-    }
+    if (decision.kind === 'noop') return;
 
     // drop 確定: ローカルに配置を積む（担当＝落とした講師）。
     setPlacements((prev) => [

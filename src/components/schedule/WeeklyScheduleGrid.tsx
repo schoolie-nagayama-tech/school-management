@@ -291,7 +291,8 @@ export function WeeklyScheduleGrid(props: WeeklyScheduleGridProps) {
         maxStudentsPerTeacher,
         isClosed: closedDates.includes(overSlot.date),
       });
-      if (decision.kind === 'violation') {
+      // 入れられない場合は理由をトースト表示（満席・重複・休講・相性）。noop だけ無反応。
+      if (decision.kind === 'violation' || decision.kind === 'blocked') {
         onConstraintViolation?.(decision.reason);
         return;
       }

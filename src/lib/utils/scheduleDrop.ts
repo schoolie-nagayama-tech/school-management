@@ -2,8 +2,9 @@ import type { ScheduleEntry } from '@/types/schedule';
 
 /** 生徒カードD&Dのドロップ判定結果（純関数 evaluateStudentDrop の戻り値）。 */
 export type StudentDropDecision =
-  | { kind: 'noop' } // 無反応（同一ブロック・満員・重複・休講など）
-  | { kind: 'violation'; reason: string } // 制約違反（トースト表示してブロック）
+  | { kind: 'noop' } // 無反応（元ブロックへ落とした等。理由表示は不要）
+  | { kind: 'blocked'; reason: string } // 入れられない（満席・重複・休講）。理由をトースト表示
+  | { kind: 'violation'; reason: string } // 相性の制約（指導科目外・除外・性別）。理由をトースト表示
   | { kind: 'drop' }; // ドロップ実行（同コマ内=移動 / 別コマ=振替 は呼び出し側で分岐）
 
 /**
@@ -14,12 +15,15 @@ export type StudentDropDecision =
  * handleStudentEntryDrop）が「同コマ内なら moveScheduleEntry・別コマなら振替」に分岐する。
  *
  * 判定順（先に該当したものを返す）:
- *  1. 休講日 → noop
- *  2. 同一ブロック（同じ日・コマ・講師）へのドロップ → noop
- *  3. 移動先に同じ生徒が既にいる → noop
- *  4. 移動先が満席（有効エントリ数 >= 上限） → noop
+ *  1. 同一ブロック（同じ日・コマ・講師）へのドロップ → noop（無反応・理由不要）
+ *  2. 休講日 → blocked（理由付き）
+ *  3. 移動先に同じ生徒が既にいる → blocked（理由付き）
+ *  4. 移動先が満席（有効エントリ数 >= 上限） → blocked（理由付き）
  *  5. 指導科目外 / 担当除外 / 希望性別不一致 → violation（理由付き）
  *  6. それ以外 → drop
+ *
+ * blocked / violation はどちらも「入れられない＋理由あり」。呼び出し側はどちらも
+ * 理由をトースト表示してブロックする（noop だけは無反応）。
  *
  * targetActiveEntries は「移動先セルの cancelled/transferred_out を除いた現エントリ」を渡す。
  * ドラッグ中のエントリ自身は別ブロック（別講師）なので含まれず、満席の数え上げに自分は入らない。
@@ -40,14 +44,20 @@ export function evaluateStudentDrop(params: {
 }): StudentDropDecision {
   const { entry, target, targetActiveEntries, targetTeacher, maxStudentsPerTeacher, isClosed } =
     params;
-  if (isClosed) return { kind: 'noop' };
+  // 元の講師ブロックへ落としただけ＝何もしない（理由表示は不要）。
   const isSourceBlock =
     entry.entry_date === target.date &&
     entry.time_slot_id === target.slotId &&
     entry.teacher_id === target.teacherId;
   if (isSourceBlock) return { kind: 'noop' };
-  if (targetActiveEntries.some((e) => e.student_id === entry.student_id)) return { kind: 'noop' };
-  if (targetActiveEntries.length >= maxStudentsPerTeacher) return { kind: 'noop' };
+  // 以下は「入れられない」ケース。無反応にせず理由を返す（ユーザーが原因を分かるように）。
+  if (isClosed) return { kind: 'blocked', reason: '休講日のため配置できません' };
+  if (targetActiveEntries.some((e) => e.student_id === entry.student_id)) {
+    return { kind: 'blocked', reason: '同じ生徒が既にこのコマに入っています' };
+  }
+  if (targetActiveEntries.length >= maxStudentsPerTeacher) {
+    return { kind: 'blocked', reason: 'この講師のコマは満席です' };
+  }
   if (targetTeacher) {
     // 指導科目（teachable が空/未設定なら全科目可）
     const teachable = targetTeacher.teachable_subject_ids ?? [];

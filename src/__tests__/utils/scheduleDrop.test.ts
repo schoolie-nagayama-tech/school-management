@@ -59,7 +59,7 @@ describe('evaluateStudentDrop', () => {
     expect(d).toEqual({ kind: 'noop' });
   });
 
-  it('移動先に同じ生徒が既にいるなら noop', () => {
+  it('移動先に同じ生徒が既にいるなら blocked（理由付き）', () => {
     const d = evaluateStudentDrop({
       entry: baseEntry,
       target: sameSlotDifferentTeacher,
@@ -68,10 +68,10 @@ describe('evaluateStudentDrop', () => {
       maxStudentsPerTeacher: 2,
       isClosed: false,
     });
-    expect(d).toEqual({ kind: 'noop' });
+    expect(d).toEqual({ kind: 'blocked', reason: '同じ生徒が既にこのコマに入っています' });
   });
 
-  it('移動先が満員（有効エントリ数 >= 上限）なら noop（＝入れ替えで対応する領域）', () => {
+  it('移動先が満員（有効エントリ数 >= 上限）なら blocked（理由付き）', () => {
     const d = evaluateStudentDrop({
       entry: baseEntry,
       target: sameSlotDifferentTeacher,
@@ -80,10 +80,10 @@ describe('evaluateStudentDrop', () => {
       maxStudentsPerTeacher: 2,
       isClosed: false,
     });
-    expect(d).toEqual({ kind: 'noop' });
+    expect(d).toEqual({ kind: 'blocked', reason: 'この講師のコマは満席です' });
   });
 
-  it('1対1（上限1）で移動先に既に生徒がいれば noop', () => {
+  it('1対1（上限1）で移動先に既に生徒がいれば blocked（理由付き）', () => {
     const d = evaluateStudentDrop({
       entry: baseEntry,
       target: sameSlotDifferentTeacher,
@@ -92,10 +92,10 @@ describe('evaluateStudentDrop', () => {
       maxStudentsPerTeacher: 1,
       isClosed: false,
     });
-    expect(d).toEqual({ kind: 'noop' });
+    expect(d).toEqual({ kind: 'blocked', reason: 'この講師のコマは満席です' });
   });
 
-  it('休講日への移動は noop', () => {
+  it('休講日への移動は blocked（理由付き）', () => {
     const d = evaluateStudentDrop({
       entry: baseEntry,
       target: sameSlotDifferentTeacher,
@@ -104,7 +104,7 @@ describe('evaluateStudentDrop', () => {
       maxStudentsPerTeacher: 2,
       isClosed: true,
     });
-    expect(d).toEqual({ kind: 'noop' });
+    expect(d).toEqual({ kind: 'blocked', reason: '休講日のため配置できません' });
   });
 
   it('指導科目外の講師は violation（理由付き）', () => {
