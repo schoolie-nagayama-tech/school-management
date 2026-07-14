@@ -928,10 +928,14 @@ function FeedCard({
         </div>
       )}
 
-      {/* 詳細リンク */}
+      {/* 詳細リンク: このセッションの教材(student_textbook)の進行表を直接開く（一覧ではなく該当教材へ） */}
       {studentId && !compact && (
         <Link
-          href={`/students/${studentId}/progress`}
+          href={
+            st?.id
+              ? `/students/${studentId}/progress?tb=${st.id}`
+              : `/students/${studentId}/progress`
+          }
           className="block mt-2 text-[11px] text-gray-400 hover:text-[#1e3a5f]"
           data-no-swipe
         >
