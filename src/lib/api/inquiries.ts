@@ -400,6 +400,42 @@ export async function getContactedInquiryIds(schoolId: string | string[]): Promi
   return new Set(rows.map((r) => r.inquiry_id));
 }
 
+/**
+ * 問合せごとの「最後に実際にフォローした日時」を返す（inquiry_id → 最新 contacted_at の ISO）。
+ *
+ * リマインドの「体験後フォロー完了判定」用。ステータス変更・資料発送の自動記録は
+ * フォロー行動ではないので除外し、tel / email / sms / visit / interview / other のみを対象にする。
+ *
+ * @param schoolId 単一または複数の school_id
+ */
+export async function getLastFollowupDates(
+  schoolId: string | string[]
+): Promise<Map<string, string>> {
+  const schoolIds = Array.isArray(schoolId) ? schoolId : [schoolId];
+
+  const rows = await fetchAllPaged<{ inquiry_id: string; contacted_at: string; method: string }>(
+    (from, to) =>
+      supabase
+        .from('inquiry_contacts')
+        .select('inquiry_id, contacted_at, method')
+        .in('school_id', schoolIds)
+        .order('inquiry_id', { ascending: true })
+        .range(from, to)
+  );
+
+  // 自動記録（ステータス変更・資料発送）はフォロー行動ではないので除外
+  const BOOKKEEPING = new Set(['status_change', 'material_sent']);
+
+  // inquiry_id ごとに最新の contacted_at を残す
+  const map = new Map<string, string>();
+  for (const r of rows) {
+    if (!r.contacted_at || BOOKKEEPING.has(r.method)) continue;
+    const prev = map.get(r.inquiry_id);
+    if (!prev || r.contacted_at > prev) map.set(r.inquiry_id, r.contacted_at);
+  }
+  return map;
+}
+
 // ============================================================
 // CSV一括取込
 // ============================================================

@@ -89,12 +89,16 @@ function displayName(inquiry: Inquiry): string {
  * @param inquiries 対象の問合せ（deleted_at 除外済みを想定）
  * @param contactedIds コンタクト履歴が 1 件以上ある inquiry_id の集合（初回未接触判定用）
  * @param now 基準日時
+ * @param lastFollowupByInquiry inquiry_id → 最後に実際にフォローした日時(ISO)。
+ *   体験後フォローが「済み」かどうか（体験日より後にフォロー記録があるか）の判定に使う。
+ *   省略時は「フォロー記録なし」とみなす（＝従来どおり体験後は催促し続ける）。
  * @returns severity(danger>warning>info)→daysSince 降順で並んだリマインド配列
  */
 export function computeInquiryReminders(
   inquiries: Inquiry[],
   contactedIds: Set<string>,
-  now: Date
+  now: Date,
+  lastFollowupByInquiry: Map<string, string> = new Map()
 ): InquiryReminder[] {
   const reminders: InquiryReminder[] = [];
 
@@ -181,8 +185,14 @@ export function computeInquiryReminders(
     if (trialAt && (inquiry.status === 'in_progress' || inquiry.status === 'trial_done')) {
       const oneDayBefore = new Date(now.getTime() - MS_PER_DAY);
       const trialDays = daysDiff(trialAt, now);
+
+      // 体験日より後に実際のフォロー（tel/メール/面談等）を記録済みなら「フォロー完了」
+      // とみなして催促しない。相手の返事待ちで既に動いている案件を毎回出さないため。
+      const lastFollowup = parseDate(lastFollowupByInquiry.get(inquiry.id));
+      const followedUpAfterTrial = !!lastFollowup && lastFollowup.getTime() > trialAt.getTime();
+
       // 体験日が直近 N 日以内のものだけ（古い体験はフォロー対象外）
-      if (trialAt < oneDayBefore && trialDays <= REMINDER_WINDOW_DAYS) {
+      if (!followedUpAfterTrial && trialAt < oneDayBefore && trialDays <= REMINDER_WINDOW_DAYS) {
         reminders.push({
           inquiryId: inquiry.id,
           schoolId: inquiry.school_id,

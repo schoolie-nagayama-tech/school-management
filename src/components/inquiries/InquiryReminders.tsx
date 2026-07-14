@@ -11,7 +11,7 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { AlertTriangle, Clock, Mail, Phone } from 'lucide-react';
 import { getInquiries } from '@/lib/api/inquiries';
-import { getContactedInquiryIds } from '@/lib/api/inquiries';
+import { getContactedInquiryIds, getLastFollowupDates } from '@/lib/api/inquiries';
 import {
   computeInquiryReminders,
   type InquiryReminder,
@@ -102,15 +102,16 @@ export function InquiryReminders({ schoolIds, schools, onReady }: Props): JSX.El
 
     const load = async () => {
       try {
-        // inquiries（全ステータス）と contactedIds を並列取得
-        const [inquiries, contactedIds] = await Promise.all([
+        // inquiries（全ステータス）と contactedIds・最終フォロー日時を並列取得
+        const [inquiries, contactedIds, lastFollowup] = await Promise.all([
           getInquiries(schoolIds), // フィルタなし: 全ステータス
           getContactedInquiryIds(schoolIds),
+          getLastFollowupDates(schoolIds),
         ]);
 
         if (cancelled) return;
 
-        const result = computeInquiryReminders(inquiries, contactedIds, new Date());
+        const result = computeInquiryReminders(inquiries, contactedIds, new Date(), lastFollowup);
         setReminders(result);
       } catch {
         // リマインドは補助表示のため、エラー時は静かに空にする
