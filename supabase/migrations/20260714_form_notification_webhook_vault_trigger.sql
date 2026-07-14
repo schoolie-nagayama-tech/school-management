@@ -7,6 +7,10 @@
 --
 -- ペイロード形式(type/table/schema/record/old_record)は supabase_functions.http_request が
 -- 送っていたものと同一にし、send-form-notification 側(body.record を参照)の実装は変更不要。
+--
+-- URL は現行本番(東京: bniistrbylypnwpfqszb)の Functions エンドポイントに合わせている。
+-- 注意: base_schema.sql の組み込みトリガーは旧シンガポール(mzxysqkuuxcfffwlfsvj)の URL/JWT を
+-- 残したままで実態(東京)と乖離している。base_schema 側の是正は別タスク。
 
 create or replace function public.trg_send_form_notification()
 returns trigger
@@ -36,7 +40,7 @@ begin
   );
 
   perform net.http_post(
-    url := 'https://mzxysqkuuxcfffwlfsvj.supabase.co/functions/v1/send-form-notification',
+    url := 'https://bniistrbylypnwpfqszb.supabase.co/functions/v1/send-form-notification',
     body := payload,
     headers := jsonb_build_object(
       'Content-Type', 'application/json',
