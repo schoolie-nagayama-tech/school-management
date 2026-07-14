@@ -45,6 +45,13 @@ const DELAY_MILESTONES = new Set([3, 5, 7, 10, 14, 21, 30]);
  */
 const REMINDER_WINDOW_DAYS = 60;
 
+/**
+ * 体験後フォローを一度記録しても、その最終フォローからこの日数以上 音沙汰がなければ
+ * 「返事待ちのまま放置」とみなして再度リマインドを出す。
+ * （フォロー直後は静かにし、停滞したら再フォローを促すためのしきい値。調整可）
+ */
+const TRIAL_FOLLOWUP_STALE_DAYS = 7;
+
 /** severity の重み（ソート用） */
 const SEVERITY_ORDER: Record<InquiryReminder['severity'], number> = {
   danger: 0,
@@ -186,19 +193,29 @@ export function computeInquiryReminders(
       const oneDayBefore = new Date(now.getTime() - MS_PER_DAY);
       const trialDays = daysDiff(trialAt, now);
 
-      // 体験日より後に実際のフォロー（tel/メール/面談等）を記録済みなら「フォロー完了」
-      // とみなして催促しない。相手の返事待ちで既に動いている案件を毎回出さないため。
+      // 体験日より後に実際のフォロー（tel/メール/面談等）を記録済みか。
+      // 記録済みでも、その最終フォローから STALE 日以上 音沙汰がなければ「放置」と
+      // みなして再度出す（フォロー直後だけ静かにし、停滞を再検知する）。
       const lastFollowup = parseDate(lastFollowupByInquiry.get(inquiry.id));
       const followedUpAfterTrial = !!lastFollowup && lastFollowup.getTime() > trialAt.getTime();
+      const followupDays = lastFollowup ? daysDiff(lastFollowup, now) : null;
+      const followupIsRecent = followupDays !== null && followupDays < TRIAL_FOLLOWUP_STALE_DAYS;
+      // 直近フォローがあり、かつそれが最近なら催促しない（既に動いている案件）
+      const suppress = followedUpAfterTrial && followupIsRecent;
 
       // 体験日が直近 N 日以内のものだけ（古い体験はフォロー対象外）
-      if (!followedUpAfterTrial && trialAt < oneDayBefore && trialDays <= REMINDER_WINDOW_DAYS) {
+      if (!suppress && trialAt < oneDayBefore && trialDays <= REMINDER_WINDOW_DAYS) {
+        // フォロー済みだが停滞（stale）なら、再フォローを促すメッセージに切り替える
+        const message =
+          followedUpAfterTrial && followupDays !== null
+            ? `フォロー後 返事待ちのまま${followupDays}日（体験から${trialDays}日）`
+            : `体験後フォロー未完了（体験から${trialDays}日）`;
         reminders.push({
           inquiryId: inquiry.id,
           schoolId: inquiry.school_id,
           name,
           kind: 'trial_followup',
-          message: `体験後フォロー未完了（体験から${trialDays}日）`,
+          message,
           daysSince: trialDays,
           severity: 'warning',
         });
