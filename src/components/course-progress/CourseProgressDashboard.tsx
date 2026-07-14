@@ -3,8 +3,13 @@
 import { useMemo, useState, useRef, useCallback, type CSSProperties } from 'react';
 import type { CourseProgressItem, StudentCourseProgress, CoursePrepPeriod } from '@/types/database';
 import type { Student } from '@/types/database';
-import { GRADE_LABELS } from '@/types/database';
 import type { AutoValues } from '@/lib/api/courseProgress';
+import {
+  computeDashboardAggregates,
+  getSchoolCategory,
+  CATEGORY_LABELS,
+  type SchoolCategory,
+} from '@/lib/coursePrepKpis';
 import { HelpTooltip } from '@/components/ui/Tooltip';
 import { AlertTriangle, ChevronDown } from 'lucide-react';
 
@@ -21,22 +26,6 @@ interface CourseProgressDashboardProps {
     updates: Partial<Pick<CoursePrepPeriod, 'schedule_start_date' | 'schedule_end_date'>>
   ) => void;
 }
-
-type SchoolCategory = 'elementary' | 'middle' | 'high' | 'other';
-
-function getSchoolCategory(grade: number): SchoolCategory {
-  if (grade >= 1 && grade <= 6) return 'elementary';
-  if (grade >= 7 && grade <= 9) return 'middle';
-  if (grade >= 10 && grade <= 12) return 'high';
-  return 'other';
-}
-
-const CATEGORY_LABELS: Record<SchoolCategory, string> = {
-  elementary: '小学生',
-  middle: '中学生',
-  high: '高校生',
-  other: 'その他',
-};
 
 const CATEGORY_COLORS: Record<
   SchoolCategory,
@@ -57,20 +46,6 @@ const CATEGORY_COLORS: Record<
   },
   other: { bg: 'bg-gray-50', border: 'border-gray-200', text: 'text-gray-700', accent: '#6b7280' },
 };
-
-// 教科別分析の表示順。ここに無い教科は末尾に日本語名順で並ぶ。
-const SUBJECT_ORDER = [
-  '国語',
-  '算数',
-  '数学',
-  '英語',
-  '英検',
-  '理科',
-  '社会',
-  '理社',
-  '小論文',
-  '作文',
-];
 
 // =============================================
 // onBlur保存のnumber input（ローカルstate保持）
@@ -139,22 +114,6 @@ function BlurSaveInput({
   );
 }
 
-// 項目名を柔軟にマッチ
-function findItemByKeywords(
-  items: CourseProgressItem[],
-  keywords: string[]
-): CourseProgressItem | undefined {
-  for (const kw of keywords) {
-    const exact = items.find((i) => i.name === kw);
-    if (exact) return exact;
-  }
-  for (const kw of keywords) {
-    const partial = items.find((i) => i.name.includes(kw));
-    if (partial) return partial;
-  }
-  return undefined;
-}
-
 export function CourseProgressDashboard({
   students,
   items,
@@ -173,353 +132,42 @@ export function CourseProgressDashboard({
     'overall'
   );
 
-  const budgetKoma = period?.budget_koma || 0;
-  const targetKoma = period?.target_koma || 0;
-  const expectedRate = period?.expected_rate || 0; // 0-100 の整数
-
-  // --- 項目の検索 ---
-  const proposedKomaItem = useMemo(() => {
-    const byAutoSource = items.find((i) => i.auto_source === 'proposed_extra');
-    if (byAutoSource) return byAutoSource;
-    return findItemByKeywords(items, [
-      '提案増コマ',
-      '提示増コマ',
-      '提案増コマ回数',
-      '提示増コマ回数',
-    ]);
-  }, [items]);
-
-  const decidedKomaItem = useMemo(() => {
-    // 申込増コマ自動列（提案書の applied_koma 合計 - 通常回数）があれば最優先で採用。
-    // これにより「提案済みにして入力した申込コマ」が決定コマ＝取得率に直結する。
-    const byAutoSource = items.find(
-      (i) => i.id !== proposedKomaItem?.id && i.auto_source === 'applied_extra'
-    );
-    if (byAutoSource) return byAutoSource;
-    return (
-      items.find(
-        (i) =>
-          i.id !== proposedKomaItem?.id &&
-          i.column_type === 'number' &&
-          (i.name.includes('増コマ回数') || i.name === '増コマ回数決定')
-      ) ||
-      findItemByKeywords(
-        items.filter((i) => i.id !== proposedKomaItem?.id),
-        ['増コマ回数決定', '増コマ決定', '決定コマ']
-      )
-    );
-  }, [items, proposedKomaItem]);
-
-  // --- 面談実施チェック項目（生徒面談・父母面談を分離） ---
-  const studentInterviewItem = useMemo(() => {
-    return findItemByKeywords(items, ['生徒面談実施', '生徒面談']);
-  }, [items]);
-
-  const parentInterviewItem = useMemo(() => {
-    return findItemByKeywords(items, ['父母面談実施', '保護者面談実施', '父母面談', '保護者面談']);
-  }, [items]);
-
-  const studentInterviewCount = useMemo(() => {
-    if (!studentInterviewItem) return 0;
-    let count = 0;
-    for (const s of students) {
-      const d = progressData.find(
-        (p) => p.student_id === s.id && p.item_id === studentInterviewItem.id
-      );
-      if (d?.status === 'completed') count++;
-    }
-    return count;
-  }, [studentInterviewItem, students, progressData]);
-
-  const parentInterviewCount = useMemo(() => {
-    if (!parentInterviewItem) return 0;
-    let count = 0;
-    for (const s of students) {
-      const d = progressData.find(
-        (p) => p.student_id === s.id && p.item_id === parentInterviewItem.id
-      );
-      if (d?.status === 'completed') count++;
-    }
-    return count;
-  }, [parentInterviewItem, students, progressData]);
-
-  // --- 教科別コマ合計 ---
-  const subjectItems = useMemo(
-    () => items.filter((i) => i.column_group === '教科別' && i.column_type === 'number'),
-    [items]
+  // --- 集計は共通の純関数に一元化（印刷レポートと同じ数字を保証） ---
+  // today は期日超過の基準日。レンダーごとに new Date() を作ると useMemo が毎回無効化されるため、
+  // 日付（YYYY-MM-DD）に丸めた文字列を1回だけ確定させる。
+  const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
+  const agg = useMemo(
+    () =>
+      computeDashboardAggregates(students, items, progressData, autoValues || {}, period, today),
+    [students, items, progressData, autoValues, period, today]
   );
 
-  const studentSubjectTotals = useMemo(() => {
-    const totals: Record<string, number> = {};
-    for (const s of students) {
-      let sum = 0;
-      for (const item of subjectItems) {
-        if (item.auto_source) {
-          const sv = autoValues?.[s.id];
-          if (sv) {
-            if (item.auto_source === 'regular_weekly') sum += sv.regular_weekly;
-            else if (item.auto_source === 'course_sessions') sum += sv.course_sessions;
-            else if (item.auto_source === 'subject_proposal') {
-              // 科目名マッチング
-              const sp = sv.subject_proposals;
-              if (sp) {
-                if (sp[item.name] !== undefined) {
-                  sum += sp[item.name];
-                } else {
-                  for (const [subject, count] of Object.entries(sp)) {
-                    if (item.name.includes(subject)) {
-                      sum += count;
-                      break;
-                    }
-                  }
-                }
-              }
-            }
-          }
-        } else {
-          const d = progressData.find((p) => p.student_id === s.id && p.item_id === item.id);
-          if (d?.number_value != null) sum += d.number_value;
-        }
-      }
-      totals[s.id] = sum;
-    }
-    return totals;
-  }, [students, subjectItems, progressData, autoValues]);
+  const {
+    proposedKomaItem,
+    decidedKomaItem,
+    studentInterviewItem,
+    parentInterviewItem,
+    studentInterviewCount,
+    parentInterviewCount,
+    totalProposed,
+    totalDecided,
+    actualRatePct,
+    proposedStudentCount,
+    decidedStudentCount,
+    expectedKoma,
+    budgetKoma,
+    targetKoma,
+    expectedRate,
+    budgetRate,
+    targetRate,
+    categoryAnalysis,
+    subjectAnalysis,
+  } = agg;
+  // JSX の既存参照名に合わせて期日超過をまとめ直す
+  const overdueData = { items: agg.overdueItems, list: agg.overdueList };
 
-  // --- 生徒ごと提案増コマ ---
-  const studentProposedKoma = useMemo(() => {
-    const vals: Record<string, number> = {};
-    for (const s of students) {
-      if (proposedKomaItem) {
-        if (proposedKomaItem.auto_source === 'proposed_extra') {
-          const sv = autoValues?.[s.id];
-          const proposalTotal = sv?.proposal_total ?? 0;
-          const courseSessions = sv?.course_sessions ?? 0;
-          vals[s.id] = Math.max(0, proposalTotal - courseSessions);
-        } else {
-          const d = progressData.find(
-            (p) => p.student_id === s.id && p.item_id === proposedKomaItem.id
-          );
-          vals[s.id] = d?.number_value ?? 0;
-        }
-      } else {
-        vals[s.id] = 0;
-      }
-    }
-    return vals;
-  }, [students, proposedKomaItem, progressData, autoValues, studentSubjectTotals]);
-
-  // --- 生徒ごと決定増コマ ---
-  const studentDecidedKoma = useMemo(() => {
-    const vals: Record<string, number> = {};
-    for (const s of students) {
-      if (decidedKomaItem) {
-        if (decidedKomaItem.auto_source === 'applied_extra') {
-          // 申込増コマ = 提案書の申込コマ合計 - 講習期間の通常回数
-          const sv = autoValues?.[s.id];
-          const appliedTotal = sv?.applied_total ?? 0;
-          const courseSessions = sv?.course_sessions ?? 0;
-          vals[s.id] = Math.max(0, appliedTotal - courseSessions);
-        } else {
-          const d = progressData.find(
-            (p) => p.student_id === s.id && p.item_id === decidedKomaItem.id
-          );
-          vals[s.id] = d?.number_value ?? 0;
-        }
-      } else {
-        vals[s.id] = 0;
-      }
-    }
-    return vals;
-  }, [students, decidedKomaItem, progressData, autoValues]);
-
-  // --- 生徒ごと「決定コマの記録があるか」 ---
-  // 申込件数(申込済)のカウント用。手入力列は 0 を明示入力した生徒も「申込済(コマ0で確定)」として数えるため、
-  // number_value が記録されていれば（0でも）true。自動列は明示的な0入力の概念がないので値>0を記録ありとみなす。
-  const studentDecidedHasValue = useMemo(() => {
-    const vals: Record<string, boolean> = {};
-    for (const s of students) {
-      if (!decidedKomaItem) {
-        vals[s.id] = false;
-        continue;
-      }
-      if (decidedKomaItem.auto_source) {
-        vals[s.id] = (studentDecidedKoma[s.id] ?? 0) > 0;
-      } else {
-        const d = progressData.find(
-          (p) => p.student_id === s.id && p.item_id === decidedKomaItem.id
-        );
-        vals[s.id] = d?.number_value != null;
-      }
-    }
-    return vals;
-  }, [students, decidedKomaItem, progressData, studentDecidedKoma]);
-
-  // --- 集計 ---
-  // 進捗率（%整数）。0除算は0扱い。進捗状況カードの各行と学年別内訳の取得率で共用する。
+  // 進捗率（%整数）。0除算は0扱い。進捗状況カードの各行で使う。
   const pct = (n: number, d: number) => (d > 0 ? Math.round((n / d) * 100) : 0);
-  const totalProposed = Object.values(studentProposedKoma).reduce((a, b) => a + b, 0);
-  const totalDecided = Object.values(studentDecidedKoma).reduce((a, b) => a + b, 0);
-  const actualRate = totalProposed > 0 ? totalDecided / totalProposed : 0;
-  const actualRatePct = Math.round(actualRate * 100);
-  // 予想: 手動入力の予想取得率 × 提案合計
-  const expectedRateDecimal = expectedRate / 100;
-  const expectedKoma = Math.round(totalProposed * expectedRateDecimal);
-  // 実績: 実際の取得率 × 提案合計 = totalDecided
-  const budgetRate = budgetKoma > 0 ? totalDecided / budgetKoma : 0;
-  const targetRate = targetKoma > 0 ? totalDecided / targetKoma : 0;
-  const proposedStudentCount = Object.values(studentProposedKoma).filter((v) => v > 0).length;
-  // 申込済件数: 決定コマの記録がある生徒数（手入力0コマも申込済として数える）。
-  // テーブル列フッターの「入力済み(number_value!=null)」と数え方を統一する。
-  const decidedStudentCount = Object.values(studentDecidedHasValue).filter(Boolean).length;
-
-  // --- 期日超過タスク ---
-  const today = new Date().toISOString().slice(0, 10);
-  const overdueData = useMemo(() => {
-    const checkItems = items.filter(
-      (i) => i.column_type === 'check' && i.deadline && i.deadline < today && !i.is_hidden
-    );
-    const overdueList: { item: CourseProgressItem; student: Student }[] = [];
-    for (const item of checkItems) {
-      for (const s of students) {
-        const d = progressData.find((p) => p.student_id === s.id && p.item_id === item.id);
-        if (!d || (d.status !== 'completed' && d.status !== 'not_applicable')) {
-          overdueList.push({ item, student: s });
-        }
-      }
-    }
-    return { items: checkItems, list: overdueList };
-  }, [items, students, progressData, today]);
-
-  // --- 学校種別分析 ---
-  const categoryAnalysis = useMemo(() => {
-    const categories: SchoolCategory[] = ['elementary', 'middle', 'high'];
-    return categories
-      .map((cat) => {
-        const catStudents = students.filter((s) => getSchoolCategory(s.grade) === cat);
-        if (catStudents.length === 0) return null;
-        const catProposed = catStudents.reduce(
-          (sum, s) => sum + (studentProposedKoma[s.id] ?? 0),
-          0
-        );
-        const catDecided = catStudents.reduce((sum, s) => sum + (studentDecidedKoma[s.id] ?? 0), 0);
-        const catRate = catProposed > 0 ? catDecided / catProposed : 0;
-        const catProposedCount = catStudents.filter(
-          (s) => (studentProposedKoma[s.id] ?? 0) > 0
-        ).length;
-        // 申込済件数は「決定コマの記録あり」で数える（0コマ確定も申込済に含める）
-        const catDecidedCount = catStudents.filter((s) => studentDecidedHasValue[s.id]).length;
-
-        const gradeBreakdown: {
-          grade: number;
-          label: string;
-          count: number;
-          proposed: number;
-          decided: number;
-          avgProposed: number;
-          avgDecided: number;
-          rate: number;
-        }[] = [];
-        const gradeSet = Array.from(new Set(catStudents.map((s) => s.grade))).sort((a, b) => a - b);
-        for (const grade of gradeSet) {
-          const gs = catStudents.filter((s) => s.grade === grade);
-          const gProposed = gs.reduce((sum, s) => sum + (studentProposedKoma[s.id] ?? 0), 0);
-          const gDecided = gs.reduce((sum, s) => sum + (studentDecidedKoma[s.id] ?? 0), 0);
-          gradeBreakdown.push({
-            grade,
-            label: GRADE_LABELS[grade] || `${grade}`,
-            count: gs.length,
-            proposed: gProposed,
-            decided: gDecided,
-            // 提案増コマ平均（その学年の在籍1人あたりの提案コマ数）
-            avgProposed: gs.length > 0 ? gProposed / gs.length : 0,
-            // 取得増コマ平均（その学年の在籍1人あたりの決定コマ数）
-            avgDecided: gs.length > 0 ? gDecided / gs.length : 0,
-            // 取得率（決定コマ ÷ 提案コマ）。提案0の学年は0%扱い。
-            rate: gProposed > 0 ? gDecided / gProposed : 0,
-          });
-        }
-
-        return {
-          category: cat,
-          label: CATEGORY_LABELS[cat],
-          colors: CATEGORY_COLORS[cat],
-          studentCount: catStudents.length,
-          proposedCount: catProposedCount,
-          decidedCount: catDecidedCount,
-          totalProposed: catProposed,
-          totalDecided: catDecided,
-          acquisitionRate: catRate,
-          avgProposed: catStudents.length > 0 ? catProposed / catStudents.length : 0,
-          // 平均取得増コマ数（在籍1人あたりの決定コマ数）
-          avgDecided: catStudents.length > 0 ? catDecided / catStudents.length : 0,
-          gradeBreakdown,
-        };
-      })
-      .filter((x): x is Exclude<typeof x, null> => x !== null);
-  }, [students, studentProposedKoma, studentDecidedKoma, studentDecidedHasValue]);
-
-  // --- 教科別 提案 vs 取得（提案書ベース） ---
-  // 提案書の subject_proposals（提案コマ）と subject_applied（申込＝取得コマ）を教科ごとに全生徒合算する。
-  // 提案コマ・取得コマは結合グループを考慮済みの値が auto_values で届くため、ここでは素直に加算するだけでよい。
-  // 「全体」に加えて学校種別（小／中／高）でも内訳を集計し、タブで切り替えて見られるようにする。
-  type SubjectRow = { subject: string; proposed: number; applied: number; rate: number };
-  const subjectAnalysis = useMemo(() => {
-    type Agg = Record<string, { proposed: number; applied: number }>;
-    const overall: Agg = {};
-    const byCat: Record<'elementary' | 'middle' | 'high', Agg> = {
-      elementary: {},
-      middle: {},
-      high: {},
-    };
-    const add = (agg: Agg, subject: string, proposed: number, applied: number) => {
-      if (!agg[subject]) agg[subject] = { proposed: 0, applied: 0 };
-      agg[subject].proposed += proposed;
-      agg[subject].applied += applied;
-    };
-    for (const s of students) {
-      const sv = autoValues?.[s.id];
-      if (!sv) continue;
-      const cat = getSchoolCategory(s.grade);
-      // 提案・申込どちらかに登場する教科をすべて対象にする（提案0・申込のみの教科も拾う）
-      const subjects = Array.from(
-        new Set([
-          ...Object.keys(sv.subject_proposals ?? {}),
-          ...Object.keys(sv.subject_applied ?? {}),
-        ])
-      );
-      for (const subject of subjects) {
-        const p = sv.subject_proposals?.[subject] ?? 0;
-        const a = sv.subject_applied?.[subject] ?? 0;
-        add(overall, subject, p, a);
-        if (cat === 'elementary' || cat === 'middle' || cat === 'high')
-          add(byCat[cat], subject, p, a);
-      }
-    }
-    // 既知順（SUBJECT_ORDER）→ それ以外は日本語名順に並べて行配列化する
-    const toRows = (agg: Agg): SubjectRow[] =>
-      Object.entries(agg)
-        .map(([subject, v]) => ({
-          subject,
-          proposed: v.proposed,
-          applied: v.applied,
-          rate: v.proposed > 0 ? v.applied / v.proposed : 0,
-        }))
-        .sort((a, b) => {
-          const ia = SUBJECT_ORDER.indexOf(a.subject);
-          const ib = SUBJECT_ORDER.indexOf(b.subject);
-          if (ia !== -1 && ib !== -1) return ia - ib;
-          if (ia !== -1) return -1;
-          if (ib !== -1) return 1;
-          return a.subject.localeCompare(b.subject, 'ja');
-        });
-    return {
-      overall: toRows(overall),
-      elementary: toRows(byCat.elementary),
-      middle: toRows(byCat.middle),
-      high: toRows(byCat.high),
-    };
-  }, [students, autoValues]);
 
   const hasScheduleDates = period?.schedule_start_date && period?.schedule_end_date;
 
@@ -942,14 +590,17 @@ export function CourseProgressDashboard({
           >
             <div className="flex items-center gap-2">
               <span className="text-xs font-medium text-text-muted">学校種別分析</span>
-              {categoryAnalysis.map((cat) => (
-                <span
-                  key={cat.category}
-                  className={`text-[10px] px-1.5 py-0.5 rounded-full ${cat.colors.bg} ${cat.colors.text}`}
-                >
-                  {cat.label} {cat.totalDecided}/{cat.totalProposed}
-                </span>
-              ))}
+              {categoryAnalysis.map((cat) => {
+                const colors = CATEGORY_COLORS[cat.category];
+                return (
+                  <span
+                    key={cat.category}
+                    className={`text-[10px] px-1.5 py-0.5 rounded-full ${colors.bg} ${colors.text}`}
+                  >
+                    {cat.label} {cat.totalDecided}/{cat.totalProposed}
+                  </span>
+                );
+              })}
             </div>
             <ChevronDown
               className={`w-4 h-4 text-text-faint transition-[transform] duration-150 ease-out ${categoryOpen ? 'rotate-180' : ''}`}
@@ -959,110 +610,113 @@ export function CourseProgressDashboard({
           {categoryOpen && (
             <div className="px-4 pb-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {/* 学校種別カードを stagger-item で順次フェードイン */}
-              {categoryAnalysis.map((cat, idx) => (
-                <div
-                  key={cat.category}
-                  className={`stagger-item ${cat.colors.bg} rounded-xl border ${cat.colors.border} p-4`}
-                  style={{ '--stagger-index': idx } as CSSProperties}
-                >
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <span className={`text-sm font-bold ${cat.colors.text}`}>{cat.label}</span>
-                      <span className="text-xs text-text-faint">{cat.studentCount}名</span>
+              {categoryAnalysis.map((cat, idx) => {
+                const colors = CATEGORY_COLORS[cat.category];
+                return (
+                  <div
+                    key={cat.category}
+                    className={`stagger-item ${colors.bg} rounded-xl border ${colors.border} p-4`}
+                    style={{ '--stagger-index': idx } as CSSProperties}
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <span className={`text-sm font-bold ${colors.text}`}>{cat.label}</span>
+                        <span className="text-xs text-text-faint">{cat.studentCount}名</span>
+                      </div>
+                      <span className={`text-xs font-medium ${colors.text}`}>
+                        取得率 {Math.round(cat.acquisitionRate * 100)}%
+                      </span>
                     </div>
-                    <span className={`text-xs font-medium ${cat.colors.text}`}>
-                      取得率 {Math.round(cat.acquisitionRate * 100)}%
-                    </span>
-                  </div>
 
-                  <div className="grid grid-cols-4 gap-2 mb-3">
-                    <div className="text-center">
-                      <div className="text-[10px] text-text-muted">提案</div>
-                      <div className={`text-sm font-bold ${cat.colors.text}`}>
-                        {cat.totalProposed}
-                      </div>
-                      <div className="text-[10px] text-text-faint">{cat.proposedCount}名</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-[10px] text-text-muted">決定</div>
-                      <div className={`text-sm font-bold ${cat.colors.text}`}>
-                        {cat.totalDecided}
-                      </div>
-                      <div className="text-[10px] text-text-faint">{cat.decidedCount}名</div>
-                    </div>
-                    <div className="text-center">
-                      <div
-                        className="text-[10px] text-text-muted"
-                        title="在籍1人あたりの提案コマ数"
-                      >
-                        平均提案
-                      </div>
-                      <div className={`text-sm font-bold ${cat.colors.text}`}>
-                        {cat.avgProposed.toFixed(1)}
-                      </div>
-                      <div className="text-[10px] text-text-faint">コマ/人</div>
-                    </div>
-                    <div className="text-center">
-                      <div
-                        className="text-[10px] text-text-muted"
-                        title="在籍1人あたりの取得（決定）増コマ数"
-                      >
-                        平均取得
-                      </div>
-                      <div className={`text-sm font-bold ${cat.colors.text}`}>
-                        {cat.avgDecided.toFixed(1)}
-                      </div>
-                      <div className="text-[10px] text-text-faint">コマ/人</div>
-                    </div>
-                  </div>
-
-                  <div className="w-full bg-white/60 rounded-full h-1.5 mb-2">
-                    <div
-                      className="h-1.5 rounded-full transition-[width] duration-500 ease-out"
-                      style={{
-                        width: `${Math.min(Math.round(cat.acquisitionRate * 100), 100)}%`,
-                        backgroundColor: cat.colors.accent,
-                      }}
-                    />
-                  </div>
-
-                  {cat.gradeBreakdown.length > 1 && (
-                    <div className="mt-2 space-y-0.5">
-                      {cat.gradeBreakdown.map((g) => (
-                        <div
-                          key={g.grade}
-                          className="flex items-center justify-between text-[10px]"
-                        >
-                          <span className="text-text-muted w-6">{g.label}</span>
-                          <span className="text-text-faint w-7 text-right">{g.count}名</span>
-                          <span className="text-text-muted w-11 text-right">提案{g.proposed}</span>
-                          <span
-                            className="text-text-faint w-10 text-right"
-                            title="提案増コマ平均（提案コマ÷人数）"
-                          >
-                            提{g.avgProposed.toFixed(1)}
-                          </span>
-                          <span className={`font-medium w-11 text-right ${cat.colors.text}`}>
-                            決定{g.decided}
-                          </span>
-                          <span
-                            className="text-text-faint w-10 text-right"
-                            title="取得増コマ平均（決定コマ÷人数）"
-                          >
-                            取{g.avgDecided.toFixed(1)}
-                          </span>
-                          <span
-                            className={`font-medium w-9 text-right ${cat.colors.text}`}
-                            title="取得率（決定コマ÷提案コマ）"
-                          >
-                            {Math.round(g.rate * 100)}%
-                          </span>
+                    <div className="grid grid-cols-4 gap-2 mb-3">
+                      <div className="text-center">
+                        <div className="text-[10px] text-text-muted">提案</div>
+                        <div className={`text-sm font-bold ${colors.text}`}>
+                          {cat.totalProposed}
                         </div>
-                      ))}
+                        <div className="text-[10px] text-text-faint">{cat.proposedCount}名</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-[10px] text-text-muted">決定</div>
+                        <div className={`text-sm font-bold ${colors.text}`}>{cat.totalDecided}</div>
+                        <div className="text-[10px] text-text-faint">{cat.decidedCount}名</div>
+                      </div>
+                      <div className="text-center">
+                        <div
+                          className="text-[10px] text-text-muted"
+                          title="在籍1人あたりの提案コマ数"
+                        >
+                          平均提案
+                        </div>
+                        <div className={`text-sm font-bold ${colors.text}`}>
+                          {cat.avgProposed.toFixed(1)}
+                        </div>
+                        <div className="text-[10px] text-text-faint">コマ/人</div>
+                      </div>
+                      <div className="text-center">
+                        <div
+                          className="text-[10px] text-text-muted"
+                          title="在籍1人あたりの取得（決定）増コマ数"
+                        >
+                          平均取得
+                        </div>
+                        <div className={`text-sm font-bold ${colors.text}`}>
+                          {cat.avgDecided.toFixed(1)}
+                        </div>
+                        <div className="text-[10px] text-text-faint">コマ/人</div>
+                      </div>
                     </div>
-                  )}
-                </div>
-              ))}
+
+                    <div className="w-full bg-white/60 rounded-full h-1.5 mb-2">
+                      <div
+                        className="h-1.5 rounded-full transition-[width] duration-500 ease-out"
+                        style={{
+                          width: `${Math.min(Math.round(cat.acquisitionRate * 100), 100)}%`,
+                          backgroundColor: colors.accent,
+                        }}
+                      />
+                    </div>
+
+                    {cat.gradeBreakdown.length > 1 && (
+                      <div className="mt-2 space-y-0.5">
+                        {cat.gradeBreakdown.map((g) => (
+                          <div
+                            key={g.grade}
+                            className="flex items-center justify-between text-[10px]"
+                          >
+                            <span className="text-text-muted w-6">{g.label}</span>
+                            <span className="text-text-faint w-7 text-right">{g.count}名</span>
+                            <span className="text-text-muted w-11 text-right">
+                              提案{g.proposed}
+                            </span>
+                            <span
+                              className="text-text-faint w-10 text-right"
+                              title="提案増コマ平均（提案コマ÷人数）"
+                            >
+                              提{g.avgProposed.toFixed(1)}
+                            </span>
+                            <span className={`font-medium w-11 text-right ${colors.text}`}>
+                              決定{g.decided}
+                            </span>
+                            <span
+                              className="text-text-faint w-10 text-right"
+                              title="取得増コマ平均（決定コマ÷人数）"
+                            >
+                              取{g.avgDecided.toFixed(1)}
+                            </span>
+                            <span
+                              className={`font-medium w-9 text-right ${colors.text}`}
+                              title="取得率（決定コマ÷提案コマ）"
+                            >
+                              {Math.round(g.rate * 100)}%
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
