@@ -4,20 +4,21 @@
  * 入会オンボーディングウィザード（教室長向け）。
  *
  * 入会処理から「担当講師の決定」までを 1 つの流れで完結させる
- * （設計: docs/small-group-programming-schedule-plan.md §2.13 ＋ §2.13改訂）。
+ * （設計: docs/small-group-programming-schedule-plan.md §2.13 ／ §2.13改訂 ／ §2.13改訂2）。
  *
  * 入口:
  *  1. 問合せ詳細「生徒として登録」→ 生徒作成後 `/students/[id]/onboarding?inquiryId=...` へ遷移
  *  2. 生徒詳細（StudentDetailModal）に「通塾セットアップ」導線（通塾日程 0 件のときのみ表示）
  *
- * ステップ（§2.13改訂で 5→4 に統合）:
+ * ステップ（§2.13改訂2 で役割分担を明確化）:
  *  1. 生徒情報の確認（主要4項目のインライン編集。ここだけ即時 updateStudent）
- *  2. 受講科目と比率（学年区分で絞った科目を複数選択＋1対2/1対1）
- *  3. コマ配置（ミニ座席表）: 通塾開始日を決め、その週の実データ座席表に生徒カードを D&D で配置。
- *     旧 Step3（人数グリッド）＋旧 Step4（別画面マッチング）を 1 画面に統合。担当は「落とした講師」で暗黙決定。
+ *  2. 受講科目（学年で絞った科目を複数選択。各科目に 比率＋曜日＋時限＋45分なら前半/後半 を確定）
+ *  3. コマ配置: ① 通塾開始日 ／ ② スケジュール（Step2 で決めた各コマだけをミニ座席表として詳しく表示し、
+ *     受講科目の数だけ並ぶドラッグカードを出勤講師に D&D して担当を決定）
  *  4. 確認・一括保存（契約 upsert・パターン作成・週再生成・体験コマ引き継ぎ）
  *
  * 途中離脱では何も書かれない（Step1 の生徒情報修正のみ例外で即時保存）。保存は Step4 で一括。
+ * 担当を落とさなかった科目は teacher_id=null（担当未決定）で登録し、座席表側で後から割り当てる。
  */
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
@@ -69,24 +70,17 @@ import { evaluateStudentDrop } from '@/lib/utils/scheduleDrop';
 import { INDIVIDUAL_FORMATION, DAY_OF_WEEK_LABELS } from '@/types/schedule';
 import type { HalfPosition, ScheduleTimeSlot, ScheduleEntry } from '@/types/schedule';
 import type { Student, Subject } from '@/types/database';
+import { CheckCircle2, ArrowRight, ArrowLeft, CalendarDays } from 'lucide-react';
 import {
-  CheckCircle2,
-  ArrowRight,
-  ArrowLeft,
-  CalendarDays,
-  ChevronRight,
-  ChevronDown,
-} from 'lucide-react';
-import {
-  MiniTeacherCard,
+  MiniSeatingSlot,
   OnboardingDragCard,
   type Placement,
   type SubjectDragPayload,
 } from './MiniSeatingGrid';
 import styles from '@/components/schedule/scheduleDensity.module.css';
 
-// 週間グリッドの列＝月〜土（個別指導は日曜運用しない想定。Step2 の受講曜日とは無関係に全曜日を出す）。
-const GRID_DAYS = [1, 2, 3, 4, 5, 6];
+// Step2 の曜日プルダウンに出す曜日＝月〜土（個別指導は日曜運用しない想定）。
+const SELECTABLE_DAYS = [1, 2, 3, 4, 5, 6];
 
 const TOTAL_STEPS = 4;
 const STEP_LABELS = ['生徒情報', '受講科目', 'コマ配置', '確認'];
@@ -99,6 +93,19 @@ interface OnbTeacher {
   email: string | null;
   teachable_subject_ids?: string[] | null;
   gender?: 'male' | 'female' | 'other' | null;
+}
+
+/** Step2 で確定した1科目ぶんの受講計画（科目×曜日×コマ×比率×半コマ）。 */
+interface SubjectPlan {
+  subject: Subject;
+  ratio: 1 | 2;
+  day: number;
+  slotId: string;
+  slotNumber: number;
+  startTime: string;
+  endTime: string;
+  durationMinutes: number | null;
+  half: HalfPosition;
 }
 
 /** 数値学年 → 表示ラベル（小/中/高）。 */
@@ -116,7 +123,7 @@ function timeToMinutes(t: string): number {
 
 /**
  * 45 分授業の実効時間帯を導出する（schedule.ts の computeEffectiveTimeRange と同等・クライアント版）。
- * 前半=開始〜+45分 / 後半=終了−45分〜終了 / それ以外はコマ全体。新コマ同士の重複判定に使う。
+ * 前半=開始〜+45分 / 後半=終了−45分〜終了 / それ以外はコマ全体。同一曜日のコマ同士の重複判定に使う。
  */
 function effectiveRange(
   startTime: string,
@@ -129,6 +136,24 @@ function effectiveRange(
   if (duration === 45 && half === 'first') return { start: s, end: s + 45 };
   if (duration === 45 && half === 'second') return { start: e - 45, end: e };
   return { start: s, end: e };
+}
+
+/**
+ * 受講計画リスト内で「同一曜日かつ実効時間帯が重なる」ペアを探す。
+ * （例: 同じコマに 90分科目を2つ入れてしまった等）。重なりが無ければ null。
+ */
+function findPlanOverlap(plans: SubjectPlan[]): SubjectPlan | null {
+  for (let i = 0; i < plans.length; i++) {
+    for (let j = i + 1; j < plans.length; j++) {
+      const a = plans[i];
+      const b = plans[j];
+      if (a.day !== b.day) continue;
+      const ra = effectiveRange(a.startTime, a.endTime, a.durationMinutes, a.half);
+      const rb = effectiveRange(b.startTime, b.endTime, b.durationMinutes, b.half);
+      if (ra.start < rb.end && rb.start < ra.end) return a;
+    }
+  }
+  return null;
 }
 
 /** YYYY-MM-DD（ローカル）。 */
@@ -192,9 +217,13 @@ export default function OnboardingPage() {
   const [schoolName, setSchoolName] = useState('');
   const [isSavingStudent, setIsSavingStudent] = useState(false);
 
-  // ---- Step2: 受講科目と比率 ----
+  // ---- Step2: 受講科目（科目×曜日×コマ×比率×半コマ）----
   const [selectedSubjectIds, setSelectedSubjectIds] = useState<Set<string>>(new Set());
   const [ratioMap, setRatioMap] = useState<Map<string, 1 | 2>>(new Map());
+  // 科目ごとの受講コマ（曜日・時限）と 45分の半コマ位置。
+  const [dayMap, setDayMap] = useState<Map<string, number>>(new Map());
+  const [slotMap, setSlotMap] = useState<Map<string, string>>(new Map());
+  const [halfMap, setHalfMap] = useState<Map<string, HalfPosition>>(new Map());
 
   // ---- Step3: コマ配置（ミニ座席表） ----
   const [effectiveFrom, setEffectiveFrom] = useState<string>(toLocalDateStr(new Date()));
@@ -203,20 +232,16 @@ export default function OnboardingPage() {
   const [availByDaySlot, setAvailByDaySlot] = useState<Map<string, string[]>>(new Map());
   const [weekEntries, setWeekEntries] = useState<ScheduleEntry[]>([]);
   const [closedDates, setClosedDates] = useState<Set<string>>(new Set());
-  // ローカルに積んだ配置
+  // ローカルに積んだ配置（1科目=最大1件。ドロップ先講師つき）
   const [placements, setPlacements] = useState<Placement[]>([]);
-  // ドラッグ元の「今置く科目」
-  const [activeSubjectId, setActiveSubjectId] = useState<string | null>(null);
-  const [activeHalf, setActiveHalf] = useState<HalfPosition>('first');
-  // 展開中セル（`${day}|${slotId}`）
-  const [expandedCellKey, setExpandedCellKey] = useState<string | null>(null);
-  // ドラッグ中ペイロード（枠色計算用）
+  // ドラッグ中ペイロード（どの科目カードを掴んでいるか。枠色・可否計算に使う）
   const [dragPayload, setDragPayload] = useState<SubjectDragPayload | null>(null);
 
   // ---- Step4: 保存 ----
   const [isSaving, setIsSaving] = useState(false);
   const [saveResult, setSaveResult] = useState<{
     patternCount: number;
+    undecidedCount: number;
     trialConverted: number;
     trialSkipped: number;
     skipped: boolean;
@@ -285,13 +310,13 @@ export default function OnboardingPage() {
         const weekEnd = new Date(weekStartStr + 'T12:00:00');
         weekEnd.setDate(weekEnd.getDate() + 6);
         const weekEndStr = toLocalDateStr(weekEnd);
-        const [dayMap, entries, closed] = await Promise.all([
+        const [dayMapRes, entries, closed] = await Promise.all([
           getAvailabilityDayMap(schoolId, weekStartStr),
           getScheduleEntries(schoolId, weekStartStr, weekEndStr),
           getClosedDays(schoolId, { from: weekStartStr, to: weekEndStr }).catch(() => []),
         ]);
         if (cancelled) return;
-        setAvailByDaySlot(dayMap.byDayAndSlotNumber);
+        setAvailByDaySlot(dayMapRes.byDayAndSlotNumber);
         setWeekEntries(entries);
         setClosedDates(new Set(closed.map((c) => c.closed_date)));
       } catch (e) {
@@ -346,11 +371,66 @@ export default function OnboardingPage() {
 
   const studentName = student ? `${student.last_name} ${student.first_name}` : '';
 
-  // 選択中の「今置く科目」情報。
-  const activeSubject = activeSubjectId ? subjectById.get(activeSubjectId) : null;
-  const activeIs45 = activeSubject?.duration_minutes === 45;
-  const activeRatio: 1 | 2 = activeSubjectId ? (ratioMap.get(activeSubjectId) ?? 2) : 2;
-  const activeDragHalf: HalfPosition = activeIs45 ? activeHalf : null;
+  // Step2 で確定した受講計画（曜日・時限が揃った科目のみ）。曜日→コマ順で安定ソート。
+  const subjectPlans = useMemo<SubjectPlan[]>(() => {
+    const plans: SubjectPlan[] = [];
+    for (const s of selectedSubjects) {
+      const day = dayMap.get(s.id);
+      const slotId = slotMap.get(s.id);
+      if (day == null || !slotId) continue;
+      const slot = timeSlots.find((t) => t.id === slotId);
+      if (!slot) continue;
+      const is45 = s.duration_minutes === 45;
+      plans.push({
+        subject: s,
+        ratio: ratioMap.get(s.id) ?? 2,
+        day,
+        slotId,
+        slotNumber: slot.slot_number,
+        startTime: slot.start_time,
+        endTime: slot.end_time,
+        durationMinutes: s.duration_minutes ?? null,
+        half: is45 ? (halfMap.get(s.id) ?? 'first') : null,
+      });
+    }
+    return plans.sort((a, b) => a.day - b.day || a.slotNumber - b.slotNumber);
+  }, [selectedSubjects, dayMap, slotMap, ratioMap, halfMap, timeSlots]);
+
+  // (曜日×コマ) 単位にまとめたミニ座席表の並び（同一コマに複数科目が来たら1枠にまとめる）。
+  const combos = useMemo(() => {
+    const m = new Map<
+      string,
+      {
+        key: string;
+        day: number;
+        slotId: string;
+        slotNumber: number;
+        startTime: string;
+        plans: SubjectPlan[];
+      }
+    >();
+    for (const p of subjectPlans) {
+      const key = `${p.day}|${p.slotId}`;
+      const g = m.get(key) ?? {
+        key,
+        day: p.day,
+        slotId: p.slotId,
+        slotNumber: p.slotNumber,
+        startTime: p.startTime,
+        plans: [],
+      };
+      g.plans.push(p);
+      m.set(key, g);
+    }
+    return Array.from(m.values()).sort((a, b) => a.day - b.day || a.slotNumber - b.slotNumber);
+  }, [subjectPlans]);
+
+  // 科目ID → その科目の配置（担当講師）。未配置＝担当未決定。
+  const placementBySubject = useMemo(() => {
+    const m = new Map<string, Placement>();
+    placements.forEach((p) => m.set(p.subjectId, p));
+    return m;
+  }, [placements]);
 
   // ---- Step1: 生徒情報の即時保存 ----
   const saveStudentInfo = useCallback(async () => {
@@ -376,14 +456,26 @@ export default function OnboardingPage() {
     }
   }, [student, lastName, firstName, lastKana, firstKana, grade, schoolName]);
 
-  // ---- Step2: 科目トグル ----
+  // 指定科目の配置（担当講師）を取り消す（受講コマを変えたら担当は無効化する）。
+  const dropPlacementForSubject = useCallback((subjectId: string) => {
+    setPlacements((prev) => prev.filter((p) => p.subjectId !== subjectId));
+  }, []);
+
+  // ---- Step2: 科目トグルと各項目の変更 ----
   const toggleSubject = (id: string) => {
     setSelectedSubjectIds((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else {
+      if (next.has(id)) {
+        next.delete(id);
+        // 選択解除した科目の配置は無効化する。
+        dropPlacementForSubject(id);
+      } else {
         next.add(id);
         if (!ratioMap.has(id)) setRatioMap((m) => new Map(m).set(id, 2));
+        // 45分科目は既定で前半にしておく（表示直後から半コマが確定するように）。
+        if (subjectById.get(id)?.duration_minutes === 45 && !halfMap.has(id)) {
+          setHalfMap((m) => new Map(m).set(id, 'first'));
+        }
       }
       return next;
     });
@@ -391,6 +483,18 @@ export default function OnboardingPage() {
 
   const setSubjectRatio = (id: string, ratio: 1 | 2) => {
     setRatioMap((m) => new Map(m).set(id, ratio));
+  };
+  // 曜日・時限は受講コマそのものなので、変更したら担当（配置）を無効化する。
+  const setSubjectDay = (id: string, day: number) => {
+    setDayMap((m) => new Map(m).set(id, day));
+    dropPlacementForSubject(id);
+  };
+  const setSubjectSlot = (id: string, slotId: string) => {
+    setSlotMap((m) => new Map(m).set(id, slotId));
+    dropPlacementForSubject(id);
+  };
+  const setSubjectHalf = (id: string, half: HalfPosition) => {
+    setHalfMap((m) => new Map(m).set(id, half));
   };
 
   // ---- Step3: セル内の講師別データ ----
@@ -416,12 +520,12 @@ export default function OnboardingPage() {
     [placements]
   );
 
-  // 選択中科目に対する講師の相性（指導可否/性別/除外）。evaluateStudentDrop の violation と同基準。
-  const compatFor = useCallback(
-    (teacher: OnbTeacher): { ok: boolean; reason: string | null } | null => {
-      if (!activeSubjectId || !student) return null;
+  // 指定科目に対する講師の相性（指導可否/性別/除外）。evaluateStudentDrop の violation と同基準。
+  const compatForSubject = useCallback(
+    (subjectId: string, teacher: OnbTeacher): { ok: boolean; reason: string | null } | null => {
+      if (!student) return null;
       const teachable = teacher.teachable_subject_ids ?? [];
-      if (teachable.length > 0 && !teachable.includes(activeSubjectId)) {
+      if (teachable.length > 0 && !teachable.includes(subjectId)) {
         return { ok: false, reason: '指導科目外の講師です' };
       }
       const excluded = student.excluded_teacher_ids ?? [];
@@ -437,13 +541,15 @@ export default function OnboardingPage() {
       }
       return { ok: true, reason: null };
     },
-    [activeSubjectId, student]
+    [student]
   );
 
   // ドラッグ中: この講師カードに落とせるか（evaluateStudentDrop 流用）。
+  // 掴んでいる科目の (曜日, コマ) と一致しないミニ座席表には落とせない。
   const canDropFor = useCallback(
     (date: string, day: number, slotId: string, teacher: OnbTeacher): boolean | null => {
       if (!dragPayload || !student) return null;
+      if (dragPayload.day !== day || dragPayload.slotId !== slotId) return false;
       const existing = activeEntriesFor(date, slotId, teacher.id);
       const local = placementsFor(day, slotId, teacher.id);
       const targetActiveEntries = [
@@ -493,16 +599,14 @@ export default function OnboardingPage() {
     const parsed = parseDropId(String(e.over.id));
     if (!parsed) return;
     const { day, slotId, teacherId } = parsed;
+    // 掴んでいる科目のコマと違うミニ座席表には置けない。
+    if (day !== payload.day || slotId !== payload.slotId) return;
+    // 同じ科目を二重配置しない（通常は配置済みカードが draggable でないので起きない）。
+    if (placements.some((p) => p.subjectId === payload.subjectId)) return;
     const slot = timeSlots.find((s) => s.id === slotId);
     const teacher = teacherById.get(teacherId);
     if (!slot || !teacher) return;
     const date = dateForDow(weekStartStr, day);
-
-    // 同じコマ（曜日×コマ）に別講師でも既に配置済みなら弾く（生徒は同時に1箇所）。
-    if (placements.some((p) => p.day === day && p.timeSlotId === slotId)) {
-      toast.error(`${DAY_OF_WEEK_LABELS[day]}曜 ${slot.slot_number}限には既に配置済みです`);
-      return;
-    }
 
     const existing = activeEntriesFor(date, slotId, teacherId);
     const local = placementsFor(day, slotId, teacherId);
@@ -551,11 +655,11 @@ export default function OnboardingPage() {
       return;
     }
 
-    // drop 確定: ローカルに配置を積む。
+    // drop 確定: ローカルに配置を積む（担当＝落とした講師）。
     setPlacements((prev) => [
       ...prev,
       {
-        key: `${day}|${slotId}|${teacherId}|${payload.subjectId}|${payload.halfPosition ?? 'full'}|${Date.now()}`,
+        key: `${payload.subjectId}|${teacherId}|${Date.now()}`,
         day,
         date,
         timeSlotId: slotId,
@@ -569,22 +673,11 @@ export default function OnboardingPage() {
         halfPosition: payload.halfPosition,
       },
     ]);
-    // 落とした先のセルを展開して結果（1対2の隣）を見せる。
-    setExpandedCellKey(`${day}|${slotId}`);
   };
 
   const removePlacement = (key: string) => {
     setPlacements((prev) => prev.filter((p) => p.key !== key));
   };
-
-  const placementList = useMemo(
-    () =>
-      [...placements].sort(
-        (a, b) =>
-          a.day - b.day || a.slotNumber - b.slotNumber || a.teacherId.localeCompare(b.teacherId)
-      ),
-    [placements]
-  );
 
   // ---- ステップ遷移 ----
   const goNext = async () => {
@@ -599,18 +692,27 @@ export default function OnboardingPage() {
         toast.error('受講科目を1つ以上選択してください');
         return;
       }
-      // Step3 の「今置く科目」既定を最初の受講科目にする。
-      if (!activeSubjectId || !selectedSubjectIds.has(activeSubjectId)) {
-        setActiveSubjectId(Array.from(selectedSubjectIds)[0] ?? null);
+      // 全選択科目に曜日・時限が揃っているか。
+      const incomplete = selectedSubjects.filter(
+        (s) => dayMap.get(s.id) == null || !slotMap.get(s.id)
+      );
+      if (incomplete.length > 0) {
+        toast.error('各受講科目の曜日と時限を選択してください');
+        return;
+      }
+      // 同一曜日で時間帯が重なるコマ指定は先に是正させる。
+      const overlap = findPlanOverlap(subjectPlans);
+      if (overlap) {
+        toast.error(
+          `${DAY_OF_WEEK_LABELS[overlap.day]}曜のコマ指定が重なっています。曜日・時限を見直してください`
+        );
+        return;
       }
       setStep(3);
       return;
     }
     if (step === 3) {
-      if (placements.length === 0) {
-        toast.error('コマを1つ以上配置してください（配置せず完了する場合はスキップ）');
-        return;
-      }
+      // 受講コマは Step2 で確定済み。担当未決定のまま進んでよい（後から座席表で割当可）。
       setStep(4);
       return;
     }
@@ -622,7 +724,13 @@ export default function OnboardingPage() {
 
   // 通塾設定をスキップして完了（パターン未作成。生徒登録だけで終える）。
   const handleSkip = () => {
-    setSaveResult({ patternCount: 0, trialConverted: 0, trialSkipped: 0, skipped: true });
+    setSaveResult({
+      patternCount: 0,
+      undecidedCount: 0,
+      trialConverted: 0,
+      trialSkipped: 0,
+      skipped: true,
+    });
     toast.success('通塾設定をスキップしました');
   };
 
@@ -631,34 +739,26 @@ export default function OnboardingPage() {
     if (!student) return;
     setIsSaving(true);
     try {
-      // 1a. 新コマ同士（同一曜日で実効時間帯が重なる）の重複
-      for (let i = 0; i < placementList.length; i++) {
-        for (let j = i + 1; j < placementList.length; j++) {
-          const a = placementList[i];
-          const b = placementList[j];
-          if (a.day !== b.day) continue;
-          const ra = effectiveRange(a.startTime, a.endTime, a.durationMinutes, a.halfPosition);
-          const rb = effectiveRange(b.startTime, b.endTime, b.durationMinutes, b.halfPosition);
-          if (ra.start < rb.end && rb.start < ra.end) {
-            toast.error(
-              `${DAY_OF_WEEK_LABELS[a.day]}曜のコマ同士で時間帯が重なっています。配置を見直してください`
-            );
-            setIsSaving(false);
-            setStep(3);
-            return;
-          }
-        }
+      // 1a. 新コマ同士（同一曜日で実効時間帯が重なる）の重複 → 是正は Step2（コマ指定）で。
+      const overlap = findPlanOverlap(subjectPlans);
+      if (overlap) {
+        toast.error(
+          `${DAY_OF_WEEK_LABELS[overlap.day]}曜のコマ指定が重なっています。曜日・時限を見直してください`
+        );
+        setIsSaving(false);
+        setStep(2);
+        return;
       }
       // 1b. DB 既存パターン/エントリとの重複
-      for (const p of placementList) {
+      for (const p of subjectPlans) {
         const conflict = await checkStudentTimeConflict(studentId, p.day, p.startTime, p.endTime, {
           durationMinutes: p.durationMinutes,
-          halfPosition: p.halfPosition,
+          halfPosition: p.half,
         });
         if (conflict) {
           toast.error(conflict.message);
           setIsSaving(false);
-          setStep(3);
+          setStep(2);
           return;
         }
       }
@@ -672,21 +772,24 @@ export default function OnboardingPage() {
         )
       );
 
-      // 3) 通塾日程パターンを作成（配置ごと。担当＝落とした講師。effective_from＝開始日）。
-      for (const p of placementList) {
+      // 3) 通塾日程パターンを作成（科目ごと。担当＝配置した講師 or 未決定=null。effective_from＝開始日）。
+      let undecidedCount = 0;
+      for (const p of subjectPlans) {
+        const teacherId = placementBySubject.get(p.subject.id)?.teacherId ?? null;
+        if (!teacherId) undecidedCount++;
         await createRegularPattern(schoolId, {
           student_id: studentId,
           day_of_week: p.day,
-          time_slot_id: p.timeSlotId,
-          teacher_id: p.teacherId,
-          subject_ids: [p.subjectId],
+          time_slot_id: p.slotId,
+          teacher_id: teacherId,
+          subject_ids: [p.subject.id],
           seat_label: '',
           period_type: 'regular',
           effective_from: effectiveFrom,
           formation: INDIVIDUAL_FORMATION,
           ratio: p.ratio,
           duration_minutes: p.durationMinutes,
-          half_position: p.halfPosition,
+          half_position: p.half,
         });
       }
 
@@ -707,7 +810,8 @@ export default function OnboardingPage() {
       }
 
       setSaveResult({
-        patternCount: placementList.length,
+        patternCount: subjectPlans.length,
+        undecidedCount,
         trialConverted,
         trialSkipped,
         skipped: false,
@@ -771,6 +875,8 @@ export default function OnboardingPage() {
                 <>
                   {student.last_name} {student.first_name} さんの通塾日程 {saveResult.patternCount}{' '}
                   コマを登録しました。
+                  {saveResult.undecidedCount > 0 &&
+                    `（うち ${saveResult.undecidedCount} コマは担当未決定。座席表で割り当ててください）`}
                   {saveResult.trialConverted > 0 &&
                     ` 体験コマ ${saveResult.trialConverted} 件を引き継ぎました。`}
                   {saveResult.trialSkipped > 0 &&
@@ -905,16 +1011,22 @@ export default function OnboardingPage() {
                 </div>
               )}
 
-              {/* ─── Step2: 受講科目と比率 ─── */}
+              {/* ─── Step2: 受講科目（科目×曜日×コマ×比率）─── */}
               {step === 2 && (
                 <div className="space-y-5">
                   <div>
-                    <h2 className="text-base font-bold text-text-heading mb-1">受講科目と比率</h2>
+                    <h2 className="text-base font-bold text-text-heading mb-1">受講科目</h2>
                     <p className="text-xs text-text-muted">
                       {gradeLabel(grade)}{' '}
-                      の科目を選び、科目ごとに指導比率を設定します。45分科目は表示に「（45分）」が付きます。
+                      の科目を選び、科目ごとに「比率・曜日・時限」を決めます。45分科目は前半/後半も選びます。ここで「何を・いつ・何対何で」が確定します。
                     </p>
                   </div>
+                  {timeSlots.length === 0 && (
+                    <div className="p-3 rounded-lg border border-warning/40 bg-warning/10 text-xs text-warning">
+                      個別指導のコマ時間が未設定です。設定 →
+                      コマ時間から登録すると時限を選べるようになります。
+                    </div>
+                  )}
                   <div className="space-y-4">
                     {subjectGroups.map((group) => (
                       <div key={group.label}>
@@ -922,34 +1034,89 @@ export default function OnboardingPage() {
                         <div className="space-y-1.5">
                           {group.subjects.map((s) => {
                             const checked = selectedSubjectIds.has(s.id);
+                            const is45 = s.duration_minutes === 45;
                             return (
                               <div
                                 key={s.id}
-                                className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg border border-border bg-surface-hover"
+                                className="rounded-lg border border-border bg-surface-hover px-3 py-2"
                               >
-                                <label className="flex items-center gap-2 cursor-pointer flex-1">
-                                  <input
-                                    type="checkbox"
-                                    checked={checked}
-                                    onChange={() => toggleSubject(s.id)}
-                                    className="w-4 h-4 accent-primary"
-                                  />
-                                  <span className="text-sm text-text-body">
-                                    {subjectOptionLabel(s)}
-                                  </span>
-                                </label>
-                                {checked && (
-                                  <select
-                                    value={ratioMap.get(s.id) ?? 2}
-                                    onChange={(e) =>
-                                      setSubjectRatio(s.id, e.target.value === '1' ? 1 : 2)
-                                    }
-                                    className="px-2 py-1 border border-border rounded text-xs bg-surface-raised focus:outline-none focus:ring-2 focus:ring-primary"
-                                  >
-                                    <option value="2">1対2</option>
-                                    <option value="1">1対1</option>
-                                  </select>
-                                )}
+                                <div className="flex items-center gap-3 flex-wrap">
+                                  <label className="flex items-center gap-2 cursor-pointer">
+                                    <input
+                                      type="checkbox"
+                                      checked={checked}
+                                      onChange={() => toggleSubject(s.id)}
+                                      className="w-4 h-4 accent-primary"
+                                    />
+                                    <span className="text-sm text-text-body">
+                                      {subjectOptionLabel(s)}
+                                    </span>
+                                  </label>
+                                  {checked && (
+                                    <div className="flex items-center gap-2 flex-wrap ml-auto">
+                                      <select
+                                        value={ratioMap.get(s.id) ?? 2}
+                                        onChange={(e) =>
+                                          setSubjectRatio(s.id, e.target.value === '1' ? 1 : 2)
+                                        }
+                                        className="px-2 py-1 border border-border rounded text-xs bg-surface-raised focus:outline-none focus:ring-2 focus:ring-primary"
+                                        aria-label="指導比率"
+                                      >
+                                        <option value="2">1対2</option>
+                                        <option value="1">1対1</option>
+                                      </select>
+                                      <select
+                                        value={dayMap.get(s.id) ?? ''}
+                                        onChange={(e) =>
+                                          setSubjectDay(s.id, parseInt(e.target.value, 10))
+                                        }
+                                        className="px-2 py-1 border border-border rounded text-xs bg-surface-raised focus:outline-none focus:ring-2 focus:ring-primary"
+                                        aria-label="曜日"
+                                      >
+                                        <option value="" disabled>
+                                          曜日
+                                        </option>
+                                        {SELECTABLE_DAYS.map((d) => (
+                                          <option key={d} value={d}>
+                                            {DAY_OF_WEEK_LABELS[d]}曜
+                                          </option>
+                                        ))}
+                                      </select>
+                                      <select
+                                        value={slotMap.get(s.id) ?? ''}
+                                        onChange={(e) => setSubjectSlot(s.id, e.target.value)}
+                                        className="px-2 py-1 border border-border rounded text-xs bg-surface-raised focus:outline-none focus:ring-2 focus:ring-primary"
+                                        aria-label="時限"
+                                        disabled={timeSlots.length === 0}
+                                      >
+                                        <option value="" disabled>
+                                          時限
+                                        </option>
+                                        {timeSlots.map((slot) => (
+                                          <option key={slot.id} value={slot.id}>
+                                            {slot.slot_number}限 {slot.start_time.slice(0, 5)}
+                                          </option>
+                                        ))}
+                                      </select>
+                                      {is45 && (
+                                        <select
+                                          value={halfMap.get(s.id) ?? 'first'}
+                                          onChange={(e) =>
+                                            setSubjectHalf(
+                                              s.id,
+                                              e.target.value === 'second' ? 'second' : 'first'
+                                            )
+                                          }
+                                          className="px-2 py-1 border border-border rounded text-xs bg-surface-raised focus:outline-none focus:ring-2 focus:ring-primary"
+                                          aria-label="45分の位置"
+                                        >
+                                          <option value="first">前半</option>
+                                          <option value="second">後半</option>
+                                        </select>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
                               </div>
                             );
                           })}
@@ -960,277 +1127,186 @@ export default function OnboardingPage() {
                 </div>
               )}
 
-              {/* ─── Step3: コマ配置（ミニ座席表） ─── */}
+              {/* ─── Step3: コマ配置（① 通塾開始日 ／ ② スケジュール）─── */}
               {step === 3 && (
                 <DndContext
                   sensors={sensors}
                   onDragStart={handleDragStart}
                   onDragEnd={handleDragEnd}
                 >
-                  <div className="space-y-4">
-                    <div>
-                      <h2 className="text-base font-bold text-text-heading mb-1">コマ配置</h2>
-                      <p className="text-xs text-text-muted">
-                        通塾開始日を選び、下の「今置く科目」カードを出勤している講師にドラッグして配置します。セルをクリックすると在籍生徒（1対2の隣）を確認できます。
-                      </p>
-                    </div>
-
-                    {/* 通塾開始日 */}
-                    <div className="flex flex-wrap items-center gap-2">
-                      <label className="text-xs text-text-muted">通塾開始日</label>
-                      <input
-                        type="date"
-                        value={effectiveFrom}
-                        onChange={(e) => setEffectiveFrom(e.target.value)}
-                        className="px-2 py-1 border border-border rounded text-sm bg-surface-raised focus:outline-none focus:ring-2 focus:ring-primary"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setEffectiveFrom(toLocalDateStr(new Date()))}
-                        className="px-2 py-1 rounded border border-border text-xs text-text-body hover:bg-surface-hover"
-                      >
-                        今日
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setEffectiveFrom(firstOfNextMonth())}
-                        className="px-2 py-1 rounded border border-border text-xs text-text-body hover:bg-surface-hover"
-                      >
-                        来月1日
-                      </button>
-                      <span className="text-[11px] text-text-muted">
-                        表示週: {weekStartStr} の週
-                      </span>
-                    </div>
-
-                    {/* 配置する生徒カード（ドラッグ元） */}
-                    <div className="border border-border rounded-lg p-3 bg-surface-hover space-y-2">
-                      <p className="text-xs text-text-muted">今置く科目を選んでドラッグ</p>
-                      <div className="flex flex-wrap gap-1.5">
-                        {selectedSubjects.map((s) => {
-                          const on = activeSubjectId === s.id;
-                          return (
-                            <button
-                              key={s.id}
-                              type="button"
-                              onClick={() => setActiveSubjectId(s.id)}
-                              className={`px-2.5 py-1 rounded-full border text-xs transition-colors ${
-                                on
-                                  ? 'border-primary bg-primary text-white'
-                                  : 'border-border bg-surface-raised text-text-body hover:bg-surface-hover'
-                              }`}
-                            >
-                              {subjectOptionLabel(s)}
-                            </button>
-                          );
-                        })}
+                  <div className="space-y-5">
+                    {/* ① 通塾開始日 */}
+                    <div className="space-y-2">
+                      <h2 className="text-base font-bold text-text-heading">① 通塾開始日</h2>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <input
+                          type="date"
+                          value={effectiveFrom}
+                          onChange={(e) => setEffectiveFrom(e.target.value)}
+                          className="px-2 py-1 border border-border rounded text-sm bg-surface-raised focus:outline-none focus:ring-2 focus:ring-primary"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setEffectiveFrom(toLocalDateStr(new Date()))}
+                          className="px-2 py-1 rounded border border-border text-xs text-text-body hover:bg-surface-hover"
+                        >
+                          今日
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEffectiveFrom(firstOfNextMonth())}
+                          className="px-2 py-1 rounded border border-border text-xs text-text-body hover:bg-surface-hover"
+                        >
+                          来月1日
+                        </button>
+                        <span className="text-[11px] text-text-muted">
+                          表示週: {weekStartStr} の週
+                        </span>
                       </div>
-                      {activeIs45 && (
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-text-muted">45分の位置</span>
-                          {(['first', 'second'] as const).map((h) => (
-                            <button
-                              key={h}
-                              type="button"
-                              onClick={() => setActiveHalf(h)}
-                              className={`px-2 py-0.5 rounded border text-xs ${
-                                activeHalf === h
-                                  ? 'border-primary bg-primary/10 text-text-heading'
-                                  : 'border-border bg-surface-raised text-text-muted hover:bg-surface-hover'
-                              }`}
-                            >
-                              {h === 'first' ? '前半' : '後半'}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                      {activeSubject && (
-                        <div className={styles.root}>
-                          <OnboardingDragCard
-                            studentName={studentName}
-                            subjectName={activeSubject.name}
-                            ratio={activeRatio}
-                            halfLabel={
-                              activeDragHalf === 'first'
-                                ? '前'
-                                : activeDragHalf === 'second'
-                                  ? '後'
-                                  : null
-                            }
-                            payload={{
-                              subjectId: activeSubject.id,
-                              ratio: activeRatio,
-                              durationMinutes: activeSubject.duration_minutes ?? null,
-                              halfPosition: activeDragHalf,
-                            }}
-                          />
-                        </div>
-                      )}
                     </div>
 
-                    {/* 週間グリッド（ミニ座席表） */}
-                    {timeSlots.length === 0 ? (
-                      <p className="text-sm text-text-muted">
-                        個別指導のコマ時間が未設定です。設定 → コマ時間から登録してください。
-                      </p>
-                    ) : (
-                      <div className={`${styles.root} overflow-x-auto`}>
-                        {weekLoading && (
-                          <p className="text-[11px] text-text-muted mb-1">週データを読み込み中…</p>
-                        )}
-                        <table className="w-full border-collapse" style={{ minWidth: 720 }}>
-                          <thead>
-                            <tr>
-                              <th className="p-1 text-text-muted font-normal w-14 text-xs"></th>
-                              {GRID_DAYS.map((d) => (
-                                <th
-                                  key={d}
-                                  className="p-1 text-text-heading font-medium text-xs text-center"
-                                >
-                                  {DAY_OF_WEEK_LABELS[d]}
-                                </th>
-                              ))}
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {timeSlots.map((slot) => (
-                              <tr key={slot.id}>
-                                <td className="p-1 text-text-muted whitespace-nowrap align-top text-xs">
-                                  {slot.slot_number}限
-                                  <br />
-                                  <span className="text-[10px]">{slot.start_time.slice(0, 5)}</span>
-                                </td>
-                                {GRID_DAYS.map((d) => {
-                                  const cellKey = `${d}|${slot.id}`;
-                                  const date = dateForDow(weekStartStr, d);
-                                  const isClosed = closedDates.has(date);
-                                  const expanded = expandedCellKey === cellKey;
-                                  const availIds =
-                                    availByDaySlot.get(`${d}|${slot.slot_number}`) ?? [];
-                                  const cellTeachers = availIds
-                                    .map((id) => teacherById.get(id))
-                                    .filter((t): t is OnbTeacher => !!t);
-                                  return (
-                                    <td
-                                      key={d}
-                                      className="p-0.5 align-top"
-                                      style={{ minWidth: 116 }}
-                                    >
-                                      {isClosed ? (
-                                        <div className="min-h-[40px] rounded-md border border-dashed border-border flex items-center justify-center text-[10px] text-text-faint">
-                                          休講日
-                                        </div>
-                                      ) : cellTeachers.length === 0 ? (
-                                        <div className="min-h-[40px] rounded-md border border-dashed border-border flex items-center justify-center text-[10px] text-text-faint">
-                                          出勤なし
-                                        </div>
-                                      ) : (
-                                        <div className="flex flex-col gap-1">
-                                          <button
-                                            type="button"
-                                            onClick={() =>
-                                              setExpandedCellKey(expanded ? null : cellKey)
-                                            }
-                                            className="flex items-center gap-0.5 text-[10px] text-text-muted hover:text-text-heading"
-                                            title={expanded ? '畳む' : '在籍生徒を表示'}
-                                          >
-                                            {expanded ? (
-                                              <ChevronDown className="w-3 h-3" />
-                                            ) : (
-                                              <ChevronRight className="w-3 h-3" />
-                                            )}
-                                            {cellTeachers.length}人出勤
-                                          </button>
-                                          {cellTeachers.map((t) => (
-                                            <MiniTeacherCard
-                                              key={t.id}
-                                              droppableId={makeDropId(d, slot.id, t.id)}
-                                              teacher={{
-                                                id: t.id,
-                                                name:
-                                                  getSurname(t) || t.display_name || t.email || '—',
-                                                gender: t.gender ?? null,
-                                              }}
-                                              existingEntries={activeEntriesFor(
-                                                date,
-                                                slot.id,
-                                                t.id
-                                              )}
-                                              placements={placementsFor(d, slot.id, t.id)}
-                                              maxStudents={maxStudents}
-                                              expanded={expanded}
-                                              compat={compatFor(t)}
-                                              dragActive={!!dragPayload}
-                                              canDrop={canDropFor(date, d, slot.id, t)}
-                                              studentName={studentName}
-                                              subjectNameById={subjectNameById}
-                                              onRemovePlacement={removePlacement}
-                                            />
-                                          ))}
-                                        </div>
-                                      )}
-                                    </td>
-                                  );
-                                })}
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    )}
-
-                    {/* 配置済みリスト */}
-                    <div>
-                      <p className="text-sm font-medium text-text-heading mb-2">
-                        配置済み（週 {placementList.length} コマ）
-                      </p>
-                      {placementList.length === 0 ? (
+                    {/* ② スケジュール */}
+                    <div className="space-y-3">
+                      <div>
+                        <h2 className="text-base font-bold text-text-heading">② スケジュール</h2>
                         <p className="text-xs text-text-muted">
-                          まだ配置がありません。上のカードを講師にドラッグしてください。
+                          下のカード（受講科目ごと）を、対応するコマのミニ座席表の講師にドラッグして担当を決めます。1対2は隣の生徒が見えます。担当は後で座席表からでも決められます。
                         </p>
-                      ) : (
-                        <div className="space-y-1.5">
-                          {placementList.map((p) => {
-                            const t = teacherById.get(p.teacherId);
-                            return (
-                              <div
-                                key={p.key}
-                                className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface-hover border border-border text-sm"
-                              >
-                                <span className="font-medium text-text-heading w-24">
-                                  {DAY_OF_WEEK_LABELS[p.day]}曜 {p.slotNumber}限
-                                </span>
-                                <span className="text-text-body flex-1">
-                                  {subjectNameById.get(p.subjectId)}
-                                  <span className="text-text-muted ml-1">
-                                    （{p.ratio === 1 ? '1対1' : '1対2'}
-                                    {p.halfPosition
-                                      ? `・45${p.halfPosition === 'first' ? '前' : '後'}`
-                                      : ''}
-                                    ）
-                                  </span>
-                                </span>
-                                <span className="text-text-muted text-xs">
-                                  {t ? getSurname(t) || t.display_name || t.email : '講師'}
-                                </span>
-                                <button
-                                  type="button"
-                                  onClick={() => removePlacement(p.key)}
-                                  className="text-xs text-danger hover:underline"
-                                >
-                                  削除
-                                </button>
-                              </div>
-                            );
-                          })}
+                      </div>
+
+                      <div className={styles.root}>
+                        {/* ドラッグ元カード（受講科目の数だけ並ぶ） */}
+                        <div className="border border-border rounded-lg p-3 bg-surface-hover space-y-2">
+                          <p className="text-xs text-text-muted">
+                            科目カードを出勤講師へドラッグ（配置済みは講師名を表示）
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            {subjectPlans.map((p) => {
+                              const placement = placementBySubject.get(p.subject.id);
+                              if (placement) {
+                                const t = teacherById.get(placement.teacherId);
+                                return (
+                                  <div
+                                    key={p.subject.id}
+                                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-success/50 bg-success/10 text-sm"
+                                  >
+                                    <span className="font-medium text-text-heading">
+                                      {studentName}
+                                    </span>
+                                    <span className="text-text-body">{p.subject.name}</span>
+                                    <span className="text-xs text-success">
+                                      配置済み（
+                                      {t ? getSurname(t) || t.display_name || t.email : '講師'}）
+                                    </span>
+                                    <button
+                                      type="button"
+                                      onClick={() => removePlacement(placement.key)}
+                                      className="text-xs text-danger hover:underline"
+                                    >
+                                      解除
+                                    </button>
+                                  </div>
+                                );
+                              }
+                              const half =
+                                p.half === 'first' ? '前' : p.half === 'second' ? '後' : null;
+                              return (
+                                <OnboardingDragCard
+                                  key={p.subject.id}
+                                  studentName={studentName}
+                                  subjectName={p.subject.name}
+                                  ratio={p.ratio}
+                                  halfLabel={half}
+                                  payload={{
+                                    subjectId: p.subject.id,
+                                    ratio: p.ratio,
+                                    durationMinutes: p.durationMinutes,
+                                    halfPosition: p.half,
+                                    day: p.day,
+                                    slotId: p.slotId,
+                                  }}
+                                />
+                              );
+                            })}
+                          </div>
                         </div>
-                      )}
+
+                        {/* Step2 で決めた各コマのミニ座席表 */}
+                        {combos.length === 0 ? (
+                          <p className="text-sm text-text-muted mt-3">
+                            受講コマがありません。Step2 で曜日・時限を選んでください。
+                          </p>
+                        ) : (
+                          <div className="space-y-3 mt-3">
+                            {combos.map((combo) => {
+                              const date = dateForDow(weekStartStr, combo.day);
+                              const isClosed = closedDates.has(date);
+                              const availIds =
+                                availByDaySlot.get(`${combo.day}|${combo.slotNumber}`) ?? [];
+                              const cellTeachers = availIds
+                                .map((id) => teacherById.get(id))
+                                .filter((t): t is OnbTeacher => !!t)
+                                .map((t) => ({
+                                  id: t.id,
+                                  name: getSurname(t) || t.display_name || t.email || '—',
+                                  gender: t.gender ?? null,
+                                }));
+                              return (
+                                <MiniSeatingSlot
+                                  key={combo.key}
+                                  day={combo.day}
+                                  slotNumber={combo.slotNumber}
+                                  startTime={combo.startTime}
+                                  subjectsForCell={combo.plans.map((p) => ({
+                                    subjectId: p.subject.id,
+                                    subjectName: p.subject.name,
+                                    ratio: p.ratio,
+                                    half: p.half,
+                                  }))}
+                                  isClosed={isClosed}
+                                  weekLoading={weekLoading}
+                                  teachers={cellTeachers}
+                                  maxStudents={maxStudents}
+                                  dragActive={!!dragPayload}
+                                  studentName={studentName}
+                                  subjectNameById={subjectNameById}
+                                  existingEntriesFor={(tid) =>
+                                    activeEntriesFor(date, combo.slotId, tid)
+                                  }
+                                  placementsFor={(tid) =>
+                                    placementsFor(combo.day, combo.slotId, tid)
+                                  }
+                                  makeDropId={(tid) => makeDropId(combo.day, combo.slotId, tid)}
+                                  canDropFor={(tid) => {
+                                    const t = teacherById.get(tid);
+                                    if (!t) return null;
+                                    return canDropFor(date, combo.day, combo.slotId, t);
+                                  }}
+                                  compatFor={(tid) => {
+                                    if (
+                                      !dragPayload ||
+                                      dragPayload.day !== combo.day ||
+                                      dragPayload.slotId !== combo.slotId
+                                    ) {
+                                      return null;
+                                    }
+                                    const t = teacherById.get(tid);
+                                    if (!t) return null;
+                                    return compatForSubject(dragPayload.subjectId, t);
+                                  }}
+                                  onRemovePlacement={removePlacement}
+                                />
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
 
-                  {/* ドラッグ中プレビュー（カーソル追従） */}
+                  {/* ドラッグ中プレビュー（カーソル追従。科目カードと同じ体裁・色バッジ無し） */}
                   <DragOverlay>
-                    {dragPayload && activeSubject ? (
+                    {dragPayload ? (
                       <div className={styles.root}>
                         <div
                           className={styles.tBlock}
@@ -1243,8 +1319,11 @@ export default function OnboardingPage() {
                           }}
                         >
                           <span style={{ fontWeight: 600, fontSize: 12 }}>{studentName}</span>
-                          <span className={`${styles.subjChip} ${styles.subjBlue}`}>
-                            {subjectNameById.get(dragPayload.subjectId) ?? activeSubject.name}
+                          <span style={{ fontSize: 12, color: 'var(--text-body)' }}>
+                            {subjectNameById.get(dragPayload.subjectId) ?? '科目'}
+                          </span>
+                          <span className={styles.ratioTag}>
+                            {dragPayload.ratio === 1 ? '1:1' : '1:2'}
                           </span>
                         </div>
                       </div>
@@ -1259,7 +1338,7 @@ export default function OnboardingPage() {
                   <div>
                     <h2 className="text-base font-bold text-text-heading mb-1">確認・保存</h2>
                     <p className="text-xs text-text-muted">
-                      内容を確認して「登録する」を押すと、契約・通塾日程・座席表への反映をまとめて実行します。
+                      内容を確認して「登録する」を押すと、契約・通塾日程・座席表への反映をまとめて実行します。担当未決定の科目も登録され、座席表から後で割り当てできます。
                     </p>
                   </div>
 
@@ -1270,51 +1349,43 @@ export default function OnboardingPage() {
                   </div>
 
                   <div>
-                    <h3 className="text-sm font-medium text-text-heading mb-2">受講科目</h3>
-                    <div className="flex flex-wrap gap-2">
-                      {selectedSubjects.map((s) => (
-                        <span
-                          key={s.id}
-                          className="px-2.5 py-1 rounded-full bg-surface-hover border border-border text-xs text-text-body"
-                        >
-                          {subjectOptionLabel(s)}（{ratioMap.get(s.id) === 1 ? '1対1' : '1対2'}）
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
                     <h3 className="text-sm font-medium text-text-heading mb-2">
-                      配置（週 {placementList.length} コマ）
+                      受講コマ（週 {subjectPlans.length} コマ）
                     </h3>
-                    <div className="space-y-1.5">
-                      {placementList.map((p) => {
-                        const t = teacherById.get(p.teacherId);
-                        return (
-                          <div
-                            key={p.key}
-                            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-surface-hover border border-border text-sm"
-                          >
-                            <span className="font-medium text-text-heading w-24">
-                              {DAY_OF_WEEK_LABELS[p.day]}曜 {p.slotNumber}限
-                            </span>
-                            <span className="text-text-body flex-1">
-                              {subjectNameById.get(p.subjectId)}
-                              <span className="text-text-muted ml-1">
-                                （{p.ratio === 1 ? '1対1' : '1対2'}
-                                {p.halfPosition
-                                  ? `・45${p.halfPosition === 'first' ? '前' : '後'}`
-                                  : ''}
-                                ）
+                    {subjectPlans.length === 0 ? (
+                      <p className="text-xs text-text-muted">受講コマがありません。</p>
+                    ) : (
+                      <div className="space-y-1.5">
+                        {subjectPlans.map((p) => {
+                          const placement = placementBySubject.get(p.subject.id);
+                          const t = placement ? teacherById.get(placement.teacherId) : null;
+                          return (
+                            <div
+                              key={`${p.day}|${p.slotId}|${p.subject.id}`}
+                              className="flex items-center gap-2 px-3 py-2 rounded-lg bg-surface-hover border border-border text-sm"
+                            >
+                              <span className="font-medium text-text-heading w-24">
+                                {DAY_OF_WEEK_LABELS[p.day]}曜 {p.slotNumber}限
                               </span>
-                            </span>
-                            <span className="text-text-muted text-xs">
-                              {t ? getSurname(t) || t.display_name || t.email : '講師'}
-                            </span>
-                          </div>
-                        );
-                      })}
-                    </div>
+                              <span className="text-text-body flex-1">
+                                {p.subject.name}
+                                <span className="text-text-muted ml-1">
+                                  （{p.ratio === 1 ? '1対1' : '1対2'}
+                                  {p.half ? `・45${p.half === 'first' ? '前' : '後'}` : ''}）
+                                </span>
+                              </span>
+                              {t ? (
+                                <span className="text-text-muted text-xs">
+                                  {getSurname(t) || t.display_name || t.email}
+                                </span>
+                              ) : (
+                                <span className="text-warning text-xs">担当未決定</span>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
