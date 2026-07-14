@@ -14,8 +14,10 @@ import { withFetchCache } from '@/lib/utils/fetchCache';
 import { fetchAllPaged } from '@/lib/utils/supabasePaging';
 
 /** 一覧取得用（Row の列と一致。将来の列追加時は型と同期すること） */
+// 講師希望3列（preferred_teacher_gender / fixed_teacher_ids / excluded_teacher_ids）も含める。
+// これらは座席表D&D・マッチングが読むだけでなく、生徒編集フォームの初期表示にも必要（getStudent がこの列集合で取得するため）。
 const STUDENT_LIST_COLUMNS =
-  'id,school_id,student_code,last_name,first_name,last_name_kana,first_name_kana,grade,status,school_name,class_name,club,subject_other,is_programming,is_sibling,is_test,deleted_at,created_at,updated_at';
+  'id,school_id,student_code,last_name,first_name,last_name_kana,first_name_kana,grade,status,school_name,class_name,club,subject_other,is_programming,is_sibling,is_test,preferred_teacher_gender,fixed_teacher_ids,excluded_teacher_ids,deleted_at,created_at,updated_at';
 
 const SUBJECT_LIST_COLUMNS = 'id,name,grade_category,sort_order,duration_minutes,created_at';
 

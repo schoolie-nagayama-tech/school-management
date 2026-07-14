@@ -3,11 +3,38 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Button, Input, Select, Loading } from '@/components/ui';
 import type { Student, StudentInsert, StudentUpdate } from '@/types/database';
-import { X } from 'lucide-react';
+import { X, UserX, UserCheck } from 'lucide-react';
 import { GRADE_LABELS, STATUS_LABELS, ORDER_STATUS_LABELS } from '@/types/database';
 import { getStudentTextbooks, deleteOrder } from '@/lib/api/ordering';
 import type { StudentTextbook } from '@/lib/api/ordering';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
+import { fetchWithAuth } from '@/lib/api/auth';
+
+/** 講師希望セクションで使う講師（/api/admin/users?role=teacher の返り値の必要フィールド）。 */
+interface PrefTeacher {
+  id: string;
+  display_name: string | null;
+  last_name?: string | null;
+  first_name?: string | null;
+  email: string | null;
+  // どの教室に所属するかで絞り込むため user_schools を参照する
+  user_schools?: Array<{ school_id?: string | null }> | null;
+}
+
+/** 講師の表示名（display_name 優先 → 姓名 → メール）。 */
+function teacherLabel(t: PrefTeacher): string {
+  if (t.display_name && t.display_name.trim()) return t.display_name.trim();
+  const name = `${t.last_name ?? ''} ${t.first_name ?? ''}`.trim();
+  if (name) return name;
+  return t.email ?? '(名称未設定)';
+}
+
+/** 希望性別オプション（空文字＝指定なし＝DBでは null）。 */
+const genderOptions = [
+  { value: '', label: '指定なし' },
+  { value: 'male', label: '男性' },
+  { value: 'female', label: '女性' },
+];
 
 interface StudentFormProps {
   student?: Student | null;
@@ -55,9 +82,20 @@ export function StudentForm({
     is_programming: student?.is_programming ?? false,
     is_sibling: student?.is_sibling ?? false,
     withdrawal_date: student?.withdrawal_date || '',
+    // 講師希望3列。gender は select 用に空文字を許容し、送信時に null へ正規化する。
+    preferred_teacher_gender: (student?.preferred_teacher_gender ?? '') as '' | 'male' | 'female',
+    fixed_teacher_ids: (student?.fixed_teacher_ids ?? []) as string[],
+    excluded_teacher_ids: (student?.excluded_teacher_ids ?? []) as string[],
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // 講師希望セクション用の講師リスト（生徒の所属校で絞り込む）
+  const [teachers, setTeachers] = useState<PrefTeacher[]>([]);
+  const [teachersLoading, setTeachersLoading] = useState(false);
+
+  // 講師リスト取得の基準となる教室ID。編集時は生徒の所属校、新規時は登録先教室。
+  const teacherSchoolId = student?.school_id || selectedSchoolId;
 
   // 所持教材
   const [textbooks, setTextbooks] = useState<StudentTextbook[]>([]);
@@ -81,9 +119,80 @@ export function StudentForm({
         is_programming: student.is_programming ?? false,
         is_sibling: student.is_sibling ?? false,
         withdrawal_date: student.withdrawal_date || '',
+        preferred_teacher_gender: (student.preferred_teacher_gender ?? '') as
+          | ''
+          | 'male'
+          | 'female',
+        fixed_teacher_ids: student.fixed_teacher_ids ?? [],
+        excluded_teacher_ids: student.excluded_teacher_ids ?? [],
       });
     }
   }, [student]);
+
+  // 教室の講師を取得（座席表と同じ admin users API）。その教室に user_schools で
+  // 紐づく role=teacher のみに絞り込む。NG/固定の選択肢に使う。
+  useEffect(() => {
+    if (!teacherSchoolId) {
+      setTeachers([]);
+      return;
+    }
+    let cancelled = false;
+    setTeachersLoading(true);
+    fetchWithAuth('/api/admin/users?role=teacher')
+      .then((r) => r.json())
+      .then((d) => {
+        if (cancelled) return;
+        const all = (d.users || []) as PrefTeacher[];
+        const scoped = all.filter((t) =>
+          (t.user_schools || []).some((us) => us?.school_id === teacherSchoolId)
+        );
+        // 表示名で並べ替え（日本語ロケール）
+        scoped.sort((a, b) => teacherLabel(a).localeCompare(teacherLabel(b), 'ja'));
+        setTeachers(scoped);
+      })
+      .catch(() => {
+        if (!cancelled) setTeachers([]);
+      })
+      .finally(() => {
+        if (!cancelled) setTeachersLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [teacherSchoolId]);
+
+  // NG講師トグル。固定に入っている講師は同時にNGにできない（相反するため固定から外す）。
+  const toggleExcludedTeacher = (teacherId: string) => {
+    setFormData((prev) => {
+      const isOn = prev.excluded_teacher_ids.includes(teacherId);
+      return {
+        ...prev,
+        excluded_teacher_ids: isOn
+          ? prev.excluded_teacher_ids.filter((id) => id !== teacherId)
+          : [...prev.excluded_teacher_ids, teacherId],
+        // NGに追加するときは固定から自動除外（両方指定を防ぐ）
+        fixed_teacher_ids: isOn
+          ? prev.fixed_teacher_ids
+          : prev.fixed_teacher_ids.filter((id) => id !== teacherId),
+      };
+    });
+  };
+
+  // 固定講師トグル。NGに入っている講師は同時に固定にできない（NGから外す）。
+  const toggleFixedTeacher = (teacherId: string) => {
+    setFormData((prev) => {
+      const isOn = prev.fixed_teacher_ids.includes(teacherId);
+      return {
+        ...prev,
+        fixed_teacher_ids: isOn
+          ? prev.fixed_teacher_ids.filter((id) => id !== teacherId)
+          : [...prev.fixed_teacher_ids, teacherId],
+        excluded_teacher_ids: isOn
+          ? prev.excluded_teacher_ids
+          : prev.excluded_teacher_ids.filter((id) => id !== teacherId),
+      };
+    });
+  };
 
   // 所持教材を取得（編集時のみ）
   const fetchTextbooks = useCallback(async () => {
@@ -157,10 +266,24 @@ export function StudentForm({
 
     if (!validate()) return;
 
-    // withdrawal_date は空欄を null として送る（DB の DATE 型は空文字を許容しない）
+    // 安全網: NGと固定に同じ講師が入っていないこと（UI側でトグル時に相互排他にしているが念のため）。
+    const dupTeacherIds = formData.fixed_teacher_ids.filter((id) =>
+      formData.excluded_teacher_ids.includes(id)
+    );
+    if (dupTeacherIds.length > 0) {
+      setErrors((prev) => ({
+        ...prev,
+        teacherPref: '同じ講師をNGと固定の両方に指定することはできません',
+      }));
+      return;
+    }
+
+    // withdrawal_date は空欄を null として送る（DB の DATE 型は空文字を許容しない）。
+    // preferred_teacher_gender も空文字（指定なし）は null で保存する。
     const normalized = {
       ...formData,
       withdrawal_date: formData.withdrawal_date || null,
+      preferred_teacher_gender: formData.preferred_teacher_gender || null,
     };
     const submitData = isEdit
       ? (normalized as StudentUpdate)
@@ -314,6 +437,86 @@ export function StudentForm({
           />
           <span className="text-sm font-medium text-[#1f2937]">兄弟・姉妹あり</span>
         </label>
+      </div>
+
+      {/* 担当講師の希望（NG講師・固定講師・希望性別） */}
+      {/* ここで設定した値は座席表のD&D可否判定・マッチング候補・入会ウィザードのミニ座席表が読む。 */}
+      <div className="space-y-4 border-t border-[#e5e7eb] pt-4">
+        <div>
+          <h3 className="text-sm font-semibold text-[#1f2937]">担当講師の希望</h3>
+          <p className="text-xs text-[#6b7280] mt-0.5">
+            NG講師・固定講師・希望性別を設定すると、座席表への配置やマッチングで反映されます。
+          </p>
+        </div>
+
+        {/* 希望性別 */}
+        <Select
+          label="希望する講師の性別"
+          name="preferred_teacher_gender"
+          value={formData.preferred_teacher_gender}
+          onChange={handleChange}
+          options={genderOptions}
+        />
+
+        {errors.teacherPref && <p className="text-sm text-red-600">{errors.teacherPref}</p>}
+
+        {teachersLoading ? (
+          <Loading size="md" />
+        ) : !teacherSchoolId ? (
+          <p className="text-sm text-[#4b5563]/60">教室が未確定のため講師を表示できません</p>
+        ) : teachers.length === 0 ? (
+          <p className="text-sm text-[#4b5563]/60">この教室に登録された講師がいません</p>
+        ) : (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {/* 担当NG講師 */}
+            <div>
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <UserX className="w-4 h-4 text-[#dc2626]" />
+                <span className="text-sm font-medium text-[#1f2937]">担当NG講師</span>
+              </div>
+              <div className="space-y-1 border border-[#e5e7eb] rounded-lg p-2 bg-white max-h-48 overflow-y-auto">
+                {teachers.map((t) => (
+                  <label
+                    key={t.id}
+                    className="flex items-center gap-2 px-1.5 py-1 rounded cursor-pointer hover:bg-[#f3f4f6]"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={formData.excluded_teacher_ids.includes(t.id)}
+                      onChange={() => toggleExcludedTeacher(t.id)}
+                      className="w-4 h-4 text-[#dc2626] border-[#e5e7eb] rounded focus:ring-[#dc2626]"
+                    />
+                    <span className="text-sm text-[#1f2937] truncate">{teacherLabel(t)}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* 固定講師 */}
+            <div>
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <UserCheck className="w-4 h-4 text-[#16a34a]" />
+                <span className="text-sm font-medium text-[#1f2937]">固定講師</span>
+              </div>
+              <div className="space-y-1 border border-[#e5e7eb] rounded-lg p-2 bg-white max-h-48 overflow-y-auto">
+                {teachers.map((t) => (
+                  <label
+                    key={t.id}
+                    className="flex items-center gap-2 px-1.5 py-1 rounded cursor-pointer hover:bg-[#f3f4f6]"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={formData.fixed_teacher_ids.includes(t.id)}
+                      onChange={() => toggleFixedTeacher(t.id)}
+                      className="w-4 h-4 text-[#16a34a] border-[#e5e7eb] rounded focus:ring-[#16a34a]"
+                    />
+                    <span className="text-sm text-[#1f2937] truncate">{teacherLabel(t)}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* 所持教材 */}
