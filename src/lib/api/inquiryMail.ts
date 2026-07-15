@@ -238,13 +238,31 @@ function resolveSiteOrigin(): string {
 }
 
 /**
+ * トークンから配信停止URLを組み立てる（buildUnsubscribeUrl / テスト送信で共有）。
+ */
+function buildUnsubscribeUrlForToken(token: string): string {
+  const origin = resolveSiteOrigin();
+  if (!origin || !token) return '';
+  return `${origin}/inquiries/unsubscribe?token=${encodeURIComponent(token)}`;
+}
+
+/**
+ * テスト送信（テンプレート管理の「自分宛てにテスト送信」）用のダミー配信停止URL。
+ * 実在の問合せに紐づかないため実トークンは無いが、本番メールと見た目を揃えて
+ * フッターの表示崩れ・文言を確認できるようにする。リンク自体はクリックすると
+ * 「リンクが無効です」になる（テストなので実害はない）。
+ */
+export function buildTestUnsubscribeUrl(): string {
+  return buildUnsubscribeUrlForToken('00000000-0000-0000-0000-000000000000');
+}
+
+/**
  * 問合せのワンクリック配信停止リンク（メール本文フッターに埋め込む）を作る。
  * トークンは inquiries.email_opt_out_token（公開・推測不能）。
  */
 export function buildUnsubscribeUrl(inquiry: Inquiry): string {
-  const origin = resolveSiteOrigin();
-  if (!origin || !inquiry.email_opt_out_token) return '';
-  return `${origin}/inquiries/unsubscribe?token=${encodeURIComponent(inquiry.email_opt_out_token)}`;
+  if (!inquiry.email_opt_out_token) return '';
+  return buildUnsubscribeUrlForToken(inquiry.email_opt_out_token);
 }
 
 /**

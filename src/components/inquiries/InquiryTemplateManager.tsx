@@ -21,6 +21,7 @@ import {
   updateMailTemplate,
   deleteMailTemplate,
   renderTemplate,
+  buildTestUnsubscribeUrl,
 } from '@/lib/api/inquiryMail';
 import type { InquiryMailTemplate, InquiryMailTemplateInsert } from '@/types/database';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
@@ -224,6 +225,9 @@ export function InquiryTemplateManager({ onChanged }: InquiryTemplateManagerProp
           to: user.email,
           subject: `[テスト] ${renderedSubject}`,
           body: renderedBody,
+          // 実際の送信と見た目を揃えるため、配信停止フッターもテストメールに載せる
+          // （ダミートークンなのでリンク自体は無効。表示確認用）
+          unsubscribeUrl: buildTestUnsubscribeUrl(),
         },
       });
       if (error || (data && data.error)) {
