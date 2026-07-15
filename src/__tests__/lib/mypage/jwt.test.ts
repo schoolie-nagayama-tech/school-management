@@ -19,6 +19,15 @@ beforeAll(async () => {
   const jwk = await exportJWK(privateKey);
   jwk.alg = 'ES256';
   jwk.kid = 'test-kid';
+  // ★ 実運用の鍵の形を再現する（2026-07-15 の実機バグの再発防止）:
+  //   `supabase gen signing-key` が出す JWK は use/key_ops/ext を含む。
+  //   その JWK をそのまま環境変数に貼るのが自然な運用だが、key_ops:["sign","verify"] を
+  //   WebCrypto に渡すと ECDSA では不正（秘密鍵は sign のみ）として弾かれ、
+  //   ログインが 500 で必ず失敗する。テストが jose 生成のクリーンな JWK を使っていたため
+  //   この不整合を見逃していた。ここで実鍵と同じ形にしておく。
+  jwk.use = 'sig';
+  jwk.key_ops = ['sign', 'verify'];
+  jwk.ext = true;
   process.env.PORTAL_JWT_PRIVATE_JWK = JSON.stringify(jwk);
   // iss 用（vitest.config の env で https://test.supabase.co が入っている前提だが明示）。
   process.env.NEXT_PUBLIC_SUPABASE_URL =
@@ -75,6 +84,10 @@ describe('signPortalJwt / verifyPortalJwt', () => {
     // トークンは portal_session に流用できない（クレーム検証で弾く）。
     const { SignJWT, importJWK } = await import('jose');
     const jwk = JSON.parse(process.env.PORTAL_JWT_PRIVATE_JWK!);
+    // テスト側も key_ops 等を落としてから読む（実装と同じ理由。上の beforeAll のコメント参照）
+    delete jwk.key_ops;
+    delete jwk.use;
+    delete jwk.ext;
     const key = await importJWK(jwk, 'ES256');
     const now = Math.floor(Date.now() / 1000);
     const staffLike = await new SignJWT({

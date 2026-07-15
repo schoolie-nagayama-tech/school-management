@@ -33,7 +33,17 @@ export interface PortalStudentAuth {
 }
 
 /**
- * セッション検証 ＋ studentId の紐づけ検証をまとめて行う。
+ * セッション検証 ＋ studentId の「紐づけ」と「在籍」の検証をまとめて行う。
+ *
+ * ★ 在籍（退塾失効）もここで見る理由（2026-07-15 実機で漏洩を確認して追加）:
+ *   紐づけ（portal_account_students）は退塾しても残る。失効は students の RLS 述語
+ *   （withdrawal_date is null or >= current_date）が担うが、**この関数が返す svc は
+ *   service role ＝ RLS をバイパスする**。そのため紐づけだけを見て通すと、
+ *   svc で算出する API（例: /api/mypage/transfer-usage は schedule_regular_patterns と
+ *   schedule_entries を service role で読む）が **退塾生のデータを返してしまう**。
+ *   実際に「退塾済みの生徒の通塾パターン数・振替使用回数が返る」ことを実機で確認した。
+ *   「卒業・退塾後の閲覧は即時不可」（account-line-design.md §9）の違反なので、
+ *   RLS に頼れないこの入口で在籍も確認する。
  *
  * @param studentId 対象生徒
  * @returns 成功なら文脈、失敗なら返すべき NextResponse を持つオブジェクト
@@ -49,6 +59,23 @@ export async function requirePortalStudent(
   const svc = getPortalServiceClient();
 
   if (!(await verifyPortalLink(accountId, studentId, svc))) {
+    return { error: NextResponse.json({ error: '権限がありません' }, { status: 403 }) };
+  }
+
+  // 在籍確認は **ポータルJWTのクライアント（RLSが効く）** で行う。
+  // Stage1 の portal_students_select_linked が「紐づけ＋在籍中」を判定するので、
+  // 失効条件をここに書き写さずに済む（＝二重実装して食い違う事故を避ける）。
+  // 退塾超過なら 0 件になり、紐づけの有無と同じ 403 に落とす（存在を漏らさない）。
+  const { data: enrolled, error: enrolledErr } = await ctx.client
+    .from('students')
+    .select('id')
+    .eq('id', studentId)
+    .maybeSingle();
+  if (enrolledErr) {
+    console.error('[mypage/portalAuth] 在籍確認に失敗:', enrolledErr.message);
+    return { error: NextResponse.json({ error: '権限がありません' }, { status: 403 }) };
+  }
+  if (!enrolled) {
     return { error: NextResponse.json({ error: '権限がありません' }, { status: 403 }) };
   }
 

@@ -63,6 +63,26 @@ function loadSigningJwk(): { jwk: Record<string, unknown>; kid: string } {
 }
 
 /**
+ * JWK から WebCrypto が受け付けない用途系フィールドを取り除く。
+ *
+ * ★ なぜ必要か（2026-07-15 実機で発覚したバグ）:
+ *   `supabase gen signing-key` が出す JWK は `key_ops: ["sign","verify"]` を含む。
+ *   これをそのまま importJWK に渡すと WebCrypto が
+ *     DOMException: Unsupported key usage for a ECDSA key
+ *   で落ちる。ECDSA では **秘密鍵は sign のみ・公開鍵は verify のみ**が許され、
+ *   両方を持つ鍵は不正だから。結果としてログインが 500 で必ず失敗していた。
+ *   鍵JSONをそのまま環境変数に貼るのが自然な運用なので、
+ *   「貼られた形に依存せず動く」ようにコード側で落とす（use/ext も同様に不要）。
+ */
+function stripKeyUsage(jwk: Record<string, unknown>): Record<string, unknown> {
+  const cleaned = { ...jwk };
+  delete cleaned.key_ops;
+  delete cleaned.use;
+  delete cleaned.ext;
+  return cleaned;
+}
+
+/**
  * Supabaseの issuer（`${SUPABASE_URL}/auth/v1`）を組み立てる。
  * RLS/PostgREST が期待する iss に一致させる。
  */
@@ -82,7 +102,8 @@ function getIssuer(): string {
  */
 export async function signPortalJwt(portalAccountId: string): Promise<string> {
   const { jwk, kid } = loadSigningJwk();
-  const privateKey = await importJWK(jwk as JWK, 'ES256');
+  // key_ops 等を落としてから読む（そのまま渡すと WebCrypto が弾く。stripKeyUsage 参照）
+  const privateKey = await importJWK(stripKeyUsage(jwk) as JWK, 'ES256');
   const now = Math.floor(Date.now() / 1000);
 
   return await new SignJWT({
@@ -111,7 +132,8 @@ export async function verifyPortalJwt(token: string): Promise<PortalJwtClaims | 
   try {
     const { jwk } = loadSigningJwk();
     // 秘密指数 d を落として公開鍵JWKにする。
-    const publicJwk: Record<string, unknown> = { ...jwk };
+    // key_ops 等も落とす（公開鍵に "sign" が残っていると WebCrypto が弾く。stripKeyUsage 参照）。
+    const publicJwk = stripKeyUsage(jwk);
     delete publicJwk.d;
     const publicKey = await importJWK(publicJwk as JWK, 'ES256');
 

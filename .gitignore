@@ -44,3 +44,7 @@ next-env.d.ts
 /public/sw.js.map
 /public/workbox-*.js
 /public/workbox-*.js.map
+
+# ローカルSupabaseに読ませるポータルJWT署名鍵（秘密鍵）。
+# トークン発行権そのもの＝service_role key 同格。絶対にコミットしない。
+supabase/signing_keys.json
