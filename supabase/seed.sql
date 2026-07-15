@@ -26,10 +26,19 @@ on conflict (id) do nothing;
 -- ------------------------------------------------------------
 -- スタッフ（Supabase Auth ＋ user_profiles）
 --   auth.users に直接入れる。パスワードは bcrypt ハッシュ（password123）。
+--
+-- ★ confirmation_token / recovery_token / email_change / email_change_token_new に
+--   '' を入れている理由（2026-07-15・実機のGoTrueログで確定した罠）:
+--     これらの列は NOT NULL ではないが、GoTrue(Go) は string として読むため NULL だと
+--       Scan error on column "confirmation_token": converting NULL to string is unsupported
+--     で POST /auth/v1/token が 500（"Database error querying schema"）になる。
+--   ＝ これらを省くと **staff@test.local は作られた時から一度もログインできない**。
+--   ローカルでスタッフ側の画面を検証できていなかったのはこれが原因。列を消さないこと。
 -- ------------------------------------------------------------
 insert into auth.users (
   instance_id, id, aud, role, email, encrypted_password,
   email_confirmed_at, created_at, updated_at,
+  confirmation_token, recovery_token, email_change, email_change_token_new,
   raw_app_meta_data, raw_user_meta_data
 )
 values (
@@ -38,6 +47,8 @@ values (
   'authenticated', 'authenticated', 'staff@test.local',
   crypt('password123', gen_salt('bf')),
   now(), now(), now(),
+  -- ★ NULL 禁止（上記）。空文字を明示する。
+  '', '', '', '',
   '{"provider":"email","providers":["email"]}', '{}'
 )
 on conflict (id) do nothing;
