@@ -29,6 +29,7 @@ import { MobileBottomNav } from './MobileBottomNav';
 import { useStandalone } from '@/lib/utils/useStandalone';
 import { useToast } from '@/hooks/useToast';
 import { ToastContainer } from '@/components/ui';
+import { fetchWithAuth } from '@/lib/api/auth';
 
 interface AppHeaderProps {
   title: string;
@@ -157,7 +158,10 @@ export function AppHeader({
     if (startingPortalDemo) return;
     setStartingPortalDemo(true);
     try {
-      const res = await fetch('/api/portal-demo/start', { method: 'POST' });
+      // 素の fetch では 401 になる（実機で確認）。この API は requireManager を通るため、
+      // cookie だけに頼らず Authorization ヘッダーを付ける fetchWithAuth を使う
+      // ＝プロジェクトの管理API呼び出しの作法（getApiAuth 側も Bearer を見る）。
+      const res = await fetchWithAuth('/api/portal-demo/start', { method: 'POST' });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         toastError(data?.error ?? 'デモの起動に失敗しました');
@@ -439,17 +443,36 @@ export function AppHeader({
                         すべての設定
                       </Link>
                       <div className="border-t border-border my-1" />
-                      {/* 教室長ダッシュボード（admin のみ・試作。通常ナビにはまだ出さず、ここが唯一の入口） */}
-                      {isSystemAdmin(profile?.role) && (
+                      {/* 試作・クローズドな機能の入口。
+                          通常ナビ（navConfig）には載せず、ここが唯一の入口。
+                          isSystemAdmin ⊂ isManagerOrAbove なので外側は manager 以上で判定する。 */}
+                      {isManagerOrAbove(profile?.role) && (
                         <>
-                          <Link
-                            href="/home-mock"
-                            className="flex items-center gap-2 px-3 py-2 text-xs text-text-heading hover:bg-gray-50 transition-colors"
-                            onClick={() => setShowSettingsDropdown(false)}
+                          {isSystemAdmin(profile?.role) && (
+                            <Link
+                              href="/home-mock"
+                              className="flex items-center gap-2 px-3 py-2 text-xs text-text-heading hover:bg-gray-50 transition-colors"
+                              onClick={() => setShowSettingsDropdown(false)}
+                            >
+                              <LayoutDashboard className="w-3.5 h-3.5" aria-hidden />
+                              教室長ダッシュボード（試作）
+                            </Link>
+                          )}
+                          {/* 保護者ポータルV2 デモ。ダッシュボードが admin 限定なのに対し
+                              こちらが manager 以上なのは、デモの目的が「教室長に本番で
+                              触ってもらうこと」そのものだから。 */}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setShowSettingsDropdown(false);
+                              handlePortalDemo();
+                            }}
+                            disabled={startingPortalDemo}
+                            className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-text-heading transition-colors hover:bg-gray-50 disabled:opacity-50"
                           >
-                            <LayoutDashboard className="w-3.5 h-3.5" aria-hidden />
-                            教室長ダッシュボード（試作）
-                          </Link>
+                            <Smartphone className="w-3.5 h-3.5 shrink-0" aria-hidden />
+                            保護者ポータルV2（試作・ダミーデータ）
+                          </button>
                           <div className="border-t border-border my-1" />
                         </>
                       )}
@@ -494,21 +517,6 @@ export function AppHeader({
                 >
                   <LayoutDashboard className="w-4 h-4" aria-hidden />
                 </Link>
-              )}
-              {/* 保護者ポータルV2 デモ：教室長以上に表示。
-                  隣の座席表が isSystemAdmin なのに対しこちらが manager 以上なのは、
-                  デモの目的が「教室長に本番で触ってもらうこと」そのものだから。
-                  通常ナビ（navConfig）には載せない＝ここが唯一の入口（座席表・ダッシュボードと同じ扱い）。 */}
-              {profile && isManagerOrAbove(profile.role) && (
-                <button
-                  type="button"
-                  onClick={handlePortalDemo}
-                  disabled={startingPortalDemo}
-                  className="p-1.5 rounded-lg text-white/80 transition-[color,background-color,transform] duration-150 ease-out active:scale-[0.97] hover:text-white hover:bg-white/10 disabled:opacity-50"
-                  title="保護者ポータルV2（試作・ダミーデータ）"
-                >
-                  <Smartphone className="w-4 h-4" aria-hidden />
-                </button>
               )}
             </div>
           </div>
