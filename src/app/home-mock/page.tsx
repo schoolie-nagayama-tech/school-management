@@ -43,7 +43,9 @@ import type {
 } from '@/types/database';
 import type { AutoValues } from '@/lib/api/courseProgress';
 import { AdminLayout } from '@/components/layouts';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui';
+import { Card, CardContent, CardHeader, CardTitle, Loading } from '@/components/ui';
+import AccessDenied from '@/components/AccessDenied';
+import { isSystemAdmin } from '@/lib/utils/roles';
 import {
   Inbox,
   CalendarDays,
@@ -1901,6 +1903,27 @@ function OverviewView() {
 
 /* 分岐: すべての教室 → 俯瞰ビュー、個別校舎 → 詳細ビュー */
 export default function HomeMockPage() {
-  const { selectedSchoolId } = useAuth();
+  const { selectedSchoolId, profile, isLoading } = useAuth();
+
+  // このページはリンク側（AppHeader）が元から admin 限定で出しているのに、
+  // ページ自体には認可が無く、URL直打ちなら講師でも開けてしまっていた。
+  // ここは「意図（admin限定の試作）に実装を合わせる」だけの修正であり、
+  // リンクは元から admin にしか出ていないため誰の業務動線も変えない。
+  // 判定は必ずリンク側と同じ isSystemAdmin にする（ズレると入口と中身が食い違う）。
+  if (isLoading) {
+    return (
+      <AdminLayout>
+        <Loading />
+      </AdminLayout>
+    );
+  }
+  if (!isSystemAdmin(profile?.role)) {
+    return (
+      <AdminLayout>
+        <AccessDenied message="このページはシステム管理者のみアクセス可能です" />
+      </AdminLayout>
+    );
+  }
+
   return selectedSchoolId === 'all' ? <OverviewView /> : <DetailView />;
 }
