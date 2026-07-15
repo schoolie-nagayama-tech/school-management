@@ -299,11 +299,7 @@ describe('講師名: 限定公開ビューだけが読める', () => {
   });
 
   it('★ 紐づけを持たないアカウントは1人も列挙できない', async () => {
-    const rows = await selectAs(
-      'portal',
-      strangerAccountId,
-      'select id from portal_teacher_names'
-    );
+    const rows = await selectAs('portal', strangerAccountId, 'select id from portal_teacher_names');
     expect(rows.length).toBe(0);
   });
 

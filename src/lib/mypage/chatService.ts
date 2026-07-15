@@ -83,16 +83,14 @@ export async function resolveThreadForStudent(
   }
 
   // student_id unique の競合（並行作成）は onConflict で既存を拾い直す。
-  const { error: insErr } = await supabase
-    .from('chat_threads')
-    .upsert(
-      {
-        student_id: studentId,
-        school_id: (student as { school_id: string }).school_id,
-        created_by: createdBy,
-      },
-      { onConflict: 'student_id', ignoreDuplicates: true }
-    );
+  const { error: insErr } = await supabase.from('chat_threads').upsert(
+    {
+      student_id: studentId,
+      school_id: (student as { school_id: string }).school_id,
+      created_by: createdBy,
+    },
+    { onConflict: 'student_id', ignoreDuplicates: true }
+  );
   if (insErr) {
     console.error('[chatService] スレッド作成に失敗:', insErr.message);
     return null;

@@ -549,7 +549,11 @@ export async function createBulletinPost(
   }
 
   // 個別配信の対象生徒を bulletin_post_targets に書く（individual のときだけ）。
-  if (targetScope === 'individual' && data.target_student_ids && data.target_student_ids.length > 0) {
+  if (
+    targetScope === 'individual' &&
+    data.target_student_ids &&
+    data.target_student_ids.length > 0
+  ) {
     const rows = data.target_student_ids.map((sid) => ({
       post_id: (post as { id: string }).id,
       student_id: sid,

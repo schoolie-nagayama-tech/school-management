@@ -117,9 +117,12 @@ afterAll(async () => {
 
 describe('chat_threads: 自分が participant のスレッドだけ可視', () => {
   it('accountA は threadA を読めるが threadB は読めない', async () => {
-    const rows = await selectAs('portal', accountAId, 'select id from chat_threads where id = any($1)', [
-      [threadAId, threadBId],
-    ]);
+    const rows = await selectAs(
+      'portal',
+      accountAId,
+      'select id from chat_threads where id = any($1)',
+      [[threadAId, threadBId]]
+    );
     const ids = rows.map((r) => r.id);
     expect(ids).toContain(threadAId);
     expect(ids).not.toContain(threadBId);
@@ -145,7 +148,11 @@ describe('chat_messages: 自分が participant のスレッドのメッセージ
   });
 
   it('authenticated（スタッフ）は chat_messages を読めない（portal専用grant）', async () => {
-    const count = await tryCountAs('authenticated', accountAId, 'select id from chat_messages limit 1');
+    const count = await tryCountAs(
+      'authenticated',
+      accountAId,
+      'select id from chat_messages limit 1'
+    );
     // grant 無し → permission denied(-1) を期待。仮に select 可でも RLS で 0 件。
     expect(count === -1 || count === 0).toBe(true);
   });

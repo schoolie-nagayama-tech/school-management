@@ -110,10 +110,7 @@ describe('退塾生の失効', () => {
 
   it('退塾日が未来の生徒は在籍扱い（境界: 当日はまだ見える）', async () => {
     const today = new Date().toISOString().slice(0, 10);
-    await admin
-      .from('students')
-      .update({ withdrawal_date: today })
-      .eq('id', withdrawnStudentId);
+    await admin.from('students').update({ withdrawal_date: today }).eq('id', withdrawnStudentId);
     const rows = await selectAs('portal', accountId, 'select id from students where id = $1', [
       withdrawnStudentId,
     ]);

@@ -169,10 +169,7 @@ afterAll(async () => {
   await admin.from('portal_account_students').delete().eq('account_id', accountAId);
   await admin.from('portal_account_students').delete().eq('account_id', accountBId);
   await admin.from('portal_account_students').delete().eq('account_id', accountSelfBId);
-  await admin
-    .from('portal_accounts')
-    .delete()
-    .in('id', [accountAId, accountBId, accountSelfBId]);
+  await admin.from('portal_accounts').delete().in('id', [accountAId, accountBId, accountSelfBId]);
   await admin.from('students').delete().eq('school_id', schoolId);
   if (staffUserId) await cleanupTestUser(admin, staffUserId);
   await cleanupTestSchool(admin, otherSchoolId);
