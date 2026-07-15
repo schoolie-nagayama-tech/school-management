@@ -141,11 +141,17 @@ function formatResponseDetails(formType: string, responseData: any, periodSettin
     case 'moshi':
       if (responseData.exam_type === 'regular') {
         details += `<p><strong>受験方法:</strong> 本試験受験</p>`
-        if (periodSettings?.exam_date_label) {
-          details += `<p><strong>本試験日:</strong> ${periodSettings.exam_date_label}</p>`
+        // 複数日程の期間では回答が選んだ日程を持つ。持たない場合（単一日程・旧回答）は期間設定にフォールバック
+        const examDateLabel =
+          responseData.selected_exam_date_label || periodSettings?.exam_date_label
+        const examTime = responseData.selected_exam_date_label
+          ? responseData.selected_exam_time
+          : periodSettings?.exam_time
+        if (examDateLabel) {
+          details += `<p><strong>本試験日:</strong> ${examDateLabel}</p>`
         }
-        if (periodSettings?.exam_time) {
-          details += `<p><strong>時間:</strong> ${periodSettings.exam_time}</p>`
+        if (examTime) {
+          details += `<p><strong>時間:</strong> ${examTime}</p>`
         }
       } else if (responseData.exam_type === 'furikae') {
         details += `<p><strong>受験方法:</strong> 振替受験</p>`
@@ -253,11 +259,18 @@ function formatMoshiContextBlock(periodTitle: string, periodSettings: any): stri
   if (periodTitle) {
     parts.push(`<p><strong>対象の模試:</strong> ${periodTitle}</p>`)
   }
-  if (periodSettings?.exam_date_label) {
+  // 複数日程が設定されていれば全日程を列挙。旧データは単一の exam_date_label にフォールバック
+  const examDates = (periodSettings?.exam_dates ?? []).filter((d: any) => d?.label)
+  if (examDates.length > 0) {
+    const items = examDates
+      .map((d: any) => `<li>${d.label}${d.time ? ` ${d.time}` : ''}</li>`)
+      .join('')
+    parts.push(`<p><strong>試験日:</strong></p><ul>${items}</ul>`)
+  } else if (periodSettings?.exam_date_label) {
     parts.push(`<p><strong>試験日:</strong> ${periodSettings.exam_date_label}</p>`)
-  }
-  if (periodSettings?.exam_time) {
-    parts.push(`<p><strong>時間:</strong> ${periodSettings.exam_time}</p>`)
+    if (periodSettings?.exam_time) {
+      parts.push(`<p><strong>時間:</strong> ${periodSettings.exam_time}</p>`)
+    }
   }
   if (periodSettings?.description) {
     parts.push(

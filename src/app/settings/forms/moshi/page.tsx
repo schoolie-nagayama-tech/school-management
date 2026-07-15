@@ -19,6 +19,20 @@ import type { MoshiPeriod } from '@/types/forms/moshi';
 import { getDefaultSchoolId } from '@/lib/api/schools';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 import { getFormPeriodStatus } from '@/lib/utils/formPeriodStatus';
+import { formatMoshiExamDateText, getMoshiExamDates } from '@/lib/utils/moshiExamDates';
+
+// 受験日時セル。複数日程が設定されていれば全て縦に並べる
+function ExamDatesCell({ period }: { period: MoshiPeriod }) {
+  const dates = getMoshiExamDates(period.settings);
+  if (dates.length === 0) return <span className="text-text-muted">-</span>;
+  return (
+    <div className="space-y-0.5">
+      {dates.map((d) => (
+        <div key={d.id}>{formatMoshiExamDateText(d)}</div>
+      ))}
+    </div>
+  );
+}
 
 export default function MoshiSettingsPage() {
   const [periods, setPeriods] = useState<MoshiPeriod[]>([]);
@@ -221,7 +235,7 @@ export default function MoshiSettingsPage() {
                       <td className="border border-border px-4 py-3">{period.period_key}</td>
                       <td className="border border-border px-4 py-3">{period.title}</td>
                       <td className="border border-border px-4 py-3">
-                        {period.settings.exam_date_label} {period.settings.exam_time}
+                        <ExamDatesCell period={period} />
                       </td>
                       <td className="border border-border px-4 py-3">
                         {formatDateRange(period.publish_start, period.publish_end)}
@@ -312,7 +326,7 @@ export default function MoshiSettingsPage() {
                           <td className="border border-border px-4 py-3">{period.period_key}</td>
                           <td className="border border-border px-4 py-3">{period.title}</td>
                           <td className="border border-border px-4 py-3">
-                            {period.settings.exam_date_label} {period.settings.exam_time}
+                            <ExamDatesCell period={period} />
                           </td>
                           <td className="border border-border px-4 py-3">
                             {formatDateRange(period.publish_start, period.publish_end)}

@@ -10,9 +10,11 @@ import {
   getNextPeriodKey,
 } from '@/lib/api/form-periods';
 import { getApplicationItems } from '@/lib/api/applications';
-import type { MoshiPeriod, MoshiSettings } from '@/types/forms/moshi';
+import type { MoshiExamDate, MoshiPeriod, MoshiSettings } from '@/types/forms/moshi';
 import type { ApplicationItem } from '@/types/database';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
+import { formatMoshiDateLabel, getMoshiExamDates } from '@/lib/utils/moshiExamDates';
+import { Plus, Trash2 } from 'lucide-react';
 
 interface MoshiPeriodEditorProps {
   isOpen: boolean;
@@ -27,6 +29,11 @@ interface MoshiPeriodEditorProps {
 }
 
 const ALL_GRADES = ['小4', '小5', '小6', '中1', '中2', '中3'];
+
+// 編集中の試験日程1行。label は保存時に日付から作るのでここでは持たない
+type ExamDateRow = { id: string; date: string; time: string };
+
+const newExamDateRow = (): ExamDateRow => ({ id: crypto.randomUUID(), date: '', time: '' });
 
 export function MoshiPeriodEditor({
   isOpen,
@@ -50,8 +57,7 @@ export function MoshiPeriodEditor({
   const [publishStart, setPublishStart] = useState('');
   const [publishEnd, setPublishEnd] = useState('');
   const [selectedGrades, setSelectedGrades] = useState<string[]>(ALL_GRADES);
-  const [examDate, setExamDate] = useState('');
-  const [examTime, setExamTime] = useState('');
+  const [examDates, setExamDates] = useState<ExamDateRow[]>([newExamDateRow()]);
   const [furikaeEnabled, setFurikaeEnabled] = useState(true);
   const [furikaeNote, setFurikaeNote] = useState('振替受験は平日のみとなります。');
   const [elementaryTime, setElementaryTime] = useState('約2時間');
@@ -59,16 +65,6 @@ export function MoshiPeriodEditor({
   const [completionMessage, setCompletionMessage] = useState('お申し込みありがとうございます。');
   const [linkedApplicationItemId, setLinkedApplicationItemId] = useState<string>('');
   const [applicationItems, setApplicationItems] = useState<ApplicationItem[]>([]);
-
-  // 日付ラベルを生成
-  const formatDateLabel = (dateStr: string): string => {
-    if (!dateStr) return '';
-    const date = new Date(dateStr);
-    const month = date.getMonth() + 1;
-    const day = date.getDate();
-    const dayOfWeek = ['日', '月', '火', '水', '木', '金', '土'][date.getDay()];
-    return `${month}月${day}日（${dayOfWeek}）`;
-  };
 
   // 初期値の設定
   useEffect(() => {
@@ -91,8 +87,13 @@ export function MoshiPeriodEditor({
           period.publish_end ? new Date(period.publish_end).toISOString().slice(0, 16) : ''
         );
         setSelectedGrades(settings.grades || ALL_GRADES);
-        setExamDate(settings.exam_date || '');
-        setExamTime(settings.exam_time || '');
+        // 旧データ（単一日程）も getMoshiExamDates が1件の配列にしてくれる
+        const loaded = getMoshiExamDates(settings).map((d) => ({
+          id: d.id,
+          date: d.date,
+          time: d.time || '',
+        }));
+        setExamDates(loaded.length > 0 ? loaded : [newExamDateRow()]);
         setFurikaeEnabled(settings.furikae?.enabled ?? true);
         setFurikaeNote(settings.furikae?.note || '振替受験は平日のみとなります。');
         setElementaryTime(settings.furikae?.time_guide?.elementary || '約2時間');
@@ -110,8 +111,7 @@ export function MoshiPeriodEditor({
         setPublishStart('');
         setPublishEnd('');
         setSelectedGrades(ALL_GRADES);
-        setExamDate('');
-        setExamTime('');
+        setExamDates([newExamDateRow()]);
         setFurikaeEnabled(true);
         setFurikaeNote('振替受験は平日のみとなります。');
         setElementaryTime('約2時間');
@@ -136,6 +136,23 @@ export function MoshiPeriodEditor({
     );
   };
 
+  // 試験日程の行操作
+  const updateExamDate = (id: string, patch: Partial<ExamDateRow>) => {
+    setExamDates((prev) => prev.map((row) => (row.id === id ? { ...row, ...patch } : row)));
+  };
+
+  const addExamDate = () => {
+    setExamDates((prev) => [...prev, newExamDateRow()]);
+  };
+
+  const removeExamDate = (id: string) => {
+    // 最低1行は残す（0行だと保存できないため）
+    setExamDates((prev) => (prev.length <= 1 ? prev : prev.filter((row) => row.id !== id)));
+  };
+
+  // 日付が入っている行だけを保存対象にする（空行は捨てる）
+  const filledExamDates = examDates.filter((row) => row.date);
+
   // バリデーション
   const validate = (): boolean => {
     if (!periodKey.trim()) {
@@ -146,9 +163,19 @@ export function MoshiPeriodEditor({
       setError('タイトルを入力してください');
       return false;
     }
-    if (!examDate) {
-      setError('受験日を入力してください');
+    if (filledExamDates.length === 0) {
+      setError('受験日を1つ以上入力してください');
       return false;
+    }
+    // 同じ日付＋同じ時間の行が並ぶと生徒側の選択肢が区別できなくなる
+    const seen = new Set<string>();
+    for (const row of filledExamDates) {
+      const key = `${row.date}|${row.time.trim()}`;
+      if (seen.has(key)) {
+        setError(`受験日時が重複しています（${formatMoshiDateLabel(row.date)}）`);
+        return false;
+      }
+      seen.add(key);
     }
     if (selectedGrades.length === 0) {
       setError('対象学年を1つ以上選択してください');
@@ -175,12 +202,28 @@ export function MoshiPeriodEditor({
     setError('');
 
     try {
+      // 日付昇順で正規化。ラベルは日付から作り直す
+      const cleanedExamDates: MoshiExamDate[] = [...filledExamDates]
+        .sort((a, b) => a.date.localeCompare(b.date))
+        .map((row) => ({
+          id: row.id,
+          date: row.date,
+          label: formatMoshiDateLabel(row.date),
+          ...(row.time.trim() ? { time: row.time.trim() } : {}),
+        }));
+
+      // 旧フィールドには先頭日程を書く。
+      // 通知メールの Edge Function など exam_date を直接読む箇所が残っているため、
+      // 複数日程でも「最初の1件」は必ず有効な値が入っている状態を保つ。
+      const primary = cleanedExamDates[0];
+
       const settings: MoshiSettings = {
         description: description.trim(),
         grades: selectedGrades,
-        exam_date: examDate,
-        exam_date_label: formatDateLabel(examDate),
-        exam_time: examTime.trim(),
+        exam_dates: cleanedExamDates,
+        exam_date: primary.date,
+        exam_date_label: primary.label,
+        exam_time: primary.time ?? '',
         furikae: {
           enabled: furikaeEnabled,
           note: furikaeNote.trim(),
@@ -332,17 +375,64 @@ export function MoshiPeriodEditor({
             受験日時
           </h3>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-1 text-[#1f2937]">
-                受験日 <span className="text-red-500">*</span>
-              </label>
-              <Input type="date" value={examDate} onChange={(e) => setExamDate(e.target.value)} />
-              {examDate && (
-                <p className="text-sm text-[#4b5563] mt-1">→ {formatDateLabel(examDate)}</p>
-              )}
-            </div>
+          <p className="text-xs text-[#4b5563]/80 mb-3">
+            複数登録すると、申込フォームで生徒がどの日程で受験するかを1つ選びます。
+          </p>
+
+          <div className="space-y-3">
+            {examDates.map((row, index) => (
+              <div key={row.id} className="flex items-start gap-3">
+                <div className="flex-1">
+                  {index === 0 && (
+                    <label className="block text-sm font-medium mb-1 text-[#1f2937]">
+                      受験日 <span className="text-red-500">*</span>
+                    </label>
+                  )}
+                  <Input
+                    type="date"
+                    value={row.date}
+                    onChange={(e) => updateExamDate(row.id, { date: e.target.value })}
+                  />
+                  {row.date && (
+                    <p className="text-sm text-[#4b5563] mt-1">
+                      → {formatMoshiDateLabel(row.date)}
+                    </p>
+                  )}
+                </div>
+                <div className="flex-1">
+                  {index === 0 && (
+                    <label className="block text-sm font-medium mb-1 text-[#1f2937]">時間</label>
+                  )}
+                  <Input
+                    type="text"
+                    value={row.time}
+                    onChange={(e) => updateExamDate(row.id, { time: e.target.value })}
+                    placeholder="例: 10:00〜13:00"
+                  />
+                </div>
+                <div className={index === 0 ? 'pt-7' : ''}>
+                  <button
+                    type="button"
+                    onClick={() => removeExamDate(row.id)}
+                    disabled={examDates.length <= 1}
+                    aria-label="この受験日時を削除"
+                    className="p-2 text-[#6b7280] hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-[#6b7280] disabled:cursor-not-allowed"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
+
+          <button
+            type="button"
+            onClick={addExamDate}
+            className="mt-3 inline-flex items-center gap-1.5 text-sm text-[#3b82f6] hover:text-[#2563eb] font-medium"
+          >
+            <Plus className="w-4 h-4" />
+            受験日時を追加
+          </button>
         </section>
 
         {/* 対象学年 */}

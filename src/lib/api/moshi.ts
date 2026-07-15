@@ -7,6 +7,7 @@ import {
 } from './form-responses';
 import type { FormResponseInsert } from '@/types/database';
 import type {
+  MoshiExamDateCount,
   MoshiPeriod,
   MoshiResponse,
   MoshiResponseData,
@@ -96,6 +97,11 @@ export async function getMoshiResponses(
     filtered = filtered.filter((r) => r.response_data.exam_type === filters.examType);
   }
 
+  // 試験日程フィルター（通常受験のみが対象。振替は日程を選ばないので除外される）
+  if (filters?.examDateId && filters.examDateId !== 'all') {
+    filtered = filtered.filter((r) => r.response_data.selected_exam_date_id === filters.examDateId);
+  }
+
   return filtered;
 }
 
@@ -113,12 +119,32 @@ export async function getMoshiStats(
   const chargedCount = responses.filter((r) => r.status_checks?.charged === true).length;
   const linkedCount = responses.filter((r) => r.linked_student_id !== null).length;
 
+  // 試験日程ごとの申込数。回答に焼き込まれた値で集計するので期間設定の取得は不要
+  const countsById = new Map<string, MoshiExamDateCount>();
+  for (const r of responses) {
+    const d = r.response_data;
+    if (d.exam_type !== 'regular' || !d.selected_exam_date_id) continue;
+    const existing = countsById.get(d.selected_exam_date_id);
+    if (existing) {
+      existing.count += 1;
+    } else {
+      countsById.set(d.selected_exam_date_id, {
+        id: d.selected_exam_date_id,
+        date: d.selected_exam_date || '',
+        label: d.selected_exam_date_label || d.selected_exam_date || '',
+        time: d.selected_exam_time,
+        count: 1,
+      });
+    }
+  }
+
   return {
     total_responses: responses.length,
     regular_count: regularCount,
     furikae_count: furikaeCount,
     charged_count: chargedCount,
     linked_count: linkedCount,
+    exam_date_counts: Array.from(countsById.values()).sort((a, b) => a.date.localeCompare(b.date)),
   };
 }
 

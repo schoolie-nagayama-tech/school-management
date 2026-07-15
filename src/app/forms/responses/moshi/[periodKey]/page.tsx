@@ -23,7 +23,11 @@ import { LinkStudentModal } from '@/components/forms/LinkStudentModal';
 import { useToast } from '@/hooks/useToast';
 import { useConfirm } from '@/hooks/useConfirm';
 import { ToastContainer, Loading, Spinner } from '@/components/ui';
-import type { MoshiResponse, MoshiResponseFilters } from '@/types/forms/moshi';
+import type {
+  MoshiResponse,
+  MoshiResponseFilters,
+  MoshiStats as MoshiStatsData,
+} from '@/types/forms/moshi';
 import type { Student } from '@/types/database';
 import { getDefaultSchoolId } from '@/lib/api/schools';
 import { useAuth } from '@/contexts/AuthContext';
@@ -39,12 +43,14 @@ export default function MoshiResponsePage() {
   const periodKey = (params?.periodKey as string) || '';
   const { getSelectedSchoolIds, permissions } = useAuth();
   const [responses, setResponses] = useState<MoshiResponse[]>([]);
-  const [stats, setStats] = useState({
+  // 型名 MoshiStats は同名のコンポーネントと衝突するため別名で読む
+  const [stats, setStats] = useState<MoshiStatsData>({
     total_responses: 0,
     regular_count: 0,
     furikae_count: 0,
     charged_count: 0,
     linked_count: 0,
+    exam_date_counts: [],
   });
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
@@ -58,6 +64,7 @@ export default function MoshiResponsePage() {
   // フィルター
   const [filterGrade, setFilterGrade] = useState<number | 'all'>('all');
   const [filterExamType, setFilterExamType] = useState<'all' | 'regular' | 'furikae'>('all');
+  const [filterExamDateId, setFilterExamDateId] = useState<string>('all');
   const [filterChargedStatus, setFilterChargedStatus] = useState<'all' | 'charged' | 'not_charged'>(
     'all'
   );
@@ -79,6 +86,7 @@ export default function MoshiResponsePage() {
       const filters: MoshiResponseFilters = {
         grade: filterGrade === 'all' ? undefined : filterGrade,
         examType: filterExamType === 'all' ? undefined : filterExamType,
+        examDateId: filterExamDateId === 'all' ? undefined : filterExamDateId,
         chargedStatus: filterChargedStatus === 'all' ? undefined : filterChargedStatus,
         linkedStatus: filterLinkedStatus === 'all' ? undefined : filterLinkedStatus,
         showArchived,
@@ -105,6 +113,7 @@ export default function MoshiResponsePage() {
     periodKey,
     filterGrade,
     filterExamType,
+    filterExamDateId,
     filterChargedStatus,
     filterLinkedStatus,
     showArchived,
@@ -122,12 +131,15 @@ export default function MoshiResponsePage() {
   };
 
   const formatExamType = (response: MoshiResponse): string => {
-    if (response.response_data.exam_type === 'regular') {
-      return '通常受験';
+    const d = response.response_data;
+    if (d.exam_type === 'regular') {
+      // 複数日程の期間ではどの日程を選んだかを出す。単一日程・旧回答は日程を持たないので「通常受験」のまま
+      const date = d.selected_exam_date_label || d.selected_exam_date || '';
+      if (!date) return '通常受験';
+      return `通常 ${date} ${d.selected_exam_time || ''}`.trim();
     } else {
-      const date =
-        response.response_data.furikae_date_label || response.response_data.furikae_date || '';
-      const time = response.response_data.furikae_time || '';
+      const date = d.furikae_date_label || d.furikae_date || '';
+      const time = d.furikae_time || '';
       return `振替 ${date} ${time}`;
     }
   };
@@ -390,15 +402,13 @@ export default function MoshiResponsePage() {
         cmp = a.grade - b.grade;
         break;
       case 'exam_type': {
-        const typeA =
-          a.response_data.exam_type === 'regular'
-            ? '0'
-            : `1${a.response_data.furikae_date_label || ''}`;
-        const typeB =
-          b.response_data.exam_type === 'regular'
-            ? '0'
-            : `1${b.response_data.furikae_date_label || ''}`;
-        cmp = typeA.localeCompare(typeB);
+        // 通常受験を先に、その中は試験日順。振替はその後ろで希望日順。
+        // 日付は YYYY-MM-DD なので辞書順＝日付順になる
+        const sortValue = (r: MoshiResponse) =>
+          r.response_data.exam_type === 'regular'
+            ? `0${r.response_data.selected_exam_date || ''}`
+            : `1${r.response_data.furikae_date || ''}`;
+        cmp = sortValue(a).localeCompare(sortValue(b));
         break;
       }
       case 'charged':
@@ -487,6 +497,25 @@ export default function MoshiResponsePage() {
                 <option value="furikae">振替受験</option>
               </select>
             </div>
+
+            {/* 試験日程フィルター（複数日程の申込がある期間でのみ出す） */}
+            {stats.exam_date_counts.length > 1 && (
+              <div>
+                <label className="block text-sm font-medium text-text-heading mb-2">試験日程</label>
+                <select
+                  value={filterExamDateId}
+                  onChange={(e) => setFilterExamDateId(e.target.value)}
+                  className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-surface-raised text-text-body"
+                >
+                  <option value="all">全て</option>
+                  {stats.exam_date_counts.map((d) => (
+                    <option key={d.id} value={d.id}>
+                      {d.time ? `${d.label} ${d.time}` : d.label}（{d.count}件）
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             <div>
               <label className="block text-sm font-medium text-text-heading mb-2">計上状態</label>

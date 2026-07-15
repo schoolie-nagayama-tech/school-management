@@ -62,12 +62,26 @@ export function MoshiResponseDetailModal({
         </div>
 
         {response.response_data.exam_type === 'regular' && (
-          <div>
-            <label className="block text-sm font-medium text-[#1f2937] mb-1">通常受験</label>
-            <p className="text-sm text-[#4b5563]">
-              {response.response_data.regular_confirmed ? '参加確認済み' : '-'}
-            </p>
-          </div>
+          <>
+            {/* 選択した日程。単一日程の期間・複数日程対応より前の回答は持たない */}
+            {response.response_data.selected_exam_date_label && (
+              <div>
+                <label className="block text-sm font-medium text-[#1f2937] mb-1">受験日程</label>
+                <p className="text-sm text-[#4b5563]">
+                  {response.response_data.selected_exam_date_label}
+                  {response.response_data.selected_exam_time
+                    ? ` ${response.response_data.selected_exam_time}`
+                    : ''}
+                </p>
+              </div>
+            )}
+            <div>
+              <label className="block text-sm font-medium text-[#1f2937] mb-1">通常受験</label>
+              <p className="text-sm text-[#4b5563]">
+                {response.response_data.regular_confirmed ? '参加確認済み' : '-'}
+              </p>
+            </div>
+          </>
         )}
 
         {response.response_data.exam_type === 'furikae' && (

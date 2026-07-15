@@ -19,13 +19,34 @@ export const MOSHI_GRADE_NUMBER_TO_NAME: Record<number, string> = {
   9: '中3',
 };
 
+/** 試験日程1件。複数日程を設定でき、生徒はこの中から1つを選ぶ */
+export interface MoshiExamDate {
+  /** 行の安定ID。同日に複数の時間帯を置けるよう日付とは別に持つ */
+  id: string;
+  date: string; // YYYY-MM-DD形式
+  label: string; // 例: "2月15日（日）"
+  /** 時間（未指定可）。例: "10:00〜13:00" */
+  time?: string;
+}
+
 // 模試設定
 export interface MoshiSettings {
   description: string;
   grades: string[]; // 例: ["小4", "小5", "小6", "中1", "中2", "中3"]
+  /**
+   * 試験日程（複数可）。これが正典。
+   * 未設定の旧データは exam_date / exam_date_label / exam_time にフォールバックする。
+   * 読むときは getMoshiExamDates(settings) を使うこと。
+   */
+  exam_dates?: MoshiExamDate[];
+  /**
+   * @deprecated exam_dates を使う。
+   * 旧データ互換と通知メール（Edge Function が直接参照）のため、先頭日程を書き続けている。
+   */
   exam_date: string; // YYYY-MM-DD形式
+  /** @deprecated exam_dates を使う。先頭日程のラベル */
   exam_date_label: string; // 例: "2月15日（日）"
-  /** 本試験の時間（未指定可）。時間指定は振替受験のみ */
+  /** @deprecated exam_dates を使う。先頭日程の時間 */
   exam_time?: string; // 例: "10:00〜13:00"
   furikae: {
     enabled: boolean;
@@ -43,6 +64,15 @@ export interface MoshiSettings {
 export interface MoshiResponseData {
   exam_type: 'regular' | 'furikae';
   regular_confirmed?: boolean;
+  /**
+   * 通常受験で選んだ試験日程。設定側の日程を後から編集しても回答が壊れないよう、
+   * IDだけでなく日付・ラベル・時間を回答時点の値で非正規化して保存する。
+   * 日程が1件しかない期間や、複数日程対応より前の回答では未設定。
+   */
+  selected_exam_date_id?: string;
+  selected_exam_date?: string; // YYYY-MM-DD形式
+  selected_exam_date_label?: string;
+  selected_exam_time?: string;
   furikae_date?: string;
   furikae_date_label?: string;
   furikae_time?: string;
@@ -98,6 +128,8 @@ export interface MoshiResponse {
 export interface MoshiResponseFilters {
   grade?: number;
   examType?: 'all' | 'regular' | 'furikae';
+  /** 通常受験のうち、選ばれた試験日程で絞る（'all' または MoshiExamDate.id） */
+  examDateId?: string;
   showArchived?: boolean;
   search?: string;
   chargedStatus?: 'all' | 'charged' | 'not_charged';
@@ -111,4 +143,17 @@ export interface MoshiStats {
   furikae_count: number;
   charged_count: number;
   linked_count: number;
+  /**
+   * 通常受験の申込を試験日程ごとに数えたもの（日付昇順）。
+   * 日程を持たない回答（単一日程の期間・複数日程対応より前の回答）は含まれない。
+   */
+  exam_date_counts: MoshiExamDateCount[];
+}
+
+export interface MoshiExamDateCount {
+  id: string;
+  date: string;
+  label: string;
+  time?: string;
+  count: number;
 }
