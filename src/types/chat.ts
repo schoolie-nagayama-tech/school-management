@@ -37,8 +37,13 @@ export interface ChatTemplatePayload {
   candidates?: TransferCandidate[];
   /** 面談希望の希望時間帯メモ（meeting_request・任意）。 */
   preferredNote?: string;
-  /** サーバーが締切超過で振替を欠席にダウングレードしたことを示すフラグ（監査・表示用）。 */
+  /** サーバーが振替を欠席にダウングレードしたことを示すフラグ（監査・表示用）。締切超過 or 上限到達。 */
   transferDowngraded?: boolean;
+  /**
+   * ダウングレードの理由が「今月の振替上限に達していた」ことを示す（§7-3）。
+   * transferDowngraded と併せて立つ。締切超過によるダウングレードと文面を分けるために持つ。
+   */
+  transferBlockedByQuota?: boolean;
   /**
    * system メッセージの冪等キー（振替確定の自動発信で二重投稿を防ぐ）。
    * 例: 'tn:<transfer_notification_id>' / 'entry:<to_entry_id>'。

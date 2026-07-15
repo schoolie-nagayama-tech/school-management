@@ -10,6 +10,7 @@ import {
 } from '@/lib/mypage/chatService';
 import { buildTemplateBody, buildAckBody } from '@/lib/mypage/chatTemplates';
 import { isTransferDeadlinePassed } from '@/lib/mypage/transferDeadline';
+import { getPortalTransferQuota } from '@/lib/mypage/transferQuota';
 import { dispatchNotification } from '@/lib/mypage/notify';
 import type { ChatTemplateKind, ChatTemplatePayload, TransferCandidate } from '@/types/chat';
 
@@ -89,17 +90,43 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  // 締切内で振替を希望するなら第1希望は必須。
-  const requiresCandidates =
-    !deadlinePassed &&
-    (templateKind === 'transfer_request' || (templateKind === 'absence' && payload.wantsTransfer));
-  if (requiresCandidates && (!payload.candidates || payload.candidates.length === 0)) {
-    return NextResponse.json({ error: '振替の第1希望（日付）を入力してください' }, { status: 400 });
-  }
-
+  // ── 認可（紐づけ検証）──
+  // ★ 順序の意図: 下のクォータ再検証は service role で DB を引くので、
+  //   「他人の生徒IDを投げて残り回数を推測される」ことが無いよう、必ず先に 403 で弾く。
   const svc = getPortalServiceClient();
   if (!(await verifyPortalLink(accountId, studentId, svc))) {
     return NextResponse.json({ error: '権限がありません' }, { status: 403 });
+  }
+
+  // ── 振替上限のサーバー再検証（§7-3）──
+  // クライアント（AbsenceSheet）でも振替希望を無効化するが、サーバーが最終防衛線。
+  // 締切ルールと同じ二重チェック方針で、上限到達なら欠席へダウングレードする。
+  // 判定は getPortalTransferQuota に集約（フリー期間・教室の追加許可もそこで解決）。
+  let quotaBlocked = false;
+  const wantsTransferNow =
+    !deadlinePassed &&
+    (templateKind === 'transfer_request' || (templateKind === 'absence' && payload.wantsTransfer));
+  if (wantsTransferNow && payload.lessonDate) {
+    // 月の基準は「対象授業日」（今日ではない）。getPortalTransferQuota がその契約。
+    const quota = await getPortalTransferQuota(studentId, payload.lessonDate);
+    if (!quota.canRequestTransfer) {
+      quotaBlocked = true;
+      payload.wantsTransfer = false;
+      payload.transferDowngraded = true;
+      payload.transferBlockedByQuota = true;
+      payload.candidates = [];
+    }
+  }
+
+  // 締切内・上限内で振替を希望するなら第1希望は必須。
+  // ★ ダウングレード後に評価する: 上限で振替が落ちた連絡を「第1希望が無い」で 400 にすると、
+  //   保護者は欠席連絡すら送れなくなる（欠席は受理すべき）。
+  const requiresCandidates =
+    !deadlinePassed &&
+    !quotaBlocked &&
+    (templateKind === 'transfer_request' || (templateKind === 'absence' && payload.wantsTransfer));
+  if (requiresCandidates && (!payload.candidates || payload.candidates.length === 0)) {
+    return NextResponse.json({ error: '振替の第1希望（日付）を入力してください' }, { status: 400 });
   }
 
   const thread = await resolveThreadForStudent(studentId, null, svc);
@@ -143,6 +170,8 @@ export async function POST(request: NextRequest) {
     message: templateMsg,
     ack: ackMsg,
     transferDowngraded: !!payload.transferDowngraded,
+    // クライアントが「上限で落ちた」ことを区別して案内できるように分けて返す。
+    transferBlockedByQuota: !!payload.transferBlockedByQuota,
     deadlinePassed,
   });
 }

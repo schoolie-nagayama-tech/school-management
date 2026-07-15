@@ -143,7 +143,11 @@ describe('students: ポータルRLS（portal_students_select_linked）', () => {
 
 describe('portal_account_students: 自分の紐づけだけ読める', () => {
   it('自分のアカウントの紐づけ行が読める', async () => {
-    const rows = await selectAs('portal', accountId, 'select student_id from portal_account_students');
+    const rows = await selectAs(
+      'portal',
+      accountId,
+      'select student_id from portal_account_students'
+    );
     const ids = rows.map((r) => r.student_id);
     expect(ids).toContain(studentActiveId);
     expect(ids).toContain(studentWithdrawnId);
@@ -174,9 +178,12 @@ describe('portal_invitations: 誰も（portalでも）読めない', () => {
   });
 
   it('anon も招待を読めない（0件 or エラー）', async () => {
-    const count = await tryCountAs('anon', null, 'select id from portal_invitations where id = $1', [
-      invitationId,
-    ]);
+    const count = await tryCountAs(
+      'anon',
+      null,
+      'select id from portal_invitations where id = $1',
+      [invitationId]
+    );
     expect(count === 0 || count === -1).toBe(true);
   });
 });
@@ -185,11 +192,23 @@ describe('デフォルト拒否: portal ロールは明示グラント外のテ�
   /**
    * 保証:
    *   portal ロールには grant していないテーブルは RLS 以前に permission denied になる。
-   *   authenticated＝スタッフを暗黙仮定した広いポリシー（subjects の ALL using(true) 等）が
+   *   authenticated＝スタッフを暗黙仮定した広いポリシー（ALL using(true) 等）が
    *   ポータル利用者に波及しないことの回帰テスト。
+   *
+   * ★ subjects はこのケースから外した（Stage3・2026-07-14）:
+   *   予定ビューの科目表示に必要なため、Stage3 のマイグレーションで
+   *   「grant select to portal ＋ to portal の using(true) ポリシー」を明示追加した
+   *   （教科名は機微でないという判断）。よって subjects はもう「明示グラント外」ではない。
+   *   デフォルト拒否の代表例としては、grant していない座席表テーブル
+   *   （schedule_regular_patterns）と system_settings で担保する。
+   *   subjects が portal から読めること自体は rls-portal-schedule.test.ts が固定する。
    */
-  it('portal は subjects を読めない（permission denied）', async () => {
-    const count = await tryCountAs('portal', accountId, 'select id from subjects limit 1');
+  it('portal は schedule_regular_patterns を読めない（permission denied）', async () => {
+    const count = await tryCountAs(
+      'portal',
+      accountId,
+      'select id from schedule_regular_patterns limit 1'
+    );
     expect(count).toBe(-1);
   });
 
@@ -204,11 +223,7 @@ describe('デフォルト拒否: portal ロールは明示グラント外のテ�
    *   system_settings を読める（既存ポリシー無変更の確認）。
    */
   it('authenticated（スタッフ）は subjects を従来どおり読める（エラーにならない）', async () => {
-    const count = await tryCountAs(
-      'authenticated',
-      accountId,
-      'select id from subjects limit 1'
-    );
+    const count = await tryCountAs('authenticated', accountId, 'select id from subjects limit 1');
     expect(count).toBeGreaterThanOrEqual(0);
   });
 

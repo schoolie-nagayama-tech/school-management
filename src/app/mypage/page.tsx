@@ -1,6 +1,13 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { MessageSquare, CalendarDays, FileText, User, Megaphone } from 'lucide-react';
+import {
+  MessageSquare,
+  CalendarDays,
+  FileText,
+  User,
+  Megaphone,
+  ClipboardList,
+} from 'lucide-react';
 import { getPortalContext } from '@/lib/mypage/supabase';
 import { LogoutButton } from '@/components/mypage/LogoutButton';
 
@@ -117,10 +124,17 @@ export default async function MyPage() {
             title="お知らせ"
             description="教室からのお知らせ"
           />
-          <PlaceholderCard
+          <LinkCard
+            href="/mypage/schedule"
             icon={<CalendarDays className="h-5 w-5" />}
             title="スケジュール"
-            description="時間割・今後の予定（準備中）"
+            description="時間割・今後の予定／欠席・振替の連絡"
+          />
+          <LinkCard
+            href="/mypage/forms"
+            icon={<ClipboardList className="h-5 w-5" />}
+            title="申し込み・手続き"
+            description="模試・増コマ・通塾の変更・ご相談"
           />
           <PlaceholderCard
             icon={<FileText className="h-5 w-5" />}
