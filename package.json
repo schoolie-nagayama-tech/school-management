@@ -21,7 +21,8 @@
     "db:status": "supabase status",
     "db:dump": "node -e \"const {execSync}=require('child_process');const fs=require('fs');const os=require('os');const path=require('path');const tmpFile=path.join(os.tmpdir(),'prod_schema.sql');execSync('supabase db dump --linked --schema public -f \\\"'+tmpFile+'\\\"',{stdio:'inherit'});const body=fs.readFileSync(tmpFile,'utf8');const header='-- ============================================================\\n-- BASE SCHEMA (本番DBからdump - ローカル開発/テスト用)\\n-- ============================================================\\n-- supabase db dump --linked --schema public で生成。\\n-- 本番環境には push しないこと（本番に既に適用済み）。\\n-- 再生成: npm run db:dump\\n-- ============================================================\\n\\n';fs.writeFileSync('supabase/migrations/00000000000000_base_schema.sql',header+body);fs.unlinkSync(tmpFile);console.log('Updated base_schema (',body.length,'bytes)');\"",
     "db:prod-push": "echo '本番push前: _archived_for_local_dev から migrations/ に戻してください' && exit 1",
-    "analyze": "cross-env ANALYZE=true next build"
+    "analyze": "cross-env ANALYZE=true next build",
+    "db:rebuild": "node scripts/rebuild-local-db.mjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

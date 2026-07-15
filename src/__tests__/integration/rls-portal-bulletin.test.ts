@@ -18,6 +18,7 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { getAdminClient, createTestSchool, cleanupTestSchool } from './helpers';
+import { createTestUser, cleanupTestUser } from './rls-helpers';
 import { selectAs, tryCountAs } from './portal-rls-helpers';
 
 let admin: SupabaseClient;
@@ -28,6 +29,8 @@ let studentBId: string; // grade 8・accountB(mother)・accountSelfB(self)
 let accountAId: string;
 let accountBId: string;
 let accountSelfBId: string; // studentB 本人（relation='self'）
+/** 既存スタッフ挙動の検証用。教室に所属する実在のスタッフ（check_school_access が通る）。 */
+let staffUserId: string;
 
 let otherSchoolId: string; // 教室スコープ検証用の別教室
 
@@ -94,6 +97,13 @@ beforeAll(async () => {
   // 教室スコープ検証用の別教室（生徒の紐づけは作らない）。
   const otherSchool = await createTestSchool(admin, { name: 'ポータル掲示板・別教室' });
   otherSchoolId = otherSchool.id;
+
+  // 既存スタッフ挙動の検証用。本番の bulletin_posts は authenticated に対し
+  // check_school_access(school_id) で教室スコープされるため、実在のスタッフ
+  // （その教室に所属）でないと1件も見えない。ポータルアカウントのIDを
+  // スタッフの sub として渡しても解決できない（＝そう書くと常に0件になる）。
+  const staff = await createTestUser(admin, { role: 'teacher', schoolIds: [schoolId] });
+  staffUserId = staff.userId;
 
   const mkPost = async (overrides: Record<string, unknown>) => {
     const { data, error } = await admin
@@ -164,6 +174,7 @@ afterAll(async () => {
     .delete()
     .in('id', [accountAId, accountBId, accountSelfBId]);
   await admin.from('students').delete().eq('school_id', schoolId);
+  if (staffUserId) await cleanupTestUser(admin, staffUserId);
   await cleanupTestSchool(admin, otherSchoolId);
   await cleanupTestSchool(admin, schoolId);
 });
@@ -278,23 +289,37 @@ describe('bulletin_portal_reads: 自分の既読だけ可視', () => {
 });
 
 describe('既存スタッフ挙動の不変（audience 既定=社内で従来どおり）', () => {
-  it('authenticated は 社内 の投稿を従来どおり読める', async () => {
+  // ★ ここは「その教室に所属する実在のスタッフ」で検証する。
+  //   本番の bulletin_posts は authenticated に対し check_school_access(school_id) で
+  //   教室スコープされる（allow_all_auth ではない）。ポータルアカウントのIDを sub に
+  //   渡すとスタッフとして解決できず常に0件になり、テストが意味を失う。
+  it('自校スタッフは 社内 の投稿を従来どおり読める', async () => {
     const rows = await selectAs(
       'authenticated',
-      accountAId,
+      staffUserId,
       'select id from bulletin_posts where id = $1',
       [postInternalId]
     );
     expect(rows.length).toBe(1);
   });
 
-  it('authenticated は 保護者向け投稿も従来どおり読める（allow_all_auth）', async () => {
+  it('自校スタッフは 保護者向け投稿も従来どおり読める（audience 追加で見え方が変わらない）', async () => {
     const count = await tryCountAs(
       'authenticated',
-      accountAId,
+      staffUserId,
       'select id from bulletin_posts where id = $1',
       [postAllId]
     );
     expect(count).toBe(1);
+  });
+
+  it('他教室の投稿はスタッフにも見えない（既存の教室スコープが効いている）', async () => {
+    const rows = await selectAs(
+      'authenticated',
+      staffUserId,
+      'select id from bulletin_posts where id = $1',
+      [postOtherSchoolId]
+    );
+    expect(rows.length).toBe(0);
   });
 });
