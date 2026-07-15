@@ -187,6 +187,21 @@ export async function approveClassReport(
   }
   const report = await getReportById(reportId);
   if (!report) throw new Error('承認後の取得に失敗しました');
+
+  // 保護者ポータルv2(Stage4): 承認＝公開の瞬間に保護者へ通知（画面内＋メール）を1回。
+  // ブラウザからのみ fire-and-forget で新設サーバールートを叩く（サーバー実行時は window 無し）。
+  // 紐づけ保護者が居なければ API 側で no-op、二重送信は API 側で冪等ガード。
+  // 失敗しても承認自体は成功扱い（非致命・握りつぶす）。
+  if (typeof window !== 'undefined') {
+    void fetch('/api/mypage/reports/system/published', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reportId }),
+    }).catch(() => {
+      /* 非致命: 承認は既に成立しているので通知失敗は無視する */
+    });
+  }
+
   return report;
 }
 

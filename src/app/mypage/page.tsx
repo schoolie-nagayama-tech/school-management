@@ -36,7 +36,7 @@ interface LinkedStudentRow {
  *   （portal_students_select_linked）が許した「自分の紐づけ生徒（在籍中）」だけ。
  *   退塾日を過ぎた生徒は students 埋め込みが RLS で外れ null になる → 一覧に出さない。
  *
- * 各ドメイン（連絡/スケジュール/報告書）は今はプレースホルダー。Stage2 以降で中身を足す。
+ * 各ドメイン（連絡/お知らせ/スケジュール/手続き/報告書）は Stage2〜4 で実装済み。
  */
 export default async function MyPage() {
   const ctx = await getPortalContext();
@@ -136,10 +136,11 @@ export default async function MyPage() {
             title="申し込み・手続き"
             description="模試・増コマ・通塾の変更・ご相談"
           />
-          <PlaceholderCard
+          <LinkCard
+            href="/mypage/reports"
             icon={<FileText className="h-5 w-5" />}
             title="授業報告書"
-            description="授業の報告・宿題（準備中）"
+            description="授業の報告・宿題"
           />
         </div>
       </section>
@@ -172,28 +173,5 @@ function LinkCard({
         <p className="text-xs text-text-muted">{description}</p>
       </div>
     </Link>
-  );
-}
-
-/** 未実装ドメインのプレースホルダーカード。 */
-function PlaceholderCard({
-  icon,
-  title,
-  description,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  description: string;
-}) {
-  return (
-    <div className="flex items-center gap-3 rounded-xl border border-border bg-surface-raised p-4 opacity-70">
-      <span className="flex h-9 w-9 items-center justify-center rounded-full bg-surface-hover text-text-muted">
-        {icon}
-      </span>
-      <div>
-        <p className="font-medium text-text-heading">{title}</p>
-        <p className="text-xs text-text-muted">{description}</p>
-      </div>
-    </div>
   );
 }

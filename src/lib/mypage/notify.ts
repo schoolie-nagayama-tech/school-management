@@ -25,7 +25,12 @@ import { getPortalServiceClient } from './serviceClient';
  */
 
 /** 通知イベント種別。 */
-export type NotifyKind = 'chat_new_message' | 'announcement' | 'system_message';
+export type NotifyKind =
+  | 'chat_new_message'
+  | 'announcement'
+  | 'system_message'
+  /** 授業報告書の承認（＝公開）時（Stage4・§7-4）。 */
+  | 'report_published';
 
 /** ディスパッチする通知イベント。 */
 export interface NotifyEvent {
