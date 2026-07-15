@@ -7,7 +7,15 @@ import { useBulletinUnread } from '@/contexts/BulletinUnreadContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMasterData } from '@/contexts/MasterDataContext';
 import { USER_ROLE_LABELS } from '@/types/database';
-import { Megaphone, ChevronDown, X, LogOut, Settings, LayoutDashboard } from 'lucide-react';
+import {
+  Megaphone,
+  ChevronDown,
+  X,
+  LogOut,
+  Settings,
+  LayoutDashboard,
+  Smartphone,
+} from 'lucide-react';
 import { TierMedal } from '@/components/teacher/TierMedal';
 import { useTeacherBadgeCount } from '@/hooks/useTeacherBadgeCount';
 import { BadgeFlowerField } from '@/components/badges/HiddenFlower';
@@ -16,9 +24,11 @@ import { ThemeToggle } from './ThemeToggle';
 import { getSurname } from '@/lib/utils/teacherName';
 import { PushNotificationButton } from '@/components/ui/PushNotificationButton';
 import { buildNavEntries, isLinkActive, isGroupActive } from './navConfig';
-import { isSystemAdmin } from '@/lib/utils/roles';
+import { isSystemAdmin, isManagerOrAbove } from '@/lib/utils/roles';
 import { MobileBottomNav } from './MobileBottomNav';
 import { useStandalone } from '@/lib/utils/useStandalone';
+import { useToast } from '@/hooks/useToast';
+import { ToastContainer } from '@/components/ui';
 
 interface AppHeaderProps {
   title: string;
@@ -133,6 +143,35 @@ export function AppHeader({
     });
   }, []);
 
+  // 保護者ポータルV2 デモの起動状態（多重クリックで複数セッションを発行しないため）
+  const [startingPortalDemo, setStartingPortalDemo] = useState(false);
+  const { toasts, removeToast, error: toastError } = useToast();
+
+  /**
+   * 保護者ポータルV2 のデモセッションを発行して /mypage へ移動する。
+   *
+   * サーバー側（/api/portal-demo/start）が権限・ダミーデータ検証をすべて行う。
+   * ここは入口の導線であって認可の境界ではないので、失敗理由はサーバーの文言を出す。
+   */
+  const handlePortalDemo = useCallback(async () => {
+    if (startingPortalDemo) return;
+    setStartingPortalDemo(true);
+    try {
+      const res = await fetch('/api/portal-demo/start', { method: 'POST' });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toastError(data?.error ?? 'デモの起動に失敗しました');
+        setStartingPortalDemo(false);
+        return;
+      }
+      // 保護者用シェル（別レイアウト・別主体）へ移るので実遷移させる。
+      window.location.href = '/mypage';
+    } catch {
+      toastError('デモの起動に失敗しました');
+      setStartingPortalDemo(false);
+    }
+  }, [startingPortalDemo, toastError]);
+
   // ルート変更時にモバイルメニューを自動で閉じる
   useEffect(() => {
     setShowMobileMenu(false);
@@ -196,6 +235,8 @@ export function AppHeader({
 
   return (
     <>
+      {/* ヘッダー由来の操作（ポータルデモ起動など）の失敗を出すトースト */}
+      <ToastContainer toasts={toasts} onRemove={removeToast} />
       <header className="relative bg-primary shadow-md print:hidden">
         <BadgeFlowerField count={badgeCount ?? 0} placements={HEADER_FLOWERS} />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -453,6 +494,21 @@ export function AppHeader({
                 >
                   <LayoutDashboard className="w-4 h-4" aria-hidden />
                 </Link>
+              )}
+              {/* 保護者ポータルV2 デモ：教室長以上に表示。
+                  隣の座席表が isSystemAdmin なのに対しこちらが manager 以上なのは、
+                  デモの目的が「教室長に本番で触ってもらうこと」そのものだから。
+                  通常ナビ（navConfig）には載せない＝ここが唯一の入口（座席表・ダッシュボードと同じ扱い）。 */}
+              {profile && isManagerOrAbove(profile.role) && (
+                <button
+                  type="button"
+                  onClick={handlePortalDemo}
+                  disabled={startingPortalDemo}
+                  className="p-1.5 rounded-lg text-white/80 transition-[color,background-color,transform] duration-150 ease-out active:scale-[0.97] hover:text-white hover:bg-white/10 disabled:opacity-50"
+                  title="保護者ポータルV2（試作・ダミーデータ）"
+                >
+                  <Smartphone className="w-4 h-4" aria-hidden />
+                </button>
               )}
             </div>
           </div>

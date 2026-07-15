@@ -34,6 +34,17 @@ export interface PortalJwtClaims {
   aud: 'authenticated';
   /** カスタムクレーム。ポリシーやログでポータルJWTだと判別できるよう付与する。 */
   portal: true;
+  /**
+   * デモセッション（スタッフ体験用）の印。
+   *
+   * ★ なぜ JWT のクレームなのか:
+   *   これは「ダミーデータ専用の体験セッション」であることを示す印で、
+   *   フラグ（portal_v2_enabled）が OFF のままでも /mypage レイアウトの門番を
+   *   通せる唯一の鍵になる。cookie の別フラグや localStorage ではなく JWT に載せるのは、
+   *   署名鍵（PORTAL_JWT_PRIVATE_JWK）で守られていて偽造できないから。
+   *   これにより「フラグを ON にせず＝/mypage/login を本番に晒さず」デモだけを通せる。
+   */
+  demo: boolean;
   iss: string;
   exp: number;
   iat: number;
@@ -98,9 +109,13 @@ function getIssuer(): string {
  * ポータルアカウント用のSupabase互換JWTを署名して返す。
  *
  * @param portalAccountId  portal_accounts.id（JWTの sub になり portal_uid() として読まれる）
+ * @param opts.demo        true のときだけ demo クレームを載せる（スタッフのデモ体験用）
  * @returns 署名済みJWT文字列
  */
-export async function signPortalJwt(portalAccountId: string): Promise<string> {
+export async function signPortalJwt(
+  portalAccountId: string,
+  opts?: { demo?: boolean }
+): Promise<string> {
   const { jwk, kid } = loadSigningJwk();
   // key_ops 等を落としてから読む（そのまま渡すと WebCrypto が弾く。stripKeyUsage 参照）
   const privateKey = await importJWK(stripKeyUsage(jwk) as JWK, 'ES256');
@@ -112,6 +127,9 @@ export async function signPortalJwt(portalAccountId: string): Promise<string> {
     aud: 'authenticated',
     // ポリシーやログでポータルJWTだと判別できるようにするカスタムクレーム。
     portal: true,
+    // demo でないときはクレーム自体を載せない。既存（保護者の実ログイン）が発行する
+    // JWT の中身を1バイトも変えないための条件付き展開。
+    ...(opts?.demo ? { demo: true } : {}),
   })
     .setProtectedHeader({ alg: 'ES256', typ: 'JWT', kid })
     .setSubject(portalAccountId)
@@ -150,6 +168,9 @@ export async function verifyPortalJwt(token: string): Promise<PortalJwtClaims | 
       role: 'portal',
       aud: 'authenticated',
       portal: true,
+      // 署名検証を通ったJWTにだけ demo:true があり得る（偽造不可）。
+      // 明示的に === true で読むことで、truthy な別値をデモ扱いしない。
+      demo: payload.demo === true,
       iss: payload.iss as string,
       exp: payload.exp as number,
       iat: payload.iat as number,

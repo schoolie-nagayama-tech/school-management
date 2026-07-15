@@ -74,6 +74,20 @@ export type EmailResolver = (event: NotifyEvent) => Promise<string[]>;
 export const defaultEmailResolver: EmailResolver = async (event) => {
   if (event.toEmails && event.toEmails.length > 0) return dedupeEmails(event.toEmails);
   if (!event.studentId) return [];
+
+  // ★ ダミーデータからの実送信を止める最終ガード
+  //   デモ体験（研修用テスト生徒・デモ教室）で操作した結果、実在の保護者に
+  //   メールが飛ぶ事故を防ぐ。呼び出し側それぞれに「デモなら送るな」を書かせると
+  //   必ず書き忘れが出るので、宛先解決が必ず通るこの1箇所で塞ぐ。
+  //   将来デモ経路や通知種別が増えても、ここを通る限り自動的に守られる。
+  if (await isDummyStudent(event.studentId)) {
+    console.info(
+      '[mypage/notify] ダミーデータ（テスト生徒/デモ教室）のためメール送信をスキップ:',
+      event.studentId
+    );
+    return [];
+  }
+
   try {
     const supabase = getPortalServiceClient();
     // 生徒に紐づく問合せ/フォーム回答のメールを拾う暫定経路（PIIを持たない設計の穴埋め）。
@@ -94,6 +108,37 @@ export const defaultEmailResolver: EmailResolver = async (event) => {
     return [];
   }
 };
+
+/**
+ * 生徒がダミーデータ（研修用テスト生徒 or デモ教室所属）かを判定する。
+ *
+ * 判定不能（DBエラー等）のときは true を返して安全側に倒す:
+ *   「送れないダミー」を送らないより、「送ってはいけない相手」に送る方が害が大きい。
+ *   メールは非致命な通知なので、疑わしいときは送らない側に倒してよい。
+ */
+async function isDummyStudent(studentId: string): Promise<boolean> {
+  try {
+    const supabase = getPortalServiceClient();
+    const { data, error } = await supabase
+      .from('students')
+      .select('is_test, schools(is_demo)')
+      .eq('id', studentId)
+      .maybeSingle();
+
+    if (error) {
+      console.warn('[mypage/notify] ダミー判定に失敗（安全側でメールをスキップ）:', error.message);
+      return true;
+    }
+    // 生徒が見つからない場合も宛先を解決すべき相手がいないのでスキップ扱い。
+    if (!data) return true;
+
+    const row = data as { is_test?: boolean; schools?: { is_demo?: boolean } | null };
+    return row.is_test === true || row.schools?.is_demo === true;
+  } catch (e) {
+    console.warn('[mypage/notify] ダミー判定に失敗（安全側でメールをスキップ）:', e);
+    return true;
+  }
+}
 
 /** in-app チャネル: メッセージは既に永続化済みなので副作用なし（記録のみ）。 */
 export const inAppChannel: NotifyChannel = {

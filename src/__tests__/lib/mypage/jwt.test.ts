@@ -51,6 +51,31 @@ describe('signPortalJwt / verifyPortalJwt', () => {
     expect(claims!.exp).toBeGreaterThan(claims!.iat);
   });
 
+  it('demo オプション付きで署名すると demo クレームが立つ', async () => {
+    // デモセッションはフラグ OFF でも /mypage を通れる唯一の鍵。
+    // 署名鍵で守られていることが前提なので、往復で確実に立つことを固定する。
+    const token = await signPortalJwt(SUB, { demo: true });
+    const claims = await verifyPortalJwt(token);
+    expect(claims).not.toBeNull();
+    expect(claims!.demo).toBe(true);
+    // デモでも主体は通常のポータルセッションと同じ（RLSの扱いを変えない）。
+    expect(claims!.sub).toBe(SUB);
+    expect(claims!.role).toBe('portal');
+  });
+
+  it('demo 指定なしの通常ログインでは demo が立たない', async () => {
+    // 既存（保護者の実ログイン）の挙動を変えないことの固定。
+    const token = await signPortalJwt(SUB);
+    const claims = await verifyPortalJwt(token);
+    expect(claims!.demo).toBeFalsy();
+  });
+
+  it('demo:false を渡してもクレームは載らない', async () => {
+    const token = await signPortalJwt(SUB, { demo: false });
+    const claims = await verifyPortalJwt(token);
+    expect(claims!.demo).toBe(false);
+  });
+
   it('改ざんされたトークンは null を返す', async () => {
     const token = await signPortalJwt(SUB);
     // 署名部を1文字書き換える。
