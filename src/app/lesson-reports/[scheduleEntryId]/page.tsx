@@ -1,42 +1,66 @@
 'use client';
 
 /**
- * 授業報告書フォーム
+ * 授業報告書フォーム（Stage 4 で進行表と融合）
  *
  * URL: /lesson-reports/[scheduleEntryId]
  *
- * 主な機能：
- *  - schedule_entry_id から授業情報・生徒・講師を解決
- *  - 既存報告書があれば編集、無ければ新規作成
- *  - 進行表の中期目標（教材目標 / 行動目標）を上部に表示
- *  - 単元×教材セット（メイン1 + サブN）を可変追加
- *  - スライダー入力（宿題実施率 / 正答率）
- *  - 「下書き保存」「提出（室長承認待ち）」のワークフロー
+ * 入力コンセプト（要件定義 §7-4）:
+ *   「選ぶものはクリック、質が要る文章だけ手書き」。
+ *   講師の仕事を楽にして、授業とコミュニケーションに時間を使えるようにする。
+ *   定型文の自動組み立ては陳腐になるため使わない（却下済み）。
  *
- * 進行表との転記：
- *  - 学校進度 → 保存時に student_progress に転記（P2-2 では UI のみ、転記は将来追加）
- *  - 単元 → 保存時に student_progress_lessons に転記（同上）
+ * 画面構成:
+ *   - 目標ヘッダー（常時表示・3層）
+ *       ① 試験目標（student_textbook_exams: 試験名 / 試験日 / 目標点 / 範囲）… 進行表と同期・表示のみ
+ *       ② 行動目標（action_goals）… 進行表と同期・表示のみ
+ *       ③ 今日の目標（short_term_goal）… 手入力
+ *       ＋ 期日カウントダウン（あと◯日（◯週間）・授業あと◯回）を自動計算して横に表示
+ *   - 保護者に公開されるゾーン（緑）: 今日の目標 / 学習内容・学校進度 / 宿題・演習％ / 確認テスト /
+ *       講評 / 次回までの宿題（日割り）/ 科目別欄
+ *   - 教室内のみのゾーン（グレー破線）: 引継ぎ / 遅刻・宿題未実施フラグ
+ *
+ * 保存の二系統（どちらも既存の経路をそのまま使う。新しい保存先は作らない）:
+ *   1. class_reports … upsertClassReport（提出→室長承認→差し戻しのワークフローは変更なし）
+ *   2. 進行表 … recordSession（progress-sessions.ts）。学習単元・学校進度・引継ぎ・フラグは
+ *      授業記録パネルとまったく同じ組み立て方で渡す。進行表側から見ても従来どおり読める。
+ *      ★ 引継ぎの「セッション/行」分離は意図的な既存設計。ここで独自同期を作らないこと。
  */
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { AdminLayout } from '@/components/layouts';
 import { Card, CardContent } from '@/components/ui';
 import { Button } from '@/components/ui';
 import { ToastContainer, Loading } from '@/components/ui';
 import { useToast } from '@/hooks/useToast';
+import { useAuth } from '@/contexts/AuthContext';
 import { getReportByScheduleEntry, upsertClassReport } from '@/lib/api/class-reports';
-import type {
-  ClassReport,
-  ClassReportFormData,
-  HomeworkAssignmentItem,
-  SubjectSpecific,
-} from '@/types/class-report';
+import type { ClassReport, ClassReportFormData, SubjectSpecific } from '@/types/class-report';
 import { supabase } from '@/lib/supabase';
-import { getStudentTextbooks } from '@/lib/api/progress';
+import { getStudentTextbooks, getStudentProgress } from '@/lib/api/progress';
 import { getCurriculumItems } from '@/lib/api/textbooks';
-import { ChevronLeft, Plus, X, Save, Send, Wand2 } from 'lucide-react';
+import {
+  getFeedGoalsByTextbooks,
+  getSessionsByScheduleEntry,
+  getSessionsForEdit,
+  recordSession,
+  type SessionUnitAction,
+} from '@/lib/api/progress-sessions';
+import type { CurriculumItemWithProgress, StudentTextbookWithDetails } from '@/types/database';
+import { ChevronLeft, Plus, X, Save, Send, Eye, Lock, Target, CalendarClock } from 'lucide-react';
 import { DemoProgressPreview } from '@/components/lesson-reports/DemoProgressPreview';
+import { LessonReportProgressGrid } from '@/components/lesson-reports/LessonReportProgressGrid';
+import {
+  buildHomeworkDateRows,
+  compactHomeworkRows,
+  computeExamCountdown,
+  formatCountdownDays,
+  judgeCheckTestPassed,
+  mergeHomeworkRows,
+  todayInJst,
+  type ExamCountdown,
+} from '@/lib/lesson-reports/reportSchedule';
 
 // 座席表系テーブルは Database 型未登録なので any でクエリ
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -61,44 +85,62 @@ interface StudentTextbookOption {
   curriculum_items: Array<{ id: number; title: string; sort_order: number }>;
 }
 
-/** 今日の YYYY-MM-DD */
-function todayStr(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+/** 目標ヘッダーに出す中期目標（進行表と同期・この画面では編集しない） */
+interface GoalHeader {
+  examLabel: string;
+  examDate: string | null;
+  targetScore: number | null;
+  examRange: string | null;
+  actionGoals: string[];
 }
 
-/** date1 - date2 の日数差（正：date1 が後） */
-function daysBetween(d1: string, d2: string): number {
-  const t1 = new Date(d1 + 'T12:00:00').getTime();
-  const t2 = new Date(d2 + 'T12:00:00').getTime();
-  return Math.round((t1 - t2) / (24 * 60 * 60 * 1000));
+/** 教材（student_textbook）ごとの進行表グリッド選択状態 */
+interface GridSelectionState {
+  unitActions: Record<number, 1 | 2 | 3>;
+  schoolUnits: Set<number>;
+  /** 読込時点で学校進度がついていた単元ID（外されたものを検出してクリアするため） */
+  origSchoolUnitIds: number[];
+  /** 既存セッションID（再保存時に上書き更新して二重作成を防ぐ） */
+  sessionId: string | null;
 }
 
-/** date を N 日進めた YYYY-MM-DD */
-function addDays(date: string, n: number): string {
-  const d = new Date(date + 'T12:00:00');
-  d.setDate(d.getDate() + n);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
+const emptySelection = (): GridSelectionState => ({
+  unitActions: {},
+  schoolUnits: new Set(),
+  origSchoolUnitIds: [],
+  sessionId: null,
+});
 
-/** 生徒の次の通塾日を schedule_entries から取得（無ければ授業日+7日を返す） */
-async function getNextLessonDate(studentId: string, fromDate: string): Promise<string> {
+/**
+ * 生徒の授業予定日を取得する。
+ * - nextLessonDate: 宿題の日割り生成に使う「次回授業日」（振替で入ったコマも授業なので含める）
+ * - scheduledDates: 期日カウントダウンの「授業あと◯回」に使う（要件どおり status='scheduled' のみ）
+ *
+ * 1生徒の未来の予定は多くても数十件なので PostgREST の1000行上限には触れない。
+ */
+async function getLessonDates(
+  studentId: string,
+  fromDate: string
+): Promise<{ nextLessonDate: string | null; scheduledDates: string[] }> {
   const { data } = await db
     .from('schedule_entries')
-    .select('entry_date')
+    .select('entry_date, status')
     .eq('student_id', studentId)
-    .gt('entry_date', fromDate)
+    .gte('entry_date', fromDate)
     .in('status', ['scheduled', 'transferred_in'])
-    .order('entry_date', { ascending: true })
-    .limit(1);
-  if (data && data.length > 0) return (data[0] as { entry_date: string }).entry_date;
-  return addDays(fromDate, 7);
+    .order('entry_date', { ascending: true });
+
+  const rows = (data || []) as Array<{ entry_date: string; status: string }>;
+  return {
+    nextLessonDate: rows.find((r) => r.entry_date > fromDate)?.entry_date ?? null,
+    scheduledDates: rows.filter((r) => r.status === 'scheduled').map((r) => r.entry_date),
+  };
 }
 
 export default function LessonReportFormPage() {
   const params = useParams();
   const router = useRouter();
-  // 将来 useAuth から取得した profile を使った権限制御を入れる予定（今は schedule_entry の teacher_id をそのまま使用）
+  const { profile } = useAuth();
   const { toasts, removeToast, success, error: toastError } = useToast();
   const scheduleEntryId = params.scheduleEntryId as string;
   // デモモード: /lesson-reports/demo でアクセスすると、DBを使わずダミーデータで
@@ -110,7 +152,18 @@ export default function LessonReportFormPage() {
   const [entry, setEntry] = useState<ScheduleEntryInfo | null>(null);
   const [existingReport, setExistingReport] = useState<ClassReport | null>(null);
   const [textbookOptions, setTextbookOptions] = useState<StudentTextbookOption[]>([]);
-  const [nextLessonDate, setNextLessonDate] = useState<string>('');
+  const [nextLessonDate, setNextLessonDate] = useState<string | null>(null);
+  const [scheduledDates, setScheduledDates] = useState<string[]>([]);
+  const [goalHeader, setGoalHeader] = useState<GoalHeader | null>(null);
+
+  // 進行表グリッド（教材ごとの単元行）と、その選択状態
+  const [gridRows, setGridRows] = useState<Record<string, CurriculumItemWithProgress[]>>({});
+  const [selections, setSelections] = useState<Record<string, GridSelectionState>>({});
+
+  // 内部ゾーン（進行表の授業記録と同じ保存先へ書く項目）
+  const [handover, setHandover] = useState('');
+  const [homeworkNotDone, setHomeworkNotDone] = useState(false);
+  const [tardy, setTardy] = useState(false);
 
   // フォーム状態
   const [form, setForm] = useState<ClassReportFormData>({
@@ -143,88 +196,16 @@ export default function LessonReportFormPage() {
     setIsLoading(true);
     // デモモード: DBを使わずダミーデータで実フォームを表示
     if (isDemo) {
-      const demoEntry: ScheduleEntryInfo = {
-        id: 'demo',
-        school_id: 'demo',
-        entry_date: '2026-05-28',
-        student_id: 'demo-student',
-        teacher_id: 'demo-teacher',
-        subject_ids: ['demo-eng'],
-        time_slot: { slot_number: 3, start_time: '16:20', end_time: '17:50' },
-        student: { id: 'demo-student', last_name: '山田', first_name: '太郎', grade: 8 },
-        teacher: { id: 'demo-teacher', display_name: '田中 花子', email: null },
-      };
-      setEntry(demoEntry);
-      setNextLessonDate('2026-06-04');
-      const demoTextbooks: StudentTextbookOption[] = [
-        {
-          id: 'tb-main',
-          textbook_id: 1,
-          textbook_name: 'New Horizon 中2 英語',
-          curriculum_items: [
-            { id: 1, title: 'Unit 6 現在完了形', sort_order: 1 },
-            { id: 2, title: 'Unit 7 不定詞', sort_order: 2 },
-          ],
-        },
-        {
-          id: 'tb-sub',
-          textbook_id: 2,
-          textbook_name: '英文法ドリル',
-          curriculum_items: [{ id: 3, title: '現在完了形（継続）', sort_order: 1 }],
-        },
-      ];
-      setTextbookOptions(demoTextbooks);
-      setForm({
-        schedule_entry_id: 'demo',
-        student_id: 'demo-student',
-        teacher_id: 'demo-teacher',
-        lesson_date: '2026-05-28',
-        short_term_goal: '現在完了形（継続・経験・完了）の使い分けを理解し、例文を5つ作れる',
-        mid_term_goal_snapshot: '英文法 Unit 5〜8 を完了し、1学期期末で 80 点以上を取る',
-        mid_action_goal_snapshot: '宿題を毎回提出し、間違えた問題を翌日に必ず復習する',
-        school_progress: '教科書 p.62 現在完了形（継続用法）',
-        homework_completion_pct: 90,
-        homework_correct_pct: 75,
-        today_correct_pct: 85,
-        vocab_test_score: 18,
-        vocab_test_total: 20,
-        vocab_test_passed: true,
-        check_test_score: 8,
-        check_test_total: 10,
-        check_test_passed: true,
-        review_comment:
-          '現在完了形の「継続」用法はよく理解できていました。have/has の使い分けも問題ありません。次回は「経験」用法（ever / never）を中心に進めます。',
-        homework_assignments: [
-          { date: '2026-05-29', text: '英文法ドリル p.23〜24（現在完了形・経験）' },
-          { date: '2026-05-30', text: '単語練習 Unit 6（46〜49）3回ずつ' },
-          { date: '2026-06-01', text: '教科書 p.63 音読 + Q&A ノート作成' },
-        ],
-        subject_specific: {
-          kind: 'vocab',
-          range: 'Unit 6 単語',
-          pages: '46-49',
-          times_per_day: 3,
-          duration: '1週間',
-        },
-        status: 'draft',
-        units: [
-          {
-            student_textbook_id: 'tb-main',
-            is_main: true,
-            curriculum_item_ids: [1],
-            page_start: 48,
-            page_end: 52,
-            display_order: 0,
-          },
-          {
-            student_textbook_id: 'tb-sub',
-            is_main: false,
-            curriculum_item_ids: [3],
-            page_start: 20,
-            page_end: 22,
-            display_order: 1,
-          },
-        ],
+      loadDemo({
+        setEntry,
+        setNextLessonDate,
+        setScheduledDates,
+        setGoalHeader,
+        setTextbookOptions,
+        setGridRows,
+        setSelections,
+        setHandover,
+        setForm,
       });
       setIsLoading(false);
       return;
@@ -262,9 +243,13 @@ export default function LessonReportFormPage() {
       };
       setEntry(info);
 
-      // 2. 次回授業日を取得（宿題日付割当用）
-      const next = await getNextLessonDate(info.student_id, info.entry_date);
-      setNextLessonDate(next);
+      // 2. 授業予定日（次回授業日＝宿題の日割り / 予定件数＝カウントダウン）。
+      //    報告書を後日書くこともあるので、授業日と今日の早いほうから拾う。
+      const today = todayInJst();
+      const fromDate = info.entry_date < today ? info.entry_date : today;
+      const lessonDates = await getLessonDates(info.student_id, fromDate);
+      setNextLessonDate(lessonDates.nextLessonDate);
+      setScheduledDates(lessonDates.scheduledDates);
 
       // 3. 生徒の student_textbooks + 各 textbook の curriculum_items を取得
       const textbooks = await getStudentTextbooks(info.student_id);
@@ -290,8 +275,30 @@ export default function LessonReportFormPage() {
       const report = await getReportByScheduleEntry(scheduleEntryId);
       setExistingReport(report);
 
+      const units = report
+        ? (report.units ?? []).map((u, idx) => ({
+            id: u.id,
+            student_textbook_id: u.student_textbook_id,
+            is_main: u.is_main,
+            curriculum_item_ids: u.curriculum_item_ids,
+            page_start: u.page_start,
+            page_end: u.page_end,
+            display_order: u.display_order ?? idx,
+          }))
+        : options.length > 0
+          ? [
+              {
+                student_textbook_id: options[0].id,
+                is_main: true,
+                curriculum_item_ids: [] as number[],
+                page_start: null,
+                page_end: null,
+                display_order: 0,
+              },
+            ]
+          : [];
+
       if (report) {
-        // 既存値でフォームを埋める
         setForm({
           schedule_entry_id: scheduleEntryId,
           student_id: report.student_id,
@@ -304,6 +311,7 @@ export default function LessonReportFormPage() {
           homework_completion_pct: report.homework_completion_pct,
           homework_correct_pct: report.homework_correct_pct,
           today_correct_pct: report.today_correct_pct,
+          // 単語テストは UI から外したが、過去データを消さないよう値はそのまま持ち回る
           vocab_test_score: report.vocab_test_score,
           vocab_test_total: report.vocab_test_total,
           vocab_test_passed: report.vocab_test_passed,
@@ -314,41 +322,27 @@ export default function LessonReportFormPage() {
           homework_assignments: report.homework_assignments ?? [],
           subject_specific: report.subject_specific ?? null,
           status: report.status,
-          units: (report.units ?? []).map((u, idx) => ({
-            id: u.id,
-            student_textbook_id: u.student_textbook_id,
-            is_main: u.is_main,
-            curriculum_item_ids: u.curriculum_item_ids,
-            page_start: u.page_start,
-            page_end: u.page_end,
-            display_order: u.display_order ?? idx,
-          })),
+          units,
         });
       } else {
-        // 新規：基本情報だけセット。メイン教材セットを1つデフォルト追加
-        const defaultUnit =
-          options.length > 0
-            ? [
-                {
-                  student_textbook_id: options[0].id,
-                  is_main: true,
-                  curriculum_item_ids: [] as number[],
-                  page_start: null,
-                  page_end: null,
-                  display_order: 0,
-                },
-              ]
-            : [];
         setForm((f) => ({
           ...f,
           student_id: info.student_id,
           teacher_id: info.teacher_id,
           lesson_date: info.entry_date,
-          units: defaultUnit,
+          units,
         }));
       }
-    } catch (e) {
-      toastError(e instanceof Error ? e.message : '初期化に失敗しました');
+
+      // 5. 目標ヘッダー（メイン教材の試験目標＋行動目標）。既存の一括取得関数を再利用する。
+      const mainStbId = (units.find((u) => u.is_main) ?? units[0])?.student_textbook_id ?? null;
+      setGoalHeader(mainStbId ? await loadGoalHeader(mainStbId, trackable) : null);
+
+      // 6. このコマに既に紐づいているセッションを復元（下書き保存の再開・再提出で
+      //    セッションが増殖しないよう sessionId を握っておく）
+      await restoreSessions(scheduleEntryId, units, setSelections, setHandover, setHomeworkNotDone, setTardy);
+    } catch (err) {
+      toastError(err instanceof Error ? err.message : '初期化に失敗しました');
     } finally {
       setIsLoading(false);
     }
@@ -358,59 +352,102 @@ export default function LessonReportFormPage() {
     load();
   }, [load]);
 
-  // 講評の行数カウント
+  // ---- 進行表グリッドの行を、フォームで選ばれている教材ぶんだけ取得 ----
+  const wantedTextbookIds = useMemo(
+    () => form.units.map((u) => u.student_textbook_id).filter(Boolean),
+    [form.units]
+  );
+  // 取得済み／取得中の教材IDを覚えて二重フェッチを防ぐ
+  const fetchedRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    if (isDemo) return;
+    const missing = wantedTextbookIds.filter((id) => !fetchedRef.current.has(id));
+    if (missing.length === 0) return;
+    missing.forEach((id) => fetchedRef.current.add(id));
+    (async () => {
+      for (const id of missing) {
+        try {
+          const rows = await getStudentProgress(id);
+          setGridRows((prev) => ({ ...prev, [id]: rows }));
+        } catch (err) {
+          console.error('進行表グリッドの取得に失敗:', err);
+          fetchedRef.current.delete(id); // 失敗したら次の描画で再試行できるようにする
+        }
+      }
+    })();
+  }, [wantedTextbookIds, isDemo]);
+
+  // ---- 次回までの宿題: 授業翌日〜次回授業日の日付行を自動生成 ----
+  useEffect(() => {
+    if (isDemo || !form.lesson_date) return;
+    setForm((f) => ({
+      ...f,
+      homework_assignments: mergeHomeworkRows(
+        buildHomeworkDateRows({ lessonDate: f.lesson_date, nextLessonDate }),
+        f.homework_assignments
+      ),
+    }));
+    // lesson_date と nextLessonDate が確定したときだけ組み直す（入力中は触らない）
+  }, [form.lesson_date, nextLessonDate, isDemo]);
+
+  // ---- 期日カウントダウン ----
+  const countdown: ExamCountdown | null = useMemo(
+    () =>
+      computeExamCountdown({
+        examDate: goalHeader?.examDate,
+        today: todayInJst(),
+        lessonDates: scheduledDates,
+      }),
+    [goalHeader?.examDate, scheduledDates]
+  );
+
+  // 確認テストの合否は得点から自動判定する（講師が合否ボタンを押さなくて済むように）
+  const checkTestPassed = useMemo(
+    () => judgeCheckTestPassed(form.check_test_score, form.check_test_total),
+    [form.check_test_score, form.check_test_total]
+  );
+
   const reviewLineCount = useMemo(
     () => (form.review_comment ? form.review_comment.split('\n').length : 0),
     [form.review_comment]
   );
 
-  // 宿題日付の自動入力：授業の翌日から1日ずつ順に振り、次回授業日でクランプ。
-  // 「等分配（コマ数で日を割る）」をやめ、「次回授業日までの連続した日付」を入れる方式。
-  // 行が次回授業日までの日数より多い場合は、超過分は次回授業日に丸める。
-  const autoDistributeHomeworkDates = useCallback(() => {
-    const base = form.lesson_date || todayStr();
-    const updated = form.homework_assignments.map((a, i) => {
-      let d = addDays(base, i + 1); // 授業翌日 = i:0、翌々日 = i:1 ...
-      if (nextLessonDate && d > nextLessonDate) d = nextLessonDate; // 次回授業日でクランプ
-      return { ...a, date: d };
-    });
-    setForm((f) => ({ ...f, homework_assignments: updated }));
-  }, [form.lesson_date, form.homework_assignments, nextLessonDate]);
-
-  // 宿題行操作：追加時、その行の日付も「授業翌日からの連番（次回授業日でクランプ）」で自動セット。
-  const addHomeworkRow = () =>
-    setForm((f) => {
-      const base = f.lesson_date || todayStr();
-      const i = f.homework_assignments.length;
-      let d = addDays(base, i + 1);
-      if (nextLessonDate && d > nextLessonDate) d = nextLessonDate;
-      return {
-        ...f,
-        homework_assignments: [...f.homework_assignments, { date: d, text: '' }],
-      };
-    });
-  const removeHomeworkRow = (idx: number) =>
-    setForm((f) => ({
-      ...f,
-      homework_assignments: f.homework_assignments.filter((_, i) => i !== idx),
-    }));
-  const updateHomeworkRow = (idx: number, patch: Partial<HomeworkAssignmentItem>) =>
-    setForm((f) => ({
-      ...f,
-      homework_assignments: f.homework_assignments.map((a, i) =>
-        i === idx ? { ...a, ...patch } : a
-      ),
-    }));
+  // ---- グリッドのセルクリック（進行表の授業記録とまったく同じ操作） ----
+  const handleCellToggle = useCallback(
+    (studentTextbookId: string, curriculumItemId: number, column: 'school' | 1 | 2 | 3) => {
+      setSelections((prev) => {
+        const cur = prev[studentTextbookId] ?? emptySelection();
+        if (column === 'school') {
+          const next = new Set(cur.schoolUnits);
+          if (next.has(curriculumItemId)) next.delete(curriculumItemId);
+          else next.add(curriculumItemId);
+          return { ...prev, [studentTextbookId]: { ...cur, schoolUnits: next } };
+        }
+        const next = { ...cur.unitActions };
+        if (next[curriculumItemId] === column) delete next[curriculumItemId];
+        else next[curriculumItemId] = column;
+        return { ...prev, [studentTextbookId]: { ...cur, unitActions: next } };
+      });
+    },
+    []
+  );
 
   // 教材セット操作
-  const addUnit = (isMain: boolean) =>
+  const usedTextbookIds = new Set(form.units.map((u) => u.student_textbook_id));
+  const addUnit = () => {
+    // 同じ教材を2つのセットに入れると選択状態（教材IDで保持）が二重になるため、未使用の教材だけ追加できる
+    const free = textbookOptions.find((o) => !usedTextbookIds.has(o.id));
+    if (!free) {
+      toastError('追加できる教材がありません');
+      return;
+    }
     setForm((f) => ({
       ...f,
       units: [
         ...f.units,
         {
-          student_textbook_id: textbookOptions[0]?.id ?? '',
-          is_main: isMain,
+          student_textbook_id: free.id,
+          is_main: false,
           curriculum_item_ids: [],
           page_start: null,
           page_end: null,
@@ -418,6 +455,7 @@ export default function LessonReportFormPage() {
         },
       ],
     }));
+  };
   const removeUnit = (idx: number) =>
     setForm((f) => ({ ...f, units: f.units.filter((_, i) => i !== idx) }));
   const updateUnit = (idx: number, patch: Partial<ClassReportFormData['units'][number]>) =>
@@ -426,26 +464,90 @@ export default function LessonReportFormPage() {
       units: f.units.map((u, i) => (i === idx ? { ...u, ...patch } : u)),
     }));
 
-  // 保存
+  const updateHomeworkText = (idx: number, text: string) =>
+    setForm((f) => ({
+      ...f,
+      homework_assignments: f.homework_assignments.map((a, i) => (i === idx ? { ...a, text } : a)),
+    }));
+
+  // プリント等テキスト外の教材の自由記述。専用の列が無いので subject_specific(jsonb) に同居させる
+  const extraMaterials = form.subject_specific?.extra_materials ?? '';
+  const setExtraMaterials = (v: string) =>
+    setForm((f) => ({
+      ...f,
+      subject_specific: { ...(f.subject_specific ?? { kind: 'none' }), extra_materials: v },
+    }));
+
+  // ---- 保存 ----
   const handleSave = async (nextStatus: 'draft' | 'submitted') => {
     if (!entry) return;
-    // デモモードは保存・提出しない（見本のため）
     if (isDemo) {
       toastError('これは入力画面の見本です。実際の授業からはここで保存・提出できます。');
       return;
     }
     setIsSaving(true);
     try {
-      await upsertClassReport(entry.school_id, { ...form, status: nextStatus });
+      // 学習単元は進行表グリッドの選択が正。保存直前に units へ反映する
+      const units = form.units.map((u) => ({
+        ...u,
+        curriculum_item_ids: Object.keys(selections[u.student_textbook_id]?.unitActions ?? {}).map(
+          Number
+        ),
+      }));
+
+      // 学校進度（class_reports 側は text 列）は、グリッドで選ばれた学校単元から組み立てる
+      const schoolProgressText = buildSchoolProgressText(form.units, selections, gridRows, textbookOptions);
+
+      const payload: ClassReportFormData = {
+        ...form,
+        units,
+        school_progress: schoolProgressText || form.school_progress,
+        // 中期目標は保存時点の進行表内容をスナップショットする（この画面では編集しない）
+        mid_term_goal_snapshot: goalHeader
+          ? formatExamGoal(goalHeader)
+          : form.mid_term_goal_snapshot,
+        mid_action_goal_snapshot: goalHeader
+          ? goalHeader.actionGoals.join(' ・ ')
+          : form.mid_action_goal_snapshot,
+        // 合否は得点からの自動判定を保存する
+        check_test_passed: checkTestPassed,
+        // 空欄の日は保存しない
+        homework_assignments: compactHomeworkRows(form.homework_assignments),
+        status: nextStatus,
+      };
+
+      await upsertClassReport(entry.school_id, payload);
+
+      // 進行表への転記（学習単元・学校進度・引継ぎ・フラグ）。
+      // 授業記録パネルと同じ組み立てで既存の recordSession をそのまま呼ぶ。
+      await syncToProgress({
+        entry,
+        units: form.units,
+        selections,
+        gridRows,
+        handover,
+        homeworkNotDone,
+        tardy,
+        teacherName: entry.teacher?.display_name || profile?.display_name || '',
+        onSessionSaved: (stbId, sessionId) =>
+          setSelections((prev) => ({
+            ...prev,
+            [stbId]: {
+              ...(prev[stbId] ?? emptySelection()),
+              sessionId,
+              origSchoolUnitIds: Array.from(prev[stbId]?.schoolUnits ?? []),
+            },
+          })),
+      });
+
       success(nextStatus === 'draft' ? '下書き保存しました' : '提出しました（室長承認待ち）');
       if (nextStatus === 'submitted') {
         router.push('/today');
       } else {
-        // 再取得して existingReport を最新化
         await load();
       }
-    } catch (e) {
-      toastError(e instanceof Error ? e.message : '保存に失敗しました');
+    } catch (err) {
+      toastError(err instanceof Error ? err.message : '保存に失敗しました');
     } finally {
       setIsSaving(false);
     }
@@ -479,7 +581,6 @@ export default function LessonReportFormPage() {
     <AdminLayout documentTitle={`${studentName}｜授業報告書`}>
       <ToastContainer toasts={toasts} onRemove={removeToast} />
       <div className="space-y-4">
-        {/* デモモードの注記バナー */}
         {isDemo && (
           <div className="rounded-lg bg-warning-subtle border border-warning/30 px-3 py-2 text-xs text-warning">
             <strong>入力画面の見本（ダミーデータ）</strong>
@@ -537,30 +638,16 @@ export default function LessonReportFormPage() {
           </div>
         )}
 
-        {/* 1. 目標 */}
-        <Section title="1. 目標">
-          <Field
-            label="中期: 教材目標 (進行表から取得・スナップショット)"
-            hint="保存時点の進行表内容を保存します"
-          >
-            <textarea
-              className="w-full px-3 py-2 border rounded-md text-sm bg-surface"
-              rows={2}
-              value={form.mid_term_goal_snapshot}
-              onChange={(e) => setForm((f) => ({ ...f, mid_term_goal_snapshot: e.target.value }))}
-              placeholder="例：期末テスト Unit 1-7 で 85点以上を取る"
-            />
-          </Field>
-          <Field label="中期: 行動目標 (進行表から取得・スナップショット)">
-            <textarea
-              className="w-full px-3 py-2 border rounded-md text-sm bg-surface"
-              rows={2}
-              value={form.mid_action_goal_snapshot}
-              onChange={(e) => setForm((f) => ({ ...f, mid_action_goal_snapshot: e.target.value }))}
-              placeholder="例：英文を音読し、不定詞の3用法を例文で説明できる"
-            />
-          </Field>
-          <Field label="短期: この授業の目標" hint="↑ 中期目標を踏まえて入力">
+        {/* 目標ヘッダー（進行表と同期の中期目標＋期日カウントダウン） */}
+        <GoalHeaderCard goal={goalHeader} countdown={countdown} />
+
+        {/* ── 保護者に公開されるゾーン ── */}
+        <Zone
+          kind="public"
+          title="保護者に公開される内容（承認後にマイページへ）"
+          icon={<Eye className="w-3.5 h-3.5" />}
+        >
+          <Field label="今日の目標（手入力）" hint="↑ 上の中期目標を踏まえて、この授業のゴールを1文で">
             <input
               type="text"
               className="w-full px-3 py-2 border-2 border-info rounded-md text-sm"
@@ -569,307 +656,258 @@ export default function LessonReportFormPage() {
               placeholder="例：不定詞の名詞用法を5問以上正しく訳せる"
             />
           </Field>
-        </Section>
 
-        {/* 2. 学校進度 */}
-        <Section title="2. 学校進度">
-          <Field
-            label="学校進度（保存時に進行表に転記されます）"
-            hint="進行表と同期するため、教材の単元から選択します。教材が未登録の場合のみ自由入力になります"
-          >
-            {textbookOptions.length === 0 ? (
-              // 教材未登録時のフォールバック：自由入力
-              <input
-                type="text"
-                className="w-full px-3 py-2 border rounded-md text-sm"
-                value={form.school_progress}
-                onChange={(e) => setForm((f) => ({ ...f, school_progress: e.target.value }))}
-                placeholder="例: Unit 5 - Lesson 2"
-              />
-            ) : (
-              <select
-                className="w-full px-3 py-2 border rounded-md text-sm bg-white"
-                value={form.school_progress}
-                onChange={(e) => setForm((f) => ({ ...f, school_progress: e.target.value }))}
-              >
-                <option value="">選択してください</option>
-                {/* 既存の自由記述値が選択肢に無い場合は、その値を先頭に残して消えないようにする */}
-                {form.school_progress &&
-                  !textbookOptions.some((opt) =>
-                    opt.curriculum_items.some(
-                      (it) => `${opt.textbook_name} / ${it.title}` === form.school_progress
-                    )
-                  ) && <option value={form.school_progress}>{form.school_progress}（既存）</option>}
-                {textbookOptions.map((opt) => (
-                  <optgroup key={opt.id} label={opt.textbook_name}>
-                    {opt.curriculum_items
-                      .slice()
-                      .sort((a, b) => a.sort_order - b.sort_order)
-                      .map((it) => {
-                        const label = `${opt.textbook_name} / ${it.title}`;
-                        return (
-                          <option key={it.id} value={label}>
-                            {it.title}
-                          </option>
-                        );
-                      })}
-                  </optgroup>
-                ))}
-              </select>
-            )}
-          </Field>
-        </Section>
-
-        {/* 3. 今日の授業内容（教材セット） */}
-        <Section title="3. 今日の授業内容（教材×単元、保存時に進行表へ転記）">
-          <div className="space-y-3">
-            {form.units.map((u, idx) => {
-              const opt = textbookOptions.find((o) => o.id === u.student_textbook_id);
-              return (
-                <div
-                  key={idx}
-                  className={`p-3 border rounded-md ${
-                    u.is_main ? 'border-info border-2 bg-info-subtle/30' : 'bg-surface'
-                  }`}
-                >
-                  <div className="flex items-center gap-2 mb-2">
-                    <span
-                      className={`px-2 py-0.5 rounded text-xs font-bold ${
-                        u.is_main ? 'bg-info text-white' : 'bg-gray-500 text-white'
-                      }`}
-                    >
-                      {u.is_main ? 'メイン' : 'サブ'}
-                    </span>
-                    <select
-                      value={u.student_textbook_id}
-                      onChange={(e) => updateUnit(idx, { student_textbook_id: e.target.value })}
-                      className="flex-1 px-2 py-1 border rounded text-sm font-semibold"
-                    >
-                      {textbookOptions.map((o) => (
-                        <option key={o.id} value={o.id}>
-                          {o.textbook_name}
-                        </option>
-                      ))}
-                    </select>
-                    {!u.is_main && (
-                      <button
-                        type="button"
-                        className="text-text-faint hover:text-danger transition-colors duration-150 active:scale-[0.90]"
-                        onClick={() => removeUnit(idx)}
-                        title="このセットを削除"
+          {/* 学習内容・学校進度 ＝ 進行表グリッドの埋め込み */}
+          <div>
+            <label className="block text-xs font-semibold text-text-muted mb-1">
+              学習内容・学校進度
+              <span className="ml-2 px-2 py-0.5 rounded-full bg-info-subtle text-info text-[10px] font-bold">
+                進行表の行をクリックで選択（記入方式は進行表と同じ）
+              </span>
+            </label>
+            <div className="space-y-3">
+              {form.units.map((u, idx) => {
+                const opt = textbookOptions.find((o) => o.id === u.student_textbook_id);
+                const sel = selections[u.student_textbook_id] ?? emptySelection();
+                return (
+                  <div
+                    key={u.student_textbook_id || idx}
+                    className={`p-3 border rounded-md ${
+                      u.is_main ? 'border-info border-2 bg-info-subtle/30' : 'bg-surface'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      <span
+                        className={`px-2 py-0.5 rounded text-xs font-bold ${
+                          u.is_main ? 'bg-info text-white' : 'bg-gray-500 text-white'
+                        }`}
                       >
-                        <X className="w-4 h-4" />
-                      </button>
-                    )}
-                  </div>
-
-                  <Field label="授業単元（複数選択可）">
-                    <div className="flex flex-wrap gap-1 p-2 border rounded-md bg-white min-h-[40px]">
-                      {u.curriculum_item_ids.map((itemId) => {
-                        const item = opt?.curriculum_items.find((c) => c.id === itemId);
-                        return (
-                          <span
-                            key={itemId}
-                            className="inline-flex items-center gap-1 px-2 py-0.5 bg-info text-white text-xs rounded"
-                          >
-                            {item?.title ?? `単元#${itemId}`}
-                            <button
-                              type="button"
-                              onClick={() =>
-                                updateUnit(idx, {
-                                  curriculum_item_ids: u.curriculum_item_ids.filter(
-                                    (id) => id !== itemId
-                                  ),
-                                })
-                              }
-                              className="hover:opacity-70 transition-opacity duration-150 ease-[var(--ease-out)]"
-                            >
-                              ×
-                            </button>
-                          </span>
-                        );
-                      })}
+                        {u.is_main ? 'メイン' : 'サブ'}
+                      </span>
                       <select
-                        value=""
-                        onChange={(e) => {
-                          const v = parseInt(e.target.value, 10);
-                          if (!Number.isNaN(v) && !u.curriculum_item_ids.includes(v)) {
-                            updateUnit(idx, {
-                              curriculum_item_ids: [...u.curriculum_item_ids, v],
-                            });
-                          }
-                        }}
-                        className="px-2 py-0.5 text-xs border rounded text-info"
+                        value={u.student_textbook_id}
+                        onChange={(e) => updateUnit(idx, { student_textbook_id: e.target.value })}
+                        className="flex-1 px-2 py-1 border rounded text-sm font-semibold"
                       >
-                        <option value="">+ 単元追加</option>
-                        {opt?.curriculum_items
-                          .filter((c) => !u.curriculum_item_ids.includes(c.id))
-                          .map((c) => (
-                            <option key={c.id} value={c.id}>
-                              {c.title}
+                        {textbookOptions
+                          // 他のセットで使っている教材は選ばせない（選択状態は教材IDで持つため）
+                          .filter(
+                            (o) => o.id === u.student_textbook_id || !usedTextbookIds.has(o.id)
+                          )
+                          .map((o) => (
+                            <option key={o.id} value={o.id}>
+                              {o.textbook_name}
                             </option>
                           ))}
                       </select>
+                      {!u.is_main && (
+                        <button
+                          type="button"
+                          className="text-text-faint hover:text-danger transition-colors duration-150 active:scale-[0.90]"
+                          onClick={() => removeUnit(idx)}
+                          title="このセットを削除"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      )}
                     </div>
-                  </Field>
 
-                  <div className="grid grid-cols-2 gap-2">
-                    <Field label="開始ページ">
-                      <div className="relative">
-                        <span className="absolute left-2 top-1/2 -translate-y-1/2 text-text-muted text-sm font-semibold pointer-events-none">
-                          p.
-                        </span>
-                        <input
-                          type="number"
-                          className="w-full pl-7 pr-2 py-1 border rounded text-sm"
-                          value={u.page_start ?? ''}
-                          onChange={(e) =>
-                            updateUnit(idx, {
-                              page_start:
-                                e.target.value === '' ? null : parseInt(e.target.value, 10),
-                            })
-                          }
+                    <LessonReportProgressGrid
+                      textbookName={opt?.textbook_name ?? '教材'}
+                      rows={gridRows[u.student_textbook_id] ?? []}
+                      selection={{
+                        unitActions: sel.unitActions,
+                        schoolUnits: sel.schoolUnits,
+                        sessionDate: form.lesson_date,
+                      }}
+                      onCellToggle={(cid, col) =>
+                        handleCellToggle(u.student_textbook_id, cid, col)
+                      }
+                      isTeacher={profile?.role === 'teacher'}
+                    />
+
+                    <div className="grid grid-cols-2 gap-2 mt-2">
+                      <Field label="開始ページ">
+                        <PageInput
+                          value={u.page_start}
+                          onChange={(v) => updateUnit(idx, { page_start: v })}
                         />
-                      </div>
-                    </Field>
-                    <Field label="終了ページ">
-                      <div className="relative">
-                        <span className="absolute left-2 top-1/2 -translate-y-1/2 text-text-muted text-sm font-semibold pointer-events-none">
-                          p.
-                        </span>
-                        <input
-                          type="number"
-                          className="w-full pl-7 pr-2 py-1 border rounded text-sm"
-                          value={u.page_end ?? ''}
-                          onChange={(e) =>
-                            updateUnit(idx, {
-                              page_end: e.target.value === '' ? null : parseInt(e.target.value, 10),
-                            })
-                          }
+                      </Field>
+                      <Field label="終了ページ">
+                        <PageInput
+                          value={u.page_end}
+                          onChange={(v) => updateUnit(idx, { page_end: v })}
                         />
-                      </div>
-                    </Field>
+                      </Field>
+                    </div>
                   </div>
-                </div>
-              );
-            })}
-            <button
-              type="button"
-              onClick={() => addUnit(false)}
-              className="w-full py-2 border-2 border-dashed border-info rounded-md text-sm text-info hover:bg-info-subtle transition-colors duration-150 active:scale-[0.98] ease-[cubic-bezier(0.23,1,0.32,1)]"
-            >
-              <Plus className="inline w-4 h-4 mr-1" />
-              サブ教材セットを追加（補助教材）
-            </button>
-          </div>
-        </Section>
-
-        {/* 4. 宿題・テスト */}
-        <Section title="4. 宿題・テスト結果">
-          <SliderField
-            label="宿題実施状況"
-            value={form.homework_completion_pct}
-            onChange={(v) => setForm((f) => ({ ...f, homework_completion_pct: v }))}
-          />
-          <SliderField
-            label="宿題正答率"
-            value={form.homework_correct_pct}
-            onChange={(v) => setForm((f) => ({ ...f, homework_correct_pct: v }))}
-          />
-          <TestRow
-            label="英単語テスト"
-            score={form.vocab_test_score}
-            total={form.vocab_test_total}
-            passed={form.vocab_test_passed}
-            onScoreChange={(v) => setForm((f) => ({ ...f, vocab_test_score: v }))}
-            onTotalChange={(v) => setForm((f) => ({ ...f, vocab_test_total: v }))}
-            onPassedChange={(v) => setForm((f) => ({ ...f, vocab_test_passed: v }))}
-          />
-          <TestRow
-            label="確認テスト"
-            score={form.check_test_score}
-            total={form.check_test_total}
-            passed={form.check_test_passed}
-            onScoreChange={(v) => setForm((f) => ({ ...f, check_test_score: v }))}
-            onTotalChange={(v) => setForm((f) => ({ ...f, check_test_total: v }))}
-            onPassedChange={(v) => setForm((f) => ({ ...f, check_test_passed: v }))}
-          />
-          <SliderField
-            label="本日の問題正答率"
-            value={form.today_correct_pct}
-            onChange={(v) => setForm((f) => ({ ...f, today_correct_pct: v }))}
-          />
-        </Section>
-
-        {/* 5. 講評 */}
-        <Section title="5. 講評">
-          <textarea
-            className="w-full px-3 py-2 border rounded-md text-sm"
-            rows={5}
-            value={form.review_comment}
-            onChange={(e) => setForm((f) => ({ ...f, review_comment: e.target.value }))}
-            placeholder="5行程度で記入"
-          />
-          <div className="text-xs text-text-muted mt-1">現在 {reviewLineCount} 行 / 推奨 5 行</div>
-        </Section>
-
-        {/* 6. 次回までの宿題 */}
-        <Section title="6. 次回までの宿題（授業翌日〜次回授業日に自動割当）">
-          <div className="text-xs text-text-muted mb-2 p-2 bg-info-subtle rounded">
-            次回授業: <strong>{nextLessonDate}</strong> ・ 残り{' '}
-            <strong>{daysBetween(nextLessonDate, form.lesson_date || todayStr())}日</strong>
-            <button
-              type="button"
-              onClick={autoDistributeHomeworkDates}
-              className="ml-2 px-2 py-0.5 text-xs bg-info text-white rounded transition-[opacity,transform] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.95]"
-            >
-              <Wand2 className="inline w-3 h-3 mr-1" />
-              次回授業日まで日付を入れる
-            </button>
-          </div>
-          <div className="space-y-1">
-            {form.homework_assignments.map((a, idx) => (
-              <div key={idx} className="grid grid-cols-[100px_1fr_30px] gap-2 items-center">
-                <input
-                  type="date"
-                  value={a.date}
-                  onChange={(e) => updateHomeworkRow(idx, { date: e.target.value })}
-                  className="px-2 py-1 border rounded text-xs"
-                />
-                <input
-                  type="text"
-                  value={a.text}
-                  onChange={(e) => updateHomeworkRow(idx, { text: e.target.value })}
-                  className="px-2 py-1 border rounded text-sm"
-                  placeholder="例: ワーク p.30-31"
-                />
+                );
+              })}
+              {textbookOptions.length > usedTextbookIds.size && (
                 <button
                   type="button"
-                  onClick={() => removeHomeworkRow(idx)}
-                  className="text-text-faint hover:text-danger transition-colors duration-150 active:scale-[0.90]"
+                  onClick={addUnit}
+                  className="w-full py-2 border-2 border-dashed border-info rounded-md text-sm text-info hover:bg-info-subtle transition-colors duration-150 active:scale-[0.98] ease-[cubic-bezier(0.23,1,0.32,1)]"
                 >
-                  <X className="w-4 h-4" />
+                  <Plus className="inline w-4 h-4 mr-1" />
+                  サブ教材セットを追加（補助教材）
                 </button>
-              </div>
-            ))}
-            <button
-              type="button"
-              onClick={addHomeworkRow}
-              className="w-full py-2 border-2 border-dashed border-info rounded text-sm text-info hover:bg-info-subtle transition-colors duration-150 active:scale-[0.98] ease-[cubic-bezier(0.23,1,0.32,1)]"
-            >
-              <Plus className="inline w-4 h-4 mr-1" />
-              宿題枠を追加
-            </button>
+              )}
+            </div>
+            <p className="text-[10px] text-text-faint mt-2 mb-1">
+              プリント・テキスト外の教材はこちらに（自由記述）
+            </p>
+            <input
+              type="text"
+              className="w-full px-3 py-2 border rounded-md text-sm"
+              value={extraMaterials}
+              onChange={(e) => setExtraMaterials(e.target.value)}
+              placeholder="例: 計算プリント（分数係数）を10問"
+            />
           </div>
-        </Section>
 
-        {/* 7. 科目別欄 */}
-        <Section title="7. 科目別欄">
-          <SubjectSpecificField
-            value={form.subject_specific}
-            onChange={(v) => setForm((f) => ({ ...f, subject_specific: v }))}
+          {/* 宿題・演習（すべてスライダー） */}
+          <div>
+            <label className="block text-xs font-semibold text-text-muted mb-2">
+              宿題・演習（すべてスライダー）
+            </label>
+            <div className="space-y-2">
+              <SliderField
+                label="やってきた量"
+                value={form.homework_completion_pct}
+                onChange={(v) => setForm((f) => ({ ...f, homework_completion_pct: v }))}
+              />
+              <SliderField
+                label="宿題の正答率"
+                value={form.homework_correct_pct}
+                onChange={(v) => setForm((f) => ({ ...f, homework_correct_pct: v }))}
+              />
+              <SliderField
+                label="今日の演習の正答率"
+                value={form.today_correct_pct}
+                onChange={(v) => setForm((f) => ({ ...f, today_correct_pct: v }))}
+              />
+            </div>
+          </div>
+
+          {/* 確認テスト（1本に統合・合否は自動判定） */}
+          <CheckTestField
+            score={form.check_test_score}
+            total={form.check_test_total}
+            passed={checkTestPassed}
+            onScoreChange={(v) => setForm((f) => ({ ...f, check_test_score: v }))}
+            onTotalChange={(v) => setForm((f) => ({ ...f, check_test_total: v }))}
           />
-        </Section>
+
+          {/* 講評（手書き） */}
+          <Field label="講評（手書き・保護者が読む文章）">
+            <textarea
+              className="w-full px-3 py-2 border rounded-md text-sm"
+              rows={5}
+              value={form.review_comment}
+              onChange={(e) => setForm((f) => ({ ...f, review_comment: e.target.value }))}
+              placeholder="5行程度で記入"
+            />
+            <div className="text-xs text-text-muted mt-1">
+              現在 {reviewLineCount} 行 / 推奨 5 行
+            </div>
+          </Field>
+
+          {/* 次回までの宿題（日割り） */}
+          <div>
+            <label className="block text-xs font-semibold text-text-muted mb-1">
+              次回までの宿題（日割り）
+              <span className="ml-2 px-2 py-0.5 rounded-full bg-info-subtle text-info text-[10px] font-bold">
+                次回授業日までの日付を自動生成
+              </span>
+            </label>
+            {nextLessonDate ? (
+              <p className="text-[10px] text-text-faint mb-2">
+                次回授業: {formatDateLabel(nextLessonDate)}（この日の行は入力なしでOK）
+              </p>
+            ) : (
+              <p className="text-[10px] text-text-faint mb-2">
+                次回授業日が未定のため、翌日から7日分の行を出しています
+              </p>
+            )}
+            <div className="space-y-1">
+              {form.homework_assignments.map((a, idx) => {
+                const isNext = !!nextLessonDate && a.date === nextLessonDate;
+                return (
+                  <div key={a.date || idx} className="grid grid-cols-[92px_1fr] gap-2 items-center">
+                    <span
+                      className={`px-2 py-1 rounded text-[11px] font-bold text-center tabular-nums ${
+                        isNext ? 'bg-surface text-text-muted' : 'bg-info-subtle text-info'
+                      }`}
+                    >
+                      {formatDateLabel(a.date)}
+                    </span>
+                    <input
+                      type="text"
+                      value={a.text}
+                      onChange={(e) => updateHomeworkText(idx, e.target.value)}
+                      className="px-2 py-1 border rounded text-sm"
+                      placeholder={isNext ? '（次回授業日・入力なしでOK）' : '例: ワーク p.30-31'}
+                    />
+                  </div>
+                );
+              })}
+              {form.homework_assignments.length === 0 && (
+                <p className="text-xs text-text-faint">授業日が未確定のため日割り行を作れません</p>
+              )}
+            </div>
+          </div>
+
+          {/* 科目別欄（既存機能。保護者に見える宿題の一部として公開ゾーンに置く） */}
+          <Field label="科目別欄（単語・計算・漢字の反復練習）">
+            <SubjectSpecificField
+              value={form.subject_specific}
+              onChange={(v) => setForm((f) => ({ ...f, subject_specific: v }))}
+            />
+          </Field>
+        </Zone>
+
+        {/* ── 教室内のみのゾーン ── */}
+        <Zone
+          kind="internal"
+          title="教室内のみ（保護者には出ません）"
+          icon={<Lock className="w-3.5 h-3.5" />}
+        >
+          <Field
+            label="引継ぎ（手書き・次の担当講師・室長へ）"
+            hint="進行表の授業記録と同じ保存先（progress_sessions）に書き込まれます"
+          >
+            <textarea
+              className="w-full px-3 py-2 border rounded-md text-sm"
+              rows={3}
+              value={handover}
+              onChange={(e) => setHandover(e.target.value)}
+              placeholder="次の講師への引継ぎを入力..."
+            />
+          </Field>
+          <Field label="フラグ">
+            <div className="flex items-center gap-4">
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={tardy}
+                  onChange={(e) => setTardy(e.target.checked)}
+                  className="w-4 h-4 accent-[#d97706]"
+                />
+                <span className="text-sm text-text-body">遅刻</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={homeworkNotDone}
+                  onChange={(e) => setHomeworkNotDone(e.target.checked)}
+                  className="w-4 h-4 accent-[#d97706]"
+                />
+                <span className="text-sm text-text-body">宿題未実施</span>
+              </label>
+            </div>
+          </Field>
+        </Zone>
 
         {/* フッター */}
         <div className="sticky bottom-0 bg-white border-t p-3 flex items-center gap-2 -mx-4 px-4">
@@ -891,25 +929,306 @@ export default function LessonReportFormPage() {
           </Button>
         </div>
 
-        {/* デモ時のみ：報告書の下に進行表イメージ（教材×単元テーブル + 時系列フィード）。
-            「講師は進行表を見ながら報告書を書き起こす」動線を1ページで検討するためのダミー。
-            将来は同一ページに本物の進行表を埋め込む想定。 */}
         {isDemo && <DemoProgressPreview />}
       </div>
     </AdminLayout>
   );
 }
 
+// ---------- 保存ヘルパー ----------
+
+/** 目標ヘッダーの試験目標を1行のテキストにする（class_reports のスナップショット列用） */
+function formatExamGoal(g: GoalHeader): string {
+  const parts = [g.examLabel];
+  if (g.targetScore != null) parts.push(`${g.targetScore}点`);
+  const head = parts.join(' ');
+  return g.examRange ? `${head}（範囲: ${g.examRange}）` : head;
+}
+
+/** 日付ラベル 'YYYY-MM-DD' → 'M/D(曜)' */
+function formatDateLabel(date: string): string {
+  if (!date) return '';
+  const d = new Date(`${date}T12:00:00Z`);
+  if (Number.isNaN(d.getTime())) return date;
+  const w = ['日', '月', '火', '水', '木', '金', '土'][d.getUTCDay()];
+  return `${d.getUTCMonth() + 1}/${d.getUTCDate()}(${w})`;
+}
+
+/**
+ * グリッドで学校進度としてマークされた単元から、class_reports.school_progress（text列）の
+ * 表示文字列を組み立てる。進行表側の実データ（student_progress.school_progress_date）は
+ * recordSession が書くので、ここは保護者に見せる文言だけを作る。
+ */
+function buildSchoolProgressText(
+  units: ClassReportFormData['units'],
+  selections: Record<string, GridSelectionState>,
+  gridRows: Record<string, CurriculumItemWithProgress[]>,
+  textbookOptions: StudentTextbookOption[]
+): string {
+  const labels: string[] = [];
+  for (const u of units) {
+    const sel = selections[u.student_textbook_id];
+    if (!sel || sel.schoolUnits.size === 0) continue;
+    const rows = gridRows[u.student_textbook_id] ?? [];
+    const tbName =
+      textbookOptions.find((o) => o.id === u.student_textbook_id)?.textbook_name ?? '教材';
+    for (const row of rows) {
+      if (sel.schoolUnits.has(row.id)) labels.push(`${tbName} / ${row.title}`);
+    }
+  }
+  return labels.join('、');
+}
+
+/**
+ * 進行表への転記。教材（student_textbook）ごとに既存の recordSession をそのまま呼ぶ。
+ * primaryCurriculumItemId の算出も授業記録パネル（SessionRecordingPanel）と同じ規則:
+ * 触れた単元のうちカリキュラム順で一番下の行に引継ぎ・フラグを書く。
+ */
+async function syncToProgress(params: {
+  entry: ScheduleEntryInfo;
+  units: ClassReportFormData['units'];
+  selections: Record<string, GridSelectionState>;
+  gridRows: Record<string, CurriculumItemWithProgress[]>;
+  handover: string;
+  homeworkNotDone: boolean;
+  tardy: boolean;
+  teacherName: string;
+  onSessionSaved: (studentTextbookId: string, sessionId: string) => void;
+}): Promise<void> {
+  const {
+    entry,
+    units,
+    selections,
+    gridRows,
+    handover,
+    homeworkNotDone,
+    tardy,
+    teacherName,
+    onSessionSaved,
+  } = params;
+
+  for (const u of units) {
+    const stbId = u.student_textbook_id;
+    const sel = selections[stbId];
+    if (!sel) continue;
+
+    const hasContent =
+      Object.keys(sel.unitActions).length > 0 ||
+      sel.schoolUnits.size > 0 ||
+      !!handover ||
+      homeworkNotDone ||
+      tardy;
+    // 何も入力が無い教材で空のセッションを作らない。ただし既にセッションがある場合は
+    // 「入力を消した」編集なので更新は通す
+    if (!hasContent && !sel.sessionId) continue;
+
+    const unitActions: SessionUnitAction[] = Object.entries(sel.unitActions).map(([cid, ln]) => ({
+      curriculumItemId: Number(cid),
+      lessonNumber: ln,
+    }));
+
+    // 触れた単元のうちカリキュラム順で最後のものを primary にする
+    const rows = gridRows[stbId] ?? [];
+    const touched = new Set([
+      ...Object.keys(sel.unitActions).map(Number),
+      ...Array.from(sel.schoolUnits),
+    ]);
+    let primaryCurriculumItemId: number | null = null;
+    for (const row of rows) {
+      if (touched.has(row.id)) primaryCurriculumItemId = row.id;
+    }
+
+    // 編集で学校進度から外された単元を検出してクリアする
+    const clearSchoolProgressUnits = sel.origSchoolUnitIds.filter((id) => !sel.schoolUnits.has(id));
+
+    const session = await recordSession({
+      studentTextbookId: stbId,
+      sessionDate: entry.entry_date,
+      teacherId: entry.teacher_id,
+      teacherName,
+      handover,
+      homeworkNotDone,
+      tardy,
+      unitActions,
+      schoolProgressUnits: Array.from(sel.schoolUnits),
+      scheduleEntryId: entry.id,
+      sessionId: sel.sessionId,
+      primaryCurriculumItemId,
+      clearSchoolProgressUnits,
+    });
+    onSessionSaved(stbId, session.id);
+  }
+}
+
+/** 目標ヘッダーを組み立てる。試験目標・行動目標は既存の一括取得関数を再利用する */
+async function loadGoalHeader(
+  mainStbId: string,
+  textbooks: StudentTextbookWithDetails[]
+): Promise<GoalHeader | null> {
+  const goals = await getFeedGoalsByTextbooks([mainStbId]);
+  const summary = goals[mainStbId];
+  if (!summary?.exam) return null;
+  // exam_range は getFeedGoalsByTextbooks が返さないので、取得済みの教材の exams から拾う
+  const examRow = textbooks
+    .find((tb) => tb.id === mainStbId)
+    ?.exams?.find((e) => e.id === summary.exam!.id);
+  return {
+    examLabel: summary.exam.label,
+    examDate: summary.exam.examDate,
+    targetScore: summary.exam.targetScore,
+    examRange: examRow?.exam_range ?? null,
+    actionGoals: summary.actionGoals.map((g) => g.title),
+  };
+}
+
+/**
+ * このコマに紐づく既存セッションから、グリッド選択・引継ぎ・フラグを復元する。
+ * - セッションの識別は schedule_entry_id（下書きを何度保存してもセッションを増やさない）
+ * - 指導単元 / 学校進度は既存の getSessionsForEdit で復元する
+ */
+async function restoreSessions(
+  scheduleEntryId: string,
+  units: ClassReportFormData['units'],
+  setSelections: (v: Record<string, GridSelectionState>) => void,
+  setHandover: (v: string) => void,
+  setHomeworkNotDone: (v: boolean) => void,
+  setTardy: (v: boolean) => void
+): Promise<void> {
+  const byTextbook = await getSessionsByScheduleEntry(scheduleEntryId);
+  const next: Record<string, GridSelectionState> = {};
+  let handoverSet = false;
+
+  for (const u of units) {
+    const stbId = u.student_textbook_id;
+    const session = byTextbook[stbId];
+    if (!session) {
+      next[stbId] = emptySelection();
+      continue;
+    }
+    // 指導単元・学校進度の復元（既存関数を利用。取りこぼしても sessionId があるので
+    // セッションが増殖することはない）
+    let unitActions: Record<number, 1 | 2 | 3> = {};
+    let schoolUnitIds: number[] = [];
+    try {
+      const editable = await getSessionsForEdit(stbId, 50);
+      const hit = editable.find((e) => e.session.id === session.id);
+      if (hit) {
+        unitActions = hit.unitActions;
+        schoolUnitIds = hit.schoolUnitIds;
+      }
+    } catch (err) {
+      console.error('セッションの復元に失敗:', err);
+    }
+    next[stbId] = {
+      unitActions,
+      schoolUnits: new Set(schoolUnitIds),
+      origSchoolUnitIds: schoolUnitIds,
+      sessionId: session.id,
+    };
+    // 引継ぎ・フラグはコマ単位の情報。最初に見つかったセッションの値を採用する
+    if (!handoverSet) {
+      setHandover(session.handover ?? '');
+      setHomeworkNotDone(session.homework_not_done);
+      setTardy(session.tardy);
+      handoverSet = true;
+    }
+  }
+  setSelections(next);
+}
+
 // ---------- 小コンポーネント ----------
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+/**
+ * ゾーンUI: 書いた内容が保護者に出るか／教室内に留まるかを視覚的に分ける。
+ * 緑＝公開（承認後にマイページへ）／グレー破線＝内部。
+ */
+function Zone({
+  kind,
+  title,
+  icon,
+  children,
+}: {
+  kind: 'public' | 'internal';
+  title: string;
+  icon: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  const isPublic = kind === 'public';
   return (
-    <Card>
-      <CardContent className="p-4 space-y-3">
-        <h2 className="text-xs font-bold text-text-muted uppercase tracking-wide">{title}</h2>
-        {children}
-      </CardContent>
-    </Card>
+    <div
+      className={`rounded-lg border overflow-hidden ${
+        isPublic ? 'border-success/40' : 'border-border border-dashed'
+      }`}
+    >
+      <div
+        className={`flex items-center gap-1.5 px-4 py-2 text-[11px] font-bold tracking-wide ${
+          isPublic ? 'bg-success-subtle text-success' : 'bg-surface text-text-muted'
+        }`}
+      >
+        {icon}
+        {title}
+      </div>
+      <div className="bg-white p-4 space-y-4">{children}</div>
+    </div>
+  );
+}
+
+/** 目標ヘッダー: 中期目標（試験・行動）は表示のみ。期日カウントダウンを横に出す */
+function GoalHeaderCard({
+  goal,
+  countdown,
+}: {
+  goal: GoalHeader | null;
+  countdown: ExamCountdown | null;
+}) {
+  if (!goal) {
+    return (
+      <div className="rounded-lg border border-border bg-white px-4 py-3 text-xs text-text-muted">
+        <Target className="inline w-3.5 h-3.5 mr-1.5 -mt-0.5" />
+        この生徒のメイン教材に試験目標が未設定です（目標は進行表で設定します）
+      </div>
+    );
+  }
+  return (
+    <div className="rounded-lg border border-border bg-white px-4 py-3 space-y-2">
+      <div className="flex items-center gap-2 flex-wrap text-[13px]">
+        <span className="text-[10px] font-bold tracking-wide text-text-muted w-14 shrink-0">
+          試験目標
+        </span>
+        <span className="font-semibold text-text-heading">{formatExamGoal(goal)}</span>
+        {/* 期日カウントダウン（試験目標が無い生徒には出ない） */}
+        {countdown && (
+          <span className="ml-auto flex gap-1.5 shrink-0">
+            <span
+              className={`px-2 py-0.5 rounded-full text-[10.5px] font-bold tabular-nums ${
+                countdown.expired
+                  ? 'bg-surface text-text-muted'
+                  : 'bg-warning-subtle text-warning'
+              }`}
+            >
+              <CalendarClock className="inline w-3 h-3 mr-1 -mt-0.5" />
+              {goal.examDate?.slice(5).replace('-', '/')} ・ {formatCountdownDays(countdown)}
+            </span>
+            {!countdown.expired && (
+              <span className="px-2 py-0.5 rounded-full text-[10.5px] font-bold tabular-nums bg-info-subtle text-info">
+                授業あと{countdown.lessonsLeft}回
+              </span>
+            )}
+          </span>
+        )}
+      </div>
+      {goal.actionGoals.length > 0 && (
+        <div className="flex items-center gap-2 flex-wrap text-[13px]">
+          <span className="text-[10px] font-bold tracking-wide text-text-muted w-14 shrink-0">
+            行動目標
+          </span>
+          <span className="font-semibold text-text-heading">{goal.actionGoals.join(' ・ ')}</span>
+          <span className="ml-auto px-2 py-0.5 rounded-full text-[10.5px] font-bold bg-ink-subtle text-ink shrink-0">
+            進行表と同期
+          </span>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -931,6 +1250,29 @@ function Field({
   );
 }
 
+function PageInput({
+  value,
+  onChange,
+}: {
+  value: number | null;
+  onChange: (v: number | null) => void;
+}) {
+  return (
+    <div className="relative">
+      <span className="absolute left-2 top-1/2 -translate-y-1/2 text-text-muted text-sm font-semibold pointer-events-none">
+        p.
+      </span>
+      <input
+        type="number"
+        className="w-full pl-7 pr-2 py-1 border rounded text-sm"
+        value={value ?? ''}
+        onChange={(e) => onChange(e.target.value === '' ? null : parseInt(e.target.value, 10))}
+      />
+    </div>
+  );
+}
+
+/** ％入力はすべてスライダー（5%刻み・値をラベル表示） */
 function SliderField({
   label,
   value,
@@ -942,15 +1284,17 @@ function SliderField({
 }) {
   return (
     <div>
-      <label className="block text-xs font-semibold text-text-muted mb-1">{label}</label>
+      <div className="text-[10.5px] text-text-faint mb-1">{label}</div>
       <div className="grid grid-cols-[1fr_60px] gap-3 items-center">
         <input
           type="range"
           min={0}
           max={100}
+          step={5}
           value={value ?? 0}
           onChange={(e) => onChange(parseInt(e.target.value, 10))}
           className="w-full"
+          aria-label={label}
         />
         <div className="text-lg font-bold text-info text-right tabular-nums">
           {value ?? '-'}
@@ -961,53 +1305,87 @@ function SliderField({
   );
 }
 
-function TestRow({
+/** 数値ステッパー（タイピングを減らす。直接入力も残す） */
+function Stepper({
+  value,
+  onChange,
+  step = 1,
+  min = 0,
   label,
+}: {
+  value: number | null;
+  onChange: (v: number | null) => void;
+  step?: number;
+  min?: number;
+  label: string;
+}) {
+  const bump = (d: number) => onChange(Math.max(min, (value ?? 0) + d));
+  return (
+    <div className="inline-flex items-center border rounded-lg overflow-hidden bg-white">
+      <button
+        type="button"
+        onClick={() => bump(-step)}
+        aria-label={`${label}を減らす`}
+        className="w-8 h-8 flex items-center justify-center text-text-muted hover:bg-surface transition-colors duration-150 active:scale-[0.95]"
+      >
+        −
+      </button>
+      <input
+        type="number"
+        value={value ?? ''}
+        onChange={(e) => onChange(e.target.value === '' ? null : parseInt(e.target.value, 10))}
+        aria-label={label}
+        className="w-12 px-1 py-1 text-sm text-center border-x outline-none tabular-nums"
+      />
+      <button
+        type="button"
+        onClick={() => bump(step)}
+        aria-label={`${label}を増やす`}
+        className="w-8 h-8 flex items-center justify-center text-text-muted hover:bg-surface transition-colors duration-150 active:scale-[0.95]"
+      >
+        ＋
+      </button>
+    </div>
+  );
+}
+
+/**
+ * 確認テスト（単語/確認は運用上分けられないため1本に統合）。
+ * 合否は得点から自動判定するので、講師は点数だけ入れればよい。
+ */
+function CheckTestField({
   score,
   total,
   passed,
   onScoreChange,
   onTotalChange,
-  onPassedChange,
 }: {
-  label: string;
   score: number | null;
   total: number | null;
   passed: boolean | null;
   onScoreChange: (v: number | null) => void;
   onTotalChange: (v: number | null) => void;
-  onPassedChange: (v: boolean | null) => void;
 }) {
   return (
-    <div className="grid grid-cols-[1fr_70px_70px_140px] gap-2 items-end p-2 bg-surface rounded">
-      <div className="text-sm font-semibold pb-1">{label}</div>
-      <input
-        type="number"
-        value={score ?? ''}
-        onChange={(e) => onScoreChange(e.target.value === '' ? null : parseInt(e.target.value, 10))}
-        className="px-2 py-1 border rounded text-sm text-center"
-      />
-      <input
-        type="number"
-        value={total ?? ''}
-        onChange={(e) => onTotalChange(e.target.value === '' ? null : parseInt(e.target.value, 10))}
-        className="px-2 py-1 border rounded text-sm text-center"
-      />
-      <div className="flex border rounded overflow-hidden">
-        <button
-          type="button"
-          onClick={() => onPassedChange(true)}
-          className={`flex-1 py-1 text-xs font-bold transition-[background-color,color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97] ${passed === true ? 'bg-success text-white' : 'text-text-muted'}`}
-        >
-          合格
-        </button>
-        <button
-          type="button"
-          onClick={() => onPassedChange(false)}
-          className={`flex-1 py-1 text-xs font-bold transition-[background-color,color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97] ${passed === false ? 'bg-danger text-white' : 'text-text-muted'}`}
-        >
-          不合格
-        </button>
+    <div>
+      <label className="block text-xs font-semibold text-text-muted mb-1">
+        確認テスト（1本に統合）
+      </label>
+      <div className="flex items-center gap-2 flex-wrap">
+        <Stepper value={score} onChange={onScoreChange} label="確認テストの得点" />
+        <span className="text-sm text-text-muted">/</span>
+        <Stepper value={total} onChange={onTotalChange} label="確認テストの満点" />
+        {passed === null ? (
+          <span className="text-[11px] text-text-faint">点数を入れると合否を自動判定します</span>
+        ) : (
+          <span
+            className={`px-2 py-0.5 rounded-full text-[10.5px] font-bold ${
+              passed ? 'bg-success-subtle text-success' : 'bg-warning-subtle text-warning'
+            }`}
+          >
+            {passed ? '合格' : '不合格'}（自動判定）
+          </span>
+        )}
       </div>
     </div>
   );
@@ -1026,6 +1404,8 @@ function SubjectSpecificField({
     SubjectSpecific,
     { kind: 'none' }
   > | null;
+  // プリント自由記述（extra_materials）は kind に依らず保持する
+  const extra = value?.extra_materials;
 
   return (
     <div className="space-y-2">
@@ -1035,7 +1415,7 @@ function SubjectSpecificField({
           value={kind}
           onChange={(e) => {
             const k = e.target.value as SubjectSpecific['kind'];
-            if (k === 'none') onChange({ kind: 'none' });
+            if (k === 'none') onChange({ kind: 'none', extra_materials: extra });
             else
               onChange({
                 kind: k,
@@ -1043,6 +1423,7 @@ function SubjectSpecificField({
                 pages: v?.pages ?? '',
                 times_per_day: v?.times_per_day ?? 5,
                 duration: v?.duration ?? '1週間',
+                extra_materials: extra,
               });
           }}
           className="px-2 py-1 border rounded text-sm"
@@ -1104,4 +1485,129 @@ function SubjectSpecificField({
       )}
     </div>
   );
+}
+
+// ---------- デモモード ----------
+
+/**
+ * /lesson-reports/demo 用のダミーデータ。DBを引かずに実フォームの見た目を確認するため、
+ * 進行表グリッドの行も合成する（保存・提出は無効）。
+ */
+function loadDemo(setters: {
+  setEntry: (v: ScheduleEntryInfo) => void;
+  setNextLessonDate: (v: string | null) => void;
+  setScheduledDates: (v: string[]) => void;
+  setGoalHeader: (v: GoalHeader | null) => void;
+  setTextbookOptions: (v: StudentTextbookOption[]) => void;
+  setGridRows: (v: Record<string, CurriculumItemWithProgress[]>) => void;
+  setSelections: (v: Record<string, GridSelectionState>) => void;
+  setHandover: (v: string) => void;
+  setForm: (v: ClassReportFormData) => void;
+}) {
+  const lessonDate = todayInJst();
+  const next = buildHomeworkDateRows({ lessonDate, nextLessonDate: null });
+  const nextLessonDate = next[next.length - 1] ?? null;
+
+  setters.setEntry({
+    id: 'demo',
+    school_id: 'demo',
+    entry_date: lessonDate,
+    student_id: 'demo-student',
+    teacher_id: 'demo-teacher',
+    subject_ids: ['demo-math'],
+    time_slot: { slot_number: 5, start_time: '18:00', end_time: '19:30' },
+    student: { id: 'demo-student', last_name: '山田', first_name: '花子', grade: 8 },
+    teacher: { id: 'demo-teacher', display_name: '佐々木 先生', email: null },
+  });
+  setters.setNextLessonDate(nextLessonDate);
+  // 期日カウントダウンの見本用に、試験日までの授業予定を数件置く
+  setters.setScheduledDates([1, 4, 8, 11].map((d) => addDaysLocal(lessonDate, d)));
+  setters.setGoalHeader({
+    examLabel: '期末テスト 数学',
+    examDate: addDaysLocal(lessonDate, 14),
+    targetScore: 80,
+    examRange: '一次関数まで',
+    actionGoals: ['ノートに途中式を残す', '宿題は日割りでその日のうちに'],
+  });
+
+  const options: StudentTextbookOption[] = [
+    {
+      id: 'tb-main',
+      textbook_id: 1,
+      textbook_name: '新中学問題集 数学2年',
+      curriculum_items: [
+        { id: 1, title: '連立方程式の利用', sort_order: 1 },
+        { id: 2, title: '一次関数の式', sort_order: 2 },
+        { id: 3, title: '一次関数の利用', sort_order: 3 },
+        { id: 4, title: '一次関数のグラフ', sort_order: 4 },
+      ],
+    },
+  ];
+  setters.setTextbookOptions(options);
+  setters.setGridRows({
+    'tb-main': options[0].curriculum_items.map((it) => ({
+      id: it.id,
+      textbook_id: 1,
+      title: it.title,
+      item_number: it.sort_order,
+      item_type: null,
+      sort_order: it.sort_order,
+      created_at: '',
+      progress: null,
+    })) as unknown as CurriculumItemWithProgress[],
+  });
+  setters.setSelections({
+    'tb-main': {
+      unitActions: { 2: 1 },
+      schoolUnits: new Set([3]),
+      origSchoolUnitIds: [3],
+      sessionId: null,
+    },
+  });
+  setters.setHandover(
+    '符号ミスは減ってきたが、分数係数が入ると手が止まる。次回は分数係数の変化の割合から。丸付けは自走OK。'
+  );
+  setters.setForm({
+    schedule_entry_id: 'demo',
+    student_id: 'demo-student',
+    teacher_id: 'demo-teacher',
+    lesson_date: lessonDate,
+    short_term_goal: '一次関数の変化の割合を自力で求められるようにする',
+    mid_term_goal_snapshot: '',
+    mid_action_goal_snapshot: '',
+    school_progress: '',
+    homework_completion_pct: 90,
+    homework_correct_pct: 75,
+    today_correct_pct: 85,
+    vocab_test_score: null,
+    vocab_test_total: null,
+    vocab_test_passed: null,
+    check_test_score: 15,
+    check_test_total: 20,
+    check_test_passed: true,
+    review_comment:
+      '変化の割合の意味をグラフと式の両方から確認しました。符号ミスがまだ出ますが、後半は自力で正確に求められています。次回は式からグラフを描く練習に進みます。',
+    homework_assignments: next.map((d, i) => ({
+      date: d,
+      text: i === 0 ? '新中問 p.59 の基本問題' : i === 1 ? '新中問 p.60 ＋ 昨日の間違い直し' : '',
+    })),
+    subject_specific: { kind: 'none', extra_materials: '計算プリント（分数係数）を10問' },
+    status: 'draft',
+    units: [
+      {
+        student_textbook_id: 'tb-main',
+        is_main: true,
+        curriculum_item_ids: [2],
+        page_start: 54,
+        page_end: 58,
+        display_order: 0,
+      },
+    ],
+  });
+}
+
+/** デモ用の日付加算（reportSchedule の addDays を使うと import が循環しないので直接利用） */
+function addDaysLocal(date: string, n: number): string {
+  const t = Date.parse(`${date}T12:00:00Z`);
+  return new Date(t + n * 86400000).toISOString().slice(0, 10);
 }
