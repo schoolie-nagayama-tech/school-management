@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { Search, AlertTriangle, Package, ShoppingCart, X, Trash2, Plus, Minus } from 'lucide-react';
 import type { Textbook, Material } from '@/types/database';
 
@@ -34,9 +34,33 @@ interface TextbookCatalogProps {
   onBulkOrder: (items: CartItem[]) => Promise<void>;
   onStockAdjust?: (material: Material) => void;
   onStockRegister?: (textbookName: string) => void;
+  /** カート保存のスコープ（選択中の教室）。変わったらカートを捨てる。 */
+  schoolScopeKey: string;
 }
 
 const ITEMS_PER_PAGE = 60;
+
+// カートは本コンポーネントの useState だが、親が fetchData() する度に
+// isLoading の出し分けで本コンポーネントごとアンマウントされ、カートが黙って消える
+// （教材登録・在庫調整など、ページから動いていなくても起きる）。
+// sessionStorage に退避して復元する。タブを閉じたら破棄でよいので localStorage は使わない。
+const CART_STORAGE_KEY = 'nest-ordering-cart-v1';
+
+type StoredCart = { scope: string; items: CartItem[] };
+
+/** 保存済みカートを読む。スコープ（教室）が違えば捨てる。壊れていても落とさない。 */
+function loadStoredCart(scope: string): CartItem[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = sessionStorage.getItem(CART_STORAGE_KEY);
+    if (!raw) return [];
+    const saved = JSON.parse(raw) as StoredCart;
+    if (saved?.scope !== scope || !Array.isArray(saved.items)) return [];
+    return saved.items;
+  } catch {
+    return [];
+  }
+}
 
 // ─── Subject Color Coding ─────────────────────────────────
 const SUBJECT_COLORS: Record<string, { bg: string; text: string; dot: string }> = {
@@ -445,11 +469,38 @@ export function TextbookCatalog({
   onBulkOrder,
   onStockAdjust,
   onStockRegister,
+  schoolScopeKey,
 }: TextbookCatalogProps) {
-  // Cart state
-  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  // Cart state（アンマウントで消えないよう sessionStorage から初期化する）
+  const [cartItems, setCartItems] = useState<CartItem[]>(() => loadStoredCart(schoolScopeKey));
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // カートの変更を都度 sessionStorage へ反映する。
+  useEffect(() => {
+    try {
+      if (cartItems.length === 0) {
+        sessionStorage.removeItem(CART_STORAGE_KEY);
+      } else {
+        const payload: StoredCart = { scope: schoolScopeKey, items: cartItems };
+        sessionStorage.setItem(CART_STORAGE_KEY, JSON.stringify(payload));
+      }
+    } catch {
+      // 容量超過やプライベートモードでの失敗。保存できなくてもカート自体は使えるので無視する。
+    }
+  }, [cartItems, schoolScopeKey]);
+
+  // 教室を切り替えたらカートを捨てる（別教室の生徒・教材が混ざるため）。
+  // 通常は切替時に本コンポーネントがアンマウントされ初期化側の scope 判定で捨てられるが、
+  // マウントされたまま切り替わった場合にここで捨てないと、他教室のカートが新スコープで保存される。
+  const prevScopeRef = useRef(schoolScopeKey);
+  useEffect(() => {
+    if (prevScopeRef.current !== schoolScopeKey) {
+      prevScopeRef.current = schoolScopeKey;
+      setCartItems([]);
+      setIsCartOpen(false);
+    }
+  }, [schoolScopeKey]);
 
   const handleAddToCart = useCallback(
     (
@@ -481,8 +532,12 @@ export function TextbookCatalog({
     setIsSubmitting(true);
     try {
       await onBulkOrder(cartItems);
+      // 成功したときだけカートを空にする（失敗時に消すと入力し直しになるため）。
       setCartItems([]);
       setIsCartOpen(false);
+    } catch {
+      // 失敗の通知は呼び出し元がトーストで行う。ここで捕まえないと unhandled rejection になり、
+      // カートは残るのに画面には何も出ない（＝無言で失敗する）ため握りつぶさず捕捉だけする。
     } finally {
       setIsSubmitting(false);
     }
