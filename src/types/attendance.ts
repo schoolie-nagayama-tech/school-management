@@ -31,9 +31,14 @@ export interface AttendanceSheet {
   rejection_reason: string | null;
   transport_cost: number;
   admin_note: string | null;
+  /** 1対2・1対1のいずれかにコマ給変更があるか（導出フラグ） */
   is_koma_changing: boolean;
+  /** コマ給変更(1対2)。指導形態ごとに別建てなので 1対1 とは別カラムで持つ */
   koma_change_from: number | null;
   koma_change_to: number | null;
+  /** コマ給変更(1対1) */
+  koma_change_from_1to1: number | null;
+  koma_change_to_1to1: number | null;
   created_at: string;
   updated_at: string;
   // リレーション
@@ -70,6 +75,22 @@ export interface AttendanceNote {
   note: string | null;
   created_at: string;
   updated_at: string;
+}
+
+// コマ給変更の指導形態。1対2 は既存カラム(koma_change_from/to)、1対1 は _1to1 カラムに対応する
+export type KomaChangeFormat = '1to2' | '1to1';
+
+export const KOMA_CHANGE_FORMAT_LABELS: Record<KomaChangeFormat, string> = {
+  '1to2': '1対2',
+  '1to1': '1対1',
+};
+
+// コマ給変更の入力値（1講師・1ヶ月ぶん）。片方だけの変更もあるため各枠は独立に null を取る
+export interface KomaChangeInput {
+  from_1to2: number | null;
+  to_1to2: number | null;
+  from_1to1: number | null;
+  to_1to1: number | null;
 }
 
 // フォーム用

@@ -58,6 +58,7 @@ import {
   type AttendanceSheetStatus,
 } from '@/types/attendance';
 import { ScheduleDriftCheckPanel } from '@/components/attendance/ScheduleDriftCheckPanel';
+import { LateEarlySelect } from '@/components/attendance/LateEarlySelect';
 
 export default function AttendanceSheetDetailPage() {
   const params = useParams();
@@ -330,8 +331,10 @@ export default function AttendanceSheetDetailPage() {
                       </span>
                     </th>
                   ))}
-                  <th className="px-2 py-2 text-center font-medium border-b min-w-[100px]">
+                  {/* 遅刻早退は講師側の入力欄を廃止したため、ここが唯一の入力箇所 */}
+                  <th className="px-2 py-2 text-center font-medium border-b min-w-[150px] whitespace-nowrap">
                     遅刻早退
+                    <span className="block text-xs text-text-body font-normal">室長が入力</span>
                   </th>
                   <th className="px-2 py-2 text-center font-medium border-b min-w-[120px]">備考</th>
                 </tr>
@@ -381,11 +384,9 @@ export default function AttendanceSheetDetailPage() {
                         );
                       })}
                       <td className="px-1 py-1 border-b">
-                        <Input
+                        <LateEarlySelect
                           value={noteData?.lateEarly || ''}
-                          onChange={(e) => handleLateEarlyChange(d.date, e.target.value)}
-                          placeholder="遅刻15分"
-                          className="h-8 text-sm"
+                          onChange={(next) => handleLateEarlyChange(d.date, next)}
                         />
                       </td>
                       <td className="px-1 py-1 border-b">
