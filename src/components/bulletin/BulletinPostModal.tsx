@@ -20,6 +20,14 @@ const GRADE_OPTIONS = Object.entries(GRADE_LABELS).map(([n, label]) => ({
   label,
 }));
 
+/**
+ * 配信先（audience）UIの表示フラグ（2026-07-16）。
+ * 保護者ポータルv2はまだadmin限定デモで、実在の保護者は誰もポータルに居ないため、
+ * 配信先を選ばせる意味がまだ無い。UIを従来（社内のみ）の見た目に戻すために false にする。
+ * 将来ポータルを保護者に開放するときは true に戻す（機能自体は消さない）。
+ */
+const AUDIENCE_UI_ENABLED = false;
+
 const RichTextEditor = dynamic(
   () => import('@/components/ui/RichTextEditor').then((m) => m.RichTextEditor),
   {
@@ -231,17 +239,30 @@ export function BulletinPostModal({
       const normalizedLink = normalizeLinkUrl(linkUrl);
       const publishStartAt = dateToTimestamp(publishStartDate, 'start');
       const publishEndAt = dateToTimestamp(publishEndDate, 'end');
-      // 配信先の共通フィールド。社内のみ（deliversToPortal=false）なら scope/grade/個別は既定に倒す。
-      const audienceFields = {
-        audience,
-        target_scope: deliversToPortal ? targetScope : ('all' as BulletinTargetScope),
-        target_grade: deliversToPortal && targetScope === 'grade' ? targetGrades : null,
-        target_student_ids:
-          deliversToPortal && targetScope === 'individual' ? targetStudentIds : [],
-      };
+      // 配信先の共通フィールド。
+      // AUDIENCE_UI_ENABLED=false の間はUIから配信先を変更できないため、新規投稿は常に社内のみで送る
+      // （社内のみ＝deliversToPortal=false のときの既定値と同じ）。
+      const audienceFields = AUDIENCE_UI_ENABLED
+        ? {
+            audience,
+            target_scope: deliversToPortal ? targetScope : ('all' as BulletinTargetScope),
+            target_grade: deliversToPortal && targetScope === 'grade' ? targetGrades : null,
+            target_student_ids:
+              deliversToPortal && targetScope === 'individual' ? targetStudentIds : [],
+          }
+        : {
+            audience: ['社内'],
+            target_scope: 'all' as BulletinTargetScope,
+            target_grade: null,
+            target_student_ids: [] as string[],
+          };
 
       if (post) {
-        // 代表の教室はラベルも含めて更新する
+        // 代表の教室はラベルも含めて更新する。
+        // AUDIENCE_UI_ENABLED=false のときは audience 系キーを一切送らない
+        // （updateBulletinPostは未指定キーを更新しない＝既存の配信先設定を維持する。
+        //  本番デモ校には audience=['保護者','生徒'] のお知らせが既にあり、
+        //  ここで ['社内'] を送ると黙って上書き・ポータルから消えてしまうため）。
         await updateBulletinPost(
           post.id,
           {
@@ -252,7 +273,7 @@ export function BulletinPostModal({
             is_pinned: isPinned,
             publish_start_at: publishStartAt,
             publish_end_at: publishEndAt,
-            ...audienceFields,
+            ...(AUDIENCE_UI_ENABLED ? audienceFields : {}),
           },
           userId
         );
@@ -269,9 +290,13 @@ export function BulletinPostModal({
               is_pinned: isPinned,
               publish_start_at: publishStartAt,
               publish_end_at: publishEndAt,
-              audience,
-              target_scope: audienceFields.target_scope,
-              target_grade: audienceFields.target_grade,
+              ...(AUDIENCE_UI_ENABLED
+                ? {
+                    audience,
+                    target_scope: audienceFields.target_scope,
+                    target_grade: audienceFields.target_grade,
+                  }
+                : {}),
             },
             userId
           );
@@ -480,154 +505,164 @@ export function BulletinPostModal({
           </label>
         </div>
 
-        {/* 配信先（audience）と届ける範囲（保護者ポータルv2 Stage2）。 */}
-        <div className="rounded-lg border border-[#e5e7eb] p-3">
-          <label className="mb-2 block text-sm font-medium text-[#1f2937]">配信先</label>
-          <div className="flex flex-wrap gap-2">
-            {AUDIENCE_OPTIONS.map((opt) => {
-              const checked = audience.includes(opt.value);
-              return (
-                <label
-                  key={opt.value}
-                  className={`flex cursor-pointer items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm ${
-                    checked
-                      ? 'border-[#1e3a5f] bg-[#1e3a5f]/10 text-[#1f2937]'
-                      : 'border-gray-200 text-gray-500 hover:bg-gray-50'
-                  }`}
-                >
-                  <input
-                    type="checkbox"
-                    checked={checked}
-                    onChange={() =>
-                      setAudience((prev) =>
-                        prev.includes(opt.value)
-                          ? prev.filter((a) => a !== opt.value)
-                          : [...prev, opt.value]
-                      )
-                    }
-                    className="h-4 w-4"
-                  />
-                  {opt.label}
-                </label>
-              );
-            })}
-          </div>
-          <p className="mt-1.5 text-xs text-gray-500">
-            既定は「社内」のみ（従来どおりスタッフだけに表示）。保護者・生徒に出すときだけ選択します。
-          </p>
-
-          {deliversToPortal && (
-            <div className="mt-3 border-t border-gray-100 pt-3">
-              <label className="mb-2 block text-sm font-medium text-[#1f2937]">届ける範囲</label>
-              <div className="mb-2 flex gap-2">
-                {(
-                  [
-                    { key: 'all', label: '全体' },
-                    { key: 'grade', label: '学年' },
-                    { key: 'individual', label: '個別' },
-                  ] as { key: BulletinTargetScope; label: string }[]
-                ).map((s) => (
-                  <button
-                    key={s.key}
-                    type="button"
-                    onClick={() => setTargetScope(s.key)}
-                    className={`flex-1 rounded-lg border px-3 py-1.5 text-sm ${
-                      targetScope === s.key
-                        ? 'border-[#1e3a5f] bg-[#1e3a5f]/10 font-medium text-[#1f2937]'
+        {/*
+          配信先（audience）と届ける範囲（保護者ポータルv2 Stage2）。
+          AUDIENCE_UI_ENABLED=false の間は非表示（Stage2以前と同じ見た目に戻す）。
+          JSXは削除せずフラグで丸ごと出し分ける（将来ポータルを保護者に開放するときに復活させる）。
+        */}
+        {AUDIENCE_UI_ENABLED && (
+          <div className="rounded-lg border border-[#e5e7eb] p-3">
+            <label className="mb-2 block text-sm font-medium text-[#1f2937]">配信先</label>
+            <div className="flex flex-wrap gap-2">
+              {AUDIENCE_OPTIONS.map((opt) => {
+                const checked = audience.includes(opt.value);
+                return (
+                  <label
+                    key={opt.value}
+                    className={`flex cursor-pointer items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm ${
+                      checked
+                        ? 'border-[#1e3a5f] bg-[#1e3a5f]/10 text-[#1f2937]'
                         : 'border-gray-200 text-gray-500 hover:bg-gray-50'
                     }`}
                   >
-                    {s.label}
-                  </button>
-                ))}
-              </div>
-
-              {targetScope === 'grade' && (
-                <div className="flex flex-wrap gap-1.5">
-                  {GRADE_OPTIONS.map((g) => {
-                    const on = targetGrades.includes(g.value);
-                    return (
-                      <button
-                        key={g.value}
-                        type="button"
-                        onClick={() =>
-                          setTargetGrades((prev) =>
-                            prev.includes(g.value)
-                              ? prev.filter((v) => v !== g.value)
-                              : [...prev, g.value]
-                          )
-                        }
-                        className={`rounded-full border px-2.5 py-1 text-xs ${
-                          on
-                            ? 'border-[#1e3a5f] bg-[#1e3a5f]/10 text-[#1f2937]'
-                            : 'border-gray-200 text-gray-500 hover:bg-gray-50'
-                        }`}
-                      >
-                        {g.label}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-
-              {targetScope === 'individual' && (
-                <div>
-                  <Input
-                    value={studentQuery}
-                    onChange={(e) => setStudentQuery(e.target.value)}
-                    placeholder="生徒名で検索"
-                    className="mb-2 w-full"
-                  />
-                  <div className="max-h-40 space-y-1 overflow-y-auto rounded-lg border border-gray-200 p-2">
-                    {studentOptions
-                      .filter((s) =>
-                        studentQuery ? `${s.last_name}${s.first_name}`.includes(studentQuery) : true
-                      )
-                      .slice(0, 50)
-                      .map((s) => (
-                        <label
-                          key={s.id}
-                          className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 hover:bg-gray-50"
-                        >
-                          <input
-                            type="checkbox"
-                            checked={targetStudentIds.includes(s.id)}
-                            onChange={() =>
-                              setTargetStudentIds((prev) =>
-                                prev.includes(s.id)
-                                  ? prev.filter((id) => id !== s.id)
-                                  : [...prev, s.id]
-                              )
-                            }
-                            className="h-4 w-4"
-                          />
-                          <span className="text-sm text-[#1f2937]">
-                            {s.last_name} {s.first_name}
-                            {s.grade != null && (
-                              <span className="ml-1 text-xs text-gray-400">
-                                {GRADE_LABELS[s.grade] ?? s.grade}
-                              </span>
-                            )}
-                          </span>
-                        </label>
-                      ))}
-                    {studentOptions.length === 0 && (
-                      <p className="px-2 py-1 text-xs text-gray-400">生徒を読み込み中…</p>
-                    )}
-                  </div>
-                  <p className="mt-1 text-xs text-gray-500">選択中: {targetStudentIds.length} 名</p>
-                </div>
-              )}
-
-              {/* 対象人数プレビュー（学年） */}
-              {targetScope === 'grade' && targetGrades.length > 0 && (
-                <p className="mt-2 text-xs text-gray-500">
-                  対象学年: {targetGrades.map((g) => GRADE_LABELS[g] ?? g).join('・')}
-                </p>
-              )}
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() =>
+                        setAudience((prev) =>
+                          prev.includes(opt.value)
+                            ? prev.filter((a) => a !== opt.value)
+                            : [...prev, opt.value]
+                        )
+                      }
+                      className="h-4 w-4"
+                    />
+                    {opt.label}
+                  </label>
+                );
+              })}
             </div>
-          )}
-        </div>
+            <p className="mt-1.5 text-xs text-gray-500">
+              既定は「社内」のみ（従来どおりスタッフだけに表示）。保護者・生徒に出すときだけ選択します。
+            </p>
+
+            {deliversToPortal && (
+              <div className="mt-3 border-t border-gray-100 pt-3">
+                <label className="mb-2 block text-sm font-medium text-[#1f2937]">届ける範囲</label>
+                <div className="mb-2 flex gap-2">
+                  {(
+                    [
+                      { key: 'all', label: '全体' },
+                      { key: 'grade', label: '学年' },
+                      { key: 'individual', label: '個別' },
+                    ] as { key: BulletinTargetScope; label: string }[]
+                  ).map((s) => (
+                    <button
+                      key={s.key}
+                      type="button"
+                      onClick={() => setTargetScope(s.key)}
+                      className={`flex-1 rounded-lg border px-3 py-1.5 text-sm ${
+                        targetScope === s.key
+                          ? 'border-[#1e3a5f] bg-[#1e3a5f]/10 font-medium text-[#1f2937]'
+                          : 'border-gray-200 text-gray-500 hover:bg-gray-50'
+                      }`}
+                    >
+                      {s.label}
+                    </button>
+                  ))}
+                </div>
+
+                {targetScope === 'grade' && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {GRADE_OPTIONS.map((g) => {
+                      const on = targetGrades.includes(g.value);
+                      return (
+                        <button
+                          key={g.value}
+                          type="button"
+                          onClick={() =>
+                            setTargetGrades((prev) =>
+                              prev.includes(g.value)
+                                ? prev.filter((v) => v !== g.value)
+                                : [...prev, g.value]
+                            )
+                          }
+                          className={`rounded-full border px-2.5 py-1 text-xs ${
+                            on
+                              ? 'border-[#1e3a5f] bg-[#1e3a5f]/10 text-[#1f2937]'
+                              : 'border-gray-200 text-gray-500 hover:bg-gray-50'
+                          }`}
+                        >
+                          {g.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {targetScope === 'individual' && (
+                  <div>
+                    <Input
+                      value={studentQuery}
+                      onChange={(e) => setStudentQuery(e.target.value)}
+                      placeholder="生徒名で検索"
+                      className="mb-2 w-full"
+                    />
+                    <div className="max-h-40 space-y-1 overflow-y-auto rounded-lg border border-gray-200 p-2">
+                      {studentOptions
+                        .filter((s) =>
+                          studentQuery
+                            ? `${s.last_name}${s.first_name}`.includes(studentQuery)
+                            : true
+                        )
+                        .slice(0, 50)
+                        .map((s) => (
+                          <label
+                            key={s.id}
+                            className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 hover:bg-gray-50"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={targetStudentIds.includes(s.id)}
+                              onChange={() =>
+                                setTargetStudentIds((prev) =>
+                                  prev.includes(s.id)
+                                    ? prev.filter((id) => id !== s.id)
+                                    : [...prev, s.id]
+                                )
+                              }
+                              className="h-4 w-4"
+                            />
+                            <span className="text-sm text-[#1f2937]">
+                              {s.last_name} {s.first_name}
+                              {s.grade != null && (
+                                <span className="ml-1 text-xs text-gray-400">
+                                  {GRADE_LABELS[s.grade] ?? s.grade}
+                                </span>
+                              )}
+                            </span>
+                          </label>
+                        ))}
+                      {studentOptions.length === 0 && (
+                        <p className="px-2 py-1 text-xs text-gray-400">生徒を読み込み中…</p>
+                      )}
+                    </div>
+                    <p className="mt-1 text-xs text-gray-500">
+                      選択中: {targetStudentIds.length} 名
+                    </p>
+                  </div>
+                )}
+
+                {/* 対象人数プレビュー（学年） */}
+                {targetScope === 'grade' && targetGrades.length > 0 && (
+                  <p className="mt-2 text-xs text-gray-500">
+                    対象学年: {targetGrades.map((g) => GRADE_LABELS[g] ?? g).join('・')}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="flex justify-end gap-2">
           <Button onClick={onClose} variant="ghost">
