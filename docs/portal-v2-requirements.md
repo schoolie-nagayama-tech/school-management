@@ -95,6 +95,12 @@ Grow で使っている機能がすべて v2 で代替できたら置換完了�
 - 公開承認ワークフロー: 講師下書き→室長承認→公開。承認前は保護者非表示。
 - 原型 = 承認済み報告書が保護者に一覧・閲覧できる状態（マージ完成を待たず、既存報告書データの読み取りビューから始めることを許容する）。
 
+### G. 成績（Stage 5・保護者の書き込み第一号）
+- 保護者が **定期テスト・内申（通知表）を入力** → スタッフが承認 → 既存の成績（`assessments`）に転記。
+- 保護者は自分の紐づけ生徒の**成績（スタッフ入力分も含む）を閲覧**できる。
+- 模試の結果は対象外（成績表は塾に届く・CSVインポート運用済み。保護者に入れさせる意味がない）。
+- 原型 = デモ保護者が定期テストを入力→スタッフが承認→`/students/[id]/scores` に反映され、保護者側でも承認済みとして見える状態。**詳細は §7-5**。
+
 ### 横断: 通知
 - 最終形は確定済みの通知マトリクス（LINE push 一本。届ける=push／見れば済む=画面0円）。
 - **クローズド期間は画面内新着表示のみ**（マイページのバッジ＋一覧の未読）。
@@ -192,6 +198,7 @@ Grow で使っている機能がすべて v2 で代替できたら置換完了�
 | **2. コミュニケーション** | ④ 1対1チャット（保護者側＋スタッフ側受信/返信）、テンプレ（欠席/振替/面談）＋自動受付返信、座席表からの振替自動発信、⑤ 掲示板 audience 拡張、画面内＋メール通知。**詳細は §7-2** | 保護者⇔教室のメッセージ往復＋お知らせ配信＋振替自動通知が動く（Grow の G1/G2/G3 を代替可能） |
 | **3. スケジュール** | 時間割・予定ビュー、欠席連絡導線、v1 フォーム取り込み（UI 温存可否をここで判断）、セルフ予約接続 | G4/G5 を代替可能 |
 | **4. 報告書** | 承認ワークフロー＋保護者ビュー（既存データ読み取りから） | G6 を代替可能 |
+| **5. 成績** | 保護者入力（定期・内申）→スタッフ承認→`assessments` 転記＋成績閲覧。**ポータル初の保護者書き込み。詳細は §7-5** | デモ保護者の入力→承認→既存成績画面への反映が一周する |
 | （後続） | LINE 取得後: LINE ログイン＋push チャネル接続。法務（ポリシー/規約/同意フロー）確定→公開ゲート | roadmap M2 に合流 |
 
 - 実施順の理由: Grow 置換の核＝双方向やり取り（C）を最初の機能ドメインに。報告書（R）は承認フローと P1-14 依存があるため最後。
@@ -327,6 +334,93 @@ UIモックで合意した設計。実装の契約。
 
 ---
 
+## 7-5. Stage 5 詳細仕様: 成績の保護者入力＋閲覧（2026-07-16 設計）
+
+### 設計の3本柱
+
+1. **入力対象は 定期テスト（regular_test）と 内申（report_card）だけ**。
+   保護者の手元に原本がある（テスト用紙・通知表）＝保護者が一次情報源。塾側の聞き取り・回収の手間をゼロにする。
+   模試（mock）は成績表が塾に届き CSV/貼り付けインポート運用が既にあるため**入力対象にしない**（閲覧はできる）。
+2. **保護者の入力はそのまま業務データに混ぜない**。中間テーブル `portal_score_submissions` に置き、
+   **スタッフの承認で `assessments` / `assessment_scores` へ転記**する。
+   → AlertBoard・成績グラフ・PDF・生徒詳細など既存の全消費者は**無改修のまま「承認済みだけ」を見続ける**。
+   報告書の「承認＝公開」ゲート（§7-4）の**逆向きの適用**（保護者→塾は「承認＝取り込み」）。
+3. **portal ロールに書き込み権限を一切足さない**（§6-3 の不変条件）。
+   書き込み = service role API ＋ 入口で `requirePortalStudent`（チャット投稿と同じ型）。
+   読み取り = SELECT のみ（自分の申請は RLS、承認済み成績は狭いビュー）。
+
+### データモデル（新規1テーブル＋ビュー1本。既存テーブルのスキーマ変更なし）
+
+```
+portal_score_submissions
+  id            uuid PK
+  school_id     uuid NOT NULL → schools      -- 生徒の所属校を送信時に焼き込み（承認キューの教室絞り。
+                                             --  student_textbooks.school_id と同じ「所属校と一致」原則）
+  student_id    uuid NOT NULL → students
+  account_id    uuid NOT NULL → portal_accounts   -- 誰が入れたか
+  category      text CHECK ('regular_test','report_card')   -- ★模試はDB層でも入れられない
+  grade         int  CHECK (1..13)
+  name_code     text                          -- assessments.name_code と同じ値域（term1_mid 等）・同じCHECK
+  exam_month    date                          -- 月初日正規化（portal_transfer_permissions.month と同じ流儀）。
+                                             --  report_card は null 可（assessments 側の運用と同じ）
+  scores        jsonb NOT NULL                -- {"english": 82, ...}。表示前に防御的正規化
+                                             --  （homework_assignments / subject_specific と同じ思想）
+  status        text CHECK ('submitted','approved','rejected') default 'submitted'
+  rejected_reason text                        -- 差し戻し理由。★保護者に見せる（報告書の rejection_reason は
+                                             --  内部向けで見せないが、こちらは保護者への返答そのもの）
+  reviewed_by   uuid → user_profiles
+  reviewed_at   timestamptz
+  assessment_id uuid → assessments            -- 承認で転記した先（監査・二重転記防止）
+  created_at / updated_at
+```
+
+- **GRANT**: service_role=ALL ／ portal=SELECT（`account_id = portal_uid()` の自分の申請のみ・policy）／
+  authenticated=SELECT（`check_school_access(school_id)`。承認キューの表示用。**承認操作そのものはAPI経由**）
+- **値のバリデーション（サーバー・service role APIの入口）**: 定期テスト=整数0〜100 ／ 内申=整数1〜5 ／
+  科目キーはカテゴリの既知集合（`COMMON_9_SUBJECTS`）のみ通す。範囲外・未知キーは400。
+- **閲覧ビュー `portal_assessments`**（§7-4 の限定公開ビューと同型・security_invoker 無し）:
+  - 述語: 紐づけ（`portal_uid()`）＋在籍中＋生徒の所属校＝assessments.school_id（4条件は §7-4 と同じ）
+  - 列: id / student_id / category / grade / name_code / exam_month / exam_date / scores（jsonb集約）。内部列なし
+  - **スタッフが入れた成績（模試含む全カテゴリ）も保護者に見せる**（設計判断: Grow置換として自然。
+    絞りたくなったら述語に category 条件を足すだけの構造にしておく）
+  - relation（保護者/生徒本人）では絞らない＝本人にも自分の成績は見せる
+
+### フロー
+
+1. **保護者**: `/mypage/grades` — 承認済み成績の一覧＋自分の申請と状態（承認待ち/承認済み/差し戻し＋理由）。
+   「成績を入力」→ カテゴリ・テスト名（`ASSESSMENT_NAME_OPTIONS` の選択式）・学年・年月（ピッカー）・
+   科目別点数（数値のみ）→ `POST /api/mypage/scores`。
+   **保護者にもタイピング最小化を適用**: 自由入力は一切なし（選択＋数値だけ）。
+   - 再送: 同一（student, category, grade, name_code, exam_month）で自分の `submitted` が既にあれば**置き換え**。
+     承認後の訂正は新しい申請として出す（承認済みの行は保護者から不変）。
+2. **スタッフ**: 承認キュー（生徒管理ページの NewResponsesBoard と同型の「承認待ち成績」ボード＋
+   `/students/[id]/scores` 内のバナー）。既存 `assessments` に同一（category, grade, name_code, exam_month）の
+   行があれば**並べて差分表示**。
+   - **承認** = 転記。無ければ `createAssessmentRow` 相当＋scores 埋め、あれば**申請に含まれる科目だけ上書き**
+     （空欄・未申請の科目は触らない）。`reviewed_by` / `assessment_id` をアトミックに記録。
+   - **差し戻し** = 理由必須（保護者に表示される）。
+   - 権限境界は既存の成績編集と同じ **`canEditScores`（講師も可）**。承認＝成績を書く行為なので同じ境界に置く。
+3. **通知**: クローズド期間は画面内のみ（保護者=状態表示／スタッフ=キューのバッジ）。
+   メールは既存の宛先解決課題（§8）に相乗りしない。
+
+### デモ・検証
+
+- デモ校に「承認待ち1件＋差し戻し1件＋承認済み数件」を仕込む（demo SQL に増分。冪等原則は維持）。
+- RLS境界テスト: portal が portal_score_submissions の他人の行・assessments 本体・ビュー越境を読めないこと／
+  書きAPIが他人の生徒・退塾生・模試カテゴリ・範囲外の値を弾くこと。
+- 出口条件: デモ保護者が定期テストを入力→スタッフが承認→`/students/[id]/scores` に出る→保護者の
+  `/mypage/grades` にも承認済みとして出る（一周）。
+
+### 非スコープ（v1 でやらない・将来）
+
+- 模試の保護者入力（運用が既に塾側にある）
+- `student_textbook_exams`（試験目標）との自動連携 — 承認時に「この生徒の直近の試験目標の振り返り
+  （result_score）候補」として見せるのは自然な拡張だが、進行表側のフロー（NextGoalModal）を尊重して v1 では触らない
+- 成績グラフの保護者表示（まず表から。ScoreChart の流用は次段）
+- 一括入力・写真OCR取り込み
+
+---
+
 ## 8. 未決事項（実装しながら決める）
 
 - v1 フォーム UI を温存するか v2 デザインに寄せるか（Stage 3 で判断）
@@ -334,3 +428,5 @@ UIモックで合意した設計。実装の契約。
 - 報告書ビューと P1-14 マージの統合タイミング（Stage 4）
 - LINE 連携の細部（ブロック/再連携・複数教室生徒）・データ保存期間 — 正典 §10 のまま継続
 - v1 の廃止時期・リダイレクト（M2 以降）
+- 成績（§7-5）の細部: 承認時の科目上書きポリシーの微調整（v1=申請科目のみ上書き）／保護者への成績閲覧の
+  カテゴリ範囲（v1=全カテゴリ。異論があれば絞る）／ダッシュボードへの成績セクション追加のタイミング
