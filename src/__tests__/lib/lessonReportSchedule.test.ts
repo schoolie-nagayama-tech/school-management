@@ -104,7 +104,11 @@ describe('computeExamCountdown', () => {
   });
 
   it('授業予定が無ければ 授業あと0回', () => {
-    const cd = computeExamCountdown({ examDate: '2026-07-29', today: '2026-07-15', lessonDates: [] });
+    const cd = computeExamCountdown({
+      examDate: '2026-07-29',
+      today: '2026-07-15',
+      lessonDates: [],
+    });
     expect(cd!.lessonsLeft).toBe(0);
   });
 
@@ -150,7 +154,9 @@ describe('buildHomeworkDateRows', () => {
     expect(rows).toHaveLength(7);
     expect(rows[0]).toBe('2026-07-15');
     // 同日もフォールバック扱い（翌日以降が対象のため）
-    expect(buildHomeworkDateRows({ lessonDate: '2026-07-14', nextLessonDate: '2026-07-14' })).toHaveLength(7);
+    expect(
+      buildHomeworkDateRows({ lessonDate: '2026-07-14', nextLessonDate: '2026-07-14' })
+    ).toHaveLength(7);
   });
 
   it('長期休みで次回が遠い場合は上限で打ち切り、次回授業日の行は必ず残す', () => {

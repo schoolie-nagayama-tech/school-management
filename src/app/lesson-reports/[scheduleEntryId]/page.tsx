@@ -340,7 +340,14 @@ export default function LessonReportFormPage() {
 
       // 6. このコマに既に紐づいているセッションを復元（下書き保存の再開・再提出で
       //    セッションが増殖しないよう sessionId を握っておく）
-      await restoreSessions(scheduleEntryId, units, setSelections, setHandover, setHomeworkNotDone, setTardy);
+      await restoreSessions(
+        scheduleEntryId,
+        units,
+        setSelections,
+        setHandover,
+        setHomeworkNotDone,
+        setTardy
+      );
     } catch (err) {
       toastError(err instanceof Error ? err.message : '初期化に失敗しました');
     } finally {
@@ -496,7 +503,12 @@ export default function LessonReportFormPage() {
       }));
 
       // 学校進度（class_reports 側は text 列）は、グリッドで選ばれた学校単元から組み立てる
-      const schoolProgressText = buildSchoolProgressText(form.units, selections, gridRows, textbookOptions);
+      const schoolProgressText = buildSchoolProgressText(
+        form.units,
+        selections,
+        gridRows,
+        textbookOptions
+      );
 
       const payload: ClassReportFormData = {
         ...form,
@@ -647,7 +659,10 @@ export default function LessonReportFormPage() {
           title="保護者に公開される内容（承認後にマイページへ）"
           icon={<Eye className="w-3.5 h-3.5" />}
         >
-          <Field label="今日の目標（手入力）" hint="↑ 上の中期目標を踏まえて、この授業のゴールを1文で">
+          <Field
+            label="今日の目標（手入力）"
+            hint="↑ 上の中期目標を踏まえて、この授業のゴールを1文で"
+          >
             <input
               type="text"
               className="w-full px-3 py-2 border-2 border-info rounded-md text-sm"
@@ -720,9 +735,7 @@ export default function LessonReportFormPage() {
                         schoolUnits: sel.schoolUnits,
                         sessionDate: form.lesson_date,
                       }}
-                      onCellToggle={(cid, col) =>
-                        handleCellToggle(u.student_textbook_id, cid, col)
-                      }
+                      onCellToggle={(cid, col) => handleCellToggle(u.student_textbook_id, cid, col)}
                       isTeacher={profile?.role === 'teacher'}
                     />
 
@@ -1201,9 +1214,7 @@ function GoalHeaderCard({
           <span className="ml-auto flex gap-1.5 shrink-0">
             <span
               className={`px-2 py-0.5 rounded-full text-[10.5px] font-bold tabular-nums ${
-                countdown.expired
-                  ? 'bg-surface text-text-muted'
-                  : 'bg-warning-subtle text-warning'
+                countdown.expired ? 'bg-surface text-text-muted' : 'bg-warning-subtle text-warning'
               }`}
             >
               <CalendarClock className="inline w-3 h-3 mr-1 -mt-0.5" />

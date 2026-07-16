@@ -21,7 +21,11 @@
 import { useMemo } from 'react';
 import type { CurriculumItemWithProgress } from '@/types/database';
 import { ProgressRow } from '@/app/students/[studentId]/progress/ProgressRow';
-import { isIntentTag, type IntentTag, type MeetingColMap } from '@/app/students/[studentId]/progress/newProgress.shared';
+import {
+  isIntentTag,
+  type IntentTag,
+  type MeetingColMap,
+} from '@/app/students/[studentId]/progress/newProgress.shared';
 
 /**
  * 報告書フォームで出す列だけ true にする。

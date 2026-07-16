@@ -169,7 +169,9 @@ export function mergeHomeworkRows(dates: string[], existing: HomeworkRow[]): Hom
 
 /** 保存前の整形: 空欄の日は保存しない（DBに空行を溜めない） */
 export function compactHomeworkRows(rows: HomeworkRow[]): HomeworkRow[] {
-  return rows.filter((r) => r.text.trim() !== '').map((r) => ({ date: r.date, text: r.text.trim() }));
+  return rows
+    .filter((r) => r.text.trim() !== '')
+    .map((r) => ({ date: r.date, text: r.text.trim() }));
 }
 
 // ─────────────────────────────────────────────
