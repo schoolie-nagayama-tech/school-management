@@ -9,6 +9,7 @@ import AccessDenied from '@/components/AccessDenied';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLocalSchoolId } from '@/hooks/useLocalSchoolId';
 import { useToast } from '@/hooks/useToast';
+import { fetchWithAuth } from '@/lib/api/auth';
 import { isManagerOrAbove } from '@/lib/utils/roles';
 
 /**
@@ -80,9 +81,12 @@ export default function PortalTransferPage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
+      // 素の fetch では 401 になる（この API は requireManager/requireAdmin を通るため）。
+      // cookie だけに頼らず Authorization ヘッダーを付ける fetchWithAuth を使う
+      // ＝このプロジェクトの管理API呼び出しの作法。
       const [permRes, freeRes] = await Promise.all([
-        fetch(`/api/admin/portal-transfer-permissions${schoolQs}`),
-        fetch(`/api/admin/transfer-free-periods${schoolQs}`),
+        fetchWithAuth(`/api/admin/portal-transfer-permissions${schoolQs}`),
+        fetchWithAuth(`/api/admin/transfer-free-periods${schoolQs}`),
       ]);
       const permJson = await permRes.json();
       const freeJson = await freeRes.json();
@@ -106,7 +110,7 @@ export default function PortalTransferPage() {
     }
     setPermSaving(true);
     try {
-      const res = await fetch('/api/admin/portal-transfer-permissions', {
+      const res = await fetchWithAuth('/api/admin/portal-transfer-permissions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -134,7 +138,7 @@ export default function PortalTransferPage() {
 
   const revokePermission = async (row: PermissionRow) => {
     try {
-      const res = await fetch(
+      const res = await fetchWithAuth(
         `/api/admin/portal-transfer-permissions?studentId=${encodeURIComponent(row.student_id)}&month=${row.month}`,
         { method: 'DELETE' }
       );
@@ -160,7 +164,7 @@ export default function PortalTransferPage() {
     }
     setFreeSaving(true);
     try {
-      const res = await fetch('/api/admin/transfer-free-periods', {
+      const res = await fetchWithAuth('/api/admin/transfer-free-periods', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -189,9 +193,12 @@ export default function PortalTransferPage() {
 
   const deleteFreePeriod = async (id: string) => {
     try {
-      const res = await fetch(`/api/admin/transfer-free-periods?id=${encodeURIComponent(id)}`, {
-        method: 'DELETE',
-      });
+      const res = await fetchWithAuth(
+        `/api/admin/transfer-free-periods?id=${encodeURIComponent(id)}`,
+        {
+          method: 'DELETE',
+        }
+      );
       if (!res.ok) {
         toastError('削除に失敗しました');
         return;

@@ -9,6 +9,7 @@ import AccessDenied from '@/components/AccessDenied';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLocalSchoolId } from '@/hooks/useLocalSchoolId';
 import { useToast } from '@/hooks/useToast';
+import { fetchWithAuth } from '@/lib/api/auth';
 import { isManagerOrAbove } from '@/lib/utils/roles';
 import type { ChatMessage } from '@/types/chat';
 
@@ -46,7 +47,10 @@ export default function PortalChatInboxPage() {
     setLoading(true);
     try {
       const qs = localSchoolId && localSchoolId !== 'all' ? `?school_id=${localSchoolId}` : '';
-      const res = await fetch(`/api/admin/portal-chat/threads${qs}`);
+      // 素の fetch では 401 になる（この API は requireManager/requireAdmin を通るため）。
+      // cookie だけに頼らず Authorization ヘッダーを付ける fetchWithAuth を使う
+      // ＝このプロジェクトの管理API呼び出しの作法。
+      const res = await fetchWithAuth(`/api/admin/portal-chat/threads${qs}`);
       const json = await res.json();
       setThreads(res.ok ? (json.threads ?? []) : []);
     } catch {
@@ -198,7 +202,7 @@ function StaffConversation({
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(
+      const res = await fetchWithAuth(
         `/api/admin/portal-chat/messages?thread_id=${encodeURIComponent(thread.thread_id)}`
       );
       const json = await res.json();
@@ -220,7 +224,7 @@ function StaffConversation({
     if (!text.trim()) return;
     setSending(true);
     try {
-      const res = await fetch('/api/admin/portal-chat/messages', {
+      const res = await fetchWithAuth('/api/admin/portal-chat/messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ thread_id: thread.thread_id, body: text.trim() }),

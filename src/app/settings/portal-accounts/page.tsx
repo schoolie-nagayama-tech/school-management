@@ -10,6 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useLocalSchoolId } from '@/hooks/useLocalSchoolId';
 import { useToast } from '@/hooks/useToast';
 import { isSystemAdmin } from '@/lib/utils/roles';
+import { fetchWithAuth } from '@/lib/api/auth';
 import { getStudents } from '@/lib/api/students';
 
 /**
@@ -62,7 +63,10 @@ export default function PortalAccountsPage() {
     try {
       const [studentList, invRes] = await Promise.all([
         getStudents(undefined, [localSchoolId], undefined, { includeTest: true }),
-        fetch(`/api/admin/portal-invitations?school_id=${localSchoolId}`),
+        // 素の fetch では 401 になる（この API は requireManager/requireAdmin を通るため）。
+        // cookie だけに頼らず Authorization ヘッダーを付ける fetchWithAuth を使う
+        // ＝このプロジェクトの管理API呼び出しの作法。
+        fetchWithAuth(`/api/admin/portal-invitations?school_id=${localSchoolId}`),
       ]);
       setStudents(
         studentList.map((s) => ({ id: s.id, last_name: s.last_name, first_name: s.first_name }))
@@ -89,7 +93,7 @@ export default function PortalAccountsPage() {
     setIssuing(true);
     setLastUrl('');
     try {
-      const res = await fetch('/api/admin/portal-invitations', {
+      const res = await fetchWithAuth('/api/admin/portal-invitations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ student_id: selectedStudentId, invite_type: inviteType }),
