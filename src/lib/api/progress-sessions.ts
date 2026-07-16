@@ -147,6 +147,35 @@ export async function getProgressSessions(
 }
 
 /**
+ * 1コマ（schedule_entry）に紐づく既存セッションを student_textbook_id 単位で引く。
+ *
+ * 授業報告書フォーム（/lesson-reports/[scheduleEntryId]）が使う。報告書は下書き保存・
+ * 再提出で何度も保存されるため、そのたびに recordSession が新しいセッションを作ると
+ * 進行表のフィードに同じコマが積み上がってしまう。既存セッションの id を渡して
+ * 「上書き更新」させるための読み取り専用ヘルパー（保存経路は recordSession のまま）。
+ */
+export async function getSessionsByScheduleEntry(
+  scheduleEntryId: string
+): Promise<Record<string, ProgressSession>> {
+  const { data, error } = await supabase
+    .from('progress_sessions')
+    .select('*')
+    .eq('schedule_entry_id', scheduleEntryId)
+    .order('created_at', { ascending: true });
+
+  if (error) {
+    throw new Error(`セッションの取得に失敗しました: ${error.message}`);
+  }
+  const out: Record<string, ProgressSession> = {};
+  // 同一コマ×同一教材は1セッションの想定。万一重複していたら最初の1件を採用し、
+  // 以降の保存はそれを上書きしていく（増殖を止める側に倒す）。
+  for (const s of (data || []) as ProgressSession[]) {
+    if (!out[s.student_textbook_id]) out[s.student_textbook_id] = s;
+  }
+  return out;
+}
+
+/**
  * 生徒の全テキスト横断で直近セッションを取得（生徒詳細ミニフィード用）
  */
 export async function getStudentSessionFeed(

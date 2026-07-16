@@ -2055,6 +2055,19 @@ export async function completeHeldTransfer(
     console.warn('Failed to record transfer notification:', notifyErr);
   }
 
+  // 保護者ポータルv2(Stage2): 振替確定を保護者スレッドへ system メッセージで自動発信する。
+  // ブラウザからのみ fire-and-forget で新設サーバールートを叩く（サーバー実行時は window 無し）。
+  // 紐づけ保護者が居なければ API 側で no-op、失敗しても振替登録は成功扱い（非致命・握りつぶす）。
+  if (typeof window !== 'undefined') {
+    void fetch('/api/mypage/chat/system/transfer', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ toEntryId: toEntry.id }),
+    }).catch(() => {
+      /* 非致命: 振替登録は既に成立しているので通知失敗は無視する */
+    });
+  }
+
   return { from: fromEntry, to: toEntry };
 }
 
@@ -2099,11 +2112,25 @@ export async function createTransferEntry(
  *  - すでに上限ぴったりの場合 isExceeded=false、追加振替で +1 すると超過。
  *
  * monthAnchor: 月の判定に使う任意日 (YYYY-MM-DD)。省略時は今日。
+ *
+ * client: クエリに使う Supabase クライアント（省略時は既定のブラウザクライアント db）。
+ *   ★ なぜ注入できるようにするか（2026-07-14 / 保護者ポータル Stage3）:
+ *     このモジュールの既定クライアント db は「ブラウザ用（ログイン中スタッフのセッションを
+ *     持つ anon キー）」。サーバー（API ルート）から呼ぶとセッションが無く、RLS により
+ *     schedule_regular_patterns / schedule_entries が 0 件で返る。その結果
+ *     limit=0 / used=0 となり「振替が常に上限到達」に見える（エラーにならず静かに壊れる）。
+ *     保護者ポータルの残り回数判定はサーバー（service role）で行う必要があるため、
+ *     クライアントだけを差し替えられるようにする。
+ *     ルール（上限・使用・月の数え方）はここが唯一の正であり続ける＝二重実装しない。
+ *   既存呼び出し（座席表 UI）は引数を渡さないので挙動は一切変わらない。
  */
 export async function getMonthlyTransferUsage(
   studentId: string,
-  monthAnchor?: string
+  monthAnchor?: string,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  client?: any
 ): Promise<{ limit: number; used: number; isExceeded: boolean; monthLabel: string }> {
+  const q = client ?? db;
   const anchor = monthAnchor ? new Date(monthAnchor + 'T12:00:00') : new Date();
   const y = anchor.getFullYear();
   const m = anchor.getMonth(); // 0-11
@@ -2113,7 +2140,7 @@ export async function getMonthlyTransferUsage(
   const monthLabel = `${y}年${m + 1}月`;
 
   // 上限：その生徒の有効な通塾日程パターン数
-  const { data: patterns } = await db
+  const { data: patterns } = await q
     .from('schedule_regular_patterns')
     .select('id')
     .eq('student_id', studentId)
@@ -2121,7 +2148,7 @@ export async function getMonthlyTransferUsage(
   const limit = (patterns as Array<{ id: string }> | null)?.length ?? 0;
 
   // 使用：その月内に entry_date が含まれる「振替元」(transferred_out) の件数
-  const { data: usedEntries } = await db
+  const { data: usedEntries } = await q
     .from('schedule_entries')
     .select('id')
     .eq('student_id', studentId)

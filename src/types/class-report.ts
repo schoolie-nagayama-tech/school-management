@@ -23,7 +23,13 @@ export interface HomeworkAssignmentItem {
   text: string;
 }
 
-/** 科目別欄の中身（科目によって kind と内容が変わる） */
+/**
+ * 科目別欄の中身（科目によって kind と内容が変わる）
+ *
+ * `extra_materials` は Stage4 で追加した「プリント等・テキスト外教材の自由記述」。
+ * class_reports に専用の列が無く、マイグレーションを増やさない方針のため、
+ * jsonb 列 `subject_specific` に同居させている（kind に依らず常に持てる）。
+ */
 export type SubjectSpecific =
   | {
       kind: 'vocab'; // 英語の単語練習
@@ -31,6 +37,7 @@ export type SubjectSpecific =
       pages: string; // 例: '46-49'
       times_per_day: number; // 1日の練習回数
       duration: string; // 期間（例：'1週間'）
+      extra_materials?: string;
     }
   | {
       kind: 'calc'; // 数学の計算練習
@@ -38,6 +45,7 @@ export type SubjectSpecific =
       pages: string;
       times_per_day: number;
       duration: string;
+      extra_materials?: string;
     }
   | {
       kind: 'kanji'; // 国語の漢字練習
@@ -45,8 +53,9 @@ export type SubjectSpecific =
       pages: string;
       times_per_day: number;
       duration: string;
+      extra_materials?: string;
     }
-  | { kind: 'none' };
+  | { kind: 'none'; extra_materials?: string };
 
 /** メインテーブル class_reports の行 */
 export interface ClassReport {

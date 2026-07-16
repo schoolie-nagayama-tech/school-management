@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { AdminLayout } from '@/components/layouts';
-import { Button, Loading, InlineLoading } from '@/components/ui';
+import { Button, Loading, InlineLoading, ToastContainer } from '@/components/ui';
 import dynamic from 'next/dynamic';
 import type { MaterialFormData } from '@/components/inventory';
 import Link from 'next/link';
@@ -38,6 +38,7 @@ import type { Material, MaterialOrderWithDetails, BillingPeriod, Textbook } from
 import { useRequirePermission, useCanEdit } from '@/hooks/usePermissions';
 import AccessDenied from '@/components/AccessDenied';
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/useToast';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 
 export default function OrderingPage() {
@@ -47,6 +48,7 @@ export default function OrderingPage() {
   );
   const canEdit = useCanEdit('canEditOrdering');
   const { getSelectedSchoolIds, selectedSchoolId } = useAuth();
+  const { toasts, removeToast, success, error: toastError } = useToast();
 
   // Data state
   const [materials, setMaterials] = useState<Material[]>([]);
@@ -120,6 +122,9 @@ export default function OrderingPage() {
   }, [fetchData, selectedSchoolId]);
 
   const schoolIds = useMemo(() => getSelectedSchoolIds(), [getSelectedSchoolIds]);
+
+  // カート保存のスコープ。教室を切り替えたら別教室の生徒・教材が混ざるため保存分は捨てる。
+  const cartScopeKey = useMemo(() => schoolIds.join(','), [schoolIds]);
 
   // --- Material CRUD ---
   const handleCreateMaterial = async (data: MaterialFormData) => {
@@ -264,57 +269,77 @@ export default function OrderingPage() {
     };
     const orderEntries: Entry[] = [];
 
-    for (const item of items) {
-      const isSample = item.studentId === SAMPLE_VALUE;
-      const isVocab = item.textbookName === VOCAB_BOOK_NAME;
-      const student = !isSample ? students.find((s) => s.id === item.studentId) : null;
-      const targetSchoolId = isVocab && student?.school_id ? student.school_id : fallbackSchoolId;
+    // 教材の解決〜発注レコード作成は逐次 await のため、途中で失敗すると前半だけ DB に残る。
+    // 何件通ったかを数えておき、失敗時のトーストで知らせる（黙って部分成功すると、
+    // 画面上は「押しても何も起きない」ように見えて原因にたどり着けないため）。
+    let createdCount = 0;
+    try {
+      for (const item of items) {
+        const isSample = item.studentId === SAMPLE_VALUE;
+        const isVocab = item.textbookName === VOCAB_BOOK_NAME;
+        const student = !isSample ? students.find((s) => s.id === item.studentId) : null;
+        const targetSchoolId = isVocab && student?.school_id ? student.school_id : fallbackSchoolId;
 
-      let material = materialCache.get(materialKey(item.textbookName, targetSchoolId));
-      if (!material) {
-        material = await createMaterial(
-          { name: item.textbookName, category: 'テキスト', unit: '冊' },
-          isVocab && targetSchoolId
-            ? [targetSchoolId]
-            : schoolIds.length > 0
-              ? schoolIds
-              : undefined
-        );
-        materialCache.set(materialKey(material.name, material.school_id), material);
+        let material = materialCache.get(materialKey(item.textbookName, targetSchoolId));
+        if (!material) {
+          material = await createMaterial(
+            { name: item.textbookName, category: 'テキスト', unit: '冊' },
+            isVocab && targetSchoolId
+              ? [targetSchoolId]
+              : schoolIds.length > 0
+                ? schoolIds
+                : undefined
+          );
+          materialCache.set(materialKey(material.name, material.school_id), material);
+        }
+
+        orderEntries.push({
+          material_id: material.id,
+          ...(isSample ? { is_sample: true } : { student_id: item.studentId }),
+          quantity: item.quantity,
+          targetSchoolId,
+        });
       }
 
-      orderEntries.push({
-        material_id: material.id,
-        ...(isSample ? { is_sample: true } : { student_id: item.studentId }),
-        quantity: item.quantity,
-        targetSchoolId,
-      });
-    }
-
-    // 発注レコード作成（target school 別にグルーピング）
-    if (activeBillingPeriod) {
-      for (const entry of orderEntries) {
-        const { targetSchoolId, ...orderData } = entry;
-        await createOrderWithBilling(orderData, activeBillingPeriod.id, targetSchoolId);
-      }
-    } else {
-      // 単語練習帳が混在すると school_id が異なるため、bulk insert は単一 school 用に分割
-      const hasMixedSchool =
-        new Set(orderEntries.map((e) => e.targetSchoolId)).size > 1 ||
-        orderEntries.some((e) => e.is_sample);
-      if (hasMixedSchool) {
+      // 発注レコード作成（target school 別にグルーピング）
+      if (activeBillingPeriod) {
         for (const entry of orderEntries) {
           const { targetSchoolId, ...orderData } = entry;
-          await createOrder(orderData, targetSchoolId);
+          await createOrderWithBilling(orderData, activeBillingPeriod.id, targetSchoolId);
+          createdCount++;
         }
       } else {
-        const { targetSchoolId } = orderEntries[0] ?? { targetSchoolId: fallbackSchoolId };
-        const payload = orderEntries.map(({ targetSchoolId: _ts, ...rest }) => rest);
-        await createBulkOrders(
-          payload as Array<{ material_id: string; student_id: string; quantity: number }>,
-          targetSchoolId
-        );
+        // 単語練習帳が混在すると school_id が異なるため、bulk insert は単一 school 用に分割
+        const hasMixedSchool =
+          new Set(orderEntries.map((e) => e.targetSchoolId)).size > 1 ||
+          orderEntries.some((e) => e.is_sample);
+        if (hasMixedSchool) {
+          for (const entry of orderEntries) {
+            const { targetSchoolId, ...orderData } = entry;
+            await createOrder(orderData, targetSchoolId);
+            createdCount++;
+          }
+        } else {
+          const { targetSchoolId } = orderEntries[0] ?? { targetSchoolId: fallbackSchoolId };
+          const payload = orderEntries.map(({ targetSchoolId: _ts, ...rest }) => rest);
+          const created = await createBulkOrders(
+            payload as Array<{ material_id: string; student_id: string; quantity: number }>,
+            targetSchoolId
+          );
+          createdCount = created.length;
+        }
       }
+    } catch (err) {
+      // ここで fetchData() を呼んではいけない。setIsLoading(true) で TextbookCatalog が
+      // アンマウントされ、失敗時に残したいカート（同コンポーネントの useState）ごと消えるため。
+      // 部分成功した分は次回の再取得で拾える。カートを残すため呼び出し元へ再throwする。
+      const reason = getUserErrorMessage(err, '発注の登録に失敗しました');
+      toastError(
+        createdCount > 0
+          ? `${items.length}件中${createdCount}件だけ登録されました: ${reason}`
+          : reason
+      );
+      throw err;
     }
 
     // 在庫減算（item ごとに targetSchoolId を使う）
@@ -334,6 +359,9 @@ export default function OrderingPage() {
     }
 
     fetchData();
+    // ボタン名は「まとめて発注」だが、実際に作られるのは未確認レコードで取次への発注ではない。
+    // 行き先を明示しないと「発注できていない」と誤解されるため、ステータスまで書く。
+    success(`${createdCount}件を発注リストに登録しました（未確認）`);
   };
 
   const handleFormClose = () => {
@@ -361,6 +389,7 @@ export default function OrderingPage() {
 
   return (
     <AdminLayout headerTitle="教材・発注管理">
+      <ToastContainer toasts={toasts} onRemove={removeToast} />
       {/* Error Message */}
       {errorMessage && (
         <div className="mb-4 bg-danger/20 text-danger px-4 py-2 rounded border border-danger">
@@ -438,6 +467,7 @@ export default function OrderingPage() {
           materials={materials}
           onOrder={handleTextbookOrder}
           onBulkOrder={handleBulkOrder}
+          schoolScopeKey={cartScopeKey}
           onStockAdjust={handleStockAdjust}
           onStockRegister={async (textbookName: string) => {
             // 在庫未登録のテキスト → まず Material を作成してから在庫調整モーダルを開く

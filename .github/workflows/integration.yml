@@ -32,19 +32,41 @@ jobs:
         with:
           version: latest
 
-      # クリーンビルドは base_schema のみを適用する。
-      # 理由: migrations/ には無日付(xxx_)と日付(2026xxxx)が混在し、ファイル名順では
-      # 依存テーブルのCREATEより先にALTERが走るためゼロからのクリーン適用が通らない。
-      # base_schema は `npm run db:dump` で本番から再生成した現行スキーマ(全テーブル+適用済みRLS)
-      # なので、これ一本で現行prod相当のDBが組める。増分SQLは一時退避して supabase start から除外する。
-      # （supabase はサブディレクトリを読まないため _archived_for_local_dev も対象外）
-      - name: Use base_schema only for clean build
+      # クリーンビルドは「base_schema ＋ 日付付き増分(2026*)」を適用する。
+      # ＝ローカルの db:reset と同じレシピ（supabase/LOCAL_DEV.md の規約。f671e73 で整備）。
+      # base_schema は本番dump（2026-07-08時点）で、それ以降の増分（ポータルv2等）は
+      # 日付付きファイルとして migrations/ に置かれている。seed.sql がポータルの
+      # テーブルを参照するため、base_schema 単独ではもう組めない。
+      # 無日付(xxx_)/接頭辞z(zzz_)の旧ファイルは CLI が無視するが、意図を明確にするため
+      # 退避で明示的に除外する（supabase はサブディレクトリを読まないため
+      # _archived_for_local_dev も対象外）。
+      - name: Use base_schema + dated migrations (same recipe as local db:reset)
         run: |
           mkdir -p /tmp/mig_excluded
           cd supabase/migrations
-          find . -maxdepth 1 -name '*.sql' ! -name '00000000000000_base_schema.sql' \
+          find . -maxdepth 1 -name '*.sql' \
+            ! -name '00000000000000_base_schema.sql' ! -name '2026*.sql' \
             -exec mv {} /tmp/mig_excluded/ \;
           echo "適用するマイグレーション:" && ls *.sql
+
+      # JWT署名鍵ファイルを使い捨てで生成する。
+      # config.toml が signing_keys_path = "./signing_keys.json" を参照するが、
+      # 実物（本番Supabaseが信頼するES256秘密鍵）はコミット禁止（.gitignore済み）。
+      # CI ではファイルが「形式どおり存在する」ことだけが必要（このジョブが回すのは
+      # スタッフ側RLSテストで、ポータルJWTの実鍵は使わない）ため、毎回その場で
+      # ローカル実物と同形式（秘密JWKの配列）のダミー鍵を作る。
+      - name: Generate throwaway signing keys
+        run: |
+          node -e '
+            const { webcrypto: wc } = require("crypto");
+            (async () => {
+              const kp = await wc.subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, true, ["sign", "verify"]);
+              const jwk = await wc.subtle.exportKey("jwk", kp.privateKey);
+              const out = [{ ...jwk, kid: wc.randomUUID(), use: "sig", alg: "ES256" }];
+              require("fs").writeFileSync("supabase/signing_keys.json", JSON.stringify(out));
+              console.log("generated throwaway signing key (kid=" + out[0].kid + ")");
+            })();
+          '
 
       # ローカル Supabase を起動（base_schema を適用してDBを初期化）
       # ubuntu-latest は Docker が利用可能なため supabase start が動く

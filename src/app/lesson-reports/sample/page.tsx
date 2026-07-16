@@ -17,6 +17,7 @@ import { Card, CardContent } from '@/components/ui';
 import { Button } from '@/components/ui';
 import Link from 'next/link';
 import { DemoProgressPreview } from '@/components/lesson-reports/DemoProgressPreview';
+import { SUBJECT_SPECIFIC_KIND_LABELS } from '@/components/mypage/ReportDetail';
 import {
   ChevronLeft,
   Target,
@@ -27,6 +28,7 @@ import {
   GraduationCap,
   Eye,
   Pencil,
+  PencilLine,
   Smartphone,
   CheckCircle2,
   Star,
@@ -61,7 +63,6 @@ const SAMPLE = {
   homeworkCompletionPct: 90,
   homeworkCorrectPct: 75,
   todayCorrectPct: 85,
-  vocab: { score: 18, total: 20, passed: true },
   check: { score: 8, total: 10, passed: true },
   reviewComment:
     '現在完了形の「継続」用法はよく理解できていました。have/has の使い分けも問題ありません。「経験」用法でやや混乱が見られたので、次回 ever / never を使った例文練習を中心に進めます。宿題の取り組みも丁寧で、間違い直しもできていました。この調子で続けましょう。',
@@ -70,12 +71,14 @@ const SAMPLE = {
     { date: '2026-05-30', text: '単語練習 Unit 6（46〜49）3回ずつ' },
     { date: '2026-06-01', text: '教科書 p.63 音読 + Q&A ノート作成' },
   ],
+  // 科目別欄。kind は講師フォームの SubjectSpecificField と同じ判別 union（'vocab'|'calc'|'kanji'|'none'）。
   subjectSpecific: {
-    label: '英単語練習',
+    kind: 'vocab' as const,
     range: 'Unit 6 単語',
-    pages: 'p.46〜49',
+    pages: '46〜49',
     timesPerDay: 3,
     duration: '1週間',
+    extraMaterials: '文法プリント（現在完了形の書き換え）2枚',
   },
 };
 
@@ -109,6 +112,15 @@ function SectionTitle({ icon, children }: { icon: React.ReactNode; children: Rea
 
 const W = (d: string) =>
   ['日', '月', '火', '水', '木', '金', '土'][new Date(d + 'T12:00:00').getDay()];
+
+/**
+ * 'YYYY-MM-DD' → '5/29(金)'。保護者の実画面（ReportDetail の formatShortDate）と
+ * 表記を合わせる（見本だけ表記が違うと見本の意味が無いため）。
+ */
+const formatDateLabel = (d: string) => {
+  const [, m, day] = d.split('-').map(Number);
+  return `${m}/${day}(${W(d)})`;
+};
 
 export default function LessonReportSamplePage() {
   // 表示モード: preview=室長が承認時に見る完成形 / form=講師が書く入力画面 /
@@ -296,6 +308,16 @@ export default function LessonReportSamplePage() {
                     </li>
                   ))}
                 </ul>
+                {SAMPLE.subjectSpecific.extraMaterials && (
+                  <div className="mt-2 rounded-lg bg-surface border border-border-subtle p-2.5">
+                    <div className="text-[10px] text-text-muted font-semibold">
+                      プリント・テキスト外の教材
+                    </div>
+                    <div className="text-sm text-text-body">
+                      {SAMPLE.subjectSpecific.extraMaterials}
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
@@ -319,21 +341,6 @@ export default function LessonReportSamplePage() {
                   <Pct label="本日正答率" value={SAMPLE.todayCorrectPct} color="var(--success)" />
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  <div className="flex items-center gap-1.5 rounded-lg border border-border-subtle px-2.5 py-1.5">
-                    <span className="text-xs text-text-muted">単語テスト</span>
-                    <span className="text-sm font-bold tabular-nums">
-                      {SAMPLE.vocab.score}/{SAMPLE.vocab.total}
-                    </span>
-                    <span
-                      className={`px-1.5 py-0.5 text-[10px] rounded-full font-semibold ${
-                        SAMPLE.vocab.passed
-                          ? 'bg-success-subtle text-success'
-                          : 'bg-danger-subtle text-danger'
-                      }`}
-                    >
-                      {SAMPLE.vocab.passed ? '合格' : '再テスト'}
-                    </span>
-                  </div>
                   <div className="flex items-center gap-1.5 rounded-lg border border-border-subtle px-2.5 py-1.5">
                     <span className="text-xs text-text-muted">チェックテスト</span>
                     <span className="text-sm font-bold tabular-nums">
@@ -375,7 +382,7 @@ export default function LessonReportSamplePage() {
                   {SAMPLE.homeworkAssignments.map((h, i) => (
                     <li key={i} className="flex items-start gap-2">
                       <span className="flex-shrink-0 mt-0.5 px-2 py-0.5 rounded-md bg-surface border border-border-subtle text-[11px] font-semibold tabular-nums text-text-muted">
-                        {h.date.slice(5).replace('-', '/')}（{W(h.date)}）
+                        {formatDateLabel(h.date)}
                       </span>
                       <span className="text-sm text-text-body">{h.text}</span>
                     </li>
@@ -384,23 +391,23 @@ export default function LessonReportSamplePage() {
               </CardContent>
             </Card>
 
-            {/* 科目別欄（英語＝単語練習） */}
+            {/* 科目別欄（単語・計算・漢字の反復練習） */}
             <Card>
               <CardContent className="p-4">
                 <SectionTitle icon={<GraduationCap className="w-4 h-4 text-info" />}>
-                  科目別（{SAMPLE.subjectSpecific.label}）
+                  科目別（{SUBJECT_SPECIFIC_KIND_LABELS[SAMPLE.subjectSpecific.kind]}）
                 </SectionTitle>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   <div className="rounded-lg border border-border-subtle p-2">
-                    <div className="text-[10px] text-text-muted">範囲</div>
+                    <div className="text-[10px] text-text-muted">練習範囲</div>
                     <div className="text-sm font-medium">{SAMPLE.subjectSpecific.range}</div>
                   </div>
                   <div className="rounded-lg border border-border-subtle p-2">
                     <div className="text-[10px] text-text-muted">ページ</div>
-                    <div className="text-sm font-medium">{SAMPLE.subjectSpecific.pages}</div>
+                    <div className="text-sm font-medium">p.{SAMPLE.subjectSpecific.pages}</div>
                   </div>
                   <div className="rounded-lg border border-border-subtle p-2">
-                    <div className="text-[10px] text-text-muted">1日の回数</div>
+                    <div className="text-[10px] text-text-muted">1日の練習回数</div>
                     <div className="text-sm font-medium">
                       {SAMPLE.subjectSpecific.timesPerDay} 回
                     </div>
@@ -483,9 +490,6 @@ function PortalView() {
                 </div>
                 <div className="mt-3 flex gap-2 flex-wrap">
                   <span className="px-2 py-1 rounded-full bg-success-subtle text-success text-xs font-semibold">
-                    単語テスト {SAMPLE.vocab.score}/{SAMPLE.vocab.total} 合格
-                  </span>
-                  <span className="px-2 py-1 rounded-full bg-success-subtle text-success text-xs font-semibold">
                     チェックテスト {SAMPLE.check.score}/{SAMPLE.check.total} 合格
                   </span>
                 </div>
@@ -510,7 +514,47 @@ function PortalView() {
                     <span className="mt-0.5">・</span>
                     <span>学校の進み: {SAMPLE.schoolProgress}</span>
                   </li>
+                  {SAMPLE.subjectSpecific.extraMaterials && (
+                    <li className="flex items-start gap-1.5 text-text-muted">
+                      <span className="mt-0.5">・</span>
+                      <span>プリント等: {SAMPLE.subjectSpecific.extraMaterials}</span>
+                    </li>
+                  )}
                 </ul>
+              </div>
+
+              {/* 科目別欄（単語・計算・漢字の反復練習） */}
+              <div className="rounded-2xl bg-white border border-sky-100 shadow-sm p-4">
+                <div className="flex items-center gap-1.5 text-sm font-bold text-info mb-2">
+                  <PencilLine className="w-4 h-4" />
+                  {SUBJECT_SPECIFIC_KIND_LABELS[SAMPLE.subjectSpecific.kind]}
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <div className="text-[10px] text-text-muted">練習範囲</div>
+                    <div className="text-sm font-medium text-text-body">
+                      {SAMPLE.subjectSpecific.range}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] text-text-muted">ページ</div>
+                    <div className="text-sm font-medium text-text-body">
+                      p.{SAMPLE.subjectSpecific.pages}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] text-text-muted">1日の練習回数</div>
+                    <div className="text-sm font-medium text-text-body">
+                      {SAMPLE.subjectSpecific.timesPerDay}回
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] text-text-muted">期間</div>
+                    <div className="text-sm font-medium text-text-body">
+                      {SAMPLE.subjectSpecific.duration}
+                    </div>
+                  </div>
+                </div>
               </div>
 
               {/* 次回までの宿題（チェックリスト風） */}
@@ -525,7 +569,7 @@ function PortalView() {
                       <CheckCircle2 className="w-4 h-4 text-gray-300 flex-shrink-0 mt-0.5" />
                       <div>
                         <span className="text-[11px] font-semibold text-warning">
-                          {h.date.slice(5).replace('-', '/')}（{W(h.date)}）まで
+                          {formatDateLabel(h.date)}まで
                         </span>
                         <div className="text-text-body">{h.text}</div>
                       </div>

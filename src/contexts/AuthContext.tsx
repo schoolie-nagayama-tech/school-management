@@ -70,6 +70,11 @@ const PUBLIC_PATHS = [
   // 追客メールの配信停止ページ（メール内リンクから保護者が直接アクセス）。
   // 注: '/inquiry' では '/inquiries/...'（複数形）は前方一致しないため個別に追加する。
   '/inquiries/unsubscribe',
+  // 保護者ポータルv2（/mypage）。スタッフ用の Supabase Auth セッションではなく
+  // 独自の portal_session（案3のポータルJWT）で認証するため、スタッフ用の
+  // ログインリダイレクト対象から外す。認可は /mypage 側の layout（全体スイッチ）と
+  // 各ページのセッション確認＋RLSで行う。
+  '/mypage',
 ];
 
 // 招待からの登録パス
