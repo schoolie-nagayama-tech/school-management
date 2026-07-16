@@ -1,7 +1,15 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Send, CalendarX, CalendarClock, Users, ChevronLeft, Info } from 'lucide-react';
+import {
+  Send,
+  CalendarX,
+  CalendarClock,
+  Users,
+  ChevronLeft,
+  Info,
+  ExternalLink,
+} from 'lucide-react';
 import { Button, Modal, Input, Textarea } from '@/components/ui';
 import { isTransferDeadlinePassed } from '@/lib/mypage/transferDeadline';
 import type {
@@ -10,6 +18,7 @@ import type {
   PortalThreadSummary,
   TransferCandidate,
 } from '@/types/chat';
+import type { PortalTimeSlotDto } from '@/types/mypage-schedule';
 
 /** 話題フィルタ。 */
 type TopicFilter = 'all' | 'zesseki' | 'meeting';
@@ -120,6 +129,10 @@ function Conversation({
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
   const [activeTemplate, setActiveTemplate] = useState<ChatTemplateKind | null>(null);
+  // TemplateForm（クイックアクションの連絡シート）向けの教室情報。生徒が決まった時点で
+  // 一度だけ取っておき、開閉のたびには叩かない（保護者は電波の悪い場所でも使う）。
+  const [timeSlots, setTimeSlots] = useState<PortalTimeSlotDto[]>([]);
+  const [meetingBookingUrl, setMeetingBookingUrl] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
   const load = useCallback(async () => {
@@ -138,6 +151,36 @@ function Conversation({
   useEffect(() => {
     load();
   }, [load]);
+
+  // ★ 失敗しても画面を壊さない: 時限は空配列（TemplateForm 側が自由入力にフォールバック）、
+  //   予約URLは null（従来のチャット送信フォームにフォールバック）のままにする。
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(
+          `/api/mypage/school-info?student_id=${encodeURIComponent(thread.student_id)}`
+        );
+        const json = await res.json();
+        if (cancelled) return;
+        if (res.ok) {
+          setTimeSlots(json.timeSlots ?? []);
+          setMeetingBookingUrl(json.meetingBookingUrl ?? null);
+        } else {
+          setTimeSlots([]);
+          setMeetingBookingUrl(null);
+        }
+      } catch {
+        if (!cancelled) {
+          setTimeSlots([]);
+          setMeetingBookingUrl(null);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [thread.student_id]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -266,6 +309,8 @@ function Conversation({
         <TemplateForm
           kind={activeTemplate}
           studentId={thread.student_id}
+          timeSlots={timeSlots}
+          meetingBookingUrl={meetingBookingUrl}
           onClose={() => setActiveTemplate(null)}
           onSent={async () => {
             setActiveTemplate(null);
@@ -401,11 +446,19 @@ function StructuredCard({ message, isPortal }: { message: ChatMessage; isPortal:
 function TemplateForm({
   kind,
   studentId,
+  timeSlots,
+  meetingBookingUrl,
   onClose,
   onSent,
 }: {
   kind: ChatTemplateKind;
   studentId: string;
+  /** その教室に実在する時限。AbsenceSheet と同じく、時限は自由入力ではなく選択にする。
+   *  取得に失敗/未取得（空配列）なら自由入力にフォールバックする。 */
+  timeSlots: PortalTimeSlotDto[];
+  /** 生徒の所属校の面談予約URL。設定されていれば面談希望はチャット送信せず
+   *  予約ページへ直接誘導する（§3）。未設定（null）なら従来のチャット送信フォーム。 */
+  meetingBookingUrl: string | null;
   onClose: () => void;
   onSent: () => void;
 }) {
@@ -489,6 +542,36 @@ function TemplateForm({
     }
   };
 
+  // ★ 面談希望＋予約URL設定済みの教室は、チャット送信フォームを出さず予約ページへ
+  //   直接誘導する（往復を1回減らす。§3）。サーバー側の buildAckBody にも同じURLを
+  //   載せる経路は残っているが、そちらは変更しない（旧クライアント・直接POST対策）。
+  //   URL未設定の教室は下の従来フォームに続けて後方互換を保つ。
+  if (kind === 'meeting_request' && meetingBookingUrl) {
+    return (
+      <Modal isOpen onClose={onClose} title={title} size="md">
+        <div className="space-y-4">
+          <p className="text-sm text-text-body">
+            ご都合の良い日時を、予約ページから直接お選びいただけます。
+          </p>
+          <a
+            href={meetingBookingUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-ink px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-ink/90"
+          >
+            <ExternalLink className="h-4 w-4" />
+            予約ページを開く
+          </a>
+          <div className="flex justify-end">
+            <Button variant="ghost" onClick={onClose}>
+              閉じる
+            </Button>
+          </div>
+        </div>
+      </Modal>
+    );
+  }
+
   return (
     <Modal isOpen onClose={onClose} title={title} size="md">
       <div className="space-y-4">
@@ -501,12 +584,34 @@ function TemplateForm({
               onChange={(e) => setLessonDate(e.target.value)}
               required
             />
-            <Input
-              label="時限・時間（任意）"
-              value={lessonSlot}
-              onChange={(e) => setLessonSlot(e.target.value)}
-              placeholder="例: 17:00〜 / 3限"
-            />
+            {timeSlots.length > 0 ? (
+              <div>
+                <label className="mb-1 block text-sm font-medium text-text-heading">
+                  時限・時間（任意）
+                </label>
+                {/* AbsenceSheet と同じ理由: 自由入力にすると教室に存在しない表記で
+                    書かれてしまい、確認の往復が発生する。実在する時限だけを出す。 */}
+                <select
+                  value={lessonSlot}
+                  onChange={(e) => setLessonSlot(e.target.value)}
+                  className="w-full rounded-lg border border-border bg-surface-raised px-2 py-1.5 text-sm text-text-body"
+                >
+                  <option value="">指定なし</option>
+                  {timeSlots.map((s) => (
+                    <option key={s.id} value={s.slotLabel}>
+                      {s.slotLabel}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : (
+              <Input
+                label="時限・時間（任意）"
+                value={lessonSlot}
+                onChange={(e) => setLessonSlot(e.target.value)}
+                placeholder="例: 17:00〜 / 3限"
+              />
+            )}
           </>
         )}
 
@@ -557,16 +662,36 @@ function TemplateForm({
                     }}
                     className="rounded-lg border border-border bg-surface-raised px-2 py-1.5 text-sm text-text-body"
                   />
-                  <input
-                    value={c.slot}
-                    onChange={(e) => {
-                      const next = [...candidates];
-                      next[i] = { ...next[i], slot: e.target.value };
-                      setCandidates(next);
-                    }}
-                    placeholder="時限（任意）"
-                    className="flex-1 rounded-lg border border-border bg-surface-raised px-2 py-1.5 text-sm text-text-body"
-                  />
+                  {timeSlots.length > 0 ? (
+                    <select
+                      aria-label={`第${i + 1}希望の時限`}
+                      value={c.slot}
+                      onChange={(e) => {
+                        const next = [...candidates];
+                        next[i] = { ...next[i], slot: e.target.value };
+                        setCandidates(next);
+                      }}
+                      className="min-w-0 flex-1 rounded-lg border border-border bg-surface-raised px-2 py-1.5 text-sm text-text-body"
+                    >
+                      <option value="">時限（任意）</option>
+                      {timeSlots.map((s) => (
+                        <option key={s.id} value={s.slotLabel}>
+                          {s.slotLabel}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      value={c.slot}
+                      onChange={(e) => {
+                        const next = [...candidates];
+                        next[i] = { ...next[i], slot: e.target.value };
+                        setCandidates(next);
+                      }}
+                      placeholder="時限（任意）"
+                      className="flex-1 rounded-lg border border-border bg-surface-raised px-2 py-1.5 text-sm text-text-body"
+                    />
+                  )}
                 </div>
               ))}
             </div>

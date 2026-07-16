@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requirePortalStudent } from '@/lib/mypage/portalAuth';
-import type { PortalScheduleEntryDto, PortalTimeSlotDto } from '@/types/mypage-schedule';
-import type { SupabaseClient } from '@supabase/supabase-js';
+import { fetchSchoolTimeSlots } from '@/lib/mypage/schoolInfo';
+import type { PortalScheduleEntryDto } from '@/types/mypage-schedule';
 
 export const dynamic = 'force-dynamic';
 
@@ -165,55 +165,4 @@ export async function GET(request: NextRequest) {
   });
 
   return NextResponse.json({ ok: true, entries: dtos, timeSlots });
-}
-
-/**
- * その生徒の教室に実在する時限（有効なもの）を表示順で返す。
- *
- * ★ 生徒の所属校で明示的に絞る理由:
- *   schedule_time_slots の portal ポリシーは「紐づけ生徒のいずれかの所属校」を許す。
- *   兄弟が別教室に通っている保護者だと、絞らなければ両校の時限が混ざって選択肢に出る
- *   （その生徒には存在しない時限を選べてしまう）。RLS は越境を防ぐためのものであって、
- *   「この生徒に出す一覧」の絞り込みはアプリ側の責務。
- *
- * ★ 失敗しても空配列を返す（例外にしない）: 時限一覧は連絡シートの補助的な選択肢で、
- *   これが引けないことを理由に予定表そのものを 500 にする価値はない。
- */
-async function fetchSchoolTimeSlots(
-  client: SupabaseClient,
-  studentId: string
-): Promise<PortalTimeSlotDto[]> {
-  const { data: student } = await client
-    .from('students')
-    .select('school_id')
-    .eq('id', studentId)
-    .maybeSingle();
-
-  const schoolId = (student as { school_id?: string } | null)?.school_id;
-  if (!schoolId) return [];
-
-  const { data: slots } = await client
-    .from('schedule_time_slots')
-    .select('id, slot_number, start_time, end_time')
-    .eq('school_id', schoolId)
-    .eq('is_active', true)
-    .order('display_order', { ascending: true });
-
-  return (
-    (
-      (slots ?? []) as unknown as Array<{
-        id: string;
-        slot_number: number;
-        start_time: string | null;
-        end_time: string | null;
-      }>
-    )
-      .map((s) => {
-        const st = s.start_time?.slice(0, 5) ?? '';
-        const et = s.end_time?.slice(0, 5) ?? '';
-        return { id: s.id, slotNumber: s.slot_number, slotLabel: st && et ? `${st}〜${et}` : '' };
-      })
-      // ラベルが作れない時限は選択肢に出さない（保護者に意味のない行を見せない）。
-      .filter((s) => s.slotLabel !== '')
-  );
 }
