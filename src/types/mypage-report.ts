@@ -11,6 +11,15 @@
  *
  * ★ lib/mypage/* は `import 'server-only'` なのでクライアントから import できない。
  *   API の戻り値の形はサーバー/クライアントで共有したいので型だけをここに置く。
+ *
+ * ★ 英単語テスト（vocab_test_*）を持たない理由（確定仕様・元に戻さないこと）:
+ *   「単語テストと確認テストは分けられない」という判断で、テストは確認テストに一本化された。
+ *   講師フォーム（app/lesson-reports/[scheduleEntryId]）は既に確認テストしか入力させず、
+ *   vocab_test_* には null しか書かない。よって保護者に出す枠を残しても永遠に空になる。
+ *   DB（class_reports の列・portal_class_reports ビュー）には列が残っているが、
+ *   列の削除は適用済みマイグレーションの改変になるため行わず、公開面から外すだけにする
+ *   （列は死んだまま無害）。型から外しておくと「うっかり参照するコードがコンパイルを
+ *   通ってしまう」事故も防げる。
  */
 
 /** 次回までの宿題1件（class_reports.homework_assignments の要素）。 */
@@ -46,13 +55,10 @@ export interface PortalReportListItem {
   teacherName: string | null;
   /** 今日の目標（カードでは1行に省略表示）。 */
   shortTermGoal: string | null;
-  /** カードの結果チップ用。 */
+  /** カードの結果チップ用（テストは確認テストに一本化。ファイル冒頭の注記を参照）。 */
   checkTestScore: number | null;
   checkTestTotal: number | null;
   checkTestPassed: boolean | null;
-  vocabTestScore: number | null;
-  vocabTestTotal: number | null;
-  vocabTestPassed: boolean | null;
   homeworkCompletionPct: number | null;
   isRead: boolean;
 }
@@ -76,13 +82,10 @@ export interface PortalReportDetail {
   homeworkCompletionPct: number | null;
   homeworkCorrectPct: number | null;
   todayCorrectPct: number | null;
-  /** テスト */
+  /** テスト（確認テストのみ。ファイル冒頭の注記を参照） */
   checkTestScore: number | null;
   checkTestTotal: number | null;
   checkTestPassed: boolean | null;
-  vocabTestScore: number | null;
-  vocabTestTotal: number | null;
-  vocabTestPassed: boolean | null;
   /** 講師より（講評） */
   reviewComment: string | null;
   /** 次回までの宿題（日付ごと） */

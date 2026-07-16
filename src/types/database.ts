@@ -347,6 +347,8 @@ export type Database = {
           slack_mention_id: string | null;
           logo_url: string | null;
           is_demo: boolean;
+          /** 面談予約用のGoogleカレンダーURL。null=未設定（自動返信にURLを載せない）。 */
+          meeting_booking_url: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -359,6 +361,7 @@ export type Database = {
           slack_mention_id?: string | null;
           logo_url?: string | null;
           is_demo?: boolean;
+          meeting_booking_url?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -371,6 +374,7 @@ export type Database = {
           slack_mention_id?: string | null;
           logo_url?: string | null;
           is_demo?: boolean;
+          meeting_booking_url?: string | null;
           created_at?: string;
           updated_at?: string;
         };

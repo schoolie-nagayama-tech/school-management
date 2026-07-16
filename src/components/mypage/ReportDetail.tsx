@@ -36,9 +36,8 @@ export function ReportDetail({ report }: { report: PortalReportDetail }) {
     report.homeworkCompletionPct != null ||
     report.homeworkCorrectPct != null ||
     report.todayCorrectPct != null;
-  const hasTests =
-    (report.vocabTestScore != null && report.vocabTestTotal != null) ||
-    (report.checkTestScore != null && report.checkTestTotal != null);
+  // テストは確認テストの1本のみ（英単語テストは廃止）。理由は types/mypage-report.ts の注記。
+  const hasTests = report.checkTestScore != null && report.checkTestTotal != null;
 
   return (
     <div className="space-y-3">
@@ -113,12 +112,6 @@ export function ReportDetail({ report }: { report: PortalReportDetail }) {
         <Section>
           <SectionTitle icon={<Award className="h-[13px] w-[13px]" />}>テスト</SectionTitle>
           <div className="flex flex-wrap gap-2">
-            <TestCard
-              name="英単語テスト"
-              score={report.vocabTestScore}
-              total={report.vocabTestTotal}
-              passed={report.vocabTestPassed}
-            />
             <TestCard
               name="確認テスト"
               score={report.checkTestScore}

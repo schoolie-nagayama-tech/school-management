@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requirePortalStudent } from '@/lib/mypage/portalAuth';
-import type { PortalScheduleEntryDto } from '@/types/mypage-schedule';
+import type { PortalScheduleEntryDto, PortalTimeSlotDto } from '@/types/mypage-schedule';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,6 +21,11 @@ export const dynamic = 'force-dynamic';
  *   status=transferred_in→振替 / status=cancelled→休講（打ち消し表示）
  *   ※ ラベル化はクライアント（ScheduleView）で行い、ここは生の値も返す。
  *   DTO の型は @/types/mypage-schedule（クライアントと共有）。
+ *
+ * 戻り: { ok, entries, timeSlots }
+ *   timeSlots は「その生徒の教室に実在する時限」の一覧。振替希望の時限を
+ *   自由入力ではなく選択にするために使う（AbsenceSheet）。予定が0件の週でも返す
+ *   （＝コマが無い週から開いても選択肢が空にならない）。
  */
 export async function GET(request: NextRequest) {
   const sp = request.nextUrl.searchParams;
@@ -41,14 +47,18 @@ export async function GET(request: NextRequest) {
 
   const { client } = auth;
 
-  // ── 予定本体（RLS 越し） ──
-  const { data: entriesRaw, error } = await client
-    .from('schedule_entries')
-    .select('id, entry_date, time_slot_id, teacher_id, subject_ids, seat_label, status, kind')
-    .eq('student_id', studentId)
-    .gte('entry_date', from)
-    .lte('entry_date', to)
-    .order('entry_date', { ascending: true });
+  // ── 予定本体（RLS 越し）＋ 教室の時限一覧 ──
+  // 互いに独立なので並列に取る（保護者の回線が細い前提。往復を積み上げない）。
+  const [{ data: entriesRaw, error }, timeSlots] = await Promise.all([
+    client
+      .from('schedule_entries')
+      .select('id, entry_date, time_slot_id, teacher_id, subject_ids, seat_label, status, kind')
+      .eq('student_id', studentId)
+      .gte('entry_date', from)
+      .lte('entry_date', to)
+      .order('entry_date', { ascending: true }),
+    fetchSchoolTimeSlots(client, studentId),
+  ]);
 
   if (error) {
     console.error('[mypage/schedule] 予定の取得に失敗:', error.message);
@@ -67,7 +77,8 @@ export async function GET(request: NextRequest) {
   }
   const entries = (entriesRaw ?? []) as unknown as EntryRow[];
   if (entries.length === 0) {
-    return NextResponse.json({ ok: true, entries: [] });
+    // 予定が無くても時限一覧は返す（コマが無い週から連絡シートを開いても選択肢が要る）。
+    return NextResponse.json({ ok: true, entries: [], timeSlots });
   }
 
   // ── 参照マスタをまとめて解決（N+1 を避ける） ──
@@ -153,5 +164,56 @@ export async function GET(request: NextRequest) {
     return (a.startTime ?? '99:99').localeCompare(b.startTime ?? '99:99');
   });
 
-  return NextResponse.json({ ok: true, entries: dtos });
+  return NextResponse.json({ ok: true, entries: dtos, timeSlots });
+}
+
+/**
+ * その生徒の教室に実在する時限（有効なもの）を表示順で返す。
+ *
+ * ★ 生徒の所属校で明示的に絞る理由:
+ *   schedule_time_slots の portal ポリシーは「紐づけ生徒のいずれかの所属校」を許す。
+ *   兄弟が別教室に通っている保護者だと、絞らなければ両校の時限が混ざって選択肢に出る
+ *   （その生徒には存在しない時限を選べてしまう）。RLS は越境を防ぐためのものであって、
+ *   「この生徒に出す一覧」の絞り込みはアプリ側の責務。
+ *
+ * ★ 失敗しても空配列を返す（例外にしない）: 時限一覧は連絡シートの補助的な選択肢で、
+ *   これが引けないことを理由に予定表そのものを 500 にする価値はない。
+ */
+async function fetchSchoolTimeSlots(
+  client: SupabaseClient,
+  studentId: string
+): Promise<PortalTimeSlotDto[]> {
+  const { data: student } = await client
+    .from('students')
+    .select('school_id')
+    .eq('id', studentId)
+    .maybeSingle();
+
+  const schoolId = (student as { school_id?: string } | null)?.school_id;
+  if (!schoolId) return [];
+
+  const { data: slots } = await client
+    .from('schedule_time_slots')
+    .select('id, slot_number, start_time, end_time')
+    .eq('school_id', schoolId)
+    .eq('is_active', true)
+    .order('display_order', { ascending: true });
+
+  return (
+    (
+      (slots ?? []) as unknown as Array<{
+        id: string;
+        slot_number: number;
+        start_time: string | null;
+        end_time: string | null;
+      }>
+    )
+      .map((s) => {
+        const st = s.start_time?.slice(0, 5) ?? '';
+        const et = s.end_time?.slice(0, 5) ?? '';
+        return { id: s.id, slotNumber: s.slot_number, slotLabel: st && et ? `${st}〜${et}` : '' };
+      })
+      // ラベルが作れない時限は選択肢に出さない（保護者に意味のない行を見せない）。
+      .filter((s) => s.slotLabel !== '')
+  );
 }

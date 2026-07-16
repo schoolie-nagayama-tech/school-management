@@ -87,16 +87,26 @@ export function buildTemplateBody(kind: ChatTemplateKind, payload: ChatTemplateP
  * @param kind             送信されたテンプレ種別
  * @param payload          （ダウングレード反映後の）payload
  * @param deadlinePassed   対象授業が振替締切を過ぎているか（サーバーで算出した結果）
+ * @param meetingBookingUrl 面談予約ページ（Googleカレンダー）のURL。
+ *   ★ 呼び出し側から渡す理由: この関数を純関数のまま保つため（DBを引かない）。
+ *     生徒の所属校の schools.meeting_booking_url を引くのは API 側の責務。
+ *     未設定（null/空）なら何も足さない＝従来どおりの文面（後方互換）。
  */
 export function buildAckBody(
   kind: ChatTemplateKind,
   payload: ChatTemplatePayload,
-  deadlinePassed: boolean
+  deadlinePassed: boolean,
+  meetingBookingUrl?: string | null
 ): string {
   const dateLabel = payload.lessonDate ? `${formatJpDate(payload.lessonDate)}の授業について、` : '';
 
   if (kind === 'meeting_request') {
-    return 'ご希望を受け付けました。担当より日程を調整のうえ、あらためてご連絡します。';
+    const base = 'ご希望を受け付けました。担当より日程を調整のうえ、あらためてご連絡します。';
+    // 予約ページがある教室は、その場で保護者に枠を押さえてもらう（往復が1回減る）。
+    if (meetingBookingUrl) {
+      return `${base}\nご都合の良い日時を下記からご予約ください：\n${meetingBookingUrl}`;
+    }
+    return base;
   }
 
   // 上限到達によるダウングレード（§7-3）。締切超過より先に判定する。

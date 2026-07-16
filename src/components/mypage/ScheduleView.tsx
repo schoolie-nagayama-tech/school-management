@@ -3,7 +3,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ChevronLeft, ChevronRight, MoreHorizontal, Repeat } from 'lucide-react';
 import { AbsenceSheet } from './AbsenceSheet';
-import type { PortalScheduleEntryDto, TransferQuota } from '@/types/mypage-schedule';
+import { formatGradeLabel } from '@/lib/utils/gradeLabel';
+import type {
+  PortalScheduleEntryDto,
+  PortalTimeSlotDto,
+  TransferQuota,
+} from '@/types/mypage-schedule';
 
 /**
  * 予定ビュー（時間割・今後の予定）— 保護者側。
@@ -109,6 +114,8 @@ export function ScheduleView({ students }: { students: ScheduleStudent[] }) {
   const [studentId, setStudentId] = useState<string>(students[0]?.id ?? '');
   const [weekStart, setWeekStart] = useState<string>(() => mondayOf(todayJst()));
   const [entries, setEntries] = useState<PortalScheduleEntryDto[]>([]);
+  // 教室に実在する時限（振替希望の「時限」選択肢）。予定APIに同梱されてくる。
+  const [timeSlots, setTimeSlots] = useState<PortalTimeSlotDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [quota, setQuota] = useState<TransferQuota | null>(null);
   // 「…」から開く欠席・振替シートの対象コマ。
@@ -126,6 +133,7 @@ export function ScheduleView({ students }: { students: ScheduleStudent[] }) {
       );
       const json = await res.json();
       setEntries(res.ok ? (json.entries ?? []) : []);
+      setTimeSlots(res.ok ? (json.timeSlots ?? []) : []);
     } finally {
       setLoading(false);
     }
@@ -188,7 +196,7 @@ export function ScheduleView({ students }: { students: ScheduleStudent[] }) {
               }`}
             >
               {s.name}
-              {s.grade != null && `（${s.grade}年）`}
+              {s.grade != null && `（${formatGradeLabel(s.grade)}）`}
             </button>
           ))}
         </div>
@@ -266,6 +274,7 @@ export function ScheduleView({ students }: { students: ScheduleStudent[] }) {
         <AbsenceSheet
           studentId={studentId}
           entry={sheetEntry}
+          timeSlots={timeSlots}
           onClose={() => setSheetEntry(null)}
           onSent={() => {
             setSheetEntry(null);

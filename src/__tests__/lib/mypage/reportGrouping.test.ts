@@ -21,9 +21,6 @@ function item(id: string, lessonDate: string): PortalReportListItem {
     checkTestScore: null,
     checkTestTotal: null,
     checkTestPassed: null,
-    vocabTestScore: null,
-    vocabTestTotal: null,
-    vocabTestPassed: null,
     homeworkCompletionPct: null,
     isRead: false,
   };

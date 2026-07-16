@@ -28,7 +28,9 @@
 --   psql "<接続文字列>" -f supabase/demo/portal_v2_demo_data.sql
 --   前提: portal v2 のマイグレーション4本
 --         （20260714000000 / 20260714010000 / 20260714020000 / 20260715000000）
---         が適用済みであること。未適用だと audience 列や portal_* テーブルが無く失敗する。
+--         と 20260716000000_schools_meeting_booking_url
+--         が適用済みであること。未適用だと audience 列や portal_* テーブル、
+--         schools.meeting_booking_url が無く失敗する。
 --
 -- ■ 削除方法（デモを撤去するとき）
 --   デモ教室に全てがぶら下がっているので、以下で消える（実データには触れない）:
@@ -60,13 +62,19 @@ begin;
 --     （在籍8名）が混ざっており、デモとして見せる内容を制御できないため新設する。
 --   code='demo' は手続きハブのリンク先 /portal/demo/<form_type> の組み立てに使われる
 --   （formGuidance.buildFormHref が students → schools.code を引く）。
+--
+--   meeting_booking_url: 面談希望の自動返信に載る予約URL（chatTemplates.buildAckBody）。
+--     ★ 実在しないダミーURLにすること。実物の予約ページを入れると、デモを触った
+--       教室長が本物の枠を押さえてしまう。
 -- ----------------------------------------------------------------------------
-insert into public.schools (id, name, code, is_demo)
-values ('d0000000-0000-4000-8000-000000000001', 'デモ校（保護者ポータル体験）', 'demo', true)
+insert into public.schools (id, name, code, is_demo, meeting_booking_url)
+values ('d0000000-0000-4000-8000-000000000001', 'デモ校（保護者ポータル体験）', 'demo', true,
+        'https://calendar.app.google/demo-booking-example')
 on conflict (id) do update
   set name = excluded.name,
       code = excluded.code,
-      is_demo = excluded.is_demo;
+      is_demo = excluded.is_demo,
+      meeting_booking_url = excluded.meeting_booking_url;
 
 
 -- ============================================================================
@@ -531,13 +539,21 @@ on conflict (id) do update
 --
 --   §8 で予定を作り直した直後なので、報告書は毎回まっさらに作られる
 --   （CASCADE で消えている）。過去コマの新しい順に太郎2本・花子1本を付ける。
+--
+--   ★ vocab_test_*（英単語テスト）を入れない理由（確定仕様）:
+--     テストは確認テストに一本化された。講師フォーム
+--     （app/lesson-reports/[scheduleEntryId]）は確認テストしか入力させず、
+--     vocab_test_* には null しか書かない。デモデータも「実際に生成されるデータ」と
+--     同じ形にしないと、保護者面から英単語を外したのにデータにだけ値が残る、という
+--     食い違いが起きる。よって列ごと insert から外す（＝ null が入る）。
+--     class_reports の列と portal_class_reports ビューはそのまま残す
+--     （列の削除は適用済みマイグレーションの改変になるため。列は死んだまま無害）。
 -- ----------------------------------------------------------------------------
 insert into public.class_reports (
   id, school_id, schedule_entry_id, student_id, teacher_id, lesson_date,
   short_term_goal, mid_term_goal_snapshot, school_progress,
   homework_completion_pct, homework_correct_pct, today_correct_pct,
   check_test_score, check_test_total, check_test_passed,
-  vocab_test_score, vocab_test_total, vocab_test_passed,
   review_comment, homework_assignments, status, submitted_at, approved_at, approved_by
 )
 select
@@ -552,9 +568,32 @@ select
   v.school_progress,
   v.hw_completion, v.hw_correct, v.today_correct,
   v.check_score, v.check_total, v.check_passed,
-  v.vocab_score, v.vocab_total, v.vocab_passed,
   v.review_comment,
-  v.homework::jsonb,
+  -- ★ 次回までの宿題は「日割り」（確定仕様）:
+  --   授業日の翌日から次回授業日までを1日ずつに割り、hw_texts を順に当てる。
+  --   以前は date に '次回まで' という文字列を入れていたが、これは日付の位置に
+  --   日付でないものを入れており、画面（ReportDetail の formatShortDate）が
+  --   日付として整形できず日割りにならなかった。
+  --   ★ 日付は必ず授業日（＝current_date 相対で作られる予定）から導出する。
+  --     固定日付を書くと再実行のたびに古びる（このファイル全体の方針）。
+  --   上限を +3 日で切るのは、通塾間隔が空くコマでも宿題が延々と並ばないようにするため
+  --   （太郎=月水金・花子=火木なので実際は 2〜3 日ぶんになる）。
+  (
+    select jsonb_agg(
+             jsonb_build_object('date', to_char(d.day, 'YYYY-MM-DD'), 'text', v.hw_texts[d.i])
+             order by d.i
+           )
+    from (
+      select gs::date as day, row_number() over (order by gs) as i
+      from generate_series(
+             e.entry_date + 1,
+             least(nx.next_date, e.entry_date + 3),
+             interval '1 day'
+           ) gs
+    ) d
+    -- 日数ぶんの文章が無ければその日は宿題なし（配列長を超えたら出さない）。
+    where v.hw_texts[d.i] is not null
+  ),
   -- ★ 承認済みでないと保護者に一切見えない（ビューの公開ゲート）。
   'approved',
   e.entry_date + time '21:00',
@@ -572,30 +611,35 @@ from (values
    '一次関数の変化の割合を確実に求められるようにする',
    '2学期中間テストで数学80点以上',
    '学校は一次関数の利用に入ったところ',
-   100, 85, 78, 8, 10, true, 18, 20, true,
+   100, 85, 78, 8, 10, true,
    'ご家庭でもよく練習してきてくれました。変化の割合の求め方は安定してきています。グラフから読み取る問題であと一歩ミスが出るので、次回はそこを重点的に扱います。集中して最後まで取り組めていました。',
-   '[{"date":"次回まで","text":"ワーク p.58〜61 の演習問題"},{"date":"次回まで","text":"英単語 Unit 5 の小テスト再チャレンジ"}]'),
+   array['ワーク p.58〜59（変化の割合の練習）',
+         'ワーク p.60〜61（グラフの読み取り）',
+         '確認テストの直しをノートに1ページ']),
   -- 太郎(英語): 直近の 水 のコマ
   ('d0000000-0000-4000-8000-0000000000a2', 'd0000000-0000-4000-8000-000000000021', array[3],
    '動名詞の使い分けを理解する',
    '2学期中間テストで英語75点以上',
    '学校はUnit5の後半',
-   90, 70, 72, 7, 10, false, 16, 20, true,
+   90, 70, 72, 7, 10, false,
    '動名詞と不定詞の使い分けで迷う場面がありました。今日は基本の型を整理したので、次回までに例文を音読して定着させましょう。宿題の取り組み自体はとても丁寧です。',
-   '[{"date":"次回まで","text":"英単語トレーニング Unit 5 音読10回"}]'),
+   array['英単語トレーニング Unit 5 音読10回',
+         'ワーク p.12〜13（動名詞の書きかえ）',
+         'Unit 5 の例文を3つノートに書く']),
   -- 花子(算数): 直近の 火 のコマ
   ('d0000000-0000-4000-8000-0000000000a3', 'd0000000-0000-4000-8000-000000000022', array[2],
    '分数のかけ算の約分を正確にできるようにする',
    '2学期の計算単元を苦手なく終える',
    '学校は分数のかけ算の途中',
-   100, 95, 88, 9, 10, true, null, null, null,
+   100, 95, 88, 9, 10, true,
    '約分のミスがほとんどなくなりました。計算のスピードも上がっています。次回から分数のわり算に進みます。最後の応用問題まで粘り強く取り組めました。',
-   '[{"date":"次回まで","text":"算数ドリル p.24〜27"}]')
+   array['算数ドリル p.24〜25',
+         '算数ドリル p.26〜27',
+         '計算カード（分数のかけ算）5分'])
 ) as v(id, student_id, dows, short_term_goal, mid_term_goal, school_progress,
        hw_completion, hw_correct, today_correct,
        check_score, check_total, check_passed,
-       vocab_score, vocab_total, vocab_passed,
-       review_comment, homework)
+       review_comment, hw_texts)
 -- 指定曜日の「直近の実施済みコマ」を引き当てる（＝教科と本文が必ず一致する）。
 join lateral (
   select se.id, se.entry_date, se.teacher_id
@@ -607,9 +651,21 @@ join lateral (
   order by se.entry_date desc
   limit 1
 ) e on true
+-- 次回授業日（宿題の日割りの終端）。休講・振替も含めて「次に教室へ来る日」を取る。
+-- ★ left join にする理由: 未来のコマが1件も無い場合でも報告書は作られるべき。
+--   その場合 next_date is null となり、上の least() が NULL を無視して
+--   e.entry_date + 3 が終端になる（＝宿題は3日ぶん）。
+left join lateral (
+  select min(se2.entry_date) as next_date
+  from public.schedule_entries se2
+  where se2.student_id = v.student_id::uuid
+    and se2.entry_date > e.entry_date
+) nx on true
 on conflict (id) do update
   set schedule_entry_id = excluded.schedule_entry_id,
       lesson_date = excluded.lesson_date,
+      -- 日割りは lesson_date（＝current_date 相対）から導出するので、再実行で作り直す。
+      homework_assignments = excluded.homework_assignments,
       status = 'approved';
 
 -- 学習内容（教材×単元×ページ）。

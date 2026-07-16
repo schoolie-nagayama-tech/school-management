@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { getPortalContext } from '@/lib/mypage/supabase';
 import { LogoutButton } from '@/components/mypage/LogoutButton';
+import { formatGradeLabel } from '@/lib/utils/gradeLabel';
 
 export const dynamic = 'force-dynamic';
 
@@ -99,7 +100,7 @@ export default async function MyPage() {
                   </p>
                   <p className="text-xs text-text-muted">
                     {RELATION_LABEL[l.relation] ?? l.relation}
-                    {l.students!.grade != null && ` ・ ${l.students!.grade}年`}
+                    {l.students!.grade != null && ` ・ ${formatGradeLabel(l.students!.grade)}`}
                   </p>
                 </div>
               </li>

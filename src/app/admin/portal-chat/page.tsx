@@ -11,6 +11,7 @@ import { useLocalSchoolId } from '@/hooks/useLocalSchoolId';
 import { useToast } from '@/hooks/useToast';
 import { fetchWithAuth } from '@/lib/api/auth';
 import { isManagerOrAbove } from '@/lib/utils/roles';
+import { formatGradeLabel } from '@/lib/utils/gradeLabel';
 import type { ChatMessage } from '@/types/chat';
 
 /**
@@ -139,7 +140,9 @@ export default function PortalChatInboxPage() {
                         <p className="truncate font-medium text-text-heading">
                           {t.student_name}
                           {t.grade != null && (
-                            <span className="ml-1 text-xs text-text-muted">{t.grade}年</span>
+                            <span className="ml-1 text-xs text-text-muted">
+                              {formatGradeLabel(t.grade)}
+                            </span>
                           )}
                         </p>
                         <p className="truncate text-xs text-text-muted">

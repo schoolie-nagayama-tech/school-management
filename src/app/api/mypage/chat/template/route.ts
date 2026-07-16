@@ -129,6 +129,27 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: '振替の第1希望（日付）を入力してください' }, { status: 400 });
   }
 
+  // ── 面談予約URL（教室ごと）──
+  // ★ 認可（verifyPortalLink）の後で引く: 生徒IDから教室の設定を引く経路なので、
+  //   紐づけ検証を通っていない相手には一切引かせない（他の DB 参照と同じ順序方針）。
+  // ★ 面談希望のときだけ引く（欠席・振替では使わない値のために毎回1クエリ増やさない）。
+  let meetingBookingUrl: string | null = null;
+  if (templateKind === 'meeting_request') {
+    const { data: studentRow } = await svc
+      .from('students')
+      .select('school_id')
+      .eq('id', studentId)
+      .maybeSingle();
+    if (studentRow?.school_id) {
+      const { data: schoolRow } = await svc
+        .from('schools')
+        .select('meeting_booking_url')
+        .eq('id', studentRow.school_id)
+        .maybeSingle();
+      meetingBookingUrl = schoolRow?.meeting_booking_url ?? null;
+    }
+  }
+
   const thread = await resolveThreadForStudent(studentId, null, svc);
   if (!thread) return NextResponse.json({ error: 'スレッドの用意に失敗しました' }, { status: 500 });
   await ensureParticipant(thread.id, accountId, svc);
@@ -148,7 +169,7 @@ export async function POST(request: NextRequest) {
   if (!templateMsg) return NextResponse.json({ error: '送信に失敗しました' }, { status: 500 });
 
   // ── (2) 受付の自動返信（system）── 締切判定を文面に反映。
-  const ackBody = buildAckBody(templateKind, payload, deadlinePassed);
+  const ackBody = buildAckBody(templateKind, payload, deadlinePassed, meetingBookingUrl);
   const ackMsg = await insertMessage(
     { threadId: thread.id, senderKind: 'system', senderId: null, body: ackBody },
     svc

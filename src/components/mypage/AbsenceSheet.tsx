@@ -4,7 +4,11 @@ import { useEffect, useMemo, useState } from 'react';
 import { Repeat, TriangleAlert, CircleCheck } from 'lucide-react';
 import { Button, Modal, Textarea } from '@/components/ui';
 import { isTransferDeadlinePassed } from '@/lib/mypage/transferDeadline';
-import type { PortalScheduleEntryDto, TransferQuota } from '@/types/mypage-schedule';
+import type {
+  PortalScheduleEntryDto,
+  PortalTimeSlotDto,
+  TransferQuota,
+} from '@/types/mypage-schedule';
 import type { TransferCandidate } from '@/types/chat';
 
 /**
@@ -43,11 +47,14 @@ function formatSlash(dateStr: string): string {
 export function AbsenceSheet({
   studentId,
   entry,
+  timeSlots,
   onClose,
   onSent,
 }: {
   studentId: string;
   entry: PortalScheduleEntryDto;
+  /** その教室に実在する時限。振替希望の「時限」はここからの選択にする（自由入力にしない）。 */
+  timeSlots: PortalTimeSlotDto[];
   onClose: () => void;
   onSent: () => void;
 }) {
@@ -210,7 +217,13 @@ export function AbsenceSheet({
                     }}
                     className="rounded-lg border border-border bg-surface-raised px-2 py-1.5 text-sm text-text-body"
                   />
-                  <input
+                  {/*
+                    ★ 自由入力にしない理由: 保護者が「6限」「夕方」など教室に存在しない
+                      表記で書くと、教室側が毎回読み替えて確認の往復が発生する。
+                      実在する時限だけを出せば、そのまま席の調整に使える。
+                      空（未選択）は残す＝時限の希望は今までどおり任意。
+                  */}
+                  <select
                     aria-label={`第${i + 1}希望の時限`}
                     value={c.slot}
                     onChange={(e) => {
@@ -218,9 +231,15 @@ export function AbsenceSheet({
                       next[i] = { ...next[i], slot: e.target.value };
                       setCandidates(next);
                     }}
-                    placeholder="時限（任意）"
                     className="min-w-0 flex-1 rounded-lg border border-border bg-surface-raised px-2 py-1.5 text-sm text-text-body"
-                  />
+                  >
+                    <option value="">時限（任意）</option>
+                    {timeSlots.map((s) => (
+                      <option key={s.id} value={s.slotLabel}>
+                        {s.slotLabel}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               ))}
             </div>

@@ -33,8 +33,10 @@ export default function SchoolSettingsPage() {
   const [school, setSchool] = useState<School | null>(null);
   const [notificationEmails, setNotificationEmails] = useState<string[]>([]);
   const [slackMentionId, setSlackMentionId] = useState('');
+  const [meetingBookingUrl, setMeetingBookingUrl] = useState('');
   const [logoUrl, setLogoUrl] = useState('');
   const [isUploading, setIsUploading] = useState(false);
+  const [isSavingBookingUrl, setIsSavingBookingUrl] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -49,6 +51,7 @@ export default function SchoolSettingsPage() {
           setSchool(schoolData);
           setLogoUrl(schoolData.logo_url || '');
           setSlackMentionId(schoolData.slack_mention_id || '');
+          setMeetingBookingUrl(schoolData.meeting_booking_url || '');
           // notification_emails 配列を優先、なければ旧フィールドから復元
           if (schoolData.notification_emails && schoolData.notification_emails.length > 0) {
             setNotificationEmails(schoolData.notification_emails);
@@ -140,6 +143,28 @@ export default function SchoolSettingsPage() {
       toastError(getUserErrorMessage(err, '削除に失敗しました'));
     } finally {
       setIsUploading(false);
+    }
+  };
+
+  // 面談予約URLを保存
+  // ★ 通知設定の保存（handleSave）と分けている理由:
+  //   このカード（ポータル表示）はロゴと同じく「保護者に見えるもの」の設定で、
+  //   下の通知設定カードとは対象読者が違う。カードごとに保存を閉じておくと、
+  //   ロゴを触っただけで通知先まで書き換わるような事故が起きない。
+  const handleSaveBookingUrl = async () => {
+    if (!school) return;
+    setIsSavingBookingUrl(true);
+    try {
+      // 空欄は「未設定」= null にする（空文字だと自動返信の分岐が truthy になってしまう）。
+      const url = meetingBookingUrl.trim() || null;
+      await updateSchool(school.id, { meeting_booking_url: url });
+      setSchool({ ...school, meeting_booking_url: url });
+      setMeetingBookingUrl(url ?? '');
+      success('面談予約URLを更新しました');
+    } catch (err) {
+      toastError(getUserErrorMessage(err, '更新に失敗しました'));
+    } finally {
+      setIsSavingBookingUrl(false);
     }
   };
 
@@ -277,6 +302,30 @@ export default function SchoolSettingsPage() {
               <p className="text-xs text-text-muted">
                 保護者ポータルのヘッダーに表示されます。2MB以下の画像ファイル。
               </p>
+
+              <div className="pt-2 border-t border-border">
+                <label className="block text-sm font-medium text-text-heading mb-1">
+                  面談予約URL（Googleカレンダー）
+                </label>
+                <Input
+                  type="url"
+                  value={meetingBookingUrl}
+                  onChange={(e) => setMeetingBookingUrl(e.target.value)}
+                  placeholder="https://calendar.app.google/..."
+                />
+                <p className="mt-2 text-xs text-text-muted">
+                  保護者が面談を希望したとき、自動返信にこのURLを載せます。空欄の場合は載せません。
+                </p>
+                <div className="mt-3 flex justify-end">
+                  <Button
+                    onClick={handleSaveBookingUrl}
+                    disabled={isSavingBookingUrl}
+                    className="min-w-[120px]"
+                  >
+                    {isSavingBookingUrl ? '保存中...' : '保存'}
+                  </Button>
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>

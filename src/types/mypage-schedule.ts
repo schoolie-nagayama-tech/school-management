@@ -71,6 +71,21 @@ export interface PortalScheduleEntryDto {
   seatLabel: string | null;
 }
 
+/**
+ * 教室に実在する時限1件（/api/mypage/schedule の戻りに同梱）。
+ *
+ * ★ なぜ予定APIに相乗りさせるか: 振替希望の「時限」を自由入力から選択に変えるために
+ *   必要になった値だが、これを使う AbsenceSheet は必ず予定ビュー（ScheduleView）の
+ *   コマから開かれる。専用の口を足すより、既に叩いている予定APIに載せて親から
+ *   渡すほうがリクエストが増えない（保護者は電波の悪い場所でも使う）。
+ */
+export interface PortalTimeSlotDto {
+  id: string;
+  slotNumber: number;
+  /** '17:00〜18:30'。開始・終了が引けない時限は API 側で落とすので必ず値がある。 */
+  slotLabel: string;
+}
+
 // ============================================================
 // 手続きハブ（§7-3 申し込みプッシュ）
 // ============================================================

@@ -24,6 +24,14 @@ import type {
  * ★ class_reports 本体は portal に grant していない（デフォルト拒否）。
  *   内部運用列（rejection_reason / mid_action_goal_snapshot / approved_by …）は
  *   ビューに存在しないため、ここから参照しようとしてもそもそも列が無い。
+ *
+ * ★ 英単語テスト（vocab_test_*）を select しない理由（確定仕様）:
+ *   テストは確認テストに一本化された。講師フォームは既に確認テストしか入力させず
+ *   vocab_test_* には null しか書かないので、引いても永遠に null。
+ *   class_reports の列と portal_class_reports ビューには列が残っているが、
+ *   列の削除は適用済みマイグレーションの改変になるため行わず、公開面から外すだけにする
+ *   （列は死んだまま無害）。ビュー側を触っていないので、この select から外すのが
+ *   保護者に出さないことの実効的な担保になる。
  */
 
 /** ビューが返す一覧用の列（select で明示する列と対応）。 */
@@ -36,9 +44,6 @@ interface ReportListRow {
   check_test_score: number | null;
   check_test_total: number | null;
   check_test_passed: boolean | null;
-  vocab_test_score: number | null;
-  vocab_test_total: number | null;
-  vocab_test_passed: boolean | null;
   homework_completion_pct: number | null;
   subject_names: string[] | null;
 }
@@ -66,7 +71,7 @@ interface ReportUnitRow {
 
 /** 一覧で引く列（内部列はビューに存在しないので、そもそも書けない）。 */
 const LIST_COLUMNS =
-  'id, student_id, lesson_date, teacher_id, short_term_goal, check_test_score, check_test_total, check_test_passed, vocab_test_score, vocab_test_total, vocab_test_passed, homework_completion_pct, subject_names';
+  'id, student_id, lesson_date, teacher_id, short_term_goal, check_test_score, check_test_total, check_test_passed, homework_completion_pct, subject_names';
 
 const DETAIL_COLUMNS = `${LIST_COLUMNS}, mid_term_goal_snapshot, school_progress, homework_correct_pct, today_correct_pct, review_comment, homework_assignments`;
 
@@ -147,9 +152,6 @@ export async function getPortalReports(
     checkTestScore: r.check_test_score,
     checkTestTotal: r.check_test_total,
     checkTestPassed: r.check_test_passed,
-    vocabTestScore: r.vocab_test_score,
-    vocabTestTotal: r.vocab_test_total,
-    vocabTestPassed: r.vocab_test_passed,
     homeworkCompletionPct: r.homework_completion_pct,
     isRead: readSet.has(r.id),
   }));
@@ -223,9 +225,6 @@ export async function getPortalReport(
     checkTestScore: r.check_test_score,
     checkTestTotal: r.check_test_total,
     checkTestPassed: r.check_test_passed,
-    vocabTestScore: r.vocab_test_score,
-    vocabTestTotal: r.vocab_test_total,
-    vocabTestPassed: r.vocab_test_passed,
     reviewComment: r.review_comment,
     homeworkAssignments: normalizeAssignments(r.homework_assignments),
     isRead: readSet.has(r.id),

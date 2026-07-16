@@ -112,6 +112,8 @@ export async function updateSchool(
     logo_url?: string | null;
     is_demo?: boolean;
     slack_mention_id?: string | null;
+    /** 面談予約URL（Googleカレンダー）。空文字ではなく null で「未設定」を表す。 */
+    meeting_booking_url?: string | null;
   }
 ): Promise<School> {
   const { data: school, error } = await supabase

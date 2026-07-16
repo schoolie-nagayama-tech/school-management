@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { ChevronRight, FileText } from 'lucide-react';
 import { groupReportsByMonth, type PortalReportListItem } from '@/types/mypage-report';
+import { formatGradeLabel } from '@/lib/utils/gradeLabel';
 
 /**
  * 授業報告書の一覧 — 保護者側（§7-4・UIモック セクション1）。
@@ -78,7 +79,7 @@ export function ReportsView({ students }: { students: ReportStudent[] }) {
               }`}
             >
               {s.name}
-              {s.grade != null && `（${s.grade}年）`}
+              {s.grade != null && `（${formatGradeLabel(s.grade)}）`}
             </button>
           ))}
         </div>
@@ -174,6 +175,8 @@ interface Chip {
  * カードの結果チップを組み立てる（モック準拠）。
  * テストは「合格なら success / 不合格・未判定なら warning」。宿題はやってきた量のみ
  * （％を3つ並べるとカードが読めなくなるので、詳細に譲る）。
+ *
+ * ★ テストは確認テストの1本のみ（英単語のチップは廃止）。理由は types/mypage-report.ts の注記。
  */
 function buildChips(r: PortalReportListItem): Chip[] {
   const chips: Chip[] = [];
@@ -190,7 +193,6 @@ function buildChips(r: PortalReportListItem): Chip[] {
       className: passed ? 'bg-success-subtle text-success' : 'bg-warning-subtle text-warning',
     });
   };
-  push('英単語', r.vocabTestScore, r.vocabTestTotal, r.vocabTestPassed);
   push('確認テスト', r.checkTestScore, r.checkTestTotal, r.checkTestPassed);
   if (r.homeworkCompletionPct != null) {
     chips.push({
