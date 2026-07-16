@@ -46,6 +46,25 @@ jobs:
             -exec mv {} /tmp/mig_excluded/ \;
           echo "適用するマイグレーション:" && ls *.sql
 
+      # JWT署名鍵ファイルを使い捨てで生成する。
+      # config.toml が signing_keys_path = "./signing_keys.json" を参照するが、
+      # 実物（本番Supabaseが信頼するES256秘密鍵）はコミット禁止（.gitignore済み）。
+      # CI ではファイルが「形式どおり存在する」ことだけが必要（このジョブが回すのは
+      # スタッフ側RLSテストで、ポータルJWTの実鍵は使わない）ため、毎回その場で
+      # ローカル実物と同形式（秘密JWKの配列）のダミー鍵を作る。
+      - name: Generate throwaway signing keys
+        run: |
+          node -e '
+            const { webcrypto: wc } = require("crypto");
+            (async () => {
+              const kp = await wc.subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, true, ["sign", "verify"]);
+              const jwk = await wc.subtle.exportKey("jwk", kp.privateKey);
+              const out = [{ ...jwk, kid: wc.randomUUID(), use: "sig", alg: "ES256" }];
+              require("fs").writeFileSync("supabase/signing_keys.json", JSON.stringify(out));
+              console.log("generated throwaway signing key (kid=" + out[0].kid + ")");
+            })();
+          '
+
       # ローカル Supabase を起動（base_schema を適用してDBを初期化）
       # ubuntu-latest は Docker が利用可能なため supabase start が動く
       - name: Start Supabase
