@@ -17,8 +17,10 @@
 --   ポリシー」の2点セット。ポリシー内は auth.uid() でなく public.portal_uid() を使う。
 --   書き込みは service role 経由の API で行う（portal に INSERT/UPDATE/DELETE を与えない）。
 --
--- 注意: 本番には適用しない（ローカルスタックで検証のみ）。portal ロール／portal_uid() は
---       Stage1(20260714000000) で作成済みの前提。冪等に書く。
+-- 適用状況: 2026-07-16 に本番へ適用済み（MCP の apply_migration・版名 portal_v2_schedule）。
+--       ※ 以前の「本番には適用しない」は Stage3 開発時点の記述。本番デモ
+--         （docs/portal-v2-demo-handoff.md §3-2）で適用したため改めた。
+--       portal ロール／portal_uid() は Stage1(20260714000000) で作成済みの前提。冪等に書く。
 -- ============================================================
 
 
