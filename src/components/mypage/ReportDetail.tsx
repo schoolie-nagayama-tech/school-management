@@ -1,15 +1,20 @@
 'use client';
 
 import { useEffect } from 'react';
-import { Award, BookOpen, Gauge, PencilLine, Quote, School, Target } from 'lucide-react';
-import type { PortalReportDetail, PortalReportUnit } from '@/types/mypage-report';
+import { Award, BookOpen, Gauge, PencilLine, Quote, Repeat, School, Target } from 'lucide-react';
+import type {
+  PortalReportDetail,
+  PortalReportUnit,
+  PortalSubjectSpecific,
+} from '@/types/mypage-report';
 
 /**
  * 授業報告書の詳細 — 保護者側（§7-4・UIモック セクション2）。
  *
- * 並び（モック準拠・変えないこと）:
- *   今日の目標／今月の目標 → 学習内容（教材×単元×ページ）＋学校の進度 →
- *   宿題の取り組み（3項目のバー） → テスト → 講師より（講評） → 次回までの宿題（日付ごと）
+ * 並び（モック準拠・変えないこと。科目別欄は講師フォームの公開ゾーンの並びに合わせて末尾）:
+ *   今日の目標／試験目標 → 学習内容（教材×単元×ページ）＋学校の進度＋プリント等の教材 →
+ *   宿題の取り組み（3項目のバー） → テスト → 講師より（講評） → 次回までの宿題（日付ごと） →
+ *   科目別欄（単語・計算・漢字の反復練習）
  *
  * ★ ここに出るのは限定公開ビューが返した列だけ:
  *   差し戻し理由・行動目標・承認者などの内部列はビューに存在しないので、
@@ -17,6 +22,21 @@ import type { PortalReportDetail, PortalReportUnit } from '@/types/mypage-report
  *
  * 空のセクションは出さない（講師が埋めなかった項目で画面が水増しされないように）。
  */
+
+/**
+ * 科目別欄の kind → 表示ラベル。講師フォームの SubjectSpecificField（種別セレクト）と
+ * 一言一句合わせる（ここだけ別の呼び方をすると保護者と講師で話が噛み合わなくなる）。
+ * sample/page.tsx の「保護者の見え方」タブでも同じ表記を使う。
+ */
+export const SUBJECT_SPECIFIC_KIND_LABELS: Record<
+  Exclude<PortalSubjectSpecific['kind'], 'none'>,
+  string
+> = {
+  vocab: '英語：単語練習',
+  calc: '数学：計算練習',
+  kanji: '国語：漢字練習',
+};
+
 export function ReportDetail({ report }: { report: PortalReportDetail }) {
   // 開いた＝既読。未読だったときだけ叩く（§7-4「タップで既読」）。
   useEffect(() => {
@@ -31,13 +51,16 @@ export function ReportDetail({ report }: { report: PortalReportDetail }) {
   }, [report.id, report.isRead]);
 
   const hasGoals = !!(report.shortTermGoal || report.midTermGoal);
-  const hasLearning = report.units.length > 0 || !!report.schoolProgress;
+  const extraMaterials = report.subjectSpecific?.extraMaterials ?? null;
+  const hasLearning = report.units.length > 0 || !!report.schoolProgress || !!extraMaterials;
   const hasHomeworkMeters =
     report.homeworkCompletionPct != null ||
     report.homeworkCorrectPct != null ||
     report.todayCorrectPct != null;
   // テストは確認テストの1本のみ（英単語テストは廃止）。理由は types/mypage-report.ts の注記。
   const hasTests = report.checkTestScore != null && report.checkTestTotal != null;
+  // 科目別欄（単語・計算・漢字の反復練習）。kind='none' はデータ無し扱いなので出さない。
+  const hasSubjectPractice = !!report.subjectSpecific && report.subjectSpecific.kind !== 'none';
 
   return (
     <div className="space-y-3">
@@ -58,7 +81,7 @@ export function ReportDetail({ report }: { report: PortalReportDetail }) {
                 icon={<Target className="h-[13px] w-[13px]" />}
                 className={report.shortTermGoal ? 'mt-3' : undefined}
               >
-                今月の目標
+                試験目標
               </SectionTitle>
               <p className="text-sm text-text-body">{report.midTermGoal}</p>
             </>
@@ -92,6 +115,17 @@ export function ReportDetail({ report }: { report: PortalReportDetail }) {
                 学校の進度
               </SectionTitle>
               <p className="text-sm text-text-body">{report.schoolProgress}</p>
+            </>
+          )}
+          {extraMaterials && (
+            <>
+              <SectionTitle
+                icon={<PencilLine className="h-[13px] w-[13px]" />}
+                className={report.units.length > 0 || report.schoolProgress ? 'mt-3' : undefined}
+              >
+                プリント・テキスト外の教材
+              </SectionTitle>
+              <p className="text-sm text-text-body">{extraMaterials}</p>
             </>
           )}
         </Section>
@@ -154,6 +188,35 @@ export function ReportDetail({ report }: { report: PortalReportDetail }) {
               </li>
             ))}
           </ul>
+        </Section>
+      )}
+
+      {/* 科目別欄（単語・計算・漢字の反復練習）。講師フォームでは公開ゾーンの末尾にあるので合わせる。 */}
+      {hasSubjectPractice && report.subjectSpecific && (
+        <Section>
+          <SectionTitle icon={<Repeat className="h-[13px] w-[13px]" />}>
+            {
+              SUBJECT_SPECIFIC_KIND_LABELS[
+                report.subjectSpecific.kind as Exclude<PortalSubjectSpecific['kind'], 'none'>
+              ]
+            }
+          </SectionTitle>
+          <div className="grid grid-cols-2 gap-2">
+            <SubjectField label="練習範囲" value={report.subjectSpecific.range} />
+            <SubjectField
+              label="ページ"
+              value={report.subjectSpecific.pages ? `p.${report.subjectSpecific.pages}` : null}
+            />
+            <SubjectField
+              label="1日の練習回数"
+              value={
+                report.subjectSpecific.timesPerDay != null
+                  ? `${report.subjectSpecific.timesPerDay}回`
+                  : null
+              }
+            />
+            <SubjectField label="期間" value={report.subjectSpecific.duration} />
+          </div>
         </Section>
       )}
     </div>
@@ -269,9 +332,25 @@ function formatPages(start: number | null, end: number | null): string {
   return `p.${start ?? end}`;
 }
 
-/** 'YYYY-MM-DD' → '7/16'。 */
+/** 科目別欄の1項目（ラベル＋値）。値が無ければ出さない。 */
+function SubjectField({ label, value }: { label: string; value: string | null }) {
+  if (!value) return null;
+  return (
+    <div>
+      <p className="text-[10.5px] text-text-muted">{label}</p>
+      <p className="text-sm font-semibold text-text-body">{value}</p>
+    </div>
+  );
+}
+
+/**
+ * 'YYYY-MM-DD' → '7/16(木)'。
+ * 講師フォームの formatDateLabel（app/lesson-reports/[scheduleEntryId]/page.tsx）と
+ * 表記を合わせる（曜日なしだと講師とのやり取りで日付を指しにくいという指摘があった）。
+ */
 function formatShortDate(date: string): string {
-  const [, m, d] = date.split('-').map(Number);
-  if (!m || !d) return date;
-  return `${m}/${d}`;
+  const d = new Date(`${date}T12:00:00Z`);
+  if (Number.isNaN(d.getTime())) return date;
+  const w = ['日', '月', '火', '水', '木', '金', '土'][d.getUTCDay()];
+  return `${d.getUTCMonth() + 1}/${d.getUTCDate()}(${w})`;
 }

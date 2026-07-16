@@ -29,6 +29,27 @@ export interface PortalHomeworkAssignment {
   text?: string | null;
 }
 
+/**
+ * 科目別欄（単語・計算・漢字の反復練習）＋プリント等自由記述。class_reports.subject_specific
+ * （jsonb）の正規化後の形。kind='none' はデータの入っていない状態を表すので保持しない
+ * （lib/mypage/reports.ts の normalizeSubjectSpecific が null に潰す）。
+ * ただし kind='none' でも extraMaterials だけ入っていることがある（プリント自由記述は
+ * kind に依らず書けるため）ので、その場合は kind='none' のまま extraMaterials だけ持つ。
+ */
+export interface PortalSubjectSpecific {
+  kind: 'vocab' | 'calc' | 'kanji' | 'none';
+  /** 練習範囲。例: 'Unit 6 単語' */
+  range: string | null;
+  /** ページ範囲。例: '46-49'（先頭に 'p.' は付けない・表示側で付与） */
+  pages: string | null;
+  /** 1日の練習回数 */
+  timesPerDay: number | null;
+  /** 期間。例: '1週間' */
+  duration: string | null;
+  /** プリント・テキスト外の教材（自由記述）。kind に依らず入りうる。 */
+  extraMaterials: string | null;
+}
+
 /** 学習内容1件（教材×単元×ページ）。portal_lesson_report_units の1行。 */
 export interface PortalReportUnit {
   id: string;
@@ -72,12 +93,15 @@ export interface PortalReportDetail {
   teacherName: string | null;
   /** 今日の目標 */
   shortTermGoal: string | null;
-  /** 今月の目標（★ 行動目標スナップショットはビューが出さない） */
+  /** 試験目標（mid_term_goal_snapshot 由来。保存時に formatExamGoal で整形済み。
+   *  ★ 行動目標スナップショットはビューが出さない） */
   midTermGoal: string | null;
   /** 学習内容（教材×単元×ページ） */
   units: PortalReportUnit[];
   /** 学校の進度 */
   schoolProgress: string | null;
+  /** 科目別欄（単語・計算・漢字の反復練習）＋プリント等自由記述。無ければ null。 */
+  subjectSpecific: PortalSubjectSpecific | null;
   /** 宿題の取り組み（3項目のバー） */
   homeworkCompletionPct: number | null;
   homeworkCorrectPct: number | null;

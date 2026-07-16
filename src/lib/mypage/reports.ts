@@ -6,6 +6,7 @@ import type {
   PortalReportDetail,
   PortalReportListItem,
   PortalReportUnit,
+  PortalSubjectSpecific,
 } from '@/types/mypage-report';
 
 /**
@@ -56,6 +57,7 @@ interface ReportDetailRow extends ReportListRow {
   today_correct_pct: number | null;
   review_comment: string | null;
   homework_assignments: unknown;
+  subject_specific: unknown;
 }
 
 interface ReportUnitRow {
@@ -73,7 +75,7 @@ interface ReportUnitRow {
 const LIST_COLUMNS =
   'id, student_id, lesson_date, teacher_id, short_term_goal, check_test_score, check_test_total, check_test_passed, homework_completion_pct, subject_names';
 
-const DETAIL_COLUMNS = `${LIST_COLUMNS}, mid_term_goal_snapshot, school_progress, homework_correct_pct, today_correct_pct, review_comment, homework_assignments`;
+const DETAIL_COLUMNS = `${LIST_COLUMNS}, mid_term_goal_snapshot, school_progress, homework_correct_pct, today_correct_pct, review_comment, homework_assignments, subject_specific`;
 
 /**
  * 講師名を限定公開ビュー経由で解決する（Stage3 の予定APIと同じ作法）。
@@ -227,6 +229,7 @@ export async function getPortalReport(
     checkTestPassed: r.check_test_passed,
     reviewComment: r.review_comment,
     homeworkAssignments: normalizeAssignments(r.homework_assignments),
+    subjectSpecific: normalizeSubjectSpecific(r.subject_specific),
     isRead: readSet.has(r.id),
   };
 }
@@ -249,6 +252,49 @@ function normalizeAssignments(raw: unknown): PortalHomeworkAssignment[] {
     out.push({ date, text });
   }
   return out;
+}
+
+/**
+ * subject_specific（JSONB。科目別欄: 単語・計算・漢字の反復練習＋プリント等自由記述）を
+ * 表示用に正規化する。normalizeAssignments と同じ理由で信頼できない入力として扱う:
+ * 講師の入力UI（app/lesson-reports/[scheduleEntryId]/page.tsx の SubjectSpecificField）が
+ * 書く形が将来変わっても、想定外の形はここで捨てて保護者面を壊さない。
+ *
+ * kind は 'vocab' | 'calc' | 'kanji' | 'none' の判別 union（型定義は class-report.ts）。
+ * 未知の kind（列挙が増えた・書き込みが壊れた等）は丸ごと信用せず null にする
+ * （中途半端な形で出すより、セクションごと出さない方が安全）。
+ */
+export function normalizeSubjectSpecific(raw: unknown): PortalSubjectSpecific | null {
+  if (raw == null || typeof raw !== 'object' || Array.isArray(raw)) return null;
+  const rec = raw as Record<string, unknown>;
+
+  const kindRaw = rec.kind;
+  const kind =
+    kindRaw === 'vocab' || kindRaw === 'calc' || kindRaw === 'kanji' || kindRaw === 'none'
+      ? kindRaw
+      : null;
+  if (!kind) return null;
+
+  const range = typeof rec.range === 'string' && rec.range.trim() !== '' ? rec.range : null;
+  const pages = typeof rec.pages === 'string' && rec.pages.trim() !== '' ? rec.pages : null;
+  const timesPerDay =
+    typeof rec.times_per_day === 'number' && Number.isFinite(rec.times_per_day)
+      ? rec.times_per_day
+      : null;
+  const duration =
+    typeof rec.duration === 'string' && rec.duration.trim() !== '' ? rec.duration : null;
+  const extraMaterials =
+    typeof rec.extra_materials === 'string' && rec.extra_materials.trim() !== ''
+      ? rec.extra_materials
+      : null;
+
+  // 見せられる中身が何も無ければセクションごと出さない（呼び出し側の空判定を単純にする）。
+  if (kind === 'none' && !extraMaterials) return null;
+  if (kind !== 'none' && !range && !pages && timesPerDay == null && !duration && !extraMaterials) {
+    return null;
+  }
+
+  return { kind, range, pages, timesPerDay, duration, extraMaterials };
 }
 
 /**
