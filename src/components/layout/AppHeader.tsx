@@ -24,7 +24,7 @@ import { ThemeToggle } from './ThemeToggle';
 import { getSurname } from '@/lib/utils/teacherName';
 import { PushNotificationButton } from '@/components/ui/PushNotificationButton';
 import { buildNavEntries, isLinkActive, isGroupActive } from './navConfig';
-import { isSystemAdmin, isManagerOrAbove } from '@/lib/utils/roles';
+import { isSystemAdmin } from '@/lib/utils/roles';
 import { MobileBottomNav } from './MobileBottomNav';
 import { useStandalone } from '@/lib/utils/useStandalone';
 import { useToast } from '@/hooks/useToast';
@@ -158,7 +158,7 @@ export function AppHeader({
     if (startingPortalDemo) return;
     setStartingPortalDemo(true);
     try {
-      // 素の fetch では 401 になる（実機で確認）。この API は requireManager を通るため、
+      // 素の fetch では 401 になる（実機で確認）。この API は requireSystemAdmin を通るため、
       // cookie だけに頼らず Authorization ヘッダーを付ける fetchWithAuth を使う
       // ＝プロジェクトの管理API呼び出しの作法（getApiAuth 側も Bearer を見る）。
       const res = await fetchWithAuth('/api/portal-demo/start', { method: 'POST' });
@@ -445,22 +445,21 @@ export function AppHeader({
                       <div className="border-t border-border my-1" />
                       {/* 試作・クローズドな機能の入口。
                           通常ナビ（navConfig）には載せず、ここが唯一の入口。
-                          isSystemAdmin ⊂ isManagerOrAbove なので外側は manager 以上で判定する。 */}
-                      {isManagerOrAbove(profile?.role) && (
+                          ★ 一旦すべて admin 限定（ユーザー判断 2026-07-16）。ポータルV2デモは
+                            当初 manager 以上に開いていたが admin のみに絞った。ここを広げる
+                            ときは /api/portal-demo/start の requireSystemAdmin と、デモSQL の
+                            user_schools 付与範囲（2-b）も3点セットで揃えること
+                            （ここは導線であって認可の境界ではない＝APIを緩めないと意味がない）。 */}
+                      {isSystemAdmin(profile?.role) && (
                         <>
-                          {isSystemAdmin(profile?.role) && (
-                            <Link
-                              href="/home-mock"
-                              className="flex items-center gap-2 px-3 py-2 text-xs text-text-heading hover:bg-gray-50 transition-colors"
-                              onClick={() => setShowSettingsDropdown(false)}
-                            >
-                              <LayoutDashboard className="w-3.5 h-3.5" aria-hidden />
-                              教室長ダッシュボード（試作）
-                            </Link>
-                          )}
-                          {/* 保護者ポータルV2 デモ。ダッシュボードが admin 限定なのに対し
-                              こちらが manager 以上なのは、デモの目的が「教室長に本番で
-                              触ってもらうこと」そのものだから。 */}
+                          <Link
+                            href="/home-mock"
+                            className="flex items-center gap-2 px-3 py-2 text-xs text-text-heading hover:bg-gray-50 transition-colors"
+                            onClick={() => setShowSettingsDropdown(false)}
+                          >
+                            <LayoutDashboard className="w-3.5 h-3.5" aria-hidden />
+                            教室長ダッシュボード（試作）
+                          </Link>
                           <button
                             type="button"
                             onClick={() => {

@@ -1,11 +1,14 @@
 /**
  * APIルートテスト: /api/portal-demo/start (POST)
  *
- * スタッフ（教室長以上）向けデモセッション発行の検証。
+ * システム管理者（admin のみ）向けデモセッション発行の検証。
  * このエンドポイントは「フラグ OFF のまま /mypage を通す鍵」を発行するため、
  *   1) スタッフ認証で閉じていること
  *   2) 紐づけ生徒が全員ダミーでなければ発行を拒否すること（実データ到達の最後の砦）
  * の2点が壊れていないことを固定する。
+ *
+ * ★ 認可は requireSystemAdmin（admin のみ）。requireAdmin は owner も通してしまうため
+ *   使わない（AppHeader の isSystemAdmin と境界を揃える）。
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { NextRequest } from 'next/server';
@@ -15,7 +18,7 @@ import { createMockChain } from './helpers';
 vi.mock('server-only', () => ({}));
 
 vi.mock('@/lib/api-auth', () => ({
-  requireManager: vi.fn().mockResolvedValue(null),
+  requireSystemAdmin: vi.fn().mockResolvedValue(null),
 }));
 
 // service role クライアントを直接差し替える（実DB・実鍵に触らない）。
@@ -37,7 +40,7 @@ vi.mock('@/lib/mypage/session', () => ({
 import { POST } from '@/app/api/portal-demo/start/route';
 import { signPortalJwt } from '@/lib/mypage/jwt';
 import { setPortalSession } from '@/lib/mypage/session';
-import { requireManager } from '@/lib/api-auth';
+import { requireSystemAdmin } from '@/lib/api-auth';
 
 const ACCOUNT = { id: 'acc-1', login_id: 'demo-parent', display_name: 'デモ保護者' };
 
@@ -73,7 +76,7 @@ function makeRequest() {
 describe('POST /api/portal-demo/start', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(requireManager).mockResolvedValue(null);
+    vi.mocked(requireSystemAdmin).mockResolvedValue(null);
   });
 
   it('紐づけ生徒が全員ダミーならデモセッションを発行する', async () => {
@@ -87,9 +90,9 @@ describe('POST /api/portal-demo/start', () => {
     expect(setPortalSession).toHaveBeenCalledWith('signed-jwt');
   });
 
-  it('manager 未満は弾かれ、セッションを発行しない', async () => {
-    vi.mocked(requireManager).mockResolvedValue(
-      NextResponse.json({ error: '権限がありません' }, { status: 403 })
+  it('admin 以外（owner / manager / 講師）は弾かれ、セッションを発行しない', async () => {
+    vi.mocked(requireSystemAdmin).mockResolvedValue(
+      NextResponse.json({ error: 'システム管理者権限が必要です' }, { status: 403 })
     );
 
     const res = await POST(makeRequest());

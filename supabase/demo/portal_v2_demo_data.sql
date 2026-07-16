@@ -173,7 +173,7 @@ on conflict (id) do update
 
 
 -- ----------------------------------------------------------------------------
--- 2-b) 教室長以上をデモ校の担当に加える（スタッフ側もデモを触れるようにする）
+-- 2-b) システム管理者(admin)をデモ校の担当に加える（スタッフ側もデモを触れるようにする）
 -- ----------------------------------------------------------------------------
 --   ★ なぜ必要か:
 --     スタッフの受信箱 /admin/portal-chat は auth.schoolIds（＝user_schools）で絞る
@@ -181,25 +181,30 @@ on conflict (id) do update
 --     保護者からのデモ連絡が1件も見えず、「保護者が送る→教室が返す」という
 --     ポータルの核心（双方向）を体験できない。
 --
---   ★ なぜ安全か（2026-07-15 本番実測にもとづく判断）:
---     教室長以上11名のうち8名は既に is_demo=true の「デフォルト教室」の担当に
---     入っている。よってデモ校を足すのは今と同じ性質の変更で、業務動線は変わらない。
---     加えて二重の隔離が効く: デモ校は is_demo=true で教室ドロップダウンから除外され、
---     デモ生徒は is_test=true で業務集計（講習進捗・回答率・cron集計等）から除外される。
+--   ★ 対象は admin だけ（ユーザー判断 2026-07-16「一旦見えるのはアドミンのみ」）:
+--     当初は manager 以上（本番実測で11名）に広げる設計だったが、まず admin(4名)に絞る。
+--     デモの入口と**必ず範囲を揃えること**＝担当だけ足しても入口が無ければ無意味で、
+--     逆に入口だけ開いても受信箱が空になる。揃える3点セット:
+--       (1) このブロックの role 条件
+--       (2) AppHeader の歯車メニューの条件（isSystemAdmin）
+--       (3) /api/portal-demo/start の requireSystemAdmin
+--     講師（72名）には広げない（デモの対象外）。
 --
---   ★ 使い方（重要）:
---     is_demo の教室はドロップダウンに出ないので個別選択はできない。受信箱を見るには
---     教室切替を「すべての教室」にする（API は school_id 未指定なら自分の全スコープを
---     返すため、デモ校のスレッドが含まれる）。
+--   ★ 副作用を隠さないこと: 対象者の教室ドロップダウンに「デモ校」が1項目増える。
+--     **is_demo はドロップダウンから除外されない**（AppHeader は `displaySchools = schools`
+--     でフィルタ無し。2026-07-16 実機確認）。以前ここに「is_demo=true で教室ドロップダウン
+--     から除外される」と書いていたのは**誤り**だった。業務集計から外れるのは
+--     デモ生徒側の is_test の効果であって、教室の is_demo は表示を消さない。
 --
---   ★ 対象は manager 以上だけ。講師（72名）には広げない（デモの対象外）。
+--   ★ 使い方: 教室切替でデモ校を直接選ぶ（「すべての教室」でもデモ校のスレッドは含まれる）。
+--
 --   ★ 冪等: UNIQUE(user_id, school_id) があるので do nothing で足りる。
 --     既存の担当は一切変更しない（追加のみ）。
 insert into public.user_schools (id, user_id, school_id)
 select gen_random_uuid(), up.id, 'd0000000-0000-4000-8000-000000000001'
 from public.user_profiles up
 where up.is_active
-  and up.role in ('manager', 'admin', 'owner')
+  and up.role = 'admin'
 on conflict (user_id, school_id) do nothing;
 
 
@@ -554,7 +559,7 @@ insert into public.class_reports (
   short_term_goal, mid_term_goal_snapshot, school_progress,
   homework_completion_pct, homework_correct_pct, today_correct_pct,
   check_test_score, check_test_total, check_test_passed,
-  review_comment, homework_assignments, status, submitted_at, approved_at, approved_by
+  review_comment, homework_assignments, subject_specific, status, submitted_at, approved_at, approved_by
 )
 select
   v.id::uuid,
@@ -594,6 +599,10 @@ select
     -- 日数ぶんの文章が無ければその日は宿題なし（配列長を超えたら出さない）。
     where v.hw_texts[d.i] is not null
   ),
+  -- 科目別欄（単語・計算・漢字の反復練習）。保護者面の科目別セクションのデモ用。
+  -- 形は講師フォーム（SubjectSpecificField）が書くものと同じ判別 union。
+  -- 花子は null のまま＝「書かなければセクションごと出ない」ことも見せる。
+  v.subject_specific::jsonb,
   -- ★ 承認済みでないと保護者に一切見えない（ビューの公開ゲート）。
   'approved',
   e.entry_date + time '21:00',
@@ -615,7 +624,8 @@ from (values
    'ご家庭でもよく練習してきてくれました。変化の割合の求め方は安定してきています。グラフから読み取る問題であと一歩ミスが出るので、次回はそこを重点的に扱います。集中して最後まで取り組めていました。',
    array['ワーク p.58〜59（変化の割合の練習）',
          'ワーク p.60〜61（グラフの読み取り）',
-         '確認テストの直しをノートに1ページ']),
+         '確認テストの直しをノートに1ページ'],
+   '{"kind":"calc","range":"変化の割合の計算","pages":"58-61","times_per_day":3,"duration":"次の授業まで"}'),
   -- 太郎(英語): 直近の 水 のコマ
   ('d0000000-0000-4000-8000-0000000000a2', 'd0000000-0000-4000-8000-000000000021', array[3],
    '動名詞の使い分けを理解する',
@@ -625,7 +635,8 @@ from (values
    '動名詞と不定詞の使い分けで迷う場面がありました。今日は基本の型を整理したので、次回までに例文を音読して定着させましょう。宿題の取り組み自体はとても丁寧です。',
    array['英単語トレーニング Unit 5 音読10回',
          'ワーク p.12〜13（動名詞の書きかえ）',
-         'Unit 5 の例文を3つノートに書く']),
+         'Unit 5 の例文を3つノートに書く'],
+   '{"kind":"vocab","range":"Unit 5 単語","pages":"10-13","times_per_day":5,"duration":"1週間","extra_materials":"文法プリント3枚（動名詞の書きかえ）"}'),
   -- 花子(算数): 直近の 火 のコマ
   ('d0000000-0000-4000-8000-0000000000a3', 'd0000000-0000-4000-8000-000000000022', array[2],
    '分数のかけ算の約分を正確にできるようにする',
@@ -635,11 +646,12 @@ from (values
    '約分のミスがほとんどなくなりました。計算のスピードも上がっています。次回から分数のわり算に進みます。最後の応用問題まで粘り強く取り組めました。',
    array['算数ドリル p.24〜25',
          '算数ドリル p.26〜27',
-         '計算カード（分数のかけ算）5分'])
+         '計算カード（分数のかけ算）5分'],
+   null)
 ) as v(id, student_id, dows, short_term_goal, mid_term_goal, school_progress,
        hw_completion, hw_correct, today_correct,
        check_score, check_total, check_passed,
-       review_comment, hw_texts)
+       review_comment, hw_texts, subject_specific)
 -- 指定曜日の「直近の実施済みコマ」を引き当てる（＝教科と本文が必ず一致する）。
 join lateral (
   select se.id, se.entry_date, se.teacher_id
@@ -666,6 +678,8 @@ on conflict (id) do update
       lesson_date = excluded.lesson_date,
       -- 日割りは lesson_date（＝current_date 相対）から導出するので、再実行で作り直す。
       homework_assignments = excluded.homework_assignments,
+      -- 科目別欄も再実行で最新のデモ内容に揃える。
+      subject_specific = excluded.subject_specific,
       status = 'approved';
 
 -- 学習内容（教材×単元×ページ）。
