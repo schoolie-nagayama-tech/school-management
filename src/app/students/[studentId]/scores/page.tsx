@@ -36,6 +36,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import AccessDenied from '@/components/AccessDenied';
 import { exportProgressToPDF } from '@/lib/utils/pdfExport';
 import { MockCsvImportModal } from '@/components/scores/MockCsvImportModal';
+import { ScoreSubmissionQueue } from '@/components/scores/ScoreSubmissionQueue';
 
 type Category = 'regular_test' | 'report_card' | 'mock';
 
@@ -333,6 +334,15 @@ export default function StudentScoresPage() {
             {isExportingPdf ? 'PDF出力中...' : 'PDF出力'}
           </Button>
         </div>
+
+        {/* 保護者からの成績申請（承認待ちがあるときだけ表示・§7-5）。PDFには含めない。 */}
+        {studentId && (
+          <ScoreSubmissionQueue
+            studentId={studentId}
+            canEdit={canEditScores}
+            onChanged={fetchAllAssessments}
+          />
+        )}
 
         <div id="scores-pdf-content" className="space-y-6">
           {/* 成績表ヘッダー（PDFに含む） */}
