@@ -53,6 +53,20 @@ export function countUnreadReports(reports: PortalReportListItem[]): number {
 }
 
 /**
+ * カードに代表として出す報告書を1件選ぶ。
+ *
+ * ★ 「最新1件」ではなく「未読があれば最新の未読」を出す理由:
+ *   見出しの件数バッジは未読数を示す。単純に最新を出すと「バッジは未読1なのに、
+ *   表示されている行は既読（新着バッジ無し）」という食い違いが起きる
+ *   （「ほかに未読N件」の行を削った簡素化で顕在化。実機で確認）。
+ *   未読がある間はそれが保護者に一番見せたいものなので、代表も未読側に揃える。
+ *   reports は getPortalReports が新しい順で返す前提（先頭一致で最新の未読になる）。
+ */
+export function selectFeaturedReport(reports: PortalReportListItem[]): PortalReportListItem | null {
+  return reports.find((r) => !r.isRead) ?? reports[0] ?? null;
+}
+
+/**
  * 手続きハブのデータ（getFormGuidance の戻り）から、この生徒宛のプッシュ（強調カード）だけを絞り込む。
  *
  * ★ items（「受付中」の静かな一覧）はダッシュボードには出さない:

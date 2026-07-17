@@ -8,6 +8,7 @@ import { getPortalAnnouncements } from '@/lib/mypage/announcements';
 import { getFormGuidance } from '@/lib/mypage/formGuidance';
 import {
   selectHero,
+  selectFeaturedReport,
   toDashboardHero,
   countUnreadReports,
   filterGuidanceForStudent,
@@ -122,7 +123,8 @@ export default async function MyPage() {
 
       const heroEntry = selectHero(entries);
       const unreadCount = countUnreadReports(reports);
-      const latestReport = reports[0] ?? null;
+      // 代表は「未読があれば最新の未読」（見出しの未読バッジと表示行を食い違わせない）。
+      const latestReport = selectFeaturedReport(reports);
       const latestIsUnread = latestReport ? !latestReport.isRead : false;
 
       const chat = chatByStudent.get(l.student_id);

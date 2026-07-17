@@ -11,6 +11,7 @@ import {
   selectHero,
   toDashboardHero,
   countUnreadReports,
+  selectFeaturedReport,
   filterGuidanceForStudent,
 } from '@/lib/mypage/dashboardDerive';
 import type { PortalScheduleEntryDto } from '@/types/mypage-schedule';
@@ -110,6 +111,30 @@ describe('countUnreadReports', () => {
 
   it('0件なら0', () => {
     expect(countUnreadReports([])).toBe(0);
+  });
+});
+
+describe('selectFeaturedReport', () => {
+  it('未読があれば最新の未読を返す（見出しの未読バッジと表示行を食い違わせない）', () => {
+    const reports = [
+      mkReport({ id: 'newest-read', isRead: true }),
+      mkReport({ id: 'unread-1', isRead: false }),
+      mkReport({ id: 'unread-2', isRead: false }),
+    ];
+    // 新しい順で並んでいる前提。先頭一致で「最新の未読」= unread-1。
+    expect(selectFeaturedReport(reports)?.id).toBe('unread-1');
+  });
+
+  it('全部既読なら最新を返す', () => {
+    const reports = [
+      mkReport({ id: 'newest', isRead: true }),
+      mkReport({ id: 'old', isRead: true }),
+    ];
+    expect(selectFeaturedReport(reports)?.id).toBe('newest');
+  });
+
+  it('0件なら null', () => {
+    expect(selectFeaturedReport([])).toBeNull();
   });
 });
 
