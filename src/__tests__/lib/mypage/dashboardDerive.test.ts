@@ -2,17 +2,15 @@
  * ダッシュボード（/mypage トップ）のデータ整形ロジック（純関数）テスト。
  *
  * 固定する仕様:
- *   - ヒーロー選択（0件/1件/3件以上）
- *   - 未読数の集計・「ほかに未読N件」が最新1件を二重に数えないこと
- *   - 手続きハブの生徒絞り込みで「受付中」以外（受付終了）を出さないこと
+ *   - ヒーロー選択（0件/1件/複数件）
+ *   - 未読数の集計
+ *   - 手続きハブの生徒絞り込みで pushes のみ返すこと（studentId で絞る）
  */
 import { describe, it, expect } from 'vitest';
 import {
-  selectHeroAndAgenda,
+  selectHero,
   toDashboardHero,
-  toDashboardAgendaEntry,
   countUnreadReports,
-  computeMoreUnreadReports,
   filterGuidanceForStudent,
 } from '@/lib/mypage/dashboardDerive';
 import type { PortalScheduleEntryDto } from '@/types/mypage-schedule';
@@ -35,22 +33,20 @@ function mkEntry(over: Partial<PortalScheduleEntryDto> = {}): PortalScheduleEntr
   };
 }
 
-describe('selectHeroAndAgenda', () => {
-  it('0件なら hero=null, agenda=[]', () => {
-    expect(selectHeroAndAgenda([])).toEqual({ hero: null, agenda: [] });
+describe('selectHero', () => {
+  it('0件なら null', () => {
+    expect(selectHero([])).toBeNull();
   });
 
-  it('1件なら hero=その1件, agenda=[]', () => {
+  it('1件なら その1件', () => {
     const e = mkEntry();
-    expect(selectHeroAndAgenda([e])).toEqual({ hero: e, agenda: [] });
+    expect(selectHero([e])).toBe(e);
   });
 
-  it('3件以上なら hero=先頭, agenda=続く2件のみ（3件目以降は捨てる）', () => {
+  it('複数件なら先頭のみ（2件目以降は捨てる）', () => {
     const e1 = mkEntry({ id: 'e1' });
     const e2 = mkEntry({ id: 'e2' });
-    const e3 = mkEntry({ id: 'e3' });
-    const e4 = mkEntry({ id: 'e4' });
-    expect(selectHeroAndAgenda([e1, e2, e3, e4])).toEqual({ hero: e1, agenda: [e2, e3] });
+    expect(selectHero([e1, e2])).toBe(e1);
   });
 });
 
@@ -85,21 +81,6 @@ describe('toDashboardHero', () => {
   });
 });
 
-describe('toDashboardAgendaEntry', () => {
-  it('必要な項目だけを写す', () => {
-    const row = toDashboardAgendaEntry(
-      mkEntry({ entryDate: '2026-07-18', startTime: '17:00', status: 'transferred_in' })
-    );
-    expect(row).toEqual({
-      entryDate: '2026-07-18',
-      startTime: '17:00',
-      subjectNames: ['数学'],
-      isCancelled: false,
-      isTransfer: true,
-    });
-  });
-});
-
 function mkReport(over: Partial<PortalReportListItem> = {}): PortalReportListItem {
   return {
     id: 'r1',
@@ -129,20 +110,6 @@ describe('countUnreadReports', () => {
 
   it('0件なら0', () => {
     expect(countUnreadReports([])).toBe(0);
-  });
-});
-
-describe('computeMoreUnreadReports', () => {
-  it('最新が未読なら、全体未読数から1引く（カード本体と二重に数えない）', () => {
-    expect(computeMoreUnreadReports(2, true)).toBe(1);
-  });
-
-  it('最新が既読なら、全体未読数そのまま', () => {
-    expect(computeMoreUnreadReports(2, false)).toBe(2);
-  });
-
-  it('マイナスにはならない（未読0件で最新未読というありえない入力でも0に丸める）', () => {
-    expect(computeMoreUnreadReports(0, true)).toBe(0);
   });
 });
 
@@ -199,20 +166,25 @@ describe('filterGuidanceForStudent', () => {
     ],
   };
 
-  it('studentId で絞り込む', () => {
+  it('studentId で絞り込む（pushes のみ返す。items はダッシュボードに出さない）', () => {
     const result = filterGuidanceForStudent(guidance, 's1');
-    expect(result.pushes).toHaveLength(1);
-    expect(result.pushes[0].studentId).toBe('s1');
-  });
-
-  it('items は受付中(open)のみ。受付終了(ended)はダッシュボードに出さない', () => {
-    const result = filterGuidanceForStudent(guidance, 's1');
-    expect(result.items).toHaveLength(1);
-    expect(result.items[0].status).toBe('open');
+    expect(result).toEqual({
+      pushes: [
+        {
+          studentId: 's1',
+          studentName: '太郎',
+          formType: 'moshi',
+          periodKey: '2026-08',
+          title: '8月模試',
+          reason: '対象学年です',
+          href: '/portal/x/moshi',
+        },
+      ],
+    });
   });
 
   it('該当が無ければ空配列', () => {
     const result = filterGuidanceForStudent(guidance, 's3');
-    expect(result).toEqual({ pushes: [], items: [] });
+    expect(result).toEqual({ pushes: [] });
   });
 });

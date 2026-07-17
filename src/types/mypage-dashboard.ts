@@ -1,4 +1,4 @@
-import type { GuidanceItem, GuidancePush } from './mypage-schedule';
+import type { GuidancePush } from './mypage-schedule';
 
 /**
  * 保護者ポータル ダッシュボード（/mypage トップ）の共有型。
@@ -24,30 +24,17 @@ export interface DashboardHeroEntry {
   /** 'HH:MM'。slotLabel（'17:00〜18:30'）から分離。引けなければ null。 */
   endTime: string | null;
   subjectNames: string[];
-  teacherName: string | null;
   isCancelled: boolean;
   isTransfer: boolean;
 }
 
-/** ヒーローに続く予定1件（最大2件）。 */
-export interface DashboardAgendaEntry {
-  entryDate: string;
-  startTime: string | null;
-  subjectNames: string[];
-  isCancelled: boolean;
-  isTransfer: boolean;
-}
-
-/** 授業報告書セクションの最新1件（講評抜粋つき）。 */
+/** 授業報告書セクションの最新1件。 */
 export interface DashboardLatestReport {
   id: string;
   /** 'YYYY-MM-DD' */
   lessonDate: string;
   subjectNames: string[];
-  teacherName: string | null;
   isUnread: boolean;
-  /** 講評（review_comment）。抜粋2行clampは表示側で行う。 */
-  excerpt: string | null;
   checkTestScore: number | null;
   checkTestTotal: number | null;
   checkTestPassed: boolean | null;
@@ -59,21 +46,17 @@ export interface DashboardReportsSection {
   unreadCount: number;
   /** 最新1件（無ければ null＝報告書なし）。 */
   latest: DashboardLatestReport | null;
-  /** 「ほかに未読の報告書が N 件」の N（latest 自身の未読ぶんは除く）。 */
-  moreUnread: number;
 }
 
 /** お申し込みセクション（この生徒に絞り込み済み）。 */
 export interface DashboardAppliesSection {
+  /** 強調カード（タイトル＋理由＋CTA）のみ。「受付中」の静かな一覧は forms ページで見せる。 */
   pushes: GuidancePush[];
-  /** 「受付中」のみ（受付終了はダッシュボードでは出さない。全件は forms ページで見せる）。 */
-  items: GuidanceItem[];
 }
 
 /** チャット概要（この生徒宛のスレッド）。 */
 export interface DashboardChatSummary {
   unreadCount: number;
-  preview: string | null;
 }
 
 /** お知らせ1件（アカウント単位で共有・全子どもタブで同じ内容）。 */
@@ -83,7 +66,6 @@ export interface DashboardNotice {
   /** ISO日時（bulletin_posts.created_at）。表示整形は DashboardView 側で行う。 */
   createdAt: string;
   isRead: boolean;
-  isPinned: boolean;
 }
 
 /** 子ども1人分のダッシュボードデータ一式。 */
@@ -93,7 +75,6 @@ export interface DashboardChild {
   grade: number | null;
   /** 直近の予定が無ければ null。 */
   hero: DashboardHeroEntry | null;
-  agenda: DashboardAgendaEntry[];
   reports: DashboardReportsSection;
   applies: DashboardAppliesSection;
   chat: DashboardChatSummary;
