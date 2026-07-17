@@ -15,22 +15,15 @@
 import type { PortalScheduleEntryDto } from '@/types/mypage-schedule';
 import type { PortalReportListItem } from '@/types/mypage-report';
 import type { FormGuidance } from '@/types/mypage-schedule';
-import type {
-  DashboardAgendaEntry,
-  DashboardAppliesSection,
-  DashboardHeroEntry,
-} from '@/types/mypage-dashboard';
+import type { DashboardAppliesSection, DashboardHeroEntry } from '@/types/mypage-dashboard';
 
 /**
- * 予定一覧（今日〜+14日・日付昇順が前提）から「次の授業」ヒーローと、続く予定（最大2件）を選ぶ。
- * 予定が0件なら hero=null・agenda=[]。
+ * 予定一覧（今日〜+14日・日付昇順が前提）から「次の授業」ヒーローを選ぶ。
+ * 予定が0件なら null。続く予定（agenda）はカードから撤去したので選ばない
+ * （「予定をすべて見る」リンク先に譲る）。
  */
-export function selectHeroAndAgenda(entries: PortalScheduleEntryDto[]): {
-  hero: PortalScheduleEntryDto | null;
-  agenda: PortalScheduleEntryDto[];
-} {
-  if (entries.length === 0) return { hero: null, agenda: [] };
-  return { hero: entries[0], agenda: entries.slice(1, 3) };
+export function selectHero(entries: PortalScheduleEntryDto[]): PortalScheduleEntryDto | null {
+  return entries[0] ?? null;
 }
 
 /** 'HH:MM〜HH:MM' 形式の slotLabel を [開始, 終了] に分ける。引けなければ両方 null。 */
@@ -40,7 +33,7 @@ function splitSlotLabel(label: string | null): [string | null, string | null] {
   return [start || null, end || null];
 }
 
-/** 予定DTO（schedule.ts）→ ヒーロー表示用DTO。 */
+/** 予定DTO（schedule.ts）→ ヒーロー表示用DTO。講師名は出さない（保護者には不要な情報）。 */
 export function toDashboardHero(entry: PortalScheduleEntryDto, today: string): DashboardHeroEntry {
   const [slotStart, slotEnd] = splitSlotLabel(entry.slotLabel);
   return {
@@ -48,18 +41,6 @@ export function toDashboardHero(entry: PortalScheduleEntryDto, today: string): D
     isToday: entry.entryDate === today,
     startTime: entry.startTime ?? slotStart,
     endTime: slotEnd,
-    subjectNames: entry.subjectNames,
-    teacherName: entry.teacherName,
-    isCancelled: entry.status === 'cancelled',
-    isTransfer: entry.status === 'transferred_in',
-  };
-}
-
-/** 予定DTO（schedule.ts）→ 続く予定（アジェンダ行）表示用DTO。 */
-export function toDashboardAgendaEntry(entry: PortalScheduleEntryDto): DashboardAgendaEntry {
-  return {
-    entryDate: entry.entryDate,
-    startTime: entry.startTime,
     subjectNames: entry.subjectNames,
     isCancelled: entry.status === 'cancelled',
     isTransfer: entry.status === 'transferred_in',
@@ -72,20 +53,25 @@ export function countUnreadReports(reports: PortalReportListItem[]): number {
 }
 
 /**
- * 「ほかに未読の報告書が N 件」の N。
- * 最新1件はカード本体に既に出ている（新着バッジ付き）ので、それが未読なら
- * 全体の未読数から1引いて二重に数えないようにする。
+ * カードに代表として出す報告書を1件選ぶ。
+ *
+ * ★ 「最新1件」ではなく「未読があれば最新の未読」を出す理由:
+ *   見出しの件数バッジは未読数を示す。単純に最新を出すと「バッジは未読1なのに、
+ *   表示されている行は既読（新着バッジ無し）」という食い違いが起きる
+ *   （「ほかに未読N件」の行を削った簡素化で顕在化。実機で確認）。
+ *   未読がある間はそれが保護者に一番見せたいものなので、代表も未読側に揃える。
+ *   reports は getPortalReports が新しい順で返す前提（先頭一致で最新の未読になる）。
  */
-export function computeMoreUnreadReports(unreadCount: number, latestIsUnread: boolean): number {
-  return Math.max(0, unreadCount - (latestIsUnread ? 1 : 0));
+export function selectFeaturedReport(reports: PortalReportListItem[]): PortalReportListItem | null {
+  return reports.find((r) => !r.isRead) ?? reports[0] ?? null;
 }
 
 /**
- * 手続きハブのデータ（getFormGuidance の戻り）から、この生徒宛のぶんだけを絞り込む。
+ * 手続きハブのデータ（getFormGuidance の戻り）から、この生徒宛のプッシュ（強調カード）だけを絞り込む。
  *
- * ★ items は「受付中」のみに絞る（status === 'open'）:
- *   ダッシュボードは「今やること」を見せる場で、受付終了は申込めず出す価値が薄い。
- *   受付終了も含めた全件は forms ページ（FormsHub）で見せる。
+ * ★ items（「受付中」の静かな一覧）はダッシュボードには出さない:
+ *   一覧は「申し込み・手続きへ」リンク先（FormsHub）で見せる。ダッシュボードは
+ *   プッシュ（今すぐ対応してほしいもの）だけに絞ってメリハリを付ける。
  */
 export function filterGuidanceForStudent(
   guidance: FormGuidance,
@@ -93,6 +79,5 @@ export function filterGuidanceForStudent(
 ): DashboardAppliesSection {
   return {
     pushes: guidance.pushes.filter((p) => p.studentId === studentId),
-    items: guidance.items.filter((i) => i.studentId === studentId && i.status === 'open'),
   };
 }

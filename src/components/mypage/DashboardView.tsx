@@ -251,11 +251,7 @@ function CommunicationCard({
             <span className="block truncate text-[13px] font-semibold text-text-heading">
               教室から返信が届いています
             </span>
-            {chat.preview && (
-              <span className="block truncate text-[11.5px] text-text-muted">{chat.preview}</span>
-            )}
           </span>
-          <CountBadge count={chat.unreadCount} />
         </Link>
       ) : (
         <Link href="/mypage/chat" className="flex items-center gap-2.5 py-2">
@@ -299,7 +295,6 @@ function CommunicationCard({
                 </span>
                 <span className="block text-[11px] tabular-nums text-text-muted">
                   {formatMD(n.createdAt)}
-                  {n.isPinned ? ' ・ 固定' : ''}
                 </span>
               </span>
             </Link>
@@ -315,7 +310,7 @@ function CommunicationCard({
 // ============================================================
 
 function ScheduleCard({ child }: { child: DashboardChild }) {
-  const { hero, agenda } = child;
+  const { hero } = child;
   return (
     <DashCard footerLabel="予定をすべて見る" footerHref="/mypage/schedule">
       <SectionHead icon={<CalendarDays className="h-full w-full" />} label="次の授業" />
@@ -344,46 +339,9 @@ function ScheduleCard({ child }: { child: DashboardChild }) {
             <span className="mx-0.5 font-normal text-text-faint">〜</span>
             {hero.endTime ?? '—'}
           </div>
-          <div className="mt-px text-[13px] text-text-body">
+          <div className="mt-px truncate text-[13px] text-text-body">
             {hero.subjectNames.join('・') || '授業'}
-            {hero.teacherName && (
-              <>
-                <span className="mx-[5px] text-text-faint">・</span>
-                {hero.teacherName}先生
-              </>
-            )}
           </div>
-
-          {agenda.length > 0 && (
-            <div className="mt-3 flex flex-col border-t border-border-subtle pt-2">
-              {agenda.map((a) => (
-                <div
-                  key={`${a.entryDate}-${a.startTime ?? ''}`}
-                  className="flex items-center gap-2 py-1.5 text-[12.5px]"
-                >
-                  <span className="w-[62px] flex-none tabular-nums font-semibold text-text-heading">
-                    {formatMDWeekday(a.entryDate)}
-                  </span>
-                  <span
-                    className={`w-[42px] flex-none tabular-nums ${
-                      a.isCancelled ? 'text-text-faint line-through' : 'text-text-muted'
-                    }`}
-                  >
-                    {a.startTime ?? '—'}
-                  </span>
-                  <span
-                    className={`min-w-0 flex-1 truncate ${
-                      a.isCancelled ? 'text-text-faint line-through' : 'text-text-body'
-                    }`}
-                  >
-                    {a.subjectNames.join('・') || '授業'}
-                  </span>
-                  {a.isTransfer && <Badge tone="ink">振替</Badge>}
-                  {a.isCancelled && <Badge tone="primary">休講</Badge>}
-                </div>
-              ))}
-            </div>
-          )}
         </>
       )}
     </DashCard>
@@ -428,18 +386,10 @@ function ReportsCard({ child }: { child: DashboardChild }) {
             <span className="text-[12.5px] font-bold tabular-nums text-text-heading">
               {formatMDWeekday(latest.lessonDate)}
             </span>
-            <span className="text-[12px] text-text-muted">
-              {[
-                latest.subjectNames.join('・'),
-                latest.teacherName ? `${latest.teacherName}先生` : null,
-              ]
-                .filter(Boolean)
-                .join(' ・ ')}
+            <span className="truncate text-[12px] text-text-muted">
+              {latest.subjectNames.join('・')}
             </span>
           </div>
-          {latest.excerpt && (
-            <p className="mt-1 line-clamp-2 text-[12.5px] text-text-body">{latest.excerpt}</p>
-          )}
           {hasTestChip && (
             <div className="mt-[7px] flex flex-wrap gap-[5px]">
               <Badge tone={latest.checkTestPassed ? 'success' : 'warning'}>
@@ -449,12 +399,6 @@ function ReportsCard({ child }: { child: DashboardChild }) {
             </div>
           )}
         </Link>
-      )}
-
-      {reports.moreUnread > 0 && (
-        <p className="mt-2 px-0.5 text-[11.5px] text-text-muted">
-          ほかに未読の報告書が {reports.moreUnread} 件あります
-        </p>
       )}
     </DashCard>
   );
@@ -466,7 +410,7 @@ function ReportsCard({ child }: { child: DashboardChild }) {
 
 function AppliesCard({ child }: { child: DashboardChild }) {
   const { applies } = child;
-  const hasAnything = applies.pushes.length > 0 || applies.items.length > 0;
+  const hasAnything = applies.pushes.length > 0;
 
   return (
     <DashCard footerLabel="申し込み・手続きへ" footerHref="/mypage/forms">
@@ -494,15 +438,6 @@ function AppliesCard({ child }: { child: DashboardChild }) {
                 申し込みへ進む
                 <ExternalLink className="h-[14px] w-[14px]" />
               </a>
-            </div>
-          ))}
-          {applies.items.map((it) => (
-            <div
-              key={`item-${it.formType}-${it.periodKey}`}
-              className="rounded-xl border border-border-subtle px-3 py-2.5"
-            >
-              <p className="mb-[3px] text-[13.5px] font-bold text-text-heading">{it.title}</p>
-              <Badge tone="success">受付中</Badge>
             </div>
           ))}
         </div>

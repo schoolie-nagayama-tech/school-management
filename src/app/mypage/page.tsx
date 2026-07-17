@@ -2,16 +2,15 @@ import { redirect } from 'next/navigation';
 import { getPortalContext } from '@/lib/mypage/supabase';
 import { getPortalServiceClient } from '@/lib/mypage/serviceClient';
 import { getPortalScheduleEntries, todayJst, addDaysJst } from '@/lib/mypage/schedule';
-import { getPortalReports, getPortalReport } from '@/lib/mypage/reports';
+import { getPortalReports } from '@/lib/mypage/reports';
 import { getPortalChatSummaries } from '@/lib/mypage/chatSummary';
 import { getPortalAnnouncements } from '@/lib/mypage/announcements';
 import { getFormGuidance } from '@/lib/mypage/formGuidance';
 import {
-  selectHeroAndAgenda,
+  selectHero,
+  selectFeaturedReport,
   toDashboardHero,
-  toDashboardAgendaEntry,
   countUnreadReports,
-  computeMoreUnreadReports,
   filterGuidanceForStudent,
 } from '@/lib/mypage/dashboardDerive';
 import { DashboardView } from '@/components/mypage/DashboardView';
@@ -109,7 +108,6 @@ export default async function MyPage() {
     title: n.title,
     createdAt: n.created_at,
     isRead: n.is_read,
-    isPinned: n.is_pinned,
   }));
 
   // ── 生徒ごとの組み立て（並列） ──
@@ -123,12 +121,10 @@ export default async function MyPage() {
         getPortalReports(client, l.student_id),
       ]);
 
-      const { hero: heroEntry, agenda: agendaEntries } = selectHeroAndAgenda(entries);
+      const heroEntry = selectHero(entries);
       const unreadCount = countUnreadReports(reports);
-      const latestReport = reports[0] ?? null;
-
-      // 講評抜粋は最新1件だけ詳細を追加取得する（一覧APIは reviewComment を持たないため）。
-      const latestDetail = latestReport ? await getPortalReport(client, latestReport.id) : null;
+      // 代表は「未読があれば最新の未読」（見出しの未読バッジと表示行を食い違わせない）。
+      const latestReport = selectFeaturedReport(reports);
       const latestIsUnread = latestReport ? !latestReport.isRead : false;
 
       const chat = chatByStudent.get(l.student_id);
@@ -138,7 +134,6 @@ export default async function MyPage() {
         name,
         grade: st.grade,
         hero: heroEntry ? toDashboardHero(heroEntry, today) : null,
-        agenda: agendaEntries.map(toDashboardAgendaEntry),
         reports: {
           unreadCount,
           latest: latestReport
@@ -146,20 +141,16 @@ export default async function MyPage() {
                 id: latestReport.id,
                 lessonDate: latestReport.lessonDate,
                 subjectNames: latestReport.subjectNames,
-                teacherName: latestReport.teacherName,
                 isUnread: latestIsUnread,
-                excerpt: latestDetail?.reviewComment ?? null,
                 checkTestScore: latestReport.checkTestScore,
                 checkTestTotal: latestReport.checkTestTotal,
                 checkTestPassed: latestReport.checkTestPassed,
               }
             : null,
-          moreUnread: computeMoreUnreadReports(unreadCount, latestIsUnread),
         },
         applies: filterGuidanceForStudent(guidance, l.student_id),
         chat: {
           unreadCount: chat?.unread_count ?? 0,
-          preview: chat?.last_message_preview ?? null,
         },
       };
     })
