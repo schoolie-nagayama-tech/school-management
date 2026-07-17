@@ -47,13 +47,16 @@ export function SelectTrigger({ children, className = '', onClick }: SelectTrigg
       context?.setOpen(!context.open);
     }
   };
+  // 呼び出し側が w-56 等の幅クラスを渡したらそれを尊重する（Input と同じ理由）。
+  // 既定の w-full を残すと Tailwind の出力順で w-full が勝ち、幅指定が黙って無視される。
+  const hasWidthOverride = /(^|\s)w-\S/.test(className);
 
   return (
     <button
       type="button"
       onClick={handleClick}
       className={`
-        w-full px-3 py-2
+        ${hasWidthOverride ? '' : 'w-full'} px-3 py-2
         border rounded-lg
         text-text-body
         bg-surface-raised

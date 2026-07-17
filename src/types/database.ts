@@ -1253,6 +1253,8 @@ export type Database = {
           gender?: 'male' | 'female' | 'other' | null;
           /** 講師の社員番号。並び順制御に使用 */
           employee_no?: string | null;
+          /** 講師の入社日。入社3ヶ月アラートの判定に使用。NULL=未設定（判定対象外） */
+          hire_date?: string | null;
           /** true=時給講師として扱い、出勤簿等に含める（owner/admin兼任向け） */
           is_teaching_staff?: boolean;
         };
@@ -1275,6 +1277,8 @@ export type Database = {
           gender?: 'male' | 'female' | 'other' | null;
           /** 講師の社員番号。並び順制御に使用 */
           employee_no?: string | null;
+          /** 講師の入社日。入社3ヶ月アラートの判定に使用。NULL=未設定（判定対象外） */
+          hire_date?: string | null;
           /** true=時給講師として扱い、出勤簿等に含める（owner/admin兼任向け） */
           is_teaching_staff?: boolean;
         };
@@ -1297,6 +1301,8 @@ export type Database = {
           gender?: 'male' | 'female' | 'other' | null;
           /** 講師の社員番号。並び順制御に使用 */
           employee_no?: string | null;
+          /** 講師の入社日。入社3ヶ月アラートの判定に使用。NULL=未設定（判定対象外） */
+          hire_date?: string | null;
           /** true=時給講師として扱い、出勤簿等に含める（owner/admin兼任向け） */
           is_teaching_staff?: boolean;
         };
@@ -1649,6 +1655,8 @@ export type Database = {
           is_koma_changing: boolean;
           koma_change_from: number | null;
           koma_change_to: number | null;
+          koma_change_from_1to1: number | null;
+          koma_change_to_1to1: number | null;
           created_at: string;
           updated_at: string;
         };
@@ -1670,6 +1678,8 @@ export type Database = {
           is_koma_changing?: boolean;
           koma_change_from?: number | null;
           koma_change_to?: number | null;
+          koma_change_from_1to1?: number | null;
+          koma_change_to_1to1?: number | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -1691,6 +1701,8 @@ export type Database = {
           is_koma_changing?: boolean;
           koma_change_from?: number | null;
           koma_change_to?: number | null;
+          koma_change_from_1to1?: number | null;
+          koma_change_to_1to1?: number | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -4056,6 +4068,8 @@ export interface UserProfile {
   default_school_id?: string | null;
   /** 講師の社員番号。並び順制御に使用 */
   employee_no?: string | null;
+  /** 講師の入社日。入社3ヶ月アラートの判定に使用。NULL=未設定（判定対象外） */
+  hire_date?: string | null;
   /** true=時給講師として扱い、出勤簿等に含める（owner/admin兼任向け） */
   is_teaching_staff?: boolean;
 }

@@ -6,6 +6,7 @@ import type {
   AttendanceSheet,
   AttendanceRecord,
   AttendanceNote,
+  KomaChangeInput,
 } from '@/types/attendance';
 
 // ========================================
@@ -1049,6 +1050,8 @@ export async function updateAttendanceSheetMeta(
     is_koma_changing?: boolean;
     koma_change_from?: number | null;
     koma_change_to?: number | null;
+    koma_change_from_1to1?: number | null;
+    koma_change_to_1to1?: number | null;
   }
 ) {
   const { error } = await supabase.from('attendance_sheets').update(fields).eq('id', sheetId);
@@ -1059,13 +1062,13 @@ export async function updateAttendanceSheetMeta(
   }
 }
 
-// コマ給変更を登録/解除（講師の所属教室すべてに反映、シートがなければ作成）
+// コマ給変更を登録/解除（講師の所属教室すべてに反映、シートがなければ作成）。
+// 指導形態ごと（1対2 / 1対1）に独立して設定でき、両枠とも空なら解除扱い。
 export async function setKomaChange(
   teacherId: string,
   yearMonth: string,
   allowedSchoolIds: string[],
-  fromValue: number | null,
-  toValue: number | null
+  change: KomaChangeInput
 ) {
   if (allowedSchoolIds.length === 0) return;
 
@@ -1088,13 +1091,17 @@ export async function setKomaChange(
     await getOrCreateAttendanceSheet(teacherId, sId, yearMonth);
   }
 
-  const setFlags = fromValue !== null && toValue !== null;
+  // 各枠は from/to が揃って初めて有効。片方だけの入力は未設定として捨てる。
+  const has1to2 = change.from_1to2 !== null && change.to_1to2 !== null;
+  const has1to1 = change.from_1to1 !== null && change.to_1to1 !== null;
   const { error } = await supabase
     .from('attendance_sheets')
     .update({
-      is_koma_changing: setFlags,
-      koma_change_from: setFlags ? fromValue : null,
-      koma_change_to: setFlags ? toValue : null,
+      is_koma_changing: has1to2 || has1to1,
+      koma_change_from: has1to2 ? change.from_1to2 : null,
+      koma_change_to: has1to2 ? change.to_1to2 : null,
+      koma_change_from_1to1: has1to1 ? change.from_1to1 : null,
+      koma_change_to_1to1: has1to1 ? change.to_1to1 : null,
     })
     .eq('teacher_id', teacherId)
     .eq('year_month', yearMonth)
@@ -1176,7 +1183,9 @@ export async function getRecentlyRetiredTeachers(schoolIds: string[], yearMonth:
   }));
 }
 
-// 入社して約3ヶ月の講師を取得
+// 入社して約3ヶ月の講師を取得（＝3ヶ月前の月に入社した講師）。
+// 判定は user_profiles.hire_date（入社日）で行う。created_at はアカウント作成日であって入社日ではなく、
+// 導入時の一括投入で全員同日になってしまうため使わない。hire_date が NULL の講師は対象外。
 export async function getNewTeachers(schoolIds: string[], yearMonth: string) {
   const [y, m] = yearMonth.split('-').map(Number);
   let targetMonth = m - 3;
@@ -1205,12 +1214,12 @@ export async function getNewTeachers(schoolIds: string[], yearMonth: string) {
 
   const { data, error } = await supabase
     .from('user_profiles')
-    .select('id, display_name, email, created_at')
+    .select('id, display_name, email, hire_date')
     .in('id', teacherIds)
     .eq('role', 'teacher')
     .eq('is_active', true)
-    .gte('created_at', targetStart)
-    .lte('created_at', targetEnd + 'T23:59:59');
+    .gte('hire_date', targetStart)
+    .lte('hire_date', targetEnd);
 
   if (error) {
     console.error('Error fetching new teachers:', error);
@@ -1219,8 +1228,21 @@ export async function getNewTeachers(schoolIds: string[], yearMonth: string) {
   return (data || []).map((t) => ({
     id: t.id,
     name: t.display_name || t.email || '未設定',
-    created_at: t.created_at,
+    hire_date: t.hire_date as string,
   }));
+}
+
+// 講師の入社日を更新（出勤簿管理からのインライン設定用）
+export async function updateTeacherHireDate(teacherId: string, hireDate: string | null) {
+  const { error } = await supabase
+    .from('user_profiles')
+    .update({ hire_date: hireDate })
+    .eq('id', teacherId);
+
+  if (error) {
+    console.error('Error updating hire_date:', error);
+    throw new Error('入社日の更新に失敗しました');
+  }
 }
 
 // 教室に紐づく active 講師一覧（ドロップダウン選択肢用）
@@ -1242,7 +1264,7 @@ export async function getActiveTeacherProfiles(schoolIds: string[]) {
 
   const { data, error } = await supabase
     .from('user_profiles')
-    .select('id, display_name, email, exit_date, created_at')
+    .select('id, display_name, email, exit_date, hire_date, created_at')
     .in('id', teacherIds)
     // 出勤簿管理の講師ドロップダウン。role='teacher' に加え時給講師(is_teaching_staff)も対象にする
     .or('role.eq.teacher,is_teaching_staff.eq.true')
@@ -1257,6 +1279,7 @@ export async function getActiveTeacherProfiles(schoolIds: string[]) {
     id: t.id,
     name: t.display_name || t.email || '未設定',
     exit_date: t.exit_date as string | null,
+    hire_date: (t.hire_date as string | null) ?? null,
     created_at: t.created_at,
   }));
 }

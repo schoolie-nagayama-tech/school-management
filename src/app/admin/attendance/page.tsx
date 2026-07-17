@@ -51,7 +51,6 @@ import {
   AlertTriangle,
   UserMinus,
   UserPlus,
-  TrendingUp,
   Send,
   ArrowUpDown,
 } from 'lucide-react';
@@ -66,6 +65,7 @@ import {
   getLateEarlyList,
   updateAttendanceSheetMeta,
   updateTeacherExitDate,
+  updateTeacherHireDate,
   updateTeacherEmployeeNo,
   getRecentlyRetiredTeachers,
   getNewTeachers,
@@ -127,15 +127,42 @@ interface SummaryRow {
   transport_cost: number;
   admin_note: string | null;
   is_koma_changing: boolean;
+  /** コマ給変更(1対2) */
   koma_change_from: number | null;
   koma_change_to: number | null;
+  /** コマ給変更(1対1) */
+  koma_change_from_1to1: number | null;
+  koma_change_to_1to1: number | null;
 }
 
 interface TeacherProfile {
   id: string;
   name: string;
   exit_date: string | null;
+  /** 入社日。入社3ヶ月アラートの判定に使う（NULL=未設定＝対象外） */
+  hire_date: string | null;
   created_at: string;
+}
+
+/** コマ給変更バッジの本文。1対2・1対1のうち設定されている枠だけを "1対2 ¥2,000→¥2,200" 形式で並べる。 */
+function komaChangeLabels(sheet: {
+  koma_change_from: number | null;
+  koma_change_to: number | null;
+  koma_change_from_1to1: number | null;
+  koma_change_to_1to1: number | null;
+}): string[] {
+  const labels: string[] = [];
+  if (sheet.koma_change_from !== null && sheet.koma_change_to !== null) {
+    labels.push(
+      `1対2 ¥${sheet.koma_change_from.toLocaleString()}→¥${sheet.koma_change_to.toLocaleString()}`
+    );
+  }
+  if (sheet.koma_change_from_1to1 !== null && sheet.koma_change_to_1to1 !== null) {
+    labels.push(
+      `1対1 ¥${sheet.koma_change_from_1to1.toLocaleString()}→¥${sheet.koma_change_to_1to1.toLocaleString()}`
+    );
+  }
+  return labels;
 }
 
 type SortOrder = 'employee' | 'name-asc' | 'name-desc' | 'amount-desc';
@@ -174,6 +201,43 @@ function compareByEmployeeNo(a: SummaryRow, b: SummaryRow): number {
   return ea.localeCompare(eb, 'ja');
 }
 
+/** 登録済みの人事情報チップ（講師名＋内容＋解除ボタン）。入社日・退職日・コマ給で色だけ変える。 */
+function HrChip({
+  color,
+  name,
+  detail,
+  onClear,
+  clearLabel,
+}: {
+  color: 'blue' | 'orange' | 'purple';
+  name: string;
+  detail: string;
+  onClear: () => void;
+  clearLabel: string;
+}) {
+  const colorClass = {
+    blue: 'bg-blue-600 hover:bg-blue-700',
+    orange: 'bg-orange-500 hover:bg-orange-600',
+    purple: 'bg-purple-600 hover:bg-purple-700',
+  }[color];
+  return (
+    <span
+      className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs text-white whitespace-nowrap ${colorClass.split(' ')[0]}`}
+    >
+      <span className="font-medium">{name}</span>
+      <span className="opacity-90">{detail}</span>
+      <button
+        type="button"
+        onClick={onClear}
+        className={`ml-0.5 rounded px-1 ${colorClass.split(' ')[1]}`}
+        aria-label={clearLabel}
+      >
+        ×
+      </button>
+    </span>
+  );
+}
+
 export default function AttendanceManagementPage() {
   const router = useRouter();
   // グローバルの教室選択に連動（ヘッダーのドロップダウンと同期）
@@ -204,16 +268,22 @@ export default function AttendanceManagementPage() {
   const [recentlyRetired, setRecentlyRetired] = useState<
     { id: string; name: string; exit_date: string | null }[]
   >([]);
-  const [newTeachers, setNewTeachers] = useState<
-    { id: string; name: string; created_at: string }[]
-  >([]);
-  const [retiringTeacherId, setRetiringTeacherId] = useState<string>('');
-  const [retiringExitDate, setRetiringExitDate] = useState<string>('');
-
-  // コマ給変更入力
-  const [komaChangeTeacherId, setKomaChangeTeacherId] = useState<string>('');
+  const [newTeachers, setNewTeachers] = useState<{ id: string; name: string; hire_date: string }[]>(
+    []
+  );
+  // 人事・コマ給の登録フォーム。入社日・退職日・コマ給変更は「1人の講師に対する設定」なので、
+  // 講師を1回選べば3つともまとめて編集・保存できる1フォームに統合している。
+  const [hrTeacherId, setHrTeacherId] = useState<string>('');
+  const [hrHireDate, setHrHireDate] = useState<string>('');
+  const [hrExitDate, setHrExitDate] = useState<string>('');
+  // コマ給変更は指導形態ごと（1対2 / 1対1）に旧→新を持つ
   const [komaChangeFrom, setKomaChangeFrom] = useState<string>('');
   const [komaChangeTo, setKomaChangeTo] = useState<string>('');
+  const [komaChangeFrom1to1, setKomaChangeFrom1to1] = useState<string>('');
+  const [komaChangeTo1to1, setKomaChangeTo1to1] = useState<string>('');
+  // 読み込み時の値。保存時に「変わった項目だけ」書くために比較用として持つ
+  const [hrSnapshot, setHrSnapshot] = useState<string>('');
+  const [isSavingHr, setIsSavingHr] = useState(false);
 
   // 教室長: 提出先管理者
   const [adminUsers, setAdminUsers] = useState<{ id: string; name: string }[]>([]);
@@ -317,6 +387,45 @@ export default function AttendanceManagementPage() {
       setSelectedSchool(allowedSchools.find((s) => s.id === selectedSchoolId) || null);
     }
   }, [selectedSchoolId, allowedSchools]);
+
+  // 講師を選んだら、その講師の登録済みの値をフォームへ読み込む。
+  // コマ給変更は2枠まとめて上書きするため、既存値を出しておかないと
+  // 「1対1だけ後から足す」操作で 1対2 の設定が消える。
+  useEffect(() => {
+    if (!hrTeacherId) {
+      setHrSnapshot('');
+      return;
+    }
+    const teacher = allTeachers.find((t) => t.id === hrTeacherId);
+    const existing = sheets.find((s) => (s.teacher?.id || s.teacher_id) === hrTeacherId);
+    const num = (v: number | null | undefined) => (v != null ? String(v) : '');
+    const next = {
+      hire: teacher?.hire_date ?? '',
+      exit: teacher?.exit_date ?? '',
+      f2: num(existing?.koma_change_from),
+      t2: num(existing?.koma_change_to),
+      f1: num(existing?.koma_change_from_1to1),
+      t1: num(existing?.koma_change_to_1to1),
+    };
+    setHrHireDate(next.hire);
+    setHrExitDate(next.exit);
+    setKomaChangeFrom(next.f2);
+    setKomaChangeTo(next.t2);
+    setKomaChangeFrom1to1(next.f1);
+    setKomaChangeTo1to1(next.t1);
+    setHrSnapshot(JSON.stringify(next));
+  }, [hrTeacherId, allTeachers, sheets]);
+
+  // 未保存の変更があるか（保存ボタンの活性判定に使う）
+  const hrCurrent = JSON.stringify({
+    hire: hrHireDate,
+    exit: hrExitDate,
+    f2: komaChangeFrom,
+    t2: komaChangeTo,
+    f1: komaChangeFrom1to1,
+    t1: komaChangeTo1to1,
+  });
+  const hrDirty = !!hrTeacherId && !!hrSnapshot && hrCurrent !== hrSnapshot;
 
   // ロール別の対象ステータス
   const actionableStatuses = isManager ? ['submitted'] : ['submitted', 'reviewed'];
@@ -490,21 +599,6 @@ export default function AttendanceManagementPage() {
     }
   };
 
-  // 退職日の設定
-  const handleSetExitDate = async () => {
-    if (!retiringTeacherId || !retiringExitDate) return;
-    try {
-      await updateTeacherExitDate(retiringTeacherId, retiringExitDate);
-      const teacher = allTeachers.find((t) => t.id === retiringTeacherId);
-      success(`${teacher?.name ?? '不明'}の退職日を設定しました`);
-      setRetiringTeacherId('');
-      setRetiringExitDate('');
-      await fetchData();
-    } catch {
-      toastError('退職日の設定に失敗しました');
-    }
-  };
-
   // 退職日の解除（exit_date を null にクリアする）
   const handleClearExitDate = async (teacherId: string) => {
     try {
@@ -516,40 +610,76 @@ export default function AttendanceManagementPage() {
     }
   };
 
-  // コマ給変更を登録
-  const handleSetKomaChange = async () => {
-    if (!komaChangeTeacherId) return;
-    const fromVal = parseInt(komaChangeFrom);
-    const toVal = parseInt(komaChangeTo);
-    if (!fromVal || !toVal || fromVal <= 0 || toVal <= 0) {
-      toastError('旧コマ給と新コマ給を入力してください');
-      return;
-    }
-    const effectiveSchoolIds =
-      !selectedSchoolId || selectedSchoolId === 'all' ? userSchoolIds : [selectedSchoolId];
+  // 入社日の解除（hire_date を null にクリアする）
+  const handleClearHireDate = async (teacherId: string) => {
     try {
-      await setKomaChange(komaChangeTeacherId, yearMonth, effectiveSchoolIds, fromVal, toVal);
-      const teacher = allTeachers.find((t) => t.id === komaChangeTeacherId);
-      success(
-        `${teacher?.name ?? '不明'}のコマ給変更を登録しました（¥${fromVal.toLocaleString()}→¥${toVal.toLocaleString()}）`
-      );
-      setKomaChangeTeacherId('');
-      setKomaChangeFrom('');
-      setKomaChangeTo('');
+      await updateTeacherHireDate(teacherId, null);
+      success('入社日を解除しました');
       await fetchData();
     } catch {
-      toastError('コマ給変更の登録に失敗しました');
+      toastError('入社日の解除に失敗しました');
     }
   };
 
-  // コマ給変更を解除
+  // 人事・コマ給フォームの保存。入社日・退職日・コマ給変更のうち、変更があった項目だけ書き込む。
+  const handleSaveHr = async () => {
+    if (!hrTeacherId || !hrSnapshot) return;
+    const snap = JSON.parse(hrSnapshot) as Record<string, string>;
+    // コマ給は旧・新が揃って初めて有効。片方だけの入力は「変更なし」として捨てる。
+    const parsePair = (from: string, to: string): [number | null, number | null] => {
+      const f = parseInt(from);
+      const t = parseInt(to);
+      if (!f || !t || f <= 0 || t <= 0) return [null, null];
+      return [f, t];
+    };
+    const teacherName = allTeachers.find((t) => t.id === hrTeacherId)?.name ?? '不明';
+    setIsSavingHr(true);
+    try {
+      if (hrHireDate !== snap.hire) {
+        await updateTeacherHireDate(hrTeacherId, hrHireDate || null);
+      }
+      if (hrExitDate !== snap.exit) {
+        await updateTeacherExitDate(hrTeacherId, hrExitDate || null);
+      }
+      const komaDirty =
+        komaChangeFrom !== snap.f2 ||
+        komaChangeTo !== snap.t2 ||
+        komaChangeFrom1to1 !== snap.f1 ||
+        komaChangeTo1to1 !== snap.t1;
+      if (komaDirty) {
+        const [from1to2, to1to2] = parsePair(komaChangeFrom, komaChangeTo);
+        const [from1to1, to1to1] = parsePair(komaChangeFrom1to1, komaChangeTo1to1);
+        const effectiveSchoolIds =
+          !selectedSchoolId || selectedSchoolId === 'all' ? userSchoolIds : [selectedSchoolId];
+        await setKomaChange(hrTeacherId, yearMonth, effectiveSchoolIds, {
+          from_1to2: from1to2,
+          to_1to2: to1to2,
+          from_1to1: from1to1,
+          to_1to1: to1to1,
+        });
+      }
+      success(`${teacherName}の設定を保存しました`);
+      await fetchData();
+    } catch {
+      toastError('保存に失敗しました');
+    } finally {
+      setIsSavingHr(false);
+    }
+  };
+
+  // コマ給変更を解除（1対2・1対1の両枠を解除）
   const handleClearKomaChange = async (sheet: SummaryRow) => {
     if (!sheet.teacher?.id && !sheet.teacher_id) return;
     const teacherId = sheet.teacher?.id || sheet.teacher_id!;
     const effectiveSchoolIds =
       !selectedSchoolId || selectedSchoolId === 'all' ? userSchoolIds : [selectedSchoolId];
     try {
-      await setKomaChange(teacherId, yearMonth, effectiveSchoolIds, null, null);
+      await setKomaChange(teacherId, yearMonth, effectiveSchoolIds, {
+        from_1to2: null,
+        to_1to2: null,
+        from_1to1: null,
+        to_1to1: null,
+      });
       success(`${sheet.teacher?.name ?? '不明'}のコマ給変更を解除しました`);
       await fetchData();
     } catch {
@@ -770,9 +900,19 @@ export default function AttendanceManagementPage() {
     (type, index, self) => index === self.findIndex((t) => t.name === type.name)
   );
 
-  const komaChangingSheets = sheets.filter((s) => s.is_koma_changing);
   const [ym_y, ym_m] = yearMonth.split('-').map(Number);
-  const monthEndDate = `${yearMonth}-${new Date(ym_y, ym_m, 0).getDate()}`;
+  const monthEndDate = `${yearMonth}-${String(new Date(ym_y, ym_m, 0).getDate()).padStart(2, '0')}`;
+
+  // 「登録済み」一覧の元データ。入社日・退職日は講師単位、コマ給変更は当月シート単位（講師で重複排除）
+  const hireDateTeachers = allTeachers.filter((t) => !!t.hire_date);
+  const exitDateTeachers = allTeachers.filter((t) => !!t.exit_date);
+  const komaChangingTeachers = Array.from(
+    new Map(
+      sheets
+        .filter((s) => s.is_koma_changing)
+        .map((s) => [s.teacher?.id || s.teacher_id || s.id, s])
+    ).values()
+  );
 
   return (
     <AdminLayout headerTitle="講師勤怠">
@@ -996,12 +1136,14 @@ export default function AttendanceManagementPage() {
                                   {sheet.teacher.employee_no}
                                 </span>
                               )}
-                              {sheet.is_koma_changing && (
-                                <Badge className="bg-purple-600 text-white text-[9px] px-1">
-                                  コマ¥{(sheet.koma_change_from ?? 0).toLocaleString()}→¥
-                                  {(sheet.koma_change_to ?? 0).toLocaleString()}
+                              {komaChangeLabels(sheet).map((label) => (
+                                <Badge
+                                  key={label}
+                                  className="bg-purple-600 text-white text-[9px] px-1"
+                                >
+                                  {label}
                                 </Badge>
-                              )}
+                              ))}
                               {/* 退職状態バッジ（転置ビュー用） */}
                               {exitStatusT === 'leaving' && sheet.teacher?.exit_date && (
                                 <Badge className="bg-orange-500 text-white text-[9px] px-1">
@@ -1208,22 +1350,25 @@ export default function AttendanceManagementPage() {
                           disabled={actionableCount === 0}
                         />
                       </TableHead>
-                      {showSchoolColumn && <TableHead>教室</TableHead>}
-                      <TableHead className="min-w-[60px]">社員番号</TableHead>
-                      <TableHead>講師名</TableHead>
-                      <TableHead className="text-center">ステータス</TableHead>
+                      {/* 見出しは折り返すと3行に崩れて表が読みにくくなるため、すべて1行に固定する */}
+                      {showSchoolColumn && (
+                        <TableHead className="whitespace-nowrap">教室</TableHead>
+                      )}
+                      <TableHead className="min-w-[60px] whitespace-nowrap">社員番号</TableHead>
+                      <TableHead className="whitespace-nowrap">講師名</TableHead>
+                      <TableHead className="text-center whitespace-nowrap">ステータス</TableHead>
                       {displayTypes.map((type) => (
-                        <TableHead key={type.id} className="text-center">
+                        <TableHead key={type.id} className="text-center whitespace-nowrap">
                           {type.name}
                         </TableHead>
                       ))}
-                      <TableHead className="text-center">合計</TableHead>
-                      <TableHead className="text-right">金額</TableHead>
-                      <TableHead className="text-center">準備給日数</TableHead>
-                      <TableHead className="text-center">勤務日数</TableHead>
-                      <TableHead className="text-center">交通費</TableHead>
-                      <TableHead className="min-w-[120px]">備考</TableHead>
-                      <TableHead className="min-w-[200px]">操作</TableHead>
+                      <TableHead className="text-center whitespace-nowrap">合計</TableHead>
+                      <TableHead className="text-right whitespace-nowrap">金額</TableHead>
+                      <TableHead className="text-center whitespace-nowrap">準備給日数</TableHead>
+                      <TableHead className="text-center whitespace-nowrap">勤務日数</TableHead>
+                      <TableHead className="text-center whitespace-nowrap">交通費</TableHead>
+                      <TableHead className="min-w-[120px] whitespace-nowrap">備考</TableHead>
+                      <TableHead className="min-w-[200px] whitespace-nowrap">操作</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -1242,7 +1387,11 @@ export default function AttendanceManagementPage() {
                               disabled={!actionableStatuses.includes(sheet.status)}
                             />
                           </TableCell>
-                          {showSchoolColumn && <TableCell>{sheet.school?.name ?? ''}</TableCell>}
+                          {showSchoolColumn && (
+                            <TableCell className="whitespace-nowrap">
+                              {sheet.school?.name ?? ''}
+                            </TableCell>
+                          )}
                           <TableCell className="text-sm text-gray-500 tabular-nums">
                             {isAdmin ? (
                               // 社員番号インライン編集（admin/owner のみ）。Enterで確定（blur）。
@@ -1263,23 +1412,30 @@ export default function AttendanceManagementPage() {
                             )}
                           </TableCell>
                           <TableCell className="font-medium">
-                            <span>{sheet.teacher?.name ?? '不明'}</span>
-                            {sheet.is_koma_changing && (
-                              <Badge className="ml-1 bg-purple-600 text-white text-[10px] px-1">
-                                ¥{(sheet.koma_change_from ?? 0).toLocaleString()}→¥
-                                {(sheet.koma_change_to ?? 0).toLocaleString()}
-                              </Badge>
-                            )}
-                            {/* 退職状態バッジ: 退職予定はオレンジ、退職済みはグレー */}
-                            {exitStatus === 'leaving' && sheet.teacher?.exit_date && (
-                              <Badge className="ml-1 bg-orange-500 text-white text-[10px] px-1">
-                                退職予定 {formatExitMonthDay(sheet.teacher.exit_date)}
-                              </Badge>
-                            )}
-                            {exitStatus === 'retired' && (
-                              <Badge className="ml-1 bg-gray-400 text-white text-[10px] px-1">
-                                退職
-                              </Badge>
+                            {/* 講師名は1行に固定し、バッジは名前の下に折り返す（名前自体が2行に割れるのを防ぐ） */}
+                            <div className="whitespace-nowrap">{sheet.teacher?.name ?? '不明'}</div>
+                            {(sheet.is_koma_changing || exitStatus) && (
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {komaChangeLabels(sheet).map((label) => (
+                                  <Badge
+                                    key={label}
+                                    className="bg-purple-600 text-white text-[10px] px-1"
+                                  >
+                                    {label}
+                                  </Badge>
+                                ))}
+                                {/* 退職状態バッジ: 退職予定はオレンジ、退職済みはグレー */}
+                                {exitStatus === 'leaving' && sheet.teacher?.exit_date && (
+                                  <Badge className="bg-orange-500 text-white text-[10px] px-1">
+                                    退職予定 {formatExitMonthDay(sheet.teacher.exit_date)}
+                                  </Badge>
+                                )}
+                                {exitStatus === 'retired' && (
+                                  <Badge className="bg-gray-400 text-white text-[10px] px-1">
+                                    退職
+                                  </Badge>
+                                )}
+                              </div>
                             )}
                           </TableCell>
                           <TableCell className="text-center">
@@ -1427,140 +1583,180 @@ export default function AttendanceManagementPage() {
           </CardContent>
         </Card>
 
-        {/* 退職予定・コマ給変更 (admin only) */}
+        {/* 講師の人事・コマ給 (admin only)。
+            入社日・退職日・コマ給変更はいずれも「1人の講師に対する設定」なので、
+            講師を1回選べば3つともまとめて編集できる1フォームに統合している。 */}
         {isAdmin && (
           <Card>
             <CardHeader className="py-3">
-              <CardTitle className="text-base">退職予定・コマ給変更</CardTitle>
+              <CardTitle className="text-base">講師の人事・コマ給</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-6">
-              {/* 退職予定 */}
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">今月末退職の講師を登録</Label>
-                <div className="flex flex-wrap items-center gap-2">
-                  <Select value={retiringTeacherId} onValueChange={setRetiringTeacherId}>
-                    <SelectTrigger className="w-56">
-                      <SelectValue placeholder="講師を選択" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {allTeachers.map((t) => (
-                        <SelectItem key={t.id} value={t.id}>
-                          {t.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Input
-                    type="date"
-                    value={retiringExitDate || monthEndDate}
-                    onChange={(e) => setRetiringExitDate(e.target.value)}
-                    className="w-40"
-                  />
-                  <Button size="sm" onClick={handleSetExitDate} disabled={!retiringTeacherId}>
-                    登録
+            <CardContent className="space-y-4">
+              <div className="flex flex-wrap items-center gap-2">
+                <Label className="text-sm font-medium">講師</Label>
+                <Select value={hrTeacherId} onValueChange={setHrTeacherId}>
+                  <SelectTrigger className="w-56">
+                    <SelectValue placeholder="講師を選択" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {allTeachers.map((t) => (
+                      <SelectItem key={t.id} value={t.id}>
+                        {t.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {hrTeacherId && (
+                  <Button size="sm" onClick={handleSaveHr} disabled={!hrDirty || isSavingHr}>
+                    {isSavingHr ? '保存中...' : '保存'}
                   </Button>
-                </div>
-                {/* exit_date が設定されている全講師を表示（当月限定をやめ、未来月の退職日も確認できるようにする） */}
-                {allTeachers.some((t) => !!t.exit_date) && (
-                  <div className="flex flex-wrap gap-1 mt-1">
-                    {allTeachers
-                      .filter((t) => !!t.exit_date)
-                      .map((t) => (
-                        <div
-                          key={t.id}
-                          className="inline-flex items-center gap-1 bg-orange-500 text-white rounded-md px-2 py-1 text-xs"
-                        >
-                          <span className="font-medium">{t.name}</span>
-                          <span>（{t.exit_date}）</span>
-                          {/* 解除ボタン: コマ給変更の解除ボタンと同じ作法 */}
-                          <button
-                            type="button"
-                            onClick={() => handleClearExitDate(t.id)}
-                            className="ml-1 hover:bg-orange-600 rounded px-1"
-                            aria-label="退職日を解除"
-                          >
-                            ×
-                          </button>
-                        </div>
-                      ))}
-                  </div>
                 )}
               </div>
 
-              {/* コマ給変更 */}
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">コマ給変更の講師を登録</Label>
-                <div className="flex flex-wrap items-center gap-2">
-                  <Select value={komaChangeTeacherId} onValueChange={setKomaChangeTeacherId}>
-                    <SelectTrigger className="w-56">
-                      <SelectValue placeholder="講師を選択" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {allTeachers.map((t) => (
-                        <SelectItem key={t.id} value={t.id}>
-                          {t.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <div className="flex items-center gap-1">
-                    <span className="text-sm text-text-body">¥</span>
-                    <Input
-                      type="number"
-                      min="0"
-                      value={komaChangeFrom}
-                      onChange={(e) => setKomaChangeFrom(e.target.value)}
-                      placeholder="旧"
-                      className="w-24 text-right"
-                    />
-                    <span className="text-sm text-text-body">→ ¥</span>
-                    <Input
-                      type="number"
-                      min="0"
-                      value={komaChangeTo}
-                      onChange={(e) => setKomaChangeTo(e.target.value)}
-                      placeholder="新"
-                      className="w-24 text-right"
-                    />
-                  </div>
-                  <Button
-                    size="sm"
-                    onClick={handleSetKomaChange}
-                    disabled={!komaChangeTeacherId || !komaChangeFrom || !komaChangeTo}
-                  >
-                    登録
-                  </Button>
-                </div>
-                {komaChangingSheets.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {Array.from(
-                      new Map(
-                        komaChangingSheets.map((s) => [s.teacher?.id || s.teacher_id || s.id, s])
-                      ).values()
-                    ).map((s) => (
-                      <div
-                        key={s.id}
-                        className="inline-flex items-center gap-1 bg-purple-600 text-white rounded-md px-2 py-1 text-xs"
-                      >
-                        <TrendingUp className="h-3 w-3" />
-                        <span className="font-medium">{s.teacher?.name ?? '不明'}</span>
-                        <span>
-                          ¥{(s.koma_change_from ?? 0).toLocaleString()}→¥
-                          {(s.koma_change_to ?? 0).toLocaleString()}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => handleClearKomaChange(s)}
-                          className="ml-1 hover:bg-purple-700 rounded px-1"
-                          aria-label="解除"
+              {!hrTeacherId ? (
+                <p className="text-xs text-text-faint">
+                  講師を選ぶと、入社日・退職日・コマ給変更をまとめて登録できます。
+                </p>
+              ) : (
+                <div className="space-y-3 border-l-2 border-border pl-4">
+                  {/* 入社日・退職日は user_profiles の値なので月に依存しない */}
+                  <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+                    <div className="flex items-center gap-2">
+                      <Label className="w-14 text-sm text-text-body">入社日</Label>
+                      <Input
+                        type="date"
+                        value={hrHireDate}
+                        onChange={(e) => setHrHireDate(e.target.value)}
+                        className="w-40"
+                      />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Label className="w-14 text-sm text-text-body">退職日</Label>
+                      <Input
+                        type="date"
+                        value={hrExitDate}
+                        onChange={(e) => setHrExitDate(e.target.value)}
+                        className="w-40"
+                      />
+                      {!hrExitDate && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-xs"
+                          onClick={() => setHrExitDate(monthEndDate)}
                         >
-                          ×
-                        </button>
-                      </div>
-                    ))}
+                          今月末
+                        </Button>
+                      )}
+                    </div>
                   </div>
-                )}
-              </div>
+
+                  {/* コマ給変更は当月のシートに紐づくので、対象月を明示する */}
+                  <div className="flex flex-wrap items-start gap-x-6 gap-y-2">
+                    <Label className="w-14 text-sm text-text-body pt-2">コマ給</Label>
+                    <div className="space-y-2">
+                      {(
+                        [
+                          [
+                            '1対2',
+                            komaChangeFrom,
+                            setKomaChangeFrom,
+                            komaChangeTo,
+                            setKomaChangeTo,
+                          ],
+                          [
+                            '1対1',
+                            komaChangeFrom1to1,
+                            setKomaChangeFrom1to1,
+                            komaChangeTo1to1,
+                            setKomaChangeTo1to1,
+                          ],
+                        ] as const
+                      ).map(([label, fromVal, setFrom, toVal, setTo]) => (
+                        <div key={label} className="flex items-center gap-1">
+                          <span className="w-10 text-sm text-text-body">{label}</span>
+                          <span className="text-sm text-text-body">¥</span>
+                          <Input
+                            type="number"
+                            min="0"
+                            value={fromVal}
+                            onChange={(e) => setFrom(e.target.value)}
+                            placeholder="旧"
+                            className="w-24 text-right"
+                          />
+                          <span className="text-sm text-text-body">→ ¥</span>
+                          <Input
+                            type="number"
+                            min="0"
+                            value={toVal}
+                            onChange={(e) => setTo(e.target.value)}
+                            placeholder="新"
+                            className="w-24 text-right"
+                          />
+                        </div>
+                      ))}
+                      <p className="text-xs text-text-faint">
+                        {formatYearMonth(yearMonth)}
+                        の変更として登録します。変更があった指導形態だけ入力してください。
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* 登録済みの一覧。誰に何が入っているかを一目で見せ、× で解除する。
+                  入社日・退職日は全講師分（未来月の退職日も確認できる）、コマ給変更は当月分。 */}
+              {(hireDateTeachers.length > 0 ||
+                exitDateTeachers.length > 0 ||
+                komaChangingTeachers.length > 0) && (
+                <div className="space-y-1.5 border-t border-border pt-3">
+                  {hireDateTeachers.length > 0 && (
+                    <div className="flex flex-wrap items-center gap-1">
+                      <span className="w-14 text-xs text-text-faint">入社日</span>
+                      {hireDateTeachers.map((t) => (
+                        <HrChip
+                          key={t.id}
+                          color="blue"
+                          name={t.name}
+                          detail={t.hire_date!}
+                          onClear={() => handleClearHireDate(t.id)}
+                          clearLabel="入社日を解除"
+                        />
+                      ))}
+                    </div>
+                  )}
+                  {exitDateTeachers.length > 0 && (
+                    <div className="flex flex-wrap items-center gap-1">
+                      <span className="w-14 text-xs text-text-faint">退職日</span>
+                      {exitDateTeachers.map((t) => (
+                        <HrChip
+                          key={t.id}
+                          color="orange"
+                          name={t.name}
+                          detail={t.exit_date!}
+                          onClear={() => handleClearExitDate(t.id)}
+                          clearLabel="退職日を解除"
+                        />
+                      ))}
+                    </div>
+                  )}
+                  {komaChangingTeachers.length > 0 && (
+                    <div className="flex flex-wrap items-center gap-1">
+                      <span className="w-14 text-xs text-text-faint">コマ給</span>
+                      {komaChangingTeachers.map((s) => (
+                        <HrChip
+                          key={s.id}
+                          color="purple"
+                          name={s.teacher?.name ?? '不明'}
+                          detail={komaChangeLabels(s).join('・')}
+                          onClear={() => handleClearKomaChange(s)}
+                          clearLabel="コマ給変更を解除"
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
         )}

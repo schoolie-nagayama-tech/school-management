@@ -11,9 +11,15 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
 export const Input = forwardRef<HTMLInputElement, InputProps>(
   ({ label, error, helpText, className = '', id, ...props }, ref) => {
     const inputId = id || label?.replace(/\s+/g, '-').toLowerCase();
+    // 呼び出し側が w-20 等の幅クラスを渡したらそれを尊重する。
+    // 既定の w-full を付けたままだと、Tailwind の出力順で w-full が後に来て幅指定に勝ってしまい、
+    // 「w-40 を渡したのに横いっぱいに伸びる」（＝flex 内で折り返す）という崩れ方をするため。
+    // min-w-*/max-w-* だけの指定は幅を決めないので、従来どおり w-full を残す。
+    const hasWidthOverride = /(^|\s)w-\S/.test(className);
+    const widthClass = hasWidthOverride ? '' : 'w-full';
 
     return (
-      <div className="w-full">
+      <div className={widthClass}>
         {label && (
           <label htmlFor={inputId} className="block text-sm font-medium text-text-heading mb-1">
             {label}
@@ -24,7 +30,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           ref={ref}
           id={inputId}
           className={`
-            w-full px-3 py-2
+            ${widthClass} px-3 py-2
             border rounded-lg
             bg-surface-raised text-text-body placeholder-text-faint
             transition-colors duration-150

@@ -20,7 +20,8 @@ const variantStyles: Record<BadgeVariant, string> = {
 export function Badge({ children, variant = 'default', className = '' }: BadgeProps) {
   return (
     <span
-      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${variantStyles[variant]} ${className}`}
+      // バッジは短いラベル専用。狭い列に置くと折り返して2〜3行に崩れるため、常に1行に保つ
+      className={`inline-flex items-center whitespace-nowrap px-2.5 py-0.5 rounded-full text-xs font-medium ${variantStyles[variant]} ${className}`}
     >
       {children}
     </span>
