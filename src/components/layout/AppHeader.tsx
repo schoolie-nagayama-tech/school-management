@@ -7,7 +7,15 @@ import { useBulletinUnread } from '@/contexts/BulletinUnreadContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMasterData } from '@/contexts/MasterDataContext';
 import { USER_ROLE_LABELS } from '@/types/database';
-import { Megaphone, ChevronDown, X, LogOut, Settings, LayoutDashboard } from 'lucide-react';
+import {
+  Megaphone,
+  ChevronDown,
+  X,
+  LogOut,
+  Settings,
+  LayoutDashboard,
+  Smartphone,
+} from 'lucide-react';
 import { TierMedal } from '@/components/teacher/TierMedal';
 import { useTeacherBadgeCount } from '@/hooks/useTeacherBadgeCount';
 import { BadgeFlowerField } from '@/components/badges/HiddenFlower';
@@ -19,6 +27,9 @@ import { buildNavEntries, isLinkActive, isGroupActive } from './navConfig';
 import { isSystemAdmin } from '@/lib/utils/roles';
 import { MobileBottomNav } from './MobileBottomNav';
 import { useStandalone } from '@/lib/utils/useStandalone';
+import { useToast } from '@/hooks/useToast';
+import { ToastContainer } from '@/components/ui';
+import { fetchWithAuth } from '@/lib/api/auth';
 
 interface AppHeaderProps {
   title: string;
@@ -133,6 +144,38 @@ export function AppHeader({
     });
   }, []);
 
+  // 保護者ポータルV2 デモの起動状態（多重クリックで複数セッションを発行しないため）
+  const [startingPortalDemo, setStartingPortalDemo] = useState(false);
+  const { toasts, removeToast, error: toastError } = useToast();
+
+  /**
+   * 保護者ポータルV2 のデモセッションを発行して /mypage へ移動する。
+   *
+   * サーバー側（/api/portal-demo/start）が権限・ダミーデータ検証をすべて行う。
+   * ここは入口の導線であって認可の境界ではないので、失敗理由はサーバーの文言を出す。
+   */
+  const handlePortalDemo = useCallback(async () => {
+    if (startingPortalDemo) return;
+    setStartingPortalDemo(true);
+    try {
+      // 素の fetch では 401 になる（実機で確認）。この API は requireSystemAdmin を通るため、
+      // cookie だけに頼らず Authorization ヘッダーを付ける fetchWithAuth を使う
+      // ＝プロジェクトの管理API呼び出しの作法（getApiAuth 側も Bearer を見る）。
+      const res = await fetchWithAuth('/api/portal-demo/start', { method: 'POST' });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toastError(data?.error ?? 'デモの起動に失敗しました');
+        setStartingPortalDemo(false);
+        return;
+      }
+      // 保護者用シェル（別レイアウト・別主体）へ移るので実遷移させる。
+      window.location.href = '/mypage';
+    } catch {
+      toastError('デモの起動に失敗しました');
+      setStartingPortalDemo(false);
+    }
+  }, [startingPortalDemo, toastError]);
+
   // ルート変更時にモバイルメニューを自動で閉じる
   useEffect(() => {
     setShowMobileMenu(false);
@@ -196,6 +239,8 @@ export function AppHeader({
 
   return (
     <>
+      {/* ヘッダー由来の操作（ポータルデモ起動など）の失敗を出すトースト */}
+      <ToastContainer toasts={toasts} onRemove={removeToast} />
       <header className="relative bg-primary shadow-md print:hidden">
         <BadgeFlowerField count={badgeCount ?? 0} placements={HEADER_FLOWERS} />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -398,7 +443,13 @@ export function AppHeader({
                         すべての設定
                       </Link>
                       <div className="border-t border-border my-1" />
-                      {/* 教室長ダッシュボード（admin のみ・試作。通常ナビにはまだ出さず、ここが唯一の入口） */}
+                      {/* 試作・クローズドな機能の入口。
+                          通常ナビ（navConfig）には載せず、ここが唯一の入口。
+                          ★ 一旦すべて admin 限定（ユーザー判断 2026-07-16）。ポータルV2デモは
+                            当初 manager 以上に開いていたが admin のみに絞った。ここを広げる
+                            ときは /api/portal-demo/start の requireSystemAdmin と、デモSQL の
+                            user_schools 付与範囲（2-b）も3点セットで揃えること
+                            （ここは導線であって認可の境界ではない＝APIを緩めないと意味がない）。 */}
                       {isSystemAdmin(profile?.role) && (
                         <>
                           <Link
@@ -409,6 +460,18 @@ export function AppHeader({
                             <LayoutDashboard className="w-3.5 h-3.5" aria-hidden />
                             教室長ダッシュボード（試作）
                           </Link>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setShowSettingsDropdown(false);
+                              handlePortalDemo();
+                            }}
+                            disabled={startingPortalDemo}
+                            className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-text-heading transition-colors hover:bg-gray-50 disabled:opacity-50"
+                          >
+                            <Smartphone className="w-3.5 h-3.5 shrink-0" aria-hidden />
+                            保護者ポータルV2（試作・ダミーデータ）
+                          </button>
                           <div className="border-t border-border my-1" />
                         </>
                       )}

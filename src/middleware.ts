@@ -237,6 +237,12 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/invite/') ||
     pathname.startsWith('/offline') ||
     pathname.startsWith('/api/portal/') ||
+    // 保護者ポータルv2（/mypage）。スタッフ用 Supabase セッションではなく portal_session
+    // で認証するため、スタッフ用のセッション更新をスキップする（認可は /mypage 側の
+    // layout の全体スイッチ・各ページのセッション確認・RLS で行う）。
+    // 注: スタッフ用の /api/admin/portal-invitations はここに含めない（requireAdmin で保護）。
+    pathname.startsWith('/mypage') ||
+    pathname.startsWith('/api/mypage/') ||
     pathname.startsWith('/api/embed/') ||
     pathname.startsWith('/api/seasonal-shift/public') ||
     pathname.startsWith('/api/regular-shift/public') ||

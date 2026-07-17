@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { createServerClient } from '@supabase/ssr';
 import { NextRequest, NextResponse } from 'next/server';
+import { isSystemAdmin } from '@/lib/utils/roles';
 
 /**
  * リクエストから認証情報（userId, role, schoolIds）を取得する。
@@ -142,6 +143,48 @@ export async function requireAdmin(request: NextRequest): Promise<NextResponse |
       })
     );
     const res = NextResponse.json({ error: '管理者権限が必要です' }, { status: 403 });
+    mergeCookiesIntoResponse(cookieResponse, res);
+    return res;
+  }
+  return null;
+}
+
+/**
+ * システム管理者（admin のみ）権限を要求する。
+ *
+ * ★ requireAdmin との違い（間違えると意図より広く開く）:
+ *   requireAdmin は名前に反して **admin と owner の両方**を通す（＝プロジェクトの
+ *   「管理者権限」の既定）。owner（エリアマネージャー）も通してよい API はそちらを使う。
+ *   こちらは admin だけに絞りたい場合に使う。UI 側の isSystemAdmin と同じ境界なので、
+ *   「メニューに出ないのに API は叩ける」というズレが生まれない。
+ *
+ * @returns 権限不足なら NextResponse（401/403）、OKなら null（処理続行）
+ */
+export async function requireSystemAdmin(request: NextRequest): Promise<NextResponse | null> {
+  const { auth, cookieResponse } = await getApiAuth(request);
+  if (!auth) {
+    console.error(
+      JSON.stringify({
+        type: 'AUTH_FAILURE',
+        path: request.nextUrl.pathname,
+        ip: request.headers.get('x-forwarded-for'),
+        timestamp: new Date().toISOString(),
+      })
+    );
+    const res = NextResponse.json({ error: '認証が必要です' }, { status: 401 });
+    mergeCookiesIntoResponse(cookieResponse, res);
+    return res;
+  }
+  if (!isSystemAdmin(auth.role)) {
+    console.error(
+      JSON.stringify({
+        type: 'AUTH_FAILURE',
+        path: request.nextUrl.pathname,
+        ip: request.headers.get('x-forwarded-for'),
+        timestamp: new Date().toISOString(),
+      })
+    );
+    const res = NextResponse.json({ error: 'システム管理者権限が必要です' }, { status: 403 });
     mergeCookiesIntoResponse(cookieResponse, res);
     return res;
   }

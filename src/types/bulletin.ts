@@ -1,3 +1,10 @@
+/** 掲示板の配信範囲（保護者ポータルv2 Stage2）。 */
+export type BulletinTargetScope = 'all' | 'grade' | 'individual';
+
+/** audience に使う値（社内＝スタッフ / 保護者 / 生徒本人）。 */
+export const BULLETIN_AUDIENCES = ['社内', '保護者', '生徒'] as const;
+export type BulletinAudience = (typeof BULLETIN_AUDIENCES)[number];
+
 export interface BulletinLabel {
   id: string;
   school_id: string;
@@ -27,6 +34,15 @@ export interface BulletinPost {
   updated_by: string | null;
   created_at: string;
   updated_at: string;
+  /**
+   * 配信先集合（保護者ポータルv2 Stage2）。既定 ['社内']＝社内連絡（従来動作・保護者に出ない）。
+   * 保護者/生徒に出すには '保護者' / '生徒' を含める。
+   */
+  audience?: string[];
+  /** 配信範囲。'all'=全体 / 'grade'=学年指定 / 'individual'=個別生徒。既定 'all'。 */
+  target_scope?: BulletinTargetScope;
+  /** target_scope='grade' のときの対象学年（students.grade と一致比較）。 */
+  target_grade?: number[] | null;
   // JOIN時
   label?: BulletinLabel | null;
   creator?: { display_name: string | null; email: string } | null;

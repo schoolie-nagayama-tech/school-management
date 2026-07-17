@@ -101,6 +101,12 @@ Supabase互換のJWT（sub = portal_account_id）を署名して発行
 | **案3（採用）** | **RLS（DB集約）** | 自前ログイン + 自前署名JWT で案1のハックを回避しつつRLSを得る |
 
 - 実装時の検証事項: 「自前JWTをSupabaseのJWTシークレットで署名 / Third-Party Auth登録 → RLSが auth.uid() を受理」を最終確認する。
+  - **✅ 2026-07-14 検証済み**（`experiments/portal-auth-poc/`）: 本番プロジェクトは非対称署名鍵（JWT Signing Keys）方式のため、HS256共有シークレットでの自前署名は不受理（`PGRST301`）。
+    代わりに **自前生成したES256鍵をSupabaseにインポート→Rotateで有効化→その鍵で自前ミント**する方式（Supabase公式FAQ記載の手順）で成立を確認した。
+    `auth.uid()` が JWT の `sub` を正しく返すことを実機テスト済み。実装時はこの鍵を安全な環境変数（Vercel env、`NEXT_PUBLIC_`禁止）で管理する。
+  - **✅ 同日追記: ロールは `authenticated` でなく専用の `portal` ロールを使う**。authenticated で発行すると「authenticated＝スタッフ」前提の既存の広いRLSポリシー（subjects 等の全開放）が保護者にも適用されるため。
+    `create role portal nologin noinherit` ＋ `grant portal to authenticator` で PostgREST が成り代われることを本番で実測（pg_role=portal / subjects は403=デフォルト拒否）。
+    `auth` スキーマは portal に usage 付与不可のため、ポータル用ポリシーは `auth.uid()` でなく `public.portal_uid()` を使う。
 - RLSコスト: ポータルが読むテーブル（students / schedule_entries / 報告書等）に、**スタッフ用ポリシーと併存する形でポータル用ポリシー**を追加する必要がある。
 
 ### 認証手段の使い分け

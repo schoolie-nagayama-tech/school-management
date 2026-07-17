@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { AdminLayout } from '@/components/layouts';
-import { Loading } from '@/components/ui';
+import { Loading, ToastContainer } from '@/components/ui';
 import { OrderStatusSection } from '@/components/ordering/OrderStatusSection';
 import { getOrders, updateOrderStatus, deleteOrder } from '@/lib/api/ordering';
 import { useMasterData } from '@/contexts/MasterDataContext';
@@ -47,7 +47,7 @@ export default function OrderHistoryPage() {
   const canEdit = useCanEdit('canEditOrdering');
   const { getSelectedSchoolIds, selectedSchoolId } = useAuth();
   const { schools: masterSchools } = useMasterData();
-  const { success, error: toastError } = useToast();
+  const { toasts, removeToast, success, error: toastError } = useToast();
 
   const [orders, setOrders] = useState<MaterialOrderWithDetails[]>([]);
   const [schoolMap, setSchoolMap] = useState<Record<string, string>>({});
@@ -178,6 +178,7 @@ export default function OrderHistoryPage() {
 
   return (
     <AdminLayout headerTitle="教材発注履歴">
+      <ToastContainer toasts={toasts} onRemove={removeToast} />
       {/* Back link */}
       <div className="flex items-center justify-between mb-6">
         <Link
