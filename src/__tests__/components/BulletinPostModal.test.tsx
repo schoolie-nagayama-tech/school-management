@@ -124,7 +124,7 @@ describe('BulletinPostModal（配信先UI非表示化・AUDIENCE_UI_ENABLED=fals
     expect(screen.queryByPlaceholderText('生徒名で検索')).not.toBeInTheDocument();
   });
 
-  it('新規投稿は audience=[\'社内\'] / target_scope=\'all\' を常に送る', async () => {
+  it("新規投稿は audience=['社内'] / target_scope='all' を常に送る", async () => {
     const user = userEvent.setup();
     render(
       <BulletinPostModal
