@@ -2,7 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { createServerClient } from '@supabase/ssr';
 import { NextRequest, NextResponse } from 'next/server';
-import { isSystemAdmin } from '@/lib/utils/roles';
+import { isSystemAdmin, canEditScores } from '@/lib/utils/roles';
 
 /**
  * リクエストから認証情報（userId, role, schoolIds）を取得する。
@@ -212,6 +212,48 @@ export async function requireManager(request: NextRequest): Promise<NextResponse
   }
   const roleLower = auth.role.toLowerCase();
   if (roleLower !== 'admin' && roleLower !== 'owner' && roleLower !== 'manager') {
+    console.error(
+      JSON.stringify({
+        type: 'AUTH_FAILURE',
+        path: request.nextUrl.pathname,
+        ip: request.headers.get('x-forwarded-for'),
+        timestamp: new Date().toISOString(),
+      })
+    );
+    const res = NextResponse.json({ error: '権限がありません' }, { status: 403 });
+    mergeCookiesIntoResponse(cookieResponse, res);
+    return res;
+  }
+  return null;
+}
+
+/**
+ * 成績編集権限（講師も含む・保護者は不可）を要求する。
+ *
+ * ★ なぜ requireManager を使わないか（保護者ポータルv2 Stage5・§7-5）:
+ *   成績申請の承認/差し戻しは「既存の成績編集と同じ canEditScores 境界」に合わせる設計判断
+ *   （§7-5）。canEditScores は teacher も true にする一方 manager 未満は不可としているため、
+ *   既存の requireManager（manager以上）や requireAdmin（admin/owner）とは境界が異なる。
+ *   判定自体は lib/utils/roles.ts の canEditScores（ROLE_PERMISSIONS 参照）に一本化する。
+ *
+ * @returns 権限不足なら NextResponse（401/403）、OKなら null（処理続行）
+ */
+export async function requireScoreEditor(request: NextRequest): Promise<NextResponse | null> {
+  const { auth, cookieResponse } = await getApiAuth(request);
+  if (!auth) {
+    console.error(
+      JSON.stringify({
+        type: 'AUTH_FAILURE',
+        path: request.nextUrl.pathname,
+        ip: request.headers.get('x-forwarded-for'),
+        timestamp: new Date().toISOString(),
+      })
+    );
+    const res = NextResponse.json({ error: '認証が必要です' }, { status: 401 });
+    mergeCookiesIntoResponse(cookieResponse, res);
+    return res;
+  }
+  if (!canEditScores(auth.role)) {
     console.error(
       JSON.stringify({
         type: 'AUTH_FAILURE',

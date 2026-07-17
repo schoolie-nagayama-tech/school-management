@@ -9,19 +9,9 @@ import type {
   AssessmentScoreInsert,
 } from '@/types/database';
 import { ASSESSMENT_NAME_LABELS } from '@/types/database';
-
-// 共通9科の科目コード
-const COMMON_9_SUBJECTS = [
-  'english',
-  'math',
-  'japanese',
-  'social',
-  'science',
-  'music',
-  'art',
-  'tech_home',
-  'pe',
-] as const;
+// 共通9科の科目コード。保護者ポータルv2 Stage5（成績申請）も同じ集合を使うため
+// src/lib/scores/subjects.ts に切り出し済み（挙動は変えないリファクタ）。
+import { COMMON_9_SUBJECTS } from '@/lib/scores/subjects';
 
 // 5科の科目コード（英数国社理）
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
