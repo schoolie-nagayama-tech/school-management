@@ -16,8 +16,11 @@ export const dynamic = 'force-dynamic';
  *   そもそもタブに出ない。成績本体（承認済み成績＋自分の申請）は GradesView から
  *   API 経由で取得する。
  *
- * ★ ダッシュボード・/mypage メニューへの導線はまだ足さない（サーバー担当のAPIと結合し、
- *   動作確認してから追加する。§実装指示）。このページに直接来れば動く。
+ * ★ ダッシュボードには最小の導線（静かなリンク行）だけ足してある
+ *   （src/components/mypage/DashboardView.tsx の GradesLink）。カード化（DashCard）は
+ *   まだしていない。ダッシュボードは直前に大幅簡素化したばかりで、成績のためにまた
+ *   カードを1枚増やすと方針に逆行するため、デモで実際の使われ方を見てから判断する
+ *   （保留・意図的）。/mypage メニュー等への追加導線も同様に未着手。
  */
 export default async function GradesPage() {
   const ctx = await getPortalContext();

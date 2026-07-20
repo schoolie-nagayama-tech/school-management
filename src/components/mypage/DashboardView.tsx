@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import {
+  BarChart3,
   Bell,
   CalendarDays,
   ChevronRight,
@@ -104,6 +105,7 @@ export function DashboardView({
           <ScheduleCard child={active} />
           <ReportsCard child={active} />
           <AppliesCard child={active} />
+          <GradesLink />
         </div>
       )}
     </div>
@@ -443,5 +445,28 @@ function AppliesCard({ child }: { child: DashboardChild }) {
         </div>
       )}
     </DashCard>
+  );
+}
+
+// ============================================================
+// 5) 成績への導線（静かなリンク行）
+// ============================================================
+//   ★ カード化（DashCard）しない理由: このダッシュボードは直前に大幅簡素化した
+//     ばかり（feature/dashboard-simplify）で、成績のためにまたカードを1枚増やすと
+//     「情報量を削ってメリハリを付ける」という方針に逆行する。まずはデモで
+//     実際の使われ方・見せ方を確認してから、カード化するかどうかを判断する
+//     （保留・意図的な最小導線）。見た目は他カードのフッターリンクと同じトーンに揃える。
+function GradesLink() {
+  return (
+    <Link
+      href="/mypage/grades"
+      className="flex items-center justify-between rounded-xl border border-border-subtle bg-surface-raised px-3.5 py-3 text-[12.5px] font-semibold text-ink transition-colors hover:bg-surface-hover"
+    >
+      <span className="flex items-center gap-1.5">
+        <BarChart3 className="h-3.5 w-3.5 text-text-muted" />
+        成績（テスト・通知表）
+      </span>
+      <ChevronRight className="h-[15px] w-[15px]" />
+    </Link>
   );
 }
