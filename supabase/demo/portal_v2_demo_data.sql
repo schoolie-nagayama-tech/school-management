@@ -28,13 +28,20 @@
 --   psql "<接続文字列>" -f supabase/demo/portal_v2_demo_data.sql
 --   前提: portal v2 のマイグレーション4本
 --         （20260714000000 / 20260714010000 / 20260714020000 / 20260715000000）
---         と 20260716000000_schools_meeting_booking_url
---         が適用済みであること。未適用だと audience 列や portal_* テーブル、
---         schools.meeting_booking_url が無く失敗する。
+--         と 20260716000000_schools_meeting_booking_url、
+--         20260717000000_portal_v2_scores（§14 成績で使う portal_score_submissions／
+--         portal_assessments）が適用済みであること。未適用だと audience 列や portal_* テーブル、
+--         schools.meeting_booking_url、成績の中間テーブルが無く失敗する。
 --
 -- ■ 削除方法（デモを撤去するとき）
 --   デモ教室に全てがぶら下がっているので、以下で消える（実データには触れない）:
 --     delete from public.portal_accounts        where id = 'd0000000-0000-4000-8000-000000000031';
+--     ★ students を消す前に、必ず成績（§14）を消すこと。assessments.student_id の FK は
+--       ON DELETE RESTRICT なので、成績デモデータ投入後に students を先に消そうとすると
+--       失敗する。student_id ではなく school_id で絞るのは、デモ中に実際に承認操作をすると
+--       assessments にランダムUUIDの行が増えるため、それも一緒に拾って消すため。
+--     delete from public.portal_score_submissions where school_id = 'd0000000-0000-4000-8000-000000000001';
+--     delete from public.assessments              where school_id = 'd0000000-0000-4000-8000-000000000001';
 --     delete from public.students               where school_id = 'd0000000-0000-4000-8000-000000000001';
 --     delete from public.bulletin_posts         where school_id = 'd0000000-0000-4000-8000-000000000001';
 --     delete from public.form_periods           where school_id = 'd0000000-0000-4000-8000-000000000001';
@@ -892,6 +899,151 @@ on conflict (id) do update
       is_active = true,
       is_archived = false;
 
+
+-- ============================================================================
+-- 14) 成績（assessments / assessment_scores / portal_score_submissions）
+-- ============================================================================
+--   正典: docs/portal-v2-requirements.md §7-5「デモ・検証」。
+--   要件どおり「承認待ち1件・差し戻し1件・承認済み数件」が揃う状態を再現する。
+--
+--   ★ delete → 再生成にする理由（§8 schedule_entries と同じ考え方）:
+--     デモで教室長が実際に「承認待ち」を承認すると、承認API
+--     （src/app/api/admin/score-submissions/[id]/approve 相当）が assessments に
+--     ランダムUUIDの行を作る。この delete は student_id 単位で行うため、承認によって
+--     増えたその行も含めて毎回消え、再実行すればデモは必ず初期状態
+--     （承認待ちが1件だけある状態）に戻る。
+--   ★ assessment_scores は assessments への ON DELETE CASCADE で自動的に消えるので、
+--     ここで個別に delete しなくてよい。
+-- ----------------------------------------------------------------------------
+delete from public.portal_score_submissions
+where student_id in (
+  'd0000000-0000-4000-8000-000000000021',
+  'd0000000-0000-4000-8000-000000000022'
+);
+
+delete from public.assessments
+where student_id in (
+  'd0000000-0000-4000-8000-000000000021',
+  'd0000000-0000-4000-8000-000000000022'
+);
+
+-- ----------------------------------------------------------------------------
+-- 14-a) assessments + assessment_scores（承認済みとして既に確定している成績本体）
+-- ----------------------------------------------------------------------------
+--   ★ title を ASSESSMENT_NAME_LABELS[nameCode] と完全一致させる理由:
+--     成績申請の承認API は `title = ASSESSMENT_NAME_LABELS[nameCode] || nameCode` で
+--     assessments.title を書く（src/lib/api/assessments.ts と同じ定数）。デモの
+--     title がこことズレると、「デモ内で実際に承認して生まれる本物の行」と
+--     「最初から入れてあるデモ行」で見た目（title文字列）が変わってしまう。
+--     よってここでも同じラベルをそのまま書き写す:
+--       term1_mid → '1学期中間' ／ venue → '会場模試' ／ term1 → '1学期'
+--     （src/types/database.ts の ASSESSMENT_NAME_LABELS を参照して確認済み）。
+--   ★ delete 直後なので固定UUIDでも on conflict は不要（衝突しない）。
+-- ----------------------------------------------------------------------------
+insert into public.assessments (id, school_id, student_id, category, title, exam_date, grade, exam_month, name_code)
+values
+  -- d1: 太郎・定期テスト（1学期中間）。承認済み申請 e1 の転記先。
+  ('d0000000-0000-4000-8000-0000000000d1', 'd0000000-0000-4000-8000-000000000001',
+   'd0000000-0000-4000-8000-000000000021', 'regular_test', '1学期中間',
+   date_trunc('month', current_date - interval '2 months')::date, 8,
+   date_trunc('month', current_date - interval '2 months')::date, 'term1_mid'),
+  -- d2: 太郎・模試（会場模試）。★ スタッフが直接入れた行（保護者申請を経由しない）。
+  --   保護者入力の対象は定期・内申だけだが、閲覧ビュー portal_assessments は模試も
+  --   見せる設計（§7-5）なので、その見え方をデモで確認できるように置く。
+  ('d0000000-0000-4000-8000-0000000000d2', 'd0000000-0000-4000-8000-000000000001',
+   'd0000000-0000-4000-8000-000000000021', 'mock', '会場模試',
+   date_trunc('month', current_date - interval '1 month')::date + 6, 8,
+   date_trunc('month', current_date - interval '1 month')::date, 'venue'),
+  -- d3: 太郎・内申（1学期）。承認済み申請 e3 の転記先。内申は月を持たない運用なので
+  --   exam_month は null（§7-5 の既存運用）。
+  ('d0000000-0000-4000-8000-0000000000d3', 'd0000000-0000-4000-8000-000000000001',
+   'd0000000-0000-4000-8000-000000000021', 'report_card', '1学期', null, 8, null, 'term1'),
+  -- d4: 花子・内申（1学期）。★ スタッフが直接入れた行（保護者申請を経由しない）。
+  ('d0000000-0000-4000-8000-0000000000d4', 'd0000000-0000-4000-8000-000000000001',
+   'd0000000-0000-4000-8000-000000000022', 'report_card', '1学期', null, 6, null, 'term1');
+
+-- 科目コードは COMMON_9_SUBJECTS（src/lib/scores/subjects.ts）のキーで統一する
+-- （スタッフ画面・承認転記処理が読むキーと同じにする必要があるため）。
+insert into public.assessment_scores (assessment_id, subject, value)
+values
+  -- d1: 定期テスト（0〜100点）。
+  ('d0000000-0000-4000-8000-0000000000d1', 'english', 72),
+  ('d0000000-0000-4000-8000-0000000000d1', 'math', 81),
+  ('d0000000-0000-4000-8000-0000000000d1', 'japanese', 65),
+  ('d0000000-0000-4000-8000-0000000000d1', 'social', 70),
+  ('d0000000-0000-4000-8000-0000000000d1', 'science', 74),
+  -- d2: 模試（5科偏差値の枠だが、デモでは主要3科のみ入力＝一部欠損の見え方も確認できる）。
+  ('d0000000-0000-4000-8000-0000000000d2', 'english', 58),
+  ('d0000000-0000-4000-8000-0000000000d2', 'math', 62),
+  ('d0000000-0000-4000-8000-0000000000d2', 'japanese', 55),
+  -- d3: 内申（1〜5の5段階、中学は9科）。
+  ('d0000000-0000-4000-8000-0000000000d3', 'english', 4),
+  ('d0000000-0000-4000-8000-0000000000d3', 'math', 4),
+  ('d0000000-0000-4000-8000-0000000000d3', 'japanese', 3),
+  ('d0000000-0000-4000-8000-0000000000d3', 'social', 3),
+  ('d0000000-0000-4000-8000-0000000000d3', 'science', 4),
+  ('d0000000-0000-4000-8000-0000000000d3', 'music', 3),
+  ('d0000000-0000-4000-8000-0000000000d3', 'art', 3),
+  ('d0000000-0000-4000-8000-0000000000d3', 'tech_home', 4),
+  ('d0000000-0000-4000-8000-0000000000d3', 'pe', 3),
+  -- d4: 内申（小学は実質3段階なので3以下。英語・技家は小学に無いので入れない）。
+  ('d0000000-0000-4000-8000-0000000000d4', 'japanese', 3),
+  ('d0000000-0000-4000-8000-0000000000d4', 'math', 3),
+  ('d0000000-0000-4000-8000-0000000000d4', 'science', 2),
+  ('d0000000-0000-4000-8000-0000000000d4', 'social', 3),
+  ('d0000000-0000-4000-8000-0000000000d4', 'music', 3),
+  ('d0000000-0000-4000-8000-0000000000d4', 'art', 3),
+  ('d0000000-0000-4000-8000-0000000000d4', 'pe', 3);
+
+-- ----------------------------------------------------------------------------
+-- 14-b) portal_score_submissions（保護者からの成績申請）
+-- ----------------------------------------------------------------------------
+--   §7-5「デモ・検証」の要件どおり、承認待ち1件・差し戻し1件・承認済み2件を揃える。
+--   account_id はデモ保護者（§4）固定・school_id はデモ校固定。
+--
+--   ★ 制約に注意（20260717000000_portal_v2_scores.sql）:
+--     - status='rejected' には rejected_reason が必須（CHECK）。
+--     - exam_month は月初日のみ許される（CHECK）。
+--     - status='submitted' は同一枠（student_id, category, grade, name_code, exam_month）
+--       が unique（部分索引）。submitted は e2 の1件だけなので衝突しない。
+-- ----------------------------------------------------------------------------
+insert into public.portal_score_submissions (
+  id, school_id, student_id, account_id, category, grade, name_code, exam_month,
+  scores, status, rejected_reason, reviewed_by, reviewed_at, assessment_id, created_at
+)
+values
+  -- e1: 太郎・承認済み。d1 への転記が完了した状態（assessment_id が監査リンクになる）。
+  ('d0000000-0000-4000-8000-0000000000e1', 'd0000000-0000-4000-8000-000000000001',
+   'd0000000-0000-4000-8000-000000000021', 'd0000000-0000-4000-8000-000000000031',
+   'regular_test', 8, 'term1_mid', date_trunc('month', current_date - interval '2 months')::date,
+   jsonb_build_object('english', 72, 'math', 81, 'japanese', 65, 'social', 70, 'science', 74),
+   'approved', null, 'd0000000-0000-4000-8000-000000000011', now() - interval '8 days',
+   'd0000000-0000-4000-8000-0000000000d1', now() - interval '9 days'),
+  -- e2: 太郎・★承認待ち（デモの「承認待ち1件」。教室長が承認フローを体験する行）。
+  ('d0000000-0000-4000-8000-0000000000e2', 'd0000000-0000-4000-8000-000000000001',
+   'd0000000-0000-4000-8000-000000000021', 'd0000000-0000-4000-8000-000000000031',
+   'regular_test', 8, 'term1_final', date_trunc('month', current_date)::date,
+   jsonb_build_object('english', 78, 'math', 85, 'japanese', 70, 'social', 74, 'science', 80),
+   'submitted', null, null, null, null, now() - interval '1 day'),
+  -- e3: 太郎・承認済み（内申）。d3 への転記が完了した状態。
+  ('d0000000-0000-4000-8000-0000000000e3', 'd0000000-0000-4000-8000-000000000001',
+   'd0000000-0000-4000-8000-000000000021', 'd0000000-0000-4000-8000-000000000031',
+   'report_card', 8, 'term1', null,
+   jsonb_build_object('english', 4, 'math', 4, 'japanese', 3, 'social', 3, 'science', 4,
+                       'music', 3, 'art', 3, 'tech_home', 4, 'pe', 3),
+   'approved', null, 'd0000000-0000-4000-8000-000000000011', now() - interval '5 days',
+   'd0000000-0000-4000-8000-0000000000d3', now() - interval '6 days'),
+  -- e4: 花子・★差し戻し（デモの「差し戻し1件」。理由が保護者に表示されることを見せる）。
+  --   grade=5 はわざと間違えた学年（花子は実際は小6）。差し戻し理由もその指摘にしてある。
+  ('d0000000-0000-4000-8000-0000000000e4', 'd0000000-0000-4000-8000-000000000001',
+   'd0000000-0000-4000-8000-000000000022', 'd0000000-0000-4000-8000-000000000031',
+   'report_card', 5, 'term1', null,
+   jsonb_build_object('japanese', 3, 'math', 3),
+   'rejected',
+   '学年が「小5」で登録されていました。小6の通知表でしたら、学年を「小6」に直してもう一度お送りください。',
+   'd0000000-0000-4000-8000-000000000012', now() - interval '2 days', null, now() - interval '3 days');
+
+
 commit;
 
 -- ============================================================================
@@ -903,4 +1055,6 @@ commit;
 --   union all select 'class_reports',    count(*) from public.class_reports              where school_id = 'd0000000-0000-4000-8000-000000000001'
 --   union all select 'bulletin_posts',   count(*) from public.bulletin_posts             where school_id = 'd0000000-0000-4000-8000-000000000001'
 --   union all select 'chat_messages',    count(*) from public.chat_messages              where thread_id in ('d0000000-0000-4000-8000-000000000061','d0000000-0000-4000-8000-000000000062')
---   union all select 'form_periods',     count(*) from public.form_periods               where school_id = 'd0000000-0000-4000-8000-000000000001';
+--   union all select 'form_periods',     count(*) from public.form_periods               where school_id = 'd0000000-0000-4000-8000-000000000001'
+--   union all select 'assessments',      count(*) from public.assessments                where school_id = 'd0000000-0000-4000-8000-000000000001'
+--   union all select 'portal_score_submissions', count(*) from public.portal_score_submissions where school_id = 'd0000000-0000-4000-8000-000000000001';

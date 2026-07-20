@@ -28,9 +28,9 @@ export function LogoutButton() {
       type="button"
       onClick={handleLogout}
       disabled={busy}
-      className="inline-flex items-center gap-1 text-sm text-text-muted transition-colors hover:text-text-heading disabled:opacity-50"
+      className="inline-flex items-center gap-1 text-xs text-text-muted transition-colors hover:text-text-heading disabled:opacity-50"
     >
-      <LogOut className="h-4 w-4" />
+      <LogOut className="h-3.5 w-3.5" />
       ログアウト
     </button>
   );
