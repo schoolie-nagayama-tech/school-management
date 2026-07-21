@@ -341,7 +341,7 @@ export function ScoreTable({
                   colSpan={canEdit ? 11 : 10}
                   className="px-4 py-8 text-center text-[var(--paragraph)]"
                 >
-                  データがありません。上の「テストを追加」から登録してください。
+                  データがありません。上の「行を追加」から登録してください。
                 </td>
               </tr>
             ) : (
@@ -479,7 +479,7 @@ export function ScoreTable({
           {assessments.length === 0 ? (
             <tr>
               <td colSpan={totalColSpan} className="px-4 py-8 text-center text-[var(--paragraph)]">
-                データがありません。上の「テストを追加」から登録してください。
+                データがありません。上の「行を追加」から登録してください。
               </td>
             </tr>
           ) : (
