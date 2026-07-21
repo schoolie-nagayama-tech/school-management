@@ -9,6 +9,7 @@ import type {
   AssessmentScoreInsert,
 } from '@/types/database';
 import { ASSESSMENT_NAME_LABELS } from '@/types/database';
+import { compareAssessmentsChronological } from '@/lib/utils/scoreListTransform';
 // 共通9科の科目コード。保護者ポータルv2 Stage5（成績申請）も同じ集合を使うため
 // src/lib/scores/subjects.ts に切り出し済み（挙動は変えないリファクタ）。
 import { COMMON_9_SUBJECTS } from '@/lib/scores/subjects';
@@ -147,6 +148,11 @@ export async function listAssessments(
     ...assessment,
     scores: scoresTyped.filter((score) => score.assessment_id === assessment.id),
   }));
+
+  // 表示は新しい順（1学期 → 2学期中間・期末 → 学年末 の逆）。
+  // DB の name_code 昇順はアルファベット順で、term2_final < term2_mid（期末が中間より前）に
+  // なってしまい時系列にならないため、共有コンパレータで時系列に並べてから反転する。
+  assessmentsWithScores.sort((a, b) => compareAssessmentsChronological(b, a));
 
   return assessmentsWithScores;
 }
