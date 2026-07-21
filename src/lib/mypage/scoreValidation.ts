@@ -10,7 +10,7 @@
  * ★ COMMON_9_SUBJECTS は src/lib/scores/subjects.ts から import する（assessments.ts と共有）。
  */
 import { COMMON_9_SUBJECTS, isCommonSubjectCode } from '@/lib/scores/subjects';
-import { ASSESSMENT_NAME_OPTIONS } from '@/types/database';
+import { ASSESSMENT_NAME_OPTIONS, SUBJECT_LABELS } from '@/types/database';
 import type { ScoreMap, SubmittableScoreCategory } from '@/types/portal-scores';
 
 export type ValidationResult<T> = { ok: true; value: T } | { ok: false; error: string };
@@ -65,13 +65,17 @@ export function validateScores(
     if (!isCommonSubjectCode(subject)) {
       return { ok: false, error: `未知の科目です: ${subject}` };
     }
+    // ★ エラー文言は保護者のモーダルにそのまま表示される（ScoreSubmitModal は
+    //   サーバー文言を直出しする設計）。生の科目コード（english 等）を見せないよう
+    //   必ず日本語ラベルで組み立てる。
+    const subjectLabel = SUBJECT_LABELS[subject] ?? subject;
     if (typeof raw !== 'number' || !Number.isFinite(raw) || !Number.isInteger(raw)) {
-      return { ok: false, error: `${subject} の点数は整数で入力してください` };
+      return { ok: false, error: `${subjectLabel}の点数は整数で入力してください` };
     }
     if (raw < min || raw > max) {
       return {
         ok: false,
-        error: `${subject} の点数は${min}〜${max}の範囲で入力してください`,
+        error: `${subjectLabel}の点数は${min}〜${max}の範囲で入力してください`,
       };
     }
     value[subject] = raw;
