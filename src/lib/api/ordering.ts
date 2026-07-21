@@ -414,7 +414,9 @@ export async function getProposalOrderCandidates(
  * 発注候補から material_orders を「未確認(unconfirmed)」で作成する（通常の発注手順に乗せる）。
  * 発注ページと同じく、対応する material が無ければ materialName(ラベル)で material を作成してから登録する
  * （提案書のテキストはすべて発注リストに積める）。
- * ここでは発注済みにはせず、所持教材へも反映しない。発注画面で未確認→発注→発送→配布と進める運用。
+ * 重要: 所持(is_owned)が立つのは「発注リストに積んだ時点」ではなく「実際に発注(ordered)した時点」
+ * （updateOrderStatus 内の markMaterialOwned 呼び出し）。ここでは unconfirmed のまま積むだけなので、
+ * まだ所持にはならない。発注画面で未確認→発注→発送→配布と進める運用。
  * schoolId と materialName が必須。失敗は件数で返す。
  */
 export async function createOrdersForCandidates(
@@ -449,8 +451,8 @@ export async function createOrdersForCandidates(
         }
       }
 
-      // 未確認のまま発注リストに積む（発注済みにはしない／所持教材にも入れない）。
-      // 以降は通常の発注手順（未確認→発注→発送→配布）で進める。
+      // 未確認のまま発注リストに積む（＝まだ「発注(ordered)」していないので所持教材にも入れない）。
+      // 以降は通常の発注手順（未確認→発注→発送→配布）で進める。「発注」した時点で所持になる。
       await createOrder(
         {
           material_id: materialId,
@@ -674,21 +676,14 @@ export async function updateOrderStatus(id: string, status: OrderStatus): Promis
     console.error('在庫トランザクションの自動作成に失敗しました:', stockError);
   }
 
-  // 発注時: 所持教材に自動登録（見本発注はスキップ）
-  if (status === 'ordered' && existingOrder.student_id) {
-    try {
-      await registerStudentTextbook(
-        existingOrder.material_id,
-        existingOrder.student_id,
-        existingOrder.school_id
-      );
-    } catch (err) {
-      console.error('発注時の所持教材登録に失敗しました:', err);
-    }
-  }
-
-  // 配布時: 所持教材に「所持(is_owned=true)」として登録（配布したら所持済み）
-  if (status === 'distributed' && existingOrder.student_id) {
+  // 所持判定基準: 配布時点 → 発注時点に変更（発注した時点で「入手予定が確定した」とみなす）。
+  // ordered/delivered/distributed のいずれかに遷移したら所持(is_owned=true)を立てる。
+  // markMaterialOwned は冪等なので、unconfirmed から delivered/distributed へ直接遷移した
+  // ケース（ordered を経由しなかった場合）の取りこぼしも、ここで毎回呼ぶことで防ぐ。
+  if (
+    (status === 'ordered' || status === 'delivered' || status === 'distributed') &&
+    existingOrder.student_id
+  ) {
     try {
       await markMaterialOwned(
         existingOrder.material_id,
@@ -696,7 +691,21 @@ export async function updateOrderStatus(id: string, status: OrderStatus): Promis
         existingOrder.school_id
       );
     } catch (err) {
-      console.error('配布時の所持登録に失敗しました:', err);
+      console.error('所持登録に失敗しました:', err);
+    }
+  }
+
+  // キャンセル時: 所持の取り消し。発注時点で所持化する仕様のため、キャンセルで取り消さないと
+  // 「発注はキャンセルされたのに所持扱いのまま」という偽所持が残ってしまう。
+  if (status === 'cancelled' && existingOrder.student_id) {
+    try {
+      await revokeMaterialOwnership(
+        existingOrder.material_id,
+        existingOrder.student_id,
+        existingOrder.school_id
+      );
+    } catch (err) {
+      console.error('キャンセル時の所持取り消しに失敗しました:', err);
     }
   }
 
@@ -848,8 +857,11 @@ async function resolveTextbookIdForMaterial(
 }
 
 /**
- * 発注した教材を「所持(is_owned=true)」として student_textbooks に登録する（配布時に呼ぶ）。
+ * 発注した教材を「所持(is_owned=true)」として student_textbooks に登録する。
+ * 所持の判定基準は「配布時点」ではなく「発注時点」（ordered/delivered/distributed への
+ * 遷移時に呼ぶ）。発注した時点で入手が確定するとみなし、その時点で所持扱いにする。
  * 対応テキストを解決し、st があれば is_owned=true に更新、無ければ作成する（track_progress は触らない）。
+ * 冪等（何度呼んでも同じ結果）なので、複数のステータス遷移から安全に呼べる。
  * 解決できない場合は静かにスキップ（フリーテキスト教材名など）。
  */
 async function markMaterialOwned(
@@ -901,9 +913,56 @@ async function markMaterialOwned(
 }
 
 /**
+ * 発注キャンセル時に所持(is_owned)を取り消す。
+ * 発注時点で所持化する仕様に変えたため、キャンセルで所持を取り消さないと「発注は無くなったのに
+ * 所持扱いのまま」という偽所持が student_textbooks に残ってしまう。そのための対になる処理。
+ * - 同じ生徒×教材で他に未キャンセルの発注が残っていれば何もしない（その発注で所持は継続する）。
+ * - track_progress=true（進行表で管理中）の行は is_owned だけ false に戻す（進行表の行自体は残す）。
+ * - track_progress=false の行は削除する（所持でも進行表管理でもない「宙ぶらりん」行を残さないため）。
+ *   手動追加した所持を誤って消してしまうリスクはあるが、所持済み教材はそもそも発注候補から除外され
+ *   通常は同じ教材を重ねて発注しない（= キャンセルされる発注の相手は基本的に発注由来の所持）ため、
+ *   実運用上のリスクは低いと判断した。
+ */
+async function revokeMaterialOwnership(
+  materialId: string,
+  studentId: string,
+  _fallbackSchoolId: string
+): Promise<void> {
+  const textbookId = await resolveTextbookIdForMaterial(materialId);
+  if (textbookId == null) return;
+
+  // 同一生徒×教材で他に未キャンセルの発注が残っていれば、所持は取り消さない
+  const { data: otherOrders } = await supabase
+    .from('material_orders')
+    .select('id')
+    .eq('student_id', studentId)
+    .eq('material_id', materialId)
+    .neq('status', 'cancelled')
+    .limit(1);
+  if (otherOrders && otherOrders.length > 0) return;
+
+  const { data: existing } = await supabase
+    .from('student_textbooks')
+    .select('id, track_progress')
+    .eq('student_id', studentId)
+    .eq('textbook_id', textbookId)
+    .maybeSingle();
+  if (!existing) return;
+
+  const row = existing as { id: string; track_progress: boolean };
+  if (row.track_progress) {
+    // 進行表で管理中の行は削除せず、所持フラグだけ戻す
+    await supabase.from('student_textbooks').update({ is_owned: false }).eq('id', row.id);
+  } else {
+    // 所持目的だけで存在していた行は削除する（未分類の宙ぶらりん行を残さない）
+    await supabase.from('student_textbooks').delete().eq('id', row.id);
+  }
+}
+
+/**
  * 発注由来の教材を「進行表で管理」ON/OFF する。
  * 発注(material)に対応するテキストを解決して student_textbooks の track_progress を切り替える
- * （発注由来は registerStudentTextbook の名前不一致で st が無いことが多いため、ここで作成/更新する）。
+ * （発注由来は名前不一致で st が無いことが多いため、ここで作成/更新する）。
  * テキスト解決: textbooks.material_id 優先、無ければ material 名のラベル(名前 | [出版社 |] 学年 | 科目)を
  * 分解して name/grade/subject で照合する。
  */
@@ -1011,64 +1070,6 @@ export async function deleteDistributedMaterial(orderId: string, studentId: stri
       if (stb) {
         await supabase.from('student_textbooks').delete().eq('id', stb.id);
       }
-    }
-  }
-}
-
-/**
- * 発注時: 所持教材に自動登録
- * textbooks テーブルに同名の教材があれば student_textbooks に追加（track_progress=false）
- *
- * 注意: 引数の schoolId は「発注（在庫/請求）の教室」であり、生徒の所属校とは限らない
- * （他校の生徒に発注する場合や、操作中の選択校が先頭校に倒れる場合がある）。
- * 所持教材(student_textbooks)は RLS の可視性が school_id に依存し、講師は user_schools の
- * 自校しか見られないため、必ず「生徒の所属校」を school_id に入れる。発注校を入れると
- * 別校の student_textbook ができ、その生徒の担当講師から所持教材が見えなくなる。
- */
-async function registerStudentTextbook(
-  materialId: string,
-  studentId: string,
-  schoolId: string
-): Promise<void> {
-  const { data: material } = await supabase
-    .from('materials')
-    .select('name')
-    .eq('id', materialId)
-    .single();
-
-  if (!material) return;
-
-  const { data: textbook } = await supabase
-    .from('textbooks')
-    .select('id')
-    .eq('name', material.name)
-    .maybeSingle();
-
-  if (textbook) {
-    const { data: existingSt } = await supabase
-      .from('student_textbooks')
-      .select('id')
-      .eq('student_id', studentId)
-      .eq('textbook_id', textbook.id)
-      .maybeSingle();
-
-    if (!existingSt) {
-      // 生徒の所属校を引いて student_textbooks の school_id に使う（発注校 schoolId は使わない）。
-      // 取得できない場合のみ発注校をフォールバックにする。
-      const { data: student } = await supabase
-        .from('students')
-        .select('school_id')
-        .eq('id', studentId)
-        .maybeSingle();
-      const stSchoolId = (student as { school_id: string } | null)?.school_id ?? schoolId;
-
-      await supabase.from('student_textbooks').insert({
-        school_id: stSchoolId,
-        student_id: studentId,
-        textbook_id: textbook.id,
-        is_active: true,
-        track_progress: false,
-      });
     }
   }
 }

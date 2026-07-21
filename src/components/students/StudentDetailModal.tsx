@@ -283,8 +283,10 @@ export function StudentDetailModal({
 
   // 発注中の教材を「配布済み」にする。従来は教材発注画面からしか変更できず不便だったため、
   // 生徒詳細からも（講師含む全ロールで）操作できるようにした。
-  // updateOrderStatus が material_orders.status=distributed・所持(is_owned)付与・在庫出庫・
-  // 請求連携までまとめて行う（在庫/請求は権限が無ければ内部で握りつぶされ、配布自体は成立する）。
+  // 所持(is_owned)は発注時点で既に付いているため、ここでの主な役割は在庫出庫・請求連携
+  // （updateOrderStatus が material_orders.status=distributed・在庫出庫・請求連携までまとめて行う。
+  // markMaterialOwned は冪等な安全網として再度呼ばれるだけ）。
+  // 在庫/請求は権限が無ければ内部で握りつぶされ、配布自体は成立する。
   const handleMarkDistributed = async (dm: DistributedMaterial) => {
     if (!student) return;
     const ok = await confirm({
@@ -557,7 +559,7 @@ export function StudentDetailModal({
               )}
 
               <p className="text-[11px] text-[#6b7280] mb-2">
-                物理的に所持している教材です（配布・手動追加で入る）。「所持」ON
+                所持している・届く予定の教材です（発注・手動追加で入る）。「所持」ON
                 のものは発注候補から除外されます。「進行表で管理」は別軸で、ONにすると進行表に進捗欄が出ます。
               </p>
               {isLoading ? (
@@ -568,11 +570,11 @@ export function StudentDetailModal({
                 <div className="space-y-1.5">{ownedTextbooks.map(renderTextbookRow)}</div>
               )}
 
-              {/* 発注中（発注済・発送済。配布すると所持教材に入る） */}
+              {/* 発注中（未配布。発注時点で既に上の「所持教材」にも載っている） */}
               {!isLoading && distributedMaterials.length > 0 && (
                 <div className="mt-3">
                   <p className="text-[11px] text-[#6b7280] mb-1.5">
-                    発注中（配布すると所持教材に入ります）
+                    発注中（未配布・発注時点で所持教材に載っています。配布済みにすると在庫と請求に反映されます）
                   </p>
                   <div className="space-y-1">
                     {distributedMaterials.map((dm) => (
@@ -590,13 +592,14 @@ export function StudentDetailModal({
                           <span className="text-[10px] text-[#4b5563] bg-gray-100 px-1.5 py-0.5 rounded">
                             {ORDER_STATUS_LABEL[dm.status] ?? '発注'}
                           </span>
-                          {/* 配布済みにする（全ロール可）。押すと所持教材に移動する */}
+                          {/* 配布済みにする（全ロール可）。所持は発注時点で既に付いているので、
+                              押すと在庫の出庫・請求連携（単語練習帳の自動記入など）が動く */}
                           <button
                             type="button"
                             onClick={() => handleMarkDistributed(dm)}
                             disabled={distributingOrderId === dm.orderId}
                             className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-medium text-white bg-[#1e3a5f] rounded hover:bg-[#16304d] disabled:opacity-50 transition-[background-color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97]"
-                            title="配布済みにする（所持教材に移動）"
+                            title="配布済みにする（在庫・請求に反映）"
                           >
                             <PackageCheck className="w-3 h-3" />
                             {distributingOrderId === dm.orderId ? '処理中…' : '配布済みにする'}
