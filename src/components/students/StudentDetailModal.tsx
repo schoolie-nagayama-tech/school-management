@@ -412,7 +412,8 @@ export function StudentDetailModal({
       !(tb as { track_progress?: boolean }).track_progress
   );
 
-  // 発注中（発注済・発送済。まだ未所持＝配布で is_owned=true になる）
+  // 発注中の表示ラベル。発注時点で is_owned=true になる仕様なので、これらは既に上の
+  // 「所持教材」にも載っている。配布済みにすると在庫出庫・請求連携が動く（所持の移動ではない）。
   const ORDER_STATUS_LABEL: Record<string, string> = {
     ordered: '発注済',
     delivered: '発送済',
