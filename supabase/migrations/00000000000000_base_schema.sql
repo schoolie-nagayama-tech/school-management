@@ -2146,6 +2146,7 @@ CREATE TABLE IF NOT EXISTS "public"."student_textbooks" (
     "sort_order" integer DEFAULT 0,
     "is_draft" boolean DEFAULT false NOT NULL,
     "track_progress" boolean DEFAULT false NOT NULL,
+    "is_owned" boolean DEFAULT false NOT NULL,
     CONSTRAINT "student_textbooks_season_check" CHECK ((("season" IS NULL) OR (("season")::"text" = ANY ((ARRAY['spring'::character varying, 'summer'::character varying, 'winter'::character varying])::"text"[]))))
 );
 
