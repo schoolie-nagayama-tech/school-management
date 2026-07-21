@@ -1,12 +1,12 @@
 /**
  * scoreListTransform（成績一覧のデータ変換）のユニットテスト
  *
- * transformToScoreList は assessments を生徒ごと・時系列順に並べ、
+ * transformToScoreList は assessments を生徒ごとに新しい順（表示順）に並べ、
  * 5科/9科合計・前回比(diff)・換算内申・偏差値を計算する純粋関数。
  * 「間違うと成績表示が狂う」中核ロジックなので、
  *   - 合計の計算（null科目を0扱いしない）
  *   - 前回比（一つ前の行との差分）
- *   - 時系列の並び順
+ *   - 並び順（表示は新しい順・diff は時系列で計算）
  *   - カテゴリ別の挙動（内申=9科+換算内申 / 模試=偏差値）
  *   - 生徒の並び順（学年→かな）
  * を検証する。
@@ -67,10 +67,10 @@ const FIVE = (
 ];
 
 describe('transformToScoreList - 定期テスト(regular_test)', () => {
-  it('5科合計を計算し、2回目の行に前回比(diff)が入る', () => {
+  it('5科合計を計算し、前回比(diff)が入る（表示は新しい順）', () => {
     const student = makeStudent({ id: 's1', grade: 8 });
     const assessments = [
-      // わざと「後の試験」を先に渡し、時系列ソートされることも確認する
+      // わざと順不同で渡し、並べ替えが効くことも確認する
       makeAssessment({
         id: 'a2',
         grade: 8,
@@ -88,19 +88,19 @@ describe('transformToScoreList - 定期テスト(regular_test)', () => {
 
     expect(result).toHaveLength(1);
     const rows = result[0].rows;
-    // 中間 → 期末 の時系列順に並ぶ
-    expect(rows.map((r) => r.nameCode)).toEqual(['term1_mid', 'term1_final']);
+    // 新しい順（期末 → 中間）に並ぶ
+    expect(rows.map((r) => r.nameCode)).toEqual(['term1_final', 'term1_mid']);
 
-    // 1行目: 合計150, 前回が無いので diff は null
-    expect(rows[0].fiveSum).toBe(150);
-    expect(rows[0].fiveSumDiff).toBeNull();
-    expect(rows[0].diffs.english).toBeNull();
+    // 1行目(期末): 合計175, 前回比 +25, 各科目の差分も計算される
+    expect(rows[0].fiveSum).toBe(175);
+    expect(rows[0].fiveSumDiff).toBe(25);
+    expect(rows[0].diffs.english).toBe(5);
+    expect(rows[0].diffs.math).toBe(5);
 
-    // 2行目: 合計175, 前回比 +25, 各科目の差分も計算される
-    expect(rows[1].fiveSum).toBe(175);
-    expect(rows[1].fiveSumDiff).toBe(25);
-    expect(rows[1].diffs.english).toBe(5);
-    expect(rows[1].diffs.math).toBe(5);
+    // 2行目(中間): 合計150, さらに前が無いので diff は null
+    expect(rows[1].fiveSum).toBe(150);
+    expect(rows[1].fiveSumDiff).toBeNull();
+    expect(rows[1].diffs.english).toBeNull();
   });
 
   it('null の科目は0扱いせず合計から除外する', () => {

@@ -100,14 +100,32 @@ function diffOrNull(current: number | null, previous: number | null): number | n
 }
 
 /**
- * Assessment を時系列順にソートするキーを生成
- * grade DESC → exam_month ASC → name_code ASC（時系列順）
+ * Assessment を時系列順にソートするキーを生成（古い → 新しい）。
+ * grade → exam_month → name_code の順で、いずれも「時系列で早いほど小さい」キーになる。
+ * name_code はアルファベット順では時系列にならない（例: term2_final < term2_mid で期末が
+ * 中間より先に来てしまう）ため、NAME_CODE_ORDER の学期内の並びを使う。
  */
-function sortKeyForAssessment(a: AssessmentWithScores): string {
+function sortKeyForAssessment(a: {
+  grade: number;
+  exam_month: string | null;
+  name_code: string;
+}): string {
   const gradePart = String(a.grade).padStart(2, '0');
   const monthPart = a.exam_month ?? '0000-00';
   const codePart = String(NAME_CODE_ORDER[a.name_code] ?? 99).padStart(2, '0');
   return `${gradePart}-${monthPart}-${codePart}`;
+}
+
+/**
+ * Assessment を時系列順（古い → 新しい）に比較する共有コンパレータ。
+ * 成績一覧・生徒別成績表の両方で同じ並び（＝同じ時系列の定義）を使うために公開する。
+ * 「新しい順」に並べたいときは呼び出し側で結果を反転する。
+ */
+export function compareAssessmentsChronological(
+  a: { grade: number; exam_month: string | null; name_code: string },
+  b: { grade: number; exam_month: string | null; name_code: string }
+): number {
+  return sortKeyForAssessment(a).localeCompare(sortKeyForAssessment(b));
 }
 
 function buildRowLabel(assessment: AssessmentWithScores, category: ScoreListCategory): string {
@@ -136,10 +154,10 @@ export function transformToScoreList(
     // ここでスキップせず全生徒を対象にする（表示側は StudentGroup が rows.length===0 を「未実施」行にする）。
     const assessments = assessmentsByStudent.get(student.id) ?? [];
 
-    // 時系列順にソート（古い順 → 新しい順）
-    const sorted = [...assessments].sort((a, b) =>
-      sortKeyForAssessment(a).localeCompare(sortKeyForAssessment(b))
-    );
+    // まず時系列順（古い順 → 新しい順）に並べる。
+    // 前回比(diff)は「一つ前の試験との差」なので、計算はこの向きでしか正しく出せない。
+    // 表示用の並び（新しい順）にするのは、diff を計算し終えたあとに rows を反転する。
+    const sorted = [...assessments].sort(compareAssessmentsChronological);
 
     const rows: ScoreListRow[] = [];
     let prevScores: Record<string, number | null> | null = null;
@@ -205,6 +223,11 @@ export function transformToScoreList(
       prevHensa3 = hensa3;
       prevHensa5 = hensa5;
     }
+
+    // 表示は新しい順（下に行くほど古い）。
+    // 例: 学年末 → 2学期期末 → 2学期中間 → 1学期期末 → 1学期中間。
+    // 直近の成績が常に一番上に来るようにするため（diff は反転前に計算済み）。
+    rows.reverse();
 
     result.push({
       studentId: student.id,

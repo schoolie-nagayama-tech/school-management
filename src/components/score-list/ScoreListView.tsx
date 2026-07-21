@@ -45,8 +45,12 @@ const HENSA_SORT_OPTIONS: { value: SortKey; label: string }[] = [
   { value: 'hensa5_asc', label: '最新5科偏差値（低 → 高）' },
 ];
 
-function lastRow(s: ScoreListStudent) {
-  return s.rows.length > 0 ? s.rows[s.rows.length - 1] : null;
+/**
+ * 「最新換算内申」「最新偏差値」ソートが見る行 = 直近の試験の行。
+ * rows は新しい順（transformToScoreList が表示用に反転済み）なので先頭が最新。
+ */
+function latestRow(s: ScoreListStudent) {
+  return s.rows.length > 0 ? s.rows[0] : null;
 }
 
 function compareNumDesc(a: number | null, b: number | null): number {
@@ -79,26 +83,38 @@ function sortStudents(students: ScoreListStudent[], key: SortKey): ScoreListStud
       arr.sort((a, b) => b.grade - a.grade);
       break;
     case 'fiveSum_desc':
-      arr.sort((a, b) => compareNumDesc(lastRow(a)?.fiveSum ?? null, lastRow(b)?.fiveSum ?? null));
+      arr.sort((a, b) =>
+        compareNumDesc(latestRow(a)?.fiveSum ?? null, latestRow(b)?.fiveSum ?? null)
+      );
       break;
     case 'fiveSum_asc':
-      arr.sort((a, b) => compareNumAsc(lastRow(a)?.fiveSum ?? null, lastRow(b)?.fiveSum ?? null));
+      arr.sort((a, b) =>
+        compareNumAsc(latestRow(a)?.fiveSum ?? null, latestRow(b)?.fiveSum ?? null)
+      );
       break;
     case 'naishin_desc':
       arr.sort((a, b) =>
-        compareNumDesc(lastRow(a)?.convertedNaishin ?? null, lastRow(b)?.convertedNaishin ?? null)
+        compareNumDesc(
+          latestRow(a)?.convertedNaishin ?? null,
+          latestRow(b)?.convertedNaishin ?? null
+        )
       );
       break;
     case 'naishin_asc':
       arr.sort((a, b) =>
-        compareNumAsc(lastRow(a)?.convertedNaishin ?? null, lastRow(b)?.convertedNaishin ?? null)
+        compareNumAsc(
+          latestRow(a)?.convertedNaishin ?? null,
+          latestRow(b)?.convertedNaishin ?? null
+        )
       );
       break;
     case 'hensa5_desc':
-      arr.sort((a, b) => compareNumDesc(lastRow(a)?.hensa5 ?? null, lastRow(b)?.hensa5 ?? null));
+      arr.sort((a, b) =>
+        compareNumDesc(latestRow(a)?.hensa5 ?? null, latestRow(b)?.hensa5 ?? null)
+      );
       break;
     case 'hensa5_asc':
-      arr.sort((a, b) => compareNumAsc(lastRow(a)?.hensa5 ?? null, lastRow(b)?.hensa5 ?? null));
+      arr.sort((a, b) => compareNumAsc(latestRow(a)?.hensa5 ?? null, latestRow(b)?.hensa5 ?? null));
       break;
   }
   return arr;
