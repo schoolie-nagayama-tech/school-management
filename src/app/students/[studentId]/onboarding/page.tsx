@@ -192,10 +192,13 @@ export default function OnboardingPage() {
   const studentId = params.studentId as string;
   const inquiryId = searchParams.get('inquiryId');
 
-  // 問合せ管理からの入会（inquiryId 付き）は、今は Step1（生徒情報の確認）だけ行い、
-  // 受講科目・コマ配置・担当決定（Step2〜4）はデフォルト（未設定）でスキップして
-  // 生徒詳細へ直接進む。通塾セットアップ自体は生徒詳細から後で行える。
-  const fromInquiry = !!inquiryId;
+  // 今は入会経路によらず Step1（生徒情報の確認）だけ行い、受講科目・コマ配置・
+  // 担当決定（Step2〜4）はデフォルト（未設定）でスキップして生徒詳細へ直接進む。
+  // 通塾セットアップ自体は生徒詳細から後で行える。
+  // （元は問合せ経由=inquiryId付きだけこの挙動だったが、生徒管理からの新規登録
+  //   →「通塾セットアップ」導線も同じくStep1のみにした。inquiryId 自体は
+  //   「問合せから転記済み」バッジの表示にのみ引き続き使う。）
+  const singleStepOnly = true;
 
   const { profile, schoolIds } = useAuth();
   const isManager = isManagerOrAbove(profile?.role);
@@ -462,9 +465,9 @@ export default function OnboardingPage() {
     }
   }, [student, lastName, firstName, lastKana, firstKana, grade, schoolName]);
 
-  // 問合せ経由のときの完了処理: Step1 の内容を保存して、通塾セットアップ（Step2〜4）を
+  // Step1 のみモードの完了処理: Step1 の内容を保存して、通塾セットアップ（Step2〜4）を
   // 経由せず生徒詳細へ直接遷移する。通塾設定は生徒詳細から後で行える。
-  const finishFromInquiry = useCallback(async () => {
+  const finishSingleStep = useCallback(async () => {
     const ok = await saveStudentInfo();
     if (ok === false) return;
     toast.success('生徒登録が完了しました');
@@ -908,8 +911,8 @@ export default function OnboardingPage() {
           </div>
         ) : (
           <>
-            {/* ステップインジケーター（問合せ経由は Step1 のみなので出さない） */}
-            {!fromInquiry && (
+            {/* ステップインジケーター（今は Step1 のみなので出さない） */}
+            {!singleStepOnly && (
               <div className="flex items-center justify-between mb-8">
                 {[1, 2, 3, 4].map((s) => (
                   <div key={s} className="flex items-center flex-1 last:flex-none">
@@ -962,7 +965,7 @@ export default function OnboardingPage() {
                         </span>
                       )}
                     </p>
-                    {fromInquiry && (
+                    {singleStepOnly && (
                       <p className="text-xs text-text-muted mt-1">
                         受講科目・通塾日程・担当講師の設定は今はスキップします。生徒詳細ページの「通塾セットアップ」から後で行えます。
                       </p>
@@ -1408,10 +1411,10 @@ export default function OnboardingPage() {
               )}
             </div>
 
-            {/* フッターナビ（問合せ経由は Step1 のみなので専用の単一ボタン） */}
-            {fromInquiry ? (
+            {/* フッターナビ（今は Step1 のみなので専用の単一ボタン） */}
+            {singleStepOnly ? (
               <div className="flex items-center justify-end mt-6">
-                <Button onClick={finishFromInquiry} disabled={isSavingStudent}>
+                <Button onClick={finishSingleStep} disabled={isSavingStudent}>
                   {isSavingStudent ? '保存中...' : '登録して生徒詳細へ'}
                   <ArrowRight className="w-4 h-4 ml-1.5" />
                 </Button>
