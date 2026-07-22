@@ -22,7 +22,7 @@
  */
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { useParams, useSearchParams } from 'next/navigation';
+import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import {
@@ -188,8 +188,14 @@ function parseDropId(id: string): { day: number; slotId: string; teacherId: stri
 export default function OnboardingPage() {
   const params = useParams();
   const searchParams = useSearchParams();
+  const router = useRouter();
   const studentId = params.studentId as string;
   const inquiryId = searchParams.get('inquiryId');
+
+  // 問合せ管理からの入会（inquiryId 付き）は、今は Step1（生徒情報の確認）だけ行い、
+  // 受講科目・コマ配置・担当決定（Step2〜4）はデフォルト（未設定）でスキップして
+  // 生徒詳細へ直接進む。通塾セットアップ自体は生徒詳細から後で行える。
+  const fromInquiry = !!inquiryId;
 
   const { profile, schoolIds } = useAuth();
   const isManager = isManagerOrAbove(profile?.role);
@@ -455,6 +461,15 @@ export default function OnboardingPage() {
       setIsSavingStudent(false);
     }
   }, [student, lastName, firstName, lastKana, firstKana, grade, schoolName]);
+
+  // 問合せ経由のときの完了処理: Step1 の内容を保存して、通塾セットアップ（Step2〜4）を
+  // 経由せず生徒詳細へ直接遷移する。通塾設定は生徒詳細から後で行える。
+  const finishFromInquiry = useCallback(async () => {
+    const ok = await saveStudentInfo();
+    if (ok === false) return;
+    toast.success('生徒登録が完了しました');
+    router.push(`/students/${studentId}/schedule`);
+  }, [saveStudentInfo, router, studentId]);
 
   // 指定科目の配置（担当講師）を取り消す（受講コマを変えたら担当は無効化する）。
   const dropPlacementForSubject = useCallback((subjectId: string) => {
@@ -893,36 +908,38 @@ export default function OnboardingPage() {
           </div>
         ) : (
           <>
-            {/* ステップインジケーター */}
-            <div className="flex items-center justify-between mb-8">
-              {[1, 2, 3, 4].map((s) => (
-                <div key={s} className="flex items-center flex-1 last:flex-none">
-                  <div className="flex flex-col items-center gap-1">
-                    <div
-                      className={`flex items-center justify-center w-9 h-9 rounded-full border-2 text-sm font-medium transition-colors ${
-                        s === step
-                          ? 'bg-primary border-primary text-white'
-                          : s < step
-                            ? 'bg-text-heading border-text-heading text-white'
-                            : 'bg-surface-raised border-border text-text-muted'
-                      }`}
-                    >
-                      {s < step ? <CheckCircle2 className="w-4 h-4" /> : s}
+            {/* ステップインジケーター（問合せ経由は Step1 のみなので出さない） */}
+            {!fromInquiry && (
+              <div className="flex items-center justify-between mb-8">
+                {[1, 2, 3, 4].map((s) => (
+                  <div key={s} className="flex items-center flex-1 last:flex-none">
+                    <div className="flex flex-col items-center gap-1">
+                      <div
+                        className={`flex items-center justify-center w-9 h-9 rounded-full border-2 text-sm font-medium transition-colors ${
+                          s === step
+                            ? 'bg-primary border-primary text-white'
+                            : s < step
+                              ? 'bg-text-heading border-text-heading text-white'
+                              : 'bg-surface-raised border-border text-text-muted'
+                        }`}
+                      >
+                        {s < step ? <CheckCircle2 className="w-4 h-4" /> : s}
+                      </div>
+                      <span
+                        className={`text-[11px] ${s === step ? 'text-text-heading font-medium' : 'text-text-muted'}`}
+                      >
+                        {STEP_LABELS[s - 1]}
+                      </span>
                     </div>
-                    <span
-                      className={`text-[11px] ${s === step ? 'text-text-heading font-medium' : 'text-text-muted'}`}
-                    >
-                      {STEP_LABELS[s - 1]}
-                    </span>
+                    {s < TOTAL_STEPS && (
+                      <div
+                        className={`flex-1 h-0.5 mx-2 ${s < step ? 'bg-text-heading' : 'bg-border'}`}
+                      />
+                    )}
                   </div>
-                  {s < TOTAL_STEPS && (
-                    <div
-                      className={`flex-1 h-0.5 mx-2 ${s < step ? 'bg-text-heading' : 'bg-border'}`}
-                    />
-                  )}
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
 
             <div className="bg-surface-raised border border-border rounded-xl p-6 min-h-[360px]">
               {/* ─── Step1: 生徒情報の確認 ─── */}
@@ -945,6 +962,11 @@ export default function OnboardingPage() {
                         </span>
                       )}
                     </p>
+                    {fromInquiry && (
+                      <p className="text-xs text-text-muted mt-1">
+                        受講科目・通塾日程・担当講師の設定は今はスキップします。生徒詳細ページの「通塾セットアップ」から後で行えます。
+                      </p>
+                    )}
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1.5">
@@ -1386,34 +1408,43 @@ export default function OnboardingPage() {
               )}
             </div>
 
-            {/* フッターナビ */}
-            <div className="flex items-center justify-between mt-6">
-              <div>
-                {step > 1 && (
-                  <Button variant="secondary" onClick={goPrev} disabled={isSaving}>
-                    <ArrowLeft className="w-4 h-4 mr-1.5" />
-                    戻る
-                  </Button>
-                )}
+            {/* フッターナビ（問合せ経由は Step1 のみなので専用の単一ボタン） */}
+            {fromInquiry ? (
+              <div className="flex items-center justify-end mt-6">
+                <Button onClick={finishFromInquiry} disabled={isSavingStudent}>
+                  {isSavingStudent ? '保存中...' : '登録して生徒詳細へ'}
+                  <ArrowRight className="w-4 h-4 ml-1.5" />
+                </Button>
               </div>
-              <div className="flex items-center gap-2">
-                {step === 3 && (
-                  <Button variant="secondary" onClick={handleSkip} disabled={isSaving}>
-                    通塾設定をスキップして完了
-                  </Button>
-                )}
-                {step < TOTAL_STEPS ? (
-                  <Button onClick={goNext} disabled={isSavingStudent}>
-                    次へ
-                    <ArrowRight className="w-4 h-4 ml-1.5" />
-                  </Button>
-                ) : (
-                  <Button onClick={handleSubmit} disabled={isSaving}>
-                    {isSaving ? '登録中...' : '登録する'}
-                  </Button>
-                )}
+            ) : (
+              <div className="flex items-center justify-between mt-6">
+                <div>
+                  {step > 1 && (
+                    <Button variant="secondary" onClick={goPrev} disabled={isSaving}>
+                      <ArrowLeft className="w-4 h-4 mr-1.5" />
+                      戻る
+                    </Button>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  {step === 3 && (
+                    <Button variant="secondary" onClick={handleSkip} disabled={isSaving}>
+                      通塾設定をスキップして完了
+                    </Button>
+                  )}
+                  {step < TOTAL_STEPS ? (
+                    <Button onClick={goNext} disabled={isSavingStudent}>
+                      次へ
+                      <ArrowRight className="w-4 h-4 ml-1.5" />
+                    </Button>
+                  ) : (
+                    <Button onClick={handleSubmit} disabled={isSaving}>
+                      {isSaving ? '登録中...' : '登録する'}
+                    </Button>
+                  )}
+                </div>
               </div>
-            </div>
+            )}
           </>
         )}
       </div>
