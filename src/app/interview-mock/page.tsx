@@ -446,25 +446,6 @@ function findLatestHandover(interviews: MockInterview[]): { date: string; text: 
  * 小コンポーネント
  * ========================================================== */
 
-// セクション見出し（home-mock の様式を踏襲）
-function SectionLabel({
-  icon: Icon,
-  children,
-  right,
-}: {
-  icon: React.ElementType;
-  children: React.ReactNode;
-  right?: React.ReactNode;
-}) {
-  return (
-    <div className="mb-2 mt-5 flex items-center gap-2 first:mt-0">
-      <Icon className="h-4 w-4 text-text-muted" />
-      <h3 className="text-sm font-bold text-text-heading">{children}</h3>
-      {right && <div className="ml-auto shrink-0">{right}</div>}
-    </div>
-  );
-}
-
 // 成績セルの前回比インジケーター（▲▼、変化なしは横棒）
 function ScoreTrend({ prev, curr }: { prev: number | null; curr: number | null }) {
   if (curr == null) return <span className="text-text-faint">—</span>;
