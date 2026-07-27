@@ -518,6 +518,15 @@ a:focus-visible {
     margin: 10mm;
   }
 
+  /* 面談ワークスペース印刷シート: A4縦1枚（画面上は hidden、印刷時だけ表示） */
+  .interview-report-print-page {
+    page: interviewreport;
+  }
+  @page interviewreport {
+    size: A4 portrait;
+    margin: 10mm;
+  }
+
   body {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;

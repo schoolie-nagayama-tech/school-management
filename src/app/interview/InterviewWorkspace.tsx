@@ -1,0 +1,380 @@
+'use client';
+
+/**
+ * 面談ワークスペース 本体
+ * ------------------------------------------------------------------
+ * 検討用モック（src/app/interview-mock/page.tsx）を実データ化した本番ページ。
+ * 3カラム（過去の面談記録／今回の面談メモ／データ参照）＋ヘッダー帯（生徒切替・印刷）で構成する。
+ *
+ * データ取得は「軽いもの」（面談記録・成績・通塾日程・講習申込）を先にまとめて取得して
+ * 3カラムを先に描画し、N+1になりがちな進行表（テキストごとに getStudentProgress を呼ぶ）は
+ * 後追いで並列取得する。courses/progress ページの段階表示と同じ考え方。
+ */
+
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { AdminLayout } from '@/components/layouts';
+import { Card, CardContent, Button, Select, Loading, ToastContainer } from '@/components/ui';
+import AccessDenied from '@/components/AccessDenied';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/useToast';
+import { isManagerOrAbove } from '@/lib/utils/roles';
+import { formatGradeLabel } from '@/lib/utils/gradeLabel';
+import { getStudents, getStudent, type EnrichedStudent } from '@/lib/api/students';
+import { getStudentInterviews } from '@/lib/api/interviews';
+import { listAssessments } from '@/lib/api/assessments';
+import { getStudentTextbooks, getStudentProgress } from '@/lib/api/progress';
+import { getRegularPatterns } from '@/lib/api/schedule';
+import { getKoushuEnrollmentsByStudent, type KoushuEnrollment } from '@/lib/api/seasonalCourses';
+import type { AssessmentWithScores, Student, StudentInterview } from '@/types/database';
+import type { ScheduleRegularPattern } from '@/types/schedule';
+import { InterviewTimeline, type HandoverInfo } from './InterviewTimeline';
+import { InterviewMemoPanel, type MemoSnapshot } from './InterviewMemoPanel';
+import { StudentDataPanel } from './StudentDataPanel';
+import { InterviewPrintSheet } from './InterviewPrintSheet';
+import {
+  extractHandover,
+  summarizeTextbookProgress,
+  type TextbookProgressSummary,
+} from './interview.shared';
+import { History, Printer } from 'lucide-react';
+
+export function InterviewWorkspace() {
+  const { profile, isLoading: authLoading, getSelectedSchoolIds, selectedSchoolId } = useAuth();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { toasts, removeToast, error: toastError } = useToast();
+
+  const [students, setStudents] = useState<EnrichedStudent[]>([]);
+  const [studentsLoading, setStudentsLoading] = useState(true);
+  const [selectedStudentId, setSelectedStudentId] = useState('');
+  // URLクエリからの初期選択は初回のみ適用する
+  const didInitFromQueryRef = useRef(false);
+  // 教室切替の検知用（初回マウント時は何もしない）
+  const prevSchoolIdRef = useRef(selectedSchoolId);
+
+  const [student, setStudent] = useState<Student | null>(null);
+
+  const [interviews, setInterviews] = useState<StudentInterview[]>([]);
+  const [assessments, setAssessments] = useState<AssessmentWithScores[]>([]);
+  const [regularPatterns, setRegularPatterns] = useState<ScheduleRegularPattern[]>([]);
+  const [koushuEnrollments, setKoushuEnrollments] = useState<KoushuEnrollment[]>([]);
+  const [lightLoading, setLightLoading] = useState(false);
+
+  const [textbookSummaries, setTextbookSummaries] = useState<TextbookProgressSummary[]>([]);
+  const [textbookCount, setTextbookCount] = useState(0);
+  const [progressLoading, setProgressLoading] = useState(false);
+
+  const [memoSnapshot, setMemoSnapshot] = useState<MemoSnapshot>({
+    interviewDate: new Date().toISOString().slice(0, 10),
+    interviewTypeLabel: '保護者面談',
+    title: '',
+    memo: '',
+  });
+
+  // 生徒一覧（在籍中のみ、学年→氏名かな順）
+  useEffect(() => {
+    let cancelled = false;
+    async function loadStudents() {
+      setStudentsLoading(true);
+      try {
+        const schoolIds = getSelectedSchoolIds();
+        const all = await getStudents(undefined, schoolIds.length > 0 ? schoolIds : undefined);
+        const active = all
+          .filter((s) => s.status === 'active')
+          .sort((a, b) => {
+            if (a.grade !== b.grade) return a.grade - b.grade;
+            const aKana = `${a.last_name_kana}${a.first_name_kana}`;
+            const bKana = `${b.last_name_kana}${b.first_name_kana}`;
+            return aKana.localeCompare(bKana, 'ja');
+          });
+        if (cancelled) return;
+        setStudents(active);
+
+        // 初期選択: URLクエリ ?studentId= があれば優先、無ければ先頭の生徒（初回のみ）
+        if (!didInitFromQueryRef.current) {
+          didInitFromQueryRef.current = true;
+          const queryId = searchParams.get('studentId');
+          const found = queryId ? active.find((s) => s.id === queryId) : undefined;
+          setSelectedStudentId(found ? found.id : (active[0]?.id ?? ''));
+        }
+      } catch (e) {
+        console.error('Error fetching students:', e);
+        toastError('生徒一覧の取得に失敗しました');
+      } finally {
+        if (!cancelled) setStudentsLoading(false);
+      }
+    }
+    loadStudents();
+    return () => {
+      cancelled = true;
+    };
+    // searchParams/toastError は初回判定にのみ使うため依存に含めない
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [getSelectedSchoolIds]);
+
+  // 教室切替時は選択中の生徒をリセットする（選べる生徒集合自体が変わるため）
+  useEffect(() => {
+    if (prevSchoolIdRef.current !== selectedSchoolId) {
+      prevSchoolIdRef.current = selectedSchoolId;
+      setSelectedStudentId('');
+    }
+  }, [selectedSchoolId]);
+
+  const handleSelectStudent = useCallback(
+    (id: string) => {
+      setSelectedStudentId(id);
+      router.replace(`/interview?studentId=${id}`, { scroll: false });
+    },
+    [router]
+  );
+
+  // 選択中生徒の詳細（学年・学校名などの表示用）
+  useEffect(() => {
+    if (!selectedStudentId) {
+      setStudent(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const schoolIds = getSelectedSchoolIds();
+        const s = await getStudent(selectedStudentId, schoolIds.length > 0 ? schoolIds : undefined);
+        if (!cancelled) setStudent(s);
+      } catch (e) {
+        console.error('Error fetching student:', e);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedStudentId, getSelectedSchoolIds]);
+
+  // 面談記録だけの再取得（タスク完了・面談編集・新規保存のあとに呼ぶ軽量パス）
+  const refetchInterviews = useCallback(async () => {
+    if (!selectedStudentId) return;
+    try {
+      setInterviews(await getStudentInterviews(selectedStudentId));
+    } catch (e) {
+      console.error('Error fetching interviews:', e);
+    }
+  }, [selectedStudentId]);
+
+  // 軽いデータ（面談記録・成績・通塾日程・講習申込）をまとめて取得。進行表より先に描画する。
+  // 通塾日程の取得には生徒の school_id が要るため getStudent の完了を待つ。
+  useEffect(() => {
+    if (!selectedStudentId || !student) return;
+    let cancelled = false;
+    (async () => {
+      setLightLoading(true);
+      try {
+        const [iv, asm, patterns, koushu] = await Promise.all([
+          getStudentInterviews(selectedStudentId).catch(() => []),
+          listAssessments(selectedStudentId).catch(() => []),
+          getRegularPatterns(student.school_id, { studentId: selectedStudentId }).catch(() => []),
+          getKoushuEnrollmentsByStudent(selectedStudentId).catch(() => []),
+        ]);
+        if (cancelled) return;
+        setInterviews(iv);
+        setAssessments(asm);
+        setRegularPatterns(patterns);
+        setKoushuEnrollments(koushu);
+      } finally {
+        if (!cancelled) setLightLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedStudentId, student]);
+
+  // 重いデータ（進行表）は後追いで取得。generatorのgetStudent完了を待たず生徒IDが決まり次第走らせる。
+  useEffect(() => {
+    if (!selectedStudentId) {
+      setTextbookSummaries([]);
+      setTextbookCount(0);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      setProgressLoading(true);
+      try {
+        const raw = await getStudentTextbooks(selectedStudentId);
+        // 進行表バーに出すのは「進行表で管理中」のテキストのみ（/progress ページと同じ絞り込み）
+        const tracked = raw.filter((t) => t.track_progress);
+        const summaries = await Promise.all(
+          tracked.map(async (tb) => {
+            const rows = await getStudentProgress(tb.id).catch(() => []);
+            return summarizeTextbookProgress(tb, rows);
+          })
+        );
+        if (cancelled) return;
+        setTextbookSummaries(summaries);
+        // 所持教材数は track_progress に関係なく is_owned=true の件数
+        setTextbookCount(raw.filter((t) => t.is_owned).length);
+      } catch (e) {
+        console.error('Error fetching progress:', e);
+      } finally {
+        if (!cancelled) setProgressLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedStudentId]);
+
+  // 「前回の申し送り」= 面談タイムライン最新（非タスク）の抜粋。左カラム・印刷シート共通で使う。
+  const nonTaskInterviews = useMemo(
+    () => interviews.filter((i) => i.interview_type !== 'task'),
+    [interviews]
+  );
+  const handover: HandoverInfo | null = useMemo(() => {
+    const latest = nonTaskInterviews[0];
+    if (!latest) return null;
+    const extracted = extractHandover(latest.content);
+    return {
+      date: latest.interview_date,
+      text: extracted ?? latest.content.slice(0, 200),
+      isFallback: !extracted,
+    };
+  }, [nonTaskInterviews]);
+
+  const today = new Date().toISOString().slice(0, 10);
+
+  if (authLoading) {
+    return (
+      <AdminLayout headerTitle="面談">
+        <Loading className="min-h-[60vh]" />
+      </AdminLayout>
+    );
+  }
+
+  if (!isManagerOrAbove(profile?.role)) {
+    return (
+      <AdminLayout headerTitle="面談">
+        <AccessDenied message="このページは教室長以上のみアクセス可能です" />
+      </AdminLayout>
+    );
+  }
+
+  return (
+    <AdminLayout headerTitle="面談" fullWidth>
+      {/* ヘッダー帯（生徒切替・印刷） */}
+      <Card className="mb-5 print:hidden">
+        <CardContent className="py-4">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <div className="w-full sm:w-64">
+                <Select
+                  aria-label="生徒切替"
+                  value={selectedStudentId}
+                  onChange={(e) => handleSelectStudent(e.target.value)}
+                  disabled={studentsLoading || students.length === 0}
+                  options={
+                    students.length > 0
+                      ? students.map((s) => ({
+                          value: s.id,
+                          label: `${s.last_name} ${s.first_name}（${formatGradeLabel(s.grade)}・${
+                            s.school_name ?? '学校未登録'
+                          }）`,
+                        }))
+                      : [
+                          {
+                            value: '',
+                            label: studentsLoading ? '読み込み中...' : '在籍生徒がいません',
+                          },
+                        ]
+                  }
+                />
+              </div>
+              {student && (
+                <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                  <span className="text-xl font-bold text-text-heading">
+                    {student.last_name} {student.first_name}
+                  </span>
+                  <span className="text-sm text-text-muted">
+                    {formatGradeLabel(student.grade)}
+                    {student.school_name ? `・${student.school_name}` : ''}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              {handover && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-info-subtle px-2.5 py-1 text-xs font-medium text-info">
+                  <History className="h-3.5 w-3.5" />
+                  前回面談: {handover.date}
+                </span>
+              )}
+              {student && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => window.print()}
+                  className="gap-1.5"
+                >
+                  <Printer className="h-3.5 w-3.5" />
+                  印刷
+                </Button>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {!student ? (
+        <Card className="print:hidden">
+          <CardContent className="py-12 text-center text-text-muted">
+            {studentsLoading ? '読み込み中...' : '生徒を選択してください'}
+          </CardContent>
+        </Card>
+      ) : (
+        <>
+          {/* 3カラム本体 */}
+          <div className="grid gap-5 print:hidden lg:grid-cols-[320px_1fr_360px] lg:items-start">
+            <InterviewTimeline
+              studentId={student.id}
+              schoolId={student.school_id}
+              interviews={interviews}
+              loading={lightLoading}
+              handover={handover}
+              onChanged={refetchInterviews}
+            />
+            <InterviewMemoPanel
+              key={student.id}
+              studentId={student.id}
+              schoolId={student.school_id}
+              onSaved={refetchInterviews}
+              onDraftChange={setMemoSnapshot}
+            />
+            <StudentDataPanel
+              student={student}
+              assessments={assessments}
+              assessmentsLoading={lightLoading}
+              textbookSummaries={textbookSummaries}
+              textbookCount={textbookCount}
+              progressLoading={progressLoading}
+              regularPatterns={regularPatterns}
+              koushuEnrollments={koushuEnrollments}
+              lightLoading={lightLoading}
+            />
+          </div>
+
+          {/* 印刷シート（画面には出ない。印刷時のみ表示。globals.css の interviewreport ページを使用） */}
+          <InterviewPrintSheet
+            student={student}
+            today={today}
+            handover={handover}
+            recentInterviews={nonTaskInterviews}
+            assessments={assessments}
+            textbookSummaries={textbookSummaries}
+            memo={memoSnapshot}
+          />
+        </>
+      )}
+
+      <ToastContainer toasts={toasts} onRemove={removeToast} />
+    </AdminLayout>
+  );
+}
