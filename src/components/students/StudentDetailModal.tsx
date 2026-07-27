@@ -33,7 +33,8 @@ import { StudentKoushuTab } from './StudentKoushuTab';
 import { useAuth } from '@/contexts/AuthContext';
 import { useConfirm } from '@/hooks/useConfirm';
 import { useToast } from '@/hooks/useToast';
-import { Trash2, ExternalLink, PackageCheck, CalendarPlus } from 'lucide-react';
+import { isManagerOrAbove } from '@/lib/utils/roles';
+import { Trash2, ExternalLink, PackageCheck, CalendarPlus, MessageSquarePlus } from 'lucide-react';
 
 interface StudentDetailModalProps {
   isOpen: boolean;
@@ -77,6 +78,8 @@ export function StudentDetailModal({
   const { confirm, ConfirmDialog } = useConfirm();
   const { success, error: toastError } = useToast();
   const isTeacher = profile?.role === 'teacher';
+  // 面談ワークスペースへの導線は室長以上のみ（面談ワークスペース自体が室長以上限定のページのため）
+  const canStartInterview = isManagerOrAbove(profile?.role);
   // 入会オンボーディング導線: 通塾日程が0件の生徒にだけ「通塾セットアップ」ボタンを出す。
   const [hasPatterns, setHasPatterns] = useState<boolean | null>(null);
   const [textbooks, setTextbooks] = useState<StudentTextbookRow[]>([]);
@@ -802,6 +805,21 @@ export function StudentDetailModal({
 
         {activeTab === 'interviews' && student && (
           <div className="h-[60vh] overflow-y-auto pr-2">
+            {/* 面談ワークスペース（過去の面談・成績・進行表を1画面に集約して当日の面談記録を書く画面）への導線。
+                ワークスペース自体が室長以上限定のため、ボタンも室長以上にだけ出す。 */}
+            {canStartInterview && (
+              <div className="mb-4 flex justify-end">
+                <a
+                  href={`/interview?studentId=${student.id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-ink px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-ink/80"
+                >
+                  <MessageSquarePlus className="h-3.5 w-3.5" />
+                  面談を始める
+                </a>
+              </div>
+            )}
             <InterviewList studentId={student.id} schoolId={student.school_id ?? schoolId} />
           </div>
         )}
