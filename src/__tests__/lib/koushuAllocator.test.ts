@@ -58,7 +58,7 @@ function assertInvariants(input: AllocatorInput, result: AllocatorResult) {
       expect(teachable, `${tc.name} は ${a.subjectId} を指導できない`).toContain(a.subjectId);
     }
 
-    // (5) 生徒は同一コマに1本まで
+    // (5) 生徒は同一コマに1コマまで
     const scKey = `${a.studentId}_${cell}`;
     expect(studentCell.has(scKey), `${a.studentId} が ${cell} に二重配置`).toBe(false);
     studentCell.add(scKey);
@@ -115,7 +115,7 @@ function assertInvariants(input: AllocatorInput, result: AllocatorResult) {
     }
   }
 
-  // (11) 割当＋未割当が申込本数と一致する（取りこぼし・重複計上が無い）
+  // (11) 割当＋未割当が申込コマ数と一致する（取りこぼし・重複計上が無い）
   const assignedByTask = new Map<string, number>();
   for (const a of result.assignments) {
     const k = `${a.studentId}_${a.subjectId}`;
@@ -134,7 +134,7 @@ function assertInvariants(input: AllocatorInput, result: AllocatorResult) {
 }
 
 describe('allocateKoushu — 基本動作', () => {
-  it('余裕があれば申込本数どおり割り当てる', () => {
+  it('余裕があれば申込コマ数どおり割り当てる', () => {
     const input = buildMinimalInput();
     const result = allocateKoushu(input);
     expect(result.assignments).toHaveLength(2);
@@ -177,7 +177,7 @@ describe('allocateKoushu — ハード制約', () => {
   });
 
   it('1日上限（既定2コマ）を超えない', () => {
-    // 1日に3枠あるが上限2 → 3本目は別日へ
+    // 1日に3枠あるが上限2 → 3コマ目は別日へ
     const input = buildMinimalInput({
       slots: [
         { id: 'A', slot_number: 1, start_time: '16:20:00', end_time: '17:50:00' },
@@ -209,7 +209,7 @@ describe('allocateKoushu — ハード制約', () => {
     assertInvariants(input, result);
   });
 
-  it('同一科目を同じ日に2本入れない（既定 allowSameSubjectSameDay=false）', () => {
+  it('同一科目を同じ日に2コマ入れない（既定 allowSameSubjectSameDay=false）', () => {
     const input = buildMinimalInput({
       tasks: [{ studentId: 'S1', subjectId: 'X', koma: 2, ratio: 2, duration: 90 }],
       studentAvailability: new Map([['S1', new Set(['2026-07-20_A', '2026-07-20_B', '2026-07-21_A'])]]),
@@ -221,7 +221,7 @@ describe('allocateKoushu — ハード制約', () => {
     assertInvariants(input, result);
   });
 
-  it('同日同科目を許可すると同じ日に2本入る', () => {
+  it('同日同科目を許可すると同じ日に2コマ入る', () => {
     const input = buildMinimalInput({
       tasks: [{ studentId: 'S1', subjectId: 'X', koma: 2, ratio: 2, duration: 90 }],
       studentAvailability: new Map([['S1', new Set(['2026-07-20_A', '2026-07-20_B'])]]),
@@ -266,7 +266,7 @@ describe('allocateKoushu — ハード制約', () => {
     assertInvariants(input, result);
   });
 
-  it('45分×2本は同じ講師セルの前半/後半で席を共有できる', () => {
+  it('45分×2コマは同じ講師セルの前半/後半で席を共有できる', () => {
     const input = buildMinimalInput({
       students: [
         { id: 'S1', name: '生徒1', grade: 5 },
@@ -482,7 +482,7 @@ describe('allocateKoushu — 優先順とソフト項', () => {
     const result = allocateKoushu(input);
     expect(result.assignments).toHaveLength(4);
     const anyCount = result.assignments.filter((a) => a.teacherId === 'T_any').length;
-    // 負荷平準化が効いて、全科目可の講師にも回る（偏り0本ではない）
+    // 負荷平準化が効いて、全科目可の講師にも回る（偏り0コマではない）
     expect(anyCount).toBeGreaterThan(0);
     assertInvariants(input, result);
   });
@@ -519,7 +519,7 @@ describe('allocateKoushu — 優先順とソフト項', () => {
     const result = allocateKoushu(input);
     expect(result.assignments).toHaveLength(3);
     const placed = result.assignments.map((a) => a.date).sort();
-    // 3本を12日に散らすので、隣接日に固まらない（最小間隔が2日以上）
+    // 3コマを12日に散らすので、隣接日に固まらない（最小間隔が2日以上）
     const gaps = placed.slice(1).map((d, i) => {
       const a = new Date(placed[i] + 'T12:00:00').getTime();
       const b = new Date(d + 'T12:00:00').getTime();
@@ -562,15 +562,15 @@ describe('allocateKoushu — 現実規模の合成データ', () => {
     }
   });
 
-  it('1日上限を上げると割当本数が増える（詰め込みが効く）', () => {
+  it('1日上限を上げると割当コマ数が増える（詰め込みが効く）', () => {
     const base = buildFixtureInput({ seed: 42 });
     const tight = allocateKoushu({ ...base, settings: { ...base.settings, maxKomaPerStudentPerDay: 1 } });
     const loose = allocateKoushu({ ...base, settings: { ...base.settings, maxKomaPerStudentPerDay: 3 } });
     expect(loose.stats.assignedKoma).toBeGreaterThanOrEqual(tight.stats.assignedKoma);
   });
 
-  it('席を絞ると割当本数が減る（需要がセルに集中する短期シナリオ）', () => {
-    // 8週に散らすと1セルあたり0.5本程度で席が縛りにならないため、
+  it('席を絞ると割当コマ数が減る（需要がセルに集中する短期シナリオ）', () => {
+    // 8週に散らすと1セルあたり0.5コマ程度で席が縛りにならないため、
     // 期間を1週に圧縮して需要をセルに集中させたうえで比較する。
     const opts = { seed: 42, startDate: '2026-07-20', endDate: '2026-07-25' };
     const rich = allocateKoushu(buildFixtureInput({ ...opts, totalIndividualSeats: 12 }));

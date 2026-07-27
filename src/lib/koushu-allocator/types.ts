@@ -48,12 +48,12 @@ export interface SubjectDef {
 
 /**
  * 申込1件分のタスク（生徒×科目）。
- * koma は「本数」。45分1本も1と数える（仕様書 §3-1 の単位定義）。
+ * koma は「コマ数」。45分1コマも1と数える（仕様書 §3-1 の単位定義）。
  */
 export interface TaskDef {
   studentId: string;
   subjectId: string;
-  /** 残り本数（既存の公開済み配置を差し引いた後の値を渡す） */
+  /** 残りコマ数（既存の公開済み配置を差し引いた後の値を渡す） */
   koma: number;
   /** 1=1対1 / 2=1対2。申込時に科目ごと指定 */
   ratio: 1 | 2;
@@ -74,13 +74,13 @@ export interface ExistingPlacement {
 }
 
 export interface AllocatorSettings {
-  /** 生徒1人の1日あたり講習コマ上限（本数） */
+  /** 生徒1人の1日あたり講習コマ上限（コマ数） */
   maxKomaPerStudentPerDay: number;
-  /** 同日に2本入れるなら連続コマを優先 */
+  /** 同日に2コマ入れるなら連続コマを優先 */
   preferConsecutive: boolean;
-  /** 同一科目を同じ日に2本入れてよいか */
+  /** 同一科目を同じ日に2コマ入れてよいか */
   allowSameSubjectSameDay: boolean;
-  /** 同一科目の本数を期間全体に等間隔で散らす */
+  /** 同一科目のコマ数を期間全体に等間隔で散らす */
   spreadSubjectEvenly: boolean;
 }
 
@@ -150,7 +150,7 @@ export const UNASSIGNED_REASON_LABELS: Record<UnassignedReason, string> = {
 export interface UnassignedTask {
   studentId: string;
   subjectId: string;
-  /** 割り当てられなかった本数 */
+  /** 割り当てられなかったコマ数 */
   koma: number;
   reason: UnassignedReason;
 }
@@ -161,9 +161,9 @@ export interface AllocatorResult {
   stats: {
     requestedKoma: number;
     assignedKoma: number;
-    /** 講師ID → 割当本数（負荷の偏りを見る） */
+    /** 講師ID → 割当コマ数（負荷の偏りを見る） */
     loadByTeacher: Record<string, number>;
-    /** リペアで救済できた本数 */
+    /** リペアで救済できたコマ数 */
     repairedKoma: number;
   };
 }

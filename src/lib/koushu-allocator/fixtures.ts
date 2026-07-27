@@ -87,7 +87,7 @@ export interface FixtureOptions {
  * 現実に近い講習シナリオを1つ組み立てる。
  *
  * - 生徒10名（中3多め）。可能枠の広さに差をつける（制約の強い順が効くか見るため）
- * - 科目は1〜3、本数3〜8。一部を 1対1 / 45分にする
+ * - 科目は1〜3、コマ数3〜8。一部を 1対1 / 45分にする
  * - 講師6名。日ごとに出勤する講師が変わる（シフト提出を模した粗密）
  */
 export function buildFixtureInput(opts: FixtureOptions = {}): AllocatorInput {
@@ -178,7 +178,7 @@ export function buildFixtureInput(opts: FixtureOptions = {}): AllocatorInput {
     for (let k = 0; k < subjCount; k++) {
       const pick = pool.splice(Math.floor(rnd() * pool.length), 1)[0];
       if (!pick) break;
-      const koma = 3 + Math.floor(rnd() * 6); // 3〜8本
+      const koma = 3 + Math.floor(rnd() * 6); // 3〜8コマ
       // 決定的に一部を 1対1 / 45分にする
       const ratio: 1 | 2 = i % 5 === 0 && k === 0 ? 1 : 2;
       const duration: 45 | 90 = st.grade <= 6 && k === 0 ? 45 : 90;

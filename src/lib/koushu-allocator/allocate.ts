@@ -4,7 +4,7 @@
  * 正典仕様: docs/koushu-auto-allocation-spec.md §5
  *
  * 方式: 貪欲（制約の強い順）＋リペア1パス。
- *  - 生徒は「可能枠が少ない順 → 残本数が多い順」で処理（CSP の定石。順序依存を緩和）
+ *  - 生徒は「可能枠が少ない順 → 残コマ数が多い順」で処理（CSP の定石。順序依存を緩和）
  *  - 生徒内は科目ラウンドロビン（特定科目が枠を食い尽くすのを防ぐ）
  *  - 席の判定は seatOccupancy.ts（canPlaceEntry / computeSeatOccupancy）を唯一の正として使う
  *    ＝1対1の排他・45分の前半/後半ペアリングをここで再実装しない
@@ -39,7 +39,7 @@ export const ALLOC_WEIGHTS = {
   genderPref: 10, // 希望性別に一致
   available: 5, // 出勤している（ベースライン）
   continuity: 8, // 同じ生徒×科目で既に割り当てた講師（低優先の明示）
-  loadBalancePerKoma: 1.5, // 担当本数が少ない講師を優先（本数×これを減点）
+  loadBalancePerKoma: 1.5, // 担当コマ数が少ない講師を優先（コマ数×これを減点）
   // セル選択
   spreadIdeal: 12, // 同一科目の理想間隔に近い
   adjacentBonus: 10, // 同日の連続コマ（連続優先ON時）
@@ -88,7 +88,7 @@ class AllocState {
   seatsByTeacherCell = new Map<string, SeatEntryInput[]>();
   /** `${date}_${slotId}` → 教室全体で使用中の席数 */
   usedSeatsByCell = new Map<CellKey, number>();
-  /** `${studentId}_${date}` → その日の本数 */
+  /** `${studentId}_${date}` → その日のコマ数 */
   komaByStudentDay = new Map<string, number>();
   /** `${studentId}_${date}_${slotId}` → 既に入っているか（生徒の同一コマ重複防止） */
   studentCellTaken = new Set<string>();
@@ -96,7 +96,7 @@ class AllocState {
   datesByStudentSubject = new Map<string, string[]>();
   /** `${studentId}_${date}` → その日に入っている slot_number 一覧（連続判定用） */
   slotNumbersByStudentDay = new Map<string, number[]>();
-  /** teacherId → 割当本数（負荷平準化用） */
+  /** teacherId → 割当コマ数（負荷平準化用） */
   loadByTeacher = new Map<string, number>();
   /** `${studentId}_${subjectId}` → 使った講師ID集合（継続性用） */
   teachersByStudentSubject = new Map<string, Set<string>>();
@@ -202,7 +202,7 @@ export interface Blockers {
   teacher: number;
 }
 
-/** そのタスク1本を置ける候補（セル×講師）を全部列挙してスコア付けする。 */
+/** そのタスク1コマを置ける候補（セル×講師）を全部列挙してスコア付けする。 */
 function findCandidates(
   task: TaskDef,
   input: AllocatorInput,
@@ -296,11 +296,11 @@ function findCandidates(
         // 指導可能（＝ここまで来た候補は全員）に一律で加点する。
         // teachable の「宣言あり/なし」で差を付けると、指導可能科目を空にしている
         // 「全科目可」の講師だけが 20点不利になり、ほとんど選ばれなくなる（実測で
-        // 27本 vs 4本の偏りが出た）。空=全科目可という慣習と矛盾するため一律にする。
+        // 27コマ vs 4コマの偏りが出た）。空=全科目可という慣習と矛盾するため一律にする。
         score += ALLOC_WEIGHTS.subjectMatch;
         if (prefGender && teacher.gender === prefGender) score += ALLOC_WEIGHTS.genderPref;
         if (continuityTeachers.has(tid)) score += ALLOC_WEIGHTS.continuity;
-        // 負荷平準化（担当本数が少ない講師を優先）
+        // 負荷平準化（担当コマ数が少ない講師を優先）
         score -= (state.loadByTeacher.get(tid) ?? 0) * ALLOC_WEIGHTS.loadBalancePerKoma;
         // 詰め込み効率（既存席の空き半分を埋めるなら加点＝新しい席を開かない）
         if (delta === 0) score += ALLOC_WEIGHTS.halfPackBonus;
@@ -408,7 +408,7 @@ export function allocateKoushu(input: AllocatorInput): AllocatorResult {
     }
   }
 
-  // ---- 生徒の処理順: 制約の強い順（可能枠が少ない順）→ 残本数が多い順 ----
+  // ---- 生徒の処理順: 制約の強い順（可能枠が少ない順）→ 残コマ数が多い順 ----
   const remainingByStudent = new Map<string, number>();
   for (const t of workable) {
     remainingByStudent.set(t.studentId, (remainingByStudent.get(t.studentId) ?? 0) + t.koma);
@@ -428,7 +428,7 @@ export function allocateKoushu(input: AllocatorInput): AllocatorResult {
 
   for (const studentId of studentOrder) {
     const tasks = workable.filter((t) => t.studentId === studentId).map((t) => ({ ...t }));
-    // 科目ラウンドロビン: 残本数が残っている限り1本ずつ回す
+    // 科目ラウンドロビン: 残コマ数が残っている限り1コマずつ回す
     let progressed = true;
     while (progressed) {
       progressed = false;
@@ -512,7 +512,7 @@ export function allocateKoushu(input: AllocatorInput): AllocatorResult {
  * リペア: 配置済み1件を別の実行可能セルへ1手だけ動かして、task が入る空きを作る。
  * 成功したら state と assignments を書き換えて true。
  *
- * 単純化のため「動かす候補」は task と同じ生徒以外の配置に限る（自分を動かしても本数は増えない）。
+ * 単純化のため「動かす候補」は task と同じ生徒以外の配置に限る（自分を動かしてもコマ数は増えない）。
  * 探索はコストを抑えるため先頭から最初に成功したものを採る（1手・最初のヒット）。
  */
 function tryRepair(
