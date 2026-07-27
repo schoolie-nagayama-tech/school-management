@@ -402,6 +402,91 @@ describe('allocateKoushu — 優先順とソフト項', () => {
     assertInvariants(input, result);
   });
 
+  it('リペアが働く（先に置いた生徒を動かして後の生徒を救済する）', () => {
+    // 制約の強い順で救えないケースを意図的に作る:
+    //   S1(科目X) と S2(科目Y) は可能枠の数が同じ。先に処理される S1 が 7/20 を取ると、
+    //   S2 は「7/20 は教室満席」「7/21 は Y を教える講師が出勤なし」で行き場を失う。
+    //   S1 は 7/21 に移れるので、1手動かせば両方入る＝リペアの出番。
+    const input = buildMinimalInput({
+      dates: ['2026-07-20', '2026-07-21'],
+      slots: [{ id: 'A', slot_number: 1, start_time: '16:20:00', end_time: '17:50:00' }],
+      students: [
+        { id: 'S1', name: '生徒1', grade: 9 },
+        { id: 'S2', name: '生徒2', grade: 9 },
+      ],
+      teachers: [
+        { id: 'T1', name: '講師1', gender: null, teachableSubjectIds: ['X'] },
+        { id: 'T2', name: '講師2', gender: null, teachableSubjectIds: ['Y'] },
+      ],
+      subjects: [
+        { id: 'X', name: '数学' },
+        { id: 'Y', name: '英語' },
+      ],
+      tasks: [
+        { studentId: 'S1', subjectId: 'X', koma: 1, ratio: 2, duration: 90 },
+        { studentId: 'S2', subjectId: 'Y', koma: 1, ratio: 2, duration: 90 },
+      ],
+      studentAvailability: new Map([
+        ['S1', new Set(['2026-07-20_A', '2026-07-21_A'])],
+        ['S2', new Set(['2026-07-20_A', '2026-07-21_A'])],
+      ]),
+      // 7/21 は T2（英語）が出勤していない
+      teacherAvailability: new Map([
+        ['2026-07-20_A', ['T1', 'T2']],
+        ['2026-07-21_A', ['T1']],
+      ]),
+      // 教室席1 = 1コマに1名しか入れない（講師が別でも埋まる）
+      capacity: { maxStudentsPerTeacher: 2, totalIndividualSeats: 1 },
+    });
+    const result = allocateKoushu(input);
+    expect(result.assignments).toHaveLength(2);
+    expect(result.unassigned).toHaveLength(0);
+    expect(result.stats.repairedKoma).toBe(1);
+    // S1 が 7/21 へ退避し、S2 が 7/20 に入っている
+    expect(result.assignments.find((a) => a.studentId === 'S1')!.date).toBe('2026-07-21');
+    expect(result.assignments.find((a) => a.studentId === 'S2')!.date).toBe('2026-07-20');
+    assertInvariants(input, result);
+  });
+
+  it('全科目可（指導可能科目が空）の講師が不当に敬遠されない', () => {
+    // 空=全科目可 の講師と、明示宣言の講師が同条件なら、負荷の少ない側が選ばれる。
+    // 以前は「宣言あり」だけが +20 されており、全科目可の講師がほぼ使われなかった。
+    const input = buildMinimalInput({
+      dates: ['2026-07-20', '2026-07-21', '2026-07-22', '2026-07-23'],
+      slots: [{ id: 'A', slot_number: 1, start_time: '16:20:00', end_time: '17:50:00' }],
+      students: [{ id: 'S1', name: '生徒1', grade: 9 }],
+      teachers: [
+        { id: 'T_declared', name: '宣言あり', gender: null, teachableSubjectIds: ['X'] },
+        { id: 'T_any', name: '全科目可', gender: null, teachableSubjectIds: [] },
+      ],
+      tasks: [{ studentId: 'S1', subjectId: 'X', koma: 4, ratio: 2, duration: 90 }],
+      studentAvailability: new Map([
+        [
+          'S1',
+          new Set(['2026-07-20_A', '2026-07-21_A', '2026-07-22_A', '2026-07-23_A']),
+        ],
+      ]),
+      teacherAvailability: new Map([
+        ['2026-07-20_A', ['T_declared', 'T_any']],
+        ['2026-07-21_A', ['T_declared', 'T_any']],
+        ['2026-07-22_A', ['T_declared', 'T_any']],
+        ['2026-07-23_A', ['T_declared', 'T_any']],
+      ]),
+      settings: {
+        maxKomaPerStudentPerDay: 2,
+        preferConsecutive: false,
+        allowSameSubjectSameDay: true,
+        spreadSubjectEvenly: false,
+      },
+    });
+    const result = allocateKoushu(input);
+    expect(result.assignments).toHaveLength(4);
+    const anyCount = result.assignments.filter((a) => a.teacherId === 'T_any').length;
+    // 負荷平準化が効いて、全科目可の講師にも回る（偏り0本ではない）
+    expect(anyCount).toBeGreaterThan(0);
+    assertInvariants(input, result);
+  });
+
   it('固定講師が居れば優先して割り当てる', () => {
     const input = buildMinimalInput({
       students: [{ id: 'S1', name: '生徒1', grade: 9, fixedTeacherIds: ['T2'] }],

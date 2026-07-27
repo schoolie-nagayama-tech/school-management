@@ -269,8 +269,9 @@ function findCandidates(
         if (!teacher) continue;
         if (prefGender && teacher.gender && teacher.gender !== prefGender) continue;
         const teachable = teacher.teachableSubjectIds ?? [];
-        // 空=全科目可（既存慣習）
-        if (teachable.length > 0 && !teachable.includes(task.subjectId)) continue;
+        // 空=全科目可（既存慣習）。指導できない講師はハード除外。
+        const canTeach = teachable.length === 0 || teachable.includes(task.subjectId);
+        if (!canTeach) continue;
 
         const existingSeats = state.seats(date, slotId, tid);
         const half = decideHalf(existingSeats, capacity.maxStudentsPerTeacher, task.duration);
@@ -292,7 +293,11 @@ function findCandidates(
         let score = ALLOC_WEIGHTS.available;
         if (fixed.has(tid)) score += ALLOC_WEIGHTS.fixedTeacher;
         if (past.has(tid)) score += ALLOC_WEIGHTS.pastHistory;
-        if (teachable.length > 0) score += ALLOC_WEIGHTS.subjectMatch;
+        // 指導可能（＝ここまで来た候補は全員）に一律で加点する。
+        // teachable の「宣言あり/なし」で差を付けると、指導可能科目を空にしている
+        // 「全科目可」の講師だけが 20点不利になり、ほとんど選ばれなくなる（実測で
+        // 27本 vs 4本の偏りが出た）。空=全科目可という慣習と矛盾するため一律にする。
+        score += ALLOC_WEIGHTS.subjectMatch;
         if (prefGender && teacher.gender === prefGender) score += ALLOC_WEIGHTS.genderPref;
         if (continuityTeachers.has(tid)) score += ALLOC_WEIGHTS.continuity;
         // 負荷平準化（担当本数が少ない講師を優先）
