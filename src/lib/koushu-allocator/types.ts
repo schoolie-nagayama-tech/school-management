@@ -80,7 +80,11 @@ export interface AllocatorSettings {
   preferConsecutive: boolean;
   /** 同一科目を同じ日に2コマ入れてよいか */
   allowSameSubjectSameDay: boolean;
-  /** 同一科目のコマ数を期間全体に等間隔で散らす */
+  /**
+   * 同一科目のコマ数を期間全体に等間隔で散らす。
+   * ON のとき「隣のコマとの間隔」だけでなく「期間全体のどこに来るべきか（絶対位置）」も
+   * 見る。前半に英語が固まり後半が数学だけになるのを防ぐのはこの絶対位置の方。
+   */
   spreadSubjectEvenly: boolean;
 }
 
@@ -155,6 +159,25 @@ export interface UnassignedTask {
   reason: UnassignedReason;
 }
 
+/** 期間を等分した1区間の科目構成 */
+export interface SubjectBalanceQuarter {
+  startDate: string;
+  endDate: string;
+  /** 科目ID → その期に置かれたコマ数 */
+  komaBySubject: Record<string, number>;
+  total: number;
+}
+
+/** 科目が期間全体へ均等に散っているかの計測結果（computeSubjectBalance が算出） */
+export interface SubjectBalance {
+  /** 0〜1。1に近いほど各科目が期間全体へ均等に散っている */
+  evenness: number;
+  /** 期別の科目構成（前半/後半の偏りを目で見る用） */
+  quarters: SubjectBalanceQuarter[];
+  /** 偏りが大きい生徒×科目（上位10件）。drift は 0=均等 / 0.5=片端に全部 */
+  worst: Array<{ studentId: string; subjectId: string; drift: number }>;
+}
+
 export interface AllocatorResult {
   assignments: Assignment[];
   unassigned: UnassignedTask[];
@@ -165,5 +188,7 @@ export interface AllocatorResult {
     loadByTeacher: Record<string, number>;
     /** リペアで救済できたコマ数 */
     repairedKoma: number;
+    /** 科目の時間的な偏り（前半英語ばかり…を検知する） */
+    subjectBalance: SubjectBalance;
   };
 }

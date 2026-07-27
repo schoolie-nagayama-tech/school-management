@@ -13,7 +13,13 @@
  * 決定性: Math.random / Date.now を使わない。同じ入力からは常に同じ出力（テスト可能性）。
  */
 
-import { canPlaceEntry, computeSeatOccupancy, type SeatEntryInput, type HalfPosition } from '@/lib/utils/seatOccupancy';
+import {
+  canPlaceEntry,
+  computeSeatOccupancy,
+  type SeatEntryInput,
+  type HalfPosition,
+} from '@/lib/utils/seatOccupancy';
+import { computeSubjectBalance } from './balance';
 import type {
   AllocatorInput,
   AllocatorResult,
@@ -41,18 +47,26 @@ export const ALLOC_WEIGHTS = {
   continuity: 8, // 同じ生徒×科目で既に割り当てた講師（低優先の明示）
   loadBalancePerKoma: 1.5, // 担当コマ数が少ない講師を優先（コマ数×これを減点）
   // セル選択
-  spreadIdeal: 12, // 同一科目の理想間隔に近い
+  spreadAnchor: 16, // 期間全体で見た「そのコマが来るべき絶対位置」に近い
+  spreadIdeal: 8, // 直前/直後の同科目コマとの間隔が理想以上（局所的な固まり防止）
   adjacentBonus: 10, // 同日の連続コマ（連続優先ON時）
   sameDaySamePenalty: 8, // 同日に同科目（許可時のみ発生する減点）
   halfPackBonus: 6, // 既存席の空き半分を埋める（詰め込み効率）
 } as const;
+
+/**
+ * 絶対位置の許容幅（理想間隔の何倍まで外れたら加点ゼロにするか）。
+ * 小さくすると位置を厳しく守る＝偏りは減るが、席・講師の都合で入らず未割当が増える。
+ */
+const ANCHOR_TOLERANCE = 1.5;
 
 // ============================================================
 // ヘルパ
 // ============================================================
 
 const cellKey = (date: string, slotId: string): CellKey => `${date}_${slotId}`;
-const seatKey = (date: string, slotId: string, teacherId: string) => `${date}_${slotId}_${teacherId}`;
+const seatKey = (date: string, slotId: string, teacherId: string) =>
+  `${date}_${slotId}_${teacherId}`;
 
 /** JST 安全な日付差（日数）。文字列 YYYY-MM-DD 前提。 */
 function dayDiff(a: string, b: string): number {
@@ -62,7 +76,11 @@ function dayDiff(a: string, b: string): number {
 }
 
 /** 45分タスクの half を、その講師セルの空き状況から決める（詰め込み優先）。 */
-function decideHalf(existingSeats: SeatEntryInput[], maxSeats: number, duration: 45 | 90): HalfPosition {
+function decideHalf(
+  existingSeats: SeatEntryInput[],
+  maxSeats: number,
+  duration: 45 | 90
+): HalfPosition {
   if (duration !== 45) return null;
   const occ = computeSeatOccupancy(existingSeats, maxSeats);
   // 片半だけ空いた席を優先して埋める（新しい席を開かない）
@@ -73,7 +91,11 @@ function decideHalf(existingSeats: SeatEntryInput[], maxSeats: number, duration:
 }
 
 /** その配置が「新しい席を1つ消費するか」（教室席数の判定に使う） */
-function seatDelta(existingSeats: SeatEntryInput[], incoming: SeatEntryInput, maxSeats: number): number {
+function seatDelta(
+  existingSeats: SeatEntryInput[],
+  incoming: SeatEntryInput,
+  maxSeats: number
+): number {
   const before = computeSeatOccupancy(existingSeats, maxSeats).usedSeatCount;
   const after = computeSeatOccupancy([...existingSeats, incoming], maxSeats).usedSeatCount;
   return Math.max(0, after - before);
@@ -132,7 +154,10 @@ class AllocState {
     const ss = `${a.studentId}_${a.subjectId}`;
     this.datesByStudentSubject.set(ss, [...(this.datesByStudentSubject.get(ss) ?? []), a.date]);
 
-    this.slotNumbersByStudentDay.set(sd, [...(this.slotNumbersByStudentDay.get(sd) ?? []), a.slotNumber]);
+    this.slotNumbersByStudentDay.set(sd, [
+      ...(this.slotNumbersByStudentDay.get(sd) ?? []),
+      a.slotNumber,
+    ]);
 
     this.loadByTeacher.set(a.teacherId, (this.loadByTeacher.get(a.teacherId) ?? 0) + 1);
 
@@ -208,7 +233,8 @@ function findCandidates(
   input: AllocatorInput,
   state: AllocState,
   availCells: Map<string, AvailCell[]>,
-  blockers: Blockers
+  blockers: Blockers,
+  dateIndexByDate: Map<string, number>
 ): Candidate[] {
   const { settings, capacity } = input;
   const cells = availCells.get(task.studentId);
@@ -225,7 +251,21 @@ function findCandidates(
 
   // 分散の理想間隔（この科目を期間全体に散らしたときの日間隔）
   const totalForSubject = placedDates.length + task.koma;
-  const idealGap = totalForSubject > 1 ? Math.max(1, input.dates.length / totalForSubject) : input.dates.length;
+  const idealGap =
+    totalForSubject > 1 ? Math.max(1, input.dates.length / totalForSubject) : input.dates.length;
+
+  // ---- 絶対位置（アンカー）の準備 ----
+  // 期間の端から端までを span とし、この科目の k 番目（日付順）のコマは
+  // (k + 0.5) / N の位置に来るのが理想、とする。
+  // 従来の「直前のコマとの間隔」だけでは、間隔が理想以上なら常に満点なので
+  // 可能枠が狭いと最短間隔で前半に固まってしまう（＝前半英語ばかりの原因）。
+  // 絶対位置で押さえると、6コマ目は必ず期間の後方を狙うようになる。
+  const span = Math.max(1, input.dates.length - 1);
+  const idealGapIdx = Math.max(1, span / totalForSubject);
+  const placedIdx = placedDates
+    .map((d) => dateIndexByDate.get(d))
+    .filter((v): v is number => v != null)
+    .sort((a, b) => a - b);
 
   const out: Candidate[] = [];
 
@@ -255,6 +295,30 @@ function findCandidates(
     if (teacherIds.length === 0) {
       blockers.teacher++;
       continue;
+    }
+
+    // ---- セル単位の加点（講師によらないのでここで1回だけ計算する） ----
+    let cellScore = 0;
+    if (settings.spreadSubjectEvenly) {
+      const idx = dateIndexByDate.get(date) ?? 0;
+      // この候補日より前にある同科目コマ数 ＝ この候補が日付順で何番目になるか
+      const k = placedIdx.filter((p) => p <= idx).length;
+      const idealIdx = ((k + 0.5) / totalForSubject) * span;
+      const anchorDrift = Math.min(1, Math.abs(idx - idealIdx) / (idealGapIdx * ANCHOR_TOLERANCE));
+      cellScore += (1 - anchorDrift) * ALLOC_WEIGHTS.spreadAnchor;
+      // 局所的な固まり防止（直近の同科目コマと近すぎない）
+      if (placedDates.length > 0) {
+        const nearest = Math.min(...placedDates.map((d) => dayDiff(d, date)));
+        cellScore += (Math.min(nearest, idealGap) / idealGap) * ALLOC_WEIGHTS.spreadIdeal;
+      }
+    }
+    // 同日に同科目（許可されている場合のみここに来る）は減点
+    if (sameDay) cellScore -= ALLOC_WEIGHTS.sameDaySamePenalty;
+    // 同日の連続コマ
+    if (settings.preferConsecutive) {
+      const nums = state.slotNumbersByStudentDay.get(sd) ?? [];
+      if (nums.some((n) => Math.abs(n - slotNumber) === 1))
+        cellScore += ALLOC_WEIGHTS.adjacentBonus;
     }
 
     {
@@ -304,18 +368,8 @@ function findCandidates(
         score -= (state.loadByTeacher.get(tid) ?? 0) * ALLOC_WEIGHTS.loadBalancePerKoma;
         // 詰め込み効率（既存席の空き半分を埋めるなら加点＝新しい席を開かない）
         if (delta === 0) score += ALLOC_WEIGHTS.halfPackBonus;
-        // 同一科目の分散
-        if (settings.spreadSubjectEvenly && placedDates.length > 0) {
-          const nearest = Math.min(...placedDates.map((d) => dayDiff(d, date)));
-          score += (Math.min(nearest, idealGap) / idealGap) * ALLOC_WEIGHTS.spreadIdeal;
-        }
-        // 同日に同科目（許可されている場合のみここに来る）は減点
-        if (sameDay) score -= ALLOC_WEIGHTS.sameDaySamePenalty;
-        // 同日の連続コマ
-        if (settings.preferConsecutive) {
-          const nums = state.slotNumbersByStudentDay.get(sd) ?? [];
-          if (nums.some((n) => Math.abs(n - slotNumber) === 1)) score += ALLOC_WEIGHTS.adjacentBonus;
-        }
+        // セル単位の加点（分散・絶対位置・連続コマ）
+        score += cellScore;
 
         out.push({ date, slotId, slotNumber, teacherId: tid, halfPosition: half, score });
       }
@@ -390,6 +444,8 @@ export function allocateKoushu(input: AllocatorInput): AllocatorResult {
 
   // 生徒の可能枠を展開（走査対象＝ここだけ。1回作って使い回す）
   const availCells = buildAvailCells(input);
+  // 日付 → 期間内の通し番号（絶対位置の計算に使う。毎回作らず1回だけ）
+  const dateIndexByDate = new Map(input.dates.map((d, i) => [d, i]));
 
   // ---- 可能表未提出の生徒は対象外（仕様書 §1-4） ----
   const workable: TaskDef[] = [];
@@ -428,14 +484,19 @@ export function allocateKoushu(input: AllocatorInput): AllocatorResult {
 
   for (const studentId of studentOrder) {
     const tasks = workable.filter((t) => t.studentId === studentId).map((t) => ({ ...t }));
-    // 科目ラウンドロビン: 残コマ数が残っている限り1コマずつ回す
+    // 科目ラウンドロビン: 残コマ数が残っている限り1コマずつ回す。
+    // 毎パスで「残コマ数が多い科目」から回す（配列順のまま回すと、先頭の科目が
+    // 良いセルを先取りし続け、後ろの科目が期間の端へ押し出される）。
     let progressed = true;
     while (progressed) {
       progressed = false;
-      for (const task of tasks) {
+      const pass = tasks
+        .filter((t) => t.koma > 0)
+        .sort((a, b) => b.koma - a.koma || a.subjectId.localeCompare(b.subjectId));
+      for (const task of pass) {
         if (task.koma <= 0) continue;
         const blockers = emptyBlockers();
-        const cands = findCandidates(task, input, state, availCells, blockers);
+        const cands = findCandidates(task, input, state, availCells, blockers, dateIndexByDate);
         if (cands.length === 0) continue; // この科目はもう置けない（リペアへ）
         const best = cands[0];
         state.commit({
@@ -475,7 +536,7 @@ export function allocateKoushu(input: AllocatorInput): AllocatorResult {
   let repairedKoma = 0;
   for (const [, task] of Array.from(leftover.entries())) {
     while (task.koma > 0) {
-      const moved = tryRepair(task, input, state, availCells, assignments);
+      const moved = tryRepair(task, input, state, availCells, assignments, dateIndexByDate);
       if (!moved) break;
       task.koma -= 1;
       repairedKoma += 1;
@@ -486,7 +547,7 @@ export function allocateKoushu(input: AllocatorInput): AllocatorResult {
   for (const [, task] of Array.from(leftover.entries())) {
     if (task.koma <= 0) continue;
     const blockers = emptyBlockers();
-    findCandidates(task, input, state, availCells, blockers);
+    findCandidates(task, input, state, availCells, blockers, dateIndexByDate);
     unassigned.push({
       studentId: task.studentId,
       subjectId: task.subjectId,
@@ -504,6 +565,7 @@ export function allocateKoushu(input: AllocatorInput): AllocatorResult {
       assignedKoma: assignments.length,
       loadByTeacher: Object.fromEntries(state.loadByTeacher),
       repairedKoma,
+      subjectBalance: computeSubjectBalance(input.dates, assignments),
     },
   };
 }
@@ -520,7 +582,8 @@ function tryRepair(
   input: AllocatorInput,
   state: AllocState,
   availCells: Map<string, AvailCell[]>,
-  assignments: Assignment[]
+  assignments: Assignment[],
+  dateIndexByDate: Map<string, number>
 ): boolean {
   const { capacity } = input;
   const slotById = new Map(input.slots.map((s) => [s.id, s]));
@@ -543,8 +606,9 @@ function tryRepair(
       duration: victim.duration,
     };
     const vb = emptyBlockers();
-    const vCands = findCandidates(victimTask, input, trial, availCells, vb).filter(
-      (c) => !(c.date === victim.date && c.slotId === victim.slotId && c.teacherId === victim.teacherId)
+    const vCands = findCandidates(victimTask, input, trial, availCells, vb, dateIndexByDate).filter(
+      (c) =>
+        !(c.date === victim.date && c.slotId === victim.slotId && c.teacherId === victim.teacherId)
     );
     if (vCands.length === 0) continue;
 
@@ -563,7 +627,7 @@ function tryRepair(
       maxSeats: capacity.maxStudentsPerTeacher,
     });
     const tb = emptyBlockers();
-    const tCands = findCandidates(task, input, trial2, availCells, tb);
+    const tCands = findCandidates(task, input, trial2, availCells, tb, dateIndexByDate);
     if (tCands.length === 0) continue;
 
     // 成功: 本番 state を trial2 + task 配置に更新
@@ -615,9 +679,13 @@ function cloneState(s: AllocState): AllocState {
   n.komaByStudentDay = new Map(s.komaByStudentDay);
   n.studentCellTaken = new Set(s.studentCellTaken);
   n.datesByStudentSubject = new Map(Array.from(s.datesByStudentSubject, ([k, v]) => [k, [...v]]));
-  n.slotNumbersByStudentDay = new Map(Array.from(s.slotNumbersByStudentDay, ([k, v]) => [k, [...v]]));
+  n.slotNumbersByStudentDay = new Map(
+    Array.from(s.slotNumbersByStudentDay, ([k, v]) => [k, [...v]])
+  );
   n.loadByTeacher = new Map(s.loadByTeacher);
-  n.teachersByStudentSubject = new Map(Array.from(s.teachersByStudentSubject, ([k, v]) => [k, new Set(v)]));
+  n.teachersByStudentSubject = new Map(
+    Array.from(s.teachersByStudentSubject, ([k, v]) => [k, new Set(v)])
+  );
   return n;
 }
 
@@ -650,7 +718,10 @@ function removeFromState(
   const after = computeSeatOccupancy(seats, maxSeats).usedSeatCount;
 
   const ck = cellKey(a.date, a.slotId);
-  s.usedSeatsByCell.set(ck, Math.max(0, (s.usedSeatsByCell.get(ck) ?? 0) - Math.max(0, before - after)));
+  s.usedSeatsByCell.set(
+    ck,
+    Math.max(0, (s.usedSeatsByCell.get(ck) ?? 0) - Math.max(0, before - after))
+  );
 
   const sd = `${a.studentId}_${a.date}`;
   s.komaByStudentDay.set(sd, Math.max(0, (s.komaByStudentDay.get(sd) ?? 0) - 1));

@@ -7,6 +7,7 @@
  */
 
 import { allocateKoushu } from '@/lib/koushu-allocator/allocate';
+import { computeSubjectBalance } from '@/lib/koushu-allocator/balance';
 import {
   buildFixtureInput,
   buildMinimalInput,
@@ -44,7 +45,9 @@ function assertInvariants(input: AllocatorInput, result: AllocatorResult) {
 
     // (3) 講師がそのセルに出勤している
     const onDuty = input.teacherAvailability.get(cell) ?? [];
-    expect(onDuty, `${cell} に出勤していない講師 ${a.teacherId} が割当てられた`).toContain(a.teacherId);
+    expect(onDuty, `${cell} に出勤していない講師 ${a.teacherId} が割当てられた`).toContain(
+      a.teacherId
+    );
 
     // (4) 生徒の希望条件（NG・性別）と講師の指導可能科目
     const st = studentById.get(a.studentId)!;
@@ -100,7 +103,9 @@ function assertInvariants(input: AllocatorInput, result: AllocatorResult) {
     usedByCell.set(cell, (usedByCell.get(cell) ?? 0) + used);
   }
   for (const [cell, used] of Array.from(usedByCell.entries())) {
-    expect(used, `${cell} が教室席数を超過`).toBeLessThanOrEqual(input.capacity.totalIndividualSeats);
+    expect(used, `${cell} が教室席数を超過`).toBeLessThanOrEqual(
+      input.capacity.totalIndividualSeats
+    );
   }
 
   // (9) 1日上限を超えていない
@@ -212,7 +217,9 @@ describe('allocateKoushu — ハード制約', () => {
   it('同一科目を同じ日に2コマ入れない（既定 allowSameSubjectSameDay=false）', () => {
     const input = buildMinimalInput({
       tasks: [{ studentId: 'S1', subjectId: 'X', koma: 2, ratio: 2, duration: 90 }],
-      studentAvailability: new Map([['S1', new Set(['2026-07-20_A', '2026-07-20_B', '2026-07-21_A'])]]),
+      studentAvailability: new Map([
+        ['S1', new Set(['2026-07-20_A', '2026-07-20_B', '2026-07-21_A'])],
+      ]),
     });
     const result = allocateKoushu(input);
     expect(result.assignments).toHaveLength(2);
@@ -295,7 +302,13 @@ describe('allocateKoushu — ハード制約', () => {
     const input = buildMinimalInput({
       students: [
         // T1(男性)はNG、T2(女性)のみ可
-        { id: 'S1', name: '生徒1', grade: 9, excludedTeacherIds: ['T1'], preferredTeacherGender: 'female' },
+        {
+          id: 'S1',
+          name: '生徒1',
+          grade: 9,
+          excludedTeacherIds: ['T1'],
+          preferredTeacherGender: 'female',
+        },
       ],
       teachers: [
         { id: 'T1', name: '講師1', gender: 'male', teachableSubjectIds: [] },
@@ -461,10 +474,7 @@ describe('allocateKoushu — 優先順とソフト項', () => {
       ],
       tasks: [{ studentId: 'S1', subjectId: 'X', koma: 4, ratio: 2, duration: 90 }],
       studentAvailability: new Map([
-        [
-          'S1',
-          new Set(['2026-07-20_A', '2026-07-21_A', '2026-07-22_A', '2026-07-23_A']),
-        ],
+        ['S1', new Set(['2026-07-20_A', '2026-07-21_A', '2026-07-22_A', '2026-07-23_A'])],
       ]),
       teacherAvailability: new Map([
         ['2026-07-20_A', ['T_declared', 'T_any']],
@@ -530,6 +540,150 @@ describe('allocateKoushu — 優先順とソフト項', () => {
   });
 });
 
+describe('科目の時間的な偏り（前半英語ばかり…の防止）', () => {
+  /** 連続した日付を n 日ぶん作る（休講なし） */
+  function seqDates(n: number, from = '2026-07-20'): string[] {
+    const out: string[] = [];
+    const cur = new Date(from + 'T12:00:00');
+    for (let i = 0; i < n; i++) {
+      const y = cur.getFullYear();
+      const m = String(cur.getMonth() + 1).padStart(2, '0');
+      const d = String(cur.getDate()).padStart(2, '0');
+      out.push(`${y}-${m}-${d}`);
+      cur.setDate(cur.getDate() + 1);
+    }
+    return out;
+  }
+
+  it('2コマの科目は前半と後半に1コマずつ置かれる（絶対位置のアンカー）', () => {
+    const dates = seqDates(20);
+    const input = buildMinimalInput({
+      dates,
+      slots: [{ id: 'A', slot_number: 1, start_time: '16:20:00', end_time: '17:50:00' }],
+      tasks: [{ studentId: 'S1', subjectId: 'X', koma: 2, ratio: 2, duration: 90 }],
+      studentAvailability: new Map([['S1', new Set(dates.map((d) => `${d}_A`))]]),
+      teacherAvailability: new Map(dates.map((d) => [`${d}_A`, ['T1']])),
+    });
+    const result = allocateKoushu(input);
+    expect(result.assignments).toHaveLength(2);
+    const idx = result.assignments.map((a) => dates.indexOf(a.date)).sort((a, b) => a - b);
+    // 理想位置は 0.25 / 0.75 の地点（= だいたい 5日目と14日目）
+    expect(idx[0]).toBeLessThan(dates.length / 2);
+    expect(idx[1]).toBeGreaterThanOrEqual(dates.length / 2);
+  });
+
+  it('コマ数が少ない科目も期間の後半に残る（多い科目に食われない）', () => {
+    // 英語8コマ・数学2コマ。均等化が無いと数学が前半で終わり、後半は英語だけになる。
+    const dates = seqDates(40);
+    const avail = new Set(dates.map((d) => `${d}_A`));
+    const input = buildMinimalInput({
+      dates,
+      slots: [{ id: 'A', slot_number: 1, start_time: '16:20:00', end_time: '17:50:00' }],
+      subjects: [
+        { id: 'EN', name: '英語' },
+        { id: 'MA', name: '数学' },
+      ],
+      tasks: [
+        { studentId: 'S1', subjectId: 'EN', koma: 8, ratio: 2, duration: 90 },
+        { studentId: 'S1', subjectId: 'MA', koma: 2, ratio: 2, duration: 90 },
+      ],
+      studentAvailability: new Map([['S1', avail]]),
+      teacherAvailability: new Map(dates.map((d) => [`${d}_A`, ['T1']])),
+    });
+    const result = allocateKoushu(input);
+    const half = dates.length / 2;
+    const mathIdx = result.assignments
+      .filter((a) => a.subjectId === 'MA')
+      .map((a) => dates.indexOf(a.date));
+    expect(mathIdx).toHaveLength(2);
+    expect(
+      mathIdx.some((i) => i < half),
+      '数学が前半に1コマも無い'
+    ).toBe(true);
+    expect(
+      mathIdx.some((i) => i >= half),
+      '数学が後半に1コマも無い'
+    ).toBe(true);
+    // 後半にも両科目が混ざっていること
+    const lateSubjects = new Set(
+      result.assignments.filter((a) => dates.indexOf(a.date) >= half).map((a) => a.subjectId)
+    );
+    expect(lateSubjects).toEqual(new Set(['EN', 'MA']));
+    assertInvariants(input, result);
+  });
+
+  it('均等化ONはOFFより偏りが小さく、割当コマ数を犠牲にしない', () => {
+    const base = buildFixtureInput({ seed: 42 });
+    const off = allocateKoushu({
+      ...base,
+      settings: { ...base.settings, spreadSubjectEvenly: false },
+    });
+    const on = allocateKoushu({
+      ...base,
+      settings: { ...base.settings, spreadSubjectEvenly: true },
+    });
+
+    expect(on.stats.subjectBalance.evenness).toBeGreaterThan(off.stats.subjectBalance.evenness);
+    // 均等化は「詰め込みを諦める」形で達成してはいけない
+    expect(on.stats.assignedKoma).toBeGreaterThanOrEqual(off.stats.assignedKoma);
+  });
+
+  it('期間を4等分した各期のコマ数が偏らない（教室全体で見た山崩し）', () => {
+    const input = buildFixtureInput({ seed: 42 });
+    const result = allocateKoushu(input);
+    const totals = result.stats.subjectBalance.quarters.map((q) => q.total);
+    expect(totals).toHaveLength(4);
+    const mean = totals.reduce((s, n) => s + n, 0) / totals.length;
+    // 最も多い期が平均の1.5倍を超えない（均等化前は 41 vs 平均25.5 で超えていた）
+    expect(Math.max(...totals)).toBeLessThanOrEqual(mean * 1.5);
+    // 最終期が空にならない（前半に食い尽くされていない）
+    expect(totals[3]).toBeGreaterThan(0);
+  });
+
+  it('複数 seed で均等度が実用水準を保つ', () => {
+    for (const seed of [1, 7, 42, 99, 2026]) {
+      const result = allocateKoushu(buildFixtureInput({ seed }));
+      expect(result.stats.subjectBalance.evenness, `seed=${seed} の均等度が低い`).toBeGreaterThan(
+        0.7
+      );
+    }
+  });
+});
+
+describe('computeSubjectBalance — 指標の定義', () => {
+  const dates = Array.from({ length: 11 }, (_, i) => `2026-07-${String(20 + i).padStart(2, '0')}`);
+  const mk = (date: string) => ({
+    studentId: 'S1',
+    subjectId: 'X',
+    date,
+    slotId: 'A',
+    teacherId: 'T1',
+    ratio: 2 as const,
+    duration: 90 as const,
+    halfPosition: null,
+    score: 0,
+  });
+
+  it('均等に散っていれば 1 に近い', () => {
+    // 11日に3コマ → 理想位置は index 1.67 / 5 / 8.33
+    const b = computeSubjectBalance(dates, [mk(dates[2]), mk(dates[5]), mk(dates[8])]);
+    expect(b.evenness).toBeGreaterThan(0.9);
+  });
+
+  it('片端に固まっていれば 0 に近い', () => {
+    const b = computeSubjectBalance(dates, [mk(dates[0]), mk(dates[0 + 1]), mk(dates[2])]);
+    expect(b.evenness).toBeLessThan(0.4);
+  });
+
+  it('1コマだけの科目は指標に含めない（均等かを定義できない）', () => {
+    const b = computeSubjectBalance(dates, [mk(dates[0])]);
+    expect(b.evenness).toBe(1);
+    expect(b.worst).toHaveLength(0);
+    // 配置自体は期別集計に出る
+    expect(b.quarters.reduce((s, q) => s + q.total, 0)).toBe(1);
+  });
+});
+
 describe('allocateKoushu — 現実規模の合成データ', () => {
   it('8週・10生徒・6講師でハード制約を全て満たす', () => {
     const input = buildFixtureInput({ seed: 42 });
@@ -550,9 +704,24 @@ describe('allocateKoushu — 現実規模の合成データ', () => {
 
   it('設定を変えても不変条件が壊れない', () => {
     const variants = [
-      { maxKomaPerStudentPerDay: 1, preferConsecutive: false, allowSameSubjectSameDay: false, spreadSubjectEvenly: false },
-      { maxKomaPerStudentPerDay: 3, preferConsecutive: true, allowSameSubjectSameDay: true, spreadSubjectEvenly: true },
-      { maxKomaPerStudentPerDay: 2, preferConsecutive: false, allowSameSubjectSameDay: true, spreadSubjectEvenly: false },
+      {
+        maxKomaPerStudentPerDay: 1,
+        preferConsecutive: false,
+        allowSameSubjectSameDay: false,
+        spreadSubjectEvenly: false,
+      },
+      {
+        maxKomaPerStudentPerDay: 3,
+        preferConsecutive: true,
+        allowSameSubjectSameDay: true,
+        spreadSubjectEvenly: true,
+      },
+      {
+        maxKomaPerStudentPerDay: 2,
+        preferConsecutive: false,
+        allowSameSubjectSameDay: true,
+        spreadSubjectEvenly: false,
+      },
     ];
     for (const settings of variants) {
       const base = buildFixtureInput({ seed: 42 });
@@ -564,8 +733,14 @@ describe('allocateKoushu — 現実規模の合成データ', () => {
 
   it('1日上限を上げると割当コマ数が増える（詰め込みが効く）', () => {
     const base = buildFixtureInput({ seed: 42 });
-    const tight = allocateKoushu({ ...base, settings: { ...base.settings, maxKomaPerStudentPerDay: 1 } });
-    const loose = allocateKoushu({ ...base, settings: { ...base.settings, maxKomaPerStudentPerDay: 3 } });
+    const tight = allocateKoushu({
+      ...base,
+      settings: { ...base.settings, maxKomaPerStudentPerDay: 1 },
+    });
+    const loose = allocateKoushu({
+      ...base,
+      settings: { ...base.settings, maxKomaPerStudentPerDay: 3 },
+    });
     expect(loose.stats.assignedKoma).toBeGreaterThanOrEqual(tight.stats.assignedKoma);
   });
 

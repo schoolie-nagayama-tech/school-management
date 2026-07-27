@@ -27,7 +27,15 @@ const cellKey = (date: string, slotId: string): CellKey => `${date}_${slotId}`;
 export function buildKoushuDates(
   startDate = '2026-07-20',
   endDate = '2026-09-13',
-  closed: string[] = ['2026-08-10', '2026-08-11', '2026-08-12', '2026-08-13', '2026-08-14', '2026-08-15', '2026-08-16']
+  closed: string[] = [
+    '2026-08-10',
+    '2026-08-11',
+    '2026-08-12',
+    '2026-08-13',
+    '2026-08-14',
+    '2026-08-15',
+    '2026-08-16',
+  ]
 ): string[] {
   const out: string[] = [];
   const closedSet = new Set(closed);
@@ -63,12 +71,37 @@ export const FIXTURE_SUBJECTS = [
 ];
 
 export const FIXTURE_TEACHERS = [
-  { id: 't_sato', name: '佐藤 朱華', gender: 'female' as const, teachableSubjectIds: ['sub_kokugo', 'sub_eigo', 'sub_shakai'] },
-  { id: 't_takigawa', name: '瀧川 怜生', gender: 'male' as const, teachableSubjectIds: ['sub_sugaku', 'sub_rika'] },
-  { id: 't_sugiura', name: '杉浦 駿', gender: 'male' as const, teachableSubjectIds: ['sub_sugaku', 'sub_rika', 'sub_eigo'] },
-  { id: 't_kitamura', name: '北村 由衣', gender: 'female' as const, teachableSubjectIds: ['sub_kokugo', 'sub_shakai'] },
+  {
+    id: 't_sato',
+    name: '佐藤 朱華',
+    gender: 'female' as const,
+    teachableSubjectIds: ['sub_kokugo', 'sub_eigo', 'sub_shakai'],
+  },
+  {
+    id: 't_takigawa',
+    name: '瀧川 怜生',
+    gender: 'male' as const,
+    teachableSubjectIds: ['sub_sugaku', 'sub_rika'],
+  },
+  {
+    id: 't_sugiura',
+    name: '杉浦 駿',
+    gender: 'male' as const,
+    teachableSubjectIds: ['sub_sugaku', 'sub_rika', 'sub_eigo'],
+  },
+  {
+    id: 't_kitamura',
+    name: '北村 由衣',
+    gender: 'female' as const,
+    teachableSubjectIds: ['sub_kokugo', 'sub_shakai'],
+  },
   { id: 't_nishikan', name: '西舘 季紀', gender: 'male' as const, teachableSubjectIds: [] }, // 空=全科目可
-  { id: 't_mizukami', name: '水上 歩乃歌', gender: 'female' as const, teachableSubjectIds: ['sub_eigo', 'sub_kokugo'] },
+  {
+    id: 't_mizukami',
+    name: '水上 歩乃歌',
+    gender: 'female' as const,
+    teachableSubjectIds: ['sub_eigo', 'sub_kokugo'],
+  },
 ];
 
 export interface FixtureOptions {

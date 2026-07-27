@@ -9,7 +9,7 @@
  * 正典仕様: docs/koushu-auto-allocation-spec.md
  */
 
-import { useEffect, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import {
   ArrowLeft,
@@ -38,6 +38,7 @@ import {
   type AllocatorInput,
   type AllocatorSettings,
   type Assignment,
+  type SubjectBalance,
   type UnassignedReason,
 } from '@/lib/koushu-allocator/types';
 
@@ -857,8 +858,9 @@ export default function KoushuSimulatorPage() {
                     const fullyAssigned = s.unassignedKoma === 0;
                     const isOpen = selectedStudentId === s.id;
                     return (
-                      <>
-                        <tr key={s.id} className="border-b border-gray-100 last:border-0">
+                      // key は Fragment 側に付ける（内側の <tr> に付けても React は兄弟を識別できない）
+                      <Fragment key={s.id}>
+                        <tr className="border-b border-gray-100 last:border-0">
                           <td className="py-1.5 pr-3">
                             <button
                               onClick={() =>
@@ -925,7 +927,7 @@ export default function KoushuSimulatorPage() {
                             </td>
                           </tr>
                         )}
-                      </>
+                      </Fragment>
                     );
                   })}
                 </tbody>
@@ -952,6 +954,15 @@ export default function KoushuSimulatorPage() {
                 ))}
               </div>
             </div>
+
+            {/* 科目バランス（前半英語ばかり…になっていないかを見る） */}
+            <SubjectBalancePanel
+              balance={result.stats.subjectBalance}
+              subjects={input.subjects}
+              studentNameById={studentNameById}
+              subjectNameById={subjectNameById}
+              spreadEnabled={settings.spreadSubjectEvenly}
+            />
 
             {/* 未割当リスト */}
             <div className="rounded-lg border border-[var(--stroke)] bg-white p-4">
@@ -982,6 +993,124 @@ export default function KoushuSimulatorPage() {
         )}
       </div>
     </AdminLayout>
+  );
+}
+
+// ============================================================
+// 科目バランス（期別の科目構成と偏り指標）
+// ============================================================
+
+/** 科目の識別色。subjects 配列の順で決まる（同じ入力なら常に同じ色） */
+const SUBJECT_BAR_COLORS = [
+  'bg-blue-500',
+  'bg-emerald-500',
+  'bg-amber-500',
+  'bg-purple-500',
+  'bg-rose-500',
+  'bg-cyan-500',
+  'bg-orange-500',
+  'bg-indigo-500',
+];
+
+function SubjectBalancePanel({
+  balance,
+  subjects,
+  studentNameById,
+  subjectNameById,
+  spreadEnabled,
+}: {
+  balance: SubjectBalance;
+  subjects: { id: string; name: string }[];
+  studentNameById: Map<string, string>;
+  subjectNameById: Map<string, string>;
+  spreadEnabled: boolean;
+}) {
+  const colorBySubject = new Map(
+    subjects.map((s, i) => [s.id, SUBJECT_BAR_COLORS[i % SUBJECT_BAR_COLORS.length]])
+  );
+  const evennessPct = Math.round(balance.evenness * 100);
+  const evennessClass =
+    evennessPct >= 80
+      ? 'bg-success-subtle text-success'
+      : evennessPct >= 60
+        ? 'bg-warning-subtle text-warning'
+        : 'bg-danger-subtle text-danger';
+  // 期ごとのバー幅を揃えるため、最も多い期を基準にする
+  const maxTotal = Math.max(1, ...balance.quarters.map((q) => q.total));
+
+  return (
+    <div className="rounded-lg border border-[var(--stroke)] bg-white p-4">
+      <div className="flex items-center justify-between gap-2 mb-1">
+        <h2 className="text-sm font-semibold text-[var(--headline)]">科目バランス（期別の構成）</h2>
+        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${evennessClass}`}>
+          均等度 {evennessPct}%
+        </span>
+      </div>
+      <p className="text-xs text-[var(--paragraph)] mb-3">
+        各科目のコマが期間全体へ均等に散っているか。
+        {spreadEnabled ? '「科目を均等分散」ON' : '「科目を均等分散」OFF（偏りが出やすい）'}
+      </p>
+
+      {/* 科目の凡例 */}
+      <div className="flex flex-wrap gap-x-3 gap-y-1 mb-3">
+        {subjects.map((s) => (
+          <span key={s.id} className="flex items-center gap-1.5 text-xs text-[var(--paragraph)]">
+            <span className={`w-2.5 h-2.5 rounded-sm ${colorBySubject.get(s.id)}`} />
+            {s.name}
+          </span>
+        ))}
+      </div>
+
+      {/* 期別の積み上げバー */}
+      <div className="space-y-2">
+        {balance.quarters.map((q, i) => (
+          <div key={i} className="flex items-center gap-2 text-xs">
+            <span className="w-32 shrink-0 text-[var(--paragraph)]">
+              第{i + 1}期 {q.startDate.slice(5)}〜{q.endDate.slice(5)}
+            </span>
+            <div className="flex-1 h-5 bg-gray-100 rounded overflow-hidden">
+              {/* 期どうしの多寡が分かるよう、最大の期を100%として全体幅を決める */}
+              <div className="flex h-full" style={{ width: `${(q.total / maxTotal) * 100}%` }}>
+                {subjects.map((s) => {
+                  const koma = q.komaBySubject[s.id] ?? 0;
+                  if (koma === 0) return null;
+                  return (
+                    <div
+                      key={s.id}
+                      className={colorBySubject.get(s.id)}
+                      style={{ width: `${(koma / Math.max(1, q.total)) * 100}%` }}
+                      title={`第${i + 1}期 ${s.name} ${koma}コマ`}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+            <span className="w-12 text-right text-[var(--headline)] shrink-0">{q.total}コマ</span>
+          </div>
+        ))}
+      </div>
+
+      {/* 偏りが大きい生徒×科目 */}
+      {balance.worst.length > 0 && (
+        <div className="mt-4 pt-3 border-t border-[var(--stroke)]">
+          <h3 className="text-xs font-semibold text-[var(--headline)] mb-1.5">
+            偏りが大きい生徒×科目
+          </h3>
+          <ul className="text-xs text-[var(--paragraph)] space-y-0.5">
+            {balance.worst.slice(0, 5).map((w, i) => (
+              <li key={i} className="flex items-center gap-2">
+                <span className="flex-1 truncate">
+                  {studentNameById.get(w.studentId) ?? w.studentId}{' '}
+                  {subjectNameById.get(w.subjectId) ?? w.subjectId}
+                </span>
+                {/* drift は 0=均等 / 0.5=片端に全部。分かりやすさのため均等度に換算して出す */}
+                <span className="shrink-0">均等度 {Math.round((1 - w.drift * 2) * 100)}%</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
   );
 }
 
