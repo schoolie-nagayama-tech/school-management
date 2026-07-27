@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { AlertTriangle } from 'lucide-react';
 import { AdminLayout } from '@/components/layouts';
 import { Button, Loading, InlineLoading, ToastContainer } from '@/components/ui';
 import dynamic from 'next/dynamic';
@@ -30,6 +31,7 @@ import {
   createOrder,
   createOrderWithBilling,
   createBulkOrders,
+  checkOrderDuplicates,
 } from '@/lib/api/ordering';
 import { getStudents } from '@/lib/api/students';
 import { getBillingPeriods } from '@/lib/api/billing';
@@ -125,6 +127,39 @@ export default function OrderingPage() {
 
   // カート保存のスコープ。教室を切り替えたら別教室の生徒・教材が混ざるため保存分は捨てる。
   const cartScopeKey = useMemo(() => schoolIds.join(','), [schoolIds]);
+
+  // 発注済み（未キャンセル・実生徒）の「生徒ID::教材名ラベル」集合。カタログの生徒選択肢に
+  // 「発注済」を注記するための即時判定（追加fetchなし。ロード済み orders から作る）。
+  const existingOrderPairs = useMemo(() => {
+    const set = new Set<string>();
+    for (const o of orders) {
+      if (o.status === 'cancelled' || o.is_sample || !o.student_id || !o.material?.name) continue;
+      set.add(`${o.student_id}::${o.material.name}`);
+    }
+    return set;
+  }, [orders]);
+
+  // 二重発注の確認ダイアログ。確定時にサーバー再判定した重複を提示し、除外/含める/中止を選ばせる。
+  type DuplicateRow = { key: string; studentLabel: string; textbookName: string; reason: string };
+  const [dupPrompt, setDupPrompt] = useState<{ rows: DuplicateRow[]; total: number } | null>(null);
+  // ダイアログの選択結果を handleBulkOrder 側の await に渡すための resolver。
+  const dupResolverRef = useRef<((choice: 'exclude' | 'include' | 'cancel') => void) | null>(null);
+
+  const resolveDupChoice = useCallback((choice: 'exclude' | 'include' | 'cancel') => {
+    const resolve = dupResolverRef.current;
+    dupResolverRef.current = null;
+    setDupPrompt(null);
+    resolve?.(choice);
+  }, []);
+
+  const askDuplicateDecision = useCallback(
+    (rows: DuplicateRow[], total: number): Promise<'exclude' | 'include' | 'cancel'> =>
+      new Promise((resolve) => {
+        dupResolverRef.current = resolve;
+        setDupPrompt({ rows, total });
+      }),
+    []
+  );
 
   // --- Material CRUD ---
   const handleCreateMaterial = async (data: MaterialFormData) => {
@@ -250,6 +285,67 @@ export default function OrderingPage() {
   const handleBulkOrder = async (items: CartItem[]) => {
     const fallbackSchoolId = schoolIds.length > 0 ? schoolIds[0] : undefined;
 
+    // ─── 二重発注チェック（確定前・サーバー再判定） ───
+    // ロード済みデータでは拾えない「他ユーザーの発注」「前セッションから残ったカート」「所持済み」も
+    // 含め、実生徒の (生徒×テキスト) をサーバーで再判定する。見本は対象外。
+    let effectiveItems = items;
+    const dupCandidates = items
+      .filter((it) => it.studentId !== SAMPLE_VALUE && it.textbook?.id != null)
+      .map((it) => ({ item: it, studentId: it.studentId, textbookId: it.textbook.id }));
+    if (dupCandidates.length > 0) {
+      const dupKeys = new Set<string>();
+      const ownedKeys = new Set<string>();
+      try {
+        const results = await checkOrderDuplicates(
+          dupCandidates.map(({ studentId, textbookId }) => ({ studentId, textbookId }))
+        );
+        for (const r of results) {
+          if (r.isDuplicate) {
+            dupKeys.add(`${r.studentId}:${r.textbookId}`);
+            if (r.alreadyOwned) ownedKeys.add(`${r.studentId}:${r.textbookId}`);
+          }
+        }
+      } catch (err) {
+        // 判定に失敗しても発注自体は止めない（重複防止はベストエフォート）。
+        console.warn('二重発注チェックに失敗しました（スキップ）:', err);
+      }
+
+      if (dupKeys.size > 0) {
+        // 重複行を提示（同一キーはまとめる）。理由は所持/発注済みのどちらか。
+        const seen = new Set<string>();
+        const rows: DuplicateRow[] = [];
+        for (const { item, studentId, textbookId } of dupCandidates) {
+          const key = `${studentId}:${textbookId}`;
+          if (!dupKeys.has(key) || seen.has(key)) continue;
+          seen.add(key);
+          rows.push({
+            key,
+            studentLabel: item.studentLabel,
+            textbookName: item.textbook.name,
+            reason: ownedKeys.has(key) ? '所持' : '発注済み',
+          });
+        }
+
+        const choice = await askDuplicateDecision(rows, dupCandidates.length);
+        if (choice === 'cancel') {
+          // カートを残すため throw（TextbookCatalog 側の catch が握りつぶし、cart は維持される）。
+          throw new Error('duplicate-order-cancelled');
+        }
+        if (choice === 'exclude') {
+          effectiveItems = items.filter((it) => {
+            if (it.studentId === SAMPLE_VALUE || it.textbook?.id == null) return true;
+            return !dupKeys.has(`${it.studentId}:${it.textbook.id}`);
+          });
+          if (effectiveItems.length === 0) {
+            success('重複のみだったため発注しませんでした（全件が既に発注済み/所持）');
+            throw new Error('duplicate-order-all-excluded');
+          }
+        }
+        // choice === 'include' の場合は effectiveItems = items のまま（重複も発注）。
+      }
+    }
+    const excludedCount = items.length - effectiveItems.length;
+
     // (school_id, material name) で材料をキャッシュ。単語練習帳は教室別レコードを使うので
     // material_name 単独では衝突するためキーに school_id を含める。
     const materialKey = (name: string, schoolId: string | undefined) =>
@@ -274,7 +370,7 @@ export default function OrderingPage() {
     // 画面上は「押しても何も起きない」ように見えて原因にたどり着けないため）。
     let createdCount = 0;
     try {
-      for (const item of items) {
+      for (const item of effectiveItems) {
         const isSample = item.studentId === SAMPLE_VALUE;
         const isVocab = item.textbookName === VOCAB_BOOK_NAME;
         const student = !isSample ? students.find((s) => s.id === item.studentId) : null;
@@ -336,7 +432,7 @@ export default function OrderingPage() {
       const reason = getUserErrorMessage(err, '発注の登録に失敗しました');
       toastError(
         createdCount > 0
-          ? `${items.length}件中${createdCount}件だけ登録されました: ${reason}`
+          ? `${effectiveItems.length}件中${createdCount}件だけ登録されました: ${reason}`
           : reason
       );
       throw err;
@@ -361,7 +457,12 @@ export default function OrderingPage() {
     fetchData();
     // ボタン名は「まとめて発注」だが、実際に作られるのは未確認レコードで取次への発注ではない。
     // 行き先を明示しないと「発注できていない」と誤解されるため、ステータスまで書く。
-    success(`${createdCount}件を発注リストに登録しました（未確認）`);
+    // 二重発注で除外した件数があれば併記する。
+    success(
+      excludedCount > 0
+        ? `${createdCount}件を発注リストに登録しました（未確認）／重複${excludedCount}件は除外`
+        : `${createdCount}件を発注リストに登録しました（未確認）`
+    );
   };
 
   const handleFormClose = () => {
@@ -468,6 +569,7 @@ export default function OrderingPage() {
           onOrder={handleTextbookOrder}
           onBulkOrder={handleBulkOrder}
           schoolScopeKey={cartScopeKey}
+          existingOrderPairs={existingOrderPairs}
           onStockAdjust={handleStockAdjust}
           onStockRegister={async (textbookName: string) => {
             // 在庫未登録のテキスト → まず Material を作成してから在庫調整モーダルを開く
@@ -495,6 +597,68 @@ export default function OrderingPage() {
           onSubmit={editingMaterial ? handleUpdateMaterial : handleCreateMaterial}
           material={editingMaterial}
         />
+      )}
+
+      {/* 二重発注 確認ダイアログ */}
+      {dupPrompt && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-md rounded-xl bg-white shadow-xl">
+            <div className="flex items-start gap-3 border-b border-gray-200 px-5 py-4">
+              <AlertTriangle className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-500" />
+              <div>
+                <h3 className="text-base font-bold text-gray-900">二重発注の可能性</h3>
+                <p className="mt-0.5 text-xs text-gray-500">
+                  カート{dupPrompt.total}件のうち、次の{dupPrompt.rows.length}
+                  件はすでに発注済み／所持済みです。
+                </p>
+              </div>
+            </div>
+            <div className="max-h-64 overflow-y-auto px-5 py-3">
+              <ul className="space-y-1.5">
+                {dupPrompt.rows.map((r) => (
+                  <li
+                    key={r.key}
+                    className="flex items-center justify-between gap-2 rounded-lg bg-gray-50 px-3 py-2"
+                  >
+                    <span className="min-w-0 flex-1 text-sm text-gray-800">
+                      <span className="font-medium">{r.studentLabel}</span>
+                      <span className="mx-1.5 text-gray-300">/</span>
+                      <span className="truncate text-gray-600">{r.textbookName}</span>
+                    </span>
+                    <span
+                      className={`flex-shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium ${
+                        r.reason === '所持'
+                          ? 'bg-green-100 text-green-700'
+                          : 'bg-blue-100 text-blue-700'
+                      }`}
+                    >
+                      {r.reason}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="flex flex-col gap-2 border-t border-gray-200 px-5 py-4">
+              <Button onClick={() => resolveDupChoice('exclude')} className="w-full text-sm">
+                重複を除いて発注（{dupPrompt.total - dupPrompt.rows.length}件）
+              </Button>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => resolveDupChoice('include')}
+                  className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-600 hover:bg-gray-50"
+                >
+                  重複も含めて発注（{dupPrompt.total}件）
+                </button>
+                <button
+                  onClick={() => resolveDupChoice('cancel')}
+                  className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-500 hover:bg-gray-50"
+                >
+                  キャンセル
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Stock Transaction Modal */}

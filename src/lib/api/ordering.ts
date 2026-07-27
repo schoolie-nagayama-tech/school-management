@@ -482,6 +482,133 @@ export async function createOrdersForCandidates(
   return { success, failed };
 }
 
+// ============================================
+// 二重発注チェック（手動カート発注の確定前）
+// ============================================
+
+/** 二重発注チェックの入力（生徒×テキスト）。見本(生徒なし)は重複対象外なので呼び出し側で除外する。 */
+export interface OrderDuplicateInput {
+  studentId: string;
+  textbookId: number;
+}
+
+export interface OrderDuplicateResult extends OrderDuplicateInput {
+  /** すでに所持している（student_textbooks.is_owned=true） */
+  alreadyOwned: boolean;
+  /** すでに未キャンセルの発注が生徒×教材にある */
+  hasActiveOrder: boolean;
+  /** alreadyOwned か hasActiveOrder のいずれか＝二重発注になる */
+  isDuplicate: boolean;
+}
+
+/**
+ * 生徒×テキストの組が「二重発注」になるかを判定する（手動カート発注の確定前チェック）。
+ * 判定基準は提案書公開の自動発注(getProposalOrderCandidates)と揃える:
+ *   - alreadyOwned: student_textbooks.is_owned=true があれば所持済み → 重複
+ *   - hasActiveOrder: material_orders の未キャンセル発注が生徒×教材にあれば発注済み → 重複
+ * テキスト→教材の解決は textbooks.material_id 優先、無ければ material 名ラベル
+ * （名前 | [出版社 |] 学年 | 科目）の一致で補完する（既存の発注ロジックと同じ規則）。
+ * 見本(student_id=null)はそもそも重複対象外なので、呼び出し側で除外してから渡すこと。
+ * キャンセル済み発注はブロックしない（買い直し・再発注のため、上位で明示的に上書きできる想定）。
+ */
+export async function checkOrderDuplicates(
+  inputs: OrderDuplicateInput[]
+): Promise<OrderDuplicateResult[]> {
+  if (inputs.length === 0) return [];
+
+  const studentIds = Array.from(new Set(inputs.map((i) => i.studentId)));
+  const textbookIds = Array.from(new Set(inputs.map((i) => i.textbookId)));
+
+  // テキスト詳細（material_id + 教材名ラベル）。ラベルは formatTextbookLabel / materials.name と同形式。
+  const tbDetail = new Map<number, { material_id: string | null; label: string | null }>();
+  {
+    const { data } = await supabase
+      .from('textbooks')
+      .select('id, name, grade, subject, publisher, material_id')
+      .in('id', textbookIds);
+    for (const t of (data ?? []) as {
+      id: number;
+      name: string;
+      grade: string | null;
+      subject: string | null;
+      publisher: string | null;
+      material_id: string | null;
+    }[]) {
+      const parts: string[] = [t.name];
+      if (t.publisher) parts.push(t.publisher);
+      if (t.grade) parts.push(t.grade);
+      if (t.subject) parts.push(t.subject);
+      tbDetail.set(t.id, { material_id: t.material_id, label: t.name ? parts.join(' | ') : null });
+    }
+  }
+
+  // material_id 未設定のテキストは、ラベル名で materials を引いて補完する。
+  const matIdByName = new Map<string, string>();
+  {
+    const labels = Array.from(
+      new Set(
+        Array.from(tbDetail.values())
+          .map((d) => d.label)
+          .filter((l): l is string => !!l)
+      )
+    );
+    if (labels.length > 0) {
+      const { data } = await supabase.from('materials').select('id, name').in('name', labels);
+      for (const m of (data ?? []) as { id: string; name: string }[]) {
+        if (!matIdByName.has(m.name)) matIdByName.set(m.name, m.id);
+      }
+    }
+  }
+
+  const materialIdOf = (textbookId: number): string | null => {
+    const d = tbDetail.get(textbookId);
+    if (!d) return null;
+    if (d.material_id) return d.material_id;
+    if (d.label && matIdByName.has(d.label)) return matIdByName.get(d.label)!;
+    return null;
+  };
+
+  // 所持集合（is_owned=true）。生徒×テキストで持つ。
+  const ownedSet = new Set<string>();
+  {
+    const { data } = await supabase
+      .from('student_textbooks')
+      .select('student_id, textbook_id')
+      .in('student_id', studentIds)
+      .in('textbook_id', textbookIds)
+      .eq('is_owned', true);
+    for (const r of (data ?? []) as { student_id: string; textbook_id: number }[]) {
+      ownedSet.add(`${r.student_id}:${r.textbook_id}`);
+    }
+  }
+
+  // 未キャンセル発注集合（生徒×教材）。
+  const orderedSet = new Set<string>();
+  {
+    const materialIds = Array.from(
+      new Set(textbookIds.map((id) => materialIdOf(id)).filter((m): m is string => !!m))
+    );
+    if (materialIds.length > 0) {
+      const { data } = await supabase
+        .from('material_orders')
+        .select('student_id, material_id, status')
+        .in('student_id', studentIds)
+        .in('material_id', materialIds)
+        .neq('status', 'cancelled');
+      for (const r of (data ?? []) as { student_id: string | null; material_id: string }[]) {
+        if (r.student_id) orderedSet.add(`${r.student_id}:${r.material_id}`);
+      }
+    }
+  }
+
+  return inputs.map((i) => {
+    const alreadyOwned = ownedSet.has(`${i.studentId}:${i.textbookId}`);
+    const mId = materialIdOf(i.textbookId);
+    const hasActiveOrder = !!mId && orderedSet.has(`${i.studentId}:${mId}`);
+    return { ...i, alreadyOwned, hasActiveOrder, isDuplicate: alreadyOwned || hasActiveOrder };
+  });
+}
+
 /**
  * 発注を作成し、「教材発注」請求項目の生徒セルに教材名を自動反映する
  */

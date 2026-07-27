@@ -36,6 +36,12 @@ interface TextbookCatalogProps {
   onStockRegister?: (textbookName: string) => void;
   /** カート保存のスコープ（選択中の教室）。変わったらカートを捨てる。 */
   schoolScopeKey: string;
+  /**
+   * すでに発注済み（未キャンセル）の「生徒ID::教材名ラベル」集合。
+   * 生徒選択肢に「発注済」を表示して事前に気づかせる（L0・即時警告）。
+   * 所持済みは含めない（このページで未ロードのため）。確定時のサーバー再判定で最終的に弾く。
+   */
+  existingOrderPairs?: Set<string>;
 }
 
 const ITEMS_PER_PAGE = 60;
@@ -109,6 +115,8 @@ interface TextbookProductCardProps {
     quantity: number
   ) => void;
   onStockAdjust?: () => void;
+  /** すでに発注済みの「生徒ID::教材名ラベル」集合（発注済バッジ用）。 */
+  existingOrderPairs?: Set<string>;
 }
 
 function TextbookProductCard({
@@ -118,7 +126,12 @@ function TextbookProductCard({
   stockQuantity,
   onAddToCart,
   onStockAdjust,
+  existingOrderPairs,
 }: TextbookProductCardProps) {
+  const cardLabel = formatTextbookLabel(textbook);
+  // この生徒がこのテキストをすでに発注済みか（未キャンセル）。選択肢に注記して事前に気づかせる。
+  const isOrdered = (studentId: string) =>
+    !!existingOrderPairs && existingOrderPairs.has(`${studentId}::${cardLabel}`);
   // 冊数分の生徒スロット。1冊=1生徒（または見本）として、冊数を増やすと
   // その冊数分だけ生徒を割り当てられる。空欄の冊はカートに追加されない。
   const [studentIds, setStudentIds] = useState<string[]>(['']);
@@ -299,6 +312,7 @@ function TextbookProductCard({
                   {getAvailableStudents(index).map((s) => (
                     <option key={s.id} value={s.id}>
                       {gradeLabel(s.grade)} {s.last_name} {s.first_name}
+                      {isOrdered(s.id) ? '（発注済）' : ''}
                     </option>
                   ))}
                 </select>
@@ -470,6 +484,7 @@ export function TextbookCatalog({
   onStockAdjust,
   onStockRegister,
   schoolScopeKey,
+  existingOrderPairs,
 }: TextbookCatalogProps) {
   // Cart state（アンマウントで消えないよう sessionStorage から初期化する）
   const [cartItems, setCartItems] = useState<CartItem[]>(() => loadStoredCart(schoolScopeKey));
@@ -510,15 +525,25 @@ export function TextbookCatalog({
       studentLabel: string,
       quantity: number
     ) => {
-      const newItem: CartItem = {
-        id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-        textbookName,
-        studentId,
-        studentLabel,
-        quantity,
-        textbook,
-      };
-      setCartItems((prev) => [...prev, newItem]);
+      setCartItems((prev) => {
+        // カート内二重発注防止: 同一生徒×同一テキストがすでにカートにあれば追加しない。
+        // 見本(SAMPLE_VALUE)は複数注文が正当なので重複を許す。
+        if (
+          studentId !== SAMPLE_VALUE &&
+          prev.some((it) => it.studentId === studentId && it.textbookName === textbookName)
+        ) {
+          return prev;
+        }
+        const newItem: CartItem = {
+          id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+          textbookName,
+          studentId,
+          studentLabel,
+          quantity,
+          textbook,
+        };
+        return [...prev, newItem];
+      });
     },
     []
   );
@@ -889,6 +914,7 @@ export function TextbookCatalog({
                   canEdit={canEdit}
                   stockQuantity={stockInfo ? stockInfo.quantity : null}
                   onAddToCart={handleAddToCart}
+                  existingOrderPairs={existingOrderPairs}
                   onStockAdjust={
                     stockInfo && onStockAdjust
                       ? () => onStockAdjust(stockInfo.material)
