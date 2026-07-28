@@ -48,3 +48,13 @@ next-env.d.ts
 # ローカルSupabaseに読ませるポータルJWT署名鍵（秘密鍵）。
 # トークン発行権そのもの＝service_role key 同格。絶対にコミットしない。
 supabase/signing_keys.json
+
+# PoC・実験用のローカル作業場（本番コードではない）。
+# portal-auth-poc にはポータルJWT署名鍵（上と同格の秘密鍵）が置かれているため、
+# git add -A の巻き添えで鍵が混入しないよう、ディレクトリごと追跡対象から外す。
+/experiments/
+
+# 使い捨ての検証スクリプト・テスト（役目が終わったら消す前提のもの）。
+# 実データ検証で .env.local の service role key を直読みするものがあり、
+# CI では必ず落ちるうえ機微情報を含みうるのでコミットしない。
+_tmp_*
