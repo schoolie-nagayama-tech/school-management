@@ -47,8 +47,11 @@ export const ALLOC_WEIGHTS = {
   continuity: 8, // 同じ生徒×科目で既に割り当てた講師（低優先の明示）
   loadBalancePerKoma: 1.5, // 担当コマ数が少ない講師を優先（コマ数×これを減点）
   // セル選択
-  spreadAnchor: 16, // 期間全体で見た「そのコマが来るべき絶対位置」に近い
-  spreadIdeal: 8, // 直前/直後の同科目コマとの間隔が理想以上（局所的な固まり防止）
+  // 分散の2項は合算で効く。合成データで seed を振って比べ、均等度の最悪ケースが
+  // 最も良く（0.838→0.858）割当コマ数も落ちない 20/12 を採った。
+  // 局所項を弱めると（8にすると）可能枠が狭い実データで均等度が下がったので元の12に戻している。
+  spreadAnchor: 20, // 期間全体で見た「そのコマが来るべき絶対位置」に近い
+  spreadIdeal: 12, // 直前/直後の同科目コマとの間隔が理想以上（局所的な固まり防止）
   adjacentBonus: 10, // 同日の連続コマ（連続優先ON時）
   sameDaySamePenalty: 8, // 同日に同科目（許可時のみ発生する減点）
   halfPackBonus: 6, // 既存席の空き半分を埋める（詰め込み効率）
@@ -171,6 +174,17 @@ class AllocState {
 // 候補評価
 // ============================================================
 
+/**
+ * 候補評価で使う派生データ（入力から1回だけ算出して使い回す）。
+ * 引数を増やし続けないためにまとめている。
+ */
+interface AllocContext {
+  /** 日付 → 期間内の通し番号 */
+  dateIndexByDate: Map<string, number>;
+  /** 生徒 → 可能枠に現れる異なる日数 */
+  availDateCount: Map<string, number>;
+}
+
 interface Candidate {
   date: string;
   slotId: string;
@@ -234,8 +248,9 @@ function findCandidates(
   state: AllocState,
   availCells: Map<string, AvailCell[]>,
   blockers: Blockers,
-  dateIndexByDate: Map<string, number>
+  ctx: AllocContext
 ): Candidate[] {
+  const { dateIndexByDate } = ctx;
   const { settings, capacity } = input;
   const cells = availCells.get(task.studentId);
   if (!cells || cells.length === 0) return [];
@@ -261,7 +276,16 @@ function findCandidates(
   // 可能枠が狭いと最短間隔で前半に固まってしまう（＝前半英語ばかりの原因）。
   // 絶対位置で押さえると、6コマ目は必ず期間の後方を狙うようになる。
   const span = Math.max(1, input.dates.length - 1);
-  const idealGapIdx = Math.max(1, span / totalForSubject);
+  // アンカーの N は「入りそうなコマ数」で抑える。
+  // 申込が生徒の可能日数を大きく超えている教室（実測: 充填率158%）で totalForSubject を
+  // そのまま使うと、理想位置が期間の前方に密集し **アンカーが逆に前半へ集めてしまう**
+  // （緑園都市校の実データで均等度 0.809 → 0.789 に悪化した）。
+  // 同一科目は同日に入らないので、置ける上限は「可能枠の異なる日数」で抑えられる。
+  const anchorN = Math.max(
+    1,
+    Math.min(totalForSubject, ctx.availDateCount.get(task.studentId) ?? totalForSubject)
+  );
+  const idealGapIdx = Math.max(1, span / anchorN);
   const placedIdx = placedDates
     .map((d) => dateIndexByDate.get(d))
     .filter((v): v is number => v != null)
@@ -303,7 +327,7 @@ function findCandidates(
       const idx = dateIndexByDate.get(date) ?? 0;
       // この候補日より前にある同科目コマ数 ＝ この候補が日付順で何番目になるか
       const k = placedIdx.filter((p) => p <= idx).length;
-      const idealIdx = ((k + 0.5) / totalForSubject) * span;
+      const idealIdx = ((k + 0.5) / anchorN) * span;
       const anchorDrift = Math.min(1, Math.abs(idx - idealIdx) / (idealGapIdx * ANCHOR_TOLERANCE));
       cellScore += (1 - anchorDrift) * ALLOC_WEIGHTS.spreadAnchor;
       // 局所的な固まり防止（直近の同科目コマと近すぎない）
@@ -444,8 +468,18 @@ export function allocateKoushu(input: AllocatorInput): AllocatorResult {
 
   // 生徒の可能枠を展開（走査対象＝ここだけ。1回作って使い回す）
   const availCells = buildAvailCells(input);
-  // 日付 → 期間内の通し番号（絶対位置の計算に使う。毎回作らず1回だけ）
-  const dateIndexByDate = new Map(input.dates.map((d, i) => [d, i]));
+  // 候補評価で毎回使う派生データ。1回だけ作って使い回す。
+  const ctx: AllocContext = {
+    // 日付 → 期間内の通し番号（絶対位置の計算に使う）
+    dateIndexByDate: new Map(input.dates.map((d, i) => [d, i])),
+    // 生徒 → 可能枠に現れる異なる日数（アンカーの N の上限）
+    availDateCount: new Map(
+      Array.from(availCells.entries(), ([sid, cells]) => [
+        sid,
+        new Set(cells.map((c) => c.date)).size,
+      ])
+    ),
+  };
 
   // ---- 可能表未提出の生徒は対象外（仕様書 §1-4） ----
   const workable: TaskDef[] = [];
@@ -496,7 +530,7 @@ export function allocateKoushu(input: AllocatorInput): AllocatorResult {
       for (const task of pass) {
         if (task.koma <= 0) continue;
         const blockers = emptyBlockers();
-        const cands = findCandidates(task, input, state, availCells, blockers, dateIndexByDate);
+        const cands = findCandidates(task, input, state, availCells, blockers, ctx);
         if (cands.length === 0) continue; // この科目はもう置けない（リペアへ）
         const best = cands[0];
         state.commit({
@@ -536,7 +570,7 @@ export function allocateKoushu(input: AllocatorInput): AllocatorResult {
   let repairedKoma = 0;
   for (const [, task] of Array.from(leftover.entries())) {
     while (task.koma > 0) {
-      const moved = tryRepair(task, input, state, availCells, assignments, dateIndexByDate);
+      const moved = tryRepair(task, input, state, availCells, assignments, ctx);
       if (!moved) break;
       task.koma -= 1;
       repairedKoma += 1;
@@ -547,7 +581,7 @@ export function allocateKoushu(input: AllocatorInput): AllocatorResult {
   for (const [, task] of Array.from(leftover.entries())) {
     if (task.koma <= 0) continue;
     const blockers = emptyBlockers();
-    findCandidates(task, input, state, availCells, blockers, dateIndexByDate);
+    findCandidates(task, input, state, availCells, blockers, ctx);
     unassigned.push({
       studentId: task.studentId,
       subjectId: task.subjectId,
@@ -583,7 +617,7 @@ function tryRepair(
   state: AllocState,
   availCells: Map<string, AvailCell[]>,
   assignments: Assignment[],
-  dateIndexByDate: Map<string, number>
+  ctx: AllocContext
 ): boolean {
   const { capacity } = input;
   const slotById = new Map(input.slots.map((s) => [s.id, s]));
@@ -606,7 +640,7 @@ function tryRepair(
       duration: victim.duration,
     };
     const vb = emptyBlockers();
-    const vCands = findCandidates(victimTask, input, trial, availCells, vb, dateIndexByDate).filter(
+    const vCands = findCandidates(victimTask, input, trial, availCells, vb, ctx).filter(
       (c) =>
         !(c.date === victim.date && c.slotId === victim.slotId && c.teacherId === victim.teacherId)
     );
@@ -627,7 +661,7 @@ function tryRepair(
       maxSeats: capacity.maxStudentsPerTeacher,
     });
     const tb = emptyBlockers();
-    const tCands = findCandidates(task, input, trial2, availCells, tb, dateIndexByDate);
+    const tCands = findCandidates(task, input, trial2, availCells, tb, ctx);
     if (tCands.length === 0) continue;
 
     // 成功: 本番 state を trial2 + task 配置に更新
