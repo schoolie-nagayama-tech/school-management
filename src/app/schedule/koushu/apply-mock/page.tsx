@@ -73,17 +73,19 @@ const PROPOSALS = [
     subject: '英語',
     textbook: 'フォレスタ 英語 中2',
     units: ['不定詞', '動名詞', '比較'],
-    proposedKoma: 8,
+    proposedKoma: 12,
     ratio: 2 as const,
     duration: 90 as const,
+    regularKoma: 7, // 週1回 × 7週
   },
   {
     subject: '数学',
     textbook: 'フォレスタ 数学 中2',
     units: ['連立方程式', '一次関数'],
-    proposedKoma: 6,
+    proposedKoma: 10,
     ratio: 1 as const,
     duration: 90 as const,
+    regularKoma: 7,
   },
   {
     subject: '理科',
@@ -92,6 +94,7 @@ const PROPOSALS = [
     proposedKoma: 4,
     ratio: 2 as const,
     duration: 90 as const,
+    regularKoma: 0, // 通常授業では取っていない科目
   },
 ];
 
@@ -102,22 +105,38 @@ const PROPOSALS = [
 const EXTRA_SUBJECTS = ['社会', '国語'];
 
 /**
- * 単価。増コマ（zoukoma）と同じく form_periods.settings.price_table に
- * 「学年名 → 1コマの円」で持つ想定（Record<string, number>）。
+ * 単価テーブル（仕様書 決定26・§15-2）。
+ * 学年 × 形式(1対1/1対2) × 時間(45/90) の3軸。
+ * 増コマの price_table は「学年 → 円」だけなので、講習では持てない。
  *
- * ただし増コマの price_table は**学年だけ**の分岐で、1対1／45分の単価差を
- * 表現できない。講習でそれが必要ならキー設計の拡張が要る（要確認事項）。
- * モックでは 1対1 の係数を仮に置いて、差が出る場合の見え方を確認する。
+ * 45分は小1〜小4のみ（決定17）。それ以外の学年には "45" キーを置かない
+ * ＝選択肢に出さず、APIでも弾く。値が無い組み合わせは申込できない。
  */
-const PRICE_PER_KOMA = 3980;
-const RATIO1_MULTIPLIER = 1.6; // 仮。1対1の単価差（未確定）
-const DURATION45_MULTIPLIER = 0.6; // 仮。45分の単価差（未確定）
+type PriceTable = Record<
+  string,
+  Partial<Record<'1on1' | '1on2', Partial<Record<45 | 90, number>>>>
+>;
 
-function unitPrice(ratio: 1 | 2, duration: 45 | 90): number {
-  let p = PRICE_PER_KOMA;
-  if (ratio === 1) p *= RATIO1_MULTIPLIER;
-  if (duration === 45) p *= DURATION45_MULTIPLIER;
-  return Math.round(p);
+const PRICE_TABLE: PriceTable = {
+  小3: { '1on2': { 90: 3200, 45: 1900 }, '1on1': { 90: 5200, 45: 3100 } },
+  中2: { '1on2': { 90: 3980 }, '1on1': { 90: 6400 } },
+  中3: { '1on2': { 90: 4300 }, '1on1': { 90: 6900 } },
+};
+
+/** 単価を引く。組み合わせが無ければ 0（本番では申込不可として弾く） */
+function unitPrice(gradeLabel: string, ratio: 1 | 2, duration: 45 | 90): number {
+  return PRICE_TABLE[gradeLabel]?.[ratio === 1 ? '1on1' : '1on2']?.[duration] ?? 0;
+}
+
+/**
+ * 講習費の対象コマ数。
+ *
+ * 期間中の通常授業は月謝で別途もらっているので、申込コマ数からその分を差し引く
+ * （進行表の「増コマ」と同じ考え方）。通常授業は科目ごとに決まっているため、
+ * 科目単位で引く。申込が通常授業の回数を下回る場合は 0 に丸める。
+ */
+function chargeableKoma(applied: number, regular: number): number {
+  return Math.max(0, applied - regular);
 }
 
 const yen = (n: number) => `¥${n.toLocaleString()}`;
@@ -227,6 +246,8 @@ interface ApplyLine {
   proposedKoma: number;
   ratio: 1 | 2;
   duration: 45 | 90;
+  /** 期間中の通常授業コマ数。月謝に含まれるので講習費からは差し引く */
+  regularKoma: number;
   addedByParent?: boolean;
 }
 
@@ -279,6 +300,8 @@ function ParentFormMock() {
         proposedKoma: 0,
         ratio: 2 as const,
         duration: 90 as const,
+        // 提案外に追加した科目は通常授業で取っていない前提（全コマが講習費の対象）
+        regularKoma: 0,
         addedByParent: true,
       })),
     ],
@@ -299,8 +322,17 @@ function ParentFormMock() {
   };
 
   const totalKoma = lines.reduce((s, l) => s + (koma[l.subject] ?? 0), 0);
+  // 月謝に含まれる通常授業ぶん（申込コマを超えては引かない）
+  const totalRegular = lines.reduce((s, l) => s + Math.min(koma[l.subject] ?? 0, l.regularKoma), 0);
+  const totalChargeable = lines.reduce(
+    (s, l) => s + chargeableKoma(koma[l.subject] ?? 0, l.regularKoma),
+    0
+  );
   const totalFee = lines.reduce(
-    (s, l) => s + (koma[l.subject] ?? 0) * unitPrice(l.ratio, l.duration),
+    (s, l) =>
+      s +
+      chargeableKoma(koma[l.subject] ?? 0, l.regularKoma) *
+        unitPrice(STUDENT.gradeLabel, l.ratio, l.duration),
     0
   );
   const totalCells = dates.length * SLOTS.length;
@@ -364,6 +396,8 @@ function ParentFormMock() {
                 addSubject={addSubject}
                 removeSubject={removeSubject}
                 totalKoma={totalKoma}
+                totalRegular={totalRegular}
+                totalChargeable={totalChargeable}
                 totalFee={totalFee}
               />
             )}
@@ -384,6 +418,8 @@ function ParentFormMock() {
                 lines={lines}
                 koma={koma}
                 totalKoma={totalKoma}
+                totalRegular={totalRegular}
+                totalChargeable={totalChargeable}
                 totalFee={totalFee}
                 okCells={okCells}
               />
@@ -490,6 +526,8 @@ function StepSubjects({
   addSubject,
   removeSubject,
   totalKoma,
+  totalRegular,
+  totalChargeable,
   totalFee,
 }: {
   lines: ApplyLine[];
@@ -499,6 +537,8 @@ function StepSubjects({
   addSubject: (s: string) => void;
   removeSubject: (s: string) => void;
   totalKoma: number;
+  totalRegular: number;
+  totalChargeable: number;
   totalFee: number;
 }) {
   const [picking, setPicking] = useState(false);
@@ -515,7 +555,7 @@ function StepSubjects({
 
       {lines.map((p) => {
         const n = koma[p.subject] ?? 0;
-        const price = unitPrice(p.ratio, p.duration);
+        const price = unitPrice(STUDENT.gradeLabel, p.ratio, p.duration);
         return (
           <div
             key={p.subject}
@@ -595,9 +635,22 @@ function StepSubjects({
               </div>
             </div>
 
-            <div className="flex items-center justify-between mt-2">
-              <span className="text-[11px] text-[var(--paragraph)]">小計</span>
-              <span className="text-sm text-[var(--headline)] tabular-nums">{yen(n * price)}</span>
+            {/* 通常授業ぶんは月謝で受け取っているので講習費から差し引く */}
+            <div className="mt-2 pt-2 border-t border-[var(--stroke)] space-y-1">
+              {p.regularKoma > 0 && (
+                <div className="flex items-center justify-between text-[11px] text-[var(--paragraph)]">
+                  <span>うち通常授業（月謝に含む）</span>
+                  <span className="tabular-nums">−{Math.min(n, p.regularKoma)}コマ</span>
+                </div>
+              )}
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] text-[var(--paragraph)]">
+                  講習費の対象 {chargeableKoma(n, p.regularKoma)}コマ
+                </span>
+                <span className="text-sm text-[var(--headline)] tabular-nums">
+                  {yen(chargeableKoma(n, p.regularKoma) * price)}
+                </span>
+              </div>
             </div>
 
             {p.addedByParent && (
@@ -650,17 +703,29 @@ function StepSubjects({
 
       <div className="rounded-xl bg-gray-50 p-3 space-y-1.5">
         <div className="flex items-center justify-between">
-          <span className="text-xs text-[var(--paragraph)]">合計コマ数</span>
-          <span className="text-sm text-[var(--headline)] tabular-nums">{totalKoma}コマ</span>
+          <span className="text-sm text-[var(--headline)]">合計コマ数</span>
+          <span className="text-base font-semibold text-[var(--headline)] tabular-nums">
+            {totalKoma}コマ
+          </span>
         </div>
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-[var(--headline)]">合計金額</span>
+        {totalRegular > 0 && (
+          <div className="flex items-center justify-between text-xs text-[var(--paragraph)]">
+            <span>うち通常授業（月謝に含む）</span>
+            <span className="tabular-nums">−{totalRegular}コマ</span>
+          </div>
+        )}
+        <div className="flex items-center justify-between text-xs text-[var(--paragraph)]">
+          <span>講習費の対象</span>
+          <span className="tabular-nums">{totalChargeable}コマ</span>
+        </div>
+        <div className="flex items-center justify-between pt-1.5 border-t border-[var(--stroke)]">
+          <span className="text-sm text-[var(--headline)]">講習費</span>
           <span className="text-lg font-semibold text-[var(--headline)] tabular-nums">
             {yen(totalFee)}
           </span>
         </div>
         <p className="text-[10px] text-[var(--paragraph)]">
-          税込。お月謝と合わせてお引き落としとなります。
+          税込。期間中の通常授業ぶんはお月謝に含まれるため、講習費からは差し引いています。
         </p>
       </div>
     </div>
@@ -1142,12 +1207,16 @@ function StepConfirm({
   lines,
   koma,
   totalKoma,
+  totalRegular,
+  totalChargeable,
   totalFee,
   okCells,
 }: {
   lines: ApplyLine[];
   koma: Record<string, number>;
   totalKoma: number;
+  totalRegular: number;
+  totalChargeable: number;
   totalFee: number;
   okCells: number;
 }) {
@@ -1162,7 +1231,7 @@ function StepConfirm({
           .filter((p) => (koma[p.subject] ?? 0) > 0)
           .map((p) => {
             const n = koma[p.subject] ?? 0;
-            const price = unitPrice(p.ratio, p.duration);
+            const price = unitPrice(STUDENT.gradeLabel, p.ratio, p.duration);
             return (
               <div
                 key={p.subject}
@@ -1178,28 +1247,44 @@ function StepConfirm({
                     )}
                   </p>
                   <p className="text-[11px] text-[var(--paragraph)]">
-                    {p.ratio === 1 ? '1対1' : '1対2'} / {p.duration}分 ・ {n}コマ × {yen(price)}
+                    {p.ratio === 1 ? '1対1' : '1対2'} / {p.duration}分 ・ {n}コマ
+                    {p.regularKoma > 0 && `（うち通常 ${Math.min(n, p.regularKoma)}コマ）`}
+                  </p>
+                  <p className="text-[11px] text-[var(--paragraph)]">
+                    講習費 {chargeableKoma(n, p.regularKoma)}コマ × {yen(price)}
                   </p>
                 </div>
                 <span className="text-sm font-semibold text-[var(--headline)] tabular-nums">
-                  {yen(n * price)}
+                  {yen(chargeableKoma(n, p.regularKoma) * price)}
                 </span>
               </div>
             );
           })}
         <div className="px-3 py-2.5 border-t border-[var(--stroke)] bg-gray-50 space-y-1">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-[var(--paragraph)]">合計コマ数</span>
-            <span className="text-sm text-[var(--headline)] tabular-nums">{totalKoma}コマ</span>
+            <span className="text-sm text-[var(--headline)]">合計コマ数</span>
+            <span className="text-sm font-semibold text-[var(--headline)] tabular-nums">
+              {totalKoma}コマ
+            </span>
           </div>
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-[var(--headline)]">合計金額</span>
+          {totalRegular > 0 && (
+            <div className="flex items-center justify-between text-xs text-[var(--paragraph)]">
+              <span>うち通常授業（月謝に含む）</span>
+              <span className="tabular-nums">−{totalRegular}コマ</span>
+            </div>
+          )}
+          <div className="flex items-center justify-between text-xs text-[var(--paragraph)]">
+            <span>講習費の対象</span>
+            <span className="tabular-nums">{totalChargeable}コマ</span>
+          </div>
+          <div className="flex items-center justify-between pt-1.5 border-t border-[var(--stroke)]">
+            <span className="text-sm text-[var(--headline)]">講習費</span>
             <span className="text-base font-semibold text-[var(--headline)] tabular-nums">
               {yen(totalFee)}
             </span>
           </div>
           <p className="text-[10px] text-[var(--paragraph)]">
-            税込。お月謝と合わせてお引き落としとなります。
+            税込。期間中の通常授業ぶんはお月謝に含まれるため、講習費からは差し引いています。
           </p>
         </div>
       </div>
@@ -1231,12 +1316,34 @@ function StepConfirm({
  * 管理側
  * ========================================================== */
 
+/** source: 申込の出所。代行入力を後から追えるようにする（決定24） */
 const MOCK_STUDENTS = [
-  { name: '宮永 心那', grade: '中2', status: 'applied' as const, koma: 18 },
-  { name: '稲田 葵', grade: '中3', status: 'applied' as const, koma: 24 },
-  { name: '園田 あいり', grade: '小5', status: 'opened' as const, koma: 0 },
-  { name: '大橋 穂乃梨', grade: '中1', status: 'none' as const, koma: 0 },
-  { name: '大崎 透', grade: '小6', status: 'none' as const, koma: 0 },
+  {
+    name: '宮永 心那',
+    grade: '中2',
+    status: 'applied' as const,
+    koma: 26,
+    source: 'parent' as const,
+    by: null,
+  },
+  {
+    name: '稲田 葵',
+    grade: '中3',
+    status: 'applied' as const,
+    koma: 24,
+    source: 'staff' as const,
+    by: '高橋（室長）',
+  },
+  {
+    name: '園田 あいり',
+    grade: '小5',
+    status: 'opened' as const,
+    koma: 0,
+    source: null,
+    by: null,
+  },
+  { name: '大橋 穂乃梨', grade: '中1', status: 'none' as const, koma: 0, source: null, by: null },
+  { name: '大崎 透', grade: '小6', status: 'none' as const, koma: 0, source: null, by: null },
 ];
 
 const GRADES = [
@@ -1319,8 +1426,19 @@ function AdminMock() {
                 <td className="py-2 pr-3 text-[var(--paragraph)]">{s.grade}</td>
                 <td className="py-2 pr-3">
                   {s.status === 'applied' ? (
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-success-subtle text-success">
-                      済 {s.koma}コマ
+                    <span className="flex flex-wrap items-center gap-1">
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-success-subtle text-success">
+                        済 {s.koma}コマ
+                      </span>
+                      {/* 代行入力は必ず見えるようにする（決定24の抑止力の中心） */}
+                      {s.source === 'staff' && (
+                        <span
+                          className="text-xs px-2 py-0.5 rounded-full bg-warning-subtle text-warning"
+                          title={`代行入力: ${s.by}`}
+                        >
+                          代行 / {s.by}
+                        </span>
+                      )}
                     </span>
                   ) : s.status === 'opened' ? (
                     <span className="text-xs px-2 py-0.5 rounded-full bg-warning-subtle text-warning">
@@ -1359,6 +1477,30 @@ function AdminMock() {
             公開期間が無いため配布ボタンは無効。上のスイッチで切り替えて確認できます。
           </p>
         )}
+
+        {/* 代行入力の統制（決定24）。作るが、代行だと消えないように残す */}
+        <div className="mt-3 pt-3 border-t border-[var(--stroke)]">
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-xs text-[var(--headline)]">
+              教室代行で入力
+              <span className="ml-1 text-[var(--paragraph)]">（スマホを使わない家庭向け）</span>
+            </p>
+            <button
+              disabled
+              className="text-xs px-2.5 py-1.5 rounded border border-[var(--stroke)] text-[var(--headline)] disabled:opacity-40"
+            >
+              代行入力を始める
+            </button>
+          </div>
+          <ul className="text-[11px] text-[var(--paragraph)] mt-1.5 space-y-0.5 list-disc pl-4">
+            <li>出所（保護者本人／教室代行）と入力者・日時を申込に記録する</li>
+            <li>一覧に「代行」バッジを出し、達成率の集計でも代行分を別に数える</li>
+            <li>
+              <code className="px-1 rounded bg-gray-100">admin_audit_logs</code> に記録する
+            </li>
+            <li>保護者への自動確認メールは送らない（検討したが不採用）</li>
+          </ul>
+        </div>
       </div>
 
       {/* 実行パネル */}
@@ -1412,9 +1554,12 @@ function AdminMock() {
         <div className="grid sm:grid-cols-2 gap-3">
           <label className="text-xs text-[var(--headline)]">
             1日上限コマ数
-            <select className="mt-1 w-full text-sm border border-[var(--stroke)] rounded-lg px-2 py-1.5">
+            <select
+              defaultValue="2"
+              className="mt-1 w-full text-sm border border-[var(--stroke)] rounded-lg px-2 py-1.5"
+            >
               <option>1</option>
-              <option selected>2</option>
+              <option>2</option>
               <option>3</option>
             </select>
           </label>
@@ -1458,6 +1603,14 @@ function AdminMock() {
         </div>
         <ul className="text-xs space-y-1.5 list-disc pl-4 text-[var(--paragraph)]">
           <li>申込状況は「未／閲覧のみ／済」の3段階でよいか。督促の導線は要るか</li>
+          <li>
+            <strong>代行の別掲集計</strong>: どの数字を分けて見たいか（申込率／取得コマ／金額）。
+            本部が見る画面はどこか
+          </li>
+          <li>
+            通常授業ぶんの差し引きは <code>schedule_entries(kind=&apos;regular&apos;)</code>{' '}
+            の期間内実績で数える。 振替・休講がある場合の扱い（振替先が期間外に出たら？）
+          </li>
           <li>トークンURLの有効期限・再発行の運用（きょうだいで使い回されないか）</li>
           <li>「受験生」ショートカットは中3＋高3でよいか（既卒13を含めるか）</li>
           <li>
