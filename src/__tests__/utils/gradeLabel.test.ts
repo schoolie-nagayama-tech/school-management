@@ -7,6 +7,7 @@
  */
 import { describe, it, expect } from 'vitest';
 import { formatGradeLabel, formatGradeLabelOrEmpty } from '@/lib/utils/gradeLabel';
+import { gradeLabel as progressGradeLabel } from '@/app/students/[studentId]/progress/newProgress.shared';
 import { GRADE_LABELS } from '@/types/database';
 
 describe('formatGradeLabel', () => {
@@ -54,5 +55,27 @@ describe('formatGradeLabelOrEmpty', () => {
   it('値があれば formatGradeLabel と同じ', () => {
     expect(formatGradeLabelOrEmpty(8)).toBe('中2');
     expect(formatGradeLabelOrEmpty(13)).toBe('既卒');
+  });
+});
+
+/**
+ * 進行表は「小学2年生」という別表記を意図的に持っている（共通ヘルパに寄せない）。
+ * 表記は別で良いが、13 が空欄に落ちるのはバグなのでここで固定する。
+ */
+describe('newProgress.shared の gradeLabel（進行表の長い表記）', () => {
+  it('小中高は「小学N年生」形式', () => {
+    expect(progressGradeLabel(2)).toBe('小学2年生');
+    expect(progressGradeLabel(8)).toBe('中学2年生');
+    expect(progressGradeLabel(11)).toBe('高校2年生');
+  });
+
+  it('13 は「既卒」（空欄に落とさない）', () => {
+    expect(progressGradeLabel(13)).toBe('既卒');
+  });
+
+  it('未設定・範囲外は空文字', () => {
+    expect(progressGradeLabel(null)).toBe('');
+    expect(progressGradeLabel(undefined)).toBe('');
+    expect(progressGradeLabel(99)).toBe('');
   });
 });

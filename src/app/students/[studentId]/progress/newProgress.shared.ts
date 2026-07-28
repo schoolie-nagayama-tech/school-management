@@ -71,11 +71,22 @@ export const SUBJECT_COLOR: Record<SubjectColumn, { bg: string; text: string; ac
 // ─────────────────────────────────────────────
 // ヘルパー
 // ─────────────────────────────────────────────
+/**
+ * 進行表用の学年ラベル（8 → '中学2年生'）。
+ *
+ * ★ 共通の formatGradeLabel（'中2'）と別実装なのは意図的: こちらは講師向け進行表の
+ *   長い表記で、主体も文脈も違う。共通ヘルパに寄せると片方の表記変更が
+ *   もう片方を巻き添えにする。表記だけ別、値の意味は GRADE_LABELS と揃える。
+ *
+ * ★ 13（既卒）に長い表記は無いので GRADE_LABELS と同じ '既卒' を返す。
+ *   ここを落とすと既卒の生徒だけ学年が空欄になる。
+ */
 export function gradeLabel(grade: number | null | undefined): string {
   if (grade == null) return '';
   if (grade <= 6) return `小学${grade}年生`;
   if (grade <= 9) return `中学${grade - 6}年生`;
   if (grade <= 12) return `高校${grade - 9}年生`;
+  if (grade === 13) return '既卒';
   return '';
 }
 
