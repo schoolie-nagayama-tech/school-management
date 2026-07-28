@@ -16,6 +16,7 @@ import { Plus } from 'lucide-react';
 import type { ScheduleEntry, ScheduleTimeSlot } from '@/types/schedule';
 import { getSurname } from '@/lib/utils/teacherName';
 import styles from './scheduleDensity.module.css';
+import { formatGradeLabel } from '@/lib/utils/gradeLabel';
 
 const DOW_LABELS = ['日', '月', '火', '水', '木', '金', '土'];
 /** 空席プレースホルダを最大何行まで出すか（残席が多いと縦に伸びるので圧縮） */
@@ -34,12 +35,6 @@ function getTodayLocalDateStr(): string {
   const m = String(d.getMonth() + 1).padStart(2, '0');
   const day = String(d.getDate()).padStart(2, '0');
   return `${y}-${m}-${day}`;
-}
-
-function gradeLabel(g: number): string {
-  if (g <= 6) return `小${g}`;
-  if (g <= 9) return `中${g - 6}`;
-  return `高${g - 9}`;
 }
 
 export interface FormationBoardProps {
@@ -127,7 +122,7 @@ function ClassCard({
       <div className={styles.gStudents}>
         {entries.map((e) => {
           const name = e.student ? `${e.student.last_name}${e.student.first_name}` : '—';
-          const grade = e.student ? gradeLabel(e.student.grade) : '';
+          const grade = e.student ? formatGradeLabel(e.student.grade) : '';
           const isTransferIn = e.status === 'transferred_in';
           const isAbsent = e.attendance_status === 'absent';
           const rowCls = [

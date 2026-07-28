@@ -24,6 +24,7 @@ import { toSurnameOnly } from '@/lib/utils/teacherName';
 // Phase A: 形態キーの直書きを定数参照に置換。
 // TODO(Phase E): 集団バッジ表示はマスタ label 参照へ差し替える（新形態も表示できるように）。
 import { GROUP_FORMATION } from '@/types/schedule';
+import { formatGradeLabel } from '@/lib/utils/gradeLabel';
 
 interface DashboardData {
   school: { name: string };
@@ -55,12 +56,6 @@ interface DashboardData {
     check_test_total: number | null;
     check_test_passed: boolean | null;
   }>;
-}
-
-function gradeLabel(g: number): string {
-  if (g <= 6) return `小${g}`;
-  if (g <= 9) return `中${g - 6}`;
-  return `高${g - 9}`;
 }
 
 function formatDateShort(s: string): string {
@@ -156,7 +151,7 @@ export default function StudentDashboardPage() {
               {data.student.last_name} {data.student.first_name}
             </h1>
             <div className="text-sm mt-1 text-text-on-primary/80">
-              {gradeLabel(data.student.grade)} ・ {data.school.name}
+              {formatGradeLabel(data.student.grade)} ・ {data.school.name}
             </div>
           </CardContent>
         </Card>

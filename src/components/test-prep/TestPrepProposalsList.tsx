@@ -11,6 +11,7 @@ import type { TestPrepProposal, TestPrepStatus } from '@/types/test-prep';
 import { TEST_PREP_STATUS_LABELS } from '@/types/test-prep';
 import { Spinner } from '@/components/ui';
 import { GRADE_LABELS } from '@/types/database';
+import { formatGradeLabel } from '@/lib/utils/gradeLabel';
 
 type ProposalRow = TestPrepProposal & {
   student: { last_name: string; first_name: string; grade: number } | null;
@@ -31,12 +32,6 @@ const STATUS_STYLES: Record<TestPrepStatus, string> = {
   sent: 'bg-warning-subtle text-yellow-700',
   published: 'bg-success-subtle text-green-700',
 };
-
-function gradeName(grade: number): string {
-  if (grade >= 10) return `高${grade - 9}`;
-  if (grade >= 7) return `中${grade - 6}`;
-  return `小${grade}`;
-}
 
 export default function TestPrepProposalsList() {
   const router = useRouter();
@@ -300,7 +295,7 @@ export default function TestPrepProposalsList() {
                           {p.student.last_name} {p.student.first_name}
                         </span>
                         <span className="text-xs text-text-muted ml-2">
-                          {gradeName(p.student.grade)}
+                          {formatGradeLabel(p.student.grade)}
                         </span>
                       </div>
                     ) : (

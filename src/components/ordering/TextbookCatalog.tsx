@@ -3,6 +3,7 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { Search, AlertTriangle, Package, ShoppingCart, X, Trash2, Plus, Minus } from 'lucide-react';
 import type { Textbook, Material } from '@/types/database';
+import { formatGradeLabelOrEmpty } from '@/lib/utils/gradeLabel';
 
 interface StudentOption {
   id: string;
@@ -81,13 +82,6 @@ const DEFAULT_COLOR = { bg: 'bg-gray-50', text: 'text-gray-700', dot: 'bg-gray-4
 function getSubjectColor(subject: string | null) {
   if (!subject) return DEFAULT_COLOR;
   return SUBJECT_COLORS[subject] ?? DEFAULT_COLOR;
-}
-
-function gradeLabel(grade: number | null): string {
-  if (grade === null || grade === undefined) return '';
-  if (grade <= 6) return `小${grade}`;
-  if (grade <= 9) return `中${grade - 6}`;
-  return `高${grade - 9}`;
 }
 
 function formatTextbookLabel(tb: Textbook): string {
@@ -177,7 +171,7 @@ function TextbookProductCard({
       } else {
         const student = students.find((s) => s.id === sid);
         if (!student) continue;
-        const studentLabel = `${gradeLabel(student.grade)} ${student.last_name} ${student.first_name}`;
+        const studentLabel = `${formatGradeLabelOrEmpty(student.grade)} ${student.last_name} ${student.first_name}`;
         onAddToCart(textbook, formatTextbookLabel(textbook), sid, studentLabel, 1);
       }
     }
@@ -311,7 +305,7 @@ function TextbookProductCard({
                   </option>
                   {getAvailableStudents(index).map((s) => (
                     <option key={s.id} value={s.id}>
-                      {gradeLabel(s.grade)} {s.last_name} {s.first_name}
+                      {formatGradeLabelOrEmpty(s.grade)} {s.last_name} {s.first_name}
                       {isOrdered(s.id) ? '（発注済）' : ''}
                     </option>
                   ))}

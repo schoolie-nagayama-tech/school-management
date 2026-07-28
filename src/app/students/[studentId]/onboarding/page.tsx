@@ -78,6 +78,7 @@ import {
   type SubjectDragPayload,
 } from './MiniSeatingGrid';
 import styles from '@/components/schedule/scheduleDensity.module.css';
+import { formatGradeLabel } from '@/lib/utils/gradeLabel';
 
 // Step2 の曜日プルダウンに出す曜日＝月〜土（個別指導は日曜運用しない想定）。
 const SELECTABLE_DAYS = [1, 2, 3, 4, 5, 6];
@@ -106,13 +107,6 @@ interface SubjectPlan {
   endTime: string;
   durationMinutes: number | null;
   half: HalfPosition;
-}
-
-/** 数値学年 → 表示ラベル（小/中/高）。 */
-function gradeLabel(g: number): string {
-  if (g <= 6) return `小${g}`;
-  if (g <= 9) return `中${g - 6}`;
-  return `高${g - 9}`;
 }
 
 /** "HH:MM[:SS]" → 分。 */
@@ -1013,7 +1007,7 @@ export default function OnboardingPage() {
                       >
                         {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((g) => (
                           <option key={g} value={g}>
-                            {gradeLabel(g)}
+                            {formatGradeLabel(g)}
                           </option>
                         ))}
                       </select>
@@ -1037,7 +1031,7 @@ export default function OnboardingPage() {
                   <div>
                     <h2 className="text-base font-bold text-text-heading mb-1">受講科目</h2>
                     <p className="text-xs text-text-muted">
-                      {gradeLabel(grade)}{' '}
+                      {formatGradeLabel(grade)}{' '}
                       の科目を選び、科目ごとに「比率・曜日・時限」を決めます。45分科目は前半/後半も選びます。ここで「何を・いつ・何対何で」が確定します。
                     </p>
                   </div>

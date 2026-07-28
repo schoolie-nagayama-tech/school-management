@@ -6,6 +6,7 @@ import { Plus } from 'lucide-react';
 import { TeacherCard } from './TeacherCard';
 import { getSubjectChip } from './scheduleBadges';
 import { computeSeatOccupancy } from '@/lib/utils/seatOccupancy';
+import { formatGradeLabelOrEmpty } from '@/lib/utils/gradeLabel';
 import styles from './scheduleDensity.module.css';
 import type { ScheduleEntry, ScheduleTimeSlot } from '@/types/schedule';
 
@@ -52,14 +53,7 @@ function UnassignedChip({
     ? `${entry.student.last_name ?? ''} ${entry.student.first_name ?? ''}`.trim() || '生徒'
     : '生徒';
   const grade = entry.student?.grade;
-  const gradeLabel =
-    grade != null
-      ? grade <= 6
-        ? `小${grade}`
-        : grade <= 9
-          ? `中${grade - 6}`
-          : `高${grade - 9}`
-      : '';
+  const gradeLabel = formatGradeLabelOrEmpty(grade);
   const firstSubject = (entry.subject_ids ?? [])
     .map((sid) => subjectNameById?.get(sid))
     .find((n): n is string => !!n);

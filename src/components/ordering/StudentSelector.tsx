@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { formatGradeLabelOrEmpty } from '@/lib/utils/gradeLabel';
 
 interface StudentOption {
   id: string;
@@ -63,13 +64,6 @@ export function StudentSelector({
     setSearch('');
   };
 
-  const gradeLabel = (grade: number | null) => {
-    if (grade === null || grade === undefined) return '';
-    if (grade <= 6) return `小${grade}`;
-    if (grade <= 9) return `中${grade - 6}`;
-    return `高${grade - 9}`;
-  };
-
   return (
     <div ref={containerRef} className="relative">
       {(selectedStudent || isSampleSelected) && !isOpen ? (
@@ -78,7 +72,9 @@ export function StudentSelector({
             <span className="flex-1 text-purple-700 font-medium">見本（生徒なし）</span>
           ) : selectedStudent ? (
             <>
-              <span className="text-xs text-gray-500">{gradeLabel(selectedStudent.grade)}</span>
+              <span className="text-xs text-gray-500">
+                {formatGradeLabelOrEmpty(selectedStudent.grade)}
+              </span>
               <span className="flex-1 text-gray-800">
                 {selectedStudent.last_name} {selectedStudent.first_name}
               </span>
@@ -131,7 +127,9 @@ export function StudentSelector({
                 className="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50 transition-[background-color] duration-150 ease-out flex items-center gap-2"
                 onClick={() => handleSelect(s.id)}
               >
-                <span className="text-xs text-gray-400 w-6">{gradeLabel(s.grade)}</span>
+                <span className="text-xs text-gray-400 w-6">
+                  {formatGradeLabelOrEmpty(s.grade)}
+                </span>
                 <span className="text-gray-800">
                   {s.last_name} {s.first_name}
                 </span>

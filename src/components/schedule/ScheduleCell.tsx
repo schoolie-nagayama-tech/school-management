@@ -3,12 +3,7 @@
 import React from 'react';
 import { Badge } from '@/components/ui';
 import type { ScheduleEntry, ScheduleTimeSlot } from '@/types/schedule';
-
-function gradeLabel(g: number): string {
-  if (g <= 6) return `小${g}`;
-  if (g <= 9) return `中${g - 6}`;
-  return `高${g - 9}`;
-}
+import { formatGradeLabel } from '@/lib/utils/gradeLabel';
 
 /**
  * 今日からターゲット日付までの日数。
@@ -74,7 +69,7 @@ export const ScheduleCell = React.memo(function ScheduleCell({
       <div className="min-h-[44px] space-y-1">
         {transferredOutEntries.map((entry) => {
           const studentName = entry.student
-            ? `${entry.student.last_name} ${entry.student.first_name}（${gradeLabel(entry.student.grade)}）`
+            ? `${entry.student.last_name} ${entry.student.first_name}（${formatGradeLabel(entry.student.grade)}）`
             : entry.inquiry?.student_name || entry.student_id || '—';
           // 振替期限チップ表示用：未消化（transfer_to_id 無し）かつ期限ありのものだけ
           const isUnresolved = !entry.transfer_to_id;
@@ -117,7 +112,7 @@ export const ScheduleCell = React.memo(function ScheduleCell({
             ? (ATTENDANCE_BG[entry.attendance_status] ?? DEFAULT_BG)
             : DEFAULT_BG;
           const studentName = entry.student
-            ? `${entry.student.last_name} ${entry.student.first_name}（${gradeLabel(entry.student.grade)}）`
+            ? `${entry.student.last_name} ${entry.student.first_name}（${formatGradeLabel(entry.student.grade)}）`
             : entry.inquiry?.student_name || entry.student_id || '—';
           const subjectNames =
             (entry.subject_ids || [])

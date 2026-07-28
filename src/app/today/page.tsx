@@ -33,6 +33,7 @@ import { supabase } from '@/lib/supabase';
 import { fetchAllPaged } from '@/lib/utils/supabasePaging';
 import type { ClassReportStatus } from '@/types/class-report';
 import { ChevronLeft, ChevronRight, FileText, CheckCircle, AlertCircle, Clock } from 'lucide-react';
+import { formatGradeLabel } from '@/lib/utils/gradeLabel';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabase as any;
@@ -61,12 +62,6 @@ function addDays(date: string, n: number): string {
   const d = new Date(date + 'T12:00:00');
   d.setDate(d.getDate() + n);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
-
-function gradeLabel(g: number): string {
-  if (g <= 6) return `小${g}`;
-  if (g <= 9) return `中${g - 6}`;
-  return `高${g - 9}`;
 }
 
 function formatDateLong(dateStr: string): string {
@@ -280,7 +275,7 @@ export default function TodayPage() {
               const studentName = entry.student
                 ? `${entry.student.last_name} ${entry.student.first_name}`
                 : entry.student_id;
-              const grade = entry.student ? gradeLabel(entry.student.grade) : '';
+              const grade = entry.student ? formatGradeLabel(entry.student.grade) : '';
               const slot = entry.time_slot;
               return (
                 <Link

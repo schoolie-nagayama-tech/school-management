@@ -4,6 +4,7 @@ import React from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import { Badge } from '@/components/ui';
 import type { ScheduleEntry } from '@/types/schedule';
+import { formatGradeLabel } from '@/lib/utils/gradeLabel';
 
 const ATTENDANCE_BG: Record<string, string> = {
   present: 'bg-green-100',
@@ -11,12 +12,6 @@ const ATTENDANCE_BG: Record<string, string> = {
   late: 'bg-amber-100',
 };
 const DEFAULT_BG = 'bg-white';
-
-function gradeLabel(g: number): string {
-  if (g <= 6) return `小${g}`;
-  if (g <= 9) return `中${g - 6}`;
-  return `高${g - 9}`;
-}
 
 interface DraggableEntryProps {
   entry: ScheduleEntry;
@@ -37,7 +32,7 @@ export const DraggableEntry = React.memo(function DraggableEntry({
     ? (ATTENDANCE_BG[entry.attendance_status] ?? DEFAULT_BG)
     : DEFAULT_BG;
   const studentName = entry.student
-    ? `${entry.student.last_name} ${entry.student.first_name}（${gradeLabel(entry.student.grade)}）`
+    ? `${entry.student.last_name} ${entry.student.first_name}（${formatGradeLabel(entry.student.grade)}）`
     : entry.student_id;
   const subjectNames =
     (entry.subject_ids || [])

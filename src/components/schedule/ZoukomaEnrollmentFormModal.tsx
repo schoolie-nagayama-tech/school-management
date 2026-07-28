@@ -19,12 +19,7 @@ import {
 } from '@/lib/api/form-responses';
 import type { FormResponseInsert } from '@/types/database';
 import type { ZoukomaPeriod, ZoukomaResponse, ZoukomaResponseData } from '@/types/forms/zoukoma';
-
-function gradeLabel(grade: number): string {
-  if (grade <= 6) return `小${grade}`;
-  if (grade <= 9) return `中${grade - 6}`;
-  return `高${grade - 9}`;
-}
+import { formatGradeLabel } from '@/lib/utils/gradeLabel';
 
 interface Props {
   open: boolean;
@@ -83,7 +78,9 @@ export function ZoukomaEnrollmentFormModal({
   }, [open, editing]);
 
   // 編集時の表示名/学年（編集は生徒固定）
-  const lockedLabel = editing ? `${editing.student_name}（${gradeLabel(editing.grade)}）` : null;
+  const lockedLabel = editing
+    ? `${editing.student_name}（${formatGradeLabel(editing.grade)}）`
+    : null;
 
   const totalKoma = Object.values(subjectValues).reduce((s, n) => s + (Number(n) || 0), 0);
 
@@ -106,7 +103,7 @@ export function ZoukomaEnrollmentFormModal({
     }
 
     // 単価：price_table を学年ラベル（中1 等）で引く。無ければ0（請求は別途）。
-    const unitPrice = settings.price_table?.[gradeLabel(grade)] ?? 0;
+    const unitPrice = settings.price_table?.[formatGradeLabel(grade)] ?? 0;
     // 通塾できる枠：選択した slotId を generateAllSlots のラベル付きに変換
     const allSlots = generateAllSlots(settings);
     const slotById = new Map(allSlots.map((s) => [s.id, s.label]));
@@ -189,7 +186,7 @@ export function ZoukomaEnrollmentFormModal({
               {selectedStudent && (
                 <div className="mt-2 text-sm text-[var(--headline)] bg-blue-50 px-3 py-2 rounded-md">
                   選択: {selectedStudent.last_name} {selectedStudent.first_name}（
-                  {gradeLabel(selectedStudent.grade)}）
+                  {formatGradeLabel(selectedStudent.grade)}）
                 </div>
               )}
             </div>

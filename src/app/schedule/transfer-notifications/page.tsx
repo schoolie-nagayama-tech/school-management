@@ -43,12 +43,7 @@ import {
 } from '@/lib/api/transfer-notifications';
 import { Mail, CheckCircle, X, AlertCircle } from 'lucide-react';
 import AccessDenied from '@/components/AccessDenied';
-
-function gradeLabel(g: number): string {
-  if (g <= 6) return `小${g}`;
-  if (g <= 9) return `中${g - 6}`;
-  return `高${g - 9}`;
-}
+import { formatGradeLabel } from '@/lib/utils/gradeLabel';
 
 export default function TransferNotificationsPage() {
   const { profile, selectedSchoolId, getSelectedSchoolIds } = useAuth();
@@ -177,7 +172,7 @@ export default function TransferNotificationsPage() {
                         <span className="font-bold">{studentName}</span>
                         {n.student && (
                           <span className="text-xs text-text-muted">
-                            ({gradeLabel(n.student.grade)})
+                            ({formatGradeLabel(n.student.grade)})
                           </span>
                         )}
                         {statusBadge(n.delivery_status)}

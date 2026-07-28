@@ -25,6 +25,7 @@ import type { ScheduleEntryFormation } from '@/types/schedule';
 // Phase A: 形態キーの直書きを定数参照に置換（配置パネルの既定は個別）
 import { INDIVIDUAL_FORMATION } from '@/types/schedule';
 import { CheckCircle, Target, X } from 'lucide-react';
+import { formatGradeLabel } from '@/lib/utils/gradeLabel';
 
 const DOW_LABELS = ['日', '月', '火', '水', '木', '金', '土'];
 type StudentSchedule = Awaited<ReturnType<typeof getStudentRegularSchedule>>;
@@ -58,12 +59,6 @@ interface Props {
   refreshKey?: number;
   /** パネルを閉じる */
   onClose?: () => void;
-}
-
-function gradeLabel(g: number): string {
-  if (g <= 6) return `小${g}`;
-  if (g <= 9) return `中${g - 6}`;
-  return `高${g - 9}`;
 }
 
 export function KoushuPlacementPanel({
@@ -196,7 +191,7 @@ export function KoushuPlacementPanel({
                               {r.student?.last_name} {r.student?.first_name}
                             </span>
                             <span className="text-text-muted ml-1">
-                              ({r.student ? gradeLabel(r.student.grade) : ''})
+                              ({r.student ? formatGradeLabel(r.student.grade) : ''})
                             </span>
                           </button>
                         </td>

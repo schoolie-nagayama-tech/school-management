@@ -31,6 +31,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { GROUP_FORMATION } from '@/types/schedule';
 import { supabase } from '@/lib/supabase';
 import { recordAttendance } from '@/lib/api/schedule';
+import { formatGradeLabel } from '@/lib/utils/gradeLabel';
 import {
   ChevronLeft,
   ChevronRight,
@@ -84,11 +85,6 @@ function startOfMonth(d: Date): Date {
 }
 function endOfMonth(d: Date): Date {
   return new Date(d.getFullYear(), d.getMonth() + 1, 0);
-}
-function gradeLabel(g: number): string {
-  if (g <= 6) return `小${g}`;
-  if (g <= 9) return `中${g - 6}`;
-  return `高${g - 9}`;
 }
 function formatDateLong(d: Date): string {
   const week = ['日', '月', '火', '水', '木', '金', '土'][d.getDay()];
@@ -436,7 +432,7 @@ function EntryRow({
           {studentName}
           {entry.student && (
             <span className="text-xs text-text-muted ml-1">
-              ({gradeLabel(entry.student.grade)})
+              ({formatGradeLabel(entry.student.grade)})
             </span>
           )}
           {entry.kind === 'koushu' && (

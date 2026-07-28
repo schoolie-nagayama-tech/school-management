@@ -38,12 +38,7 @@ import { getPendingReports, approveClassReport, rejectClassReport } from '@/lib/
 import type { ClassReport } from '@/types/class-report';
 import { CheckCircle, XCircle, ChevronRight, ChevronLeft } from 'lucide-react';
 import AccessDenied from '@/components/AccessDenied';
-
-function gradeLabel(g: number): string {
-  if (g <= 6) return `小${g}`;
-  if (g <= 9) return `中${g - 6}`;
-  return `高${g - 9}`;
-}
+import { formatGradeLabel } from '@/lib/utils/gradeLabel';
 
 export default function PendingReportsPage() {
   const router = useRouter();
@@ -165,7 +160,7 @@ export default function PendingReportsPage() {
               const studentName = r.student
                 ? `${r.student.last_name} ${r.student.first_name}`
                 : r.student_id;
-              const grade = r.student ? gradeLabel(r.student.grade) : '';
+              const grade = r.student ? formatGradeLabel(r.student.grade) : '';
               const teacherName = r.teacher?.display_name || r.teacher?.email || '';
               const submittedAt = r.submitted_at
                 ? new Date(r.submitted_at).toLocaleString('ja-JP')

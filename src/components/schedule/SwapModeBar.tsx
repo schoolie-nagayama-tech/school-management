@@ -4,12 +4,7 @@ import React from 'react';
 import { Button } from '@/components/ui';
 import { ArrowLeftRight } from 'lucide-react';
 import type { ScheduleEntry } from '@/types/schedule';
-
-function gradeLabel(g: number): string {
-  if (g <= 6) return `小${g}`;
-  if (g <= 9) return `中${g - 6}`;
-  return `高${g - 9}`;
-}
+import { formatGradeLabel } from '@/lib/utils/gradeLabel';
 
 export interface SwapModeBarProps {
   /** 入れ替え元（選択中の生徒A）のエントリ */
@@ -25,7 +20,7 @@ export interface SwapModeBarProps {
  */
 export function SwapModeBar({ entry, teacherName, onCancel }: SwapModeBarProps) {
   const studentName = entry.student
-    ? `${entry.student.last_name}${entry.student.first_name}（${gradeLabel(entry.student.grade)}）`
+    ? `${entry.student.last_name}${entry.student.first_name}（${formatGradeLabel(entry.student.grade)}）`
     : (entry.student_id ?? '生徒');
   const teacher = teacherName ?? entry.teacher?.display_name ?? entry.teacher?.email ?? '';
 

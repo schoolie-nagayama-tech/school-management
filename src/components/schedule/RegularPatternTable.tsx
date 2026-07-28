@@ -14,12 +14,7 @@ import {
 import { Pencil, Trash2, Plus } from 'lucide-react';
 import { DAY_OF_WEEK_LABELS, SCHEDULE_PERIOD_LABELS } from '@/types/schedule';
 import type { ScheduleRegularPattern } from '@/types/schedule';
-
-function gradeLabel(g: number): string {
-  if (g <= 6) return `小${g}`;
-  if (g <= 9) return `中${g - 6}`;
-  return `高${g - 9}`;
-}
+import { formatGradeLabel } from '@/lib/utils/gradeLabel';
 
 interface RegularPatternTableProps {
   patterns: ScheduleRegularPattern[];
@@ -75,7 +70,7 @@ export function RegularPatternTable({
               <TableRow key={p.id}>
                 <TableCell>
                   {p.student
-                    ? `${p.student.last_name} ${p.student.first_name}（${gradeLabel(p.student.grade)}）`
+                    ? `${p.student.last_name} ${p.student.first_name}（${formatGradeLabel(p.student.grade)}）`
                     : p.student_id}
                 </TableCell>
                 {showFormation && (

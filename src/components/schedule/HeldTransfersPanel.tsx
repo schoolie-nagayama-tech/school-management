@@ -26,6 +26,7 @@ import {
   deletePendingLesson,
   type PendingLesson,
 } from '@/lib/api/pending-lessons';
+import { formatGradeLabel } from '@/lib/utils/gradeLabel';
 
 interface Props {
   schoolIds: string[];
@@ -41,12 +42,6 @@ interface Props {
   onStartPlacement: (entry: ScheduleEntry) => void;
   /** 「配置」クリック（追加授業）: 親が placingAdhoc('lesson') を残数 target で再開。 */
   onStartPendingPlacement: (pending: PendingLesson) => void;
-}
-
-function gradeLabel(g: number): string {
-  if (g <= 6) return `小${g}`;
-  if (g <= 9) return `中${g - 6}`;
-  return `高${g - 9}`;
 }
 
 function daysUntil(targetDateStr: string): number {
@@ -161,7 +156,7 @@ export function HeldTransfersPanel({
               <ul className="divide-y divide-border-subtle">
                 {entries.map((entry) => {
                   const studentName = entry.student
-                    ? `${entry.student.last_name} ${entry.student.first_name}（${gradeLabel(entry.student.grade)}）`
+                    ? `${entry.student.last_name} ${entry.student.first_name}（${formatGradeLabel(entry.student.grade)}）`
                     : (entry.student_id ?? '生徒');
                   const slotLabel = entry.time_slot ? `${entry.time_slot.slot_number}限` : '';
                   const subjectNames = (entry.subject_ids ?? [])
@@ -244,7 +239,7 @@ export function HeldTransfersPanel({
               <ul className="divide-y divide-border-subtle">
                 {pending.map((pl) => {
                   const name = pl.student
-                    ? `${pl.student.last_name} ${pl.student.first_name}（${gradeLabel(pl.student.grade)}）`
+                    ? `${pl.student.last_name} ${pl.student.first_name}（${formatGradeLabel(pl.student.grade)}）`
                     : pl.inquiry
                       ? `${pl.inquiry.student_name ?? '見込み客'}（見込み客）`
                       : '対象者';

@@ -13,6 +13,7 @@ import { Checkbox } from '@/components/ui';
 import { Textarea } from '@/components/ui';
 import type { ScheduleEntryFormData, ScheduleEntry } from '@/types/schedule';
 import type { Subject } from '@/types/database';
+import { formatGradeLabel } from '@/lib/utils/gradeLabel';
 
 const GRADE_CATEGORY_LABELS: Record<string, string> = {
   elementary: '小学',
@@ -66,12 +67,6 @@ interface ScheduleEntryFormProps {
   subjects: Subject[];
   selectedSchoolId: string;
   editingEntry?: ScheduleEntry | null;
-}
-
-function gradeLabel(g: number): string {
-  if (g <= 6) return `小${g}`;
-  if (g <= 9) return `中${g - 6}`;
-  return `高${g - 9}`;
 }
 
 export function ScheduleEntryForm({
@@ -140,7 +135,7 @@ export function ScheduleEntryForm({
           <Input
             value={
               editingEntry?.student
-                ? `${editingEntry.student.last_name} ${editingEntry.student.first_name}（${gradeLabel(editingEntry.student.grade)}）`
+                ? `${editingEntry.student.last_name} ${editingEntry.student.first_name}（${formatGradeLabel(editingEntry.student.grade)}）`
                 : '—'
             }
             disabled
@@ -164,7 +159,7 @@ export function ScheduleEntryForm({
               <SelectContent>
                 {filteredStudents.slice(0, 100).map((s) => (
                   <SelectItem key={s.id} value={s.id}>
-                    {s.last_name} {s.first_name}（{gradeLabel(s.grade)}）
+                    {s.last_name} {s.first_name}（{formatGradeLabel(s.grade)}）
                   </SelectItem>
                 ))}
               </SelectContent>

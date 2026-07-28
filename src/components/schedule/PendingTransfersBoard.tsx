@@ -17,6 +17,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { AlertTriangle, ChevronRight } from 'lucide-react';
 import type { ScheduleEntry } from '@/types/schedule';
 import { getPendingTransfers } from '@/lib/api/schedule';
+import { formatGradeLabel } from '@/lib/utils/gradeLabel';
 
 interface PendingTransfersBoardProps {
   schoolIds: string[];
@@ -24,12 +25,6 @@ interface PendingTransfersBoardProps {
   onSelectEntry?: (entry: ScheduleEntry) => void;
   /** 何日以内を「間近」とみなすか。デフォルト 14 */
   thresholdDays?: number;
-}
-
-function gradeLabel(g: number): string {
-  if (g <= 6) return `小${g}`;
-  if (g <= 9) return `中${g - 6}`;
-  return `高${g - 9}`;
 }
 
 function daysUntil(targetDateStr: string): number {
@@ -106,7 +101,7 @@ export function PendingTransfersBoard({
           <ul className="divide-y divide-gray-100">
             {entries.map((entry) => {
               const studentName = entry.student
-                ? `${entry.student.last_name} ${entry.student.first_name}（${gradeLabel(entry.student.grade)}）`
+                ? `${entry.student.last_name} ${entry.student.first_name}（${formatGradeLabel(entry.student.grade)}）`
                 : entry.student_id;
               const teacherName = entry.teacher?.display_name || entry.teacher?.email || '';
               const slotLabel = entry.time_slot ? `${entry.time_slot.slot_number}限` : '';

@@ -19,6 +19,7 @@ import { getSubjects } from '@/lib/api/subjects';
 import { getSurname } from '@/lib/utils/teacherName';
 import type { Student, ExamType, CurriculumItem, Subject } from '@/types/database';
 import { GRADE_LABELS } from '@/types/database';
+import { formatGradeLabel } from '@/lib/utils/gradeLabel';
 import type {
   TestPrepProposalWithDetails,
   TestPrepStatus,
@@ -608,13 +609,7 @@ export default function TestPrepEditor() {
               <label className="block text-sm font-medium text-text-body mb-1">生徒</label>
               <div className="px-3 py-2 bg-surface rounded-lg border border-border text-sm">
                 {student.last_name} {student.first_name}
-                <span className="text-text-muted ml-2">
-                  {student.grade >= 10
-                    ? `高${student.grade - 9}`
-                    : student.grade >= 7
-                      ? `中${student.grade - 6}`
-                      : `小${student.grade}`}
-                </span>
+                <span className="text-text-muted ml-2">{formatGradeLabel(student.grade)}</span>
               </div>
             </div>
             <div>

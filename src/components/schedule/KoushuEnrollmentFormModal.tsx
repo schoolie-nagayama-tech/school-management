@@ -9,15 +9,10 @@ import type { Subject } from '@/types/database';
 import type { ScheduleEntryFormation } from '@/types/schedule';
 // Phase A: 講習申込は個別/集団の2列固定。マトリクスのキー型は2値のまま保つ（他形態はここに来ない）。
 import { INDIVIDUAL_FORMATION, GROUP_FORMATION } from '@/types/schedule';
+import { formatGradeLabel } from '@/lib/utils/gradeLabel';
 
 /** 講習申込マトリクスの列キー。講習は個別/集団の2列のみ（ユーザー定義形態は対象外）。 */
 type KoushuFormationColumn = 'individual' | 'group';
-
-function gradeLabel(grade: number): string {
-  if (grade <= 6) return `小${grade}`;
-  if (grade <= 9) return `中${grade - 6}`;
-  return `高${grade - 9}`;
-}
 
 /** 申込1件分（formation 別）。科目別コマ数で持つ。 */
 export interface EnrollmentRow {
@@ -138,7 +133,7 @@ export function KoushuEnrollmentFormModal({
   };
 
   const studentLabel = lockedStudent
-    ? `${lockedStudent.last_name} ${lockedStudent.first_name}（${gradeLabel(lockedStudent.grade)}）`
+    ? `${lockedStudent.last_name} ${lockedStudent.first_name}（${formatGradeLabel(lockedStudent.grade)}）`
     : null;
 
   const indivTotal = Object.values(matrix).reduce((s, v) => s + (v.individual || 0), 0);
@@ -171,7 +166,7 @@ export function KoushuEnrollmentFormModal({
               {selectedStudent && (
                 <div className="mt-2 text-sm text-[var(--headline)] bg-blue-50 px-3 py-2 rounded-md">
                   ✓ {selectedStudent.last_name} {selectedStudent.first_name}（
-                  {gradeLabel(selectedStudent.grade)}）
+                  {formatGradeLabel(selectedStudent.grade)}）
                   {regularHint != null && (
                     <span className="ml-2 text-xs text-[var(--paragraph)]">
                       （講習期間中の通常授業: 約{regularHint}コマ）

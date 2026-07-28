@@ -10,6 +10,7 @@
 import React from 'react';
 import { X } from 'lucide-react';
 import type { ScheduleEntry } from '@/types/schedule';
+import { formatGradeLabel } from '@/lib/utils/gradeLabel';
 
 interface Props {
   /** 同一 (date, slot, teacher) のエントリ群＝1クラス */
@@ -18,12 +19,6 @@ interface Props {
   subjectNameById?: Map<string, string>;
   onStudentClick?: (entry: ScheduleEntry, e: React.MouseEvent) => void;
   onRemoveEntry?: (entry: ScheduleEntry) => void;
-}
-
-function gradeLabel(g: number): string {
-  if (g <= 6) return `小${g}`;
-  if (g <= 9) return `中${g - 6}`;
-  return `高${g - 9}`;
 }
 
 export function GroupCard({
@@ -75,7 +70,7 @@ export function GroupCard({
       <div className="flex flex-wrap gap-0.5">
         {entries.map((e) => {
           const name = e.student ? `${e.student.last_name}${e.student.first_name}` : '—';
-          const grade = e.student ? gradeLabel(e.student.grade) : '';
+          const grade = e.student ? formatGradeLabel(e.student.grade) : '';
           return (
             <span
               key={e.id}

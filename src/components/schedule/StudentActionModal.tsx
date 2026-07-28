@@ -4,12 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui';
 import { Calendar, XCircle, Pencil, Trash2, RotateCcw, ArrowLeftRight } from 'lucide-react';
 import type { ScheduleEntry, ScheduleTimeSlot } from '@/types/schedule';
-
-function gradeLabel(g: number): string {
-  if (g <= 6) return `小${g}`;
-  if (g <= 9) return `中${g - 6}`;
-  return `高${g - 9}`;
-}
+import { formatGradeLabel } from '@/lib/utils/gradeLabel';
 
 function formatDay(dateStr: string): string {
   const d = new Date(dateStr + 'Z');
@@ -58,7 +53,7 @@ export function StudentActionModal({
   // 振替・出欠・編集の対象外で、取消（削除）のみ許可する。
   const isInquiry = !entry.student_id && !!entry.inquiry_id;
   const studentName = entry.student
-    ? `${entry.student.last_name} ${entry.student.first_name}（${gradeLabel(entry.student.grade)}）`
+    ? `${entry.student.last_name} ${entry.student.first_name}（${formatGradeLabel(entry.student.grade)}）`
     : entry.inquiry
       ? `${entry.inquiry.student_name || '（氏名未登録）'}（見込み客）`
       : (entry.student_id ?? '—');

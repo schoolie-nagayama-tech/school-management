@@ -51,6 +51,7 @@ import type { CurriculumItemWithProgress, StudentTextbookWithDetails } from '@/t
 import { ChevronLeft, Plus, X, Save, Send, Eye, Lock, Target, CalendarClock } from 'lucide-react';
 import { DemoProgressPreview } from '@/components/lesson-reports/DemoProgressPreview';
 import { LessonReportProgressGrid } from '@/components/lesson-reports/LessonReportProgressGrid';
+import { formatGradeLabelOrEmpty } from '@/lib/utils/gradeLabel';
 import {
   buildHomeworkDateRows,
   compactHomeworkRows,
@@ -584,8 +585,7 @@ export default function LessonReportFormPage() {
   const studentName = entry.student
     ? `${entry.student.last_name} ${entry.student.first_name}`
     : entry.student_id;
-  const grade = entry.student?.grade ?? 0;
-  const gradeLabel = grade <= 6 ? `小${grade}` : grade <= 9 ? `中${grade - 6}` : `高${grade - 9}`;
+  const gradeLabel = formatGradeLabelOrEmpty(entry.student?.grade);
   const teacherName = entry.teacher?.display_name || entry.teacher?.email || '';
   const slotLabel = entry.time_slot ? `${entry.time_slot.slot_number}限` : '';
 

@@ -22,6 +22,7 @@ import { Button } from '@/components/ui';
 import { ToastContainer, Loading } from '@/components/ui';
 import { useToast } from '@/hooks/useToast';
 import { CheckCircle2 } from 'lucide-react';
+import { formatGradeLabel } from '@/lib/utils/gradeLabel';
 
 interface SettingInfo {
   id: string;
@@ -44,12 +45,6 @@ interface FetchedData {
   open_slots: OpenSlot[];
   student: { id: string; last_name: string; first_name: string; grade: number } | null;
   existing_submission: { id: string; allow_edit: boolean } | null;
-}
-
-function gradeLabel(g: number): string {
-  if (g <= 6) return `小${g}`;
-  if (g <= 9) return `中${g - 6}`;
-  return `高${g - 9}`;
 }
 
 export default function StudentShiftFormPage() {
@@ -301,7 +296,9 @@ export default function StudentShiftFormPage() {
                   <strong>
                     {data.student.last_name} {data.student.first_name}
                   </strong>
-                  <span className="text-text-muted ml-1">（{gradeLabel(data.student.grade)}）</span>
+                  <span className="text-text-muted ml-1">
+                    （{formatGradeLabel(data.student.grade)}）
+                  </span>
                 </div>
 
                 {data.existing_submission && !editToken && (

@@ -15,6 +15,7 @@ import { getMaterials } from '@/lib/api/inventory';
 import { createOrder, createOrderWithBilling } from '@/lib/api/ordering';
 import { getBillingPeriods } from '@/lib/api/billing';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
+import { formatGradeLabelOrEmpty } from '@/lib/utils/gradeLabel';
 import type { Student, Material, BillingPeriod } from '@/types/database';
 
 interface CreateOrderModalProps {
@@ -22,13 +23,6 @@ interface CreateOrderModalProps {
   onClose: () => void;
   onCreated: () => void;
   schoolIds: string[];
-}
-
-function gradeLabel(grade: number | null): string {
-  if (grade === null || grade === undefined) return '';
-  if (grade <= 6) return `小${grade}`;
-  if (grade <= 9) return `中${grade - 6}`;
-  return `高${grade - 9}`;
 }
 
 export function CreateOrderModal({ isOpen, onClose, onCreated, schoolIds }: CreateOrderModalProps) {
@@ -273,7 +267,7 @@ export function CreateOrderModal({ isOpen, onClose, onCreated, schoolIds }: Crea
                           <SelectContent>
                             {available.map((s) => (
                               <SelectItem key={s.id} value={s.id}>
-                                {gradeLabel(s.grade)} {s.last_name} {s.first_name}
+                                {formatGradeLabelOrEmpty(s.grade)} {s.last_name} {s.first_name}
                               </SelectItem>
                             ))}
                           </SelectContent>

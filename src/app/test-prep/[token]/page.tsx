@@ -6,6 +6,7 @@ import type { TestPrepProposalWithDetails, TestPrepProposalUnit } from '@/types/
 import { SELF_ASSESSMENT_LABELS } from '@/types/test-prep';
 import { getTestPrepProposalByToken } from '@/lib/api/test-prep-proposals';
 import { toSurnameOnly } from '@/lib/utils/teacherName';
+import { formatGradeLabel } from '@/lib/utils/gradeLabel';
 import { Spinner } from '@/components/ui';
 import { ArrowRight } from 'lucide-react';
 
@@ -15,13 +16,6 @@ const ASSESSMENT_STYLES: Record<string, string> = {
   '△': 'text-yellow-600 font-bold',
   '×': 'text-red-600 font-bold',
 };
-
-// 学年番号 → 表示名
-function gradeName(grade: number): string {
-  if (grade >= 10) return `高${grade - 9}`;
-  if (grade >= 7) return `中${grade - 6}`;
-  return `小${grade}`;
-}
 
 export default function TestPrepPublicPage() {
   const params = useParams();
@@ -73,7 +67,7 @@ export default function TestPrepPublicPage() {
   const studentName = proposal.student
     ? `${proposal.student.last_name} ${proposal.student.first_name}`
     : '---';
-  const studentGrade = proposal.student ? gradeName(proposal.student.grade) : '---';
+  const studentGrade = proposal.student ? formatGradeLabel(proposal.student.grade) : '---';
   const schoolObj = (proposal as unknown as Record<string, unknown>).school as
     | { name: string; code: string | null }
     | undefined;

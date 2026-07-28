@@ -37,14 +37,9 @@ import {
 import { logScheduleChange } from '@/lib/api/schedule-change-logs';
 import { CheckCircle2, Filter, RefreshCw, Sparkles, Info, X } from 'lucide-react';
 import AccessDenied from '@/components/AccessDenied';
+import { formatGradeLabel } from '@/lib/utils/gradeLabel';
 
 const DAY_LABELS = ['日', '月', '火', '水', '木', '金', '土'];
-
-function gradeLabel(g: number): string {
-  if (g <= 6) return `小${g}`;
-  if (g <= 9) return `中${g - 6}`;
-  return `高${g - 9}`;
-}
 
 export default function PatternMatchPage() {
   const { profile, selectedSchoolId, getSelectedSchoolIds } = useAuth();
@@ -339,7 +334,7 @@ export default function PatternMatchPage() {
                           const studentName = p.student
                             ? `${p.student.last_name} ${p.student.first_name}`
                             : p.student_id;
-                          const grade = p.student ? gradeLabel(p.student.grade) : '';
+                          const grade = p.student ? formatGradeLabel(p.student.grade) : '';
                           const candidates = candidatesByPattern.get(p.id);
                           return (
                             <li key={p.id} className="px-4 py-3">
@@ -486,7 +481,7 @@ function AllCandidatesModal({
   const studentName = pattern.student
     ? `${pattern.student.last_name} ${pattern.student.first_name}`
     : pattern.student_id;
-  const grade = pattern.student ? gradeLabel(pattern.student.grade) : '';
+  const grade = pattern.student ? formatGradeLabel(pattern.student.grade) : '';
   const dowLabel = DAY_LABELS[pattern.day_of_week];
   const slot = pattern.time_slot;
 

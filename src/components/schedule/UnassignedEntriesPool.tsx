@@ -19,6 +19,7 @@ import React, { useState } from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import { ChevronDown, ChevronRight, AlertTriangle } from 'lucide-react';
 import type { ScheduleEntry, ScheduleTimeSlot } from '@/types/schedule';
+import { formatGradeLabelOrEmpty } from '@/lib/utils/gradeLabel';
 
 const DAY_LABELS = ['日', '月', '火', '水', '木', '金', '土'];
 
@@ -38,14 +39,7 @@ function UnassignedChip({ entry, timeSlot, subjectNameById, dow }: UnassignedChi
     ? `${entry.student.last_name ?? ''} ${entry.student.first_name ?? ''}`.trim() || '生徒'
     : '生徒';
   const grade = entry.student?.grade;
-  const gradeLabel =
-    grade != null
-      ? grade <= 6
-        ? `小${grade}`
-        : grade <= 9
-          ? `中${grade - 6}`
-          : `高${grade - 9}`
-      : '';
+  const gradeLabel = formatGradeLabelOrEmpty(grade);
   const subjects = (entry.subject_ids ?? [])
     .map((sid) => subjectNameById?.get(sid))
     .filter((n): n is string => !!n);

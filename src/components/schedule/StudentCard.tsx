@@ -5,12 +5,7 @@ import type { ScheduleEntry } from '@/types/schedule';
 import { SCHEDULE_ENTRY_KIND_LABELS, isExtraLessonKind } from '@/types/schedule';
 import { extraKindBadgeClass, getSubjectChip, type SubjectChipTone } from './scheduleBadges';
 import styles from './scheduleDensity.module.css';
-
-function gradeLabel(grade: number): string {
-  if (grade <= 6) return `小${grade}`;
-  if (grade <= 9) return `中${grade - 6}`;
-  return `高${grade - 9}`;
-}
+import { formatGradeLabel } from '@/lib/utils/gradeLabel';
 
 /** 科目チップの色トーン → CSS モジュールクラス。scheduleBadges.getSubjectChip と対で使う。 */
 const TONE_CLASS: Record<SubjectChipTone, string> = {
@@ -70,7 +65,7 @@ export const StudentCard = React.memo(function StudentCard({
       : (entry.student_id ?? '—');
   // 生徒は数値学年、見込み客(inquiry.grade)は text。student/inquiry いずれも無ければ「—」。
   const grade = entry.student
-    ? gradeLabel(entry.student.grade)
+    ? formatGradeLabel(entry.student.grade)
     : entry.inquiry
       ? entry.inquiry.grade || '—'
       : '—';

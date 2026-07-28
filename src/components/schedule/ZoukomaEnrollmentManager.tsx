@@ -9,12 +9,7 @@ import { getZoukomaPeriods, getAllZoukomaResponses } from '@/lib/api/zoukoma';
 import { archiveResponse } from '@/lib/api/form-responses';
 import type { ZoukomaPeriod, ZoukomaResponse } from '@/types/forms/zoukoma';
 import { useAuth } from '@/contexts/AuthContext';
-
-function gradeLabel(grade: number): string {
-  if (grade <= 6) return `小${grade}`;
-  if (grade <= 9) return `中${grade - 6}`;
-  return `高${grade - 9}`;
-}
+import { formatGradeLabel } from '@/lib/utils/gradeLabel';
 
 /**
  * テスト対策（増コマ）申込の生徒別 管理。期間は意識せず全申込を1つの一覧で扱う。
@@ -159,7 +154,9 @@ export function ZoukomaEnrollmentManager() {
                     <td className="px-3 py-2 font-medium text-[var(--headline)]">
                       {r.student_name}
                     </td>
-                    <td className="px-3 py-2 text-[var(--paragraph)]">{gradeLabel(r.grade)}</td>
+                    <td className="px-3 py-2 text-[var(--paragraph)]">
+                      {formatGradeLabel(r.grade)}
+                    </td>
                     <td className="px-3 py-2 text-[var(--paragraph)]">{komaSummary(r)}</td>
                     <td className="px-3 py-2 text-[var(--paragraph)]">
                       {r.response_data?.selected_slots?.length ?? 0} 枠

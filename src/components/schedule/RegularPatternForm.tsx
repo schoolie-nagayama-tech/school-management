@@ -11,6 +11,7 @@ import {
   SelectItem,
 } from '@/components/ui';
 import { Checkbox } from '@/components/ui';
+import { formatGradeLabel } from '@/lib/utils/gradeLabel';
 import { SCHEDULE_PERIOD_LABELS, DAY_OF_WEEK_LABELS } from '@/types/schedule';
 import type {
   ScheduleRegularPattern,
@@ -332,12 +333,6 @@ export function RegularPatternForm({
     }));
   };
 
-  const gradeLabel = (g: number) => {
-    if (g <= 6) return `小${g}`;
-    if (g <= 9) return `中${g - 6}`;
-    return `高${g - 9}`;
-  };
-
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-lg">
@@ -363,7 +358,7 @@ export function RegularPatternForm({
               <SelectContent>
                 {filteredStudents.slice(0, 100).map((s) => (
                   <SelectItem key={s.id} value={s.id}>
-                    {s.last_name} {s.first_name}（{gradeLabel(s.grade)}）
+                    {s.last_name} {s.first_name}（{formatGradeLabel(s.grade)}）
                   </SelectItem>
                 ))}
               </SelectContent>

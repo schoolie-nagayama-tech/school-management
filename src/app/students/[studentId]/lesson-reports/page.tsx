@@ -27,6 +27,7 @@ import { getApprovedReportsByStudent } from '@/lib/api/class-reports';
 import { supabase } from '@/lib/supabase';
 import type { ClassReport } from '@/types/class-report';
 import { ChevronLeft, ChevronRight, FileText } from 'lucide-react';
+import { formatGradeLabel } from '@/lib/utils/gradeLabel';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabase as any;
@@ -36,12 +37,6 @@ interface StudentInfo {
   last_name: string;
   first_name: string;
   grade: number;
-}
-
-function gradeLabel(g: number): string {
-  if (g <= 6) return `小${g}`;
-  if (g <= 9) return `中${g - 6}`;
-  return `高${g - 9}`;
 }
 
 /** subject_ids から最初の科目名を取得するための補助マップ生成 */
@@ -180,7 +175,7 @@ export default function StudentLessonReportsPage() {
                 {student.last_name} {student.first_name}
               </div>
               <div className="text-sm mt-1 text-text-on-primary/80">
-                {gradeLabel(student.grade)}
+                {formatGradeLabel(student.grade)}
               </div>
             </CardContent>
           </Card>

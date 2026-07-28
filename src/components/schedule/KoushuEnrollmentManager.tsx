@@ -24,14 +24,9 @@ import {
 import { INDIVIDUAL_FORMATION, GROUP_FORMATION } from '@/types/schedule';
 import { useMasterData } from '@/contexts/MasterDataContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { formatGradeLabel } from '@/lib/utils/gradeLabel';
 
 const DOW_LABELS = ['日', '月', '火', '水', '木', '金', '土'];
-
-function gradeLabel(grade: number): string {
-  if (grade <= 6) return `小${grade}`;
-  if (grade <= 9) return `中${grade - 6}`;
-  return `高${grade - 9}`;
-}
 
 /** 生徒1人分の講習申込（個別/集団） */
 interface StudentRow {
@@ -360,7 +355,7 @@ function FragmentRow({
           </button>
         </td>
         <td className="px-3 py-2 text-[var(--paragraph)]">
-          {row.student ? gradeLabel(row.student.grade) : '—'}
+          {row.student ? formatGradeLabel(row.student.grade) : '—'}
         </td>
         <td className="px-3 py-2">
           <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-medium bg-info-subtle text-info border border-info/20 mr-1.5">

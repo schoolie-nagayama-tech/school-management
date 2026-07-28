@@ -5,14 +5,9 @@ import { Search } from 'lucide-react';
 import { searchStudents } from '@/lib/api/students';
 import type { Student } from '@/types/database';
 import type { Subject } from '@/types/database';
+import { formatGradeLabel } from '@/lib/utils/gradeLabel';
 
 export type StudentWithSubjects = Student & { subjects: Subject[] };
-
-function gradeLabel(grade: number): string {
-  if (grade <= 6) return `小${grade}`;
-  if (grade <= 9) return `中${grade - 6}`;
-  return `高${grade - 9}`;
-}
 
 export interface StudentSearchInputProps {
   schoolId: string;
@@ -122,7 +117,7 @@ export function StudentSearchInput({
                       <span className="font-medium truncate">
                         {s.last_name} {s.first_name}
                         <span className="text-[var(--paragraph)] font-normal ml-1">
-                          （{gradeLabel(s.grade)}）
+                          （{formatGradeLabel(s.grade)}）
                         </span>
                       </span>
                     </button>

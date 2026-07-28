@@ -72,6 +72,7 @@ import { HelpTooltip } from '@/components/ui/Tooltip';
 import { loadSavedSeasonYear, saveSavedSeasonYear } from '@/lib/utils/coursePrepStorage';
 import { useLocalSchoolId } from '@/hooks/useLocalSchoolId';
 import { SchoolSwitcher } from '@/components/SchoolSwitcher';
+import { formatGradeLabel } from '@/lib/utils/gradeLabel';
 
 export default function CourseProgressPage() {
   const { hasPermission, isLoading: permissionLoading } = useRequirePermission(
@@ -1185,7 +1186,7 @@ export default function CourseProgressPage() {
                     <option value="all">全学年</option>
                     {[4, 5, 6, 7, 8, 9, 10, 11, 12].map((g) => (
                       <option key={g} value={g}>
-                        {g <= 6 ? `小${g}` : g <= 9 ? `中${g - 6}` : `高${g - 9}`}
+                        {formatGradeLabel(g)}
                       </option>
                     ))}
                   </select>

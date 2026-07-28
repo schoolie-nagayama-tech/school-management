@@ -5,12 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Button } from '@/components/ui';
 import { AlertTriangle } from 'lucide-react';
 import type { ScheduleEntry, ScheduleTimeSlot } from '@/types/schedule';
-
-function gradeLabel(grade: number): string {
-  if (grade <= 6) return `小${grade}`;
-  if (grade <= 9) return `中${grade - 6}`;
-  return `高${grade - 9}`;
-}
+import { formatGradeLabel } from '@/lib/utils/gradeLabel';
 
 function formatDay(dateStr: string): string {
   const d = new Date(dateStr + 'Z');
@@ -41,7 +36,7 @@ export function DeleteScheduleEntryModal({
   if (!entry) return null;
 
   const studentName = entry.student
-    ? `${entry.student.last_name} ${entry.student.first_name}（${gradeLabel(entry.student.grade)}）`
+    ? `${entry.student.last_name} ${entry.student.first_name}（${formatGradeLabel(entry.student.grade)}）`
     : entry.student_id;
   const subjectNames =
     (entry.subjects ?? [])

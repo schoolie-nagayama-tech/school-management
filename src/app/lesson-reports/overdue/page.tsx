@@ -32,12 +32,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { getOverdueReports, type OverdueReportTarget } from '@/lib/api/class-reports';
 import { AlertTriangle, ChevronRight } from 'lucide-react';
 import AccessDenied from '@/components/AccessDenied';
-
-function gradeLabel(g: number): string {
-  if (g <= 6) return `小${g}`;
-  if (g <= 9) return `中${g - 6}`;
-  return `高${g - 9}`;
-}
+import { formatGradeLabel } from '@/lib/utils/gradeLabel';
 
 export default function OverdueReportsPage() {
   const router = useRouter();
@@ -157,7 +152,7 @@ export default function OverdueReportsPage() {
                             <div className="text-sm font-medium">
                               {t.student_name}{' '}
                               <span className="text-xs text-text-muted">
-                                （{gradeLabel(t.student_grade)}）
+                                （{formatGradeLabel(t.student_grade)}）
                               </span>
                             </div>
                             <div className="text-xs text-text-muted mt-0.5">

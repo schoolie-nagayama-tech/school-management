@@ -8,6 +8,7 @@ import type { Subject } from '@/types/database';
 // Phase A: 形態キーの直書きを定数参照に置換。
 // TODO(Phase B以降): 表示ラベルは SCHEDULE_ENTRY_FORMATION_LABELS/マスタ label 参照へ差し替える。
 import { GROUP_FORMATION } from '@/types/schedule';
+import { formatGradeLabel } from '@/lib/utils/gradeLabel';
 
 const SEASON_LABELS: Record<string, string> = {
   spring: '春期',
@@ -20,12 +21,6 @@ const SEASON_COLORS: Record<string, string> = {
   summer: 'bg-orange-100 text-orange-700',
   winter: 'bg-blue-100 text-blue-700',
 };
-
-function gradeLabel(grade: number): string {
-  if (grade <= 6) return `小${grade}`;
-  if (grade <= 9) return `中${grade - 6}`;
-  return `高${grade - 9}`;
-}
 
 interface KoushuPeriodCardProps {
   course: KoushuCourse;
@@ -151,7 +146,7 @@ export function KoushuPeriodCard({
                             {en.student ? `${en.student.last_name} ${en.student.first_name}` : '—'}
                           </td>
                           <td className="px-4 py-2 text-[var(--paragraph)]">
-                            {en.student ? gradeLabel(en.student.grade) : '—'}
+                            {en.student ? formatGradeLabel(en.student.grade) : '—'}
                           </td>
                           <td className="px-4 py-2 text-[var(--paragraph)]">
                             <span

@@ -22,6 +22,7 @@ import {
 } from '@/lib/api/zoukoma-placement';
 import type { Subject } from '@/types/database';
 import { CheckCircle, Target, X } from 'lucide-react';
+import { formatGradeLabel } from '@/lib/utils/gradeLabel';
 
 interface Props {
   schoolId: string;
@@ -37,12 +38,6 @@ interface Props {
   placingSubjectId?: string | null;
   refreshKey?: number;
   onClose?: () => void;
-}
-
-function gradeLabel(g: number): string {
-  if (g <= 6) return `小${g}`;
-  if (g <= 9) return `中${g - 6}`;
-  return `高${g - 9}`;
 }
 
 function dowLabel(date: string): string {
@@ -162,7 +157,7 @@ export function TestPrepPlacementPanel({
                               {r.student?.last_name} {r.student?.first_name}
                             </span>
                             <span className="text-text-muted ml-1">
-                              ({r.student ? gradeLabel(r.student.grade) : ''})
+                              ({r.student ? formatGradeLabel(r.student.grade) : ''})
                             </span>
                           </button>
                         </td>
