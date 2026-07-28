@@ -202,8 +202,8 @@ const AVAIL_LAYOUTS: { key: AvailLayout; name: string; note: string }[] = [
   },
   {
     key: 'week',
-    name: 'B 週アコーディオン',
-    note: '週ごとに折りたたむ。全体像が掴めるが開閉の手間がある',
+    name: 'B 週アコーディオン（採用）',
+    note: '週ごとに畳んで「その週に何枠×か」を見出しに出す。8週でも一覧が1画面強に収まる',
   },
   {
     key: 'pattern',
@@ -215,7 +215,8 @@ const AVAIL_LAYOUTS: { key: AvailLayout; name: string; note: string }[] = [
 function ParentFormMock() {
   const dates = useMemo(() => buildDates(), []);
   const [step, setStep] = useState(1);
-  const [layout, setLayout] = useState<AvailLayout>('list');
+  // 採用案は B（週アコーディオン）。A・C は比較用に残している
+  const [layout, setLayout] = useState<AvailLayout>('week');
   const [koma, setKoma] = useState<Record<string, number>>(
     Object.fromEntries(PROPOSALS.map((p) => [p.subject, p.proposedKoma]))
   );
@@ -283,6 +284,7 @@ function ParentFormMock() {
                 ng={ng}
                 toggle={toggle}
                 toggleDay={toggleDay}
+                setNg={setNg}
                 okCells={okCells}
                 totalKoma={totalKoma}
               />
@@ -470,6 +472,7 @@ function StepAvailability({
   ng,
   toggle,
   toggleDay,
+  setNg,
   okCells,
   totalKoma,
 }: {
@@ -478,6 +481,7 @@ function StepAvailability({
   ng: Set<string>;
   toggle: (key: string) => void;
   toggleDay: (date: string) => void;
+  setNg: (updater: (prev: Set<string>) => Set<string>) => void;
   okCells: number;
   totalKoma: number;
 }) {
@@ -505,7 +509,9 @@ function StepAvailability({
       {layout === 'list' && (
         <AvailList dates={dates} ng={ng} toggle={toggle} toggleDay={toggleDay} />
       )}
-      {layout === 'week' && <AvailWeek dates={dates} ng={ng} toggle={toggle} />}
+      {layout === 'week' && (
+        <AvailWeek dates={dates} ng={ng} toggle={toggle} toggleDay={toggleDay} setNg={setNg} />
+      )}
       {layout === 'pattern' && <AvailPattern dates={dates} ng={ng} toggle={toggle} />}
     </div>
   );
@@ -516,7 +522,7 @@ function Cell({ on, label, onClick }: { on: boolean; label: string; onClick: () 
   return (
     <button
       onClick={onClick}
-      className={`h-9 rounded-md text-[11px] font-medium border transition-colors flex items-center justify-center gap-0.5 ${
+      className={`h-10 rounded-md text-[11px] font-medium border transition-colors flex items-center justify-center gap-0.5 ${
         on
           ? 'bg-success-subtle border-success text-success'
           : 'bg-gray-100 border-[var(--stroke)] text-gray-400'
@@ -584,80 +590,251 @@ function AvailList({
   );
 }
 
-/** 案B: 週アコーディオン */
+/**
+ * 案B: 週アコーディオン（採用案）
+ *
+ * 週ごとに畳んで「その週に何枠×を付けたか」を見出しに出す。8週あっても
+ * 一覧の高さが1画面強に収まり、触った週・触っていない週が一目でわかる。
+ *
+ * 設計上の要点:
+ *  - 週は複数同時に開ける（帰省の週と部活の週を見比べたいので単一開閉にしない）
+ *  - 週見出しの「まとめて×」で旅行・帰省の週を1タップで落とせる
+ *  - 日付ラベルもボタン。その日をまとめて切り替える
+ *  - 休講日は注記として残す（日付が飛ぶだけだと入力し忘れと区別できない）
+ */
 function AvailWeek({
   dates,
   ng,
   toggle,
+  toggleDay,
+  setNg,
 }: {
   dates: string[];
   ng: Set<string>;
   toggle: (k: string) => void;
+  toggleDay: (d: string) => void;
+  setNg: (updater: (prev: Set<string>) => Set<string>) => void;
 }) {
   const weeks = useMemo(() => groupByWeek(dates), [dates]);
-  const [open, setOpen] = useState<number | null>(0);
+  // 初期は第1週だけ開く。以降は保護者が開いた週を保持する
+  const [open, setOpen] = useState<Set<number>>(new Set([0]));
+
+  const toggleWeekOpen = (wi: number) =>
+    setOpen((prev) => {
+      const nextOpen = new Set(prev);
+      if (nextOpen.has(wi)) nextOpen.delete(wi);
+      else nextOpen.add(wi);
+      return nextOpen;
+    });
+
+  /**
+   * 渡した枠をまとめて×／解除する。
+   * 全部×なら解除、そうでなければ全部×（＝押すたびに意味が反転しないよう
+   * 「まだ○が残っていれば×にする」を優先する）。
+   */
+  const toggleKeys = (keys: string[]) =>
+    setNg((prev) => {
+      const nextNg = new Set(prev);
+      const allNg = keys.every((k) => nextNg.has(k));
+      for (const k of keys) {
+        if (allNg) nextNg.delete(k);
+        else nextNg.add(k);
+      }
+      return nextNg;
+    });
+
+  /** 週まるごと（旅行・帰省の週を1タップで落とす用） */
+  const toggleWeekAll = (weekDates: string[]) =>
+    toggleKeys(weekDates.flatMap((d) => SLOTS.map((s) => cellKey(d, s.no))));
+
+  /** 列＝その週のその時限をまとめて（「1限はいつも部活」を1タップで落とす用） */
+  const toggleSlotInWeek = (weekDates: string[], slotNo: number) =>
+    toggleKeys(weekDates.map((d) => cellKey(d, slotNo)));
+
   return (
     <div className="space-y-2">
       {weeks.map((w, wi) => {
+        const total = w.dates.length * SLOTS.length;
         const ngCount = w.dates.reduce(
           (n, d) => n + SLOTS.filter((s) => ng.has(cellKey(d, s.no))).length,
           0
         );
-        const isOpen = open === wi;
+        const isOpen = open.has(wi);
+        const allNg = ngCount === total;
+        // 直前の週との間に空いた休講期間（お盆など）を先に差し込む
+        const prev = weeks[wi - 1];
+        const gap = prev ? gapBetween(prev.dates[prev.dates.length - 1], w.dates[0]) : null;
         return (
-          <div key={w.label} className="rounded-lg border border-[var(--stroke)] overflow-hidden">
-            <button
-              onClick={() => setOpen(isOpen ? null : wi)}
-              className="w-full flex items-center justify-between px-3 py-2.5 text-left"
+          <Fragment key={w.label}>
+            {gap && <ClosedWeekCard from={gap.from} to={gap.to} />}
+            <div
+              className={`rounded-xl border border-[var(--stroke)] overflow-hidden ${
+                allNg ? 'bg-gray-50' : 'bg-white'
+              }`}
             >
-              <span className="text-sm text-[var(--headline)]">
-                第{wi + 1}週 <span className="text-[11px] text-[var(--paragraph)]">{w.label}</span>
-              </span>
-              <span className="flex items-center gap-2">
-                {ngCount > 0 ? (
-                  <span className="text-[11px] text-danger">{ngCount}枠 ×</span>
-                ) : (
-                  <span className="text-[11px] text-success">全部OK</span>
-                )}
+              <button
+                onClick={() => toggleWeekOpen(wi)}
+                className="w-full flex items-center justify-between gap-2 px-3 py-3 text-left"
+              >
+                <span className="min-w-0">
+                  <span
+                    className={`block text-sm ${allNg ? 'text-gray-400' : 'text-[var(--headline)]'}`}
+                  >
+                    第{wi + 1}週
+                    <span className="ml-1.5 text-[11px] text-[var(--paragraph)]">{w.label}</span>
+                  </span>
+                  <span className="block text-[11px] mt-0.5">
+                    {allNg ? (
+                      <span className="text-[var(--paragraph)]">この週は通えない</span>
+                    ) : ngCount > 0 ? (
+                      <span className="text-warning">
+                        {total - ngCount}枠 通える（{ngCount}枠 ×）
+                      </span>
+                    ) : (
+                      <span className="text-success">すべて通える（{total}枠）</span>
+                    )}
+                  </span>
+                </span>
                 <ChevronDown
-                  className={`w-4 h-4 text-[var(--paragraph)] transition-transform ${isOpen ? 'rotate-180' : ''}`}
+                  className={`w-4 h-4 shrink-0 text-[var(--paragraph)] transition-transform ${isOpen ? 'rotate-180' : ''}`}
                 />
-              </span>
-            </button>
-            {isOpen && (
-              <div className="px-2 pb-2">
-                <div className="grid grid-cols-[28px_repeat(5,1fr)] gap-1">
-                  <div />
-                  {SLOTS.map((s) => (
-                    <div key={s.no} className="text-[9px] text-center text-[var(--paragraph)]">
-                      {s.time}
+              </button>
+
+              {isOpen && (
+                <div className="px-2.5 pb-3">
+                  <button
+                    onClick={() => toggleWeekAll(w.dates)}
+                    className="w-full mb-2 py-1.5 rounded-lg border border-[var(--stroke)] text-[11px] text-[var(--headline)] active:scale-[0.99]"
+                  >
+                    {allNg
+                      ? 'この週をすべて「通える」に戻す'
+                      : 'この週はすべて通えない（旅行・帰省）'}
+                  </button>
+
+                  <div className="grid grid-cols-[46px_repeat(5,1fr)] gap-1">
+                    {/* 見出しはどれも押せる＝行と列の一括切替であることを示す */}
+                    <div className="text-[9px] text-[var(--paragraph)] flex items-end justify-center pb-1">
+                      一括
                     </div>
-                  ))}
-                  {w.dates.map((d) => (
-                    // key は Fragment 側に付ける（内側の要素に付けても兄弟を識別できない）
-                    <Fragment key={d}>
-                      <div className="text-[10px] flex items-center text-[var(--paragraph)]">
-                        {Number(d.slice(8, 10))}
-                        {WEEKDAY[dow(d)]}
-                      </div>
-                      {SLOTS.map((s) => (
-                        <Cell
+                    {/* 列の一括: その週のその時限をまとめて（「1限はいつも部活」を1タップ） */}
+                    {SLOTS.map((s) => {
+                      const colNg = w.dates.every((d) => ng.has(cellKey(d, s.no)));
+                      return (
+                        <button
                           key={s.no}
-                          on={!ng.has(cellKey(d, s.no))}
-                          label=""
-                          onClick={() => toggle(cellKey(d, s.no))}
-                        />
-                      ))}
-                    </Fragment>
-                  ))}
+                          onClick={() => toggleSlotInWeek(w.dates, s.no)}
+                          className={`text-center leading-tight rounded py-0.5 active:scale-95 ${
+                            colNg ? 'bg-gray-100' : ''
+                          }`}
+                          title="この時限をこの週まとめて切替"
+                        >
+                          <span
+                            className={`block text-[10px] ${
+                              colNg ? 'text-gray-400 line-through' : 'text-[var(--headline)]'
+                            }`}
+                          >
+                            {s.no}限
+                          </span>
+                          <span className="block text-[9px] text-[var(--paragraph)]">{s.time}</span>
+                        </button>
+                      );
+                    })}
+
+                    {w.dates.map((d) => {
+                      const dayNg = SLOTS.every((s) => ng.has(cellKey(d, s.no)));
+                      return (
+                        // key は Fragment 側に付ける（内側の要素に付けても兄弟を識別できない）
+                        <Fragment key={d}>
+                          {/* 行の一括: その日をまとめて切替 */}
+                          <button
+                            onClick={() => toggleDay(d)}
+                            className={`text-[11px] flex items-center justify-center rounded active:scale-95 ${
+                              dayNg
+                                ? 'text-gray-400 line-through bg-gray-100'
+                                : 'text-[var(--headline)] hover:bg-gray-50'
+                            }`}
+                            title="この日をまとめて切替"
+                          >
+                            {Number(d.slice(8, 10))}
+                            <span className={dow(d) === 6 ? 'text-blue-500' : ''}>
+                              ({WEEKDAY[dow(d)]})
+                            </span>
+                          </button>
+                          {SLOTS.map((s) => (
+                            <Cell
+                              key={s.no}
+                              on={!ng.has(cellKey(d, s.no))}
+                              label=""
+                              onClick={() => toggle(cellKey(d, s.no))}
+                            />
+                          ))}
+                        </Fragment>
+                      );
+                    })}
+                  </div>
+
+                  <ClosedDaysNote weekDates={w.dates} />
                 </div>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          </Fragment>
         );
       })}
     </div>
   );
+}
+
+/**
+ * 週と週の間に空いた休講期間（お盆など）を1枚のカードで出す。
+ *
+ * 稼働日だけを並べるとお盆の1週間が丸ごと消え、第3週(8/3〜8/8)の次が
+ * いきなり8/17になる。保護者からは「入力し忘れ？」に見えるので、
+ * 選べない期間であることを明示する。
+ */
+function ClosedWeekCard({ from, to }: { from: string; to: string }) {
+  return (
+    <div className="rounded-xl border border-dashed border-[var(--stroke)] bg-gray-50 px-3 py-2.5">
+      <p className="text-xs text-[var(--paragraph)]">
+        {mmdd(from)}〜{mmdd(to)} は休講のため授業がありません
+      </p>
+    </div>
+  );
+}
+
+/** その週の中に混ざっている休講日を注記として出す（週まるごとではない場合） */
+function ClosedDaysNote({ weekDates }: { weekDates: string[] }) {
+  if (weekDates.length === 0) return null;
+  const closed: string[] = [];
+  const cur = new Date(weekDates[0] + 'T12:00:00');
+  const last = new Date(weekDates[weekDates.length - 1] + 'T12:00:00');
+  while (cur <= last) {
+    const m = String(cur.getMonth() + 1).padStart(2, '0');
+    const dd = String(cur.getDate()).padStart(2, '0');
+    const iso = `${cur.getFullYear()}-${m}-${dd}`;
+    if (CLOSED.has(iso)) closed.push(`${Number(m)}/${Number(dd)}`);
+    cur.setDate(cur.getDate() + 1);
+  }
+  if (closed.length === 0) return null;
+  return (
+    <p className="text-[10px] text-[var(--paragraph)] mt-2 px-1">
+      {closed.join('・')} は休講日のため選べません
+    </p>
+  );
+}
+
+/** 直前の週の最終日と次の週の初日の間に空いた休講期間を返す（無ければ null） */
+function gapBetween(prevLast: string, nextFirst: string): { from: string; to: string } | null {
+  const from = new Date(prevLast + 'T12:00:00');
+  from.setDate(from.getDate() + 1);
+  const to = new Date(nextFirst + 'T12:00:00');
+  to.setDate(to.getDate() - 1);
+  if (from > to) return null;
+  const iso = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  // 日曜だけの隙間は毎週あるので出さない。2日以上空いたときだけ休講期間とみなす
+  const days = Math.round((to.getTime() - from.getTime()) / 86_400_000) + 1;
+  if (days < 2) return null;
+  return { from: iso(from), to: iso(to) };
 }
 
 /** 案C: 曜日パターンで一括 → 個別で微調整 */
