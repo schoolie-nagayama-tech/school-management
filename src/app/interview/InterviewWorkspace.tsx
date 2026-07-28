@@ -37,7 +37,8 @@ import {
   summarizeTextbookProgress,
   type TextbookProgressSummary,
 } from './interview.shared';
-import { History, Printer } from 'lucide-react';
+import { InterviewHub } from './InterviewHub';
+import { ArrowLeft, History, Printer } from 'lucide-react';
 
 export function InterviewWorkspace() {
   const { profile, isLoading: authLoading, getSelectedSchoolIds, selectedSchoolId } = useAuth();
@@ -48,8 +49,6 @@ export function InterviewWorkspace() {
   const [students, setStudents] = useState<EnrichedStudent[]>([]);
   const [studentsLoading, setStudentsLoading] = useState(true);
   const [selectedStudentId, setSelectedStudentId] = useState('');
-  // URLクエリからの初期選択は初回のみ適用する
-  const didInitFromQueryRef = useRef(false);
   // 教室切替の検知用（初回マウント時は何もしない）
   const prevSchoolIdRef = useRef(selectedSchoolId);
 
@@ -91,12 +90,13 @@ export function InterviewWorkspace() {
         if (cancelled) return;
         setStudents(active);
 
-        // 初期選択: URLクエリ ?studentId= があれば優先、無ければ先頭の生徒（初回のみ）
-        if (!didInitFromQueryRef.current) {
-          didInitFromQueryRef.current = true;
-          const queryId = searchParams.get('studentId');
-          const found = queryId ? active.find((s) => s.id === queryId) : undefined;
-          setSelectedStudentId(found ? found.id : (active[0]?.id ?? ''));
+        // 初期ロード時のみ URL クエリ ?studentId= を反映する（同一コミットで反映し
+        // Hub→ワークスペースの1フレームのちらつきを避ける）。無ければ何もせず
+        // studentsLoading=false・selectedStudentId='' のまま → 下の入口一覧表示に落ちる。
+        const queryId = searchParams.get('studentId');
+        if (queryId) {
+          const found = active.find((s) => s.id === queryId);
+          if (found) setSelectedStudentId(found.id);
         }
       } catch (e) {
         console.error('Error fetching students:', e);
@@ -109,17 +109,41 @@ export function InterviewWorkspace() {
     return () => {
       cancelled = true;
     };
-    // searchParams/toastError は初回判定にのみ使うため依存に含めない
+    // searchParams/toastError は初回ロードにのみ使うため依存に含めない
+    // （searchParams の変化は下の同期 useEffect が別途処理する）
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [getSelectedSchoolIds]);
 
-  // 教室切替時は選択中の生徒をリセットする（選べる生徒集合自体が変わるため）
+  // 初期ロード後の URL クエリ ?studentId= と選択状態を同期する（初期ロード自体は上の effect が担当）。
+  // - 入口一覧（InterviewHub）の行クリック/「面談を始める」で studentId 付きに遷移した場合
+  //   → 生徒一覧に実在すれば選択状態に反映してワークスペースを開く
+  // - ヘッダーの「一覧へ戻る」でクエリを外した場合 → 選択解除して入口一覧に戻す
+  // - 生徒一覧ロード前、または該当生徒が見つからない場合は何もしない（入口一覧の表示に任せる）
+  //
+  // 以前はクエリが無ければ先頭の生徒を自動選択していたが、入口一覧を新設したのに伴い廃止した
+  // （未選択のまま一覧に留まり、選んでから開く設計にする）。
+  useEffect(() => {
+    const queryId = searchParams.get('studentId');
+    if (queryId) {
+      if (students.length === 0) return;
+      const found = students.find((s) => s.id === queryId);
+      if (found && found.id !== selectedStudentId) {
+        setSelectedStudentId(found.id);
+      }
+    } else if (selectedStudentId) {
+      setSelectedStudentId('');
+    }
+  }, [searchParams, students, selectedStudentId]);
+
+  // 教室切替時は選択中の生徒をリセットする（選べる生徒集合自体が変わるため）。
+  // URLに古い studentId が残っていると上の同期効果と噛み合わないため、クエリも一覧に戻す。
   useEffect(() => {
     if (prevSchoolIdRef.current !== selectedSchoolId) {
       prevSchoolIdRef.current = selectedSchoolId;
       setSelectedStudentId('');
+      router.replace('/interview', { scroll: false });
     }
-  }, [selectedSchoolId]);
+  }, [selectedSchoolId, router]);
 
   const handleSelectStudent = useCallback(
     (id: string) => {
@@ -257,11 +281,25 @@ export function InterviewWorkspace() {
     );
   }
 
+  // 生徒未選択（?studentId= なし）→ 入口一覧（InterviewHub）を表示する。
+  // 生徒一覧のロード中は判定を保留し、下の通常レンダリングパスで読み込み中表示を出す。
+  if (!studentsLoading && !selectedStudentId) {
+    return <InterviewHub />;
+  }
+
   return (
     <AdminLayout headerTitle="面談" fullWidth>
-      {/* ヘッダー帯（生徒切替・印刷） */}
+      {/* ヘッダー帯（一覧へ戻る・生徒切替・印刷） */}
       <Card className="mb-5 print:hidden">
         <CardContent className="py-4">
+          <button
+            type="button"
+            onClick={() => router.push('/interview', { scroll: false })}
+            className="mb-3 inline-flex items-center gap-1 text-sm text-text-muted transition-colors hover:text-text-heading"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            一覧へ戻る
+          </button>
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
               <div className="w-full sm:w-64">

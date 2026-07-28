@@ -72,6 +72,19 @@ export function buildNavEntries(ctx: NavContext): NavEntry[] {
     });
   }
 
+  // 面談（教室長以上。面談ワークスペース自体が室長以上限定のページのため）
+  // 注意: matchPrefixes: ['/interview'] にすると検討用モック /interview-mock にも
+  // 前方一致してしまうため、exact: true で完全一致のみにする。
+  if (showAll || isManagerOrAbove(profile?.role)) {
+    entries.push({
+      kind: 'link',
+      key: 'interview',
+      label: '面談',
+      href: '/interview',
+      exact: true,
+    });
+  }
+
   // 申込状況
   if (showAll || p?.canAccessApplications) {
     entries.push({
