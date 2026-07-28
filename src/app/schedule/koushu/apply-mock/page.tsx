@@ -95,6 +95,33 @@ const PROPOSALS = [
   },
 ];
 
+/**
+ * 保護者が提案外に追加できる科目（決定: 提案した科目以外もやりたい場合がある）。
+ * 本番では subjects テーブルから、生徒の grade_category に合う行を出す。
+ */
+const EXTRA_SUBJECTS = ['社会', '国語'];
+
+/**
+ * 単価。増コマ（zoukoma）と同じく form_periods.settings.price_table に
+ * 「学年名 → 1コマの円」で持つ想定（Record<string, number>）。
+ *
+ * ただし増コマの price_table は**学年だけ**の分岐で、1対1／45分の単価差を
+ * 表現できない。講習でそれが必要ならキー設計の拡張が要る（要確認事項）。
+ * モックでは 1対1 の係数を仮に置いて、差が出る場合の見え方を確認する。
+ */
+const PRICE_PER_KOMA = 3980;
+const RATIO1_MULTIPLIER = 1.6; // 仮。1対1の単価差（未確定）
+const DURATION45_MULTIPLIER = 0.6; // 仮。45分の単価差（未確定）
+
+function unitPrice(ratio: 1 | 2, duration: 45 | 90): number {
+  let p = PRICE_PER_KOMA;
+  if (ratio === 1) p *= RATIO1_MULTIPLIER;
+  if (duration === 45) p *= DURATION45_MULTIPLIER;
+  return Math.round(p);
+}
+
+const yen = (n: number) => `¥${n.toLocaleString()}`;
+
 const WEEKDAY = ['日', '月', '火', '水', '木', '金', '土'];
 
 /** 期間の稼働日を列挙（日曜・休講日は除外） */
@@ -191,6 +218,18 @@ export default function KoushuApplyMockPage() {
  * 保護者フォーム（375px のスマホ枠に描画）
  * ========================================================== */
 
+/** 申込1行。提案書由来と保護者が追加したものを同じ形で扱う */
+interface ApplyLine {
+  subject: string;
+  textbook: string | null;
+  units: string[];
+  /** 提案コマ数。保護者が追加した科目は 0 */
+  proposedKoma: number;
+  ratio: 1 | 2;
+  duration: 45 | 90;
+  addedByParent?: boolean;
+}
+
 /** 可能日程の入力方式。どれが実用に耐えるか比べるためモックでは切替できる */
 type AvailLayout = 'list' | 'week' | 'pattern';
 
@@ -220,10 +259,50 @@ function ParentFormMock() {
   const [koma, setKoma] = useState<Record<string, number>>(
     Object.fromEntries(PROPOSALS.map((p) => [p.subject, p.proposedKoma]))
   );
+  /** 保護者が提案外に追加した科目 */
+  const [extra, setExtra] = useState<string[]>([]);
   /** ×を付けた枠。全○初期なのでここに入っているものだけが「出られない」 */
   const [ng, setNg] = useState<Set<string>>(new Set());
 
-  const totalKoma = Object.values(koma).reduce((s, n) => s + n, 0);
+  /**
+   * 申込の明細。提案書の科目＋保護者が追加した科目。
+   * 追加分は教室が形式を決めていないので既定（1対2・90分）を当て、
+   * 「教室で調整します」と断ってから出す。
+   */
+  const lines: ApplyLine[] = useMemo(
+    () => [
+      ...PROPOSALS,
+      ...extra.map((s) => ({
+        subject: s,
+        textbook: null,
+        units: [],
+        proposedKoma: 0,
+        ratio: 2 as const,
+        duration: 90 as const,
+        addedByParent: true,
+      })),
+    ],
+    [extra]
+  );
+
+  const addSubject = (s: string) => {
+    setExtra((prev) => [...prev, s]);
+    setKoma((prev) => ({ ...prev, [s]: 2 }));
+  };
+  const removeSubject = (s: string) => {
+    setExtra((prev) => prev.filter((x) => x !== s));
+    setKoma((prev) => {
+      const next = { ...prev };
+      delete next[s];
+      return next;
+    });
+  };
+
+  const totalKoma = lines.reduce((s, l) => s + (koma[l.subject] ?? 0), 0);
+  const totalFee = lines.reduce(
+    (s, l) => s + (koma[l.subject] ?? 0) * unitPrice(l.ratio, l.duration),
+    0
+  );
   const totalCells = dates.length * SLOTS.length;
   const okCells = totalCells - ng.size;
 
@@ -276,7 +355,18 @@ function ParentFormMock() {
           </div>
 
           <div className="px-4 py-4 pb-24">
-            {step === 1 && <StepSubjects koma={koma} setKoma={setKoma} totalKoma={totalKoma} />}
+            {step === 1 && (
+              <StepSubjects
+                lines={lines}
+                koma={koma}
+                setKoma={setKoma}
+                extra={extra}
+                addSubject={addSubject}
+                removeSubject={removeSubject}
+                totalKoma={totalKoma}
+                totalFee={totalFee}
+              />
+            )}
             {step === 2 && (
               <StepAvailability
                 dates={dates}
@@ -289,7 +379,15 @@ function ParentFormMock() {
                 totalKoma={totalKoma}
               />
             )}
-            {step === 3 && <StepConfirm koma={koma} totalKoma={totalKoma} okCells={okCells} />}
+            {step === 3 && (
+              <StepConfirm
+                lines={lines}
+                koma={koma}
+                totalKoma={totalKoma}
+                totalFee={totalFee}
+                okCells={okCells}
+              />
+            )}
           </div>
 
           {/* 固定フッタ */}
@@ -361,12 +459,18 @@ function ParentFormMock() {
               形式（1対1／1対2）と90分は表示のみでよいか。保護者から変更希望が来る運用をどうするか
             </li>
             <li>
-              <strong>全○初期の副作用</strong>: 何も触らず送信されると「全部通える」ことになる。
-              実際に来られない日に配置され当日欠席が増えるおそれ。1件も×が無いとき確認を挟むか
+              <strong>単価が学年だけで決まってよいか</strong>: 増コマの price_table は 「学年 →
+              円」しか持っていない。講習で 1対1・45分の単価が違うなら
+              キー設計の拡張が要る（モックでは仮の係数 1対1=1.6倍 / 45分=0.6倍 を置いている）
+            </li>
+            <li>
+              <strong>保護者が追加した科目</strong>: 形式・教材が未定のまま申し込まれる。
+              既定（1対2・90分）で金額を出しているが、教室が後から形式を変えたら金額が変わる。
+              その場合の伝え方をどうするか
             </li>
             <li>
               期間全体で {dates.length}日 × {SLOTS.length}コマ = {totalCells}
-              枠。案A〜Cで入力量が見合うか
+              枠。案Bの入力量が見合うか
             </li>
             <li>申込コマ数は提案より増やせてよいか（上限を設けるか）</li>
           </ul>
@@ -379,86 +483,185 @@ function ParentFormMock() {
 /* ---------- ステップ1: 申込内容 ---------- */
 
 function StepSubjects({
+  lines,
   koma,
   setKoma,
+  extra,
+  addSubject,
+  removeSubject,
   totalKoma,
+  totalFee,
 }: {
+  lines: ApplyLine[];
   koma: Record<string, number>;
-  setKoma: (v: Record<string, number>) => void;
+  setKoma: (updater: (prev: Record<string, number>) => Record<string, number>) => void;
+  extra: string[];
+  addSubject: (s: string) => void;
+  removeSubject: (s: string) => void;
   totalKoma: number;
+  totalFee: number;
 }) {
+  const [picking, setPicking] = useState(false);
+  const bump = (subject: string, delta: number) =>
+    setKoma((prev) => ({ ...prev, [subject]: Math.max(0, (prev[subject] ?? 0) + delta) }));
+
+  const addable = EXTRA_SUBJECTS.filter((s) => !extra.includes(s));
+
   return (
     <div className="space-y-3">
       <p className="text-xs text-[var(--paragraph)]">
         教室からの提案です。コマ数を確認して、変更があれば増減してください。
       </p>
 
-      {PROPOSALS.map((p) => (
-        <div key={p.subject} className="rounded-xl border border-[var(--stroke)] p-3">
-          <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0">
-              <p className="text-sm font-semibold text-[var(--headline)]">{p.subject}</p>
-              <p className="text-[11px] text-[var(--paragraph)] truncate">{p.textbook}</p>
+      {lines.map((p) => {
+        const n = koma[p.subject] ?? 0;
+        const price = unitPrice(p.ratio, p.duration);
+        return (
+          <div
+            key={p.subject}
+            className={`rounded-xl border p-3 ${
+              p.addedByParent ? 'border-info bg-info-subtle' : 'border-[var(--stroke)]'
+            }`}
+          >
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-[var(--headline)] flex items-center gap-1.5">
+                  {p.subject}
+                  {p.addedByParent && (
+                    <span className="text-[10px] font-normal px-1.5 py-0.5 rounded-full bg-info text-white">
+                      追加
+                    </span>
+                  )}
+                </p>
+                <p className="text-[11px] text-[var(--paragraph)] truncate">
+                  {p.textbook ?? '教材は教室で選びます'}
+                </p>
+              </div>
+              {/* 形式・時間は教室が決めた値なので、押せない見た目にする（決定14） */}
+              <div className="flex gap-1 shrink-0">
+                <span
+                  className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+                    p.ratio === 1
+                      ? 'bg-warning-subtle text-warning'
+                      : 'bg-gray-100 text-[var(--paragraph)]'
+                  }`}
+                >
+                  {p.ratio === 1 ? '1対1' : '1対2'}
+                </span>
+                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-gray-100 text-[var(--paragraph)]">
+                  {p.duration}分
+                </span>
+              </div>
             </div>
-            {/* 形式・時間は教室が決めた値。保護者は表示のみ（決定14） */}
-            {/* 形式・時間は教室が決めた値なので、押せない見た目にする */}
-            <div className="flex gap-1 shrink-0">
-              <span
-                className={`text-[10px] px-1.5 py-0.5 rounded-full ${
-                  p.ratio === 1
-                    ? 'bg-warning-subtle text-warning'
-                    : 'bg-gray-100 text-[var(--paragraph)]'
-                }`}
-              >
-                {p.ratio === 1 ? '1対1' : '1対2'}
-              </span>
-              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-gray-100 text-[var(--paragraph)]">
-                {p.duration}分
-              </span>
-            </div>
-          </div>
 
-          <div className="flex flex-wrap gap-1 mt-2">
-            {p.units.map((u) => (
-              <span
-                key={u}
-                className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-[var(--paragraph)]"
-              >
-                {u}
-              </span>
-            ))}
-          </div>
+            {p.units.length > 0 && (
+              <div className="flex flex-wrap gap-1 mt-2">
+                {p.units.map((u) => (
+                  <span
+                    key={u}
+                    className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-[var(--paragraph)]"
+                  >
+                    {u}
+                  </span>
+                ))}
+              </div>
+            )}
 
-          <div className="flex items-center justify-between mt-3 pt-3 border-t border-[var(--stroke)]">
-            <span className="text-xs text-[var(--paragraph)]">提案 {p.proposedKoma}コマ</span>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setKoma({ ...koma, [p.subject]: Math.max(0, koma[p.subject] - 1) })}
-                className="w-9 h-9 rounded-full border border-[var(--stroke)] flex items-center justify-center active:scale-95"
-                aria-label={`${p.subject}を1コマ減らす`}
-              >
-                <Minus className="w-4 h-4" />
-              </button>
-              <span className="w-12 text-center text-lg font-semibold text-[var(--headline)] tabular-nums">
-                {koma[p.subject]}
-              </span>
-              <button
-                onClick={() => setKoma({ ...koma, [p.subject]: koma[p.subject] + 1 })}
-                className="w-9 h-9 rounded-full border border-[var(--stroke)] flex items-center justify-center active:scale-95"
-                aria-label={`${p.subject}を1コマ増やす`}
-              >
-                <Plus className="w-4 h-4" />
-              </button>
+            <div className="flex items-center justify-between mt-3 pt-3 border-t border-[var(--stroke)]">
+              <div>
+                <p className="text-xs text-[var(--paragraph)]">
+                  {p.addedByParent ? '形式は教室で調整します' : `提案 ${p.proposedKoma}コマ`}
+                </p>
+                <p className="text-[11px] text-[var(--paragraph)] mt-0.5">1コマ {yen(price)}</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => bump(p.subject, -1)}
+                  className="w-9 h-9 rounded-full border border-[var(--stroke)] bg-white flex items-center justify-center active:scale-95"
+                  aria-label={`${p.subject}を1コマ減らす`}
+                >
+                  <Minus className="w-4 h-4" />
+                </button>
+                <span className="w-10 text-center text-lg font-semibold text-[var(--headline)] tabular-nums">
+                  {n}
+                </span>
+                <button
+                  onClick={() => bump(p.subject, 1)}
+                  className="w-9 h-9 rounded-full border border-[var(--stroke)] bg-white flex items-center justify-center active:scale-95"
+                  aria-label={`${p.subject}を1コマ増やす`}
+                >
+                  <Plus className="w-4 h-4" />
+                </button>
+              </div>
             </div>
+
+            <div className="flex items-center justify-between mt-2">
+              <span className="text-[11px] text-[var(--paragraph)]">小計</span>
+              <span className="text-sm text-[var(--headline)] tabular-nums">{yen(n * price)}</span>
+            </div>
+
+            {p.addedByParent && (
+              <button
+                onClick={() => removeSubject(p.subject)}
+                className="mt-2 w-full py-1.5 rounded-lg border border-[var(--stroke)] bg-white text-[11px] text-[var(--paragraph)]"
+              >
+                この科目をやめる
+              </button>
+            )}
           </div>
+        );
+      })}
+
+      {/* 提案外の科目を保護者が足せる（決定: 提案科目以外もやりたい場合がある） */}
+      {addable.length > 0 &&
+        (picking ? (
+          <div className="rounded-xl border border-[var(--stroke)] p-3">
+            <p className="text-xs text-[var(--headline)] mb-2">追加する科目を選んでください</p>
+            <div className="flex flex-wrap gap-1.5">
+              {addable.map((s) => (
+                <button
+                  key={s}
+                  onClick={() => {
+                    addSubject(s);
+                    setPicking(false);
+                  }}
+                  className="px-3 py-2 rounded-lg border border-[var(--stroke)] text-sm text-[var(--headline)] active:scale-95"
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={() => setPicking(false)}
+              className="mt-2 w-full py-1.5 text-[11px] text-[var(--paragraph)]"
+            >
+              やめる
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => setPicking(true)}
+            className="w-full py-2.5 rounded-xl border border-dashed border-[var(--stroke)] text-sm text-[var(--headline)] flex items-center justify-center gap-1"
+          >
+            <Plus className="w-4 h-4" />
+            他の科目も追加する
+          </button>
+        ))}
+
+      <div className="rounded-xl bg-gray-50 p-3 space-y-1.5">
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-[var(--paragraph)]">合計コマ数</span>
+          <span className="text-sm text-[var(--headline)] tabular-nums">{totalKoma}コマ</span>
         </div>
-      ))}
-
-      <div className="rounded-xl bg-gray-50 p-3 flex items-center justify-between">
-        <span className="text-sm text-[var(--headline)]">合計</span>
-        <span className="text-lg font-semibold text-[var(--headline)] tabular-nums">
-          {totalKoma}コマ
-        </span>
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-[var(--headline)]">合計金額</span>
+          <span className="text-lg font-semibold text-[var(--headline)] tabular-nums">
+            {yen(totalFee)}
+          </span>
+        </div>
+        <p className="text-[10px] text-[var(--paragraph)]">
+          税込。お月謝と合わせてお引き落としとなります。
+        </p>
       </div>
     </div>
   );
@@ -936,12 +1139,16 @@ function AvailPattern({
 /* ---------- ステップ3: 確認 ---------- */
 
 function StepConfirm({
+  lines,
   koma,
   totalKoma,
+  totalFee,
   okCells,
 }: {
+  lines: ApplyLine[];
   koma: Record<string, number>;
   totalKoma: number;
+  totalFee: number;
   okCells: number;
 }) {
   const tight = okCells < totalKoma * 2;
@@ -951,27 +1158,49 @@ function StepConfirm({
         <div className="px-3 py-2 bg-gray-50 text-xs font-medium text-[var(--headline)]">
           申込内容
         </div>
-        {PROPOSALS.map((p) => (
-          <div
-            key={p.subject}
-            className="px-3 py-2.5 flex items-center justify-between border-t border-[var(--stroke)]"
-          >
-            <div>
-              <p className="text-sm text-[var(--headline)]">{p.subject}</p>
-              <p className="text-[11px] text-[var(--paragraph)]">
-                {p.ratio === 1 ? '1対1' : '1対2'} / {p.duration}分
-              </p>
-            </div>
-            <span className="text-sm font-semibold text-[var(--headline)] tabular-nums">
-              {koma[p.subject]}コマ
+        {lines
+          .filter((p) => (koma[p.subject] ?? 0) > 0)
+          .map((p) => {
+            const n = koma[p.subject] ?? 0;
+            const price = unitPrice(p.ratio, p.duration);
+            return (
+              <div
+                key={p.subject}
+                className="px-3 py-2.5 flex items-center justify-between border-t border-[var(--stroke)]"
+              >
+                <div>
+                  <p className="text-sm text-[var(--headline)] flex items-center gap-1.5">
+                    {p.subject}
+                    {p.addedByParent && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-info-subtle text-info">
+                        追加
+                      </span>
+                    )}
+                  </p>
+                  <p className="text-[11px] text-[var(--paragraph)]">
+                    {p.ratio === 1 ? '1対1' : '1対2'} / {p.duration}分 ・ {n}コマ × {yen(price)}
+                  </p>
+                </div>
+                <span className="text-sm font-semibold text-[var(--headline)] tabular-nums">
+                  {yen(n * price)}
+                </span>
+              </div>
+            );
+          })}
+        <div className="px-3 py-2.5 border-t border-[var(--stroke)] bg-gray-50 space-y-1">
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-[var(--paragraph)]">合計コマ数</span>
+            <span className="text-sm text-[var(--headline)] tabular-nums">{totalKoma}コマ</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-[var(--headline)]">合計金額</span>
+            <span className="text-base font-semibold text-[var(--headline)] tabular-nums">
+              {yen(totalFee)}
             </span>
           </div>
-        ))}
-        <div className="px-3 py-2.5 flex items-center justify-between border-t border-[var(--stroke)] bg-gray-50">
-          <span className="text-sm text-[var(--headline)]">合計</span>
-          <span className="text-base font-semibold text-[var(--headline)] tabular-nums">
-            {totalKoma}コマ
-          </span>
+          <p className="text-[10px] text-[var(--paragraph)]">
+            税込。お月謝と合わせてお引き落としとなります。
+          </p>
         </div>
       </div>
 
