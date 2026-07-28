@@ -3,16 +3,29 @@
 /**
  * 面談ワークスペース 左カラム: 過去の面談記録
  * ------------------------------------------------------------------
- * 「前回の申し送り」ピン留めカード・「未完了の約束・タスク」・「面談タイムライン」の3つ。
+ * 「前回の申し送り」ピン留めカード・「未完了の約束・タスク」（下部に追加欄つき）・
+ * 「面談タイムライン」の3つ。
  * タスクの完了/未完了は楽観更新し、失敗時はロールバックする。
  * タイムラインの編集は既存の InterviewModal をそのまま再利用する。
+ *
+ * 約束・宿題の追加は「今回の面談メモ」欄が廃止された（Notta取込に一本化されたため）のに伴い、
+ * このカードへ統合した。メモと一緒に保存する必要が無いため、入力するとその場で
+ * createInterview を1件呼んで即登録する（下書きを溜めて後でまとめて保存する設計にはしない）。
  */
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Card, CardContent, CardHeader, CardTitle, InlineLoading } from '@/components/ui';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  InlineLoading,
+  Input,
+  Button,
+} from '@/components/ui';
 import { InterviewModal } from '@/components/students/InterviewModal';
-import { completeTask, uncompleteTask } from '@/lib/api/interviews';
+import { completeTask, uncompleteTask, createInterview } from '@/lib/api/interviews';
 import { useToast } from '@/hooks/useToast';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 import {
@@ -29,6 +42,7 @@ import {
   ExternalLink,
   History,
   Pin,
+  Plus,
 } from 'lucide-react';
 
 export interface HandoverInfo {
@@ -55,7 +69,11 @@ export function InterviewTimeline({
   handover,
   onChanged,
 }: InterviewTimelineProps) {
-  const { error: toastError } = useToast();
+  const { success, error: toastError } = useToast();
+
+  // 約束・宿題の追加欄
+  const [newTaskLabel, setNewTaskLabel] = useState('');
+  const [addingTask, setAddingTask] = useState(false);
 
   // タイムラインの全文展開トグル
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
@@ -90,6 +108,29 @@ export function InterviewTimeline({
       // 失敗時はロールバック
       setTaskOverrides((prev) => ({ ...prev, [task.id]: !next }));
       toastError(getUserErrorMessage(e, 'タスクの更新に失敗しました'));
+    }
+  };
+
+  // 約束・宿題の即時登録。メモとまとめて保存する必要が無くなったため、入力→追加ボタンで
+  // その場で 'task' 種別の面談記録を1件作成する。多重送信防止のため送信中は disabled にする。
+  const handleAddTask = async () => {
+    const label = newTaskLabel.trim();
+    if (!label || addingTask) return;
+    setAddingTask(true);
+    try {
+      await createInterview(schoolId, studentId, {
+        interview_date: new Date().toISOString().slice(0, 10),
+        interview_type: 'task',
+        title: null,
+        content: label,
+      });
+      setNewTaskLabel('');
+      success('約束・タスクを追加しました');
+      onChanged();
+    } catch (e) {
+      toastError(getUserErrorMessage(e, 'タスクの追加に失敗しました'));
+    } finally {
+      setAddingTask(false);
     }
   };
 
@@ -153,6 +194,34 @@ export function InterviewTimeline({
               })}
             </ul>
           )}
+
+          {/* 追加欄（入力→追加ボタンで即登録） */}
+          <div className="mt-3 flex gap-2 border-t border-border-subtle pt-3">
+            <Input
+              aria-label="約束・タスクを追加"
+              value={newTaskLabel}
+              onChange={(e) => setNewTaskLabel(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleAddTask();
+                }
+              }}
+              placeholder="例：英語ワークP10まで"
+              className="flex-1"
+              disabled={addingTask}
+            />
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleAddTask}
+              disabled={addingTask || !newTaskLabel.trim()}
+              className="shrink-0 gap-1"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              追加
+            </Button>
+          </div>
         </CardContent>
       </Card>
 

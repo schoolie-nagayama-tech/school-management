@@ -8,39 +8,12 @@
 import type {
   AssessmentWithScores,
   CurriculumItemWithProgress,
-  InterviewType,
   StudentTextbookWithDetails,
 } from '@/types/database';
 import { ASSESSMENT_NAME_LABELS, SEASON_LABELS, SUBJECT_LABELS } from '@/types/database';
 import type { ScheduleRegularPattern } from '@/types/schedule';
 import { DAY_OF_WEEK_LABELS } from '@/types/schedule';
 import type { KoushuEnrollment } from '@/lib/api/seasonalCourses';
-
-/* ============================================================
- * 話題チップ・面談種別
- * ========================================================== */
-
-// 中央カラムのメモに見出しを挿入するための話題チップ。
-// 「次回への申し送り」だけは左カラムの extractHandover と対になっており、
-// 挿入される見出し文言 `## 次回への申し送り` を変更する場合は extractHandover も合わせて直すこと。
-export const TOPIC_CHIPS = [
-  '成績について',
-  '宿題・家庭学習',
-  '講習の提案',
-  '進路・受験',
-  '学校での様子',
-  '次回への申し送り',
-] as const;
-
-// 新規メモ入力で選べる面談種別（'task' は約束・宿題クイック登録から別途作られるため除外）
-export const MEMO_INTERVIEW_TYPES: InterviewType[] = [
-  'parent_interview',
-  'phone',
-  'student_interview',
-  'casual',
-  'enrollment',
-  'other',
-];
 
 /* ============================================================
  * 日付ユーティリティ
@@ -73,10 +46,10 @@ export function fmtDateJa(dateStr: string): string {
 /**
  * 面談本文から「## 次回への申し送り」見出しセクションを抜き出す純粋関数。
  *
- * 中央カラムの話題チップ「次回への申し送り」を押すと本文末尾に
- * `## 次回への申し送り` という見出しが挿入される設計になっており、この関数はその対。
- * 次回の面談時、左カラムの「前回の申し送り」ピン留めカードに表示するため、
- * 直近の面談本文からこの見出し以降〜次の `##` 見出し（無ければ末尾）までを取り出す。
+ * 面談記録はNotta（文字起こし）取込やモーダル編集で自由記述されるが、本文中に
+ * `## 次回への申し送り` という見出しが書かれていれば、次回の面談時に左カラムの
+ * 「前回の申し送り」ピン留めカードへ表示するため、この見出し以降〜次の `##` 見出し
+ *（無ければ末尾）までを取り出す。
  *
  * 見出しが見つからない場合は null を返す。呼び出し側で「本文の先頭200字」等に
  * フォールバックさせる想定（申し送りを書く運用が徹底されていない過去記録にも配慮）。
@@ -146,8 +119,78 @@ export function summarizeTextbookProgress(
   };
 }
 
+/** 進行表パネル・印刷シートで使う「直近の単元履歴」1件分 */
+export interface TextbookLessonHistoryEntry {
+  lessonDate: string;
+  unitTitle: string;
+  teacherName: string | null;
+  /** その単元の引継ぎメモ（無ければ null。空文字は null 扱いにする） */
+  handover: string | null;
+}
+
+/** 進行表パネル・印刷シートで使うテキスト1件分の詳細（進捗集計＋履歴＋次単元＋宿題/遅刻件数） */
+export interface TextbookProgressDetail extends TextbookProgressSummary {
+  /** 直近の単元履歴。最大5件・実施日の新しい順 */
+  recentLessons: TextbookLessonHistoryEntry[];
+  /** 次にやる単元名（レッスンが1件も記録されていない単元のうち先頭2件、カリキュラム順） */
+  nextUnitTitles: string[];
+  /** 宿題未実施が立っている単元数（0件なら呼び出し側で非表示にする） */
+  homeworkNotDoneCount: number;
+  /** 遅刻が立っている単元数（0件なら呼び出し側で非表示にする） */
+  tardyCount: number;
+}
+
+/**
+ * 進行表パネル向けの詳細集計。summarizeTextbookProgress の進捗集計に加えて、
+ * 面談で話題にしやすい「直近何をやったか」「次に何をやるか」「宿題・遅刻の状況」をまとめる。
+ *
+ * 引継ぎ・宿題未実施・遅刻は student_progress（テキスト×単元）側のフィールドで、
+ * 授業セッション記録と非同期に保存される仕様のため、実際には入っていないことが多い。
+ * 呼び出し側は 0件・null のときに「0回」「引継ぎなし」を並べず、何も出さないこと
+ * （[[project_progress_handover_decoupling]] 参照）。
+ */
+export function summarizeTextbookDetail(
+  textbook: StudentTextbookWithDetails,
+  rows: CurriculumItemWithProgress[]
+): TextbookProgressDetail {
+  const base = summarizeTextbookProgress(textbook, rows);
+
+  // 全単元のレッスンをフラット化して実施日の新しい順に並べ、先頭5件を「直近の単元履歴」とする。
+  // teacher_name はレッスン行に無ければ進行記録側（progress.teacher_name）にフォールバックする。
+  const flatLessons: TextbookLessonHistoryEntry[] = [];
+  for (const item of rows) {
+    for (const lesson of item.progress?.lessons ?? []) {
+      if (!lesson.lesson_date) continue;
+      flatLessons.push({
+        lessonDate: lesson.lesson_date,
+        unitTitle: item.title,
+        teacherName: lesson.teacher_name ?? item.progress?.teacher_name ?? null,
+        handover: item.progress?.handover?.trim() || null,
+      });
+    }
+  }
+  flatLessons.sort((a, b) => b.lessonDate.localeCompare(a.lessonDate));
+  const recentLessons = flatLessons.slice(0, 5);
+
+  // 次にやる単元 = レッスンが1件も記録されていない単元を、カリキュラムの並び順(sort_order)で先頭から2件
+  const nextUnitTitles = [...rows]
+    .filter((r) => !(r.progress?.lessons ?? []).some((l) => l.lesson_date))
+    .sort((a, b) => a.sort_order - b.sort_order)
+    .slice(0, 2)
+    .map((r) => r.title);
+
+  const homeworkNotDoneCount = rows.filter((r) => r.progress?.homework_not_done).length;
+  const tardyCount = rows.filter((r) => r.progress?.tardy).length;
+
+  return { ...base, recentLessons, nextUnitTitles, homeworkNotDoneCount, tardyCount };
+}
+
 /* ============================================================
- * 通塾日程・講習申込の整形（基本情報カード用）
+ * 通塾日程・講習申込の整形
+ * ------------------------------------------------------------
+ * 2カラム再構成（成績・進行表を主役にする）で「基本情報」カードは廃止したため、
+ * 現在ワークスペース内では未使用。他画面からの再利用や将来の復活に備えて残す
+ * 純粋関数（テストで担保）。
  * ========================================================== */
 
 /** 通塾日程を「火19:00 / 木19:00」形式にまとめる */
@@ -185,90 +228,80 @@ export function formatKoushuEnrollments(enrollments: KoushuEnrollment[]): string
 }
 
 /* ============================================================
- * 成績サマリ（右カラム・印刷シート共通）
+ * 成績サマリ（成績パネル・印刷シート共通）
  * ========================================================== */
 
-// 成績サマリで表示する5科（StudentDetailModal の formatScoreRow と同じ集合に揃える）
-const SCORE_SUBJECTS = ['english', 'math', 'japanese', 'social', 'science'] as const;
+/** 成績カテゴリ（Assessment['category'] のエイリアス。ここでの引数用に短く再掲する） */
+export type AssessmentCategory = 'regular_test' | 'report_card' | 'mock';
+
+// 科目の表示順。定期テスト/内申は共通9科、模試は換算内申などカテゴリによって出現する
+// 科目集合が異なるため固定リストにはしない。ここでは「並べる優先順位」だけを決め、
+// このリストに無い科目（他カテゴリで将来増えても）は末尾に回して落とさない。
+const SUBJECT_ORDER = [
+  'english',
+  'math',
+  'japanese',
+  'science',
+  'social',
+  'music',
+  'art',
+  'tech_home',
+  'pe',
+  'conv_5',
+  'conv_4',
+] as const;
+
+function subjectOrderIndex(subject: string): number {
+  const i = (SUBJECT_ORDER as readonly string[]).indexOf(subject);
+  return i === -1 ? SUBJECT_ORDER.length : i;
+}
 
 export interface ScoreSummaryRow {
   subject: string;
   label: string;
-  values: (number | null)[]; // recentTests と同じ並び（古い→新しい）
+  values: (number | null)[]; // testLabels と同じ並び（古い→新しい）
 }
 
 export interface ScoreSummary {
-  testLabels: string[]; // 直近3件、古い→新しい順
+  testLabels: string[]; // 直近N件、古い→新しい順
   rows: ScoreSummaryRow[];
   totals: number[]; // 各テストの合計点（testLabels と同じ並び）
 }
 
 /**
- * 定期テストの直近3件を集計する。
- * listAssessments() は新しい順（降順）で返るため、先頭3件を取ってから
+ * 指定カテゴリの直近N件を集計する（既定は定期テスト直近3件。印刷シートの従来仕様と同じ）。
+ * listAssessments() は新しい順（降順）で返るため、先頭N件を取ってから
  * 表示用に古い→新しい順へ反転する（成績推移として左から右に読めるように）。
+ *
+ * 科目行はカテゴリごとの固定リストを使わず、実際に scores に出現した科目だけから作る
+ * （内申は9科、模試は換算内申など、カテゴリで科目集合が違うため）。
  */
-export function computeScoreSummary(assessments: AssessmentWithScores[]): ScoreSummary {
-  const regular = assessments
-    .filter((a) => a.category === 'regular_test')
-    .slice(0, 3)
+export function computeScoreSummary(
+  assessments: AssessmentWithScores[],
+  category: AssessmentCategory = 'regular_test',
+  count = 3
+): ScoreSummary {
+  const picked = assessments
+    .filter((a) => a.category === category)
+    .slice(0, count)
     .reverse();
 
-  const testLabels = regular.map((a) => ASSESSMENT_NAME_LABELS[a.name_code] ?? a.name_code);
-  const rows: ScoreSummaryRow[] = SCORE_SUBJECTS.map((subject) => ({
+  const testLabels = picked.map((a) => ASSESSMENT_NAME_LABELS[a.name_code] ?? a.name_code);
+
+  const subjectSet = new Set<string>();
+  for (const a of picked) {
+    for (const s of a.scores) subjectSet.add(s.subject);
+  }
+  const subjects = Array.from(subjectSet).sort(
+    (a, b) => subjectOrderIndex(a) - subjectOrderIndex(b) || a.localeCompare(b)
+  );
+
+  const rows: ScoreSummaryRow[] = subjects.map((subject) => ({
     subject,
     label: SUBJECT_LABELS[subject] ?? subject,
-    values: regular.map((a) => a.scores.find((s) => s.subject === subject)?.value ?? null),
+    values: picked.map((a) => a.scores.find((s) => s.subject === subject)?.value ?? null),
   }));
-  const totals = regular.map((_, i) => rows.reduce((sum, row) => sum + (row.values[i] ?? 0), 0));
+  const totals = picked.map((_, i) => rows.reduce((sum, row) => sum + (row.values[i] ?? 0), 0));
 
   return { testLabels, rows, totals };
-}
-
-/* ============================================================
- * 今回の面談メモ 下書き（localStorage）
- * ========================================================== */
-
-export interface InterviewDraft {
-  interviewDate: string;
-  interviewType: InterviewType;
-  title: string;
-  memo: string;
-  insertedTopics: string[];
-  quickTasks: string[];
-}
-
-const DRAFT_KEY_PREFIX = 'nest-interview-draft-v1:';
-
-/**
- * 下書きの自動保存。面談中に画面遷移や誤操作で入力中のメモが消えると致命的なため、
- * 生徒ID込みのキーで localStorage に退避し、再訪時に復元する。
- */
-export function loadInterviewDraft(studentId: string): InterviewDraft | null {
-  if (typeof window === 'undefined') return null;
-  try {
-    const raw = window.localStorage.getItem(DRAFT_KEY_PREFIX + studentId);
-    if (!raw) return null;
-    return JSON.parse(raw) as InterviewDraft;
-  } catch {
-    return null;
-  }
-}
-
-export function saveInterviewDraft(studentId: string, draft: InterviewDraft): void {
-  if (typeof window === 'undefined') return;
-  try {
-    window.localStorage.setItem(DRAFT_KEY_PREFIX + studentId, JSON.stringify(draft));
-  } catch {
-    // 容量超過等は無視する（下書き機能は失敗しても致命的ではない）
-  }
-}
-
-export function clearInterviewDraft(studentId: string): void {
-  if (typeof window === 'undefined') return;
-  try {
-    window.localStorage.removeItem(DRAFT_KEY_PREFIX + studentId);
-  } catch {
-    // noop
-  }
 }

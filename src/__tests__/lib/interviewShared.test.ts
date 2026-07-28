@@ -4,8 +4,13 @@ import {
   formatKoushuEnrollments,
   formatRegularPatternsSchedule,
   computeScoreSummary,
+  summarizeTextbookDetail,
 } from '@/app/interview/interview.shared';
-import type { AssessmentWithScores } from '@/types/database';
+import type {
+  AssessmentWithScores,
+  CurriculumItemWithProgress,
+  StudentTextbookWithDetails,
+} from '@/types/database';
 import type { ScheduleRegularPattern } from '@/types/schedule';
 import type { KoushuEnrollment } from '@/lib/api/seasonalCourses';
 
@@ -99,5 +104,100 @@ describe('computeScoreSummary', () => {
 
   it('成績が無ければ空配列を返す', () => {
     expect(computeScoreSummary([]).testLabels).toEqual([]);
+  });
+
+  it('カテゴリ・件数を指定できる（内申は科目集合が定期テストと異なるため実データから科目行を作る）', () => {
+    const assessments = [
+      {
+        category: 'report_card',
+        name_code: 'term2',
+        scores: [
+          { subject: 'music', value: 4 },
+          { subject: 'art', value: 5 },
+        ],
+      },
+      {
+        category: 'report_card',
+        name_code: 'term1',
+        scores: [
+          { subject: 'music', value: 3 },
+          { subject: 'art', value: 4 },
+        ],
+      },
+      // 定期テストは対象外カテゴリなので混ざらない
+      {
+        category: 'regular_test',
+        name_code: 'term1_final',
+        scores: [{ subject: 'english', value: 90 }],
+      },
+    ] as unknown as AssessmentWithScores[];
+
+    const summary = computeScoreSummary(assessments, 'report_card', 5);
+    expect(summary.testLabels).toEqual(['1学期', '2学期']);
+    // english は report_card の scores に出現しないため行に含まれない（固定5科ではなく実データ由来）
+    expect(summary.rows.map((r) => r.subject)).toEqual(['music', 'art']);
+    expect(summary.rows.find((r) => r.subject === 'music')?.values).toEqual([3, 4]);
+  });
+});
+
+describe('summarizeTextbookDetail', () => {
+  const textbook = {
+    id: 'st-1',
+    textbook: { name: 'システム英単語', subject: '英語' },
+  } as unknown as StudentTextbookWithDetails;
+
+  it('直近の単元履歴を実施日の新しい順に並べ、次にやる単元・宿題/遅刻件数を集計する', () => {
+    const rows = [
+      {
+        title: '第1章',
+        sort_order: 1,
+        progress: {
+          teacher_name: '山田',
+          handover: '  ',
+          homework_not_done: false,
+          tardy: false,
+          lessons: [{ lesson_date: '2026-07-01', teacher_name: null }],
+        },
+      },
+      {
+        title: '第2章',
+        sort_order: 2,
+        progress: {
+          teacher_name: null,
+          handover: '単語帳の続きを確認する',
+          homework_not_done: true,
+          tardy: false,
+          lessons: [{ lesson_date: '2026-07-15', teacher_name: '佐藤' }],
+        },
+      },
+      // レッスンが1件も無い = 未実施（次にやる単元の候補）
+      { title: '第3章', sort_order: 3, progress: null },
+      { title: '第4章', sort_order: 4, progress: null },
+    ] as unknown as CurriculumItemWithProgress[];
+
+    const detail = summarizeTextbookDetail(textbook, rows);
+
+    expect(detail.name).toBe('システム英単語');
+    expect(detail.total).toBe(4);
+    expect(detail.done).toBe(2);
+    // 新しい順: 第2章(07/15) → 第1章(07/01)
+    expect(detail.recentLessons.map((l) => l.unitTitle)).toEqual(['第2章', '第1章']);
+    expect(detail.recentLessons[0].teacherName).toBe('佐藤');
+    expect(detail.recentLessons[0].handover).toBe('単語帳の続きを確認する');
+    // handover が空白のみ(trim後空文字)なら null 扱い
+    expect(detail.recentLessons[1].handover).toBeNull();
+    expect(detail.nextUnitTitles).toEqual(['第3章', '第4章']);
+    expect(detail.homeworkNotDoneCount).toBe(1);
+    expect(detail.tardyCount).toBe(0);
+  });
+
+  it('引継ぎ・宿題未実施・遅刻が無ければ0件を返す（呼び出し側で0を表示しない判断の元データ）', () => {
+    const rows = [
+      { title: '第1章', sort_order: 1, progress: null },
+    ] as unknown as CurriculumItemWithProgress[];
+    const detail = summarizeTextbookDetail(textbook, rows);
+    expect(detail.homeworkNotDoneCount).toBe(0);
+    expect(detail.tardyCount).toBe(0);
+    expect(detail.recentLessons).toEqual([]);
   });
 });

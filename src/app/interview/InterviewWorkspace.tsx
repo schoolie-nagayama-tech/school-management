@@ -4,11 +4,12 @@
  * 面談ワークスペース 本体
  * ------------------------------------------------------------------
  * 検討用モック（src/app/interview-mock/page.tsx）を実データ化した本番ページ。
- * 3カラム（過去の面談記録／今回の面談メモ／データ参照）＋ヘッダー帯（生徒切替・印刷）で構成する。
+ * 面談記録はNotta（文字起こし）から取り込む運用になり「今回の面談メモ」入力が不要になったため、
+ * 2カラム（左＝過去の面談記録・約束/タスク、右＝成績・進行表）＋ヘッダー帯（生徒切替・印刷）で構成する。
  *
- * データ取得は「軽いもの」（面談記録・成績・通塾日程・講習申込）を先にまとめて取得して
- * 3カラムを先に描画し、N+1になりがちな進行表（テキストごとに getStudentProgress を呼ぶ）は
- * 後追いで並列取得する。courses/progress ページの段階表示と同じ考え方。
+ * データ取得は「軽いもの」（面談記録・成績）を先にまとめて取得して左右カラムを先に描画し、
+ * N+1になりがちな進行表（テキストごとに getStudentProgress を呼ぶ）は後追いで並列取得する。
+ * courses/progress ページの段階表示と同じ考え方。
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -29,13 +30,13 @@ import { getKoushuEnrollmentsByStudent, type KoushuEnrollment } from '@/lib/api/
 import type { AssessmentWithScores, Student, StudentInterview } from '@/types/database';
 import type { ScheduleRegularPattern } from '@/types/schedule';
 import { InterviewTimeline, type HandoverInfo } from './InterviewTimeline';
-import { InterviewMemoPanel, type MemoSnapshot } from './InterviewMemoPanel';
-import { StudentDataPanel } from './StudentDataPanel';
+import { ScorePanel } from './ScorePanel';
+import { ProgressPanel, type TextbookProgressData } from './ProgressPanel';
 import { InterviewPrintSheet } from './InterviewPrintSheet';
 import {
   extractHandover,
-  summarizeTextbookProgress,
-  type TextbookProgressSummary,
+  formatKoushuEnrollments,
+  formatRegularPatternsSchedule,
 } from './interview.shared';
 import { InterviewHub } from './InterviewHub';
 import { ArrowLeft, History, Printer } from 'lucide-react';
@@ -56,20 +57,15 @@ export function InterviewWorkspace() {
 
   const [interviews, setInterviews] = useState<StudentInterview[]>([]);
   const [assessments, setAssessments] = useState<AssessmentWithScores[]>([]);
+  // 通塾日程・講習申込はヘッダー帯に1行で添える（面談で必ず話題に出るため）
   const [regularPatterns, setRegularPatterns] = useState<ScheduleRegularPattern[]>([]);
   const [koushuEnrollments, setKoushuEnrollments] = useState<KoushuEnrollment[]>([]);
   const [lightLoading, setLightLoading] = useState(false);
 
-  const [textbookSummaries, setTextbookSummaries] = useState<TextbookProgressSummary[]>([]);
-  const [textbookCount, setTextbookCount] = useState(0);
+  // 進行表の生データ（テキスト×そのテキストの進行記録行）をテキストぶん保持する。
+  // 集計（進捗％・直近履歴・次単元など）は ProgressPanel / 印刷シート側で summarizeTextbookDetail に任せる。
+  const [textbookProgressData, setTextbookProgressData] = useState<TextbookProgressData[]>([]);
   const [progressLoading, setProgressLoading] = useState(false);
-
-  const [memoSnapshot, setMemoSnapshot] = useState<MemoSnapshot>({
-    interviewDate: new Date().toISOString().slice(0, 10),
-    interviewTypeLabel: '保護者面談',
-    title: '',
-    memo: '',
-  });
 
   // 生徒一覧（在籍中のみ、学年→氏名かな順）
   useEffect(() => {
@@ -185,7 +181,8 @@ export function InterviewWorkspace() {
   }, [selectedStudentId]);
 
   // 軽いデータ（面談記録・成績・通塾日程・講習申込）をまとめて取得。進行表より先に描画する。
-  // 通塾日程の取得には生徒の school_id が要るため getStudent の完了を待つ。
+  // 通塾日程と講習申込は面談で必ず話題に出る（曜日の相談・講習の案内）ため、
+  // 専用カードは持たずヘッダー帯に1行で添える。
   useEffect(() => {
     if (!selectedStudentId || !student) return;
     let cancelled = false;
@@ -212,11 +209,10 @@ export function InterviewWorkspace() {
     };
   }, [selectedStudentId, student]);
 
-  // 重いデータ（進行表）は後追いで取得。generatorのgetStudent完了を待たず生徒IDが決まり次第走らせる。
+  // 重いデータ（進行表）は後追いで取得。生徒IDが決まり次第、テキストごとに並列で進行記録を取る。
   useEffect(() => {
     if (!selectedStudentId) {
-      setTextbookSummaries([]);
-      setTextbookCount(0);
+      setTextbookProgressData([]);
       return;
     }
     let cancelled = false;
@@ -224,18 +220,16 @@ export function InterviewWorkspace() {
       setProgressLoading(true);
       try {
         const raw = await getStudentTextbooks(selectedStudentId);
-        // 進行表バーに出すのは「進行表で管理中」のテキストのみ（/progress ページと同じ絞り込み）
+        // 進行表パネルに出すのは「進行表で管理中」のテキストのみ（/progress ページと同じ絞り込み）
         const tracked = raw.filter((t) => t.track_progress);
-        const summaries = await Promise.all(
-          tracked.map(async (tb) => {
-            const rows = await getStudentProgress(tb.id).catch(() => []);
-            return summarizeTextbookProgress(tb, rows);
-          })
+        const data = await Promise.all(
+          tracked.map(async (textbook) => ({
+            textbook,
+            rows: await getStudentProgress(textbook.id).catch(() => []),
+          }))
         );
         if (cancelled) return;
-        setTextbookSummaries(summaries);
-        // 所持教材数は track_progress に関係なく is_owned=true の件数
-        setTextbookCount(raw.filter((t) => t.is_owned).length);
+        setTextbookProgressData(data);
       } catch (e) {
         console.error('Error fetching progress:', e);
       } finally {
@@ -334,6 +328,11 @@ export function InterviewWorkspace() {
                     {formatGradeLabel(student.grade)}
                     {student.school_name ? `・${student.school_name}` : ''}
                   </span>
+                  {/* 通塾日程・講習申込。専用カードは持たせず、面談中に目に入る位置へ添える */}
+                  <span className="text-xs text-text-faint">
+                    通塾: {formatRegularPatternsSchedule(regularPatterns)} ／ 講習:{' '}
+                    {formatKoushuEnrollments(koushuEnrollments)}
+                  </span>
                 </div>
               )}
             </div>
@@ -369,8 +368,8 @@ export function InterviewWorkspace() {
         </Card>
       ) : (
         <>
-          {/* 3カラム本体 */}
-          <div className="grid gap-5 print:hidden lg:grid-cols-[320px_1fr_360px] lg:items-start">
+          {/* 2カラム本体（左＝過去の面談記録・約束/タスク、右＝成績・進行表） */}
+          <div className="grid gap-5 print:hidden lg:grid-cols-[340px_minmax(0,1fr)] lg:items-start">
             <InterviewTimeline
               studentId={student.id}
               schoolId={student.school_id}
@@ -379,24 +378,10 @@ export function InterviewWorkspace() {
               handover={handover}
               onChanged={refetchInterviews}
             />
-            <InterviewMemoPanel
-              key={student.id}
-              studentId={student.id}
-              schoolId={student.school_id}
-              onSaved={refetchInterviews}
-              onDraftChange={setMemoSnapshot}
-            />
-            <StudentDataPanel
-              student={student}
-              assessments={assessments}
-              assessmentsLoading={lightLoading}
-              textbookSummaries={textbookSummaries}
-              textbookCount={textbookCount}
-              progressLoading={progressLoading}
-              regularPatterns={regularPatterns}
-              koushuEnrollments={koushuEnrollments}
-              lightLoading={lightLoading}
-            />
+            <div className="flex flex-col gap-5">
+              <ScorePanel assessments={assessments} loading={lightLoading} />
+              <ProgressPanel textbookData={textbookProgressData} loading={progressLoading} />
+            </div>
           </div>
 
           {/* 印刷シート（画面には出ない。印刷時のみ表示。globals.css の interviewreport ページを使用） */}
@@ -406,8 +391,7 @@ export function InterviewWorkspace() {
             handover={handover}
             recentInterviews={nonTaskInterviews}
             assessments={assessments}
-            textbookSummaries={textbookSummaries}
-            memo={memoSnapshot}
+            textbookData={textbookProgressData}
           />
         </>
       )}

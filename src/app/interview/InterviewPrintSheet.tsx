@@ -4,12 +4,17 @@
  * courses/progress の CourseProgressReport と同じ流儀: 画面には `hidden print:block` で隠しておき、
  * 印刷時だけ表示される専用ブロック。名前付きページ（globals.css の `interviewreport`）で
  * 用紙サイズ・向きを固定する。
+ *
+ * 「今回の面談メモ」欄（手書き罫線含む）は廃止した。面談記録がNotta取込に一本化され、
+ * このシートを見ながらメモを手書きする運用が無くなったため。代わりに、面談で話題にしやすい
+ * 進行表の直近単元履歴＋引継ぎと、成績（定期テスト）を載せる。A4縦1枚に収めるため
+ * 進行表は上位3テキスト×直近3単元に絞る。
  */
 
 import type { AssessmentWithScores, Student } from '@/types/database';
-import { computeScoreSummary, fmtDateJa, type TextbookProgressSummary } from './interview.shared';
+import { computeScoreSummary, fmtDateJa, summarizeTextbookDetail } from './interview.shared';
 import type { HandoverInfo } from './InterviewTimeline';
-import type { MemoSnapshot } from './InterviewMemoPanel';
+import type { TextbookProgressData } from './ProgressPanel';
 import { formatGradeLabel } from '@/lib/utils/gradeLabel';
 import { INTERVIEW_TYPE_LABELS, type StudentInterview } from '@/types/database';
 
@@ -20,8 +25,8 @@ interface InterviewPrintSheetProps {
   /** 面談タイムラインの直近3件（新しい順） */
   recentInterviews: StudentInterview[];
   assessments: AssessmentWithScores[];
-  textbookSummaries: TextbookProgressSummary[];
-  memo: MemoSnapshot;
+  /** 進行表の生データ（画面の ProgressPanel と同じもの）。集計はこちら側で行う */
+  textbookData: TextbookProgressData[];
 }
 
 export function InterviewPrintSheet({
@@ -30,11 +35,15 @@ export function InterviewPrintSheet({
   handover,
   recentInterviews,
   assessments,
-  textbookSummaries,
-  memo,
+  textbookData,
 }: InterviewPrintSheetProps) {
   const scoreSummary = computeScoreSummary(assessments);
-  const hasMemoContent = memo.memo.trim().length > 0;
+
+  // A4縦1枚に収めるため上位3テキスト×直近3単元に絞る（画面側は5件だが印刷は紙面の都合で減らす）
+  const printTextbooks = textbookData.slice(0, 3).map(({ textbook, rows }) => {
+    const detail = summarizeTextbookDetail(textbook, rows);
+    return { ...detail, recentLessons: detail.recentLessons.slice(0, 3) };
+  });
 
   return (
     <div className="interview-report-print-page hidden bg-white text-black print:block">
@@ -50,7 +59,6 @@ export function InterviewPrintSheet({
           </div>
         </div>
         <div className="text-right text-[10px] leading-tight">
-          <div>面談日：{memo.interviewDate}</div>
           <div>出力日：{today}</div>
         </div>
       </div>
@@ -88,7 +96,7 @@ export function InterviewPrintSheet({
         )}
       </div>
 
-      {/* 成績表 */}
+      {/* 成績表（定期テスト直近3件） */}
       <div className="mb-3">
         <div className="mb-1 border-b border-black pb-0.5 text-xs font-bold">
           成績（定期テスト直近3件）
@@ -131,43 +139,38 @@ export function InterviewPrintSheet({
         )}
       </div>
 
-      {/* 進行表サマリ */}
-      <div className="mb-3">
-        <div className="mb-1 border-b border-black pb-0.5 text-xs font-bold">進行表サマリ</div>
-        {textbookSummaries.length === 0 ? (
-          <p className="text-[10px] text-gray-500">進行表で管理中のテキストはありません</p>
-        ) : (
-          <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-[10px]">
-            {textbookSummaries.map((tb) => (
-              <div
-                key={tb.id}
-                className="flex items-center justify-between gap-2 break-inside-avoid"
-              >
-                <span className="truncate">
-                  {tb.name}
-                  {tb.subject ? `（${tb.subject}）` : ''}
-                  {tb.stalled ? ' ※停滞' : ''}
-                </span>
-                <span className="shrink-0 tabular-nums">{tb.progressPct}%</span>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* 今回のメモ */}
+      {/* 進行表（直近の単元履歴＋引継ぎ） */}
       <div>
         <div className="mb-1 border-b border-black pb-0.5 text-xs font-bold">
-          今回の面談メモ（{memo.interviewTypeLabel}
-          {memo.title ? `：${memo.title}` : ''}）
+          進行表（直近の単元履歴）
         </div>
-        {hasMemoContent ? (
-          <p className="whitespace-pre-wrap text-[10px] leading-relaxed">{memo.memo}</p>
+        {printTextbooks.length === 0 ? (
+          <p className="text-[10px] text-gray-500">進行表で管理中のテキストはありません</p>
         ) : (
-          // 未入力なら手書き用の罫線を敷く
-          <div>
-            {Array.from({ length: 14 }).map((_, i) => (
-              <div key={i} className="h-[18px] border-b border-gray-300" />
+          <div className="flex flex-col gap-1.5">
+            {printTextbooks.map((tb) => (
+              <div key={tb.id} className="break-inside-avoid text-[10px] leading-snug">
+                <div className="font-medium">
+                  {tb.name}
+                  {tb.subject ? `（${tb.subject}）` : ''}・{tb.done}/{tb.total}（{tb.progressPct}%）
+                  {tb.stalled ? ' ※停滞' : ''}
+                </div>
+                {tb.recentLessons.length === 0 ? (
+                  <p className="text-gray-500">実施記録なし</p>
+                ) : (
+                  <ul className="ml-2 list-disc">
+                    {tb.recentLessons.map((l, i) => (
+                      <li key={i}>
+                        {fmtDateJa(l.lessonDate)}　{l.unitTitle}
+                        {l.teacherName ? `（${l.teacherName}）` : ''}
+                        {l.handover && (
+                          <span className="text-gray-700"> ／引継ぎ: {l.handover}</span>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             ))}
           </div>
         )}
