@@ -890,6 +890,15 @@ export default function AttendanceManagementPage() {
 
   const showSchoolColumn = !selectedSchoolId || selectedSchoolId === 'all';
 
+  /**
+   * 通常テーブルで「コマ種別列より前」にある列数（チェックボックス / 教室 / 社員番号 / 講師名 / ステータス）。
+   *
+   * ★ 合計行の colSpan をこの定数から引くこと。ヘッダーに列を足したのに合計行の
+   *   colSpan を直し忘れると、合計行だけ1列ぶん横にずれる（社員番号列の追加で実際に起きた）。
+   *   数字を直書きすると次に列が増えたとき同じ事故になる。
+   */
+  const leadingColumnCount = showSchoolColumn ? 5 : 4;
+
   const formatLateEarlyDate = (dateStr: string): string => {
     const date = new Date(dateStr);
     const dayLabels = ['日', '月', '火', '水', '木', '金', '土'];
@@ -1546,7 +1555,7 @@ export default function AttendanceManagementPage() {
                     })}
                     {/* 合計行 */}
                     <TableRow className="bg-gray-100 font-medium">
-                      <TableCell colSpan={showSchoolColumn ? 4 : 3}>合計</TableCell>
+                      <TableCell colSpan={leadingColumnCount}>合計</TableCell>
                       {displayTypes.map((type) => (
                         <TableCell key={type.id} className="text-center">
                           {sheets.reduce((sum, row) => {
