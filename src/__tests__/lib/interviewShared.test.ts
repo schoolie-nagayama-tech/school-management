@@ -7,6 +7,7 @@ import {
   summarizeTextbookDetail,
   computeDisciplineMonthly,
   computeDisciplineMonthlyByStudent,
+  computeDisciplineMonthlyTotals,
 } from '@/app/interview/interview.shared';
 import type {
   AssessmentWithScores,
@@ -326,5 +327,85 @@ describe('computeDisciplineMonthlyByStudent', () => {
     const grouped = computeDisciplineMonthlyByStudent(rows, 6, today).get(studentId);
 
     expect(grouped).toEqual(direct);
+  });
+});
+
+describe('computeDisciplineMonthlyTotals', () => {
+  // 2026年7月30日を「今日」として固定する（他の describe と同じ基準日）
+  const today = new Date(2026, 6, 30);
+
+  it('2生徒ぶんの月次配列を渡すと月ごとに正しく合算される', () => {
+    const studentA = computeDisciplineMonthly(
+      [
+        { session_date: '2026-07-05', homework_not_done: true, tardy: false },
+        { session_date: '2026-07-12', homework_not_done: false, tardy: true },
+      ],
+      6,
+      today
+    );
+    const studentB = computeDisciplineMonthly(
+      [{ session_date: '2026-07-20', homework_not_done: true, tardy: true }],
+      6,
+      today
+    );
+
+    const totals = computeDisciplineMonthlyTotals([studentA, studentB], 6, today);
+    const july = totals.find((m) => m.month === '2026-07')!;
+    // 生徒A: 授業2日・宿題1・遅刻1 / 生徒B: 授業1日・宿題1・遅刻1 の合算
+    expect(july.lessonDays).toBe(3);
+    expect(july.homeworkMissedDays).toBe(2);
+    expect(july.tardyDays).toBe(2);
+  });
+
+  it('studentCount はその月に lessonDays>0 だった生徒数になる（片方だけ記録がある月）', () => {
+    const studentA = computeDisciplineMonthly(
+      [{ session_date: '2026-07-05', homework_not_done: false, tardy: false }],
+      6,
+      today
+    );
+    // 生徒Bは6月のみ記録がある（7月は lessonDays 0）
+    const studentB = computeDisciplineMonthly(
+      [{ session_date: '2026-06-10', homework_not_done: false, tardy: false }],
+      6,
+      today
+    );
+
+    const totals = computeDisciplineMonthlyTotals([studentA, studentB], 6, today);
+    const july = totals.find((m) => m.month === '2026-07')!;
+    const june = totals.find((m) => m.month === '2026-06')!;
+    expect(july.studentCount).toBe(1); // 7月に授業記録があるのは生徒Aのみ
+    expect(june.studentCount).toBe(1); // 6月に授業記録があるのは生徒Bのみ
+  });
+
+  it('空配列を渡すと全月 0・studentCount 0 の6行が新しい月先頭で返る', () => {
+    const totals = computeDisciplineMonthlyTotals([], 6, today);
+    expect(totals.map((m) => m.month)).toEqual([
+      '2026-07',
+      '2026-06',
+      '2026-05',
+      '2026-04',
+      '2026-03',
+      '2026-02',
+    ]);
+    expect(
+      totals.every(
+        (m) =>
+          m.lessonDays === 0 &&
+          m.homeworkMissedDays === 0 &&
+          m.tardyDays === 0 &&
+          m.studentCount === 0
+      )
+    ).toBe(true);
+  });
+
+  it('引数を破壊しない', () => {
+    const studentA = computeDisciplineMonthly(
+      [{ session_date: '2026-07-05', homework_not_done: true, tardy: false }],
+      6,
+      today
+    );
+    const snapshot = JSON.parse(JSON.stringify(studentA));
+    computeDisciplineMonthlyTotals([studentA], 6, today);
+    expect(studentA).toEqual(snapshot);
   });
 });

@@ -407,6 +407,48 @@ export function computeDisciplineMonthlyByStudent(
   return result;
 }
 
+/** 全生徒合算の月次合計1行分 */
+export interface DisciplineMonthTotal extends DisciplineMonth {
+  /** その月に授業記録が1日以上あった生徒数 */
+  studentCount: number;
+}
+
+/**
+ * 生徒ごとの月次集計（画面に既に出している DisciplineRow.months の配列そのもの）を
+ * 月単位で合算して「全体」の月次合計を作る。
+ *
+ * 生の session 行から再集計しない理由: 画面の生徒行と「全体」合計行で数字が食い違うと
+ * 集計の信頼性が疑われる。既に各生徒行の表示に使っている computeDisciplineMonthly の
+ * 出力をそのまま足し上げることで、生徒行の合計＝全体行になることを構造的に保証する。
+ *
+ * 月の枠組み（対象月キー・label・新しい月が先頭の順序）は computeDisciplineMonthly([], ...) で
+ * 作り、そこに各生徒の同月の値を月キーで対応付けて足し込む（配列インデックスの並びに
+ * 依存すると、生徒によって記録の欠けた月がある場合にズレるため）。
+ */
+export function computeDisciplineMonthlyTotals(
+  perStudentMonths: DisciplineMonth[][],
+  monthsBack: number,
+  today: Date
+): DisciplineMonthTotal[] {
+  const frame = computeDisciplineMonthly([], monthsBack, today);
+  const totalsByMonth = new Map<string, DisciplineMonthTotal>(
+    frame.map((m) => [m.month, { ...m, studentCount: 0 }])
+  );
+
+  for (const months of perStudentMonths) {
+    for (const m of months) {
+      const total = totalsByMonth.get(m.month);
+      if (!total) continue; // 対象範囲外の月キーは無視（通常は起こらない想定）
+      total.lessonDays += m.lessonDays;
+      total.homeworkMissedDays += m.homeworkMissedDays;
+      total.tardyDays += m.tardyDays;
+      if (m.lessonDays > 0) total.studentCount += 1;
+    }
+  }
+
+  return frame.map((m) => totalsByMonth.get(m.month)!);
+}
+
 /**
  * 「注意が必要」とみなす割合のしきい値。この値以上の月は赤字にして目に留まりやすくする。
  * 根拠のある値ではなく運用上の目安のため、必要に応じて調整してよい。
