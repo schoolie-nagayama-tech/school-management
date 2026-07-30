@@ -6,6 +6,7 @@ import {
   computeScoreSummary,
   summarizeTextbookDetail,
   computeDisciplineMonthly,
+  computeDisciplineMonthlyByStudent,
 } from '@/app/interview/interview.shared';
 import type {
   AssessmentWithScores,
@@ -255,5 +256,75 @@ describe('computeDisciplineMonthly', () => {
     expect(july.lessonDays).toBe(3);
     expect(july.homeworkMissedDays).toBe(2);
     expect(july.tardyDays).toBe(2);
+  });
+});
+
+describe('computeDisciplineMonthlyByStudent', () => {
+  // 2026年7月30日を「今日」として固定する（computeDisciplineMonthly のテストと同じ基準日）
+  const today = new Date(2026, 6, 30);
+
+  it('2生徒の行が正しく生徒ごとに分かれて集計される', () => {
+    const rows = [
+      {
+        student_id: 'student-a',
+        session_date: '2026-07-10',
+        homework_not_done: true,
+        tardy: false,
+      },
+      {
+        student_id: 'student-b',
+        session_date: '2026-07-12',
+        homework_not_done: false,
+        tardy: true,
+      },
+      {
+        student_id: 'student-a',
+        session_date: '2026-07-15',
+        homework_not_done: false,
+        tardy: false,
+      },
+    ];
+    const byStudent = computeDisciplineMonthlyByStudent(rows, 6, today);
+
+    expect(byStudent.size).toBe(2);
+
+    const aJuly = byStudent.get('student-a')!.find((m) => m.month === '2026-07')!;
+    expect(aJuly.lessonDays).toBe(2);
+    expect(aJuly.homeworkMissedDays).toBe(1);
+    expect(aJuly.tardyDays).toBe(0);
+
+    const bJuly = byStudent.get('student-b')!.find((m) => m.month === '2026-07')!;
+    expect(bJuly.lessonDays).toBe(1);
+    expect(bJuly.homeworkMissedDays).toBe(0);
+    expect(bJuly.tardyDays).toBe(1);
+  });
+
+  it('rows に登場しない生徒は Map に含まれない', () => {
+    const rows = [
+      {
+        student_id: 'student-a',
+        session_date: '2026-07-10',
+        homework_not_done: false,
+        tardy: false,
+      },
+    ];
+    const byStudent = computeDisciplineMonthlyByStudent(rows, 6, today);
+    expect(byStudent.has('student-a')).toBe(true);
+    expect(byStudent.has('student-nonexistent')).toBe(false);
+    expect(Array.from(byStudent.keys())).toEqual(['student-a']);
+  });
+
+  it('既存 computeDisciplineMonthly と同じ結果になる（1生徒ぶんを両方で計算して一致）', () => {
+    const studentId = 'student-a';
+    const rawSessions = [
+      { session_date: '2026-07-05', homework_not_done: true, tardy: false },
+      { session_date: '2026-06-20', homework_not_done: false, tardy: true },
+    ];
+    const rows = rawSessions.map((s) => ({ student_id: studentId, ...s }));
+
+    const direct = computeDisciplineMonthly(rawSessions, 6, today);
+    const grouped = computeDisciplineMonthlyByStudent(rows, 6, today).get(studentId);
+
+    expect(grouped).toEqual(direct);
   });
 });
