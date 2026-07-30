@@ -25,6 +25,10 @@ import { getStudents, getStudent, type EnrichedStudent } from '@/lib/api/student
 import { getStudentInterviews } from '@/lib/api/interviews';
 import { listAssessments } from '@/lib/api/assessments';
 import { getStudentTextbooks, getStudentProgress } from '@/lib/api/progress';
+import {
+  getStudentDisciplineSessions,
+  type DisciplineSessionRow,
+} from '@/lib/api/progress-sessions';
 import { getRegularPatterns } from '@/lib/api/schedule';
 import { getKoushuEnrollmentsByStudent, type KoushuEnrollment } from '@/lib/api/seasonalCourses';
 import type { AssessmentWithScores, Student, StudentInterview } from '@/types/database';
@@ -32,6 +36,7 @@ import type { ScheduleRegularPattern } from '@/types/schedule';
 import { InterviewTimeline, type HandoverInfo } from './InterviewTimeline';
 import { ScorePanel } from './ScorePanel';
 import { ProgressPanel, type TextbookProgressData } from './ProgressPanel';
+import { DisciplinePanel } from './DisciplinePanel';
 import { InterviewPrintSheet } from './InterviewPrintSheet';
 import {
   extractHandover,
@@ -60,6 +65,8 @@ export function InterviewWorkspace() {
   // 通塾日程・講習申込はヘッダー帯に1行で添える（面談で必ず話題に出るため）
   const [regularPatterns, setRegularPatterns] = useState<ScheduleRegularPattern[]>([]);
   const [koushuEnrollments, setKoushuEnrollments] = useState<KoushuEnrollment[]>([]);
+  // 宿題・遅刻の月次集計（DisciplinePanel）用の生セッション行。集計自体は computeDisciplineMonthly に任せる
+  const [disciplineSessions, setDisciplineSessions] = useState<DisciplineSessionRow[]>([]);
   const [lightLoading, setLightLoading] = useState(false);
 
   // 進行表の生データ（テキスト×そのテキストの進行記録行）をテキストぶん保持する。
@@ -189,17 +196,27 @@ export function InterviewWorkspace() {
     (async () => {
       setLightLoading(true);
       try {
-        const [iv, asm, patterns, koushu] = await Promise.all([
+        // 宿題・遅刻パネルの集計対象期間（直近6ヶ月）の開始日 = 今日から遡って6ヶ月前の月の1日
+        const disciplineFrom = new Date();
+        disciplineFrom.setDate(1);
+        disciplineFrom.setMonth(disciplineFrom.getMonth() - 5);
+        const disciplineFromStr = `${disciplineFrom.getFullYear()}-${String(
+          disciplineFrom.getMonth() + 1
+        ).padStart(2, '0')}-01`;
+
+        const [iv, asm, patterns, koushu, discipline] = await Promise.all([
           getStudentInterviews(selectedStudentId).catch(() => []),
           listAssessments(selectedStudentId).catch(() => []),
           getRegularPatterns(student.school_id, { studentId: selectedStudentId }).catch(() => []),
           getKoushuEnrollmentsByStudent(selectedStudentId).catch(() => []),
+          getStudentDisciplineSessions(selectedStudentId, disciplineFromStr).catch(() => []),
         ]);
         if (cancelled) return;
         setInterviews(iv);
         setAssessments(asm);
         setRegularPatterns(patterns);
         setKoushuEnrollments(koushu);
+        setDisciplineSessions(discipline);
       } finally {
         if (!cancelled) setLightLoading(false);
       }
@@ -381,6 +398,7 @@ export function InterviewWorkspace() {
             <div className="flex flex-col gap-5">
               <ScorePanel assessments={assessments} loading={lightLoading} />
               <ProgressPanel textbookData={textbookProgressData} loading={progressLoading} />
+              <DisciplinePanel sessions={disciplineSessions} loading={lightLoading} />
             </div>
           </div>
 
@@ -392,6 +410,7 @@ export function InterviewWorkspace() {
             recentInterviews={nonTaskInterviews}
             assessments={assessments}
             textbookData={textbookProgressData}
+            disciplineSessions={disciplineSessions}
           />
         </>
       )}

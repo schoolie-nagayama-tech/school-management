@@ -12,9 +12,15 @@
  */
 
 import type { AssessmentWithScores, Student } from '@/types/database';
-import { computeScoreSummary, fmtDateJa, summarizeTextbookDetail } from './interview.shared';
+import {
+  computeDisciplineMonthly,
+  computeScoreSummary,
+  fmtDateJa,
+  summarizeTextbookDetail,
+} from './interview.shared';
 import type { HandoverInfo } from './InterviewTimeline';
 import type { TextbookProgressData } from './ProgressPanel';
+import type { DisciplineSessionRow } from '@/lib/api/progress-sessions';
 import { formatGradeLabel } from '@/lib/utils/gradeLabel';
 import { INTERVIEW_TYPE_LABELS, type StudentInterview } from '@/types/database';
 
@@ -27,6 +33,8 @@ interface InterviewPrintSheetProps {
   assessments: AssessmentWithScores[];
   /** 進行表の生データ（画面の ProgressPanel と同じもの）。集計はこちら側で行う */
   textbookData: TextbookProgressData[];
+  /** 宿題・遅刻パネルと同じ生セッション行。集計は computeDisciplineMonthly で画面側と揃える */
+  disciplineSessions: DisciplineSessionRow[];
 }
 
 export function InterviewPrintSheet({
@@ -36,8 +44,11 @@ export function InterviewPrintSheet({
   recentInterviews,
   assessments,
   textbookData,
+  disciplineSessions,
 }: InterviewPrintSheetProps) {
   const scoreSummary = computeScoreSummary(assessments);
+  // 画面（DisciplinePanel）と同じ直近6ヶ月・同じ集計関数で数字を揃える
+  const disciplineMonths = computeDisciplineMonthly(disciplineSessions, 6, new Date());
 
   // A4縦1枚に収めるため上位3テキスト×直近3単元に絞る（画面側は5件だが印刷は紙面の都合で減らす）
   const printTextbooks = textbookData.slice(0, 3).map(({ textbook, rows }) => {
@@ -173,6 +184,43 @@ export function InterviewPrintSheet({
               </div>
             ))}
           </div>
+        )}
+      </div>
+
+      {/* 宿題・遅刻（直近6ヶ月・月次） */}
+      <div className="mt-3">
+        <div className="mb-1 border-b border-black pb-0.5 text-xs font-bold">
+          宿題・遅刻（直近6ヶ月）
+        </div>
+        {disciplineMonths.every((m) => m.lessonDays === 0) ? (
+          <p className="text-[10px] text-gray-500">直近6ヶ月の授業記録がありません</p>
+        ) : (
+          <table className="w-full border-collapse text-[10px]">
+            <thead>
+              <tr className="border-b border-gray-400 text-gray-600">
+                <th className="py-1 pl-1 text-left font-medium">月</th>
+                <th className="py-1 text-right font-medium">授業</th>
+                <th className="py-1 text-right font-medium">宿題忘れ</th>
+                <th className="py-1 text-right font-medium">遅刻</th>
+              </tr>
+            </thead>
+            <tbody>
+              {disciplineMonths.map((m) => (
+                <tr key={m.month} className="border-b border-gray-200">
+                  <td className="py-0.5 pl-1">{m.label}</td>
+                  <td className="py-0.5 text-right tabular-nums">
+                    {m.lessonDays > 0 ? `${m.lessonDays}日` : '—'}
+                  </td>
+                  <td className="py-0.5 text-right tabular-nums">
+                    {m.homeworkMissedDays > 0 ? `${m.homeworkMissedDays}日` : '—'}
+                  </td>
+                  <td className="py-0.5 text-right tabular-nums">
+                    {m.tardyDays > 0 ? `${m.tardyDays}日` : '—'}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         )}
       </div>
     </div>
