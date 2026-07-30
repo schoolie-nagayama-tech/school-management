@@ -1316,34 +1316,13 @@ function StepConfirm({
  * 管理側
  * ========================================================== */
 
-/** source: 申込の出所。代行入力を後から追えるようにする（決定24） */
+/** 申込はすべて保護者本人によるもの（代行入力は作らない＝決定24） */
 const MOCK_STUDENTS = [
-  {
-    name: '宮永 心那',
-    grade: '中2',
-    status: 'applied' as const,
-    koma: 26,
-    source: 'parent' as const,
-    by: null,
-  },
-  {
-    name: '稲田 葵',
-    grade: '中3',
-    status: 'applied' as const,
-    koma: 24,
-    source: 'staff' as const,
-    by: '高橋（室長）',
-  },
-  {
-    name: '園田 あいり',
-    grade: '小5',
-    status: 'opened' as const,
-    koma: 0,
-    source: null,
-    by: null,
-  },
-  { name: '大橋 穂乃梨', grade: '中1', status: 'none' as const, koma: 0, source: null, by: null },
-  { name: '大崎 透', grade: '小6', status: 'none' as const, koma: 0, source: null, by: null },
+  { name: '宮永 心那', grade: '中2', status: 'applied' as const, koma: 26 },
+  { name: '稲田 葵', grade: '中3', status: 'applied' as const, koma: 24 },
+  { name: '園田 あいり', grade: '小5', status: 'opened' as const, koma: 0 },
+  { name: '大橋 穂乃梨', grade: '中1', status: 'none' as const, koma: 0 },
+  { name: '大崎 透', grade: '小6', status: 'none' as const, koma: 0 },
 ];
 
 const GRADES = [
@@ -1426,19 +1405,8 @@ function AdminMock() {
                 <td className="py-2 pr-3 text-[var(--paragraph)]">{s.grade}</td>
                 <td className="py-2 pr-3">
                   {s.status === 'applied' ? (
-                    <span className="flex flex-wrap items-center gap-1">
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-success-subtle text-success">
-                        済 {s.koma}コマ
-                      </span>
-                      {/* 代行入力は必ず見えるようにする（決定24の抑止力の中心） */}
-                      {s.source === 'staff' && (
-                        <span
-                          className="text-xs px-2 py-0.5 rounded-full bg-warning-subtle text-warning"
-                          title={`代行入力: ${s.by}`}
-                        >
-                          代行 / {s.by}
-                        </span>
-                      )}
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-success-subtle text-success">
+                      済 {s.koma}コマ
                     </span>
                   ) : s.status === 'opened' ? (
                     <span className="text-xs px-2 py-0.5 rounded-full bg-warning-subtle text-warning">
@@ -1478,29 +1446,15 @@ function AdminMock() {
           </p>
         )}
 
-        {/* 代行入力の統制（決定24）。作るが、代行だと消えないように残す */}
-        <div className="mt-3 pt-3 border-t border-[var(--stroke)]">
-          <div className="flex items-center justify-between gap-2">
-            <p className="text-xs text-[var(--headline)]">
-              教室代行で入力
-              <span className="ml-1 text-[var(--paragraph)]">（スマホを使わない家庭向け）</span>
-            </p>
-            <button
-              disabled
-              className="text-xs px-2.5 py-1.5 rounded border border-[var(--stroke)] text-[var(--headline)] disabled:opacity-40"
-            >
-              代行入力を始める
-            </button>
-          </div>
-          <ul className="text-[11px] text-[var(--paragraph)] mt-1.5 space-y-0.5 list-disc pl-4">
-            <li>出所（保護者本人／教室代行）と入力者・日時を申込に記録する</li>
-            <li>一覧に「代行」バッジを出し、達成率の集計でも代行分を別に数える</li>
-            <li>
-              <code className="px-1 rounded bg-gray-100">admin_audit_logs</code> に記録する
-            </li>
-            <li>保護者への自動確認メールは送らない（検討したが不採用）</li>
-          </ul>
-        </div>
+        {/*
+          代行入力は作らない（決定24）。
+          教室長が自分で申し込んで取ったように見せる不正を避けるため、機能ごと持たない。
+          スマホを使わない家庭には教室の端末を貸し、保護者自身に入力してもらう運用。
+        */}
+        <p className="text-[11px] text-[var(--paragraph)] mt-3 pt-3 border-t border-[var(--stroke)]">
+          教室スタッフによる代行入力は用意しません（不正防止）。スマホを使わない家庭には
+          教室の端末を貸し、保護者自身に入力してもらいます。
+        </p>
       </div>
 
       {/* 実行パネル */}
@@ -1604,19 +1558,18 @@ function AdminMock() {
         <ul className="text-xs space-y-1.5 list-disc pl-4 text-[var(--paragraph)]">
           <li>申込状況は「未／閲覧のみ／済」の3段階でよいか。督促の導線は要るか</li>
           <li>
-            <strong>代行の別掲集計</strong>: どの数字を分けて見たいか（申込率／取得コマ／金額）。
-            本部が見る画面はどこか
-          </li>
-          <li>
-            通常授業ぶんの差し引きは <code>schedule_entries(kind=&apos;regular&apos;)</code>{' '}
-            の期間内実績で数える。 振替・休講がある場合の扱い（振替先が期間外に出たら？）
+            <strong>「期間の週数」の数え方</strong>: 通常授業ぶんは請求ベース（契約の週回数 ×
+            期間の週数）で引く。 お盆の休講週を含めるか、講習期間と請求の月境界がずれる場合の扱い
           </li>
           <li>トークンURLの有効期限・再発行の運用（きょうだいで使い回されないか）</li>
           <li>「受験生」ショートカットは中3＋高3でよいか（既卒13を含めるか）</li>
           <li>
             実行後の結果表示（達成率・未割当理由・科目バランス）はシミュレータと同じ形でよいか
           </li>
-          <li>紙で申し込んだ生徒を教室が代行入力する導線は本当に不要か</li>
+          <li>
+            教室端末を貸して保護者に入力してもらう運用が回るか（貸し出し中の付き添い・
+            入力途中で帰られた場合の扱い）
+          </li>
         </ul>
       </div>
     </div>
