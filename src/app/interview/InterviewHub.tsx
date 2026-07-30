@@ -43,6 +43,7 @@ import {
   fmtDateJa,
   computeDisciplineMonthly,
   computeDisciplineMonthlyByStudent,
+  computeDisciplineMonthlyTotals,
   DISCIPLINE_ALERT_RATIO_THRESHOLD,
   type DisciplineMonth,
 } from './interview.shared';
@@ -310,6 +311,20 @@ export function InterviewHub() {
     return sorted;
   }, [disciplineRows, search, disciplineSortKey]);
 
+  // 「全体」合計行: 検索・並び替え後（disciplineFilteredSorted）の各生徒の months を合算する。
+  // 全生徒固定ではなく絞り込み後の months を入力にするのは、氏名検索で絞り込んだときに
+  // 「全体」も検索結果に連動したほうが「今表示している生徒たちの合計」として自然なため
+  // （並び替えは合計に影響しないので disciplineFilteredSorted で十分）。
+  const disciplineTotals = useMemo(
+    () =>
+      computeDisciplineMonthlyTotals(
+        disciplineFilteredSorted.map((row) => row.months),
+        DISCIPLINE_MONTHS_BACK,
+        new Date()
+      ),
+    [disciplineFilteredSorted]
+  );
+
   // 集計ビューの月列ヘッダー（新しい月が左）。行データに依存しないので空セッションから作る
   const disciplineMonthHeaders = useMemo(
     () =>
@@ -523,6 +538,48 @@ export function InterviewHub() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
+                    {/* 「全体」合計行。生徒行と同じ列構成に揃えるが、クリックしても遷移しない（onClick なし） */}
+                    <TableRow className="bg-surface-hover font-medium">
+                      <TableCell className="whitespace-nowrap font-semibold text-text-heading">
+                        全体
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap text-text-faint">—</TableCell>
+                      {showSchoolColumn && (
+                        <TableCell className="whitespace-nowrap text-text-faint">—</TableCell>
+                      )}
+                      {disciplineTotals.map((m) => (
+                        <TableCell key={m.month} className="whitespace-nowrap text-center text-xs">
+                          {m.lessonDays === 0 ? (
+                            <span className="text-text-faint">—</span>
+                          ) : (
+                            <div className="leading-tight">
+                              {/*
+                                全体行の割合は「生徒の授業日数の合計」に対する割合であり、
+                                個々の生徒の割合（休んだ・遅刻した日の割合）とは意味が違う
+                                （例: 生徒Aが月20日中10日宿題忘れ＝50%でも、他の生徒が全員0件なら
+                                全体では合算日数に対する割合はもっと低く出る）。ただし赤字強調の
+                                基準としては同じ disciplineCellClass をそのまま使い、閾値を揃える。
+                              */}
+                              <div
+                                className={disciplineCellClass(m.homeworkMissedDays, m.lessonDays)}
+                              >
+                                宿 {m.homeworkMissedDays}
+                              </div>
+                              <div className={disciplineCellClass(m.tardyDays, m.lessonDays)}>
+                                遅 {m.tardyDays}
+                              </div>
+                              <div className="text-text-faint text-[10px]">{m.studentCount}名</div>
+                            </div>
+                          )}
+                        </TableCell>
+                      ))}
+                      <TableCell className="whitespace-nowrap text-center text-xs text-text-body">
+                        授業
+                        {disciplineTotals.reduce((sum, m) => sum + m.lessonDays, 0)}日・宿
+                        {disciplineTotals.reduce((sum, m) => sum + m.homeworkMissedDays, 0)}・遅
+                        {disciplineTotals.reduce((sum, m) => sum + m.tardyDays, 0)}
+                      </TableCell>
+                    </TableRow>
                     {disciplineFilteredSorted.map((row) => (
                       <TableRow key={row.student.id} onClick={() => goToWorkspace(row.student.id)}>
                         <TableCell className="whitespace-nowrap font-medium text-text-heading">
@@ -569,7 +626,7 @@ export function InterviewHub() {
                 </Table>
               </div>
               <p className="mt-3 text-[11px] text-text-faint">
-                進行表の記録に基づく（未入力は数えられません）
+                進行表の記録に基づく（未入力は数えられません）。「全体」行の割合は生徒の授業日数合計に対する割合です
               </p>
             </>
           )}
