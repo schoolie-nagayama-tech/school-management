@@ -305,3 +305,74 @@ export function computeScoreSummary(
 
   return { testLabels, rows, totals };
 }
+
+/* ============================================================
+ * 宿題・遅刻の月次集計（宿題・遅刻パネル・印刷シート共通）
+ * ========================================================== */
+
+/** 宿題・遅刻の月次集計1行分 */
+export interface DisciplineMonth {
+  month: string; // 'YYYY-MM'
+  label: string; // '2026年7月'
+  lessonDays: number; // 授業日数（session_dateのユニーク数）
+  homeworkMissedDays: number; // 宿題忘れがあった日数
+  tardyDays: number; // 遅刻があった日数
+}
+
+/**
+ * 生徒の宿題忘れ・遅刻を月次で集計する（宿題・遅刻パネル・印刷シート共通）。
+ *
+ * 教材ごとに1セッション行が立つため、同じ授業日に複数教材のセッションが存在しうる。
+ * ここでは「日単位」で数える: 同日の行のうちどれか1件でも homework_not_done/tardy が
+ * true ならその日を1日として数える（教材数ぶんの二重計上を防ぐ）。
+ *
+ * today を含む月から遡って monthsBack ヶ月分を対象にし、記録の無い月も
+ * lessonDays: 0 で埋めたうえで新しい月が先頭になる配列で返す。範囲外の日付は無視する。
+ * 月キーは session_date（'YYYY-MM-DD'）の先頭7文字をそのまま使う（タイムゾーン変換不要）。
+ */
+export function computeDisciplineMonthly(
+  sessions: { session_date: string; homework_not_done: boolean; tardy: boolean }[],
+  monthsBack: number,
+  today: Date
+): DisciplineMonth[] {
+  // 対象月キー（新しい順）を先に確定する。範囲外の月は後段で無視する。
+  const monthKeys: string[] = [];
+  for (let i = 0; i < monthsBack; i++) {
+    const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+    monthKeys.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
+  }
+  const monthKeySet = new Set(monthKeys);
+
+  // 日単位でフラグを集約する: 同日に複数教材の行があっても、どれか1件が true ならその日は true
+  const dayHomework = new Map<string, boolean>();
+  const dayTardy = new Map<string, boolean>();
+  const daysByMonth = new Map<string, Set<string>>();
+  for (const s of sessions) {
+    const monthKey = s.session_date.slice(0, 7);
+    if (!monthKeySet.has(monthKey)) continue; // 範囲外の日付は無視
+
+    if (!daysByMonth.has(monthKey)) daysByMonth.set(monthKey, new Set());
+    daysByMonth.get(monthKey)!.add(s.session_date);
+
+    if (s.homework_not_done) dayHomework.set(s.session_date, true);
+    if (s.tardy) dayTardy.set(s.session_date, true);
+  }
+
+  return monthKeys.map((monthKey) => {
+    const days = daysByMonth.get(monthKey) ?? new Set<string>();
+    let homeworkMissedDays = 0;
+    let tardyDays = 0;
+    for (const day of Array.from(days)) {
+      if (dayHomework.get(day)) homeworkMissedDays++;
+      if (dayTardy.get(day)) tardyDays++;
+    }
+    const [y, m] = monthKey.split('-');
+    return {
+      month: monthKey,
+      label: `${y}年${Number(m)}月`,
+      lessonDays: days.size,
+      homeworkMissedDays,
+      tardyDays,
+    };
+  });
+}

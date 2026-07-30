@@ -206,6 +206,45 @@ export async function getStudentSessionFeed(
   return (data || []) as unknown as ProgressSessionWithDetails[];
 }
 
+/** 月次集計用の最小セッション行 */
+export interface DisciplineSessionRow {
+  session_date: string;
+  homework_not_done: boolean;
+  tardy: boolean;
+}
+
+/**
+ * 生徒の全教材横断でセッションの宿題・遅刻フラグを日付レンジ取得する（面談ページの月次集計用）。
+ * is_active で絞らない: 使い終わって非アクティブ化した教材のセッションも過去実績として数える。
+ *
+ * 1生徒×6ヶ月ぶんなら多くてもたかだか数百行で、PostgREST の1000行上限（[[project_postgrest_1000_row_limit]]）
+ * には掛からない想定。教室横断の集計に転用する場合は要ページング対応。
+ */
+export async function getStudentDisciplineSessions(
+  studentId: string,
+  dateFrom: string // 'YYYY-MM-DD'
+): Promise<DisciplineSessionRow[]> {
+  // 生徒に紐づく student_textbook を全取得（is_active は絞らない。非アクティブ化後も過去実績は残す）
+  const { data: stList } = await supabase
+    .from('student_textbooks')
+    .select('id')
+    .eq('student_id', studentId);
+
+  if (!stList || stList.length === 0) return [];
+  const stIds = (stList as { id: string }[]).map((st) => st.id);
+
+  const { data, error } = await supabase
+    .from('progress_sessions')
+    .select('session_date, homework_not_done, tardy')
+    .in('student_textbook_id', stIds)
+    .gte('session_date', dateFrom);
+
+  if (error) {
+    throw new Error(`宿題・遅刻の月次集計データの取得に失敗しました: ${error.message}`);
+  }
+  return (data || []) as DisciplineSessionRow[];
+}
+
 /** 記録パネルで再編集するためのセッション復元データ */
 export interface EditableSession {
   session: ProgressSession;

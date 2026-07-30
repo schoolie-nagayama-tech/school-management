@@ -5,6 +5,7 @@ import {
   formatRegularPatternsSchedule,
   computeScoreSummary,
   summarizeTextbookDetail,
+  computeDisciplineMonthly,
 } from '@/app/interview/interview.shared';
 import type {
   AssessmentWithScores,
@@ -199,5 +200,60 @@ describe('summarizeTextbookDetail', () => {
     expect(detail.homeworkNotDoneCount).toBe(0);
     expect(detail.tardyCount).toBe(0);
     expect(detail.recentLessons).toEqual([]);
+  });
+});
+
+describe('computeDisciplineMonthly', () => {
+  // 2026年7月30日を「今日」として固定する
+  const today = new Date(2026, 6, 30);
+
+  it('同一日に複数教材のセッション行があっても日単位で1件として数える（二重計上しない）', () => {
+    const sessions = [
+      { session_date: '2026-07-10', homework_not_done: true, tardy: false },
+      // 同じ日の別教材ぶんの行。宿題忘れは無いが、既に1件立っているので日単位では変わらない
+      { session_date: '2026-07-10', homework_not_done: false, tardy: false },
+    ];
+    const months = computeDisciplineMonthly(sessions, 6, today);
+    const july = months.find((m) => m.month === '2026-07')!;
+    expect(july.lessonDays).toBe(1);
+    expect(july.homeworkMissedDays).toBe(1);
+    expect(july.tardyDays).toBe(0);
+  });
+
+  it('6ヶ月分を新しい月が先頭になる順で返し、記録の無い月も lessonDays 0 で埋める', () => {
+    const sessions = [{ session_date: '2026-07-10', homework_not_done: false, tardy: false }];
+    const months = computeDisciplineMonthly(sessions, 6, today);
+    expect(months.map((m) => m.month)).toEqual([
+      '2026-07',
+      '2026-06',
+      '2026-05',
+      '2026-04',
+      '2026-03',
+      '2026-02',
+    ]);
+    // 記録がある7月以外は lessonDays 0 で埋まる
+    expect(months.filter((m) => m.month !== '2026-07').every((m) => m.lessonDays === 0)).toBe(true);
+  });
+
+  it('集計対象範囲外（7ヶ月前）のセッションは無視される', () => {
+    const sessions = [
+      // 2026-01 は monthsBack=6 の範囲（2026-02〜2026-07）に入らないため無視される
+      { session_date: '2026-01-15', homework_not_done: true, tardy: true },
+    ];
+    const months = computeDisciplineMonthly(sessions, 6, today);
+    expect(months.every((m) => m.lessonDays === 0)).toBe(true);
+  });
+
+  it('宿題忘れと遅刻は独立に数えられる', () => {
+    const sessions = [
+      { session_date: '2026-07-05', homework_not_done: true, tardy: false },
+      { session_date: '2026-07-12', homework_not_done: false, tardy: true },
+      { session_date: '2026-07-20', homework_not_done: true, tardy: true },
+    ];
+    const months = computeDisciplineMonthly(sessions, 6, today);
+    const july = months.find((m) => m.month === '2026-07')!;
+    expect(july.lessonDays).toBe(3);
+    expect(july.homeworkMissedDays).toBe(2);
+    expect(july.tardyDays).toBe(2);
   });
 });
