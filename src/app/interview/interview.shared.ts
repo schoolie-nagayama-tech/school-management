@@ -376,3 +376,41 @@ export function computeDisciplineMonthly(
     };
   });
 }
+
+/**
+ * 全生徒ぶんのセッション行を生徒ごとにグループ化し、それぞれ computeDisciplineMonthly で月次集計する。
+ * 集計ロジックを二重実装しないため、既存の computeDisciplineMonthly に委譲する
+ * （面談入口一覧の「宿題・遅刻」全生徒集計ビュー用）。
+ *
+ * Map のキーは student_id。rows に一度も登場しない生徒はエントリ自体を作らない
+ * （呼び出し側で「記録なし」扱いにするため）。
+ */
+export function computeDisciplineMonthlyByStudent(
+  rows: { student_id: string; session_date: string; homework_not_done: boolean; tardy: boolean }[],
+  monthsBack: number,
+  today: Date
+): Map<string, DisciplineMonth[]> {
+  const byStudent = new Map<string, typeof rows>();
+  for (const row of rows) {
+    const list = byStudent.get(row.student_id);
+    if (list) {
+      list.push(row);
+    } else {
+      byStudent.set(row.student_id, [row]);
+    }
+  }
+
+  const result = new Map<string, DisciplineMonth[]>();
+  for (const [studentId, studentRows] of Array.from(byStudent.entries())) {
+    result.set(studentId, computeDisciplineMonthly(studentRows, monthsBack, today));
+  }
+  return result;
+}
+
+/**
+ * 「注意が必要」とみなす割合のしきい値。この値以上の月は赤字にして目に留まりやすくする。
+ * 根拠のある値ではなく運用上の目安のため、必要に応じて調整してよい。
+ * 宿題・遅刻パネル（1生徒用）と面談入口の全生徒集計ビューの両方で使うため、ここに集約する
+ * （二重定義しない）。
+ */
+export const DISCIPLINE_ALERT_RATIO_THRESHOLD = 0.3;

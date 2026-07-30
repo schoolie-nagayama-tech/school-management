@@ -12,7 +12,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle, InlineLoading } from '@/components/ui';
 import type { DisciplineSessionRow } from '@/lib/api/progress-sessions';
-import { computeDisciplineMonthly } from './interview.shared';
+import { computeDisciplineMonthly, DISCIPLINE_ALERT_RATIO_THRESHOLD } from './interview.shared';
 import { CalendarCheck2 } from 'lucide-react';
 
 interface DisciplinePanelProps {
@@ -23,10 +23,6 @@ interface DisciplinePanelProps {
 /** 集計対象期間（直近6ヶ月）。印刷シートも同じ値を使う */
 const MONTHS_BACK = 6;
 
-// 「注意が必要」とみなす割合のしきい値。この値以上の月は赤字にして目に留まりやすくする。
-// 根拠のある値ではなく運用上の目安のため、必要に応じて調整してよい。
-const ALERT_RATIO_THRESHOLD = 0.3;
-
 /** 件数・割合(%)・注意フラグをまとめて返す。授業日数0または件数0なら控えめな「—」にする */
 function formatCount(
   count: number,
@@ -34,7 +30,7 @@ function formatCount(
 ): { days: number; pct: number | null; alert: boolean } {
   if (lessonDays === 0 || count === 0) return { days: count, pct: null, alert: false };
   const pct = Math.round((count / lessonDays) * 100);
-  return { days: count, pct, alert: count / lessonDays >= ALERT_RATIO_THRESHOLD };
+  return { days: count, pct, alert: count / lessonDays >= DISCIPLINE_ALERT_RATIO_THRESHOLD };
 }
 
 export function DisciplinePanel({ sessions, loading }: DisciplinePanelProps) {
