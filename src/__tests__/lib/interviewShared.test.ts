@@ -8,6 +8,7 @@ import {
   computeDisciplineMonthly,
   computeDisciplineMonthlyByStudent,
   computeDisciplineMonthlyTotals,
+  computeDisciplineOverallTotal,
 } from '@/app/interview/interview.shared';
 import type {
   AssessmentWithScores,
@@ -377,6 +378,44 @@ describe('computeDisciplineMonthlyTotals', () => {
     expect(june.studentCount).toBe(1); // 6月に授業記録があるのは生徒Bのみ
   });
 
+  it('homeworkStudentCount/tardyStudentCount はその月に該当した生徒数になる（片方だけ宿題忘れがある月）', () => {
+    // 生徒Aは7月に宿題忘れのみ、生徒Bは7月に遅刻のみ。両方とも lessonDays>0 だが
+    // 宿題忘れ・遅刻それぞれの該当生徒数は1名ずつになるべき（studentCount=2とは別物）。
+    const studentA = computeDisciplineMonthly(
+      [{ session_date: '2026-07-05', homework_not_done: true, tardy: false }],
+      6,
+      today
+    );
+    const studentB = computeDisciplineMonthly(
+      [{ session_date: '2026-07-10', homework_not_done: false, tardy: true }],
+      6,
+      today
+    );
+
+    const totals = computeDisciplineMonthlyTotals([studentA, studentB], 6, today);
+    const july = totals.find((m) => m.month === '2026-07')!;
+    expect(july.studentCount).toBe(2); // 授業記録があるのは2名
+    expect(july.homeworkStudentCount).toBe(1); // 宿題忘れがあるのは生徒Aのみ
+    expect(july.tardyStudentCount).toBe(1); // 遅刻があるのは生徒Bのみ
+  });
+
+  it('同じ生徒が同じ月に複数日の宿題忘れをしても人数は1', () => {
+    const studentA = computeDisciplineMonthly(
+      [
+        { session_date: '2026-07-05', homework_not_done: true, tardy: false },
+        { session_date: '2026-07-12', homework_not_done: true, tardy: false },
+        { session_date: '2026-07-20', homework_not_done: true, tardy: false },
+      ],
+      6,
+      today
+    );
+
+    const totals = computeDisciplineMonthlyTotals([studentA], 6, today);
+    const july = totals.find((m) => m.month === '2026-07')!;
+    expect(july.homeworkMissedDays).toBe(3); // 回数（延べ日数）は3
+    expect(july.homeworkStudentCount).toBe(1); // 人数は1名のまま
+  });
+
   it('空配列を渡すと全月 0・studentCount 0 の6行が新しい月先頭で返る', () => {
     const totals = computeDisciplineMonthlyTotals([], 6, today);
     expect(totals.map((m) => m.month)).toEqual([
@@ -393,7 +432,9 @@ describe('computeDisciplineMonthlyTotals', () => {
           m.lessonDays === 0 &&
           m.homeworkMissedDays === 0 &&
           m.tardyDays === 0 &&
-          m.studentCount === 0
+          m.studentCount === 0 &&
+          m.homeworkStudentCount === 0 &&
+          m.tardyStudentCount === 0
       )
     ).toBe(true);
   });
@@ -406,6 +447,87 @@ describe('computeDisciplineMonthlyTotals', () => {
     );
     const snapshot = JSON.parse(JSON.stringify(studentA));
     computeDisciplineMonthlyTotals([studentA], 6, today);
+    expect(studentA).toEqual(snapshot);
+  });
+});
+
+describe('computeDisciplineOverallTotal', () => {
+  // 2026年7月30日を「今日」として固定する（他の describe と同じ基準日）
+  const today = new Date(2026, 6, 30);
+
+  it('回数は全月・全生徒の総和になる', () => {
+    const studentA = computeDisciplineMonthly(
+      [
+        { session_date: '2026-07-05', homework_not_done: true, tardy: false },
+        { session_date: '2026-06-05', homework_not_done: false, tardy: true },
+      ],
+      6,
+      today
+    );
+    const studentB = computeDisciplineMonthly(
+      [{ session_date: '2026-07-20', homework_not_done: true, tardy: true }],
+      6,
+      today
+    );
+
+    const overall = computeDisciplineOverallTotal([studentA, studentB]);
+    expect(overall.lessonDays).toBe(3);
+    expect(overall.homeworkMissedDays).toBe(2);
+    expect(overall.tardyDays).toBe(2);
+  });
+
+  it('人数は月をまたいで重複カウントされない（同じ生徒が5月・6月の両方で宿題忘れ→homeworkStudentCountは1）', () => {
+    // 生徒Aは5月と6月の両方で宿題忘れがある。月次では2件（延べ）だが、
+    // 期間合計の人数としては「該当した生徒」が1名いるだけなので1にならなければならない。
+    const studentA = computeDisciplineMonthly(
+      [
+        { session_date: '2026-05-10', homework_not_done: true, tardy: false },
+        { session_date: '2026-06-10', homework_not_done: true, tardy: false },
+      ],
+      6,
+      today
+    );
+
+    const overall = computeDisciplineOverallTotal([studentA]);
+    expect(overall.homeworkMissedDays).toBe(2); // 回数（延べ日数）は月をまたいでも単純合算で2
+    expect(overall.homeworkStudentCount).toBe(1); // 人数は生徒単位で1（重複カウントしない）
+  });
+
+  it('記録が無い生徒は studentCount に含まれない', () => {
+    const studentA = computeDisciplineMonthly(
+      [{ session_date: '2026-07-05', homework_not_done: false, tardy: false }],
+      6,
+      today
+    );
+    // 記録が1件も無い生徒（呼び出し側で emptyMonths が渡されるケースに相当）
+    const studentB = computeDisciplineMonthly([], 6, today);
+
+    const overall = computeDisciplineOverallTotal([studentA, studentB]);
+    expect(overall.studentCount).toBe(1);
+    expect(overall.homeworkStudentCount).toBe(0);
+    expect(overall.tardyStudentCount).toBe(0);
+  });
+
+  it('空配列で全て0', () => {
+    const overall = computeDisciplineOverallTotal([]);
+    expect(overall).toEqual({
+      lessonDays: 0,
+      homeworkMissedDays: 0,
+      tardyDays: 0,
+      studentCount: 0,
+      homeworkStudentCount: 0,
+      tardyStudentCount: 0,
+    });
+  });
+
+  it('引数を破壊しない', () => {
+    const studentA = computeDisciplineMonthly(
+      [{ session_date: '2026-07-05', homework_not_done: true, tardy: true }],
+      6,
+      today
+    );
+    const snapshot = JSON.parse(JSON.stringify(studentA));
+    computeDisciplineOverallTotal([studentA]);
     expect(studentA).toEqual(snapshot);
   });
 });

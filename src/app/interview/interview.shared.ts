@@ -411,6 +411,10 @@ export function computeDisciplineMonthlyByStudent(
 export interface DisciplineMonthTotal extends DisciplineMonth {
   /** その月に授業記録が1日以上あった生徒数 */
   studentCount: number;
+  /** その月に宿題忘れが1日以上あった生徒数 */
+  homeworkStudentCount: number;
+  /** その月に遅刻が1日以上あった生徒数 */
+  tardyStudentCount: number;
 }
 
 /**
@@ -432,7 +436,10 @@ export function computeDisciplineMonthlyTotals(
 ): DisciplineMonthTotal[] {
   const frame = computeDisciplineMonthly([], monthsBack, today);
   const totalsByMonth = new Map<string, DisciplineMonthTotal>(
-    frame.map((m) => [m.month, { ...m, studentCount: 0 }])
+    frame.map((m) => [
+      m.month,
+      { ...m, studentCount: 0, homeworkStudentCount: 0, tardyStudentCount: 0 },
+    ])
   );
 
   for (const months of perStudentMonths) {
@@ -443,10 +450,74 @@ export function computeDisciplineMonthlyTotals(
       total.homeworkMissedDays += m.homeworkMissedDays;
       total.tardyDays += m.tardyDays;
       if (m.lessonDays > 0) total.studentCount += 1;
+      if (m.homeworkMissedDays > 0) total.homeworkStudentCount += 1;
+      if (m.tardyDays > 0) total.tardyStudentCount += 1;
     }
   }
 
   return frame.map((m) => totalsByMonth.get(m.month)!);
+}
+
+/** 期間全体（表示中の全月）の合計 */
+export interface DisciplineOverallTotal {
+  lessonDays: number;
+  homeworkMissedDays: number;
+  tardyDays: number;
+  /** 期間中に1日でも授業記録があった生徒数 */
+  studentCount: number;
+  /** 期間中に1日でも宿題忘れがあった生徒数 */
+  homeworkStudentCount: number;
+  /** 期間中に1日でも遅刻があった生徒数 */
+  tardyStudentCount: number;
+}
+
+/**
+ * 期間全体（表示中の全月分）の合計を生徒ごとの月次配列から計算する。
+ *
+ * 注意: 人数を「月ごとの人数の単純合計」にしてはいけない。同じ生徒が5月・6月の両方で
+ * 宿題忘れをしていた場合、月次の人数を単純に足すと2名分にカウントされてしまい、
+ * 「延べ人数」であって「実際に該当した生徒数」ではなくなる。期間合計としてここで
+ * 知りたいのは「期間中に1人でも宿題忘れ/遅刻があった生徒が何人いるか」なので、
+ * 必ず生徒単位でいったん期間合計を作ってから、その値が0より大きいかどうかで数える。
+ * 引数（各生徒の月次配列）は読み取るだけで変更しない。
+ */
+export function computeDisciplineOverallTotal(
+  perStudentMonths: DisciplineMonth[][]
+): DisciplineOverallTotal {
+  let lessonDays = 0;
+  let homeworkMissedDays = 0;
+  let tardyDays = 0;
+  let studentCount = 0;
+  let homeworkStudentCount = 0;
+  let tardyStudentCount = 0;
+
+  for (const months of perStudentMonths) {
+    // まず生徒1人分の期間合計を出してから人数判定に使う（月またぎの重複カウント防止）
+    let studentLessonDays = 0;
+    let studentHomeworkMissedDays = 0;
+    let studentTardyDays = 0;
+    for (const m of months) {
+      studentLessonDays += m.lessonDays;
+      studentHomeworkMissedDays += m.homeworkMissedDays;
+      studentTardyDays += m.tardyDays;
+    }
+
+    lessonDays += studentLessonDays;
+    homeworkMissedDays += studentHomeworkMissedDays;
+    tardyDays += studentTardyDays;
+    if (studentLessonDays > 0) studentCount += 1;
+    if (studentHomeworkMissedDays > 0) homeworkStudentCount += 1;
+    if (studentTardyDays > 0) tardyStudentCount += 1;
+  }
+
+  return {
+    lessonDays,
+    homeworkMissedDays,
+    tardyDays,
+    studentCount,
+    homeworkStudentCount,
+    tardyStudentCount,
+  };
 }
 
 /**
