@@ -8,9 +8,8 @@ import { createOrdersForCandidates, type OrderCandidate } from '@/lib/api/orderi
 /**
  * 提案書公開後に表示する発注ダイアログ。
  * 「発注する」ボタンを押したタイミングで、その場で発注リストに「未確認(unconfirmed)」として追加する
- * （createOrdersForCandidates）。ステータスは未確認のままだが、**この時点で所持教材に入る**
- * （取次サイトへの実発注は事務方が行うため、リストに載せた時点を「発注」とみなす仕様）。
- * 取り消しはキャンセルまたは発注の削除で行う（どちらも所持を戻す）。
+ * （createOrdersForCandidates）。ここではまだ実発注(ordered)にはならず、所持教材にも入らない。
+ * 所持が立つのは、発注画面側で実際に「発注(ordered)」ステータスへ進めた時点（updateOrderStatus）。
  * ページ遷移はしない。押すまではリストに追加されない（チェックで取捨選択可）。
  * - needsOrder（未所持 & 既存発注なし）: ボタンで一括リスト追加の対象。
  *   対応 material が無いテキストも、追加時にラベル名で material を作成して登録する（発注ページと同じ）。

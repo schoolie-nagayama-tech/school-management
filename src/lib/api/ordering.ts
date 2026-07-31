@@ -84,17 +84,12 @@ export async function getOrders(
 }
 
 /**
- * 発注を作成（発注リストに追加）。
+ * 発注を作成（発注リストに「未確認」で追加する）。
  *
- * ★ この時点で所持(is_owned=true)を立てる。
- *   取次サイトへの実発注は事務方が行うため、教室長にとっては「発注リストに追加＝発注済み」。
- *   ステータス遷移（未確認→発注済み）を待って所持化すると、教室長の画面では
- *   発注したのに所持教材に出てこない状態が続き、二重発注チェックもすり抜ける。
- *   （旧仕様は ordered への遷移時のみ所持化していた。updateOrderStatus 側の呼び出しは
- *   冪等なので残してある＝外部から直接ステータスを進めた場合の取りこぼし防止。）
- *
- * ★ 対になる取り消しは revokeMaterialOwnership（キャンセル時・削除時）。
- *   作成側だけ増やすと偽所持が残るので、必ず対で維持すること。
+ * ★ ここでは所持(is_owned)を立てない。所持が立つのは未確認→発注済み(ordered)へ
+ *   進めた時点（updateOrderStatus 内の markMaterialOwned）。
+ *   「発注リストに載せた時点で所持にする」案は一度入れたが、進行表で管理すべき教材と
+ *   そうでない教材が分かれる以上、発注だけを根拠に所持を立てるのは実態に合わないため戻した。
  */
 export async function createOrder(
   order: {
@@ -130,19 +125,7 @@ export async function createOrder(
     throw new Error(getUserErrorMessage(error, '発注の作成に失敗しました'));
   }
 
-  const created = data as MaterialOrder;
-
-  // 発注リストに載った時点で所持にする。見本(生徒なし)は対象外。
-  // 所持登録に失敗しても発注自体は成立させる（発注が消えるほうが害が大きい）。
-  if (created.student_id) {
-    try {
-      await markMaterialOwned(created.material_id, created.student_id, created.school_id);
-    } catch (err) {
-      console.error('所持登録に失敗しました:', err);
-    }
-  }
-
-  return created;
+  return data as MaterialOrder;
 }
 
 // ============================================
@@ -436,9 +419,9 @@ export async function getProposalOrderCandidates(
  * 発注候補から material_orders を「未確認(unconfirmed)」で作成する（通常の発注手順に乗せる）。
  * 発注ページと同じく、対応する material が無ければ materialName(ラベル)で material を作成してから登録する
  * （提案書のテキストはすべて発注リストに積める）。
- * 重要: 所持(is_owned)は「発注リストに積んだ時点」で立つ（createOrder 内で markMaterialOwned を呼ぶ）。
- * 取次サイトへの実発注は事務方が行うため、教室長にとっては発注リストに載せた時点が「発注」。
- * ステータス自体は unconfirmed のままで、発注画面で未確認→発注→発送→配布と進める運用は変わらない。
+ * 重要: 所持(is_owned)が立つのは「発注リストに積んだ時点」ではなく「実際に発注(ordered)した時点」
+ * （updateOrderStatus 内の markMaterialOwned 呼び出し）。ここでは unconfirmed のまま積むだけなので、
+ * まだ所持にはならない。発注画面で未確認→発注→発送→配布と進める運用。
  * schoolId と materialName が必須。失敗は件数で返す。
  */
 export async function createOrdersForCandidates(
@@ -825,9 +808,10 @@ export async function updateOrderStatus(id: string, status: OrderStatus): Promis
     console.error('在庫トランザクションの自動作成に失敗しました:', stockError);
   }
 
-  // 所持は createOrder（発注リストに追加）の時点で立てているので、通常ここでは既に立っている。
-  // それでも呼ぶのは、旧データや外部経路で所持が付いていない発注を進めたときの取りこぼし防止。
-  // markMaterialOwned は冪等なので重ねて呼んでも害はない。
+  // 所持判定基準: 配布時点 → 発注時点に変更（発注した時点で「入手予定が確定した」とみなす）。
+  // ordered/delivered/distributed のいずれかに遷移したら所持(is_owned=true)を立てる。
+  // markMaterialOwned は冪等なので、unconfirmed から delivered/distributed へ直接遷移した
+  // ケース（ordered を経由しなかった場合）の取りこぼしも、ここで毎回呼ぶことで防ぐ。
   if (
     (status === 'ordered' || status === 'delivered' || status === 'distributed') &&
     existingOrder.student_id
@@ -939,20 +923,7 @@ export async function createBulkOrders(
     throw new Error(getUserErrorMessage(error, '一括発注の作成に失敗しました'));
   }
 
-  const created = (data || []) as MaterialOrder[];
-
-  // createOrder と同じ基準で所持を立てる（この関数は insert を直接叩くため個別に呼ぶ）。
-  // 1件ずつ失敗を握りつぶす: 一部の所持登録が失敗しても発注は成立させる。
-  for (const o of created) {
-    if (!o.student_id) continue;
-    try {
-      await markMaterialOwned(o.material_id, o.student_id, o.school_id);
-    } catch (err) {
-      console.error('所持登録に失敗しました:', err);
-    }
-  }
-
-  return created;
+  return (data || []) as MaterialOrder[];
 }
 
 /**
@@ -1041,8 +1012,8 @@ async function resolveTextbookIdForMaterial(
 
 /**
  * 発注した教材を「所持(is_owned=true)」として student_textbooks に登録する。
- * 判定基準は「発注リストに追加した時点」（createOrder / createBulkOrders から呼ぶ）。
- * ステータス遷移（updateOrderStatus）からも冪等に呼ばれる。
+ * 所持の判定基準は「配布時点」ではなく「発注時点」（ordered/delivered/distributed への
+ * 遷移時に呼ぶ）。発注した時点で入手が確定するとみなし、その時点で所持扱いにする。
  * 対応テキストを解決し、st があれば is_owned=true に更新、無ければ作成する（track_progress は触らない）。
  * 冪等（何度呼んでも同じ結果）なので、複数のステータス遷移から安全に呼べる。
  * 解決できない場合は静かにスキップ（フリーテキスト教材名など）。
