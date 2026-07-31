@@ -305,3 +305,225 @@ export function computeScoreSummary(
 
   return { testLabels, rows, totals };
 }
+
+/* ============================================================
+ * 宿題・遅刻の月次集計（宿題・遅刻パネル・印刷シート共通）
+ * ========================================================== */
+
+/** 宿題・遅刻の月次集計1行分 */
+export interface DisciplineMonth {
+  month: string; // 'YYYY-MM'
+  label: string; // '2026年7月'
+  lessonDays: number; // 授業日数（session_dateのユニーク数）
+  homeworkMissedDays: number; // 宿題忘れがあった日数
+  tardyDays: number; // 遅刻があった日数
+}
+
+/**
+ * 生徒の宿題忘れ・遅刻を月次で集計する（宿題・遅刻パネル・印刷シート共通）。
+ *
+ * 教材ごとに1セッション行が立つため、同じ授業日に複数教材のセッションが存在しうる。
+ * ここでは「日単位」で数える: 同日の行のうちどれか1件でも homework_not_done/tardy が
+ * true ならその日を1日として数える（教材数ぶんの二重計上を防ぐ）。
+ *
+ * today を含む月から遡って monthsBack ヶ月分を対象にし、記録の無い月も
+ * lessonDays: 0 で埋めたうえで新しい月が先頭になる配列で返す。範囲外の日付は無視する。
+ * 月キーは session_date（'YYYY-MM-DD'）の先頭7文字をそのまま使う（タイムゾーン変換不要）。
+ */
+export function computeDisciplineMonthly(
+  sessions: { session_date: string; homework_not_done: boolean; tardy: boolean }[],
+  monthsBack: number,
+  today: Date
+): DisciplineMonth[] {
+  // 対象月キー（新しい順）を先に確定する。範囲外の月は後段で無視する。
+  const monthKeys: string[] = [];
+  for (let i = 0; i < monthsBack; i++) {
+    const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+    monthKeys.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
+  }
+  const monthKeySet = new Set(monthKeys);
+
+  // 日単位でフラグを集約する: 同日に複数教材の行があっても、どれか1件が true ならその日は true
+  const dayHomework = new Map<string, boolean>();
+  const dayTardy = new Map<string, boolean>();
+  const daysByMonth = new Map<string, Set<string>>();
+  for (const s of sessions) {
+    const monthKey = s.session_date.slice(0, 7);
+    if (!monthKeySet.has(monthKey)) continue; // 範囲外の日付は無視
+
+    if (!daysByMonth.has(monthKey)) daysByMonth.set(monthKey, new Set());
+    daysByMonth.get(monthKey)!.add(s.session_date);
+
+    if (s.homework_not_done) dayHomework.set(s.session_date, true);
+    if (s.tardy) dayTardy.set(s.session_date, true);
+  }
+
+  return monthKeys.map((monthKey) => {
+    const days = daysByMonth.get(monthKey) ?? new Set<string>();
+    let homeworkMissedDays = 0;
+    let tardyDays = 0;
+    for (const day of Array.from(days)) {
+      if (dayHomework.get(day)) homeworkMissedDays++;
+      if (dayTardy.get(day)) tardyDays++;
+    }
+    const [y, m] = monthKey.split('-');
+    return {
+      month: monthKey,
+      label: `${y}年${Number(m)}月`,
+      lessonDays: days.size,
+      homeworkMissedDays,
+      tardyDays,
+    };
+  });
+}
+
+/**
+ * 全生徒ぶんのセッション行を生徒ごとにグループ化し、それぞれ computeDisciplineMonthly で月次集計する。
+ * 集計ロジックを二重実装しないため、既存の computeDisciplineMonthly に委譲する
+ * （面談入口一覧の「宿題・遅刻」全生徒集計ビュー用）。
+ *
+ * Map のキーは student_id。rows に一度も登場しない生徒はエントリ自体を作らない
+ * （呼び出し側で「記録なし」扱いにするため）。
+ */
+export function computeDisciplineMonthlyByStudent(
+  rows: { student_id: string; session_date: string; homework_not_done: boolean; tardy: boolean }[],
+  monthsBack: number,
+  today: Date
+): Map<string, DisciplineMonth[]> {
+  const byStudent = new Map<string, typeof rows>();
+  for (const row of rows) {
+    const list = byStudent.get(row.student_id);
+    if (list) {
+      list.push(row);
+    } else {
+      byStudent.set(row.student_id, [row]);
+    }
+  }
+
+  const result = new Map<string, DisciplineMonth[]>();
+  for (const [studentId, studentRows] of Array.from(byStudent.entries())) {
+    result.set(studentId, computeDisciplineMonthly(studentRows, monthsBack, today));
+  }
+  return result;
+}
+
+/** 全生徒合算の月次合計1行分 */
+export interface DisciplineMonthTotal extends DisciplineMonth {
+  /** その月に授業記録が1日以上あった生徒数 */
+  studentCount: number;
+  /** その月に宿題忘れが1日以上あった生徒数 */
+  homeworkStudentCount: number;
+  /** その月に遅刻が1日以上あった生徒数 */
+  tardyStudentCount: number;
+}
+
+/**
+ * 生徒ごとの月次集計（画面に既に出している DisciplineRow.months の配列そのもの）を
+ * 月単位で合算して「全体」の月次合計を作る。
+ *
+ * 生の session 行から再集計しない理由: 画面の生徒行と「全体」合計行で数字が食い違うと
+ * 集計の信頼性が疑われる。既に各生徒行の表示に使っている computeDisciplineMonthly の
+ * 出力をそのまま足し上げることで、生徒行の合計＝全体行になることを構造的に保証する。
+ *
+ * 月の枠組み（対象月キー・label・新しい月が先頭の順序）は computeDisciplineMonthly([], ...) で
+ * 作り、そこに各生徒の同月の値を月キーで対応付けて足し込む（配列インデックスの並びに
+ * 依存すると、生徒によって記録の欠けた月がある場合にズレるため）。
+ */
+export function computeDisciplineMonthlyTotals(
+  perStudentMonths: DisciplineMonth[][],
+  monthsBack: number,
+  today: Date
+): DisciplineMonthTotal[] {
+  const frame = computeDisciplineMonthly([], monthsBack, today);
+  const totalsByMonth = new Map<string, DisciplineMonthTotal>(
+    frame.map((m) => [
+      m.month,
+      { ...m, studentCount: 0, homeworkStudentCount: 0, tardyStudentCount: 0 },
+    ])
+  );
+
+  for (const months of perStudentMonths) {
+    for (const m of months) {
+      const total = totalsByMonth.get(m.month);
+      if (!total) continue; // 対象範囲外の月キーは無視（通常は起こらない想定）
+      total.lessonDays += m.lessonDays;
+      total.homeworkMissedDays += m.homeworkMissedDays;
+      total.tardyDays += m.tardyDays;
+      if (m.lessonDays > 0) total.studentCount += 1;
+      if (m.homeworkMissedDays > 0) total.homeworkStudentCount += 1;
+      if (m.tardyDays > 0) total.tardyStudentCount += 1;
+    }
+  }
+
+  return frame.map((m) => totalsByMonth.get(m.month)!);
+}
+
+/** 期間全体（表示中の全月）の合計 */
+export interface DisciplineOverallTotal {
+  lessonDays: number;
+  homeworkMissedDays: number;
+  tardyDays: number;
+  /** 期間中に1日でも授業記録があった生徒数 */
+  studentCount: number;
+  /** 期間中に1日でも宿題忘れがあった生徒数 */
+  homeworkStudentCount: number;
+  /** 期間中に1日でも遅刻があった生徒数 */
+  tardyStudentCount: number;
+}
+
+/**
+ * 期間全体（表示中の全月分）の合計を生徒ごとの月次配列から計算する。
+ *
+ * 注意: 人数を「月ごとの人数の単純合計」にしてはいけない。同じ生徒が5月・6月の両方で
+ * 宿題忘れをしていた場合、月次の人数を単純に足すと2名分にカウントされてしまい、
+ * 「延べ人数」であって「実際に該当した生徒数」ではなくなる。期間合計としてここで
+ * 知りたいのは「期間中に1人でも宿題忘れ/遅刻があった生徒が何人いるか」なので、
+ * 必ず生徒単位でいったん期間合計を作ってから、その値が0より大きいかどうかで数える。
+ * 引数（各生徒の月次配列）は読み取るだけで変更しない。
+ */
+export function computeDisciplineOverallTotal(
+  perStudentMonths: DisciplineMonth[][]
+): DisciplineOverallTotal {
+  let lessonDays = 0;
+  let homeworkMissedDays = 0;
+  let tardyDays = 0;
+  let studentCount = 0;
+  let homeworkStudentCount = 0;
+  let tardyStudentCount = 0;
+
+  for (const months of perStudentMonths) {
+    // まず生徒1人分の期間合計を出してから人数判定に使う（月またぎの重複カウント防止）
+    let studentLessonDays = 0;
+    let studentHomeworkMissedDays = 0;
+    let studentTardyDays = 0;
+    for (const m of months) {
+      studentLessonDays += m.lessonDays;
+      studentHomeworkMissedDays += m.homeworkMissedDays;
+      studentTardyDays += m.tardyDays;
+    }
+
+    lessonDays += studentLessonDays;
+    homeworkMissedDays += studentHomeworkMissedDays;
+    tardyDays += studentTardyDays;
+    if (studentLessonDays > 0) studentCount += 1;
+    if (studentHomeworkMissedDays > 0) homeworkStudentCount += 1;
+    if (studentTardyDays > 0) tardyStudentCount += 1;
+  }
+
+  return {
+    lessonDays,
+    homeworkMissedDays,
+    tardyDays,
+    studentCount,
+    homeworkStudentCount,
+    tardyStudentCount,
+  };
+}
+
+/**
+ * 「注意が必要」とみなす割合のしきい値。この値以上の月は赤字にして目に留まりやすくする。
+ * 根拠のある値ではなく運用上の目安のため、必要に応じて調整してよい。
+ * 宿題・遅刻パネル（1生徒用）と面談入口の全生徒集計ビューの両方で使うため、ここに集約する
+ * （二重定義しない）。
+ */
+export const DISCIPLINE_ALERT_RATIO_THRESHOLD = 0.3;

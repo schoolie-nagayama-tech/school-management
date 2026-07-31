@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import { AUTH_COOKIE_NAME } from '@/lib/authCookie';
 
 /**
  * デバッグ/プレビュー用の自動ログイン API。
@@ -49,9 +50,8 @@ export async function GET(request: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
-      // ブラウザクライアント (src/lib/supabase.ts) が storageKey: 'sb-auth-token' を
-      // 使っているので、Cookie 名もそれに合わせないと相互運用できない
-      cookieOptions: { name: 'sb-auth-token' },
+      // Cookie 名をブラウザクライアントに合わせないと相互運用できない（lib/authCookie.ts）
+      cookieOptions: { name: AUTH_COOKIE_NAME },
       cookies: {
         getAll() {
           return cookieStore.getAll();

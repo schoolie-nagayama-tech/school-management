@@ -79,6 +79,7 @@ import {
 } from './MiniSeatingGrid';
 import styles from '@/components/schedule/scheduleDensity.module.css';
 import { formatGradeLabel } from '@/lib/utils/gradeLabel';
+import { toKatakana } from '@/lib/utils/kana';
 
 // Step2 の曜日プルダウンに出す曜日＝月〜土（個別指導は日曜運用しない想定）。
 const SELECTABLE_DAYS = [1, 2, 3, 4, 5, 6];
@@ -443,8 +444,9 @@ export default function OnboardingPage() {
       const updated = await updateStudent(student.id, {
         last_name: lastName.trim() || student.last_name,
         first_name: firstName.trim(),
-        last_name_kana: lastKana.trim(),
-        first_name_kana: firstKana.trim(),
+        // 問合せから転記された値は入力欄を経由しないため、保存時にも必ず揃える
+        last_name_kana: toKatakana(lastKana.trim()),
+        first_name_kana: toKatakana(firstKana.trim()),
         grade,
         school_name: schoolName.trim() || null,
       });
@@ -459,13 +461,17 @@ export default function OnboardingPage() {
     }
   }, [student, lastName, firstName, lastKana, firstKana, grade, schoolName]);
 
-  // Step1 のみモードの完了処理: Step1 の内容を保存して、通塾セットアップ（Step2〜4）を
-  // 経由せず生徒詳細へ直接遷移する。通塾設定は生徒詳細から後で行える。
+  // Step1 のみモードの完了処理。
+  //
+  // 入会の流れは「生徒情報 → 授業スケジュール → 教材発注 → 生徒詳細」。
+  // 旧 Step2〜4（受講科目・コマ配置・担当決定）は使わず、既存の各ページへ順に送る。
+  // ?onboarding=1 を付けて遷移先に「入会フローの途中」であることを伝え、
+  // 次の一手（発注へ進む / あとで）を出す。どちらもスキップ可。
   const finishSingleStep = useCallback(async () => {
     const ok = await saveStudentInfo();
     if (ok === false) return;
     toast.success('生徒登録が完了しました');
-    router.push(`/students/${studentId}/schedule`);
+    router.push(`/students/${studentId}/schedule?onboarding=1`);
   }, [saveStudentInfo, router, studentId]);
 
   // 指定科目の配置（担当講師）を取り消す（受講コマを変えたら担当は無効化する）。
@@ -983,18 +989,21 @@ export default function OnboardingPage() {
                       />
                     </div>
                     <div className="space-y-1.5">
-                      <label className="block text-xs text-text-muted">姓（かな）</label>
+                      <label className="block text-xs text-text-muted">セイ（フリガナ）</label>
                       <input
                         value={lastKana}
-                        onChange={(e) => setLastKana(e.target.value)}
+                        // 検索・並び替えがカナ依存のため、ひらがなで入力されても揃える
+                        onChange={(e) => setLastKana(toKatakana(e.target.value))}
+                        placeholder="ヤマダ"
                         className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-surface-raised focus:outline-none focus:ring-2 focus:ring-primary"
                       />
                     </div>
                     <div className="space-y-1.5">
-                      <label className="block text-xs text-text-muted">名（かな）</label>
+                      <label className="block text-xs text-text-muted">メイ（フリガナ）</label>
                       <input
                         value={firstKana}
-                        onChange={(e) => setFirstKana(e.target.value)}
+                        onChange={(e) => setFirstKana(toKatakana(e.target.value))}
+                        placeholder="タロウ"
                         className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-surface-raised focus:outline-none focus:ring-2 focus:ring-primary"
                       />
                     </div>

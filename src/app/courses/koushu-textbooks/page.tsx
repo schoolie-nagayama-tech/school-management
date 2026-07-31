@@ -17,6 +17,7 @@ import { getProposalsBySchool } from '@/lib/api/proposals';
 import { getCurrentSeason } from '@/components/proposals/proposalEditor.shared';
 import type { SeasonalProposalWithDetails, SeasonType, Student } from '@/types/database';
 import { SEASON_LABELS, GRADE_LABELS } from '@/types/database';
+import { formatTextbookGrade } from '@/lib/utils/textbookLabel';
 
 interface TextbookRow {
   textbookId: number;
@@ -28,9 +29,9 @@ interface TextbookRow {
   owned: boolean;
 }
 
-// テキストの対象学年表示（学校種別＋学年）
+// テキストの対象学年表示（学校種別＋学年）。未設定はこの表では '—' を出す。
 function textbookGradeLabel(schoolType?: string | null, grade?: string | null): string {
-  return [schoolType ?? '', grade ?? ''].join('').trim() || '—';
+  return formatTextbookGrade(schoolType, grade) || '—';
 }
 
 interface StudentRoster {

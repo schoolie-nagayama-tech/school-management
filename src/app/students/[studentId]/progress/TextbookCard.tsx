@@ -5,6 +5,7 @@ import type { ActionGoal, StudentTextbookWithDetails } from '@/types/database';
 import {
   SUBJECT_COLOR,
   isStalled,
+  monthDayLabel,
   progressStats,
   seasonLabel,
   type SubjectColumn,
@@ -12,6 +13,8 @@ import {
 
 export function TextbookCard({
   textbook,
+  isLive = false,
+  lastUsedDate,
   subjectColumn,
   activeExam,
   actionGoals,
@@ -32,6 +35,10 @@ export function TextbookCard({
   onDelete,
 }: {
   textbook: StudentTextbookWithDetails;
+  /** この科目で最後に授業に使ったテキストか（LIVE バッジ） */
+  isLive?: boolean;
+  /** 最終利用日 'YYYY-MM-DD'。LIVE の古さを判断できるよう併記する */
+  lastUsedDate?: string;
   subjectColumn: SubjectColumn;
   activeExam: {
     id: string;
@@ -178,8 +185,25 @@ export function TextbookCard({
         {textbook.textbook?.name ?? '教科書'}
       </h3>
 
-      {/* バッジ（学年 / 季節 / 非公開） */}
+      {/* バッジ（LIVE / 学年 / 季節 / 非公開） */}
       <div className="flex items-center gap-1 mb-1.5 flex-wrap">
+        {/* 同一科目に複数冊あるとき、今どれを使っているかを一目で示す。最優先で左端に置く。 */}
+        {isLive && (
+          <span
+            className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-md font-bold bg-emerald-600 text-white border border-emerald-700"
+            title={
+              lastUsedDate
+                ? `この科目で最後に授業に使ったテキスト（${lastUsedDate}）`
+                : 'この科目で最後に授業に使ったテキスト'
+            }
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-white" aria-hidden />
+            LIVE
+            {lastUsedDate && (
+              <span className="font-normal opacity-90">{monthDayLabel(lastUsedDate)}</span>
+            )}
+          </span>
+        )}
         {textbook.textbook?.grade && (
           <span
             className={`text-xs px-2 py-0.5 rounded-md ${tint.bg} ${tint.text} font-bold border ${tint.accent}`}

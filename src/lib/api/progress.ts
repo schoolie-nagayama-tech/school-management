@@ -137,6 +137,66 @@ export async function getStudentTextbooksExamsBySchool(
 /**
  * 生徒のテキスト一覧を取得
  */
+/**
+ * テキストごとの「最後に授業で使った日」を取得する（LIVE 判定用）。
+ *
+ * ★ なぜ2系統を突き合わせるか（片方だけでは取りこぼす）:
+ *   授業の記録先は progress_sessions（セッション）と student_progress_lessons（行ごとの指導日）
+ *   の2つあり、この2つは別保存・非同期で書かれる。本番実測（2026-07-31）で
+ *   セッションのみ 2件 / 指導日のみ 5件 / 両方あるが日付相違 55件 あった。
+ *   どちらか片方だけを見ると「最新のはずのテキストが LIVE にならない」ズレが出るため、
+ *   両方の新しい方を採る。
+ *
+ * ★ student_textbooks.updated_at は使わない: 並び替えや公開トグルでも動くため、
+ *   「授業で進めた」ことを表さない。
+ *
+ * @param studentTextbookIds 対象の student_textbooks.id
+ * @returns student_textbook_id → 最終利用日('YYYY-MM-DD')。記録が無いテキストは含まれない
+ */
+export async function getLastUsedDateByTextbook(
+  studentTextbookIds: string[]
+): Promise<Record<string, string>> {
+  if (studentTextbookIds.length === 0) return {};
+
+  const latest: Record<string, string> = {};
+  // 同じテキストの中で新しい方だけ残す
+  const keepNewer = (id: string | null | undefined, date: string | null | undefined) => {
+    if (!id || !date) return;
+    if (!latest[id] || date > latest[id]) latest[id] = date;
+  };
+
+  // 1) セッション（progress_sessions は student_textbook_id を直接持つ）
+  const sessions = await fetchAllInChunks<{
+    student_textbook_id: string;
+    session_date: string | null;
+  }>(studentTextbookIds, (chunk, from, to) =>
+    supabase
+      .from('progress_sessions')
+      .select('student_textbook_id, session_date')
+      .in('student_textbook_id', chunk)
+      .order('id', { ascending: true })
+      .range(from, to)
+  );
+  for (const s of sessions) keepNewer(s.student_textbook_id, s.session_date);
+
+  // 2) 行ごとの指導日（student_progress 経由でテキストに紐づく）
+  const lessons = await fetchAllInChunks<{
+    lesson_date: string | null;
+    student_progress: { student_textbook_id: string } | null;
+  }>(studentTextbookIds, (chunk, from, to) =>
+    supabase
+      .from('student_progress_lessons')
+      .select('lesson_date, student_progress!inner(student_textbook_id)')
+      .in('student_progress.student_textbook_id', chunk)
+      .not('lesson_date', 'is', null)
+      .order('id', { ascending: true })
+      .range(from, to)
+  );
+  for (const l of lessons) keepNewer(l.student_progress?.student_textbook_id, l.lesson_date);
+
+  return latest;
+}
+
 export async function getStudentTextbooks(
   studentId: string,
   includeInactive = false

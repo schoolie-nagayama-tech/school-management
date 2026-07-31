@@ -359,6 +359,29 @@ export function StudentsPageClient({
     })();
   }, [searchParams, router, getSelectedSchoolIds, isTeacher]);
 
+  // URLパラメータ ?detail=studentId で生徒詳細モーダルを自動起動（1 detailId につき 1 回のみ）。
+  // 生徒詳細はモーダルで URL を持たないため、入会フローの最終地点として遷移できるようにする。
+  const handledDetailIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    const detailId = searchParams.get('detail');
+    if (!detailId) {
+      handledDetailIdRef.current = null;
+      return;
+    }
+    if (handledDetailIdRef.current === detailId) return;
+    handledDetailIdRef.current = detailId;
+
+    void (async () => {
+      const student = await getStudent(detailId, getSelectedSchoolIds());
+      if (student) {
+        setSelectedStudent(student);
+        setIsDetailModalOpen(true);
+      }
+      // 開けても開けなくても URL は戻す（リロードで再度開かないように）
+      router.replace('/students', { scroll: false });
+    })();
+  }, [searchParams, router, getSelectedSchoolIds]);
+
   // 成績タブ用（クライアント側で在籍・学年フィルタ）
   const filteredStudents = useMemo(() => {
     let filtered = studentsForScores;

@@ -460,6 +460,84 @@ export async function withdrawAttendanceSheet(sheetId: string) {
 // ========================================
 
 // 教室の出勤簿一覧を取得（管理画面用）
+/**
+ * 対象月の在籍講師に、出勤簿（下書き）が無ければ作成する。
+ *
+ * ★ なぜ必要か: 一覧は attendance_sheets 起点なので、シートが1枚も無い講師は行が存在せず
+ *   一覧に出てこなかった。運用上は「使い始める前に出勤簿を書いてもらう」ため、
+ *   登録済みの講師は未入力でも一覧に並んでいる必要がある。
+ *
+ * ★ 在籍していた月だけに作る（「当月以降」では絞らない）:
+ *   この画面の既定は前月（給与の確認・承認は前月分を見る運用）。当月以降に限ると、
+ *   肝心の前月一覧に新任講師が出ずに目的を果たせない。代わりに次の2点で絞る。
+ *   - アカウント作成が対象月より後の講師は作らない（その月にはまだ居なかった）
+ *   - 対象月の開始より前に退職済みの講師は作らない
+ *   hire_date は未設定が多く判定に使えないため、created_at を在籍の代理指標にしている。
+ *
+ * UNIQUE(teacher_id, school_id, year_month) があるため、同時に開かれても重複しない
+ * （ignoreDuplicates で衝突は黙って捨てる）。
+ */
+async function ensureSheetsForActiveTeachers(schoolId: string, yearMonth: string): Promise<void> {
+  const { data: userSchools } = await supabase
+    .from('user_schools')
+    .select('user_id')
+    .eq('school_id', schoolId);
+  const teacherIds = Array.from(
+    new Set(
+      (userSchools || [])
+        .map((u: { user_id?: string }) => u.user_id)
+        .filter((id): id is string => Boolean(id))
+    )
+  );
+  if (teacherIds.length === 0) return;
+
+  // 一覧の対象講師は getTeachersWithAttendance と同じ条件で揃える
+  const [y, m] = yearMonth.split('-').map(Number);
+  const monthStart = `${yearMonth}-01`;
+  const monthEnd = `${yearMonth}-${String(new Date(y, m, 0).getDate()).padStart(2, '0')}`;
+  const { data: profiles } = await supabase
+    .from('user_profiles')
+    .select('id, exit_date, created_at')
+    .in('id', teacherIds)
+    .or('role.eq.teacher,is_teaching_staff.eq.true')
+    .eq('is_active', true);
+
+  const targets = (profiles || [])
+    .filter((p) => {
+      const { exit_date: exit, created_at: created } = p as {
+        exit_date: string | null;
+        created_at: string | null;
+      };
+      if (exit && exit < monthStart) return false; // 対象月より前に退職済み
+      if (created && created.slice(0, 10) > monthEnd) return false; // その月にはまだ居なかった
+      return true;
+    })
+    .map((p) => (p as { id: string }).id);
+  if (targets.length === 0) return;
+
+  const { data: existing } = await supabase
+    .from('attendance_sheets')
+    .select('teacher_id')
+    .eq('school_id', schoolId)
+    .eq('year_month', yearMonth);
+  const has = new Set((existing || []).map((s: { teacher_id: string }) => s.teacher_id));
+
+  const missing = targets.filter((id) => !has.has(id));
+  if (missing.length === 0) return;
+
+  const { error } = await supabase.from('attendance_sheets').upsert(
+    missing.map((teacherId) => ({
+      teacher_id: teacherId,
+      school_id: schoolId,
+      year_month: yearMonth,
+      status: 'draft' as const,
+    })),
+    { onConflict: 'teacher_id,school_id,year_month', ignoreDuplicates: true }
+  );
+  // 作成に失敗しても一覧表示自体は続行する（既存分は出す）
+  if (error) console.error('Error creating draft attendance sheets:', error);
+}
+
 export async function getAttendanceSheetList(schoolId: string, yearMonth: string) {
   const { data, error } = await supabase
     .from('attendance_sheets')
@@ -755,6 +833,12 @@ export async function getAttendanceSummary(
   yearMonth: string,
   allowedSchoolIds?: string[]
 ) {
+  // 未入力の講師も一覧に出すため、先に下書きを用意する。
+  // 教室が特定できるときだけ（全教室表示では対象が広すぎて作成の副作用が大きい）。
+  if (schoolId) {
+    await ensureSheetsForActiveTeachers(schoolId, yearMonth);
+  }
+
   // 出勤簿は (教室 × 講師) で、全教室指定(管理者)だと1000行に接近しうる。records の
   // 元になるため切り捨てると集計全体が欠けるので全件ページング取得（id 昇順で安定）。
   let sheets: AttendanceSheet[];

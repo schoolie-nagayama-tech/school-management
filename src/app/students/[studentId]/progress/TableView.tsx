@@ -39,12 +39,14 @@ import { ProgressRow } from './ProgressRow';
 import { ExamGoalEditModal } from './ExamGoalEditModal';
 import { NextGoalModal } from './NextGoalModal';
 import { ExamRangeModal } from './ExamRangeModal';
+import { formatTextbookMeta } from '@/lib/utils/textbookLabel';
 
 // ─────────────────────────────────────────────
 // テーブルビュー（Phase 1: 最低限の編集機能 + Phase 2a: 面談モード行可視化）
 // ─────────────────────────────────────────────
 export function TableView({
   textbook,
+  isLive = false,
   progress,
   setProgress,
   examTypes,
@@ -67,6 +69,8 @@ export function TableView({
   highlightItemId,
 }: {
   textbook: StudentTextbookWithDetails;
+  /** この科目で最後に授業に使ったテキストか（LIVE バッジ） */
+  isLive?: boolean;
   progress: CurriculumItemWithProgress[];
   setProgress: React.Dispatch<React.SetStateAction<CurriculumItemWithProgress[]>>;
   examTypes: ExamType[];
@@ -578,6 +582,13 @@ export function TableView({
     [textbook.id, toastError, markDirty, setProgress]
   );
 
+  // テキストの属性（対象学年・科目）。生徒の学年とは別物なので、テキスト名の直後に添える。
+  const textbookMeta = formatTextbookMeta(
+    textbook.textbook?.school_type,
+    textbook.textbook?.grade,
+    textbook.textbook?.subject
+  );
+
   return (
     <div>
       {/* ヘッダ */}
@@ -608,7 +619,17 @@ export function TableView({
           {/* 一次情報: テキスト名（大・濃） */}
           <h2 className="text-lg font-semibold text-[#1f2937] truncate">
             {textbook.textbook?.name ?? '教科書'}
+            {textbookMeta && (
+              <span className="text-xs font-normal text-[#6b7280] ml-1.5">{textbookMeta}</span>
+            )}
           </h2>
+          {/* 一覧で選んだあとも、開いているのが現行冊かを確認できるようにする */}
+          {isLive && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-emerald-600 text-white border border-emerald-700 whitespace-nowrap">
+              <span className="w-1.5 h-1.5 rounded-full bg-white" aria-hidden />
+              LIVE
+            </span>
+          )}
           {textbook.is_draft && (
             <span className="px-2 py-0.5 bg-gray-200 text-gray-700 rounded text-[11px] font-bold border border-gray-400 whitespace-nowrap">
               非公開

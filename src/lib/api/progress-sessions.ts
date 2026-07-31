@@ -206,6 +206,122 @@ export async function getStudentSessionFeed(
   return (data || []) as unknown as ProgressSessionWithDetails[];
 }
 
+/** 月次集計用の最小セッション行 */
+export interface DisciplineSessionRow {
+  session_date: string;
+  homework_not_done: boolean;
+  tardy: boolean;
+}
+
+/**
+ * 生徒の全教材横断でセッションの宿題・遅刻フラグを日付レンジ取得する（面談ページの月次集計用）。
+ * is_active で絞らない: 使い終わって非アクティブ化した教材のセッションも過去実績として数える。
+ *
+ * 1生徒×6ヶ月ぶんなら多くてもたかだか数百行で、PostgREST の1000行上限（[[project_postgrest_1000_row_limit]]）
+ * には掛からない想定。教室横断の集計に転用する場合は要ページング対応。
+ */
+export async function getStudentDisciplineSessions(
+  studentId: string,
+  dateFrom: string // 'YYYY-MM-DD'
+): Promise<DisciplineSessionRow[]> {
+  // 生徒に紐づく student_textbook を全取得（is_active は絞らない。非アクティブ化後も過去実績は残す）
+  const { data: stList } = await supabase
+    .from('student_textbooks')
+    .select('id')
+    .eq('student_id', studentId);
+
+  if (!stList || stList.length === 0) return [];
+  const stIds = (stList as { id: string }[]).map((st) => st.id);
+
+  const { data, error } = await supabase
+    .from('progress_sessions')
+    .select('session_date, homework_not_done, tardy')
+    .in('student_textbook_id', stIds)
+    .gte('session_date', dateFrom);
+
+  if (error) {
+    throw new Error(`宿題・遅刻の月次集計データの取得に失敗しました: ${error.message}`);
+  }
+  return (data || []) as DisciplineSessionRow[];
+}
+
+/** 全生徒集計用: student_id 付きの最小セッション行 */
+export interface SchoolDisciplineSessionRow extends DisciplineSessionRow {
+  student_id: string;
+}
+
+/**
+ * 選択教室の全生徒ぶんのセッション宿題・遅刻フラグを日付レンジ取得する（面談入口の全生徒集計用）。
+ *
+ * student_textbooks を !inner 埋め込みし、埋め込み側のカラム（student_textbooks.school_id）を
+ * ドット記法で絞る。getSessionFeed / getHomeworkTardyCounts と同じ手法（[[project_postgrest_1000_row_limit]]
+ * 対策の embed フィルタ）。
+ *
+ * 教室×6ヶ月ぶんは生徒数×教材数でスケールし、PostgREST の1000行上限（未ページングだと
+ * 静かに切り捨てられる罠）に掛かりうるため、.range() で全ページ取得する。1ページ1000行、
+ * 取得件数が1000未満になった時点で最終ページと判断して終了する。安全弁として最大20ページ
+ * （2万行）でループを打ち切り、打ち切った場合は集計が欠けている可能性があるため警告を出す。
+ */
+export async function getSchoolDisciplineSessions(
+  schoolIds: string[],
+  dateFrom: string // 'YYYY-MM-DD'
+): Promise<SchoolDisciplineSessionRow[]> {
+  if (schoolIds.length === 0) return [];
+
+  const PAGE_SIZE = 1000;
+  const MAX_PAGES = 20;
+  const rows: SchoolDisciplineSessionRow[] = [];
+
+  type Row = {
+    session_date: string;
+    homework_not_done: boolean;
+    tardy: boolean;
+    // PostgREST の embed は関係の解釈によりオブジェクト/配列どちらでも返り得るため両対応する
+    student_textbooks:
+      | { student_id: string; school_id: string }
+      | { student_id: string; school_id: string }[]
+      | null;
+  };
+
+  for (let page = 0; page < MAX_PAGES; page++) {
+    const from = page * PAGE_SIZE;
+    const to = from + PAGE_SIZE - 1;
+    const { data, error } = await supabase
+      .from('progress_sessions')
+      .select(
+        'session_date, homework_not_done, tardy, student_textbooks!inner(student_id, school_id)'
+      )
+      .in('student_textbooks.school_id', schoolIds)
+      .gte('session_date', dateFrom)
+      .order('id', { ascending: true })
+      .range(from, to);
+
+    if (error) {
+      throw new Error(`全生徒の宿題・遅刻集計データの取得に失敗しました: ${error.message}`);
+    }
+
+    for (const r of (data || []) as unknown as Row[]) {
+      const st = Array.isArray(r.student_textbooks) ? r.student_textbooks[0] : r.student_textbooks;
+      if (!st) continue;
+      rows.push({
+        session_date: r.session_date,
+        homework_not_done: r.homework_not_done,
+        tardy: r.tardy,
+        student_id: st.student_id,
+      });
+    }
+
+    if (!data || data.length < PAGE_SIZE) break;
+    if (page === MAX_PAGES - 1) {
+      console.warn(
+        `getSchoolDisciplineSessions: ページ上限(${MAX_PAGES}ページ=${MAX_PAGES * PAGE_SIZE}行)に達したため打ち切りました。集計が一部欠けている可能性があります。`
+      );
+    }
+  }
+
+  return rows;
+}
+
 /** 記録パネルで再編集するためのセッション復元データ */
 export interface EditableSession {
   session: ProgressSession;

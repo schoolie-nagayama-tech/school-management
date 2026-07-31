@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
 import type { Database } from '@/types/database';
+import { AUTH_COOKIE_NAME } from '@/lib/authCookie';
 
 /**
  * サーバーコンポーネント用の Supabase クライアント。
@@ -22,13 +23,10 @@ export async function createSupabaseServerClient() {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
-      // ブラウザ用クライアント(src/lib/supabase.ts)は auth.storageKey:'sb-auth-token' を指定しており、
-      // セッション cookie は 'sb-auth-token.0/.1' という名前で保存される。
-      // @supabase/ssr の createServerClient は cookie 名を auth.storageKey ではなく
-      // cookieOptions.name から決めるため、ここで合わせないと別名の cookie を探して
-      // セッションを見つけられず getUser が認証なし扱いになる
-      // （Phase3 のサーバー事前取得が常に null になっていた原因）。
-      cookieOptions: { name: 'sb-auth-token' },
+      // cookie 名をブラウザクライアントと合わせないとセッションを見つけられず
+      // getUser が認証なし扱いになる（Phase3 のサーバー事前取得が常に null だった原因）。
+      // 詳細と過去の事故は lib/authCookie.ts。
+      cookieOptions: { name: AUTH_COOKIE_NAME },
       cookies: {
         getAll() {
           return cookieStore.getAll();

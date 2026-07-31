@@ -25,6 +25,12 @@ import { getStudents, getStudent, type EnrichedStudent } from '@/lib/api/student
 import { getStudentInterviews } from '@/lib/api/interviews';
 import { listAssessments } from '@/lib/api/assessments';
 import { getStudentTextbooks, getStudentProgress } from '@/lib/api/progress';
+import {
+  getStudentDisciplineSessions,
+  getFeedGoalsByTextbooks,
+  type DisciplineSessionRow,
+  type FeedGoalSummary,
+} from '@/lib/api/progress-sessions';
 import { getRegularPatterns } from '@/lib/api/schedule';
 import { getKoushuEnrollmentsByStudent, type KoushuEnrollment } from '@/lib/api/seasonalCourses';
 import type { AssessmentWithScores, Student, StudentInterview } from '@/types/database';
@@ -32,6 +38,7 @@ import type { ScheduleRegularPattern } from '@/types/schedule';
 import { InterviewTimeline, type HandoverInfo } from './InterviewTimeline';
 import { ScorePanel } from './ScorePanel';
 import { ProgressPanel, type TextbookProgressData } from './ProgressPanel';
+import { DisciplinePanel } from './DisciplinePanel';
 import { InterviewPrintSheet } from './InterviewPrintSheet';
 import {
   extractHandover,
@@ -60,11 +67,15 @@ export function InterviewWorkspace() {
   // 通塾日程・講習申込はヘッダー帯に1行で添える（面談で必ず話題に出るため）
   const [regularPatterns, setRegularPatterns] = useState<ScheduleRegularPattern[]>([]);
   const [koushuEnrollments, setKoushuEnrollments] = useState<KoushuEnrollment[]>([]);
+  // 宿題・遅刻の月次集計（DisciplinePanel）用の生セッション行。集計自体は computeDisciplineMonthly に任せる
+  const [disciplineSessions, setDisciplineSessions] = useState<DisciplineSessionRow[]>([]);
   const [lightLoading, setLightLoading] = useState(false);
 
   // 進行表の生データ（テキスト×そのテキストの進行記録行）をテキストぶん保持する。
   // 集計（進捗％・直近履歴・次単元など）は ProgressPanel / 印刷シート側で summarizeTextbookDetail に任せる。
   const [textbookProgressData, setTextbookProgressData] = useState<TextbookProgressData[]>([]);
+  // student_textbook_id → 目標（試験目標）と行動目標。進行表パネルで進捗バーの代わりに出す
+  const [textbookGoals, setTextbookGoals] = useState<Record<string, FeedGoalSummary>>({});
   const [progressLoading, setProgressLoading] = useState(false);
 
   // 生徒一覧（在籍中のみ、学年→氏名かな順）
@@ -189,17 +200,27 @@ export function InterviewWorkspace() {
     (async () => {
       setLightLoading(true);
       try {
-        const [iv, asm, patterns, koushu] = await Promise.all([
+        // 宿題・遅刻パネルの集計対象期間（直近6ヶ月）の開始日 = 今日から遡って6ヶ月前の月の1日
+        const disciplineFrom = new Date();
+        disciplineFrom.setDate(1);
+        disciplineFrom.setMonth(disciplineFrom.getMonth() - 5);
+        const disciplineFromStr = `${disciplineFrom.getFullYear()}-${String(
+          disciplineFrom.getMonth() + 1
+        ).padStart(2, '0')}-01`;
+
+        const [iv, asm, patterns, koushu, discipline] = await Promise.all([
           getStudentInterviews(selectedStudentId).catch(() => []),
           listAssessments(selectedStudentId).catch(() => []),
           getRegularPatterns(student.school_id, { studentId: selectedStudentId }).catch(() => []),
           getKoushuEnrollmentsByStudent(selectedStudentId).catch(() => []),
+          getStudentDisciplineSessions(selectedStudentId, disciplineFromStr).catch(() => []),
         ]);
         if (cancelled) return;
         setInterviews(iv);
         setAssessments(asm);
         setRegularPatterns(patterns);
         setKoushuEnrollments(koushu);
+        setDisciplineSessions(discipline);
       } finally {
         if (!cancelled) setLightLoading(false);
       }
@@ -213,6 +234,7 @@ export function InterviewWorkspace() {
   useEffect(() => {
     if (!selectedStudentId) {
       setTextbookProgressData([]);
+      setTextbookGoals({});
       return;
     }
     let cancelled = false;
@@ -222,14 +244,19 @@ export function InterviewWorkspace() {
         const raw = await getStudentTextbooks(selectedStudentId);
         // 進行表パネルに出すのは「進行表で管理中」のテキストのみ（/progress ページと同じ絞り込み）
         const tracked = raw.filter((t) => t.track_progress);
-        const data = await Promise.all(
-          tracked.map(async (textbook) => ({
-            textbook,
-            rows: await getStudentProgress(textbook.id).catch(() => []),
-          }))
-        );
+        // 進行記録はテキストごとに取るが、目標・行動目標は全テキストまとめて1回で取れる
+        const [data, goals] = await Promise.all([
+          Promise.all(
+            tracked.map(async (textbook) => ({
+              textbook,
+              rows: await getStudentProgress(textbook.id).catch(() => []),
+            }))
+          ),
+          getFeedGoalsByTextbooks(tracked.map((t) => t.id)).catch(() => ({})),
+        ]);
         if (cancelled) return;
         setTextbookProgressData(data);
+        setTextbookGoals(goals);
       } catch (e) {
         console.error('Error fetching progress:', e);
       } finally {
@@ -368,8 +395,9 @@ export function InterviewWorkspace() {
         </Card>
       ) : (
         <>
-          {/* 2カラム本体（左＝過去の面談記録・約束/タスク、右＝成績・進行表） */}
-          <div className="grid gap-5 print:hidden lg:grid-cols-[340px_minmax(0,1fr)] lg:items-start">
+          {/* 2カラム本体（左＝約束/タスク・面談記録、右＝成績・進行表）。
+              左カラムは面談記録（Notta取込の長文が入る）を読ませる列なので広めに取る。 */}
+          <div className="grid gap-5 print:hidden lg:grid-cols-[minmax(0,440px)_minmax(0,1fr)] lg:items-start">
             <InterviewTimeline
               studentId={student.id}
               schoolId={student.school_id}
@@ -380,7 +408,12 @@ export function InterviewWorkspace() {
             />
             <div className="flex flex-col gap-5">
               <ScorePanel assessments={assessments} loading={lightLoading} />
-              <ProgressPanel textbookData={textbookProgressData} loading={progressLoading} />
+              <ProgressPanel
+                textbookData={textbookProgressData}
+                goals={textbookGoals}
+                loading={progressLoading}
+              />
+              <DisciplinePanel sessions={disciplineSessions} loading={lightLoading} />
             </div>
           </div>
 
@@ -392,6 +425,7 @@ export function InterviewWorkspace() {
             recentInterviews={nonTaskInterviews}
             assessments={assessments}
             textbookData={textbookProgressData}
+            disciplineSessions={disciplineSessions}
           />
         </>
       )}

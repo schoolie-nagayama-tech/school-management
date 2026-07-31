@@ -159,6 +159,63 @@ export function sortByOrder(list: StudentTextbookWithDetails[]): StudentTextbook
   });
 }
 
+/**
+ * 'YYYY-MM-DD' → '07/30'。SessionFeed の日付表記に合わせている。
+ * 年をまたいでも月日だけで足りる（LIVE の古さは月日で十分伝わる）。
+ */
+export function monthDayLabel(date: string | null | undefined): string {
+  if (!date) return '';
+  return date.replace(/-/g, '/').slice(5);
+}
+
+/**
+ * 科目ごとに「今使っているテキスト」を1冊だけ決める（LIVE バッジ用）。
+ *
+ * ★ 背景: 同一科目に2冊以上あるのは例外ではなく常態（本番実測で 612 組中 235 組＝約38%）。
+ *   これまでは「手動で一番上に置く」運用で見分けていたため、並べ替え漏れがそのまま
+ *   取り違えになっていた。最終利用日で機械的に決めて一目で分かるようにする。
+ *
+ * ★ 期限を設けない理由: 「直近60日以内」等で絞ると長期休み明けや久々の再開で
+ *   どの科目にも LIVE が出なくなり、「一目で分かる」という目的を果たさない。
+ *   その科目で一番新しければ必ず付け、古さは日付の併記で判断してもらう。
+ *
+ * ★ 並び順は変えない: 手動の並び（意図的に副教材を上に固定する等）を壊さないため、
+ *   ここでは印を付けるだけで sort_order には触れない。
+ *
+ * 同日で並んだ場合は現行運用どおり手動並び順が上のものを LIVE とする。
+ *
+ * @param textbooks 対象生徒のテキスト（科目混在で可）
+ * @param lastUsedByTextbook student_textbook_id → 最終利用日（getLastUsedDateByTextbook の戻り値）
+ * @returns LIVE と判定した student_textbook_id の集合。記録が全く無い科目は選ばれない
+ */
+export function pickLiveTextbookIds(
+  textbooks: StudentTextbookWithDetails[],
+  lastUsedByTextbook: Record<string, string>
+): Set<string> {
+  // sortByOrder と同じ優先度（sort_order → created_at）を順位に落とすため、
+  // 科目ごとに整列した配列の添字を「手動順」として使う。
+  const bySubject: Record<string, StudentTextbookWithDetails[]> = {};
+  for (const tb of textbooks) {
+    const col = categorizeSubject(tb.textbook?.subject);
+    (bySubject[col] ||= []).push(tb);
+  }
+
+  const best: Record<string, { id: string; date: string; order: number }> = {};
+  for (const col of Object.keys(bySubject)) {
+    sortByOrder(bySubject[col]).forEach((tb, index) => {
+      const date = lastUsedByTextbook[tb.id];
+      if (!date) return; // 授業記録が無いテキストは候補にしない
+      const current = best[col];
+      // 日付が新しい方。同日なら手動順が上（index が小さい）方を採る
+      if (!current || date > current.date || (date === current.date && index < current.order)) {
+        best[col] = { id: tb.id, date, order: index };
+      }
+    });
+  }
+
+  return new Set(Object.keys(best).map((col) => best[col].id));
+}
+
 export function activeExamOf(
   tb: StudentTextbookWithDetails,
   examTypes: ExamType[] = []

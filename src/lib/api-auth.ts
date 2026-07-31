@@ -3,6 +3,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { createServerClient } from '@supabase/ssr';
 import { NextRequest, NextResponse } from 'next/server';
 import { isSystemAdmin, canEditScores } from '@/lib/utils/roles';
+import { AUTH_COOKIE_NAME } from '@/lib/authCookie';
 
 /**
  * リクエストから認証情報（userId, role, schoolIds）を取得する。
@@ -60,6 +61,11 @@ export async function getApiAuth(request: NextRequest): Promise<{
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
+        // ブラウザクライアントは storageKey:'sb-auth-token' でセッションを保存するため、
+        // ここで cookie 名を合わせないと既定名の cookie を探して常に「認証なし」になる。
+        // Authorization ヘッダーを送らない呼び出し（例: ロゴ画像アップロード）が
+        // 必ず401になっていた原因。詳細は lib/authCookie.ts。
+        cookieOptions: { name: AUTH_COOKIE_NAME },
         cookies: {
           getAll() {
             return request.cookies.getAll();

@@ -84,7 +84,12 @@ export async function getOrders(
 }
 
 /**
- * 発注を作成
+ * 発注を作成（発注リストに「未確認」で追加する）。
+ *
+ * ★ ここでは所持(is_owned)を立てない。所持が立つのは未確認→発注済み(ordered)へ
+ *   進めた時点（updateOrderStatus 内の markMaterialOwned）。
+ *   「発注リストに載せた時点で所持にする」案は一度入れたが、進行表で管理すべき教材と
+ *   そうでない教材が分かれる以上、発注だけを根拠に所持を立てるのは実態に合わないため戻した。
  */
 export async function createOrder(
   order: {
@@ -858,10 +863,32 @@ export async function updateOrderStatus(id: string, status: OrderStatus): Promis
  * 発注を削除（unconfirmedのみ）
  */
 export async function deleteOrder(id: string): Promise<void> {
+  // 削除で所持が残らないよう、消す前に生徒・教材を控えておく。
+  // （発注リストに載った時点で所持を立てる仕様のため、キャンセルだけでなく削除でも対で取り消す）
+  const { data: target } = await supabase
+    .from('material_orders')
+    .select('material_id, student_id, school_id')
+    .eq('id', id)
+    .maybeSingle();
+
   const { error } = await supabase.from('material_orders').delete().eq('id', id);
 
   if (error) {
     throw new Error(getUserErrorMessage(error, '発注の削除に失敗しました'));
+  }
+
+  const row = target as {
+    material_id: string;
+    student_id: string | null;
+    school_id: string;
+  } | null;
+  if (row?.student_id) {
+    try {
+      // 他に未キャンセルの発注が残っていれば revokeMaterialOwnership 側で何もしない
+      await revokeMaterialOwnership(row.material_id, row.student_id, row.school_id);
+    } catch (err) {
+      console.error('所持の取り消しに失敗しました:', err);
+    }
   }
 }
 
