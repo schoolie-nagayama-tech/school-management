@@ -71,7 +71,10 @@ function getEditHref(alert: Alert): string | null {
     case 'score_drop':
     case 'score_missing':
       return `/students/${sid}/scores`;
+    // 面談未更新は「記録を見る」より「これから面談する」導線なので、
+    // 記録一覧タブではなく面談ワークスペース（申し送り・タスク・成績・進行表が揃う画面）へ送る
     case 'interview_overdue':
+      return `/interview?studentId=${sid}`;
     case 'interview_task':
       return `/students/${sid}/interviews`;
     case 'application_overdue':
@@ -110,7 +113,9 @@ export function AlertItem({
     <Link
       href={editHref}
       className="text-xs text-gray-700 hover:text-[#1e3a5f] hover:underline truncate"
-      title="編集ページへ移動"
+      title={
+        alert.alert_type === 'interview_overdue' ? '面談ワークスペースへ移動' : '編集ページへ移動'
+      }
     >
       {alert.message}
     </Link>
