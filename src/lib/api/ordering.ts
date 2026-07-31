@@ -84,7 +84,17 @@ export async function getOrders(
 }
 
 /**
- * 発注を作成
+ * 発注を作成（発注リストに追加）。
+ *
+ * ★ この時点で所持(is_owned=true)を立てる。
+ *   取次サイトへの実発注は事務方が行うため、教室長にとっては「発注リストに追加＝発注済み」。
+ *   ステータス遷移（未確認→発注済み）を待って所持化すると、教室長の画面では
+ *   発注したのに所持教材に出てこない状態が続き、二重発注チェックもすり抜ける。
+ *   （旧仕様は ordered への遷移時のみ所持化していた。updateOrderStatus 側の呼び出しは
+ *   冪等なので残してある＝外部から直接ステータスを進めた場合の取りこぼし防止。）
+ *
+ * ★ 対になる取り消しは revokeMaterialOwnership（キャンセル時・削除時）。
+ *   作成側だけ増やすと偽所持が残るので、必ず対で維持すること。
  */
 export async function createOrder(
   order: {
@@ -120,7 +130,19 @@ export async function createOrder(
     throw new Error(getUserErrorMessage(error, '発注の作成に失敗しました'));
   }
 
-  return data as MaterialOrder;
+  const created = data as MaterialOrder;
+
+  // 発注リストに載った時点で所持にする。見本(生徒なし)は対象外。
+  // 所持登録に失敗しても発注自体は成立させる（発注が消えるほうが害が大きい）。
+  if (created.student_id) {
+    try {
+      await markMaterialOwned(created.material_id, created.student_id, created.school_id);
+    } catch (err) {
+      console.error('所持登録に失敗しました:', err);
+    }
+  }
+
+  return created;
 }
 
 // ============================================
@@ -414,9 +436,9 @@ export async function getProposalOrderCandidates(
  * 発注候補から material_orders を「未確認(unconfirmed)」で作成する（通常の発注手順に乗せる）。
  * 発注ページと同じく、対応する material が無ければ materialName(ラベル)で material を作成してから登録する
  * （提案書のテキストはすべて発注リストに積める）。
- * 重要: 所持(is_owned)が立つのは「発注リストに積んだ時点」ではなく「実際に発注(ordered)した時点」
- * （updateOrderStatus 内の markMaterialOwned 呼び出し）。ここでは unconfirmed のまま積むだけなので、
- * まだ所持にはならない。発注画面で未確認→発注→発送→配布と進める運用。
+ * 重要: 所持(is_owned)は「発注リストに積んだ時点」で立つ（createOrder 内で markMaterialOwned を呼ぶ）。
+ * 取次サイトへの実発注は事務方が行うため、教室長にとっては発注リストに載せた時点が「発注」。
+ * ステータス自体は unconfirmed のままで、発注画面で未確認→発注→発送→配布と進める運用は変わらない。
  * schoolId と materialName が必須。失敗は件数で返す。
  */
 export async function createOrdersForCandidates(
@@ -803,10 +825,9 @@ export async function updateOrderStatus(id: string, status: OrderStatus): Promis
     console.error('在庫トランザクションの自動作成に失敗しました:', stockError);
   }
 
-  // 所持判定基準: 配布時点 → 発注時点に変更（発注した時点で「入手予定が確定した」とみなす）。
-  // ordered/delivered/distributed のいずれかに遷移したら所持(is_owned=true)を立てる。
-  // markMaterialOwned は冪等なので、unconfirmed から delivered/distributed へ直接遷移した
-  // ケース（ordered を経由しなかった場合）の取りこぼしも、ここで毎回呼ぶことで防ぐ。
+  // 所持は createOrder（発注リストに追加）の時点で立てているので、通常ここでは既に立っている。
+  // それでも呼ぶのは、旧データや外部経路で所持が付いていない発注を進めたときの取りこぼし防止。
+  // markMaterialOwned は冪等なので重ねて呼んでも害はない。
   if (
     (status === 'ordered' || status === 'delivered' || status === 'distributed') &&
     existingOrder.student_id
@@ -858,10 +879,32 @@ export async function updateOrderStatus(id: string, status: OrderStatus): Promis
  * 発注を削除（unconfirmedのみ）
  */
 export async function deleteOrder(id: string): Promise<void> {
+  // 削除で所持が残らないよう、消す前に生徒・教材を控えておく。
+  // （発注リストに載った時点で所持を立てる仕様のため、キャンセルだけでなく削除でも対で取り消す）
+  const { data: target } = await supabase
+    .from('material_orders')
+    .select('material_id, student_id, school_id')
+    .eq('id', id)
+    .maybeSingle();
+
   const { error } = await supabase.from('material_orders').delete().eq('id', id);
 
   if (error) {
     throw new Error(getUserErrorMessage(error, '発注の削除に失敗しました'));
+  }
+
+  const row = target as {
+    material_id: string;
+    student_id: string | null;
+    school_id: string;
+  } | null;
+  if (row?.student_id) {
+    try {
+      // 他に未キャンセルの発注が残っていれば revokeMaterialOwnership 側で何もしない
+      await revokeMaterialOwnership(row.material_id, row.student_id, row.school_id);
+    } catch (err) {
+      console.error('所持の取り消しに失敗しました:', err);
+    }
   }
 }
 
@@ -896,7 +939,20 @@ export async function createBulkOrders(
     throw new Error(getUserErrorMessage(error, '一括発注の作成に失敗しました'));
   }
 
-  return (data || []) as MaterialOrder[];
+  const created = (data || []) as MaterialOrder[];
+
+  // createOrder と同じ基準で所持を立てる（この関数は insert を直接叩くため個別に呼ぶ）。
+  // 1件ずつ失敗を握りつぶす: 一部の所持登録が失敗しても発注は成立させる。
+  for (const o of created) {
+    if (!o.student_id) continue;
+    try {
+      await markMaterialOwned(o.material_id, o.student_id, o.school_id);
+    } catch (err) {
+      console.error('所持登録に失敗しました:', err);
+    }
+  }
+
+  return created;
 }
 
 /**
@@ -985,8 +1041,8 @@ async function resolveTextbookIdForMaterial(
 
 /**
  * 発注した教材を「所持(is_owned=true)」として student_textbooks に登録する。
- * 所持の判定基準は「配布時点」ではなく「発注時点」（ordered/delivered/distributed への
- * 遷移時に呼ぶ）。発注した時点で入手が確定するとみなし、その時点で所持扱いにする。
+ * 判定基準は「発注リストに追加した時点」（createOrder / createBulkOrders から呼ぶ）。
+ * ステータス遷移（updateOrderStatus）からも冪等に呼ばれる。
  * 対応テキストを解決し、st があれば is_owned=true に更新、無ければ作成する（track_progress は触らない）。
  * 冪等（何度呼んでも同じ結果）なので、複数のステータス遷移から安全に呼べる。
  * 解決できない場合は静かにスキップ（フリーテキスト教材名など）。
