@@ -27,7 +27,9 @@ import { listAssessments } from '@/lib/api/assessments';
 import { getStudentTextbooks, getStudentProgress } from '@/lib/api/progress';
 import {
   getStudentDisciplineSessions,
+  getFeedGoalsByTextbooks,
   type DisciplineSessionRow,
+  type FeedGoalSummary,
 } from '@/lib/api/progress-sessions';
 import { getRegularPatterns } from '@/lib/api/schedule';
 import { getKoushuEnrollmentsByStudent, type KoushuEnrollment } from '@/lib/api/seasonalCourses';
@@ -72,6 +74,8 @@ export function InterviewWorkspace() {
   // 進行表の生データ（テキスト×そのテキストの進行記録行）をテキストぶん保持する。
   // 集計（進捗％・直近履歴・次単元など）は ProgressPanel / 印刷シート側で summarizeTextbookDetail に任せる。
   const [textbookProgressData, setTextbookProgressData] = useState<TextbookProgressData[]>([]);
+  // student_textbook_id → 目標（試験目標）と行動目標。進行表パネルで進捗バーの代わりに出す
+  const [textbookGoals, setTextbookGoals] = useState<Record<string, FeedGoalSummary>>({});
   const [progressLoading, setProgressLoading] = useState(false);
 
   // 生徒一覧（在籍中のみ、学年→氏名かな順）
@@ -230,6 +234,7 @@ export function InterviewWorkspace() {
   useEffect(() => {
     if (!selectedStudentId) {
       setTextbookProgressData([]);
+      setTextbookGoals({});
       return;
     }
     let cancelled = false;
@@ -239,14 +244,19 @@ export function InterviewWorkspace() {
         const raw = await getStudentTextbooks(selectedStudentId);
         // 進行表パネルに出すのは「進行表で管理中」のテキストのみ（/progress ページと同じ絞り込み）
         const tracked = raw.filter((t) => t.track_progress);
-        const data = await Promise.all(
-          tracked.map(async (textbook) => ({
-            textbook,
-            rows: await getStudentProgress(textbook.id).catch(() => []),
-          }))
-        );
+        // 進行記録はテキストごとに取るが、目標・行動目標は全テキストまとめて1回で取れる
+        const [data, goals] = await Promise.all([
+          Promise.all(
+            tracked.map(async (textbook) => ({
+              textbook,
+              rows: await getStudentProgress(textbook.id).catch(() => []),
+            }))
+          ),
+          getFeedGoalsByTextbooks(tracked.map((t) => t.id)).catch(() => ({})),
+        ]);
         if (cancelled) return;
         setTextbookProgressData(data);
+        setTextbookGoals(goals);
       } catch (e) {
         console.error('Error fetching progress:', e);
       } finally {
@@ -385,8 +395,9 @@ export function InterviewWorkspace() {
         </Card>
       ) : (
         <>
-          {/* 2カラム本体（左＝過去の面談記録・約束/タスク、右＝成績・進行表） */}
-          <div className="grid gap-5 print:hidden lg:grid-cols-[340px_minmax(0,1fr)] lg:items-start">
+          {/* 2カラム本体（左＝約束/タスク・面談記録、右＝成績・進行表）。
+              左カラムは面談記録（Notta取込の長文が入る）を読ませる列なので広めに取る。 */}
+          <div className="grid gap-5 print:hidden lg:grid-cols-[minmax(0,440px)_minmax(0,1fr)] lg:items-start">
             <InterviewTimeline
               studentId={student.id}
               schoolId={student.school_id}
@@ -397,7 +408,11 @@ export function InterviewWorkspace() {
             />
             <div className="flex flex-col gap-5">
               <ScorePanel assessments={assessments} loading={lightLoading} />
-              <ProgressPanel textbookData={textbookProgressData} loading={progressLoading} />
+              <ProgressPanel
+                textbookData={textbookProgressData}
+                goals={textbookGoals}
+                loading={progressLoading}
+              />
               <DisciplinePanel sessions={disciplineSessions} loading={lightLoading} />
             </div>
           </div>

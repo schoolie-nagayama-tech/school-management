@@ -3,8 +3,12 @@
 /**
  * 面談ワークスペース 左カラム: 過去の面談記録
  * ------------------------------------------------------------------
- * 「前回の申し送り」ピン留めカード・「未完了の約束・タスク」（下部に追加欄つき）・
- * 「面談タイムライン」の3つ。
+ * 「未完了の約束・タスク」（下部に追加欄つき）と「面談記録」の2枚。
+ *
+ * 「前回の申し送り」は独立カードを廃止し、面談記録カードの先頭にピン留めブロックとして
+ * 統合した（申し送りは面談記録の最新1件から抜き出したものであり、同じデータを2枚のカードに
+ * 分けて出すと同じ内容が並んで見えるため）。カードの並びは、面談中に真っ先に確認したい
+ * 未完了タスクを上に置く。
  * タスクの完了/未完了は楽観更新し、失敗時はロールバックする。
  * タイムラインの編集は既存の InterviewModal をそのまま再利用する。
  *
@@ -136,27 +140,7 @@ export function InterviewTimeline({
 
   return (
     <div className="flex flex-col gap-5">
-      {/* 前回の申し送り（ピン留め） */}
-      <Card className="border-l-4 border-l-warning">
-        <CardHeader className="flex flex-row items-center gap-2 border-b-0 pb-0">
-          <Pin className="h-4 w-4 text-warning" />
-          <CardTitle className="text-sm">前回の申し送り</CardTitle>
-        </CardHeader>
-        <CardContent className="pt-2">
-          {loading ? (
-            <InlineLoading />
-          ) : handover ? (
-            <>
-              <p className="mb-1 text-xs text-text-faint">{fmtDateJa(handover.date)}</p>
-              <p className="whitespace-pre-wrap text-sm text-text-body">{handover.text}</p>
-            </>
-          ) : (
-            <p className="text-sm text-text-muted">面談記録はまだありません</p>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* 未完了の約束・タスク */}
+      {/* 未完了の約束・タスク（面談中に最初に確認するため面談記録より上に置く） */}
       <Card>
         <CardHeader className="flex flex-row items-center gap-2 border-b-0 pb-0">
           <CheckCircle2 className="h-4 w-4 text-text-muted" />
@@ -225,19 +209,34 @@ export function InterviewTimeline({
         </CardContent>
       </Card>
 
-      {/* 面談タイムライン（新しい順・APIが既にソート済み） */}
+      {/* 面談記録（先頭に前回の申し送りをピン留め＋以下タイムライン。新しい順・APIが既にソート済み） */}
       <Card>
         <CardHeader className="flex flex-row items-center gap-2 border-b-0 pb-0">
           <History className="h-4 w-4 text-text-muted" />
-          <CardTitle className="text-sm">面談タイムライン</CardTitle>
+          <CardTitle className="text-sm">面談記録</CardTitle>
         </CardHeader>
-        <CardContent className="max-h-[600px] overflow-y-auto pt-2">
+        <CardContent className="max-h-[720px] overflow-y-auto pt-2">
           {loading ? (
             <InlineLoading />
           ) : timeline.length === 0 ? (
             <p className="text-sm text-text-muted">面談記録はまだありません</p>
           ) : (
             <div className="flex flex-col gap-3">
+              {/* 前回の申し送り。タイムライン最新1件から抜き出したものなので、同じ並びの先頭に置く */}
+              {handover && (
+                <div className="rounded-lg border-l-4 border-l-warning bg-warning-subtle p-3">
+                  <div className="mb-1 flex items-center gap-1.5">
+                    <Pin className="h-3.5 w-3.5 shrink-0 text-warning" />
+                    <span className="text-xs font-semibold text-warning">前回の申し送り</span>
+                    <span className="ml-auto shrink-0 text-xs text-text-faint">
+                      {fmtDateJa(handover.date)}
+                    </span>
+                  </div>
+                  <p className="whitespace-pre-wrap text-sm leading-relaxed text-text-body">
+                    {handover.text}
+                  </p>
+                </div>
+              )}
               {timeline.map((iv) => {
                 const expanded = expandedIds.has(iv.id);
                 return (
