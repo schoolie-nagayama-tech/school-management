@@ -24,6 +24,11 @@ export interface CartItem {
 interface TextbookCatalogProps {
   textbooks: Textbook[];
   students: StudentOption[];
+  /**
+   * 生徒スロットの初期選択（入会フローから特定の生徒の発注に来たとき用）。
+   * 各カードの1冊目にだけ入れる。以降の増冊や手動変更は従来どおり自由。
+   */
+  initialStudentId?: string;
   canEdit: boolean;
   materials: Material[];
   onOrder: (
@@ -111,11 +116,14 @@ interface TextbookProductCardProps {
   onStockAdjust?: () => void;
   /** すでに発注済みの「生徒ID::教材名ラベル」集合（発注済バッジ用）。 */
   existingOrderPairs?: Set<string>;
+  /** 1冊目の生徒スロットの初期値（入会フローからの遷移時）。 */
+  initialStudentId?: string;
 }
 
 function TextbookProductCard({
   textbook,
   students,
+  initialStudentId,
   canEdit,
   stockQuantity,
   onAddToCart,
@@ -128,7 +136,12 @@ function TextbookProductCard({
     !!existingOrderPairs && existingOrderPairs.has(`${studentId}::${cardLabel}`);
   // 冊数分の生徒スロット。1冊=1生徒（または見本）として、冊数を増やすと
   // その冊数分だけ生徒を割り当てられる。空欄の冊はカートに追加されない。
-  const [studentIds, setStudentIds] = useState<string[]>(['']);
+  // 初期選択は students に実在するときだけ効かせる。
+  // 実在しない ID を入れると、select は該当 option が無いので「生徒を選択...」に見えるのに
+  // 内部状態だけ ID を持ち、そのままカートに入って別教室の生徒に発注されうる。
+  const [studentIds, setStudentIds] = useState<string[]>([
+    initialStudentId && students.some((s) => s.id === initialStudentId) ? initialStudentId : '',
+  ]);
   const [addedSuccess, setAddedSuccess] = useState(false);
 
   const quantity = studentIds.length;
@@ -471,6 +484,7 @@ function CartDrawer({
 export function TextbookCatalog({
   textbooks,
   students,
+  initialStudentId,
   canEdit,
   materials,
   onOrder: _onOrder,
@@ -905,6 +919,7 @@ export function TextbookCatalog({
                   key={tb.id}
                   textbook={tb}
                   students={students}
+                  initialStudentId={initialStudentId}
                   canEdit={canEdit}
                   stockQuantity={stockInfo ? stockInfo.quantity : null}
                   onAddToCart={handleAddToCart}

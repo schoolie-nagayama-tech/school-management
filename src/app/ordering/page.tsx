@@ -7,6 +7,7 @@ import { Button, Loading, InlineLoading, ToastContainer } from '@/components/ui'
 import dynamic from 'next/dynamic';
 import type { MaterialFormData } from '@/components/inventory';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import type { CartItem } from '@/components/ordering/TextbookCatalog';
 
 const MaterialForm = dynamic(() => import('@/components/inventory').then((m) => m.MaterialForm), {
@@ -52,6 +53,11 @@ export default function OrderingPage() {
   const { getSelectedSchoolIds, selectedSchoolId } = useAuth();
   const { toasts, removeToast, success, error: toastError } = useToast();
 
+  // 入会フロー（?onboarding=<studentId>）から来たか。来ていれば発注対象を初期選択し、
+  // 生徒詳細へ抜ける導線を出す。
+  const searchParams = useSearchParams();
+  const onboardingStudentId = searchParams?.get('onboarding') || null;
+
   // Data state
   const [materials, setMaterials] = useState<Material[]>([]);
   const [orders, setOrders] = useState<MaterialOrderWithDetails[]>([]);
@@ -59,6 +65,12 @@ export default function OrderingPage() {
     { id: string; school_id: string; last_name: string; first_name: string; grade: number | null }[]
   >([]);
   const [textbooks, setTextbooks] = useState<Textbook[]>([]);
+  // 生徒名は students の読み込み後に確定する。未確定でもバナーは出す（名前だけ後から入る）
+  const onboardingStudentName = useMemo(() => {
+    if (!onboardingStudentId) return '';
+    const s = students.find((st) => st.id === onboardingStudentId);
+    return s ? `${s.last_name} ${s.first_name}` : '';
+  }, [onboardingStudentId, students]);
   const [activeBillingPeriod, setActiveBillingPeriod] = useState<BillingPeriod | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
@@ -498,6 +510,25 @@ export default function OrderingPage() {
         </div>
       )}
 
+      {/* 入会フロー（生徒情報 → 授業スケジュール → 教材発注 → 生徒詳細）の最後の一手。
+          発注が要らない生徒もいるので、発注せずに生徒詳細へ抜けられるようにしておく。 */}
+      {onboardingStudentId && (
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-gray-200 bg-white p-4">
+          <p className="text-sm text-gray-700">
+            {onboardingStudentName
+              ? `${onboardingStudentName} の入会手続きの最後です。`
+              : '入会手続きの最後です。'}
+            必要な教材をカートに入れて発注してください。発注が不要ならそのまま完了できます。
+          </p>
+          <Link
+            href={`/students?detail=${onboardingStudentId}`}
+            className="px-4 py-2 rounded-lg bg-[#1e3a5f] text-white text-sm font-medium hover:opacity-90 transition-[opacity] duration-150 ease-out whitespace-nowrap"
+          >
+            完了して生徒詳細へ
+          </Link>
+        </div>
+      )}
+
       {/* Header Actions */}
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-lg font-bold text-gray-900">教材・発注管理</h2>
@@ -564,6 +595,7 @@ export default function OrderingPage() {
         <TextbookCatalog
           textbooks={textbooks}
           students={students}
+          initialStudentId={onboardingStudentId ?? undefined}
           canEdit={canEdit}
           materials={materials}
           onOrder={handleTextbookOrder}

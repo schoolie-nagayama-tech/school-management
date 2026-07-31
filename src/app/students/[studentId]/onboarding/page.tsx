@@ -461,13 +461,17 @@ export default function OnboardingPage() {
     }
   }, [student, lastName, firstName, lastKana, firstKana, grade, schoolName]);
 
-  // Step1 のみモードの完了処理: Step1 の内容を保存して、通塾セットアップ（Step2〜4）を
-  // 経由せず生徒詳細へ直接遷移する。通塾設定は生徒詳細から後で行える。
+  // Step1 のみモードの完了処理。
+  //
+  // 入会の流れは「生徒情報 → 授業スケジュール → 教材発注 → 生徒詳細」。
+  // 旧 Step2〜4（受講科目・コマ配置・担当決定）は使わず、既存の各ページへ順に送る。
+  // ?onboarding=1 を付けて遷移先に「入会フローの途中」であることを伝え、
+  // 次の一手（発注へ進む / あとで）を出す。どちらもスキップ可。
   const finishSingleStep = useCallback(async () => {
     const ok = await saveStudentInfo();
     if (ok === false) return;
     toast.success('生徒登録が完了しました');
-    router.push(`/students/${studentId}/schedule`);
+    router.push(`/students/${studentId}/schedule?onboarding=1`);
   }, [saveStudentInfo, router, studentId]);
 
   // 指定科目の配置（担当講師）を取り消す（受講コマを変えたら担当は無効化する）。
