@@ -18,6 +18,8 @@ import { TextbookCard } from './TextbookCard';
 // ─────────────────────────────────────────────
 export function CardsView({
   textbooks,
+  liveTextbookIds,
+  lastUsedByTextbook,
   examTypes,
   actionGoalsByExam,
   role,
@@ -30,6 +32,10 @@ export function CardsView({
   onDelete,
 }: {
   textbooks: StudentTextbookWithDetails[];
+  /** 科目ごとの「今使っているテキスト」。LIVE バッジを出す対象。 */
+  liveTextbookIds: Set<string>;
+  /** student_textbook_id → 最終利用日。LIVE バッジに日付を併記する。 */
+  lastUsedByTextbook: Record<string, string>;
   examTypes: ExamType[];
   actionGoalsByExam: Record<string, ActionGoal[]>;
   role: 'teacher' | 'manager';
@@ -136,6 +142,8 @@ export function CardsView({
                   <TextbookCard
                     key={tb.id}
                     textbook={tb}
+                    isLive={liveTextbookIds.has(tb.id)}
+                    lastUsedDate={lastUsedByTextbook[tb.id]}
                     subjectColumn={col}
                     activeExam={ae}
                     actionGoals={goals}

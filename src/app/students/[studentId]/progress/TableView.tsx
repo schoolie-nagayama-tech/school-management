@@ -46,6 +46,7 @@ import { formatTextbookMeta } from '@/lib/utils/textbookLabel';
 // ─────────────────────────────────────────────
 export function TableView({
   textbook,
+  isLive = false,
   progress,
   setProgress,
   examTypes,
@@ -68,6 +69,8 @@ export function TableView({
   highlightItemId,
 }: {
   textbook: StudentTextbookWithDetails;
+  /** この科目で最後に授業に使ったテキストか（LIVE バッジ） */
+  isLive?: boolean;
   progress: CurriculumItemWithProgress[];
   setProgress: React.Dispatch<React.SetStateAction<CurriculumItemWithProgress[]>>;
   examTypes: ExamType[];
@@ -620,6 +623,13 @@ export function TableView({
               <span className="text-xs font-normal text-[#6b7280] ml-1.5">{textbookMeta}</span>
             )}
           </h2>
+          {/* 一覧で選んだあとも、開いているのが現行冊かを確認できるようにする */}
+          {isLive && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-emerald-600 text-white border border-emerald-700 whitespace-nowrap">
+              <span className="w-1.5 h-1.5 rounded-full bg-white" aria-hidden />
+              LIVE
+            </span>
+          )}
           {textbook.is_draft && (
             <span className="px-2 py-0.5 bg-gray-200 text-gray-700 rounded text-[11px] font-bold border border-gray-400 whitespace-nowrap">
               非公開

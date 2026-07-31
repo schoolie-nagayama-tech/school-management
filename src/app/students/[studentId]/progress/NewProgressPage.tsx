@@ -31,6 +31,7 @@ import { useToast } from '@/hooks/useToast';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   getStudentTextbooks,
+  getLastUsedDateByTextbook,
   getStudentProgress,
   createStudentTextbook,
   updateStudentTextbook,
@@ -56,6 +57,7 @@ import {
   categorizeSubject,
   gradeLabel,
   sortByOrder,
+  pickLiveTextbookIds,
   type View,
   type ViewMode,
 } from './newProgress.shared';
@@ -85,6 +87,8 @@ export default function NewProgressPage() {
   // データ状態（既存ロジックを踏襲）
   const [student, setStudent] = useState<Student | null>(null);
   const [studentTextbooks, setStudentTextbooks] = useState<StudentTextbookWithDetails[]>([]);
+  // student_textbook_id → 最終利用日。LIVE バッジの判定に使う
+  const [lastUsedByTextbook, setLastUsedByTextbook] = useState<Record<string, string>>({});
   const [examTypes, setExamTypes] = useState<ExamType[]>([]);
   const [selectedTextbookId, setSelectedTextbookId] = useState<string | null>(null);
   const [progressData, setProgressData] = useState<CurriculumItemWithProgress[]>([]);
@@ -145,6 +149,13 @@ export default function NewProgressPage() {
             setActionGoalsByExam({});
           }
         }
+        // 最終利用日（LIVE 判定用）。失敗しても進行表自体は使えるべきなので握りつぶす。
+        try {
+          const lastUsed = await getLastUsedDateByTextbook(filteredTbs.map((tb) => tb.id));
+          setLastUsedByTextbook(lastUsed);
+        } catch {
+          setLastUsedByTextbook({});
+        }
         // 各教科書の試験範囲を並行取得（独立テーブル）
         try {
           const rangePairs = await Promise.all(
@@ -182,6 +193,12 @@ export default function NewProgressPage() {
   const selectedTb = useMemo(
     () => studentTextbooks.find((t) => t.id === selectedTextbookId) ?? null,
     [selectedTextbookId, studentTextbooks]
+  );
+
+  // 科目ごとの「今使っているテキスト」。同一科目に複数冊あるときの取り違え防止。
+  const liveTextbookIds = useMemo(
+    () => pickLiveTextbookIds(studentTextbooks, lastUsedByTextbook),
+    [studentTextbooks, lastUsedByTextbook]
   );
 
   const openTextbook = (id: string) => {
@@ -449,6 +466,8 @@ export default function NewProgressPage() {
       ) : view === 'cards' ? (
         <CardsView
           textbooks={studentTextbooks}
+          liveTextbookIds={liveTextbookIds}
+          lastUsedByTextbook={lastUsedByTextbook}
           examTypes={examTypes}
           actionGoalsByExam={actionGoalsByExam}
           role={isTeacher ? 'teacher' : 'manager'}
@@ -464,6 +483,7 @@ export default function NewProgressPage() {
         selectedTb && (
           <TableView
             textbook={selectedTb}
+            isLive={liveTextbookIds.has(selectedTb.id)}
             progress={progressData}
             setProgress={setProgressData}
             examTypes={examTypes}
