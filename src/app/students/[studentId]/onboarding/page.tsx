@@ -79,6 +79,7 @@ import {
 } from './MiniSeatingGrid';
 import styles from '@/components/schedule/scheduleDensity.module.css';
 import { formatGradeLabel } from '@/lib/utils/gradeLabel';
+import { toKatakana } from '@/lib/utils/kana';
 
 // Step2 の曜日プルダウンに出す曜日＝月〜土（個別指導は日曜運用しない想定）。
 const SELECTABLE_DAYS = [1, 2, 3, 4, 5, 6];
@@ -443,8 +444,9 @@ export default function OnboardingPage() {
       const updated = await updateStudent(student.id, {
         last_name: lastName.trim() || student.last_name,
         first_name: firstName.trim(),
-        last_name_kana: lastKana.trim(),
-        first_name_kana: firstKana.trim(),
+        // 問合せから転記された値は入力欄を経由しないため、保存時にも必ず揃える
+        last_name_kana: toKatakana(lastKana.trim()),
+        first_name_kana: toKatakana(firstKana.trim()),
         grade,
         school_name: schoolName.trim() || null,
       });
@@ -983,18 +985,21 @@ export default function OnboardingPage() {
                       />
                     </div>
                     <div className="space-y-1.5">
-                      <label className="block text-xs text-text-muted">姓（かな）</label>
+                      <label className="block text-xs text-text-muted">セイ（フリガナ）</label>
                       <input
                         value={lastKana}
-                        onChange={(e) => setLastKana(e.target.value)}
+                        // 検索・並び替えがカナ依存のため、ひらがなで入力されても揃える
+                        onChange={(e) => setLastKana(toKatakana(e.target.value))}
+                        placeholder="ヤマダ"
                         className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-surface-raised focus:outline-none focus:ring-2 focus:ring-primary"
                       />
                     </div>
                     <div className="space-y-1.5">
-                      <label className="block text-xs text-text-muted">名（かな）</label>
+                      <label className="block text-xs text-text-muted">メイ（フリガナ）</label>
                       <input
                         value={firstKana}
-                        onChange={(e) => setFirstKana(e.target.value)}
+                        onChange={(e) => setFirstKana(toKatakana(e.target.value))}
+                        placeholder="タロウ"
                         className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-surface-raised focus:outline-none focus:ring-2 focus:ring-primary"
                       />
                     </div>
