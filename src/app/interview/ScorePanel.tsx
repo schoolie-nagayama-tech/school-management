@@ -3,12 +3,15 @@
 /**
  * 面談ワークスペース 右カラム: 成績パネル
  * ------------------------------------------------------------------
- * 定期テスト／内申／模試のカテゴリ切替タブ＋直近5件の科目別スコア表＋合計点推移の棒グラフ。
+ * 定期テスト／内申／模試を縦に並べ、それぞれ直近5件の科目別スコア表＋合計点推移の棒グラフを出す。
  * 「今回の面談メモ」廃止で空いた中央カラムのスペースを使い、面談中にその場で成績を
  * 参照できるようにするためのパネル（3カラム時代は右端に小さな成績サマリしか無かった）。
+ *
+ * 旧実装はカテゴリ切替タブだったが、面談では3種を見比べる（テストは上がったが内申は動かない等）
+ * ことが多く、切り替えると比較できないため並べる形に変更した。データが1件も無いカテゴリは
+ * 見出しごと出さない（空の枠を並べても場所を取るだけのため）。
  */
 
-import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, InlineLoading } from '@/components/ui';
 import type { AssessmentWithScores } from '@/types/database';
 import { computeScoreSummary, type AssessmentCategory } from './interview.shared';
@@ -74,19 +77,61 @@ function SimpleBarChart({ values, labels }: { values: number[]; labels: string[]
   );
 }
 
-export function ScorePanel({ assessments, loading }: ScorePanelProps) {
-  // 既定は定期テスト。データが無いカテゴリも選択自体はできるが（初期表示のため）、
-  // タブはグレーアウトして押せないようにする。
-  const [category, setCategory] = useState<AssessmentCategory>('regular_test');
-
-  const hasData: Record<AssessmentCategory, boolean> = {
-    regular_test: assessments.some((a) => a.category === 'regular_test'),
-    report_card: assessments.some((a) => a.category === 'report_card'),
-    mock: assessments.some((a) => a.category === 'mock'),
-  };
-
+// 1カテゴリ分の中身（スコア表＋合計推移）。3カテゴリを並べるため切り出した。
+function CategorySection({
+  label,
+  assessments,
+  category,
+}: {
+  label: string;
+  assessments: AssessmentWithScores[];
+  category: AssessmentCategory;
+}) {
   // 直近5件・古い→新しい順（左から右へ推移が読めるように）
   const summary = computeScoreSummary(assessments, category, 5);
+  if (summary.testLabels.length === 0) return null;
+
+  return (
+    <section>
+      <h3 className="mb-1.5 border-b border-border-subtle pb-1 text-xs font-semibold text-text-heading">
+        {label}
+      </h3>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-border-subtle text-left text-text-muted">
+              <th className="pb-1.5 pr-2 font-medium">教科</th>
+              {summary.testLabels.map((name, i) => (
+                <th key={`${name}-${i}`} className="px-1.5 pb-1.5 text-right font-medium">
+                  <span className="block text-xs leading-tight">{name}</span>
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {summary.rows.map((row) => (
+              <tr key={row.subject} className="border-b border-border-subtle last:border-0">
+                <td className="py-1.5 pr-2 text-text-body">{row.label}</td>
+                {row.values.map((s, i) => (
+                  <td key={i} className="px-1.5 py-1.5 text-right">
+                    <ScoreTrend prev={row.values[i - 1] ?? null} curr={s} />
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <p className="mb-1 mt-3 text-xs text-text-muted">合計点の推移</p>
+      <SimpleBarChart values={summary.totals} labels={summary.testLabels} />
+    </section>
+  );
+}
+
+export function ScorePanel({ assessments, loading }: ScorePanelProps) {
+  // 1件でも登録があるカテゴリだけを並べる
+  const shown = CATEGORIES.filter((c) => assessments.some((a) => a.category === c.value));
 
   return (
     <Card>
@@ -95,67 +140,21 @@ export function ScorePanel({ assessments, loading }: ScorePanelProps) {
         <CardTitle className="text-sm">成績</CardTitle>
       </CardHeader>
       <CardContent className="pt-3">
-        {/* カテゴリ切替タブ */}
-        <div className="mb-3 inline-flex rounded-lg border border-border-subtle p-1">
-          {CATEGORIES.map((c) => {
-            const active = category === c.value;
-            const disabled = !hasData[c.value];
-            return (
-              <button
-                key={c.value}
-                type="button"
-                disabled={disabled}
-                onClick={() => setCategory(c.value)}
-                className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-                  active
-                    ? 'bg-ink text-text-on-primary'
-                    : disabled
-                      ? 'cursor-not-allowed text-text-faint'
-                      : 'text-text-muted hover:text-text-heading'
-                }`}
-              >
-                {c.label}
-              </button>
-            );
-          })}
-        </div>
-
         {loading ? (
           <InlineLoading />
-        ) : summary.testLabels.length === 0 ? (
+        ) : shown.length === 0 ? (
           <p className="text-sm text-text-muted">登録がありません</p>
         ) : (
-          <>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border-subtle text-left text-text-muted">
-                    <th className="pb-1.5 pr-2 font-medium">教科</th>
-                    {summary.testLabels.map((name, i) => (
-                      <th key={`${name}-${i}`} className="px-1.5 pb-1.5 text-right font-medium">
-                        <span className="block text-xs leading-tight">{name}</span>
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {summary.rows.map((row) => (
-                    <tr key={row.subject} className="border-b border-border-subtle last:border-0">
-                      <td className="py-1.5 pr-2 text-text-body">{row.label}</td>
-                      {row.values.map((s, i) => (
-                        <td key={i} className="px-1.5 py-1.5 text-right">
-                          <ScoreTrend prev={row.values[i - 1] ?? null} curr={s} />
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            <p className="mb-1 mt-4 text-xs text-text-muted">合計点の推移</p>
-            <SimpleBarChart values={summary.totals} labels={summary.testLabels} />
-          </>
+          <div className="flex flex-col gap-5">
+            {shown.map((c) => (
+              <CategorySection
+                key={c.value}
+                label={c.label}
+                assessments={assessments}
+                category={c.value}
+              />
+            ))}
+          </div>
         )}
       </CardContent>
     </Card>
