@@ -293,6 +293,8 @@ export default function AttendanceManagementPage() {
   const [isTransposedView, setIsTransposedView] = useState(false);
   // デフォルトは社員番号順（出勤簿一覧の標準並び順）
   const [sortOrder, setSortOrder] = useState<SortOrder>('employee');
+  // 勤務実績なしの行を隠すか。既定は表示（未入力の講師を見落とさないため）
+  const [hideNoWork, setHideNoWork] = useState(false);
 
   const { schools: masterSchools } = useMasterData();
 
@@ -688,26 +690,40 @@ export default function AttendanceManagementPage() {
   };
 
   // 並べ替え済みシート
+  /**
+   * 勤務実績がない（全項目0）行か。
+   * 未入力の講師も一覧に出す仕様にしたため、実際には勤務していない講師の行も並ぶ。
+   * 給与確認のときに邪魔にならないよう、下にまとめる／隠すの判定に使う。
+   */
+  const hasNoWork = (s: SummaryRow) => s.grand_total === 0 && s.total_amount === 0;
+
+  const noWorkCount = useMemo(() => sheets.filter(hasNoWork).length, [sheets]);
+
   const sortedSheets = useMemo(() => {
-    const copy = [...sheets];
+    // 実績なしを隠す（既定は全件表示）
+    const base = hideNoWork ? sheets.filter((s) => !hasNoWork(s)) : sheets;
+    const copy = [...base];
+    // 並び順に関わらず、実績なしは常に下へ。中の順序は選択中の並び順を保つ。
+    const withGroup = (list: SummaryRow[]) =>
+      list.sort((a, b) => Number(hasNoWork(a)) - Number(hasNoWork(b)));
     switch (sortOrder) {
       case 'employee':
         // 社員番号順（数値優先・NULL末尾・姓フォールバック）
-        return copy.sort(compareByEmployeeNo);
+        return withGroup(copy.sort(compareByEmployeeNo));
       case 'name-asc':
-        return copy.sort((a, b) =>
-          (a.teacher?.name ?? '').localeCompare(b.teacher?.name ?? '', 'ja')
+        return withGroup(
+          copy.sort((a, b) => (a.teacher?.name ?? '').localeCompare(b.teacher?.name ?? '', 'ja'))
         );
       case 'name-desc':
-        return copy.sort((a, b) =>
-          (b.teacher?.name ?? '').localeCompare(a.teacher?.name ?? '', 'ja')
+        return withGroup(
+          copy.sort((a, b) => (b.teacher?.name ?? '').localeCompare(a.teacher?.name ?? '', 'ja'))
         );
       case 'amount-desc':
-        return copy.sort((a, b) => b.total_amount - a.total_amount);
+        return withGroup(copy.sort((a, b) => b.total_amount - a.total_amount));
       default:
-        return copy;
+        return withGroup(copy);
     }
-  }, [sheets, sortOrder]);
+  }, [sheets, sortOrder, hideNoWork]);
 
   const cycleSortOrder = () => {
     // employee → name-asc → name-desc → amount-desc → employee の順で循環
@@ -1030,6 +1046,20 @@ export default function AttendanceManagementPage() {
                       </Button>
                     )}
                   </div>
+                )}
+                {/* 未入力の講師も一覧に出す仕様のため、勤務実績なしの行を畳めるようにする。
+                    教室長も使うので isAdmin の外に置く。 */}
+                {noWorkCount > 0 && (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => setHideNoWork((v) => !v)}
+                    title="全項目が0の講師（未入力・勤務なし）の行を隠します"
+                  >
+                    {hideNoWork
+                      ? `実績なしを表示（${noWorkCount}名）`
+                      : `実績なしを隠す（${noWorkCount}名）`}
+                  </Button>
                 )}
                 <div className="relative w-48">
                   <Select
@@ -1381,7 +1411,8 @@ export default function AttendanceManagementPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {sheets.map((sheet) => {
+                    {/* sortedSheets を使う（実績なしを下にまとめる／隠す指定を通常表示にも効かせる） */}
+                    {sortedSheets.map((sheet) => {
                       // 退職状態を計算してグレーアウトや退職バッジの表示に使う
                       const exitStatus = getExitStatus(sheet.teacher?.exit_date);
                       return (
