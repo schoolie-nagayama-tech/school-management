@@ -44,6 +44,7 @@ import {
   computeDisciplineMonthly,
   computeDisciplineMonthlyByStudent,
   computeDisciplineMonthlyTotals,
+  computeDisciplineOverallTotal,
   DISCIPLINE_ALERT_RATIO_THRESHOLD,
   type DisciplineMonth,
 } from './interview.shared';
@@ -325,6 +326,14 @@ export function InterviewHub() {
     [disciplineFilteredSorted]
   );
 
+  // 期間合計（表示中の6ヶ月分）。人数を月次合計の単純合算にすると同じ生徒を複数月で
+  // 二重に数えてしまうため、月次合計 disciplineTotals とは別に生徒単位で計算し直す
+  // computeDisciplineOverallTotal に委譲する。
+  const disciplineOverallTotal = useMemo(
+    () => computeDisciplineOverallTotal(disciplineFilteredSorted.map((row) => row.months)),
+    [disciplineFilteredSorted]
+  );
+
   // 集計ビューの月列ヘッダー（新しい月が左）。行データに依存しないので空セッションから作る
   const disciplineMonthHeaders = useMemo(
     () =>
@@ -559,25 +568,60 @@ export function InterviewHub() {
                                 （例: 生徒Aが月20日中10日宿題忘れ＝50%でも、他の生徒が全員0件なら
                                 全体では合算日数に対する割合はもっと低く出る）。ただし赤字強調の
                                 基準としては同じ disciplineCellClass をそのまま使い、閾値を揃える。
+
+                                回数（延べ日数）だけだと「何人で起きているか」が読めないため、
+                                回数0件のときは人数もノイズになるので出さず、1件以上のときだけ
+                                該当生徒数を薄字で併記する。
                               */}
                               <div
                                 className={disciplineCellClass(m.homeworkMissedDays, m.lessonDays)}
                               >
-                                宿 {m.homeworkMissedDays}
+                                宿 {m.homeworkMissedDays}回
+                                {m.homeworkMissedDays > 0 && (
+                                  <span className="text-text-faint text-[10px]">
+                                    {' '}
+                                    {m.homeworkStudentCount}名
+                                  </span>
+                                )}
                               </div>
                               <div className={disciplineCellClass(m.tardyDays, m.lessonDays)}>
-                                遅 {m.tardyDays}
+                                遅 {m.tardyDays}回
+                                {m.tardyDays > 0 && (
+                                  <span className="text-text-faint text-[10px]">
+                                    {' '}
+                                    {m.tardyStudentCount}名
+                                  </span>
+                                )}
                               </div>
-                              <div className="text-text-faint text-[10px]">{m.studentCount}名</div>
+                              <div className="text-text-faint text-[10px]">
+                                記録{m.studentCount}名
+                              </div>
                             </div>
                           )}
                         </TableCell>
                       ))}
                       <TableCell className="whitespace-nowrap text-center text-xs text-text-body">
-                        授業
-                        {disciplineTotals.reduce((sum, m) => sum + m.lessonDays, 0)}日・宿
-                        {disciplineTotals.reduce((sum, m) => sum + m.homeworkMissedDays, 0)}・遅
-                        {disciplineTotals.reduce((sum, m) => sum + m.tardyDays, 0)}
+                        <div className="leading-tight">
+                          <div>授業{disciplineOverallTotal.lessonDays}日</div>
+                          <div>
+                            宿{disciplineOverallTotal.homeworkMissedDays}回
+                            {disciplineOverallTotal.homeworkMissedDays > 0 && (
+                              <span className="text-text-faint text-[10px]">
+                                {' '}
+                                {disciplineOverallTotal.homeworkStudentCount}名
+                              </span>
+                            )}
+                          </div>
+                          <div>
+                            遅{disciplineOverallTotal.tardyDays}回
+                            {disciplineOverallTotal.tardyDays > 0 && (
+                              <span className="text-text-faint text-[10px]">
+                                {' '}
+                                {disciplineOverallTotal.tardyStudentCount}名
+                              </span>
+                            )}
+                          </div>
+                        </div>
                       </TableCell>
                     </TableRow>
                     {disciplineFilteredSorted.map((row) => (
@@ -626,7 +670,8 @@ export function InterviewHub() {
                 </Table>
               </div>
               <p className="mt-3 text-[11px] text-text-faint">
-                進行表の記録に基づく（未入力は数えられません）。「全体」行の割合は生徒の授業日数合計に対する割合です
+                進行表の記録に基づく（未入力は数えられません）。「全体」行の割合は生徒の授業日数合計に対する割合です。
+                「全体」行は回数（延べ日数）と、その内訳となる生徒数を併記しています
               </p>
             </>
           )}
