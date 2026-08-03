@@ -20,7 +20,13 @@
  *   本番では提案結合だけがあって申込結合が無い教材が多数派のため、両方を見る必要がある。
  */
 
-/** 計算に必要な進捗行の最小形（画面・API どちらからでも組み立てられる形にしておく） */
+/**
+ * 計算に必要な進捗行の最小形（画面・API どちらからでも組み立てられる形にしておく）。
+ *
+ * ★ 配列は必ず**カリキュラム順（進行表の表示順）**で渡すこと。
+ *   「そのグループより先へ進んでいるか」を並び順から判断しているため、順不同で渡すと
+ *   やり切り判定が崩れる。
+ */
 export interface KoushuKomaRow {
   /** 行の識別子（グループに属さない行のグループキーに使う） */
   rowKey: string | number;
@@ -42,7 +48,9 @@ export interface KoushuGroupStat {
   planned: number;
   /** 消化コマ */
   consumed: number;
-  /** グループ内の全単元に指導日が入っているか＝やり切ったか */
+  /** グループ内の全単元に指導日が入っているか（＝1回は触った） */
+  allTaught: boolean;
+  /** やり切ったと判断したか（allTaught かつ、より後ろの単元に指導実績がある） */
   finished: boolean;
   /** consumed - planned。マイナス=予定より少ないコマで終えた / プラス=予定より多く使った */
   delta: number;
@@ -105,12 +113,19 @@ function groupKeyOf(row: KoushuKomaRow): string {
  * 進捗行から講習のコマ状況を計算する。
  *
  * needed（残り必要コマ）はグループ単位の残りを足したもので、判定はこの2種類で決まる:
- * - **やり切ったグループ（全単元に指導日あり）は残り0**。予定を使い切っていなくても借金は残らない。
+ * - **やり切ったグループは残り0**。予定を使い切っていなくても借金は残らない。
  *   例: 「比例の式・反比例の式」を2コマ予定で1コマで終わらせたら、浮いた1コマは前倒しになる。
  *   ★これを入れないと、終わった単元がいつまでも1コマ要求し続けて「プラン通り」に見えてしまう
  *   （本番の実例で発覚: 残りコマ6・進行表の残り予定5なのに判定が0＝プラン通りと出ていた）。
  * - 未完了グループは max(申込コマ − 実施コマ, 0)。予定より多く使えば残りコマだけが減り、
  *   マイナス（遅れ）になる。
+ *
+ * ★「やり切った」の判定に *より後ろの単元に指導実績があること* を要求している理由:
+ *   全単元に1回ずつ日付が入っただけでは終わったとは限らない（同じ単元の2回目・3回目を
+ *   次のコマでやる進め方が普通にある）。1コマ目を終えた直後に「前倒し」と言い切ると
+ *   2回目が来た瞬間に評価が逆転してしまう。先の単元に進んでいれば戻らないと判断できる。
+ *   最前線のグループは判定を保留（＝残り必要を多めに見る安全側）にし、実際に2回目が
+ *   入れば消化コマが増えてズレは自然に解消する。
  *
  * 申込コマが1つも無い教材（＝講習ラベルだけで申込が未転記）は applied=0 で返るので、
  * 呼び出し側は applied===0 のときバッジを出さないこと。
@@ -122,44 +137,57 @@ export function computeKoushuKoma(rows: KoushuKomaRow[]): KoushuKomaSummary {
   type Bucket = {
     planned: number;
     lessons: Lesson[];
-    /** グループ内に指導日の無い単元が1つでもあれば未完了 */
+    /** グループ内に指導日の無い単元が1つでもあれば未着手の単元が残っている */
     untaughtUnits: number;
+    /** グループが占める行の最後の位置（「ここより先に進んだか」の判定に使う） */
+    lastIndex: number;
     anchorRowKey: string | number;
     /** anchor を application_count>0 の行に寄せたか（最初の1回だけ上書きする） */
     anchorFixed: boolean;
   };
 
+  // 指導実績のある一番後ろの行。ここより手前のグループは「もう先へ進んだ」と判断できる。
+  let frontierIndex = -1;
+  rows.forEach((row, index) => {
+    if ((row.lessons || []).some((l) => !!l.lesson_date)) frontierIndex = index;
+  });
+
   const groups = new Map<string, Bucket>();
-  for (const row of rows) {
+  rows.forEach((row, index) => {
     const key = groupKeyOf(row);
     const g: Bucket = groups.get(key) || {
       planned: 0,
       lessons: [],
       untaughtUnits: 0,
+      lastIndex: index,
       anchorRowKey: row.rowKey,
       anchorFixed: false,
     };
     g.planned += row.applicationCount || 0;
     g.lessons.push(...(row.lessons || []));
     if (!(row.lessons || []).some((l) => !!l.lesson_date)) g.untaughtUnits++;
+    g.lastIndex = index;
     // 予定コマの数字が出ている行にマーカーを出したいので、そこを anchor にする
     if (!g.anchorFixed && (row.applicationCount || 0) > 0) {
       g.anchorRowKey = row.rowKey;
       g.anchorFixed = true;
     }
     groups.set(key, g);
-  }
+  });
 
   // tsconfig の target が ES5 系のため Map のイテレータを直接回さない（downlevelIteration 未使用）
   const groupStats: KoushuGroupStat[] = [];
   let needed = 0;
   for (const [key, g] of Array.from(groups.entries())) {
     const consumed = countKoma(g.lessons);
-    const finished = g.untaughtUnits === 0;
+    const allTaught = g.untaughtUnits === 0;
+    // 全単元に触れていても、まだ最前線なら次のコマで2回目をやるかもしれない＝やり切ったと決めない
+    const finished = allTaught && g.lastIndex < frontierIndex;
     groupStats.push({
       key,
       planned: g.planned,
       consumed,
+      allTaught,
       finished,
       delta: consumed - g.planned,
       anchorRowKey: g.anchorRowKey,

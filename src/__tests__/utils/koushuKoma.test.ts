@@ -214,6 +214,48 @@ describe('computeKoushuKoma — やり切ったグループは残り0（本番�
     expect(koushuPaceLabel(s)).toEqual({ text: '+1コマ前倒し', tone: 'ahead' });
   });
 
+  it('最前線のグループは、全単元に日付が入っていても前倒しと言い切らない（2回目が来るため）', () => {
+    // 中村ケースの「先の単元(4-3/4-4)をやった行」を落として、比例・反比例が最前線の状態にする
+    const frontier = nakamura.slice(0, 10).concat(nakamura.slice(12));
+    const s = computeKoushuKoma(frontier);
+    // 申込11 - 実施5 = 残り6。比例反比例(2コマ予定/1コマ実施)はまだ1コマ要求する
+    expect(s.remaining).toBe(6);
+    expect(s.needed).toBe(1 + 5); // 比例反比例の残り1 + 未実施5コマ
+    // ＝この時点では「プラン通り」。先へ進んで初めて +1コマ前倒しになる
+    expect(s.diff).toBe(0);
+    expect(koushuPaceLabel(s)).toEqual({ text: 'プラン通り', tone: 'onplan' });
+    const g5 = s.groups.find((g) => g.key === 'a:5');
+    expect(g5).toMatchObject({ allTaught: true, finished: false });
+    // ズレとしても出さない（この時点では「1コマで終わった」と決められない）
+    expect(koushuGroupDeviations(s).map((g) => g.key)).not.toContain('a:5');
+  });
+
+  it('先の単元に進んだ時点で「やり切った」に変わる', () => {
+    const before = computeKoushuKoma(nakamura.slice(0, 10).concat(nakamura.slice(12)));
+    const after = computeKoushuKoma(nakamura);
+    expect(before.groups.find((g) => g.key === 'a:5')?.finished).toBe(false);
+    expect(after.groups.find((g) => g.key === 'a:5')?.finished).toBe(true);
+  });
+
+  it('同じ単元の2回目が入れば消化コマが増えてズレが解消する', () => {
+    // 比例・反比例の2回目を8/05に実施（別セッション）＝予定2コマを2コマで消化
+    const withSecond = nakamura.map((r) =>
+      r.rowKey === 9 || r.rowKey === 10
+        ? {
+            ...r,
+            lessons: [...r.lessons, { lesson_date: '2026-08-05', session_id: 's7' }],
+          }
+        : r
+    );
+    const s = computeKoushuKoma(withSecond);
+    const g5 = s.groups.find((g) => g.key === 'a:5');
+    expect(g5).toMatchObject({ planned: 2, consumed: 2, delta: 0 });
+    expect(koushuGroupDeviations(s)).toEqual([]);
+    // 実施7コマ・残り5・残り必要5 → プラン通りに戻る
+    expect(s.done).toBe(7);
+    expect(s.diff).toBe(0);
+  });
+
   it('ズレたグループとして「2コマ予定を1コマで実施」だけを拾う', () => {
     const devs = koushuGroupDeviations(computeKoushuKoma(nakamura));
     expect(devs).toHaveLength(1);
