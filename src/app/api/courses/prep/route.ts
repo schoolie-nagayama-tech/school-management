@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { getApiAuth } from '@/lib/api-auth';
-import { fetchAllPaged } from '@/lib/utils/supabasePaging';
+import { fetchAllPaged, fetchAllInChunks } from '@/lib/utils/supabasePaging';
 
 export const dynamic = 'force-dynamic';
 
@@ -271,15 +271,20 @@ async function runBatchForSchool(
   if (targets.includes('student_progress')) {
     promises.push(
       (async () => {
-        const { data } = await supabaseAdmin
-          .from('course_prep_student_progress')
-          .select('*, item:course_prep_progress_items!inner(school_id, season, year)')
-          .eq('item.school_id', schoolId)
-          .eq('item.season', season)
-          .eq('item.year', year);
-        batchResult.student_progress = (data || []).map(
-          ({ item: _item, ...rest }: { item: unknown; [key: string]: unknown }) => rest
+        // 進捗は (生徒 × 進捗項目) でスケールし、1校1シーズンで容易に1000行を超える。
+        // 未ページングだと PostgREST の1000行上限で静かに切り捨てられ、あふれた分のセルが
+        // 「保存したのにリロードで消える」ように見える（本番で発生）。必ず全件ページングする。
+        const data = await fetchAllPaged<{ item: unknown; [key: string]: unknown }>((from, to) =>
+          supabaseAdmin
+            .from('course_prep_student_progress')
+            .select('*, item:course_prep_progress_items!inner(school_id, season, year)')
+            .eq('item.school_id', schoolId)
+            .eq('item.season', season)
+            .eq('item.year', year)
+            .order('id', { ascending: true })
+            .range(from, to)
         );
+        batchResult.student_progress = data.map(({ item: _item, ...rest }) => rest);
       })()
     );
   }
@@ -451,12 +456,18 @@ async function runBatchForSchool(
                 .neq('is_test', true) // 研修用テスト生徒は母数に含めない
                 .then(({ count }) => count || 0)
             : Promise.resolve(0),
+          // 1項目につき生徒数分の行が返るため1000行を超えうる。切り捨てると進捗率が過小になる。
           uniqueLinkedIds.length > 0
-            ? supabaseAdmin
-                .from('course_prep_student_progress')
-                .select('item_id, status')
-                .in('item_id', uniqueLinkedIds)
-                .then(({ data }) => data || [])
+            ? fetchAllInChunks<{ item_id: string; status: string }>(
+                uniqueLinkedIds,
+                (chunk, from, to) =>
+                  supabaseAdmin
+                    .from('course_prep_student_progress')
+                    .select('item_id, status')
+                    .in('item_id', chunk)
+                    .order('id', { ascending: true })
+                    .range(from, to)
+              )
             : Promise.resolve([]),
         ]);
 
@@ -617,14 +628,25 @@ export async function GET(request: NextRequest) {
         }
 
         const itemIds = items.map((i: { id: string }) => i.id);
-        const { data, error } = await supabaseAdmin
-          .from('course_prep_student_progress')
-          .select('*')
-          .eq('school_id', schoolId)
-          .in('item_id', itemIds);
-
-        if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-        return NextResponse.json({ data: data || [] });
+        // 1項目につき生徒数分の行が返る（1対多）ため、チャンク分割＋チャンク内ページングで全件取得する。
+        // 未ページングだと1000行で切り捨てられ、進捗が保存されていないように見える。
+        try {
+          const data = await fetchAllInChunks(itemIds, (chunk, from, to) =>
+            supabaseAdmin
+              .from('course_prep_student_progress')
+              .select('*')
+              .eq('school_id', schoolId)
+              .in('item_id', chunk)
+              .order('id', { ascending: true })
+              .range(from, to)
+          );
+          return NextResponse.json({ data });
+        } catch (e) {
+          return NextResponse.json(
+            { error: e instanceof Error ? e.message : '進捗の取得に失敗しました' },
+            { status: 500 }
+          );
+        }
       }
 
       case 'get_period': {
@@ -712,10 +734,17 @@ export async function GET(request: NextRequest) {
 
           const totalStudents = studentCount || 0;
 
-          const { data: progressData } = await supabaseAdmin
-            .from('course_prep_student_progress')
-            .select('item_id, status')
-            .in('item_id', uniqueItemIds);
+          // 1項目につき生徒数分の行が返るため1000行を超えうる。切り捨てると進捗率が過小になる。
+          const progressData = await fetchAllInChunks<{ item_id: string; status: string }>(
+            uniqueItemIds,
+            (chunk, from, to) =>
+              supabaseAdmin
+                .from('course_prep_student_progress')
+                .select('item_id, status')
+                .in('item_id', chunk)
+                .order('id', { ascending: true })
+                .range(from, to)
+          );
 
           for (const itemId of uniqueItemIds) {
             const related = (progressData || []).filter(
