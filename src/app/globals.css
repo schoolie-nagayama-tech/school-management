@@ -23,11 +23,14 @@
   --primary-subtle: oklch(96% 0.03 27);
   --primary-contrast: oklch(98% 0.005 27);
 
-  /* === Background layers === */
-  --bg: oklch(99% 0.002 27); /* 最下層 */
-  --surface: oklch(97% 0.003 27); /* カード */
-  --surface-raised: oklch(100% 0 0); /* フローティング要素 */
-  --surface-hover: oklch(95% 0.004 27);
+  /* === Background layers ===
+     カードを「白」、ページ地を「薄いグレーの机」にして階層を作る。
+     以前は bg 99% / surface 97% でカードのほうが暗く、しかも差が2%しかなかったため
+     画面全体が一枚の灰色の面に見えていた（メリハリ不足の主因）。 */
+  --bg: oklch(96.5% 0.004 27); /* 最下層（机） */
+  --surface: oklch(100% 0 0); /* カード（白で浮かせる） */
+  --surface-raised: oklch(100% 0 0); /* フローティング要素（影で区別する） */
+  --surface-hover: oklch(95% 0.005 27);
 
   /* === Text === */
   --text-heading: oklch(22% 0.01 27);
@@ -36,20 +39,23 @@
   --text-faint: oklch(68% 0.006 27);
   --text-on-primary: oklch(98% 0.005 27);
 
-  /* === Border === */
-  --border-default: oklch(90% 0.005 27);
-  --border-subtle: oklch(94% 0.004 27);
-  --border-strong: oklch(82% 0.008 27);
+  /* === Border ===
+     カードが白になったぶん、輪郭が見えないと境目が消えるので全体に1段濃くする */
+  --border-default: oklch(87% 0.006 27);
+  --border-subtle: oklch(92% 0.005 27);
+  --border-strong: oklch(78% 0.01 27);
 
-  /* === Status === */
-  --success: oklch(55% 0.14 145);
-  --success-subtle: oklch(95% 0.04 145);
-  --warning: oklch(72% 0.15 80);
-  --warning-subtle: oklch(96% 0.05 80);
-  --danger: oklch(55% 0.19 27);
-  --danger-subtle: oklch(96% 0.03 27);
-  --info: oklch(55% 0.15 250);
-  --info-subtle: oklch(96% 0.03 250);
+  /* === Status ===
+     subtle 系はカードが白になると背景に埋もれるため、彩度を上げて「色が付いている」と
+     一目で分かる濃さにする（明度は下げすぎず、上に載る文字色の可読性は維持） */
+  --success: oklch(52% 0.15 145);
+  --success-subtle: oklch(93% 0.06 145);
+  --warning: oklch(68% 0.16 80);
+  --warning-subtle: oklch(94% 0.08 80);
+  --danger: oklch(53% 0.2 27);
+  --danger-subtle: oklch(93% 0.05 27);
+  --info: oklch(52% 0.16 250);
+  --info-subtle: oklch(93% 0.05 250);
 
   /* === Accents（管理画面の副系ブランド色） ===
      旧 #1e3a5f（dark navy）の役割を継承。見出し強調・バッジ・選択中状態などに使用 */
@@ -131,8 +137,9 @@
   --primary-subtle: oklch(28% 0.06 27);
   --primary-contrast: oklch(18% 0.02 27);
 
-  /* Background: 純黒ではなく微 tint。段階の段差を強めて奥行きを出す */
-  --bg: oklch(17% 0.01 27);
+  /* Background: 純黒ではなく微 tint。段階の段差を強めて奥行きを出す
+     （ダークは元から bg < surface でカードが浮く関係になっているため据え置き） */
+  --bg: oklch(16% 0.01 27);
   --surface: oklch(21% 0.012 27);
   --surface-raised: oklch(25% 0.013 27);
   --surface-hover: oklch(28% 0.014 27);
