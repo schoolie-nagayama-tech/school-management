@@ -81,6 +81,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import {
   ATTENDANCE_STATUS_LABELS,
   ATTENDANCE_STATUS_COLORS,
+  ATTENDANCE_FLOW_STEPS,
   type AttendanceType,
   type AttendanceSheetStatus,
 } from '@/types/attendance';
@@ -246,6 +247,9 @@ export default function AttendanceManagementPage() {
 
   const isManager = profile?.role === 'manager';
   const isAdmin = profile?.role === 'admin' || profile?.role === 'owner';
+  // 社員番号はシステム管理者のみ。isAdmin は owner を含むので別に持つ
+  // （この画面に講師は入れないため、実質の境界は admin と owner/manager の間）。
+  const canSeeEmployeeNo = profile?.role === 'admin';
 
   const [schools, setSchools] = useState<School[]>([]);
   const [selectedSchool, setSelectedSchool] = useState<School | null>(null);
@@ -294,7 +298,16 @@ export default function AttendanceManagementPage() {
   // デフォルトは社員番号順（出勤簿一覧の標準並び順）
   const [sortOrder, setSortOrder] = useState<SortOrder>('employee');
   // 勤務実績なしの行を隠すか。既定は表示（未入力の講師を見落とさないため）
-  const [hideNoWork, setHideNoWork] = useState(false);
+  // 既定で隠す。未入力の講師も一覧に出す仕様にした結果、勤務していない講師の行が
+  // 常に並ぶようになったため、通常は畳んだ状態で見せる（ボタンで出せる）。
+  const [hideNoWork, setHideNoWork] = useState(true);
+
+  /**
+   * 勤務実績がない（全項目0）行か。
+   * 「下にまとめる／隠す」と「前月未提出アラートの対象外にする」の両方で使う。
+   * fetch のコールバックからも参照するため、state 宣言の近くに置いている。
+   */
+  const hasNoWork = (s: SummaryRow) => s.grand_total === 0 && s.total_amount === 0;
 
   const { schools: masterSchools } = useMasterData();
 
@@ -355,9 +368,12 @@ export default function AttendanceManagementPage() {
       setAttendanceTypes(typesData);
       setSheets(summaryResult as SummaryRow[]);
       setLateEarlyRecords(lateEarlyResult);
+      // 前月未提出アラート。未入力の講師も一覧に出す仕様にしたため、そのままだと
+      // 「その月は勤務していないので出す物がない」講師まで未提出として名前が挙がる。
+      // 実績が1つでもある（＝勤務したのに出していない）人だけを追いかける対象にする。
       setPrevMonthUnsubmitted(
         (prevMonthSummary as SummaryRow[]).filter(
-          (s: SummaryRow) => s.status === 'draft' || s.status === 'rejected'
+          (s: SummaryRow) => (s.status === 'draft' || s.status === 'rejected') && !hasNoWork(s)
         )
       );
       setRecentlyRetired(retiredResult);
@@ -690,13 +706,6 @@ export default function AttendanceManagementPage() {
   };
 
   // 並べ替え済みシート
-  /**
-   * 勤務実績がない（全項目0）行か。
-   * 未入力の講師も一覧に出す仕様にしたため、実際には勤務していない講師の行も並ぶ。
-   * 給与確認のときに邪魔にならないよう、下にまとめる／隠すの判定に使う。
-   */
-  const hasNoWork = (s: SummaryRow) => s.grand_total === 0 && s.total_amount === 0;
-
   const noWorkCount = useMemo(() => sheets.filter(hasNoWork).length, [sheets]);
 
   const sortedSheets = useMemo(() => {
@@ -912,8 +921,9 @@ export default function AttendanceManagementPage() {
    * ★ 合計行の colSpan をこの定数から引くこと。ヘッダーに列を足したのに合計行の
    *   colSpan を直し忘れると、合計行だけ1列ぶん横にずれる（社員番号列の追加で実際に起きた）。
    *   数字を直書きすると次に列が増えたとき同じ事故になる。
+   *   社員番号列は admin のときだけ出すので、ここも連動させる。
    */
-  const leadingColumnCount = showSchoolColumn ? 5 : 4;
+  const leadingColumnCount = (showSchoolColumn ? 4 : 3) + (canSeeEmployeeNo ? 1 : 0);
 
   const formatLateEarlyDate = (dateStr: string): string => {
     const date = new Date(dateStr);
@@ -1147,6 +1157,32 @@ export default function AttendanceManagementPage() {
               </div>
             )}
 
+            {/* 提出までの流れ。誰が何をするとステータスがどう進むかを1行で示す。
+                ステータス名は ATTENDANCE_STATUS_LABELS と対で、文言を変えるときは両方直すこと。 */}
+            <div className="mb-4 rounded-lg border border-border bg-surface p-3">
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-2 text-xs">
+                <span className="font-medium text-text-heading">出勤簿の流れ</span>
+                {ATTENDANCE_FLOW_STEPS.map((step, i) => (
+                  <span key={step.status} className="flex items-center gap-2">
+                    {i > 0 && <span className="text-text-muted">→</span>}
+                    <span className="flex items-center gap-1.5">
+                      <Badge className={ATTENDANCE_STATUS_COLORS[step.status]}>
+                        {ATTENDANCE_STATUS_LABELS[step.status]}
+                      </Badge>
+                      <span className="text-text-muted">{step.actor}</span>
+                    </span>
+                  </span>
+                ))}
+              </div>
+              <p className="mt-2 text-[11px] text-text-muted">
+                内容に不備があれば「差戻」で1つ前に返せます（差し戻された出勤簿は
+                <Badge className={`${ATTENDANCE_STATUS_COLORS.rejected} mx-1`}>
+                  {ATTENDANCE_STATUS_LABELS.rejected}
+                </Badge>
+                になり、講師が直して再提出します）。
+              </p>
+            </div>
+
             {isLoading ? (
               <Loading size="md" />
             ) : sheets.length === 0 ? (
@@ -1169,8 +1205,8 @@ export default function AttendanceManagementPage() {
                               <span className="font-medium text-xs">
                                 {sheet.teacher?.name ?? '不明'}
                               </span>
-                              {/* 社員番号を講師名の下に小さく表示 */}
-                              {sheet.teacher?.employee_no && (
+                              {/* 社員番号を講師名の下に小さく表示（システム管理者のみ） */}
+                              {canSeeEmployeeNo && sheet.teacher?.employee_no && (
                                 <span className="text-[10px] text-gray-400 tabular-nums">
                                   {sheet.teacher.employee_no}
                                 </span>
@@ -1393,7 +1429,9 @@ export default function AttendanceManagementPage() {
                       {showSchoolColumn && (
                         <TableHead className="whitespace-nowrap">教室</TableHead>
                       )}
-                      <TableHead className="min-w-[60px] whitespace-nowrap">社員番号</TableHead>
+                      {canSeeEmployeeNo && (
+                        <TableHead className="min-w-[60px] whitespace-nowrap">社員番号</TableHead>
+                      )}
                       <TableHead className="whitespace-nowrap">講師名</TableHead>
                       <TableHead className="text-center whitespace-nowrap">ステータス</TableHead>
                       {displayTypes.map((type) => (
@@ -1432,9 +1470,9 @@ export default function AttendanceManagementPage() {
                               {sheet.school?.name ?? ''}
                             </TableCell>
                           )}
-                          <TableCell className="text-sm text-gray-500 tabular-nums">
-                            {isAdmin ? (
-                              // 社員番号インライン編集（admin/owner のみ）。Enterで確定（blur）。
+                          {canSeeEmployeeNo && (
+                            <TableCell className="text-sm text-gray-500 tabular-nums">
+                              {/* 社員番号インライン編集（システム管理者のみ）。Enterで確定（blur）。 */}
                               <Input
                                 key={`emp-${sheet.id}-${sheet.teacher?.employee_no ?? ''}`}
                                 defaultValue={sheet.teacher?.employee_no ?? ''}
@@ -1447,10 +1485,8 @@ export default function AttendanceManagementPage() {
                                 inputMode="numeric"
                                 className="w-16 h-7 text-center mx-auto"
                               />
-                            ) : (
-                              (sheet.teacher?.employee_no ?? '—')
-                            )}
-                          </TableCell>
+                            </TableCell>
+                          )}
                           <TableCell className="font-medium">
                             {/* 講師名は1行に固定し、バッジは名前の下に折り返す（名前自体が2行に割れるのを防ぐ） */}
                             <div className="whitespace-nowrap">{sheet.teacher?.name ?? '不明'}</div>
