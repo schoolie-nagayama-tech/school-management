@@ -32,6 +32,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import {
   getStudentTextbooks,
   getLastUsedDateByTextbook,
+  getKoushuKomaByTextbooks,
   getStudentProgress,
   createStudentTextbook,
   updateStudentTextbook,
@@ -52,6 +53,7 @@ import type {
   Textbook,
 } from '@/types/database';
 import { getSurname } from '@/lib/utils/teacherName';
+import type { KoushuKomaSummary } from '@/lib/utils/koushuKoma';
 
 import {
   categorizeSubject,
@@ -200,6 +202,42 @@ export default function NewProgressPage() {
     () => pickLiveTextbookIds(studentTextbooks, lastUsedByTextbook),
     [studentTextbooks, lastUsedByTextbook]
   );
+
+  // 講習の残りコマ（カードのチップ用）。対象は季節ラベル付きテキストのみ。
+  // カード一覧を開いたときだけ取りに行き、テーブルから戻るたびに取り直す
+  // （テーブル側で授業を記録するとコマが増えるため、戻った一覧が古いままにならないように）。
+  const koushuTextbookIdsKey = useMemo(
+    () =>
+      studentTextbooks
+        .filter((tb) => !!tb.season)
+        .map((tb) => tb.id)
+        .sort()
+        .join(','),
+    [studentTextbooks]
+  );
+  const [koushuKomaByTextbook, setKoushuKomaByTextbook] = useState<
+    Record<string, KoushuKomaSummary>
+  >({});
+  useEffect(() => {
+    if (view !== 'cards') return;
+    const ids = koushuTextbookIdsKey ? koushuTextbookIdsKey.split(',') : [];
+    if (ids.length === 0) {
+      setKoushuKomaByTextbook({});
+      return;
+    }
+    let cancelled = false;
+    getKoushuKomaByTextbooks(ids)
+      .then((map) => {
+        if (!cancelled) setKoushuKomaByTextbook(map);
+      })
+      .catch(() => {
+        // チップは補助情報。取得できなくても進行表自体は使えるべきなので握りつぶす
+        if (!cancelled) setKoushuKomaByTextbook({});
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [koushuTextbookIdsKey, view]);
 
   const openTextbook = (id: string) => {
     setSelectedTextbookId(id);
@@ -468,6 +506,7 @@ export default function NewProgressPage() {
           textbooks={studentTextbooks}
           liveTextbookIds={liveTextbookIds}
           lastUsedByTextbook={lastUsedByTextbook}
+          koushuKomaByTextbook={koushuKomaByTextbook}
           examTypes={examTypes}
           actionGoalsByExam={actionGoalsByExam}
           role={isTeacher ? 'teacher' : 'manager'}

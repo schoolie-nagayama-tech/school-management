@@ -2,6 +2,8 @@
 
 import { Eye, EyeOff, GripVertical, Trash2 } from 'lucide-react';
 import type { ActionGoal, StudentTextbookWithDetails } from '@/types/database';
+import type { KoushuKomaSummary } from '@/lib/utils/koushuKoma';
+import { KoushuKomaChip } from '@/components/progress/KoushuKomaBar';
 import {
   SUBJECT_COLOR,
   isStalled,
@@ -15,11 +17,12 @@ export function TextbookCard({
   textbook,
   isLive = false,
   lastUsedDate,
+  koushuKoma,
   subjectColumn,
   activeExam,
   actionGoals,
   role,
-  isMeeting: _isMeeting,
+  isMeeting,
   onOpen,
   canMoveUp,
   canMoveDown,
@@ -39,6 +42,8 @@ export function TextbookCard({
   isLive?: boolean;
   /** 最終利用日 'YYYY-MM-DD'。LIVE の古さを判断できるよう併記する */
   lastUsedDate?: string;
+  /** 講習のコマ集計（講習ラベル付きのテキストのみ）。残りコマチップを出す */
+  koushuKoma?: KoushuKomaSummary;
   subjectColumn: SubjectColumn;
   activeExam: {
     id: string;
@@ -223,6 +228,11 @@ export function TextbookCard({
           >
             {season}
           </span>
+        )}
+        {/* 講習の残りコマ。季節バッジの隣に置き、「夏期＝あと何コマ」を一目で読ませる。
+            面談モードでは出さない（申込コマは保護者に見せる情報ではないため、進行表と同じ扱い）。 */}
+        {koushuKoma && koushuKoma.applied > 0 && !isMeeting && (
+          <KoushuKomaChip summary={koushuKoma} />
         )}
         {textbook.is_draft && (
           <span className="text-[11px] px-1.5 py-0.5 bg-gray-200 text-gray-700 rounded font-bold border border-gray-400">
