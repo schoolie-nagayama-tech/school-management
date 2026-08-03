@@ -250,6 +250,9 @@ export default function AttendanceManagementPage() {
   // 社員番号はシステム管理者のみ。isAdmin は owner を含むので別に持つ
   // （この画面に講師は入れないため、実質の境界は admin と owner/manager の間）。
   const canSeeEmployeeNo = profile?.role === 'admin';
+  // チェックボックス列は一括承認（管理者）でしか使わない。
+  // 教室長の提出は「提出済み全件」が対象で行を選ばないため、列ごと出さない。
+  const showSelectionColumn = profile?.role !== 'manager';
 
   const [schools, setSchools] = useState<School[]>([]);
   const [selectedSchool, setSelectedSchool] = useState<School | null>(null);
@@ -493,11 +496,18 @@ export default function AttendanceManagementPage() {
   };
 
   // 教室長: 管理者へ一括提出
+  /**
+   * 教室長 → 管理者へ提出。
+   * 対象は表示中の「提出済み」全件（行の選択は不要）。
+   * 以前は行のチェックが必須で、提出先を選んでもボタンが出ず「提出できない」状態に見えていた。
+   */
   const handleBulkReview = async () => {
-    if (!profile || selectedIds.size === 0 || !selectedAdminId) return;
+    if (!profile || !selectedAdminId) return;
+    const targetIds = actionableSheets.map((s) => s.id);
+    if (targetIds.length === 0) return;
     try {
-      await reviewAttendanceSheets(Array.from(selectedIds), profile.id, selectedAdminId);
-      success(`${selectedIds.size}件の出勤簿を管理者へ提出しました`);
+      await reviewAttendanceSheets(targetIds, profile.id, selectedAdminId);
+      success(`${targetIds.length}件の出勤簿を管理者へ提出しました`);
       setSelectedIds(new Set());
       await fetchData();
     } catch {
@@ -921,9 +931,14 @@ export default function AttendanceManagementPage() {
    * ★ 合計行の colSpan をこの定数から引くこと。ヘッダーに列を足したのに合計行の
    *   colSpan を直し忘れると、合計行だけ1列ぶん横にずれる（社員番号列の追加で実際に起きた）。
    *   数字を直書きすると次に列が増えたとき同じ事故になる。
-   *   社員番号列は admin のときだけ出すので、ここも連動させる。
+   *   社員番号列(admin のみ)・チェックボックス列(教室長には出さない)も連動させる。
+   *   内訳: チェックボックス / 教室 / 社員番号 / 講師名 / ステータス
    */
-  const leadingColumnCount = (showSchoolColumn ? 4 : 3) + (canSeeEmployeeNo ? 1 : 0);
+  const leadingColumnCount =
+    2 + // 講師名・ステータス（常に出る）
+    (showSelectionColumn ? 1 : 0) +
+    (showSchoolColumn ? 1 : 0) +
+    (canSeeEmployeeNo ? 1 : 0);
 
   const formatLateEarlyDate = (dateStr: string): string => {
     const date = new Date(dateStr);
@@ -1135,12 +1150,11 @@ export default function AttendanceManagementPage() {
                           ))}
                         </SelectContent>
                       </Select>
-                      {selectedIds.size > 0 && (
-                        <Button onClick={handleBulkReview} disabled={!selectedAdminId}>
-                          <Send className="h-4 w-4 mr-2" />
-                          選択した{selectedIds.size}件を管理者へ提出
-                        </Button>
-                      )}
+                      {/* 行の選択は不要。提出先を選べば押せる */}
+                      <Button onClick={handleBulkReview} disabled={!selectedAdminId}>
+                        <Send className="h-4 w-4 mr-2" />
+                        提出済み{actionableCount}件を管理者へ提出
+                      </Button>
                     </div>
                   </>
                 ) : (
@@ -1418,13 +1432,15 @@ export default function AttendanceManagementPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-12">
-                        <Checkbox
-                          checked={actionableCount > 0 && selectedIds.size === actionableCount}
-                          onCheckedChange={toggleSelectAll}
-                          disabled={actionableCount === 0}
-                        />
-                      </TableHead>
+                      {showSelectionColumn && (
+                        <TableHead className="w-12">
+                          <Checkbox
+                            checked={actionableCount > 0 && selectedIds.size === actionableCount}
+                            onCheckedChange={toggleSelectAll}
+                            disabled={actionableCount === 0}
+                          />
+                        </TableHead>
+                      )}
                       {/* 見出しは折り返すと3行に崩れて表が読みにくくなるため、すべて1行に固定する */}
                       {showSchoolColumn && (
                         <TableHead className="whitespace-nowrap">教室</TableHead>
@@ -1458,13 +1474,15 @@ export default function AttendanceManagementPage() {
                           key={sheet.id}
                           className={exitStatus === 'retired' ? 'opacity-60' : undefined}
                         >
-                          <TableCell>
-                            <Checkbox
-                              checked={selectedIds.has(sheet.id)}
-                              onCheckedChange={() => toggleSelect(sheet.id)}
-                              disabled={!actionableStatuses.includes(sheet.status)}
-                            />
-                          </TableCell>
+                          {showSelectionColumn && (
+                            <TableCell>
+                              <Checkbox
+                                checked={selectedIds.has(sheet.id)}
+                                onCheckedChange={() => toggleSelect(sheet.id)}
+                                disabled={!actionableStatuses.includes(sheet.status)}
+                              />
+                            </TableCell>
+                          )}
                           {showSchoolColumn && (
                             <TableCell className="whitespace-nowrap">
                               {sheet.school?.name ?? ''}
