@@ -21,7 +21,6 @@ import {
   TableHeader,
   TableRow,
   Badge,
-  Checkbox,
   Dialog,
   DialogContent,
   DialogHeader,
@@ -250,9 +249,6 @@ export default function AttendanceManagementPage() {
   // 社員番号はシステム管理者のみ。isAdmin は owner を含むので別に持つ
   // （この画面に講師は入れないため、実質の境界は admin と owner/manager の間）。
   const canSeeEmployeeNo = profile?.role === 'admin';
-  // チェックボックス列は一括承認（管理者）でしか使わない。
-  // 教室長の提出は「提出済み全件」が対象で行を選ばないため、列ごと出さない。
-  const showSelectionColumn = profile?.role !== 'manager';
 
   const [schools, setSchools] = useState<School[]>([]);
   const [selectedSchool, setSelectedSchool] = useState<School | null>(null);
@@ -260,7 +256,6 @@ export default function AttendanceManagementPage() {
   const [attendanceTypes, setAttendanceTypes] = useState<AttendanceType[]>([]);
   const [sheets, setSheets] = useState<SummaryRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false);
   const [rejectingSheet, setRejectingSheet] = useState<SummaryRow | null>(null);
   const [rejectReason, setRejectReason] = useState('');
@@ -386,7 +381,6 @@ export default function AttendanceManagementPage() {
       // 提出先は自動で選ばない。以前は先頭の管理者を既定にしていたが、セレクトの表示は
       // 「提出先を選択」のままなのにボタンだけ押せる状態になり、誰宛に出るのか分からなかった。
       // 未選択のままにして、明示的に選ぶまで提出ボタンを無効にする。
-      setSelectedIds(new Set());
     } catch (err) {
       console.error('Failed to fetch data:', err);
       toastError('データの取得に失敗しました');
@@ -451,23 +445,6 @@ export default function AttendanceManagementPage() {
   const actionableSheets = sheets.filter((s) => actionableStatuses.includes(s.status));
   const actionableCount = actionableSheets.length;
 
-  const toggleSelect = (id: string) => {
-    setSelectedIds((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(id)) newSet.delete(id);
-      else newSet.add(id);
-      return newSet;
-    });
-  };
-
-  const toggleSelectAll = () => {
-    if (selectedIds.size === actionableSheets.length) {
-      setSelectedIds(new Set());
-    } else {
-      setSelectedIds(new Set(actionableSheets.map((s) => s.id)));
-    }
-  };
-
   // 管理者: 承認
   const handleApprove = async (sheet: SummaryRow) => {
     if (!profile) return;
@@ -481,12 +458,19 @@ export default function AttendanceManagementPage() {
   };
 
   // 管理者: 一括承認
+  /**
+   * 承認待ち（提出済み・確認済み）をまとめて承認する。
+   * 運用上ほぼ一括で承認するため、行の選択は不要にしている
+   * （チェックを付けないとボタンが出ず、気づかれなかった）。
+   * 個別に承認したいときは各行の「承認」ボタンを使う。
+   */
   const handleBulkApprove = async () => {
-    if (!profile || selectedIds.size === 0) return;
+    if (!profile) return;
+    const targetIds = actionableSheets.map((s) => s.id);
+    if (targetIds.length === 0) return;
     try {
-      await bulkApproveAttendanceSheets(Array.from(selectedIds), profile.id);
-      success(`${selectedIds.size}件の出勤簿を承認しました`);
-      setSelectedIds(new Set());
+      await bulkApproveAttendanceSheets(targetIds, profile.id);
+      success(`${targetIds.length}件の出勤簿を承認しました`);
       await fetchData();
     } catch {
       toastError('一括承認に失敗しました');
@@ -506,7 +490,6 @@ export default function AttendanceManagementPage() {
     try {
       await reviewAttendanceSheets(targetIds, profile.id, selectedAdminId);
       success(`${targetIds.length}件の出勤簿を管理者へ提出しました`);
-      setSelectedIds(new Set());
       await fetchData();
     } catch {
       toastError('提出に失敗しました');
@@ -929,12 +912,11 @@ export default function AttendanceManagementPage() {
    * ★ 合計行の colSpan をこの定数から引くこと。ヘッダーに列を足したのに合計行の
    *   colSpan を直し忘れると、合計行だけ1列ぶん横にずれる（社員番号列の追加で実際に起きた）。
    *   数字を直書きすると次に列が増えたとき同じ事故になる。
-   *   社員番号列(admin のみ)・チェックボックス列(教室長には出さない)も連動させる。
-   *   内訳: チェックボックス / 教室 / 社員番号 / 講師名 / ステータス
+   *   社員番号列は admin のときだけ出すので連動させる。
+   *   内訳: 教室 / 社員番号 / 講師名 / ステータス
    */
   const leadingColumnCount =
     2 + // 講師名・ステータス（常に出る）
-    (showSelectionColumn ? 1 : 0) +
     (showSchoolColumn ? 1 : 0) +
     (canSeeEmployeeNo ? 1 : 0);
 
@@ -1158,12 +1140,11 @@ export default function AttendanceManagementPage() {
                 ) : (
                   <>
                     <span className="text-sm text-text-body">承認待ち: {actionableCount}件</span>
-                    {selectedIds.size > 0 && (
-                      <Button onClick={handleBulkApprove}>
-                        <CheckCircle className="h-4 w-4 mr-2" />
-                        選択した{selectedIds.size}件を一括承認
-                      </Button>
-                    )}
+                    {/* 行の選択は不要。個別に承認したいときは各行の「承認」ボタンを使う */}
+                    <Button onClick={handleBulkApprove}>
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      承認待ち{actionableCount}件を一括承認
+                    </Button>
                   </>
                 )}
               </div>
@@ -1430,15 +1411,6 @@ export default function AttendanceManagementPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      {showSelectionColumn && (
-                        <TableHead className="w-12">
-                          <Checkbox
-                            checked={actionableCount > 0 && selectedIds.size === actionableCount}
-                            onCheckedChange={toggleSelectAll}
-                            disabled={actionableCount === 0}
-                          />
-                        </TableHead>
-                      )}
                       {/* 見出しは折り返すと3行に崩れて表が読みにくくなるため、すべて1行に固定する */}
                       {showSchoolColumn && (
                         <TableHead className="whitespace-nowrap">教室</TableHead>
@@ -1472,15 +1444,6 @@ export default function AttendanceManagementPage() {
                           key={sheet.id}
                           className={exitStatus === 'retired' ? 'opacity-60' : undefined}
                         >
-                          {showSelectionColumn && (
-                            <TableCell>
-                              <Checkbox
-                                checked={selectedIds.has(sheet.id)}
-                                onCheckedChange={() => toggleSelect(sheet.id)}
-                                disabled={!actionableStatuses.includes(sheet.status)}
-                              />
-                            </TableCell>
-                          )}
                           {showSchoolColumn && (
                             <TableCell className="whitespace-nowrap">
                               {sheet.school?.name ?? ''}

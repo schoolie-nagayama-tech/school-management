@@ -809,6 +809,10 @@ export async function reopenAttendanceSheet(sheetId: string) {
  *
  * ★ admin のみ。以前は owner も候補に含めていたが、承認するのは管理者なので
  *   提出先も管理者に揃える（オーナーを選べると、承認されないまま止まりうる）。
+ *
+ * ★ @test.com のテストアカウントは除外する。本番にも admin@test.com 等が実在し、
+ *   全教室に紐づいているため候補に出てしまう。アカウント自体は動作確認に使うので
+ *   is_active は落とさず、この一覧からだけ隠す。
  */
 export async function getAdminUsers() {
   const { data, error } = await supabase
@@ -816,6 +820,7 @@ export async function getAdminUsers() {
     .select('id, display_name, email')
     .eq('role', 'admin')
     .eq('is_active', true)
+    .not('email', 'like', '%@test.com')
     .order('display_name');
 
   if (error) {
