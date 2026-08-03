@@ -804,11 +804,17 @@ export async function reopenAttendanceSheet(sheetId: string) {
 }
 
 // 管理者一覧を取得（提出先選択用）
+/**
+ * 出勤簿の提出先の候補（教室長が「管理者へ提出」するときに選ぶ相手）。
+ *
+ * ★ admin のみ。以前は owner も候補に含めていたが、承認するのは管理者なので
+ *   提出先も管理者に揃える（オーナーを選べると、承認されないまま止まりうる）。
+ */
 export async function getAdminUsers() {
   const { data, error } = await supabase
     .from('user_profiles')
     .select('id, display_name, email')
-    .in('role', ['admin', 'owner'])
+    .eq('role', 'admin')
     .eq('is_active', true)
     .order('display_name');
 
