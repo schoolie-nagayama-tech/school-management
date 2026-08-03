@@ -2,6 +2,7 @@ import { Suspense } from 'react';
 import { StudentsPageClient } from './StudentsPageClient';
 import { BulletinBoard } from '@/components/bulletin/BulletinBoard';
 import { AlertBoard } from '@/components/alerts';
+import { PendingAttendanceNotice } from '@/components/attendance/PendingAttendanceNotice';
 import { prefetchBulletinInitial } from '@/lib/api/bulletin-server';
 import { prefetchAlertInitial } from '@/lib/api/alert-server';
 import { prefetchNotificationInitial } from '@/lib/api/notification-server';
@@ -43,9 +44,13 @@ export default async function StudentsPage() {
         </Suspense>
       }
       alertSlot={
-        <Suspense fallback={boardFallback}>
-          <AlertServerSlot />
-        </Suspense>
+        <div className="space-y-3">
+          {/* 出勤簿の未処理（生徒アラートとは別枠。理由はコンポーネント側のコメント参照） */}
+          <PendingAttendanceNotice />
+          <Suspense fallback={boardFallback}>
+            <AlertServerSlot />
+          </Suspense>
+        </div>
       }
     />
   );

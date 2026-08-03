@@ -4,6 +4,7 @@ import type {
   AttendanceType,
   AttendanceTypeFormData,
   AttendanceSheet,
+  AttendanceSheetStatus,
   AttendanceRecord,
   AttendanceNote,
   KomaChangeInput,
@@ -536,6 +537,43 @@ async function ensureSheetsForActiveTeachers(schoolId: string, yearMonth: string
   );
   // 作成に失敗しても一覧表示自体は続行する（既存分は出す）
   if (error) console.error('Error creating draft attendance sheets:', error);
+}
+
+/**
+ * 自分が次に動かすべき出勤簿の件数（お知らせバー・ヘッダーバッジ用）。
+ *
+ * ★ 出勤簿には通知の受け口が無く、管理者は出勤簿管理を開くまで
+ *   提出されたことに気づけなかった。件数だけ外に出して気づけるようにする。
+ *
+ * ★ 役割で対象ステータスが変わる（画面の actionableStatuses と同じ定義に揃えること）:
+ *   - 教室長: submitted（講師から出てきた。確認して管理者へ提出する）
+ *   - 管理者/オーナー: submitted + reviewed（承認する）
+ *
+ * ★ 月では絞らない: 承認漏れは古い月ほど埋もれるため、未処理は全部数える。
+ *
+ * @returns 件数（教室が無い/権限が無い場合は 0）
+ */
+export async function getPendingAttendanceCount(
+  schoolIds: string[],
+  role: string | null | undefined
+): Promise<number> {
+  if (schoolIds.length === 0) return 0;
+  const r = (role ?? '').toLowerCase();
+  if (r !== 'manager' && r !== 'admin' && r !== 'owner') return 0;
+  const statuses: AttendanceSheetStatus[] =
+    r === 'manager' ? ['submitted'] : ['submitted', 'reviewed'];
+
+  const { count, error } = await supabase
+    .from('attendance_sheets')
+    .select('id', { count: 'exact', head: true })
+    .in('school_id', schoolIds)
+    .in('status', statuses);
+
+  if (error) {
+    console.error('Error counting pending attendance sheets:', error);
+    return 0;
+  }
+  return count ?? 0;
 }
 
 export async function getAttendanceSheetList(schoolId: string, yearMonth: string) {
