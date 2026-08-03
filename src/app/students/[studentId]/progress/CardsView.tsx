@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import type { ActionGoal, ExamType, StudentTextbookWithDetails } from '@/types/database';
+import type { KoushuKomaSummary } from '@/lib/utils/koushuKoma';
 import {
   SUBJECT_COLOR,
   SUBJECT_COLUMNS,
@@ -20,6 +21,7 @@ export function CardsView({
   textbooks,
   liveTextbookIds,
   lastUsedByTextbook,
+  koushuKomaByTextbook,
   examTypes,
   actionGoalsByExam,
   role,
@@ -36,6 +38,8 @@ export function CardsView({
   liveTextbookIds: Set<string>;
   /** student_textbook_id → 最終利用日。LIVE バッジに日付を併記する。 */
   lastUsedByTextbook: Record<string, string>;
+  /** student_textbook_id → 講習コマ集計。講習ラベル付きのテキストのみ入る。 */
+  koushuKomaByTextbook?: Record<string, KoushuKomaSummary>;
   examTypes: ExamType[];
   actionGoalsByExam: Record<string, ActionGoal[]>;
   role: 'teacher' | 'manager';
@@ -144,6 +148,7 @@ export function CardsView({
                     textbook={tb}
                     isLive={liveTextbookIds.has(tb.id)}
                     lastUsedDate={lastUsedByTextbook[tb.id]}
+                    koushuKoma={koushuKomaByTextbook?.[tb.id]}
                     subjectColumn={col}
                     activeExam={ae}
                     actionGoals={goals}
