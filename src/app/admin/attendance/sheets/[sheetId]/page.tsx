@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { AdminLayout } from '@/components/layouts';
 import {
   Button,
@@ -63,6 +63,8 @@ import { LateEarlySelect } from '@/components/attendance/LateEarlySelect';
 export default function AttendanceSheetDetailPage() {
   const params = useParams();
   const router = useRouter();
+  // 一覧から渡された表示月。戻るときに同じ月へ返すために使う
+  const backYearMonth = useSearchParams()?.get('ym') ?? '';
   const { profile } = useAuth();
   const { toasts, removeToast, success, error: toastError } = useToast();
   const sheetId = params.sheetId as string;
@@ -263,7 +265,12 @@ export default function AttendanceSheetDetailPage() {
           <div className="flex items-center gap-4">
             <Button
               variant="ghost"
-              onClick={() => router.push('/admin/attendance')}
+              // 一覧で見ていた月(?ym=)へ戻す。付いていなければ従来どおり既定の月。
+              onClick={() =>
+                router.push(
+                  backYearMonth ? `/admin/attendance?ym=${backYearMonth}` : '/admin/attendance'
+                )
+              }
               className="p-2"
             >
               <ArrowLeft className="h-5 w-5" />

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { AdminLayout } from '@/components/layouts';
 import {
   Card,
@@ -240,6 +240,7 @@ function HrChip({
 
 export default function AttendanceManagementPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   // グローバルの教室選択に連動（ヘッダーのドロップダウンと同期）
   const { profile, schoolIds: userSchoolIds, selectedSchoolId, setSelectedSchoolId } = useAuth();
   const { toasts, removeToast, success, error: toastError } = useToast();
@@ -252,7 +253,24 @@ export default function AttendanceManagementPage() {
 
   const [schools, setSchools] = useState<School[]>([]);
   const [selectedSchool, setSelectedSchool] = useState<School | null>(null);
-  const [yearMonth, setYearMonth] = useState(getCurrentYearMonth());
+  // 表示中の月は URL(?ym=YYYY-MM) にも持たせる。
+  // state だけだと、講師の詳細を開いて戻ったときに初期値（当月）へ戻ってしまい、
+  // 前月を確認・編集していた場合に毎回選び直しになる。
+  const initialYearMonth = searchParams?.get('ym') || getCurrentYearMonth();
+  const [yearMonth, setYearMonth] = useState(initialYearMonth);
+
+  /**
+   * 月を切り替える。state と URL(?ym=) を同時に更新する。
+   * URL に載せておくことで、講師の詳細から戻ったときに同じ月へ戻れる。
+   * 履歴を増やさないよう replace を使う（戻るボタンで月送りを遡らせない）。
+   */
+  const changeYearMonth = useCallback(
+    (next: string) => {
+      setYearMonth(next);
+      router.replace(`/admin/attendance?ym=${next}`, { scroll: false });
+    },
+    [router]
+  );
   const [attendanceTypes, setAttendanceTypes] = useState<AttendanceType[]>([]);
   const [sheets, setSheets] = useState<SummaryRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -542,7 +560,8 @@ export default function AttendanceManagementPage() {
   };
 
   const handleViewDetail = (sheet: SummaryRow) => {
-    router.push(`/admin/attendance/sheets/${sheet.id}`);
+    // 表示中の月を渡す。詳細の「戻る」がこの月の一覧へ返るようにするため。
+    router.push(`/admin/attendance/sheets/${sheet.id}?ym=${yearMonth}`);
   };
 
   const handleOpenPortal = () => {
@@ -963,7 +982,7 @@ export default function AttendanceManagementPage() {
                 <Button
                   size="sm"
                   variant="secondary"
-                  onClick={() => setYearMonth(getPrevMonth(getCurrentYearMonth()))}
+                  onClick={() => changeYearMonth(getPrevMonth(getCurrentYearMonth()))}
                 >
                   前月を表示
                 </Button>
@@ -1091,7 +1110,7 @@ export default function AttendanceManagementPage() {
                 <div className="flex items-center gap-2">
                   <Button
                     variant="ghost"
-                    onClick={() => setYearMonth(getPrevMonth(yearMonth))}
+                    onClick={() => changeYearMonth(getPrevMonth(yearMonth))}
                     className="p-2"
                   >
                     <ChevronLeft className="h-5 w-5" />
@@ -1101,7 +1120,7 @@ export default function AttendanceManagementPage() {
                   </span>
                   <Button
                     variant="ghost"
-                    onClick={() => setYearMonth(getNextMonth(yearMonth))}
+                    onClick={() => changeYearMonth(getNextMonth(yearMonth))}
                     className="p-2"
                   >
                     <ChevronRight className="h-5 w-5" />
