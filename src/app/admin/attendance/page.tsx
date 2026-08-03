@@ -383,11 +383,9 @@ export default function AttendanceManagementPage() {
       setNewTeachers(newResult);
       setAllTeachers(teacherList);
       setAdminUsers(adminList);
-      // 未選択時のみデフォルト管理者を設定。関数型 setState で現在値を参照することで
-      // selectedAdminId を依存配列から外し、初回ロード時の二重フェッチを防ぐ
-      if (adminList.length > 0) {
-        setSelectedAdminId((prev) => prev || adminList[0].id);
-      }
+      // 提出先は自動で選ばない。以前は先頭の管理者を既定にしていたが、セレクトの表示は
+      // 「提出先を選択」のままなのにボタンだけ押せる状態になり、誰宛に出るのか分からなかった。
+      // 未選択のままにして、明示的に選ぶまで提出ボタンを無効にする。
       setSelectedIds(new Set());
     } catch (err) {
       console.error('Failed to fetch data:', err);
