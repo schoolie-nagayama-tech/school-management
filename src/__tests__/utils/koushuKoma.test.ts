@@ -8,7 +8,12 @@
  *   定義が変わると3画面が同時にズレる。
  */
 import { describe, it, expect } from 'vitest';
-import { computeKoushuKoma, koushuPaceLabel, type KoushuKomaRow } from '@/lib/utils/koushuKoma';
+import {
+  computeKoushuKoma,
+  koushuGroupDeviations,
+  koushuPaceLabel,
+  type KoushuKomaRow,
+} from '@/lib/utils/koushuKoma';
 
 /** 単元1行ぶんのヘルパー（指導日は [日付, セッションID] の配列で渡す） */
 function row(
@@ -152,12 +157,141 @@ describe('computeKoushuKoma', () => {
   });
 
   it('進捗行が無くても落ちない', () => {
-    expect(computeKoushuKoma([])).toEqual({
-      applied: 0,
-      done: 0,
-      remaining: 0,
-      needed: 0,
-      diff: 0,
-    });
+    const s = computeKoushuKoma([]);
+    expect(s).toMatchObject({ applied: 0, done: 0, remaining: 0, needed: 0, diff: 0 });
+    expect(s.groups).toEqual([]);
+  });
+});
+
+/**
+ * ★ 本番で見つかった取りこぼしの回帰テスト（永山・中1・フォレスタステップ数学）。
+ *
+ * 「2コマ予定の比例の式・反比例の式を、7/30の1コマで両方やり切った」ケース。
+ * 残りコマは6で正しいのに、進行表に残っている予定は5コマしか無い＝1コマ前倒し。
+ * 旧実装は「やり切ったグループ」も max(予定−実施,0)=1 を要求し続けたため needed=6 となり、
+ * 6−6=0 で「プラン通り」と誤判定していた。
+ */
+describe('computeKoushuKoma — やり切ったグループは残り0（本番の実データ）', () => {
+  const nakamura: KoushuKomaRow[] = [
+    row(1, 1, { applied: 1, lessons: [['2026-07-14', 's1']] }),
+    row(2, 0, { applied: 1, lessons: [['2026-07-14', 's1']] }),
+    row(3, 1, { applied: 2, lessons: [['2026-07-15', 's2']] }),
+    row(4, 0, { applied: 2, lessons: [['2026-07-15', 's2']] }),
+    row(5, 1, { applied: 3, lessons: [['2026-07-22', 's3']] }),
+    row(6, 0, { applied: 3, lessons: [['2026-07-22', 's3']] }),
+    row(7, 1, { applied: 4, lessons: [['2026-07-24', 's4']] }),
+    row(8, 0, { applied: 4, lessons: [['2026-07-24', 's4']] }),
+    // ここが本題: 2コマ予定を1コマ(7/30)で2単元とも終えている
+    row(9, 2, { applied: 5, lessons: [['2026-07-30', 's5']] }),
+    row(10, 0, { applied: 5, lessons: [['2026-07-30', 's5']] }),
+    row(11, 1, { applied: 6, lessons: [['2026-08-03', 's6']] }),
+    row(12, 0, { applied: 6, lessons: [['2026-08-03', 's6']] }),
+    // 未実施
+    row(13, 1),
+    row(14, 2, { applied: 7 }),
+    row(15, 0, { applied: 7 }),
+    row(16, 1, { applied: 8 }),
+    row(17, 0, { applied: 8 }),
+    row(18, 1, { applied: 9 }),
+    row(19, 0, { applied: 9 }),
+    // 提案のみで申込0（＝やり切るべき対象ではない）
+    row(20, 0),
+    row(21, 0),
+  ];
+
+  it('申込12・実施6・残り6（コマ数の集計は従来どおり）', () => {
+    const s = computeKoushuKoma(nakamura);
+    expect(s.applied).toBe(12);
+    expect(s.done).toBe(6);
+    expect(s.remaining).toBe(6);
+  });
+
+  it('やり切ったグループを0にすると 残り必要=5 → +1コマ前倒しと出る', () => {
+    const s = computeKoushuKoma(nakamura);
+    // 未実施の 4-5(1) / 4-6・4-7(2) / 5-1・5-2(1) / 5-3・5-4(1) = 5
+    expect(s.needed).toBe(5);
+    expect(s.diff).toBe(1);
+    expect(koushuPaceLabel(s)).toEqual({ text: '+1コマ前倒し', tone: 'ahead' });
+  });
+
+  it('最前線のグループは、全単元に日付が入っていても前倒しと言い切らない（2回目が来るため）', () => {
+    // 中村ケースの「先の単元(4-3/4-4)をやった行」を落として、比例・反比例が最前線の状態にする
+    const frontier = nakamura.slice(0, 10).concat(nakamura.slice(12));
+    const s = computeKoushuKoma(frontier);
+    // 申込11 - 実施5 = 残り6。比例反比例(2コマ予定/1コマ実施)はまだ1コマ要求する
+    expect(s.remaining).toBe(6);
+    expect(s.needed).toBe(1 + 5); // 比例反比例の残り1 + 未実施5コマ
+    // ＝この時点では「プラン通り」。先へ進んで初めて +1コマ前倒しになる
+    expect(s.diff).toBe(0);
+    expect(koushuPaceLabel(s)).toEqual({ text: 'プラン通り', tone: 'onplan' });
+    const g5 = s.groups.find((g) => g.key === 'a:5');
+    expect(g5).toMatchObject({ allTaught: true, finished: false });
+    // ズレとしても出さない（この時点では「1コマで終わった」と決められない）
+    expect(koushuGroupDeviations(s).map((g) => g.key)).not.toContain('a:5');
+  });
+
+  it('先の単元に進んだ時点で「やり切った」に変わる', () => {
+    const before = computeKoushuKoma(nakamura.slice(0, 10).concat(nakamura.slice(12)));
+    const after = computeKoushuKoma(nakamura);
+    expect(before.groups.find((g) => g.key === 'a:5')?.finished).toBe(false);
+    expect(after.groups.find((g) => g.key === 'a:5')?.finished).toBe(true);
+  });
+
+  it('同じ単元の2回目が入れば消化コマが増えてズレが解消する', () => {
+    // 比例・反比例の2回目を8/05に実施（別セッション）＝予定2コマを2コマで消化
+    const withSecond = nakamura.map((r) =>
+      r.rowKey === 9 || r.rowKey === 10
+        ? {
+            ...r,
+            lessons: [...r.lessons, { lesson_date: '2026-08-05', session_id: 's7' }],
+          }
+        : r
+    );
+    const s = computeKoushuKoma(withSecond);
+    const g5 = s.groups.find((g) => g.key === 'a:5');
+    expect(g5).toMatchObject({ planned: 2, consumed: 2, delta: 0 });
+    expect(koushuGroupDeviations(s)).toEqual([]);
+    // 実施7コマ・残り5・残り必要5 → プラン通りに戻る
+    expect(s.done).toBe(7);
+    expect(s.diff).toBe(0);
+  });
+
+  it('ズレたグループとして「2コマ予定を1コマで実施」だけを拾う', () => {
+    const devs = koushuGroupDeviations(computeKoushuKoma(nakamura));
+    expect(devs).toHaveLength(1);
+    expect(devs[0]).toMatchObject({ planned: 2, consumed: 1, finished: true, delta: -1 });
+    // 予定コマの数字が出ている行（申込2の行）に印を出す
+    expect(devs[0].anchorRowKey).toBe(9);
+  });
+
+  it('まだ手を付けていないグループや、単元が残っている途中のグループはズレ扱いしない', () => {
+    const devs = koushuGroupDeviations(
+      computeKoushuKoma([
+        // 未着手（2コマ予定・実施0）
+        row(1, 2, { applied: 1 }),
+        row(2, 0, { applied: 1 }),
+        // 途中（2コマ予定・1コマ実施だが2単元目が未指導）
+        row(3, 2, { applied: 2, lessons: [['2026-07-30', 's1']] }),
+        row(4, 0, { applied: 2 }),
+      ])
+    );
+    expect(devs).toEqual([]);
+  });
+
+  it('予定より多く使ったグループは、やり切る前でもズレとして拾う', () => {
+    const devs = koushuGroupDeviations(
+      computeKoushuKoma([
+        row(1, 1, {
+          applied: 1,
+          lessons: [
+            ['2026-07-20', 's1'],
+            ['2026-07-22', 's2'],
+          ],
+        }),
+        row(2, 0, { applied: 1 }),
+      ])
+    );
+    expect(devs).toHaveLength(1);
+    expect(devs[0]).toMatchObject({ planned: 1, consumed: 2, finished: false, delta: 1 });
   });
 });

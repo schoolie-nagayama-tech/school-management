@@ -37,7 +37,8 @@ import { TextbookSettingsInline } from './TextbookSettingsInline';
 import { ExamRangesInline } from './ExamRangesInline';
 import { ProgressRow } from './ProgressRow';
 import { KoushuKomaBar } from '@/components/progress/KoushuKomaBar';
-import { computeKoushuKoma } from '@/lib/utils/koushuKoma';
+import { computeKoushuKoma, koushuGroupDeviations } from '@/lib/utils/koushuKoma';
+import type { KoushuGroupStat } from '@/lib/utils/koushuKoma';
 import { ExamGoalEditModal } from './ExamGoalEditModal';
 import { NextGoalModal } from './NextGoalModal';
 import { ExamRangeModal } from './ExamRangeModal';
@@ -601,6 +602,17 @@ export function TableView({
     // 申込コマが未転記（0）の講習教材では判定が意味を持たないので出さない
     return summary.applied > 0 ? summary : null;
   }, [displaySeason, isMeeting, progress]);
+
+  // 予定と実施がズレたグループ（例: 2コマ予定の単元を1コマで終えた）を、その予定コマを
+  // 表示している行に紐づける。合計だけ見ても「どこでズレたか」が分からないため。
+  const komaDeviationByRow = useMemo(() => {
+    const map = new Map<number, KoushuGroupStat>();
+    if (!koushuKoma) return map;
+    for (const g of koushuGroupDeviations(koushuKoma)) {
+      map.set(Number(g.anchorRowKey), g);
+    }
+    return map;
+  }, [koushuKoma]);
 
   // テキストの属性（対象学年・科目）。生徒の学年とは別物なので、テキスト名の直後に添える。
   const textbookMeta = formatTextbookMeta(
@@ -1187,6 +1199,7 @@ export function TableView({
                     proposalGroupSpan={proposalGroupSpan}
                     appliedGroupSpan={appliedGroupSpan}
                     inheritedIntentTag={inheritedTag}
+                    komaDeviation={komaDeviationByRow.get(row.id) ?? null}
                     selfName={selfName}
                     isTeacher={role === 'teacher'}
                     paintActive={paintActive}

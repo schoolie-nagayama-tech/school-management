@@ -9,6 +9,7 @@ import {
   type IntentTag,
   type MeetingColMap,
 } from './newProgress.shared';
+import type { KoushuGroupStat } from '@/lib/utils/koushuKoma';
 import { IntentTagPicker } from './IntentTagPicker';
 import { DateInputWithToday } from './DateInputWithToday';
 import { TeacherNameInput } from './TeacherNameInput';
@@ -28,6 +29,7 @@ export function ProgressRow({
   proposalGroupSpan = 1,
   appliedGroupSpan = 1,
   inheritedIntentTag = null,
+  komaDeviation = null,
   selfName = '',
   isTeacher = false,
   paintActive = false,
@@ -61,6 +63,8 @@ export function ProgressRow({
   appliedGroupSpan?: number;
   /** 非先頭行に継承表示する指導意図タグ（読み取り専用） */
   inheritedIntentTag?: IntentTag | null;
+  /** この行が予定コマを持つグループで、予定と実施がズレているときの内訳（申込セルに印を出す） */
+  komaDeviation?: KoushuGroupStat | null;
   /** ログイン中ユーザーの display_name（講師名欄の自動補完用） */
   selfName?: string;
   /** 講師権限: 講師名を苗字のみ表示 */
@@ -239,6 +243,22 @@ export function ProgressRow({
               }}
               className="w-14 px-1.5 py-1 text-xs bg-transparent border border-transparent hover:border-[#e5e7eb] focus:border-[#1e3a5f] focus:bg-white rounded outline-none text-center"
             />
+          )}
+          {/* 予定と実施がズレたグループにだけ「実施/予定」を出す。合計バッジだけでは
+              「どの単元でズレたか」が分からず、進行表の見た目と残りコマ数が食い違って見える。 */}
+          {komaDeviation && (
+            <span
+              className={`mt-0.5 block text-center text-[10px] font-bold tabular-nums ${
+                komaDeviation.delta < 0 ? 'text-emerald-700' : 'text-red-700'
+              }`}
+              title={
+                komaDeviation.delta < 0
+                  ? `${komaDeviation.planned}コマ予定の単元を${komaDeviation.consumed}コマで終えています（${-komaDeviation.delta}コマ前倒し）`
+                  : `${komaDeviation.planned}コマ予定の単元に${komaDeviation.consumed}コマ使っています（${komaDeviation.delta}コマ超過）`
+              }
+            >
+              実施{komaDeviation.consumed}
+            </span>
           )}
         </td>
       )}

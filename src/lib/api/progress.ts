@@ -547,11 +547,13 @@ export async function getKoushuKomaByTextbooks(
     group_number: number | null;
     applied_group_number: number | null;
     lessons: { lesson_date: string | null; session_id: string | null }[] | null;
+    // PostgREST の embed は関係の解釈によりオブジェクト/配列どちらでも返り得るため両対応する
+    curriculum_item: { sort_order: number | null } | { sort_order: number | null }[] | null;
   }>(studentTextbookIds, (chunk, from, to) =>
     supabase
       .from('student_progress')
       .select(
-        'id, student_textbook_id, curriculum_item_id, application_count, group_number, applied_group_number, lessons:student_progress_lessons(lesson_date, session_id)'
+        'id, student_textbook_id, curriculum_item_id, application_count, group_number, applied_group_number, lessons:student_progress_lessons(lesson_date, session_id), curriculum_item:curriculum_items(sort_order)'
       )
       .in('student_textbook_id', chunk)
       .order('id', { ascending: true })
@@ -560,22 +562,35 @@ export async function getKoushuKomaByTextbooks(
     throw new Error(`講習コマの取得に失敗しました: ${e.message}`);
   });
 
-  const byTextbook = new Map<string, KoushuKomaRow[]>();
+  // computeKoushuKoma は「先の単元へ進んだか」を並び順で判断するため、
+  // カリキュラム順（進行表の表示順）に整列してから渡す。
+  // ここは id 順でページングしている（安定ページングのため）ので、並べ替えは取得後に行う。
+  const sortOrderOf = (r: (typeof rows)[number]): number => {
+    const ci = Array.isArray(r.curriculum_item) ? r.curriculum_item[0] : r.curriculum_item;
+    return ci?.sort_order ?? Number.MAX_SAFE_INTEGER;
+  };
+
+  const byTextbook = new Map<string, { order: number; row: KoushuKomaRow }[]>();
   for (const r of rows) {
     const list = byTextbook.get(r.student_textbook_id) || [];
     list.push({
-      rowKey: r.curriculum_item_id,
-      applicationCount: r.application_count || 0,
-      appliedGroupNumber: r.applied_group_number,
-      groupNumber: r.group_number,
-      lessons: r.lessons || [],
+      order: sortOrderOf(r),
+      row: {
+        rowKey: r.curriculum_item_id,
+        applicationCount: r.application_count || 0,
+        appliedGroupNumber: r.applied_group_number,
+        groupNumber: r.group_number,
+        lessons: r.lessons || [],
+      },
     });
     byTextbook.set(r.student_textbook_id, list);
   }
 
   const result: Record<string, KoushuKomaSummary> = {};
   for (const id of studentTextbookIds) {
-    result[id] = computeKoushuKoma(byTextbook.get(id) || []);
+    const list = byTextbook.get(id) || [];
+    list.sort((a, b) => a.order - b.order || Number(a.row.rowKey) - Number(b.row.rowKey));
+    result[id] = computeKoushuKoma(list.map((x) => x.row));
   }
   return result;
 }
