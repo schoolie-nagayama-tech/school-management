@@ -9,6 +9,7 @@ import { getStudentTextbooksExamsBySchool } from './progress';
 import { getAlertSettingsBySchools, pickStrictestThreshold } from './alertSettings';
 import { fetchAllInChunks, fetchAllPaged } from '@/lib/utils/supabasePaging';
 import { compareByRoster } from '@/lib/alerts/grouping';
+import { isCoursePrepOutOfScope } from '@/lib/coursePrepKpis';
 import type {
   Alert,
   AlertDismissal,
@@ -44,6 +45,7 @@ export interface AlertSources {
     id: string;
     school_id: string;
     name: string;
+    column_type: string;
     deadline: string;
     season: SeasonType;
     year: number;
@@ -956,7 +958,7 @@ async function fetchCoursePrepAlertData(schoolIds: string[]): Promise<{
   try {
     const { data: items, error: itemsError } = await supabase
       .from('course_prep_progress_items')
-      .select('id, school_id, name, deadline, season, year')
+      .select('id, school_id, name, column_type, deadline, season, year')
       .in('school_id', schoolIds)
       .eq('season', season)
       .eq('year', year)
@@ -1012,7 +1014,10 @@ function buildCoursePrepOverdueCandidates(sources: AlertSources): Alert[] {
   );
 
   const completedSet = new Set<string>();
+  // 進捗レコードの有無（「対象外」自動判定の上書き検出に使う。進捗表と同じ基準）
+  const recordedSet = new Set<string>();
   for (const p of sources.coursePrepStudentProgress) {
+    recordedSet.add(`${p.student_id}:${p.item_id}`);
     if (p.status === 'completed' || p.status === 'not_applicable') {
       completedSet.add(`${p.student_id}:${p.item_id}`);
     }
@@ -1025,7 +1030,10 @@ function buildCoursePrepOverdueCandidates(sources: AlertSources): Alert[] {
 
     const studentsInSchool = sources.students.filter((s) => s.school_id === item.school_id);
     for (const student of studentsInSchool) {
-      if (completedSet.has(`${student.id}:${item.id}`)) continue;
+      const key = `${student.id}:${item.id}`;
+      if (completedSet.has(key)) continue;
+      // 非中3の進路調査など、進捗表で「対象外」になるセルはアラートにも出さない
+      if (isCoursePrepOutOfScope(item, student.grade, recordedSet.has(key))) continue;
 
       const dueDateStr = dueDate.toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' });
       const alertKey = `course_prep:${item.id}`;

@@ -10,6 +10,7 @@ import {
   computeDecidedKomaByStudent,
   computeDashboardAggregates,
   computeSchoolKpis,
+  isCoursePrepOutOfScope,
 } from '@/lib/coursePrepKpis';
 import type { CourseProgressItem, StudentCourseProgress, Student } from '@/types/database';
 import type { AutoValues } from '@/lib/api/courseProgress';
@@ -194,5 +195,60 @@ describe('computeDashboardAggregates（レポート/ダッシュボード共通�
     expect(math).toMatchObject({ proposed: 8, applied: 7 }); // s1:4/3 + s2:4/4
     const eng = a.subjectAnalysis.overall.find((r) => r.subject === '英語');
     expect(eng).toMatchObject({ proposed: 4, applied: 1 }); // s1:2/1 + s3:2/0
+  });
+});
+
+/**
+ * 進路調査（中3限定項目）の「対象外」判定のテスト。
+ * 進捗表・期日超過KPI・アラートがこの1つの判定を共有しており、片方だけ実装が漏れると
+ * 「表では対象外なのにアラートに残る」食い違いになるため、ここで定義を固定する。
+ */
+describe('isCoursePrepOutOfScope（進路調査は中3のみ対象）', () => {
+  const shinro = { name: '進路調査回収', column_type: 'check' };
+
+  it('非中3で入力が無ければ対象外', () => {
+    expect(isCoursePrepOutOfScope(shinro, 8, false)).toBe(true);
+    expect(isCoursePrepOutOfScope(shinro, null, false)).toBe(true);
+  });
+
+  it('中3は常に対象', () => {
+    expect(isCoursePrepOutOfScope(shinro, 9, false)).toBe(false);
+  });
+
+  it('非中3でも明示的な入力があれば対象（手動の上書きを尊重）', () => {
+    expect(isCoursePrepOutOfScope(shinro, 8, true)).toBe(false);
+  });
+
+  it('進路調査以外の項目・チェック列以外には効かない', () => {
+    expect(isCoursePrepOutOfScope({ name: '生徒面談実施', column_type: 'check' }, 8, false)).toBe(
+      false
+    );
+    expect(isCoursePrepOutOfScope({ name: '進路調査回収', column_type: 'number' }, 8, false)).toBe(
+      false
+    );
+  });
+});
+
+describe('期日超過の集計で進路調査の対象外セルを数えない', () => {
+  const items = [
+    item({ id: 'sh', name: '進路調査回収', column_type: 'check', deadline: '2026-05-22' }),
+    item({ id: 'si', name: '生徒面談実施', column_type: 'check', deadline: '2026-05-22' }),
+  ];
+  // 中2(s1)・中3(s2)
+  const students = [student({ id: 's1', grade: 8 }), student({ id: 's2', grade: 9 })];
+  const today = '2026-07-14'; // 期日を過ぎている
+
+  it('進路調査は中3(s2)のみ超過。面談は両名超過 → 計3件', () => {
+    const k = computeSchoolKpis(students, items, [], auto({}), null, today);
+    expect(k.overdueCount).toBe(3);
+    const a = computeDashboardAggregates(students, items, [], auto({}), null, today);
+    expect(a.overdueList).toHaveLength(3);
+    expect(a.overdueList.some((o) => o.item.id === 'sh' && o.student.id === 's1')).toBe(false);
+  });
+
+  it('中2でも進路調査に明示的な入力(pending)があれば超過として数える', () => {
+    const progressData = [progress({ student_id: 's1', item_id: 'sh', status: 'pending' })];
+    const k = computeSchoolKpis(students, items, progressData, auto({}), null, today);
+    expect(k.overdueCount).toBe(4);
   });
 });
