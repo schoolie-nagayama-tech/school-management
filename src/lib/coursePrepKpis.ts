@@ -103,6 +103,28 @@ export function computeDecidedKomaByStudent(
   return vals;
 }
 
+/**
+ * 「進路調査回収」は中3(grade=9)のみが対象の項目。
+ * 非中3で明示的な入力が無いセルは「対象外」とみなす（表では自動でグレー表示になる）。
+ *
+ * この判定は 進捗表・KPI集計（期日超過）・アラート の3か所で使うため、ここを唯一の定義とする。
+ * 片方だけに実装すると「表では対象外なのにアラートには残る」といった食い違いが起きる。
+ *
+ * hasRecord = その生徒×項目に進捗レコードが存在するか。
+ * 明示的にクリックして入力された場合は上書きとみなし、対象外にはしない。
+ */
+export function isGrade9OnlyCoursePrepItem(item: { name: string; column_type: string }): boolean {
+  return item.column_type === 'check' && item.name.includes('進路調査');
+}
+
+export function isCoursePrepOutOfScope(
+  item: { name: string; column_type: string },
+  grade: number | null | undefined,
+  hasRecord: boolean
+): boolean {
+  return isGrade9OnlyCoursePrepItem(item) && (grade ?? 0) !== 9 && !hasRecord;
+}
+
 export interface SchoolKpis {
   studentCount: number;
   // 提案増コマ合計 / 取得（決定）増コマ合計
@@ -195,6 +217,8 @@ export function computeSchoolKpis(
   for (const item of overdueItems) {
     for (const s of students) {
       const d = progressData.find((p) => p.student_id === s.id && p.item_id === item.id);
+      // 非中3の進路調査など「対象外」セルは期日超過に数えない
+      if (isCoursePrepOutOfScope(item, s.grade, !!d)) continue;
       if (!d || (d.status !== 'completed' && d.status !== 'not_applicable')) {
         overdueCount++;
       }
@@ -426,6 +450,8 @@ export function computeDashboardAggregates(
   for (const item of overdueItems) {
     for (const s of students) {
       const d = progressData.find((p) => p.student_id === s.id && p.item_id === item.id);
+      // 非中3の進路調査など「対象外」セルは期日超過に数えない
+      if (isCoursePrepOutOfScope(item, s.grade, !!d)) continue;
       if (!d || (d.status !== 'completed' && d.status !== 'not_applicable')) {
         overdueList.push({ item, student: s });
       }
