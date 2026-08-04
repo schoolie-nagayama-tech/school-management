@@ -230,6 +230,17 @@ export async function findAttendanceSheet(
 }
 
 // 出勤簿を取得または作成
+/**
+ * ★ 新規作成は「その講師がその教室に所属しているとき」だけ。
+ *   このページ(/attendance/[schoolCode]/[teacherId])は開いただけでシートを作るため、
+ *   所属していない教室のURLを踏むと空シートが生えていた。掛け持ちの講師は教室ごとに
+ *   別アカウントで運用しているので、旧アカウント側に他教室のシートが残ると
+ *   出勤簿一覧（attendance_sheets 起点）に同じ氏名が2行並ぶ。
+ *   実例: 若林 佐知子（永山アカウントに堀之内のシートが残り2行表示 / 2026-08 に削除）。
+ *
+ * ★ 既存シートは所属を見ずにそのまま返す。異動などで所属が変わっても、
+ *   過去に作られたシートの閲覧・提出まで塞いでしまわないようにするため。
+ */
 export async function getOrCreateAttendanceSheet(
   teacherId: string,
   schoolId: string,
@@ -251,6 +262,23 @@ export async function getOrCreateAttendanceSheet(
   if (findError && findError.code !== 'PGRST116') {
     console.error('Error finding attendance sheet:', findError);
     throw new Error('出勤簿の検索に失敗しました');
+  }
+
+  // 所属確認。user_schools は本人か管理者ロールしか読めない（RLS）ので、
+  // 読めなかった場合も「作らない」側に倒す。
+  const { data: membership, error: membershipError } = await supabase
+    .from('user_schools')
+    .select('school_id')
+    .eq('user_id', teacherId)
+    .eq('school_id', schoolId)
+    .limit(1);
+
+  if (membershipError) {
+    console.error('Error checking user_schools:', membershipError);
+    throw new Error('出勤簿の作成に失敗しました');
+  }
+  if (!membership || membership.length === 0) {
+    throw new Error('この教室に所属していないため、出勤簿を作成できません');
   }
 
   // なければ作成
