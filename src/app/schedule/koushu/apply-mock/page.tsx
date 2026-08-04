@@ -3,8 +3,9 @@
 /**
  * 講習申込のWeb化 モック（検討用）
  * ------------------------------------------------------------------
- * 正典仕様: docs/koushu-auto-allocation-spec.md 第2部（§8〜§16）。
- * §16「設計レビュー（2026-08-04）」の決定29〜35を反映し、タブを3つに拡張した。
+ * 正典仕様: docs/koushu-auto-allocation-spec.md 第2部（§8〜§16）＋ §17。
+ * §16「設計レビュー（2026-08-04）」の決定29〜35に加え、
+ * §17「小集団・プログラミングの追加＋学年別の講習期間」の決定36〜44を反映した。
  *
  * 紙の提案書申込をWeb化する画面の叩き台。決めたいのは主に次の3点:
  *  1. 保護者フォームで「提案の見せ方」と「コマ数の入れ方」がスマホで成立するか
@@ -12,10 +13,12 @@
  *  3. 管理側（提案書の入口／自動配置の実行パネル／公開期間・単価の設定）に足りない項目は無いか
  *
  * タブ構成:
- *  - 保護者フォーム（スマホ）: 通常の3ステップに加え、「生徒コード入口」「申込済み（読み取り専用）」の
- *    表示状態を切り替えて確認できる（決定19・決定30）
+ *  - 保護者フォーム（スマホ）: 個別4ステップ（申込内容→小集団・プログラミング→通える日→確認）に加え、
+ *    「生徒コード入口」「申込済み（読み取り専用）」の表示状態を切り替えて確認できる（決定19・決定30）。
+ *    小集団・プログラミングは固定開催・振替不可のため、可能日程は聞かず「参加する/しない」だけを選ぶ（決定36・37）
  *  - 管理側（入口・実行パネル）: 配布・失効再発行・再提出許可（決定30）
- *  - 設定（期間・単価）: `course_prep_periods` に持つ公開期間と3軸単価表のモック（決定29）
+ *  - 設定（期間・単価）: `course_prep_periods` に持つ公開期間・3軸単価表・学年別終了日（決定44）、
+ *    `seasonal_courses` のコース単価・開催予定（決定40・42）のモック
  *
  * すべてダミーデータ直書き・DB接続やAPI呼び出しは一切なし。
  * 検討OKなら本番ルート（/koushu-apply/[token] と /portal/[schoolCode]/koushu）へ昇格する。
@@ -113,6 +116,56 @@ const PROPOSALS = [
  * 本番では subjects テーブルから、生徒の grade_category に合う行を出す。
  */
 const EXTRA_SUBJECTS = ['社会', '国語'];
+
+/**
+ * 小集団・プログラミングのダミーコース（仕様書 §17-1・決定36〜40）。
+ * `seasonal_courses.session_dates` が配布する予定表そのもの＝正典（決定40）。
+ * 固定開催・振替不可（決定37）なので、個別のような可能日程の入力はさせず
+ * 「参加する/しない」だけを選ばせる。座席表配置は自動配置の対象外・手動のまま（決定2・§17-4）。
+ */
+interface CourseSession {
+  date: string;
+  start: string;
+  end: string;
+}
+
+interface Course {
+  name: string;
+  /** 動的形態（schedule_formations）のラベル */
+  formation: string;
+  /** コース単価。学年別にしない（決定42） */
+  unitPrice: number;
+  sessions: CourseSession[];
+}
+
+const COURSES: Course[] = [
+  {
+    name: '中3 理社特訓',
+    formation: '小集団',
+    unitPrice: 2200,
+    sessions: [
+      { date: '2026-07-21', start: '19:30', end: '21:00' },
+      { date: '2026-07-23', start: '19:30', end: '21:00' },
+      { date: '2026-07-28', start: '19:30', end: '21:00' },
+      { date: '2026-07-30', start: '19:30', end: '21:00' },
+      { date: '2026-08-04', start: '19:30', end: '21:00' },
+      { date: '2026-08-06', start: '19:30', end: '21:00' },
+      { date: '2026-08-18', start: '19:30', end: '21:00' },
+      { date: '2026-08-20', start: '19:30', end: '21:00' },
+    ],
+  },
+  {
+    name: 'プログラミング講座',
+    formation: 'プログラミング',
+    unitPrice: 2750,
+    sessions: [
+      { date: '2026-07-25', start: '10:00', end: '11:30' },
+      { date: '2026-08-01', start: '10:00', end: '11:30' },
+      { date: '2026-08-08', start: '10:00', end: '11:30' },
+      { date: '2026-08-22', start: '10:00', end: '11:30' },
+    ],
+  },
+];
 
 /**
  * 単価テーブル（仕様書 決定26・§15-2）。
@@ -354,6 +407,8 @@ function ParentFormMock() {
   const [extra, setExtra] = useState<string[]>([]);
   /** ×を付けた枠。全○初期なのでここに入っているものだけが「出られない」 */
   const [ng, setNg] = useState<Set<string>>(new Set());
+  /** 参加を選んだ小集団・プログラミングのコース名（決定36・37: 日時固定・全回参加が既定） */
+  const [courseJoin, setCourseJoin] = useState<Set<string>>(new Set());
 
   /**
    * 申込の明細。提案書の科目＋保護者が追加した科目。
@@ -408,6 +463,22 @@ function ParentFormMock() {
   const totalCells = dates.length * SLOTS.length;
   const okCells = totalCells - ng.size;
 
+  /**
+   * 小集団・プログラミングは参加コースの単価×回数をそのまま合算する。
+   * 通常授業の差し引き（chargeableKoma）は個別のみに掛かるので、ここでは一切使わない（決定43）。
+   */
+  const joinedCourses = COURSES.filter((c) => courseJoin.has(c.name));
+  const totalCourseFee = joinedCourses.reduce((s, c) => s + c.unitPrice * c.sessions.length, 0);
+  const grandTotal = totalFee + totalCourseFee;
+
+  const toggleCourse = (name: string) =>
+    setCourseJoin((prev) => {
+      const next = new Set(prev);
+      if (next.has(name)) next.delete(name);
+      else next.add(name);
+      return next;
+    });
+
   const toggle = (key: string) =>
     setNg((prev) => {
       const next = new Set(prev);
@@ -443,6 +514,9 @@ function ParentFormMock() {
               totalRegular={totalRegular}
               totalChargeable={totalChargeable}
               totalFee={totalFee}
+              joinedCourses={joinedCourses}
+              totalCourseFee={totalCourseFee}
+              grandTotal={grandTotal}
             />
           )}
 
@@ -456,7 +530,7 @@ function ParentFormMock() {
                   <span className="text-xs font-normal">（{STUDENT.gradeLabel}）</span>
                 </p>
                 <div className="flex gap-1 mt-2">
-                  {['申込内容', '通える日', '確認'].map((label, i) => (
+                  {['申込内容', '小集団・プログラミング', '通える日', '確認'].map((label, i) => (
                     <div key={label} className="flex-1">
                       <div
                         className={`h-1 rounded-full ${step >= i + 1 ? 'bg-ink' : 'bg-gray-200'}`}
@@ -488,6 +562,13 @@ function ParentFormMock() {
                   />
                 )}
                 {step === 2 && (
+                  <StepCourses
+                    courseJoin={courseJoin}
+                    toggleCourse={toggleCourse}
+                    totalCourseFee={totalCourseFee}
+                  />
+                )}
+                {step === 3 && (
                   <StepAvailability
                     dates={dates}
                     layout={layout}
@@ -499,7 +580,7 @@ function ParentFormMock() {
                     totalKoma={totalKoma}
                   />
                 )}
-                {step === 3 && (
+                {step === 4 && (
                   <StepConfirm
                     lines={lines}
                     koma={koma}
@@ -508,6 +589,9 @@ function ParentFormMock() {
                     totalChargeable={totalChargeable}
                     totalFee={totalFee}
                     okCells={okCells}
+                    joinedCourses={joinedCourses}
+                    totalCourseFee={totalCourseFee}
+                    grandTotal={grandTotal}
                   />
                 )}
               </div>
@@ -524,12 +608,12 @@ function ParentFormMock() {
                   </button>
                 )}
                 <button
-                  onClick={() => setStep(Math.min(3, step + 1))}
-                  disabled={step === 3}
+                  onClick={() => setStep(Math.min(4, step + 1))}
+                  disabled={step === 4}
                   className="flex-1 px-3 py-2.5 rounded-lg bg-ink text-white text-sm font-medium disabled:opacity-40 flex items-center justify-center gap-1"
                 >
-                  {step === 3 ? 'この内容で申し込む' : '次へ'}
-                  {step < 3 && <ChevronRight className="w-4 h-4" />}
+                  {step === 4 ? 'この内容で申し込む' : '次へ'}
+                  {step < 4 && <ChevronRight className="w-4 h-4" />}
                 </button>
               </div>
             </>
@@ -587,7 +671,7 @@ function ParentFormMock() {
                   checked={layout === l.key}
                   onChange={() => {
                     setLayout(l.key);
-                    setStep(2);
+                    setStep(3);
                   }}
                   className="mt-0.5"
                 />
@@ -625,6 +709,10 @@ function ParentFormMock() {
               枠。案Bの入力量が見合うか
             </li>
             <li>申込コマ数は提案より増やせてよいか（上限を設けるか）</li>
+            <li>
+              コースの開催時間が個別コマの時間帯とズレる場合の座席表上の見え方（決定41は重複判定のみ担保。表示の見せ方は未検討）
+            </li>
+            <li>途中回からの参加（按分）を認めるか。今は全回参加のみを想定している（決定37）</li>
           </ul>
         </div>
       </div>
@@ -679,6 +767,9 @@ function AppliedSummaryMock({
   totalRegular,
   totalChargeable,
   totalFee,
+  joinedCourses,
+  totalCourseFee,
+  grandTotal,
 }: {
   lines: ApplyLine[];
   koma: Record<string, number>;
@@ -686,6 +777,9 @@ function AppliedSummaryMock({
   totalRegular: number;
   totalChargeable: number;
   totalFee: number;
+  joinedCourses: Course[];
+  totalCourseFee: number;
+  grandTotal: number;
 }) {
   return (
     <div className="px-4 py-4 space-y-3">
@@ -700,6 +794,8 @@ function AppliedSummaryMock({
         <div className="px-3 py-2 bg-gray-50 text-xs font-medium text-[var(--headline)]">
           申込内容
         </div>
+
+        <div className="px-3 pt-2 text-[11px] font-medium text-[var(--paragraph)]">個別</div>
         {lines
           .filter((p) => (koma[p.subject] ?? 0) > 0)
           .map((p) => {
@@ -751,11 +847,48 @@ function AppliedSummaryMock({
             <span className="tabular-nums">{totalChargeable}コマ</span>
           </div>
           <div className="flex items-center justify-between pt-1.5 border-t border-[var(--stroke)]">
-            <span className="text-sm text-[var(--headline)]">講習費</span>
+            <span className="text-sm text-[var(--headline)]">個別 小計</span>
             <span className="text-base font-semibold text-[var(--headline)] tabular-nums">
               {yen(totalFee)}
             </span>
           </div>
+        </div>
+
+        {joinedCourses.length > 0 && (
+          <>
+            <div className="px-3 pt-2 border-t border-[var(--stroke)] text-[11px] font-medium text-[var(--paragraph)]">
+              小集団・プログラミング（差引対象外）
+            </div>
+            {joinedCourses.map((c) => (
+              <div
+                key={c.name}
+                className="px-3 py-2.5 flex items-center justify-between border-t border-[var(--stroke)]"
+              >
+                <div>
+                  <p className="text-sm text-[var(--headline)]">{c.name}</p>
+                  <p className="text-[11px] text-[var(--paragraph)]">
+                    {c.formation} ・ {c.sessions.length}回 × {yen(c.unitPrice)}
+                  </p>
+                </div>
+                <span className="text-sm font-semibold text-[var(--headline)] tabular-nums">
+                  {yen(c.unitPrice * c.sessions.length)}
+                </span>
+              </div>
+            ))}
+            <div className="px-3 py-2.5 border-t border-[var(--stroke)] bg-gray-50 flex items-center justify-between">
+              <span className="text-sm text-[var(--headline)]">小集団・プログラミング 小計</span>
+              <span className="text-base font-semibold text-[var(--headline)] tabular-nums">
+                {yen(totalCourseFee)}
+              </span>
+            </div>
+          </>
+        )}
+
+        <div className="px-3 py-3 border-t border-[var(--stroke)] flex items-center justify-between">
+          <span className="text-sm font-semibold text-[var(--headline)]">合計</span>
+          <span className="text-lg font-semibold text-[var(--headline)] tabular-nums">
+            {yen(grandTotal)}
+          </span>
         </div>
       </div>
 
@@ -982,7 +1115,114 @@ function StepSubjects({
   );
 }
 
-/* ---------- ステップ2: 通える日 ---------- */
+/* ---------- ステップ2: 小集団・プログラミング ---------- */
+
+/**
+ * 小集団・プログラミングは日時が固定（決定37）なので、個別のように可能日程を
+ * 聞かない。コースカードを見て「参加する」を選ぶだけの単純な操作にする（決定36）。
+ * コース料金には通常授業の差し引きを掛けない（決定43）ので、このステップの合計は
+ * そのままステップ4の内訳へ乗せる。
+ */
+function StepCourses({
+  courseJoin,
+  toggleCourse,
+  totalCourseFee,
+}: {
+  courseJoin: Set<string>;
+  toggleCourse: (name: string) => void;
+  totalCourseFee: number;
+}) {
+  return (
+    <div className="space-y-3">
+      <p className="text-xs text-[var(--paragraph)]">
+        小集団・プログラミングの開催予定です。日程は選べません。参加する講座があれば「参加する」を選んでください。
+      </p>
+
+      {COURSES.map((c) => {
+        const joined = courseJoin.has(c.name);
+        const fee = c.unitPrice * c.sessions.length;
+        return (
+          <div
+            key={c.name}
+            className={`rounded-xl border p-3 ${
+              joined ? 'border-ink bg-gray-50' : 'border-[var(--stroke)]'
+            }`}
+          >
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-[var(--headline)]">{c.name}</p>
+                <span className="inline-block mt-1 text-[10px] px-1.5 py-0.5 rounded-full bg-gray-100 text-[var(--paragraph)]">
+                  {c.formation}
+                </span>
+              </div>
+            </div>
+
+            <div className="mt-2 rounded-lg border border-warning bg-warning-subtle px-2.5 py-2 flex gap-1.5">
+              <AlertCircle className="w-3.5 h-3.5 text-warning shrink-0 mt-0.5" />
+              <p className="text-[11px] text-[var(--headline)] leading-relaxed">
+                日時は決まっており、変更・振替はできません
+              </p>
+            </div>
+
+            {/* 開催予定表。session_dates が配布する予定表そのもの（決定40） */}
+            <div className="mt-2 rounded-lg border border-[var(--stroke)] overflow-hidden">
+              <table className="w-full text-[11px]">
+                <thead>
+                  <tr className="bg-gray-50 text-[var(--paragraph)]">
+                    <th className="py-1 px-2 text-left font-medium">日程</th>
+                    <th className="py-1 px-2 text-left font-medium">時間</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {c.sessions.map((s) => (
+                    <tr key={s.date} className="border-t border-gray-100">
+                      <td className="py-1 px-2 text-[var(--headline)]">
+                        {mmdd(s.date)}({WEEKDAY[dow(s.date)]})
+                      </td>
+                      <td className="py-1 px-2 text-[var(--headline)] tabular-nums">
+                        {s.start}〜{s.end}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="flex items-center justify-between mt-3 pt-3 border-t border-[var(--stroke)]">
+              <p className="text-[11px] text-[var(--paragraph)]">
+                {yen(c.unitPrice)} × {c.sessions.length}回 ={' '}
+                <span className="text-[var(--headline)] font-medium">{yen(fee)}</span>
+              </p>
+              <button
+                onClick={() => toggleCourse(c.name)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1 active:scale-95 ${
+                  joined
+                    ? 'bg-ink text-white'
+                    : 'border border-[var(--stroke)] text-[var(--headline)]'
+                }`}
+              >
+                {joined && <Check className="w-3.5 h-3.5" />}
+                {joined ? '参加します' : '参加する'}
+              </button>
+            </div>
+          </div>
+        );
+      })}
+
+      <div className="rounded-xl bg-gray-50 p-3 flex items-center justify-between">
+        <span className="text-sm text-[var(--headline)]">小集団・プログラミング 合計</span>
+        <span className="text-base font-semibold text-[var(--headline)] tabular-nums">
+          {yen(totalCourseFee)}
+        </span>
+      </div>
+      <p className="text-[10px] text-[var(--paragraph)]">
+        税込。通常授業の差し引きはコース料金には適用されません（決定43）。
+      </p>
+    </div>
+  );
+}
+
+/* ---------- ステップ3: 通える日 ---------- */
 
 function StepAvailability({
   dates,
@@ -1005,6 +1245,14 @@ function StepAvailability({
 }) {
   return (
     <div className="space-y-3">
+      {/* 小集団・プログラミングの枠は自動で避けられるので、個別の可能日程では意識しなくてよい（決定41） */}
+      <div className="rounded-lg border border-info bg-info-subtle p-3 flex gap-2">
+        <Info className="w-4 h-4 text-info shrink-0 mt-0.5" />
+        <p className="text-xs text-[var(--headline)] leading-relaxed">
+          小集団・プログラミングの開催枠は自動で回避されます（個別の授業はその時間に入りません）。
+        </p>
+      </div>
+
       <div className="rounded-lg bg-warning-subtle border border-warning p-3">
         <p className="text-xs text-[var(--headline)] leading-relaxed">
           <strong>最初はすべて「通える」</strong>になっています。
@@ -1451,8 +1699,12 @@ function AvailPattern({
   );
 }
 
-/* ---------- ステップ3: 確認 ---------- */
+/* ---------- ステップ4: 確認 ---------- */
 
+/**
+ * 内訳は「個別（差引後）」と「小集団・プログラミング（差引対象外）」を分けて出し、
+ * 最後に合算する（決定43）。コース料金には通常授業の差し引きを一切掛けない。
+ */
 function StepConfirm({
   lines,
   koma,
@@ -1461,6 +1713,9 @@ function StepConfirm({
   totalChargeable,
   totalFee,
   okCells,
+  joinedCourses,
+  totalCourseFee,
+  grandTotal,
 }: {
   lines: ApplyLine[];
   koma: Record<string, number>;
@@ -1469,6 +1724,9 @@ function StepConfirm({
   totalChargeable: number;
   totalFee: number;
   okCells: number;
+  joinedCourses: Course[];
+  totalCourseFee: number;
+  grandTotal: number;
 }) {
   const tight = okCells < totalKoma * 2;
   return (
@@ -1477,6 +1735,8 @@ function StepConfirm({
         <div className="px-3 py-2 bg-gray-50 text-xs font-medium text-[var(--headline)]">
           申込内容
         </div>
+
+        <div className="px-3 pt-2 text-[11px] font-medium text-[var(--paragraph)]">個別</div>
         {lines
           .filter((p) => (koma[p.subject] ?? 0) > 0)
           .map((p) => {
@@ -1528,7 +1788,7 @@ function StepConfirm({
             <span className="tabular-nums">{totalChargeable}コマ</span>
           </div>
           <div className="flex items-center justify-between pt-1.5 border-t border-[var(--stroke)]">
-            <span className="text-sm text-[var(--headline)]">講習費</span>
+            <span className="text-sm text-[var(--headline)]">個別 小計</span>
             <span className="text-base font-semibold text-[var(--headline)] tabular-nums">
               {yen(totalFee)}
             </span>
@@ -1536,6 +1796,43 @@ function StepConfirm({
           <p className="text-[10px] text-[var(--paragraph)]">
             税込。期間中の通常授業ぶんはお月謝に含まれるため、講習費からは差し引いています。
           </p>
+        </div>
+
+        {joinedCourses.length > 0 && (
+          <>
+            <div className="px-3 pt-2 border-t border-[var(--stroke)] text-[11px] font-medium text-[var(--paragraph)]">
+              小集団・プログラミング（差引対象外）
+            </div>
+            {joinedCourses.map((c) => (
+              <div
+                key={c.name}
+                className="px-3 py-2.5 flex items-center justify-between border-t border-[var(--stroke)]"
+              >
+                <div>
+                  <p className="text-sm text-[var(--headline)]">{c.name}</p>
+                  <p className="text-[11px] text-[var(--paragraph)]">
+                    {c.formation} ・ {c.sessions.length}回 × {yen(c.unitPrice)}
+                  </p>
+                </div>
+                <span className="text-sm font-semibold text-[var(--headline)] tabular-nums">
+                  {yen(c.unitPrice * c.sessions.length)}
+                </span>
+              </div>
+            ))}
+            <div className="px-3 py-2.5 border-t border-[var(--stroke)] bg-gray-50 flex items-center justify-between">
+              <span className="text-sm text-[var(--headline)]">小集団・プログラミング 小計</span>
+              <span className="text-base font-semibold text-[var(--headline)] tabular-nums">
+                {yen(totalCourseFee)}
+              </span>
+            </div>
+          </>
+        )}
+
+        <div className="px-3 py-3 border-t border-[var(--stroke)] flex items-center justify-between">
+          <span className="text-sm font-semibold text-[var(--headline)]">合計</span>
+          <span className="text-lg font-semibold text-[var(--headline)] tabular-nums">
+            {yen(grandTotal)}
+          </span>
         </div>
       </div>
 
@@ -1874,6 +2171,23 @@ function SettingsMock() {
   /** 3軸単価表（決定26・§15-2）。course_prep_periods.apply_price_table のモック */
   const [priceTable, setPriceTable] = useState<SettingsPriceTable>(INITIAL_SETTINGS_PRICE_TABLE);
   const [saved, setSaved] = useState(false);
+  /**
+   * 講習期間（決定44）。course_prep_periods.schedule_start_date / schedule_end_date のモック。
+   * 開始は全学年共通。終了だけ学年別に上書きできる。
+   */
+  const [scheduleStart, setScheduleStart] = useState(PERIOD.start);
+  const [scheduleEnd, setScheduleEnd] = useState(PERIOD.end);
+  /**
+   * 学年別の終了日上書き（決定44）。course_prep_periods.schedule_end_by_grade jsonb のモック。
+   * grade番号(1〜13) → 'YYYY-MM-DD'。キーが無い学年は scheduleEnd にフォールバックする。
+   * 初期値は例として中3・高3だけ入れている。
+   */
+  const [gradeEndOverrides, setGradeEndOverrides] = useState<Record<number, string>>({
+    9: '2026-08-31', // 中3: 過去問演習へ早めに切り替えるため共通より前倒し
+    12: '2026-09-05', // 高3: 二次対策の都合で数日短縮
+  });
+  /** コース設定（決定40・42）。seasonal_courses.unit_price のモック。回数・開催予定は表示のみ */
+  const [courseSettings, setCourseSettings] = useState<Course[]>(COURSES);
 
   const state = publishState(publishStart, publishEnd);
 
@@ -1883,6 +2197,21 @@ function SettingsMock() {
       ...prev,
       [grade]: { ...prev[grade], [key]: Number.isNaN(n) ? 0 : n },
     }));
+  };
+
+  const updateGradeEnd = (grade: number, raw: string) =>
+    setGradeEndOverrides((prev) => {
+      const next = { ...prev };
+      if (raw) next[grade] = raw;
+      else delete next[grade];
+      return next;
+    });
+
+  const updateCoursePrice = (name: string, raw: string) => {
+    const n = Number(raw);
+    setCourseSettings((prev) =>
+      prev.map((c) => (c.name === name ? { ...c, unitPrice: Number.isNaN(n) ? 0 : n } : c))
+    );
   };
 
   const handleSave = () => {
@@ -1931,6 +2260,72 @@ function SettingsMock() {
               className="mt-1 w-full text-sm border border-[var(--stroke)] rounded-lg px-2 py-1.5"
             />
           </label>
+        </div>
+      </div>
+
+      {/* 講習期間（学年別終了日） */}
+      <div className="rounded-lg border border-[var(--stroke)] bg-white p-4 space-y-3">
+        <div>
+          <h2 className="text-sm font-semibold text-[var(--headline)]">講習期間（学年別終了日）</h2>
+          <p className="text-xs text-[var(--paragraph)] mt-0.5">
+            course_prep_periods.schedule_end_by_grade jsonb のモック（決定44）。
+            開始は全学年共通。終了日だけ学年別に上書きできる（決定44）。書いていない学年は共通の終了日。
+          </p>
+        </div>
+        <div className="grid sm:grid-cols-2 gap-3">
+          <label className="text-xs text-[var(--headline)]">
+            共通の開始日
+            <input
+              type="date"
+              value={scheduleStart}
+              onChange={(e) => setScheduleStart(e.target.value)}
+              className="mt-1 w-full text-sm border border-[var(--stroke)] rounded-lg px-2 py-1.5"
+            />
+          </label>
+          <label className="text-xs text-[var(--headline)]">
+            共通の終了日
+            <input
+              type="date"
+              value={scheduleEnd}
+              onChange={(e) => setScheduleEnd(e.target.value)}
+              className="mt-1 w-full text-sm border border-[var(--stroke)] rounded-lg px-2 py-1.5"
+            />
+          </label>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-left text-xs text-[var(--paragraph)] border-b border-[var(--stroke)]">
+                <th className="py-1.5 pr-3 font-medium">学年</th>
+                <th className="py-1.5 font-medium">終了日（上書き）</th>
+              </tr>
+            </thead>
+            <tbody>
+              {GRADES.map((g) => {
+                const override = gradeEndOverrides[g.v];
+                return (
+                  <tr key={g.v} className="border-b border-gray-100 last:border-0">
+                    <td className="py-1.5 pr-3 text-[var(--headline)]">{g.label}</td>
+                    <td className="py-1.5">
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="date"
+                          value={override ?? ''}
+                          onChange={(e) => updateGradeEnd(g.v, e.target.value)}
+                          className="w-40 text-sm border border-[var(--stroke)] rounded px-1.5 py-1"
+                        />
+                        {!override && (
+                          <span className="text-[11px] text-[var(--paragraph)]">
+                            共通どおり（{scheduleEnd}）
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       </div>
 
@@ -2019,6 +2414,63 @@ function SettingsMock() {
         <p className="text-[11px] text-[var(--paragraph)] pt-2 border-t border-[var(--stroke)]">
           単価は form_periods ではなく course_prep_periods に持つ（§16-1）。form_type
           の拡張は不要になった。
+        </p>
+      </div>
+
+      {/* コース設定（小集団・プログラミング） */}
+      <div className="rounded-lg border border-[var(--stroke)] bg-white p-4 space-y-3">
+        <div>
+          <h2 className="text-sm font-semibold text-[var(--headline)]">
+            コース設定（小集団・プログラミング）
+          </h2>
+          <p className="text-xs text-[var(--paragraph)] mt-0.5">
+            開催予定（session_dates）が配布する予定表の正典。回数×単価が料金になる（決定42）。
+          </p>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-left text-xs text-[var(--paragraph)] border-b border-[var(--stroke)]">
+                <th className="py-1.5 pr-3 font-medium">コース名</th>
+                <th className="py-1.5 pr-3 font-medium">形態</th>
+                <th className="py-1.5 pr-3 font-medium">単価</th>
+                <th className="py-1.5 pr-3 font-medium">回数</th>
+                <th className="py-1.5 font-medium">開催予定</th>
+              </tr>
+            </thead>
+            <tbody>
+              {courseSettings.map((c) => (
+                <tr key={c.name} className="border-b border-gray-100 last:border-0 align-top">
+                  <td className="py-1.5 pr-3 text-[var(--headline)] whitespace-nowrap">{c.name}</td>
+                  <td className="py-1.5 pr-3">
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-gray-100 text-[var(--paragraph)]">
+                      {c.formation}
+                    </span>
+                  </td>
+                  <td className="py-1.5 pr-3">
+                    <input
+                      type="number"
+                      value={c.unitPrice}
+                      onChange={(e) => updateCoursePrice(c.name, e.target.value)}
+                      className="w-20 text-sm border border-[var(--stroke)] rounded px-1.5 py-1"
+                    />
+                  </td>
+                  <td className="py-1.5 pr-3 text-[var(--paragraph)] whitespace-nowrap">
+                    {c.sessions.length}回
+                  </td>
+                  <td className="py-1.5 text-[11px] text-[var(--paragraph)]">
+                    {c.sessions
+                      .map((s) => `${mmdd(s.date)}(${WEEKDAY[dow(s.date)]}) ${s.start}〜${s.end}`)
+                      .join('、')}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p className="text-[11px] text-[var(--paragraph)] pt-2 border-t border-[var(--stroke)]">
+          回数・開催予定は表示のみ（session_dates
+          を直接編集する画面は別途必要）。単価だけこの画面で編集できる。
         </p>
       </div>
     </div>
