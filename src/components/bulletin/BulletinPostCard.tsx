@@ -14,7 +14,7 @@ import {
   RotateCcw,
   CalendarClock,
 } from 'lucide-react';
-import { isHtmlContent, sanitizeBulletinHtml } from '@/lib/utils/bulletinHtml';
+import { BulletinContent } from '@/components/bulletin/BulletinContent';
 
 interface BulletinPostCardProps {
   post: BulletinPost;
@@ -119,11 +119,9 @@ export function BulletinPostCard({
 
       {/* 本文を表示（リッチテキスト HTML または従来のプレーンテキスト） */}
       {post.content && (
-        <div
+        <BulletinContent
+          content={post.content}
           className="bulletin-post-content text-sm text-[var(--text)] break-words mb-2 pl-0"
-          {...(isHtmlContent(post.content)
-            ? { dangerouslySetInnerHTML: { __html: sanitizeBulletinHtml(post.content) } }
-            : { style: { whiteSpace: 'pre-wrap' }, children: post.content })}
         />
       )}
 
