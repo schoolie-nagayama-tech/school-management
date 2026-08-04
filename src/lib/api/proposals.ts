@@ -568,15 +568,21 @@ export async function syncApplicationToProgress(proposalId: string): Promise<voi
   // 提案結合と同様に「グループの先頭行に合計・他は0」で持たせ、進行表でまとめ表示できるようにする。
   // 申込結合は提案結合(group_id)とは別グループになりうるため、applied_group_number 列に独立して持つ。
   // 申込コマ>0 の単元のみを結合対象とする（提案書エディタの appliedGroupMap と同じ判定）。
+  // ★ 申込コマ(applied_koma)が未入力(NULL)でも結合は効かせる。
+  //   applied_koma は draft→sent の遷移(markProposalSent)で提案コマから初期化されるが、
+  //   sent を経ずに公開された古い提案書では NULL のまま残っている。ここで `> 0` を要求すると
+  //   grouped=false に落ち、結合単元それぞれに提案コマが入って申込合計が膨らむ
+  //   （本番実例: 結合10グループの教材で 提案15 に対し 申込27 になっていた）。
+  //   非結合側は元から `applied_koma ?? koma_count` でフォールバックしており、そこと揃える。
+  const komaOf = (u: (typeof proposal.units)[number]) => u.applied_koma ?? u.koma_count;
   const appliedHead = new Map<number, number>(); // applied_group_id -> 先頭 curriculum_item_id
-  const appliedTotal = new Map<number, number>(); // applied_group_id -> 合計（先頭の applied_koma）
-  const appliedCount = new Map<number, number>(); // applied_group_id -> 申込>0 の構成単元数
+  const appliedTotal = new Map<number, number>(); // applied_group_id -> 合計（先頭のコマ数）
+  const appliedCount = new Map<number, number>(); // applied_group_id -> コマ>0 の構成単元数
   for (const u of proposal.units) {
-    const ak = u.applied_koma ?? 0;
-    if (u.applied_group_id > 0 && ak > 0) {
+    if (u.applied_group_id > 0 && komaOf(u) > 0) {
       if (!appliedHead.has(u.applied_group_id)) {
         appliedHead.set(u.applied_group_id, u.curriculum_item_id);
-        appliedTotal.set(u.applied_group_id, ak);
+        appliedTotal.set(u.applied_group_id, komaOf(u));
       }
       appliedCount.set(u.applied_group_id, (appliedCount.get(u.applied_group_id) ?? 0) + 1);
     }
@@ -588,16 +594,10 @@ export async function syncApplicationToProgress(proposalId: string): Promise<voi
   const keyMeta = new Map<string, { count: number; group: number | null }>();
   for (const u of proposal.units) {
     const grouped =
-      u.applied_group_id > 0 &&
-      (u.applied_koma ?? 0) > 0 &&
-      (appliedCount.get(u.applied_group_id) ?? 0) >= 2;
+      u.applied_group_id > 0 && komaOf(u) > 0 && (appliedCount.get(u.applied_group_id) ?? 0) >= 2;
     const isHead = grouped && appliedHead.get(u.applied_group_id) === u.curriculum_item_id;
     // 結合: 先頭行に合計・他は0 / 非結合: 申込コマ（未入力なら提案コマ）
-    const count = grouped
-      ? isHead
-        ? (appliedTotal.get(u.applied_group_id) ?? 0)
-        : 0
-      : (u.applied_koma ?? u.koma_count);
+    const count = grouped ? (isHead ? (appliedTotal.get(u.applied_group_id) ?? 0) : 0) : komaOf(u);
     const group = grouped ? u.applied_group_id : null;
     const key = `${count}|${group ?? 'null'}`;
     if (!byKey.has(key)) {
