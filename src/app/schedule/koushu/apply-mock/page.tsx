@@ -3,12 +3,19 @@
 /**
  * 講習申込のWeb化 モック（検討用）
  * ------------------------------------------------------------------
- * 正典仕様: docs/koushu-auto-allocation-spec.md 第2部（§8〜§13）
+ * 正典仕様: docs/koushu-auto-allocation-spec.md 第2部（§8〜§16）。
+ * §16「設計レビュー（2026-08-04）」の決定29〜35を反映し、タブを3つに拡張した。
  *
  * 紙の提案書申込をWeb化する画面の叩き台。決めたいのは主に次の3点:
  *  1. 保護者フォームで「提案の見せ方」と「コマ数の入れ方」がスマホで成立するか
  *  2. 8週×5コマ（約250枠）の可能日程を375pxでどう入力させるか ← 3案を切替比較
- *  3. 管理側（提案書の入口／自動配置の実行パネル）に足りない項目は無いか
+ *  3. 管理側（提案書の入口／自動配置の実行パネル／公開期間・単価の設定）に足りない項目は無いか
+ *
+ * タブ構成:
+ *  - 保護者フォーム（スマホ）: 通常の3ステップに加え、「生徒コード入口」「申込済み（読み取り専用）」の
+ *    表示状態を切り替えて確認できる（決定19・決定30）
+ *  - 管理側（入口・実行パネル）: 配布・失効再発行・再提出許可（決定30）
+ *  - 設定（期間・単価）: `course_prep_periods` に持つ公開期間と3軸単価表のモック（決定29）
  *
  * すべてダミーデータ直書き・DB接続やAPI呼び出しは一切なし。
  * 検討OKなら本番ルート（/koushu-apply/[token] と /portal/[schoolCode]/koushu）へ昇格する。
@@ -35,6 +42,9 @@ import {
   Info,
   CalendarDays,
   Play,
+  RotateCcw,
+  Unlock,
+  KeyRound,
 } from 'lucide-react';
 
 /* ============================================================
@@ -129,6 +139,36 @@ function unitPrice(gradeLabel: string, ratio: 1 | 2, duration: 45 | 90): number 
 }
 
 /**
+ * 設定タブ（§16-1・決定29）の3軸単価エディタ用データ。
+ * 行=学年13行（GRADESと同じ v をキーに使う）、列=1対2/1対1 × 90分/45分。
+ * 45分は小1〜小4（grade v<=4）のみ持つ（決定17）。それ以外の学年はキー自体を持たない。
+ */
+type SettingsPriceRow = {
+  '1on2_90': number;
+  '1on1_90': number;
+  '1on2_45'?: number;
+  '1on1_45'?: number;
+};
+type SettingsPriceTable = Record<number, SettingsPriceRow>;
+
+/** 初期値。学年が上がるほど高くなる程度のダミー金額 */
+const INITIAL_SETTINGS_PRICE_TABLE: SettingsPriceTable = {
+  1: { '1on2_90': 2600, '1on1_90': 4200, '1on2_45': 1600, '1on1_45': 2500 },
+  2: { '1on2_90': 2700, '1on1_90': 4300, '1on2_45': 1650, '1on1_45': 2600 },
+  3: { '1on2_90': 2900, '1on1_90': 4600, '1on2_45': 1750, '1on1_45': 2750 },
+  4: { '1on2_90': 3100, '1on1_90': 4900, '1on2_45': 1850, '1on1_45': 2900 },
+  5: { '1on2_90': 3300, '1on1_90': 5200 },
+  6: { '1on2_90': 3500, '1on1_90': 5500 },
+  7: { '1on2_90': 3700, '1on1_90': 5800 },
+  8: { '1on2_90': 3980, '1on1_90': 6400 },
+  9: { '1on2_90': 4300, '1on1_90': 6900 },
+  10: { '1on2_90': 4500, '1on1_90': 7200 },
+  11: { '1on2_90': 4700, '1on1_90': 7500 },
+  12: { '1on2_90': 4900, '1on1_90': 7800 },
+  13: { '1on2_90': 5200, '1on1_90': 8200 },
+};
+
+/**
  * 講習費の対象コマ数。
  *
  * 期間中の通常授業は月謝で別途もらっているので、申込コマ数からその分を差し引く
@@ -187,7 +227,7 @@ function groupByWeek(dates: string[]): { label: string; dates: string[] }[] {
  * ページ本体
  * ========================================================== */
 
-type Tab = 'parent' | 'admin';
+type Tab = 'parent' | 'admin' | 'settings';
 
 export default function KoushuApplyMockPage() {
   const { profile, isLoading } = useAuth();
@@ -215,6 +255,7 @@ export default function KoushuApplyMockPage() {
             [
               ['parent', '保護者フォーム（スマホ）'],
               ['admin', '管理側（入口・実行パネル）'],
+              ['settings', '設定（期間・単価）'],
             ] as const
           ).map(([k, label]) => (
             <button
@@ -231,7 +272,9 @@ export default function KoushuApplyMockPage() {
           ))}
         </div>
 
-        {tab === 'parent' ? <ParentFormMock /> : <AdminMock />}
+        {tab === 'parent' && <ParentFormMock />}
+        {tab === 'admin' && <AdminMock />}
+        {tab === 'settings' && <SettingsMock />}
       </div>
     </AdminLayout>
   );
@@ -276,11 +319,34 @@ const AVAIL_LAYOUTS: { key: AvailLayout; name: string; note: string }[] = [
   },
 ];
 
+/**
+ * スマホ枠の表示状態。通常の3ステップに加え、入口（本人確認前）と
+ * 送信後の読み取り専用表示を切り替えて見た目を確認できるようにする
+ * （決定19: student_code 入口／決定30: 再提出は教室許可制）。
+ */
+type DisplayState = 'normal' | 'entry' | 'applied';
+
+const DISPLAY_STATES: { key: DisplayState; name: string; note: string }[] = [
+  { key: 'normal', name: '通常', note: '現状どおり3ステップで申込む' },
+  {
+    key: 'entry',
+    name: '生徒コード入口',
+    note: 'ポータル経由（/portal/[schoolCode]/koushu）で開いたときの本人確認画面',
+  },
+  {
+    key: 'applied',
+    name: '申込済み（読み取り専用）',
+    note: '送信後に同じリンクを開いたときの見え方。再提出は教室許可制（決定30）',
+  },
+];
+
 function ParentFormMock() {
   const dates = useMemo(() => buildDates(), []);
   const [step, setStep] = useState(1);
   // 採用案は B（週アコーディオン）。A・C は比較用に残している
   const [layout, setLayout] = useState<AvailLayout>('week');
+  // スマホ枠の中身を切り替えて、入口画面・送信後の見え方を比較する
+  const [displayState, setDisplayState] = useState<DisplayState>('normal');
   const [koma, setKoma] = useState<Record<string, number>>(
     Object.fromEntries(PROPOSALS.map((p) => [p.subject, p.proposedKoma]))
   );
@@ -367,94 +433,140 @@ function ParentFormMock() {
       {/* スマホ枠 */}
       <div className="rounded-[28px] border-[10px] border-gray-800 bg-white overflow-hidden shadow-lg">
         <div className="h-[720px] overflow-y-auto">
-          {/* ヘッダ */}
-          <div className="sticky top-0 z-10 bg-white border-b border-[var(--stroke)] px-4 py-3">
-            <p className="text-[11px] text-[var(--paragraph)]">{PERIOD.label}</p>
-            <p className="text-sm font-semibold text-[var(--headline)]">
-              {STUDENT.name} <span className="text-xs font-normal">（{STUDENT.gradeLabel}）</span>
-            </p>
-            <div className="flex gap-1 mt-2">
-              {['申込内容', '通える日', '確認'].map((label, i) => (
-                <div key={label} className="flex-1">
-                  <div
-                    className={`h-1 rounded-full ${step >= i + 1 ? 'bg-ink' : 'bg-gray-200'}`}
-                    aria-hidden
-                  />
-                  <p
-                    className={`text-[10px] mt-1 ${step >= i + 1 ? 'text-[var(--headline)]' : 'text-[var(--paragraph)]'}`}
-                  >
-                    {label}
-                  </p>
+          {displayState === 'entry' && <EntryScreenMock />}
+
+          {displayState === 'applied' && (
+            <AppliedSummaryMock
+              lines={lines}
+              koma={koma}
+              totalKoma={totalKoma}
+              totalRegular={totalRegular}
+              totalChargeable={totalChargeable}
+              totalFee={totalFee}
+            />
+          )}
+
+          {displayState === 'normal' && (
+            <>
+              {/* ヘッダ */}
+              <div className="sticky top-0 z-10 bg-white border-b border-[var(--stroke)] px-4 py-3">
+                <p className="text-[11px] text-[var(--paragraph)]">{PERIOD.label}</p>
+                <p className="text-sm font-semibold text-[var(--headline)]">
+                  {STUDENT.name}{' '}
+                  <span className="text-xs font-normal">（{STUDENT.gradeLabel}）</span>
+                </p>
+                <div className="flex gap-1 mt-2">
+                  {['申込内容', '通える日', '確認'].map((label, i) => (
+                    <div key={label} className="flex-1">
+                      <div
+                        className={`h-1 rounded-full ${step >= i + 1 ? 'bg-ink' : 'bg-gray-200'}`}
+                        aria-hidden
+                      />
+                      <p
+                        className={`text-[10px] mt-1 ${step >= i + 1 ? 'text-[var(--headline)]' : 'text-[var(--paragraph)]'}`}
+                      >
+                        {label}
+                      </p>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </div>
+              </div>
 
-          <div className="px-4 py-4 pb-24">
-            {step === 1 && (
-              <StepSubjects
-                lines={lines}
-                koma={koma}
-                setKoma={setKoma}
-                extra={extra}
-                addSubject={addSubject}
-                removeSubject={removeSubject}
-                totalKoma={totalKoma}
-                totalRegular={totalRegular}
-                totalChargeable={totalChargeable}
-                totalFee={totalFee}
-              />
-            )}
-            {step === 2 && (
-              <StepAvailability
-                dates={dates}
-                layout={layout}
-                ng={ng}
-                toggle={toggle}
-                toggleDay={toggleDay}
-                setNg={setNg}
-                okCells={okCells}
-                totalKoma={totalKoma}
-              />
-            )}
-            {step === 3 && (
-              <StepConfirm
-                lines={lines}
-                koma={koma}
-                totalKoma={totalKoma}
-                totalRegular={totalRegular}
-                totalChargeable={totalChargeable}
-                totalFee={totalFee}
-                okCells={okCells}
-              />
-            )}
-          </div>
+              <div className="px-4 py-4 pb-24">
+                {step === 1 && (
+                  <StepSubjects
+                    lines={lines}
+                    koma={koma}
+                    setKoma={setKoma}
+                    extra={extra}
+                    addSubject={addSubject}
+                    removeSubject={removeSubject}
+                    totalKoma={totalKoma}
+                    totalRegular={totalRegular}
+                    totalChargeable={totalChargeable}
+                    totalFee={totalFee}
+                  />
+                )}
+                {step === 2 && (
+                  <StepAvailability
+                    dates={dates}
+                    layout={layout}
+                    ng={ng}
+                    toggle={toggle}
+                    toggleDay={toggleDay}
+                    setNg={setNg}
+                    okCells={okCells}
+                    totalKoma={totalKoma}
+                  />
+                )}
+                {step === 3 && (
+                  <StepConfirm
+                    lines={lines}
+                    koma={koma}
+                    totalKoma={totalKoma}
+                    totalRegular={totalRegular}
+                    totalChargeable={totalChargeable}
+                    totalFee={totalFee}
+                    okCells={okCells}
+                  />
+                )}
+              </div>
 
-          {/* 固定フッタ */}
-          <div className="sticky bottom-0 bg-white border-t border-[var(--stroke)] px-4 py-3 flex gap-2">
-            {step > 1 && (
-              <button
-                onClick={() => setStep(step - 1)}
-                className="px-3 py-2.5 rounded-lg border border-[var(--stroke)] text-sm text-[var(--headline)] flex items-center gap-1"
-              >
-                <ChevronLeft className="w-4 h-4" />
-                戻る
-              </button>
-            )}
-            <button
-              onClick={() => setStep(Math.min(3, step + 1))}
-              disabled={step === 3}
-              className="flex-1 px-3 py-2.5 rounded-lg bg-ink text-white text-sm font-medium disabled:opacity-40 flex items-center justify-center gap-1"
-            >
-              {step === 3 ? 'この内容で申し込む' : '次へ'}
-              {step < 3 && <ChevronRight className="w-4 h-4" />}
-            </button>
-          </div>
+              {/* 固定フッタ */}
+              <div className="sticky bottom-0 bg-white border-t border-[var(--stroke)] px-4 py-3 flex gap-2">
+                {step > 1 && (
+                  <button
+                    onClick={() => setStep(step - 1)}
+                    className="px-3 py-2.5 rounded-lg border border-[var(--stroke)] text-sm text-[var(--headline)] flex items-center gap-1"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                    戻る
+                  </button>
+                )}
+                <button
+                  onClick={() => setStep(Math.min(3, step + 1))}
+                  disabled={step === 3}
+                  className="flex-1 px-3 py-2.5 rounded-lg bg-ink text-white text-sm font-medium disabled:opacity-40 flex items-center justify-center gap-1"
+                >
+                  {step === 3 ? 'この内容で申し込む' : '次へ'}
+                  {step < 3 && <ChevronRight className="w-4 h-4" />}
+                </button>
+              </div>
+            </>
+          )}
         </div>
       </div>
 
       {/* 右: 切替と確認事項 */}
       <div className="space-y-4">
+        <div className="rounded-lg border border-[var(--stroke)] bg-white p-4">
+          <h2 className="text-sm font-semibold text-[var(--headline)] mb-2">表示状態</h2>
+          <div className="space-y-2">
+            {DISPLAY_STATES.map((d) => (
+              <label
+                key={d.key}
+                className={`flex gap-2 items-start p-2.5 rounded-lg border cursor-pointer transition-colors ${
+                  displayState === d.key
+                    ? 'border-ink bg-gray-50'
+                    : 'border-[var(--stroke)] hover:bg-gray-50'
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="displayState"
+                  checked={displayState === d.key}
+                  onChange={() => setDisplayState(d.key)}
+                  className="mt-0.5"
+                />
+                <span>
+                  <span className="block text-sm text-[var(--headline)]">{d.name}</span>
+                  <span className="block text-xs text-[var(--paragraph)]">{d.note}</span>
+                </span>
+              </label>
+            ))}
+          </div>
+        </div>
+
         <div className="rounded-lg border border-[var(--stroke)] bg-white p-4">
           <h2 className="text-sm font-semibold text-[var(--headline)] mb-2">
             通える日の入力方式（ステップ2で反映）
@@ -516,6 +628,140 @@ function ParentFormMock() {
           </ul>
         </div>
       </div>
+    </div>
+  );
+}
+
+/**
+ * 表示状態「生徒コード入口」（決定19・§10-1）。
+ * ポータル経由（/portal/[schoolCode]/koushu）で開いたときに最初に出す本人確認画面。
+ * トークン付きURL（/koushu-apply/[token]）から開いた場合はこの画面を経由しない。
+ */
+function EntryScreenMock() {
+  const [code, setCode] = useState('');
+  return (
+    <div className="h-full flex flex-col justify-center px-6 py-10 space-y-5">
+      <div className="text-center space-y-1.5">
+        <KeyRound className="w-8 h-8 mx-auto text-[var(--paragraph)]" />
+        <h2 className="text-base font-semibold text-[var(--headline)]">生徒コードで開く</h2>
+        <p className="text-xs text-[var(--paragraph)]">
+          教室から伝えられた生徒コードを入力してください
+        </p>
+      </div>
+      <label className="block text-xs text-[var(--headline)]">
+        生徒コード
+        <input
+          value={code}
+          onChange={(e) => setCode(e.target.value)}
+          placeholder="例）A1234"
+          className="mt-1 w-full text-sm border border-[var(--stroke)] rounded-lg px-3 py-2.5"
+        />
+      </label>
+      <button className="w-full py-2.5 rounded-lg bg-ink text-white text-sm font-medium">
+        開く
+      </button>
+      <p className="text-[11px] text-[var(--paragraph)] text-center leading-relaxed">
+        教室から配られたQR・リンクから開いた場合、この画面は表示されません。
+      </p>
+    </div>
+  );
+}
+
+/**
+ * 表示状態「申込済み（読み取り専用）」（決定30・§16-2）。
+ * 初回送信後に同じリンクを開くと、内容は StepConfirm 相当の見た目で読み取り専用のまま出す。
+ * 再提出は教室が「再提出を許可」した場合のみ可能になる（管理側タブ参照）。
+ */
+function AppliedSummaryMock({
+  lines,
+  koma,
+  totalKoma,
+  totalRegular,
+  totalChargeable,
+  totalFee,
+}: {
+  lines: ApplyLine[];
+  koma: Record<string, number>;
+  totalKoma: number;
+  totalRegular: number;
+  totalChargeable: number;
+  totalFee: number;
+}) {
+  return (
+    <div className="px-4 py-4 space-y-3">
+      <div className="rounded-lg border border-info bg-info-subtle p-3 flex gap-2">
+        <Info className="w-4 h-4 text-info shrink-0 mt-0.5" />
+        <p className="text-xs text-[var(--headline)] leading-relaxed">
+          申込を受け付けています。変更は教室までご連絡ください（再提出は教室が許可した場合のみ可能になります）。
+        </p>
+      </div>
+
+      <div className="rounded-xl border border-[var(--stroke)] overflow-hidden">
+        <div className="px-3 py-2 bg-gray-50 text-xs font-medium text-[var(--headline)]">
+          申込内容
+        </div>
+        {lines
+          .filter((p) => (koma[p.subject] ?? 0) > 0)
+          .map((p) => {
+            const n = koma[p.subject] ?? 0;
+            const price = unitPrice(STUDENT.gradeLabel, p.ratio, p.duration);
+            return (
+              <div
+                key={p.subject}
+                className="px-3 py-2.5 flex items-center justify-between border-t border-[var(--stroke)]"
+              >
+                <div>
+                  <p className="text-sm text-[var(--headline)] flex items-center gap-1.5">
+                    {p.subject}
+                    {p.addedByParent && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-info-subtle text-info">
+                        追加
+                      </span>
+                    )}
+                  </p>
+                  <p className="text-[11px] text-[var(--paragraph)]">
+                    {p.ratio === 1 ? '1対1' : '1対2'} / {p.duration}分 ・ {n}コマ
+                    {p.regularKoma > 0 && `（うち通常 ${Math.min(n, p.regularKoma)}コマ）`}
+                  </p>
+                  <p className="text-[11px] text-[var(--paragraph)]">
+                    講習費 {chargeableKoma(n, p.regularKoma)}コマ × {yen(price)}
+                  </p>
+                </div>
+                <span className="text-sm font-semibold text-[var(--headline)] tabular-nums">
+                  {yen(chargeableKoma(n, p.regularKoma) * price)}
+                </span>
+              </div>
+            );
+          })}
+        <div className="px-3 py-2.5 border-t border-[var(--stroke)] bg-gray-50 space-y-1">
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-[var(--headline)]">合計コマ数</span>
+            <span className="text-sm font-semibold text-[var(--headline)] tabular-nums">
+              {totalKoma}コマ
+            </span>
+          </div>
+          {totalRegular > 0 && (
+            <div className="flex items-center justify-between text-xs text-[var(--paragraph)]">
+              <span>うち通常授業（月謝に含む）</span>
+              <span className="tabular-nums">−{totalRegular}コマ</span>
+            </div>
+          )}
+          <div className="flex items-center justify-between text-xs text-[var(--paragraph)]">
+            <span>講習費の対象</span>
+            <span className="tabular-nums">{totalChargeable}コマ</span>
+          </div>
+          <div className="flex items-center justify-between pt-1.5 border-t border-[var(--stroke)]">
+            <span className="text-sm text-[var(--headline)]">講習費</span>
+            <span className="text-base font-semibold text-[var(--headline)] tabular-nums">
+              {yen(totalFee)}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <p className="text-[11px] text-[var(--paragraph)]">
+        通える日の入力内容も送信済みです。日程は教室で組み、決まり次第お知らせします。
+      </p>
     </div>
   );
 }
@@ -1349,6 +1595,8 @@ function AdminMock() {
   const [published, setPublished] = useState(false);
   const [grades, setGrades] = useState<Set<number>>(new Set([7, 8, 9]));
   const [mode, setMode] = useState<'overwrite' | 'diff'>('diff');
+  /** 失効・再発行／再提出許可の結果を一時的に出すだけの表示（決定30。ダミーなので状態は持たない） */
+  const [notice, setNotice] = useState<string | null>(null);
 
   const toggleGrade = (v: number) =>
     setGrades((prev) => {
@@ -1357,6 +1605,11 @@ function AdminMock() {
       else next.add(v);
       return next;
     });
+
+  const flashNotice = (message: string) => {
+    setNotice(message);
+    window.setTimeout(() => setNotice(null), 2000);
+  };
 
   return (
     <div className="space-y-5">
@@ -1387,9 +1640,12 @@ function AdminMock() {
 
       {/* 提案書の入口 */}
       <div className="rounded-lg border border-[var(--stroke)] bg-white p-4">
-        <h2 className="text-sm font-semibold text-[var(--headline)] mb-1">
-          講習提案書（申込リンクの配布と状況）
-        </h2>
+        <div className="flex items-center justify-between gap-2 mb-1">
+          <h2 className="text-sm font-semibold text-[var(--headline)]">
+            講習提案書（申込リンクの配布と状況）
+          </h2>
+          {notice && <span className="text-xs text-success shrink-0">{notice}</span>}
+        </div>
         <p className="text-xs text-[var(--paragraph)] mb-3">
           生徒ごとにトークンURL／QRを発行して配る。申込状況をここで追う。
         </p>
@@ -1399,7 +1655,8 @@ function AdminMock() {
               <th className="py-1.5 pr-3 font-medium">生徒</th>
               <th className="py-1.5 pr-3 font-medium">学年</th>
               <th className="py-1.5 pr-3 font-medium">申込</th>
-              <th className="py-1.5 font-medium">配布</th>
+              <th className="py-1.5 pr-3 font-medium">配布</th>
+              <th className="py-1.5 font-medium">再提出</th>
             </tr>
           </thead>
           <tbody>
@@ -1422,7 +1679,7 @@ function AdminMock() {
                     </span>
                   )}
                 </td>
-                <td className="py-2">
+                <td className="py-2 pr-3">
                   <div className="flex gap-1">
                     <button
                       disabled={!published}
@@ -1438,7 +1695,30 @@ function AdminMock() {
                       <QrCode className="w-3 h-3" />
                       QR
                     </button>
+                    <button
+                      disabled={!published}
+                      onClick={() =>
+                        flashNotice(`${s.name}のリンクを失効・再発行しました（モック）`)
+                      }
+                      className="text-xs px-2 py-1 rounded border border-[var(--stroke)] text-[var(--headline)] disabled:opacity-40 flex items-center gap-1"
+                    >
+                      <RotateCcw className="w-3 h-3" />
+                      失効・再発行
+                    </button>
                   </div>
+                </td>
+                <td className="py-2">
+                  {s.status === 'applied' ? (
+                    <button
+                      onClick={() => flashNotice(`${s.name}の再提出を許可しました（モック）`)}
+                      className="text-xs px-2 py-1 rounded border border-[var(--stroke)] text-[var(--headline)] flex items-center gap-1"
+                    >
+                      <Unlock className="w-3 h-3" />
+                      再提出を許可
+                    </button>
+                  ) : (
+                    <span className="text-xs text-[var(--paragraph)]">—</span>
+                  )}
                 </td>
               </tr>
             ))}
@@ -1560,22 +1840,186 @@ function AdminMock() {
           確認したいこと
         </div>
         <ul className="text-xs space-y-1.5 list-disc pl-4 text-[var(--paragraph)]">
-          <li>申込状況は「未／閲覧のみ／済」の3段階でよいか。督促の導線は要るか</li>
-          <li>
-            通常授業ぶんの差し引きは請求ベース（科目ごとの週回数 × 期間の暦上の週数）。
-            休講週も1週として数える。ここは確定済みだが、週回数を通塾日程から数えるときの
-            同一コマ複数行の扱いに注意が要る
-          </li>
-          <li>トークンURLの有効期限・再発行の運用（きょうだいで使い回されないか）</li>
           <li>「受験生」ショートカットは中3＋高3でよいか（既卒13を含めるか）</li>
-          <li>
-            実行後の結果表示（達成率・未割当理由・科目バランス）はシミュレータと同じ形でよいか
-          </li>
-          <li>
-            教室端末を貸して保護者に入力してもらう運用が回るか（貸し出し中の付き添い・
-            入力途中で帰られた場合の扱い）
-          </li>
+          <li>申込状況は「未／閲覧のみ／済」の3段階でよいか</li>
+          <li>再提出許可の通知方法（許可したことを保護者へどう伝えるか）</li>
         </ul>
+      </div>
+    </div>
+  );
+}
+
+/* ============================================================
+ * 設定（期間・単価）
+ * ========================================================== */
+
+/** 公開期間の状態チップ。開始が無ければ未公開、期間内なら公開中、それ以外は終了 */
+function publishState(start: string, end: string): 'none' | 'open' | 'closed' {
+  if (!start) return 'none';
+  const now = new Date();
+  const startDate = new Date(start);
+  const endDate = end ? new Date(end) : null;
+  if (now < startDate) return 'closed';
+  if (endDate && now > endDate) return 'closed';
+  return 'open';
+}
+
+function SettingsMock() {
+  /**
+   * 公開期間（決定29）。course_prep_periods.apply_publish_start / apply_publish_end のモック。
+   * 開始が空＝未公開。フラグを新設せずこの2列だけで非公開を担保する（§12・§16-1）。
+   */
+  const [publishStart, setPublishStart] = useState('');
+  const [publishEnd, setPublishEnd] = useState('');
+  /** 3軸単価表（決定26・§15-2）。course_prep_periods.apply_price_table のモック */
+  const [priceTable, setPriceTable] = useState<SettingsPriceTable>(INITIAL_SETTINGS_PRICE_TABLE);
+  const [saved, setSaved] = useState(false);
+
+  const state = publishState(publishStart, publishEnd);
+
+  const updatePrice = (grade: number, key: keyof SettingsPriceRow, raw: string) => {
+    const n = Number(raw);
+    setPriceTable((prev) => ({
+      ...prev,
+      [grade]: { ...prev[grade], [key]: Number.isNaN(n) ? 0 : n },
+    }));
+  };
+
+  const handleSave = () => {
+    setSaved(true);
+    window.setTimeout(() => setSaved(false), 2000);
+  };
+
+  return (
+    <div className="space-y-5">
+      {/* 公開期間 */}
+      <div className="rounded-lg border border-[var(--stroke)] bg-white p-4 space-y-3">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-sm font-semibold text-[var(--headline)]">公開期間</h2>
+            <p className="text-xs text-[var(--paragraph)] mt-0.5">
+              course_prep_periods の apply_publish_start / apply_publish_end のモック（決定29）。
+              開始が未設定のうちは保護者向けURLが404になり非公開が担保される。
+            </p>
+          </div>
+          <span
+            className={`text-xs px-2 py-1 rounded-full shrink-0 ${
+              state === 'open'
+                ? 'bg-success-subtle text-success'
+                : 'bg-gray-100 text-[var(--paragraph)]'
+            }`}
+          >
+            {state === 'open' ? '公開中' : state === 'closed' ? '終了' : '未公開'}
+          </span>
+        </div>
+        <div className="grid sm:grid-cols-2 gap-3">
+          <label className="text-xs text-[var(--headline)]">
+            開始
+            <input
+              type="datetime-local"
+              value={publishStart}
+              onChange={(e) => setPublishStart(e.target.value)}
+              className="mt-1 w-full text-sm border border-[var(--stroke)] rounded-lg px-2 py-1.5"
+            />
+          </label>
+          <label className="text-xs text-[var(--headline)]">
+            終了
+            <input
+              type="datetime-local"
+              value={publishEnd}
+              onChange={(e) => setPublishEnd(e.target.value)}
+              className="mt-1 w-full text-sm border border-[var(--stroke)] rounded-lg px-2 py-1.5"
+            />
+          </label>
+        </div>
+      </div>
+
+      {/* 3軸単価エディタ */}
+      <div className="rounded-lg border border-[var(--stroke)] bg-white p-4 space-y-3">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-sm font-semibold text-[var(--headline)]">
+              単価（学年 × 形式 × 時間）
+            </h2>
+            <p className="text-xs text-[var(--paragraph)] mt-0.5">
+              45分は小1〜小4のみ（決定17）。それ以外の学年は入力欄を出さない。
+            </p>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            {saved && <span className="text-xs text-success">保存しました（モック）</span>}
+            <Button size="sm" onClick={handleSave}>
+              保存
+            </Button>
+          </div>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-left text-xs text-[var(--paragraph)] border-b border-[var(--stroke)]">
+                <th className="py-1.5 pr-3 font-medium">学年</th>
+                <th className="py-1.5 pr-3 font-medium">1対2 90分</th>
+                <th className="py-1.5 pr-3 font-medium">1対1 90分</th>
+                <th className="py-1.5 pr-3 font-medium">1対2 45分</th>
+                <th className="py-1.5 font-medium">1対1 45分</th>
+              </tr>
+            </thead>
+            <tbody>
+              {GRADES.map((g) => {
+                const row = priceTable[g.v];
+                const allow45 = g.v <= 4;
+                return (
+                  <tr key={g.v} className="border-b border-gray-100 last:border-0">
+                    <td className="py-1.5 pr-3 text-[var(--headline)]">{g.label}</td>
+                    <td className="py-1.5 pr-3">
+                      <input
+                        type="number"
+                        value={row['1on2_90']}
+                        onChange={(e) => updatePrice(g.v, '1on2_90', e.target.value)}
+                        className="w-20 text-sm border border-[var(--stroke)] rounded px-1.5 py-1"
+                      />
+                    </td>
+                    <td className="py-1.5 pr-3">
+                      <input
+                        type="number"
+                        value={row['1on1_90']}
+                        onChange={(e) => updatePrice(g.v, '1on1_90', e.target.value)}
+                        className="w-20 text-sm border border-[var(--stroke)] rounded px-1.5 py-1"
+                      />
+                    </td>
+                    <td className="py-1.5 pr-3">
+                      {allow45 ? (
+                        <input
+                          type="number"
+                          value={row['1on2_45'] ?? 0}
+                          onChange={(e) => updatePrice(g.v, '1on2_45', e.target.value)}
+                          className="w-20 text-sm border border-[var(--stroke)] rounded px-1.5 py-1"
+                        />
+                      ) : (
+                        <span className="text-[var(--paragraph)]">—</span>
+                      )}
+                    </td>
+                    <td className="py-1.5">
+                      {allow45 ? (
+                        <input
+                          type="number"
+                          value={row['1on1_45'] ?? 0}
+                          onChange={(e) => updatePrice(g.v, '1on1_45', e.target.value)}
+                          className="w-20 text-sm border border-[var(--stroke)] rounded px-1.5 py-1"
+                        />
+                      ) : (
+                        <span className="text-[var(--paragraph)]">—</span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+        <p className="text-[11px] text-[var(--paragraph)] pt-2 border-t border-[var(--stroke)]">
+          単価は form_periods ではなく course_prep_periods に持つ（§16-1）。form_type
+          の拡張は不要になった。
+        </p>
       </div>
     </div>
   );

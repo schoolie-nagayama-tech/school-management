@@ -436,8 +436,13 @@ export interface KomaSpec {
   duration: 45 | 90;
   /** 申込時点の1コマ単価（円・税込）。表示と突合のためのスナップショット */
   unitPrice?: number;
+  /** 申込時点で差し引いた通常授業コマ数（§15-7）。これが無いと申込時の金額を再現できない */
+  regularKoma?: number;
 }
 ```
+
+単価だけでなく **差し引いた通常授業コマ数もスナップショットする**。通塾日程は申込後も変わりうるので、
+申込時に保護者へ提示した金額（= (koma − regularKoma) × unitPrice）を後から再現するには両方が要る。
 
 ### 15-5. 請求との関係
 
@@ -512,3 +517,82 @@ export interface KomaSpec {
 確認画面でも `講習費 nコマ × 単価` の形で内訳を出す。
 
 注記文言: 「税込。期間中の通常授業ぶんはお月謝に含まれるため、講習費からは差し引いています。」
+
+---
+
+## 16. 設計レビュー（2026-08-04）— 漏れの補完
+
+第2部を通読し、実装に入る前に未確定・矛盾を洗った結果。ここで確定した判断は決定29〜35として追加する。
+
+| #   | 論点                     | 決定                                                                                                                                                                                            |
+| --- | ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 29  | 公開期間・単価表の置き場 | **`course_prep_periods` に列を追加**（`apply_publish_start` / `apply_publish_end` / `apply_price_table jsonb`）。form_periods には載せない（§16-1）                                             |
+| 30  | 再提出                   | **初回は自由、以降は教室許可制**。`seasonal_shift_student_submissions` の `allow_edit`/`edit_token` 機構を申込にも流用（§16-2）                                                                 |
+| 31  | フォームの対象形態       | **個別（individual）のみ**。集団（group）の申込は従来どおり教室管理。フォームには出さない                                                                                                       |
+| 32  | 単元への配分             | Web申込は科目単位の合計。進捗管理表の `applied_koma` へは**先頭単元に合計を置く**（提案書結合転記の既存慣習 `project_proposal_merge_progress_sync` に従う）。単元別の割り振りは教室が後から調整 |
+| 33  | 提案の表示対象           | フォームに出す提案書は **status in ('sent','approved')** のみ。draft は出さない（下書き直接公開禁止の既存ガードと整合）。提案が1件も無い生徒は「科目追加のみ」の画面になる                      |
+| 34  | 同一科目×複数教材        | 提案書は1教材1枚なので同じ科目が複数枚ありうる。フォームでは**科目単位に合算して1行**で見せる（教材名は列挙）                                                                                   |
+| 35  | 二重送信                 | **10分以内の同一内容をサーバーで冪等化**（`project_form_duplicate_submission` の既存慣習を踏襲。unique index は張らない）                                                                       |
+
+### 16-1. 公開期間・単価表は `course_prep_periods` に持つ（決定29）
+
+**発見した矛盾**: 決定20で「`form_type` に `'koushu'` を追加しない」と決めたが、§10-3/§12 の公開期間チェックは
+form_periods の仕組みを前提にしていた。form_periods は `form_type` の CHECK 制約（DB・TS型の2箇所）があるため、
+追加せずに相乗りはできない。
+
+**解消**: 講習期間の正典は既に `course_prep_periods`（season × year × school、schedule_start/end_date）なので、
+**申込の公開設定もここに持つ**のが最短。
+
+```sql
+ALTER TABLE course_prep_periods
+  ADD COLUMN apply_publish_start timestamptz,  -- NULL = 未公開（§12の非公開担保）
+  ADD COLUMN apply_publish_end   timestamptz,
+  ADD COLUMN apply_price_table   jsonb;        -- §15-2 の3軸テーブル
+```
+
+- 公開判定: `apply_publish_start IS NOT NULL AND now() BETWEEN start AND end` → 外れていれば 404
+- これにより form_periods / period_key / FORM_TYPE_TO_PERIODS_PATH への追加が**全部不要**になる
+- ポータル設定の入口（§10-4）は、この列を編集する小さな管理UI（教室×期間ごと）へのリンクにする
+
+### 16-2. 再提出は教室許可制（決定30）
+
+何も決めないと「保護者が何度でも上書きできる」ことになり、自動配置の実行後に申込が減ると
+配置済みコマと申込の整合が壊れる。かといって完全ロックは軽微な直しまで教室連絡になる。
+
+- **初回送信は自由**。送信後はフォームを読み取り専用で再表示（申込内容＋「変更は教室までご連絡ください」）
+- 教室が「再提出を許可」すると保護者が開き直して修正できる（`allow_edit` を立て `edit_token` 付きURLを再配布。
+  可能日程で実績のある既存機構をそのまま流用し、申込にも同じ意味論を適用する）
+- 再提出の許可・実施はどちらも上書き（履歴テーブルは作らない。最小構成を優先）
+
+### 16-3. 形式（1対1/45分）の実装先（決定14の具体化）
+
+`seasonal_proposals` に `ratio smallint DEFAULT 2` / `duration_minutes integer` を追加する。
+既定値は 通年契約（`student_subject_contracts`）の ratio ＋ `subjects.duration_minutes`。
+教室は提案書の編集画面でこの2つを変えられる（＝「提案時に決める」の実装）。
+保護者フォームはこの値を読み取り専用で表示する。
+
+### 16-4. トークンの置き場（決定19の具体化）
+
+新テーブルを1つ作る（既存テーブルに間借りできる場所が無い。`koushu_enrollments` は申込後にしか行が無い）:
+
+```sql
+CREATE TABLE koushu_apply_tokens (
+  token       text PRIMARY KEY,          -- 乱数列（test_prep_proposals.token の前例に倣う）
+  school_id   uuid NOT NULL,
+  student_id  uuid NOT NULL,
+  season      text NOT NULL,
+  year        integer NOT NULL,
+  created_by  uuid,
+  created_at  timestamptz DEFAULT now(),
+  revoked_at  timestamptz                -- 失効。再発行は新しい行を作る
+);
+```
+
+スコープは**生徒×講習期間**（提案書1枚ごとではない。フォームはその生徒の提案を全部まとめて見せるため）。
+
+### 16-5. レビューで確認して問題なしだったもの
+
+- Q1（科目の統合）→ Q2 → Q3〜Q5 の依存関係は正しい。Q1を先にやる以外の順序はない
+- 差し引き（§15-7）は請求ベースで一貫。未確定なし
+- 非公開の担保は「公開期間NULL＋ロールガード」の2点で足りる（決定29でさらに単純になった）
+- 代行なし（決定24）により `source`/`created_by` 系の設計が全部消え、申込経路は公開API 1本
