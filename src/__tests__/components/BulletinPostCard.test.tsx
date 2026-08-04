@@ -10,8 +10,9 @@ import userEvent from '@testing-library/user-event';
 import { BulletinPostCard } from '@/components/bulletin/BulletinPostCard';
 import type { BulletinPost } from '@/types/bulletin';
 
-// DOMPurify モック
-vi.mock('isomorphic-dompurify', () => ({
+// DOMPurify モック（ブラウザ版 dompurify を直接使う。isomorphic-dompurify は
+// jsdom をサーバーバンドルに持ち込むため廃止した）
+vi.mock('dompurify', () => ({
   default: {
     sanitize: vi.fn((html: string) => html),
   },
