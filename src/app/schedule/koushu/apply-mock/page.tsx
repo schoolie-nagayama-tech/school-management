@@ -76,7 +76,7 @@ const PROPOSALS = [
     proposedKoma: 12,
     ratio: 2 as const,
     duration: 90 as const,
-    regularKoma: 7, // 週1回 × 7週
+    regularKoma: 8, // 週1回 × 8週（お盆の休講週も暦どおり数える）
   },
   {
     subject: '数学',
@@ -85,7 +85,7 @@ const PROPOSALS = [
     proposedKoma: 10,
     ratio: 1 as const,
     duration: 90 as const,
-    regularKoma: 7,
+    regularKoma: 8,
   },
   {
     subject: '理科',
@@ -134,6 +134,10 @@ function unitPrice(gradeLabel: string, ratio: 1 | 2, duration: 45 | 90): number 
  * 期間中の通常授業は月謝で別途もらっているので、申込コマ数からその分を差し引く
  * （進行表の「増コマ」と同じ考え方）。通常授業は科目ごとに決まっているため、
  * 科目単位で引く。申込が通常授業の回数を下回る場合は 0 に丸める。
+ *
+ * 差し引く数は**請求ベース**（科目ごとの週回数 × 期間の暦上の週数）で決める。
+ * 授業を実施したかは関係ない ＝ 振替が期間外に出ても・休講でも・欠席でも引く。
+ * 月謝は契約どおり請求しているので、実施の有無で差し引く数が動いてはいけない。
  */
 function chargeableKoma(applied: number, regular: number): number {
   return Math.max(0, applied - regular);
@@ -1558,8 +1562,9 @@ function AdminMock() {
         <ul className="text-xs space-y-1.5 list-disc pl-4 text-[var(--paragraph)]">
           <li>申込状況は「未／閲覧のみ／済」の3段階でよいか。督促の導線は要るか</li>
           <li>
-            <strong>「期間の週数」の数え方</strong>: 通常授業ぶんは請求ベース（契約の週回数 ×
-            期間の週数）で引く。 お盆の休講週を含めるか、講習期間と請求の月境界がずれる場合の扱い
+            通常授業ぶんの差し引きは請求ベース（科目ごとの週回数 × 期間の暦上の週数）。
+            休講週も1週として数える。ここは確定済みだが、週回数を通塾日程から数えるときの
+            同一コマ複数行の扱いに注意が要る
           </li>
           <li>トークンURLの有効期限・再発行の運用（きょうだいで使い回されないか）</li>
           <li>「受験生」ショートカットは中3＋高3でよいか（既卒13を含めるか）</li>
