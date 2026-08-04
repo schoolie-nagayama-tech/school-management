@@ -101,7 +101,9 @@ export default function SessionFeed({ schoolIds: propSchoolIds }: Props) {
   const [komaMap, setKomaMap] = useState<Record<string, KoushuKomaSummary>>({});
   const [tab, setTab] = useState<TabKey>('unconfirmed');
   const [loading, setLoading] = useState(true);
-  const [alertsExpanded, setAlertsExpanded] = useState(true);
+  // 注意事項は既定で折りたたむ。件数が多いとセッション記録が下に押し出されて
+  // 本来の目的（直近の授業記録の確認）が見えなくなるため、件数だけ見せて中身は開いたときに出す。
+  const [alertsExpanded, setAlertsExpanded] = useState(false);
 
   // フィルタ
   const [studentFilter, setStudentFilter] = useState<string | null>(null);
