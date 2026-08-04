@@ -78,14 +78,23 @@ const SLOTS = [
 const STUDENT = { name: '宮永 心那', grade: 8, gradeLabel: '中2' };
 
 /**
+ * 45分の選択肢を出してよいかの判定（決定17・48）。小1〜小4のみ対象。
+ * 現在のダミー生徒は中2（grade=8）なので常に false＝時間セレクトは非表示になる。
+ * 小1〜小4の生徒なら true になり、保護者が追加した科目に 90分/45分 のセレクトも出る。
+ */
+const ALLOW_45 = STUDENT.grade <= 4;
+
+/**
  * 提案書から読む内容。ratio / duration は教室が提案時に決めた値で、
  * 保護者側は表示のみ（仕様書 決定14）。
+ * `theme` は提案書のテーマ（1行）。単元リスト・単元別コマ数は出さない
+ * （詳細は提案書本体を見れば足りる。決定47）。
  */
 const PROPOSALS = [
   {
     subject: '英語',
     textbook: 'フォレスタ 英語 中2',
-    units: ['不定詞', '動名詞', '比較'],
+    theme: '夏期の総復習と2学期の先取り',
     proposedKoma: 12,
     ratio: 2 as const,
     duration: 90 as const,
@@ -94,7 +103,7 @@ const PROPOSALS = [
   {
     subject: '数学',
     textbook: 'フォレスタ 数学 中2',
-    units: ['連立方程式', '一次関数'],
+    theme: '連立方程式の完成と一次関数の導入',
     proposedKoma: 10,
     ratio: 1 as const,
     duration: 90 as const,
@@ -103,7 +112,7 @@ const PROPOSALS = [
   {
     subject: '理科',
     textbook: 'フォレスタ 理科 中2',
-    units: ['化学変化と原子・分子'],
+    theme: '化学変化の基礎固め',
     proposedKoma: 4,
     ratio: 2 as const,
     duration: 90 as const,
@@ -166,6 +175,41 @@ const COURSES: Course[] = [
     ],
   },
 ];
+
+/**
+ * モック用の「今日」（仕様書 §17-5・決定45）。
+ * 本番では実日時（Date.now()）で判定するが、モックでは途中参加の見え方
+ * （開催済みのグレー表示・開始回セレクト・残り回数ぶんの料金再計算）を
+ * 固定して確認できるよう日付を決め打ちする。
+ * 中3理社特訓（全8回）のうち 7/21・7/23・7/28 の3回が「開催済み」になる日付を選んだ
+ * （残り5回＝8/4起算ではなく7/30から。¥2,200 × 残り5回 = ¥11,000）。
+ */
+const MOCK_TODAY = '2026-07-29';
+
+/** セッションが MOCK_TODAY より前＝開催済みかどうか */
+function isSessionHeld(date: string): boolean {
+  return date < MOCK_TODAY;
+}
+
+/** コースの未開催セッション一覧（開始回セレクトの選択肢はここから作る） */
+function upcomingSessions(course: Course): CourseSession[] {
+  return course.sessions.filter((s) => !isSessionHeld(s.date));
+}
+
+/**
+ * 参加開始日（`course_start_date`相当）から残りのセッション一覧を返す。
+ * 開始日が見つからない・先頭回が開始日＝これまでどおり全回参加として扱う。
+ */
+function remainingSessions(course: Course, startDate: string): CourseSession[] {
+  const idx = course.sessions.findIndex((s) => s.date === startDate);
+  return idx <= 0 ? course.sessions : course.sessions.slice(idx);
+}
+
+/** 参加開始セッションの番号（1始まり）。見つからなければ第1回扱い */
+function startSessionNumber(course: Course, startDate: string): number {
+  const idx = course.sessions.findIndex((s) => s.date === startDate);
+  return idx === -1 ? 1 : idx + 1;
+}
 
 /**
  * 単価テーブル（仕様書 決定26・§15-2）。
@@ -341,7 +385,8 @@ export default function KoushuApplyMockPage() {
 interface ApplyLine {
   subject: string;
   textbook: string | null;
-  units: string[];
+  /** 提案書のテーマ（1行）。保護者が追加した科目は未定なので null（決定47） */
+  theme: string | null;
   /** 提案コマ数。保護者が追加した科目は 0 */
   proposedKoma: number;
   ratio: 1 | 2;
@@ -405,37 +450,57 @@ function ParentFormMock() {
   );
   /** 保護者が提案外に追加した科目 */
   const [extra, setExtra] = useState<string[]>([]);
+  /**
+   * 保護者が追加した科目の形式（決定48・決定25改訂）。科目名 → 選択したratio/duration。
+   * 追加科目は既定で受けて教室が後から調整、ではなく保護者が選ぶ。既定値は1対2・90分。
+   */
+  const [extraFormat, setExtraFormat] = useState<
+    Record<string, { ratio: 1 | 2; duration: 45 | 90 }>
+  >({});
   /** ×を付けた枠。全○初期なのでここに入っているものだけが「出られない」 */
   const [ng, setNg] = useState<Set<string>>(new Set());
   /** 参加を選んだ小集団・プログラミングのコース名（決定36・37: 日時固定・全回参加が既定） */
   const [courseJoin, setCourseJoin] = useState<Set<string>>(new Set());
+  /**
+   * コースごとの参加開始日（決定45: 途中参加）。既定は次の未開催回。
+   * コース名 → session.date。参加を外しても選択状態は保持する（再度参加したときに戻すため）。
+   */
+  const [courseStart, setCourseStart] = useState<Record<string, string>>(
+    Object.fromEntries(
+      COURSES.map((c) => [c.name, upcomingSessions(c)[0]?.date ?? c.sessions[0].date])
+    )
+  );
 
   /**
    * 申込の明細。提案書の科目＋保護者が追加した科目。
-   * 追加分は教室が形式を決めていないので既定（1対2・90分）を当て、
-   * 「教室で調整します」と断ってから出す。
+   * 追加分は形式（1対1/1対2・90分/45分）を保護者自身が選べる（決定48・決定25改訂）。
+   * 選択は extraFormat に持ち、既定は1対2・90分。
    */
   const lines: ApplyLine[] = useMemo(
     () => [
       ...PROPOSALS,
-      ...extra.map((s) => ({
-        subject: s,
-        textbook: null,
-        units: [],
-        proposedKoma: 0,
-        ratio: 2 as const,
-        duration: 90 as const,
-        // 提案外に追加した科目は通常授業で取っていない前提（全コマが講習費の対象）
-        regularKoma: 0,
-        addedByParent: true,
-      })),
+      ...extra.map((s) => {
+        const fmt = extraFormat[s] ?? { ratio: 2 as const, duration: 90 as const };
+        return {
+          subject: s,
+          textbook: null,
+          theme: null,
+          proposedKoma: 0,
+          ratio: fmt.ratio,
+          duration: fmt.duration,
+          // 提案外に追加した科目は通常授業で取っていない前提（全コマが講習費の対象）
+          regularKoma: 0,
+          addedByParent: true,
+        };
+      }),
     ],
-    [extra]
+    [extra, extraFormat]
   );
 
   const addSubject = (s: string) => {
     setExtra((prev) => [...prev, s]);
     setKoma((prev) => ({ ...prev, [s]: 2 }));
+    setExtraFormat((prev) => ({ ...prev, [s]: { ratio: 2, duration: 90 } }));
   };
   const removeSubject = (s: string) => {
     setExtra((prev) => prev.filter((x) => x !== s));
@@ -444,7 +509,18 @@ function ParentFormMock() {
       delete next[s];
       return next;
     });
+    setExtraFormat((prev) => {
+      const next = { ...prev };
+      delete next[s];
+      return next;
+    });
   };
+  /** 保護者が追加した科目の形式を変更する（決定48） */
+  const setSubjectFormat = (subject: string, patch: Partial<{ ratio: 1 | 2; duration: 45 | 90 }>) =>
+    setExtraFormat((prev) => ({
+      ...prev,
+      [subject]: { ...(prev[subject] ?? { ratio: 2, duration: 90 }), ...patch },
+    }));
 
   const totalKoma = lines.reduce((s, l) => s + (koma[l.subject] ?? 0), 0);
   // 月謝に含まれる通常授業ぶん（申込コマを超えては引かない）
@@ -466,9 +542,13 @@ function ParentFormMock() {
   /**
    * 小集団・プログラミングは参加コースの単価×回数をそのまま合算する。
    * 通常授業の差し引き（chargeableKoma）は個別のみに掛かるので、ここでは一切使わない（決定43）。
+   * 途中参加の場合は開始回からの残り回数だけを数える（決定45）。
    */
   const joinedCourses = COURSES.filter((c) => courseJoin.has(c.name));
-  const totalCourseFee = joinedCourses.reduce((s, c) => s + c.unitPrice * c.sessions.length, 0);
+  const totalCourseFee = joinedCourses.reduce((s, c) => {
+    const start = courseStart[c.name] ?? c.sessions[0].date;
+    return s + c.unitPrice * remainingSessions(c, start).length;
+  }, 0);
   const grandTotal = totalFee + totalCourseFee;
 
   const toggleCourse = (name: string) =>
@@ -478,6 +558,9 @@ function ParentFormMock() {
       else next.add(name);
       return next;
     });
+
+  const setCourseStartDate = (name: string, date: string) =>
+    setCourseStart((prev) => ({ ...prev, [name]: date }));
 
   const toggle = (key: string) =>
     setNg((prev) => {
@@ -515,6 +598,7 @@ function ParentFormMock() {
               totalChargeable={totalChargeable}
               totalFee={totalFee}
               joinedCourses={joinedCourses}
+              courseStart={courseStart}
               totalCourseFee={totalCourseFee}
               grandTotal={grandTotal}
             />
@@ -555,6 +639,7 @@ function ParentFormMock() {
                     extra={extra}
                     addSubject={addSubject}
                     removeSubject={removeSubject}
+                    setSubjectFormat={setSubjectFormat}
                     totalKoma={totalKoma}
                     totalRegular={totalRegular}
                     totalChargeable={totalChargeable}
@@ -565,6 +650,8 @@ function ParentFormMock() {
                   <StepCourses
                     courseJoin={courseJoin}
                     toggleCourse={toggleCourse}
+                    courseStart={courseStart}
+                    setCourseStartDate={setCourseStartDate}
                     totalCourseFee={totalCourseFee}
                   />
                 )}
@@ -590,6 +677,7 @@ function ParentFormMock() {
                     totalFee={totalFee}
                     okCells={okCells}
                     joinedCourses={joinedCourses}
+                    courseStart={courseStart}
                     totalCourseFee={totalCourseFee}
                     grandTotal={grandTotal}
                   />
@@ -690,29 +778,12 @@ function ParentFormMock() {
             確認したいこと
           </div>
           <ul className="text-xs space-y-1.5 list-disc pl-4 text-[var(--paragraph)]">
-            <li>提案の見せ方は「科目＋教材名＋単元」で足りるか。単元ごとのコマ数まで出すべきか</li>
-            <li>
-              形式（1対1／1対2）と90分は表示のみでよいか。保護者から変更希望が来る運用をどうするか
-            </li>
-            <li>
-              <strong>単価が学年だけで決まってよいか</strong>: 増コマの price_table は 「学年 →
-              円」しか持っていない。講習で 1対1・45分の単価が違うなら
-              キー設計の拡張が要る（モックでは仮の係数 1対1=1.6倍 / 45分=0.6倍 を置いている）
-            </li>
-            <li>
-              <strong>保護者が追加した科目</strong>: 形式・教材が未定のまま申し込まれる。
-              既定（1対2・90分）で金額を出しているが、教室が後から形式を変えたら金額が変わる。
-              その場合の伝え方をどうするか
-            </li>
-            <li>
-              期間全体で {dates.length}日 × {SLOTS.length}コマ = {totalCells}
-              枠。案Bの入力量が見合うか
-            </li>
-            <li>申込コマ数は提案より増やせてよいか（上限を設けるか）</li>
             <li>
               コースの開催時間が個別コマの時間帯とズレる場合の座席表上の見え方（決定41は重複判定のみ担保。表示の見せ方は未検討）
             </li>
-            <li>途中回からの参加（按分）を認めるか。今は全回参加のみを想定している（決定37）</li>
+            <li>
+              開始回セレクトの選択肢を保護者に開放してよいか（帰省などの事情がある場合のみ教室に相談してからにするか）（決定45）
+            </li>
           </ul>
         </div>
       </div>
@@ -768,6 +839,7 @@ function AppliedSummaryMock({
   totalChargeable,
   totalFee,
   joinedCourses,
+  courseStart,
   totalCourseFee,
   grandTotal,
 }: {
@@ -778,6 +850,7 @@ function AppliedSummaryMock({
   totalChargeable: number;
   totalFee: number;
   joinedCourses: Course[];
+  courseStart: Record<string, string>;
   totalCourseFee: number;
   grandTotal: number;
 }) {
@@ -859,22 +932,30 @@ function AppliedSummaryMock({
             <div className="px-3 pt-2 border-t border-[var(--stroke)] text-[11px] font-medium text-[var(--paragraph)]">
               小集団・プログラミング（差引対象外）
             </div>
-            {joinedCourses.map((c) => (
-              <div
-                key={c.name}
-                className="px-3 py-2.5 flex items-center justify-between border-t border-[var(--stroke)]"
-              >
-                <div>
-                  <p className="text-sm text-[var(--headline)]">{c.name}</p>
-                  <p className="text-[11px] text-[var(--paragraph)]">
-                    {c.formation} ・ {c.sessions.length}回 × {yen(c.unitPrice)}
-                  </p>
+            {joinedCourses.map((c) => {
+              const start = courseStart[c.name] ?? c.sessions[0].date;
+              const remaining = remainingSessions(c, start);
+              const fee = c.unitPrice * remaining.length;
+              const fullyJoined = startSessionNumber(c, start) === 1;
+              return (
+                <div
+                  key={c.name}
+                  className="px-3 py-2.5 flex items-center justify-between border-t border-[var(--stroke)]"
+                >
+                  <div>
+                    <p className="text-sm text-[var(--headline)]">{c.name}</p>
+                    <p className="text-[11px] text-[var(--paragraph)]">
+                      {fullyJoined
+                        ? `${c.formation} ・ ${c.sessions.length}回 × ${yen(c.unitPrice)}`
+                        : `${c.formation} ・ 第${startSessionNumber(c, start)}回から参加・残り${remaining.length}回 × ${yen(c.unitPrice)}`}
+                    </p>
+                  </div>
+                  <span className="text-sm font-semibold text-[var(--headline)] tabular-nums">
+                    {yen(fee)}
+                  </span>
                 </div>
-                <span className="text-sm font-semibold text-[var(--headline)] tabular-nums">
-                  {yen(c.unitPrice * c.sessions.length)}
-                </span>
-              </div>
-            ))}
+              );
+            })}
             <div className="px-3 py-2.5 border-t border-[var(--stroke)] bg-gray-50 flex items-center justify-between">
               <span className="text-sm text-[var(--headline)]">小集団・プログラミング 小計</span>
               <span className="text-base font-semibold text-[var(--headline)] tabular-nums">
@@ -908,6 +989,7 @@ function StepSubjects({
   extra,
   addSubject,
   removeSubject,
+  setSubjectFormat,
   totalKoma,
   totalRegular,
   totalChargeable,
@@ -919,6 +1001,7 @@ function StepSubjects({
   extra: string[];
   addSubject: (s: string) => void;
   removeSubject: (s: string) => void;
+  setSubjectFormat: (subject: string, patch: Partial<{ ratio: 1 | 2; duration: 45 | 90 }>) => void;
   totalKoma: number;
   totalRegular: number;
   totalChargeable: number;
@@ -959,42 +1042,72 @@ function StepSubjects({
                 <p className="text-[11px] text-[var(--paragraph)] truncate">
                   {p.textbook ?? '教材は教室で選びます'}
                 </p>
+                {p.theme && <p className="text-[11px] text-[var(--paragraph)] mt-0.5">{p.theme}</p>}
               </div>
-              {/* 形式・時間は教室が決めた値なので、押せない見た目にする（決定14） */}
-              <div className="flex gap-1 shrink-0">
-                <span
-                  className={`text-[10px] px-1.5 py-0.5 rounded-full ${
-                    p.ratio === 1
-                      ? 'bg-warning-subtle text-warning'
-                      : 'bg-gray-100 text-[var(--paragraph)]'
-                  }`}
-                >
-                  {p.ratio === 1 ? '1対1' : '1対2'}
-                </span>
-                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-gray-100 text-[var(--paragraph)]">
-                  {p.duration}分
-                </span>
-              </div>
-            </div>
-
-            {p.units.length > 0 && (
-              <div className="flex flex-wrap gap-1 mt-2">
-                {p.units.map((u) => (
+              {p.addedByParent ? (
+                /* 保護者が追加した科目は形式を自分で選べる（決定48・決定25改訂）。
+                   単価が0（=価格表に無い組み合わせ）の選択肢は出さない */
+                <div className="flex flex-col items-end gap-1 shrink-0">
+                  <div className="flex rounded-full border border-[var(--stroke)] overflow-hidden">
+                    {([2, 1] as const)
+                      .filter((r) => unitPrice(STUDENT.gradeLabel, r, p.duration) > 0)
+                      .map((r) => (
+                        <button
+                          key={r}
+                          onClick={() => setSubjectFormat(p.subject, { ratio: r })}
+                          className={`px-2 py-0.5 text-[10px] ${
+                            p.ratio === r ? 'bg-ink text-white' : 'bg-white text-[var(--paragraph)]'
+                          }`}
+                        >
+                          {r === 1 ? '1対1' : '1対2'}
+                        </button>
+                      ))}
+                  </div>
+                  {/* 45分は小1〜小4のみ選択肢に出す（決定17・48）。中2の今は非表示 */}
+                  {ALLOW_45 && (
+                    <div className="flex rounded-full border border-[var(--stroke)] overflow-hidden">
+                      {([90, 45] as const)
+                        .filter((d) => unitPrice(STUDENT.gradeLabel, p.ratio, d) > 0)
+                        .map((d) => (
+                          <button
+                            key={d}
+                            onClick={() => setSubjectFormat(p.subject, { duration: d })}
+                            className={`px-2 py-0.5 text-[10px] ${
+                              p.duration === d
+                                ? 'bg-ink text-white'
+                                : 'bg-white text-[var(--paragraph)]'
+                            }`}
+                          >
+                            {d}分
+                          </button>
+                        ))}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                /* 提案由来の科目は教室が決めた形式の表示のみ（決定14。変更希望の運用は用意しない） */
+                <div className="flex gap-1 shrink-0">
                   <span
-                    key={u}
-                    className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-[var(--paragraph)]"
+                    className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+                      p.ratio === 1
+                        ? 'bg-warning-subtle text-warning'
+                        : 'bg-gray-100 text-[var(--paragraph)]'
+                    }`}
                   >
-                    {u}
+                    {p.ratio === 1 ? '1対1' : '1対2'}
                   </span>
-                ))}
-              </div>
-            )}
+                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-gray-100 text-[var(--paragraph)]">
+                    {p.duration}分
+                  </span>
+                </div>
+              )}
+            </div>
 
             <div className="flex items-center justify-between mt-3 pt-3 border-t border-[var(--stroke)]">
               <div>
-                <p className="text-xs text-[var(--paragraph)]">
-                  {p.addedByParent ? '形式は教室で調整します' : `提案 ${p.proposedKoma}コマ`}
-                </p>
+                {!p.addedByParent && (
+                  <p className="text-xs text-[var(--paragraph)]">{`提案 ${p.proposedKoma}コマ`}</p>
+                )}
                 <p className="text-[11px] text-[var(--paragraph)] mt-0.5">1コマ {yen(price)}</p>
               </div>
               <div className="flex items-center gap-2">
@@ -1122,14 +1235,22 @@ function StepSubjects({
  * 聞かない。コースカードを見て「参加する」を選ぶだけの単純な操作にする（決定36）。
  * コース料金には通常授業の差し引きを掛けない（決定43）ので、このステップの合計は
  * そのままステップ4の内訳へ乗せる。
+ *
+ * 途中参加（決定45）: MOCK_TODAY より前の回は開催済みとしてグレー表示し自動で対象外。
+ * 参加を選ぶと「参加開始」セレクトが出て、未開催の回から選べる（既定は次の回）。
+ * 料金は単価×開始回からの残り回数で再計算する。
  */
 function StepCourses({
   courseJoin,
   toggleCourse,
+  courseStart,
+  setCourseStartDate,
   totalCourseFee,
 }: {
   courseJoin: Set<string>;
   toggleCourse: (name: string) => void;
+  courseStart: Record<string, string>;
+  setCourseStartDate: (name: string, date: string) => void;
   totalCourseFee: number;
 }) {
   return (
@@ -1140,7 +1261,11 @@ function StepCourses({
 
       {COURSES.map((c) => {
         const joined = courseJoin.has(c.name);
-        const fee = c.unitPrice * c.sessions.length;
+        const start = courseStart[c.name] ?? c.sessions[0].date;
+        const remaining = remainingSessions(c, start);
+        const fee = c.unitPrice * remaining.length;
+        const fullyJoined = startSessionNumber(c, start) === 1;
+        const options = upcomingSessions(c);
         return (
           <div
             key={c.name}
@@ -1161,37 +1286,93 @@ function StepCourses({
               <AlertCircle className="w-3.5 h-3.5 text-warning shrink-0 mt-0.5" />
               <p className="text-[11px] text-[var(--headline)] leading-relaxed">
                 日時は決まっており、変更・振替はできません
+                <br />
+                途中からのご参加もできます（参加回ぶんのみのご請求）
               </p>
             </div>
 
-            {/* 開催予定表。session_dates が配布する予定表そのもの（決定40） */}
+            {/* 開催予定表。session_dates が配布する予定表そのもの（決定40）。
+                開催済み＝グレー＋ラベル、開始回より前（未開催）＝参加しない回として薄く出す（決定45） */}
             <div className="mt-2 rounded-lg border border-[var(--stroke)] overflow-hidden">
               <table className="w-full text-[11px]">
                 <thead>
                   <tr className="bg-gray-50 text-[var(--paragraph)]">
                     <th className="py-1 px-2 text-left font-medium">日程</th>
                     <th className="py-1 px-2 text-left font-medium">時間</th>
+                    <th className="py-1 px-2 text-left font-medium w-16">状態</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {c.sessions.map((s) => (
-                    <tr key={s.date} className="border-t border-gray-100">
-                      <td className="py-1 px-2 text-[var(--headline)]">
-                        {mmdd(s.date)}({WEEKDAY[dow(s.date)]})
-                      </td>
-                      <td className="py-1 px-2 text-[var(--headline)] tabular-nums">
-                        {s.start}〜{s.end}
-                      </td>
-                    </tr>
-                  ))}
+                  {c.sessions.map((s, i) => {
+                    const held = isSessionHeld(s.date);
+                    const skipped = joined && !held && s.date < start;
+                    const rowMuted = held || skipped;
+                    return (
+                      <tr
+                        key={s.date}
+                        className={`border-t border-gray-100 ${rowMuted ? 'bg-gray-50' : ''}`}
+                      >
+                        <td
+                          className={`py-1 px-2 ${rowMuted ? 'text-gray-400' : 'text-[var(--headline)]'}`}
+                        >
+                          第{i + 1}回 {mmdd(s.date)}({WEEKDAY[dow(s.date)]})
+                        </td>
+                        <td
+                          className={`py-1 px-2 tabular-nums ${rowMuted ? 'text-gray-400' : 'text-[var(--headline)]'}`}
+                        >
+                          {s.start}〜{s.end}
+                        </td>
+                        <td className="py-1 px-2">
+                          {held && (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-gray-200 text-gray-500">
+                              開催済み
+                            </span>
+                          )}
+                          {skipped && (
+                            <span className="text-[10px] text-gray-400">参加しない回</span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
 
+            {/* 参加開始セレクト。参加を選んだときだけ出す。選択肢は未開催の回のみ（決定45） */}
+            {joined && (
+              <label className="block mt-2 text-[11px] text-[var(--paragraph)]">
+                参加開始
+                <select
+                  value={start}
+                  onChange={(e) => setCourseStartDate(c.name, e.target.value)}
+                  className="mt-1 w-full text-xs border border-[var(--stroke)] rounded-lg px-2 py-1.5 text-[var(--headline)]"
+                >
+                  {options.map((s) => {
+                    const idx = c.sessions.findIndex((x) => x.date === s.date);
+                    return (
+                      <option key={s.date} value={s.date}>
+                        第{idx + 1}回 {mmdd(s.date)}({WEEKDAY[dow(s.date)]})〜
+                      </option>
+                    );
+                  })}
+                </select>
+              </label>
+            )}
+
             <div className="flex items-center justify-between mt-3 pt-3 border-t border-[var(--stroke)]">
               <p className="text-[11px] text-[var(--paragraph)]">
-                {yen(c.unitPrice)} × {c.sessions.length}回 ={' '}
-                <span className="text-[var(--headline)] font-medium">{yen(fee)}</span>
+                {joined && !fullyJoined ? (
+                  <>
+                    {yen(c.unitPrice)} × 残り{remaining.length}回（全{c.sessions.length}回中） ={' '}
+                    <span className="text-[var(--headline)] font-medium">{yen(fee)}</span>
+                  </>
+                ) : (
+                  <>
+                    {yen(c.unitPrice)} × {c.sessions.length}回 ={' '}
+                    <span className="text-[var(--headline)] font-medium">{yen(fee)}</span>
+                  </>
+                )}
               </p>
               <button
                 onClick={() => toggleCourse(c.name)}
@@ -1714,6 +1895,7 @@ function StepConfirm({
   totalFee,
   okCells,
   joinedCourses,
+  courseStart,
   totalCourseFee,
   grandTotal,
 }: {
@@ -1725,6 +1907,7 @@ function StepConfirm({
   totalFee: number;
   okCells: number;
   joinedCourses: Course[];
+  courseStart: Record<string, string>;
   totalCourseFee: number;
   grandTotal: number;
 }) {
@@ -1803,22 +1986,30 @@ function StepConfirm({
             <div className="px-3 pt-2 border-t border-[var(--stroke)] text-[11px] font-medium text-[var(--paragraph)]">
               小集団・プログラミング（差引対象外）
             </div>
-            {joinedCourses.map((c) => (
-              <div
-                key={c.name}
-                className="px-3 py-2.5 flex items-center justify-between border-t border-[var(--stroke)]"
-              >
-                <div>
-                  <p className="text-sm text-[var(--headline)]">{c.name}</p>
-                  <p className="text-[11px] text-[var(--paragraph)]">
-                    {c.formation} ・ {c.sessions.length}回 × {yen(c.unitPrice)}
-                  </p>
+            {joinedCourses.map((c) => {
+              const start = courseStart[c.name] ?? c.sessions[0].date;
+              const remaining = remainingSessions(c, start);
+              const fee = c.unitPrice * remaining.length;
+              const fullyJoined = startSessionNumber(c, start) === 1;
+              return (
+                <div
+                  key={c.name}
+                  className="px-3 py-2.5 flex items-center justify-between border-t border-[var(--stroke)]"
+                >
+                  <div>
+                    <p className="text-sm text-[var(--headline)]">{c.name}</p>
+                    <p className="text-[11px] text-[var(--paragraph)]">
+                      {fullyJoined
+                        ? `${c.formation} ・ ${c.sessions.length}回 × ${yen(c.unitPrice)}`
+                        : `${c.formation} ・ 第${startSessionNumber(c, start)}回から参加・残り${remaining.length}回 × ${yen(c.unitPrice)}`}
+                    </p>
+                  </div>
+                  <span className="text-sm font-semibold text-[var(--headline)] tabular-nums">
+                    {yen(fee)}
+                  </span>
                 </div>
-                <span className="text-sm font-semibold text-[var(--headline)] tabular-nums">
-                  {yen(c.unitPrice * c.sessions.length)}
-                </span>
-              </div>
-            ))}
+              );
+            })}
             <div className="px-3 py-2.5 border-t border-[var(--stroke)] bg-gray-50 flex items-center justify-between">
               <span className="text-sm text-[var(--headline)]">小集団・プログラミング 小計</span>
               <span className="text-base font-semibold text-[var(--headline)] tabular-nums">
