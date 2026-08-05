@@ -14,6 +14,7 @@ import type {
 import type { ScheduleEntryFormation } from '@/types/schedule';
 // Phase A: 形態キーの直書きを定数参照に置換（既定値は個別）
 import { INDIVIDUAL_FORMATION } from '@/types/schedule';
+import { normalizeKomaBySubject, totalKoma, type KomaSpec } from '@/lib/utils/komaBySubject';
 
 // =====================================================
 // 講習機能（座席表連携）用の型定義
@@ -48,8 +49,11 @@ export interface KoushuEnrollment {
   formation: ScheduleEntryFormation;
   koma_count: number;
   subject_ids: string[];
-  /** 科目別コマ数 { subject_id: コマ数 }。koma_count はこの総和、subject_ids はキー集合。 */
-  koma_by_subject?: Record<string, number>;
+  /**
+   * 科目別コマ数 { subject_id: コマ数(旧) | KomaSpec(新) }。koma_count はこの総和、
+   * subject_ids はキー集合。読み出しは normalizeKomaBySubject() 経由に統一する。
+   */
+  koma_by_subject?: Record<string, number | KomaSpec>;
   created_at: string | null;
   updated_at: string | null;
   student?: {
@@ -245,15 +249,19 @@ export async function upsertKoushuEnrollment(
   schoolId: string,
   season: string,
   studentId: string,
-  komaBySubject: Record<string, number>,
+  komaBySubject: Record<string, number | KomaSpec>,
   formation: ScheduleEntryFormation = INDIVIDUAL_FORMATION
 ): Promise<void> {
-  const entries = Object.entries(komaBySubject).filter(([, n]) => (n ?? 0) > 0);
+  // 0件判定・合算はアクセサ経由で行う（number/KomaSpec 混在でも正しくコマ数を数えるため）。
+  // ただし書き込み自体は呼び出し元から渡された元の値（number/KomaSpec）をそのまま残す
+  // ＝正規化で補った既定値(ratio/duration)を勝手にDBへ書き足さない。
+  const normalized = normalizeKomaBySubject(komaBySubject);
+  const entries = Object.entries(komaBySubject).filter(([sid]) => (normalized[sid]?.koma ?? 0) > 0);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db2 = supabase as any;
 
   if (entries.length === 0) {
-    // 全科目0 → 申込なしとして削除
+    // 全科目0（または不正値のみ） → 申込なしとして削除
     await db2
       .from('koushu_enrollments')
       .delete()
@@ -265,7 +273,7 @@ export async function upsertKoushuEnrollment(
   }
 
   const subjectIds = entries.map(([sid]) => sid);
-  const komaCount = entries.reduce((s, [, n]) => s + n, 0);
+  const komaCount = totalKoma(Object.fromEntries(entries.map(([sid]) => [sid, normalized[sid]])));
   const komaBySubjectClean = Object.fromEntries(entries);
 
   const { error } = await db2.from('koushu_enrollments').upsert(

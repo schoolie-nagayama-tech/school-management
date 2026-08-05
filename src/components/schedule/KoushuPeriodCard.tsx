@@ -9,6 +9,7 @@ import type { Subject } from '@/types/database';
 // TODO(Phase B以降): 表示ラベルは SCHEDULE_ENTRY_FORMATION_LABELS/マスタ label 参照へ差し替える。
 import { GROUP_FORMATION } from '@/types/schedule';
 import { formatGradeLabel } from '@/lib/utils/gradeLabel';
+import { normalizeKomaBySubject } from '@/lib/utils/komaBySubject';
 
 const SEASON_LABELS: Record<string, string> = {
   spring: '春期',
@@ -137,77 +138,84 @@ export function KoushuPeriodCard({
                       </tr>
                     </thead>
                     <tbody>
-                      {enrollments.map((en) => (
-                        <tr
-                          key={en.id}
-                          className="border-b border-gray-100 last:border-0 hover:bg-white transition-colors duration-150"
-                        >
-                          <td className="px-4 py-2 font-medium text-[var(--headline)]">
-                            {en.student ? `${en.student.last_name} ${en.student.first_name}` : '—'}
-                          </td>
-                          <td className="px-4 py-2 text-[var(--paragraph)]">
-                            {en.student ? formatGradeLabel(en.student.grade) : '—'}
-                          </td>
-                          <td className="px-4 py-2 text-[var(--paragraph)]">
-                            <span
-                              className={`mr-1.5 inline-block px-1.5 py-0.5 rounded text-[10px] font-medium align-middle ${
-                                en.formation === GROUP_FORMATION
-                                  ? 'bg-accent-ink-subtle text-accent-ink border border-accent-ink/15'
-                                  : 'bg-info-subtle text-info border border-info/20'
-                              }`}
-                            >
-                              {en.formation === GROUP_FORMATION ? '集団' : '個別'}
-                            </span>
-                            <span className="font-semibold text-[var(--headline)]">
-                              {en.koma_count}
-                            </span>
-                            コマ
-                          </td>
-                          <td className="px-4 py-2">
-                            <div className="flex flex-wrap gap-1">
-                              {en.subject_ids.length === 0 ? (
-                                <span className="text-[var(--paragraph)]">—</span>
-                              ) : (
-                                en.subject_ids.map((sid) => {
-                                  // 科目別コマ数があれば「国語 2」のように表示
-                                  const n = en.koma_by_subject?.[sid];
-                                  return (
-                                    <span
-                                      key={sid}
-                                      className="text-xs px-1.5 py-0.5 bg-white border border-gray-200 rounded text-[var(--paragraph)]"
-                                    >
-                                      {subjectMap.get(sid) ?? sid}
-                                      {n != null && (
-                                        <span className="ml-1 font-semibold text-[var(--headline)]">
-                                          {n}
-                                        </span>
-                                      )}
-                                    </span>
-                                  );
-                                })
-                              )}
-                            </div>
-                          </td>
-                          <td className="px-4 py-2">
-                            <div className="flex items-center gap-1 justify-end">
-                              <button
-                                onClick={() => onEditEnrollment(en)}
-                                className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded"
-                                title="編集"
+                      {enrollments.map((en) => {
+                        // koma_by_subject は number(旧)/KomaSpec(新)混在に対応するため
+                        // アクセサで正規化してから科目別コマ数を取り出す。
+                        const komaBySubject = normalizeKomaBySubject(en.koma_by_subject);
+                        return (
+                          <tr
+                            key={en.id}
+                            className="border-b border-gray-100 last:border-0 hover:bg-white transition-colors duration-150"
+                          >
+                            <td className="px-4 py-2 font-medium text-[var(--headline)]">
+                              {en.student
+                                ? `${en.student.last_name} ${en.student.first_name}`
+                                : '—'}
+                            </td>
+                            <td className="px-4 py-2 text-[var(--paragraph)]">
+                              {en.student ? formatGradeLabel(en.student.grade) : '—'}
+                            </td>
+                            <td className="px-4 py-2 text-[var(--paragraph)]">
+                              <span
+                                className={`mr-1.5 inline-block px-1.5 py-0.5 rounded text-[10px] font-medium align-middle ${
+                                  en.formation === GROUP_FORMATION
+                                    ? 'bg-accent-ink-subtle text-accent-ink border border-accent-ink/15'
+                                    : 'bg-info-subtle text-info border border-info/20'
+                                }`}
                               >
-                                <Pencil className="w-3.5 h-3.5" />
-                              </button>
-                              <button
-                                onClick={() => onDeleteEnrollment(en)}
-                                className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded"
-                                title="削除"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
+                                {en.formation === GROUP_FORMATION ? '集団' : '個別'}
+                              </span>
+                              <span className="font-semibold text-[var(--headline)]">
+                                {en.koma_count}
+                              </span>
+                              コマ
+                            </td>
+                            <td className="px-4 py-2">
+                              <div className="flex flex-wrap gap-1">
+                                {en.subject_ids.length === 0 ? (
+                                  <span className="text-[var(--paragraph)]">—</span>
+                                ) : (
+                                  en.subject_ids.map((sid) => {
+                                    // 科目別コマ数があれば「国語 2」のように表示
+                                    const n = komaBySubject[sid]?.koma;
+                                    return (
+                                      <span
+                                        key={sid}
+                                        className="text-xs px-1.5 py-0.5 bg-white border border-gray-200 rounded text-[var(--paragraph)]"
+                                      >
+                                        {subjectMap.get(sid) ?? sid}
+                                        {n != null && (
+                                          <span className="ml-1 font-semibold text-[var(--headline)]">
+                                            {n}
+                                          </span>
+                                        )}
+                                      </span>
+                                    );
+                                  })
+                                )}
+                              </div>
+                            </td>
+                            <td className="px-4 py-2">
+                              <div className="flex items-center gap-1 justify-end">
+                                <button
+                                  onClick={() => onEditEnrollment(en)}
+                                  className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded"
+                                  title="編集"
+                                >
+                                  <Pencil className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  onClick={() => onDeleteEnrollment(en)}
+                                  className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded"
+                                  title="削除"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>

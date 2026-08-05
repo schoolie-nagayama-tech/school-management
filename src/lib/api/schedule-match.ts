@@ -115,9 +115,11 @@ export async function publishProposal(
   proposalId: string,
   publishedBy: string
 ): Promise<ScheduleMatchProposal> {
+  // ratio/duration_minutes/half_position は '*' に含まれるが、公開時に必ず継承すべき列であることを
+  // 明示するため select にも書き出す（§9-4: 欠落していたバグの是正）。
   const { data: prop, error: getErr } = await db
     .from('schedule_match_proposals')
-    .select('*')
+    .select('*, ratio, duration_minutes, half_position')
     .eq('id', proposalId)
     .single();
   if (getErr || !prop) {
@@ -128,7 +130,11 @@ export async function publishProposal(
     throw new Error('下書き状態の提案のみ公開できます');
   }
 
-  // schedule_entries に INSERT
+  // schedule_entries に INSERT。
+  // §9-4: ratio/duration_minutes/half_position は proposal 側から必ずスナップショット継承する
+  // （従来はここで欠落しており、公開のたびに DB 既定値（ratio=2/duration=NULL/half=NULL）で
+  //   上書きされてしまう既存バグだった。proposal 側も現状は既定値のみのため挙動は変わらないが、
+  //   今後 proposal に値が入るようになれば正しく引き継がれる）。
   const { data: entryRow, error: insErr } = await db
     .from('schedule_entries')
     .insert({
@@ -140,6 +146,9 @@ export async function publishProposal(
       subject_ids: proposal.subject_ids,
       kind: proposal.kind,
       formation: proposal.formation,
+      ratio: proposal.ratio,
+      duration_minutes: proposal.duration_minutes,
+      half_position: proposal.half_position,
       status: 'scheduled',
     })
     .select('id')
