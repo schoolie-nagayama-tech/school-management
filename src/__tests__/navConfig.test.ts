@@ -127,13 +127,14 @@ describe('buildNavEntries: 教室長(manager)', () => {
     ]);
   });
 
-  it('講習グループに4項目が正しいラベルで入る', () => {
+  it('講習グループに5項目が正しいラベルで入る', () => {
     const course = entries.find((e) => e.key === 'course') as NavGroup;
     expect(course.items.map((i) => i.label)).toEqual([
       '講習一覧',
       '進捗管理',
       '準備スケジュール',
       '講習提案書',
+      '特別講座管理',
     ]);
   });
 });
