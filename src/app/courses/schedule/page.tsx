@@ -55,20 +55,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 import { exportProgressToPDF } from '@/lib/utils/pdfExport';
 import { loadSavedSeasonYear, saveSavedSeasonYear } from '@/lib/utils/coursePrepStorage';
-
-/** シーズンごとの全体期間 */
-function getSeasonFullRangeForInit(season: SeasonType, year: number): { start: Date; end: Date } {
-  switch (season) {
-    case 'spring':
-      return { start: new Date(year, 0, 1), end: new Date(year, 3, 30) };
-    case 'summer':
-      return { start: new Date(year, 3, 1), end: new Date(year, 7, 31) };
-    case 'winter':
-      return { start: new Date(year, 9, 1), end: new Date(year + 1, 0, 31) };
-    default:
-      return { start: new Date(year, 0, 1), end: new Date(year, 3, 30) };
-  }
-}
+import { getSeasonBaseRange, getScheduleFullRange, isSameRange } from '@/lib/utils/scheduleRange';
 
 type ViewMode = 'list' | 'gantt';
 
@@ -88,7 +75,9 @@ export default function CourseSchedulePage() {
     (s: SeasonType) => {
       setSeasonRaw(s);
       saveSavedSeasonYear(s, year);
-      setDateRange(getSeasonFullRangeForInit(s, year));
+      // 期を変えたら自動枠に戻す。タスク取得後に useEffect が実際の枠へ広げ直す。
+      setDateRange(getSeasonBaseRange(s, year));
+      setIsAutoRange(true);
     },
     [year]
   );
@@ -97,7 +86,8 @@ export default function CourseSchedulePage() {
     (y: number) => {
       setYearRaw(y);
       saveSavedSeasonYear(season, y);
-      setDateRange(getSeasonFullRangeForInit(season, y));
+      setDateRange(getSeasonBaseRange(season, y));
+      setIsAutoRange(true);
     },
     [season]
   );
@@ -105,11 +95,14 @@ export default function CourseSchedulePage() {
   // ビューモード（デフォルト: ガントチャート）
   const [viewMode, setViewMode] = useState<ViewMode>('gantt');
 
-  // 表示期間（デフォルト: シーズン全体表示）
+  // 表示期間（デフォルト: シーズン期間を土台に、タスクの日付まで伸ばした自動枠）
   const [dateRange, setDateRange] = useState<{ start: Date; end: Date }>(() => {
     const saved = loadSavedSeasonYear();
-    return getSeasonFullRangeForInit(saved.season, saved.year);
+    return getSeasonBaseRange(saved.season, saved.year);
   });
+  // 枠が自動追従中か。◀▶・今月で動かしたら false になり、以降タスクを読み直しても勝手に戻さない。
+  // 「全体表示」を押すと自動枠に戻る。
+  const [isAutoRange, setIsAutoRange] = useState(true);
 
   // データ
   const [tasks, setTasks] = useState<ScheduleTaskWithMarkers[]>([]);
@@ -125,6 +118,16 @@ export default function CourseSchedulePage() {
   >();
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
+
+  // タスクの日付に合わせた表示枠。シーズン期間を土台に、はみ出したタスクのぶんだけ月単位で広げる。
+  // 枠が固定だとタスクの日付が枠外に出たときバーが見えなくなるため。
+  const autoRange = useMemo(() => getScheduleFullRange(season, year, tasks), [season, year, tasks]);
+
+  // 自動追従中だけ枠を差し替える。同じ範囲なら state を触らない（不要な再レンダーを避ける）。
+  useEffect(() => {
+    if (!isAutoRange) return;
+    setDateRange((prev) => (isSameRange(prev, autoRange) ? prev : autoRange));
+  }, [autoRange, isAutoRange]);
 
   // テンプレート
   const [templates, setTemplates] = useState<CourseTemplate[]>([]);
@@ -590,9 +593,16 @@ export default function CourseSchedulePage() {
               <ScheduleDateRange
                 startDate={dateRange.start}
                 endDate={dateRange.end}
-                onChangeRange={(start, end) => setDateRange({ start, end })}
-                season={season}
-                year={year}
+                // ◀▶・今月で動かしたら手動扱い。以降タスクを読み直しても枠を勝手に戻さない。
+                onChangeRange={(start, end) => {
+                  setDateRange({ start, end });
+                  setIsAutoRange(false);
+                }}
+                fullRange={autoRange}
+                onFullRange={() => {
+                  setDateRange(autoRange);
+                  setIsAutoRange(true);
+                }}
               />
             )}
           </div>
