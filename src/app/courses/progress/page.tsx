@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef, type CSSProperties } from 'react';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
-import { Printer } from 'lucide-react';
+import { Printer, Trash2, AlertTriangle } from 'lucide-react';
 import { AdminLayout } from '@/components/layouts';
 import { Loading, InlineLoading } from '@/components/ui';
 import { StudentDetailModal } from '@/components/students';
@@ -44,7 +44,10 @@ import {
   deleteCourseProgressItem,
   hideCourseProgressItem,
   unhideCourseProgressItem,
+  getProgressTableSummary,
+  deleteProgressTable,
   type AutoValues,
+  type ProgressTableSummary,
 } from '@/lib/api/courseProgress';
 import {
   getTemplates,
@@ -148,6 +151,13 @@ export default function CourseProgressPage() {
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [saveTemplateName, setSaveTemplateName] = useState('');
   const [saving, setSaving] = useState(false);
+
+  // 進捗表まるごとの削除（取り消し不可なので、消える件数を見せてから実行する）
+  const [showDeleteTableDialog, setShowDeleteTableDialog] = useState(false);
+  const [deleteSummary, setDeleteSummary] = useState<ProgressTableSummary | null>(null);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [deletingTable, setDeletingTable] = useState(false);
+  const [deleteMessage, setDeleteMessage] = useState('');
 
   // フィルター
   const [searchQuery, setSearchQuery] = useState('');
@@ -624,6 +634,46 @@ export default function CourseProgressPage() {
     [localSchoolId, season]
   );
 
+  // 進捗表まるごとの削除
+  // 取り消せない操作なので、開いた時点でサーバーに「何が消えるか」を数えさせて提示する。
+  // 画面の items は「非表示項目も表示」の状態で欠けることがあり、件数の根拠にできない。
+  const handleOpenDeleteTableDialog = useCallback(async () => {
+    if (!localSchoolId) return;
+    setDeleteConfirmText('');
+    setDeleteSummary(null);
+    setShowDeleteTableDialog(true);
+    try {
+      const summary = await getProgressTableSummary(localSchoolId, season, year);
+      setDeleteSummary(summary);
+    } catch (err) {
+      console.error('Error loading progress table summary:', err);
+      setShowDeleteTableDialog(false);
+      setErrorMessage(getUserErrorMessage(err, '削除対象の確認に失敗しました'));
+    }
+  }, [localSchoolId, season, year]);
+
+  const handleDeleteProgressTable = useCallback(async () => {
+    if (!localSchoolId) return;
+    setDeletingTable(true);
+    try {
+      const deleted = await deleteProgressTable(localSchoolId, season, year);
+      setShowDeleteTableDialog(false);
+      setDeleteSummary(null);
+      setDeleteConfirmText('');
+      // 横断サマリーは別キャッシュで持っているため、消えた教室の古い集計が残らないよう全クリアする
+      invalidateCoursePrepCache();
+      await fetchData();
+      setDeleteMessage(
+        `${SEASON_LABELS[season]}${year} の進捗表を削除しました（項目 ${deleted.items} 件 / 入力データ ${deleted.student_progress} 件）`
+      );
+    } catch (err) {
+      console.error('Error deleting progress table:', err);
+      setErrorMessage(getUserErrorMessage(err, '進捗表の削除に失敗しました'));
+    } finally {
+      setDeletingTable(false);
+    }
+  }, [localSchoolId, season, year, fetchData]);
+
   // スケジュールタスクとのリンク設定 → バッチ1リクエスト + 再取得1リクエスト
   const handleLinkScheduleTask = useCallback(
     async (itemId: string, taskId: string | null) => {
@@ -974,6 +1024,15 @@ export default function CourseProgressPage() {
                 steps: ['ページ上部のダッシュボードで完了率を確認', '遅れている生徒を素早く特定'],
               },
               {
+                title: '作り間違えた進捗表を削除する',
+                description: '期・年を間違えて作った進捗表をまるごと消します（管理者・オーナー）。',
+                steps: [
+                  '削除したい期・年を選択して表示',
+                  '右上の「設定」を開き、パネル下部の「進捗表を削除」をクリック',
+                  '消える件数（項目・入力済みセル・期間設定）を確認して実行（取り消せません）',
+                ],
+              },
+              {
                 title: 'レポートをA3縦1枚で印刷する',
                 description: '表示中の集計をA3縦1枚のレポートとして印刷します。',
                 steps: [
@@ -1079,6 +1138,19 @@ export default function CourseProgressPage() {
             <button
               onClick={() => setSyncMessage('')}
               className="text-blue-400 hover:text-blue-600 ml-2"
+            >
+              &times;
+            </button>
+          </div>
+        )}
+
+        {/* 進捗表の削除結果（何がどれだけ消えたかを実績件数で残す） */}
+        {deleteMessage && (
+          <div className="mb-4 px-4 py-2 rounded border border-gray-200 bg-gray-50 text-sm text-gray-700 flex items-center justify-between">
+            <span>{deleteMessage}</span>
+            <button
+              onClick={() => setDeleteMessage('')}
+              className="text-gray-400 hover:text-gray-600 ml-2"
             >
               &times;
             </button>
@@ -1435,6 +1507,29 @@ export default function CourseProgressPage() {
                   </div>
                 </div>
               )}
+
+              {/* 危険な操作: 期・年を間違えて作った進捗表を丸ごと片付けるための出口。
+                  列の1件削除（上）と紛れないよう、タブの外に線で区切って置く。 */}
+              {isOwnerOrAbove && (
+                <div className="mt-4 pt-4 border-t border-gray-100">
+                  <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-danger/20 bg-danger/5 px-3 py-2.5">
+                    <div>
+                      <p className="text-xs font-medium text-danger">この進捗表を削除</p>
+                      <p className="text-[10px] text-gray-500 mt-0.5">
+                        {SEASON_LABELS[season]}
+                        {year} の項目・生徒の入力値・期間設定がすべて消えます（取り消せません）。
+                      </p>
+                    </div>
+                    <button
+                      onClick={handleOpenDeleteTableDialog}
+                      className="inline-flex items-center gap-1 px-3 py-1.5 text-xs border border-danger/30 rounded-lg text-danger hover:bg-danger/10 transition-[background-color,transform] duration-150 ease-out active:scale-[0.97]"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      進捗表を削除
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -1530,6 +1625,107 @@ export default function CourseProgressPage() {
           </div>
         </div>
       )}
+
+      {/* 進捗表の削除ダイアログ
+          取り消せない操作なので (1)消える件数を実データで見せ、(2)入力済みデータがある場合だけ
+          期・年のタイプ入力を要求する。空の表（作り間違い）は1クリックで片付けられる。 */}
+      {showDeleteTableDialog &&
+        (() => {
+          const confirmPhrase = `${SEASON_LABELS[season]}${year}`;
+          const isEmpty =
+            !!deleteSummary && deleteSummary.item_count === 0 && !deleteSummary.has_period;
+          // 入力済みデータが1件でもあるなら、誤爆防止に期・年のタイプ入力を要求する
+          const needsTyping = (deleteSummary?.progress_count ?? 0) > 0;
+          const canDelete =
+            !!deleteSummary &&
+            !isEmpty &&
+            !deletingTable &&
+            (!needsTyping || deleteConfirmText.trim() === confirmPhrase);
+
+          return (
+            <div className="modal-overlay fixed inset-0 z-50 flex items-center justify-center">
+              <div className="modal-panel bg-white rounded-xl shadow-xl p-6 w-[26rem] max-w-[90vw]">
+                <h3 className="flex items-center gap-1.5 text-sm font-bold text-danger mb-1">
+                  <AlertTriangle className="w-4 h-4" />
+                  進捗表を削除
+                </h3>
+                <p className="text-xs text-gray-500 mb-4">
+                  {SEASON_LABELS[season]}
+                  {year}（{availableSchools.find((s) => s.id === localSchoolId)?.name ?? 'この教室'}
+                  ）
+                </p>
+
+                {!deleteSummary ? (
+                  <div className="py-6">
+                    <InlineLoading />
+                  </div>
+                ) : isEmpty ? (
+                  <p className="text-sm text-text-body mb-4">
+                    この期・年には削除するデータがありません。
+                  </p>
+                ) : (
+                  <>
+                    <ul className="text-xs text-gray-700 space-y-1 mb-4 bg-gray-50 rounded-lg p-3">
+                      <li>
+                        進捗管理項目（列）: <strong>{deleteSummary.item_count}</strong> 件
+                      </li>
+                      <li>
+                        生徒の入力データ: <strong>{deleteSummary.progress_count}</strong> セル
+                      </li>
+                      <li>
+                        期間設定（予算コマ・講習期間など）:{' '}
+                        {deleteSummary.has_period ? 'あり' : 'なし'}
+                      </li>
+                      {deleteSummary.linked_task_count > 0 && (
+                        <li className="text-gray-500">
+                          工程表からのリンク {deleteSummary.linked_task_count}{' '}
+                          件が外れます（工程表のタスク自体は残ります）
+                        </li>
+                      )}
+                    </ul>
+                    <p className="text-xs text-danger mb-3">この操作は取り消せません。</p>
+
+                    {needsTyping && (
+                      <div className="mb-4">
+                        <label className="text-[10px] text-gray-500 block mb-1">
+                          確認のため <strong>{confirmPhrase}</strong> と入力してください
+                        </label>
+                        <input
+                          type="text"
+                          value={deleteConfirmText}
+                          onChange={(e) => setDeleteConfirmText(e.target.value)}
+                          placeholder={confirmPhrase}
+                          className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg"
+                          autoFocus
+                        />
+                      </div>
+                    )}
+                  </>
+                )}
+
+                <div className="flex justify-end gap-2">
+                  <button
+                    onClick={() => setShowDeleteTableDialog(false)}
+                    disabled={deletingTable}
+                    className="px-4 py-2 text-xs border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600 disabled:opacity-50 transition-[background-color,transform] duration-150 ease-out active:scale-[0.97]"
+                  >
+                    {deleteSummary && isEmpty ? '閉じる' : 'キャンセル'}
+                  </button>
+                  {!(deleteSummary && isEmpty) && (
+                    <button
+                      onClick={handleDeleteProgressTable}
+                      disabled={!canDelete}
+                      className="inline-flex items-center gap-1 px-4 py-2 text-xs bg-danger text-white rounded-lg hover:bg-danger/90 disabled:opacity-50 transition-[background-color,transform] duration-150 ease-out active:scale-[0.97]"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      {deletingTable ? '削除中...' : '削除する'}
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })()}
     </AdminLayout>
   );
 }
