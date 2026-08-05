@@ -177,9 +177,9 @@ const COURSES: Course[] = [
 ];
 
 /**
- * モック用の「今日」（仕様書 §17-5・決定45）。
+ * モック用の「今日」（仕様書 §17-5・決定45／§17-7・決定54）。
  * 本番では実日時（Date.now()）で判定するが、モックでは途中参加の見え方
- * （開催済みのグレー表示・開始回セレクト・残り回数ぶんの料金再計算）を
+ * （開催済みのグレー表示・残り回数ぶんの料金自動計算）を
  * 固定して確認できるよう日付を決め打ちする。
  * 中3理社特訓（全8回）のうち 7/21・7/23・7/28 の3回が「開催済み」になる日付を選んだ
  * （残り5回＝8/4起算ではなく7/30から。¥2,200 × 残り5回 = ¥11,000）。
@@ -191,24 +191,23 @@ function isSessionHeld(date: string): boolean {
   return date < MOCK_TODAY;
 }
 
-/** コースの未開催セッション一覧（開始回セレクトの選択肢はここから作る） */
+/**
+ * コースの未開催セッション一覧＝参加開始後の残り回数・料金の元になる（決定54）。
+ * 開始回セレクトは廃止し、参加は常に次の未開催回から自動で始まる。
+ */
 function upcomingSessions(course: Course): CourseSession[] {
   return course.sessions.filter((s) => !isSessionHeld(s.date));
 }
 
 /**
- * 参加開始日（`course_start_date`相当）から残りのセッション一覧を返す。
- * 開始日が見つからない・先頭回が開始日＝これまでどおり全回参加として扱う。
+ * 参加開始セッションの番号（1始まり）＝次の未開催回。
+ * 全回開催済みで未開催回が無いダミーデータは想定していないため、その場合は最終回+1を返す。
  */
-function remainingSessions(course: Course, startDate: string): CourseSession[] {
-  const idx = course.sessions.findIndex((s) => s.date === startDate);
-  return idx <= 0 ? course.sessions : course.sessions.slice(idx);
-}
-
-/** 参加開始セッションの番号（1始まり）。見つからなければ第1回扱い */
-function startSessionNumber(course: Course, startDate: string): number {
-  const idx = course.sessions.findIndex((s) => s.date === startDate);
-  return idx === -1 ? 1 : idx + 1;
+function startSessionNumber(course: Course): number {
+  const first = upcomingSessions(course)[0];
+  return first
+    ? course.sessions.findIndex((s) => s.date === first.date) + 1
+    : course.sessions.length + 1;
 }
 
 /**
@@ -461,15 +460,6 @@ function ParentFormMock() {
   const [ng, setNg] = useState<Set<string>>(new Set());
   /** 参加を選んだ小集団・プログラミングのコース名（決定36・37: 日時固定・全回参加が既定） */
   const [courseJoin, setCourseJoin] = useState<Set<string>>(new Set());
-  /**
-   * コースごとの参加開始日（決定45: 途中参加）。既定は次の未開催回。
-   * コース名 → session.date。参加を外しても選択状態は保持する（再度参加したときに戻すため）。
-   */
-  const [courseStart, setCourseStart] = useState<Record<string, string>>(
-    Object.fromEntries(
-      COURSES.map((c) => [c.name, upcomingSessions(c)[0]?.date ?? c.sessions[0].date])
-    )
-  );
 
   /**
    * 申込の明細。提案書の科目＋保護者が追加した科目。
@@ -542,13 +532,13 @@ function ParentFormMock() {
   /**
    * 小集団・プログラミングは参加コースの単価×回数をそのまま合算する。
    * 通常授業の差し引き（chargeableKoma）は個別のみに掛かるので、ここでは一切使わない（決定43）。
-   * 途中参加の場合は開始回からの残り回数だけを数える（決定45）。
+   * 途中参加の場合は次の未開催回からの残り回数だけを自動で数える（決定45・決定54）。
    */
   const joinedCourses = COURSES.filter((c) => courseJoin.has(c.name));
-  const totalCourseFee = joinedCourses.reduce((s, c) => {
-    const start = courseStart[c.name] ?? c.sessions[0].date;
-    return s + c.unitPrice * remainingSessions(c, start).length;
-  }, 0);
+  const totalCourseFee = joinedCourses.reduce(
+    (s, c) => s + c.unitPrice * upcomingSessions(c).length,
+    0
+  );
   const grandTotal = totalFee + totalCourseFee;
 
   const toggleCourse = (name: string) =>
@@ -558,9 +548,6 @@ function ParentFormMock() {
       else next.add(name);
       return next;
     });
-
-  const setCourseStartDate = (name: string, date: string) =>
-    setCourseStart((prev) => ({ ...prev, [name]: date }));
 
   const toggle = (key: string) =>
     setNg((prev) => {
@@ -598,7 +585,6 @@ function ParentFormMock() {
               totalChargeable={totalChargeable}
               totalFee={totalFee}
               joinedCourses={joinedCourses}
-              courseStart={courseStart}
               totalCourseFee={totalCourseFee}
               grandTotal={grandTotal}
             />
@@ -650,8 +636,6 @@ function ParentFormMock() {
                   <StepCourses
                     courseJoin={courseJoin}
                     toggleCourse={toggleCourse}
-                    courseStart={courseStart}
-                    setCourseStartDate={setCourseStartDate}
                     totalCourseFee={totalCourseFee}
                   />
                 )}
@@ -677,7 +661,6 @@ function ParentFormMock() {
                     totalFee={totalFee}
                     okCells={okCells}
                     joinedCourses={joinedCourses}
-                    courseStart={courseStart}
                     totalCourseFee={totalCourseFee}
                     grandTotal={grandTotal}
                   />
@@ -771,18 +754,6 @@ function ParentFormMock() {
             ))}
           </div>
         </div>
-
-        <div className="rounded-lg border border-info bg-info-subtle p-4 text-sm text-[var(--headline)] space-y-2">
-          <div className="flex items-center gap-2 font-semibold text-info">
-            <Info className="w-4 h-4 shrink-0" />
-            確認したいこと
-          </div>
-          <ul className="text-xs space-y-1.5 list-disc pl-4 text-[var(--paragraph)]">
-            <li>
-              開始回セレクトの選択肢を保護者に開放してよいか（帰省などの事情がある場合のみ教室に相談してからにするか）（決定45）
-            </li>
-          </ul>
-        </div>
       </div>
     </div>
   );
@@ -837,7 +808,6 @@ function AppliedSummaryMock({
   totalChargeable,
   totalFee,
   joinedCourses,
-  courseStart,
   totalCourseFee,
   grandTotal,
 }: {
@@ -848,7 +818,6 @@ function AppliedSummaryMock({
   totalChargeable: number;
   totalFee: number;
   joinedCourses: Course[];
-  courseStart: Record<string, string>;
   totalCourseFee: number;
   grandTotal: number;
 }) {
@@ -931,10 +900,9 @@ function AppliedSummaryMock({
               小集団・プログラミング（差引対象外）
             </div>
             {joinedCourses.map((c) => {
-              const start = courseStart[c.name] ?? c.sessions[0].date;
-              const remaining = remainingSessions(c, start);
+              const remaining = upcomingSessions(c);
               const fee = c.unitPrice * remaining.length;
-              const fullyJoined = startSessionNumber(c, start) === 1;
+              const fullyJoined = startSessionNumber(c) === 1;
               return (
                 <div
                   key={c.name}
@@ -945,7 +913,7 @@ function AppliedSummaryMock({
                     <p className="text-[11px] text-[var(--paragraph)]">
                       {fullyJoined
                         ? `${c.formation} ・ ${c.sessions.length}回 × ${yen(c.unitPrice)}`
-                        : `${c.formation} ・ 第${startSessionNumber(c, start)}回から参加・残り${remaining.length}回 × ${yen(c.unitPrice)}`}
+                        : `${c.formation} ・ 第${startSessionNumber(c)}回から参加・残り${remaining.length}回 × ${yen(c.unitPrice)}`}
                     </p>
                   </div>
                   <span className="text-sm font-semibold text-[var(--headline)] tabular-nums">
@@ -1234,21 +1202,17 @@ function StepSubjects({
  * コース料金には通常授業の差し引きを掛けない（決定43）ので、このステップの合計は
  * そのままステップ4の内訳へ乗せる。
  *
- * 途中参加（決定45）: MOCK_TODAY より前の回は開催済みとしてグレー表示し自動で対象外。
- * 参加を選ぶと「参加開始」セレクトが出て、未開催の回から選べる（既定は次の回）。
- * 料金は単価×開始回からの残り回数で再計算する。
+ * 途中参加（決定45・決定54）: MOCK_TODAY より前の回は開催済みとしてグレー表示し自動で対象外。
+ * 開始回セレクトは廃止し、参加を選ぶと常に次の未開催回から自動で参加する。
+ * 料金は単価×自動で決まる残り回数で計算する。
  */
 function StepCourses({
   courseJoin,
   toggleCourse,
-  courseStart,
-  setCourseStartDate,
   totalCourseFee,
 }: {
   courseJoin: Set<string>;
   toggleCourse: (name: string) => void;
-  courseStart: Record<string, string>;
-  setCourseStartDate: (name: string, date: string) => void;
   totalCourseFee: number;
 }) {
   return (
@@ -1259,11 +1223,9 @@ function StepCourses({
 
       {COURSES.map((c) => {
         const joined = courseJoin.has(c.name);
-        const start = courseStart[c.name] ?? c.sessions[0].date;
-        const remaining = remainingSessions(c, start);
+        const remaining = upcomingSessions(c);
         const fee = c.unitPrice * remaining.length;
-        const fullyJoined = startSessionNumber(c, start) === 1;
-        const options = upcomingSessions(c);
+        const fullyJoined = startSessionNumber(c) === 1;
         return (
           <div
             key={c.name}
@@ -1286,11 +1248,13 @@ function StepCourses({
                 日時は決まっており、変更・振替はできません
                 <br />
                 途中からのご参加もできます（参加回ぶんのみのご請求）
+                <br />
+                参加開始をさらに遅らせたい場合は教室へご連絡ください
               </p>
             </div>
 
             {/* 開催予定表。session_dates が配布する予定表そのもの（決定40）。
-                開催済み＝グレー＋ラベル、開始回より前（未開催）＝参加しない回として薄く出す（決定45） */}
+                開催済み＝グレー＋ラベルの2状態のみ（開始回セレクトを廃止した決定54で「参加しない回」は不要になった） */}
             <div className="mt-2 rounded-lg border border-[var(--stroke)] overflow-hidden">
               <table className="w-full text-[11px]">
                 <thead>
@@ -1303,20 +1267,18 @@ function StepCourses({
                 <tbody>
                   {c.sessions.map((s, i) => {
                     const held = isSessionHeld(s.date);
-                    const skipped = joined && !held && s.date < start;
-                    const rowMuted = held || skipped;
                     return (
                       <tr
                         key={s.date}
-                        className={`border-t border-gray-100 ${rowMuted ? 'bg-gray-50' : ''}`}
+                        className={`border-t border-gray-100 ${held ? 'bg-gray-50' : ''}`}
                       >
                         <td
-                          className={`py-1 px-2 ${rowMuted ? 'text-gray-400' : 'text-[var(--headline)]'}`}
+                          className={`py-1 px-2 ${held ? 'text-gray-400' : 'text-[var(--headline)]'}`}
                         >
                           第{i + 1}回 {mmdd(s.date)}({WEEKDAY[dow(s.date)]})
                         </td>
                         <td
-                          className={`py-1 px-2 tabular-nums ${rowMuted ? 'text-gray-400' : 'text-[var(--headline)]'}`}
+                          className={`py-1 px-2 tabular-nums ${held ? 'text-gray-400' : 'text-[var(--headline)]'}`}
                         >
                           {s.start}〜{s.end}
                         </td>
@@ -1326,9 +1288,6 @@ function StepCourses({
                               開催済み
                             </span>
                           )}
-                          {skipped && (
-                            <span className="text-[10px] text-gray-400">参加しない回</span>
-                          )}
                         </td>
                       </tr>
                     );
@@ -1336,27 +1295,6 @@ function StepCourses({
                 </tbody>
               </table>
             </div>
-
-            {/* 参加開始セレクト。参加を選んだときだけ出す。選択肢は未開催の回のみ（決定45） */}
-            {joined && (
-              <label className="block mt-2 text-[11px] text-[var(--paragraph)]">
-                参加開始
-                <select
-                  value={start}
-                  onChange={(e) => setCourseStartDate(c.name, e.target.value)}
-                  className="mt-1 w-full text-xs border border-[var(--stroke)] rounded-lg px-2 py-1.5 text-[var(--headline)]"
-                >
-                  {options.map((s) => {
-                    const idx = c.sessions.findIndex((x) => x.date === s.date);
-                    return (
-                      <option key={s.date} value={s.date}>
-                        第{idx + 1}回 {mmdd(s.date)}({WEEKDAY[dow(s.date)]})〜
-                      </option>
-                    );
-                  })}
-                </select>
-              </label>
-            )}
 
             <div className="flex items-center justify-between mt-3 pt-3 border-t border-[var(--stroke)]">
               <p className="text-[11px] text-[var(--paragraph)]">
@@ -1893,7 +1831,6 @@ function StepConfirm({
   totalFee,
   okCells,
   joinedCourses,
-  courseStart,
   totalCourseFee,
   grandTotal,
 }: {
@@ -1905,7 +1842,6 @@ function StepConfirm({
   totalFee: number;
   okCells: number;
   joinedCourses: Course[];
-  courseStart: Record<string, string>;
   totalCourseFee: number;
   grandTotal: number;
 }) {
@@ -1985,10 +1921,9 @@ function StepConfirm({
               小集団・プログラミング（差引対象外）
             </div>
             {joinedCourses.map((c) => {
-              const start = courseStart[c.name] ?? c.sessions[0].date;
-              const remaining = remainingSessions(c, start);
+              const remaining = upcomingSessions(c);
               const fee = c.unitPrice * remaining.length;
-              const fullyJoined = startSessionNumber(c, start) === 1;
+              const fullyJoined = startSessionNumber(c) === 1;
               return (
                 <div
                   key={c.name}
@@ -1999,7 +1934,7 @@ function StepConfirm({
                     <p className="text-[11px] text-[var(--paragraph)]">
                       {fullyJoined
                         ? `${c.formation} ・ ${c.sessions.length}回 × ${yen(c.unitPrice)}`
-                        : `${c.formation} ・ 第${startSessionNumber(c, start)}回から参加・残り${remaining.length}回 × ${yen(c.unitPrice)}`}
+                        : `${c.formation} ・ 第${startSessionNumber(c)}回から参加・残り${remaining.length}回 × ${yen(c.unitPrice)}`}
                     </p>
                   </div>
                   <span className="text-sm font-semibold text-[var(--headline)] tabular-nums">
