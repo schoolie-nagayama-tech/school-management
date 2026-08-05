@@ -481,6 +481,76 @@ export function ScheduleGanttChart({
     [onUpdateTask]
   );
 
+  // ===== チャート上のドラッグで期間を作る =====
+  // 期間はリスト表示の日付入力からしか作れず、ガントを見ながら引けなかった。
+  // 行の上を横にドラッグして開始〜終了を決められるようにする（既存のバーの引き直しも同じ操作）。
+  //
+  // 1マスの範囲を s（開始日）と e（終了日）で持つ。日表示は s===e、週表示は週の初日と最終日。
+  // これで日/週どちらのビューでも同じロジックで min/max を取れる。
+  type DragUnit = { s: Date; e: Date };
+  const [dragRange, setDragRange] = useState<{
+    taskId: string;
+    from: DragUnit;
+    to: DragUnit;
+  } | null>(null);
+  // 日表示のマスのクリックは既存のマーカー入力。ドラッグと取り違えないよう、
+  // 「別のマスへ入ったか」でクリックかドラッグかを判定する。
+  const didDragRef = useRef(false);
+  const canDragPeriod = canEdit && !!onUpdateTask;
+
+  const beginDrag = useCallback(
+    (taskId: string, unit: DragUnit) => {
+      if (!canDragPeriod) return;
+      didDragRef.current = false;
+      setDragRange({ taskId, from: unit, to: unit });
+    },
+    [canDragPeriod]
+  );
+
+  const extendDrag = useCallback((taskId: string, unit: DragUnit) => {
+    setDragRange((prev) => {
+      // 縦に別の行へ入っても乗っ取らない（タスクをまたいだ期間設定は意味を成さないため）
+      if (!prev || prev.taskId !== taskId) return prev;
+      if (isSameDay(prev.to.s, unit.s)) return prev;
+      didDragRef.current = true;
+      return { ...prev, to: unit };
+    });
+  }, []);
+
+  // マウスを離した場所が表の外でも確定させたいので window で拾う。
+  // マスをまたがずに離した場合（＝ただのクリック）は何もせずドラッグ状態だけ捨てる。
+  useEffect(() => {
+    if (!dragRange) return;
+    const finish = () => {
+      if (didDragRef.current) {
+        const { taskId, from, to } = dragRange;
+        const start = from.s <= to.s ? from.s : to.s;
+        const end = from.e >= to.e ? from.e : to.e;
+        onUpdateTask?.(taskId, { start_date: formatDate(start), end_date: formatDate(end) });
+        // click は mouseup の直後に発火する。開始マスの上で離した場合だけ td の onClick に届くので、
+        // そこでマーカー入力を抑止できるようフラグは残し、click を通過させてから落とす。
+        // （別マスで離すと click は td ではなく祖先で起きるため、ここで落とさないと次のクリックを食う）
+        setTimeout(() => {
+          didDragRef.current = false;
+        }, 0);
+      }
+      setDragRange(null);
+    };
+    window.addEventListener('mouseup', finish);
+    return () => window.removeEventListener('mouseup', finish);
+  }, [dragRange, onUpdateTask]);
+
+  /** ドラッグ中のプレビュー範囲に入っているマスか */
+  const isInDragPreview = useCallback(
+    (taskId: string, unit: DragUnit): boolean => {
+      if (!dragRange || dragRange.taskId !== taskId) return false;
+      const lo = dragRange.from.s <= dragRange.to.s ? dragRange.from.s : dragRange.to.s;
+      const hi = dragRange.from.e >= dragRange.to.e ? dragRange.from.e : dragRange.to.e;
+      return unit.e >= lo && unit.s <= hi;
+    },
+    [dragRange]
+  );
+
   // 日付文字列をローカルタイムゾーンのDateに変換（UTCズレ防止）
   const toLocalDate = useCallback((dateStr: string): Date => {
     return new Date(dateStr + 'T00:00:00');
@@ -770,15 +840,37 @@ export function ScheduleGanttChart({
                         const barEnd = isBarEnd(task, d);
                         const marker = getMarker(task, dateStr);
                         const isMD = ms && barStart;
+                        const unit = { s: d, e: d };
+                        const previewing = isInDragPreview(task.id, unit);
                         return (
                           <td
                             key={dateStr}
                             className={`border-b border-r border-gray-100 px-0 py-0 text-center relative cursor-pointer min-w-[24px] h-[32px] ${weekend && !inBar ? 'bg-gray-50/30' : ''}`}
-                            onClick={() => canEdit && onMarkerClick(task.id, dateStr, marker)}
-                            title={marker ? marker.label : dateStr}
+                            onMouseDown={(e) => {
+                              if (!canDragPeriod) return;
+                              e.preventDefault(); // ドラッグ中の文字選択を止める
+                              beginDrag(task.id, unit);
+                            }}
+                            onMouseEnter={() => extendDrag(task.id, unit)}
+                            onClick={() => {
+                              // マスをまたいだ＝期間のドラッグだったので、マーカー入力は開かない
+                              // （フラグの解除は mouseup 側のタイマーが行う）
+                              if (didDragRef.current) return;
+                              if (canEdit) onMarkerClick(task.id, dateStr, marker);
+                            }}
+                            title={
+                              marker
+                                ? marker.label
+                                : canDragPeriod
+                                  ? `${dateStr}（横にドラッグで期間を設定）`
+                                  : dateStr
+                            }
                           >
                             {isToday && (
                               <div className="absolute top-0 bottom-0 left-1/2 w-[2px] bg-red-500/70 z-10 -translate-x-1/2" />
+                            )}
+                            {previewing && (
+                              <div className="absolute top-1/2 -translate-y-1/2 inset-x-0 h-[18px] bg-blue-500/25 border-y border-blue-500/40 z-[15] pointer-events-none" />
                             )}
                             {inBar && !ms && (
                               <div
@@ -929,13 +1021,30 @@ export function ScheduleGanttChart({
                         {weeks.map((w, wi) => {
                           const state = getWeekCellState(task, w.days);
                           const hasToday = w.days.some((d) => isSameDay(d, today));
+                          // 週表示は「週の初日〜最終日」を1マスとして扱う
+                          const unit = { s: w.days[0], e: w.days[w.days.length - 1] };
+                          const previewing = isInDragPreview(task.id, unit);
                           return (
                             <td
                               key={wi}
-                              className="border-b border-r border-gray-100 text-center relative h-[32px] min-w-[52px]"
+                              className={`border-b border-r border-gray-100 text-center relative h-[32px] min-w-[52px] ${canDragPeriod ? 'cursor-pointer' : ''}`}
+                              onMouseDown={(e) => {
+                                if (!canDragPeriod) return;
+                                e.preventDefault();
+                                beginDrag(task.id, unit);
+                              }}
+                              onMouseEnter={() => extendDrag(task.id, unit)}
+                              title={
+                                canDragPeriod
+                                  ? `${formatDate(unit.s)} 〜 ${formatDate(unit.e)}（横にドラッグで期間を設定）`
+                                  : undefined
+                              }
                             >
                               {hasToday && (
                                 <div className="absolute top-0 bottom-0 left-1/2 w-[2px] bg-red-500/70 z-10 -translate-x-1/2" />
+                              )}
+                              {previewing && (
+                                <div className="absolute top-1/2 -translate-y-1/2 inset-x-0 h-[18px] bg-blue-500/25 border-y border-blue-500/40 z-[15] pointer-events-none" />
                               )}
                               {state.hasBar && !state.isMilestoneInWeek && (
                                 <div
@@ -1053,6 +1162,14 @@ export function ScheduleGanttChart({
                 <span className="text-[9px] text-gray-400">今日</span>
               </div>
             </div>
+            {/* ドラッグでの期間設定は見ただけでは気づけないので、凡例の並びで明示する */}
+            {canDragPeriod && (
+              <div className="border-l border-gray-200 pl-3">
+                <span className="text-[9px] text-gray-400">
+                  行を横にドラッグすると期間を設定できます
+                </span>
+              </div>
+            )}
           </div>
           <div className="flex items-center bg-gray-100 rounded-lg p-0.5">
             <button
@@ -1074,7 +1191,7 @@ export function ScheduleGanttChart({
       {/* ガントチャート */}
       <div
         ref={scrollRef}
-        className="overflow-auto border border-gray-200 rounded-xl bg-white shadow-sm"
+        className={`overflow-auto border border-gray-200 rounded-xl bg-white shadow-sm ${dragRange ? 'select-none' : ''}`}
         style={{ maxHeight: 'calc(100vh - 170px)' }}
       >
         {scale === 'day' ? renderDayView() : renderWeekView()}
