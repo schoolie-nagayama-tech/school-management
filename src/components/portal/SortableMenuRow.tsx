@@ -71,6 +71,7 @@ export function SortableMenuRow({
           hasRegisteredPeriods={registeredPeriods.length > 0}
           registeredCount={formType ? registeredPeriods.length : undefined}
           externalUrl={menu.link_url}
+          externalUrls={menu.link_urls}
           onToggle={() => onToggleVisibility(menu)}
         />
       </td>
