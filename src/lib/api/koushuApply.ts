@@ -444,25 +444,36 @@ interface CourseRow {
 }
 
 /**
- * 生徒の学年に合い、開催予定が申込期間に重なるコースを取得する（決定36・40・44）。
- * `seasonal_courses` に formation 列が無いため（既知のスキーマギャップ。実装報告を参照）、
- * 既存の `koushu_enrollments` からそのコースで過去に使われた formation を逆引きする。
- * 過去の申込が無いコースは 'group'（集団レーンの既定キー）にフォールバックする。
+ * 生徒の学年に合い、開催予定が申込期間に重なる特別講座を取得する（決定36・40・44・56）。
+ *
+ * 参照先は専用テーブル `koushu_special_courses`。formation（小集団 / HAL 等）は
+ * この行が直接持つ。target_grades が空配列なら全学年対象とみなす。
  */
 export async function loadCourses(
   ctx: ApplyContext,
   opts: { grade: number; startDate: string; endDate: string; todayIso: string }
 ): Promise<ApplyCourse[]> {
+  // 特別講座は専用テーブル（仕様書§18・決定56）。seasonal_courses は
+  // 「個別指導の学習メニュー959件」で別物なので参照しない。
+  // formation はこのテーブルが直接持つため、申込から推測する必要はない（決定57）。
   const { data: rows } = await ctx.db
-    .from('seasonal_courses')
-    .select('id, name, target_grades, session_dates, unit_price')
+    .from('koushu_special_courses')
+    .select('id, name, formation, target_grades, session_dates, unit_price')
     .eq('school_id', ctx.schoolId)
     .eq('season', ctx.season)
+    .eq('year', ctx.year)
     .eq('is_active', true);
 
-  const candidates = ((rows ?? []) as Array<CourseRow & { target_grades: number[] | null }>).filter(
-    (c) => (c.target_grades ?? []).includes(opts.grade)
-  );
+  type SpecialCourseRow = CourseRow & {
+    formation: string;
+    target_grades: number[] | null;
+  };
+
+  const candidates = ((rows ?? []) as SpecialCourseRow[]).filter((c) => {
+    // target_grades が空配列＝全学年対象
+    const grades = c.target_grades ?? [];
+    return grades.length === 0 || grades.includes(opts.grade);
+  });
   const inRange = candidates.filter((c) => {
     const sessions = c.session_dates ?? [];
     return (
@@ -470,26 +481,13 @@ export async function loadCourses(
       sessions.some((s) => s.date >= opts.startDate && s.date <= opts.endDate)
     );
   });
-  if (inRange.length === 0) return [];
-
-  const courseIds = inRange.map((c) => c.id);
-  const { data: formationRows } = await ctx.db
-    .from('koushu_enrollments')
-    .select('course_id, formation')
-    .in('course_id', courseIds);
-  const formationByCourse = new Map<string, string>();
-  for (const r of (formationRows ?? []) as Array<{ course_id: string | null; formation: string }>) {
-    if (r.course_id && !formationByCourse.has(r.course_id)) {
-      formationByCourse.set(r.course_id, r.formation);
-    }
-  }
 
   return inRange.map((c) => {
     const sessions = markHeldSessions(c.session_dates ?? [], opts.todayIso);
     return {
       courseId: c.id,
       name: c.name,
-      formation: formationByCourse.get(c.id) ?? 'group',
+      formation: c.formation,
       unitPrice: c.unit_price as number,
       sessions,
       remainingCount: remainingSessionCount(sessions),

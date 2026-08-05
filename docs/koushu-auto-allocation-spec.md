@@ -689,3 +689,74 @@ ALTER TABLE course_prep_periods
 | 52  | 受験生ショートカット                     | **作らない**。受験生は学年から機械判定できない（小6の中学受験・中3の中高一貫非受験がある）。学年ショートカットは小学生／中学生／高校生の3つのみ                                                                   |
 | 53  | 再提出の保護者向け表示                   | **一切出さない**。申込済み画面は「お申込み内容の変更・キャンセルはできません」だけ。再提出許可の機構（決定30）は教室内部の運用として残すが、許可時は教室から個別連絡でURLを渡す（＝通知方法の設計は不要になった） |
 | 54  | 開始回セレクト                           | **作らない**。途中参加は「次の未開催回から自動参加」のみ（残り回数×単価も自動）。開始をさらに遅らせたい家庭は教室へ連絡してもらう。決定45の開始回セレクトの記述はこの決定で上書き                                 |
+
+---
+
+## 18. 特別講座（旧「小集団・プログラミング」）の設計改訂（2026-08-05）
+
+§17 は「小集団・プログラミング」という括りで書いたが、実態調査の結果、名称とデータの置き場を改める。
+**§17 のうち本節と矛盾する記述は本節で上書きする。**
+
+### 18-1. 調査で分かった実態
+
+| 事実                             | 内容                                                                                                                                                |
+| -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `seasonal_courses`(959件) の中身 | **個別指導の学習メニュー**（「中3理科 地学分野先取り」「小4算数 2学期予習(啓林館)」等）。`seasonal_course_applications` に592件の申込履歴があり現役 |
+| 開催日時                         | `session_dates` が入っている行は **0件**。日時を持つ運用は存在しない                                                                                |
+| プログラミング                   | コース名に「プログラミング」を含む行は **0件**                                                                                                      |
+| 現在の運用                       | 紙の予定表を最初に配って終わり。予定は変わらない。**座席表には表示していない**                                                                      |
+| `schedule_formations`            | `individual`(個別) / `group`(集団) / `f_zrshafsx`(**HAL＝プログラミング**) の3件                                                                    |
+| 規模                             | 1教室あたり2〜3講座 × 各8回。小集団は各学年あり                                                                                                     |
+
+**したがって `seasonal_courses` に `formation` を足して既存959件を集団扱いで埋めるのは誤り**
+（実体は個別メニュー）。§17-3 のこの案は破棄する。
+
+### 18-2. 確定した設計判断（決定55〜58）
+
+| #   | 論点           | 決定                                                                                                                                                                                                                                        |
+| --- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 55  | 呼称           | **「特別講座」**に統一（旧: 小集団・プログラミング）。プログラミングだけに限定されない括りにする。その下に形態（小集団・HAL 等）がぶら下がる                                                                                                |
+| 56  | データの置き場 | **新テーブル `koushu_special_courses` を新設**。`seasonal_courses`（個別メニュー959件・現役）とは混ぜない。列も用途も別物で、同居させると `seasonal_course_applications` を扱う既存コード全部に「メニューか講座か」の分岐が入る             |
+| 57  | 形態の作り方   | **`is_system=false` のユーザー定義形態として作る**（例: 「小集団」を追加。HALは既存）。座席表のタブは `!is_system && is_active` で組まれているため**実装変更ゼロでタブに出る**。`group`（システム形態）は従来どおり講習専用レーンとして残す |
+| 58  | 座席表への表示 | 特別講座のコマを**通常のスケジュールに出す**（現在は紙のみで座席表に出ていない）。形態タブに並ぶ: 個別 ／ 小集団 ／ HAL                                                                                                                     |
+
+**決定38・40（`koushu_enrollments.course_id` 復活・`seasonal_courses.session_dates`）は本節で置き換える。**
+`seasonal_courses` に追加済みの `session_dates` / `unit_price` 列は使わない（削除はしない。害が無く、
+削除すると別セッションの作業とぶつかりうるため放置する）。
+
+### 18-3. 新テーブル
+
+```sql
+create table koushu_special_courses (
+  id uuid primary key default gen_random_uuid(),
+  school_id uuid not null references schools(id) on delete cascade,
+  season text not null,
+  year integer not null,
+  formation text not null references schedule_formations(key),  -- 小集団 / HAL 等
+  name text not null,
+  target_grades integer[] not null default '{}',                 -- 対象学年（1-13）
+  unit_price integer,                                            -- 1回あたりの円（税込）
+  session_dates jsonb not null default '[]',                     -- [{date,start_time,end_time}]
+  capacity integer,                                              -- 定員（NULL=制限なし）
+  is_active boolean not null default true,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+```
+
+- 申込は引き続き `koushu_enrollments` に1コース1行（`course_id` にこのテーブルのidを入れる）。
+  **ただし現行の `course_id` は `seasonal_courses` へのFKなので張り替えが要る**（§18-4）
+- 料金 = `unit_price` × 参加回数（未開催の回数。決定42・45）
+- 座席表へは `schedule_entries`(kind='koushu', formation=講座の形態) を**手動配置**で作る（決定2は不変）
+
+### 18-4. `koushu_enrollments.course_id` のFK張り替え
+
+現在 `course_id` は `seasonal_courses(id)` を参照している。特別講座を指すよう張り替える。
+**本番0行なのでデータ移行は不要**だが、FK先の変更なので単独マイグレで当て、
+`upsertKoushuEnrollment` の unique（決定39）とは別作業にする。
+
+### 18-5. スコープ外（今回やらないこと）
+
+- `seasonal_courses`（個別メニュー959件）には**一切触らない**。`seasonal_course_applications` の592件も同様
+- 特別講座の出欠・振替管理は作らない（固定開催・振替不可）
+- 座席表への自動配置は作らない（手動。決定2）
