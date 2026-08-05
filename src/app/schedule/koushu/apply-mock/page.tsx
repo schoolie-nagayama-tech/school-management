@@ -779,9 +779,6 @@ function ParentFormMock() {
           </div>
           <ul className="text-xs space-y-1.5 list-disc pl-4 text-[var(--paragraph)]">
             <li>
-              コースの開催時間が個別コマの時間帯とズレる場合の座席表上の見え方（決定41は重複判定のみ担保。表示の見せ方は未検討）
-            </li>
-            <li>
               開始回セレクトの選択肢を保護者に開放してよいか（帰省などの事情がある場合のみ教室に相談してからにするか）（決定45）
             </li>
           </ul>
@@ -829,7 +826,8 @@ function EntryScreenMock() {
 /**
  * 表示状態「申込済み（読み取り専用）」（決定30・§16-2）。
  * 初回送信後に同じリンクを開くと、内容は StepConfirm 相当の見た目で読み取り専用のまま出す。
- * 再提出は教室が「再提出を許可」した場合のみ可能になる（管理側タブ参照）。
+ * 再提出の機構（決定30）は教室内部の運用。保護者には「できること」を一切見せない（決定53:
+ * キャンセル不可と案内しているため）。許可時は教室から個別連絡でURLを渡す。
  */
 function AppliedSummaryMock({
   lines,
@@ -859,7 +857,7 @@ function AppliedSummaryMock({
       <div className="rounded-lg border border-info bg-info-subtle p-3 flex gap-2">
         <Info className="w-4 h-4 text-info shrink-0 mt-0.5" />
         <p className="text-xs text-[var(--headline)] leading-relaxed">
-          申込を受け付けています。変更は教室までご連絡ください（再提出は教室が許可した場合のみ可能になります）。
+          申込を受け付けています。お申込み内容の変更・キャンセルはできません。
         </p>
       </div>
 
@@ -2247,7 +2245,6 @@ function AdminMock() {
               [
                 ['小学生', [1, 2, 3, 4, 5, 6]],
                 ['中学生', [7, 8, 9]],
-                ['受験生', [9, 12]],
                 ['高校生', [10, 11, 12]],
               ] as const
             ).map(([label, vs]) => (
@@ -2328,9 +2325,7 @@ function AdminMock() {
           確認したいこと
         </div>
         <ul className="text-xs space-y-1.5 list-disc pl-4 text-[var(--paragraph)]">
-          <li>「受験生」ショートカットは中3＋高3でよいか（既卒13を含めるか）</li>
           <li>申込状況は「未／閲覧のみ／済」の3段階でよいか</li>
-          <li>再提出許可の通知方法（許可したことを保護者へどう伝えるか）</li>
         </ul>
       </div>
     </div>
