@@ -30,6 +30,7 @@ import {
 import { InterviewList } from './InterviewList';
 import { AttendanceMatrix } from './AttendanceMatrix';
 import { StudentKoushuTab } from './StudentKoushuTab';
+import { PortalInviteSection } from './PortalInviteSection';
 import { useAuth } from '@/contexts/AuthContext';
 import { useConfirm } from '@/hooks/useConfirm';
 import { useToast } from '@/hooks/useToast';
@@ -649,6 +650,12 @@ export function StudentDetailModal({
                 <div className="space-y-1.5">{orphanTextbooks.map(renderTextbookRow)}</div>
               </div>
             )}
+
+            {/* 保護者ポータル招待（admin/owner のみ＝API認可と一致、コンポーネント内で自己判定） */}
+            <PortalInviteSection
+              studentId={student.id}
+              studentName={`${student.last_name} ${student.first_name}`}
+            />
 
             {/* 登録・更新日時 */}
             <div>
