@@ -261,14 +261,17 @@ export async function upsertKoushuEnrollment(
   const db2 = supabase as any;
 
   if (entries.length === 0) {
-    // 全科目0（または不正値のみ） → 申込なしとして削除
+    // 全科目0（または不正値のみ） → 申込なしとして削除。
+    // course_id IS NULL に限定するのは、同じ形態でコース申込（course_id あり）が
+    // 併存しうるため（決定39）。科目ベースの申込だけを消す。
     await db2
       .from('koushu_enrollments')
       .delete()
       .eq('school_id', schoolId)
       .eq('season', season)
       .eq('student_id', studentId)
-      .eq('formation', formation);
+      .eq('formation', formation)
+      .is('course_id', null);
     return;
   }
 
@@ -288,7 +291,12 @@ export async function upsertKoushuEnrollment(
       koma_by_subject: komaBySubjectClean,
       updated_at: new Date().toISOString(),
     },
-    { onConflict: 'school_id,season,student_id,formation' }
+    // course_id を含めるのは複数コース参加のため（決定39）。
+    // DB側は UNIQUE NULLS NOT DISTINCT なので、course_id IS NULL の科目ベース申込は
+    // 従来どおり「1生徒×1形態で1行」に保たれる。
+    // ★ この列並びは koushu_enrollments の unique 制約と一対一。DDLだけ／コードだけ
+    //   変えると「no unique or exclusion constraint matching」で保存が落ちる。
+    { onConflict: 'school_id,season,student_id,formation,course_id' }
   );
 
   if (error) throw error;
