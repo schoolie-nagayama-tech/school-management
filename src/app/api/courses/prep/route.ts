@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { getApiAuth } from '@/lib/api-auth';
 import { fetchAllPaged } from '@/lib/utils/supabasePaging';
+import {
+  sanitizePriceTable,
+  sanitizeEndByGrade,
+  validatePublishWindow,
+} from '@/lib/utils/koushuApplySettings';
 
 export const dynamic = 'force-dynamic';
 
@@ -905,7 +910,7 @@ export async function POST(request: NextRequest) {
       case 'delete_schedule_marker':
         return await handleDeleteScheduleMarker(supabaseAdmin, schoolId, params);
       case 'upsert_period':
-        return await handleUpsertPeriod(supabaseAdmin, schoolId, params);
+        return await handleUpsertPeriod(supabaseAdmin, schoolId, params, authResult.user.role);
       default:
         return NextResponse.json({ error: `不明なアクション: ${action}` }, { status: 400 });
     }
@@ -1872,11 +1877,17 @@ async function handleUpsertPeriod(
     expectedRate?: number;
     scheduleStartDate?: string;
     scheduleEndDate?: string;
-  }
+    // 講習申込の公開設定（Q4・決定26/29/44）。渡されたときだけ教室長以上を要求する。
+    applyPublishStart?: string | null;
+    applyPublishEnd?: string | null;
+    applyPriceTable?: unknown;
+    scheduleEndByGrade?: unknown;
+  },
+  role: string
 ) {
   const { data: existing } = await supabaseAdmin
     .from('course_prep_periods')
-    .select('id')
+    .select('id, schedule_start_date')
     .eq('school_id', schoolId)
     .eq('season', params.season)
     .eq('year', params.year)
@@ -1889,6 +1900,53 @@ async function handleUpsertPeriod(
   if (params.scheduleStartDate !== undefined)
     updateData.schedule_start_date = params.scheduleStartDate;
   if (params.scheduleEndDate !== undefined) updateData.schedule_end_date = params.scheduleEndDate;
+
+  // ---- 講習申込の公開設定（§10-4） ----
+  // このAPIの認可は「その教室にアクセスできるか」までで、講師も通る。
+  // 公開期間と単価は保護者に見える面を直接動かすので、ここだけ教室長以上に絞る（§12のロールガード）。
+  const touchesApplySettings =
+    params.applyPublishStart !== undefined ||
+    params.applyPublishEnd !== undefined ||
+    params.applyPriceTable !== undefined ||
+    params.scheduleEndByGrade !== undefined;
+
+  if (touchesApplySettings) {
+    const roleLower = (role || '').toLowerCase();
+    if (roleLower !== 'admin' && roleLower !== 'owner' && roleLower !== 'manager') {
+      return NextResponse.json(
+        { error: '講習申込の公開設定は教室長以上のみ変更できます' },
+        { status: 403 }
+      );
+    }
+
+    // 公開期間は開始・終了をセットで扱う（片方だけだと「公開したつもりで非公開」になる）
+    if (params.applyPublishStart !== undefined || params.applyPublishEnd !== undefined) {
+      const win = validatePublishWindow(
+        params.applyPublishStart ?? null,
+        params.applyPublishEnd ?? null
+      );
+      if (!win.ok) return NextResponse.json({ error: win.message }, { status: 400 });
+      updateData.apply_publish_start = win.value.start;
+      updateData.apply_publish_end = win.value.end;
+    }
+
+    if (params.applyPriceTable !== undefined) {
+      const table = sanitizePriceTable(params.applyPriceTable);
+      if (!table.ok) return NextResponse.json({ error: table.message }, { status: 400 });
+      updateData.apply_price_table = table.value;
+    }
+
+    if (params.scheduleEndByGrade !== undefined) {
+      // 開始日は「今回の更新値 → 既存値」の順で見る（同一保存で開始日も変えたケースに追随する）
+      const startForCheck =
+        (params.scheduleStartDate as string | undefined) ??
+        (existing as { schedule_start_date?: string | null } | null)?.schedule_start_date ??
+        null;
+      const byGrade = sanitizeEndByGrade(params.scheduleEndByGrade, startForCheck);
+      if (!byGrade.ok) return NextResponse.json({ error: byGrade.message }, { status: 400 });
+      updateData.schedule_end_by_grade = byGrade.value;
+    }
+  }
 
   if (existing) {
     const { error } = await supabaseAdmin

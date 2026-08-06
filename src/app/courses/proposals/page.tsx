@@ -3,10 +3,22 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Check, FileText, Filter, Plus, Printer, Search, Trash2, X } from 'lucide-react';
+import {
+  ArrowLeft,
+  Check,
+  FileText,
+  Filter,
+  Plus,
+  Printer,
+  QrCode,
+  Search,
+  Trash2,
+  X,
+} from 'lucide-react';
 import { ContextHelp } from '@/components/help/ContextHelp';
 import { AdminLayout } from '@/components/layouts';
-import { InlineLoading, Loading } from '@/components/ui';
+import { InlineLoading, Loading, ToastContainer } from '@/components/ui';
+import { useToast } from '@/hooks/useToast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRequirePermission } from '@/hooks/usePermissions';
 import AccessDenied from '@/components/AccessDenied';
@@ -25,6 +37,13 @@ import {
   type ProposalOrderInput,
 } from '@/lib/api/ordering';
 import { PublishOrderDialog } from '@/components/proposals/PublishOrderDialog';
+import { KoushuApplyLinkModal } from '@/components/proposals/KoushuApplyLinkModal';
+import {
+  getKoushuApplyPeriods,
+  getAppliedStudentIds,
+  type KoushuApplyPeriodSettings,
+} from '@/lib/api/koushuApplyAdmin';
+import { publishStatusOf } from '@/lib/utils/koushuApplySettings';
 import { supabase } from '@/lib/supabase';
 import { fetchAllPaged } from '@/lib/utils/supabasePaging';
 import type { SeasonalProposalWithDetails, SeasonType, ProposalStatus } from '@/types/database';
@@ -91,6 +110,7 @@ export default function CourseProposalsPage() {
   );
   const { schoolIds, selectedSchoolId, getSelectedSchoolIds, profile } = useAuth();
   const { localSchoolId, setLocalSchoolId, isAllSelected, availableSchools } = useLocalSchoolId();
+  const { toasts, removeToast, success, error } = useToast();
 
   // 一括公開は教室長以上(manager/owner/admin)のみ。提案済み化は全スタッフ可。
   const isManagerOrAbove =
@@ -105,6 +125,17 @@ export default function CourseProposalsPage() {
   const [sending, setSending] = useState(false);
   // 公開後の教材発注ダイアログ（公開前に算出した候補スナップショット）
   const [orderDialog, setOrderDialog] = useState<OrderCandidate[] | null>(null);
+
+  // 講習申込（Web申込）の入口。教室ごとの公開設定と、申込済みの生徒ID。
+  const [applyPeriodBySchool, setApplyPeriodBySchool] = useState<
+    Map<string, KoushuApplyPeriodSettings>
+  >(new Map());
+  const [appliedStudentIds, setAppliedStudentIds] = useState<Set<string>>(new Set());
+  const [applyLinkTarget, setApplyLinkTarget] = useState<{
+    schoolId: string;
+    studentId: string;
+    studentName: string;
+  } | null>(null);
 
   const currentYear = new Date().getFullYear();
   const [filterYear, setFilterYear] = useState<number>(currentYear);
@@ -231,6 +262,57 @@ export default function CourseProposalsPage() {
   useEffect(() => {
     if (hasPermission) load();
   }, [hasPermission, load]);
+
+  // ===== 講習申込（Web申込）の入口: 公開設定と申込状況 =====
+  // 申込リンクのスコープは「生徒 × 講習期間(season+year)」なので、季節が絞られていないと
+  // 対象期間が決まらない。その場合は入口を出さない（間違った期間のURLを配らないため）。
+  const loadApplyInfo = useCallback(async () => {
+    const schoolIdsInList = Array.from(
+      new Set(proposals.map((p) => p.school_id).filter((v): v is string => !!v))
+    );
+    if (!filterSeason || !filterYear || schoolIdsInList.length === 0) {
+      setApplyPeriodBySchool(new Map());
+      setAppliedStudentIds(new Set());
+      return;
+    }
+    try {
+      // 教室ごとに「その期間の公開設定」と「申込済みの生徒」を取る。
+      // 全教室表示のときは提案書が複数校にまたがるため、生徒の所属校ごとに分けて引く。
+      const perSchool = await Promise.all(
+        schoolIdsInList.map(async (sid) => {
+          const studentIds = Array.from(
+            new Set(proposals.filter((p) => p.school_id === sid).map((p) => p.student_id))
+          );
+          const [periods, applied] = await Promise.all([
+            getKoushuApplyPeriods(sid),
+            getAppliedStudentIds(sid, filterSeason, studentIds),
+          ]);
+          const period =
+            periods.find((p) => p.season === filterSeason && p.year === filterYear) ?? null;
+          return { sid, period, applied };
+        })
+      );
+
+      const periodMap = new Map<string, KoushuApplyPeriodSettings>();
+      const appliedSet = new Set<string>();
+      for (const { sid, period, applied } of perSchool) {
+        if (period) periodMap.set(sid, period);
+        // Set のスプレッド/for-of は tsconfig の target 都合で使えないため Array.from で回す
+        for (const studentId of Array.from(applied)) appliedSet.add(studentId);
+      }
+      setApplyPeriodBySchool(periodMap);
+      setAppliedStudentIds(appliedSet);
+    } catch (err) {
+      // 申込の入口は補助情報なので、取得に失敗しても提案書一覧自体は使えるようにする
+      console.error('[proposals] 講習申込の公開設定の取得に失敗:', err);
+      setApplyPeriodBySchool(new Map());
+      setAppliedStudentIds(new Set());
+    }
+  }, [proposals, filterSeason, filterYear]);
+
+  useEffect(() => {
+    if (hasPermission) loadApplyInfo();
+  }, [hasPermission, loadApplyInfo]);
 
   const loadStudents = useCallback(async () => {
     setStudentsLoading(true);
@@ -927,6 +1009,19 @@ export default function CourseProposalsPage() {
                   (sum, p) => sum + calcTotalKoma(p.units),
                   0
                 );
+                // 講習申込の入口。生徒の所属校（提案書の school_id）で公開設定を引く。
+                const groupSchoolId = studentProposals[0]?.school_id ?? null;
+                const applyPeriod = groupSchoolId
+                  ? (applyPeriodBySchool.get(groupSchoolId) ?? null)
+                  : null;
+                // 公開期間が無い間はリンク発行させない（§12の非公開担保）
+                const applyPublishStatus = publishStatusOf(
+                  applyPeriod?.applyPublishStart,
+                  applyPeriod?.applyPublishEnd
+                );
+                const canIssueApplyLink =
+                  isManagerOrAbove && !!groupSchoolId && applyPublishStatus !== 'unpublished';
+                const hasApplied = appliedStudentIds.has(studentId);
                 return (
                   <div
                     key={studentId}
@@ -949,8 +1044,44 @@ export default function CourseProposalsPage() {
                         <span className="px-1.5 py-0.5 text-[11px] font-bold rounded bg-info-subtle text-info">
                           合計 {totalKoma}コマ
                         </span>
+                        {/* 申込状況は「季節を絞ったとき」だけ意味を持つ（申込は season 単位） */}
+                        {filterSeason && (
+                          <span
+                            className={`px-1.5 py-0.5 text-[11px] font-medium rounded ${
+                              hasApplied
+                                ? 'bg-success-subtle text-success'
+                                : 'bg-surface-hover text-text-muted'
+                            }`}
+                            title={
+                              hasApplied ? 'Web申込を受け付け済み' : 'まだWeb申込が届いていません'
+                            }
+                          >
+                            {hasApplied ? '申込済' : '未申込'}
+                          </span>
+                        )}
                       </div>
                       <div className="flex items-center gap-1.5">
+                        {filterSeason && isManagerOrAbove && (
+                          <button
+                            onClick={() =>
+                              groupSchoolId &&
+                              setApplyLinkTarget({
+                                schoolId: groupSchoolId,
+                                studentId,
+                                studentName: name,
+                              })
+                            }
+                            disabled={!canIssueApplyLink}
+                            className="p-1 text-text-faint hover:text-text-heading transition-[color,transform] duration-150 ease-out active:scale-[0.97] disabled:opacity-40 disabled:cursor-not-allowed"
+                            title={
+                              canIssueApplyLink
+                                ? '申込リンク（URL・QR）を発行'
+                                : '申込の公開期間が未設定です（設定 → ポータル設定 → 講習申込）'
+                            }
+                          >
+                            <QrCode className="w-3.5 h-3.5" />
+                          </button>
+                        )}
                         <button
                           onClick={() => handlePrintStudent(studentId, name, studentProposals)}
                           disabled={printLoading === studentId}
@@ -1072,6 +1203,24 @@ export default function CourseProposalsPage() {
       {orderDialog && (
         <PublishOrderDialog candidates={orderDialog} onClose={() => setOrderDialog(null)} />
       )}
+
+      {/* 講習申込リンク（URL・QR）の発行 */}
+      {applyLinkTarget && filterSeason && (
+        <KoushuApplyLinkModal
+          isOpen={!!applyLinkTarget}
+          onClose={() => setApplyLinkTarget(null)}
+          schoolId={applyLinkTarget.schoolId}
+          studentId={applyLinkTarget.studentId}
+          studentName={applyLinkTarget.studentName}
+          season={filterSeason}
+          year={filterYear}
+          alreadyApplied={appliedStudentIds.has(applyLinkTarget.studentId)}
+          onError={error}
+          onSuccess={success}
+        />
+      )}
+
+      <ToastContainer toasts={toasts} onRemove={removeToast} />
     </AdminLayout>
   );
 }

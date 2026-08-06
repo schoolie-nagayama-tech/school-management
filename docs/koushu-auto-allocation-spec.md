@@ -339,7 +339,7 @@ export function normalizeKomaBySubject(v: unknown): Record<string, KomaSpec>;
 | **Q1 科目の統合**   | `subjects` に高校理社2行追加 → `textbooks.subject_id` 追加＋バックフィル → 解決不能件数の可視化 | なし。**他の全部の前提** |
 | **Q2 データ拡張**   | `koma_by_subject` の KomaSpec 化＋正規化アクセサ／`schedule_match_proposals` 3列＋publish継承   | Q1                       |
 | **Q3 申込フォーム** | 公開ルート2本＋送信API＋スマホUI（提案確認→コマ数→×カレンダー）                                 | Q1, Q2                   |
-| **Q4 入口**         | ポータル設定の公開期間管理／提案書のリンク・QR・申込状況                                        | Q3                       |
+| **Q4 入口**         | ポータル設定の公開期間管理／提案書のリンク・QR・申込状況（**実装済**。§19）                     | Q3                       |
 | **Q5 本番配線**     | /schedule 実行パネル（学年複数選択・設定・再実行モード）→下書き→公開                            | Q2                       |
 | **Q6 切替**         | 2027年2月。紙運用からの移行                                                                     | Q3〜Q5                   |
 
@@ -760,3 +760,62 @@ create table koushu_special_courses (
 - `seasonal_courses`（個別メニュー959件）には**一切触らない**。`seasonal_course_applications` の592件も同様
 - 特別講座の出欠・振替管理は作らない（固定開催・振替不可）
 - 座席表への自動配置は作らない（手動。決定2）
+
+---
+
+## 19. Q4 入口の実装（2026-08-06 完了）
+
+DDLは追加していない。Q2で足した4列（`apply_publish_start` / `apply_publish_end` /
+`apply_price_table` / `schedule_end_by_grade`）と `koushu_apply_tokens` をそのまま使う。
+本番確認済み: 5期間すべて `apply_publish_start IS NULL`、トークン0行（＝保護者からは404のまま）。
+
+### 19-1. 公開設定UI（`/settings/koushu-apply`）
+
+| 項目           | 保存先                                        |
+| -------------- | --------------------------------------------- |
+| 公開期間       | `course_prep_periods.apply_publish_start/end` |
+| 単価表         | `course_prep_periods.apply_price_table`       |
+| 学年別の終了日 | `course_prep_periods.schedule_end_by_grade`   |
+
+- 入口は**ポータル設定の独立カード**（決定20どおり `FORM_TYPE_TO_PERIODS_PATH` には載せない）
+- 書き込みは既存の `/api/courses/prep`（`upsert_period`）に相乗り
+
+### 19-2. 検証を1箇所に置いた（`src/lib/utils/koushuApplySettings.ts`）
+
+`apply_price_table` は公開ローダーが `lookupUnitPrice` で読む jsonb なので、
+壊れた形が入ると保護者に誤った金額が出る。検証は純関数に集約し、
+**設定画面とサーバーAPIの両方から同じ関数を呼ぶ**（画面で通ったものはサーバーでも通る）。
+
+- `validatePublishWindow` — **開始だけ／終了だけの保存を禁止**。`isApplyPublished` は
+  片方欠けを非公開と解釈するため、「公開したつもりで非公開」になる事故を入口で潰す
+- `sanitizePriceTable` — 学年ラベル・`1on1/1on2`・`45/90` 以外のキーを拒否。
+  **45分を小5以上に置くのも拒否**する（提案書由来の科目は申込時に学年別45分チェックを
+  通らない経路があるため、「引ける単価が存在しない」ことをデータ側で保証する）
+- `sanitizeEndByGrade` — 学年番号1〜13・暦上実在する日付・開始日以降のみ
+- `publishStatusOf` — バッジ表示用の4値。**`open` を返す条件は `isApplyPublished` が
+  true を返す条件と一致**（テストで同値性を検証している。ズレると「公開中に見えるのに404」）
+
+### 19-3. ロールガード（§12）
+
+`/api/courses/prep` の認可は「その教室にアクセスできるか」までで**講師も通る**。
+公開期間と単価は保護者に見える面を直接動かすので、
+`upsert_period` に apply系フィールドが1つでも含まれるときだけ **manager以上を要求**する。
+既存の呼び出し（予算コマ・期間の日付だけ）は従来どおり素通りする。
+
+### 19-4. 提案書からのリンク発行（`/courses/proposals`）
+
+- 生徒グループの見出しに **QRアイコン（申込リンク）** と **申込済／未申込バッジ**
+- **年・季節を絞っているときだけ表示**。トークンのスコープが生徒×(season, year) なので、
+  季節未選択だと対象期間が決まらない（違う期間のURLを配る事故を防ぐ）
+- **公開期間が未設定の期間はボタンを押せない**（§12の担保をUIにも出す）
+- **開くだけでは発行しない**。「発行する」を押したときにだけ `koushu_apply_tokens` に行を作る
+- 「URLを作り直す」＝ `revoked_at` を立てて新規発行（決定19）。届いている申込は消えない
+- 申込状況は `koushu_enrollments` の (school_id, season, student_id) の有無。
+  公開ローダーの `hasExistingEnrollment` と同じ定義に揃えてある（片方だけ変えないこと）
+
+### 19-5. 既知の穴（Q6までに判断する）
+
+**0科目0コースの申込は「未申込」に見える。** 送信APIは科目行もコース行も無いと
+`koushu_enrollments` に1行も書かないため、可能日程だけ送られた申込が申込状況に出ない。
+`alreadySubmitted`（再表示の判定）も同じテーブルを見ているので挙動は一貫しているが、
+「今回は申し込みません」を記録したいなら別途フラグが要る。紙運用と並走している間は実害なし。
