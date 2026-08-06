@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, Input } from '@/components/ui';
 import { UserPlus, Link2 } from 'lucide-react';
+import { LineLoginButton } from './LineLoginButton';
 
 interface InviteAcceptProps {
   token: string;
@@ -12,6 +13,8 @@ interface InviteAcceptProps {
   studentName: string;
   /** 既に有効なポータルセッションがあるか（あれば紐づけ確認モード）。 */
   hasSession: boolean;
+  /** LINEログインが設定済みか（未設定環境ではボタンを出さない）。 */
+  lineEnabled?: boolean;
 }
 
 const RELATION_OPTIONS = [
@@ -23,9 +26,21 @@ const RELATION_OPTIONS = [
 /**
  * 招待受諾フォーム。2モード:
  *  - hasSession: 現アカウントに「この生徒を紐づける」確認ボタンのみ。
- *  - 未ログイン: アカウント作成フォーム（保護者招待なら続柄選択つき）。
+ *  - 未ログイン: LINEではじめる／IDとパスワードで登録、の2択。
+ *
+ * ★ LINE経路が「登録」ではなく「ログイン」に見えるのは意図的:
+ *   LINEを押すと /api/mypage/line/start へ飛び、コールバックでアカウントが作られた
+ *   （または既存アカウントでログインした）状態でこのページに戻ってくる。
+ *   戻ったときは hasSession=true になるので、そこで続柄を選んで紐づけを完了する。
+ *   続柄をLINE往復の前に選ばせても保持できないため、往復後に聞く作りにしている。
  */
-export function InviteAccept({ token, inviteType, studentName, hasSession }: InviteAcceptProps) {
+export function InviteAccept({
+  token,
+  inviteType,
+  studentName,
+  hasSession,
+  lineEnabled = false,
+}: InviteAcceptProps) {
   const router = useRouter();
   const [displayName, setDisplayName] = useState('');
   const [loginId, setLoginId] = useState('');
@@ -77,6 +92,21 @@ export function InviteAccept({ token, inviteType, studentName, hasSession }: Inv
         <span className="font-medium text-text-heading">{studentName}</span> さん
         {isGuardian ? 'の保護者として' : '本人として'}招待されています。
       </p>
+
+      {/* 未ログインのときだけ LINE 経路を出す。押すとLINE往復後にこのページへ戻る。 */}
+      {!hasSession && lineEnabled && (
+        <>
+          <LineLoginButton invite={token} label="LINEではじめる" />
+          <p className="mt-2 text-xs text-text-muted">
+            LINEではじめると、教室からのお知らせをLINEで受け取れます。
+          </p>
+          <div className="my-6 flex items-center gap-3">
+            <span className="h-px flex-1 bg-border" />
+            <span className="text-xs text-text-muted">または</span>
+            <span className="h-px flex-1 bg-border" />
+          </div>
+        </>
+      )}
 
       {isGuardian && (
         <div className="mb-4">

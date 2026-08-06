@@ -11,6 +11,15 @@ import { getPortalServiceClient } from './serviceClient';
  * ポータルJWTやスタッフセッションに依存させない。no-store は serviceClient 側で強制済み。
  */
 export async function isPortalV2Enabled(): Promise<boolean> {
+  // ★ 開発環境限定のバイパス（本番フラグを触らずにローカル検証するため）:
+  //   .env.local は本番DB（東京）を指しているため、ローカルで動作確認したいからと
+  //   system_settings.portal_v2_enabled を true にすると、**本番の /mypage が
+  //   一般公開されてしまう**。そこでローカルは環境変数だけで開けるようにする。
+  //   NODE_ENV が production のときは何があっても効かせない（本番デプロイでの誤爆防止）。
+  if (process.env.NODE_ENV !== 'production' && process.env.PORTAL_V2_DEV_ENABLED === 'true') {
+    return true;
+  }
+
   try {
     const supabase = getPortalServiceClient();
     const { data, error } = await supabase

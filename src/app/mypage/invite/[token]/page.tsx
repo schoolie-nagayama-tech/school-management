@@ -1,6 +1,7 @@
 import { AlertCircle } from 'lucide-react';
 import { getPortalServiceClient } from '@/lib/mypage/serviceClient';
 import { getPortalContext } from '@/lib/mypage/supabase';
+import { isLineLoginConfigured } from '@/lib/mypage/line';
 import { InviteAccept } from '@/components/mypage/InviteAccept';
 
 export const dynamic = 'force-dynamic';
@@ -89,6 +90,7 @@ export default async function InvitePage({ params }: { params: { token: string }
       inviteType={invitation.invite_type}
       studentName={studentName}
       hasSession={ctx != null}
+      lineEnabled={isLineLoginConfigured()}
     />
   );
 }
