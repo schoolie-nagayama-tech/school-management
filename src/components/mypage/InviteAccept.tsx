@@ -53,6 +53,7 @@ export function InviteAccept({
   const [password, setPassword] = useState('');
   const [relation, setRelation] = useState('guardian');
   const [relationNote, setRelationNote] = useState('');
+  const [agreed, setAgreed] = useState(false);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
@@ -62,7 +63,8 @@ export function InviteAccept({
     setError('');
     setSubmitting(true);
     try {
-      const body: Record<string, unknown> = { token };
+      // 同意はどちらのモードでも必須（P3-L4）。サーバー側でも true を検証する。
+      const body: Record<string, unknown> = { token, agreed };
       if (!hasSession) {
         body.display_name = displayName;
         body.login_id = loginId;
@@ -189,7 +191,45 @@ export function InviteAccept({
         </div>
       )}
 
-      <Button onClick={submit} isLoading={submitting} className="w-full">
+      {/*
+        法務文書への同意（P3-L4）。
+        ★ hasSession の有無にかかわらず両モードで出す:
+          LINE経路は往復後に hasSession=true でこの画面に戻り、ID/PW経路は
+          hasSession=false のまま送信する。つまり「紐づけの成立」は必ずこの送信
+          ボタンを通る。ここに置けば、どちらの入口から来ても同意なしでポータルの
+          利用が始まることはない。
+      */}
+      <label className="mb-4 flex cursor-pointer items-start gap-2.5">
+        <input
+          type="checkbox"
+          checked={agreed}
+          onChange={(e) => setAgreed(e.target.checked)}
+          className="mt-0.5 h-4 w-4 shrink-0 rounded border-border text-info focus:ring-2 focus:ring-primary"
+        />
+        <span className="text-sm leading-relaxed text-text-body">
+          <a
+            href="/privacy"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-info underline underline-offset-2"
+          >
+            プライバシーポリシー
+          </a>
+          と
+          <a
+            href="/terms"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-info underline underline-offset-2"
+          >
+            利用規約
+          </a>
+          に同意します
+        </span>
+      </label>
+
+      {/* 未同意のうちは押せない（サーバー側の 400 に頼らず画面で止める）。 */}
+      <Button onClick={submit} isLoading={submitting} disabled={!agreed} className="w-full">
         {hasSession ? (
           <>
             <Link2 className="mr-2 h-4 w-4" />

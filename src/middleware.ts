@@ -230,6 +230,10 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/api/inquiry-form') ||
     pathname.startsWith('/api/booking/') ||
     pathname.startsWith('/login') ||
+    // 法務文書の公開ページ（P3-L3）。登録前の保護者が読む必要があるため未ログインで見える。
+    // 中身は force-static でビルド時に確定するので、スタッフ用セッション更新は完全に無駄。
+    pathname.startsWith('/privacy') ||
+    pathname.startsWith('/terms') ||
     // ログイン画面のリンク取得（ログイン前に叩く公開GET）
     pathname.startsWith('/api/login-links') ||
     pathname.startsWith('/forgot-password') ||
