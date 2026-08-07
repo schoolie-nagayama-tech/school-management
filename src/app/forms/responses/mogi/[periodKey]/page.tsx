@@ -3,7 +3,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import { AdminLayout } from '@/components/layouts';
-import { getMogiResponses, getMogiStats, updateMogiChargedStatus } from '@/lib/api/mogi';
+import {
+  getMogiResponses,
+  getMogiStats,
+  updateMogiAppliedStatus,
+  updateMogiChargedStatus,
+} from '@/lib/api/mogi';
 import {
   unlinkResponseFromStudent,
   getArchivedCount,
@@ -53,6 +58,7 @@ export default function MogiResponsePage() {
       total: number;
     }>,
     charged_count: 0,
+    applied_count: 0,
     linked_count: 0,
   });
   const [isLoading, setIsLoading] = useState(true);
@@ -70,6 +76,9 @@ export default function MogiResponsePage() {
   const [filterDateId, setFilterDateId] = useState<string>('all');
   const [filterVenueId, setFilterVenueId] = useState<string>('all');
   const [filterChargedStatus, setFilterChargedStatus] = useState<'all' | 'charged' | 'not_charged'>(
+    'all'
+  );
+  const [filterAppliedStatus, setFilterAppliedStatus] = useState<'all' | 'applied' | 'not_applied'>(
     'all'
   );
   const [filterLinkedStatus, setFilterLinkedStatus] = useState<'all' | 'linked' | 'unlinked'>(
@@ -93,6 +102,7 @@ export default function MogiResponsePage() {
         dateId: filterDateId === 'all' ? undefined : filterDateId,
         venueId: filterVenueId === 'all' ? undefined : filterVenueId,
         chargedStatus: filterChargedStatus === 'all' ? undefined : filterChargedStatus,
+        appliedStatus: filterAppliedStatus === 'all' ? undefined : filterAppliedStatus,
         linkedStatus: filterLinkedStatus === 'all' ? undefined : filterLinkedStatus,
         showArchived,
       };
@@ -121,6 +131,7 @@ export default function MogiResponsePage() {
     filterDateId,
     filterVenueId,
     filterChargedStatus,
+    filterAppliedStatus,
     filterLinkedStatus,
     showArchived,
   ]);
@@ -162,6 +173,31 @@ export default function MogiResponsePage() {
       setResponses(prevResponses);
       setStats(prevStats);
       error(err instanceof Error ? err.message : '計上状態の更新に失敗しました');
+    }
+  };
+
+  // 申込状態の更新（Vもぎ主催者への申込代行が済んだかのチェック。請求とは無関係）
+  const handleAppliedToggle = async (responseId: string, applied: boolean) => {
+    const prevResponses = responses;
+    const prevStats = stats;
+    setResponses((prev) =>
+      prev.map((r) =>
+        r.id === responseId ? { ...r, status_checks: { ...r.status_checks, applied } } : r
+      )
+    );
+    setStats((s) => ({
+      ...s,
+      applied_count: s.applied_count + (applied ? 1 : -1),
+    }));
+    try {
+      await updateMogiAppliedStatus(responseId, applied);
+      await fetchData();
+      success(`${applied ? '申込済みにしました' : '申込を解除しました'}`);
+    } catch (err) {
+      console.error('Error updating applied status:', err);
+      setResponses(prevResponses);
+      setStats(prevStats);
+      error(err instanceof Error ? err.message : '申込状態の更新に失敗しました');
     }
   };
 
@@ -367,7 +403,7 @@ export default function MogiResponsePage() {
 
           {/* フィルター */}
           <div className="mb-6 bg-surface-raised rounded-xl border border-border p-4">
-            <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
               <div>
                 <label className="block text-sm font-medium text-text-heading mb-2">学年</label>
                 <select
@@ -444,6 +480,21 @@ export default function MogiResponsePage() {
                       </option>
                     );
                   })}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-text-heading mb-2">申込状態</label>
+                <select
+                  value={filterAppliedStatus}
+                  onChange={(e) =>
+                    setFilterAppliedStatus(e.target.value as 'all' | 'applied' | 'not_applied')
+                  }
+                  className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-surface-raised text-text-body"
+                >
+                  <option value="all">全て</option>
+                  <option value="applied">申込済み</option>
+                  <option value="not_applied">未申込</option>
                 </select>
               </div>
 
@@ -567,6 +618,9 @@ export default function MogiResponsePage() {
                         選択日程・会場
                       </th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-text-heading uppercase">
+                        申込
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-text-heading uppercase">
                         計上
                       </th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-text-heading uppercase">
@@ -608,6 +662,14 @@ export default function MogiResponsePage() {
                         </td>
                         <td className="px-4 py-3 text-sm text-text-body">
                           {formatSelections(response.response_data.selections)}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-text-body">
+                          <input
+                            type="checkbox"
+                            checked={response.status_checks?.applied || false}
+                            onChange={(e) => handleAppliedToggle(response.id, e.target.checked)}
+                            className="w-4 h-4 text-info border-border rounded focus:ring-primary cursor-pointer"
+                          />
                         </td>
                         <td className="px-4 py-3 text-sm text-text-body">
                           <input

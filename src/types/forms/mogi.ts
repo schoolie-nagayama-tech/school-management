@@ -157,6 +157,8 @@ export interface MogiResponse {
   linked_at: string | null;
   status_checks: {
     charged?: boolean;
+    /** Vもぎ主催者への申込を代行済みか（計上とは独立した進捗チェック） */
+    applied?: boolean;
   } | null;
   is_archived: boolean;
   archived_at: string | null;
@@ -176,6 +178,7 @@ export interface MogiResponseFilters {
   dateId?: string;
   venueId?: string;
   chargedStatus?: 'charged' | 'not_charged';
+  appliedStatus?: 'applied' | 'not_applied';
   linkedStatus?: 'linked' | 'unlinked';
   showArchived?: boolean;
 }
@@ -201,5 +204,7 @@ export interface MogiStats {
     count: number;
   }>;
   charged_count: number;
+  /** 申込代行が済んだ回答数 */
+  applied_count: number;
   linked_count: number;
 }

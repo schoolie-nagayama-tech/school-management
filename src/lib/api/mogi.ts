@@ -1,5 +1,10 @@
 import { createPeriodApi, updateChargedStatusWithBilling } from './form-period-api';
-import { createPublicFormResponse, getFormResponses } from './form-responses';
+import {
+  createPublicFormResponse,
+  getFormResponse,
+  getFormResponses,
+  updateFormResponseStatus,
+} from './form-responses';
 import type { FormResponseInsert } from '@/types/database';
 import type {
   MogiPeriod,
@@ -71,6 +76,7 @@ export async function submitMogiResponse(data: {
     response_data: data.response_data as never,
     status_checks: {
       charged: false,
+      applied: false,
     },
   };
 
@@ -134,6 +140,14 @@ export async function getMogiResponses(
     });
   }
 
+  // 申込状態フィルター（未設定の回答は「未申込」として扱う）
+  if (filters?.appliedStatus) {
+    filtered = filtered.filter((r) => {
+      const applied = r.status_checks?.applied || false;
+      return filters.appliedStatus === 'applied' ? applied : !applied;
+    });
+  }
+
   return filtered;
 }
 
@@ -156,6 +170,7 @@ export async function getMogiStats(
       total_responses: responses.length,
       date_venue_counts: [],
       charged_count: 0,
+      applied_count: 0,
       linked_count: 0,
     };
   }
@@ -213,6 +228,8 @@ export async function getMogiStats(
 
   const chargedCount = responses.filter((r) => r.status_checks?.charged === true).length;
 
+  const appliedCount = responses.filter((r) => r.status_checks?.applied === true).length;
+
   const linkedCount = responses.filter((r) => r.linked_student_id !== null).length;
 
   return {
@@ -220,6 +237,7 @@ export async function getMogiStats(
     date_venue_counts: dateVenueCounts,
     type_counts: typeCounts,
     charged_count: chargedCount,
+    applied_count: appliedCount,
     linked_count: linkedCount,
   };
 }
@@ -228,6 +246,16 @@ export async function getMogiStats(
  * Vもぎ回答の計上状態を更新（既存の status_checks をマージし請求へ同期）
  */
 export const updateMogiChargedStatus = updateChargedStatusWithBilling;
+
+/**
+ * Vもぎ回答の申込状態を更新（既存の status_checks をマージ）
+ * 計上とは別の進捗管理なので請求への同期は行わない。
+ */
+export async function updateMogiAppliedStatus(responseId: string, applied: boolean): Promise<void> {
+  const response = await getFormResponse(responseId);
+  const current = (response?.status_checks || {}) as Record<string, boolean>;
+  await updateFormResponseStatus(responseId, { ...current, applied });
+}
 
 /**
  * Vもぎ期間の回答数を取得
