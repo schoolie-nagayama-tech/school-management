@@ -37,4 +37,4 @@ add column if not exists relation_note text;
 
 comment on column public.portal_account_students.relation_note is 'relation=''other'' のときの続柄の自由入力（例: 祖母）。表示・記録用で権限判定には使わない。それ以外は NULL。';
 
-comment on column public.portal_account_students.relation as '本人(self)/保護者(guardian)/その他(other)。RLSは self か否かだけを見る。';
+comment on column public.portal_account_students.relation is '本人(self)/保護者(guardian)/その他(other)。RLSは self か否かだけを見る。';
