@@ -158,7 +158,7 @@
 ### 1. データモデル（生徒テーブルは無変更）
 
 - `portal_accounts`（保護者・生徒統合・PIIなし: line_user_id / login_id / password_hash / display_name …）
-- `portal_account_students`（多対多: account_id / student_id / relation=self|father|mother|other）
+- `portal_account_students`（多対多: account_id / student_id / relation=self|guardian|other・relation_note=otherの自由入力）
 - `portal_invitations`（token / student_id / invite_type=guardian|student / expires_at=7日 / accepted_*）
 
 ### 2. 認証・セッション（案3: 自前ログイン → Supabase互換JWT → RLS）

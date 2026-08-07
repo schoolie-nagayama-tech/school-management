@@ -7,20 +7,28 @@ import { setPortalSession } from '@/lib/mypage/session';
 
 export const dynamic = 'force-dynamic';
 
-/** 保護者招待で選べる relation。生徒招待は 'self' 固定。 */
-const GUARDIAN_RELATIONS = ['father', 'mother', 'other'] as const;
+/**
+ * 保護者招待で選べる relation。生徒招待は 'self' 固定。
+ * 父・母の区別は運用で使わないため 2026-08-05 に「保護者 / その他」へ整理した
+ * （マイグレーション 20260805000000）。その他は relation_note に自由入力を持つ。
+ */
+const GUARDIAN_RELATIONS = ['guardian', 'other'] as const;
 type GuardianRelation = (typeof GUARDIAN_RELATIONS)[number];
+
+/** その他を選んだときの続柄メモの最大長（画面の1行入力に見合う長さ）。 */
+const RELATION_NOTE_MAX = 20;
 
 /**
  * 招待受諾。2モード（docs/portal-v2-requirements.md Stage1）。
  *
- * body: { token, display_name?, login_id?, password?, relation? }
+ * body: { token, display_name?, login_id?, password?, relation?, relation_note? }
  *
  * (a) 既ログイン（有効な portal_session あり）: 現アカウントに生徒紐づけを追加。
  * (b) 未ログイン: { display_name, login_id, password, relation } でアカウント作成
  *     → 紐づけ → accepted マーク → 自動ログイン（cookieセット）。
  *
- * relation は invite_type='student' なら強制 'self'、'guardian' なら father/mother/other。
+ * relation は invite_type='student' なら強制 'self'、'guardian' なら guardian/other。
+ * other のときは relation_note（自由入力）を必須にする。
  * login_id 重複は 409。
  */
 export async function POST(request: NextRequest) {
@@ -62,17 +70,33 @@ export async function POST(request: NextRequest) {
   // ── relation の確定 ──
   // 生徒招待は 'self' 固定（自己昇格の防止）。保護者招待は body の relation を検証。
   let relation: 'self' | GuardianRelation;
+  let relationNote: string | null = null;
   if (invitation.invite_type === 'student') {
     relation = 'self';
   } else {
     const r = body.relation;
     if (typeof r !== 'string' || !GUARDIAN_RELATIONS.includes(r as GuardianRelation)) {
       return NextResponse.json(
-        { error: '続柄（父・母・その他）を選択してください' },
+        { error: '続柄（保護者・その他）を選択してください' },
         { status: 400 }
       );
     }
     relation = r as GuardianRelation;
+
+    // 「その他」は自由入力を必須にする（誰なのか分からない紐づけを作らない）。
+    if (relation === 'other') {
+      const note = body.relation_note;
+      if (typeof note !== 'string' || !note.trim()) {
+        return NextResponse.json({ error: '続柄を入力してください（例: 祖母）' }, { status: 400 });
+      }
+      if (note.trim().length > RELATION_NOTE_MAX) {
+        return NextResponse.json(
+          { error: `続柄は${RELATION_NOTE_MAX}文字以内で入力してください` },
+          { status: 400 }
+        );
+      }
+      relationNote = note.trim();
+    }
   }
 
   // ── モード判定: 有効なセッションがあれば (a)、無ければ (b) ──
@@ -81,7 +105,13 @@ export async function POST(request: NextRequest) {
   if (ctx) {
     // ── (a) 既ログイン: 現アカウントに紐づけを追加 ──
     const accountId = ctx.claims.sub;
-    const linkResult = await linkStudent(supabase, accountId, invitation.student_id, relation);
+    const linkResult = await linkStudent(
+      supabase,
+      accountId,
+      invitation.student_id,
+      relation,
+      relationNote
+    );
     if (linkResult.error) return linkResult.error;
 
     const marked = await markAccepted(supabase, invitation.id, accountId);
@@ -126,7 +156,13 @@ export async function POST(request: NextRequest) {
   const accountId = created.id;
 
   // 生徒紐づけ。失敗したら作ったアカウントを後始末して 500。
-  const linkResult = await linkStudent(supabase, accountId, invitation.student_id, relation);
+  const linkResult = await linkStudent(
+    supabase,
+    accountId,
+    invitation.student_id,
+    relation,
+    relationNote
+  );
   if (linkResult.error) {
     await supabase.from('portal_accounts').delete().eq('id', accountId);
     return linkResult.error;
@@ -154,12 +190,13 @@ async function linkStudent(
   supabase: ReturnType<typeof getPortalServiceClient>,
   accountId: string,
   studentId: string,
-  relation: string
+  relation: string,
+  relationNote: string | null
 ): Promise<{ error: NextResponse | null }> {
   const { error } = await supabase
     .from('portal_account_students')
     .upsert(
-      { account_id: accountId, student_id: studentId, relation },
+      { account_id: accountId, student_id: studentId, relation, relation_note: relationNote },
       { onConflict: 'account_id,student_id', ignoreDuplicates: true }
     );
   if (error) {

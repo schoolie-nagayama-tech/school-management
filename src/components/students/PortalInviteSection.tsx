@@ -25,6 +25,16 @@ import { isOwnerOrAbove } from '@/lib/utils/roles';
 
 const EXPIRES_IN_DAYS = 7;
 
+/**
+ * 生徒本人向け招待の発行UIを出すか（2026-08-05 は false）。
+ *
+ * 運用方針として当面は**全員を保護者として登録する**ため、選択肢自体を出さない
+ * （選べると迷いが生まれ、誤って生徒本人で発行すると閲覧範囲が変わってしまう）。
+ * API・DB・受諾画面は invite_type='student' を引き続きサポートしているので、
+ * 生徒本人アカウントを配る運用を始めるときはこのフラグを true に戻すだけでよい。
+ */
+const STUDENT_INVITE_ENABLED = false;
+
 interface InvitationRow {
   id: string;
   token: string;
@@ -149,33 +159,43 @@ export function PortalInviteSection({ studentId, studentName }: PortalInviteSect
           </div>
         )}
 
-        {/* 招待タイプ選択 + 発行 */}
+        {/* 招待タイプ選択 + 発行（生徒本人は当面非表示＝保護者固定） */}
         <div className="flex items-center gap-2 pt-2 border-t border-[#e5e7eb]">
-          <div className="flex gap-1">
-            <button
-              type="button"
-              onClick={() => setInviteType('guardian')}
-              className={`px-2.5 py-1 text-xs rounded border transition-colors ${
-                inviteType === 'guardian'
-                  ? 'border-[#1e3a5f] bg-[#1e3a5f]/10 font-medium text-[#1e3a5f]'
-                  : 'border-[#e5e7eb] text-[#4b5563] hover:bg-white'
-              }`}
-            >
-              保護者
-            </button>
-            <button
-              type="button"
-              onClick={() => setInviteType('student')}
-              className={`px-2.5 py-1 text-xs rounded border transition-colors ${
-                inviteType === 'student'
-                  ? 'border-[#1e3a5f] bg-[#1e3a5f]/10 font-medium text-[#1e3a5f]'
-                  : 'border-[#e5e7eb] text-[#4b5563] hover:bg-white'
-              }`}
-            >
-              生徒本人
-            </button>
-          </div>
-          <Button type="button" size="sm" onClick={handleIssue} isLoading={issuing}>
+          {STUDENT_INVITE_ENABLED ? (
+            <div className="flex gap-1">
+              <button
+                type="button"
+                onClick={() => setInviteType('guardian')}
+                className={`px-2.5 py-1 text-xs rounded border transition-colors ${
+                  inviteType === 'guardian'
+                    ? 'border-[#1e3a5f] bg-[#1e3a5f]/10 font-medium text-[#1e3a5f]'
+                    : 'border-[#e5e7eb] text-[#4b5563] hover:bg-white'
+                }`}
+              >
+                保護者
+              </button>
+              <button
+                type="button"
+                onClick={() => setInviteType('student')}
+                className={`px-2.5 py-1 text-xs rounded border transition-colors ${
+                  inviteType === 'student'
+                    ? 'border-[#1e3a5f] bg-[#1e3a5f]/10 font-medium text-[#1e3a5f]'
+                    : 'border-[#e5e7eb] text-[#4b5563] hover:bg-white'
+                }`}
+              >
+                生徒本人
+              </button>
+            </div>
+          ) : (
+            <span className="text-xs text-[#4b5563]">保護者向けの招待を発行します</span>
+          )}
+          <Button
+            type="button"
+            size="sm"
+            onClick={handleIssue}
+            isLoading={issuing}
+            className="ml-auto"
+          >
             招待を発行
           </Button>
         </div>
