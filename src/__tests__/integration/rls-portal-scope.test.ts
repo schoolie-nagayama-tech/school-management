@@ -81,17 +81,17 @@ beforeAll(async () => {
   accountId = await mkAccount('テスト保護者');
   otherAccountId = await mkAccount('別の保護者');
 
-  // ── 紐づけ: accountId → active(father) と withdrawn(father) ──
+  // ── 紐づけ: accountId → active(guardian) と withdrawn(guardian) ──
   const link = async (acc: string, student: string, relation: string) => {
     const { error } = await admin
       .from('portal_account_students')
       .insert({ account_id: acc, student_id: student, relation });
     if (error) throw new Error(`紐づけ失敗: ${error.message}`);
   };
-  await link(accountId, studentActiveId, 'father');
-  await link(accountId, studentWithdrawnId, 'father');
+  await link(accountId, studentActiveId, 'guardian');
+  await link(accountId, studentWithdrawnId, 'guardian');
   // otherAccount は unlinked 生徒に紐づく（accountId からは見えないことの対照）。
-  await link(otherAccountId, studentUnlinkedId, 'mother');
+  await link(otherAccountId, studentUnlinkedId, 'guardian');
 
   // ── 招待1件（読めないことの検証用） ──
   const { data: inv, error: invErr } = await admin

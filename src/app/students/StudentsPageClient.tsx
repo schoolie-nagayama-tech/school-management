@@ -505,15 +505,19 @@ export function StudentsPageClient({
         const created = await createStudent(data as StudentInsert);
         setIsCreateModalOpen(false);
         await syncListsAfterMutation();
+        // 登録直後に詳細モーダルへ遷移させる（入会オンボーディングの最終地点）。
+        // ポータル招待の発行導線（PortalInviteSection）もこのモーダル内にあるため、
+        // 「登録→招待発行」が画面遷移なしで一続きになる。
         setSelectedStudent(created);
         setIsDetailModalOpen(true);
+        success('生徒を登録しました。ポータル招待はこの詳細画面から発行できます');
       } catch (error) {
         setErrorMessage(getUserErrorMessage(error, '生徒の登録に失敗しました'));
       } finally {
         setIsSubmitting(false);
       }
     },
-    [syncListsAfterMutation]
+    [syncListsAfterMutation, success]
   );
 
   // 更新

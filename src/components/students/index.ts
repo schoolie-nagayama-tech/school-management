@@ -13,3 +13,4 @@ export { StudentRegularScheduleList } from './StudentRegularScheduleList';
 export { RegularScheduleFormModal } from './RegularScheduleFormModal';
 export { AttendanceMatrix } from './AttendanceMatrix';
 export { BulkMoveStudentsModal } from './BulkMoveStudentsModal';
+export { PortalInviteSection } from './PortalInviteSection';

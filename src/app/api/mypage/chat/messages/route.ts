@@ -92,6 +92,8 @@ export async function POST(request: NextRequest) {
 
   // 通知（スタッフ宛のメール等）。非致命なので失敗しても送信自体は成功扱い。
   // 宛先は教室スタッフ側の運用に依存するため、ここでは studentId 起点の暫定解決に委ねる。
+  // ★ audience を付けない＝既定の 'staff'。保護者にLINEを送ってはいけない
+  //   （これは保護者自身の送信に対する通知なので、送ると自分の発言が自分に通知される）。
   void dispatchNotification({
     kind: 'chat_new_message',
     studentId,

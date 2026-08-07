@@ -95,7 +95,13 @@ export function DashboardView({
           <LogoutButton />
         </div>
       </div>
-      <h1 className="mb-4 text-base font-bold text-text-heading">{displayName}</h1>
+      {/*
+        見出しは「ログインした人の名前」ではなく **表示中の生徒名**。
+        保護者にとっての主語は自分ではなく子どもで、兄弟がいる場合は
+        いまどの子を見ているかが最も知りたい情報になるため。
+        生徒が1人も見えないとき（退塾・失効直後）だけアカウント名にフォールバックする。
+      */}
+      <h1 className="mb-4 text-base font-bold text-text-heading">{active?.name ?? displayName}</h1>
 
       {active == null ? (
         <div className="rounded-xl border border-border bg-surface-raised p-4 text-sm text-text-muted">

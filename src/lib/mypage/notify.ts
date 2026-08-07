@@ -1,5 +1,6 @@
 import 'server-only';
 import { getPortalServiceClient } from './serviceClient';
+import { buildPushText, logLineMessage, sendLinePush } from './linePush';
 
 /**
  * ポータル通知ディスパッチャ（Stage 2）。
@@ -12,6 +13,14 @@ import { getPortalServiceClient } from './serviceClient';
  *   - in-app: メッセージ/お知らせは既に DB に永続化済み（画面内バッジ・未読で表現）。
  *     このチャネルは「追加の副作用なし」なので dispatcher 側では no-op 記録のみ。
  *   - email: 既存 Resend 経路（send-inquiry-mail Edge Function）に相乗り。
+ *   - line: Messaging API のプッシュ（linePush.ts）。**既定は dry-run**で、
+ *     LINE_PUSH_ENABLED='true' を立てるまで実送信しない。通数は毎回ログに残す。
+ *
+ * ★ 宛先はチャネルごとに解決する:
+ *   email は「メールアドレス」、line は「LINEユーザーID」と宛先の型が違う。
+ *   dispatcher は チャネル名（'email' / 'line'）を見て、そのチャネル用の
+ *   リゾルバだけを走らせる。チャネルが無ければ解決処理自体を走らせない
+ *   （無駄なDBアクセスを避ける）。
  *
  * ★ 宛先メール解決の現状（TODO）:
  *   portal_accounts は PII（メール）を持たない設計。よって「ポータルアカウント→メール」の
@@ -32,9 +41,22 @@ export type NotifyKind =
   /** 授業報告書の承認（＝公開）時（Stage4・§7-4）。 */
   | 'report_published';
 
+/**
+ * 通知の宛先区分。
+ *
+ * ★ 既定が 'staff'（＝LINEを送らない）なのは意図的:
+ *   dispatchNotification は保護者宛にもスタッフ宛にも使われている
+ *   （例: 保護者がチャットを送った通知は「スタッフ宛」）。ここを取り違えると
+ *   **保護者が自分の送信について自分にLINE通知を受け取る**という誤配信になり、
+ *   通数も無駄に消費する。指定を忘れたときは送らない側（fail-closed）に倒す。
+ */
+export type NotifyAudience = 'guardian' | 'staff';
+
 /** ディスパッチする通知イベント。 */
 export interface NotifyEvent {
   kind: NotifyKind;
+  /** 宛先区分。'guardian' のときだけ LINE プッシュの対象になる（既定 'staff'）。 */
+  audience?: NotifyAudience;
   /** 対象生徒（メール宛先解決の起点）。 */
   studentId?: string;
   /** 明示的な宛先メール（分かっている場合。指定時はリゾルバをスキップ）。 */
@@ -47,6 +69,14 @@ export interface NotifyEvent {
   fromName?: string;
   /** 返信先（教室メール）。 */
   replyTo?: string;
+  /**
+   * 発信元の教室名。LINEプッシュの本文冒頭【〇〇校】に使う。
+   * 公式アカウントを全教室で1本しか持たないため、どの教室からの連絡かは
+   * 本文で明示するしかない（2026-08-05 決定）。省略時は fromName にフォールバック。
+   */
+  schoolName?: string;
+  /** 詳細を見にいくURL（LINE本文の末尾に付ける）。 */
+  url?: string;
 }
 
 /** 1チャネルの送信結果。 */
@@ -65,6 +95,9 @@ export interface NotifyChannel {
 
 /** 宛先メール解決関数の型。 */
 export type EmailResolver = (event: NotifyEvent) => Promise<string[]>;
+
+/** 宛先LINEユーザーID解決関数の型。 */
+export type LineResolver = (event: NotifyEvent) => Promise<string[]>;
 
 /**
  * 既定の宛先メール解決:
@@ -140,6 +173,57 @@ async function isDummyStudent(studentId: string): Promise<boolean> {
   }
 }
 
+/**
+ * 既定の宛先LINE解決:
+ *   studentId に紐づくポータルアカウントのうち、LINE連携済みのユーザーIDを集める。
+ *
+ * ★ メールと同じダミーデータガードを必ず通す:
+ *   デモ体験（研修用テスト生徒・デモ教室）の操作で実在の保護者にLINEが飛ぶ事故は
+ *   メール以上に取り返しがつかない（既読が付き、削除もできない）。
+ *   呼び出し側に「デモなら送るな」を書かせると必ず書き忘れるので、
+ *   宛先解決が必ず通るこの1箇所で塞ぐ。
+ */
+export const defaultLineResolver: LineResolver = async (event) => {
+  // スタッフ宛の通知を保護者のLINEに流さない（既定は staff＝送らない）。
+  if (event.audience !== 'guardian') return [];
+  if (!event.studentId) return [];
+
+  if (await isDummyStudent(event.studentId)) {
+    console.info(
+      '[mypage/notify] ダミーデータ（テスト生徒/デモ教室）のためLINE送信をスキップ:',
+      event.studentId
+    );
+    return [];
+  }
+
+  try {
+    const supabase = getPortalServiceClient();
+    const { data, error } = await supabase
+      .from('portal_account_students')
+      .select('portal_accounts(line_user_id, line_followed)')
+      .eq('student_id', event.studentId);
+
+    if (error) {
+      console.warn('[mypage/notify] LINE宛先の解決に失敗（LINEはスキップ）:', error.message);
+      return [];
+    }
+
+    const rows = (data ?? []) as unknown as {
+      portal_accounts: { line_user_id: string | null; line_followed?: boolean | null } | null;
+    }[];
+    const ids = rows
+      // ブロック/友だち解除された相手には届かないので宛先から外す（webhook P3-C9 が更新）。
+      // カラム未取得（undefined）は「不明」として送る側に倒す＝従来どおりの挙動。
+      .filter((r) => r.portal_accounts?.line_followed !== false)
+      .map((r) => r.portal_accounts?.line_user_id)
+      .filter((id): id is string => !!id);
+    return Array.from(new Set(ids));
+  } catch (e) {
+    console.warn('[mypage/notify] LINE宛先の解決に失敗（LINEはスキップ）:', e);
+    return [];
+  }
+};
+
 /** in-app チャネル: メッセージは既に永続化済みなので副作用なし（記録のみ）。 */
 export const inAppChannel: NotifyChannel = {
   name: 'in-app',
@@ -189,6 +273,40 @@ export const emailChannel: NotifyChannel = {
 };
 
 /**
+ * line チャネル: Messaging API のプッシュ。
+ *
+ * 送信の可否（dry-run か実送信か）は linePush 側の LINE_PUSH_ENABLED が決める。
+ * ここでは「宛先が無ければ何もしない」と「結果を必ず通数ログに残す」だけを担う。
+ * ログは status に関わらず残す（dry-run の記録が、本番投入前の配線確認の証跡になる）。
+ */
+export const lineChannel: NotifyChannel = {
+  name: 'line',
+  async send(event, recipients) {
+    // 宛先区分の二重確認（リゾルバを差し替えられても誤配信しないための多層防御）。
+    if (event.audience !== 'guardian' || recipients.length === 0) {
+      return { channel: 'line', delivered: 0, skipped: true };
+    }
+
+    const text = buildPushText({
+      title: event.title,
+      body: event.body,
+      schoolName: event.schoolName ?? event.fromName,
+      url: event.url,
+    });
+
+    const result = await sendLinePush(recipients, text);
+    await logLineMessage({ kind: event.kind, studentId: event.studentId, result });
+
+    return {
+      channel: 'line',
+      delivered: result.status === 'sent' ? result.recipientCount : 0,
+      skipped: result.status !== 'sent',
+      error: result.status === 'error' ? result.detail : undefined,
+    };
+  },
+};
+
+/**
  * 通知をディスパッチする。全チャネルへファンアウトし、結果を集約して返す。
  * 失敗は握りつぶさず結果に載せるが、throw はしない（通知は非致命）。
  *
@@ -197,19 +315,32 @@ export const emailChannel: NotifyChannel = {
  */
 export async function dispatchNotification(
   event: NotifyEvent,
-  opts?: { channels?: NotifyChannel[]; emailResolver?: EmailResolver }
+  opts?: {
+    channels?: NotifyChannel[];
+    emailResolver?: EmailResolver;
+    lineResolver?: LineResolver;
+  }
 ): Promise<ChannelResult[]> {
-  const channels = opts?.channels ?? [inAppChannel, emailChannel];
-  const resolver = opts?.emailResolver ?? defaultEmailResolver;
+  const channels = opts?.channels ?? [inAppChannel, emailChannel, lineChannel];
+  const emailResolver = opts?.emailResolver ?? defaultEmailResolver;
+  const lineResolver = opts?.lineResolver ?? defaultLineResolver;
 
-  // メール宛先は email 系チャネルがあるときだけ解決する（無駄なDBアクセスを避ける）。
+  // 宛先は該当チャネルがあるときだけ解決する（無駄なDBアクセスを避ける）。
   const needsEmail = channels.some((c) => c.name === 'email');
-  const recipientEmails = needsEmail ? await resolver(event) : [];
+  const needsLine = channels.some((c) => c.name === 'line');
+  const [recipientEmails, recipientLineIds] = await Promise.all([
+    needsEmail ? emailResolver(event) : Promise.resolve<string[]>([]),
+    needsLine ? lineResolver(event) : Promise.resolve<string[]>([]),
+  ]);
 
   const results: ChannelResult[] = [];
   for (const ch of channels) {
+    // 宛先の型がチャネルごとに違う（email=メールアドレス / line=LINEユーザーID）ので、
+    // チャネル名で渡し分ける。該当しないチャネル（in-app 等）には空配列を渡す。
+    const recipients =
+      ch.name === 'email' ? recipientEmails : ch.name === 'line' ? recipientLineIds : [];
     try {
-      results.push(await ch.send(event, recipientEmails));
+      results.push(await ch.send(event, recipients));
     } catch (e) {
       results.push({ channel: ch.name, delivered: 0, skipped: true, error: String(e) });
     }

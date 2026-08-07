@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, Input } from '@/components/ui';
 import { UserPlus, Link2 } from 'lucide-react';
+import { LineLoginButton } from './LineLoginButton';
 
 interface InviteAcceptProps {
   token: string;
@@ -12,25 +13,46 @@ interface InviteAcceptProps {
   studentName: string;
   /** 既に有効なポータルセッションがあるか（あれば紐づけ確認モード）。 */
   hasSession: boolean;
+  /** LINEログインが設定済みか（未設定環境ではボタンを出さない）。 */
+  lineEnabled?: boolean;
 }
 
+/**
+ * 続柄の選択肢。父・母の区別は運用で使わないため2択に整理した（2026-08-05）。
+ * その他は誰なのかが分からない紐づけを作らないよう、自由入力を必須にする。
+ */
 const RELATION_OPTIONS = [
-  { value: 'father', label: '父' },
-  { value: 'mother', label: '母' },
+  { value: 'guardian', label: '保護者' },
   { value: 'other', label: 'その他' },
 ];
+
+/** その他の自由入力の最大長（APIの RELATION_NOTE_MAX と揃える）。 */
+const RELATION_NOTE_MAX = 20;
 
 /**
  * 招待受諾フォーム。2モード:
  *  - hasSession: 現アカウントに「この生徒を紐づける」確認ボタンのみ。
- *  - 未ログイン: アカウント作成フォーム（保護者招待なら続柄選択つき）。
+ *  - 未ログイン: LINEではじめる／IDとパスワードで登録、の2択。
+ *
+ * ★ LINE経路が「登録」ではなく「ログイン」に見えるのは意図的:
+ *   LINEを押すと /api/mypage/line/start へ飛び、コールバックでアカウントが作られた
+ *   （または既存アカウントでログインした）状態でこのページに戻ってくる。
+ *   戻ったときは hasSession=true になるので、そこで続柄を選んで紐づけを完了する。
+ *   続柄をLINE往復の前に選ばせても保持できないため、往復後に聞く作りにしている。
  */
-export function InviteAccept({ token, inviteType, studentName, hasSession }: InviteAcceptProps) {
+export function InviteAccept({
+  token,
+  inviteType,
+  studentName,
+  hasSession,
+  lineEnabled = false,
+}: InviteAcceptProps) {
   const router = useRouter();
   const [displayName, setDisplayName] = useState('');
   const [loginId, setLoginId] = useState('');
   const [password, setPassword] = useState('');
-  const [relation, setRelation] = useState('father');
+  const [relation, setRelation] = useState('guardian');
+  const [relationNote, setRelationNote] = useState('');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
@@ -46,7 +68,11 @@ export function InviteAccept({ token, inviteType, studentName, hasSession }: Inv
         body.login_id = loginId;
         body.password = password;
       }
-      if (isGuardian) body.relation = relation;
+      if (isGuardian) {
+        body.relation = relation;
+        // 「その他」のときだけ自由入力を送る（サーバー側でも必須検証している）。
+        if (relation === 'other') body.relation_note = relationNote;
+      }
 
       const res = await fetch('/api/mypage/invite/accept', {
         method: 'POST',
@@ -78,6 +104,21 @@ export function InviteAccept({ token, inviteType, studentName, hasSession }: Inv
         {isGuardian ? 'の保護者として' : '本人として'}招待されています。
       </p>
 
+      {/* 未ログインのときだけ LINE 経路を出す。押すとLINE往復後にこのページへ戻る。 */}
+      {!hasSession && lineEnabled && (
+        <>
+          <LineLoginButton invite={token} label="LINEではじめる" />
+          <p className="mt-2 text-xs text-text-muted">
+            LINEではじめると、教室からのお知らせをLINEで受け取れます。
+          </p>
+          <div className="my-6 flex items-center gap-3">
+            <span className="h-px flex-1 bg-border" />
+            <span className="text-xs text-text-muted">または</span>
+            <span className="h-px flex-1 bg-border" />
+          </div>
+        </>
+      )}
+
       {isGuardian && (
         <div className="mb-4">
           <label className="mb-1 block text-sm font-medium text-text-heading">続柄</label>
@@ -97,6 +138,20 @@ export function InviteAccept({ token, inviteType, studentName, hasSession }: Inv
               </button>
             ))}
           </div>
+
+          {/* 「その他」を選んだときだけ、誰なのかを書いてもらう（サーバー側でも必須）。 */}
+          {relation === 'other' && (
+            <div className="mt-3">
+              <Input
+                label="続柄"
+                value={relationNote}
+                onChange={(e) => setRelationNote(e.target.value)}
+                placeholder="例: 祖母"
+                maxLength={RELATION_NOTE_MAX}
+                required
+              />
+            </div>
+          )}
         </div>
       )}
 

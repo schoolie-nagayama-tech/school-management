@@ -272,8 +272,8 @@ on conflict (id) do update
 -- 紐づけ。★ デモ生徒以外には絶対に紐づけないこと（実データへの到達経路になる）。
 insert into public.portal_account_students (account_id, student_id, relation)
 values
-  ('d0000000-0000-4000-8000-000000000031', 'd0000000-0000-4000-8000-000000000021', 'mother'),
-  ('d0000000-0000-4000-8000-000000000031', 'd0000000-0000-4000-8000-000000000022', 'mother')
+  ('d0000000-0000-4000-8000-000000000031', 'd0000000-0000-4000-8000-000000000021', 'guardian'),
+  ('d0000000-0000-4000-8000-000000000031', 'd0000000-0000-4000-8000-000000000022', 'guardian')
 on conflict (account_id, student_id) do update
   set relation = excluded.relation;
 
@@ -739,7 +739,7 @@ on conflict (id) do update
 --     (2) publish_start_at is null or <= now()   ← 予約公開前は出ない
 --     (3) publish_end_at   is null or >= now()   ← 公開終了後は出ない
 --     (4) 投稿の school_id = 紐づけ生徒の所属校
---     (5) audience: relation='mother'（≠self）なので **'保護者' が入っていること** が必須。
+--     (5) audience: relation='guardian'（≠self）なので **'保護者' が入っていること** が必須。
 --         既定の '{社内}' のままだと保護者には絶対に出ない（＝既定は安全側）。
 --     (6) target_scope='all'（教室全体）
 --   ※ audience に '生徒' も入れておくと、将来 relation='self' のデモを足しても見える。

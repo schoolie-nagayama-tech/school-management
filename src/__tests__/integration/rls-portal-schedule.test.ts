@@ -129,10 +129,10 @@ beforeAll(async () => {
     .eq('id', otherTeacherUserId);
 
   await admin.from('portal_account_students').insert([
-    { account_id: accountAId, student_id: studentAId, relation: 'mother' },
+    { account_id: accountAId, student_id: studentAId, relation: 'guardian' },
     // accountA は退塾済みのCにも紐づく（紐づけは残るが予定は見えない、を検証する）。
-    { account_id: accountAId, student_id: studentCId, relation: 'mother' },
-    { account_id: accountBId, student_id: studentBId, relation: 'father' },
+    { account_id: accountAId, student_id: studentCId, relation: 'guardian' },
+    { account_id: accountBId, student_id: studentBId, relation: 'guardian' },
   ]);
 
   const mkEntry = async (studentId: string, date: string) => {
