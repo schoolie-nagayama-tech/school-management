@@ -179,6 +179,7 @@ export async function POST(request: NextRequest) {
   await markRead({ threadId: thread.id, readerKind: 'portal', readerId: accountId }, svc);
 
   // 通知（スタッフ宛）。非致命。
+  // ★ audience を付けない＝既定の 'staff'。保護者自身の送信に対する通知なのでLINEは送らない。
   void dispatchNotification({
     kind: 'chat_new_message',
     studentId,

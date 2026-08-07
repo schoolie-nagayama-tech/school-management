@@ -143,6 +143,8 @@ export async function POST(request: NextRequest) {
   // メール通知（宛先未解決なら no-op）。非致命。
   void dispatchNotification({
     kind: 'system_message',
+    // 振替確定の連絡は保護者宛＝LINEプッシュの対象（通知マトリクス: 予定変更）。
+    audience: 'guardian',
     studentId,
     title: '振替日が決まりました',
     body: messageBody,

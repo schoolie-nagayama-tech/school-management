@@ -113,6 +113,8 @@ export async function POST(request: NextRequest) {
   const lessonLabel = formatLessonDate(r.lesson_date);
   const results = await dispatchNotification({
     kind: 'report_published',
+    // 保護者宛＝LINEプッシュの対象（通知マトリクス: 報告書公開は毎回push）。
+    audience: 'guardian',
     studentId: r.student_id,
     title: `【${schoolName}】授業報告書が公開されました`,
     body: [
