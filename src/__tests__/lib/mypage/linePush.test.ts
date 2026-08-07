@@ -6,7 +6,7 @@
  *   1) LINE_PUSH_ENABLED が立っていなければ実送信しない（既定は dry-run）
  *   2) 宛先ゼロ・トークン未設定なら何もしない
  *   3) 500人を超える宛先は分割して送る（LINE仕様の上限）
- *   4) 本文の冒頭に【教室名】が入る（1本の公式アカウントで教室を識別する唯一の手段）
+ *   4) 本文に教室名を入れない（2026-08-07 決定。個別通知の発信元は自明なため）
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
@@ -22,19 +22,17 @@ import { buildPushText, sendLinePush, isLinePushEnabled } from '@/lib/mypage/lin
 const ORIGINAL_ENV = { ...process.env };
 
 describe('linePush: buildPushText', () => {
-  it('教室名を【】で本文の冒頭に付ける', () => {
-    const text = buildPushText({
-      title: '報告書を公開しました',
-      body: '本文',
-      schoolName: '永山校',
-    });
-    expect(text.startsWith('【永山校】報告書を公開しました')).toBe(true);
+  it('タイトルで始まる（教室名は付けない）', () => {
+    // 2026-08-07 決定: 個別通知の発信元は受け取る本人の通う教室に決まっているため
+    // 名乗らない。一斉配信で他教室の内容が届く問題は宛先の絞り込みで解く。
+    const text = buildPushText({ title: '報告書を公開しました', body: '本文' });
+    expect(text.startsWith('報告書を公開しました')).toBe(true);
+    expect(text).not.toContain('【');
   });
 
-  it('教室名が無ければタイトルだけで始まる', () => {
+  it('タイトルと本文を空行で区切る', () => {
     const text = buildPushText({ title: 'お知らせ', body: '本文' });
-    expect(text.startsWith('お知らせ')).toBe(true);
-    expect(text).not.toContain('【');
+    expect(text).toBe('お知らせ\n\n本文');
   });
 
   it('URLがあれば末尾に付く', () => {

@@ -69,12 +69,6 @@ export interface NotifyEvent {
   fromName?: string;
   /** 返信先（教室メール）。 */
   replyTo?: string;
-  /**
-   * 発信元の教室名。LINEプッシュの本文冒頭【〇〇校】に使う。
-   * 公式アカウントを全教室で1本しか持たないため、どの教室からの連絡かは
-   * 本文で明示するしかない（2026-08-05 決定）。省略時は fromName にフォールバック。
-   */
-  schoolName?: string;
   /** 詳細を見にいくURL（LINE本文の末尾に付ける）。 */
   url?: string;
 }
@@ -290,7 +284,6 @@ export const lineChannel: NotifyChannel = {
     const text = buildPushText({
       title: event.title,
       body: event.body,
-      schoolName: event.schoolName ?? event.fromName,
       url: event.url,
     });
 
