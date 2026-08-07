@@ -200,7 +200,7 @@ export const defaultLineResolver: LineResolver = async (event) => {
     const supabase = getPortalServiceClient();
     const { data, error } = await supabase
       .from('portal_account_students')
-      .select('portal_accounts(line_user_id)')
+      .select('portal_accounts(line_user_id, line_followed)')
       .eq('student_id', event.studentId);
 
     if (error) {
@@ -209,9 +209,14 @@ export const defaultLineResolver: LineResolver = async (event) => {
     }
 
     const rows = (data ?? []) as unknown as {
-      portal_accounts: { line_user_id: string | null } | null;
+      portal_accounts: { line_user_id: string | null; line_followed?: boolean | null } | null;
     }[];
-    const ids = rows.map((r) => r.portal_accounts?.line_user_id).filter((id): id is string => !!id);
+    const ids = rows
+      // ブロック/友だち解除された相手には届かないので宛先から外す（webhook P3-C9 が更新）。
+      // カラム未取得（undefined）は「不明」として送る側に倒す＝従来どおりの挙動。
+      .filter((r) => r.portal_accounts?.line_followed !== false)
+      .map((r) => r.portal_accounts?.line_user_id)
+      .filter((id): id is string => !!id);
     return Array.from(new Set(ids));
   } catch (e) {
     console.warn('[mypage/notify] LINE宛先の解決に失敗（LINEはスキップ）:', e);

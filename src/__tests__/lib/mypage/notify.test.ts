@@ -13,7 +13,9 @@ const state = vi.hoisted(() => ({
   student: null as { is_test?: boolean; schools?: { is_demo?: boolean } | null } | null,
   studentError: null as { message: string } | null,
   formResponses: [] as { email: string | null; created_at: string }[],
-  linkedAccounts: [] as { portal_accounts: { line_user_id: string | null } | null }[],
+  linkedAccounts: [] as {
+    portal_accounts: { line_user_id: string | null; line_followed?: boolean } | null;
+  }[],
 }));
 
 vi.mock('@/lib/mypage/serviceClient', () => ({
@@ -242,6 +244,20 @@ describe('notify: defaultLineResolver のダミーデータガード', () => {
       { portal_accounts: { line_user_id: 'U-c' } },
     ];
     expect(await defaultLineResolver(event)).toEqual(['U-c']);
+  });
+
+  it('友だち解除・ブロックされた相手は宛先から外す（webhookが false にする）', async () => {
+    state.linkedAccounts = [
+      { portal_accounts: { line_user_id: 'U-blocked', line_followed: false } },
+      { portal_accounts: { line_user_id: 'U-active', line_followed: true } },
+    ];
+    expect(await defaultLineResolver(event)).toEqual(['U-active']);
+  });
+
+  it('友だち状態が不明（カラム未取得）なら送る側に倒す', async () => {
+    // 既存データ・古いクエリとの互換。届かなければLINE側で失敗するだけで害は小さい。
+    state.linkedAccounts = [{ portal_accounts: { line_user_id: 'U-unknown' } }];
+    expect(await defaultLineResolver(event)).toEqual(['U-unknown']);
   });
 
   it('studentId が無ければ宛先を返さない', async () => {
