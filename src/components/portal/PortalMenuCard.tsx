@@ -9,6 +9,8 @@ interface PortalMenuCardProps {
   schoolCode: string;
   isFormActive?: boolean;
   isVisible?: boolean;
+  /** 受付を始めたばかり（New バッジ表示。リスト側で先頭に浮上済み） */
+  isNew?: boolean;
 }
 
 // アクティブカード（白背景+左線アクセント）
@@ -37,6 +39,30 @@ function DisabledCard({ children }: { children: React.ReactNode }) {
   );
 }
 
+// タイトル（受付を始めたばかりのメニューには NEW バッジを付ける）。
+// カードは公開/非公開・内部フォーム/外部リンクで分岐してマークアップが違うため、
+// タイトル部分だけ共通化して付け忘れを防ぐ。
+function MenuTitle({
+  title,
+  isNew,
+  className = '',
+}: {
+  title: string;
+  isNew: boolean;
+  className?: string;
+}) {
+  return (
+    <div className={`flex items-center gap-2 ${className}`}>
+      <h2 className="text-[15px] font-bold text-[#1a1a1a] truncate">{title}</h2>
+      {isNew && (
+        <span className="inline-flex flex-shrink-0 px-1.5 py-0.5 text-[10px] font-bold leading-none rounded bg-[#ef4444] text-white tracking-wide">
+          NEW
+        </span>
+      )}
+    </div>
+  );
+}
+
 // ステータスバッジ
 function StatusBadge({ active }: { active: boolean }) {
   if (active) {
@@ -59,6 +85,7 @@ export function PortalMenuCard({
   schoolCode,
   isFormActive = false,
   isVisible = true,
+  isNew = false,
 }: PortalMenuCardProps) {
   const isMendan = menu.menu_key === 'mendan';
   const showAsDisabled = isVisible !== true;
@@ -67,9 +94,7 @@ export function PortalMenuCard({
   const cardContent = (
     <div className="flex items-center gap-3 p-4">
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 mb-0.5">
-          <h2 className="text-[15px] font-bold text-[#1a1a1a] truncate">{menu.title}</h2>
-        </div>
+        <MenuTitle title={menu.title} isNew={isNew} className="mb-0.5" />
         {menu.description && (
           <p className="text-[13px] text-[#6b7280] truncate">{menu.description}</p>
         )}
@@ -124,7 +149,7 @@ export function PortalMenuCard({
           className="flex items-center gap-3 p-4"
         >
           <div className="flex-1 min-w-0">
-            <h2 className="text-[15px] font-bold text-[#1a1a1a] truncate">{menu.title}</h2>
+            <MenuTitle title={menu.title} isNew={isNew} />
             {menu.description && (
               <p className="text-[13px] text-[#6b7280] truncate">{menu.description}</p>
             )}
@@ -155,7 +180,7 @@ export function PortalMenuCard({
       <ActiveCard>
         <Link href={formUrl} className="flex items-center gap-3 p-4">
           <div className="flex-1 min-w-0">
-            <h2 className="text-[15px] font-bold text-[#1a1a1a] truncate">{menu.title}</h2>
+            <MenuTitle title={menu.title} isNew={isNew} />
             {menu.description && (
               <p className="text-[13px] text-[#6b7280] truncate">{menu.description}</p>
             )}
