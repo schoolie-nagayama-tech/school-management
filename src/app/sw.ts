@@ -11,7 +11,11 @@ declare const self: WorkerGlobalScope;
 
 const serwist = new Serwist({
   precacheEntries: self.__SW_MANIFEST,
-  skipWaiting: true,
+  // skipWaiting は false。true だと新しいSWが勝手に主導権を奪い、開いたままのページが
+  // 「古いJS + 新しいSW」という食い違った状態で動き続ける（チャンク読み込みエラーの温床）。
+  // 代わりに新版は waiting で待たせ、ServiceWorkerUpdateBar がユーザーに知らせて、
+  // 「更新」を押したときだけ messageSkipWaiting → reload する。
+  skipWaiting: false,
   clientsClaim: true,
   navigationPreload: true,
   runtimeCaching: [
