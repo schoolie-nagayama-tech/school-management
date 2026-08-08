@@ -717,6 +717,39 @@ export async function loadRealAllocatorInput(opts: RealDataOptions): Promise<Rea
     (id) => !studentAvailability.get(id)?.size
   ).length;
 
+  // ---- 10-c. 過去6か月の担当講師（講師選択の pastHistory 加点用） ----
+  // 従来の koushu-match.ts が持っていた入力。落とすと「いつも見てもらっている先生」の
+  // 加点が消えて講師選択の質が下がるので、アダプタ側で組み立てる。
+  // 非致命的：失敗しても加点が無いだけなので空扱いで続行する。
+  const pastTeacherByStudent = new Map<string, Set<string>>();
+  if (applicantStudentIds.length > 0) {
+    try {
+      const sixMonthsAgo = new Date(period.schedule_start_date + 'T12:00:00');
+      sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+      const pastFrom = `${sixMonthsAgo.getFullYear()}-${String(sixMonthsAgo.getMonth() + 1).padStart(2, '0')}-${String(sixMonthsAgo.getDate()).padStart(2, '0')}`;
+      const pastRows = await fetchAllInChunks<{ student_id: string; teacher_id: string }>(
+        applicantStudentIds,
+        (chunk, from, to) =>
+          db
+            .from('schedule_entries')
+            .select('student_id, teacher_id')
+            .eq('school_id', schoolId)
+            .in('student_id', chunk)
+            .gte('entry_date', pastFrom)
+            .not('teacher_id', 'is', null)
+            .order('id', { ascending: true })
+            .range(from, to)
+      );
+      for (const row of pastRows) {
+        const set = pastTeacherByStudent.get(row.student_id) ?? new Set<string>();
+        set.add(row.teacher_id);
+        pastTeacherByStudent.set(row.student_id, set);
+      }
+    } catch (err) {
+      console.error('loadRealAllocatorInput: 過去担当の取得に失敗（加点なしで続行）', err);
+    }
+  }
+
   // ---- 11. 既存配置（公開済み講習・期間内・個別） ----
   let existing: ExistingPlacement[] = [];
   try {
@@ -831,6 +864,7 @@ export async function loadRealAllocatorInput(opts: RealDataOptions): Promise<Rea
     capacity,
     existing,
     settings,
+    pastTeacherByStudent,
   };
 
   const notes: RealDataNotes = {

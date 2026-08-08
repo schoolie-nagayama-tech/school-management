@@ -1,402 +1,256 @@
 /**
- * 講習（個別）自動マッチング — 提案生成
+ * 講習（個別）自動配置 — 下書き提案の生成（本番配線）
  *
- * 役割：講習期間の「生徒別の個別残コマ」を、出勤可能講師・席数・1日上限を考慮して
- *       期間内の (日付 × 個別コマ) に貪欲配置し、schedule_match_proposals に下書きとして保存する。
- *       本格的な自動マッチングは個別のみ（集団は手動編成）。
+ * 正典仕様: docs/koushu-auto-allocation-spec.md 第1部 §5（アルゴリズム）・§11（実行パネル）。
  *
- * 重要：schedule_match_proposals.teacher_id は NOT NULL。
- *       → 候補講師がいないコマは提案を作らず unmatched として報告する（担当未決定の提案は作れない）。
+ * 役割: 講習期間の申込を、生徒の通塾可能表・講師の講習シフト・席数・実行時設定に従って
+ *       期間内の (日付 × 個別コマ) に配置し、schedule_match_proposals に下書きとして保存する。
+ *       対象は個別のみ（小集団・特別講座は固定開催なので手動配置。決定2・41）。
  *
- * スコア／配置の重みはすべて暫定値。MATCH_CONFIG に集約し、実運用しながら調整する想定。
+ * 構成（責務を分けてある）:
+ *   1. realDataAdapter  — DBを読んで AllocatorInput を組み立てる（読み取り専用）
+ *   2. allocateKoushu   — 純粋関数の配置ロジック（DB非依存・テスト可能）
+ *   3. このファイル      — 1と2をつなぎ、結果を下書き提案として保存する
+ *
+ * ★ 旧 generateKoushuIndividualProposals は削除した（Q5）。
+ *   あれは生徒の通塾可能表を見ておらず（settingId が未配線）、席数も単純な人数比較で
+ *   1対1の排他・45分の半コマを数えられていなかった。同じ画面から呼べる状態で
+ *   残しておくと「通えない日に置く」古い経路が生き続けるため、フォールバックは用意しない。
+ *   講師選択の加点（固定50/過去30/科目20/性別10/出勤5）は allocate.ts の ALLOC_WEIGHTS へ移した。
  */
 
-import { supabase } from '@/lib/supabase';
-import { getActiveTimeSlots } from '@/lib/api/schedule';
-import { getAvailabilityDayMap } from '@/lib/api/teacher-availability';
-import { getKoushuPlacementProgressByPeriod, type KoushuPeriodInfo } from '@/lib/api/koushu-period';
-import { getClassCapacity, DEFAULT_CLASS_CAPACITY } from '@/lib/api/school-class-capacity';
-import { createMatchBatch } from '@/lib/api/schedule-match';
+import type { KoushuPeriodInfo } from '@/lib/api/koushu-period';
+import { createMatchBatch, dismissKoushuDraftsInPeriod } from '@/lib/api/schedule-match';
 import type { MatchBatchMode } from '@/types/schedule-match';
-// Phase A: 自動マッチングは個別のみ対象（現状維持）。'individual' 直値を定数参照に置換。
+import { allocateKoushu } from '@/lib/koushu-allocator/allocate';
+import { loadRealAllocatorInput, type RealDataNotes } from '@/lib/koushu-allocator/realDataAdapter';
+import {
+  UNASSIGNED_REASON_LABELS,
+  type AllocatorSettings,
+  type UnassignedReason,
+} from '@/lib/koushu-allocator/types';
+// 講習の自動配置は個別レーンのみ対象（ユーザー定義形態は対象外）
 import { INDIVIDUAL_FORMATION } from '@/types/schedule';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const db = supabase as any;
+// ============================================================
+// 本番配線（Q5・§11）— アロケータを下書き生成に接続する
+// ============================================================
 
 /**
- * マッチングの調整パラメータ。※すべて暫定値。実運用しながら調整する。
- * weights は pattern-matching.ts（通塾日程マッチング）と揃えている。
+ * 再実行モード（§5-5）。
+ *  - 'discard': この期間の既存下書きを破棄してから組み直す。公開済み・手動配置には触れない
+ *  - 'diff':   既存下書きも占有として尊重し、埋まっていないコマだけ足す
  */
-export const MATCH_CONFIG = {
-  weights: {
-    fixedTeacher: 50, // 担当固定リストに含まれる
-    pastHistory: 30, // 過去6か月にこの生徒を担当
-    subjectMatch: 20, // 指導科目が生徒の科目と一致
-    genderPref: 10, // 性別希望に合致
-    available: 5, // 出勤可能（ベースライン）
-  },
-  maxKomaPerStudentPerDay: 2, // 1生徒1日あたりの講習コマ上限
-} as const;
+export type KoushuRerunMode = 'discard' | 'diff';
 
-export interface KoushuMatchInput {
+export interface RunKoushuAllocationInput {
   schoolId: string;
   period: KoushuPeriodInfo;
   executedBy: string;
-  mode?: MatchBatchMode;
-  /** 生徒の通塾可能日（seasonal_shift_settings.id）。指定時のみ生徒側の可否でフィルタ（現状は未配線） */
-  settingId?: string | null;
-  /** 休講日（YYYY-MM-DD）。これらの日付は配置対象から除外 */
-  closedDates?: string[];
-  options?: {
-    maxKomaPerStudentPerDay?: number;
-  };
+  settings: AllocatorSettings;
+  /** 対象学年（決定21）。空/未指定＝全学年 */
+  gradeFilter?: number[] | null;
+  /** 学年別の講習終了日（決定44）。course_prep_periods.schedule_end_by_grade をそのまま渡す */
+  scheduleEndByGrade?: Record<string, string> | null;
+  rerunMode: KoushuRerunMode;
 }
 
-export interface KoushuMatchResult {
+/** 未割当を理由別にまとめたもの（画面表示用） */
+export interface UnassignedGroup {
+  reason: UnassignedReason;
+  label: string;
+  koma: number;
+  students: Array<{ studentId: string; studentName: string; koma: number }>;
+}
+
+export interface RunKoushuAllocationResult {
   batchId: string | null;
   proposalsCreated: number;
-  unmatched: Array<{
-    student_id: string;
-    student_name?: string;
-    remaining: number;
-    reason: string;
-  }>;
-}
-
-interface TeacherProfile {
-  id: string;
-  display_name: string | null;
-  email: string | null;
-  gender: 'male' | 'female' | 'other' | null;
-  teachable_subject_ids: string[] | null;
-}
-
-interface ScoredTeacher {
-  teacherId: string;
-  score: number;
-  reasons: string[];
-  conflicts: string[];
-  subjectOut: boolean;
-}
-
-/** 期間内の日付一覧（YYYY-MM-DD）。休講日は除外。 */
-// テスト対象（配置の元になる営業日展開）のため export
-export function enumeratePeriodDates(start: string, end: string, closed: Set<string>): string[] {
-  const dates: string[] = [];
-  const cur = new Date(start + 'T12:00:00');
-  const last = new Date(end + 'T12:00:00');
-  while (cur <= last) {
-    const ds = cur.toLocaleDateString('en-CA', { timeZone: 'Asia/Tokyo' });
-    if (!closed.has(ds)) dates.push(ds);
-    cur.setDate(cur.getDate() + 1);
-  }
-  return dates;
-}
-
-/** YYYY-MM-DD の曜日（0=日〜6=土）。JST 正午基準でズレを防ぐ。 */
-function dowOf(dateStr: string): number {
-  return new Date(dateStr + 'T12:00:00').getDay();
+  /** 破棄モードで不採用にした既存下書きの件数 */
+  dismissedDrafts: number;
+  requestedKoma: number;
+  assignedKoma: number;
+  repairedKoma: number;
+  /** 科目が期間全体に散っているか（0〜1。1に近いほど均等） */
+  evenness: number;
+  unassignedGroups: UnassignedGroup[];
+  /** 実データの取得元・欠損の情報（画面に注意書きを出すため） */
+  notes: RealDataNotes;
 }
 
 /**
- * 1生徒に対する1講師のスコアを算出（pattern-matching.ts 準拠）。
- * ハード除外（指名NG / 性別希望不一致）の場合は null。
- * 指導科目外は subjectOut=true で返し（除外はしない）、呼び出し側が科目一致を優先する。
+ * 講習（個別）の自動配置を実行し、下書き提案として保存する。
+ *
+ * 旧 generateKoushuIndividualProposals との違い（§11・仕様書第1部 §5）:
+ *  - 生徒の可能表を**正典として使う**（旧実装は未配線で、通える日を無視して置いていた）
+ *  - 講師の出勤は講習シフト提出が正典（旧実装は通年の曜日別出勤可能）
+ *  - 席の判定は seatOccupancy.ts に一本化（1対1の排他・45分の前半/後半を正しく数える）
+ *  - ratio / duration_minutes / half_position を提案に載せる
+ *  - 未割当を5分類の理由付きで返す
+ *  - 実行時設定（1日上限・連続優先・同日同科目・均等分散）と学年絞り込みを受ける
+ *
+ * ★ 破棄/差分のどちらでも公開済みエントリと手動配置には触れない。
  */
-// テスト対象（指名NG/性別のハード除外・加重和スコア）のため export
-export function scoreTeacher(opts: {
-  teacher: TeacherProfile;
-  fixedSet: Set<string>;
-  excludedSet: Set<string>;
-  preferredGender: 'male' | 'female' | null;
-  pastSet: Set<string>;
-  subjectIds: string[];
-}): ScoredTeacher | null {
-  const { teacher, fixedSet, excludedSet, preferredGender, pastSet, subjectIds } = opts;
-  if (excludedSet.has(teacher.id)) return null; // 指名NG
-  if (preferredGender && teacher.gender && teacher.gender !== preferredGender) return null;
+export async function runKoushuAllocation(
+  input: RunKoushuAllocationInput
+): Promise<RunKoushuAllocationResult> {
+  const { schoolId, period, executedBy, settings, rerunMode } = input;
 
-  const w = MATCH_CONFIG.weights;
-  let score = 0;
-  const reasons: string[] = [];
-  const conflicts: string[] = [];
-
-  if (fixedSet.has(teacher.id)) {
-    score += w.fixedTeacher;
-    reasons.push('担当固定');
-  }
-  if (pastSet.has(teacher.id)) {
-    score += w.pastHistory;
-    reasons.push('過去担当');
-  }
-
-  const teachable = new Set(teacher.teachable_subject_ids ?? []);
-  const subjectKnown = teachable.size > 0 && subjectIds.length > 0;
-  const subjectOut = subjectKnown && !subjectIds.some((sid) => teachable.has(sid));
-  if (subjectKnown && !subjectOut) {
-    score += w.subjectMatch;
-    reasons.push('教科対応');
-  }
-  if (subjectOut) conflicts.push('教科外');
-
-  if (preferredGender && teacher.gender === preferredGender) {
-    score += w.genderPref;
-    reasons.push('希望性別一致');
-  }
-
-  score += w.available;
-  reasons.push('出勤可能');
-
-  return { teacherId: teacher.id, score, reasons, conflicts, subjectOut };
-}
-
-/**
- * 講習（個別）の提案を生成して下書きバッチに保存する。
- * 戻り値に作成件数と未マッチ（残コマ）を返す。
- */
-export async function generateKoushuIndividualProposals(
-  input: KoushuMatchInput
-): Promise<KoushuMatchResult> {
-  const { schoolId, period, executedBy } = input;
-  const maxPerDay = input.options?.maxKomaPerStudentPerDay ?? MATCH_CONFIG.maxKomaPerStudentPerDay;
-  const closed = new Set(input.closedDates ?? []);
-
-  // --- 入力収集 ---
-  // 過去日付には配置しない（配置時の過去日付ガードと整合）。期間開始が過去でも今日以降のみ。
-  const todayJst = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Tokyo' });
-  const effectiveStart =
-    period.schedule_start_date > todayJst ? period.schedule_start_date : todayJst;
-  const dates = enumeratePeriodDates(effectiveStart, period.schedule_end_date, closed);
-  const slots = (await getActiveTimeSlots(schoolId, INDIVIDUAL_FORMATION)).sort(
-    (a, b) => a.slot_number - b.slot_number
-  );
-  const dayMap = await getAvailabilityDayMap(schoolId, period.schedule_start_date);
-  const capacity = (await getClassCapacity(schoolId)) ?? DEFAULT_CLASS_CAPACITY;
-  const maxPerTeacher = capacity.max_students_per_teacher_individual;
-  const totalSeats = capacity.total_individual_seats;
-
-  // 生徒×科目別の個別残コマ（placed=既存の published を尊重）。1タスク=（生徒,科目）の残コマ。
-  const progress = await getKoushuPlacementProgressByPeriod(period, INDIVIDUAL_FORMATION);
-  const tasks: Array<{
-    student_id: string;
-    subjectId: string;
-    remaining: number;
-    student?: { id: string; last_name: string; first_name: string; grade: number };
-  }> = [];
-  for (const [student_id, v] of Array.from(progress.entries())) {
-    for (const [subjectId, b] of Object.entries(v.bySubject)) {
-      const rem = b.enrolled - b.placed;
-      if (rem > 0) tasks.push({ student_id, subjectId, remaining: rem, student: v.student });
-    }
-  }
-  // 残コマの多い（生徒,科目）から処理
-  tasks.sort((a, b) => b.remaining - a.remaining);
-
-  if (tasks.length === 0 || slots.length === 0 || dates.length === 0) {
-    return { batchId: null, proposalsCreated: 0, unmatched: [] };
-  }
-
-  const studentIds = Array.from(new Set(tasks.map((t) => t.student_id)));
-
-  // 生徒の希望ルール（指名固定/NG/性別）を一括取得
-  const { data: studentRows } = await db
-    .from('students')
-    .select('id, preferred_teacher_gender, fixed_teacher_ids, excluded_teacher_ids')
-    .in('id', studentIds);
-  const rulesByStudent = new Map<
-    string,
-    { fixed: Set<string>; excluded: Set<string>; gender: 'male' | 'female' | null }
-  >();
-  for (const r of (studentRows ?? []) as Array<{
-    id: string;
-    preferred_teacher_gender: 'male' | 'female' | null;
-    fixed_teacher_ids: string[] | null;
-    excluded_teacher_ids: string[] | null;
-  }>) {
-    rulesByStudent.set(r.id, {
-      fixed: new Set(r.fixed_teacher_ids ?? []),
-      excluded: new Set(r.excluded_teacher_ids ?? []),
-      gender: r.preferred_teacher_gender ?? null,
+  // 1. 破棄モードなら先に既存下書きを不採用にする。
+  //    ここで先に消しておかないと、下書きが occupancy に残っていない前提で組み直した提案と
+  //    古い下書きが座席表に二重で★表示される。
+  let dismissedDrafts = 0;
+  if (rerunMode === 'discard') {
+    dismissedDrafts = await dismissKoushuDraftsInPeriod({
+      schoolId,
+      formation: INDIVIDUAL_FORMATION,
+      startDate: period.schedule_start_date,
+      endDate: period.schedule_end_date,
     });
   }
 
-  // 過去6か月の担当講師（生徒別）
-  const sixMonthsAgo = new Date();
-  sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-  const pastFrom = sixMonthsAgo.toISOString().slice(0, 10);
-  const { data: pastEntries } = await db
-    .from('schedule_entries')
-    .select('student_id, teacher_id')
-    .in('student_id', studentIds)
-    .gte('entry_date', pastFrom)
-    .not('teacher_id', 'is', null);
-  const pastByStudent = new Map<string, Set<string>>();
-  for (const e of (pastEntries ?? []) as Array<{ student_id: string; teacher_id: string }>) {
-    if (!pastByStudent.has(e.student_id)) pastByStudent.set(e.student_id, new Set());
-    pastByStudent.get(e.student_id)!.add(e.teacher_id);
-  }
+  // 2. 実データを読んでアロケータ入力を組み立てる（読み取り専用）
+  const { input: allocInput, notes } = await loadRealAllocatorInput({
+    schoolId,
+    period: {
+      schedule_start_date: period.schedule_start_date,
+      schedule_end_date: period.schedule_end_date,
+      season: period.season,
+      year: period.year,
+    },
+    settings,
+    gradeFilter: input.gradeFilter ?? null,
+    scheduleEndByGrade: input.scheduleEndByGrade ?? null,
+    // 差分モードのときだけ既存下書きを占有として積む（破棄モードは上で消した）
+    includeDrafts: rerunMode === 'diff',
+  });
 
-  // 出勤可能講師の profile を一括取得
-  const allTeacherIds = Array.from(new Set(Array.from(dayMap.byDayOfWeek.values()).flat()));
-  const profileById = new Map<string, TeacherProfile>();
-  if (allTeacherIds.length > 0) {
-    const { data: profiles } = await db
-      .from('user_profiles')
-      .select('id, display_name, email, gender, teachable_subject_ids')
-      .in('id', allTeacherIds)
-      .eq('is_active', true);
-    for (const p of (profiles ?? []) as TeacherProfile[]) profileById.set(p.id, p);
-  }
+  // 3. 配置
+  const result = allocateKoushu(allocInput);
 
-  // 既存の個別講習エントリで占有状況を初期化（席数 / 講師あたり / 生徒の使用済みコマ）
-  const seatsUsed = new Map<string, number>(); // `${date}|${slotId}` -> 人数
-  const teacherOccupancy = new Map<string, number>(); // `${date}|${slotId}|${teacherId}` -> 人数
-  const studentSlotsUsed = new Map<string, Set<string>>(); // studentId -> Set(`${date}|${slotId}`)
-  const studentKomaPerDay = new Map<string, number>(); // `${studentId}|${date}` -> 数
-  const { data: existing } = await db
-    .from('schedule_entries')
-    .select('student_id, teacher_id, entry_date, time_slot_id')
-    .eq('school_id', schoolId)
-    .eq('kind', 'koushu')
-    // 講習の自動マッチングは個別のみ対象（集団はマッチング対象外）
-    .eq('formation', INDIVIDUAL_FORMATION)
-    .gte('entry_date', period.schedule_start_date)
-    .lte('entry_date', period.schedule_end_date)
-    .in('status', ['scheduled', 'completed', 'transferred_in']);
-  for (const e of (existing ?? []) as Array<{
-    student_id: string;
-    teacher_id: string | null;
-    entry_date: string;
-    time_slot_id: string;
-  }>) {
-    const cell = `${e.entry_date}|${e.time_slot_id}`;
-    seatsUsed.set(cell, (seatsUsed.get(cell) ?? 0) + 1);
-    if (e.teacher_id)
-      teacherOccupancy.set(
-        `${cell}|${e.teacher_id}`,
-        (teacherOccupancy.get(`${cell}|${e.teacher_id}`) ?? 0) + 1
-      );
-    if (!studentSlotsUsed.has(e.student_id)) studentSlotsUsed.set(e.student_id, new Set());
-    studentSlotsUsed.get(e.student_id)!.add(cell);
-    const k = `${e.student_id}|${e.entry_date}`;
-    studentKomaPerDay.set(k, (studentKomaPerDay.get(k) ?? 0) + 1);
-  }
+  // 4. 未割当を理由別にまとめる（室長が「何が足りないのか」を1目で見るための集計）
+  const unassignedGroups = groupUnassignedByReason(
+    result.unassigned,
+    new Map(allocInput.students.map((s) => [s.id, s.name]))
+  );
 
-  // --- 配置（貪欲・ラウンド方式で期間内に均等分散） ---
-  const proposals: Array<{
-    student_id: string;
-    teacher_id: string;
-    proposal_date: string;
-    time_slot_id: string;
-    subject_ids: string[];
-    formation: 'individual';
-    kind: 'koushu';
-    match_meta: { score: number; reasons: string[]; conflicts: string[] };
-  }> = [];
-  const unmatched: KoushuMatchResult['unmatched'] = [];
-
-  for (const task of tasks) {
-    const sid = task.student_id;
-    const rules = rulesByStudent.get(sid) ?? {
-      fixed: new Set<string>(),
-      excluded: new Set<string>(),
-      gender: null,
+  // 5. 提案が0件なら batch を作らない（空バッチで履歴を汚さない）
+  if (result.assignments.length === 0) {
+    return {
+      batchId: null,
+      proposalsCreated: 0,
+      dismissedDrafts,
+      requestedKoma: result.stats.requestedKoma,
+      assignedKoma: 0,
+      repairedKoma: 0,
+      evenness: result.stats.subjectBalance.evenness,
+      unassignedGroups,
+      notes,
     };
-    const pastSet = pastByStudent.get(sid) ?? new Set<string>();
-    const subjectIds = [task.subjectId]; // この (生徒,科目) タスクは単一科目で配置
-    let need = task.remaining;
+  }
 
-    // ラウンド方式：日付を1周しながら1日1コマずつ置く → 期間に均等分散しつつ1日上限を尊重。
-    // studentKomaPerDay / studentSlotsUsed は生徒単位なので、同生徒の他科目の配置も込みで上限を尊重する。
-    let progressed = true;
-    while (need > 0 && progressed) {
-      progressed = false;
-      for (const date of dates) {
-        if (need <= 0) break;
-        const perDayKey = `${sid}|${date}`;
-        if ((studentKomaPerDay.get(perDayKey) ?? 0) >= maxPerDay) continue;
+  // 6. 下書きとして保存。ratio/duration_minutes/half_position を必ず載せる（§9-4）。
+  const slotNumberById = new Map(allocInput.slots.map((s) => [s.id, s.slot_number]));
+  const batch = await createMatchBatch({
+    school_id: schoolId,
+    setting_id: null,
+    executed_by: executedBy,
+    // schedule_match_batches.mode は既存の3値（overwrite/diff/partial）。
+    // 破棄モードは「この期間の下書きを作り直す」なので overwrite に対応させる。
+    mode: (rerunMode === 'discard' ? 'overwrite' : 'diff') as MatchBatchMode,
+    notes: buildBatchNotes(period, input.gradeFilter ?? null, rerunMode),
+    proposals: result.assignments.map((a) => ({
+      student_id: a.studentId,
+      teacher_id: a.teacherId,
+      proposal_date: a.date,
+      time_slot_id: a.slotId,
+      subject_ids: [a.subjectId],
+      formation: INDIVIDUAL_FORMATION,
+      kind: 'koushu' as const,
+      ratio: a.ratio,
+      // 90分（全コマ）は NULL で保存する（schedule_entries と同じ規約）
+      duration_minutes: a.duration === 45 ? 45 : null,
+      half_position: a.halfPosition,
+      match_meta: {
+        score: a.score,
+        reasons: [],
+        conflicts: [],
+        slotNumber: slotNumberById.get(a.slotId) ?? null,
+      },
+    })),
+  });
 
-        const dow = dowOf(date);
-        const dowTeachers = dayMap.byDayOfWeek.get(dow) ?? [];
-        if (dowTeachers.length === 0) continue;
+  return {
+    batchId: batch.id,
+    proposalsCreated: result.assignments.length,
+    dismissedDrafts,
+    requestedKoma: result.stats.requestedKoma,
+    assignedKoma: result.stats.assignedKoma,
+    repairedKoma: result.stats.repairedKoma,
+    evenness: result.stats.subjectBalance.evenness,
+    unassignedGroups,
+    notes,
+  };
+}
 
-        for (const slot of slots) {
-          const cell = `${date}|${slot.id}`;
-          if (studentSlotsUsed.get(sid)?.has(cell) ?? false) continue; // 同生徒同コマ重複回避
-          if ((seatsUsed.get(cell) ?? 0) >= totalSeats) continue; // 教室席数
-
-          // 候補講師：この曜日に出勤可能 ∩ このコマで担当上限未満
-          const scored: ScoredTeacher[] = [];
-          for (const tid of dowTeachers) {
-            if ((teacherOccupancy.get(`${cell}|${tid}`) ?? 0) >= maxPerTeacher) continue;
-            const prof = profileById.get(tid);
-            if (!prof) continue;
-            const s = scoreTeacher({
-              teacher: prof,
-              fixedSet: rules.fixed,
-              excludedSet: rules.excluded,
-              preferredGender: rules.gender,
-              pastSet,
-              subjectIds,
-            });
-            if (s) scored.push(s);
-          }
-          if (scored.length === 0) continue;
-
-          // 科目一致を優先（subjectOut=false を上位に）。同条件ならスコア降順。
-          scored.sort((a, b) => Number(a.subjectOut) - Number(b.subjectOut) || b.score - a.score);
-          const best = scored[0];
-
-          proposals.push({
-            student_id: sid,
-            teacher_id: best.teacherId,
-            proposal_date: date,
-            time_slot_id: slot.id,
-            subject_ids: subjectIds, // 単一科目
-            formation: INDIVIDUAL_FORMATION,
-            kind: 'koushu',
-            match_meta: { score: best.score, reasons: best.reasons, conflicts: best.conflicts },
-          });
-          // 状態更新
-          seatsUsed.set(cell, (seatsUsed.get(cell) ?? 0) + 1);
-          teacherOccupancy.set(
-            `${cell}|${best.teacherId}`,
-            (teacherOccupancy.get(`${cell}|${best.teacherId}`) ?? 0) + 1
-          );
-          if (!studentSlotsUsed.has(sid)) studentSlotsUsed.set(sid, new Set());
-          studentSlotsUsed.get(sid)!.add(cell);
-          studentKomaPerDay.set(perDayKey, (studentKomaPerDay.get(perDayKey) ?? 0) + 1);
-          need -= 1;
-          progressed = true;
-          break; // この日付はこのラウンドでは1コマだけ
-        }
-      }
+/**
+ * 未割当タスクを理由別にまとめる（純関数・テスト対象）。
+ *
+ * まとめ方の意図:
+ *  - 理由（5分類）ごとにコマ数を合算し、コマ数の多い理由を先に出す＝対処の優先順になる
+ *  - 同じ生徒の複数科目は1行に合算する（画面が縦に伸びるのを防ぐ）
+ *  - 生徒名が引けないときはIDの先頭8文字で代替する（空欄にして「誰？」にしない）
+ */
+export function groupUnassignedByReason(
+  unassigned: Array<{
+    studentId: string;
+    subjectId: string;
+    koma: number;
+    reason: UnassignedReason;
+  }>,
+  studentNameById: Map<string, string>
+): UnassignedGroup[] {
+  const byReason = new Map<UnassignedReason, UnassignedGroup>();
+  for (const u of unassigned) {
+    if (u.koma <= 0) continue;
+    let g = byReason.get(u.reason);
+    if (!g) {
+      g = { reason: u.reason, label: UNASSIGNED_REASON_LABELS[u.reason], koma: 0, students: [] };
+      byReason.set(u.reason, g);
     }
-    if (need > 0) {
-      unmatched.push({
-        student_id: sid,
-        student_name: task.student
-          ? `${task.student.last_name}${task.student.first_name}`
-          : undefined,
-        remaining: need,
-        reason: '出勤可能な講師・空きコマが不足',
+    g.koma += u.koma;
+    const row = g.students.find((s) => s.studentId === u.studentId);
+    if (row) {
+      row.koma += u.koma;
+    } else {
+      g.students.push({
+        studentId: u.studentId,
+        studentName: studentNameById.get(u.studentId) ?? u.studentId.slice(0, 8),
+        koma: u.koma,
       });
     }
   }
-
-  if (proposals.length === 0) {
-    return { batchId: null, proposalsCreated: 0, unmatched };
+  const groups = Array.from(byReason.values()).sort(
+    (a, b) => b.koma - a.koma || a.reason.localeCompare(b.reason)
+  );
+  for (const g of groups) {
+    g.students.sort((a, b) => b.koma - a.koma || a.studentName.localeCompare(b.studentName, 'ja'));
   }
+  return groups;
+}
 
-  const batch = await createMatchBatch({
-    school_id: schoolId,
-    setting_id: input.settingId ?? null,
-    executed_by: executedBy,
-    mode: input.mode ?? 'partial',
-    notes: `講習個別マッチング ${period.label}`,
-    proposals,
-  });
-
-  return { batchId: batch.id, proposalsCreated: proposals.length, unmatched };
+/** バッチの notes（後から履歴を見て「何の条件で回したか」が分かるようにする） */
+function buildBatchNotes(
+  period: KoushuPeriodInfo,
+  gradeFilter: number[] | null,
+  rerunMode: KoushuRerunMode
+): string {
+  const parts = [`講習個別 自動配置 ${period.label}`];
+  parts.push(rerunMode === 'discard' ? '破棄モード' : '差分モード');
+  if (gradeFilter && gradeFilter.length > 0) {
+    parts.push(`対象学年: ${gradeFilter.join(',')}`);
+  } else {
+    parts.push('全学年');
+  }
+  return parts.join(' / ');
 }

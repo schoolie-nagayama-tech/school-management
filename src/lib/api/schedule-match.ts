@@ -220,6 +220,36 @@ export async function dismissProposal(proposalId: string): Promise<void> {
   }
 }
 
+/**
+ * 期間内の講習（個別）の下書き提案をまとめて不採用にする（再実行の「破棄モード」用・§5-5）。
+ *
+ * ★ status を 'dismissed' にするだけで、公開済み（published）と手動配置の
+ *   schedule_entries には一切触らない。物理削除もしない（何を捨てたか追えるようにする）。
+ * 戻り値は破棄した件数。
+ */
+export async function dismissKoushuDraftsInPeriod(params: {
+  schoolId: string;
+  formation: string;
+  startDate: string;
+  endDate: string;
+}): Promise<number> {
+  const { data, error } = await db
+    .from('schedule_match_proposals')
+    .update({ status: 'dismissed' as MatchProposalStatus })
+    .eq('school_id', params.schoolId)
+    .eq('kind', 'koushu')
+    .eq('formation', params.formation)
+    .eq('status', 'draft')
+    .gte('proposal_date', params.startDate)
+    .lte('proposal_date', params.endDate)
+    .select('id');
+  if (error) {
+    console.error('Error dismissing koushu drafts:', error);
+    throw new Error('既存の下書き提案の破棄に失敗しました');
+  }
+  return ((data ?? []) as Array<{ id: string }>).length;
+}
+
 /** 提案を編集（公開前に室長が手動調整する想定） */
 export async function updateDraftProposal(
   proposalId: string,
