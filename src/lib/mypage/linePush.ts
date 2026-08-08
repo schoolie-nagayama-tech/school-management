@@ -49,24 +49,17 @@ export function isLinePushEnabled(): boolean {
 /**
  * 通知の本文を組み立てる。
  *
- * ★ 冒頭の【〇〇校】は仕様（2026-08-05 決定）:
- *   公式アカウントは複数教室で1本しか持たないため、アカウント名では
- *   どの教室からの連絡か分からない。本文の先頭で必ず明示する。
+ * ★ 教室名は本文に入れない（2026-08-07 決定。2026-08-05 の方針を撤回）:
+ *   当初は「公式アカウント1本では発信元教室が分からない」として冒頭に
+ *   【〇〇校】を付ける方針だったが、
+ *     - 個別通知は受け取る本人の通う教室からの連絡に決まっている
+ *       （宛先を生徒から逆引きしているため）ので、名乗る必要がない
+ *     - 一斉連絡で他教室の内容が届くのは「本文に教室名が無いこと」ではなく
+ *       **宛先の絞り込みが誤っていること**が問題。教室名の付与では解決しない
+ *   という理由で外した。一斉配信（P3-C7）は配信先を在籍教室でスコープすること。
  */
-export function buildPushText(params: {
-  title: string;
-  body: string;
-  schoolName?: string;
-  url?: string;
-}): string {
-  // 呼び出し側が既にタイトルへ【教室名】を入れている経路がある
-  // （報告書公開など。メール件名として先に作られたもの）。二重に付けない。
-  const alreadyPrefixed = params.title.trimStart().startsWith('【');
-  const head =
-    params.schoolName && !alreadyPrefixed
-      ? `【${params.schoolName}】${params.title}`
-      : params.title;
-  const parts = [head, params.body.trim()];
+export function buildPushText(params: { title: string; body: string; url?: string }): string {
+  const parts = [params.title, params.body.trim()];
   if (params.url) parts.push(params.url);
   return parts.filter(Boolean).join('\n\n');
 }

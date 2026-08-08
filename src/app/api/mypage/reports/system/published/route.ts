@@ -116,7 +116,11 @@ export async function POST(request: NextRequest) {
     // 保護者宛＝LINEプッシュの対象（通知マトリクス: 報告書公開は毎回push）。
     audience: 'guardian',
     studentId: r.student_id,
-    title: `【${schoolName}】授業報告書が公開されました`,
+    // 件名・LINE本文の冒頭に教室名は入れない（2026-08-07 決定）。
+    // 受け取る保護者にとって発信元は自分の子が通う教室に決まっており（宛先を
+    // 生徒から逆引きしているため）、名乗る必要がないため。
+    // メールの差出人表示名（fromName）には教室名を残す。
+    title: '授業報告書が公開されました',
     body: [
       `${studentName} さんの ${lessonLabel} の授業報告書が公開されました。`,
       '',

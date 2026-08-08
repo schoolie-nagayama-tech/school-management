@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { ExternalLink } from 'lucide-react';
 import type { PortalAnnouncement } from '@/lib/mypage/announcements';
+import { BulletinContent } from '@/components/bulletin/BulletinContent';
 
 /**
  * 保護者お知らせ一覧（クライアント）。
@@ -67,10 +68,16 @@ export function AnnouncementsView({ initial }: { initial: PortalAnnouncement[] }
             </button>
             {open && (
               <div className="border-t border-border px-4 pb-4 pt-3">
-                {/* 本文は掲示板と同じ HTML（サニタイズ済みの範囲で表示）。 */}
-                <div
+                {/*
+                  ★ 保存型XSS対策（2026-08-08）: 以前はここで a.content を素の
+                  dangerouslySetInnerHTML に流していた。お知らせ本文は生HTMLで保存され
+                  書き込み時のサニタイズが無いため、スタッフが仕込んだスクリプトが
+                  全保護者の画面で実行され得た。掲示板本体と同じ BulletinContent に
+                  委ねる（描画時に DOMPurify を通す・SSRでは平文にフォールバック）。
+                */}
+                <BulletinContent
+                  content={a.content}
                   className="prose prose-sm max-w-none text-sm text-text-body"
-                  dangerouslySetInnerHTML={{ __html: a.content }}
                 />
                 {a.link_url && (
                   <a
