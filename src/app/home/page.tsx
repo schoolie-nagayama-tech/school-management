@@ -15,6 +15,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { AdminLayout } from '@/components/layouts';
 import { AlertBoard } from '@/components/alerts/AlertBoard';
+import { PendingAttendanceNotice } from '@/components/attendance/PendingAttendanceNotice';
 import { useAuth } from '@/contexts/AuthContext';
 import { isManagerOrAbove, isTeacher } from '@/lib/utils/roles';
 import { getUnreadCount } from '@/lib/api/bulletin';
@@ -170,6 +171,9 @@ export default function HomePage() {
             );
           })}
       </div>
+
+      {/* 出勤簿の未処理（生徒アラートとは別枠。理由はコンポーネント側のコメント参照） */}
+      <PendingAttendanceNotice />
 
       {/* 要対応アラートの実リスト（既存コンポーネントを再利用） */}
       <AlertBoard />

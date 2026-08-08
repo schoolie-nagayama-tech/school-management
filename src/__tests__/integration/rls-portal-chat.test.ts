@@ -69,10 +69,10 @@ beforeAll(async () => {
 
   await admin
     .from('portal_account_students')
-    .insert({ account_id: accountAId, student_id: studentAId, relation: 'father' });
+    .insert({ account_id: accountAId, student_id: studentAId, relation: 'guardian' });
   await admin
     .from('portal_account_students')
-    .insert({ account_id: accountBId, student_id: studentBId, relation: 'mother' });
+    .insert({ account_id: accountBId, student_id: studentBId, relation: 'guardian' });
 
   const mkThread = async (studentId: string) => {
     const { data, error } = await admin

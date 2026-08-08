@@ -132,6 +132,59 @@ export async function deleteCourseProgressItem(id: string, schoolId: string): Pr
 }
 
 // =============================================
+// 進捗表まるごとの削除
+// =============================================
+
+/** 削除ダイアログに出す「何が消えるか」。画面の items は非表示分が欠けるのでサーバーで数える。 */
+export type ProgressTableSummary = {
+  item_count: number;
+  progress_count: number;
+  has_period: boolean;
+  /** 工程表から進捗項目にリンクしているタスク数。タスク自体は消えずリンクだけ外れる。 */
+  linked_task_count: number;
+};
+
+export async function getProgressTableSummary(
+  schoolId: string,
+  season: SeasonType,
+  year: number
+): Promise<ProgressTableSummary> {
+  const result = await fetchCoursePrepApi('get_progress_table_summary', {
+    schoolId,
+    season,
+    year: String(year),
+  });
+  const data = (result.data || {}) as Partial<ProgressTableSummary>;
+  return {
+    item_count: data.item_count ?? 0,
+    progress_count: data.progress_count ?? 0,
+    has_period: data.has_period ?? false,
+    linked_task_count: data.linked_task_count ?? 0,
+  };
+}
+
+/** 削除の実績件数（サーバーが削除前に数えた値） */
+export type DeletedCounts = {
+  items: number;
+  student_progress: number;
+  period: number;
+  unlinked_schedule_tasks: number;
+};
+
+/**
+ * 進捗表（教室 × 期 × 年）をまるごと削除する。取り消し不可。
+ * 項目・生徒の入力値・期間設定が消える。工程表のタスクは残り、リンクだけ外れる。
+ */
+export async function deleteProgressTable(
+  schoolId: string,
+  season: SeasonType,
+  year: number
+): Promise<DeletedCounts> {
+  const result = await callCoursePrepApi('delete_progress_table', schoolId, { season, year });
+  return (result.deleted || {}) as DeletedCounts;
+}
+
+// =============================================
 // 生徒進捗データ
 // =============================================
 

@@ -112,6 +112,21 @@ export const ATTENDANCE_STATUS_LABELS: Record<AttendanceSheetStatus, string> = {
   rejected: '修正',
 };
 
+/**
+ * 提出までの流れ（画面の説明表示用）。
+ *
+ * 実際の遷移と対で持つこと:
+ *   draft →(講師が提出) submitted →(教室長が確認) reviewed →(管理者が承認) approved
+ * 差戻は rejectToTeacher(submitted→rejected) / rejectToManager(reviewed→submitted)。
+ * rejected は分岐なのでこの直線の流れには含めない。
+ */
+export const ATTENDANCE_FLOW_STEPS: { status: AttendanceSheetStatus; actor: string }[] = [
+  { status: 'draft', actor: '講師が入力' },
+  { status: 'submitted', actor: '講師が提出' },
+  { status: 'reviewed', actor: '教室長が確認' },
+  { status: 'approved', actor: '管理者が承認' },
+];
+
 // ステータスカラー
 export const ATTENDANCE_STATUS_COLORS: Record<AttendanceSheetStatus, string> = {
   draft: 'bg-gray-100 text-gray-800',

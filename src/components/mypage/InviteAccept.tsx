@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, Input } from '@/components/ui';
 import { UserPlus, Link2 } from 'lucide-react';
+import { LineLoginButton } from './LineLoginButton';
 
 interface InviteAcceptProps {
   token: string;
@@ -12,25 +13,47 @@ interface InviteAcceptProps {
   studentName: string;
   /** 既に有効なポータルセッションがあるか（あれば紐づけ確認モード）。 */
   hasSession: boolean;
+  /** LINEログインが設定済みか（未設定環境ではボタンを出さない）。 */
+  lineEnabled?: boolean;
 }
 
+/**
+ * 続柄の選択肢。父・母の区別は運用で使わないため2択に整理した（2026-08-05）。
+ * その他は誰なのかが分からない紐づけを作らないよう、自由入力を必須にする。
+ */
 const RELATION_OPTIONS = [
-  { value: 'father', label: '父' },
-  { value: 'mother', label: '母' },
+  { value: 'guardian', label: '保護者' },
   { value: 'other', label: 'その他' },
 ];
+
+/** その他の自由入力の最大長（APIの RELATION_NOTE_MAX と揃える）。 */
+const RELATION_NOTE_MAX = 20;
 
 /**
  * 招待受諾フォーム。2モード:
  *  - hasSession: 現アカウントに「この生徒を紐づける」確認ボタンのみ。
- *  - 未ログイン: アカウント作成フォーム（保護者招待なら続柄選択つき）。
+ *  - 未ログイン: LINEではじめる／IDとパスワードで登録、の2択。
+ *
+ * ★ LINE経路が「登録」ではなく「ログイン」に見えるのは意図的:
+ *   LINEを押すと /api/mypage/line/start へ飛び、コールバックでアカウントが作られた
+ *   （または既存アカウントでログインした）状態でこのページに戻ってくる。
+ *   戻ったときは hasSession=true になるので、そこで続柄を選んで紐づけを完了する。
+ *   続柄をLINE往復の前に選ばせても保持できないため、往復後に聞く作りにしている。
  */
-export function InviteAccept({ token, inviteType, studentName, hasSession }: InviteAcceptProps) {
+export function InviteAccept({
+  token,
+  inviteType,
+  studentName,
+  hasSession,
+  lineEnabled = false,
+}: InviteAcceptProps) {
   const router = useRouter();
   const [displayName, setDisplayName] = useState('');
   const [loginId, setLoginId] = useState('');
   const [password, setPassword] = useState('');
-  const [relation, setRelation] = useState('father');
+  const [relation, setRelation] = useState('guardian');
+  const [relationNote, setRelationNote] = useState('');
+  const [agreed, setAgreed] = useState(false);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
@@ -40,13 +63,18 @@ export function InviteAccept({ token, inviteType, studentName, hasSession }: Inv
     setError('');
     setSubmitting(true);
     try {
-      const body: Record<string, unknown> = { token };
+      // 同意はどちらのモードでも必須（P3-L4）。サーバー側でも true を検証する。
+      const body: Record<string, unknown> = { token, agreed };
       if (!hasSession) {
         body.display_name = displayName;
         body.login_id = loginId;
         body.password = password;
       }
-      if (isGuardian) body.relation = relation;
+      if (isGuardian) {
+        body.relation = relation;
+        // 「その他」のときだけ自由入力を送る（サーバー側でも必須検証している）。
+        if (relation === 'other') body.relation_note = relationNote;
+      }
 
       const res = await fetch('/api/mypage/invite/accept', {
         method: 'POST',
@@ -78,6 +106,21 @@ export function InviteAccept({ token, inviteType, studentName, hasSession }: Inv
         {isGuardian ? 'の保護者として' : '本人として'}招待されています。
       </p>
 
+      {/* 未ログインのときだけ LINE 経路を出す。押すとLINE往復後にこのページへ戻る。 */}
+      {!hasSession && lineEnabled && (
+        <>
+          <LineLoginButton invite={token} label="LINEではじめる" />
+          <p className="mt-2 text-xs text-text-muted">
+            LINEではじめると、教室からのお知らせをLINEで受け取れます。
+          </p>
+          <div className="my-6 flex items-center gap-3">
+            <span className="h-px flex-1 bg-border" />
+            <span className="text-xs text-text-muted">または</span>
+            <span className="h-px flex-1 bg-border" />
+          </div>
+        </>
+      )}
+
       {isGuardian && (
         <div className="mb-4">
           <label className="mb-1 block text-sm font-medium text-text-heading">続柄</label>
@@ -97,6 +140,20 @@ export function InviteAccept({ token, inviteType, studentName, hasSession }: Inv
               </button>
             ))}
           </div>
+
+          {/* 「その他」を選んだときだけ、誰なのかを書いてもらう（サーバー側でも必須）。 */}
+          {relation === 'other' && (
+            <div className="mt-3">
+              <Input
+                label="続柄"
+                value={relationNote}
+                onChange={(e) => setRelationNote(e.target.value)}
+                placeholder="例: 祖母"
+                maxLength={RELATION_NOTE_MAX}
+                required
+              />
+            </div>
+          )}
         </div>
       )}
 
@@ -134,7 +191,45 @@ export function InviteAccept({ token, inviteType, studentName, hasSession }: Inv
         </div>
       )}
 
-      <Button onClick={submit} isLoading={submitting} className="w-full">
+      {/*
+        法務文書への同意（P3-L4）。
+        ★ hasSession の有無にかかわらず両モードで出す:
+          LINE経路は往復後に hasSession=true でこの画面に戻り、ID/PW経路は
+          hasSession=false のまま送信する。つまり「紐づけの成立」は必ずこの送信
+          ボタンを通る。ここに置けば、どちらの入口から来ても同意なしでポータルの
+          利用が始まることはない。
+      */}
+      <label className="mb-4 flex cursor-pointer items-start gap-2.5">
+        <input
+          type="checkbox"
+          checked={agreed}
+          onChange={(e) => setAgreed(e.target.checked)}
+          className="mt-0.5 h-4 w-4 shrink-0 rounded border-border text-info focus:ring-2 focus:ring-primary"
+        />
+        <span className="text-sm leading-relaxed text-text-body">
+          <a
+            href="/privacy"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-info underline underline-offset-2"
+          >
+            プライバシーポリシー
+          </a>
+          と
+          <a
+            href="/terms"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-info underline underline-offset-2"
+          >
+            利用規約
+          </a>
+          に同意します
+        </span>
+      </label>
+
+      {/* 未同意のうちは押せない（サーバー側の 400 に頼らず画面で止める）。 */}
+      <Button onClick={submit} isLoading={submitting} disabled={!agreed} className="w-full">
         {hasSession ? (
           <>
             <Link2 className="mr-2 h-4 w-4" />

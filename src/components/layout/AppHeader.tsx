@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { TierMedal } from '@/components/teacher/TierMedal';
 import { useTeacherBadgeCount } from '@/hooks/useTeacherBadgeCount';
+import { usePendingAttendanceCount } from '@/hooks/usePendingAttendanceCount';
 import { BadgeFlowerField } from '@/components/badges/HiddenFlower';
 import { HEADER_FLOWERS } from '@/components/badges/flowerPlacements';
 import { ThemeToggle } from './ThemeToggle';
@@ -99,6 +100,8 @@ export function AppHeader({
   const { schools: masterSchools } = useMasterData();
   // 未読件数は BulletinUnreadContext に一元化済み（自前のポーリングは廃止）
   const { unreadCount: bulletinUnreadCount } = useBulletinUnread();
+  // 出勤簿は通知が無く画面を開くまで気づけないため、ナビの「出勤簿管理」に件数バッジを出す
+  const pendingAttendanceCount = usePendingAttendanceCount();
 
   const handleSchoolChange = (schoolId: string | 'all') => {
     setSelectedSchoolId(schoolId);
@@ -288,9 +291,14 @@ export function AppHeader({
                             <Link
                               key={item.key}
                               href={item.href}
-                              className={dropdownItemClass(isLinkActive(pathname, item))}
+                              className={`${dropdownItemClass(isLinkActive(pathname, item))} flex items-center justify-between gap-2`}
                             >
                               {item.label}
+                              {item.key === 'attendance' && pendingAttendanceCount > 0 && (
+                                <span className="inline-flex min-w-[18px] items-center justify-center rounded-full bg-warning px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
+                                  {pendingAttendanceCount}
+                                </span>
+                              )}
                             </Link>
                           ))}
                         </div>
@@ -633,13 +641,18 @@ export function AppHeader({
                       <Link
                         key={item.key}
                         href={item.href}
-                        className={`block rounded-md px-4 py-2 text-sm transition-[color,background-color,transform] duration-150 ease-out active:scale-[0.98] ${
+                        className={`flex items-center justify-between gap-2 rounded-md px-4 py-2 text-sm transition-[color,background-color,transform] duration-150 ease-out active:scale-[0.98] ${
                           isLinkActive(pathname, item)
                             ? 'bg-primary/10 font-semibold text-primary'
                             : 'text-gray-600 hover:bg-gray-50'
                         }`}
                       >
                         {item.label}
+                        {item.key === 'attendance' && pendingAttendanceCount > 0 && (
+                          <span className="inline-flex min-w-[18px] items-center justify-center rounded-full bg-warning px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
+                            {pendingAttendanceCount}
+                          </span>
+                        )}
                       </Link>
                     ))}
                   </div>

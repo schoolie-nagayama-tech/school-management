@@ -53,6 +53,9 @@ import {
 } from '@/lib/api/progress-sessions';
 import type { ProgressSessionWithDetails } from '@/types/database';
 import { toSurnameOnly } from '@/lib/utils/teacherName';
+import { getKoushuKomaByTextbooks } from '@/lib/api/progress';
+import type { KoushuKomaSummary } from '@/lib/utils/koushuKoma';
+import { KoushuKomaChip } from '@/components/progress/KoushuKomaBar';
 
 // ─── 定数 ───
 
@@ -94,9 +97,13 @@ export default function SessionFeed({ schoolIds: propSchoolIds }: Props) {
   const [goalMap, setGoalMap] = useState<Record<string, FeedGoalSummary>>({});
   // 学校進度がついている単元: student_textbook_id をキーに保持（確認カードの学校単元行に使う）
   const [schoolUnitMap, setSchoolUnitMap] = useState<Record<string, SchoolProgressUnit[]>>({});
+  // 講習の残りコマ: student_textbook_id をキーに保持（講習教材のカードにだけ出す）
+  const [komaMap, setKomaMap] = useState<Record<string, KoushuKomaSummary>>({});
   const [tab, setTab] = useState<TabKey>('unconfirmed');
   const [loading, setLoading] = useState(true);
-  const [alertsExpanded, setAlertsExpanded] = useState(true);
+  // 注意事項は既定で折りたたむ。件数が多いとセッション記録が下に押し出されて
+  // 本来の目的（直近の授業記録の確認）が見えなくなるため、件数だけ見せて中身は開いたときに出す。
+  const [alertsExpanded, setAlertsExpanded] = useState(false);
 
   // フィルタ
   const [studentFilter, setStudentFilter] = useState<string | null>(null);
@@ -158,9 +165,29 @@ export default function SessionFeed({ schoolIds: propSchoolIds }: Props) {
             console.error('Failed to fetch school progress units:', e);
             setSchoolUnitMap({});
           });
+        // 講習コマは季節ラベル付きの教材だけ。通常授業のカードには出さないので対象を絞って取る。
+        const koushuIds = Array.from(
+          new Set(
+            data
+              .filter((s) => !!s.student_textbook?.season)
+              .map((s) => s.student_textbook?.id)
+              .filter((v): v is string => !!v)
+          )
+        );
+        if (koushuIds.length > 0) {
+          getKoushuKomaByTextbooks(koushuIds)
+            .then(setKomaMap)
+            .catch((e) => {
+              console.error('Failed to fetch koushu koma:', e);
+              setKomaMap({});
+            });
+        } else {
+          setKomaMap({});
+        }
       } else {
         setGoalMap({});
         setSchoolUnitMap({});
+        setKomaMap({});
       }
     } catch (e) {
       console.error(e);
@@ -384,6 +411,9 @@ export default function SessionFeed({ schoolIds: propSchoolIds }: Props) {
                       ? schoolUnitMap[session.student_textbook.id]
                       : undefined
                   }
+                  koushuKoma={
+                    session.student_textbook?.id ? komaMap[session.student_textbook.id] : undefined
+                  }
                 />
               ))}
             </div>
@@ -424,6 +454,8 @@ interface SwipeableCardProps {
   goal?: FeedGoalSummary;
   /** 学校進度がついている単元（学校単元行に表示） */
   schoolUnits?: SchoolProgressUnit[];
+  /** 講習の残りコマ（講習教材のみ） */
+  koushuKoma?: KoushuKomaSummary;
   /** stagger animation index */
   staggerIndex?: number;
 }
@@ -441,6 +473,7 @@ function SwipeableCard({
   trayRef,
   goal,
   schoolUnits,
+  koushuKoma,
   staggerIndex = 0,
 }: SwipeableCardProps) {
   const cardRef = useRef<HTMLDivElement>(null);
@@ -543,6 +576,7 @@ function SwipeableCard({
                     onStudentClick={onStudentClick}
                     goal={goal}
                     schoolUnits={schoolUnits}
+                    koushuKoma={koushuKoma}
                   />
                 </div>
               </div>
@@ -590,6 +624,7 @@ function SwipeableCard({
         onStudentClick={onStudentClick}
         goal={goal}
         schoolUnits={schoolUnits}
+        koushuKoma={koushuKoma}
       />
     </div>
   );
@@ -616,6 +651,8 @@ interface FeedCardProps {
   goal?: FeedGoalSummary;
   /** 学校進度がついている単元（進行表の学校進度列由来）。学校単元行に表示 */
   schoolUnits?: SchoolProgressUnit[];
+  /** 講習の残りコマ（講習教材のみ）。教材名の横にチップで出す */
+  koushuKoma?: KoushuKomaSummary;
 }
 
 function FeedCard({
@@ -630,6 +667,7 @@ function FeedCard({
   compact,
   goal,
   schoolUnits = [],
+  koushuKoma,
 }: FeedCardProps) {
   const hasIssue = session.homework_not_done || session.tardy;
   const [editing, setEditing] = useState(false);
@@ -828,7 +866,11 @@ function FeedCard({
           ) : (
             <div className="text-sm font-semibold text-gray-900">{studentName}</div>
           )}
-          <div className="text-xs text-gray-500">{textbookName}</div>
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-xs text-gray-500">{textbookName}</span>
+            {/* 講習だけ「あと何コマ・プランに足りるか」を確認しながら判断できるようにする */}
+            {koushuKoma && koushuKoma.applied > 0 && <KoushuKomaChip summary={koushuKoma} />}
+          </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <div className="text-xs text-gray-500 whitespace-nowrap">

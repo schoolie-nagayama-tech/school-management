@@ -68,6 +68,23 @@ export const MOGI_EXAM_TYPE_LABELS: Record<MogiExamType, string> = {
   tokushoku: '特色検査対策模試',
 };
 
+/**
+ * 種別バッジの配色。同じ日に複数種別の模試が立つため、回答一覧では日程・会場だけでは
+ * どのVもぎを申し込んだのか判別できない。色で種別を見分けられるようにする。
+ *
+ * 文字色はどれも text-heading で固定し、背景の色相だけで区別する（小さい文字なので
+ * 色付き文字より地色を変えたほうが読みやすく、コントラストも確保できる）。
+ * 地域は1フォームにつき東京か神奈川のどちらか一方なので、同じ色相を東京・神奈川で
+ * 使い回している（1つの一覧の中では必ず異なる色になる）。
+ */
+export const MOGI_EXAM_TYPE_BADGE_CLASSES: Record<MogiExamType, string> = {
+  toritsu_v: 'bg-info-subtle text-text-heading',
+  shiritsu_v: 'bg-warning-subtle text-text-heading',
+  jikousakusei: 'bg-success-subtle text-text-heading',
+  zenken: 'bg-info-subtle text-text-heading',
+  tokushoku: 'bg-warning-subtle text-text-heading',
+};
+
 // 地域ごとの選択肢
 export const MOGI_EXAM_TYPE_OPTIONS_BY_REGION: Record<
   MogiRegion,
@@ -157,6 +174,8 @@ export interface MogiResponse {
   linked_at: string | null;
   status_checks: {
     charged?: boolean;
+    /** Vもぎ主催者への申込を代行済みか（計上とは独立した進捗チェック） */
+    applied?: boolean;
   } | null;
   is_archived: boolean;
   archived_at: string | null;
@@ -176,6 +195,7 @@ export interface MogiResponseFilters {
   dateId?: string;
   venueId?: string;
   chargedStatus?: 'charged' | 'not_charged';
+  appliedStatus?: 'applied' | 'not_applied';
   linkedStatus?: 'linked' | 'unlinked';
   showArchived?: boolean;
 }
@@ -201,5 +221,7 @@ export interface MogiStats {
     count: number;
   }>;
   charged_count: number;
+  /** 申込代行が済んだ回答数 */
+  applied_count: number;
   linked_count: number;
 }

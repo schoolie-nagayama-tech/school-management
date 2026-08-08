@@ -7,7 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useMasterData } from '@/contexts/MasterDataContext';
 import { useBulletinUnread } from '@/contexts/BulletinUnreadContext';
 import { Button } from '@/components/ui';
-import { isHtmlContent, sanitizeBulletinHtml } from '@/lib/utils/bulletinHtml';
+import { BulletinContent } from '@/components/bulletin/BulletinContent';
 
 /**
  * 未読の連絡がある講師に対して、全画面で掲示板を表示し既読を強制するゲート。
@@ -128,11 +128,9 @@ export function UnreadBulletinGate() {
                 </div>
 
                 {post.content && (
-                  <div
+                  <BulletinContent
+                    content={post.content}
                     className="bulletin-post-content mb-3 break-words text-sm text-[var(--text)]"
-                    {...(isHtmlContent(post.content)
-                      ? { dangerouslySetInnerHTML: { __html: sanitizeBulletinHtml(post.content) } }
-                      : { style: { whiteSpace: 'pre-wrap' }, children: post.content })}
                   />
                 )}
 

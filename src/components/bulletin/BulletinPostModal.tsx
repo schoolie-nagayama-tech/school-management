@@ -7,11 +7,24 @@ import type { School } from '@/types/database';
 import { GRADE_LABELS } from '@/types/database';
 import { Modal, Button, Input } from '@/components/ui';
 
-/** audience 選択肢（社内＝スタッフ / 保護者 / 生徒本人）。 */
+/**
+ * audience 選択肢（社内＝スタッフ / 保護者）。
+ *
+ * ★ '生徒'（生徒本人宛）は選べないようにしている（2026-08-07）:
+ *   ポータルのアカウントは**世帯ごとに1つ**で、保護者を名義人として発行し
+ *   塾生本人も同じアカウントを使う運用に確定した。つまり relation='self' の
+ *   紐づけは作られない。一方、掲示板の可視判定は
+ *     relation='self' → '生徒' 宛 / relation<>'self' → '保護者' 宛
+ *   （20260714010000_portal_v2_chat_bulletin.sql）なので、'生徒' 宛で投稿すると
+ *   **誰にも届かない**（静かに消える）。選ばせないことでその事故を防ぐ。
+ *
+ *   DB・RLS・型は '生徒' を引き続き受け付ける（本番デモ校に audience=['保護者','生徒']
+ *   の既存データがあり、将来 生徒本人アカウントを配る可能性も残すため）。
+ *   運用を変えるならここに選択肢を戻す前に、RLS の分岐を実態に合わせること。
+ */
 const AUDIENCE_OPTIONS: { value: string; label: string }[] = [
   { value: '社内', label: '社内（スタッフ）' },
   { value: '保護者', label: '保護者' },
-  { value: '生徒', label: '生徒本人' },
 ];
 
 /** 学年チップ（1..13）。 */

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Eye, EyeOff, FileText, RefreshCw, Send, Settings2 } from 'lucide-react';
 import {
@@ -36,6 +36,9 @@ import { ActionGoalsSection } from './ActionGoalsSection';
 import { TextbookSettingsInline } from './TextbookSettingsInline';
 import { ExamRangesInline } from './ExamRangesInline';
 import { ProgressRow } from './ProgressRow';
+import { KoushuKomaBar } from '@/components/progress/KoushuKomaBar';
+import { computeKoushuKoma, koushuGroupDeviations } from '@/lib/utils/koushuKoma';
+import type { KoushuGroupStat } from '@/lib/utils/koushuKoma';
 import { ExamGoalEditModal } from './ExamGoalEditModal';
 import { NextGoalModal } from './NextGoalModal';
 import { ExamRangeModal } from './ExamRangeModal';
@@ -582,6 +585,35 @@ export function TableView({
     [textbook.id, toastError, markDirty, setProgress]
   );
 
+  // 講習のコマ状況（申込 / 実施 / 残り / プランに対する過不足）。
+  // 表に出ている進捗行だけで計算できるので追加取得は不要。季節ラベルが付いた教材のみ対象。
+  // 面談モードでは出さない: 申込コマ列と同じく保護者に見せる情報ではないため。
+  const koushuKoma = useMemo(() => {
+    if (!displaySeason || isMeeting) return null;
+    const summary = computeKoushuKoma(
+      progress.map((row) => ({
+        rowKey: row.id,
+        applicationCount: row.progress?.application_count || 0,
+        appliedGroupNumber: row.progress?.applied_group_number ?? null,
+        groupNumber: row.progress?.group_number ?? null,
+        lessons: row.progress?.lessons || [],
+      }))
+    );
+    // 申込コマが未転記（0）の講習教材では判定が意味を持たないので出さない
+    return summary.applied > 0 ? summary : null;
+  }, [displaySeason, isMeeting, progress]);
+
+  // 予定と実施がズレたグループ（例: 2コマ予定の単元を1コマで終えた）を、その予定コマを
+  // 表示している行に紐づける。合計だけ見ても「どこでズレたか」が分からないため。
+  const komaDeviationByRow = useMemo(() => {
+    const map = new Map<number, KoushuGroupStat>();
+    if (!koushuKoma) return map;
+    for (const g of koushuGroupDeviations(koushuKoma)) {
+      map.set(Number(g.anchorRowKey), g);
+    }
+    return map;
+  }, [koushuKoma]);
+
   // テキストの属性（対象学年・科目）。生徒の学年とは別物なので、テキスト名の直後に添える。
   const textbookMeta = formatTextbookMeta(
     textbook.textbook?.school_type,
@@ -786,6 +818,9 @@ export function TableView({
           </div>
         </div>
       </div>
+
+      {/* 講習の残りコマ。「あと何コマで、残りの単元は足りるのか」をヘッダー直下で言い切る。 */}
+      {koushuKoma && <KoushuKomaBar summary={koushuKoma} />}
 
       {/* テキストの切替は「← テキスト一覧」からのみ行う方針のため、
           以前あった教科書タブ（横並び切替）は廃止した。
@@ -1164,6 +1199,7 @@ export function TableView({
                     proposalGroupSpan={proposalGroupSpan}
                     appliedGroupSpan={appliedGroupSpan}
                     inheritedIntentTag={inheritedTag}
+                    komaDeviation={komaDeviationByRow.get(row.id) ?? null}
                     selfName={selfName}
                     isTeacher={role === 'teacher'}
                     paintActive={paintActive}

@@ -85,6 +85,8 @@ export async function POST(request: NextRequest) {
   // 保護者宛の新着通知（メール等）。非致命。
   void dispatchNotification({
     kind: 'chat_new_message',
+    // 教室→保護者の返信なので保護者宛＝LINEプッシュの対象。
+    audience: 'guardian',
     studentId: thread.student_id,
     title: '教室から新着メッセージ',
     body: text.trim(),

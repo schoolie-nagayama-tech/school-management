@@ -2,12 +2,15 @@
 
 import { Eye, EyeOff, GripVertical, Trash2 } from 'lucide-react';
 import type { ActionGoal, StudentTextbookWithDetails } from '@/types/database';
+import type { KoushuKomaSummary } from '@/lib/utils/koushuKoma';
+import { KoushuKomaChip } from '@/components/progress/KoushuKomaBar';
 import {
   SUBJECT_COLOR,
   isStalled,
   monthDayLabel,
   progressStats,
   seasonLabel,
+  textbookGradeLabel,
   type SubjectColumn,
 } from './newProgress.shared';
 
@@ -15,11 +18,12 @@ export function TextbookCard({
   textbook,
   isLive = false,
   lastUsedDate,
+  koushuKoma,
   subjectColumn,
   activeExam,
   actionGoals,
   role,
-  isMeeting: _isMeeting,
+  isMeeting,
   onOpen,
   canMoveUp,
   canMoveDown,
@@ -39,6 +43,8 @@ export function TextbookCard({
   isLive?: boolean;
   /** 最終利用日 'YYYY-MM-DD'。LIVE の古さを判断できるよう併記する */
   lastUsedDate?: string;
+  /** 講習のコマ集計（講習ラベル付きのテキストのみ）。残りコマチップを出す */
+  koushuKoma?: KoushuKomaSummary;
   subjectColumn: SubjectColumn;
   activeExam: {
     id: string;
@@ -69,6 +75,8 @@ export function TextbookCard({
   const { stalled } = isStalled(textbook);
   const { total, done } = progressStats(textbook);
   const season = seasonLabel(textbook.season);
+  // 学年はバッジをやめてテキスト名の頭に繋げる（「中3 フォレスタ」）。バッジ行の数を減らすため。
+  const gradeLabel = textbookGradeLabel(textbook.textbook);
   const achievedCount = actionGoals.filter((g) => g.achieved).length;
   const tint = SUBJECT_COLOR[subjectColumn];
   // ▲▼・D&Dによる並べ替えは教室長以上のみ（講師には両方とも出さない）
@@ -117,7 +125,24 @@ export function TextbookCard({
     >
       {/* 並べ替えボタン（右上） */}
       <div className="flex items-start justify-between gap-1 mb-1">
-        <div className={`text-[11px] font-bold ${tint.text}`}>{subjectColumn}</div>
+        {/* 科目と季節は「どの箱の話か」を示すラベルなので、まとめて先頭に置く。
+            季節をここに移した分、下のバッジ行は LIVE・残りコマ・非公開だけになる。 */}
+        <div className="flex items-center gap-1 min-w-0">
+          <span className={`text-[11px] font-bold ${tint.text}`}>{subjectColumn}</span>
+          {season && (
+            <span
+              className={`text-[10px] px-1.5 py-0.5 rounded font-bold border ${
+                textbook.season === 'spring'
+                  ? 'bg-pink-100 text-pink-800 border-pink-300'
+                  : textbook.season === 'summer'
+                    ? 'bg-orange-100 text-orange-800 border-orange-300'
+                    : 'bg-sky-100 text-sky-800 border-sky-300'
+              }`}
+            >
+              {season}
+            </span>
+          )}
+        </div>
         <div className="flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
           {onDelete && (
             <button
@@ -180,12 +205,13 @@ export function TextbookCard({
         </div>
       </div>
 
-      {/* タイトル行 */}
+      {/* タイトル行（学年はバッジにせず頭に繋げる: 「中3 フォレスタ」） */}
       <h3 className="font-semibold text-[#1f2937] text-[13px] leading-tight mb-1 line-clamp-2 break-words">
+        {gradeLabel && <span className="text-[#6b7280] font-medium">{gradeLabel}　</span>}
         {textbook.textbook?.name ?? '教科書'}
       </h3>
 
-      {/* バッジ（LIVE / 学年 / 季節 / 非公開） */}
+      {/* バッジ（LIVE / 残りコマ / 非公開） */}
       <div className="flex items-center gap-1 mb-1.5 flex-wrap">
         {/* 同一科目に複数冊あるとき、今どれを使っているかを一目で示す。最優先で左端に置く。 */}
         {isLive && (
@@ -204,25 +230,10 @@ export function TextbookCard({
             )}
           </span>
         )}
-        {textbook.textbook?.grade && (
-          <span
-            className={`text-xs px-2 py-0.5 rounded-md ${tint.bg} ${tint.text} font-bold border ${tint.accent}`}
-          >
-            {textbook.textbook.grade}
-          </span>
-        )}
-        {season && (
-          <span
-            className={`text-xs px-2 py-0.5 rounded-md font-bold border ${
-              textbook.season === 'spring'
-                ? 'bg-pink-100 text-pink-800 border-pink-300'
-                : textbook.season === 'summer'
-                  ? 'bg-orange-100 text-orange-800 border-orange-300'
-                  : 'bg-sky-100 text-sky-800 border-sky-300'
-            }`}
-          >
-            {season}
-          </span>
+        {/* 講習の残りコマ。季節は上の科目の隣に移したので、ここは残りコマから始まる。
+            面談モードでは出さない（申込コマは保護者に見せる情報ではないため、進行表と同じ扱い）。 */}
+        {koushuKoma && koushuKoma.applied > 0 && !isMeeting && (
+          <KoushuKomaChip summary={koushuKoma} />
         )}
         {textbook.is_draft && (
           <span className="text-[11px] px-1.5 py-0.5 bg-gray-200 text-gray-700 rounded font-bold border border-gray-400">

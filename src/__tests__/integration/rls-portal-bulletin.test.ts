@@ -8,7 +8,7 @@
  *   4. target_scope='individual' は bulletin_post_targets に自分の紐づけ生徒が居るときだけ可視。
  *   5. bulletin_portal_reads は自分の既読だけ可視。
  *   6. 既存スタッフ挙動が不変: authenticated は 社内 の投稿を従来どおり読める（allow_all_auth）。
- *   7. relation と audience の対応: '生徒' 宛は本人(self)のみ・保護者(father/mother/other)は
+ *   7. relation と audience の対応: '生徒' 宛は本人(self)のみ・保護者(guardian/other)は
  *      '保護者' 宛のみ可視（生徒に保護者向け情報を出さない、の裏表）。
  *   8. 教室スコープ: 他教室の投稿は audience/target が該当しても不可視。
  *   9. アーカイブ済み・公開開始前の投稿は不可視（直接PostgRESTを叩かれてもDB層で遮断）。
@@ -24,8 +24,8 @@ import { selectAs, tryCountAs } from './portal-rls-helpers';
 let admin: SupabaseClient;
 let schoolId: string;
 
-let studentAId: string; // grade 5・accountA(father)
-let studentBId: string; // grade 8・accountB(mother)・accountSelfB(self)
+let studentAId: string; // grade 5・accountA(guardian)
+let studentBId: string; // grade 8・accountB(guardian)・accountSelfB(self)
 let accountAId: string;
 let accountBId: string;
 let accountSelfBId: string; // studentB 本人（relation='self'）
@@ -86,10 +86,10 @@ beforeAll(async () => {
 
   await admin
     .from('portal_account_students')
-    .insert({ account_id: accountAId, student_id: studentAId, relation: 'father' });
+    .insert({ account_id: accountAId, student_id: studentAId, relation: 'guardian' });
   await admin
     .from('portal_account_students')
-    .insert({ account_id: accountBId, student_id: studentBId, relation: 'mother' });
+    .insert({ account_id: accountBId, student_id: studentBId, relation: 'guardian' });
   await admin
     .from('portal_account_students')
     .insert({ account_id: accountSelfBId, student_id: studentBId, relation: 'self' });
@@ -126,7 +126,7 @@ beforeAll(async () => {
   postAllId = await mkPost({ audience: ['保護者'], target_scope: 'all' });
   // 保護者・学年5。
   postGrade5Id = await mkPost({ audience: ['保護者'], target_scope: 'grade', target_grade: [5] });
-  // 生徒・個別(studentB)。audience='生徒' なので本人(self)のみ可視、保護者(mother)には出ない。
+  // 生徒・個別(studentB)。audience='生徒' なので本人(self)のみ可視、保護者(guardian)には出ない。
   postIndivBId = await mkPost({ audience: ['生徒'], target_scope: 'individual' });
   await admin
     .from('bulletin_post_targets')
@@ -209,7 +209,7 @@ describe('bulletin_posts: ポータル audience/target 可視性', () => {
     expect(b.length).toBe(0);
   });
 
-  it('生徒宛・個別(studentB)は本人(self)のみ可視。保護者(mother)にも他家庭にも不可視', async () => {
+  it('生徒宛・個別(studentB)は本人(self)のみ可視。保護者(guardian)にも他家庭にも不可視', async () => {
     // audience='生徒' は relation='self' だけに立つ（保護者に生徒宛は出さない・逆も同様）。
     const self = await selectAs(
       'portal',
@@ -217,7 +217,7 @@ describe('bulletin_posts: ポータル audience/target 可視性', () => {
       'select id from bulletin_posts where id = $1',
       [postIndivBId]
     );
-    const mother = await selectAs(
+    const guardian = await selectAs(
       'portal',
       accountBId,
       'select id from bulletin_posts where id = $1',
@@ -227,7 +227,7 @@ describe('bulletin_posts: ポータル audience/target 可視性', () => {
       postIndivBId,
     ]);
     expect(self.length).toBe(1);
-    expect(mother.length).toBe(0);
+    expect(guardian.length).toBe(0);
     expect(a.length).toBe(0);
   });
 

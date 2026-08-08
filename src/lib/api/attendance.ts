@@ -4,6 +4,7 @@ import type {
   AttendanceType,
   AttendanceTypeFormData,
   AttendanceSheet,
+  AttendanceSheetStatus,
   AttendanceRecord,
   AttendanceNote,
   KomaChangeInput,
@@ -229,6 +230,17 @@ export async function findAttendanceSheet(
 }
 
 // 出勤簿を取得または作成
+/**
+ * ★ 新規作成は「その講師がその教室に所属しているとき」だけ。
+ *   このページ(/attendance/[schoolCode]/[teacherId])は開いただけでシートを作るため、
+ *   所属していない教室のURLを踏むと空シートが生えていた。掛け持ちの講師は教室ごとに
+ *   別アカウントで運用しているので、旧アカウント側に他教室のシートが残ると
+ *   出勤簿一覧（attendance_sheets 起点）に同じ氏名が2行並ぶ。
+ *   実例: 若林 佐知子（永山アカウントに堀之内のシートが残り2行表示 / 2026-08 に削除）。
+ *
+ * ★ 既存シートは所属を見ずにそのまま返す。異動などで所属が変わっても、
+ *   過去に作られたシートの閲覧・提出まで塞いでしまわないようにするため。
+ */
 export async function getOrCreateAttendanceSheet(
   teacherId: string,
   schoolId: string,
@@ -250,6 +262,23 @@ export async function getOrCreateAttendanceSheet(
   if (findError && findError.code !== 'PGRST116') {
     console.error('Error finding attendance sheet:', findError);
     throw new Error('出勤簿の検索に失敗しました');
+  }
+
+  // 所属確認。user_schools は本人か管理者ロールしか読めない（RLS）ので、
+  // 読めなかった場合も「作らない」側に倒す。
+  const { data: membership, error: membershipError } = await supabase
+    .from('user_schools')
+    .select('school_id')
+    .eq('user_id', teacherId)
+    .eq('school_id', schoolId)
+    .limit(1);
+
+  if (membershipError) {
+    console.error('Error checking user_schools:', membershipError);
+    throw new Error('出勤簿の作成に失敗しました');
+  }
+  if (!membership || membership.length === 0) {
+    throw new Error('この教室に所属していないため、出勤簿を作成できません');
   }
 
   // なければ作成
@@ -538,6 +567,43 @@ async function ensureSheetsForActiveTeachers(schoolId: string, yearMonth: string
   if (error) console.error('Error creating draft attendance sheets:', error);
 }
 
+/**
+ * 自分が次に動かすべき出勤簿の件数（お知らせバー・ヘッダーバッジ用）。
+ *
+ * ★ 出勤簿には通知の受け口が無く、管理者は出勤簿管理を開くまで
+ *   提出されたことに気づけなかった。件数だけ外に出して気づけるようにする。
+ *
+ * ★ 役割で対象ステータスが変わる（画面の actionableStatuses と同じ定義に揃えること）:
+ *   - 教室長: submitted（講師から出てきた。確認して管理者へ提出する）
+ *   - 管理者/オーナー: submitted + reviewed（承認する）
+ *
+ * ★ 月では絞らない: 承認漏れは古い月ほど埋もれるため、未処理は全部数える。
+ *
+ * @returns 件数（教室が無い/権限が無い場合は 0）
+ */
+export async function getPendingAttendanceCount(
+  schoolIds: string[],
+  role: string | null | undefined
+): Promise<number> {
+  if (schoolIds.length === 0) return 0;
+  const r = (role ?? '').toLowerCase();
+  if (r !== 'manager' && r !== 'admin' && r !== 'owner') return 0;
+  const statuses: AttendanceSheetStatus[] =
+    r === 'manager' ? ['submitted'] : ['submitted', 'reviewed'];
+
+  const { count, error } = await supabase
+    .from('attendance_sheets')
+    .select('id', { count: 'exact', head: true })
+    .in('school_id', schoolIds)
+    .in('status', statuses);
+
+  if (error) {
+    console.error('Error counting pending attendance sheets:', error);
+    return 0;
+  }
+  return count ?? 0;
+}
+
 export async function getAttendanceSheetList(schoolId: string, yearMonth: string) {
   const { data, error } = await supabase
     .from('attendance_sheets')
@@ -804,12 +870,23 @@ export async function reopenAttendanceSheet(sheetId: string) {
 }
 
 // 管理者一覧を取得（提出先選択用）
+/**
+ * 出勤簿の提出先の候補（教室長が「管理者へ提出」するときに選ぶ相手）。
+ *
+ * ★ admin のみ。以前は owner も候補に含めていたが、承認するのは管理者なので
+ *   提出先も管理者に揃える（オーナーを選べると、承認されないまま止まりうる）。
+ *
+ * ★ @test.com のテストアカウントは除外する。本番にも admin@test.com 等が実在し、
+ *   全教室に紐づいているため候補に出てしまう。アカウント自体は動作確認に使うので
+ *   is_active は落とさず、この一覧からだけ隠す。
+ */
 export async function getAdminUsers() {
   const { data, error } = await supabase
     .from('user_profiles')
     .select('id, display_name, email')
-    .in('role', ['admin', 'owner'])
+    .eq('role', 'admin')
     .eq('is_active', true)
+    .not('email', 'like', '%@test.com')
     .order('display_name');
 
   if (error) {

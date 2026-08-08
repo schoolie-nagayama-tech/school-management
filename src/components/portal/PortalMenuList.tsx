@@ -1,12 +1,15 @@
 'use client';
 
 import { PortalMenuCard } from './PortalMenuCard';
+import { isRecentlyOpened } from '@/lib/utils/portalNew';
 import type { PortalMenu } from '@/types/database';
 
 interface MenuWithActiveStatus {
   menu: PortalMenu;
   isFormActive: boolean;
   isVisible: boolean;
+  /** 受付が始まった日時。New バッジの判定に使う（受付期間を持たないメニューは null） */
+  openedAt?: string | null;
 }
 
 interface PortalMenuListProps {
@@ -27,7 +30,7 @@ export function PortalMenuList({ menus, schoolCode }: PortalMenuListProps) {
 
   return (
     <div className="space-y-3">
-      {menus.map(({ menu, isFormActive, isVisible }, index) => (
+      {menus.map(({ menu, isFormActive, isVisible, openedAt }, index) => (
         // stagger-item: 各カードを 40ms 刻みでフェードイン（8件超はクランプ）
         <div
           key={menu.id}
@@ -39,6 +42,7 @@ export function PortalMenuList({ menus, schoolCode }: PortalMenuListProps) {
             schoolCode={schoolCode}
             isFormActive={isFormActive}
             isVisible={isVisible}
+            isNew={isFormActive && isVisible && isRecentlyOpened(openedAt)}
           />
         </div>
       ))}

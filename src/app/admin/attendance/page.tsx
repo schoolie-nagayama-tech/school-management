@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import type { CSSProperties } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { AdminLayout } from '@/components/layouts';
 import {
   Card,
@@ -21,7 +22,6 @@ import {
   TableHeader,
   TableRow,
   Badge,
-  Checkbox,
   Dialog,
   DialogContent,
   DialogHeader,
@@ -81,6 +81,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import {
   ATTENDANCE_STATUS_LABELS,
   ATTENDANCE_STATUS_COLORS,
+  ATTENDANCE_FLOW_STEPS,
   type AttendanceType,
   type AttendanceSheetStatus,
 } from '@/types/attendance';
@@ -186,6 +187,28 @@ function formatExitMonthDay(exitDate: string): string {
   return `${d.getMonth() + 1}/${d.getDate()}`;
 }
 
+/**
+ * 振込表示（転置ビュー）の列装飾。1列=1人なので、列を「縦線」と「1列おきの地色」で
+ * 仕切り、どの数字が誰のものか一目で追えるようにする。マウスが乗っている列は
+ * さらに強く塗って、横に長い表でも視線が隣の人にずれないようにする。
+ *
+ * 背景をクラスではなく style で当てているのは、TableHead が自前で bg- クラスを
+ * 持っており、Tailwind のユーティリティ同士では記述順で優先度が決まらないため。
+ */
+function transposedColumnStyle(columnIndex: number, isHovered: boolean): CSSProperties {
+  if (isHovered) return { backgroundColor: 'var(--info-subtle)' };
+  return {
+    backgroundColor: columnIndex % 2 === 1 ? 'var(--accent-ink-subtle)' : 'var(--surface)',
+  };
+}
+
+/** 振込表示の講師列に共通で当てる枠線。列の左に縦線を引いて人の区切りを作る */
+const TRANSPOSED_COL_BORDER = 'border-l border-border';
+
+/** 振込表示の「項目」列（左端固定）に共通で当てるクラス。本文列との境目は太い縦線で切る */
+const TRANSPOSED_LABEL_CELL =
+  'font-medium sticky left-0 bg-surface-raised z-10 border-r-2 border-border-strong';
+
 // 社員番号での並び替え。数値化できれば数値順、できなければ文字列順、未設定は末尾、最後に姓でフォールバック
 function compareByEmployeeNo(a: SummaryRow, b: SummaryRow): number {
   const ea = (a.teacher?.employee_no ?? '').trim();
@@ -240,20 +263,40 @@ function HrChip({
 
 export default function AttendanceManagementPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   // グローバルの教室選択に連動（ヘッダーのドロップダウンと同期）
   const { profile, schoolIds: userSchoolIds, selectedSchoolId, setSelectedSchoolId } = useAuth();
   const { toasts, removeToast, success, error: toastError } = useToast();
 
   const isManager = profile?.role === 'manager';
   const isAdmin = profile?.role === 'admin' || profile?.role === 'owner';
+  // 社員番号はシステム管理者のみ。isAdmin は owner を含むので別に持つ
+  // （この画面に講師は入れないため、実質の境界は admin と owner/manager の間）。
+  const canSeeEmployeeNo = profile?.role === 'admin';
 
   const [schools, setSchools] = useState<School[]>([]);
   const [selectedSchool, setSelectedSchool] = useState<School | null>(null);
-  const [yearMonth, setYearMonth] = useState(getCurrentYearMonth());
+  // 表示中の月は URL(?ym=YYYY-MM) にも持たせる。
+  // state だけだと、講師の詳細を開いて戻ったときに初期値（当月）へ戻ってしまい、
+  // 前月を確認・編集していた場合に毎回選び直しになる。
+  const initialYearMonth = searchParams?.get('ym') || getCurrentYearMonth();
+  const [yearMonth, setYearMonth] = useState(initialYearMonth);
+
+  /**
+   * 月を切り替える。state と URL(?ym=) を同時に更新する。
+   * URL に載せておくことで、講師の詳細から戻ったときに同じ月へ戻れる。
+   * 履歴を増やさないよう replace を使う（戻るボタンで月送りを遡らせない）。
+   */
+  const changeYearMonth = useCallback(
+    (next: string) => {
+      setYearMonth(next);
+      router.replace(`/admin/attendance?ym=${next}`, { scroll: false });
+    },
+    [router]
+  );
   const [attendanceTypes, setAttendanceTypes] = useState<AttendanceType[]>([]);
   const [sheets, setSheets] = useState<SummaryRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false);
   const [rejectingSheet, setRejectingSheet] = useState<SummaryRow | null>(null);
   const [rejectReason, setRejectReason] = useState('');
@@ -291,10 +334,21 @@ export default function AttendanceManagementPage() {
 
   // 管理者: 転置ビュー・並べ替え
   const [isTransposedView, setIsTransposedView] = useState(false);
+  // 振込表示でマウスが乗っている講師の列。列全体を塗って「いま誰の数字を見ているか」を示す
+  const [hoveredSheetId, setHoveredSheetId] = useState<string | null>(null);
   // デフォルトは社員番号順（出勤簿一覧の標準並び順）
   const [sortOrder, setSortOrder] = useState<SortOrder>('employee');
   // 勤務実績なしの行を隠すか。既定は表示（未入力の講師を見落とさないため）
-  const [hideNoWork, setHideNoWork] = useState(false);
+  // 既定で隠す。未入力の講師も一覧に出す仕様にした結果、勤務していない講師の行が
+  // 常に並ぶようになったため、通常は畳んだ状態で見せる（ボタンで出せる）。
+  const [hideNoWork, setHideNoWork] = useState(true);
+
+  /**
+   * 勤務実績がない（全項目0）行か。
+   * 「下にまとめる／隠す」と「前月未提出アラートの対象外にする」の両方で使う。
+   * fetch のコールバックからも参照するため、state 宣言の近くに置いている。
+   */
+  const hasNoWork = (s: SummaryRow) => s.grand_total === 0 && s.total_amount === 0;
 
   const { schools: masterSchools } = useMasterData();
 
@@ -355,21 +409,21 @@ export default function AttendanceManagementPage() {
       setAttendanceTypes(typesData);
       setSheets(summaryResult as SummaryRow[]);
       setLateEarlyRecords(lateEarlyResult);
+      // 前月未提出アラート。未入力の講師も一覧に出す仕様にしたため、そのままだと
+      // 「その月は勤務していないので出す物がない」講師まで未提出として名前が挙がる。
+      // 実績が1つでもある（＝勤務したのに出していない）人だけを追いかける対象にする。
       setPrevMonthUnsubmitted(
         (prevMonthSummary as SummaryRow[]).filter(
-          (s: SummaryRow) => s.status === 'draft' || s.status === 'rejected'
+          (s: SummaryRow) => (s.status === 'draft' || s.status === 'rejected') && !hasNoWork(s)
         )
       );
       setRecentlyRetired(retiredResult);
       setNewTeachers(newResult);
       setAllTeachers(teacherList);
       setAdminUsers(adminList);
-      // 未選択時のみデフォルト管理者を設定。関数型 setState で現在値を参照することで
-      // selectedAdminId を依存配列から外し、初回ロード時の二重フェッチを防ぐ
-      if (adminList.length > 0) {
-        setSelectedAdminId((prev) => prev || adminList[0].id);
-      }
-      setSelectedIds(new Set());
+      // 提出先は自動で選ばない。以前は先頭の管理者を既定にしていたが、セレクトの表示は
+      // 「提出先を選択」のままなのにボタンだけ押せる状態になり、誰宛に出るのか分からなかった。
+      // 未選択のままにして、明示的に選ぶまで提出ボタンを無効にする。
     } catch (err) {
       console.error('Failed to fetch data:', err);
       toastError('データの取得に失敗しました');
@@ -434,23 +488,6 @@ export default function AttendanceManagementPage() {
   const actionableSheets = sheets.filter((s) => actionableStatuses.includes(s.status));
   const actionableCount = actionableSheets.length;
 
-  const toggleSelect = (id: string) => {
-    setSelectedIds((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(id)) newSet.delete(id);
-      else newSet.add(id);
-      return newSet;
-    });
-  };
-
-  const toggleSelectAll = () => {
-    if (selectedIds.size === actionableSheets.length) {
-      setSelectedIds(new Set());
-    } else {
-      setSelectedIds(new Set(actionableSheets.map((s) => s.id)));
-    }
-  };
-
   // 管理者: 承認
   const handleApprove = async (sheet: SummaryRow) => {
     if (!profile) return;
@@ -464,12 +501,19 @@ export default function AttendanceManagementPage() {
   };
 
   // 管理者: 一括承認
+  /**
+   * 承認待ち（提出済み・確認済み）をまとめて承認する。
+   * 運用上ほぼ一括で承認するため、行の選択は不要にしている
+   * （チェックを付けないとボタンが出ず、気づかれなかった）。
+   * 個別に承認したいときは各行の「承認」ボタンを使う。
+   */
   const handleBulkApprove = async () => {
-    if (!profile || selectedIds.size === 0) return;
+    if (!profile) return;
+    const targetIds = actionableSheets.map((s) => s.id);
+    if (targetIds.length === 0) return;
     try {
-      await bulkApproveAttendanceSheets(Array.from(selectedIds), profile.id);
-      success(`${selectedIds.size}件の出勤簿を承認しました`);
-      setSelectedIds(new Set());
+      await bulkApproveAttendanceSheets(targetIds, profile.id);
+      success(`${targetIds.length}件の出勤簿を承認しました`);
       await fetchData();
     } catch {
       toastError('一括承認に失敗しました');
@@ -477,12 +521,18 @@ export default function AttendanceManagementPage() {
   };
 
   // 教室長: 管理者へ一括提出
+  /**
+   * 教室長 → 管理者へ提出。
+   * 対象は表示中の「提出済み」全件（行の選択は不要）。
+   * 以前は行のチェックが必須で、提出先を選んでもボタンが出ず「提出できない」状態に見えていた。
+   */
   const handleBulkReview = async () => {
-    if (!profile || selectedIds.size === 0 || !selectedAdminId) return;
+    if (!profile || !selectedAdminId) return;
+    const targetIds = actionableSheets.map((s) => s.id);
+    if (targetIds.length === 0) return;
     try {
-      await reviewAttendanceSheets(Array.from(selectedIds), profile.id, selectedAdminId);
-      success(`${selectedIds.size}件の出勤簿を管理者へ提出しました`);
-      setSelectedIds(new Set());
+      await reviewAttendanceSheets(targetIds, profile.id, selectedAdminId);
+      success(`${targetIds.length}件の出勤簿を管理者へ提出しました`);
       await fetchData();
     } catch {
       toastError('提出に失敗しました');
@@ -535,7 +585,8 @@ export default function AttendanceManagementPage() {
   };
 
   const handleViewDetail = (sheet: SummaryRow) => {
-    router.push(`/admin/attendance/sheets/${sheet.id}`);
+    // 表示中の月を渡す。詳細の「戻る」がこの月の一覧へ返るようにするため。
+    router.push(`/admin/attendance/sheets/${sheet.id}?ym=${yearMonth}`);
   };
 
   const handleOpenPortal = () => {
@@ -690,13 +741,6 @@ export default function AttendanceManagementPage() {
   };
 
   // 並べ替え済みシート
-  /**
-   * 勤務実績がない（全項目0）行か。
-   * 未入力の講師も一覧に出す仕様にしたため、実際には勤務していない講師の行も並ぶ。
-   * 給与確認のときに邪魔にならないよう、下にまとめる／隠すの判定に使う。
-   */
-  const hasNoWork = (s: SummaryRow) => s.grand_total === 0 && s.total_amount === 0;
-
   const noWorkCount = useMemo(() => sheets.filter(hasNoWork).length, [sheets]);
 
   const sortedSheets = useMemo(() => {
@@ -912,8 +956,13 @@ export default function AttendanceManagementPage() {
    * ★ 合計行の colSpan をこの定数から引くこと。ヘッダーに列を足したのに合計行の
    *   colSpan を直し忘れると、合計行だけ1列ぶん横にずれる（社員番号列の追加で実際に起きた）。
    *   数字を直書きすると次に列が増えたとき同じ事故になる。
+   *   社員番号列は admin のときだけ出すので連動させる。
+   *   内訳: 教室 / 社員番号 / 講師名 / ステータス
    */
-  const leadingColumnCount = showSchoolColumn ? 5 : 4;
+  const leadingColumnCount =
+    2 + // 講師名・ステータス（常に出る）
+    (showSchoolColumn ? 1 : 0) +
+    (canSeeEmployeeNo ? 1 : 0);
 
   const formatLateEarlyDate = (dateStr: string): string => {
     const date = new Date(dateStr);
@@ -958,7 +1007,7 @@ export default function AttendanceManagementPage() {
                 <Button
                   size="sm"
                   variant="secondary"
-                  onClick={() => setYearMonth(getPrevMonth(getCurrentYearMonth()))}
+                  onClick={() => changeYearMonth(getPrevMonth(getCurrentYearMonth()))}
                 >
                   前月を表示
                 </Button>
@@ -1086,7 +1135,7 @@ export default function AttendanceManagementPage() {
                 <div className="flex items-center gap-2">
                   <Button
                     variant="ghost"
-                    onClick={() => setYearMonth(getPrevMonth(yearMonth))}
+                    onClick={() => changeYearMonth(getPrevMonth(yearMonth))}
                     className="p-2"
                   >
                     <ChevronLeft className="h-5 w-5" />
@@ -1096,7 +1145,7 @@ export default function AttendanceManagementPage() {
                   </span>
                   <Button
                     variant="ghost"
-                    onClick={() => setYearMonth(getNextMonth(yearMonth))}
+                    onClick={() => changeYearMonth(getNextMonth(yearMonth))}
                     className="p-2"
                   >
                     <ChevronRight className="h-5 w-5" />
@@ -1125,27 +1174,51 @@ export default function AttendanceManagementPage() {
                           ))}
                         </SelectContent>
                       </Select>
-                      {selectedIds.size > 0 && (
-                        <Button onClick={handleBulkReview} disabled={!selectedAdminId}>
-                          <Send className="h-4 w-4 mr-2" />
-                          選択した{selectedIds.size}件を管理者へ提出
-                        </Button>
-                      )}
+                      {/* 行の選択は不要。提出先を選べば押せる */}
+                      <Button onClick={handleBulkReview} disabled={!selectedAdminId}>
+                        <Send className="h-4 w-4 mr-2" />
+                        提出済み{actionableCount}件を管理者へ提出
+                      </Button>
                     </div>
                   </>
                 ) : (
                   <>
                     <span className="text-sm text-text-body">承認待ち: {actionableCount}件</span>
-                    {selectedIds.size > 0 && (
-                      <Button onClick={handleBulkApprove}>
-                        <CheckCircle className="h-4 w-4 mr-2" />
-                        選択した{selectedIds.size}件を一括承認
-                      </Button>
-                    )}
+                    {/* 行の選択は不要。個別に承認したいときは各行の「承認」ボタンを使う */}
+                    <Button onClick={handleBulkApprove}>
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      承認待ち{actionableCount}件を一括承認
+                    </Button>
                   </>
                 )}
               </div>
             )}
+
+            {/* 提出までの流れ。誰が何をするとステータスがどう進むかを1行で示す。
+                ステータス名は ATTENDANCE_STATUS_LABELS と対で、文言を変えるときは両方直すこと。 */}
+            <div className="mb-4 rounded-lg border border-border bg-surface p-3">
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-2 text-xs">
+                <span className="font-medium text-text-heading">出勤簿の流れ</span>
+                {ATTENDANCE_FLOW_STEPS.map((step, i) => (
+                  <span key={step.status} className="flex items-center gap-2">
+                    {i > 0 && <span className="text-text-muted">→</span>}
+                    <span className="flex items-center gap-1.5">
+                      <Badge className={ATTENDANCE_STATUS_COLORS[step.status]}>
+                        {ATTENDANCE_STATUS_LABELS[step.status]}
+                      </Badge>
+                      <span className="text-text-muted">{step.actor}</span>
+                    </span>
+                  </span>
+                ))}
+              </div>
+              <p className="mt-2 text-[11px] text-text-muted">
+                内容に不備があれば「差戻」で1つ前に返せます（差し戻された出勤簿は
+                <Badge className={`${ATTENDANCE_STATUS_COLORS.rejected} mx-1`}>
+                  {ATTENDANCE_STATUS_LABELS.rejected}
+                </Badge>
+                になり、講師が直して再提出します）。
+              </p>
+            </div>
 
             {isLoading ? (
               <Loading size="md" />
@@ -1153,184 +1226,257 @@ export default function AttendanceManagementPage() {
               <div className="text-center py-8 text-text-body">出勤簿がありません</div>
             ) : isAdmin && isTransposedView ? (
               /* ===== 管理者: 転置ビュー ===== */
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="min-w-[120px] sticky left-0 bg-surface-raised z-10">
-                        項目
-                      </TableHead>
-                      {sortedSheets.map((sheet) => {
-                        // 転置ビューでも退職状態バッジを表示する
-                        const exitStatusT = getExitStatus(sheet.teacher?.exit_date);
-                        return (
-                          <TableHead key={sheet.id} className="text-center min-w-[100px]">
-                            <div className="flex flex-col items-center gap-1">
-                              <span className="font-medium text-xs">
-                                {sheet.teacher?.name ?? '不明'}
-                              </span>
-                              {/* 社員番号を講師名の下に小さく表示 */}
-                              {sheet.teacher?.employee_no && (
-                                <span className="text-[10px] text-gray-400 tabular-nums">
-                                  {sheet.teacher.employee_no}
-                                </span>
-                              )}
-                              {komaChangeLabels(sheet).map((label) => (
-                                <Badge
-                                  key={label}
-                                  className="bg-purple-600 text-white text-[9px] px-1"
-                                >
-                                  {label}
-                                </Badge>
-                              ))}
-                              {/* 退職状態バッジ（転置ビュー用） */}
-                              {exitStatusT === 'leaving' && sheet.teacher?.exit_date && (
-                                <Badge className="bg-orange-500 text-white text-[9px] px-1">
-                                  退職予定 {formatExitMonthDay(sheet.teacher.exit_date)}
-                                </Badge>
-                              )}
-                              {exitStatusT === 'retired' && (
-                                <Badge className="bg-gray-400 text-white text-[9px] px-1">
-                                  退職
-                                </Badge>
-                              )}
-                              <Badge
-                                className={`text-[10px] ${ATTENDANCE_STATUS_COLORS[sheet.status as AttendanceSheetStatus]}`}
-                              >
-                                {ATTENDANCE_STATUS_LABELS[sheet.status as AttendanceSheetStatus]}
-                              </Badge>
-                            </div>
-                          </TableHead>
-                        );
-                      })}
-                      <TableHead className="text-center font-bold min-w-[80px]">合計</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {/* コマ種別行 */}
-                    {displayTypes.map((type) => (
-                      <TableRow key={type.id}>
-                        <TableCell className="font-medium sticky left-0 bg-surface-raised z-10">
-                          {type.name}
-                        </TableCell>
-                        {sortedSheets.map((sheet) => {
-                          const td = Object.values(sheet.type_totals).find(
-                            (t) => t.name === type.name
-                          );
+              <>
+                {/* 日数系の行は名前だけだと取り違えやすいので、集計の定義をその場に置く。
+                    定義は getAttendanceSummary（prep_days / work_days）と対。 */}
+                <div className="mb-3 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-text-muted">
+                  <span>
+                    <span className="font-medium text-text-body">準備給日数</span>
+                    ＝授業のあった日数（授業の準備に対して払う）
+                  </span>
+                  <span>
+                    <span className="font-medium text-text-body">勤務日数</span>
+                    ＝授業・事務を問わず何かしら入力のあった日数
+                  </span>
+                  <span>
+                    <span className="font-medium text-text-body">金額合計</span>
+                    ＝単価×コマ数の概算（実支給額ではありません）
+                  </span>
+                </div>
+                <div className="overflow-x-auto" onMouseLeave={() => setHoveredSheetId(null)}>
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="border-b-2 border-border-strong">
+                        <TableHead className="min-w-[120px] sticky left-0 bg-surface-raised z-20 border-r-2 border-border-strong">
+                          項目
+                        </TableHead>
+                        {sortedSheets.map((sheet, colIndex) => {
+                          // 転置ビューでも退職状態バッジを表示する
+                          const exitStatusT = getExitStatus(sheet.teacher?.exit_date);
                           return (
-                            <TableCell key={sheet.id} className="text-center">
-                              {td?.total || 0}
-                              {type.unit === 'hours' ? 'h' : ''}
-                            </TableCell>
+                            <TableHead
+                              key={sheet.id}
+                              className={`text-center min-w-[100px] ${TRANSPOSED_COL_BORDER}`}
+                              style={transposedColumnStyle(colIndex, hoveredSheetId === sheet.id)}
+                              onMouseEnter={() => setHoveredSheetId(sheet.id)}
+                            >
+                              <div className="flex flex-col items-center gap-1">
+                                <span className="font-medium text-xs">
+                                  {sheet.teacher?.name ?? '不明'}
+                                </span>
+                                {/* 社員番号を講師名の下に小さく表示（システム管理者のみ） */}
+                                {canSeeEmployeeNo && sheet.teacher?.employee_no && (
+                                  <span className="text-[10px] text-gray-400 tabular-nums">
+                                    {sheet.teacher.employee_no}
+                                  </span>
+                                )}
+                                {komaChangeLabels(sheet).map((label) => (
+                                  <Badge
+                                    key={label}
+                                    className="bg-purple-600 text-white text-[9px] px-1"
+                                  >
+                                    {label}
+                                  </Badge>
+                                ))}
+                                {/* 退職状態バッジ（転置ビュー用） */}
+                                {exitStatusT === 'leaving' && sheet.teacher?.exit_date && (
+                                  <Badge className="bg-orange-500 text-white text-[9px] px-1">
+                                    退職予定 {formatExitMonthDay(sheet.teacher.exit_date)}
+                                  </Badge>
+                                )}
+                                {exitStatusT === 'retired' && (
+                                  <Badge className="bg-gray-400 text-white text-[9px] px-1">
+                                    退職
+                                  </Badge>
+                                )}
+                                <Badge
+                                  className={`text-[10px] ${ATTENDANCE_STATUS_COLORS[sheet.status as AttendanceSheetStatus]}`}
+                                >
+                                  {ATTENDANCE_STATUS_LABELS[sheet.status as AttendanceSheetStatus]}
+                                </Badge>
+                              </div>
+                            </TableHead>
                           );
                         })}
-                        <TableCell className="text-center font-medium">
-                          {sortedSheets.reduce((sum, sheet) => {
+                        <TableHead className="text-center font-bold min-w-[80px] border-l-2 border-border-strong">
+                          合計
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {/* コマ種別行 */}
+                      {displayTypes.map((type) => (
+                        <TableRow key={type.id}>
+                          <TableCell className={TRANSPOSED_LABEL_CELL}>{type.name}</TableCell>
+                          {sortedSheets.map((sheet, colIndex) => {
                             const td = Object.values(sheet.type_totals).find(
                               (t) => t.name === type.name
                             );
-                            return sum + (td?.total || 0);
-                          }, 0)}
-                          {type.unit === 'hours' ? 'h' : ''}
+                            const value = td?.total || 0;
+                            return (
+                              <TableCell
+                                key={sheet.id}
+                                className={`text-center tabular-nums ${TRANSPOSED_COL_BORDER} ${
+                                  // 0 は「入力なし」であって読み取る必要がない数字なので薄くする
+                                  value === 0 ? 'text-text-faint' : ''
+                                }`}
+                                style={transposedColumnStyle(colIndex, hoveredSheetId === sheet.id)}
+                                onMouseEnter={() => setHoveredSheetId(sheet.id)}
+                              >
+                                {value}
+                                {type.unit === 'hours' ? 'h' : ''}
+                              </TableCell>
+                            );
+                          })}
+                          <TableCell className="text-center font-medium tabular-nums border-l-2 border-border-strong bg-surface-hover">
+                            {sortedSheets.reduce((sum, sheet) => {
+                              const td = Object.values(sheet.type_totals).find(
+                                (t) => t.name === type.name
+                              );
+                              return sum + (td?.total || 0);
+                            }, 0)}
+                            {type.unit === 'hours' ? 'h' : ''}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      {/* 金額合計。単価×コマ数のざっくり計算で実際の支給額とは一致しないため、
+                        参考値として薄く出すだけにして、強調はしない */}
+                      <TableRow>
+                        <TableCell className={`${TRANSPOSED_LABEL_CELL} text-text-muted`}>
+                          金額合計
+                          <span className="ml-1 text-[10px] font-normal text-text-faint">概算</span>
+                        </TableCell>
+                        {sortedSheets.map((sheet, colIndex) => (
+                          <TableCell
+                            key={sheet.id}
+                            className={`text-right text-xs text-text-muted tabular-nums ${TRANSPOSED_COL_BORDER}`}
+                            style={transposedColumnStyle(colIndex, hoveredSheetId === sheet.id)}
+                            onMouseEnter={() => setHoveredSheetId(sheet.id)}
+                          >
+                            ¥{sheet.total_amount.toLocaleString()}
+                          </TableCell>
+                        ))}
+                        <TableCell className="text-right text-xs text-text-muted tabular-nums border-l-2 border-border-strong bg-surface-hover">
+                          ¥{sortedSheets.reduce((s, r) => s + r.total_amount, 0).toLocaleString()}
                         </TableCell>
                       </TableRow>
-                    ))}
-                    {/* 金額合計 */}
-                    <TableRow className="bg-gray-50 font-medium">
-                      <TableCell className="sticky left-0 bg-gray-50 z-10">金額合計</TableCell>
-                      {sortedSheets.map((sheet) => (
-                        <TableCell key={sheet.id} className="text-right">
-                          ¥{sheet.total_amount.toLocaleString()}
+                      {/* 準備給日数（＝授業があった日数） */}
+                      <TableRow>
+                        <TableCell className={TRANSPOSED_LABEL_CELL}>準備給日数</TableCell>
+                        {sortedSheets.map((sheet, colIndex) => (
+                          <TableCell
+                            key={sheet.id}
+                            className={`text-center tabular-nums ${TRANSPOSED_COL_BORDER}`}
+                            style={transposedColumnStyle(colIndex, hoveredSheetId === sheet.id)}
+                            onMouseEnter={() => setHoveredSheetId(sheet.id)}
+                          >
+                            {sheet.prep_days}日
+                          </TableCell>
+                        ))}
+                        <TableCell className="text-center font-medium tabular-nums border-l-2 border-border-strong bg-surface-hover">
+                          {sortedSheets.reduce((s, r) => s + r.prep_days, 0)}日
                         </TableCell>
-                      ))}
-                      <TableCell className="text-right font-bold">
-                        ¥{sortedSheets.reduce((s, r) => s + r.total_amount, 0).toLocaleString()}
-                      </TableCell>
-                    </TableRow>
-                    {/* 準備給日数 */}
-                    <TableRow>
-                      <TableCell className="font-medium sticky left-0 bg-surface-raised z-10">
-                        準備給日数
-                      </TableCell>
-                      {sortedSheets.map((sheet) => (
-                        <TableCell key={sheet.id} className="text-center">
-                          {sheet.prep_days}日
+                      </TableRow>
+                      {/* 勤務日数（＝授業・事務を問わず何かしら勤務した日数） */}
+                      <TableRow>
+                        <TableCell className={TRANSPOSED_LABEL_CELL}>勤務日数</TableCell>
+                        {sortedSheets.map((sheet, colIndex) => (
+                          <TableCell
+                            key={sheet.id}
+                            className={`text-center tabular-nums ${TRANSPOSED_COL_BORDER}`}
+                            style={transposedColumnStyle(colIndex, hoveredSheetId === sheet.id)}
+                            onMouseEnter={() => setHoveredSheetId(sheet.id)}
+                          >
+                            {sheet.work_days}日
+                          </TableCell>
+                        ))}
+                        <TableCell className="text-center font-medium tabular-nums border-l-2 border-border-strong bg-surface-hover">
+                          {sortedSheets.reduce((s, r) => s + r.work_days, 0)}日
                         </TableCell>
-                      ))}
-                      <TableCell className="text-center font-medium">
-                        {sortedSheets.reduce((s, r) => s + r.prep_days, 0)}日
-                      </TableCell>
-                    </TableRow>
-                    {/* 勤務日数 */}
-                    <TableRow>
-                      <TableCell className="font-medium sticky left-0 bg-surface-raised z-10">
-                        勤務日数
-                      </TableCell>
-                      {sortedSheets.map((sheet) => (
-                        <TableCell key={sheet.id} className="text-center">
-                          {sheet.work_days}日
+                      </TableRow>
+                      {/* 交通費 (editable) */}
+                      <TableRow>
+                        <TableCell className={TRANSPOSED_LABEL_CELL}>交通費</TableCell>
+                        {sortedSheets.map((sheet, colIndex) => (
+                          <TableCell
+                            key={sheet.id}
+                            className={TRANSPOSED_COL_BORDER}
+                            style={transposedColumnStyle(colIndex, hoveredSheetId === sheet.id)}
+                            onMouseEnter={() => setHoveredSheetId(sheet.id)}
+                          >
+                            <Input
+                              type="number"
+                              min="0"
+                              value={sheet.transport_cost || ''}
+                              onChange={(e) => handleTransportCostChange(sheet.id, e.target.value)}
+                              placeholder="0"
+                              className="w-20 h-7 text-sm text-right mx-auto"
+                            />
+                          </TableCell>
+                        ))}
+                        <TableCell className="text-right font-medium tabular-nums border-l-2 border-border-strong bg-surface-hover">
+                          ¥{sortedSheets.reduce((s, r) => s + r.transport_cost, 0).toLocaleString()}
                         </TableCell>
-                      ))}
-                      <TableCell className="text-center font-medium">
-                        {sortedSheets.reduce((s, r) => s + r.work_days, 0)}日
-                      </TableCell>
-                    </TableRow>
-                    {/* 交通費 (editable) */}
-                    <TableRow>
-                      <TableCell className="font-medium sticky left-0 bg-surface-raised z-10">
-                        交通費
-                      </TableCell>
-                      {sortedSheets.map((sheet) => (
-                        <TableCell key={sheet.id}>
-                          <Input
-                            type="number"
-                            min="0"
-                            value={sheet.transport_cost || ''}
-                            onChange={(e) => handleTransportCostChange(sheet.id, e.target.value)}
-                            placeholder="0"
-                            className="w-20 h-7 text-sm text-right mx-auto"
-                          />
-                        </TableCell>
-                      ))}
-                      <TableCell className="text-right font-medium">
-                        ¥{sortedSheets.reduce((s, r) => s + r.transport_cost, 0).toLocaleString()}
-                      </TableCell>
-                    </TableRow>
-                    {/* 備考 (editable) */}
-                    <TableRow>
-                      <TableCell className="font-medium sticky left-0 bg-surface-raised z-10">
-                        備考
-                      </TableCell>
-                      {sortedSheets.map((sheet) => (
-                        <TableCell key={sheet.id}>
-                          <Input
-                            value={sheet.admin_note || ''}
-                            onChange={(e) => handleAdminNoteChange(sheet.id, e.target.value)}
-                            placeholder="備考"
-                            className="h-7 text-sm min-w-[80px]"
-                          />
-                        </TableCell>
-                      ))}
-                      <TableCell />
-                    </TableRow>
-                    {/* 操作行 */}
-                    <TableRow className="bg-gray-50">
-                      <TableCell className="font-medium sticky left-0 bg-gray-50 z-10">
-                        操作
-                      </TableCell>
-                      {sortedSheets.map((sheet) => (
-                        <TableCell key={sheet.id}>
-                          <div className="flex flex-col gap-1 items-center">
-                            <Button
-                              variant="secondary"
-                              size="sm"
-                              onClick={() => handleViewDetail(sheet)}
-                              className="text-xs w-full"
-                            >
-                              詳細
-                            </Button>
-                            {sheet.status === 'reviewed' && (
-                              <>
+                      </TableRow>
+                      {/* 備考 (editable) */}
+                      <TableRow>
+                        <TableCell className={TRANSPOSED_LABEL_CELL}>備考</TableCell>
+                        {sortedSheets.map((sheet, colIndex) => (
+                          <TableCell
+                            key={sheet.id}
+                            className={TRANSPOSED_COL_BORDER}
+                            style={transposedColumnStyle(colIndex, hoveredSheetId === sheet.id)}
+                            onMouseEnter={() => setHoveredSheetId(sheet.id)}
+                          >
+                            <Input
+                              value={sheet.admin_note || ''}
+                              onChange={(e) => handleAdminNoteChange(sheet.id, e.target.value)}
+                              placeholder="備考"
+                              className="h-7 text-sm min-w-[80px]"
+                            />
+                          </TableCell>
+                        ))}
+                        <TableCell className="border-l-2 border-border-strong bg-surface-hover" />
+                      </TableRow>
+                      {/* 操作行 */}
+                      <TableRow className="border-t-2 border-border-strong">
+                        <TableCell className={TRANSPOSED_LABEL_CELL}>操作</TableCell>
+                        {sortedSheets.map((sheet, colIndex) => (
+                          <TableCell
+                            key={sheet.id}
+                            className={TRANSPOSED_COL_BORDER}
+                            style={transposedColumnStyle(colIndex, hoveredSheetId === sheet.id)}
+                            onMouseEnter={() => setHoveredSheetId(sheet.id)}
+                          >
+                            <div className="flex flex-col gap-1 items-center">
+                              <Button
+                                variant="secondary"
+                                size="sm"
+                                onClick={() => handleViewDetail(sheet)}
+                                className="text-xs w-full"
+                              >
+                                詳細
+                              </Button>
+                              {sheet.status === 'reviewed' && (
+                                <>
+                                  <Button
+                                    size="sm"
+                                    onClick={() => handleApprove(sheet)}
+                                    className="text-green-600 hover:text-green-700 hover:bg-green-50 text-xs w-full"
+                                  >
+                                    承認
+                                  </Button>
+                                  <Button
+                                    variant="danger"
+                                    size="sm"
+                                    onClick={() => handleRejectClick(sheet, 'to-manager')}
+                                    className="text-xs w-full"
+                                  >
+                                    差戻
+                                  </Button>
+                                </>
+                              )}
+                              {sheet.status === 'submitted' && (
                                 <Button
                                   size="sm"
                                   onClick={() => handleApprove(sheet)}
@@ -1338,62 +1484,40 @@ export default function AttendanceManagementPage() {
                                 >
                                   承認
                                 </Button>
+                              )}
+                              {sheet.status === 'approved' && (
                                 <Button
-                                  variant="danger"
+                                  variant="secondary"
                                   size="sm"
-                                  onClick={() => handleRejectClick(sheet, 'to-manager')}
+                                  onClick={() => handleReopenClick(sheet)}
                                   className="text-xs w-full"
                                 >
-                                  差戻
+                                  <RotateCcw className="h-3 w-3 mr-1" />
+                                  取消
                                 </Button>
-                              </>
-                            )}
-                            {sheet.status === 'submitted' && (
-                              <Button
-                                size="sm"
-                                onClick={() => handleApprove(sheet)}
-                                className="text-green-600 hover:text-green-700 hover:bg-green-50 text-xs w-full"
-                              >
-                                承認
-                              </Button>
-                            )}
-                            {sheet.status === 'approved' && (
-                              <Button
-                                variant="secondary"
-                                size="sm"
-                                onClick={() => handleReopenClick(sheet)}
-                                className="text-xs w-full"
-                              >
-                                <RotateCcw className="h-3 w-3 mr-1" />
-                                取消
-                              </Button>
-                            )}
-                          </div>
-                        </TableCell>
-                      ))}
-                      <TableCell />
-                    </TableRow>
-                  </TableBody>
-                </Table>
-              </div>
+                              )}
+                            </div>
+                          </TableCell>
+                        ))}
+                        <TableCell className="border-l-2 border-border-strong bg-surface-hover" />
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </div>
+              </>
             ) : (
               /* ===== 通常テーブル ===== */
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-12">
-                        <Checkbox
-                          checked={actionableCount > 0 && selectedIds.size === actionableCount}
-                          onCheckedChange={toggleSelectAll}
-                          disabled={actionableCount === 0}
-                        />
-                      </TableHead>
                       {/* 見出しは折り返すと3行に崩れて表が読みにくくなるため、すべて1行に固定する */}
                       {showSchoolColumn && (
                         <TableHead className="whitespace-nowrap">教室</TableHead>
                       )}
-                      <TableHead className="min-w-[60px] whitespace-nowrap">社員番号</TableHead>
+                      {canSeeEmployeeNo && (
+                        <TableHead className="min-w-[60px] whitespace-nowrap">社員番号</TableHead>
+                      )}
                       <TableHead className="whitespace-nowrap">講師名</TableHead>
                       <TableHead className="text-center whitespace-nowrap">ステータス</TableHead>
                       {displayTypes.map((type) => (
@@ -1420,21 +1544,14 @@ export default function AttendanceManagementPage() {
                           key={sheet.id}
                           className={exitStatus === 'retired' ? 'opacity-60' : undefined}
                         >
-                          <TableCell>
-                            <Checkbox
-                              checked={selectedIds.has(sheet.id)}
-                              onCheckedChange={() => toggleSelect(sheet.id)}
-                              disabled={!actionableStatuses.includes(sheet.status)}
-                            />
-                          </TableCell>
                           {showSchoolColumn && (
                             <TableCell className="whitespace-nowrap">
                               {sheet.school?.name ?? ''}
                             </TableCell>
                           )}
-                          <TableCell className="text-sm text-gray-500 tabular-nums">
-                            {isAdmin ? (
-                              // 社員番号インライン編集（admin/owner のみ）。Enterで確定（blur）。
+                          {canSeeEmployeeNo && (
+                            <TableCell className="text-sm text-gray-500 tabular-nums">
+                              {/* 社員番号インライン編集（システム管理者のみ）。Enterで確定（blur）。 */}
                               <Input
                                 key={`emp-${sheet.id}-${sheet.teacher?.employee_no ?? ''}`}
                                 defaultValue={sheet.teacher?.employee_no ?? ''}
@@ -1447,10 +1564,8 @@ export default function AttendanceManagementPage() {
                                 inputMode="numeric"
                                 className="w-16 h-7 text-center mx-auto"
                               />
-                            ) : (
-                              (sheet.teacher?.employee_no ?? '—')
-                            )}
-                          </TableCell>
+                            </TableCell>
+                          )}
                           <TableCell className="font-medium">
                             {/* 講師名は1行に固定し、バッジは名前の下に折り返す（名前自体が2行に割れるのを防ぐ） */}
                             <div className="whitespace-nowrap">{sheet.teacher?.name ?? '不明'}</div>

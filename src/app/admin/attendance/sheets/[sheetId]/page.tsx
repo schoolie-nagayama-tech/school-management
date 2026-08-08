@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { AdminLayout } from '@/components/layouts';
 import {
   Button,
@@ -34,6 +34,7 @@ import {
   CheckCircle,
   XCircle,
   RotateCcw,
+  Send,
 } from 'lucide-react';
 import { useToast } from '@/hooks/useToast';
 import {
@@ -45,6 +46,7 @@ import {
   rejectToTeacher,
   rejectToManager,
   reopenAttendanceSheet,
+  submitAttendanceSheet,
 } from '@/lib/api/attendance';
 import { formatYearMonth, getMonthDates, getPrevMonth, getNextMonth } from '@/lib/utils/date';
 import { useAuth } from '@/contexts/AuthContext';
@@ -63,6 +65,8 @@ import { LateEarlySelect } from '@/components/attendance/LateEarlySelect';
 export default function AttendanceSheetDetailPage() {
   const params = useParams();
   const router = useRouter();
+  // 一覧から渡された表示月。戻るときに同じ月へ返すために使う
+  const backYearMonth = useSearchParams()?.get('ym') ?? '';
   const { profile } = useAuth();
   const { toasts, removeToast, success, error: toastError } = useToast();
   const sheetId = params.sheetId as string;
@@ -77,6 +81,7 @@ export default function AttendanceSheetDetailPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false);
   const [isReopenDialogOpen, setIsReopenDialogOpen] = useState(false);
+  const [isSubmitDialogOpen, setIsSubmitDialogOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
 
   const fetchData = useCallback(async () => {
@@ -127,6 +132,17 @@ export default function AttendanceSheetDetailPage() {
 
   const dates = getMonthDates(sheet.year_month);
   const status = sheet.status as AttendanceSheetStatus;
+
+  // 自分自身の出勤簿を開いているか。
+  // ★ 事務員など「室長以上のロールだが自分も出勤簿を書く」人のための判定。
+  //   講師用の出勤簿ページ(/attendance/[schoolCode]/[teacherId])は role='teacher' 前提で
+  //   開けないため、提出ボタンがどこにも無く、入力しても「入力中」のまま止まっていた。
+  const isOwnSheet = !!profile?.id && profile.id === sheet.teacher_id;
+
+  // 提出できるのは「本人」と「管理者(admin/owner)」。
+  // ★ 管理者が他人の分も提出できる必要がある: 退職した講師は本人が提出できないので、
+  //   誰も出せないまま永久に「入力中」で残り、承認フローに乗らなくなる。
+  const canSubmitSheet = (isOwnSheet || isAdmin) && (status === 'draft' || status === 'rejected');
 
   // コマ数変更（管理者は常に編集可能）
   const handleValueChange = async (date: string, typeId: string, value: string) => {
@@ -224,6 +240,19 @@ export default function AttendanceSheetDetailPage() {
     }
   };
 
+  // 出勤簿を提出（入力中／差し戻し → 提出済み）。本人の提出と管理者の代理提出で共通。
+  const handleSubmitSheet = async () => {
+    try {
+      await submitAttendanceSheet(sheetId);
+      success(isOwnSheet ? '提出しました' : '代理で提出しました');
+      setIsSubmitDialogOpen(false);
+      fetchData();
+    } catch (error) {
+      console.error('Failed to submit sheet:', error);
+      toastError('提出に失敗しました');
+    }
+  };
+
   // 承認取消（提出済みに戻す）
   const handleReopen = async () => {
     try {
@@ -263,7 +292,12 @@ export default function AttendanceSheetDetailPage() {
           <div className="flex items-center gap-4">
             <Button
               variant="ghost"
-              onClick={() => router.push('/admin/attendance')}
+              // 一覧で見ていた月(?ym=)へ戻す。付いていなければ従来どおり既定の月。
+              onClick={() =>
+                router.push(
+                  backYearMonth ? `/admin/attendance?ym=${backYearMonth}` : '/admin/attendance'
+                )
+              }
               className="p-2"
             >
               <ArrowLeft className="h-5 w-5" />
@@ -419,6 +453,13 @@ export default function AttendanceSheetDetailPage() {
 
         {/* 操作ボタン */}
         <div className="flex justify-center gap-4">
+          {/* 本人の提出（講師ページを開けない室長以上のための導線）＋管理者による代理提出 */}
+          {canSubmitSheet && (
+            <Button onClick={() => setIsSubmitDialogOpen(true)}>
+              <Send className="h-4 w-4 mr-2" />
+              {isOwnSheet ? (status === 'rejected' ? '再提出する' : '提出する') : '代理で提出する'}
+            </Button>
+          )}
           {/* 教室長: 提出済みの出勤簿を講師に差し戻し */}
           {isManager && status === 'submitted' && (
             <Button variant="danger" onClick={() => setIsRejectDialogOpen(true)}>
@@ -529,6 +570,30 @@ export default function AttendanceSheetDetailPage() {
               キャンセル
             </AlertDialogCancel>
             <AlertDialogAction onClick={handleReopen}>取り消す</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* 提出確認ダイアログ（本人／管理者の代理提出で文言を変える） */}
+      <AlertDialog open={isSubmitDialogOpen} onOpenChange={setIsSubmitDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {isOwnSheet
+                ? '自分の出勤簿を提出しますか？'
+                : `${sheet.teacher?.name ?? 'この講師'}さんの出勤簿を代理で提出しますか？`}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {isOwnSheet
+                ? '提出すると「提出済み」になり、承認の対象になります。提出後も内容は編集できます。'
+                : '本人の代わりに「提出済み」にします。退職などで本人が提出できない出勤簿を承認フローに乗せるための操作です。提出後も内容は編集できます。'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setIsSubmitDialogOpen(false)}>
+              キャンセル
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleSubmitSheet}>提出する</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

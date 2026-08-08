@@ -14,6 +14,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import { getStudentSessionFeed } from '@/lib/api/progress-sessions';
 import type { ProgressSessionWithDetails } from '@/types/database';
 import { toSurnameOnly } from '@/lib/utils/teacherName';
+import {
+  SUBJECT_COLOR,
+  categorizeSubject,
+} from '@/app/students/[studentId]/progress/newProgress.shared';
 
 interface Props {
   studentId: string;
@@ -104,6 +108,11 @@ function MiniCard({
   const hasIssue = session.homework_not_done || session.tardy;
   const st = session.student_textbook;
   const textbookName = st?.textbook?.name || '—';
+  // 同じテキスト名が別科目にもある（例: フォレスタステップが数学と英語の両方）ため、
+  // テキスト名だけでは何の授業か分からない。科目を先頭に出して見分けられるようにする。
+  const subjectColumn = categorizeSubject(st?.textbook?.subject);
+  const subjectLabel = st?.textbook?.subject || subjectColumn;
+  const subjectTint = SUBJECT_COLOR[subjectColumn];
 
   const displayTeacher = session.teacher_name
     ? isTeacher
@@ -122,14 +131,23 @@ function MiniCard({
 
   return (
     <div className={`px-4 py-3 ${hasIssue ? 'bg-amber-50/40' : ''}`}>
-      {/* 上段: テキスト名 / 日付 / 講師 */}
-      <div className="flex items-center justify-between mb-1">
-        <span className="text-xs font-medium text-gray-800">{textbookName}</span>
-        <div className="flex items-center gap-2">
-          <span className="text-[10px] text-gray-400">
+      {/* 上段: 科目 / テキスト名 / 日付・講師（日付と講師は読み取れるサイズ・濃さにする） */}
+      <div className="flex items-center justify-between gap-2 mb-1">
+        <div className="flex items-center gap-1.5 min-w-0">
+          <span
+            className={`shrink-0 px-1.5 py-0.5 rounded text-[11px] font-bold border ${subjectTint.bg} ${subjectTint.text} ${subjectTint.accent}`}
+          >
+            {subjectLabel}
+          </span>
+          <span className="text-sm font-medium text-gray-800 truncate">{textbookName}</span>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <span className="text-xs font-medium text-gray-600 tabular-nums">
             {session.session_date?.replace(/-/g, '/')}
           </span>
-          {displayTeacher && <span className="text-[10px] text-gray-400">{displayTeacher}</span>}
+          {displayTeacher && (
+            <span className="text-xs font-medium text-gray-700">{displayTeacher}</span>
+          )}
         </div>
       </div>
 

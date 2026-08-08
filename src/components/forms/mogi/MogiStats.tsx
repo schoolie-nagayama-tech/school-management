@@ -37,10 +37,14 @@ export function MogiStats({ stats }: MogiStatsProps) {
   return (
     <div className="mb-6 space-y-4">
       {/* 集計サマリー */}
-      <div className="bg-white rounded-xl border border-[#e5e7eb] p-4 grid grid-cols-2 md:grid-cols-3 gap-4 text-center">
+      <div className="bg-white rounded-xl border border-[#e5e7eb] p-4 grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
         <div>
           <p className="text-sm text-[#4b5563]">合計回答数</p>
           <p className="text-xl font-bold text-[#1f2937]">{stats.total_responses} 件</p>
+        </div>
+        <div>
+          <p className="text-sm text-[#4b5563]">申込済み</p>
+          <p className="text-xl font-bold text-[#1f2937]">{stats.applied_count} 件</p>
         </div>
         <div>
           <p className="text-sm text-[#4b5563]">計上済み</p>

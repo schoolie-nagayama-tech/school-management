@@ -24,6 +24,8 @@ import type {
 } from '@/types/database';
 import { getCurriculumItems } from './textbooks';
 import { getDefaultSchoolId } from './schools';
+import { computeKoushuKoma } from '@/lib/utils/koushuKoma';
+import type { KoushuKomaRow, KoushuKomaSummary } from '@/lib/utils/koushuKoma';
 
 // ============================================
 // 生徒×テキスト紐付け（student_textbooks）
@@ -517,6 +519,79 @@ export async function getStudentProgress(
     progress: progressMap.get(item.id.toString()) || null,
   }));
 
+  return result;
+}
+
+/**
+ * 講習の残りコマを教材単位で一括取得する（テキスト一覧カード・進行表確認フィード用）。
+ *
+ * 進行表を開いている画面は既に読み込み済みの進捗行から computeKoushuKoma を直接呼べばよいが、
+ * 一覧系は教材ごとに進捗を持っていないため、ここでまとめて取る。
+ * 1教材あたり進捗行は数十件・指導日はさらに多くなるので、必ず fetchAllInChunks
+ * （id チャンク分割 + チャンク内ページング）で取ること。.in() の素の select は
+ * 1000行で静かに切り捨てられ、コマ数だけが少なく出る（＝遅れて見える）事故になる。
+ *
+ * @param studentTextbookIds 対象の student_textbooks.id（講習ラベル付きのものだけ渡せば十分）
+ * @returns student_textbook_id → 集計。申込コマが無い教材も applied=0 で返る
+ */
+export async function getKoushuKomaByTextbooks(
+  studentTextbookIds: string[]
+): Promise<Record<string, KoushuKomaSummary>> {
+  if (studentTextbookIds.length === 0) return {};
+
+  const rows = await fetchAllInChunks<{
+    id: string;
+    student_textbook_id: string;
+    curriculum_item_id: number;
+    application_count: number;
+    group_number: number | null;
+    applied_group_number: number | null;
+    lessons: { lesson_date: string | null; session_id: string | null }[] | null;
+    // PostgREST の embed は関係の解釈によりオブジェクト/配列どちらでも返り得るため両対応する
+    curriculum_item: { sort_order: number | null } | { sort_order: number | null }[] | null;
+  }>(studentTextbookIds, (chunk, from, to) =>
+    supabase
+      .from('student_progress')
+      .select(
+        'id, student_textbook_id, curriculum_item_id, application_count, group_number, applied_group_number, lessons:student_progress_lessons(lesson_date, session_id), curriculum_item:curriculum_items(sort_order)'
+      )
+      .in('student_textbook_id', chunk)
+      .order('id', { ascending: true })
+      .range(from, to)
+  ).catch((e) => {
+    throw new Error(`講習コマの取得に失敗しました: ${e.message}`);
+  });
+
+  // computeKoushuKoma は「先の単元へ進んだか」を並び順で判断するため、
+  // カリキュラム順（進行表の表示順）に整列してから渡す。
+  // ここは id 順でページングしている（安定ページングのため）ので、並べ替えは取得後に行う。
+  const sortOrderOf = (r: (typeof rows)[number]): number => {
+    const ci = Array.isArray(r.curriculum_item) ? r.curriculum_item[0] : r.curriculum_item;
+    return ci?.sort_order ?? Number.MAX_SAFE_INTEGER;
+  };
+
+  const byTextbook = new Map<string, { order: number; row: KoushuKomaRow }[]>();
+  for (const r of rows) {
+    const list = byTextbook.get(r.student_textbook_id) || [];
+    list.push({
+      order: sortOrderOf(r),
+      row: {
+        rowKey: r.curriculum_item_id,
+        applicationCount: r.application_count || 0,
+        appliedGroupNumber: r.applied_group_number,
+        groupNumber: r.group_number,
+        lessons: r.lessons || [],
+      },
+    });
+    byTextbook.set(r.student_textbook_id, list);
+  }
+
+  const result: Record<string, KoushuKomaSummary> = {};
+  for (const id of studentTextbookIds) {
+    const list = byTextbook.get(id) || [];
+    list.sort((a, b) => a.order - b.order || Number(a.row.rowKey) - Number(b.row.rowKey));
+    result[id] = computeKoushuKoma(list.map((x) => x.row));
+  }
   return result;
 }
 

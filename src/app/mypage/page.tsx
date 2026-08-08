@@ -6,6 +6,7 @@ import { getPortalReports } from '@/lib/mypage/reports';
 import { getPortalChatSummaries } from '@/lib/mypage/chatSummary';
 import { getPortalAnnouncements } from '@/lib/mypage/announcements';
 import { getFormGuidance } from '@/lib/mypage/formGuidance';
+import { hasCurrentConsent } from '@/lib/mypage/legal';
 import {
   selectHero,
   selectFeaturedReport,
@@ -55,6 +56,17 @@ export default async function MyPage() {
   }
 
   const { client, claims } = ctx;
+
+  // ── 法務文書への同意チェック（P3-L4） ──
+  // ★ なぜレイアウト（mypage/layout.tsx）ではなくここで判定するか:
+  //   レイアウトは自分がどのパスで描画されているかを知れない。レイアウトで
+  //   redirect('/mypage/consent') すると、/mypage/consent 自身もそのレイアウトの
+  //   配下なので同じ判定が再び走り、リダイレクトループになる。
+  //   ダッシュボード（ポータルの入口）で判定すれば、同意画面や公開ページを
+  //   巻き込まずに「同意しないと中身に入れない」を成立させられる。
+  if (!(await hasCurrentConsent(claims.sub))) {
+    redirect('/mypage/consent');
+  }
 
   // 自分のアカウント表示名（portal_accounts の SELECT self ポリシー越し）。
   const { data: account } = await client

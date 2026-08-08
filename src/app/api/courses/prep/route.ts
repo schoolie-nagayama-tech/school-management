@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { getApiAuth } from '@/lib/api-auth';
-import { fetchAllPaged } from '@/lib/utils/supabasePaging';
+import { fetchAllPaged, fetchAllInChunks } from '@/lib/utils/supabasePaging';
 import {
   sanitizePriceTable,
   sanitizeEndByGrade,
@@ -276,15 +276,20 @@ async function runBatchForSchool(
   if (targets.includes('student_progress')) {
     promises.push(
       (async () => {
-        const { data } = await supabaseAdmin
-          .from('course_prep_student_progress')
-          .select('*, item:course_prep_progress_items!inner(school_id, season, year)')
-          .eq('item.school_id', schoolId)
-          .eq('item.season', season)
-          .eq('item.year', year);
-        batchResult.student_progress = (data || []).map(
-          ({ item: _item, ...rest }: { item: unknown; [key: string]: unknown }) => rest
+        // 進捗は (生徒 × 進捗項目) でスケールし、1校1シーズンで容易に1000行を超える。
+        // 未ページングだと PostgREST の1000行上限で静かに切り捨てられ、あふれた分のセルが
+        // 「保存したのにリロードで消える」ように見える（本番で発生）。必ず全件ページングする。
+        const data = await fetchAllPaged<{ item: unknown; [key: string]: unknown }>((from, to) =>
+          supabaseAdmin
+            .from('course_prep_student_progress')
+            .select('*, item:course_prep_progress_items!inner(school_id, season, year)')
+            .eq('item.school_id', schoolId)
+            .eq('item.season', season)
+            .eq('item.year', year)
+            .order('id', { ascending: true })
+            .range(from, to)
         );
+        batchResult.student_progress = data.map(({ item: _item, ...rest }) => rest);
       })()
     );
   }
@@ -456,12 +461,18 @@ async function runBatchForSchool(
                 .neq('is_test', true) // 研修用テスト生徒は母数に含めない
                 .then(({ count }) => count || 0)
             : Promise.resolve(0),
+          // 1項目につき生徒数分の行が返るため1000行を超えうる。切り捨てると進捗率が過小になる。
           uniqueLinkedIds.length > 0
-            ? supabaseAdmin
-                .from('course_prep_student_progress')
-                .select('item_id, status')
-                .in('item_id', uniqueLinkedIds)
-                .then(({ data }) => data || [])
+            ? fetchAllInChunks<{ item_id: string; status: string }>(
+                uniqueLinkedIds,
+                (chunk, from, to) =>
+                  supabaseAdmin
+                    .from('course_prep_student_progress')
+                    .select('item_id, status')
+                    .in('item_id', chunk)
+                    .order('id', { ascending: true })
+                    .range(from, to)
+              )
             : Promise.resolve([]),
         ]);
 
@@ -622,14 +633,38 @@ export async function GET(request: NextRequest) {
         }
 
         const itemIds = items.map((i: { id: string }) => i.id);
-        const { data, error } = await supabaseAdmin
-          .from('course_prep_student_progress')
-          .select('*')
-          .eq('school_id', schoolId)
-          .in('item_id', itemIds);
+        // 1項目につき生徒数分の行が返る（1対多）ため、チャンク分割＋チャンク内ページングで全件取得する。
+        // 未ページングだと1000行で切り捨てられ、進捗が保存されていないように見える。
+        try {
+          const data = await fetchAllInChunks(itemIds, (chunk, from, to) =>
+            supabaseAdmin
+              .from('course_prep_student_progress')
+              .select('*')
+              .eq('school_id', schoolId)
+              .in('item_id', chunk)
+              .order('id', { ascending: true })
+              .range(from, to)
+          );
+          return NextResponse.json({ data });
+        } catch (e) {
+          return NextResponse.json(
+            { error: e instanceof Error ? e.message : '進捗の取得に失敗しました' },
+            { status: 500 }
+          );
+        }
+      }
 
-        if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-        return NextResponse.json({ data: data || [] });
+      // 削除ダイアログ用: 進捗表に何が入っているか（消える件数）をサーバーで数える
+      case 'get_progress_table_summary': {
+        const summary = await countProgressTable(supabaseAdmin, schoolId, season, year);
+        return NextResponse.json({
+          data: {
+            item_count: summary.itemIds.length,
+            progress_count: summary.progressCount,
+            has_period: summary.hasPeriod,
+            linked_task_count: summary.linkedTasks,
+          },
+        });
       }
 
       case 'get_period': {
@@ -717,10 +752,17 @@ export async function GET(request: NextRequest) {
 
           const totalStudents = studentCount || 0;
 
-          const { data: progressData } = await supabaseAdmin
-            .from('course_prep_student_progress')
-            .select('item_id, status')
-            .in('item_id', uniqueItemIds);
+          // 1項目につき生徒数分の行が返るため1000行を超えうる。切り捨てると進捗率が過小になる。
+          const progressData = await fetchAllInChunks<{ item_id: string; status: string }>(
+            uniqueItemIds,
+            (chunk, from, to) =>
+              supabaseAdmin
+                .from('course_prep_student_progress')
+                .select('item_id, status')
+                .in('item_id', chunk)
+                .order('id', { ascending: true })
+                .range(from, to)
+          );
 
           for (const itemId of uniqueItemIds) {
             const related = (progressData || []).filter(
@@ -786,6 +828,7 @@ export async function GET(request: NextRequest) {
  *   - "update_student_date"    : 生徒の日付データを更新
  *   - "hide_progress_item"     : 進捗管理項目を非表示
  *   - "delete_progress_item"   : 進捗管理項目を削除
+ *   - "delete_progress_table"  : 進捗表（期・年）をまるごと削除（admin/owner のみ）
  *   - "create_schedule_task"   : 工程表タスクを追加
  *   - "update_schedule_task"   : 工程表タスクを更新
  *   - "delete_schedule_task"   : 工程表タスクを削除
@@ -903,8 +946,18 @@ export async function POST(request: NextRequest) {
         return await handleSaveTemplate(supabaseAdmin, schoolId, params);
       case 'delete_template':
         return await handleDeleteTemplate(supabaseAdmin, params);
-      case 'delete_all_progress_items':
-        return await handleDeleteAllProgressItems(supabaseAdmin, schoolId, params);
+      case 'delete_progress_table': {
+        // 進捗表まるごとの削除は取り消せないので admin/owner に限定する
+        // （UI の isOwnerOrAbove と同じ境界。「ボタンは出ないのに API は叩ける」を作らない）
+        const role = (authResult.user.role || '').toLowerCase();
+        if (role !== 'admin' && role !== 'owner') {
+          return NextResponse.json(
+            { error: '進捗表の削除には管理者権限が必要です' },
+            { status: 403 }
+          );
+        }
+        return await handleDeleteProgressTable(supabaseAdmin, schoolId, params);
+      }
       case 'upsert_schedule_marker':
         return await handleUpsertScheduleMarker(supabaseAdmin, schoolId, params);
       case 'delete_schedule_marker':
@@ -1848,20 +1901,120 @@ async function handleDeleteTemplate(
   return NextResponse.json({ success: true });
 }
 
-async function handleDeleteAllProgressItems(
+// ===== 進捗表まるごとの削除 =====
+
+/**
+ * 進捗表（school × season × year）に何が入っているかを数える。
+ *
+ * 削除ダイアログが「何が消えるのか」を実データで見せるために使う。画面が持っている
+ * items は「非表示項目も表示」のチェック次第で欠けるため、消える件数はサーバーで数える。
+ */
+async function countProgressTable(
+  supabaseAdmin: ReturnType<typeof getSupabaseAdmin>,
+  schoolId: string,
+  season: string,
+  year: number
+): Promise<{ itemIds: string[]; progressCount: number; hasPeriod: boolean; linkedTasks: number }> {
+  const [{ data: items }, { data: period }] = await Promise.all([
+    supabaseAdmin
+      .from('course_prep_progress_items')
+      .select('id')
+      .eq('school_id', schoolId)
+      .eq('season', season)
+      .eq('year', year),
+    supabaseAdmin
+      .from('course_prep_periods')
+      .select('id')
+      .eq('school_id', schoolId)
+      .eq('season', season)
+      .eq('year', year)
+      .maybeSingle(),
+  ]);
+
+  const itemIds = ((items || []) as { id: string }[]).map((i) => i.id);
+  if (itemIds.length === 0) {
+    return { itemIds, progressCount: 0, hasPeriod: !!period, linkedTasks: 0 };
+  }
+
+  const [{ count: progressCount }, { count: linkedTasks }] = await Promise.all([
+    // 入力済みセル数。head:true なので 1000 行上限の切り捨ては効かない（件数だけを取る）。
+    supabaseAdmin
+      .from('course_prep_student_progress')
+      .select('id', { count: 'exact', head: true })
+      .in('item_id', itemIds),
+    // 工程表側からリンクされているタスク数（消えはしないがリンクが外れる旨を警告するため）
+    supabaseAdmin
+      .from('course_prep_schedule_tasks')
+      .select('id', { count: 'exact', head: true })
+      .eq('school_id', schoolId)
+      .in('linked_progress_item_id', itemIds),
+  ]);
+
+  return {
+    itemIds,
+    progressCount: progressCount || 0,
+    hasPeriod: !!period,
+    linkedTasks: linkedTasks || 0,
+  };
+}
+
+/**
+ * 進捗表（school × season × year）をまるごと削除する。取り消しはできない。
+ *
+ * 消えるもの:
+ *   - course_prep_progress_items（列の定義）
+ *   - course_prep_student_progress（生徒×項目のセル。item_id の ON DELETE CASCADE で連鎖削除）
+ *   - course_prep_periods（予算コマ・目標・講習期間などの期間メタ）
+ *
+ * 消さないもの: course_prep_schedule_tasks（工程表は別画面の資産なので巻き添えにしない）。
+ *   進捗項目にリンクしていたタスクは linked_progress_item_id が SET NULL になり、リンクだけ外れる。
+ */
+async function handleDeleteProgressTable(
   supabaseAdmin: ReturnType<typeof getSupabaseAdmin>,
   schoolId: string,
   params: { season: string; year: number }
 ) {
-  const { error } = await supabaseAdmin
+  const { season, year } = params;
+  if (!season || !year) {
+    return NextResponse.json({ error: 'season と year が必要です' }, { status: 400 });
+  }
+
+  // 削除後は数えられないので、実績値は消す前に確定させておく
+  const before = await countProgressTable(supabaseAdmin, schoolId, season, year);
+
+  const { error: itemsError } = await supabaseAdmin
     .from('course_prep_progress_items')
     .delete()
     .eq('school_id', schoolId)
-    .eq('season', params.season)
-    .eq('year', params.year);
+    .eq('season', season)
+    .eq('year', year);
+  if (itemsError) {
+    return NextResponse.json({ error: itemsError.message }, { status: 500 });
+  }
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ success: true });
+  const { error: periodError } = await supabaseAdmin
+    .from('course_prep_periods')
+    .delete()
+    .eq('school_id', schoolId)
+    .eq('season', season)
+    .eq('year', year);
+  if (periodError) {
+    // 項目は消えているので、期間メタだけ残った中途半端な状態を隠さず伝える
+    return NextResponse.json(
+      { error: `項目は削除しましたが期間設定の削除に失敗しました: ${periodError.message}` },
+      { status: 500 }
+    );
+  }
+
+  return NextResponse.json({
+    success: true,
+    deleted: {
+      items: before.itemIds.length,
+      student_progress: before.progressCount,
+      period: before.hasPeriod ? 1 : 0,
+      unlinked_schedule_tasks: before.linkedTasks,
+    },
+  });
 }
 
 // ===== 講習期間メタ =====

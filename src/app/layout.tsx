@@ -12,6 +12,7 @@ import { BulletinUnreadProvider } from '@/contexts/BulletinUnreadContext';
 import { UnreadBulletinGate } from '@/components/bulletin/UnreadBulletinGate';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import { Toaster } from 'sonner';
+import { ServiceWorkerUpdateBar } from '@/components/pwa/ServiceWorkerUpdateBar';
 
 const notoSansJP = Noto_Sans_JP({
   subsets: ['latin'],
@@ -86,6 +87,8 @@ export default async function RootLayout({
                   <UnreadBulletinGate />
                   {/* アプリ全体のトースト通知（ボタン操作のフィードバック用） */}
                   <Toaster richColors position="top-center" />
+                  {/* 新しいバージョンをデプロイしたら通知する（古いJSを掴んだままになるのを防ぐ） */}
+                  <ServiceWorkerUpdateBar />
                   <SpeedInsights />
                 </BulletinUnreadProvider>
               </MasterDataProvider>

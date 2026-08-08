@@ -7,6 +7,8 @@ interface VisibilityBadgeProps {
   hasRegisteredPeriods?: boolean;
   registeredCount?: number;
   externalUrl?: string | null;
+  /** 複数リンク（面談申し込みなど）。link_url ではなくこちらにURLを持つメニューがある */
+  externalUrls?: Array<{ url: string; label: string }> | null;
   onToggle: () => void;
 }
 
@@ -54,6 +56,7 @@ export function VisibilityBadge({
   hasRegisteredPeriods = false,
   registeredCount,
   externalUrl,
+  externalUrls,
   onToggle,
 }: VisibilityBadgeProps) {
   const handleToggle = (e: React.MouseEvent) => {
@@ -62,14 +65,25 @@ export function VisibilityBadge({
   };
 
   // 外部リンクの場合
+  //
+  // ★ URLの有無は link_url と link_urls の両方で見る: 面談申し込みは対象学年ごとに
+  //   複数のリンクを持つため link_urls 側にURLが入り、link_url は null のまま。
+  //   link_url だけを見ていたため「URL未設定」と表示され、公開/非公開の切り替えボタンも
+  //   出なかった（保護者ポータルには link_urls を見て実際に公開されている状態だった）。
+  //
+  // ★ URL未設定でも切り替えボタンは出す: 未設定=保護者に出ない状態ではあるが、
+  //   公開状態そのものは触れないと「公開中なのに止められない」ことになる。
   if (itemType === 'external') {
-    if (!externalUrl) {
-      return <StatusBadge isActive={false} label="URL未設定" />;
-    }
+    const hasUrl = !!externalUrl || (externalUrls?.length ?? 0) > 0;
     return (
-      <div className="flex items-center gap-2">
-        <StatusBadge isActive={isVisible} label={isVisible ? '公開中' : '非公開'} />
-        <ToggleButton isVisible={isVisible} onToggle={handleToggle} />
+      <div className="space-y-1">
+        <div className="flex items-center gap-2">
+          <StatusBadge isActive={isVisible && hasUrl} label={isVisible ? '公開中' : '非公開'} />
+          <ToggleButton isVisible={isVisible} onToggle={handleToggle} />
+        </div>
+        {!hasUrl && (
+          <div className="text-xs text-[#6b7280] pl-0.5">URL未設定 · 保護者には表示されません</div>
+        )}
       </div>
     );
   }

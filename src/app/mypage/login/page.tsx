@@ -1,82 +1,68 @@
-'use client';
+import { isLineLoginConfigured } from '@/lib/mypage/line';
+import { LineLoginButton } from '@/components/mypage/LineLoginButton';
+import { LoginForm } from '@/components/mypage/LoginForm';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { Button, Input } from '@/components/ui';
-import { LogIn } from 'lucide-react';
+export const dynamic = 'force-dynamic';
+
+/** LINEログインの失敗理由 → 画面に出す日本語。コードは callback ルートが付ける。 */
+const LINE_ERROR_MESSAGES: Record<string, string> = {
+  state_mismatch: 'ログインの有効期限が切れました。もう一度お試しください。',
+  exchange_failed: 'LINEとの通信に失敗しました。時間をおいて再度お試しください。',
+  no_invite: '教室から届いた招待URLからログインしてください。',
+  invite_invalid: '招待が無効か期限切れです。教室に再発行をご依頼ください。',
+  already_linked:
+    'このLINEアカウントは既に別のアカウントと連携されています。教室にお問い合わせください。',
+  server_error: 'ログインに失敗しました。時間をおいて再度お試しください。',
+};
 
 /**
  * 保護者ポータル ログイン画面。
- * login_id / パスワードを /api/mypage/login に送り、成功で /mypage へ。
- * モバイルファースト・装飾絵文字なし（アイコンは lucide-react）。
+ *
+ * 認証手段は2本（docs/account-line-design.md §4）:
+ *   - LINEログイン（保護者の主たる手段）
+ *   - 教室発行のID/PW（LINEを持たない生徒向けのフォールバック）
+ * どちらも同じポータルセッション（自前署名JWT）に着地する。
+ *
+ * サーバーコンポーネントなのは、LINEが設定済みかを環境変数で判定して
+ * ボタンの出し分けをするため（未設定の環境で押せないボタンを見せない）。
  */
-export default function MyPageLoginPage() {
-  const router = useRouter();
-  const [loginId, setLoginId] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setSubmitting(true);
-    try {
-      const res = await fetch('/api/mypage/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ login_id: loginId, password }),
-      });
-      const json = await res.json();
-      if (!res.ok) {
-        setError(json.error ?? 'ログインに失敗しました');
-        return;
-      }
-      // 成功: マイページへ。router.refresh でサーバー側のセッション読み取りを反映。
-      router.push('/mypage');
-      router.refresh();
-    } catch {
-      setError('通信に失敗しました。時間をおいて再度お試しください。');
-    } finally {
-      setSubmitting(false);
-    }
-  };
+export default function MyPageLoginPage({
+  searchParams,
+}: {
+  searchParams: { line_error?: string };
+}) {
+  const lineEnabled = isLineLoginConfigured();
+  const lineError = searchParams.line_error
+    ? (LINE_ERROR_MESSAGES[searchParams.line_error] ?? LINE_ERROR_MESSAGES.server_error)
+    : null;
 
   return (
     <div className="pt-8">
       <h1 className="mb-1 text-xl font-bold text-text-heading">ログイン</h1>
       <p className="mb-6 text-sm text-text-muted">
-        教室から配布されたIDとパスワードでログインしてください。
+        {lineEnabled
+          ? 'LINE、または教室から配布されたIDとパスワードでログインしてください。'
+          : '教室から配布されたIDとパスワードでログインしてください。'}
       </p>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <Input
-          label="ログインID"
-          value={loginId}
-          onChange={(e) => setLoginId(e.target.value)}
-          autoComplete="username"
-          required
-        />
-        <Input
-          label="パスワード"
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          autoComplete="current-password"
-          required
-        />
+      {lineError && (
+        <div className="mb-4 rounded-lg border border-danger bg-danger/10 p-3 text-sm text-danger">
+          {lineError}
+        </div>
+      )}
 
-        {error && (
-          <div className="rounded-lg border border-danger bg-danger/10 p-3 text-sm text-danger">
-            {error}
+      {lineEnabled && (
+        <>
+          <LineLoginButton />
+          <div className="my-6 flex items-center gap-3">
+            <span className="h-px flex-1 bg-border" />
+            <span className="text-xs text-text-muted">または</span>
+            <span className="h-px flex-1 bg-border" />
           </div>
-        )}
+        </>
+      )}
 
-        <Button type="submit" isLoading={submitting} className="w-full">
-          <LogIn className="mr-2 h-4 w-4" />
-          ログイン
-        </Button>
-      </form>
+      <LoginForm />
     </div>
   );
 }

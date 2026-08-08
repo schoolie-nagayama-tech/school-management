@@ -3,7 +3,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import { AdminLayout } from '@/components/layouts';
-import { getMogiResponses, getMogiStats, updateMogiChargedStatus } from '@/lib/api/mogi';
+import {
+  getMogiResponses,
+  getMogiStats,
+  updateMogiAppliedStatus,
+  updateMogiChargedStatus,
+} from '@/lib/api/mogi';
 import {
   unlinkResponseFromStudent,
   getArchivedCount,
@@ -26,8 +31,9 @@ import {
   GRADE_NUMBER_TO_NAME,
   MOGI_EXAM_TYPE_OPTIONS,
   MOGI_EXAM_TYPE_LABELS,
+  MOGI_EXAM_TYPE_BADGE_CLASSES,
 } from '@/types/forms/mogi';
-import type { MogiExamType } from '@/types/forms/mogi';
+import type { MogiExamType, DateVenueSelection } from '@/types/forms/mogi';
 import { MogiStats } from '@/components/forms/mogi/MogiStats';
 import { MogiResponseDetailModal } from '@/components/forms/mogi/MogiResponseDetailModal';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
@@ -53,6 +59,7 @@ export default function MogiResponsePage() {
       total: number;
     }>,
     charged_count: 0,
+    applied_count: 0,
     linked_count: 0,
   });
   const [isLoading, setIsLoading] = useState(true);
@@ -70,6 +77,9 @@ export default function MogiResponsePage() {
   const [filterDateId, setFilterDateId] = useState<string>('all');
   const [filterVenueId, setFilterVenueId] = useState<string>('all');
   const [filterChargedStatus, setFilterChargedStatus] = useState<'all' | 'charged' | 'not_charged'>(
+    'all'
+  );
+  const [filterAppliedStatus, setFilterAppliedStatus] = useState<'all' | 'applied' | 'not_applied'>(
     'all'
   );
   const [filterLinkedStatus, setFilterLinkedStatus] = useState<'all' | 'linked' | 'unlinked'>(
@@ -93,6 +103,7 @@ export default function MogiResponsePage() {
         dateId: filterDateId === 'all' ? undefined : filterDateId,
         venueId: filterVenueId === 'all' ? undefined : filterVenueId,
         chargedStatus: filterChargedStatus === 'all' ? undefined : filterChargedStatus,
+        appliedStatus: filterAppliedStatus === 'all' ? undefined : filterAppliedStatus,
         linkedStatus: filterLinkedStatus === 'all' ? undefined : filterLinkedStatus,
         showArchived,
       };
@@ -121,6 +132,7 @@ export default function MogiResponsePage() {
     filterDateId,
     filterVenueId,
     filterChargedStatus,
+    filterAppliedStatus,
     filterLinkedStatus,
     showArchived,
   ]);
@@ -136,8 +148,41 @@ export default function MogiResponsePage() {
     return `${date.getMonth() + 1}/${date.getDate()} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
   };
 
-  const formatSelections = (selections: Array<{ date_label: string; venue_label: string }>) => {
-    return selections.map((s) => `${s.date_label} ${s.venue_label}`).join(', ');
+  /**
+   * 選択した日程・会場を1件1行で描画する。
+   * 同じ日に都立V・私立Vなど複数種別の模試が立つため、日程と会場だけでは
+   * どの模試を申し込んだのか分からない。先頭に種別バッジを付けて区別する。
+   * exam_type は後付けの項目なので、持っていない古い回答は「種別未設定」と出す
+   * （空欄にすると「種別が無い」のか「読み落とした」のか判別できないため）。
+   */
+  const renderSelections = (selections: DateVenueSelection[]) => {
+    if (selections.length === 0) {
+      return <span className="text-text-muted">—</span>;
+    }
+    return (
+      <div className="flex flex-col gap-1">
+        {selections.map((s, index) => {
+          const typeLabel =
+            s.exam_type_label ?? (s.exam_type ? MOGI_EXAM_TYPE_LABELS[s.exam_type] : null);
+          return (
+            <div key={`${s.date_id}-${s.venue_id}-${index}`} className="flex items-start gap-2">
+              <span
+                className={`shrink-0 rounded px-1.5 py-0.5 text-[11px] font-medium whitespace-nowrap ${
+                  s.exam_type
+                    ? MOGI_EXAM_TYPE_BADGE_CLASSES[s.exam_type]
+                    : 'bg-surface-hover text-text-muted'
+                }`}
+              >
+                {typeLabel ?? '種別未設定'}
+              </span>
+              <span>
+                {s.date_label} {s.venue_label}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    );
   };
 
   // 計上状態の更新（APIで既存 status_checks をマージし、成功時にサマリーも即時反映）
@@ -162,6 +207,31 @@ export default function MogiResponsePage() {
       setResponses(prevResponses);
       setStats(prevStats);
       error(err instanceof Error ? err.message : '計上状態の更新に失敗しました');
+    }
+  };
+
+  // 申込状態の更新（Vもぎ主催者への申込代行が済んだかのチェック。請求とは無関係）
+  const handleAppliedToggle = async (responseId: string, applied: boolean) => {
+    const prevResponses = responses;
+    const prevStats = stats;
+    setResponses((prev) =>
+      prev.map((r) =>
+        r.id === responseId ? { ...r, status_checks: { ...r.status_checks, applied } } : r
+      )
+    );
+    setStats((s) => ({
+      ...s,
+      applied_count: s.applied_count + (applied ? 1 : -1),
+    }));
+    try {
+      await updateMogiAppliedStatus(responseId, applied);
+      await fetchData();
+      success(`${applied ? '申込済みにしました' : '申込を解除しました'}`);
+    } catch (err) {
+      console.error('Error updating applied status:', err);
+      setResponses(prevResponses);
+      setStats(prevStats);
+      error(err instanceof Error ? err.message : '申込状態の更新に失敗しました');
     }
   };
 
@@ -367,7 +437,7 @@ export default function MogiResponsePage() {
 
           {/* フィルター */}
           <div className="mb-6 bg-surface-raised rounded-xl border border-border p-4">
-            <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
               <div>
                 <label className="block text-sm font-medium text-text-heading mb-2">学年</label>
                 <select
@@ -444,6 +514,21 @@ export default function MogiResponsePage() {
                       </option>
                     );
                   })}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-text-heading mb-2">申込状態</label>
+                <select
+                  value={filterAppliedStatus}
+                  onChange={(e) =>
+                    setFilterAppliedStatus(e.target.value as 'all' | 'applied' | 'not_applied')
+                  }
+                  className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-surface-raised text-text-body"
+                >
+                  <option value="all">全て</option>
+                  <option value="applied">申込済み</option>
+                  <option value="not_applied">未申込</option>
                 </select>
               </div>
 
@@ -564,7 +649,10 @@ export default function MogiResponsePage() {
                         学年
                       </th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-text-heading uppercase">
-                        選択日程・会場
+                        模試種別・日程・会場
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-text-heading uppercase">
+                        申込
                       </th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-text-heading uppercase">
                         計上
@@ -607,7 +695,15 @@ export default function MogiResponsePage() {
                           {GRADE_NUMBER_TO_NAME[response.grade] || response.grade}
                         </td>
                         <td className="px-4 py-3 text-sm text-text-body">
-                          {formatSelections(response.response_data.selections)}
+                          {renderSelections(response.response_data.selections)}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-text-body">
+                          <input
+                            type="checkbox"
+                            checked={response.status_checks?.applied || false}
+                            onChange={(e) => handleAppliedToggle(response.id, e.target.checked)}
+                            className="w-4 h-4 text-info border-border rounded focus:ring-primary cursor-pointer"
+                          />
                         </td>
                         <td className="px-4 py-3 text-sm text-text-body">
                           <input

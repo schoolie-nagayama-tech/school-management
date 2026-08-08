@@ -66,8 +66,8 @@ beforeAll(async () => {
 
   // ★ 両方に紐づける。退塾しても紐づけ行は残る＝これが穴の前提だった。
   await admin.from('portal_account_students').insert([
-    { account_id: accountId, student_id: activeStudentId, relation: 'mother' },
-    { account_id: accountId, student_id: withdrawnStudentId, relation: 'mother' },
+    { account_id: accountId, student_id: activeStudentId, relation: 'guardian' },
+    { account_id: accountId, student_id: withdrawnStudentId, relation: 'guardian' },
   ]);
 });
 

@@ -108,6 +108,32 @@ export function seasonLabel(season: string | null | undefined): string | null {
   return null;
 }
 
+/**
+ * テキスト名の頭に付ける学年ラベル。「中3」「小6」「高共通」の形に短縮する。
+ *
+ * textbooks.grade は「3年」「共通」のように学校種別を持たない値で入っており、それ単体では
+ * 中3か高3か読めない。school_type（中学/小学/高校）と繋いで短縮形にする。
+ * 既に「中2」のような短縮形で入っている値や、school_type が無い値はそのまま返す。
+ */
+export function textbookGradeLabel(
+  tb: { grade?: string | null; school_type?: string | null } | null | undefined
+): string | null {
+  const grade = tb?.grade?.trim();
+  if (!grade) return null;
+  const short =
+    tb?.school_type === '中学'
+      ? '中'
+      : tb?.school_type === '小学'
+        ? '小'
+        : tb?.school_type === '高校'
+          ? '高'
+          : null;
+  if (!short) return grade;
+  if (grade.startsWith(short)) return grade; // 「中2」「小6」に二重で付けない
+  const year = grade.match(/^(\d+)年$/);
+  return year ? `${short}${year[1]}` : `${short}${grade}`;
+}
+
 // 停滞判定（最終授業日から14日経過）
 export function isStalled(tb: StudentTextbookWithDetails): {
   stalled: boolean;

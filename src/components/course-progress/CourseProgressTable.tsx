@@ -11,6 +11,7 @@ import type {
 } from '@/types/database';
 import { GRADE_LABELS, PROGRESS_COLUMN_GROUPS } from '@/types/database';
 import type { AutoValues } from '@/lib/api/courseProgress';
+import { isGrade9OnlyCoursePrepItem } from '@/lib/coursePrepKpis';
 import { Tooltip } from '@/components/ui/Tooltip';
 
 /** auto_source の表示名と簡易説明 */
@@ -309,10 +310,10 @@ export function CourseProgressTable({
 
   // 中3(grade=9)限定のチェック項目（進路調査回収）。
   // 進路調査は中3のみ対象なので、非中3かつ未入力のセルは「対象外」として扱い、分母から除外する。
+  // 対象項目の判定はアラート・KPI集計と共通（isGrade9OnlyCoursePrepItem）。ここでは
+  // 描画のたびに項目名を走査しないよう、該当項目のIDだけ先に集めておく。
   const grade9OnlyCheckIds = useMemo(() => {
-    return new Set(
-      items.filter((i) => i.column_type === 'check' && i.name.includes('進路調査')).map((i) => i.id)
-    );
+    return new Set(items.filter(isGrade9OnlyCoursePrepItem).map((i) => i.id));
   }, [items]);
 
   // 非中3かつ明示的な入力が無い場合に「対象外」とみなすか

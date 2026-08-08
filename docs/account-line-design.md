@@ -57,11 +57,11 @@ created_at      timestamptz
 ```
 account_id  uuid -> portal_accounts.id
 student_id  uuid -> students.id
-relation    text  -- 'self' | 'father' | 'mother' | 'other'
+relation    text  -- 'self' | 'guardian' | 'other'（+ relation_note: otherの自由入力）
 PRIMARY KEY (account_id, student_id)
 ```
 - 生徒本人: `relation='self'` で自分の生徒IDに1本
-- 保護者: 子（兄弟は複数行）に `father/mother/other` で紐づく
+- 保護者: 子（兄弟は複数行）に `guardian`（既定）または `other`（続柄を自由入力）で紐づく
 - 父・母それぞれが別 `portal_accounts` で同じ生徒に紐づける
 
 ### portal_invitations（招待。既存 user_invitations の発想を流用）
@@ -232,7 +232,7 @@ Supabase互換のJWT（sub = portal_account_id）を署名して発行
 | セッション・認可 | 案3：自前ログイン → Supabase互換JWT → RLSで多層防御 |
 | 認証手段 | 保護者=LINE主／生徒=LINE or 教室発行ID/PW／スタッフ=従来メール/PW |
 | アカウント | `portal_accounts`（保護者・生徒統合・PIIなし） |
-| 紐づけ | `portal_account_students`（relation: self/father/mother/other、多対多） |
+| 紐づけ | `portal_account_students`（relation: self/guardian/other＋relation_note、多対多） |
 | 権限 | 招待タイプ(guardian/student)で閲覧範囲を確定 |
 | 生徒テーブル | 無変更 |
 

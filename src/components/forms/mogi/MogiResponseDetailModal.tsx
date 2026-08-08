@@ -54,6 +54,12 @@ export function MogiResponseDetailModal({
               <span className="ml-2 text-[#1f2937] font-medium">{response.email}</span>
             </div>
             <div>
+              <span className="text-[#4b5563]/60">申込状態:</span>
+              <span className="ml-2 text-[#1f2937] font-medium">
+                {response.status_checks?.applied ? '申込済み' : '未申込'}
+              </span>
+            </div>
+            <div>
               <span className="text-[#4b5563]/60">計上状態:</span>
               <span className="ml-2 text-[#1f2937] font-medium">
                 {response.status_checks?.charged ? '計上済み' : '未計上'}
