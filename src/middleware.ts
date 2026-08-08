@@ -33,6 +33,16 @@ const PUBLIC_RATE_LIMITS: Array<{
   { path: '/api/inquiries/unsubscribe', limit: 30, windowSeconds: 60 },
   // ログイン画面のリンク取得（未認証GET）— 1IPあたり 60リクエスト/分
   { path: '/api/login-links', limit: 60, windowSeconds: 60 },
+  // ── 保護者ポータル（2026-08-08 セキュリティレビューで追加） ──
+  // ポータルログイン — 1IPあたり 10リクエスト/分。
+  // ルート側の bcrypt＋失敗時500msディレイは並列リクエストで実質無効化できるため、
+  // ID/PW総当たりの一次防御はここで行う（正当な保護者のログインは1〜2回で足りる）。
+  { path: '/api/mypage/login', limit: 10, windowSeconds: 60 },
+  // 招待受諾 — 1IPあたり 10リクエスト/分。トークンは256bitで総当たりは現実的でないが、
+  // スタッフ招待（/api/invite/）と同水準の多層防御を敷く。
+  { path: '/api/mypage/invite/accept', limit: 10, windowSeconds: 60 },
+  // LINEログインの開始/コールバック — 1IPあたり 30リクエスト/分（state cookie 乱発などの資源消費対策）
+  { path: '/api/mypage/line/', limit: 30, windowSeconds: 60 },
 ];
 
 function getClientIp(request: NextRequest): string {
