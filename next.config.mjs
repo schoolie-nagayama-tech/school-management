@@ -42,7 +42,21 @@ const nextConfig = {
   // - nosniff: Content-Type を無視した推測実行（アップロード画像をスクリプト扱い等）を防ぐ。
   // - Referrer-Policy: 外部リンクへ遷移したときにURLのパス（生徒IDや招待トークンを含み得る）を
   //   リファラとして漏らさない。
+  // - Content-Security-Policy: XSSの多層防御（万一サニタイズを抜けても実行させない保険）。
+  //   ★ script-src / default-src はあえて絞らない: Next.js の水和はインラインスクリプトを
+  //     使うため、これらを厳格化すると nonce 配布の作り込みが要り、事故りやすい。
+  //     代わりに nonce 不要で壊す心配がなく効果の大きい4本だけを敷く:
+  //       object-src 'none'      … Flash等プラグイン由来のスクリプト実行を封じる
+  //       base-uri 'self'        … <base>注入で相対URLを攻撃者ドメインに乗っ取る手口を封じる
+  //       frame-ancestors 'self' … クリックジャッキング（XFOを無視するブラウザも含めて）
+  //       form-action 'self'     … フォーム送信先を外部に差し替える手口を封じる
   async headers() {
+    const csp = [
+      "object-src 'none'",
+      "base-uri 'self'",
+      "frame-ancestors 'self'",
+      "form-action 'self'",
+    ].join('; ');
     return [
       {
         source: '/(.*)',
@@ -50,6 +64,7 @@ const nextConfig = {
           { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
           { key: 'X-Content-Type-Options', value: 'nosniff' },
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+          { key: 'Content-Security-Policy', value: csp },
         ],
       },
     ];
