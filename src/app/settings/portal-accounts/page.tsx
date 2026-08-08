@@ -2,13 +2,23 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { ChevronLeft, Copy, Ticket } from 'lucide-react';
+import {
+  ChevronLeft,
+  Copy,
+  Ticket,
+  Users,
+  Link2Off,
+  Trash2,
+  Smartphone,
+  KeyRound,
+} from 'lucide-react';
 import { AdminLayout } from '@/components/layouts';
 import { Button, Loading, ToastContainer } from '@/components/ui';
 import AccessDenied from '@/components/AccessDenied';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLocalSchoolId } from '@/hooks/useLocalSchoolId';
 import { useToast } from '@/hooks/useToast';
+import { useConfirm } from '@/hooks/useConfirm';
 import { isSystemAdmin } from '@/lib/utils/roles';
 import { fetchWithAuth } from '@/lib/api/auth';
 import { getStudents } from '@/lib/api/students';
@@ -37,10 +47,35 @@ interface InvitationRow {
   students: { last_name: string; first_name: string } | null;
 }
 
+/** 登録済みポータルアカウント1件（GET /api/admin/portal-accounts の返り）。 */
+interface PortalAccountRow {
+  id: string;
+  display_name: string;
+  login_id: string | null;
+  has_line: boolean;
+  last_login_at: string | null;
+  students: { student_id: string; student_name: string; relation: string }[];
+}
+
+/** relation コードを日本語ラベルに変換する。 */
+function relationLabel(relation: string): string {
+  switch (relation) {
+    case 'self':
+      return '本人';
+    case 'father':
+      return '父';
+    case 'mother':
+      return '母';
+    default:
+      return 'その他';
+  }
+}
+
 export default function PortalAccountsPage() {
   const { profile, isLoading: authLoading } = useAuth();
   const { localSchoolId, availableSchools, setLocalSchoolId } = useLocalSchoolId();
   const { toasts, removeToast, success, error: toastError } = useToast();
+  const { confirm, ConfirmDialog } = useConfirm();
 
   const [students, setStudents] = useState<StudentLite[]>([]);
   const [invitations, setInvitations] = useState<InvitationRow[]>([]);
@@ -49,6 +84,11 @@ export default function PortalAccountsPage() {
   const [loading, setLoading] = useState(false);
   const [issuing, setIssuing] = useState(false);
   const [lastUrl, setLastUrl] = useState('');
+
+  // 登録済みアカウントは教室スコープを持たない（アカウントは教室に属さないため）ので、
+  // 招待一覧（教室別）とは別に全件をまとめて読む。
+  const [accounts, setAccounts] = useState<PortalAccountRow[]>([]);
+  const [accountsLoading, setAccountsLoading] = useState(false);
 
   const isAdmin = isSystemAdmin(profile?.role);
 
@@ -84,6 +124,83 @@ export default function PortalAccountsPage() {
   useEffect(() => {
     if (isAdmin) loadData();
   }, [isAdmin, loadData]);
+
+  // 登録済みアカウント一覧を読み込む（教室に依存しない全件）。
+  const loadAccounts = useCallback(async () => {
+    setAccountsLoading(true);
+    try {
+      const res = await fetchWithAuth('/api/admin/portal-accounts');
+      const json = await res.json();
+      setAccounts(res.ok ? (json.accounts ?? []) : []);
+      if (!res.ok) toastError(json.error ?? 'アカウント一覧の取得に失敗しました');
+    } catch (e) {
+      console.error('[portal-accounts] アカウント取得に失敗:', e);
+      toastError('アカウント一覧の取得に失敗しました');
+    } finally {
+      setAccountsLoading(false);
+    }
+  }, [toastError]);
+
+  useEffect(() => {
+    if (isAdmin) loadAccounts();
+  }, [isAdmin, loadAccounts]);
+
+  // 紐づけ1件だけ解除する（アカウントは残る）。誤操作防止に確認ダイアログ必須。
+  const handleUnlink = async (
+    account: PortalAccountRow,
+    student: { student_id: string; student_name: string }
+  ) => {
+    const ok = await confirm({
+      title: '紐づけを解除',
+      description: `${student.student_name} さんとの紐づけを解除しますか？（このアカウントは ${student.student_name} さんの情報を見られなくなります）`,
+      confirmLabel: '解除する',
+      variant: 'warning',
+    });
+    if (!ok) return;
+    try {
+      const res = await fetchWithAuth('/api/admin/portal-accounts', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ account_id: account.id, student_id: student.student_id }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        toastError(json.error ?? '解除に失敗しました');
+        return;
+      }
+      success('紐づけを解除しました');
+      loadAccounts();
+    } catch {
+      toastError('通信に失敗しました');
+    }
+  };
+
+  // アカウントごと削除する（紐づけ・同意ログも cascade で消える）。確認ダイアログ必須。
+  const handleDeleteAccount = async (account: PortalAccountRow) => {
+    const ok = await confirm({
+      title: 'アカウントを削除',
+      description: `${account.display_name} のアカウントを削除しますか？ログインできなくなり、紐づけもすべて解除されます。`,
+      confirmLabel: '削除する',
+      variant: 'danger',
+    });
+    if (!ok) return;
+    try {
+      const res = await fetchWithAuth('/api/admin/portal-accounts', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ account_id: account.id }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        toastError(json.error ?? '削除に失敗しました');
+        return;
+      }
+      success('アカウントを削除しました');
+      loadAccounts();
+    } catch {
+      toastError('通信に失敗しました');
+    }
+  };
 
   const handleIssue = async () => {
     if (!selectedStudentId) {
@@ -313,7 +430,95 @@ export default function PortalAccountsPage() {
             </div>
           )}
         </div>
+
+        {/* 登録済みアカウント（紐づけ解除・アカウント削除） */}
+        <div className="mt-6 rounded-xl border border-border bg-surface-raised p-6">
+          <h2 className="mb-1 flex items-center gap-2 text-lg font-bold text-text-heading">
+            <Users className="h-5 w-5" />
+            登録済みのアカウント
+          </h2>
+          <p className="mb-4 text-xs text-text-muted">
+            受諾済みの保護者・生徒アカウントです。誤って紐づけた・作り直したいときは、生徒ごとに紐づけを解除するか、アカウントごと削除できます。
+          </p>
+          {accountsLoading ? (
+            <Loading size="md" />
+          ) : accounts.length === 0 ? (
+            <p className="text-sm text-text-muted">登録済みのアカウントはありません。</p>
+          ) : (
+            <div className="space-y-3">
+              {accounts.map((acc) => (
+                <div key={acc.id} className="rounded-lg border border-border bg-surface p-4">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-bold text-text-heading">{acc.display_name}</span>
+                        {/* ログイン手段のバッジ。LINE連携があれば優先表示、なければ発行ID。 */}
+                        {acc.has_line ? (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-success/10 px-2 py-0.5 text-xs font-medium text-success">
+                            <Smartphone className="h-3 w-3" />
+                            LINE連携
+                          </span>
+                        ) : acc.login_id ? (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-info/10 px-2 py-0.5 text-xs font-medium text-info">
+                            <KeyRound className="h-3 w-3" />
+                            ID: {acc.login_id}
+                          </span>
+                        ) : null}
+                      </div>
+                      <p className="mt-1 text-xs text-text-muted">
+                        最終ログイン:{' '}
+                        {acc.last_login_at
+                          ? new Date(acc.last_login_at).toLocaleString('ja-JP')
+                          : '未ログイン'}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteAccount(acc)}
+                      className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-danger px-2.5 py-1.5 text-xs font-medium text-danger transition-colors hover:bg-danger/10"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                      アカウント削除
+                    </button>
+                  </div>
+
+                  {/* 紐づけ生徒。各行に続柄と解除ボタン。 */}
+                  <div className="mt-3 border-t border-border-subtle pt-3">
+                    {acc.students.length === 0 ? (
+                      <p className="text-xs text-text-muted">紐づけられている生徒はいません。</p>
+                    ) : (
+                      <ul className="space-y-1.5">
+                        {acc.students.map((st) => (
+                          <li
+                            key={st.student_id}
+                            className="flex items-center justify-between gap-2 text-sm"
+                          >
+                            <span className="text-text-body">
+                              {st.student_name}
+                              <span className="ml-1 text-xs text-text-muted">
+                                （{relationLabel(st.relation)}）
+                              </span>
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleUnlink(acc, st)}
+                              className="inline-flex shrink-0 items-center gap-1 text-xs text-text-muted transition-colors hover:text-danger"
+                            >
+                              <Link2Off className="h-3.5 w-3.5" />
+                              解除
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </AdminLayout>
+      {ConfirmDialog}
     </div>
   );
 }
