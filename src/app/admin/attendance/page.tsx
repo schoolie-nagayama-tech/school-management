@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import type { CSSProperties } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { AdminLayout } from '@/components/layouts';
 import {
@@ -186,6 +187,28 @@ function formatExitMonthDay(exitDate: string): string {
   return `${d.getMonth() + 1}/${d.getDate()}`;
 }
 
+/**
+ * 振込表示（転置ビュー）の列装飾。1列=1人なので、列を「縦線」と「1列おきの地色」で
+ * 仕切り、どの数字が誰のものか一目で追えるようにする。マウスが乗っている列は
+ * さらに強く塗って、横に長い表でも視線が隣の人にずれないようにする。
+ *
+ * 背景をクラスではなく style で当てているのは、TableHead が自前で bg- クラスを
+ * 持っており、Tailwind のユーティリティ同士では記述順で優先度が決まらないため。
+ */
+function transposedColumnStyle(columnIndex: number, isHovered: boolean): CSSProperties {
+  if (isHovered) return { backgroundColor: 'var(--info-subtle)' };
+  return {
+    backgroundColor: columnIndex % 2 === 1 ? 'var(--accent-ink-subtle)' : 'var(--surface)',
+  };
+}
+
+/** 振込表示の講師列に共通で当てる枠線。列の左に縦線を引いて人の区切りを作る */
+const TRANSPOSED_COL_BORDER = 'border-l border-border';
+
+/** 振込表示の「項目」列（左端固定）に共通で当てるクラス。本文列との境目は太い縦線で切る */
+const TRANSPOSED_LABEL_CELL =
+  'font-medium sticky left-0 bg-surface-raised z-10 border-r-2 border-border-strong';
+
 // 社員番号での並び替え。数値化できれば数値順、できなければ文字列順、未設定は末尾、最後に姓でフォールバック
 function compareByEmployeeNo(a: SummaryRow, b: SummaryRow): number {
   const ea = (a.teacher?.employee_no ?? '').trim();
@@ -311,6 +334,8 @@ export default function AttendanceManagementPage() {
 
   // 管理者: 転置ビュー・並べ替え
   const [isTransposedView, setIsTransposedView] = useState(false);
+  // 振込表示でマウスが乗っている講師の列。列全体を塗って「いま誰の数字を見ているか」を示す
+  const [hoveredSheetId, setHoveredSheetId] = useState<string | null>(null);
   // デフォルトは社員番号順（出勤簿一覧の標準並び順）
   const [sortOrder, setSortOrder] = useState<SortOrder>('employee');
   // 勤務実績なしの行を隠すか。既定は表示（未入力の講師を見落とさないため）
@@ -1201,184 +1226,257 @@ export default function AttendanceManagementPage() {
               <div className="text-center py-8 text-text-body">出勤簿がありません</div>
             ) : isAdmin && isTransposedView ? (
               /* ===== 管理者: 転置ビュー ===== */
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="min-w-[120px] sticky left-0 bg-surface-raised z-10">
-                        項目
-                      </TableHead>
-                      {sortedSheets.map((sheet) => {
-                        // 転置ビューでも退職状態バッジを表示する
-                        const exitStatusT = getExitStatus(sheet.teacher?.exit_date);
-                        return (
-                          <TableHead key={sheet.id} className="text-center min-w-[100px]">
-                            <div className="flex flex-col items-center gap-1">
-                              <span className="font-medium text-xs">
-                                {sheet.teacher?.name ?? '不明'}
-                              </span>
-                              {/* 社員番号を講師名の下に小さく表示（システム管理者のみ） */}
-                              {canSeeEmployeeNo && sheet.teacher?.employee_no && (
-                                <span className="text-[10px] text-gray-400 tabular-nums">
-                                  {sheet.teacher.employee_no}
-                                </span>
-                              )}
-                              {komaChangeLabels(sheet).map((label) => (
-                                <Badge
-                                  key={label}
-                                  className="bg-purple-600 text-white text-[9px] px-1"
-                                >
-                                  {label}
-                                </Badge>
-                              ))}
-                              {/* 退職状態バッジ（転置ビュー用） */}
-                              {exitStatusT === 'leaving' && sheet.teacher?.exit_date && (
-                                <Badge className="bg-orange-500 text-white text-[9px] px-1">
-                                  退職予定 {formatExitMonthDay(sheet.teacher.exit_date)}
-                                </Badge>
-                              )}
-                              {exitStatusT === 'retired' && (
-                                <Badge className="bg-gray-400 text-white text-[9px] px-1">
-                                  退職
-                                </Badge>
-                              )}
-                              <Badge
-                                className={`text-[10px] ${ATTENDANCE_STATUS_COLORS[sheet.status as AttendanceSheetStatus]}`}
-                              >
-                                {ATTENDANCE_STATUS_LABELS[sheet.status as AttendanceSheetStatus]}
-                              </Badge>
-                            </div>
-                          </TableHead>
-                        );
-                      })}
-                      <TableHead className="text-center font-bold min-w-[80px]">合計</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {/* コマ種別行 */}
-                    {displayTypes.map((type) => (
-                      <TableRow key={type.id}>
-                        <TableCell className="font-medium sticky left-0 bg-surface-raised z-10">
-                          {type.name}
-                        </TableCell>
-                        {sortedSheets.map((sheet) => {
-                          const td = Object.values(sheet.type_totals).find(
-                            (t) => t.name === type.name
-                          );
+              <>
+                {/* 日数系の行は名前だけだと取り違えやすいので、集計の定義をその場に置く。
+                    定義は getAttendanceSummary（prep_days / work_days）と対。 */}
+                <div className="mb-3 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-text-muted">
+                  <span>
+                    <span className="font-medium text-text-body">準備給日数</span>
+                    ＝授業のあった日数（授業の準備に対して払う）
+                  </span>
+                  <span>
+                    <span className="font-medium text-text-body">勤務日数</span>
+                    ＝授業・事務を問わず何かしら入力のあった日数
+                  </span>
+                  <span>
+                    <span className="font-medium text-text-body">金額合計</span>
+                    ＝単価×コマ数の概算（実支給額ではありません）
+                  </span>
+                </div>
+                <div className="overflow-x-auto" onMouseLeave={() => setHoveredSheetId(null)}>
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="border-b-2 border-border-strong">
+                        <TableHead className="min-w-[120px] sticky left-0 bg-surface-raised z-20 border-r-2 border-border-strong">
+                          項目
+                        </TableHead>
+                        {sortedSheets.map((sheet, colIndex) => {
+                          // 転置ビューでも退職状態バッジを表示する
+                          const exitStatusT = getExitStatus(sheet.teacher?.exit_date);
                           return (
-                            <TableCell key={sheet.id} className="text-center">
-                              {td?.total || 0}
-                              {type.unit === 'hours' ? 'h' : ''}
-                            </TableCell>
+                            <TableHead
+                              key={sheet.id}
+                              className={`text-center min-w-[100px] ${TRANSPOSED_COL_BORDER}`}
+                              style={transposedColumnStyle(colIndex, hoveredSheetId === sheet.id)}
+                              onMouseEnter={() => setHoveredSheetId(sheet.id)}
+                            >
+                              <div className="flex flex-col items-center gap-1">
+                                <span className="font-medium text-xs">
+                                  {sheet.teacher?.name ?? '不明'}
+                                </span>
+                                {/* 社員番号を講師名の下に小さく表示（システム管理者のみ） */}
+                                {canSeeEmployeeNo && sheet.teacher?.employee_no && (
+                                  <span className="text-[10px] text-gray-400 tabular-nums">
+                                    {sheet.teacher.employee_no}
+                                  </span>
+                                )}
+                                {komaChangeLabels(sheet).map((label) => (
+                                  <Badge
+                                    key={label}
+                                    className="bg-purple-600 text-white text-[9px] px-1"
+                                  >
+                                    {label}
+                                  </Badge>
+                                ))}
+                                {/* 退職状態バッジ（転置ビュー用） */}
+                                {exitStatusT === 'leaving' && sheet.teacher?.exit_date && (
+                                  <Badge className="bg-orange-500 text-white text-[9px] px-1">
+                                    退職予定 {formatExitMonthDay(sheet.teacher.exit_date)}
+                                  </Badge>
+                                )}
+                                {exitStatusT === 'retired' && (
+                                  <Badge className="bg-gray-400 text-white text-[9px] px-1">
+                                    退職
+                                  </Badge>
+                                )}
+                                <Badge
+                                  className={`text-[10px] ${ATTENDANCE_STATUS_COLORS[sheet.status as AttendanceSheetStatus]}`}
+                                >
+                                  {ATTENDANCE_STATUS_LABELS[sheet.status as AttendanceSheetStatus]}
+                                </Badge>
+                              </div>
+                            </TableHead>
                           );
                         })}
-                        <TableCell className="text-center font-medium">
-                          {sortedSheets.reduce((sum, sheet) => {
+                        <TableHead className="text-center font-bold min-w-[80px] border-l-2 border-border-strong">
+                          合計
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {/* コマ種別行 */}
+                      {displayTypes.map((type) => (
+                        <TableRow key={type.id}>
+                          <TableCell className={TRANSPOSED_LABEL_CELL}>{type.name}</TableCell>
+                          {sortedSheets.map((sheet, colIndex) => {
                             const td = Object.values(sheet.type_totals).find(
                               (t) => t.name === type.name
                             );
-                            return sum + (td?.total || 0);
-                          }, 0)}
-                          {type.unit === 'hours' ? 'h' : ''}
+                            const value = td?.total || 0;
+                            return (
+                              <TableCell
+                                key={sheet.id}
+                                className={`text-center tabular-nums ${TRANSPOSED_COL_BORDER} ${
+                                  // 0 は「入力なし」であって読み取る必要がない数字なので薄くする
+                                  value === 0 ? 'text-text-faint' : ''
+                                }`}
+                                style={transposedColumnStyle(colIndex, hoveredSheetId === sheet.id)}
+                                onMouseEnter={() => setHoveredSheetId(sheet.id)}
+                              >
+                                {value}
+                                {type.unit === 'hours' ? 'h' : ''}
+                              </TableCell>
+                            );
+                          })}
+                          <TableCell className="text-center font-medium tabular-nums border-l-2 border-border-strong bg-surface-hover">
+                            {sortedSheets.reduce((sum, sheet) => {
+                              const td = Object.values(sheet.type_totals).find(
+                                (t) => t.name === type.name
+                              );
+                              return sum + (td?.total || 0);
+                            }, 0)}
+                            {type.unit === 'hours' ? 'h' : ''}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      {/* 金額合計。単価×コマ数のざっくり計算で実際の支給額とは一致しないため、
+                        参考値として薄く出すだけにして、強調はしない */}
+                      <TableRow>
+                        <TableCell className={`${TRANSPOSED_LABEL_CELL} text-text-muted`}>
+                          金額合計
+                          <span className="ml-1 text-[10px] font-normal text-text-faint">概算</span>
+                        </TableCell>
+                        {sortedSheets.map((sheet, colIndex) => (
+                          <TableCell
+                            key={sheet.id}
+                            className={`text-right text-xs text-text-muted tabular-nums ${TRANSPOSED_COL_BORDER}`}
+                            style={transposedColumnStyle(colIndex, hoveredSheetId === sheet.id)}
+                            onMouseEnter={() => setHoveredSheetId(sheet.id)}
+                          >
+                            ¥{sheet.total_amount.toLocaleString()}
+                          </TableCell>
+                        ))}
+                        <TableCell className="text-right text-xs text-text-muted tabular-nums border-l-2 border-border-strong bg-surface-hover">
+                          ¥{sortedSheets.reduce((s, r) => s + r.total_amount, 0).toLocaleString()}
                         </TableCell>
                       </TableRow>
-                    ))}
-                    {/* 金額合計 */}
-                    <TableRow className="bg-gray-50 font-medium">
-                      <TableCell className="sticky left-0 bg-gray-50 z-10">金額合計</TableCell>
-                      {sortedSheets.map((sheet) => (
-                        <TableCell key={sheet.id} className="text-right">
-                          ¥{sheet.total_amount.toLocaleString()}
+                      {/* 準備給日数（＝授業があった日数） */}
+                      <TableRow>
+                        <TableCell className={TRANSPOSED_LABEL_CELL}>準備給日数</TableCell>
+                        {sortedSheets.map((sheet, colIndex) => (
+                          <TableCell
+                            key={sheet.id}
+                            className={`text-center tabular-nums ${TRANSPOSED_COL_BORDER}`}
+                            style={transposedColumnStyle(colIndex, hoveredSheetId === sheet.id)}
+                            onMouseEnter={() => setHoveredSheetId(sheet.id)}
+                          >
+                            {sheet.prep_days}日
+                          </TableCell>
+                        ))}
+                        <TableCell className="text-center font-medium tabular-nums border-l-2 border-border-strong bg-surface-hover">
+                          {sortedSheets.reduce((s, r) => s + r.prep_days, 0)}日
                         </TableCell>
-                      ))}
-                      <TableCell className="text-right font-bold">
-                        ¥{sortedSheets.reduce((s, r) => s + r.total_amount, 0).toLocaleString()}
-                      </TableCell>
-                    </TableRow>
-                    {/* 準備給日数 */}
-                    <TableRow>
-                      <TableCell className="font-medium sticky left-0 bg-surface-raised z-10">
-                        準備給日数
-                      </TableCell>
-                      {sortedSheets.map((sheet) => (
-                        <TableCell key={sheet.id} className="text-center">
-                          {sheet.prep_days}日
+                      </TableRow>
+                      {/* 勤務日数（＝授業・事務を問わず何かしら勤務した日数） */}
+                      <TableRow>
+                        <TableCell className={TRANSPOSED_LABEL_CELL}>勤務日数</TableCell>
+                        {sortedSheets.map((sheet, colIndex) => (
+                          <TableCell
+                            key={sheet.id}
+                            className={`text-center tabular-nums ${TRANSPOSED_COL_BORDER}`}
+                            style={transposedColumnStyle(colIndex, hoveredSheetId === sheet.id)}
+                            onMouseEnter={() => setHoveredSheetId(sheet.id)}
+                          >
+                            {sheet.work_days}日
+                          </TableCell>
+                        ))}
+                        <TableCell className="text-center font-medium tabular-nums border-l-2 border-border-strong bg-surface-hover">
+                          {sortedSheets.reduce((s, r) => s + r.work_days, 0)}日
                         </TableCell>
-                      ))}
-                      <TableCell className="text-center font-medium">
-                        {sortedSheets.reduce((s, r) => s + r.prep_days, 0)}日
-                      </TableCell>
-                    </TableRow>
-                    {/* 勤務日数 */}
-                    <TableRow>
-                      <TableCell className="font-medium sticky left-0 bg-surface-raised z-10">
-                        勤務日数
-                      </TableCell>
-                      {sortedSheets.map((sheet) => (
-                        <TableCell key={sheet.id} className="text-center">
-                          {sheet.work_days}日
+                      </TableRow>
+                      {/* 交通費 (editable) */}
+                      <TableRow>
+                        <TableCell className={TRANSPOSED_LABEL_CELL}>交通費</TableCell>
+                        {sortedSheets.map((sheet, colIndex) => (
+                          <TableCell
+                            key={sheet.id}
+                            className={TRANSPOSED_COL_BORDER}
+                            style={transposedColumnStyle(colIndex, hoveredSheetId === sheet.id)}
+                            onMouseEnter={() => setHoveredSheetId(sheet.id)}
+                          >
+                            <Input
+                              type="number"
+                              min="0"
+                              value={sheet.transport_cost || ''}
+                              onChange={(e) => handleTransportCostChange(sheet.id, e.target.value)}
+                              placeholder="0"
+                              className="w-20 h-7 text-sm text-right mx-auto"
+                            />
+                          </TableCell>
+                        ))}
+                        <TableCell className="text-right font-medium tabular-nums border-l-2 border-border-strong bg-surface-hover">
+                          ¥{sortedSheets.reduce((s, r) => s + r.transport_cost, 0).toLocaleString()}
                         </TableCell>
-                      ))}
-                      <TableCell className="text-center font-medium">
-                        {sortedSheets.reduce((s, r) => s + r.work_days, 0)}日
-                      </TableCell>
-                    </TableRow>
-                    {/* 交通費 (editable) */}
-                    <TableRow>
-                      <TableCell className="font-medium sticky left-0 bg-surface-raised z-10">
-                        交通費
-                      </TableCell>
-                      {sortedSheets.map((sheet) => (
-                        <TableCell key={sheet.id}>
-                          <Input
-                            type="number"
-                            min="0"
-                            value={sheet.transport_cost || ''}
-                            onChange={(e) => handleTransportCostChange(sheet.id, e.target.value)}
-                            placeholder="0"
-                            className="w-20 h-7 text-sm text-right mx-auto"
-                          />
-                        </TableCell>
-                      ))}
-                      <TableCell className="text-right font-medium">
-                        ¥{sortedSheets.reduce((s, r) => s + r.transport_cost, 0).toLocaleString()}
-                      </TableCell>
-                    </TableRow>
-                    {/* 備考 (editable) */}
-                    <TableRow>
-                      <TableCell className="font-medium sticky left-0 bg-surface-raised z-10">
-                        備考
-                      </TableCell>
-                      {sortedSheets.map((sheet) => (
-                        <TableCell key={sheet.id}>
-                          <Input
-                            value={sheet.admin_note || ''}
-                            onChange={(e) => handleAdminNoteChange(sheet.id, e.target.value)}
-                            placeholder="備考"
-                            className="h-7 text-sm min-w-[80px]"
-                          />
-                        </TableCell>
-                      ))}
-                      <TableCell />
-                    </TableRow>
-                    {/* 操作行 */}
-                    <TableRow className="bg-gray-50">
-                      <TableCell className="font-medium sticky left-0 bg-gray-50 z-10">
-                        操作
-                      </TableCell>
-                      {sortedSheets.map((sheet) => (
-                        <TableCell key={sheet.id}>
-                          <div className="flex flex-col gap-1 items-center">
-                            <Button
-                              variant="secondary"
-                              size="sm"
-                              onClick={() => handleViewDetail(sheet)}
-                              className="text-xs w-full"
-                            >
-                              詳細
-                            </Button>
-                            {sheet.status === 'reviewed' && (
-                              <>
+                      </TableRow>
+                      {/* 備考 (editable) */}
+                      <TableRow>
+                        <TableCell className={TRANSPOSED_LABEL_CELL}>備考</TableCell>
+                        {sortedSheets.map((sheet, colIndex) => (
+                          <TableCell
+                            key={sheet.id}
+                            className={TRANSPOSED_COL_BORDER}
+                            style={transposedColumnStyle(colIndex, hoveredSheetId === sheet.id)}
+                            onMouseEnter={() => setHoveredSheetId(sheet.id)}
+                          >
+                            <Input
+                              value={sheet.admin_note || ''}
+                              onChange={(e) => handleAdminNoteChange(sheet.id, e.target.value)}
+                              placeholder="備考"
+                              className="h-7 text-sm min-w-[80px]"
+                            />
+                          </TableCell>
+                        ))}
+                        <TableCell className="border-l-2 border-border-strong bg-surface-hover" />
+                      </TableRow>
+                      {/* 操作行 */}
+                      <TableRow className="border-t-2 border-border-strong">
+                        <TableCell className={TRANSPOSED_LABEL_CELL}>操作</TableCell>
+                        {sortedSheets.map((sheet, colIndex) => (
+                          <TableCell
+                            key={sheet.id}
+                            className={TRANSPOSED_COL_BORDER}
+                            style={transposedColumnStyle(colIndex, hoveredSheetId === sheet.id)}
+                            onMouseEnter={() => setHoveredSheetId(sheet.id)}
+                          >
+                            <div className="flex flex-col gap-1 items-center">
+                              <Button
+                                variant="secondary"
+                                size="sm"
+                                onClick={() => handleViewDetail(sheet)}
+                                className="text-xs w-full"
+                              >
+                                詳細
+                              </Button>
+                              {sheet.status === 'reviewed' && (
+                                <>
+                                  <Button
+                                    size="sm"
+                                    onClick={() => handleApprove(sheet)}
+                                    className="text-green-600 hover:text-green-700 hover:bg-green-50 text-xs w-full"
+                                  >
+                                    承認
+                                  </Button>
+                                  <Button
+                                    variant="danger"
+                                    size="sm"
+                                    onClick={() => handleRejectClick(sheet, 'to-manager')}
+                                    className="text-xs w-full"
+                                  >
+                                    差戻
+                                  </Button>
+                                </>
+                              )}
+                              {sheet.status === 'submitted' && (
                                 <Button
                                   size="sm"
                                   onClick={() => handleApprove(sheet)}
@@ -1386,44 +1484,27 @@ export default function AttendanceManagementPage() {
                                 >
                                   承認
                                 </Button>
+                              )}
+                              {sheet.status === 'approved' && (
                                 <Button
-                                  variant="danger"
+                                  variant="secondary"
                                   size="sm"
-                                  onClick={() => handleRejectClick(sheet, 'to-manager')}
+                                  onClick={() => handleReopenClick(sheet)}
                                   className="text-xs w-full"
                                 >
-                                  差戻
+                                  <RotateCcw className="h-3 w-3 mr-1" />
+                                  取消
                                 </Button>
-                              </>
-                            )}
-                            {sheet.status === 'submitted' && (
-                              <Button
-                                size="sm"
-                                onClick={() => handleApprove(sheet)}
-                                className="text-green-600 hover:text-green-700 hover:bg-green-50 text-xs w-full"
-                              >
-                                承認
-                              </Button>
-                            )}
-                            {sheet.status === 'approved' && (
-                              <Button
-                                variant="secondary"
-                                size="sm"
-                                onClick={() => handleReopenClick(sheet)}
-                                className="text-xs w-full"
-                              >
-                                <RotateCcw className="h-3 w-3 mr-1" />
-                                取消
-                              </Button>
-                            )}
-                          </div>
-                        </TableCell>
-                      ))}
-                      <TableCell />
-                    </TableRow>
-                  </TableBody>
-                </Table>
-              </div>
+                              )}
+                            </div>
+                          </TableCell>
+                        ))}
+                        <TableCell className="border-l-2 border-border-strong bg-surface-hover" />
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </div>
+              </>
             ) : (
               /* ===== 通常テーブル ===== */
               <div className="overflow-x-auto">

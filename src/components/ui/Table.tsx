@@ -1,7 +1,7 @@
 'use client';
 
 import { ReactNode } from 'react';
-import type { TdHTMLAttributes } from 'react';
+import type { TdHTMLAttributes, ThHTMLAttributes } from 'react';
 
 interface TableProps {
   children: ReactNode;
@@ -51,15 +51,19 @@ export function TableRow({ children, className = '', onClick }: TableRowProps) {
   );
 }
 
-interface TableHeadProps {
+/** th の標準属性（style / onMouseEnter など）をそのまま渡せるようにしている。
+ *  出勤簿の振込表示のように「列ごとに色を変える」用途では、クラスの優先順位に
+ *  左右されない style での上書きが必要になるため。 */
+interface TableHeadProps extends ThHTMLAttributes<HTMLTableCellElement> {
   children?: ReactNode;
   className?: string;
 }
 
-export function TableHead({ children, className = '' }: TableHeadProps) {
+export function TableHead({ children, className = '', ...rest }: TableHeadProps) {
   return (
     <th
       className={`px-4 py-3 text-left text-sm font-semibold text-text-heading bg-surface-hover ${className}`}
+      {...rest}
     >
       {children}
     </th>
