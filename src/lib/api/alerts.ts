@@ -61,6 +61,22 @@ export interface AlertSources {
   settingsBySchool: Map<string, AlertSetting[]>;
 }
 
+/**
+ * プログラミング（HALLO）専科の生徒か。成績・宿題等の指標がコース性質上合わないためアラート対象外にする。
+ *
+ * 通常教科を併せて受講している生徒は通常どおりアラートを出したいので、
+ * 「プログラミングコース受講」チェックだけでは判定しない。プログラミングは科目マスタに無く
+ * 科目「その他」＋自由入力(subject_other)で登録される運用のため、
+ * 「その他」以外の科目を1つでも受講していれば専科ではないとみなす。
+ */
+export function isProgrammingOnlyStudent(student: {
+  is_programming?: boolean | null;
+  subjects?: Array<{ name: string }>;
+}): boolean {
+  if (!student.is_programming) return false;
+  return !(student.subjects ?? []).some((s) => s.name !== 'その他');
+}
+
 /** 週回数(shukaisu)/曜日(youbi)変更フォームの回答（アラート判定に必要な最小情報） */
 export interface ScheduleChangeResponse {
   id: string;
@@ -295,8 +311,8 @@ export async function fetchAlertSources(schoolIds: string[]): Promise<AlertSourc
     getAlertSettingsBySchools(schoolIds).catch(() => new Map<string, AlertSetting[]>()),
   ]);
 
-  // プログラミング受講生はアラート対象外（成績・宿題等の指標がコース性質上合わないため）
-  const students = allStudents.filter((s) => s.status === 'active' && !s.is_programming);
+  // プログラミング専科の生徒はアラート対象外（通常教科を併用していれば対象に残す）
+  const students = allStudents.filter((s) => s.status === 'active' && !isProgrammingOnlyStudent(s));
   const applications = applicationsResult ?? [];
   const pendingTasks = pendingTasksResult ?? [];
   const { byStudent: textbooksByStudent, examTypeNames } = textbooksResult;
@@ -772,11 +788,12 @@ function buildInterviewTaskCandidates(sources: AlertSources): Alert[] {
 
   for (const task of sources.pendingTasks) {
     const studentId = task.student_id;
+    // 在籍中(active・非プログラミング専科)の生徒のみ。タスク取得側は生徒の状態で絞っていないため、
+    // ここで students に居ない生徒（プログラミング専科・退塾生など）のタスクを落とす。
     const student = studentMap.get(studentId);
-    const studentName = student
-      ? `${student.last_name} ${student.first_name}`
-      : `${task.student?.last_name ?? ''} ${task.student?.first_name ?? ''}`.trim() || '（不明）';
-    const grade = student?.grade ?? 0;
+    if (!student) continue;
+    const studentName = `${student.last_name} ${student.first_name}`;
+    const grade = student.grade;
 
     const alertKey = `task:${task.id}`;
     const taskDateStr = task.interview_date
@@ -804,7 +821,7 @@ function buildInterviewTaskCandidates(sources: AlertSources): Alert[] {
       student_id: studentId,
       student_name: studentName,
       grade,
-      school_id: student?.school_id,
+      school_id: student.school_id,
       alert_type: 'interview_task',
       alert_key: alertKey,
       message: taskDateStr ? `${taskDateStr}: ${contentPreview}` : contentPreview || 'タスク',
@@ -1082,7 +1099,7 @@ function buildScheduleChangeUnappliedCandidates(sources: AlertSources): Alert[] 
   today.setHours(0, 0, 0, 0);
 
   for (const res of sources.scheduleChangeResponses) {
-    // 在籍中(active・非プログラミング)の生徒のみ。退会等で students に居なければスキップ
+    // 在籍中(active・非プログラミング専科)の生徒のみ。退会等で students に居なければスキップ
     const student = studentMap.get(res.student_id);
     if (!student) continue;
 
@@ -1442,8 +1459,8 @@ async function fetchAlertSourcesLight(
     }),
     getAlertSettingsBySchools(schoolIds, client).catch(() => new Map<string, AlertSetting[]>()),
   ]);
-  // プログラミング受講生はアラート対象外
-  const students = allStudents.filter((s) => s.status === 'active' && !s.is_programming);
+  // プログラミング専科の生徒はアラート対象外（通常教科を併用していれば対象に残す）
+  const students = allStudents.filter((s) => s.status === 'active' && !isProgrammingOnlyStudent(s));
 
   return {
     students,
@@ -1491,8 +1508,8 @@ async function fetchAlertSourcesHeavy(schoolIds: string[]): Promise<Partial<Aler
     fetchCoursePrepAlertData(schoolIds),
     getAlertSettingsBySchools(schoolIds).catch(() => new Map<string, AlertSetting[]>()),
   ]);
-  // プログラミング受講生はアラート対象外
-  const students = allStudents.filter((s) => s.status === 'active' && !s.is_programming);
+  // プログラミング専科の生徒はアラート対象外（通常教科を併用していれば対象に残す）
+  const students = allStudents.filter((s) => s.status === 'active' && !isProgrammingOnlyStudent(s));
 
   const { byStudent: textbooksByStudent, examTypeNames } = textbooksResult;
 
