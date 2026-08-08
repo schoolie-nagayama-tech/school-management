@@ -3,6 +3,7 @@ import { getSchoolByCode } from '@/lib/api/schools';
 import { getAllPortalMenusForPortal } from '@/lib/api/portal';
 import { getActiveFormPeriod } from '@/lib/api/form-periods';
 import { PortalMenuList } from '@/components/portal';
+import { sortNewFirst } from '@/lib/utils/portalNew';
 import type { FormType, PortalMenu } from '@/types/database';
 
 // 管理画面での公開/非公開の切り替えを保護者ポータルに即反映するため ISR は使わない。
@@ -45,6 +46,7 @@ export default async function PortalPage({ params }: PortalPageProps) {
   }
 
   // 各メニューの公開期間をチェック（is_visible と isFormActive を渡す）
+  // openedAt は「受付が始まった日時」。New バッジと先頭浮上の判定に使う。
   const menusWithActiveStatus = await Promise.all(
     menus.map(async (menu) => {
       // 内部フォームの場合のみ公開期間をチェック
@@ -54,20 +56,36 @@ export default async function PortalPage({ params }: PortalPageProps) {
           try {
             const activePeriod = await getActiveFormPeriod(school.id, formType);
             const isFormActive = !!activePeriod;
-            return { menu, isFormActive, isVisible: menu.is_visible === true };
+            // publish_start が正典。未設定の古い期間だけ作成日で代用する。
+            const openedAt = activePeriod
+              ? (activePeriod.publish_start ?? activePeriod.created_at)
+              : null;
+            return { menu, isFormActive, isVisible: menu.is_visible === true, openedAt };
           } catch (error) {
             console.error(`Error checking form period for ${menu.menu_key}:`, error);
-            return { menu, isFormActive: false, isVisible: menu.is_visible === true };
+            return {
+              menu,
+              isFormActive: false,
+              isVisible: menu.is_visible === true,
+              openedAt: null,
+            };
           }
         }
       }
       // 外部リンクの場合は常にアクティブとみなす（link_urlまたはlink_urlsが設定されている場合）
+      // 受付期間を持たないため New の対象外。
       const hasLinks: boolean =
         menu.menu_key === 'mendan'
           ? !!(menu.link_urls && menu.link_urls.length > 0)
           : !!menu.link_url;
-      return { menu, isFormActive: hasLinks, isVisible: menu.is_visible === true };
+      return { menu, isFormActive: hasLinks, isVisible: menu.is_visible === true, openedAt: null };
     })
+  );
+
+  // 受付を始めたばかりのメニューを先頭へ。それ以外は設定画面の手動並び順のまま。
+  // 非公開・受付期間外のメニューは New にならない（openedAt を null にする）。
+  const sortedMenus = sortNewFirst(menusWithActiveStatus, (m) =>
+    m.isFormActive && m.isVisible ? m.openedAt : null
   );
 
   return (
@@ -108,7 +126,7 @@ export default async function PortalPage({ params }: PortalPageProps) {
         </p>
 
         {/* メニュー一覧 */}
-        <PortalMenuList menus={menusWithActiveStatus} schoolCode={schoolCode} />
+        <PortalMenuList menus={sortedMenus} schoolCode={schoolCode} />
       </main>
     </div>
   );
