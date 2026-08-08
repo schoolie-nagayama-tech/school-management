@@ -79,7 +79,9 @@ export async function GET(request: NextRequest) {
 
     // PostgREST は多対一の埋め込み students を単一オブジェクトで返すが、生成型は配列に
     // 推論しがちなため unknown 経由でこちらの明示型に寄せる。
-    for (const row of (links ?? []) as unknown as Array<LinkedStudentRow & { account_id: string }>) {
+    for (const row of (links ?? []) as unknown as Array<
+      LinkedStudentRow & { account_id: string }
+    >) {
       const name = row.students
         ? `${row.students.last_name ?? ''} ${row.students.first_name ?? ''}`.trim()
         : '';
