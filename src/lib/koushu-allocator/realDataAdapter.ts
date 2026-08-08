@@ -4,16 +4,20 @@
  * 正典仕様: docs/koushu-auto-allocation-spec.md
  *
  * 目的:
- *  - シミュレータ画面（/schedule/koushu/simulator）の「実データモード」から呼ばれる。
+ *  - シミュレータ画面（/schedule/koushu/simulator）の「実データモード」と、
+ *    本番の実行パネル（/schedule の講習モード）の両方から呼ばれる。
  *  - 本番テーブルを読み取り、allocateKoushu() が食える AllocatorInput を組み立てる。
  *  - ブラウザクライアント（ログイン中ユーザーのRLS）だけを使う。service role は使わない。
  *  - 書き込み系（insert/update/delete/upsert/rpc）は一切呼ばない。
  *
- * 実データの既知の欠損とフォールバック（呼び出し元の画面に notes として出す）:
- *  - 科目: student_progress は curriculum_item 単位で、科目への正式な紐付けが未実装（P1で追加予定）。
- *    このアダプタは生徒IDから決定的に暫定科目を割り振る（TODOコメント参照）。
- *  - ratio/duration: 申込側に情報が無いため student_subject_contracts（あれば）→ 無ければ ratio=2、
- *    subjects.duration_minutes（無ければ90分）を使う。
+ * タスク（申込）の取得元は2系統ある（notes.taskSource で見分ける）:
+ *  1. **koushu_enrollments（正典）** — Web申込。科目・比率(1対1/1対2)・時間(45/90) が申込どおり入る。
+ *  2. **student_progress（フォールバック）** — 紙運用。1件も申込行が無い期間だけこちらに落ちる。
+ *     科目が分からないので生徒IDのハッシュから暫定割当し、比率は student_subject_contracts、
+ *     時間は subjects.duration_minutes で推定する。**科目別の結果は目安にしかならない。**
+ *     2027-02の切替で紙運用が終わったらこの経路は落とせる。
+ *
+ * その他の既知の欠損とフォールバック（呼び出し元の画面に notes として出す）:
  *  - 生徒の出席可能枠: seasonal_shift_student_submissions が空なら通塾日程（schedule_regular_patterns）に
  *    フォールバックする。
  *  - 講師の出勤: seasonal_shift_submissions は teacher_name/teacher_email 逆引きが必要な提出が多い
@@ -26,6 +30,8 @@ import { fetchAllPaged, fetchAllInChunks } from '@/lib/utils/supabasePaging';
 import { normalizePersonName } from '@/lib/utils/personName';
 import { getClosedDays } from '@/lib/api/schedule';
 import { getClassCapacity, DEFAULT_CLASS_CAPACITY } from '@/lib/api/school-class-capacity';
+import { normalizeKomaBySubject } from '@/lib/utils/komaBySubject';
+import { resolveGradeEndDate } from '@/lib/utils/koushuApplyPure';
 import { INDIVIDUAL_FORMATION } from '@/types/schedule';
 import type {
   AllocatorInput,
@@ -53,6 +59,23 @@ export interface RealDataOptions {
   /** course_prep_periods の1件（getKoushuPeriods の戻り値と互換） */
   period: { schedule_start_date: string; schedule_end_date: string; season: string; year: number };
   settings: AllocatorSettings;
+  /**
+   * 対象学年（決定21）。空/未指定＝全学年。
+   * 学年ごとに実行できるようにするための絞り込みで、タスク（申込）側に効かせる。
+   * 既存配置・容量は全学年ぶんを積む（他学年の席を無視して重ねてしまわないため）。
+   */
+  gradeFilter?: number[] | null;
+  /**
+   * 学年別の講習終了日（決定44。course_prep_periods.schedule_end_by_grade）。
+   * 生徒の可能枠をその学年の終了日でクランプする。未設定の学年は共通の終了日。
+   */
+  scheduleEndByGrade?: Record<string, string> | null;
+  /**
+   * 既存の下書き提案（schedule_match_proposals.status='draft'）も既存配置として積むか。
+   * true = 差分モード（埋まっていないコマだけ足す） / false = 破棄モード（下書きは無かったものとして組み直す）。
+   * どちらでも公開済み・手動配置には触れない（§5-5）。
+   */
+  includeDrafts?: boolean;
 }
 
 export interface RealDataNotes {
@@ -74,8 +97,24 @@ export interface RealDataNotes {
   studentsWithoutAvailability: number;
   /** シフトの time_slot 文字列が schedule_time_slots に解決できなかった行数 */
   unresolvedTimeSlots: number;
-  /** 科目は暫定割当（生徒IDのハッシュから決定的に選んでいる）であることの明示フラグ */
-  subjectAssignmentIsProvisional: true;
+  /**
+   * タスク（申込）の取得元。
+   *  - 'koushu_enrollments': Web申込の正典。科目・比率・時間が申込どおりに入る
+   *  - 'student_progress': 紙運用のフォールバック。科目は暫定割当（生徒IDのハッシュ）で
+   *    比率・時間も推定値。**この場合の科目別の結果は目安にしかならない**
+   */
+  taskSource: 'koushu_enrollments' | 'student_progress';
+  /**
+   * 科目が暫定割当かどうか。taskSource==='student_progress' のときだけ true。
+   * 画面はこのフラグを見て「科目は暫定」の注意書きを出す。
+   */
+  subjectAssignmentIsProvisional: boolean;
+  /** 学年で絞った場合の対象学年（未指定なら null＝全学年） */
+  gradeFilter: number[] | null;
+  /** 学年別終了日で可能枠を切り落とした生徒数（決定44の効き具合の確認用） */
+  studentsClampedByGradeEnd: number;
+  /** 既存配置として積んだ下書き提案の件数（差分モードのときだけ非0） */
+  draftsCountedAsExisting: number;
 }
 
 export interface RealDataResult {
@@ -290,86 +329,160 @@ export async function loadRealAllocatorInput(opts: RealDataOptions): Promise<Rea
     }));
   }
 
-  // ---- 6. 申込コマ（student_progress.application_count） ----
-  // student_progress に school_id / student_id は無いため student_textbooks 経由で辿る。
-  // 期間の season に一致する student_textbooks（is_active のみ）に限定し、他学期の混入を防ぐ。
-  const stbRows = await fetchAllPaged<{ id: string; student_id: string }>((from, to) =>
+  // ---- 6. タスク（申込） ----
+  // 正典は koushu_enrollments（Web申込）。科目・比率・時間が申込どおりに入っている。
+  // 紙運用と並走している間は申込行が無いので、その場合だけ student_progress へ落ちる。
+  const tasks: TaskDef[] = [];
+  let taskSource: RealDataNotes['taskSource'] = 'koushu_enrollments';
+  const komaByStudent = new Map<string, number>();
+
+  // 学年フィルタ（決定21）。空配列は「絞り込みなし」と同義に扱う。
+  const gradeSet =
+    opts.gradeFilter && opts.gradeFilter.length > 0 ? new Set(opts.gradeFilter) : null;
+  const isTargetStudent = (studentId: string): boolean => {
+    const s = studentById.get(studentId);
+    if (!s) return false; // 在籍中・非テスト生徒のみ対象
+    return gradeSet === null || gradeSet.has(s.grade);
+  };
+
+  const enrollmentRows = await fetchAllPaged<{
+    student_id: string;
+    koma_count: number;
+    subject_ids: string[] | null;
+    koma_by_subject: unknown;
+  }>((from, to) =>
     db
-      .from('student_textbooks')
-      .select('id, student_id')
+      .from('koushu_enrollments')
+      .select('student_id, koma_count, subject_ids, koma_by_subject')
       .eq('school_id', schoolId)
       .eq('season', period.season)
-      .eq('is_active', true)
+      .eq('formation', INDIVIDUAL_FORMATION)
+      // 個別は course_id NULL の1行（コース行は特別講座なので配置対象外）
+      .is('course_id', null)
       .order('id', { ascending: true })
       .range(from, to)
   );
-  const studentByStbId = new Map(stbRows.map((r) => [r.id, r.student_id]));
-  const stbIds = stbRows.map((r) => r.id);
 
-  // 申込コマ>0の行だけを単純合算する。application_count は「結合グループの先頭行に合計・他は0」の
-  // 規約で保存されている（syncApplicationToProgress／src/lib/api/proposals.ts 585-600行付近）ため、
-  // >0 の行だけを足せば二重計上にならない（0の行＝結合の非先頭行は自動的に無視される）。
-  const progressRows =
-    stbIds.length > 0
-      ? await fetchAllInChunks<{ student_textbook_id: string; application_count: number }>(
-          stbIds,
-          (chunk, from, to) =>
-            db
-              .from('student_progress')
-              .select('student_textbook_id, application_count')
-              .in('student_textbook_id', chunk)
-              .gt('application_count', 0)
-              .order('id', { ascending: true })
-              .range(from, to)
-        )
-      : [];
-
-  const komaByStudent = new Map<string, number>();
-  for (const row of progressRows) {
-    const studentId = studentByStbId.get(row.student_textbook_id);
-    if (!studentId) continue;
-    if (!studentById.has(studentId)) continue; // 在籍中・非テスト生徒のみ対象
-    komaByStudent.set(studentId, (komaByStudent.get(studentId) ?? 0) + row.application_count);
-  }
-  const applicantStudentIds = Array.from(komaByStudent.keys());
-
-  // ---- 7. ratio（生徒×科目の指導契約）。無ければ既定 ratio=2 ----
-  // student_subject_contracts の意味は getStudentContractRatioMap と同じ（student_id×subject_id→ratio）。
-  // ここでは対象生徒数ぶんの逐次呼び出しを避けるため、同じテーブルを bulk + チャンク取得する。
-  const contractRows =
-    applicantStudentIds.length > 0
-      ? await fetchAllInChunks<{ student_id: string; subject_id: string; ratio: number }>(
-          applicantStudentIds,
-          (chunk, from, to) =>
-            db
-              .from('student_subject_contracts')
-              .select('student_id, subject_id, ratio')
-              .in('student_id', chunk)
-              .order('id', { ascending: true })
-              .range(from, to)
-        )
-      : [];
-  const ratioByStudentSubject = new Map<string, 1 | 2>();
-  for (const r of contractRows) {
-    ratioByStudentSubject.set(`${r.student_id}_${r.subject_id}`, r.ratio === 1 ? 1 : 2);
+  if (enrollmentRows.length > 0) {
+    for (const row of enrollmentRows) {
+      if (!isTargetStudent(row.student_id)) continue;
+      const spec = normalizeKomaBySubject(row.koma_by_subject);
+      const entries = Object.entries(spec);
+      if (entries.length > 0) {
+        for (const [subjectId, s] of entries) {
+          if (s.koma <= 0) continue;
+          tasks.push({
+            studentId: row.student_id,
+            subjectId,
+            koma: s.koma,
+            ratio: s.ratio,
+            duration: s.duration,
+          });
+          komaByStudent.set(row.student_id, (komaByStudent.get(row.student_id) ?? 0) + s.koma);
+        }
+      } else if ((row.subject_ids ?? []).length === 1 && row.koma_count > 0) {
+        // koma_by_subject が空で単一科目のときだけ総コマ数をその科目に寄せる後方互換
+        // （getKoushuPlacementProgressByPeriod と同じ規約に揃える）
+        const subjectId = (row.subject_ids as string[])[0];
+        tasks.push({
+          studentId: row.student_id,
+          subjectId,
+          koma: row.koma_count,
+          ratio: 2,
+          duration: subjectDurationById.get(subjectId) ?? 90,
+        });
+        komaByStudent.set(
+          row.student_id,
+          (komaByStudent.get(row.student_id) ?? 0) + row.koma_count
+        );
+      }
+    }
+  } else {
+    taskSource = 'student_progress';
   }
 
-  // ---- 8. タスク組み立て（科目は暫定割当。上の pickProvisionalSubjects の TODO 参照） ----
-  const tasks: TaskDef[] = [];
-  for (const studentId of applicantStudentIds) {
-    const totalKoma = komaByStudent.get(studentId) ?? 0;
-    if (totalKoma <= 0 || subjects.length === 0) continue;
-    const hash = hashString(studentId);
-    const chosen = pickProvisionalSubjects(hash, subjects);
-    const split = splitKomaAmongSubjects(totalKoma, chosen.length, hash);
-    chosen.forEach((subj, i) => {
-      const koma = split[i] ?? 0;
-      if (koma <= 0) return;
-      const ratio = ratioByStudentSubject.get(`${studentId}_${subj.id}`) ?? 2;
-      const duration = subjectDurationById.get(subj.id) ?? 90;
-      tasks.push({ studentId, subjectId: subj.id, koma, ratio, duration });
-    });
+  // ---- 6-b. フォールバック: 紙運用の申込コマ（student_progress.application_count） ----
+  // Web申込が1件も無い期間だけここに来る（2027-02の切替まで紙運用と並走するため）。
+  // ★ 科目が分からないので暫定割当（生徒IDのハッシュ）になる。科目別の結果は目安にしかならない。
+  if (taskSource === 'student_progress') {
+    // student_progress に school_id / student_id は無いため student_textbooks 経由で辿る。
+    // 期間の season に一致する student_textbooks（is_active のみ）に限定し、他学期の混入を防ぐ。
+    const stbRows = await fetchAllPaged<{ id: string; student_id: string }>((from, to) =>
+      db
+        .from('student_textbooks')
+        .select('id, student_id')
+        .eq('school_id', schoolId)
+        .eq('season', period.season)
+        .eq('is_active', true)
+        .order('id', { ascending: true })
+        .range(from, to)
+    );
+    const studentByStbId = new Map(stbRows.map((r) => [r.id, r.student_id]));
+    const stbIds = stbRows.map((r) => r.id);
+
+    // 申込コマ>0の行だけを単純合算する。application_count は「結合グループの先頭行に合計・他は0」の
+    // 規約で保存されている（syncApplicationToProgress／src/lib/api/proposals.ts 585-600行付近）ため、
+    // >0 の行だけを足せば二重計上にならない（0の行＝結合の非先頭行は自動的に無視される）。
+    const progressRows =
+      stbIds.length > 0
+        ? await fetchAllInChunks<{ student_textbook_id: string; application_count: number }>(
+            stbIds,
+            (chunk, from, to) =>
+              db
+                .from('student_progress')
+                .select('student_textbook_id, application_count')
+                .in('student_textbook_id', chunk)
+                .gt('application_count', 0)
+                .order('id', { ascending: true })
+                .range(from, to)
+          )
+        : [];
+
+    for (const row of progressRows) {
+      const studentId = studentByStbId.get(row.student_textbook_id);
+      if (!studentId) continue;
+      if (!isTargetStudent(studentId)) continue; // 在籍中・非テスト・対象学年のみ
+      komaByStudent.set(studentId, (komaByStudent.get(studentId) ?? 0) + row.application_count);
+    }
+    const fallbackStudentIds = Array.from(komaByStudent.keys());
+
+    // ratio（生徒×科目の指導契約）。無ければ既定 ratio=2。
+    // student_subject_contracts の意味は getStudentContractRatioMap と同じ（student_id×subject_id→ratio）。
+    const contractRows =
+      fallbackStudentIds.length > 0
+        ? await fetchAllInChunks<{ student_id: string; subject_id: string; ratio: number }>(
+            fallbackStudentIds,
+            (chunk, from, to) =>
+              db
+                .from('student_subject_contracts')
+                .select('student_id, subject_id, ratio')
+                .in('student_id', chunk)
+                .order('id', { ascending: true })
+                .range(from, to)
+          )
+        : [];
+    const ratioByStudentSubject = new Map<string, 1 | 2>();
+    for (const r of contractRows) {
+      ratioByStudentSubject.set(`${r.student_id}_${r.subject_id}`, r.ratio === 1 ? 1 : 2);
+    }
+
+    for (const studentId of fallbackStudentIds) {
+      const total = komaByStudent.get(studentId) ?? 0;
+      if (total <= 0 || subjects.length === 0) continue;
+      const hash = hashString(studentId);
+      const chosen = pickProvisionalSubjects(hash, subjects);
+      const split = splitKomaAmongSubjects(total, chosen.length, hash);
+      chosen.forEach((subj, i) => {
+        const koma = split[i] ?? 0;
+        if (koma <= 0) return;
+        const ratio = ratioByStudentSubject.get(`${studentId}_${subj.id}`) ?? 2;
+        const duration = subjectDurationById.get(subj.id) ?? 90;
+        tasks.push({ studentId, subjectId: subj.id, koma, ratio, duration });
+      });
+    }
   }
+
+  const applicantStudentIds = Array.from(new Set(tasks.map((t) => t.studentId)));
 
   // ---- 9. 講師の出勤（夏期講習シフト提出）----
   // 非致命的：解決できなかった提出者・スロットは notes に数を残して空扱いで続行する。
@@ -576,6 +689,30 @@ export async function loadRealAllocatorInput(opts: RealDataOptions): Promise<Rea
       );
     }
   }
+  // ---- 10-b. 学年別の講習終了日でクランプ（決定44・§17-2） ----
+  // 開始は全学年共通・終了だけ学年別。終了が早い学年の生徒に期間外のコマを置かないようにする。
+  // 可能枠の側で切るのが最小の実装で、アロケータ本体はこれ以上手を入れなくてよい
+  // （アンカーの span は「その生徒の可能枠の端から端」を見るので自動的に追随する）。
+  let studentsClampedByGradeEnd = 0;
+  if (opts.scheduleEndByGrade && Object.keys(opts.scheduleEndByGrade).length > 0) {
+    for (const [studentId, cells] of Array.from(studentAvailability.entries())) {
+      const grade = studentById.get(studentId)?.grade;
+      if (grade == null) continue;
+      const endForGrade = resolveGradeEndDate(
+        period.schedule_end_date,
+        opts.scheduleEndByGrade,
+        grade
+      );
+      if (endForGrade >= period.schedule_end_date) continue; // 共通の終了日と同じ or それ以降なら切る必要なし
+      const kept = new Set<CellKey>();
+      for (const key of Array.from(cells)) {
+        if (key.slice(0, 10) <= endForGrade) kept.add(key);
+      }
+      if (kept.size !== cells.size) studentsClampedByGradeEnd++;
+      studentAvailability.set(studentId, kept);
+    }
+  }
+
   const studentsWithoutAvailability = applicantStudentIds.filter(
     (id) => !studentAvailability.get(id)?.size
   ).length;
@@ -623,6 +760,55 @@ export async function loadRealAllocatorInput(opts: RealDataOptions): Promise<Rea
     console.error('loadRealAllocatorInput: 既存配置の取得に失敗（既存配置なし扱いで続行）', err);
   }
 
+  // ---- 11-b. 差分モード: 既存の下書き提案も「既存配置」として積む（§5-5） ----
+  // 破棄モード（includeDrafts=false）では積まない＝下書きは無かったものとして組み直す。
+  // どちらのモードでも公開済み・手動配置には触れない。
+  let draftsCountedAsExisting = 0;
+  if (opts.includeDrafts) {
+    try {
+      const draftRows = await fetchAllPaged<{
+        student_id: string;
+        subject_ids: string[] | null;
+        proposal_date: string;
+        time_slot_id: string;
+        teacher_id: string | null;
+        ratio: number | null;
+        duration_minutes: number | null;
+        half_position: 'first' | 'second' | null;
+      }>((from, to) =>
+        db
+          .from('schedule_match_proposals')
+          .select(
+            'student_id, subject_ids, proposal_date, time_slot_id, teacher_id, ratio, duration_minutes, half_position'
+          )
+          .eq('school_id', schoolId)
+          .eq('kind', 'koushu')
+          .eq('formation', INDIVIDUAL_FORMATION)
+          .eq('status', 'draft')
+          .gte('proposal_date', period.schedule_start_date)
+          .lte('proposal_date', period.schedule_end_date)
+          .order('id', { ascending: true })
+          .range(from, to)
+      );
+      const draftPlacements: ExistingPlacement[] = draftRows
+        .filter((row) => !!row.teacher_id && (row.subject_ids ?? []).length > 0)
+        .map((row) => ({
+          studentId: row.student_id,
+          subjectId: (row.subject_ids as string[])[0],
+          date: row.proposal_date,
+          slotId: row.time_slot_id,
+          teacherId: row.teacher_id as string,
+          ratio: row.ratio === 1 ? 1 : 2,
+          duration: row.duration_minutes === 45 ? 45 : 90,
+          halfPosition: row.half_position ?? null,
+        }));
+      draftsCountedAsExisting = draftPlacements.length;
+      existing = existing.concat(draftPlacements);
+    } catch (err) {
+      console.error('loadRealAllocatorInput: 下書き提案の取得に失敗（下書きなし扱いで続行）', err);
+    }
+  }
+
   // ---- 12. 容量（未設定なら既定値） ----
   const capRow = await getClassCapacity(schoolId);
   const capacity = {
@@ -657,7 +843,11 @@ export async function loadRealAllocatorInput(opts: RealDataOptions): Promise<Rea
     studentAvailabilitySource,
     studentsWithoutAvailability,
     unresolvedTimeSlots,
-    subjectAssignmentIsProvisional: true,
+    taskSource,
+    subjectAssignmentIsProvisional: taskSource === 'student_progress',
+    gradeFilter: gradeSet ? Array.from(gradeSet).sort((a, b) => a - b) : null,
+    studentsClampedByGradeEnd,
+    draftsCountedAsExisting,
   };
 
   return { input, notes };

@@ -765,3 +765,103 @@ describe('allocateKoushu — 現実規模の合成データ', () => {
     ]);
   });
 });
+
+describe('学年別の講習終了日（決定44）— 終了が早い生徒の分散', () => {
+  /**
+   * 学年別終了日で「期間の途中までしか通えない生徒」が混ざったときに、
+   * その生徒が通える範囲の中で均等に散ること。
+   *
+   * ★ この検証が守っているもの（allocate.ts の EARLY_END_RATIO）:
+   *   絶対位置アンカーの基準区間を常に「期間全体」にすると、終了が早い生徒の
+   *   後半のコマの理想位置が通える範囲の外に出てアンカーが効かなくなり、前方に寄る。
+   *   逆に常に「その生徒の可能枠」に縮めると、期間いっぱい通える生徒の分散が悪化する。
+   *   そのため「明らかに早く終わる生徒だけ縮める」条件付きにしている。
+   *
+   * ★ 閾値の根拠（合成データ5seedの実測。両側を確認済み）:
+   *   期間全体で固定 → 0.814 ／ 条件付き（現行） → 0.831
+   *   その間の 0.825 を下限に置く。単一シナリオでは差が出ない（統計的な差なので
+   *   fixtures 全体で測る必要がある）。
+   */
+  const SEEDS = [1, 7, 42, 99, 2026];
+  const CLAMP_RATIO = 0.6;
+
+  /** 生徒の半分の可能枠を期間先頭 60% で切る（＝終了が早い学年の代用） */
+  function clampHalfOfStudents(input: AllocatorInput): AllocatorInput {
+    const cutoffDate = input.dates[Math.max(0, Math.floor(input.dates.length * CLAMP_RATIO) - 1)];
+    const clamped = new Map(input.studentAvailability);
+    Array.from(clamped.keys())
+      .sort()
+      .forEach((sid, i) => {
+        if (i % 2 !== 0) return;
+        const kept = new Set<string>();
+        for (const key of Array.from(clamped.get(sid) ?? [])) {
+          if (key.slice(0, 10) <= cutoffDate) kept.add(key);
+        }
+        clamped.set(sid, kept);
+      });
+    return { ...input, studentAvailability: clamped };
+  }
+
+  /**
+   * 「その生徒が通える範囲の中で均等か」を測る。
+   * computeSubjectBalance は期間全体を基準にするので、通える範囲が狭い生徒は
+   * 何をしても偏って見える。ここでは基準を生徒の最終可能日に置いて測る。
+   */
+  function windowEvenness(input: AllocatorInput, result: AllocatorResult): number {
+    const idxByDate = new Map(input.dates.map((d, i) => [d, i]));
+    const maxIdxByStudent = new Map<string, number>();
+    for (const [sid, cells] of Array.from(input.studentAvailability.entries())) {
+      const idxs = Array.from(cells)
+        .map((k) => idxByDate.get(k.slice(0, 10)))
+        .filter((v): v is number => v != null);
+      if (idxs.length > 0) maxIdxByStudent.set(sid, Math.max(...idxs));
+    }
+
+    const positions = new Map<string, number[]>();
+    for (const a of result.assignments) {
+      const i = idxByDate.get(a.date);
+      if (i == null) continue;
+      const key = `${a.studentId}|${a.subjectId}`;
+      const arr = positions.get(key);
+      if (arr) arr.push(i);
+      else positions.set(key, [i]);
+    }
+
+    const drifts: number[] = [];
+    for (const [key, pos] of Array.from(positions.entries())) {
+      if (pos.length < 2) continue;
+      const sid = key.slice(0, key.indexOf('|'));
+      const span = Math.max(1, maxIdxByStudent.get(sid) ?? input.dates.length - 1);
+      const sorted = [...pos].sort((a, b) => a - b);
+      let sum = 0;
+      for (let k = 0; k < sorted.length; k++) {
+        sum += Math.abs(sorted[k] - ((k + 0.5) / sorted.length) * span);
+      }
+      drifts.push(sum / sorted.length / span);
+    }
+    const mean = drifts.length === 0 ? 0 : drifts.reduce((s, d) => s + d, 0) / drifts.length;
+    return Math.max(0, Math.min(1, 1 - mean * 2));
+  }
+
+  it('通える範囲の中での均等度が実測水準（0.825以上）を保つ', () => {
+    let sum = 0;
+    for (const seed of SEEDS) {
+      const input = clampHalfOfStudents(buildFixtureInput({ seed }));
+      const result = allocateKoushu(input);
+      assertInvariants(input, result);
+      sum += windowEvenness(input, result);
+    }
+    expect(sum / SEEDS.length).toBeGreaterThanOrEqual(0.825);
+  });
+
+  it('期間を切っても割当コマ数が大きく落ちない', () => {
+    for (const seed of SEEDS) {
+      const base = buildFixtureInput({ seed });
+      const clamped = clampHalfOfStudents(base);
+      const before = allocateKoushu(base).stats.assignedKoma;
+      const after = allocateKoushu(clamped).stats.assignedKoma;
+      // 半数の生徒の枠を4割削っているので減るのは当然だが、破滅的に落ちないこと
+      expect(after).toBeGreaterThan(before * 0.8);
+    }
+  });
+});

@@ -46,6 +46,11 @@ export async function createMatchBatch(input: MatchBatchInput): Promise<Schedule
 
   // 2. proposals を bulk insert
   if (input.proposals.length > 0) {
+    // ★ ratio / duration_minutes / half_position を必ず書く（§7のリスク・§9-4の対）。
+    //   publishProposal 側は proposal から3列を継承する実装になっているが、こちらの INSERT で
+    //   落としていると継承元が DB 既定値（ratio=2 / duration=NULL / half=NULL）になり、
+    //   1対1・45分の提案が公開の瞬間に「1対2・全コマ」へ化ける。
+    //   未指定（undefined）のときだけ DB 既定に委ねる（アルゴリズムが3列を持たない提案も作れるため）。
     const rows = input.proposals.map((p) => ({
       batch_id: batch.id,
       school_id: input.school_id,
@@ -56,6 +61,9 @@ export async function createMatchBatch(input: MatchBatchInput): Promise<Schedule
       subject_ids: p.subject_ids,
       formation: p.formation,
       kind: p.kind,
+      ...(p.ratio !== undefined ? { ratio: p.ratio } : {}),
+      ...(p.duration_minutes !== undefined ? { duration_minutes: p.duration_minutes } : {}),
+      ...(p.half_position !== undefined ? { half_position: p.half_position } : {}),
       match_meta: p.match_meta ?? null,
     }));
     const { error: insErr } = await db.from('schedule_match_proposals').insert(rows);
