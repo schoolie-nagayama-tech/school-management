@@ -63,6 +63,13 @@ export const ALLOC_WEIGHTS = {
  */
 const ANCHOR_TOLERANCE = 1.5;
 
+/**
+ * 「終了が明らかに早い生徒」と見なす閾値（期間長に対する比）。
+ * これより手前で通えなくなる生徒だけ、絶対位置の基準区間をその生徒の最終可能日までに縮める。
+ * 根拠と実測値は findCandidates 内の span の決め方のコメントを参照。
+ */
+const EARLY_END_RATIO = 0.9;
+
 // ============================================================
 // ヘルパ
 // ============================================================
@@ -183,6 +190,13 @@ interface AllocContext {
   dateIndexByDate: Map<string, number>;
   /** 生徒 → 可能枠に現れる異なる日数 */
   availDateCount: Map<string, number>;
+  /**
+   * 生徒 → 可能枠の最初/最後の日付インデックス。
+   * 絶対位置アンカーの基準区間を決めるのに **max だけ** 使う（決定44の波及・§17-2 のP2項目）。
+   * 開始は全学年共通なので min は基準点に使わない（使うと実測で均等度が悪化した。
+   * 詳細は findCandidates 内の span の決め方のコメント）。
+   */
+  studentIdxRange: Map<string, { min: number; max: number }>;
 }
 
 interface Candidate {
@@ -275,7 +289,25 @@ function findCandidates(
   // 従来の「直前のコマとの間隔」だけでは、間隔が理想以上なら常に満点なので
   // 可能枠が狭いと最短間隔で前半に固まってしまう（＝前半英語ばかりの原因）。
   // 絶対位置で押さえると、6コマ目は必ず期間の後方を狙うようになる。
-  const span = Math.max(1, input.dates.length - 1);
+  // 基準区間は「その生徒が通える範囲」（決定44の波及。AllocContext.studentIdxRange のコメント参照）。
+  // 基準区間 span の決め方（決定44の波及・§17-2 のP2項目）。
+  //
+  // 開始は全学年共通なので基準点は常に期間の先頭（0）。終了だけ学年別に早まりうるので、
+  // その生徒の最終可能日が**明らかに早い**ときだけ span をそこまでに縮める。
+  //
+  // ★ なぜ「明らかに早いときだけ」なのか（実測で決めた）:
+  //   常に生徒の最終可能日で縮めると、期間いっぱい通える生徒（最終日が数日足りないだけの生徒）
+  //   まで span が縮み、idealGapIdx が小さくなってアンカーが過度に厳しくなる。
+  //   合成データ5seedで 均等度 0.872 → 0.864 に悪化した。
+  //   逆に、生徒の半数の終了を期間の60%で切った条件（＝学年別終了日がある状態）では
+  //   縮めた方が 0.814 → 0.831 と改善する。
+  //   そこで「期間の90%より手前で終わる生徒」だけ縮める条件付きにした。
+  //   実測: 学年別終了日なし 0.869（最悪0.858・旧式と同値）／学年別終了日あり 0.831。
+  const lastIdx = input.dates.length - 1;
+  const idxRange = ctx.studentIdxRange.get(task.studentId);
+  const studentMaxIdx = idxRange?.max ?? lastIdx;
+  const baseIdx = 0;
+  const span = Math.max(1, studentMaxIdx < lastIdx * EARLY_END_RATIO ? studentMaxIdx : lastIdx);
   // アンカーの N は「入りそうなコマ数」で抑える。
   // 申込が生徒の可能日数を大きく超えている教室（実測: 充填率158%）で totalForSubject を
   // そのまま使うと、理想位置が期間の前方に密集し **アンカーが逆に前半へ集めてしまう**
@@ -327,7 +359,7 @@ function findCandidates(
       const idx = dateIndexByDate.get(date) ?? 0;
       // この候補日より前にある同科目コマ数 ＝ この候補が日付順で何番目になるか
       const k = placedIdx.filter((p) => p <= idx).length;
-      const idealIdx = ((k + 0.5) / anchorN) * span;
+      const idealIdx = baseIdx + ((k + 0.5) / anchorN) * span;
       const anchorDrift = Math.min(1, Math.abs(idx - idealIdx) / (idealGapIdx * ANCHOR_TOLERANCE));
       cellScore += (1 - anchorDrift) * ALLOC_WEIGHTS.spreadAnchor;
       // 局所的な固まり防止（直近の同科目コマと近すぎない）
@@ -469,15 +501,27 @@ export function allocateKoushu(input: AllocatorInput): AllocatorResult {
   // 生徒の可能枠を展開（走査対象＝ここだけ。1回作って使い回す）
   const availCells = buildAvailCells(input);
   // 候補評価で毎回使う派生データ。1回だけ作って使い回す。
+  const dateIndexByDate = new Map(input.dates.map((d, i) => [d, i]));
   const ctx: AllocContext = {
     // 日付 → 期間内の通し番号（絶対位置の計算に使う）
-    dateIndexByDate: new Map(input.dates.map((d, i) => [d, i])),
+    dateIndexByDate,
     // 生徒 → 可能枠に現れる異なる日数（アンカーの N の上限）
     availDateCount: new Map(
       Array.from(availCells.entries(), ([sid, cells]) => [
         sid,
         new Set(cells.map((c) => c.date)).size,
       ])
+    ),
+    // 生徒 → 可能枠の端から端（アンカーの基準区間）。buildAvailCells は日付昇順に並べてある。
+    studentIdxRange: new Map(
+      Array.from(availCells.entries())
+        .filter(([, cells]) => cells.length > 0)
+        .map(([sid, cells]) => {
+          const idxs = cells
+            .map((c) => dateIndexByDate.get(c.date))
+            .filter((v): v is number => v != null);
+          return [sid, { min: Math.min(...idxs), max: Math.max(...idxs) }] as const;
+        })
     ),
   };
 

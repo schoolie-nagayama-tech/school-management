@@ -46,6 +46,11 @@ export async function createMatchBatch(input: MatchBatchInput): Promise<Schedule
 
   // 2. proposals を bulk insert
   if (input.proposals.length > 0) {
+    // ★ ratio / duration_minutes / half_position を必ず書く（§7のリスク・§9-4の対）。
+    //   publishProposal 側は proposal から3列を継承する実装になっているが、こちらの INSERT で
+    //   落としていると継承元が DB 既定値（ratio=2 / duration=NULL / half=NULL）になり、
+    //   1対1・45分の提案が公開の瞬間に「1対2・全コマ」へ化ける。
+    //   未指定（undefined）のときだけ DB 既定に委ねる（アルゴリズムが3列を持たない提案も作れるため）。
     const rows = input.proposals.map((p) => ({
       batch_id: batch.id,
       school_id: input.school_id,
@@ -56,6 +61,9 @@ export async function createMatchBatch(input: MatchBatchInput): Promise<Schedule
       subject_ids: p.subject_ids,
       formation: p.formation,
       kind: p.kind,
+      ...(p.ratio !== undefined ? { ratio: p.ratio } : {}),
+      ...(p.duration_minutes !== undefined ? { duration_minutes: p.duration_minutes } : {}),
+      ...(p.half_position !== undefined ? { half_position: p.half_position } : {}),
       match_meta: p.match_meta ?? null,
     }));
     const { error: insErr } = await db.from('schedule_match_proposals').insert(rows);
@@ -115,9 +123,11 @@ export async function publishProposal(
   proposalId: string,
   publishedBy: string
 ): Promise<ScheduleMatchProposal> {
+  // ratio/duration_minutes/half_position は '*' に含まれるが、公開時に必ず継承すべき列であることを
+  // 明示するため select にも書き出す（§9-4: 欠落していたバグの是正）。
   const { data: prop, error: getErr } = await db
     .from('schedule_match_proposals')
-    .select('*')
+    .select('*, ratio, duration_minutes, half_position')
     .eq('id', proposalId)
     .single();
   if (getErr || !prop) {
@@ -128,7 +138,11 @@ export async function publishProposal(
     throw new Error('下書き状態の提案のみ公開できます');
   }
 
-  // schedule_entries に INSERT
+  // schedule_entries に INSERT。
+  // §9-4: ratio/duration_minutes/half_position は proposal 側から必ずスナップショット継承する
+  // （従来はここで欠落しており、公開のたびに DB 既定値（ratio=2/duration=NULL/half=NULL）で
+  //   上書きされてしまう既存バグだった。proposal 側も現状は既定値のみのため挙動は変わらないが、
+  //   今後 proposal に値が入るようになれば正しく引き継がれる）。
   const { data: entryRow, error: insErr } = await db
     .from('schedule_entries')
     .insert({
@@ -140,6 +154,9 @@ export async function publishProposal(
       subject_ids: proposal.subject_ids,
       kind: proposal.kind,
       formation: proposal.formation,
+      ratio: proposal.ratio,
+      duration_minutes: proposal.duration_minutes,
+      half_position: proposal.half_position,
       status: 'scheduled',
     })
     .select('id')
@@ -201,6 +218,36 @@ export async function dismissProposal(proposalId: string): Promise<void> {
     console.error('Error dismissing proposal:', error);
     throw new Error('提案の不採用処理に失敗しました');
   }
+}
+
+/**
+ * 期間内の講習（個別）の下書き提案をまとめて不採用にする（再実行の「破棄モード」用・§5-5）。
+ *
+ * ★ status を 'dismissed' にするだけで、公開済み（published）と手動配置の
+ *   schedule_entries には一切触らない。物理削除もしない（何を捨てたか追えるようにする）。
+ * 戻り値は破棄した件数。
+ */
+export async function dismissKoushuDraftsInPeriod(params: {
+  schoolId: string;
+  formation: string;
+  startDate: string;
+  endDate: string;
+}): Promise<number> {
+  const { data, error } = await db
+    .from('schedule_match_proposals')
+    .update({ status: 'dismissed' as MatchProposalStatus })
+    .eq('school_id', params.schoolId)
+    .eq('kind', 'koushu')
+    .eq('formation', params.formation)
+    .eq('status', 'draft')
+    .gte('proposal_date', params.startDate)
+    .lte('proposal_date', params.endDate)
+    .select('id');
+  if (error) {
+    console.error('Error dismissing koushu drafts:', error);
+    throw new Error('既存の下書き提案の破棄に失敗しました');
+  }
+  return ((data ?? []) as Array<{ id: string }>).length;
 }
 
 /** 提案を編集（公開前に室長が手動調整する想定） */

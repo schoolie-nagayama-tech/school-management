@@ -25,6 +25,7 @@ import { INDIVIDUAL_FORMATION, GROUP_FORMATION } from '@/types/schedule';
 import { useMasterData } from '@/contexts/MasterDataContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatGradeLabel } from '@/lib/utils/gradeLabel';
+import { normalizeKomaBySubject, type KomaSpec } from '@/lib/utils/komaBySubject';
 
 const DOW_LABELS = ['日', '月', '火', '水', '木', '金', '土'];
 
@@ -154,19 +155,33 @@ export function KoushuEnrollmentManager() {
 
   const komaSummary = (en?: KoushuEnrollment): string => {
     if (!en) return '—';
-    const kbs = en.koma_by_subject ?? {};
+    // koma_by_subject は number(旧)/KomaSpec(新)が混在しうるためアクセサで正規化してから表示する
+    const kbs = normalizeKomaBySubject(en.koma_by_subject);
     const parts = Object.entries(kbs).map(
-      ([sid, n]) => `${subjectNameById.get(sid) ?? sid.slice(0, 4)}${n}`
+      ([sid, spec]) => `${subjectNameById.get(sid) ?? sid.slice(0, 4)}${spec.koma}`
     );
     return parts.length > 0 ? parts.join('・') : `${en.koma_count}コマ`;
   };
 
+  // 編集フォーム(EnrollmentRow.komaBySubject)は現状コマ数(number)入力のみを扱うため、
+  // 正規化したKomaSpecからkomaだけを取り出して渡す（比率/時間入力への対応はフォーム側改修のスコープ外）。
+  const toKomaCountMap = (kbs?: Record<string, number | KomaSpec>): Record<string, number> =>
+    Object.fromEntries(
+      Object.entries(normalizeKomaBySubject(kbs)).map(([sid, spec]) => [sid, spec.koma])
+    );
+
   const editInitialRows = (r: StudentRow): EnrollmentRow[] => {
     const rows: EnrollmentRow[] = [];
     if (r.individual?.koma_by_subject)
-      rows.push({ formation: INDIVIDUAL_FORMATION, komaBySubject: r.individual.koma_by_subject });
+      rows.push({
+        formation: INDIVIDUAL_FORMATION,
+        komaBySubject: toKomaCountMap(r.individual.koma_by_subject),
+      });
     if (r.group?.koma_by_subject)
-      rows.push({ formation: GROUP_FORMATION, komaBySubject: r.group.koma_by_subject });
+      rows.push({
+        formation: GROUP_FORMATION,
+        komaBySubject: toKomaCountMap(r.group.koma_by_subject),
+      });
     return rows;
   };
 

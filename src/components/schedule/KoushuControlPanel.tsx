@@ -7,7 +7,7 @@
  * このアコーディオン1枚にまとめてツールバーをすっきりさせる。
  *
  * 機能:
- *  - 個別の自動マッチング実行（generateKoushuIndividualProposals）→ 下書き提案を一覧
+ *  - 個別の自動配置（KoushuAllocationPanel。学年選択・実行時設定・再実行モードはそちら側）
  *  - 下書きの個別公開 / 全公開 / 却下（既存 schedule-match.ts を利用）
  *  - 配置進捗（KoushuPlacementPanel）を内包
  */
@@ -15,7 +15,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui';
 import { KoushuPlacementPanel } from './KoushuPlacementPanel';
-import { generateKoushuIndividualProposals, type KoushuMatchResult } from '@/lib/api/koushu-match';
+import { KoushuAllocationPanel } from './KoushuAllocationPanel';
 import {
   getProposalsByBatch,
   publishProposal,
@@ -24,7 +24,7 @@ import {
   type ScheduleMatchProposal,
 } from '@/lib/api/schedule-match';
 import type { KoushuPeriodInfo } from '@/lib/api/koushu-period';
-import { ChevronDown, ChevronRight, Wand2, Check, X, GraduationCap } from 'lucide-react';
+import { ChevronDown, ChevronRight, Check, X, GraduationCap } from 'lucide-react';
 
 interface Props {
   period: KoushuPeriodInfo;
@@ -68,7 +68,6 @@ export function KoushuControlPanel({
   const [running, setRunning] = useState(false);
   const [batchId, setBatchId] = useState<string | null>(null);
   const [proposals, setProposals] = useState<ScheduleMatchProposal[]>([]);
-  const [result, setResult] = useState<KoushuMatchResult | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -84,21 +83,15 @@ export function KoushuControlPanel({
     setProposals(list);
   }, []);
 
-  const handleRunMatching = async () => {
-    setRunning(true);
-    setError(null);
-    try {
-      const res = await generateKoushuIndividualProposals({ schoolId, period, executedBy });
-      setBatchId(res.batchId);
-      setResult(res);
-      if (res.batchId) await reloadProposals(res.batchId);
+  /** 実行パネルが配置を終えたら、その batch の下書きを読み込んで一覧・座席表★に反映する */
+  const handleAllocationCompleted = useCallback(
+    async (newBatchId: string | null) => {
+      setBatchId(newBatchId);
+      if (newBatchId) await reloadProposals(newBatchId);
       else setProposals([]);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'マッチングに失敗しました');
-    } finally {
-      setRunning(false);
-    }
-  };
+    },
+    [reloadProposals]
+  );
 
   const handlePublishOne = async (id: string) => {
     setBusyId(id);
@@ -171,52 +164,34 @@ export function KoushuControlPanel({
 
         {open && (
           <div className="mt-3 space-y-3">
-            {/* 個別マッチング */}
+            {/* 個別の自動配置（実行パネル。学年選択・実行時設定・再実行モードはこの中） */}
+            <KoushuAllocationPanel
+              period={period}
+              schoolId={schoolId}
+              executedBy={executedBy}
+              onCompleted={handleAllocationCompleted}
+            />
+
+            {/* 下書きの公開操作 */}
             <div className="rounded-lg border border-border-subtle p-2.5">
               <div className="flex items-center gap-2">
-                <span className="text-xs font-semibold text-text-body">個別 自動マッチング</span>
-                <button
-                  type="button"
-                  onClick={handleRunMatching}
-                  disabled={running}
-                  className="ml-auto inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md bg-info text-white hover:bg-info/90 active:scale-[0.97] transition-[background-color,transform] duration-150 disabled:opacity-50"
-                >
-                  <Wand2 className="w-3.5 h-3.5" />
-                  {running ? '実行中…' : 'マッチング実行'}
-                </button>
+                <span className="text-xs font-semibold text-text-body">下書きの確認・公開</span>
                 {drafts.length > 0 && (
                   <button
                     type="button"
                     onClick={handlePublishAll}
                     disabled={running}
-                    className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md border border-success text-success hover:bg-success-subtle active:scale-[0.97] transition-[background-color,transform] duration-150 disabled:opacity-50"
+                    className="ml-auto inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md border border-success text-success hover:bg-success-subtle active:scale-[0.97] transition-[background-color,transform] duration-150 disabled:opacity-50"
                   >
                     <Check className="w-3.5 h-3.5" />
                     下書きを全公開（{drafts.length}）
                   </button>
                 )}
               </div>
-
-              {result && (
-                <div className="mt-1.5 text-xs">
-                  <p className="text-text-muted">提案 {result.proposalsCreated} 件を作成</p>
-                  {result.unmatched.length > 0 && (
-                    <div className="mt-1 rounded border border-warning/30 bg-warning-subtle/40 p-1.5">
-                      <p className="text-warning font-semibold mb-0.5">
-                        未マッチ {result.unmatched.reduce((s, u) => s + u.remaining, 0)} コマ（
-                        {result.unmatched.length}名）— 出勤講師・空きコマが足りていません
-                      </p>
-                      <ul className="max-h-28 overflow-y-auto space-y-0.5">
-                        {result.unmatched.map((u) => (
-                          <li key={u.student_id} className="text-text-muted">
-                            {u.student_name ?? u.student_id.slice(0, 8)}：残 {u.remaining} コマ（
-                            {u.reason}）
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </div>
+              {drafts.length === 0 && (
+                <p className="mt-1 text-[11px] text-text-muted">
+                  下書きはありません。上の「自動配置を実行」で作成します。
+                </p>
               )}
 
               {/* 下書き一覧 */}

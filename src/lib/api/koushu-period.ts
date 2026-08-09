@@ -17,6 +17,7 @@ import { supabase } from '@/lib/supabase';
 import { fetchAllPaged, fetchAllInChunks } from '@/lib/utils/supabasePaging';
 import type { SeasonType } from '@/types/database';
 import type { ScheduleEntryFormation } from '@/types/schedule';
+import { normalizeKomaBySubject, type KomaSpec } from '@/lib/utils/komaBySubject';
 // Phase A: 講習は個別のみ対象。'individual' 直値を定数参照に置換（意図は現状維持）。
 import { INDIVIDUAL_FORMATION } from '@/types/schedule';
 
@@ -184,7 +185,8 @@ export async function getKoushuPlacementProgressByPeriod(
     student_id: string;
     koma_count: number;
     subject_ids: string[];
-    koma_by_subject?: Record<string, number> | null;
+    // number（旧形式）/ KomaSpec（新形式）の両方が来うる。読み出しは正規化アクセサに一本化する。
+    koma_by_subject?: Record<string, number | KomaSpec> | null;
     student?:
       | { id: string; last_name: string; first_name: string; grade: number }
       | Array<{ id: string; last_name: string; first_name: string; grade: number }>;
@@ -205,9 +207,15 @@ export async function getKoushuPlacementProgressByPeriod(
     return q.order('id', { ascending: true }).range(from, to);
   });
 
-  // 申込の科目別コマ数（koma_by_subject 優先。無ければ単一科目に総コマ数を寄せる後方互換）
+  // 申込の科目別コマ数（koma_by_subject 優先。無ければ単一科目に総コマ数を寄せる後方互換）。
+  // koma_by_subject は number/KomaSpec が混在しうるためアクセサで正規化してから koma だけ取り出す。
   const subjectEnrollOf = (e: EnrollmentRow): Record<string, number> => {
-    if (e.koma_by_subject && Object.keys(e.koma_by_subject).length > 0) return e.koma_by_subject;
+    const normalized = normalizeKomaBySubject(e.koma_by_subject);
+    if (Object.keys(normalized).length > 0) {
+      return Object.fromEntries(Object.entries(normalized).map(([sid, spec]) => [sid, spec.koma]));
+    }
+    // koma_by_subject が空（未設定/全滅）で単一科目申込のときだけ、総コマ数をその科目に寄せる
+    // 後方互換（既存データの表示を変えないため。§9-2 では意図的に維持する挙動）。
     if ((e.subject_ids ?? []).length === 1) return { [e.subject_ids[0]]: e.koma_count };
     return {};
   };

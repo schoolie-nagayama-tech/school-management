@@ -469,6 +469,26 @@ export default function PortalSettingsPage() {
           </div>
         )}
 
+        {/* 講習申込（Web申込）の公開設定
+            form_type を増やさない設計（決定20）なので、下の「フォーム一覧」には載せずに
+            独立した入口にする。公開期間の正典は course_prep_periods 側にある。 */}
+        <div className="mb-6 bg-surface-raised rounded-xl border border-border p-6">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h2 className="text-lg font-bold text-text-heading mb-1">講習申込（Web申込）</h2>
+              <p className="text-xs text-text-body/60">
+                公開期間・単価表・学年別の講習終了日を設定します。公開期間が空の間は保護者から見えません。
+              </p>
+            </div>
+            <Link
+              href="/settings/koushu-apply"
+              className="shrink-0 px-3 py-2 border border-border rounded-lg text-sm text-text-body hover:bg-surface-hover transition-colors duration-150"
+            >
+              設定を開く
+            </Link>
+          </div>
+        </div>
+
         {/* フォーム一覧（統合版） */}
         {isLoading ? (
           <Loading size="md" />

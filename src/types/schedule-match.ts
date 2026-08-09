@@ -3,6 +3,8 @@
  * 実行バッチ (schedule_match_batches) の型定義
  */
 
+import type { HalfPosition } from '@/types/schedule';
+
 export type MatchBatchMode = 'overwrite' | 'diff' | 'partial';
 export type MatchProposalStatus = 'draft' | 'published' | 'dismissed';
 
@@ -38,6 +40,14 @@ export interface ScheduleMatchProposal {
   // Phase A: 形態の動的マスタ化に伴い union → string へ緩和（値は schedule_formations が管理）。
   formation: string;
   kind: 'regular' | 'koushu';
+  // Phase R（§3-2・§9-4）: schedule_entries と同じ3列。既定は DB 側 DEFAULT（ratio=2 / duration_minutes,
+  // half_position=NULL）に委ねるため任意項目にする（マッチングアルゴリズムが未指定で作る提案もあるため）。
+  /** 指導比率。1=1対1 / 2=1対2（既定）。 */
+  ratio?: 1 | 2;
+  /** 授業時間(分)。45 or 90。NULL=全コマ(90分)扱い。 */
+  duration_minutes?: number | null;
+  /** 45分授業の占有半コマ。'first'=前半 / 'second'=後半 / NULL=全コマ。 */
+  half_position?: HalfPosition;
   status: MatchProposalStatus;
   schedule_entry_id: string | null;
   published_at: string | null;

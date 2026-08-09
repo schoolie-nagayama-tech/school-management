@@ -146,12 +146,13 @@ export function buildNavEntries(ctx: NavContext): NavEntry[] {
       kind: 'group',
       key: 'course',
       label: '講習管理',
-      matchPrefixes: ['/courses'],
+      matchPrefixes: ['/courses', '/schedule/special-courses'],
       items: [
         { key: 'courses', label: '講習一覧', href: '/courses', exact: true },
         { key: 'progress', label: '進捗管理', href: '/courses/progress' },
         { key: 'schedule', label: '準備スケジュール', href: '/courses/schedule' },
         { key: 'proposals', label: '講習提案書', href: '/courses/proposals' },
+        { key: 'special-courses', label: '特別講座管理', href: '/schedule/special-courses' },
       ],
     });
   }

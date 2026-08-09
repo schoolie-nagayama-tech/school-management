@@ -3,6 +3,7 @@ import { SEASON_LABELS } from '@/types/database';
 import type { ScheduleEntryFormation } from '@/types/schedule';
 import type { KoushuEnrollment } from '@/lib/api/seasonalCourses';
 import { calcTotalKoma, calcTotalAppliedKoma } from '@/lib/api/proposals';
+import { normalizeKomaBySubject } from '@/lib/utils/komaBySubject';
 
 /**
  * 生徒詳細「講習」タブ用の集計ヘルパー（純関数）。
@@ -107,10 +108,15 @@ export function groupStudentKoushu(
     if (!SEASON_ORDER[season]) continue; // season 不明な行はスキップ
     const targetYear = maxYearBySeason.get(season) ?? null;
     const g = ensureGroup(season, targetYear);
+    // koma_by_subject は number(旧)/KomaSpec(新)が混在しうるため正規化し、
+    // この画面はコマ数のみ表示するので koma だけを取り出す（表示結果は変えない）。
+    const normalizedKbs = normalizeKomaBySubject(e.koma_by_subject);
     g.enrollments.push({
       formation: e.formation,
       komaCount: e.koma_count,
-      komaBySubject: e.koma_by_subject ?? {},
+      komaBySubject: Object.fromEntries(
+        Object.entries(normalizedKbs).map(([sid, spec]) => [sid, spec.koma])
+      ),
     });
   }
 
