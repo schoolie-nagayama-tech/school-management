@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useMemo, DragEvent } from 'react';
 import { getRegularPatterns, getTimeSlots, deleteRegularPattern } from '@/lib/api/schedule';
 import { getSubjects } from '@/lib/api/subjects';
 import type { ScheduleRegularPattern, ScheduleTimeSlot } from '@/types/schedule';
-import { DAY_OF_WEEK_LABELS, SCHEDULE_PERIOD_LABELS } from '@/types/schedule';
+import { DAY_OF_WEEK_LABELS, SCHEDULE_PERIOD_LABELS, INDIVIDUAL_FORMATION } from '@/types/schedule';
 import type { Subject } from '@/types/database';
 import { supabase } from '@/lib/supabase';
 import { X } from 'lucide-react';
@@ -71,9 +71,12 @@ export function AttendanceMatrix({
     setIsLoading(true);
     const gradeCategory = studentGrade ? gradeToCategory(studentGrade) : undefined;
     // Promise.allSettled にして 1 つ失敗しても他のデータは表示できるように
+    // このマトリクスは1コマ=1生徒の単一授業（ドラッグ&ドロップで科目を割当）という個別指導の
+    // モデル前提のセル設計（複数生徒が入る集団授業は表現できない）のため、コマ時間は
+    // 個別指導枠のみに絞る。無指定のままだと集団の同slot_numberコマが混ざり「1限」行が重複する。
     const [patsRes, slotsRes, subsRes] = await Promise.allSettled([
       getRegularPatterns(schoolId, { studentId }),
-      getTimeSlots(schoolId),
+      getTimeSlots(schoolId, INDIVIDUAL_FORMATION),
       getSubjects(gradeCategory),
     ]);
     if (patsRes.status === 'fulfilled') {
@@ -107,11 +110,13 @@ export function AttendanceMatrix({
     return map;
   }, [subjects]);
 
-  // パターンを曜日×コマのマップにする (period_type='regular' のみ)
+  // パターンを曜日×コマのマップにする (period_type='regular' かつ個別指導のみ)
+  // このマトリクスのコマ行は個別指導枠に絞っているため、パターン側も個別指導のもの
+  // （formation 未設定の旧データも個別として扱う）だけを対象にし、行と整合させる。
   const patternMap = useMemo(() => {
     const map = new Map<string, ScheduleRegularPattern>();
     for (const p of patterns) {
-      if (p.period_type === 'regular') {
+      if (p.period_type === 'regular' && p.formation === INDIVIDUAL_FORMATION) {
         map.set(`${p.day_of_week}-${p.time_slot_id}`, p);
       }
     }
@@ -124,7 +129,7 @@ export function AttendanceMatrix({
   const weeklyCount = useMemo(() => {
     const slots = new Set<string>();
     for (const p of patterns) {
-      if (p.period_type === 'regular') {
+      if (p.period_type === 'regular' && p.formation === INDIVIDUAL_FORMATION) {
         slots.add(`${p.day_of_week}-${p.time_slot_id}`);
       }
     }

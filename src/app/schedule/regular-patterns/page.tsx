@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { AdminLayout } from '@/components/layouts';
@@ -42,7 +42,9 @@ import type {
   ScheduleRegularPattern,
   ScheduleRegularPatternFormData,
   ScheduleFormation,
+  ScheduleTimeSlot,
 } from '@/types/schedule';
+import { INDIVIDUAL_FORMATION } from '@/types/schedule';
 import type { School } from '@/types/database';
 import type { Subject } from '@/types/database';
 import AccessDenied from '@/components/AccessDenied';
@@ -140,6 +142,27 @@ export default function RegularPatternsPage() {
   subjects.forEach((s) => {
     subjectNames[s.id] = s.name;
   });
+
+  // コマ時間マスタは教室×形態ごとに独立したセットのため、(formation, slot_number) の複合キーで
+  // 引けるようにしておく。一覧の各行の時刻表示は getRegularPatterns が返す time_slot（FK結合済み・
+  // パターン自身の形態のコマを指す）をそのまま使うため対応不要だが、フォームのコマ選択肢は
+  // formation 無指定の timeSlots をそのまま渡すと個別/集団のコマが混在し「1限」が水増しされる。
+  // 追加フォームの既定形態（個別）または編集中パターンの形態のコマだけに絞って渡す。
+  const timeSlotsByFormationAndNumber = useMemo(() => {
+    const map = new Map<string, ScheduleTimeSlot>();
+    timeSlots.forEach((slot) => {
+      map.set(`${slot.formation}:${slot.slot_number}`, slot);
+    });
+    return map;
+  }, [timeSlots]);
+  const formTargetFormation = editingPattern?.formation ?? INDIVIDUAL_FORMATION;
+  const timeSlotsForForm = useMemo(
+    () =>
+      Array.from(timeSlotsByFormationAndNumber.values())
+        .filter((s) => s.formation === formTargetFormation)
+        .sort((a, b) => a.slot_number - b.slot_number),
+    [timeSlotsByFormationAndNumber, formTargetFormation]
+  );
 
   const canTeacherTeachSubjects = (teacherId: string, subjectIds: string[]) => {
     if (subjectIds.length === 0) return true;
@@ -335,7 +358,7 @@ export default function RegularPatternsPage() {
         }}
         onSubmit={handleSave}
         editingPattern={editingPattern}
-        timeSlots={timeSlots}
+        timeSlots={timeSlotsForForm}
         teachers={teachers}
         students={students}
         subjects={subjects}

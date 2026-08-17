@@ -135,11 +135,21 @@ export async function getTimeSlotById(id: string): Promise<ScheduleTimeSlot | nu
   return (data as ScheduleTimeSlot) ?? null;
 }
 
-/** IDの配列順に slot_number を 1,2,3... に振り直す */
-export async function reorderTimeSlots(schoolId: string, orderedIds: string[]): Promise<void> {
+/**
+ * 指定 school_id × formation スコープで、display_order → slot_number の順に
+ * 並べ直し、slot_number を 1,2,3...の連番に詰め直す（RPC: reorder_time_slots）。
+ * 並び替え（上下ボタン）で使う場合は、呼び出し前に対象コマの display_order を
+ * 新しい表示順へ更新しておくこと（updateTimeSlot 経由）。display_order には
+ * 一意制約が無いため個別更新で衝突しない。
+ * 削除後の欠番詰めであれば display_order は変更せず本関数を呼ぶだけでよい。
+ */
+export async function reorderTimeSlots(
+  schoolId: string,
+  formation: ScheduleEntryFormation
+): Promise<void> {
   const { error } = await db.rpc('reorder_time_slots', {
     p_school_id: schoolId,
-    p_ordered_ids: orderedIds,
+    p_formation: formation,
   });
   if (error) {
     console.error('Error reordering time slots:', error);
@@ -168,6 +178,10 @@ export async function createTimeSlot(
 
   if (error) {
     console.error('Error creating time slot:', error);
+    // 23514 = check_violation。slot_number の上限（20）を超えるとここに来る
+    if ((error as { code?: string })?.code === '23514') {
+      throw new Error('コマ数の上限に達しています。これ以上コマを追加できません。');
+    }
     throw new Error('コマ時間の登録に失敗しました');
   }
   return data as ScheduleTimeSlot;
@@ -186,6 +200,10 @@ export async function updateTimeSlot(
 
   if (error) {
     console.error('Error updating time slot:', error);
+    // 23514 = check_violation。slot_number の上限（20）を超えるとここに来る
+    if ((error as { code?: string })?.code === '23514') {
+      throw new Error('コマ数の上限に達しています。これ以上コマを追加できません。');
+    }
     throw new Error('コマ時間の更新に失敗しました');
   }
   return data as ScheduleTimeSlot;

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button, Loading } from '@/components/ui';
 import { Pencil, Trash2, Calendar } from 'lucide-react';
@@ -14,7 +14,7 @@ import {
 } from '@/lib/api/schedule';
 import { getSubjects } from '@/lib/api/subjects';
 import type { ScheduleRegularPattern, ScheduleTimeSlot } from '@/types/schedule';
-import { DAY_OF_WEEK_LABELS, SCHEDULE_PERIOD_LABELS } from '@/types/schedule';
+import { DAY_OF_WEEK_LABELS, SCHEDULE_PERIOD_LABELS, INDIVIDUAL_FORMATION } from '@/types/schedule';
 import { useToast } from '@/hooks/useToast';
 import { useConfirm } from '@/hooks/useConfirm';
 
@@ -80,6 +80,27 @@ export function StudentRegularScheduleList({
   const weeklyCount = new Set(regularPatterns.map((p) => `${p.day_of_week}-${p.time_slot_id}`))
     .size;
 
+  // コマ時間マスタは教室×形態ごとに独立したセットのため、(formation, slot_number) の複合キーで
+  // 引けるようにしておく。一覧の各行の時刻表示は getRegularPatterns が返す time_slot（FK結合済み・
+  // パターン自身の形態のコマを指す）をそのまま使うため対応不要だが、追加・編集フォームのコマ選択肢は
+  // formation 無指定の timeSlots をそのまま渡すと個別/集団のコマが混在し「1限」が水増しされる。
+  const timeSlotsByFormationAndNumber = useMemo(() => {
+    const map = new Map<string, ScheduleTimeSlot>();
+    timeSlots.forEach((slot) => {
+      map.set(`${slot.formation}:${slot.slot_number}`, slot);
+    });
+    return map;
+  }, [timeSlots]);
+
+  /** 指定形態のコマだけに絞って返す（新規は個別が既定、編集はそのパターンの形態）。 */
+  const timeSlotsForFormation = useCallback(
+    (formation: string) =>
+      Array.from(timeSlotsByFormationAndNumber.values())
+        .filter((s) => s.formation === formation)
+        .sort((a, b) => a.slot_number - b.slot_number),
+    [timeSlotsByFormationAndNumber]
+  );
+
   const fetchData = useCallback(async () => {
     if (!schoolId) return;
     setLoading(true);
@@ -110,7 +131,8 @@ export function StudentRegularScheduleList({
   const handleAdd = () => {
     setEditingPattern(null);
     if (onOpenAddForm) {
-      onOpenAddForm({ timeSlots, teachers, subjects });
+      // 新規作成は通塾パターンの既定形態（個別）のコマのみを候補にする
+      onOpenAddForm({ timeSlots: timeSlotsForFormation(INDIVIDUAL_FORMATION), teachers, subjects });
     } else {
       setFormOpen(true);
     }
@@ -118,7 +140,13 @@ export function StudentRegularScheduleList({
 
   const handleEdit = (pattern: ScheduleRegularPattern) => {
     if (onOpenEditForm) {
-      onOpenEditForm({ pattern, timeSlots, teachers, subjects });
+      // 編集はそのパターン自身の形態のコマのみを候補にする
+      onOpenEditForm({
+        pattern,
+        timeSlots: timeSlotsForFormation(pattern.formation ?? INDIVIDUAL_FORMATION),
+        teachers,
+        subjects,
+      });
     } else {
       setEditingPattern(pattern);
       setFormOpen(true);
@@ -294,7 +322,7 @@ export function StudentRegularScheduleList({
           schoolId={schoolId}
           studentGrade={studentGrade}
           pattern={editingPattern}
-          timeSlots={timeSlots}
+          timeSlots={timeSlotsForFormation(editingPattern?.formation ?? INDIVIDUAL_FORMATION)}
           teachers={teachers}
           subjects={subjects}
           onSuccess={handleFormSuccess}

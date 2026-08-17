@@ -32,6 +32,7 @@ import { formatGradeLabel } from '@/lib/utils/gradeLabel';
 import { getStudents, type EnrichedStudent } from '@/lib/api/students';
 import { getInterviewsBySchool } from '@/lib/api/interviews';
 import { getSchools } from '@/lib/api/schools';
+import { isProgrammingOnlyStudent } from '@/lib/students/programming';
 import {
   getSchoolDisciplineSessions,
   type SchoolDisciplineSessionRow,
@@ -136,7 +137,10 @@ export function InterviewHub() {
         if (cancelled) return;
 
         const schoolNameById = new Map(schools.map((s) => [s.id, s.name] as const));
-        const active = students.filter((s) => s.status === 'active');
+        // プログラミング(HALLO)専科の生徒は面談すべき指標(成績・宿題等)が無く一覧の対象にならないため除外
+        const active = students.filter(
+          (s) => s.status === 'active' && !isProgrammingOnlyStudent(s)
+        );
 
         const built: StudentRow[] = active.map((student) => {
           const interviews = interviewsByStudent.get(student.id) ?? [];
