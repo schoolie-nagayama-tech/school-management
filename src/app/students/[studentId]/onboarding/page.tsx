@@ -53,7 +53,11 @@ import {
   regenerateWeekForDate,
   convertInquiryTrialEntriesToStudent,
 } from '@/lib/api/schedule';
-import { getAvailabilityDayMap } from '@/lib/api/teacher-availability';
+import {
+  getAvailabilityDayMap,
+  availableUserIdsForInterval,
+  type AvailabilityDayMap,
+} from '@/lib/api/teacher-availability';
 import { getClassCapacity, DEFAULT_CLASS_CAPACITY } from '@/lib/api/school-class-capacity';
 import {
   getStudentContractRatioMap,
@@ -233,7 +237,8 @@ export default function OnboardingPage() {
   const [effectiveFrom, setEffectiveFrom] = useState<string>(toLocalDateStr(new Date()));
   // 表示週の実データ
   const [weekLoading, setWeekLoading] = useState(false);
-  const [availByDaySlot, setAvailByDaySlot] = useState<Map<string, string[]>>(new Map());
+  // 出勤可能データ。コマ番号ではなくコマの実時間帯で講師を絞るため Map ごと保持する
+  const [availabilityMap, setAvailabilityMap] = useState<AvailabilityDayMap | null>(null);
   const [weekEntries, setWeekEntries] = useState<ScheduleEntry[]>([]);
   const [closedDates, setClosedDates] = useState<Set<string>>(new Set());
   // ローカルに積んだ配置（1科目=最大1件。ドロップ先講師つき）
@@ -320,13 +325,13 @@ export default function OnboardingPage() {
           getClosedDays(schoolId, { from: weekStartStr, to: weekEndStr }).catch(() => []),
         ]);
         if (cancelled) return;
-        setAvailByDaySlot(dayMapRes.byDayAndSlotNumber);
+        setAvailabilityMap(dayMapRes);
         setWeekEntries(entries);
         setClosedDates(new Set(closed.map((c) => c.closed_date)));
       } catch (e) {
         if (!cancelled) {
           console.warn('週データの取得に失敗:', e);
-          setAvailByDaySlot(new Map());
+          setAvailabilityMap(null);
           setWeekEntries([]);
           setClosedDates(new Set());
         }
@@ -410,6 +415,7 @@ export default function OnboardingPage() {
         slotId: string;
         slotNumber: number;
         startTime: string;
+        endTime: string;
         plans: SubjectPlan[];
       }
     >();
@@ -421,6 +427,7 @@ export default function OnboardingPage() {
         slotId: p.slotId,
         slotNumber: p.slotNumber,
         startTime: p.startTime,
+        endTime: p.endTime,
         plans: [],
       };
       g.plans.push(p);
@@ -1264,8 +1271,15 @@ export default function OnboardingPage() {
                             {combos.map((combo) => {
                               const date = dateForDow(weekStartStr, combo.day);
                               const isClosed = closedDates.has(date);
-                              const availIds =
-                                availByDaySlot.get(`${combo.day}|${combo.slotNumber}`) ?? [];
+                              // そのコマの時間帯に在室している講師（コマ番号ではなく実時刻で判定）
+                              const availIds = availabilityMap
+                                ? availableUserIdsForInterval(
+                                    availabilityMap,
+                                    combo.day,
+                                    combo.startTime,
+                                    combo.endTime
+                                  )
+                                : [];
                               const cellTeachers = availIds
                                 .map((id) => teacherById.get(id))
                                 .filter((t): t is OnbTeacher => !!t)

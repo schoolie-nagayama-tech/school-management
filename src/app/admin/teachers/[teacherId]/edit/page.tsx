@@ -20,7 +20,7 @@ import { addUserToSchool, removeUserFromSchool, fetchWithAuth } from '@/lib/api/
 import { displayLoginId } from '@/lib/utils/loginId';
 import { ChevronLeft } from 'lucide-react';
 import { useMasterData } from '@/contexts/MasterDataContext';
-import { getActiveTimeSlots } from '@/lib/api/schedule';
+import { getActiveTimeSlots, mergeTimeSlotsByTimeRange } from '@/lib/api/schedule';
 import {
   getTeacherBadges,
   getTeacherBadgeAssignments,
@@ -303,18 +303,8 @@ export default function TeacherEditPage() {
           editSchoolIds.map((sid) => getActiveTimeSlots(sid).catch(() => [] as ScheduleTimeSlot[]))
         );
         if (cancelled) return;
-        const seen = new Set<number>();
-        const allSlots: ScheduleTimeSlot[] = [];
-        for (const slots of slotsArrays) {
-          for (const s of slots) {
-            if (!seen.has(s.slot_number)) {
-              seen.add(s.slot_number);
-              allSlots.push(s);
-            }
-          }
-        }
-        allSlots.sort((a, b) => a.slot_number - b.slot_number);
-        setScheduleTimeSlots(allSlots);
+        // 重複排除は slot_number ではなく実時刻区間で行う（形態違いの同番コマを潰さないため）。
+        setScheduleTimeSlots(mergeTimeSlotsByTimeRange(slotsArrays));
       } catch {
         if (!cancelled) setScheduleTimeSlots([]);
       }

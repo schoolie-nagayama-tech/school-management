@@ -352,12 +352,18 @@ export async function PATCH(request: NextRequest, { params }: { params: { userId
     // リクエストに含まれているときだけ更新する。未指定なら既存値を保持し、
     // 名前変更など無関係な保存で user_profiles 側の値が空に潰れるのを防ぐ。
     if ('available_slot_numbers_by_day' in body) {
-      profileUpdates.available_slot_numbers_by_day =
-        body.available_slot_numbers_by_day != null &&
-        typeof body.available_slot_numbers_by_day === 'object' &&
-        !Array.isArray(body.available_slot_numbers_by_day)
-          ? body.available_slot_numbers_by_day
-          : {};
+      // 値がプレーンなオブジェクトでない場合（null・配列・文字列など）は、
+      // 黙って {} に潰して全消去せず 400 で拒否する。
+      // typeof は配列も 'object' になるため Array.isArray と null チェックの両方が必要。
+      const value = body.available_slot_numbers_by_day;
+      const isPlainObject = value !== null && typeof value === 'object' && !Array.isArray(value);
+      if (!isPlainObject) {
+        return NextResponse.json(
+          { error: 'available_slot_numbers_by_day はオブジェクト形式で指定してください' },
+          { status: 400 }
+        );
+      }
+      profileUpdates.available_slot_numbers_by_day = value;
     }
 
     const { data, error } = await supabaseAdmin

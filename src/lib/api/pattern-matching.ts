@@ -15,7 +15,7 @@ import { supabase } from '@/lib/supabase';
 // Phase A: 形態キーの直書きを定数参照に置換
 import { INDIVIDUAL_FORMATION } from '@/types/schedule';
 import { getCurrentTeacherShifts } from '@/lib/api/teacher-shifts';
-import { getAvailabilityDayMap } from '@/lib/api/teacher-availability';
+import { getAvailabilityDayMap, availableUserIdsForInterval } from '@/lib/api/teacher-availability';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabase as any;
@@ -87,24 +87,24 @@ export async function getPatternMatchCandidates(
   // 1. 当該曜日に出勤可能な講師IDを取得
   //    第1優先: teacher_availability_periods（manual > regular_shift で正規化済み）
   //    フォールバック: 上記が空のときのみ生のシフト提出 (getCurrentTeacherShifts)
-  //    細粒度の slot_number 一致は warning 付与に活用（除外はしない、誤判定回避）
+  //    細粒度の判定はコマの実時刻で行う（slot_number は形態ごとに独立採番されるため使わない）。
+  //    一致しなくてもハード除外はせず warning 止まりにする（誤判定で候補が消える方が困るため）。
   const dayMap = await getAvailabilityDayMap(schoolId, asOfDate);
   let dowAvailable = dayMap.byDayOfWeek.get(pattern.day_of_week) ?? [];
-  let slotAvailableSet = new Set<string>();
-  if (pattern.time_slot?.slot_number) {
-    slotAvailableSet = new Set(
-      dayMap.byDayAndSlotNumber.get(`${pattern.day_of_week}|${pattern.time_slot.slot_number}`) ?? []
-    );
-  }
+  const start = pattern.time_slot?.start_time;
+  const end = pattern.time_slot?.end_time;
+  let canEvaluateInterval = Boolean(start && end);
+  let slotAvailableSet = canEvaluateInterval
+    ? new Set(availableUserIdsForInterval(dayMap, pattern.day_of_week, start!, end!))
+    : new Set<string>();
   if (dowAvailable.length === 0 && dayMap.byDayOfWeek.size === 0) {
-    // period が1件も無いときだけ旧APIにフォールバック
+    // period が1件も無いときだけ旧APIにフォールバック。
+    // 旧APIは slot_number キーしか持たず形態を区別できないので、細粒度の加点は行わない
+    // （曜日一致のみで候補を出す）。
     const shifts = await getCurrentTeacherShifts(schoolId, asOfDate);
     dowAvailable = shifts.byDayOfWeek.get(pattern.day_of_week) ?? [];
-    if (pattern.time_slot?.slot_number) {
-      const fbSlot =
-        shifts.byDayAndSlot.get(`${pattern.day_of_week}|${pattern.time_slot.slot_number}`) ?? [];
-      slotAvailableSet = new Set(fbSlot);
-    }
+    canEvaluateInterval = false;
+    slotAvailableSet = new Set<string>();
   }
   if (dowAvailable.length === 0) return [];
 
@@ -199,13 +199,13 @@ export async function getPatternMatchCandidates(
     score += 5;
     reasons.push('出勤可能');
 
-    // 細粒度: 当該コマ番号にも出勤可能なら +5、無ければ警告（除外はしない）
-    if (slotAvailableSet.size > 0) {
+    // 細粒度: 当該コマの時間帯にも在室していれば +5、そうでなければ警告（除外はしない）
+    if (canEvaluateInterval) {
       if (slotAvailableSet.has(p.id)) {
         score += 5;
         reasons.push('当該コマ出勤可');
       } else {
-        warnings.push('該当コマは未提出');
+        warnings.push('該当コマは出勤時間外');
       }
     }
 
