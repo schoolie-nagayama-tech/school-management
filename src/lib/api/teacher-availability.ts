@@ -17,6 +17,7 @@
 
 import { supabase } from '@/lib/supabase';
 import { fetchAllPaged } from '@/lib/utils/supabasePaging';
+import { INDIVIDUAL_FORMATION } from '@/types/schedule';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -31,15 +32,166 @@ export interface TeacherAvailabilityPeriod {
   effective_from: string; // YYYY-MM-DD
   effective_until: string | null;
   available_days_of_week: number[];
-  /** key: "0".."6", value: 1〜N の slot_number 配列 */
+  /**
+   * @deprecated 旧・派生値。形態(formation)ごとに slot_number が独立採番されるため
+   * 「同じ1限」が形態間で別時間になり意味が壊れる。新規書き込みはせず、読み取りも
+   * available_time_slots_by_day が空の旧レコードを救済する時だけ使う。
+   * key: "0".."6", value: 1〜N の slot_number 配列
+   */
   available_slot_numbers_by_day: Record<string, number[]>;
-  /** key: "0".."6", value: ["HH:MM-HH:MM", ...] */
+  /** 正典。key: "0".."6", value: ["HH:MM-HH:MM", ...] */
   available_time_slots_by_day: Record<string, string[]>;
   source: AvailabilitySource;
   source_submission_id: string | null;
   notes: string | null;
   created_at: string;
   updated_at: string;
+}
+
+// =====================================================
+// 時間帯ベースの可否判定（正典ロジック）
+//
+// 出勤可否は「その時間に教室に居られるか」という物理的事実であり、形態の属性ではない。
+// そのため slot_number ではなく実時刻の区間で判定する。
+// 詳細は docs/teacher-availability-time-based-plan.md
+// =====================================================
+
+/** 分単位の時刻区間 [start, end) */
+export interface TimeInterval {
+  start: number;
+  end: number;
+}
+
+/**
+ * 連続とみなす休憩の上限（分）。
+ * 個別 17:00-18:30 と 18:40-20:10 に○を付けた講師は 17:00-20:10 に在室しているとみなし、
+ * 休憩をまたぐ集団コマ 18:00-19:00 にも入れる。単なるオーバーラップ判定にしないのは
+ * 「18:00-18:30 しか居ない講師が 18:00-19:00 のコマに合致する」誤判定を防ぐため。
+ */
+export const DEFAULT_BRIDGE_GAP_MINUTES = 15;
+
+/** "HH:MM" / "HH:MM:SS" → 0時からの分。解釈できなければ null */
+export function parseTimeToMinutes(value: string | null | undefined): number | null {
+  if (!value) return null;
+  const m = /^(\d{1,2}):(\d{2})/.exec(value.trim());
+  if (!m) return null;
+  const h = Number(m[1]);
+  const min = Number(m[2]);
+  if (!Number.isFinite(h) || !Number.isFinite(min)) return null;
+  return h * 60 + min;
+}
+
+/** "HH:MM-HH:MM" → 区間。解釈できなければ null */
+function parseLabelToInterval(label: string): TimeInterval | null {
+  const parts = String(label ?? '').split('-');
+  if (parts.length < 2) return null;
+  const start = parseTimeToMinutes(parts[0]);
+  const end = parseTimeToMinutes(parts[1]);
+  if (start == null || end == null || end <= start) return null;
+  return { start, end };
+}
+
+/**
+ * "HH:MM-HH:MM" のリストを、bridgeGapMinutes 以下の隙間を橋渡ししてマージした区間列にする。
+ * 開始時刻昇順で返す。
+ */
+export function mergeTimeSlotLabels(
+  labels: string[] | null | undefined,
+  bridgeGapMinutes: number = DEFAULT_BRIDGE_GAP_MINUTES
+): TimeInterval[] {
+  const parsed = (labels ?? [])
+    .map(parseLabelToInterval)
+    .filter((iv): iv is TimeInterval => iv !== null)
+    .sort((a, b) => a.start - b.start || a.end - b.end);
+
+  const merged: TimeInterval[] = [];
+  for (const iv of parsed) {
+    const last = merged[merged.length - 1];
+    if (last && iv.start <= last.end + bridgeGapMinutes) {
+      last.end = Math.max(last.end, iv.end);
+    } else {
+      merged.push({ ...iv });
+    }
+  }
+  return merged;
+}
+
+/** マージ済み区間列が [start, end] を丸ごと含むか */
+export function isIntervalCovered(
+  intervals: TimeInterval[],
+  startTime: string,
+  endTime: string
+): boolean {
+  const start = parseTimeToMinutes(startTime);
+  const end = parseTimeToMinutes(endTime);
+  if (start == null || end == null) return false;
+  // 終了時刻が壊れている場合は開始時刻が含まれるかだけを見る
+  const effectiveEnd = end > start ? end : start;
+  return intervals.some((iv) => iv.start <= start && iv.end >= effectiveEnd);
+}
+
+/** slot_number → "HH:MM-HH:MM" の解決関数（旧レコード救済用） */
+export type SlotNumberLabelResolver = (slotNumber: number) => string | undefined;
+
+/**
+ * 期間レコードから、指定曜日の在室区間を組み立てる。
+ *
+ * 戻り値 null は「その曜日は全時間可」を意味する（DBコメント由来の既存意味論。
+ * 2027-02 の本格稼働時に「空=不可」へ改定予定）。
+ *
+ * available_time_slots_by_day が空でも旧 available_slot_numbers_by_day が入っている
+ * レコード（2026-06 以前の手動入力）は、resolver でコマ番号を実時刻に解決して救済する。
+ * resolver が無い/解決できない場合のみ「全時間可」に落ちる。
+ */
+export function buildDayIntervals(
+  period: Pick<
+    TeacherAvailabilityPeriod,
+    'available_days_of_week' | 'available_time_slots_by_day' | 'available_slot_numbers_by_day'
+  >,
+  dayOfWeek: number,
+  options?: { resolveSlotNumber?: SlotNumberLabelResolver; bridgeGapMinutes?: number }
+): TimeInterval[] | null {
+  if (!period.available_days_of_week?.includes(dayOfWeek)) return null;
+
+  const key = String(dayOfWeek);
+  const labels = period.available_time_slots_by_day?.[key] ?? [];
+  if (labels.length > 0) {
+    return mergeTimeSlotLabels(labels, options?.bridgeGapMinutes);
+  }
+
+  const legacySlotNumbers = period.available_slot_numbers_by_day?.[key] ?? [];
+  const resolver = options?.resolveSlotNumber;
+  if (legacySlotNumbers.length > 0 && resolver) {
+    const legacyLabels = legacySlotNumbers
+      .map((n) => resolver(n))
+      .filter((l): l is string => Boolean(l));
+    if (legacyLabels.length > 0) {
+      return mergeTimeSlotLabels(legacyLabels, options?.bridgeGapMinutes);
+    }
+  }
+
+  // 時間帯の指定が無い＝その曜日は全時間可
+  return null;
+}
+
+/**
+ * 講師がその曜日の [startTime, endTime] のコマに入れるか。
+ * 曜日が対象外なら不可、時間帯未指定なら全時間可、それ以外は区間包含で判定する。
+ */
+export function isAvailableForInterval(
+  period: Pick<
+    TeacherAvailabilityPeriod,
+    'available_days_of_week' | 'available_time_slots_by_day' | 'available_slot_numbers_by_day'
+  >,
+  dayOfWeek: number,
+  startTime: string,
+  endTime: string,
+  options?: { resolveSlotNumber?: SlotNumberLabelResolver; bridgeGapMinutes?: number }
+): boolean {
+  if (!period.available_days_of_week?.includes(dayOfWeek)) return false;
+  const intervals = buildDayIntervals(period, dayOfWeek, options);
+  if (intervals === null) return true; // 時間帯未指定＝全時間可
+  return isIntervalCovered(intervals, startTime, endTime);
 }
 
 // =====================================================
@@ -113,42 +265,19 @@ export async function syncRegularShiftToAvailability(
     available_time_slots_by_day[String(dow)] = Array.from(set).sort();
   }
 
-  // 5) schedule_time_slots と突合して slot_number を解決
-  //    time_slot 文字列 "HH:MM-HH:MM" → start_time/end_time で逆引き
-  //    formation 個別/集団どちらも対応（同じ時間帯の slot_number は同じ前提）
-  const { data: timeSlotRows } = await db
-    .from('schedule_time_slots')
-    .select('slot_number, start_time, end_time')
-    .eq('school_id', sub.school_id);
-
-  const slotNumberByLabel = new Map<string, number>();
-  for (const r of (timeSlotRows ?? []) as Array<{
-    slot_number: number;
-    start_time: string;
-    end_time: string;
-  }>) {
-    const label = `${(r.start_time || '').slice(0, 5)}-${(r.end_time || '').slice(0, 5)}`;
-    if (!slotNumberByLabel.has(label)) slotNumberByLabel.set(label, r.slot_number);
-  }
-
-  const available_slot_numbers_by_day: Record<string, number[]> = {};
-  for (const [dowKey, times] of Object.entries(available_time_slots_by_day)) {
-    const nums = new Set<number>();
-    for (const t of times) {
-      const n = slotNumberByLabel.get(t);
-      if (n != null) nums.add(n);
-    }
-    available_slot_numbers_by_day[dowKey] = Array.from(nums).sort((a, b) => a - b);
-  }
-
-  // 6) upsert (source_submission_id ベース)
+  // 5) upsert (source_submission_id ベース)
+  //
+  //    available_slot_numbers_by_day は意図的に書かない。以前はここで
+  //    schedule_time_slots を time_slot 文字列で逆引きして slot_number を導出していたが、
+  //    形態(formation)ごとに slot_number が独立採番されるため「同じ時間帯＝同じ slot_number」
+  //    という前提が成立せず、先勝ちで別形態のコマ番号を握りつぶしていた。
+  //    判定は available_time_slots_by_day（提出そのままの実時刻）で行う。
   const row = {
     user_id: userId,
     school_id: sub.school_id,
     effective_from: setting.effective_from ?? '2026-01-01',
     effective_until: setting.effective_until ?? null,
     available_days_of_week,
-    available_slot_numbers_by_day,
     available_time_slots_by_day,
     source: 'regular_shift' as const,
     source_submission_id: submissionId,
@@ -271,25 +400,74 @@ export async function getAvailabilityPeriods(
   return (data ?? []) as TeacherAvailabilityPeriod[];
 }
 
+export interface AvailabilityDayMap {
+  /** 曜日 (0-6) → 出勤可能 user_id[] */
+  byDayOfWeek: Map<number, string[]>;
+  /**
+   * `${dow}|${user_id}` → その曜日の在室区間（開始時刻昇順・マージ済み）。
+   * 値が null のときは「その曜日は全時間可」を意味する。
+   */
+  intervalsByDayAndUser: Map<string, TimeInterval[] | null>;
+  sourcesByUserId: Map<string, AvailabilitySource>;
+}
+
 /**
- * 学校全体の availability を dow / dow|slot_number ベースに展開して返す。
+ * 旧レコード救済用に、その学校の slot_number → "HH:MM-HH:MM" 解決関数を作る。
+ * 形態別にコマ番号が独立採番されるため、個別(individual)のコマ時間を基準にする
+ * （旧 available_slot_numbers_by_day は個別しか無かった時代の値のため）。
+ */
+async function buildLegacySlotResolver(
+  schoolId: string,
+  db: AnyClient
+): Promise<SlotNumberLabelResolver | undefined> {
+  const { data } = await db
+    .from('schedule_time_slots')
+    .select('slot_number, start_time, end_time, formation')
+    .eq('school_id', schoolId);
+
+  const rows = (data ?? []) as Array<{
+    slot_number: number;
+    start_time: string;
+    end_time: string;
+    formation: string | null;
+  }>;
+  if (rows.length === 0) return undefined;
+
+  const individual = rows.filter((r) => r.formation === INDIVIDUAL_FORMATION);
+  const source = individual.length > 0 ? individual : rows;
+
+  const byNumber = new Map<number, string>();
+  for (const r of source) {
+    if (byNumber.has(r.slot_number)) continue;
+    byNumber.set(
+      r.slot_number,
+      `${(r.start_time || '').slice(0, 5)}-${(r.end_time || '').slice(0, 5)}`
+    );
+  }
+  return (slotNumber: number) => byNumber.get(slotNumber);
+}
+
+/**
+ * 学校全体の availability を「曜日 → 講師」「曜日×講師 → 在室区間」に展開して返す。
  * 座席表 (WeeklyScheduleGrid) の shiftAvailableByDow と互換の形式。
  *
- * - byDayOfWeek: 曜日 (0-6) → 出勤可能 user_id[]
- * - byDayAndSlotNumber: `${dow}|${slot_number}` → 出勤可能 user_id[]（細粒度フィルタ用）
+ * コマ番号(slot_number)ベースの展開は廃止した。形態ごとにコマ番号が独立採番される
+ * ため、同じ番号でも形態が違えば別時間になり判定が壊れるため。
+ * 具体的なコマに入れるかは availableUserIdsForInterval / isAvailableForInterval で判定する。
  */
 export async function getAvailabilityDayMap(
   schoolId: string,
   asOfDate?: string,
   options?: { client?: AnyClient }
-): Promise<{
-  byDayOfWeek: Map<number, string[]>;
-  byDayAndSlotNumber: Map<string, string[]>;
-  sourcesByUserId: Map<string, AvailabilitySource>;
-}> {
-  const byUser = await getCurrentAvailabilityBySchool(schoolId, asOfDate, options);
+): Promise<AvailabilityDayMap> {
+  const db: AnyClient = options?.client ?? supabase;
+  const [byUser, resolveSlotNumber] = await Promise.all([
+    getCurrentAvailabilityBySchool(schoolId, asOfDate, options),
+    buildLegacySlotResolver(schoolId, db),
+  ]);
+
   const dowMap = new Map<number, Set<string>>();
-  const slotMap = new Map<string, Set<string>>();
+  const intervalsByDayAndUser = new Map<string, TimeInterval[] | null>();
   const sources = new Map<string, AvailabilitySource>();
 
   for (const [uid, p] of Array.from(byUser.entries())) {
@@ -297,22 +475,32 @@ export async function getAvailabilityDayMap(
     for (const dow of p.available_days_of_week) {
       if (!dowMap.has(dow)) dowMap.set(dow, new Set());
       dowMap.get(dow)!.add(uid);
-
-      const slotNums = p.available_slot_numbers_by_day?.[String(dow)] ?? [];
-      for (const n of slotNums) {
-        const key = `${dow}|${n}`;
-        if (!slotMap.has(key)) slotMap.set(key, new Set());
-        slotMap.get(key)!.add(uid);
-      }
+      intervalsByDayAndUser.set(`${dow}|${uid}`, buildDayIntervals(p, dow, { resolveSlotNumber }));
     }
   }
 
   const byDayOfWeek = new Map<number, string[]>();
   Array.from(dowMap.entries()).forEach(([k, v]) => byDayOfWeek.set(k, Array.from(v)));
-  const byDayAndSlotNumber = new Map<string, string[]>();
-  Array.from(slotMap.entries()).forEach(([k, v]) => byDayAndSlotNumber.set(k, Array.from(v)));
 
-  return { byDayOfWeek, byDayAndSlotNumber, sourcesByUserId: sources };
+  return { byDayOfWeek, intervalsByDayAndUser, sourcesByUserId: sources };
+}
+
+/**
+ * その曜日の [startTime, endTime] のコマに入れる講師 user_id を返す。
+ * 在室区間が null（時間帯未指定）の講師は全時間可として含める。
+ */
+export function availableUserIdsForInterval(
+  map: AvailabilityDayMap,
+  dayOfWeek: number,
+  startTime: string,
+  endTime: string
+): string[] {
+  const candidates = map.byDayOfWeek.get(dayOfWeek) ?? [];
+  return candidates.filter((uid) => {
+    const intervals = map.intervalsByDayAndUser.get(`${dayOfWeek}|${uid}`);
+    if (intervals == null) return true; // 未登録 or 全時間可
+    return isIntervalCovered(intervals, startTime, endTime);
+  });
 }
 
 /** 学校全体の「今日有効な」availability を user_id ごとに返す。座席表/マッチング向け */
@@ -359,8 +547,8 @@ export interface ManualAvailabilityInput {
   effective_from: string;
   effective_until?: string | null;
   available_days_of_week: number[];
-  available_slot_numbers_by_day: Record<string, number[]>;
-  available_time_slots_by_day?: Record<string, string[]>;
+  /** 正典。"HH:MM-HH:MM" のリストを曜日ごとに持つ */
+  available_time_slots_by_day: Record<string, string[]>;
   notes?: string | null;
 }
 
@@ -374,14 +562,17 @@ export async function upsertManualAvailability(
 ): Promise<TeacherAvailabilityPeriod> {
   const db: AnyClient = options?.client ?? supabase;
 
+  // 旧 available_slot_numbers_by_day は明示的に空へ落とす。
+  // 残したままだと「時間帯を空にした曜日」で旧コマ番号が復活し（buildDayIntervals の
+  // 旧レコード救済が効いてしまう）、手動で外したはずの枠が可に戻る事故になる。
   const row = {
     user_id: input.user_id,
     school_id: input.school_id,
     effective_from: input.effective_from,
     effective_until: input.effective_until ?? null,
     available_days_of_week: input.available_days_of_week,
-    available_slot_numbers_by_day: input.available_slot_numbers_by_day,
-    available_time_slots_by_day: input.available_time_slots_by_day ?? {},
+    available_time_slots_by_day: input.available_time_slots_by_day,
+    available_slot_numbers_by_day: {},
     source: 'manual' as const,
     source_submission_id: null,
     notes: input.notes ?? null,

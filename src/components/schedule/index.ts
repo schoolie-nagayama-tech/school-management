@@ -11,7 +11,6 @@ export { AttendanceButtons } from './AttendanceButtons';
 export { ScheduleEntryForm } from './ScheduleEntryForm';
 export { ScheduleEntryModal } from './ScheduleEntryModal';
 export { TransferModal } from './TransferModal';
-export { ScheduleGrid } from './ScheduleGrid';
 export { TeacherDetailModal } from './TeacherDetailModal';
 export { DroppableCell, getCellId, parseCellId, MAX_STUDENTS_PER_TEACHER } from './DroppableCell';
 export { DraggableEntry } from './DraggableEntry';

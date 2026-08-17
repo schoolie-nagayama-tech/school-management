@@ -13,15 +13,20 @@
  * 親ページの「保存」ボタンとは独立して動く（フォーム送信に乗らない）。
  */
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   deleteAvailabilityPeriod,
   upsertManualAvailability,
   type TeacherAvailabilityPeriod,
 } from '@/lib/api/teacher-availability';
-import type { ScheduleTimeSlot } from '@/types/schedule';
+import { INDIVIDUAL_FORMATION, type ScheduleTimeSlot } from '@/types/schedule';
 
 const DAY_LABELS = ['日', '月', '火', '水', '木', '金', '土'];
+
+/** コマ → "HH:MM-HH:MM"。出勤可否の保存キーはこのラベル */
+function toTimeLabel(slot: Pick<ScheduleTimeSlot, 'start_time' | 'end_time'>): string {
+  return `${(slot.start_time ?? '').slice(0, 5)}-${(slot.end_time ?? '').slice(0, 5)}`;
+}
 
 function EmptyText({ children }: { children: React.ReactNode }) {
   return <p className="text-sm text-gray-400 py-2">{children}</p>;
@@ -298,26 +303,63 @@ function AvailabilityEditorModal({
   const [effectiveFrom, setEffectiveFrom] = useState<string>(initial?.effective_from ?? today);
   const [effectiveUntil, setEffectiveUntil] = useState<string>(initial?.effective_until ?? '');
   const [notes, setNotes] = useState<string>(initial?.notes ?? '');
-  // 曜日×slot_number セット
-  const [grid, setGrid] = useState<Record<string, Set<number>>>(() => {
-    const out: Record<string, Set<number>> = {};
-    if (initial?.available_slot_numbers_by_day) {
-      for (const [k, arr] of Object.entries(initial.available_slot_numbers_by_day)) {
-        out[k] = new Set((arr as number[]) ?? []);
-      }
+
+  // グリッドの行 = 選択中の校舎で有効な全形態のコマを「実時刻」で重複排除した合併軸。
+  // 形態ごとに slot_number が独立採番されるため番号で束ねると別時間のコマが潰れる。
+  // 形態が増えても行が増えるだけで、保存済みの出勤可否は影響を受けない。
+  const gridRows = useMemo(() => {
+    const scoped = timeSlots.filter((s) => s.school_id === schoolId);
+    // 親が校舎で絞ったリストを渡してくる場合に空にならないようフォールバック
+    const source = scoped.length > 0 ? scoped : timeSlots;
+    const byLabel = new Map<string, { label: string; start: string; end: string }>();
+    for (const s of source) {
+      const label = toTimeLabel(s);
+      if (!label.includes('-') || byLabel.has(label)) continue;
+      byLabel.set(label, {
+        label,
+        start: (s.start_time ?? '').slice(0, 5),
+        end: (s.end_time ?? '').slice(0, 5),
+      });
+    }
+    return Array.from(byLabel.values()).sort((a, b) => a.start.localeCompare(b.start));
+  }, [timeSlots, schoolId]);
+
+  // 曜日 → 出勤する時間帯ラベルのセット
+  const [grid, setGrid] = useState<Record<string, Set<string>>>(() => {
+    const out: Record<string, Set<string>> = {};
+    const byDay = initial?.available_time_slots_by_day ?? {};
+    for (const [k, arr] of Object.entries(byDay)) {
+      const labels = (arr as string[]) ?? [];
+      if (labels.length > 0) out[k] = new Set(labels);
+    }
+    if (Object.keys(out).length > 0) return out;
+
+    // 旧レコード救済: 時間帯が空でコマ番号だけ入っている期間は、個別のコマ時間で復元する
+    // （旧 available_slot_numbers_by_day は個別しか無かった時代の値のため）。
+    const individual = timeSlots.filter((s) => s.formation === INDIVIDUAL_FORMATION);
+    const numberSource = individual.length > 0 ? individual : timeSlots;
+    const labelByNumber = new Map<number, string>();
+    for (const s of numberSource) {
+      if (!labelByNumber.has(s.slot_number)) labelByNumber.set(s.slot_number, toTimeLabel(s));
+    }
+    for (const [k, arr] of Object.entries(initial?.available_slot_numbers_by_day ?? {})) {
+      const labels = ((arr as number[]) ?? [])
+        .map((n) => labelByNumber.get(n))
+        .filter((l): l is string => Boolean(l));
+      if (labels.length > 0) out[k] = new Set(labels);
     }
     return out;
   });
   const [isSaving, setIsSaving] = useState(false);
   const [errMsg, setErrMsg] = useState<string | null>(null);
 
-  const toggleCell = (dow: number, slotNum: number) => {
+  const toggleCell = (dow: number, timeLabel: string) => {
     setGrid((prev) => {
       const next = { ...prev };
       const key = String(dow);
       const set = new Set(next[key] ?? []);
-      if (set.has(slotNum)) set.delete(slotNum);
-      else set.add(slotNum);
+      if (set.has(timeLabel)) set.delete(timeLabel);
+      else set.add(timeLabel);
       next[key] = set;
       return next;
     });
@@ -339,22 +381,13 @@ function AvailabilityEditorModal({
     }
     setIsSaving(true);
     try {
-      const slotNumbersByDay: Record<string, number[]> = {};
+      // 保存は時間帯ラベルのみ。コマ番号は形態別に独立採番されるため保存しない。
+      const timeSlotsByDay: Record<string, string[]> = {};
       const days: number[] = [];
       for (const [k, set] of Object.entries(grid)) {
         if (set.size === 0) continue;
-        slotNumbersByDay[k] = Array.from(set).sort((a, b) => a - b);
+        timeSlotsByDay[k] = Array.from(set).sort();
         days.push(parseInt(k, 10));
-      }
-      // time_slot 文字列の表記も同時に保存（schedule_time_slots と突合）
-      const timeSlotsByDay: Record<string, string[]> = {};
-      for (const [k, nums] of Object.entries(slotNumbersByDay)) {
-        timeSlotsByDay[k] = nums
-          .map((n) => {
-            const ts = timeSlots.find((t) => t.slot_number === n);
-            return ts ? `${ts.start_time.slice(0, 5)}-${ts.end_time.slice(0, 5)}` : null;
-          })
-          .filter((s): s is string => s !== null);
       }
 
       await upsertManualAvailability({
@@ -363,7 +396,6 @@ function AvailabilityEditorModal({
         effective_from: effectiveFrom,
         effective_until: effectiveUntil || null,
         available_days_of_week: days.sort((a, b) => a - b),
-        available_slot_numbers_by_day: slotNumbersByDay,
         available_time_slots_by_day: timeSlotsByDay,
         notes: notes || (isEdit ? null : '講師詳細から手動追加'),
       });
@@ -441,17 +473,17 @@ function AvailabilityEditorModal({
             </div>
           </div>
 
-          {/* 曜日×コマ グリッド */}
+          {/* 曜日×時間帯 グリッド */}
           <div>
-            <div className="text-xs font-semibold text-gray-600 mb-1">出勤可能コマ</div>
-            {timeSlots.length === 0 ? (
+            <div className="text-xs font-semibold text-gray-600 mb-1">出勤可能な時間帯</div>
+            {gridRows.length === 0 ? (
               <p className="text-xs text-gray-400">コマ時間マスタが未設定です</p>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full border-collapse text-xs">
                   <thead>
                     <tr>
-                      <th className="p-1.5 border border-gray-200 bg-gray-50 text-left">コマ</th>
+                      <th className="p-1.5 border border-gray-200 bg-gray-50 text-left">時間帯</th>
                       {DAY_LABELS.map((d, i) => (
                         <th
                           key={i}
@@ -463,20 +495,17 @@ function AvailabilityEditorModal({
                     </tr>
                   </thead>
                   <tbody>
-                    {timeSlots.map((slot) => (
-                      <tr key={slot.slot_number}>
+                    {gridRows.map((row) => (
+                      <tr key={row.label}>
                         <td className="p-1.5 border border-gray-200 text-gray-700 whitespace-nowrap">
-                          <span className="font-semibold">{slot.slot_number}</span>
-                          <span className="ml-1 text-gray-400">
-                            {slot.start_time.slice(0, 5)}〜{slot.end_time.slice(0, 5)}
-                          </span>
+                          {row.start}〜{row.end}
                         </td>
                         {DAY_LABELS.map((_, dayIdx) => {
-                          const checked = grid[String(dayIdx)]?.has(slot.slot_number) ?? false;
+                          const checked = grid[String(dayIdx)]?.has(row.label) ?? false;
                           return (
                             <td
                               key={dayIdx}
-                              onClick={() => toggleCell(dayIdx, slot.slot_number)}
+                              onClick={() => toggleCell(dayIdx, row.label)}
                               className={`p-1.5 border border-gray-200 text-center cursor-pointer transition-[background-color] duration-100 ease-out select-none ${
                                 checked
                                   ? 'bg-emerald-100 hover:bg-emerald-200'

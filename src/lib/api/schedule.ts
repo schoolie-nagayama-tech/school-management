@@ -94,6 +94,33 @@ export async function getActiveTimeSlots(
   return (data || []) as ScheduleTimeSlot[];
 }
 
+/**
+ * 複数校（＝複数 getActiveTimeSlots 呼び出し結果）のコマ時間マスタを、実時刻区間
+ * 「HH:MM-HH:MM」をキーに重複排除し、開始時刻の昇順にまとめる。
+ *
+ * schedule_time_slots は UNIQUE(school_id, formation, slot_number) で形態ごとに
+ * 独立採番されるため、同じ slot_number でも individual と group で時刻が異なりうる。
+ * slot_number だけをキーに重複排除すると、'group' < 'individual' の order で
+ * 取得した際に group 側が先勝ちし、individual 側の時刻が握りつぶされてしまう
+ * （講師詳細・編集ページで実際に発生していたバグ）。実時刻区間をキーにすることで、
+ * 形態違いの同番コマが1つに潰れないようにする。
+ */
+export function mergeTimeSlotsByTimeRange(slotsArrays: ScheduleTimeSlot[][]): ScheduleTimeSlot[] {
+  const seen = new Set<string>();
+  const merged: ScheduleTimeSlot[] = [];
+  for (const slots of slotsArrays) {
+    for (const s of slots) {
+      const key = `${s.start_time.slice(0, 5)}-${s.end_time.slice(0, 5)}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        merged.push(s);
+      }
+    }
+  }
+  merged.sort((a, b) => a.start_time.localeCompare(b.start_time));
+  return merged;
+}
+
 export async function getTimeSlotById(id: string): Promise<ScheduleTimeSlot | null> {
   const { data, error } = await db
     .from('schedule_time_slots')

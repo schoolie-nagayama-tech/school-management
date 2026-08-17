@@ -26,6 +26,7 @@ import { StudentDetailModal } from '@/components/students/StudentDetailModal';
 import { Calendar, Settings } from 'lucide-react';
 import type { ScheduleEntry, ScheduleEntryFormData, ScheduleTimeSlot } from '@/types/schedule';
 import type { Student } from '@/types/database';
+import type { AvailabilityDayMap } from '@/lib/api/teacher-availability';
 
 interface Teacher {
   id: string;
@@ -114,6 +115,8 @@ interface ScheduleDialogsProps {
   teacherDetailOpen: boolean;
   onTeacherDetailClose: () => void;
   selectedTeacher: Teacher | null;
+  /** 出勤可否（正典）。schoolId・週単位で page.tsx が取得済みのものをそのまま渡す。 */
+  availabilityMap: AvailabilityDayMap | null;
 
   // Delete modal
   deleteDialogOpen: boolean;
@@ -190,6 +193,7 @@ export function ScheduleDialogs({
   teacherDetailOpen,
   onTeacherDetailClose,
   selectedTeacher,
+  availabilityMap,
 
   deleteDialogOpen,
   onDeleteDialogClose,
@@ -383,6 +387,7 @@ export function ScheduleDialogs({
         onClose={onTeacherDetailClose}
         teacher={selectedTeacher}
         subjects={subjects}
+        availabilityMap={availabilityMap}
       />
 
       <DeleteScheduleEntryModal

@@ -14,7 +14,7 @@ import { supabase } from '@/lib/supabase';
 import { getStudentRegularSchedule } from '@/lib/api/koushu-period';
 import { getScheduleEntries } from '@/lib/api/schedule';
 import { getClassCapacity, DEFAULT_CLASS_CAPACITY } from '@/lib/api/school-class-capacity';
-import { getAvailabilityDayMap } from '@/lib/api/teacher-availability';
+import { getAvailabilityDayMap, availableUserIdsForInterval } from '@/lib/api/teacher-availability';
 import type { ZoukomaAvailableSlot } from '@/lib/api/zoukoma-placement';
 // Phase A: 講習・テスト対策の配置ストリップは個別のみ対象。'individual' 直値を定数参照に置換。
 import { INDIVIDUAL_FORMATION } from '@/types/schedule';
@@ -37,7 +37,7 @@ export interface PlacementStripData {
   /** 期間の全日付 YYYY-MM-DD[] */
   dates: string[];
   /** 表示する個別コマの一覧（formation!=group, slot_number 昇順） */
-  slots: Array<{ id: string; slot_number: number; start_time: string }>;
+  slots: Array<{ id: string; slot_number: number; start_time: string; end_time: string }>;
   /**
    * セル状態マップ。キー = `${date}_${slotId}`
    * キーが存在しない日×コマは「不可(グレー)」
@@ -95,7 +95,7 @@ function buildTimeToSlotMap(slots: Array<{ id: string; start_time: string }>): M
  * 満席判定ロジック（可能枠に対してのみ適用）
  *
  * - 可能枠(黄)のキー = `${date}_${slotId}` それぞれについて:
- *   1) その日×コマに出勤可能な講師一覧を byDayAndSlotNumber から取得
+ *   1) そのコマの時間帯に在室している講師一覧を availableUserIdsForInterval で取得
  *   2) 出勤可能講師が 0人 → 満席
  *   3) 全員が個別上限(cap) 人以上を担当済み → 満席
  * - 配置済み(緑)は満席より優先するため、available なキーに対してのみ判定を行い
@@ -105,7 +105,7 @@ function buildTimeToSlotMap(slots: Array<{ id: string; start_time: string }>): M
  * @param allEntries      期間内の全 schedule_entries（kind 問わず individual + active status）
  * @param cap             1講師あたりの個別上限
  * @param availabilityByWeek  週月曜日付 → getAvailabilityDayMap の結果 Map
- * @param slots           個別コマ一覧（slotId → slot_number 解決用）
+ * @param slots           個別コマ一覧（slotId → 実時刻の解決用）
  * @param dates           期間の全日付
  * @returns 満席と判定したキーの Set
  */
@@ -120,7 +120,7 @@ function computeFullKeys(
   }>,
   cap: number,
   availabilityByWeek: Map<string, Awaited<ReturnType<typeof getAvailabilityDayMap>>>,
-  slots: Array<{ id: string; slot_number: number }>,
+  slots: Array<{ id: string; start_time: string; end_time: string }>,
   dates: string[]
 ): Set<string> {
   // 個別かつ active な配置済みエントリを date×slotId×teacherId ごとに集計
@@ -149,8 +149,8 @@ function computeFullKeys(
     return `${y}-${m}-${day}`;
   };
 
-  // slotId → slot_number の逆引きマップ
-  const slotNumById = new Map(slots.map((s) => [s.id, s.slot_number]));
+  // slotId → 実時刻の逆引きマップ（出勤可否はコマ番号ではなく時間帯で判定する）
+  const slotTimeById = new Map(slots.map((s) => [s.id, s] as const));
 
   // 日付リストから週月曜日セットを構築（dates が渡されていれば全週をカバー）
   const mondaySet = new Set<string>();
@@ -161,8 +161,8 @@ function computeFullKeys(
   for (const cellKey of Array.from(availableKeys)) {
     const [dateStr, slotId] = cellKey.split('_');
     const dow = getDayOfWeekJST(dateStr);
-    const slotNum = slotNumById.get(slotId);
-    if (slotNum == null) continue;
+    const slot = slotTimeById.get(slotId);
+    if (!slot) continue;
 
     const monday = getWeekMonday(dateStr);
     const avail = availabilityByWeek.get(monday);
@@ -172,9 +172,13 @@ function computeFullKeys(
       continue;
     }
 
-    // その曜日×コマに出勤可能な講師一覧
-    const availKey = `${dow}|${slotNum}`;
-    const availableTeachers = avail.byDayAndSlotNumber.get(availKey) ?? [];
+    // そのコマの時間帯に在室している講師一覧
+    const availableTeachers = availableUserIdsForInterval(
+      avail,
+      dow,
+      slot.start_time,
+      slot.end_time
+    );
 
     if (availableTeachers.length === 0) {
       // 出勤可能講師が0人 → 満席
@@ -208,7 +212,7 @@ export async function buildKoushuPlacementStrip(
   schoolId: string,
   studentId: string,
   period: { schedule_start_date: string; schedule_end_date: string },
-  slots: Array<{ id: string; slot_number: number; start_time: string }>
+  slots: Array<{ id: string; slot_number: number; start_time: string; end_time: string }>
 ): Promise<PlacementStripData> {
   const startDate = period.schedule_start_date;
   const endDate = period.schedule_end_date;
@@ -342,7 +346,7 @@ export async function buildTestPrepPlacementStrip(
   schoolId: string,
   studentId: string,
   availableSlots: ZoukomaAvailableSlot[],
-  slots: Array<{ id: string; slot_number: number; start_time: string }>
+  slots: Array<{ id: string; slot_number: number; start_time: string; end_time: string }>
 ): Promise<PlacementStripData> {
   if (availableSlots.length === 0) {
     // スロットが空の場合は空データを返す

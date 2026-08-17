@@ -153,6 +153,10 @@ import {
   type ZoukomaAvailableSlot,
 } from '@/lib/api/zoukoma-placement';
 import type { ScheduleMatchProposal } from '@/types/schedule-match';
+import {
+  availableUserIdsForInterval,
+  type AvailabilityDayMap,
+} from '@/lib/api/teacher-availability';
 
 function getWeekStart(d: Date): Date {
   const day = d.getDay();
@@ -270,6 +274,9 @@ export default function SchedulePage() {
   // 通常シフトから「この曜日この時間帯に出勤可能」と提出した講師IDを byDayOfWeek で保持。
   // 各セル描画時に「曜日 → 出勤可能講師ID 一覧」を引いて空き枠として並べる。
   const [shiftByDow, setShiftByDow] = useState<Map<number, string[]>>(new Map());
+  // 講師詳細モーダル用に、byDayOfWeek だけでなく在室区間(intervalsByDayAndUser)も保持する。
+  // null = 未取得（読み込み中、または旧APIフォールバック時で区間データが無い）。
+  const [availabilityMap, setAvailabilityMap] = useState<AvailabilityDayMap | null>(null);
   // 講師欠勤マップ（コマ単位）。キー: `${date}|${timeSlotId}|${userId}`
   const [absenceKeySet, setAbsenceKeySet] = useState<Set<string>>(new Set());
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -608,6 +615,7 @@ export default function SchedulePage() {
   useEffect(() => {
     if (!schoolId) {
       setShiftByDow(new Map());
+      setAvailabilityMap(null);
       return;
     }
     let cancelled = false;
@@ -615,19 +623,28 @@ export default function SchedulePage() {
       try {
         const { getAvailabilityDayMap } = await import('@/lib/api/teacher-availability');
         const asOf = weekStartStr;
-        const { byDayOfWeek } = await getAvailabilityDayMap(schoolId, asOf);
+        const map = await getAvailabilityDayMap(schoolId, asOf);
+        // 講師詳細モーダル(TeacherDetailModal)の在室時間帯表示にそのまま流用する。
+        // period が1件も無い教室でも byDayOfWeek/intervalsByDayAndUser は空 Map として
+        // 確定して返るため、ここで setAvailabilityMap(map) しておけば
+        // モーダル側は「取得中...」ではなく「データなし(—)」を正しく出し分けられる
+        // （null=未取得/取得失敗、空Map=取得済みだが対象講師の登録が無い、を区別する）。
+        if (!cancelled) setAvailabilityMap(map);
 
-        if (byDayOfWeek.size > 0) {
-          if (!cancelled) setShiftByDow(byDayOfWeek);
+        if (map.byDayOfWeek.size > 0) {
+          if (!cancelled) setShiftByDow(map.byDayOfWeek);
           return;
         }
-        // period が1件もなければ旧APIにフォールバック
+        // period が1件もなければ座席表の空き枠表示(shiftByDow)だけ旧APIにフォールバック
         const { getCurrentTeacherShifts } = await import('@/lib/api/teacher-shifts');
         const fallback = await getCurrentTeacherShifts(schoolId, asOf);
         if (!cancelled) setShiftByDow(fallback.byDayOfWeek);
       } catch (e) {
         console.warn('Shift availability fetch failed:', e);
-        if (!cancelled) setShiftByDow(new Map());
+        if (!cancelled) {
+          setShiftByDow(new Map());
+          setAvailabilityMap(null);
+        }
       }
     })();
     return () => {
@@ -856,6 +873,8 @@ export default function SchedulePage() {
         id: s.id,
         slot_number: s.slot_number,
         start_time: s.start_time ?? '',
+        // 満席判定は講師の在室時間帯との包含で行うため終了時刻も渡す
+        end_time: s.end_time ?? '',
       }));
 
     // 講習配置モード
@@ -3235,6 +3254,7 @@ export default function SchedulePage() {
           setSelectedTeacher(null);
         }}
         selectedTeacher={selectedTeacher}
+        availabilityMap={availabilityMap}
         deleteDialogOpen={deleteDialogOpen}
         onDeleteDialogClose={() => {
           setDeleteDialogOpen(false);
@@ -3289,9 +3309,18 @@ export default function SchedulePage() {
       {groupKomaTarget &&
         (() => {
           const slot = groupSlots.find((s) => s.id === groupKomaTarget.slotId) ?? null;
-          // 対象日の曜日に出勤可能な講師のみ提示
+          // 対象コマに出勤可能な講師のみ提示。
+          // 集団のコマ時間は個別と別なので、曜日だけで絞ると「その曜日には来るが
+          // この時間帯には居ない」講師まで候補に出てしまう。在室区間が取れているときは
+          // コマの実時刻で絞り、取れないとき（period 皆無で旧APIフォールバック中など）は
+          // 従来どおり曜日粒度に落とす。
           const dow = new Date(groupKomaTarget.date + 'T12:00:00').getDay();
-          const availIds = new Set(shiftByDow.get(dow) ?? []);
+          const availIds =
+            availabilityMap && availabilityMap.byDayOfWeek.size > 0 && slot
+              ? new Set(
+                  availableUserIdsForInterval(availabilityMap, dow, slot.start_time, slot.end_time)
+                )
+              : new Set(shiftByDow.get(dow) ?? []);
           const availableTeachers = teachers.filter((t) => availIds.has(t.id));
           return (
             <GroupKomaFormModal
