@@ -48,6 +48,12 @@ CREATE POLICY schedule_time_slots_write_manager ON public.schedule_time_slots
 -- INVOKER 化により UPDATE は呼び出しユーザーの RLS（上の write_manager）を通る。
 -- 明示ガードも置く: 権限外の呼び出しを「無言の0件更新」ではなくエラーにするため。
 -- auth.role() が NULL（migration や psql 直接実行）や service_role のときはガードを通す。
+--
+-- 旧シグネチャ (p_school_id, p_ordered_ids) は現行 main のUIが呼ぶ正規の口。
+-- 20260817000000_fix_reorder_time_slots.sql（別ブランチ、本番適用済み）はこれを
+-- DROP して新シグネチャ (p_school_id, p_formation) に置き換えたため、そのUI改修が
+-- デプロイされるまで本番の並び替えは関数不在で壊れていた。ここで再作成して直す。
+-- 両シグネチャは共存し、PostgREST は名前付き引数でオーバーロードを判別する。
 CREATE OR REPLACE FUNCTION public.reorder_time_slots(p_school_id uuid, p_ordered_ids uuid[])
 RETURNS void
 LANGUAGE plpgsql
@@ -79,13 +85,58 @@ BEGIN
 END;
 $$;
 
+-- ── 3b. 新シグネチャ (p_school_id, p_formation) も同様に固める ──
+-- 20260817000000（別ブランチ、本番適用済み）が作った新シグネチャは
+-- SECURITY DEFINER・ロール検査なし・anon GRANT 付きだった。本体のロジック
+-- （(school_id, formation)スコープで display_order → slot_number 順に 1..N 詰め直し）
+-- は維持したまま、INVOKER + manager+ ガードに置き換える。
+-- 20260817000000 が未適用の環境ではここで新規作成されるだけで無害
+-- （このシグネチャを呼ぶUIが来たときに既に固まった状態で待っている）。
+CREATE OR REPLACE FUNCTION public.reorder_time_slots(p_school_id uuid, p_formation text)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY INVOKER
+SET search_path TO 'public', 'pg_temp'
+AS $$
+BEGIN
+  IF auth.role() IN ('anon', 'authenticated') AND NOT EXISTS (
+    SELECT 1 FROM public.user_profiles up
+    WHERE up.id = auth.uid() AND up.role IN ('admin', 'owner', 'manager')
+  ) THEN
+    RAISE EXCEPTION 'コマ時間の並び替えは教室長以上のみ実行できます' USING ERRCODE = '42501';
+  END IF;
+
+  SET CONSTRAINTS schedule_time_slots_school_formation_slot_unique DEFERRED;
+
+  UPDATE public.schedule_time_slots t
+  SET slot_number = sub.new_number::integer,
+      updated_at = now()
+  FROM (
+    SELECT id, ROW_NUMBER() OVER (ORDER BY display_order ASC, slot_number ASC) AS new_number
+    FROM public.schedule_time_slots
+    WHERE school_id = p_school_id
+      AND formation = p_formation
+  ) sub
+  WHERE t.id = sub.id
+    AND t.slot_number IS DISTINCT FROM sub.new_number::integer;
+
+  SET CONSTRAINTS schedule_time_slots_school_formation_slot_unique IMMEDIATE;
+END;
+$$;
+
 -- ── 4. EXECUTE 権限の締め付け ──
 -- 落とし穴「Supabase既定権限でanon/authenticatedにALLが付く」対応。
 -- reassign_slot_numbers はアプリから未使用のレガシーだが、zzz_ の search_path 固定
 -- マイグレーションが ALTER FUNCTION で参照するため DROP はせず権限だけ剥がす
 -- （本体は旧制約名参照のままなので呼んでもエラーで実害なし。整理は別途）。
 REVOKE ALL ON FUNCTION public.reorder_time_slots(p_school_id uuid, p_ordered_ids uuid[]) FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION public.reorder_time_slots(p_school_id uuid, p_formation text) FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION public.reassign_slot_numbers(p_school_id uuid) FROM PUBLIC, anon;
+
+-- 旧シグネチャは本番では 20260817000000 に DROP されており上で新規作成になるため、
+-- default privileges 頼みにせず明示 GRANT する（manager のUI経路は authenticated ロール）。
+GRANT EXECUTE ON FUNCTION public.reorder_time_slots(p_school_id uuid, p_ordered_ids uuid[]) TO authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.reorder_time_slots(p_school_id uuid, p_formation text) TO authenticated, service_role;
 
 -- テーブル側も anon の書き込み権限を剥がす（RLS頼みをやめる。SELECT はポータル用に残す）
 REVOKE INSERT, UPDATE, DELETE ON TABLE public.schedule_time_slots FROM anon;
