@@ -10,6 +10,7 @@ import { getAlertSettingsBySchools, pickStrictestThreshold } from './alertSettin
 import { fetchAllInChunks, fetchAllPaged } from '@/lib/utils/supabasePaging';
 import { compareByRoster } from '@/lib/alerts/grouping';
 import { isCoursePrepOutOfScope } from '@/lib/coursePrepKpis';
+import { isProgrammingOnlyStudent } from '@/lib/students/programming';
 import type {
   Alert,
   AlertDismissal,
@@ -61,21 +62,9 @@ export interface AlertSources {
   settingsBySchool: Map<string, AlertSetting[]>;
 }
 
-/**
- * プログラミング（HALLO）専科の生徒か。成績・宿題等の指標がコース性質上合わないためアラート対象外にする。
- *
- * 通常教科を併せて受講している生徒は通常どおりアラートを出したいので、
- * 「プログラミングコース受講」チェックだけでは判定しない。プログラミングは科目マスタに無く
- * 科目「その他」＋自由入力(subject_other)で登録される運用のため、
- * 「その他」以外の科目を1つでも受講していれば専科ではないとみなす。
- */
-export function isProgrammingOnlyStudent(student: {
-  is_programming?: boolean | null;
-  subjects?: Array<{ name: string }>;
-}): boolean {
-  if (!student.is_programming) return false;
-  return !(student.subjects ?? []).some((s) => s.name !== 'その他');
-}
+// プログラミング（HALLO）専科の生徒か判定する純関数は lib/students/programming.ts に切り出し済み。
+// 既存の import 元（テスト含む）を壊さないよう、このファイルからも re-export しておく。
+export { isProgrammingOnlyStudent };
 
 /** 週回数(shukaisu)/曜日(youbi)変更フォームの回答（アラート判定に必要な最小情報） */
 export interface ScheduleChangeResponse {

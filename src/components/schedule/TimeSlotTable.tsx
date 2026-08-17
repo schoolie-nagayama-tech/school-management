@@ -8,7 +8,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-  Badge,
+  Switch,
   Loading,
 } from '@/components/ui';
 import { Pencil, Trash2, ArrowUp, ArrowDown } from 'lucide-react';
@@ -25,6 +25,8 @@ interface TimeSlotTableProps {
   onDelete: (slot: ScheduleTimeSlot) => void;
   onAdd: () => void;
   onMove?: (index: number, direction: 'up' | 'down') => void;
+  /** 有効/無効バッジのインライントグル。編集ダイアログを開かず即切替する */
+  onToggleActive?: (slot: ScheduleTimeSlot) => void;
   isLoading?: boolean;
 }
 
@@ -34,6 +36,7 @@ export function TimeSlotTable({
   onDelete,
   onAdd,
   onMove,
+  onToggleActive,
   isLoading,
 }: TimeSlotTableProps) {
   if (isLoading) {
@@ -66,11 +69,13 @@ export function TimeSlotTable({
             <TableCell>{timeLabel(slot.start_time)}</TableCell>
             <TableCell>{timeLabel(slot.end_time)}</TableCell>
             <TableCell className="text-center">
-              {slot.is_active ? (
-                <Badge variant="default">有効</Badge>
-              ) : (
-                <Badge variant="secondary">無効</Badge>
-              )}
+              {/* 編集ダイアログを開かずに有効/無効を即切替できるインライントグル */}
+              <label className="inline-flex items-center gap-2 cursor-pointer select-none">
+                <Switch checked={slot.is_active} onCheckedChange={() => onToggleActive?.(slot)} />
+                <span className="text-xs text-[var(--paragraph)]">
+                  {slot.is_active ? '有効' : '無効'}
+                </span>
+              </label>
             </TableCell>
             <TableCell>
               <div className="flex items-center gap-0.5">

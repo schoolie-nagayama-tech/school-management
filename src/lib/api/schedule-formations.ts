@@ -141,12 +141,15 @@ export async function setFormationActive(
   return data as ScheduleFormation;
 }
 
-/** 形態の並び順（sort_order）を更新。is_system は並び替え対象外（先頭固定）。 */
+/**
+ * 形態の並び順（sort_order）を更新。
+ * 改名・無効化・削除とは異なり、並び替えは individual/group（is_system）にも許可する
+ * ので、他の更新系と違いここだけ ensureNotSystemFormation ガードを掛けない。
+ */
 export async function updateFormationOrder(
   key: string,
   sortOrder: number
 ): Promise<ScheduleFormation> {
-  await ensureNotSystemFormation(key);
   const { data, error } = await db
     .from('schedule_formations')
     .update({ sort_order: sortOrder })

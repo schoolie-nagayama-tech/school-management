@@ -77,7 +77,7 @@ export function TimeSlotForm({
         </DialogHeader>
         <div className="space-y-4">
           <p className="text-sm text-[var(--paragraph)]">
-            コマ番号は開始時刻の早い順に自動で割り当てられます。
+            コマ番号は末尾に自動で割り当てられます。並び順は一覧の矢印ボタンで変更できます。
           </p>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">

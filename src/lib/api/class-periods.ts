@@ -61,7 +61,9 @@ export async function getClassPeriodsAsync(schoolId: string): Promise<ClassPerio
   const cached = getClassPeriods(schoolId);
   if (cached.length > 0) return cached;
   try {
-    const slots = await getActiveTimeSlots(schoolId);
+    // 呼び出し元（曜日変更・週回数変更フォーム等）はいずれも個別指導の通塾コマが前提のため、
+    // fetchClassPeriodsLive と同様に既定を個別指導枠にし、集団枠との slot_number 衝突を避ける。
+    const slots = await getActiveTimeSlots(schoolId, INDIVIDUAL_FORMATION);
     if (slots.length > 0) {
       const periods = formatSlotsForPeriods(slots);
       setClassPeriods(schoolId, periods);
