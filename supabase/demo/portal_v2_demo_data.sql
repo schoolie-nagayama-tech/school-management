@@ -8,6 +8,14 @@
 --   空の画面では評価にならないので、6画面（マイページ/予定/報告書/お知らせ/
 --   連絡/手続き）すべてに表示されるデータを作る。
 --
+--   ★ 2026-08 追加: 「保護者に見える」だけでなく **スタッフ側の一周** もデモできるようにした。
+--     デモの価値は「教室の操作がそのまま保護者に届く」ことを1本の線で見せられる点にあるので、
+--     保護者側の完成形だけでなく、その手前の**未完了状態**を意図的に置いてある。
+--       - 通塾日程（§7）      … 座席表を「通塾日程から生成する」一周
+--       - 未承認の報告書（§10-b） … 講師が書いた報告書を室長が承認する一周
+--       - 講習Web申込（§15）  … 申込トークンを配って保護者がスマホから申し込む一周
+--     いずれも「操作した結果が保護者ポータル／スタッフ画面に現れる」ところまで繋がっている。
+--
 -- ■ 業務データからの二重隔離（設計判断済み・変更しないこと）
 --   このデータは本番DBに入るが、既存の2つの仕組みで業務から二重に隔離される:
 --     1. デモ教室  schools.is_demo = true
@@ -32,6 +40,19 @@
 --         20260717000000_portal_v2_scores（§14 成績で使う portal_score_submissions／
 --         portal_assessments）が適用済みであること。未適用だと audience 列や portal_* テーブル、
 --         schools.meeting_booking_url、成績の中間テーブルが無く失敗する。
+--   ★ スタッフ側の一周（§7 / §15）を含めるための追加前提:
+--         20260710000000_lesson_model_ratio_duration
+--           （schedule_regular_patterns.ratio / duration_minutes）
+--         20260710000002_schedule_formations
+--           （formation の CHECK → schedule_formations(key) への FK 置換。individual/group はシード済み）
+--         20260805110000_koushu_apply_q2_additive
+--           （koushu_apply_tokens 新設／course_prep_periods の apply_publish_start・
+--             apply_publish_end・apply_price_table・schedule_end_by_grade 追加）
+--         20260805120000_koushu_enrollments_unique_with_course
+--           （申込のユニークキーに course_id を含める。PostgreSQL 15+ の nulls not distinct を使う）
+--         20260805130000_koushu_special_courses
+--           （特別講座マスタ。koushu_enrollments.course_id の参照先）
+--     未適用だと §15 の insert 先テーブル／列そのものが無く失敗する。
 --
 -- ■ 削除方法（デモを撤去するとき）
 --   デモ教室に全てがぶら下がっているので、以下で消える（実データには触れない）:
@@ -42,6 +63,20 @@
 --       assessments にランダムUUIDの行が増えるため、それも一緒に拾って消すため。
 --     delete from public.portal_score_submissions where school_id = 'd0000000-0000-4000-8000-000000000001';
 --     delete from public.assessments              where school_id = 'd0000000-0000-4000-8000-000000000001';
+--     ★ 講習Web申込デモ（§15）も students を消す前に、かつ **この順序で** 消すこと。
+--       koushu_enrollments → koushu_special_courses の FK は ON DELETE RESTRICT
+--       （「申込がある講座は消せない」設計）なので、講座を先に消そうとすると必ず失敗する。
+--       seasonal_shift_* はデモで実際に申し込むと生徒の希望日程が書かれるので、
+--       設定側（settings）を消せば子（slot_settings / student_submissions）は CASCADE で消える。
+--     delete from public.koushu_enrollments       where school_id = 'd0000000-0000-4000-8000-000000000001';
+--     delete from public.koushu_special_courses   where school_id = 'd0000000-0000-4000-8000-000000000001';
+--     delete from public.koushu_apply_tokens      where school_id = 'd0000000-0000-4000-8000-000000000001';
+--     delete from public.seasonal_shift_settings  where school_id = 'd0000000-0000-4000-8000-000000000001';
+--     delete from public.course_prep_periods      where school_id = 'd0000000-0000-4000-8000-000000000001';
+--     ★ 通塾日程（§7）は students の削除に CASCADE で連鎖するので個別の delete は不要。
+--       ただし schedule_time_slots より **後** に消してはいけない
+--       （schedule_regular_patterns.time_slot_id は ON DELETE RESTRICT）。
+--       下の順序（students → … → schedule_time_slots）を守っていれば自動的に満たされる。
 --     delete from public.students               where school_id = 'd0000000-0000-4000-8000-000000000001';
 --     delete from public.bulletin_posts         where school_id = 'd0000000-0000-4000-8000-000000000001';
 --     delete from public.form_periods           where school_id = 'd0000000-0000-4000-8000-000000000001';
@@ -325,11 +360,55 @@ where not exists (
 -- ============================================================================
 -- 7) 通塾日程パターン（schedule_regular_patterns）
 -- ============================================================================
---   予定画面が呼ぶ /api/mypage/transfer-usage の「今月の残り振替回数」は
---   **有効な通塾日程パターン数** を上限として計算する（transferQuota.ts）。
---   これが0件だと残り0回と出て注記が不自然になるため、週2回ぶんを作る。
+--   ★ 役割は2つある（片方だけ見て消さないこと）:
+--     (1) 保護者側: 予定画面が呼ぶ /api/mypage/transfer-usage の「今月の残り振替回数」は
+--         **有効な通塾日程パターン数** を上限として計算する（transferQuota.ts）。
+--         0件だと残り0回と出て注記が不自然になる。
+--     (2) スタッフ側: 座席表 /schedule は「コマ時間 > 0 かつ 通塾日程 > 0」で初めて盤面を描く
+--         （src/app/schedule/page.tsx）。ここが空だと「通塾日程が未登録です」カードになり、
+--         **座席表を生成する一周そのものがデモできない**。
 --   day_of_week: 0=日 .. 6=土
+--
+--   ★ 生成（generateWeeklySchedule / src/lib/api/schedule.ts）が通るための条件:
+--     - is_active=true。false のパターンは取得対象にすら入らない。
+--     - time_slot_id の参照先が実在すること。引けないパターンは黙ってスキップされる。
+--     - effective_from <= 対象日 <= effective_until。ここでは effective_from を
+--       current_date - 90、effective_until は無期限(null)にして常に生成対象にする。
+--     - teacher_id のユーザーが user_profiles.role = 'teacher' であること。
+--       違うと ensureUserIsTeacher() が例外を投げ **生成が丸ごと失敗する**
+--       （§2 のデモ講師は2名とも teacher なので満たしている）。
+--     - formation は schedule_formations(key) への FK。'individual' / 'group' は
+--       マイグレーションでシード済みの**全社共通マスタ**なので教室ごとの投入は要らない。
+--       ★ ただし time_slot 側の formation と必ず揃えること。ズレていても生成自体は成功するが、
+--         座席表は形態タブごとにコマと予定の**両方**を formation で絞るため、
+--         そのエントリはどのタブにも表示されない。§5 のコマは全て 'individual' なので
+--         ここも 'individual' に揃える。
+--
+--   ★ §8（予定の直接投入）との関係 — 二重表示は起きない（実装で確認済み）:
+--     同期チェック（detectScheduleDrift）は `entry_date-time_slot_id-student_id` のキーで
+--     突合し、regular_pattern_id は「余分(extra)」判定にしか使わない。§8 はこの §7 と
+--     同じ 曜日×コマ×生徒 で予定を作っているので missing=0 / extra=0 ＝
+--     **ドリフトバナーは出ず、座席表を開いても勝手に再生成されない**。
+--     生成ボタンを押した場合は、その週の kind='regular' かつ status in (scheduled, completed)
+--     の行が一旦削除され、パターン由来の行（regular_pattern_id 付き）に**置き換わる**。
+--     ★ デモではこれを許容する（生成の一周を試すのが目的）。ただし副作用は隠さない:
+--       - §8 で作った「振替」「休講」の演出行（transferred_in / cancelled）は削除対象外で残る
+--       - 削除された予定にぶら下がっていた報告書（§10 / §10-b）は
+--         class_reports_schedule_entry_id_fkey の CASCADE で **一緒に消える**
+--       → 生成の一周を試したあとは、このファイルを再実行すれば元の状態に戻る。
+--
+--   ★ 冪等: デモ生徒ぶんを delete → 再生成（§8・§14 と同じ作法）。
+--     固定IDの5本だけを on conflict で上書きするやり方だと、デモ中に画面から手で足した
+--     通塾日程が残り続けて「毎回同じ初期状態」にならないため、生徒単位で消してから作る。
+--     ★ この delete は失敗しない: schedule_entries.regular_pattern_id の FK は
+--       ON DELETE SET NULL なので、生成済みの予定があっても該当列が null に戻るだけ。
 -- ----------------------------------------------------------------------------
+delete from public.schedule_regular_patterns
+where student_id in (
+  'd0000000-0000-4000-8000-000000000021',
+  'd0000000-0000-4000-8000-000000000022'
+);
+
 insert into public.schedule_regular_patterns (
   id, school_id, student_id, day_of_week, time_slot_id, teacher_id, subject_ids,
   seat_label, period_type, is_active, effective_from, formation, ratio, duration_minutes
@@ -361,14 +440,8 @@ values
    'd0000000-0000-4000-8000-000000000022', 4, 'd0000000-0000-4000-8000-000000000043',
    'd0000000-0000-4000-8000-000000000012',
    array[(select id from public.subjects where name = '国語' and grade_category = 'elementary' order by sort_order limit 1)],
-   'B-2', 'regular', true, current_date - 90, 'individual', 2, 90)
-on conflict (id) do update
-  set day_of_week = excluded.day_of_week,
-      time_slot_id = excluded.time_slot_id,
-      teacher_id = excluded.teacher_id,
-      subject_ids = excluded.subject_ids,
-      is_active = true,
-      effective_from = excluded.effective_from;
+   'B-2', 'regular', true, current_date - 90, 'individual', 2, 90);
+-- ★ delete 直後なので on conflict は不要（§14 と同じ理由。固定IDは必ず衝突しない）。
 
 
 -- ============================================================================
@@ -732,6 +805,178 @@ on conflict (id) do update
 
 
 -- ============================================================================
+-- 10-b) 未承認の報告書（「講師が書く → 室長が承認する」一周のデモ）
+-- ============================================================================
+--   ★ なぜ必要か:
+--     §10 は承認済み(approved)しか作らないので、**室長が承認する操作**を一度も試せない。
+--     報告書は「講師が書く(draft) → 提出(submitted) → 室長が承認(approved)」で初めて
+--     保護者に見える（portal_class_reports の公開ゲートが status='approved'）。
+--     承認前の行が1件も無いと、V2 の肝である「承認した瞬間に保護者へ届く」因果を見せられない。
+--
+--   ★ 実値はアプリの実装に合わせる（src/lib/api/class-reports.ts で確認済み）:
+--     - 承認待ち一覧 /lesson-reports/pending は getPendingReports() が
+--       `status = 'submitted'` だけを拾う。**draft はここに出ない**（＝講師の書きかけ扱い）。
+--     - approveClassReport() は status='approved' / approved_at / approved_by を書き、
+--       rejected_* を null に戻す。
+--     - rejectClassReport() は status='rejected' / rejected_at / rejected_by /
+--       rejection_reason を書く。
+--     よって「室長の承認待ち」= submitted、「講師の書きかけ」= draft で表す。
+--     status の CHECK は draft / submitted / approved / rejected の4値（base_schema）。
+--
+--   ★ 対象コマは §10 と重ならないものを選ぶ:
+--     class_reports.schedule_entry_id には UNIQUE 制約があるので、§10 が使ったコマに
+--     もう1件ぶら下げることはできない。教科と本文がズレないよう曜日で絞ったうえで、
+--       - 体験 太郎（submitted）: 月(1)/金(5)＝どちらも数学 の **2番目に新しい** 実施済みコマ
+--         （§10 a1 が最新を使っているので1つずらす。同じ数学の曜日の中でずらすので
+--          「offset で選ぶと教科がズレる」§10 の注意には抵触しない）
+--       - 体験 花子（draft）  : 木(4)＝国語 の最新の実施済みコマ（§10 a3 は火なので未使用）
+--     ★ offset は LATERAL の外側を参照できない（Postgres は OFFSET に変数を許さない）ため、
+--       row_number() で順位を振って where 句で選ぶ。
+--
+--   ★ 副作用を隠さないこと:
+--     /lesson-reports/pending は選択中の教室（＝user_schools）を横断して submitted を拾う。
+--     デモ校の担当になっている人（現状は admin 4名。§2-b）の承認待ち一覧に
+--     **「デモ校・体験 太郎」の行が1件混ざる**。教室名と生徒名で実データと区別はつくが、
+--     承認待ちの件数が1件増えることは把握しておくこと。
+--     気になる場合は教室切替でデモ校以外を選べば出ない（一覧は選択教室で絞られる）。
+--
+--   ★ 冪等（§14 と同じ思想。再実行すれば必ず「承認待ち1件・下書き1件」に戻る）:
+--     デモで実際に承認/差し戻しをすると、この行の status は approved/rejected に変わる。
+--     しかし §8 が **デモ生徒の schedule_entries を全消し**し、それが class_reports へ
+--     CASCADE するので、再実行の時点でこの行は既に消えている。§10 と同じ仕組みで
+--     毎回まっさらに作り直される。on conflict 節は保険（承認済みの状態を必ず巻き戻す）。
+-- ----------------------------------------------------------------------------
+insert into public.class_reports (
+  id, school_id, schedule_entry_id, student_id, teacher_id, lesson_date,
+  short_term_goal, mid_term_goal_snapshot, school_progress,
+  homework_completion_pct, homework_correct_pct, today_correct_pct,
+  check_test_score, check_test_total, check_test_passed,
+  review_comment, homework_assignments, status, submitted_at, approved_at, approved_by
+)
+select
+  v.id::uuid,
+  'd0000000-0000-4000-8000-000000000001',
+  e.id,
+  v.student_id::uuid,
+  e.teacher_id,
+  e.entry_date,
+  v.short_term_goal,
+  v.mid_term_goal,
+  v.school_progress,
+  v.hw_completion, v.hw_correct, v.today_correct,
+  v.check_score, v.check_total, v.check_passed,
+  v.review_comment,
+  -- 宿題の日割りは §10 とまったく同じ作り（授業日の翌日から次回授業日まで・最大3日）。
+  (
+    select jsonb_agg(
+             jsonb_build_object('date', to_char(d.day, 'YYYY-MM-DD'), 'text', v.hw_texts[d.i])
+             order by d.i
+           )
+    from (
+      select gs::date as day, row_number() over (order by gs) as i
+      from generate_series(
+             e.entry_date + 1,
+             least(nx.next_date, e.entry_date + 3),
+             interval '1 day'
+           ) gs
+    ) d
+    where v.hw_texts[d.i] is not null
+  ),
+  v.status,
+  -- 提出済みだけが提出日時を持つ。下書きは講師がまだ出していないので null。
+  case when v.status = 'submitted' then e.entry_date + time '21:00' else null end,
+  -- ★ 承認関連は必ず null（ここが入っていると「承認待ち」にならない）。
+  null::timestamptz, null::uuid
+from (values
+  -- f1: 体験 太郎 / 数学 / **承認待ち**（室長が /lesson-reports/pending で承認するデモの主役）
+  ('d0000000-0000-4000-8000-0000000000f1', 'd0000000-0000-4000-8000-000000000021', array[1, 5], 2, 'submitted',
+   '一次関数のグラフを式から正確に書けるようにする',
+   '2学期中間テストで数学80点以上',
+   '学校は一次関数のグラフに入ったところ',
+   90, 80, 75, 7, 10, false,
+   '傾きと切片の読み取りは正確でしたが、式からグラフを書く手順で迷う場面がありました。今日は書き方の順番を整理したので、次回までに宿題で手を動かして定着させましょう。',
+   array['ワーク p.52〜53（式からグラフを書く）',
+         'ワーク p.54〜55（グラフから式を求める）',
+         '確認テストの直しをノートに1ページ']),
+  -- f2: 体験 花子 / 国語 / **下書き**（講師フォームから「提出」する一周も試せるようにする）
+  ('d0000000-0000-4000-8000-0000000000f2', 'd0000000-0000-4000-8000-000000000022', array[4], 1, 'draft',
+   '説明文の段落ごとの要点をつかめるようにする',
+   '2学期の読解問題を苦手なく終える',
+   '学校は説明文の単元',
+   100, 90, 80, 8, 10, true,
+   '（書きかけ）段落の要点はつかめていました。接続語に印をつける読み方を練習中。',
+   array['読解プリント 1枚'])
+) as v(id, student_id, dows, rank_from_latest, status,
+       short_term_goal, mid_term_goal, school_progress,
+       hw_completion, hw_correct, today_correct,
+       check_score, check_total, check_passed,
+       review_comment, hw_texts)
+-- 指定曜日の実施済みコマを新しい順に並べ、rank_from_latest 番目を引き当てる。
+join lateral (
+  select se.id, se.entry_date, se.teacher_id
+  from (
+    select se2.id, se2.entry_date, se2.teacher_id,
+           row_number() over (order by se2.entry_date desc) as rn
+    from public.schedule_entries se2
+    where se2.student_id = v.student_id::uuid
+      and se2.entry_date < current_date
+      and se2.status = 'completed'
+      and extract(dow from se2.entry_date)::int = any(v.dows)
+  ) se
+  where se.rn = v.rank_from_latest
+) e on true
+-- 次回授業日（宿題の日割りの終端）。§10 と同じ理由で left join。
+left join lateral (
+  select min(se3.entry_date) as next_date
+  from public.schedule_entries se3
+  where se3.student_id = v.student_id::uuid
+    and se3.entry_date > e.entry_date
+) nx on true
+on conflict (id) do update
+  set schedule_entry_id = excluded.schedule_entry_id,
+      lesson_date = excluded.lesson_date,
+      homework_assignments = excluded.homework_assignments,
+      -- 承認/差し戻し済みの状態を必ず初期状態（承認待ち・下書き）へ巻き戻す。
+      status = excluded.status,
+      submitted_at = excluded.submitted_at,
+      approved_at = null,
+      approved_by = null,
+      rejected_at = null,
+      rejected_by = null,
+      rejection_reason = null;
+
+-- 承認待ち(f1)の学習内容。承認画面で内容を確認してから承認する、という手順を再現するため
+-- 「学習内容が入った状態」にしておく。下書き(f2)は書きかけらしく単元を付けない。
+insert into public.lesson_report_units (
+  id, report_id, student_textbook_id, is_main, curriculum_item_ids, page_start, page_end, display_order
+)
+select
+  v.id::uuid,
+  v.report_id::uuid,
+  v.student_textbook_id::uuid,
+  true,
+  coalesce(
+    (select array_agg(c.id order by c.sort_order)
+     from public.curriculum_items c
+     where c.title = any(v.titles)),
+    '{}'::int[]
+  ),
+  v.page_start, v.page_end, 0
+from (values
+  ('d0000000-0000-4000-8000-0000000000c5', 'd0000000-0000-4000-8000-0000000000f1',
+   'd0000000-0000-4000-8000-0000000000b1', array['一次関数とグラフ'], 50, 53)
+) as v(id, report_id, student_textbook_id, titles, page_start, page_end)
+-- 親レポートが実在するときだけ入れる（上の lateral が引けなかった場合の保険）。
+where exists (select 1 from public.class_reports cr where cr.id = v.report_id::uuid)
+on conflict (id) do update
+  set report_id = excluded.report_id,
+      student_textbook_id = excluded.student_textbook_id,
+      curriculum_item_ids = excluded.curriculum_item_ids,
+      page_start = excluded.page_start,
+      page_end = excluded.page_end;
+
+
+-- ============================================================================
 -- 11) お知らせ（bulletin_posts）
 -- ============================================================================
 --   ★ bulletin_posts_select_portal の可視条件（1つでも外すと画面が空になる）:
@@ -1089,6 +1334,226 @@ values
    'd0000000-0000-4000-8000-000000000012', now() - interval '2 days', null, now() - interval '3 days');
 
 
+-- ============================================================================
+-- 15) 講習Web申込のデモ（保護者がスマホから申し込む一周）
+-- ============================================================================
+--   正典: docs/koushu-auto-allocation-spec.md 第2部。実装は src/lib/api/koushuApply.ts。
+--   ★ 一般公開は 2027-02 予定。ここで作るのは**デモ校のデモ生徒ぶんだけ**で、
+--     実教室の申込フォームが開くようになるわけではない（公開判定は教室×講習期間ごと）。
+--
+--   ★ 申込フォーム /koushu-apply/[token] が「開く」ための条件（resolveApplyContext の判定順）:
+--     (1) koushu_apply_tokens に token 一致の行がある
+--     (2) その行の revoked_at が null
+--     (3) 同じ (school_id, season, year) の course_prep_periods がある
+--     (4) その期間の schedule_start_date / schedule_end_date が **両方とも非NULL**
+--     (5) apply_publish_start <= now() <= apply_publish_end（**両方とも非NULLが必須**。
+--         片方でも NULL なら非公開＝404。これが「紙と並走中は空にしておく」安全弁）
+--     (6) 生徒が実在し、school_id 一致・status <> 'withdrawn'
+--     どれか1つでも外れると 404（存在の出し分けをしない設計）。
+--
+--   ★ 「開く」だけでは申込操作ができない。実用上さらに必要なもの:
+--     - course_prep_periods.apply_price_table … 単価が引けない形式は選択肢に出ない。
+--       キーは **GRADE_LABELS の日本語ラベル**（'中2' / '小6'）。UUIDや数値キーでは引けない。
+--       45分は小1〜小4のみ選べる仕様なので、中2・小6には 90 だけ入れる。
+--     - koushu_enrollments に (school_id, season, student_id) の行が **無いこと**。
+--       あると alreadySubmitted=true で読み取り専用画面になり、申込を試せない。
+--       ★ だからデモデータとして申込行を作ってはいけない（delete で消す側に回す）。
+--
+--   ★ season / year について:
+--     course_prep_periods.season には CHECK（spring / summer / winter）があるので
+--     'winter' 固定にし、year は現在年を使う。**暦の季節と一致していなくてよい**
+--     （デモの目的は「申込フォームが開いて申し込める」ことの確認）。
+--     一方で日付はこのファイル全体の方針どおり current_date 相対にして古びないようにする。
+--     ★ 3つのテーブル（course_prep_periods / koushu_special_courses / koushu_apply_tokens）で
+--       season と year を必ず同じ値に揃えること。ズレると 404 になる。
+--
+--   ★ 冪等: delete → 再生成。デモで実際に申し込むと koushu_enrollments と
+--     seasonal_shift_student_submissions に行ができるので、それも毎回消して
+--     「まだ申し込んでいない状態」に戻す（§14 と同じ思想）。
+--     ★ 削除順が重要: koushu_enrollments → koushu_special_courses の FK は ON DELETE RESTRICT
+--       （申込のある講座は消せない設計）。講座を先に消そうとすると必ず失敗する。
+-- ----------------------------------------------------------------------------
+
+-- 申込結果（デモで実際に申し込むと増える）を先に消す。
+-- ★ ここだけ生徒idではなく school_id で絞る（§8・§14 とは逆）。下の講座削除が RESTRICT で
+--   守られているため、デモ校に1行でも申込が残っていると講座を消せず全体が失敗するから。
+--   デモ校に在籍するのはデモ生徒2名だけなので、実データに触れないことは変わらない。
+delete from public.koushu_enrollments where school_id = 'd0000000-0000-4000-8000-000000000001';
+
+-- 講座 → トークン → 通塾可能日程 → 講習期間 の順に消す（上の RESTRICT の都合）。
+-- seasonal_shift_settings を消すと slot_settings と student_submissions は CASCADE で消える。
+delete from public.koushu_special_courses where school_id = 'd0000000-0000-4000-8000-000000000001';
+delete from public.koushu_apply_tokens    where school_id = 'd0000000-0000-4000-8000-000000000001';
+delete from public.seasonal_shift_settings where school_id = 'd0000000-0000-4000-8000-000000000001';
+delete from public.course_prep_periods    where school_id = 'd0000000-0000-4000-8000-000000000001';
+
+-- ----------------------------------------------------------------------------
+-- 15-a) 講習期間＋公開設定（course_prep_periods）
+-- ----------------------------------------------------------------------------
+--   スタッフ側の設定画面は /settings/koushu-apply。専用の設定テーブルや system_settings は
+--   使っておらず、公開期間・単価表はすべてこの1行の列に載っている。
+--   ★ 申込期間は「今」を必ず挟むこと（挟まないと開いた瞬間に404になる）。
+-- ----------------------------------------------------------------------------
+insert into public.course_prep_periods (
+  id, school_id, season, year,
+  schedule_start_date, schedule_end_date,
+  apply_publish_start, apply_publish_end, apply_price_table
+)
+values (
+  'd0000000-0000-4000-8000-000000000101',
+  'd0000000-0000-4000-8000-000000000001',
+  'winter', extract(year from current_date)::int,
+  -- 講習の開催期間（＝申込画面に出る通塾可能日程の範囲）。
+  current_date + 21, current_date + 45,
+  -- 公開期間。今を挟み、しばらく開いたままにする。
+  now() - interval '1 day', now() + interval '60 days',
+  -- 3軸単価表（学年ラベル → 1on1/1on2 → 45/90 → 円）。
+  -- ★ デモ生徒の学年ラベル（中2 / 小6）が入っていないと「追加科目」が1件も出ない。
+  jsonb_build_object(
+    '中2', jsonb_build_object(
+             '1on2', jsonb_build_object('90', 4500),
+             '1on1', jsonb_build_object('90', 7000)
+           ),
+    '小6', jsonb_build_object(
+             '1on2', jsonb_build_object('90', 4000),
+             '1on1', jsonb_build_object('90', 6500)
+           )
+  )
+);
+
+-- ----------------------------------------------------------------------------
+-- 15-b) 特別講座（koushu_special_courses）
+-- ----------------------------------------------------------------------------
+--   ★ 講座マスタは seasonal_courses **ではない**（あちらは個別指導の学習メニュー959件で別物）。
+--   ★ フォームに出るための条件（loadCourses）:
+--     - is_active = true
+--     - unit_price が非NULL
+--     - session_dates のうち1件以上が講習期間（15-a の start/end）に入っている
+--     - target_grades が空配列（＝全学年）か、生徒の学年番号を含む
+--   ★ 料金は unit_price × **未開催の回数**。全回が過去日だと0回＝申込できない扱いになるので、
+--     開催日は必ず未来（current_date 相対）にする。
+--   ★ formation は schedule_formations(key) への FK。シード済みなのは individual / group だけ。
+--     小集団やプログラミングを使いたい場合は先に schedule_formations へ行を足すこと。
+--   ★ target_grades を中2(=8)だけにしてある。花子（小6）のフォームには講座が出ない＝
+--     「対象学年の絞り込みが効いている」ことも同時にデモできる。
+-- ----------------------------------------------------------------------------
+insert into public.koushu_special_courses (
+  id, school_id, season, year, formation, name, target_grades, unit_price, session_dates, capacity, is_active
+)
+values (
+  'd0000000-0000-4000-8000-000000000102',
+  'd0000000-0000-4000-8000-000000000001',
+  'winter', extract(year from current_date)::int,
+  'group',
+  'デモ 入試対策ゼミ（保護者ポータル体験用）',
+  array[8],
+  3000,
+  jsonb_build_array(
+    jsonb_build_object('date', to_char(current_date + 25, 'YYYY-MM-DD'), 'start_time', '13:30', 'end_time', '15:00'),
+    jsonb_build_object('date', to_char(current_date + 32, 'YYYY-MM-DD'), 'start_time', '13:30', 'end_time', '15:00'),
+    jsonb_build_object('date', to_char(current_date + 39, 'YYYY-MM-DD'), 'start_time', '13:30', 'end_time', '15:00')
+  ),
+  12,
+  true
+);
+
+-- ----------------------------------------------------------------------------
+-- 15-c) 通塾可能日程の開講枠（seasonal_shift_settings / seasonal_shift_slot_settings）
+-- ----------------------------------------------------------------------------
+--   申込フォームのステップ3「通塾できない日」はここから作られる。無くてもフォームは開くし
+--   申込も成立するが、ステップ3が真っ白になって一周の実感が無いので入れておく。
+--   ★ 拾われる条件（resolveShiftSettingId）: status='published' かつ講習期間と日付が重なること。
+--     既定は 'draft' なので明示的に published にする。
+--   ★ time_slot は自由テキストだが、UI が 'HH:MM-HH:MM' を前提に整形するので
+--     weekday_slots / saturday_slots の要素と同じ表記で揃える。
+--   ★ 日曜は開講しない（extract(dow)=0 を除外）。
+-- ----------------------------------------------------------------------------
+insert into public.seasonal_shift_settings (
+  id, school_id, name, start_date, end_date, deadline,
+  description, weekday_slots, saturday_slots, status
+)
+values (
+  'd0000000-0000-4000-8000-000000000103',
+  'd0000000-0000-4000-8000-000000000001',
+  'デモ 講習期間の通塾可能日程',
+  current_date + 21, current_date + 45, current_date + 14,
+  'デモ用の開講コマ設定です。実際の日程ではありません。',
+  '13:30-15:00,15:10-16:40,17:00-18:30,18:40-20:10',
+  '13:30-15:00,15:10-16:40,17:00-18:30,18:40-20:10',
+  'published'
+);
+
+insert into public.seasonal_shift_slot_settings (setting_id, slot_date, time_slot, is_open)
+select
+  'd0000000-0000-4000-8000-000000000103',
+  g.d::date,
+  t.ts,
+  true
+from generate_series(current_date + 21, current_date + 45, interval '1 day') g(d)
+cross join unnest(array['13:30-15:00', '15:10-16:40', '17:00-18:30', '18:40-20:10']) as t(ts)
+where extract(dow from g.d) <> 0
+on conflict (setting_id, slot_date, time_slot) do nothing;
+
+-- ----------------------------------------------------------------------------
+-- 15-d) 申込トークン（koushu_apply_tokens）
+-- ----------------------------------------------------------------------------
+--   保護者に配る申込URLは /koushu-apply/<token>。
+--   ★ 本番の発行処理は64桁の乱数hexを作るが、DB側に形式の制約は無い。
+--     デモは**一目でデモと分かる可読値**にする（撤去時に見つけやすい・URLを手打ちできる）。
+--   ★ 有効期限カラムは無い。止めるときは revoked_at を入れるか、15-a の公開期間を空にする。
+--   ★ created_by は user_profiles への FK が無い列なので、発行者としてデモ講師を入れておく。
+--   ★ トークンを使わない入口 /portal/demo/koushu（教室コード + 生徒コード）も同時に開く。
+--     デモ校は code='demo'、生徒コードは DEMO001（太郎）/ DEMO002（花子）。
+--     こちらは 15-a の期間だけで判定するので、トークンを配らない運用の見え方も試せる。
+-- ----------------------------------------------------------------------------
+insert into public.koushu_apply_tokens (token, school_id, student_id, season, year, created_by)
+values
+  ('demo-koushu-taro', 'd0000000-0000-4000-8000-000000000001',
+   'd0000000-0000-4000-8000-000000000021', 'winter', extract(year from current_date)::int,
+   'd0000000-0000-4000-8000-000000000011'),
+  ('demo-koushu-hanako', 'd0000000-0000-4000-8000-000000000001',
+   'd0000000-0000-4000-8000-000000000022', 'winter', extract(year from current_date)::int,
+   'd0000000-0000-4000-8000-000000000011');
+
+
+-- ============================================================================
+-- 16) manager（教室長）開放の準備 — ★ まだ流さないこと（コメントアウトのまま）
+-- ============================================================================
+--   現在デモ校の担当（user_schools）は admin だけに付けている（§2-b）。
+--   V2 試用を教室長以上に広げるときは、下のブロックのコメントを外して流す。
+--
+--   ★ ただし **アプリ側の開放と3点セットで**有効化すること。1つでも欠けると機能しない:
+--     (1) src/lib/mypage/demoAccess.ts の canAccessPortalDemo()
+--         … isSystemAdmin(role) → isManagerOrAbove(role) に変更する。
+--           AppHeader の歯車メニュー（入口）と /api/portal-demo/start の認可は
+--           どちらもこの1関数を見るので、ここを変えれば両方追従する。
+--     (2) このブロック（デモ校の user_schools 付与）
+--     (3) docs/portal-v2-demo-handoff.md の「公開範囲」の記述を更新
+--   ★ (1) だけ開いても user_schools が無ければスタッフ受信箱 /admin/portal-chat が空になり、
+--     「保護者が送る → 教室が返す」というV2の核心（双方向）を体験できない。
+--     逆に (2) だけ流しても入口が無いので触れない。**必ず同時に**。
+--
+--   ★ 副作用を隠さないこと: 対象者（本番実測で manager 以上=11名）の教室ドロップダウンに
+--     「デモ校」が1項目増える。is_demo はドロップダウンから除外されない（§2-b 参照）。
+--
+--   ★ 冪等: UNIQUE(user_id, school_id) があるので do nothing で足りる。
+--     既存の担当は一切変更しない（追加のみ）。§2-b の admin ぶんとも重複しない。
+-- ----------------------------------------------------------------------------
+-- insert into public.user_schools (id, user_id, school_id)
+-- select gen_random_uuid(), up.id, 'd0000000-0000-4000-8000-000000000001'
+-- from public.user_profiles up
+-- where up.is_active
+--   and up.role in ('manager', 'owner', 'admin')   -- ★ isManagerOrAbove と同じ境界
+-- on conflict (user_id, school_id) do nothing;
+--
+-- ★ 元に戻すとき（admin だけに絞り直す）:
+-- delete from public.user_schools us
+-- using public.user_profiles up
+-- where us.user_id = up.id
+--   and us.school_id = 'd0000000-0000-4000-8000-000000000001'
+--   and up.role <> 'admin';
+
+
 commit;
 
 -- ============================================================================
@@ -1097,9 +1562,20 @@ commit;
 --   select 'schools',                    count(*) from public.schools                    where id = 'd0000000-0000-4000-8000-000000000001'
 --   union all select 'students',         count(*) from public.students                   where school_id = 'd0000000-0000-4000-8000-000000000001'
 --   union all select 'schedule_entries', count(*) from public.schedule_entries           where school_id = 'd0000000-0000-4000-8000-000000000001'
+--   union all select 'regular_patterns', count(*) from public.schedule_regular_patterns  where school_id = 'd0000000-0000-4000-8000-000000000001'
 --   union all select 'class_reports',    count(*) from public.class_reports              where school_id = 'd0000000-0000-4000-8000-000000000001'
+--   -- ★ 承認一周デモの初期状態: submitted=1 / draft=1（0だと §10-b が引き当てに失敗している）
+--   union all select 'reports_submitted', count(*) from public.class_reports             where school_id = 'd0000000-0000-4000-8000-000000000001' and status = 'submitted'
+--   union all select 'reports_draft',    count(*) from public.class_reports              where school_id = 'd0000000-0000-4000-8000-000000000001' and status = 'draft'
 --   union all select 'bulletin_posts',   count(*) from public.bulletin_posts             where school_id = 'd0000000-0000-4000-8000-000000000001'
 --   union all select 'chat_messages',    count(*) from public.chat_messages              where thread_id in ('d0000000-0000-4000-8000-000000000061','d0000000-0000-4000-8000-000000000062')
 --   union all select 'form_periods',     count(*) from public.form_periods               where school_id = 'd0000000-0000-4000-8000-000000000001'
 --   union all select 'assessments',      count(*) from public.assessments                where school_id = 'd0000000-0000-4000-8000-000000000001'
---   union all select 'portal_score_submissions', count(*) from public.portal_score_submissions where school_id = 'd0000000-0000-4000-8000-000000000001';
+--   union all select 'portal_score_submissions', count(*) from public.portal_score_submissions where school_id = 'd0000000-0000-4000-8000-000000000001'
+--   -- 講習Web申込デモ（§15）
+--   union all select 'course_prep_periods',      count(*) from public.course_prep_periods       where school_id = 'd0000000-0000-4000-8000-000000000001'
+--   union all select 'koushu_special_courses',   count(*) from public.koushu_special_courses    where school_id = 'd0000000-0000-4000-8000-000000000001'
+--   union all select 'koushu_apply_tokens',      count(*) from public.koushu_apply_tokens       where school_id = 'd0000000-0000-4000-8000-000000000001'
+--   union all select 'shift_slot_settings',      count(*) from public.seasonal_shift_slot_settings where setting_id = 'd0000000-0000-4000-8000-000000000103'
+--   -- ★ 申込一周の初期状態は必ず 0 件（1件でもあると申込フォームが読み取り専用になる）
+--   union all select 'koushu_enrollments',       count(*) from public.koushu_enrollments        where school_id = 'd0000000-0000-4000-8000-000000000001';
