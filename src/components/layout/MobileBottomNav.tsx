@@ -5,14 +5,16 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMasterData } from '@/contexts/MasterDataContext';
+import { useDeviceTrust } from '@/contexts/DeviceTrustContext';
 import { isManagerOrAbove, isTeacher } from '@/lib/utils/roles';
 import {
   Users,
   ClipboardList,
   ListChecks,
   MessageSquare,
-  FileText,
   CalendarCheck,
+  CalendarDays,
+  CalendarRange,
   Menu,
   type LucideIcon,
 } from 'lucide-react';
@@ -47,6 +49,8 @@ export function MobileBottomNav({ menuOpen, onMenuToggle }: MobileBottomNavProps
   const pathname = usePathname();
   const { profile, permissions, schoolIds } = useAuth();
   const { schools: masterSchools } = useMasterData();
+  // 家モード判定は DeviceTrustContext に一元化（PCナビ・ページゲートと同じ材料）
+  const { homeMode } = useDeviceTrust();
 
   // 講師の自分の出勤簿リンク用に担当教室コードを取得（AppHeader と同じ算出）
   const homeSchoolCode = useMemo(() => {
@@ -65,23 +69,18 @@ export function MobileBottomNav({ menuOpen, onMenuToggle }: MobileBottomNavProps
     const teacher = isTeacher(profile.role);
 
     if (teacher) {
+      // 講師の親指導線は「本日 / 予定 / 生徒 / 出勤簿」。
+      // 着地を /today に変えた（正典 §1-7）のに合わせ、本日・予定を常設に格上げした。
+      // 申込・テスト対策は下部バーからは外し「メニュー」シート（navConfig）へ集約する
+      // （5タブの制約内に収め、家モードでも並びが崩れないようにするため）。
       const list: BottomTab[] = [
-        { key: 'students', label: '生徒', href: '/students', icon: Users },
+        { key: 'today', label: '本日', href: '/today', icon: CalendarDays },
+        { key: 'my-schedule', label: '予定', href: '/my-schedule', icon: CalendarRange },
       ];
-      if (permissions?.canAccessApplications) {
-        list.push({
-          key: 'applications',
-          label: '申込',
-          href: '/applications',
-          icon: ClipboardList,
-        });
+      // 家モードでは生徒情報系を出さない（開いてもゲートで止まる死にリンクになるため）
+      if (!homeMode) {
+        list.push({ key: 'students', label: '生徒', href: '/students', icon: Users });
       }
-      list.push({
-        key: 'test-prep',
-        label: 'テスト対策',
-        href: '/test-prep-proposals',
-        icon: FileText,
-      });
       if (homeSchoolCode && profile.id) {
         list.push({
           key: 'my-attendance',
@@ -116,7 +115,7 @@ export function MobileBottomNav({ menuOpen, onMenuToggle }: MobileBottomNavProps
       });
     }
     return list;
-  }, [profile, permissions, homeSchoolCode]);
+  }, [profile, permissions, homeSchoolCode, homeMode]);
 
   // 未ログイン等でタブが無ければ何も描画しない
   if (!profile || tabs.length === 0) return null;

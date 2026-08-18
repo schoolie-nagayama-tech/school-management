@@ -1,5 +1,6 @@
 import type { Permission, UserProfile } from '@/types/database';
 import { isTeacher, isManagerOrAbove } from '@/lib/utils/roles';
+import { isClassroomOnlyPath } from '@/lib/homeMode';
 
 /**
  * ヘッダーナビゲーションの構造定義（単一の情報源）。
@@ -39,6 +40,12 @@ export interface NavContext {
   showAll: boolean;
   /** 講師の自分の出勤簿リンク生成に使う担当教室 */
   schools: { id: string; code: string | null }[];
+  /**
+   * 家モード（講師＋教室端末マーク無し）か。
+   * true のとき教室限定パスの項目を隠す（死にリンクを見せない。
+   * 正典 docs/teacher-home-mode-plan.md §2）。判定は DeviceTrustContext。
+   */
+  homeMode?: boolean;
 }
 
 /**
@@ -46,9 +53,41 @@ export interface NavContext {
  * 権限ゲートはここで一元的に評価し、可視な項目だけを返す。
  */
 export function buildNavEntries(ctx: NavContext): NavEntry[] {
-  const { permissions: p, profile, showAll, schools } = ctx;
+  const { permissions: p, profile, showAll, schools, homeMode } = ctx;
   const teacher = isTeacher(profile?.role);
   const entries: NavEntry[] = [];
+
+  // 講師の日常導線（本日の授業 / 自分の予定）。
+  // 以前は URL 直打ちの「隠し公開」だったが、講師のログイン後の着地を /today に
+  // 変えたのに合わせて正式なナビ項目にした（正典 §1-7）。家モードでも使える。
+  if (teacher) {
+    entries.push({
+      kind: 'link',
+      key: 'today',
+      label: '本日の授業',
+      href: '/today',
+      exact: true,
+    });
+    entries.push({
+      kind: 'link',
+      key: 'my-schedule',
+      label: '自分の予定',
+      href: '/my-schedule',
+      exact: true,
+    });
+  }
+
+  // ダッシュボード（教室長以上・V2試用）。ページ側 /dashboard も同じ
+  // isManagerOrAbove でガードしている（判定関数を揃える）。
+  if (showAll || isManagerOrAbove(profile?.role)) {
+    entries.push({
+      kind: 'link',
+      key: 'dashboard',
+      label: 'ダッシュボード',
+      href: '/dashboard',
+      exact: true,
+    });
+  }
 
   // 生徒管理（全ロール）
   if (showAll || p?.canAccessStudents) {
@@ -207,6 +246,22 @@ export function buildNavEntries(ctx: NavContext): NavEntry[] {
         { key: 'tasks', label: '業務進捗管理表', href: '/tasks' },
       ],
     });
+  }
+
+  // 家モードでは教室限定の項目を落とす。
+  // 個々の push に条件を足すのではなく最後に一括で除くのは、教室限定パスの定義
+  // （lib/homeMode.ts）とページゲートの判定を必ず同じ材料に揃えるため。
+  // homeMode が true になるのは講師のときだけなので、上位ロールには影響しない。
+  if (homeMode) {
+    return entries
+      .map((entry) =>
+        entry.kind === 'group'
+          ? { ...entry, items: entry.items.filter((item) => !isClassroomOnlyPath(item.href)) }
+          : entry
+      )
+      .filter((entry) =>
+        entry.kind === 'group' ? entry.items.length > 0 : !isClassroomOnlyPath(entry.href)
+      );
   }
 
   return entries;

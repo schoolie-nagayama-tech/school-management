@@ -68,6 +68,17 @@ describe('buildNavEntries: 講師', () => {
     );
   });
 
+  it('本日の授業・自分の予定を正式なナビ項目として出す（旧・隠し公開の格上げ）', () => {
+    const today = entries.find((e) => e.key === 'today');
+    const mySchedule = entries.find((e) => e.key === 'my-schedule');
+    expect(today?.kind).toBe('link');
+    expect(mySchedule?.kind).toBe('link');
+    if (today?.kind === 'link') expect(today.href).toBe('/today');
+    if (mySchedule?.kind === 'link') expect(mySchedule.href).toBe('/my-schedule');
+    // 講師の着地が /today になったので先頭に置く
+    expect(keys(entries).slice(0, 2)).toEqual(['today', 'my-schedule']);
+  });
+
   it('教室長以上のグループは出さない', () => {
     const k = keys(entries);
     expect(k).not.toContain('form');
@@ -89,6 +100,35 @@ describe('buildNavEntries: 講師', () => {
   it('担当教室コードが無ければ出勤簿リンクは出ない', () => {
     const e = buildNavEntries(ctxFor('teacher', { schools: [{ id: 's1', code: null }] }));
     expect(keys(e)).not.toContain('my-attendance');
+  });
+});
+
+describe('buildNavEntries: 講師の家モード', () => {
+  const home = buildNavEntries(ctxFor('teacher', { homeMode: true }));
+
+  it('教室限定の項目（生徒管理・テスト対策・申込状況）を隠す', () => {
+    const k = keys(home);
+    expect(k).not.toContain('students');
+    expect(k).not.toContain('test-prep');
+    expect(k).not.toContain('applications');
+  });
+
+  it('家OKの項目（本日の授業・自分の予定・出勤簿）は残す', () => {
+    expect(keys(home)).toEqual(expect.arrayContaining(['today', 'my-schedule', 'my-attendance']));
+  });
+
+  it('教室モード（homeMode 未指定）では従来どおり全部出る', () => {
+    const classroom = buildNavEntries(ctxFor('teacher'));
+    expect(keys(classroom)).toEqual(
+      expect.arrayContaining(['students', 'test-prep', 'applications'])
+    );
+  });
+
+  it('教室長以上には homeMode を渡しても影響しない（家でもフル）', () => {
+    const managerHome = buildNavEntries(ctxFor('manager', { homeMode: false }));
+    expect(keys(managerHome)).toEqual(
+      expect.arrayContaining(['students', 'form', 'course', 'business'])
+    );
   });
 });
 

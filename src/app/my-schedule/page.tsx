@@ -1,12 +1,14 @@
 'use client';
 
 /**
- * 講師向け授業スケジュール（隠し公開）
+ * 講師向け授業スケジュール
  *
  * URL: /my-schedule
  *
  * 用途：講師が自分の授業を「週次 / 月次」で確認、出欠記録だけ行う。
- *      編集や振替は不可（室長のみ）。既存ナビには載せず URL 直打ちでアクセスする想定。
+ *      編集や振替は不可（室長のみ）。
+ *      以前は隠し公開（URL直打ち）だったが、家モードの導入で講師の家OKセットの
+ *      中心になったためナビの正式項目にした（docs/teacher-home-mode-plan.md §1-7）。
  *
  * 表示：
  *  - 週次（デフォルト）：月-土を縦に並べたコンパクトリスト
@@ -32,6 +34,7 @@ import { GROUP_FORMATION } from '@/types/schedule';
 import { supabase } from '@/lib/supabase';
 import { recordAttendance } from '@/lib/api/schedule';
 import { formatGradeLabel } from '@/lib/utils/gradeLabel';
+import { displayStudentNameForTeacher } from '@/lib/utils/displayStudentName';
 import {
   ChevronLeft,
   ChevronRight,
@@ -417,9 +420,11 @@ function EntryRow({
   disabled: boolean;
   onRecord: (s: 'present' | 'absent' | 'late') => void;
 }) {
-  const studentName = entry.student
-    ? `${entry.student.last_name} ${entry.student.first_name}`
-    : entry.student_id;
+  // 家モードでの生徒名表示は社内判断待ちのため必ずヘルパー経由で出す
+  // （docs/teacher-home-mode-plan.md §1-6。マスクに倒す場合はヘルパーだけ変える）
+  const studentName = displayStudentNameForTeacher(
+    entry.student ? `${entry.student.last_name} ${entry.student.first_name}` : entry.student_id
+  );
   const slot = entry.time_slot;
   const att = entry.attendance_status;
   return (
