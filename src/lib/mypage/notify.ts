@@ -107,7 +107,15 @@ export const defaultEmailResolver: EmailResolver = async (event) => {
   //   メールが飛ぶ事故を防ぐ。呼び出し側それぞれに「デモなら送るな」を書かせると
   //   必ず書き忘れが出るので、宛先解決が必ず通るこの1箇所で塞ぐ。
   //   将来デモ経路や通知種別が増えても、ここを通る限り自動的に守られる。
-  if (await isDummyStudent(event.studentId)) {
+  //
+  //   例外＝デモ通知の試用（NOTIFY_DEMO_EMAIL_ALLOWLIST）:
+  //   デモ教室で通知の一周（操作→実際に届く）を試すため、許可リストに載った宛先
+  //   **だけ**は送信を許す。リストには自社スタッフのメールだけを載せる運用。
+  //   env 未設定なら従来どおり全ブロックなので、消せば元の安全状態に戻る。
+  //   実在生徒（非ダミー）の経路はこの分岐を通らず、一切変わらない。
+  const dummy = await isDummyStudent(event.studentId);
+  const demoEmailAllowlist = parseAllowlist(process.env.NOTIFY_DEMO_EMAIL_ALLOWLIST, true);
+  if (dummy && demoEmailAllowlist.size === 0) {
     console.info(
       '[mypage/notify] ダミーデータ（テスト生徒/デモ教室）のためメール送信をスキップ:',
       event.studentId
@@ -129,12 +137,32 @@ export const defaultEmailResolver: EmailResolver = async (event) => {
     const emails = (data ?? [])
       .map((r: { email: string | null }) => r.email)
       .filter((e): e is string => !!e && e.includes('@'));
-    return dedupeEmails(emails);
+    const resolved = dedupeEmails(emails);
+    // ダミー生徒は許可リスト掲載の宛先だけに絞る（リスト外の実在アドレスは落とす）。
+    if (dummy) {
+      return resolved.filter((e) => demoEmailAllowlist.has(e.toLowerCase()));
+    }
+    return resolved;
   } catch (e) {
     console.warn('[mypage/notify] メール宛先の解決に失敗（メールはスキップ）:', e);
     return [];
   }
 };
+
+/**
+ * カンマ区切りの許可リスト env をパースする（デモ通知試用用）。
+ * lowercase=true はメール用（大文字小文字を無視して比較するため正規化する）。
+ * 未設定・空文字は空 Set＝「例外なし（全ブロック）」を意味する。
+ */
+function parseAllowlist(raw: string | undefined, lowercase: boolean): Set<string> {
+  if (!raw) return new Set();
+  return new Set(
+    raw
+      .split(',')
+      .map((s) => (lowercase ? s.trim().toLowerCase() : s.trim()))
+      .filter((s) => s.length > 0)
+  );
+}
 
 /**
  * 生徒がダミーデータ（研修用テスト生徒 or デモ教室所属）かを判定する。
@@ -182,7 +210,14 @@ export const defaultLineResolver: LineResolver = async (event) => {
   if (event.audience !== 'guardian') return [];
   if (!event.studentId) return [];
 
-  if (await isDummyStudent(event.studentId)) {
+  // デモ通知の試用例外（NOTIFY_DEMO_LINE_ALLOWLIST）はメール側と同じ設計:
+  //   ダミー生徒でも、許可リストに載った LINE userId だけは宛先に残す。
+  //   リストには自社スタッフの userId だけを載せる運用。env 未設定なら従来どおり
+  //   全ブロック。なお実送信の最終ゲートは従来どおり linePush.ts の
+  //   LINE_PUSH_ENABLED であり、この許可リストは宛先解決の絞り込みでしかない。
+  const dummy = await isDummyStudent(event.studentId);
+  const demoLineAllowlist = parseAllowlist(process.env.NOTIFY_DEMO_LINE_ALLOWLIST, false);
+  if (dummy && demoLineAllowlist.size === 0) {
     console.info(
       '[mypage/notify] ダミーデータ（テスト生徒/デモ教室）のためLINE送信をスキップ:',
       event.studentId
@@ -211,7 +246,12 @@ export const defaultLineResolver: LineResolver = async (event) => {
       .filter((r) => r.portal_accounts?.line_followed !== false)
       .map((r) => r.portal_accounts?.line_user_id)
       .filter((id): id is string => !!id);
-    return Array.from(new Set(ids));
+    const resolved = Array.from(new Set(ids));
+    // ダミー生徒は許可リスト掲載の userId だけに絞る（リスト外は落とす）。
+    if (dummy) {
+      return resolved.filter((id) => demoLineAllowlist.has(id));
+    }
+    return resolved;
   } catch (e) {
     console.warn('[mypage/notify] LINE宛先の解決に失敗（LINEはスキップ）:', e);
     return [];

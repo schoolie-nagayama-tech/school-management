@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useBulletinUnread } from '@/contexts/BulletinUnreadContext';
+import { useDeviceTrust } from '@/contexts/DeviceTrustContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMasterData } from '@/contexts/MasterDataContext';
 import { USER_ROLE_LABELS } from '@/types/database';
@@ -26,6 +27,7 @@ import { getSurname } from '@/lib/utils/teacherName';
 import { PushNotificationButton } from '@/components/ui/PushNotificationButton';
 import { buildNavEntries, isLinkActive, isGroupActive } from './navConfig';
 import { isSystemAdmin } from '@/lib/utils/roles';
+import { canAccessPortalDemo } from '@/lib/mypage/demoAccess';
 import { MobileBottomNav } from './MobileBottomNav';
 import { useStandalone } from '@/lib/utils/useStandalone';
 import { useToast } from '@/hooks/useToast';
@@ -100,6 +102,8 @@ export function AppHeader({
   const { schools: masterSchools } = useMasterData();
   // 未読件数は BulletinUnreadContext に一元化済み（自前のポーリングは廃止）
   const { unreadCount: bulletinUnreadCount } = useBulletinUnread();
+  // 家モード判定は DeviceTrustContext に一元化（ページゲートと同じ材料を見る）
+  const { homeMode } = useDeviceTrust();
   // 出勤簿は通知が無く画面を開くまで気づけないため、ナビの「出勤簿管理」に件数バッジを出す
   const pendingAttendanceCount = usePendingAttendanceCount();
 
@@ -188,9 +192,10 @@ export function AppHeader({
   const showAllLinks = !permissions || authLoading;
 
   // ナビ項目（PC/スマホ共通の単一定義）。権限ゲートは navConfig 側で評価済み。
+  // 家モード（講師＋教室端末マーク無し）では教室限定の項目を落とす（正典 §2）。
   const navEntries = useMemo(
-    () => buildNavEntries({ permissions, profile, showAll: showAllLinks, schools }),
-    [permissions, profile, showAllLinks, schools]
+    () => buildNavEntries({ permissions, profile, showAll: showAllLinks, schools, homeMode }),
+    [permissions, profile, showAllLinks, schools, homeMode]
   );
 
   // 講師のみ: バッジ獲得数に応じてヘッダーにティアメダルを表示
@@ -453,35 +458,37 @@ export function AppHeader({
                       <div className="border-t border-border my-1" />
                       {/* 試作・クローズドな機能の入口。
                           通常ナビ（navConfig）には載せず、ここが唯一の入口。
-                          ★ 一旦すべて admin 限定（ユーザー判断 2026-07-16）。ポータルV2デモは
-                            当初 manager 以上に開いていたが admin のみに絞った。ここを広げる
-                            ときは /api/portal-demo/start の requireSystemAdmin と、デモSQL の
-                            user_schools 付与範囲（2-b）も3点セットで揃えること
-                            （ここは導線であって認可の境界ではない＝APIを緩めないと意味がない）。 */}
+                          検討用モック /home-mock は admin 限定のまま据え置き
+                          （試用向けの本ルートは /dashboard に分離済み・navConfig に掲載）。 */}
                       {isSystemAdmin(profile?.role) && (
-                        <>
-                          <Link
-                            href="/home-mock"
-                            className="flex items-center gap-2 px-3 py-2 text-xs text-text-heading hover:bg-gray-50 transition-colors"
-                            onClick={() => setShowSettingsDropdown(false)}
-                          >
-                            <LayoutDashboard className="w-3.5 h-3.5" aria-hidden />
-                            教室長ダッシュボード（試作）
-                          </Link>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setShowSettingsDropdown(false);
-                              handlePortalDemo();
-                            }}
-                            disabled={startingPortalDemo}
-                            className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-text-heading transition-colors hover:bg-gray-50 disabled:opacity-50"
-                          >
-                            <Smartphone className="w-3.5 h-3.5 shrink-0" aria-hidden />
-                            保護者ポータルV2（試作・ダミーデータ）
-                          </button>
-                          <div className="border-t border-border my-1" />
-                        </>
+                        <Link
+                          href="/home-mock"
+                          className="flex items-center gap-2 px-3 py-2 text-xs text-text-heading hover:bg-gray-50 transition-colors"
+                          onClick={() => setShowSettingsDropdown(false)}
+                        >
+                          <LayoutDashboard className="w-3.5 h-3.5" aria-hidden />
+                          教室長ダッシュボード（試作）
+                        </Link>
+                      )}
+                      {/* ポータルV2デモの導線。公開範囲は canAccessPortalDemo が単一の判定点
+                          （API 側 /api/portal-demo/start も同じヘルパーで認可する。
+                           開放時はヘルパー1箇所＋デモSQLの user_schools 付与を揃える）。 */}
+                      {canAccessPortalDemo(profile?.role) && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowSettingsDropdown(false);
+                            handlePortalDemo();
+                          }}
+                          disabled={startingPortalDemo}
+                          className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-text-heading transition-colors hover:bg-gray-50 disabled:opacity-50"
+                        >
+                          <Smartphone className="w-3.5 h-3.5 shrink-0" aria-hidden />
+                          保護者ポータルV2（試作・ダミーデータ）
+                        </button>
+                      )}
+                      {(isSystemAdmin(profile?.role) || canAccessPortalDemo(profile?.role)) && (
+                        <div className="border-t border-border my-1" />
                       )}
                       {/* テーマ切替 */}
                       <div className="px-3 py-2 flex items-center justify-between">

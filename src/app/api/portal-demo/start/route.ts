@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireSystemAdmin } from '@/lib/api-auth';
+import { requirePortalDemoAccess } from '@/lib/api-auth';
 import { getPortalServiceClient } from '@/lib/mypage/serviceClient';
 import { signPortalJwt } from '@/lib/mypage/jwt';
 import { setPortalSession } from '@/lib/mypage/session';
@@ -17,22 +17,20 @@ const DEMO_LOGIN_ID = 'demo-parent';
  *   /mypage/login が一般公開されてしまう。そこでフラグは OFF のまま据え置き、
  *   署名済みの demo クレーム付きセッションだけがレイアウトの門番を通れるようにする。
  *
- * ★ 公開範囲は admin のみ（ユーザー判断 2026-07-16「一旦見えるのはアドミンのみ」）:
- *   当初は「教室長に本番で触ってもらう」目的で manager 以上に開いていたが、まずは
- *   admin だけに絞る。requireAdmin ではなく requireSystemAdmin を使うのは、
- *   **requireAdmin が owner も通してしまう**ため（UI の isSystemAdmin と境界がズレ、
- *   「メニューに出ないのに API は叩ける」状態になる）。
- *   教室長にも開く段階になったら requireManager に戻し、AppHeader の条件と
- *   デモSQL の user_schools 付与範囲（2-b）も**3点セットで**揃えること。
+ * ★ 公開範囲は canAccessPortalDemo（lib/mypage/demoAccess.ts）が単一の判定点:
+ *   現在は admin のみ（ユーザー判断 2026-07-16「一旦見えるのはアドミンのみ」）。
+ *   AppHeader の導線も同じヘルパーを見るので、教室長以上へ開放するときは
+ *   ヘルパー1箇所の変更＋デモSQL の user_schools 付与（コメントアウト節）を流すだけでよい
+ *   （旧「3点セット」のうちコード側2点はヘルパーに集約済み）。
  *
  * 安全性の三重構造:
- *   1) この発行口をスタッフ認証（admin のみ）で閉じる ＝ 外から叩けない
+ *   1) この発行口をスタッフ認証（canAccessPortalDemo）で閉じる ＝ 外から叩けない
  *   2) 発行対象をデモアカウント1つに固定し、その紐づけ生徒が全員ダミーかを検証する（下記）
  *   3) 発行後も RLS が「紐づいた生徒」しか見せない ＝ 実データには構造的に到達できない
  */
 export async function POST(request: NextRequest) {
-  // admin 以外（owner / manager / 講師）と未認証はここで弾く（401/403 を返す）。
-  const denied = await requireSystemAdmin(request);
+  // 許可ロール以外（現在は admin のみ）と未認証はここで弾く（401/403 を返す）。
+  const denied = await requirePortalDemoAccess(request);
   if (denied) return denied;
 
   const supabase = getPortalServiceClient();

@@ -2,6 +2,8 @@
  * コンポーネントテスト: BulletinPostModal
  *
  * 2026-07-16: 配信先(audience) UIを AUDIENCE_UI_ENABLED フラグで非表示化した際の固定テスト。
+ * 2026-08-18: フラグは env（NEXT_PUBLIC_BULLETIN_AUDIENCE_UI）化。テストでは env 未設定
+ *             ＝既定 false（非表示）の従来挙動を検証している。
  *   - 配信先UIが画面に出ないこと
  *   - 新規投稿は audience=['社内'] / target_scope='all' を常に送ること
  *   - 編集保存では audience 系キーを一切送らない（既存値を上書きしない）こと
