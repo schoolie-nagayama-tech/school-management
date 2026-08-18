@@ -10,6 +10,8 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { ImpersonationBanner } from '@/components/ImpersonationBanner';
 import { BulletinUnreadProvider } from '@/contexts/BulletinUnreadContext';
 import { UnreadBulletinGate } from '@/components/bulletin/UnreadBulletinGate';
+import { DeviceTrustProvider } from '@/contexts/DeviceTrustContext';
+import { HomeModeGate } from '@/components/layout/HomeModeGate';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import { Toaster } from 'sonner';
 import { ServiceWorkerUpdateBar } from '@/components/pwa/ServiceWorkerUpdateBar';
@@ -81,15 +83,20 @@ export default async function RootLayout({
               <MasterDataProvider>
                 {/* 掲示板の未読状態を一元管理し、ヘッダーバッジと既読ゲートで共有する */}
                 <BulletinUnreadProvider>
-                  <ImpersonationBanner />
-                  {children}
-                  {/* 講師に未読の連絡があれば全画面で表示し既読を促す（未読0で自動的に閉じる） */}
-                  <UnreadBulletinGate />
-                  {/* アプリ全体のトースト通知（ボタン操作のフィードバック用） */}
-                  <Toaster richColors position="top-center" />
-                  {/* 新しいバージョンをデプロイしたら通知する（古いJSを掴んだままになるのを防ぐ） */}
-                  <ServiceWorkerUpdateBar />
-                  <SpeedInsights />
+                  {/* 教室端末マークの判定を一元管理し、家モードのゲートとナビの出し分けで共有する */}
+                  <DeviceTrustProvider>
+                    <ImpersonationBanner />
+                    {children}
+                    {/* 講師に未読の連絡があれば全画面で表示し既読を促す（未読0で自動的に閉じる） */}
+                    <UnreadBulletinGate />
+                    {/* 家モードの講師が教室限定ページを開いたら全画面でブロックする */}
+                    <HomeModeGate />
+                    {/* アプリ全体のトースト通知（ボタン操作のフィードバック用） */}
+                    <Toaster richColors position="top-center" />
+                    {/* 新しいバージョンをデプロイしたら通知する（古いJSを掴んだままになるのを防ぐ） */}
+                    <ServiceWorkerUpdateBar />
+                    <SpeedInsights />
+                  </DeviceTrustProvider>
                 </BulletinUnreadProvider>
               </MasterDataProvider>
             </AuthProvider>
