@@ -1,12 +1,15 @@
 'use client';
 
 /**
- * 教室長ダッシュボード モック（検討用）
+ * 教室長ダッシュボード 本体（/dashboard 試用・/home-mock 検討用の共通コンポーネント）
  * ------------------------------------------------------------------
- * docs/classroom-manager-dashboard-draft.md の構成を、すべてダミーデータで可視化したもの。
- * レイアウト・指標の見せ方を目で確認するための叩き台であり、本番ロジックは未接続。
+ * docs/classroom-manager-dashboard-draft.md の構成。
  * 「業務系（日々さばく）」を上段、「経営系（傾向を見る）」を下段に置く2層構成。
- * 検討OKなら本番ルート /home へ昇格し、ダミーを実データ取得に差し替える。
+ * 要対応アラート・本日の授業・業務進捗・在籍数・未処理申込は実データ接続済み。
+ * 経営指標ブロック（増減内訳・学年構成・男女比など）はダミーのまま
+ * （school_monthly_metrics の投入が永山のみのため。データが揃い次第差し替え）。
+ * ルート側の認可: /home-mock=admin（検討用のまま）／/dashboard=教室長以上（V2試用）。
+ * ※ /home への昇格案は廃止（/home は PWA ホームが使用中）。試用ルートは /dashboard。
  */
 
 import { useState, useEffect } from 'react';
@@ -1901,15 +1904,33 @@ function OverviewView() {
   );
 }
 
-/* 分岐: すべての教室 → 俯瞰ビュー、個別校舎 → 詳細ビュー */
-export default function HomeMockPage() {
-  const { selectedSchoolId, profile, isLoading } = useAuth();
+/**
+ * ダッシュボード本体（認可なし・分岐のみ）。
+ * 分岐: すべての教室 → 俯瞰ビュー、個別校舎 → 詳細ビュー。
+ *
+ * 認可・ロード分岐はルート側（/dashboard・/home-mock の page.tsx）が持つ。
+ * ロールの線引きがルートごとに違う（home-mock=admin / dashboard=教室長以上）ため、
+ * 本体に認可を持たせるとどちらかの境界とズレる。
+ */
+export function ClassroomDashboardBody() {
+  const { selectedSchoolId } = useAuth();
+  return selectedSchoolId === 'all' ? <OverviewView /> : <DetailView />;
+}
 
-  // このページはリンク側（AppHeader）が元から admin 限定で出しているのに、
-  // ページ自体には認可が無く、URL直打ちなら講師でも開けてしまっていた。
-  // ここは「意図（admin限定の試作）に実装を合わせる」だけの修正であり、
-  // リンクは元から admin にしか出ていないため誰の業務動線も変えない。
-  // 判定は必ずリンク側と同じ isSystemAdmin にする（ズレると入口と中身が食い違う）。
+/**
+ * ルート用の認可ラッパー。ロード中は Loading、ロール不一致は AccessDenied。
+ * allowed の判定関数をルート側から渡す（判定はリンク側の表示条件と必ず同じ関数にする
+ * ＝ズレると「メニューに出ないのに URL 直打ちで開ける」が再発する）。
+ */
+export function GuardedClassroomDashboard({
+  allowed,
+  deniedMessage,
+}: {
+  allowed: (role: Parameters<typeof isSystemAdmin>[0]) => boolean;
+  deniedMessage: string;
+}) {
+  const { profile, isLoading } = useAuth();
+
   if (isLoading) {
     return (
       <AdminLayout>
@@ -1917,13 +1938,12 @@ export default function HomeMockPage() {
       </AdminLayout>
     );
   }
-  if (!isSystemAdmin(profile?.role)) {
+  if (!allowed(profile?.role)) {
     return (
       <AdminLayout>
-        <AccessDenied message="このページはシステム管理者のみアクセス可能です" />
+        <AccessDenied message={deniedMessage} />
       </AdminLayout>
     );
   }
-
-  return selectedSchoolId === 'all' ? <OverviewView /> : <DetailView />;
+  return <ClassroomDashboardBody />;
 }
