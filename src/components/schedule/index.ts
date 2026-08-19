@@ -3,7 +3,6 @@ export { TimeSlotTable } from './TimeSlotTable';
 export { ClosedDayForm } from './ClosedDayForm';
 export { ClosedDayList } from './ClosedDayList';
 export { RegularPatternForm } from './RegularPatternForm';
-export { RegularPatternTable } from './RegularPatternTable';
 export { ScheduleGenerateButton } from './ScheduleGenerateButton';
 export { ScheduleCell } from './ScheduleCell';
 export { ScheduleCellMenu } from './ScheduleCellMenu';
