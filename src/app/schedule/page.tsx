@@ -3016,11 +3016,13 @@ export default function SchedulePage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
+                  {/* 通塾日程の登録は生徒詳細に一本化した（横断一覧ページは廃止）ため、
+                      空状態の導線は生徒管理へ送る。 */}
                   <p className="text-[var(--paragraph)] mb-4">
-                    スケジュールを生成するには、通塾日程を登録してください。
+                    スケジュールを生成するには、生徒詳細から通塾日程を登録してください。
                   </p>
-                  <Link href="/schedule/regular-patterns">
-                    <Button>通塾日程へ</Button>
+                  <Link href="/students">
+                    <Button>生徒管理へ</Button>
                   </Link>
                 </CardContent>
               </Card>

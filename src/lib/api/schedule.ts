@@ -1051,12 +1051,19 @@ export async function generateWeeklySchedule(
 }
 
 /** 通塾日程から指定週に生成されるエントリのキー一覧を取得（同期チェック用）。generateWeeklySchedule と同一ロジック。 */
-export async function getExpectedEntryKeysFromPatterns(
+/**
+ * 期待エントリのキー → その内訳（誰の・いつ）。
+ *
+ * キーは `日付-コマID-生徒ID` の連結で、日付にもUUIDにもハイフンが含まれるため
+ * 後から分解して生徒IDを取り出すことができない。ズレ検知が「誰の通塾日程か」を
+ * 出せるように、キーを作る時点で内訳を持っておく。
+ */
+export async function getExpectedEntryDetailsFromPatterns(
   schoolId: string,
   weekStartDate: string
-): Promise<Set<string>> {
+): Promise<Map<string, { studentId: string; date: string }>> {
   const weekStart = new Date(weekStartDate);
-  const keys = new Set<string>();
+  const details = new Map<string, { studentId: string; date: string }>();
   const patterns = await getRegularPatterns(schoolId);
 
   const studentIds = Array.from(new Set(patterns.map((p) => p.student_id)));
@@ -1083,10 +1090,25 @@ export async function getExpectedEntryKeysFromPatterns(
       if (p.effective_until && dateStr > p.effective_until) continue;
       const wd = withdrawalMap.get(p.student_id);
       if (wd && dateStr >= wd) continue;
-      keys.add(`${dateStr}-${p.time_slot_id}-${p.student_id}`);
+      details.set(`${dateStr}-${p.time_slot_id}-${p.student_id}`, {
+        studentId: p.student_id,
+        date: dateStr,
+      });
     }
   }
-  return keys;
+  return details;
+}
+
+/**
+ * 期待エントリのキー集合。内訳が要らない呼び出し元向けの薄いラッパー。
+ * （実体は getExpectedEntryDetailsFromPatterns 側に一本化してある）
+ */
+export async function getExpectedEntryKeysFromPatterns(
+  schoolId: string,
+  weekStartDate: string
+): Promise<Set<string>> {
+  const details = await getExpectedEntryDetailsFromPatterns(schoolId, weekStartDate);
+  return new Set(details.keys());
 }
 
 /** 今日を含む週の月曜日を YYYY-MM-DD で返す（通塾日程変更時の自動反映用） */
@@ -2512,6 +2534,15 @@ export async function getHeldTransfers(schoolIds: string[]): Promise<ScheduleEnt
 
 // ========================================
 
+/** ズレの当事者。バナーで「誰の通塾日程か」を出すために持つ。 */
+export interface ScheduleDriftStudent {
+  studentId: string;
+  /** 姓名。取得できなければ null（生徒が消えている等） */
+  name: string | null;
+  /** 'YYYY-MM-DD' */
+  date: string;
+}
+
 export interface ScheduleDriftWeek {
   /** 週の月曜日 'YYYY-MM-DD' */
   weekStart: string;
@@ -2520,6 +2551,18 @@ export interface ScheduleDriftWeek {
   /** 座席表に存在するが、通塾日程からは期待されていないキー数（extra）。
    *  振替・手動追加を除いた regular_pattern_id 付きのもののみ */
   extraCount: number;
+  /**
+   * 未反映（missing）の生徒。
+   *
+   * ★ なぜ件数だけでなく生徒名を持つのか:
+   *   座席表の「未配置」は *エントリが生成された上で担当講師が未定* のものを生徒名つきで
+   *   出す。一方こちらは **エントリ自体が生成されていない**ケースで、座席表のどこにも
+   *   現れない。件数だけ出しても「誰の通塾日程が反映されていないのか」を突き止める
+   *   手段が無く、生徒を1人ずつ開いて探す羽目になるため、ここで名前まで返す。
+   */
+  missingStudents: ScheduleDriftStudent[];
+  /** 古いエントリ（extra）の生徒。同上の理由。 */
+  extraStudents: ScheduleDriftStudent[];
 }
 
 /**
@@ -2554,8 +2597,9 @@ export async function detectScheduleDrift(
     const ed = String(weekEnd.getDate()).padStart(2, '0');
     const weekEndStr = `${ey}-${em}-${ed}`;
 
-    // 期待されるエントリキー
-    const expected = await getExpectedEntryKeysFromPatterns(schoolId, weekStart);
+    // 期待されるエントリ（キー → 誰の・いつ）
+    const expectedDetails = await getExpectedEntryDetailsFromPatterns(schoolId, weekStart);
+    const expected = new Set(expectedDetails.keys());
 
     // 週の全エントリを取得し、2つの観点で使い分ける:
     //  - covered: kind・status を問わず「同一 (date-slot-student) に行があるか」。
@@ -2574,7 +2618,8 @@ export async function detectScheduleDrift(
       .lte('entry_date', weekEndStr);
 
     const covered = new Set<string>();
-    const actualSet = new Set<string>();
+    // extra 側は entries 由来なので、キーから内訳を引けるようここで持っておく。
+    const actualDetails = new Map<string, { studentId: string; date: string }>();
     for (const e of (entries || []) as {
       entry_date: string;
       time_slot_id: string;
@@ -2585,25 +2630,73 @@ export async function detectScheduleDrift(
       const key = `${e.entry_date}-${e.time_slot_id}-${e.student_id}`;
       covered.add(key);
       if (e.regular_pattern_id && (e.status === 'scheduled' || e.status === 'completed')) {
-        actualSet.add(key);
+        if (e.student_id) {
+          actualDetails.set(key, { studentId: e.student_id, date: e.entry_date });
+        }
       }
     }
 
-    let missing = 0;
-    Array.from(expected).forEach((k) => {
-      if (!covered.has(k)) missing++;
+    const missingList: { studentId: string; date: string }[] = [];
+    expectedDetails.forEach((detail, k) => {
+      if (!covered.has(k)) missingList.push(detail);
     });
-    let extra = 0;
-    Array.from(actualSet).forEach((k) => {
-      if (!expected.has(k)) extra++;
+    const extraList: { studentId: string; date: string }[] = [];
+    actualDetails.forEach((detail, k) => {
+      if (!expected.has(k)) extraList.push(detail);
     });
 
-    if (missing > 0 || extra > 0) {
-      results.push({ weekStart, missingCount: missing, extraCount: extra });
+    if (missingList.length > 0 || extraList.length > 0) {
+      results.push({
+        weekStart,
+        missingCount: missingList.length,
+        extraCount: extraList.length,
+        // 名前は週をまたいで使い回せるので、ループの外でまとめて解決する。
+        missingStudents: missingList.map((d) => ({ ...d, name: null })),
+        extraStudents: extraList.map((d) => ({ ...d, name: null })),
+      });
     }
   }
 
+  await fillDriftStudentNames(results);
   return results;
+}
+
+/**
+ * ズレ結果の生徒名をまとめて埋める（週ごとに問い合わせると N+1 になるため1回で引く）。
+ *
+ * 名前が引けなかった生徒は name=null のままにする。表示側は生徒IDにフォールバックせず
+ * 「（名前不明）」を出す：IDを画面に出しても現場の人には手がかりにならないため。
+ */
+async function fillDriftStudentNames(weeks: ScheduleDriftWeek[]): Promise<void> {
+  const ids = Array.from(
+    new Set(
+      weeks.flatMap((w) => [
+        ...w.missingStudents.map((s) => s.studentId),
+        ...w.extraStudents.map((s) => s.studentId),
+      ])
+    )
+  );
+  if (ids.length === 0) return;
+
+  const { data, error } = await db
+    .from('students')
+    .select('id, last_name, first_name')
+    .in('id', ids);
+  if (error) {
+    // 名前が引けなくても件数と日付は出せる。ズレ通知自体を落とさない。
+    console.warn('[schedule] ズレ検知の生徒名取得に失敗:', error.message);
+    return;
+  }
+
+  const nameMap = new Map<string, string>();
+  for (const s of (data || []) as { id: string; last_name: string; first_name: string }[]) {
+    nameMap.set(s.id, `${s.last_name} ${s.first_name}`.trim());
+  }
+  for (const w of weeks) {
+    for (const s of [...w.missingStudents, ...w.extraStudents]) {
+      s.name = nameMap.get(s.studentId) ?? null;
+    }
+  }
 }
 
 /**
