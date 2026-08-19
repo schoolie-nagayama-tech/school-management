@@ -1100,10 +1100,18 @@ export function TableView({
         </div>
       )}
 
-      {/* 進捗テーブル */}
-      <div className="bg-white rounded-xl border border-[#e5e7eb] overflow-hidden shadow-sm overflow-x-auto">
+      {/* 進捗テーブル
+       * ヘッダー行を画面上部に貼り付けて、下までスクロールしても列名が読めるようにする。
+       * sticky は「最も近いスクロール枠」に対して効くため、カードに overflow-auto/hidden を
+       * 付けるとカード内が枠になり、ページを下げてもヘッダーが動かない。そこで縦横とも
+       * スクロールはページ側に任せ、カードは表の幅ぶんだけ広がる（min-w-max）ようにした。
+       * overflow-clip はスクロール枠を作らずに角丸のはみ出しだけ切るための指定。 */}
+      <div className="bg-white rounded-xl border border-[#e5e7eb] shadow-sm overflow-clip min-w-max">
         <table className="w-full text-sm min-w-[900px]">
-          <thead className="bg-[#f9fafb] border-b border-[#e5e7eb] text-[#6b7280] text-xs">
+          {/* 下罫線は thead ではなく th の inset shadow で引く:
+           * border-collapse では sticky 中に thead の border が描画されないブラウザがあるため。
+           * 背景も th 側に持たせて、下をくぐる行が透けないようにする。 */}
+          <thead className="sticky top-0 z-20 bg-[#f9fafb] text-[#6b7280] text-xs [&>tr>th]:bg-[#f9fafb] [&>tr>th]:shadow-[inset_0_-1px_0_#e5e7eb]">
             <tr>
               <th className="px-3 py-2 text-left w-10">#</th>
               <th className="px-3 py-2 text-left min-w-[180px]">単元名</th>
