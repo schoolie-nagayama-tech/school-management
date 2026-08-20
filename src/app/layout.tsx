@@ -12,7 +12,6 @@ import { BulletinUnreadProvider } from '@/contexts/BulletinUnreadContext';
 import { UnreadBulletinGate } from '@/components/bulletin/UnreadBulletinGate';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import { Toaster } from 'sonner';
-import { ServiceWorkerUpdateBar } from '@/components/pwa/ServiceWorkerUpdateBar';
 
 const notoSansJP = Noto_Sans_JP({
   subsets: ['latin'],
@@ -46,12 +45,16 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   title: 'NEST',
   description: '学習塾向け生徒管理システム',
-  manifest: '/manifest.json',
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: 'default',
-    title: 'NEST',
-  },
+  // ★ PWA一時閉鎖中（2026-08-20）。manifest を外してインストールできないようにする。
+  //   再開時は '/manifest.json' を戻す（ファイル自体は public に残してある）。
+  // manifest: '/manifest.json',
+  // ★ PWA一時閉鎖中（2026-08-20）: iOS のホーム画面追加もアプリとして起動させない。
+  //   再開時に元へ戻す。
+  // appleWebApp: {
+  //   capable: true,
+  //   statusBarStyle: 'default',
+  //   title: 'NEST',
+  // },
 };
 
 export default async function RootLayout({
@@ -87,8 +90,8 @@ export default async function RootLayout({
                   <UnreadBulletinGate />
                   {/* アプリ全体のトースト通知（ボタン操作のフィードバック用） */}
                   <Toaster richColors position="top-center" />
-                  {/* 新しいバージョンをデプロイしたら通知する（古いJSを掴んだままになるのを防ぐ） */}
-                  <ServiceWorkerUpdateBar />
+                  {/* ★ PWA一時閉鎖中（2026-08-20）。更新検知バーはSW前提なので外している。
+                      再開時に <ServiceWorkerUpdateBar /> を戻す。 */}
                   <SpeedInsights />
                 </BulletinUnreadProvider>
               </MasterDataProvider>

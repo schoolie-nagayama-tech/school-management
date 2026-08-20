@@ -25,6 +25,7 @@ import {
   Wand2,
   BarChart3,
   LogIn,
+  LayoutDashboard,
 } from 'lucide-react';
 
 interface SettingsItem {
@@ -92,6 +93,15 @@ const settingsGroups: SettingsGroup[] = [
         icon: <Wand2 className="w-5 h-5" />,
         label: 'ダッシュボード表示設定',
         description: '生徒管理ページ上部の講習進捗サマリーなど、ウィジェットの表示ON/OFF',
+        requiresManager: true,
+      },
+      {
+        // 試用中のためヘッダーには出さず、ここが唯一の入口（navConfig のコメント参照）。
+        href: '/dashboard',
+        icon: <LayoutDashboard className="w-5 h-5" />,
+        label: '教室長ダッシュボード（試用中）',
+        description:
+          '要対応・本日の授業・業務の進捗を1画面に集約。通塾日程の運用開始後に本領を発揮します',
         requiresManager: true,
       },
     ],
