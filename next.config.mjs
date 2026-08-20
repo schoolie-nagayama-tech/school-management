@@ -1,12 +1,17 @@
 import bundleAnalyzer from '@next/bundle-analyzer';
-import withSerwistInit from '@serwist/next';
 import { withSentryConfig } from '@sentry/nextjs';
 
-const withSerwist = withSerwistInit({
-  swSrc: 'src/app/sw.ts',
-  swDest: 'public/sw.js',
-  disable: process.env.NODE_ENV === 'development',
-});
+// ★ PWA一時閉鎖中（2026-08-20・ユーザー判断）。
+//   serwist によるサービスワーカー生成を止めている。/public/sw.js は生成物ではなく
+//   手書きの自己解除SWに差し替え済み（既にインストール済み端末の登録を回収するため。
+//   配信をやめるだけだと古いSWが残り、古いJSを配り続ける）。
+//   再開するときは以下を戻す:
+//     1. import withSerwistInit from '@serwist/next';
+//     2. const withSerwist = withSerwistInit({ swSrc: 'src/app/sw.ts',
+//          swDest: 'public/sw.js', disable: process.env.NODE_ENV === 'development' });
+//     3. 最終行の export を withSerwist(nextConfig) で包む
+//     4. public/sw.js を削除し、.gitignore の /public/sw.js を有効化
+//     5. layout.tsx の manifest と ServiceWorkerUpdateBar を戻す
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -95,7 +100,7 @@ const withBundleAnalyzer = bundleAnalyzer({
 // 設定するまではソースマップアップロードを無効化しておく（未設定でビルドを壊さないため）。
 // 3つを Vercel の環境変数に設定したら sourcemaps.disable を外せば元コードのスタック
 // トレースが見えるようになる。
-export default withSentryConfig(withBundleAnalyzer(withSerwist(nextConfig)), {
+export default withSentryConfig(withBundleAnalyzer(nextConfig), {
   silent: true,
   disableLogger: true,
   sourcemaps: {

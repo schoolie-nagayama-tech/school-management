@@ -40,7 +40,10 @@ yarn-error.log*
 next-env.d.ts
 
 # PWA (generated at build time)
-/public/sw.js
+# ★ PWA一時閉鎖中(2026-08-20): serwist を外したため /public/sw.js は生成物ではなく
+#   手書きの自己解除SW。既存端末の登録を回収する要なのでコミット対象にする。
+#   PWA再開時は ignore を戻すこと。
+#/public/sw.js
 /public/sw.js.map
 /public/workbox-*.js
 /public/workbox-*.js.map

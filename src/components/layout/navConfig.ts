@@ -50,17 +50,10 @@ export function buildNavEntries(ctx: NavContext): NavEntry[] {
   const teacher = isTeacher(profile?.role);
   const entries: NavEntry[] = [];
 
-  // ダッシュボード（教室長以上・試用中）。ページ側 /dashboard も同じ
-  // isManagerOrAbove でガードしている（判定関数を揃える）。
-  if (showAll || isManagerOrAbove(profile?.role)) {
-    entries.push({
-      kind: 'link',
-      key: 'dashboard',
-      label: 'ダッシュボード',
-      href: '/dashboard',
-      exact: true,
-    });
-  }
+  // ★ ダッシュボード(/dashboard) はここに出さない（2026-08-20 判断）。
+  //   まだ試用中で、中身の多くが通塾日程（座席表）の運用開始待ちのため、
+  //   常時目に入るヘッダーではなく設定ページのカードから入る。
+  //   公開する段になったらここに link を足す（ページ側のガードは isManagerOrAbove）。
 
   // 生徒管理（全ロール）
   if (showAll || p?.canAccessStudents) {

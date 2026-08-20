@@ -33,6 +33,13 @@ export function PushNotificationButton({ schoolId, compact = false }: Props) {
       setState('unsupported');
       return;
     }
+    // ★ PWA一時閉鎖中（2026-08-20）: サービスワーカーを登録していないため
+    //   navigator.serviceWorker.ready が永久に解決せず「読み込み中」で固まる。
+    //   登録済みのSWが無ければ「非対応」として静かに畳む。
+    //   PWA再開時はこのブロックごと削除する（本番の購読は0件なので実害なし）。
+    void navigator.serviceWorker.getRegistration().then((reg) => {
+      if (!reg) setState('unsupported');
+    });
     if (Notification.permission === 'denied') {
       setState('denied');
       return;
