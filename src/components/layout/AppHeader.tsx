@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useBulletinUnread } from '@/contexts/BulletinUnreadContext';
-import { useDeviceTrust } from '@/contexts/DeviceTrustContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMasterData } from '@/contexts/MasterDataContext';
 import { USER_ROLE_LABELS } from '@/types/database';
@@ -102,8 +101,6 @@ export function AppHeader({
   const { schools: masterSchools } = useMasterData();
   // 未読件数は BulletinUnreadContext に一元化済み（自前のポーリングは廃止）
   const { unreadCount: bulletinUnreadCount } = useBulletinUnread();
-  // 家モード判定は DeviceTrustContext に一元化（ページゲートと同じ材料を見る）
-  const { homeMode } = useDeviceTrust();
   // 出勤簿は通知が無く画面を開くまで気づけないため、ナビの「出勤簿管理」に件数バッジを出す
   const pendingAttendanceCount = usePendingAttendanceCount();
 
@@ -194,8 +191,8 @@ export function AppHeader({
   // ナビ項目（PC/スマホ共通の単一定義）。権限ゲートは navConfig 側で評価済み。
   // 家モード（講師＋教室端末マーク無し）では教室限定の項目を落とす（正典 §2）。
   const navEntries = useMemo(
-    () => buildNavEntries({ permissions, profile, showAll: showAllLinks, schools, homeMode }),
-    [permissions, profile, showAllLinks, schools, homeMode]
+    () => buildNavEntries({ permissions, profile, showAll: showAllLinks, schools }),
+    [permissions, profile, showAllLinks, schools]
   );
 
   // 講師のみ: バッジ獲得数に応じてヘッダーにティアメダルを表示
