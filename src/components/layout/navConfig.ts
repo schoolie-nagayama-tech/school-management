@@ -50,6 +50,18 @@ export function buildNavEntries(ctx: NavContext): NavEntry[] {
   const teacher = isTeacher(profile?.role);
   const entries: NavEntry[] = [];
 
+  // ダッシュボード（教室長以上・試用中）。ページ側 /dashboard も同じ
+  // isManagerOrAbove でガードしている（判定関数を揃える）。
+  if (showAll || isManagerOrAbove(profile?.role)) {
+    entries.push({
+      kind: 'link',
+      key: 'dashboard',
+      label: 'ダッシュボード',
+      href: '/dashboard',
+      exact: true,
+    });
+  }
+
   // 生徒管理（全ロール）
   if (showAll || p?.canAccessStudents) {
     entries.push({

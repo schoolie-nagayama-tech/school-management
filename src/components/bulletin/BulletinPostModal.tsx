@@ -34,12 +34,14 @@ const GRADE_OPTIONS = Object.entries(GRADE_LABELS).map(([n, label]) => ({
 }));
 
 /**
- * 配信先（audience）UIの表示フラグ（2026-07-16）。
- * 保護者ポータルv2はまだadmin限定デモで、実在の保護者は誰もポータルに居ないため、
- * 配信先を選ばせる意味がまだ無い。UIを従来（社内のみ）の見た目に戻すために false にする。
- * 将来ポータルを保護者に開放するときは true に戻す（機能自体は消さない）。
+ * 配信先（audience）UIの表示フラグ（2026-07-16 定数導入 / 2026-08-18 環境変数化）。
+ * 保護者ポータルv2はまだ一般公開前で、実在の保護者は誰もポータルに居ないため、
+ * 配信先を選ばせる意味がまだ無い。既定は従来（社内のみ）の見た目＝非表示。
+ * V2試用環境で配信先UIを試すときは Vercel env（またはローカル .env.local）に
+ * NEXT_PUBLIC_BULLETIN_AUDIENCE_UI='true' を設定する。クライアントコンポーネント
+ * なので NEXT_PUBLIC_ が必須（ビルド時に埋め込まれる。秘密情報ではない）。
  */
-const AUDIENCE_UI_ENABLED = false;
+const AUDIENCE_UI_ENABLED = process.env.NEXT_PUBLIC_BULLETIN_AUDIENCE_UI === 'true';
 
 const RichTextEditor = dynamic(
   () => import('@/components/ui/RichTextEditor').then((m) => m.RichTextEditor),

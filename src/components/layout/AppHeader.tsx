@@ -26,6 +26,7 @@ import { getSurname } from '@/lib/utils/teacherName';
 import { PushNotificationButton } from '@/components/ui/PushNotificationButton';
 import { buildNavEntries, isLinkActive, isGroupActive } from './navConfig';
 import { isSystemAdmin } from '@/lib/utils/roles';
+import { canAccessPortalDemo } from '@/lib/mypage/demoAccess';
 import { MobileBottomNav } from './MobileBottomNav';
 import { useStandalone } from '@/lib/utils/useStandalone';
 import { useToast } from '@/hooks/useToast';
@@ -188,6 +189,7 @@ export function AppHeader({
   const showAllLinks = !permissions || authLoading;
 
   // ナビ項目（PC/スマホ共通の単一定義）。権限ゲートは navConfig 側で評価済み。
+  // 家モード（講師＋教室端末マーク無し）では教室限定の項目を落とす（正典 §2）。
   const navEntries = useMemo(
     () => buildNavEntries({ permissions, profile, showAll: showAllLinks, schools }),
     [permissions, profile, showAllLinks, schools]
@@ -453,35 +455,37 @@ export function AppHeader({
                       <div className="border-t border-border my-1" />
                       {/* 試作・クローズドな機能の入口。
                           通常ナビ（navConfig）には載せず、ここが唯一の入口。
-                          ★ 一旦すべて admin 限定（ユーザー判断 2026-07-16）。ポータルV2デモは
-                            当初 manager 以上に開いていたが admin のみに絞った。ここを広げる
-                            ときは /api/portal-demo/start の requireSystemAdmin と、デモSQL の
-                            user_schools 付与範囲（2-b）も3点セットで揃えること
-                            （ここは導線であって認可の境界ではない＝APIを緩めないと意味がない）。 */}
+                          検討用モック /home-mock は admin 限定のまま据え置き
+                          （試用向けの本ルートは /dashboard に分離済み・navConfig に掲載）。 */}
                       {isSystemAdmin(profile?.role) && (
-                        <>
-                          <Link
-                            href="/home-mock"
-                            className="flex items-center gap-2 px-3 py-2 text-xs text-text-heading hover:bg-gray-50 transition-colors"
-                            onClick={() => setShowSettingsDropdown(false)}
-                          >
-                            <LayoutDashboard className="w-3.5 h-3.5" aria-hidden />
-                            教室長ダッシュボード（試作）
-                          </Link>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setShowSettingsDropdown(false);
-                              handlePortalDemo();
-                            }}
-                            disabled={startingPortalDemo}
-                            className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-text-heading transition-colors hover:bg-gray-50 disabled:opacity-50"
-                          >
-                            <Smartphone className="w-3.5 h-3.5 shrink-0" aria-hidden />
-                            保護者ポータルV2（試作・ダミーデータ）
-                          </button>
-                          <div className="border-t border-border my-1" />
-                        </>
+                        <Link
+                          href="/home-mock"
+                          className="flex items-center gap-2 px-3 py-2 text-xs text-text-heading hover:bg-gray-50 transition-colors"
+                          onClick={() => setShowSettingsDropdown(false)}
+                        >
+                          <LayoutDashboard className="w-3.5 h-3.5" aria-hidden />
+                          教室長ダッシュボード（試作）
+                        </Link>
+                      )}
+                      {/* ポータルV2デモの導線。公開範囲は canAccessPortalDemo が単一の判定点
+                          （API 側 /api/portal-demo/start も同じヘルパーで認可する。
+                           開放時はヘルパー1箇所＋デモSQLの user_schools 付与を揃える）。 */}
+                      {canAccessPortalDemo(profile?.role) && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowSettingsDropdown(false);
+                            handlePortalDemo();
+                          }}
+                          disabled={startingPortalDemo}
+                          className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-text-heading transition-colors hover:bg-gray-50 disabled:opacity-50"
+                        >
+                          <Smartphone className="w-3.5 h-3.5 shrink-0" aria-hidden />
+                          保護者ポータルV2（試作・ダミーデータ）
+                        </button>
+                      )}
+                      {(isSystemAdmin(profile?.role) || canAccessPortalDemo(profile?.role)) && (
+                        <div className="border-t border-border my-1" />
                       )}
                       {/* テーマ切替 */}
                       <div className="px-3 py-2 flex items-center justify-between">

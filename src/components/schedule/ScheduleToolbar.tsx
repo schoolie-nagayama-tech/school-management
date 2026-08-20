@@ -398,7 +398,8 @@ export function ScheduleToolbar({
                     </button>
                     <div className="my-1 border-t border-[var(--stroke)]" />
                     {[
-                      { href: '/schedule/regular-patterns', label: '通塾日程の登録' },
+                      // 通塾日程の登録は生徒詳細に一本化した（横断一覧ページは廃止）。
+                      // 未反映のズレは ScheduleDriftBanner が生徒名つきで知らせる。
                       { href: '/schedule/enrollments', label: '申込管理（講習・テスト対策）' },
                       { href: '/schedule/regular-patterns/match', label: '一括マッチング' },
                       // 上部の独立ボタンから移設（上部圧縮）。授業報告書の見本（ダミー）を開く

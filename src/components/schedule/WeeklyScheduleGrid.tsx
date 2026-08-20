@@ -235,6 +235,39 @@ export function WeeklyScheduleGrid(props: WeeklyScheduleGridProps) {
     [teachers]
   );
 
+  /**
+   * 講師ID → 講師一覧での位置。セル内の講師カードの並び順に使う。
+   *
+   * ★ なぜ必要か（2026-08-20）:
+   *   以前はセル内の並びが「エントリ配列に現れた順 → 手動追加枠 → 出勤可能枠」だった。
+   *   前者は API の返却順そのままで安定しておらず、授業を移動・振替して再取得が走ると
+   *   講師カードの左右が入れ替わり、「今どこに入れたか」を見失う原因になっていた。
+   *   さらに空き枠だった講師に授業を入れると、その講師が「出勤可能枠」から
+   *   「エントリあり」のグループへ移動するため、操作した直後に必ず列が動いていた。
+   *   講師一覧（/api/admin/users?role=teacher・created_at desc, id asc で決定的）の
+   *   順序に固定することで、授業の有無にかかわらずカードの位置が動かなくなる。
+   */
+  const teacherOrder = useMemo(() => {
+    const order = new Map<string, number>();
+    teachers.forEach((t, i) => order.set(t.id, i));
+    return order;
+  }, [teachers]);
+
+  /** 講師カードの安定した並び順。一覧に無い講師（講師未登録）は末尾へ寄せる。 */
+  const compareTeacherGroups = useCallback(
+    (a: TeacherGroup, b: TeacherGroup) => {
+      const ia = teacherOrder.get(a.teacher.id) ?? Number.MAX_SAFE_INTEGER;
+      const ib = teacherOrder.get(b.teacher.id) ?? Number.MAX_SAFE_INTEGER;
+      if (ia !== ib) return ia - ib;
+      // 一覧に無い者どうしは表示名→IDで決める（毎回同じ並びにするための最終手段）。
+      const na = a.teacher.display_name ?? '';
+      const nb = b.teacher.display_name ?? '';
+      if (na !== nb) return na.localeCompare(nb, 'ja');
+      return a.teacher.id.localeCompare(b.teacher.id);
+    },
+    [teacherOrder]
+  );
+
   const activeEntry = useMemo(() => {
     if (
       !activeId ||
@@ -360,9 +393,19 @@ export function WeeklyScheduleGrid(props: WeeklyScheduleGridProps) {
         }
       }
 
+      // ★ 最後に必ず講師一覧の順へ揃える。(A)(B)(C) の積み上げ順のままだと
+      //   「授業を入れた瞬間に (C) から (A) へ移って列が動く」ため。
+      merged.sort(compareTeacherGroups);
       return merged;
     },
-    [entries, teachersForSchool, emptyTeacherSlots, teachersMap, shiftAvailableByDow]
+    [
+      entries,
+      teachersForSchool,
+      emptyTeacherSlots,
+      teachersMap,
+      shiftAvailableByDow,
+      compareTeacherGroups,
+    ]
   );
 
   return (
@@ -378,7 +421,11 @@ export function WeeklyScheduleGrid(props: WeeklyScheduleGridProps) {
       swapMode={swapMode}
       activeId={activeId}
       activeEntry={activeEntry}
-      groupEntriesByTeacher={(e, d, s) => groupEntriesByTeacher(e, d, s, teachersMap)}
+      // こちらの経路（印刷・別ビュー）も同じ並び順に揃える。片方だけ固定すると
+      // 画面と印刷で講師の順番が食い違う。
+      groupEntriesByTeacher={(e, d, s) =>
+        groupEntriesByTeacher(e, d, s, teachersMap).sort(compareTeacherGroups)
+      }
       getTeacherGroupsForCell={getTeacherGroupsForCell}
       getUnassignedEntriesForCell={getUnassignedEntriesForCell}
       onDragStart={(e) => setActiveId(String(e.active.id))}
