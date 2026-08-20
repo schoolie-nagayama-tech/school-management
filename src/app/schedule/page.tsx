@@ -1468,12 +1468,21 @@ export default function SchedulePage() {
   );
 
   // ---- 指導形態タブ（Phase D） ----
-  // タブ = 個別 ＋ is_active なユーザー定義形態（group は講習専用レーンなので出さない）。
+  // タブ = 個別（固定）＋ is_active な残りの形態すべて。sort_order 順なので
+  // 形態設定画面（/settings/time-slots）のタブ並びと一致する。
+  //
+  // ★ 集団(group)を出す理由（2026-08-20 方針変更）:
+  //   以前は is_system を除外して「group は講習専用レーンなので出さない」としていたが、
+  //   形態設定では集団のコマ時間を登録できるのに座席表に現れず、設定と盤面が食い違っていた。
+  //   集団も HAL 等と同じ「クラス枠」として扱う。
+  //   なお講習モードの集団レーン(GroupLaneGrid)とは表示対象が排他なので重複しない:
+  //     - このタブ(FormationBoard) … kind='regular'  ＝ 毎週同じコマの通常授業
+  //     - 講習モードの集団レーン    … kind='koushu'   ＝ 講座ごとに時間が異なる講習
   const formationTabs = useMemo(
     () => [
       { key: INDIVIDUAL_FORMATION, label: '個別' },
       ...formations
-        .filter((f) => !f.is_system && f.is_active)
+        .filter((f) => f.is_active && f.key !== INDIVIDUAL_FORMATION)
         .map((f) => ({ key: f.key, label: f.label })),
     ],
     [formations]
