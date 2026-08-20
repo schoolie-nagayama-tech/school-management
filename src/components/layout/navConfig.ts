@@ -1,5 +1,6 @@
 import type { Permission, UserProfile } from '@/types/database';
 import { isTeacher, isManagerOrAbove } from '@/lib/utils/roles';
+import { isClassroomOnlyPath } from '@/lib/classroomDevice';
 
 /**
  * ヘッダーナビゲーションの構造定義（単一の情報源）。
@@ -39,6 +40,12 @@ export interface NavContext {
   showAll: boolean;
   /** 講師の自分の出勤簿リンク生成に使う担当教室 */
   schools: { id: string; code: string | null }[];
+  /**
+   * 教室外モード（講師＋教室端末マーク無し）か。
+   * true のとき教室限定パスの項目を隠す（死にリンクを見せない。
+   * 正典 docs/classroom-device-plan.md §2）。判定は ClassroomDeviceContext。
+   */
+  outsideClassroom?: boolean;
 }
 
 /**
@@ -46,14 +53,33 @@ export interface NavContext {
  * 権限ゲートはここで一元的に評価し、可視な項目だけを返す。
  */
 export function buildNavEntries(ctx: NavContext): NavEntry[] {
-  const { permissions: p, profile, showAll, schools } = ctx;
+  const { permissions: p, profile, showAll, schools, outsideClassroom } = ctx;
   const teacher = isTeacher(profile?.role);
   const entries: NavEntry[] = [];
+
+  // 講師の日常導線（本日の授業 / 自分の予定）。
+  // 以前は URL 直打ちの「隠し公開」だったが、講師のログイン後の着地を /today に
+  // 変えたのに合わせて正式なナビ項目にした。教室外の端末でも使える。
+  if (teacher) {
+    entries.push({
+      kind: 'link',
+      key: 'today',
+      label: '本日の授業',
+      href: '/today',
+      exact: true,
+    });
+    entries.push({
+      kind: 'link',
+      key: 'my-schedule',
+      label: '自分の予定',
+      href: '/my-schedule',
+      exact: true,
+    });
+  }
 
   // ★ ダッシュボード(/dashboard) はここに出さない（2026-08-20 判断）。
   //   まだ試用中で、中身の多くが通塾日程（座席表）の運用開始待ちのため、
   //   常時目に入るヘッダーではなく設定ページのカードから入る。
-  //   公開する段になったらここに link を足す（ページ側のガードは isManagerOrAbove）。
 
   // 生徒管理（全ロール）
   if (showAll || p?.canAccessStudents) {
@@ -212,6 +238,22 @@ export function buildNavEntries(ctx: NavContext): NavEntry[] {
         { key: 'tasks', label: '業務進捗管理表', href: '/tasks' },
       ],
     });
+  }
+
+  // 教室外の端末では教室限定の項目を落とす。
+  // 個々の push に条件を足すのではなく最後に一括で除くのは、教室限定パスの定義
+  // （lib/classroomDevice.ts）とページゲートの判定を必ず同じ材料に揃えるため。
+  // outsideClassroom が true になるのは講師のときだけなので、上位ロールには影響しない。
+  if (outsideClassroom) {
+    return entries
+      .map((entry) =>
+        entry.kind === 'group'
+          ? { ...entry, items: entry.items.filter((item) => !isClassroomOnlyPath(item.href)) }
+          : entry
+      )
+      .filter((entry) =>
+        entry.kind === 'group' ? entry.items.length > 0 : !isClassroomOnlyPath(entry.href)
+      );
   }
 
   return entries;

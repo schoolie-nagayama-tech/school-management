@@ -26,6 +26,7 @@ import {
   BarChart3,
   LogIn,
   LayoutDashboard,
+  MonitorSmartphone,
 } from 'lucide-react';
 
 interface SettingsItem {
@@ -219,6 +220,14 @@ const settingsGroups: SettingsGroup[] = [
         icon: <Bell className="w-5 h-5" />,
         label: 'アラート設定',
         description: '成績低下・面談・申込・宿題未実施・遅刻などの発火条件',
+        requiresManager: true,
+      },
+      {
+        href: '/settings/trusted-devices',
+        icon: <MonitorSmartphone className="w-5 h-5" />,
+        label: '教室端末の登録',
+        description:
+          '教室の共有PCを「教室端末」として登録。未登録の端末では、講師は生徒情報を扱う画面を開けなくなります',
         requiresManager: true,
       },
       {
