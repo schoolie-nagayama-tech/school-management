@@ -1179,6 +1179,8 @@ export type Database = {
           confirmed_at: string | null;
           confirmed_by: string | null;
           report_id: string | null;
+          /** 次回やる予定の単元ID（機能D）。既定は空配列 */
+          next_plan_curriculum_item_ids: number[];
           created_at: string;
           updated_at: string;
         };
@@ -1195,6 +1197,7 @@ export type Database = {
           confirmed_at?: string | null;
           confirmed_by?: string | null;
           report_id?: string | null;
+          next_plan_curriculum_item_ids?: number[];
           created_at?: string;
           updated_at?: string;
         };
@@ -1211,6 +1214,7 @@ export type Database = {
           confirmed_at?: string | null;
           confirmed_by?: string | null;
           report_id?: string | null;
+          next_plan_curriculum_item_ids?: number[];
           created_at?: string;
           updated_at?: string;
         };

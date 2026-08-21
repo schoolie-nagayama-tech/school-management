@@ -16,8 +16,8 @@
  *   - 目標ヘッダー（試験目標／行動目標／期日カウントダウン）… 進行表と同期・表示のみ
  *   - 保護者に公開されるゾーン（緑）
  *       今日の目標 / 本日の指導範囲（★下段の進行表から自動反映）/ 学校の進度（自動反映）/
- *       本日の様子（遅刻・宿題未実施のトグルピル）/ 宿題・演習の達成度 / 確認テスト /
- *       講評 / 次回までの宿題（日割り）/ 科目別欄
+ *       本日の様子（遅刻・宿題未実施のトグルピル）/ 次回の予定（★進行表の続きを自動提案）/
+ *       宿題・演習の達成度 / 確認テスト / 講評 / 次回までの宿題（日割り）/ 科目別欄
  *   - 教室内のみのゾーン（グレー破線）: 引継ぎ
  *   - スティッキーバー（公開ゾーンが画面上端から消えたら出る・指導範囲の要約＋報告書へ戻る）
  *   - 下段: 進行表（教材セットの切替・追加・削除もここ）
@@ -39,6 +39,14 @@
  *      別経路を作らない。提出済み・承認済みは動かさない（裏で書き換えない）。
  *   E. 保護者プレビュー … 保護者が実際に見る ReportDetail をそのまま 375px 幅で描く。
  *   F. 提出前チェック … 提出ボタンは押せるまま。足りない項目を挙げてその欄へ連れて行く。
+ *
+ * 機能D「次回の予定」（正典: docs/lesson-report-next-plan.md）:
+ *   既定は「進行表通り」＝今日やった単元より後ろで、まだ3回とも埋まっていない先頭の1単元を
+ *   自動で入れる（実データの引継ぎに「次回：進行表通り」の手打ちが多数あり、それを置き換える）。
+ *   講師が「変更」で選び直したらその教材セットは自動追従をやめる（selections.nextPlanManual）。
+ *   保存されるのは最終的に表示されている単元IDで、「自動か手動か」はDBに持たない。
+ *   進行表側は progress_sessions.next_plan_curriculum_item_ids（ID）、保護者側は
+ *   class_reports.next_plan（名前のスナップショット）。
  *
  * 保存の二系統（どちらも既存の経路をそのまま使う。新しい保存先は作らない）:
  *   1. class_reports … upsertClassReport（提出→室長承認→差し戻しのワークフローは変更なし）
@@ -62,7 +70,12 @@ import {
   upsertClassReport,
   type PreviousLessonSummary,
 } from '@/lib/api/class-reports';
-import type { ClassReport, ClassReportFormData, SubjectSpecific } from '@/types/class-report';
+import type {
+  ClassReport,
+  ClassReportFormData,
+  NextPlanSnapshotItem,
+  SubjectSpecific,
+} from '@/types/class-report';
 import { supabase } from '@/lib/supabase';
 import { getStudentTextbooks, getStudentProgress } from '@/lib/api/progress';
 import { getCurriculumItems } from '@/lib/api/textbooks';
@@ -86,8 +99,10 @@ import {
   History,
   Lock,
   Plus,
+  RotateCcw,
   Save,
   Send,
+  SkipForward,
   Target,
   X,
 } from 'lucide-react';
@@ -96,6 +111,12 @@ import { LessonReportProgressGrid } from '@/components/lesson-reports/LessonRepo
 import { ReportDetail } from '@/components/mypage/ReportDetail';
 import { formatGradeLabelOrEmpty } from '@/lib/utils/gradeLabel';
 import { applyHomeworkCompletionPct, applyHomeworkMark } from '@/lib/lesson-reports/homeworkMark';
+import {
+  computeAutoNextPlan,
+  resolveNextPlan,
+  toNextPlanRows,
+  toggleNextPlanUnit,
+} from '@/lib/lesson-reports/nextLessonPlan';
 import { buildPortalPreview } from '@/lib/lesson-reports/portalPreview';
 import {
   validateForSubmit,
@@ -153,6 +174,13 @@ interface GridSelectionState {
   origSchoolUnitIds: number[];
   /** 既存セッションID（再保存時に上書き更新して二重作成を防ぐ） */
   sessionId: string | null;
+  /**
+   * 機能D「次回の予定」の手動値。null = 自動（進行表通り・今日の選択に追従）。
+   * 講師が一度でもピッカーを触ったら配列になり、以後この教材セットは自動追従をやめる。
+   * 手で全部外した「空」も [] として保持する（自動に戻すのはピッカーの
+   * 「進行表通りに戻す」だけ）。
+   */
+  nextPlanManual: number[] | null;
 }
 
 /** 上段「本日の指導範囲」に出すチップ1つ */
@@ -167,6 +195,7 @@ const emptySelection = (): GridSelectionState => ({
   schoolUnits: new Set(),
   origSchoolUnitIds: [],
   sessionId: null,
+  nextPlanManual: null,
 });
 
 /** 自動保存: 最後の変更からこの時間だけ何も起きなければ1回だけ走らせる（ミリ秒）。 */
@@ -185,6 +214,14 @@ type AutoSaveState = 'idle' | 'dirty' | 'saving' | 'saved' | 'error';
  *   - 宿題の空行 … 授業日が確定した瞬間に日割り行が自動生成されるだけで、講師が
  *     何かを書いたわけではない。保存時も compactHomeworkRows で落としているので、
  *     ここでも同じ圧縮をかけて「開いただけで自動保存が走る」のを防ぐ。
+ *   - 次回の予定の **自動値** … 進行表グリッドの行（gridRows）が非同期で届いた瞬間に
+ *     [] → [単元] と変わるだけで、講師は何も触っていない。これを含めると
+ *     「開いただけで自動保存が走る」（＝下書きが勝手に作られる）。
+ *     自動値は今日の選択（unitActions）から一意に決まり、その unitActions は
+ *     下でちゃんと指紋に入っているので、追従ぶんの変更は取りこぼさない。
+ *   ★ 逆に、次回の予定の **手動値**（nextPlanManual）は必ず入れること。
+ *     ピッカーで選び直しただけのときに自動保存が走らなくなる。
+ *     手動値は保存成功時に書き戻されないので、無限ループにはならない。
  *   Set は JSON にできないので、並びを固定した配列に直してから文字列にする。
  */
 function buildAutoSaveSnapshot(
@@ -201,6 +238,8 @@ function buildAutoSaveSnapshot(
         key,
         unitActions: selections[key].unitActions,
         schoolUnits: Array.from(selections[key].schoolUnits).sort((a, b) => a - b),
+        // 手動値は null（自動）と [] （手動で空）を区別したいので、そのまま載せる
+        nextPlanManual: selections[key].nextPlanManual,
       })),
   });
 }
@@ -294,6 +333,9 @@ export default function LessonReportFormPage() {
     check_test_passed: null,
     review_comment: '',
     homework_assignments: [],
+    // ★ 次回の予定は state では常に空。表示・保存の正典は selections（進行表グリッドの選択）
+    //   から毎回組み立てる。ここに実値を入れると自動保存の指紋が保存のたびに揺れる。
+    next_plan: [],
     subject_specific: null,
     status: 'draft',
     units: [],
@@ -307,6 +349,9 @@ export default function LessonReportFormPage() {
 
   // ---- A: 前回の授業（進行表の授業記録が一次情報。無ければカードごと出さない） ----
   const [previousLesson, setPreviousLesson] = useState<PreviousLessonSummary | null>(null);
+
+  // ---- D: 次回の予定（ピッカーを開いている教材セットのID。null = 閉じている） ----
+  const [nextPlanPickerFor, setNextPlanPickerFor] = useState<string | null>(null);
 
   // ---- E: 保護者プレビュー ----
   const [showPortalPreview, setShowPortalPreview] = useState(false);
@@ -467,6 +512,9 @@ export default function LessonReportFormPage() {
           check_test_passed: report.check_test_passed,
           review_comment: report.review_comment ?? '',
           homework_assignments: report.homework_assignments ?? [],
+          // 次回の予定は保存直前に組み立てる項目なので state には戻さない
+          //（表示の正典は下の restoreSessions が復元する selections.nextPlanManual）
+          next_plan: [],
           subject_specific: report.subject_specific ?? null,
           status: report.status,
           units,
@@ -686,33 +734,123 @@ export default function LessonReportFormPage() {
     }));
 
   // ---- 上段への自動反映（進行表グリッドの選択 → チップ表示） ----
-  /** 教材セット1つぶんの「今日やった単元」チップ。カリキュラム順に並べる。 */
-  const taughtChipsOf = useCallback(
-    (studentTextbookId: string): TaughtChip[] => {
-      const sel = selections[studentTextbookId];
-      if (!sel) return [];
+  /**
+   * 教材セット1つぶんの「単元名の解決」と「カリキュラム順の順位」。
+   * 単元名はグリッド行（進行表の実データ）が正だが、まだ読み込めていないときは
+   * 教材の目次から拾う。指導範囲チップ・次回の予定チップ・ピッカーで共通して使う。
+   */
+  const unitIndexOf = useCallback(
+    (studentTextbookId: string) => {
       const rows = gridRows[studentTextbookId] ?? [];
       const opt = textbookOptions.find((o) => o.id === studentTextbookId);
-      // 単元名はグリッド行が正だが、まだ読み込めていないときは教材の目次から拾う
       const titleById = new Map<number, string>();
       for (const it of opt?.curriculum_items ?? []) titleById.set(it.id, it.title);
       for (const r of rows) titleById.set(r.id, r.title);
-      // 並び順もグリッド行 →（無ければ）目次の順
       const order =
         rows.length > 0 ? rows.map((r) => r.id) : (opt?.curriculum_items ?? []).map((i) => i.id);
       const rank = (id: number) => {
         const i = order.indexOf(id);
         return i < 0 ? Number.MAX_SAFE_INTEGER : i;
       };
+      const title = (id: number) => titleById.get(id) ?? `単元#${id}`;
+      return { rank, title };
+    },
+    [gridRows, textbookOptions]
+  );
+
+  /** 教材セット1つぶんの「今日やった単元」チップ。カリキュラム順に並べる。 */
+  const taughtChipsOf = useCallback(
+    (studentTextbookId: string): TaughtChip[] => {
+      const sel = selections[studentTextbookId];
+      if (!sel) return [];
+      const { rank, title } = unitIndexOf(studentTextbookId);
       return Object.entries(sel.unitActions)
         .map(([cid, lessonNumber]) => ({
           curriculumItemId: Number(cid),
-          title: titleById.get(Number(cid)) ?? `単元#${cid}`,
+          title: title(Number(cid)),
           lessonNumber,
         }))
         .sort((a, b) => rank(a.curriculumItemId) - rank(b.curriculumItemId));
     },
-    [selections, gridRows, textbookOptions]
+    [selections, unitIndexOf]
+  );
+
+  // ---- D: 次回の予定 ----
+  /**
+   * 教材セットごとの「進行表通り」の自動値。今日の選択（unitActions）に追従する。
+   * 判定規則は純関数（lib/lesson-reports/nextLessonPlan.ts）に集約。
+   */
+  const autoNextPlanOf = useCallback(
+    (studentTextbookId: string): number[] =>
+      computeAutoNextPlan(
+        toNextPlanRows(gridRows[studentTextbookId] ?? []),
+        Object.keys(selections[studentTextbookId]?.unitActions ?? {}).map(Number)
+      ),
+    [gridRows, selections]
+  );
+
+  /** 教材セットごとの、実際に画面に出す（＝保存する）次回の予定。カリキュラム順に並べる。 */
+  const nextPlanIdsOf = useCallback(
+    (studentTextbookId: string): number[] => {
+      const { rank } = unitIndexOf(studentTextbookId);
+      return resolveNextPlan(
+        autoNextPlanOf(studentTextbookId),
+        selections[studentTextbookId]?.nextPlanManual ?? null
+      ).sort((a, b) => rank(a) - rank(b));
+    },
+    [autoNextPlanOf, selections, unitIndexOf]
+  );
+
+  /**
+   * ピッカーで単元をトグルする。初回は今出ている自動値を土台にするので、
+   * 「1件足したつもりが自動値ごと消える」ことがない。
+   * 触った時点でこの教材セットは自動追従をやめる（手で決めた値を勝手に書き換えない）。
+   */
+  const handleNextPlanToggle = useCallback(
+    (studentTextbookId: string, curriculumItemId: number) => {
+      const auto = autoNextPlanOf(studentTextbookId);
+      setSelections((prev) => {
+        const cur = prev[studentTextbookId] ?? emptySelection();
+        return {
+          ...prev,
+          [studentTextbookId]: {
+            ...cur,
+            nextPlanManual: toggleNextPlanUnit(cur.nextPlanManual, auto, curriculumItemId),
+          },
+        };
+      });
+    },
+    [autoNextPlanOf]
+  );
+
+  /** 「進行表通りに戻す」= 手動値を捨てて自動追従に戻す。 */
+  const handleNextPlanReset = useCallback((studentTextbookId: string) => {
+    setSelections((prev) => ({
+      ...prev,
+      [studentTextbookId]: {
+        ...(prev[studentTextbookId] ?? emptySelection()),
+        nextPlanManual: null,
+      },
+    }));
+  }, []);
+
+  /**
+   * 保護者面（class_reports.next_plan）に写すスナップショット。
+   * 単元が1つも無い教材セットは出さない（保護者面で空の見出しを作らないため）。
+   */
+  const nextPlanSnapshot = useMemo(
+    (): NextPlanSnapshotItem[] =>
+      form.units
+        .map((u) => {
+          const { title } = unitIndexOf(u.student_textbook_id);
+          return {
+            textbookName:
+              textbookOptions.find((o) => o.id === u.student_textbook_id)?.textbook_name ?? '教材',
+            unitTitles: nextPlanIdsOf(u.student_textbook_id).map(title),
+          };
+        })
+        .filter((item) => item.unitTitles.length > 0),
+    [form.units, textbookOptions, unitIndexOf, nextPlanIdsOf]
   );
 
   /** 学校進度チップ（保存する school_progress 文字列と同じ材料・同じ順序）。 */
@@ -782,6 +920,11 @@ export default function LessonReportFormPage() {
         displayOrder: u.display_order ?? idx,
       })),
       schoolProgress: schoolProgressLabels.join('、'),
+      // 次回の予定も保存時とまったく同じ材料（表示中の値）を渡す
+      nextPlan: nextPlanSnapshot.map((item) => ({
+        textbookName: item.textbookName,
+        unitTitles: item.unitTitles,
+      })),
       teacherName: entry?.teacher?.display_name || profile?.display_name || null,
       checkTestPassed,
     });
@@ -792,6 +935,7 @@ export default function LessonReportFormPage() {
     textbookOptions,
     taughtChipsOf,
     schoolProgressLabels,
+    nextPlanSnapshot,
     entry?.teacher?.display_name,
     profile?.display_name,
     checkTestPassed,
@@ -867,6 +1011,8 @@ export default function LessonReportFormPage() {
         check_test_passed: checkTestPassed,
         // 空欄の日は保存しない
         homework_assignments: compactHomeworkRows(form.homework_assignments),
+        // 次回の予定（保護者公開）。表示と同じ材料から保存直前に組み立てる
+        next_plan: nextPlanSnapshot,
         status: nextStatus,
       };
 
@@ -884,6 +1030,8 @@ export default function LessonReportFormPage() {
         tardy: form.tardy,
         teacherName: entry.teacher?.display_name || profile?.display_name || '',
         reportId: saved.id,
+        // 次回の予定は教材セットごとに違うので、関数として渡して各セッションで解決する
+        nextPlanIdsOf,
         onSessionSaved: (stbId, sessionId) =>
           setSelections((prev) => ({
             ...prev,
@@ -1314,6 +1462,54 @@ export default function LessonReportFormPage() {
               </p>
             </div>
 
+            {/* D: 次回の予定（既定は進行表通り・自動。変更したいときだけピッカーを開く） */}
+            <div>
+              <label className="block text-xs font-semibold text-text-muted mb-1">
+                次回の予定
+                <span className="ml-2 px-2 py-0.5 rounded-full bg-info-subtle text-info text-[10px] font-bold">
+                  進行表の続きを自動で提案
+                </span>
+              </label>
+              {form.units.length === 0 ? (
+                <p className="text-[11px] text-text-faint">
+                  この生徒には進行表で管理中の教材がありません
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {form.units.map((u, idx) => (
+                    <NextPlanUnitBlock
+                      key={u.student_textbook_id || idx}
+                      textbookName={
+                        textbookOptions.find((o) => o.id === u.student_textbook_id)
+                          ?.textbook_name ?? '教材'
+                      }
+                      isMain={u.is_main}
+                      isManual={selections[u.student_textbook_id]?.nextPlanManual != null}
+                      unitTitles={nextPlanIdsOf(u.student_textbook_id).map(
+                        unitIndexOf(u.student_textbook_id).title
+                      )}
+                      pickerOpen={nextPlanPickerFor === u.student_textbook_id}
+                      onTogglePicker={() =>
+                        setNextPlanPickerFor((cur) =>
+                          cur === u.student_textbook_id ? null : u.student_textbook_id
+                        )
+                      }
+                      candidates={(gridRows[u.student_textbook_id] ?? []).map((r) => ({
+                        id: r.id,
+                        title: r.title,
+                      }))}
+                      selectedIds={nextPlanIdsOf(u.student_textbook_id)}
+                      onToggleUnit={(cid) => handleNextPlanToggle(u.student_textbook_id, cid)}
+                      onReset={() => handleNextPlanReset(u.student_textbook_id)}
+                    />
+                  ))}
+                </div>
+              )}
+              <p className="text-[10px] text-text-faint mt-1">
+                次回やる単元です。保護者の報告書と、次回の授業の「前回の授業」に表示されます
+              </p>
+            </div>
+
             {/* 宿題・演習（すべてスライダー） */}
             <div>
               <label className="block text-xs font-semibold text-text-muted mb-2">
@@ -1508,6 +1704,8 @@ export default function LessonReportFormPage() {
                     }}
                     onCellToggle={(cid, col) => handleCellToggle(u.student_textbook_id, cid, col)}
                     isTeacher={profile?.role === 'teacher'}
+                    // D: 次回の予定の行に「次回」バッジを出す（ProgressRow には手を入れない）
+                    nextPlanUnitIds={nextPlanIdsOf(u.student_textbook_id)}
                   />
                 </div>
               );
@@ -1662,6 +1860,8 @@ async function syncToProgress(params: {
   teacherName: string;
   /** 保存した授業報告書のID。progress_sessions.report_id に紐づける */
   reportId: string;
+  /** 教材セットごとの「次回の予定」単元ID（機能D）。表示と同じ値をそのまま保存する */
+  nextPlanIdsOf: (studentTextbookId: string) => number[];
   onSessionSaved: (studentTextbookId: string, sessionId: string) => void;
 }): Promise<void> {
   const {
@@ -1674,6 +1874,7 @@ async function syncToProgress(params: {
     tardy,
     teacherName,
     reportId,
+    nextPlanIdsOf,
     onSessionSaved,
   } = params;
 
@@ -1723,6 +1924,8 @@ async function syncToProgress(params: {
       schoolProgressUnits: Array.from(sel.schoolUnits),
       scheduleEntryId: entry.id,
       reportId,
+      // ★ 報告書から呼ぶときだけ渡す（進行表の授業記録パネルからは undefined のまま）
+      nextPlanCurriculumItemIds: nextPlanIdsOf(stbId),
       sessionId: sel.sessionId,
       primaryCurriculumItemId,
       clearSchoolProgressUnits,
@@ -1795,6 +1998,12 @@ async function restoreSessions(
       schoolUnits: new Set(schoolUnitIds),
       origSchoolUnitIds: schoolUnitIds,
       sessionId: session.id,
+      // 次回の予定は保存済み＝確定値なので、そのまま手動値として復元する（自動追従させない）。
+      // 空配列も「そのとき確定した空」として尊重する。列がまだ無い環境（マイグレーション
+      // 未適用）では undefined が返るので、その場合だけ自動（null）に倒す。
+      nextPlanManual: Array.isArray(session.next_plan_curriculum_item_ids)
+        ? session.next_plan_curriculum_item_ids
+        : null,
     };
     // 引継ぎ・マークはコマ単位の情報。最初に見つかったセッションの値を採用する
     if (!handoverSet) {
@@ -1917,6 +2126,16 @@ function PreviousLessonCard({ lesson }: { lesson: PreviousLessonSummary | null }
                     </span>
                   ))}
                 </div>
+              )}
+              {/* D: 前回そのとき決めた「次回の予定」＝今日やる予定だったもの。
+                  空なら行ごと出さない（機能D以前の授業記録には入っていない）。 */}
+              {tb.nextPlanUnits.length > 0 && (
+                <p className="flex flex-wrap items-baseline gap-1 text-[12px] text-text-body">
+                  <span className="font-bold text-text-muted">前回の予定:</span>
+                  <span className="font-semibold text-text-heading">
+                    {tb.nextPlanUnits.join('・')}
+                  </span>
+                </p>
               )}
               {tb.handover && (
                 <p className="whitespace-pre-wrap rounded-md bg-white px-3 py-2 text-[12.5px] leading-6 text-text-body">
@@ -2221,6 +2440,128 @@ function UnitChip({ chip, compact }: { chip: TaughtChip; compact?: boolean }) {
         {chip.lessonNumber}回目
       </span>
     </span>
+  );
+}
+
+/**
+ * D: 次回の予定（教材セット1つぶん）。
+ *
+ * 既定は「進行表通り」＝今日やった単元の次の未実施単元が自動で入る。実データの
+ * 引継ぎに「次回：進行表通り」という手打ちが多数あったので、それを既定にした
+ * （講師が何もしなくても正しい状態になる）。
+ * 変えたいときだけ「変更」でピッカーを開いて選び直す。一度触ったら自動追従は止まり、
+ * 「進行表通りに戻す」で戻せる。
+ */
+function NextPlanUnitBlock({
+  textbookName,
+  isMain,
+  isManual,
+  unitTitles,
+  pickerOpen,
+  onTogglePicker,
+  candidates,
+  selectedIds,
+  onToggleUnit,
+  onReset,
+}: {
+  textbookName: string;
+  isMain: boolean;
+  /** 講師が手で選び直したか（＝自動追従を止めているか） */
+  isManual: boolean;
+  unitTitles: string[];
+  pickerOpen: boolean;
+  onTogglePicker: () => void;
+  /** ピッカーに並べる単元（進行表グリッドの行＝カリキュラム順） */
+  candidates: Array<{ id: number; title: string }>;
+  selectedIds: number[];
+  onToggleUnit: (curriculumItemId: number) => void;
+  onReset: () => void;
+}) {
+  const selected = new Set(selectedIds);
+  return (
+    <div
+      className={`p-3 border rounded-md ${isMain ? 'border-info bg-info-subtle/20' : 'bg-surface'}`}
+    >
+      <div className="flex items-center gap-2 mb-2">
+        <MainSubBadge isMain={isMain} />
+        <span className="text-sm font-semibold text-text-heading truncate">{textbookName}</span>
+        <span
+          className={`ml-auto shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${
+            isManual ? 'bg-warning-subtle text-warning' : 'bg-ink-subtle text-ink'
+          }`}
+        >
+          {isManual ? '変更あり' : '進行表通り'}
+        </span>
+        <button
+          type="button"
+          onClick={onTogglePicker}
+          aria-expanded={pickerOpen}
+          className="shrink-0 rounded-md border border-info px-2 py-1 text-[11px] font-bold text-info transition-colors duration-150 hover:bg-info-subtle active:scale-[0.97]"
+        >
+          {pickerOpen ? '閉じる' : '変更'}
+        </button>
+      </div>
+
+      {unitTitles.length > 0 ? (
+        <div className="flex flex-wrap gap-1.5">
+          {unitTitles.map((title, i) => (
+            <span
+              key={`${title}-${i}`}
+              className="inline-flex items-center gap-1 rounded-full bg-white px-2.5 py-1 text-[11.5px] font-semibold text-text-body ring-1 ring-inset ring-border"
+            >
+              <SkipForward className="h-3 w-3 text-info" />
+              {title}
+            </span>
+          ))}
+        </div>
+      ) : (
+        <p className="text-[11px] text-text-faint">
+          {isManual
+            ? '次回の予定は入れていません（「変更」から選び直せます）'
+            : 'この教材は進行表の単元がすべて終わっています'}
+        </p>
+      )}
+
+      {pickerOpen && (
+        <div className="mt-2 rounded-md border border-border bg-white p-2">
+          {candidates.length === 0 ? (
+            <p className="text-[11px] text-text-faint">
+              この教材には単元（目次）が登録されていません
+            </p>
+          ) : (
+            // 単元が多い教材でもフォームが縦に伸びきらないよう、ピッカー内でスクロールさせる
+            <div className="max-h-[200px] overflow-y-auto flex flex-wrap gap-1.5">
+              {candidates.map((c) => {
+                const on = selected.has(c.id);
+                return (
+                  <button
+                    key={c.id}
+                    type="button"
+                    aria-pressed={on}
+                    onClick={() => onToggleUnit(c.id)}
+                    className={`rounded-full border px-2.5 py-1 text-[11.5px] font-semibold transition-colors duration-150 active:scale-[0.97] ${
+                      on
+                        ? 'border-info bg-info text-white'
+                        : 'border-border bg-white text-text-muted hover:bg-surface'
+                    }`}
+                  >
+                    {c.title}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+          <button
+            type="button"
+            onClick={onReset}
+            className="mt-2 rounded-md border border-border px-2 py-1 text-[11px] font-bold text-text-muted transition-colors duration-150 hover:bg-surface active:scale-[0.97]"
+          >
+            <RotateCcw className="mr-1 inline h-3 w-3" />
+            進行表通りに戻す
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -2588,6 +2929,8 @@ function loadDemo(setters: {
       schoolUnits: new Set([3]),
       origSchoolUnitIds: [3],
       sessionId: null,
+      // 見本でも既定は自動（進行表通り）。セルをクリックすると次回の予定が追従する
+      nextPlanManual: null,
     },
   });
   setters.setHandover(
@@ -2605,6 +2948,8 @@ function loadDemo(setters: {
         handover:
           '文章題の立式は自力でできるようになった。代入法の計算ミスが残るので、次回は一次関数へ入る前に5分だけ復習を挟む。',
         teacherName: '佐々木 先生',
+        // 前回そのとき決めた次回の予定＝今日やる予定だった単元
+        nextPlanUnits: ['一次関数の式'],
       },
     ],
     tardy: false,
@@ -2651,6 +2996,8 @@ function loadDemo(setters: {
       date: d,
       text: i === 0 ? '新中問 p.59 の基本問題' : i === 1 ? '新中問 p.60 ＋ 昨日の間違い直し' : '',
     })),
+    // 次回の予定は保存直前に組み立てる項目なので、state は本番と同じく空で持つ
+    next_plan: [],
     subject_specific: { kind: 'none', extra_materials: '計算プリント（分数係数）を10問' },
     status: 'draft',
     units: [

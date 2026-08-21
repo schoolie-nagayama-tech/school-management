@@ -19,6 +19,7 @@
 import type { ClassReportFormData, SubjectSpecific } from '@/types/class-report';
 import type {
   PortalHomeworkAssignment,
+  PortalNextPlanItem,
   PortalReportDetail,
   PortalReportUnit,
   PortalSubjectSpecific,
@@ -46,6 +47,11 @@ export interface PortalPreviewInput {
   units: PortalPreviewUnitInput[];
   /** 学校の進度（上段のチップと同じ材料から組み立てた文字列） */
   schoolProgress: string;
+  /**
+   * 次回の予定（教材ごと）。form ではなく別入力で受けるのは units / schoolProgress と同じ理由で、
+   * 単元名の解決（ID → 名前）が画面側でしかできないため。保存される next_plan と同じ値を渡すこと。
+   */
+  nextPlan?: PortalNextPlanItem[];
   teacherName: string | null;
   /** コマの教科名。保護者面のヘッダー側で使う値で、詳細本文には出ない */
   subjectNames?: string[];
@@ -77,6 +83,8 @@ export function buildPortalPreview(input: PortalPreviewInput): PortalReportDetai
     schoolProgress: emptyToNull(input.schoolProgress),
     tardy: form.tardy,
     homeworkNotDone: form.homework_not_done,
+    // 単元が1つも決まっていない教材は出さない（保護者面で空の見出しを作らない）
+    nextPlan: (input.nextPlan ?? []).filter((item) => item.unitTitles.length > 0),
     subjectSpecific: toPortalSubjectSpecific(form.subject_specific),
     homeworkCompletionPct: form.homework_completion_pct,
     homeworkCorrectPct: form.homework_correct_pct,
