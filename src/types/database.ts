@@ -1178,6 +1178,7 @@ export type Database = {
           schedule_entry_id: string | null;
           confirmed_at: string | null;
           confirmed_by: string | null;
+          report_id: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -1193,6 +1194,7 @@ export type Database = {
           schedule_entry_id?: string | null;
           confirmed_at?: string | null;
           confirmed_by?: string | null;
+          report_id?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -1208,6 +1210,7 @@ export type Database = {
           schedule_entry_id?: string | null;
           confirmed_at?: string | null;
           confirmed_by?: string | null;
+          report_id?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -1228,6 +1231,12 @@ export type Database = {
             foreignKeyName: 'progress_sessions_schedule_entry_id_fkey';
             columns: ['schedule_entry_id'];
             referencedRelation: 'schedule_entries';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'progress_sessions_report_id_fkey';
+            columns: ['report_id'];
+            referencedRelation: 'class_reports';
             referencedColumns: ['id'];
           },
         ];

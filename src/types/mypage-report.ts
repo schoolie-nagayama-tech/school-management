@@ -100,6 +100,13 @@ export interface PortalReportDetail {
   units: PortalReportUnit[];
   /** 学校の進度 */
   schoolProgress: string | null;
+  /**
+   * 本日の様子マーク。講師フォームの公開ゾーンで押されたトグルピルの結果。
+   * どちらも false のときは表示側でセクションごと出さない
+   * （「遅刻していません」をわざわざ書かない＝該当したときだけ伝える）。
+   */
+  tardy: boolean;
+  homeworkNotDone: boolean;
   /** 科目別欄（単語・計算・漢字の反復練習）＋プリント等自由記述。無ければ null。 */
   subjectSpecific: PortalSubjectSpecific | null;
   /** 宿題の取り組み（3項目のバー） */

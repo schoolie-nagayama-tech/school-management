@@ -58,6 +58,9 @@ interface ReportDetailRow extends ReportListRow {
   review_comment: string | null;
   homework_assignments: unknown;
   subject_specific: unknown;
+  /** 本日の様子マーク。ビュー追加前の環境を踏んでも落ちないよう null 許容で受ける。 */
+  tardy: boolean | null;
+  homework_not_done: boolean | null;
 }
 
 interface ReportUnitRow {
@@ -75,7 +78,7 @@ interface ReportUnitRow {
 const LIST_COLUMNS =
   'id, student_id, lesson_date, teacher_id, short_term_goal, check_test_score, check_test_total, check_test_passed, homework_completion_pct, subject_names';
 
-const DETAIL_COLUMNS = `${LIST_COLUMNS}, mid_term_goal_snapshot, school_progress, homework_correct_pct, today_correct_pct, review_comment, homework_assignments, subject_specific`;
+const DETAIL_COLUMNS = `${LIST_COLUMNS}, mid_term_goal_snapshot, school_progress, homework_correct_pct, today_correct_pct, review_comment, homework_assignments, subject_specific, tardy, homework_not_done`;
 
 /**
  * 講師名を限定公開ビュー経由で解決する（Stage3 の予定APIと同じ作法）。
@@ -221,6 +224,10 @@ export async function getPortalReport(
     midTermGoal: r.mid_term_goal_snapshot,
     units,
     schoolProgress: r.school_progress,
+    // 本日の様子マーク。値が無ければ false（＝該当なし）に倒す。
+    // 「該当したときだけ出す」表示なので、不明を true 側に倒すと誤って保護者に伝わる。
+    tardy: r.tardy === true,
+    homeworkNotDone: r.homework_not_done === true,
     homeworkCompletionPct: r.homework_completion_pct,
     homeworkCorrectPct: r.homework_correct_pct,
     todayCorrectPct: r.today_correct_pct,
