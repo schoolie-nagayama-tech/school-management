@@ -74,6 +74,16 @@ export interface ClassReport {
   // 進度
   school_progress: string | null;
 
+  /**
+   * 本日の様子マーク（保護者公開）。
+   * progress_sessions.tardy / homework_not_done の写しで、保護者面に出すためだけの複製。
+   * 進行表側の正典は progress_sessions のままなので、集計はそちらを読むこと。
+   * homework_not_done は homework_completion_pct=0 と同期する
+   * （規則は src/lib/lesson-reports/homeworkMark.ts）。
+   */
+  tardy: boolean;
+  homework_not_done: boolean;
+
   // 宿題・テスト
   homework_completion_pct: number | null;
   homework_correct_pct: number | null;
@@ -141,6 +151,9 @@ export interface ClassReportFormData {
   mid_term_goal_snapshot: string;
   mid_action_goal_snapshot: string;
   school_progress: string;
+  /** 本日の様子マーク（保護者公開）。ClassReport 側の同名列の注記を参照 */
+  tardy: boolean;
+  homework_not_done: boolean;
   homework_completion_pct: number | null;
   homework_correct_pct: number | null;
   today_correct_pct: number | null;

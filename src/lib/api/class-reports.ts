@@ -93,6 +93,10 @@ export async function upsertClassReport(
     mid_action_goal_snapshot: form.mid_action_goal_snapshot || null,
     school_progress: form.school_progress || null,
 
+    // 本日の様子マーク（保護者公開）。進行表の正典は progress_sessions 側で、ここはその写し。
+    tardy: form.tardy,
+    homework_not_done: form.homework_not_done,
+
     homework_completion_pct: form.homework_completion_pct,
     homework_correct_pct: form.homework_correct_pct,
     today_correct_pct: form.today_correct_pct,

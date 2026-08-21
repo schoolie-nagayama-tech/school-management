@@ -461,6 +461,12 @@ export async function recordSession(params: {
   unitActions: SessionUnitAction[];
   schoolProgressUnits: number[]; // curriculum_item_ids with school dates
   scheduleEntryId?: string | null;
+  /**
+   * 対応する授業報告書のID（progress_sessions.report_id）。
+   * 報告書フォームから保存したときだけ渡す（進行表の授業記録パネルからは報告書が無いので
+   * undefined）。undefined のときは列に触らない＝既存の紐づけを消さない。
+   */
+  reportId?: string | null;
   /** 引継ぎ・遅刻・宿題を書き込む「一番下の行」の単元ID（カリキュラム順で最後の指導単元） */
   primaryCurriculumItemId?: number | null;
   /** 既存セッションの上書き更新用。指定時は新規作成せず更新する（編集時の二重作成防止） */
@@ -479,6 +485,7 @@ export async function recordSession(params: {
     unitActions,
     schoolProgressUnits,
     scheduleEntryId,
+    reportId,
     primaryCurriculumItemId,
     sessionId,
     clearSchoolProgressUnits,
@@ -495,6 +502,8 @@ export async function recordSession(params: {
       handover,
       homework_not_done: homeworkNotDone,
       tardy,
+      // 報告書から呼ばれたときだけ紐づけを書く（undefined なら列を patch に載せない）
+      ...(reportId !== undefined ? { report_id: reportId } : {}),
     });
   } else {
     // 新規モード: セッションを作成
@@ -507,6 +516,7 @@ export async function recordSession(params: {
       homework_not_done: homeworkNotDone,
       tardy,
       schedule_entry_id: scheduleEntryId,
+      report_id: reportId,
     });
   }
 

@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * 授業報告書フォーム（Stage 4 で進行表と融合）
+ * 授業報告書フォーム（P1-14 で進行表と統合・上下2段構成）
  *
  * URL: /lesson-reports/[scheduleEntryId]
  *
@@ -10,20 +10,33 @@
  *   講師の仕事を楽にして、授業とコミュニケーションに時間を使えるようにする。
  *   定型文の自動組み立ては陳腐になるため使わない（却下済み）。
  *
- * 画面構成:
- *   - 目標ヘッダー（常時表示・3層）
- *       ① 試験目標（student_textbook_exams: 試験名 / 試験日 / 目標点 / 範囲）… 進行表と同期・表示のみ
- *       ② 行動目標（action_goals）… 進行表と同期・表示のみ
- *       ③ 今日の目標（short_term_goal）… 手入力
- *       ＋ 期日カウントダウン（あと◯日（◯週間）・授業あと◯回）を自動計算して横に表示
- *   - 保護者に公開されるゾーン（緑）: 今日の目標 / 学習内容・学校進度 / 宿題・演習％ / 確認テスト /
+ * 画面構成（正典: docs/lesson-report-session-merge-plan.md）:
+ *   上段＝報告書の内容 / 下段＝進行表 の2段構成。
+ *   - ヘッダー行（生徒・学年・教材・授業日時・講師・次回授業日）
+ *   - 目標ヘッダー（試験目標／行動目標／期日カウントダウン）… 進行表と同期・表示のみ
+ *   - 保護者に公開されるゾーン（緑）
+ *       今日の目標 / 本日の指導範囲（★下段の進行表から自動反映）/ 学校の進度（自動反映）/
+ *       本日の様子（遅刻・宿題未実施のトグルピル）/ 宿題・演習の達成度 / 確認テスト /
  *       講評 / 次回までの宿題（日割り）/ 科目別欄
- *   - 教室内のみのゾーン（グレー破線）: 引継ぎ / 遅刻・宿題未実施フラグ
+ *   - 教室内のみのゾーン（グレー破線）: 引継ぎ
+ *   - スティッキーバー（公開ゾーンが画面上端から消えたら出る・指導範囲の要約＋報告書へ戻る）
+ *   - 下段: 進行表（教材セットの切替・追加・削除もここ）
+ *
+ * ★ 「本日の指導範囲」は手入力させない:
+ *   下段の進行表グリッドでセルをクリックした結果を上段にチップで自動反映するだけ。
+ *   上段のチップは読み取り専用で、解除は下段の同じセルをもう一度クリックする
+ *   （選択状態の正典を1か所（selections）に保つため、上段からは編集させない）。
+ *
+ * ★ 遅刻・宿題未実施は保護者公開:
+ *   従来は内部ゾーンのチェックボックスだったが、保護者にとっては「今日どうだったか」の
+ *   一次情報なので公開ゾーンのトグルピルに変更した（決定4）。宿題未実施マークと
+ *   「やってきた量(%)」は双方向同期する（規則は lib/lesson-reports/homeworkMark.ts）。
  *
  * 保存の二系統（どちらも既存の経路をそのまま使う。新しい保存先は作らない）:
  *   1. class_reports … upsertClassReport（提出→室長承認→差し戻しのワークフローは変更なし）
  *   2. 進行表 … recordSession（progress-sessions.ts）。学習単元・学校進度・引継ぎ・フラグは
  *      授業記録パネルとまったく同じ組み立て方で渡す。進行表側から見ても従来どおり読める。
+ *      保存した報告書の id を reportId として渡し、progress_sessions.report_id に紐づける。
  *      ★ 引継ぎの「セッション/行」分離は意図的な既存設計。ここで独自同期を作らないこと。
  */
 
@@ -48,10 +61,23 @@ import {
   type SessionUnitAction,
 } from '@/lib/api/progress-sessions';
 import type { CurriculumItemWithProgress, StudentTextbookWithDetails } from '@/types/database';
-import { ChevronLeft, Plus, X, Save, Send, Eye, Lock, Target, CalendarClock } from 'lucide-react';
+import {
+  ArrowUp,
+  CalendarClock,
+  ChevronLeft,
+  ClipboardList,
+  Eye,
+  Lock,
+  Plus,
+  Save,
+  Send,
+  Target,
+  X,
+} from 'lucide-react';
 import { DemoProgressPreview } from '@/components/lesson-reports/DemoProgressPreview';
 import { LessonReportProgressGrid } from '@/components/lesson-reports/LessonReportProgressGrid';
 import { formatGradeLabelOrEmpty } from '@/lib/utils/gradeLabel';
+import { applyHomeworkCompletionPct, applyHomeworkMark } from '@/lib/lesson-reports/homeworkMark';
 import {
   buildHomeworkDateRows,
   compactHomeworkRows,
@@ -103,6 +129,13 @@ interface GridSelectionState {
   origSchoolUnitIds: number[];
   /** 既存セッションID（再保存時に上書き更新して二重作成を防ぐ） */
   sessionId: string | null;
+}
+
+/** 上段「本日の指導範囲」に出すチップ1つ */
+interface TaughtChip {
+  curriculumItemId: number;
+  title: string;
+  lessonNumber: 1 | 2 | 3;
 }
 
 const emptySelection = (): GridSelectionState => ({
@@ -161,10 +194,8 @@ export default function LessonReportFormPage() {
   const [gridRows, setGridRows] = useState<Record<string, CurriculumItemWithProgress[]>>({});
   const [selections, setSelections] = useState<Record<string, GridSelectionState>>({});
 
-  // 内部ゾーン（進行表の授業記録と同じ保存先へ書く項目）
+  // 引継ぎ（進行表の授業記録と同じ保存先へ書く内部項目。class_reports には列が無い）
   const [handover, setHandover] = useState('');
-  const [homeworkNotDone, setHomeworkNotDone] = useState(false);
-  const [tardy, setTardy] = useState(false);
 
   // フォーム状態
   const [form, setForm] = useState<ClassReportFormData>({
@@ -176,6 +207,8 @@ export default function LessonReportFormPage() {
     mid_term_goal_snapshot: '',
     mid_action_goal_snapshot: '',
     school_progress: '',
+    tardy: false,
+    homework_not_done: false,
     homework_completion_pct: null,
     homework_correct_pct: null,
     today_correct_pct: null,
@@ -191,6 +224,12 @@ export default function LessonReportFormPage() {
     status: 'draft',
     units: [],
   });
+
+  // スティッキーバー: 公開ゾーンが画面上端から消えたら出す。
+  // センチネル（公開ゾーンの直後に置いた高さ0の目印）が上へ抜けたかどうかで判定する。
+  const publicZoneRef = useRef<HTMLDivElement>(null);
+  const publicZoneEndRef = useRef<HTMLDivElement>(null);
+  const [showStickyBar, setShowStickyBar] = useState(false);
 
   // ---- 初期データ取得 ----
   const load = useCallback(async () => {
@@ -309,6 +348,9 @@ export default function LessonReportFormPage() {
           mid_term_goal_snapshot: report.mid_term_goal_snapshot ?? '',
           mid_action_goal_snapshot: report.mid_action_goal_snapshot ?? '',
           school_progress: report.school_progress ?? '',
+          // 本日の様子マーク。列追加前に保存された古い行は null で返るので false に倒す。
+          tardy: report.tardy ?? false,
+          homework_not_done: report.homework_not_done ?? false,
           homework_completion_pct: report.homework_completion_pct,
           homework_correct_pct: report.homework_correct_pct,
           today_correct_pct: report.today_correct_pct,
@@ -340,14 +382,15 @@ export default function LessonReportFormPage() {
       setGoalHeader(mainStbId ? await loadGoalHeader(mainStbId, trackable) : null);
 
       // 6. このコマに既に紐づいているセッションを復元（下書き保存の再開・再提出で
-      //    セッションが増殖しないよう sessionId を握っておく）
+      //    セッションが増殖しないよう sessionId を握っておく）。
+      //    セッションがあればマークの正典はそちら（進行表側で直された可能性があるため）。
       await restoreSessions(
         scheduleEntryId,
         units,
         setSelections,
         setHandover,
-        setHomeworkNotDone,
-        setTardy
+        (v) => setForm((f) => ({ ...f, homework_not_done: v })),
+        (v) => setForm((f) => ({ ...f, tardy: v }))
       );
     } catch (err) {
       toastError(err instanceof Error ? err.message : '初期化に失敗しました');
@@ -398,6 +441,28 @@ export default function LessonReportFormPage() {
     // lesson_date と nextLessonDate が確定したときだけ組み直す（入力中は触らない）
   }, [form.lesson_date, nextLessonDate, isDemo]);
 
+  // ---- スティッキーバーの出し入れ ----
+  // 読み込み完了後に初めて DOM が生えるので、isLoading をトリガに監視を張り直す。
+  useEffect(() => {
+    const sentinel = publicZoneEndRef.current;
+    if (!sentinel || typeof IntersectionObserver === 'undefined') return;
+    const io = new IntersectionObserver(
+      ([e]) => {
+        // 「画面内に無い」かつ「上へ抜けた」ときだけ出す。
+        // 下端から出ていく（＝まだ読み進めていない）ときに出すと、開いた瞬間から
+        // バーが被って邪魔になる。
+        setShowStickyBar(!e.isIntersecting && e.boundingClientRect.top < 0);
+      },
+      { threshold: 0 }
+    );
+    io.observe(sentinel);
+    return () => io.disconnect();
+  }, [isLoading]);
+
+  const scrollToReport = useCallback(() => {
+    publicZoneRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, []);
+
   // ---- 期日カウントダウン ----
   const countdown: ExamCountdown | null = useMemo(
     () =>
@@ -439,6 +504,36 @@ export default function LessonReportFormPage() {
     },
     []
   );
+
+  // ---- 本日の様子マーク ⇄ 宿題のやってきた量（％）の同期 ----
+  // 規則は純関数（lib/lesson-reports/homeworkMark.ts）に集約。ここは state に載せるだけ。
+  const toggleHomeworkNotDone = useCallback(() => {
+    setForm((f) => {
+      const next = applyHomeworkMark(
+        { homeworkNotDone: f.homework_not_done, completionPct: f.homework_completion_pct },
+        !f.homework_not_done
+      );
+      return {
+        ...f,
+        homework_not_done: next.homeworkNotDone,
+        homework_completion_pct: next.completionPct,
+      };
+    });
+  }, []);
+
+  const changeHomeworkCompletionPct = useCallback((v: number | null) => {
+    setForm((f) => {
+      const next = applyHomeworkCompletionPct(
+        { homeworkNotDone: f.homework_not_done, completionPct: f.homework_completion_pct },
+        v
+      );
+      return {
+        ...f,
+        homework_not_done: next.homeworkNotDone,
+        homework_completion_pct: next.completionPct,
+      };
+    });
+  }, []);
 
   // 教材セット操作
   const usedTextbookIds = new Set(form.units.map((u) => u.student_textbook_id));
@@ -486,6 +581,48 @@ export default function LessonReportFormPage() {
       subject_specific: { ...(f.subject_specific ?? { kind: 'none' }), extra_materials: v },
     }));
 
+  // ---- 上段への自動反映（進行表グリッドの選択 → チップ表示） ----
+  /** 教材セット1つぶんの「今日やった単元」チップ。カリキュラム順に並べる。 */
+  const taughtChipsOf = useCallback(
+    (studentTextbookId: string): TaughtChip[] => {
+      const sel = selections[studentTextbookId];
+      if (!sel) return [];
+      const rows = gridRows[studentTextbookId] ?? [];
+      const opt = textbookOptions.find((o) => o.id === studentTextbookId);
+      // 単元名はグリッド行が正だが、まだ読み込めていないときは教材の目次から拾う
+      const titleById = new Map<number, string>();
+      for (const it of opt?.curriculum_items ?? []) titleById.set(it.id, it.title);
+      for (const r of rows) titleById.set(r.id, r.title);
+      // 並び順もグリッド行 →（無ければ）目次の順
+      const order =
+        rows.length > 0 ? rows.map((r) => r.id) : (opt?.curriculum_items ?? []).map((i) => i.id);
+      const rank = (id: number) => {
+        const i = order.indexOf(id);
+        return i < 0 ? Number.MAX_SAFE_INTEGER : i;
+      };
+      return Object.entries(sel.unitActions)
+        .map(([cid, lessonNumber]) => ({
+          curriculumItemId: Number(cid),
+          title: titleById.get(Number(cid)) ?? `単元#${cid}`,
+          lessonNumber,
+        }))
+        .sort((a, b) => rank(a.curriculumItemId) - rank(b.curriculumItemId));
+    },
+    [selections, gridRows, textbookOptions]
+  );
+
+  /** 学校進度チップ（保存する school_progress 文字列と同じ材料・同じ順序）。 */
+  const schoolProgressLabels = useMemo(
+    () => buildSchoolProgressLabels(form.units, selections, gridRows, textbookOptions),
+    [form.units, selections, gridRows, textbookOptions]
+  );
+
+  /** スティッキーバーの要約に使う、全教材セット横断のチップ。 */
+  const allTaughtChips = useMemo(
+    () => form.units.flatMap((u) => taughtChipsOf(u.student_textbook_id)),
+    [form.units, taughtChipsOf]
+  );
+
   // ---- 保存 ----
   const handleSave = async (nextStatus: 'draft' | 'submitted') => {
     if (!entry) return;
@@ -529,9 +666,9 @@ export default function LessonReportFormPage() {
         status: nextStatus,
       };
 
-      await upsertClassReport(entry.school_id, payload);
+      const saved = await upsertClassReport(entry.school_id, payload);
 
-      // 進行表への転記（学習単元・学校進度・引継ぎ・フラグ）。
+      // 進行表への転記（学習単元・学校進度・引継ぎ・マーク）。
       // 授業記録パネルと同じ組み立てで既存の recordSession をそのまま呼ぶ。
       await syncToProgress({
         entry,
@@ -539,9 +676,10 @@ export default function LessonReportFormPage() {
         selections,
         gridRows,
         handover,
-        homeworkNotDone,
-        tardy,
+        homeworkNotDone: form.homework_not_done,
+        tardy: form.tardy,
         teacherName: entry.teacher?.display_name || profile?.display_name || '',
+        reportId: saved.id,
         onSessionSaved: (stbId, sessionId) =>
           setSelections((prev) => ({
             ...prev,
@@ -588,11 +726,60 @@ export default function LessonReportFormPage() {
   const gradeLabel = formatGradeLabelOrEmpty(entry.student?.grade);
   const teacherName = entry.teacher?.display_name || entry.teacher?.email || '';
   const slotLabel = entry.time_slot ? `${entry.time_slot.slot_number}限` : '';
+  const timeLabel = entry.time_slot
+    ? `${entry.time_slot.start_time.slice(0, 5)}〜${entry.time_slot.end_time.slice(0, 5)}`
+    : '';
+  // ヘッダーの「教科」欄はメイン教材の名前で代替する（教科名より教材名のほうが講師に通じる）
+  const mainTextbookName =
+    textbookOptions.find(
+      (o) => o.id === (form.units.find((u) => u.is_main) ?? form.units[0])?.student_textbook_id
+    )?.textbook_name ?? '';
 
   return (
     <AdminLayout documentTitle={`${studentName}｜授業報告書`}>
       <ToastContainer toasts={toasts} onRemove={removeToast} />
       <div className="space-y-4">
+        {/* スティッキーバー（高さ0の入れ物に浮かせるので、出し入れしてもレイアウトが動かない）。
+            このページは AppHeader を出さない（AdminLayout に headerTitle を渡していない）ので
+            オフセットは進行表のヘッダー固定と同じ top-0。 */}
+        <div className="sticky top-0 z-30 h-0">
+          <div
+            className={`transition-opacity duration-150 ${
+              showStickyBar ? 'opacity-100' : 'pointer-events-none opacity-0'
+            }`}
+          >
+            <div className="flex items-center gap-2 rounded-lg border border-info/40 bg-white/95 px-3 py-2 shadow-md backdrop-blur">
+              <span className="shrink-0 text-[10px] font-bold tracking-wide text-text-muted">
+                今日の指導範囲
+              </span>
+              <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1 overflow-hidden">
+                {allTaughtChips.length === 0 ? (
+                  <span className="text-[11px] text-text-faint">まだ選ばれていません</span>
+                ) : (
+                  <>
+                    {allTaughtChips.slice(0, 3).map((c) => (
+                      <UnitChip key={c.curriculumItemId} chip={c} compact />
+                    ))}
+                    {allTaughtChips.length > 3 && (
+                      <span className="text-[11px] font-bold text-text-muted">
+                        他{allTaughtChips.length - 3}件
+                      </span>
+                    )}
+                  </>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={scrollToReport}
+                className="shrink-0 rounded-md border border-info px-2 py-1 text-[11px] font-bold text-info transition-colors duration-150 hover:bg-info-subtle active:scale-[0.97]"
+              >
+                <ArrowUp className="mr-1 inline h-3 w-3" />
+                報告書へ戻る
+              </button>
+            </div>
+          </div>
+        </div>
+
         {isDemo && (
           <div className="rounded-lg bg-warning-subtle border border-warning/30 px-3 py-2 text-xs text-warning">
             <strong>入力画面の見本（ダミーデータ）</strong>
@@ -630,16 +817,30 @@ export default function LessonReportFormPage() {
           )}
         </div>
 
-        {/* 授業情報サマリ */}
+        {/* 授業情報サマリ（生徒・学年・教材・授業日時・講師・次回授業日） */}
         <Card>
           <CardContent className="p-4 bg-ink text-white rounded-md">
-            <div className="text-xs opacity-70 uppercase tracking-wide">
-              {form.lesson_date} {slotLabel}
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <div className="text-xs opacity-70 uppercase tracking-wide">
+                  {[form.lesson_date, slotLabel, timeLabel].filter(Boolean).join(' ')}
+                </div>
+                <div className="text-xl font-bold mt-1">
+                  {studentName}{' '}
+                  <span className="text-sm font-normal opacity-80">（{gradeLabel}）</span>
+                </div>
+                <div className="text-sm mt-1 opacity-80 truncate">
+                  {mainTextbookName && <>{mainTextbookName} ・ </>}講師: {teacherName}
+                </div>
+              </div>
+              {/* 次回授業日は宿題の日割りの締切そのものなので常に見えるようにする */}
+              <div className="shrink-0 text-right">
+                <div className="text-[10px] opacity-70 tracking-wide">次回授業日</div>
+                <div className="text-sm font-bold tabular-nums mt-0.5">
+                  {nextLessonDate ? formatDateLabel(nextLessonDate) : '未定'}
+                </div>
+              </div>
             </div>
-            <div className="text-xl font-bold mt-1">
-              {studentName} <span className="text-sm font-normal opacity-80">（{gradeLabel}）</span>
-            </div>
-            <div className="text-sm mt-1 opacity-80">講師: {teacherName}</div>
           </CardContent>
         </Card>
 
@@ -654,231 +855,253 @@ export default function LessonReportFormPage() {
         <GoalHeaderCard goal={goalHeader} countdown={countdown} />
 
         {/* ── 保護者に公開されるゾーン ── */}
-        <Zone
-          kind="public"
-          title="保護者に公開される内容（承認後にマイページへ）"
-          icon={<Eye className="w-3.5 h-3.5" />}
-        >
-          <Field
-            label="今日の目標（手入力）"
-            hint="↑ 上の中期目標を踏まえて、この授業のゴールを1文で"
+        <div ref={publicZoneRef} className="scroll-mt-16">
+          <Zone
+            kind="public"
+            title="保護者に公開される内容（承認後にマイページへ）"
+            icon={<Eye className="w-3.5 h-3.5" />}
           >
-            <input
-              type="text"
-              className="w-full px-3 py-2 border-2 border-info rounded-md text-sm"
-              value={form.short_term_goal}
-              onChange={(e) => setForm((f) => ({ ...f, short_term_goal: e.target.value }))}
-              placeholder="例：不定詞の名詞用法を5問以上正しく訳せる"
-            />
-          </Field>
+            <Field
+              label="今日の目標（手入力）"
+              hint="↑ 上の中期目標を踏まえて、この授業のゴールを1文で"
+            >
+              <input
+                type="text"
+                className="w-full px-3 py-2 border-2 border-info rounded-md text-sm"
+                value={form.short_term_goal}
+                onChange={(e) => setForm((f) => ({ ...f, short_term_goal: e.target.value }))}
+                placeholder="例：不定詞の名詞用法を5問以上正しく訳せる"
+              />
+            </Field>
 
-          {/* 学習内容・学校進度 ＝ 進行表グリッドの埋め込み */}
-          <div>
-            <label className="block text-xs font-semibold text-text-muted mb-1">
-              学習内容・学校進度
-              <span className="ml-2 px-2 py-0.5 rounded-full bg-info-subtle text-info text-[10px] font-bold">
-                進行表の行をクリックで選択（記入方式は進行表と同じ）
-              </span>
-            </label>
-            <div className="space-y-3">
-              {form.units.map((u, idx) => {
-                const opt = textbookOptions.find((o) => o.id === u.student_textbook_id);
-                const sel = selections[u.student_textbook_id] ?? emptySelection();
-                return (
-                  <div
-                    key={u.student_textbook_id || idx}
-                    className={`p-3 border rounded-md ${
-                      u.is_main ? 'border-info border-2 bg-info-subtle/30' : 'bg-surface'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2 mb-2">
-                      <span
-                        className={`px-2 py-0.5 rounded text-xs font-bold ${
-                          u.is_main ? 'bg-info text-white' : 'bg-gray-500 text-white'
+            {/* 本日の指導範囲（下段の進行表から自動反映・ここでは編集しない） */}
+            <div>
+              <label className="block text-xs font-semibold text-text-muted mb-1">
+                本日の指導範囲
+                <span className="ml-2 px-2 py-0.5 rounded-full bg-info-subtle text-info text-[10px] font-bold">
+                  下の進行表から自動反映
+                </span>
+              </label>
+              {form.units.length === 0 ? (
+                <p className="text-xs text-text-faint">
+                  この生徒には進行表で管理中の教材がありません。下の自由記述に入力してください。
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {form.units.map((u, idx) => {
+                    const opt = textbookOptions.find((o) => o.id === u.student_textbook_id);
+                    const chips = taughtChipsOf(u.student_textbook_id);
+                    return (
+                      <div
+                        key={u.student_textbook_id || idx}
+                        className={`p-3 border rounded-md ${
+                          u.is_main ? 'border-info border-2 bg-info-subtle/30' : 'bg-surface'
                         }`}
                       >
-                        {u.is_main ? 'メイン' : 'サブ'}
-                      </span>
-                      <select
-                        value={u.student_textbook_id}
-                        onChange={(e) => updateUnit(idx, { student_textbook_id: e.target.value })}
-                        className="flex-1 px-2 py-1 border rounded text-sm font-semibold"
-                      >
-                        {textbookOptions
-                          // 他のセットで使っている教材は選ばせない（選択状態は教材IDで持つため）
-                          .filter(
-                            (o) => o.id === u.student_textbook_id || !usedTextbookIds.has(o.id)
-                          )
-                          .map((o) => (
-                            <option key={o.id} value={o.id}>
-                              {o.textbook_name}
-                            </option>
-                          ))}
-                      </select>
-                      {!u.is_main && (
-                        <button
-                          type="button"
-                          className="text-text-faint hover:text-danger transition-colors duration-150 active:scale-[0.90]"
-                          onClick={() => removeUnit(idx)}
-                          title="このセットを削除"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      )}
-                    </div>
-
-                    <LessonReportProgressGrid
-                      textbookName={opt?.textbook_name ?? '教材'}
-                      rows={gridRows[u.student_textbook_id] ?? []}
-                      selection={{
-                        unitActions: sel.unitActions,
-                        schoolUnits: sel.schoolUnits,
-                        sessionDate: form.lesson_date,
-                      }}
-                      onCellToggle={(cid, col) => handleCellToggle(u.student_textbook_id, cid, col)}
-                      isTeacher={profile?.role === 'teacher'}
-                    />
-
-                    <div className="grid grid-cols-2 gap-2 mt-2">
-                      <Field label="開始ページ">
-                        <PageInput
-                          value={u.page_start}
-                          onChange={(v) => updateUnit(idx, { page_start: v })}
-                        />
-                      </Field>
-                      <Field label="終了ページ">
-                        <PageInput
-                          value={u.page_end}
-                          onChange={(v) => updateUnit(idx, { page_end: v })}
-                        />
-                      </Field>
-                    </div>
-                  </div>
-                );
-              })}
-              {textbookOptions.length > usedTextbookIds.size && (
-                <button
-                  type="button"
-                  onClick={addUnit}
-                  className="w-full py-2 border-2 border-dashed border-info rounded-md text-sm text-info hover:bg-info-subtle transition-colors duration-150 active:scale-[0.98] ease-[cubic-bezier(0.23,1,0.32,1)]"
-                >
-                  <Plus className="inline w-4 h-4 mr-1" />
-                  サブ教材セットを追加（補助教材）
-                </button>
+                        <div className="flex items-center gap-2 mb-2">
+                          <MainSubBadge isMain={u.is_main} />
+                          <span className="text-sm font-semibold text-text-heading truncate">
+                            {opt?.textbook_name ?? '教材'}
+                          </span>
+                        </div>
+                        {chips.length > 0 ? (
+                          <div className="flex flex-wrap gap-1.5">
+                            {chips.map((c) => (
+                              <UnitChip key={c.curriculumItemId} chip={c} />
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-[11px] text-text-faint">
+                            下の進行表で今日やった単元をクリックしてください
+                          </p>
+                        )}
+                        <div className="grid grid-cols-2 gap-2 mt-2">
+                          <Field label="開始ページ">
+                            <PageInput
+                              value={u.page_start}
+                              onChange={(v) => updateUnit(idx, { page_start: v })}
+                            />
+                          </Field>
+                          <Field label="終了ページ">
+                            <PageInput
+                              value={u.page_end}
+                              onChange={(v) => updateUnit(idx, { page_end: v })}
+                            />
+                          </Field>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               )}
-            </div>
-            <p className="text-[10px] text-text-faint mt-2 mb-1">
-              プリント・テキスト外の教材はこちらに（自由記述）
-            </p>
-            <input
-              type="text"
-              className="w-full px-3 py-2 border rounded-md text-sm"
-              value={extraMaterials}
-              onChange={(e) => setExtraMaterials(e.target.value)}
-              placeholder="例: 計算プリント（分数係数）を10問"
-            />
-          </div>
-
-          {/* 宿題・演習（すべてスライダー） */}
-          <div>
-            <label className="block text-xs font-semibold text-text-muted mb-2">
-              宿題・演習（すべてスライダー）
-            </label>
-            <div className="space-y-2">
-              <SliderField
-                label="やってきた量"
-                value={form.homework_completion_pct}
-                onChange={(v) => setForm((f) => ({ ...f, homework_completion_pct: v }))}
-              />
-              <SliderField
-                label="宿題の正答率"
-                value={form.homework_correct_pct}
-                onChange={(v) => setForm((f) => ({ ...f, homework_correct_pct: v }))}
-              />
-              <SliderField
-                label="今日の演習の正答率"
-                value={form.today_correct_pct}
-                onChange={(v) => setForm((f) => ({ ...f, today_correct_pct: v }))}
-              />
-            </div>
-          </div>
-
-          {/* 確認テスト（1本に統合・合否は自動判定） */}
-          <CheckTestField
-            score={form.check_test_score}
-            total={form.check_test_total}
-            passed={checkTestPassed}
-            onScoreChange={(v) => setForm((f) => ({ ...f, check_test_score: v }))}
-            onTotalChange={(v) => setForm((f) => ({ ...f, check_test_total: v }))}
-          />
-
-          {/* 講評（手書き） */}
-          <Field label="講評（手書き・保護者が読む文章）">
-            <textarea
-              className="w-full px-3 py-2 border rounded-md text-sm"
-              rows={5}
-              value={form.review_comment}
-              onChange={(e) => setForm((f) => ({ ...f, review_comment: e.target.value }))}
-              placeholder="5行程度で記入"
-            />
-            <div className="text-xs text-text-muted mt-1">
-              現在 {reviewLineCount} 行 / 推奨 5 行
-            </div>
-          </Field>
-
-          {/* 次回までの宿題（日割り） */}
-          <div>
-            <label className="block text-xs font-semibold text-text-muted mb-1">
-              次回までの宿題（日割り）
-              <span className="ml-2 px-2 py-0.5 rounded-full bg-info-subtle text-info text-[10px] font-bold">
-                次回授業日までの日付を自動生成
-              </span>
-            </label>
-            {nextLessonDate ? (
-              <p className="text-[10px] text-text-faint mb-2">
-                次回授業: {formatDateLabel(nextLessonDate)}（この日の行は入力なしでOK）
+              <p className="text-[10px] text-text-faint mt-2 mb-1">
+                プリント・テキスト外の教材はこちらに（自由記述）
               </p>
-            ) : (
-              <p className="text-[10px] text-text-faint mb-2">
-                次回授業日が未定のため、翌日から7日分の行を出しています
-              </p>
-            )}
-            <div className="space-y-1">
-              {form.homework_assignments.map((a, idx) => {
-                const isNext = !!nextLessonDate && a.date === nextLessonDate;
-                return (
-                  <div key={a.date || idx} className="grid grid-cols-[92px_1fr] gap-2 items-center">
+              <input
+                type="text"
+                className="w-full px-3 py-2 border rounded-md text-sm"
+                value={extraMaterials}
+                onChange={(e) => setExtraMaterials(e.target.value)}
+                placeholder="例: 計算プリント（分数係数）を10問"
+              />
+            </div>
+
+            {/* 学校の進度（下段の学校進度列から自動反映） */}
+            <div>
+              <label className="block text-xs font-semibold text-text-muted mb-1">
+                学校の進度
+                <span className="ml-2 px-2 py-0.5 rounded-full bg-info-subtle text-info text-[10px] font-bold">
+                  下の進行表から自動反映
+                </span>
+              </label>
+              {schoolProgressLabels.length > 0 ? (
+                <div className="flex flex-wrap gap-1.5">
+                  {schoolProgressLabels.map((label) => (
                     <span
-                      className={`px-2 py-1 rounded text-[11px] font-bold text-center tabular-nums ${
-                        isNext ? 'bg-surface text-text-muted' : 'bg-info-subtle text-info'
-                      }`}
+                      key={label}
+                      className="rounded-full bg-surface px-2.5 py-1 text-[11.5px] font-semibold text-text-body"
                     >
-                      {formatDateLabel(a.date)}
+                      {label}
                     </span>
-                    <input
-                      type="text"
-                      value={a.text}
-                      onChange={(e) => updateHomeworkText(idx, e.target.value)}
-                      className="px-2 py-1 border rounded text-sm"
-                      placeholder={isNext ? '（次回授業日・入力なしでOK）' : '例: ワーク p.30-31'}
-                    />
-                  </div>
-                );
-              })}
-              {form.homework_assignments.length === 0 && (
-                <p className="text-xs text-text-faint">授業日が未確定のため日割り行を作れません</p>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-[11px] text-text-faint">
+                  下の進行表の「学校進度」列をクリックすると、学校が進んだ単元がここに出ます
+                </p>
               )}
             </div>
-          </div>
 
-          {/* 科目別欄（既存機能。保護者に見える宿題の一部として公開ゾーンに置く） */}
-          <Field label="科目別欄（単語・計算・漢字の反復練習）">
-            <SubjectSpecificField
-              value={form.subject_specific}
-              onChange={(v) => setForm((f) => ({ ...f, subject_specific: v }))}
+            {/* 本日の様子（トグルピル・保護者にも表示される） */}
+            <div>
+              <label className="block text-xs font-semibold text-text-muted mb-1">本日の様子</label>
+              <div className="flex flex-wrap items-center gap-2">
+                <MarkToggle
+                  label="遅刻"
+                  active={form.tardy}
+                  onToggle={() => setForm((f) => ({ ...f, tardy: !f.tardy }))}
+                />
+                <MarkToggle
+                  label="宿題未実施"
+                  active={form.homework_not_done}
+                  onToggle={toggleHomeworkNotDone}
+                />
+              </div>
+              <p className="text-[10px] text-text-faint mt-1">
+                該当するときだけ押します。保護者の報告書にも表示されます
+              </p>
+            </div>
+
+            {/* 宿題・演習（すべてスライダー） */}
+            <div>
+              <label className="block text-xs font-semibold text-text-muted mb-2">
+                宿題・演習（すべてスライダー）
+              </label>
+              <div className="space-y-2">
+                <SliderField
+                  label="やってきた量"
+                  value={form.homework_completion_pct}
+                  onChange={changeHomeworkCompletionPct}
+                  hint="0% にすると「宿題未実施」マークが自動で付きます"
+                />
+                <SliderField
+                  label="宿題の正答率"
+                  value={form.homework_correct_pct}
+                  onChange={(v) => setForm((f) => ({ ...f, homework_correct_pct: v }))}
+                />
+                <SliderField
+                  label="今日の演習の正答率"
+                  value={form.today_correct_pct}
+                  onChange={(v) => setForm((f) => ({ ...f, today_correct_pct: v }))}
+                />
+              </div>
+            </div>
+
+            {/* 確認テスト（1本に統合・合否は自動判定） */}
+            <CheckTestField
+              score={form.check_test_score}
+              total={form.check_test_total}
+              passed={checkTestPassed}
+              onScoreChange={(v) => setForm((f) => ({ ...f, check_test_score: v }))}
+              onTotalChange={(v) => setForm((f) => ({ ...f, check_test_total: v }))}
             />
-          </Field>
-        </Zone>
+
+            {/* 講評（手書き） */}
+            <Field label="講評（手書き・保護者が読む文章）">
+              <textarea
+                className="w-full px-3 py-2 border rounded-md text-sm"
+                rows={5}
+                value={form.review_comment}
+                onChange={(e) => setForm((f) => ({ ...f, review_comment: e.target.value }))}
+                placeholder="5行程度で記入"
+              />
+              <div className="text-xs text-text-muted mt-1">
+                現在 {reviewLineCount} 行 / 推奨 5 行
+              </div>
+            </Field>
+
+            {/* 次回までの宿題（日割り） */}
+            <div>
+              <label className="block text-xs font-semibold text-text-muted mb-1">
+                {nextLessonDate
+                  ? `次回までの宿題（次回授業日 ${formatDateLabel(nextLessonDate)} まで）`
+                  : '次回までの宿題（次回授業日 未定）'}
+                <span className="ml-2 px-2 py-0.5 rounded-full bg-info-subtle text-info text-[10px] font-bold">
+                  次回授業日までの日付を自動生成
+                </span>
+              </label>
+              {nextLessonDate ? (
+                <p className="text-[10px] text-text-faint mb-2">次回授業日の行は入力なしでOKです</p>
+              ) : (
+                <p className="text-[10px] text-text-faint mb-2">
+                  次回授業日が未定のため、翌日から7日分の行を出しています
+                </p>
+              )}
+              <div className="space-y-1">
+                {form.homework_assignments.map((a, idx) => {
+                  const isNext = !!nextLessonDate && a.date === nextLessonDate;
+                  return (
+                    <div
+                      key={a.date || idx}
+                      className="grid grid-cols-[92px_1fr] gap-2 items-center"
+                    >
+                      <span
+                        className={`px-2 py-1 rounded text-[11px] font-bold text-center tabular-nums ${
+                          isNext ? 'bg-surface text-text-muted' : 'bg-info-subtle text-info'
+                        }`}
+                      >
+                        {formatDateLabel(a.date)}
+                      </span>
+                      <input
+                        type="text"
+                        value={a.text}
+                        onChange={(e) => updateHomeworkText(idx, e.target.value)}
+                        className="px-2 py-1 border rounded text-sm"
+                        placeholder={isNext ? '（次回授業日・入力なしでOK）' : '例: ワーク p.30-31'}
+                      />
+                    </div>
+                  );
+                })}
+                {form.homework_assignments.length === 0 && (
+                  <p className="text-xs text-text-faint">
+                    授業日が未確定のため日割り行を作れません
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* 科目別欄（既存機能。保護者に見える宿題の一部として公開ゾーンに置く） */}
+            <Field label="科目別欄（単語・計算・漢字の反復練習）">
+              <SubjectSpecificField
+                value={form.subject_specific}
+                onChange={(v) => setForm((f) => ({ ...f, subject_specific: v }))}
+              />
+            </Field>
+          </Zone>
+        </div>
+
+        {/* スティッキーバーの出し入れを判定するセンチネル（公開ゾーンの直後） */}
+        <div ref={publicZoneEndRef} aria-hidden className="h-px" />
 
         {/* ── 教室内のみのゾーン ── */}
         <Zone
@@ -898,29 +1121,82 @@ export default function LessonReportFormPage() {
               placeholder="次の講師への引継ぎを入力..."
             />
           </Field>
-          <Field label="フラグ">
-            <div className="flex items-center gap-4">
-              <label className="flex items-center gap-2 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={tardy}
-                  onChange={(e) => setTardy(e.target.checked)}
-                  className="w-4 h-4 accent-[#d97706]"
-                />
-                <span className="text-sm text-text-body">遅刻</span>
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={homeworkNotDone}
-                  onChange={(e) => setHomeworkNotDone(e.target.checked)}
-                  className="w-4 h-4 accent-[#d97706]"
-                />
-                <span className="text-sm text-text-body">宿題未実施</span>
-              </label>
-            </div>
-          </Field>
         </Zone>
+
+        {/* ── 下段: 進行表 ── */}
+        <section className="rounded-lg border border-border overflow-hidden">
+          <div className="flex items-center gap-1.5 px-4 py-2 bg-surface text-[11px] font-bold tracking-wide text-text-muted">
+            <ClipboardList className="w-3.5 h-3.5" />
+            進行表
+          </div>
+          <div className="bg-white p-4 space-y-3">
+            <p className="text-[11px] text-text-faint">
+              セルをクリックすると今日の日付が入り、上の指導範囲に反映されます
+            </p>
+            {form.units.map((u, idx) => {
+              const opt = textbookOptions.find((o) => o.id === u.student_textbook_id);
+              const sel = selections[u.student_textbook_id] ?? emptySelection();
+              return (
+                <div
+                  key={u.student_textbook_id || idx}
+                  className={`p-3 border rounded-md ${
+                    u.is_main ? 'border-info border-2 bg-info-subtle/30' : 'bg-surface'
+                  }`}
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    <MainSubBadge isMain={u.is_main} />
+                    <select
+                      value={u.student_textbook_id}
+                      onChange={(e) => updateUnit(idx, { student_textbook_id: e.target.value })}
+                      className="flex-1 px-2 py-1 border rounded text-sm font-semibold"
+                    >
+                      {textbookOptions
+                        // 他のセットで使っている教材は選ばせない（選択状態は教材IDで持つため）
+                        .filter((o) => o.id === u.student_textbook_id || !usedTextbookIds.has(o.id))
+                        .map((o) => (
+                          <option key={o.id} value={o.id}>
+                            {o.textbook_name}
+                          </option>
+                        ))}
+                    </select>
+                    {!u.is_main && (
+                      <button
+                        type="button"
+                        className="text-text-faint hover:text-danger transition-colors duration-150 active:scale-[0.90]"
+                        onClick={() => removeUnit(idx)}
+                        title="このセットを削除"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+
+                  <LessonReportProgressGrid
+                    textbookName={opt?.textbook_name ?? '教材'}
+                    rows={gridRows[u.student_textbook_id] ?? []}
+                    selection={{
+                      unitActions: sel.unitActions,
+                      schoolUnits: sel.schoolUnits,
+                      sessionDate: form.lesson_date,
+                    }}
+                    onCellToggle={(cid, col) => handleCellToggle(u.student_textbook_id, cid, col)}
+                    isTeacher={profile?.role === 'teacher'}
+                  />
+                </div>
+              );
+            })}
+            {textbookOptions.length > usedTextbookIds.size && (
+              <button
+                type="button"
+                onClick={addUnit}
+                className="w-full py-2 border-2 border-dashed border-info rounded-md text-sm text-info hover:bg-info-subtle transition-colors duration-150 active:scale-[0.98] ease-[cubic-bezier(0.23,1,0.32,1)]"
+              >
+                <Plus className="inline w-4 h-4 mr-1" />
+                サブ教材を追加（補助教材）
+              </button>
+            )}
+          </div>
+        </section>
 
         {/* フッター */}
         <div className="sticky bottom-0 bg-white border-t p-3 flex items-center gap-2 -mx-4 px-4">
@@ -968,16 +1244,16 @@ function formatDateLabel(date: string): string {
 }
 
 /**
- * グリッドで学校進度としてマークされた単元から、class_reports.school_progress（text列）の
- * 表示文字列を組み立てる。進行表側の実データ（student_progress.school_progress_date）は
- * recordSession が書くので、ここは保護者に見せる文言だけを作る。
+ * グリッドで学校進度としてマークされた単元のラベル（`教材名 / 単元名`）を並べる。
+ * 画面のチップ表示と、保存する school_progress 文字列の両方がこの1か所から出るので、
+ * 「画面に出ている内容」と「保護者に届く内容」が構造的にズレない。
  */
-function buildSchoolProgressText(
+function buildSchoolProgressLabels(
   units: ClassReportFormData['units'],
   selections: Record<string, GridSelectionState>,
   gridRows: Record<string, CurriculumItemWithProgress[]>,
   textbookOptions: StudentTextbookOption[]
-): string {
+): string[] {
   const labels: string[] = [];
   for (const u of units) {
     const sel = selections[u.student_textbook_id];
@@ -989,13 +1265,27 @@ function buildSchoolProgressText(
       if (sel.schoolUnits.has(row.id)) labels.push(`${tbName} / ${row.title}`);
     }
   }
-  return labels.join('、');
+  return labels;
+}
+
+/**
+ * class_reports.school_progress（text列）の表示文字列を組み立てる。
+ * 進行表側の実データ（student_progress.school_progress_date）は recordSession が書くので、
+ * ここは保護者に見せる文言だけを作る。
+ */
+function buildSchoolProgressText(
+  units: ClassReportFormData['units'],
+  selections: Record<string, GridSelectionState>,
+  gridRows: Record<string, CurriculumItemWithProgress[]>,
+  textbookOptions: StudentTextbookOption[]
+): string {
+  return buildSchoolProgressLabels(units, selections, gridRows, textbookOptions).join('、');
 }
 
 /**
  * 進行表への転記。教材（student_textbook）ごとに既存の recordSession をそのまま呼ぶ。
  * primaryCurriculumItemId の算出も授業記録パネル（SessionRecordingPanel）と同じ規則:
- * 触れた単元のうちカリキュラム順で一番下の行に引継ぎ・フラグを書く。
+ * 触れた単元のうちカリキュラム順で一番下の行に引継ぎ・マークを書く。
  */
 async function syncToProgress(params: {
   entry: ScheduleEntryInfo;
@@ -1006,6 +1296,8 @@ async function syncToProgress(params: {
   homeworkNotDone: boolean;
   tardy: boolean;
   teacherName: string;
+  /** 保存した授業報告書のID。progress_sessions.report_id に紐づける */
+  reportId: string;
   onSessionSaved: (studentTextbookId: string, sessionId: string) => void;
 }): Promise<void> {
   const {
@@ -1017,6 +1309,7 @@ async function syncToProgress(params: {
     homeworkNotDone,
     tardy,
     teacherName,
+    reportId,
     onSessionSaved,
   } = params;
 
@@ -1065,6 +1358,7 @@ async function syncToProgress(params: {
       unitActions,
       schoolProgressUnits: Array.from(sel.schoolUnits),
       scheduleEntryId: entry.id,
+      reportId,
       sessionId: sel.sessionId,
       primaryCurriculumItemId,
       clearSchoolProgressUnits,
@@ -1095,7 +1389,7 @@ async function loadGoalHeader(
 }
 
 /**
- * このコマに紐づく既存セッションから、グリッド選択・引継ぎ・フラグを復元する。
+ * このコマに紐づく既存セッションから、グリッド選択・引継ぎ・マークを復元する。
  * - セッションの識別は schedule_entry_id（下書きを何度保存してもセッションを増やさない）
  * - 指導単元 / 学校進度は既存の getSessionsForEdit で復元する
  */
@@ -1138,7 +1432,7 @@ async function restoreSessions(
       origSchoolUnitIds: schoolUnitIds,
       sessionId: session.id,
     };
-    // 引継ぎ・フラグはコマ単位の情報。最初に見つかったセッションの値を採用する
+    // 引継ぎ・マークはコマ単位の情報。最初に見つかったセッションの値を採用する
     if (!handoverSet) {
       setHandover(session.handover ?? '');
       setHomeworkNotDone(session.homework_not_done);
@@ -1243,6 +1537,69 @@ function GoalHeaderCard({
   );
 }
 
+/** メイン／サブのバッジ（上段の指導範囲と下段の進行表で同じ見た目にする） */
+function MainSubBadge({ isMain }: { isMain: boolean }) {
+  return (
+    <span
+      className={`px-2 py-0.5 rounded text-xs font-bold shrink-0 ${
+        isMain ? 'bg-info text-white' : 'bg-gray-500 text-white'
+      }`}
+    >
+      {isMain ? 'メイン' : 'サブ'}
+    </span>
+  );
+}
+
+/**
+ * 指導範囲のチップ（単元名 ＋ n回目）。
+ * ★ 読み取り専用。解除は下段の進行表で同じセルをもう一度クリックする
+ *   （選択の正典を進行表グリッド1か所に保つため、ここからは編集させない）。
+ */
+function UnitChip({ chip, compact }: { chip: TaughtChip; compact?: boolean }) {
+  return (
+    <span
+      className={`inline-flex items-center gap-1 rounded-full bg-info-subtle font-semibold text-info ${
+        compact ? 'px-2 py-0.5 text-[10.5px]' : 'px-2.5 py-1 text-[11.5px]'
+      }`}
+    >
+      <span className={compact ? 'max-w-[120px] truncate' : ''}>{chip.title}</span>
+      <span className="rounded-full bg-info px-1.5 text-[9.5px] font-bold text-white tabular-nums">
+        {chip.lessonNumber}回目
+      </span>
+    </span>
+  );
+}
+
+/**
+ * 本日の様子のトグルピル（遅刻／宿題未実施）。
+ * チェックボックスではなく「押すと色が付くマーク」にして、講師が1タップで入れられるようにする。
+ * 押下状態は aria-pressed で伝える（見た目の色だけに頼らない）。
+ */
+function MarkToggle({
+  label,
+  active,
+  onToggle,
+}: {
+  label: string;
+  active: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={active}
+      onClick={onToggle}
+      className={`rounded-full border px-3.5 py-1.5 text-sm font-bold transition-colors duration-150 active:scale-[0.97] ${
+        active
+          ? 'border-warning bg-warning-subtle text-warning'
+          : 'border-border bg-white text-text-muted hover:bg-surface'
+      }`}
+    >
+      {label}
+    </button>
+  );
+}
+
 function Field({
   label,
   hint,
@@ -1288,10 +1645,12 @@ function SliderField({
   label,
   value,
   onChange,
+  hint,
 }: {
   label: string;
   value: number | null;
   onChange: (v: number | null) => void;
+  hint?: string;
 }) {
   return (
     <div>
@@ -1312,6 +1671,7 @@ function SliderField({
           <span className="text-xs text-text-muted font-medium">%</span>
         </div>
       </div>
+      {hint && <p className="text-[10px] text-text-faint mt-0.5">{hint}</p>}
     </div>
   );
 }
@@ -1587,6 +1947,9 @@ function loadDemo(setters: {
     mid_term_goal_snapshot: '',
     mid_action_goal_snapshot: '',
     school_progress: '',
+    // 見本では「遅刻あり・宿題はやってきた」状態にして、マークの見え方を確認できるようにする
+    tardy: true,
+    homework_not_done: false,
     homework_completion_pct: 90,
     homework_correct_pct: 75,
     today_correct_pct: 85,
