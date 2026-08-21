@@ -839,8 +839,19 @@ function buildExamOverdueCandidates(sources: AlertSources): Alert[] {
   for (const student of sources.students) {
     const textbooks = sources.textbooksByStudent.get(student.id) ?? [];
     for (const st of textbooks) {
-      for (const exam of st.exams ?? []) {
+      const exams = st.exams ?? [];
+      // 「次の目標へ」で先に進んでも前の目標行はそのまま残る（結果点数だけ書き戻される）ため、
+      // 過去の行まで判定すると次の目標を設定済みでも古い行が永久にアラートを出し続ける。
+      // そこでテキストごとに「最新の試験日の目標」だけを判定対象にする。
+      // 同日が複数ある場合はどちらも最新扱い（どちらが後継か決められないので取りこぼさない側に倒す）。
+      const latestExamDate = exams.reduce(
+        (max, e) => (e.exam_date && (max === null || e.exam_date > max) ? e.exam_date : max),
+        null as string | null
+      );
+      for (const exam of exams) {
         if (!exam.exam_date) continue;
+        // より新しい目標がある＝この行はすでに次へ進んだ後なので対象外
+        if (latestExamDate !== null && exam.exam_date < latestExamDate) continue;
         // 目標点 or 行動目標が設定済みなら目標未設定ではない
         if (exam.target_score != null) continue;
         if (sources.actionGoalExamIds.has(exam.id)) continue;
