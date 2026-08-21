@@ -10,6 +10,7 @@ import {
   Quote,
   Repeat,
   School,
+  SkipForward,
   Target,
 } from 'lucide-react';
 import type {
@@ -21,10 +22,11 @@ import type {
 /**
  * 授業報告書の詳細 — 保護者側（§7-4・UIモック セクション2）。
  *
- * 並び（モック準拠・変えないこと。科目別欄は講師フォームの公開ゾーンの並びに合わせて末尾）:
+ * 並び（モック準拠・変えないこと。モックに無い項目は講師フォームの公開ゾーンの並びに合わせる）:
  *   今日の目標／試験目標 → 学習内容（教材×単元×ページ）＋学校の進度＋プリント等の教材 →
- *   本日の様子（遅刻／宿題未実施マーク） → 宿題の取り組み（3項目のバー） → テスト →
- *   講師より（講評） → 次回までの宿題（日付ごと） → 科目別欄（単語・計算・漢字の反復練習）
+ *   本日の様子（遅刻／宿題未実施マーク） → 次回の予定 → 宿題の取り組み（3項目のバー） →
+ *   テスト → 講師より（講評） → 次回までの宿題（日付ごと） →
+ *   科目別欄（単語・計算・漢字の反復練習）
  *
  * ★ ここに出るのは限定公開ビューが返した列だけ:
  *   差し戻し理由・行動目標・承認者などの内部列はビューに存在しないので、
@@ -166,6 +168,27 @@ export function ReportDetail({
             {report.tardy && <MarkPill label="遅刻" />}
             {report.homeworkNotDone && <MarkPill label="宿題未実施" />}
           </div>
+        </Section>
+      )}
+
+      {/* 次回の予定（機能D）。講師が決めていなければセクションごと出さない。
+          375px 幅前提: 教材名は小さく上に、単元名を主役にして折り返す。 */}
+      {report.nextPlan.length > 0 && (
+        <Section>
+          <SectionTitle icon={<SkipForward className="h-[13px] w-[13px]" />}>
+            次回の予定
+          </SectionTitle>
+          <ul className="space-y-1.5">
+            {report.nextPlan.map((plan, i) => (
+              <li key={`${plan.textbookName ?? 'tb'}-${i}`}>
+                {/* 教材が1つのときは教材名を出さない（保護者にとっては単元名が本題） */}
+                {report.nextPlan.length > 1 && plan.textbookName && (
+                  <p className="text-[10.5px] text-text-muted">{plan.textbookName}</p>
+                )}
+                <p className="text-sm text-text-body">{plan.unitTitles.join('・')}</p>
+              </li>
+            ))}
+          </ul>
         </Section>
       )}
 

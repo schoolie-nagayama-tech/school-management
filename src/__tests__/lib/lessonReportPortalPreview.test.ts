@@ -29,6 +29,7 @@ const emptyForm = (patch: Partial<ClassReportFormData> = {}): ClassReportFormDat
   check_test_passed: null,
   review_comment: '',
   homework_assignments: [],
+  next_plan: [],
   subject_specific: null,
   status: 'draft',
   units: [],
@@ -75,6 +76,20 @@ describe('buildPortalPreview（保護者プレビューの組み立て）', () =
     const preview = build({ form: emptyForm({ tardy: true, homework_not_done: true }) });
     expect(preview.tardy).toBe(true);
     expect(preview.homeworkNotDone).toBe(true);
+  });
+
+  it('次回の予定は渡された値をそのまま写す（保存される next_plan と同じ材料）', () => {
+    const preview = build({
+      nextPlan: [{ textbookName: '新中問 数学2年', unitTitles: ['一次関数の利用'] }],
+    });
+    expect(preview.nextPlan).toEqual([
+      { textbookName: '新中問 数学2年', unitTitles: ['一次関数の利用'] },
+    ]);
+  });
+
+  it('次回の予定は、単元が決まっていない教材と未指定のときは空配列', () => {
+    expect(build().nextPlan).toEqual([]);
+    expect(build({ nextPlan: [{ textbookName: '新中問', unitTitles: [] }] }).nextPlan).toEqual([]);
   });
 
   it('確認テストの合否は自動判定の値を使う（フォームの古い値ではない）', () => {

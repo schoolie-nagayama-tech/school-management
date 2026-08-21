@@ -50,6 +50,17 @@ export interface PortalSubjectSpecific {
   extraMaterials: string | null;
 }
 
+/**
+ * 次回の予定1件（教材ごと）。class_reports.next_plan（jsonb）の要素。
+ *
+ * ★ ここも単元IDを持たない: ビューが返すのは講師が保存した時点の名前スナップショットで、
+ *   保護者に内部IDを露出させない（学習内容の unitTitles と同じ考え方）。
+ */
+export interface PortalNextPlanItem {
+  textbookName: string | null;
+  unitTitles: string[];
+}
+
 /** 学習内容1件（教材×単元×ページ）。portal_lesson_report_units の1行。 */
 export interface PortalReportUnit {
   id: string;
@@ -107,6 +118,11 @@ export interface PortalReportDetail {
    */
   tardy: boolean;
   homeworkNotDone: boolean;
+  /**
+   * 次回の予定（教材ごと）。講師が報告書で決めた「次回やる単元」のスナップショット。
+   * 空配列のときは表示側でセクションごと出さない（該当が無いのに見出しだけ出さない）。
+   */
+  nextPlan: PortalNextPlanItem[];
   /** 科目別欄（単語・計算・漢字の反復練習）＋プリント等自由記述。無ければ null。 */
   subjectSpecific: PortalSubjectSpecific | null;
   /** 宿題の取り組み（3項目のバー） */

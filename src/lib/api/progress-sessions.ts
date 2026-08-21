@@ -467,6 +467,14 @@ export async function recordSession(params: {
    * undefined）。undefined のときは列に触らない＝既存の紐づけを消さない。
    */
   reportId?: string | null;
+  /**
+   * 次回やる予定の単元ID（機能D。progress_sessions.next_plan_curriculum_item_ids）。
+   * reportId とまったく同じ作法にすること: 報告書フォームから保存したときだけ渡し、
+   * 進行表の授業記録パネルからは undefined。undefined のときは列に触らない
+   * （＝進行表からの保存を1バイトも変えない・既存の予定を消さない）。
+   * 列は NOT NULL なので、明示的に null を渡されたときは空配列として書く。
+   */
+  nextPlanCurriculumItemIds?: number[] | null;
   /** 引継ぎ・遅刻・宿題を書き込む「一番下の行」の単元ID（カリキュラム順で最後の指導単元） */
   primaryCurriculumItemId?: number | null;
   /** 既存セッションの上書き更新用。指定時は新規作成せず更新する（編集時の二重作成防止） */
@@ -486,6 +494,7 @@ export async function recordSession(params: {
     schoolProgressUnits,
     scheduleEntryId,
     reportId,
+    nextPlanCurriculumItemIds,
     primaryCurriculumItemId,
     sessionId,
     clearSchoolProgressUnits,
@@ -504,6 +513,10 @@ export async function recordSession(params: {
       tardy,
       // 報告書から呼ばれたときだけ紐づけを書く（undefined なら列を patch に載せない）
       ...(reportId !== undefined ? { report_id: reportId } : {}),
+      // 次回の予定も同じ作法（undefined なら列を patch に載せない）
+      ...(nextPlanCurriculumItemIds !== undefined
+        ? { next_plan_curriculum_item_ids: nextPlanCurriculumItemIds ?? [] }
+        : {}),
     });
   } else {
     // 新規モード: セッションを作成
@@ -517,6 +530,11 @@ export async function recordSession(params: {
       tardy,
       schedule_entry_id: scheduleEntryId,
       report_id: reportId,
+      // undefined のときはキーごと落ちる（＝DBの既定値 '{}' が入る）。
+      // 進行表の授業記録パネルからの新規作成は従来どおり。
+      ...(nextPlanCurriculumItemIds !== undefined
+        ? { next_plan_curriculum_item_ids: nextPlanCurriculumItemIds ?? [] }
+        : {}),
     });
   }
 

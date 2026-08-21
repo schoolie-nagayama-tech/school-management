@@ -89,6 +89,12 @@ export interface PreviousLessonTextbook {
    */
   handover: string | null;
   teacherName: string | null;
+  /**
+   * 前回の授業で決めた「次回の予定」の単元名（機能D）。
+   * ★ 教材ごとに違うので、引継ぎと同じく教材ごとに出す（連結しない）。
+   *   マイグレーション未適用の環境や、機能D以前に記録されたセッションでは空配列。
+   */
+  nextPlanUnits: string[];
 }
 
 /** 前回の授業に報告書もあったときだけ上乗せされる情報（無いのが普通）。 */
@@ -150,6 +156,8 @@ export async function getPreviousLessonForStudent(
     handover: string | null;
     homework_not_done: boolean | null;
     tardy: boolean | null;
+    /** 機能D。列が無い環境・機能D以前のセッションでは undefined / null で返る */
+    next_plan_curriculum_item_ids?: number[] | null;
     student_textbook?:
       | { id: string; textbook?: { name: string } | { name: string }[] | null }
       | Array<{ id: string; textbook?: { name: string } | { name: string }[] | null }>
@@ -161,7 +169,7 @@ export async function getPreviousLessonForStudent(
   const { data: sessionData, error: sessionErr } = await db
     .from('progress_sessions')
     .select(
-      'id, student_textbook_id, session_date, teacher_name, handover, homework_not_done, tardy, student_textbook:student_textbooks!inner(id, student_id, textbook:textbooks(name))'
+      'id, student_textbook_id, session_date, teacher_name, handover, homework_not_done, tardy, next_plan_curriculum_item_ids, student_textbook:student_textbooks!inner(id, student_id, textbook:textbooks(name))'
     )
     .eq('student_textbook.student_id', studentId)
     .lt('session_date', beforeDate)
@@ -213,15 +221,31 @@ export async function getPreviousLessonForStudent(
     unitsBySession.set(l.session_id, bucket);
   }
 
+  // 2-2. 前回決めた「次回の予定」の単元名（機能D）。IDのままでは講師に読めないので
+  //      curriculum_items で名前に解決する。全セッションぶんを1回のクエリでまとめて引く。
+  const nextPlanTitles = await resolveCurriculumTitles(
+    sessions.flatMap((s) =>
+      Array.isArray(s.next_plan_curriculum_item_ids) ? s.next_plan_curriculum_item_ids : []
+    )
+  );
+
   const textbooks: PreviousLessonTextbook[] = sessions.map((s) => {
     const stb = Array.isArray(s.student_textbook) ? s.student_textbook[0] : s.student_textbook;
     const textbook = Array.isArray(stb?.textbook) ? stb?.textbook[0] : stb?.textbook;
+    const planIds = Array.isArray(s.next_plan_curriculum_item_ids)
+      ? s.next_plan_curriculum_item_ids
+      : [];
     return {
       studentTextbookId: s.student_textbook_id,
       textbookName: textbook?.name ?? '教材',
       units: unitsBySession.get(s.id) ?? [],
       handover: s.handover && s.handover.trim() !== '' ? s.handover : null,
       teacherName: s.teacher_name,
+      // 名前が引けなかった単元（削除された等）は黙って落とす。
+      // 「単元#12」のような内部IDを講師に見せても意味が無い。
+      nextPlanUnits: planIds
+        .map((id) => nextPlanTitles.get(id))
+        .filter((t): t is string => typeof t === 'string'),
     };
   });
 
@@ -235,6 +259,29 @@ export async function getPreviousLessonForStudent(
     homeworkNotDone: sessions.some((s) => s.homework_not_done === true),
     report,
   };
+}
+
+/**
+ * 単元ID → 単元名を1回のクエリで解決する（「次回の予定」の表示用）。
+ * 引けなくても記入支援が欠けるだけなので、失敗しても空 Map を返して画面を止めない。
+ */
+async function resolveCurriculumTitles(ids: number[]): Promise<Map<number, string>> {
+  const map = new Map<number, string>();
+  const unique = Array.from(new Set(ids));
+  if (unique.length === 0) return map;
+  const { data, error } = await db
+    .from('curriculum_items')
+    .select('id, title')
+    .in('id', unique)
+    .limit(unique.length);
+  if (error) {
+    console.error('Error resolving next plan curriculum titles:', error);
+    return map;
+  }
+  for (const item of (data ?? []) as Array<{ id: number; title: string }>) {
+    map.set(item.id, item.title);
+  }
+  return map;
 }
 
 /**
@@ -326,6 +373,9 @@ export async function upsertClassReport(
 
     review_comment: form.review_comment || null,
     homework_assignments: form.homework_assignments,
+    // 次回の予定（保護者公開）。進行表側の正典は progress_sessions 側で、ここはその写し。
+    // 列は NOT NULL なので、未指定でも空配列を書く。
+    next_plan: form.next_plan ?? [],
     subject_specific: form.subject_specific,
 
     status: form.status,
