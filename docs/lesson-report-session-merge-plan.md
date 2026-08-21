@@ -100,17 +100,41 @@ comment on column public.class_reports.homework_not_done is '宿題未実施マ�
 
 ## A. 前回の授業を折りたたみで表示
 
-**目的**: 授業開始時に「前回の引継ぎ・出した宿題」を見ながら書けるようにする。
+**目的**: 授業開始時に「前回の引継ぎ・やった単元」を見ながら書けるようにする。
 
-- 新API `getPreviousReportForStudent(studentId, beforeDate)`（`src/lib/api/class-reports.ts`）
-  - `class_reports` を `student_id` 一致・`lesson_date < beforeDate`・`lesson_date desc`・`limit 1`。**status は問わない**（承認待ちでも講師には見せる）
-  - 引継ぎは `class_reports` に無いので、その報告書の `schedule_entry_id` で `progress_sessions` を引いて `handover` を取る（`report_id` は古いデータに無いので使わない）
-  - 単元名は `lesson_report_units` × `student_textbooks` × `textbooks` × `curriculum_items` を join して**名前だけ**返す
+**★ データ源は進行表の授業記録（`progress_sessions`）。報告書（`class_reports`）ではない**
+（2026-08-21 本番データで確認して差し替えた決定）:
+
+| テーブル | 件数 | 最新 | 直近30日 |
+|---|---|---|---|
+| `class_reports` | 5件（テストデータのみ） | 2026-07-20 | **0件** |
+| `progress_sessions` | 4,734件 | 当日 | 3,367件（うち `handover` 入り 4,485件） |
+
+講師が実際に使っているのは進行表の授業記録であり、報告書はまだ運用されていない。
+`class_reports` だけを見ると前回の授業カードは**実質どの生徒でも空になる**ので、
+セッションを一次情報にして、報告書があるときだけ上乗せする。
+
+- 新API `getPreviousLessonForStudent(studentId, beforeDate)`（`src/lib/api/class-reports.ts`。
+  両方のテーブルを引くのでどちらに置いてもよいが、報告書フォーム専用の記入支援なので
+  報告書側に置き、既存の型未登録テーブル用クライアント（`db`）をそのまま使う）
+  1. **前回の授業日**: `progress_sessions` → `student_textbooks`（`student_textbook_id`）で
+     `student_id` 一致・`session_date < beforeDate` の最大 `session_date`。
+     その日の**すべてのセッション**（教材ごとに1件ずつ存在しうる）を取る。`.limit()` は明示する
+  2. **セッションから取る**: `session_date` / `teacher_name` / `handover` /
+     `homework_not_done` / `tardy` / 教材名（`student_textbooks` → `textbooks`）
+  3. **その日にやった単元**: `student_progress_lessons.session_id` が対象セッションのものを引き、
+     `student_progress_id` → `student_progress.curriculum_item_id` → `curriculum_items.title` で
+     単元名を解決。`lesson_number`（1〜3回目）も持つ
+  4. **報告書があれば上乗せ（任意）**: 同じ生徒・同じ `lesson_date` の `class_reports` を1件引き、
+     あれば 講評 / 出した宿題 / 達成度3値 / 学校進度 を追加表示。**status は問わない**
+     （承認待ちでも講師には見せる）。**無いのが普通なので、無くてもカードは成立させること**
 - 置き場所: 授業情報サマリのカードの**直後**、目標ヘッダーの手前（今日のコマ → 前回どうだったか → 今日書く、の順）
 - 折りたたみヘッダー（閉じていても見える）: `前回の授業 M/D(曜)` ／ 引継ぎの1行プレビュー（省略記号で切る）／ 遅刻・宿題未実施のマーク（あれば）／ 開閉シェブロン
-- 展開時: 指導範囲（教材ごとの単元名）／学校の進度／出した宿題（日付＋内容）／講評／引継ぎ全文／達成度3値。**空の項目は出さない**
+- 展開時: 教材ごとに「教材名 → やった単元（n回目）」＋その教材の引継ぎ全文、講師名。
+  報告書があれば 講評／出した宿題（日付＋内容）／達成度3値／学校の進度 も続けて出す。**空の項目は出さない**
+- **引継ぎは教材（セッション）ごとに別々に入っていることがあるので、教材ごとに出す。1つに連結しない**
 - 既定は**閉じた状態**
-- 前回が無ければカードごと出さない。`isDemo` はダミーの前回を出す
+- 前回のセッションが1件も無ければカードごと出さない。`isDemo` はダミーの前回を出す
 
 ## G. 下書きの自動保存
 

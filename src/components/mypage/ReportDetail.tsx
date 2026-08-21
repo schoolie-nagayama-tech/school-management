@@ -47,9 +47,21 @@ export const SUBJECT_SPECIFIC_KIND_LABELS: Record<
   kanji: '国語：漢字練習',
 };
 
-export function ReportDetail({ report }: { report: PortalReportDetail }) {
+/**
+ * @param preview 講師の「保護者の見え方」プレビューから描くとき true。
+ *   既読APIを叩かない（講師が開いただけで保護者が読んだことになってしまうため）。
+ *   既定 false なので、保護者側の呼び出し（app/mypage/reports/[reportId]）は無変更で従来どおり。
+ */
+export function ReportDetail({
+  report,
+  preview = false,
+}: {
+  report: PortalReportDetail;
+  preview?: boolean;
+}) {
   // 開いた＝既読。未読だったときだけ叩く（§7-4「タップで既読」）。
   useEffect(() => {
+    if (preview) return;
     if (report.isRead) return;
     void fetch('/api/mypage/reports/read', {
       method: 'POST',
@@ -58,7 +70,7 @@ export function ReportDetail({ report }: { report: PortalReportDetail }) {
     }).catch(() => {
       /* 既読記録の失敗は致命的でないので無視 */
     });
-  }, [report.id, report.isRead]);
+  }, [report.id, report.isRead, preview]);
 
   const hasGoals = !!(report.shortTermGoal || report.midTermGoal);
   const extraMaterials = report.subjectSpecific?.extraMaterials ?? null;

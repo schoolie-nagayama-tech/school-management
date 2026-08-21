@@ -32,6 +32,14 @@
  *   一次情報なので公開ゾーンのトグルピルに変更した（決定4）。宿題未実施マークと
  *   「やってきた量(%)」は双方向同期する（規則は lib/lesson-reports/homeworkMark.ts）。
  *
+ * 記入支援4機能（フェーズ2・正典は同じ計画書の「フェーズ2」節）:
+ *   A. 前回の授業 … 進行表の授業記録（progress_sessions）を一次情報にした折りたたみカード。
+ *      報告書がまだ運用されていないため class_reports だけでは空になる（§A の表を参照）。
+ *   G. 下書きの自動保存 … 手動の「下書き保存」と同じ persist() を、黙って・間引いて呼ぶだけ。
+ *      別経路を作らない。提出済み・承認済みは動かさない（裏で書き換えない）。
+ *   E. 保護者プレビュー … 保護者が実際に見る ReportDetail をそのまま 375px 幅で描く。
+ *   F. 提出前チェック … 提出ボタンは押せるまま。足りない項目を挙げてその欄へ連れて行く。
+ *
  * 保存の二系統（どちらも既存の経路をそのまま使う。新しい保存先は作らない）:
  *   1. class_reports … upsertClassReport（提出→室長承認→差し戻しのワークフローは変更なし）
  *   2. 進行表 … recordSession（progress-sessions.ts）。学習単元・学校進度・引継ぎ・フラグは
@@ -48,7 +56,12 @@ import { Button } from '@/components/ui';
 import { ToastContainer, Loading } from '@/components/ui';
 import { useToast } from '@/hooks/useToast';
 import { useAuth } from '@/contexts/AuthContext';
-import { getReportByScheduleEntry, upsertClassReport } from '@/lib/api/class-reports';
+import {
+  getPreviousLessonForStudent,
+  getReportByScheduleEntry,
+  upsertClassReport,
+  type PreviousLessonSummary,
+} from '@/lib/api/class-reports';
 import type { ClassReport, ClassReportFormData, SubjectSpecific } from '@/types/class-report';
 import { supabase } from '@/lib/supabase';
 import { getStudentTextbooks, getStudentProgress } from '@/lib/api/progress';
@@ -61,12 +74,16 @@ import {
   type SessionUnitAction,
 } from '@/lib/api/progress-sessions';
 import type { CurriculumItemWithProgress, StudentTextbookWithDetails } from '@/types/database';
+import type { PortalReportDetail } from '@/types/mypage-report';
 import {
+  AlertCircle,
   ArrowUp,
   CalendarClock,
+  ChevronDown,
   ChevronLeft,
   ClipboardList,
   Eye,
+  History,
   Lock,
   Plus,
   Save,
@@ -76,8 +93,15 @@ import {
 } from 'lucide-react';
 import { DemoProgressPreview } from '@/components/lesson-reports/DemoProgressPreview';
 import { LessonReportProgressGrid } from '@/components/lesson-reports/LessonReportProgressGrid';
+import { ReportDetail } from '@/components/mypage/ReportDetail';
 import { formatGradeLabelOrEmpty } from '@/lib/utils/gradeLabel';
 import { applyHomeworkCompletionPct, applyHomeworkMark } from '@/lib/lesson-reports/homeworkMark';
+import { buildPortalPreview } from '@/lib/lesson-reports/portalPreview';
+import {
+  validateForSubmit,
+  type SubmitCheckField,
+  type SubmitCheckIssue,
+} from '@/lib/lesson-reports/submitValidation';
 import {
   buildHomeworkDateRows,
   compactHomeworkRows,
@@ -144,6 +168,56 @@ const emptySelection = (): GridSelectionState => ({
   origSchoolUnitIds: [],
   sessionId: null,
 });
+
+/** 自動保存: 最後の変更からこの時間だけ何も起きなければ1回だけ走らせる（ミリ秒）。 */
+const AUTO_SAVE_DELAY_MS = 3000;
+
+/** 自動保存の表示状態。トーストは出さず、フッターの文言だけを変える。 */
+type AutoSaveState = 'idle' | 'dirty' | 'saving' | 'saved' | 'error';
+
+/**
+ * 自動保存の「無変更なら叩かない」判定に使うスナップショット（内容だけの指紋）。
+ *
+ * ★ 何を入れないかが重要:
+ *   - `sessionId` / `origSchoolUnitIds` … 保存が成功したときにサーバから返ってきて
+ *     selections に書き戻される値。これを含めると「保存 → 状態が変わる → また保存」の
+ *     無限ループになる。
+ *   - 宿題の空行 … 授業日が確定した瞬間に日割り行が自動生成されるだけで、講師が
+ *     何かを書いたわけではない。保存時も compactHomeworkRows で落としているので、
+ *     ここでも同じ圧縮をかけて「開いただけで自動保存が走る」のを防ぐ。
+ *   Set は JSON にできないので、並びを固定した配列に直してから文字列にする。
+ */
+function buildAutoSaveSnapshot(
+  form: ClassReportFormData,
+  handover: string,
+  selections: Record<string, GridSelectionState>
+): string {
+  return JSON.stringify({
+    form: { ...form, homework_assignments: compactHomeworkRows(form.homework_assignments) },
+    handover,
+    selections: Object.keys(selections)
+      .sort()
+      .map((key) => ({
+        key,
+        unitActions: selections[key].unitActions,
+        schoolUnits: Array.from(selections[key].schoolUnits).sort((a, b) => a - b),
+      })),
+  });
+}
+
+/**
+ * 実行中のフラグ（ref）が下りるまで待つ。
+ * 手動保存が自動保存とかち合ったときに、押した操作を捨てずに順番待ちさせるために使う
+ * （同じ upsert 経路を同時に走らせると、報告書を二重に作りにいくレースになる）。
+ */
+async function waitForIdle(flag: React.MutableRefObject<boolean>, timeoutMs: number) {
+  const start = Date.now();
+  while (flag.current) {
+    if (Date.now() - start > timeoutMs) return false;
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+  return true;
+}
 
 /**
  * 生徒の授業予定日を取得する。
@@ -231,6 +305,30 @@ export default function LessonReportFormPage() {
   const publicZoneEndRef = useRef<HTMLDivElement>(null);
   const [showStickyBar, setShowStickyBar] = useState(false);
 
+  // ---- A: 前回の授業（進行表の授業記録が一次情報。無ければカードごと出さない） ----
+  const [previousLesson, setPreviousLesson] = useState<PreviousLessonSummary | null>(null);
+
+  // ---- E: 保護者プレビュー ----
+  const [showPortalPreview, setShowPortalPreview] = useState(false);
+
+  // ---- F: 提出前チェック（不足項目からその入力欄へ飛ばすための参照） ----
+  const [showSubmitIssues, setShowSubmitIssues] = useState(false);
+  const progressSectionRef = useRef<HTMLElement>(null);
+  const extraMaterialsRef = useRef<HTMLInputElement>(null);
+  const handoverRef = useRef<HTMLTextAreaElement>(null);
+  const reviewRef = useRef<HTMLTextAreaElement>(null);
+
+  // ---- G: 下書きの自動保存 ----
+  const [autoSaveState, setAutoSaveState] = useState<AutoSaveState>('idle');
+  const [autoSavedAt, setAutoSavedAt] = useState<string | null>(null);
+  // ★ ミューテックスは ref（useState ではない）:
+  //   state は次のレンダーまで反映されないため、3秒タイマーと手動クリックが重なると
+  //   「どちらもまだ保存中ではない」と判定して二重に走る。ref なら同期的に立つ。
+  const savingRef = useRef(false);
+  // 最後に保存できた時点のスナップショット。これと同じなら自動保存を叩かない。
+  // null の間（＝初期ロード完了前）は自動保存そのものを動かさない。
+  const lastSavedSnapshotRef = useRef<string | null>(null);
+
   // ---- 初期データ取得 ----
   const load = useCallback(async () => {
     setIsLoading(true);
@@ -246,6 +344,7 @@ export default function LessonReportFormPage() {
         setSelections,
         setHandover,
         setForm,
+        setPreviousLesson,
       });
       setIsLoading(false);
       return;
@@ -285,11 +384,16 @@ export default function LessonReportFormPage() {
 
       // 2. 授業予定日（次回授業日＝宿題の日割り / 予定件数＝カウントダウン）。
       //    報告書を後日書くこともあるので、授業日と今日の早いほうから拾う。
+      //    前回の授業（記入支援）は独立した読み取りなので同時に投げる。
       const today = todayInJst();
       const fromDate = info.entry_date < today ? info.entry_date : today;
-      const lessonDates = await getLessonDates(info.student_id, fromDate);
+      const [lessonDates, previous] = await Promise.all([
+        getLessonDates(info.student_id, fromDate),
+        getPreviousLessonForStudent(info.student_id, info.entry_date),
+      ]);
       setNextLessonDate(lessonDates.nextLessonDate);
       setScheduledDates(lessonDates.scheduledDates);
+      setPreviousLesson(previous);
 
       // 3. 生徒の student_textbooks + 各 textbook の curriculum_items を取得
       const textbooks = await getStudentTextbooks(info.student_id);
@@ -623,14 +727,114 @@ export default function LessonReportFormPage() {
     [form.units, taughtChipsOf]
   );
 
-  // ---- 保存 ----
-  const handleSave = async (nextStatus: 'draft' | 'submitted') => {
-    if (!entry) return;
+  // ---- G: 自動保存の変更検知 ----
+  // 中身の指紋。これが前回保存時と同じなら自動保存は叩かない。
+  const snapshot = useMemo(
+    () => buildAutoSaveSnapshot(form, handover, selections),
+    [form, handover, selections]
+  );
+  // 非同期処理の途中から最新の指紋を読むための鏡。レンダーのたびに同じ値を書くだけなので
+  // 副作用は無い（effect に持ち込むと1レンダーぶん古い値を掴む）。
+  const snapshotRef = useRef(snapshot);
+  snapshotRef.current = snapshot;
+
+  // ---- F: 提出前チェック ----
+  const selectedUnitCount = useMemo(
+    () =>
+      form.units.reduce(
+        (sum, u) => sum + Object.keys(selections[u.student_textbook_id]?.unitActions ?? {}).length,
+        0
+      ),
+    [form.units, selections]
+  );
+  const submitIssues: SubmitCheckIssue[] = useMemo(
+    () =>
+      validateForSubmit({
+        hasTextbooks: form.units.length > 0,
+        selectedUnitCount,
+        extraMaterials,
+        handover,
+        reviewComment: form.review_comment,
+      }),
+    [form.units.length, selectedUnitCount, extraMaterials, handover, form.review_comment]
+  );
+
+  // ---- E: 保護者プレビュー ----
+  // 保護者が実際に見るコンポーネント（ReportDetail）へそのまま渡すデータ。
+  // 「保存したらこう出る」と一致させるため、保存時と同じ整形（試験目標のスナップショット・
+  // 学校進度の連結・確認テストの自動判定）をここでも通す。
+  const portalPreview = useMemo(() => {
+    if (!showPortalPreview) return null;
+    return buildPortalPreview({
+      form: {
+        ...form,
+        mid_term_goal_snapshot: goalHeader
+          ? formatExamGoal(goalHeader)
+          : form.mid_term_goal_snapshot,
+      },
+      units: form.units.map((u, idx) => ({
+        isMain: u.is_main,
+        textbookName:
+          textbookOptions.find((o) => o.id === u.student_textbook_id)?.textbook_name ?? '教材',
+        unitTitles: taughtChipsOf(u.student_textbook_id).map((c) => c.title),
+        pageStart: u.page_start,
+        pageEnd: u.page_end,
+        displayOrder: u.display_order ?? idx,
+      })),
+      schoolProgress: schoolProgressLabels.join('、'),
+      teacherName: entry?.teacher?.display_name || profile?.display_name || null,
+      checkTestPassed,
+    });
+  }, [
+    showPortalPreview,
+    form,
+    goalHeader,
+    textbookOptions,
+    taughtChipsOf,
+    schoolProgressLabels,
+    entry?.teacher?.display_name,
+    profile?.display_name,
+    checkTestPassed,
+  ]);
+
+  // ---- 保存（手動・自動で共有する唯一の経路） ----
+  /**
+   * 報告書（class_reports）と進行表（progress_sessions）を保存する。
+   * 手動の「下書き保存 / 提出」も自動保存もこの関数を呼ぶ。★別経路を作らないこと。
+   *
+   * @param nextStatus 保存後の状態
+   * @param opts.silent 自動保存。トーストを出さず、**load() も呼ばない**
+   *   （再読込するとフォーカス・スクロール位置・入力途中の値が飛ぶ）。
+   *   返ってきた報告書は existingReport に差し替えるだけにする。
+   * @returns 保存できたら true
+   */
+  const persist = async (
+    nextStatus: 'draft' | 'submitted',
+    opts?: { silent?: boolean }
+  ): Promise<boolean> => {
+    const silent = opts?.silent === true;
+    if (!entry) return false;
     if (isDemo) {
-      toastError('これは入力画面の見本です。実際の授業からはここで保存・提出できます。');
-      return;
+      if (!silent) {
+        toastError('これは入力画面の見本です。実際の授業からはここで保存・提出できます。');
+      }
+      return false;
     }
-    setIsSaving(true);
+    // 二重実行の防止。自動保存は黙って見送り、手動は相手が終わるのを待ってから続ける
+    // （押した操作を捨てない）。
+    if (savingRef.current) {
+      if (silent) return false;
+      const idle = await waitForIdle(savingRef, 8000);
+      if (!idle) {
+        toastError('保存処理が終わりません。少し待ってからもう一度お試しください');
+        return false;
+      }
+    }
+    savingRef.current = true;
+    // 保存を始めた時点の中身を「保存した内容」として覚える。
+    // 保存中に打たれたぶんは指紋が変わるので、次の自動保存で拾われる。
+    const snapshotAtStart = snapshotRef.current;
+    if (!silent) setIsSaving(true);
     try {
       // 学習単元は進行表グリッドの選択が正。保存直前に units へ反映する
       const units = form.units.map((u) => ({
@@ -691,17 +895,131 @@ export default function LessonReportFormPage() {
           })),
       });
 
+      // ここまで来たら「この指紋の内容は保存済み」。自動保存の無変更判定に使う。
+      lastSavedSnapshotRef.current = snapshotAtStart;
+
+      if (silent) {
+        // ★ load() を呼ばない。再取得した報告書だけ差し替える（更新日時・IDの反映）。
+        setExistingReport(saved);
+        return true;
+      }
+
       success(nextStatus === 'draft' ? '下書き保存しました' : '提出しました（室長承認待ち）');
+      setAutoSaveState('idle');
       if (nextStatus === 'submitted') {
         router.push('/today');
       } else {
         await load();
       }
+      return true;
     } catch (err) {
-      toastError(err instanceof Error ? err.message : '保存に失敗しました');
+      // 自動保存の失敗はトーストにしない（入力のたびに再試行して連打になる）。
+      // フッターの文言だけで伝え、手動保存を促す。
+      if (!silent) toastError(err instanceof Error ? err.message : '保存に失敗しました');
+      return false;
     } finally {
-      setIsSaving(false);
+      savingRef.current = false;
+      if (!silent) setIsSaving(false);
     }
+  };
+
+  // persist はレンダーごとに作り直される（常に最新の state を見るため）。
+  // タイマーから呼ぶときに古い関数を掴まないよう、毎レンダー ref に載せ替える。
+  const persistRef = useRef(persist);
+  useEffect(() => {
+    persistRef.current = persist;
+  });
+
+  // ---- G: 自動保存 ----
+  // 初期ロードが終わった時点の中身を基準にする。開いただけで自動保存が走らないように。
+  // ★ この effect は下の自動保存 effect より前に置くこと（同じコミットで先に走る必要がある）。
+  useEffect(() => {
+    if (isLoading) return;
+    lastSavedSnapshotRef.current = snapshotRef.current;
+    setAutoSaveState('idle');
+  }, [isLoading]);
+
+  // 変更を検知して AUTO_SAVE_DELAY_MS 後に1回だけ下書き保存する。
+  // 実行しない条件（計画書 §G。どれか1つでも当てはまれば見送る）:
+  //   - デモ / 初期ロード中 / 基準未確定
+  //   - 既存報告書が submitted・approved（提出済みを裏で書き換えない）
+  //   - 手動・自動のどちらかが実行中（ミューテックスは savingRef）
+  //   - 前回保存時と中身が同じ（無変更では叩かない）
+  const reportStatus = existingReport?.status ?? null;
+  useEffect(() => {
+    if (isDemo || isLoading) return;
+    if (reportStatus === 'submitted' || reportStatus === 'approved') return;
+    if (lastSavedSnapshotRef.current === null) return;
+    if (snapshot === lastSavedSnapshotRef.current) return;
+
+    setAutoSaveState('dirty');
+    const timer = setTimeout(() => {
+      void (async () => {
+        // タイマー発火時点でもう一度条件を見る（この3秒の間に手動保存が走っていることがある）
+        if (savingRef.current) return;
+        if (snapshotRef.current === lastSavedSnapshotRef.current) return;
+        setAutoSaveState('saving');
+        const ok = await persistRef.current('draft', { silent: true });
+        if (ok) {
+          setAutoSavedAt(
+            new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })
+          );
+          // 保存中に打たれた変更があれば、指紋が違うので次の effect が拾って再度走る
+          setAutoSaveState(
+            snapshotRef.current === lastSavedSnapshotRef.current ? 'saved' : 'dirty'
+          );
+        } else {
+          setAutoSaveState('error');
+        }
+      })();
+    }, AUTO_SAVE_DELAY_MS);
+    return () => clearTimeout(timer);
+  }, [snapshot, isDemo, isLoading, reportStatus]);
+
+  // 未保存の変更が残ったままページを離れようとしたときだけ確認を出す。
+  useEffect(() => {
+    if (isDemo) return;
+    if (autoSaveState !== 'dirty' && autoSaveState !== 'error') return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [autoSaveState, isDemo]);
+
+  /** 手動の「下書き保存」 */
+  const handleSave = (nextStatus: 'draft' | 'submitted') => {
+    void persist(nextStatus);
+  };
+
+  /**
+   * F: 提出。ボタンは常に押せる。足りない項目があればその場で一覧を出して止める
+   * （黙って無効化すると、講師は何が足りないのか分からないまま画面を往復することになる）。
+   */
+  const handleSubmit = () => {
+    if (submitIssues.length > 0) {
+      setShowSubmitIssues(true);
+      return;
+    }
+    setShowSubmitIssues(false);
+    void persist('submitted');
+  };
+
+  /** 不足項目のボタンから、その入力欄へスクロールしてフォーカスする。 */
+  const focusSubmitIssue = (field: SubmitCheckField) => {
+    if (field === 'taught-range') {
+      // 指導範囲は下段の進行表でセルを押して埋めるものなので、進行表まで連れて行く。
+      // 進行表に教材が無い生徒は、プリント等の自由記述が入力先になる。
+      if (form.units.length === 0) {
+        focusElement(extraMaterialsRef.current);
+        return;
+      }
+      progressSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
+    if (field === 'handover') focusElement(handoverRef.current);
+    if (field === 'review') focusElement(reviewRef.current);
   };
 
   if (isLoading) {
@@ -844,6 +1162,9 @@ export default function LessonReportFormPage() {
           </CardContent>
         </Card>
 
+        {/* A: 前回の授業（今日のコマ → 前回どうだったか → 今日書く、の順） */}
+        <PreviousLessonCard lesson={previousLesson} />
+
         {existingReport?.status === 'rejected' && existingReport.rejection_reason && (
           <div className="bg-danger-subtle border border-danger rounded p-3 text-sm text-danger">
             <div className="font-medium">差し戻し理由:</div>
@@ -938,6 +1259,7 @@ export default function LessonReportFormPage() {
                 プリント・テキスト外の教材はこちらに（自由記述）
               </p>
               <input
+                ref={extraMaterialsRef}
                 type="text"
                 className="w-full px-3 py-2 border rounded-md text-sm"
                 value={extraMaterials}
@@ -1029,6 +1351,7 @@ export default function LessonReportFormPage() {
             {/* 講評（手書き） */}
             <Field label="講評（手書き・保護者が読む文章）">
               <textarea
+                ref={reviewRef}
                 className="w-full px-3 py-2 border rounded-md text-sm"
                 rows={5}
                 value={form.review_comment}
@@ -1114,6 +1437,7 @@ export default function LessonReportFormPage() {
             hint="進行表の授業記録と同じ保存先（progress_sessions）に書き込まれます"
           >
             <textarea
+              ref={handoverRef}
               className="w-full px-3 py-2 border rounded-md text-sm"
               rows={3}
               value={handover}
@@ -1124,7 +1448,10 @@ export default function LessonReportFormPage() {
         </Zone>
 
         {/* ── 下段: 進行表 ── */}
-        <section className="rounded-lg border border-border overflow-hidden">
+        <section
+          ref={progressSectionRef}
+          className="rounded-lg border border-border overflow-hidden scroll-mt-16"
+        >
           <div className="flex items-center gap-1.5 px-4 py-2 bg-surface text-[11px] font-bold tracking-wide text-text-muted">
             <ClipboardList className="w-3.5 h-3.5" />
             進行表
@@ -1198,25 +1525,52 @@ export default function LessonReportFormPage() {
           </div>
         </section>
 
-        {/* フッター */}
-        <div className="sticky bottom-0 bg-white border-t p-3 flex items-center gap-2 -mx-4 px-4">
-          <span className="text-xs text-text-muted flex-1">
-            {existingReport?.updated_at
-              ? `最終保存: ${new Date(existingReport.updated_at).toLocaleString('ja-JP')}`
-              : '未保存'}
-          </span>
-          <Button variant="outline" onClick={() => router.back()} disabled={isSaving}>
-            キャンセル
-          </Button>
-          <Button variant="outline" onClick={() => handleSave('draft')} disabled={isSaving}>
-            <Save className="w-4 h-4 mr-1" />
-            下書き保存
-          </Button>
-          <Button onClick={() => handleSave('submitted')} disabled={isSaving}>
-            <Send className="w-4 h-4 mr-1" />
-            {isSaving ? '保存中...' : '提出 (室長承認待ち)'}
-          </Button>
+        {/* フッター（提出前チェックの一覧はこの真上に出す） */}
+        <div className="sticky bottom-0 bg-white border-t -mx-4 px-4">
+          {showSubmitIssues && submitIssues.length > 0 && (
+            <SubmitIssuePanel
+              issues={submitIssues}
+              onJump={focusSubmitIssue}
+              onClose={() => setShowSubmitIssues(false)}
+            />
+          )}
+          <div className="flex flex-wrap items-center gap-2 py-3">
+            <span className="text-xs text-text-muted flex-1 min-w-[140px]">
+              <SaveStatusText
+                autoSaveState={autoSaveState}
+                autoSavedAt={autoSavedAt}
+                updatedAt={existingReport?.updated_at ?? null}
+              />
+            </span>
+            {submitIssues.length > 0 && (
+              // 押してから驚かせないよう、不足件数は常時出しておく
+              <span className="rounded-full bg-warning-subtle px-2.5 py-1 text-[11px] font-bold text-warning">
+                未入力 {submitIssues.length}件
+              </span>
+            )}
+            <Button variant="outline" onClick={() => router.back()} disabled={isSaving}>
+              キャンセル
+            </Button>
+            <Button variant="outline" onClick={() => setShowPortalPreview(true)}>
+              <Eye className="w-4 h-4 mr-1" />
+              保護者の見え方
+            </Button>
+            <Button variant="outline" onClick={() => handleSave('draft')} disabled={isSaving}>
+              <Save className="w-4 h-4 mr-1" />
+              下書き保存
+            </Button>
+            {/* ★ 不足があっても押せるままにする（押したときに何が足りないかを言う） */}
+            <Button onClick={handleSubmit} disabled={isSaving}>
+              <Send className="w-4 h-4 mr-1" />
+              {isSaving ? '保存中...' : '提出 (室長承認待ち)'}
+            </Button>
+          </div>
         </div>
+
+        {/* E: 保護者プレビュー（保護者が実際に見るコンポーネントをそのまま375px幅で描く） */}
+        {showPortalPreview && portalPreview && (
+          <PortalPreviewModal report={portalPreview} onClose={() => setShowPortalPreview(false)} />
+        )}
 
         {isDemo && <DemoProgressPreview />}
       </div>
@@ -1232,6 +1586,16 @@ function formatExamGoal(g: GoalHeader): string {
   if (g.targetScore != null) parts.push(`${g.targetScore}点`);
   const head = parts.join(' ');
   return g.examRange ? `${head}（範囲: ${g.examRange}）` : head;
+}
+
+/**
+ * 入力欄まで運んでフォーカスする（提出前チェックの「この欄へ」用）。
+ * スクロールは自分で滑らかに行い、focus 側は preventScroll で二重移動を止める。
+ */
+function focusElement(el: HTMLElement | null) {
+  if (!el) return;
+  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  el.focus({ preventScroll: true });
 }
 
 /** 日付ラベル 'YYYY-MM-DD' → 'M/D(曜)' */
@@ -1476,6 +1840,296 @@ function Zone({
         {title}
       </div>
       <div className="bg-white p-4 space-y-4">{children}</div>
+    </div>
+  );
+}
+
+/**
+ * A: 前回の授業（折りたたみ）。
+ *
+ * 一次情報は進行表の授業記録（progress_sessions）。閉じていても
+ * 「いつ・引継ぎの1行・遅刻/宿題未実施」までは見えるようにして、開かなくても
+ * 前回の様子が掴めるようにする（既定は閉じた状態）。
+ * 前回が無ければカードごと出さない。空の項目も出さない。
+ */
+function PreviousLessonCard({ lesson }: { lesson: PreviousLessonSummary | null }) {
+  const [open, setOpen] = useState(false);
+  if (!lesson) return null;
+
+  // 引継ぎは教材ごとに別内容。閉じているときは最初の1件を1行だけ見せる（全文は展開時）。
+  const handoverPreview = lesson.textbooks.find((t) => t.handover)?.handover ?? null;
+  const report = lesson.report;
+  const hasMeters =
+    report != null &&
+    (report.homeworkCompletionPct != null ||
+      report.homeworkCorrectPct != null ||
+      report.todayCorrectPct != null);
+  const homeworkRows = report ? report.homeworkAssignments.filter((h) => h.text?.trim()) : [];
+
+  return (
+    <div className="rounded-lg border border-border bg-white overflow-hidden">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className="flex w-full items-center gap-2 px-4 py-2.5 text-left transition-colors duration-150 hover:bg-surface"
+      >
+        <History className="h-3.5 w-3.5 shrink-0 text-text-muted" />
+        <span className="shrink-0 text-[11px] font-bold tracking-wide text-text-muted tabular-nums">
+          前回の授業 {formatDateLabel(lesson.lessonDate)}
+        </span>
+        {lesson.tardy && <PreviousMarkPill label="遅刻" />}
+        {lesson.homeworkNotDone && <PreviousMarkPill label="宿題未実施" />}
+        <span className="min-w-0 flex-1 truncate text-[11.5px] text-text-faint">
+          {handoverPreview ?? '引継ぎはありません'}
+        </span>
+        <ChevronDown
+          className={`h-4 w-4 shrink-0 text-text-muted transition-transform duration-150 ${
+            open ? 'rotate-180' : ''
+          }`}
+        />
+      </button>
+
+      {open && (
+        <div className="border-t border-border-subtle bg-surface/50 px-4 py-3 space-y-3">
+          {/* 教材ごと（＝セッションごと）。引継ぎは連結せず、その教材の下に出す */}
+          {lesson.textbooks.map((tb) => (
+            <div key={tb.studentTextbookId} className="space-y-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-[12.5px] font-semibold text-text-heading">
+                  {tb.textbookName}
+                </span>
+                {tb.teacherName && (
+                  <span className="text-[10.5px] text-text-faint">担当: {tb.teacherName}</span>
+                )}
+              </div>
+              {tb.units.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {tb.units.map((u, i) => (
+                    <span
+                      key={`${u.title}-${u.lessonNumber}-${i}`}
+                      className="inline-flex items-center gap-1 rounded-full bg-info-subtle px-2.5 py-1 text-[11.5px] font-semibold text-info"
+                    >
+                      {u.title}
+                      <span className="rounded-full bg-info px-1.5 text-[9.5px] font-bold text-white tabular-nums">
+                        {u.lessonNumber}回目
+                      </span>
+                    </span>
+                  ))}
+                </div>
+              )}
+              {tb.handover && (
+                <p className="whitespace-pre-wrap rounded-md bg-white px-3 py-2 text-[12.5px] leading-6 text-text-body">
+                  {tb.handover}
+                </p>
+              )}
+            </div>
+          ))}
+
+          {/* 報告書があったときだけ上乗せ（本番では無いことのほうが多い） */}
+          {report?.schoolProgress && (
+            <PreviousBlock label="学校の進度">
+              <p className="text-[12.5px] text-text-body">{report.schoolProgress}</p>
+            </PreviousBlock>
+          )}
+          {report?.reviewComment && (
+            <PreviousBlock label="講評">
+              <p className="whitespace-pre-wrap text-[12.5px] leading-6 text-text-body">
+                {report.reviewComment}
+              </p>
+            </PreviousBlock>
+          )}
+          {homeworkRows.length > 0 && (
+            <PreviousBlock label="出した宿題">
+              <ul className="space-y-1">
+                {homeworkRows.map((h, i) => (
+                  <li key={`${h.date}-${i}`} className="flex items-start gap-2">
+                    {h.date && (
+                      <span className="mt-[1px] shrink-0 rounded bg-info-subtle px-1.5 py-0.5 text-[10px] font-bold text-info tabular-nums">
+                        {formatDateLabel(h.date)}
+                      </span>
+                    )}
+                    <span className="text-[12.5px] text-text-body">{h.text}</span>
+                  </li>
+                ))}
+              </ul>
+            </PreviousBlock>
+          )}
+          {hasMeters && report && (
+            <PreviousBlock label="達成度">
+              <div className="flex flex-wrap gap-x-4 gap-y-1 text-[12px] text-text-body tabular-nums">
+                <PreviousPct label="やってきた量" value={report.homeworkCompletionPct} />
+                <PreviousPct label="宿題の正答率" value={report.homeworkCorrectPct} />
+                <PreviousPct label="今日の演習の正答率" value={report.todayCorrectPct} />
+              </div>
+            </PreviousBlock>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** 前回カードの見出し付きブロック（報告書があったときだけ出る項目）。 */
+function PreviousBlock({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <div className="mb-1 text-[10px] font-bold tracking-wide text-text-muted">{label}</div>
+      {children}
+    </div>
+  );
+}
+
+/** 前回カードの達成度1項目。値が無ければ出さない。 */
+function PreviousPct({ label, value }: { label: string; value: number | null }) {
+  if (value == null) return null;
+  return (
+    <span>
+      {label} <b className="text-text-heading">{value}%</b>
+    </span>
+  );
+}
+
+/** 前回カードのマーク（遅刻／宿題未実施）。公開ゾーンのトグルピルと同じ warning 系の色。 */
+function PreviousMarkPill({ label }: { label: string }) {
+  return (
+    <span className="shrink-0 rounded-full bg-warning-subtle px-2 py-0.5 text-[10px] font-bold text-warning">
+      {label}
+    </span>
+  );
+}
+
+/**
+ * F: 提出前チェックの一覧パネル（フッターの真上）。
+ * 各項目はボタンで、押すとその入力欄までスクロールしてフォーカスする。
+ */
+function SubmitIssuePanel({
+  issues,
+  onJump,
+  onClose,
+}: {
+  issues: SubmitCheckIssue[];
+  onJump: (field: SubmitCheckField) => void;
+  onClose: () => void;
+}) {
+  return (
+    <div className="mt-2 rounded-lg border border-warning/50 bg-warning-subtle px-3 py-2.5">
+      <div className="flex items-start gap-2">
+        <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
+        <div className="min-w-0 flex-1">
+          <p className="text-xs font-bold text-warning">
+            提出前に {issues.length} 件の入力が必要です
+          </p>
+          <ul className="mt-1.5 space-y-1">
+            {issues.map((issue) => (
+              <li key={issue.field}>
+                <button
+                  type="button"
+                  onClick={() => onJump(issue.field)}
+                  className="flex w-full items-baseline gap-2 rounded-md bg-white px-2.5 py-1.5 text-left transition-colors duration-150 hover:bg-warning-subtle active:scale-[0.99]"
+                >
+                  <span className="shrink-0 text-[12px] font-bold text-text-heading">
+                    {issue.label}
+                  </span>
+                  <span className="min-w-0 flex-1 text-[11.5px] text-text-muted">
+                    {issue.message}
+                  </span>
+                  <span className="shrink-0 text-[11px] font-bold text-info">この欄へ →</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="閉じる"
+          className="shrink-0 text-warning/70 transition-colors duration-150 hover:text-warning"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * G: フッターの保存状態表示。
+ * 自動保存はトーストを出さず、この1行だけで伝える（作業中に通知を積み上げない）。
+ */
+function SaveStatusText({
+  autoSaveState,
+  autoSavedAt,
+  updatedAt,
+}: {
+  autoSaveState: AutoSaveState;
+  autoSavedAt: string | null;
+  updatedAt: string | null;
+}) {
+  if (autoSaveState === 'saving') return <>保存中…</>;
+  if (autoSaveState === 'dirty') return <>未保存の変更があります</>;
+  if (autoSaveState === 'error') {
+    return <span className="text-danger">自動保存に失敗しました（手動で保存してください）</span>;
+  }
+  if (autoSaveState === 'saved' && autoSavedAt) return <>自動保存 {autoSavedAt}</>;
+  return <>{updatedAt ? `最終保存: ${new Date(updatedAt).toLocaleString('ja-JP')}` : '未保存'}</>;
+}
+
+/**
+ * E: 保護者プレビューのモーダル。
+ *
+ * ★ 中身は保護者が実際に見る ReportDetail をそのまま描く（見た目を作り直さない）。
+ *   保護者ポータルは100%スマホ前提なので、幅375pxの枠に収めて実機の見え方に合わせる。
+ *   preview を渡して既読APIを叩かせない（講師が開いただけで既読にしない）。
+ */
+function PortalPreviewModal({
+  report,
+  onClose,
+}: {
+  report: PortalReportDetail;
+  onClose: () => void;
+}) {
+  // Escape で閉じられるようにする（モーダルの基本動作）
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-label="保護者にはこう表示されます"
+      onClick={onClose}
+    >
+      <div
+        className="mt-6 w-[375px] max-w-full overflow-hidden rounded-xl bg-white shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-start gap-2 border-b border-border-subtle px-4 py-3">
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-bold text-text-heading">保護者にはこう表示されます</p>
+            <p className="mt-0.5 text-[10.5px] text-text-faint">
+              室長の承認後にマイページへ公開されます
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="閉じる"
+            className="shrink-0 text-text-faint transition-colors duration-150 hover:text-text-body"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+        <div className="max-h-[80vh] overflow-y-auto bg-surface px-3 py-3">
+          <ReportDetail report={report} preview />
+        </div>
+      </div>
     </div>
   );
 }
@@ -1874,6 +2528,7 @@ function loadDemo(setters: {
   setSelections: (v: Record<string, GridSelectionState>) => void;
   setHandover: (v: string) => void;
   setForm: (v: ClassReportFormData) => void;
+  setPreviousLesson: (v: PreviousLessonSummary | null) => void;
 }) {
   const lessonDate = todayInJst();
   const next = buildHomeworkDateRows({ lessonDate, nextLessonDate: null });
@@ -1938,6 +2593,37 @@ function loadDemo(setters: {
   setters.setHandover(
     '符号ミスは減ってきたが、分数係数が入ると手が止まる。次回は分数係数の変化の割合から。丸付けは自走OK。'
   );
+
+  // 前回の授業（見本）。本番と同じく「セッションが一次情報・報告書は上乗せ」の形で作る。
+  setters.setPreviousLesson({
+    lessonDate: addDaysLocal(lessonDate, -4),
+    textbooks: [
+      {
+        studentTextbookId: 'tb-main',
+        textbookName: '新中学問題集 数学2年',
+        units: [{ title: '連立方程式の利用', lessonNumber: 2 }],
+        handover:
+          '文章題の立式は自力でできるようになった。代入法の計算ミスが残るので、次回は一次関数へ入る前に5分だけ復習を挟む。',
+        teacherName: '佐々木 先生',
+      },
+    ],
+    tardy: false,
+    homeworkNotDone: true,
+    report: {
+      reportId: 'demo-previous-report',
+      status: 'approved',
+      schoolProgress: '新中学問題集 数学2年 / 一次関数の式',
+      reviewComment:
+        '連立方程式の文章題を中心に演習しました。式は立てられるようになったので、次は計算の正確さを上げていきます。',
+      homeworkAssignments: [
+        { date: addDaysLocal(lessonDate, -3), text: '新中問 p.52-53' },
+        { date: addDaysLocal(lessonDate, -2), text: '新中問 p.54 ＋ 間違い直し' },
+      ],
+      homeworkCompletionPct: 0,
+      homeworkCorrectPct: null,
+      todayCorrectPct: 70,
+    },
+  });
   setters.setForm({
     schedule_entry_id: 'demo',
     student_id: 'demo-student',
