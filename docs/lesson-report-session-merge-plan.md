@@ -91,3 +91,73 @@ comment on column public.class_reports.homework_not_done is '宿題未実施マ�
 - `npx tsc --noEmit` 0件、`npm test` 緑、prettier clean
 - 新規テスト: `homeworkMark` の同期規則（マークON→0 / 0→ON / >0→OFF / null は触らない）
 - 保護者面 `ReportDetail` でマークが出る（両方 false のとき行が出ない）
+
+---
+
+# フェーズ2: 記入支援4機能（A / G / E / F）
+
+2026-08-21 決定。PR #64 と同じブランチに2本目のコミットとして積む。
+
+## A. 前回の授業を折りたたみで表示
+
+**目的**: 授業開始時に「前回の引継ぎ・出した宿題」を見ながら書けるようにする。
+
+- 新API `getPreviousReportForStudent(studentId, beforeDate)`（`src/lib/api/class-reports.ts`）
+  - `class_reports` を `student_id` 一致・`lesson_date < beforeDate`・`lesson_date desc`・`limit 1`。**status は問わない**（承認待ちでも講師には見せる）
+  - 引継ぎは `class_reports` に無いので、その報告書の `schedule_entry_id` で `progress_sessions` を引いて `handover` を取る（`report_id` は古いデータに無いので使わない）
+  - 単元名は `lesson_report_units` × `student_textbooks` × `textbooks` × `curriculum_items` を join して**名前だけ**返す
+- 置き場所: 授業情報サマリのカードの**直後**、目標ヘッダーの手前（今日のコマ → 前回どうだったか → 今日書く、の順）
+- 折りたたみヘッダー（閉じていても見える）: `前回の授業 M/D(曜)` ／ 引継ぎの1行プレビュー（省略記号で切る）／ 遅刻・宿題未実施のマーク（あれば）／ 開閉シェブロン
+- 展開時: 指導範囲（教材ごとの単元名）／学校の進度／出した宿題（日付＋内容）／講評／引継ぎ全文／達成度3値。**空の項目は出さない**
+- 既定は**閉じた状態**
+- 前回が無ければカードごと出さない。`isDemo` はダミーの前回を出す
+
+## G. 下書きの自動保存
+
+**方針**: 手動の「下書き保存」とまったく同じ経路を、黙って・間引いて呼ぶだけ。別経路を作らない。
+
+- `handleSave` の中身を `persist(nextStatus, { silent })` に切り出し、手動・自動の両方がこれを呼ぶ
+- 発火: form / handover / selections のいずれかが変わってから **3秒間** 何も起きなければ1回
+- 実行しない条件（どれか1つでも当てはまれば見送る）
+  - `isDemo` ／ 初期ロード中
+  - 既存報告書が `submitted` または `approved`（**新規・`draft`・`rejected` のときだけ動く**。提出済みを裏で書き換えない）
+  - 手動保存が実行中、または自動保存が実行中（**ref のミューテックス**。state だと取りこぼす）
+  - 前回保存に成功したときのスナップショットと中身が同じ（無変更では叩かない）
+- 自動保存は `load()` を**呼ばない**（フォーカス・スクロール・入力中の値が飛ぶ）。返ってきた報告書は `existingReport` に**マージするだけ**
+- 成功してもトーストは出さない。フッターの表示だけ変える
+  - `未保存の変更があります` → `保存中…` → `自動保存 HH:MM`
+  - 失敗時: フッターに `自動保存に失敗しました（手動で保存してください）`。トーストは出さない（連打になる）
+- 未保存の変更があるときだけ `beforeunload` で確認を出す
+- `upsertClassReport` は `schedule_entry_id` で既存を引き直すので、報告書IDを持ち回らなくても重複しない。セッションIDは既存の `onSessionSaved` でそのまま握る
+
+## E. 保護者プレビュー
+
+**方針**: 見た目を作り直さず、**保護者が実際に見るコンポーネントをそのまま描く**（作り直すと必ずズレる）。
+
+- 純関数 `buildPortalPreview(...)`（`src/lib/lesson-reports/portalPreview.ts`）でフォームの現在値から `PortalReportDetail` を組み立てる。単体テストを付ける
+- `ReportDetail` に `preview?: boolean` を追加し、true のときは**既読APIを叩かない**（`useEffect` の中で早期 return）。既定 false で既存の呼び出しは無変更
+- 入口: フッターの「下書き保存」の隣に `保護者の見え方`（lucide の `Eye`）
+- モーダル: 幅 **375px** の枠に収め、`max-h-[80vh]` でスクロール。見出し `保護者にはこう表示されます`、注記 `室長の承認後にマイページへ公開されます`
+- 保存はしない（プレビューを開いても書き込まない）
+
+## F. 提出前チェック
+
+**方針**: ボタンを黙って無効化しない。何が足りないかを言い、その場所へ連れて行く。
+
+- 純関数 `validateForSubmit(...)`（`src/lib/lesson-reports/submitValidation.ts`）＋単体テスト。戻りは `{ field, label, message }[]`
+- 必須（これだけ。増やさない）
+  1. **本日の指導範囲**: 進行表で1単元以上選ばれていること。ただし進行表の教材が0件の生徒は「プリント等の自由記述」が埋まっていればOK
+  2. **引継ぎ**: 空でない
+  3. **講評**: 空でない（保護者が読む本文が空の報告書を出させない）
+- 挙動
+  - 「提出」ボタンは**押せるまま**。押したときに検証し、足りなければフッター上に一覧パネルを出す
+  - 一覧の各項目はボタン。押すとその入力欄へスクロールしてフォーカスする
+  - 不足があるときは提出ボタンの隣に `未入力 N件` のチップを常時出す（押してから驚かせない）
+- 「下書き保存」と自動保存は**止めない**
+
+## 受け入れ基準（フェーズ2）
+
+- `/lesson-reports/demo` で 前回の授業カード・保護者プレビュー・提出前チェックが動く（自動保存はデモでは動かないこと）
+- `tsc --noEmit` 0件／`npm test` 全緑／prettier clean
+- 新規テスト: `portalPreview` `submitValidation`（境界を固定）
+- ヘルプ FAQ に 4機能を追記
