@@ -21,7 +21,7 @@ import {
   type ZoukomaAvailableSlot,
 } from '@/lib/api/zoukoma-placement';
 import type { Subject } from '@/types/database';
-import { CheckCircle, Target, X, Wand2 } from 'lucide-react';
+import { CheckCircle, Target, X } from 'lucide-react';
 import { formatGradeLabel } from '@/lib/utils/gradeLabel';
 
 interface Props {
@@ -151,7 +151,8 @@ export function TestPrepPlacementPanel({
                 <tr>
                   <th className="py-1 px-1">生徒 / 科目</th>
                   <th className="py-1 px-1 text-right">配置/申込</th>
-                  <th className="py-1 px-1 w-14"></th>
+                  {/* 配置・自動の2ボタンを横に並べる幅。w-14 だと折り返して縦積みになる。 */}
+                  <th className="py-1 px-1 w-28 whitespace-nowrap"></th>
                 </tr>
               </thead>
               <tbody>
@@ -207,9 +208,9 @@ export function TestPrepPlacementPanel({
                                 </span>
                               )}
                             </td>
-                            <td className="py-1 px-1">
+                            <td className="py-1 px-1 whitespace-nowrap">
                               {canPlace && (
-                                <div className="flex items-center justify-end gap-1">
+                                <div className="flex flex-nowrap items-center justify-end gap-1 whitespace-nowrap">
                                   <button
                                     type="button"
                                     onClick={() =>
@@ -220,7 +221,7 @@ export function TestPrepPlacementPanel({
                                         r.availableSlots
                                       )
                                     }
-                                    className={`text-xs px-2 py-0.5 rounded active:scale-[0.97] transition-[background-color,transform] duration-150 ${
+                                    className={`whitespace-nowrap text-xs px-2 py-0.5 rounded active:scale-[0.97] transition-[background-color,transform] duration-150 ${
                                       isPlacing
                                         ? 'bg-info text-white'
                                         : 'bg-white border border-info text-info hover:bg-info-subtle'
@@ -244,9 +245,8 @@ export function TestPrepPlacementPanel({
                                         )
                                       }
                                       title="空いている枠と講師を自動で選んで提案します"
-                                      className="inline-flex items-center gap-1 rounded border border-info bg-info-subtle px-2 py-0.5 text-xs text-info transition-[background-color,transform] duration-150 hover:bg-info/10 active:scale-[0.97] disabled:opacity-50"
+                                      className="whitespace-nowrap rounded border border-info bg-info-subtle px-2 py-0.5 text-xs text-info transition-[background-color,transform] duration-150 hover:bg-info/10 active:scale-[0.97] disabled:opacity-50"
                                     >
-                                      <Wand2 className="h-3 w-3" />
                                       自動
                                     </button>
                                   )}

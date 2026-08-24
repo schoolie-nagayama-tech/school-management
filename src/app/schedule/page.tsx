@@ -3143,9 +3143,13 @@ export default function SchedulePage() {
             schoolId={schoolId ?? ''}
             subjects={masterSubjects}
             onStartPlacement={(studentId, subjectId, subjectName, slots) => {
+              // 同じ生徒・科目の再クリックは「終了」＝モード解除なので盤面へ送らない
+              //（終了したのに下へ動かされると、パネルへ戻るのに毎回スクロールし直しになる）。
+              const isExiting =
+                placingTestPrep?.studentId === studentId &&
+                placingTestPrep?.subjectId === subjectId;
               handleStartTestPrepPlacement(studentId, subjectId, subjectName, slots);
-              // 押した後に自分でスクロールさせない（パネルは画面上部にある）
-              scrollToBoard();
+              if (!isExiting) scrollToBoard();
             }}
             onAutoPlace={handleTestPrepAuto}
             autoPlacing={autoPlacing}
