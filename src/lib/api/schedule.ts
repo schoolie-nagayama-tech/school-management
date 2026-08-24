@@ -867,8 +867,10 @@ export async function getScheduleEntries(
 /**
  * 退塾予定日マップ（生徒ID → 'YYYY-MM-DD'）。その日以降はコマを生成しない。
  * 週次生成と同期チェックで同じ集合を使うため関数に切り出してある。
+ *
+ * フェーズ2-B（請求連携）も同じ入力で planWeeklyEntries を回す必要があるため export する。
  */
-async function loadWithdrawalMap(studentIds: string[]): Promise<Map<string, string>> {
+export async function loadWithdrawalMap(studentIds: string[]): Promise<Map<string, string>> {
   const map = new Map<string, string>();
   if (studentIds.length === 0) return map;
   const { data } = await db
@@ -890,8 +892,11 @@ async function loadWithdrawalMap(studentIds: string[]): Promise<Map<string, stri
  *   **追加クエリを一切発行せず** null を返し、既存の生成結果と1件も変わらないようにする。
  *   同様に、講座が無い・上書き行が無い・週内に上書き session が無い段階でも
  *   その先のクエリを打ち切る。
+ *
+ * フェーズ2-B（請求連携）も同じ入力を使うため export している。請求側で読み込みを
+ * 書き直すと講習期上書きの解釈が二重実装になり、座席表と請求の回数がズレる。
  */
-async function loadSpecialCourseOverrideInput(
+export async function loadSpecialCourseOverrideInput(
   schoolId: string,
   patterns: ScheduleRegularPattern[],
   fromStr: string,

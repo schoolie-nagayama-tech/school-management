@@ -25,6 +25,22 @@ import { fetchAllPaged } from '@/lib/utils/supabasePaging';
 import { batchFetchCoursePrepApiMulti } from './coursePrepApi';
 import type { AutoValues } from './courseProgress';
 import { computeDecidedKomaByStudent } from '@/lib/coursePrepKpis';
+// フェーズ2-B: 特別講座の受講料同期。通年講座の受講回数は座席表の週次生成と
+// 同じ入力・同じ純関数（planWeeklyEntries）を通して数える（正典 docs/special-courses-plan.md）。
+import { getYearRoundCourses, getKoushuCourses } from './specialCourses';
+import { getRegularPatterns, loadWithdrawalMap, loadSpecialCourseOverrideInput } from './schedule';
+import { planWeeklyEntries } from '@/lib/schedule/specialCourseOverride';
+import {
+  aggregateKoushuAmounts,
+  aggregateYearRoundAmounts,
+  computeSpecialCourseSplit,
+  countMonthlySessions,
+  monthWeekRange,
+  weekStartsCoveringMonth,
+  type BillingMonth,
+  type KoushuEnrollmentLike,
+  type SpecialCourseAmountResult,
+} from '@/lib/billing/specialCourseBilling';
 
 // ============================================
 // 請求期間 (Billing Periods)
@@ -1498,4 +1514,152 @@ export async function syncCourseExtraToBilling(
   }
 
   return { synced };
+}
+
+/** 特別講座の同期対象。通年講座は月次、講習講座は期（季節×年）に1回 */
+export type SpecialCourseSyncTarget =
+  | { mode: 'year_round'; year: number; month: number }
+  | { mode: 'koushu'; season: SeasonType; year: number };
+
+/** 特別講座の同期結果。単価未設定で計上できなかった講座名も返す（黙って0円にしないため） */
+export interface SpecialCourseSyncResult {
+  /** 請求行を作成・更新した生徒数 */
+  synced: number;
+  /** 単価未設定のため計上をスキップした講座名（重複なし） */
+  skippedCourseNames: string[];
+}
+
+/**
+ * 通年講座の受講料（金額）を教室ごとに集計する。
+ *
+ * ★ 受講回数は週次生成と同じ純関数 planWeeklyEntries の結果を数える。
+ *   「曜日の出現数 × 単価」を自前で数え直すと、講習期上書き（定期停止・日程差し替え・
+ *   その期は開催しない）が二重実装になり、座席表と請求でコマ数がズレる。
+ *   入力（通塾日程・退塾日・上書き）も座席表と同じローダー（lib/api/schedule.ts）を使う。
+ */
+async function collectYearRoundAmounts(
+  schoolId: string,
+  month: BillingMonth
+): Promise<SpecialCourseAmountResult> {
+  const courses = (await getYearRoundCourses(schoolId)).filter((c) => c.is_active);
+  if (courses.length === 0) return { amountByStudent: new Map(), missingPriceCourseNames: [] };
+
+  // 週内で effective が切り替わりうるので、座席表の生成と同じく is_active 全件を渡して日ごとに判定させる
+  const patterns = await getRegularPatterns(schoolId);
+  const studentIds = Array.from(new Set(patterns.map((p) => p.student_id)));
+  const withdrawalDates = await loadWithdrawalMap(studentIds);
+
+  // 上書き入力は月全体（対象月に重なる全週）の範囲で1回だけ読む。
+  // 範囲はコマ時間マスタを読むかどうかの判定にしか効かないため、週ごとに読み直す必要はない。
+  const range = monthWeekRange(month);
+  const override = await loadSpecialCourseOverrideInput(schoolId, patterns, range.from, range.to);
+
+  const plannedWeeks = weekStartsCoveringMonth(month).map((weekStartDate) =>
+    planWeeklyEntries({ weekStartDate, patterns, withdrawalDates, override })
+  );
+
+  return aggregateYearRoundAmounts(countMonthlySessions(plannedWeeks, month), courses);
+}
+
+/**
+ * 講習講座の受講料（金額）を教室ごとに集計する。
+ * 申込（koushu_enrollments）の koma_count × 単価。名簿は申込がそのまま正典。
+ */
+async function collectKoushuCourseAmounts(
+  schoolId: string,
+  season: SeasonType,
+  year: number
+): Promise<SpecialCourseAmountResult> {
+  const courses = (await getKoushuCourses(schoolId, season, year)).filter((c) => c.is_active);
+  if (courses.length === 0) return { amountByStudent: new Map(), missingPriceCourseNames: [] };
+
+  const courseIds = courses.map((c) => c.id);
+  // 申込は (生徒数 × 講座) でスケールするため全件ページング取得する（1000行で静かに切れると過小請求になる）
+  const enrollments = await fetchAllPaged<KoushuEnrollmentLike>((from, to) =>
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (supabase as any)
+      .from('koushu_enrollments')
+      .select('student_id, course_id, koma_count')
+      .in('course_id', courseIds)
+      .order('id', { ascending: true })
+      .range(from, to)
+  );
+
+  return aggregateKoushuAmounts(enrollments, courses);
+}
+
+/**
+ * 特別講座の受講料を請求項目に同期する（正典 docs/special-courses-plan.md フェーズ2-B）。
+ *
+ * 増コマ同期（syncCourseExtraToBilling）と同じ流儀:
+ *   - 対象列は名前ベース検出（名前に「特別講座」を含む number 項目）。DBスキーマは変更しない
+ *   - value_number = 未計上（新規差分）、quantity = 計上済み。再同期しても計上済みは保持する
+ *   - 0円の生徒は請求行を作らない（対象のみ upsert）
+ *
+ * セルに入れるのは回数ではなく **金額（円）**。講座ごとに単価が違うため合算しないと表現できない。
+ * 単価未設定の講座は計上せず講座名を返し、呼び出し側（画面）で知らせる。
+ *
+ * @param billingItemId 流し込み先の請求項目ID
+ * @param schoolIds     対象教室（単一/複数）
+ * @param target        通年講座なら対象年月、講習講座なら季節・年
+ */
+export async function syncSpecialCourseToBilling(
+  billingItemId: string,
+  schoolIds: string | string[],
+  target: SpecialCourseSyncTarget
+): Promise<SpecialCourseSyncResult> {
+  const targetSchoolIds = Array.isArray(schoolIds) ? schoolIds : [schoolIds];
+  const skippedCourseNames: string[] = [];
+  let synced = 0;
+
+  for (const schoolId of targetSchoolIds) {
+    const result =
+      target.mode === 'year_round'
+        ? await collectYearRoundAmounts(schoolId, { year: target.year, month: target.month })
+        : await collectKoushuCourseAmounts(schoolId, target.season, target.year);
+
+    for (const name of result.missingPriceCourseNames) {
+      if (!skippedCourseNames.includes(name)) skippedCourseNames.push(name);
+    }
+
+    for (const [studentId, total] of Array.from(result.amountByStudent.entries())) {
+      if (!total || total <= 0) continue;
+
+      const { data: existing } = await supabase
+        .from('student_billings')
+        .select('id, quantity')
+        .eq('student_id', studentId)
+        .eq('billing_item_id', billingItemId)
+        .maybeSingle();
+
+      // 計上済み(quantity)は保持し、新しい合計との差分だけ未計上(value_number)に出す
+      // （増コマ同期と同じ split。純粋ロジックは specialCourseBilling.ts でテスト）
+      const prevCharged = existing?.quantity ?? 0;
+      const { charged, pending, allCharged } = computeSpecialCourseSplit(prevCharged, total);
+
+      if (existing) {
+        await supabase
+          .from('student_billings')
+          .update({
+            value_number: pending,
+            quantity: charged,
+            is_billed: allCharged,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', existing.id);
+      } else {
+        await supabase.from('student_billings').insert({
+          school_id: schoolId,
+          student_id: studentId,
+          billing_item_id: billingItemId,
+          is_billed: allCharged,
+          value_number: pending,
+          quantity: charged,
+        });
+      }
+      synced++;
+    }
+  }
+
+  return { synced, skippedCourseNames };
 }
