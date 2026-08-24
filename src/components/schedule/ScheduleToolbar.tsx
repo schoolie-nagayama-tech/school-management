@@ -401,6 +401,9 @@ export function ScheduleToolbar({
                       // 通塾日程の登録は生徒詳細に一本化した（横断一覧ページは廃止）。
                       // 未反映のズレは ScheduleDriftBanner が生徒名つきで知らせる。
                       { href: '/schedule/enrollments', label: '申込管理（講習・テスト対策）' },
+                      // 振替は盤面の D&D で確定するが、確定後の保護者通知の状況を見る場所が
+                      // 盤面から辿れなかったのでここに置く（未送信の取りこぼしに気づけるように）。
+                      { href: '/schedule/transfer-notifications', label: '振替の通知' },
                       { href: '/schedule/regular-patterns/match', label: '一括マッチング' },
                       // 上部の独立ボタンから移設（上部圧縮）。授業報告書の見本（ダミー）を開く
                       { href: '/lesson-reports/sample', label: '報告書見本' },

@@ -56,6 +56,8 @@ interface ScheduleDialogsProps {
 
   // Student action modal
   actionModalEntry: ScheduleEntry | null;
+  /** 振替先コマから保護者へ通知する（未指定なら通知ボタンを出さない） */
+  onNotifyTransfer?: () => Promise<void>;
   onActionModalClose: () => void;
   timeSlots: ScheduleTimeSlot[];
   onTransferFromAction: () => void;
@@ -149,6 +151,7 @@ export function ScheduleDialogs({
   onScheduleGenerateConfirm,
 
   actionModalEntry,
+  onNotifyTransfer,
   onActionModalClose,
   timeSlots,
   onTransferFromAction,
@@ -296,6 +299,7 @@ export function ScheduleDialogs({
             : null
         }
         onTransfer={onTransferFromAction}
+        onNotifyTransfer={onNotifyTransfer}
         onRevertTransfer={onRevertTransfer}
         onAbsent={onAbsentFromAction}
         onSwap={onSwapFromAction}

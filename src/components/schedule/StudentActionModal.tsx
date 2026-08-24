@@ -2,7 +2,8 @@
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui';
 import { Button } from '@/components/ui';
-import { Calendar, XCircle, Pencil, Trash2, RotateCcw, ArrowLeftRight } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Calendar, XCircle, Pencil, Trash2, RotateCcw, ArrowLeftRight, Send } from 'lucide-react';
 import type { ScheduleEntry, ScheduleTimeSlot } from '@/types/schedule';
 import { formatGradeLabel } from '@/lib/utils/gradeLabel';
 
@@ -31,6 +32,11 @@ export interface StudentActionModalProps {
   onStudentClick?: () => void;
   /** 講師名クリック時（親で授業操作モーダルを閉じてから開くこと） */
   onTeacherClick?: () => void;
+  /**
+   * 振替先コマ（transferred_in）で「保護者に通知」を押したときの送信処理。
+   * 未指定なら通知ボタンを出さない。解決/送信の結果表示は親（トースト）が担当する。
+   */
+  onNotifyTransfer?: () => Promise<void>;
 }
 
 export function StudentActionModal({
@@ -46,7 +52,17 @@ export function StudentActionModal({
   onDelete,
   onStudentClick,
   onTeacherClick,
+  onNotifyTransfer,
 }: StudentActionModalProps) {
+  // 通知は誤送信すると取り消せないので、必ず確認を1枚挟む。
+  // ★ フックは entry の early return より前に置くこと（条件付きフックになるため）。
+  const [notifyConfirming, setNotifyConfirming] = useState(false);
+  const [notifySending, setNotifySending] = useState(false);
+  // 別のコマを開いたときに確認状態を持ち越さない（前のコマのつもりで押す事故を防ぐ）。
+  useEffect(() => {
+    setNotifyConfirming(false);
+    setNotifySending(false);
+  }, [open, entry?.id]);
   if (!entry) return null;
 
   // Phase T: 体験の見込み客（student_id 無し・inquiry_id 参照）は終端的なコマ。
@@ -126,6 +142,52 @@ export function StudentActionModal({
                 <RotateCcw className="h-4 w-4 mr-2" />
                 通常の授業に戻す
               </Button>
+            </div>
+          )}
+          {/* 振替先コマからの保護者通知。確定時に自動でも飛ぶが、保護者が後から
+              マイページに登録した場合など、後追いで送りたい場面があるため手動でも送れるようにする。
+              二重送信は API 側で冪等に弾かれる（同じ振替は1回だけ）。 */}
+          {isTransferredIn && onNotifyTransfer && (
+            <div className="border-t border-[var(--surface)] pt-3">
+              {!notifyConfirming ? (
+                <Button variant="outline" size="sm" onClick={() => setNotifyConfirming(true)}>
+                  <Send className="h-4 w-4 mr-2" />
+                  保護者に通知
+                </Button>
+              ) : (
+                <div className="rounded-md border border-[var(--stroke)] bg-[var(--surface)] p-3 space-y-2">
+                  <p className="text-xs text-[var(--paragraph)]">
+                    {studentName} の保護者に、この振替（{formatDay(entry.entry_date)} {slotLabel}
+                    ）をマイページのチャットとLINEで通知します。
+                  </p>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      disabled={notifySending}
+                      onClick={async () => {
+                        setNotifySending(true);
+                        try {
+                          await onNotifyTransfer();
+                          setNotifyConfirming(false);
+                        } finally {
+                          setNotifySending(false);
+                        }
+                      }}
+                    >
+                      <Send className="h-4 w-4 mr-2" />
+                      {notifySending ? '送信中…' : '送信する'}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      disabled={notifySending}
+                      onClick={() => setNotifyConfirming(false)}
+                    >
+                      やめる
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
           {/* 見込み客（体験）は振替・出欠・編集の対象外。取消のみ許可する。 */}

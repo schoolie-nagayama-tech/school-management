@@ -1310,6 +1310,25 @@ export default function SchedulePage() {
     setActionModalEntry(null);
   }, [actionModalEntry]);
 
+  /**
+   * 振替先コマから保護者へ通知する（授業操作モーダルの「保護者に通知」）。
+   * 送信可否の判定と文言は lib/api/transfer-notify に集約（通知一覧と同じ結果表示にする）。
+   * 届かなかったときを成功として出さないこと（保護者に届いていないのに届いた顔をしないため）。
+   */
+  const handleNotifyTransfer = useCallback(async () => {
+    if (!actionModalEntry) return;
+    const { notifyTransfer, transferNotifyMessage, isTransferNotifyDelivered } =
+      await import('@/lib/api/transfer-notify');
+    const result = await notifyTransfer({ toEntryId: actionModalEntry.id });
+    const message = transferNotifyMessage(result);
+    if (isTransferNotifyDelivered(result)) {
+      success(message);
+      setActionModalEntry(null);
+    } else {
+      toastError(message);
+    }
+  }, [actionModalEntry, success, toastError]);
+
   /** 振替モードに切り替え（座席表の講師ブロックをクリックで振替先を選ぶ） */
   const handleTransferFromAction = useCallback(() => {
     if (!actionModalEntry) return;
@@ -3240,6 +3259,7 @@ export default function SchedulePage() {
         // 形態タブでは振替候補コマ・スロットラベルをその形態に限定する
         timeSlots={isFormationBoard ? formationSlots : timeSlots}
         onTransferFromAction={handleTransferFromAction}
+        onNotifyTransfer={handleNotifyTransfer}
         // §2.12 入れ替えは個別タブ・かつ他モード非アクティブのときだけ「入れ替え」ボタンを出す。
         onSwapFromAction={
           activeFormation === INDIVIDUAL_FORMATION &&
