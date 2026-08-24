@@ -433,7 +433,7 @@ export async function loadSubjectIdsForGradeCategory(
 }
 
 // ============================================================
-// コース（小集団・プログラミング。決定36〜42・45）
+// 講習講座（小集団・プログラミング。決定36〜42・45）
 // ============================================================
 
 interface CourseRow {
@@ -444,10 +444,14 @@ interface CourseRow {
 }
 
 /**
- * 生徒の学年に合い、開催予定が申込期間に重なる特別講座を取得する（決定36・40・44・56）。
+ * 生徒の学年に合い、開催予定が申込期間に重なる講習講座を取得する（決定36・40・44・56）。
  *
- * 参照先は専用テーブル `koushu_special_courses`。formation（小集団 / HAL 等）は
- * この行が直接持つ。target_grades が空配列なら全学年対象とみなす。
+ * 参照先は `special_courses` の scope='koushu'（旧 koushu_special_courses から id ごと移行済み）。
+ * formation（小集団 / プログラミング等）はこの行が直接持つ。
+ * target_grades が空配列なら全学年対象とみなす。
+ *
+ * ★ scope='year_round'（通年講座）は出さない。通年講座は名簿ベース（座席表の形態ボードで
+ *   枠に生徒を入れる）で運用し、保護者のWeb申込の対象ではないため（正典 docs/special-courses-plan.md §2）。
  */
 export async function loadCourses(
   ctx: ApplyContext,
@@ -457,9 +461,10 @@ export async function loadCourses(
   // 「個別指導の学習メニュー959件」で別物なので参照しない。
   // formation はこのテーブルが直接持つため、申込から推測する必要はない（決定57）。
   const { data: rows } = await ctx.db
-    .from('koushu_special_courses')
+    .from('special_courses')
     .select('id, name, formation, target_grades, session_dates, unit_price')
     .eq('school_id', ctx.schoolId)
+    .eq('scope', 'koushu')
     .eq('season', ctx.season)
     .eq('year', ctx.year)
     .eq('is_active', true);

@@ -4,10 +4,10 @@
  * 形態ボード（小集団・プログラミング等のユーザー定義形態）— Phase D。
  *
  * 行 = その形態のコマ時間（schedule_time_slots, formation=キー）、列 = 表示日（向きに追随）。
- * 各セル = その (日付×コマ) のクラス枠カード群。1カード = 1講師のクラス（講師1名＋生徒N行）。
+ * 各セル = その (日付×コマ) の講座の枠カード群。1カード = 1講師のクラス（講師1名＋生徒N行）。
  * カード言語は個別ボード（Phase U 高密度）と統一し、scheduleDensity.module.css を再利用/拡張する。
  *
- * 集団は手動編成なので D&D は無し。空セルの「＋クラス枠」バーで登録モーダル、
+ * 形態ボードは手動編成なので D&D は無し。空セルの「＋講座の枠」バーで登録モーダル、
  * 空席プレースホルダ行で既存クラスへの生徒追加、生徒行クリックで StudentActionModal を開く。
  */
 
@@ -47,11 +47,11 @@ export interface FormationBoardProps {
   /** 1枠あたり生徒数上限（school_formation_capacity.max_students_per_group） */
   maxStudentsPerGroup: number;
   subjectNameById?: Map<string, string>;
-  /** 空セルの「＋クラス枠」バー文言（例: クラス枠 / コース枠） */
+  /** 空セルの「＋…」バー文言（例: 講座の枠） */
   addLabel?: string;
   orientation: 'cols' | 'rows';
   stickyOffset?: number;
-  /** 空セルの「＋クラス枠」クリック → 登録モーダル（曜日×コマ自動設定） */
+  /** 空セルの「＋講座の枠」クリック → 登録モーダル（曜日×コマ自動設定） */
   onCreate: (date: string, slotId: string) => void;
   /** 空席プレースホルダ行クリック → 既存クラスへ生徒追加（講師固定） */
   onAddStudent: (date: string, slotId: string, teacherId: string | null) => void;
@@ -59,7 +59,7 @@ export interface FormationBoardProps {
   onStudentClick: (entry: ScheduleEntry, e: React.MouseEvent) => void;
 }
 
-/** 1クラス枠カード（1講師分）。 */
+/** 1枠カード（1講師分）。 */
 function ClassCard({
   entries,
   maxStudents,
@@ -169,7 +169,7 @@ export function FormationBoard({
   closedDates,
   maxStudentsPerGroup,
   subjectNameById,
-  addLabel = 'クラス枠',
+  addLabel = '講座の枠',
   orientation,
   stickyOffset = 0,
   onCreate,
@@ -195,7 +195,7 @@ export function FormationBoard({
   const slotTimeLabel = (slot: ScheduleTimeSlot) =>
     `${slot.start_time?.slice(0, 5) ?? ''}〜${slot.end_time?.slice(0, 5) ?? ''}`;
 
-  // 1セルの中身（クラス枠カード群 ＋ ＋クラス枠バー）
+  // 1セルの中身（枠カード群 ＋ ＋バー）
   const renderCell = (date: string, slot: ScheduleTimeSlot) => {
     const closed = closedSet.has(date);
     const groups = cellGroups(date, slot.id);

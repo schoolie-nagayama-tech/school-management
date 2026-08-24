@@ -114,6 +114,11 @@ export interface ScheduleRegularPattern {
   duration_minutes: number | null;
   /** Phase R: 45分授業の占有半コマ。'first'=前半 / 'second'=後半 / NULL=全コマ。 */
   half_position: HalfPosition;
+  /**
+   * 所属する特別講座（special_courses.id）。個別形態の通塾日程は NULL。
+   * 形態ボードの枠は必ずどれかの講座に属する（正典 docs/special-courses-plan.md §2）。
+   */
+  special_course_id?: string | null;
   created_at: string;
   updated_at: string;
   // リレーション
@@ -160,6 +165,11 @@ export interface ScheduleRegularPatternFormData {
   duration_minutes?: number | null;
   /** Phase R: 45分授業の占有半コマ。省略/NULL=全コマ。 */
   half_position?: HalfPosition;
+  /**
+   * 所属する特別講座（special_courses.id）。形態ボードの枠を作るときに渡す。
+   * undefined を渡すと列自体を送らない（既存の個別パターン作成の挙動を変えないため）。
+   */
+  special_course_id?: string | null;
 }
 
 /** Phase R: 45分授業の占有半コマ位置。null=全コマ。seatOccupancy と共有する型。 */
@@ -211,7 +221,7 @@ export function isExtraLessonKind(kind: ScheduleEntryKind): kind is ExtraLessonK
  * タイポ検出の代わりに、以下の定数を直書きの代替として使い、DB側は FK で正当性を守る。
  *
  * - individual: 個別指導（1講師あたり生徒数名、ブース運用）。is_system。座席表メイングリッド。
- * - group     : 集団指導（1講師あたり多人数）。is_system。講習の集団レーンが依存。
+ * - group     : 小集団（1講師あたり多人数）。is_system。講習の集団レーンが依存。
  *
  * 重要：形態ごとにコマ時間自体が違うため、同じセルに混在しない。
  * ただし時間帯が重なる場合があり（個別19:30-21:00 と 集団20:20-21:20 等）、
@@ -227,9 +237,14 @@ export type ScheduleEntryFormation = string;
 export const INDIVIDUAL_FORMATION = 'individual';
 export const GROUP_FORMATION = 'group';
 
+/**
+ * 形態キーの表示名フォールバック。正典は schedule_formations.label（DB）なので、
+ * マスタを引ける画面ではそちらを使う。ここは取得前・取得不可時の保険。
+ * 'group' は 2026-08-24 の語彙確定でラベルのみ「小集団」へ改名（キーは不変）。
+ */
 export const SCHEDULE_ENTRY_FORMATION_LABELS: Record<string, string> = {
   individual: '個別',
-  group: '集団',
+  group: '小集団',
 };
 
 /**

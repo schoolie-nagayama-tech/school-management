@@ -6,8 +6,8 @@
  * 学校ごとに以下を可変設定する：
  *  - 個別: 1講師あたりの生徒上限（デフォルト2 = 1対2まで）
  *  - 個別: 教室全体の同時席数（デフォルト12）
- *  - 集団: 1コマあたりの生徒上限（デフォルト8）
- *  - 集団: 同時開催コマ数（デフォルト1 = 1室のみ）
+ *  - 小集団: 1コマあたりの生徒上限（デフォルト8）
+ *  - 小集団: 同時開催コマ数（デフォルト1 = 1室のみ）
  *
  * これらは座席表配置時のバリデーションや、将来のマッチング機能の容量制約として使われる。
  */
@@ -197,7 +197,7 @@ export default function ClassCapacitySettingsPage() {
         </div>
 
         <p className="text-sm text-text-muted">
-          学校ごとに個別指導・集団指導の生徒数上限を設定します。座席表配置時のバリデーションや、将来のマッチング機能の容量制約として使用されます。
+          学校ごとに個別指導・小集団の生徒数上限を設定します。座席表配置時のバリデーションや、将来のマッチング機能の容量制約として使用されます。
         </p>
 
         {/* 教室選択 */}
@@ -248,15 +248,15 @@ export default function ClassCapacitySettingsPage() {
               </CardContent>
             </Card>
 
-            {/* 集団指導 */}
+            {/* 小集団 */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">集団指導</CardTitle>
+                <CardTitle className="text-base">小集団</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <NumberField
                   label="1コマあたりの生徒数 (1〜100)"
-                  hint="集団授業1コマに参加できる生徒数の上限。"
+                  hint="小集団の授業1コマに参加できる生徒数の上限。"
                   value={form.max_students_per_group}
                   min={1}
                   max={100}
@@ -264,7 +264,7 @@ export default function ClassCapacitySettingsPage() {
                 />
                 <NumberField
                   label="同時開催コマ数 (1〜20)"
-                  hint="同じ時間帯に並行で開催できる集団コマ数。教室が1室なら 1。"
+                  hint="同じ時間帯に並行で開催できる小集団のコマ数。教室が1室なら 1。"
                   value={form.max_concurrent_groups}
                   min={1}
                   max={20}
@@ -286,7 +286,7 @@ export default function ClassCapacitySettingsPage() {
 
             {/*
               ユーザー定義形態の定員（school_formation_capacity）。
-              個別/集団（is_system）は上の専用UIで管理するため、ここには出さない。
+              個別/小集団（is_system）は上の専用UIで管理するため、ここには出さない。
               形態が1つも無ければセクションごと非表示。
             */}
             {userFormations.length > 0 && (
