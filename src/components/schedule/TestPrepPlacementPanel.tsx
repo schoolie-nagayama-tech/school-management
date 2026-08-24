@@ -21,7 +21,7 @@ import {
   type ZoukomaAvailableSlot,
 } from '@/lib/api/zoukoma-placement';
 import type { Subject } from '@/types/database';
-import { CheckCircle, Target, X } from 'lucide-react';
+import { CheckCircle, Target, X, Wand2 } from 'lucide-react';
 import { formatGradeLabel } from '@/lib/utils/gradeLabel';
 
 interface Props {
@@ -34,6 +34,19 @@ interface Props {
     subjectName: string,
     availableSlots: ZoukomaAvailableSlot[]
   ) => void;
+  /**
+   * 「自動」クリック時：親が空き枠と講師を選んで**提案**を作る（この時点では書き込まない）。
+   * needed は残コマ数。未指定なら自動ボタンを出さない。
+   */
+  onAutoPlace?: (
+    studentId: string,
+    subjectId: string,
+    subjectName: string,
+    availableSlots: ZoukomaAvailableSlot[],
+    needed: number
+  ) => void;
+  /** 自動配置の候補を計算中（ボタンを二度押しさせない） */
+  autoPlacing?: boolean;
   placingStudentId?: string | null;
   placingSubjectId?: string | null;
   refreshKey?: number;
@@ -49,6 +62,8 @@ export function TestPrepPlacementPanel({
   schoolId,
   subjects,
   onStartPlacement,
+  onAutoPlace,
+  autoPlacing,
   placingStudentId,
   placingSubjectId,
   refreshKey,
@@ -194,24 +209,48 @@ export function TestPrepPlacementPanel({
                             </td>
                             <td className="py-1 px-1">
                               {canPlace && (
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    onStartPlacement!(
-                                      r.student_id,
-                                      b.subjectId!,
-                                      b.subjectName,
-                                      r.availableSlots
-                                    )
-                                  }
-                                  className={`text-xs px-2 py-0.5 rounded active:scale-[0.97] transition-[background-color,transform] duration-150 ${
-                                    isPlacing
-                                      ? 'bg-info text-white'
-                                      : 'bg-white border border-info text-info hover:bg-info-subtle'
-                                  }`}
-                                >
-                                  {isPlacing ? '終了' : '配置'}
-                                </button>
+                                <div className="flex items-center justify-end gap-1">
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      onStartPlacement!(
+                                        r.student_id,
+                                        b.subjectId!,
+                                        b.subjectName,
+                                        r.availableSlots
+                                      )
+                                    }
+                                    className={`text-xs px-2 py-0.5 rounded active:scale-[0.97] transition-[background-color,transform] duration-150 ${
+                                      isPlacing
+                                        ? 'bg-info text-white'
+                                        : 'bg-white border border-info text-info hover:bg-info-subtle'
+                                    }`}
+                                  >
+                                    {isPlacing ? '終了' : '配置'}
+                                  </button>
+                                  {/* 自動は「空いている枠と講師を選んで提案する」だけ。
+                                      確定は盤面下の確認バーで行うので、ここでは書き込まない。 */}
+                                  {onAutoPlace && (
+                                    <button
+                                      type="button"
+                                      disabled={autoPlacing}
+                                      onClick={() =>
+                                        onAutoPlace(
+                                          r.student_id,
+                                          b.subjectId!,
+                                          b.subjectName,
+                                          r.availableSlots,
+                                          remaining
+                                        )
+                                      }
+                                      title="空いている枠と講師を自動で選んで提案します"
+                                      className="inline-flex items-center gap-1 rounded border border-info bg-info-subtle px-2 py-0.5 text-xs text-info transition-[background-color,transform] duration-150 hover:bg-info/10 active:scale-[0.97] disabled:opacity-50"
+                                    >
+                                      <Wand2 className="h-3 w-3" />
+                                      自動
+                                    </button>
+                                  )}
+                                </div>
                               )}
                             </td>
                           </tr>
