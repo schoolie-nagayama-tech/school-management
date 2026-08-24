@@ -1,7 +1,10 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { Copy, Ticket, Users, Link2Off, Loader2 } from 'lucide-react';
+import { Copy, Ticket, Users, Link2Off, Loader2, Printer, Download } from 'lucide-react';
+import QRCode from 'qrcode';
+import { useMasterData } from '@/contexts/MasterDataContext';
+import { buildInviteHandoutHtml } from '@/lib/portal/inviteHandout';
 import { Button, ToastContainer } from '@/components/ui';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/useToast';
@@ -68,7 +71,8 @@ function relationLabel(relation: string, note: string | null): string {
 }
 
 export function PortalInviteSection({ studentId, studentName }: PortalInviteSectionProps) {
-  const { profile } = useAuth();
+  const { profile, selectedSchoolId } = useAuth();
+  const { schools } = useMasterData();
   // セクション自体は教室長（manager）以上に見せる。招待発行だけ owner 以上に絞る（下の canInvite）。
   const canView = isManagerOrAbove(profile?.role);
   const canInvite = isOwnerOrAbove(profile?.role);
@@ -83,6 +87,8 @@ export function PortalInviteSection({ studentId, studentName }: PortalInviteSect
   const [lastUrl, setLastUrl] = useState('');
   const [copied, setCopied] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  // 受諾URLのQRコード（PNG data URL）。URLが決まってから非同期で作る。
+  const [qrDataUrl, setQrDataUrl] = useState('');
 
   const [linkedAccounts, setLinkedAccounts] = useState<LinkedAccount[]>([]);
   const [loadingLinks, setLoadingLinks] = useState(false);
@@ -193,6 +199,73 @@ export function PortalInviteSection({ studentId, studentName }: PortalInviteSect
     } finally {
       setUnlinkingId(null);
     }
+  };
+
+  // 受諾URLが決まったらQRを作る。紙に印刷しても読める余白と誤り訂正で出す。
+  useEffect(() => {
+    if (!lastUrl) {
+      setQrDataUrl('');
+      return;
+    }
+    let cancelled = false;
+    QRCode.toDataURL(lastUrl, { width: 512, margin: 2, errorCorrectionLevel: 'M' })
+      .then((dataUrl) => {
+        if (!cancelled) setQrDataUrl(dataUrl);
+      })
+      .catch((e) => {
+        console.error('[PortalInviteSection] QRの生成に失敗:', e);
+        if (!cancelled) setQrDataUrl('');
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [lastUrl]);
+
+  /** 有効期限の表示。招待は発行から EXPIRES_IN_DAYS 日で切れる。 */
+  const expiresLabel = (() => {
+    const d = new Date();
+    d.setDate(d.getDate() + EXPIRES_IN_DAYS);
+    return `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
+  })();
+
+  /** QR画像をPNGで保存（LINEやメールで送るとき用）。 */
+  const downloadQr = () => {
+    if (!qrDataUrl) return;
+    const a = document.createElement('a');
+    a.href = qrDataUrl;
+    // ファイル名に使えない文字を潰す（生徒名は自由入力）
+    a.download = `mypage_invite_${studentName.replace(/[s/\:*?"<>|・（）]/g, '_')}.png`;
+    a.click();
+  };
+
+  /**
+   * 配布用のA4シートを別ウィンドウで開いて印刷する。
+   * アプリ側で window.print() しないのは、このセクションが生徒詳細モーダルの中にあり、
+   * モーダルの外側まで用紙に乗ってしまうため（詳細は lib/portal/inviteHandout.ts）。
+   */
+  const printHandout = () => {
+    if (!lastUrl || !qrDataUrl) return;
+    const schoolName =
+      selectedSchoolId && selectedSchoolId !== 'all'
+        ? (schools.find((sc) => sc.id === selectedSchoolId)?.name ?? '')
+        : '';
+    const html = buildInviteHandoutHtml({
+      studentName,
+      url: lastUrl,
+      qrDataUrl,
+      expiresLabel,
+      schoolName,
+      inviteType,
+    });
+    const w = window.open('', '_blank');
+    if (!w) {
+      setErrorMessage('印刷ページを開けませんでした。ブラウザのポップアップ許可をご確認ください');
+      return;
+    }
+    w.document.write(html);
+    w.document.close();
+    // 画像（QR）の読み込みを待ってから印刷ダイアログを出す。待たないと白い枠だけ印刷される。
+    w.onload = () => w.print();
   };
 
   const copy = async (text: string) => {
@@ -313,6 +386,41 @@ export function PortalInviteSection({ studentId, studentName }: PortalInviteSect
                     {copied ? 'コピー済み' : 'コピー'}
                   </button>
                 </div>
+
+                {/* QRコードと配布用の紙。保護者にURLを打たせずに済むようにする。 */}
+                {qrDataUrl && (
+                  <div className="mt-2.5 flex items-center gap-3 border-t border-blue-200 pt-2.5">
+                    {/* eslint-disable-next-line @next/next/no-img-element -- data URL のQRは next/image の最適化対象外 */}
+                    <img
+                      src={qrDataUrl}
+                      alt="受諾URLのQRコード"
+                      className="h-24 w-24 rounded border border-[#e5e7eb] bg-white"
+                    />
+                    <div className="flex min-w-0 flex-col gap-1.5">
+                      <p className="text-[11px] text-[#4b5563]">
+                        QRコードを読み取ってもらうと、URLを入力せずに登録できます。
+                      </p>
+                      <div className="flex flex-wrap gap-1.5">
+                        <button
+                          type="button"
+                          onClick={printHandout}
+                          className="inline-flex items-center gap-1 rounded bg-[#1e3a5f] px-2 py-1 text-[11px] font-medium text-white transition-colors hover:bg-[#16304d]"
+                        >
+                          <Printer className="h-3 w-3" />
+                          印刷して渡す
+                        </button>
+                        <button
+                          type="button"
+                          onClick={downloadQr}
+                          className="inline-flex items-center gap-1 rounded border border-[#c7d2dd] bg-white px-2 py-1 text-[11px] font-medium text-[#1e3a5f] transition-colors hover:bg-[#eef3f8]"
+                        >
+                          <Download className="h-3 w-3" />
+                          QRを保存
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </>
