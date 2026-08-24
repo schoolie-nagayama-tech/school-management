@@ -220,6 +220,9 @@ export default function SchedulePage() {
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [students, setStudents] = useState<Awaited<ReturnType<typeof getStudents>>>([]);
   const [entriesLoading, setEntriesLoading] = useState(false);
+  // 一度でも盤面を描いたか。2回目以降の更新では盤面を外さずそのまま残す
+  //（外すとページの高さが潰れ、ブラウザがスクロール位置を先頭に戻してしまうため）。
+  const [entriesLoadedOnce, setEntriesLoadedOnce] = useState(false);
   const regularPatternsRef = useRef<Awaited<ReturnType<typeof getRegularPatterns>>>([]);
 
   const [actionModalEntry, setActionModalEntry] = useState<ScheduleEntry | null>(null);
@@ -555,6 +558,7 @@ export default function SchedulePage() {
       toastError('スケジュールの取得に失敗しました');
     } finally {
       setEntriesLoading(false);
+      setEntriesLoadedOnce(true);
     }
   }, [schoolId, weekStartStr, weekEndStr, toastError, profile?.id]);
 
@@ -2300,7 +2304,23 @@ export default function SchedulePage() {
             description: '同日内の担当講師を変更（移動）',
           });
           success('授業を移動しました');
-          refreshEntries();
+          // ★ ここで refreshEntries() を呼ばない。
+          //   同コマ内の移動は日付・コマが変わらないので通塾日程とのズレ判定に影響せず、
+          //   取り直す必要がない。取り直すと盤面が一瞬消えてページの高さが潰れ、
+          //   ブラウザがスクロール位置を先頭に戻してしまう（毎回スクロールし直しになる）。
+          //   動かした1コマだけを手元の状態で差し替える。
+          setEntries((prev) =>
+            prev.map((e) =>
+              e.id === entry.id
+                ? {
+                    ...e,
+                    entry_date: targetDate,
+                    time_slot_id: targetSlotId,
+                    teacher_id: targetTeacherId,
+                  }
+                : e
+            )
+          );
           return;
         }
         // 別日または別コマ → 振替
@@ -2719,6 +2739,23 @@ export default function SchedulePage() {
     />
   );
 
+  /**
+   * 盤面を出したまま再取得しているときの「更新中」表示。
+   * fixed で浮かせるのでページの高さに影響せず、スクロール位置を動かさない。
+   * 初回ロード中は盤面ごとスピナーを出すので、ここでは出さない。
+   */
+  const refreshingIndicator =
+    entriesLoading && entriesLoadedOnce ? (
+      <div
+        role="status"
+        aria-live="polite"
+        className="fixed bottom-4 right-4 z-50 flex items-center gap-2 rounded-full border border-border-default bg-white/95 px-3 py-1.5 text-xs font-semibold text-text-muted shadow-md backdrop-blur print:hidden"
+      >
+        <Loading size="sm" />
+        更新中
+      </div>
+    ) : null;
+
   return (
     <AdminLayout headerTitle="座席表" fullWidth>
       {/* 画面コンテンツ一式を print:hidden で包む。印刷時はこの下の #schedule-daily-print
@@ -2971,7 +3008,8 @@ export default function SchedulePage() {
             </Card>
           ) : (
             <div className="schedule-print -mx-4 -mb-6">
-              {entriesLoading ? (
+              {refreshingIndicator}
+              {entriesLoading && !entriesLoadedOnce ? (
                 <div className="py-8">
                   <Loading size="md" />
                 </div>
@@ -3042,6 +3080,7 @@ export default function SchedulePage() {
                  AdminLayout(fullWidth) の px-4 / 下端 py-6 を打ち消して画面いっぱいに広げる。
                  キャンバス色（--sd-canvas）はグリッド側の boardCanvas がページ端まで塗る。 */
               <div className="schedule-print -mx-4 -mb-6">
+                {refreshingIndicator}
                 {transferMode && (
                   <div className="px-3 pb-2">
                     <TransferModeBar
@@ -3070,7 +3109,7 @@ export default function SchedulePage() {
                     />
                   </div>
                 )}
-                {entriesLoading ? (
+                {entriesLoading && !entriesLoadedOnce ? (
                   <div className="py-8">
                     <Loading size="md" />
                   </div>
