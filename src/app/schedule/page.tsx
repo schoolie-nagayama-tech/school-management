@@ -124,7 +124,12 @@ import { reassignTeacherFromToday } from '@/lib/api/pattern-matching';
 import { markInquiryTrialScheduled } from '@/lib/api/inquiries';
 import type { AddLessonPlacementPayload } from '@/components/schedule';
 import type { HalfPosition } from '@/types/schedule';
-import { canPlaceEntry, type SeatEntryInput } from '@/lib/utils/seatOccupancy';
+import { checkTeacherFit } from '@/lib/schedule/teacherFit';
+import {
+  pickTestPrepPlacements,
+  type AutoPlaceCell,
+  type AutoPlacePick,
+} from '@/lib/schedule/testPrepAutoPlace';
 import type { PendingLesson } from '@/lib/api/pending-lessons';
 import { getFormations, getFormationCapacity } from '@/lib/api/schedule-formations';
 import { createFormationClassPatterns } from '@/lib/api/formation-patterns';
@@ -386,6 +391,23 @@ export default function SchedulePage() {
     rawSlots: import('@/lib/api/zoukoma-placement').ZoukomaAvailableSlot[];
   } | null>(null);
   const [zoukomaPanelRefreshKey, setZoukomaPanelRefreshKey] = useState(0);
+  /**
+   * テスト対策の自動配置の**提案**。確定ボタンを押すまで1件も書き込まない。
+   * 提案中は盤面の該当セルに印を出し、下部の確定バーで内容を見せる。
+   */
+  const [testPrepProposal, setTestPrepProposal] = useState<{
+    studentId: string;
+    studentName: string;
+    subjectId: string;
+    subjectName: string;
+    picks: AutoPlacePick[];
+    /** 置ききれなかった数。0 でなければバーに出す（黙って少なく置かない） */
+    shortfall: number;
+  } | null>(null);
+  const [autoPlacing, setAutoPlacing] = useState(false);
+  const [confirmingAutoPlace, setConfirmingAutoPlace] = useState(false);
+  /** 「配置」を押したときに盤面まで送るためのアンカー */
+  const boardRef = useRef<HTMLDivElement>(null);
 
   // ---- 配置ストリップ（出席可能日程ドットマトリクス） ----
   // 配置モード中（講習 / テスト対策）に生徒の出席可能日程をストリップ表示するためのデータ
@@ -1777,6 +1799,198 @@ export default function SchedulePage() {
     [placingTestPrep, timeSlots]
   );
 
+  /** この教室に所属する在籍中の講師。自動配置の候補にする（座席表の講師カードと同じ絞り込み）。 */
+  const schoolTeachers = useMemo(
+    () => teachers.filter((t) => t.user_schools?.some((us) => us.school_id === schoolId)),
+    [teachers, schoolId]
+  );
+
+  /** 盤面の先頭へ送る。パネルは画面上部にあり、押した後に自分でスクロールさせないため。 */
+  const scrollToBoard = useCallback(() => {
+    // 状態更新で盤面が描き変わるので、1フレーム待ってから送る
+    requestAnimationFrame(() => {
+      boardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  }, []);
+
+  /**
+   * テスト対策の自動配置。空いている枠と講師を選んで**提案だけ**作る。
+   * 書き込みは確定ボタン（handleConfirmAutoPlace）まで一切しない。
+   *
+   * 候補の絞り込みは画面と同じ判定を使う:
+   *   マスの可否 … 通塾可能枠・休講日・過去日・生徒の重複（getTestPrepPlaceability と同基準）
+   *   講師の可否 … checkTeacherFit（欠勤・指導科目外・満席/1対1・担当除外・希望性別）
+   * ここで独自判定を足すと「画面では置けないのに提案される」ズレが出る。
+   */
+  const handleTestPrepAuto = useCallback(
+    async (
+      studentId: string,
+      subjectId: string,
+      subjectName: string,
+      slots: ZoukomaAvailableSlot[],
+      needed: number
+    ) => {
+      if (!schoolId || needed <= 0) return;
+      setAutoPlacing(true);
+      try {
+        const student = students.find((st) => st.id === studentId);
+        const studentName = student
+          ? `${student.last_name ?? ''} ${student.first_name ?? ''}`.trim()
+          : '生徒';
+
+        // 個別コマの開始時刻(HH:MM) → コマ。通塾可能枠は時刻で来るのでコマに解決する。
+        const timeToSlot = new Map<string, { id: string; slot_number: number }>();
+        for (const t of timeSlots) {
+          if (t.formation !== INDIVIDUAL_FORMATION) continue;
+          if (t.start_time) timeToSlot.set(t.start_time.slice(0, 5), t);
+        }
+
+        // この生徒のこの科目を普段見ている講師に加点する（担当の継続性を優先）
+        const usualCount = new Map<string, number>();
+        for (const e of entriesWithSubjects) {
+          if (e.student_id !== studentId || !e.teacher_id) continue;
+          if (!(e.subject_ids ?? []).includes(subjectId)) continue;
+          usualCount.set(e.teacher_id, (usualCount.get(e.teacher_id) ?? 0) + 1);
+        }
+
+        const todayJst = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Tokyo' });
+        const cells: AutoPlaceCell[] = [];
+        const seen = new Set<string>();
+        for (const av of slots) {
+          const slot = av.startTime ? timeToSlot.get(av.startTime.slice(0, 5)) : undefined;
+          if (!slot) continue;
+          const cellKey = `${av.date}|${slot.id}`;
+          if (seen.has(cellKey)) continue;
+          seen.add(cellKey);
+          if (closedDates.includes(av.date) || av.date < todayJst) continue;
+          // 同じコマに既にこの生徒が入っていないか
+          const dup = entriesWithSubjects.some(
+            (e) =>
+              e.student_id === studentId &&
+              e.entry_date === av.date &&
+              e.time_slot_id === slot.id &&
+              e.status !== 'cancelled' &&
+              e.status !== 'transferred_out'
+          );
+          if (dup) continue;
+
+          const fitTeachers = schoolTeachers
+            .map((t) => {
+              const active = entriesWithSubjects.filter(
+                (e) =>
+                  e.entry_date === av.date &&
+                  e.time_slot_id === slot.id &&
+                  e.teacher_id === t.id &&
+                  e.status !== 'cancelled' &&
+                  e.status !== 'transferred_out'
+              );
+              const fit = checkTeacherFit({
+                teacher: t,
+                isAbsent: absenceKeySet.has(`${av.date}|${slot.id}|${t.id}`),
+                occupied: active.map((e) => ({
+                  ratio: e.ratio === 1 ? 1 : 2,
+                  halfPosition: e.half_position ?? null,
+                })),
+                maxStudentsPerTeacher: capacity.max_students_per_teacher_individual,
+                incoming: { ratio: 2, halfPosition: null },
+                subjectIds: [subjectId],
+              });
+              if (!fit.ok) return null;
+              return {
+                id: t.id,
+                name: t.display_name || t.email || '講師',
+                priority: usualCount.get(t.id) ?? 0,
+                load: active.length,
+              };
+            })
+            .filter((t): t is NonNullable<typeof t> => t !== null);
+          if (fitTeachers.length === 0) continue;
+          cells.push({
+            date: av.date,
+            slotId: slot.id,
+            slotNumber: slot.slot_number,
+            teachers: fitTeachers,
+          });
+        }
+
+        const { picks, shortfall } = pickTestPrepPlacements(cells, needed);
+        if (picks.length === 0) {
+          toastError('この生徒が通塾できる枠に、空いている講師が見つかりませんでした');
+          return;
+        }
+        // 提案中は手動の配置モードを解除する（配置状態を2つ同時に持たせない）
+        setPlacingTestPrep(null);
+        setTestPrepProposal({ studentId, studentName, subjectId, subjectName, picks, shortfall });
+        // 先頭の提案が見える週へ移動してから盤面へ送る
+        setWeekStart(getWeekStart(new Date(picks[0].date + 'T12:00:00')));
+        scrollToBoard();
+      } catch (e) {
+        toastError(e instanceof Error ? e.message : '自動配置の候補を作れませんでした');
+      } finally {
+        setAutoPlacing(false);
+      }
+    },
+    [
+      schoolId,
+      students,
+      timeSlots,
+      entriesWithSubjects,
+      closedDates,
+      schoolTeachers,
+      absenceKeySet,
+      capacity,
+      toastError,
+      scrollToBoard,
+    ]
+  );
+
+  /** 提案から1件外す（微調整用）。全部外したら提案そのものを畳む。 */
+  const removeAutoPick = useCallback((date: string, slotId: string) => {
+    setTestPrepProposal((prev) => {
+      if (!prev) return prev;
+      const picks = prev.picks.filter((p) => !(p.date === date && p.slotId === slotId));
+      return picks.length === 0 ? null : { ...prev, picks };
+    });
+  }, []);
+
+  /** 提案を確定して実際に書き込む。ここで初めて DB を触る。 */
+  const handleConfirmAutoPlace = useCallback(async () => {
+    const proposal = testPrepProposal;
+    if (!proposal || !schoolId) return;
+    setConfirmingAutoPlace(true);
+    try {
+      const { createTestPrepPlacement } = await import('@/lib/api/schedule');
+      let placed = 0;
+      const failed: string[] = [];
+      for (const pick of proposal.picks) {
+        try {
+          await createTestPrepPlacement(
+            schoolId,
+            pick.date,
+            pick.slotId,
+            proposal.studentId,
+            [proposal.subjectId],
+            pick.teacherId
+          );
+          placed++;
+        } catch {
+          // 1件失敗しても残りは進める。どれが入らなかったかは後でまとめて伝える。
+          failed.push(`${pick.date.slice(5).replace('-', '/')} ${pick.slotNumber}限`);
+        }
+      }
+      setTestPrepProposal(null);
+      await refreshEntries();
+      setZoukomaPanelRefreshKey((k) => k + 1);
+      if (failed.length > 0) {
+        toastError(`${placed}件を配置しました。${failed.join('・')} は配置できませんでした`);
+      } else {
+        success(`${placed}件のテスト対策コマを配置しました`);
+      }
+    } finally {
+      setConfirmingAutoPlace(false);
+    }
+  }, [testPrepProposal, schoolId, refreshEntries, success, toastError]);
+
   // 配置モード中の各セルの配置可否（通塾可能枠か＝強調表示の判定）
   const getTestPrepPlaceability = useCallback(
     (date: string, slotId: string): { ok: boolean; reason: string | null } => {
@@ -1894,20 +2108,8 @@ export default function SchedulePage() {
       if (teacherId.startsWith('__unassigned__')) return { ok: true, reason: null };
       const teacher = teachers.find((t) => t.id === teacherId);
       if (!teacher) return { ok: true, reason: null };
-      // a. 欠勤
-      if (absenceKeySet.has(`${date}|${slotId}|${teacherId}`)) {
-        return { ok: false, reason: '欠勤' };
-      }
-      // b. 指導可能科目（teachable が空/未設定なら全科目可）
-      const subjIds = placingAdhoc.subjectIds ?? [];
-      const teachable = teacher.teachable_subject_ids;
-      if (teachable && teachable.length > 0 && subjIds.length > 0) {
-        const teachableSet = new Set(teachable);
-        if (!subjIds.some((id) => teachableSet.has(id))) {
-          return { ok: false, reason: '指導科目外' };
-        }
-      }
-      // c. 席占有（1対1専有・満席・45分半コマ）。canPlaceEntry で判定。
+      // 判定の中身は checkTeacherFit（lib/schedule/teacherFit）に集約している。
+      // 自動配置が講師を選ぶときと同じ関数を使うため（画面で入れられない講師を提案しないため）。
       const active = entriesWithSubjects.filter(
         (e) =>
           e.entry_date === date &&
@@ -1916,31 +2118,22 @@ export default function SchedulePage() {
           e.status !== 'cancelled' &&
           e.status !== 'transferred_out'
       );
-      const toSeat = (e: (typeof active)[number]): SeatEntryInput => ({
-        ratio: e.ratio === 1 ? 1 : 2,
-        halfPosition: e.half_position ?? null,
+      return checkTeacherFit({
+        teacher,
+        isAbsent: absenceKeySet.has(`${date}|${slotId}|${teacherId}`),
+        occupied: active.map((e) => ({
+          ratio: e.ratio === 1 ? 1 : 2,
+          halfPosition: e.half_position ?? null,
+        })),
+        maxStudentsPerTeacher: capacity.max_students_per_teacher_individual,
+        incoming: {
+          ratio: placingAdhoc.ratio === 1 ? 1 : 2,
+          halfPosition: placingAdhoc.halfPosition ?? null,
+        },
+        subjectIds: placingAdhoc.subjectIds ?? [],
+        excludedTeacherIds: placingAdhoc.excludedTeacherIds ?? [],
+        preferredGender: placingAdhoc.preferredGender ?? null,
       });
-      const incoming: SeatEntryInput = {
-        ratio: placingAdhoc.ratio === 1 ? 1 : 2,
-        halfPosition: placingAdhoc.halfPosition ?? null,
-      };
-      if (
-        !canPlaceEntry(active.map(toSeat), incoming, capacity.max_students_per_teacher_individual)
-      ) {
-        return {
-          ok: false,
-          reason: active.some((e) => e.ratio === 1) ? '1対1のため不可' : '満員',
-        };
-      }
-      // d. 生徒の担当除外・希望性別（見込み客は空/none で素通り）
-      if ((placingAdhoc.excludedTeacherIds ?? []).includes(teacherId)) {
-        return { ok: false, reason: '担当除外指定' };
-      }
-      const pref = placingAdhoc.preferredGender;
-      if (pref && teacher.gender && teacher.gender !== pref) {
-        return { ok: false, reason: `${pref === 'male' ? '男性' : '女性'}講師希望` };
-      }
-      return { ok: true, reason: null };
     },
     [placingAdhoc, teachers, absenceKeySet, entriesWithSubjects, capacity]
   );
@@ -2949,7 +3142,13 @@ export default function SchedulePage() {
           <TestPrepPlacementPanel
             schoolId={schoolId ?? ''}
             subjects={masterSubjects}
-            onStartPlacement={handleStartTestPrepPlacement}
+            onStartPlacement={(studentId, subjectId, subjectName, slots) => {
+              handleStartTestPrepPlacement(studentId, subjectId, subjectName, slots);
+              // 押した後に自分でスクロールさせない（パネルは画面上部にある）
+              scrollToBoard();
+            }}
+            onAutoPlace={handleTestPrepAuto}
+            autoPlacing={autoPlacing}
             placingStudentId={placingTestPrep?.studentId ?? null}
             placingSubjectId={placingTestPrep?.subjectId ?? null}
             refreshKey={zoukomaPanelRefreshKey}
@@ -2958,6 +3157,69 @@ export default function SchedulePage() {
               handleTestPrepToggle(false);
             }}
           />
+        )}
+
+        {/* テスト対策の自動配置の確認バー。ここで確定するまで1件も書き込まない。 */}
+        {testPrepProposal && (
+          <div className="fixed inset-x-0 bottom-0 z-50 border-t border-info bg-white/97 px-4 py-3 shadow-[0_-2px_12px_rgba(20,35,50,0.12)] backdrop-blur print:hidden">
+            <div className="mx-auto flex max-w-6xl flex-col gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-sm font-bold text-[var(--headline)]">
+                  {testPrepProposal.studentName} ・ {testPrepProposal.subjectName}
+                </span>
+                <span className="text-xs text-text-muted">
+                  この内容で {testPrepProposal.picks.length} コマ配置します（まだ登録していません）
+                </span>
+                {testPrepProposal.shortfall > 0 && (
+                  <span className="rounded bg-warning-subtle px-2 py-0.5 text-xs font-semibold text-warning">
+                    残り{testPrepProposal.shortfall}コマは置ける枠がありません
+                  </span>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {testPrepProposal.picks.map((pick) => (
+                  <button
+                    key={`${pick.date}|${pick.slotId}`}
+                    type="button"
+                    onClick={() => removeAutoPick(pick.date, pick.slotId)}
+                    title="この1件を提案から外す"
+                    className="group inline-flex items-center gap-1.5 rounded-full border border-info bg-info-subtle px-3 py-1 text-xs text-[var(--headline)] transition-colors hover:border-danger hover:bg-danger-subtle"
+                  >
+                    <span className="font-semibold tabular-nums">
+                      {pick.date.slice(5).replace('-', '/')}(
+                      {
+                        ['日', '月', '火', '水', '木', '金', '土'][
+                          new Date(pick.date + 'T12:00:00').getDay()
+                        ]
+                      }
+                      )
+                    </span>
+                    <span className="tabular-nums">{pick.slotNumber}限</span>
+                    <span className="text-text-muted">{pick.teacherName}</span>
+                    <span className="text-text-faint group-hover:text-danger">×</span>
+                  </button>
+                ))}
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] text-text-faint">
+                  チップをクリックするとその1件を外せます
+                </span>
+                <div className="ml-auto flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={confirmingAutoPlace}
+                    onClick={() => setTestPrepProposal(null)}
+                  >
+                    やめる
+                  </Button>
+                  <Button size="sm" disabled={confirmingAutoPlace} onClick={handleConfirmAutoPlace}>
+                    {confirmingAutoPlace ? '配置中…' : 'この内容で配置'}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
         )}
 
         {/* 配置モード中: 生徒の出席可能日程をドットマトリクスで表示。
@@ -3098,7 +3360,7 @@ export default function SchedulePage() {
               /* 盤面セクション（フルブリード）: Card の枠に入れず、負マージンで
                  AdminLayout(fullWidth) の px-4 / 下端 py-6 を打ち消して画面いっぱいに広げる。
                  キャンバス色（--sd-canvas）はグリッド側の boardCanvas がページ端まで塗る。 */
-              <div className="schedule-print -mx-4 -mb-6">
+              <div ref={boardRef} className="schedule-print -mx-4 -mb-6">
                 {refreshingIndicator}
                 {transferMode && (
                   <div className="px-3 pb-2">
