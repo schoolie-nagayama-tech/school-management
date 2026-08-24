@@ -145,3 +145,67 @@ RLS/grantは既存の `koushu_special_courses`（20260805130000）と同じ方�
 
 講座 `unit_price` × 名簿を請求へ。請求側の構造調査（billing のデータモデル・増コマ同期の方式）
 の結果を受けて仕様を書く。
+
+---
+
+# フェーズ2-B: 特別講座の請求連携（仕様）
+
+2026-08-25 着手。請求側の構造調査（billing_items=教室×期間ごとの動的列 / student_billings=生徒×項目のセル /
+既存の増コマ同期 `syncCourseExtraToBilling` の名前ベース検出方式）を踏まえた設計。**DBマイグレーション無し**。
+
+## 方式（既存の増コマ同期の完全踏襲）
+
+- **列の検出**: `value_type='number'`・`linked_form_type` 無し・**名前に「特別講座」を含む** billing_item に
+  「特別講座から同期」ボタンを出す（`isCourseExtraItem` と同じ名前ベース検出。判定関数 `isSpecialCourseItem` を
+  BillingTable に追加。増コマ列の検出条件と重複しないこと＝「講習」を含み「特別講座」も含む名前は特別講座側を優先）。
+- **セルに入れる値**: **金額（円）**。講座ごとに単価が違うため回数ではなく金額を合算する。
+- **計上済み保護**: `computeCourseExtraSplit` と同じ split（既存 quantity は保持し、新合計との差分を
+  value_number=未計上へ。0円の生徒は行を作らない）。quantity/value_number の意味は既存規約どおり。
+
+## 同期ダイアログ
+
+ボタン押下 → ダイアログで**対象を選ぶ**:
+
+1. **通年講座（月次）**: 対象月を選択（既定=請求期間名 "YYYY年M月" のパース結果。パース不可なら start_date の月）。
+   月謝先取りの商習慣（5週目ロジックが請求月+1ヶ月を見る）があるため、対象月は固定せず選ばせる。
+2. **講習講座（期に1回）**: 季節・年を選択（増コマ同期のダイアログと同じUI）。
+
+## 金額計算（純関数 `src/lib/billing/specialCourseBilling.ts`・テスト必須）
+
+### 通年講座
+
+生徒ごとに `Σ(講座ごと: unit_price × その月の受講回数)`。
+
+受講回数は**フェーズ2-Aの planWeeklyEntries をそのまま使って数える**:
+対象月に重なる各週について planWeeklyEntries を呼び、`specialCourseId != null`（=講座由来。定期・上書き両方）かつ
+日付が対象月内の計画コマを生徒×講座で数える。
+★ 自前で「曜日出現数 × 単価」を数え直さないこと。講習期上書き（定期停止・休講・振替日程）を
+  二重実装すると座席表と請求で回数がズレる。生成と同じ関数を通せば定義上一致する。
+※ planWeeklyEntries の regular 側 PlannedEntry に specialCourseId が乗っていない場合は
+  乗せる改修をしてよい（source='regular' でも pattern.special_course_id を透過させる）。
+
+### 講習講座
+
+対象 (school, season, year) の scope='koushu' 講座について、
+`koushu_enrollments`（course_id=講座）の生徒ごとに `unit_price × koma_count` を合算。
+
+### 共通
+
+- `unit_price` が NULL の講座は**計上せず**、同期結果ダイアログ/トーストに講座名を出して知らせる
+  （黙って0円にしない）。
+- 対象講座が0件・対象生徒0件は「0件でした」を明示。
+
+## 触るファイル
+
+- `src/lib/billing/specialCourseBilling.ts`（新規・純関数: 月内回数集計・金額合算・split）
+- `src/lib/api/billing.ts`: `syncSpecialCourseToBilling(billingItemId, schoolIds, target)` を
+  `syncCourseExtraToBilling`（1421-1501行）を雛形に新設
+- `src/components/billing/BillingTable.tsx`: `isSpecialCourseItem` 判定＋同期ボタン＋対象選択ダイアログ
+  （courseExtraSync の流儀）
+- `src/app/help/page.tsx`: 請求のFAQに「特別講座の同期」を追記
+
+## やらないこと
+
+- billing_items への専用 source_type / 講座IDリンク列の追加（名前ベース検出で足りる。増コマ列と同じ
+  「項目名を変えると計上済みが表示から外れる」既知の罠は引き継ぐ＝ヘルプに明記）
+- 自動計上（cron 等）。同期は室長のボタン操作のみ
