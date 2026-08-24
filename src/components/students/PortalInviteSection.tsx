@@ -135,6 +135,26 @@ export function PortalInviteSection({ studentId, studentName }: PortalInviteSect
     void loadLinks();
   }, [canView, canInvite, loadInvitations, loadLinks]);
 
+  // 受諾URLが決まったらQRを作る。紙に印刷しても読める余白と誤り訂正で出す。
+  useEffect(() => {
+    if (!lastUrl) {
+      setQrDataUrl('');
+      return;
+    }
+    let cancelled = false;
+    QRCode.toDataURL(lastUrl, { width: 512, margin: 2, errorCorrectionLevel: 'M' })
+      .then((dataUrl) => {
+        if (!cancelled) setQrDataUrl(dataUrl);
+      })
+      .catch((e) => {
+        console.error('[PortalInviteSection] QRの生成に失敗:', e);
+        if (!cancelled) setQrDataUrl('');
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [lastUrl]);
+
   // manager 未満には何も出さない（教師は不可）
   if (!canView) return null;
 
@@ -200,26 +220,6 @@ export function PortalInviteSection({ studentId, studentName }: PortalInviteSect
       setUnlinkingId(null);
     }
   };
-
-  // 受諾URLが決まったらQRを作る。紙に印刷しても読める余白と誤り訂正で出す。
-  useEffect(() => {
-    if (!lastUrl) {
-      setQrDataUrl('');
-      return;
-    }
-    let cancelled = false;
-    QRCode.toDataURL(lastUrl, { width: 512, margin: 2, errorCorrectionLevel: 'M' })
-      .then((dataUrl) => {
-        if (!cancelled) setQrDataUrl(dataUrl);
-      })
-      .catch((e) => {
-        console.error('[PortalInviteSection] QRの生成に失敗:', e);
-        if (!cancelled) setQrDataUrl('');
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [lastUrl]);
 
   /** 有効期限の表示。招待は発行から EXPIRES_IN_DAYS 日で切れる。 */
   const expiresLabel = (() => {
