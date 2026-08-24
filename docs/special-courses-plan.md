@@ -99,3 +99,49 @@ RLS/grantは既存の `koushu_special_courses`（20260805130000）と同じ方�
 - 2026-08-24 ②: 名簿は手動入力
 - 2026-08-24 ③: 受講料は請求とつなぐ
 - 2026-08-24: 座席表に載せる／講座は学年×科目
+
+---
+
+# フェーズ2-A: 講習期上書きの週次生成への反映（仕様）
+
+2026-08-25 着手。ブランチ claude/special-courses-p2。
+
+## 意味論（確定仕様の再掲＋生成規則）
+
+通年講座 × 講習期（`course_prep_periods` の schedule_start_date〜schedule_end_date）について:
+
+| 上書き行 | その講習期のあいだの挙動 |
+|---|---|
+| 無し | **通常どおり**。定期の枠（曜日×コマ）から今までどおり週次生成する |
+| あり（session_dates 非空） | 定期の枠からの生成を**止め**、上書きの日時で生成する |
+| あり（session_dates 空配列） | 定期の枠からの生成を止め、**何も生成しない**（その期は開催しない） |
+
+## 実装規則
+
+1. **抑止判定は純関数に1本化**する（`src/lib/schedule/specialCourseOverride.ts`）。
+   `generateWeeklySchedule`（生成）と `getExpectedEntryDetailsFromPatterns`（同期チェック）の
+   **両方が同じ関数を使う**こと。
+   ★ 片方だけに入れると、同期チェックが「不足」と誤検知して画面更新のたびに再生成が走る
+   （2026-07-13 の実バグと同型。docs/schedule-system-handoff の同期チェックの意味論を参照）。
+   同期チェックの期待キー = 「生成が作るはずのもの」と厳密に一致させる。
+2. **上書き分の生成**: 週に重なる上書き session（date/start_time/end_time）ごとに、
+   - コマ解決: `schedule_time_slots`（その講座の formation・is_active）から **start_time の完全一致**で引く。
+     一致が無ければその session は生成しない（console.warn。UI 側の警告が主対策）。
+   - 名簿 = その講座に紐づく有効な枠（`schedule_regular_patterns.special_course_id`、
+     effective_from/until がその日を覆うもの）の生徒（重複排除）。
+   - 生徒ごとに entries を作成: `kind='koushu'`・formation=講座の形態・teacher_id=その生徒の枠の講師
+     （複数枠なら作成日時の古い枠を採用＝決定的に）・subject_ids=枠のもの・status='scheduled'。
+   - 冪等: 既存の生成スキップ規則と同じ「同一 (date, slot, student) に行があれば作らない」。
+3. **上書き登録UIの検証**（YearRoundCourseDetailModal）: 保存時、各 session の start_time が
+   その形態のコマ時間に存在しなければ行単位で警告を出す（保存は許す。コマ時間を後から
+   足す運用があり得るため）。あわせて「登録済みの週に既に生成されたコマは自動では消えません。
+   座席表で削除してください」の注意書きを出す。
+4. **消し込みはしない**: 生成は挿入のみ（既存方針）。上書きを後から変えた場合の余った行は
+   手動で消す（日程変更未反映アラートと同じ思想。自動削除は手動調整を巻き戻す罠）。
+5. テスト: 抑止判定・コマ解決・名簿解決の純関数と、
+   「生成と同期チェックの期待が一致する」ことを固定するシナリオテストを必ず置く。
+
+# フェーズ2-B: 請求連携（調査中）
+
+講座 `unit_price` × 名簿を請求へ。請求側の構造調査（billing のデータモデル・増コマ同期の方式）
+の結果を受けて仕様を書く。
