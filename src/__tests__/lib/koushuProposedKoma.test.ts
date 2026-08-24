@@ -124,3 +124,81 @@ describe('getProposedKomaBySubject', () => {
     expect(r.komaBySubject).toEqual({});
   });
 });
+
+// ============================================================
+// 申込回数（進行表）からの取り込み
+// ============================================================
+
+import { getAppliedKomaBySubject } from '@/lib/api/koushu-applied-koma';
+
+describe('getAppliedKomaBySubject', () => {
+  it('教材ごとの申込回数を科目別に合計する', async () => {
+    tableData.current = {
+      student_textbooks: [
+        { id: 'stb1', textbook: { subject_id: 'math' } },
+        { id: 'stb2', textbook: { subject_id: 'eng' } },
+      ],
+      student_progress: [
+        { student_textbook_id: 'stb1', application_count: 3 },
+        { student_textbook_id: 'stb1', application_count: 2 },
+        { student_textbook_id: 'stb2', application_count: 4 },
+      ],
+    };
+    const r = await getAppliedKomaBySubject('s1');
+    expect(r).toEqual({ math: 5, eng: 4 });
+  });
+
+  it('同じ科目の複数教材は合算する', async () => {
+    tableData.current = {
+      student_textbooks: [
+        { id: 'stb1', textbook: { subject_id: 'math' } },
+        { id: 'stb2', textbook: { subject_id: 'math' } },
+      ],
+      student_progress: [
+        { student_textbook_id: 'stb1', application_count: 2 },
+        { student_textbook_id: 'stb2', application_count: 3 },
+      ],
+    };
+    expect(await getAppliedKomaBySubject('s1')).toEqual({ math: 5 });
+  });
+
+  it('結合グループの0行は素直に足してよい（書き込み時に先頭へ寄せてあるため）', async () => {
+    tableData.current = {
+      student_textbooks: [{ id: 'stb1', textbook: { subject_id: 'math' } }],
+      // 先頭行に合計6が入り、同じグループの残りは0で埋まっている形
+      student_progress: [
+        { student_textbook_id: 'stb1', application_count: 6 },
+        { student_textbook_id: 'stb1', application_count: 0 },
+        { student_textbook_id: 'stb1', application_count: 0 },
+      ],
+    };
+    expect(await getAppliedKomaBySubject('s1')).toEqual({ math: 6 });
+  });
+
+  it('embed が配列で返っても科目を解決できる', async () => {
+    tableData.current = {
+      student_textbooks: [{ id: 'stb1', textbook: [{ subject_id: 'sci' }] }],
+      student_progress: [{ student_textbook_id: 'stb1', application_count: 2 }],
+    };
+    expect(await getAppliedKomaBySubject('s1')).toEqual({ sci: 2 });
+  });
+
+  it('科目が引けない教材と申込0は結果に含めない', async () => {
+    tableData.current = {
+      student_textbooks: [
+        { id: 'stb1', textbook: { subject_id: null } },
+        { id: 'stb2', textbook: { subject_id: 'math' } },
+      ],
+      student_progress: [
+        { student_textbook_id: 'stb1', application_count: 9 },
+        { student_textbook_id: 'stb2', application_count: 0 },
+      ],
+    };
+    expect(await getAppliedKomaBySubject('s1')).toEqual({});
+  });
+
+  it('所持教材が無ければ空を返す', async () => {
+    tableData.current = { student_textbooks: [] };
+    expect(await getAppliedKomaBySubject('s1')).toEqual({});
+  });
+});

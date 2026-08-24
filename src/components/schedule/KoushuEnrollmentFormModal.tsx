@@ -4,9 +4,10 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui';
 import { Button } from '@/components/ui';
 import { Minus, Plus, Download, Loader2 } from 'lucide-react';
-import { StudentSearchInput, type StudentWithSubjects } from './StudentSearchInput';
+import { KoushuStudentPicker, type PickerStudent } from './KoushuStudentPicker';
 import { estimateRegularKomaInPeriod, type KoushuPeriodInfo } from '@/lib/api/koushu-period';
 import { getProposedKomaBySubject } from '@/lib/api/koushu-proposed-koma';
+import { getAppliedKomaBySubject } from '@/lib/api/koushu-applied-koma';
 import type { Subject } from '@/types/database';
 import type { ScheduleEntryFormation } from '@/types/schedule';
 // Phase A: 講習申込は個別/集団の2列固定。マトリクスのキー型は2値のまま保つ（他形態はここに来ない）。
@@ -27,8 +28,11 @@ interface KoushuEnrollmentFormModalProps {
   onClose: () => void;
   schoolId: string;
   subjects: Subject[];
-  /** 既に登録済みの生徒ID（新規追加時の重複防止用） */
-  existingStudentIds: string[];
+  /**
+   * 既に申込を登録済みの生徒ID → 合計コマ数。
+   * 生徒一覧のバッジ（申込済み◯コマ / 未申込）と、学年見出しの「未申込n名」に使う。
+   */
+  appliedKomaByStudent: Record<string, number>;
   /** 編集対象の生徒（指定時は検索なしで固定。新規追加時は未指定） */
   lockedStudent?: { id: string; last_name: string; first_name: string; grade: number } | null;
   /** 編集時の既存値（個別/集団の科目別コマ数を事前入力） */
@@ -45,13 +49,13 @@ export function KoushuEnrollmentFormModal({
   onClose,
   schoolId,
   subjects,
-  existingStudentIds,
+  appliedKomaByStudent,
   lockedStudent,
   initialRows,
   period,
   onSave,
 }: KoushuEnrollmentFormModalProps) {
-  const [selectedStudent, setSelectedStudent] = useState<StudentWithSubjects | null>(null);
+  const [selectedStudent, setSelectedStudent] = useState<PickerStudent | null>(null);
   // 科目 × formation のコマ数マトリクス。matrix[subjectId] = { individual, group }
   const [matrix, setMatrix] = useState<Matrix>({});
   const [regularHint, setRegularHint] = useState<number | null>(null);
@@ -64,10 +68,12 @@ export function KoushuEnrollmentFormModal({
   const [showAllSubjects, setShowAllSubjects] = useState(false);
   /** 生徒が履修中の科目ID（新規追加時は検索結果から、編集時は取れないので空） */
   const [studentSubjectIds, setStudentSubjectIds] = useState<string[]>([]);
-  /** 提案書から取り込んだ科目別コマ数。取り込みボタンの結果と、行の「提案 n」表示に使う */
+  /** 進行表の申込回数（科目別）。自動取り込みの主データ。 */
+  const [applied, setApplied] = useState<Record<string, number> | null>(null);
+  /** 提案書の提案コマ数（科目別）。申込回数が無いときの控えとして残す。 */
   const [proposed, setProposed] = useState<Record<string, number> | null>(null);
-  const [proposalLoading, setProposalLoading] = useState(false);
-  const [proposalNote, setProposalNote] = useState<string | null>(null);
+  const [sourceLoading, setSourceLoading] = useState(false);
+  const [sourceNote, setSourceNote] = useState<string | null>(null);
 
   const isEditMode = !!lockedStudent;
   const studentId = lockedStudent?.id ?? selectedStudent?.id ?? null;
@@ -79,8 +85,9 @@ export function KoushuEnrollmentFormModal({
     setRegularHint(null);
     setShowAllSubjects(false);
     setStudentSubjectIds([]);
+    setApplied(null);
     setProposed(null);
-    setProposalNote(null);
+    setSourceNote(null);
     const init: Matrix = {};
     for (const row of initialRows ?? []) {
       // 講習申込は個別/集団の2列固定。混入した他形態行は無視して2列を汚さない。
@@ -95,52 +102,56 @@ export function KoushuEnrollmentFormModal({
     setMatrix(init);
   }, [open, initialRows]);
 
-  /** 提案書を読み込む。取り込みボタンの元になる数字で、行の目安表示にも使う。 */
-  const loadProposal = useCallback(
+  /**
+   * 自動取り込みの元データを読む。
+   * 申込回数（進行表）が主、提案書は申込がまだ記録されていないときの控え。
+   */
+  const loadSources = useCallback(
     async (sid: string) => {
-      if (!period) return;
-      setProposalLoading(true);
-      setProposalNote(null);
+      setSourceLoading(true);
+      setSourceNote(null);
       try {
-        const result = await getProposedKomaBySubject(sid, period.season, period.year);
-        setProposed(result.komaBySubject);
-        if (Object.keys(result.komaBySubject).length === 0) {
-          setProposalNote('この生徒の提案書が見つかりません（手入力してください）');
-        } else if (result.unresolvedCount > 0) {
+        const [appliedKoma, proposal] = await Promise.all([
+          getAppliedKomaBySubject(sid),
+          period
+            ? getProposedKomaBySubject(sid, period.season, period.year)
+            : Promise.resolve({ komaBySubject: {}, unresolvedCount: 0 }),
+        ]);
+        setApplied(appliedKoma);
+        setProposed(proposal.komaBySubject);
+        if (proposal.unresolvedCount > 0) {
           // 黙って落とすと「提案したのに出てこない」原因が分からないので必ず知らせる
-          setProposalNote(
-            `${result.unresolvedCount}枚の提案書は教材に科目が設定されておらず取り込めません`
+          setSourceNote(
+            `${proposal.unresolvedCount}枚の提案書は教材に科目が設定されておらず取り込めません`
           );
         }
       } catch {
+        setApplied({});
         setProposed({});
-        setProposalNote('提案書の取得に失敗しました');
+        setSourceNote('申込回数・提案書の取得に失敗しました');
       } finally {
-        setProposalLoading(false);
+        setSourceLoading(false);
       }
     },
     [period]
   );
 
-  // 編集時は開いた時点で生徒が確定しているので、そのまま提案書を読む
+  // 編集時は開いた時点で生徒が確定しているので、そのまま元データを読む
   useEffect(() => {
     if (!open || !lockedStudent) return;
-    void loadProposal(lockedStudent.id);
-  }, [open, lockedStudent, loadProposal]);
+    void loadSources(lockedStudent.id);
+  }, [open, lockedStudent, loadSources]);
 
-  // 新規追加時、生徒を選んだら通常授業回数の目安と提案書をまとめて取る
-  const handleSelectStudent = async (student: StudentWithSubjects | null) => {
+  // 新規追加時、生徒を選んだら通常授業回数の目安と取り込み元をまとめて取る
+  const handleSelectStudent = async (student: PickerStudent) => {
     setSelectedStudent(student);
-    setStudentSubjectIds(student?.subjects?.map((s) => s.id) ?? []);
-    if (!student) return;
-    if (period) {
-      try {
-        setRegularHint(await estimateRegularKomaInPeriod(student.id, period));
-      } catch {
-        setRegularHint(null);
-      }
+    void loadSources(student.id);
+    if (!period) return;
+    try {
+      setRegularHint(await estimateRegularKomaInPeriod(student.id, period));
+    } catch {
+      setRegularHint(null);
     }
-    void loadProposal(student.id);
   };
 
   /**
@@ -151,13 +162,14 @@ export function KoushuEnrollmentFormModal({
   const visibleSubjects = useMemo(() => {
     if (showAllSubjects) return subjects;
     const keep = new Set<string>(studentSubjectIds);
+    for (const sid of Object.keys(applied ?? {})) keep.add(sid);
     for (const sid of Object.keys(proposed ?? {})) keep.add(sid);
     for (const [sid, v] of Object.entries(matrix)) {
       if (v.individual > 0 || v.group > 0) keep.add(sid);
     }
     if (keep.size === 0) return subjects;
     return subjects.filter((s) => keep.has(s.id));
-  }, [showAllSubjects, subjects, studentSubjectIds, proposed, matrix]);
+  }, [showAllSubjects, subjects, studentSubjectIds, applied, proposed, matrix]);
 
   const hiddenCount = subjects.length - visibleSubjects.length;
 
@@ -170,12 +182,11 @@ export function KoushuEnrollmentFormModal({
     });
   };
 
-  /** 提案書のコマ数を個別列に入れる。集団はコース単位で別管理なので触らない。 */
-  const applyProposal = () => {
-    if (!proposed) return;
+  /** 科目別コマ数を個別列に入れる。集団はコース単位で別管理なので触らない。 */
+  const fillIndividual = (source: Record<string, number>) => {
     setMatrix((prev) => {
       const next: Matrix = { ...prev };
-      for (const [sid, koma] of Object.entries(proposed)) {
+      for (const [sid, koma] of Object.entries(source)) {
         const cur = next[sid] ?? { individual: 0, group: 0 };
         next[sid] = { individual: koma, group: cur.group };
       }
@@ -224,6 +235,7 @@ export function KoushuEnrollmentFormModal({
 
   const indivTotal = Object.values(matrix).reduce((s, v) => s + (v.individual || 0), 0);
   const groupTotal = Object.values(matrix).reduce((s, v) => s + (v.group || 0), 0);
+  const appliedTotal = Object.values(applied ?? {}).reduce((s, n) => s + n, 0);
   const proposedTotal = Object.values(proposed ?? {}).reduce((s, n) => s + n, 0);
 
   return (
@@ -244,16 +256,16 @@ export function KoushuEnrollmentFormModal({
               <label className="block text-sm font-medium text-[var(--headline)] mb-1">
                 生徒を選択 <span className="text-red-500">*</span>
               </label>
-              <StudentSearchInput
+              <KoushuStudentPicker
                 schoolId={schoolId}
-                excludeStudentIds={existingStudentIds}
+                appliedKomaByStudent={appliedKomaByStudent}
+                selectedId={selectedStudent?.id ?? null}
                 onSelect={handleSelectStudent}
-                placeholder="氏名・かなで検索..."
               />
               {selectedStudent && (
-                <div className="mt-2 text-sm text-[var(--headline)] bg-blue-50 px-3 py-2 rounded-md">
+                <div className="mt-2 rounded-md bg-blue-50 px-3 py-2 text-sm text-[var(--headline)]">
                   {selectedStudent.last_name} {selectedStudent.first_name}（
-                  {formatGradeLabel(selectedStudent.grade)}）
+                  {formatGradeLabel(selectedStudent.grade ?? 0)}）
                   {regularHint != null && (
                     <span className="ml-2 text-xs text-[var(--paragraph)]">
                       講習期間中の通常授業: 約{regularHint}コマ
@@ -264,32 +276,53 @@ export function KoushuEnrollmentFormModal({
             </div>
           )}
 
-          {/* 提案書からの取り込み。手入力を減らすための主導線なので科目表の上に置く。 */}
+          {/* 自動取り込み。手入力を減らすための主導線なので科目表の上に置く。
+              申込回数（進行表）が主、提案書は申込がまだ記録されていないときの控え。 */}
           {studentId && (
-            <div className="rounded-md border border-[var(--stroke)] bg-gray-50 px-3 py-2">
-              {proposalLoading ? (
+            <div className="space-y-1.5 rounded-md border border-[var(--stroke)] bg-gray-50 px-3 py-2">
+              {sourceLoading ? (
                 <p className="flex items-center gap-2 text-xs text-[var(--paragraph)]">
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  提案書を確認しています…
+                  申込回数を確認しています…
                 </p>
-              ) : proposedTotal > 0 ? (
+              ) : appliedTotal > 0 ? (
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="text-xs text-[var(--paragraph)]">
-                    提案書あり（{Object.keys(proposed ?? {}).length}科目・合計{proposedTotal}コマ）
+                    申込回数 {Object.keys(applied ?? {}).length}科目・合計{appliedTotal}コマ
                   </span>
-                  <Button size="sm" variant="outline" onClick={applyProposal} className="ml-auto">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => fillIndividual(applied ?? {})}
+                    className="ml-auto"
+                  >
                     <Download className="mr-1 h-3.5 w-3.5" />
-                    提案どおり入力
+                    申込どおり入力
                   </Button>
                 </div>
               ) : (
                 <p className="text-xs text-[var(--paragraph)]">
-                  {proposalNote ?? '提案書が見つかりません（手入力してください）'}
+                  進行表に申込回数がまだ入っていません
                 </p>
               )}
-              {proposedTotal > 0 && proposalNote && (
-                <p className="mt-1 text-xs text-amber-700">{proposalNote}</p>
+              {/* 申込回数が無い（＝提案書の公開前）ときのために提案書も出す。
+                  数が違うことがあるので、どちらを入れたかが分かるようボタンを分ける。 */}
+              {!sourceLoading && proposedTotal > 0 && (
+                <div className="flex flex-wrap items-center gap-2 border-t border-[var(--stroke)] pt-1.5">
+                  <span className="text-xs text-[var(--paragraph)]">
+                    提案書 {Object.keys(proposed ?? {}).length}科目・合計{proposedTotal}コマ
+                  </span>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => fillIndividual(proposed ?? {})}
+                    className="ml-auto"
+                  >
+                    提案どおり入力
+                  </Button>
+                </div>
               )}
+              {sourceNote && <p className="text-xs text-amber-700">{sourceNote}</p>}
             </div>
           )}
 
@@ -317,16 +350,22 @@ export function KoushuEnrollmentFormModal({
                     <tbody>
                       {visibleSubjects.map((s) => {
                         const cell = matrix[s.id] ?? { individual: 0, group: 0 };
+                        const a = applied?.[s.id];
                         const p = proposed?.[s.id];
                         return (
                           <tr key={s.id} className="border-t border-gray-100">
                             <td className="px-2 py-1 text-[var(--headline)]">
                               {s.name}
-                              {p != null && p > 0 && (
+                              {/* 取り込み元の目安。申込回数があればそちらを優先して出す。 */}
+                              {a != null && a > 0 ? (
+                                <span className="ml-1.5 text-[10px] text-[var(--paragraph)]">
+                                  申込{a}
+                                </span>
+                              ) : p != null && p > 0 ? (
                                 <span className="ml-1.5 text-[10px] text-[var(--paragraph)]">
                                   提案{p}
                                 </span>
-                              )}
+                              ) : null}
                             </td>
                             <td className="px-1 py-1">
                               <KomaStepper
