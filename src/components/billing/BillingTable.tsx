@@ -8,6 +8,7 @@ import {
   deleteBillingItem,
   syncOrdersToBilling,
   syncCourseExtraToBilling,
+  syncSpecialCourseToBilling,
   autoFillFifthWeekBilling,
   updateBillingValue,
   syncFormToBilling,
@@ -20,7 +21,22 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useState } from 'react';
 import { useToast } from '@/hooks/useToast';
 import { useConfirm } from '@/hooks/useConfirm';
-import { Pencil, Trash2, Zap, Inbox, GraduationCap } from 'lucide-react';
+import { resolveDefaultBillingMonth } from '@/lib/billing/specialCourseBilling';
+import { Pencil, Trash2, Zap, Inbox, GraduationCap, BookOpen } from 'lucide-react';
+
+/**
+ * 特別講座の受講料列かどうかの判定。
+ * 増コマ列と同じく名前ベースで検出する（DBスキーマ変更を避けるため）。
+ * value_type='number' で名前に「特別講座」を含み、フォーム連携でない請求項目が対象。
+ * 正典 docs/special-courses-plan.md フェーズ2-B。
+ */
+function isSpecialCourseItem(item: BillingItem): boolean {
+  return (
+    (item.value_type || 'check') === 'number' &&
+    !item.linked_form_type &&
+    item.name.includes('特別講座')
+  );
+}
 
 /**
  * 講習の「取得増コマ」列かどうかの判定。
@@ -29,12 +45,17 @@ import { Pencil, Trash2, Zap, Inbox, GraduationCap } from 'lucide-react';
  * 講習の増コマ同期対象とみなす。
  * 「講習」で判定するのは、テスト対策の増コマ列など別種の「増コマ」を誤検出しないため
  * （zoukoma フォーム連携列とも同期ボタンが競合しないよう除外）。
+ *
+ * 「講習特別講座」のように両方の語を含む名前は **特別講座側を優先** して除外する。
+ * 同じ列に増コマ同期と特別講座同期のボタンが並ぶと、押し間違いで別定義の値に
+ * 上書きされる（＝金額列にコマ数が入る）ため。
  */
 function isCourseExtraItem(item: BillingItem): boolean {
   return (
     (item.value_type || 'check') === 'number' &&
     !item.linked_form_type &&
-    item.name.includes('講習')
+    item.name.includes('講習') &&
+    !item.name.includes('特別講座')
   );
 }
 
@@ -43,14 +64,14 @@ function isCourseExtraItem(item: BillingItem): boolean {
  * フォーム連携項目・取得増コマ列に加え、既に内訳データ(quantity)が入っている
  * number項目（発注同期の教材発注は除く）も引き続きsplit表示にする。
  *
- * 罠: isCourseExtraItem は項目名（「講習」を含むか）で判定している。項目名を変えたり
+ * 罠: isCourseExtraItem / isSpecialCourseItem は項目名（「講習」「特別講座」を含むか）で判定している。項目名を変えたり
  * 判定条件を後から変更したりすると、既に計上済み（quantity側に集約済み）のデータが
  * 名前ベースの判定から外れ、通常セル（value_number基準の表示）に「消えた」ように
  * 見えてしまう（実際は quantity に残っているが読まれない）。billing?.quantity != null
  * を fallback 条件に含めることで、分類が変わっても既存の計上済みデータは表示され続ける。
  */
 function usesChargedSplit(item: BillingItem, billing?: StudentBilling): boolean {
-  if (item.linked_form_type || isCourseExtraItem(item)) return true;
+  if (item.linked_form_type || isCourseExtraItem(item) || isSpecialCourseItem(item)) return true;
   return (
     (item.value_type || 'check') === 'number' &&
     item.source_type !== 'order' &&
@@ -106,8 +127,62 @@ export function BillingTable({
   const [syncSeason, setSyncSeason] = useState<SeasonType>('summer');
   const [syncYear, setSyncYear] = useState<number>(new Date().getFullYear());
   const [courseExtraSyncing, setCourseExtraSyncing] = useState(false);
+  // 特別講座 同期ダイアログ（対象請求項目 + 通年/講習の別と対象期間）
+  const [specialCourseSyncItemId, setSpecialCourseSyncItemId] = useState<string | null>(null);
+  const [specialCourseMode, setSpecialCourseMode] = useState<'year_round' | 'koushu'>('year_round');
+  // 対象月は "YYYY-MM"。月謝先取り（翌月分を当月に請求する）運用があるため既定は出すが固定しない
+  const [specialCourseMonth, setSpecialCourseMonth] = useState<string>('');
+  const [specialCourseSeason, setSpecialCourseSeason] = useState<SeasonType>('summer');
+  const [specialCourseYear, setSpecialCourseYear] = useState<number>(new Date().getFullYear());
+  const [specialCourseSyncing, setSpecialCourseSyncing] = useState(false);
   const { success, error: toastError } = useToast();
   const { confirm, ConfirmDialog } = useConfirm();
+
+  /** 特別講座の同期ダイアログを開く。対象月の既定は請求期間名 → 開始日の順に決める */
+  const openSpecialCourseSync = (itemId: string) => {
+    const defaultMonth = resolveDefaultBillingMonth(billingPeriodName, periodStartDate);
+    setSpecialCourseMonth(`${defaultMonth.year}-${String(defaultMonth.month).padStart(2, '0')}`);
+    setSpecialCourseMode('year_round');
+    setSpecialCourseSyncItemId(itemId);
+  };
+
+  // 特別講座の受講料（金額）を同期する。通年講座は対象月、講習講座は季節・年で対象を決める
+  const handleSpecialCourseSync = async () => {
+    if (!specialCourseSyncItemId || !schoolIds) return;
+    const [yearStr, monthStr] = specialCourseMonth.split('-');
+    const year = parseInt(yearStr, 10);
+    const month = parseInt(monthStr, 10);
+    if (specialCourseMode === 'year_round' && (!year || !month)) {
+      toastError('対象月を選んでください');
+      return;
+    }
+    setSpecialCourseSyncing(true);
+    try {
+      const result = await syncSpecialCourseToBilling(
+        specialCourseSyncItemId,
+        schoolIds,
+        specialCourseMode === 'year_round'
+          ? { mode: 'year_round', year, month }
+          : { mode: 'koushu', season: specialCourseSeason, year: specialCourseYear }
+      );
+      // 単価未設定の講座は計上していないので、黙って0円にせず講座名を伝える
+      const skipped =
+        result.skippedCourseNames.length > 0
+          ? `（単価未設定のため未計上: ${result.skippedCourseNames.join('・')}）`
+          : '';
+      if (result.synced === 0) {
+        success(`対象は0件でした${skipped}`);
+      } else {
+        success(`${result.synced}名の特別講座受講料を同期しました${skipped}`);
+      }
+      setSpecialCourseSyncItemId(null);
+      onItemsChange?.();
+    } catch (err) {
+      toastError(getUserErrorMessage(err, '同期に失敗しました'));
+    } finally {
+      setSpecialCourseSyncing(false);
+    }
+  };
 
   // 取得増コマを進捗管理表から同期する（季節・年を明示指定）
   const handleCourseExtraSync = async () => {
@@ -750,6 +825,20 @@ export function BillingTable({
                                 進捗から同期
                               </button>
                             )}
+                            {/* 特別講座列: 講座の単価×受講回数（金額）を同期。対象はダイアログで選ぶ */}
+                            {isSpecialCourseItem(item) && !isTeacher && schoolIds && (
+                              <button
+                                className="text-[11px] px-1.5 py-0.5 rounded-full bg-sky-400/30 text-sky-100 hover:bg-sky-400/50 transition-[background-color] duration-150 ease-out"
+                                title="特別講座の受講料を同期"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openSpecialCourseSync(item.id);
+                                }}
+                              >
+                                <BookOpen className="inline h-3 w-3 mr-0.5" />
+                                特別講座から同期
+                              </button>
+                            )}
                           </div>
                         )}
                       </div>
@@ -1263,6 +1352,117 @@ export function BillingTable({
                 className="px-3 py-1.5 rounded-lg text-sm font-medium bg-emerald-600 text-white hover:bg-emerald-700 transition-[background-color] duration-150 ease-out disabled:opacity-50"
               >
                 {courseExtraSyncing ? '同期中...' : '同期する'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 特別講座 同期ダイアログ（通年講座＝対象月 / 講習講座＝季節・年） */}
+      {specialCourseSyncItemId && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-sm rounded-xl bg-white shadow-xl border border-[#e5e7eb]">
+            <div className="px-5 py-4 border-b border-[#e5e7eb]">
+              <h3 className="text-sm font-bold text-[#1f2937] flex items-center gap-1.5">
+                <BookOpen className="h-4 w-4 text-sky-600" />
+                特別講座の受講料を同期
+              </h3>
+              <p className="text-xs text-[#6b7280] mt-1">
+                講座の単価 × 受講回数を合計した「金額（円）」がこの列に入ります。
+              </p>
+            </div>
+            <div className="px-5 py-4 space-y-3">
+              <div>
+                <label className="block text-xs text-[#6b7280] mb-1">対象</label>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setSpecialCourseMode('year_round')}
+                    className={`flex-1 px-2 py-1.5 rounded-lg text-sm border transition-[background-color,border-color] duration-150 ease-out ${
+                      specialCourseMode === 'year_round'
+                        ? 'bg-sky-600 text-white border-sky-600'
+                        : 'bg-white text-[#4b5563] border-[#e5e7eb] hover:bg-[#f3f4f6]'
+                    }`}
+                  >
+                    通年講座（月次）
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSpecialCourseMode('koushu')}
+                    className={`flex-1 px-2 py-1.5 rounded-lg text-sm border transition-[background-color,border-color] duration-150 ease-out ${
+                      specialCourseMode === 'koushu'
+                        ? 'bg-sky-600 text-white border-sky-600'
+                        : 'bg-white text-[#4b5563] border-[#e5e7eb] hover:bg-[#f3f4f6]'
+                    }`}
+                  >
+                    講習講座（期に1回）
+                  </button>
+                </div>
+              </div>
+              {specialCourseMode === 'year_round' ? (
+                <div>
+                  <label className="block text-xs text-[#6b7280] mb-1">対象月</label>
+                  <input
+                    type="month"
+                    value={specialCourseMonth}
+                    onChange={(e) => setSpecialCourseMonth(e.target.value)}
+                    className="w-full px-2 py-1.5 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#1f2937] focus:outline-none focus:ring-2 focus:ring-sky-400"
+                  />
+                  <p className="text-[11px] text-[#6b7280] mt-1">
+                    その月に座席表で開催される回数を数えます。翌月分を先取りで請求する場合は、
+                    対象月を翌月にしてください。
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <div>
+                    <label className="block text-xs text-[#6b7280] mb-1">季節</label>
+                    <select
+                      value={specialCourseSeason}
+                      onChange={(e) => setSpecialCourseSeason(e.target.value as SeasonType)}
+                      className="w-full px-2 py-1.5 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#1f2937] focus:outline-none focus:ring-2 focus:ring-sky-400"
+                    >
+                      {(Object.keys(SEASON_LABELS) as SeasonType[]).map((s) => (
+                        <option key={s} value={s}>
+                          {SEASON_LABELS[s]}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs text-[#6b7280] mb-1">年</label>
+                    <input
+                      type="number"
+                      value={specialCourseYear}
+                      onChange={(e) =>
+                        setSpecialCourseYear(parseInt(e.target.value, 10) || specialCourseYear)
+                      }
+                      className="w-full px-2 py-1.5 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#1f2937] focus:outline-none focus:ring-2 focus:ring-sky-400"
+                    />
+                  </div>
+                  <p className="text-[11px] text-[#6b7280]">
+                    講習講座は申込のコマ数 × 単価で計算します。
+                  </p>
+                </>
+              )}
+              <p className="text-[11px] text-[#9ca3af]">
+                単価が未設定の講座は計上されません（同期後に講座名をお知らせします）。
+              </p>
+            </div>
+            <div className="px-5 py-4 border-t border-[#e5e7eb] flex justify-end gap-2">
+              <button
+                onClick={() => setSpecialCourseSyncItemId(null)}
+                disabled={specialCourseSyncing}
+                className="px-3 py-1.5 rounded-lg text-sm text-[#4b5563] hover:bg-[#f3f4f6] transition-[background-color] duration-150 ease-out disabled:opacity-50"
+              >
+                キャンセル
+              </button>
+              <button
+                onClick={handleSpecialCourseSync}
+                disabled={specialCourseSyncing}
+                className="px-3 py-1.5 rounded-lg text-sm font-medium bg-sky-600 text-white hover:bg-sky-700 transition-[background-color] duration-150 ease-out disabled:opacity-50"
+              >
+                {specialCourseSyncing ? '同期中...' : '同期する'}
               </button>
             </div>
           </div>

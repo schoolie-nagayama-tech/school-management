@@ -103,7 +103,13 @@ export interface PlannedEntry {
   halfPosition: 'first' | 'second' | null;
   /** 由来の枠。override は名簿を決めた枠（同一生徒に複数あれば作成日時が最古のもの） */
   regularPatternId: string;
-  /** override のみ講座ID。regular は null */
+  /**
+   * 由来の特別講座ID。override は上書き元の講座、regular は枠の special_course_id を透過する
+   * （講座に紐づかない通常の枠は null）。
+   * ★ regular にも乗せているのは、請求連携（フェーズ2-B）が「講座由来のコマ数」を
+   *   この関数の結果だけで数えられるようにするため。曜日の出現数から自前で数え直すと
+   *   講習期上書き（定期停止・日程差し替え）が二重実装になり、座席表と請求がズレる。
+   */
   specialCourseId: string | null;
 }
 
@@ -316,7 +322,9 @@ export function planWeeklyEntries(input: PlanWeeklyEntriesInput): PlannedEntry[]
         durationMinutes: p.duration_minutes ?? null,
         halfPosition: p.half_position ?? null,
         regularPatternId: p.id,
-        specialCourseId: null,
+        // 講座に紐づく枠なら講座IDを透過する（請求連携が講座由来のコマを数えるため）。
+        // 生成される schedule_entries の内容は変わらない（この値は行に書かない）。
+        specialCourseId: p.special_course_id ?? null,
       };
       regularMap.set(regularDedupeKey(e), e);
     }
