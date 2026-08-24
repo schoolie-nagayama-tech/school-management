@@ -303,7 +303,7 @@ export default function TimeSlotsSettingsPage() {
   };
 
   // 形態の並び順を上下に移動。
-  // 個別・集団（is_system）も並び替え対象に含め、表示フィルタ（無効を隠す等）に
+  // 個別・小集団（is_system）も並び替え対象に含め、表示フィルタ（無効を隠す等）に
   // 関係なく全形態（無効含む）を sort_order 順に並べたリストの中で隣接入れ替えする。
   // 表示中リストだけで隣接判定すると、無効形態を挟んだときに交換相手がズレる。
   const handleMoveFormation = async (key: string, direction: 'up' | 'down') => {
@@ -456,7 +456,7 @@ export default function TimeSlotsSettingsPage() {
                       <span className="text-[10px] font-normal opacity-80">(無効)</span>
                     )}
                   </button>
-                  {/* 歯車メニューは常時表示（ホバー依存にしない）。個別・集団(is_system)も
+                  {/* 歯車メニューは常時表示（ホバー依存にしない）。個別・小集団(is_system)も
                       並び替えだけはここから操作できる（改名・無効化・削除はメニュー内で無効化） */}
                   {canManageFormations && (
                     <button
@@ -732,7 +732,7 @@ function FormationMenu({
       </button>
       {isSystem && (
         <p className="px-3 pt-1.5 text-[10px] leading-relaxed text-text-faint">
-          個別・集団はシステム標準の形態のため、並び順の変更のみ可能です
+          個別・小集団はシステム標準の形態のため、並び順の変更のみ可能です
         </p>
       )}
     </div>

@@ -56,13 +56,20 @@ export interface CreateFormationClassParams {
   maxStudentsPerGroup: number;
   /** 同時刻の枠数上限（school_formation_capacity.max_concurrent_groups） */
   maxConcurrentGroups: number;
+  /**
+   * 所属させる特別講座（通年講座）の id。
+   * 新規に枠を作るとき（create）は必須。既存クラスへの生徒追加（add）では
+   * undefined を渡し、同じ枠の既存メンバーが属する講座を引き継ぐ。
+   */
+  specialCourseId?: string | null;
 }
 
 /**
- * 形態別クラス枠の週次パターンを一括作成する（Phase C）。
+ * 形態ボードの「講座の枠」の週次パターンを一括作成する（Phase C）。
  *
  * クラス概念は持たず「曜日×コマ×講師×形態」の行群を暗黙のクラスとして扱う。
- * 選択生徒ごとに schedule_regular_patterns 行（formation=キー）を作成する。
+ * 選択生徒ごとに schedule_regular_patterns 行（formation=キー・special_course_id=講座）を作成する。
+ * 枠は必ずどれかの特別講座に属する（正典 docs/special-courses-plan.md §2）。
  *
  * バリデーション（DB 書き込み前に全部まとめてチェックし、通ったものだけ挿入）:
  *  1. 定員: 同一 (曜日×コマ×講師) の既存メンバー + 追加数 <= max_students_per_group
@@ -83,6 +90,7 @@ export async function createFormationClassPatterns(
     studentIds,
     maxStudentsPerGroup,
     maxConcurrentGroups,
+    specialCourseId,
   } = params;
   const effectiveFrom = params.effectiveFrom || todayStr();
 
@@ -113,6 +121,15 @@ export async function createFormationClassPatterns(
   }
   const targetGroupKey = groupKeyOf(teacherId);
   const existingInGroup = membersByGroup.get(targetGroupKey) ?? 0;
+
+  // ── 講座の決定 ──
+  // 生徒追加（specialCourseId 未指定）のときは、同じ枠に既にいるメンバーの講座を引き継ぐ。
+  // 枠ごとに講座が混ざると名簿・請求が破綻するので、ここで1つに揃える。
+  const inheritedCourseId =
+    sameSlotFormation.find(
+      (p) => groupKeyOf(p.teacher_id) === targetGroupKey && p.special_course_id
+    )?.special_course_id ?? null;
+  const resolvedCourseId = specialCourseId !== undefined ? specialCourseId : inheritedCourseId;
   if (existingInGroup + studentIds.length > maxStudentsPerGroup) {
     throw new Error(
       `定員を超えます（現在 ${existingInGroup} 名 + 追加 ${studentIds.length} 名 > 上限 ${maxStudentsPerGroup} 名）`
@@ -164,6 +181,7 @@ export async function createFormationClassPatterns(
       period_type: 'regular',
       effective_from: effectiveFrom,
       formation,
+      special_course_id: resolvedCourseId,
     });
     created.push(row);
   }
@@ -171,7 +189,7 @@ export async function createFormationClassPatterns(
 }
 
 /**
- * 形態クラスから生徒1名を「通塾日程から外す」。
+ * 講座の枠から生徒1名を「通塾日程から外す」。
  * effective_until を昨日にセットして週次生成の対象外にする（履歴は保持）。
  * fromDate 未指定なら今日を境界に、その前日を effective_until にする。
  */

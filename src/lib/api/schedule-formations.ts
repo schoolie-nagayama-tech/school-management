@@ -97,11 +97,11 @@ async function ensureNotSystemFormation(key: string): Promise<void> {
   }
   if (!data) throw new Error('指導形態が見つかりません');
   if ((data as { is_system: boolean }).is_system) {
-    throw new Error('個別・集団は既定の形態のため、変更・削除できません');
+    throw new Error('個別・小集団は既定の形態のため、変更・削除できません');
   }
 }
 
-/** 形態を改名。is_system（個別/集団）は改名不可。 */
+/** 形態を改名。is_system（個別/小集団）は改名不可。 */
 export async function renameFormation(key: string, label: string): Promise<ScheduleFormation> {
   const trimmed = label.trim();
   if (!trimmed) throw new Error('形態名を入力してください');
@@ -121,7 +121,7 @@ export async function renameFormation(key: string, label: string): Promise<Sched
 
 /**
  * 形態の有効/無効を切り替える（ソフト削除）。
- * is_system も無効化してはいけない（個別=メイングリッド、集団=講習レーンが依存するため）。
+ * is_system も無効化してはいけない（個別=メイングリッド、小集団=講習レーンが依存するため）。
  */
 export async function setFormationActive(
   key: string,

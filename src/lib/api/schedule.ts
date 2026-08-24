@@ -557,12 +557,17 @@ export async function createRegularPattern(
       is_active: true,
       effective_from: form.effective_from || todayStr(),
       effective_until: form.effective_until ?? null,
-      // 形態：未指定は個別。集団パターンを作るときは form.formation='group' を渡す。
+      // 形態：未指定は個別。小集団パターンを作るときは form.formation='group' を渡す。
       formation: form.formation ?? INDIVIDUAL_FORMATION,
       // Phase R: 指導比率・半コマ。未指定は ratio=2・全コマ（既存挙動不変）。
       ratio: form.ratio ?? 2,
       duration_minutes: form.duration_minutes ?? null,
       half_position: form.half_position ?? null,
+      // 特別講座。undefined のときは列自体を送らない（個別の通塾日程は講座を持たないため、
+      // 既存呼び出しのペイロードを1バイトも変えない）。
+      ...(form.special_course_id !== undefined
+        ? { special_course_id: form.special_course_id }
+        : {}),
     })
     .select()
     .single();

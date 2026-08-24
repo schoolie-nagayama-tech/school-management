@@ -141,7 +141,7 @@ const settingsGroups: SettingsGroup[] = [
         href: '/settings/class-capacity',
         icon: <Users className="w-5 h-5" />,
         label: '授業生徒数設定',
-        description: '個別・集団それぞれの生徒数上限・席数の設定',
+        description: '個別・小集団それぞれの生徒数上限・席数の設定',
         requiresManager: true,
       },
       {

@@ -133,6 +133,7 @@ import {
 import type { PendingLesson } from '@/lib/api/pending-lessons';
 import { getFormations, getFormationCapacity } from '@/lib/api/schedule-formations';
 import { createFormationClassPatterns } from '@/lib/api/formation-patterns';
+import { getActiveYearRoundCoursesByFormation, type SpecialCourse } from '@/lib/api/specialCourses';
 import type { ScheduleFormation, SchoolFormationCapacity } from '@/types/schedule';
 import { logScheduleChange } from '@/lib/api/schedule-change-logs';
 import type {
@@ -428,13 +429,15 @@ export default function SchedulePage() {
   const [activeFormation, setActiveFormation] = useState<string>(INDIVIDUAL_FORMATION);
   // アクティブ形態の定員（school_formation_capacity。未設定なら max_students_per_group=8 / max_concurrent_groups=1）。
   const [formationCapacity, setFormationCapacity] = useState<SchoolFormationCapacity | null>(null);
-  // クラス枠登録モーダルの対象（セル起点で自動設定）。mode='create'=新規枠 / 'add'=既存クラスへ追加。
+  // 講座の枠 登録モーダルの対象（セル起点で自動設定）。mode='create'=新規枠 / 'add'=既存クラスへ追加。
   const [formationTarget, setFormationTarget] = useState<{
     date: string;
     slotId: string;
     mode: 'create' | 'add';
     teacherId: string | null;
   } | null>(null);
+  // アクティブ形態の通年講座（枠は必ずどれかの講座に属する）。0件ならモーダルが講座作成へ誘導する。
+  const [formationCourses, setFormationCourses] = useState<SpecialCourse[]>([]);
 
   const VISIBLE_DAYS_STORAGE_KEY = 'schedule_visible_days';
   const defaultVisibleDays = [1, 2, 3, 4, 5, 6]; // 月〜土
@@ -1518,8 +1521,8 @@ export default function SchedulePage() {
   //
   // ★ 集団(group)を出す理由（2026-08-20 方針変更）:
   //   以前は is_system を除外して「group は講習専用レーンなので出さない」としていたが、
-  //   形態設定では集団のコマ時間を登録できるのに座席表に現れず、設定と盤面が食い違っていた。
-  //   集団も HAL 等と同じ「クラス枠」として扱う。
+  //   形態設定では小集団のコマ時間を登録できるのに座席表に現れず、設定と盤面が食い違っていた。
+  //   小集団も他の形態と同じ「講座の枠」として扱う。
   //   なお講習モードの集団レーン(GroupLaneGrid)とは表示対象が排他なので重複しない:
   //     - このタブ(FormationBoard) … kind='regular'  ＝ 毎週同じコマの通常授業
   //     - 講習モードの集団レーン    … kind='koushu'   ＝ 講座ごとに時間が異なる講習
@@ -1552,7 +1555,26 @@ export default function SchedulePage() {
   const formationMaxStudents = formationCapacity?.max_students_per_group ?? 8;
   const formationMaxConcurrent = formationCapacity?.max_concurrent_groups ?? 1;
 
-  // 空セルの「＋クラス枠」→ 新規クラス枠モーダル
+  // アクティブ形態の通年講座を読み込む（個別タブでは講座の概念が無いので読まない）。
+  useEffect(() => {
+    if (!schoolId || !isFormationBoard) {
+      setFormationCourses([]);
+      return;
+    }
+    let cancelled = false;
+    getActiveYearRoundCoursesByFormation(schoolId, activeFormation)
+      .then((list) => {
+        if (!cancelled) setFormationCourses(list);
+      })
+      .catch(() => {
+        if (!cancelled) setFormationCourses([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [schoolId, activeFormation, isFormationBoard]);
+
+  // 空セルの「＋講座の枠」→ 新規枠モーダル
   const handleFormationCreate = useCallback((date: string, slotId: string) => {
     setFormationTarget({ date, slotId, mode: 'create', teacherId: null });
   }, []);
@@ -1567,7 +1589,12 @@ export default function SchedulePage() {
 
   // モーダル送信：生徒ごとに formation 付き週次パターンを作成し、当週以降の座席表を再生成。
   const handleSubmitFormationKoma = useCallback(
-    async (data: { teacherId: string | null; subjectIds: string[]; studentIds: string[] }) => {
+    async (data: {
+      teacherId: string | null;
+      subjectIds: string[];
+      studentIds: string[];
+      specialCourseId?: string | null;
+    }) => {
       if (!formationTarget || !schoolId) return;
       const dow = new Date(formationTarget.date + 'T12:00:00').getDay();
       await createFormationClassPatterns({
@@ -1580,8 +1607,10 @@ export default function SchedulePage() {
         studentIds: data.studentIds,
         maxStudentsPerGroup: formationMaxStudents,
         maxConcurrentGroups: formationMaxConcurrent,
+        // add モードは undefined。API 側で既存枠の講座を引き継ぐ。
+        specialCourseId: data.specialCourseId,
       });
-      success('クラス枠を登録しました');
+      success('講座の枠を登録しました');
       // 通塾日程→座席表の反映（今週から4週）＋表示中の週を同期。
       await regenerateCurrentWeekIfNeeded(schoolId, profile?.id);
       await refreshEntries();
@@ -3284,7 +3313,7 @@ export default function SchedulePage() {
               </CardHeader>
               <CardContent>
                 <p className="text-[var(--paragraph)] mb-4">
-                  この形態のクラス枠を登録するには、まずコマ時間を設定してください。
+                  この形態で講座の枠を登録するには、まずコマ時間を設定してください。
                 </p>
                 <Link href="/settings/time-slots">
                   <Button>コマ時間設定へ</Button>
@@ -3307,7 +3336,7 @@ export default function SchedulePage() {
                     closedDates={closedDates}
                     maxStudentsPerGroup={formationMaxStudents}
                     subjectNameById={new Map(masterSubjects.map((s) => [s.id, s.name]))}
-                    addLabel="クラス枠"
+                    addLabel="講座の枠"
                     orientation={orientation}
                     stickyOffset={stickyOffset}
                     onCreate={handleFormationCreate}
@@ -3673,7 +3702,7 @@ export default function SchedulePage() {
           );
         })()}
 
-      {/* 形態別クラス枠 登録モーダル（Phase C）。セル起点で曜日×コマ自動設定。 */}
+      {/* 講座の枠 登録モーダル（Phase C）。セル起点で曜日×コマ自動設定。 */}
       {formationTarget && (
         <FormationKomaFormModal
           open={!!formationTarget}
@@ -3689,6 +3718,7 @@ export default function SchedulePage() {
             .map((t) => ({ id: t.id, display_name: t.display_name, email: t.email }))}
           mode={formationTarget.mode}
           lockedTeacherId={formationTarget.teacherId}
+          courses={formationCourses}
           onSubmit={handleSubmitFormationKoma}
         />
       )}

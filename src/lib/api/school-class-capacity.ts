@@ -1,6 +1,6 @@
 // 授業生徒数設定（school_class_capacity）の CRUD
 //
-// 学校ごとの授業生徒数上限（個別/集団それぞれ）を管理するための API。
+// 学校ごとの授業生徒数上限（個別/小集団それぞれ）を管理するための API。
 // マイグレーションで全スクールにデフォルト値の行をシード済みのため、
 // 通常は getByScoolId で取得 → updateByScoolId で更新するだけで運用できる。
 
@@ -74,7 +74,7 @@ export async function upsertClassCapacity(
     throw new Error('教室全体の同時席数は 1〜100 の範囲で入力してください');
   }
   if (form.max_students_per_group < 1 || form.max_students_per_group > 100) {
-    throw new Error('集団1コマあたりの生徒数は 1〜100 の範囲で入力してください');
+    throw new Error('小集団1コマあたりの生徒数は 1〜100 の範囲で入力してください');
   }
   if (form.max_concurrent_groups < 1 || form.max_concurrent_groups > 20) {
     throw new Error('同時開催コマ数は 1〜20 の範囲で入力してください');
