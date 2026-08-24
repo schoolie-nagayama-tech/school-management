@@ -1,7 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
-import { CalendarClock, Users } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { AlertTriangle, CalendarClock, Users } from 'lucide-react';
 import {
   Badge,
   Button,
@@ -27,6 +27,9 @@ import {
   type SpecialCourseSession,
 } from '@/lib/utils/specialCourses';
 import type { KoushuPeriodInfo } from '@/lib/api/koushu-period';
+import { getActiveTimeSlots } from '@/lib/api/schedule';
+import type { ScheduleTimeSlot } from '@/types/schedule';
+import { findSessionsWithoutTimeSlot } from '@/lib/schedule/specialCourseOverride';
 
 const DOW_LABELS = ['日', '月', '火', '水', '木', '金', '土'];
 
@@ -87,8 +90,12 @@ function groupSchedule(rows: SpecialCourseRosterRow[]): ScheduleGroup[] {
 export function YearRoundCourseDetailModal({ open, onOpenChange, course, periods }: Props) {
   const [roster, setRoster] = useState<SpecialCourseRosterRow[]>([]);
   const [overrides, setOverrides] = useState<SpecialCourseKoushuOverride[]>([]);
+  // この講座の形態で有効なコマ時間。上書きの開始時刻がここに無い行は座席表に生成されない
+  const [timeSlots, setTimeSlots] = useState<ScheduleTimeSlot[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /** 保存後まで残す警告（編集欄を閉じても消えないように error とは別に持つ） */
+  const [savedWarning, setSavedWarning] = useState<string | null>(null);
 
   // 上書き編集の対象講習期（未選択=編集していない）と編集中の開催予定
   const [editingPeriod, setEditingPeriod] = useState<KoushuPeriodInfo | null>(null);
@@ -99,32 +106,46 @@ export function YearRoundCourseDetailModal({ open, onOpenChange, course, periods
     setLoading(true);
     setError(null);
     try {
-      const [rosterRows, overrideRows] = await Promise.all([
+      const [rosterRows, overrideRows, slots] = await Promise.all([
         // asOfDate=今日: 退塾・曜日変更で終了した履歴行を名簿に混ぜない
         getSpecialCourseRoster(course.id, new Date().toISOString().slice(0, 10)),
         getKoushuOverrides(course.id),
+        getActiveTimeSlots(course.school_id, course.formation),
       ]);
       setRoster(rosterRows);
       setOverrides(overrideRows);
+      setTimeSlots(slots);
     } catch (e) {
       setError(e instanceof Error ? e.message : '読み込みに失敗しました');
     } finally {
       setLoading(false);
     }
-  }, [course.id]);
+  }, [course.id, course.school_id, course.formation]);
 
   useEffect(() => {
     if (!open) return;
     setEditingPeriod(null);
     setEditingSessions([]);
+    setSavedWarning(null);
     load();
   }, [open, load]);
+
+  /**
+   * 開始時刻がこの形態のコマ時間に無い行。座席表への生成は start_time の完全一致で
+   * コマを引くため、ここに載る行は保存しても座席表には出ない。
+   * 保存は止めない（コマ時間を後から足す運用があるため）。
+   */
+  const unmatchedSessions = useMemo(
+    () => findSessionsWithoutTimeSlot(editingSessions, timeSlots, course.formation),
+    [editingSessions, timeSlots, course.formation]
+  );
 
   const startEditOverride = (period: KoushuPeriodInfo) => {
     const { sessions } = resolveKoushuOverride(overrides, period.season, period.year);
     setEditingPeriod(period);
     setEditingSessions(sessions);
     setError(null);
+    setSavedWarning(null);
   };
 
   const handleSaveOverride = async () => {
@@ -135,6 +156,11 @@ export function YearRoundCourseDetailModal({ open, onOpenChange, course, periods
     }
     setSaving(true);
     setError(null);
+    // 警告は保存を止めないので、保存前に文言を作って保存後の表示に持ち越す
+    const warning =
+      unmatchedSessions.length > 0
+        ? `${unmatchedSessions.length}件の開催予定はコマ時間に一致しないため、座席表には生成されません（保存はされています）。コマ時間マスタに同じ開始時刻のコマを追加してください。`
+        : null;
     try {
       await upsertKoushuOverride(
         course.id,
@@ -143,6 +169,7 @@ export function YearRoundCourseDetailModal({ open, onOpenChange, course, periods
         editingSessions
       );
       setEditingPeriod(null);
+      setSavedWarning(warning);
       await load();
     } catch (e) {
       setError(e instanceof Error ? e.message : '保存に失敗しました');
@@ -154,6 +181,7 @@ export function YearRoundCourseDetailModal({ open, onOpenChange, course, periods
   const handleClearOverride = async (period: KoushuPeriodInfo) => {
     setSaving(true);
     setError(null);
+    setSavedWarning(null);
     try {
       await deleteKoushuOverride(course.id, period.season, period.year);
       if (editingPeriod?.id === period.id) setEditingPeriod(null);
@@ -227,8 +255,17 @@ export function YearRoundCourseDetailModal({ open, onOpenChange, course, periods
                 <h3 className="text-sm font-bold text-[var(--headline)]">講習期の上書き</h3>
               </div>
               <p className="text-xs text-[var(--paragraph)]">
-                上書きを登録しない講習期は、通常の時間割どおり開催します。
+                上書きを登録しない講習期は、通常の時間割どおり開催します。上書きを登録すると、その講習期のあいだは通常の時間割からの生成を止め、登録した日時で座席表に生成します。
               </p>
+              <p className="text-xs text-[var(--paragraph)] bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
+                登録済みの週に既に生成されたコマは自動では消えません。座席表で削除してください。
+              </p>
+              {savedWarning && (
+                <p className="flex items-start gap-1.5 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
+                  <AlertTriangle className="w-4 h-4 shrink-0 mt-px" />
+                  <span>{savedWarning}</span>
+                </p>
+              )}
               {periods.length === 0 ? (
                 <p className="text-xs text-[var(--paragraph)] bg-gray-50 border border-[var(--stroke)] rounded-md px-3 py-3">
                   講習期間が設定されていません。先に講習期間を設定してください。
@@ -283,6 +320,26 @@ export function YearRoundCourseDetailModal({ open, onOpenChange, course, periods
                               value={editingSessions}
                               onChange={setEditingSessions}
                             />
+                            {unmatchedSessions.length > 0 && (
+                              <div className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-3 py-2 space-y-1">
+                                <p className="flex items-center gap-1.5 font-medium">
+                                  <AlertTriangle className="w-4 h-4 shrink-0" />
+                                  コマ時間に無い開始時刻があります（保存はできます）
+                                </p>
+                                <ul className="list-disc pl-5 space-y-0.5">
+                                  {unmatchedSessions.map((u) => (
+                                    <li
+                                      key={`${u.index}_${u.session.date}_${u.session.start_time}`}
+                                    >
+                                      {u.index + 1}行目 {u.session.date} {u.session.start_time}
+                                    </li>
+                                  ))}
+                                </ul>
+                                <p>
+                                  この行は座席表に生成されません。コマ時間マスタに同じ開始時刻のコマを追加してから保存し直してください。
+                                </p>
+                              </div>
+                            )}
                             <div className="flex items-center gap-2">
                               <Button size="sm" onClick={handleSaveOverride} isLoading={saving}>
                                 この講習期の日時を保存

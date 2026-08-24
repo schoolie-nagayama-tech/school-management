@@ -25,6 +25,14 @@ import {
   type SeatEntryInput,
 } from '@/lib/utils/seatOccupancy';
 import { getClassCapacity, DEFAULT_CLASS_CAPACITY } from '@/lib/api/school-class-capacity';
+import { getKoushuPeriods } from '@/lib/api/koushu-period';
+// フェーズ2-A: 通年講座の講習期上書き。抑止判定と上書き分の生成計画は純関数に一本化してあり、
+// 週次生成と同期チェックの双方がここを通る（正典 docs/special-courses-plan.md）。
+import {
+  planWeeklyEntries,
+  plannedEntryKey,
+  type SpecialCourseOverrideInput,
+} from '@/lib/schedule/specialCourseOverride';
 
 // 座席表テーブルは Database 型に未定義のため、any でクエリ
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -856,6 +864,83 @@ export async function getScheduleEntries(
   })) as ScheduleEntry[];
 }
 
+/**
+ * 退塾予定日マップ（生徒ID → 'YYYY-MM-DD'）。その日以降はコマを生成しない。
+ * 週次生成と同期チェックで同じ集合を使うため関数に切り出してある。
+ */
+async function loadWithdrawalMap(studentIds: string[]): Promise<Map<string, string>> {
+  const map = new Map<string, string>();
+  if (studentIds.length === 0) return map;
+  const { data } = await db
+    .from('students')
+    .select('id, withdrawal_date')
+    .in('id', studentIds)
+    .not('withdrawal_date', 'is', null);
+  for (const s of (data || []) as { id: string; withdrawal_date: string | null }[]) {
+    if (s.withdrawal_date) map.set(s.id, s.withdrawal_date);
+  }
+  return map;
+}
+
+/**
+ * 通年講座の講習期上書きの入力一式を読む（週次生成・同期チェック共通）。
+ *
+ * ★ ホットパス保護: 週次生成は座席表を開くたびに走る。講座に紐づく枠
+ *   (schedule_regular_patterns.special_course_id) が1件も無い教室では
+ *   **追加クエリを一切発行せず** null を返し、既存の生成結果と1件も変わらないようにする。
+ *   同様に、講座が無い・上書き行が無い・週内に上書き session が無い段階でも
+ *   その先のクエリを打ち切る。
+ */
+async function loadSpecialCourseOverrideInput(
+  schoolId: string,
+  patterns: ScheduleRegularPattern[],
+  fromStr: string,
+  toStr: string
+): Promise<SpecialCourseOverrideInput | null> {
+  const courseIds = Array.from(
+    new Set(patterns.map((p) => p.special_course_id).filter((id): id is string => !!id))
+  );
+  if (courseIds.length === 0) return null;
+
+  // 通年講座だけが上書きの対象（講習講座は元から日付指定で、定期の枠を持たない）
+  const { data: courseRows, error: courseError } = await db
+    .from('special_courses')
+    .select('id, formation')
+    .in('id', courseIds)
+    .eq('scope', 'year_round');
+  if (courseError) {
+    console.warn('特別講座の取得に失敗したため、講習期の上書きは適用しません:', courseError);
+    return null;
+  }
+  const courses = (courseRows ?? []) as Array<{ id: string; formation: string }>;
+  if (courses.length === 0) return null;
+
+  const { data: overrideRows, error: overrideError } = await db
+    .from('special_course_koushu_overrides')
+    .select('course_id, season, year, session_dates')
+    .in(
+      'course_id',
+      courses.map((c) => c.id)
+    );
+  if (overrideError) {
+    console.warn('講習期の上書き設定の取得に失敗したため、上書きは適用しません:', overrideError);
+    return null;
+  }
+  const overrides = (overrideRows ?? []) as SpecialCourseOverrideInput['overrides'];
+  if (overrides.length === 0) return null;
+
+  // 抑止期間は「上書き行の (season, year) に対応する講習期の日程」で決まる
+  const periods = await getKoushuPeriods(schoolId);
+
+  // コマ時間マスタは「この週に上書き session がある」ときだけ要る（抑止だけなら不要）
+  const hasSessionInWeek = overrides.some((o) =>
+    (o.session_dates ?? []).some((s) => s.date >= fromStr && s.date <= toStr)
+  );
+  const timeSlots = hasSessionInWeek ? await getActiveTimeSlots(schoolId) : [];
+
+  return { courses, periods, overrides, timeSlots };
+}
+
 /** 指定週のスケジュールを通塾日程から一括生成。既存は上書き。 */
 export async function generateWeeklySchedule(
   schoolId: string,
@@ -875,17 +960,10 @@ export async function generateWeeklySchedule(
 
   // 退塾日マップ：退塾予定日を持つ生徒は、その日以降のエントリ生成対象外
   const studentIds = Array.from(new Set(patterns.map((p) => p.student_id)));
-  const withdrawalMap = new Map<string, string>();
-  if (studentIds.length > 0) {
-    const { data: studs } = await db
-      .from('students')
-      .select('id, withdrawal_date')
-      .in('id', studentIds)
-      .not('withdrawal_date', 'is', null);
-    for (const s of (studs || []) as { id: string; withdrawal_date: string | null }[]) {
-      if (s.withdrawal_date) withdrawalMap.set(s.id, s.withdrawal_date);
-    }
-  }
+  const withdrawalMap = await loadWithdrawalMap(studentIds);
+
+  // 通年講座の講習期上書き（講座リンク付きの枠が0件なら null＝追加クエリなし・挙動不変）
+  const overrideInput = await loadSpecialCourseOverrideInput(schoolId, patterns, fromStr, toStr);
 
   type EntryRow = {
     school_id: string;
@@ -896,10 +974,11 @@ export async function generateWeeklySchedule(
     student_id: string;
     subject_ids: string[];
     seat_label: string | null;
-    regular_pattern_id: string;
+    // 通塾日程の写しなら由来パターン、通年講座の講習期上書き由来なら NULL
+    regular_pattern_id: string | null;
     status: string;
     // 種別（regular/koushu）と形態。
-    // 通塾日程からの生成は常に regular。formation はパターン側 p.formation を引き継ぐ。
+    // 通塾日程からの生成は regular、講習期上書き由来は koushu。formation はパターン側 p.formation を引き継ぐ。
     // Phase A: 形態は動的マスタ化したため union ではなく string。
     kind: 'regular' | 'koushu';
     formation: string;
@@ -954,57 +1033,46 @@ export async function generateWeeklySchedule(
     ).map((e) => `${e.entry_date}-${e.time_slot_id}-${e.student_id}`)
   );
 
-  // teacher_id が NULL のものは ハイフン+null で識別。NULL 同士のキー衝突を防ぐ
-  const entryKey = (e: {
-    entry_date: string;
-    time_slot_id: string;
-    teacher_id: string | null;
-    student_id: string;
-  }) => `${e.entry_date}-${e.time_slot_id}-${e.teacher_id ?? 'null'}-${e.student_id}`;
-  const entriesMap = new Map<string, EntryRow>();
+  // 「その週に作られるべきコマ」の列挙は純関数に一本化してある（同期チェックと共通）。
+  // ここでは DB の現況に依存する除外（振替済みの枠を避ける・手動割当講師の引き継ぎ）だけを行う。
+  const planned = planWeeklyEntries({
+    weekStartDate,
+    patterns,
+    withdrawalDates: withdrawalMap,
+    override: overrideInput,
+  });
 
-  for (const p of patterns) {
-    // 時間帯マスタ未設定のパターンだけスキップ。teacher_id NULL は「担当未決定」エントリとして生成する。
-    if (!p.time_slot) continue;
-    for (let d = 0; d < 7; d++) {
-      const dDate = new Date(weekStart);
-      dDate.setUTCDate(weekStart.getUTCDate() + d);
-      if (dDate.getUTCDay() !== p.day_of_week) continue;
-      const dateStr = dDate.toISOString().slice(0, 10);
-      // effective_from/until で日付が有効範囲内か
-      if (p.effective_from && dateStr < p.effective_from) continue;
-      if (p.effective_until && dateStr > p.effective_until) continue;
-      // 退塾予定日以降は生成しない
-      const wd = withdrawalMap.get(p.student_id);
-      if (wd && dateStr >= wd) continue;
-      // 振替済みの枠は再生成しない（重複防止 N-4）
-      const carryKey = `${dateStr}-${p.time_slot_id}-${p.student_id}`;
-      if (transferredKeys.has(carryKey)) continue;
-      // パターンの teacher_id が NULL でも、既存エントリで手動割当されていればそれを維持する
-      const teacherId = p.teacher_id ?? manualTeacherCarry.get(carryKey) ?? null;
-      const e: EntryRow = {
-        school_id: schoolId,
-        entry_date: dateStr,
-        time_slot_id: p.time_slot_id,
-        teacher_id: teacherId,
-        student_id: p.student_id,
-        subject_ids: p.subject_ids || [],
-        seat_label: p.seat_label || null,
-        regular_pattern_id: p.id,
-        status: 'scheduled',
-        // 通塾日程から生成される=通常授業。
-        // formation はパターン側の値を引き継ぐ（個別パターンなら個別、集団パターンなら集団のエントリに）。
-        kind: 'regular',
-        formation: p.formation ?? INDIVIDUAL_FORMATION,
-        // Phase R: ratio/duration/half をパターンから継承。既存パターンは ratio=2・全コマなので挙動不変。
-        ratio: p.ratio ?? 2,
-        duration_minutes: p.duration_minutes ?? null,
-        half_position: p.half_position ?? null,
-      };
-      entriesMap.set(entryKey(e), e);
-    }
+  const entries: EntryRow[] = [];
+  for (const pe of planned) {
+    // 振替済み・単発コマ等で既に埋まっている枠は再生成しない（重複防止 N-4）
+    const carryKey = plannedEntryKey(pe);
+    if (transferredKeys.has(carryKey)) continue;
+    // パターンの teacher_id が NULL でも、既存エントリで手動割当されていればそれを維持する。
+    // 引き継ぎ元は kind='regular' の既存行なので、上書き由来（kind='koushu'）には適用しない。
+    const teacherId =
+      pe.teacherId ?? (pe.source === 'regular' ? (manualTeacherCarry.get(carryKey) ?? null) : null);
+    entries.push({
+      school_id: schoolId,
+      entry_date: pe.date,
+      time_slot_id: pe.timeSlotId,
+      teacher_id: teacherId,
+      student_id: pe.studentId,
+      subject_ids: pe.subjectIds,
+      seat_label: pe.seatLabel,
+      // 上書き由来のコマは通塾日程の写しではないので regular_pattern_id を持たせない
+      // （ズレ検知の「余分な行」判定は regular_pattern_id 付きだけを見るため、巻き込まれない）。
+      regular_pattern_id: pe.source === 'regular' ? pe.regularPatternId : null,
+      status: 'scheduled',
+      // 通塾日程から生成される=通常授業。上書き由来は講習コマ (kind='koushu')。
+      // formation はパターン（上書きは講座）の値を引き継ぐ。
+      kind: pe.kind,
+      formation: pe.formation ?? INDIVIDUAL_FORMATION,
+      // Phase R: ratio/duration/half をパターンから継承。既存パターンは ratio=2・全コマなので挙動不変。
+      ratio: pe.ratio,
+      duration_minutes: pe.durationMinutes,
+      half_position: pe.halfPosition,
+    });
   }
-  const entries: EntryRow[] = Array.from(entriesMap.values());
 
   // kind='regular' のみ削除する。講習コマ (kind='koushu') は通塾日程の再生成対象外なので残す
   // （講習配置が通塾日程の再生成で消える事故を防ぐ）。
@@ -1067,39 +1135,31 @@ export async function getExpectedEntryDetailsFromPatterns(
   schoolId: string,
   weekStartDate: string
 ): Promise<Map<string, { studentId: string; date: string }>> {
-  const weekStart = new Date(weekStartDate);
   const details = new Map<string, { studentId: string; date: string }>();
   const patterns = await getRegularPatterns(schoolId);
 
   const studentIds = Array.from(new Set(patterns.map((p) => p.student_id)));
-  const withdrawalMap = new Map<string, string>();
-  if (studentIds.length > 0) {
-    const { data: studs } = await db
-      .from('students')
-      .select('id, withdrawal_date')
-      .in('id', studentIds)
-      .not('withdrawal_date', 'is', null);
-    for (const s of (studs || []) as { id: string; withdrawal_date: string | null }[]) {
-      if (s.withdrawal_date) withdrawalMap.set(s.id, s.withdrawal_date);
-    }
-  }
+  const withdrawalMap = await loadWithdrawalMap(studentIds);
 
-  for (const p of patterns) {
-    if (!p.time_slot) continue;
-    for (let d = 0; d < 7; d++) {
-      const dDate = new Date(weekStart);
-      dDate.setUTCDate(weekStart.getUTCDate() + d);
-      if (dDate.getUTCDay() !== p.day_of_week) continue;
-      const dateStr = dDate.toISOString().slice(0, 10);
-      if (p.effective_from && dateStr < p.effective_from) continue;
-      if (p.effective_until && dateStr > p.effective_until) continue;
-      const wd = withdrawalMap.get(p.student_id);
-      if (wd && dateStr >= wd) continue;
-      details.set(`${dateStr}-${p.time_slot_id}-${p.student_id}`, {
-        studentId: p.student_id,
-        date: dateStr,
-      });
-    }
+  // 週の範囲は generateWeeklySchedule と同じ刻み方で出す（上書き session の週内判定に使う）
+  const weekStart = new Date(weekStartDate);
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekEnd.getDate() + 6);
+  const fromStr = weekStart.toISOString().slice(0, 10);
+  const toStr = weekEnd.toISOString().slice(0, 10);
+
+  // ★ 生成側と同じ入力・同じ純関数を通す。期待キー集合＝生成が作る集合、を定義上一致させる。
+  //   ここを片方だけ変えると「未反映」の誤検知→毎回の再生成→手動移動の巻き戻しに直結する。
+  const overrideInput = await loadSpecialCourseOverrideInput(schoolId, patterns, fromStr, toStr);
+  const planned = planWeeklyEntries({
+    weekStartDate,
+    patterns,
+    withdrawalDates: withdrawalMap,
+    override: overrideInput,
+  });
+
+  for (const pe of planned) {
+    details.set(plannedEntryKey(pe), { studentId: pe.studentId, date: pe.date });
   }
   return details;
 }
