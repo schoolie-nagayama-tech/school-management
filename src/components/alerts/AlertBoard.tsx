@@ -70,6 +70,44 @@ interface AlertBoardProps {
   initialData?: AlertInitialData;
 }
 
+/**
+ * 対応済みにしたアラートをボードからその場で取り除く（楽観更新）。
+ * dismiss の一意キーはサーバー側と同じ (student_id, alert_type, alert_key) なので、
+ * 同一キーの行はまとめて落とす。残りアラートが0件になった生徒はカードごと消す。
+ */
+function removeAlertLocally(list: StudentAlerts[], target: Alert): StudentAlerts[] {
+  return list
+    .map((sa) =>
+      sa.student_id === target.student_id
+        ? {
+            ...sa,
+            alerts: sa.alerts.filter(
+              (a) => !(a.alert_type === target.alert_type && a.alert_key === target.alert_key)
+            ),
+          }
+        : sa
+    )
+    .filter((sa) => sa.alerts.length > 0);
+}
+
+/**
+ * 楽観更新のロールバック用に、アラート1件から復元用の StudentAlerts エントリを作る。
+ * Alert は氏名・学年・かな・学籍番号を持っているため、mergeStudentAlerts に渡せば
+ * 名簿順の正しい位置に戻せる（生徒カードごと消えていた場合も復活する）。
+ */
+function toRestoreEntry(alert: Alert): StudentAlerts {
+  return {
+    student_id: alert.student_id,
+    student_name: alert.student_name,
+    grade: alert.grade,
+    school_id: alert.school_id,
+    last_name_kana: alert.last_name_kana,
+    first_name_kana: alert.first_name_kana,
+    student_code: alert.student_code,
+    alerts: [alert],
+  };
+}
+
 const SCHOOL_COLORS = [
   { bg: 'bg-sky-100', text: 'text-sky-700', border: 'border-sky-200' },
   { bg: 'bg-emerald-100', text: 'text-emerald-700', border: 'border-emerald-200' },
@@ -106,6 +144,8 @@ export function AlertBoard({ className = '', initialData }: AlertBoardProps) {
   // Heavy アラートは引き続き whenNetworkIdle() 後にクライアントで取得されるため、
   // このスキップは Light fetch のみに効く（Heavy のタイミング制御は fetchAlerts 内で行う）。
   const skipInitialFetchRef = useRef<boolean>(!!initialData);
+  // 対応済み処理が進行中のアラートID（連打による二重記録を防ぐ）
+  const dismissingRef = useRef<Set<string>>(new Set());
 
   // 対応済み操作はmanager以上のみ
   const canDismiss =
@@ -257,32 +297,50 @@ export function AlertBoard({ className = '', initialData }: AlertBoardProps) {
     fetchAlerts();
   }, [fetchAlerts, loadHeavyAlerts]);
 
+  /**
+   * 対応済み操作。押した行だけをその場で消す楽観更新にしている。
+   *
+   * 以前は dismiss のたびに fetchAlerts(true) で全件再取得していたが、
+   * isLoading が立つとボード全体が1行のローディング表示に置き換わって高さが潰れ、
+   * 再描画後にスクロール位置が飛ぶ（＝1件押すたびに読み込み待ち＋下までスクロールし直し）。
+   * サーバー側の dismiss は「そのキーのアラートを消す」だけの決定的な操作なので、
+   * ローカルで同じ結果を作れば再取得は不要。キャッシュだけ捨てておき、
+   * 次回のページ表示・教室切替で最新状態を取り直す。
+   * 書き込みに失敗したら消した行を元の位置（名簿順）へ戻す。
+   */
   const handleDismiss = useCallback(
     async (alert: Alert) => {
       if (!canDismiss) return;
       if (!DISMISSABLE_ALERT_TYPES.has(alert.alert_type)) return;
+      // 連打による二重 INSERT を防ぐ（行は即消えるが、展開行などで同キーが並ぶ場合の保険）
+      if (dismissingRef.current.has(alert.id)) return;
+
+      const schoolIds = getSelectedSchoolIds();
+      if (schoolIds.length === 0) {
+        toastError('教室が選択されていません');
+        return;
+      }
+
+      dismissingRef.current.add(alert.id);
+      // 楽観更新：まず表示から消す（レイアウトが潰れないのでスクロール位置は動かない）
+      setStudentAlerts((prev) => removeAlertLocally(prev, alert));
 
       try {
-        const schoolIds = getSelectedSchoolIds();
-        if (schoolIds.length === 0) {
-          toastError('教室が選択されていません');
-          return;
-        }
-
-        // 生徒のschool_idを取得
-        const { data: student, error: studentError } = await supabase
-          .from('students')
-          .select('school_id')
-          .eq('id', alert.student_id)
-          .maybeSingle();
-
-        if (studentError || !student) {
-          toastError('生徒情報が見つかりません');
-          return;
+        // dismiss は生徒の所属校で記録する。アラートは生成時に school_id を持つので
+        // 通常は追加のラウンドトリップ不要。欠けているときだけ students を引く。
+        let schoolId = alert.school_id;
+        if (!schoolId) {
+          const { data: student, error: studentError } = await supabase
+            .from('students')
+            .select('school_id')
+            .eq('id', alert.student_id)
+            .maybeSingle();
+          if (studentError || !student) throw new Error('生徒情報が見つかりません');
+          schoolId = student.school_id;
         }
 
         await dismissAlert(
-          student.school_id,
+          schoolId,
           alert.student_id,
           alert.alert_type,
           alert.alert_key,
@@ -290,15 +348,19 @@ export function AlertBoard({ className = '', initialData }: AlertBoardProps) {
           undefined
         );
 
+        // 表示は更新済み。次回取得で最新を読むようキャッシュのみ無効化する
+        invalidateAlertCache(schoolIds);
         success('対応済みにしました');
-        // アラートを再取得（キャッシュをスキップ）
-        await fetchAlerts(true);
       } catch (error) {
         console.error('Error dismissing alert:', error);
+        // ロールバック：消した行を名簿順の正しい位置へ戻す
+        setStudentAlerts((prev) => mergeStudentAlerts(prev, [toRestoreEntry(alert)]));
         toastError('対応済みの記録に失敗しました');
+      } finally {
+        dismissingRef.current.delete(alert.id);
       }
     },
-    [canDismiss, getSelectedSchoolIds, profile?.id, success, toastError, fetchAlerts]
+    [canDismiss, getSelectedSchoolIds, profile?.id, success, toastError]
   );
 
   // 講師には講習関連など担当外のアラートを表示しない（行ごと除外）。
