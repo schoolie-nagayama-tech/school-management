@@ -43,6 +43,13 @@ export interface SpecialCourse {
   year: number | null;
   /** 講習講座の開催予定。通年講座は空配列（時間割は講座の枠側が持つ） */
   session_dates: SpecialCourseSession[];
+  /**
+   * 通年講座の定例開催曜日（0=日〜6=土）。未設定=null。
+   * 講習講座は常に null（開催日は session_dates で指定するため）。
+   */
+  day_of_week: number | null;
+  /** 通年講座の定例開催コマ（schedule_time_slots.id）。未設定=null。講習講座は常に null。 */
+  time_slot_id: string | null;
   is_active: boolean;
 }
 
@@ -59,11 +66,13 @@ export type SpecialCourseFormValues = Pick<
   | 'unit_price'
   | 'capacity'
   | 'session_dates'
+  | 'day_of_week'
+  | 'time_slot_id'
   | 'is_active'
 >;
 
 const SELECT_COLUMNS =
-  'id, school_id, scope, formation, name, target_grades, subject_id, unit_price, capacity, season, year, session_dates, is_active';
+  'id, school_id, scope, formation, name, target_grades, subject_id, unit_price, capacity, season, year, session_dates, day_of_week, time_slot_id, is_active';
 
 /**
  * 通年講座の一覧（教室単位）。
@@ -109,6 +118,8 @@ export async function getKoushuCourses(
 /**
  * 形態ボードの「＋講座の枠」で選ばせる通年講座。
  * その形態で有効な通年講座だけを返す（0件なら画面側で講座作成へ誘導する）。
+ * クリックしたセル（曜日×コマ）への絞り込みは呼び出し側で
+ * filterCoursesForCell（lib/utils/specialCourses）に通す。
  */
 export async function getActiveYearRoundCoursesByFormation(
   schoolId: string,

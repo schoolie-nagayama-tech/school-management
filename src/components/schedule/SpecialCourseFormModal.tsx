@@ -11,10 +11,12 @@ import {
 } from '@/components/ui';
 import { SessionDatesEditor } from './SessionDatesEditor';
 import { GRADE_LABELS, type Subject } from '@/types/database';
-import type { ScheduleFormation } from '@/types/schedule';
+import type { ScheduleFormation, ScheduleTimeSlot } from '@/types/schedule';
 import type { SpecialCourse, SpecialCourseFormValues } from '@/lib/api/specialCourses';
+import { getActiveTimeSlots } from '@/lib/api/schedule';
 import {
   totalCourseFee,
+  DOW_LABELS,
   SPECIAL_COURSE_SCOPE_LABELS,
   type SpecialCourseScope,
 } from '@/lib/utils/specialCourses';
@@ -27,6 +29,8 @@ export type { SpecialCourseFormValues };
 interface SpecialCourseFormModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** コマ時間マスタ（schedule_time_slots）を引く対象教室。通年講座のコマ選択に使う。 */
+  schoolId: string;
   /** 'year_round'=通年講座（開催予定は持たない） / 'koushu'=講習講座（日付指定） */
   scope: SpecialCourseScope;
   /** 個別以外の指導形態（小集団・プログラミング等）。呼び出し側で絞り込み済み。 */
@@ -46,6 +50,8 @@ const emptyValues = (formations: ScheduleFormation[]): SpecialCourseFormValues =
   unit_price: null,
   capacity: null,
   session_dates: [],
+  day_of_week: null,
+  time_slot_id: null,
   is_active: true,
 });
 
@@ -53,12 +59,14 @@ const emptyValues = (formations: ScheduleFormation[]): SpecialCourseFormValues =
  * 特別講座（通年講座 / 講習講座）の追加・編集モーダル。
  *
  * 項目は 名前・指導形態（個別以外から）・対象学年・科目・単価・定員 が共通で、
- * 講習講座のときだけ開催予定表（一括生成つき）を出す。通年講座の時間割は
- * 座席表の形態ボードで「講座の枠」を作ると決まるので、ここでは入力しない。
+ * 通年講座は定例の開催曜日・コマ、講習講座は開催予定表（一括生成つき）を出す。
+ * 通年講座の生徒ごとの枠は座席表の形態ボードで作るが、その候補に出るためには
+ * ここで曜日・コマを設定しておく必要がある（正典 docs/special-courses-plan.md フェーズ3）。
  */
 export function SpecialCourseFormModal({
   open,
   onOpenChange,
+  schoolId,
   scope,
   formations,
   subjects,
@@ -66,6 +74,7 @@ export function SpecialCourseFormModal({
   onSubmit,
 }: SpecialCourseFormModalProps) {
   const [values, setValues] = useState<SpecialCourseFormValues>(emptyValues(formations));
+  const [timeSlots, setTimeSlots] = useState<ScheduleTimeSlot[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -83,6 +92,8 @@ export function SpecialCourseFormModal({
         unit_price: editing.unit_price,
         capacity: editing.capacity,
         session_dates: editing.session_dates,
+        day_of_week: editing.day_of_week,
+        time_slot_id: editing.time_slot_id,
         is_active: editing.is_active,
       });
     } else {
@@ -90,6 +101,38 @@ export function SpecialCourseFormModal({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, editing]);
+
+  /**
+   * コマの選択肢は「その講座の指導形態の有効なコマ時間」。
+   * 形態ごとにコマ時間が独立採番されているため、形態を変えたら選び直しになる。
+   * 講習講座は日付指定なのでコマを使わず、取得もしない。
+   */
+  useEffect(() => {
+    if (!open || isKoushu || !schoolId || !values.formation) {
+      setTimeSlots([]);
+      return;
+    }
+    let cancelled = false;
+    getActiveTimeSlots(schoolId, values.formation)
+      .then((slots) => {
+        if (!cancelled) setTimeSlots(slots);
+      })
+      .catch(() => {
+        if (!cancelled) setTimeSlots([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, isKoushu, schoolId, values.formation]);
+
+  /** 指導形態を変えるとコマ時間の並びが変わるので、選択済みのコマは捨てる（別形態のコマが残る事故を防ぐ）。 */
+  const handleFormationChange = (formation: string) => {
+    setValues((v) => ({
+      ...v,
+      formation,
+      time_slot_id: v.formation === formation ? v.time_slot_id : null,
+    }));
+  };
 
   const toggleGrade = (grade: number) => {
     setValues((v) => ({
@@ -118,8 +161,14 @@ export function SpecialCourseFormModal({
     }
     setSaving(true);
     try {
-      // 通年講座は開催予定を持たない（時間割は講座の枠側）。誤って残った行は捨てる。
-      await onSubmit(isKoushu ? values : { ...values, session_dates: [] });
+      // 種別ごとに使わない項目は保存前に落とす。
+      //  - 通年講座: 開催予定（日付指定は講習講座のもの）
+      //  - 講習講座: 定例の曜日・コマ（scope 切替で残った値をそのまま書かない）
+      await onSubmit(
+        isKoushu
+          ? { ...values, day_of_week: null, time_slot_id: null }
+          : { ...values, session_dates: [] }
+      );
       onOpenChange(false);
     } catch (e) {
       setError(e instanceof Error ? e.message : '保存に失敗しました');
@@ -157,7 +206,7 @@ export function SpecialCourseFormModal({
               </label>
               <select
                 value={values.formation}
-                onChange={(e) => setValues((v) => ({ ...v, formation: e.target.value }))}
+                onChange={(e) => handleFormationChange(e.target.value)}
                 className="w-full px-3 py-2 border border-[var(--stroke)] rounded-lg bg-white text-sm focus:ring-2 focus:ring-primary focus:border-primary"
               >
                 {formations.length === 0 && <option value="">指導形態が未登録です</option>}
@@ -269,10 +318,64 @@ export function SpecialCourseFormModal({
               />
             </div>
           ) : (
-            <p className="text-xs text-[var(--paragraph)] bg-gray-50 border border-[var(--stroke)] rounded-md px-3 py-2">
-              通年講座の時間割（曜日×コマ）は、座席表の形態ボードで「講座の枠」を作ると決まります。
-              講習期だけ日時を変える場合は、保存後に一覧の「講習期の上書き」から登録してください。
-            </p>
+            /* 定例の開催枠（通年講座のみ）。座席表の枠はこの曜日×コマのセルからしか作れない。 */
+            <div className="border border-[var(--stroke)] rounded-xl p-4 bg-gray-50/50 space-y-3">
+              <p className="text-sm font-medium text-[var(--headline)]">定例の開催枠（任意）</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-[var(--headline)] mb-1">
+                    曜日
+                  </label>
+                  <select
+                    value={values.day_of_week ?? ''}
+                    onChange={(e) =>
+                      setValues((v) => ({
+                        ...v,
+                        day_of_week: e.target.value === '' ? null : Number(e.target.value),
+                      }))
+                    }
+                    className="w-full px-3 py-2 border border-[var(--stroke)] rounded-lg bg-white text-sm focus:ring-2 focus:ring-primary focus:border-primary"
+                  >
+                    <option value="">未設定</option>
+                    {DOW_LABELS.map((label, dow) => (
+                      <option key={dow} value={dow}>
+                        {label}曜
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-[var(--headline)] mb-1">
+                    コマ
+                  </label>
+                  <select
+                    value={values.time_slot_id ?? ''}
+                    onChange={(e) =>
+                      setValues((v) => ({ ...v, time_slot_id: e.target.value || null }))
+                    }
+                    className="w-full px-3 py-2 border border-[var(--stroke)] rounded-lg bg-white text-sm focus:ring-2 focus:ring-primary focus:border-primary"
+                  >
+                    <option value="">未設定</option>
+                    {timeSlots.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {`#${s.slot_number} ${s.start_time.slice(0, 5)}-${s.end_time.slice(0, 5)}`}
+                      </option>
+                    ))}
+                  </select>
+                  {timeSlots.length === 0 && (
+                    <p className="mt-1 text-xs text-amber-700">
+                      この指導形態のコマ時間が未登録です（設定 → コマ時間設定で追加してください）
+                    </p>
+                  )}
+                </div>
+              </div>
+              <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
+                未設定だと座席表の枠から選べません。座席表の形態ボードでは、ここで設定した曜日×コマのセルにだけこの講座が候補として出ます。
+              </p>
+              <p className="text-xs text-[var(--paragraph)]">
+                生徒ごとの枠（名簿）は座席表の形態ボードで作ります。講習期だけ日時を変える場合は、保存後に一覧の「講習期の上書き」から登録してください。
+              </p>
+            </div>
           )}
 
           {/* 合計金額プレビュー（講習講座は回数が決まっているので出す） */}

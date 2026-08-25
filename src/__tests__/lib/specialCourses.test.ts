@@ -5,6 +5,8 @@ import {
   generateSessionDates,
   mergeSessionDates,
   resolveKoushuOverride,
+  filterCoursesForCell,
+  formatWeeklySlotLabel,
   totalCourseFee,
   type SpecialCourseKoushuOverride,
 } from '@/lib/utils/specialCourses';
@@ -127,6 +129,77 @@ describe('resolveKoushuOverride', () => {
       overridden: true,
       sessions: [],
     });
+  });
+});
+
+describe('filterCoursesForCell', () => {
+  // 永山校の実データ相当（中1理A=月19:10 / 中1社A=火19:10 / 中2理A=月20:20）
+  const courses = [
+    { id: 'a', name: '中1理A', day_of_week: 1, time_slot_id: 'slot-1910' },
+    { id: 'b', name: '中1社A', day_of_week: 2, time_slot_id: 'slot-1910' },
+    { id: 'c', name: '中2理A', day_of_week: 1, time_slot_id: 'slot-2020' },
+    { id: 'd', name: '中2社A', day_of_week: 1, time_slot_id: 'slot-1910' },
+  ];
+
+  it('曜日とコマの両方が一致する講座だけを返す', () => {
+    expect(filterCoursesForCell(courses, 1, 'slot-1910').map((c) => c.id)).toEqual(['a', 'd']);
+  });
+
+  it('曜日が違えば除外する（月の講座を火のセルに出さない）', () => {
+    expect(filterCoursesForCell(courses, 2, 'slot-1910').map((c) => c.id)).toEqual(['b']);
+  });
+
+  it('コマが違えば除外する', () => {
+    expect(filterCoursesForCell(courses, 1, 'slot-2020').map((c) => c.id)).toEqual(['c']);
+  });
+
+  it('曜日・コマが未設定の講座は候補に出さない', () => {
+    const withUnset = [
+      { id: 'x', day_of_week: null, time_slot_id: null },
+      { id: 'y', day_of_week: 1, time_slot_id: null },
+      { id: 'z', day_of_week: null, time_slot_id: 'slot-1910' },
+      { id: 'a', day_of_week: 1, time_slot_id: 'slot-1910' },
+    ];
+    expect(filterCoursesForCell(withUnset, 1, 'slot-1910').map((c) => c.id)).toEqual(['a']);
+  });
+
+  it('日曜(0)も曜日として扱う（未設定と混同しない）', () => {
+    const sunday = [{ id: 's', day_of_week: 0, time_slot_id: 'slot-1000' }];
+    expect(filterCoursesForCell(sunday, 0, 'slot-1000').map((c) => c.id)).toEqual(['s']);
+  });
+
+  it('元の並び順を保つ（講座名順のまま画面に出す）', () => {
+    const same = [
+      { id: '1', day_of_week: 1, time_slot_id: 'slot-1910' },
+      { id: '2', day_of_week: 1, time_slot_id: 'slot-1910' },
+      { id: '3', day_of_week: 1, time_slot_id: 'slot-1910' },
+    ];
+    expect(filterCoursesForCell(same, 1, 'slot-1910').map((c) => c.id)).toEqual(['1', '2', '3']);
+  });
+
+  it('空配列を渡せば空配列', () => {
+    expect(filterCoursesForCell([], 1, 'slot-1910')).toEqual([]);
+  });
+
+  it('一致0件でも例外にせず空配列を返す', () => {
+    expect(filterCoursesForCell(courses, 6, 'slot-1910')).toEqual([]);
+  });
+});
+
+describe('formatWeeklySlotLabel', () => {
+  const slot = { start_time: '19:10:00', end_time: '20:10:00' };
+
+  it('「曜日 開始-終了」で組み立てる（秒は落とす）', () => {
+    expect(formatWeeklySlotLabel(1, 'slot-1910', slot)).toBe('月 19:10-20:10');
+  });
+
+  it('曜日かコマが未設定なら null（呼び出し側で「未設定」を出す）', () => {
+    expect(formatWeeklySlotLabel(null, 'slot-1910', slot)).toBeNull();
+    expect(formatWeeklySlotLabel(1, null, null)).toBeNull();
+  });
+
+  it('コマ時間が見つからないときは曜日だけ返す（設定を黙って消さない）', () => {
+    expect(formatWeeklySlotLabel(3, 'slot-deleted', undefined)).toBe('水');
   });
 });
 
