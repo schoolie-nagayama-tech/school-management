@@ -134,6 +134,7 @@ import type { PendingLesson } from '@/lib/api/pending-lessons';
 import { getFormations, getFormationCapacity } from '@/lib/api/schedule-formations';
 import { createFormationClassPatterns } from '@/lib/api/formation-patterns';
 import { getActiveYearRoundCoursesByFormation, type SpecialCourse } from '@/lib/api/specialCourses';
+import { filterCoursesForCell } from '@/lib/utils/specialCourses';
 import type { ScheduleFormation, SchoolFormationCapacity } from '@/types/schedule';
 import { logScheduleChange } from '@/lib/api/schedule-change-logs';
 import type {
@@ -1573,6 +1574,19 @@ export default function SchedulePage() {
       cancelled = true;
     };
   }, [schoolId, activeFormation, isFormationBoard]);
+
+  /**
+   * 枠モーダルに出す講座候補。
+   * 'create' はクリックしたセルの曜日×コマで開催する講座だけに絞る（中1理A=月19:10 を
+   * 火曜のセルに置けてしまうと、講座の定例枠と枠の実際がずれるため）。
+   * 'add' は既存枠から講座を引き継ぐので絞らない。
+   */
+  const formationModalCourses = useMemo(() => {
+    if (!formationTarget || formationTarget.mode !== 'create') return formationCourses;
+    // 曜日はセルの日付から求める（正午指定でタイムゾーンによる日付ズレを避ける）
+    const dayOfWeek = new Date(formationTarget.date + 'T12:00:00').getDay();
+    return filterCoursesForCell(formationCourses, dayOfWeek, formationTarget.slotId);
+  }, [formationTarget, formationCourses]);
 
   // 空セルの「＋講座の枠」→ 新規枠モーダル
   const handleFormationCreate = useCallback((date: string, slotId: string) => {
@@ -3718,7 +3732,7 @@ export default function SchedulePage() {
             .map((t) => ({ id: t.id, display_name: t.display_name, email: t.email }))}
           mode={formationTarget.mode}
           lockedTeacherId={formationTarget.teacherId}
-          courses={formationCourses}
+          courses={formationModalCourses}
           onSubmit={handleSubmitFormationKoma}
         />
       )}

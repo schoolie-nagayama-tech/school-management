@@ -10,6 +10,7 @@
  *
  * モード:
  *  - create: 空セルの「＋講座の枠」から。講座と講師を選んで新しい枠を作る。
+ *            講座の候補はそのセルの曜日×コマで開催する講座だけ（親が filterCoursesForCell で絞る）。
  *  - add   : 既存クラスの空席行から。講師は固定、生徒だけ追加する。
  *            枠は既にどれかの講座に属しているので、講座はその枠から引き継ぐ（選ばせない）。
  */
@@ -53,7 +54,11 @@ interface Props {
   mode: 'create' | 'add';
   /** add モード時の固定講師（null=担当未決定クラスへの追加） */
   lockedTeacherId?: string | null;
-  /** この形態の通年講座（is_active のみ）。0件なら講座作成へ誘導する。 */
+  /**
+   * 選べる通年講座（is_active のみ）。
+   * create のとき親が「このセルの曜日×コマで開催する講座」に絞って渡す（filterCoursesForCell）。
+   * 0件なら講座の定例枠の設定へ誘導する。
+   */
   courses: SpecialCourse[];
   onSubmit: (data: {
     teacherId: string | null;
@@ -171,13 +176,15 @@ export function FormationKomaFormModal({
                 講座 <span className="text-red-500">*</span>
               </label>
               {courses.length === 0 ? (
+                /* 候補は「このセルの曜日×コマで開催する講座」に絞られている。
+                   0件は講座未作成か、講座に定例の曜日・コマが未設定のどちらか。 */
                 <div className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded px-3 py-2 space-y-1">
-                  <p>この指導形態の通年講座がまだありません。</p>
+                  <p>このコマに開催する講座がありません。</p>
                   <Link
                     href="/schedule/special-courses"
                     className="underline font-medium hover:no-underline"
                   >
-                    特別講座管理で講座を作成してください
+                    特別講座管理で講座を作成し、曜日・コマを設定してください
                   </Link>
                 </div>
               ) : (

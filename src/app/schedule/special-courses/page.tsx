@@ -24,6 +24,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useMasterData } from '@/contexts/MasterDataContext';
 import { isManagerOrAbove } from '@/lib/utils/roles';
 import { getFormations } from '@/lib/api/schedule-formations';
+import { getActiveTimeSlots } from '@/lib/api/schedule';
 import { getKoushuPeriods, type KoushuPeriodInfo } from '@/lib/api/koushu-period';
 import {
   getYearRoundCourses,
@@ -36,11 +37,16 @@ import {
 } from '@/lib/api/specialCourses';
 import {
   formatCourseScopeLabel,
+  formatWeeklySlotLabel,
   totalCourseFee,
   SPECIAL_COURSE_SCOPE_LABELS,
   type SpecialCourseScope,
 } from '@/lib/utils/specialCourses';
-import { INDIVIDUAL_FORMATION, type ScheduleFormation } from '@/types/schedule';
+import {
+  INDIVIDUAL_FORMATION,
+  type ScheduleFormation,
+  type ScheduleTimeSlot,
+} from '@/types/schedule';
 
 /**
  * 特別講座（通年講座 / 講習講座）の管理画面。
@@ -63,6 +69,8 @@ export default function SpecialCoursesPage() {
   const [periods, setPeriods] = useState<KoushuPeriodInfo[]>([]);
   const [selectedPeriod, setSelectedPeriod] = useState<KoushuPeriodInfo | null>(null);
   const [courses, setCourses] = useState<SpecialCourse[]>([]);
+  // 通年講座の「曜日 開始-終了」表示用のコマ時間マスタ（全形態ぶん。形態別の絞り込みはフォーム側）
+  const [timeSlots, setTimeSlots] = useState<ScheduleTimeSlot[]>([]);
   const [loading, setLoading] = useState(false);
 
   const [modalOpen, setModalOpen] = useState(false);
@@ -92,6 +100,17 @@ export default function SpecialCoursesPage() {
         setSelectedPeriod((cur) => (cur && p.some((x) => x.id === cur.id) ? cur : (p[0] ?? null)));
       })
       .catch(() => setPeriods([]));
+  }, [schoolId]);
+
+  // コマ時間マスタ（教室切替のたびに取り直す）
+  useEffect(() => {
+    if (!schoolId) {
+      setTimeSlots([]);
+      return;
+    }
+    getActiveTimeSlots(schoolId)
+      .then(setTimeSlots)
+      .catch(() => setTimeSlots([]));
   }, [schoolId]);
 
   const loadCourses = useCallback(async () => {
@@ -124,6 +143,7 @@ export default function SpecialCoursesPage() {
     [formations]
   );
   const subjectNameById = useMemo(() => new Map(subjects.map((s) => [s.id, s.name])), [subjects]);
+  const timeSlotById = useMemo(() => new Map(timeSlots.map((s) => [s.id, s])), [timeSlots]);
 
   const handleOpenCreate = () => {
     setEditingCourse(null);
@@ -221,7 +241,7 @@ export default function SpecialCoursesPage() {
 
             <p className="text-xs text-[var(--paragraph)]">
               {scope === 'year_round'
-                ? '通常期も講習期も開催する講座です。時間割（曜日×コマ）は座席表の形態ボードで「講座の枠」を作ると決まります。'
+                ? '通常期も講習期も開催する講座です。定例の曜日・コマを設定すると、座席表の形態ボードのそのセルから生徒の枠を作れるようになります。'
                 : 'その講習期だけ開催する講座です。開催日時をここで確定します（変更・振替はできません）。'}
             </p>
 
@@ -285,6 +305,12 @@ export default function SpecialCoursesPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
                 {courses.map((c) => {
                   const total = totalCourseFee(c.unit_price, c.session_dates.length);
+                  // 通年講座の定例枠。未設定の講座は座席表の枠の候補に出ないので、はっきり見せる。
+                  const weeklySlotLabel = formatWeeklySlotLabel(
+                    c.day_of_week,
+                    c.time_slot_id,
+                    c.time_slot_id ? timeSlotById.get(c.time_slot_id) : null
+                  );
                   return (
                     <div
                       key={c.id}
@@ -340,6 +366,20 @@ export default function SpecialCoursesPage() {
                             )}
                           </dd>
                         </div>
+                        {c.scope === 'year_round' && (
+                          <div className="flex justify-between">
+                            <dt>曜日・コマ</dt>
+                            <dd
+                              className={
+                                weeklySlotLabel
+                                  ? 'font-medium text-[var(--headline)]'
+                                  : 'text-gray-400'
+                              }
+                            >
+                              {weeklySlotLabel ?? '未設定'}
+                            </dd>
+                          </div>
+                        )}
                         {c.scope === 'koushu' && (
                           <div className="flex justify-between">
                             <dt>回数</dt>
@@ -375,6 +415,7 @@ export default function SpecialCoursesPage() {
       <SpecialCourseFormModal
         open={modalOpen}
         onOpenChange={setModalOpen}
+        schoolId={schoolId}
         scope={scope}
         formations={formations}
         subjects={subjects}

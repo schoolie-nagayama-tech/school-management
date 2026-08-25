@@ -122,6 +122,62 @@ export function resolveKoushuOverride(
   return { overridden: true, sessions: hit.session_dates ?? [] };
 }
 
+// ============================================================
+// 通年講座の定例枠（曜日×コマ）
+// ============================================================
+
+/** 曜日ラベル（0=日〜6=土）。special_courses.day_of_week と同じ並び。 */
+export const DOW_LABELS = ['日', '月', '火', '水', '木', '金', '土'];
+
+/**
+ * 定例枠（曜日・コマ）を持つ最小形。
+ * lib/api の SpecialCourse 型に依存させないことで、この関数群を DB 抜きでテストできる。
+ */
+export interface WeeklySlotHolder {
+  day_of_week: number | null;
+  time_slot_id: string | null;
+}
+
+/** コマ時間の表示に必要な最小形（schedule_time_slots の一部）。 */
+export interface WeeklySlotTime {
+  start_time: string;
+  end_time: string;
+}
+
+/**
+ * 通年講座の定例枠の表示名（例「月 19:10-20:10」）。
+ * 曜日・コマのどちらかが未設定なら null を返し、呼び出し側で「未設定」を出す。
+ * コマ時間マスタに該当が見つからない場合（無効化されたコマ等）は曜日だけ返して、
+ * 設定されている事実を黙って握りつぶさない。
+ */
+export function formatWeeklySlotLabel(
+  dayOfWeek: number | null,
+  timeSlotId: string | null,
+  slot: WeeklySlotTime | null | undefined
+): string | null {
+  if (dayOfWeek == null || !timeSlotId) return null;
+  const dow = DOW_LABELS[dayOfWeek] ?? String(dayOfWeek);
+  if (!slot) return dow;
+  return `${dow} ${slot.start_time.slice(0, 5)}-${slot.end_time.slice(0, 5)}`;
+}
+
+/**
+ * 形態ボードのセル（曜日×コマ）で選べる講座に絞る。
+ *
+ * 講座は定例の開催曜日・コマを持つので、別の曜日のセルに枠を作れてしまうと
+ * 講座の時間割と枠の実際がずれる（中1理A=月19:10 を火曜のセルに置く事故）。
+ * 曜日・コマが未設定の講座は、どのセルにも属さない扱いで候補から外す
+ * （講座フォームの「未設定だと座席表の枠から選べません」の注記と対）。
+ * 元配列の順序は保つ（呼び出し側の並び＝講座名順をそのまま画面に出すため）。
+ */
+export function filterCoursesForCell<T extends WeeklySlotHolder>(
+  courses: T[],
+  dayOfWeek: number,
+  timeSlotId: string
+): T[] {
+  return courses.filter((c) => c.day_of_week === dayOfWeek && c.time_slot_id === timeSlotId);
+}
+
 /** 単価×回数の合計金額。単価未設定は null（「—」表示にする）。 */
 export function totalCourseFee(unitPrice: number | null, sessionCount: number): number | null {
   return unitPrice != null ? unitPrice * sessionCount : null;
