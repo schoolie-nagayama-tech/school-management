@@ -175,7 +175,14 @@ export function filterCoursesForCell<T extends WeeklySlotHolder>(
   dayOfWeek: number,
   timeSlotId: string
 ): T[] {
-  return courses.filter((c) => c.day_of_week === dayOfWeek && c.time_slot_id === timeSlotId);
+  return courses.filter((c) => {
+    // 曜日・コマを決めていない講座は「時間が決まっていない講座」。どのコマでも選べる。
+    //   例) 国理社オンラインライブ … 中1理A は月19:10と決まっている → そのセルだけ
+    //       HAL50分 / HAL80分     … 生徒ごとに曜日も時刻も違う      → どのセルでも
+    // 片方だけ設定されている中途半端な状態も「未設定」と同じ扱いにする（絞れないため）。
+    if (c.day_of_week == null || c.time_slot_id == null) return true;
+    return c.day_of_week === dayOfWeek && c.time_slot_id === timeSlotId;
+  });
 }
 
 /** 単価×回数の合計金額。単価未設定は null（「—」表示にする）。 */
