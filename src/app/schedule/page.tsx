@@ -1505,11 +1505,19 @@ export default function SchedulePage() {
     }));
   }, [entries, subjects]);
 
+  // 個別グリッドに載せるのは個別形態の授業だけ。
+  // 小集団・プログラミング等は形態タブ（FormationBoard）が受け持つので、個別タブに混ぜない。
+  // ★ formation は NOT NULL・既定 'individual' なので NULL を考慮する必要はない。
+  const individualEntries = useMemo(
+    () => entriesWithSubjects.filter((e) => e.formation === INDIVIDUAL_FORMATION),
+    [entriesWithSubjects]
+  );
+
   // 講習モード: 講習登録済み生徒のみにフィルタリング
   const displayEntries = useMemo(() => {
-    if (!selectedKoushu || koushuEnrollments.size === 0) return entriesWithSubjects;
-    return entriesWithSubjects.filter((e) => !!e.student_id && koushuEnrollments.has(e.student_id));
-  }, [entriesWithSubjects, selectedKoushu, koushuEnrollments]);
+    if (!selectedKoushu || koushuEnrollments.size === 0) return individualEntries;
+    return individualEntries.filter((e) => !!e.student_id && koushuEnrollments.has(e.student_id));
+  }, [individualEntries, selectedKoushu, koushuEnrollments]);
 
   // 講習モードの2レーン分割: 個別レーン=既存グリッド、集団レーン=GroupLaneGrid。
   // formation でコマ時間を分け、個別グリッドには個別コマだけ渡す（集団コマが個別グリッドに混ざらないように）。
@@ -3545,7 +3553,10 @@ export default function SchedulePage() {
                     <WeeklyScheduleGrid
                       schoolId={schoolId ?? ''}
                       weekDates={weekDates}
-                      timeSlots={selectedKoushu ? individualSlots : timeSlots}
+                      // 個別グリッドの列は常に個別のコマだけ。以前は講習モードのときだけ
+                      // 絞っており、通常モードでは他形態（小集団・プログラミング）のコマ時間が
+                      // 個別タブに列として並んでしまっていた（例: 1限16:10 は HAL のコマ）。
+                      timeSlots={individualSlots}
                       entries={individualGridEntries}
                       closedDates={closedDates}
                       teachers={teachers}
@@ -3615,8 +3626,9 @@ export default function SchedulePage() {
         <div className="hidden print:block">
           <ScheduleDailyPrintView
             weekDates={[printDay]}
-            timeSlots={timeSlots}
-            entries={entriesWithSubjects}
+            // 日次印刷は個別ボードの配布用。画面と同じく個別のコマ・授業だけを出す。
+            timeSlots={individualSlots}
+            entries={individualEntries}
             schoolName={selectedSchool?.name}
             singleDate={printDay}
             boothMapByDate={printBoothMap}
