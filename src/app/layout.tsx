@@ -10,7 +10,6 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { ImpersonationBanner } from '@/components/ImpersonationBanner';
 import { BulletinUnreadProvider } from '@/contexts/BulletinUnreadContext';
 import { UnreadBulletinGate } from '@/components/bulletin/UnreadBulletinGate';
-import { SpeedInsights } from '@vercel/speed-insights/next';
 import { Toaster } from 'sonner';
 
 const notoSansJP = Noto_Sans_JP({
@@ -92,7 +91,6 @@ export default async function RootLayout({
                   <Toaster richColors position="top-center" />
                   {/* ★ PWA一時閉鎖中（2026-08-20）。更新検知バーはSW前提なので外している。
                       再開時に <ServiceWorkerUpdateBar /> を戻す。 */}
-                  <SpeedInsights />
                 </BulletinUnreadProvider>
               </MasterDataProvider>
             </AuthProvider>

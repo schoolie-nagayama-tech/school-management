@@ -143,6 +143,7 @@ export function MobileBottomNav({ menuOpen, onMenuToggle }: MobileBottomNavProps
           const Icon = tab.icon;
           return (
             <Link
+              prefetch={false}
               key={tab.key}
               href={tab.href}
               className={itemClass(active)}
