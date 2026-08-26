@@ -190,6 +190,40 @@ export async function deleteFormation(key: string): Promise<void> {
 // 形態別定員（school_formation_capacity）
 // ========================================
 
+/** 形態別定員の既定値（school_formation_capacity に行が無い教室で使う値）。 */
+export const DEFAULT_FORMATION_MAX_STUDENTS = 8;
+export const DEFAULT_FORMATION_MAX_CONCURRENT_GROUPS = 1;
+
+/** createFormationClassPatterns に渡す「形態の既定値」ペア。 */
+export interface FormationCapacityDefaults {
+  maxStudentsPerGroup: number;
+  maxConcurrentGroups: number;
+}
+
+/**
+ * 形態の既定定員を解決する（枠を作る画面が createFormationClassPatterns に渡す値）。
+ *
+ * 座席表の形態ボードと生徒詳細の通塾日程フォームで値の出どころがズレると、
+ * 同じ講座なのに入口によって定員チェックの結果が変わってしまうため、ここに一本化する。
+ * 取得に失敗した場合も既定値で動かす（座席表側の .catch(() => null) と同じ挙動）。
+ * なお枠の実際の定員は講座の定員が優先される（resolveClassCapacity。判定は API 側）。
+ */
+export async function getFormationCapacityDefaults(
+  schoolId: string,
+  formation: string
+): Promise<FormationCapacityDefaults> {
+  let capacity: SchoolFormationCapacity | null = null;
+  try {
+    capacity = await getFormationCapacity(schoolId, formation);
+  } catch {
+    capacity = null;
+  }
+  return {
+    maxStudentsPerGroup: capacity?.max_students_per_group ?? DEFAULT_FORMATION_MAX_STUDENTS,
+    maxConcurrentGroups: capacity?.max_concurrent_groups ?? DEFAULT_FORMATION_MAX_CONCURRENT_GROUPS,
+  };
+}
+
 /** 教室×形態の定員設定を取得（未設定なら null）。 */
 export async function getFormationCapacity(
   schoolId: string,
