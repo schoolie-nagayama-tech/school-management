@@ -4,6 +4,7 @@
 // 1日 × 1講師 = 1レコード。同日内では番号の重複は不可（DB の UNIQUE で強制）。
 
 import { supabase } from '@/lib/supabase';
+import { fetchAllPaged } from '@/lib/utils/supabasePaging';
 
 // 新規テーブルなので Database 型に未追加。any でクエリ。
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -93,6 +94,53 @@ export async function setDailyBoothAssignments(
     throw new Error('ブース番号の保存に失敗しました');
   }
   return (data || []) as DailyBoothAssignment[];
+}
+
+/**
+ * 割当行の配列を (日付 → (講師ID → ブース番号)) の入れ子マップに畳む純関数。
+ * クエリ結果の整形だけを担うのでテストしやすいよう切り出してある。
+ */
+export function groupBoothNoByDate(
+  assignments: Array<Pick<DailyBoothAssignment, 'assignment_date' | 'teacher_id' | 'booth_no'>>
+): Map<string, Map<string, number>> {
+  const byDate = new Map<string, Map<string, number>>();
+  for (const a of assignments) {
+    let map = byDate.get(a.assignment_date);
+    if (!map) {
+      map = new Map<string, number>();
+      byDate.set(a.assignment_date, map);
+    }
+    map.set(a.teacher_id, a.booth_no);
+  }
+  return byDate;
+}
+
+/**
+ * 期間内のブース番号を1クエリで取得する。戻り値: date -> (teacher_id -> booth_no)
+ *
+ * 週表示では日数ぶん getBoothNoMapForDate を撃つと N+1 になり、ハイドレーション直後の
+ * 同時リクエスト数を無駄に増やす（接続プール飽和の一因）。期間で1回にまとめる。
+ * 行数は「日数 × 講師数」程度だが、1000行上限に静かに切られないよう fetchAllPaged を通す。
+ */
+export async function getBoothNoMapForRange(
+  schoolId: string,
+  fromDate: string,
+  toDate: string
+): Promise<Map<string, Map<string, number>>> {
+  const rows = await fetchAllPaged<DailyBoothAssignment>((from, to) =>
+    db
+      .from('schedule_daily_booth_assignments')
+      .select('*')
+      .eq('school_id', schoolId)
+      .gte('assignment_date', fromDate)
+      .lte('assignment_date', toDate)
+      // 安定ページングのため一意な id を最後に含める
+      .order('assignment_date', { ascending: true })
+      .order('booth_no', { ascending: true })
+      .order('id', { ascending: true })
+      .range(from, to)
+  );
+  return groupBoothNoByDate(rows);
 }
 
 /**
