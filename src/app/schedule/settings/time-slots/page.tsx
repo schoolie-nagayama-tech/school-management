@@ -1,13 +1,6 @@
-'use client';
+import { redirect } from 'next/navigation';
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-
-/** 旧ルート → /settings/time-slots へリダイレクト */
-export default function TimeSlotsPageRedirect() {
-  const router = useRouter();
-  useEffect(() => {
-    router.replace('/settings/time-slots');
-  }, [router]);
-  return <div className="py-8 text-center text-gray-500">リダイレクト中...</div>;
+/** 旧ルート → 「授業の設定」（/schedule/special-courses）へリダイレクト */
+export default function ScheduleTimeSlotsRedirect() {
+  redirect('/schedule/special-courses');
 }

@@ -1526,7 +1526,7 @@ export default function SchedulePage() {
 
   // ---- 指導形態タブ（Phase D） ----
   // タブ = 個別（固定）＋ is_active な残りの形態すべて。sort_order 順なので
-  // 形態設定画面（/settings/time-slots）のタブ並びと一致する。
+  // 授業の設定画面（/schedule/special-courses）のタブ並びと一致する。
   //
   // ★ 集団(group)を出す理由（2026-08-20 方針変更）:
   //   以前は is_system を除外して「group は講習専用レーンなので出さない」としていたが、
@@ -3393,8 +3393,8 @@ export default function SchedulePage() {
                 <p className="text-[var(--paragraph)] mb-4">
                   この形態で講座の枠を登録するには、まずコマ時間を設定してください。
                 </p>
-                <Link href="/settings/time-slots">
-                  <Button>コマ時間設定へ</Button>
+                <Link href="/schedule/special-courses">
+                  <Button>授業の設定へ</Button>
                 </Link>
               </CardContent>
             </Card>
@@ -3440,8 +3440,8 @@ export default function SchedulePage() {
                   <p className="text-[var(--paragraph)] mb-4">
                     座席表を利用するには、まずコマ時間を設定してください。
                   </p>
-                  <Link href="/settings/time-slots">
-                    <Button>コマ時間設定へ</Button>
+                  <Link href="/schedule/special-courses">
+                    <Button>授業の設定へ</Button>
                   </Link>
                 </CardContent>
               </Card>

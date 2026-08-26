@@ -39,12 +39,24 @@ interface SpecialCourseFormModalProps {
   subjects: Subject[];
   /** 編集対象。null なら新規作成 */
   editing: SpecialCourse | null;
+  /**
+   * 新規作成時に初期選択する指導形態。
+   * 「授業の設定」ページは形態タブの中から講座を追加するので、タブの形態を初期値にする。
+   * 未指定なら formations の先頭。
+   */
+  defaultFormation?: string;
   onSubmit: (values: SpecialCourseFormValues) => Promise<void>;
 }
 
-const emptyValues = (formations: ScheduleFormation[]): SpecialCourseFormValues => ({
+const emptyValues = (
+  formations: ScheduleFormation[],
+  defaultFormation?: string
+): SpecialCourseFormValues => ({
   name: '',
-  formation: formations[0]?.key ?? '',
+  formation:
+    defaultFormation && formations.some((f) => f.key === defaultFormation)
+      ? defaultFormation
+      : (formations[0]?.key ?? ''),
   target_grades: [],
   subject_id: null,
   unit_price: null,
@@ -71,9 +83,12 @@ export function SpecialCourseFormModal({
   formations,
   subjects,
   editing,
+  defaultFormation,
   onSubmit,
 }: SpecialCourseFormModalProps) {
-  const [values, setValues] = useState<SpecialCourseFormValues>(emptyValues(formations));
+  const [values, setValues] = useState<SpecialCourseFormValues>(
+    emptyValues(formations, defaultFormation)
+  );
   const [timeSlots, setTimeSlots] = useState<ScheduleTimeSlot[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -97,10 +112,10 @@ export function SpecialCourseFormModal({
         is_active: editing.is_active,
       });
     } else {
-      setValues(emptyValues(formations));
+      setValues(emptyValues(formations, defaultFormation));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, editing]);
+  }, [open, editing, defaultFormation]);
 
   /**
    * コマの選択肢は「その講座の指導形態の有効なコマ時間」。
