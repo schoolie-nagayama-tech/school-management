@@ -74,6 +74,8 @@ interface ScheduleToolbarProps {
   onAddLesson: () => void;
   /** コンテキストヘルプ（?）。管理ボタンの右に描画する。 */
   helpSlot?: React.ReactNode;
+  /** 座席表の凡例。週移動ボタンの右に置く（盤面の上を1行占有させないため）。 */
+  legendSlot?: React.ReactNode;
 }
 
 export function ScheduleToolbar({
@@ -99,6 +101,7 @@ export function ScheduleToolbar({
   onFormationChange,
   onAddLesson,
   helpSlot,
+  legendSlot,
 }: ScheduleToolbarProps) {
   const [weekPickerOpen, setWeekPickerOpen] = useState(false);
   const weekPickerInputRef = useRef<HTMLInputElement>(null);
@@ -219,6 +222,8 @@ export function ScheduleToolbar({
                 今週
               </Button>
             )}
+            {/* 凡例。以前は盤面の直前に全幅で置いていたが、常時1行を使うので週移動の隣へ寄せた */}
+            {legendSlot}
           </div>
         </div>
         {schoolId && (
@@ -400,6 +405,12 @@ export function ScheduleToolbar({
                     {[
                       // 通塾日程の登録は生徒詳細に一本化した（横断一覧ページは廃止）。
                       // 未反映のズレは ScheduleDriftBanner が生徒名つきで知らせる。
+                      // 通年の特別講座（小集団・プログラミング）もここで作る。座席表の
+                      // 「＋講座の枠」は講座が無いと候補が出ないので、盤面から辿れる位置に置く。
+                      {
+                        href: '/schedule/special-courses',
+                        label: '特別講座管理（小集団・プログラミング）',
+                      },
                       { href: '/schedule/enrollments', label: '申込管理（講習・テスト対策）' },
                       // 振替は盤面の D&D で確定するが、確定後の保護者通知の状況を見る場所が
                       // 盤面から辿れなかったのでここに置く（未送信の取りこぼしに気づけるように）。

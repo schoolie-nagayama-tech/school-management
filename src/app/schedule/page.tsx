@@ -3053,6 +3053,7 @@ export default function SchedulePage() {
             activeFormation={activeFormation}
             onFormationChange={handleFormationChange}
             onAddLesson={() => setAddLessonOpen(true)}
+            legendSlot={<ScheduleLegend />}
             helpSlot={contextHelp}
           />
         </div>
@@ -3127,11 +3128,25 @@ export default function SchedulePage() {
                 onStartPendingPlacement={handleStartPendingLessonPlacement}
               />
             )}
+
+            {/* 振替期限の対応待ち。振替保留と同じ行に同じ形のチップで並べる
+                （0件のときは内部で null を返すので、この行が空でも崩れない）。 */}
+            {schoolId && !isFormationBoard && (
+              <PendingTransfersBoard
+                schoolIds={[schoolId]}
+                onSelectEntry={(entry) => {
+                  // 振替元のあった日付に飛ぶ。週単位で扱うため、その週の月曜へジャンプ。
+                  const d = new Date(entry.entry_date + 'T12:00:00');
+                  const dow = d.getDay();
+                  const diff = (dow + 6) % 7;
+                  const monday = new Date(d);
+                  monday.setDate(d.getDate() - diff);
+                  setWeekStart(monday);
+                }}
+              />
+            )}
           </div>
         )}
-
-        {/* 座席表の凡例（バッジ・色の意味）。折りたたみ式。 */}
-        <ScheduleLegend />
 
         {/* Phase P2: 汎用配置モード（振替保留の配置 / 授業追加の配置）中の上部ミニバナー。個別タブ専用。 */}
         {!isFormationBoard && placingAdhoc && (
@@ -3289,23 +3304,6 @@ export default function SchedulePage() {
             })()}
             weekStartStr={weekStartStr}
             onDayClick={(date) => setWeekStart(getWeekStart(new Date(date + 'T12:00:00')))}
-          />
-        )}
-
-        {/* 振替期限切れ間近の督促ボード。
-            0件のときは内部で何も描画しないので、空ボードでスペースを食わない */}
-        {schoolId && !isFormationBoard && (
-          <PendingTransfersBoard
-            schoolIds={[schoolId]}
-            onSelectEntry={(entry) => {
-              // 振替元のあった日付に飛ぶ。週単位で扱う必要があるため、その週の月曜にジャンプ。
-              const d = new Date(entry.entry_date + 'T12:00:00');
-              const dow = d.getDay();
-              const diff = (dow + 6) % 7; // 月曜=0 になるオフセット
-              const monday = new Date(d);
-              monday.setDate(d.getDate() - diff);
-              setWeekStart(monday);
-            }}
           />
         )}
 
