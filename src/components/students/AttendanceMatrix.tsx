@@ -1,14 +1,37 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo, DragEvent } from 'react';
-import { getRegularPatterns, getTimeSlots, deleteRegularPattern } from '@/lib/api/schedule';
+import {
+  getRegularPatterns,
+  getTimeSlots,
+  getActiveTimeSlots,
+  deleteRegularPattern,
+} from '@/lib/api/schedule';
 import { getSubjects } from '@/lib/api/subjects';
+import { getActiveYearRoundCourses, type SpecialCourse } from '@/lib/api/specialCourses';
+import { getFormations } from '@/lib/api/schedule-formations';
+import { fetchWithAuth } from '@/lib/api/auth';
 import type { ScheduleRegularPattern, ScheduleTimeSlot } from '@/types/schedule';
-import { DAY_OF_WEEK_LABELS, SCHEDULE_PERIOD_LABELS, INDIVIDUAL_FORMATION } from '@/types/schedule';
+import {
+  DAY_OF_WEEK_LABELS,
+  SCHEDULE_PERIOD_LABELS,
+  SCHEDULE_ENTRY_FORMATION_LABELS,
+  INDIVIDUAL_FORMATION,
+} from '@/types/schedule';
 import type { Subject } from '@/types/database';
 import { supabase } from '@/lib/supabase';
-import { X } from 'lucide-react';
+import { X, Plus } from 'lucide-react';
 import { Loading } from '@/components/ui';
+import { useConfirm } from '@/hooks/useConfirm';
+import { RegularScheduleFormModal } from './RegularScheduleFormModal';
+
+/** 講座の授業の一覧に出す講師（登録モーダルにも渡す） */
+interface TeacherOption {
+  id: string;
+  display_name: string | null;
+  email: string | null;
+  teachable_subject_ids?: string[] | null;
+}
 
 interface AttendanceMatrixProps {
   studentId: string;
@@ -60,6 +83,14 @@ export function AttendanceMatrix({
   const [isLoading, setIsLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
   const [dragOverCell, setDragOverCell] = useState<string | null>(null);
+  // 講座の授業（個別以外の形態のパターン）セクション用。マトリクスは個別専用のまま残し、
+  // 講座はこの下のリストで扱う（入り口を1か所にまとめる）。
+  const [courses, setCourses] = useState<SpecialCourse[]>([]);
+  const [formationLabels, setFormationLabels] = useState<Record<string, string>>({});
+  const [allTimeSlots, setAllTimeSlots] = useState<ScheduleTimeSlot[]>([]);
+  const [teachers, setTeachers] = useState<TeacherOption[]>([]);
+  const [courseFormOpen, setCourseFormOpen] = useState(false);
+  const { confirm, ConfirmDialog } = useConfirm();
   // 同一コマへの重ね登録をブロックした際の一時的なお知らせ（数秒で自動消去）
   const [notice, setNotice] = useState<string | null>(null);
 
@@ -74,11 +105,22 @@ export function AttendanceMatrix({
     // このマトリクスは1コマ=1生徒の単一授業（ドラッグ&ドロップで科目を割当）という個別指導の
     // モデル前提のセル設計（複数生徒が入る集団授業は表現できない）のため、コマ時間は
     // 個別指導枠のみに絞る。無指定のままだと集団の同slot_numberコマが混ざり「1限」行が重複する。
-    const [patsRes, slotsRes, subsRes] = await Promise.allSettled([
-      getRegularPatterns(schoolId, { studentId }),
-      getTimeSlots(schoolId, INDIVIDUAL_FORMATION),
-      getSubjects(gradeCategory),
-    ]);
+    const [patsRes, slotsRes, subsRes, coursesRes, formationsRes, allSlotsRes, teachersRes] =
+      await Promise.allSettled([
+        getRegularPatterns(schoolId, { studentId }),
+        getTimeSlots(schoolId, INDIVIDUAL_FORMATION),
+        getSubjects(gradeCategory),
+        // 講座の授業セクション用。失敗してもマトリクス本体は表示できるようにここでも allSettled。
+        getActiveYearRoundCourses(schoolId),
+        getFormations(),
+        getActiveTimeSlots(schoolId),
+        // 講師一覧は編集できるときだけ引く（講師ロールは /api/admin/users を叩けない）
+        canEdit
+          ? fetchWithAuth('/api/admin/users?role=teacher')
+              .then((r) => r.json())
+              .then((d) => (d.users ?? []) as TeacherOption[])
+          : Promise.resolve([] as TeacherOption[]),
+      ]);
     if (patsRes.status === 'fulfilled') {
       setPatterns(patsRes.value);
     } else {
@@ -94,8 +136,16 @@ export function AttendanceMatrix({
     } else {
       console.error('Error fetching subjects:', subsRes.reason);
     }
+    setCourses(coursesRes.status === 'fulfilled' ? coursesRes.value : []);
+    setFormationLabels(
+      formationsRes.status === 'fulfilled'
+        ? Object.fromEntries(formationsRes.value.map((f) => [f.key, f.label]))
+        : {}
+    );
+    setAllTimeSlots(allSlotsRes.status === 'fulfilled' ? allSlotsRes.value : []);
+    setTeachers(teachersRes.status === 'fulfilled' ? teachersRes.value : []);
     setIsLoading(false);
-  }, [schoolId, studentId, studentGrade]);
+  }, [schoolId, studentId, studentGrade, canEdit]);
 
   useEffect(() => {
     fetchData();
@@ -135,6 +185,75 @@ export function AttendanceMatrix({
     }
     return slots.size;
   }, [patterns]);
+
+  /**
+   * 講座の授業（個別以外の形態の通常期パターン）。
+   * マトリクスは1コマ=1生徒の個別モデルなので表現できず、下のリストで扱う。
+   * 終了日を過ぎた履歴行は現在の通塾内容ではないので出さない。
+   */
+  const coursePatterns = useMemo(() => {
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    return patterns
+      .filter(
+        (p) =>
+          p.period_type === 'regular' &&
+          p.formation !== INDIVIDUAL_FORMATION &&
+          (!p.effective_until || p.effective_until >= todayStr)
+      )
+      .sort((a, b) => a.day_of_week - b.day_of_week);
+  }, [patterns]);
+
+  /** 講座の週コマ数（個別と同じく曜日×コマのユニーク数で数える） */
+  const courseWeeklyCount = useMemo(
+    () => new Set(coursePatterns.map((p) => `${p.day_of_week}-${p.time_slot_id}`)).size,
+    [coursePatterns]
+  );
+
+  /** 講座id → 講座名。引けない場合は形態ラベルで代用する（黙って空欄にしない）。 */
+  const courseLabelOf = useCallback(
+    (pattern: ScheduleRegularPattern): string => {
+      const course = pattern.special_course_id
+        ? courses.find((c) => c.id === pattern.special_course_id)
+        : null;
+      if (course) return course.name;
+      const formation = pattern.formation ?? '';
+      return formationLabels[formation] ?? SCHEDULE_ENTRY_FORMATION_LABELS[formation] ?? '講座';
+    },
+    [courses, formationLabels]
+  );
+
+  /** 講師の表示。姓だけ出して密度を優先し、未設定は「担当未決定」。 */
+  const teacherLabelOf = (pattern: ScheduleRegularPattern): string => {
+    const name = pattern.teacher?.display_name || pattern.teacher?.email || '';
+    if (!name) return '担当未決定';
+    // 「山田 太郎」「山田　太郎」どちらの区切りでも姓だけを出す
+    return name.split(/[ 　]+/)[0];
+  };
+
+  /** 講座の授業を1件外す（is_active=false。マトリクスのセル削除と同じ deleteRegularPattern） */
+  const handleDeleteCoursePattern = useCallback(
+    async (pattern: ScheduleRegularPattern) => {
+      const ok = await confirm({
+        title: '削除確認',
+        description: 'この講座の授業を通塾日程から外しますか？',
+        confirmLabel: '削除',
+        variant: 'danger',
+      });
+      if (!ok) return;
+      setSaving(pattern.id);
+      try {
+        await deleteRegularPattern(pattern.id);
+        await fetchData();
+        onPatternChange?.();
+      } catch (err) {
+        console.error('Error deleting course pattern:', err);
+      } finally {
+        setSaving(null);
+      }
+    },
+    [confirm, fetchData, onPatternChange]
+  );
 
   // ドラッグ開始
   const handleDragStart = useCallback((e: DragEvent, subjectId: string) => {
@@ -396,12 +515,97 @@ export function AttendanceMatrix({
         <span className="text-gray-500">
           通常期: <span className="font-bold text-[#1e3a5f]">週{weeklyCount}回</span>
         </span>
+        {/* 講座は個別の週回数の数え方を変えず、別枠で添える */}
+        {courseWeeklyCount > 0 && (
+          <span className="text-gray-400">（ほかに講座 {courseWeeklyCount} コマ）</span>
+        )}
         {patterns.filter((p) => p.period_type !== 'regular').length > 0 && (
           <span className="text-gray-400">
             (講習期パターン: {patterns.filter((p) => p.period_type !== 'regular').length}件)
           </span>
         )}
       </div>
+
+      {/* 講座の授業（小集団・プログラミング等）。マトリクスは個別専用なのでここで扱う。
+          講座も講座のパターンも無い教室では何も出さない（ノイズを増やさない）。 */}
+      {(coursePatterns.length > 0 || (canEdit && courses.length > 0)) && (
+        <div className="border-t border-gray-100 pt-2 space-y-1.5">
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-[10px] text-gray-400">講座の授業（小集団・プログラミングなど）</p>
+            {canEdit && courses.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setCourseFormOpen(true)}
+                className="inline-flex items-center gap-1 text-[11px] text-[#1e3a5f] hover:underline transition-[color] duration-150 ease-out"
+              >
+                <Plus className="w-3 h-3" />
+                講座の授業を追加
+              </button>
+            )}
+          </div>
+          {coursePatterns.length === 0 ? (
+            <p className="text-[11px] text-gray-400">
+              講座の授業はありません。「講座の授業を追加」から登録できます。
+            </p>
+          ) : (
+            <ul className="space-y-1">
+              {coursePatterns.map((p) => (
+                <li
+                  key={p.id}
+                  className={`text-[11px] text-gray-600 flex flex-wrap items-center gap-2 ${
+                    saving === p.id ? 'opacity-50' : ''
+                  }`}
+                >
+                  <span className="inline-flex px-1.5 py-0.5 text-[9px] rounded bg-indigo-100 text-indigo-600 border border-indigo-200">
+                    {courseLabelOf(p)}
+                  </span>
+                  <span>毎週{DAY_OF_WEEK_LABELS[p.day_of_week] ?? '—'}曜</span>
+                  <span>
+                    {p.time_slot
+                      ? `${p.time_slot.slot_number}限 ${p.time_slot.start_time?.slice(0, 5)}-${p.time_slot.end_time?.slice(0, 5)}`
+                      : '—'}
+                  </span>
+                  <span className="text-gray-400">{teacherLabelOf(p)}</span>
+                  {canEdit && (
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteCoursePattern(p)}
+                      className="ml-auto text-gray-400 hover:text-red-500 transition-[color] duration-150 ease-out"
+                      aria-label="削除"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+
+      {/* 講座の授業の登録モーダル（個別指導はマトリクスのD&Dが担当するので講座専用で開く） */}
+      {canEdit && (
+        <RegularScheduleFormModal
+          open={courseFormOpen}
+          onClose={() => setCourseFormOpen(false)}
+          studentId={studentId}
+          schoolId={schoolId}
+          studentGrade={studentGrade}
+          pattern={null}
+          timeSlots={allTimeSlots}
+          teachers={teachers}
+          subjects={subjects}
+          courses={courses}
+          formationLabels={formationLabels}
+          courseOnly
+          onSuccess={() => {
+            fetchData();
+            onPatternChange?.();
+          }}
+        />
+      )}
+
+      {ConfirmDialog}
 
       {/* 講習期パターンがある場合にリスト表示 */}
       {patterns.filter((p) => p.period_type !== 'regular').length > 0 && (

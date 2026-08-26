@@ -92,6 +92,12 @@ export interface RegularScheduleFormModalProps {
   courses?: SpecialCourse[];
   /** 形態キー → 表示名（schedule_formations.label）。講座名に添える形態ラベル用。 */
   formationLabels?: Record<string, string>;
+  /**
+   * 講座専用モード。「授業」セレクトから個別指導を外す。
+   * 個別指導の登録は生徒詳細のマトリクス（科目のドラッグ＆ドロップ）が担当するため、
+   * 入り口を二重に作らない。
+   */
+  courseOnly?: boolean;
   onSuccess: () => void;
 }
 
@@ -107,6 +113,7 @@ export function RegularScheduleFormModal({
   subjects,
   courses = EMPTY_COURSES,
   formationLabels = EMPTY_FORMATION_LABELS,
+  courseOnly = false,
   onSuccess,
 }: RegularScheduleFormModalProps) {
   const { profile } = useAuth();
@@ -185,7 +192,8 @@ export function RegularScheduleFormModal({
       setEffectiveFrom(getNextMonthFirstDay());
       setEffectiveUntil(pattern.effective_until ?? '');
     } else {
-      setCourseId('');
+      // 講座専用モードでは個別指導を選ばせないので、先頭の講座を初期選択にする
+      setCourseId(courseOnly ? (courseOptions[0]?.id ?? '') : '');
       setDayOfWeek(1);
       setTimeSlotId('');
       setSubjectIds(subjectsForGrade[0] ? [subjectsForGrade[0].id] : []);
@@ -195,7 +203,7 @@ export function RegularScheduleFormModal({
       setEffectiveFrom(getNextMonthFirstDay());
       setEffectiveUntil('');
     }
-  }, [open, pattern, subjectsForGrade]);
+  }, [open, pattern, subjectsForGrade, courseOnly, courseOptions]);
 
   // 授業（個別 / 講座）を切り替えたら、その形態のコマ・講座の曜日・科目に合わせ直す。
   // 形態ごとにコマ時間マスタが独立しているため、コマidの持ち越しは必ず外す。
@@ -355,7 +363,11 @@ export function RegularScheduleFormModal({
                 onChange={(e) => setCourseId(e.target.value)}
                 className="w-full px-3 py-2 border border-[var(--stroke)] rounded-md text-sm bg-white"
               >
-                <option value="">個別指導</option>
+                {courseOnly ? (
+                  courseOptions.length === 0 && <option value="">選択できる講座がありません</option>
+                ) : (
+                  <option value="">個別指導</option>
+                )}
                 {courseOptions.map((c) => (
                   <option key={c.id} value={c.id}>
                     {courseOptionLabel(c)}
