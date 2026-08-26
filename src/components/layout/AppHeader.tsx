@@ -253,7 +253,7 @@ export function AppHeader({
             <div className="flex items-center gap-4">
               {/* NESTロゴ（スマホのナビは下部のボトムタブ＋メニューシートに集約）。
                   PWA(standalone)の教室長以上はダッシュボード /home をホームにする。 */}
-              <Link href={homeHref} className="shrink-0">
+              <Link prefetch={false} href={homeHref} className="shrink-0">
                 <span className="text-white font-black text-2xl tracking-[0.4em] pr-[0.4em] select-none">
                   NEST
                 </span>
@@ -264,6 +264,7 @@ export function AppHeader({
                 {navEntries.map((entry) =>
                   entry.kind === 'link' ? (
                     <Link
+                      prefetch={false}
                       key={entry.key}
                       href={entry.href}
                       className={navLinkClass(isLinkActive(pathname, entry))}
@@ -291,6 +292,7 @@ export function AppHeader({
                         <div className="py-1">
                           {entry.items.map((item) => (
                             <Link
+                              prefetch={false}
                               key={item.key}
                               href={item.href}
                               className={`${dropdownItemClass(isLinkActive(pathname, item))} flex items-center justify-between gap-2`}
@@ -442,6 +444,7 @@ export function AppHeader({
                         </button>
                       )}
                       <Link
+                        prefetch={false}
                         href="/settings"
                         className={`block px-3 py-2 text-xs hover:bg-gray-50 transition-colors ${
                           pathname === '/settings'
@@ -459,6 +462,7 @@ export function AppHeader({
                           （試用向けの本ルートは /dashboard に分離済み・navConfig に掲載）。 */}
                       {isSystemAdmin(profile?.role) && (
                         <Link
+                          prefetch={false}
                           href="/home-mock"
                           className="flex items-center gap-2 px-3 py-2 text-xs text-text-heading hover:bg-gray-50 transition-colors"
                           onClick={() => setShowSettingsDropdown(false)}
@@ -494,6 +498,7 @@ export function AppHeader({
                       </div>
                       {/* ヘルプ */}
                       <Link
+                        prefetch={false}
                         href="/help"
                         className="block px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 transition-colors"
                         onClick={() => setShowSettingsDropdown(false)}
@@ -518,6 +523,7 @@ export function AppHeader({
               {/* 座席表：システム管理者のみ表示 */}
               {profile && isSystemAdmin(profile.role) && (
                 <Link
+                  prefetch={false}
                   href="/schedule"
                   className={`p-1.5 rounded-lg transition-[color,background-color,transform] duration-150 ease-out active:scale-[0.97] ${
                     pathname === '/schedule' || pathname?.startsWith('/schedule')
@@ -535,6 +541,7 @@ export function AppHeader({
             slide-in-bar: globals.css で定義済み（@starting-style でフェードイン）*/}
           {bulletinUnreadCount > 0 && (
             <Link
+              prefetch={false}
               href="/students"
               className="slide-in-bar block py-2 px-4 bg-amber-400 text-amber-950 font-bold text-sm text-center hover:bg-amber-500 transition-colors duration-150"
             >
@@ -587,6 +594,7 @@ export function AppHeader({
           {/* PWA(standalone)の教室長以上のみ: ダッシュボードへの導線をメニュー先頭に出す */}
           {showPwaHome && (
             <Link
+              prefetch={false}
               href="/home"
               className={`block rounded-md px-4 py-2.5 text-sm transition-[color,background-color,transform] duration-150 ease-out active:scale-[0.98] ${
                 pathname === '/home'
@@ -601,6 +609,7 @@ export function AppHeader({
           {navEntries.map((entry) =>
             entry.kind === 'link' ? (
               <Link
+                prefetch={false}
                 key={entry.key}
                 href={entry.href}
                 className={`block rounded-md px-4 py-2.5 text-sm transition-[color,background-color,transform] duration-150 ease-out active:scale-[0.98] ${
@@ -643,6 +652,7 @@ export function AppHeader({
                   <div className="space-y-0.5 py-0.5 pl-3">
                     {entry.items.map((item) => (
                       <Link
+                        prefetch={false}
                         key={item.key}
                         href={item.href}
                         className={`flex items-center justify-between gap-2 rounded-md px-4 py-2 text-sm transition-[color,background-color,transform] duration-150 ease-out active:scale-[0.98] ${
@@ -670,6 +680,7 @@ export function AppHeader({
             <ThemeToggle />
           </div>
           <Link
+            prefetch={false}
             href="/help"
             className="block rounded-md px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
           >
