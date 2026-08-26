@@ -54,7 +54,10 @@ function mogiDateIdToDate(dateId: string): string {
 }
 
 /** 1件の moshi 回答から実施予定イベントを組み立てる。解決できなければ null。 */
-function buildMoshiEvent(row: ResponseRow, period: PeriodRow | undefined): PortalExamEventDto | null {
+function buildMoshiEvent(
+  row: ResponseRow,
+  period: PeriodRow | undefined
+): PortalExamEventDto | null {
   const data = row.response_data as Partial<MoshiResponseData> | null | undefined;
   if (!data || typeof data !== 'object') return null;
 
