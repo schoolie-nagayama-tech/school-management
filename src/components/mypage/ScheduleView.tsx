@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight, MoreHorizontal, Repeat } from 'lucide-react'
 import { AbsenceSheet } from './AbsenceSheet';
 import { formatGradeLabel } from '@/lib/utils/gradeLabel';
 import type {
+  PortalExamEventDto,
   PortalScheduleEntryDto,
   PortalTimeSlotDto,
   TransferQuota,
@@ -32,7 +33,7 @@ export interface ScheduleStudent {
 }
 
 /** 種別バッジの表示定義（§実装指示のマッピング）。 */
-type BadgeKind = 'regular' | 'transfer' | 'koushu' | 'test_prep' | 'cancelled' | 'other';
+type BadgeKind = 'regular' | 'transfer' | 'koushu' | 'test_prep' | 'cancelled' | 'other' | 'exam';
 
 /**
  * 予定の status/kind から表示バッジを決める。
@@ -55,6 +56,7 @@ const BADGE_LABEL: Record<BadgeKind, string> = {
   test_prep: 'テスト対策',
   cancelled: '休講',
   other: 'その他',
+  exam: '模試',
 };
 
 const BADGE_CLASS: Record<BadgeKind, string> = {
@@ -64,7 +66,33 @@ const BADGE_CLASS: Record<BadgeKind, string> = {
   test_prep: 'bg-success-subtle text-success',
   cancelled: 'bg-primary-subtle text-primary-dark',
   other: 'bg-surface-hover text-text-muted',
+  // 講習(warning)・振替(ink)と混同しないよう、模試だけ info 系の色相にする。
+  exam: 'bg-info-subtle text-info',
 };
+
+/**
+ * 予定リストに混ぜる1件（授業 or 申込済み模試）。
+ * ★ なぜ判別ユニオンにするか: schedule_entries 由来の授業と form_responses 由来の
+ *   模試は取得元も形も別だが、同じ日付グルーピング・時刻順マージのリストに並べる
+ *   必要がある。型を分けたまま `type` タグで分岐すれば、模試側に無い時限・座席・
+ *   講師の概念を授業側の型に引きずられずに済む。
+ */
+type DayItem =
+  | { kind: 'lesson'; entry: PortalScheduleEntryDto }
+  | { kind: 'exam'; exam: PortalExamEventDto };
+
+/** 模試の timeLabel（'10:00〜13:00' 等、自由入力）から先頭の開始時刻を取り出す。 */
+function examStartTime(timeLabel: string | null): string | null {
+  const m = timeLabel?.match(/^(\d{1,2}):(\d{2})/);
+  // '9:00' のような1桁時はゼロ埋めして 'HH:MM' に正規化（文字列比較でのソート用）。
+  return m ? `${m[1].padStart(2, '0')}:${m[2]}` : null;
+}
+
+/** 同日内の並び替えキー（'HH:MM'）。時刻不明なら末尾に回るよう大きい値にする。 */
+function sortKeyOf(item: DayItem): string {
+  if (item.kind === 'lesson') return item.entry.startTime ?? '99:99';
+  return examStartTime(item.exam.timeLabel) ?? '99:99';
+}
 
 /** 'YYYY-MM-DD'（JSTカレンダー日）を Date を介さず扱うためのユーティリティ群。 */
 
@@ -116,6 +144,8 @@ export function ScheduleView({ students }: { students: ScheduleStudent[] }) {
   const [entries, setEntries] = useState<PortalScheduleEntryDto[]>([]);
   // 教室に実在する時限（振替希望の「時限」選択肢）。予定APIに同梱されてくる。
   const [timeSlots, setTimeSlots] = useState<PortalTimeSlotDto[]>([]);
+  // 申込済み模試の実施予定（schedule_entries とは別ソース。予定APIに同梱されてくる）。
+  const [exams, setExams] = useState<PortalExamEventDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [quota, setQuota] = useState<TransferQuota | null>(null);
   // 「…」から開く欠席・振替シートの対象コマ。
@@ -134,6 +164,7 @@ export function ScheduleView({ students }: { students: ScheduleStudent[] }) {
       const json = await res.json();
       setEntries(res.ok ? (json.entries ?? []) : []);
       setTimeSlots(res.ok ? (json.timeSlots ?? []) : []);
+      setExams(res.ok ? (json.exams ?? []) : []);
     } finally {
       setLoading(false);
     }
@@ -161,15 +192,24 @@ export function ScheduleView({ students }: { students: ScheduleStudent[] }) {
     };
   }, [studentId, today]);
 
-  // 日付ごとにグルーピング（APIが日付・開始時刻順で返す前提）。
+  // 日付ごとにグルーピングし、同日内は授業・模試を時刻順にマージする
+  // （APIはそれぞれ日付・開始時刻順で返すが、混ぜた後の並びはここで決め直す）。
   const grouped = useMemo(() => {
-    const map = new Map<string, PortalScheduleEntryDto[]>();
-    for (const e of entries) {
-      if (!map.has(e.entryDate)) map.set(e.entryDate, []);
-      map.get(e.entryDate)!.push(e);
-    }
-    return Array.from(map.entries()).sort((a, b) => (a[0] < b[0] ? -1 : 1));
-  }, [entries]);
+    const map = new Map<string, DayItem[]>();
+    const push = (date: string, item: DayItem) => {
+      if (!map.has(date)) map.set(date, []);
+      map.get(date)!.push(item);
+    };
+    for (const e of entries) push(e.entryDate, { kind: 'lesson', entry: e });
+    for (const ex of exams) push(ex.entryDate, { kind: 'exam', exam: ex });
+
+    return Array.from(map.entries())
+      .map(([date, items]): [string, DayItem[]] => {
+        items.sort((a, b) => sortKeyOf(a).localeCompare(sortKeyOf(b)));
+        return [date, items];
+      })
+      .sort((a, b) => (a[0] < b[0] ? -1 : 1));
+  }, [entries, exams]);
 
   if (students.length === 0) {
     return (
@@ -232,7 +272,7 @@ export function ScheduleView({ students }: { students: ScheduleStudent[] }) {
         ) : grouped.length === 0 ? (
           <p className="py-8 text-center text-sm text-text-muted">この週の予定はありません。</p>
         ) : (
-          grouped.map(([date, dayEntries]) => (
+          grouped.map(([date, dayItems]) => (
             <div key={date}>
               <div
                 className={`mb-1.5 flex items-center gap-1.5 text-xs font-bold ${
@@ -246,9 +286,17 @@ export function ScheduleView({ students }: { students: ScheduleStudent[] }) {
                   </span>
                 )}
               </div>
-              {dayEntries.map((e) => (
-                <LessonRow key={e.id} entry={e} onAction={() => setSheetEntry(e)} />
-              ))}
+              {dayItems.map((item) =>
+                item.kind === 'lesson' ? (
+                  <LessonRow
+                    key={item.entry.id}
+                    entry={item.entry}
+                    onAction={() => setSheetEntry(item.entry)}
+                  />
+                ) : (
+                  <ExamRow key={item.exam.id} exam={item.exam} />
+                )
+              )}
             </div>
           ))
         )}
@@ -257,7 +305,7 @@ export function ScheduleView({ students }: { students: ScheduleStudent[] }) {
       {/* 凡例＋残り振替回数（控えめな1行） */}
       <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
         <span className="flex gap-1.5">
-          {(['regular', 'transfer', 'koushu', 'test_prep'] as BadgeKind[]).map((k) => (
+          {(['regular', 'transfer', 'koushu', 'test_prep', 'exam'] as BadgeKind[]).map((k) => (
             <span
               key={k}
               className={`rounded-full px-2 py-0.5 text-[9.5px] font-bold ${BADGE_CLASS[k]}`}
@@ -331,6 +379,38 @@ function LessonRow({ entry, onAction }: { entry: PortalScheduleEntryDto; onActio
           <MoreHorizontal className="h-4.5 w-4.5" />
         </button>
       )}
+    </div>
+  );
+}
+
+/**
+ * 申込済み模試1件の行。
+ * ★ 授業行（LessonRow）とあえて見た目を揃えすぎない: 時限・座席・講師が無い
+ *   模試に「…」（欠席・振替）を出すと押しても何も起きない行に見えるため、
+ *   アクションは付けない（教室に直接連絡する運用のため）。
+ */
+function ExamRow({ exam }: { exam: PortalExamEventDto }) {
+  // 左カラム（幅56px）に '10:00〜13:00' は収まらないので開始時刻だけ出し、
+  // 時間帯の全体と会場は下段にまとめる（375px前提）。
+  const startTime = examStartTime(exam.timeLabel);
+  const detail = [exam.timeLabel !== startTime ? exam.timeLabel : null, exam.venueLabel]
+    .filter(Boolean)
+    .join('・');
+
+  return (
+    <div className="mb-1.5 flex items-center gap-2.5 rounded-xl border border-border-subtle bg-surface-raised px-3 py-2.5">
+      <div className="w-14 flex-none border-r border-border-subtle pr-2.5 text-center">
+        <div className="text-[13px] font-bold text-text-heading">{startTime ?? '—'}</div>
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-center gap-1.5 text-[13.5px] font-semibold text-text-heading">
+          <span>{exam.title}</span>
+          <span className={`rounded-full px-2 py-0.5 text-[9.5px] font-bold ${BADGE_CLASS.exam}`}>
+            {BADGE_LABEL.exam}
+          </span>
+        </div>
+        {detail && <div className="text-[11.5px] text-text-muted">{detail}</div>}
+      </div>
     </div>
   );
 }

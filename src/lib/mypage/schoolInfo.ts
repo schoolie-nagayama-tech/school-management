@@ -13,6 +13,25 @@ import type { PortalTimeSlotDto } from '@/types/mypage-schedule';
  */
 
 /**
+ * 生徒の所属校ID（students.school_id）。
+ *
+ * ★ ポータルJWTのクライアントで読む理由: students の portal ポリシーが
+ *   「紐づけ生徒・在籍中」に絞ってくれる。fetchSchoolTimeSlots・模試予定導出
+ *   （examEvents.ts）の両方が同じ解決を必要とするため、ここに集約する。
+ */
+export async function fetchStudentSchoolId(
+  client: SupabaseClient,
+  studentId: string
+): Promise<string | null> {
+  const { data: student } = await client
+    .from('students')
+    .select('school_id')
+    .eq('id', studentId)
+    .maybeSingle();
+  return (student as { school_id?: string } | null)?.school_id ?? null;
+}
+
+/**
  * その生徒の教室（students.school_id）に実在する時限（有効なもの）を表示順で返す。
  *
  * ★ 生徒の所属校で明示的に絞る理由:
@@ -31,13 +50,7 @@ export async function fetchSchoolTimeSlots(
   client: SupabaseClient,
   studentId: string
 ): Promise<PortalTimeSlotDto[]> {
-  const { data: student } = await client
-    .from('students')
-    .select('school_id')
-    .eq('id', studentId)
-    .maybeSingle();
-
-  const schoolId = (student as { school_id?: string } | null)?.school_id;
+  const schoolId = await fetchStudentSchoolId(client, studentId);
   if (!schoolId) return [];
 
   const { data: slots } = await client
