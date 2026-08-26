@@ -131,7 +131,12 @@ import {
   type AutoPlacePick,
 } from '@/lib/schedule/testPrepAutoPlace';
 import type { PendingLesson } from '@/lib/api/pending-lessons';
-import { getFormations, getFormationCapacity } from '@/lib/api/schedule-formations';
+import {
+  getFormations,
+  getFormationCapacity,
+  DEFAULT_FORMATION_MAX_STUDENTS,
+  DEFAULT_FORMATION_MAX_CONCURRENT_GROUPS,
+} from '@/lib/api/schedule-formations';
 import {
   createFormationClassPatterns,
   getFormationPatternCourseMap,
@@ -1560,9 +1565,11 @@ export default function SchedulePage() {
       entriesWithSubjects.filter((e) => e.formation === activeFormation && e.kind === 'regular'),
     [entriesWithSubjects, activeFormation]
   );
-  // 定員（未設定なら 1枠8名・同時1枠）。
-  const formationMaxStudents = formationCapacity?.max_students_per_group ?? 8;
-  const formationMaxConcurrent = formationCapacity?.max_concurrent_groups ?? 1;
+  // 定員（未設定なら 1枠8名・同時1枠）。既定値は生徒詳細の通塾日程フォームと共通の定数を使う。
+  const formationMaxStudents =
+    formationCapacity?.max_students_per_group ?? DEFAULT_FORMATION_MAX_STUDENTS;
+  const formationMaxConcurrent =
+    formationCapacity?.max_concurrent_groups ?? DEFAULT_FORMATION_MAX_CONCURRENT_GROUPS;
 
   // アクティブ形態の通年講座を読み込む（個別タブでは講座の概念が無いので読まない）。
   useEffect(() => {

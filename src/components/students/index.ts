@@ -9,7 +9,6 @@ export { InterviewList } from './InterviewList';
 export { InterviewModal } from './InterviewModal';
 export { InterviewListModal } from './InterviewListModal';
 export { TaskAlert } from './TaskAlert';
-export { StudentRegularScheduleList } from './StudentRegularScheduleList';
 export { RegularScheduleFormModal } from './RegularScheduleFormModal';
 export { AttendanceMatrix } from './AttendanceMatrix';
 export { BulkMoveStudentsModal } from './BulkMoveStudentsModal';
