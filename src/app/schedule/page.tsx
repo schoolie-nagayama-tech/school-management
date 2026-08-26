@@ -545,16 +545,6 @@ export default function SchedulePage() {
   const refreshEntries = useCallback(async () => {
     if (!schoolId) return;
     setEntriesLoading(true);
-    // 講師欠勤マップを並行取得（座席表の講師カード欠勤表示用）
-    void (async () => {
-      try {
-        const { getTeacherAbsences } = await import('@/lib/api/teacher-absences');
-        const { keySet } = await getTeacherAbsences(schoolId, weekStartStr, weekEndStr);
-        setAbsenceKeySet(keySet);
-      } catch {
-        /* noop: 欠勤取得失敗は座席表表示に影響させない */
-      }
-    })();
     try {
       const [initialList, closed] = await Promise.all([
         getScheduleEntries(schoolId, weekStartStr, weekEndStr),
@@ -569,6 +559,11 @@ export default function SchedulePage() {
       }
       setEntries(list);
       setClosedDates(closed.map((c) => c.closed_date));
+      // ここで盤面を先に描画する。以降の同期チェックは1往復かかるので、それを待たせない。
+      // entriesLoading は true のまま残し、同期チェック中は refreshingIndicator（高さ中立の
+      // 「更新中」表示）が出るようにする。盤面はアンマウントしない（消すとページ高さが潰れて
+      // スクロールが先頭へ戻る。PR #66 で解消済みの既知バグを再発させない）。
+      setEntriesLoadedOnce(true);
 
       // 通塾日程と座席表の同期チェック：未生成の枠があれば自動で再生成（手動作業不要）
       if (patterns.length > 0) {
@@ -597,7 +592,20 @@ export default function SchedulePage() {
       toastError('スケジュールの取得に失敗しました');
     } finally {
       setEntriesLoading(false);
+      // 正常系では上で既に true にしている（同じ値の再セットは React 側で無視される）。
+      // ここは取得失敗時に「初回ロード中スピナー」で固まらないようにするための保険。
       setEntriesLoadedOnce(true);
+      // 講師欠勤マップは講師カードの欠勤表示にしか使わず初回描画に不要なので、
+      // 盤面が出てから取りにいく（ハイドレーション直後の同時リクエストを減らす）。
+      void (async () => {
+        try {
+          const { getTeacherAbsences } = await import('@/lib/api/teacher-absences');
+          const { keySet } = await getTeacherAbsences(schoolId, weekStartStr, weekEndStr);
+          setAbsenceKeySet(keySet);
+        } catch {
+          /* noop: 欠勤取得失敗は座席表表示に影響させない */
+        }
+      })();
     }
   }, [schoolId, weekStartStr, weekEndStr, toastError, profile?.id]);
 
@@ -644,12 +652,16 @@ export default function SchedulePage() {
     setBootstrapped(false);
   }, [schoolId]);
 
+  // 全生徒＋関連（student_subjects / patterns）を引く重い呼び出し。
+  // 盤面の生徒名は getScheduleEntries の join で取れており、この students は
+  // モーダルや配置モードでの id 引きにしか使わないので、盤面が出てから取得する。
   useEffect(() => {
+    if (!entriesLoadedOnce) return;
     if (!schoolId) return;
     getStudents(undefined, [schoolId])
       .then(setStudents)
       .catch(() => setStudents([]));
-  }, [schoolId]);
+  }, [schoolId, entriesLoadedOnce]);
 
   // 「現在有効な講師の出勤可能曜日」を期間付きで取得。
   // - 第1優先: teacher_availability_periods (manual > regular_shift)
@@ -697,7 +709,9 @@ export default function SchedulePage() {
 
   // 講習期間リストをロード（schoolId 変更時）
   // course_prep_periods から「設定済み（start/end あり）」を全部表示
+  // モードのツールバー用で盤面の初回描画には不要なため、盤面が出てから取得する。
   useEffect(() => {
+    if (!entriesLoadedOnce) return;
     if (!schoolId) {
       setKoushuList([]);
       return;
@@ -705,10 +719,12 @@ export default function SchedulePage() {
     getKoushuPeriods(schoolId)
       .then(setKoushuList)
       .catch(() => setKoushuList([]));
-  }, [schoolId]);
+  }, [schoolId, entriesLoadedOnce]);
 
   // 追加授業（テスト対策）モードを出すか：増コマフォームが設定済みかで判定（schoolId 変更時）
+  // 同じくモード表示の判定だけなので盤面が出てから取得する。
   useEffect(() => {
+    if (!entriesLoadedOnce) return;
     if (!schoolId) {
       setHasTestPrep(false);
       return;
@@ -716,10 +732,12 @@ export default function SchedulePage() {
     hasZoukomaForm(schoolId)
       .then(setHasTestPrep)
       .catch(() => setHasTestPrep(false));
-  }, [schoolId]);
+  }, [schoolId, entriesLoadedOnce]);
 
   // 授業生徒数設定をロード（schoolId 変更時）。失敗・未設定はデフォルト値で動かす。
+  // 未取得の間も DEFAULT_CLASS_CAPACITY で描画できるため、盤面が出てから取得する。
   useEffect(() => {
+    if (!entriesLoadedOnce) return;
     if (!schoolId) {
       setCapacity(DEFAULT_CLASS_CAPACITY);
       return;
@@ -727,7 +745,7 @@ export default function SchedulePage() {
     getClassCapacity(schoolId)
       .then((c) => setCapacity(c ?? DEFAULT_CLASS_CAPACITY))
       .catch(() => setCapacity(DEFAULT_CLASS_CAPACITY));
-  }, [schoolId]);
+  }, [schoolId, entriesLoadedOnce]);
 
   // 指導形態マスタをロード（is_active のみ）。ユーザー定義形態が0件なら形態タブは出ない。
   useEffect(() => {
@@ -737,7 +755,9 @@ export default function SchedulePage() {
   }, []);
 
   // アクティブ形態の定員をロード（個別タブでは不要）。schoolId / activeFormation 変更時。
+  // 未取得は null（定員表示なし）で動くので、盤面が出てから取得する。
   useEffect(() => {
+    if (!entriesLoadedOnce) return;
     if (!schoolId || activeFormation === INDIVIDUAL_FORMATION) {
       setFormationCapacity(null);
       return;
@@ -745,7 +765,7 @@ export default function SchedulePage() {
     getFormationCapacity(schoolId, activeFormation)
       .then(setFormationCapacity)
       .catch(() => setFormationCapacity(null));
-  }, [schoolId, activeFormation]);
+  }, [schoolId, activeFormation, entriesLoadedOnce]);
 
   // 形態タブへ切替時は個別専用の講習/テスト対策モードを解除（形態ボードに残らないように）。
   const handleFormationChange = useCallback((key: string) => {
@@ -766,7 +786,9 @@ export default function SchedulePage() {
 
   // 週内の座席番号（ブース番号）を全表示日ぶん取得して講師ヘッダーのインライン入力に反映。
   // 失敗しても座席表本体には影響させない（番号無しで動く）。
+  // 盤面の初回描画には不要なので entriesLoadedOnce 後に回し、期間まとめて1クエリで取る。
   useEffect(() => {
+    if (!entriesLoadedOnce) return;
     if (!schoolId || weekDates.length === 0) {
       setWeekBoothMap(new Map());
       return;
@@ -774,11 +796,13 @@ export default function SchedulePage() {
     let cancelled = false;
     (async () => {
       try {
-        const { getBoothNoMapForDate } = await import('@/lib/api/schedule-daily-booth');
-        const pairs = await Promise.all(
-          weekDates.map(async (d) => [d, await getBoothNoMapForDate(schoolId, d)] as const)
+        const { getBoothNoMapForRange } = await import('@/lib/api/schedule-daily-booth');
+        const map = await getBoothNoMapForRange(
+          schoolId,
+          weekDates[0],
+          weekDates[weekDates.length - 1]
         );
-        if (!cancelled) setWeekBoothMap(new Map(pairs));
+        if (!cancelled) setWeekBoothMap(map);
       } catch (e) {
         console.warn('Failed to fetch weekly booth assignments:', e);
       }
@@ -786,7 +810,7 @@ export default function SchedulePage() {
     return () => {
       cancelled = true;
     };
-  }, [schoolId, weekDates]);
+  }, [schoolId, weekDates, entriesLoadedOnce]);
 
   // 講師ヘッダーの座席番号インライン入力を保存。
   // ブース番号は (school×date) 内で一意。その日の割当セットを読み直し、対象講師だけ更新して置換する。
