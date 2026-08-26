@@ -72,6 +72,25 @@ export interface PortalScheduleEntryDto {
 }
 
 /**
+ * 申込済み模試（Vもぎ・全県模試 / オープン模試）の実施予定1件。
+ * `schedule_entries` ではなく `form_responses` から導出する別ソースのため、
+ * `PortalScheduleEntryDto` とは別型にしている（時限・座席・講師の概念が無い）。
+ */
+export interface PortalExamEventDto {
+  /** 合成ID（`${formType}:${responseId}:${日付キー}`）。リストの key に使う。 */
+  id: string;
+  /** 'YYYY-MM-DD' */
+  entryDate: string;
+  /** 例: form_periods.title（無ければ 'Vもぎ・全県模試' / '模試'）。 */
+  title: string;
+  /** '10:00〜13:00' 等。不明なら null。 */
+  timeLabel: string | null;
+  /** Vもぎ・全県模試の会場名。オープン模試（教室実施）は null。 */
+  venueLabel: string | null;
+  formType: 'moshi' | 'mogi';
+}
+
+/**
  * 教室に実在する時限1件（/api/mypage/schedule の戻りに同梱）。
  *
  * ★ なぜ予定APIに相乗りさせるか: 振替希望の「時限」を自由入力から選択に変えるために
