@@ -10,6 +10,8 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { ImpersonationBanner } from '@/components/ImpersonationBanner';
 import { BulletinUnreadProvider } from '@/contexts/BulletinUnreadContext';
 import { UnreadBulletinGate } from '@/components/bulletin/UnreadBulletinGate';
+import { ClassroomDeviceProvider } from '@/contexts/ClassroomDeviceContext';
+import { ClassroomDeviceGate } from '@/components/layout/ClassroomDeviceGate';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import { Toaster } from 'sonner';
 
@@ -84,15 +86,20 @@ export default async function RootLayout({
               <MasterDataProvider>
                 {/* 掲示板の未読状態を一元管理し、ヘッダーバッジと既読ゲートで共有する */}
                 <BulletinUnreadProvider>
-                  <ImpersonationBanner />
-                  {children}
-                  {/* 講師に未読の連絡があれば全画面で表示し既読を促す（未読0で自動的に閉じる） */}
-                  <UnreadBulletinGate />
-                  {/* アプリ全体のトースト通知（ボタン操作のフィードバック用） */}
-                  <Toaster richColors position="top-center" />
-                  {/* ★ PWA一時閉鎖中（2026-08-20）。更新検知バーはSW前提なので外している。
-                      再開時に <ServiceWorkerUpdateBar /> を戻す。 */}
-                  <SpeedInsights />
+                  {/* 教室端末の判定を一元管理し、ゲートとナビの出し分けで共有する */}
+                  <ClassroomDeviceProvider>
+                    <ImpersonationBanner />
+                    {children}
+                    {/* 講師に未読の連絡があれば全画面で表示し既読を促す（未読0で自動的に閉じる） */}
+                    <UnreadBulletinGate />
+                    {/* 教室外の端末の講師が教室限定ページを開いたら全画面でブロックする */}
+                    <ClassroomDeviceGate />
+                    {/* アプリ全体のトースト通知（ボタン操作のフィードバック用） */}
+                    <Toaster richColors position="top-center" />
+                    {/* ★ PWA一時閉鎖中（2026-08-20）。更新検知バーはSW前提なので外している。
+                        再開時に <ServiceWorkerUpdateBar /> を戻す。 */}
+                    <SpeedInsights />
+                  </ClassroomDeviceProvider>
                 </BulletinUnreadProvider>
               </MasterDataProvider>
             </AuthProvider>

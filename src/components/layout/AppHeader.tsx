@@ -189,7 +189,7 @@ export function AppHeader({
   const showAllLinks = !permissions || authLoading;
 
   // ナビ項目（PC/スマホ共通の単一定義）。権限ゲートは navConfig 側で評価済み。
-  // 家モード（講師＋教室端末マーク無し）では教室限定の項目を落とす（正典 §2）。
+  // 教室外モード（講師＋教室端末マーク無し）では教室限定の項目を落とす（正典 §2）。
   const navEntries = useMemo(
     () => buildNavEntries({ permissions, profile, showAll: showAllLinks, schools }),
     [permissions, profile, showAllLinks, schools]

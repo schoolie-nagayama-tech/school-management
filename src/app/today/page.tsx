@@ -34,6 +34,7 @@ import { fetchAllPaged } from '@/lib/utils/supabasePaging';
 import type { ClassReportStatus } from '@/types/class-report';
 import { ChevronLeft, ChevronRight, FileText, CheckCircle, AlertCircle, Clock } from 'lucide-react';
 import { formatGradeLabel } from '@/lib/utils/gradeLabel';
+import { displayStudentNameForTeacher } from '@/lib/utils/displayStudentName';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabase as any;
@@ -272,9 +273,13 @@ export default function TodayPage() {
         ) : (
           <div className="space-y-2">
             {entries.map((entry, idx) => {
-              const studentName = entry.student
-                ? `${entry.student.last_name} ${entry.student.first_name}`
-                : entry.student_id;
+              // 教室外の端末での生徒名表示は社内判断待ちのため必ずヘルパー経由で出す
+              // （docs/classroom-device-plan.md §1-6。マスクに倒す場合はヘルパーだけ変える）
+              const studentName = displayStudentNameForTeacher(
+                entry.student
+                  ? `${entry.student.last_name} ${entry.student.first_name}`
+                  : entry.student_id
+              );
               const grade = entry.student ? formatGradeLabel(entry.student.grade) : '';
               const slot = entry.time_slot;
               return (
