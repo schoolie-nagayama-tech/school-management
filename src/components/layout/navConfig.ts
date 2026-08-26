@@ -157,7 +157,7 @@ export function buildNavEntries(ctx: NavContext): NavEntry[] {
         { key: 'progress', label: '進捗管理', href: '/courses/progress' },
         { key: 'schedule', label: '準備スケジュール', href: '/courses/schedule' },
         { key: 'proposals', label: '講習提案書', href: '/courses/proposals' },
-        { key: 'special-courses', label: '特別講座管理', href: '/schedule/special-courses' },
+        { key: 'special-courses', label: '授業の設定', href: '/schedule/special-courses' },
       ],
     });
   }

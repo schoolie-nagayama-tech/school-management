@@ -29,6 +29,7 @@ import { StudentSearchInput, type StudentWithSubjects } from './StudentSearchInp
 import type { Subject } from '@/types/database';
 import type { ScheduleTimeSlot } from '@/types/schedule';
 import type { SpecialCourse } from '@/lib/api/specialCourses';
+import { resolveClassCapacity } from '@/lib/schedule/classCapacity';
 import { X } from 'lucide-react';
 
 interface TeacherOption {
@@ -46,8 +47,13 @@ interface Props {
   date: string;
   slot: ScheduleTimeSlot | null;
   subjects: Subject[];
-  /** 1枠あたり生徒数上限（表示用） */
+  /** 1枠あたり生徒数上限の「形態の既定値」（講座に定員が無いときの表示・フォールバック用） */
   maxStudents: number;
+  /**
+   * add モードの解決済み定員（親が capacityByPatternId から引いた値）。
+   * create は選んだ講座から modal 内で解決するので不要。
+   */
+  lockedCapacity?: number;
   /** この教室の講師（担当未決定＝空を含めて選択可） */
   teachers: TeacherOption[];
   /** 'create'=新規の講座の枠 / 'add'=既存クラスへ生徒追加 */
@@ -85,6 +91,7 @@ export function FormationKomaFormModal({
   slot,
   subjects,
   maxStudents,
+  lockedCapacity,
   teachers,
   mode,
   lockedTeacherId,
@@ -111,6 +118,17 @@ export function FormationKomaFormModal({
     // courses は開いている最中に差し替わらない前提。依存に入れると入力中にリセットされるため除く。
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, mode, lockedTeacherId]);
+
+  // 表示する定員。create は選んだ講座の定員（未設定なら形態の既定値）、
+  // add は親が枠から引いた解決済み定員をそのまま出す。
+  const selectedCourse = courses.find((c) => c.id === courseId) ?? null;
+  const effectiveMaxStudents =
+    mode === 'add'
+      ? (lockedCapacity ?? maxStudents)
+      : resolveClassCapacity({
+          courseCapacity: selectedCourse?.capacity,
+          formationDefault: maxStudents,
+        });
 
   const toggleSubject = (id: string) =>
     setSubjectIds((prev) => (prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]));
@@ -266,9 +284,12 @@ export function FormationKomaFormModal({
             <label className="block text-sm font-medium text-[var(--headline)] mb-1">
               生徒 <span className="text-red-500">*</span>
               <span className="ml-2 text-xs font-normal text-[var(--paragraph)]">
-                {students.length}名選択中（上限{maxStudents}名）
+                {students.length}名選択中（上限{effectiveMaxStudents}名）
               </span>
             </label>
+            <p className="mb-1 text-xs text-[var(--paragraph)]">
+              上限は講座の定員です（未設定の講座は形態の既定値）。
+            </p>
             <StudentSearchInput
               schoolId={schoolId}
               excludeStudentIds={students.map((s) => s.id)}

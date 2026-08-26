@@ -6,6 +6,8 @@ import {
   checkStudentTimeConflict,
 } from '@/lib/api/schedule';
 import type { ScheduleRegularPattern } from '@/types/schedule';
+import { resolveClassCapacity } from '@/lib/schedule/classCapacity';
+import { fetchAllPaged } from '@/lib/utils/supabasePaging';
 
 // schedule_regular_patterns は Database 型に未定義のため any でクエリ（schedule.ts と同じ流儀）。
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -52,7 +54,11 @@ export interface CreateFormationClassParams {
   studentIds: string[];
   /** 適用開始日。未指定なら今日 */
   effectiveFrom?: string;
-  /** 1枠あたり生徒数上限（school_formation_capacity.max_students_per_group） */
+  /**
+   * 1枠あたり生徒数上限の「形態の既定値」
+   * （school_formation_capacity / school_class_capacity の max_students_per_group）。
+   * 講座に定員（special_courses.capacity）があれば講座を優先する（resolveClassCapacity）。
+   */
   maxStudentsPerGroup: number;
   /** 同時刻の枠数上限（school_formation_capacity.max_concurrent_groups） */
   maxConcurrentGroups: number;
@@ -65,6 +71,60 @@ export interface CreateFormationClassParams {
 }
 
 /**
+ * その形態の週次パターンの「パターンid → 講座id」対応表を取得する。
+ *
+ * 座席表の形態ボードは枠の定員（＝空席行の数・満席表示）を講座ごとに変えたいが、
+ * schedule_entries に special_course_id は無い。entry.regular_pattern_id からこの表を引いて
+ * 講座に辿る。定員表示のためだけなので id 2列に絞った軽いクエリにする。
+ * （履歴行も混ざるが、id をキーに引くだけなので実害は無い）
+ */
+export async function getFormationPatternCourseMap(
+  schoolId: string,
+  formation: string
+): Promise<Map<string, string | null>> {
+  type Row = { id: string; special_course_id: string | null };
+  try {
+    const rows = await fetchAllPaged<Row>((from, to) =>
+      db
+        .from('schedule_regular_patterns')
+        .select('id, special_course_id')
+        .eq('school_id', schoolId)
+        .eq('formation', formation)
+        .eq('is_active', true)
+        .order('id', { ascending: true })
+        .range(from, to)
+    );
+    return new Map(rows.map((r) => [r.id, r.special_course_id ?? null]));
+  } catch (e) {
+    console.error('Error fetching formation pattern course map:', e);
+    return new Map();
+  }
+}
+
+/** 定員解決に必要な講座の最小情報（name はエラーメッセージ用） */
+interface CourseCapacityInfo {
+  name: string;
+  capacity: number | null;
+}
+
+/**
+ * 講座1件の定員と名前を取得する。見つからなければ null（＝形態の既定値で判定）。
+ * 定員チェックのためだけの軽いクエリなので、SpecialCourse 全体は引かない。
+ */
+async function fetchCourseCapacity(courseId: string): Promise<CourseCapacityInfo | null> {
+  const { data, error } = await db
+    .from('special_courses')
+    .select('name, capacity')
+    .eq('id', courseId)
+    .maybeSingle();
+  if (error) {
+    console.error('Error fetching special course capacity:', error);
+    return null;
+  }
+  return (data as CourseCapacityInfo | null) ?? null;
+}
+
+/**
  * 形態ボードの「講座の枠」の週次パターンを一括作成する（Phase C）。
  *
  * クラス概念は持たず「曜日×コマ×講師×形態」の行群を暗黙のクラスとして扱う。
@@ -72,7 +132,9 @@ export interface CreateFormationClassParams {
  * 枠は必ずどれかの特別講座に属する（正典 docs/special-courses-plan.md §2）。
  *
  * バリデーション（DB 書き込み前に全部まとめてチェックし、通ったものだけ挿入）:
- *  1. 定員: 同一 (曜日×コマ×講師) の既存メンバー + 追加数 <= max_students_per_group
+ *  1. 定員: 同一 (曜日×コマ×講師) の既存メンバー + 追加数 <= 枠の定員
+ *     枠の定員 = 講座の定員（special_courses.capacity）優先、無ければ形態の既定値
+ *     （maxStudentsPerGroup）。判定は resolveClassCapacity に一元化する。
  *  2. 同時刻の枠数: 新規に講師枠を増やす場合、同一 (曜日×コマ) の講師枠数 < max_concurrent_groups
  *  3. 講師の別枠時間帯重複: 同一講師が別コマ（時間帯オーバーラップ）に既にいれば不可（同一コマは複数生徒OK）
  *  4. 生徒: 生徒ごとに checkStudentTimeConflict（形態横断・同一時間帯の二重登録禁止）
@@ -130,9 +192,21 @@ export async function createFormationClassPatterns(
       (p) => groupKeyOf(p.teacher_id) === targetGroupKey && p.special_course_id
     )?.special_course_id ?? null;
   const resolvedCourseId = specialCourseId !== undefined ? specialCourseId : inheritedCourseId;
-  if (existingInGroup + studentIds.length > maxStudentsPerGroup) {
+
+  // ── 枠の定員を解決（講座の定員 > 形態の既定値） ──
+  // create は params.specialCourseId、add は枠から引き継いだ講座の capacity を見る。
+  // 枠内で講座が混在することは想定しない（inheritedCourseId は先頭の非NULLを採用）。
+  const courseInfo = resolvedCourseId ? await fetchCourseCapacity(resolvedCourseId) : null;
+  const capacityLimit = resolveClassCapacity({
+    courseCapacity: courseInfo?.capacity,
+    formationDefault: maxStudentsPerGroup,
+  });
+  // 講座の定員が実際に採用されたときだけ、どの講座の定員かをメッセージに出す
+  const isCourseCapacity = !!courseInfo && courseInfo.capacity === capacityLimit;
+  if (existingInGroup + studentIds.length > capacityLimit) {
+    const prefix = isCourseCapacity ? `「${courseInfo!.name}」の` : '';
     throw new Error(
-      `定員を超えます（現在 ${existingInGroup} 名 + 追加 ${studentIds.length} 名 > 上限 ${maxStudentsPerGroup} 名）`
+      `${prefix}定員を超えます（現在 ${existingInGroup} 名 + 追加 ${studentIds.length} 名 > 上限 ${capacityLimit} 名）`
     );
   }
   // 新規に講師枠を増やす場合のみ同時刻の枠数を検査（既存枠への追加はカウント増にならない）

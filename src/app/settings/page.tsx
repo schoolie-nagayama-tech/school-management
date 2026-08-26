@@ -131,17 +131,11 @@ const settingsGroups: SettingsGroup[] = [
         requiresManager: true,
       },
       {
-        href: '/settings/time-slots',
+        // 旧「コマ時間設定」「授業生徒数設定」はここに統合した（座席表の管理メニューからも辿れる）
+        href: '/schedule/special-courses',
         icon: <Clock className="w-5 h-5" />,
-        label: 'コマ時間設定',
-        description: 'コマ番号・開始時刻・終了時刻の管理',
-        requiresManager: true,
-      },
-      {
-        href: '/settings/class-capacity',
-        icon: <Users className="w-5 h-5" />,
-        label: '授業生徒数設定',
-        description: '個別・小集団それぞれの生徒数上限・席数の設定',
+        label: '授業の設定',
+        description: '指導形態・コマ時間・定員・講座をまとめて設定',
         requiresManager: true,
       },
       {

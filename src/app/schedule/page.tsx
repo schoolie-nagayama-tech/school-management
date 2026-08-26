@@ -132,7 +132,11 @@ import {
 } from '@/lib/schedule/testPrepAutoPlace';
 import type { PendingLesson } from '@/lib/api/pending-lessons';
 import { getFormations, getFormationCapacity } from '@/lib/api/schedule-formations';
-import { createFormationClassPatterns } from '@/lib/api/formation-patterns';
+import {
+  createFormationClassPatterns,
+  getFormationPatternCourseMap,
+} from '@/lib/api/formation-patterns';
+import { resolveClassCapacity } from '@/lib/schedule/classCapacity';
 import { getActiveYearRoundCoursesByFormation, type SpecialCourse } from '@/lib/api/specialCourses';
 import { filterCoursesForCell } from '@/lib/utils/specialCourses';
 import type { ScheduleFormation, SchoolFormationCapacity } from '@/types/schedule';
@@ -439,6 +443,10 @@ export default function SchedulePage() {
   } | null>(null);
   // アクティブ形態の通年講座（枠は必ずどれかの講座に属する）。0件ならモーダルが講座作成へ誘導する。
   const [formationCourses, setFormationCourses] = useState<SpecialCourse[]>([]);
+  // 週次パターンid → 講座id。盤面の枠カードから講座の定員を引くための対応表（定員の講座一本化）。
+  const [formationPatternCourseMap, setFormationPatternCourseMap] = useState<
+    Map<string, string | null>
+  >(new Map());
 
   const VISIBLE_DAYS_STORAGE_KEY = 'schedule_visible_days';
   const defaultVisibleDays = [1, 2, 3, 4, 5, 6]; // 月〜土
@@ -1518,7 +1526,7 @@ export default function SchedulePage() {
 
   // ---- 指導形態タブ（Phase D） ----
   // タブ = 個別（固定）＋ is_active な残りの形態すべて。sort_order 順なので
-  // 形態設定画面（/settings/time-slots）のタブ並びと一致する。
+  // 授業の設定画面（/schedule/special-courses）のタブ並びと一致する。
   //
   // ★ 集団(group)を出す理由（2026-08-20 方針変更）:
   //   以前は is_system を除外して「group は講習専用レーンなので出さない」としていたが、
@@ -1575,6 +1583,47 @@ export default function SchedulePage() {
     };
   }, [schoolId, activeFormation, isFormationBoard]);
 
+  // 盤面の枠 → 講座 の対応表（定員表示用）。講座の追加・枠の登録で変わるので
+  // formationCourses と同じタイミングで読み直す。
+  useEffect(() => {
+    if (!schoolId || !isFormationBoard) {
+      setFormationPatternCourseMap(new Map());
+      return;
+    }
+    let cancelled = false;
+    getFormationPatternCourseMap(schoolId, activeFormation)
+      .then((m) => {
+        if (!cancelled) setFormationPatternCourseMap(m);
+      })
+      .catch(() => {
+        if (!cancelled) setFormationPatternCourseMap(new Map());
+      });
+    return () => {
+      cancelled = true;
+    };
+    // entries を依存に入れるのは「枠を登録したら空席行の定員がすぐ追随する」ようにするため
+    // （枠の登録後は refreshEntries が走り entries の参照が変わる）。取得は2列だけなので軽い。
+  }, [schoolId, activeFormation, isFormationBoard, entries]);
+
+  /**
+   * 枠カードに出す定員（週次パターンid → 解決済み定員）。
+   * 講座に定員があれば講座優先、無ければ形態の既定値（resolveClassCapacity）。
+   */
+  const capacityByPatternId = useMemo(() => {
+    const capByCourse = new Map(formationCourses.map((c) => [c.id, c.capacity]));
+    const result = new Map<string, number>();
+    for (const [patternId, courseId] of Array.from(formationPatternCourseMap.entries())) {
+      result.set(
+        patternId,
+        resolveClassCapacity({
+          courseCapacity: courseId ? capByCourse.get(courseId) : null,
+          formationDefault: formationMaxStudents,
+        })
+      );
+    }
+    return result;
+  }, [formationPatternCourseMap, formationCourses, formationMaxStudents]);
+
   /**
    * 枠モーダルに出す講座候補。
    * 'create' はクリックしたセルの曜日×コマで開催する講座だけに絞る（中1理A=月19:10 を
@@ -1587,6 +1636,23 @@ export default function SchedulePage() {
     const dayOfWeek = new Date(formationTarget.date + 'T12:00:00').getDay();
     return filterCoursesForCell(formationCourses, dayOfWeek, formationTarget.slotId);
   }, [formationTarget, formationCourses]);
+
+  /**
+   * add モード（既存クラスへの生徒追加）で出す解決済み定員。
+   * 対象セル（日付×コマ×講師）のエントリから週次パターンを辿り capacityByPatternId を引く。
+   * create モードはモーダル側で選んだ講座から解決するので undefined でよい。
+   */
+  const formationTargetCapacity = useMemo(() => {
+    if (!formationTarget || formationTarget.mode !== 'add') return undefined;
+    const hit = formationEntries.find(
+      (e) =>
+        e.entry_date === formationTarget.date &&
+        e.time_slot_id === formationTarget.slotId &&
+        (e.teacher_id ?? null) === formationTarget.teacherId &&
+        e.regular_pattern_id
+    );
+    return hit?.regular_pattern_id ? capacityByPatternId.get(hit.regular_pattern_id) : undefined;
+  }, [formationTarget, formationEntries, capacityByPatternId]);
 
   // 空セルの「＋講座の枠」→ 新規枠モーダル
   const handleFormationCreate = useCallback((date: string, slotId: string) => {
@@ -3327,8 +3393,8 @@ export default function SchedulePage() {
                 <p className="text-[var(--paragraph)] mb-4">
                   この形態で講座の枠を登録するには、まずコマ時間を設定してください。
                 </p>
-                <Link href="/settings/time-slots">
-                  <Button>コマ時間設定へ</Button>
+                <Link href="/schedule/special-courses">
+                  <Button>授業の設定へ</Button>
                 </Link>
               </CardContent>
             </Card>
@@ -3347,6 +3413,7 @@ export default function SchedulePage() {
                     entries={formationEntries}
                     closedDates={closedDates}
                     maxStudentsPerGroup={formationMaxStudents}
+                    capacityByPatternId={capacityByPatternId}
                     subjectNameById={new Map(masterSubjects.map((s) => [s.id, s.name]))}
                     addLabel="講座の枠"
                     orientation={orientation}
@@ -3373,8 +3440,8 @@ export default function SchedulePage() {
                   <p className="text-[var(--paragraph)] mb-4">
                     座席表を利用するには、まずコマ時間を設定してください。
                   </p>
-                  <Link href="/settings/time-slots">
-                    <Button>コマ時間設定へ</Button>
+                  <Link href="/schedule/special-courses">
+                    <Button>授業の設定へ</Button>
                   </Link>
                 </CardContent>
               </Card>
@@ -3725,6 +3792,7 @@ export default function SchedulePage() {
           slot={formationSlots.find((s) => s.id === formationTarget.slotId) ?? null}
           subjects={masterSubjects}
           maxStudents={formationMaxStudents}
+          lockedCapacity={formationTargetCapacity}
           teachers={teachers
             .filter((t) => t.user_schools?.some((us) => us.school_id === schoolId))
             .map((t) => ({ id: t.id, display_name: t.display_name, email: t.email }))}

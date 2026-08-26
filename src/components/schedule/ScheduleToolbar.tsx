@@ -399,17 +399,17 @@ export function ScheduleToolbar({
                       className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-[var(--paragraph)] hover:bg-[var(--surface)]"
                     >
                       <Settings className="h-4 w-4 opacity-70" />
-                      座席表の設定…
+                      表示の設定…
                     </button>
                     <div className="my-1 border-t border-[var(--stroke)]" />
                     {[
                       // 通塾日程の登録は生徒詳細に一本化した（横断一覧ページは廃止）。
                       // 未反映のズレは ScheduleDriftBanner が生徒名つきで知らせる。
-                      // 通年の特別講座（小集団・プログラミング）もここで作る。座席表の
+                      // 指導形態・コマ時間・定員・講座はすべて「授業の設定」で作る。座席表の
                       // 「＋講座の枠」は講座が無いと候補が出ないので、盤面から辿れる位置に置く。
                       {
                         href: '/schedule/special-courses',
-                        label: '特別講座管理（小集団・プログラミング）',
+                        label: '授業の設定（形態・コマ・定員・講座）',
                       },
                       { href: '/schedule/enrollments', label: '申込管理（講習・テスト対策）' },
                       // 振替は盤面の D&D で確定するが、確定後の保護者通知の状況を見る場所が

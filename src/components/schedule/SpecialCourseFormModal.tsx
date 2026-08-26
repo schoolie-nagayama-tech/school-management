@@ -39,12 +39,24 @@ interface SpecialCourseFormModalProps {
   subjects: Subject[];
   /** 編集対象。null なら新規作成 */
   editing: SpecialCourse | null;
+  /**
+   * 新規作成時に初期選択する指導形態。
+   * 「授業の設定」ページは形態タブの中から講座を追加するので、タブの形態を初期値にする。
+   * 未指定なら formations の先頭。
+   */
+  defaultFormation?: string;
   onSubmit: (values: SpecialCourseFormValues) => Promise<void>;
 }
 
-const emptyValues = (formations: ScheduleFormation[]): SpecialCourseFormValues => ({
+const emptyValues = (
+  formations: ScheduleFormation[],
+  defaultFormation?: string
+): SpecialCourseFormValues => ({
   name: '',
-  formation: formations[0]?.key ?? '',
+  formation:
+    defaultFormation && formations.some((f) => f.key === defaultFormation)
+      ? defaultFormation
+      : (formations[0]?.key ?? ''),
   target_grades: [],
   subject_id: null,
   unit_price: null,
@@ -71,9 +83,12 @@ export function SpecialCourseFormModal({
   formations,
   subjects,
   editing,
+  defaultFormation,
   onSubmit,
 }: SpecialCourseFormModalProps) {
-  const [values, setValues] = useState<SpecialCourseFormValues>(emptyValues(formations));
+  const [values, setValues] = useState<SpecialCourseFormValues>(
+    emptyValues(formations, defaultFormation)
+  );
   const [timeSlots, setTimeSlots] = useState<ScheduleTimeSlot[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -97,10 +112,10 @@ export function SpecialCourseFormModal({
         is_active: editing.is_active,
       });
     } else {
-      setValues(emptyValues(formations));
+      setValues(emptyValues(formations, defaultFormation));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, editing]);
+  }, [open, editing, defaultFormation]);
 
   /**
    * コマの選択肢は「その講座の指導形態の有効なコマ時間」。
@@ -283,7 +298,7 @@ export function SpecialCourseFormModal({
             </div>
             <div>
               <label className="block text-sm font-medium text-[var(--headline)] mb-1">
-                定員（任意）
+                定員（1枠あたり）
               </label>
               <input
                 type="number"
@@ -295,9 +310,14 @@ export function SpecialCourseFormModal({
                     capacity: e.target.value === '' ? null : Number(e.target.value),
                   }))
                 }
-                placeholder="未指定=制限なし"
+                placeholder="未入力=形態の既定値"
                 className="w-full px-3 py-2 border border-[var(--stroke)] rounded-lg bg-white text-sm focus:ring-2 focus:ring-primary focus:border-primary"
               />
+              {/* 個別・小集団・プログラミングの実質的な違いはこの数字だけ、という整理（定員の講座一本化）。 */}
+              <p className="mt-1 text-xs text-[var(--paragraph)]">
+                1枠（講師1人）あたりの生徒数の上限。未入力ならこの形態の既定値を使います。例:
+                HAL50分=3 / HAL80分=5 / 国理社=10
+              </p>
             </div>
           </div>
 

@@ -214,7 +214,7 @@ export function ScheduleDialogs({
       <Dialog open={scheduleSettingsOpen} onOpenChange={onScheduleSettingsChange}>
         <DialogContent className="max-w-sm bg-white border border-gray-200">
           <DialogHeader>
-            <DialogTitle>座席表の設定</DialogTitle>
+            <DialogTitle>表示の設定</DialogTitle>
           </DialogHeader>
           <div className="flex flex-col gap-2 py-2">
             <Button
@@ -235,11 +235,11 @@ export function ScheduleDialogs({
               className="justify-start"
               onClick={() => {
                 onScheduleSettingsChange(false);
-                router.push('/settings/time-slots');
+                router.push('/schedule/special-courses');
               }}
             >
               <Settings className="mr-2 h-4 w-4" />
-              コマ時間設定
+              授業の設定
             </Button>
             <Button
               variant="secondary"
