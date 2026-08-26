@@ -13,8 +13,10 @@ import {
   regenerateCurrentWeekIfNeeded,
 } from '@/lib/api/schedule';
 import { getSubjects } from '@/lib/api/subjects';
+import { getActiveYearRoundCourses, type SpecialCourse } from '@/lib/api/specialCourses';
+import { getFormations } from '@/lib/api/schedule-formations';
 import type { ScheduleRegularPattern, ScheduleTimeSlot } from '@/types/schedule';
-import { DAY_OF_WEEK_LABELS, SCHEDULE_PERIOD_LABELS, INDIVIDUAL_FORMATION } from '@/types/schedule';
+import { DAY_OF_WEEK_LABELS, SCHEDULE_PERIOD_LABELS } from '@/types/schedule';
 import { useToast } from '@/hooks/useToast';
 import { useConfirm } from '@/hooks/useConfirm';
 
@@ -32,18 +34,23 @@ export interface StudentRegularScheduleListProps {
   studentGrade?: number;
   onRefresh?: () => void;
   /** モーダル内で使用する場合: 追加クリック時に親がフォームを表示し、その前に外側モーダルを閉じる */
-  onOpenAddForm?: (context: {
-    timeSlots: ScheduleTimeSlot[];
-    teachers: TeacherOption[];
-    subjects: Awaited<ReturnType<typeof getSubjects>>;
-  }) => void;
+  onOpenAddForm?: (context: RegularScheduleFormContext) => void;
   /** モーダル内で使用する場合: 編集クリック時に親がフォームを表示し、その前に外側モーダルを閉じる */
-  onOpenEditForm?: (context: {
-    pattern: ScheduleRegularPattern;
-    timeSlots: ScheduleTimeSlot[];
-    teachers: TeacherOption[];
-    subjects: Awaited<ReturnType<typeof getSubjects>>;
-  }) => void;
+  onOpenEditForm?: (
+    context: RegularScheduleFormContext & { pattern: ScheduleRegularPattern }
+  ) => void;
+}
+
+/**
+ * 親がフォームを描画する場合に渡す一式。
+ * コマ時間は全形態ぶん渡す（モーダル側が選択中の授業の形態で絞る）。
+ */
+export interface RegularScheduleFormContext {
+  timeSlots: ScheduleTimeSlot[];
+  teachers: TeacherOption[];
+  subjects: Awaited<ReturnType<typeof getSubjects>>;
+  courses: SpecialCourse[];
+  formationLabels: Record<string, string>;
 }
 
 function slotLabel(slot: ScheduleTimeSlot | undefined): string {
@@ -67,6 +74,9 @@ export function StudentRegularScheduleList({
   const [timeSlots, setTimeSlots] = useState<ScheduleTimeSlot[]>([]);
   const [teachers, setTeachers] = useState<TeacherOption[]>([]);
   const [subjects, setSubjects] = useState<Awaited<ReturnType<typeof getSubjects>>>([]);
+  // 通年講座（全形態・is_active）。モーダルを開くたびに取りに行かないよう一覧側で一括ロードする。
+  const [courses, setCourses] = useState<SpecialCourse[]>([]);
+  const [formationLabels, setFormationLabels] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [formOpen, setFormOpen] = useState(false);
   const [editingPattern, setEditingPattern] = useState<ScheduleRegularPattern | null>(null);
@@ -80,39 +90,52 @@ export function StudentRegularScheduleList({
   const weeklyCount = new Set(regularPatterns.map((p) => `${p.day_of_week}-${p.time_slot_id}`))
     .size;
 
-  // コマ時間マスタは教室×形態ごとに独立したセットのため、(formation, slot_number) の複合キーで
-  // 引けるようにしておく。一覧の各行の時刻表示は getRegularPatterns が返す time_slot（FK結合済み・
-  // パターン自身の形態のコマを指す）をそのまま使うため対応不要だが、追加・編集フォームのコマ選択肢は
-  // formation 無指定の timeSlots をそのまま渡すと個別/集団のコマが混在し「1限」が水増しされる。
-  const timeSlotsByFormationAndNumber = useMemo(() => {
-    const map = new Map<string, ScheduleTimeSlot>();
-    timeSlots.forEach((slot) => {
-      map.set(`${slot.formation}:${slot.slot_number}`, slot);
-    });
-    return map;
-  }, [timeSlots]);
-
-  /** 指定形態のコマだけに絞って返す（新規は個別が既定、編集はそのパターンの形態）。 */
-  const timeSlotsForFormation = useCallback(
-    (formation: string) =>
-      Array.from(timeSlotsByFormationAndNumber.values())
-        .filter((s) => s.formation === formation)
-        .sort((a, b) => a.slot_number - b.slot_number),
-    [timeSlotsByFormationAndNumber]
+  // コマ時間マスタは教室×形態ごとに独立したセットのため、(formation, slot_number) が同じでも
+  // 別のコマになる。フォームには全形態ぶんを渡し、モーダル側が選択中の授業（個別 or 講座の形態）で
+  // 絞る。一覧の各行の時刻表示は getRegularPatterns が返す time_slot（FK結合済み・パターン自身の
+  // 形態のコマを指す）をそのまま使うため、ここでの絞り込みは不要。
+  const allTimeSlots = useMemo(
+    () => [...timeSlots].sort((a, b) => a.slot_number - b.slot_number),
+    [timeSlots]
   );
+
+  /** 講座id → 講座名（パターン行の講座バッジ用） */
+  const courseNameById = useMemo(() => new Map(courses.map((c) => [c.id, c.name])), [courses]);
+
+  /** 親にフォームを描かせる場合に渡す一式（追加・編集で共通） */
+  const formContext = useCallback(
+    () => ({ timeSlots: allTimeSlots, teachers, subjects, courses, formationLabels }),
+    [allTimeSlots, teachers, subjects, courses, formationLabels]
+  );
+
+  /** 講座に属するパターンの行に出すバッジ。講座一覧に無い講座idは「講座」とだけ出す。 */
+  const renderCourseBadge = (pattern: ScheduleRegularPattern) => {
+    if (!pattern.special_course_id) return null;
+    return (
+      <span className="ml-2 inline-flex px-1.5 py-0.5 text-[10px] rounded bg-indigo-100 text-indigo-700 border border-indigo-200 align-middle">
+        {courseNameById.get(pattern.special_course_id) ?? '講座'}
+      </span>
+    );
+  };
 
   const fetchData = useCallback(async () => {
     if (!schoolId) return;
     setLoading(true);
     try {
-      const [pats, slots, subj] = await Promise.all([
+      // 講座・形態マスタは取得に失敗しても通塾日程の表示は続けたいので、個別に握りつぶす
+      // （講座が引けないときは「授業」セレクトに個別指導だけが出る）。
+      const [pats, slots, subj, courseList, formationList] = await Promise.all([
         getRegularPatterns(schoolId, { studentId }),
         getActiveTimeSlots(schoolId),
         getSubjects(),
+        getActiveYearRoundCourses(schoolId).catch(() => [] as SpecialCourse[]),
+        getFormations().catch(() => []),
       ]);
       setPatterns(pats);
       setTimeSlots(slots);
       setSubjects(subj);
+      setCourses(courseList);
+      setFormationLabels(Object.fromEntries(formationList.map((f) => [f.key, f.label])));
       const usersRes = await fetchWithAuth('/api/admin/users?role=teacher');
       const usersData = await usersRes.json();
       const users = usersData.users ?? [];
@@ -131,8 +154,8 @@ export function StudentRegularScheduleList({
   const handleAdd = () => {
     setEditingPattern(null);
     if (onOpenAddForm) {
-      // 新規作成は通塾パターンの既定形態（個別）のコマのみを候補にする
-      onOpenAddForm({ timeSlots: timeSlotsForFormation(INDIVIDUAL_FORMATION), teachers, subjects });
+      // 追加ボタンは1つ。個別指導か講座かはモーダル内の「授業」セレクトで選ぶ。
+      onOpenAddForm(formContext());
     } else {
       setFormOpen(true);
     }
@@ -140,13 +163,7 @@ export function StudentRegularScheduleList({
 
   const handleEdit = (pattern: ScheduleRegularPattern) => {
     if (onOpenEditForm) {
-      // 編集はそのパターン自身の形態のコマのみを候補にする
-      onOpenEditForm({
-        pattern,
-        timeSlots: timeSlotsForFormation(pattern.formation ?? INDIVIDUAL_FORMATION),
-        teachers,
-        subjects,
-      });
+      onOpenEditForm({ pattern, ...formContext() });
     } else {
       setEditingPattern(pattern);
       setFormOpen(true);
@@ -216,7 +233,10 @@ export function StudentRegularScheduleList({
                   <td className="px-4 py-2 text-[var(--paragraph)]">
                     {DAY_OF_WEEK_LABELS[p.day_of_week] ?? '—'}
                   </td>
-                  <td className="px-4 py-2 text-[var(--paragraph)]">{slotLabel(p.time_slot)}</td>
+                  <td className="px-4 py-2 text-[var(--paragraph)]">
+                    {slotLabel(p.time_slot)}
+                    {renderCourseBadge(p)}
+                  </td>
                   <td className="px-4 py-2 text-[var(--paragraph)]">
                     {p.teacher?.display_name || p.teacher?.email || '—'}
                   </td>
@@ -322,9 +342,11 @@ export function StudentRegularScheduleList({
           schoolId={schoolId}
           studentGrade={studentGrade}
           pattern={editingPattern}
-          timeSlots={timeSlotsForFormation(editingPattern?.formation ?? INDIVIDUAL_FORMATION)}
+          timeSlots={allTimeSlots}
           teachers={teachers}
           subjects={subjects}
+          courses={courses}
+          formationLabels={formationLabels}
           onSuccess={handleFormSuccess}
         />
       )}
