@@ -992,59 +992,60 @@ export default function CourseProgressPage() {
     );
   }
 
+  // コンテキストヘルプ（?）。上部に独立した1行を取るのをやめ、ヘッダー右の
+  // アクション群（設定など）と同じ行に並べる（座席表の上部整理と同じ方針）。
+  const contextHelp = (
+    <ContextHelp
+      searchQuery="進捗管理"
+      topics={[
+        {
+          title: '進捗を入力する',
+          description: '生徒ごとの講習進捗を記録します。',
+          steps: [
+            '期・年を選択して対象データを表示',
+            'テーブル内のセルをクリックして編集',
+            '進捗ステータスやコマ数を入力',
+          ],
+        },
+        {
+          title: 'テンプレートを適用する',
+          description: '保存済みテンプレートから一括設定します。',
+          steps: [
+            '「テンプレート適用」ボタンをクリック',
+            '適用するテンプレートを選択',
+            '上書き範囲を確認して適用',
+          ],
+        },
+        {
+          title: 'ダッシュボードで全体把握する',
+          description: '教室全体の進捗状況をグラフで確認します。',
+          steps: ['ページ上部のダッシュボードで完了率を確認', '遅れている生徒を素早く特定'],
+        },
+        {
+          title: '作り間違えた進捗表を削除する',
+          description: '期・年を間違えて作った進捗表をまるごと消します（管理者・オーナー）。',
+          steps: [
+            '削除したい期・年を選択して表示',
+            '右上の「設定」を開き、パネル下部の「進捗表を削除」をクリック',
+            '消える件数（項目・入力済みセル・期間設定）を確認して実行（取り消せません）',
+          ],
+        },
+        {
+          title: 'レポートをA3縦1枚で印刷する',
+          description: '表示中の集計をA3縦1枚のレポートとして印刷します。',
+          steps: [
+            '右上の「レポート印刷」をクリック（1教室表示＝単一校 / すべての教室＝横断サマリー）',
+            'プレビューで内容を確認',
+            '「印刷する」でブラウザの印刷ダイアログを開き、用紙をA3・向きを縦にして印刷',
+          ],
+        },
+      ]}
+    />
+  );
+
   return (
     <AdminLayout headerTitle="講習 進捗管理">
       <div>
-        {/* コンテキストヘルプ */}
-        <div className="flex justify-end mb-2">
-          <ContextHelp
-            searchQuery="進捗管理"
-            topics={[
-              {
-                title: '進捗を入力する',
-                description: '生徒ごとの講習進捗を記録します。',
-                steps: [
-                  '期・年を選択して対象データを表示',
-                  'テーブル内のセルをクリックして編集',
-                  '進捗ステータスやコマ数を入力',
-                ],
-              },
-              {
-                title: 'テンプレートを適用する',
-                description: '保存済みテンプレートから一括設定します。',
-                steps: [
-                  '「テンプレート適用」ボタンをクリック',
-                  '適用するテンプレートを選択',
-                  '上書き範囲を確認して適用',
-                ],
-              },
-              {
-                title: 'ダッシュボードで全体把握する',
-                description: '教室全体の進捗状況をグラフで確認します。',
-                steps: ['ページ上部のダッシュボードで完了率を確認', '遅れている生徒を素早く特定'],
-              },
-              {
-                title: '作り間違えた進捗表を削除する',
-                description: '期・年を間違えて作った進捗表をまるごと消します（管理者・オーナー）。',
-                steps: [
-                  '削除したい期・年を選択して表示',
-                  '右上の「設定」を開き、パネル下部の「進捗表を削除」をクリック',
-                  '消える件数（項目・入力済みセル・期間設定）を確認して実行（取り消せません）',
-                ],
-              },
-              {
-                title: 'レポートをA3縦1枚で印刷する',
-                description: '表示中の集計をA3縦1枚のレポートとして印刷します。',
-                steps: [
-                  '右上の「レポート印刷」をクリック（1教室表示＝単一校 / すべての教室＝横断サマリー）',
-                  'プレビューで内容を確認',
-                  '「印刷する」でブラウザの印刷ダイアログを開き、用紙をA3・向きを縦にして印刷',
-                ],
-              },
-            ]}
-          />
-        </div>
-
         {isAllSelected && (
           <SchoolSwitcher
             schools={availableSchools}
@@ -1067,68 +1068,73 @@ export default function CourseProgressPage() {
             onSeasonChange={setSeason}
             onYearChange={setYear}
           />
-          {/* アクションは単一校（特定教室の詳細表）のときだけ。横断サマリーでは非表示。 */}
-          <div className={`flex items-center gap-2 ${showAllSchoolsOverview ? 'hidden' : ''}`}>
-            {isOwnerOrAbove && (
-              <>
+          {/* 右側の帯: アクション群 + ヘルプ（?）。? だけは表示モードによらず常に出す。 */}
+          <div className="flex items-center gap-2">
+            {/* アクションは単一校（特定教室の詳細表）のときだけ。横断サマリーでは非表示。 */}
+            <div className={`flex items-center gap-2 ${showAllSchoolsOverview ? 'hidden' : ''}`}>
+              {isOwnerOrAbove && (
+                <>
+                  <button
+                    onClick={handleOpenTemplateDialog}
+                    className="px-3 py-1.5 text-xs border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600 transition-[background-color,transform] duration-150 ease-out active:scale-[0.97]"
+                  >
+                    テンプレート適用
+                  </button>
+                  <button
+                    onClick={() => {
+                      const seasonLabel =
+                        season === 'spring' ? '春期' : season === 'summer' ? '夏期' : '冬期';
+                      setSaveTemplateName(`${seasonLabel}${year} 進捗管理テンプレート`);
+                      setShowSaveDialog(true);
+                    }}
+                    className="px-3 py-1.5 text-xs border border-green-200 rounded-lg hover:bg-green-50 text-green-600 transition-[background-color,transform] duration-150 ease-out active:scale-[0.97]"
+                  >
+                    テンプレート保存
+                  </button>
+                  <button
+                    onClick={handleSyncCalendar}
+                    disabled={syncing}
+                    className="px-3 py-1.5 text-xs border border-blue-200 rounded-lg hover:bg-blue-50 text-blue-600 disabled:opacity-50 transition-[background-color,transform] duration-150 ease-out active:scale-[0.97]"
+                    title="Googleカレンダーの面談予約を取得して進捗を同期"
+                  >
+                    {syncing ? '同期中...' : '面談同期'}
+                  </button>
+                </>
+              )}
+              {isManagerOrAbove && (
                 <button
-                  onClick={handleOpenTemplateDialog}
-                  className="px-3 py-1.5 text-xs border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600 transition-[background-color,transform] duration-150 ease-out active:scale-[0.97]"
+                  onClick={() => setReportMode('single')}
+                  disabled={isLoading || autoLoading || displayItems.length === 0}
+                  className="inline-flex items-center gap-1 px-3 py-1.5 text-xs border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600 disabled:opacity-50 transition-[background-color,transform] duration-150 ease-out active:scale-[0.97]"
+                  title="表示中の教室の集計をA3縦1枚で印刷（集計の読み込み完了後に押せます）"
                 >
-                  テンプレート適用
+                  <Printer className="w-3.5 h-3.5" />
+                  レポート印刷
                 </button>
-                <button
-                  onClick={() => {
-                    const seasonLabel =
-                      season === 'spring' ? '春期' : season === 'summer' ? '夏期' : '冬期';
-                    setSaveTemplateName(`${seasonLabel}${year} 進捗管理テンプレート`);
-                    setShowSaveDialog(true);
-                  }}
-                  className="px-3 py-1.5 text-xs border border-green-200 rounded-lg hover:bg-green-50 text-green-600 transition-[background-color,transform] duration-150 ease-out active:scale-[0.97]"
-                >
-                  テンプレート保存
-                </button>
-                <button
-                  onClick={handleSyncCalendar}
-                  disabled={syncing}
-                  className="px-3 py-1.5 text-xs border border-blue-200 rounded-lg hover:bg-blue-50 text-blue-600 disabled:opacity-50 transition-[background-color,transform] duration-150 ease-out active:scale-[0.97]"
-                  title="Googleカレンダーの面談予約を取得して進捗を同期"
-                >
-                  {syncing ? '同期中...' : '面談同期'}
-                </button>
-              </>
-            )}
-            {isManagerOrAbove && (
+              )}
               <button
-                onClick={() => setReportMode('single')}
-                disabled={isLoading || autoLoading || displayItems.length === 0}
+                onClick={() => setShowSettings(!showSettings)}
+                className={`px-3 py-1.5 text-xs border rounded-lg transition-[background-color,color,transform] duration-150 ease-out active:scale-[0.97] ${showSettings ? 'border-ink bg-ink text-white' : 'border-gray-200 hover:bg-gray-50 text-gray-600'}`}
+              >
+                設定
+              </button>
+            </div>
+
+            {/* 全教室横断サマリー表示中のレポート印刷（上のアクション群は横断時に隠れるため別置き） */}
+            {showAllSchoolsOverview && isManagerOrAbove && (
+              <button
+                onClick={() => setReportMode('all')}
+                disabled={allSchoolsLoading || allSchoolsKpis.length === 0}
                 className="inline-flex items-center gap-1 px-3 py-1.5 text-xs border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600 disabled:opacity-50 transition-[background-color,transform] duration-150 ease-out active:scale-[0.97]"
-                title="表示中の教室の集計をA3縦1枚で印刷（集計の読み込み完了後に押せます）"
+                title="全教室の横断サマリーをA3縦1枚で印刷"
               >
                 <Printer className="w-3.5 h-3.5" />
                 レポート印刷
               </button>
             )}
-            <button
-              onClick={() => setShowSettings(!showSettings)}
-              className={`px-3 py-1.5 text-xs border rounded-lg transition-[background-color,color,transform] duration-150 ease-out active:scale-[0.97] ${showSettings ? 'border-ink bg-ink text-white' : 'border-gray-200 hover:bg-gray-50 text-gray-600'}`}
-            >
-              設定
-            </button>
-          </div>
 
-          {/* 全教室横断サマリー表示中のレポート印刷（上のアクション群は横断時に隠れるため別置き） */}
-          {showAllSchoolsOverview && isManagerOrAbove && (
-            <button
-              onClick={() => setReportMode('all')}
-              disabled={allSchoolsLoading || allSchoolsKpis.length === 0}
-              className="inline-flex items-center gap-1 px-3 py-1.5 text-xs border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600 disabled:opacity-50 transition-[background-color,transform] duration-150 ease-out active:scale-[0.97]"
-              title="全教室の横断サマリーをA3縦1枚で印刷"
-            >
-              <Printer className="w-3.5 h-3.5" />
-              レポート印刷
-            </button>
-          )}
+            {contextHelp}
+          </div>
         </div>
 
         {/* カレンダー同期結果 */}
