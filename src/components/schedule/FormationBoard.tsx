@@ -44,8 +44,13 @@ export interface FormationBoardProps {
   /** その形態の週次エントリ（kind='regular', formation=キーで絞り込み済み） */
   entries: ScheduleEntry[];
   closedDates: string[];
-  /** 1枠あたり生徒数上限（school_formation_capacity.max_students_per_group） */
+  /** 1枠あたり生徒数上限の「形態の既定値」（school_formation_capacity.max_students_per_group） */
   maxStudentsPerGroup: number;
+  /**
+   * 週次パターンid → 解決済みの枠の定員（講座の定員 > 形態の既定値）。
+   * 省略時や引けなかった枠は maxStudentsPerGroup（従来挙動）。
+   */
+  capacityByPatternId?: Map<string, number>;
   subjectNameById?: Map<string, string>;
   /** 空セルの「＋…」バー文言（例: 講座の枠） */
   addLabel?: string;
@@ -63,6 +68,7 @@ export interface FormationBoardProps {
 function ClassCard({
   entries,
   maxStudents,
+  capacityByPatternId,
   subjectNameById,
   date,
   slotId,
@@ -70,7 +76,9 @@ function ClassCard({
   onStudentClick,
 }: {
   entries: ScheduleEntry[];
+  /** 形態の既定値（講座の定員が引けなかったときのフォールバック） */
   maxStudents: number;
+  capacityByPatternId?: Map<string, number>;
   subjectNameById?: Map<string, string>;
   date: string;
   slotId: string;
@@ -79,6 +87,9 @@ function ClassCard({
 }) {
   if (entries.length === 0) return null;
   const teacherId = entries[0].teacher_id ?? null;
+  // この枠の定員。枠のどのエントリも同じ講座に属する前提なので先頭の週次パターンで引く。
+  const patternId = entries[0].regular_pattern_id ?? null;
+  const capacity = (patternId ? capacityByPatternId?.get(patternId) : undefined) ?? maxStudents;
   const teacher = entries[0].teacher;
   const teacherFullName = teacher?.display_name || teacher?.email || null;
   // 座席表ボードは密度優先のため姓のみ表示（フルネームは title 属性で確認できる）
@@ -94,7 +105,7 @@ function ClassCard({
     : '';
 
   const count = entries.length;
-  const remaining = Math.max(0, maxStudents - count);
+  const remaining = Math.max(0, capacity - count);
   const isFull = remaining === 0;
   const emptyRows = Math.min(remaining, MAX_EMPTY_ROWS);
   const hiddenRemain = remaining - emptyRows;
@@ -106,7 +117,7 @@ function ClassCard({
           {subjectLabel || 'クラス'}
         </span>
         <span className={`${styles.gCap} ${isFull ? '' : styles.openSlots}`}>
-          {count}/{maxStudents}
+          {count}/{capacity}
         </span>
       </div>
       <div
@@ -168,6 +179,7 @@ export function FormationBoard({
   entries,
   closedDates,
   maxStudentsPerGroup,
+  capacityByPatternId,
   subjectNameById,
   addLabel = '講座の枠',
   orientation,
@@ -209,6 +221,7 @@ export function FormationBoard({
             key={tid}
             entries={list}
             maxStudents={maxStudentsPerGroup}
+            capacityByPatternId={capacityByPatternId}
             subjectNameById={subjectNameById}
             date={date}
             slotId={slot.id}
