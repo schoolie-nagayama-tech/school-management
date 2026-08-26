@@ -370,7 +370,9 @@ export function SpecialCourseFormModal({
                 </div>
               </div>
               <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
-                未設定だと座席表の枠から選べません。座席表の形態ボードでは、ここで設定した曜日×コマのセルにだけこの講座が候補として出ます。
+                設定すると、座席表の形態ボードでは その曜日×コマのセルにだけ
+                この講座が候補として出ます。生徒ごとに曜日や時刻が違う講座（HAL
+                など）は未設定のままにしてください。どのコマの枠からでも選べます。
               </p>
               <p className="text-xs text-[var(--paragraph)]">
                 生徒ごとの枠（名簿）は座席表の形態ボードで作ります。講習期だけ日時を変える場合は、保存後に一覧の「講習期の上書き」から登録してください。

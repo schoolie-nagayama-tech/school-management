@@ -153,14 +153,26 @@ describe('filterCoursesForCell', () => {
     expect(filterCoursesForCell(courses, 1, 'slot-2020').map((c) => c.id)).toEqual(['c']);
   });
 
-  it('曜日・コマが未設定の講座は候補に出さない', () => {
+  it('曜日・コマが未設定の講座はどのコマでも候補に出す（時間が決まっていない講座）', () => {
     const withUnset = [
       { id: 'x', day_of_week: null, time_slot_id: null },
       { id: 'y', day_of_week: 1, time_slot_id: null },
       { id: 'z', day_of_week: null, time_slot_id: 'slot-1910' },
       { id: 'a', day_of_week: 1, time_slot_id: 'slot-1910' },
     ];
-    expect(filterCoursesForCell(withUnset, 1, 'slot-1910').map((c) => c.id)).toEqual(['a']);
+    // 片方だけ設定（y・z）も絞り込めないので未設定と同じ扱い。全部候補に出す。
+    expect(filterCoursesForCell(withUnset, 1, 'slot-1910').map((c) => c.id)).toEqual([
+      'x',
+      'y',
+      'z',
+      'a',
+    ]);
+    // 別のコマでも、未設定の3件は出る（一致するのは a ではなくなる）
+    expect(filterCoursesForCell(withUnset, 2, 'slot-2020').map((c) => c.id)).toEqual([
+      'x',
+      'y',
+      'z',
+    ]);
   });
 
   it('日曜(0)も曜日として扱う（未設定と混同しない）', () => {
