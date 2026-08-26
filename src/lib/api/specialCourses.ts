@@ -140,6 +140,27 @@ export async function getActiveYearRoundCoursesByFormation(
   return (data ?? []) as SpecialCourse[];
 }
 
+/**
+ * 教室の有効な通年講座を全形態ぶん取得する。
+ * 生徒詳細の通塾日程フォームは形態タブを持たない（生徒から見れば授業は「個別か講座か」だけ）ので、
+ * 形態で絞らずまとめて引き、対象学年での絞り込みは画面側（filterCoursesForGrade）で行う。
+ */
+export async function getActiveYearRoundCourses(schoolId: string): Promise<SpecialCourse[]> {
+  const { data, error } = await db
+    .from('special_courses')
+    .select(SELECT_COLUMNS)
+    .eq('school_id', schoolId)
+    .eq('scope', 'year_round')
+    .eq('is_active', true)
+    .order('formation', { ascending: true })
+    .order('name', { ascending: true });
+  if (error) {
+    console.error('Error fetching active year-round courses:', error);
+    throw new Error('通年講座の取得に失敗しました');
+  }
+  return (data ?? []) as SpecialCourse[];
+}
+
 /** 特別講座を新規作成。id は DB 側で自動採番。 */
 export async function createSpecialCourse(input: SpecialCourseInput): Promise<SpecialCourse> {
   const { data, error } = await db
