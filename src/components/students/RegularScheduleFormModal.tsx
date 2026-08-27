@@ -23,11 +23,16 @@ import {
 import { createFormationClassPatterns } from '@/lib/api/formation-patterns';
 import { getFormationCapacityDefaults } from '@/lib/api/schedule-formations';
 import {
+  getStudentContractRatioMap,
+  upsertStudentContract,
+} from '@/lib/api/student-subject-contracts';
+import {
   buildFormationClassParams,
   filterCoursesForGrade,
   hasFixedWeeklySlot,
   resolveFormationForSlots,
 } from '@/lib/schedule/patternCourseForm';
+import { resolvePatternSaveMode, todayStr } from '@/lib/schedule/patternVersioning';
 import {
   DAY_OF_WEEK_LABELS,
   SCHEDULE_PERIOD_LABELS,
@@ -98,6 +103,13 @@ export interface RegularScheduleFormModalProps {
    * 入り口を二重に作らない。
    */
   courseOnly?: boolean;
+  /**
+   * 通塾日程v2（公開ゲート canUseLessonEntryV2）。
+   * true のとき「いつから適用」のセグメントを日付入力1つに置き換え、
+   * 個別指導の担当講師（未定可）・指導比率を編集できるようにする。
+   * false のときは従来UI・従来の保存経路のまま（講師・教室長の画面を変えないため）。
+   */
+  lessonEntryV2?: boolean;
   onSuccess: () => void;
 }
 
@@ -114,6 +126,7 @@ export function RegularScheduleFormModal({
   courses = EMPTY_COURSES,
   formationLabels = EMPTY_FORMATION_LABELS,
   courseOnly = false,
+  lessonEntryV2 = false,
   onSuccess,
 }: RegularScheduleFormModalProps) {
   const { profile } = useAuth();
@@ -130,6 +143,12 @@ export function RegularScheduleFormModal({
   const [effectiveFrom, setEffectiveFrom] = useState<string>(getNextMonthFirstDay());
   // 終了日（任意。退塾・期間限定変更用）
   const [effectiveUntil, setEffectiveUntil] = useState<string>('');
+  // v2: 「変更を適用する日」（新規は開始日）。既定=今日。
+  // セグメント（今すぐ/指定日から）は使わず日付入力1つに統一する。
+  const [applyDate, setApplyDate] = useState<string>(todayStr());
+  // v2: 指導比率（個別のみ）。生徒×科目の契約と食い違わせないため契約から初期化する。
+  const [ratio, setRatio] = useState<1 | 2>(2);
+  const [contractRatioMap, setContractRatioMap] = useState<Map<string, 1 | 2>>(new Map());
   const [saving, setSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -191,6 +210,8 @@ export function RegularScheduleFormModal({
       setApplyMode('now');
       setEffectiveFrom(getNextMonthFirstDay());
       setEffectiveUntil(pattern.effective_until ?? '');
+      setApplyDate(todayStr());
+      setRatio(pattern.ratio ?? 2);
     } else {
       // 講座専用モードでは個別指導を選ばせないので、先頭の講座を初期選択にする
       setCourseId(courseOnly ? (courseOptions[0]?.id ?? '') : '');
@@ -202,8 +223,31 @@ export function RegularScheduleFormModal({
       setApplyMode('now');
       setEffectiveFrom(getNextMonthFirstDay());
       setEffectiveUntil('');
+      setApplyDate(todayStr());
+      setRatio(2);
     }
   }, [open, pattern, subjectsForGrade, courseOnly, courseOptions]);
+
+  // v2: 比率の初期値は生徒×科目の契約が正（座席表の空席「＋」と同じ扱い）。開いたときに読む。
+  useEffect(() => {
+    if (!open || !lessonEntryV2 || !studentId) return;
+    let cancelled = false;
+    getStudentContractRatioMap(studentId).then((m) => {
+      if (!cancelled) setContractRatioMap(m);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, lessonEntryV2, studentId]);
+
+  // v2: 新規の個別指導は、選んだ科目の契約比率を既定にする（契約と食い違う登録を作らない）。
+  // 編集時は保存済みの値が正なので触らない。
+  useEffect(() => {
+    if (!open || !lessonEntryV2 || isEdit) return;
+    const singleSubjectId = subjectIds.length === 1 ? subjectIds[0] : null;
+    if (!singleSubjectId) return;
+    setRatio(contractRatioMap.get(singleSubjectId) ?? 2);
+  }, [open, lessonEntryV2, isEdit, subjectIds, contractRatioMap]);
 
   // 授業（個別 / 講座）を切り替えたら、その形態のコマ・講座の曜日・科目に合わせ直す。
   // 形態ごとにコマ時間マスタが独立しているため、コマidの持ち越しは必ず外す。
@@ -252,8 +296,11 @@ export function RegularScheduleFormModal({
     }
   }, [validTeacherId, teacherId]);
 
-  /** 講師は講座では任意（担当未決定で登録できる）。個別は従来どおり必須。 */
-  const canSubmit = !!schoolId && !!timeSlotId && (isCourseMode || !!teacherId);
+  /**
+   * 講師は講座では任意（担当未決定で登録できる）。個別は従来どおり必須。
+   * v2 では個別でも「担当未決定」のまま登録できる（マトリクスのD&Dと同じ扱い）。
+   */
+  const canSubmit = !!schoolId && !!timeSlotId && (isCourseMode || lessonEntryV2 || !!teacherId);
 
   const handleSubmit = async () => {
     if (!canSubmit) return;
@@ -275,8 +322,9 @@ export function RegularScheduleFormModal({
             timeSlotId,
             teacherId,
             subjectIds,
-            applyMode,
-            effectiveFrom,
+            // v2 は日付入力1つ。今日なら API 側が今日を入れるので 'now' と同じ扱いにする。
+            applyMode: lessonEntryV2 ? (applyDate > todayStr() ? 'future' : 'now') : applyMode,
+            effectiveFrom: lessonEntryV2 ? applyDate : effectiveFrom,
             capacityDefaults,
           })
         );
@@ -295,24 +343,70 @@ export function RegularScheduleFormModal({
         seat_label: '',
         period_type: periodType,
         effective_until: effectiveUntil || null,
+        // v2 の個別のみ比率を送る（従来の呼び出しのペイロードは1バイトも変えない）
+        ...(lessonEntryV2 && !isCourseMode ? { ratio } : {}),
       };
+
+      // 契約=正の設計。v2 の個別で単一科目のときは契約比率も揃える
+      // （座席表の空席「＋」と同じ。片方だけ動かして食い違う状態を作らない）。
+      if (lessonEntryV2 && !isCourseMode && subjectIds.length === 1) {
+        try {
+          await upsertStudentContract(schoolId, studentId, subjectIds[0], ratio);
+        } catch (e) {
+          // 契約保存の失敗で通塾日程の登録自体は止めない（比率はパターン側にも載る）
+          console.warn('契約比率の保存に失敗しました:', e);
+        }
+      }
+
       if (isEdit && pattern) {
-        if (applyMode === 'future') {
-          // 「来月から」変更：旧パターンに終了日をセットし、新パターンを effective_from から開始
-          await scheduleRegularPatternChangeFrom(pattern.id, effectiveFrom, form, schoolId);
+        // v2 は「変更日 > 現在の開始日」なら版を切る、それ以外は上書き（純関数で判定）。
+        const saveMode = lessonEntryV2
+          ? resolvePatternSaveMode({
+              patternEffectiveFrom: pattern.effective_from,
+              applyDate,
+              isCourse: isCourseMode,
+            })
+          : applyMode === 'future'
+            ? 'version'
+            : 'overwrite';
+        if (saveMode === 'version') {
+          // 版を切る：旧パターンに終了日（変更日の前日）をセットし、新パターンを変更日から開始
+          await scheduleRegularPatternChangeFrom(
+            pattern.id,
+            lessonEntryV2 ? applyDate : effectiveFrom,
+            {
+              ...form,
+              // 版を切る API は渡した値をそのまま書き込むので、形態・半コマ・比率は
+              // 現在の行から引き継ぐ（渡さないと個別・全コマ・1対2 に落ちて占有が壊れる）
+              formation: pattern.formation,
+              duration_minutes: pattern.duration_minutes,
+              half_position: pattern.half_position,
+              ratio: form.ratio ?? pattern.ratio,
+            },
+            schoolId
+          );
         } else {
-          // 即時変更：既存行をそのまま更新（effective_until のみ変えたい場合もここで処理）
+          // 上書き：既存行をそのまま更新（effective_until のみ変えたい場合もここで処理）
           // 講座のパターンは special_course_id / formation を更新対象に含めないので維持される。
-          await updateRegularPattern(pattern.id, form);
+          await updateRegularPattern(pattern.id, {
+            ...form,
+            // v2 の個別で「まだ始まっていない行の開始日を前倒しする」場合だけ開始日も動かす。
+            // 上書きは 変更日 <= 開始日 のときしか選ばれないので、開始が後ろへずれることはない。
+            ...(lessonEntryV2 && !isCourseMode ? { effective_from: applyDate } : {}),
+          });
         }
         await regenerateCurrentWeekIfNeeded(schoolId, profile?.id);
         onSuccess();
         onClose();
       } else {
-        // 新規追加：effective_from は applyMode によって今日 or 指定日
+        // 新規追加：v2 は日付入力の値、従来は applyMode によって今日 or 指定日
         const createForm: ScheduleRegularPatternFormData = {
           ...form,
-          effective_from: applyMode === 'future' ? effectiveFrom : undefined,
+          effective_from: lessonEntryV2
+            ? applyDate || undefined
+            : applyMode === 'future'
+              ? effectiveFrom
+              : undefined,
         };
         await createRegularPattern(schoolId, createForm);
         await regenerateCurrentWeekIfNeeded(schoolId, profile?.id);
@@ -482,8 +576,11 @@ export function RegularScheduleFormModal({
               onChange={(e) => setTeacherId(e.target.value)}
               className="w-full px-3 py-2 border border-[var(--stroke)] rounded-md text-sm bg-white"
             >
-              {/* 講座は担当未決定のまま登録できる（座席表の「＋講座の枠」と同じ） */}
-              <option value="">{isCourseMode ? '担当未決定' : '選択してください'}</option>
+              {/* 講座は担当未決定のまま登録できる（座席表の「＋講座の枠」と同じ）。
+                  v2 では個別指導も担当未決定のまま登録できる（あとで座席表で決める運用）。 */}
+              <option value="">
+                {isCourseMode || lessonEntryV2 ? '担当未決定' : '選択してください'}
+              </option>
               {teachersForSubject.map((t) => (
                 <option key={t.id} value={t.id}>
                   {t.display_name || t.email || '—'}
@@ -491,6 +588,34 @@ export function RegularScheduleFormModal({
               ))}
             </select>
           </div>
+
+          {/* 指導比率（個別指導のみ）。生徒×科目の契約と同じ値を持たせる。 */}
+          {lessonEntryV2 && !isCourseMode && (
+            <div>
+              <label className="block text-xs font-medium text-[var(--paragraph)] mb-1">
+                指導比率
+              </label>
+              <div className="flex gap-2">
+                {([1, 2] as const).map((r) => (
+                  <button
+                    key={r}
+                    type="button"
+                    onClick={() => setRatio(r)}
+                    className={`flex-1 px-3 py-1.5 rounded text-sm border ${
+                      ratio === r
+                        ? 'bg-[#1e3a5f] text-white border-[#1e3a5f]'
+                        : 'bg-white border-[var(--stroke)] text-[var(--paragraph)] hover:bg-[var(--surface)] transition-colors duration-150'
+                    }`}
+                  >
+                    {r === 1 ? '1対1' : '1対2'}
+                  </button>
+                ))}
+              </div>
+              <p className="text-[11px] text-[var(--paragraph-light)] mt-1">
+                この科目の指導契約（1対1／1対2）にも同じ比率が保存されます。
+              </p>
+            </div>
+          )}
 
           {/* 期間区分は講座の新規登録では選ばせない（講座の枠は通常期として作られる） */}
           {!(isCourseMode && !isEdit) && (
@@ -517,6 +642,24 @@ export function RegularScheduleFormModal({
               <p className="text-[11px] text-[var(--paragraph-light)]">
                 講座の通塾日程の変更は今すぐ反映されます。
               </p>
+            ) : lessonEntryV2 ? (
+              /* v2: 「今すぐ/指定日から」の2択は使わず、日付入力1つ（既定=今日）に統一する */
+              <>
+                <label className="block text-xs font-medium text-[var(--paragraph)]">
+                  {isEdit ? '変更日' : '開始日'}
+                </label>
+                <input
+                  type="date"
+                  value={applyDate}
+                  onChange={(e) => setApplyDate(e.target.value)}
+                  className="w-full px-3 py-2 border border-[var(--stroke)] rounded-md text-sm bg-white"
+                />
+                <p className="text-[11px] text-[var(--paragraph-light)]">
+                  {isEdit
+                    ? 'この日から新しい内容になります。前日までは今の内容のまま履歴に残ります'
+                    : 'この日から授業が始まります。過去の月の請求には影響しません'}
+                </p>
+              </>
             ) : (
               <>
                 <label className="block text-xs font-medium text-[var(--paragraph)]">
