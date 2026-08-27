@@ -528,11 +528,13 @@ export default function AttendanceSheetDetailPage() {
       </div>
 
       {/* 差し戻しダイアログ */}
+      {/* Header / Footer は DialogContent の外に置く（中に入れるとスクロール領域に巻き込まれ、
+          タイトルが上端で切れ、ボタンが画面外に出る）。幅は Dialog の size で決まる。 */}
       <Dialog open={isRejectDialogOpen} onOpenChange={setIsRejectDialogOpen}>
+        <DialogHeader>
+          <DialogTitle>{isManager ? '講師に差し戻し' : '教室長に差し戻し'}</DialogTitle>
+        </DialogHeader>
         <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{isManager ? '講師に差し戻し' : '教室長に差し戻し'}</DialogTitle>
-          </DialogHeader>
           <div className="py-4">
             <div className="space-y-2">
               <Label htmlFor="reason">差し戻し理由（任意）</Label>
@@ -545,15 +547,15 @@ export default function AttendanceSheetDetailPage() {
               />
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="secondary" onClick={() => setIsRejectDialogOpen(false)}>
-              キャンセル
-            </Button>
-            <Button variant="danger" onClick={handleReject}>
-              差し戻す
-            </Button>
-          </DialogFooter>
         </DialogContent>
+        <DialogFooter>
+          <Button variant="secondary" onClick={() => setIsRejectDialogOpen(false)}>
+            キャンセル
+          </Button>
+          <Button variant="danger" onClick={handleReject}>
+            差し戻す
+          </Button>
+        </DialogFooter>
       </Dialog>
 
       {/* 承認取消確認ダイアログ */}

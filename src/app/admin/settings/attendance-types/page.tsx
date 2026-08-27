@@ -335,11 +335,13 @@ export default function AttendanceTypesPage() {
       </div>
 
       {/* 追加・編集ダイアログ */}
+      {/* Header / Footer は DialogContent の外に置く（中に入れるとスクロール領域に巻き込まれ、
+          タイトルが上端で切れ、ボタンが画面外に出る）。幅は Dialog の size で決まる。 */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogHeader>
+          <DialogTitle>{editingItem ? 'コマ種別を編集' : 'コマ種別を追加'}</DialogTitle>
+        </DialogHeader>
         <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{editingItem ? 'コマ種別を編集' : 'コマ種別を追加'}</DialogTitle>
-          </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="name">種別名 *</Label>
@@ -391,13 +393,13 @@ export default function AttendanceTypesPage() {
               />
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="secondary" onClick={() => setIsDialogOpen(false)}>
-              キャンセル
-            </Button>
-            <Button onClick={handleSave}>保存</Button>
-          </DialogFooter>
         </DialogContent>
+        <DialogFooter>
+          <Button variant="secondary" onClick={() => setIsDialogOpen(false)}>
+            キャンセル
+          </Button>
+          <Button onClick={handleSave}>保存</Button>
+        </DialogFooter>
       </Dialog>
 
       {/* 削除確認ダイアログ */}

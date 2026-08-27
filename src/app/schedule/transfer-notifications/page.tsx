@@ -290,11 +290,13 @@ export default function TransferNotificationsPage() {
       </div>
 
       {/* 送信済みマーク ダイアログ */}
+      {/* Header / Footer は DialogContent の外に置く（中に入れるとスクロール領域に巻き込まれ、
+          タイトルが上端で切れ、ボタンが画面外に出る）。幅は Dialog の size で決まる。 */}
       <Dialog open={!!markTarget} onOpenChange={(v) => !v && setMarkTarget(null)}>
+        <DialogHeader>
+          <DialogTitle>送信済みにマーク</DialogTitle>
+        </DialogHeader>
         <DialogContent>
-          <DialogHeader>
-            <DialogTitle>送信済みにマーク</DialogTitle>
-          </DialogHeader>
           <div className="space-y-3">
             <p className="text-sm text-text-muted">
               実際に送信した方法と宛先を記録します（事後ログ）。
@@ -329,15 +331,15 @@ export default function TransferNotificationsPage() {
               将来：Edge Function が pending を自動送信する仕組みに置き換える予定
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setMarkTarget(null)}>
-              キャンセル
-            </Button>
-            <Button onClick={handleMark} disabled={!markSentTo.trim()}>
-              記録
-            </Button>
-          </DialogFooter>
         </DialogContent>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setMarkTarget(null)}>
+            キャンセル
+          </Button>
+          <Button onClick={handleMark} disabled={!markSentTo.trim()}>
+            記録
+          </Button>
+        </DialogFooter>
       </Dialog>
     </AdminLayout>
   );

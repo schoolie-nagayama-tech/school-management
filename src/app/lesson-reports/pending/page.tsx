@@ -229,11 +229,13 @@ export default function PendingReportsPage() {
       </div>
 
       {/* 差し戻しダイアログ */}
+      {/* Header / Footer は DialogContent の外に置く（中に入れるとスクロール領域に巻き込まれ、
+          タイトルが上端で切れ、ボタンが画面外に出る）。幅は Dialog の size で決まる。 */}
       <Dialog open={!!rejectTarget} onOpenChange={(v) => !v && setRejectTarget(null)}>
+        <DialogHeader>
+          <DialogTitle>報告書を差し戻し</DialogTitle>
+        </DialogHeader>
         <DialogContent>
-          <DialogHeader>
-            <DialogTitle>報告書を差し戻し</DialogTitle>
-          </DialogHeader>
           <div className="space-y-2">
             <p className="text-sm">
               {rejectTarget?.student
@@ -249,15 +251,15 @@ export default function PendingReportsPage() {
               rows={4}
             />
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setRejectTarget(null)}>
-              キャンセル
-            </Button>
-            <Button onClick={submitReject} disabled={!!actingId}>
-              差し戻す
-            </Button>
-          </DialogFooter>
         </DialogContent>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setRejectTarget(null)}>
+            キャンセル
+          </Button>
+          <Button onClick={submitReject} disabled={!!actingId}>
+            差し戻す
+          </Button>
+        </DialogFooter>
       </Dialog>
     </AdminLayout>
   );
