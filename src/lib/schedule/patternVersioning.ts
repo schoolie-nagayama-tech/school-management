@@ -38,6 +38,27 @@ export function resolvePatternSaveMode(input: PatternSaveModeInput): PatternSave
   return applyDate > from ? 'version' : 'overwrite';
 }
 
+export interface CellEntryCreationInput {
+  /** クリックしたセルの日付 'YYYY-MM-DD' */
+  cellDate: string;
+  /** フォームで指定した授業の開始日 'YYYY-MM-DD'。未指定なら従来どおり当週に作る */
+  startDate: string | null | undefined;
+}
+
+/**
+ * 座席表の空席「＋」から通常授業を登録するとき、
+ * クリックしたセルの日付に当週ぶんの schedule_entry を同時に作ってよいかを判定する。
+ *
+ * 開始日がセルの日付より後＝まだ始まっていない授業なので、ここでエントリを作ると
+ * 開始日前の授業が座席表に出てしまう。開始日以降の週には週次再生成
+ * （planWeeklyEntries が effective_from を見る）が自動で並べるので、作らなくてよい。
+ * 日付比較は 'YYYY-MM-DD' の辞書順で足りる（ゼロ埋め固定長のため）。
+ */
+export function shouldCreateEntryForCell(input: CellEntryCreationInput): boolean {
+  if (!input.startDate) return true;
+  return input.startDate <= input.cellDate;
+}
+
 /** 履歴行の状態。'ended'=終了 / 'current'=現在 / 'upcoming'=開始前 */
 export type PatternPeriodStatus = 'ended' | 'current' | 'upcoming';
 
