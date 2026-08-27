@@ -377,11 +377,13 @@ export function RegularPatternForm({
   };
 
   return (
-    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
-          <DialogTitle>{editingPattern ? '通塾日程を編集' : '通塾日程を追加'}</DialogTitle>
-        </DialogHeader>
+    /* Header / Footer は DialogContent の外に置く（中に入れるとスクロール領域に
+       巻き込まれ、タイトルが上端で切れ、ボタンが画面外に出る）。幅は Dialog の size で決まる。 */
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()} size="md">
+      <DialogHeader>
+        <DialogTitle>{editingPattern ? '通塾日程を編集' : '通塾日程を追加'}</DialogTitle>
+      </DialogHeader>
+      <DialogContent>
         <div className="space-y-4 max-h-[70vh] overflow-y-auto">
           <div className="space-y-2">
             <Label>生徒</Label>
@@ -573,15 +575,15 @@ export function RegularPatternForm({
             </Select>
           </div>
         </div>
-        <DialogFooter>
-          <Button variant="secondary" onClick={onClose}>
-            キャンセル
-          </Button>
-          <Button onClick={handleSubmit} disabled={saving}>
-            {saving ? '保存中...' : '保存'}
-          </Button>
-        </DialogFooter>
       </DialogContent>
+      <DialogFooter>
+        <Button variant="secondary" onClick={onClose}>
+          キャンセル
+        </Button>
+        <Button onClick={handleSubmit} disabled={saving}>
+          {saving ? '保存中...' : '保存'}
+        </Button>
+      </DialogFooter>
     </Dialog>
   );
 }

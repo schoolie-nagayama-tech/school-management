@@ -189,15 +189,17 @@ export function FormationKomaFormModal({
   const lockedTeacher = teachers.find((t) => t.id === lockedTeacherId);
 
   return (
-    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle>
-            {mode === 'add'
-              ? `${formationLabel} クラスに生徒を追加`
-              : `${formationLabel} 講座の枠を登録`}
-          </DialogTitle>
-        </DialogHeader>
+    /* Header / Footer は DialogContent の外に置く（中に入れるとスクロール領域に
+       巻き込まれ、タイトルが上端で切れ、ボタンが画面外に出る）。幅は Dialog の size で決まる。 */
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()} size="md">
+      <DialogHeader>
+        <DialogTitle>
+          {mode === 'add'
+            ? `${formationLabel} クラスに生徒を追加`
+            : `${formationLabel} 講座の枠を登録`}
+        </DialogTitle>
+      </DialogHeader>
+      <DialogContent>
         <div className="space-y-4 py-2">
           {/* 曜日×コマ（固定表示） */}
           <div className="text-sm text-[var(--paragraph)] bg-[var(--surface)] rounded px-3 py-2">
@@ -356,20 +358,18 @@ export function FormationKomaFormModal({
 
           {error && <p className="text-sm text-red-600 bg-red-50 rounded px-3 py-2">{error}</p>}
         </div>
-        <DialogFooter>
-          <Button variant="secondary" onClick={onClose} disabled={saving}>
-            キャンセル
-          </Button>
-          <Button
-            onClick={handleSubmit}
-            disabled={
-              saving || students.length === 0 || (mode === 'create' && courses.length === 0)
-            }
-          >
-            {saving ? '登録中...' : '登録'}
-          </Button>
-        </DialogFooter>
       </DialogContent>
+      <DialogFooter>
+        <Button variant="secondary" onClick={onClose} disabled={saving}>
+          キャンセル
+        </Button>
+        <Button
+          onClick={handleSubmit}
+          disabled={saving || students.length === 0 || (mode === 'create' && courses.length === 0)}
+        >
+          {saving ? '登録中...' : '登録'}
+        </Button>
+      </DialogFooter>
     </Dialog>
   );
 }

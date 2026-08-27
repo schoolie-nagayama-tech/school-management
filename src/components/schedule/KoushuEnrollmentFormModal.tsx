@@ -239,11 +239,13 @@ export function KoushuEnrollmentFormModal({
   const proposedTotal = Object.values(proposed ?? {}).reduce((s, n) => s + n, 0);
 
   return (
-    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
-          <DialogTitle>{isEditMode ? '講習申込を編集' : '生徒を追加'}</DialogTitle>
-        </DialogHeader>
+    /* Header / Footer は DialogContent の外に置く（中に入れるとスクロール領域に
+       巻き込まれ、タイトルが上端で切れ、ボタンが画面外に出る）。幅は Dialog の size で決まる。 */
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()} size="md">
+      <DialogHeader>
+        <DialogTitle>{isEditMode ? '講習申込を編集' : '生徒を追加'}</DialogTitle>
+      </DialogHeader>
+      <DialogContent>
         <div className="space-y-4 py-2">
           {/* 生徒選択 */}
           {isEditMode ? (
@@ -405,15 +407,15 @@ export function KoushuEnrollmentFormModal({
 
           {error && <p className="text-sm text-red-600 bg-red-50 rounded px-3 py-2">{error}</p>}
         </div>
-        <DialogFooter>
-          <Button variant="secondary" onClick={onClose} disabled={saving}>
-            キャンセル
-          </Button>
-          <Button onClick={handleSubmit} disabled={saving}>
-            {saving ? '保存中...' : '保存'}
-          </Button>
-        </DialogFooter>
       </DialogContent>
+      <DialogFooter>
+        <Button variant="secondary" onClick={onClose} disabled={saving}>
+          キャンセル
+        </Button>
+        <Button onClick={handleSubmit} disabled={saving}>
+          {saving ? '保存中...' : '保存'}
+        </Button>
+      </DialogFooter>
     </Dialog>
   );
 }
