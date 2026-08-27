@@ -240,10 +240,18 @@ export function AttendanceMatrix({
       .sort((a, b) => a.day_of_week - b.day_of_week);
   }, [patterns]);
 
-  /** 講座の週コマ数（個別と同じく曜日×コマのユニーク数で数える） */
+  /**
+   * 講座の週コマ数（個別と同じく曜日×コマのユニーク数で数える）。
+   * v2 では個別の週回数と揃えて「現在有効な行」だけを数える（開始前の予定を今の週回数に混ぜない）。
+   */
   const courseWeeklyCount = useMemo(
-    () => new Set(coursePatterns.map((p) => `${p.day_of_week}-${p.time_slot_id}`)).size,
-    [coursePatterns]
+    () =>
+      new Set(
+        coursePatterns
+          .filter((p) => !v2 || getPatternPeriodStatus(p, today) === 'current')
+          .map((p) => `${p.day_of_week}-${p.time_slot_id}`)
+      ).size,
+    [coursePatterns, v2, today]
   );
 
   /**
