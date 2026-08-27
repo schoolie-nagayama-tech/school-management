@@ -141,12 +141,13 @@ export function BoothAssignmentModal({
   };
 
   return (
-    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>ブース番号設定 ({date})</DialogTitle>
-        </DialogHeader>
-
+    /* Header / Footer は DialogContent の外に置く（中に入れるとスクロール領域に
+       巻き込まれ、タイトルが上端で切れ、ボタンが画面外に出る）。幅は Dialog の size で決まる。 */
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()} size="lg">
+      <DialogHeader>
+        <DialogTitle>ブース番号設定 ({date})</DialogTitle>
+      </DialogHeader>
+      <DialogContent>
         <div className="space-y-3">
           <div className="flex items-center justify-between text-xs text-text-muted">
             <span>
@@ -219,16 +220,15 @@ export function BoothAssignmentModal({
             </div>
           )}
         </div>
-
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose} disabled={isSaving}>
-            キャンセル
-          </Button>
-          <Button onClick={onSave} disabled={isSaving || hasDuplicates}>
-            {isSaving ? '保存中...' : '保存'}
-          </Button>
-        </DialogFooter>
       </DialogContent>
+      <DialogFooter>
+        <Button variant="outline" onClick={onClose} disabled={isSaving}>
+          キャンセル
+        </Button>
+        <Button onClick={onSave} disabled={isSaving || hasDuplicates}>
+          {isSaving ? '保存中...' : '保存'}
+        </Button>
+      </DialogFooter>
     </Dialog>
   );
 }

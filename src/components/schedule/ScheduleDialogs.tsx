@@ -211,11 +211,13 @@ export function ScheduleDialogs({
 
   return (
     <>
-      <Dialog open={scheduleSettingsOpen} onOpenChange={onScheduleSettingsChange}>
-        <DialogContent className="max-w-sm bg-white border border-gray-200">
-          <DialogHeader>
-            <DialogTitle>表示の設定</DialogTitle>
-          </DialogHeader>
+      {/* Header / Footer は DialogContent の外に置く（中に入れるとスクロール領域に
+          巻き込まれ、タイトルが上端で切れ、ボタンが画面外に出る）。幅は Dialog の size で決まる。 */}
+      <Dialog open={scheduleSettingsOpen} onOpenChange={onScheduleSettingsChange} size="sm">
+        <DialogHeader>
+          <DialogTitle>表示の設定</DialogTitle>
+        </DialogHeader>
+        <DialogContent>
           <div className="flex flex-col gap-2 py-2">
             <Button
               variant="secondary"
