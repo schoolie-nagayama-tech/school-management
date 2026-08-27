@@ -20,9 +20,19 @@ import {
   INDIVIDUAL_FORMATION,
 } from '@/types/schedule';
 import type { Subject } from '@/types/database';
-import { X, Plus } from 'lucide-react';
+import { X, Plus, ChevronDown, ChevronRight } from 'lucide-react';
 import { Loading } from '@/components/ui';
 import { useConfirm } from '@/hooks/useConfirm';
+import { useAuth } from '@/contexts/AuthContext';
+import { canUseLessonEntryV2 } from '@/lib/utils/lessonEntryV2';
+import {
+  getPatternPeriodStatus,
+  formatPatternPeriod,
+  formatUpcomingBadge,
+  formatUpcomingCellBadge,
+  todayStr,
+  type PatternPeriodStatus,
+} from '@/lib/schedule/patternVersioning';
 import { RegularScheduleFormModal } from './RegularScheduleFormModal';
 
 /** 講座の授業の一覧に出す講師（登録モーダルにも渡す） */
@@ -90,7 +100,16 @@ export function AttendanceMatrix({
   const [allTimeSlots, setAllTimeSlots] = useState<ScheduleTimeSlot[]>([]);
   const [teachers, setTeachers] = useState<TeacherOption[]>([]);
   const [courseFormOpen, setCourseFormOpen] = useState(false);
+  // v2: 編集対象のパターン（セル／講座の行をクリックして開く）。null なら追加モード。
+  const [editingPattern, setEditingPattern] = useState<ScheduleRegularPattern | null>(null);
+  // v2: 変更履歴・予定セクションの開閉（既定は畳む。開始前の行があれば開く）。
+  const [historyOpen, setHistoryOpen] = useState(false);
   const { confirm, ConfirmDialog } = useConfirm();
+  // 通塾日程v2の公開ゲート。false のロールは従来UIのまま（D&Dの保存経路だけ全員に適用）。
+  const { profile } = useAuth();
+  const v2 = canUseLessonEntryV2(profile?.role);
+  // 履歴の状態判定に使う今日。マウント中は固定でよい（日付跨ぎは再描画のきっかけが別にある）。
+  const today = useMemo(() => todayStr(), []);
   // 同一コマへの重ね登録をブロックした際の一時的なお知らせ（数秒で自動消去）
   const [notice, setNotice] = useState<string | null>(null);
 
@@ -160,31 +179,48 @@ export function AttendanceMatrix({
     return map;
   }, [subjects]);
 
+  /**
+   * マトリクスに出す個別指導のパターン。
+   * v2 では「現在有効な行」だけをセル・週回数の対象にする（終了済み・開始前を混ぜない）。
+   * v2 でないときは従来どおり全行を対象にする（講師・教室長の見え方を変えないため）。
+   */
+  const individualPatterns = useMemo(
+    () =>
+      patterns.filter((p) => p.period_type === 'regular' && p.formation === INDIVIDUAL_FORMATION),
+    [patterns]
+  );
+
   // パターンを曜日×コマのマップにする (period_type='regular' かつ個別指導のみ)
   // このマトリクスのコマ行は個別指導枠に絞っているため、パターン側も個別指導のもの
   // （formation 未設定の旧データも個別として扱う）だけを対象にし、行と整合させる。
   const patternMap = useMemo(() => {
     const map = new Map<string, ScheduleRegularPattern>();
-    for (const p of patterns) {
-      if (p.period_type === 'regular' && p.formation === INDIVIDUAL_FORMATION) {
-        map.set(`${p.day_of_week}-${p.time_slot_id}`, p);
-      }
+    for (const p of individualPatterns) {
+      if (v2 && getPatternPeriodStatus(p, today) !== 'current') continue;
+      map.set(`${p.day_of_week}-${p.time_slot_id}`, p);
     }
     return map;
-  }, [patterns]);
+  }, [individualPatterns, v2, today]);
+
+  /**
+   * v2: まだ始まっていない個別指導のパターン（開始前）。
+   * 同じセルに現在の授業もある場合は現在を優先して出す（薄い予定で今の内容を隠さない）。
+   * その組み合わせは下の「変更履歴・予定」で両方見える。
+   */
+  const upcomingMap = useMemo(() => {
+    const map = new Map<string, ScheduleRegularPattern>();
+    if (!v2) return map;
+    for (const p of individualPatterns) {
+      if (getPatternPeriodStatus(p, today) !== 'upcoming') continue;
+      map.set(`${p.day_of_week}-${p.time_slot_id}`, p);
+    }
+    return map;
+  }, [individualPatterns, v2, today]);
 
   // 通常期の週回数
   // 同じ曜日×コマ（例: 国/理 のように 2 科目を 1 コマで実施）は週 1 回として数えるため、
   // パターン件数ではなく「曜日×コマ」のユニーク数で集計する。
-  const weeklyCount = useMemo(() => {
-    const slots = new Set<string>();
-    for (const p of patterns) {
-      if (p.period_type === 'regular' && p.formation === INDIVIDUAL_FORMATION) {
-        slots.add(`${p.day_of_week}-${p.time_slot_id}`);
-      }
-    }
-    return slots.size;
-  }, [patterns]);
+  const weeklyCount = useMemo(() => patternMap.size, [patternMap]);
 
   /**
    * 講座の授業（個別以外の形態の通常期パターン）。
@@ -210,6 +246,43 @@ export function AttendanceMatrix({
     [coursePatterns]
   );
 
+  /**
+   * v2: 変更履歴・予定に出す行（通常期の全パターン。個別も講座も混ぜる）。
+   * getRegularPatterns は is_active=true を全件返す＝終了済み・開始前も入っているので、
+   * ここで追加の取得はしない。適用開始日の降順（新しい版が上）。
+   */
+  const historyRows = useMemo(() => {
+    if (!v2) return [] as { pattern: ScheduleRegularPattern; status: PatternPeriodStatus }[];
+    return patterns
+      .filter((p) => p.period_type === 'regular')
+      .map((p) => ({ pattern: p, status: getPatternPeriodStatus(p, today) }))
+      .sort((a, b) => {
+        const byFrom = (b.pattern.effective_from ?? '').localeCompare(
+          a.pattern.effective_from ?? ''
+        );
+        // 同じ開始日の行は曜日順にして並びが毎回入れ替わらないようにする
+        return byFrom !== 0 ? byFrom : a.pattern.day_of_week - b.pattern.day_of_week;
+      });
+  }, [patterns, v2, today]);
+
+  /**
+   * セクションを出すか。終了済みも開始前も無いなら、マトリクスと講座一覧の写しにしかならず
+   * ノイズなので出さない。
+   */
+  const hasHistoryOrPlan = useMemo(
+    () => historyRows.some((r) => r.status !== 'current'),
+    [historyRows]
+  );
+  const hasUpcoming = useMemo(
+    () => historyRows.some((r) => r.status === 'upcoming'),
+    [historyRows]
+  );
+
+  // 開始前の行が1件でもあれば開いた状態で初期表示する（見落とすと二重登録の元になる）。
+  useEffect(() => {
+    if (hasUpcoming) setHistoryOpen(true);
+  }, [hasUpcoming]);
+
   /** 講座id → 講座名。引けない場合は形態ラベルで代用する（黙って空欄にしない）。 */
   const courseLabelOf = useCallback(
     (pattern: ScheduleRegularPattern): string => {
@@ -221,6 +294,29 @@ export function AttendanceMatrix({
       return formationLabels[formation] ?? SCHEDULE_ENTRY_FORMATION_LABELS[formation] ?? '講座';
     },
     [courses, formationLabels]
+  );
+
+  /** 履歴に出す授業名。講座は講座名、個別は科目名（引けなければ「個別指導」）。 */
+  const lessonLabelOf = useCallback(
+    (pattern: ScheduleRegularPattern): string => {
+      if (pattern.formation !== INDIVIDUAL_FORMATION || pattern.special_course_id) {
+        return courseLabelOf(pattern);
+      }
+      const names = (pattern.subject_ids ?? [])
+        .map((id) => subjectMap.get(id))
+        .filter((n): n is string => !!n);
+      return names.length > 0 ? names.join('・') : '個別指導';
+    },
+    [courseLabelOf, subjectMap]
+  );
+
+  /** v2: セル／講座の行をクリックして編集モーダルを開く */
+  const openEdit = useCallback(
+    (pattern: ScheduleRegularPattern) => {
+      if (!v2 || !canEdit) return;
+      setEditingPattern(pattern);
+    },
+    [v2, canEdit]
   );
 
   /** 講師の表示。姓だけ出して密度を優先し、未設定は「担当未決定」。 */
@@ -322,16 +418,14 @@ export function AttendanceMatrix({
     [canEdit, patternMap, schoolId, studentId, fetchData, onPatternChange]
   );
 
-  // パターン削除
+  // パターン削除（セル右上の×）。開始前の予定セルも同じ経路で外せるよう対象を直接受け取る。
   const handleRemovePattern = useCallback(
-    async (e: React.MouseEvent, dayOfWeek: number, slotId: string) => {
+    async (e: React.MouseEvent, target: ScheduleRegularPattern) => {
       e.stopPropagation();
-      const key = `${dayOfWeek}-${slotId}`;
-      const existing = patternMap.get(key);
-      if (!existing) return;
+      const key = `${target.day_of_week}-${target.time_slot_id}`;
       setSaving(key);
       try {
-        await deleteRegularPattern(existing.id);
+        await deleteRegularPattern(target.id);
         await fetchData();
         onPatternChange?.();
       } catch (err) {
@@ -340,7 +434,7 @@ export function AttendanceMatrix({
         setSaving(null);
       }
     },
-    [patternMap, fetchData, onPatternChange]
+    [fetchData, onPatternChange]
   );
 
   if (isLoading) {
@@ -452,7 +546,10 @@ export function AttendanceMatrix({
                 </td>
                 {WEEKDAYS.map((day) => {
                   const key = `${day}-${slot.id}`;
-                  const pattern = patternMap.get(key);
+                  const current = patternMap.get(key);
+                  // v2: 現在の授業が無いセルにだけ、開始前（予定）の授業を薄く出す
+                  const upcoming = current ? undefined : upcomingMap.get(key);
+                  const pattern = current ?? upcoming;
                   const isOn = !!pattern;
                   const isSaving = saving === key;
                   const isDragOver = dragOverCell === key && !isOn;
@@ -482,21 +579,31 @@ export function AttendanceMatrix({
                       onDragLeave={handleDragLeave}
                       onDrop={(e) => handleDrop(e, day, slot.id)}
                     >
-                      {isOn && (
+                      {isOn && pattern && (
                         <div
-                          className={`group relative flex flex-col items-center justify-center rounded mx-0.5 px-1 py-0.5 ${is45 ? 'border-2 border-dashed' : 'border'} ${color?.bg ?? 'bg-gray-100'} ${color?.border ?? 'border-gray-300'}`}
+                          onClick={v2 && canEdit ? () => openEdit(pattern) : undefined}
+                          title={v2 && canEdit ? 'クリックして編集' : undefined}
+                          className={`group relative flex flex-col items-center justify-center rounded mx-0.5 px-1 py-0.5 ${is45 ? 'border-2 border-dashed' : 'border'} ${color?.bg ?? 'bg-gray-100'} ${color?.border ?? 'border-gray-300'} ${
+                            // 開始前の予定は薄く出して現在の授業と区別する
+                            upcoming ? 'opacity-60 border-dashed' : ''
+                          } ${v2 && canEdit ? 'cursor-pointer' : ''}`}
                         >
                           <span
                             className={`text-[11px] font-medium leading-tight ${color?.text ?? 'text-gray-600'}`}
                           >
                             {subjectName ?? '●'}
                           </span>
-                          {is45 && (
+                          {upcoming && (
+                            <span className="text-[8px] text-blue-600 leading-none">
+                              {formatUpcomingCellBadge(upcoming.effective_from)}
+                            </span>
+                          )}
+                          {is45 && !upcoming && (
                             <span className="text-[8px] text-gray-400 leading-none">45分</span>
                           )}
                           {canEdit && (
                             <button
-                              onClick={(e) => handleRemovePattern(e, day, slot.id)}
+                              onClick={(e) => handleRemovePattern(e, pattern)}
                               className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-gray-400 hover:bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-150"
                             >
                               <X className="w-2.5 h-2.5" />
@@ -527,6 +634,18 @@ export function AttendanceMatrix({
             (講習期パターン: {patterns.filter((p) => p.period_type !== 'regular').length}件)
           </span>
         )}
+        {/* v2: 個別指導も講座もここから追加する。講座が1件も無い教室でも入り口を出したいので、
+            講座セクションではなくサマリの行に置く。 */}
+        {v2 && canEdit && (
+          <button
+            type="button"
+            onClick={() => setCourseFormOpen(true)}
+            className="ml-auto inline-flex items-center gap-1 text-[11px] text-[#1e3a5f] hover:underline transition-[color] duration-150 ease-out"
+          >
+            <Plus className="w-3 h-3" />
+            授業を追加
+          </button>
+        )}
       </div>
 
       {/* 講座の授業（小集団・プログラミング等）。マトリクスは個別専用なのでここで扱う。
@@ -535,7 +654,8 @@ export function AttendanceMatrix({
         <div className="border-t border-gray-100 pt-2 space-y-1.5">
           <div className="flex items-center justify-between gap-2">
             <p className="text-[10px] text-gray-400">講座の授業（小集団・プログラミングなど）</p>
-            {canEdit && courses.length > 0 && (
+            {/* v2 では追加の入り口をサマリの「授業を追加」に1本化するのでここには出さない */}
+            {!v2 && canEdit && courses.length > 0 && (
               <button
                 type="button"
                 onClick={() => setCourseFormOpen(true)}
@@ -548,16 +668,19 @@ export function AttendanceMatrix({
           </div>
           {coursePatterns.length === 0 ? (
             <p className="text-[11px] text-gray-400">
-              講座の授業はありません。「講座の授業を追加」から登録できます。
+              講座の授業はありません。「{v2 ? '授業を追加' : '講座の授業を追加'}
+              」から登録できます。
             </p>
           ) : (
             <ul className="space-y-1">
               {coursePatterns.map((p) => (
                 <li
                   key={p.id}
+                  onClick={v2 && canEdit ? () => openEdit(p) : undefined}
+                  title={v2 && canEdit ? 'クリックして編集' : undefined}
                   className={`text-[11px] text-gray-600 flex flex-wrap items-center gap-2 ${
                     saving === p.id ? 'opacity-50' : ''
-                  }`}
+                  } ${v2 && canEdit ? 'cursor-pointer hover:bg-gray-50 rounded px-1 -mx-1' : ''}`}
                 >
                   <span className="inline-flex px-1.5 py-0.5 text-[9px] rounded bg-indigo-100 text-indigo-600 border border-indigo-200">
                     {courseLabelOf(p)}
@@ -572,7 +695,11 @@ export function AttendanceMatrix({
                   {canEdit && (
                     <button
                       type="button"
-                      onClick={() => handleDeleteCoursePattern(p)}
+                      onClick={(e) => {
+                        // v2 では行クリックが編集なので、×は編集を開かない
+                        e.stopPropagation();
+                        handleDeleteCoursePattern(p);
+                      }}
                       className="ml-auto text-gray-400 hover:text-red-500 transition-[color] duration-150 ease-out"
                       aria-label="削除"
                     >
@@ -586,21 +713,86 @@ export function AttendanceMatrix({
         </div>
       )}
 
-      {/* 講座の授業の登録モーダル（個別指導はマトリクスのD&Dが担当するので講座専用で開く） */}
+      {/* 変更履歴・予定。終了済みも開始前も無いときは出さない（マトリクスの写しになるだけ）。 */}
+      {v2 && hasHistoryOrPlan && (
+        <div className="border-t border-gray-100 pt-2 space-y-1.5">
+          <button
+            type="button"
+            onClick={() => setHistoryOpen((prev) => !prev)}
+            className="inline-flex items-center gap-1 text-[10px] text-gray-400 hover:text-[#1e3a5f] transition-[color] duration-150 ease-out"
+          >
+            {historyOpen ? (
+              <ChevronDown className="w-3 h-3" />
+            ) : (
+              <ChevronRight className="w-3 h-3" />
+            )}
+            変更履歴・予定（{historyRows.length}件）
+          </button>
+          {historyOpen && (
+            <ul className="space-y-1">
+              {historyRows.map(({ pattern: p, status }) => (
+                <li
+                  key={p.id}
+                  className="text-[11px] text-gray-600 flex flex-wrap items-center gap-2"
+                >
+                  <span
+                    className={`inline-flex px-1.5 py-0.5 text-[9px] rounded border ${
+                      status === 'ended'
+                        ? 'bg-gray-100 text-gray-500 border-gray-200'
+                        : status === 'current'
+                          ? 'bg-emerald-100 text-emerald-700 border-emerald-300'
+                          : 'bg-blue-100 text-blue-700 border-blue-300'
+                    }`}
+                  >
+                    {status === 'ended'
+                      ? '終了'
+                      : status === 'current'
+                        ? '現在'
+                        : formatUpcomingBadge(p.effective_from)}
+                  </span>
+                  <span>毎週{DAY_OF_WEEK_LABELS[p.day_of_week] ?? '—'}曜</span>
+                  <span>
+                    {p.time_slot
+                      ? `${p.time_slot.slot_number}限 ${p.time_slot.start_time?.slice(0, 5)}-${p.time_slot.end_time?.slice(0, 5)}`
+                      : '—'}
+                  </span>
+                  <span className="font-medium text-[#2a2a2a]">{lessonLabelOf(p)}</span>
+                  <span className="text-gray-400">{teacherLabelOf(p)}</span>
+                  {/* 比率は個別指導だけの概念（講座は定員で管理する） */}
+                  {p.formation === INDIVIDUAL_FORMATION && !p.special_course_id && (
+                    <span className="text-gray-400">{p.ratio === 1 ? '1対1' : '1対2'}</span>
+                  )}
+                  <span className="ml-auto text-gray-400 tabular-nums">
+                    {formatPatternPeriod(p)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+
+      {/* 登録・編集モーダル。
+          v2 でないときは従来どおり講座専用の追加モーダル（個別指導はマトリクスのD&Dが担当）。
+          v2 では個別指導も追加でき、セル／講座の行のクリックで編集モードで開く。 */}
       {canEdit && (
         <RegularScheduleFormModal
-          open={courseFormOpen}
-          onClose={() => setCourseFormOpen(false)}
+          open={courseFormOpen || !!editingPattern}
+          onClose={() => {
+            setCourseFormOpen(false);
+            setEditingPattern(null);
+          }}
           studentId={studentId}
           schoolId={schoolId}
           studentGrade={studentGrade}
-          pattern={null}
+          pattern={editingPattern}
           timeSlots={allTimeSlots}
           teachers={teachers}
           subjects={subjects}
           courses={courses}
           formationLabels={formationLabels}
-          courseOnly
+          courseOnly={!v2}
+          lessonEntryV2={v2}
           onSuccess={() => {
             fetchData();
             onPatternChange?.();
