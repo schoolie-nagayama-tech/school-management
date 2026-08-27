@@ -1293,6 +1293,17 @@ export default function SchedulePage() {
     setBoothAssignDate(dateStr);
   }, []);
 
+  // ★ 以下2つは盤面(WeeklyScheduleGrid)に渡すので、インラインのアロー関数にしないこと。
+  //    盤面は React.memo でラップしてあり、props が毎回別物になると memo が効かず、
+  //    盤面に無関係なデータが届くたびに再描画されてカクつく。
+  /** D&D 制約違反の通知（盤面 → トースト） */
+  const handleConstraintViolation = useCallback(
+    (reason: string) => toastError(reason),
+    [toastError]
+  );
+  /** 振替モードの解除 */
+  const handleTransferCancel = useCallback(() => setTransferMode(null), []);
+
   // 印刷日が決まったら、その日のブース割当をフェッチして印刷ビューに渡す。
   // 番号設定モーダルで保存→閉じた直後に印刷した場合も、最新値を取得して反映できる。
   useEffect(() => {
@@ -3453,7 +3464,7 @@ export default function SchedulePage() {
                     closedDates={closedDates}
                     maxStudentsPerGroup={formationMaxStudents}
                     capacityByPatternId={capacityByPatternId}
-                    subjectNameById={new Map(masterSubjects.map((s) => [s.id, s.name]))}
+                    subjectNameById={subjectById}
                     addLabel="講座の枠"
                     orientation={orientation}
                     stickyOffset={stickyOffset}
@@ -3598,14 +3609,14 @@ export default function SchedulePage() {
                       onTeacherCardMove={handleTeacherCardMove}
                       onStudentEntryDrop={handleStudentEntryDrop}
                       onTeacherDropOnUnassigned={handleTeacherDropOnUnassigned}
-                      onConstraintViolation={(reason) => toastError(reason)}
-                      subjectNameById={new Map(masterSubjects.map((s) => [s.id, s.name]))}
+                      onConstraintViolation={handleConstraintViolation}
+                      subjectNameById={subjectById}
                       absenceKeySet={absenceKeySet}
                       onToggleAbsence={handleToggleAbsence}
                       onTransferTargetClick={handleTransferTargetClick}
                       onPrintDay={handlePrintDay}
                       onBoothAssign={handleBoothAssign}
-                      onTransferCancel={() => setTransferMode(null)}
+                      onTransferCancel={handleTransferCancel}
                       getKoushuInfo={selectedKoushu ? getKoushuInfo : undefined}
                       koushuPlacing={gridPlacing}
                       getKoushuPlaceability={gridGetPlaceability}
@@ -3629,7 +3640,7 @@ export default function SchedulePage() {
                           maxStudentsPerGroup={capacity.max_students_per_group}
                           maxConcurrentGroups={capacity.max_concurrent_groups}
                           closedDates={closedDates}
-                          subjectNameById={new Map(masterSubjects.map((s) => [s.id, s.name]))}
+                          subjectNameById={subjectById}
                           onCreate={handleCreateGroupKoma}
                           onStudentClick={handleEntryClick}
                         />

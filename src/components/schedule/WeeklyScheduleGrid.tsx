@@ -173,7 +173,18 @@ export interface WeeklyScheduleGridProps {
   stickyOffset?: number;
 }
 
-export function WeeklyScheduleGrid(props: WeeklyScheduleGridProps) {
+/**
+ * 盤面本体。★ React.memo でラップして export している（末尾）。
+ *
+ * 座席表ページは1コンポーネントに多数の状態を持ち、初回描画のあとにも
+ * 講習期間・全生徒・定員などの取得結果が次々届いてページ全体が再レンダリングされる。
+ * 盤面は「講師×コマ×日」のセルを大量に描くのでこの再描画が重く、
+ * 盤面に関係ないデータが届くたびカクついていた。
+ * props が変わらない限り盤面は描き直さない。
+ * ★ そのため呼び出し側は props を安定させること（インラインで new Map やアロー関数を
+ *    渡すと毎回別物になり memo が効かない）。
+ */
+function WeeklyScheduleGridImpl(props: WeeklyScheduleGridProps) {
   const {
     schoolId,
     weekDates,
@@ -454,3 +465,6 @@ export function WeeklyScheduleGrid(props: WeeklyScheduleGridProps) {
     />
   );
 }
+
+export const WeeklyScheduleGrid = React.memo(WeeklyScheduleGridImpl);
+WeeklyScheduleGrid.displayName = 'WeeklyScheduleGrid';
