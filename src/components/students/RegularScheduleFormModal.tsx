@@ -11,6 +11,7 @@
  */
 
 import { useState, useEffect, useMemo } from 'react';
+import { HelpCircle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui';
 import { Button } from '@/components/ui';
@@ -432,26 +433,50 @@ export function RegularScheduleFormModal({
     return `${course.name}（${label}）`;
   };
 
-  return (
-    <Dialog open={open} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-md bg-white">
-        <DialogHeader>
-          <DialogTitle>{isEdit ? '通塾日程を編集' : '通塾日程を追加'}</DialogTitle>
-        </DialogHeader>
+  /** 講座のパターンの編集は即時反映のみ（変更日を選ばせない） */
+  const isCourseEdit = isCourseMode && isEdit;
+  /** 終了日は講座の新規登録では出さない（講座の枠の終了は一覧の削除から行う） */
+  const showEndDate = !(isCourseMode && !isEdit);
+  /** 指導比率は v2 の個別指導だけの概念（講座は定員で管理する） */
+  const showRatio = lessonEntryV2 && !isCourseMode;
+  /** 日付入力が2つ並ぶ場面だけ2列にして縦を詰める（狭い画面では1列に戻す） */
+  const useDateGrid = lessonEntryV2 && !isCourseEdit && showEndDate;
 
-        <div className="space-y-4 py-2">
+  return (
+    /* Header / Footer は DialogContent の外に置く。中に入れるとスクロール領域に巻き込まれ、
+       タイトルが画面上端で切れ、保存ボタンが画面外に出る。幅は Dialog の size で決まる。 */
+    <Dialog open={open} onOpenChange={(open) => !open && onClose()} size="md">
+      <DialogHeader>
+        <DialogTitle>{isEdit ? '通塾日程を編集' : '通塾日程を追加'}</DialogTitle>
+      </DialogHeader>
+
+      <DialogContent>
+        <div className="space-y-4">
           {/* 授業（個別指導 or 講座）。編集では変更不可（個別⇔講座の載せ替えは削除→追加で行う）。 */}
-          <div>
-            <label className="block text-xs font-medium text-[var(--paragraph)] mb-1">授業</label>
-            {isEdit ? (
-              <p className="px-3 py-2 border border-[var(--stroke)] rounded-md text-sm bg-[var(--surface)] text-[var(--paragraph)]">
+          {isEdit ? (
+            /* 編集では選べないので、入力欄風の箱＋注釈2行はやめて1行の読み取り専用表示にする。
+               「変更できない理由」はヘルプアイコンの title に寄せて常時2行を占有させない。 */
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-medium text-[var(--paragraph)] flex-shrink-0">
+                授業
+              </span>
+              <span className="text-sm font-medium text-[var(--headline)]">
                 {selectedCourse
                   ? courseOptionLabel(selectedCourse)
                   : isCourseMode
                     ? '講座'
                     : '個別指導'}
-              </p>
-            ) : (
+              </span>
+              <span
+                className="inline-flex text-[var(--paragraph-light)]"
+                title="授業の種類は変更できません。別の授業へ移す場合は削除してから追加してください。"
+              >
+                <HelpCircle className="w-3.5 h-3.5" aria-hidden="true" />
+              </span>
+            </div>
+          ) : (
+            <div>
+              <label className="block text-xs font-medium text-[var(--paragraph)] mb-1">授業</label>
               <select
                 value={courseId}
                 onChange={(e) => setCourseId(e.target.value)}
@@ -468,13 +493,8 @@ export function RegularScheduleFormModal({
                   </option>
                 ))}
               </select>
-            )}
-            {isEdit && (
-              <p className="text-[11px] text-[var(--paragraph-light)] mt-1">
-                授業の種類は変更できません。別の授業へ移す場合は削除してから追加してください。
-              </p>
-            )}
-          </div>
+            </div>
+          )}
 
           <div>
             <label className="block text-xs font-medium text-[var(--paragraph)] mb-1">曜日</label>
@@ -569,53 +589,56 @@ export function RegularScheduleFormModal({
             )}
           </div>
 
-          <div>
-            <label className="block text-xs font-medium text-[var(--paragraph)] mb-1">講師</label>
-            <select
-              value={validTeacherId}
-              onChange={(e) => setTeacherId(e.target.value)}
-              className="w-full px-3 py-2 border border-[var(--stroke)] rounded-md text-sm bg-white"
-            >
-              {/* 講座は担当未決定のまま登録できる（座席表の「＋講座の枠」と同じ）。
-                  v2 では個別指導も担当未決定のまま登録できる（あとで座席表で決める運用）。 */}
-              <option value="">
-                {isCourseMode || lessonEntryV2 ? '担当未決定' : '選択してください'}
-              </option>
-              {teachersForSubject.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.display_name || t.email || '—'}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* 指導比率（個別指導のみ）。生徒×科目の契約と同じ値を持たせる。 */}
-          {lessonEntryV2 && !isCourseMode && (
+          {/* 講師と指導比率は2列に並べて縦を詰める（指導比率が無い場合は講師が全幅） */}
+          <div className={showRatio ? 'grid grid-cols-1 sm:grid-cols-2 gap-3' : ''}>
             <div>
-              <label className="block text-xs font-medium text-[var(--paragraph)] mb-1">
-                指導比率
-              </label>
-              <div className="flex gap-2">
-                {([1, 2] as const).map((r) => (
-                  <button
-                    key={r}
-                    type="button"
-                    onClick={() => setRatio(r)}
-                    className={`flex-1 px-3 py-1.5 rounded text-sm border ${
-                      ratio === r
-                        ? 'bg-[#1e3a5f] text-white border-[#1e3a5f]'
-                        : 'bg-white border-[var(--stroke)] text-[var(--paragraph)] hover:bg-[var(--surface)] transition-colors duration-150'
-                    }`}
-                  >
-                    {r === 1 ? '1対1' : '1対2'}
-                  </button>
+              <label className="block text-xs font-medium text-[var(--paragraph)] mb-1">講師</label>
+              <select
+                value={validTeacherId}
+                onChange={(e) => setTeacherId(e.target.value)}
+                className="w-full px-3 py-2 border border-[var(--stroke)] rounded-md text-sm bg-white"
+              >
+                {/* 講座は担当未決定のまま登録できる（座席表の「＋講座の枠」と同じ）。
+                    v2 では個別指導も担当未決定のまま登録できる（あとで座席表で決める運用）。 */}
+                <option value="">
+                  {isCourseMode || lessonEntryV2 ? '担当未決定' : '選択してください'}
+                </option>
+                {teachersForSubject.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.display_name || t.email || '—'}
+                  </option>
                 ))}
-              </div>
-              <p className="text-[11px] text-[var(--paragraph-light)] mt-1">
-                この科目の指導契約（1対1／1対2）にも同じ比率が保存されます。
-              </p>
+              </select>
             </div>
-          )}
+
+            {/* 指導比率（個別指導のみ）。生徒×科目の契約と同じ値を持たせる。 */}
+            {showRatio && (
+              <div>
+                <label className="block text-xs font-medium text-[var(--paragraph)] mb-1">
+                  指導比率
+                </label>
+                <div className="flex gap-2">
+                  {([1, 2] as const).map((r) => (
+                    <button
+                      key={r}
+                      type="button"
+                      onClick={() => setRatio(r)}
+                      className={`flex-1 px-3 py-1.5 rounded text-sm border ${
+                        ratio === r
+                          ? 'bg-[#1e3a5f] text-white border-[#1e3a5f]'
+                          : 'bg-white border-[var(--stroke)] text-[var(--paragraph)] hover:bg-[var(--surface)] transition-colors duration-150'
+                      }`}
+                    >
+                      {r === 1 ? '1対1' : '1対2'}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-[11px] text-[var(--paragraph-light)] mt-1">
+                  この科目の指導契約（1対1／1対2）にも同じ比率が保存されます。
+                </p>
+              </div>
+            )}
+          </div>
 
           {/* 期間区分は講座の新規登録では選ばせない（講座の枠は通常期として作られる） */}
           {!(isCourseMode && !isEdit) && (
@@ -636,94 +659,97 @@ export function RegularScheduleFormModal({
           )}
 
           {/* 適用範囲（バージョン管理）— 過去月の請求と整合を取るため、変更日を予約できる */}
-          <div className="border-t border-[var(--stroke)] pt-3 space-y-2">
-            {/* 講座のパターンの編集は即時反映のみ（指定日からの切替は講座の引き継ぎができないため） */}
-            {isCourseMode && isEdit ? (
-              <p className="text-[11px] text-[var(--paragraph-light)]">
-                講座の通塾日程の変更は今すぐ反映されます。
-              </p>
-            ) : lessonEntryV2 ? (
-              /* v2: 「今すぐ/指定日から」の2択は使わず、日付入力1つ（既定=今日）に統一する */
-              <>
-                <label className="block text-xs font-medium text-[var(--paragraph)]">
-                  {isEdit ? '変更日' : '開始日'}
-                </label>
-                <input
-                  type="date"
-                  value={applyDate}
-                  onChange={(e) => setApplyDate(e.target.value)}
-                  className="w-full px-3 py-2 border border-[var(--stroke)] rounded-md text-sm bg-white"
-                />
+          <div className="border-t border-[var(--stroke)] pt-3">
+            {/* 変更日（開始日）と終了日は2列に並べて縦を詰める（狭い画面では1列に戻す） */}
+            <div className={useDateGrid ? 'grid grid-cols-1 sm:grid-cols-2 gap-3' : 'space-y-2'}>
+              {/* 講座のパターンの編集は即時反映のみ（指定日からの切替は講座の引き継ぎができないため） */}
+              {isCourseEdit ? (
                 <p className="text-[11px] text-[var(--paragraph-light)]">
-                  {isEdit
-                    ? 'この日から新しい内容になります。前日までは今の内容のまま履歴に残ります'
-                    : 'この日から授業が始まります。過去の月の請求には影響しません'}
+                  講座の通塾日程の変更は今すぐ反映されます。
                 </p>
-              </>
-            ) : (
-              <>
-                <label className="block text-xs font-medium text-[var(--paragraph)]">
-                  いつから適用
-                </label>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setApplyMode('now')}
-                    className={`flex-1 px-3 py-1.5 rounded text-sm border ${
-                      applyMode === 'now'
-                        ? 'bg-[#1e3a5f] text-white border-[#1e3a5f]'
-                        : 'bg-white border-[var(--stroke)] text-[var(--paragraph)] hover:bg-[var(--surface)]'
-                    }`}
-                  >
-                    今すぐ反映
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setApplyMode('future')}
-                    className={`flex-1 px-3 py-1.5 rounded text-sm border ${
-                      applyMode === 'future'
-                        ? 'bg-[#1e3a5f] text-white border-[#1e3a5f]'
-                        : 'bg-white border-[var(--stroke)] text-[var(--paragraph)] hover:bg-[var(--surface)]'
-                    }`}
-                  >
-                    指定日から
-                  </button>
+              ) : lessonEntryV2 ? (
+                /* v2: 「今すぐ/指定日から」の2択は使わず、日付入力1つ（既定=今日）に統一する */
+                <div>
+                  <label className="block text-xs font-medium text-[var(--paragraph)] mb-1">
+                    {isEdit ? '変更日' : '開始日'}
+                  </label>
+                  <input
+                    type="date"
+                    value={applyDate}
+                    onChange={(e) => setApplyDate(e.target.value)}
+                    className="w-full px-3 py-2 border border-[var(--stroke)] rounded-md text-sm bg-white"
+                  />
+                  <p className="text-[11px] text-[var(--paragraph-light)] mt-1">
+                    {isEdit
+                      ? 'この日から新しい内容になります。前日までは今の内容のまま履歴に残ります'
+                      : 'この日から授業が始まります。過去の月の請求には影響しません'}
+                  </p>
                 </div>
-                {applyMode === 'future' && (
-                  <div>
-                    <input
-                      type="date"
-                      value={effectiveFrom}
-                      onChange={(e) => setEffectiveFrom(e.target.value)}
-                      className="w-full px-3 py-2 border border-[var(--stroke)] rounded-md text-sm bg-white"
-                    />
-                    <p className="text-[11px] text-[var(--paragraph-light)] mt-1">
-                      {isEdit
-                        ? 'この日以降に新しい設定が適用され、これまでの設定はこの日の前日で終了します（過去月の請求計算に影響しません）'
-                        : 'この日から新しい通塾日程として登録されます'}
-                    </p>
+              ) : (
+                <div className="space-y-2">
+                  <label className="block text-xs font-medium text-[var(--paragraph)]">
+                    いつから適用
+                  </label>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setApplyMode('now')}
+                      className={`flex-1 px-3 py-1.5 rounded text-sm border ${
+                        applyMode === 'now'
+                          ? 'bg-[#1e3a5f] text-white border-[#1e3a5f]'
+                          : 'bg-white border-[var(--stroke)] text-[var(--paragraph)] hover:bg-[var(--surface)]'
+                      }`}
+                    >
+                      今すぐ反映
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setApplyMode('future')}
+                      className={`flex-1 px-3 py-1.5 rounded text-sm border ${
+                        applyMode === 'future'
+                          ? 'bg-[#1e3a5f] text-white border-[#1e3a5f]'
+                          : 'bg-white border-[var(--stroke)] text-[var(--paragraph)] hover:bg-[var(--surface)]'
+                      }`}
+                    >
+                      指定日から
+                    </button>
                   </div>
-                )}
-              </>
-            )}
+                  {applyMode === 'future' && (
+                    <div>
+                      <input
+                        type="date"
+                        value={effectiveFrom}
+                        onChange={(e) => setEffectiveFrom(e.target.value)}
+                        className="w-full px-3 py-2 border border-[var(--stroke)] rounded-md text-sm bg-white"
+                      />
+                      <p className="text-[11px] text-[var(--paragraph-light)] mt-1">
+                        {isEdit
+                          ? 'この日以降に新しい設定が適用され、これまでの設定はこの日の前日で終了します（過去月の請求計算に影響しません）'
+                          : 'この日から新しい通塾日程として登録されます'}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
 
-            {/* 終了日は講座の新規登録では出さない（講座の枠の終了は一覧の削除から行う） */}
-            {!(isCourseMode && !isEdit) && (
-              <>
-                <label className="block text-xs font-medium text-[var(--paragraph)] pt-2">
-                  終了日（任意）
-                </label>
-                <input
-                  type="date"
-                  value={effectiveUntil}
-                  onChange={(e) => setEffectiveUntil(e.target.value)}
-                  className="w-full px-3 py-2 border border-[var(--stroke)] rounded-md text-sm bg-white"
-                />
-                <p className="text-[11px] text-[var(--paragraph-light)]">
-                  退塾や期間限定の通塾の場合に指定。空欄なら無期限。
-                </p>
-              </>
-            )}
+              {/* 終了日は講座の新規登録では出さない（講座の枠の終了は一覧の削除から行う） */}
+              {showEndDate && (
+                <div>
+                  <label className="block text-xs font-medium text-[var(--paragraph)] mb-1">
+                    終了日（任意）
+                  </label>
+                  <input
+                    type="date"
+                    value={effectiveUntil}
+                    onChange={(e) => setEffectiveUntil(e.target.value)}
+                    className="w-full px-3 py-2 border border-[var(--stroke)] rounded-md text-sm bg-white"
+                  />
+                  <p className="text-[11px] text-[var(--paragraph-light)] mt-1">
+                    退塾や期間限定の通塾の場合に指定。空欄なら無期限。
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
 
           {errorMessage && (
@@ -732,20 +758,22 @@ export function RegularScheduleFormModal({
             </div>
           )}
         </div>
-
-        <DialogFooter className="gap-2">
-          <Button variant="outline" onClick={onClose} disabled={saving}>
-            キャンセル
-          </Button>
-          <Button
-            onClick={handleSubmit}
-            disabled={saving || !canSubmit}
-            className="bg-[#1e3a5f] hover:bg-[#2a4a6f] transition-colors duration-150"
-          >
-            {saving ? '保存中...' : '保存する'}
-          </Button>
-        </DialogFooter>
       </DialogContent>
+
+      <DialogFooter className="gap-2">
+        {/* 編集はドラッグ直後に自動で開くことがあり、その時点で既に登録済み。
+            「キャンセル」だと登録も取り消されるように読めるので「閉じる」にする。 */}
+        <Button variant="outline" onClick={onClose} disabled={saving}>
+          {isEdit ? '閉じる' : 'キャンセル'}
+        </Button>
+        <Button
+          onClick={handleSubmit}
+          disabled={saving || !canSubmit}
+          className="bg-[#1e3a5f] hover:bg-[#2a4a6f] transition-colors duration-150"
+        >
+          {saving ? '保存中...' : '保存する'}
+        </Button>
+      </DialogFooter>
     </Dialog>
   );
 }

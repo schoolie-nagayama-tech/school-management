@@ -403,7 +403,7 @@ export function AttendanceMatrix({
         // 自前の insert ではなく createRegularPattern を通す。
         // 形態をまたぐ時間帯の重複チェック（checkStudentTimeConflict）がこの中にあり、
         // 直接 insert すると講座と同じ時間帯に個別が二重に入るのを止められないため。
-        await createRegularPattern(schoolId, {
+        const created = await createRegularPattern(schoolId, {
           student_id: studentId,
           day_of_week: dayOfWeek,
           time_slot_id: slotId,
@@ -414,6 +414,11 @@ export function AttendanceMatrix({
         });
         await fetchData();
         onPatternChange?.();
+        // v2: 置いた直後に編集モーダルを開く（「クリックすると編集できる」が伝わらないため）。
+        // 作成行が取れなかったときは何もしない（黙って落ちない・エラーも出さない）。
+        if (v2 && canEdit && created?.id) {
+          setEditingPattern(created);
+        }
       } catch (err) {
         console.error('Error creating pattern:', err);
         // 重複エラーは黙って失敗させず、ブロック通知と同じ場所に理由を出す
@@ -423,7 +428,7 @@ export function AttendanceMatrix({
         setSaving(null);
       }
     },
-    [canEdit, patternMap, schoolId, studentId, fetchData, onPatternChange]
+    [canEdit, patternMap, schoolId, studentId, fetchData, onPatternChange, v2]
   );
 
   // パターン削除（セル右上の×）。開始前の予定セルも同じ経路で外せるよう対象を直接受け取る。
@@ -594,7 +599,12 @@ export function AttendanceMatrix({
                           className={`group relative flex flex-col items-center justify-center rounded mx-0.5 px-1 py-0.5 ${is45 ? 'border-2 border-dashed' : 'border'} ${color?.bg ?? 'bg-gray-100'} ${color?.border ?? 'border-gray-300'} ${
                             // 開始前の予定は薄く出して現在の授業と区別する
                             upcoming ? 'opacity-60 border-dashed' : ''
-                          } ${v2 && canEdit ? 'cursor-pointer' : ''}`}
+                          } ${
+                            // クリックで編集できることが見た目で分かるように、hover で枠線を強調する
+                            v2 && canEdit
+                              ? 'cursor-pointer transition-[box-shadow] duration-150 ease-out hover:ring-2 hover:ring-inset hover:ring-[#1e3a5f]/40'
+                              : ''
+                          }`}
                         >
                           <span
                             className={`text-[11px] font-medium leading-tight ${color?.text ?? 'text-gray-600'}`}
