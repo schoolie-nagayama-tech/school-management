@@ -173,7 +173,12 @@ function ClassCard({
   );
 }
 
-export function FormationBoard({
+/**
+ * 形態ボード本体。★ React.memo でラップして export している（末尾）。
+ * 理由は WeeklyScheduleGrid と同じ（盤面に無関係なデータが届くたびの再描画を止める）。
+ * 呼び出し側は props を安定させること。
+ */
+function FormationBoardImpl({
   weekDates,
   slots,
   entries,
@@ -338,3 +343,6 @@ export function FormationBoard({
     </div>
   );
 }
+
+export const FormationBoard = React.memo(FormationBoardImpl);
+FormationBoard.displayName = 'FormationBoard';
