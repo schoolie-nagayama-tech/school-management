@@ -761,8 +761,10 @@ export function RegularScheduleFormModal({
       </DialogContent>
 
       <DialogFooter className="gap-2">
+        {/* 編集はドラッグ直後に自動で開くことがあり、その時点で既に登録済み。
+            「キャンセル」だと登録も取り消されるように読めるので「閉じる」にする。 */}
         <Button variant="outline" onClick={onClose} disabled={saving}>
-          キャンセル
+          {isEdit ? '閉じる' : 'キャンセル'}
         </Button>
         <Button
           onClick={handleSubmit}
