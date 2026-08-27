@@ -74,7 +74,7 @@ export function AddStudentToSlotModal({
   const { profile } = useAuth();
   // 通塾日程v2（公開ゲート）。false のロールでは開始日の入力を出さず、
   // 保存経路も従来のまま（effective_from を渡さない＝createRegularPattern 側で今日）。
-  const lessonEntryV2 = canUseLessonEntryV2(profile?.role);
+  const lessonEntryV2 = canUseLessonEntryV2(profile?.role, schoolId);
   const [selectedStudent, setSelectedStudent] = useState<StudentWithSubjects | null>(null);
   const [subjectId, setSubjectId] = useState<string>('');
   const [registerType, setRegisterType] = useState<RegisterType>('regular');

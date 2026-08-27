@@ -108,7 +108,7 @@ export function FormationKomaFormModal({
   const { profile } = useAuth();
   // 通塾日程v2（公開ゲート）。false のロールでは開始日の入力を出さず、
   // effectiveFrom も渡さない（＝API 側の既定＝今日 のまま・従来挙動）。
-  const lessonEntryV2 = canUseLessonEntryV2(profile?.role);
+  const lessonEntryV2 = canUseLessonEntryV2(profile?.role, schoolId);
 
   // teacherId: '' = 担当未決定（意図的に空を許容）
   const [teacherId, setTeacherId] = useState('');

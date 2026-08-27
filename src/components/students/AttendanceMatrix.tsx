@@ -107,7 +107,7 @@ export function AttendanceMatrix({
   const { confirm, ConfirmDialog } = useConfirm();
   // 通塾日程v2の公開ゲート。false のロールは従来UIのまま（D&Dの保存経路だけ全員に適用）。
   const { profile } = useAuth();
-  const v2 = canUseLessonEntryV2(profile?.role);
+  const v2 = canUseLessonEntryV2(profile?.role, schoolId);
   // 履歴の状態判定に使う今日。マウント中は固定でよい（日付跨ぎは再描画のきっかけが別にある）。
   const today = useMemo(() => todayStr(), []);
   // 同一コマへの重ね登録をブロックした際の一時的なお知らせ（数秒で自動消去）
