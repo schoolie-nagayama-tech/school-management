@@ -740,6 +740,8 @@ export async function updateRegularPattern(
   if (form.period_type !== undefined) updatePayload.period_type = form.period_type;
   if (form.effective_from !== undefined) updatePayload.effective_from = form.effective_from;
   if (form.effective_until !== undefined) updatePayload.effective_until = form.effective_until;
+  // 指導比率。渡されたときだけ更新する（未指定の呼び出しの挙動は変えない）。
+  if (form.ratio !== undefined) updatePayload.ratio = form.ratio;
 
   const { data, error } = await db
     .from('schedule_regular_patterns')

@@ -1724,6 +1724,7 @@ export default function SchedulePage() {
       subjectIds: string[];
       studentIds: string[];
       specialCourseId?: string | null;
+      effectiveFrom?: string;
     }) => {
       if (!formationTarget || !schoolId) return;
       const dow = new Date(formationTarget.date + 'T12:00:00').getDay();
@@ -1739,6 +1740,8 @@ export default function SchedulePage() {
         maxConcurrentGroups: formationMaxConcurrent,
         // add モードは undefined。API 側で既存枠の講座を引き継ぐ。
         specialCourseId: data.specialCourseId,
+        // 通塾日程v2の開始日。undefined なら API 側の既定（今日）＝従来挙動。
+        effectiveFrom: data.effectiveFrom,
       });
       success('講座の枠を登録しました');
       // 通塾日程→座席表の反映（今週から4週）＋表示中の週を同期。

@@ -26,10 +26,12 @@ import {
   Button,
 } from '@/components/ui';
 import { StudentSearchInput, type StudentWithSubjects } from './StudentSearchInput';
+import { useAuth } from '@/contexts/AuthContext';
 import type { Subject } from '@/types/database';
 import type { ScheduleTimeSlot } from '@/types/schedule';
 import type { SpecialCourse } from '@/lib/api/specialCourses';
 import { resolveClassCapacity } from '@/lib/schedule/classCapacity';
+import { canUseLessonEntryV2 } from '@/lib/utils/lessonEntryV2';
 import { X } from 'lucide-react';
 
 interface TeacherOption {
@@ -72,6 +74,11 @@ interface Props {
     studentIds: string[];
     /** create のみ。add は undefined で API 側が既存枠の講座を引き継ぐ。 */
     specialCourseId?: string | null;
+    /**
+     * 授業の開始日（通塾日程v2のみ）。undefined なら API 側の既定（今日）＝従来挙動。
+     * 週次エントリへの反映は再生成機構（planWeeklyEntries）に任せる。
+     */
+    effectiveFrom?: string;
   }) => Promise<void>;
 }
 
@@ -98,11 +105,18 @@ export function FormationKomaFormModal({
   courses,
   onSubmit,
 }: Props) {
+  const { profile } = useAuth();
+  // 通塾日程v2（公開ゲート）。false のロールでは開始日の入力を出さず、
+  // effectiveFrom も渡さない（＝API 側の既定＝今日 のまま・従来挙動）。
+  const lessonEntryV2 = canUseLessonEntryV2(profile?.role, schoolId);
+
   // teacherId: '' = 担当未決定（意図的に空を許容）
   const [teacherId, setTeacherId] = useState('');
   const [courseId, setCourseId] = useState('');
   const [subjectIds, setSubjectIds] = useState<string[]>([]);
   const [students, setStudents] = useState<StudentWithSubjects[]>([]);
+  // v2: 授業の開始日（既定＝クリックしたセルの日付）。create / add どちらでも指定できる。
+  const [startDate, setStartDate] = useState<string>(date);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -113,11 +127,12 @@ export function FormationKomaFormModal({
       setCourseId(courses.length === 1 ? courses[0].id : '');
       setSubjectIds([]);
       setStudents([]);
+      setStartDate(date);
       setError(null);
     }
     // courses は開いている最中に差し替わらない前提。依存に入れると入力中にリセットされるため除く。
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, mode, lockedTeacherId]);
+  }, [open, mode, lockedTeacherId, date]);
 
   // 表示する定員。create は選んだ講座の定員（未設定なら形態の既定値）、
   // add は親が枠から引いた解決済み定員をそのまま出す。
@@ -157,6 +172,8 @@ export function FormationKomaFormModal({
         studentIds: students.map((s) => s.id),
         // add モードは undefined を渡し、API 側で既存枠の講座を引き継がせる
         specialCourseId: mode === 'create' ? courseId : undefined,
+        // ゲート false では undefined＝従来どおり API 側の既定（今日）を使う
+        effectiveFrom: lessonEntryV2 ? startDate : undefined,
       });
       onClose();
     } catch (e) {
@@ -317,6 +334,25 @@ export function FormationKomaFormModal({
               </div>
             )}
           </div>
+
+          {/* v2: 授業の開始日（既定＝クリックしたセルの日付）。
+              週次エントリへの反映は再生成機構に任せる（ここでは作らない）。 */}
+          {lessonEntryV2 && (
+            <div className="border-t border-[var(--stroke)] pt-3 space-y-1">
+              <label className="block text-sm font-medium text-[var(--headline)]">
+                授業の開始日
+              </label>
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="w-full px-3 py-2 border border-[var(--stroke)] rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
+              />
+              <p className="text-[11px] text-[var(--paragraph)]">
+                この日から毎週の授業が始まります。先の日付にすると、その日までは座席表に出ません
+              </p>
+            </div>
+          )}
 
           {error && <p className="text-sm text-red-600 bg-red-50 rounded px-3 py-2">{error}</p>}
         </div>
