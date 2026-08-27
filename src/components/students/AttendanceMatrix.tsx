@@ -6,6 +6,7 @@ import {
   getTimeSlots,
   getActiveTimeSlots,
   deleteRegularPattern,
+  createRegularPattern,
 } from '@/lib/api/schedule';
 import { getSubjects } from '@/lib/api/subjects';
 import { getActiveYearRoundCourses, type SpecialCourse } from '@/lib/api/specialCourses';
@@ -19,7 +20,6 @@ import {
   INDIVIDUAL_FORMATION,
 } from '@/types/schedule';
 import type { Subject } from '@/types/database';
-import { supabase } from '@/lib/supabase';
 import { X, Plus } from 'lucide-react';
 import { Loading } from '@/components/ui';
 import { useConfirm } from '@/hooks/useConfirm';
@@ -296,22 +296,25 @@ export function AttendanceMatrix({
 
       setSaving(key);
       try {
-        const { error } = await (supabase as any).from('schedule_regular_patterns').insert({
-          school_id: schoolId,
+        // 自前の insert ではなく createRegularPattern を通す。
+        // 形態をまたぐ時間帯の重複チェック（checkStudentTimeConflict）がこの中にあり、
+        // 直接 insert すると講座と同じ時間帯に個別が二重に入るのを止められないため。
+        await createRegularPattern(schoolId, {
           student_id: studentId,
           day_of_week: dayOfWeek,
           time_slot_id: slotId,
           teacher_id: null,
           subject_ids: [subjectId],
-          seat_label: null,
+          seat_label: '',
           period_type: 'regular',
-          is_active: true,
         });
-        if (error) throw error;
         await fetchData();
         onPatternChange?.();
       } catch (err) {
         console.error('Error creating pattern:', err);
+        // 重複エラーは黙って失敗させず、ブロック通知と同じ場所に理由を出す
+        setNotice((err as Error).message || '通塾日程の登録に失敗しました');
+        window.setTimeout(() => setNotice(null), 6000);
       } finally {
         setSaving(null);
       }
