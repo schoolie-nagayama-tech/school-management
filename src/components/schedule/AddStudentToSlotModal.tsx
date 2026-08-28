@@ -259,12 +259,13 @@ export function AddStudentToSlotModal({
   const canSubmit = selectedStudent && subjectId && schoolId;
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-md bg-white border border-gray-200">
-        <DialogHeader>
-          <DialogTitle>生徒を追加</DialogTitle>
-        </DialogHeader>
-
+    /* Header / Footer は DialogContent の外に置く（中に入れるとスクロール領域に
+       巻き込まれ、タイトルが上端で切れ、ボタンが画面外に出る）。幅は Dialog の size で決まる。 */
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()} size="md">
+      <DialogHeader>
+        <DialogTitle>生徒を追加</DialogTitle>
+      </DialogHeader>
+      <DialogContent>
         <div className="space-y-4 py-2">
           <div className="text-sm text-[var(--paragraph)]">
             <div>追加先: {slotLabel}</div>
@@ -425,20 +426,19 @@ export function AddStudentToSlotModal({
             </div>
           )}
         </div>
-
-        <DialogFooter className="gap-2">
-          <Button variant="outline" onClick={onClose} disabled={saving}>
-            キャンセル
-          </Button>
-          <Button
-            onClick={handleSubmit}
-            disabled={!canSubmit || saving}
-            className="bg-[#1e3a5f] hover:bg-[#2a4a6f]"
-          >
-            {saving ? '追加中...' : '追加する'}
-          </Button>
-        </DialogFooter>
       </DialogContent>
+      <DialogFooter className="gap-2">
+        <Button variant="outline" onClick={onClose} disabled={saving}>
+          キャンセル
+        </Button>
+        <Button
+          onClick={handleSubmit}
+          disabled={!canSubmit || saving}
+          className="bg-[#1e3a5f] hover:bg-[#2a4a6f]"
+        >
+          {saving ? '追加中...' : '追加する'}
+        </Button>
+      </DialogFooter>
     </Dialog>
   );
 }

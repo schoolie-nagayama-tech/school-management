@@ -39,11 +39,13 @@ export function ClosedDayForm({ open, onClose, onSubmit }: ClosedDayFormProps) {
   };
 
   return (
+    /* Header / Footer は DialogContent の外に置く（中に入れるとスクロール領域に
+       巻き込まれ、タイトルが上端で切れ、ボタンが画面外に出る）。幅は Dialog の size で決まる。 */
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogHeader>
+        <DialogTitle>休講日を追加</DialogTitle>
+      </DialogHeader>
       <DialogContent>
-        <DialogHeader>
-          <DialogTitle>休講日を追加</DialogTitle>
-        </DialogHeader>
         <div className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="closed_date">日付</Label>
@@ -74,15 +76,15 @@ export function ClosedDayForm({ open, onClose, onSubmit }: ClosedDayFormProps) {
             </Label>
           </div>
         </div>
-        <DialogFooter>
-          <Button variant="secondary" onClick={onClose}>
-            キャンセル
-          </Button>
-          <Button onClick={handleSubmit} disabled={saving}>
-            {saving ? '登録中...' : '登録'}
-          </Button>
-        </DialogFooter>
       </DialogContent>
+      <DialogFooter>
+        <Button variant="secondary" onClick={onClose}>
+          キャンセル
+        </Button>
+        <Button onClick={handleSubmit} disabled={saving}>
+          {saving ? '登録中...' : '登録'}
+        </Button>
+      </DialogFooter>
     </Dialog>
   );
 }

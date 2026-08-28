@@ -89,12 +89,13 @@ export function StudentActionModal({
   const canAct = !isTransferredOut && !isCancelled;
 
   return (
-    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-md bg-white border border-gray-200">
-        <DialogHeader>
-          <DialogTitle>授業の操作</DialogTitle>
-        </DialogHeader>
-
+    /* Header / Footer は DialogContent の外に置く（中に入れるとスクロール領域に
+       巻き込まれ、タイトルが上端で切れ、ボタンが画面外に出る）。幅は Dialog の size で決まる。 */
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()} size="md">
+      <DialogHeader>
+        <DialogTitle>授業の操作</DialogTitle>
+      </DialogHeader>
+      <DialogContent>
         <div className="space-y-4 py-2">
           <div className="text-sm">
             <div>

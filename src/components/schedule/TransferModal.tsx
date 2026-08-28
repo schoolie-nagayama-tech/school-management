@@ -91,11 +91,13 @@ export function TransferModal({
   };
 
   return (
-    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle>別の週へ振替</DialogTitle>
-        </DialogHeader>
+    /* Header / Footer は DialogContent の外に置く（中に入れるとスクロール領域に
+       巻き込まれ、タイトルが上端で切れ、ボタンが画面外に出る）。幅は Dialog の size で決まる。 */
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()} size="md">
+      <DialogHeader>
+        <DialogTitle>別の週へ振替</DialogTitle>
+      </DialogHeader>
+      <DialogContent>
         <div className="space-y-4">
           <div className="space-y-2">
             <Label>振替先日付</Label>
@@ -146,31 +148,31 @@ export function TransferModal({
             />
           </div>
         </div>
-        <DialogFooter className="flex-col sm:flex-row sm:justify-between gap-2">
-          {/* Phase P2: 振替先が未定なら保留プールへ。左端に置いて確定操作と視覚的に分ける。 */}
-          {onHold ? (
-            <Button
-              variant="outline"
-              onClick={onHold}
-              disabled={saving}
-              className="sm:mr-auto"
-              title="振替先を決めずに保留プールに入れる（後で座席表から配置）"
-            >
-              振替先が未定（保留にする）
-            </Button>
-          ) : (
-            <span />
-          )}
-          <div className="flex gap-2 justify-end">
-            <Button variant="secondary" onClick={onClose}>
-              キャンセル
-            </Button>
-            <Button onClick={handleSubmit} disabled={saving}>
-              {saving ? '振替中...' : '振替する'}
-            </Button>
-          </div>
-        </DialogFooter>
       </DialogContent>
+      <DialogFooter className="flex-col sm:flex-row sm:justify-between gap-2">
+        {/* Phase P2: 振替先が未定なら保留プールへ。左端に置いて確定操作と視覚的に分ける。 */}
+        {onHold ? (
+          <Button
+            variant="outline"
+            onClick={onHold}
+            disabled={saving}
+            className="sm:mr-auto"
+            title="振替先を決めずに保留プールに入れる（後で座席表から配置）"
+          >
+            振替先が未定（保留にする）
+          </Button>
+        ) : (
+          <span />
+        )}
+        <div className="flex gap-2 justify-end">
+          <Button variant="secondary" onClick={onClose}>
+            キャンセル
+          </Button>
+          <Button onClick={handleSubmit} disabled={saving}>
+            {saving ? '振替中...' : '振替する'}
+          </Button>
+        </div>
+      </DialogFooter>
     </Dialog>
   );
 }

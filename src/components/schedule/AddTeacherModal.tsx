@@ -62,11 +62,13 @@ export function AddTeacherModal({
   };
 
   return (
+    /* Header / Footer は DialogContent の外に置く（中に入れるとスクロール領域に
+       巻き込まれ、タイトルが上端で切れ、ボタンが画面外に出る）。幅は Dialog の size で決まる。 */
     <Dialog open={open} onOpenChange={(v) => !v && onClose()} size="lg">
+      <DialogHeader>
+        <DialogTitle>講師を追加</DialogTitle>
+      </DialogHeader>
       <DialogContent>
-        <DialogHeader>
-          <DialogTitle>講師を追加</DialogTitle>
-        </DialogHeader>
         <div className="space-y-3 py-2">
           {availableTeachers.length === 0 ? (
             <p className="text-sm text-gray-500 text-center py-4">
@@ -91,15 +93,15 @@ export function AddTeacherModal({
             </div>
           )}
         </div>
-        <DialogFooter>
-          <Button variant="secondary" onClick={onClose}>
-            キャンセル
-          </Button>
-          <Button onClick={handleSubmit} disabled={!teacherId || availableTeachers.length === 0}>
-            追加
-          </Button>
-        </DialogFooter>
       </DialogContent>
+      <DialogFooter>
+        <Button variant="secondary" onClick={onClose}>
+          キャンセル
+        </Button>
+        <Button onClick={handleSubmit} disabled={!teacherId || availableTeachers.length === 0}>
+          追加
+        </Button>
+      </DialogFooter>
     </Dialog>
   );
 }

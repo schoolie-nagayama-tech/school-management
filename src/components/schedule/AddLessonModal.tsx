@@ -212,12 +212,13 @@ export function AddLessonModal({
     'w-full px-3 py-2 border border-[var(--stroke)] rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--primary)]';
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-md bg-white border border-gray-200">
-        <DialogHeader>
-          <DialogTitle>授業を追加</DialogTitle>
-        </DialogHeader>
-
+    /* Header / Footer は DialogContent の外に置く（中に入れるとスクロール領域に
+       巻き込まれ、タイトルが上端で切れ、ボタンが画面外に出る）。幅は Dialog の size で決まる。 */
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()} size="md">
+      <DialogHeader>
+        <DialogTitle>授業を追加</DialogTitle>
+      </DialogHeader>
+      <DialogContent>
         <div className="space-y-4 py-2">
           {/* 種別タブ：追加授業 / 体験授業 */}
           <div className="inline-flex rounded-lg bg-[var(--surface)] p-0.5 w-full">
@@ -389,21 +390,20 @@ export function AddLessonModal({
             </div>
           )}
         </div>
-
-        <DialogFooter className="gap-2">
-          <Button variant="outline" onClick={onClose}>
-            キャンセル
-          </Button>
-          <Button
-            onClick={handleStart}
-            disabled={!canStart}
-            className="bg-[#1e3a5f] hover:bg-[#2a4a6f] flex items-center gap-1"
-          >
-            <MapPin className="h-4 w-4" />
-            座席表から日程を選ぶ
-          </Button>
-        </DialogFooter>
       </DialogContent>
+      <DialogFooter className="gap-2">
+        <Button variant="outline" onClick={onClose}>
+          キャンセル
+        </Button>
+        <Button
+          onClick={handleStart}
+          disabled={!canStart}
+          className="bg-[#1e3a5f] hover:bg-[#2a4a6f] flex items-center gap-1"
+        >
+          <MapPin className="h-4 w-4" />
+          座席表から日程を選ぶ
+        </Button>
+      </DialogFooter>
     </Dialog>
   );
 }

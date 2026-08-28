@@ -109,11 +109,13 @@ export function ScheduleEntryModal({
     : '—';
 
   return (
-    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
-          <DialogTitle>{mode === 'add' ? '授業を追加' : '授業を編集'}</DialogTitle>
-        </DialogHeader>
+    /* Header / Footer は DialogContent の外に置く（中に入れるとスクロール領域に
+       巻き込まれ、タイトルが上端で切れ、ボタンが画面外に出る）。幅は Dialog の size で決まる。 */
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()} size="md">
+      <DialogHeader>
+        <DialogTitle>{mode === 'add' ? '授業を追加' : '授業を編集'}</DialogTitle>
+      </DialogHeader>
+      <DialogContent>
         <ScheduleEntryForm
           mode={mode}
           dateLabel={dateLabel}
@@ -126,15 +128,15 @@ export function ScheduleEntryModal({
           selectedSchoolId={schoolId}
           editingEntry={entry}
         />
-        <DialogFooter>
-          <Button variant="secondary" onClick={onClose}>
-            キャンセル
-          </Button>
-          <Button onClick={handleSubmit} disabled={saving}>
-            {saving ? '保存中...' : '保存'}
-          </Button>
-        </DialogFooter>
       </DialogContent>
+      <DialogFooter>
+        <Button variant="secondary" onClick={onClose}>
+          キャンセル
+        </Button>
+        <Button onClick={handleSubmit} disabled={saving}>
+          {saving ? '保存中...' : '保存'}
+        </Button>
+      </DialogFooter>
     </Dialog>
   );
 }
