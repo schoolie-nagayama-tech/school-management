@@ -180,5 +180,6 @@ export function groupIntoChains<T>(rows: T[], keyOf: (row: T) => string): T[][] 
       chains.set(key, [row]);
     }
   }
-  return [...chains.values()];
+  // Map の iterator を直接展開しない（tsconfig の target がES5系のため Array.from を使う）
+  return Array.from(chains.values());
 }
