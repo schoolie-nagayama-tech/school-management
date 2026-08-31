@@ -5,7 +5,7 @@
  *
  * コンセプト:
  *   週の座席表＝「予定を組む盤」に対して、この日表示は「今日を回す運用盤」。
- *   列=講師・行=コマで、(1) 今のコマで誰が誰を見ているか、(2) 講師の1日の流れ、
+ *   行=講師・列=コマで、(1) 今のコマで誰が誰を見ているか、(2) 講師の1日の流れ、
  *   (3) 当日の異常（欠勤・未配置・体験・テスト対策）が1画面で分かることを狙う。
  *   このビューでは配置の組み替えはしない（組み替えは週表示の役割。誤操作防止のため
  *   閲覧・運用に主体を絞っている）。
@@ -223,7 +223,7 @@ function DailyMockBoard() {
           <p className="font-medium">これはUIモックです（すべてダミーデータ・DB接続なし）。</p>
           <p className="mt-1 text-text-body">
             週の座席表が「予定を組む盤」なのに対し、この日表示は「今日を回す運用盤」です。
-            列=講師・行=コマで、今のコマの状況・講師の1日の流れ・当日の異常（欠勤/未配置/体験/テスト対策）を1画面で把握できることを狙っています。
+            行=講師・列=コマで、今のコマの状況・講師の1日の流れ・当日の異常（欠勤/未配置/体験/テスト対策）を1画面で把握できることを狙っています。
             このビューでは配置の組み替えは行いません（組み替えは週表示で行う想定です）。
           </p>
         </div>
@@ -277,102 +277,103 @@ function DailyMockBoard() {
         ))}
       </div>
 
-      {/* 盤面: 列=講師 / 行=コマ。左端=コマ見出し(sticky left)、上端=講師見出し(sticky top) */}
+      {/* 盤面: 行=講師 / 列=コマ。左端=講師見出し(sticky left)、上端=コマ見出し(sticky top) */}
       <div className="overflow-auto rounded-xl border border-border bg-surface">
         <div
           className="grid min-w-max"
           style={{
-            gridTemplateColumns: `160px repeat(${TEACHERS.length}, minmax(190px, 1fr))`,
+            gridTemplateColumns: `140px repeat(${PERIODS.length}, minmax(190px, 1fr))`,
           }}
         >
           {/* 左上コーナー（両方向 sticky） */}
           <div className="sticky left-0 top-0 z-30 border-b border-r border-border bg-surface-raised" />
 
-          {/* 講師ヘッダー行（sticky top） */}
-          {TEACHERS.map((t) => (
-            <div
-              key={t.id}
-              className={`sticky top-0 z-20 flex items-center justify-between gap-2 border-b border-border px-3 py-2 ${
-                t.isAbsent ? 'bg-danger-subtle' : 'bg-surface-raised'
-              }`}
-            >
-              <div className="min-w-0">
-                <div className="truncate text-sm font-bold text-text-heading">{t.name}</div>
-                <div className="text-[10px] text-text-faint">{t.seat}</div>
-              </div>
-              {t.isAbsent && (
-                <span className="shrink-0 rounded-full bg-danger px-2 py-0.5 text-[10px] font-bold text-text-on-primary">
-                  欠勤
-                </span>
-              )}
-            </div>
-          ))}
-
-          {/* コマ行 */}
+          {/* コマヘッダー行（sticky top） */}
           {PERIODS.map((p) => {
             const isCurrent = p.key === CURRENT_PERIOD;
             return (
-              <Fragment key={p.key}>
-                {/* コマ見出し（sticky left） */}
-                <div
-                  className={`sticky left-0 z-10 flex flex-col justify-center gap-1 border-b border-r border-border px-3 py-2 ${
-                    isCurrent ? 'bg-info-subtle' : 'bg-surface-raised'
-                  }`}
-                >
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-sm font-bold text-text-heading">{p.label}</span>
-                    {isCurrent && (
-                      <span className="rounded-full bg-info px-1.5 py-0.5 text-[10px] font-bold text-text-on-primary">
-                        現在
-                      </span>
-                    )}
-                  </div>
-                  <span className="text-[10px] text-text-faint">{p.time}</span>
-                  {p.key === UNPLACED_PERIOD && (
-                    <span className="mt-0.5 inline-flex w-fit items-center gap-1 rounded-full bg-warning-subtle px-1.5 py-0.5 text-[10px] font-bold text-warning">
-                      <AlertTriangle className="h-3 w-3" />
-                      未配置 {UNPLACED_STUDENTS.length}
+              <div
+                key={p.key}
+                className={`sticky top-0 z-20 flex flex-col justify-center gap-1 border-b border-border px-3 py-2 ${
+                  isCurrent ? 'bg-info-subtle' : 'bg-surface-raised'
+                }`}
+              >
+                <div className="flex items-center gap-1.5">
+                  <span className="text-sm font-bold text-text-heading">{p.label}</span>
+                  {isCurrent && (
+                    <span className="rounded-full bg-info px-1.5 py-0.5 text-[10px] font-bold text-text-on-primary">
+                      現在
                     </span>
                   )}
                 </div>
-
-                {/* 講師×コマのセル */}
-                {TEACHERS.map((t) => {
-                  const students = BOARD[t.id]?.[p.key] ?? [];
-                  return (
-                    <div
-                      key={`${t.id}-${p.key}`}
-                      className={`min-h-[52px] border-b border-r border-border-subtle p-1.5 last:border-r-0 ${
-                        isCurrent ? 'bg-info-subtle/40' : ''
-                      } ${t.isAbsent ? 'opacity-50' : ''}`}
-                      style={
-                        t.isAbsent
-                          ? {
-                              backgroundImage:
-                                'repeating-linear-gradient(45deg, transparent, transparent 6px, color-mix(in oklch, var(--danger) 10%, transparent) 6px, color-mix(in oklch, var(--danger) 10%, transparent) 12px)',
-                            }
-                          : undefined
-                      }
-                    >
-                      {t.isAbsent ? (
-                        <div className="flex h-full min-h-[36px] items-center justify-center text-center text-[10px] text-text-faint">
-                          欠勤のため振替対応中
-                        </div>
-                      ) : students.length === 0 ? (
-                        <div className="h-full min-h-[36px]" />
-                      ) : (
-                        <div className="flex flex-col gap-1">
-                          {students.map((s, i) => (
-                            <StudentRow key={`${s.name}-${i}`} student={s} />
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </Fragment>
+                <span className="text-[10px] text-text-faint">{p.time}</span>
+                {p.key === UNPLACED_PERIOD && (
+                  <span className="mt-0.5 inline-flex w-fit items-center gap-1 rounded-full bg-warning-subtle px-1.5 py-0.5 text-[10px] font-bold text-warning">
+                    <AlertTriangle className="h-3 w-3" />
+                    未配置 {UNPLACED_STUDENTS.length}
+                  </span>
+                )}
+              </div>
             );
           })}
+
+          {/* 講師行 */}
+          {TEACHERS.map((t) => (
+            <Fragment key={t.id}>
+              {/* 講師見出し（sticky left） */}
+              <div
+                className={`sticky left-0 z-10 flex items-center justify-between gap-2 border-b border-r border-border px-3 py-2 ${
+                  t.isAbsent ? 'bg-danger-subtle' : 'bg-surface-raised'
+                }`}
+              >
+                <div className="min-w-0">
+                  <div className="truncate text-sm font-bold text-text-heading">{t.name}</div>
+                  <div className="text-[10px] text-text-faint">{t.seat}</div>
+                </div>
+                {t.isAbsent && (
+                  <span className="shrink-0 rounded-full bg-danger px-2 py-0.5 text-[10px] font-bold text-text-on-primary">
+                    欠勤
+                  </span>
+                )}
+              </div>
+
+              {/* コマ×講師のセル */}
+              {PERIODS.map((p) => {
+                const isCurrent = p.key === CURRENT_PERIOD;
+                const students = BOARD[t.id]?.[p.key] ?? [];
+                return (
+                  <div
+                    key={`${t.id}-${p.key}`}
+                    className={`min-h-[52px] border-b border-r border-border-subtle p-1.5 last:border-r-0 ${
+                      isCurrent ? 'bg-info-subtle/40' : ''
+                    } ${t.isAbsent ? 'opacity-50' : ''}`}
+                    style={
+                      t.isAbsent
+                        ? {
+                            backgroundImage:
+                              'repeating-linear-gradient(45deg, transparent, transparent 6px, color-mix(in oklch, var(--danger) 10%, transparent) 6px, color-mix(in oklch, var(--danger) 10%, transparent) 12px)',
+                          }
+                        : undefined
+                    }
+                  >
+                    {t.isAbsent ? (
+                      <div className="flex h-full min-h-[36px] items-center justify-center text-center text-[10px] text-text-faint">
+                        欠勤のため振替対応中
+                      </div>
+                    ) : students.length === 0 ? (
+                      <div className="h-full min-h-[36px]" />
+                    ) : (
+                      <div className="flex flex-col gap-1">
+                        {students.map((s, i) => (
+                          <StudentRow key={`${s.name}-${i}`} student={s} />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </Fragment>
+          ))}
         </div>
       </div>
 
