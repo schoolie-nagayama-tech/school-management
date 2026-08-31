@@ -187,8 +187,16 @@ export const TeacherCard = React.memo(function TeacherCard({
     : teacher.display_name || teacher.email || '—';
   const displayName = isUnassigned ? fullName : getSurname(teacher) || fullName;
 
-  // D&D 制約チェック。基本制約 + 講師×生徒の相性制約。
-  const dropConstraint = useMemo<{ canDrop: boolean; reason: string | null }>(() => {
+  /**
+   * D&D 制約チェック。基本制約 + 講師×生徒の相性制約。
+   * warn=true は「入れられるが希望と違う」（希望性別）。落とせる状態のまま、
+   * 注意を促すバッジだけ出す。判定はドロップ実行側（evaluateStudentDrop）と同じ意味論。
+   */
+  const dropConstraint = useMemo<{
+    canDrop: boolean;
+    reason: string | null;
+    warn?: boolean;
+  }>(() => {
     if (!activeDragEntry) return { canDrop: false, reason: null };
     const isSourceBlock =
       activeDragEntry.entry_date === date &&
@@ -214,7 +222,12 @@ export const TeacherCard = React.memo(function TeacherCard({
     if (excluded.includes(teacher.id)) return { canDrop: false, reason: '担当除外指定' };
     const preferred = activeDragEntry.student?.preferred_teacher_gender;
     if (preferred && teacher.gender && teacher.gender !== preferred) {
-      return { canDrop: false, reason: `${preferred === 'male' ? '男性' : '女性'}講師希望` };
+      // 希望性別は止めない（運用上そうせざるを得ない場面がある）。落とせるまま警告だけ出す。
+      return {
+        canDrop: true,
+        reason: `${preferred === 'male' ? '男性' : '女性'}講師希望`,
+        warn: true,
+      };
     }
     return { canDrop: true, reason: null };
   }, [
@@ -238,7 +251,10 @@ export const TeacherCard = React.memo(function TeacherCard({
 
   const genderLabel = teacher.gender === 'male' ? '男' : teacher.gender === 'female' ? '女' : '';
 
-  const isOverAndCanDrop = isOver && (canDrop || canAcceptTeacherDrop);
+  // 希望と違うだけのカードは「落とせるが注意」。緑の可ではなく橙の警告で見せる。
+  const isDropWarning = !!dropConstraint.warn && canDrop;
+  const isOverAndCanDrop = isOver && (canDrop || canAcceptTeacherDrop) && !isDropWarning;
+  const isOverAndWarn = isOver && isDropWarning;
   const isOverAndCannotDrop = isOver && !canDrop && !canAcceptTeacherDrop && activeDragEntry;
 
   const isDragInProgress = !!activeDragEntry;
@@ -309,8 +325,10 @@ export const TeacherCard = React.memo(function TeacherCard({
     isAvailableOnly ? styles.availableOnly : '',
     isAbsent ? styles.absentTeacher : '',
     isOverAndCanDrop ? styles.dropOk : '',
+    isOverAndWarn ? styles.dropWarn : '',
     isOverAndCannotDrop ? styles.dropNg : '',
-    (canDrop || canAcceptTeacherDrop) && !isOver ? styles.dropCandidate : '',
+    (canDrop || canAcceptTeacherDrop) && !isOver && !isDropWarning ? styles.dropCandidate : '',
+    isDropWarning && !isOver ? styles.dropWarnCandidate : '',
     isDimmedDuringDrag ? styles.dropDim : '',
     isPlaceTarget ? styles.placeTarget : '',
     placeBlocked ? styles.placeNg : '',
@@ -347,14 +365,22 @@ export const TeacherCard = React.memo(function TeacherCard({
             ? 'クリックでこの講師に配置する'
             : isOverAndCannotDrop && dropConstraint.reason
               ? `割当不可: ${dropConstraint.reason}`
-              : isAvailableOnly
-                ? 'ドラッグして担当未決定セルに割当できます'
-                : undefined
+              : isDropWarning && dropConstraint.reason
+                ? `${dropConstraint.reason}（入れられますが希望と違います）`
+                : isAvailableOnly
+                  ? 'ドラッグして担当未決定セルに割当できます'
+                  : undefined
       }
     >
       {isAbsent && <div className={styles.absentBadge}>欠勤</div>}
       {isOverAndCannotDrop && dropConstraint.reason && (
         <div className={styles.reasonBadge}>{dropConstraint.reason}</div>
+      )}
+      {/* 希望性別と違う講師。落とせるので不可バッジ（赤）とは別色にする */}
+      {isDropWarning && dropConstraint.reason && (
+        <div className={`${styles.reasonBadge} ${styles.reasonBadgeWarn}`}>
+          {dropConstraint.reason}
+        </div>
       )}
 
       {/* ヘッダー：講師名は中央寄せ、背景は生徒行より濃い（--sd-head-bg） */}

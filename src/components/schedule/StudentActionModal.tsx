@@ -3,9 +3,20 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui';
 import { Button } from '@/components/ui';
 import { useEffect, useState } from 'react';
-import { Calendar, XCircle, Pencil, Trash2, RotateCcw, ArrowLeftRight, Send } from 'lucide-react';
+import {
+  Calendar,
+  XCircle,
+  Pencil,
+  Trash2,
+  RotateCcw,
+  ArrowLeftRight,
+  Send,
+  ClipboardList,
+  ExternalLink,
+} from 'lucide-react';
 import type { ScheduleEntry, ScheduleTimeSlot } from '@/types/schedule';
 import { formatGradeLabel } from '@/lib/utils/gradeLabel';
+import { getSurname } from '@/lib/utils/teacherName';
 
 function formatDay(dateStr: string): string {
   const d = new Date(dateStr + 'Z');
@@ -37,6 +48,13 @@ export interface StudentActionModalProps {
    * 未指定なら通知ボタンを出さない。解決/送信の結果表示は親（トースト）が担当する。
    */
   onNotifyTransfer?: () => Promise<void>;
+  /**
+   * 振替元のコマ（transfer_from_id の先）。振替先のコマを開いたときに
+   * 「どの授業の振替なのか」を出すために親が解決して渡す。未指定なら表示しない。
+   */
+  transferSource?: ScheduleEntry | null;
+  /** 進行表を開く（別タブ）。未指定ならボタンを出さない。 */
+  progressHref?: string | null;
 }
 
 export function StudentActionModal({
@@ -53,6 +71,8 @@ export function StudentActionModal({
   onStudentClick,
   onTeacherClick,
   onNotifyTransfer,
+  transferSource,
+  progressHref,
 }: StudentActionModalProps) {
   // 通知は誤送信すると取り消せないので、必ず確認を1枚挟む。
   // ★ フックは entry の early return より前に置くこと（条件付きフックになるため）。
@@ -131,6 +151,35 @@ export function StudentActionModal({
             </div>
             <div>科目: {subjectNames}</div>
           </div>
+
+          {/* 振替元。「いつ・誰の授業を動かしたコマなのか」は振替先だけ見ても分からないため、
+              振替先のコマを開いたときにここへ出す（元コマは別の週にあることが多い）。 */}
+          {isTransferredIn && transferSource && (
+            <div className="rounded-md border border-[var(--stroke)] bg-[var(--surface)] px-3 py-2 text-xs">
+              <div className="font-semibold text-[var(--headline)]">振替元</div>
+              <div className="mt-0.5 text-[var(--paragraph)]">
+                {formatDay(transferSource.entry_date)}{' '}
+                {transferSource.time_slot ? `${transferSource.time_slot.slot_number}限` : ''}
+                {transferSource.teacher &&
+                  ` ・ ${getSurname(transferSource.teacher) || transferSource.teacher.display_name || ''}`}
+              </div>
+            </div>
+          )}
+
+          {/* 進行表への導線。授業から「この生徒に何をやったか」へ1クリックで行けるようにする。
+              別タブで開くのは、座席表の作業（振替・出欠付け）を中断させないため。 */}
+          {progressHref && (
+            <a
+              href={progressHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-sm text-[var(--primary)] hover:underline"
+            >
+              <ClipboardList className="h-4 w-4" />
+              進行表を開く
+              <ExternalLink className="h-3 w-3" />
+            </a>
+          )}
 
           {isTransferredIn && onRevertTransfer && (
             <div className="flex flex-wrap gap-2">

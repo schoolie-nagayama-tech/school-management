@@ -104,6 +104,7 @@ import {
   getActiveTimeSlots,
   getRegularPatterns,
   getScheduleEntries,
+  getScheduleEntryById,
   getClosedDays,
   generateWeeklySchedule,
   hasEntriesForWeek,
@@ -204,7 +205,7 @@ function getWeekDates(weekStart: Date): string[] {
 export default function SchedulePage() {
   const { profile, isLoading: authLoading, selectedSchoolId, getSelectedSchoolIds } = useAuth();
   const { schools: masterSchools, subjects: masterSubjects } = useMasterData();
-  const { toasts, removeToast, success, error: toastError } = useToast();
+  const { toasts, removeToast, success, error: toastError, warning: toastWarning } = useToast();
   const [schools, setSchools] = useState<School[]>([]);
   const [selectedSchoolIdLocal, setSelectedSchoolIdLocal] = useState<string>('');
   const [weekStart, setWeekStart] = useState<Date>(() => getWeekStart(new Date()));
@@ -1109,6 +1110,37 @@ export default function SchedulePage() {
     [swapMode, handleSwapTargetClick]
   );
 
+  /**
+   * 授業操作モーダルで出す振替元。まず表示中の週から探し、無ければ ID で取りにいく
+   * （振替は週をまたぐので、振替元が今の週に無いほうが普通）。
+   */
+  const [actionModalTransferSource, setActionModalTransferSource] = useState<ScheduleEntry | null>(
+    null
+  );
+  useEffect(() => {
+    const fromId =
+      actionModalEntry?.status === 'transferred_in' ? actionModalEntry.transfer_from_id : null;
+    if (!fromId) {
+      setActionModalTransferSource(null);
+      return;
+    }
+    const local = entries.find((e) => e.id === fromId);
+    if (local) {
+      setActionModalTransferSource(local);
+      return;
+    }
+    let cancelled = false;
+    setActionModalTransferSource(null);
+    getScheduleEntryById(fromId).then((row) => {
+      if (!cancelled) setActionModalTransferSource(row);
+    });
+    return () => {
+      cancelled = true;
+    };
+    // entries は週の再取得のたびに作り直されるので、依存は「開いているコマ」だけにする
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [actionModalEntry?.id, actionModalEntry?.status, actionModalEntry?.transfer_from_id]);
+
   const handleStudentClickFromAction = useCallback(() => {
     const entry = actionModalEntry;
     if (!entry) return;
@@ -1300,6 +1332,11 @@ export default function SchedulePage() {
   const handleConstraintViolation = useCallback(
     (reason: string) => toastError(reason),
     [toastError]
+  );
+  /** 配置はしたが希望と違うときの通知（盤面 → 警告トースト）。止めずに知らせるだけ。 */
+  const handleConstraintWarning = useCallback(
+    (reason: string) => toastWarning(reason),
+    [toastWarning]
   );
   /** 振替モードの解除 */
   const handleTransferCancel = useCallback(() => setTransferMode(null), []);
@@ -3613,6 +3650,7 @@ export default function SchedulePage() {
                       onStudentEntryDrop={handleStudentEntryDrop}
                       onTeacherDropOnUnassigned={handleTeacherDropOnUnassigned}
                       onConstraintViolation={handleConstraintViolation}
+                      onConstraintWarning={handleConstraintWarning}
                       subjectNameById={subjectById}
                       absenceKeySet={absenceKeySet}
                       onToggleAbsence={handleToggleAbsence}
@@ -3686,6 +3724,7 @@ export default function SchedulePage() {
         scheduleGenerateHasExisting={scheduleGenerateHasExisting}
         onScheduleGenerateConfirm={handleScheduleGenerateConfirm}
         actionModalEntry={actionModalEntry}
+        actionModalTransferSource={actionModalTransferSource}
         onActionModalClose={() => setActionModalEntry(null)}
         // 形態タブでは振替候補コマ・スロットラベルをその形態に限定する
         timeSlots={isFormationBoard ? formationSlots : timeSlots}
