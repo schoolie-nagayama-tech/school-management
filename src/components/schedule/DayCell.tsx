@@ -229,9 +229,21 @@ export const DayCell = React.memo(function DayCell(props: DayCellProps) {
     />
   );
 
+  /**
+   * 通常表示では「授業が1つも入っていない講師」を盤面の主役から外し、
+   * コマ枠の下に講師名カードだけを並べる。授業のあるカードが埋もれないようにするため。
+   *
+   * 振替・配置・入れ替えの各モードでは分けない。空いている講師こそが探し物なので、
+   * 空席枠付きのカードとして他と同じ流れに置いたほうが見つけやすい。
+   */
+  const splitEmptyTeachers = !transferMode && !koushuPlacing && !swapSource;
+  const hasLesson = (g: TeacherGroup) => g.entries.some((e) => e.status !== 'cancelled');
+  const activeGroups = splitEmptyTeachers ? teacherGroups.filter(hasLesson) : teacherGroups;
+  const emptyGroups = splitEmptyTeachers ? teacherGroups.filter((g) => !hasLesson(g)) : [];
+
   // 分割用の推定高さ（生徒行 + 空席プレースホルダ行）。
   // Phase R: 空席数は席占有（1対1/1対2・45分半コマ）の vacancies 数と一致させる。
-  const withHeight = teacherGroups.map((g) => {
+  const withHeight = activeGroups.map((g) => {
     const displayCount = g.entries.filter((e) => e.status !== 'cancelled').length;
     const active = g.entries.filter(
       (e) => e.status !== 'cancelled' && e.status !== 'transferred_out'
@@ -246,7 +258,7 @@ export const DayCell = React.memo(function DayCell(props: DayCellProps) {
 
   let blocksNode: React.ReactNode;
   if (layout === 'pack') {
-    blocksNode = <div className={styles.tPack}>{teacherGroups.map(renderBlock)}</div>;
+    blocksNode = <div className={styles.tPack}>{activeGroups.map(renderBlock)}</div>;
   } else if (layout === 'col2') {
     const [left, right] = splitPreservingOrder(withHeight);
     blocksNode = (
@@ -260,7 +272,7 @@ export const DayCell = React.memo(function DayCell(props: DayCellProps) {
   } else {
     blocksNode = (
       <div className={styles.cellCols}>
-        <div className={styles.cellCol}>{teacherGroups.map(renderBlock)}</div>
+        <div className={styles.cellCol}>{activeGroups.map(renderBlock)}</div>
       </div>
     );
   }
@@ -314,6 +326,14 @@ export const DayCell = React.memo(function DayCell(props: DayCellProps) {
       )}
 
       {blocksNode}
+
+      {/* 授業が入っていない講師（＝空いている講師）。名前カードだけをコマ枠の下にまとめる。
+          生徒のドロップ先・欠勤トグル・座席番号はカードのまま生きている。 */}
+      {emptyGroups.length > 0 && (
+        <div className={styles.emptyTeacherRow} title="このコマで授業が入っていない講師">
+          {emptyGroups.map(renderBlock)}
+        </div>
+      )}
 
       {/* 配置モード中・配置可能セルのみ: 「＋ 担当未決定で配置」の細い緑破線バー。
           セル背景クリックと同じハンドラ（onCellPlace）を呼ぶ視覚的受け皿。 */}

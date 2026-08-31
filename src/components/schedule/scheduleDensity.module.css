@@ -35,6 +35,8 @@
   --sd-absent-row-bg: oklch(93% 0.004 27);
   /* 追加授業=ink/violet系の淡背景（振替の青250・体験の緑145と区別が付く紫寄り300） */
   --sd-additional-row-bg: oklch(94.5% 0.03 300);
+  /* テスト対策=橙80。バッジ色(warning)と同系にして、色だけで種別が分かるようにする */
+  --sd-testprep-row-bg: oklch(95% 0.045 80);
   --sd-fs-name: 10.5px;
   --sd-fs-tname: 11.5px;
   --sd-fs-meta: 9.5px;
@@ -70,6 +72,7 @@
     --sd-transfer-row-bg: oklch(32% 0.07 250);
     --sd-absent-row-bg: oklch(35% 0.012 27);
     --sd-additional-row-bg: oklch(32% 0.05 300);
+    --sd-testprep-row-bg: oklch(33% 0.06 80);
   }
 }
 
@@ -188,6 +191,20 @@
   padding: 8px 2px;
   cursor: default;
 }
+/* 授業なし講師の集約行（コマ枠の下）。名前カードだけを詰めて並べ、
+   授業のあるカードと視覚的に段を分ける。境界の線で「ここから下は空き」と分かる。 */
+.emptyTeacherRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  padding-top: 3px;
+  border-top: 1px dashed var(--sd-cell-border);
+}
+.emptyTeacherRow > * {
+  flex: 0 1 auto;
+  min-width: 96px;
+}
+
 /* セル内の動的パッキング: 列幅~128pxを保って入るだけ横に並べ、順序保存で折り返す */
 .tPack {
   display: grid;
@@ -484,11 +501,12 @@
   filter: grayscale(0.7);
 }
 
+/* 右padding は headRight のボタン（＋生徒 / 座席番号 / 欠勤 / ✕）の実幅ぶん空ける */
 .tHead {
   position: relative;
   display: flex;
   align-items: center;
-  padding: 0 44px 0 6px;
+  padding: 0 60px 0 6px;
   background: var(--sd-head-bg);
   min-height: 22px;
 }
@@ -569,6 +587,13 @@
     background 0.15s var(--sd-ease-out),
     color 0.15s var(--sd-ease-out),
     opacity 0.15s var(--sd-ease-out);
+}
+/* ＋生徒: 空きのあるカードでだけ出る。空席行を廃した通常表示での生徒追加の入口。 */
+.addStudentBtn {
+  color: var(--sd-ok-text);
+}
+.addStudentBtn:hover {
+  background: var(--sd-ok-bg);
 }
 /* ✕ は通常時は隠し、カードホバーで出す */
 .tCloseBtn {
@@ -710,7 +735,7 @@
   border-style: dashed;
 }
 
-/* 行色（状態）: 振替=青 / 欠席=グレー+打消し / 体験=success系 */
+/* 行色（状態）: 振替=青 / 欠席=グレー+打消し / 体験=緑 / テスト対策=橙 / 追加授業=紫 */
 .transferRow {
   background: var(--sd-transfer-row-bg);
 }
@@ -723,6 +748,15 @@
 }
 .clickable.trialRow:hover {
   background: var(--success-subtle);
+  filter: brightness(0.97);
+}
+/* テスト対策: 橙の淡背景。体験の緑・振替の青と並べても一目で分かる。
+   行色で分かるようになったのでバッジは廃止した（StudentCard 参照）。 */
+.testPrepRow {
+  background: var(--sd-testprep-row-bg);
+}
+.clickable.testPrepRow:hover {
+  background: var(--sd-testprep-row-bg);
   filter: brightness(0.97);
 }
 /* 追加授業（単発の追加コマ）: ink/violet 系の淡背景。バッジ廃止のぶんを行色で示す */
@@ -803,6 +837,11 @@
 }
 .seatEmpty:hover {
   filter: brightness(0.97);
+}
+/* 振替モードの空席枠は「見るための枠」。クリックはカード（＝振替先の指定）へ通す */
+.seatEmptyStatic {
+  pointer-events: none;
+  cursor: default;
 }
 
 /* 科目カラーチップ（漢字ラベル併記） */

@@ -3,7 +3,7 @@
 import React from 'react';
 import type { ScheduleEntry } from '@/types/schedule';
 import { SCHEDULE_ENTRY_KIND_LABELS, isExtraLessonKind } from '@/types/schedule';
-import { extraKindBadgeClass, getSubjectChip, type SubjectChipTone } from './scheduleBadges';
+import { getSubjectChip, type SubjectChipTone } from './scheduleBadges';
 import styles from './scheduleDensity.module.css';
 import { formatGradeLabel } from '@/lib/utils/gradeLabel';
 
@@ -44,9 +44,9 @@ export interface StudentCardProps {
 
 /**
  * 生徒行（1行表示・Phase U 密度改修）。
- * 「氏名 学年 [科目色チップ]」を1行に収める。出欠・振替・体験は「行色」で表現し、
- * 状態バッジ（振/欠/体）は廃止（凡例に行色の意味を集約）。
- * テスト対策・追加授業などの kind バッジは現行どおり残す。
+ * 「氏名 学年 [科目色チップ]」を1行に収める。出欠・振替と、単発コマの種別
+ * （体験・テスト対策・追加授業）はすべて「行色」で表現し、種別バッジは持たない
+ * （凡例に行色の意味を集約。1行の密度をバッジで圧迫しないため）。
  * 行クリックで親が授業操作メニュー（StudentActionModal）を開く。
  */
 export const StudentCard = React.memo(function StudentCard({
@@ -78,11 +78,12 @@ export const StudentCard = React.memo(function StudentCard({
   const isDraft = !!entry.isDraft;
   const isAbsent = entry.attendance_status === 'absent';
   const isTrial = entry.kind === 'trial';
+  const isTestPrep = entry.kind === 'test_prep';
   const isAdditional = entry.kind === 'additional';
-  // 種別バッジは test_prep のみ残す（体験・追加授業は行色で表現するのでバッジから除外）。
-  const showKindBadge = isExtraLessonKind(entry.kind) && entry.kind === 'test_prep';
 
-  // 行色（状態）: 優先度 = 欠席 > 振替元 > 振替先 > 体験 > 追加授業 > 通常
+  // 行色（状態）: 優先度 = 欠席 > 振替元 > 振替先 > 体験 > テスト対策 > 追加授業 > 通常
+  // 単発コマ（体験・テスト対策・追加授業）は種別バッジを持たず、すべて行色で見分ける。
+  // バッジは1行に収める密度を圧迫するため、色と凡例に情報を寄せている。
   const stateClass = isAbsent
     ? styles.absent
     : isTransferredOut
@@ -91,12 +92,18 @@ export const StudentCard = React.memo(function StudentCard({
         ? styles.transferRow
         : isTrial
           ? styles.trialRow
-          : isAdditional
-            ? styles.additionalRow
-            : '';
+          : isTestPrep
+            ? styles.testPrepRow
+            : isAdditional
+              ? styles.additionalRow
+              : '';
 
-  // 振替先は元日程を title に出す（バッジ廃止のぶんの情報を hover で補う）
-  const rowTitle = isTransferredIn ? '振替で入ったコマ' : studentName;
+  // 行色だけでは断定できない情報は hover の title で補う（バッジ廃止のぶん）
+  const rowTitle = isTransferredIn
+    ? '振替で入ったコマ'
+    : isExtraLessonKind(entry.kind)
+      ? `${studentName}（${SCHEDULE_ENTRY_KIND_LABELS[entry.kind]}）`
+      : studentName;
 
   // §2.12 入れ替えモードの行ハイライト（source/candidate/dimmed）。
   const swapClass =
@@ -141,14 +148,6 @@ export const StudentCard = React.memo(function StudentCard({
           title="自動マッチングの仮配置（未公開）"
         >
           仮
-        </span>
-      )}
-      {showKindBadge && (
-        <span
-          className={`${styles.kindBadge} ${extraKindBadgeClass(entry.kind)}`}
-          title={`${SCHEDULE_ENTRY_KIND_LABELS[entry.kind]}（単発の追加授業）`}
-        >
-          {SCHEDULE_ENTRY_KIND_LABELS[entry.kind]}
         </span>
       )}
       {isInquiry && (
