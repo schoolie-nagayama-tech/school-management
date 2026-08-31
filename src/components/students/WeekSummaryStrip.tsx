@@ -8,14 +8,17 @@
  *
  * 出すもの:
  *  - 今日の時点で有効な授業
- *  - まだ始まっていない授業のうち、同じ曜日×コマに今の授業が無いもの（「9/1から開始」）
- * 今の授業に控えている変更がある場合は、そのチップに「→ 10/1から理科」を添える。
+ *  - まだ始まっていない授業のうち、同じ曜日×コマに今の授業が無いもの（「9/1〜」）
+ * 今の授業に控えている変更がある場合は、そのチップに「→ 10/1〜 理科」を添える。
+ *
+ * ★1件=1行に圧縮する。生徒詳細モーダルの中で開かれるため、3行カードだと概観のはずの帯が
+ * 正である一覧表より面積を取ってしまう。
  */
 
 import { useMemo } from 'react';
 import type { ScheduleRegularPattern } from '@/types/schedule';
 import { DAY_OF_WEEK_LABELS } from '@/types/schedule';
-import { getPatternPeriodStatus, formatUpcomingBadge } from '@/lib/schedule/patternVersioning';
+import { getPatternPeriodStatus, formatUpcomingCellBadge } from '@/lib/schedule/patternVersioning';
 import styles from './lessonPlan.module.css';
 
 export interface WeekSummaryStripProps {
@@ -34,11 +37,11 @@ function slotKeyOf(pattern: ScheduleRegularPattern): string {
   return `${pattern.day_of_week}-${pattern.time_slot_id}`;
 }
 
-/** 「月 3限」のような見出し。コマ番号が引けないときは曜日だけ出す */
+/** 「木5限」のような見出し。1行に収めるので空白は入れない。コマ番号が引けないときは曜日だけ */
 function headingOf(pattern: ScheduleRegularPattern): string {
   const day = DAY_OF_WEEK_LABELS[pattern.day_of_week] ?? '—';
   const slot = pattern.time_slot?.slot_number;
-  return slot != null ? `${day} ${slot}限` : day;
+  return slot != null ? `${day}${slot}限` : day;
 }
 
 export function WeekSummaryStrip({
@@ -87,33 +90,26 @@ export function WeekSummaryStrip({
   if (chips.length === 0) return null;
 
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="flex flex-wrap gap-1.5">
       {chips.map(({ pattern, next, isNew }) => (
-        <div
-          key={pattern.id}
-          className="min-w-[116px] rounded-lg border border-[var(--stroke)] bg-[var(--surface)] px-3 py-1.5"
-        >
-          <span className="block text-[11px] font-bold text-[var(--headline)]">
-            {headingOf(pattern)}
-          </span>
-          <span className="block text-xs text-[var(--paragraph)]">
-            {lessonLabelOf(pattern)}
-            <span className="text-[var(--paragraph-light)]">（{teacherLabelOf(pattern)}）</span>
-          </span>
+        <span key={pattern.id} className={styles.summaryChip}>
+          <span className={styles.summaryChipSlot}>{headingOf(pattern)}</span>
+          <span className="text-[var(--paragraph)]">{lessonLabelOf(pattern)}</span>
+          <span className={styles.summaryChipTeacher}>（{teacherLabelOf(pattern)}）</span>
           {/* 控えている変更・これから始まる授業は warning 系の色で添える（今の内容と取り違えないように） */}
           {isNew ? (
-            <span className={`block text-[11px] ${styles.upcomingNote}`}>
-              {formatUpcomingBadge(pattern.effective_from)}開始
+            <span className={`text-[11px] ${styles.upcomingNote}`}>
+              {formatUpcomingCellBadge(pattern.effective_from)}
             </span>
           ) : (
             next && (
-              <span className={`block text-[11px] ${styles.upcomingNote}`}>
-                → {formatUpcomingBadge(next.effective_from)}
+              <span className={`text-[11px] ${styles.upcomingNote}`}>
+                →{formatUpcomingCellBadge(next.effective_from)}
                 {lessonLabelOf(next)}
               </span>
             )
           )}
-        </div>
+        </span>
       ))}
     </div>
   );

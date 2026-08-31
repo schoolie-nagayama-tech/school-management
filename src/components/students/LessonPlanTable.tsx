@@ -10,6 +10,10 @@
  * ここは表示層だけ。版管理・編集モーダル・保存処理・公開ゲートは既存の実装をそのまま使う
  * （行クリック／「変更」は呼び出し側が RegularScheduleFormModal を開く）。
  * D&Dによる登録はこの画面では持たない。登録は「＋授業を追加」、変更は行から行う。
+ *
+ * ★列構成: この表は生徒詳細モーダルの中で開かれる＝デスクトップ全幅は前提にできない。
+ * 「曜日・コマ / 内容 / 期間バー / 操作」の4列に畳み、コマ・比率・講師は主要素の下に小さく添える。
+ * 期間バーはヘッダーの月ラベルと同じ .timelineGrid（12等分）を共有し、月とバーを必ず対応させる。
  */
 
 import { useMemo, useState } from 'react';
@@ -158,14 +162,11 @@ export function LessonPlanTable({
 
       {/* 表はページ本体を横に伸ばさないよう、この中だけ横スクロールさせる */}
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[820px] border-collapse text-xs">
+        <table className="w-full min-w-[520px] border-collapse text-xs">
           <thead>
             <tr>
-              <Th>曜日</Th>
-              <Th>コマ</Th>
-              <Th>科目・講座</Th>
-              <Th>形態</Th>
-              <Th>講師</Th>
+              <Th>曜日・コマ</Th>
+              <Th>内容</Th>
               <th className="border-b border-[var(--stroke)] bg-[var(--bg)] px-2.5 py-1 text-left align-bottom">
                 {/* 年度送り。既定は今日の年度。塾の年度なので3月始まり2月終わり。 */}
                 <div className="flex items-center justify-center gap-1 text-[10px] text-[var(--paragraph-light)]">
@@ -189,7 +190,11 @@ export function LessonPlanTable({
                     <ChevronRight className="w-3 h-3" aria-hidden="true" />
                   </button>
                 </div>
-                <div className={styles.timelineHead}>
+                {/* 月ラベル。本文のバーと同じ .timelineGrid に載せて列を共有する */}
+                <div
+                  className={`${styles.timelineGrid} ${styles.timelineHead}`}
+                  data-lp-grid="months"
+                >
                   {months.map((month) => (
                     <span key={month}>{Number(month.slice(5))}</span>
                   ))}
@@ -203,7 +208,7 @@ export function LessonPlanTable({
             {rowCount === 0 && (
               <tr>
                 <td
-                  colSpan={7}
+                  colSpan={4}
                   className="px-2.5 py-6 text-center text-[11px] text-[var(--paragraph-light)]"
                 >
                   {year}年度に該当する授業はありません。
@@ -307,35 +312,51 @@ function PlanTableRow({
     >
       {/* 曜日・コマは鎖の先頭だけに出し、同じコマの版であることを縦の結合で示す */}
       {!isChained && (
-        <>
-          <Td rowSpan={chainLength}>{DAY_OF_WEEK_LABELS[pattern.day_of_week] ?? '—'}</Td>
-          <Td rowSpan={chainLength}>{slotLabelOf(pattern)}</Td>
-        </>
+        <td
+          rowSpan={chainLength}
+          className="px-2.5 py-2 align-middle whitespace-nowrap text-[var(--paragraph)]"
+        >
+          <span className="block font-medium text-[var(--headline)]">
+            {DAY_OF_WEEK_LABELS[pattern.day_of_week] ?? '—'}
+          </span>
+          <span className="block text-[10px] text-[var(--paragraph-light)]">
+            {slotLabelOf(pattern)}
+          </span>
+        </td>
       )}
-      <td className="px-2.5 py-2 align-middle whitespace-nowrap font-medium text-[var(--headline)]">
-        {isChained && (
-          <span className="text-[var(--paragraph-light)] font-normal mr-1" aria-hidden="true">
-            ↳
-          </span>
-        )}
-        {lessonLabelOf(pattern)}
-        {isCourse && (
-          <span className="ml-1.5 inline-flex rounded px-1.5 py-0.5 text-[9px] font-normal bg-[var(--accent-ink-subtle)] text-[var(--accent-ink)]">
-            講座
-          </span>
-        )}
+      {/* 内容だけは折り返し可（科目を複数持つ行が横に伸びると期間バーが押し出されるため） */}
+      <td className="px-2.5 py-2 align-middle text-[var(--paragraph)]">
+        <span className="block font-medium text-[var(--headline)]">
+          {isChained && (
+            <span className="text-[var(--paragraph-light)] font-normal mr-1" aria-hidden="true">
+              ↳
+            </span>
+          )}
+          {lessonLabelOf(pattern)}
+          {isCourse && (
+            <span className="ml-1.5 inline-flex rounded px-1.5 py-0.5 text-[9px] font-normal bg-[var(--accent-ink-subtle)] text-[var(--accent-ink)]">
+              講座
+            </span>
+          )}
+        </span>
+        {/* 比率は個別指導だけの概念（講座は定員で管理する）。列を分けず主要素の下に添える */}
+        <span className="block text-[10px] text-[var(--paragraph-light)] whitespace-nowrap">
+          {[isCourse ? null : pattern.ratio === 1 ? '1対1' : '1対2', teacherLabelOf(pattern)]
+            .filter(Boolean)
+            .join('・')}
+        </span>
       </td>
-      {/* 比率は個別指導だけの概念（講座は定員で管理する） */}
-      <Td>{isCourse ? '—' : pattern.ratio === 1 ? '1対1' : '1対2'}</Td>
-      <Td>{teacherLabelOf(pattern)}</Td>
       <td className="px-2.5 py-2 align-middle">
         <div className={styles.timeline} title={formatPatternPeriod(pattern)}>
-          {Array.from({ length: 12 }, (_, index) => (
-            <span
-              key={index}
-              className={`${styles.cell} ${index === currentMonthIndex ? styles.cellCurrent : ''}`}
-            />
-          ))}
+          {/* 月セルはヘッダーの月ラベルと同じ .timelineGrid に載せる（列定義の共有が肝） */}
+          <div className={styles.timelineGrid} data-lp-grid="months">
+            {Array.from({ length: 12 }, (_, index) => (
+              <span
+                key={index}
+                className={`${styles.cell} ${index === currentMonthIndex ? styles.cellCurrent : ''}`}
+              />
+            ))}
+          </div>
           <div
             className={`${styles.bar} ${BAR_CLASS[status]} ${
               bar.clippedLeft ? styles.clippedLeft : ''
@@ -374,17 +395,5 @@ function PlanTableRow({
         )}
       </td>
     </tr>
-  );
-}
-
-/** 本文セル（曜日・コマ・形態・講師で体裁を揃える） */
-function Td({ children, rowSpan }: { children: React.ReactNode; rowSpan?: number }) {
-  return (
-    <td
-      rowSpan={rowSpan}
-      className="px-2.5 py-2 align-middle whitespace-nowrap text-[var(--paragraph)]"
-    >
-      {children}
-    </td>
   );
 }

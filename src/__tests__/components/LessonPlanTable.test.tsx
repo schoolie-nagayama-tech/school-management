@@ -6,11 +6,14 @@
  *    純関数のテストだけでは崩れに気づけない（曜日・コマが1回しか出ないこと自体が仕様）。
  *  - 「終了した授業も表示」トグルをオンにしても直近1年より古い行は出さない、という運用上の決定は
  *    表示側で握りつぶすと静かに破れる。トグル操作込みで固定する。
+ *  - ★この表は生徒詳細モーダル（幅が限られる）の中で開かれるが、実機での見え方はテストから
+ *    確かめられない。「ヘッダーの月ラベルと本文のバーが同じグリッドを共有する」「列は4つ」など、
+ *    崩れの根因になった構造だけを DOM で固定する。
  *
  * @vitest-environment jsdom
  */
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { LessonPlanTable } from '@/components/students/LessonPlanTable';
 import type { ScheduleRegularPattern, ScheduleTimeSlot } from '@/types/schedule';
@@ -68,7 +71,7 @@ function renderTable(patterns: ScheduleRegularPattern[], canEdit = true) {
   const onEdit = vi.fn();
   const onDelete = vi.fn();
   const onAdd = vi.fn();
-  render(
+  const view = render(
     <LessonPlanTable
       patterns={patterns}
       today={TODAY}
@@ -80,7 +83,7 @@ function renderTable(patterns: ScheduleRegularPattern[], canEdit = true) {
       onAdd={onAdd}
     />
   );
-  return { onEdit, onDelete, onAdd };
+  return { onEdit, onDelete, onAdd, container: view.container };
 }
 
 describe('LessonPlanTable', () => {
@@ -161,5 +164,51 @@ describe('LessonPlanTable', () => {
     renderTable([pattern({ id: 'shakai' })], false);
     expect(screen.queryByRole('button', { name: '変更' })).toBeNull();
     expect(screen.queryByRole('button', { name: '授業を追加' })).toBeNull();
+  });
+
+  it('ヘッダーの月ラベルと本文のバーが同じグリッド（12列）を共有する', () => {
+    // ★ ここが崩れると月とバーの位置が対応せず「いつから変わるか」が読めなくなる。
+    //   以前はヘッダーだけ別の列定義を参照していて、月ラベルが縦一列に落ちていた。
+    const { container } = renderTable([pattern({ id: 'shakai' })]);
+    const grids = Array.from(container.querySelectorAll<HTMLElement>('[data-lp-grid="months"]'));
+    // ヘッダーの月ラベル1つ ＋ 本文の行1つ
+    expect(grids).toHaveLength(2);
+    for (const grid of grids) {
+      expect(grid.children).toHaveLength(12);
+    }
+    // 同じCSSクラス＝同じ grid-template-columns。別々に幅を決めさせない
+    expect(grids[0].className.split(' ')).toContain(grids[1].className.split(' ')[0]);
+  });
+
+  it('月ラベルは3月始まりの12ヶ月を横並びで出す', () => {
+    const { container } = renderTable([pattern({ id: 'shakai' })]);
+    const head = container.querySelector<HTMLElement>('thead [data-lp-grid="months"]');
+    expect(head).not.toBeNull();
+    expect(Array.from(head!.children).map((el) => el.textContent)).toEqual([
+      '3',
+      '4',
+      '5',
+      '6',
+      '7',
+      '8',
+      '9',
+      '10',
+      '11',
+      '12',
+      '1',
+      '2',
+    ]);
+  });
+
+  it('モーダル幅でも成立するよう「曜日・コマ / 内容 / 期間 / 操作」の4列に畳む', () => {
+    const { container } = renderTable([pattern({ id: 'shakai' })]);
+    const headerCells = container.querySelectorAll('thead th');
+    expect(headerCells).toHaveLength(4);
+    expect(screen.getByText('曜日・コマ')).toBeDefined();
+    expect(screen.getByText('内容')).toBeDefined();
+    // 本文も4セル。コマ・比率・講師は独立した列を持たず、主要素の下に添える
+    const bodyRow = container.querySelector('tbody tr')!;
+    expect(bodyRow.querySelectorAll('td')).toHaveLength(4);
+    expect(within(bodyRow as HTMLElement).getByText('1対2・山田')).toBeDefined();
   });
 });

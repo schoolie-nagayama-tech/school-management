@@ -30,6 +30,7 @@ import {
   formatUpcomingCellBadge,
   todayStr,
 } from '@/lib/schedule/patternVersioning';
+import { formatWeeklyCountLabel, summarizeWeeklyCount } from '@/lib/schedule/lessonPlanTable';
 import { RegularScheduleFormModal } from './RegularScheduleFormModal';
 import { LessonPlanTable } from './LessonPlanTable';
 import { WeekSummaryStrip } from './WeekSummaryStrip';
@@ -218,6 +219,17 @@ export function AttendanceMatrix({
   // 同じ曜日×コマ（例: 国/理 のように 2 科目を 1 コマで実施）は週 1 回として数えるため、
   // パターン件数ではなく「曜日×コマ」のユニーク数で集計する。
   const weeklyCount = useMemo(() => patternMap.size, [patternMap]);
+
+  /**
+   * v2: 週回数の表示文言。
+   * 「今日の時点で有効な行」だけを数えると、10/1 開始の予定しか無い生徒が「週0回」になり
+   * 予定があるのに通っていないように読める。開始前の予定も併せて数え、
+   * 「10/1から 週2回」「通常期: 週2回（10/1から 週3回）」の形で出す。
+   */
+  const weeklyCountLabel = useMemo(
+    () => formatWeeklyCountLabel(summarizeWeeklyCount(individualPatterns, today)),
+    [individualPatterns, today]
+  );
 
   /**
    * 講座の授業（個別以外の形態の通常期パターン）。
@@ -464,10 +476,14 @@ export function AttendanceMatrix({
     return (
       <div className="space-y-3">
         {/* 週回数は請求・面談で使うので、帯の見出しとして残す */}
-        <div className="flex items-center gap-2 text-xs">
+        <div className="flex flex-wrap items-center gap-x-2 text-xs">
           <span className="text-[var(--paragraph-light)]">
-            通常期: <span className="font-bold text-[var(--headline)]">週{weeklyCount}回</span>
+            {weeklyCountLabel.prefix}{' '}
+            <span className="font-bold text-[var(--headline)]">{weeklyCountLabel.count}</span>
           </span>
+          {weeklyCountLabel.note && (
+            <span className="text-[var(--paragraph-light)]">{weeklyCountLabel.note}</span>
+          )}
           {courseWeeklyCount > 0 && (
             <span className="text-[var(--paragraph-light)]">
               （ほかに講座 {courseWeeklyCount} コマ）
