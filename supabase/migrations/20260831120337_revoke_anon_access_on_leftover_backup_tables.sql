@@ -10,14 +10,29 @@
 -- 恒久テーブルの RLS 設計自体は正しく、匿名で読める面は公開情報のみで個人情報の露出はゼロだった。
 --
 -- 表そのものの削除（DROP）はしない。役目が終わっているかの判断は別途行う。
+--
+-- ★ 存在チェックで包む理由:
+--   これらは本番で手作業で作られた臨時表で、base_schema（本番dump）にも含まれていない。
+--   ローカル/CI の db reset では存在しないため、素で書くと 42P01 で全体が落ちる
+--   （実際に RLS Integration Tests がこれで失敗した）。本番だけに効けばよい記録なので、
+--   存在するときだけ実行する。
 -- ============================================================
 
-revoke all on table public._koushu_progress_backup_20260626 from anon, authenticated;
-revoke all on table public._seasonal_proposal_applied_koma_backup_20260626 from anon, authenticated;
-revoke all on table public._koushu_applied_fix_backup_20260804 from anon, authenticated;
-
--- revoke だけだと、将来 GRANT を戻す操作をした瞬間に再び全公開に戻る。
--- ポリシーを1本も作らずに RLS を有効化しておくことで、service role 以外からは実質不可視になる（二重の防御）。
-alter table public._koushu_progress_backup_20260626 enable row level security;
-alter table public._seasonal_proposal_applied_koma_backup_20260626 enable row level security;
-alter table public._koushu_applied_fix_backup_20260804 enable row level security;
+do $$
+declare
+  t text;
+begin
+  foreach t in array array[
+    'public._koushu_progress_backup_20260626',
+    'public._seasonal_proposal_applied_koma_backup_20260626',
+    'public._koushu_applied_fix_backup_20260804'
+  ] loop
+    if to_regclass(t) is not null then
+      execute format('revoke all on table %s from anon, authenticated', t);
+      -- revoke だけだと、将来 GRANT を戻す操作をした瞬間に再び全公開に戻る。
+      -- ポリシーを1本も作らずに RLS を有効化しておくことで、service role 以外からは
+      -- 実質不可視になる（二重の防御）。
+      execute format('alter table %s enable row level security', t);
+    end if;
+  end loop;
+end $$;

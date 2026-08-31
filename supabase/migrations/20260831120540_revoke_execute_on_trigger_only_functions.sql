@@ -15,9 +15,23 @@
 -- ★ check_school_access / check_user_role / check_student_access は意図的に触らない。
 --   これらは RLS ポリシー式から参照されており、呼び出しロールの EXECUTE を落とすと認可そのものが
 --   壊れて全ユーザーがロックアウトされうる。advisor の警告は残るが、これは残して正しい。
+--
+-- ★ 存在チェックで包む理由: sync_student_textbook_school_id など一部は base_schema に含まれず
+--   ローカル/CI では存在しない。素で REVOKE すると 42883 で全体が落ちる。
 -- ============================================================
 
-revoke execute on function public.handle_new_user() from anon, authenticated;
-revoke execute on function public.cascade_student_school_to_textbooks() from anon, authenticated;
-revoke execute on function public.sync_student_textbook_school_id() from anon, authenticated;
-revoke execute on function public.trg_send_form_notification() from anon, authenticated;
+do $$
+declare
+  sig text;
+begin
+  foreach sig in array array[
+    'public.handle_new_user()',
+    'public.cascade_student_school_to_textbooks()',
+    'public.sync_student_textbook_school_id()',
+    'public.trg_send_form_notification()'
+  ] loop
+    if to_regprocedure(sig) is not null then
+      execute format('revoke execute on function %s from anon, authenticated', sig);
+    end if;
+  end loop;
+end $$;

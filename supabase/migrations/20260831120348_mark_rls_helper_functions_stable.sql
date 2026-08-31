@@ -16,8 +16,22 @@
 --
 -- 残作業: ポリシー内の裸の auth.uid() 39箇所を (select auth.uid()) に包むと、行ごとの再評価が
 --         InitPlan に畳まれてさらに効く（Supabase advisor の auth_rls_initplan 警告48件）。
+--
+-- ★ 存在チェックで包む理由: ローカル/CI の db reset では base_schema の内容次第で
+--   一部の関数が無いことがあり、素で ALTER すると 42883 で全体が落ちる。
 -- ============================================================
 
-alter function public.check_school_access(uuid) stable;
-alter function public.check_user_role(text[]) stable;
-alter function public.check_student_access(uuid) stable;
+do $$
+declare
+  sig text;
+begin
+  foreach sig in array array[
+    'public.check_school_access(uuid)',
+    'public.check_user_role(text[])',
+    'public.check_student_access(uuid)'
+  ] loop
+    if to_regprocedure(sig) is not null then
+      execute format('alter function %s stable', sig);
+    end if;
+  end loop;
+end $$;
