@@ -13,7 +13,7 @@
  *  - DB・React に依存させないこと。
  */
 
-import { getPatternPeriodStatus } from './patternVersioning';
+import { formatUpcomingBadge, getPatternPeriodStatus } from './patternVersioning';
 
 /** 塾の年度の開始月（3月）。4月始まりの学校年度とは違うので定数で明示する。 */
 const ACADEMIC_YEAR_START_MONTH = 3;
@@ -182,4 +182,92 @@ export function groupIntoChains<T>(rows: T[], keyOf: (row: T) => string): T[][] 
   }
   // Map の iterator を直接展開しない（tsconfig の target がES5系のため Array.from を使う）
   return Array.from(chains.values());
+}
+
+/** 週回数を数える最小の行。曜日×コマのユニーク数で数えるため、この4つだけ要る。 */
+export interface WeeklyCountRow extends PlanRowPeriod {
+  day_of_week: number;
+  time_slot_id: string;
+}
+
+/** 週回数の内訳（今の回数と、次に変わる日の回数） */
+export interface WeeklyCountSummary {
+  /** 今日の時点で有効な週回数 */
+  currentCount: number;
+  /** 次に週回数が変わる日 'YYYY-MM-DD'（開始前の行のうち最も早い開始日）。無ければ null */
+  upcomingFrom: string | null;
+  /** upcomingFrom 時点の週回数。開始前の行が無ければ currentCount と同じ */
+  upcomingCount: number;
+}
+
+/** 曜日×コマのキー。同じコマに2科目入っていても週1回として数えるために使う */
+function weeklySlotKey(row: WeeklyCountRow): string {
+  return `${row.day_of_week}-${row.time_slot_id}`;
+}
+
+/** その日に有効な行の曜日×コマのユニーク数。日付は 'YYYY-MM-DD' の辞書順比較で足りる。 */
+function countWeeklySlotsAt(rows: WeeklyCountRow[], date: string): number {
+  const keys = new Set<string>();
+  for (const row of rows) {
+    if (row.effective_from > date) continue;
+    if (row.effective_until && row.effective_until < date) continue;
+    keys.add(weeklySlotKey(row));
+  }
+  return keys.size;
+}
+
+/**
+ * 週回数を「今」と「次に変わる日」の2点で数える。
+ *
+ * ★なぜ2点で数えるか:
+ *  10/1 開始の予定しか無い生徒は、今日の時点で有効な行が0件なので「週0回」になる。
+ *  嘘ではないが、予定があるのに週0回とだけ出すのは誤解を招くため、開始前の予定も併せて返し、
+ *  表示側で「10/1から 週2回」と出せるようにする。
+ *  upcomingCount は「その日に有効な行」を数えるので、今の授業が続くぶんも自然に足される。
+ */
+export function summarizeWeeklyCount(rows: WeeklyCountRow[], today: string): WeeklyCountSummary {
+  let upcomingFrom: string | null = null;
+  for (const row of rows) {
+    if (getPatternPeriodStatus(row, today) !== 'upcoming') continue;
+    if (!upcomingFrom || row.effective_from < upcomingFrom) upcomingFrom = row.effective_from;
+  }
+  const currentCount = countWeeklySlotsAt(rows, today);
+  return {
+    currentCount,
+    upcomingFrom,
+    upcomingCount: upcomingFrom ? countWeeklySlotsAt(rows, upcomingFrom) : currentCount,
+  };
+}
+
+/** 週回数の表示文言。prefix と count は必ず出し、note は変化があるときだけ添える。 */
+export interface WeeklyCountLabel {
+  /** 「通常期:」または「10/1から」 */
+  prefix: string;
+  /** 「週2回」 */
+  count: string;
+  /** 「（10/1から 週3回）」。控えている変化が無ければ null */
+  note: string | null;
+}
+
+/**
+ * 週回数の表示文言を組み立てる。
+ *  - 今0回で予定だけある … 「10/1から 週2回」（週0回とは出さない）
+ *  - 今もあり予定もある   … 「通常期: 週2回（10/1から 週3回）」
+ *  - 予定が無い/回数が変わらない … 「通常期: 週2回」
+ */
+export function formatWeeklyCountLabel(summary: WeeklyCountSummary): WeeklyCountLabel {
+  const { currentCount, upcomingFrom, upcomingCount } = summary;
+  if (currentCount === 0 && upcomingFrom) {
+    return {
+      prefix: formatUpcomingBadge(upcomingFrom),
+      count: `週${upcomingCount}回`,
+      note: null,
+    };
+  }
+  // 回数が変わらない予定（科目だけ差し替え等）で括弧を出すと情報が増えないので出さない
+  const note =
+    upcomingFrom && upcomingCount !== currentCount
+      ? `（${formatUpcomingBadge(upcomingFrom)} 週${upcomingCount}回）`
+      : null;
+  return { prefix: '通常期:', count: `週${currentCount}回`, note };
 }

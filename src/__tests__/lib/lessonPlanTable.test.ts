@@ -17,6 +17,9 @@ import {
   filterPlanRows,
   groupIntoChains,
   oneYearBefore,
+  summarizeWeeklyCount,
+  formatWeeklyCountLabel,
+  type WeeklyCountRow,
 } from '@/lib/schedule/lessonPlanTable';
 
 describe('getAcademicYear', () => {
@@ -205,5 +208,83 @@ describe('groupIntoChains', () => {
       { id: 'new', key: 'k' },
     ];
     expect(groupIntoChains(rows, (r) => r.key)[0].map((r) => r.id)).toEqual(['old', 'new']);
+  });
+});
+
+describe('summarizeWeeklyCount / formatWeeklyCountLabel', () => {
+  const TODAY = '2026-08-31';
+
+  /** 週回数は曜日×コマのユニーク数で数える。テストの行はその2つと期間だけあればよい。 */
+  function row(
+    day: number,
+    slot: string,
+    effective_from: string,
+    effective_until: string | null = null
+  ): WeeklyCountRow {
+    return { day_of_week: day, time_slot_id: slot, effective_from, effective_until };
+  }
+
+  it('同じ曜日×コマに2科目入っていても週1回として数える', () => {
+    const rows = [row(4, 'slot-5', '2026-04-01'), row(4, 'slot-5', '2026-04-01')];
+    expect(summarizeWeeklyCount(rows, TODAY).currentCount).toBe(1);
+  });
+
+  it('開始前の予定しか無いときは「週0回」ではなく開始日つきで出す', () => {
+    const rows = [row(4, 'slot-5', '2026-10-01'), row(2, 'slot-3', '2026-10-01')];
+    const summary = summarizeWeeklyCount(rows, TODAY);
+    expect(summary).toEqual({ currentCount: 0, upcomingFrom: '2026-10-01', upcomingCount: 2 });
+    expect(formatWeeklyCountLabel(summary)).toEqual({
+      prefix: '10/1から',
+      count: '週2回',
+      note: null,
+    });
+  });
+
+  it('今も予定もあるときは、開始日時点の合計を括弧で添える', () => {
+    const rows = [
+      row(1, 'slot-3', '2026-04-01'),
+      row(3, 'slot-4', '2026-04-01'),
+      // 10/1 から1コマ増える（既存2コマは続くので合計3回）
+      row(5, 'slot-5', '2026-10-01'),
+    ];
+    const summary = summarizeWeeklyCount(rows, TODAY);
+    expect(summary).toEqual({ currentCount: 2, upcomingFrom: '2026-10-01', upcomingCount: 3 });
+    expect(formatWeeklyCountLabel(summary)).toEqual({
+      prefix: '通常期:',
+      count: '週2回',
+      note: '（10/1から 週3回）',
+    });
+  });
+
+  it('回数が変わらない予定（科目の差し替え）では括弧を出さない', () => {
+    const rows = [
+      // 同じ 水4限 が 9/30 で終わり 10/1 から別の版に切り替わる
+      row(3, 'slot-4', '2026-04-01', '2026-09-30'),
+      row(3, 'slot-4', '2026-10-01'),
+    ];
+    const summary = summarizeWeeklyCount(rows, TODAY);
+    expect(summary.currentCount).toBe(1);
+    expect(summary.upcomingCount).toBe(1);
+    expect(formatWeeklyCountLabel(summary).note).toBeNull();
+  });
+
+  it('予定が無ければ従来どおり「通常期: 週N回」', () => {
+    const summary = summarizeWeeklyCount([row(1, 'slot-3', '2026-04-01')], TODAY);
+    expect(summary.upcomingFrom).toBeNull();
+    expect(formatWeeklyCountLabel(summary)).toEqual({
+      prefix: '通常期:',
+      count: '週1回',
+      note: null,
+    });
+  });
+
+  it('終了した行は今の週回数に数えない', () => {
+    const rows = [row(1, 'slot-3', '2026-04-01', '2026-07-31')];
+    expect(summarizeWeeklyCount(rows, TODAY)).toEqual({
+      currentCount: 0,
+      upcomingFrom: null,
+      upcomingCount: 0,
+    });
+    expect(formatWeeklyCountLabel(summarizeWeeklyCount(rows, TODAY)).count).toBe('週0回');
   });
 });
