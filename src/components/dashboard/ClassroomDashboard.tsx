@@ -5,6 +5,7 @@
  * ------------------------------------------------------------------
  * docs/classroom-manager-dashboard-draft.md の構成。
  * 「業務系（日々さばく）」を上段、「経営系（傾向を見る）」を下段に置く2層構成。
+ * 最上部に「今日やること」ウィジェット（TodayTodosWidget）を置き、散らばった情報から選別した行動リストを主役にする。
  * 要対応アラート・本日の授業・業務進捗・在籍数・未処理申込は実データ接続済み。
  * 経営指標ブロック（増減内訳・学年構成・男女比など）はダミーのまま
  * （school_monthly_metrics の投入が永山のみのため。データが揃い次第差し替え）。
@@ -48,6 +49,8 @@ import type { AutoValues } from '@/lib/api/courseProgress';
 import { AdminLayout } from '@/components/layouts';
 import { Card, CardContent, CardHeader, CardTitle, Loading } from '@/components/ui';
 import AccessDenied from '@/components/AccessDenied';
+// 「今日やること」は最上部の主役なので遅延ロードせず即座に出す
+import { TodayTodosWidget } from '@/components/dashboard/TodayTodosWidget';
 import { isSystemAdmin } from '@/lib/utils/roles';
 import {
   Inbox,
@@ -884,7 +887,11 @@ function DetailView() {
         これは検討用モックです。すべてダミーデータで、実データは未接続です。
       </div>
 
-      {/* ① 連絡事項（掲示板）— 最上部・全幅 */}
+      {/* ⓪ 今日やること — 最上部・全幅。運営と生徒の用事を1本に混ぜた行動リスト */}
+      <SectionLabel icon={ListTodo}>今日やること</SectionLabel>
+      <TodayTodosWidget schoolIds={getSelectedSchoolIds()} />
+
+      {/* ① 連絡事項（掲示板）— 全幅 */}
       <SectionLabel icon={Pin}>連絡事項</SectionLabel>
       {/* 左アクセント: primary（全体連絡＝ブランド色で最上部を引き締める） */}
       <Card className="border-l-4 border-l-primary">
