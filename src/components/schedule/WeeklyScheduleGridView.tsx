@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Printer, Hash } from 'lucide-react';
 import {
   DndContext,
@@ -150,18 +150,10 @@ export function WeeklyScheduleGridView(props: WeeklyScheduleGridViewProps) {
   const todayLocal = getTodayLocalDateStr();
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
-  // 転置モードの日行スナップはページ全体（document）スクロールに載せる。
-  // mandatory はツールバーやパネルが絡むページ全体では引っかかりやすいため proximity で運用。
-  // アンマウント・向き切替時は必ず元へ戻す（他ページに snap を残さない）。
-  useEffect(() => {
-    if (orientation !== 'rows') return;
-    const el = document.documentElement;
-    const prev = el.style.scrollSnapType;
-    el.style.scrollSnapType = 'y proximity';
-    return () => {
-      el.style.scrollSnapType = prev;
-    };
-  }, [orientation]);
+  // 【転置モードの日行スナップは廃止】かつて html に scroll-snap-type を設定していたが、
+  // スナップ点が盤面内の曜日行にしか無く、盤面より上（ヘッダー・メニュー）へ戻ろうとしても
+  // 最寄りの曜日行へ引き戻されて上部に到達できなくなる罠があったため撤去した。
+  // 再導入するならページ最上部にもスナップ点を置くこと。
 
   // 手動で開いた「授業なし」スロット（slot.id をキー）
   const [expandedEmptySlots, setExpandedEmptySlots] = useState<Set<string>>(new Set());

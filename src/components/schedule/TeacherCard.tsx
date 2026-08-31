@@ -270,6 +270,13 @@ export const TeacherCard = React.memo(function TeacherCard({
 
   const showSeatInput = !!onSeatNoChange && !isUnassigned && !isAvailableOnly;
 
+  /**
+   * 「生徒を追加」ボタン。通常表示で空席行を出さなくなったぶん、生徒を足す入口を
+   * ヘッダーに移した（空席行のクリックが唯一の入口だったため、消すと足せなくなる）。
+   * 振替・配置・入れ替えの各モードでは、カードのクリックがそのモードの操作なので出さない。
+   */
+  const showAddStudent = canAddStudent && !transferMode && !koushuPlacing && !swapSource;
+
   // §2.12 入れ替えモードでの各生徒行のハイライト状態を算出する。
   // 判定は「同じ日・同じコマ・別講師」（このカードは date/timeSlotId/teacher.id を持つ）。
   const getSwapState = (entry: ScheduleEntry): SwapState => {
@@ -375,6 +382,21 @@ export const TeacherCard = React.memo(function TeacherCard({
           )}
         </span>
         <span className={styles.headRight}>
+          {showAddStudent && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onAddStudent();
+              }}
+              className={`${styles.headBtn} ${styles.addStudentBtn}`}
+              aria-label="生徒を追加"
+              title="この講師に生徒を追加"
+            >
+              <Plus size={11} />
+            </button>
+          )}
           {showSeatInput && (
             <input
               className={styles.seatInput}
@@ -439,28 +461,22 @@ export const TeacherCard = React.memo(function TeacherCard({
 
         {/* 空席プレースホルダ行（破線+緑面）。Phase R: 席占有の vacancies を描画する。
             'full'=丸ごと空き / 'first'=前半だけ空き / 'second'=後半だけ空き。
-            D&D のドロップ先はカード本体全体なので、この行に落としても割当が成立する。 */}
-        {!transferMode &&
-          !koushuPlacing &&
-          !swapSource &&
+
+            出すのは振替モードのときだけ。振替先を探すときは「どこが空いているか」が
+            主題なので枠が見えたほうが早い。通常表示では空席行はノイズにしかならず、
+            授業のあるカードが埋もれるため出さない（空きは講師カードの左縁の緑で分かる）。
+            振替モードではカード全体のクリックが振替先の指定なので、この行はクリックを
+            受けずに素通りさせる（pointer-events を切る）。 */}
+        {transferMode &&
           canAddStudent &&
           occupancy.vacancies.map((v, i) => {
             const label =
               v.kind === 'first' ? '空席（前45）' : v.kind === 'second' ? '空席（後45）' : '空席';
-            const title =
-              v.kind === 'full'
-                ? '空席（クリックで生徒を追加 / 生徒行をドラッグしてここに割当）'
-                : `${label}（クリックで生徒を追加）`;
             return (
               <div
                 key={`empty-${v.kind}-${i}`}
-                className={`${styles.seatEmpty}${v.kind !== 'full' ? ' ' + styles.seatEmptyHalf : ''}`}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onAddStudent();
-                }}
-                role="button"
-                title={title}
+                className={`${styles.seatEmpty} ${styles.seatEmptyStatic}${v.kind !== 'full' ? ' ' + styles.seatEmptyHalf : ''}`}
+                aria-hidden="true"
               >
                 <Plus size={10} />
                 {label}

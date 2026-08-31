@@ -11,7 +11,7 @@
  * 表示:
  *  - 本日の schedule_entries (status=scheduled/completed/transferred_in、講師=ログイン中ユーザー)
  *  - 各コマカード: 時刻 / 生徒名 / 教科 / 報告書ステータス(未提出=赤・下書き=黄・承認待ち=灰・公開=緑)
- *  - クリックで /lesson-reports/[scheduleEntryId] へ遷移
+ *  - クリックで /lesson-reports/[scheduleEntryId] を別タブで開く（一覧を残したまま次のコマへ移れる）
  *
  * 日付ナビ:
  *  - 「前日 / 本日 / 翌日」のシンプルなナビ
@@ -281,6 +281,10 @@ export default function TodayPage() {
                 <Link
                   key={entry.id}
                   href={`/lesson-reports/${entry.id}`}
+                  // 報告書は別タブで開く。この一覧を残したまま次のコマへ移れるようにするため
+                  //（同じタブだと1件書くたびに一覧へ戻る操作が要る）。
+                  target="_blank"
+                  rel="noopener noreferrer"
                   // 40ms 刻みでカードがフェードイン。
                   // 9件目以降は最大値で頭打ち（長すぎる遅延は逆効果）
                   className="block stagger-item"

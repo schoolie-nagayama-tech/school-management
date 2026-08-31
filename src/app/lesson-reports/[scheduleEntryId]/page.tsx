@@ -110,6 +110,7 @@ import { DemoProgressPreview } from '@/components/lesson-reports/DemoProgressPre
 import { LessonReportProgressGrid } from '@/components/lesson-reports/LessonReportProgressGrid';
 import { ReportDetail } from '@/components/mypage/ReportDetail';
 import { formatGradeLabelOrEmpty } from '@/lib/utils/gradeLabel';
+import { getSurname } from '@/lib/utils/teacherName';
 import { applyHomeworkCompletionPct, applyHomeworkMark } from '@/lib/lesson-reports/homeworkMark';
 import {
   computeAutoNextPlan,
@@ -147,7 +148,13 @@ interface ScheduleEntryInfo {
   subject_ids: string[];
   time_slot?: { slot_number: number; start_time: string; end_time: string };
   student?: { id: string; last_name: string; first_name: string; grade: number };
-  teacher?: { id: string; display_name: string | null; email: string | null };
+  /** last_name は報告書に苗字だけを出すために取る（getSurname のフォールバックより確実） */
+  teacher?: {
+    id: string;
+    display_name: string | null;
+    last_name?: string | null;
+    email: string | null;
+  };
 }
 
 interface StudentTextbookOption {
@@ -399,7 +406,7 @@ export default function LessonReportFormPage() {
       const { data: entryRow, error: entryErr } = await db
         .from('schedule_entries')
         .select(
-          '*, time_slot:schedule_time_slots(slot_number, start_time, end_time), student:students(id, last_name, first_name, grade), teacher:user_profiles!schedule_entries_teacher_id_fkey(id, display_name, email)'
+          '*, time_slot:schedule_time_slots(slot_number, start_time, end_time), student:students(id, last_name, first_name, grade), teacher:user_profiles!schedule_entries_teacher_id_fkey(id, display_name, last_name, email)'
         )
         .eq('id', scheduleEntryId)
         .single();
@@ -897,6 +904,17 @@ export default function LessonReportFormPage() {
     [form.units.length, selectedUnitCount, extraMaterials, handover, form.review_comment]
   );
 
+  /**
+   * 報告書に出す講師名。フルネームではなく苗字のみにする
+   * （報告書は保護者にも渡るため、講師の下の名前まで出さない）。
+   * 表示・保存・進行表への転記・保護者プレビューすべてこの1つを使う。
+   */
+  const teacherSurname = useMemo(() => {
+    const fromEntry = entry?.teacher ? getSurname(entry.teacher) : '';
+    if (fromEntry) return fromEntry;
+    return getSurname(profile ?? null);
+  }, [entry?.teacher, profile]);
+
   // ---- E: 保護者プレビュー ----
   // 保護者が実際に見るコンポーネント（ReportDetail）へそのまま渡すデータ。
   // 「保存したらこう出る」と一致させるため、保存時と同じ整形（試験目標のスナップショット・
@@ -925,7 +943,7 @@ export default function LessonReportFormPage() {
         textbookName: item.textbookName,
         unitTitles: item.unitTitles,
       })),
-      teacherName: entry?.teacher?.display_name || profile?.display_name || null,
+      teacherName: teacherSurname || null,
       checkTestPassed,
     });
   }, [
@@ -936,8 +954,7 @@ export default function LessonReportFormPage() {
     taughtChipsOf,
     schoolProgressLabels,
     nextPlanSnapshot,
-    entry?.teacher?.display_name,
-    profile?.display_name,
+    teacherSurname,
     checkTestPassed,
   ]);
 
@@ -1028,7 +1045,7 @@ export default function LessonReportFormPage() {
         handover,
         homeworkNotDone: form.homework_not_done,
         tardy: form.tardy,
-        teacherName: entry.teacher?.display_name || profile?.display_name || '',
+        teacherName: teacherSurname,
         reportId: saved.id,
         // 次回の予定は教材セットごとに違うので、関数として渡して各セッションで解決する
         nextPlanIdsOf,
@@ -1190,7 +1207,7 @@ export default function LessonReportFormPage() {
     ? `${entry.student.last_name} ${entry.student.first_name}`
     : entry.student_id;
   const gradeLabel = formatGradeLabelOrEmpty(entry.student?.grade);
-  const teacherName = entry.teacher?.display_name || entry.teacher?.email || '';
+  const teacherName = teacherSurname || entry.teacher?.email || '';
   const slotLabel = entry.time_slot ? `${entry.time_slot.slot_number}限` : '';
   const timeLabel = entry.time_slot
     ? `${entry.time_slot.start_time.slice(0, 5)}〜${entry.time_slot.end_time.slice(0, 5)}`
