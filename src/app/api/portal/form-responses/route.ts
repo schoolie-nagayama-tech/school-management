@@ -4,6 +4,12 @@ import { portalFormResponseSchema } from '@/lib/validations/schemas';
 import { createFurikaeCalendarEvents } from '@/lib/google-calendar';
 import { FORM_TYPE_LABELS } from '@/types/database';
 import { zoukomaKomaCount } from '@/lib/utils/zoukomaKoma';
+import {
+  DUPLICATE_WINDOW_MINUTES,
+  normalizeFormEmail,
+  normalizeFormName,
+  stableStringify,
+} from '@/lib/utils/formDedup';
 
 export const dynamic = 'force-dynamic';
 
@@ -62,6 +68,26 @@ export async function POST(request: NextRequest) {
     }
     if (period.publish_end && new Date(period.publish_end) < now) {
       return NextResponse.json({ error: '受付期間が終了しました' }, { status: 400 });
+    }
+
+    // 二重送信ガード（冪等化）
+    // 送信できたか不安になった保護者が数分後に同じ内容をもう一度送るケースがあるため、
+    // 直近の「氏名・メール・回答内容が完全に同じ」申込は新規作成せず既存レコードを返す。
+    // 保護者には通常どおり完了画面が出るので、失敗と勘違いした三度目の送信も起きない。
+    // 内容が違う再送信は「内容の変更・追加申込」なので通す（ハード制約にしない理由）。
+    const recentDuplicate = await findRecentDuplicate(supabaseAdmin, {
+      school_id,
+      form_type,
+      form_period,
+      student_name,
+      email: email ?? '',
+      response_data,
+    });
+    if (recentDuplicate) {
+      console.log(
+        `[portal/form-responses] 重複送信を無視しました: ${form_type}/${form_period} ${student_name} → ${recentDuplicate.id}`
+      );
+      return NextResponse.json({ data: recentDuplicate, duplicate: true });
     }
 
     const { data: created, error } = await supabaseAdmin
@@ -200,12 +226,58 @@ export async function POST(request: NextRequest) {
  * 名前を正規化する（スペースの有無・全角半角スペースを統一して比較用に変換）
  */
 function normalizeName(name: string): string {
-  // 全角スペース→半角スペース、連続スペースを除去、前後トリム、全て小文字化
-  return name
-    .replace(/\u3000/g, ' ') // 全角スペース→半角
-    .replace(/\s+/g, '') // 全てのスペースを除去
-    .trim()
-    .toLowerCase();
+  return normalizeFormName(name);
+}
+
+/**
+ * 直近 DUPLICATE_WINDOW_MINUTES 以内の「同一人物・同一内容」の申込を探す。
+ *
+ * 期間内の候補行をまとめて取ってからアプリ側で突き合わせる。氏名の空白差やメールの
+ * 大文字小文字差を吸収したいので、DB側の等値比較には寄せていない。
+ * 判定できなかった場合は null を返して送信を通す（重複防止のために申込自体を落とさない）。
+ */
+async function findRecentDuplicate(
+  supabaseAdmin: SupabaseClient,
+  params: {
+    school_id: string;
+    form_type: string;
+    form_period: string;
+    student_name: string;
+    email: string;
+    response_data: unknown;
+  }
+) {
+  const since = new Date(Date.now() - DUPLICATE_WINDOW_MINUTES * 60 * 1000).toISOString();
+
+  // メールの絞り込みはDB側でやらない（ilike はメール中の _ をワイルドカードと解釈して
+  // 誤検知し、eq は大文字小文字差を取りこぼすため）。時間幅が10分なので候補は少ない。
+  const { data, error } = await supabaseAdmin
+    .from('form_responses')
+    .select('*')
+    .eq('school_id', params.school_id)
+    .eq('form_type', params.form_type)
+    .eq('form_period', params.form_period)
+    .gte('created_at', since)
+    .order('created_at', { ascending: false })
+    .limit(50);
+
+  if (error) {
+    console.warn('[portal/form-responses] 重複チェックに失敗しました（送信は継続）:', error);
+    return null;
+  }
+
+  const name = normalizeFormName(params.student_name);
+  const email = normalizeFormEmail(params.email);
+  const payload = stableStringify(params.response_data);
+
+  return (
+    (data || []).find(
+      (r: { student_name: string; email: string | null; response_data: unknown }) =>
+        normalizeFormName(r.student_name || '') === name &&
+        normalizeFormEmail(r.email) === email &&
+        stableStringify(r.response_data) === payload
+    ) || null
+  );
 }
 
 /**

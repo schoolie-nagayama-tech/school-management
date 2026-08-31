@@ -22,6 +22,7 @@ import {
   PortalErrorBanner,
   PortalPreviewBanner,
   usePortalFormDraft,
+  usePortalDuplicateGuard,
 } from '@/components/forms/shared';
 
 interface MoshiFormProps {
@@ -52,6 +53,9 @@ export function MoshiForm({ school, period, isPreview }: MoshiFormProps) {
 
   // 設定を取得
   const settings = period.settings;
+
+  // 同一期間の二重申込チェック（送信前の確認ダイアログ）
+  const { confirmIfDuplicate, duplicateDialog } = usePortalDuplicateGuard({ enabled: !isPreview });
 
   // 試験日程（旧データの単一日程も1件の配列として返る）
   const examDates = getMoshiExamDates(settings);
@@ -164,6 +168,16 @@ export function MoshiForm({ school, period, isPreview }: MoshiFormProps) {
     setErrorMessage('');
 
     try {
+      // 同じ期間に申込済みなら確認を挟む（内容変更・追加申込は続行できる）
+      const proceed = await confirmIfDuplicate({
+        school_id: school.id,
+        form_type: 'moshi',
+        form_period: period.period_key,
+        student_name: studentName.trim(),
+        email: email.trim(),
+      });
+      if (!proceed) return;
+
       const gradeNumber = MOSHI_GRADE_NAME_TO_NUMBER[selectedGrade] || 7;
 
       // 日程が1つだけの期間では選択UIを出さないので、その1件を暗黙の選択として扱う
@@ -234,6 +248,7 @@ export function MoshiForm({ school, period, isPreview }: MoshiFormProps) {
 
   return (
     <div className="space-y-5">
+      {duplicateDialog}
       <PortalFormHeader
         eyebrow="オープン模試 申し込み"
         title={period.title || 'オープン模試申し込み'}
