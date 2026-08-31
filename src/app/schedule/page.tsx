@@ -14,6 +14,11 @@ const WeeklyScheduleGrid = dynamic(
   () => import('@/components/schedule').then((m) => m.WeeklyScheduleGrid),
   { ssr: false }
 );
+// 日表示（当日盤）。週盤面と排他なので同じく動的読み込みにする。
+const DailyScheduleBoard = dynamic(
+  () => import('@/components/schedule').then((m) => m.DailyScheduleBoard),
+  { ssr: false }
+);
 const TransferModeBar = dynamic(
   () => import('@/components/schedule').then((m) => m.TransferModeBar),
   { ssr: false }
@@ -519,6 +524,22 @@ export default function SchedulePage() {
       /* ignore */
     }
   }, []);
+  // 表示モード（週=予定を組む盤 / 日=今日を回す運用盤）。向き・列数と同じ永続化パターン。
+  const VIEW_MODE_STORAGE_KEY = 'schedule_view_mode';
+  const [viewMode, setViewMode] = useState<'week' | 'day'>(() => {
+    if (typeof window === 'undefined') return 'week';
+    return localStorage.getItem(VIEW_MODE_STORAGE_KEY) === 'day' ? 'day' : 'week';
+  });
+  const setViewModePersist = useCallback((next: 'week' | 'day') => {
+    setViewMode(next);
+    try {
+      localStorage.setItem(VIEW_MODE_STORAGE_KEY, next);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+  // 日表示で見ている日。既定は今日（初期の週は必ず今日を含む）。
+  const [selectedDate, setSelectedDate] = useState<string>(() => toLocalDateStr(new Date()));
   // 週内の座席番号（印刷ブース番号）マップ。講師ヘッダーのインライン入力で表示・編集する。
   const [weekBoothMap, setWeekBoothMap] = useState<Map<string, Map<string, number>>>(new Map());
 
@@ -542,6 +563,37 @@ export default function SchedulePage() {
   const weekEnd = new Date(weekStart);
   weekEnd.setDate(weekEnd.getDate() + 6);
   const weekEndStr = toLocalDateStr(weekEnd);
+
+  // 週が動いたら日表示の対象日を週の中に引き戻す。
+  // 今日がその週にあれば今日、無ければ週の初日（＝週表示の並びの先頭と一致させる）。
+  useEffect(() => {
+    if (selectedDate >= weekStartStr && selectedDate <= weekEndStr) return;
+    const today = toLocalDateStr(new Date());
+    setSelectedDate(today >= weekStartStr && today <= weekEndStr ? today : weekStartStr);
+  }, [weekStartStr, weekEndStr, selectedDate]);
+
+  /** 日表示の前日/翌日。週をまたぐときは週も移す（週取得ロジックがそのまま再取得する）。 */
+  const shiftSelectedDate = useCallback(
+    (delta: number) => {
+      const d = new Date(`${selectedDate}T12:00:00`);
+      d.setDate(d.getDate() + delta);
+      const next = toLocalDateStr(d);
+      setSelectedDate(next);
+      if (next < weekStartStr || next > weekEndStr) {
+        setWeekStart(getWeekStart(new Date(`${next}T12:00:00`)));
+      }
+    },
+    [selectedDate, weekStartStr, weekEndStr]
+  );
+
+  /** 日表示の「本日」。今日が表示中の週の外なら週ごと移す。 */
+  const goSelectedToday = useCallback(() => {
+    const today = toLocalDateStr(new Date());
+    setSelectedDate(today);
+    if (today < weekStartStr || today > weekEndStr) {
+      setWeekStart(getWeekStart(new Date(`${today}T12:00:00`)));
+    }
+  }, [weekStartStr, weekEndStr]);
 
   const refreshEntries = useCallback(async () => {
     if (!schoolId) return;
@@ -3201,6 +3253,8 @@ export default function SchedulePage() {
             onVisibleDaysChange={setVisibleDaysPersist}
             onKoushuSelect={handleKoushuSelect}
             onTestPrepToggle={handleTestPrepToggle}
+            viewMode={viewMode}
+            onViewModeChange={setViewModePersist}
             orientation={orientation}
             onOrientationChange={setOrientationPersist}
             colMode={colMode}
@@ -3625,51 +3679,72 @@ export default function SchedulePage() {
                         <ChevronRight className="w-5 h-5" />
                       </button>
                     </div>
-                    <WeeklyScheduleGrid
-                      schoolId={schoolId ?? ''}
-                      weekDates={weekDates}
-                      // 個別グリッドの列は常に個別のコマだけ。以前は講習モードのときだけ
-                      // 絞っており、通常モードでは他形態（小集団・プログラミング）のコマ時間が
-                      // 個別タブに列として並んでしまっていた（例: 1限16:10 は HAL のコマ）。
-                      timeSlots={individualSlots}
-                      entries={individualGridEntries}
-                      closedDates={closedDates}
-                      teachers={teachers}
-                      emptyTeacherSlots={emptyTeacherSlots}
-                      shiftAvailableByDow={shiftByDow}
-                      maxStudentsPerTeacher={capacity.max_students_per_teacher_individual}
-                      transferMode={transferMode}
-                      swapMode={swapMode}
-                      onEmptyTeacherSlotsChange={setEmptyTeacherSlots}
-                      onAddTeacher={handleAddTeacher}
-                      onAddStudent={handleAddStudent}
-                      onRemoveTeacher={handleRemoveTeacher}
-                      onStudentClick={handleEntryClick}
-                      onTransferClick={handleTransferClickFromCard}
-                      onTeacherCardMove={handleTeacherCardMove}
-                      onStudentEntryDrop={handleStudentEntryDrop}
-                      onTeacherDropOnUnassigned={handleTeacherDropOnUnassigned}
-                      onConstraintViolation={handleConstraintViolation}
-                      onConstraintWarning={handleConstraintWarning}
-                      subjectNameById={subjectById}
-                      absenceKeySet={absenceKeySet}
-                      onToggleAbsence={handleToggleAbsence}
-                      onTransferTargetClick={handleTransferTargetClick}
-                      onPrintDay={handlePrintDay}
-                      onBoothAssign={handleBoothAssign}
-                      onTransferCancel={handleTransferCancel}
-                      getKoushuInfo={selectedKoushu ? getKoushuInfo : undefined}
-                      koushuPlacing={gridPlacing}
-                      getKoushuPlaceability={gridGetPlaceability}
-                      onKoushuPlace={gridPlace}
-                      onKoushuPlaceWithTeacher={gridPlaceWithTeacher}
-                      getTeacherPlaceConstraint={gridGetTeacherConstraint}
-                      orientation={orientation}
-                      colMode={colMode}
-                      boothMapByDate={weekBoothMap}
-                      onSeatNoChange={handleSeatNoChange}
-                      stickyOffset={stickyOffset}
-                    />
+                    {/* 表示モードで盤面を出し分ける。日表示は「今日を回す運用盤」で
+                        配置の組み替え（D&D）を持たない。週盤面のコードには手を入れず、
+                        ここでの分岐だけで切り替える。 */}
+                    {viewMode === 'day' ? (
+                      <DailyScheduleBoard
+                        date={selectedDate}
+                        entries={individualGridEntries}
+                        timeSlots={individualSlots}
+                        teachers={schoolTeachers}
+                        absenceKeySet={absenceKeySet}
+                        shiftAvailableByDow={shiftByDow}
+                        boothMap={weekBoothMap.get(selectedDate)}
+                        subjectNameById={subjectById}
+                        isClosed={closedDates.includes(selectedDate)}
+                        onStudentClick={handleEntryClick}
+                        onPrevDay={() => shiftSelectedDate(-1)}
+                        onNextDay={() => shiftSelectedDate(1)}
+                        onToday={goSelectedToday}
+                      />
+                    ) : (
+                      <WeeklyScheduleGrid
+                        schoolId={schoolId ?? ''}
+                        weekDates={weekDates}
+                        // 個別グリッドの列は常に個別のコマだけ。以前は講習モードのときだけ
+                        // 絞っており、通常モードでは他形態（小集団・プログラミング）のコマ時間が
+                        // 個別タブに列として並んでしまっていた（例: 1限16:10 は HAL のコマ）。
+                        timeSlots={individualSlots}
+                        entries={individualGridEntries}
+                        closedDates={closedDates}
+                        teachers={teachers}
+                        emptyTeacherSlots={emptyTeacherSlots}
+                        shiftAvailableByDow={shiftByDow}
+                        maxStudentsPerTeacher={capacity.max_students_per_teacher_individual}
+                        transferMode={transferMode}
+                        swapMode={swapMode}
+                        onEmptyTeacherSlotsChange={setEmptyTeacherSlots}
+                        onAddTeacher={handleAddTeacher}
+                        onAddStudent={handleAddStudent}
+                        onRemoveTeacher={handleRemoveTeacher}
+                        onStudentClick={handleEntryClick}
+                        onTransferClick={handleTransferClickFromCard}
+                        onTeacherCardMove={handleTeacherCardMove}
+                        onStudentEntryDrop={handleStudentEntryDrop}
+                        onTeacherDropOnUnassigned={handleTeacherDropOnUnassigned}
+                        onConstraintViolation={handleConstraintViolation}
+                        onConstraintWarning={handleConstraintWarning}
+                        subjectNameById={subjectById}
+                        absenceKeySet={absenceKeySet}
+                        onToggleAbsence={handleToggleAbsence}
+                        onTransferTargetClick={handleTransferTargetClick}
+                        onPrintDay={handlePrintDay}
+                        onBoothAssign={handleBoothAssign}
+                        onTransferCancel={handleTransferCancel}
+                        getKoushuInfo={selectedKoushu ? getKoushuInfo : undefined}
+                        koushuPlacing={gridPlacing}
+                        getKoushuPlaceability={gridGetPlaceability}
+                        onKoushuPlace={gridPlace}
+                        onKoushuPlaceWithTeacher={gridPlaceWithTeacher}
+                        getTeacherPlaceConstraint={gridGetTeacherConstraint}
+                        orientation={orientation}
+                        colMode={colMode}
+                        boothMapByDate={weekBoothMap}
+                        onSeatNoChange={handleSeatNoChange}
+                        stickyOffset={stickyOffset}
+                      />
+                    )}
                     {/* 集団レーン（講習モードかつ集団コマ時間がある場合のみ）。集団は手動編成。
                           フルブリード化に伴い、端に張り付かないよう横パディングだけ入れる。 */}
                     {selectedKoushu && groupSlots.length > 0 && (

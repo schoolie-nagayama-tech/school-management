@@ -14,6 +14,7 @@ export { TeacherDetailModal } from './TeacherDetailModal';
 export { DroppableCell, getCellId, parseCellId, MAX_STUDENTS_PER_TEACHER } from './DroppableCell';
 export { DraggableEntry } from './DraggableEntry';
 export { WeeklyScheduleGrid } from './WeeklyScheduleGrid';
+export { DailyScheduleBoard } from './DailyScheduleBoard';
 export { DayCell, getDayCellId, parseDayCellId } from './DayCell';
 export type { TeacherGroup } from './DayCell';
 export { TeacherCard, getTeacherCardId, parseTeacherCardId } from './TeacherCard';
