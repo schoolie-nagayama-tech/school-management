@@ -477,6 +477,9 @@ function EntryRow({
 
         <Link
           href={`/lesson-reports/${entry.id}`}
+          // 報告書は別タブ。出欠を付けながら書けるよう、この一覧を閉じさせない（/today と同じ扱い）
+          target="_blank"
+          rel="noopener noreferrer"
           className="text-xs text-info hover:underline underline-offset-2 flex items-center gap-0.5 flex-shrink-0"
         >
           <FileText className="w-3 h-3" />

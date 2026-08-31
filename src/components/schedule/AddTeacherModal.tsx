@@ -1,15 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui';
-import { Button } from '@/components/ui';
-import {
-  SelectShadcn as Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from '@/components/ui';
+import { Button, Input } from '@/components/ui';
 
 export interface TeacherOption {
   id: string;
@@ -29,6 +22,9 @@ interface AddTeacherModalProps {
   onSelect: (teacherId: string) => void;
 }
 
+/** 絞り込み欄を出す件数のしきい値。これ以下なら一覧だけで十分見渡せる。 */
+const FILTER_THRESHOLD = 12;
+
 export function AddTeacherModal({
   open,
   onClose,
@@ -37,28 +33,41 @@ export function AddTeacherModal({
   existingTeacherIds = [],
   onSelect,
 }: AddTeacherModalProps) {
-  const [teacherId, setTeacherId] = useState('');
+  const [query, setQuery] = useState('');
 
   // 教室に所属・有効・このコマに未追加の講師のみ表示
-  const availableTeachers = teachers.filter(
-    (t) =>
-      t.is_active !== false &&
-      t.user_schools?.some((us) => us.school_id === schoolId) &&
-      !existingTeacherIds.includes(t.id)
+  const availableTeachers = useMemo(
+    () =>
+      teachers.filter(
+        (t) =>
+          t.is_active !== false &&
+          t.user_schools?.some((us) => us.school_id === schoolId) &&
+          !existingTeacherIds.includes(t.id)
+      ),
+    [teachers, schoolId, existingTeacherIds]
   );
 
+  // 開き直すたびに絞り込みを白紙に戻す（前回の入力が残っていると「講師がいない」に見える）
   useEffect(() => {
-    if (open) {
-      setTeacherId(availableTeachers[0]?.id ?? '');
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (open) setQuery('');
   }, [open]);
 
-  const handleSubmit = () => {
-    if (teacherId) {
-      onSelect(teacherId);
-      onClose();
-    }
+  const label = (t: TeacherOption) => t.display_name || t.email || t.id;
+
+  const shownTeachers = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return availableTeachers;
+    return availableTeachers.filter((t) => label(t).toLowerCase().includes(q));
+  }, [availableTeachers, query]);
+
+  /**
+   * 講師カードは1クリックで確定する。ドロップダウン＋確定ボタンだった頃は、
+   * 開いたリストがモーダルの overflow に切られて選択そのものができなかった。
+   * 追加した講師はコマ上から外せるので、押し間違いは1クリックで戻せる。
+   */
+  const handlePick = (teacherId: string) => {
+    onSelect(teacherId);
+    onClose();
   };
 
   return (
@@ -69,37 +78,45 @@ export function AddTeacherModal({
         <DialogTitle>講師を追加</DialogTitle>
       </DialogHeader>
       <DialogContent>
-        <div className="space-y-3 py-2">
-          {availableTeachers.length === 0 ? (
-            <p className="text-sm text-gray-500 text-center py-4">
-              このコマに追加できる講師はいません
-            </p>
-          ) : (
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-[var(--headline)]">講師を選択</label>
-              <Select value={teacherId} onValueChange={setTeacherId}>
-                <SelectTrigger className="w-full text-base py-2.5">
-                  <SelectValue placeholder="講師を選択" />
-                </SelectTrigger>
-                {/* 講師が多い教室でも一度に見渡せるよう、既定(max-h-60)より高くする */}
-                <SelectContent className="max-h-80">
-                  {availableTeachers.map((t) => (
-                    <SelectItem key={t.id} value={t.id} className="text-base py-2.5">
-                      {t.display_name || t.email || t.id}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-        </div>
+        {availableTeachers.length === 0 ? (
+          <p className="py-4 text-center text-sm text-text-muted">
+            このコマに追加できる講師はいません
+          </p>
+        ) : (
+          <div className="space-y-3">
+            {availableTeachers.length > FILTER_THRESHOLD && (
+              <Input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="名前で絞り込む"
+                className="w-full"
+              />
+            )}
+            {shownTeachers.length === 0 ? (
+              <p className="py-4 text-center text-sm text-text-muted">
+                「{query}」に一致する講師はいません
+              </p>
+            ) : (
+              <div className="grid max-h-[55vh] grid-cols-2 gap-2 overflow-y-auto sm:grid-cols-3">
+                {shownTeachers.map((t) => (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => handlePick(t.id)}
+                    className="rounded-lg border border-border bg-surface-raised px-3 py-3 text-left text-sm font-medium text-text-body transition-colors hover:border-primary hover:bg-surface-hover focus:outline-none focus:ring-2 focus:ring-primary"
+                  >
+                    {label(t)}
+                  </button>
+                ))}
+              </div>
+            )}
+            <p className="text-xs text-text-faint">クリックするとこのコマに追加します</p>
+          </div>
+        )}
       </DialogContent>
       <DialogFooter>
         <Button variant="secondary" onClick={onClose}>
           キャンセル
-        </Button>
-        <Button onClick={handleSubmit} disabled={!teacherId || availableTeachers.length === 0}>
-          追加
         </Button>
       </DialogFooter>
     </Dialog>

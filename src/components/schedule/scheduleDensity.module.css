@@ -83,8 +83,7 @@
   min-height: calc(100vh - 180px);
 }
 /* ボード本体。内部スクロールはやめ、ページ全体のスクロールで流す。
-   転置モードの日行スナップは document スクロールへ移設
-   （scroll-snap-type はビュー側の useEffect で html 要素に 'y proximity' を設定）。 */
+   （日行スナップは「上部へ戻れなくなる」罠のため廃止。WeeklyScheduleGridView 参照） */
 .boardArea {
   min-width: 0;
 }
@@ -137,7 +136,7 @@
   border-radius: 4px;
   min-height: 20px;
 }
-/* 曜日行ヘッダー（左端の縦積みラベル）。日単位スナップの代表点 */
+/* 曜日行ヘッダー（左端の縦積みラベル） */
 .dayLabelT {
   background: var(--sd-head-bg);
   border: 1px solid var(--sd-cell-border);
@@ -147,9 +146,6 @@
   align-items: center;
   justify-content: center;
   gap: 0;
-  scroll-snap-align: start;
-  /* ページスクロールのスナップ時に sticky ツールバー＋時限見出しの下に頭出しする */
-  scroll-margin-top: calc(var(--sd-sticky-top, 0px) + 32px);
   position: relative;
 }
 .dayLabelT .dDate {
