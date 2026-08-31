@@ -2,11 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { notifyInquiryReport, type InquirySchoolReport } from '@/lib/slack';
 import { fetchAllPaged } from '@/lib/utils/supabasePaging';
+import { requireCronAuth } from '@/lib/cron-auth';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
-
-const CRON_SECRET = process.env.CRON_SECRET;
 
 // 対応遅延として通知する経過日数（旧GAS互換）
 const ALERT_DAYS = [3, 5, 7, 10, 14, 21, 30];
@@ -44,11 +43,9 @@ type InquiryRow = {
  * 教室別の問合せ進捗サマリー＋対応遅延案件をSlackに通知。月曜は週次レポートを併記。
  */
 export async function GET(request: NextRequest) {
-  // Vercel Cron認証
-  const authHeader = request.headers.get('authorization');
-  if (CRON_SECRET && authHeader !== `Bearer ${CRON_SECRET}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  // Vercel Cron認証（CRON_SECRET 未設定なら拒否＝フェイルクローズド）
+  const authError = requireCronAuth(request);
+  if (authError) return authError;
 
   // 土日チェック（JST）
   const nowJstMs = Date.now() + 9 * 60 * 60 * 1000;

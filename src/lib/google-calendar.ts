@@ -28,13 +28,25 @@ function getSupabaseAdmin() {
 // 認証URL生成
 // ============================================
 
-export function getGoogleAuthUrl(userId: string, origin?: string): string {
+/**
+ * Google の認可画面URLを組み立てる。
+ *
+ * ★ state には userId を入れないこと（2026-08 修正）:
+ *   state は Google 経由でブラウザに往復するだけの値で、攻撃者も自由に書ける。
+ *   ここに userId を載せていたため、「攻撃者の code ＋ 被害者の userId」で
+ *   コールバックを叩くと被害者の連携先を奪える穴があった。
+ *   いまは lib/googleOauthState.ts が発行するランダム値を渡し、
+ *   userId は httpOnly cookie 側だけで運ぶ。
+ *
+ * @param state CSRF対策のランダム値（cookie に保存済みのもの）
+ */
+export function getGoogleAuthUrl(state: string, origin?: string): string {
   const oauth2Client = getOAuth2Client(origin);
   return oauth2Client.generateAuthUrl({
     access_type: 'offline',
     prompt: 'consent', // 毎回 refresh_token を取得するため
     scope: ['openid', 'email', 'https://www.googleapis.com/auth/calendar.events'],
-    state: userId, // コールバックでユーザーを特定
+    state, // コールバックで cookie の state と突き合わせる
   });
 }
 
@@ -42,6 +54,14 @@ export function getGoogleAuthUrl(userId: string, origin?: string): string {
 // トークン取得・保存
 // ============================================
 
+/**
+ * 認可コードをトークンに交換して保存する。
+ *
+ * ★ userId は「サーバー側で検証済みの値」しか渡してはいけない。
+ *   ここは google_calendar_tokens を user_id で upsert する＝連携先を上書きする処理なので、
+ *   リクエストのクエリ由来の値を渡すと他人の連携を乗っ取られる（呼び出し元は
+ *   state cookie から取り出した userId を渡すこと）。
+ */
 export async function handleGoogleCallback(code: string, userId: string, origin?: string) {
   const oauth2Client = getOAuth2Client(origin);
   const { tokens } = await oauth2Client.getToken(code);

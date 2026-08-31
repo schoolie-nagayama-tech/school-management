@@ -18,6 +18,7 @@ import {
   updateTemplate as updateTemplateApi,
   setGoogleEventId,
 } from '@/lib/api/monthlyTasks';
+import { isOwnerOrAbove } from '@/lib/utils/roles';
 import { Spinner } from '@/components/ui';
 import type { MonthlyTaskWithChecks, MonthlyTaskTemplate } from '@/types/database';
 import { useToast } from '@/hooks/useToast';
@@ -61,6 +62,12 @@ export function MonthlyTaskPage() {
   // 編集権限
   const canEdit =
     profile?.role === 'admin' || profile?.role === 'owner' || profile?.role === 'manager';
+
+  // 全教室共通のマスタを壊す操作（講習タスクの一括削除）は admin / owner のみ。
+  // 講習タスクは教室を絞って消せない（monthly_tasks は全教室共通）ので、
+  // 教室長に見せると1クリックで全社ぶんが消える。API 側も同じ境界で 403 にしている
+  // （src/app/api/tasks/route.ts の canEditSharedMaster）。ボタンを隠して境界を揃える。
+  const canDeleteSharedMaster = isOwnerOrAbove(profile?.role);
 
   // 対象教室
   const activeSchools = useMemo(() => {
@@ -663,7 +670,7 @@ export function MonthlyTaskPage() {
               <Download className="w-3.5 h-3.5" />
               {isSyncing ? '取込中...' : '講習取込'}
             </button>
-            {courseTaskCount > 0 && (
+            {canDeleteSharedMaster && courseTaskCount > 0 && (
               <button
                 onClick={handleDeleteCourseTasks}
                 className="flex items-center gap-1 px-3 py-1.5 text-xs bg-red-50 text-red-600 hover:bg-red-100 rounded transition-[background-color] duration-150 ease-out"
