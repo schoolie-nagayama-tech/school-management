@@ -57,6 +57,10 @@ describe('POST /api/portal/form-responses', () => {
         return createMockChain(period) as never;
       }
       if (callCount === 2) {
+        // 二重送信ガードの候補取得（直近の同一内容なし）
+        return createMockChain([]) as never;
+      }
+      if (callCount === 3) {
         // form_responses insert
         return createMockChain(createdResponse) as never;
       }
@@ -72,6 +76,72 @@ describe('POST /api/portal/form-responses', () => {
     expect(res.status).toBe(200);
     expect(body.data).toBeDefined();
     expect(body.data.id).toBe('resp-1');
+  });
+
+  it('直近の同一内容の再送信は新規作成せず既存レコードを返す', async () => {
+    const period = {
+      id: 'p1',
+      is_active: true,
+      is_archived: false,
+      publish_start: '2020-01-01',
+      publish_end: '2099-12-31',
+    };
+    // キー順を入れ替えても同一内容として扱えること（jsonb はキー順を正規化するため）
+    const existing = {
+      id: 'existing-1',
+      student_name: '山田　太郎',
+      email: null,
+      response_data: { exam_type: 'regular' },
+    };
+
+    let callCount = 0;
+    mockAdmin.from.mockImplementation(() => {
+      callCount++;
+      if (callCount === 1) return createMockChain(period) as never;
+      if (callCount === 2) return createMockChain([existing]) as never;
+      return createMockChain({ id: 'should-not-be-created' }) as never;
+    });
+
+    const { POST } = await import('@/app/api/portal/form-responses/route');
+    const res = await POST(makeRequest());
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body.duplicate).toBe(true);
+    expect(body.data.id).toBe('existing-1');
+  });
+
+  it('内容が違う再送信は正当な変更・追加申込として新規作成する', async () => {
+    const period = {
+      id: 'p1',
+      is_active: true,
+      is_archived: false,
+      publish_start: '2020-01-01',
+      publish_end: '2099-12-31',
+    };
+    const existing = {
+      id: 'existing-1',
+      student_name: '山田太郎',
+      email: null,
+      response_data: { exam_type: 'furikae' },
+    };
+
+    let callCount = 0;
+    mockAdmin.from.mockImplementation(() => {
+      callCount++;
+      if (callCount === 1) return createMockChain(period) as never;
+      if (callCount === 2) return createMockChain([existing]) as never;
+      if (callCount === 3) return createMockChain({ id: 'resp-2' }) as never;
+      return createMockChain(null) as never;
+    });
+
+    const { POST } = await import('@/app/api/portal/form-responses/route');
+    const res = await POST(makeRequest());
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body.duplicate).toBeUndefined();
+    expect(body.data.id).toBe('resp-2');
   });
 
   it('バリデーション失敗で400を返す（school_idがUUIDでない）', async () => {
@@ -189,6 +259,8 @@ describe('POST /api/portal/form-responses', () => {
     mockAdmin.from.mockImplementation(() => {
       callCount++;
       if (callCount === 1) return createMockChain(period) as never;
+      // 二重送信ガードの候補取得（該当なし）
+      if (callCount === 2) return createMockChain([]) as never;
       // insert で重複エラー
       return createMockChain(null, { code: '23505', message: 'duplicate' }) as never;
     });

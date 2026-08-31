@@ -65,6 +65,17 @@ export const portalFormResponseSchema = z.object({
 
 export type PortalFormResponseData = z.infer<typeof portalFormResponseSchema>;
 
+/** 送信前の「同じ期間にもう申し込んでいないか」確認用（回答内容は不要） */
+export const portalDuplicateCheckSchema = z.object({
+  school_id: z.string().uuid('無効な教室IDです'),
+  form_type: z.string().min(1, 'フォーム種別は必須です'),
+  form_period: z.string().min(1, 'フォーム期間は必須です'),
+  student_name: z.string().min(1, '生徒名は必須です'),
+  email: z.string().min(1, 'メールアドレスは必須です'),
+});
+
+export type PortalDuplicateCheckData = z.infer<typeof portalDuplicateCheckSchema>;
+
 // ── Notta 文字起こし（Zapier webhook） ──
 
 export const nottaWebhookSchema = z.object({
