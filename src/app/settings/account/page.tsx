@@ -180,6 +180,8 @@ export default function AccountSettingsPage() {
   // Google Calendar 連携開始
   const handleConnectCalendar = async () => {
     const supabase = createSupabaseBrowserClient();
+    // getSession() は必要ならトークンを更新し、セッション cookie を書き直す。
+    // 遷移前に呼んでおくことで、サーバー側が古い cookie を読んで401になるのを防ぐ。
     const {
       data: { session },
     } = await supabase.auth.getSession();
@@ -187,8 +189,11 @@ export default function AccountSettingsPage() {
       toastError('セッションが取得できません。再ログインしてください。');
       return;
     }
-    // トークンをクエリパラメータで渡してリダイレクト
-    window.location.href = `/api/integrations/google/authorize?token=${session.access_token}`;
+    // ★ アクセストークンをクエリに載せない（2026-08 修正）:
+    //   URLのクエリはアクセスログ・Referer・ブラウザ履歴・プロキシに残るため、
+    //   ログイン用JWTを載せると漏れた瞬間になりすましができる。
+    //   同一オリジンへのトップレベル遷移なのでセッション cookie がそのまま送られる。
+    window.location.href = '/api/integrations/google/authorize';
   };
 
   // Google Calendar 連携解除

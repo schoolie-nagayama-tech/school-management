@@ -95,7 +95,7 @@
 
 - `/my-schedule` 講師向け週/月切替+出欠記録 (隠し公開)
 - `transfer_notifications` テーブル + `/schedule/transfer-notifications` 履歴画面 (Edge Function 送信は将来)
-- `/portal/[schoolCode]/student-dashboard` 生徒/保護者ダッシュボード (擬似認証)
+- ~~`/portal/[schoolCode]/student-dashboard` 生徒/保護者ダッシュボード (擬似認証)~~ → **2026-08-31 削除**。未認証で氏名・時間割・報告書が取れる状態だったため。置換先は `/mypage`（ポータルJWT認証）
 
 ### Polish (d7a7b94, 28bc712)
 
@@ -219,7 +219,7 @@
 | `/today`                                 | 本日の授業 (講師/室長)                                                         |
 | `/my-schedule`                           | 講師向け週/月スケジュール (隠し公開)                                           |
 | `/seasonal-shift-student/[settingId]`    | 生徒の通塾可能表 公開フォーム                                                  |
-| `/portal/[schoolCode]/student-dashboard` | 保護者ダッシュボード (擬似認証)                                                |
+| ~~`/portal/[schoolCode]/student-dashboard`~~ | **2026-08-31 削除**（未認証で個人情報が取得できたため）。置換先は `/mypage` |
 | `/admin/teachers/[teacherId]`            | 講師詳細 (G-4 で勤務シフト+履歴パネル追加)                                     |
 
 ### 主要コンポーネント

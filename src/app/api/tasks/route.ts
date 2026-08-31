@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { getApiAuth } from '@/lib/api-auth';
+import { getApiAuth, isSchoolInScope } from '@/lib/api-auth';
+import { isOwnerOrAbove } from '@/lib/utils/roles';
 import { fetchAllPaged } from '@/lib/utils/supabasePaging';
 
 export const dynamic = 'force-dynamic';
@@ -49,22 +50,29 @@ export async function GET(request: NextRequest) {
 
         // チェック情報を一括取得。(タスク数 × 教室数) でスケールし結果が 1000 行を
         // 超えうるため .range() で全件ページング取得する（taskIds で .in() しつつページング）。
+        //
+        // ★ school_id を操作者の教室に絞る理由:
+        //   このルートは service role（RLS バイパス）で動くため、絞らないと他教室の
+        //   進捗・オーバーライド内容までレスポンスに載る。画面側は自教室ぶんしか
+        //   描画しない（activeSchools ⊆ auth.schoolIds）ので、絞っても表示は変わらない。
+        //   admin/owner は schoolIds に全教室が入るため従来どおり全件見える。
         const taskIds = tasks.map((t) => (t as { id: string }).id);
         let checks: Array<Record<string, unknown>> = [];
-        if (taskIds.length > 0) {
+        if (taskIds.length > 0 && auth.schoolIds.length > 0) {
           checks = await fetchAllPaged<Record<string, unknown>>((from, to) =>
             supabaseAdmin
               .from('monthly_task_checks')
               .select('*')
               .in('task_id', taskIds)
+              .in('school_id', auth.schoolIds)
               .order('id', { ascending: true })
               .range(from, to)
           );
         }
 
-        // 教室別オーバーライドを一括取得（同上、全件ページング取得）
+        // 教室別オーバーライドを一括取得（同上、全件ページング取得。school_id を絞る理由も同上）
         let overrides: Array<Record<string, unknown>> = [];
-        if (taskIds.length > 0) {
+        if (taskIds.length > 0 && auth.schoolIds.length > 0) {
           // monthly_task_overrides は複合PK (task_id, school_id) で id 列が無いため、
           // 安定ページングはこの2列でソートする。
           overrides = await fetchAllPaged<Record<string, unknown>>((from, to) =>
@@ -72,6 +80,7 @@ export async function GET(request: NextRequest) {
               .from('monthly_task_overrides')
               .select('*')
               .in('task_id', taskIds)
+              .in('school_id', auth.schoolIds)
               .order('task_id', { ascending: true })
               .order('school_id', { ascending: true })
               .range(from, to)
@@ -347,9 +356,25 @@ export async function POST(request: NextRequest) {
   const { action } = body;
   const supabaseAdmin = getSupabaseAdmin();
 
-  // manager 以上のみ編集可能
+  // manager 以上のみ編集可能。
+  // ロール文字列は大小混在で入りうるため toLowerCase で正規化する
+  // （requireManager / requireAdmin など既存ゲートも同じ正規化をしている。
+  //   ここだけ大小区別のままだと「UI では編集できるのに API が403」というズレが出る）。
+  const roleLower = (auth.role || '').toLowerCase();
   const editableRoles = ['admin', 'owner', 'manager'];
-  const canEdit = editableRoles.includes(auth.role);
+  const canEdit = editableRoles.includes(roleLower);
+
+  // 全教室共通のマスタ（monthly_tasks 本体）を書き換えてよいのは admin / owner だけ。
+  //
+  // ★ なぜここで判定が要るか:
+  //   このルートは service role クライアント（RLS 完全バイパス）で動くので、
+  //   教室スコープを守れるのはアプリ側のこの判定だけ。canEdit だけでは
+  //   教室長(manager)が全教室のタスクマスタを更新・削除できてしまう。
+  const canEditSharedMaster = isOwnerOrAbove(auth.role);
+
+  // 教室スコープ外の schoolId を指定されたときの共通レスポンス。
+  const outOfScopeResponse = () =>
+    NextResponse.json({ error: 'この教室を操作する権限がありません' }, { status: 403 });
 
   try {
     switch (action) {
@@ -383,27 +408,54 @@ export async function POST(request: NextRequest) {
         const { taskId, updates, schoolId } = body;
         if (!taskId) return NextResponse.json({ error: 'taskId は必須です' }, { status: 400 });
 
-        // schoolId が指定されている場合 → 教室別オーバーライドとして保存
-        if (schoolId) {
-          const overrideFields = ['task_name', 'task_date', 'category', 'note', 'url'];
-          const overrideData: Record<string, unknown> = {
+        // オーバーライド行に載せてよい項目（sort_order はベースタスク専用）
+        const overrideFields = ['task_name', 'task_date', 'category', 'note', 'url'];
+        /** 指定教室ぶんのオーバーライド行を組み立てる */
+        const buildOverrideRow = (sid: string) => {
+          const row: Record<string, unknown> = {
             task_id: taskId,
-            school_id: schoolId,
+            school_id: sid,
             updated_at: new Date().toISOString(),
           };
           for (const key of overrideFields) {
-            if (updates[key] !== undefined) overrideData[key] = updates[key];
+            if (updates[key] !== undefined) row[key] = updates[key];
           }
+          return row;
+        };
+
+        // schoolId が指定されている場合 → 教室別オーバーライドとして保存
+        if (schoolId) {
+          // 自分の教室スコープ内か必ず検証する（service role なので RLS は効かない）。
+          if (!isSchoolInScope(schoolId, auth.schoolIds)) return outOfScopeResponse();
           const { data, error } = await supabaseAdmin
             .from('monthly_task_overrides')
-            .upsert(overrideData, { onConflict: 'task_id,school_id' })
+            .upsert(buildOverrideRow(schoolId), { onConflict: 'task_id,school_id' })
             .select()
             .single();
           if (error) throw error;
           return NextResponse.json({ data, type: 'override' });
         }
 
-        // schoolId なし → ベースタスクを更新（全教室共通）
+        // schoolId なし → 本来は「全教室共通のベースタスク更新」。
+        //
+        // ★ 教室長(manager)を 403 にせず自教室のオーバーライドへ読み替える理由:
+        //   画面(MonthlyTaskPage)は「教室が1つだけ選択されているときだけ schoolId を送る」
+        //   実装のため、複数教室を担当する教室長が「すべての教室」表示のまま編集すると
+        //   schoolId 無しで届く。ここで単純に 403 にすると、これまで動いていた通常操作が
+        //   （画面側は汎用の失敗トーストしか出さないので原因も分からないまま）壊れる。
+        //   かといってベースタスクを書き換えると担当外の教室にまで波及するので、
+        //   「自分の担当教室ぶんのオーバーライド」に閉じて保存する＝見た目の結果は同じで、
+        //   他教室には触れない。UI が送ってくる更新項目は overrideFields に全て含まれる。
+        if (!canEditSharedMaster) {
+          if (auth.schoolIds.length === 0) return outOfScopeResponse();
+          const rows = auth.schoolIds.map(buildOverrideRow);
+          const { error } = await supabaseAdmin
+            .from('monthly_task_overrides')
+            .upsert(rows, { onConflict: 'task_id,school_id' });
+          if (error) throw error;
+          return NextResponse.json({ data: rows, type: 'override' });
+        }
+
         const allowedFields = ['task_name', 'task_date', 'category', 'note', 'url', 'sort_order'];
         const filteredUpdates: Record<string, unknown> = {};
         for (const key of allowedFields) {
@@ -426,22 +478,37 @@ export async function POST(request: NextRequest) {
         const { taskId: deleteId, schoolId: deleteSchoolId } = body;
         if (!deleteId) return NextResponse.json({ error: 'taskId は必須です' }, { status: 400 });
 
+        /** 指定教室でこのタスクを非表示にするオーバーライド行 */
+        const buildHiddenRow = (sid: string) => ({
+          task_id: deleteId,
+          school_id: sid,
+          is_hidden: true,
+          updated_at: new Date().toISOString(),
+        });
+
         // schoolId が指定されている場合 → その教室だけ非表示にする
         if (deleteSchoolId) {
-          const { error } = await supabaseAdmin.from('monthly_task_overrides').upsert(
-            {
-              task_id: deleteId,
-              school_id: deleteSchoolId,
-              is_hidden: true,
-              updated_at: new Date().toISOString(),
-            },
-            { onConflict: 'task_id,school_id' }
-          );
+          // 自分の教室スコープ内か必ず検証する（service role なので RLS は効かない）。
+          if (!isSchoolInScope(deleteSchoolId, auth.schoolIds)) return outOfScopeResponse();
+          const { error } = await supabaseAdmin
+            .from('monthly_task_overrides')
+            .upsert(buildHiddenRow(deleteSchoolId), { onConflict: 'task_id,school_id' });
           if (error) throw error;
           return NextResponse.json({ success: true, type: 'hidden' });
         }
 
-        // schoolId なし → タスク自体を削除（全教室）
+        // schoolId なし → 本来は「タスク自体を全教室から削除」。
+        // update_task と同じ理由で、教室長は自教室ぶんの非表示に読み替える
+        // （担当外の教室のタスクを消させない。操作者の画面からは消えるので体感は同じ）。
+        if (!canEditSharedMaster) {
+          if (auth.schoolIds.length === 0) return outOfScopeResponse();
+          const { error } = await supabaseAdmin
+            .from('monthly_task_overrides')
+            .upsert(auth.schoolIds.map(buildHiddenRow), { onConflict: 'task_id,school_id' });
+          if (error) throw error;
+          return NextResponse.json({ success: true, type: 'hidden' });
+        }
+
         const { error } = await supabaseAdmin.from('monthly_tasks').delete().eq('id', deleteId);
         if (error) throw error;
         return NextResponse.json({ success: true });
@@ -449,6 +516,15 @@ export async function POST(request: NextRequest) {
 
       case 'delete_course_tasks': {
         if (!canEdit) return NextResponse.json({ error: '権限がありません' }, { status: 403 });
+        // 年月だけ指定で全教室ぶんの講習タスクを一括削除する破壊的操作。
+        // 教室を絞る手段が無い（monthly_tasks は全教室共通）ため、教室長には開けない。
+        // 画面側も同じ境界でボタンを出し分けている（MonthlyTaskPage の canDeleteSharedMaster）。
+        if (!canEditSharedMaster) {
+          return NextResponse.json(
+            { error: '講習タスクの一括削除は管理者のみ実行できます' },
+            { status: 403 }
+          );
+        }
         const { year: delYear, month: delMonth } = body;
         if (!delYear || !delMonth)
           return NextResponse.json({ error: 'year, month は必須です' }, { status: 400 });
@@ -546,6 +622,10 @@ export async function POST(request: NextRequest) {
         if (!checkTaskId || !schoolId) {
           return NextResponse.json({ error: 'taskId, schoolId は必須です' }, { status: 400 });
         }
+        // batch_toggle_check と同じく、対象教室が自分のスコープ内かを必ず検証する
+        // （下の course_prep_schedule_tasks への同期も schoolId で絞っているため、
+        //   ここを素通しにすると他教室の講習進捗まで書き換わる）。
+        if (!isSchoolInScope(schoolId, auth.schoolIds)) return outOfScopeResponse();
 
         // upsert チェック
         const { data: existing } = await supabaseAdmin
@@ -607,6 +687,15 @@ export async function POST(request: NextRequest) {
 
       case 'update_note': {
         if (!canEdit) return NextResponse.json({ error: '権限がありません' }, { status: 403 });
+        // schoolId を受け取らず必ずベースタスク（全教室共通）のメモを書き換えるため、
+        // 教室長には開けない。画面からのメモ編集は update_task 経由で
+        // 教室別オーバーライドとして保存される（この action の呼び出し元は現状ゼロ）。
+        if (!canEditSharedMaster) {
+          return NextResponse.json(
+            { error: '全教室共通のメモを編集する権限がありません' },
+            { status: 403 }
+          );
+        }
         const { taskId: noteTaskId, note } = body;
         if (!noteTaskId) return NextResponse.json({ error: 'taskId は必須です' }, { status: 400 });
         const { error } = await supabaseAdmin

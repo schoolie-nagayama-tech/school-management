@@ -177,11 +177,19 @@ export async function getTeachersWithAttendance(schoolId: string, yearMonth: str
   const allSheetIds = (sheets || []).map((s) => s.id);
   const recordsBySheet = new Map<string, any[]>();
   if (allSheetIds.length > 0) {
-    const { data: allRecords } = await supabase
-      .from('attendance_records')
-      .select('sheet_id, value')
-      .in('sheet_id', allSheetIds);
-    (allRecords || []).forEach((r) => {
+    // records は (シート × 日数 × 種別) で1000行を容易に超える。sheetIds も多いと
+    // .in() の URL が長くなるため、チャンク分割 + チャンク内ページングで取得する。
+    const allRecords = await fetchAllInChunks<{ sheet_id: string; value: number }>(
+      allSheetIds,
+      (chunk, from, to) =>
+        supabase
+          .from('attendance_records')
+          .select('sheet_id, value')
+          .in('sheet_id', chunk)
+          .order('id', { ascending: true })
+          .range(from, to)
+    );
+    allRecords.forEach((r) => {
       const list = recordsBySheet.get(r.sheet_id) || [];
       list.push(r);
       recordsBySheet.set(r.sheet_id, list);
@@ -667,17 +675,25 @@ export async function getAttendanceSheetList(schoolId: string, yearMonth: string
   const allSheetIds = sheets.map((s) => s.id);
   const recordsBySheet2 = new Map<string, any[]>();
   if (allSheetIds.length > 0) {
-    const { data: allRecords } = await supabase
-      .from('attendance_records')
-      .select(
-        `
+    // records は (シート × 日数 × 種別) で1000行を容易に超える。sheetIds も多いと
+    // .in() の URL が長くなるため、チャンク分割 + チャンク内ページングで取得する。
+    const allRecords = await fetchAllInChunks<Record<string, unknown>>(
+      allSheetIds,
+      (chunk, from, to) =>
+        supabase
+          .from('attendance_records')
+          .select(
+            `
         sheet_id,
         value,
         attendance_type:attendance_types(id, name, unit)
       `
-      )
-      .in('sheet_id', allSheetIds);
-    (allRecords || []).forEach((r: Record<string, unknown>) => {
+          )
+          .in('sheet_id', chunk)
+          .order('id', { ascending: true })
+          .range(from, to)
+    );
+    allRecords.forEach((r: Record<string, unknown>) => {
       const list = recordsBySheet2.get(r.sheet_id as string) || [];
       list.push(r);
       recordsBySheet2.set(r.sheet_id as string, list);
