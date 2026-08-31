@@ -867,6 +867,38 @@ export async function getScheduleEntries(
 }
 
 /**
+ * コマを1件だけ ID で取る（リレーション付き）。
+ *
+ * 用途は振替元の表示。振替は週をまたぐので、振替先のコマを開いても振替元が
+ * 表示中の週に無いことがある。そのとき週の一覧から探しても見つからないため、
+ * ID で直接取りにいく。
+ */
+export async function getScheduleEntryById(entryId: string): Promise<ScheduleEntry | null> {
+  const { data, error } = await db
+    .from('schedule_entries')
+    .select(
+      '*, time_slot:schedule_time_slots(*), student:students(id, last_name, first_name, grade), teacher:user_profiles!schedule_entries_teacher_id_fkey(id, display_name, last_name, email)'
+    )
+    .eq('id', entryId)
+    .maybeSingle();
+  if (error || !data) {
+    if (error) console.error('Error fetching schedule entry by id:', error.message);
+    return null;
+  }
+  const r = data as ScheduleEntry & {
+    time_slot?: ScheduleTimeSlot[] | ScheduleTimeSlot;
+    student?: unknown[] | unknown;
+    teacher?: unknown[] | unknown;
+  };
+  return {
+    ...r,
+    time_slot: Array.isArray(r.time_slot) ? r.time_slot[0] : r.time_slot,
+    student: Array.isArray(r.student) ? r.student[0] : r.student,
+    teacher: Array.isArray(r.teacher) ? r.teacher[0] : r.teacher,
+  } as ScheduleEntry;
+}
+
+/**
  * 退塾予定日マップ（生徒ID → 'YYYY-MM-DD'）。その日以降はコマを生成しない。
  * 週次生成と同期チェックで同じ集合を使うため関数に切り出してある。
  *

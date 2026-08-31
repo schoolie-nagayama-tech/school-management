@@ -134,6 +134,11 @@ export interface WeeklyScheduleGridProps {
    * トースト表示などに使う。
    */
   onConstraintViolation?: (reason: string) => void;
+  /**
+   * 配置はしたが注意が要るときに呼ばれる（希望性別と違う講師に入れた等）。
+   * ドロップは実行済みなので、呼び出し側は警告トーストを出すだけにする。
+   */
+  onConstraintWarning?: (reason: string) => void;
   onTransferTargetClick?: (date: string, slotId: string, teacherId: string) => void;
   onPrintDay?: (date: string) => void;
   onBoothAssign?: (date: string) => void;
@@ -206,6 +211,7 @@ function WeeklyScheduleGridImpl(props: WeeklyScheduleGridProps) {
     onStudentEntryDrop,
     onTeacherDropOnUnassigned,
     onConstraintViolation,
+    onConstraintWarning,
     onTransferTargetClick,
     onPrintDay,
     onBoothAssign,
@@ -338,6 +344,12 @@ function WeeklyScheduleGridImpl(props: WeeklyScheduleGridProps) {
       // 入れられない場合は理由をトースト表示（満席・重複・休講・相性）。noop だけ無反応。
       if (decision.kind === 'violation' || decision.kind === 'blocked') {
         onConstraintViolation?.(decision.reason);
+        return;
+      }
+      // 希望と違うだけ（希望性別）なら止めない。警告を出したうえでそのまま配置する。
+      if (decision.kind === 'warn') {
+        onConstraintWarning?.(decision.reason);
+        onStudentEntryDrop(String(active.id), overSlot.date, overSlot.slotId, overSlot.teacherId);
         return;
       }
       if (decision.kind !== 'drop') return;

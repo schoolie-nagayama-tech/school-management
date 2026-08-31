@@ -4,7 +4,8 @@ import type { ScheduleEntry } from '@/types/schedule';
 export type StudentDropDecision =
   | { kind: 'noop' } // 無反応（元ブロックへ落とした等。理由表示は不要）
   | { kind: 'blocked'; reason: string } // 入れられない（満席・重複・休講）。理由をトースト表示
-  | { kind: 'violation'; reason: string } // 相性の制約（指導科目外・除外・性別）。理由をトースト表示
+  | { kind: 'violation'; reason: string } // 相性の制約（指導科目外・除外）。理由をトースト表示
+  | { kind: 'warn'; reason: string } // 入れられるが注意が要る（希望性別違い）。警告を出して実行
   | { kind: 'drop' }; // ドロップ実行（同コマ内=移動 / 別コマ=振替 は呼び出し側で分岐）
 
 /**
@@ -19,11 +20,13 @@ export type StudentDropDecision =
  *  2. 休講日 → blocked（理由付き）
  *  3. 移動先に同じ生徒が既にいる → blocked（理由付き）
  *  4. 移動先が満席（有効エントリ数 >= 上限） → blocked（理由付き）
- *  5. 指導科目外 / 担当除外 / 希望性別不一致 → violation（理由付き）
- *  6. それ以外 → drop
+ *  5. 指導科目外 / 担当除外 → violation（理由付き）
+ *  6. 希望性別と違う講師 → warn（理由付き。ドロップは実行する）
+ *  7. それ以外 → drop
  *
  * blocked / violation はどちらも「入れられない＋理由あり」。呼び出し側はどちらも
  * 理由をトースト表示してブロックする（noop だけは無反応）。
+ * warn は「入れたうえで注意を出す」。止めると教室が回らない類の希望条件に使う。
  *
  * targetActiveEntries は「移動先セルの cancelled/transferred_out を除いた現エントリ」を渡す。
  * ドラッグ中のエントリ自身は別ブロック（別講師）なので含まれず、満席の数え上げに自分は入らない。
@@ -73,12 +76,17 @@ export function evaluateStudentDrop(params: {
     if (excluded.includes(target.teacherId)) {
       return { kind: 'violation', reason: '担当除外指定の講師です' };
     }
-    // 性別希望
+    /*
+     * 性別希望は「守れないと絶対に困る」制約ではなく、守りたい希望。
+     * 教室では、希望と違う講師でも当日の都合で入れざるを得ない場面が普通にあるので、
+     * ブロックせず警告だけ出して通す（2026-08-31 運用判断）。
+     * 逆に自動配置は希望どおりの講師を選ぶべきなので、checkTeacherFit 側は不可のままにしてある。
+     */
     const preferred = entry.student?.preferred_teacher_gender;
     if (preferred && targetTeacher.gender && targetTeacher.gender !== preferred) {
       return {
-        kind: 'violation',
-        reason: `${preferred === 'male' ? '男性' : '女性'}講師希望のため割当不可`,
+        kind: 'warn',
+        reason: `${preferred === 'male' ? '男性' : '女性'}講師希望の生徒です（希望と違う講師に割り当てました）`,
       };
     }
   }

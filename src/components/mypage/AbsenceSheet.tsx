@@ -48,6 +48,7 @@ export function AbsenceSheet({
   studentId,
   entry,
   timeSlots,
+  initialKind = 'absence',
   onClose,
   onSent,
 }: {
@@ -55,10 +56,15 @@ export function AbsenceSheet({
   entry: PortalScheduleEntryDto;
   /** その教室に実在する時限。振替希望の「時限」はここからの選択にする（自由入力にしない）。 */
   timeSlots: PortalTimeSlotDto[];
+  /**
+   * 開いたときに選ばれている連絡の種類。チャットの「振替希望」から開くときに 'transfer' を渡す。
+   * 締切・上限で選べない場合は下の useEffect が 'absence' に戻す（不整合な送信を防ぐ）。
+   */
+  initialKind?: ContactKind;
   onClose: () => void;
   onSent: () => void;
 }) {
-  const [kind, setKind] = useState<ContactKind>('absence');
+  const [kind, setKind] = useState<ContactKind>(initialKind);
   const [reason, setReason] = useState('');
   const [candidates, setCandidates] = useState<TransferCandidate[]>([
     { date: '', slot: '' },

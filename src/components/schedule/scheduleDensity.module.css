@@ -414,6 +414,15 @@
   outline: 1px solid color-mix(in oklch, var(--success) 60%, transparent);
   outline-offset: 1px;
 }
+/* 希望性別と違う講師。落とせる（＝赤の不可ではない）が、緑の「どうぞ」でもないので橙。 */
+.dropWarn {
+  outline: 2px solid var(--warning);
+  outline-offset: -1px;
+}
+.dropWarnCandidate {
+  outline: 1px dashed color-mix(in oklch, var(--warning) 70%, transparent);
+  outline-offset: 1px;
+}
 .dropDim {
   opacity: 0.3;
   filter: grayscale(1);
@@ -644,6 +653,11 @@
   white-space: nowrap;
   box-shadow: var(--sd-card-shadow);
   pointer-events: none;
+}
+/* 「入れられるが希望と違う」バッジ。不可（赤）と混同させないため橙にする。 */
+.reasonBadgeWarn {
+  background: var(--warning);
+  color: var(--text-heading);
 }
 
 /* ============ 生徒行（1行表示） ============ */

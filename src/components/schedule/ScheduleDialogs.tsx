@@ -58,6 +58,8 @@ interface ScheduleDialogsProps {
   actionModalEntry: ScheduleEntry | null;
   /** 振替先コマから保護者へ通知する（未指定なら通知ボタンを出さない） */
   onNotifyTransfer?: () => Promise<void>;
+  /** 振替元コマ（transfer_from_id の先）。親が解決して渡す。未指定なら振替元を表示しない */
+  actionModalTransferSource?: ScheduleEntry | null;
   onActionModalClose: () => void;
   timeSlots: ScheduleTimeSlot[];
   onTransferFromAction: () => void;
@@ -152,6 +154,7 @@ export function ScheduleDialogs({
 
   actionModalEntry,
   onNotifyTransfer,
+  actionModalTransferSource,
   onActionModalClose,
   timeSlots,
   onTransferFromAction,
@@ -309,6 +312,13 @@ export function ScheduleDialogs({
         onDelete={onDeleteClick}
         onStudentClick={onStudentClickFromAction}
         onTeacherClick={onTeacherClickFromAction}
+        transferSource={actionModalTransferSource}
+        // 進行表は生徒に紐づくページなので、生徒のいるコマ（見込み客の体験は除く）だけ出す
+        progressHref={
+          actionModalEntry?.student_id
+            ? `/students/${actionModalEntry.student_id}/progress`
+            : undefined
+        }
       />
 
       <StudentDetailModal
