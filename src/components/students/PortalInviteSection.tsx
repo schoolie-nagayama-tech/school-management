@@ -1,7 +1,24 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { Copy, Ticket, Users, Link2Off, Loader2, Printer, Download } from 'lucide-react';
+import {
+  Copy,
+  Ticket,
+  Users,
+  Link2Off,
+  Loader2,
+  Printer,
+  Download,
+  MessageCircle,
+  Ban,
+  KeyRound,
+  CheckCircle2,
+  AlertTriangle,
+  Info,
+  FolderOpen,
+  UserPlus,
+  Clock,
+} from 'lucide-react';
 import QRCode from 'qrcode';
 import { useMasterData } from '@/contexts/MasterDataContext';
 import { buildInviteHandoutHtml } from '@/lib/portal/inviteHandout';
@@ -11,13 +28,18 @@ import { useToast } from '@/hooks/useToast';
 import { useConfirm } from '@/hooks/useConfirm';
 import { fetchWithAuth } from '@/lib/api/auth';
 import { isManagerOrAbove, isOwnerOrAbove } from '@/lib/utils/roles';
+import { LinkExistingAccountDialog } from './LinkExistingAccountDialog';
 
 /**
  * 生徒詳細モーダル・新規登録直後の導線から使う保護者ポータルのセクション。
  *
- * 2つの機能を持つ:
+ * 4つの機能を持つ:
  *   1) 招待の発行（admin/owner のみ）— /api/admin/portal-invitations（requireAdmin）
  *   2) 登録済みアカウントの紐づけ解除（manager 以上）— /api/admin/students/[id]/portal-links
+ *   3) LINE連携の状態確認（manager 以上）— 「通知が届くか」の結論・誰が何名紐づいているか・
+ *      そのアカウントが見ている兄弟・直近の送信結果。問い合わせを受けたときに答える材料。
+ *   4) 既存アカウントへの紐づけ追加（manager 以上）— 兄弟の2人目以降を招待なしで足す
+ *      （LinkExistingAccountDialog）。
  *
  * ★ 権限の出し分け（セクション＝manager以上／招待発行＝owner以上）:
  *   - セクション全体の表示ゲートは isManagerOrAbove。教室長も「誤紐づけを解除する」ために
@@ -53,9 +75,89 @@ interface InvitationRow {
 interface LinkedAccount {
   account_id: string;
   display_name: string;
+  login_id: string | null;
   has_line: boolean;
+  /** 友だち追加中か。LINE未連携なら null（既定値 true を「友だち」と誤読しないため）。 */
+  line_followed: boolean | null;
+  line_follow_updated_at: string | null;
+  last_login_at: string | null;
+  /** この生徒とこのアカウントを紐づけた日時。 */
+  linked_at: string;
   relation: string;
   relation_note: string | null;
+  /** このアカウントが見ている他の生徒＝兄弟（自教室の分だけ返る）。 */
+  other_students: Array<{ student_id: string; student_name: string; grade: number | null }>;
+}
+
+/** 直近のLINE送信ログ1件（本文は保存していないので種別と結果だけ）。 */
+interface RecentLog {
+  id: string;
+  kind: string;
+  status: string;
+  detail: string | null;
+  recipient_count: number;
+  created_at: string;
+}
+
+/**
+ * 通知種別の日本語ラベル（lib/mypage/notify.ts の NotifyKind に対応）。
+ * 振替日の確定は専用の種別を持たず system_message で流れるので、「予定のお知らせ」とまとめる。
+ */
+const LOG_KIND_LABELS: Record<string, string> = {
+  report_published: '授業報告書の公開',
+  chat_new_message: 'チャット返信',
+  announcement: 'お知らせ',
+  system_message: '予定のお知らせ',
+};
+
+/**
+ * 送信ログの状態表示。
+ *
+ * ★ status の意味（migration 20260807000000 のコメントが正典）:
+ *   sent=実送信 / dry_run=LINE_PUSH_ENABLED 未設定で送っていない /
+ *   skipped=宛先ゼロ・ダミーデータ等で送らなかった / error=送信を試みて失敗。
+ *   ブロック中の保護者は宛先解決の段階で外れるので error ではなく skipped になる。
+ *   スタッフに見せる言葉は「届いた/届いていない」に寄せる。
+ */
+function logStatusLabel(status: string): { label: string; className: string } {
+  switch (status) {
+    case 'sent':
+      return { label: '送信済', className: 'bg-success-subtle text-success' };
+    case 'dry_run':
+      return { label: '送信オフ', className: 'bg-surface-hover text-text-muted' };
+    case 'skipped':
+      return { label: '対象なし', className: 'bg-warning-subtle text-warning' };
+    case 'error':
+      return { label: '失敗', className: 'bg-danger-subtle text-danger' };
+    default:
+      return { label: status, className: 'bg-surface-hover text-text-muted' };
+  }
+}
+
+/** 日時の短縮表示（M/D HH:mm）。一覧に並べたときに詰まらない粒度にする。 */
+function shortDateTime(iso: string | null): string {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '—';
+  const hh = String(d.getHours()).padStart(2, '0');
+  const mm = String(d.getMinutes()).padStart(2, '0');
+  return `${d.getMonth() + 1}/${d.getDate()} ${hh}:${mm}`;
+}
+
+/** 日付だけの短縮表示（M/D）。 */
+function shortDate(iso: string | null): string {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '—';
+  return `${d.getMonth() + 1}/${d.getDate()}`;
+}
+
+/** 学年の表示（1-6=小、7-9=中、10-12=高）。 */
+function gradeLabel(grade: number | null): string {
+  if (grade == null) return '';
+  if (grade <= 6) return `小${grade}`;
+  if (grade <= 9) return `中${grade - 6}`;
+  return `高${grade - 9}`;
 }
 
 interface PortalInviteSectionProps {
@@ -91,8 +193,10 @@ export function PortalInviteSection({ studentId, studentName }: PortalInviteSect
   const [qrDataUrl, setQrDataUrl] = useState('');
 
   const [linkedAccounts, setLinkedAccounts] = useState<LinkedAccount[]>([]);
+  const [recentLogs, setRecentLogs] = useState<RecentLog[]>([]);
   const [loadingLinks, setLoadingLinks] = useState(false);
   const [unlinkingId, setUnlinkingId] = useState<string | null>(null);
+  const [linkDialogOpen, setLinkDialogOpen] = useState(false);
 
   // その生徒宛の発行済み招待一覧を取得（一覧APIは既に student_id フィルタに対応済み）
   const loadInvitations = useCallback(async () => {
@@ -120,9 +224,11 @@ export function PortalInviteSection({ studentId, studentName }: PortalInviteSect
       );
       const json = await res.json();
       setLinkedAccounts(res.ok ? (json.accounts ?? []) : []);
+      setRecentLogs(res.ok ? (json.recent_logs ?? []) : []);
     } catch (e) {
       console.error('[PortalInviteSection] 紐づけ一覧の取得に失敗:', e);
       setLinkedAccounts([]);
+      setRecentLogs([]);
     } finally {
       setLoadingLinks(false);
     }
@@ -279,6 +385,89 @@ export function PortalInviteSection({ studentId, studentName }: PortalInviteSect
     }
   };
 
+  /**
+   * 「この生徒の保護者にLINE通知が届くか」を1行に畳んだ結論。
+   *
+   * 面談中に開いて3秒で判断できることを狙う。判定は一覧API（/api/admin/line-status）の
+   * STATUS_RANK と同じ考え方で、複数アカウントがあるときは一番良い状態を代表にする。
+   */
+  const verdict = (() => {
+    if (loadingLinks) return null;
+    if (linkedAccounts.length === 0) {
+      return {
+        tone: 'todo' as const,
+        title: 'まだ登録されていません',
+        description:
+          '保護者アカウントが無いため、ポータルもLINE通知も使えません。招待を発行するか、兄弟の保護者アカウントに紐づけてください。',
+      };
+    }
+
+    const reachable = linkedAccounts.filter((a) => a.has_line && a.line_followed !== false);
+    const blocked = linkedAccounts.filter((a) => a.has_line && a.line_followed === false);
+
+    if (reachable.length > 0) {
+      const rest = linkedAccounts.length - reachable.length;
+      return {
+        tone: 'ok' as const,
+        title: 'LINE通知が届きます',
+        description:
+          rest > 0
+            ? `${linkedAccounts.length}名のうち${reachable.length}名のLINEに届きます。残りの方はポータル画面のみです。`
+            : '授業報告書の公開・振替の確定・チャット返信がLINEに届きます。',
+      };
+    }
+
+    if (blocked.length > 0) {
+      const since = blocked[0].line_follow_updated_at;
+      return {
+        tone: 'ng' as const,
+        title: 'LINE通知は届きません',
+        description: `公式アカウントがブロック（または友だち解除）されています${
+          since ? `（${shortDate(since)} に検知）` : ''
+        }。ポータル画面へのログインは今までどおり使えます。`,
+      };
+    }
+
+    return {
+      tone: 'ng' as const,
+      title: 'LINE通知は届きません',
+      description:
+        'ID・パスワードのみのアカウントです。ポータル画面は見られますが、LINEには届きません。LINEログインをご案内してください。',
+    };
+  })();
+
+  const verdictStyle = {
+    ok: { wrap: 'border-success/30 bg-success-subtle', title: 'text-success', Icon: CheckCircle2 },
+    ng: { wrap: 'border-danger/30 bg-danger-subtle', title: 'text-danger', Icon: AlertTriangle },
+    todo: { wrap: 'border-warning/40 bg-warning-subtle', title: 'text-warning', Icon: Info },
+  } as const;
+
+  /** アカウント1件のLINE状態バッジ。 */
+  const accountBadge = (acc: LinkedAccount) => {
+    if (!acc.has_line) {
+      return (
+        <span className="inline-flex shrink-0 items-center gap-1 rounded bg-info-subtle px-1.5 py-0.5 text-[10px] font-medium text-info">
+          <KeyRound className="h-3 w-3" />
+          ID・PWのみ
+        </span>
+      );
+    }
+    if (acc.line_followed === false) {
+      return (
+        <span className="inline-flex shrink-0 items-center gap-1 rounded bg-danger-subtle px-1.5 py-0.5 text-[10px] font-medium text-danger">
+          <Ban className="h-3 w-3" />
+          ブロック中
+        </span>
+      );
+    }
+    return (
+      <span className="inline-flex shrink-0 items-center gap-1 rounded bg-success-subtle px-1.5 py-0.5 text-[10px] font-medium text-success">
+        <MessageCircle className="h-3 w-3" />
+        友だち追加中
+      </span>
+    );
+  };
+
   // 招待の状態ラベル（設定→ポータルアカウントと同じ判定基準）
   const statusOf = (inv: InvitationRow): { label: string; className: string } => {
     if (inv.accepted_at) return { label: '受諾済み', className: 'text-green-600' };
@@ -294,9 +483,155 @@ export function PortalInviteSection({ studentId, studentName }: PortalInviteSect
         保護者ポータル
       </h3>
       <div className="p-3 bg-[#f8fafc] rounded-lg border border-[#e5e7eb] space-y-3">
+        {/* ★ 結論を最初に出す: 「この保護者にLINE通知が届くのか」。
+            その下に、誰が何名紐づいているか（兄弟含む）と直近の送信結果を置く。 */}
+        {loadingLinks ? (
+          <p className="text-xs text-[#9ca3af]">読み込み中...</p>
+        ) : (
+          verdict && (
+            <div
+              className={`flex items-start gap-2.5 rounded-lg border p-2.5 ${verdictStyle[verdict.tone].wrap}`}
+            >
+              {(() => {
+                const Icon = verdictStyle[verdict.tone].Icon;
+                return (
+                  <Icon className={`mt-0.5 h-4 w-4 shrink-0 ${verdictStyle[verdict.tone].title}`} />
+                );
+              })()}
+              <div className="min-w-0">
+                <p className={`text-xs font-bold ${verdictStyle[verdict.tone].title}`}>
+                  {verdict.title}
+                </p>
+                <p className="mt-0.5 text-[11px] leading-relaxed text-[#4b5563]">
+                  {verdict.description}
+                </p>
+              </div>
+            </div>
+          )
+        )}
+
+        {/* 登録済みアカウント（manager 以上で表示。紐づけの追加・解除の入口） */}
+        <div>
+          <div className="mb-1.5 flex items-center gap-1.5">
+            <p className="flex items-center gap-1.5 text-xs font-medium text-[#4b5563]">
+              <Users className="w-3.5 h-3.5" />
+              この生徒を見られる人
+            </p>
+            <span
+              className={`inline-flex items-baseline gap-0.5 rounded-full px-2 py-0.5 text-[10px] font-bold tabular-nums ${
+                linkedAccounts.length > 0 ? 'bg-ink-subtle text-ink' : 'bg-[#f1f5f9] text-[#9ca3af]'
+              }`}
+            >
+              <span className="text-xs">{linkedAccounts.length}</span>名
+            </span>
+            <button
+              type="button"
+              onClick={() => setLinkDialogOpen(true)}
+              className="ml-auto inline-flex shrink-0 items-center gap-1 rounded border border-[#e5e7eb] bg-white px-2 py-1 text-[11px] font-medium text-[#1f2937] transition-colors hover:bg-[#f1f5f9]"
+            >
+              <UserPlus className="h-3 w-3" />
+              登録済みの保護者から選ぶ
+            </button>
+          </div>
+
+          {loadingLinks ? (
+            <p className="text-xs text-[#9ca3af]">読み込み中...</p>
+          ) : linkedAccounts.length === 0 ? (
+            <p className="text-xs text-[#6b7280]">このお子さまに紐づくアカウントはありません。</p>
+          ) : (
+            <div className="space-y-1.5">
+              {linkedAccounts.map((acc) => (
+                <div
+                  key={acc.account_id}
+                  className="rounded border border-[#e5e7eb] bg-white px-2 py-1.5 text-xs"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-[#1f2937] truncate">{acc.display_name}</span>
+                    <span className="shrink-0 rounded bg-[#f1f5f9] px-1.5 py-0.5 text-[10px] text-[#4b5563]">
+                      {relationLabel(acc.relation, acc.relation_note)}
+                    </span>
+                    {accountBadge(acc)}
+                    <button
+                      type="button"
+                      onClick={() => handleUnlink(acc)}
+                      disabled={unlinkingId === acc.account_id}
+                      className="ml-auto inline-flex shrink-0 items-center gap-1 rounded border border-[#e5e7eb] px-2 py-1 text-[11px] font-medium text-[#dc2626] transition-colors hover:bg-red-50 disabled:opacity-50"
+                    >
+                      {unlinkingId === acc.account_id ? (
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                      ) : (
+                        <Link2Off className="w-3 h-3" />
+                      )}
+                      解除
+                    </button>
+                  </div>
+
+                  <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-[10px] tabular-nums text-[#9ca3af]">
+                    <span>{acc.has_line ? 'LINEログイン' : `ID: ${acc.login_id ?? '—'}`}</span>
+                    <span>紐づけ {shortDate(acc.linked_at)}</span>
+                    <span>最終ログイン {shortDateTime(acc.last_login_at)}</span>
+                  </div>
+
+                  {/* ★ 兄弟の可視化: 問い合わせで「弟の分も見えていますか」に即答するための行。
+                      他教室の兄弟はAPI側で落としているので、ここには自教室の子だけが出る。 */}
+                  <div className="mt-1 flex items-start gap-1.5 rounded bg-[#f8fafc] px-2 py-1 text-[10px] text-[#6b7280]">
+                    <FolderOpen className="mt-0.5 h-3 w-3 shrink-0 text-[#9ca3af]" />
+                    {acc.other_students.length === 0 ? (
+                      <span>この生徒だけに紐づいています</span>
+                    ) : (
+                      <span>
+                        このアカウントは{' '}
+                        <span className="font-medium text-[#4b5563]">
+                          {acc.other_students
+                            .map((s) => `${s.student_name}（${gradeLabel(s.grade)}）`)
+                            .join('・')}
+                        </span>{' '}
+                        も見ています
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* 直近の通知（line_message_logs をそのまま履歴として読む。本文は保存していない） */}
+        {recentLogs.length > 0 && (
+          <div>
+            <p className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-[#4b5563]">
+              <Clock className="w-3.5 h-3.5" />
+              直近の通知
+            </p>
+            <div className="overflow-hidden rounded border border-[#e5e7eb] bg-white">
+              {recentLogs.map((log) => {
+                const st = logStatusLabel(log.status);
+                return (
+                  <div
+                    key={log.id}
+                    className="flex items-center gap-2 border-b border-[#f1f5f9] px-2 py-1.5 text-[11px] last:border-b-0"
+                  >
+                    <span className="min-w-0 flex-1 truncate text-[#4b5563]">
+                      {LOG_KIND_LABELS[log.kind] ?? log.kind}
+                    </span>
+                    <span
+                      className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium ${st.className}`}
+                    >
+                      {st.label}
+                    </span>
+                    <span className="shrink-0 tabular-nums text-[#9ca3af]">
+                      {shortDateTime(log.created_at)}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* 招待発行ブロック（owner 以上のみ。発行APIが admin/owner 限定のため） */}
         {canInvite && (
-          <>
+          <div className="space-y-3 border-t border-[#e5e7eb] pt-3">
             {/* 発行済み一覧 */}
             {loading ? (
               <p className="text-xs text-[#9ca3af]">読み込み中...</p>
@@ -423,54 +758,21 @@ export function PortalInviteSection({ studentId, studentName }: PortalInviteSect
                 )}
               </div>
             )}
-          </>
+          </div>
         )}
-
-        {/* 登録済みアカウント（manager 以上で表示。紐づけ解除の入口） */}
-        <div className={canInvite ? 'pt-2 border-t border-[#e5e7eb]' : ''}>
-          <p className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-[#4b5563]">
-            <Users className="w-3.5 h-3.5" />
-            登録済みアカウント
-          </p>
-          {loadingLinks ? (
-            <p className="text-xs text-[#9ca3af]">読み込み中...</p>
-          ) : linkedAccounts.length === 0 ? (
-            <p className="text-xs text-[#6b7280]">このお子さまに紐づくアカウントはありません。</p>
-          ) : (
-            <div className="space-y-1">
-              {linkedAccounts.map((acc) => (
-                <div
-                  key={acc.account_id}
-                  className="flex items-center gap-2 rounded border border-[#e5e7eb] bg-white px-2 py-1.5 text-xs"
-                >
-                  <span className="font-medium text-[#1f2937] truncate">{acc.display_name}</span>
-                  <span className="shrink-0 rounded bg-[#f1f5f9] px-1.5 py-0.5 text-[10px] text-[#4b5563]">
-                    {relationLabel(acc.relation, acc.relation_note)}
-                  </span>
-                  {acc.has_line && (
-                    <span className="shrink-0 rounded bg-[#e7f5ec] px-1.5 py-0.5 text-[10px] font-medium text-[#16a34a]">
-                      LINE連携
-                    </span>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => handleUnlink(acc)}
-                    disabled={unlinkingId === acc.account_id}
-                    className="ml-auto inline-flex shrink-0 items-center gap-1 rounded border border-[#e5e7eb] px-2 py-1 text-[11px] font-medium text-[#dc2626] transition-colors hover:bg-red-50 disabled:opacity-50"
-                  >
-                    {unlinkingId === acc.account_id ? (
-                      <Loader2 className="w-3 h-3 animate-spin" />
-                    ) : (
-                      <Link2Off className="w-3 h-3" />
-                    )}
-                    解除
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
       </div>
+
+      {/* 兄弟の追加登録。招待の往復なしで既存アカウントに紐づける（POST portal-links）。 */}
+      <LinkExistingAccountDialog
+        isOpen={linkDialogOpen}
+        onClose={() => setLinkDialogOpen(false)}
+        studentId={studentId}
+        studentName={studentName}
+        onLinked={() => {
+          success('紐づけました');
+          void loadLinks();
+        }}
+      />
 
       {ConfirmDialog}
       <ToastContainer toasts={toasts} onRemove={removeToast} />

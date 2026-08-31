@@ -183,6 +183,14 @@ const settingsGroups: SettingsGroup[] = [
         requiresManager: true,
       },
       {
+        // 教室長も自教室の棚卸しに使うので requiresManager（APIも manager＋自教室スコープ）。
+        href: '/settings/line-status',
+        icon: <MessageSquare className="w-5 h-5" />,
+        label: 'LINE連携状況',
+        description: '保護者にLINE通知が届く状態か・誰が何名紐づいているかの確認',
+        requiresManager: true,
+      },
+      {
         href: '/settings/forms/moshi',
         icon: <FileText className="w-5 h-5" />,
         label: 'フォーム期間設定',
