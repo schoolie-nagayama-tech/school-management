@@ -61,6 +61,12 @@ interface ScheduleToolbarProps {
   onVisibleDaysChange: (days: number[]) => void;
   onKoushuSelect: (period: KoushuPeriodInfo | null) => void;
   onTestPrepToggle: (active: boolean) => void;
+  /**
+   * 表示モード。'week'=週の座席表（予定を組む盤） / 'day'=当日盤（今日を回す運用盤）。
+   * 個別タブ専用（形態ボードでは切替を出さない）。ユーザー設定として永続化。
+   */
+  viewMode: 'week' | 'day';
+  onViewModeChange: (v: 'week' | 'day') => void;
   /** 座席表の向き（既定=転置 日=行）とセル内列数（日=列モードのみ有効）。ユーザー設定として永続化 */
   orientation: 'cols' | 'rows';
   onOrientationChange: (o: 'cols' | 'rows') => void;
@@ -92,6 +98,8 @@ export function ScheduleToolbar({
   onVisibleDaysChange,
   onKoushuSelect,
   onTestPrepToggle,
+  viewMode,
+  onViewModeChange,
   orientation,
   onOrientationChange,
   colMode,
@@ -228,33 +236,62 @@ export function ScheduleToolbar({
         </div>
         {schoolId && (
           <div className="flex items-center gap-2 flex-wrap">
-            {/* 向きトグル: 日=行(転置・既定) / 日=列(週俯瞰)。ユーザー設定として永続化。 */}
-            <div className="flex items-center gap-1.5">
-              <span className="text-xs text-[var(--paragraph)]">向き:</span>
-              <div className="inline-flex rounded-full bg-[var(--surface)] p-0.5">
-                {[
-                  { v: 'rows' as const, label: '日=行' },
-                  { v: 'cols' as const, label: '日=列' },
-                ].map((o) => (
-                  <button
-                    key={o.v}
-                    type="button"
-                    onClick={() => onOrientationChange(o.v)}
-                    className={`px-2.5 py-0.5 rounded-full text-xs font-medium transition-colors ${
-                      orientation === o.v
-                        ? 'bg-white text-[var(--headline)] shadow-sm'
-                        : 'text-[var(--paragraph-light)] hover:text-[var(--headline)]'
-                    }`}
-                  >
-                    {o.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-            {/* 列数トグル: 日=列モードのときだけ意味を持つ（個別タブ専用） */}
-            {isIndividualTab && orientation === 'cols' && (
+            {/* 週/日トグル: 週=予定を組む盤 / 日=今日を回す運用盤。個別タブ専用。
+                形態ボードには当日盤が無いのでタブ側で出し分ける。 */}
+            {isIndividualTab && (
               <div className="flex items-center gap-1.5">
                 <span className="text-xs text-[var(--paragraph)]">表示:</span>
+                <div className="inline-flex rounded-full bg-[var(--surface)] p-0.5">
+                  {[
+                    { v: 'week' as const, label: '週' },
+                    { v: 'day' as const, label: '日' },
+                  ].map((o) => (
+                    <button
+                      key={o.v}
+                      type="button"
+                      onClick={() => onViewModeChange(o.v)}
+                      className={`px-2.5 py-0.5 rounded-full text-xs font-medium transition-colors ${
+                        viewMode === o.v
+                          ? 'bg-white text-[var(--headline)] shadow-sm'
+                          : 'text-[var(--paragraph-light)] hover:text-[var(--headline)]'
+                      }`}
+                    >
+                      {o.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            {/* 向きトグル: 日=行(転置・既定) / 日=列(週俯瞰)。ユーザー設定として永続化。
+                日表示では盤面が「行=講師・列=コマ」で固定なので意味を持たない → 隠す。 */}
+            {viewMode !== 'day' && (
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs text-[var(--paragraph)]">向き:</span>
+                <div className="inline-flex rounded-full bg-[var(--surface)] p-0.5">
+                  {[
+                    { v: 'rows' as const, label: '日=行' },
+                    { v: 'cols' as const, label: '日=列' },
+                  ].map((o) => (
+                    <button
+                      key={o.v}
+                      type="button"
+                      onClick={() => onOrientationChange(o.v)}
+                      className={`px-2.5 py-0.5 rounded-full text-xs font-medium transition-colors ${
+                        orientation === o.v
+                          ? 'bg-white text-[var(--headline)] shadow-sm'
+                          : 'text-[var(--paragraph-light)] hover:text-[var(--headline)]'
+                      }`}
+                    >
+                      {o.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            {/* 列数トグル: 日=列モードのときだけ意味を持つ（個別タブ専用・日表示では非表示） */}
+            {isIndividualTab && viewMode !== 'day' && orientation === 'cols' && (
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs text-[var(--paragraph)]">列数:</span>
                 <div className="inline-flex rounded-full bg-[var(--surface)] p-0.5">
                   {([1, 2] as const).map((n) => (
                     <button
