@@ -29,6 +29,25 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: false,
   },
+
+  // 型チェックは CI に一本化し、next build 中では走らせない。
+  //
+  // ★品質ゲートを外しているわけではない。
+  //   .github/workflows/ci.yml に独立した `npx tsc --noEmit` ステップがあり、main への
+  //   PR は型エラーがあれば必ず落ちる。これまでは CI で tsc を1回、その直後の
+  //   `next build` でもう1回と、同じ型チェックを二重に走らせていた。
+  //
+  // ★なぜ外すか:
+  //   Vercel のビルドコンテナは2コア8GBで、この二重チェックがメモリ・時間を圧迫し、
+  //   ビルドがハングして45分でタイムアウトする事象が繰り返し起きていた
+  //   （2026-09-01 の可観測性PRでも、GitHub Actions の `next build` は6分で成功する一方
+  //     Vercel 側だけが失敗した）。ローカル/CI と Vercel で結果が変わる不安定さを取り除く。
+  //
+  // ★戻すとき: CI の tsc ステップを消す場合は、必ずここも false に戻すこと。
+  //   どちらか片方だけになると型エラーが素通りする。
+  typescript: {
+    ignoreBuildErrors: true,
+  },
   // 画像最適化の設定
   images: {
     remotePatterns: [
