@@ -688,10 +688,11 @@ export default function AttendanceManagementPage() {
     const teacherName = allTeachers.find((t) => t.id === hrTeacherId)?.name ?? '不明';
     setIsSavingHr(true);
     try {
-      if (hrHireDate !== snap.hire) {
+      // 入社日・退職日は管理者だけの操作（教室長には入力欄自体を出していない）
+      if (isAdmin && hrHireDate !== snap.hire) {
         await updateTeacherHireDate(hrTeacherId, hrHireDate || null);
       }
-      if (hrExitDate !== snap.exit) {
+      if (isAdmin && hrExitDate !== snap.exit) {
         await updateTeacherExitDate(hrTeacherId, hrExitDate || null);
       }
       const komaDirty =
@@ -1738,13 +1739,18 @@ export default function AttendanceManagementPage() {
           </CardContent>
         </Card>
 
-        {/* 講師の人事・コマ給 (admin only)。
+        {/* 講師の人事・コマ給。
             入社日・退職日・コマ給変更はいずれも「1人の講師に対する設定」なので、
-            講師を1回選べば3つともまとめて編集できる1フォームに統合している。 */}
-        {isAdmin && (
+            講師を1回選べば3つともまとめて編集できる1フォームに統合している。
+
+            ★ コマ給の改定は教室長も行うのでカード自体は教室長以上に出す。
+              入社日・退職日は人事情報なので管理者のみ（カード内で出し分ける）。 */}
+        {(isAdmin || isManager) && (
           <Card>
             <CardHeader className="py-3">
-              <CardTitle className="text-base">講師の人事・コマ給</CardTitle>
+              <CardTitle className="text-base">
+                {isAdmin ? '講師の人事・コマ給' : '講師のコマ給'}
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex flex-wrap items-center gap-2">
@@ -1770,41 +1776,46 @@ export default function AttendanceManagementPage() {
 
               {!hrTeacherId ? (
                 <p className="text-xs text-text-faint">
-                  講師を選ぶと、入社日・退職日・コマ給変更をまとめて登録できます。
+                  {isAdmin
+                    ? '講師を選ぶと、入社日・退職日・コマ給変更をまとめて登録できます。'
+                    : '講師を選ぶと、コマ給の改定を登録できます。'}
                 </p>
               ) : (
                 <div className="space-y-3 border-l-2 border-border pl-4">
-                  {/* 入社日・退職日は user_profiles の値なので月に依存しない */}
-                  <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
-                    <div className="flex items-center gap-2">
-                      <Label className="w-14 text-sm text-text-body">入社日</Label>
-                      <Input
-                        type="date"
-                        value={hrHireDate}
-                        onChange={(e) => setHrHireDate(e.target.value)}
-                        className="w-40"
-                      />
+                  {/* 入社日・退職日は user_profiles の値なので月に依存しない。
+                      人事情報なので教室長には出さない（コマ給の改定だけ任せる）。 */}
+                  {isAdmin && (
+                    <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+                      <div className="flex items-center gap-2">
+                        <Label className="w-14 text-sm text-text-body">入社日</Label>
+                        <Input
+                          type="date"
+                          value={hrHireDate}
+                          onChange={(e) => setHrHireDate(e.target.value)}
+                          className="w-40"
+                        />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Label className="w-14 text-sm text-text-body">退職日</Label>
+                        <Input
+                          type="date"
+                          value={hrExitDate}
+                          onChange={(e) => setHrExitDate(e.target.value)}
+                          className="w-40"
+                        />
+                        {!hrExitDate && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-xs"
+                            onClick={() => setHrExitDate(monthEndDate)}
+                          >
+                            今月末
+                          </Button>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Label className="w-14 text-sm text-text-body">退職日</Label>
-                      <Input
-                        type="date"
-                        value={hrExitDate}
-                        onChange={(e) => setHrExitDate(e.target.value)}
-                        className="w-40"
-                      />
-                      {!hrExitDate && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-xs"
-                          onClick={() => setHrExitDate(monthEndDate)}
-                        >
-                          今月末
-                        </Button>
-                      )}
-                    </div>
-                  </div>
+                  )}
 
                   {/* コマ給変更は当月のシートに紐づくので、対象月を明示する */}
                   <div className="flex flex-wrap items-start gap-x-6 gap-y-2">
@@ -1861,11 +1872,10 @@ export default function AttendanceManagementPage() {
 
               {/* 登録済みの一覧。誰に何が入っているかを一目で見せ、× で解除する。
                   入社日・退職日は全講師分（未来月の退職日も確認できる）、コマ給変更は当月分。 */}
-              {(hireDateTeachers.length > 0 ||
-                exitDateTeachers.length > 0 ||
+              {((isAdmin && (hireDateTeachers.length > 0 || exitDateTeachers.length > 0)) ||
                 komaChangingTeachers.length > 0) && (
                 <div className="space-y-1.5 border-t border-border pt-3">
-                  {hireDateTeachers.length > 0 && (
+                  {isAdmin && hireDateTeachers.length > 0 && (
                     <div className="flex flex-wrap items-center gap-1">
                       <span className="w-14 text-xs text-text-faint">入社日</span>
                       {hireDateTeachers.map((t) => (
@@ -1880,7 +1890,7 @@ export default function AttendanceManagementPage() {
                       ))}
                     </div>
                   )}
-                  {exitDateTeachers.length > 0 && (
+                  {isAdmin && exitDateTeachers.length > 0 && (
                     <div className="flex flex-wrap items-center gap-1">
                       <span className="w-14 text-xs text-text-faint">退職日</span>
                       {exitDateTeachers.map((t) => (
