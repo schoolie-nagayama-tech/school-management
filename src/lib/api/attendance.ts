@@ -308,6 +308,65 @@ export async function getOrCreateAttendanceSheet(
   return created as AttendanceSheet;
 }
 
+/** 未提出の出勤簿（講師本人用）。sheetId が null なら出勤簿がまだ作られていない＝当然未提出。 */
+export interface UnsubmittedAttendanceTarget {
+  schoolId: string;
+  sheetId: string | null;
+  status: AttendanceSheetStatus | null;
+}
+
+/**
+ * 指定月の出勤簿がまだ提出されていない教室を返す（講師本人の未提出ゲート用）。
+ *
+ * 未提出とみなすのは次の3つ:
+ *   - 出勤簿がまだ無い（一度も開いていない）
+ *   - draft（下書きのまま提出していない）
+ *   - rejected（差し戻された。直して出し直す必要がある）
+ * submitted 以降（submitted / reviewed / approved）は本人の手を離れているので対象外。
+ *
+ * ★ 取得に失敗したときは空配列を返す（＝ブロックしない）。
+ *   判定できないことを理由に業務を止める側へは倒さない。
+ */
+export async function getUnsubmittedAttendanceSheets(
+  teacherId: string,
+  schoolIds: string[],
+  yearMonth: string
+): Promise<UnsubmittedAttendanceTarget[]> {
+  if (!teacherId || schoolIds.length === 0) return [];
+
+  const { data, error } = await supabase
+    .from('attendance_sheets')
+    .select('id, school_id, status')
+    .eq('teacher_id', teacherId)
+    .in('school_id', schoolIds)
+    .eq('year_month', yearMonth);
+
+  if (error) {
+    console.error('Error checking unsubmitted attendance sheets:', error);
+    return [];
+  }
+
+  const bySchool = new Map<string, { id: string; status: AttendanceSheetStatus }>();
+  for (const row of (data || []) as {
+    id: string;
+    school_id: string;
+    status: AttendanceSheetStatus;
+  }[]) {
+    bySchool.set(row.school_id, { id: row.id, status: row.status });
+  }
+
+  return schoolIds
+    .map((schoolId) => {
+      const sheet = bySchool.get(schoolId);
+      return {
+        schoolId,
+        sheetId: sheet?.id ?? null,
+        status: sheet?.status ?? null,
+      };
+    })
+    .filter((t) => t.status === null || t.status === 'draft' || t.status === 'rejected');
+}
+
 // 出勤簿の詳細を取得（明細・備考含む）
 export async function getAttendanceSheetDetail(sheetId: string) {
   const { data: sheetData, error: sheetError } = await supabase

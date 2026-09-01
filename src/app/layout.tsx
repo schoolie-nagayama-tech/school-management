@@ -10,6 +10,7 @@ import { AbortErrorSilencer } from '@/components/AbortErrorSilencer';
 import { ImpersonationBanner } from '@/components/ImpersonationBanner';
 import { BulletinUnreadProvider } from '@/contexts/BulletinUnreadContext';
 import { UnreadBulletinGate } from '@/components/bulletin/UnreadBulletinGate';
+import { UnsubmittedAttendanceGate } from '@/components/attendance/UnsubmittedAttendanceGate';
 import { Toaster } from 'sonner';
 
 const notoSansJP = Noto_Sans_JP({
@@ -87,6 +88,8 @@ export default async function RootLayout({
                   {children}
                   {/* 講師に未読の連絡があれば全画面で表示し既読を促す（未読0で自動的に閉じる） */}
                   <UnreadBulletinGate />
+                  {/* 前月の出勤簿が未提出の講師をブロックし提出を促す（出勤簿ページだけは通す） */}
+                  <UnsubmittedAttendanceGate />
                   {/* アプリ全体のトースト通知（ボタン操作のフィードバック用） */}
                   <Toaster richColors position="top-center" />
                   {/* ★ PWA一時閉鎖中（2026-08-20）。更新検知バーはSW前提なので外している。

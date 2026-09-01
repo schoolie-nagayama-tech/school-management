@@ -284,6 +284,8 @@ export default function TeacherAttendancePage() {
     try {
       await submitAttendanceSheet(sheetId);
       setStatus('submitted');
+      // 未提出ゲート（UnsubmittedAttendanceGate）に判定し直させる
+      window.dispatchEvent(new Event('attendance-submitted'));
       setIsSubmitDialogOpen(false);
       // ボタン近くに感謝のポップアップを表示（4秒で自動消去）
       setShowThanks(true);
@@ -304,6 +306,8 @@ export default function TeacherAttendancePage() {
     try {
       await withdrawAttendanceSheet(sheetId);
       setStatus('draft');
+      // 取り下げると未提出に戻るので、ゲートにも判定し直させる
+      window.dispatchEvent(new Event('attendance-submitted'));
       success('取り下げました');
       setIsWithdrawDialogOpen(false);
     } catch (err) {
