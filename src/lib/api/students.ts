@@ -16,8 +16,10 @@ import { fetchAllPaged } from '@/lib/utils/supabasePaging';
 /** 一覧取得用（Row の列と一致。将来の列追加時は型と同期すること） */
 // 講師希望3列（preferred_teacher_gender / fixed_teacher_ids / excluded_teacher_ids）も含める。
 // これらは座席表D&D・マッチングが読むだけでなく、生徒編集フォームの初期表示にも必要（getStudent がこの列集合で取得するため）。
+// withdrawal_date（退塾予定日）も同様。ここに無いと保存はできても編集フォームを開き直すと空欄に戻り、
+// 「登録しても反映されない」ように見える。
 const STUDENT_LIST_COLUMNS =
-  'id,school_id,student_code,last_name,first_name,last_name_kana,first_name_kana,grade,status,school_name,class_name,club,subject_other,is_programming,is_sibling,is_test,preferred_teacher_gender,fixed_teacher_ids,excluded_teacher_ids,deleted_at,created_at,updated_at';
+  'id,school_id,student_code,last_name,first_name,last_name_kana,first_name_kana,grade,status,school_name,class_name,club,subject_other,is_programming,is_sibling,is_test,withdrawal_date,preferred_teacher_gender,fixed_teacher_ids,excluded_teacher_ids,deleted_at,created_at,updated_at';
 
 const SUBJECT_LIST_COLUMNS = 'id,name,grade_category,sort_order,duration_minutes,created_at';
 
@@ -137,13 +139,15 @@ async function enrichStudentsWithRelations(
     day_of_week: number;
     time_slot_id: string | null;
     subject_ids: string[];
+    effective_from: string | null;
+    effective_until: string | null;
   };
 
   const [ssResult, patternsResult] = await Promise.all([
     client.from('student_subjects').select('student_id, subject_id').in('student_id', studentIds),
     client
       .from('schedule_regular_patterns')
-      .select('student_id, day_of_week, time_slot_id, subject_ids')
+      .select('student_id, day_of_week, time_slot_id, subject_ids, effective_from, effective_until')
       .in('student_id', studentIds)
       .eq('period_type', 'regular')
       .eq('is_active', true)
@@ -184,18 +188,40 @@ async function enrichStudentsWithRelations(
     }
   });
 
-  const patternsMap = new Map<string, SchedulePatternSummary[]>();
+  // 通塾日程は1行=1版（effective_from 〜 effective_until）で持つため、曜日を変えただけでも
+  // 「終了した旧版」と「新しい版」の2行になる。全行をそのまま出すと一覧のチップが二重に並び、
+  // 週回数も水増しされる（曜日を変えただけなのに週2回に見える）ので、今日有効な行だけを出す。
+  // 状態判定は patternVersioning.getPatternPeriodStatus と同じ意味（境界日はその日も有効）。
+  // 日付比較は 'YYYY-MM-DD' の辞書順で足りる（ゼロ埋め固定長のため）。
+  const todayJst = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Tokyo' });
+  const isEnded = (p: PatternRow) => !!p.effective_until && p.effective_until < todayJst;
+  const isUpcoming = (p: PatternRow) => !!p.effective_from && p.effective_from > todayJst;
+
+  const rowsByStudent = new Map<string, PatternRow[]>();
   for (const p of rawPatterns) {
-    if (!patternsMap.has(p.student_id)) patternsMap.set(p.student_id, []);
-    const sIds = p.subject_ids || [];
-    patternsMap.get(p.student_id)!.push({
-      day_of_week: p.day_of_week,
-      time_slot_id: p.time_slot_id,
-      subject_ids: sIds,
-      subject_names: sIds
-        .map((id: string) => subjectsMap.get(id)?.name)
-        .filter((n: string | undefined): n is string => !!n),
-    });
+    if (!rowsByStudent.has(p.student_id)) rowsByStudent.set(p.student_id, []);
+    rowsByStudent.get(p.student_id)!.push(p);
+  }
+
+  const patternsMap = new Map<string, SchedulePatternSummary[]>();
+  for (const [studentId, rows] of Array.from(rowsByStudent.entries())) {
+    const current = rows.filter((p) => !isEnded(p) && !isUpcoming(p));
+    // 今日有効な行が無い生徒（これから通い始める）は空欄になってしまうので、開始前の行で代替する。
+    const shown = current.length > 0 ? current : rows.filter((p) => !isEnded(p));
+    patternsMap.set(
+      studentId,
+      shown.map((p) => {
+        const sIds = p.subject_ids || [];
+        return {
+          day_of_week: p.day_of_week,
+          time_slot_id: p.time_slot_id,
+          subject_ids: sIds,
+          subject_names: sIds
+            .map((id: string) => subjectsMap.get(id)?.name)
+            .filter((n: string | undefined): n is string => !!n),
+        };
+      })
+    );
   }
 
   return studentsTyped.map((student) => {
