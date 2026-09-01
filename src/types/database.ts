@@ -901,6 +901,8 @@ export type Database = {
           // 物理的に所持しているか（進行表管理 track_progress とは独立）
           is_owned: boolean;
           season: 'spring' | 'summer' | 'winter' | null;
+          // 使い終わったテキストに付ける完了ラベル。NULL=未完了
+          completed_at: string | null;
           sort_order: number | null;
           created_at: string;
           updated_at: string;
@@ -915,6 +917,7 @@ export type Database = {
           track_progress?: boolean;
           is_owned?: boolean;
           season?: 'spring' | 'summer' | 'winter' | null;
+          completed_at?: string | null;
           sort_order?: number | null;
           created_at?: string;
           updated_at?: string;
@@ -929,6 +932,7 @@ export type Database = {
           is_draft?: boolean;
           is_owned?: boolean;
           season?: 'spring' | 'summer' | 'winter' | null;
+          completed_at?: string | null;
           sort_order?: number | null;
           created_at?: string;
           updated_at?: string;
