@@ -35,6 +35,13 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useConfirm } from '@/hooks/useConfirm';
 import { useToast } from '@/hooks/useToast';
 import { isManagerOrAbove } from '@/lib/utils/roles';
+
+/** 'YYYY-MM-DD' を '2026/9/30' にする（ゼロ埋めを外して読みやすくする） */
+function formatJaDate(date: string): string {
+  const [y, m, d] = date.split('-');
+  if (!y || !m || !d) return date;
+  return `${y}/${Number(m)}/${Number(d)}`;
+}
 import { Trash2, ExternalLink, PackageCheck, CalendarPlus, MessageSquarePlus } from 'lucide-react';
 
 interface StudentDetailModalProps {
@@ -453,12 +460,22 @@ export function StudentDetailModal({
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-xs text-[#4b5563]">在籍状況</label>
-                  <div className="mt-1">
+                  <div className="mt-1 flex flex-wrap items-center gap-1.5">
                     <span
                       className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${STATUS_COLORS[student.status]}`}
                     >
                       {STATUS_LABELS[student.status]}
                     </span>
+                    {/* 退塾予定日は「在籍中だが、いつまで」を決める情報なので在籍状況の隣に出す。
+                        編集画面を開かないと分からないと、退塾間近の生徒に気づけないため。 */}
+                    {student.withdrawal_date && (
+                      <span
+                        className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-amber-100 text-amber-800"
+                        title="この日以降は座席表生成・5週目請求から除外され、翌日に「退会」へ切り替わります"
+                      >
+                        退塾予定 {formatJaDate(student.withdrawal_date)}
+                      </span>
+                    )}
                   </div>
                 </div>
                 <div>
