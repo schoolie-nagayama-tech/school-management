@@ -95,6 +95,7 @@ import {
   ChevronDown,
   ChevronLeft,
   ClipboardList,
+  Compass,
   Eye,
   History,
   Lock,
@@ -108,6 +109,8 @@ import {
 } from 'lucide-react';
 import { DemoProgressPreview } from '@/components/lesson-reports/DemoProgressPreview';
 import { LessonReportProgressGrid } from '@/components/lesson-reports/LessonReportProgressGrid';
+import { ReportGuideBar } from '@/components/lesson-reports/ReportGuideBar';
+import { computeGuideSteps, type GuideStepInput } from '@/lib/lesson-reports/guideSteps';
 import { ReportDetail } from '@/components/mypage/ReportDetail';
 import { formatGradeLabelOrEmpty } from '@/lib/utils/gradeLabel';
 import { getSurname } from '@/lib/utils/teacherName';
@@ -204,6 +207,12 @@ const emptySelection = (): GridSelectionState => ({
   sessionId: null,
   nextPlanManual: null,
 });
+
+/**
+ * ガイドバーの表示/非表示を覚えるキー（既定=表示。× を押したときだけ 'hidden' を書く）。
+ * 手動の「済」は保存しない（設計書 §3）。ここで持つのは見せるか見せないかだけ。
+ */
+const GUIDE_STORAGE_KEY = 'lesson_report_guide';
 
 /** 自動保存: 最後の変更からこの時間だけ何も起きなければ1回だけ走らせる（ミリ秒）。 */
 const AUTO_SAVE_DELAY_MS = 3000;
@@ -369,6 +378,15 @@ export default function LessonReportFormPage() {
   const extraMaterialsRef = useRef<HTMLInputElement>(null);
   const handoverRef = useRef<HTMLTextAreaElement>(null);
   const reviewRef = useRef<HTMLTextAreaElement>(null);
+
+  // ---- ガイドバー（正典: docs/lesson-report-flow-plan.md §3）----
+  // 見せ方だけの機能。フォーム state・保存経路には一切関与しない。
+  const [guideVisible, setGuideVisible] = useState(true);
+  // 「該当なし」等で手動で済にした質問。★保存しない（ページ内だけ・設計書§3の判断）
+  const [guideManualDone, setGuideManualDone] = useState<ReadonlySet<string>>(new Set<string>());
+  // 「ここに答える」で光らせている要素と、その消灯タイマー（アンマウント時に片付ける）
+  const guideHighlightElRef = useRef<HTMLElement | null>(null);
+  const guideHighlightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // ---- G: 下書きの自動保存 ----
   const [autoSaveState, setAutoSaveState] = useState<AutoSaveState>('idle');
@@ -561,6 +579,16 @@ export default function LessonReportFormPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  // ---- ガイドバー: 前回「×」で閉じていたら閉じたまま開く（既定は表示） ----
+  // localStorage はサーバー側に無いので、初期値は表示にしておいてマウント後に読み直す。
+  useEffect(() => {
+    try {
+      if (window.localStorage.getItem(GUIDE_STORAGE_KEY) === 'hidden') setGuideVisible(false);
+    } catch {
+      // 読めない環境（プライベートモード等）では既定の「表示」のままにする
+    }
+  }, []);
 
   // ---- 進行表グリッドの行を、フォームで選ばれている教材ぶんだけ取得 ----
   const wantedTextbookIds = useMemo(
@@ -904,6 +932,124 @@ export default function LessonReportFormPage() {
     [form.units.length, selectedUnitCount, extraMaterials, handover, form.review_comment]
   );
 
+  // ---- ガイドバー: いまの入力から「次に答える質問」を出す ----
+  /**
+   * 判定に使う材料を既存の state から組み立てる。
+   * ★ ここに新しい state を足さない。ガイドは既存の入力を読み直しているだけ。
+   *   指導範囲・引継ぎ・講評の3つは提出前チェック（validateForSubmit）と同じ条件式になる。
+   */
+  const guideInput: GuideStepInput = useMemo(
+    () => ({
+      tardy: form.tardy,
+      homeworkNotDone: form.homework_not_done,
+      hasTextbooks: form.units.length > 0,
+      selectedUnitCount,
+      extraMaterials,
+      // 達成度スライダーは常に出している（教材の有無に依存しない）ので available は常に true。
+      // 「今日は測っていない」は手動の「該当なし」で進める。
+      homeworkAchievementAvailable: true,
+      homeworkAchievementFilled:
+        form.homework_completion_pct != null ||
+        form.homework_correct_pct != null ||
+        form.today_correct_pct != null,
+      checkTestScoreFilled: form.check_test_score != null,
+      schoolProgressFilled: schoolProgressLabels.length > 0,
+      goal: form.short_term_goal,
+      // 次回の予定は進行表の続きが自動提案されるので、たいてい開いた時点で済になる
+      nextPlanFilled: nextPlanSnapshot.length > 0,
+      // 授業日が未確定だと日割り行そのものが作れない＝答える対象が無い（スキップ）
+      homeworkRowsAvailable: form.homework_assignments.length > 0,
+      homeworkRowsFilled: form.homework_assignments.some((a) => a.text.trim() !== ''),
+      handover,
+      review: form.review_comment,
+    }),
+    [
+      form.tardy,
+      form.homework_not_done,
+      form.units.length,
+      selectedUnitCount,
+      extraMaterials,
+      form.homework_completion_pct,
+      form.homework_correct_pct,
+      form.today_correct_pct,
+      form.check_test_score,
+      schoolProgressLabels.length,
+      form.short_term_goal,
+      nextPlanSnapshot.length,
+      form.homework_assignments,
+      handover,
+      form.review_comment,
+    ]
+  );
+  const guideSteps = useMemo(
+    () => computeGuideSteps(guideInput, guideManualDone),
+    [guideInput, guideManualDone]
+  );
+
+  /** ハイライトを消す（タイマーも止める）。ジャンプのたび・アンマウント時に呼ぶ。 */
+  const clearGuideHighlight = useCallback(() => {
+    if (guideHighlightTimerRef.current) {
+      clearTimeout(guideHighlightTimerRef.current);
+      guideHighlightTimerRef.current = null;
+    }
+    const el = guideHighlightElRef.current;
+    if (el) {
+      el.classList.remove('ring-2', 'ring-info', 'ring-offset-2', 'rounded-md');
+      guideHighlightElRef.current = null;
+    }
+  }, []);
+
+  /** 「ここに答える」: その質問のセクションへ運んで2秒だけ光らせる（入力はフォーム本体で行う）。 */
+  const handleGuideJump = useCallback(
+    (targetId: string) => {
+      const el = document.getElementById(targetId);
+      if (!el) return;
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      clearGuideHighlight();
+      el.classList.add('ring-2', 'ring-info', 'ring-offset-2', 'rounded-md');
+      guideHighlightElRef.current = el;
+      guideHighlightTimerRef.current = setTimeout(clearGuideHighlight, 2000);
+    },
+    [clearGuideHighlight]
+  );
+
+  useEffect(() => clearGuideHighlight, [clearGuideHighlight]);
+
+  /** 「該当なし」等: 自動判定できない質問を手動で済にする（保存はしない）。 */
+  const handleGuideManualDone = useCallback((id: string) => {
+    setGuideManualDone((prev) => {
+      // ★ Set のスプレッド展開は ES5 ターゲットで壊れるので Array.from を使う
+      const next = new Set(Array.from(prev));
+      next.add(id);
+      return next;
+    });
+  }, []);
+
+  /** ×: バーを閉じる。次に開いたときも閉じたままにする。 */
+  const handleGuideDismiss = useCallback(() => {
+    setGuideVisible(false);
+    try {
+      window.localStorage.setItem(GUIDE_STORAGE_KEY, 'hidden');
+    } catch {
+      // プライベートモード等で localStorage が使えなくても機能は止めない
+    }
+  }, []);
+
+  /** ヘッダーの「ガイドを表示」: 一度消した人が戻せるようにする。 */
+  const handleGuideRestore = useCallback(() => {
+    setGuideVisible(true);
+    try {
+      window.localStorage.setItem(GUIDE_STORAGE_KEY, 'shown');
+    } catch {
+      // 同上
+    }
+  }, []);
+
+  /** 全問済みのときの「提出へ」: フッター（提出ボタン・提出前チェック）まで運ぶ。 */
+  const handleGuideSubmitJump = useCallback(() => {
+    document.getElementById('guide-submit')?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+  }, []);
+
   /**
    * 報告書に出す講師名。フルネームではなく苗字のみにする
    * （報告書は保護者にも渡るため、講師の下の名前まで出さない）。
@@ -1111,6 +1257,14 @@ export default function LessonReportFormPage() {
   //   - 手動・自動のどちらかが実行中（ミューテックスは savingRef）
   //   - 前回保存時と中身が同じ（無変更では叩かない）
   const reportStatus = existingReport?.status ?? null;
+
+  /**
+   * ガイドバーを出してよいか。
+   * 「これから書く人」だけに出す。デモ（見本）と、もう書き換えない提出済み・公開済みでは出さない
+   * （＝自動保存を動かさない条件と同じ。編集できない画面で「次はこれを書こう」と言わない）。
+   */
+  const guideAvailable = !isDemo && reportStatus !== 'submitted' && reportStatus !== 'approved';
+
   useEffect(() => {
     if (isDemo || isLoading) return;
     if (reportStatus === 'submitted' || reportStatus === 'approved') return;
@@ -1298,7 +1452,31 @@ export default function LessonReportFormPage() {
                     : '差し戻し'}
             </span>
           )}
+          {/* ガイドを×で消した人が戻すための小さな入口（消したきり戻せないのを避ける） */}
+          {guideAvailable && !guideVisible && (
+            <button
+              type="button"
+              onClick={handleGuideRestore}
+              className="ml-auto flex items-center gap-1 text-[11px] font-bold text-info transition-colors duration-150 hover:underline"
+            >
+              <Compass className="h-3.5 w-3.5" />
+              ガイドを表示
+            </button>
+          )}
         </div>
+
+        {/* ── ゆるいガイドバー（正典: docs/lesson-report-flow-plan.md §3）──
+            拘束しない案内役。次の未完了の質問を指すだけで、入力はフォーム本体で行う。
+            提出前チェックとは独立なので、閉じても提出時の判定は従来どおり動く。 */}
+        {guideAvailable && guideVisible && (
+          <ReportGuideBar
+            steps={guideSteps}
+            onJump={handleGuideJump}
+            onManualDone={handleGuideManualDone}
+            onDismiss={handleGuideDismiss}
+            onSubmitJump={handleGuideSubmitJump}
+          />
+        )}
 
         {/* 授業情報サマリ（生徒・学年・教材・授業日時・講師・次回授業日） */}
         <Card>
@@ -1347,21 +1525,24 @@ export default function LessonReportFormPage() {
             title="保護者に公開される内容（承認後にマイページへ）"
             icon={<Eye className="w-3.5 h-3.5" />}
           >
-            <Field
-              label="今日の目標（手入力）"
-              hint="↑ 上の中期目標を踏まえて、この授業のゴールを1文で"
-            >
-              <input
-                type="text"
-                className="w-full px-3 py-2 border-2 border-info rounded-md text-sm"
-                value={form.short_term_goal}
-                onChange={(e) => setForm((f) => ({ ...f, short_term_goal: e.target.value }))}
-                placeholder="例：不定詞の名詞用法を5問以上正しく訳せる"
-              />
-            </Field>
+            {/* id はガイドバーのスクロール先（lib/lesson-reports/guideSteps.ts の targetId） */}
+            <div id="guide-goal">
+              <Field
+                label="今日の目標（手入力）"
+                hint="↑ 上の中期目標を踏まえて、この授業のゴールを1文で"
+              >
+                <input
+                  type="text"
+                  className="w-full px-3 py-2 border-2 border-info rounded-md text-sm"
+                  value={form.short_term_goal}
+                  onChange={(e) => setForm((f) => ({ ...f, short_term_goal: e.target.value }))}
+                  placeholder="例：不定詞の名詞用法を5問以上正しく訳せる"
+                />
+              </Field>
+            </div>
 
             {/* 本日の指導範囲（下段の進行表から自動反映・ここでは編集しない） */}
-            <div>
+            <div id="guide-taught">
               <label className="block text-xs font-semibold text-text-muted mb-1">
                 本日の指導範囲
                 <span className="ml-2 px-2 py-0.5 rounded-full bg-info-subtle text-info text-[10px] font-bold">
@@ -1434,7 +1615,7 @@ export default function LessonReportFormPage() {
             </div>
 
             {/* 学校の進度（下段の学校進度列から自動反映） */}
-            <div>
+            <div id="guide-school-progress">
               <label className="block text-xs font-semibold text-text-muted mb-1">
                 学校の進度
                 <span className="ml-2 px-2 py-0.5 rounded-full bg-info-subtle text-info text-[10px] font-bold">
@@ -1460,7 +1641,7 @@ export default function LessonReportFormPage() {
             </div>
 
             {/* 本日の様子（トグルピル・保護者にも表示される） */}
-            <div>
+            <div id="guide-mood">
               <label className="block text-xs font-semibold text-text-muted mb-1">本日の様子</label>
               <div className="flex flex-wrap items-center gap-2">
                 <MarkToggle
@@ -1480,7 +1661,7 @@ export default function LessonReportFormPage() {
             </div>
 
             {/* D: 次回の予定（既定は進行表通り・自動。変更したいときだけピッカーを開く） */}
-            <div>
+            <div id="guide-next-plan">
               <label className="block text-xs font-semibold text-text-muted mb-1">
                 次回の予定
                 <span className="ml-2 px-2 py-0.5 rounded-full bg-info-subtle text-info text-[10px] font-bold">
@@ -1528,7 +1709,7 @@ export default function LessonReportFormPage() {
             </div>
 
             {/* 宿題・演習（すべてスライダー） */}
-            <div>
+            <div id="guide-homework-check">
               <label className="block text-xs font-semibold text-text-muted mb-2">
                 宿題・演習（すべてスライダー）
               </label>
@@ -1553,31 +1734,35 @@ export default function LessonReportFormPage() {
             </div>
 
             {/* 確認テスト（1本に統合・合否は自動判定） */}
-            <CheckTestField
-              score={form.check_test_score}
-              total={form.check_test_total}
-              passed={checkTestPassed}
-              onScoreChange={(v) => setForm((f) => ({ ...f, check_test_score: v }))}
-              onTotalChange={(v) => setForm((f) => ({ ...f, check_test_total: v }))}
-            />
+            <div id="guide-check-test">
+              <CheckTestField
+                score={form.check_test_score}
+                total={form.check_test_total}
+                passed={checkTestPassed}
+                onScoreChange={(v) => setForm((f) => ({ ...f, check_test_score: v }))}
+                onTotalChange={(v) => setForm((f) => ({ ...f, check_test_total: v }))}
+              />
+            </div>
 
             {/* 講評（手書き） */}
-            <Field label="講評（手書き・保護者が読む文章）">
-              <textarea
-                ref={reviewRef}
-                className="w-full px-3 py-2 border rounded-md text-sm"
-                rows={5}
-                value={form.review_comment}
-                onChange={(e) => setForm((f) => ({ ...f, review_comment: e.target.value }))}
-                placeholder="5行程度で記入"
-              />
-              <div className="text-xs text-text-muted mt-1">
-                現在 {reviewLineCount} 行 / 推奨 5 行
-              </div>
-            </Field>
+            <div id="guide-review">
+              <Field label="講評（手書き・保護者が読む文章）">
+                <textarea
+                  ref={reviewRef}
+                  className="w-full px-3 py-2 border rounded-md text-sm"
+                  rows={5}
+                  value={form.review_comment}
+                  onChange={(e) => setForm((f) => ({ ...f, review_comment: e.target.value }))}
+                  placeholder="5行程度で記入"
+                />
+                <div className="text-xs text-text-muted mt-1">
+                  現在 {reviewLineCount} 行 / 推奨 5 行
+                </div>
+              </Field>
+            </div>
 
             {/* 次回までの宿題（日割り） */}
-            <div>
+            <div id="guide-homework-assign">
               <label className="block text-xs font-semibold text-text-muted mb-1">
                 {nextLessonDate
                   ? `次回までの宿題（次回授業日 ${formatDateLabel(nextLessonDate)} まで）`
@@ -1645,19 +1830,21 @@ export default function LessonReportFormPage() {
           title="教室内のみ（保護者には出ません）"
           icon={<Lock className="w-3.5 h-3.5" />}
         >
-          <Field
-            label="引継ぎ（手書き・次の担当講師・室長へ）"
-            hint="進行表の授業記録と同じ保存先（progress_sessions）に書き込まれます"
-          >
-            <textarea
-              ref={handoverRef}
-              className="w-full px-3 py-2 border rounded-md text-sm"
-              rows={3}
-              value={handover}
-              onChange={(e) => setHandover(e.target.value)}
-              placeholder="次の講師への引継ぎを入力..."
-            />
-          </Field>
+          <div id="guide-handover">
+            <Field
+              label="引継ぎ（手書き・次の担当講師・室長へ）"
+              hint="進行表の授業記録と同じ保存先（progress_sessions）に書き込まれます"
+            >
+              <textarea
+                ref={handoverRef}
+                className="w-full px-3 py-2 border rounded-md text-sm"
+                rows={3}
+                value={handover}
+                onChange={(e) => setHandover(e.target.value)}
+                placeholder="次の講師への引継ぎを入力..."
+              />
+            </Field>
+          </div>
         </Zone>
 
         {/* ── 下段: 進行表 ── */}
@@ -1740,8 +1927,9 @@ export default function LessonReportFormPage() {
           </div>
         </section>
 
-        {/* フッター（提出前チェックの一覧はこの真上に出す） */}
-        <div className="sticky bottom-0 bg-white border-t -mx-4 px-4">
+        {/* フッター（提出前チェックの一覧はこの真上に出す）。
+            id はガイドバーの「提出へ」のスクロール先。 */}
+        <div id="guide-submit" className="sticky bottom-0 bg-white border-t -mx-4 px-4">
           {showSubmitIssues && submitIssues.length > 0 && (
             <SubmitIssuePanel
               issues={submitIssues}
