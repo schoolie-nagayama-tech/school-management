@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPortalContext } from '@/lib/mypage/supabase';
 import { recordConsent } from '@/lib/mypage/legal';
+import { captureApiError } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,7 +26,10 @@ export async function POST(request: NextRequest) {
   let body: Record<string, unknown>;
   try {
     body = (await request.json()) as Record<string, unknown>;
-  } catch {
+  } catch (error) {
+    captureApiError(error, {
+      route: 'POST /api/mypage/consent',
+    });
     return NextResponse.json({ error: 'リクエストが不正です' }, { status: 400 });
   }
 
@@ -40,6 +44,9 @@ export async function POST(request: NextRequest) {
   try {
     await recordConsent(ctx.claims.sub);
   } catch (e) {
+    captureApiError(e, {
+      route: 'POST /api/mypage/consent',
+    });
     console.error('[mypage/consent] 同意ログの記録に失敗:', (e as Error).message);
     return NextResponse.json({ error: '同意の記録に失敗しました' }, { status: 500 });
   }

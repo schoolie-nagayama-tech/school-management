@@ -10,6 +10,7 @@ import {
   normalizeFormName,
   stableStringify,
 } from '@/lib/utils/formDedup';
+import { captureApiError } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 
@@ -116,6 +117,9 @@ export async function POST(request: NextRequest) {
     try {
       await autoLinkAndUpdateApplication(supabaseAdmin, created, school_id, form_type, form_period);
     } catch (e) {
+      captureApiError(e, {
+        route: 'POST /api/portal/form-responses',
+      });
       console.warn('[portal/form-responses] 自動紐付けに失敗しました（無視します）:', e);
     }
 
@@ -123,6 +127,9 @@ export async function POST(request: NextRequest) {
     try {
       await autoSyncFormToBilling(supabaseAdmin, created.id, school_id, form_type);
     } catch (e) {
+      captureApiError(e, {
+        route: 'POST /api/portal/form-responses',
+      });
       console.warn('[portal/form-responses] 請求への自動反映に失敗しました（無視します）:', e);
     }
 
@@ -160,6 +167,9 @@ export async function POST(request: NextRequest) {
           });
         }
       } catch (e) {
+        captureApiError(e, {
+          route: 'POST /api/portal/form-responses',
+        });
         console.warn(
           '[portal/form-responses] カレンダーイベント作成に失敗しました（無視します）:',
           e
@@ -191,6 +201,9 @@ export async function POST(request: NextRequest) {
         console.warn('[portal/form-responses] 申込通知メールの送信に失敗しました:', invokeError);
       }
     } catch (e) {
+      captureApiError(e, {
+        route: 'POST /api/portal/form-responses',
+      });
       console.warn('[portal/form-responses] 申込通知メールの送信に失敗しました:', e);
     }
 
@@ -212,11 +225,17 @@ export async function POST(request: NextRequest) {
         }),
       });
     } catch (e) {
+      captureApiError(e, {
+        route: 'POST /api/portal/form-responses',
+      });
       console.warn('[portal/form-responses] プッシュ通知に失敗しました（無視します）:', e);
     }
 
     return NextResponse.json({ data: created });
   } catch (error) {
+    captureApiError(error, {
+      route: 'POST /api/portal/form-responses',
+    });
     console.error('[portal/form-responses] create failed:', error);
     return NextResponse.json({ error: 'フォーム回答の作成に失敗しました' }, { status: 500 });
   }

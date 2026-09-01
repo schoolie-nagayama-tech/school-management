@@ -8,6 +8,7 @@ import {
   notifyBulkOrderPlaced,
   notifyBulkOrderDelivered,
 } from '@/lib/slack';
+import { captureApiError } from '@/lib/api-error';
 
 function getSupabaseAdmin() {
   return createClient(
@@ -57,7 +58,12 @@ export async function POST(request: NextRequest) {
           )
           .in('id', chunk)
       );
-    } catch {
+    } catch (error) {
+      captureApiError(error, {
+        route: 'POST /api/ordering/status',
+        userId: auth.userId,
+        role: auth.role,
+      });
       return NextResponse.json({ ok: true, notified: false });
     }
 
@@ -131,6 +137,11 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ ok: true, notified: true });
   } catch (e) {
+    captureApiError(e, {
+      route: 'POST /api/ordering/status',
+      userId: auth.userId,
+      role: auth.role,
+    });
     console.error('[api/ordering/status] Slack通知エラー:', e);
     return NextResponse.json({ ok: true, notified: false });
   }

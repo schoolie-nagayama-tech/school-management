@@ -8,6 +8,7 @@ import type {
   PortalTimeSlotDto,
   PortalExamEventDto,
 } from '@/types/mypage-schedule';
+import { captureApiError } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 
@@ -85,6 +86,10 @@ export async function GET(request: NextRequest) {
         }),
     ]);
   } catch (e) {
+    captureApiError(e, {
+      route: 'GET /api/mypage/schedule',
+      userId: auth.accountId,
+    });
     console.error('[mypage/schedule] 予定の取得に失敗:', e instanceof Error ? e.message : e);
     return NextResponse.json({ error: '予定の取得に失敗しました' }, { status: 500 });
   }

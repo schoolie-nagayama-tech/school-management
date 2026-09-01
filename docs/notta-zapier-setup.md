@@ -17,6 +17,7 @@ NOTTA_WEBHOOK_SECRET=<ランダムな長い文字列。例: openssl rand -hex 32
 ```
 supabase db push
 ```
+
 または Supabase ダッシュボードの SQL Editor で
 `supabase/migrations/xxx_notta_transcripts.sql` を実行。
 
@@ -47,6 +48,7 @@ supabase db push
 ## 4. 動作確認
 
 ローカルで:
+
 ```bash
 curl -X POST http://localhost:3000/api/webhooks/notta \
   -H "Authorization: Bearer $NOTTA_WEBHOOK_SECRET" \

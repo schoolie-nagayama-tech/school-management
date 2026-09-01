@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { requireManager } from '@/lib/api-auth';
+import { apiErrorResponse, captureApiError } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 // Next.js の Data Cache に載せない（このルート内の fetch を常に no-store 扱いにする）。
@@ -52,11 +53,17 @@ export async function GET() {
     let links: unknown = [];
     try {
       links = JSON.parse(raw);
-    } catch {
+    } catch (error) {
+      captureApiError(error, {
+        route: 'GET /api/login-links',
+      });
       links = [];
     }
     return NextResponse.json({ links: Array.isArray(links) ? links : [] });
   } catch (err) {
+    captureApiError(err, {
+      route: 'GET /api/login-links',
+    });
     console.error('login-links GET fatal:', err);
     return NextResponse.json({ links: [] });
   }
@@ -74,7 +81,10 @@ export async function PUT(request: NextRequest) {
   let body: { links?: unknown };
   try {
     body = await request.json();
-  } catch {
+  } catch (error) {
+    captureApiError(error, {
+      route: 'PUT /api/login-links',
+    });
     return NextResponse.json({ error: 'JSON が不正です' }, { status: 400 });
   }
 
@@ -134,20 +144,21 @@ export async function PUT(request: NextRequest) {
     );
 
     if (error) {
-      console.error('login-links PUT error:', error);
-      return NextResponse.json(
-        { error: '保存に失敗しました', detail: error.message },
-        { status: 500 }
+      // detail に DB の生メッセージを載せていたのをやめる（内部構造が利用者に見える）
+      return apiErrorResponse(
+        error,
+        { route: 'PUT /api/login-links', action: 'upsert_setting' },
+        'ログイン画面のリンクの保存に失敗しました。時間をおいて再度お試しください。'
       );
     }
 
     return NextResponse.json({ success: true, links: sanitized });
   } catch (err) {
-    console.error('login-links PUT fatal:', err);
-    const message = err instanceof Error ? err.message : '不明なエラー';
-    return NextResponse.json(
-      { error: 'サーバーエラーが発生しました', detail: message },
-      { status: 500 }
+    // apiErrorResponse が内部で captureApiError を呼ぶので、ここで二重送信しない
+    return apiErrorResponse(
+      err,
+      { route: 'PUT /api/login-links' },
+      'ログイン画面のリンクの保存に失敗しました。時間をおいて再度お試しください。'
     );
   }
 }

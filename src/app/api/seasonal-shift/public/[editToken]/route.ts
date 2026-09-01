@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { captureApiError } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 
@@ -88,6 +89,9 @@ export async function GET(_request: NextRequest, { params }: { params: { editTok
 
     return NextResponse.json({ submission });
   } catch (error) {
+    captureApiError(error, {
+      route: 'GET /api/seasonal-shift/public/[editToken]',
+    });
     console.error('[seasonal-shift/public] fetch failed:', error);
     return NextResponse.json({ error: 'Failed to get submission' }, { status: 500 });
   }
@@ -164,6 +168,9 @@ export async function PUT(request: NextRequest, { params }: { params: { editToke
     const updated = await getSubmissionByToken(supabaseAdmin, editToken);
     return NextResponse.json({ submission: updated });
   } catch (error) {
+    captureApiError(error, {
+      route: 'PUT /api/seasonal-shift/public/[editToken]',
+    });
     console.error('[seasonal-shift/public] update failed:', error);
     return NextResponse.json({ error: 'Failed to update submission' }, { status: 500 });
   }

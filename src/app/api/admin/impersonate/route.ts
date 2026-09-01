@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { requireAdmin } from '@/lib/api-auth';
+import { captureApiError } from '@/lib/api-error';
+import { writeAuditLog } from '@/lib/audit-log';
 
 export const dynamic = 'force-dynamic';
 
@@ -87,15 +89,20 @@ export async function POST(request: NextRequest) {
     const hashedToken = linkData.properties.hashed_token;
     const targetEmail = targetProfile.email;
 
-    // 監査ログ
-    console.log(
-      JSON.stringify({
-        type: 'IMPERSONATE',
-        adminId: callerUser.id,
-        targetId: userId,
-        timestamp: new Date().toISOString(),
-      })
-    );
+    // 監査ログ。
+    // ★ここは DB に残すこと。なりすましログインは「他人としてアプリを操作できる」
+    //   最も強い管理操作で、docs/runbook.md のインシデント対応手順も
+    //   「admin_audit_logs で操作履歴を確認」と書いている。
+    //   以前は console.log だけで DB に残らず、Vercel のログ保持期間を過ぎると
+    //   誰がいつ誰になりすましたかを追う手段が消えていた（手順と実装の食い違い）。
+    await writeAuditLog({
+      actorId: callerUser.id,
+      actorRole: 'admin',
+      action: 'user.impersonate',
+      targetType: 'user_profile',
+      targetId: userId,
+      request,
+    });
 
     // 呼び出し元 admin の refresh_token を httpOnly cookie に保存
     const res = NextResponse.json({ actionLink, hashedToken, email: targetEmail });
@@ -115,6 +122,9 @@ export async function POST(request: NextRequest) {
     });
     return res;
   } catch (err) {
+    captureApiError(err, {
+      route: 'POST /api/admin/impersonate',
+    });
     console.error('POST /api/admin/impersonate error:', err);
     return NextResponse.json({ error: 'スイッチに失敗しました' }, { status: 500 });
   }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { getApiAuth } from '@/lib/api-auth';
+import { captureApiError } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 
@@ -168,6 +169,11 @@ export async function POST(request: NextRequest) {
   try {
     await invokeNotification(supabaseAdmin, submission.id);
   } catch (err) {
+    captureApiError(err, {
+      route: 'POST /api/seasonal-shift/me',
+      userId: auth.userId,
+      role: auth.role,
+    });
     console.warn('[seasonal-shift/me] notify failed:', err);
   }
 

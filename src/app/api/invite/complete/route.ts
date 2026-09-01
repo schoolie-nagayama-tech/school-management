@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { captureApiError } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 
@@ -127,6 +128,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ ok: true });
   } catch (e) {
+    captureApiError(e, {
+      route: 'POST /api/invite/complete',
+    });
     console.error('Invite complete error:', e);
     return NextResponse.json({ error: '招待の完了処理に失敗しました' }, { status: 500 });
   }

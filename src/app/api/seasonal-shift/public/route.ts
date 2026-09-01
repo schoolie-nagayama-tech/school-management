@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { captureApiError } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 
@@ -225,11 +226,17 @@ export async function POST(request: NextRequest) {
     try {
       await invokeNotification(supabaseAdmin, 'submitted', submission.id);
     } catch (error) {
+      captureApiError(error, {
+        route: 'POST /api/seasonal-shift/public',
+      });
       console.warn('[seasonal-shift/public] notify failed:', error);
     }
 
     return NextResponse.json({ submission });
   } catch (error) {
+    captureApiError(error, {
+      route: 'POST /api/seasonal-shift/public',
+    });
     console.error('[seasonal-shift/public] create failed:', error);
     return NextResponse.json({ error: 'Failed to submit' }, { status: 500 });
   }
@@ -277,6 +284,9 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ setting, slotSettings: slotSettings ?? [] });
   } catch (error) {
+    captureApiError(error, {
+      route: 'GET /api/seasonal-shift/public',
+    });
     console.error('[seasonal-shift/public] GET failed:', error);
     return NextResponse.json({ error: 'Failed to get setting' }, { status: 500 });
   }

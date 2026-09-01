@@ -5,6 +5,7 @@ import { signPortalJwt } from '@/lib/mypage/jwt';
 import { setPortalSessionOnResponse } from '@/lib/mypage/session';
 import { buildRedirectUri, exchangeCodeForIdToken, verifyIdToken } from '@/lib/mypage/line';
 import { clearLineOauthState, readLineOauthState } from '@/lib/mypage/lineOauthState';
+import { captureApiError } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 
@@ -70,6 +71,9 @@ export async function GET(request: NextRequest) {
     });
     profile = await verifyIdToken({ idToken, nonce: saved.nonce });
   } catch (e) {
+    captureApiError(e, {
+      route: 'GET /api/mypage/line/callback',
+    });
     console.error('[mypage/line/callback] LINE認証に失敗:', e);
     return fail(request, 'exchange_failed');
   }
@@ -174,6 +178,9 @@ export async function GET(request: NextRequest) {
 
     return await grantSession(request, created.id, saved.invite);
   } catch (e) {
+    captureApiError(e, {
+      route: 'GET /api/mypage/line/callback',
+    });
     console.error('[mypage/line/callback] 予期しないエラー:', e);
     return fail(request, 'server_error');
   }

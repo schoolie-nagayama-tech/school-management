@@ -15,6 +15,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { captureApiError } from '@/lib/api-error';
 
 // service role クライアントはリクエスト時に作る。モジュールロード時に作ると、
 // Next.js のビルド時ページデータ収集フェーズで env が無い CI 環境などで
@@ -44,7 +45,10 @@ export async function POST(req: NextRequest) {
   let body: SubmitBody;
   try {
     body = (await req.json()) as SubmitBody;
-  } catch {
+  } catch (error) {
+    captureApiError(error, {
+      route: 'POST /api/seasonal-shift-student/submit',
+    });
     return NextResponse.json({ error: 'invalid_json' }, { status: 400 });
   }
 

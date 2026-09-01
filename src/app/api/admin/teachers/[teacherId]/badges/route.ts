@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { getApiAuth, isUserInScope } from '@/lib/api-auth';
+import { captureApiError } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 
@@ -63,6 +64,9 @@ export async function GET(
 
     return NextResponse.json({ assignments: data || [] });
   } catch (err) {
+    captureApiError(err, {
+      route: 'GET /api/admin/teachers/[teacherId]/badges',
+    });
     console.error('GET /api/admin/teachers/[teacherId]/badges error:', err);
     return NextResponse.json({ error: 'バッジ付与情報の取得に失敗しました' }, { status: 500 });
   }
@@ -116,6 +120,9 @@ export async function POST(
       return NextResponse.json({ action: 'assigned', assignment: data }, { status: 201 });
     }
   } catch (err) {
+    captureApiError(err, {
+      route: 'POST /api/admin/teachers/[teacherId]/badges',
+    });
     console.error('POST /api/admin/teachers/[teacherId]/badges error:', err);
     return NextResponse.json({ error: 'バッジの付与/剥奪に失敗しました' }, { status: 500 });
   }

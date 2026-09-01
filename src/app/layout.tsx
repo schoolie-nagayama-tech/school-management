@@ -6,7 +6,7 @@ import { AuthProvider } from '@/contexts/AuthContext';
 import { resolveServerAuth } from '@/lib/auth/resolveServerAuth';
 import { MasterDataProvider } from '@/contexts/MasterDataContext';
 import { ThemeProvider, themeInitScript } from '@/contexts/ThemeContext';
-import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { AbortErrorSilencer } from '@/components/AbortErrorSilencer';
 import { ImpersonationBanner } from '@/components/ImpersonationBanner';
 import { BulletinUnreadProvider } from '@/contexts/BulletinUnreadContext';
 import { UnreadBulletinGate } from '@/components/bulletin/UnreadBulletinGate';
@@ -77,7 +77,7 @@ export default async function RootLayout({
         <meta name="theme-color" content="#d32f2f" />
       </head>
       <body className="antialiased">
-        <ErrorBoundary>
+        <AbortErrorSilencer>
           <ThemeProvider>
             <AuthProvider initialAuth={initialAuth}>
               <MasterDataProvider>
@@ -95,7 +95,7 @@ export default async function RootLayout({
               </MasterDataProvider>
             </AuthProvider>
           </ThemeProvider>
-        </ErrorBoundary>
+        </AbortErrorSilencer>
       </body>
     </html>
   );

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { authorizeStudentScope, UUID_RE } from '@/lib/api/portalStudentScope';
+import { captureApiError } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 
@@ -190,7 +191,10 @@ export async function POST(
   let body: Record<string, unknown>;
   try {
     body = (await request.json()) as Record<string, unknown>;
-  } catch {
+  } catch (error) {
+    captureApiError(error, {
+      route: 'POST /api/admin/students/[studentId]/portal-links',
+    });
     return NextResponse.json({ error: 'リクエストが不正です' }, { status: 400 });
   }
 
@@ -288,7 +292,10 @@ export async function DELETE(
   let body: Record<string, unknown>;
   try {
     body = (await request.json()) as Record<string, unknown>;
-  } catch {
+  } catch (error) {
+    captureApiError(error, {
+      route: 'DELETE /api/admin/students/[studentId]/portal-links',
+    });
     return NextResponse.json({ error: 'リクエストが不正です' }, { status: 400 });
   }
 

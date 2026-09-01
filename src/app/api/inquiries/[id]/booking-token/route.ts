@@ -17,6 +17,7 @@ import {
   resolveBookingConfig,
 } from '@/lib/server/booking';
 import { deleteCalendarEvent } from '@/lib/google-calendar';
+import { captureApiError } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 
@@ -161,6 +162,9 @@ export async function DELETE(
         await deleteCalendarEvent(calUserId, inquiry.interview_event_id);
       }
     } catch (e) {
+      captureApiError(e, {
+        route: 'DELETE /api/inquiries/[id]/booking-token',
+      });
       // カレンダー操作の失敗はDBの取消を妨げない
       console.warn('[booking-token] カレンダーイベント削除に失敗（無視します）:', e);
     }

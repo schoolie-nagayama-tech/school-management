@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { getApiAuth, isSchoolInScope } from '@/lib/api-auth';
+import { captureApiError } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 
@@ -88,6 +89,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (e) {
+    captureApiError(e, {
+      route: 'POST /api/seasonal-shift/notify',
+    });
     console.error('[seasonal-shift/notify]', e);
     return NextResponse.json({ error: 'Failed to send notification' }, { status: 500 });
   }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import { captureApiError } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 
@@ -50,6 +51,9 @@ export async function POST(request: NextRequest) {
     if (error) throw error;
     return NextResponse.json({ ok: true });
   } catch (e) {
+    captureApiError(e, {
+      route: 'POST /api/push/subscribe',
+    });
     console.error('[push/subscribe]', e);
     return NextResponse.json({ error: '登録に失敗しました' }, { status: 500 });
   }
@@ -87,6 +91,9 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json({ ok: true });
   } catch (e) {
+    captureApiError(e, {
+      route: 'DELETE /api/push/subscribe',
+    });
     console.error('[push/unsubscribe]', e);
     return NextResponse.json({ error: '解除に失敗しました' }, { status: 500 });
   }

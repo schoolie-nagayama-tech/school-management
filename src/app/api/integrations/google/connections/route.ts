@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/api-auth';
 import { createClient } from '@supabase/supabase-js';
 import { fetchAllPaged, fetchInChunks, fetchAllInChunks } from '@/lib/utils/supabasePaging';
+import { apiErrorResponse } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 
@@ -38,7 +39,12 @@ export async function GET(request: NextRequest) {
         .range(from, to)
     );
   } catch (error) {
-    return NextResponse.json({ error: (error as Error).message }, { status: 500 });
+    // apiErrorResponse が内部で captureApiError を呼ぶので、ここで二重送信しない
+    return apiErrorResponse(
+      error,
+      { route: 'GET /api/integrations/google/connections', action: 'fetch_tokens' },
+      'カレンダー連携状況の取得に失敗しました。時間をおいて再度お試しください。'
+    );
   }
 
   if (tokens.length === 0) {

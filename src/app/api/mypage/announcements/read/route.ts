@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPortalContext } from '@/lib/mypage/supabase';
 import { markPortalAnnouncementRead } from '@/lib/mypage/announcements';
+import { captureApiError } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,7 +16,11 @@ export async function POST(request: NextRequest) {
   let body: Record<string, unknown>;
   try {
     body = (await request.json()) as Record<string, unknown>;
-  } catch {
+  } catch (error) {
+    captureApiError(error, {
+      route: 'POST /api/mypage/announcements/read',
+      userId: ctx.claims.sub,
+    });
     return NextResponse.json({ error: 'リクエストが不正です' }, { status: 400 });
   }
   const postId = body.post_id;

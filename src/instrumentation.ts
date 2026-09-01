@@ -16,6 +16,22 @@ export async function register() {
   // Vercel が自動設定するコミットSHA。デプロイごとにエラーを紐付けられる（ローカルでは undefined）。
   const release = process.env.VERCEL_GIT_COMMIT_SHA;
 
+  // ★本番で DSN が未設定なら起動時に1度だけ警告する。
+  //   DSN が無いと SDK は黙って無効化される（＝ビルドもデプロイも成功する）ため、
+  //   「Sentry を配線したつもりで実は1件も届いていない」状態に気づけない。
+  //   captureException を全 API ルートに入れても、DSN が無ければ全部捨てられる。
+  //   設定するのは Vercel の環境変数 SENTRY_DSN（サーバー）と NEXT_PUBLIC_SENTRY_DSN（ブラウザ）。
+  if (!dsn && environment === 'production') {
+    console.warn(
+      JSON.stringify({
+        type: 'SENTRY_DSN_MISSING',
+        message:
+          'SENTRY_DSN が未設定のためエラー監視は無効です。Vercel の環境変数に設定してください。',
+        timestamp: new Date().toISOString(),
+      })
+    );
+  }
+
   const beforeSend: NonNullable<Parameters<typeof Sentry.init>[0]>['beforeSend'] = (
     event,
     hint

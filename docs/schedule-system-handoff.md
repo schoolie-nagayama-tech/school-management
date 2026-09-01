@@ -203,24 +203,24 @@
 
 ### 主要画面
 
-| パス                                     | 内容                                                                           |
-| ---------------------------------------- | ------------------------------------------------------------------------------ |
-| `/schedule`                              | 座席表メイン (週/日切替、講習選択、ドリフト警告、督促ボード、マッチングモード) |
-| `/schedule/regular-patterns`             | 通塾日程一覧 (生徒×曜日×コマ)                                                  |
-| `/schedule/regular-patterns/match`       | **G-3 マッチング画面**                                                         |
-| `/schedule/transfer-notifications`       | 振替通知履歴                                                                   |
-| `/schedule/settings/time-slots`          | コマ時間設定                                                                   |
-| `/schedule/settings/closed-days`         | 休講日                                                                         |
-| `/settings/class-capacity`               | 授業生徒数設定                                                                 |
-| `/lesson-reports/[scheduleEntryId]`      | 授業報告書フォーム                                                             |
-| `/lesson-reports/pending`                | 報告書承認                                                                     |
-| `/lesson-reports/overdue`                | 報告書督促                                                                     |
-| `/students/[id]/lesson-reports`          | 過去報告書                                                                     |
-| `/today`                                 | 本日の授業 (講師/室長)                                                         |
-| `/my-schedule`                           | 講師向け週/月スケジュール (隠し公開)                                           |
-| `/seasonal-shift-student/[settingId]`    | 生徒の通塾可能表 公開フォーム                                                  |
-| ~~`/portal/[schoolCode]/student-dashboard`~~ | **2026-08-31 削除**（未認証で個人情報が取得できたため）。置換先は `/mypage` |
-| `/admin/teachers/[teacherId]`            | 講師詳細 (G-4 で勤務シフト+履歴パネル追加)                                     |
+| パス                                         | 内容                                                                           |
+| -------------------------------------------- | ------------------------------------------------------------------------------ |
+| `/schedule`                                  | 座席表メイン (週/日切替、講習選択、ドリフト警告、督促ボード、マッチングモード) |
+| `/schedule/regular-patterns`                 | 通塾日程一覧 (生徒×曜日×コマ)                                                  |
+| `/schedule/regular-patterns/match`           | **G-3 マッチング画面**                                                         |
+| `/schedule/transfer-notifications`           | 振替通知履歴                                                                   |
+| `/schedule/settings/time-slots`              | コマ時間設定                                                                   |
+| `/schedule/settings/closed-days`             | 休講日                                                                         |
+| `/settings/class-capacity`                   | 授業生徒数設定                                                                 |
+| `/lesson-reports/[scheduleEntryId]`          | 授業報告書フォーム                                                             |
+| `/lesson-reports/pending`                    | 報告書承認                                                                     |
+| `/lesson-reports/overdue`                    | 報告書督促                                                                     |
+| `/students/[id]/lesson-reports`              | 過去報告書                                                                     |
+| `/today`                                     | 本日の授業 (講師/室長)                                                         |
+| `/my-schedule`                               | 講師向け週/月スケジュール (隠し公開)                                           |
+| `/seasonal-shift-student/[settingId]`        | 生徒の通塾可能表 公開フォーム                                                  |
+| ~~`/portal/[schoolCode]/student-dashboard`~~ | **2026-08-31 削除**（未認証で個人情報が取得できたため）。置換先は `/mypage`    |
+| `/admin/teachers/[teacherId]`                | 講師詳細 (G-4 で勤務シフト+履歴パネル追加)                                     |
 
 ### 主要コンポーネント
 

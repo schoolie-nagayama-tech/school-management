@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { captureApiError } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 
@@ -52,6 +53,9 @@ export async function GET(_request: NextRequest, { params }: { params: { token: 
 
     return NextResponse.json(invitation);
   } catch (e) {
+    captureApiError(e, {
+      route: 'GET /api/invite/[token]',
+    });
     console.error('GET /api/invite/[token] error:', e);
     return NextResponse.json({ error: '招待情報の取得に失敗しました' }, { status: 500 });
   }

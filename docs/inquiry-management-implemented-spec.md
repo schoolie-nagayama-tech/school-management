@@ -30,6 +30,7 @@ docs/inquiry-management-requirements.md (v3)、予約は docs/inquiry-booking-re
 **未入会者PIIのため anon ポリシーは一切作らない。公開系は service role + トークン認可。**
 
 ### inquiries（問合せ台帳）
+
 主要カラム: id, school_id, **hp_inquiry_no**(HP問合せNO・再取込upsertキー・手入力はnull),
 inquired_at, student_name/kana, guardian_name/kana, relationship, grade(text "中2"等),
 gender(男/女/不明), phone(変換なし), email, postal_code, address_pref/detail/building,
@@ -46,6 +47,7 @@ created_at, updated_at, deleted_at(ソフトデリート)。
 CHECK制約は 20260618_inquiry_status_trial_phases.sql。
 
 ### inquiry_contacts（コンタクト履歴 = 行動タイムライン）
+
 inquiry_id, school_id, contacted_at, **method**, direction(outbound/inbound/null),
 result, note, created_by。
 method = tel/email/sms/visit/other/**material_sent(資料送付)**/**status_change(自動)**。
@@ -53,24 +55,29 @@ material_sent と status_change は 20260617 で追加。status_change は statu
 updateInquiryWithTimeline が自動 insert（日本語で「対応中 → 体験待ち」）。
 
 ### inquiry_school_settings（教室別設定・PK=school_id）
+
 hp_school_code(HP教室CD例5M13), mail_signature, mail_reply_to,
 yamato_customer_code, yamato_fare_code(既定01), sender_tel/zip/address/name,
 slack_mention_id, **booking_config**(jsonb・予約設定)。
 初期: 永山=5M13 / 清瀬=5F72 を投入済み。
 
 ### inquiry_mail_templates
+
 school_id(null=全教室共通), name, subject, body, **trigger_days**(N日後=送信候補・null手動),
 is_active, sort_order。差込変数 {保護者}{生徒}{教室名}{教室電話}{署名}。
 スターター3件(初回/4日後/10日後)投入済み。
 
 ### inquiry_mail_logs
+
 inquiry_id, school_id, template_id, method(email/sms), subject, status(sent/failed),
 sent_at, sent_by, **resend_email_id**, **opened_at**, **clicked_at**(開封計測用)。
 
 ### inquiry_booking_tokens（公開予約トークン）
+
 token(unique), inquiry_id, school_id, purpose(interview/trial), expires_at, used_at。
 
 ### inquiry_import_tokens（ブックマークレット取込トークン）
+
 token(unique), label, created_by, revoked, last_used_at。RLSポリシー無し(service roleのみ)。
 
 ## 4. 取込（4経路）
@@ -79,9 +86,9 @@ token(unique), label, created_by, revoked, last_used_at。RLSポリシー無し(
    javascript:ブックマークレットをブックマークバーに登録。本部HPの問合せ画面で1クリック→
    `POST tactgroup.net/contents/boshu/class/applicant/download.php`(body `btn_download=1`,
    PHPSESSID Cookie認証のみ, Shift_JIS CSV)を fetch→ NESTの
-   `POST /api/inquiry-import/push?token=...`(text/plain, CORS *, トークン認可, service role)へ送信。
+   `POST /api/inquiry-import/push?token=...`(text/plain, CORS \*, トークン認可, service role)へ送信。
    問合せNOで重複自動スキップ。**教室ごとに1クリック**(今表示中の教室のCSVが返るため)。
-2. **CSV取込** — `/admin/inquiries/import` で boshu_applicant_*.csv をアップロード。
+2. **CSV取込** — `/admin/inquiries/import` で boshu*applicant*\*.csv をアップロード。
 3. **貼り付けて追加** — `/admin/inquiries/paste` でHP詳細ページを全選択コピー→貼付→パース→確認→1件登録。
 4. **手入力で追加** — 一覧の「手入力で追加」モーダル。電話・直来などHPに無い問合せ用。
 
@@ -103,11 +110,13 @@ CSVパーサ: `src/lib/utils/inquiryCsv.ts`。`parseInquiryCsvText(text)`(サー
 ## 6. 詳細 `/admin/inquiries/[id]`
 
 3層の情報設計:
+
 - **顧客サマリーヘッダー**(全幅): 氏名・ステータスBadge・学年・電話/メールボタン(tel:/mailto:)・要望引用・失注理由。
 - **左カラム(やること)**: 「追客タイムライン」(=旧ステータス+コンタクトを統合)、メール送信。
 - **右カラム(参照)**: 顧客情報(集約)、面談予約、関連する問合せ(名寄せ)、HP原文、操作(生徒登録/削除)。
 
 ### 追客タイムライン(中核)
+
 - 先頭ブロック「現状」: ステータスselect(7値)+条件フィールド(体験待ち/体験済み/体験没/入会=体験日、
   入会=入会日/週回数、没/体験没=失注理由)+メモ+保存。保存は `updateInquiryWithTimeline`。
 - タイムライン: inquiry_contacts + inquiry_mail_logs を contacted_at/sent_at 降順で統合表示。
@@ -117,24 +126,28 @@ CSVパーサ: `src/lib/utils/inquiryCsv.ts`。`parseInquiryCsvText(text)`(サー
 - ボタン操作は sonner トースト(保存しました等)。Toaster はルートレイアウトに配線済み。
 
 ### 操作
+
 - 「生徒として登録」: createStudent(学年テキスト→GRADE_LABELS逆引きで数値化)+linked_student_id紐付け。
 - ソフトデリート(確認モーダル)。
 
 ## 7. 分析 `/admin/inquiries/analytics`
 
 `src/lib/utils/inquiryAnalytics.ts`(純関数 computeInquiryAnalytics) + recharts。
+
 - 決定内訳(ドーナツ,7値)、ファネル(問合せ→体験→入面→入会, date基準)、月次推移、媒体別(件数/入会率/連絡不通率)、
   リードタイム(問合せ→入会・体験→入会の中央値/平均)、商圏(郵便番号前3桁・在籍学校別)、失注理由内訳。
 - **期間ピッカー**: デフォルト=今年。即時反映。
 - **「去年と比較」トグル**: 今年+前年同期間を並列取得し、サマリーに前年値と±差分、月次推移に前年系列を重ねる。
 
 ### 期間ピッカー(共通) `src/lib/utils/inquiryPeriod.ts` + `InquiryPeriodPicker.tsx`
+
 プリセット: 今月/先月/直近30日/直近90日/今四半期/今年/去年/全期間/カスタム。JST固定。
 shiftByYear(年比較・2/29は2/28クランプ)。一覧と分析で共通。
 
 ## 8. リマインド `src/lib/utils/inquiryReminders.ts`(純関数)
 
 コアの alerts.ts には触れず別実装。一覧上部に表示。**直近60日窓**(過去一括取込のノイズ防止)。
+
 - 初回コンタクト未実施: in_progress + 履歴0件 + 1日以上(3日以上=緊急)
 - 対応遅延: in_progress/unreachable + 体験日/入面日なし + 経過日が3/5/7/10/14/21/30(GAS互換, 14日以上=緊急)
 - 資料未発送: **in_progress** + 資料請求 + 資送日なし + 3日以上
@@ -145,6 +158,7 @@ shiftByYear(年比較・2/29は2/28クランプ)。一覧と分析で共通。
 Resend。Edge Function `supabase/functions/send-inquiry-mail`(RESEND_API_KEYはVault,
 from=school-ie.com固定で表示名のみ教室別, reply_to対応, verify_jwt=true, 返信前提でフッターなし)。
 **送信は全て手動**(自動送信なし)。
+
 - テンプレ管理 `/admin/inquiries/templates`(変数チップ+ライブプレビュー+自分宛てテスト送信)。
 - 詳細からテンプレ差込送信+送信履歴。
 - `/admin/inquiries/mail`(本日の送信候補=trigger_days到達の未送信)。

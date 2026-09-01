@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getApiAuth, requireManager } from '@/lib/api-auth';
 import { getPortalServiceClient } from '@/lib/mypage/serviceClient';
+import { captureApiError } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 
@@ -66,7 +67,12 @@ export async function POST(request: NextRequest) {
   let body: Record<string, unknown>;
   try {
     body = (await request.json()) as Record<string, unknown>;
-  } catch {
+  } catch (error) {
+    captureApiError(error, {
+      route: 'POST /api/admin/transfer-free-periods',
+      userId: auth.userId,
+      role: auth.role,
+    });
     return NextResponse.json({ error: 'リクエストが不正です' }, { status: 400 });
   }
 

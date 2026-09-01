@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireScoreEditor, getApiAuth } from '@/lib/api-auth';
 import { getPortalServiceClient } from '@/lib/mypage/serviceClient';
 import { rejectScoreSubmission } from '@/lib/api/scoreSubmissions';
+import { captureApiError } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,7 +24,12 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   let body: Record<string, unknown>;
   try {
     body = (await request.json()) as Record<string, unknown>;
-  } catch {
+  } catch (error) {
+    captureApiError(error, {
+      route: 'POST /api/admin/score-submissions/[id]/reject',
+      userId: auth.userId,
+      role: auth.role,
+    });
     return NextResponse.json({ error: 'リクエストが不正です' }, { status: 400 });
   }
 

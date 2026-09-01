@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { normalizePersonName } from '@/lib/utils/personName';
 import { syncRegularShiftToAvailability } from '@/lib/api/teacher-availability';
+import { captureApiError } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 
@@ -264,6 +265,9 @@ export async function POST(request: NextRequest) {
     try {
       await invokeNotification(supabaseAdmin, 'submitted', submission.id);
     } catch (notifyError) {
+      captureApiError(notifyError, {
+        route: 'POST /api/regular-shift/public',
+      });
       console.warn('[regular-shift/public] notify failed:', notifyError);
     }
 
@@ -277,11 +281,17 @@ export async function POST(request: NextRequest) {
         console.warn('[regular-shift/public] availability sync skipped:', syncResult.reason);
       }
     } catch (syncError) {
+      captureApiError(syncError, {
+        route: 'POST /api/regular-shift/public',
+      });
       console.warn('[regular-shift/public] availability sync failed:', syncError);
     }
 
     return NextResponse.json({ submission });
   } catch (error) {
+    captureApiError(error, {
+      route: 'POST /api/regular-shift/public',
+    });
     console.error('[regular-shift/public] create failed:', error);
     return NextResponse.json({ error: 'Failed to submit' }, { status: 500 });
   }
@@ -325,6 +335,9 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ setting, slotSettings: slotSettings ?? [] });
   } catch (error) {
+    captureApiError(error, {
+      route: 'GET /api/regular-shift/public',
+    });
     console.error('[regular-shift/public] GET failed:', error);
     return NextResponse.json({ error: 'Failed to get setting' }, { status: 500 });
   }

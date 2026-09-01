@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { getApiAuth } from '@/lib/api-auth';
+import { captureApiError } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 
@@ -59,6 +60,9 @@ export async function GET(request: NextRequest) {
       }
     );
   } catch (err) {
+    captureApiError(err, {
+      route: 'GET /api/my/badges',
+    });
     console.error('GET /api/my/badges error:', err);
     return NextResponse.json({ error: 'バッジ情報の取得に失敗しました' }, { status: 500 });
   }

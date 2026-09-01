@@ -6,6 +6,7 @@ import {
   isLineLoginConfigured,
 } from '@/lib/mypage/line';
 import { setLineOauthState } from '@/lib/mypage/lineOauthState';
+import { captureApiError } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 
@@ -39,6 +40,9 @@ export async function GET(request: NextRequest) {
       nonce,
     });
   } catch (e) {
+    captureApiError(e, {
+      route: 'GET /api/mypage/line/start',
+    });
     console.error('[mypage/line/start] 認可URLの組み立てに失敗:', e);
     return NextResponse.json({ error: 'LINEログインの開始に失敗しました' }, { status: 500 });
   }

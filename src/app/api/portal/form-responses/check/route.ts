@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { portalDuplicateCheckSchema } from '@/lib/validations/schemas';
 import { normalizeFormEmail, normalizeFormName } from '@/lib/utils/formDedup';
+import { captureApiError } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 
@@ -62,6 +63,9 @@ export async function POST(request: NextRequest) {
       submitted_at: matched?.created_at ?? null,
     });
   } catch (error) {
+    captureApiError(error, {
+      route: 'POST /api/portal/form-responses/check',
+    });
     console.error('[portal/form-responses/check] failed:', error);
     // 判定できないときは重複なし扱い。確認ダイアログのためだけに申込を止めない
     return NextResponse.json({ exists: false, submitted_at: null });

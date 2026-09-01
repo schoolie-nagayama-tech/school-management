@@ -5,6 +5,7 @@ import { validatePassword, hashPassword } from '@/lib/mypage/password';
 import { signPortalJwt } from '@/lib/mypage/jwt';
 import { setPortalSession } from '@/lib/mypage/session';
 import { recordConsent } from '@/lib/mypage/legal';
+import { captureApiError } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 
@@ -38,7 +39,10 @@ export async function POST(request: NextRequest) {
   let body: Record<string, unknown>;
   try {
     body = (await request.json()) as Record<string, unknown>;
-  } catch {
+  } catch (error) {
+    captureApiError(error, {
+      route: 'POST /api/mypage/invite/accept',
+    });
     return NextResponse.json({ error: 'リクエストが不正です' }, { status: 400 });
   }
 
@@ -249,6 +253,10 @@ async function saveConsent(accountId: string): Promise<NextResponse | null> {
     await recordConsent(accountId);
     return null;
   } catch (e) {
+    captureApiError(e, {
+      route: 'POST /api/mypage/invite/accept',
+      action: 'save_consent',
+    });
     console.error('[mypage/invite/accept] 同意ログの記録に失敗:', (e as Error).message);
     return NextResponse.json({ error: '同意の記録に失敗しました' }, { status: 500 });
   }
