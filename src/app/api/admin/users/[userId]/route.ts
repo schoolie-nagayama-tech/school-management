@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import { requireAdmin, requireManager, getApiAuth, isUserInScope } from '@/lib/api-auth';
 import { writeAuditLog } from '@/lib/audit-log';
 import { USER_ROLE_LEVELS } from '@/types/database';
+import { captureApiError } from '@/lib/api-error';
 
 function getSupabaseAdmin() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -113,6 +114,9 @@ export async function GET(request: NextRequest, { params }: { params: { userId: 
       user_schools: userSchools || [],
     });
   } catch (error) {
+    captureApiError(error, {
+      route: 'GET /api/admin/users/[userId]',
+    });
     console.error('Failed to fetch user:', error);
     return NextResponse.json({ error: 'ユーザーの取得に失敗しました' }, { status: 500 });
   }
@@ -390,6 +394,9 @@ export async function PATCH(request: NextRequest, { params }: { params: { userId
 
     return NextResponse.json(data);
   } catch (error) {
+    captureApiError(error, {
+      route: 'PATCH /api/admin/users/[userId]',
+    });
     console.error('Failed to update user profile:', error);
     return NextResponse.json({ error: 'プロファイルの更新に失敗しました' }, { status: 500 });
   }
@@ -583,6 +590,9 @@ export async function DELETE(request: NextRequest, { params }: { params: { userI
 
     return NextResponse.json({ success: true });
   } catch (error) {
+    captureApiError(error, {
+      route: 'DELETE /api/admin/users/[userId]',
+    });
     console.error('Failed to delete user:', error);
     return NextResponse.json({ error: 'ユーザーの削除に失敗しました' }, { status: 500 });
   }

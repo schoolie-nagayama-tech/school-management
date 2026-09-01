@@ -5,6 +5,7 @@ import {
   readGoogleOauthState,
   verifyGoogleOauthState,
 } from '@/lib/googleOauthState';
+import { captureApiError } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 
@@ -80,6 +81,9 @@ export async function GET(request: NextRequest) {
       )
     );
   } catch (e) {
+    captureApiError(e, {
+      route: 'GET /api/integrations/google/callback',
+    });
     console.error('[google-callback] Token exchange failed:', e);
     const message = e instanceof Error ? e.message : 'トークンの取得に失敗しました';
     return clearGoogleOauthState(

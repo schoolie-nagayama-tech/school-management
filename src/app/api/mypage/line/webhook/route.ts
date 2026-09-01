@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPortalServiceClient } from '@/lib/mypage/serviceClient';
 import { parseLineEvents, verifyLineSignature } from '@/lib/mypage/lineWebhook';
+import { captureApiError } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 
@@ -65,6 +66,9 @@ export async function POST(request: NextRequest) {
       // 先に友だち追加してから後日ログインする順序も普通にあるため、これは異常ではない。
     }
   } catch (e) {
+    captureApiError(e, {
+      route: 'POST /api/mypage/line/webhook',
+    });
     // 受け口を止めないため、処理エラーでも 200 を返す（上のコメント参照）。
     console.error('[mypage/line/webhook] イベント処理に失敗:', e);
   }

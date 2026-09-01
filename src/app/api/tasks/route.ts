@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import { getApiAuth, isSchoolInScope } from '@/lib/api-auth';
 import { isOwnerOrAbove } from '@/lib/utils/roles';
 import { fetchAllPaged } from '@/lib/utils/supabasePaging';
+import { apiErrorResponse } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 
@@ -336,10 +337,16 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: `不明なアクション: ${action}` }, { status: 400 });
     }
   } catch (error) {
-    console.error('[api/tasks GET]', error);
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'サーバーエラー' },
-      { status: 500 }
+    // apiErrorResponse が内部で captureApiError を呼ぶので、ここで二重送信しない
+    return apiErrorResponse(
+      error,
+      {
+        route: 'GET /api/tasks',
+        action: action ?? undefined,
+        userId: auth.userId,
+        role: auth.role,
+      },
+      'タスクの取得に失敗しました。時間をおいて再度お試しください。'
     );
   }
 }
@@ -953,10 +960,16 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: `不明なアクション: ${action}` }, { status: 400 });
     }
   } catch (error) {
-    console.error('[api/tasks POST]', error);
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'サーバーエラー' },
-      { status: 500 }
+    // apiErrorResponse が内部で captureApiError を呼ぶので、ここで二重送信しない
+    return apiErrorResponse(
+      error,
+      {
+        route: 'POST /api/tasks',
+        action: action ?? undefined,
+        userId: auth.userId,
+        role: auth.role,
+      },
+      'タスクの保存に失敗しました。時間をおいて再度お試しください。'
     );
   }
 }

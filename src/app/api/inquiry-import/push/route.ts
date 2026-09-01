@@ -14,6 +14,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { importInquiryCsvText } from '@/lib/server/inquiryImportPush';
+import { apiErrorResponse } from '@/lib/api-error';
 
 // SSR キャッシュ無効化（毎リクエスト実行）
 export const dynamic = 'force-dynamic';
@@ -109,11 +110,15 @@ export async function POST(request: NextRequest) {
   try {
     importResult = await importInquiryCsvText(serviceClient, csvText);
   } catch (err) {
-    console.error('[inquiry-import/push] importInquiryCsvText failed:', err);
-    return NextResponse.json(
-      { error: err instanceof Error ? err.message : '取込処理に失敗しました' },
-      { status: 500, headers: CORS_HEADERS }
+    // apiErrorResponse が内部で captureApiError を呼ぶので、ここで二重送信しない。
+    // CORS ヘッダは apiErrorResponse が付けないので、返ってきたレスポンスに足す。
+    const res = apiErrorResponse(
+      err,
+      { route: 'POST /api/inquiry-import/push', action: 'import_csv' },
+      '問合せCSVの取込に失敗しました。時間をおいて再度お試しください。'
     );
+    for (const [k, v] of Object.entries(CORS_HEADERS)) res.headers.set(k, v);
+    return res;
   }
 
   // ---- 5. last_used_at を更新（エラーは非致命的なので throw しない）----

@@ -3,6 +3,7 @@ import { getPortalServiceClient } from '@/lib/mypage/serviceClient';
 import { verifyPassword } from '@/lib/mypage/password';
 import { signPortalJwt } from '@/lib/mypage/jwt';
 import { setPortalSession } from '@/lib/mypage/session';
+import { captureApiError } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,7 +21,10 @@ export async function POST(request: NextRequest) {
   let body: unknown;
   try {
     body = await request.json();
-  } catch {
+  } catch (error) {
+    captureApiError(error, {
+      route: 'POST /api/mypage/login',
+    });
     return NextResponse.json({ error: 'リクエストが不正です' }, { status: 400 });
   }
 

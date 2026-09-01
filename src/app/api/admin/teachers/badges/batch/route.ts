@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { getApiAuth } from '@/lib/api-auth';
+import { captureApiError } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 
@@ -84,6 +85,9 @@ export async function GET(request: NextRequest) {
       }
     );
   } catch (err) {
+    captureApiError(err, {
+      route: 'GET /api/admin/teachers/badges/batch',
+    });
     console.error('GET /api/admin/teachers/badges/batch error:', err);
     return NextResponse.json({ error: 'バッジ付与情報の一括取得に失敗しました' }, { status: 500 });
   }

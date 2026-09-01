@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { getApiAuth } from '@/lib/api-auth';
+import { captureApiError } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 
@@ -55,6 +56,9 @@ export async function GET(
 
     return NextResponse.json({ assignedTeacherIds });
   } catch (err) {
+    captureApiError(err, {
+      route: 'GET /api/admin/teacher-badges/[badgeId]/assignees',
+    });
     console.error('GET /api/admin/teacher-badges/[badgeId]/assignees error:', err);
     return NextResponse.json({ error: '付与情報の取得に失敗しました' }, { status: 500 });
   }

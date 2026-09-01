@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { google } from 'googleapis';
 import { createClient } from '@supabase/supabase-js';
 import { syncCalendarBookingsToProgress } from '@/lib/api/courseProgressSync';
+import { apiErrorResponse, captureApiError } from '@/lib/api-error';
 import { fetchAllPaged } from '@/lib/utils/supabasePaging';
 
 function getSupabaseAdmin() {
@@ -29,6 +30,8 @@ function getOAuth2Client() {
  * body: { schoolId: string }
  */
 export async function POST(request: Request) {
+  // catch 側でも「どの教室で落ちたか」を Sentry に残せるよう try の外に保持する
+  let schoolIdForLog: string | null = null;
   try {
     const supabaseAdmin = getSupabaseAdmin();
 
@@ -48,6 +51,7 @@ export async function POST(request: Request) {
 
     const body = await request.json();
     const { schoolId } = body;
+    schoolIdForLog = typeof schoolId === 'string' ? schoolId : null;
     if (!schoolId) {
       return NextResponse.json({ error: 'schoolIdが必要です' }, { status: 400 });
     }
@@ -170,7 +174,10 @@ export async function POST(request: Request) {
           })
           .eq('user_id', matchedToken.user_id);
         oauth2Client.setCredentials(credentials);
-      } catch {
+      } catch (error) {
+        captureApiError(error, {
+          route: 'POST /api/courses/progress/sync-calendar',
+        });
         return NextResponse.json(
           {
             error: 'Googleカレンダーのトークンリフレッシュに失敗しました。再連携が必要です。',
@@ -221,10 +228,11 @@ export async function POST(request: Request) {
       totalEvents: events.length,
     });
   } catch (error) {
-    console.error('[sync-calendar] Error:', error);
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : '同期に失敗しました' },
-      { status: 500 }
+    // apiErrorResponse が内部で captureApiError を呼ぶので、ここで二重送信しない
+    return apiErrorResponse(
+      error,
+      { route: 'POST /api/courses/progress/sync-calendar', schoolId: schoolIdForLog },
+      'カレンダーからの面談進捗の同期に失敗しました。時間をおいて再度お試しください。'
     );
   }
 }

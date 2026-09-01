@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { requireManager, getApiAuth } from '@/lib/api-auth';
+import { captureApiError } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 
@@ -51,6 +52,9 @@ export async function PATCH(
 
     return NextResponse.json({ badge: data });
   } catch (err) {
+    captureApiError(err, {
+      route: 'PATCH /api/admin/teacher-badges/[badgeId]',
+    });
     console.error('PATCH /api/admin/teacher-badges/[badgeId] error:', err);
     return NextResponse.json({ error: 'バッジの更新に失敗しました' }, { status: 500 });
   }
@@ -96,6 +100,9 @@ export async function DELETE(
 
     return NextResponse.json({ success: true });
   } catch (err) {
+    captureApiError(err, {
+      route: 'DELETE /api/admin/teacher-badges/[badgeId]',
+    });
     console.error('DELETE /api/admin/teacher-badges/[badgeId] error:', err);
     return NextResponse.json({ error: 'バッジの削除に失敗しました' }, { status: 500 });
   }

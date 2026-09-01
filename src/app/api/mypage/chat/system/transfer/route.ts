@@ -9,6 +9,7 @@ import {
 } from '@/lib/mypage/chatService';
 import { buildTransferConfirmedBody } from '@/lib/mypage/chatTemplates';
 import { dispatchNotification } from '@/lib/mypage/notify';
+import { captureApiError } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 
@@ -34,7 +35,10 @@ export async function POST(request: NextRequest) {
   let body: Record<string, unknown>;
   try {
     body = (await request.json()) as Record<string, unknown>;
-  } catch {
+  } catch (error) {
+    captureApiError(error, {
+      route: 'POST /api/mypage/chat/system/transfer',
+    });
     return NextResponse.json({ error: 'リクエストが不正です' }, { status: 400 });
   }
 

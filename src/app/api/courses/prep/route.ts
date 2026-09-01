@@ -7,8 +7,22 @@ import {
   sanitizeEndByGrade,
   validatePublishWindow,
 } from '@/lib/utils/koushuApplySettings';
+import { apiErrorResponse } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
+
+/**
+ * 入力バリデーション NG をそのまま 400 で返す。
+ *
+ * ここで返す文言は koushuApplySettings のバリデータが組み立てた利用者向けの日本語
+ * （例:「公開の終了日時は開始日時より後にしてください」）であり、DB のカラム名・制約名
+ * といった内部構造は含まない。利用者が自力で直せる情報なので、apiErrorResponse の
+ * 固定文言に潰さずそのまま見せる。DB 由来の例外とは扱いが違うことを名前で示すために
+ * 関数に切り出している。
+ */
+function validationError(message: string) {
+  return NextResponse.json({ error: message }, { status: 400 });
+}
 
 /** 期間内の各曜日の出現回数を正確にカウント (0=日〜6=土) */
 function countDayOccurrences(startDate: string, endDate: string): Record<number, number> {
@@ -561,10 +575,10 @@ async function handleBatchGetMulti(request: NextRequest, url: URL) {
     }
     return NextResponse.json({ data: result });
   } catch (error) {
-    console.error('[courses/prep batch_get_multi] Error:', error);
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : '取得に失敗しました' },
-      { status: 500 }
+    return apiErrorResponse(
+      error,
+      { route: 'GET /api/courses/prep', action: 'batch_get_multi' },
+      '講習準備データの取得に失敗しました。時間をおいて再度お試しください。'
     );
   }
 }
@@ -575,9 +589,12 @@ async function handleBatchGetMulti(request: NextRequest, url: URL) {
  * サービスロールキーで RLS をバイパスして講習準備データを読み取る
  */
 export async function GET(request: NextRequest) {
+  // catch 側でも「どのアクションで落ちたか」を Sentry に残せるよう try の外に保持する
+  let actionForLog: string | null = null;
   try {
     const url = new URL(request.url);
     const action = url.searchParams.get('action');
+    actionForLog = action;
     const schoolId = url.searchParams.get('schoolId');
 
     // 複数校バッチは単一 schoolId を持たないため、単一必須チェックの「前」に分岐する。
@@ -615,7 +632,12 @@ export async function GET(request: NextRequest) {
         }
 
         const { data, error } = await query;
-        if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+        if (error)
+          return apiErrorResponse(
+            error,
+            { route: 'GET /api/courses/prep', action: 'get_progress_items', schoolId },
+            '進捗管理項目の取得に失敗しました。時間をおいて再度お試しください。'
+          );
         return NextResponse.json({ data: data || [] });
       }
 
@@ -647,9 +669,10 @@ export async function GET(request: NextRequest) {
           );
           return NextResponse.json({ data });
         } catch (e) {
-          return NextResponse.json(
-            { error: e instanceof Error ? e.message : '進捗の取得に失敗しました' },
-            { status: 500 }
+          return apiErrorResponse(
+            e,
+            { route: 'GET /api/courses/prep', action: 'get_student_progress', schoolId },
+            '生徒の進捗の取得に失敗しました。時間をおいて再度お試しください。'
           );
         }
       }
@@ -676,7 +699,12 @@ export async function GET(request: NextRequest) {
           .eq('year', year)
           .maybeSingle();
 
-        if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+        if (error)
+          return apiErrorResponse(
+            error,
+            { route: 'GET /api/courses/prep', action: 'get_period', schoolId },
+            '講習期間の設定の取得に失敗しました。時間をおいて再度お試しください。'
+          );
         return NextResponse.json({ data });
       }
 
@@ -703,7 +731,12 @@ export async function GET(request: NextRequest) {
         }
 
         const { data, error } = await query;
-        if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+        if (error)
+          return apiErrorResponse(
+            error,
+            { route: 'GET /api/courses/prep', action: 'get_templates', schoolId },
+            'テンプレートの取得に失敗しました。時間をおいて再度お試しください。'
+          );
         return NextResponse.json({ data: data || [] });
       }
 
@@ -716,7 +749,12 @@ export async function GET(request: NextRequest) {
           .eq('year', year)
           .order('sort_order', { ascending: true });
 
-        if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+        if (error)
+          return apiErrorResponse(
+            error,
+            { route: 'GET /api/courses/prep', action: 'get_schedule_tasks', schoolId },
+            '工程表タスクの取得に失敗しました。時間をおいて再度お試しください。'
+          );
         if (!tasks || tasks.length === 0) return NextResponse.json({ data: [] });
 
         const taskIds = tasks.map((t: { id: string }) => t.id);
@@ -806,10 +844,10 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: `不明なアクション: ${action}` }, { status: 400 });
     }
   } catch (error) {
-    console.error('[courses/prep GET] Error:', error);
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : '取得に失敗しました' },
-      { status: 500 }
+    return apiErrorResponse(
+      error,
+      { route: 'GET /api/courses/prep', action: actionForLog ?? undefined },
+      '講習準備データの取得に失敗しました。時間をおいて再度お試しください。'
     );
   }
 }
@@ -837,9 +875,14 @@ export async function GET(request: NextRequest) {
  *   - "upsert_period"          : 講習期間メタを更新
  */
 export async function POST(request: NextRequest) {
+  // catch 側でも「どの操作・どの教室で落ちたか」を Sentry に残せるよう try の外に保持する
+  let actionForLog: string | null = null;
+  let schoolIdForLog: string | null = null;
   try {
     const body = await request.json();
     const { action, schoolId, ...params } = body;
+    actionForLog = typeof action === 'string' ? action : null;
+    schoolIdForLog = typeof schoolId === 'string' ? schoolId : null;
 
     if (!action || !schoolId) {
       return NextResponse.json({ error: 'action と schoolId が必要です' }, { status: 400 });
@@ -968,10 +1011,14 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: `不明なアクション: ${action}` }, { status: 400 });
     }
   } catch (error) {
-    console.error('[courses/prep] Error:', error);
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : '操作に失敗しました' },
-      { status: 500 }
+    return apiErrorResponse(
+      error,
+      {
+        route: 'POST /api/courses/prep',
+        action: actionForLog ?? undefined,
+        schoolId: schoolIdForLog,
+      },
+      '講習準備データの操作に失敗しました。時間をおいて再度お試しください。'
     );
   }
 }
@@ -1037,7 +1084,11 @@ async function handleInitProgressTemplate(
     .insert(insertData);
 
   if (insertError) {
-    return NextResponse.json({ error: `適用失敗: ${insertError.message}` }, { status: 500 });
+    return apiErrorResponse(
+      insertError,
+      { route: 'POST /api/courses/prep', action: 'init_progress_template', schoolId },
+      '進捗管理テンプレートの適用に失敗しました。時間をおいて再度お試しください。'
+    );
   }
 
   return NextResponse.json({ success: true, count: insertData.length });
@@ -1133,7 +1184,11 @@ async function handleInitScheduleTemplate(
     .select('id, sort_order');
 
   if (insertError) {
-    return NextResponse.json({ error: `適用失敗: ${insertError.message}` }, { status: 500 });
+    return apiErrorResponse(
+      insertError,
+      { route: 'POST /api/courses/prep', action: 'init_schedule_template', schoolId },
+      '工程表テンプレートの適用に失敗しました。時間をおいて再度お試しください。'
+    );
   }
 
   // マーカーを復元
@@ -1205,7 +1260,11 @@ async function handleCreateProgressItem(
     .single();
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return apiErrorResponse(
+      error,
+      { route: 'POST /api/courses/prep', action: 'create_progress_item', schoolId },
+      '進捗管理項目の追加に失敗しました。時間をおいて再度お試しください。'
+    );
   }
   return NextResponse.json({ data });
 }
@@ -1232,7 +1291,12 @@ async function handleUpdateProgressItem(
     .select()
     .single();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error)
+    return apiErrorResponse(
+      error,
+      { route: 'POST /api/courses/prep', action: 'update_progress_item', schoolId },
+      '進捗管理項目の更新に失敗しました。時間をおいて再度お試しください。'
+    );
 
   // 期日同期: deadline が更新された場合、リンク元のスケジュールタスクの end_date も同期
   if (params.updates.deadline !== undefined) {
@@ -1273,7 +1337,11 @@ async function handleHideProgressItem(
     .eq('school_id', schoolId);
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return apiErrorResponse(
+      error,
+      { route: 'POST /api/courses/prep', action: 'hide_progress_item', schoolId },
+      '進捗管理項目の表示・非表示の切り替えに失敗しました。時間をおいて再度お試しください。'
+    );
   }
   return NextResponse.json({ success: true });
 }
@@ -1291,7 +1359,11 @@ async function handleDeleteProgressItem(
     .eq('school_id', schoolId);
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return apiErrorResponse(
+      error,
+      { route: 'POST /api/courses/prep', action: 'delete_progress_item', schoolId },
+      '進捗管理項目の削除に失敗しました。時間をおいて再度お試しください。'
+    );
   }
   return NextResponse.json({ success: true });
 }
@@ -1312,7 +1384,12 @@ async function handleUpdateStudentProgress(
       .eq('school_id', schoolId)
       .eq('student_id', studentId)
       .eq('item_id', itemId);
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error)
+      return apiErrorResponse(
+        error,
+        { route: 'POST /api/courses/prep', action: 'update_student_progress:clear', schoolId },
+        '進捗の取り消しに失敗しました。時間をおいて再度お試しください。'
+      );
   } else {
     // UPSERT で更新する。SELECT→INSERT/UPDATE の非アトミック実装だと、
     // 同一セルを素早く連打（空欄→完了→対象外）した際に2リクエストが競合し、
@@ -1327,7 +1404,12 @@ async function handleUpdateStudentProgress(
       },
       { onConflict: 'student_id,item_id' }
     );
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error)
+      return apiErrorResponse(
+        error,
+        { route: 'POST /api/courses/prep', action: 'update_student_progress:upsert', schoolId },
+        '進捗の保存に失敗しました。時間をおいて再度お試しください。'
+      );
   }
 
   // 自動完了同期: 進捗アイテムにリンクされたスケジュールタスクの完了状態を自動更新
@@ -1357,7 +1439,12 @@ async function handleUpdateStudentNumber(
     },
     { onConflict: 'student_id,item_id' }
   );
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error)
+    return apiErrorResponse(
+      error,
+      { route: 'POST /api/courses/prep', action: 'update_student_number', schoolId },
+      '数値の保存に失敗しました。時間をおいて再度お試しください。'
+    );
 
   return NextResponse.json({ success: true });
 }
@@ -1379,7 +1466,12 @@ async function handleUpdateStudentDate(
     },
     { onConflict: 'student_id,item_id' }
   );
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error)
+    return apiErrorResponse(
+      error,
+      { route: 'POST /api/courses/prep', action: 'update_student_date', schoolId },
+      '日付の保存に失敗しました。時間をおいて再度お試しください。'
+    );
 
   return NextResponse.json({ success: true });
 }
@@ -1430,7 +1522,12 @@ async function handleCreateScheduleTask(
     .select()
     .single();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error)
+    return apiErrorResponse(
+      error,
+      { route: 'POST /api/courses/prep', action: 'create_schedule_task', schoolId },
+      '工程表タスクの追加に失敗しました。時間をおいて再度お試しください。'
+    );
   return NextResponse.json({ data });
 }
 
@@ -1558,7 +1655,12 @@ async function handleUpdateScheduleTask(
     .eq('id', params.taskId)
     .eq('school_id', schoolId);
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error)
+    return apiErrorResponse(
+      error,
+      { route: 'POST /api/courses/prep', action: 'update_schedule_task', schoolId },
+      '工程表タスクの更新に失敗しました。時間をおいて再度お試しください。'
+    );
 
   // 期日同期: end_date が更新された場合、リンク先の進捗項目の deadline も同期
   if (params.updates.end_date !== undefined) {
@@ -1692,7 +1794,12 @@ async function handleDeleteScheduleTask(
     .eq('id', params.taskId)
     .eq('school_id', schoolId);
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error)
+    return apiErrorResponse(
+      error,
+      { route: 'POST /api/courses/prep', action: 'delete_schedule_task', schoolId },
+      '工程表タスクの削除に失敗しました。時間をおいて再度お試しください。'
+    );
   return NextResponse.json({ success: true });
 }
 
@@ -1730,7 +1837,12 @@ async function handleUpsertScheduleMarker(
         updated_at: new Date().toISOString(),
       })
       .eq('id', existing.id);
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error)
+      return apiErrorResponse(
+        error,
+        { route: 'POST /api/courses/prep', action: 'upsert_schedule_marker:update', schoolId },
+        '工程表マーカーの更新に失敗しました。時間をおいて再度お試しください。'
+      );
   } else {
     const { error } = await supabaseAdmin.from('course_prep_schedule_markers').insert({
       task_id: params.taskId,
@@ -1738,7 +1850,12 @@ async function handleUpsertScheduleMarker(
       label: params.label,
       color: params.color || null,
     });
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error)
+      return apiErrorResponse(
+        error,
+        { route: 'POST /api/courses/prep', action: 'upsert_schedule_marker:insert', schoolId },
+        '工程表マーカーの追加に失敗しました。時間をおいて再度お試しください。'
+      );
   }
 
   return NextResponse.json({ success: true });
@@ -1765,7 +1882,12 @@ async function handleDeleteScheduleMarker(
     .eq('task_id', params.taskId)
     .eq('marker_date', params.markerDate);
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error)
+    return apiErrorResponse(
+      error,
+      { route: 'POST /api/courses/prep', action: 'delete_schedule_marker', schoolId },
+      '工程表マーカーの削除に失敗しました。時間をおいて再度お試しください。'
+    );
   return NextResponse.json({ success: true });
 }
 
@@ -1790,7 +1912,12 @@ async function handleSaveTemplate(
       .eq('season', season)
       .eq('year', year)
       .order('sort_order');
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error)
+      return apiErrorResponse(
+        error,
+        { route: 'POST /api/courses/prep', action: 'save_template:read_progress_items', schoolId },
+        'テンプレートの保存に失敗しました（進捗管理項目を読み取れませんでした）。時間をおいて再度お試しください。'
+      );
     templateData = (data || []) as Record<string, unknown>[];
   } else {
     // スケジュールタスク: 全フィールド + マーカー + リンク先進捗項目名を保存
@@ -1803,7 +1930,12 @@ async function handleSaveTemplate(
       .eq('season', season)
       .eq('year', year)
       .order('sort_order');
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error)
+      return apiErrorResponse(
+        error,
+        { route: 'POST /api/courses/prep', action: 'save_template:read_schedule_tasks', schoolId },
+        'テンプレートの保存に失敗しました（工程表タスクを読み取れませんでした）。時間をおいて再度お試しください。'
+      );
 
     // マーカーを取得
     const taskIds = (tasks || []).map((t: { id: string }) => t.id);
@@ -1883,7 +2015,12 @@ async function handleSaveTemplate(
     .select()
     .single();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error)
+    return apiErrorResponse(
+      error,
+      { route: 'POST /api/courses/prep', action: 'save_template:insert', schoolId },
+      'テンプレートの保存に失敗しました。時間をおいて再度お試しください。'
+    );
   return NextResponse.json({ data });
 }
 
@@ -1897,7 +2034,12 @@ async function handleDeleteTemplate(
     .eq('id', params.templateId)
     .eq('is_default', false);
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error)
+    return apiErrorResponse(
+      error,
+      { route: 'POST /api/courses/prep', action: 'delete_template' },
+      'テンプレートの削除に失敗しました。時間をおいて再度お試しください。'
+    );
   return NextResponse.json({ success: true });
 }
 
@@ -1989,7 +2131,11 @@ async function handleDeleteProgressTable(
     .eq('season', season)
     .eq('year', year);
   if (itemsError) {
-    return NextResponse.json({ error: itemsError.message }, { status: 500 });
+    return apiErrorResponse(
+      itemsError,
+      { route: 'POST /api/courses/prep', action: 'delete_progress_table:items', schoolId },
+      '進捗表の削除に失敗しました。時間をおいて再度お試しください。'
+    );
   }
 
   const { error: periodError } = await supabaseAdmin
@@ -2000,9 +2146,11 @@ async function handleDeleteProgressTable(
     .eq('year', year);
   if (periodError) {
     // 項目は消えているので、期間メタだけ残った中途半端な状態を隠さず伝える
-    return NextResponse.json(
-      { error: `項目は削除しましたが期間設定の削除に失敗しました: ${periodError.message}` },
-      { status: 500 }
+    // DB 由来の文言は返さず、どこまで進んだかだけを伝える
+    return apiErrorResponse(
+      periodError,
+      { route: 'POST /api/courses/prep', action: 'delete_progress_table:period', schoolId },
+      '進捗管理項目は削除しましたが、期間設定の削除に失敗しました。時間をおいて再度お試しください。'
     );
   }
 
@@ -2078,14 +2226,14 @@ async function handleUpsertPeriod(
         params.applyPublishStart ?? null,
         params.applyPublishEnd ?? null
       );
-      if (!win.ok) return NextResponse.json({ error: win.message }, { status: 400 });
+      if (!win.ok) return validationError(win.message);
       updateData.apply_publish_start = win.value.start;
       updateData.apply_publish_end = win.value.end;
     }
 
     if (params.applyPriceTable !== undefined) {
       const table = sanitizePriceTable(params.applyPriceTable);
-      if (!table.ok) return NextResponse.json({ error: table.message }, { status: 400 });
+      if (!table.ok) return validationError(table.message);
       updateData.apply_price_table = table.value;
     }
 
@@ -2096,7 +2244,7 @@ async function handleUpsertPeriod(
         (existing as { schedule_start_date?: string | null } | null)?.schedule_start_date ??
         null;
       const byGrade = sanitizeEndByGrade(params.scheduleEndByGrade, startForCheck);
-      if (!byGrade.ok) return NextResponse.json({ error: byGrade.message }, { status: 400 });
+      if (!byGrade.ok) return validationError(byGrade.message);
       updateData.schedule_end_by_grade = byGrade.value;
     }
   }
@@ -2106,7 +2254,12 @@ async function handleUpsertPeriod(
       .from('course_prep_periods')
       .update({ ...updateData, updated_at: new Date().toISOString() })
       .eq('id', existing.id);
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error)
+      return apiErrorResponse(
+        error,
+        { route: 'POST /api/courses/prep', action: 'upsert_period:update', schoolId },
+        '講習期間の設定の保存に失敗しました。時間をおいて再度お試しください。'
+      );
   } else {
     const { error } = await supabaseAdmin.from('course_prep_periods').insert({
       school_id: schoolId,
@@ -2114,7 +2267,12 @@ async function handleUpsertPeriod(
       year: params.year,
       ...updateData,
     });
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error)
+      return apiErrorResponse(
+        error,
+        { route: 'POST /api/courses/prep', action: 'upsert_period:insert', schoolId },
+        '講習期間の設定の保存に失敗しました。時間をおいて再度お試しください。'
+      );
   }
 
   return NextResponse.json({ success: true });

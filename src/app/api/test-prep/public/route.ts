@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { captureApiError } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 
@@ -97,6 +98,9 @@ export async function GET(req: NextRequest) {
       zoukoma_period: zoukomaPeriod,
     });
   } catch (e) {
+    captureApiError(e, {
+      route: 'GET /api/test-prep/public',
+    });
     console.error('test-prep public API error:', e);
     return NextResponse.json({ error: 'internal_error' }, { status: 500 });
   }

@@ -8,11 +8,13 @@
 ## ビジネス用語の定義
 
 ### 通常授業（通塾日程）
+
 - 年度単位で設定される、生徒の固定スケジュール
 - 「毎週火曜日の2限に、山田先生に数学を教えてもらう」という設定
 - 変更がなければ自動継続
 
 ### 座席表
+
 - 通常授業のデータをもとに、特定の週のスケジュールを展開したもの
 - **入力** = 通常授業パターン（regular_schedules）
 - **出力** = 週間スケジュール（schedule_entries）
@@ -27,6 +29,7 @@
 ```
 
 ### 授業形態
+
 - **1対1**: 講師1人が生徒1人を指導
 - **1対2**: 講師1人が生徒2人を指導（デフォルト）
   - **重要**: 2人は「ペア」ではなく、**別々の授業**を同時に行う
@@ -34,11 +37,13 @@
 - **グループ指導**: 講師1人が複数生徒を指導（別時間帯、後で実装）
 
 ### コマ（時間帯）
+
 - 1日の授業を区切る単位
 - 通常期: 3コマ（例: 1限 16:20-17:50, 2限 17:55-19:25, 3限 19:30-21:00）
 - 講習期: 別のコマ設定
 
 ### 期間タイプ
+
 ```typescript
 type PeriodType = 'regular' | 'spring' | 'summer' | 'winter';
 // regular: 通常期
@@ -52,6 +57,7 @@ type PeriodType = 'regular' | 'spring' | 'summer' | 'winter';
 ### 既存テーブル
 
 #### 1. time_slots（コマ時間マスタ）
+
 ```sql
 - id: UUID
 - school_id: UUID (教室)
@@ -62,6 +68,7 @@ type PeriodType = 'regular' | 'spring' | 'summer' | 'winter';
 ```
 
 #### 2. regular_schedules（通常授業パターン）
+
 ```sql
 - id: UUID
 - student_id: UUID (生徒)
@@ -75,6 +82,7 @@ type PeriodType = 'regular' | 'spring' | 'summer' | 'winter';
 ```
 
 #### 3. regular_schedule_subjects（通常授業の科目）
+
 ```sql
 - id: UUID
 - regular_schedule_id: UUID
@@ -83,6 +91,7 @@ type PeriodType = 'regular' | 'spring' | 'summer' | 'winter';
 ```
 
 #### 4. schedule_entries（授業スケジュール ＝ 座席表の1セル）
+
 ```sql
 - id: UUID
 - school_id: UUID
@@ -99,6 +108,7 @@ type PeriodType = 'regular' | 'spring' | 'summer' | 'winter';
 ```
 
 #### 5. schedule_entry_subjects（授業の科目）
+
 ```sql
 - id: UUID
 - schedule_entry_id: UUID
@@ -135,6 +145,7 @@ type PeriodType = 'regular' | 'spring' | 'summer' | 'winter';
 ```
 
 ### 構造のポイント
+
 1. **列 = 講師**: 各列が1人の講師
 2. **行 = コマ**: 各行が1つの時間帯
 3. **セル = 講師ブロック**: 1人の講師が担当する生徒（最大2人）を表示
@@ -145,26 +156,30 @@ type PeriodType = 'regular' | 'spring' | 'summer' | 'winter';
 ### 1. 恒久的変更（通常授業パターンを変更）
 
 #### 生徒の曜日・コマ変更
+
 ```
 操作: regular_schedulesのday_of_week, time_slot_idを更新
 影響: 以降の週の座席表に反映
 ```
 
 #### 講師の担当変更
+
 ```
 操作: regular_schedulesのteacher_idを更新
 影響: 以降の週の座席表に反映
 ```
 
 #### 生徒の追加
+
 ```
 操作: regular_schedulesに新規レコード作成
-入口: 
+入口:
   - 生徒詳細画面から「通塾日程を追加」
   - 座席表から「+ 生徒追加」
 ```
 
 #### 生徒の削除（退塾・休塾）
+
 ```
 操作: regular_schedulesのis_activeをfalseに
 影響: 以降の週の座席表から消える
@@ -173,8 +188,9 @@ type PeriodType = 'regular' | 'spring' | 'summer' | 'winter';
 ### 2. 一時的変更（その日のみ）
 
 #### 振替（生徒の日程変更）
+
 ```
-操作: 
+操作:
   - 元のschedule_entryのstatusを'transferred_out'に
   - 新しいschedule_entryを'transferred_in'で作成
 影響: その回のみ
@@ -182,6 +198,7 @@ type PeriodType = 'regular' | 'spring' | 'summer' | 'winter';
 ```
 
 #### 代講（講師の一時変更）
+
 ```
 操作: schedule_entriesのteacher_idを更新
 影響: その回のみ
@@ -189,6 +206,7 @@ type PeriodType = 'regular' | 'spring' | 'summer' | 'winter';
 ```
 
 #### 欠席
+
 ```
 操作: schedule_entriesのattendance_statusを'absent'に
 影響: その回のみ
@@ -197,7 +215,9 @@ type PeriodType = 'regular' | 'spring' | 'summer' | 'winter';
 ## 生徒の時間重複チェック
 
 ### なぜ必要か
+
 個別指導とグループ指導で時間帯が重なる可能性がある：
+
 ```
 個別指導: 19:30-21:00
 グループ: 20:30-21:30
@@ -205,6 +225,7 @@ type PeriodType = 'regular' | 'spring' | 'summer' | 'winter';
 ```
 
 ### チェックロジック
+
 ```typescript
 async function checkStudentTimeConflict(
   studentId: string,
@@ -218,6 +239,7 @@ async function checkStudentTimeConflict(
 ```
 
 ### チェックタイミング
+
 - 通常授業パターン登録時
 - 振替先指定時
 
@@ -234,11 +256,13 @@ async function checkStudentTimeConflict(
 ## グループ指導（将来実装）
 
 ### 概要
+
 - 個別指導とは**別のコマ設定**（別の時間帯）
 - 同じ座席表ページ内でタブ切り替え
 - 生徒の時間重複チェックは個別・グループ横断で行う
 
 ### データモデル案
+
 ```sql
 -- グループ指導用のコマ（個別とは別）
 time_slots に is_group_class: BOOLEAN を追加？
@@ -310,7 +334,12 @@ getWeeklyScheduleData(schoolId, weekStartDate): WeeklySchedule
 type PeriodType = 'regular' | 'spring' | 'summer' | 'winter';
 
 // スケジュールステータス
-type ScheduleStatus = 'scheduled' | 'completed' | 'cancelled' | 'transferred_out' | 'transferred_in';
+type ScheduleStatus =
+  | 'scheduled'
+  | 'completed'
+  | 'cancelled'
+  | 'transferred_out'
+  | 'transferred_in';
 
 // 出席ステータス
 type AttendanceStatus = 'present' | 'absent' | 'late';
@@ -327,8 +356,8 @@ interface RegularSchedule {
   period_type: PeriodType;
   is_active: boolean;
   // JOINデータ
-  student?: { id, last_name, first_name, grade };
-  teacher?: { id, display_name, email };
+  student?: { id; last_name; first_name; grade };
+  teacher?: { id; display_name; email };
   time_slot?: TimeSlot;
   subjects?: RegularScheduleSubject[];
 }
@@ -347,8 +376,8 @@ interface ScheduleEntry {
   regular_schedule_id: string | null;
   attendance_status: AttendanceStatus | null;
   // JOINデータ
-  student?: { id, last_name, first_name, grade };
-  teacher?: { id, display_name, email };
+  student?: { id; last_name; first_name; grade };
+  teacher?: { id; display_name; email };
   time_slot?: TimeSlot;
   subjects?: ScheduleEntrySubject[];
 }
@@ -357,6 +386,7 @@ interface ScheduleEntry {
 ## 現在の実装状況
 
 ### 実装済み
+
 - ✅ データモデル（テーブル定義）
 - ✅ 型定義（TypeScript）
 - ✅ API関数（CRUD操作）
@@ -371,6 +401,7 @@ interface ScheduleEntry {
 - ✅ 振替操作UI（TransferModal による振替先日付・コマ・講師選択）
 
 ### 未実装
+
 - ❌ 座席表からの生徒追加UI（「+ 生徒追加」でモーダルから新規登録）
 - ❌ 座席表からの生徒削除UI（講師ブロック単位の削除は確認ダイアログあり）
 - ❌ 生徒詳細画面からの通塾日程管理（通常授業パターンの一覧・追加・編集）
@@ -381,6 +412,7 @@ interface ScheduleEntry {
 ## UIデザイン指針
 
 新しいデザインシステムに準拠：
+
 - ページ背景: 白 `bg-white`
 - カード背景: 薄グレー `bg-[#f8f8f8]`
 - ボーダー: `border-gray-200`

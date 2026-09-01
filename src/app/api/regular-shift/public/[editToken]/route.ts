@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { syncRegularShiftToAvailability } from '@/lib/api/teacher-availability';
+import { captureApiError } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 
@@ -95,6 +96,9 @@ export async function GET(_request: NextRequest, { params }: { params: { editTok
 
     return NextResponse.json({ submission });
   } catch (error) {
+    captureApiError(error, {
+      route: 'GET /api/regular-shift/public/[editToken]',
+    });
     console.error('[regular-shift/public] fetch failed:', error);
     return NextResponse.json({ error: 'Failed to get submission' }, { status: 500 });
   }
@@ -181,12 +185,18 @@ export async function PUT(request: NextRequest, { params }: { params: { editToke
         console.warn('[regular-shift/public/edit] availability sync skipped:', syncResult.reason);
       }
     } catch (syncError) {
+      captureApiError(syncError, {
+        route: 'PUT /api/regular-shift/public/[editToken]',
+      });
       console.warn('[regular-shift/public/edit] availability sync failed:', syncError);
     }
 
     const updated = await getSubmissionByToken(supabaseAdmin, editToken);
     return NextResponse.json({ submission: updated });
   } catch (error) {
+    captureApiError(error, {
+      route: 'PUT /api/regular-shift/public/[editToken]',
+    });
     console.error('[regular-shift/public] update failed:', error);
     return NextResponse.json({ error: 'Failed to update submission' }, { status: 500 });
   }

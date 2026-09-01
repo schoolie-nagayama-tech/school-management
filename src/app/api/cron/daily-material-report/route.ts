@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import { notifyDailyReport } from '@/lib/slack';
 import { fetchAllPaged } from '@/lib/utils/supabasePaging';
 import { requireCronAuth } from '@/lib/cron-auth';
+import { captureApiError } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
@@ -124,6 +125,9 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ ok: true, notified: result });
   } catch (e) {
+    captureApiError(e, {
+      route: 'GET /api/cron/daily-material-report',
+    });
     console.error('[cron/daily-material-report] エラー:', e);
     return NextResponse.json({ ok: false, error: 'Internal error' }, { status: 500 });
   }

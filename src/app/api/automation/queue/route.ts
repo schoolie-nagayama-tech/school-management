@@ -15,6 +15,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { requireManager, getApiAuth } from '@/lib/api-auth';
 import { isValidAutomationPayload } from '@/lib/automation/actions';
+import { captureApiError } from '@/lib/api-error';
 
 function getServiceClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -41,7 +42,12 @@ export async function POST(request: NextRequest) {
   try {
     const body = (await request.json()) as { payload?: unknown };
     payload = body.payload;
-  } catch {
+  } catch (error) {
+    captureApiError(error, {
+      route: 'POST /api/automation/queue',
+      userId: auth.userId,
+      role: auth.role,
+    });
     return NextResponse.json({ error: 'リクエストの形式が不正です' }, { status: 400 });
   }
 

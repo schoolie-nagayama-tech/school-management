@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
 import { parseNottaSlackMessage } from '@/lib/utils/nottaSlackParser';
+import { captureApiError } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 
@@ -58,6 +59,10 @@ function verifySlackSignature(
     }
     return ok;
   } catch (e) {
+    captureApiError(e, {
+      route: 'POST /api/webhooks/slack/notta',
+      action: 'verify_signature',
+    });
     console.error('[slack-notta] signature compare threw', e);
     return false;
   }
@@ -150,7 +155,10 @@ export async function POST(request: NextRequest) {
   let payload: SlackEventPayload;
   try {
     payload = JSON.parse(rawBody);
-  } catch {
+  } catch (error) {
+    captureApiError(error, {
+      route: 'POST /api/webhooks/slack/notta',
+    });
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
 
@@ -256,6 +264,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ ok: true }, { status: 200 });
   } catch (e) {
+    captureApiError(e, {
+      route: 'POST /api/webhooks/slack/notta',
+    });
     console.error('[slack-notta] insert failed:', e);
     // Slack 側の自動 Retry を避けるため 200 を返す
     return NextResponse.json({ ok: false, error: 'internal error' }, { status: 200 });

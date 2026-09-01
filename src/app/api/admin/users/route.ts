@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { getApiAuth } from '@/lib/api-auth';
 import { fetchAllPaged } from '@/lib/utils/supabasePaging';
+import { captureApiError } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 
@@ -97,6 +98,8 @@ export async function GET(request: NextRequest) {
           .range(from, to)
       );
     } catch (profilesError) {
+      // ここでは Sentry に送らない。再 throw して外側の catch が captureApiError するので、
+      // 両方で送ると同じ例外が2件のイベントになる。
       console.error('Error fetching user profiles:', profilesError);
       throw profilesError;
     }
@@ -147,6 +150,7 @@ export async function GET(request: NextRequest) {
         allUserSchools.push(...rows);
       }
     } catch (schoolsError) {
+      // 上と同じ理由で、再 throw だけして Sentry 送信は外側の catch に任せる。
       console.error('Error fetching user_schools:', schoolsError);
       throw schoolsError;
     }
@@ -178,6 +182,9 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ users: scopedUsers }, { headers: noCacheHeaders });
   } catch (error: unknown) {
+    captureApiError(error, {
+      route: 'GET /api/admin/users',
+    });
     console.error('Failed to fetch users:', error);
     return NextResponse.json({ error: 'ユーザーの取得に失敗しました' }, { status: 500 });
   }

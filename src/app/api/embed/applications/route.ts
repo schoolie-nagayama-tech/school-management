@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { fetchAllPaged } from '@/lib/utils/supabasePaging';
+import { captureApiError } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 
@@ -60,6 +61,9 @@ export async function GET(request: NextRequest) {
           .range(from, to)
       );
     } catch (studentsError) {
+      captureApiError(studentsError, {
+        route: 'GET /api/embed/applications',
+      });
       console.error('Error fetching students:', studentsError);
       return NextResponse.json({ error: '生徒データの取得に失敗しました' }, { status: 500 });
     }
@@ -89,6 +93,9 @@ export async function GET(request: NextRequest) {
           .range(from, to)
       );
     } catch (appsError) {
+      captureApiError(appsError, {
+        route: 'GET /api/embed/applications',
+      });
       console.error('Error fetching applications:', appsError);
       return NextResponse.json({ error: '申込状況の取得に失敗しました' }, { status: 500 });
     }
@@ -108,6 +115,9 @@ export async function GET(request: NextRequest) {
       generated_at: new Date().toISOString(),
     });
   } catch (error) {
+    captureApiError(error, {
+      route: 'GET /api/embed/applications',
+    });
     console.error('Embed API error:', error);
     return NextResponse.json({ error: 'サーバーエラーが発生しました' }, { status: 500 });
   }
@@ -272,6 +282,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ error: '不明なアクションです' }, { status: 400 });
   } catch (error) {
+    captureApiError(error, {
+      route: 'POST /api/embed/applications',
+    });
     console.error('Embed POST error:', error);
     return NextResponse.json({ error: 'サーバーエラーが発生しました' }, { status: 500 });
   }

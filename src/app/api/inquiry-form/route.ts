@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { captureApiError } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 
@@ -136,6 +137,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
+    captureApiError(error, {
+      route: 'POST /api/inquiry-form',
+    });
     console.error('[inquiry-form] POST failed:', error);
     return NextResponse.json(
       { error: '送信に失敗しました。お手数ですがもう一度お試しください。' },

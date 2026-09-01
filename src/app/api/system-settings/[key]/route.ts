@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { createClient } from '@supabase/supabase-js';
+import { apiErrorResponse } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 
@@ -143,11 +144,11 @@ export async function PUT(request: NextRequest, { params }: { params: { key: str
       .single();
 
     if (error) {
-      console.error('Error upserting system setting:', error);
-      const message = error?.message ?? '不明なエラー';
-      return NextResponse.json(
-        { error: 'システム設定の保存に失敗しました', detail: message },
-        { status: 500 }
+      // detail に DB の生メッセージを載せていたのをやめる（内部構造が利用者に見える）
+      return apiErrorResponse(
+        error,
+        { route: 'PUT /api/system-settings/[key]', action: 'upsert_setting', extra: { key } },
+        'システム設定の保存に失敗しました。時間をおいて再度お試しください。'
       );
     }
 
@@ -157,11 +158,11 @@ export async function PUT(request: NextRequest, { params }: { params: { key: str
       value: data?.value ?? valueStr,
     });
   } catch (err) {
-    console.error('system-settings PUT error:', err);
-    const message = err instanceof Error ? err.message : '不明なエラー';
-    return NextResponse.json(
-      { error: 'サーバーエラーが発生しました', detail: message },
-      { status: 500 }
+    // apiErrorResponse が内部で captureApiError を呼ぶので、ここで二重送信しない
+    return apiErrorResponse(
+      err,
+      { route: 'PUT /api/system-settings/[key]', extra: { key: params?.key ?? null } },
+      'システム設定の保存に失敗しました。時間をおいて再度お試しください。'
     );
   }
 }
