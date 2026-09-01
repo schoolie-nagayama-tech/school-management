@@ -1272,6 +1272,8 @@ export type Database = {
           employee_no?: string | null;
           /** 講師の入社日。入社3ヶ月アラートの判定に使用。NULL=未設定（判定対象外） */
           hire_date?: string | null;
+          /** 次回の契約更新日（研修期間の終了日）。NULL=対象外／更新済み */
+          contract_renewal_date?: string | null;
           /** true=時給講師として扱い、出勤簿等に含める（owner/admin兼任向け） */
           is_teaching_staff?: boolean;
         };
@@ -1296,6 +1298,8 @@ export type Database = {
           employee_no?: string | null;
           /** 講師の入社日。入社3ヶ月アラートの判定に使用。NULL=未設定（判定対象外） */
           hire_date?: string | null;
+          /** 次回の契約更新日（研修期間の終了日）。NULL=対象外／更新済み */
+          contract_renewal_date?: string | null;
           /** true=時給講師として扱い、出勤簿等に含める（owner/admin兼任向け） */
           is_teaching_staff?: boolean;
         };
@@ -1320,6 +1324,8 @@ export type Database = {
           employee_no?: string | null;
           /** 講師の入社日。入社3ヶ月アラートの判定に使用。NULL=未設定（判定対象外） */
           hire_date?: string | null;
+          /** 次回の契約更新日（研修期間の終了日）。NULL=対象外／更新済み */
+          contract_renewal_date?: string | null;
           /** true=時給講師として扱い、出勤簿等に含める（owner/admin兼任向け） */
           is_teaching_staff?: boolean;
         };
@@ -4087,6 +4093,11 @@ export interface UserProfile {
   employee_no?: string | null;
   /** 講師の入社日。入社3ヶ月アラートの判定に使用。NULL=未設定（判定対象外） */
   hire_date?: string | null;
+  /**
+   * 次回の契約更新日（研修期間の終了日）。NULL=対象外／更新済み。
+   * 入社日からの自動計算はしない（契約は月単位で切るため、境界は教室長が判断する）。
+   */
+  contract_renewal_date?: string | null;
   /** true=時給講師として扱い、出勤簿等に含める（owner/admin兼任向け） */
   is_teaching_staff?: boolean;
 }

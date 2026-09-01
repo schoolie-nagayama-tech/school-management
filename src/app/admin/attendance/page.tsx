@@ -51,6 +51,7 @@ import {
   AlertTriangle,
   UserMinus,
   UserPlus,
+  FileSignature,
   Send,
   ArrowUpDown,
 } from 'lucide-react';
@@ -69,6 +70,9 @@ import {
   updateTeacherEmployeeNo,
   getRecentlyRetiredTeachers,
   getNewTeachers,
+  getContractRenewalTeachers,
+  updateTeacherContractRenewalDate,
+  type ContractRenewalTeacher,
   getActiveTeacherProfiles,
   reviewAttendanceSheets,
   rejectToTeacher,
@@ -224,6 +228,13 @@ function compareByEmployeeNo(a: SummaryRow, b: SummaryRow): number {
   return ea.localeCompare(eb, 'ja');
 }
 
+/** 'YYYY-MM-DD' を '8/31' の形にする（チップは横幅が限られるので年は落とす） */
+function formatMonthDayJa(date: string): string {
+  const [, m, d] = date.split('-');
+  if (!m || !d) return date;
+  return `${Number(m)}/${Number(d)}`;
+}
+
 /** 登録済みの人事情報チップ（講師名＋内容＋解除ボタン）。入社日・退職日・コマ給で色だけ変える。 */
 function HrChip({
   color,
@@ -232,7 +243,7 @@ function HrChip({
   onClear,
   clearLabel,
 }: {
-  color: 'blue' | 'orange' | 'purple';
+  color: 'blue' | 'orange' | 'purple' | 'amber';
   name: string;
   detail: string;
   onClear: () => void;
@@ -242,6 +253,7 @@ function HrChip({
     blue: 'bg-blue-600 hover:bg-blue-700',
     orange: 'bg-orange-500 hover:bg-orange-600',
     purple: 'bg-purple-600 hover:bg-purple-700',
+    amber: 'bg-amber-600 hover:bg-amber-700',
   }[color];
   return (
     <span
@@ -314,6 +326,8 @@ export default function AttendanceManagementPage() {
   const [newTeachers, setNewTeachers] = useState<{ id: string; name: string; hire_date: string }[]>(
     []
   );
+  // 契約更新が近い／過ぎている講師（研修期間の終了日を講師登録で入れたもの）
+  const [contractRenewals, setContractRenewals] = useState<ContractRenewalTeacher[]>([]);
   // 人事・コマ給の登録フォーム。入社日・退職日・コマ給変更は「1人の講師に対する設定」なので、
   // 講師を1回選べば3つともまとめて編集・保存できる1フォームに統合している。
   const [hrTeacherId, setHrTeacherId] = useState<string>('');
@@ -394,6 +408,7 @@ export default function AttendanceManagementPage() {
         prevMonthSummary,
         retiredResult,
         newResult,
+        contractRenewalResult,
         teacherList,
         adminList,
       ] = await Promise.all([
@@ -403,6 +418,7 @@ export default function AttendanceManagementPage() {
         getAttendanceSummary(schoolId, realPrevMonth, allowedIds),
         getRecentlyRetiredTeachers(effectiveSchoolIds, yearMonth),
         getNewTeachers(effectiveSchoolIds, yearMonth),
+        getContractRenewalTeachers(effectiveSchoolIds),
         getActiveTeacherProfiles(effectiveSchoolIds),
         getAdminUsers(),
       ]);
@@ -419,6 +435,7 @@ export default function AttendanceManagementPage() {
       );
       setRecentlyRetired(retiredResult);
       setNewTeachers(newResult);
+      setContractRenewals(contractRenewalResult);
       setAllTeachers(teacherList);
       setAdminUsers(adminList);
       // 提出先は自動で選ばない。以前は先頭の管理者を既定にしていたが、セレクトの表示は
@@ -674,6 +691,18 @@ export default function AttendanceManagementPage() {
     }
   };
 
+  // 契約更新の解除（＝更新が済んだ）。日付をクリアするとアラートから外れる。
+  // 次回の更新日を続けて管理したい場合は、講師の編集画面から入れ直す。
+  const handleClearContractRenewal = async (teacherId: string) => {
+    try {
+      await updateTeacherContractRenewalDate(teacherId, null);
+      success('契約更新を済みにしました');
+      await fetchData();
+    } catch {
+      toastError('契約更新の解除に失敗しました');
+    }
+  };
+
   // 人事・コマ給フォームの保存。入社日・退職日・コマ給変更のうち、変更があった項目だけ書き込む。
   const handleSaveHr = async () => {
     if (!hrTeacherId || !hrSnapshot) return;
@@ -688,10 +717,11 @@ export default function AttendanceManagementPage() {
     const teacherName = allTeachers.find((t) => t.id === hrTeacherId)?.name ?? '不明';
     setIsSavingHr(true);
     try {
-      if (hrHireDate !== snap.hire) {
+      // 入社日・退職日は管理者だけの操作（教室長には入力欄自体を出していない）
+      if (isAdmin && hrHireDate !== snap.hire) {
         await updateTeacherHireDate(hrTeacherId, hrHireDate || null);
       }
-      if (hrExitDate !== snap.exit) {
+      if (isAdmin && hrExitDate !== snap.exit) {
         await updateTeacherExitDate(hrTeacherId, hrExitDate || null);
       }
       const komaDirty =
@@ -1032,10 +1062,14 @@ export default function AttendanceManagementPage() {
           </div>
         </div>
 
-        {/* 人事情報カード (admin only) */}
-        {isAdmin && (recentlyRetired.length > 0 || newTeachers.length > 0) && (
+        {/* 人事情報カード。
+            先月退職・入社3ヶ月は管理者のみ。
+            契約更新は研修期間の終了を追いかけるもので、期限を判断するのは教室長なので
+            教室長にも出す（更新が済んだら × で消す＝アラートを止める）。 */}
+        {((isAdmin && (recentlyRetired.length > 0 || newTeachers.length > 0)) ||
+          contractRenewals.length > 0) && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {recentlyRetired.length > 0 && (
+            {isAdmin && recentlyRetired.length > 0 && (
               <Card className="border-red-200 bg-red-50/50">
                 <CardContent className="py-3 px-4">
                   <div className="flex items-center gap-2 mb-2">
@@ -1052,7 +1086,7 @@ export default function AttendanceManagementPage() {
                 </CardContent>
               </Card>
             )}
-            {newTeachers.length > 0 && (
+            {isAdmin && newTeachers.length > 0 && (
               <Card className="border-blue-200 bg-blue-50/50">
                 <CardContent className="py-3 px-4">
                   <div className="flex items-center gap-2 mb-2">
@@ -1066,6 +1100,32 @@ export default function AttendanceManagementPage() {
                       </Badge>
                     ))}
                   </div>
+                </CardContent>
+              </Card>
+            )}
+            {contractRenewals.length > 0 && (
+              <Card className="border-amber-300 bg-amber-50/60">
+                <CardContent className="py-3 px-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <FileSignature className="h-4 w-4 text-amber-700" />
+                    <span className="text-sm font-semibold text-amber-900">契約更新</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {contractRenewals.map((t) => (
+                      <HrChip
+                        key={t.id}
+                        color={t.overdue ? 'orange' : 'amber'}
+                        name={t.name}
+                        detail={`${formatMonthDayJa(t.contract_renewal_date)}${t.overdue ? ' 超過' : ''}`}
+                        onClear={() => handleClearContractRenewal(t.id)}
+                        clearLabel="契約更新を済みにする"
+                      />
+                    ))}
+                  </div>
+                  <p className="mt-2 text-xs text-amber-800">
+                    研修期間の終了日です。更新が済んだら × を押して消してください。
+                    次回の更新日は講師の編集画面から入れ直せます。
+                  </p>
                 </CardContent>
               </Card>
             )}
@@ -1738,13 +1798,18 @@ export default function AttendanceManagementPage() {
           </CardContent>
         </Card>
 
-        {/* 講師の人事・コマ給 (admin only)。
+        {/* 講師の人事・コマ給。
             入社日・退職日・コマ給変更はいずれも「1人の講師に対する設定」なので、
-            講師を1回選べば3つともまとめて編集できる1フォームに統合している。 */}
-        {isAdmin && (
+            講師を1回選べば3つともまとめて編集できる1フォームに統合している。
+
+            ★ コマ給の改定は教室長も行うのでカード自体は教室長以上に出す。
+              入社日・退職日は人事情報なので管理者のみ（カード内で出し分ける）。 */}
+        {(isAdmin || isManager) && (
           <Card>
             <CardHeader className="py-3">
-              <CardTitle className="text-base">講師の人事・コマ給</CardTitle>
+              <CardTitle className="text-base">
+                {isAdmin ? '講師の人事・コマ給' : '講師のコマ給'}
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex flex-wrap items-center gap-2">
@@ -1770,41 +1835,46 @@ export default function AttendanceManagementPage() {
 
               {!hrTeacherId ? (
                 <p className="text-xs text-text-faint">
-                  講師を選ぶと、入社日・退職日・コマ給変更をまとめて登録できます。
+                  {isAdmin
+                    ? '講師を選ぶと、入社日・退職日・コマ給変更をまとめて登録できます。'
+                    : '講師を選ぶと、コマ給の改定を登録できます。'}
                 </p>
               ) : (
                 <div className="space-y-3 border-l-2 border-border pl-4">
-                  {/* 入社日・退職日は user_profiles の値なので月に依存しない */}
-                  <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
-                    <div className="flex items-center gap-2">
-                      <Label className="w-14 text-sm text-text-body">入社日</Label>
-                      <Input
-                        type="date"
-                        value={hrHireDate}
-                        onChange={(e) => setHrHireDate(e.target.value)}
-                        className="w-40"
-                      />
+                  {/* 入社日・退職日は user_profiles の値なので月に依存しない。
+                      人事情報なので教室長には出さない（コマ給の改定だけ任せる）。 */}
+                  {isAdmin && (
+                    <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+                      <div className="flex items-center gap-2">
+                        <Label className="w-14 text-sm text-text-body">入社日</Label>
+                        <Input
+                          type="date"
+                          value={hrHireDate}
+                          onChange={(e) => setHrHireDate(e.target.value)}
+                          className="w-40"
+                        />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Label className="w-14 text-sm text-text-body">退職日</Label>
+                        <Input
+                          type="date"
+                          value={hrExitDate}
+                          onChange={(e) => setHrExitDate(e.target.value)}
+                          className="w-40"
+                        />
+                        {!hrExitDate && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-xs"
+                            onClick={() => setHrExitDate(monthEndDate)}
+                          >
+                            今月末
+                          </Button>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Label className="w-14 text-sm text-text-body">退職日</Label>
-                      <Input
-                        type="date"
-                        value={hrExitDate}
-                        onChange={(e) => setHrExitDate(e.target.value)}
-                        className="w-40"
-                      />
-                      {!hrExitDate && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-xs"
-                          onClick={() => setHrExitDate(monthEndDate)}
-                        >
-                          今月末
-                        </Button>
-                      )}
-                    </div>
-                  </div>
+                  )}
 
                   {/* コマ給変更は当月のシートに紐づくので、対象月を明示する */}
                   <div className="flex flex-wrap items-start gap-x-6 gap-y-2">
@@ -1861,11 +1931,10 @@ export default function AttendanceManagementPage() {
 
               {/* 登録済みの一覧。誰に何が入っているかを一目で見せ、× で解除する。
                   入社日・退職日は全講師分（未来月の退職日も確認できる）、コマ給変更は当月分。 */}
-              {(hireDateTeachers.length > 0 ||
-                exitDateTeachers.length > 0 ||
+              {((isAdmin && (hireDateTeachers.length > 0 || exitDateTeachers.length > 0)) ||
                 komaChangingTeachers.length > 0) && (
                 <div className="space-y-1.5 border-t border-border pt-3">
-                  {hireDateTeachers.length > 0 && (
+                  {isAdmin && hireDateTeachers.length > 0 && (
                     <div className="flex flex-wrap items-center gap-1">
                       <span className="w-14 text-xs text-text-faint">入社日</span>
                       {hireDateTeachers.map((t) => (
@@ -1880,7 +1949,7 @@ export default function AttendanceManagementPage() {
                       ))}
                     </div>
                   )}
-                  {exitDateTeachers.length > 0 && (
+                  {isAdmin && exitDateTeachers.length > 0 && (
                     <div className="flex flex-wrap items-center gap-1">
                       <span className="w-14 text-xs text-text-faint">退職日</span>
                       {exitDateTeachers.map((t) => (

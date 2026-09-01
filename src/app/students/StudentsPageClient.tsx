@@ -62,7 +62,6 @@ import { AdminLayout } from '@/components/layouts';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { AlertBoard } from '@/components/alerts';
-import { AttendanceUnsubmittedAlert } from '@/components/attendance/AttendanceUnsubmittedAlert';
 import { TaskProgressWidget } from '@/components/monthly-tasks/TaskProgressWidget';
 import { useToast } from '@/hooks/useToast';
 import { ToastContainer } from '@/components/ui';
@@ -689,7 +688,6 @@ export function StudentsPageClient({
       )}
 
       {/* 出勤簿未提出アラート（講師向け） */}
-      {isTeacher && <AttendanceUnsubmittedAlert />}
 
       {/* 外部ツール（Grow・らくプリ等）クイックリンク + コンテキストヘルプ：
             ヘルプアイコン単体で1行使うのは縦余白が無駄なため、クイックリンクと横並びにする */}
