@@ -1468,6 +1468,91 @@ export async function getNewTeachers(schoolIds: string[], yearMonth: string) {
   }));
 }
 
+/** 契約更新が近い／過ぎている講師（出勤簿管理のアラート用） */
+export interface ContractRenewalTeacher {
+  id: string;
+  name: string;
+  /** 次回の契約更新日 'YYYY-MM-DD' */
+  contract_renewal_date: string;
+  /** 更新日を過ぎている（今日より前） */
+  overdue: boolean;
+}
+
+/**
+ * 契約更新が近い／過ぎている講師を取得する。
+ *
+ * ★ 判定は「今日」基準（出勤簿の表示月ではない）。
+ *   月を遡って見ているときにアラートが消えたり増えたりすると、
+ *   「今まさに手を打つべきか」が読めなくなるため。
+ * ★ 対象は翌月末まで（1ヶ月前から気付ける）。過ぎたものは更新日を消すまで出し続ける。
+ * ★ contract_renewal_date が NULL の講師は対象外（未設定＝追いかけない／更新済み）。
+ */
+export async function getContractRenewalTeachers(
+  schoolIds: string[]
+): Promise<ContractRenewalTeacher[]> {
+  if (schoolIds.length === 0) return [];
+
+  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Tokyo' });
+  const [y, m] = today.split('-').map(Number);
+  // 翌月の末日まで（m は1始まりなので new Date(y, m + 1, 0) が翌月末）
+  const limitDate = new Date(y, m + 1, 0);
+  const limit = `${limitDate.getFullYear()}-${String(limitDate.getMonth() + 1).padStart(2, '0')}-${String(limitDate.getDate()).padStart(2, '0')}`;
+
+  const { data: userSchools } = await supabase
+    .from('user_schools')
+    .select('user_id')
+    .in('school_id', schoolIds);
+  const teacherIds = Array.from(
+    new Set(
+      (userSchools || [])
+        .map((u: { user_id?: string }) => u.user_id)
+        .filter((id): id is string => Boolean(id))
+    )
+  );
+  if (teacherIds.length === 0) return [];
+
+  const { data, error } = await supabase
+    .from('user_profiles')
+    .select('id, display_name, email, contract_renewal_date')
+    .in('id', teacherIds)
+    .or('role.eq.teacher,is_teaching_staff.eq.true')
+    .eq('is_active', true)
+    .not('contract_renewal_date', 'is', null)
+    .lte('contract_renewal_date', limit)
+    .order('contract_renewal_date', { ascending: true });
+
+  if (error) {
+    console.error('Error fetching contract renewal teachers:', error);
+    return [];
+  }
+
+  return (data || []).map((t) => ({
+    id: t.id as string,
+    name: (t.display_name as string) || (t.email as string) || '未設定',
+    contract_renewal_date: t.contract_renewal_date as string,
+    overdue: (t.contract_renewal_date as string) < today,
+  }));
+}
+
+/**
+ * 契約更新日を更新する（出勤簿管理から「更新済み」にして消す用途）。
+ * null を渡すとクリア＝アラートから外れる。
+ */
+export async function updateTeacherContractRenewalDate(
+  teacherId: string,
+  date: string | null
+): Promise<void> {
+  const { error } = await supabase
+    .from('user_profiles')
+    .update({ contract_renewal_date: date })
+    .eq('id', teacherId);
+
+  if (error) {
+    console.error('Error updating contract_renewal_date:', error);
+    throw new Error('契約更新日の更新に失敗しました');
+  }
+}
+
 // 講師の入社日を更新（出勤簿管理からのインライン設定用）
 export async function updateTeacherHireDate(teacherId: string, hireDate: string | null) {
   const { error } = await supabase

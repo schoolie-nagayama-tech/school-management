@@ -349,6 +349,21 @@ export async function PATCH(request: NextRequest, { params }: { params: { userId
     if (Array.isArray(body.teachable_subject_ids)) {
       profileUpdates.teachable_subject_ids = body.teachable_subject_ids;
     }
+    // 次回の契約更新日（研修期間の終了日）。空文字・null はクリア＝更新済み扱い。
+    // 'YYYY-MM-DD' 以外は date 列に入れられないので 400 で弾く（黙ってクリアしない）。
+    if ('contract_renewal_date' in body) {
+      const v = body.contract_renewal_date;
+      if (v === null || v === '') {
+        profileUpdates.contract_renewal_date = null;
+      } else if (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v)) {
+        profileUpdates.contract_renewal_date = v;
+      } else {
+        return NextResponse.json(
+          { error: '契約更新日は YYYY-MM-DD 形式で指定してください' },
+          { status: 400 }
+        );
+      }
+    }
     if (Array.isArray(body.available_days_of_week)) {
       profileUpdates.available_days_of_week = body.available_days_of_week;
     }

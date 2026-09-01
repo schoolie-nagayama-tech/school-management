@@ -51,6 +51,7 @@ import {
   AlertTriangle,
   UserMinus,
   UserPlus,
+  FileSignature,
   Send,
   ArrowUpDown,
 } from 'lucide-react';
@@ -69,6 +70,9 @@ import {
   updateTeacherEmployeeNo,
   getRecentlyRetiredTeachers,
   getNewTeachers,
+  getContractRenewalTeachers,
+  updateTeacherContractRenewalDate,
+  type ContractRenewalTeacher,
   getActiveTeacherProfiles,
   reviewAttendanceSheets,
   rejectToTeacher,
@@ -224,6 +228,13 @@ function compareByEmployeeNo(a: SummaryRow, b: SummaryRow): number {
   return ea.localeCompare(eb, 'ja');
 }
 
+/** 'YYYY-MM-DD' を '8/31' の形にする（チップは横幅が限られるので年は落とす） */
+function formatMonthDayJa(date: string): string {
+  const [, m, d] = date.split('-');
+  if (!m || !d) return date;
+  return `${Number(m)}/${Number(d)}`;
+}
+
 /** 登録済みの人事情報チップ（講師名＋内容＋解除ボタン）。入社日・退職日・コマ給で色だけ変える。 */
 function HrChip({
   color,
@@ -232,7 +243,7 @@ function HrChip({
   onClear,
   clearLabel,
 }: {
-  color: 'blue' | 'orange' | 'purple';
+  color: 'blue' | 'orange' | 'purple' | 'amber';
   name: string;
   detail: string;
   onClear: () => void;
@@ -242,6 +253,7 @@ function HrChip({
     blue: 'bg-blue-600 hover:bg-blue-700',
     orange: 'bg-orange-500 hover:bg-orange-600',
     purple: 'bg-purple-600 hover:bg-purple-700',
+    amber: 'bg-amber-600 hover:bg-amber-700',
   }[color];
   return (
     <span
@@ -314,6 +326,8 @@ export default function AttendanceManagementPage() {
   const [newTeachers, setNewTeachers] = useState<{ id: string; name: string; hire_date: string }[]>(
     []
   );
+  // 契約更新が近い／過ぎている講師（研修期間の終了日を講師登録で入れたもの）
+  const [contractRenewals, setContractRenewals] = useState<ContractRenewalTeacher[]>([]);
   // 人事・コマ給の登録フォーム。入社日・退職日・コマ給変更は「1人の講師に対する設定」なので、
   // 講師を1回選べば3つともまとめて編集・保存できる1フォームに統合している。
   const [hrTeacherId, setHrTeacherId] = useState<string>('');
@@ -394,6 +408,7 @@ export default function AttendanceManagementPage() {
         prevMonthSummary,
         retiredResult,
         newResult,
+        contractRenewalResult,
         teacherList,
         adminList,
       ] = await Promise.all([
@@ -403,6 +418,7 @@ export default function AttendanceManagementPage() {
         getAttendanceSummary(schoolId, realPrevMonth, allowedIds),
         getRecentlyRetiredTeachers(effectiveSchoolIds, yearMonth),
         getNewTeachers(effectiveSchoolIds, yearMonth),
+        getContractRenewalTeachers(effectiveSchoolIds),
         getActiveTeacherProfiles(effectiveSchoolIds),
         getAdminUsers(),
       ]);
@@ -419,6 +435,7 @@ export default function AttendanceManagementPage() {
       );
       setRecentlyRetired(retiredResult);
       setNewTeachers(newResult);
+      setContractRenewals(contractRenewalResult);
       setAllTeachers(teacherList);
       setAdminUsers(adminList);
       // 提出先は自動で選ばない。以前は先頭の管理者を既定にしていたが、セレクトの表示は
@@ -671,6 +688,18 @@ export default function AttendanceManagementPage() {
       await fetchData();
     } catch {
       toastError('入社日の解除に失敗しました');
+    }
+  };
+
+  // 契約更新の解除（＝更新が済んだ）。日付をクリアするとアラートから外れる。
+  // 次回の更新日を続けて管理したい場合は、講師の編集画面から入れ直す。
+  const handleClearContractRenewal = async (teacherId: string) => {
+    try {
+      await updateTeacherContractRenewalDate(teacherId, null);
+      success('契約更新を済みにしました');
+      await fetchData();
+    } catch {
+      toastError('契約更新の解除に失敗しました');
     }
   };
 
@@ -1033,10 +1062,14 @@ export default function AttendanceManagementPage() {
           </div>
         </div>
 
-        {/* 人事情報カード (admin only) */}
-        {isAdmin && (recentlyRetired.length > 0 || newTeachers.length > 0) && (
+        {/* 人事情報カード。
+            先月退職・入社3ヶ月は管理者のみ。
+            契約更新は研修期間の終了を追いかけるもので、期限を判断するのは教室長なので
+            教室長にも出す（更新が済んだら × で消す＝アラートを止める）。 */}
+        {((isAdmin && (recentlyRetired.length > 0 || newTeachers.length > 0)) ||
+          contractRenewals.length > 0) && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {recentlyRetired.length > 0 && (
+            {isAdmin && recentlyRetired.length > 0 && (
               <Card className="border-red-200 bg-red-50/50">
                 <CardContent className="py-3 px-4">
                   <div className="flex items-center gap-2 mb-2">
@@ -1053,7 +1086,7 @@ export default function AttendanceManagementPage() {
                 </CardContent>
               </Card>
             )}
-            {newTeachers.length > 0 && (
+            {isAdmin && newTeachers.length > 0 && (
               <Card className="border-blue-200 bg-blue-50/50">
                 <CardContent className="py-3 px-4">
                   <div className="flex items-center gap-2 mb-2">
@@ -1067,6 +1100,32 @@ export default function AttendanceManagementPage() {
                       </Badge>
                     ))}
                   </div>
+                </CardContent>
+              </Card>
+            )}
+            {contractRenewals.length > 0 && (
+              <Card className="border-amber-300 bg-amber-50/60">
+                <CardContent className="py-3 px-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <FileSignature className="h-4 w-4 text-amber-700" />
+                    <span className="text-sm font-semibold text-amber-900">契約更新</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {contractRenewals.map((t) => (
+                      <HrChip
+                        key={t.id}
+                        color={t.overdue ? 'orange' : 'amber'}
+                        name={t.name}
+                        detail={`${formatMonthDayJa(t.contract_renewal_date)}${t.overdue ? ' 超過' : ''}`}
+                        onClear={() => handleClearContractRenewal(t.id)}
+                        clearLabel="契約更新を済みにする"
+                      />
+                    ))}
+                  </div>
+                  <p className="mt-2 text-xs text-amber-800">
+                    研修期間の終了日です。更新が済んだら × を押して消してください。
+                    次回の更新日は講師の編集画面から入れ直せます。
+                  </p>
                 </CardContent>
               </Card>
             )}
