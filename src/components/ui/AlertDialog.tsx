@@ -1,6 +1,7 @@
 'use client';
 
-import { ReactNode, useEffect, useId, createContext, useContext } from 'react';
+import { ReactNode, useEffect, useId, useState, createContext, useContext } from 'react';
+import { createPortal } from 'react-dom';
 
 const AlertDialogIdsContext = createContext<{ titleId: string; descId: string } | undefined>(
   undefined
@@ -17,6 +18,10 @@ interface AlertDialogProps {
 export function AlertDialog({ open, onOpenChange, children, overlayClassName }: AlertDialogProps) {
   const titleId = useId();
   const descId = useId();
+  // ポータル描画はマウント後のみ（SSR/ハイドレーション不一致を避ける）
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   useEffect(() => {
     if (open) {
       document.body.style.overflow = 'hidden';
@@ -42,9 +47,12 @@ export function AlertDialog({ open, onOpenChange, children, overlayClassName }: 
     };
   }, [open, onOpenChange]);
 
-  if (!open) return null;
+  if (!open || !mounted) return null;
 
-  return (
+  // document.body 直下へポータル描画する。
+  // 親モーダルのパネル(.modal-panel)は transform を持つため、入れ子で描画すると
+  // fixed の基準が親パネルになり、はみ出した部分が親の overflow-hidden で見切れる。
+  return createPortal(
     <div
       className={`fixed inset-0 z-50 flex items-center justify-center p-4 ${overlayClassName ?? ''}`}
     >
@@ -64,7 +72,8 @@ export function AlertDialog({ open, onOpenChange, children, overlayClassName }: 
           {children}
         </AlertDialogIdsContext.Provider>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 

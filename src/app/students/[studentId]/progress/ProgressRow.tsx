@@ -365,7 +365,8 @@ export function ProgressRow({
         ) : null;
       })}
       {showHandover && (
-        <td className="px-3 py-2.5 align-top">
+        // 列自体も20字ぶん＋左右パディングで固定し、長文で列が横に伸びないようにする
+        <td className="px-3 py-2.5 align-top w-[284px] max-w-[284px]">
           {canDirectEdit ? (
             <HandoverCell
               value={p?.handover ?? ''}
@@ -466,7 +467,9 @@ function HandoverCell({ value, onSave }: { value: string; onSave: (v: string | n
           e.stopPropagation();
           setEditing(true);
         }}
-        className="w-full min-w-[9rem] cursor-text whitespace-pre-wrap rounded border border-transparent bg-[#f8fafc] px-1.5 py-1 text-left text-[13px] leading-snug text-gray-800 transition-colors duration-150 ease-out hover:border-[#e5e7eb]"
+        // 全角20字あたりで折り返す（max-w-[20em] は text-[13px] 基準で 260px = 全角20字）。
+        // break-words は URL や英数字の長い連続を溢れさせないため。
+        className="w-full min-w-[9rem] max-w-[20em] cursor-text whitespace-pre-wrap break-words rounded border border-transparent bg-[#f8fafc] px-1.5 py-1 text-left text-[13px] leading-snug text-gray-800 transition-colors duration-150 ease-out hover:border-[#e5e7eb]"
         title="クリックで編集"
       >
         {value}
@@ -489,7 +492,8 @@ function HandoverCell({ value, onSave }: { value: string; onSave: (v: string | n
       }}
       onBlur={commit}
       onClick={(e) => e.stopPropagation()}
-      className="w-full min-h-[30px] min-w-[9rem] resize-none overflow-hidden rounded border border-transparent bg-transparent px-1.5 py-1 align-top text-[13px] leading-snug outline-none hover:border-[#e5e7eb] focus:border-[#1e3a5f] focus:bg-white"
+      // 表示時と同じ幅で折り返す（編集に入った瞬間に行の折れ方が変わらないように）
+      className="w-full min-h-[30px] min-w-[9rem] max-w-[20em] resize-none overflow-hidden rounded border border-transparent bg-transparent px-1.5 py-1 align-top text-[13px] leading-snug outline-none hover:border-[#e5e7eb] focus:border-[#1e3a5f] focus:bg-white"
     />
   );
 }
