@@ -211,7 +211,11 @@ export function RegularScheduleFormModal({
       setApplyMode('now');
       setEffectiveFrom(getNextMonthFirstDay());
       setEffectiveUntil(pattern.effective_until ?? '');
-      setApplyDate(todayStr());
+      // まだ始まっていない行（例: 10/1 開始の予定）を編集するときは、その行の開始日を初期値にする。
+      // 常に今日を入れていると、開いて保存しただけで開始日が今日へ前倒しされてしまい、
+      // 一覧の「10/1〜」と食い違う。始まっている行は「今日から切り替える」が既定でよい。
+      const patternFrom = pattern.effective_from ?? '';
+      setApplyDate(patternFrom && patternFrom > todayStr() ? patternFrom : todayStr());
       setRatio(pattern.ratio ?? 2);
     } else {
       // 講座専用モードでは個別指導を選ばせないので、先頭の講座を初期選択にする
@@ -671,7 +675,7 @@ export function RegularScheduleFormModal({
                 /* v2: 「今すぐ/指定日から」の2択は使わず、日付入力1つ（既定=今日）に統一する */
                 <div>
                   <label className="block text-xs font-medium text-[var(--paragraph)] mb-1">
-                    {isEdit ? '変更日' : '開始日'}
+                    {isEdit ? '適用開始日' : '開始日'}
                   </label>
                   <input
                     type="date"
@@ -681,7 +685,7 @@ export function RegularScheduleFormModal({
                   />
                   <p className="text-[11px] text-[var(--paragraph-light)] mt-1">
                     {isEdit
-                      ? 'この日から新しい内容になります。前日までは今の内容のまま履歴に残ります'
+                      ? '入力した内容がこの日から反映されます（操作した日ではありません）。今日より後の日にすると、前日までは今の内容のまま履歴に残ります'
                       : 'この日から授業が始まります。過去の月の請求には影響しません'}
                   </p>
                 </div>
