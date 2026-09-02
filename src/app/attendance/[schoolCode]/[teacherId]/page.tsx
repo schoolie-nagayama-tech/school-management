@@ -83,13 +83,16 @@ export default function TeacherAttendancePage() {
   const badgeCount = useTeacherBadgeCount();
   // 閲覧者が本人の場合のみ演出を適用 (他者のデータを覗くときは通常表示)
   const isOwner = profile?.role === 'teacher' && profile.id === teacherId;
-  // ★ このページの提出・取り下げは「本人だけ」。
-  //   教室長以上はURLを直接開けば他人の出勤簿を表示できてしまい、以前はそこに
-  //   提出ボタンが出ていた（本人が出したことになり、代理提出の記録も残らない）。
-  //   代理で出すときは出勤簿管理（一覧の「提出」／詳細の「代理で提出する」）を使う。
-  //   ロールではなく本人かどうかで見るのは、事務員など講師以外のロールでも
+  // ★ このページの提出・取り下げは「本人」と「管理者(admin/owner)」だけ。
+  //   以前は誰が開いても提出ボタンが出ており、教室長がURLで他人の出勤簿を開いて
+  //   そのまま出せてしまっていた（本人が出したことになり、代理提出の記録も残らない）。
+  //   教室長が代理で出すときは出勤簿管理（一覧の「提出」／詳細の「代理で提出する」）を使う。
+  //   管理者はデータの直し直し（提出の取り下げ→修正→再提出）をこの画面でやる必要があるので残す。
+  //   本人判定をロールで見ないのは、事務員など講師以外のロールでも
   //   自分の出勤簿はここから出せるようにするため。
   const isSelf = !!profile?.id && profile.id === teacherId;
+  const isAdmin = profile?.role === 'admin' || profile?.role === 'owner';
+  const canOperate = isSelf || isAdmin;
   const tierKey = isOwner && badgeCount !== null ? getTier(badgeCount).key : null;
   const [school, setSchool] = useState<{ id: string; name: string } | null>(null);
   const [teacher, setTeacher] = useState<{ id: string; name: string } | null>(null);
@@ -285,11 +288,12 @@ export default function TeacherAttendancePage() {
 
   // 提出
   const handleSubmit = async () => {
-    if (!sheetId) return;
+    // 押した人を記録するので profile が要る（管理者が他人の分を出せば代理提出として残る）
+    if (!sheetId || !profile?.id) return;
 
     setIsSaving(true);
     try {
-      await submitAttendanceSheet(sheetId, teacherId);
+      await submitAttendanceSheet(sheetId, profile.id);
       setStatus('submitted');
       // 未提出ゲート（UnsubmittedAttendanceGate）に判定し直させる
       window.dispatchEvent(new Event('attendance-submitted'));
@@ -602,27 +606,27 @@ export default function TeacherAttendancePage() {
               `}</style>
             </div>
           )}
-          {isSelf && status === 'draft' && (
+          {canOperate && status === 'draft' && (
             <Button onClick={() => setIsSubmitDialogOpen(true)}>
               <Send className="h-4 w-4 mr-2" />
               提出する
             </Button>
           )}
-          {isSelf && status === 'submitted' && (
+          {canOperate && status === 'submitted' && (
             <Button variant="secondary" onClick={() => setIsWithdrawDialogOpen(true)}>
               <Undo2 className="h-4 w-4 mr-2" />
               提出を取り下げる
             </Button>
           )}
-          {isSelf && status === 'rejected' && (
+          {canOperate && status === 'rejected' && (
             <Button onClick={() => setIsSubmitDialogOpen(true)}>
               <Send className="h-4 w-4 mr-2" />
               再提出する
             </Button>
           )}
-          {/* 他人の出勤簿を見ているとき（教室長以上がURLで開いた場合）。
+          {/* 教室長が他人の出勤簿をURLで開いた場合。
               ここからは出させず、代理提出の記録が残る出勤簿管理へ誘導する。 */}
-          {!isSelf && status !== 'approved' && (
+          {!canOperate && status !== 'approved' && (
             <p className="text-sm text-text-muted">
               本人以外はこの画面から提出できません。代理で提出する場合は出勤簿管理から行ってください。
             </p>
