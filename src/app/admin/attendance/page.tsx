@@ -63,6 +63,7 @@ import {
   approveAttendanceSheet,
   bulkApproveAttendanceSheets,
   reopenAttendanceSheet,
+  submitAttendanceSheet,
   getLateEarlyList,
   updateAttendanceSheetMeta,
   updateTeacherExitDate,
@@ -315,6 +316,9 @@ export default function AttendanceManagementPage() {
   const [rejectMode, setRejectMode] = useState<'to-teacher' | 'to-manager'>('to-teacher');
   const [isReopenDialogOpen, setIsReopenDialogOpen] = useState(false);
   const [reopeningSheet, setReopeningSheet] = useState<SummaryRow | null>(null);
+  // 代理提出（入力中・差し戻し → 提出済み）の確認ダイアログ
+  const [isSubmitDialogOpen, setIsSubmitDialogOpen] = useState(false);
+  const [submittingSheet, setSubmittingSheet] = useState<SummaryRow | null>(null);
   const [lateEarlyRecords, setLateEarlyRecords] = useState<LateEarlyRecord[]>([]);
   const [prevMonthUnsubmitted, setPrevMonthUnsubmitted] = useState<SummaryRow[]>([]);
 
@@ -583,6 +587,34 @@ export default function AttendanceManagementPage() {
   };
 
   // 承認取消
+  /**
+   * 代理提出（入力中・差し戻し → 提出済み）。
+   *
+   * ★ 本人が出せない出勤簿を誰かが必ず拾えるようにするための操作。
+   *   退職・長期欠勤・提出忘れの出勤簿は、誰も出せないと「入力中」のまま残り
+   *   承認フローに乗らない。督促して回るのは教室長なので、ロールでは出し分けない
+   *   （出勤簿管理を開けるのは室長以上だけ）。
+   * ★ 詳細画面の「代理で提出する」と同じ操作。ここに置いたのは、一覧で
+   *   「入力中」を見つけたその場で出せるようにするため。
+   */
+  const handleSubmitClick = (sheet: SummaryRow) => {
+    setSubmittingSheet(sheet);
+    setIsSubmitDialogOpen(true);
+  };
+
+  const handleSubmitSheet = async () => {
+    if (!submittingSheet) return;
+    try {
+      await submitAttendanceSheet(submittingSheet.id);
+      success(`${submittingSheet.teacher?.name ?? '不明'}の出勤簿を提出しました`);
+      setIsSubmitDialogOpen(false);
+      setSubmittingSheet(null);
+      await fetchData();
+    } catch {
+      toastError('提出に失敗しました');
+    }
+  };
+
   const handleReopenClick = (sheet: SummaryRow) => {
     setReopeningSheet(sheet);
     setIsReopenDialogOpen(true);
@@ -1708,6 +1740,16 @@ export default function AttendanceManagementPage() {
                               >
                                 詳細
                               </Button>
+                              {(sheet.status === 'draft' || sheet.status === 'rejected') && (
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleSubmitClick(sheet)}
+                                  className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                >
+                                  <Send className="h-3 w-3 mr-1" />
+                                  提出
+                                </Button>
+                              )}
                               {isManager && sheet.status === 'submitted' && (
                                 <Button
                                   variant="danger"
@@ -2082,6 +2124,26 @@ export default function AttendanceManagementPage() {
       </Dialog>
 
       {/* 承認取消確認ダイアログ */}
+      {/* 代理提出の確認。誰の分を出すのかを明示する（本人以外の操作なので取り違えを防ぐ） */}
+      <AlertDialog open={isSubmitDialogOpen} onOpenChange={setIsSubmitDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {submittingSheet?.teacher?.name ?? 'この講師'}さんの出勤簿を提出しますか？
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              本人の代わりに「提出済み」にします。退職・提出忘れなどで本人が出せない出勤簿を承認フローに乗せるための操作です。提出後も内容は編集できます。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setIsSubmitDialogOpen(false)}>
+              キャンセル
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleSubmitSheet}>提出する</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <AlertDialog open={isReopenDialogOpen} onOpenChange={setIsReopenDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>

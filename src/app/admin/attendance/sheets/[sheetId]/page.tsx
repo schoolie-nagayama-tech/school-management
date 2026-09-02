@@ -139,10 +139,15 @@ export default function AttendanceSheetDetailPage() {
   //   開けないため、提出ボタンがどこにも無く、入力しても「入力中」のまま止まっていた。
   const isOwnSheet = !!profile?.id && profile.id === sheet.teacher_id;
 
-  // 提出できるのは「本人」と「管理者(admin/owner)」。
-  // ★ 管理者が他人の分も提出できる必要がある: 退職した講師は本人が提出できないので、
-  //   誰も出せないまま永久に「入力中」で残り、承認フローに乗らなくなる。
-  const canSubmitSheet = (isOwnSheet || isAdmin) && (status === 'draft' || status === 'rejected');
+  // 提出はこの画面を開ける人（＝出勤簿管理に入れる室長以上）なら誰でもできる。
+  // ★ 本人が提出できないケースを誰かが必ず拾えるようにするための緩和:
+  //   退職・長期欠勤・提出忘れの出勤簿は、代理で出せる人がいないと「入力中」のまま
+  //   永久に残り、承認フローに乗らない。以前は管理者(admin/owner)限定だったが、
+  //   実際に督促して回るのは教室長なので、教室長も出せるようにした。
+  // ★ 講師は出勤簿管理を開けない（navConfig で講師には自分の出勤簿しか出さない）うえ、
+  //   RLS の attendance_sheets_teacher_own で自分の行しか触れないため、ここを緩めても
+  //   他人の出勤簿を講師が提出できるようにはならない。
+  const canSubmitSheet = status === 'draft' || status === 'rejected';
 
   // コマ数変更（管理者は常に編集可能）
   const handleValueChange = async (date: string, typeId: string, value: string) => {
