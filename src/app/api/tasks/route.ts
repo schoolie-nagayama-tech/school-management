@@ -803,6 +803,23 @@ export async function POST(request: NextRequest) {
           (existingLinks || []).map((l: Record<string, unknown>) => l.linked_schedule_task_id)
         );
 
+        // ★ 既にこの月にある講習タスクを「タスク名」で引けるようにする。
+        //   linked_schedule_task_id は教室ぶんある schedule_task のうち1件しか記録しないため、
+        //   linkedIds だけで判定すると2回目の同期で残りの教室ぶんが未リンク扱いになり、
+        //   同じ名前のタスクがもう1行できてしまう（＝全教室で二重に見える）。
+        //   monthly_tasks は全教室共通で「タスク名1つ＝1行」なので、名前で存在判定する。
+        const { data: existingCourseTasks } = await supabaseAdmin
+          .from('monthly_tasks')
+          .select('id, task_name')
+          .eq('year', year)
+          .eq('month', month)
+          .eq('category', 'course');
+
+        const existingTaskIdByName = new Map<string, string>();
+        for (const t of (existingCourseTasks || []) as { id: string; task_name: string }[]) {
+          if (!existingTaskIdByName.has(t.task_name)) existingTaskIdByName.set(t.task_name, t.id);
+        }
+
         // 教室横断でタスク名をユニーク化（同名タスクは1つだけ作成）
         const taskNameMap = new Map<
           string,
@@ -838,6 +855,27 @@ export async function POST(request: NextRequest) {
         let imported = 0;
         const entries = Array.from(taskNameMap.values());
         for (const entry of entries) {
+          // 同名のタスクが既にある＝2回目以降の同期。行は増やさず、チェック行が無い教室ぶんだけ足す
+          // （教室が後から講習準備タスクを作った場合の取りこぼしは拾いたいため）。
+          // ignoreDuplicates で既存のチェックは上書きしない（手で付けた完了を消さない）。
+          const existingTaskId = existingTaskIdByName.get(entry.name);
+          if (existingTaskId) {
+            const rows = Array.from(entry.schoolCompletions.entries()).map(
+              ([schoolId, isCompleted]) => ({
+                task_id: existingTaskId,
+                school_id: schoolId,
+                is_completed: isCompleted,
+                completed_at: isCompleted ? new Date().toISOString() : null,
+              })
+            );
+            if (rows.length > 0) {
+              await supabaseAdmin
+                .from('monthly_task_checks')
+                .upsert(rows, { onConflict: 'task_id,school_id', ignoreDuplicates: true });
+            }
+            continue;
+          }
+
           // monthly_task作成（最初のschedule_task_idでリンク）
           const { data: newTask, error: insertErr } = await supabaseAdmin
             .from('monthly_tasks')
