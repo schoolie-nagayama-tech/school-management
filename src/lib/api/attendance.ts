@@ -513,12 +513,19 @@ export async function saveAttendanceNote(
 }
 
 // 出勤簿を提出
-export async function submitAttendanceSheet(sheetId: string) {
+/**
+ * 出勤簿を提出する（入力中・差し戻し → 提出済み）。
+ *
+ * ★ submittedBy は必須。本人が出したのか代理で出されたのかを後から辿れるようにするため、
+ *   押した人を必ず記録する（teacher_id と違えば代理提出として画面にマークを出す）。
+ */
+export async function submitAttendanceSheet(sheetId: string, submittedBy: string) {
   const { data, error } = await supabase
     .from('attendance_sheets')
     .update({
       status: 'submitted',
       submitted_at: new Date().toISOString(),
+      submitted_by: submittedBy,
     })
     .eq('id', sheetId)
     .select()
@@ -529,6 +536,17 @@ export async function submitAttendanceSheet(sheetId: string) {
     throw new Error('出勤簿の提出に失敗しました');
   }
   return data;
+}
+
+/**
+ * 代理提出（本人以外が提出ボタンを押した）かどうか。
+ * submitted_by が無い行はこの列を追加する前の提出なので、代理とは判定しない。
+ */
+export function isProxySubmitted(sheet: {
+  teacher_id: string;
+  submitted_by?: string | null;
+}): boolean {
+  return !!sheet.submitted_by && sheet.submitted_by !== sheet.teacher_id;
 }
 
 // 出勤簿を取り下げ（提出取消）
