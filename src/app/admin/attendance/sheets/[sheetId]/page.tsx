@@ -47,6 +47,7 @@ import {
   rejectToManager,
   reopenAttendanceSheet,
   submitAttendanceSheet,
+  isProxySubmitted,
 } from '@/lib/api/attendance';
 import { formatYearMonth, getMonthDates, getPrevMonth, getNextMonth } from '@/lib/utils/date';
 import { useAuth } from '@/contexts/AuthContext';
@@ -248,7 +249,8 @@ export default function AttendanceSheetDetailPage() {
   // 出勤簿を提出（入力中／差し戻し → 提出済み）。本人の提出と管理者の代理提出で共通。
   const handleSubmitSheet = async () => {
     try {
-      await submitAttendanceSheet(sheetId);
+      if (!profile) return;
+      await submitAttendanceSheet(sheetId, profile.id);
       success(isOwnSheet ? '提出しました' : '代理で提出しました');
       setIsSubmitDialogOpen(false);
       fetchData();
@@ -312,9 +314,17 @@ export default function AttendanceSheetDetailPage() {
               <h1 className="text-2xl font-bold">{sheet.teacher?.name}</h1>
             </div>
           </div>
-          <Badge className={ATTENDANCE_STATUS_COLORS[status]}>
-            {ATTENDANCE_STATUS_LABELS[status]}
-          </Badge>
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge className={ATTENDANCE_STATUS_COLORS[status]}>
+              {ATTENDANCE_STATUS_LABELS[status]}
+            </Badge>
+            {/* 本人ではなく教室長・管理者が出した出勤簿であることを明示する */}
+            {isProxySubmitted(sheet) && (
+              <span title="本人ではなく教室長・管理者が代理で提出しました">
+                <Badge className="bg-amber-100 text-amber-800">代理提出</Badge>
+              </span>
+            )}
+          </div>
         </div>
 
         {/* 年月選択 */}

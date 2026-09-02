@@ -64,6 +64,7 @@ import {
   bulkApproveAttendanceSheets,
   reopenAttendanceSheet,
   submitAttendanceSheet,
+  isProxySubmitted,
   getLateEarlyList,
   updateAttendanceSheetMeta,
   updateTeacherExitDate,
@@ -116,6 +117,8 @@ interface SummaryRow {
   } | null;
   teacher_id?: string;
   status: string;
+  /** 提出ボタンを押した人。teacher_id と違えば代理提出（バッジを出す） */
+  submitted_by?: string | null;
   type_totals: Record<
     string,
     {
@@ -508,6 +511,9 @@ export default function AttendanceManagementPage() {
   const actionableStatuses = isManager ? ['submitted'] : ['submitted', 'reviewed'];
   const actionableSheets = sheets.filter((s) => actionableStatuses.includes(s.status));
   const actionableCount = actionableSheets.length;
+  // 「承認者へ提出」できるのは講師から出てきた（submitted）行だけ。
+  // 管理者の actionableSheets には reviewed（既に誰かへ提出済み）も混ざるため別に持つ。
+  const submittedSheets = sheets.filter((s) => s.status === 'submitted');
 
   // 管理者: 承認
   const handleApprove = async (sheet: SummaryRow) => {
@@ -549,11 +555,11 @@ export default function AttendanceManagementPage() {
    */
   const handleBulkReview = async () => {
     if (!profile || !selectedAdminId) return;
-    const targetIds = actionableSheets.map((s) => s.id);
+    const targetIds = submittedSheets.map((s) => s.id);
     if (targetIds.length === 0) return;
     try {
       await reviewAttendanceSheets(targetIds, profile.id, selectedAdminId);
-      success(`${targetIds.length}件の出勤簿を管理者へ提出しました`);
+      success(`${targetIds.length}件の出勤簿を承認者へ提出しました`);
       await fetchData();
     } catch {
       toastError('提出に失敗しました');
@@ -603,9 +609,9 @@ export default function AttendanceManagementPage() {
   };
 
   const handleSubmitSheet = async () => {
-    if (!submittingSheet) return;
+    if (!submittingSheet || !profile) return;
     try {
-      await submitAttendanceSheet(submittingSheet.id);
+      await submitAttendanceSheet(submittingSheet.id, profile.id);
       success(`${submittingSheet.teacher?.name ?? '不明'}の出勤簿を提出しました`);
       setIsSubmitDialogOpen(false);
       setSubmittingSheet(null);
@@ -1269,7 +1275,7 @@ export default function AttendanceManagementPage() {
                       {/* 行の選択は不要。提出先を選べば押せる */}
                       <Button onClick={handleBulkReview} disabled={!selectedAdminId}>
                         <Send className="h-4 w-4 mr-2" />
-                        提出済み{actionableCount}件を管理者へ提出
+                        提出済み{submittedSheets.length}件を承認者へ提出
                       </Button>
                     </div>
                   </>
@@ -1281,6 +1287,34 @@ export default function AttendanceManagementPage() {
                       <CheckCircle className="h-4 w-4 mr-2" />
                       承認待ち{actionableCount}件を一括承認
                     </Button>
+                    {/* 管理者も承認者へ回せるようにする。
+                        自分が承認しない（オーナーに承認してもらう・別の管理者に引き継ぐ）ケースが
+                        あるのに、教室長にしか提出の導線が無かった。
+                        対象は講師から出てきた submitted のみ（reviewed は既に誰かへ提出済み）。 */}
+                    {submittedSheets.length > 0 && (
+                      <div className="flex items-center gap-2">
+                        <Select value={selectedAdminId} onValueChange={setSelectedAdminId}>
+                          <SelectTrigger className="w-48">
+                            <SelectValue placeholder="提出先を選択" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {adminUsers.map((u) => (
+                              <SelectItem key={u.id} value={u.id}>
+                                {u.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Button
+                          variant="secondary"
+                          onClick={handleBulkReview}
+                          disabled={!selectedAdminId}
+                        >
+                          <Send className="h-4 w-4 mr-2" />
+                          提出済み{submittedSheets.length}件を承認者へ提出
+                        </Button>
+                      </div>
+                    )}
                   </>
                 )}
               </div>
@@ -1686,13 +1720,28 @@ export default function AttendanceManagementPage() {
                             )}
                           </TableCell>
                           <TableCell className="text-center">
-                            <Badge
-                              className={
-                                ATTENDANCE_STATUS_COLORS[sheet.status as AttendanceSheetStatus]
-                              }
-                            >
-                              {ATTENDANCE_STATUS_LABELS[sheet.status as AttendanceSheetStatus]}
-                            </Badge>
+                            <div className="flex flex-wrap items-center justify-center gap-1">
+                              <Badge
+                                className={
+                                  ATTENDANCE_STATUS_COLORS[sheet.status as AttendanceSheetStatus]
+                                }
+                              >
+                                {ATTENDANCE_STATUS_LABELS[sheet.status as AttendanceSheetStatus]}
+                              </Badge>
+                              {/* 本人ではなく教室長・管理者が出した出勤簿。給与の根拠になる書類なので、
+                                  本人の申告か代理かが一覧で分かるようにする */}
+                              {sheet.teacher_id &&
+                                isProxySubmitted({
+                                  teacher_id: sheet.teacher_id,
+                                  submitted_by: sheet.submitted_by,
+                                }) && (
+                                  <span title="本人ではなく教室長・管理者が代理で提出しました">
+                                    <Badge className="bg-amber-100 text-amber-800 text-[10px]">
+                                      代理提出
+                                    </Badge>
+                                  </span>
+                                )}
+                            </div>
                           </TableCell>
                           {displayTypes.map((type) => {
                             const typeData = Object.values(sheet.type_totals).find(

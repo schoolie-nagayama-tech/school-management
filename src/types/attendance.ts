@@ -23,6 +23,8 @@ export interface AttendanceSheet {
   year_month: string;
   status: AttendanceSheetStatus;
   submitted_at: string | null;
+  /** 提出ボタンを押した人。teacher_id と違えば代理提出（列を追加する前の提出は null） */
+  submitted_by: string | null;
   approved_at: string | null;
   approved_by: string | null;
   reviewed_at: string | null;

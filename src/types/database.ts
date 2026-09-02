@@ -1667,6 +1667,8 @@ export type Database = {
           year_month: string;
           status: 'draft' | 'submitted' | 'reviewed' | 'approved' | 'rejected';
           submitted_at: string | null;
+          /** 提出ボタンを押した人。teacher_id と違えば代理提出 */
+          submitted_by: string | null;
           approved_at: string | null;
           approved_by: string | null;
           reviewed_at: string | null;
@@ -1690,6 +1692,7 @@ export type Database = {
           year_month: string;
           status?: 'draft' | 'submitted' | 'reviewed' | 'approved' | 'rejected';
           submitted_at?: string | null;
+          submitted_by?: string | null;
           approved_at?: string | null;
           approved_by?: string | null;
           reviewed_at?: string | null;
@@ -1713,6 +1716,7 @@ export type Database = {
           year_month?: string;
           status?: 'draft' | 'submitted' | 'reviewed' | 'approved' | 'rejected';
           submitted_at?: string | null;
+          submitted_by?: string | null;
           approved_at?: string | null;
           approved_by?: string | null;
           reviewed_at?: string | null;
