@@ -38,7 +38,6 @@ import {
   GLOSSARY_DATA,
   type FaqItem,
   type FaqCategoryData,
-  type GlossaryItem,
   type RoleTag,
 } from '@/lib/help/faqData';
 
