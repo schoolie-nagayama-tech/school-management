@@ -76,7 +76,7 @@
 
 | 材料 | 読み方 |
 | --- | --- |
-| 出欠・振替 | `schedule_entries.attendance_status`（`present / absent / late`）を生徒×期間で数える。**生徒の出欠を集計する関数はまだ無い**（`attendance.ts` は講師の勤怠） |
+| 出欠・振替 | **座席表に記録がある**: `schedule_entries.attendance_status`（`present / absent / late`、座席表のセルから記録）。生徒×期間で数える1クエリを足すだけ（`attendance.ts` は講師の勤怠なので使わない） |
 | 保護者とのやりとり | `chat_threads` → `chat_messages` を生徒で引く。直近の要旨と返信待ちの有無 |
 
 報告書の講評（`class_reports.review_comment`）も面談ワークスペースは読んでいないが、
@@ -87,4 +87,4 @@
 - 「現状」の行を組むテンプレート関数（セクションごと・データが無ければ null を返す）。
 - 生徒の出欠集計関数。
 - 面談ワークスペースへのカード追加＋印刷シート。
-- 公開前に `docs/legal/privacy-policy.md` 第5条へ Anthropic を追記（全AI機能で共通）。
+- `docs/legal/privacy-policy.md` はちーがるチェック中のため改訂しない（2026-09-03）。チェック後に第5条へ Anthropic を追記してから公開。
