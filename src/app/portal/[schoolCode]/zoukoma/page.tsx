@@ -37,6 +37,10 @@ export default async function ZoukomaPortalPage({ params, searchParams }: Zoukom
   // 公開中の増コマ申込期間を取得
   const period = await getActiveZoukomaPeriod(schoolCode);
 
+  // フォーム本体は ZoukomaForm 側が PortalFormHeader と白カード（PortalFormSection）を
+  // 持っているので、ここでは外枠を重ねない。以前は白カード＋独自ヘッダーで包んでおり、
+  // タイトルが二重に出るうえ、375px 幅で左右の余白が 48px 余計に食われていた
+  // （他フォーム /mogi /youbi /shukaisu /soudan と同じ構えに揃える）。
   return (
     <div className="min-h-screen bg-[#f3f4f6]">
       <div className="max-w-lg mx-auto px-4 py-8 w-full">
@@ -55,22 +59,7 @@ export default async function ZoukomaPortalPage({ params, searchParams }: Zoukom
             </a>
           </div>
         ) : (
-          // フォーム表示（他フォームと同じレイアウト：ヘッダー＋白カード）
-          <>
-            <header className="mb-6 text-center">
-              <h1 className="text-2xl font-bold text-[#1f2937] mb-2">{period.title}</h1>
-              {period.settings?.description && (
-                <p className="text-[#4b5563] whitespace-pre-line">{period.settings.description}</p>
-              )}
-            </header>
-            <div className="bg-white rounded-xl border border-[#e5e7eb] p-6">
-              <ZoukomaForm
-                school={school}
-                period={period}
-                initialValues={buildInitialValues(query)}
-              />
-            </div>
-          </>
+          <ZoukomaForm school={school} period={period} initialValues={buildInitialValues(query)} />
         )}
       </div>
     </div>

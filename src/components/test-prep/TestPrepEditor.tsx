@@ -563,7 +563,7 @@ export default function TestPrepEditor() {
       </div>
 
       {/* 印刷用: 保護者向けの案内（この書面が何かの説明）。紙で渡されても目的が伝わるようにする */}
-      <div className="hidden print:block mb-4 p-3 border border-gray-300 rounded-lg text-sm text-gray-700 leading-relaxed">
+      <div className="testprep-print-intro hidden print:block mb-4 p-3 border border-gray-300 rounded-lg text-sm text-gray-700 leading-relaxed">
         <p className="font-bold text-gray-900 mb-1">保護者の皆様へ — テスト対策のご提案</p>
         <p>
           本書は、次回の定期テストに向けて、担当講師がお子様の現在の到達状況をもとに作成した対策プランです。
@@ -657,8 +657,9 @@ export default function TestPrepEditor() {
           </div>
         </section>
 
-        {/* 科目・単元 */}
-        <section className="space-y-4">
+        {/* 科目・単元。印刷時は科目カードを2段組にしてA4縦1枚に収める
+            （画面は従来どおり1列。print 用の並びは下の @media print で指定） */}
+        <section className="testprep-print-subjects space-y-4">
           <div className="flex items-center justify-between print:hidden">
             <h2 className="text-sm font-bold text-text-muted uppercase tracking-wide">
               科目・単元
@@ -806,7 +807,7 @@ export default function TestPrepEditor() {
 
       {/* 印刷用QRコード */}
       {publicUrl && (
-        <div className="hidden print:block mt-8 border-t-2 border-dashed border-gray-300 pt-6">
+        <div className="testprep-print-qr hidden print:block mt-8 border-t-2 border-dashed border-gray-300 pt-6">
           <div className="flex items-center gap-6">
             <img
               src={`https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(publicUrl)}`}
@@ -825,15 +826,33 @@ export default function TestPrepEditor() {
         </div>
       )}
 
+      {/* 印刷はA4縦1枚が前提。5科目を縦に積むと確実に2枚目へこぼれるため、
+          印刷時だけ科目カードを2段組にし、余白・文字を一段詰めている。 */}
       <style>{`
         @media print {
-          @page { size: A4 portrait; margin: 10mm 12mm; }
-          body { -webkit-print-color-adjust: exact; print-color-adjust: exact; font-size: 11px; }
+          @page { size: A4 portrait; margin: 8mm 10mm; }
+          body { -webkit-print-color-adjust: exact; print-color-adjust: exact; font-size: 10px; }
           /* A4 1枚に収めるためコンパクト化 */
-          table { font-size: 10px; }
-          td, th { padding: 2px 6px !important; }
-          .space-y-6 > * + * { margin-top: 8px !important; }
-          .space-y-4 > * + * { margin-top: 6px !important; }
+          table { font-size: 9px; }
+          td, th { padding: 1px 4px !important; }
+          .space-y-6 > * + * { margin-top: 6px !important; }
+          .space-y-4 > * + * { margin-top: 4px !important; }
+          /* 科目カードを2段組に。grid の子になるので space-y のマージンは殺す */
+          .testprep-print-subjects {
+            display: grid !important;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+            align-items: start;
+          }
+          .testprep-print-subjects > * + * { margin-top: 0 !important; }
+          .testprep-print-intro {
+            padding: 6px !important;
+            margin-bottom: 6px !important;
+            font-size: 9px !important;
+            line-height: 1.35 !important;
+          }
+          .testprep-print-qr { margin-top: 8px !important; padding-top: 6px !important; }
+          .testprep-print-qr img { width: 72px !important; height: 72px !important; }
         }
       `}</style>
     </div>
