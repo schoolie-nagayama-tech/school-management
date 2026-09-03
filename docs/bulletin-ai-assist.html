@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>連絡掲示板AIアシスト — 設計と検証</title>
+<style>
+  :root {
+    --text: #1f2933;
+    --muted: #6b7480;
+    --line: #e3e6ea;
+    --accent: #2f6f4e;
+    --accent-bg: #eef5f1;
+    --warn: #9a5b1e;
+    --warn-bg: #fdf4e8;
+    --surface: #f7f8f9;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0 auto; padding: 48px 28px 96px; max-width: 900px;
+    font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", Meiryo, system-ui, sans-serif;
+    color: var(--text); line-height: 1.85; font-size: 15px;
+    -webkit-font-smoothing: antialiased;
+  }
+  header { border-bottom: 3px solid var(--text); padding-bottom: 18px; margin-bottom: 40px; }
+  h1 { font-size: 27px; margin: 0 0 8px; letter-spacing: .01em; }
+  .sub { color: var(--muted); font-size: 13.5px; margin: 0; }
+  h2 {
+    font-size: 19px; margin: 52px 0 16px; padding-left: 12px;
+    border-left: 5px solid var(--accent);
+  }
+  h3 { font-size: 15.5px; margin: 30px 0 10px; }
+  p { margin: 0 0 14px; }
+  ul, ol { margin: 0 0 16px; padding-left: 1.5em; }
+  li { margin-bottom: 5px; }
+  table { border-collapse: collapse; width: 100%; margin: 18px 0 22px; font-size: 14px; }
+  th, td { border: 1px solid var(--line); padding: 9px 12px; text-align: left; vertical-align: top; }
+  th { background: var(--surface); font-weight: 600; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .lead {
+    background: var(--accent-bg); border: 1px solid #cfe0d6;
+    padding: 18px 22px; border-radius: 6px; margin-bottom: 8px;
+  }
+  .lead p:last-child { margin-bottom: 0; }
+  .callout {
+    background: var(--warn-bg); border-left: 4px solid var(--warn);
+    padding: 14px 18px; margin: 20px 0; border-radius: 0 4px 4px 0;
+  }
+  .callout p:last-child { margin-bottom: 0; }
+  .callout strong { color: var(--warn); }
+  .note { color: var(--muted); font-size: 13px; margin-top: -8px; }
+  code {
+    background: var(--surface); padding: 1px 5px; border-radius: 3px;
+    font-family: "SFMono-Regular", Consolas, monospace; font-size: 12.5px;
+  }
+  .catalog { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 8px; margin: 18px 0 6px; }
+  .catalog div {
+    border: 1px solid var(--line); border-radius: 4px; padding: 8px 12px;
+    font-size: 13.5px; background: #fff;
+  }
+  .timeline { border: 1px solid var(--line); border-radius: 6px; padding: 22px 24px 12px; margin: 22px 0; }
+  .bar { position: relative; height: 6px; background: var(--line); border-radius: 3px; margin: 0 0 14px; }
+  .bar span { position: absolute; top: -5px; width: 16px; height: 16px; border-radius: 50%; background: #fff; border: 3px solid var(--accent); transform: translateX(-50%); }
+  .bar span.plain { border-color: var(--muted); }
+  .marks { display: flex; flex-direction: column; gap: 7px; font-size: 13.5px; }
+  .marks div { display: flex; gap: 12px; }
+  .marks b { flex: 0 0 74px; font-variant-numeric: tabular-nums; color: var(--accent); font-weight: 600; }
+  .marks b.plain { color: var(--muted); }
+  .big { font-size: 30px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.3; }
+  .stats { display: flex; gap: 14px; flex-wrap: wrap; margin: 20px 0; }
+  .stat { flex: 1 1 190px; border: 1px solid var(--line); border-radius: 6px; padding: 14px 18px; }
+  .stat .label { font-size: 12.5px; color: var(--muted); }
+  .stat.hl { background: var(--warn-bg); border-color: #e8d3b4; }
+  .stat.hl .big { color: var(--warn); }
+  footer { margin-top: 64px; padding-top: 18px; border-top: 1px solid var(--line); color: var(--muted); font-size: 12.5px; }
+
+  /* --- モック再現用 --- */
+  .screen { border: 1px solid var(--line); border-radius: 6px; padding: 20px 22px; margin: 18px 0 24px; background: #fff; }
+  .screen-label { font-size: 12px; color: var(--muted); letter-spacing: .04em; margin-bottom: 12px; text-transform: uppercase; }
+  .postcard { border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 4px; padding: 14px 18px; background: var(--surface); }
+  .postcard .meta { font-size: 12.5px; color: var(--muted); margin-bottom: 6px; }
+  .postcard .title { font-weight: 600; margin-bottom: 8px; }
+  .postcard .body { font-size: 14px; margin: 0; }
+  .tag { display: inline-block; border: 1px solid var(--line); background: #fff; border-radius: 3px; padding: 1px 8px; font-size: 12px; color: var(--muted); margin-right: 6px; }
+  .popup {
+    max-width: 330px; border: 1px solid #cfd6dc; border-radius: 8px; padding: 14px 16px;
+    box-shadow: 0 6px 18px rgba(31,41,51,.13); background: #fff; margin: 14px 0;
+  }
+  .popup .head { font-size: 12px; color: var(--accent); font-weight: 600; margin-bottom: 7px; }
+  .popup .head.forced { color: var(--warn); }
+  .popup .msg { font-size: 13.5px; margin: 0 0 12px; }
+  .popup .btns { display: flex; gap: 8px; }
+  .popup .btns span { font-size: 12.5px; border-radius: 4px; padding: 5px 12px; }
+  .popup .btns .primary { background: var(--accent); color: #fff; }
+  .popup .btns .ghost { border: 1px solid var(--line); color: var(--muted); }
+  .scenario { border: 1px solid var(--line); border-radius: 6px; margin: 16px 0; overflow: hidden; }
+  .scenario > .hd { background: var(--surface); padding: 10px 16px; font-weight: 600; font-size: 14.5px; border-bottom: 1px solid var(--line); }
+  .scenario > .hd small { font-weight: 400; color: var(--muted); display: block; font-size: 12.5px; margin-top: 2px; }
+  .scenario > .bd { padding: 14px 18px; }
+  .log { font-size: 13px; margin: 0 0 4px; }
+  .log b { color: var(--accent); font-variant-numeric: tabular-nums; margin-right: 8px; }
+  .aibox { border: 1px dashed #c8d2cc; border-radius: 5px; padding: 12px 14px; margin: 12px 0; background: #fbfcfb; }
+  .aibox .dec { font-weight: 600; font-size: 13.5px; margin-bottom: 4px; }
+  .aibox ul { margin: 6px 0 8px; font-size: 12.5px; color: var(--muted); }
+  .aibox .why { font-size: 13px; margin: 0; }
+  @media print {
+    body { padding: 0; font-size: 11.5pt; }
+    h2 { page-break-after: avoid; }
+    table, .timeline, .callout, .stats { page-break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>連絡掲示板AIアシスト</h1>
+  <p class="sub">NEST — 設計と検証結果 / 2026-09-02 / 実装未着手</p>
+</header>
+
+<div class="lead">
+  <p>教室長が連絡掲示板に書いた自由文を AI が読み、<strong>講師が NEST 上でやるべきタスク</strong>を取り出す。各タスクは DB の状態から済／未済を自動で判定でき、未対応が残っている講師には<strong>授業中に、生徒が目の前にいるあいだに</strong>1件だけ静かに知らせる。</p>
+  <p>教室長の投稿のしかたは今までと一切変わらない。</p>
+</div>
+
+<h2>1. なぜ作るか — 実データが示したこと</h2>
+
+<p>清瀬校の 2026-07-28 の投稿を本番 DB で再現した。掲示板には「1学期通知表の回収状況が芳しくない（59名中14名）」とあり、教室長は同じ依頼を4回投稿していた。全教室では通知表回収だけで8投稿ある。</p>
+
+<div class="stats">
+  <div class="stat">
+    <div class="label">対象生徒（中1以上・対象外を除く）</div>
+    <div class="big">59</div>
+    <div class="label">クエリで完全一致</div>
+  </div>
+  <div class="stat">
+    <div class="label">手動チェック（申込状況）</div>
+    <div class="big">13</div>
+    <div class="label">掲示板の「14名」に相当</div>
+  </div>
+  <div class="stat hl">
+    <div class="label">実データ（内申が入力済み）</div>
+    <div class="big">41</div>
+    <div class="label">同時点で 69% が完了していた</div>
+  </div>
+</div>
+
+<div class="callout">
+  <p><strong>実態は「回収が進んでいない」ではなく「チェックの付け忘れ」だった。</strong>講師は7割やっていたのに、教室長は手作業の帳簿を見て督促を4回繰り返していた。28名分の見誤りである。</p>
+</div>
+
+<p>この機能が消すコストは、督促そのものではなく<strong>二重帳簿</strong>だ。DB に事実は入っているのに、それを誰も集計していなかった。だから済／未済の判定は実データ側で行い、手動チェックは参照しない。</p>
+
+<h2>2. 仕組み</h2>
+
+<ol>
+  <li><strong>投稿</strong> — 教室長はこれまで通り自由文で書く。UI は変えない。</li>
+  <li><strong>抽出</strong> — 投稿後、AI が本文を読み、13種の有限カタログから該当するタスクを選ぶ。自由生成はしない。対象範囲（全生徒／担当生徒／学年／特定の生徒／講師自身）と期限も同時に取る。</li>
+  <li><strong>判定</strong> — タスク種別ごとに決まった SQL で、生徒1人ずつ済／未済を出す。閲覧時にその場で計測する（バッチ不要）。</li>
+  <li><strong>通知</strong> — AIアシストが ON の講師に、授業中1件だけポップアップ。</li>
+  <li><strong>集約</strong> — 教室長は進捗ボードで、講師別・生徒別の進み具合を見る。</li>
+</ol>
+
+<h3>タスクカタログ（13種）</h3>
+<div class="catalog">
+  <div>内申入力</div><div>テスト結果転記</div><div>目標設定</div><div>進行表入力</div>
+  <div>シフト提出</div><div>シフト確認</div><div>出勤簿入力</div><div>教材配布チェック</div>
+  <div>所持教材確認</div><div>テスト対策提案</div><div>申込状況チェック</div><div>報告書の期限</div>
+  <div>報告書タイトル形式</div>
+</div>
+<p class="note">DB に痕跡が残る操作だけを対象にする。心構え・物理作業・情報共有は対象外。カタログを閉じることで、AI が余計なタスクをでっち上げる余地をなくしている。</p>
+
+<h2>3. 授業中ポップアップのタイミング</h2>
+
+<p>タスクの大半は生徒が目の前にいないとできない。だから通知は授業中に出す。ただし「授業を記録」は授業<em>前</em>の準備段階で押されるので、そこで出すのは早すぎる。講師が冒頭で自主的に済ませることもある。</p>
+
+<p>そこで<strong>起動と表示を分ける</strong>。「授業を記録」で見張りを起動し、途中で DB を照合し直して、まだ残っていれば AI がその場で出すかどうかを決める。</p>
+
+<div class="timeline">
+  <div class="bar">
+    <span style="left:0%"></span>
+    <span style="left:34%"></span>
+    <span style="left:66%"></span>
+    <span style="left:81%" class="plain"></span>
+    <span style="left:100%" class="plain"></span>
+  </div>
+  <div class="marks">
+    <div><b>0分</b><span>「授業を記録」を押す＝起動。その生徒の未対応タスクを取得する。<strong>0件ならここで終了（AI呼び出しなし）</strong>。</span></div>
+    <div><b>1/3経過</b><span>DB を再照合。冒頭で自主的にやった分はここで消える。残っていれば AI に判断させる。</span></div>
+    <div><b>2/3経過</b><span>再照合ののち、2回目の判断。ここが実際に出ることの多い地点。</span></div>
+    <div><b class="plain">残り15分</b><span>これ以降は出さない。生徒が帰ってしまえば意味がないため。</span></div>
+    <div><b class="plain">終了</b><span>見張りを解除。</span></div>
+  </div>
+</div>
+
+<h3>AI が受け取る材料</h3>
+<p>判断の基準を人が決め切れないので、材料を渡して委ねる。経過時間、残っているタスクとその性質（生徒に聞くだけか／相談が要るか）、生徒の今日の状況（遅刻・宿題未実施）、講師が進行表をどこまで触っているか、期限までの日数、今日すでに出した回数。</p>
+
+<p>AI の答えは「今出す」「まだ待つ」「今日は見送る」の3択と、出す場合の文面。<strong>既定は出さない側に倒す</strong>——誤爆のほうが見逃しより有害だからだ。ただし期限当日と超過だけは、AI を通さずプログラム側で強制表示する。</p>
+
+<h3>ポップアップの作法</h3>
+<ul>
+  <li>画面は塞がない。授業画面の右下に小さなカードで出す。</li>
+  <li>1コマにつき1件だけ。溜まっていても、どれを出すかは AI が選ぶ。</li>
+  <li><strong>既存の成績値は表示しない。</strong>生徒に画面が見えているため。</li>
+  <li>その場で完結させる。カード内にインラインで入力欄が開く。</li>
+  <li>逃げ道を用意する。「今日はできない」＋理由（通知表を持ってきていない／時間が取れない）を選ぶと教室長に伝わり、督促対象から外れる。</li>
+</ul>
+
+<h2>4. プログラムが決めること / AI が決めること</h2>
+
+<table>
+  <thead><tr><th style="width:50%">プログラム</th><th>AI</th></tr></thead>
+  <tbody>
+    <tr><td>済／未済の判定（実データを見る。手動チェックは参照しない）</td><td>投稿文からタスクを選ぶ（カタログ内から）</td></tr>
+    <tr><td>対象生徒の絞り込み、期限までの日数</td><td>対象範囲と期限の読み取り</td></tr>
+    <tr><td>チェックポイントの時刻、再照合の実行</td><td>今出すか／待つか／見送るか</td></tr>
+    <tr><td>期限当日・超過の強制表示</td><td>複数あるときどれを出すか</td></tr>
+    <tr><td>未対応0件なら AI を呼ばない</td><td>ポップアップの文面</td></tr>
+  </tbody>
+</table>
+
+<h2>5. 抽出精度の検証</h2>
+
+<p>社内向けの掲示板投稿65件に手作業で正解ラベルを付け、Claude（Sonnet）に抽出させて突き合わせた。</p>
+
+<table>
+  <tbody>
+    <tr><th style="width:38%">投稿単位の一致</th><td class="num">63 / 65</td><td>不一致2件は再確認の結果こちらのラベル誤り。実質 65/65</td></tr>
+    <tr><th>誤検知（ないのに作った）</th><td class="num">0 件</td><td>タスクのない33件すべてで空を返した</td></tr>
+    <tr><th>罠（誤検知を誘う投稿）</th><td class="num">5 / 5</td><td>「目標設定に使ってください」＝模試日程の共有、進行表を「読む」だけ、等</td></tr>
+    <tr><th>明示された期限</th><td class="num">4 / 4</td><td>相対表現「今週中」も正しい日付に解決</td></tr>
+  </tbody>
+</table>
+
+<p>精度は実装に進んで差し支えない水準。判断の難しいところで AI が黙る（空を返す）ほうに寄っているのが望ましい挙動だった。</p>
+
+<h2>6. DB 判定の設計と既知の罠</h2>
+
+<ul>
+  <li><strong>完了時刻の履歴がない。</strong>申込状況のチェックは外すと行ごと消え、状態変更も上書き。「いつ済んだか」を正確に扱うには、初めて済を観測した時刻を記録する小さなテーブルが要る。ポップアップの効果測定にも必須。</li>
+  <li><strong>成績データに年度を表す列がない。</strong>学期は <code>name_code</code>（term1／term2／year_end）のみ。「今年度の1学期」は <code>成績の学年 = 生徒の現学年</code> で代用しているが、4月の学年更新と留年で壊れる。年度列を持たせるべき。</li>
+  <li><strong>担当講師の正典が使えない教室がある。</strong>清瀬校は座席表も固定講師も0件で、進行表の講師名（自由テキスト）しか手がかりがない。座席表 → 固定講師 → 進行表の順にフォールバックする。なおポップアップは「今その授業にいる講師」に出すので、担当解決が要るのは教室長の講師別内訳だけ。</li>
+  <li><strong>「対象外」は人手のマーキング。</strong>属性から導かれていない。今回も投稿の13分前に15件がまとめて付けられていた。自動化するなら「小学生は通知表回収の対象外」のような学年ルールで導出すべき。</li>
+  <li><strong>集計はクライアントから取らない。</strong>1000行で静かに切り捨てられるため、SQL／RPC 側に寄せる。重い集計は「N分前時点」と添えてキャッシュする。</li>
+</ul>
+
+<h2>7. 再掲のまとめ方</h2>
+
+<p>同じ依頼が繰り返し投稿される（通知表回収は4教室で8投稿、清瀬校だけで4回）。これを別々のタスクとして数えると、進捗が投稿のたびにリセットされてしまう。同一とみなして1本の継続タスクに束ね、投稿は「同じ件の再掲」として紐づける。</p>
+
+<h2>8. コスト</h2>
+
+<p>未対応タスクが1件もない授業では AI を呼ばない。大半の授業がこれに当たるため、実際の呼び出しは「未対応が残っている生徒のコマ」だけに絞られる。抽出は投稿1件につき1回。<strong>Haiku を使えば月に数百円の規模</strong>に収まる。</p>
+<p class="note">基盤は Claude API。Google Workspace 契約では自社アプリから Gemini を使えないこと、および「既定でデータを保存しない」ことが選定理由。</p>
+
+<h2>9. モックの中身</h2>
+
+<p>動くモックが <code>/bulletin/ai-assist-mock</code> にある（管理者限定・ナビ未登録・DBには一切触れない）。以下はその5つのタブが実際に表示している内容を、この資料だけで読めるように写したもの。<strong>人名・教室名・投稿文はすべて架空</strong>で、数値だけが本番 DB の再現値。</p>
+
+<h3>タブ1 — 投稿後のAI読み取り（教室長が見る画面）</h3>
+
+<div class="screen">
+  <div class="screen-label">掲示板の投稿（いつも通りに書いたもの）</div>
+  <div class="postcard">
+    <div class="meta">見本台校 ／ 教室長 三上 ／ 2026-07-14 <span class="tag" style="margin-left:6px">依頼</span></div>
+    <div class="title">1学期の通知表回収のお願い</div>
+    <p class="body">1学期の通知表を回収してください。回収したらNESTの内申入力と、申込状況にチェックをお願いします。7/31まで。</p>
+  </div>
+
+  <div class="screen-label" style="margin-top:20px">AIが読み取ったタスク</div>
+  <table style="margin-top:0">
+    <thead><tr><th>種別</th><th>対象</th><th>期限</th><th>判定方法（何を見て済とするか）</th><th>追跡</th></tr></thead>
+    <tbody>
+      <tr><td>内申入力</td><td>全生徒<br><span class="note">中1〜中3</span></td><td>2026-07-31</td><td>生徒の2026年度1学期の内申が入力されている</td><td>する</td></tr>
+      <tr><td>申込状況チェック</td><td>担当生徒</td><td>2026-07-31</td><td>申込状況の確認済みチェックが付いている</td><td>する</td></tr>
+    </tbody>
+  </table>
+  <p class="note" style="margin-top:0">画面上部に「投稿方法は今までと同じ。この読み取りは投稿後に自動で付きます」と明記。各行は教室長がその場で「追跡しない」に落とせる。</p>
+  <p class="note"><strong>再掲の検知:</strong> 「7/12の投稿『通知表回収のお願い』と同じタスクとして継続します（新規作成しない）」</p>
+</div>
+
+<p>選択肢が有限であることを見せるため、凡例も並べている。</p>
+
+<table>
+  <thead><tr><th style="width:22%">対象（5種）</th><th>意味</th></tr></thead>
+  <tbody>
+    <tr><td>全生徒</td><td>教室の在籍生徒すべて</td></tr>
+    <tr><td>担当生徒</td><td>その講師が担当している生徒だけ</td></tr>
+    <tr><td>学年</td><td>中3だけ、など</td></tr>
+    <tr><td>特定生徒</td><td>投稿で名前が挙がった生徒だけ</td></tr>
+    <tr><td>講師自身</td><td>シフト提出・出勤簿入力など生徒に紐づかないもの</td></tr>
+  </tbody>
+</table>
+
+<table>
+  <thead><tr><th style="width:22%">期限（3種）</th><th>意味</th></tr></thead>
+  <tbody>
+    <tr><td>日付</td><td>その日までに済ませる。当日・超過は強制表示になる</td></tr>
+    <tr><td>毎回</td><td>報告書の期限・進行表入力など、授業のたびに発生するもの</td></tr>
+    <tr><td>なし</td><td>期限のない依頼。強制表示はせず、AIの判断だけで出す</td></tr>
+  </tbody>
+</table>
+
+<h3>タブ2 — 進捗ボード（教室長が見る画面）</h3>
+
+<p>「1学期通知表回収 → 内申入力」の進捗。<strong>実データを主、手動チェックを従</strong>として並べ、その差を独立した数字として立てているのがこの画面の要点。最終計測「3分前」のラベル付き。</p>
+
+<div class="stats">
+  <div class="stat">
+    <div class="label">実データ（内申が入力されている）</div>
+    <div class="big" style="color:var(--accent)">41 / 59</div>
+  </div>
+  <div class="stat">
+    <div class="label">手動チェック（申込状況）</div>
+    <div class="big" style="color:var(--muted)">13 / 59</div>
+  </div>
+  <div class="stat hl">
+    <div class="label">チェック漏れ</div>
+    <div class="big">28</div>
+    <div class="label">内申は入っているがチェックが付いていない</div>
+  </div>
+</div>
+
+<p class="note">画面の注記: 「教室長はこの手動チェックを見て督促を4回繰り返していたが、講師は7割やっていた」</p>
+
+<h4 style="font-size:14px;margin:24px 0 6px">講師別の内訳</h4>
+<table>
+  <thead><tr><th>講師</th><th class="num">担当</th><th class="num">済（実データ）</th><th class="num">未済</th><th>AIアシスト</th></tr></thead>
+  <tbody>
+    <tr><td>川瀬 直樹</td><td class="num">12</td><td class="num">9</td><td class="num">3</td><td>ON</td></tr>
+    <tr><td>森田 彩香</td><td class="num">11</td><td class="num">8</td><td class="num">3</td><td>ON</td></tr>
+    <tr><td>立花 悠</td><td class="num">10</td><td class="num">7</td><td class="num">3</td><td>OFF</td></tr>
+    <tr><td>大西 慎一</td><td class="num">9</td><td class="num">6</td><td class="num">3</td><td>ON</td></tr>
+    <tr><td>中井 みなみ</td><td class="num">9</td><td class="num">6</td><td class="num">3</td><td>OFF</td></tr>
+    <tr><td>藤原 亮太</td><td class="num">8</td><td class="num">5</td><td class="num">3</td><td>ON</td></tr>
+    <tr><th>合計</th><th class="num">59</th><th class="num">41</th><th class="num">18</th><th></th></tr>
+  </tbody>
+</table>
+<p class="note" style="margin-top:-14px">担当は 座席表 → 固定講師 → 進行表の講師名 の順で解決。</p>
+
+<h4 style="font-size:14px;margin:24px 0 6px">生徒別（4状態）</h4>
+<table>
+  <thead><tr><th>生徒</th><th>学年</th><th>担当</th><th>状態</th></tr></thead>
+  <tbody>
+    <tr><td>佐々木 花</td><td>中2</td><td>川瀬 直樹</td><td>未</td></tr>
+    <tr><td>青木 陸</td><td>中3</td><td>川瀬 直樹</td><td>済</td></tr>
+    <tr><td>早瀬 千夏</td><td>中1</td><td>森田 彩香</td><td>今日はできない（通知表を持ってきていない）</td></tr>
+    <tr><td>野々村 蓮</td><td>中3</td><td>森田 彩香</td><td>済（チェック漏れ）</td></tr>
+    <tr><td>篠原 美結</td><td>中2</td><td>立花 悠</td><td>済（チェック漏れ）</td></tr>
+    <tr><td>真砂 湊</td><td>中2</td><td>立花 悠</td><td>今日はできない（通知表を持ってきていない）</td></tr>
+    <tr><td>有馬 咲希</td><td>中1</td><td>大西 慎一</td><td>済</td></tr>
+    <tr><td>土屋 奏太</td><td>中3</td><td>大西 慎一</td><td>済（チェック漏れ）</td></tr>
+    <tr><td>瀬川 灯</td><td>中2</td><td>中井 みなみ</td><td>未</td></tr>
+    <tr><td>倉持 陽向</td><td>中1</td><td>藤原 亮太</td><td>済</td></tr>
+  </tbody>
+</table>
+<p class="note" style="margin-top:-14px">「済（チェック漏れ）」は督促の対象外なので警告色にしない。「今日はできない」は講師がポップアップで返した理由つきの保留で、これも督促対象から外す。</p>
+
+<p>2つ目のタスク「申込状況チェック」も同じ形式で小さく置いてある（13 / 59）。判定が手動チェックそのものなので、<strong>これ単体を進捗と読むと実態を28名ぶん見誤る</strong>という注記付き。</p>
+
+<h3>タブ3 — AIアシスト設定（講師管理の画面）</h3>
+
+<p>講師ごとのトグルと、上部のオプション「直近30日の未対応率が50%を超えた講師に自動でONにする」。モックでは実際に効き、しきい値を超えた講師は手動トグルが無効化されて「自動でON」バッジが付く。</p>
+
+<table>
+  <thead><tr><th>講師</th><th class="num">直近30日の未対応率</th><th>AIアシスト</th></tr></thead>
+  <tbody>
+    <tr><td>川瀬 直樹</td><td class="num">18%</td><td>ON</td></tr>
+    <tr><td>森田 彩香</td><td class="num">25%</td><td>ON</td></tr>
+    <tr><td>立花 悠</td><td class="num">62%</td><td>OFF → 自動ONの対象</td></tr>
+    <tr><td>大西 慎一</td><td class="num">41%</td><td>ON</td></tr>
+    <tr><td>中井 みなみ</td><td class="num">55%</td><td>OFF → 自動ONの対象</td></tr>
+    <tr><td>藤原 亮太</td><td class="num">9%</td><td>ON</td></tr>
+  </tbody>
+</table>
+<p class="note" style="margin-top:-14px">OFF の講師には何も出ない。ただし進捗ボードには載る（教室長からは見えている）。</p>
+
+<h3>タブ4 — 授業中ポップアップのシミュレータ（講師が見る画面）</h3>
+
+<p>シナリオを4種から選び、経過時間のスライダー（0〜80分）を動かすと、その時点までに「プログラムが何をしたか」と「AIが呼ばれて何と答えたか」が積み上がる。授業は<strong>佐々木 花・中2・数学・3限 18:00〜19:20</strong> の設定。ポップアップは授業画面の右下に小さなカードで出て、画面は塞がない。</p>
+
+<div class="scenario">
+  <div class="hd">シナリオA — 冒頭で自主的にやった<small>講師が授業前に自分で入力済み。1/3チェックで残0になり、AIは一度も呼ばれない</small></div>
+  <div class="bd">
+    <p class="log"><b>0分</b>未対応2件を取得（内申入力・申込状況チェック）</p>
+    <p class="log"><b>27分</b>DB再照合 → どちらも済んでいた → 残0件</p>
+    <p class="log"><b>27分</b>残0件のため、この授業の以降のチェックを打ち切り（AI呼び出しなし）</p>
+    <p class="note" style="margin:10px 0 0">ポップアップなし。自分でやった講師には何も出ない。これが最も多いケースになる想定。</p>
+  </div>
+</div>
+
+<div class="scenario">
+  <div class="hd">シナリオB — 未対応のまま（通常の流れ）<small>1/3では「まだ待つ」、2/3で「今出す」。AIがタイミングを選ぶ標準形</small></div>
+  <div class="bd">
+    <p class="log"><b>0分</b>未対応2件を取得（内申入力・申込状況チェック）</p>
+    <p class="log"><b>27分</b>DB再照合 → 申込状況チェックが済んでいた → 残1件（内申入力）</p>
+    <p class="log"><b>27分</b>残1件のためAIへ問い合わせ → 「まだ待つ」 → 表示しない</p>
+
+    <div class="aibox">
+      <div class="dec">AIの判断（27分）— まだ待つ</div>
+      <ul>
+        <li>経過: 27分 / 80分（1/3チェック）</li>
+        <li>未対応タスク: 内申入力（対象: 佐々木 花）</li>
+        <li>生徒の今日の状況: 遅刻あり・宿題は実施済み</li>
+        <li>進行表の入力状況: 単元未選択（演習に入ったばかり）</li>
+        <li>期限までの日数: 17日 ／ 本日の表示回数: 0回</li>
+      </ul>
+      <p class="why">理由: 遅刻で到着直後、演習に入ったばかり。今は生徒への声かけを優先させたい</p>
+    </div>
+
+    <p class="log"><b>53分</b>DB再照合 → 残1件（内申入力）</p>
+    <p class="log"><b>53分</b>残1件のためAIへ問い合わせ → 「出す」 → ポップアップを1件だけ表示</p>
+
+    <div class="aibox">
+      <div class="dec">AIの判断（53分）— 出す</div>
+      <ul>
+        <li>経過: 53分 / 80分（2/3チェック）</li>
+        <li>未対応タスク: 内申入力（対象: 佐々木 花）</li>
+        <li>生徒の今日の状況: 遅刻あり・宿題は実施済み</li>
+        <li>進行表の入力状況: 単元選択済み・演習が一区切り</li>
+        <li>期限までの日数: 17日 ／ 本日の表示回数: 0回</li>
+      </ul>
+      <p class="why">理由: 演習が一区切りついて手が空いている。生徒本人がいるうちに聞ける最後の機会に近い</p>
+    </div>
+
+    <div class="popup">
+      <div class="head">AIアシスト</div>
+      <p class="msg">花さんの1学期の内申をまだ聞けていません。演習の合間に確認して入力をお願いします。</p>
+      <div class="btns"><span class="primary">入力する</span><span class="ghost">今日はできない</span></div>
+    </div>
+
+    <p class="log"><b>65分</b>最終ライン。本日は表示済みのため、以降は問い合わせも表示もしない</p>
+    <p class="note" style="margin:10px 0 0">1回の授業で出すのは1件だけ。出した後は最終ラインまで何も出さない。</p>
+  </div>
+</div>
+
+<div class="scenario">
+  <div class="hd">シナリオC — 期限当日（強制）<small>期限当日・超過はAIの判断を待たずプログラム側で強制表示する</small></div>
+  <div class="bd">
+    <p class="log"><b>0分</b>未対応1件を取得（内申入力・期限は本日 2026-07-31）</p>
+    <p class="log"><b>27分</b>DB再照合 → 残1件・期限当日と判定</p>
+    <p class="log"><b>27分</b>期限当日のためAIを呼ばずに強制表示（テンプレート文面）</p>
+    <div class="popup">
+      <div class="head forced">期限当日</div>
+      <p class="msg">花さんの1学期の内申が未入力です。本日が期限です。授業の終わりまでに入力をお願いします。</p>
+      <div class="btns"><span class="primary">入力する</span><span class="ghost">今日はできない</span></div>
+    </div>
+    <p class="log"><b>53分</b>表示済みのため何もしない</p>
+    <p class="note" style="margin:10px 0 0">AIに「見送る」判断をさせない唯一のケース。</p>
+  </div>
+</div>
+
+<div class="scenario">
+  <div class="hd">シナリオD — 未対応なし<small>起動時点で未対応0件。以降は何も動かず、AIコストも発生しない</small></div>
+  <div class="bd">
+    <p class="log"><b>0分</b>未対応0件を取得</p>
+    <p class="log"><b>0分</b>この授業のチェックを起動時に終了（AI呼び出しなし・コスト0）</p>
+    <p class="note" style="margin:10px 0 0">AIを呼ぶのは「未対応がある生徒のコマ」だけ。大半のコマはここで終わる。</p>
+  </div>
+</div>
+
+<h4 style="font-size:14px;margin:26px 0 6px">ポップアップの2つのボタン</h4>
+<ul>
+  <li><strong>入力する</strong> — カードの中に5教科（国語・数学・英語・理科・社会）×評定1〜5のミニフォームがインラインで開く。画面遷移なし。<strong>既存の値は表示しない</strong>（生徒に画面が見えているため）。</li>
+  <li><strong>今日はできない</strong> — 理由チップ（通知表を持ってきていない／時間が取れない／その他）を1つ選ぶと「室長に伝えました」と出て閉じる。以後その生徒は督促対象から外れる。</li>
+</ul>
+<p class="note">画面下に常設の注記: 「既定は出さない側に倒す（誤爆より見逃し）」。</p>
+
+<h3>タブ5 — 仕組み</h3>
+
+<p>投稿からボードまでの8ステップを縦に並べ、各ステップが<strong>プログラムの担当かAIの担当か</strong>を示す。分界の詳細は §4、コストは §8 と同じ内容。</p>
+
+<table>
+  <thead><tr><th style="width:30%">ステップ</th><th style="width:12%">担当</th><th>内容</th></tr></thead>
+  <tbody>
+    <tr><td>投稿</td><td>プログラム</td><td>教室長が今まで通り自由文で投稿する。投稿UIは変えない</td></tr>
+    <tr><td>AI抽出</td><td>AI</td><td>投稿を読み、13種のカタログから該当するタスクを選ぶ。自由生成はしない</td></tr>
+    <tr><td>判定クエリ</td><td>プログラム</td><td>タスク種別ごとの固定クエリでDBを見て、生徒×講師ごとに済／未済を出す</td></tr>
+    <tr><td>「授業を記録」で起動</td><td>プログラム</td><td>講師が授業を開始した時点で、その生徒の未対応タスクを取得する</td></tr>
+    <tr><td>1/3・2/3で再照合</td><td>プログラム</td><td>チェックポイントでDBを見直す。残0なら以降は何もしない</td></tr>
+    <tr><td>AI判断</td><td>AI</td><td>残っているときだけ、今出すか・待つか・今日は見送るかを決める</td></tr>
+    <tr><td>ポップアップ</td><td>プログラム</td><td>授業画面の右下に小さく1件だけ。モーダルで画面を塞がない</td></tr>
+    <tr><td>進捗ボード</td><td>プログラム</td><td>済／未済／今日はできない、を教室長が講師別・生徒別に見る</td></tr>
+  </tbody>
+</table>
+
+<h2>10. 現在地と残っている判断</h2>
+
+<p>設計・抽出精度の検証・DBでの再現・モックまで完了。実装は未着手。モックは worktree 上にあり、まだコミットしていない。</p>
+
+<h3>決めていないこと</h3>
+<ul>
+  <li>手動チェック（申込状況）の運用を続けるか、実データ判定に一本化してやめるか。</li>
+  <li>AIアシストの ON を教室長が個別に付けるか、未対応率がしきい値を超えたら自動で付けるか。</li>
+  <li>抽出結果を教室長が投稿後に確認・修正する工程を挟むか、完全に自動で走らせるか。</li>
+  <li>完了履歴テーブルの粒度（タスク×生徒×講師×観測時刻）。</li>
+</ul>
+
+<footer>
+  NEST 内部資料 — 生徒名・講師名は一切含まない。数値は本番 DB（清瀬校 2026-07-28 時点）の再現による。
+</footer>
+
+</body>
+</html>
