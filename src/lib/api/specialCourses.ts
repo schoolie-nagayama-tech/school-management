@@ -13,6 +13,7 @@
  */
 import { supabase } from '@/lib/supabase';
 import type {
+  CourseBillingUnit,
   SpecialCourseKoushuOverride,
   SpecialCourseScope,
   SpecialCourseSession,
@@ -34,8 +35,18 @@ export interface SpecialCourse {
   target_grades: number[];
   /** 科目。総合・プログラミング等の科目に紐づかない講座は null */
   subject_id: string | null;
-  /** 1回あたりの単価（円・税込）。未設定は null */
+  /**
+   * 受講料（円・税込）。未設定は null（請求に計上されない）。
+   * billing_unit が per_session なら1回あたり、monthly ならその月ぶんの金額。
+   */
   unit_price: number | null;
+  /**
+   * 受講料の数え方。既定は per_session（1回ごと＝単価×回数）。
+   * HAL のように月額固定の講座だけ monthly にする。月額を1回単価として入れると
+   * 月4〜5回ぶん掛かって4〜5倍請求になるため、講座ごとに持つ。
+   * 講習講座は申込コマ数で請求するので常に per_session。
+   */
+  billing_unit: CourseBillingUnit;
   /** 定員。null=制限なし */
   capacity: number | null;
   /** 講習講座のみ必須。通年講座は null */
@@ -64,6 +75,7 @@ export type SpecialCourseFormValues = Pick<
   | 'target_grades'
   | 'subject_id'
   | 'unit_price'
+  | 'billing_unit'
   | 'capacity'
   | 'session_dates'
   | 'day_of_week'
@@ -72,7 +84,7 @@ export type SpecialCourseFormValues = Pick<
 >;
 
 const SELECT_COLUMNS =
-  'id, school_id, scope, formation, name, target_grades, subject_id, unit_price, capacity, season, year, session_dates, day_of_week, time_slot_id, is_active';
+  'id, school_id, scope, formation, name, target_grades, subject_id, unit_price, billing_unit, capacity, season, year, session_dates, day_of_week, time_slot_id, is_active';
 
 /**
  * 通年講座の一覧（教室単位）。

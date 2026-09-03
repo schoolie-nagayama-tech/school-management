@@ -346,7 +346,8 @@ export function CoursesSection({
                     </div>
                   )}
                   <div className="flex justify-between">
-                    <dt>単価</dt>
+                    {/* 通年講座は月謝制、講習講座は1回の単価。同じ列に別の意味が入るので見出しで区別する */}
+                    <dt>{c.scope === 'koushu' ? '単価（1回）' : '月額'}</dt>
                     <dd>{c.unit_price != null ? `${c.unit_price.toLocaleString()}円` : '—'}</dd>
                   </div>
                   <div className="flex justify-between">

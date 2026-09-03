@@ -15,11 +15,24 @@ import type { PlannedEntry } from '@/lib/schedule/specialCourseOverride';
 import { computeCourseExtraSplit, type CourseExtraSplit } from '@/lib/utils/billingCharged';
 
 /** 金額計算に必要な講座の最小形（special_courses の必要列だけ） */
+/** 受講料の数え方。per_session=1回ごと（既定） / monthly=月額（回数によらず一定） */
+export type CourseBillingUnit = 'per_session' | 'monthly';
+
 export interface SpecialCoursePricing {
   id: string;
   name: string;
-  /** 1回あたりの単価（円）。NULL は「未設定」＝計上せず講座名を警告に出す */
+  /**
+   * 受講料（円）。NULL は「未設定」＝計上せず講座名を警告に出す。
+   * billing_unit が per_session なら1回あたり、monthly ならその月ぶんの金額。
+   */
   unit_price: number | null;
+  /**
+   * 受講料の数え方。未指定は 'per_session'（従来の挙動）。
+   *
+   * ★ HAL のように月額固定の講座がある。月額を1回単価として入れると
+   *   月4〜5回ぶん掛かって4〜5倍請求になるため、講座ごとに数え方を持つ。
+   */
+  billing_unit?: CourseBillingUnit;
 }
 
 /** 講習講座の申込1行の最小形（koushu_enrollments の必要列だけ） */
@@ -184,8 +197,16 @@ export function countMonthlySessions(
 }
 
 /**
- * 通年講座の金額を生徒ごとに合算する。`Σ(講座ごと: unit_price × その月の受講回数)`。
+ * 通年講座の金額を生徒ごとに合算する。数え方は講座ごとの billing_unit に従う。
  *
+ * - per_session（既定） … `単価 × その月の受講回数`
+ * - monthly            … `月額`（回数は掛けない。4回でも5回でも同額）
+ *
+ * ★ 月額の講座は HAL（月額10,890円・11,990円）。月額を1回単価として入れると
+ *   4〜5倍請求になるため、数え方を講座ごとに持つ。そのためHALの単価は
+ *   これまで空のまま運用され、請求に載っていなかった。
+ * ★ どちらの数え方でも、受講0回の月は請求しない
+ *   （入会前・退会後・その期は開催しない、が自然に落ちる）。
  * - 単価 NULL の講座は計上せず、講座名を missingPriceCourseNames に積む（黙って0円にしない）。
  * - courses に無い講座ID（無効化済み・他教室など）は対象外として無視する。
  */
@@ -202,11 +223,14 @@ export function aggregateYearRoundAmounts(
     for (const [courseId, sessions] of Array.from(byCourse.entries())) {
       const course = courseById.get(courseId);
       if (!course) continue;
+      if (sessions <= 0) continue;
       if (course.unit_price == null) {
-        if (sessions > 0 && !missing.includes(course.name)) missing.push(course.name);
+        if (!missing.includes(course.name)) missing.push(course.name);
         continue;
       }
-      amount += course.unit_price * sessions;
+      // 月額の講座は、受講が1回でもあればその月ぶんを1回だけ計上する
+      amount +=
+        course.billing_unit === 'monthly' ? course.unit_price : course.unit_price * sessions;
     }
     if (amount > 0) amountByStudent.set(studentId, amount);
   }

@@ -189,3 +189,19 @@ export function filterCoursesForCell<T extends WeeklySlotHolder>(
 export function totalCourseFee(unitPrice: number | null, sessionCount: number): number | null {
   return unitPrice != null ? unitPrice * sessionCount : null;
 }
+
+/**
+ * 受講料の数え方。
+ * - per_session（既定）… 1回ごと。請求は「単価 × 回数」
+ * - monthly           … 月額。回数によらずその月ぶんを1回だけ請求する（HAL）
+ *
+ * 月額の講座の金額を1回単価として入れると月4〜5回ぶん掛かって4〜5倍請求になるため、
+ * 講座ごとにどちらで数えるかを持つ。講習講座は申込コマ数で請求するので常に per_session。
+ */
+export type CourseBillingUnit = 'per_session' | 'monthly';
+
+/** 受講料の数え方の表示名 */
+export const COURSE_BILLING_UNIT_LABELS: Record<CourseBillingUnit, string> = {
+  per_session: '1回ごと（単価×回数）',
+  monthly: '月額（回数によらず一定）',
+};

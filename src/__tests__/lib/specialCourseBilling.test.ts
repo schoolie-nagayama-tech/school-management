@@ -178,7 +178,7 @@ describe('通年講座の月内受講回数（planWeeklyEntries の結果を数�
 });
 
 describe('通年講座の金額合算', () => {
-  it('単価 × 月内回数を生徒ごとに合計する', () => {
+  it('単価 × 月内回数を生徒ごとに合計する（既定の数え方）', () => {
     const counts = countMonthlySessions(
       planMonth(
         [pattern({ id: 'p1', student_id: 's1' }), pattern({ id: 'p2', student_id: 's2' })],
@@ -216,6 +216,45 @@ describe('通年講座の金額合算', () => {
       { id: 'course-2', name: '中3数学ゼミ', unit_price: 2000 },
     ]);
     expect(result.amountByStudent.get('s1')).toBe(3000 * 4 + 2000 * 4);
+  });
+
+  it('月額の講座（HALなど）は回数を掛けない', () => {
+    const counts = countMonthlySessions(
+      planMonth([pattern({ id: 'p1', student_id: 's1' })], null),
+      AUG_2026
+    );
+    // 8月の該当曜日は4回あるが、月額なので金額はそのまま
+    expect(counts.get('s1')?.get('course-1')).toBe(4);
+    const result = aggregateYearRoundAmounts(counts, [
+      { ...COURSE, unit_price: 10890, billing_unit: 'monthly' },
+    ]);
+    expect(result.amountByStudent.get('s1')).toBe(10890);
+  });
+
+  it('月額と1回ごとの講座が混ざっても数え方を取り違えない', () => {
+    const counts = countMonthlySessions(
+      planMonth(
+        [
+          pattern({ id: 'p1', student_id: 's1' }),
+          pattern({
+            id: 'p2',
+            student_id: 's1',
+            day_of_week: 3,
+            special_course_id: 'course-2',
+            time_slot_id: 'slot-group-am',
+            time_slot: { id: 'slot-group-am' },
+          }),
+        ],
+        null
+      ),
+      AUG_2026
+    );
+    const result = aggregateYearRoundAmounts(counts, [
+      { ...COURSE, unit_price: 10890, billing_unit: 'monthly' },
+      { id: 'course-2', name: '中3数学ゼミ', unit_price: 2000, billing_unit: 'per_session' },
+    ]);
+    // HAL相当は月額そのまま、ゼミは 2000×4回
+    expect(result.amountByStudent.get('s1')).toBe(10890 + 2000 * 4);
   });
 
   it('単価未設定の講座は計上せず講座名を返す（黙って0円にしない）', () => {
