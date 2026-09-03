@@ -90,6 +90,10 @@ export async function getOrders(
  *   進めた時点（updateOrderStatus 内の markMaterialOwned）。
  *   「発注リストに載せた時点で所持にする」案は一度入れたが、進行表で管理すべき教材と
  *   そうでない教材が分かれる以上、発注だけを根拠に所持を立てるのは実態に合わないため戻した。
+ * ★ ただし生徒の教材一覧には未確認の時点で並べる（linkStudentTextbookForOrder）。
+ *   所持=OFF・進行表管理=OFF の行として作るので、生徒詳細の「未分類」に出るだけで
+ *   所持にも進行表にも入らない。発注したのに生徒詳細のどこにも出ないと
+ *   「発注できていない」ように見えるため。
  */
 export async function createOrder(
   order: {
@@ -125,7 +129,59 @@ export async function createOrder(
     throw new Error(getUserErrorMessage(error, '発注の作成に失敗しました'));
   }
 
-  return data as MaterialOrder;
+  const created = data as MaterialOrder;
+  if (!isSample && created.student_id) {
+    await linkStudentTextbookForOrder(created.material_id, created.student_id, targetSchoolId);
+  }
+
+  return created;
+}
+
+/**
+ * 発注した教材を、生徒の教材一覧に「所持でも進行表管理でもない」行として並べる。
+ *
+ * ★ 未確認（発注リストに積んだだけ）の段階で呼ぶ。所持(is_owned)は「発注(ordered)」に
+ *   進めた時点で markMaterialOwned が立てるので、ここでは false のまま。
+ *   進行表(track_progress)も false。生徒詳細では「未分類」として見える。
+ * ★ 既にある行には一切触らない。手で付けた所持・進行表管理を発注で塗り替えないため。
+ * ★ ベストエフォート。ここで失敗しても発注自体は成立させる（教材の紐付けは後から直せる）。
+ */
+async function linkStudentTextbookForOrder(
+  materialId: string,
+  studentId: string,
+  fallbackSchoolId: string
+): Promise<void> {
+  try {
+    const textbookId = await resolveTextbookIdForMaterial(materialId);
+    if (textbookId == null) return;
+
+    const { data: existing } = await supabase
+      .from('student_textbooks')
+      .select('id')
+      .eq('student_id', studentId)
+      .eq('textbook_id', textbookId)
+      .maybeSingle();
+    if (existing) return;
+
+    // school_id は生徒の所属校に合わせる（所持教材の school_id は生徒所属と一致させる不変条件）
+    const { data: student } = await supabase
+      .from('students')
+      .select('school_id')
+      .eq('id', studentId)
+      .maybeSingle();
+    const stSchoolId = (student as { school_id: string } | null)?.school_id ?? fallbackSchoolId;
+
+    await supabase.from('student_textbooks').insert({
+      school_id: stSchoolId,
+      student_id: studentId,
+      textbook_id: textbookId,
+      is_active: true,
+      is_owned: false,
+      track_progress: false,
+    });
+  } catch (e) {
+    console.warn('発注教材の生徒への紐付けに失敗しました（発注は成立）:', e);
+  }
 }
 
 // ============================================
@@ -973,7 +1029,15 @@ export async function createBulkOrders(
     throw new Error(getUserErrorMessage(error, '一括発注の作成に失敗しました'));
   }
 
-  return (data || []) as MaterialOrder[];
+  const createdOrders = (data || []) as MaterialOrder[];
+  // 単発の createOrder と揃えて、生徒の教材一覧にも未確認の時点で並べる
+  for (const o of createdOrders) {
+    if (!o.is_sample && o.student_id) {
+      await linkStudentTextbookForOrder(o.material_id, o.student_id, targetSchoolId);
+    }
+  }
+
+  return createdOrders;
 }
 
 /**
