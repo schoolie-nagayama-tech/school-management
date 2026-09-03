@@ -6,7 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useBulletinUnread } from '@/contexts/BulletinUnreadContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMasterData } from '@/contexts/MasterDataContext';
-import { USER_ROLE_LABELS } from '@/types/database';
+import { USER_ROLE_LABELS, type UserRole } from '@/types/database';
 import {
   Megaphone,
   ChevronDown,
@@ -28,6 +28,8 @@ import { buildNavEntries, isLinkActive, isGroupActive } from './navConfig';
 import { isSystemAdmin } from '@/lib/utils/roles';
 import { canAccessPortalDemo } from '@/lib/mypage/demoAccess';
 import { MobileBottomNav } from './MobileBottomNav';
+import { HeaderAiHelp } from '@/components/help/HeaderAiHelp';
+import type { RoleTag } from '@/lib/help/faqData';
 import { useStandalone } from '@/lib/utils/useStandalone';
 import { useToast } from '@/hooks/useToast';
 import { ToastContainer } from '@/components/ui';
@@ -45,6 +47,15 @@ interface AppHeaderProps {
 // ドロップダウンパネル共通クラス生成。
 // 常時DOMに残し、opacity + scale の CSS transitionで開閉する。
 // enter: 150ms ease-out（即時反応）/ exit: 100ms（より速く閉じて応答感を高める）
+/** UserRole を FAQ の RoleTag に寄せる（faqIndex.ts の toRoleTag と同じ対応） */
+function helpRoleTag(role: UserRole | undefined): RoleTag {
+  if (!role) return 'all';
+  if (role === 'admin' || role === 'owner') return 'admin';
+  if (role === 'manager') return 'manager';
+  if (role === 'teacher') return 'teacher';
+  return 'all';
+}
+
 function dropdownPanelClass(open: boolean, align: 'left' | 'right' = 'left') {
   const base =
     'absolute top-full mt-1 bg-white rounded-lg border border-gray-200 shadow-xl transition-[opacity,transform] ease-out';
@@ -519,6 +530,10 @@ export function AppHeader({
                     </div>
                   </div>
                 </div>
+              )}
+              {/* ★AIヘルプ。歯車の奥だと存在に気づかれないので、どの画面からも見える位置に出す */}
+              {profile && !authLoading && (
+                <HeaderAiHelp role={helpRoleTag(profile.role as UserRole | undefined)} />
               )}
               {/* 座席表：システム管理者のみ表示 */}
               {profile && isSystemAdmin(profile.role) && (
