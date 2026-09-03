@@ -164,4 +164,30 @@ describe('keywordSearch', () => {
     expect(hits.length).toBeGreaterThan(0);
     expect(hits.length).toBeLessThanOrEqual(5);
   });
+
+  it('空白区切りで打った全語が含まれるものを返す', () => {
+    const hits = keywordSearch(index, '振替 操作');
+    expect(hits.length).toBeGreaterThan(0);
+    for (const h of hits) {
+      const target = `${h.question} ${h.item.answer} ${h.keywords.join(' ')}`;
+      expect(target).toContain('振替');
+      expect(target).toContain('操作');
+    }
+  });
+
+  /**
+   * ★受け皿としての本命。日本語は分かち書きしないので、話し言葉の質問は1語になる。
+   * 全語一致だけだと必ず0件になり、「答えられないときに出す候補」が常に空になってしまう。
+   */
+  it('話し言葉の質問でも候補を返す（分かち書きしない日本語）', () => {
+    const hits = keywordSearch(index, '振替のやり方が分からない');
+    expect(hits.length).toBeGreaterThan(0);
+    // 「振替」を含む項目が上位に来る
+    const top = hits.slice(0, 3).map((h) => `${h.question} ${h.keywords.join(' ')}`);
+    expect(top.some((t) => t.includes('振替'))).toBe(true);
+  });
+
+  it('どのFAQにも掠らない質問では空を返す（無理に出さない）', () => {
+    expect(keywordSearch(index, 'ｘｙｚｑｑ')).toEqual([]);
+  });
 });

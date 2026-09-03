@@ -38,9 +38,10 @@ import {
   GLOSSARY_DATA,
   type FaqItem,
   type FaqCategoryData,
-  type GlossaryItem,
   type RoleTag,
 } from '@/lib/help/faqData';
+import { AiHelpAsk } from '@/components/help/AiHelpAsk';
+import { UnansweredQuestions } from '@/components/help/UnansweredQuestions';
 
 /**
  * カテゴリ id → アイコン。
@@ -397,6 +398,9 @@ export default function HelpPage() {
           </p>
         </div>
 
+        {/* ★AIヘルプ。歯車メニューから入ってくるので、検索欄より前に置く */}
+        <AiHelpAsk role={myRole} onFallbackSearch={setSearchQuery} />
+
         {/* 検索 */}
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -577,6 +581,9 @@ export default function HelpPage() {
             )}
           </div>
         )}
+
+        {/* ★admin だけ: 答えられなかった質問 → ここを見てFAQを書き足す */}
+        {myRole === 'admin' && <UnansweredQuestions />}
       </div>
     </AdminLayout>
   );

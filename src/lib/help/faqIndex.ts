@@ -166,16 +166,47 @@ export function renderGlossary(): string {
 }
 
 /**
- * AIが使えないとき（キー未設定・障害・答えられない）に出す、従来どおりのキーワード検索。
- * ページ側の絞り込みと同じ条件にしてある。
+ * AIが使えないとき（キー未設定・障害・答えられない）に出す受け皿の検索。
+ *
+ * 2段構えにしている。
+ *
+ * 1. 空白区切りの全語がFAQ本文に含まれるもの（既存の検索欄と同じ条件）。
+ *    「振替 操作」のようにキーワードを打った場合はこれで当たる。
+ *
+ * 2. ★1で0件なら、逆向きに探す。**FAQ側のキーワードが質問文に含まれるか**で数える。
+ *    日本語は分かち書きしないので、「振替のやり方が分からない」は1語として扱われ、
+ *    1の条件では絶対に当たらない。ここが受け皿なのに空になるのは致命的なので、
+ *    質問文の中にFAQのキーワードや見出しの語が出てくるかを見て、多く当たった順に返す。
  */
 export function keywordSearch(entries: FaqIndexEntry[], query: string, limit = 5): FaqIndexEntry[] {
-  const terms = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
-  if (terms.length === 0) return [];
-  return entries
-    .filter((e) => {
-      const target = `${e.question} ${e.item.answer} ${e.keywords.join(' ')}`.toLowerCase();
-      return terms.every((t) => target.includes(t));
-    })
-    .slice(0, limit);
+  const q = query.trim().toLowerCase();
+  if (q === '') return [];
+
+  const terms = q.split(/\s+/).filter(Boolean);
+  const exact = entries.filter((e) => {
+    const target = `${e.question} ${e.item.answer} ${e.keywords.join(' ')}`.toLowerCase();
+    return terms.every((t) => target.includes(t));
+  });
+  if (exact.length > 0) return exact.slice(0, limit);
+
+  // ★逆向き。FAQのキーワード・見出しの語が質問文に出てくるかを数える
+  const scored: { entry: FaqIndexEntry; score: number }[] = [];
+  for (const e of entries) {
+    let score = 0;
+    for (const kw of e.keywords) {
+      const k = kw.trim().toLowerCase();
+      // 1文字のキーワードはどこにでも当たるので数えない
+      if (k.length >= 2 && q.includes(k)) score += 2;
+    }
+    // 見出しは「〜の操作方法」のような語で切って、実のある部分だけを見る
+    for (const part of e.question.toLowerCase().split(/[の・（）()、。/\s]+/)) {
+      if (part.length >= 2 && q.includes(part)) score += 1;
+    }
+    if (score > 0) scored.push({ entry: e, score });
+  }
+
+  return scored
+    .sort((a, b) => b.score - a.score)
+    .slice(0, limit)
+    .map((s) => s.entry);
 }
