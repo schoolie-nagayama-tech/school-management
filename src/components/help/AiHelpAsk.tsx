@@ -16,6 +16,7 @@ import type { RoleTag } from '@/lib/help/faqData';
  * 2か所で使う:
  *   - variant="page"    … /help の最上部（歯車メニューから入ってくる導線）
  *   - variant="popover" … 各ページの ContextHelp の中（いまのパスを添えて聞く）
+ *   - variant="modal"   … ヘッダーの「AIに聞いてみる」で開く中央のダイアログ
  *
  * 正典: docs/ai-help-plan.md
  */
@@ -42,7 +43,7 @@ interface AiHelpResponse {
 }
 
 interface Props {
-  variant?: 'page' | 'popover';
+  variant?: 'page' | 'popover' | 'modal';
   /** 質問した人の役割。質問の例を出し分けるのに使う（絞り込み自体はサーバー側で行う） */
   role?: RoleTag;
   /** ContextHelp から渡す、そのページの話題。質問の例の先頭に出す */
@@ -60,6 +61,8 @@ export function AiHelpAsk({ variant = 'page', role = 'all', pageTopics, onFallba
 
   const examples = useMemo(() => exampleQuestions(role, pageTopics), [role, pageTopics]);
   const isPopover = variant === 'popover';
+  // ダイアログの中では外側の枠が二重になるので、囲いを外して中身だけ出す
+  const isModal = variant === 'modal';
 
   const ask = useCallback(async (question: string) => {
     const q = question.trim();
@@ -115,9 +118,11 @@ export function AiHelpAsk({ variant = 'page', role = 'all', pageTopics, onFallba
   return (
     <section
       className={
-        isPopover
-          ? 'rounded-lg border border-border-subtle bg-surface-hover/50 p-3'
-          : 'rounded-xl border border-ink/25 bg-ink-subtle p-4'
+        isModal
+          ? ''
+          : isPopover
+            ? 'rounded-lg border border-border-subtle bg-surface-hover/50 p-3'
+            : 'rounded-xl border border-ink/25 bg-ink-subtle p-4'
       }
     >
       {!isPopover && (
@@ -143,7 +148,9 @@ export function AiHelpAsk({ variant = 'page', role = 'all', pageTopics, onFallba
             isPopover ? 'この画面のことを聞く' : '普通の言葉で聞いてください（例: 振替のやり方）'
           }
           aria-label="ヘルプに質問する"
-          className="flex-1 min-w-0 px-3 py-2 text-sm rounded-lg border border-border bg-surface text-text-heading placeholder:text-text-faint focus:outline-none focus:ring-2 focus:ring-ink/25 focus:border-ink transition-shadow"
+          className={`flex-1 min-w-0 rounded-lg border border-border bg-surface text-text-heading placeholder:text-text-faint focus:outline-none focus:ring-2 focus:ring-ink/25 focus:border-ink transition-shadow ${
+            isModal ? 'px-3.5 py-2.5 text-base' : 'px-3 py-2 text-sm'
+          }`}
         />
         <button
           type="submit"
