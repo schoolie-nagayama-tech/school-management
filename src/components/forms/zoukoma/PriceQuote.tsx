@@ -9,6 +9,12 @@ interface PriceQuoteProps {
   totalKoma: number;
 }
 
+/**
+ * 料金の見積表示。
+ *
+ * 以前は青2pxの枠で囲んだカードだったが、白カード（PortalFormSection）の中に
+ * さらに枠が入って圧迫感の原因になっていたため、薄いグレー地の面で区切るだけにしている。
+ */
 export function PriceQuote({
   selectedGrade,
   priceTable,
@@ -17,8 +23,8 @@ export function PriceQuote({
 }: PriceQuoteProps) {
   if (!selectedGrade) {
     return (
-      <div className="bg-[#f3f4f6] rounded-lg border border-[#e5e7eb] p-4">
-        <p className="text-sm text-[#4b5563] text-center">学年を選択すると料金が表示されます</p>
+      <div className="bg-[#f9fafb] rounded-lg p-3">
+        <p className="text-xs text-[#6b7280] text-center">学年を選択すると料金が表示されます</p>
       </div>
     );
   }
@@ -36,50 +42,42 @@ export function PriceQuote({
     }));
 
   return (
-    <div className="bg-white rounded-lg border-2 border-[#3b82f6] p-4">
-      <h3 className="text-lg font-bold text-[#1f2937] mb-4">料金</h3>
-
-      {/* 該当学年の単価のみ表示 */}
-      <div className="mb-4">
-        <p className="text-sm font-medium text-[#4b5563] mb-2">{selectedGrade} 単価（1コマ）</p>
-        <p className="text-lg font-semibold text-[#1f2937]">
-          ¥{(priceTable[selectedGrade] ?? 0).toLocaleString()}
+    <div className="bg-[#f9fafb] rounded-lg p-3.5">
+      <div className="flex items-baseline justify-between mb-2">
+        <h3 className="text-[13px] font-bold text-[#1f2937]">料金</h3>
+        <p className="text-[11px] text-[#6b7280]">
+          {selectedGrade} 1コマ {unitPrice.toLocaleString()}円
         </p>
       </div>
 
       {/* 見積内訳 */}
-      <div className="mb-4">
-        <p className="text-sm font-medium text-[#4b5563] mb-2">内訳</p>
-        <div className="space-y-1">
-          {subjectBreakdown.length > 0 ? (
-            subjectBreakdown.map(({ subject, koma, fee }) => (
-              <div key={subject} className="flex justify-between text-sm text-[#4b5563]">
-                <span>
-                  {subject} × {koma}コマ
-                </span>
-                <span>¥{fee.toLocaleString()}</span>
-              </div>
-            ))
-          ) : (
-            <p className="text-sm text-[#4b5563]/60 text-center py-2">科目を選択してください</p>
-          )}
-        </div>
+      <div className="space-y-1">
+        {subjectBreakdown.length > 0 ? (
+          subjectBreakdown.map(({ subject, koma, fee }) => (
+            <div key={subject} className="flex justify-between text-xs text-[#4b5563]">
+              <span>
+                {subject} × {koma}コマ
+              </span>
+              <span className="tabular-nums">¥{fee.toLocaleString()}</span>
+            </div>
+          ))
+        ) : (
+          <p className="text-xs text-[#9ca3af] text-center py-1">コマ数を入力すると内訳が出ます</p>
+        )}
       </div>
 
       {/* 合計 */}
-      <div className="pt-4 border-t-2 border-[#e5e7eb]">
-        <div className="flex justify-between items-center mb-2">
-          <span className="text-sm font-medium text-[#4b5563]">合計コマ数</span>
-          <span className="text-lg font-bold text-[#1f2937]">{totalKoma}コマ</span>
-        </div>
-        <div className="flex justify-between items-center">
-          <span className="text-base font-bold text-[#1f2937]">合計金額</span>
-          <span className="text-2xl font-bold text-[#1f2937]">¥{totalFee.toLocaleString()}</span>
-        </div>
-        <p className="text-xs text-[#4b5563] mt-2">
-          料金は次回お月謝と合わせてお引き落としとなります。
-        </p>
+      <div className="mt-2.5 pt-2.5 border-t border-[#e5e7eb] flex items-baseline justify-between">
+        <span className="text-xs text-[#4b5563]">
+          合計 <span className="font-semibold text-[#1f2937]">{totalKoma}コマ</span>
+        </span>
+        <span className="text-xl font-bold text-[#1f2937] tabular-nums">
+          ¥{totalFee.toLocaleString()}
+        </span>
       </div>
+      <p className="text-[11px] text-[#6b7280] mt-1.5">
+        料金は次回お月謝と合わせてお引き落としとなります。
+      </p>
     </div>
   );
 }

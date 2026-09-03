@@ -9,7 +9,7 @@ import { submitZoukomaResponse } from '@/lib/api/zoukoma';
 import { GRADE_NAME_TO_NUMBER } from '@/types/forms/zoukoma';
 import { SubjectInput } from './SubjectInput';
 import { PriceQuote } from './PriceQuote';
-import { SlotTable, generateAllSlots, DEFAULT_WEEKS } from './SlotTable';
+import { SlotTable, selectableSlots, DEFAULT_WEEKS } from './SlotTable';
 import { Plus, Minus } from 'lucide-react';
 import {
   PortalFormHeader,
@@ -124,7 +124,7 @@ export function ZoukomaForm({ school, period, isPreview, initialValues }: Zoukom
       const next = Math.max(MIN_WEEKS, w - 1);
       if (next < w) {
         // 削減で範囲外になった日程の✗印は残さない（送信時に無効データを混ぜないため）
-        const remainingIds = new Set(generateAllSlots(settings, next).map((s) => s.id));
+        const remainingIds = new Set(selectableSlots(settings, next).map((s) => s.id));
         setUnavailableSlots((prev) => prev.filter((id) => remainingIds.has(id)));
       }
       return next;
@@ -155,7 +155,7 @@ export function ZoukomaForm({ school, period, isPreview, initialValues }: Zoukom
     }
 
     // バツ印モード: 全スロットが出席不可だとエラー
-    const allSlots = generateAllSlots(settings, weeks);
+    const allSlots = selectableSlots(settings, weeks);
     const unavailableSet = new Set(unavailableSlots);
     const availableCount = allSlots.filter((s) => !unavailableSet.has(s.id)).length;
     if (availableCount === 0) {
@@ -227,7 +227,8 @@ export function ZoukomaForm({ school, period, isPreview, initialValues }: Zoukom
       };
 
       // 全スロットから出席不可を除外して出席可能スロットを算出
-      const allSlots = generateAllSlots(settings, weeks);
+      // （受付リードタイム前の枠は selectableSlots が落とすので、送信内容にも混ざらない）
+      const allSlots = selectableSlots(settings, weeks);
       const unavailableSet = new Set(unavailableSlots);
       const availableSlotIds = allSlots.filter((s) => !unavailableSet.has(s.id)).map((s) => s.id);
 
@@ -352,45 +353,39 @@ export function ZoukomaForm({ school, period, isPreview, initialValues }: Zoukom
             </div>
           )}
 
-          <p className="text-sm text-[#4b5563] mt-4">
+          <p className="text-xs text-[#6b7280] mt-3">
             テスト対策の日程が決まりましたら、Growより保護者様へご連絡いたします。
           </p>
         </PortalFormSection>
 
-        <PortalFormSection title={`出席できない日程に✗をつけてください（${weeks}週間・PS2のみ）`}>
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4 space-y-2">
-            <p className="text-sm font-semibold text-[#92400e]">PS2のみでの実施となります</p>
-            <p className="text-sm text-[#4b5563]">
-              ご都合の悪い日程に✗印をおつけください。✗のない日程にお申し込みいただいたコマ数を割り振ってご案内いたします。
+        <PortalFormSection
+          title="出席できない日程に✗をつけてください"
+          description="最初はすべて出席できる状態です。ご都合の悪い枠を✗にしてください。✗のない日程にお申し込みのコマ数を割り振ってご案内します（PS2のみでの実施）。"
+        >
+          {/* 表示する週数の増減（1週間単位で日程を追加/削減できる）。
+              狭い画面で文字が縦積みになっていたので、アイコンだけの ± セグメントにしている */}
+          <div className="flex items-center justify-between gap-2 mb-3">
+            <p className="text-xs text-[#6b7280]">
+              表示中：<span className="font-semibold text-[#1f2937]">{weeks}週間分</span>
             </p>
-          </div>
-
-          {/* 表示する週数の増減（1週間単位で日程を追加/削減できる） */}
-          <div className="flex items-center justify-between gap-3 mb-4 p-3 bg-[#f9fafb] border border-[#e5e7eb] rounded-lg">
-            <p className="text-sm text-[#4b5563]">
-              表示中の日程：
-              <span className="font-semibold text-[#1f2937]">{weeks}週間分</span>
-            </p>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
               <button
                 type="button"
                 onClick={handleRemoveWeek}
                 disabled={isSubmitting || weeks <= MIN_WEEKS}
-                className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-[#4b5563] bg-white border border-[#e5e7eb] rounded-lg hover:bg-[#f3f4f6] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                title="表示する日程を1週間減らす"
+                aria-label="表示する日程を1週間減らす"
+                className="w-9 h-9 rounded-full border border-[#e5e7eb] bg-white flex items-center justify-center text-[#4b5563] active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed"
               >
                 <Minus className="w-4 h-4" />
-                1週間減らす
               </button>
               <button
                 type="button"
                 onClick={handleAddWeek}
                 disabled={isSubmitting || weeks >= MAX_WEEKS}
-                className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-white bg-[color:var(--primary)] rounded-lg hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                title="表示する日程を1週間増やす"
+                aria-label="表示する日程を1週間増やす"
+                className="w-9 h-9 rounded-full border border-[#e5e7eb] bg-white flex items-center justify-center text-[#4b5563] active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed"
               >
                 <Plus className="w-4 h-4" />
-                1週間増やす
               </button>
             </div>
           </div>
@@ -409,9 +404,6 @@ export function ZoukomaForm({ school, period, isPreview, initialValues }: Zoukom
             mode="unavailable"
             numWeeks={weeks}
           />
-          <p className="text-sm text-[#4b5563] mt-4">
-            日程が決まりましたら、Growよりご連絡いたします。
-          </p>
         </PortalFormSection>
 
         <PortalFormSection title="備考">

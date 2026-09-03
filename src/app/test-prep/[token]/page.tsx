@@ -94,18 +94,20 @@ export default function TestPrepPublicPage() {
           {/* ヘッダー
               画面・カラー印刷では赤のグラデーション。白黒印刷だと赤ベタが真っ黒に潰れるため、
               print: では背景を白に落とし、赤は下線（細線）だけ残して文字を黒系にする。 */}
-          <div className="bg-gradient-to-r from-red-600 to-red-500 px-6 py-5 print:py-4 print:bg-none print:bg-white print:border-b-4 print:border-red-600">
+          <div className="bg-gradient-to-r from-red-600 to-red-500 px-6 py-5 print:px-4 print:py-2 print:bg-none print:bg-white print:border-b-2 print:border-red-600">
             <div className="flex items-center justify-between">
               <div>
                 {schoolName && (
-                  <p className="text-red-100 text-sm print:text-gray-500">{schoolName}</p>
+                  <p className="text-red-100 text-sm print:text-[9px] print:text-gray-500">
+                    {schoolName}
+                  </p>
                 )}
-                <h1 className="text-xl font-bold text-white mt-0.5 print:text-gray-900">
+                <h1 className="text-xl font-bold text-white mt-0.5 print:mt-0 print:text-base print:text-gray-900">
                   {proposal.title}
                 </h1>
               </div>
               {teacherName && (
-                <div className="text-right text-sm text-red-100 print:text-gray-600">
+                <div className="text-right text-sm text-red-100 print:text-[9px] print:text-gray-600">
                   <p>担当: {teacherName}</p>
                 </div>
               )}
@@ -113,36 +115,40 @@ export default function TestPrepPublicPage() {
           </div>
 
           {/* 生徒情報 */}
-          <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
-            <div className="flex items-center gap-6">
+          <div className="px-6 py-4 print:px-4 print:py-1.5 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+            <div className="flex items-center gap-6 print:gap-4">
               <div>
-                <span className="text-xs text-gray-400">生徒名</span>
-                <p className="font-bold text-gray-900 text-lg">{studentName}</p>
+                <span className="text-xs text-gray-400 print:text-[8px]">生徒名</span>
+                <p className="font-bold text-gray-900 text-lg print:text-[11px]">{studentName}</p>
               </div>
               <div>
-                <span className="text-xs text-gray-400">学年</span>
-                <p className="font-medium text-gray-700">{studentGrade}</p>
+                <span className="text-xs text-gray-400 print:text-[8px]">学年</span>
+                <p className="font-medium text-gray-700 print:text-[10px]">{studentGrade}</p>
               </div>
               {examName && (
                 <div>
-                  <span className="text-xs text-gray-400">試験</span>
-                  <p className="font-medium text-gray-700">{examName}</p>
+                  <span className="text-xs text-gray-400 print:text-[8px]">試験</span>
+                  <p className="font-medium text-gray-700 print:text-[10px]">{examName}</p>
                 </div>
               )}
             </div>
             <div className="text-right">
-              <span className="text-xs text-gray-400">提案コマ数合計</span>
-              <p className="text-2xl font-bold text-red-600 print:text-gray-900">
+              <span className="text-xs text-gray-400 print:text-[8px]">提案コマ数合計</span>
+              <p className="text-2xl font-bold text-red-600 print:text-base print:text-gray-900">
                 {totalKoma}
-                <span className="text-sm font-normal text-gray-500 ml-1">コマ</span>
+                <span className="text-sm font-normal text-gray-500 ml-1 print:text-[9px]">
+                  コマ
+                </span>
               </p>
             </div>
           </div>
 
           {/* 保護者向けの案内（この書面が何かの説明＋増コマ受講のおすすめ）。
               テスト対策の提案書が保護者にとって唐突／不親切だったため、目的を明記する。 */}
-          <div className="mx-6 mt-4 p-3.5 rounded-lg bg-amber-50 border border-amber-100 print:bg-white print:border-gray-300 text-sm text-gray-700 leading-relaxed">
-            <p className="font-bold text-gray-900 mb-1">保護者の皆様へ — テスト対策のご提案</p>
+          <div className="mx-6 mt-4 p-3.5 print:mx-4 print:mt-2 print:p-2 rounded-lg bg-amber-50 border border-amber-100 print:bg-white print:border-gray-300 text-sm text-gray-700 leading-relaxed print:text-[9px] print:leading-snug">
+            <p className="font-bold text-gray-900 mb-1 print:mb-0.5">
+              保護者の皆様へ — テスト対策のご提案
+            </p>
             <p>
               本書は、次回の定期テストに向けて、担当講師がお子様の現在の到達状況をもとに作成した対策プランです。
               下記の科目・単元ごとに、目標点の達成に必要と考えられる対策コマ数の目安をまとめています。
@@ -153,7 +159,7 @@ export default function TestPrepPublicPage() {
           </div>
 
           {/* 自己評価の凡例 */}
-          <div className="px-6 pt-4 pb-2 flex items-center gap-4 text-xs text-gray-500">
+          <div className="px-6 pt-4 pb-2 print:px-4 print:pt-1.5 print:pb-1 flex items-center gap-4 print:gap-2.5 text-xs text-gray-500 print:text-[8px]">
             <span className="text-gray-400">自己評価:</span>
             {Object.entries(SELF_ASSESSMENT_LABELS).map(([mark, label]) => (
               <span key={mark} className="flex items-center gap-1">
@@ -165,16 +171,16 @@ export default function TestPrepPublicPage() {
 
           {/* メッセージ */}
           {proposal.notes && (
-            <div className="mx-6 mt-2 mb-4 p-3 bg-blue-50 rounded-lg border border-blue-100 text-sm text-blue-800 whitespace-pre-line">
+            <div className="mx-6 mt-2 mb-4 p-3 print:mx-4 print:mt-1 print:mb-2 print:p-2 bg-blue-50 rounded-lg border border-blue-100 print:bg-white print:border-gray-300 text-sm text-blue-800 print:text-[9px] print:leading-snug print:text-gray-700 whitespace-pre-line">
               {proposal.notes}
             </div>
           )}
 
           {/* 科目ブロック群 */}
-          <div className="px-6 pb-6">
+          <div className="px-6 pb-6 print:px-4 print:pb-2">
             {topSubjects.length > 0 && (
               <div
-                className={`grid grid-cols-1 gap-4 mb-4 ${topSubjects.length >= 3 ? 'md:grid-cols-3 print:grid-cols-3' : topSubjects.length === 2 ? 'md:grid-cols-2 print:grid-cols-2' : ''}`}
+                className={`grid grid-cols-1 gap-4 mb-4 print:gap-2 print:mb-2 ${topSubjects.length >= 3 ? 'md:grid-cols-3 print:grid-cols-3' : topSubjects.length === 2 ? 'md:grid-cols-2 print:grid-cols-2' : ''}`}
               >
                 {topSubjects.map((subject) => (
                   <SubjectBlock key={subject.id} subject={subject} />
@@ -183,7 +189,7 @@ export default function TestPrepPublicPage() {
             )}
             {bottomSubjects.length > 0 && (
               <div
-                className={`grid grid-cols-1 gap-4 ${bottomSubjects.length >= 2 ? 'md:grid-cols-2 print:grid-cols-2' : ''}`}
+                className={`grid grid-cols-1 gap-4 print:gap-2 ${bottomSubjects.length >= 2 ? 'md:grid-cols-2 print:grid-cols-2' : ''}`}
               >
                 {bottomSubjects.map((subject) => (
                   <SubjectBlock key={subject.id} subject={subject} />
@@ -193,17 +199,17 @@ export default function TestPrepPublicPage() {
           </div>
 
           {/* QRコード（印刷用） */}
-          <div className="hidden print:block border-t-2 border-dashed border-gray-300 mx-6 pt-4 pb-6">
-            <div className="flex items-center gap-6">
-              <div className="w-24 h-24 bg-gray-200 border border-gray-300 rounded-lg flex items-center justify-center text-xs text-gray-400">
+          <div className="hidden print:block border-t border-dashed border-gray-300 mx-4 pt-2 pb-0 break-inside-avoid">
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 bg-gray-200 border border-gray-300 rounded flex items-center justify-center text-[7px] text-gray-400">
                 QR Code
               </div>
               <div>
-                <p className="font-bold text-gray-900">テスト対策 増コマ申し込み</p>
-                <p className="text-sm text-gray-600 mt-1">
+                <p className="font-bold text-gray-900 text-[10px]">テスト対策 増コマ申し込み</p>
+                <p className="text-[8px] text-gray-600 mt-0.5">
                   上のQRコードを読み取るか、以下のURLからお申し込みください。
                 </p>
-                <p className="text-sm text-blue-600 mt-1 font-mono">
+                <p className="text-[8px] text-blue-600 mt-0.5 font-mono break-all">
                   {typeof window !== 'undefined' ? window.location.href : ''}
                 </p>
               </div>
@@ -223,9 +229,11 @@ export default function TestPrepPublicPage() {
         </div>
       </div>
 
+      {/* 印刷はA4縦1枚に収める前提。余白を詰めたうえで、各要素は print: 修飾で
+          文字サイズ・パディングを圧縮している（画面表示側は従来のまま） */}
       <style>{`
         @media print {
-          @page { size: A4 portrait; margin: 10mm 12mm; }
+          @page { size: A4 portrait; margin: 8mm 10mm; }
           body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         }
       `}</style>
@@ -272,21 +280,26 @@ function SubjectBlock({ subject }: { subject: TestPrepProposalWithDetails['subje
   const rows = buildGroupedRows(subject.units || []);
 
   return (
-    <div className="border border-gray-200 rounded-xl overflow-hidden">
-      <div className="px-3 py-2 bg-gray-800 text-white flex items-center justify-between">
-        <span className="font-bold text-sm">{subject.subject_name}</span>
+    // 印刷時は科目ブロックがページ跨ぎで割れないようにする（A4縦1枚に収める前提）
+    <div className="border border-gray-200 rounded-xl overflow-hidden print:break-inside-avoid">
+      <div className="px-3 py-2 print:px-2 print:py-1 bg-gray-800 text-white flex items-center justify-between">
+        <span className="font-bold text-sm print:text-[10px]">{subject.subject_name}</span>
         {subject.target_score != null && (
-          <span className="text-xs text-gray-300">
+          <span className="text-xs text-gray-300 print:text-[8px]">
             目標 <span className="text-yellow-300 font-bold">{subject.target_score}</span>点
           </span>
         )}
       </div>
-      <table className="w-full text-xs">
+      <table className="w-full text-xs print:text-[8px]">
         <thead>
           <tr className="bg-gray-50 text-gray-500">
-            <th className="text-left px-2 py-1.5 font-medium">単元</th>
-            <th className="w-10 text-center px-1 py-1.5 font-medium">評価</th>
-            <th className="w-12 text-center px-1 py-1.5 font-medium">コマ</th>
+            <th className="text-left px-2 py-1.5 print:px-1.5 print:py-0.5 font-medium">単元</th>
+            <th className="w-10 print:w-6 text-center px-1 py-1.5 print:py-0.5 font-medium">
+              評価
+            </th>
+            <th className="w-12 print:w-7 text-center px-1 py-1.5 print:py-0.5 font-medium">
+              コマ
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -295,7 +308,9 @@ function SubjectBlock({ subject }: { subject: TestPrepProposalWithDetails['subje
               key={row.unit.id}
               className={`border-t border-gray-100 ${row.isGroupMember ? 'bg-blue-50/30' : ''}`}
             >
-              <td className="px-2 py-1.5 text-gray-700">{row.unit.unit_name}</td>
+              <td className="px-2 py-1.5 print:px-1.5 print:py-0.5 text-gray-700">
+                {row.unit.unit_name}
+              </td>
               <td className="text-center">
                 {row.unit.self_assessment && (
                   <span className={ASSESSMENT_STYLES[row.unit.self_assessment] || ''}>
@@ -320,7 +335,7 @@ function SubjectBlock({ subject }: { subject: TestPrepProposalWithDetails['subje
         </tbody>
         <tfoot>
           <tr className="border-t-2 border-gray-200 bg-gray-50 font-bold">
-            <td className="px-2 py-1.5 text-gray-600">合計</td>
+            <td className="px-2 py-1.5 print:px-1.5 print:py-0.5 text-gray-600">合計</td>
             <td />
             <td className="text-center text-red-600 print:text-gray-900">{totalKoma}</td>
           </tr>
