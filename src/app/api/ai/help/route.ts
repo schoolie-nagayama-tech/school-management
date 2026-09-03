@@ -47,6 +47,8 @@ export interface AiHelpResponse {
   degraded: boolean;
   /** unanswered / degraded のときの代替候補 */
   fallback: { id: string; question: string; categoryTitle: string; href?: string }[];
+  /** 記録した行のID。画面の「役に立った / 立たなかった」を後から結びつけるのに使う */
+  logId: string | null;
 }
 
 const MAX_QUESTION_LENGTH = 200;
@@ -90,21 +92,30 @@ async function recordQuestion(params: {
   matchedIds: string[];
   unanswered: boolean;
   degraded: boolean;
-}): Promise<void> {
+}): Promise<string | null> {
   try {
     const supabase = getPortalServiceClient();
-    const { error } = await supabase.from('help_questions').insert({
-      user_id: params.userId,
-      role: params.role,
-      question: params.question,
-      page_path: params.path,
-      matched_ids: params.matchedIds,
-      unanswered: params.unanswered,
-      degraded: params.degraded,
-    });
-    if (error) console.error('[ai/help] 質問の記録に失敗', error.message);
+    const { data, error } = await supabase
+      .from('help_questions')
+      .insert({
+        user_id: params.userId,
+        role: params.role,
+        question: params.question,
+        page_path: params.path,
+        matched_ids: params.matchedIds,
+        unanswered: params.unanswered,
+        degraded: params.degraded,
+      })
+      .select('id')
+      .single();
+    if (error) {
+      console.error('[ai/help] 質問の記録に失敗', error.message);
+      return null;
+    }
+    return (data?.id as string | undefined) ?? null;
   } catch (e) {
     console.error('[ai/help] 質問の記録に失敗', e);
+    return null;
   }
 }
 
@@ -147,11 +158,12 @@ export async function POST(request: NextRequest) {
     unanswered: true,
     degraded: false,
     fallback: fallbackFrom(visible, question),
+    logId: null,
   };
 
   // 鍵が無いときは機能を畳んで、従来の検索結果だけ返す（エラーにしない）
   if (!isClaudeConfigured()) {
-    await recordQuestion({
+    const logId = await recordQuestion({
       userId: auth.userId,
       role: roleTag,
       question,
@@ -160,7 +172,7 @@ export async function POST(request: NextRequest) {
       unanswered: true,
       degraded: true,
     });
-    return NextResponse.json({ ...empty, degraded: true } satisfies AiHelpResponse);
+    return NextResponse.json({ ...empty, degraded: true, logId } satisfies AiHelpResponse);
   }
 
   try {
@@ -179,7 +191,7 @@ export async function POST(request: NextRequest) {
       : [];
     const picked = pickEntriesByIds(visible, ids);
     if (picked.length === 0) {
-      await recordQuestion({
+      const logId = await recordQuestion({
         userId: auth.userId,
         role: roleTag,
         question,
@@ -188,7 +200,7 @@ export async function POST(request: NextRequest) {
         unanswered: true,
         degraded: false,
       });
-      return NextResponse.json(empty satisfies AiHelpResponse);
+      return NextResponse.json({ ...empty, logId } satisfies AiHelpResponse);
     }
 
     // ---- 2回目: 選ばれた項目の全文だけで答える ----
@@ -209,7 +221,7 @@ export async function POST(request: NextRequest) {
     const answerText = typeof answer?.answer === 'string' ? answer.answer.trim() : '';
     const unanswered = answer?.unanswered === true || answerText === '';
     if (unanswered) {
-      await recordQuestion({
+      const logId = await recordQuestion({
         userId: auth.userId,
         role: roleTag,
         question,
@@ -221,6 +233,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         ...empty,
         used: picked.map(toEntrySummary),
+        logId,
       } satisfies AiHelpResponse);
     }
 
@@ -242,7 +255,7 @@ export async function POST(request: NextRequest) {
       ? { href: pageEntry.href, label: pageEntry.linkLabel ?? 'このページを開く' }
       : null;
 
-    await recordQuestion({
+    const logId = await recordQuestion({
       userId: auth.userId,
       role: roleTag,
       question,
@@ -260,10 +273,11 @@ export async function POST(request: NextRequest) {
       unanswered: false,
       degraded: false,
       fallback: [],
+      logId,
     } satisfies AiHelpResponse);
   } catch (e) {
     console.error('[ai/help] failed', e);
-    await recordQuestion({
+    const logId = await recordQuestion({
       userId: auth.userId,
       role: roleTag,
       question,
@@ -273,6 +287,6 @@ export async function POST(request: NextRequest) {
       degraded: true,
     });
     // 落ちたときも従来の検索は返す
-    return NextResponse.json({ ...empty, degraded: true } satisfies AiHelpResponse);
+    return NextResponse.json({ ...empty, degraded: true, logId } satisfies AiHelpResponse);
   }
 }
