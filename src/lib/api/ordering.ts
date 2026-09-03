@@ -492,6 +492,15 @@ export async function createOrdersForCandidates(
 // ============================================
 
 /** 二重発注チェックの入力（生徒×テキスト）。見本(生徒なし)は重複対象外なので呼び出し側で除外する。 */
+/** 発注ステータスの進み具合。重複表示でどのステータスを見せるかの優先順位に使う */
+const ORDER_STATUS_RANK: Record<OrderStatus, number> = {
+  cancelled: 0,
+  unconfirmed: 1,
+  ordered: 2,
+  delivered: 3,
+  distributed: 4,
+};
+
 export interface OrderDuplicateInput {
   studentId: string;
   textbookId: number;
@@ -502,6 +511,12 @@ export interface OrderDuplicateResult extends OrderDuplicateInput {
   alreadyOwned: boolean;
   /** すでに未キャンセルの発注が生徒×教材にある */
   hasActiveOrder: boolean;
+  /**
+   * hasActiveOrder のとき、その発注のステータス（最も進んでいるもの）。
+   * 「未確認」と「配布済み」では意味がまるで違うのに、以前はまとめて「発注済み」と
+   * 出していたため、まだ何も届いていない未確認まで「もう発注済み」に見えていた。
+   */
+  activeOrderStatus: OrderStatus | null;
   /** alreadyOwned か hasActiveOrder のいずれか＝二重発注になる */
   isDuplicate: boolean;
 }
@@ -547,30 +562,44 @@ export async function checkOrderDuplicates(
     }
   }
 
-  // material_id 未設定のテキストは、ラベル名で materials を引いて補完する。
-  const matIdByName = new Map<string, string>();
+  // textbooks.material_id で直に指せるものは、その教材の「名前」を引いておく。
+  // 突き合わせを id ではなく名前で行うため（理由は下の materialNameOf のコメント）。
+  const nameByMaterialId = new Map<string, string>();
   {
-    const labels = Array.from(
+    const ids = Array.from(
       new Set(
         Array.from(tbDetail.values())
-          .map((d) => d.label)
-          .filter((l): l is string => !!l)
+          .map((d) => d.material_id)
+          .filter((m): m is string => !!m)
       )
     );
-    if (labels.length > 0) {
-      const { data } = await supabase.from('materials').select('id, name').in('name', labels);
+    if (ids.length > 0) {
+      const { data } = await supabase.from('materials').select('id, name').in('id', ids);
       for (const m of (data ?? []) as { id: string; name: string }[]) {
-        if (!matIdByName.has(m.name)) matIdByName.set(m.name, m.id);
+        nameByMaterialId.set(m.id, m.name);
       }
     }
   }
 
-  const materialIdOf = (textbookId: number): string | null => {
+  /**
+   * テキスト → 教材名。
+   *
+   * ★ 以前は「教材ID」で突き合わせていたが、materials は教室ごとに別レコードで、
+   *   同じ名前の行が最大5件ある（同一教室内の重複行もある）。名前だけで materials を
+   *   引いて先頭1件を採用していたため、別教室の教材IDを見に行って判定が外れていた
+   *   （警告が出るべきなのに出ない／出るべきでないのに出る）。
+   *   textbooks.material_id が未設定のテキストが大半（本番で 515/660 件）なので、
+   *   この経路がほぼ全件に効いていた。
+   * ★ 生徒は1教室に属し、その生徒の発注はその教室の教材レコードを指す。
+   *   よって「生徒 × 教材名」で突き合わせれば教室を意識せず正しく判定できる。
+   */
+  const materialNameOf = (textbookId: number): string | null => {
     const d = tbDetail.get(textbookId);
     if (!d) return null;
-    if (d.material_id) return d.material_id;
-    if (d.label && matIdByName.has(d.label)) return matIdByName.get(d.label)!;
-    return null;
+    if (d.material_id && nameByMaterialId.has(d.material_id)) {
+      return nameByMaterialId.get(d.material_id)!;
+    }
+    return d.label;
   };
 
   // 所持集合（is_owned=true）。生徒×テキストで持つ。
@@ -587,30 +616,51 @@ export async function checkOrderDuplicates(
     }
   }
 
-  // 未キャンセル発注集合（生徒×教材）。
-  const orderedSet = new Set<string>();
+  // 未キャンセル発注（生徒×教材名 → 最も進んだステータス）。
+  // 対象の生徒の発注だけを引き、教材名で突き合わせる。
+  const orderStatusByKey = new Map<string, OrderStatus>();
   {
-    const materialIds = Array.from(
-      new Set(textbookIds.map((id) => materialIdOf(id)).filter((m): m is string => !!m))
+    const targetNames = new Set(
+      textbookIds.map((id) => materialNameOf(id)).filter((n): n is string => !!n)
     );
-    if (materialIds.length > 0) {
+    if (targetNames.size > 0) {
       const { data } = await supabase
         .from('material_orders')
-        .select('student_id, material_id, status')
+        .select('student_id, status, materials(name)')
         .in('student_id', studentIds)
-        .in('material_id', materialIds)
         .neq('status', 'cancelled');
-      for (const r of (data ?? []) as { student_id: string | null; material_id: string }[]) {
-        if (r.student_id) orderedSet.add(`${r.student_id}:${r.material_id}`);
+      for (const r of (data ?? []) as {
+        student_id: string | null;
+        status: OrderStatus;
+        materials: { name: string } | null;
+      }[]) {
+        const name = r.materials?.name;
+        if (!r.student_id || !name || !targetNames.has(name)) continue;
+        const key = `${r.student_id}:${name}`;
+        const prev = orderStatusByKey.get(key);
+        // 同じ教材を複数回発注していることがある。表示は最も進んだものに寄せる
+        // （「未確認」と「配布済み」が両方あるなら、実際に手元にあるのは後者のため）。
+        if (!prev || ORDER_STATUS_RANK[r.status] > ORDER_STATUS_RANK[prev]) {
+          orderStatusByKey.set(key, r.status);
+        }
       }
     }
   }
 
   return inputs.map((i) => {
     const alreadyOwned = ownedSet.has(`${i.studentId}:${i.textbookId}`);
-    const mId = materialIdOf(i.textbookId);
-    const hasActiveOrder = !!mId && orderedSet.has(`${i.studentId}:${mId}`);
-    return { ...i, alreadyOwned, hasActiveOrder, isDuplicate: alreadyOwned || hasActiveOrder };
+    const name = materialNameOf(i.textbookId);
+    const activeOrderStatus = name
+      ? (orderStatusByKey.get(`${i.studentId}:${name}`) ?? null)
+      : null;
+    const hasActiveOrder = activeOrderStatus !== null;
+    return {
+      ...i,
+      alreadyOwned,
+      hasActiveOrder,
+      activeOrderStatus,
+      isDuplicate: alreadyOwned || hasActiveOrder,
+    };
   });
 }
 
