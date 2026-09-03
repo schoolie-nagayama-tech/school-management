@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import { AdminLayout } from '@/components/layouts';
 import { useAuth } from '@/contexts/AuthContext';
@@ -122,6 +122,10 @@ export default function TeachersPage() {
     selectedSchoolId && selectedSchoolId !== 'all' ? selectedSchoolId : 'all'
   );
   const [sortByBadges, setSortByBadges] = useState(false);
+  // 退職などで無効にしたアカウントは既定で隠す。
+  // 無効化しても行が残るため、在籍している講師を探すのに毎回読み飛ばす必要があった。
+  // 無効化の取り消しや履歴の確認はできる必要があるので、トグルで出せるようにする。
+  const [showInactive, setShowInactive] = useState(false);
 
   // ヘッダーの教室選択が変わったら、ページ内フィルタも追随させる
   useEffect(() => {
@@ -130,6 +134,37 @@ export default function TeachersPage() {
 
   // 今日新しいバッジを取った講師ID（名前横に閃光を出すため）
   const freshBadgeTeacherIds = useFreshBadgeTeachers();
+
+  /**
+   * 一覧に出す講師。見出しの件数もこれを使う
+   * （以前は見出しだけ絞り込み前の全件を出していて、行数と食い違っていた）。
+   * is_active が未設定の古いデータは有効として扱う（無効と決めつけて隠さない）。
+   */
+  const visibleTeachers = useMemo(() => {
+    let list = teachers.filter((t) => showInactive || t.is_active !== false);
+    if (schoolFilter !== 'all') {
+      list = list.filter((t) => (t.user_schools || []).some((us) => us.school_id === schoolFilter));
+    }
+    if (badgeFilter !== 'all') {
+      list = list.filter((t) => {
+        const assignments = teacherBadgeMap.get(t.id) || [];
+        return assignments.some((a) => a.badge_id === badgeFilter);
+      });
+    }
+    if (sortByBadges) {
+      list = [...list].sort(
+        (a, b) =>
+          (teacherBadgeMap.get(b.id)?.length || 0) - (teacherBadgeMap.get(a.id)?.length || 0)
+      );
+    }
+    return list;
+  }, [teachers, showInactive, schoolFilter, badgeFilter, sortByBadges, teacherBadgeMap]);
+
+  /** 「無効を表示」のトグルに件数を添えるための、隠れている無効アカウント数 */
+  const hiddenInactiveCount = useMemo(
+    () => (showInactive ? 0 : teachers.filter((t) => t.is_active === false).length),
+    [teachers, showInactive]
+  );
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
@@ -438,60 +473,72 @@ export default function TeachersPage() {
           <Loading />
         ) : (
           <div className="space-y-6">
-            {/* フィルタ */}
-            {(schools.length > 1 || allBadges.length > 0) && (
-              <div className="flex flex-wrap items-center gap-3">
-                {schools.length > 1 && (
+            {/* フィルタ。無効アカウントのトグルは常に出すのでバー自体は条件を付けない */}
+            <div className="flex flex-wrap items-center gap-3">
+              {schools.length > 1 && (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-500">教室:</span>
+                  <select
+                    value={schoolFilter}
+                    onChange={(e) => setSchoolFilter(e.target.value)}
+                    className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
+                  >
+                    <option value="all">すべて</option>
+                    {schools.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              {allBadges.length > 0 && (
+                <>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-500">教室:</span>
+                    <span className="text-sm text-gray-500">バッジ:</span>
                     <select
-                      value={schoolFilter}
-                      onChange={(e) => setSchoolFilter(e.target.value)}
+                      value={badgeFilter}
+                      onChange={(e) => setBadgeFilter(e.target.value)}
                       className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
                     >
                       <option value="all">すべて</option>
-                      {schools.map((s) => (
-                        <option key={s.id} value={s.id}>
-                          {s.name}
+                      {allBadges.map((b) => (
+                        <option key={b.id} value={b.id}>
+                          {b.name}
                         </option>
                       ))}
                     </select>
                   </div>
+                  <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={sortByBadges}
+                      onChange={(e) => setSortByBadges(e.target.checked)}
+                      className="rounded border-gray-300 text-ink focus:ring-ink"
+                    />
+                    バッジ数でソート
+                  </label>
+                </>
+              )}
+              <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={showInactive}
+                  onChange={(e) => setShowInactive(e.target.checked)}
+                  className="rounded border-gray-300 text-ink focus:ring-ink"
+                />
+                無効なアカウントも表示
+                {hiddenInactiveCount > 0 && (
+                  <span className="text-xs text-gray-400">（{hiddenInactiveCount}件）</span>
                 )}
-                {allBadges.length > 0 && (
-                  <>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm text-gray-500">バッジ:</span>
-                      <select
-                        value={badgeFilter}
-                        onChange={(e) => setBadgeFilter(e.target.value)}
-                        className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
-                      >
-                        <option value="all">すべて</option>
-                        {allBadges.map((b) => (
-                          <option key={b.id} value={b.id}>
-                            {b.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={sortByBadges}
-                        onChange={(e) => setSortByBadges(e.target.checked)}
-                        className="rounded border-gray-300 text-ink focus:ring-ink"
-                      />
-                      バッジ数でソート
-                    </label>
-                  </>
-                )}
-              </div>
-            )}
+              </label>
+            </div>
 
             <div className="bg-surface-raised rounded-xl border border-border overflow-hidden">
               <div className="p-4 bg-surface-hover border-b border-border">
-                <h2 className="font-bold text-text-heading">登録済み講師 ({teachers.length})</h2>
+                <h2 className="font-bold text-text-heading">
+                  登録済み講師 ({visibleTeachers.length})
+                </h2>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full">
@@ -523,31 +570,7 @@ export default function TeachersPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border/10">
-                    {(() => {
-                      let list = [...teachers];
-                      // 教室フィルタ
-                      if (schoolFilter !== 'all') {
-                        list = list.filter((t) =>
-                          (t.user_schools || []).some((us) => us.school_id === schoolFilter)
-                        );
-                      }
-                      // バッジフィルタ
-                      if (badgeFilter !== 'all') {
-                        list = list.filter((t) => {
-                          const assignments = teacherBadgeMap.get(t.id) || [];
-                          return assignments.some((a) => a.badge_id === badgeFilter);
-                        });
-                      }
-                      // バッジ数ソート
-                      if (sortByBadges) {
-                        list.sort(
-                          (a, b) =>
-                            (teacherBadgeMap.get(b.id)?.length || 0) -
-                            (teacherBadgeMap.get(a.id)?.length || 0)
-                        );
-                      }
-                      return list;
-                    })().map((teacher) => (
+                    {visibleTeachers.map((teacher) => (
                       <tr
                         key={teacher.id}
                         className="hover:bg-surface-hover/50 transition-[background-color] duration-100 ease-out"
