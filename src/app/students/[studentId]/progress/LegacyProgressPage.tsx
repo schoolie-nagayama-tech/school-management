@@ -44,7 +44,7 @@ import type {
   StudentProgressWithDetails,
   CurriculumItem,
   ProgressRowDisplay,
-  SeasonalCourseWithDetails,
+  SeasonalCourseListItem,
 } from '@/types/database';
 import { GRADE_LABELS, SEASON_LABELS } from '@/types/database';
 import { useAuth } from '@/contexts/AuthContext';
@@ -94,7 +94,7 @@ export default function LegacyProgressPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [viewMode, setViewMode] = useState<'admin' | 'parent'>('admin');
   const [isApplyCourseModalOpen, setIsApplyCourseModalOpen] = useState(false);
-  const [availableCourses, setAvailableCourses] = useState<SeasonalCourseWithDetails[]>([]);
+  const [availableCourses, setAvailableCourses] = useState<SeasonalCourseListItem[]>([]);
   const [selectedCourseId, setSelectedCourseId] = useState<string>('');
   // 下書き登録では実質未使用だが、applyCoursesToStudents への履歴記録の applied_mode 値として渡す
   const [courseApplyMode] = useState<'overwrite' | 'add'>('overwrite');

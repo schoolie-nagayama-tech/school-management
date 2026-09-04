@@ -7,6 +7,7 @@ import type {
   SeasonalCourseCurriculum,
   SeasonalCourseApplication,
   SeasonalCourseWithDetails,
+  SeasonalCourseListItem,
   SeasonType,
   CurriculumItem,
   CourseCurriculumRow,
@@ -404,14 +405,16 @@ export async function getKoushuScheduledCounts(
 // =====================================================
 
 // コース一覧を取得
-export async function getSeasonalCourses(schoolId: string): Promise<SeasonalCourseWithDetails[]> {
+// 単元は件数だけを取る。一覧は単元の中身を表示しないため、行そのものは要らない。
+// 詳細ページ用に中身が要るときは getSeasonalCourse（単体）を使うこと。
+export async function getSeasonalCourses(schoolId: string): Promise<SeasonalCourseListItem[]> {
   const { data, error } = await supabase
     .from('seasonal_courses')
     .select(
       `
       *,
       textbooks:seasonal_course_textbooks(*, textbook:textbooks(*)),
-      curriculum:seasonal_course_curriculum(*, curriculum_item:curriculum_items(*))
+      curriculum:seasonal_course_curriculum(count)
     `
     )
     .eq('school_id', schoolId)
@@ -420,7 +423,22 @@ export async function getSeasonalCourses(schoolId: string): Promise<SeasonalCour
 
   if (error) throw error;
 
-  const coursesTyped = (data || []) as SeasonalCourseWithDetails[];
+  // PostgREST の埋め込み集計は curriculum: [{ count: n }] という形で返る（0件でも [{count:0}]）。
+  // 形が変わっても一覧が壊れないよう、取り出せなければ 0 とみなす。
+  type CountEnvelope = { count: number }[] | null | undefined;
+  const coursesTyped = (
+    (data || []) as (SeasonalCourse & {
+      textbooks: SeasonalCourseTextbook[];
+      curriculum?: CountEnvelope;
+    })[]
+  ).map((row) => {
+    const { curriculum, ...rest } = row;
+    return {
+      ...rest,
+      curriculum_count: curriculum?.[0]?.count ?? 0,
+      application_count: 0,
+    } as SeasonalCourseListItem;
+  });
   if (coursesTyped.length === 0) return [];
 
   // 適用数を一括取得（N+1解消: コース毎にcountクエリ → 全コース分を1クエリで取得しJS側で集計）

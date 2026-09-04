@@ -100,6 +100,35 @@ describe('getSeasonalCourses (N+1解消後)', () => {
     warnSpy.mockRestore();
   });
 
+  it('埋め込み集計から curriculum_count を取り出す（未設定の判定に使う）', async () => {
+    // PostgREST は curriculum: [{ count: n }] の形で返す。0件でも [{count:0}] が入る。
+    const courses = [
+      { id: 'c1', school_id: 's1', name: '単元あり', curriculum: [{ count: 25 }] },
+      { id: 'c2', school_id: 's1', name: '単元なし', curriculum: [{ count: 0 }] },
+      { id: 'c3', school_id: 's1', name: '形が想定外', curriculum: [] },
+      { id: 'c4', school_id: 's1', name: 'キー自体が無い' },
+    ];
+
+    let callCount = 0;
+    mockSupabase.from.mockImplementation(() => {
+      callCount++;
+      if (callCount === 1) return createMockChain(courses);
+      return createMockChain([]);
+    });
+
+    const { getSeasonalCourses } = await import('@/lib/api/seasonalCourses');
+    const result = await getSeasonalCourses('s1');
+
+    expect(result.find((c) => c.id === 'c1')?.curriculum_count).toBe(25);
+    expect(result.find((c) => c.id === 'c2')?.curriculum_count).toBe(0);
+    // 形が想定外でも一覧を壊さず 0 として扱う（展開ガードは安全側に倒れる）
+    expect(result.find((c) => c.id === 'c3')?.curriculum_count).toBe(0);
+    expect(result.find((c) => c.id === 'c4')?.curriculum_count).toBe(0);
+
+    // 単元行そのものは一覧に持ち込まない（重い結合を外した確認）
+    expect(result[0]).not.toHaveProperty('curriculum');
+  });
+
   it('講習一覧の取得エラーは throw する', async () => {
     mockSupabase.from.mockImplementation(() => createMockChain(null, { message: 'DB error' }));
 

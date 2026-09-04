@@ -3945,6 +3945,24 @@ export interface SeasonalCourseWithDetails extends SeasonalCourse {
   application_count?: number;
 }
 
+/**
+ * 講習一覧（/courses）用の軽量版。
+ *
+ * 一覧は単元の中身を一切表示しないため、単元行そのものは取得せず件数だけを持つ。
+ * 有効コース全体で単元は約1.7万行あり、以前は単元＋教材マスタまで結合していたため
+ * 一覧を開くたびに大量のデータを転送していた。
+ *
+ * curriculum_count は「中身が入っているか」の判定にも使う。0 のコースは雛形として
+ * 未完成なので、他教室へ展開させない（空のまま展開すると各校に空の複製が増える）。
+ */
+export interface SeasonalCourseListItem extends SeasonalCourse {
+  textbooks: SeasonalCourseTextbook[];
+  /** 単元設定の件数。0 なら中身が空のテンプレ */
+  curriculum_count: number;
+  /** 適用済みの生徒数 */
+  application_count: number;
+}
+
 // カリキュラム表示用（進行表風）
 export interface CourseCurriculumRow {
   curriculumItem: CurriculumItem;
