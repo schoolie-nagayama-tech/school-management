@@ -1,28 +1,90 @@
+import 'server-only';
+import Anthropic from '@anthropic-ai/sdk';
+
 /**
- * Claude API の最小クライアント（サーバー専用）。
+ * Claude API のクライアント（サーバー専用）。
  *
- * ★AI機能の共通土台の1本目。鍵はサーバーの環境変数だけに置き、ブラウザには絶対に出さない。
- * ★SDKを入れずに fetch で直接叩いている。理由は依存を増やさないことと、
- *   使っているのが Messages API の1エンドポイントだけで、SDKの利点が薄いこと。
- *   プロバイダを差し替えたくなったらこのファイルだけを置き換える。
+ * ★AI機能の共通土台。鍵はサーバーの環境変数だけに置き、ブラウザには絶対に出さない。
+ *   NEXT_PUBLIC_ を付けると配られてしまうので、絶対に付けないこと。
+ *
+ * ★モデルIDに日付を付けない。`claude-haiku-4-5-20251001` のように書くと存在しない
+ *   モデル扱いになり、呼び出しが失敗して機能ごと畳まれる（一度これで動かなくなった）。
  *
  * 正典: docs/ai-platform-comparison.md / docs/ai-features-integration-plan.md §5
  */
 
-const API_URL = 'https://api.anthropic.com/v1/messages';
-const API_VERSION = '2023-06-01';
-
-/** 主力は Haiku。難所だけ Sonnet に上げる方針（共通土台の取り決め）。 */
+/**
+ * 主力は Haiku、難所だけ Sonnet に上げる方針（共通土台の取り決め）。
+ * ヘルプはFAQから選んで写すだけの仕事なので Haiku で足りる。
+ */
 export const CLAUDE_MODELS = {
-  fast: 'claude-haiku-4-5-20251001',
+  fast: 'claude-haiku-4-5',
   smart: 'claude-sonnet-5',
 } as const;
 
 export type ClaudeModel = (typeof CLAUDE_MODELS)[keyof typeof CLAUDE_MODELS];
 
+/** 呼び出せなかった理由。画面と記録で「鍵が無い」と「呼んだが失敗した」を区別するために使う */
+export type ClaudeFailureReason =
+  | 'not_configured' // 鍵が未設定
+  | 'auth' // 鍵が違う・失効
+  | 'rate_limit' // 混み合っている
+  | 'bad_request' // こちらの投げ方が悪い（モデルID・パラメータなど）
+  | 'unavailable'; // 相手側の障害・通信不良
+
+export class ClaudeError extends Error {
+  constructor(
+    message: string,
+    readonly reason: ClaudeFailureReason,
+    readonly status?: number
+  ) {
+    super(message);
+    this.name = 'ClaudeError';
+  }
+}
+
 /** 鍵が設定されているか。未設定なら呼び出し側は機能ごと畳む（エラーにしない） */
 export function isClaudeConfigured(): boolean {
   return Boolean(process.env.ANTHROPIC_API_KEY);
+}
+
+let client: Anthropic | null = null;
+
+function getClient(): Anthropic {
+  if (!process.env.ANTHROPIC_API_KEY) {
+    throw new ClaudeError('ANTHROPIC_API_KEY が設定されていません', 'not_configured');
+  }
+  // 使い回す（毎回作ると接続が再確立される）
+  if (!client) client = new Anthropic();
+  return client;
+}
+
+/**
+ * SDKの例外を、こちらで扱いたい粒度に畳む。
+ * ★本文はそのまま外へ出さない。鍵や内部情報が混ざりうるのでログにだけ残す。
+ */
+function toClaudeError(e: unknown): ClaudeError {
+  if (e instanceof ClaudeError) return e;
+
+  if (e instanceof Anthropic.AuthenticationError) {
+    console.error('[claude] 認証に失敗しました（鍵が違う・失効している）', e.status);
+    return new ClaudeError('AIの認証に失敗しました', 'auth', e.status);
+  }
+  if (e instanceof Anthropic.RateLimitError) {
+    console.error('[claude] レート制限', e.status);
+    return new ClaudeError('AIが混み合っています', 'rate_limit', e.status);
+  }
+  if (e instanceof Anthropic.BadRequestError || e instanceof Anthropic.NotFoundError) {
+    // ★モデルIDの誤りはここに来る。原因が分かるようにメッセージを残す
+    console.error('[claude] リクエストが不正です', e.status, e.message);
+    return new ClaudeError('AIの呼び出し方が不正です', 'bad_request', e.status);
+  }
+  if (e instanceof Anthropic.APIError) {
+    console.error('[claude] APIエラー', e.status, e.message);
+    return new ClaudeError('AIの呼び出しに失敗しました', 'unavailable', e.status);
+  }
+  console.error('[claude] 呼び出しに失敗しました', e);
+  return new ClaudeError('AIの呼び出しに失敗しました', 'unavailable');
 }
 
 export interface ClaudeBlock {
@@ -40,86 +102,79 @@ export interface ClaudeCallOptions {
   system: ClaudeBlock[];
   userText: string;
   maxTokens?: number;
-  /** 応答の書き出しを固定して、前置きを防ぐ（JSONを返させるときに使う） */
-  prefill?: string;
   signal?: AbortSignal;
-}
-
-export class ClaudeError extends Error {
-  constructor(
-    message: string,
-    readonly status?: number
-  ) {
-    super(message);
-    this.name = 'ClaudeError';
-  }
 }
 
 /** Messages API を1回叩いてテキストを返す */
 export async function callClaude(options: ClaudeCallOptions): Promise<string> {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) throw new ClaudeError('ANTHROPIC_API_KEY が設定されていません');
+  try {
+    const response = await getClient().messages.create(
+      {
+        model: options.model ?? CLAUDE_MODELS.fast,
+        max_tokens: options.maxTokens ?? 1024,
+        system: options.system.map((b) =>
+          b.cache
+            ? { type: 'text' as const, text: b.text, cache_control: { type: 'ephemeral' as const } }
+            : { type: 'text' as const, text: b.text }
+        ),
+        messages: [{ role: 'user', content: options.userText }],
+      },
+      { signal: options.signal }
+    );
 
-  const messages: { role: 'user' | 'assistant'; content: string }[] = [
-    { role: 'user', content: options.userText },
-  ];
-  // prefill を assistant の先頭に置くと、その続きから書き始める
-  if (options.prefill) messages.push({ role: 'assistant', content: options.prefill });
-
-  const res = await fetch(API_URL, {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': API_VERSION,
-    },
-    signal: options.signal,
-    body: JSON.stringify({
-      model: options.model ?? CLAUDE_MODELS.fast,
-      max_tokens: options.maxTokens ?? 1024,
-      system: options.system.map((b) =>
-        b.cache
-          ? { type: 'text', text: b.text, cache_control: { type: 'ephemeral' } }
-          : { type: 'text', text: b.text }
-      ),
-      messages,
-    }),
-  });
-
-  if (!res.ok) {
-    const body = await res.text().catch(() => '');
-    // ★本文をそのまま外に出さない。鍵や内部情報が混ざる可能性があるためログにだけ残す
-    console.error('[claude] request failed', res.status, body.slice(0, 500));
-    throw new ClaudeError('AIの呼び出しに失敗しました', res.status);
+    return response.content
+      .filter((c): c is Anthropic.TextBlock => c.type === 'text')
+      .map((c) => c.text)
+      .join('');
+  } catch (e) {
+    throw toClaudeError(e);
   }
-
-  const json = (await res.json()) as { content?: { type: string; text?: string }[] };
-  const text = (json.content ?? [])
-    .filter((c) => c.type === 'text')
-    .map((c) => c.text ?? '')
-    .join('');
-  return (options.prefill ?? '') + text;
 }
 
 /**
- * JSONを返させる。prefill で「{」から書き始めさせ、前置きの文章が混ざるのを防ぐ。
- * 壊れたJSONが返ったら null（呼び出し側で「答えられない」に倒す）。
+ * JSONを返させる。
+ * ★プレフィル（assistantの書き出しを固定する手）は新しめのモデルでは400になるので使わない。
+ *   代わりに「JSONだけを返す」ようプロンプトで指示し、前後の余計な文字はここで落とす。
+ * 壊れたJSONなら null（呼び出し側で「答えられない」に倒す）。
  */
 export async function callClaudeJson<T>(options: ClaudeCallOptions): Promise<T | null> {
-  const raw = await callClaude({ ...options, prefill: options.prefill ?? '{' });
+  const raw = await callClaude(options);
+  return parseJsonLoose<T>(raw);
+}
+
+/**
+ * 前置きやコードフェンスが付いていても最初のJSONオブジェクトを取り出す。
+ * 素の JSON.parse だけだと、ちょっとした前置きひとつで機能が黙ってしまうため。
+ */
+export function parseJsonLoose<T>(raw: string): T | null {
+  const trimmed = raw.trim();
   try {
-    return JSON.parse(raw) as T;
+    return JSON.parse(trimmed) as T;
   } catch {
-    // 末尾に余計な文字が付くことがあるので、最後の } までで切って1度だけ試す
-    const end = raw.lastIndexOf('}');
-    if (end > 0) {
-      try {
-        return JSON.parse(raw.slice(0, end + 1)) as T;
-      } catch {
-        /* あきらめる */
-      }
-    }
-    console.error('[claude] JSONとして読めませんでした', raw.slice(0, 300));
-    return null;
+    /* 下で拾い直す */
   }
+
+  // ```json ... ``` を剥がす
+  const fenced = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if (fenced) {
+    try {
+      return JSON.parse(fenced[1].trim()) as T;
+    } catch {
+      /* 続ける */
+    }
+  }
+
+  // 最初の { から最後の } までを試す
+  const start = trimmed.indexOf('{');
+  const end = trimmed.lastIndexOf('}');
+  if (start >= 0 && end > start) {
+    try {
+      return JSON.parse(trimmed.slice(start, end + 1)) as T;
+    } catch {
+      /* あきらめる */
+    }
+  }
+
+  console.error('[claude] JSONとして読めませんでした', trimmed.slice(0, 300));
+  return null;
 }
