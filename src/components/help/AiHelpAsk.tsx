@@ -40,6 +40,8 @@ interface AiHelpResponse {
   degraded: boolean;
   fallback: FallbackItem[];
   degradedReason?: DegradedReason | null;
+  /** APIが返した理由の原文（adminのみ） */
+  degradedDetail?: string | null;
   logId?: string | null;
 }
 
@@ -280,6 +282,13 @@ function AnswerCard({
           {result.degraded
             ? DEGRADED_HINT[result.degradedReason ?? 'unavailable']
             : 'この質問はヘルプに載っていません。近いかもしれない項目を出します。'}
+        </p>
+      )}
+
+      {/* ★管理者にだけ、APIが返した理由の原文を出す。原因はここにしか書かれていない */}
+      {result.degradedDetail && (
+        <p className="mt-2 rounded-md bg-surface-hover px-2.5 py-2 font-mono text-[11px] leading-relaxed text-text-muted break-all">
+          {result.degradedDetail}
         </p>
       )}
 

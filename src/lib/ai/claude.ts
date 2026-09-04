@@ -36,7 +36,13 @@ export class ClaudeError extends Error {
   constructor(
     message: string,
     readonly reason: ClaudeFailureReason,
-    readonly status?: number
+    readonly status?: number,
+    /**
+     * APIが返した理由の原文。★admin にだけ画面に出す。
+     * 原因（モデルIDの誤り・パラメータ違反など）はここにしか書かれていないので、
+     * これが見えないと結局サーバーのログを掘ることになる。
+     */
+    readonly detail?: string
   ) {
     super(message);
     this.name = 'ClaudeError';
@@ -67,24 +73,29 @@ function toClaudeError(e: unknown): ClaudeError {
   if (e instanceof ClaudeError) return e;
 
   if (e instanceof Anthropic.AuthenticationError) {
-    console.error('[claude] 認証に失敗しました（鍵が違う・失効している）', e.status);
-    return new ClaudeError('AIの認証に失敗しました', 'auth', e.status);
+    console.error('[claude] 認証に失敗しました（鍵が違う・失効している）', e.status, e.message);
+    return new ClaudeError('AIの認証に失敗しました', 'auth', e.status, e.message);
   }
   if (e instanceof Anthropic.RateLimitError) {
-    console.error('[claude] レート制限', e.status);
-    return new ClaudeError('AIが混み合っています', 'rate_limit', e.status);
+    console.error('[claude] レート制限', e.status, e.message);
+    return new ClaudeError('AIが混み合っています', 'rate_limit', e.status, e.message);
   }
   if (e instanceof Anthropic.BadRequestError || e instanceof Anthropic.NotFoundError) {
     // ★モデルIDの誤りはここに来る。原因が分かるようにメッセージを残す
     console.error('[claude] リクエストが不正です', e.status, e.message);
-    return new ClaudeError('AIの呼び出し方が不正です', 'bad_request', e.status);
+    return new ClaudeError('AIの呼び出し方が不正です', 'bad_request', e.status, e.message);
   }
   if (e instanceof Anthropic.APIError) {
     console.error('[claude] APIエラー', e.status, e.message);
-    return new ClaudeError('AIの呼び出しに失敗しました', 'unavailable', e.status);
+    return new ClaudeError('AIの呼び出しに失敗しました', 'unavailable', e.status, e.message);
   }
   console.error('[claude] 呼び出しに失敗しました', e);
-  return new ClaudeError('AIの呼び出しに失敗しました', 'unavailable');
+  return new ClaudeError(
+    'AIの呼び出しに失敗しました',
+    'unavailable',
+    undefined,
+    e instanceof Error ? e.message : String(e)
+  );
 }
 
 export interface ClaudeBlock {
