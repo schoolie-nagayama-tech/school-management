@@ -853,11 +853,13 @@ export type Database = {
         Relationships: [];
       };
       curriculum_items: {
+        // ★ item_number は DB では text。「1-8」「第15回」のような番号が実際に入っている。
+        //   number として扱うと Number('1-8') = NaN → JSON 化で null になり、番号が消える。
         Row: {
           id: number;
           textbook_id: number;
           title: string;
-          item_number: number | null;
+          item_number: string | null;
           item_type: string | null;
           sort_order: number;
           created_at: string;
@@ -866,7 +868,7 @@ export type Database = {
           id?: number;
           textbook_id: number;
           title: string;
-          item_number?: number | null;
+          item_number?: string | null;
           item_type?: string | null;
           sort_order?: number;
           created_at?: string;
@@ -875,7 +877,7 @@ export type Database = {
           id?: number;
           textbook_id?: number;
           title?: string;
-          item_number?: number | null;
+          item_number?: string | null;
           item_type?: string | null;
           sort_order?: number;
           created_at?: string;
