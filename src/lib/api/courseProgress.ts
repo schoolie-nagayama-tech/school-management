@@ -6,6 +6,8 @@ import type {
   ApplicationStatus,
   ApplicationColumnType,
   SeasonType,
+  CoursePrepSnapshot,
+  CoursePrepSnapshotMeta,
 } from '@/types/database';
 
 // =============================================
@@ -264,3 +266,46 @@ export type AutoValues = Record<
   }
 >;
 // 単独取得関数 getAutoValues は廃止。batchFetchCoursePrepApi で 'auto_values' ターゲットを使うこと。
+
+// =============================================
+// 確定保存（スナップショット）
+//
+// 講習期間が終わったあとも、進捗表の数字はライブデータから再計算され続けるため
+// 過去の実績が動いてしまう（退塾で行が消える、通塾パターンの組み替えでコマ数が変わる等）。
+// 期の終わりに「集計の入力」を凍結して、あとから当時の姿で振り返れるようにする。
+// 設計は docs/koushu-progress-snapshot-plan.md。
+// =============================================
+
+/**
+ * この期を確定保存する（取り直しは上書き）。教室長以上のみ。
+ * summary は一覧表示用のキャッシュなので、呼び出し側で現行ロジックの集計を渡す。
+ */
+export async function saveCoursePrepSnapshot(
+  schoolId: string,
+  season: SeasonType,
+  year: number,
+  summary: Record<string, unknown> | null
+): Promise<CoursePrepSnapshotMeta> {
+  const result = await callCoursePrepApi('save_snapshot', schoolId, { season, year, summary });
+  return result.data as CoursePrepSnapshotMeta;
+}
+
+/** 確定保存された期の中身を取得する。未保存なら null。 */
+export async function getCoursePrepSnapshot(
+  schoolId: string,
+  season: SeasonType,
+  year: number
+): Promise<CoursePrepSnapshot | null> {
+  const result = await fetchCoursePrepApi('get_snapshot', {
+    schoolId,
+    season,
+    year: String(year),
+  });
+  return (result.data as CoursePrepSnapshot | null) ?? null;
+}
+
+/** 確定保存済みの期の一覧（payload は含まない）。 */
+export async function listCoursePrepSnapshots(schoolId: string): Promise<CoursePrepSnapshotMeta[]> {
+  const result = await fetchCoursePrepApi('list_snapshots', { schoolId });
+  return (result.data as CoursePrepSnapshotMeta[]) || [];
+}

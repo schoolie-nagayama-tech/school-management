@@ -4487,6 +4487,69 @@ export interface StudentCourseProgress {
   updated_at: string;
 }
 
+/**
+ * 講習進捗管理表の確定保存（スナップショット）。
+ *
+ * 保存するのは集計結果ではなく「集計の入力」。CoursePrepSnapshotPayload の5点セットは
+ * computeDashboardAggregates() の引数と1:1に対応しており、これを凍結しておけば
+ * 表・ダッシュボード・レポートを当時の姿で再生できる。
+ * 詳細は docs/koushu-progress-snapshot-plan.md。
+ */
+export interface CoursePrepSnapshotPayload {
+  version: number;
+  /** 表示に要る項目だけのホワイトリスト（Student の部分集合） */
+  students: Pick<
+    Student,
+    | 'id'
+    | 'school_id'
+    | 'grade'
+    | 'last_name'
+    | 'first_name'
+    | 'last_name_kana'
+    | 'first_name_kana'
+    | 'status'
+    | 'withdrawal_date'
+  >[];
+  items: CourseProgressItem[];
+  progress: StudentCourseProgress[];
+  autoValues: Record<
+    string,
+    {
+      regular_weekly: number;
+      course_sessions: number;
+      proposal_total?: number;
+      subject_proposals?: Record<string, number>;
+      applied_total?: number;
+      subject_applied?: Record<string, number>;
+    }
+  >;
+  period: CoursePrepPeriod | null;
+}
+
+/** 一覧・バッジ表示に使うスナップショットのメタ情報（payload を含まない） */
+export interface CoursePrepSnapshotMeta {
+  id: string;
+  season?: SeasonType;
+  year?: number;
+  captured_at: string;
+  captured_by?: string | null;
+  /** 'manual' = 教室長以上が確定保存 / 'auto' = 期間終了後の日次cronが自動確定 */
+  capture_reason: 'manual' | 'auto';
+  student_count: number;
+  /** 一覧表示用のキャッシュ。payload から再生成できるので正典ではない */
+  summary: Record<string, unknown> | null;
+}
+
+export interface CoursePrepSnapshot extends CoursePrepSnapshotMeta {
+  school_id: string;
+  season: SeasonType;
+  year: number;
+  payload: CoursePrepSnapshotPayload;
+  created_at: string;
+  updated_at: string;
+}
+
+
 export interface ScheduleTask {
   id: string;
   school_id: string;

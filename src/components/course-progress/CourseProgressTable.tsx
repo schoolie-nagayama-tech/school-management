@@ -895,6 +895,18 @@ export function CourseProgressTable({
                     >
                       {student.last_name} {student.first_name}
                     </button>
+                    {/* 期の途中・期の後に退塾した生徒。講習の実績としてはコマ数を数えたいので
+                        行は残すが、今いる生徒と見分けがつかないと運用が混乱するため印を付ける。 */}
+                    {student.status === 'withdrawn' && (
+                      <span
+                        className="ml-1 px-1 py-px text-[9px] rounded bg-gray-100 text-gray-500 border border-gray-200 align-middle"
+                        title={
+                          student.withdrawal_date ? `${student.withdrawal_date} 退塾` : '退塾済み'
+                        }
+                      >
+                        退塾
+                      </span>
+                    )}
                   </td>
                   {/* 進捗バー + グループドット */}
                   <td
