@@ -2,21 +2,25 @@
 
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import type { TestPrepProposalWithDetails, TestPrepProposalUnit } from '@/types/test-prep';
+import type { TestPrepProposalWithDetails } from '@/types/test-prep';
 import { SELF_ASSESSMENT_LABELS } from '@/types/test-prep';
 import { getTestPrepProposalByToken } from '@/lib/api/test-prep-proposals';
 import { toSurnameOnly } from '@/lib/utils/teacherName';
 import { formatGradeLabel } from '@/lib/utils/gradeLabel';
 import { Spinner } from '@/components/ui';
-import { ArrowRight } from 'lucide-react';
+import {
+  ProposalSheet,
+  ProposalApplyCard,
+  type ProposalSheetData,
+} from '@/components/test-prep/ProposalSheet';
 
-const ASSESSMENT_STYLES: Record<string, string> = {
-  '◎': 'text-blue-600 font-bold',
-  '○': 'text-green-600 font-bold',
-  '△': 'text-yellow-600 font-bold',
-  '×': 'text-red-600 font-bold',
-};
-
+/**
+ * テスト対策提案書の公開ページ（保護者がQR/URLから開く）。
+ *
+ * 紙面の中身は `ProposalSheet` に集約している（モック /test-prep/mock と共用。
+ * 以前は同じマークアップを2ファイルに複製していて、片方だけ直ると見た目がずれていた）。
+ * このページの責務はトークンからの取得と、増コマ申込フォームへの引き継ぎだけ。
+ */
 export default function TestPrepPublicPage() {
   const params = useParams();
   const token = params?.token as string;
@@ -28,6 +32,12 @@ export default function TestPrepPublicPage() {
     | null
   >(null);
   const [error, setError] = useState('');
+  // 印刷用QRは自分自身のURL。SSR時は window が無いのでマウント後に入れる
+  const [pageUrl, setPageUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    setPageUrl(window.location.href);
+  }, []);
 
   useEffect(() => {
     if (!token) return;
@@ -45,7 +55,7 @@ export default function TestPrepPublicPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-[#f3f4f6] flex items-center justify-center">
         <Spinner size="md" />
       </div>
     );
@@ -53,10 +63,10 @@ export default function TestPrepPublicPage() {
 
   if (error || !proposal) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="bg-white rounded-xl border border-gray-200 p-8 text-center max-w-md">
-          <h1 className="text-xl font-bold text-gray-900 mb-2">提案書が見つかりません</h1>
-          <p className="text-gray-500 text-sm">
+      <div className="min-h-screen bg-[#f3f4f6] flex items-center justify-center px-4">
+        <div className="bg-white rounded-2xl border border-[#e5e7eb] p-8 text-center max-w-md">
+          <h1 className="text-xl font-bold text-[#1a1a1a] mb-2">提案書が見つかりません</h1>
+          <p className="text-[#6b7280] text-sm">
             {error || 'このURLは無効か、まだ公開されていません。'}
           </p>
         </div>
@@ -71,363 +81,64 @@ export default function TestPrepPublicPage() {
   const schoolObj = (proposal as unknown as Record<string, unknown>).school as
     | { name: string; code: string | null }
     | undefined;
-  const schoolName = schoolObj?.name || '';
   const schoolCode = schoolObj?.code || null;
-  // 保護者向けの書面では講師は姓のみ表示（個人情報配慮・社内の慣習に合わせる）
-  const teacherName = toSurnameOnly(proposal.teacher?.display_name) || '';
-  const examName = proposal.exam_type?.name || '';
 
-  const totalKoma = proposal.subjects.reduce(
-    (sum, s) => sum + (s.units || []).reduce((us, u) => us + u.koma_count, 0),
-    0
-  );
+  const sheet: ProposalSheetData = {
+    schoolName: schoolObj?.name || '',
+    title: proposal.title,
+    // 保護者向けの書面では講師は姓のみ表示（個人情報配慮・社内の慣習に合わせる）
+    teacherName: toSurnameOnly(proposal.teacher?.display_name) || '',
+    studentName,
+    studentGrade,
+    examName: proposal.exam_type?.name || '',
+    notes: proposal.notes || null,
+    subjects: proposal.subjects.map((s) => ({
+      id: s.id,
+      name: s.subject_name,
+      targetScore: s.target_score ?? null,
+      units: (s.units || []).map((u) => ({
+        id: u.id,
+        name: u.unit_name,
+        assessment: u.self_assessment ?? null,
+        koma: u.koma_count,
+        groupId: u.group_id ?? null,
+      })),
+    })),
+    assessmentLabels: SELF_ASSESSMENT_LABELS,
+  };
 
-  // 上段/下段の分割（5科目なら 3+2、それ以外はそのまま）
-  const topSubjects = proposal.subjects.slice(0, Math.min(3, proposal.subjects.length));
-  const bottomSubjects = proposal.subjects.length > 3 ? proposal.subjects.slice(3) : [];
+  // 科目別コマ数（申込フォームへクエリで引き継ぐ）
+  const subjectKoma = sheet.subjects
+    .map((s) => ({ name: s.name, koma: s.units.reduce((sum, u) => sum + u.koma, 0) }))
+    .filter((sk) => sk.koma > 0);
+
+  // 増コマフォームURL（生徒名・学年・科目別コマ数をクエリパラメータで渡す）
+  let applyUrl: string | null = null;
+  if (schoolCode) {
+    const query = new URLSearchParams({ name: studentName, grade: studentGrade });
+    for (const sk of subjectKoma) query.set(`s_${sk.name}`, String(sk.koma));
+    applyUrl = `/portal/${schoolCode}/zoukoma?${query.toString()}`;
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50 print:bg-white print:min-h-0">
-      <div className="max-w-3xl mx-auto px-4 py-8 print:px-0 print:py-0 print:max-w-none">
-        {/* 提案書本体 */}
-        <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden print:rounded-none print:border-none">
-          {/* ヘッダー
-              画面・カラー印刷では赤のグラデーション。白黒印刷だと赤ベタが真っ黒に潰れるため、
-              print: では背景を白に落とし、赤は下線（細線）だけ残して文字を黒系にする。 */}
-          <div className="bg-gradient-to-r from-red-600 to-red-500 px-6 py-5 print:px-4 print:py-2 print:bg-none print:bg-white print:border-b-2 print:border-red-600">
-            <div className="flex items-center justify-between">
-              <div>
-                {schoolName && (
-                  <p className="text-red-100 text-sm print:text-[9px] print:text-gray-500">
-                    {schoolName}
-                  </p>
-                )}
-                <h1 className="text-xl font-bold text-white mt-0.5 print:mt-0 print:text-base print:text-gray-900">
-                  {proposal.title}
-                </h1>
-              </div>
-              {teacherName && (
-                <div className="text-right text-sm text-red-100 print:text-[9px] print:text-gray-600">
-                  <p>担当: {teacherName}</p>
-                </div>
-              )}
-            </div>
+    <div className="min-h-screen bg-[#f3f4f6] print:bg-white print:min-h-0">
+      <div className="max-w-2xl mx-auto px-4 py-6 print:px-0 print:py-0 print:max-w-none">
+        <ProposalSheet data={sheet} printUrl={pageUrl} hasApplyLink={!!applyUrl} />
+
+        {applyUrl && (
+          <div className="mt-4">
+            <ProposalApplyCard subjectKoma={subjectKoma} applyUrl={applyUrl} />
           </div>
-
-          {/* 生徒情報 */}
-          <div className="px-6 py-4 print:px-4 print:py-1.5 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
-            <div className="flex items-center gap-6 print:gap-4">
-              <div>
-                <span className="text-xs text-gray-400 print:text-[8px]">生徒名</span>
-                <p className="font-bold text-gray-900 text-lg print:text-[11px]">{studentName}</p>
-              </div>
-              <div>
-                <span className="text-xs text-gray-400 print:text-[8px]">学年</span>
-                <p className="font-medium text-gray-700 print:text-[10px]">{studentGrade}</p>
-              </div>
-              {examName && (
-                <div>
-                  <span className="text-xs text-gray-400 print:text-[8px]">試験</span>
-                  <p className="font-medium text-gray-700 print:text-[10px]">{examName}</p>
-                </div>
-              )}
-            </div>
-            <div className="text-right">
-              <span className="text-xs text-gray-400 print:text-[8px]">提案コマ数合計</span>
-              <p className="text-2xl font-bold text-red-600 print:text-base print:text-gray-900">
-                {totalKoma}
-                <span className="text-sm font-normal text-gray-500 ml-1 print:text-[9px]">
-                  コマ
-                </span>
-              </p>
-            </div>
-          </div>
-
-          {/* 保護者向けの案内（この書面が何かの説明＋増コマ受講のおすすめ）。
-              テスト対策の提案書が保護者にとって唐突／不親切だったため、目的を明記する。 */}
-          <div className="mx-6 mt-4 p-3.5 print:mx-4 print:mt-2 print:p-2 rounded-lg bg-amber-50 border border-amber-100 print:bg-white print:border-gray-300 text-sm text-gray-700 leading-relaxed print:text-[9px] print:leading-snug">
-            <p className="font-bold text-gray-900 mb-1 print:mb-0.5">
-              保護者の皆様へ — テスト対策のご提案
-            </p>
-            <p>
-              本書は、次回の定期テストに向けて、担当講師がお子様の現在の到達状況をもとに作成した対策プランです。
-              下記の科目・単元ごとに、目標点の達成に必要と考えられる対策コマ数の目安をまとめています。
-              テストでの得点アップに向けて、ぜひ追加の対策コマ（増コマ）の受講をご検討ください。
-              お申し込みは{schoolCode ? 'ページ下部（印刷の場合はQRコード）の' : '末尾の'}
-              増コマ申込フォームから承ります。
-            </p>
-          </div>
-
-          {/* 自己評価の凡例 */}
-          <div className="px-6 pt-4 pb-2 print:px-4 print:pt-1.5 print:pb-1 flex items-center gap-4 print:gap-2.5 text-xs text-gray-500 print:text-[8px]">
-            <span className="text-gray-400">自己評価:</span>
-            {Object.entries(SELF_ASSESSMENT_LABELS).map(([mark, label]) => (
-              <span key={mark} className="flex items-center gap-1">
-                <span className={ASSESSMENT_STYLES[mark]}>{mark}</span>
-                <span>{label}</span>
-              </span>
-            ))}
-          </div>
-
-          {/* メッセージ */}
-          {proposal.notes && (
-            <div className="mx-6 mt-2 mb-4 p-3 print:mx-4 print:mt-1 print:mb-2 print:p-2 bg-blue-50 rounded-lg border border-blue-100 print:bg-white print:border-gray-300 text-sm text-blue-800 print:text-[9px] print:leading-snug print:text-gray-700 whitespace-pre-line">
-              {proposal.notes}
-            </div>
-          )}
-
-          {/* 科目ブロック群 */}
-          <div className="px-6 pb-6 print:px-4 print:pb-2">
-            {topSubjects.length > 0 && (
-              <div
-                className={`grid grid-cols-1 gap-4 mb-4 print:gap-2 print:mb-2 ${topSubjects.length >= 3 ? 'md:grid-cols-3 print:grid-cols-3' : topSubjects.length === 2 ? 'md:grid-cols-2 print:grid-cols-2' : ''}`}
-              >
-                {topSubjects.map((subject) => (
-                  <SubjectBlock key={subject.id} subject={subject} />
-                ))}
-              </div>
-            )}
-            {bottomSubjects.length > 0 && (
-              <div
-                className={`grid grid-cols-1 gap-4 print:gap-2 ${bottomSubjects.length >= 2 ? 'md:grid-cols-2 print:grid-cols-2' : ''}`}
-              >
-                {bottomSubjects.map((subject) => (
-                  <SubjectBlock key={subject.id} subject={subject} />
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* QRコード（印刷用） */}
-          <div className="hidden print:block border-t border-dashed border-gray-300 mx-4 pt-2 pb-0 break-inside-avoid">
-            <div className="flex items-center gap-4">
-              <div className="w-16 h-16 bg-gray-200 border border-gray-300 rounded flex items-center justify-center text-[7px] text-gray-400">
-                QR Code
-              </div>
-              <div>
-                <p className="font-bold text-gray-900 text-[10px]">テスト対策 増コマ申し込み</p>
-                <p className="text-[8px] text-gray-600 mt-0.5">
-                  上のQRコードを読み取るか、以下のURLからお申し込みください。
-                </p>
-                <p className="text-[8px] text-blue-600 mt-0.5 font-mono break-all">
-                  {typeof window !== 'undefined' ? window.location.href : ''}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* 増コマ申込セクション（印刷時非表示） */}
-        <div className="print:hidden mt-8">
-          <ZoukomaSection
-            proposal={proposal}
-            schoolCode={schoolCode}
-            studentName={studentName}
-            studentGrade={studentGrade}
-            totalKoma={totalKoma}
-          />
-        </div>
+        )}
       </div>
 
-      {/* 印刷はA4縦1枚に収める前提。余白を詰めたうえで、各要素は print: 修飾で
-          文字サイズ・パディングを圧縮している（画面表示側は従来のまま） */}
+      {/* 印刷はA4縦1枚が前提。紙面側の圧縮は ProposalSheet の print: 修飾で行う */}
       <style>{`
         @media print {
           @page { size: A4 portrait; margin: 8mm 10mm; }
           body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         }
       `}</style>
-    </div>
-  );
-}
-
-// グループ情報を付与した表示用行データを構築
-function buildGroupedRows(units: TestPrepProposalUnit[]) {
-  const rows: Array<{
-    unit: TestPrepProposalUnit;
-    isGroupStart: boolean;
-    isGroupMember: boolean;
-    groupSize: number;
-  }> = [];
-  const list = units || [];
-  let i = 0;
-  while (i < list.length) {
-    const u = list[i];
-    if (u.group_id) {
-      const gid = u.group_id;
-      const start = i;
-      while (i < list.length && list[i].group_id === gid) i++;
-      const size = i - start;
-      for (let j = start; j < i; j++) {
-        rows.push({
-          unit: list[j],
-          isGroupStart: j === start,
-          isGroupMember: true,
-          groupSize: size,
-        });
-      }
-    } else {
-      rows.push({ unit: u, isGroupStart: false, isGroupMember: false, groupSize: 1 });
-      i++;
-    }
-  }
-  return rows;
-}
-
-// 科目ブロック
-function SubjectBlock({ subject }: { subject: TestPrepProposalWithDetails['subjects'][number] }) {
-  const totalKoma = (subject.units || []).reduce((sum, u) => sum + u.koma_count, 0);
-  const rows = buildGroupedRows(subject.units || []);
-
-  return (
-    // 印刷時は科目ブロックがページ跨ぎで割れないようにする（A4縦1枚に収める前提）
-    <div className="border border-gray-200 rounded-xl overflow-hidden print:break-inside-avoid">
-      <div className="px-3 py-2 print:px-2 print:py-1 bg-gray-800 text-white flex items-center justify-between">
-        <span className="font-bold text-sm print:text-[10px]">{subject.subject_name}</span>
-        {subject.target_score != null && (
-          <span className="text-xs text-gray-300 print:text-[8px]">
-            目標 <span className="text-yellow-300 font-bold">{subject.target_score}</span>点
-          </span>
-        )}
-      </div>
-      <table className="w-full text-xs print:text-[8px]">
-        <thead>
-          <tr className="bg-gray-50 text-gray-500">
-            <th className="text-left px-2 py-1.5 print:px-1.5 print:py-0.5 font-medium">単元</th>
-            <th className="w-10 print:w-6 text-center px-1 py-1.5 print:py-0.5 font-medium">
-              評価
-            </th>
-            <th className="w-12 print:w-7 text-center px-1 py-1.5 print:py-0.5 font-medium">
-              コマ
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => (
-            <tr
-              key={row.unit.id}
-              className={`border-t border-gray-100 ${row.isGroupMember ? 'bg-blue-50/30' : ''}`}
-            >
-              <td className="px-2 py-1.5 print:px-1.5 print:py-0.5 text-gray-700">
-                {row.unit.unit_name}
-              </td>
-              <td className="text-center">
-                {row.unit.self_assessment && (
-                  <span className={ASSESSMENT_STYLES[row.unit.self_assessment] || ''}>
-                    {row.unit.self_assessment}
-                  </span>
-                )}
-              </td>
-              {row.isGroupMember ? (
-                row.isGroupStart ? (
-                  <td
-                    className="text-center font-medium text-gray-800 bg-blue-50/50"
-                    rowSpan={row.groupSize}
-                  >
-                    {row.unit.koma_count}
-                  </td>
-                ) : null
-              ) : (
-                <td className="text-center font-medium text-gray-800">{row.unit.koma_count}</td>
-              )}
-            </tr>
-          ))}
-        </tbody>
-        <tfoot>
-          <tr className="border-t-2 border-gray-200 bg-gray-50 font-bold">
-            <td className="px-2 py-1.5 print:px-1.5 print:py-0.5 text-gray-600">合計</td>
-            <td />
-            <td className="text-center text-red-600 print:text-gray-900">{totalKoma}</td>
-          </tr>
-        </tfoot>
-      </table>
-    </div>
-  );
-}
-
-// 増コマ申込セクション — ポータルの増コマフォームへリンク
-// schoolCode があればリンクを表示（期間の有効判定はポータル側で行う）
-function ZoukomaSection({
-  proposal,
-  schoolCode,
-  studentName,
-  studentGrade,
-  totalKoma,
-}: {
-  proposal: TestPrepProposalWithDetails;
-  schoolCode: string | null;
-  studentName: string;
-  studentGrade: string;
-  totalKoma: number;
-}) {
-  if (!schoolCode) return null;
-
-  // 科目別コマ数
-  const subjectKoma = proposal.subjects.map((s) => ({
-    name: s.subject_name,
-    koma: (s.units || []).reduce((sum, u) => sum + u.koma_count, 0),
-  }));
-
-  // 増コマフォームURL（生徒名・学年・科目別コマ数をクエリパラメータで渡す）
-  const params = new URLSearchParams({ name: studentName, grade: studentGrade });
-  for (const sk of subjectKoma) {
-    if (sk.koma > 0) params.set(`s_${sk.name}`, String(sk.koma));
-  }
-  const zoukomaUrl = `/portal/${schoolCode}/zoukoma?${params.toString()}`;
-
-  return (
-    <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-      <div className="px-6 py-5 bg-gradient-to-r from-blue-50 to-white">
-        <h2 className="font-bold text-gray-900 text-lg">テスト対策 増コマ申し込み</h2>
-        <p className="text-sm text-gray-500 mt-0.5">
-          提案内容をもとに増コマをお申し込みいただけます
-        </p>
-      </div>
-
-      <div className="px-6 py-4 border-t border-gray-100">
-        {/* 提案内容サマリー */}
-        <div className="flex items-center gap-6 mb-4 text-sm">
-          <div>
-            <span className="text-gray-400 text-xs">生徒</span>
-            <p className="font-medium text-gray-900">
-              {studentName} ({studentGrade})
-            </p>
-          </div>
-          <div>
-            <span className="text-gray-400 text-xs">提案コマ数</span>
-            <p className="font-bold text-red-600 text-lg">
-              {totalKoma}
-              <span className="text-sm font-normal text-gray-500 ml-0.5">コマ</span>
-            </p>
-          </div>
-        </div>
-
-        {/* 科目別内訳 */}
-        <div className="flex flex-wrap gap-2 mb-5">
-          {subjectKoma.map((sk) => (
-            <span
-              key={sk.name}
-              className="px-2.5 py-1 bg-gray-100 rounded-lg text-xs text-gray-700"
-            >
-              {sk.name} <span className="font-bold">{sk.koma}</span>コマ
-            </span>
-          ))}
-        </div>
-
-        {/* 増コマフォームへのリンク
-            「申し込む」だと、この場で申込確定するように見えてしまう。実際は申込フォームへ遷移するだけなので、
-            文言・矢印アイコン・補足テキストで「フォームに移動する」ことを明示する。 */}
-        <a
-          href={zoukomaUrl}
-          className="flex items-center justify-center gap-1.5 w-full py-3 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition-[background-color,transform] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97] text-sm text-center"
-        >
-          増コマ申込フォームへ進む
-          <ArrowRight className="w-4 h-4" />
-        </a>
-        <p className="text-xs text-gray-500 mt-2 text-center">
-          ボタンを押すと、お申し込みフォームに移動します。日時の選択・送信はフォーム上で行います。
-        </p>
-      </div>
     </div>
   );
 }
