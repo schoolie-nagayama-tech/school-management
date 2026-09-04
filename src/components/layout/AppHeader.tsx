@@ -23,7 +23,6 @@ import { BadgeFlowerField } from '@/components/badges/HiddenFlower';
 import { HEADER_FLOWERS } from '@/components/badges/flowerPlacements';
 import { ThemeToggle } from './ThemeToggle';
 import { getSurname } from '@/lib/utils/teacherName';
-import { PushNotificationButton } from '@/components/ui/PushNotificationButton';
 import { buildNavEntries, isLinkActive, isGroupActive } from './navConfig';
 import { isSystemAdmin } from '@/lib/utils/roles';
 import { canAccessPortalDemo } from '@/lib/mypage/demoAccess';
@@ -533,17 +532,11 @@ export function AppHeader({
                       >
                         ヘルプ
                       </Link>
-                      {/* プッシュ通知 */}
-                      {!isTeacher && (
-                        <div className="px-3 py-2 flex items-center justify-between">
-                          <span className="text-xs text-gray-600">プッシュ通知</span>
-                          {selectedSchoolId && selectedSchoolId !== 'all' ? (
-                            <PushNotificationButton schoolId={selectedSchoolId} compact />
-                          ) : schools.length > 0 ? (
-                            <PushNotificationButton schoolId={schools[0].id} compact />
-                          ) : null}
-                        </div>
-                      )}
+                      {/* ★ PWA一時閉鎖中（2026-08-20）。SWを登録していないため
+                          PushNotificationButton は 'unsupported' で null を返し、
+                          「プッシュ通知」のラベルだけが右側が空のまま残っていた。
+                          行ごと畳んでおき、PWA再開時にこのブロックを戻す。
+                          （layout.tsx の <ServiceWorkerUpdateBar /> と同じ扱い） */}
                     </div>
                   </div>
                 </div>

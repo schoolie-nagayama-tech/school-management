@@ -30,6 +30,7 @@ import {
   AlertTriangle,
   ArrowRight,
   BookOpenCheck,
+  Info,
   type LucideIcon,
 } from 'lucide-react';
 import type { UserRole } from '@/types/database';
@@ -38,6 +39,7 @@ import {
   GLOSSARY_DATA,
   type FaqItem,
   type FaqCategoryData,
+  type FeatureStatus,
   type RoleTag,
 } from '@/lib/help/faqData';
 import { AiHelpAsk } from '@/components/help/AiHelpAsk';
@@ -66,12 +68,33 @@ const CATEGORY_ICONS: Record<string, LucideIcon> = {
   inquiries: Shield,
 };
 
+// ロール名は USER_ROLE_LABELS（types/database.ts）と揃える。
+// admin タグは owner（エリアマネージャー）も含むので「システム管理者」単独ではなく
+// 「システム管理者・エリアマネージャー」と出す（mapUserRoleToTag が両方をここへ寄せるため）。
 const ROLE_LABELS: Record<RoleTag, string> = {
   all: 'すべて',
-  admin: '管理者',
-  manager: '室長',
+  admin: 'システム管理者・エリアマネージャー',
+  manager: '教室長',
   teacher: '講師',
 };
+
+/**
+ * 未公開機能の印。項目を隠さずに「いまは使えない」と分かるようにする。
+ * 公開したら faqData 側の status を消せば、このバッジも自動的に消える。
+ */
+function FeatureStatusBadge({ status }: { status?: FeatureStatus }) {
+  if (!status || status === 'live') return null;
+  const label = status === 'planned' ? '公開前' : '試作';
+  const tone =
+    status === 'planned'
+      ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200'
+      : 'bg-violet-100 text-violet-800 dark:bg-violet-900/40 dark:text-violet-200';
+  return (
+    <span className={`ml-2 align-middle rounded px-1.5 py-0.5 text-[10px] font-semibold ${tone}`}>
+      {label}
+    </span>
+  );
+}
 
 function mapUserRoleToTag(role: UserRole | undefined): RoleTag {
   if (!role) return 'all';
@@ -135,6 +158,21 @@ function FaqItemDetail({
 }) {
   return (
     <div className="px-4 pb-4 space-y-3">
+      {/* 未公開機能の断り書き。手順より前に置いて、読み始める前に気づけるようにする */}
+      {item.status && item.status !== 'live' && (
+        <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 dark:border-amber-800 dark:bg-amber-900/25">
+          <Info className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+          <p className="text-xs leading-relaxed text-amber-900 dark:text-amber-100">
+            <span className="font-semibold">
+              {item.status === 'planned'
+                ? 'この機能はまだ公開前です。'
+                : 'この機能は試作段階です。'}
+            </span>
+            {item.statusNote && <span className="ml-1">{item.statusNote}</span>}
+          </p>
+        </div>
+      )}
+
       {/* 概要 */}
       <p className="text-sm text-text-body leading-relaxed">
         {renderUiText(item.answer, searchQuery)}
@@ -287,6 +325,7 @@ function FaqAccordion({
               >
                 <span className="text-sm font-medium text-text-heading pr-2">
                   {highlightText(item.question, searchQuery)}
+                  <FeatureStatusBadge status={item.status} />
                 </span>
                 {openItems.has(index) ? (
                   <ChevronUp className="w-4 h-4 text-gray-400 shrink-0" />

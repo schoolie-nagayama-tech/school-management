@@ -8,7 +8,13 @@
  *   見出しの一覧は内容が変わらないので、プロンプトキャッシュに載せられる。
  */
 
-import { FAQ_DATA, GLOSSARY_DATA, type FaqItem, type RoleTag } from '@/lib/help/faqData';
+import {
+  FAQ_DATA,
+  GLOSSARY_DATA,
+  type FaqItem,
+  type FeatureStatus,
+  type RoleTag,
+} from '@/lib/help/faqData';
 import type { UserRole } from '@/types/database';
 
 /** 索引1件。FAQ項目1つに対応する */
@@ -21,11 +27,21 @@ export interface FaqIndexEntry {
   keywords: string[];
   /** 未指定なら全ロールに見せる（ページ側の itemMatchesRole と同じ意味論） */
   roles?: RoleTag[];
+  /** 公開状態。'live' 以外は見出しにも印を付けてAIに伝える */
+  status: FeatureStatus;
+  statusNote?: string;
   /** 遷移先。無い項目もある */
   href?: string;
   linkLabel?: string;
   item: FaqItem;
 }
+
+/** 見出し・本文・画面表示で使う公開状態のラベル（表記を1箇所に集める） */
+export const FEATURE_STATUS_LABELS: Record<FeatureStatus, string> = {
+  live: '公開済み',
+  preview: '試作（限られた入口・限られたロールのみ）',
+  planned: '公開前（いまは使えない）',
+};
 
 /**
  * question 本文から決まる短い安定ID。
@@ -69,6 +85,8 @@ export function buildFaqIndex(): FaqIndexEntry[] {
         question: item.question,
         keywords: item.keywords ?? [],
         roles: item.roles,
+        status: item.status ?? 'live',
+        statusNote: item.statusNote,
         href: item.link?.href,
         linkLabel: item.link?.label,
         item,
@@ -106,7 +124,10 @@ export function renderHeadings(entries: FaqIndexEntry[]): string {
   return entries
     .map((e) => {
       const kw = e.keywords.length > 0 ? ` [${e.keywords.join('/')}]` : '';
-      return `${e.id}\t${e.categoryTitle}\t${e.question}${kw}`;
+      // 未公開の項目も候補には残す（「使えない」と答えるのが正しい応答なので、
+      // 見出しから消すと「載っていません」になってしまう）
+      const st = e.status === 'live' ? '' : ` <${e.status}>`;
+      return `${e.id}\t${e.categoryTitle}\t${e.question}${kw}${st}`;
     })
     .join('\n');
 }
@@ -146,7 +167,15 @@ export function prioritizeByPath(entries: FaqIndexEntry[], path?: string | null)
 export function renderItemsForAnswer(entries: FaqIndexEntry[]): string {
   return entries
     .map((e) => {
-      const parts = [`## ${e.id} ${e.question}`, `カテゴリ: ${e.categoryTitle}`, e.item.answer];
+      const parts = [`## ${e.id} ${e.question}`, `カテゴリ: ${e.categoryTitle}`];
+      // ★公開状態は answer より前に置く。答えの冒頭で必ず伝えさせたいので、
+      //   本文を読む前に目に入る位置に固定する。
+      if (e.status !== 'live') {
+        parts.push(
+          `公開状態: ${FEATURE_STATUS_LABELS[e.status]}${e.statusNote ? ` — ${e.statusNote}` : ''}`
+        );
+      }
+      parts.push(e.item.answer);
       if (e.item.path) parts.push(`画面までの道順: ${e.item.path}`);
       if (e.item.steps?.length) {
         parts.push('手順:\n' + e.item.steps.map((s, i) => `${i + 1}. ${s}`).join('\n'));
