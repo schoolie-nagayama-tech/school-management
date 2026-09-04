@@ -29,6 +29,7 @@ export type ClaudeFailureReason =
   | 'not_configured' // 鍵が未設定
   | 'auth' // 鍵が違う・失効
   | 'rate_limit' // 混み合っている
+  | 'no_credit' // 残高が足りない（クレジットの購入がまだ）
   | 'bad_request' // こちらの投げ方が悪い（モデルID・パラメータなど）
   | 'unavailable'; // 相手側の障害・通信不良
 
@@ -81,8 +82,15 @@ function toClaudeError(e: unknown): ClaudeError {
     return new ClaudeError('AIが混み合っています', 'rate_limit', e.status, e.message);
   }
   if (e instanceof Anthropic.BadRequestError || e instanceof Anthropic.NotFoundError) {
-    // ★モデルIDの誤りはここに来る。原因が分かるようにメッセージを残す
+    // ★モデルIDの誤りも残高不足もここ（400）に来る。原因が分かるようにメッセージを残す。
     console.error('[claude] リクエストが不正です', e.status, e.message);
+
+    // ★残高不足だけは切り出す。直し方が「クレジットを買う」で全く違ううえ、
+    //   前払い制なので初回セットアップで必ず一度は踏む。
+    //   文面での判定なので当たらないこともあるが、外しても bad_request に落ちるだけ。
+    if (/credit balance|insufficient|too low/i.test(e.message)) {
+      return new ClaudeError('AIの残高が足りません', 'no_credit', e.status, e.message);
+    }
     return new ClaudeError('AIの呼び出し方が不正です', 'bad_request', e.status, e.message);
   }
   if (e instanceof Anthropic.APIError) {
@@ -116,30 +124,64 @@ export interface ClaudeCallOptions {
   signal?: AbortSignal;
 }
 
-/** Messages API を1回叩いてテキストを返す */
-export async function callClaude(options: ClaudeCallOptions): Promise<string> {
-  try {
-    const response = await getClient().messages.create(
-      {
-        model: options.model ?? CLAUDE_MODELS.fast,
-        max_tokens: options.maxTokens ?? 1024,
-        system: options.system.map((b) =>
-          b.cache
-            ? { type: 'text' as const, text: b.text, cache_control: { type: 'ephemeral' as const } }
-            : { type: 'text' as const, text: b.text }
-        ),
-        messages: [{ role: 'user', content: options.userText }],
-      },
-      { signal: options.signal }
-    );
+/** 1回だけ叩く。useCache=false のときは cache_control を一切付けない */
+async function send(options: ClaudeCallOptions, useCache: boolean): Promise<string> {
+  const response = await getClient().messages.create(
+    {
+      model: options.model ?? CLAUDE_MODELS.fast,
+      max_tokens: options.maxTokens ?? 1024,
+      system: options.system.map((b) =>
+        b.cache && useCache
+          ? { type: 'text' as const, text: b.text, cache_control: { type: 'ephemeral' as const } }
+          : { type: 'text' as const, text: b.text }
+      ),
+      messages: [{ role: 'user', content: options.userText }],
+    },
+    { signal: options.signal }
+  );
 
-    return response.content
-      .filter((c): c is Anthropic.TextBlock => c.type === 'text')
-      .map((c) => c.text)
-      .join('');
+  return response.content
+    .filter((c): c is Anthropic.TextBlock => c.type === 'text')
+    .map((c) => c.text)
+    .join('');
+}
+
+/**
+ * プロンプトキャッシュが使えないと分かったら、以後このプロセスでは付けない。
+ * 組織の設定は途中で変わらないので、毎回1回目を捨てるのは無駄。
+ */
+let cacheDisabled = false;
+
+/** Messages API を叩いてテキストを返す */
+export async function callClaude(options: ClaudeCallOptions): Promise<string> {
+  const wantsCache = options.system.some((b) => b.cache);
+
+  try {
+    return await send(options, wantsCache && !cacheDisabled);
   } catch (e) {
-    throw toClaudeError(e);
+    const err = toClaudeError(e);
+
+    /**
+     * ★プロンプトキャッシュが組織で有効になっていないと、cache_control が 400 で弾かれる。
+     *   キャッシュは速度と費用のための飾りであって、機能の前提ではない。
+     *   無ければ外して通す（ここを落とすと、コンソールの設定ひとつで機能ごと死ぬ）。
+     */
+    if (wantsCache && !cacheDisabled && err.reason === 'bad_request' && isCacheRejection(err)) {
+      cacheDisabled = true;
+      console.warn(
+        '[claude] プロンプトキャッシュが使えないため、以後キャッシュ無しで呼びます。' +
+          'コンソールで有効にすると費用と速度が改善します。'
+      );
+      return await send(options, false);
+    }
+
+    throw err;
   }
+}
+
+/** 400 の理由がキャッシュまわりかどうか。文面での判定なので、外しても素直に投げ直すだけ */
+function isCacheRejection(err: ClaudeError): boolean {
+  return /cache/i.test(err.detail ?? '');
 }
 
 /**

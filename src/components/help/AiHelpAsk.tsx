@@ -45,7 +45,13 @@ interface AiHelpResponse {
   logId?: string | null;
 }
 
-type DegradedReason = 'not_configured' | 'auth' | 'rate_limit' | 'bad_request' | 'unavailable';
+type DegradedReason =
+  | 'not_configured'
+  | 'auth'
+  | 'rate_limit'
+  | 'no_credit'
+  | 'bad_request'
+  | 'unavailable';
 
 /**
  * ★「AIが使えません」だけだと、設定を直すべきか待つべきかが分からない。
@@ -55,6 +61,7 @@ const DEGRADED_LABEL: Record<DegradedReason, string> = {
   not_configured: 'AIの設定がまだです',
   auth: 'AIの鍵が正しくありません',
   rate_limit: 'AIが混み合っています',
+  no_credit: 'AIの残高が足りません',
   bad_request: 'AIの呼び出しに失敗しました',
   unavailable: 'AIが使えません',
 };
@@ -64,6 +71,8 @@ const DEGRADED_HINT: Record<DegradedReason, string> = {
     '管理者が設定すると使えるようになります。それまではキーワードで探した結果を出します。',
   auth: '管理者に鍵の確認をお願いしてください。それまではキーワードで探した結果を出します。',
   rate_limit: '少し待ってからもう一度お試しください。いまはキーワードで探した結果を出します。',
+  no_credit:
+    '管理者がクレジットを購入すると使えるようになります。それまではキーワードで探した結果を出します。',
   bad_request: '不具合の可能性があります。いまはキーワードで探した結果を出します。',
   unavailable: 'いまAIに聞けないので、キーワードで探した結果を出します。',
 };
