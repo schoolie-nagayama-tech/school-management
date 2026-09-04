@@ -30,6 +30,7 @@ export type ClaudeFailureReason =
   | 'auth' // 鍵が違う・失効
   | 'rate_limit' // 混み合っている
   | 'no_credit' // 残高が足りない（クレジットの購入がまだ）
+  | 'workspace_required' // 「すべてのワークスペース」の鍵で、対象ワークスペースの指定が要る
   | 'bad_request' // こちらの投げ方が悪い（モデルID・パラメータなど）
   | 'unavailable'; // 相手側の障害・通信不良
 
@@ -62,7 +63,19 @@ function getClient(): Anthropic {
     throw new ClaudeError('ANTHROPIC_API_KEY が設定されていません', 'not_configured');
   }
   // 使い回す（毎回作ると接続が再確立される）
-  if (!client) client = new Anthropic();
+  if (client) return client;
+
+  /**
+   * ★「すべてのワークスペース」に紐づく鍵（コンソールのタイプ=個人）は、
+   *   どのワークスペースで実行するかをヘッダーで渡さないと 400 になる。
+   *   ANTHROPIC_WORKSPACE_ID を入れておけばここで付く。
+   *   ワークスペース固定の鍵を作った場合は不要（未設定でよい）。
+   */
+  const workspaceId = process.env.ANTHROPIC_WORKSPACE_ID?.trim();
+
+  client = new Anthropic(
+    workspaceId ? { defaultHeaders: { 'anthropic-workspace-id': workspaceId } } : undefined
+  );
   return client;
 }
 
@@ -90,6 +103,17 @@ function toClaudeError(e: unknown): ClaudeError {
     //   文面での判定なので当たらないこともあるが、外しても bad_request に落ちるだけ。
     if (/credit balance|insufficient|too low/i.test(e.message)) {
       return new ClaudeError('AIの残高が足りません', 'no_credit', e.status, e.message);
+    }
+
+    // ★「すべてのワークスペース」の鍵は、対象ワークスペースの指定が要る。
+    //   直し方が「環境変数を足す」か「ワークスペース固定の鍵を作り直す」で、他の400と全く違う。
+    if (/workspace[-_ ]?id/i.test(e.message)) {
+      return new ClaudeError(
+        'AIのワークスペース指定が要ります',
+        'workspace_required',
+        e.status,
+        e.message
+      );
     }
     return new ClaudeError('AIの呼び出し方が不正です', 'bad_request', e.status, e.message);
   }

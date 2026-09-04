@@ -50,6 +50,7 @@ type DegradedReason =
   | 'auth'
   | 'rate_limit'
   | 'no_credit'
+  | 'workspace_required'
   | 'bad_request'
   | 'unavailable';
 
@@ -62,6 +63,7 @@ const DEGRADED_LABEL: Record<DegradedReason, string> = {
   auth: 'AIの鍵が正しくありません',
   rate_limit: 'AIが混み合っています',
   no_credit: 'AIの残高が足りません',
+  workspace_required: 'AIのワークスペース指定が要ります',
   bad_request: 'AIの呼び出しに失敗しました',
   unavailable: 'AIが使えません',
 };
@@ -73,6 +75,8 @@ const DEGRADED_HINT: Record<DegradedReason, string> = {
   rate_limit: '少し待ってからもう一度お試しください。いまはキーワードで探した結果を出します。',
   no_credit:
     '管理者がクレジットを購入すると使えるようになります。それまではキーワードで探した結果を出します。',
+  workspace_required:
+    '管理者が設定すると使えるようになります。それまではキーワードで探した結果を出します。',
   bad_request: '不具合の可能性があります。いまはキーワードで探した結果を出します。',
   unavailable: 'いまAIに聞けないので、キーワードで探した結果を出します。',
 };
