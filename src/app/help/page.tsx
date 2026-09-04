@@ -178,6 +178,27 @@ function FaqItemDetail({
         {renderUiText(item.answer, searchQuery)}
       </p>
 
+      {/* 前提になっている決まり。手順より前に置く（読む順序を本文の構成と揃える） */}
+      {item.rules && item.rules.length > 0 && (
+        <div className="rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 dark:border-sky-800 dark:bg-sky-900/25">
+          <p className="mb-1 flex items-center gap-1.5 text-xs font-medium text-sky-900 dark:text-sky-100">
+            <BookOpenCheck className="h-3.5 w-3.5" />
+            前提になっている決まり
+          </p>
+          <ul className="space-y-1">
+            {item.rules.map((rule, i) => (
+              <li
+                key={i}
+                className="flex items-start gap-2 text-sm leading-relaxed text-sky-900 dark:text-sky-100"
+              >
+                <span className="mt-[7px] h-1 w-1 shrink-0 rounded-full bg-sky-500" />
+                <span>{renderUiText(rule, searchQuery)}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {/* ナビゲーションパス */}
       {item.path && (
         <div className="flex items-start gap-2 px-3 py-2 bg-gray-50 dark:bg-gray-700/40 rounded-lg border border-gray-200 dark:border-gray-600">

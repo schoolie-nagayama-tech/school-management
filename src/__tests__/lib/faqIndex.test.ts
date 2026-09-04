@@ -265,3 +265,58 @@ describe('related のリンク切れ', () => {
     expect(broken).toEqual([]);
   });
 });
+
+/**
+ * 規則（rules）の扱い。
+ *
+ * ★手順(steps)と規則(rules)は扱いが違う。手順は「そのまま写す」もの、規則は
+ *   「利用者の具体的な値に当てはめてよい」もの。AIに渡す本文でこの2つが
+ *   別枠になっていること、規則が回答用の本文に必ず載ることを固定する。
+ */
+describe('規則（rules）', () => {
+  const index = buildFaqIndex();
+
+  it('規則を持つ項目が存在する', () => {
+    expect(index.filter((e) => e.item.rules?.length).length).toBeGreaterThan(0);
+  });
+
+  it('回答用の本文に規則が「規則:」として載る', () => {
+    const entry = index.find((e) => e.item.rules?.length);
+    expect(entry).toBeDefined();
+    const text = renderItemsForAnswer([entry!]);
+    expect(text).toContain('規則（');
+    for (const rule of entry!.item.rules!) {
+      expect(text).toContain(rule);
+    }
+  });
+
+  it('規則は手順より前に置く（読む順序を固定する）', () => {
+    const entry = index.find((e) => e.item.rules?.length && e.item.steps?.length);
+    expect(entry).toBeDefined();
+    const text = renderItemsForAnswer([entry!]);
+    expect(text.indexOf('規則（')).toBeLessThan(text.indexOf('手順:'));
+  });
+
+  it('規則を持たない項目には規則の見出しを出さない', () => {
+    const entry = index.find((e) => !e.item.rules?.length);
+    expect(entry).toBeDefined();
+    expect(renderItemsForAnswer([entry!])).not.toContain('規則（');
+  });
+
+  it('1回目の見出しには規則を載せない（キャッシュ対象を膨らませない）', () => {
+    const entry = index.find((e) => e.item.rules?.length);
+    const heading = renderHeadings([entry!]);
+    expect(heading).not.toContain(entry!.item.rules![0]);
+  });
+
+  /** 請求の「何月分」は当てはめの代表例。規則として書かれていることを固定する */
+  it('請求の「翌月分」の決まりが規則として書かれている', () => {
+    const billing = index.find((e) => e.question === '請求管理の使い方');
+    expect(billing?.item.rules?.some((r) => r.includes('翌月分'))).toBe(true);
+  });
+
+  it('規則は受け皿の検索でも引ける', () => {
+    const hits = keywordSearch(index, '9月請求 何月分');
+    expect(hits.some((h) => h.question === '請求管理の使い方')).toBe(true);
+  });
+});

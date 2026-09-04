@@ -176,6 +176,14 @@ export function renderItemsForAnswer(entries: FaqIndexEntry[]): string {
         );
       }
       parts.push(e.item.answer);
+      // ★規則は手順より前に置く。手順は「写す」もの、規則は「当てはめてよい」もので
+      //   扱いが違うため、見出しを分けて別枠であることを明示する。
+      if (e.item.rules?.length) {
+        parts.push(
+          '規則（この項目で前提になっている決まり。利用者の具体的な値に当てはめて答えてよい）:\n' +
+            e.item.rules.map((r) => `- ${r}`).join('\n')
+        );
+      }
       if (e.item.path) parts.push(`画面までの道順: ${e.item.path}`);
       if (e.item.steps?.length) {
         parts.push('手順:\n' + e.item.steps.map((s, i) => `${i + 1}. ${s}`).join('\n'));
@@ -213,7 +221,10 @@ export function keywordSearch(entries: FaqIndexEntry[], query: string, limit = 5
 
   const terms = q.split(/\s+/).filter(Boolean);
   const exact = entries.filter((e) => {
-    const target = `${e.question} ${e.item.answer} ${e.keywords.join(' ')}`.toLowerCase();
+    // 規則も検索対象に含める。「9月請求 何月分」のように規則の中にしか
+    // 書かれていない語で探されることがあるため（AIが使えないときの受け皿）。
+    const target =
+      `${e.question} ${e.item.answer} ${(e.item.rules ?? []).join(' ')} ${e.keywords.join(' ')}`.toLowerCase();
     return terms.every((t) => target.includes(t));
   });
   if (exact.length > 0) return exact.slice(0, limit);
