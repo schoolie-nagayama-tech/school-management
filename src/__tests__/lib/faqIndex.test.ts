@@ -191,3 +191,132 @@ describe('keywordSearch', () => {
     expect(keywordSearch(index, 'ｘｙｚｑｑ')).toEqual([]);
   });
 });
+
+/**
+ * 公開状態（status）の扱い。
+ *
+ * ★ここを固定する理由: 未公開機能を roles で隠していた時期があり、教室長がAIヘルプに
+ *   聞いても見出しごと落ちて「載っていません」としか返らなかった。status は
+ *   「隠す」ためではなく「使えないと伝える」ための情報なので、絞り込みでは落とさず、
+ *   回答用の本文には必ず載ることを保証する。
+ */
+describe('公開状態（status）', () => {
+  const index = buildFaqIndex();
+
+  it('status 未指定の項目は live として索引に載る', () => {
+    const live = index.find((e) => e.question === '生徒の新規登録方法');
+    expect(live?.status).toBe('live');
+  });
+
+  it('未公開の項目もロール絞り込みで落とさない（使えないと答えるため）', () => {
+    const planned = index.filter((e) => e.status === 'planned');
+    expect(planned.length).toBeGreaterThan(0);
+    // 教室長から見える範囲に、公開前の項目が少なくとも1件は残っている
+    const forManager = filterIndexByRole(index, 'manager');
+    expect(forManager.some((e) => e.status === 'planned')).toBe(true);
+  });
+
+  it('1回目の見出しに公開状態の印が付く', () => {
+    const planned = index.filter((e) => e.status === 'planned').slice(0, 1);
+    expect(renderHeadings(planned)).toContain('<planned>');
+  });
+
+  it('公開済みの項目の見出しには印を付けない（毎回同じ文字列＝キャッシュを壊さない）', () => {
+    const live = index.filter((e) => e.status === 'live').slice(0, 1);
+    const heading = renderHeadings(live);
+    expect(heading).not.toContain('<planned>');
+    expect(heading).not.toContain('<preview>');
+  });
+
+  it('2回目の本文では公開状態が answer より前に出る', () => {
+    const entry = index.find((e) => e.status === 'planned' && e.statusNote);
+    expect(entry).toBeDefined();
+    const text = renderItemsForAnswer([entry!]);
+    expect(text).toContain('公開状態:');
+    expect(text.indexOf('公開状態:')).toBeLessThan(text.indexOf(entry!.item.answer));
+    expect(text).toContain(entry!.statusNote!);
+  });
+
+  it('公開済みの項目の本文には公開状態の行を入れない', () => {
+    const live = index.filter((e) => e.status === 'live').slice(0, 1);
+    expect(renderItemsForAnswer(live)).not.toContain('公開状態:');
+  });
+
+  it('status が live でない項目には必ず statusNote がある（何が使えないか説明できるように）', () => {
+    const missing = index
+      .filter((e) => e.status !== 'live' && !e.statusNote)
+      .map((e) => e.question);
+    expect(missing).toEqual([]);
+  });
+});
+
+/** related のクロスリンクが実在する question を指しているか（リンク切れ検出） */
+describe('related のリンク切れ', () => {
+  it('すべての related が実在する項目を指す', () => {
+    const questions = new Set(FAQ_DATA.flatMap((c) => c.items.map((i) => i.question)));
+    const broken: string[] = [];
+    for (const category of FAQ_DATA) {
+      for (const item of category.items) {
+        for (const r of item.related ?? []) {
+          if (!questions.has(r)) broken.push(`${item.question} → ${r}`);
+        }
+      }
+    }
+    expect(broken).toEqual([]);
+  });
+});
+
+/**
+ * 規則（rules）の扱い。
+ *
+ * ★手順(steps)と規則(rules)は扱いが違う。手順は「そのまま写す」もの、規則は
+ *   「利用者の具体的な値に当てはめてよい」もの。AIに渡す本文でこの2つが
+ *   別枠になっていること、規則が回答用の本文に必ず載ることを固定する。
+ */
+describe('規則（rules）', () => {
+  const index = buildFaqIndex();
+
+  it('規則を持つ項目が存在する', () => {
+    expect(index.filter((e) => e.item.rules?.length).length).toBeGreaterThan(0);
+  });
+
+  it('回答用の本文に規則が「規則:」として載る', () => {
+    const entry = index.find((e) => e.item.rules?.length);
+    expect(entry).toBeDefined();
+    const text = renderItemsForAnswer([entry!]);
+    expect(text).toContain('規則（');
+    for (const rule of entry!.item.rules!) {
+      expect(text).toContain(rule);
+    }
+  });
+
+  it('規則は手順より前に置く（読む順序を固定する）', () => {
+    const entry = index.find((e) => e.item.rules?.length && e.item.steps?.length);
+    expect(entry).toBeDefined();
+    const text = renderItemsForAnswer([entry!]);
+    expect(text.indexOf('規則（')).toBeLessThan(text.indexOf('手順:'));
+  });
+
+  it('規則を持たない項目には規則の見出しを出さない', () => {
+    const entry = index.find((e) => !e.item.rules?.length);
+    expect(entry).toBeDefined();
+    expect(renderItemsForAnswer([entry!])).not.toContain('規則（');
+  });
+
+  it('1回目の見出しには規則を載せない（キャッシュ対象を膨らませない）', () => {
+    const entry = index.find((e) => e.item.rules?.length);
+    const heading = renderHeadings([entry!]);
+    expect(heading).not.toContain(entry!.item.rules![0]);
+  });
+
+  /** 請求の「何月分」は当てはめの代表例。規則として書かれていることを固定する */
+  it('請求の「翌月分」の決まりが規則として書かれている', () => {
+    const billing = index.find((e) => e.question === '請求管理の使い方');
+    expect(billing?.item.rules?.some((r) => r.includes('翌月分'))).toBe(true);
+  });
+
+  it('規則は受け皿の検索でも引ける', () => {
+    const hits = keywordSearch(index, '9月請求 何月分');
+    expect(hits.some((h) => h.question === '請求管理の使い方')).toBe(true);
+  });
+});
