@@ -58,9 +58,12 @@ export function UnansweredQuestions() {
     }
   }, []);
 
+  // ★開く前に読む。畳んだままだと件数が分からず、溜まっていることに気づけないため
+  //   （FAQを書き足す運用に乗せるのがこの機能の目的で、気づかれないと機能しない）。
+  //   admin にしか描画されないので、追加の取得は1回だけ・件数表示のためだけに使う。
   useEffect(() => {
-    if (open && rows === null) void load();
-  }, [open, rows, load]);
+    if (rows === null) void load();
+  }, [rows, load]);
 
   return (
     <section className="rounded-xl border border-border bg-surface">
@@ -70,9 +73,15 @@ export function UnansweredQuestions() {
         aria-expanded={open}
         className="w-full flex items-center justify-between gap-3 px-4 py-3 text-left"
       >
-        <span>
+        <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
           <span className="text-sm font-bold text-text-heading">答えられなかった質問</span>
-          <span className="ml-2 text-xs text-text-muted">
+          {/* 件数は畳んだままでも出す。0件のときはバッジを出さない（無いのが正常な状態） */}
+          {rows !== null && rows.length > 0 && (
+            <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800 dark:bg-amber-900/40 dark:text-amber-200">
+              {rows.length}件
+            </span>
+          )}
+          <span className="text-xs text-text-muted">
             ここを見てFAQを書き足すと、次から答えられます
           </span>
         </span>
