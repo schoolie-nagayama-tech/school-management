@@ -17,6 +17,7 @@ import {
   addTextbookToCourse,
   saveBulkCourseCurriculum,
 } from './seasonalCourses';
+import { draftsToCourseSettings } from '@/components/koushu-plan/courseSettingAdapter';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const fromProposals = () => supabase.from('seasonal_proposals' as any);
@@ -856,14 +857,20 @@ export async function promoteProposalToCourse(
   }
 
   if (units.length > 0 && proposal.textbook_id) {
+    // 結合は「先頭にだけコマ数・残りは0」で書く。
+    // テンプレート側の読み出し（convertToCourseCurriculumRows）はグループ内を合計するため、
+    // 全メンバーに値を入れるとコマ数がメンバー数ぶん膨らむ。変換規約は adapter に集約している。
     await saveBulkCourseCurriculum(
       course.id,
       proposal.textbook_id,
-      units.map((u) => ({
-        curriculum_item_id: u.curriculum_item_id,
-        proposal_count: u.koma_count,
-        group_number: u.group_id > 0 ? u.group_id : null,
-      }))
+      draftsToCourseSettings(
+        units.map((u) => ({
+          curriculum_item_id: u.curriculum_item_id,
+          koma_count: u.koma_count,
+          group_id: u.group_id,
+        })),
+        units.map((u) => u.curriculum_item_id)
+      )
     );
   }
 
