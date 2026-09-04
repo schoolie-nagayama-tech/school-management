@@ -75,9 +75,11 @@ export async function GET(request: NextRequest) {
     )
   );
 
-  // 3. プロンプトキャッシュ付き。ここだけ落ちれば cache_control が原因
+  // 3. プロンプトキャッシュ付き。
+  //    ★本番の呼び出しは、弾かれたらキャッシュ無しで自動的に retry するので落ちない。
+  //      ここは「組織でキャッシュが有効か」を素で見るための検査。ok:false でも機能は動く。
   checks.push(
-    await run('プロンプトキャッシュ付き', () =>
+    await run('プロンプトキャッシュ付き（無効でも機能は動く）', () =>
       callClaude({
         model: CLAUDE_MODELS.fast,
         system: [
@@ -103,14 +105,20 @@ export async function GET(request: NextRequest) {
     )
   );
 
-  const firstFailure = checks.find((c) => !c.ok);
+  // キャッシュ検査の失敗は「動かない」ではないので、詰まりの判定からは外す
+  const blocking = checks.filter((c) => !c.ok && !c.name.startsWith('プロンプトキャッシュ'));
+  const cacheCheck = checks.find((c) => c.name.startsWith('プロンプトキャッシュ'));
+  const firstFailure = blocking[0];
   return NextResponse.json({
     configured: true,
     models: CLAUDE_MODELS,
     allOk: !firstFailure,
+    promptCacheAvailable: cacheCheck ? cacheCheck.ok : null,
     hint: firstFailure
       ? `「${firstFailure.name}」で失敗しました。detail にAPIが返した理由が入っています。`
-      : 'すべて通りました。AIヘルプは動くはずです。',
+      : cacheCheck && !cacheCheck.ok
+        ? 'AIヘルプは動きます。プロンプトキャッシュだけ組織で無効です（コンソールで有効にすると費用と速度が改善します）。'
+        : 'すべて通りました。AIヘルプは動くはずです。',
     checks,
   });
 }
