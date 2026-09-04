@@ -11,12 +11,12 @@ import {
   deleteSeasonalCourse,
 } from '@/lib/api/seasonalCourses';
 import { getDefaultSchoolId } from '@/lib/api/schools';
-import type { SeasonalCourseWithDetails, SeasonType } from '@/types/database';
+import type { SeasonalCourseListItem, SeasonType } from '@/types/database';
 import { SEASON_LABELS, GRADE_LABELS } from '@/types/database';
 
 export default function CoursesPage() {
   const { toasts, removeToast, success, error } = useToast();
-  const [courses, setCourses] = useState<SeasonalCourseWithDetails[]>([]);
+  const [courses, setCourses] = useState<SeasonalCourseListItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [filterSeason, setFilterSeason] = useState<SeasonType | ''>('');
