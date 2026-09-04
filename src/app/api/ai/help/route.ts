@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getApiAuth } from '@/lib/api-auth';
 import { getPortalServiceClient } from '@/lib/mypage/serviceClient';
+import { isSystemAdmin } from '@/lib/utils/roles';
 import {
   callClaudeJson,
   isClaudeConfigured,
@@ -56,6 +57,11 @@ export interface AiHelpResponse {
    *   設定を直すべきか待つべきかが分からないので、画面に出し分けるために返す。
    */
   degradedReason: ClaudeFailureReason | null;
+  /**
+   * ★APIが返した理由の原文。admin にだけ返す。
+   *   何が悪いのかはここにしか書かれておらず、これが無いとサーバーのログを掘ることになる。
+   */
+  degradedDetail?: string | null;
   /** unanswered / degraded のときの代替候補 */
   fallback: { id: string; question: string; categoryTitle: string; href?: string }[];
   /** 記録した行のID。画面の「役に立った / 立たなかった」を後から結びつけるのに使う */
@@ -294,6 +300,8 @@ export async function POST(request: NextRequest) {
   } catch (e) {
     const reason: ClaudeFailureReason = e instanceof ClaudeError ? e.reason : 'unavailable';
     console.error('[ai/help] failed', reason, e);
+    // ★原因の原文は admin にだけ見せる。講師の画面に英語のAPIエラーを出しても仕方がない
+    const detail = isSystemAdmin(auth.role) && e instanceof ClaudeError ? (e.detail ?? null) : null;
     const logId = await recordQuestion({
       userId: auth.userId,
       role: roleTag,
@@ -308,6 +316,7 @@ export async function POST(request: NextRequest) {
       ...empty,
       degraded: true,
       degradedReason: reason,
+      degradedDetail: detail,
       logId,
     } satisfies AiHelpResponse);
   }
