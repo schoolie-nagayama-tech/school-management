@@ -19,6 +19,7 @@ import {
   toRoleTag,
 } from '@/lib/help/faqIndex';
 import { FAQ_DATA } from '@/lib/help/faqData';
+import { exampleQuestions } from '@/lib/help/exampleQuestions';
 
 describe('faqItemId', () => {
   it('同じ質問文からは同じIDになる', () => {
@@ -318,5 +319,41 @@ describe('規則（rules）', () => {
   it('規則は受け皿の検索でも引ける', () => {
     const hits = keywordSearch(index, '9月請求 何月分');
     expect(hits.some((h) => h.question === '請求管理の使い方')).toBe(true);
+  });
+});
+
+/**
+ * 質問の例（チップ）が、そのロールから見える項目に必ず当たること。
+ *
+ * ★押した1回目が外れると「このヘルプは使えない」と判断されて二度と使われない。
+ *   実際、以前あった「教室を追加したい」は本番ログで unanswered になっていた
+ *   （該当するFAQ項目が無い）。チップを足すときはここで落ちるので気づける。
+ *
+ * 判定にはAIではなく受け皿のキーワード検索を使う。AIはこれより賢く拾えるので、
+ * 「受け皿でも当たる」なら実運用で外れることはまず無い、という下限の担保。
+ */
+describe('質問の例（チップ）', () => {
+  const index = buildFaqIndex();
+
+  it.each(['teacher', 'manager', 'admin', 'all'] as const)(
+    '%s の例はすべて、そのロールから見える項目に当たる',
+    (role) => {
+      const visible = filterIndexByRole(index, role);
+      const missed = exampleQuestions(role).filter(
+        (q) => keywordSearch(visible, q, 3).length === 0
+      );
+      expect(missed).toEqual([]);
+    }
+  );
+
+  it('未公開（planned）の機能は例に出さない', () => {
+    // 「まだ使えません」で終わる例は最初の一歩にならない
+    for (const role of ['teacher', 'manager', 'admin', 'all'] as const) {
+      const visible = filterIndexByRole(index, role);
+      for (const q of exampleQuestions(role)) {
+        const top = keywordSearch(visible, q, 1)[0];
+        expect(top?.status).not.toBe('planned');
+      }
+    }
   });
 });
