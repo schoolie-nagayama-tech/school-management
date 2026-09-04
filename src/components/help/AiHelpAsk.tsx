@@ -338,6 +338,33 @@ function AnswerCard({
         </div>
       )}
 
+      {/* ★候補が1件も無いときの逃げ道。答えられず候補も空だと画面に何も残らず、
+          利用者は同じ質問を言い換えて聞き直すしかなくなる（実ログで同じ質問の
+          聞き直しが複数回あった）。検索へ送る導線だけは必ず出す。 */}
+      {!answered && result.fallback.length === 0 && (
+        <div className="mt-3 rounded-lg border border-dashed border-border-strong bg-surface-hover/40 px-3 py-2.5">
+          <p className="text-xs text-text-body">
+            近いヘルプ項目が見つかりませんでした。言葉を変えて探すこともできます。
+          </p>
+          {onFallbackSearch ? (
+            <button
+              type="button"
+              onClick={() => onFallbackSearch(question)}
+              className="mt-2 text-xs text-info hover:underline"
+            >
+              この言葉でヘルプ全体を検索する
+            </button>
+          ) : (
+            <Link
+              href={`/help?q=${encodeURIComponent(question)}`}
+              className="mt-2 inline-block text-xs text-info hover:underline"
+            >
+              この言葉でヘルプ全体を検索する
+            </Link>
+          )}
+        </div>
+      )}
+
       {result.fallback.length > 0 && (
         <div className="mt-3 rounded-lg border border-dashed border-border-strong bg-surface-hover/40 px-3 py-2.5">
           <span className="text-[11px] text-text-faint">キーワードで探した結果</span>
@@ -350,7 +377,11 @@ function AnswerCard({
               </li>
             ))}
           </ul>
-          {onFallbackSearch && (
+          {/* ★答えられなかったときの逃げ道。/help ではその場で検索欄に流し込み、
+              ヘッダー・各ページから聞いたときは /help?q= へ送る。
+              以前は onFallbackSearch を渡す /help だけにボタンがあり、質問の大半を
+              占めるヘッダー経由（AIが答えられないと候補が出るだけ）が行き止まりだった。 */}
+          {onFallbackSearch ? (
             <button
               type="button"
               onClick={() => onFallbackSearch(question)}
@@ -358,6 +389,13 @@ function AnswerCard({
             >
               この言葉でヘルプ全体を検索する
             </button>
+          ) : (
+            <Link
+              href={`/help?q=${encodeURIComponent(question)}`}
+              className="mt-2 inline-block text-xs text-info hover:underline"
+            >
+              この言葉でヘルプ全体を検索する
+            </Link>
           )}
         </div>
       )}

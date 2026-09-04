@@ -461,6 +461,11 @@ export default function HelpPage() {
         {/* ★AIヘルプ。歯車メニューから入ってくるので、検索欄より前に置く */}
         <AiHelpAsk role={myRole} onFallbackSearch={setSearchQuery} />
 
+        {/* ★admin だけ: 答えられなかった質問。以前はページ最下部にあり、畳まれた
+            見出しだけでは溜まっていることに気づけなかった。FAQを書き足す運用に
+            乗せるのが目的なので、AIヘルプの直後（必ず目に入る位置）へ出す。 */}
+        {myRole === 'admin' && <UnansweredQuestions />}
+
         {/* 検索 */}
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -641,9 +646,6 @@ export default function HelpPage() {
             )}
           </div>
         )}
-
-        {/* ★admin だけ: 答えられなかった質問 → ここを見てFAQを書き足す */}
-        {myRole === 'admin' && <UnansweredQuestions />}
       </div>
     </AdminLayout>
   );
