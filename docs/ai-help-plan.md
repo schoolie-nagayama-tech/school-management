@@ -1,6 +1,6 @@
 # AIヘルプ（設計書）
 
-作成: 2026-09-03 ／ 状態: **設計確定・最初に実装する**
+作成: 2026-09-03 ／ 状態: **★本番稼働中（2026-09-04 動作確認ずみ）**
 対象: `/help`（`src/app/help/page.tsx`）と各ページの `ContextHelp`（`src/components/help/ContextHelp.tsx`）
 前提: [docs/ai-platform-comparison.md](./ai-platform-comparison.md)（基盤＝Claude API）
 親: [docs/ai-features-integration-plan.md](./ai-features-integration-plan.md)
@@ -146,10 +146,21 @@ send the id of the workspace this request acts in.
 期限切れで覚え直しなら約2.8円/問、キャッシュ無しで約2.4円/問。有効期限は5分。
 質問は続けて聞かれることが多いので、ならすと得になる。
 
-## 7. 残っていること
+## 7. 完了と、残っていること
 
-- `FAQ_DATA` の切り出しと id 付与。
-- `help_questions` テーブル（教室スコープ不要・全社共通）。
-- `/api/ai/help` と共通土台。
-- `/help` 最上部の入力欄と `ContextHelp` への追加。
-- admin 限定「答えられなかった質問」一覧。
+### 完了（2026-09-04 本番で動作確認）
+
+- `FAQ_DATA` の切り出しと id 付与（PR #125）。
+- `help_questions` テーブル（本番適用ずみ・RLSでadminのみSELECT）。
+- `/api/ai/help` と共通土台 `src/lib/ai/claude.ts`（PR #125 / #130）。
+- `/help` 最上部の入力欄と `ContextHelp` への追加、admin限定の一覧（PR #127）。
+- ヘッダーの「AIに聞く」＋Ctrl/⌘+K（PR #128）。
+- 鍵まわりの詰まりを解消（PR #130〜#134）。**真因は「すべてのワークスペース」の鍵**。
+
+### 残っていること
+
+- **運用に乗せる。** 講師・教室長に使ってもらい、admin限定の「答えられなかった質問」を
+  定期的に見てFAQを書き足す（この機能の価値はここでしか出ない）。
+- 使われ方を見てから、質問の例（`exampleQuestions.ts`）を実際の詰まりどころに寄せる。
+- プライバシーポリシー第5条への Anthropic 追記は**ちーがるチェック後**。
+  本機能は個人情報を送らないが、他のAI機能を出す前には必要。
