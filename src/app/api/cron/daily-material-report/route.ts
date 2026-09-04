@@ -2,11 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { notifyDailyReport } from '@/lib/slack';
 import { fetchAllPaged } from '@/lib/utils/supabasePaging';
+import { requireCronAuth } from '@/lib/cron-auth';
+import { captureApiError } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
-
-const CRON_SECRET = process.env.CRON_SECRET;
 
 function getSupabaseAdmin() {
   return createClient(
@@ -21,11 +21,9 @@ function getSupabaseAdmin() {
  * 未確認の発注 & 発送後7日以上未配布をSlackに通知
  */
 export async function GET(request: NextRequest) {
-  // Vercel Cron認証
-  const authHeader = request.headers.get('authorization');
-  if (CRON_SECRET && authHeader !== `Bearer ${CRON_SECRET}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  // Vercel Cron認証（CRON_SECRET 未設定なら拒否＝フェイルクローズド）
+  const authError = requireCronAuth(request);
+  if (authError) return authError;
 
   // 土日チェック（JST）
   const nowJST = new Date(Date.now() + 9 * 60 * 60 * 1000);
@@ -127,6 +125,9 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ ok: true, notified: result });
   } catch (e) {
+    captureApiError(e, {
+      route: 'GET /api/cron/daily-material-report',
+    });
     console.error('[cron/daily-material-report] エラー:', e);
     return NextResponse.json({ ok: false, error: 'Internal error' }, { status: 500 });
   }

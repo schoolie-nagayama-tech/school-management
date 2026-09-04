@@ -18,7 +18,8 @@
  *   実際の書き込みは報告書の保存時に recordSession（既存の唯一の保存経路）で行う。
  */
 
-import { useMemo } from 'react';
+import { Fragment, useMemo } from 'react';
+import { SkipForward } from 'lucide-react';
 import type { CurriculumItemWithProgress } from '@/types/database';
 import { ProgressRow } from '@/app/students/[studentId]/progress/ProgressRow';
 import {
@@ -61,13 +62,24 @@ export function LessonReportProgressGrid({
   selection,
   onCellToggle,
   isTeacher = false,
+  nextPlanUnitIds = [],
 }: {
   textbookName: string;
   rows: CurriculumItemWithProgress[];
   selection: GridSelection;
   onCellToggle: (curriculumItemId: number, column: 'school' | 1 | 2 | 3) => void;
   isTeacher?: boolean;
+  /**
+   * 機能D「次回の予定」の単元ID。該当行の直前に「次回」の目印を1行足す。
+   *
+   * ★ ProgressRow に列やバッジを足さない:
+   *   ProgressRow は現行運用中の進行表（TableView）と共用なので、1文字でも触ると
+   *   進行表の見た目が変わる。目印はこのラッパー側で、対象行の上に薄い帯を1行
+   *   挟むだけにする（表の列構成は一切変えない）。
+   */
+  nextPlanUnitIds?: number[];
 }) {
+  const nextPlanIdSet = useMemo(() => new Set(nextPlanUnitIds), [nextPlanUnitIds]);
   // 指導意図タグは報告書では読み取り専用。グループ先頭行の値を全行に配って
   // ゴーストチップ（薄い破線チップ）で見せる。編集は進行表側の仕事。
   const intentByRowId = useMemo(() => {
@@ -125,26 +137,37 @@ export function LessonReportProgressGrid({
           </thead>
           <tbody>
             {rows.map((row) => (
-              <ProgressRow
-                key={row.id}
-                row={row}
-                examTypes={[]}
-                isMeeting={false}
-                meetingCols={REPORT_GRID_COLS}
-                // 指導意図は編集させない（groupStart=false でピッカーの代わりに
-                // 継承表示のゴーストチップが出る）
-                groupStart={false}
-                inheritedIntentTag={intentByRowId.get(row.id) ?? null}
-                isTeacher={isTeacher}
-                sessionMode
-                sessionSelection={selection}
-                // 表のセルからの直接編集は報告書では使わない（保存は recordSession に一本化）
-                canDirectEdit={false}
-                onLocalPatch={() => {}}
-                onSaveProgress={async () => {}}
-                onSaveLesson={async () => {}}
-                onSessionCellToggle={onCellToggle}
-              />
+              <Fragment key={row.id}>
+                {nextPlanIdSet.has(row.id) && (
+                  <tr className="bg-info-subtle/60">
+                    <td colSpan={6} className="px-3 py-1">
+                      <span className="inline-flex items-center gap-1 text-[10px] font-bold tracking-wide text-info">
+                        <SkipForward className="h-3 w-3" />
+                        次回
+                      </span>
+                    </td>
+                  </tr>
+                )}
+                <ProgressRow
+                  row={row}
+                  examTypes={[]}
+                  isMeeting={false}
+                  meetingCols={REPORT_GRID_COLS}
+                  // 指導意図は編集させない（groupStart=false でピッカーの代わりに
+                  // 継承表示のゴーストチップが出る）
+                  groupStart={false}
+                  inheritedIntentTag={intentByRowId.get(row.id) ?? null}
+                  isTeacher={isTeacher}
+                  sessionMode
+                  sessionSelection={selection}
+                  // 表のセルからの直接編集は報告書では使わない（保存は recordSession に一本化）
+                  canDirectEdit={false}
+                  onLocalPatch={() => {}}
+                  onSaveProgress={async () => {}}
+                  onSaveLesson={async () => {}}
+                  onSessionCellToggle={onCellToggle}
+                />
+              </Fragment>
             ))}
           </tbody>
         </table>

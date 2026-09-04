@@ -16,6 +16,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { createClient } from '@supabase/supabase-js';
+import { captureApiError } from '@/lib/api-error';
 
 // Node.js runtime を明示 (crypto モジュール使用のため)
 export const runtime = 'nodejs';
@@ -142,7 +143,10 @@ export async function POST(request: NextRequest) {
   let payload: ResendWebhookPayload;
   try {
     payload = JSON.parse(rawBody);
-  } catch {
+  } catch (error) {
+    captureApiError(error, {
+      route: 'POST /api/webhooks/resend',
+    });
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
 
@@ -203,6 +207,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: true, matched });
     }
   } catch (e) {
+    captureApiError(e, {
+      route: 'POST /api/webhooks/resend',
+    });
     console.error('[resend-webhook] DB update failed', e);
     return NextResponse.json({ error: 'internal error' }, { status: 500 });
   }

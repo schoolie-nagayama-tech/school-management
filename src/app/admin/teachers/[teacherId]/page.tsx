@@ -7,11 +7,12 @@ import { AdminLayout } from '@/components/layouts';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMasterData } from '@/contexts/MasterDataContext';
 import { fetchWithAuth } from '@/lib/api/auth';
-import { getActiveTimeSlots } from '@/lib/api/schedule';
+import { getActiveTimeSlots, mergeTimeSlotsByTimeRange } from '@/lib/api/schedule';
 import { getTeacherShiftHistory, type TeacherShiftHistoryEntry } from '@/lib/api/teacher-shifts';
 import {
   getAvailabilityPeriods,
   getEffectiveAvailability,
+  isAvailableForInterval,
   syncAllRegularShifts,
   type TeacherAvailabilityPeriod,
 } from '@/lib/api/teacher-availability';
@@ -28,7 +29,7 @@ import type {
   TeacherTraining,
 } from '@/types/database';
 import { BADGE_RANK_CONFIG, USER_ROLE_LABELS } from '@/types/database';
-import type { ScheduleTimeSlot } from '@/types/schedule';
+import { INDIVIDUAL_FORMATION, type ScheduleTimeSlot } from '@/types/schedule';
 import { Loading } from '@/components/ui';
 import { BadgeIcon } from '@/components/teacher-badges/BadgeIcon';
 import { AvailabilityPeriodsPanel } from '@/components/teachers/AvailabilityPeriodsPanel';
@@ -140,18 +141,8 @@ export default function TeacherDetailPage() {
             schoolIds.map((sid) => getActiveTimeSlots(sid).catch(() => [] as ScheduleTimeSlot[]))
           );
           if (cancelled) return;
-          const seen = new Set<number>();
-          const all: ScheduleTimeSlot[] = [];
-          for (const slots of slotsArrays) {
-            for (const s of slots) {
-              if (!seen.has(s.slot_number)) {
-                seen.add(s.slot_number);
-                all.push(s);
-              }
-            }
-          }
-          all.sort((a, b) => a.slot_number - b.slot_number);
-          setScheduleTimeSlots(all);
+          // 重複排除は slot_number ではなく実時刻区間で行う（形態違いの同番コマを潰さないため）。
+          setScheduleTimeSlots(mergeTimeSlotsByTimeRange(slotsArrays));
 
           // 講師のシフト（現在有効分 + 履歴）を取得。
           // 在籍校が複数あれば最初の1校を基準にする。期間考慮はAPI側で実施。
@@ -241,19 +232,51 @@ export default function TeacherDetailPage() {
     subjectsByCategory[cat].push(s);
   }
 
-  // 「今日有効な」出勤可能を slot_number ベースで描画。
-  // effective が無ければ user_profiles の旧値にフォールバック（過渡期データ）。
-  const slotsByDay: Record<string, number[]> =
-    effectiveAvailability?.available_slot_numbers_by_day &&
-    Object.keys(effectiveAvailability.available_slot_numbers_by_day).length > 0
-      ? Object.fromEntries(
-          Object.entries(effectiveAvailability.available_slot_numbers_by_day).map(([k, v]) => [
-            k,
-            Array.isArray(v) ? (v as number[]) : [],
-          ])
-        )
-      : normalizeToSlotNumbersByDay(teacher.available_slot_numbers_by_day);
-  const totalAvailableSlots = Object.values(slotsByDay).reduce((sum, arr) => sum + arr.length, 0);
+  // 「今日有効な」出勤可能の描画。コマ番号ではなく実時刻の区間包含で判定する
+  // （形態ごとに slot_number が独立採番されるため、番号で突き合わせると別形態のコマと誤一致する）。
+  //
+  // 旧レコード（時間帯が空でコマ番号だけある期間）は個別のコマ時間で実時刻に解決する。
+  const individualSlots = scheduleTimeSlots.filter((s) => s.formation === INDIVIDUAL_FORMATION);
+  const legacyLabelSource = individualSlots.length > 0 ? individualSlots : scheduleTimeSlots;
+  const legacyLabelByNumber = new Map<number, string>();
+  for (const s of legacyLabelSource) {
+    if (!legacyLabelByNumber.has(s.slot_number)) {
+      legacyLabelByNumber.set(
+        s.slot_number,
+        `${s.start_time.slice(0, 5)}-${s.end_time.slice(0, 5)}`
+      );
+    }
+  }
+  const resolveSlotNumber = (n: number) => legacyLabelByNumber.get(n);
+
+  // 期間が無い講師は user_profiles の旧値から擬似期間を組んでフォールバック（過渡期データ）。
+  // 旧値も空なら「出勤可能なし」であり、全時間可に化けさせない。
+  const profileSlotsByDay = normalizeToSlotNumbersByDay(teacher.available_slot_numbers_by_day);
+  const profileDays = Object.entries(profileSlotsByDay)
+    .filter(([, v]) => v.length > 0)
+    .map(([k]) => Number(k));
+  const availabilityForDisplay =
+    effectiveAvailability ??
+    (profileDays.length > 0
+      ? {
+          available_days_of_week: profileDays,
+          available_time_slots_by_day: {},
+          available_slot_numbers_by_day: profileSlotsByDay,
+        }
+      : null);
+
+  const isAvailableCell = (dayIdx: number, slot: ScheduleTimeSlot): boolean =>
+    availabilityForDisplay
+      ? isAvailableForInterval(availabilityForDisplay, dayIdx, slot.start_time, slot.end_time, {
+          resolveSlotNumber,
+        })
+      : false;
+
+  const totalAvailableSlots = scheduleTimeSlots.reduce(
+    (sum, slot) =>
+      sum + DAY_LABELS.reduce((n, _, dayIdx) => n + (isAvailableCell(dayIdx, slot) ? 1 : 0), 0),
+    0
+  );
   // 「いつ時点の出勤可能か」ラベル
   const effectiveLabel = effectiveAvailability
     ? `${effectiveAvailability.effective_from} 〜 ${effectiveAvailability.effective_until || '無期限'}`
@@ -428,17 +451,16 @@ export default function TeacherDetailPage() {
                     </thead>
                     <tbody>
                       {scheduleTimeSlots.map((slot) => (
-                        <tr key={slot.slot_number}>
+                        // 表示キー・ラベルは実時刻区間（形態が違えば同じ slot_number でも
+                        // 時刻が異なるため、コマ番号ではなく時間帯を主にする）
+                        <tr key={`${slot.start_time}-${slot.end_time}`}>
                           <td className="p-2 border border-gray-200 text-gray-700 whitespace-nowrap">
-                            <span className="font-semibold">{slot.slot_number}</span>
-                            <span className="ml-1 text-gray-400">
-                              {slot.start_time}〜{slot.end_time}
+                            <span className="font-semibold">
+                              {slot.start_time.slice(0, 5)}〜{slot.end_time.slice(0, 5)}
                             </span>
                           </td>
                           {DAY_LABELS.map((_, dayIdx) => {
-                            const available = (slotsByDay[String(dayIdx)] || []).includes(
-                              slot.slot_number
-                            );
+                            const available = isAvailableCell(dayIdx, slot);
                             return (
                               <td
                                 key={dayIdx}

@@ -143,7 +143,9 @@ describe('evaluateStudentDrop', () => {
     expect(d).toEqual({ kind: 'violation', reason: '担当除外指定の講師です' });
   });
 
-  it('希望性別と講師の性別が違えば violation', () => {
+  // 希望性別は「守りたい希望」であって禁止ではない。止めると当日の調整が回らないので、
+  // 警告（warn）にして配置は通す。ブロックに戻すと運用が詰まる。
+  it('希望性別と講師の性別が違えば warn（配置は通す）', () => {
     const d = evaluateStudentDrop({
       entry: { ...baseEntry, student: { preferred_teacher_gender: 'female' } as never },
       target: sameSlotDifferentTeacher,
@@ -152,6 +154,21 @@ describe('evaluateStudentDrop', () => {
       maxStudentsPerTeacher: 2,
       isClosed: false,
     });
-    expect(d).toEqual({ kind: 'violation', reason: '女性講師希望のため割当不可' });
+    expect(d).toEqual({
+      kind: 'warn',
+      reason: '女性講師希望の生徒です（希望と違う講師に割り当てました）',
+    });
+  });
+
+  it('希望性別どおりの講師なら警告を出さない（drop）', () => {
+    const d = evaluateStudentDrop({
+      entry: { ...baseEntry, student: { preferred_teacher_gender: 'female' } as never },
+      target: sameSlotDifferentTeacher,
+      targetActiveEntries: [],
+      targetTeacher: { teachable_subject_ids: null, gender: 'female' },
+      maxStudentsPerTeacher: 2,
+      isClosed: false,
+    });
+    expect(d).toEqual({ kind: 'drop' });
   });
 });

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
-import { EXTRA_KIND_BADGE, getSubjectChip, type SubjectChipTone } from './scheduleBadges';
+import { getSubjectChip, type SubjectChipTone } from './scheduleBadges';
 import styles from './scheduleDensity.module.css';
 
 const TONE_CLASS: Record<SubjectChipTone, string> = {
@@ -61,6 +61,13 @@ export function ScheduleLegend() {
           />
           <RowSwatch
             style={{
+              background: 'var(--sd-testprep-row-bg)',
+              borderColor: 'var(--sd-warn-border)',
+            }}
+            label="橙=テスト対策"
+          />
+          <RowSwatch
+            style={{
               background: 'var(--sd-additional-row-bg)',
               borderColor: 'oklch(60% 0.15 300)',
             }}
@@ -70,7 +77,7 @@ export function ScheduleLegend() {
             <span className={styles.seatEmpty} style={{ minHeight: 16, width: 40, margin: 0 }}>
               空席
             </span>
-            <span className="text-[var(--paragraph)]">緑破線=空席</span>
+            <span className="text-[var(--paragraph)]">緑破線=空席（振替モードのみ）</span>
           </span>
 
           <span className="w-px h-4 bg-[var(--stroke)]" />
@@ -89,10 +96,10 @@ export function ScheduleLegend() {
 
           <span className="w-px h-4 bg-[var(--stroke)]" />
 
-          {/* 種別バッジ（単発の追加授業） */}
-          <span className="text-[var(--paragraph)] font-medium">種別:</span>
-          <LegendBadge className={EXTRA_KIND_BADGE.test_prep} label="テスト対策" />
+          {/* バッジ（単発コマの種別は行色へ移したので、残るのは下書きマークだけ） */}
+          <span className="text-[var(--paragraph)] font-medium">印:</span>
           <LegendBadge className="bg-info text-white" label="仮" desc="自動マッチング下書き" />
+          <LegendBadge className="bg-success text-white" label="見込" desc="未入会の体験" />
 
           <span className="w-px h-4 bg-[var(--stroke)]" />
 
@@ -109,7 +116,8 @@ export function ScheduleLegend() {
 
           <span className="w-px h-4 bg-[var(--stroke)]" />
           <span className="text-[var(--paragraph)]">
-            生徒行クリックで欠席・振替メニュー / 空きのある講師カードは左縁が緑
+            生徒行クリックで欠席・振替メニュー / 空きのある講師カードは左縁が緑 /
+            授業の入っていない講師はコマ枠の下にまとめて表示
           </span>
         </div>
       )}

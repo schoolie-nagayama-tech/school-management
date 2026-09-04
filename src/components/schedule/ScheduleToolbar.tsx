@@ -61,6 +61,12 @@ interface ScheduleToolbarProps {
   onVisibleDaysChange: (days: number[]) => void;
   onKoushuSelect: (period: KoushuPeriodInfo | null) => void;
   onTestPrepToggle: (active: boolean) => void;
+  /**
+   * 表示モード。'week'=週の座席表（予定を組む盤） / 'day'=当日盤（今日を回す運用盤）。
+   * 個別タブ専用（形態ボードでは切替を出さない）。ユーザー設定として永続化。
+   */
+  viewMode: 'week' | 'day';
+  onViewModeChange: (v: 'week' | 'day') => void;
   /** 座席表の向き（既定=転置 日=行）とセル内列数（日=列モードのみ有効）。ユーザー設定として永続化 */
   orientation: 'cols' | 'rows';
   onOrientationChange: (o: 'cols' | 'rows') => void;
@@ -74,6 +80,8 @@ interface ScheduleToolbarProps {
   onAddLesson: () => void;
   /** コンテキストヘルプ（?）。管理ボタンの右に描画する。 */
   helpSlot?: React.ReactNode;
+  /** 座席表の凡例。週移動ボタンの右に置く（盤面の上を1行占有させないため）。 */
+  legendSlot?: React.ReactNode;
 }
 
 export function ScheduleToolbar({
@@ -90,6 +98,8 @@ export function ScheduleToolbar({
   onVisibleDaysChange,
   onKoushuSelect,
   onTestPrepToggle,
+  viewMode,
+  onViewModeChange,
   orientation,
   onOrientationChange,
   colMode,
@@ -99,6 +109,7 @@ export function ScheduleToolbar({
   onFormationChange,
   onAddLesson,
   helpSlot,
+  legendSlot,
 }: ScheduleToolbarProps) {
   const [weekPickerOpen, setWeekPickerOpen] = useState(false);
   const weekPickerInputRef = useRef<HTMLInputElement>(null);
@@ -219,37 +230,68 @@ export function ScheduleToolbar({
                 今週
               </Button>
             )}
+            {/* 凡例。以前は盤面の直前に全幅で置いていたが、常時1行を使うので週移動の隣へ寄せた */}
+            {legendSlot}
           </div>
         </div>
         {schoolId && (
           <div className="flex items-center gap-2 flex-wrap">
-            {/* 向きトグル: 日=行(転置・既定) / 日=列(週俯瞰)。ユーザー設定として永続化。 */}
-            <div className="flex items-center gap-1.5">
-              <span className="text-xs text-[var(--paragraph)]">向き:</span>
-              <div className="inline-flex rounded-full bg-[var(--surface)] p-0.5">
-                {[
-                  { v: 'rows' as const, label: '日=行' },
-                  { v: 'cols' as const, label: '日=列' },
-                ].map((o) => (
-                  <button
-                    key={o.v}
-                    type="button"
-                    onClick={() => onOrientationChange(o.v)}
-                    className={`px-2.5 py-0.5 rounded-full text-xs font-medium transition-colors ${
-                      orientation === o.v
-                        ? 'bg-white text-[var(--headline)] shadow-sm'
-                        : 'text-[var(--paragraph-light)] hover:text-[var(--headline)]'
-                    }`}
-                  >
-                    {o.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-            {/* 列数トグル: 日=列モードのときだけ意味を持つ（個別タブ専用） */}
-            {isIndividualTab && orientation === 'cols' && (
+            {/* 週/日トグル: 週=予定を組む盤 / 日=今日を回す運用盤。個別タブ専用。
+                形態ボードには当日盤が無いのでタブ側で出し分ける。 */}
+            {isIndividualTab && (
               <div className="flex items-center gap-1.5">
                 <span className="text-xs text-[var(--paragraph)]">表示:</span>
+                <div className="inline-flex rounded-full bg-[var(--surface)] p-0.5">
+                  {[
+                    { v: 'week' as const, label: '週' },
+                    { v: 'day' as const, label: '日' },
+                  ].map((o) => (
+                    <button
+                      key={o.v}
+                      type="button"
+                      onClick={() => onViewModeChange(o.v)}
+                      className={`px-2.5 py-0.5 rounded-full text-xs font-medium transition-colors ${
+                        viewMode === o.v
+                          ? 'bg-white text-[var(--headline)] shadow-sm'
+                          : 'text-[var(--paragraph-light)] hover:text-[var(--headline)]'
+                      }`}
+                    >
+                      {o.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            {/* 向きトグル: 日=行(転置・既定) / 日=列(週俯瞰)。ユーザー設定として永続化。
+                日表示では盤面が「行=講師・列=コマ」で固定なので意味を持たない → 隠す。 */}
+            {viewMode !== 'day' && (
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs text-[var(--paragraph)]">向き:</span>
+                <div className="inline-flex rounded-full bg-[var(--surface)] p-0.5">
+                  {[
+                    { v: 'rows' as const, label: '日=行' },
+                    { v: 'cols' as const, label: '日=列' },
+                  ].map((o) => (
+                    <button
+                      key={o.v}
+                      type="button"
+                      onClick={() => onOrientationChange(o.v)}
+                      className={`px-2.5 py-0.5 rounded-full text-xs font-medium transition-colors ${
+                        orientation === o.v
+                          ? 'bg-white text-[var(--headline)] shadow-sm'
+                          : 'text-[var(--paragraph-light)] hover:text-[var(--headline)]'
+                      }`}
+                    >
+                      {o.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            {/* 列数トグル: 日=列モードのときだけ意味を持つ（個別タブ専用・日表示では非表示） */}
+            {isIndividualTab && viewMode !== 'day' && orientation === 'cols' && (
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs text-[var(--paragraph)]">列数:</span>
                 <div className="inline-flex rounded-full bg-[var(--surface)] p-0.5">
                   {([1, 2] as const).map((n) => (
                     <button
@@ -394,12 +436,22 @@ export function ScheduleToolbar({
                       className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-[var(--paragraph)] hover:bg-[var(--surface)]"
                     >
                       <Settings className="h-4 w-4 opacity-70" />
-                      座席表の設定…
+                      表示の設定…
                     </button>
                     <div className="my-1 border-t border-[var(--stroke)]" />
                     {[
-                      { href: '/schedule/regular-patterns', label: '通塾日程の登録' },
+                      // 通塾日程の登録は生徒詳細に一本化した（横断一覧ページは廃止）。
+                      // 未反映のズレは ScheduleDriftBanner が生徒名つきで知らせる。
+                      // 指導形態・コマ時間・定員・講座はすべて「授業の設定」で作る。座席表の
+                      // 「＋講座の枠」は講座が無いと候補が出ないので、盤面から辿れる位置に置く。
+                      {
+                        href: '/schedule/special-courses',
+                        label: '授業の設定（形態・コマ・定員・講座）',
+                      },
                       { href: '/schedule/enrollments', label: '申込管理（講習・テスト対策）' },
+                      // 振替は盤面の D&D で確定するが、確定後の保護者通知の状況を見る場所が
+                      // 盤面から辿れなかったのでここに置く（未送信の取りこぼしに気づけるように）。
+                      { href: '/schedule/transfer-notifications', label: '振替の通知' },
                       { href: '/schedule/regular-patterns/match', label: '一括マッチング' },
                       // 上部の独立ボタンから移設（上部圧縮）。授業報告書の見本（ダミー）を開く
                       { href: '/lesson-reports/sample', label: '報告書見本' },

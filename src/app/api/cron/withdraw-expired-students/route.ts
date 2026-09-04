@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { fetchAllPaged } from '@/lib/utils/supabasePaging';
+import { requireCronAuth } from '@/lib/cron-auth';
+import { captureApiError } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
-
-const CRON_SECRET = process.env.CRON_SECRET;
 
 function getSupabaseAdmin() {
   return createClient(
@@ -25,11 +25,9 @@ function getSupabaseAdmin() {
  *   - 既に withdrawn の生徒は対象外（冪等。同日に複数回叩いても二重ログにならない）。
  */
 export async function GET(request: NextRequest) {
-  // Vercel Cron認証（既存cronと同パターン）
-  const authHeader = request.headers.get('authorization');
-  if (CRON_SECRET && authHeader !== `Bearer ${CRON_SECRET}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  // Vercel Cron認証（CRON_SECRET 未設定なら拒否＝フェイルクローズド）
+  const authError = requireCronAuth(request);
+  if (authError) return authError;
 
   try {
     const supabaseAdmin = getSupabaseAdmin();
@@ -99,6 +97,9 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ ok: true, switched, date: todayJST });
   } catch (e) {
+    captureApiError(e, {
+      route: 'GET /api/cron/withdraw-expired-students',
+    });
     console.error('[cron/withdraw-expired-students] エラー:', e);
     return NextResponse.json({ ok: false, error: 'Internal error' }, { status: 500 });
   }

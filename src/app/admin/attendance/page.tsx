@@ -51,6 +51,7 @@ import {
   AlertTriangle,
   UserMinus,
   UserPlus,
+  FileSignature,
   Send,
   ArrowUpDown,
 } from 'lucide-react';
@@ -62,6 +63,8 @@ import {
   approveAttendanceSheet,
   bulkApproveAttendanceSheets,
   reopenAttendanceSheet,
+  submitAttendanceSheet,
+  isProxySubmitted,
   getLateEarlyList,
   updateAttendanceSheetMeta,
   updateTeacherExitDate,
@@ -69,6 +72,9 @@ import {
   updateTeacherEmployeeNo,
   getRecentlyRetiredTeachers,
   getNewTeachers,
+  getContractRenewalTeachers,
+  updateTeacherContractRenewalDate,
+  type ContractRenewalTeacher,
   getActiveTeacherProfiles,
   reviewAttendanceSheets,
   rejectToTeacher,
@@ -111,6 +117,8 @@ interface SummaryRow {
   } | null;
   teacher_id?: string;
   status: string;
+  /** 提出ボタンを押した人。teacher_id と違えば代理提出（バッジを出す） */
+  submitted_by?: string | null;
   type_totals: Record<
     string,
     {
@@ -224,6 +232,13 @@ function compareByEmployeeNo(a: SummaryRow, b: SummaryRow): number {
   return ea.localeCompare(eb, 'ja');
 }
 
+/** 'YYYY-MM-DD' を '8/31' の形にする（チップは横幅が限られるので年は落とす） */
+function formatMonthDayJa(date: string): string {
+  const [, m, d] = date.split('-');
+  if (!m || !d) return date;
+  return `${Number(m)}/${Number(d)}`;
+}
+
 /** 登録済みの人事情報チップ（講師名＋内容＋解除ボタン）。入社日・退職日・コマ給で色だけ変える。 */
 function HrChip({
   color,
@@ -232,7 +247,7 @@ function HrChip({
   onClear,
   clearLabel,
 }: {
-  color: 'blue' | 'orange' | 'purple';
+  color: 'blue' | 'orange' | 'purple' | 'amber';
   name: string;
   detail: string;
   onClear: () => void;
@@ -242,6 +257,7 @@ function HrChip({
     blue: 'bg-blue-600 hover:bg-blue-700',
     orange: 'bg-orange-500 hover:bg-orange-600',
     purple: 'bg-purple-600 hover:bg-purple-700',
+    amber: 'bg-amber-600 hover:bg-amber-700',
   }[color];
   return (
     <span
@@ -303,6 +319,9 @@ export default function AttendanceManagementPage() {
   const [rejectMode, setRejectMode] = useState<'to-teacher' | 'to-manager'>('to-teacher');
   const [isReopenDialogOpen, setIsReopenDialogOpen] = useState(false);
   const [reopeningSheet, setReopeningSheet] = useState<SummaryRow | null>(null);
+  // 代理提出（入力中・差し戻し → 提出済み）の確認ダイアログ
+  const [isSubmitDialogOpen, setIsSubmitDialogOpen] = useState(false);
+  const [submittingSheet, setSubmittingSheet] = useState<SummaryRow | null>(null);
   const [lateEarlyRecords, setLateEarlyRecords] = useState<LateEarlyRecord[]>([]);
   const [prevMonthUnsubmitted, setPrevMonthUnsubmitted] = useState<SummaryRow[]>([]);
 
@@ -314,6 +333,8 @@ export default function AttendanceManagementPage() {
   const [newTeachers, setNewTeachers] = useState<{ id: string; name: string; hire_date: string }[]>(
     []
   );
+  // 契約更新が近い／過ぎている講師（研修期間の終了日を講師登録で入れたもの）
+  const [contractRenewals, setContractRenewals] = useState<ContractRenewalTeacher[]>([]);
   // 人事・コマ給の登録フォーム。入社日・退職日・コマ給変更は「1人の講師に対する設定」なので、
   // 講師を1回選べば3つともまとめて編集・保存できる1フォームに統合している。
   const [hrTeacherId, setHrTeacherId] = useState<string>('');
@@ -394,6 +415,7 @@ export default function AttendanceManagementPage() {
         prevMonthSummary,
         retiredResult,
         newResult,
+        contractRenewalResult,
         teacherList,
         adminList,
       ] = await Promise.all([
@@ -403,6 +425,7 @@ export default function AttendanceManagementPage() {
         getAttendanceSummary(schoolId, realPrevMonth, allowedIds),
         getRecentlyRetiredTeachers(effectiveSchoolIds, yearMonth),
         getNewTeachers(effectiveSchoolIds, yearMonth),
+        getContractRenewalTeachers(effectiveSchoolIds),
         getActiveTeacherProfiles(effectiveSchoolIds),
         getAdminUsers(),
       ]);
@@ -419,6 +442,7 @@ export default function AttendanceManagementPage() {
       );
       setRecentlyRetired(retiredResult);
       setNewTeachers(newResult);
+      setContractRenewals(contractRenewalResult);
       setAllTeachers(teacherList);
       setAdminUsers(adminList);
       // 提出先は自動で選ばない。以前は先頭の管理者を既定にしていたが、セレクトの表示は
@@ -487,6 +511,9 @@ export default function AttendanceManagementPage() {
   const actionableStatuses = isManager ? ['submitted'] : ['submitted', 'reviewed'];
   const actionableSheets = sheets.filter((s) => actionableStatuses.includes(s.status));
   const actionableCount = actionableSheets.length;
+  // 「承認者へ提出」できるのは講師から出てきた（submitted）行だけ。
+  // 管理者の actionableSheets には reviewed（既に誰かへ提出済み）も混ざるため別に持つ。
+  const submittedSheets = sheets.filter((s) => s.status === 'submitted');
 
   // 管理者: 承認
   const handleApprove = async (sheet: SummaryRow) => {
@@ -528,11 +555,11 @@ export default function AttendanceManagementPage() {
    */
   const handleBulkReview = async () => {
     if (!profile || !selectedAdminId) return;
-    const targetIds = actionableSheets.map((s) => s.id);
+    const targetIds = submittedSheets.map((s) => s.id);
     if (targetIds.length === 0) return;
     try {
       await reviewAttendanceSheets(targetIds, profile.id, selectedAdminId);
-      success(`${targetIds.length}件の出勤簿を管理者へ提出しました`);
+      success(`${targetIds.length}件の出勤簿を承認者へ提出しました`);
       await fetchData();
     } catch {
       toastError('提出に失敗しました');
@@ -566,6 +593,34 @@ export default function AttendanceManagementPage() {
   };
 
   // 承認取消
+  /**
+   * 代理提出（入力中・差し戻し → 提出済み）。
+   *
+   * ★ 本人が出せない出勤簿を誰かが必ず拾えるようにするための操作。
+   *   退職・長期欠勤・提出忘れの出勤簿は、誰も出せないと「入力中」のまま残り
+   *   承認フローに乗らない。督促して回るのは教室長なので、ロールでは出し分けない
+   *   （出勤簿管理を開けるのは室長以上だけ）。
+   * ★ 詳細画面の「代理で提出する」と同じ操作。ここに置いたのは、一覧で
+   *   「入力中」を見つけたその場で出せるようにするため。
+   */
+  const handleSubmitClick = (sheet: SummaryRow) => {
+    setSubmittingSheet(sheet);
+    setIsSubmitDialogOpen(true);
+  };
+
+  const handleSubmitSheet = async () => {
+    if (!submittingSheet || !profile) return;
+    try {
+      await submitAttendanceSheet(submittingSheet.id, profile.id);
+      success(`${submittingSheet.teacher?.name ?? '不明'}の出勤簿を提出しました`);
+      setIsSubmitDialogOpen(false);
+      setSubmittingSheet(null);
+      await fetchData();
+    } catch {
+      toastError('提出に失敗しました');
+    }
+  };
+
   const handleReopenClick = (sheet: SummaryRow) => {
     setReopeningSheet(sheet);
     setIsReopenDialogOpen(true);
@@ -674,6 +729,18 @@ export default function AttendanceManagementPage() {
     }
   };
 
+  // 契約更新の解除（＝更新が済んだ）。日付をクリアするとアラートから外れる。
+  // 次回の更新日を続けて管理したい場合は、講師の編集画面から入れ直す。
+  const handleClearContractRenewal = async (teacherId: string) => {
+    try {
+      await updateTeacherContractRenewalDate(teacherId, null);
+      success('契約更新を済みにしました');
+      await fetchData();
+    } catch {
+      toastError('契約更新の解除に失敗しました');
+    }
+  };
+
   // 人事・コマ給フォームの保存。入社日・退職日・コマ給変更のうち、変更があった項目だけ書き込む。
   const handleSaveHr = async () => {
     if (!hrTeacherId || !hrSnapshot) return;
@@ -688,10 +755,11 @@ export default function AttendanceManagementPage() {
     const teacherName = allTeachers.find((t) => t.id === hrTeacherId)?.name ?? '不明';
     setIsSavingHr(true);
     try {
-      if (hrHireDate !== snap.hire) {
+      // 入社日・退職日は管理者だけの操作（教室長には入力欄自体を出していない）
+      if (isAdmin && hrHireDate !== snap.hire) {
         await updateTeacherHireDate(hrTeacherId, hrHireDate || null);
       }
-      if (hrExitDate !== snap.exit) {
+      if (isAdmin && hrExitDate !== snap.exit) {
         await updateTeacherExitDate(hrTeacherId, hrExitDate || null);
       }
       const komaDirty =
@@ -1032,10 +1100,14 @@ export default function AttendanceManagementPage() {
           </div>
         </div>
 
-        {/* 人事情報カード (admin only) */}
-        {isAdmin && (recentlyRetired.length > 0 || newTeachers.length > 0) && (
+        {/* 人事情報カード。
+            先月退職・入社3ヶ月は管理者のみ。
+            契約更新は研修期間の終了を追いかけるもので、期限を判断するのは教室長なので
+            教室長にも出す（更新が済んだら × で消す＝アラートを止める）。 */}
+        {((isAdmin && (recentlyRetired.length > 0 || newTeachers.length > 0)) ||
+          contractRenewals.length > 0) && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {recentlyRetired.length > 0 && (
+            {isAdmin && recentlyRetired.length > 0 && (
               <Card className="border-red-200 bg-red-50/50">
                 <CardContent className="py-3 px-4">
                   <div className="flex items-center gap-2 mb-2">
@@ -1052,7 +1124,7 @@ export default function AttendanceManagementPage() {
                 </CardContent>
               </Card>
             )}
-            {newTeachers.length > 0 && (
+            {isAdmin && newTeachers.length > 0 && (
               <Card className="border-blue-200 bg-blue-50/50">
                 <CardContent className="py-3 px-4">
                   <div className="flex items-center gap-2 mb-2">
@@ -1066,6 +1138,32 @@ export default function AttendanceManagementPage() {
                       </Badge>
                     ))}
                   </div>
+                </CardContent>
+              </Card>
+            )}
+            {contractRenewals.length > 0 && (
+              <Card className="border-amber-300 bg-amber-50/60">
+                <CardContent className="py-3 px-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <FileSignature className="h-4 w-4 text-amber-700" />
+                    <span className="text-sm font-semibold text-amber-900">契約更新</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {contractRenewals.map((t) => (
+                      <HrChip
+                        key={t.id}
+                        color={t.overdue ? 'orange' : 'amber'}
+                        name={t.name}
+                        detail={`${formatMonthDayJa(t.contract_renewal_date)}${t.overdue ? ' 超過' : ''}`}
+                        onClear={() => handleClearContractRenewal(t.id)}
+                        clearLabel="契約更新を済みにする"
+                      />
+                    ))}
+                  </div>
+                  <p className="mt-2 text-xs text-amber-800">
+                    研修期間の終了日です。更新が済んだら × を押して消してください。
+                    次回の更新日は講師の編集画面から入れ直せます。
+                  </p>
                 </CardContent>
               </Card>
             )}
@@ -1177,7 +1275,7 @@ export default function AttendanceManagementPage() {
                       {/* 行の選択は不要。提出先を選べば押せる */}
                       <Button onClick={handleBulkReview} disabled={!selectedAdminId}>
                         <Send className="h-4 w-4 mr-2" />
-                        提出済み{actionableCount}件を管理者へ提出
+                        提出済み{submittedSheets.length}件を承認者へ提出
                       </Button>
                     </div>
                   </>
@@ -1189,6 +1287,34 @@ export default function AttendanceManagementPage() {
                       <CheckCircle className="h-4 w-4 mr-2" />
                       承認待ち{actionableCount}件を一括承認
                     </Button>
+                    {/* 管理者も承認者へ回せるようにする。
+                        自分が承認しない（オーナーに承認してもらう・別の管理者に引き継ぐ）ケースが
+                        あるのに、教室長にしか提出の導線が無かった。
+                        対象は講師から出てきた submitted のみ（reviewed は既に誰かへ提出済み）。 */}
+                    {submittedSheets.length > 0 && (
+                      <div className="flex items-center gap-2">
+                        <Select value={selectedAdminId} onValueChange={setSelectedAdminId}>
+                          <SelectTrigger className="w-48">
+                            <SelectValue placeholder="提出先を選択" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {adminUsers.map((u) => (
+                              <SelectItem key={u.id} value={u.id}>
+                                {u.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Button
+                          variant="secondary"
+                          onClick={handleBulkReview}
+                          disabled={!selectedAdminId}
+                        >
+                          <Send className="h-4 w-4 mr-2" />
+                          提出済み{submittedSheets.length}件を承認者へ提出
+                        </Button>
+                      </div>
+                    )}
                   </>
                 )}
               </div>
@@ -1594,13 +1720,28 @@ export default function AttendanceManagementPage() {
                             )}
                           </TableCell>
                           <TableCell className="text-center">
-                            <Badge
-                              className={
-                                ATTENDANCE_STATUS_COLORS[sheet.status as AttendanceSheetStatus]
-                              }
-                            >
-                              {ATTENDANCE_STATUS_LABELS[sheet.status as AttendanceSheetStatus]}
-                            </Badge>
+                            <div className="flex flex-wrap items-center justify-center gap-1">
+                              <Badge
+                                className={
+                                  ATTENDANCE_STATUS_COLORS[sheet.status as AttendanceSheetStatus]
+                                }
+                              >
+                                {ATTENDANCE_STATUS_LABELS[sheet.status as AttendanceSheetStatus]}
+                              </Badge>
+                              {/* 本人ではなく教室長・管理者が出した出勤簿。給与の根拠になる書類なので、
+                                  本人の申告か代理かが一覧で分かるようにする */}
+                              {sheet.teacher_id &&
+                                isProxySubmitted({
+                                  teacher_id: sheet.teacher_id,
+                                  submitted_by: sheet.submitted_by,
+                                }) && (
+                                  <span title="本人ではなく教室長・管理者が代理で提出しました">
+                                    <Badge className="bg-amber-100 text-amber-800 text-[10px]">
+                                      代理提出
+                                    </Badge>
+                                  </span>
+                                )}
+                            </div>
                           </TableCell>
                           {displayTypes.map((type) => {
                             const typeData = Object.values(sheet.type_totals).find(
@@ -1648,6 +1789,16 @@ export default function AttendanceManagementPage() {
                               >
                                 詳細
                               </Button>
+                              {(sheet.status === 'draft' || sheet.status === 'rejected') && (
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleSubmitClick(sheet)}
+                                  className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                >
+                                  <Send className="h-3 w-3 mr-1" />
+                                  提出
+                                </Button>
+                              )}
                               {isManager && sheet.status === 'submitted' && (
                                 <Button
                                   variant="danger"
@@ -1738,13 +1889,18 @@ export default function AttendanceManagementPage() {
           </CardContent>
         </Card>
 
-        {/* 講師の人事・コマ給 (admin only)。
+        {/* 講師の人事・コマ給。
             入社日・退職日・コマ給変更はいずれも「1人の講師に対する設定」なので、
-            講師を1回選べば3つともまとめて編集できる1フォームに統合している。 */}
-        {isAdmin && (
+            講師を1回選べば3つともまとめて編集できる1フォームに統合している。
+
+            ★ コマ給の改定は教室長も行うのでカード自体は教室長以上に出す。
+              入社日・退職日は人事情報なので管理者のみ（カード内で出し分ける）。 */}
+        {(isAdmin || isManager) && (
           <Card>
             <CardHeader className="py-3">
-              <CardTitle className="text-base">講師の人事・コマ給</CardTitle>
+              <CardTitle className="text-base">
+                {isAdmin ? '講師の人事・コマ給' : '講師のコマ給'}
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex flex-wrap items-center gap-2">
@@ -1770,41 +1926,46 @@ export default function AttendanceManagementPage() {
 
               {!hrTeacherId ? (
                 <p className="text-xs text-text-faint">
-                  講師を選ぶと、入社日・退職日・コマ給変更をまとめて登録できます。
+                  {isAdmin
+                    ? '講師を選ぶと、入社日・退職日・コマ給変更をまとめて登録できます。'
+                    : '講師を選ぶと、コマ給の改定を登録できます。'}
                 </p>
               ) : (
                 <div className="space-y-3 border-l-2 border-border pl-4">
-                  {/* 入社日・退職日は user_profiles の値なので月に依存しない */}
-                  <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
-                    <div className="flex items-center gap-2">
-                      <Label className="w-14 text-sm text-text-body">入社日</Label>
-                      <Input
-                        type="date"
-                        value={hrHireDate}
-                        onChange={(e) => setHrHireDate(e.target.value)}
-                        className="w-40"
-                      />
+                  {/* 入社日・退職日は user_profiles の値なので月に依存しない。
+                      人事情報なので教室長には出さない（コマ給の改定だけ任せる）。 */}
+                  {isAdmin && (
+                    <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+                      <div className="flex items-center gap-2">
+                        <Label className="w-14 text-sm text-text-body">入社日</Label>
+                        <Input
+                          type="date"
+                          value={hrHireDate}
+                          onChange={(e) => setHrHireDate(e.target.value)}
+                          className="w-40"
+                        />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Label className="w-14 text-sm text-text-body">退職日</Label>
+                        <Input
+                          type="date"
+                          value={hrExitDate}
+                          onChange={(e) => setHrExitDate(e.target.value)}
+                          className="w-40"
+                        />
+                        {!hrExitDate && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-xs"
+                            onClick={() => setHrExitDate(monthEndDate)}
+                          >
+                            今月末
+                          </Button>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Label className="w-14 text-sm text-text-body">退職日</Label>
-                      <Input
-                        type="date"
-                        value={hrExitDate}
-                        onChange={(e) => setHrExitDate(e.target.value)}
-                        className="w-40"
-                      />
-                      {!hrExitDate && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-xs"
-                          onClick={() => setHrExitDate(monthEndDate)}
-                        >
-                          今月末
-                        </Button>
-                      )}
-                    </div>
-                  </div>
+                  )}
 
                   {/* コマ給変更は当月のシートに紐づくので、対象月を明示する */}
                   <div className="flex flex-wrap items-start gap-x-6 gap-y-2">
@@ -1861,11 +2022,10 @@ export default function AttendanceManagementPage() {
 
               {/* 登録済みの一覧。誰に何が入っているかを一目で見せ、× で解除する。
                   入社日・退職日は全講師分（未来月の退職日も確認できる）、コマ給変更は当月分。 */}
-              {(hireDateTeachers.length > 0 ||
-                exitDateTeachers.length > 0 ||
+              {((isAdmin && (hireDateTeachers.length > 0 || exitDateTeachers.length > 0)) ||
                 komaChangingTeachers.length > 0) && (
                 <div className="space-y-1.5 border-t border-border pt-3">
-                  {hireDateTeachers.length > 0 && (
+                  {isAdmin && hireDateTeachers.length > 0 && (
                     <div className="flex flex-wrap items-center gap-1">
                       <span className="w-14 text-xs text-text-faint">入社日</span>
                       {hireDateTeachers.map((t) => (
@@ -1880,7 +2040,7 @@ export default function AttendanceManagementPage() {
                       ))}
                     </div>
                   )}
-                  {exitDateTeachers.length > 0 && (
+                  {isAdmin && exitDateTeachers.length > 0 && (
                     <div className="flex flex-wrap items-center gap-1">
                       <span className="w-14 text-xs text-text-faint">退職日</span>
                       {exitDateTeachers.map((t) => (
@@ -1976,13 +2136,15 @@ export default function AttendanceManagementPage() {
       </div>
 
       {/* 差し戻しダイアログ */}
+      {/* Header / Footer は DialogContent の外に置く（中に入れるとスクロール領域に巻き込まれ、
+          タイトルが上端で切れ、ボタンが画面外に出る）。幅は Dialog の size で決まる。 */}
       <Dialog open={isRejectDialogOpen} onOpenChange={setIsRejectDialogOpen}>
+        <DialogHeader>
+          <DialogTitle>
+            {rejectMode === 'to-teacher' ? '講師に差し戻し' : '教室長に差し戻し'}
+          </DialogTitle>
+        </DialogHeader>
         <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              {rejectMode === 'to-teacher' ? '講師に差し戻し' : '教室長に差し戻し'}
-            </DialogTitle>
-          </DialogHeader>
           <div className="py-4">
             <p className="text-sm text-text-body mb-4">
               {rejectingSheet?.teacher?.name ?? '不明'}の出勤簿を
@@ -1999,18 +2161,38 @@ export default function AttendanceManagementPage() {
               />
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="secondary" onClick={() => setIsRejectDialogOpen(false)}>
-              キャンセル
-            </Button>
-            <Button variant="danger" onClick={handleReject}>
-              差し戻す
-            </Button>
-          </DialogFooter>
         </DialogContent>
+        <DialogFooter>
+          <Button variant="secondary" onClick={() => setIsRejectDialogOpen(false)}>
+            キャンセル
+          </Button>
+          <Button variant="danger" onClick={handleReject}>
+            差し戻す
+          </Button>
+        </DialogFooter>
       </Dialog>
 
       {/* 承認取消確認ダイアログ */}
+      {/* 代理提出の確認。誰の分を出すのかを明示する（本人以外の操作なので取り違えを防ぐ） */}
+      <AlertDialog open={isSubmitDialogOpen} onOpenChange={setIsSubmitDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {submittingSheet?.teacher?.name ?? 'この講師'}さんの出勤簿を提出しますか？
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              本人の代わりに「提出済み」にします。退職・提出忘れなどで本人が出せない出勤簿を承認フローに乗せるための操作です。提出後も内容は編集できます。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setIsSubmitDialogOpen(false)}>
+              キャンセル
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleSubmitSheet}>提出する</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <AlertDialog open={isReopenDialogOpen} onOpenChange={setIsReopenDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>

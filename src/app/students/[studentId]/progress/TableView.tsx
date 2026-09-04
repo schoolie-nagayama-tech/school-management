@@ -2,10 +2,11 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { Eye, EyeOff, FileText, RefreshCw, Send, Settings2 } from 'lucide-react';
+import { CheckCircle2, Eye, EyeOff, FileText, RefreshCw, Send, Settings2 } from 'lucide-react';
 import {
   getStudentProgress,
   updateStudentProgress,
+  updateStudentTextbookCompleted,
   updateStudentTextbookSeason,
   upsertStudentProgress,
   upsertStudentProgressLesson,
@@ -43,6 +44,7 @@ import { ExamGoalEditModal } from './ExamGoalEditModal';
 import { NextGoalModal } from './NextGoalModal';
 import { ExamRangeModal } from './ExamRangeModal';
 import { formatTextbookMeta } from '@/lib/utils/textbookLabel';
+import { useConfirm } from '@/hooks/useConfirm';
 
 // ─────────────────────────────────────────────
 // テーブルビュー（Phase 1: 最低限の編集機能 + Phase 2a: 面談モード行可視化）
@@ -113,6 +115,28 @@ export function TableView({
     rangeId: string | null;
     examTypeId: string | null;
   }>({ rangeId: null, examTypeId: null });
+
+  // 季節ラベルの楽観的表示値。undefined のときは親の textbook.season を使う。
+  // 手動で設定/解除した直後、onRefresh 反映までのラグでチップがちらつかないようにする。
+  // テキスト切替でリセット。
+  const [seasonOverride, setSeasonOverride] = useState<
+    'spring' | 'summer' | 'winter' | null | undefined
+  >(undefined);
+  useEffect(() => {
+    setSeasonOverride(undefined);
+  }, [textbook.id]);
+  const displaySeason = seasonOverride !== undefined ? seasonOverride : (textbook.season ?? null);
+
+  // 完了ラベルの楽観的表示値。季節ラベルと同じく、保存直後の反映ラグでちらつかせない。
+  const [completedOverride, setCompletedOverride] = useState<boolean | undefined>(undefined);
+  useEffect(() => {
+    setCompletedOverride(undefined);
+  }, [textbook.id]);
+  const displayCompleted =
+    completedOverride !== undefined ? completedOverride : !!textbook.completed_at;
+
+  // 「完了にしますか？」の確認ダイアログ
+  const { confirm, ConfirmDialog } = useConfirm();
 
   // 列可視化: 管理モード / 面談モード共通の1つの設定として保存。
   // 申込・引継ぎ・講師名は面談モードでは列設定に関係なく常時非表示（内部情報のため）。
@@ -201,7 +225,18 @@ export function TableView({
     { key: 'tardy', label: '遅刻', meetingOnlyHidden: true },
     { key: 'teacherName', label: '講師名', meetingOnlyHidden: true },
   ];
-  const hiddenColCount = colOptions.filter((o) => !meetingCols[o.key]).length;
+  // 申込コマは講習（季節ラベル付き教材）だけの情報なので、ラベルが無い教材では
+  // 列そのものを出さない。列設定の ON/OFF は保存したまま残すため、ラベルを付け直せば元に戻る。
+  const applicationColAvailable = displaySeason !== null;
+  const visibleColOptions = colOptions.filter(
+    (o) => o.key !== 'application' || applicationColAvailable
+  );
+  const hiddenColCount = visibleColOptions.filter((o) => !meetingCols[o.key]).length;
+  // 実際の描画に使う列可視状態（ヘッダーと各行で必ず同じものを使い、セルのズレを防ぐ）
+  const effectiveCols: Record<MeetingCol, boolean> = {
+    ...meetingCols,
+    application: meetingCols.application && applicationColAvailable,
+  };
 
   // ─── 一括塗りモード ───
   // 試験範囲 or 指導意図を範囲選択で一括適用する UI
@@ -362,17 +397,6 @@ export function TableView({
     return () => cancelAnimationFrame(raf);
   }, [sessionMode, isMeeting]);
 
-  // 季節ラベルの楽観的表示値。undefined のときは親の textbook.season を使う。
-  // 手動で設定/解除した直後、onRefresh 反映までのラグでチップがちらつかないようにする。
-  // テキスト切替でリセット。
-  const [seasonOverride, setSeasonOverride] = useState<
-    'spring' | 'summer' | 'winter' | null | undefined
-  >(undefined);
-  useEffect(() => {
-    setSeasonOverride(undefined);
-  }, [textbook.id]);
-  const displaySeason = seasonOverride !== undefined ? seasonOverride : (textbook.season ?? null);
-
   // 季節ラベル（夏期等）の設定・解除。教室長以上のみ、テキスト設定カードから操作する。
   // 講習提案書の公開でも自動付与されるが、手動でも付け外しできるようにする。null で解除。
   const handleSetSeason = useCallback(
@@ -391,6 +415,62 @@ export function TableView({
     },
     [textbook.id, success, toastError, onRefresh]
   );
+
+  // 完了ラベルの設定・解除。使い終わったテキストに付ける（記録は消さないので後から解除もできる）。
+  const handleSetCompleted = useCallback(
+    async (completed: boolean) => {
+      try {
+        await updateStudentTextbookCompleted(textbook.id, completed);
+        setCompletedOverride(completed);
+        success(completed ? '完了にしました' : '完了を解除しました');
+        await onRefresh();
+      } catch (e) {
+        console.error(e);
+        toastError('完了ラベルの更新に失敗しました');
+      }
+    },
+    [textbook.id, success, toastError, onRefresh]
+  );
+
+  /**
+   * 最終単元（表の一番下の行）に指導日が入ったか。
+   * 「一番下まで行った＝そのテキストを使い終わった」合図なので、完了にするか確認する。
+   */
+  const lastRowDone = useMemo(() => {
+    if (progress.length === 0) return false;
+    const last = progress[progress.length - 1];
+    return (last.progress?.lessons || []).some((l) => !!l.lesson_date);
+  }, [progress]);
+
+  // 未達→達成に変わった瞬間だけ聞く。開いただけ・既に完了・面談モードでは聞かない
+  // （初回レンダリングは「今の状態」を覚えるだけにして、開くたびに確認が出るのを防ぐ）。
+  const prevLastRowDoneRef = useRef<boolean | null>(null);
+  useEffect(() => {
+    prevLastRowDoneRef.current = null;
+  }, [textbook.id]);
+  useEffect(() => {
+    const prev = prevLastRowDoneRef.current;
+    prevLastRowDoneRef.current = lastRowDone;
+    if (prev === null || prev || !lastRowDone) return;
+    if (isMeeting || displayCompleted) return;
+    let cancelled = false;
+    (async () => {
+      const ok = await confirm({
+        title: 'テキストの完了',
+        description:
+          '最後の単元まで進みました。このテキストを完了にしますか？（完了にしても進行表は残ります）',
+        confirmLabel: '完了にする',
+        cancelLabel: 'まだ使う',
+      });
+      if (ok && !cancelled) await handleSetCompleted(true);
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // displayCompleted / isMeeting は「聞くかどうか」の条件なので依存に入れない
+    // （完了にした直後に再度この効果が走って二重に聞くのを避ける）。
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lastRowDone]);
 
   // セッション保存後にデータ再読込
   const handleSessionSaved = useCallback(async () => {
@@ -686,6 +766,13 @@ export function TableView({
               {seasonLabel(displaySeason)}
             </span>
           )}
+          {/* 完了バッジ（表示のみ。付け外しは下の設定カードで行う） */}
+          {displayCompleted && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-300 whitespace-nowrap">
+              <CheckCircle2 className="w-3 h-3" />
+              完了
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-2">
           {onTogglePublish && !isMeeting && (
@@ -796,7 +883,7 @@ export function TableView({
                       </button>
                     )}
                   </div>
-                  {colOptions.map((c) => (
+                  {visibleColOptions.map((c) => (
                     <label
                       key={c.key}
                       className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-[#f9fafb] cursor-pointer transition-[background-color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)]"
@@ -965,39 +1052,61 @@ export function TableView({
         {/* 進め方 / 宿題 / 試験範囲 — 1つのカードにまとめる */}
         {!isMeeting && (
           <div className="bg-white border border-[#e5e7eb] rounded-lg p-3">
-            {/* 季節ラベルの設定（教室長以上のみ）。講習提案書の公開でも自動付与されるが、
-                ここから手動でも付け外しできる。講師には出さない。 */}
-            {role !== 'teacher' && (
-              <div className="mb-3 flex items-center gap-2 flex-wrap">
-                <span className="text-[11px] font-semibold text-[#6b7280] uppercase tracking-wider">
-                  季節ラベル
-                </span>
-                {(
-                  [
-                    { key: null, label: 'なし' },
-                    { key: 'spring', label: '春期' },
-                    { key: 'summer', label: '夏期' },
-                    { key: 'winter', label: '冬期' },
-                  ] as const
-                ).map((opt) => {
-                  const active = displaySeason === opt.key;
-                  return (
-                    <button
-                      key={opt.label}
-                      type="button"
-                      onClick={() => handleSetSeason(opt.key)}
-                      className={`px-2.5 py-1 text-xs rounded-md border transition-[background-color,color] duration-150 ease-out active:scale-[0.97] ${
-                        active
-                          ? 'bg-[#1e3a5f] text-white border-[#1e3a5f]'
-                          : 'bg-white text-[#4b5563] border-[#e5e7eb] hover:bg-[#f3f4f6]'
-                      }`}
-                    >
-                      {opt.label}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
+            {/* ラベルの設定。
+                季節ラベル: 講習提案書の公開でも自動付与されるが、ここから手動でも付け外しできる（講師には出さない）。
+                完了ラベル: 使い終わったテキストに付ける。テキストを使い終えるのは講師なので講師も操作できる。 */}
+            <div className="mb-3 flex items-center gap-2 flex-wrap">
+              {role !== 'teacher' && (
+                <>
+                  <span className="text-[11px] font-semibold text-[#6b7280] uppercase tracking-wider">
+                    季節ラベル
+                  </span>
+                  {(
+                    [
+                      { key: null, label: 'なし' },
+                      { key: 'spring', label: '春期' },
+                      { key: 'summer', label: '夏期' },
+                      { key: 'winter', label: '冬期' },
+                    ] as const
+                  ).map((opt) => {
+                    const active = displaySeason === opt.key;
+                    return (
+                      <button
+                        key={opt.label}
+                        type="button"
+                        onClick={() => handleSetSeason(opt.key)}
+                        className={`px-2.5 py-1 text-xs rounded-md border transition-[background-color,color] duration-150 ease-out active:scale-[0.97] ${
+                          active
+                            ? 'bg-[#1e3a5f] text-white border-[#1e3a5f]'
+                            : 'bg-white text-[#4b5563] border-[#e5e7eb] hover:bg-[#f3f4f6]'
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    );
+                  })}
+                  {/* 季節ラベルと完了ラベルの区切り */}
+                  <span className="mx-1 h-4 w-px bg-[#e5e7eb]" aria-hidden />
+                </>
+              )}
+              <button
+                type="button"
+                onClick={() => handleSetCompleted(!displayCompleted)}
+                title={
+                  displayCompleted
+                    ? 'クリックで完了を解除する'
+                    : '使い終わったテキストに完了ラベルを付ける（進行表は残ります）'
+                }
+                className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded-md border transition-[background-color,color] duration-150 ease-out active:scale-[0.97] ${
+                  displayCompleted
+                    ? 'bg-emerald-600 text-white border-emerald-600'
+                    : 'bg-white text-[#4b5563] border-[#e5e7eb] hover:bg-[#f3f4f6]'
+                }`}
+              >
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                完了
+              </button>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
               {/* key={textbook.id} でテキスト切り替え時に再マウントし、保存済みの初期値を入れ直す */}
               <TextbookSettingsInline
@@ -1100,15 +1209,23 @@ export function TableView({
         </div>
       )}
 
-      {/* 進捗テーブル */}
-      <div className="bg-white rounded-xl border border-[#e5e7eb] overflow-hidden shadow-sm overflow-x-auto">
+      {/* 進捗テーブル
+       * ヘッダー行を画面上部に貼り付けて、下までスクロールしても列名が読めるようにする。
+       * sticky は「最も近いスクロール枠」に対して効くため、カードに overflow-auto/hidden を
+       * 付けるとカード内が枠になり、ページを下げてもヘッダーが動かない。そこで縦横とも
+       * スクロールはページ側に任せ、カードは表の幅ぶんだけ広がる（min-w-max）ようにした。
+       * overflow-clip はスクロール枠を作らずに角丸のはみ出しだけ切るための指定。 */}
+      <div className="bg-white rounded-xl border border-[#e5e7eb] shadow-sm overflow-clip min-w-max">
         <table className="w-full text-sm min-w-[900px]">
-          <thead className="bg-[#f9fafb] border-b border-[#e5e7eb] text-[#6b7280] text-xs">
+          {/* 下罫線は thead ではなく th の inset shadow で引く:
+           * border-collapse では sticky 中に thead の border が描画されないブラウザがあるため。
+           * 背景も th 側に持たせて、下をくぐる行が透けないようにする。 */}
+          <thead className="sticky top-0 z-20 bg-[#f9fafb] text-[#6b7280] text-xs [&>tr>th]:bg-[#f9fafb] [&>tr>th]:shadow-[inset_0_-1px_0_#e5e7eb]">
             <tr>
               <th className="px-3 py-2 text-left w-10">#</th>
               <th className="px-3 py-2 text-left min-w-[180px]">単元名</th>
               {meetingCols.proposal && <th className="px-3 py-2 text-left w-20">提案</th>}
-              {!isMeeting && meetingCols.application && (
+              {!isMeeting && effectiveCols.application && (
                 <th className="px-3 py-2 text-left w-20">申込</th>
               )}
               {meetingCols.examRange && (
@@ -1119,7 +1236,8 @@ export function TableView({
               {meetingCols.lesson2 && <th className="px-3 py-2 text-left w-28">2回目</th>}
               {meetingCols.lesson3 && <th className="px-3 py-2 text-left w-28">3回目</th>}
               {!isMeeting && meetingCols.handover && (
-                <th className="px-3 py-2 text-left min-w-[160px]">引継ぎ</th>
+                // 引継ぎは全角20字で折り返す想定の幅（20em @13px + 左右パディング）
+                <th className="px-3 py-2 text-left w-[284px] min-w-[284px]">引継ぎ</th>
               )}
               {!isMeeting && meetingCols.homeworkNotDone && (
                 <th className="px-3 py-2 text-center w-16">宿題未</th>
@@ -1193,7 +1311,7 @@ export function TableView({
                     row={row}
                     examTypes={examTypes}
                     isMeeting={isMeeting}
-                    meetingCols={meetingCols}
+                    meetingCols={effectiveCols}
                     groupStart={groupStart}
                     appliedGroupStart={appliedGroupStart}
                     proposalGroupSpan={proposalGroupSpan}
@@ -1447,6 +1565,8 @@ export function TableView({
           </div>
         </div>
       )}
+
+      {ConfirmDialog}
     </div>
   );
 }

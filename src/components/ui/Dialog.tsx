@@ -1,6 +1,7 @@
 'use client';
 
-import { ReactNode, useEffect, useId, createContext, useContext } from 'react';
+import { ReactNode, useEffect, useId, useState, createContext, useContext } from 'react';
+import { createPortal } from 'react-dom';
 
 const DialogTitleIdContext = createContext<string | undefined>(undefined);
 
@@ -24,6 +25,9 @@ interface DialogProps {
 
 export function Dialog({ open, onOpenChange, children, ariaLabel, size = 'md' }: DialogProps) {
   const titleId = useId();
+  // ポータル描画はマウント後のみ（SSR/ハイドレーション不一致を避ける）
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
   useEffect(() => {
     if (open) {
       document.body.style.overflow = 'hidden';
@@ -49,9 +53,13 @@ export function Dialog({ open, onOpenChange, children, ariaLabel, size = 'md' }:
     };
   }, [open, onOpenChange]);
 
-  if (!open) return null;
+  if (!open || !mounted) return null;
 
-  return (
+  // document.body 直下へポータル描画する。
+  // 親モーダルのパネル(.modal-panel)は transform を持つため、入れ子で描画すると
+  // fixed の基準が親パネルになり、はみ出した部分が親の overflow-hidden で見切れる。
+  // ポータルで body 直下に出すことで、入れ子でもビューポート基準で正しく中央表示される。
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div
         className="absolute inset-0 modal-overlay"
@@ -67,7 +75,8 @@ export function Dialog({ open, onOpenChange, children, ariaLabel, size = 'md' }:
       >
         <DialogTitleIdContext.Provider value={titleId}>{children}</DialogTitleIdContext.Provider>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 

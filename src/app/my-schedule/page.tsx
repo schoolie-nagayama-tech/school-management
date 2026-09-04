@@ -27,8 +27,8 @@ import { ToastContainer, Loading } from '@/components/ui';
 import { useToast } from '@/hooks/useToast';
 import { useAuth } from '@/contexts/AuthContext';
 // Phase A: 形態キーの直書きを定数参照に置換。
-// TODO(Phase E): 集団バッジ表示はマスタ label 参照へ差し替える（新形態も表示できるように）。
-import { GROUP_FORMATION } from '@/types/schedule';
+// TODO(Phase E): 形態バッジ表示はマスタ label 参照へ差し替える（新形態も表示できるように）。
+import { GROUP_FORMATION, SCHEDULE_ENTRY_FORMATION_LABELS } from '@/types/schedule';
 import { supabase } from '@/lib/supabase';
 import { recordAttendance } from '@/lib/api/schedule';
 import { formatGradeLabel } from '@/lib/utils/gradeLabel';
@@ -442,7 +442,7 @@ function EntryRow({
           )}
           {entry.formation === GROUP_FORMATION && (
             <span className="ml-1 px-1 bg-ink-subtle text-ink text-[10px] rounded font-semibold">
-              集団
+              {SCHEDULE_ENTRY_FORMATION_LABELS[GROUP_FORMATION]}
             </span>
           )}
         </span>
@@ -477,6 +477,9 @@ function EntryRow({
 
         <Link
           href={`/lesson-reports/${entry.id}`}
+          // 報告書は別タブ。出欠を付けながら書けるよう、この一覧を閉じさせない（/today と同じ扱い）
+          target="_blank"
+          rel="noopener noreferrer"
           className="text-xs text-info hover:underline underline-offset-2 flex items-center gap-0.5 flex-shrink-0"
         >
           <FileText className="w-3 h-3" />

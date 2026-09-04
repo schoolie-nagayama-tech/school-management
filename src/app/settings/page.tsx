@@ -25,6 +25,7 @@ import {
   Wand2,
   BarChart3,
   LogIn,
+  LayoutDashboard,
 } from 'lucide-react';
 
 interface SettingsItem {
@@ -94,6 +95,15 @@ const settingsGroups: SettingsGroup[] = [
         description: '生徒管理ページ上部の講習進捗サマリーなど、ウィジェットの表示ON/OFF',
         requiresManager: true,
       },
+      {
+        // 試用中のためヘッダーには出さず、ここが唯一の入口（navConfig のコメント参照）。
+        href: '/dashboard',
+        icon: <LayoutDashboard className="w-5 h-5" />,
+        label: '教室長ダッシュボード（試用中）',
+        description:
+          '要対応・本日の授業・業務の進捗を1画面に集約。通塾日程の運用開始後に本領を発揮します',
+        requiresManager: true,
+      },
     ],
   },
   {
@@ -121,17 +131,11 @@ const settingsGroups: SettingsGroup[] = [
         requiresManager: true,
       },
       {
-        href: '/settings/time-slots',
+        // 旧「コマ時間設定」「授業生徒数設定」はここに統合した（座席表の管理メニューからも辿れる）
+        href: '/schedule/special-courses',
         icon: <Clock className="w-5 h-5" />,
-        label: 'コマ時間設定',
-        description: 'コマ番号・開始時刻・終了時刻の管理',
-        requiresManager: true,
-      },
-      {
-        href: '/settings/class-capacity',
-        icon: <Users className="w-5 h-5" />,
-        label: '授業生徒数設定',
-        description: '個別・集団それぞれの生徒数上限・席数の設定',
+        label: '授業の設定',
+        description: '指導形態・コマ時間・定員・講座をまとめて設定',
         requiresManager: true,
       },
       {
@@ -176,6 +180,14 @@ const settingsGroups: SettingsGroup[] = [
         icon: <Globe className="w-5 h-5" />,
         label: 'ポータル・フォーム設定',
         description: '保護者ポータルのメニュー・公開設定',
+        requiresManager: true,
+      },
+      {
+        // 教室長も自教室の棚卸しに使うので requiresManager（APIも manager＋自教室スコープ）。
+        href: '/settings/line-status',
+        icon: <MessageSquare className="w-5 h-5" />,
+        label: 'LINE連携状況',
+        description: '保護者にLINE通知が届く状態か・誰が何名紐づいているかの確認',
         requiresManager: true,
       },
       {

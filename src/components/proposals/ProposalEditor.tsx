@@ -85,6 +85,23 @@ import {
   type IntentTag,
   type UnitDraft,
 } from './proposalEditor.shared';
+// 単元の選択・結合の純粋ロジック。講習テンプレートの編集画面と共有する（挙動を1か所に集約）
+import {
+  applyDragRange as applyDragRangeTo,
+  buildGroupMap,
+  clearSelection as clearSelectionIn,
+  getSelectionInfo,
+  groupSelectedUnits,
+  selectionSnapshot,
+  setSelectionRange,
+  ungroupAllInGroup,
+  type GroupKind,
+} from '@/components/koushu-plan/unitDraftLogic';
+import { courseSettingsToDrafts } from '@/components/koushu-plan/courseSettingAdapter';
+import {
+  filterAndSortTextbooks,
+  textbookFilterOptions,
+} from '@/components/koushu-plan/textbookPicker';
 
 export default function ProposalEditor() {
   const params = useParams();
@@ -126,6 +143,8 @@ export default function ProposalEditor() {
   const [tbFilterGrade, setTbFilterGrade] = useState('');
 
   const [allItems, setAllItems] = useState<CurriculumItem[]>([]);
+  // 画面に出ている順の curriculum_item_id。選択・結合の純粋ロジックへ並び順を渡すのに使う
+  const orderedIds = useMemo(() => allItems.map((i) => i.id), [allItems]);
   const [progressMap, setProgressMap] = useState<Map<number, StudentProgress>>(new Map());
   const [unitDrafts, setUnitDrafts] = useState<Map<number, UnitDraft>>(new Map());
   const [nextGroupId, setNextGroupId] = useState(1);
@@ -418,20 +437,10 @@ export default function ProposalEditor() {
 
   const toggleUnit = (ciId: number, shiftKey = false) => {
     if (shiftKey && lastToggleIdRef.current != null && lastToggleIdRef.current !== ciId) {
-      const startIdx = allItems.findIndex((i) => i.id === lastToggleIdRef.current);
-      const endIdx = allItems.findIndex((i) => i.id === ciId);
-      if (startIdx >= 0 && endIdx >= 0) {
-        const [lo, hi] = startIdx < endIdx ? [startIdx, endIdx] : [endIdx, startIdx];
+      const fromId = lastToggleIdRef.current;
+      if (orderedIds.includes(fromId) && orderedIds.includes(ciId)) {
         const targetState = lastToggleStateRef.current;
-        setUnitDrafts((prev) => {
-          const next = new Map(prev);
-          for (let idx = lo; idx <= hi; idx++) {
-            const id = allItems[idx].id;
-            const d = next.get(id);
-            if (d && d.selected !== targetState) next.set(id, { ...d, selected: targetState });
-          }
-          return next;
-        });
+        setUnitDrafts((prev) => setSelectionRange(prev, orderedIds, fromId, ciId, targetState));
         lastToggleIdRef.current = ciId;
         setPillAnchorId(ciId);
         return;
@@ -452,19 +461,8 @@ export default function ProposalEditor() {
 
   // ドラッグ範囲選択: 開始〜現在の連続行を、開始時のスナップショットを基準に塗り替える（ラバーバンド）
   const applyDragRange = (a: number, b: number, mode: boolean) => {
-    const [lo, hi] = a <= b ? [a, b] : [b, a];
     const snap = dragSnapshotRef.current;
-    setUnitDrafts((prev) => {
-      const next = new Map(prev);
-      allItems.forEach((it, idx) => {
-        const d = next.get(it.id);
-        if (!d) return;
-        // 範囲内は mode（選択/解除）、範囲外はドラッグ開始時の状態に戻す
-        const sel = idx >= lo && idx <= hi ? mode : snap.has(it.id);
-        if (d.selected !== sel) next.set(it.id, { ...d, selected: sel });
-      });
-      return next;
-    });
+    setUnitDrafts((prev) => applyDragRangeTo(prev, orderedIds, a, b, mode, snap));
   };
 
   // チェックボックスを押した瞬間（ドラッグ開始）。Shift同時押しは従来の範囲トグルを維持。
@@ -475,11 +473,7 @@ export default function ProposalEditor() {
       toggleUnit(id, true);
       return;
     }
-    const snap = new Set<number>();
-    unitDrafts.forEach((d, did) => {
-      if (d.selected) snap.add(did);
-    });
-    dragSnapshotRef.current = snap;
+    dragSnapshotRef.current = selectionSnapshot(unitDrafts);
     dragAnchorIdxRef.current = idx;
     const mode = !(unitDrafts.get(id)?.selected ?? false); // 未選択行から始めたら「選択」、選択済みなら「解除」
     dragModeRef.current = mode;
@@ -500,17 +494,7 @@ export default function ProposalEditor() {
   };
 
   const clearSelection = () => {
-    setUnitDrafts((prev) => {
-      const next = new Map(prev);
-      let changed = false;
-      next.forEach((d, id) => {
-        if (d.selected) {
-          next.set(id, { ...d, selected: false });
-          changed = true;
-        }
-      });
-      return changed ? next : prev;
-    });
+    setUnitDrafts((prev) => clearSelectionIn(prev));
   };
 
   // 選択中の単元すべてに指導意図を一括設定。チェック→1回選ぶだけで済ませ、行ごとの個別クリックを無くす。
@@ -567,44 +551,15 @@ export default function ProposalEditor() {
         return;
       }
 
-      // group_number → 新しい group_id のマッピングを事前に割り当てる
-      // （setUnitDrafts の updater は複数回呼ばれ得るため、採番の副作用を外に出す）。
-      let maxGroup = nextGroupId;
-      const groupRemap = new Map<number, number>();
-      for (const s of settings) {
-        const g = s.group_number;
-        if (g != null && g > 0 && !groupRemap.has(g)) {
-          groupRemap.set(g, maxGroup);
-          maxGroup++;
-        }
-      }
-
-      setUnitDrafts((prev) => {
-        const next = new Map(prev);
-        for (const s of settings) {
-          const inGroup = s.group_number != null && s.group_number > 0;
-          // 未グループかつ0コマの単元だけスキップ。グループ内の単元は0コマでも取り込む
-          // ——捨てるとグループの片割れが欠けてグループが崩れる（取り込み時にグループ化が
-          // 効かない不具合の原因だった）。
-          if (s.proposal_count <= 0 && !inGroup) continue;
-          const d = next.get(s.curriculum_item_id);
-          if (!d) continue;
-
-          const newGroupId = inGroup ? groupRemap.get(s.group_number!)! : 0;
-
-          next.set(s.curriculum_item_id, {
-            ...d,
-            // グループ内は0コマでも1コマ扱いにして有効化（groupSelected と同じ挙動）。
-            // グループ全体は calcTotalKoma で1回だけ計上されるため合計は増えない。
-            koma_count: inGroup ? s.proposal_count || 1 : s.proposal_count,
-            group_id: newGroupId,
-            selected: d.selected,
-          });
-        }
-        return next;
-      });
-
-      setNextGroupId(maxGroup);
+      // 採番は updater の外で済ませる（updater は複数回呼ばれ得るため）。
+      // 取り込みの規約（0コマの扱い・グループ番号の振り直し）は adapter 側に集約している。
+      const { drafts, nextGroupId: newNextGroupId } = courseSettingsToDrafts(
+        unitDrafts,
+        settings,
+        nextGroupId
+      );
+      setUnitDrafts(drafts);
+      setNextGroupId(newNextGroupId);
       setShowCourseImport(false);
       addToast('ひな形を取り込みました', 'success');
     } catch (_e) {
@@ -614,114 +569,39 @@ export default function ProposalEditor() {
     }
   };
 
-  const groupSelected = () => {
-    // グループ化済みの単元も選択していれば対象に含め、新しいグループで「上書き」する。
-    // （一度まとめた範囲を再チェック→まとめ直す運用に対応）
-    const selected = Array.from(unitDrafts.values()).filter((d) => d.selected);
-    if (selected.length < 2) {
-      addToast('グループ化には2つ以上の単元を選択してください', 'error');
+  /**
+   * 選択中の単元をまとめる。提案結合(group_id)と申込結合(applied_group_id)は
+   * 触る列が違うだけで操作は同じなので、種類を引数にして1本にしている。
+   * 判定と片割れグループの解散は unitDraftLogic 側に持たせ、ここは採番とトーストだけ。
+   */
+  const groupSelectedBy = (kind: GroupKind) => {
+    const label = kind === 'proposal' ? 'グループ化' : '申込結合';
+    const gid = kind === 'proposal' ? nextGroupId : nextAppliedGroupId;
+    const result = groupSelectedUnits(unitDrafts, orderedIds, gid, kind);
+    if (!result.ok) {
+      addToast(
+        result.reason === 'too-few'
+          ? `${label}には2つ以上の単元を選択してください`
+          : `隣接する単元のみ${kind === 'proposal' ? 'グループ化' : '結合'}できます`,
+        'error'
+      );
       return;
     }
-    const selectedSet = new Set(selected.map((d) => d.curriculum_item_id));
-    const indices = allItems
-      .map((item, idx) => (selectedSet.has(item.id) ? idx : -1))
-      .filter((i) => i >= 0);
-    for (let i = 1; i < indices.length; i++) {
-      if (indices[i] !== indices[i - 1] + 1) {
-        addToast('隣接する単元のみグループ化できます', 'error');
-        return;
-      }
-    }
-    const gid = nextGroupId;
-    setNextGroupId(gid + 1);
-    setUnitDrafts((prev) => {
-      const next = new Map(prev);
-      // 上書き前のグループID（再グループ対象が抜けた後に1件だけ残るグループは解散する）
-      const affectedGroupIds = new Set(selected.map((d) => d.group_id).filter((g) => g > 0));
-      for (const s of selected) {
-        const d = next.get(s.curriculum_item_id);
-        if (d)
-          next.set(s.curriculum_item_id, {
-            ...d,
-            group_id: gid,
-            koma_count: d.koma_count || 1,
-            selected: false,
-          });
-      }
-      // 上書きで片割れだけ残ったグループ（メンバー1件）は単独グループになってしまうため解散
-      for (const oldGid of Array.from(affectedGroupIds)) {
-        const remaining = Array.from(next.values()).filter((d) => d.group_id === oldGid);
-        if (remaining.length === 1) {
-          const lone = remaining[0];
-          next.set(lone.curriculum_item_id, { ...lone, group_id: 0 });
-        }
-      }
-      return next;
-    });
+    // 採番は updater の外で行う（updater が複数回呼ばれてもIDが飛ばないように）
+    if (kind === 'proposal') setNextGroupId(gid + 1);
+    else setNextAppliedGroupId(gid + 1);
+    setUnitDrafts(result.drafts);
   };
+
+  const groupSelected = () => groupSelectedBy('proposal');
+  const groupAppliedSelected = () => groupSelectedBy('applied');
 
   const ungroupUnit = (ciId: number) => {
     updateUnit(ciId, { group_id: 0 });
   };
 
   const ungroupAll = (groupId: number) => {
-    setUnitDrafts((prev) => {
-      const next = new Map(prev);
-      Array.from(next.entries()).forEach(([key, d]) => {
-        if (d.group_id === groupId) {
-          next.set(key, { ...d, group_id: 0 });
-        }
-      });
-      return next;
-    });
-  };
-
-  // 申込結合: 選択中の隣接単元を applied_group_id でまとめる（申込コマは合計表示で1コマ扱い）。
-  // 提案結合(groupSelected)と同じ操作系だが、申込側の結合だけを更新する。
-  const groupAppliedSelected = () => {
-    const selected = Array.from(unitDrafts.values()).filter((d) => d.selected);
-    if (selected.length < 2) {
-      addToast('申込結合には2つ以上の単元を選択してください', 'error');
-      return;
-    }
-    const selectedSet = new Set(selected.map((d) => d.curriculum_item_id));
-    const indices = allItems
-      .map((item, idx) => (selectedSet.has(item.id) ? idx : -1))
-      .filter((i) => i >= 0);
-    for (let i = 1; i < indices.length; i++) {
-      if (indices[i] !== indices[i - 1] + 1) {
-        addToast('隣接する単元のみ結合できます', 'error');
-        return;
-      }
-    }
-    const gid = nextAppliedGroupId;
-    setNextAppliedGroupId(gid + 1);
-    setUnitDrafts((prev) => {
-      const next = new Map(prev);
-      const affectedGroupIds = new Set(
-        selected.map((d) => d.applied_group_id).filter((g) => g > 0)
-      );
-      for (const s of selected) {
-        const d = next.get(s.curriculum_item_id);
-        // 申込コマが未入力の単元も結合対象なら申込1で有効化（合計は head 1件のみ計上）
-        if (d)
-          next.set(s.curriculum_item_id, {
-            ...d,
-            applied_group_id: gid,
-            applied_koma: d.applied_koma || 1,
-            selected: false,
-          });
-      }
-      // 片割れ1件だけ残った申込グループは解散
-      for (const oldGid of Array.from(affectedGroupIds)) {
-        const remaining = Array.from(next.values()).filter((d) => d.applied_group_id === oldGid);
-        if (remaining.length === 1) {
-          const lone = remaining[0];
-          next.set(lone.curriculum_item_id, { ...lone, applied_group_id: 0 });
-        }
-      }
-      return next;
-    });
+    setUnitDrafts((prev) => ungroupAllInGroup(prev, groupId, 'proposal'));
   };
 
   const ungroupAppliedUnit = (ciId: number) => {
@@ -729,15 +609,7 @@ export default function ProposalEditor() {
   };
 
   const ungroupAllApplied = (groupId: number) => {
-    setUnitDrafts((prev) => {
-      const next = new Map(prev);
-      Array.from(next.entries()).forEach(([key, d]) => {
-        if (d.applied_group_id === groupId) {
-          next.set(key, { ...d, applied_group_id: 0 });
-        }
-      });
-      return next;
-    });
+    setUnitDrafts((prev) => ungroupAllInGroup(prev, groupId, 'applied'));
   };
 
   // 提案コマ・申込コマのどちらかが入っていれば「有効な単元」。
@@ -754,49 +626,17 @@ export default function ProposalEditor() {
     return calcTotalAppliedKoma(activeUnits);
   }, [activeUnits]);
 
-  const groupMap = useMemo(() => {
-    const map = new Map<number, UnitDraft[]>();
-    for (const u of activeUnits) {
-      if (u.group_id === 0) continue;
-      const list = map.get(u.group_id) ?? [];
-      list.push(u);
-      map.set(u.group_id, list);
-    }
-    return map;
-  }, [activeUnits]);
+  const groupMap = useMemo(() => buildGroupMap(activeUnits, 'proposal'), [activeUnits]);
 
   // 申込結合グループ（applied_group_id ごと）。申込コマのある単元のみ対象。
-  const appliedGroupMap = useMemo(() => {
-    const map = new Map<number, UnitDraft[]>();
-    for (const u of activeUnits) {
-      if (u.applied_group_id === 0 || u.applied_koma <= 0) continue;
-      const list = map.get(u.applied_group_id) ?? [];
-      list.push(u);
-      map.set(u.applied_group_id, list);
-    }
-    return map;
-  }, [activeUnits]);
+  const appliedGroupMap = useMemo(() => buildGroupMap(activeUnits, 'applied'), [activeUnits]);
 
   // 選択中の単元情報。フローティングボタン表示・隣接判定・Gキーで使う。
   // グループ化済みの単元も対象に含める（再選択して「まとめ直し」や指導意図の一括設定ができるように）。
-  const selectionInfo = useMemo(() => {
-    const indices: number[] = [];
-    allItems.forEach((it, idx) => {
-      const d = unitDrafts.get(it.id);
-      if (d?.selected) indices.push(idx);
-    });
-    const count = indices.length;
-    let contiguous = count >= 2;
-    for (let i = 1; i < indices.length; i++) {
-      if (indices[i] !== indices[i - 1] + 1) contiguous = false;
-    }
-    return {
-      count,
-      contiguous,
-      firstIdx: indices[0] ?? -1,
-      lastIdx: indices[indices.length - 1] ?? -1,
-    };
-  }, [allItems, unitDrafts]);
+  const selectionInfo = useMemo(
+    () => getSelectionInfo(orderedIds, unitDrafts),
+    [orderedIds, unitDrafts]
+  );
 
   // ドラッグ中: どこで指を離しても選択を確定。ビューポート端では自動スクロール。
   // リスナは常設し draggingRef でガード（pointerdown直後の高速リリースでも取りこぼさない）。
@@ -1189,54 +1029,22 @@ export default function ProposalEditor() {
   // テキスト選択ピッカー
   // ════════════════════════════════════════
   if (showTextbookPicker || (!selectedTextbookId && isNew)) {
-    const schoolTypes = Array.from(
-      new Set(allTextbooks.map((t) => t.school_type).filter((v): v is string => !!v))
-    ).sort();
-    const subjects = Array.from(
-      new Set(allTextbooks.map((t) => t.subject).filter((v): v is string => !!v))
-    ).sort();
-    const grades = Array.from(
-      new Set(
-        allTextbooks
-          .filter((t) => !tbFilterSchoolType || t.school_type === tbFilterSchoolType)
-          .map((t) => t.grade)
-          .filter((v): v is string => !!v)
-      )
-    ).sort();
+    // 絞り込みと並び順（お気に入り→教科→学年→名前）は講習テンプレートの編集画面と共有する
+    const { schoolTypes, subjects, grades } = textbookFilterOptions(
+      allTextbooks,
+      tbFilterSchoolType || undefined
+    );
 
-    const SUBJECT_ORDER = ['英語', '数学', '算数', '国語', '理科', '社会'];
-    const GRADE_ORDER = ['1年', '2年', '3年', '4年', '5年', '6年', '共通'];
-
-    const filtered = allTextbooks
-      .filter((tb) => {
-        if (tbFilterSchoolType && tb.school_type !== tbFilterSchoolType) return false;
-        if (tbFilterSubject && tb.subject !== tbFilterSubject) return false;
-        if (tbFilterGrade && tb.grade !== tbFilterGrade) return false;
-        if (textbookSearch) {
-          const q = textbookSearch.toLowerCase();
-          if (
-            !tb.name.toLowerCase().includes(q) &&
-            !tb.subject?.toLowerCase().includes(q) &&
-            !tb.publisher?.toLowerCase().includes(q)
-          )
-            return false;
-        }
-        return true;
-      })
-      .sort((a, b) => {
-        // お気に入りを最優先で上位表示。テキスト数が多くて絞り込みが面倒という
-        // 要望への対応で、よく使う教材を即座に拾えるようにする。
-        const favA = favoriteTextbookIds.has(a.id) ? 0 : 1;
-        const favB = favoriteTextbookIds.has(b.id) ? 0 : 1;
-        if (favA !== favB) return favA - favB;
-        const subjA = SUBJECT_ORDER.indexOf(a.subject || '');
-        const subjB = SUBJECT_ORDER.indexOf(b.subject || '');
-        if (subjA !== subjB) return (subjA === -1 ? 999 : subjA) - (subjB === -1 ? 999 : subjB);
-        const grA = GRADE_ORDER.indexOf(a.grade || '');
-        const grB = GRADE_ORDER.indexOf(b.grade || '');
-        if (grA !== grB) return (grA === -1 ? 999 : grA) - (grB === -1 ? 999 : grB);
-        return a.name.localeCompare(b.name, 'ja');
-      });
+    const filtered = filterAndSortTextbooks(
+      allTextbooks,
+      {
+        schoolType: tbFilterSchoolType || undefined,
+        subject: tbFilterSubject || undefined,
+        grade: tbFilterGrade || undefined,
+        search: textbookSearch || undefined,
+      },
+      favoriteTextbookIds
+    );
 
     // お気に入りとそれ以外の境界 index（区切り線を入れるため）
     const favoriteEndIdx = filtered.findIndex((tb) => !favoriteTextbookIds.has(tb.id));

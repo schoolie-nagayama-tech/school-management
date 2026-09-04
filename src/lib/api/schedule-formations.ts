@@ -97,11 +97,11 @@ async function ensureNotSystemFormation(key: string): Promise<void> {
   }
   if (!data) throw new Error('指導形態が見つかりません');
   if ((data as { is_system: boolean }).is_system) {
-    throw new Error('個別・集団は既定の形態のため、変更・削除できません');
+    throw new Error('個別・小集団は既定の形態のため、変更・削除できません');
   }
 }
 
-/** 形態を改名。is_system（個別/集団）は改名不可。 */
+/** 形態を改名。is_system（個別/小集団）は改名不可。 */
 export async function renameFormation(key: string, label: string): Promise<ScheduleFormation> {
   const trimmed = label.trim();
   if (!trimmed) throw new Error('形態名を入力してください');
@@ -121,7 +121,7 @@ export async function renameFormation(key: string, label: string): Promise<Sched
 
 /**
  * 形態の有効/無効を切り替える（ソフト削除）。
- * is_system も無効化してはいけない（個別=メイングリッド、集団=講習レーンが依存するため）。
+ * is_system も無効化してはいけない（個別=メイングリッド、小集団=講習レーンが依存するため）。
  */
 export async function setFormationActive(
   key: string,
@@ -141,12 +141,15 @@ export async function setFormationActive(
   return data as ScheduleFormation;
 }
 
-/** 形態の並び順（sort_order）を更新。is_system は並び替え対象外（先頭固定）。 */
+/**
+ * 形態の並び順（sort_order）を更新。
+ * 改名・無効化・削除とは異なり、並び替えは individual/group（is_system）にも許可する
+ * ので、他の更新系と違いここだけ ensureNotSystemFormation ガードを掛けない。
+ */
 export async function updateFormationOrder(
   key: string,
   sortOrder: number
 ): Promise<ScheduleFormation> {
-  await ensureNotSystemFormation(key);
   const { data, error } = await db
     .from('schedule_formations')
     .update({ sort_order: sortOrder })
@@ -186,6 +189,40 @@ export async function deleteFormation(key: string): Promise<void> {
 // ========================================
 // 形態別定員（school_formation_capacity）
 // ========================================
+
+/** 形態別定員の既定値（school_formation_capacity に行が無い教室で使う値）。 */
+export const DEFAULT_FORMATION_MAX_STUDENTS = 8;
+export const DEFAULT_FORMATION_MAX_CONCURRENT_GROUPS = 1;
+
+/** createFormationClassPatterns に渡す「形態の既定値」ペア。 */
+export interface FormationCapacityDefaults {
+  maxStudentsPerGroup: number;
+  maxConcurrentGroups: number;
+}
+
+/**
+ * 形態の既定定員を解決する（枠を作る画面が createFormationClassPatterns に渡す値）。
+ *
+ * 座席表の形態ボードと生徒詳細の通塾日程フォームで値の出どころがズレると、
+ * 同じ講座なのに入口によって定員チェックの結果が変わってしまうため、ここに一本化する。
+ * 取得に失敗した場合も既定値で動かす（座席表側の .catch(() => null) と同じ挙動）。
+ * なお枠の実際の定員は講座の定員が優先される（resolveClassCapacity。判定は API 側）。
+ */
+export async function getFormationCapacityDefaults(
+  schoolId: string,
+  formation: string
+): Promise<FormationCapacityDefaults> {
+  let capacity: SchoolFormationCapacity | null = null;
+  try {
+    capacity = await getFormationCapacity(schoolId, formation);
+  } catch {
+    capacity = null;
+  }
+  return {
+    maxStudentsPerGroup: capacity?.max_students_per_group ?? DEFAULT_FORMATION_MAX_STUDENTS,
+    maxConcurrentGroups: capacity?.max_concurrent_groups ?? DEFAULT_FORMATION_MAX_CONCURRENT_GROUPS,
+  };
+}
 
 /** 教室×形態の定員設定を取得（未設定なら null）。 */
 export async function getFormationCapacity(

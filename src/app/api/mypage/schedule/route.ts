@@ -1,8 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requirePortalStudent } from '@/lib/mypage/portalAuth';
-import { fetchSchoolTimeSlots } from '@/lib/mypage/schoolInfo';
+import { fetchSchoolTimeSlots, fetchStudentSchoolId } from '@/lib/mypage/schoolInfo';
 import { getPortalScheduleEntries } from '@/lib/mypage/schedule';
-import type { PortalScheduleEntryDto, PortalTimeSlotDto } from '@/types/mypage-schedule';
+import { getPortalExamEvents } from '@/lib/mypage/examEvents';
+import type {
+  PortalScheduleEntryDto,
+  PortalTimeSlotDto,
+  PortalExamEventDto,
+} from '@/types/mypage-schedule';
+import { captureApiError } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,10 +33,13 @@ export const dynamic = 'force-dynamic';
  *   ※ ラベル化はクライアント（ScheduleView）で行い、ここは生の値も返す。
  *   DTO の型は @/types/mypage-schedule（クライアントと共有）。
  *
- * 戻り: { ok, entries, timeSlots }
+ * 戻り: { ok, entries, timeSlots, exams }
  *   timeSlots は「その生徒の教室に実在する時限」の一覧。振替希望の時限を
  *   自由入力ではなく選択にするために使う（AbsenceSheet）。予定が0件の週でも返す
  *   （＝コマが無い週から開いても選択肢が空にならない）。
+ *   exams は申込済み模試（Vもぎ・全県模試・オープン模試）の実施予定。schedule_entries
+ *   とは別ソース（form_responses）から導出するため、entries とは別枠で返す
+ *   （lib/mypage/examEvents.ts の getPortalExamEvents）。
  */
 export async function GET(request: NextRequest) {
   const sp = request.nextUrl.searchParams;
@@ -52,19 +61,38 @@ export async function GET(request: NextRequest) {
 
   const { client } = auth;
 
-  // ── 予定本体（RLS 越し）＋ 教室の時限一覧 ──
+  // ── 予定本体（RLS 越し）＋ 教室の時限一覧 ＋ 申込済み模試 ──
   // 互いに独立なので並列に取る（保護者の回線が細い前提。往復を積み上げない）。
   let entries: PortalScheduleEntryDto[];
   let timeSlots: PortalTimeSlotDto[];
+  let exams: PortalExamEventDto[];
   try {
-    [entries, timeSlots] = await Promise.all([
+    [entries, timeSlots, exams] = await Promise.all([
       getPortalScheduleEntries(client, studentId, from, to),
       fetchSchoolTimeSlots(client, studentId),
+      // 模試予定は「所属校ID解決 → 導出」の2段を1本のチェーンとして他と並列に流す
+      // （データ最小化のため school_id で絞る）。失敗しても授業予定の表示は巻き添えに
+      // しない（ここだけ空配列にフォールバック）。
+      fetchStudentSchoolId(client, studentId)
+        .then((schoolId) =>
+          schoolId ? getPortalExamEvents({ studentId, schoolId, from, to }) : []
+        )
+        .catch((e) => {
+          console.error(
+            '[mypage/schedule] 模試予定の取得に失敗:',
+            e instanceof Error ? e.message : e
+          );
+          return [] as PortalExamEventDto[];
+        }),
     ]);
   } catch (e) {
+    captureApiError(e, {
+      route: 'GET /api/mypage/schedule',
+      userId: auth.accountId,
+    });
     console.error('[mypage/schedule] 予定の取得に失敗:', e instanceof Error ? e.message : e);
     return NextResponse.json({ error: '予定の取得に失敗しました' }, { status: 500 });
   }
 
-  return NextResponse.json({ ok: true, entries, timeSlots });
+  return NextResponse.json({ ok: true, entries, timeSlots, exams });
 }

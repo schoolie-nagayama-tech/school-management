@@ -21,6 +21,9 @@ const STATUS_BADGE: Record<ProposalStatus, string> = {
   approved: 'bg-green-100 text-green-700',
 };
 
+// 講習申込（koushu_enrollments）の形態ラベル。
+// ここの「集団」は座席表の指導形態（小集団）ではなく「集団申込」の意味なので、
+// 2026-08-24 の語彙統一（集団→小集団）の対象外。意図的に据え置く。
 const FORMATION_LABEL: Record<string, string> = {
   individual: '個別',
   group: '集団',

@@ -50,6 +50,11 @@ export function buildNavEntries(ctx: NavContext): NavEntry[] {
   const teacher = isTeacher(profile?.role);
   const entries: NavEntry[] = [];
 
+  // ★ ダッシュボード(/dashboard) はここに出さない（2026-08-20 判断）。
+  //   まだ試用中で、中身の多くが通塾日程（座席表）の運用開始待ちのため、
+  //   常時目に入るヘッダーではなく設定ページのカードから入る。
+  //   公開する段になったらここに link を足す（ページ側のガードは isManagerOrAbove）。
+
   // 生徒管理（全ロール）
   if (showAll || p?.canAccessStudents) {
     entries.push({
@@ -152,7 +157,7 @@ export function buildNavEntries(ctx: NavContext): NavEntry[] {
         { key: 'progress', label: '進捗管理', href: '/courses/progress' },
         { key: 'schedule', label: '準備スケジュール', href: '/courses/schedule' },
         { key: 'proposals', label: '講習提案書', href: '/courses/proposals' },
-        { key: 'special-courses', label: '特別講座管理', href: '/schedule/special-courses' },
+        { key: 'special-courses', label: '授業の設定', href: '/schedule/special-courses' },
       ],
     });
   }

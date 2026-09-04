@@ -25,6 +25,14 @@ import {
   getStudentContractRatioMap,
   upsertStudentContract,
 } from '@/lib/api/student-subject-contracts';
+// 出勤可否は teacher_availability_periods（正典）を経由して判定する。
+// user_profiles の生カラム(available_days_of_week 等)は教室非依存の単一値で
+// period の manual > regular_shift の優先順位も表現できないため、直読みしない。
+import {
+  getAvailabilityDayMap,
+  availableUserIdsForInterval,
+  type AvailabilityDayMap,
+} from '@/lib/api/teacher-availability';
 
 const GRADE_CATEGORY_LABELS: Record<string, string> = {
   elementary: '小学',
@@ -63,7 +71,13 @@ interface TeacherOption {
   email: string | null;
   user_schools?: Array<{ school_id: string }>;
   teachable_subject_ids?: string[] | null;
+  /**
+   * @deprecated 出勤可否は teacher_availability_periods から取得した
+   * AvailabilityDayMap を使う（下記 availabilityMap state）。呼び出し元の型互換のため
+   * プロパティ自体は残すが、このコンポーネントは参照しない。
+   */
   available_days_of_week?: number[] | null;
+  /** @deprecated 同上 */
   available_slot_numbers_by_day?: Record<string, number[]> | null;
 }
 
@@ -120,6 +134,11 @@ export function RegularPatternForm({
   const [saving, setSaving] = useState(false);
   // Phase R: 生徒×科目の契約比率マップ（科目選択時の ratio 初期値）。
   const [contractRatioMap, setContractRatioMap] = useState<Map<string, 1 | 2>>(new Map());
+  // 出勤可否（正典）。教室・時点(asOfDate)で取り直す非同期データ。
+  // null は「未取得（読み込み中 or ダイアログ未オープン）」を表し、取得完了後は
+  // period が1件も無い教室でも空の Map（byDayOfWeek.size === 0）で確定させる。
+  const [availabilityMap, setAvailabilityMap] = useState<AvailabilityDayMap | null>(null);
+  const [availabilityLoading, setAvailabilityLoading] = useState(false);
 
   // 半コマは「単一科目 かつ その科目が45分」のときだけ扱う（複数科目は全コマ）。
   const singleSubjectId = form.subject_ids.length === 1 ? form.subject_ids[0] : null;
@@ -132,39 +151,63 @@ export function RegularPatternForm({
     t.user_schools?.some((us) => us.school_id === selectedSchoolId)
   );
 
-  const selectedSlotNumber = timeSlots.find((s) => s.id === form.time_slot_id)?.slot_number;
+  const selectedTimeSlot = timeSlots.find((s) => s.id === form.time_slot_id);
+
+  // 出勤可否データの取得。asOfDate は編集中パターンの effective_from があればそれを、
+  // 無ければ今日を使う（新規作成時は「今日時点で有効な出勤可否」で候補を絞るのが妥当）。
+  useEffect(() => {
+    if (!open || !selectedSchoolId) return;
+    let cancelled = false;
+    setAvailabilityLoading(true);
+    const asOfDate = editingPattern?.effective_from ?? new Date().toISOString().slice(0, 10);
+    getAvailabilityDayMap(selectedSchoolId, asOfDate)
+      .then((map) => {
+        if (!cancelled) setAvailabilityMap(map);
+      })
+      .catch(() => {
+        // 取得失敗時は「絞り込みなし（全員候補）」にフォールバックする。
+        // 出勤可否の取得エラーで講師選択自体をブロックしたくない。
+        if (!cancelled) setAvailabilityMap(null);
+      })
+      .finally(() => {
+        if (!cancelled) setAvailabilityLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, selectedSchoolId, editingPattern?.effective_from]);
+
   const filteredTeachers = useMemo(() => {
     // 科目未選択時は講師を表示しない（科目→講師の順で選択させる）
     if (form.subject_ids.length === 0) return [];
 
-    return teachersForSchool.filter((t) => {
-      // (a) 出勤可能曜日チェック（空 or null = 該当なし）
-      const days = t.available_days_of_week;
-      if (!days || days.length === 0) return false;
-      if (!days.includes(form.day_of_week)) return false;
+    // (a)(b) 出勤可否チェック（teacher_availability_periods 正典、manual > regular_shift 済み）。
+    //  - availabilityMap 未取得（読み込み中）のときは絞り込みをスキップする。読み込み完了前に
+    //    候補を空にすると、選択済みの講師が一瞬消えて見える事故になるため。
+    //  - byDayOfWeek が空 Map（その教室に period レコードが1件も無い）のときも絞り込みを
+    //    スキップする。「出勤可否データが存在しない」ことと「誰も出勤できない」ことは別であり、
+    //    後者と誤解釈すると講師が全員候補から消えてしまう。
+    let availableTeacherIds: Set<string> | null = null;
+    if (availabilityMap && selectedTimeSlot && availabilityMap.byDayOfWeek.size > 0) {
+      availableTeacherIds = new Set(
+        availableUserIdsForInterval(
+          availabilityMap,
+          form.day_of_week,
+          selectedTimeSlot.start_time,
+          selectedTimeSlot.end_time
+        )
+      );
+    }
 
-      // (b) 出勤可能コマチェック（空 or null = 該当なし）
-      if (selectedSlotNumber !== undefined) {
-        const byDay = t.available_slot_numbers_by_day;
-        if (!byDay || Object.keys(byDay).length === 0) return false;
-        const dayKey = String(form.day_of_week);
-        const slotNums = byDay[dayKey];
-        if (!slotNums || slotNums.length === 0) return false;
-        if (!slotNums.includes(selectedSlotNumber)) return false;
-      }
+    return teachersForSchool.filter((t) => {
+      if (availableTeacherIds && !availableTeacherIds.has(t.id)) return false;
 
       // (c) 指導可能科目チェック（選択科目を担当可能な講師のみ）
       const allowed = t.teachable_subject_ids;
       if (!allowed || allowed.length === 0) return false;
       return form.subject_ids.some((id) => allowed.includes(id));
     });
-  }, [
-    teachersForSchool,
-    form.day_of_week,
-    form.time_slot_id,
-    form.subject_ids,
-    selectedSlotNumber,
-  ]);
+  }, [teachersForSchool, form.day_of_week, form.subject_ids, selectedTimeSlot, availabilityMap]);
 
   useEffect(() => {
     if (
@@ -334,11 +377,13 @@ export function RegularPatternForm({
   };
 
   return (
-    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
-          <DialogTitle>{editingPattern ? '通塾日程を編集' : '通塾日程を追加'}</DialogTitle>
-        </DialogHeader>
+    /* Header / Footer は DialogContent の外に置く（中に入れるとスクロール領域に
+       巻き込まれ、タイトルが上端で切れ、ボタンが画面外に出る）。幅は Dialog の size で決まる。 */
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()} size="md">
+      <DialogHeader>
+        <DialogTitle>{editingPattern ? '通塾日程を編集' : '通塾日程を追加'}</DialogTitle>
+      </DialogHeader>
+      <DialogContent>
         <div className="space-y-4 max-h-[70vh] overflow-y-auto">
           <div className="space-y-2">
             <Label>生徒</Label>
@@ -475,6 +520,8 @@ export function RegularPatternForm({
               <p className="text-xs text-[var(--paragraph-light)]">
                 科目を選択すると、担当可能な講師のみ表示されます
               </p>
+            ) : availabilityLoading ? (
+              <p className="text-xs text-[var(--paragraph-light)]">出勤可否を確認中...</p>
             ) : null}
             <Select
               value={form.teacher_id ?? undefined}
@@ -528,15 +575,15 @@ export function RegularPatternForm({
             </Select>
           </div>
         </div>
-        <DialogFooter>
-          <Button variant="secondary" onClick={onClose}>
-            キャンセル
-          </Button>
-          <Button onClick={handleSubmit} disabled={saving}>
-            {saving ? '保存中...' : '保存'}
-          </Button>
-        </DialogFooter>
       </DialogContent>
+      <DialogFooter>
+        <Button variant="secondary" onClick={onClose}>
+          キャンセル
+        </Button>
+        <Button onClick={handleSubmit} disabled={saving}>
+          {saving ? '保存中...' : '保存'}
+        </Button>
+      </DialogFooter>
     </Dialog>
   );
 }

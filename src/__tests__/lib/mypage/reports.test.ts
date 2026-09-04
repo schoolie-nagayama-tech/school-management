@@ -12,7 +12,7 @@ import { describe, it, expect, vi } from 'vitest';
 // reports.ts は 'server-only' を import するため、node のテスト環境では空モジュールに差し替える。
 vi.mock('server-only', () => ({}));
 
-import { normalizeSubjectSpecific } from '@/lib/mypage/reports';
+import { normalizeNextPlan, normalizeSubjectSpecific } from '@/lib/mypage/reports';
 
 describe('normalizeSubjectSpecific', () => {
   it('null / undefined は null', () => {
@@ -111,5 +111,49 @@ describe('normalizeSubjectSpecific', () => {
   it('times_per_day=0 は falsy だが有効な数値として通す', () => {
     const result = normalizeSubjectSpecific({ kind: 'calc', times_per_day: 0 });
     expect(result?.timesPerDay).toBe(0);
+  });
+});
+
+/**
+ * 固定する仕様（normalizeNextPlan・機能D「次回の予定」）:
+ *   - subject_specific と同じく講師の入力UIが書く形を信頼しない。
+ *   - 単元名が1つも無い要素は落とす（呼び出し側は配列が空かどうかだけを見ればよい）。
+ */
+describe('normalizeNextPlan', () => {
+  it('配列でなければ空配列', () => {
+    expect(normalizeNextPlan(null)).toEqual([]);
+    expect(normalizeNextPlan(undefined)).toEqual([]);
+    expect(normalizeNextPlan({ textbookName: '新中問' })).toEqual([]);
+    expect(normalizeNextPlan('一次関数')).toEqual([]);
+  });
+
+  it('教材名＋単元名をそのまま通す', () => {
+    expect(
+      normalizeNextPlan([{ textbookName: '新中問 数学2年', unitTitles: ['一次関数の利用'] }])
+    ).toEqual([{ textbookName: '新中問 数学2年', unitTitles: ['一次関数の利用'] }]);
+  });
+
+  it('単元名が空の要素は落とす（空の見出しを保護者に出さない）', () => {
+    expect(normalizeNextPlan([{ textbookName: '新中問', unitTitles: [] }])).toEqual([]);
+    expect(normalizeNextPlan([{ textbookName: '新中問', unitTitles: ['  ', ''] }])).toEqual([]);
+    expect(normalizeNextPlan([{ textbookName: '新中問' }])).toEqual([]);
+  });
+
+  it('教材名が無くても単元名があれば残す（教材名は null）', () => {
+    expect(normalizeNextPlan([{ unitTitles: ['一次関数の利用'] }])).toEqual([
+      { textbookName: null, unitTitles: ['一次関数の利用'] },
+    ]);
+  });
+
+  it('型が違う単元名は黙って捨てる', () => {
+    expect(normalizeNextPlan([{ textbookName: 1, unitTitles: ['A', 2, null, 'B'] }])).toEqual([
+      { textbookName: null, unitTitles: ['A', 'B'] },
+    ]);
+  });
+
+  it('要素が object でなければ飛ばす', () => {
+    expect(normalizeNextPlan([null, 'x', { unitTitles: ['A'] }])).toEqual([
+      { textbookName: null, unitTitles: ['A'] },
+    ]);
   });
 });

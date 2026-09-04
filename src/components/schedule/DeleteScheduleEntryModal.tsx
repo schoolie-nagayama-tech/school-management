@@ -60,12 +60,13 @@ export function DeleteScheduleEntryModal({
   };
 
   return (
-    <Dialog open={open} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-md bg-white border border-gray-200">
-        <DialogHeader>
-          <DialogTitle>授業を削除</DialogTitle>
-        </DialogHeader>
-
+    /* Header / Footer は DialogContent の外に置く（中に入れるとスクロール領域に
+       巻き込まれ、タイトルが上端で切れ、ボタンが画面外に出る）。幅は Dialog の size で決まる。 */
+    <Dialog open={open} onOpenChange={(open) => !open && onClose()} size="md">
+      <DialogHeader>
+        <DialogTitle>授業を削除</DialogTitle>
+      </DialogHeader>
+      <DialogContent>
         <div className="space-y-4 py-2">
           <p className="text-sm text-[var(--paragraph)]">以下の授業を削除しますか？</p>
           <div className="text-sm">
@@ -112,20 +113,19 @@ export function DeleteScheduleEntryModal({
             </div>
           )}
         </div>
-
-        <DialogFooter className="gap-2">
-          <Button variant="outline" onClick={onClose} disabled={saving}>
-            キャンセル
-          </Button>
-          <Button
-            onClick={handleConfirm}
-            disabled={saving}
-            className="border-[#c62828] text-[#c62828] hover:bg-red-50"
-          >
-            {saving ? '削除中...' : '削除する'}
-          </Button>
-        </DialogFooter>
       </DialogContent>
+      <DialogFooter className="gap-2">
+        <Button variant="outline" onClick={onClose} disabled={saving}>
+          キャンセル
+        </Button>
+        <Button
+          onClick={handleConfirm}
+          disabled={saving}
+          className="border-[#c62828] text-[#c62828] hover:bg-red-50"
+        >
+          {saving ? '削除中...' : '削除する'}
+        </Button>
+      </DialogFooter>
     </Dialog>
   );
 }

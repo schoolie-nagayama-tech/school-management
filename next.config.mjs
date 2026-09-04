@@ -1,12 +1,17 @@
 import bundleAnalyzer from '@next/bundle-analyzer';
-import withSerwistInit from '@serwist/next';
 import { withSentryConfig } from '@sentry/nextjs';
 
-const withSerwist = withSerwistInit({
-  swSrc: 'src/app/sw.ts',
-  swDest: 'public/sw.js',
-  disable: process.env.NODE_ENV === 'development',
-});
+// ★ PWA一時閉鎖中（2026-08-20・ユーザー判断）。
+//   serwist によるサービスワーカー生成を止めている。/public/sw.js は生成物ではなく
+//   手書きの自己解除SWに差し替え済み（既にインストール済み端末の登録を回収するため。
+//   配信をやめるだけだと古いSWが残り、古いJSを配り続ける）。
+//   再開するときは以下を戻す:
+//     1. import withSerwistInit from '@serwist/next';
+//     2. const withSerwist = withSerwistInit({ swSrc: 'src/app/sw.ts',
+//          swDest: 'public/sw.js', disable: process.env.NODE_ENV === 'development' });
+//     3. 最終行の export を withSerwist(nextConfig) で包む
+//     4. public/sw.js を削除し、.gitignore の /public/sw.js を有効化
+//     5. layout.tsx の manifest と ServiceWorkerUpdateBar を戻す
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -23,6 +28,25 @@ const nextConfig = {
   // ESLintエラーでビルドを失敗させる（品質ゲート）
   eslint: {
     ignoreDuringBuilds: false,
+  },
+
+  // 型チェックは CI に一本化し、next build 中では走らせない。
+  //
+  // ★品質ゲートを外しているわけではない。
+  //   .github/workflows/ci.yml に独立した `npx tsc --noEmit` ステップがあり、main への
+  //   PR は型エラーがあれば必ず落ちる。これまでは CI で tsc を1回、その直後の
+  //   `next build` でもう1回と、同じ型チェックを二重に走らせていた。
+  //
+  // ★なぜ外すか:
+  //   Vercel のビルドコンテナは2コア8GBで、この二重チェックがメモリ・時間を圧迫し、
+  //   ビルドがハングして45分でタイムアウトする事象が繰り返し起きていた
+  //   （2026-09-01 の可観測性PRでも、GitHub Actions の `next build` は6分で成功する一方
+  //     Vercel 側だけが失敗した）。ローカル/CI と Vercel で結果が変わる不安定さを取り除く。
+  //
+  // ★戻すとき: CI の tsc ステップを消す場合は、必ずここも false に戻すこと。
+  //   どちらか片方だけになると型エラーが素通りする。
+  typescript: {
+    ignoreBuildErrors: true,
   },
   // 画像最適化の設定
   images: {
@@ -95,7 +119,7 @@ const withBundleAnalyzer = bundleAnalyzer({
 // 設定するまではソースマップアップロードを無効化しておく（未設定でビルドを壊さないため）。
 // 3つを Vercel の環境変数に設定したら sourcemaps.disable を外せば元コードのスタック
 // トレースが見えるようになる。
-export default withSentryConfig(withBundleAnalyzer(withSerwist(nextConfig)), {
+export default withSentryConfig(withBundleAnalyzer(nextConfig), {
   silent: true,
   disableLogger: true,
   sourcemaps: {

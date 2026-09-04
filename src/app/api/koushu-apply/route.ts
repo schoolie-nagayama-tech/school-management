@@ -36,6 +36,7 @@ import {
   type KoushuApplyRequest,
 } from '@/types/koushu-apply';
 import { INDIVIDUAL_FORMATION } from '@/types/schedule';
+import { captureApiError } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 
@@ -55,7 +56,10 @@ export async function POST(request: NextRequest) {
   let body: KoushuApplyRequest;
   try {
     body = (await request.json()) as KoushuApplyRequest;
-  } catch {
+  } catch (error) {
+    captureApiError(error, {
+      route: 'POST /api/koushu-apply',
+    });
     return badRequest('リクエストの形式が不正です。');
   }
 

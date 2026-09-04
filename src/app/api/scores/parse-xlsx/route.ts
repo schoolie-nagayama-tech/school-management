@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getApiAuth } from '@/lib/api-auth';
+import { captureApiError } from '@/lib/api-error';
 
 // アップロードを受け付ける最大ファイルサイズ（10MB）。
 // 未認証＋サイズ無制限だと、誰でも巨大ファイルを xlsx パーサに通して
@@ -67,6 +68,9 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ rows });
   } catch (e) {
+    captureApiError(e, {
+      route: 'POST /api/scores/parse-xlsx',
+    });
     console.error('parse-xlsx error:', e);
     return NextResponse.json({ error: 'ファイルの解析に失敗しました' }, { status: 500 });
   }

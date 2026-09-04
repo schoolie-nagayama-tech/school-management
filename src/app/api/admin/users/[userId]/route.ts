@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import { requireAdmin, requireManager, getApiAuth, isUserInScope } from '@/lib/api-auth';
 import { writeAuditLog } from '@/lib/audit-log';
 import { USER_ROLE_LEVELS } from '@/types/database';
+import { captureApiError } from '@/lib/api-error';
 
 function getSupabaseAdmin() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -113,6 +114,9 @@ export async function GET(request: NextRequest, { params }: { params: { userId: 
       user_schools: userSchools || [],
     });
   } catch (error) {
+    captureApiError(error, {
+      route: 'GET /api/admin/users/[userId]',
+    });
     console.error('Failed to fetch user:', error);
     return NextResponse.json({ error: 'ユーザーの取得に失敗しました' }, { status: 500 });
   }
@@ -345,6 +349,21 @@ export async function PATCH(request: NextRequest, { params }: { params: { userId
     if (Array.isArray(body.teachable_subject_ids)) {
       profileUpdates.teachable_subject_ids = body.teachable_subject_ids;
     }
+    // 次回の契約更新日（研修期間の終了日）。空文字・null はクリア＝更新済み扱い。
+    // 'YYYY-MM-DD' 以外は date 列に入れられないので 400 で弾く（黙ってクリアしない）。
+    if ('contract_renewal_date' in body) {
+      const v = body.contract_renewal_date;
+      if (v === null || v === '') {
+        profileUpdates.contract_renewal_date = null;
+      } else if (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v)) {
+        profileUpdates.contract_renewal_date = v;
+      } else {
+        return NextResponse.json(
+          { error: '契約更新日は YYYY-MM-DD 形式で指定してください' },
+          { status: 400 }
+        );
+      }
+    }
     if (Array.isArray(body.available_days_of_week)) {
       profileUpdates.available_days_of_week = body.available_days_of_week;
     }
@@ -352,12 +371,18 @@ export async function PATCH(request: NextRequest, { params }: { params: { userId
     // リクエストに含まれているときだけ更新する。未指定なら既存値を保持し、
     // 名前変更など無関係な保存で user_profiles 側の値が空に潰れるのを防ぐ。
     if ('available_slot_numbers_by_day' in body) {
-      profileUpdates.available_slot_numbers_by_day =
-        body.available_slot_numbers_by_day != null &&
-        typeof body.available_slot_numbers_by_day === 'object' &&
-        !Array.isArray(body.available_slot_numbers_by_day)
-          ? body.available_slot_numbers_by_day
-          : {};
+      // 値がプレーンなオブジェクトでない場合（null・配列・文字列など）は、
+      // 黙って {} に潰して全消去せず 400 で拒否する。
+      // typeof は配列も 'object' になるため Array.isArray と null チェックの両方が必要。
+      const value = body.available_slot_numbers_by_day;
+      const isPlainObject = value !== null && typeof value === 'object' && !Array.isArray(value);
+      if (!isPlainObject) {
+        return NextResponse.json(
+          { error: 'available_slot_numbers_by_day はオブジェクト形式で指定してください' },
+          { status: 400 }
+        );
+      }
+      profileUpdates.available_slot_numbers_by_day = value;
     }
 
     const { data, error } = await supabaseAdmin
@@ -384,6 +409,9 @@ export async function PATCH(request: NextRequest, { params }: { params: { userId
 
     return NextResponse.json(data);
   } catch (error) {
+    captureApiError(error, {
+      route: 'PATCH /api/admin/users/[userId]',
+    });
     console.error('Failed to update user profile:', error);
     return NextResponse.json({ error: 'プロファイルの更新に失敗しました' }, { status: 500 });
   }
@@ -577,6 +605,9 @@ export async function DELETE(request: NextRequest, { params }: { params: { userI
 
     return NextResponse.json({ success: true });
   } catch (error) {
+    captureApiError(error, {
+      route: 'DELETE /api/admin/users/[userId]',
+    });
     console.error('Failed to delete user:', error);
     return NextResponse.json({ error: 'ユーザーの削除に失敗しました' }, { status: 500 });
   }

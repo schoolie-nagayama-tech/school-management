@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { getApiAuth, isSchoolInScope } from '@/lib/api-auth';
+import { apiErrorResponse, captureApiError } from '@/lib/api-error';
 
 function getSupabaseAdmin() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -86,10 +87,11 @@ export async function POST(request: NextRequest) {
       });
 
     if (uploadError) {
-      console.error('Upload error:', uploadError);
-      return NextResponse.json(
-        { error: `アップロードに失敗しました: ${uploadError.message}` },
-        { status: 500 }
+      // Storage の生メッセージ（バケット名・パス等）を返さない
+      return apiErrorResponse(
+        uploadError,
+        { route: 'POST /api/upload/logo', action: 'storage_upload', schoolId },
+        'ロゴのアップロードに失敗しました。時間をおいて再度お試しください。'
       );
     }
 
@@ -111,6 +113,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ url: publicUrl });
   } catch (error) {
+    captureApiError(error, {
+      route: 'POST /api/upload/logo',
+    });
     console.error('Logo upload error:', error);
     return NextResponse.json(
       { error: 'アップロード処理中にエラーが発生しました' },

@@ -15,6 +15,20 @@ export const CLASS_REPORT_STATUS_LABELS: Record<ClassReportStatus, string> = {
   rejected: '差し戻し',
 };
 
+/**
+ * 「次回の予定」のスナップショット1件（教材セットごと・class_reports.next_plan の要素）。
+ *
+ * ★ 単元IDではなく名前で持つ理由（正典: docs/lesson-report-next-plan.md §2）:
+ *   保護者面に出すデータなので単元IDを露出させない。加えて、後から進行表の目次が
+ *   編集されても過去の報告書の文面が変わらない（保存時点の確定値が正典）。
+ *   進行表側（progress_sessions.next_plan_curriculum_item_ids）は次回の授業で
+ *   突き合わせる必要があるので、そちらはIDで持つ。
+ */
+export interface NextPlanSnapshotItem {
+  textbookName: string;
+  unitTitles: string[];
+}
+
 /** 次回までの宿題 1行 */
 export interface HomeworkAssignmentItem {
   /** 日割りの目安日付 'YYYY-MM-DD'。空文字は日付指定なし */
@@ -74,6 +88,16 @@ export interface ClassReport {
   // 進度
   school_progress: string | null;
 
+  /**
+   * 本日の様子マーク（保護者公開）。
+   * progress_sessions.tardy / homework_not_done の写しで、保護者面に出すためだけの複製。
+   * 進行表側の正典は progress_sessions のままなので、集計はそちらを読むこと。
+   * homework_not_done は homework_completion_pct=0 と同期する
+   * （規則は src/lib/lesson-reports/homeworkMark.ts）。
+   */
+  tardy: boolean;
+  homework_not_done: boolean;
+
   // 宿題・テスト
   homework_completion_pct: number | null;
   homework_correct_pct: number | null;
@@ -88,6 +112,12 @@ export interface ClassReport {
   // 講評・宿題
   review_comment: string | null;
   homework_assignments: HomeworkAssignmentItem[];
+
+  /**
+   * 次回の予定（保護者公開）。教材セットごとの教材名＋単元名。
+   * 進行表側の正典は progress_sessions.next_plan_curriculum_item_ids で、ここはその写し。
+   */
+  next_plan: NextPlanSnapshotItem[];
 
   // 科目別
   subject_specific: SubjectSpecific | null;
@@ -141,6 +171,9 @@ export interface ClassReportFormData {
   mid_term_goal_snapshot: string;
   mid_action_goal_snapshot: string;
   school_progress: string;
+  /** 本日の様子マーク（保護者公開）。ClassReport 側の同名列の注記を参照 */
+  tardy: boolean;
+  homework_not_done: boolean;
   homework_completion_pct: number | null;
   homework_correct_pct: number | null;
   today_correct_pct: number | null;
@@ -152,6 +185,16 @@ export interface ClassReportFormData {
   check_test_passed: boolean | null;
   review_comment: string;
   homework_assignments: HomeworkAssignmentItem[];
+  /**
+   * 次回の予定のスナップショット（保護者公開）。
+   *
+   * ★ 表示の正典ではない: 画面に出す「次回の予定」は進行表グリッドの選択状態
+   *   （報告書ページの selections）から毎回組み立てる。この項目は school_progress や
+   *   units[].curriculum_item_ids と同じく **保存直前に組み立てて payload に載せる** もので、
+   *   フォームの state は常に空のまま持ち回る（state に入れると自動保存の指紋が
+   *   保存のたびに揺れる）。
+   */
+  next_plan: NextPlanSnapshotItem[];
   subject_specific: SubjectSpecific | null;
   status: ClassReportStatus;
 

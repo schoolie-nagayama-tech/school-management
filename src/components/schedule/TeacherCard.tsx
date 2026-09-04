@@ -187,8 +187,16 @@ export const TeacherCard = React.memo(function TeacherCard({
     : teacher.display_name || teacher.email || '—';
   const displayName = isUnassigned ? fullName : getSurname(teacher) || fullName;
 
-  // D&D 制約チェック。基本制約 + 講師×生徒の相性制約。
-  const dropConstraint = useMemo<{ canDrop: boolean; reason: string | null }>(() => {
+  /**
+   * D&D 制約チェック。基本制約 + 講師×生徒の相性制約。
+   * warn=true は「入れられるが希望と違う」（希望性別）。落とせる状態のまま、
+   * 注意を促すバッジだけ出す。判定はドロップ実行側（evaluateStudentDrop）と同じ意味論。
+   */
+  const dropConstraint = useMemo<{
+    canDrop: boolean;
+    reason: string | null;
+    warn?: boolean;
+  }>(() => {
     if (!activeDragEntry) return { canDrop: false, reason: null };
     const isSourceBlock =
       activeDragEntry.entry_date === date &&
@@ -214,7 +222,12 @@ export const TeacherCard = React.memo(function TeacherCard({
     if (excluded.includes(teacher.id)) return { canDrop: false, reason: '担当除外指定' };
     const preferred = activeDragEntry.student?.preferred_teacher_gender;
     if (preferred && teacher.gender && teacher.gender !== preferred) {
-      return { canDrop: false, reason: `${preferred === 'male' ? '男性' : '女性'}講師希望` };
+      // 希望性別は止めない（運用上そうせざるを得ない場面がある）。落とせるまま警告だけ出す。
+      return {
+        canDrop: true,
+        reason: `${preferred === 'male' ? '男性' : '女性'}講師希望`,
+        warn: true,
+      };
     }
     return { canDrop: true, reason: null };
   }, [
@@ -238,7 +251,10 @@ export const TeacherCard = React.memo(function TeacherCard({
 
   const genderLabel = teacher.gender === 'male' ? '男' : teacher.gender === 'female' ? '女' : '';
 
-  const isOverAndCanDrop = isOver && (canDrop || canAcceptTeacherDrop);
+  // 希望と違うだけのカードは「落とせるが注意」。緑の可ではなく橙の警告で見せる。
+  const isDropWarning = !!dropConstraint.warn && canDrop;
+  const isOverAndCanDrop = isOver && (canDrop || canAcceptTeacherDrop) && !isDropWarning;
+  const isOverAndWarn = isOver && isDropWarning;
   const isOverAndCannotDrop = isOver && !canDrop && !canAcceptTeacherDrop && activeDragEntry;
 
   const isDragInProgress = !!activeDragEntry;
@@ -269,6 +285,13 @@ export const TeacherCard = React.memo(function TeacherCard({
   };
 
   const showSeatInput = !!onSeatNoChange && !isUnassigned && !isAvailableOnly;
+
+  /**
+   * 「生徒を追加」ボタン。通常表示で空席行を出さなくなったぶん、生徒を足す入口を
+   * ヘッダーに移した（空席行のクリックが唯一の入口だったため、消すと足せなくなる）。
+   * 振替・配置・入れ替えの各モードでは、カードのクリックがそのモードの操作なので出さない。
+   */
+  const showAddStudent = canAddStudent && !transferMode && !koushuPlacing && !swapSource;
 
   // §2.12 入れ替えモードでの各生徒行のハイライト状態を算出する。
   // 判定は「同じ日・同じコマ・別講師」（このカードは date/timeSlotId/teacher.id を持つ）。
@@ -302,8 +325,10 @@ export const TeacherCard = React.memo(function TeacherCard({
     isAvailableOnly ? styles.availableOnly : '',
     isAbsent ? styles.absentTeacher : '',
     isOverAndCanDrop ? styles.dropOk : '',
+    isOverAndWarn ? styles.dropWarn : '',
     isOverAndCannotDrop ? styles.dropNg : '',
-    (canDrop || canAcceptTeacherDrop) && !isOver ? styles.dropCandidate : '',
+    (canDrop || canAcceptTeacherDrop) && !isOver && !isDropWarning ? styles.dropCandidate : '',
+    isDropWarning && !isOver ? styles.dropWarnCandidate : '',
     isDimmedDuringDrag ? styles.dropDim : '',
     isPlaceTarget ? styles.placeTarget : '',
     placeBlocked ? styles.placeNg : '',
@@ -340,14 +365,22 @@ export const TeacherCard = React.memo(function TeacherCard({
             ? 'クリックでこの講師に配置する'
             : isOverAndCannotDrop && dropConstraint.reason
               ? `割当不可: ${dropConstraint.reason}`
-              : isAvailableOnly
-                ? 'ドラッグして担当未決定セルに割当できます'
-                : undefined
+              : isDropWarning && dropConstraint.reason
+                ? `${dropConstraint.reason}（入れられますが希望と違います）`
+                : isAvailableOnly
+                  ? 'ドラッグして担当未決定セルに割当できます'
+                  : undefined
       }
     >
       {isAbsent && <div className={styles.absentBadge}>欠勤</div>}
       {isOverAndCannotDrop && dropConstraint.reason && (
         <div className={styles.reasonBadge}>{dropConstraint.reason}</div>
+      )}
+      {/* 希望性別と違う講師。落とせるので不可バッジ（赤）とは別色にする */}
+      {isDropWarning && dropConstraint.reason && (
+        <div className={`${styles.reasonBadge} ${styles.reasonBadgeWarn}`}>
+          {dropConstraint.reason}
+        </div>
       )}
 
       {/* ヘッダー：講師名は中央寄せ、背景は生徒行より濃い（--sd-head-bg） */}
@@ -375,6 +408,21 @@ export const TeacherCard = React.memo(function TeacherCard({
           )}
         </span>
         <span className={styles.headRight}>
+          {showAddStudent && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onAddStudent();
+              }}
+              className={`${styles.headBtn} ${styles.addStudentBtn}`}
+              aria-label="生徒を追加"
+              title="この講師に生徒を追加"
+            >
+              <Plus size={11} />
+            </button>
+          )}
           {showSeatInput && (
             <input
               className={styles.seatInput}
@@ -439,28 +487,22 @@ export const TeacherCard = React.memo(function TeacherCard({
 
         {/* 空席プレースホルダ行（破線+緑面）。Phase R: 席占有の vacancies を描画する。
             'full'=丸ごと空き / 'first'=前半だけ空き / 'second'=後半だけ空き。
-            D&D のドロップ先はカード本体全体なので、この行に落としても割当が成立する。 */}
-        {!transferMode &&
-          !koushuPlacing &&
-          !swapSource &&
+
+            出すのは振替モードのときだけ。振替先を探すときは「どこが空いているか」が
+            主題なので枠が見えたほうが早い。通常表示では空席行はノイズにしかならず、
+            授業のあるカードが埋もれるため出さない（空きは講師カードの左縁の緑で分かる）。
+            振替モードではカード全体のクリックが振替先の指定なので、この行はクリックを
+            受けずに素通りさせる（pointer-events を切る）。 */}
+        {transferMode &&
           canAddStudent &&
           occupancy.vacancies.map((v, i) => {
             const label =
               v.kind === 'first' ? '空席（前45）' : v.kind === 'second' ? '空席（後45）' : '空席';
-            const title =
-              v.kind === 'full'
-                ? '空席（クリックで生徒を追加 / 生徒行をドラッグしてここに割当）'
-                : `${label}（クリックで生徒を追加）`;
             return (
               <div
                 key={`empty-${v.kind}-${i}`}
-                className={`${styles.seatEmpty}${v.kind !== 'full' ? ' ' + styles.seatEmptyHalf : ''}`}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onAddStudent();
-                }}
-                role="button"
-                title={title}
+                className={`${styles.seatEmpty} ${styles.seatEmptyStatic}${v.kind !== 'full' ? ' ' + styles.seatEmptyHalf : ''}`}
+                aria-hidden="true"
               >
                 <Plus size={10} />
                 {label}

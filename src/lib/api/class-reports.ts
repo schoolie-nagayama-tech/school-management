@@ -16,6 +16,7 @@ import type {
   ClassReport,
   ClassReportFormData,
   ClassReportStatus,
+  HomeworkAssignmentItem,
   LessonReportUnit,
 } from '@/types/class-report';
 
@@ -65,6 +66,269 @@ export async function getReportById(id: string): Promise<ClassReport | null> {
   return (data as ClassReport) ?? null;
 }
 
+// ============================================
+// 前回の授業（報告書フォーム上部の折りたたみカード）
+// ============================================
+
+/** 前回の授業でその教材の何回目をやったか。 */
+export interface PreviousLessonUnit {
+  title: string;
+  /** 1〜3回目（student_progress_lessons.lesson_number） */
+  lessonNumber: number;
+}
+
+/** 前回の授業の、教材（＝セッション）1つぶん。 */
+export interface PreviousLessonTextbook {
+  studentTextbookId: string;
+  textbookName: string;
+  units: PreviousLessonUnit[];
+  /**
+   * その教材の引継ぎ。
+   * ★ 教材ごとに別々の内容が入るので連結しない（連結すると誰が何の話をしているのか
+   *   分からなくなる）。表示も教材ごとに出す。
+   */
+  handover: string | null;
+  teacherName: string | null;
+  /**
+   * 前回の授業で決めた「次回の予定」の単元名（機能D）。
+   * ★ 教材ごとに違うので、引継ぎと同じく教材ごとに出す（連結しない）。
+   *   マイグレーション未適用の環境や、機能D以前に記録されたセッションでは空配列。
+   */
+  nextPlanUnits: string[];
+}
+
+/** 前回の授業に報告書もあったときだけ上乗せされる情報（無いのが普通）。 */
+export interface PreviousLessonReportExtras {
+  reportId: string;
+  status: ClassReportStatus;
+  schoolProgress: string | null;
+  reviewComment: string | null;
+  homeworkAssignments: HomeworkAssignmentItem[];
+  homeworkCompletionPct: number | null;
+  homeworkCorrectPct: number | null;
+  todayCorrectPct: number | null;
+}
+
+/** 前回の授業1回ぶん（日付単位。同じ日の複数教材はここにまとまる）。 */
+export interface PreviousLessonSummary {
+  /** 'YYYY-MM-DD' */
+  lessonDate: string;
+  textbooks: PreviousLessonTextbook[];
+  /** 遅刻・宿題未実施はコマ単位の情報。どれかのセッションに付いていれば付いた扱い */
+  tardy: boolean;
+  homeworkNotDone: boolean;
+  report: PreviousLessonReportExtras | null;
+}
+
+/** 同じ日のセッションを取り切るための上限（1コマで扱う教材が数十本になることはない）。 */
+const PREVIOUS_LESSON_SESSION_LIMIT = 30;
+/** 単元行の取得上限（教材数 × 単元数。上と同じ理由で十分に大きい値）。 */
+const PREVIOUS_LESSON_LESSON_LIMIT = 300;
+
+/**
+ * 生徒の「前回の授業」を1回ぶん返す（報告書フォームの折りたたみカード用）。
+ *
+ * ★ 一次情報は進行表の授業記録（progress_sessions）であって報告書ではない:
+ *   本番では報告書（class_reports）はまだ運用されておらず数件しか無い一方、
+ *   セッションは日々4桁の件数が積まれている。報告書だけを見ると前回カードは
+ *   実質どの生徒でも空になるため、セッションを軸にして、同じ日の報告書が
+ *   あるときだけ講評・宿題・達成度を上乗せする。
+ *   （正典: docs/lesson-report-session-merge-plan.md フェーズ2 §A）
+ *
+ * ★ 前回の授業は「日付」単位:
+ *   同じコマで複数教材を扱えば、その日のセッションは教材ごとに複数できる。
+ *   最大の session_date を前回の授業日として、その日のセッションを全部まとめる。
+ *
+ * 取得に失敗しても null を返して画面を止めない（記入支援であって、無くても報告書は書ける）。
+ *
+ * @param studentId  対象生徒
+ * @param beforeDate この日付より前を探す（'YYYY-MM-DD'。当日は含めない）
+ */
+export async function getPreviousLessonForStudent(
+  studentId: string,
+  beforeDate: string
+): Promise<PreviousLessonSummary | null> {
+  type SessionRow = {
+    id: string;
+    student_textbook_id: string;
+    session_date: string;
+    teacher_name: string | null;
+    handover: string | null;
+    homework_not_done: boolean | null;
+    tardy: boolean | null;
+    /** 機能D。列が無い環境・機能D以前のセッションでは undefined / null で返る */
+    next_plan_curriculum_item_ids?: number[] | null;
+    student_textbook?:
+      | { id: string; textbook?: { name: string } | { name: string }[] | null }
+      | Array<{ id: string; textbook?: { name: string } | { name: string }[] | null }>
+      | null;
+  };
+
+  // 1. 生徒のセッションを新しい順に。student_textbooks を !inner で埋め込み、
+  //    埋め込み側の student_id で絞る（生徒→教材→セッションの2段引きを1回で済ませる）。
+  const { data: sessionData, error: sessionErr } = await db
+    .from('progress_sessions')
+    .select(
+      'id, student_textbook_id, session_date, teacher_name, handover, homework_not_done, tardy, next_plan_curriculum_item_ids, student_textbook:student_textbooks!inner(id, student_id, textbook:textbooks(name))'
+    )
+    .eq('student_textbook.student_id', studentId)
+    .lt('session_date', beforeDate)
+    .order('session_date', { ascending: false })
+    .order('created_at', { ascending: true })
+    .limit(PREVIOUS_LESSON_SESSION_LIMIT);
+
+  if (sessionErr) {
+    console.error('Error fetching previous lesson sessions:', sessionErr);
+    return null;
+  }
+  const allSessions = (sessionData ?? []) as SessionRow[];
+  if (allSessions.length === 0) return null;
+
+  // 先頭が最大の session_date（＝前回の授業日）。同じ日のセッションだけを採用する。
+  const lessonDate = allSessions[0].session_date;
+  const sessions = allSessions.filter((s) => s.session_date === lessonDate);
+  const sessionIds = sessions.map((s) => s.id);
+
+  // 2. その日にやった単元（session_id で紐づく student_progress_lessons）。
+  //    単元名は student_progress → curriculum_items まで埋め込みで解決する。
+  const unitsBySession = new Map<string, PreviousLessonUnit[]>();
+  const { data: lessonData } = await db
+    .from('student_progress_lessons')
+    .select(
+      'session_id, lesson_number, student_progress:student_progress(curriculum_item_id, curriculum_item:curriculum_items(title))'
+    )
+    .in('session_id', sessionIds)
+    .order('lesson_number', { ascending: true })
+    .limit(PREVIOUS_LESSON_LESSON_LIMIT);
+
+  type LessonRow = {
+    session_id: string | null;
+    lesson_number: number;
+    student_progress?:
+      | { curriculum_item?: { title: string } | { title: string }[] | null }
+      | Array<{ curriculum_item?: { title: string } | { title: string }[] | null }>
+      | null;
+  };
+  for (const l of (lessonData ?? []) as LessonRow[]) {
+    if (!l.session_id) continue;
+    const prog = Array.isArray(l.student_progress) ? l.student_progress[0] : l.student_progress;
+    const item = Array.isArray(prog?.curriculum_item)
+      ? prog?.curriculum_item[0]
+      : prog?.curriculum_item;
+    if (!item?.title) continue;
+    const bucket = unitsBySession.get(l.session_id) ?? [];
+    bucket.push({ title: item.title, lessonNumber: l.lesson_number });
+    unitsBySession.set(l.session_id, bucket);
+  }
+
+  // 2-2. 前回決めた「次回の予定」の単元名（機能D）。IDのままでは講師に読めないので
+  //      curriculum_items で名前に解決する。全セッションぶんを1回のクエリでまとめて引く。
+  const nextPlanTitles = await resolveCurriculumTitles(
+    sessions.flatMap((s) =>
+      Array.isArray(s.next_plan_curriculum_item_ids) ? s.next_plan_curriculum_item_ids : []
+    )
+  );
+
+  const textbooks: PreviousLessonTextbook[] = sessions.map((s) => {
+    const stb = Array.isArray(s.student_textbook) ? s.student_textbook[0] : s.student_textbook;
+    const textbook = Array.isArray(stb?.textbook) ? stb?.textbook[0] : stb?.textbook;
+    const planIds = Array.isArray(s.next_plan_curriculum_item_ids)
+      ? s.next_plan_curriculum_item_ids
+      : [];
+    return {
+      studentTextbookId: s.student_textbook_id,
+      textbookName: textbook?.name ?? '教材',
+      units: unitsBySession.get(s.id) ?? [],
+      handover: s.handover && s.handover.trim() !== '' ? s.handover : null,
+      teacherName: s.teacher_name,
+      // 名前が引けなかった単元（削除された等）は黙って落とす。
+      // 「単元#12」のような内部IDを講師に見せても意味が無い。
+      nextPlanUnits: planIds
+        .map((id) => nextPlanTitles.get(id))
+        .filter((t): t is string => typeof t === 'string'),
+    };
+  });
+
+  // 3. 同じ日の報告書があれば上乗せ（無いのが普通なので、失敗しても素通り）。
+  const report = await getReportExtrasForDate(studentId, lessonDate);
+
+  return {
+    lessonDate,
+    textbooks,
+    tardy: sessions.some((s) => s.tardy === true),
+    homeworkNotDone: sessions.some((s) => s.homework_not_done === true),
+    report,
+  };
+}
+
+/**
+ * 単元ID → 単元名を1回のクエリで解決する（「次回の予定」の表示用）。
+ * 引けなくても記入支援が欠けるだけなので、失敗しても空 Map を返して画面を止めない。
+ */
+async function resolveCurriculumTitles(ids: number[]): Promise<Map<number, string>> {
+  const map = new Map<number, string>();
+  const unique = Array.from(new Set(ids));
+  if (unique.length === 0) return map;
+  const { data, error } = await db
+    .from('curriculum_items')
+    .select('id, title')
+    .in('id', unique)
+    .limit(unique.length);
+  if (error) {
+    console.error('Error resolving next plan curriculum titles:', error);
+    return map;
+  }
+  for (const item of (data ?? []) as Array<{ id: number; title: string }>) {
+    map.set(item.id, item.title);
+  }
+  return map;
+}
+
+/**
+ * 前回の授業日に書かれた報告書から、セッションには無い情報だけを拾う。
+ * status は問わない（承認待ち・差し戻し中でも、講師には前回の内容として見せる）。
+ */
+async function getReportExtrasForDate(
+  studentId: string,
+  lessonDate: string
+): Promise<PreviousLessonReportExtras | null> {
+  const { data, error } = await db
+    .from('class_reports')
+    .select(
+      'id, status, school_progress, review_comment, homework_assignments, homework_completion_pct, homework_correct_pct, today_correct_pct'
+    )
+    .eq('student_id', studentId)
+    .eq('lesson_date', lessonDate)
+    .order('updated_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error || !data) {
+    if (error) console.error('Error fetching previous lesson report:', error);
+    return null;
+  }
+  const r = data as {
+    id: string;
+    status: ClassReportStatus;
+    school_progress: string | null;
+    review_comment: string | null;
+    homework_assignments: HomeworkAssignmentItem[] | null;
+    homework_completion_pct: number | null;
+    homework_correct_pct: number | null;
+    today_correct_pct: number | null;
+  };
+  return {
+    reportId: r.id,
+    status: r.status,
+    schoolProgress: r.school_progress,
+    reviewComment: r.review_comment,
+    homeworkAssignments: Array.isArray(r.homework_assignments) ? r.homework_assignments : [],
+    homeworkCompletionPct: r.homework_completion_pct,
+    homeworkCorrectPct: r.homework_correct_pct,
+    todayCorrectPct: r.today_correct_pct,
+  };
+}
+
 /**
  * 報告書を保存（新規作成 or 既存更新）。
  * status は form で指定された値をそのまま反映する：
@@ -93,6 +357,10 @@ export async function upsertClassReport(
     mid_action_goal_snapshot: form.mid_action_goal_snapshot || null,
     school_progress: form.school_progress || null,
 
+    // 本日の様子マーク（保護者公開）。進行表の正典は progress_sessions 側で、ここはその写し。
+    tardy: form.tardy,
+    homework_not_done: form.homework_not_done,
+
     homework_completion_pct: form.homework_completion_pct,
     homework_correct_pct: form.homework_correct_pct,
     today_correct_pct: form.today_correct_pct,
@@ -105,6 +373,9 @@ export async function upsertClassReport(
 
     review_comment: form.review_comment || null,
     homework_assignments: form.homework_assignments,
+    // 次回の予定（保護者公開）。進行表側の正典は progress_sessions 側で、ここはその写し。
+    // 列は NOT NULL なので、未指定でも空配列を書く。
+    next_plan: form.next_plan ?? [],
     subject_specific: form.subject_specific,
 
     status: form.status,

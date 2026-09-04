@@ -18,7 +18,9 @@ import {
 } from 'lucide-react';
 import { ContextHelp } from '@/components/help/ContextHelp';
 import { AdminLayout } from '@/components/layouts';
-import { Button, Loading, InlineLoading } from '@/components/ui';
+import { Button, Loading, InlineLoading, ToastContainer } from '@/components/ui';
+import { useConfirm } from '@/hooks/useConfirm';
+import { useToast } from '@/hooks/useToast';
 import {
   getCachedSeasonalCourses,
   createSeasonalCourse,
@@ -28,7 +30,7 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { useRequirePermission } from '@/hooks/usePermissions';
 import AccessDenied from '@/components/AccessDenied';
-import type { SeasonalCourseWithDetails, SeasonType } from '@/types/database';
+import type { SeasonalCourseListItem, SeasonType } from '@/types/database';
 import { SEASON_LABELS, GRADE_LABELS } from '@/types/database';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 import { useLocalSchoolId } from '@/hooks/useLocalSchoolId';
@@ -81,7 +83,12 @@ export default function CoursesPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  const [courses, setCourses] = useState<SeasonalCourseWithDetails[]>([]);
+  // 確認とトーストは詳細ページ（/courses/[courseId]）と同じ作法に揃える。
+  // エラーは画面上部のバナーに出し続ける（展開ガードのように「直してから戻ってくる」案内は消えると困るため）。
+  const { confirm, ConfirmDialog } = useConfirm();
+  const { toasts, removeToast, success } = useToast();
+
+  const [courses, setCourses] = useState<SeasonalCourseListItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -314,10 +321,31 @@ export default function CoursesPage() {
       setErrorMessage('展開先の教室がありません');
       return;
     }
+
+    // 中身が空のまま展開させない。
+    // 展開は教材も単元もコピーするので、単元を入れる前に展開すると各教室に空の複製が増えるだけになる。
+    // 2026-09の冬期でこれが起き、他教室に空のコースが268件でき本番データの整理が必要になった。
+    const emptyCourses = filteredSorted.filter(
+      (c) => selected.has(c.id) && c.curriculum_count === 0
+    );
+    if (emptyCourses.length > 0) {
+      const names = emptyCourses
+        .slice(0, 3)
+        .map((c) => `「${c.name}」`)
+        .join('、');
+      const more = emptyCourses.length > 3 ? ` ほか${emptyCourses.length - 3}件` : '';
+      setErrorMessage(
+        `単元が未設定の講習は展開できません（${names}${more}）。先に単元とコマ数を設定してから展開してください。`
+      );
+      return;
+    }
+
     if (
-      !window.confirm(
-        `選択した${count}件の講習を他の${targetCount}教室に展開します。\n\n同名・同季節の講習が既にある教室はスキップされます。よろしいですか？`
-      )
+      !(await confirm({
+        title: '全教室に展開',
+        description: `選択した${count}件の講習を他の${targetCount}教室に展開します。同名・同季節の講習が既にある教室はスキップされます。`,
+        confirmLabel: '展開する',
+      }))
     )
       return;
 
@@ -332,7 +360,7 @@ export default function CoursesPage() {
         totalSkipped += skipped;
       }
       setSelected(new Set());
-      alert(`${totalCreated}件を作成しました。${totalSkipped}件はスキップされました。`);
+      success(`${totalCreated}件を作成しました。${totalSkipped}件はスキップされました。`);
       await fetchCourses(true);
     } catch (error) {
       console.error('Error deploying courses:', error);
@@ -343,12 +371,21 @@ export default function CoursesPage() {
   };
 
   const handleDelete = async (courseId: string, courseName: string) => {
-    if (!window.confirm(`「${courseName}」を削除しますか？`)) return;
+    if (
+      !(await confirm({
+        title: '講習を削除',
+        description: `「${courseName}」を削除しますか？`,
+        confirmLabel: '削除',
+        variant: 'danger',
+      }))
+    )
+      return;
     setDeletingId(courseId);
     try {
       await deleteSeasonalCourse(courseId);
       getCachedSeasonalCourses.invalidate();
       setCourses((prev) => prev.filter((c) => c.id !== courseId));
+      success(`「${courseName}」を削除しました`);
       setSelected((prev) => {
         const next = new Set(prev);
         next.delete(courseId);
@@ -417,6 +454,11 @@ export default function CoursesPage() {
       setNewCourseTotalKoma('');
       setNewCourseComment('');
       setApplyToAllSchools(false);
+      success(
+        targetSchoolIds.length > 1
+          ? `${targetSchoolIds.length}教室に「${courseData.name}」を作成しました`
+          : `「${courseData.name}」を作成しました`
+      );
       await fetchCourses(true);
     } catch (error) {
       console.error('Error creating course:', error);
@@ -447,6 +489,7 @@ export default function CoursesPage() {
 
   return (
     <AdminLayout headerTitle="講習管理">
+      <ToastContainer toasts={toasts} onRemove={removeToast} />
       {isAllSelected && (
         <SchoolSwitcher
           schools={availableSchools}
@@ -791,12 +834,21 @@ export default function CoursesPage() {
                               {course.total_koma}コマ
                             </span>
                           )}
+                          {/* 単元が未設定＝雛形として未完成。展開も適用もできないので目立たせる */}
+                          {course.curriculum_count === 0 && (
+                            <span
+                              className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 text-[10px] font-medium"
+                              title="単元とコマ数が未設定です。このままでは他教室に展開できません"
+                            >
+                              未設定
+                            </span>
+                          )}
                           {(course.application_count || 0) > 0 && (
                             <span
                               className="px-1.5 py-0.5 rounded bg-blue-50 text-blue-600 text-[10px] font-medium tabular-nums"
-                              title="下書きで適用済みの生徒数"
+                              title="この講習を適用した生徒数"
                             >
-                              下書き {course.application_count}件
+                              適用 {course.application_count}名
                             </span>
                           )}
                           {course.textbooks && course.textbooks.length > 0 && (
@@ -821,8 +873,11 @@ export default function CoursesPage() {
                     <button
                       onClick={() => handleDelete(course.id, course.name)}
                       disabled={deletingId === course.id}
-                      className="pr-3 pt-3.5 opacity-0 group-hover:opacity-100 text-text-faint hover:text-danger transition-[color,opacity] duration-150 ease-out shrink-0 disabled:opacity-50"
+                      // ホバーでしか出ないとタッチ端末から押せないので常時表示にする。
+                      // 誤爆しないよう既定は淡色で、ホバー・フォーカス時だけ危険色にする。
+                      className="pr-3 pt-3.5 text-text-faint/60 hover:text-danger focus-visible:text-danger transition-colors duration-150 ease-out shrink-0 disabled:opacity-50"
                       title="削除"
+                      aria-label={`「${course.name}」を削除`}
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -1000,6 +1055,7 @@ export default function CoursesPage() {
           </div>
         </div>
       )}
+      {ConfirmDialog}
     </AdminLayout>
   );
 }

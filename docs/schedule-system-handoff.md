@@ -95,7 +95,7 @@
 
 - `/my-schedule` 講師向け週/月切替+出欠記録 (隠し公開)
 - `transfer_notifications` テーブル + `/schedule/transfer-notifications` 履歴画面 (Edge Function 送信は将来)
-- `/portal/[schoolCode]/student-dashboard` 生徒/保護者ダッシュボード (擬似認証)
+- ~~`/portal/[schoolCode]/student-dashboard` 生徒/保護者ダッシュボード (擬似認証)~~ → **2026-08-31 削除**。未認証で氏名・時間割・報告書が取れる状態だったため。置換先は `/mypage`（ポータルJWT認証）
 
 ### Polish (d7a7b94, 28bc712)
 
@@ -203,24 +203,24 @@
 
 ### 主要画面
 
-| パス                                     | 内容                                                                           |
-| ---------------------------------------- | ------------------------------------------------------------------------------ |
-| `/schedule`                              | 座席表メイン (週/日切替、講習選択、ドリフト警告、督促ボード、マッチングモード) |
-| `/schedule/regular-patterns`             | 通塾日程一覧 (生徒×曜日×コマ)                                                  |
-| `/schedule/regular-patterns/match`       | **G-3 マッチング画面**                                                         |
-| `/schedule/transfer-notifications`       | 振替通知履歴                                                                   |
-| `/schedule/settings/time-slots`          | コマ時間設定                                                                   |
-| `/schedule/settings/closed-days`         | 休講日                                                                         |
-| `/settings/class-capacity`               | 授業生徒数設定                                                                 |
-| `/lesson-reports/[scheduleEntryId]`      | 授業報告書フォーム                                                             |
-| `/lesson-reports/pending`                | 報告書承認                                                                     |
-| `/lesson-reports/overdue`                | 報告書督促                                                                     |
-| `/students/[id]/lesson-reports`          | 過去報告書                                                                     |
-| `/today`                                 | 本日の授業 (講師/室長)                                                         |
-| `/my-schedule`                           | 講師向け週/月スケジュール (隠し公開)                                           |
-| `/seasonal-shift-student/[settingId]`    | 生徒の通塾可能表 公開フォーム                                                  |
-| `/portal/[schoolCode]/student-dashboard` | 保護者ダッシュボード (擬似認証)                                                |
-| `/admin/teachers/[teacherId]`            | 講師詳細 (G-4 で勤務シフト+履歴パネル追加)                                     |
+| パス                                         | 内容                                                                           |
+| -------------------------------------------- | ------------------------------------------------------------------------------ |
+| `/schedule`                                  | 座席表メイン (週/日切替、講習選択、ドリフト警告、督促ボード、マッチングモード) |
+| `/schedule/regular-patterns`                 | 通塾日程一覧 (生徒×曜日×コマ)                                                  |
+| `/schedule/regular-patterns/match`           | **G-3 マッチング画面**                                                         |
+| `/schedule/transfer-notifications`           | 振替通知履歴                                                                   |
+| `/schedule/settings/time-slots`              | コマ時間設定                                                                   |
+| `/schedule/settings/closed-days`             | 休講日                                                                         |
+| `/settings/class-capacity`                   | 授業生徒数設定                                                                 |
+| `/lesson-reports/[scheduleEntryId]`          | 授業報告書フォーム                                                             |
+| `/lesson-reports/pending`                    | 報告書承認                                                                     |
+| `/lesson-reports/overdue`                    | 報告書督促                                                                     |
+| `/students/[id]/lesson-reports`              | 過去報告書                                                                     |
+| `/today`                                     | 本日の授業 (講師/室長)                                                         |
+| `/my-schedule`                               | 講師向け週/月スケジュール (隠し公開)                                           |
+| `/seasonal-shift-student/[settingId]`        | 生徒の通塾可能表 公開フォーム                                                  |
+| ~~`/portal/[schoolCode]/student-dashboard`~~ | **2026-08-31 削除**（未認証で個人情報が取得できたため）。置換先は `/mypage`    |
+| `/admin/teachers/[teacherId]`                | 講師詳細 (G-4 で勤務シフト+履歴パネル追加)                                     |
 
 ### 主要コンポーネント
 
@@ -515,7 +515,7 @@ node scripts/verify-phase0-migrations.mjs
 - **色**: グレー=不可 / 黄=可 / 緑=配置済み / **赤=満席**。満席の定義=「その日×コマに出勤できる講師が全員、1講師あたり個別上限まで埋まっている」（出勤講師0人も満席扱い）
 - **軸**: 横=期間の全日付（週は間隔＋左枠線で区切り、週ラベルなし・日付数字を全列表示）/ 縦=個別コマの時限。今日=青ドット、表示中の週=薄青帯。粒ホバーで日付・時限・状態。日付クリックで週ジャンプ
 - **データ源**: 講習=`seasonal_shift_student_submissions` を school+student で直接クエリし期間内 available=true を抽出（time_slot "HH:MM-" の先頭5文字→slot.start_time で解決）。未提出は `getStudentRegularSchedule` を期間展開（薄黄＋注記）。テスト対策=増コマ申込の枠（ZoukomaAvailableSlot）
-- **実装**: `src/lib/api/placement-availability.ts`（buildKoushuPlacementStrip / buildTestPrepPlacementStrip / computeFullKeys）+ `PlacementAvailabilityStrip.tsx`。満席判定=週ごとの `getAvailabilityDayMap.byDayAndSlotNumber` × 既存エントリの講師別集計 × `max_students_per_teacher_individual`。配置成功で refreshKey 経由再計算
+- **実装**: `src/lib/api/placement-availability.ts`（buildKoushuPlacementStrip / buildTestPrepPlacementStrip / computeFullKeys）+ `PlacementAvailabilityStrip.tsx`。満席判定=週ごとの `getAvailabilityDayMap` × `availableUserIdsForInterval`（コマの実時刻で在室判定。2026-08-17 に `byDayAndSlotNumber` から移行）× 既存エントリの講師別集計 × `max_students_per_teacher_individual`。配置成功で refreshKey 経由再計算
 - 注意: ユーザー要件「**週単位ではなく全期間を俯瞰して配分を組む**」「サマリ数字は不要、粒の密度で読む」
 
 ## ★ 重要バグ修正：「スケジュールの取得に失敗」

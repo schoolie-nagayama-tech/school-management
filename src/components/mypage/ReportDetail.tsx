@@ -1,7 +1,18 @@
 'use client';
 
 import { useEffect } from 'react';
-import { Award, BookOpen, Gauge, PencilLine, Quote, Repeat, School, Target } from 'lucide-react';
+import {
+  AlertTriangle,
+  Award,
+  BookOpen,
+  Gauge,
+  PencilLine,
+  Quote,
+  Repeat,
+  School,
+  SkipForward,
+  Target,
+} from 'lucide-react';
 import type {
   PortalReportDetail,
   PortalReportUnit,
@@ -11,9 +22,10 @@ import type {
 /**
  * 授業報告書の詳細 — 保護者側（§7-4・UIモック セクション2）。
  *
- * 並び（モック準拠・変えないこと。科目別欄は講師フォームの公開ゾーンの並びに合わせて末尾）:
+ * 並び（モック準拠・変えないこと。モックに無い項目は講師フォームの公開ゾーンの並びに合わせる）:
  *   今日の目標／試験目標 → 学習内容（教材×単元×ページ）＋学校の進度＋プリント等の教材 →
- *   宿題の取り組み（3項目のバー） → テスト → 講師より（講評） → 次回までの宿題（日付ごと） →
+ *   本日の様子（遅刻／宿題未実施マーク） → 次回の予定 → 宿題の取り組み（3項目のバー） →
+ *   テスト → 講師より（講評） → 次回までの宿題（日付ごと） →
  *   科目別欄（単語・計算・漢字の反復練習）
  *
  * ★ ここに出るのは限定公開ビューが返した列だけ:
@@ -37,9 +49,21 @@ export const SUBJECT_SPECIFIC_KIND_LABELS: Record<
   kanji: '国語：漢字練習',
 };
 
-export function ReportDetail({ report }: { report: PortalReportDetail }) {
+/**
+ * @param preview 講師の「保護者の見え方」プレビューから描くとき true。
+ *   既読APIを叩かない（講師が開いただけで保護者が読んだことになってしまうため）。
+ *   既定 false なので、保護者側の呼び出し（app/mypage/reports/[reportId]）は無変更で従来どおり。
+ */
+export function ReportDetail({
+  report,
+  preview = false,
+}: {
+  report: PortalReportDetail;
+  preview?: boolean;
+}) {
   // 開いた＝既読。未読だったときだけ叩く（§7-4「タップで既読」）。
   useEffect(() => {
+    if (preview) return;
     if (report.isRead) return;
     void fetch('/api/mypage/reports/read', {
       method: 'POST',
@@ -48,7 +72,7 @@ export function ReportDetail({ report }: { report: PortalReportDetail }) {
     }).catch(() => {
       /* 既読記録の失敗は致命的でないので無視 */
     });
-  }, [report.id, report.isRead]);
+  }, [report.id, report.isRead, preview]);
 
   const hasGoals = !!(report.shortTermGoal || report.midTermGoal);
   const extraMaterials = report.subjectSpecific?.extraMaterials ?? null;
@@ -61,6 +85,9 @@ export function ReportDetail({ report }: { report: PortalReportDetail }) {
   const hasTests = report.checkTestScore != null && report.checkTestTotal != null;
   // 科目別欄（単語・計算・漢字の反復練習）。kind='none' はデータ無し扱いなので出さない。
   const hasSubjectPractice = !!report.subjectSpecific && report.subjectSpecific.kind !== 'none';
+  // 本日の様子: 該当したときだけ出す。両方 false なら「遅刻していません」を書くことになり
+  // 情報量ゼロで画面を水増しするだけなので、セクションごと出さない。
+  const hasMarks = report.tardy || report.homeworkNotDone;
 
   return (
     <div className="space-y-3">
@@ -128,6 +155,40 @@ export function ReportDetail({ report }: { report: PortalReportDetail }) {
               <p className="text-sm text-text-body">{extraMaterials}</p>
             </>
           )}
+        </Section>
+      )}
+
+      {/* 本日の様子（遅刻／宿題未実施）。講師フォームの公開ゾーンと同じ位置・同じ呼び方。 */}
+      {hasMarks && (
+        <Section>
+          <SectionTitle icon={<AlertTriangle className="h-[13px] w-[13px]" />}>
+            本日の様子
+          </SectionTitle>
+          <div className="flex flex-wrap gap-1.5">
+            {report.tardy && <MarkPill label="遅刻" />}
+            {report.homeworkNotDone && <MarkPill label="宿題未実施" />}
+          </div>
+        </Section>
+      )}
+
+      {/* 次回の予定（機能D）。講師が決めていなければセクションごと出さない。
+          375px 幅前提: 教材名は小さく上に、単元名を主役にして折り返す。 */}
+      {report.nextPlan.length > 0 && (
+        <Section>
+          <SectionTitle icon={<SkipForward className="h-[13px] w-[13px]" />}>
+            次回の予定
+          </SectionTitle>
+          <ul className="space-y-1.5">
+            {report.nextPlan.map((plan, i) => (
+              <li key={`${plan.textbookName ?? 'tb'}-${i}`}>
+                {/* 教材が1つのときは教材名を出さない（保護者にとっては単元名が本題） */}
+                {report.nextPlan.length > 1 && plan.textbookName && (
+                  <p className="text-[10.5px] text-text-muted">{plan.textbookName}</p>
+                )}
+                <p className="text-sm text-text-body">{plan.unitTitles.join('・')}</p>
+              </li>
+            ))}
+          </ul>
         </Section>
       )}
 
@@ -268,6 +329,19 @@ function UnitRow({ unit }: { unit: PortalReportUnit }) {
       </span>
       {detail && <span className="text-[11px] tabular-nums text-text-muted">{detail}</span>}
     </div>
+  );
+}
+
+/**
+ * 本日の様子のピル1つ（遅刻／宿題未実施）。
+ * 講師フォームのトグルピルと同じ warning 系の色にして、講師が押したものがそのまま
+ * 保護者に見えていることを両者の画面で一致させる。
+ */
+function MarkPill({ label }: { label: string }) {
+  return (
+    <span className="rounded-full bg-warning-subtle px-2.5 py-1 text-[11.5px] font-bold text-warning">
+      {label}
+    </span>
   );
 }
 

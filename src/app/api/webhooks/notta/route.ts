@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { nottaWebhookSchema } from '@/lib/validations/schemas';
+import { captureApiError } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 
@@ -39,7 +40,10 @@ export async function POST(request: NextRequest) {
   let body: unknown;
   try {
     body = await request.json();
-  } catch {
+  } catch (error) {
+    captureApiError(error, {
+      route: 'POST /api/webhooks/notta',
+    });
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
 
@@ -94,6 +98,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ data }, { status: 201 });
   } catch (error) {
+    captureApiError(error, {
+      route: 'POST /api/webhooks/notta',
+    });
     console.error('[notta-webhook] insert failed:', error);
     return NextResponse.json({ error: '文字起こしの取り込みに失敗しました' }, { status: 500 });
   }

@@ -42,7 +42,8 @@ export function PendingTransfersBoard({
 }: PendingTransfersBoardProps) {
   const [entries, setEntries] = useState<ScheduleEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [collapsed, setCollapsed] = useState(false);
+  // 既定は折りたたみ。0件でない限り常に出る帯なので、開いたままだと盤面を押し下げる。
+  const [collapsed, setCollapsed] = useState(true);
 
   const load = useCallback(async () => {
     if (schoolIds.length === 0) {
@@ -76,28 +77,26 @@ export function PendingTransfersBoard({
   const soonCount = entries.length - overdueCount;
 
   return (
-    <div className="border border-warning bg-warning-subtle rounded-lg overflow-hidden mb-4">
+    <>
+      {/* 振替保留のチップと同じ行に並ぶので、同じ寸法・同じ形（丸チップ）に揃える。
+          以前は全幅の警告ボックスで、0件でない限り常に盤面を押し下げていた。 */}
       <button
         type="button"
         onClick={() => setCollapsed((c) => !c)}
-        className="w-full px-4 py-3 flex items-center gap-2 text-left hover:bg-warning-subtle/50 transition-[background-color,border-color,color] duration-150 ease-[var(--ease-out)]"
+        className="inline-flex items-center gap-1.5 rounded-full border border-warning/50 bg-warning-subtle/60 px-2.5 py-0.5 text-xs font-semibold text-warning transition-colors hover:bg-warning-subtle print:hidden"
+        title="クリックで振替期限の対応待ち一覧を表示"
       >
-        <AlertTriangle className="w-4 h-4 text-warning flex-shrink-0" />
-        <span className="font-medium text-warning text-sm">振替期限の対応待ち</span>
-        <span className="text-xs text-warning">
-          {overdueCount > 0 && (
-            <span className="font-semibold text-danger">期限切れ {overdueCount}件</span>
-          )}
-          {overdueCount > 0 && soonCount > 0 && <span className="mx-1">/</span>}
-          {soonCount > 0 && <span>期限間近 {soonCount}件</span>}
-        </span>
+        <AlertTriangle className="w-3 h-3" />
+        振替期限
+        {overdueCount > 0 && <span className="font-bold text-danger">切れ{overdueCount}</span>}
+        {soonCount > 0 && <span>間近{soonCount}</span>}
         <ChevronRight
-          className={`ml-auto w-4 h-4 text-warning transition-transform duration-150 ease-[var(--ease-out)] ${collapsed ? '' : 'rotate-90'}`}
+          className={`w-3 h-3 opacity-70 transition-transform duration-150 ${collapsed ? '' : 'rotate-90'}`}
         />
       </button>
 
       {!collapsed && (
-        <div className="border-t border-warning max-h-80 overflow-y-auto bg-white">
+        <div className="mt-1.5 w-full rounded-lg border border-warning bg-white max-h-80 overflow-y-auto">
           <ul className="divide-y divide-gray-100">
             {entries.map((entry) => {
               const studentName = entry.student
@@ -148,6 +147,6 @@ export function PendingTransfersBoard({
           </ul>
         </div>
       )}
-    </div>
+    </>
   );
 }

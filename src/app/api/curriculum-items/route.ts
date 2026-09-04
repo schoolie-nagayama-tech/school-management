@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { requireManager, requireAdmin } from '@/lib/api-auth';
+import { apiErrorResponse } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 // Next.js の Data Cache に載せない（削除直後に古い使用状況を返さないため）。
@@ -387,9 +388,10 @@ export async function POST(request: NextRequest) {
         .select('id, textbook_id')
         .in('id', [...fromIds, toId]);
       if (itemsError) {
-        return NextResponse.json(
-          { error: `単元の取得に失敗しました: ${itemsError.message}` },
-          { status: 500 }
+        return apiErrorResponse(
+          itemsError,
+          { route: 'POST /api/curriculum-items', action: 'merge' },
+          '単元の取得に失敗しました。時間をおいて再度お試しください。'
         );
       }
       const rows = (items || []) as { id: number; textbook_id: number }[];

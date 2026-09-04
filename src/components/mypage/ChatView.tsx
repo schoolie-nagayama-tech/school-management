@@ -18,7 +18,9 @@ import type {
   PortalThreadSummary,
   TransferCandidate,
 } from '@/types/chat';
-import type { PortalTimeSlotDto } from '@/types/mypage-schedule';
+import type { PortalScheduleEntryDto, PortalTimeSlotDto } from '@/types/mypage-schedule';
+import { LessonPickerSheet } from './LessonPickerSheet';
+import { AbsenceSheet } from './AbsenceSheet';
 
 /** 話題フィルタ。 */
 type TopicFilter = 'all' | 'zesseki' | 'meeting';
@@ -129,6 +131,17 @@ function Conversation({
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
   const [activeTemplate, setActiveTemplate] = useState<ChatTemplateKind | null>(null);
+  /**
+   * 欠席・振替の連絡は「まず授業を選ぶ」。日付の手入力だと教室に無いコマで書かれ、
+   * 確認の往復が起きるため、実際に入っている予定から選んでもらう。
+   * 選んだあとの入力・送信は予定ビューと同じ AbsenceSheet に委ねる（送信経路を二重に持たない）。
+   */
+  const [lessonPicker, setLessonPicker] = useState<'absence' | 'transfer' | null>(null);
+  const [pickedLesson, setPickedLesson] = useState<{
+    entry: PortalScheduleEntryDto;
+    timeSlots: PortalTimeSlotDto[];
+    kind: 'absence' | 'transfer';
+  } | null>(null);
   // TemplateForm（クイックアクションの連絡シート）向けの教室情報。生徒が決まった時点で
   // 一度だけ取っておき、開閉のたびには叩かない（保護者は電波の悪い場所でも使う）。
   const [timeSlots, setTimeSlots] = useState<PortalTimeSlotDto[]>([]);
@@ -277,12 +290,12 @@ function Conversation({
         <QuickButton
           icon={<CalendarX className="h-4 w-4" />}
           label="欠席・遅刻"
-          onClick={() => setActiveTemplate('absence')}
+          onClick={() => setLessonPicker('absence')}
         />
         <QuickButton
           icon={<CalendarClock className="h-4 w-4" />}
           label="振替希望"
-          onClick={() => setActiveTemplate('transfer_request')}
+          onClick={() => setLessonPicker('transfer')}
         />
         <QuickButton
           icon={<Users className="h-4 w-4" />}
@@ -304,6 +317,38 @@ function Conversation({
           <Send className="h-4 w-4" />
         </Button>
       </div>
+
+      {/* 欠席・振替：まず対象の授業を選ぶ。予定が1件も無い教室・生徒では、
+          従来の日付入力フォーム（TemplateForm）へ逃がして連絡できなくならないようにする。 */}
+      {lessonPicker && !pickedLesson && (
+        <LessonPickerSheet
+          studentId={thread.student_id}
+          title={lessonPicker === 'absence' ? '欠席・遅刻の連絡' : '振替のご希望'}
+          onPick={(entry, slots) => {
+            setPickedLesson({ entry, timeSlots: slots, kind: lessonPicker });
+            setLessonPicker(null);
+          }}
+          onClose={() => setLessonPicker(null)}
+          onNoLessons={() => {
+            setActiveTemplate(lessonPicker === 'absence' ? 'absence' : 'transfer_request');
+            setLessonPicker(null);
+          }}
+        />
+      )}
+
+      {pickedLesson && (
+        <AbsenceSheet
+          studentId={thread.student_id}
+          entry={pickedLesson.entry}
+          timeSlots={pickedLesson.timeSlots}
+          initialKind={pickedLesson.kind}
+          onClose={() => setPickedLesson(null)}
+          onSent={async () => {
+            setPickedLesson(null);
+            await load();
+          }}
+        />
+      )}
 
       {activeTemplate && (
         <TemplateForm

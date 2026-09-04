@@ -17,6 +17,7 @@ import {
   PortalErrorBanner,
   PortalPreviewBanner,
   usePortalFormDraft,
+  usePortalDuplicateGuard,
 } from '@/components/forms/shared';
 
 interface MogiFormProps {
@@ -57,6 +58,9 @@ export function MogiForm({ school, period, isPreview }: MogiFormProps) {
       if (d.cancelAgreed) setCancelAgreed(d.cancelAgreed);
     },
   });
+
+  // 同一期間の二重申込チェック（送信前の確認ダイアログ）
+  const { confirmIfDuplicate, duplicateDialog } = usePortalDuplicateGuard({ enabled: !isPreview });
 
   // デフォルト設定
   const grades = settings.grades || ['中3'];
@@ -118,6 +122,16 @@ export function MogiForm({ school, period, isPreview }: MogiFormProps) {
     setErrorMessage('');
 
     try {
+      // 同じ期間に申込済みなら確認を挟む（内容変更・追加申込は続行できる）
+      const proceed = await confirmIfDuplicate({
+        school_id: school.id,
+        form_type: 'mogi',
+        form_period: period.period_key,
+        student_name: studentName.trim(),
+        email: email.trim(),
+      });
+      if (!proceed) return;
+
       const gradeNumber = GRADE_NAME_TO_NUMBER[selectedGrade] || 9;
 
       const responseData: MogiResponseData = {
@@ -173,6 +187,7 @@ export function MogiForm({ school, period, isPreview }: MogiFormProps) {
 
   return (
     <div className="space-y-5">
+      {duplicateDialog}
       <PortalFormHeader
         eyebrow={MOGI_REGION_FORM_TITLES[settings.region ?? 'tokyo'].eyebrow}
         title={period.title || MOGI_REGION_FORM_TITLES[settings.region ?? 'tokyo'].title}

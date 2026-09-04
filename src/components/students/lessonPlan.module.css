@@ -1,0 +1,146 @@
+/*
+ * 通塾日程の一覧表（1行=1授業）の期間バーと週サマリ帯。
+ * 正典モック（案3）の .tl / .tlhead / .bar / .weekstrip を CSS Module へ移植したもの。
+ * 色は globals.css のトークン（--success / --info / --text-faint など）から取り、モックの生の16進は持ち込まない。
+ *
+ * 12ヶ月グリッドは列幅を固定する。ヘッダー（月番号）と各行のバーで同じ幅を使わないと、
+ * 行ごとに月の位置がズレて「いつから変わるか」が読めなくなるため。
+ */
+
+/* 控えている変更・これから始まる授業の注記。
+   --warning はそのままでは白地に薄すぎるので、座席表(--sd-warn-text)と同じ濃さの文字色を用意する。 */
+.upcomingNote {
+  color: oklch(48% 0.11 80);
+}
+@media (prefers-color-scheme: dark) {
+  .upcomingNote {
+    color: oklch(78% 0.15 80);
+  }
+}
+
+/*
+ * 月グリッドの列定義。ヘッダーの月ラベルと各行のバーが **同じクラス** を共有する。
+ * 以前はヘッダーだけ別の変数を参照しており（--lp-month-w が .timeline スコープにしか無く
+ * ヘッダー側では未定義）、grid-template-columns が無効になって月ラベルが縦積みになっていた。
+ * 幅は固定px ではなく列を等分し、モーダルの狭い幅でも月とバーの位置が必ず一致するようにする。
+ */
+.timelineGrid,
+.timeline {
+  /* 生徒詳細モーダル内の狭い幅でも月が潰れないための下限。足りなければ表ごと横スクロールする */
+  min-width: 240px;
+}
+
+.timelineGrid {
+  display: grid;
+  /* minmax(0, 1fr) = 1fr。内容（月ラベル）で列が押し広げられないよう最小幅を 0 に落とす */
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+}
+
+.timeline {
+  /* バーはこの中に絶対配置する（left/width の % はこの幅が基準） */
+  position: relative;
+}
+
+.timelineHead {
+  font-size: 10px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.timelineHead span {
+  /* min-width:0 が無いと月ラベルが折り返して縦に伸び、ヘッダーだけで高さを食う */
+  min-width: 0;
+  text-align: center;
+  line-height: 1.6;
+  overflow: hidden;
+}
+
+/* 月のセル。縦線だけで月境を示し、面は塗らない（バーを主役にする） */
+.cell {
+  border-left: 1px solid var(--border-subtle);
+  height: 20px;
+}
+.cell:last-child {
+  border-right: 1px solid var(--border-subtle);
+}
+
+/* 今月の列。バーの色と競合しない warning 系の薄い面で「今」の位置を示す */
+.cellCurrent {
+  background: color-mix(in oklch, var(--warning-subtle) 55%, transparent);
+}
+
+.bar {
+  position: absolute;
+  top: 3px;
+  height: 14px;
+  border-radius: 4px;
+  /* 1日だけの期間でも消えないように最低幅を確保する */
+  min-width: 3px;
+}
+
+.barEnded {
+  background: var(--text-faint);
+}
+.barCurrent {
+  background: var(--success);
+}
+.barUpcoming {
+  background: var(--info);
+  opacity: 0.75;
+}
+
+/* 年度の外へ続くバーは、切れた側の角を落として「まだ続く」ことを示す */
+.clippedLeft {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+.clippedRight {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+/*
+ * 週サマリ帯のチップ。1件=1行に圧縮する。
+ * ここは「今週どう来るか」の概観でしかないので、3行カードで面積を取ると
+ * 正である下の一覧表より目立ってしまう（モーダル幅だと帯だけで画面を食う）。
+ */
+.summaryChip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  max-width: 100%;
+  padding: 1px 8px;
+  border: 1px solid var(--stroke);
+  border-radius: 999px;
+  background: var(--surface);
+  font-size: 12px;
+  line-height: 1.7;
+  /* チップの中では折り返さない。帯そのものは flex-wrap で複数行になる */
+  white-space: nowrap;
+}
+
+/* チップの曜日・コマ（「木5限」）。ここだけ強めて視線の起点にする */
+.summaryChipSlot {
+  font-weight: 700;
+  color: var(--headline);
+}
+
+/* チップの講師名。授業名より一段落とす */
+.summaryChipTeacher {
+  color: var(--paragraph-light);
+  font-size: 11px;
+}
+
+/* 凡例の色見本 */
+.legendSwatch {
+  display: inline-block;
+  width: 14px;
+  height: 10px;
+  border-radius: 3px;
+  margin-right: 4px;
+  vertical-align: -1px;
+}
+.legendCurrentMonth {
+  background: color-mix(in oklch, var(--warning-subtle) 55%, transparent);
+  border: 1px solid var(--warning);
+}

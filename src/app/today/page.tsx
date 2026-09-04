@@ -11,7 +11,7 @@
  * 表示:
  *  - 本日の schedule_entries (status=scheduled/completed/transferred_in、講師=ログイン中ユーザー)
  *  - 各コマカード: 時刻 / 生徒名 / 教科 / 報告書ステータス(未提出=赤・下書き=黄・承認待ち=灰・公開=緑)
- *  - クリックで /lesson-reports/[scheduleEntryId] へ遷移
+ *  - クリックで /lesson-reports/[scheduleEntryId] を別タブで開く（一覧を残したまま次のコマへ移れる）
  *
  * 日付ナビ:
  *  - 「前日 / 本日 / 翌日」のシンプルなナビ
@@ -27,8 +27,8 @@ import { ToastContainer, Loading } from '@/components/ui';
 import { useToast } from '@/hooks/useToast';
 import { useAuth } from '@/contexts/AuthContext';
 // Phase A: 形態キーの直書きを定数参照に置換。
-// TODO(Phase E): 集団バッジ表示はマスタ label 参照へ差し替える（新形態も表示できるように）。
-import { GROUP_FORMATION } from '@/types/schedule';
+// TODO(Phase E): 形態バッジ表示はマスタ label 参照へ差し替える（新形態も表示できるように）。
+import { GROUP_FORMATION, SCHEDULE_ENTRY_FORMATION_LABELS } from '@/types/schedule';
 import { supabase } from '@/lib/supabase';
 import { fetchAllPaged } from '@/lib/utils/supabasePaging';
 import type { ClassReportStatus } from '@/types/class-report';
@@ -281,6 +281,10 @@ export default function TodayPage() {
                 <Link
                   key={entry.id}
                   href={`/lesson-reports/${entry.id}`}
+                  // 報告書は別タブで開く。この一覧を残したまま次のコマへ移れるようにするため
+                  //（同じタブだと1件書くたびに一覧へ戻る操作が要る）。
+                  target="_blank"
+                  rel="noopener noreferrer"
                   // 40ms 刻みでカードがフェードイン。
                   // 9件目以降は最大値で頭打ち（長すぎる遅延は逆効果）
                   className="block stagger-item"
@@ -310,7 +314,7 @@ export default function TodayPage() {
                           )}
                           {entry.formation === GROUP_FORMATION && (
                             <span className="px-1.5 py-0.5 bg-ink-subtle text-ink text-[10px] rounded font-semibold">
-                              集団
+                              {SCHEDULE_ENTRY_FORMATION_LABELS[GROUP_FORMATION]}
                             </span>
                           )}
                         </div>

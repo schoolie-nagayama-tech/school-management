@@ -14,6 +14,11 @@ const WeeklyScheduleGrid = dynamic(
   () => import('@/components/schedule').then((m) => m.WeeklyScheduleGrid),
   { ssr: false }
 );
+// 日表示（当日盤）。週盤面と排他なので同じく動的読み込みにする。
+const DailyScheduleBoard = dynamic(
+  () => import('@/components/schedule').then((m) => m.DailyScheduleBoard),
+  { ssr: false }
+);
 const TransferModeBar = dynamic(
   () => import('@/components/schedule').then((m) => m.TransferModeBar),
   { ssr: false }
@@ -104,6 +109,7 @@ import {
   getActiveTimeSlots,
   getRegularPatterns,
   getScheduleEntries,
+  getScheduleEntryById,
   getClosedDays,
   generateWeeklySchedule,
   hasEntriesForWeek,
@@ -124,10 +130,26 @@ import { reassignTeacherFromToday } from '@/lib/api/pattern-matching';
 import { markInquiryTrialScheduled } from '@/lib/api/inquiries';
 import type { AddLessonPlacementPayload } from '@/components/schedule';
 import type { HalfPosition } from '@/types/schedule';
-import { canPlaceEntry, type SeatEntryInput } from '@/lib/utils/seatOccupancy';
+import { checkTeacherFit } from '@/lib/schedule/teacherFit';
+import {
+  pickTestPrepPlacements,
+  type AutoPlaceCell,
+  type AutoPlacePick,
+} from '@/lib/schedule/testPrepAutoPlace';
 import type { PendingLesson } from '@/lib/api/pending-lessons';
-import { getFormations, getFormationCapacity } from '@/lib/api/schedule-formations';
-import { createFormationClassPatterns } from '@/lib/api/formation-patterns';
+import {
+  getFormations,
+  getFormationCapacity,
+  DEFAULT_FORMATION_MAX_STUDENTS,
+  DEFAULT_FORMATION_MAX_CONCURRENT_GROUPS,
+} from '@/lib/api/schedule-formations';
+import {
+  createFormationClassPatterns,
+  getFormationPatternCourseMap,
+} from '@/lib/api/formation-patterns';
+import { resolveClassCapacity } from '@/lib/schedule/classCapacity';
+import { getActiveYearRoundCoursesByFormation, type SpecialCourse } from '@/lib/api/specialCourses';
+import { filterCoursesForCell } from '@/lib/utils/specialCourses';
 import type { ScheduleFormation, SchoolFormationCapacity } from '@/types/schedule';
 import { logScheduleChange } from '@/lib/api/schedule-change-logs';
 import type {
@@ -153,6 +175,10 @@ import {
   type ZoukomaAvailableSlot,
 } from '@/lib/api/zoukoma-placement';
 import type { ScheduleMatchProposal } from '@/types/schedule-match';
+import {
+  availableUserIdsForInterval,
+  type AvailabilityDayMap,
+} from '@/lib/api/teacher-availability';
 
 function getWeekStart(d: Date): Date {
   const day = d.getDay();
@@ -184,7 +210,7 @@ function getWeekDates(weekStart: Date): string[] {
 export default function SchedulePage() {
   const { profile, isLoading: authLoading, selectedSchoolId, getSelectedSchoolIds } = useAuth();
   const { schools: masterSchools, subjects: masterSubjects } = useMasterData();
-  const { toasts, removeToast, success, error: toastError } = useToast();
+  const { toasts, removeToast, success, error: toastError, warning: toastWarning } = useToast();
   const [schools, setSchools] = useState<School[]>([]);
   const [selectedSchoolIdLocal, setSelectedSchoolIdLocal] = useState<string>('');
   const [weekStart, setWeekStart] = useState<Date>(() => getWeekStart(new Date()));
@@ -216,6 +242,9 @@ export default function SchedulePage() {
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [students, setStudents] = useState<Awaited<ReturnType<typeof getStudents>>>([]);
   const [entriesLoading, setEntriesLoading] = useState(false);
+  // 一度でも盤面を描いたか。2回目以降の更新では盤面を外さずそのまま残す
+  //（外すとページの高さが潰れ、ブラウザがスクロール位置を先頭に戻してしまうため）。
+  const [entriesLoadedOnce, setEntriesLoadedOnce] = useState(false);
   const regularPatternsRef = useRef<Awaited<ReturnType<typeof getRegularPatterns>>>([]);
 
   const [actionModalEntry, setActionModalEntry] = useState<ScheduleEntry | null>(null);
@@ -270,6 +299,9 @@ export default function SchedulePage() {
   // 通常シフトから「この曜日この時間帯に出勤可能」と提出した講師IDを byDayOfWeek で保持。
   // 各セル描画時に「曜日 → 出勤可能講師ID 一覧」を引いて空き枠として並べる。
   const [shiftByDow, setShiftByDow] = useState<Map<number, string[]>>(new Map());
+  // 講師詳細モーダル用に、byDayOfWeek だけでなく在室区間(intervalsByDayAndUser)も保持する。
+  // null = 未取得（読み込み中、または旧APIフォールバック時で区間データが無い）。
+  const [availabilityMap, setAvailabilityMap] = useState<AvailabilityDayMap | null>(null);
   // 講師欠勤マップ（コマ単位）。キー: `${date}|${timeSlotId}|${userId}`
   const [absenceKeySet, setAbsenceKeySet] = useState<Set<string>>(new Set());
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -376,6 +408,23 @@ export default function SchedulePage() {
     rawSlots: import('@/lib/api/zoukoma-placement').ZoukomaAvailableSlot[];
   } | null>(null);
   const [zoukomaPanelRefreshKey, setZoukomaPanelRefreshKey] = useState(0);
+  /**
+   * テスト対策の自動配置の**提案**。確定ボタンを押すまで1件も書き込まない。
+   * 提案中は盤面の該当セルに印を出し、下部の確定バーで内容を見せる。
+   */
+  const [testPrepProposal, setTestPrepProposal] = useState<{
+    studentId: string;
+    studentName: string;
+    subjectId: string;
+    subjectName: string;
+    picks: AutoPlacePick[];
+    /** 置ききれなかった数。0 でなければバーに出す（黙って少なく置かない） */
+    shortfall: number;
+  } | null>(null);
+  const [autoPlacing, setAutoPlacing] = useState(false);
+  const [confirmingAutoPlace, setConfirmingAutoPlace] = useState(false);
+  /** 「配置」を押したときに盤面まで送るためのアンカー */
+  const boardRef = useRef<HTMLDivElement>(null);
 
   // ---- 配置ストリップ（出席可能日程ドットマトリクス） ----
   // 配置モード中（講習 / テスト対策）に生徒の出席可能日程をストリップ表示するためのデータ
@@ -396,13 +445,19 @@ export default function SchedulePage() {
   const [activeFormation, setActiveFormation] = useState<string>(INDIVIDUAL_FORMATION);
   // アクティブ形態の定員（school_formation_capacity。未設定なら max_students_per_group=8 / max_concurrent_groups=1）。
   const [formationCapacity, setFormationCapacity] = useState<SchoolFormationCapacity | null>(null);
-  // クラス枠登録モーダルの対象（セル起点で自動設定）。mode='create'=新規枠 / 'add'=既存クラスへ追加。
+  // 講座の枠 登録モーダルの対象（セル起点で自動設定）。mode='create'=新規枠 / 'add'=既存クラスへ追加。
   const [formationTarget, setFormationTarget] = useState<{
     date: string;
     slotId: string;
     mode: 'create' | 'add';
     teacherId: string | null;
   } | null>(null);
+  // アクティブ形態の通年講座（枠は必ずどれかの講座に属する）。0件ならモーダルが講座作成へ誘導する。
+  const [formationCourses, setFormationCourses] = useState<SpecialCourse[]>([]);
+  // 週次パターンid → 講座id。盤面の枠カードから講座の定員を引くための対応表（定員の講座一本化）。
+  const [formationPatternCourseMap, setFormationPatternCourseMap] = useState<
+    Map<string, string | null>
+  >(new Map());
 
   const VISIBLE_DAYS_STORAGE_KEY = 'schedule_visible_days';
   const defaultVisibleDays = [1, 2, 3, 4, 5, 6]; // 月〜土
@@ -469,6 +524,22 @@ export default function SchedulePage() {
       /* ignore */
     }
   }, []);
+  // 表示モード（週=予定を組む盤 / 日=今日を回す運用盤）。向き・列数と同じ永続化パターン。
+  const VIEW_MODE_STORAGE_KEY = 'schedule_view_mode';
+  const [viewMode, setViewMode] = useState<'week' | 'day'>(() => {
+    if (typeof window === 'undefined') return 'week';
+    return localStorage.getItem(VIEW_MODE_STORAGE_KEY) === 'day' ? 'day' : 'week';
+  });
+  const setViewModePersist = useCallback((next: 'week' | 'day') => {
+    setViewMode(next);
+    try {
+      localStorage.setItem(VIEW_MODE_STORAGE_KEY, next);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+  // 日表示で見ている日。既定は今日（初期の週は必ず今日を含む）。
+  const [selectedDate, setSelectedDate] = useState<string>(() => toLocalDateStr(new Date()));
   // 週内の座席番号（印刷ブース番号）マップ。講師ヘッダーのインライン入力で表示・編集する。
   const [weekBoothMap, setWeekBoothMap] = useState<Map<string, Map<string, number>>>(new Map());
 
@@ -493,19 +564,40 @@ export default function SchedulePage() {
   weekEnd.setDate(weekEnd.getDate() + 6);
   const weekEndStr = toLocalDateStr(weekEnd);
 
+  // 週が動いたら日表示の対象日を週の中に引き戻す。
+  // 今日がその週にあれば今日、無ければ週の初日（＝週表示の並びの先頭と一致させる）。
+  useEffect(() => {
+    if (selectedDate >= weekStartStr && selectedDate <= weekEndStr) return;
+    const today = toLocalDateStr(new Date());
+    setSelectedDate(today >= weekStartStr && today <= weekEndStr ? today : weekStartStr);
+  }, [weekStartStr, weekEndStr, selectedDate]);
+
+  /** 日表示の前日/翌日。週をまたぐときは週も移す（週取得ロジックがそのまま再取得する）。 */
+  const shiftSelectedDate = useCallback(
+    (delta: number) => {
+      const d = new Date(`${selectedDate}T12:00:00`);
+      d.setDate(d.getDate() + delta);
+      const next = toLocalDateStr(d);
+      setSelectedDate(next);
+      if (next < weekStartStr || next > weekEndStr) {
+        setWeekStart(getWeekStart(new Date(`${next}T12:00:00`)));
+      }
+    },
+    [selectedDate, weekStartStr, weekEndStr]
+  );
+
+  /** 日表示の「本日」。今日が表示中の週の外なら週ごと移す。 */
+  const goSelectedToday = useCallback(() => {
+    const today = toLocalDateStr(new Date());
+    setSelectedDate(today);
+    if (today < weekStartStr || today > weekEndStr) {
+      setWeekStart(getWeekStart(new Date(`${today}T12:00:00`)));
+    }
+  }, [weekStartStr, weekEndStr]);
+
   const refreshEntries = useCallback(async () => {
     if (!schoolId) return;
     setEntriesLoading(true);
-    // 講師欠勤マップを並行取得（座席表の講師カード欠勤表示用）
-    void (async () => {
-      try {
-        const { getTeacherAbsences } = await import('@/lib/api/teacher-absences');
-        const { keySet } = await getTeacherAbsences(schoolId, weekStartStr, weekEndStr);
-        setAbsenceKeySet(keySet);
-      } catch {
-        /* noop: 欠勤取得失敗は座席表表示に影響させない */
-      }
-    })();
     try {
       const [initialList, closed] = await Promise.all([
         getScheduleEntries(schoolId, weekStartStr, weekEndStr),
@@ -520,6 +612,11 @@ export default function SchedulePage() {
       }
       setEntries(list);
       setClosedDates(closed.map((c) => c.closed_date));
+      // ここで盤面を先に描画する。以降の同期チェックは1往復かかるので、それを待たせない。
+      // entriesLoading は true のまま残し、同期チェック中は refreshingIndicator（高さ中立の
+      // 「更新中」表示）が出るようにする。盤面はアンマウントしない（消すとページ高さが潰れて
+      // スクロールが先頭へ戻る。PR #66 で解消済みの既知バグを再発させない）。
+      setEntriesLoadedOnce(true);
 
       // 通塾日程と座席表の同期チェック：未生成の枠があれば自動で再生成（手動作業不要）
       if (patterns.length > 0) {
@@ -548,6 +645,20 @@ export default function SchedulePage() {
       toastError('スケジュールの取得に失敗しました');
     } finally {
       setEntriesLoading(false);
+      // 正常系では上で既に true にしている（同じ値の再セットは React 側で無視される）。
+      // ここは取得失敗時に「初回ロード中スピナー」で固まらないようにするための保険。
+      setEntriesLoadedOnce(true);
+      // 講師欠勤マップは講師カードの欠勤表示にしか使わず初回描画に不要なので、
+      // 盤面が出てから取りにいく（ハイドレーション直後の同時リクエストを減らす）。
+      void (async () => {
+        try {
+          const { getTeacherAbsences } = await import('@/lib/api/teacher-absences');
+          const { keySet } = await getTeacherAbsences(schoolId, weekStartStr, weekEndStr);
+          setAbsenceKeySet(keySet);
+        } catch {
+          /* noop: 欠勤取得失敗は座席表表示に影響させない */
+        }
+      })();
     }
   }, [schoolId, weekStartStr, weekEndStr, toastError, profile?.id]);
 
@@ -594,12 +705,16 @@ export default function SchedulePage() {
     setBootstrapped(false);
   }, [schoolId]);
 
+  // 全生徒＋関連（student_subjects / patterns）を引く重い呼び出し。
+  // 盤面の生徒名は getScheduleEntries の join で取れており、この students は
+  // モーダルや配置モードでの id 引きにしか使わないので、盤面が出てから取得する。
   useEffect(() => {
+    if (!entriesLoadedOnce) return;
     if (!schoolId) return;
     getStudents(undefined, [schoolId])
       .then(setStudents)
       .catch(() => setStudents([]));
-  }, [schoolId]);
+  }, [schoolId, entriesLoadedOnce]);
 
   // 「現在有効な講師の出勤可能曜日」を期間付きで取得。
   // - 第1優先: teacher_availability_periods (manual > regular_shift)
@@ -608,6 +723,7 @@ export default function SchedulePage() {
   useEffect(() => {
     if (!schoolId) {
       setShiftByDow(new Map());
+      setAvailabilityMap(null);
       return;
     }
     let cancelled = false;
@@ -615,19 +731,28 @@ export default function SchedulePage() {
       try {
         const { getAvailabilityDayMap } = await import('@/lib/api/teacher-availability');
         const asOf = weekStartStr;
-        const { byDayOfWeek } = await getAvailabilityDayMap(schoolId, asOf);
+        const map = await getAvailabilityDayMap(schoolId, asOf);
+        // 講師詳細モーダル(TeacherDetailModal)の在室時間帯表示にそのまま流用する。
+        // period が1件も無い教室でも byDayOfWeek/intervalsByDayAndUser は空 Map として
+        // 確定して返るため、ここで setAvailabilityMap(map) しておけば
+        // モーダル側は「取得中...」ではなく「データなし(—)」を正しく出し分けられる
+        // （null=未取得/取得失敗、空Map=取得済みだが対象講師の登録が無い、を区別する）。
+        if (!cancelled) setAvailabilityMap(map);
 
-        if (byDayOfWeek.size > 0) {
-          if (!cancelled) setShiftByDow(byDayOfWeek);
+        if (map.byDayOfWeek.size > 0) {
+          if (!cancelled) setShiftByDow(map.byDayOfWeek);
           return;
         }
-        // period が1件もなければ旧APIにフォールバック
+        // period が1件もなければ座席表の空き枠表示(shiftByDow)だけ旧APIにフォールバック
         const { getCurrentTeacherShifts } = await import('@/lib/api/teacher-shifts');
         const fallback = await getCurrentTeacherShifts(schoolId, asOf);
         if (!cancelled) setShiftByDow(fallback.byDayOfWeek);
       } catch (e) {
         console.warn('Shift availability fetch failed:', e);
-        if (!cancelled) setShiftByDow(new Map());
+        if (!cancelled) {
+          setShiftByDow(new Map());
+          setAvailabilityMap(null);
+        }
       }
     })();
     return () => {
@@ -637,7 +762,9 @@ export default function SchedulePage() {
 
   // 講習期間リストをロード（schoolId 変更時）
   // course_prep_periods から「設定済み（start/end あり）」を全部表示
+  // モードのツールバー用で盤面の初回描画には不要なため、盤面が出てから取得する。
   useEffect(() => {
+    if (!entriesLoadedOnce) return;
     if (!schoolId) {
       setKoushuList([]);
       return;
@@ -645,10 +772,12 @@ export default function SchedulePage() {
     getKoushuPeriods(schoolId)
       .then(setKoushuList)
       .catch(() => setKoushuList([]));
-  }, [schoolId]);
+  }, [schoolId, entriesLoadedOnce]);
 
   // 追加授業（テスト対策）モードを出すか：増コマフォームが設定済みかで判定（schoolId 変更時）
+  // 同じくモード表示の判定だけなので盤面が出てから取得する。
   useEffect(() => {
+    if (!entriesLoadedOnce) return;
     if (!schoolId) {
       setHasTestPrep(false);
       return;
@@ -656,10 +785,12 @@ export default function SchedulePage() {
     hasZoukomaForm(schoolId)
       .then(setHasTestPrep)
       .catch(() => setHasTestPrep(false));
-  }, [schoolId]);
+  }, [schoolId, entriesLoadedOnce]);
 
   // 授業生徒数設定をロード（schoolId 変更時）。失敗・未設定はデフォルト値で動かす。
+  // 未取得の間も DEFAULT_CLASS_CAPACITY で描画できるため、盤面が出てから取得する。
   useEffect(() => {
+    if (!entriesLoadedOnce) return;
     if (!schoolId) {
       setCapacity(DEFAULT_CLASS_CAPACITY);
       return;
@@ -667,7 +798,7 @@ export default function SchedulePage() {
     getClassCapacity(schoolId)
       .then((c) => setCapacity(c ?? DEFAULT_CLASS_CAPACITY))
       .catch(() => setCapacity(DEFAULT_CLASS_CAPACITY));
-  }, [schoolId]);
+  }, [schoolId, entriesLoadedOnce]);
 
   // 指導形態マスタをロード（is_active のみ）。ユーザー定義形態が0件なら形態タブは出ない。
   useEffect(() => {
@@ -677,7 +808,9 @@ export default function SchedulePage() {
   }, []);
 
   // アクティブ形態の定員をロード（個別タブでは不要）。schoolId / activeFormation 変更時。
+  // 未取得は null（定員表示なし）で動くので、盤面が出てから取得する。
   useEffect(() => {
+    if (!entriesLoadedOnce) return;
     if (!schoolId || activeFormation === INDIVIDUAL_FORMATION) {
       setFormationCapacity(null);
       return;
@@ -685,7 +818,7 @@ export default function SchedulePage() {
     getFormationCapacity(schoolId, activeFormation)
       .then(setFormationCapacity)
       .catch(() => setFormationCapacity(null));
-  }, [schoolId, activeFormation]);
+  }, [schoolId, activeFormation, entriesLoadedOnce]);
 
   // 形態タブへ切替時は個別専用の講習/テスト対策モードを解除（形態ボードに残らないように）。
   const handleFormationChange = useCallback((key: string) => {
@@ -706,7 +839,9 @@ export default function SchedulePage() {
 
   // 週内の座席番号（ブース番号）を全表示日ぶん取得して講師ヘッダーのインライン入力に反映。
   // 失敗しても座席表本体には影響させない（番号無しで動く）。
+  // 盤面の初回描画には不要なので entriesLoadedOnce 後に回し、期間まとめて1クエリで取る。
   useEffect(() => {
+    if (!entriesLoadedOnce) return;
     if (!schoolId || weekDates.length === 0) {
       setWeekBoothMap(new Map());
       return;
@@ -714,11 +849,13 @@ export default function SchedulePage() {
     let cancelled = false;
     (async () => {
       try {
-        const { getBoothNoMapForDate } = await import('@/lib/api/schedule-daily-booth');
-        const pairs = await Promise.all(
-          weekDates.map(async (d) => [d, await getBoothNoMapForDate(schoolId, d)] as const)
+        const { getBoothNoMapForRange } = await import('@/lib/api/schedule-daily-booth');
+        const map = await getBoothNoMapForRange(
+          schoolId,
+          weekDates[0],
+          weekDates[weekDates.length - 1]
         );
-        if (!cancelled) setWeekBoothMap(new Map(pairs));
+        if (!cancelled) setWeekBoothMap(map);
       } catch (e) {
         console.warn('Failed to fetch weekly booth assignments:', e);
       }
@@ -726,7 +863,7 @@ export default function SchedulePage() {
     return () => {
       cancelled = true;
     };
-  }, [schoolId, weekDates]);
+  }, [schoolId, weekDates, entriesLoadedOnce]);
 
   // 講師ヘッダーの座席番号インライン入力を保存。
   // ブース番号は (school×date) 内で一意。その日の割当セットを読み直し、対象講師だけ更新して置換する。
@@ -856,6 +993,8 @@ export default function SchedulePage() {
         id: s.id,
         slot_number: s.slot_number,
         start_time: s.start_time ?? '',
+        // 満席判定は講師の在室時間帯との包含で行うため終了時刻も渡す
+        end_time: s.end_time ?? '',
       }));
 
     // 講習配置モード
@@ -1022,6 +1161,37 @@ export default function SchedulePage() {
     },
     [swapMode, handleSwapTargetClick]
   );
+
+  /**
+   * 授業操作モーダルで出す振替元。まず表示中の週から探し、無ければ ID で取りにいく
+   * （振替は週をまたぐので、振替元が今の週に無いほうが普通）。
+   */
+  const [actionModalTransferSource, setActionModalTransferSource] = useState<ScheduleEntry | null>(
+    null
+  );
+  useEffect(() => {
+    const fromId =
+      actionModalEntry?.status === 'transferred_in' ? actionModalEntry.transfer_from_id : null;
+    if (!fromId) {
+      setActionModalTransferSource(null);
+      return;
+    }
+    const local = entries.find((e) => e.id === fromId);
+    if (local) {
+      setActionModalTransferSource(local);
+      return;
+    }
+    let cancelled = false;
+    setActionModalTransferSource(null);
+    getScheduleEntryById(fromId).then((row) => {
+      if (!cancelled) setActionModalTransferSource(row);
+    });
+    return () => {
+      cancelled = true;
+    };
+    // entries は週の再取得のたびに作り直されるので、依存は「開いているコマ」だけにする
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [actionModalEntry?.id, actionModalEntry?.status, actionModalEntry?.transfer_from_id]);
 
   const handleStudentClickFromAction = useCallback(() => {
     const entry = actionModalEntry;
@@ -1207,6 +1377,22 @@ export default function SchedulePage() {
     setBoothAssignDate(dateStr);
   }, []);
 
+  // ★ 以下2つは盤面(WeeklyScheduleGrid)に渡すので、インラインのアロー関数にしないこと。
+  //    盤面は React.memo でラップしてあり、props が毎回別物になると memo が効かず、
+  //    盤面に無関係なデータが届くたびに再描画されてカクつく。
+  /** D&D 制約違反の通知（盤面 → トースト） */
+  const handleConstraintViolation = useCallback(
+    (reason: string) => toastError(reason),
+    [toastError]
+  );
+  /** 配置はしたが希望と違うときの通知（盤面 → 警告トースト）。止めずに知らせるだけ。 */
+  const handleConstraintWarning = useCallback(
+    (reason: string) => toastWarning(reason),
+    [toastWarning]
+  );
+  /** 振替モードの解除 */
+  const handleTransferCancel = useCallback(() => setTransferMode(null), []);
+
   // 印刷日が決まったら、その日のブース割当をフェッチして印刷ビューに渡す。
   // 番号設定モーダルで保存→閉じた直後に印刷した場合も、最新値を取得して反映できる。
   useEffect(() => {
@@ -1286,6 +1472,25 @@ export default function SchedulePage() {
     setEditModalOpen(true);
     setActionModalEntry(null);
   }, [actionModalEntry]);
+
+  /**
+   * 振替先コマから保護者へ通知する（授業操作モーダルの「保護者に通知」）。
+   * 送信可否の判定と文言は lib/api/transfer-notify に集約（通知一覧と同じ結果表示にする）。
+   * 届かなかったときを成功として出さないこと（保護者に届いていないのに届いた顔をしないため）。
+   */
+  const handleNotifyTransfer = useCallback(async () => {
+    if (!actionModalEntry) return;
+    const { notifyTransfer, transferNotifyMessage, isTransferNotifyDelivered } =
+      await import('@/lib/api/transfer-notify');
+    const result = await notifyTransfer({ toEntryId: actionModalEntry.id });
+    const message = transferNotifyMessage(result);
+    if (isTransferNotifyDelivered(result)) {
+      success(message);
+      setActionModalEntry(null);
+    } else {
+      toastError(message);
+    }
+  }, [actionModalEntry, success, toastError]);
 
   /** 振替モードに切り替え（座席表の講師ブロックをクリックで振替先を選ぶ） */
   const handleTransferFromAction = useCallback(() => {
@@ -1424,11 +1629,19 @@ export default function SchedulePage() {
     }));
   }, [entries, subjects]);
 
+  // 個別グリッドに載せるのは個別形態の授業だけ。
+  // 小集団・プログラミング等は形態タブ（FormationBoard）が受け持つので、個別タブに混ぜない。
+  // ★ formation は NOT NULL・既定 'individual' なので NULL を考慮する必要はない。
+  const individualEntries = useMemo(
+    () => entriesWithSubjects.filter((e) => e.formation === INDIVIDUAL_FORMATION),
+    [entriesWithSubjects]
+  );
+
   // 講習モード: 講習登録済み生徒のみにフィルタリング
   const displayEntries = useMemo(() => {
-    if (!selectedKoushu || koushuEnrollments.size === 0) return entriesWithSubjects;
-    return entriesWithSubjects.filter((e) => !!e.student_id && koushuEnrollments.has(e.student_id));
-  }, [entriesWithSubjects, selectedKoushu, koushuEnrollments]);
+    if (!selectedKoushu || koushuEnrollments.size === 0) return individualEntries;
+    return individualEntries.filter((e) => !!e.student_id && koushuEnrollments.has(e.student_id));
+  }, [individualEntries, selectedKoushu, koushuEnrollments]);
 
   // 講習モードの2レーン分割: 個別レーン=既存グリッド、集団レーン=GroupLaneGrid。
   // formation でコマ時間を分け、個別グリッドには個別コマだけ渡す（集団コマが個別グリッドに混ざらないように）。
@@ -1449,12 +1662,21 @@ export default function SchedulePage() {
   );
 
   // ---- 指導形態タブ（Phase D） ----
-  // タブ = 個別 ＋ is_active なユーザー定義形態（group は講習専用レーンなので出さない）。
+  // タブ = 個別（固定）＋ is_active な残りの形態すべて。sort_order 順なので
+  // 授業の設定画面（/schedule/special-courses）のタブ並びと一致する。
+  //
+  // ★ 集団(group)を出す理由（2026-08-20 方針変更）:
+  //   以前は is_system を除外して「group は講習専用レーンなので出さない」としていたが、
+  //   形態設定では小集団のコマ時間を登録できるのに座席表に現れず、設定と盤面が食い違っていた。
+  //   小集団も他の形態と同じ「講座の枠」として扱う。
+  //   なお講習モードの集団レーン(GroupLaneGrid)とは表示対象が排他なので重複しない:
+  //     - このタブ(FormationBoard) … kind='regular'  ＝ 毎週同じコマの通常授業
+  //     - 講習モードの集団レーン    … kind='koushu'   ＝ 講座ごとに時間が異なる講習
   const formationTabs = useMemo(
     () => [
       { key: INDIVIDUAL_FORMATION, label: '個別' },
       ...formations
-        .filter((f) => !f.is_system && f.is_active)
+        .filter((f) => f.is_active && f.key !== INDIVIDUAL_FORMATION)
         .map((f) => ({ key: f.key, label: f.label })),
     ],
     [formations]
@@ -1475,11 +1697,103 @@ export default function SchedulePage() {
       entriesWithSubjects.filter((e) => e.formation === activeFormation && e.kind === 'regular'),
     [entriesWithSubjects, activeFormation]
   );
-  // 定員（未設定なら 1枠8名・同時1枠）。
-  const formationMaxStudents = formationCapacity?.max_students_per_group ?? 8;
-  const formationMaxConcurrent = formationCapacity?.max_concurrent_groups ?? 1;
+  // 定員（未設定なら 1枠8名・同時1枠）。既定値は生徒詳細の通塾日程フォームと共通の定数を使う。
+  const formationMaxStudents =
+    formationCapacity?.max_students_per_group ?? DEFAULT_FORMATION_MAX_STUDENTS;
+  const formationMaxConcurrent =
+    formationCapacity?.max_concurrent_groups ?? DEFAULT_FORMATION_MAX_CONCURRENT_GROUPS;
 
-  // 空セルの「＋クラス枠」→ 新規クラス枠モーダル
+  // アクティブ形態の通年講座を読み込む（個別タブでは講座の概念が無いので読まない）。
+  useEffect(() => {
+    if (!schoolId || !isFormationBoard) {
+      setFormationCourses([]);
+      return;
+    }
+    let cancelled = false;
+    getActiveYearRoundCoursesByFormation(schoolId, activeFormation)
+      .then((list) => {
+        if (!cancelled) setFormationCourses(list);
+      })
+      .catch(() => {
+        if (!cancelled) setFormationCourses([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [schoolId, activeFormation, isFormationBoard]);
+
+  // 盤面の枠 → 講座 の対応表（定員表示用）。講座の追加・枠の登録で変わるので
+  // formationCourses と同じタイミングで読み直す。
+  useEffect(() => {
+    if (!schoolId || !isFormationBoard) {
+      setFormationPatternCourseMap(new Map());
+      return;
+    }
+    let cancelled = false;
+    getFormationPatternCourseMap(schoolId, activeFormation)
+      .then((m) => {
+        if (!cancelled) setFormationPatternCourseMap(m);
+      })
+      .catch(() => {
+        if (!cancelled) setFormationPatternCourseMap(new Map());
+      });
+    return () => {
+      cancelled = true;
+    };
+    // entries を依存に入れるのは「枠を登録したら空席行の定員がすぐ追随する」ようにするため
+    // （枠の登録後は refreshEntries が走り entries の参照が変わる）。取得は2列だけなので軽い。
+  }, [schoolId, activeFormation, isFormationBoard, entries]);
+
+  /**
+   * 枠カードに出す定員（週次パターンid → 解決済み定員）。
+   * 講座に定員があれば講座優先、無ければ形態の既定値（resolveClassCapacity）。
+   */
+  const capacityByPatternId = useMemo(() => {
+    const capByCourse = new Map(formationCourses.map((c) => [c.id, c.capacity]));
+    const result = new Map<string, number>();
+    for (const [patternId, courseId] of Array.from(formationPatternCourseMap.entries())) {
+      result.set(
+        patternId,
+        resolveClassCapacity({
+          courseCapacity: courseId ? capByCourse.get(courseId) : null,
+          formationDefault: formationMaxStudents,
+        })
+      );
+    }
+    return result;
+  }, [formationPatternCourseMap, formationCourses, formationMaxStudents]);
+
+  /**
+   * 枠モーダルに出す講座候補。
+   * 'create' はクリックしたセルの曜日×コマで開催する講座だけに絞る（中1理A=月19:10 を
+   * 火曜のセルに置けてしまうと、講座の定例枠と枠の実際がずれるため）。
+   * 'add' は既存枠から講座を引き継ぐので絞らない。
+   */
+  const formationModalCourses = useMemo(() => {
+    if (!formationTarget || formationTarget.mode !== 'create') return formationCourses;
+    // 曜日はセルの日付から求める（正午指定でタイムゾーンによる日付ズレを避ける）
+    const dayOfWeek = new Date(formationTarget.date + 'T12:00:00').getDay();
+    return filterCoursesForCell(formationCourses, dayOfWeek, formationTarget.slotId);
+  }, [formationTarget, formationCourses]);
+
+  /**
+   * add モード（既存クラスへの生徒追加）で出す解決済み定員。
+   * 対象セル（日付×コマ×講師）のエントリから週次パターンを辿り capacityByPatternId を引く。
+   * create モードはモーダル側で選んだ講座から解決するので undefined でよい。
+   */
+  const formationTargetCapacity = useMemo(() => {
+    if (!formationTarget || formationTarget.mode !== 'add') return undefined;
+    const hit = formationEntries.find(
+      (e) =>
+        e.entry_date === formationTarget.date &&
+        e.time_slot_id === formationTarget.slotId &&
+        (e.teacher_id ?? null) === formationTarget.teacherId &&
+        e.regular_pattern_id
+    );
+    return hit?.regular_pattern_id ? capacityByPatternId.get(hit.regular_pattern_id) : undefined;
+  }, [formationTarget, formationEntries, capacityByPatternId]);
+
+  // 空セルの「＋講座の枠」→ 新規枠モーダル
   const handleFormationCreate = useCallback((date: string, slotId: string) => {
     setFormationTarget({ date, slotId, mode: 'create', teacherId: null });
   }, []);
@@ -1494,7 +1808,13 @@ export default function SchedulePage() {
 
   // モーダル送信：生徒ごとに formation 付き週次パターンを作成し、当週以降の座席表を再生成。
   const handleSubmitFormationKoma = useCallback(
-    async (data: { teacherId: string | null; subjectIds: string[]; studentIds: string[] }) => {
+    async (data: {
+      teacherId: string | null;
+      subjectIds: string[];
+      studentIds: string[];
+      specialCourseId?: string | null;
+      effectiveFrom?: string;
+    }) => {
       if (!formationTarget || !schoolId) return;
       const dow = new Date(formationTarget.date + 'T12:00:00').getDay();
       await createFormationClassPatterns({
@@ -1507,8 +1827,12 @@ export default function SchedulePage() {
         studentIds: data.studentIds,
         maxStudentsPerGroup: formationMaxStudents,
         maxConcurrentGroups: formationMaxConcurrent,
+        // add モードは undefined。API 側で既存枠の講座を引き継ぐ。
+        specialCourseId: data.specialCourseId,
+        // 通塾日程v2の開始日。undefined なら API 側の既定（今日）＝従来挙動。
+        effectiveFrom: data.effectiveFrom,
       });
-      success('クラス枠を登録しました');
+      success('講座の枠を登録しました');
       // 通塾日程→座席表の反映（今週から4週）＋表示中の週を同期。
       await regenerateCurrentWeekIfNeeded(schoolId, profile?.id);
       await refreshEntries();
@@ -1726,6 +2050,198 @@ export default function SchedulePage() {
     [placingTestPrep, timeSlots]
   );
 
+  /** この教室に所属する在籍中の講師。自動配置の候補にする（座席表の講師カードと同じ絞り込み）。 */
+  const schoolTeachers = useMemo(
+    () => teachers.filter((t) => t.user_schools?.some((us) => us.school_id === schoolId)),
+    [teachers, schoolId]
+  );
+
+  /** 盤面の先頭へ送る。パネルは画面上部にあり、押した後に自分でスクロールさせないため。 */
+  const scrollToBoard = useCallback(() => {
+    // 状態更新で盤面が描き変わるので、1フレーム待ってから送る
+    requestAnimationFrame(() => {
+      boardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  }, []);
+
+  /**
+   * テスト対策の自動配置。空いている枠と講師を選んで**提案だけ**作る。
+   * 書き込みは確定ボタン（handleConfirmAutoPlace）まで一切しない。
+   *
+   * 候補の絞り込みは画面と同じ判定を使う:
+   *   マスの可否 … 通塾可能枠・休講日・過去日・生徒の重複（getTestPrepPlaceability と同基準）
+   *   講師の可否 … checkTeacherFit（欠勤・指導科目外・満席/1対1・担当除外・希望性別）
+   * ここで独自判定を足すと「画面では置けないのに提案される」ズレが出る。
+   */
+  const handleTestPrepAuto = useCallback(
+    async (
+      studentId: string,
+      subjectId: string,
+      subjectName: string,
+      slots: ZoukomaAvailableSlot[],
+      needed: number
+    ) => {
+      if (!schoolId || needed <= 0) return;
+      setAutoPlacing(true);
+      try {
+        const student = students.find((st) => st.id === studentId);
+        const studentName = student
+          ? `${student.last_name ?? ''} ${student.first_name ?? ''}`.trim()
+          : '生徒';
+
+        // 個別コマの開始時刻(HH:MM) → コマ。通塾可能枠は時刻で来るのでコマに解決する。
+        const timeToSlot = new Map<string, { id: string; slot_number: number }>();
+        for (const t of timeSlots) {
+          if (t.formation !== INDIVIDUAL_FORMATION) continue;
+          if (t.start_time) timeToSlot.set(t.start_time.slice(0, 5), t);
+        }
+
+        // この生徒のこの科目を普段見ている講師に加点する（担当の継続性を優先）
+        const usualCount = new Map<string, number>();
+        for (const e of entriesWithSubjects) {
+          if (e.student_id !== studentId || !e.teacher_id) continue;
+          if (!(e.subject_ids ?? []).includes(subjectId)) continue;
+          usualCount.set(e.teacher_id, (usualCount.get(e.teacher_id) ?? 0) + 1);
+        }
+
+        const todayJst = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Tokyo' });
+        const cells: AutoPlaceCell[] = [];
+        const seen = new Set<string>();
+        for (const av of slots) {
+          const slot = av.startTime ? timeToSlot.get(av.startTime.slice(0, 5)) : undefined;
+          if (!slot) continue;
+          const cellKey = `${av.date}|${slot.id}`;
+          if (seen.has(cellKey)) continue;
+          seen.add(cellKey);
+          if (closedDates.includes(av.date) || av.date < todayJst) continue;
+          // 同じコマに既にこの生徒が入っていないか
+          const dup = entriesWithSubjects.some(
+            (e) =>
+              e.student_id === studentId &&
+              e.entry_date === av.date &&
+              e.time_slot_id === slot.id &&
+              e.status !== 'cancelled' &&
+              e.status !== 'transferred_out'
+          );
+          if (dup) continue;
+
+          const fitTeachers = schoolTeachers
+            .map((t) => {
+              const active = entriesWithSubjects.filter(
+                (e) =>
+                  e.entry_date === av.date &&
+                  e.time_slot_id === slot.id &&
+                  e.teacher_id === t.id &&
+                  e.status !== 'cancelled' &&
+                  e.status !== 'transferred_out'
+              );
+              const fit = checkTeacherFit({
+                teacher: t,
+                isAbsent: absenceKeySet.has(`${av.date}|${slot.id}|${t.id}`),
+                occupied: active.map((e) => ({
+                  ratio: e.ratio === 1 ? 1 : 2,
+                  halfPosition: e.half_position ?? null,
+                })),
+                maxStudentsPerTeacher: capacity.max_students_per_teacher_individual,
+                incoming: { ratio: 2, halfPosition: null },
+                subjectIds: [subjectId],
+              });
+              if (!fit.ok) return null;
+              return {
+                id: t.id,
+                name: t.display_name || t.email || '講師',
+                priority: usualCount.get(t.id) ?? 0,
+                load: active.length,
+              };
+            })
+            .filter((t): t is NonNullable<typeof t> => t !== null);
+          if (fitTeachers.length === 0) continue;
+          cells.push({
+            date: av.date,
+            slotId: slot.id,
+            slotNumber: slot.slot_number,
+            teachers: fitTeachers,
+          });
+        }
+
+        const { picks, shortfall } = pickTestPrepPlacements(cells, needed);
+        if (picks.length === 0) {
+          toastError('この生徒が通塾できる枠に、空いている講師が見つかりませんでした');
+          return;
+        }
+        // 提案中は手動の配置モードを解除する（配置状態を2つ同時に持たせない）
+        setPlacingTestPrep(null);
+        setTestPrepProposal({ studentId, studentName, subjectId, subjectName, picks, shortfall });
+        // 先頭の提案が見える週へ移動してから盤面へ送る
+        setWeekStart(getWeekStart(new Date(picks[0].date + 'T12:00:00')));
+        scrollToBoard();
+      } catch (e) {
+        toastError(e instanceof Error ? e.message : '自動配置の候補を作れませんでした');
+      } finally {
+        setAutoPlacing(false);
+      }
+    },
+    [
+      schoolId,
+      students,
+      timeSlots,
+      entriesWithSubjects,
+      closedDates,
+      schoolTeachers,
+      absenceKeySet,
+      capacity,
+      toastError,
+      scrollToBoard,
+    ]
+  );
+
+  /** 提案から1件外す（微調整用）。全部外したら提案そのものを畳む。 */
+  const removeAutoPick = useCallback((date: string, slotId: string) => {
+    setTestPrepProposal((prev) => {
+      if (!prev) return prev;
+      const picks = prev.picks.filter((p) => !(p.date === date && p.slotId === slotId));
+      return picks.length === 0 ? null : { ...prev, picks };
+    });
+  }, []);
+
+  /** 提案を確定して実際に書き込む。ここで初めて DB を触る。 */
+  const handleConfirmAutoPlace = useCallback(async () => {
+    const proposal = testPrepProposal;
+    if (!proposal || !schoolId) return;
+    setConfirmingAutoPlace(true);
+    try {
+      const { createTestPrepPlacement } = await import('@/lib/api/schedule');
+      let placed = 0;
+      const failed: string[] = [];
+      for (const pick of proposal.picks) {
+        try {
+          await createTestPrepPlacement(
+            schoolId,
+            pick.date,
+            pick.slotId,
+            proposal.studentId,
+            [proposal.subjectId],
+            pick.teacherId
+          );
+          placed++;
+        } catch {
+          // 1件失敗しても残りは進める。どれが入らなかったかは後でまとめて伝える。
+          failed.push(`${pick.date.slice(5).replace('-', '/')} ${pick.slotNumber}限`);
+        }
+      }
+      setTestPrepProposal(null);
+      await refreshEntries();
+      setZoukomaPanelRefreshKey((k) => k + 1);
+      if (failed.length > 0) {
+        toastError(`${placed}件を配置しました。${failed.join('・')} は配置できませんでした`);
+      } else {
+        success(`${placed}件のテスト対策コマを配置しました`);
+      }
+    } finally {
+      setConfirmingAutoPlace(false);
+    }
+  }, [testPrepProposal, schoolId, refreshEntries, success, toastError]);
+
   // 配置モード中の各セルの配置可否（通塾可能枠か＝強調表示の判定）
   const getTestPrepPlaceability = useCallback(
     (date: string, slotId: string): { ok: boolean; reason: string | null } => {
@@ -1843,20 +2359,8 @@ export default function SchedulePage() {
       if (teacherId.startsWith('__unassigned__')) return { ok: true, reason: null };
       const teacher = teachers.find((t) => t.id === teacherId);
       if (!teacher) return { ok: true, reason: null };
-      // a. 欠勤
-      if (absenceKeySet.has(`${date}|${slotId}|${teacherId}`)) {
-        return { ok: false, reason: '欠勤' };
-      }
-      // b. 指導可能科目（teachable が空/未設定なら全科目可）
-      const subjIds = placingAdhoc.subjectIds ?? [];
-      const teachable = teacher.teachable_subject_ids;
-      if (teachable && teachable.length > 0 && subjIds.length > 0) {
-        const teachableSet = new Set(teachable);
-        if (!subjIds.some((id) => teachableSet.has(id))) {
-          return { ok: false, reason: '指導科目外' };
-        }
-      }
-      // c. 席占有（1対1専有・満席・45分半コマ）。canPlaceEntry で判定。
+      // 判定の中身は checkTeacherFit（lib/schedule/teacherFit）に集約している。
+      // 自動配置が講師を選ぶときと同じ関数を使うため（画面で入れられない講師を提案しないため）。
       const active = entriesWithSubjects.filter(
         (e) =>
           e.entry_date === date &&
@@ -1865,31 +2369,22 @@ export default function SchedulePage() {
           e.status !== 'cancelled' &&
           e.status !== 'transferred_out'
       );
-      const toSeat = (e: (typeof active)[number]): SeatEntryInput => ({
-        ratio: e.ratio === 1 ? 1 : 2,
-        halfPosition: e.half_position ?? null,
+      return checkTeacherFit({
+        teacher,
+        isAbsent: absenceKeySet.has(`${date}|${slotId}|${teacherId}`),
+        occupied: active.map((e) => ({
+          ratio: e.ratio === 1 ? 1 : 2,
+          halfPosition: e.half_position ?? null,
+        })),
+        maxStudentsPerTeacher: capacity.max_students_per_teacher_individual,
+        incoming: {
+          ratio: placingAdhoc.ratio === 1 ? 1 : 2,
+          halfPosition: placingAdhoc.halfPosition ?? null,
+        },
+        subjectIds: placingAdhoc.subjectIds ?? [],
+        excludedTeacherIds: placingAdhoc.excludedTeacherIds ?? [],
+        preferredGender: placingAdhoc.preferredGender ?? null,
       });
-      const incoming: SeatEntryInput = {
-        ratio: placingAdhoc.ratio === 1 ? 1 : 2,
-        halfPosition: placingAdhoc.halfPosition ?? null,
-      };
-      if (
-        !canPlaceEntry(active.map(toSeat), incoming, capacity.max_students_per_teacher_individual)
-      ) {
-        return {
-          ok: false,
-          reason: active.some((e) => e.ratio === 1) ? '1対1のため不可' : '満員',
-        };
-      }
-      // d. 生徒の担当除外・希望性別（見込み客は空/none で素通り）
-      if ((placingAdhoc.excludedTeacherIds ?? []).includes(teacherId)) {
-        return { ok: false, reason: '担当除外指定' };
-      }
-      const pref = placingAdhoc.preferredGender;
-      if (pref && teacher.gender && teacher.gender !== pref) {
-        return { ok: false, reason: `${pref === 'male' ? '男性' : '女性'}講師希望` };
-      }
-      return { ok: true, reason: null };
     },
     [placingAdhoc, teachers, absenceKeySet, entriesWithSubjects, capacity]
   );
@@ -2272,7 +2767,23 @@ export default function SchedulePage() {
             description: '同日内の担当講師を変更（移動）',
           });
           success('授業を移動しました');
-          refreshEntries();
+          // ★ ここで refreshEntries() を呼ばない。
+          //   同コマ内の移動は日付・コマが変わらないので通塾日程とのズレ判定に影響せず、
+          //   取り直す必要がない。取り直すと盤面が一瞬消えてページの高さが潰れ、
+          //   ブラウザがスクロール位置を先頭に戻してしまう（毎回スクロールし直しになる）。
+          //   動かした1コマだけを手元の状態で差し替える。
+          setEntries((prev) =>
+            prev.map((e) =>
+              e.id === entry.id
+                ? {
+                    ...e,
+                    entry_date: targetDate,
+                    time_slot_id: targetSlotId,
+                    teacher_id: targetTeacherId,
+                  }
+                : e
+            )
+          );
           return;
         }
         // 別日または別コマ → 振替
@@ -2691,6 +3202,23 @@ export default function SchedulePage() {
     />
   );
 
+  /**
+   * 盤面を出したまま再取得しているときの「更新中」表示。
+   * fixed で浮かせるのでページの高さに影響せず、スクロール位置を動かさない。
+   * 初回ロード中は盤面ごとスピナーを出すので、ここでは出さない。
+   */
+  const refreshingIndicator =
+    entriesLoading && entriesLoadedOnce ? (
+      <div
+        role="status"
+        aria-live="polite"
+        className="fixed bottom-4 right-4 z-50 flex items-center gap-2 rounded-full border border-border-default bg-white/95 px-3 py-1.5 text-xs font-semibold text-text-muted shadow-md backdrop-blur print:hidden"
+      >
+        <Loading size="sm" />
+        更新中
+      </div>
+    ) : null;
+
   return (
     <AdminLayout headerTitle="座席表" fullWidth>
       {/* 画面コンテンツ一式を print:hidden で包む。印刷時はこの下の #schedule-daily-print
@@ -2725,6 +3253,8 @@ export default function SchedulePage() {
             onVisibleDaysChange={setVisibleDaysPersist}
             onKoushuSelect={handleKoushuSelect}
             onTestPrepToggle={handleTestPrepToggle}
+            viewMode={viewMode}
+            onViewModeChange={setViewModePersist}
             orientation={orientation}
             onOrientationChange={setOrientationPersist}
             colMode={colMode}
@@ -2733,6 +3263,7 @@ export default function SchedulePage() {
             activeFormation={activeFormation}
             onFormationChange={handleFormationChange}
             onAddLesson={() => setAddLessonOpen(true)}
+            legendSlot={<ScheduleLegend />}
             helpSlot={contextHelp}
           />
         </div>
@@ -2807,11 +3338,25 @@ export default function SchedulePage() {
                 onStartPendingPlacement={handleStartPendingLessonPlacement}
               />
             )}
+
+            {/* 振替期限の対応待ち。振替保留と同じ行に同じ形のチップで並べる
+                （0件のときは内部で null を返すので、この行が空でも崩れない）。 */}
+            {schoolId && !isFormationBoard && (
+              <PendingTransfersBoard
+                schoolIds={[schoolId]}
+                onSelectEntry={(entry) => {
+                  // 振替元のあった日付に飛ぶ。週単位で扱うため、その週の月曜へジャンプ。
+                  const d = new Date(entry.entry_date + 'T12:00:00');
+                  const dow = d.getDay();
+                  const diff = (dow + 6) % 7;
+                  const monday = new Date(d);
+                  monday.setDate(d.getDate() - diff);
+                  setWeekStart(monday);
+                }}
+              />
+            )}
           </div>
         )}
-
-        {/* 座席表の凡例（バッジ・色の意味）。折りたたみ式。 */}
-        <ScheduleLegend />
 
         {/* Phase P2: 汎用配置モード（振替保留の配置 / 授業追加の配置）中の上部ミニバナー。個別タブ専用。 */}
         {!isFormationBoard && placingAdhoc && (
@@ -2865,7 +3410,17 @@ export default function SchedulePage() {
           <TestPrepPlacementPanel
             schoolId={schoolId ?? ''}
             subjects={masterSubjects}
-            onStartPlacement={handleStartTestPrepPlacement}
+            onStartPlacement={(studentId, subjectId, subjectName, slots) => {
+              // 同じ生徒・科目の再クリックは「終了」＝モード解除なので盤面へ送らない
+              //（終了したのに下へ動かされると、パネルへ戻るのに毎回スクロールし直しになる）。
+              const isExiting =
+                placingTestPrep?.studentId === studentId &&
+                placingTestPrep?.subjectId === subjectId;
+              handleStartTestPrepPlacement(studentId, subjectId, subjectName, slots);
+              if (!isExiting) scrollToBoard();
+            }}
+            onAutoPlace={handleTestPrepAuto}
+            autoPlacing={autoPlacing}
             placingStudentId={placingTestPrep?.studentId ?? null}
             placingSubjectId={placingTestPrep?.subjectId ?? null}
             refreshKey={zoukomaPanelRefreshKey}
@@ -2874,6 +3429,69 @@ export default function SchedulePage() {
               handleTestPrepToggle(false);
             }}
           />
+        )}
+
+        {/* テスト対策の自動配置の確認バー。ここで確定するまで1件も書き込まない。 */}
+        {testPrepProposal && (
+          <div className="fixed inset-x-0 bottom-0 z-50 border-t border-info bg-white/97 px-4 py-3 shadow-[0_-2px_12px_rgba(20,35,50,0.12)] backdrop-blur print:hidden">
+            <div className="mx-auto flex max-w-6xl flex-col gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-sm font-bold text-[var(--headline)]">
+                  {testPrepProposal.studentName} ・ {testPrepProposal.subjectName}
+                </span>
+                <span className="text-xs text-text-muted">
+                  この内容で {testPrepProposal.picks.length} コマ配置します（まだ登録していません）
+                </span>
+                {testPrepProposal.shortfall > 0 && (
+                  <span className="rounded bg-warning-subtle px-2 py-0.5 text-xs font-semibold text-warning">
+                    残り{testPrepProposal.shortfall}コマは置ける枠がありません
+                  </span>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {testPrepProposal.picks.map((pick) => (
+                  <button
+                    key={`${pick.date}|${pick.slotId}`}
+                    type="button"
+                    onClick={() => removeAutoPick(pick.date, pick.slotId)}
+                    title="この1件を提案から外す"
+                    className="group inline-flex items-center gap-1.5 rounded-full border border-info bg-info-subtle px-3 py-1 text-xs text-[var(--headline)] transition-colors hover:border-danger hover:bg-danger-subtle"
+                  >
+                    <span className="font-semibold tabular-nums">
+                      {pick.date.slice(5).replace('-', '/')}(
+                      {
+                        ['日', '月', '火', '水', '木', '金', '土'][
+                          new Date(pick.date + 'T12:00:00').getDay()
+                        ]
+                      }
+                      )
+                    </span>
+                    <span className="tabular-nums">{pick.slotNumber}限</span>
+                    <span className="text-text-muted">{pick.teacherName}</span>
+                    <span className="text-text-faint group-hover:text-danger">×</span>
+                  </button>
+                ))}
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] text-text-faint">
+                  チップをクリックするとその1件を外せます
+                </span>
+                <div className="ml-auto flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={confirmingAutoPlace}
+                    onClick={() => setTestPrepProposal(null)}
+                  >
+                    やめる
+                  </Button>
+                  <Button size="sm" disabled={confirmingAutoPlace} onClick={handleConfirmAutoPlace}>
+                    {confirmingAutoPlace ? '配置中…' : 'この内容で配置'}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
         )}
 
         {/* 配置モード中: 生徒の出席可能日程をドットマトリクスで表示。
@@ -2899,23 +3517,6 @@ export default function SchedulePage() {
           />
         )}
 
-        {/* 振替期限切れ間近の督促ボード。
-            0件のときは内部で何も描画しないので、空ボードでスペースを食わない */}
-        {schoolId && !isFormationBoard && (
-          <PendingTransfersBoard
-            schoolIds={[schoolId]}
-            onSelectEntry={(entry) => {
-              // 振替元のあった日付に飛ぶ。週単位で扱う必要があるため、その週の月曜にジャンプ。
-              const d = new Date(entry.entry_date + 'T12:00:00');
-              const dow = d.getDay();
-              const diff = (dow + 6) % 7; // 月曜=0 になるオフセット
-              const monday = new Date(d);
-              monday.setDate(d.getDate() - diff);
-              setWeekStart(monday);
-            }}
-          />
-        )}
-
         {!schoolId ? (
           <Card>
             <CardContent className="py-8 text-center text-[var(--paragraph)]">
@@ -2934,16 +3535,17 @@ export default function SchedulePage() {
               </CardHeader>
               <CardContent>
                 <p className="text-[var(--paragraph)] mb-4">
-                  この形態のクラス枠を登録するには、まずコマ時間を設定してください。
+                  この形態で講座の枠を登録するには、まずコマ時間を設定してください。
                 </p>
-                <Link href="/settings/time-slots">
-                  <Button>コマ時間設定へ</Button>
+                <Link href="/schedule/special-courses">
+                  <Button>授業の設定へ</Button>
                 </Link>
               </CardContent>
             </Card>
           ) : (
             <div className="schedule-print -mx-4 -mb-6">
-              {entriesLoading ? (
+              {refreshingIndicator}
+              {entriesLoading && !entriesLoadedOnce ? (
                 <div className="py-8">
                   <Loading size="md" />
                 </div>
@@ -2955,8 +3557,9 @@ export default function SchedulePage() {
                     entries={formationEntries}
                     closedDates={closedDates}
                     maxStudentsPerGroup={formationMaxStudents}
-                    subjectNameById={new Map(masterSubjects.map((s) => [s.id, s.name]))}
-                    addLabel="クラス枠"
+                    capacityByPatternId={capacityByPatternId}
+                    subjectNameById={subjectById}
+                    addLabel="講座の枠"
                     orientation={orientation}
                     stickyOffset={stickyOffset}
                     onCreate={handleFormationCreate}
@@ -2981,8 +3584,8 @@ export default function SchedulePage() {
                   <p className="text-[var(--paragraph)] mb-4">
                     座席表を利用するには、まずコマ時間を設定してください。
                   </p>
-                  <Link href="/settings/time-slots">
-                    <Button>コマ時間設定へ</Button>
+                  <Link href="/schedule/special-courses">
+                    <Button>授業の設定へ</Button>
                   </Link>
                 </CardContent>
               </Card>
@@ -2997,11 +3600,13 @@ export default function SchedulePage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
+                  {/* 通塾日程の登録は生徒詳細に一本化した（横断一覧ページは廃止）ため、
+                      空状態の導線は生徒管理へ送る。 */}
                   <p className="text-[var(--paragraph)] mb-4">
-                    スケジュールを生成するには、通塾日程を登録してください。
+                    スケジュールを生成するには、生徒詳細から通塾日程を登録してください。
                   </p>
-                  <Link href="/schedule/regular-patterns">
-                    <Button>通塾日程へ</Button>
+                  <Link href="/students">
+                    <Button>生徒管理へ</Button>
                   </Link>
                 </CardContent>
               </Card>
@@ -3011,7 +3616,8 @@ export default function SchedulePage() {
               /* 盤面セクション（フルブリード）: Card の枠に入れず、負マージンで
                  AdminLayout(fullWidth) の px-4 / 下端 py-6 を打ち消して画面いっぱいに広げる。
                  キャンバス色（--sd-canvas）はグリッド側の boardCanvas がページ端まで塗る。 */
-              <div className="schedule-print -mx-4 -mb-6">
+              <div ref={boardRef} className="schedule-print -mx-4 -mb-6">
+                {refreshingIndicator}
                 {transferMode && (
                   <div className="px-3 pb-2">
                     <TransferModeBar
@@ -3040,7 +3646,7 @@ export default function SchedulePage() {
                     />
                   </div>
                 )}
-                {entriesLoading ? (
+                {entriesLoading && !entriesLoadedOnce ? (
                   <div className="py-8">
                     <Loading size="md" />
                   </div>
@@ -3073,47 +3679,72 @@ export default function SchedulePage() {
                         <ChevronRight className="w-5 h-5" />
                       </button>
                     </div>
-                    <WeeklyScheduleGrid
-                      schoolId={schoolId ?? ''}
-                      weekDates={weekDates}
-                      timeSlots={selectedKoushu ? individualSlots : timeSlots}
-                      entries={individualGridEntries}
-                      closedDates={closedDates}
-                      teachers={teachers}
-                      emptyTeacherSlots={emptyTeacherSlots}
-                      shiftAvailableByDow={shiftByDow}
-                      maxStudentsPerTeacher={capacity.max_students_per_teacher_individual}
-                      transferMode={transferMode}
-                      swapMode={swapMode}
-                      onEmptyTeacherSlotsChange={setEmptyTeacherSlots}
-                      onAddTeacher={handleAddTeacher}
-                      onAddStudent={handleAddStudent}
-                      onRemoveTeacher={handleRemoveTeacher}
-                      onStudentClick={handleEntryClick}
-                      onTransferClick={handleTransferClickFromCard}
-                      onTeacherCardMove={handleTeacherCardMove}
-                      onStudentEntryDrop={handleStudentEntryDrop}
-                      onTeacherDropOnUnassigned={handleTeacherDropOnUnassigned}
-                      onConstraintViolation={(reason) => toastError(reason)}
-                      subjectNameById={new Map(masterSubjects.map((s) => [s.id, s.name]))}
-                      absenceKeySet={absenceKeySet}
-                      onToggleAbsence={handleToggleAbsence}
-                      onTransferTargetClick={handleTransferTargetClick}
-                      onPrintDay={handlePrintDay}
-                      onBoothAssign={handleBoothAssign}
-                      onTransferCancel={() => setTransferMode(null)}
-                      getKoushuInfo={selectedKoushu ? getKoushuInfo : undefined}
-                      koushuPlacing={gridPlacing}
-                      getKoushuPlaceability={gridGetPlaceability}
-                      onKoushuPlace={gridPlace}
-                      onKoushuPlaceWithTeacher={gridPlaceWithTeacher}
-                      getTeacherPlaceConstraint={gridGetTeacherConstraint}
-                      orientation={orientation}
-                      colMode={colMode}
-                      boothMapByDate={weekBoothMap}
-                      onSeatNoChange={handleSeatNoChange}
-                      stickyOffset={stickyOffset}
-                    />
+                    {/* 表示モードで盤面を出し分ける。日表示は「今日を回す運用盤」で
+                        配置の組み替え（D&D）を持たない。週盤面のコードには手を入れず、
+                        ここでの分岐だけで切り替える。 */}
+                    {viewMode === 'day' ? (
+                      <DailyScheduleBoard
+                        date={selectedDate}
+                        entries={individualGridEntries}
+                        timeSlots={individualSlots}
+                        teachers={schoolTeachers}
+                        absenceKeySet={absenceKeySet}
+                        shiftAvailableByDow={shiftByDow}
+                        boothMap={weekBoothMap.get(selectedDate)}
+                        subjectNameById={subjectById}
+                        isClosed={closedDates.includes(selectedDate)}
+                        onStudentClick={handleEntryClick}
+                        onPrevDay={() => shiftSelectedDate(-1)}
+                        onNextDay={() => shiftSelectedDate(1)}
+                        onToday={goSelectedToday}
+                      />
+                    ) : (
+                      <WeeklyScheduleGrid
+                        schoolId={schoolId ?? ''}
+                        weekDates={weekDates}
+                        // 個別グリッドの列は常に個別のコマだけ。以前は講習モードのときだけ
+                        // 絞っており、通常モードでは他形態（小集団・プログラミング）のコマ時間が
+                        // 個別タブに列として並んでしまっていた（例: 1限16:10 は HAL のコマ）。
+                        timeSlots={individualSlots}
+                        entries={individualGridEntries}
+                        closedDates={closedDates}
+                        teachers={teachers}
+                        emptyTeacherSlots={emptyTeacherSlots}
+                        shiftAvailableByDow={shiftByDow}
+                        maxStudentsPerTeacher={capacity.max_students_per_teacher_individual}
+                        transferMode={transferMode}
+                        swapMode={swapMode}
+                        onEmptyTeacherSlotsChange={setEmptyTeacherSlots}
+                        onAddTeacher={handleAddTeacher}
+                        onAddStudent={handleAddStudent}
+                        onRemoveTeacher={handleRemoveTeacher}
+                        onStudentClick={handleEntryClick}
+                        onTransferClick={handleTransferClickFromCard}
+                        onTeacherCardMove={handleTeacherCardMove}
+                        onStudentEntryDrop={handleStudentEntryDrop}
+                        onTeacherDropOnUnassigned={handleTeacherDropOnUnassigned}
+                        onConstraintViolation={handleConstraintViolation}
+                        onConstraintWarning={handleConstraintWarning}
+                        subjectNameById={subjectById}
+                        absenceKeySet={absenceKeySet}
+                        onToggleAbsence={handleToggleAbsence}
+                        onTransferTargetClick={handleTransferTargetClick}
+                        onPrintDay={handlePrintDay}
+                        onBoothAssign={handleBoothAssign}
+                        onTransferCancel={handleTransferCancel}
+                        getKoushuInfo={selectedKoushu ? getKoushuInfo : undefined}
+                        koushuPlacing={gridPlacing}
+                        getKoushuPlaceability={gridGetPlaceability}
+                        onKoushuPlace={gridPlace}
+                        onKoushuPlaceWithTeacher={gridPlaceWithTeacher}
+                        getTeacherPlaceConstraint={gridGetTeacherConstraint}
+                        orientation={orientation}
+                        colMode={colMode}
+                        boothMapByDate={weekBoothMap}
+                        onSeatNoChange={handleSeatNoChange}
+                        stickyOffset={stickyOffset}
+                      />
+                    )}
                     {/* 集団レーン（講習モードかつ集団コマ時間がある場合のみ）。集団は手動編成。
                           フルブリード化に伴い、端に張り付かないよう横パディングだけ入れる。 */}
                     {selectedKoushu && groupSlots.length > 0 && (
@@ -3125,7 +3756,7 @@ export default function SchedulePage() {
                           maxStudentsPerGroup={capacity.max_students_per_group}
                           maxConcurrentGroups={capacity.max_concurrent_groups}
                           closedDates={closedDates}
-                          subjectNameById={new Map(masterSubjects.map((s) => [s.id, s.name]))}
+                          subjectNameById={subjectById}
                           onCreate={handleCreateGroupKoma}
                           onStudentClick={handleEntryClick}
                         />
@@ -3146,8 +3777,9 @@ export default function SchedulePage() {
         <div className="hidden print:block">
           <ScheduleDailyPrintView
             weekDates={[printDay]}
-            timeSlots={timeSlots}
-            entries={entriesWithSubjects}
+            // 日次印刷は個別ボードの配布用。画面と同じく個別のコマ・授業だけを出す。
+            timeSlots={individualSlots}
+            entries={individualEntries}
             schoolName={selectedSchool?.name}
             singleDate={printDay}
             boothMapByDate={printBoothMap}
@@ -3167,10 +3799,12 @@ export default function SchedulePage() {
         scheduleGenerateHasExisting={scheduleGenerateHasExisting}
         onScheduleGenerateConfirm={handleScheduleGenerateConfirm}
         actionModalEntry={actionModalEntry}
+        actionModalTransferSource={actionModalTransferSource}
         onActionModalClose={() => setActionModalEntry(null)}
         // 形態タブでは振替候補コマ・スロットラベルをその形態に限定する
         timeSlots={isFormationBoard ? formationSlots : timeSlots}
         onTransferFromAction={handleTransferFromAction}
+        onNotifyTransfer={handleNotifyTransfer}
         // §2.12 入れ替えは個別タブ・かつ他モード非アクティブのときだけ「入れ替え」ボタンを出す。
         onSwapFromAction={
           activeFormation === INDIVIDUAL_FORMATION &&
@@ -3235,6 +3869,7 @@ export default function SchedulePage() {
           setSelectedTeacher(null);
         }}
         selectedTeacher={selectedTeacher}
+        availabilityMap={availabilityMap}
         deleteDialogOpen={deleteDialogOpen}
         onDeleteDialogClose={() => {
           setDeleteDialogOpen(false);
@@ -3289,9 +3924,18 @@ export default function SchedulePage() {
       {groupKomaTarget &&
         (() => {
           const slot = groupSlots.find((s) => s.id === groupKomaTarget.slotId) ?? null;
-          // 対象日の曜日に出勤可能な講師のみ提示
+          // 対象コマに出勤可能な講師のみ提示。
+          // 集団のコマ時間は個別と別なので、曜日だけで絞ると「その曜日には来るが
+          // この時間帯には居ない」講師まで候補に出てしまう。在室区間が取れているときは
+          // コマの実時刻で絞り、取れないとき（period 皆無で旧APIフォールバック中など）は
+          // 従来どおり曜日粒度に落とす。
           const dow = new Date(groupKomaTarget.date + 'T12:00:00').getDay();
-          const availIds = new Set(shiftByDow.get(dow) ?? []);
+          const availIds =
+            availabilityMap && availabilityMap.byDayOfWeek.size > 0 && slot
+              ? new Set(
+                  availableUserIdsForInterval(availabilityMap, dow, slot.start_time, slot.end_time)
+                )
+              : new Set(shiftByDow.get(dow) ?? []);
           const availableTeachers = teachers.filter((t) => availIds.has(t.id));
           return (
             <GroupKomaFormModal
@@ -3308,7 +3952,7 @@ export default function SchedulePage() {
           );
         })()}
 
-      {/* 形態別クラス枠 登録モーダル（Phase C）。セル起点で曜日×コマ自動設定。 */}
+      {/* 講座の枠 登録モーダル（Phase C）。セル起点で曜日×コマ自動設定。 */}
       {formationTarget && (
         <FormationKomaFormModal
           open={!!formationTarget}
@@ -3319,11 +3963,13 @@ export default function SchedulePage() {
           slot={formationSlots.find((s) => s.id === formationTarget.slotId) ?? null}
           subjects={masterSubjects}
           maxStudents={formationMaxStudents}
+          lockedCapacity={formationTargetCapacity}
           teachers={teachers
             .filter((t) => t.user_schools?.some((us) => us.school_id === schoolId))
             .map((t) => ({ id: t.id, display_name: t.display_name, email: t.email }))}
           mode={formationTarget.mode}
           lockedTeacherId={formationTarget.teacherId}
+          courses={formationModalCourses}
           onSubmit={handleSubmitFormationKoma}
         />
       )}

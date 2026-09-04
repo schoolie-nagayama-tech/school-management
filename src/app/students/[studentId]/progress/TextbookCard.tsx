@@ -1,6 +1,6 @@
 'use client';
 
-import { Eye, EyeOff, GripVertical, Trash2 } from 'lucide-react';
+import { CheckCircle2, Eye, EyeOff, GripVertical, Trash2 } from 'lucide-react';
 import type { ActionGoal, StudentTextbookWithDetails } from '@/types/database';
 import type { KoushuKomaSummary } from '@/lib/utils/koushuKoma';
 import { KoushuKomaChip } from '@/components/progress/KoushuKomaBar';
@@ -140,6 +140,16 @@ export function TextbookCard({
               }`}
             >
               {season}
+            </span>
+          )}
+          {/* 完了ラベル。使い終わったテキストを一覧上でひと目で分けるため科目・季節の隣に置く */}
+          {textbook.completed_at && (
+            <span
+              className="inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded font-bold border bg-emerald-50 text-emerald-700 border-emerald-300"
+              title="使い終わったテキスト（完了）"
+            >
+              <CheckCircle2 className="w-2.5 h-2.5" />
+              完了
             </span>
           )}
         </div>

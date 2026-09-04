@@ -6,9 +6,34 @@ import {
   detectScheduleDrift,
   generateWeeklySchedule,
   getCurrentWeekStartDateStr,
+  type ScheduleDriftStudent,
   type ScheduleDriftWeek,
 } from '@/lib/api/schedule';
 import { useToast } from '@/hooks/useToast';
+
+/** バナーに並べる生徒名の上限。これを超えたら「ほか◯名」に畳む。 */
+const MAX_NAMES = 5;
+
+/**
+ * ズレの当事者を「名前（日付）」の並びに畳む。
+ * 同じ生徒が同じ週に複数コマぶんズレることがあるので、生徒単位でまとめて件数を添える。
+ */
+function summarizeStudents(students: ScheduleDriftStudent[]): string {
+  const byStudent = new Map<string, { name: string; count: number }>();
+  for (const s of students) {
+    const key = s.studentId;
+    const prev = byStudent.get(key);
+    if (prev) prev.count += 1;
+    else byStudent.set(key, { name: s.name ?? '（名前不明）', count: 1 });
+  }
+  const list = Array.from(byStudent.values());
+  const shown = list
+    .slice(0, MAX_NAMES)
+    .map((s) => (s.count > 1 ? `${s.name}（${s.count}コマ）` : s.name))
+    .join('、');
+  const rest = list.length - MAX_NAMES;
+  return rest > 0 ? `${shown} ほか${rest}名` : shown;
+}
 
 interface ScheduleDriftBannerProps {
   schoolId: string;
@@ -130,10 +155,22 @@ export function ScheduleDriftBanner({
           {totalExtra > 0 && <>古いエントリ {totalExtra}件</>}
           ：「反映する」で再生成してください。
         </p>
-        <ul className="text-[11px] text-amber-700 mt-1 space-y-0.5">
+        {/* 週ごとの内訳。★件数だけでは「誰の通塾日程か」が分からず、生徒を1人ずつ
+            開いて探す羽目になるため、生徒名まで出す（座席表の「未配置」と違い、
+            未反映のコマは座席表のどこにも現れないので、ここが唯一の手がかりになる）。 */}
+        <ul className="text-[11px] text-amber-700 mt-1.5 space-y-1">
           {drifts.map((d) => (
             <li key={d.weekStart}>
-              {d.weekStart} の週：未反映 {d.missingCount} / 古い {d.extraCount}
+              <span className="font-medium">{d.weekStart} の週</span>
+              <span className="ml-1">
+                未反映 {d.missingCount} / 古い {d.extraCount}
+              </span>
+              {d.missingStudents.length > 0 && (
+                <div className="mt-0.5">未反映：{summarizeStudents(d.missingStudents)}</div>
+              )}
+              {d.extraStudents.length > 0 && (
+                <div className="mt-0.5">古いエントリ：{summarizeStudents(d.extraStudents)}</div>
+              )}
             </li>
           ))}
         </ul>

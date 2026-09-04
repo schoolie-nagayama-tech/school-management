@@ -110,7 +110,18 @@ export function KoushuEnrollmentManager() {
     );
   }, [enrollments]);
 
-  const existingStudentIds = studentRows.map((r) => r.student_id);
+  /**
+   * 生徒ID → 申込済みの合計コマ数。生徒一覧のバッジと「未申込n名」に使う。
+   * 登録はあるが全科目0コマのケースもあるので、0 は「未申込」と同じ扱いになる。
+   */
+  const appliedKomaByStudent = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const r of studentRows) {
+      const sum = [r.individual, r.group].reduce((acc, e) => acc + (e?.koma_count ?? 0), 0);
+      if (sum > 0) map[r.student_id] = sum;
+    }
+    return map;
+  }, [studentRows]);
 
   const handleSave = async (studentId: string, rows: EnrollmentRow[]) => {
     if (!selectedPeriod) return;
@@ -299,7 +310,7 @@ export function KoushuEnrollmentManager() {
         }}
         schoolId={schoolId}
         subjects={subjects}
-        existingStudentIds={editingStudent ? [] : existingStudentIds}
+        appliedKomaByStudent={appliedKomaByStudent}
         lockedStudent={editingStudent?.student ?? null}
         initialRows={editingStudent ? editInitialRows(editingStudent) : undefined}
         period={selectedPeriod}

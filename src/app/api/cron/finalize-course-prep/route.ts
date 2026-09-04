@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin, buildSnapshotPayload } from '@/lib/server/coursePrepBatch';
+import { requireCronAuth } from '@/lib/cron-auth';
+import { captureApiError } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
-
-const CRON_SECRET = process.env.CRON_SECRET;
 
 /**
  * 終了からこの日数以内に終わった期だけを自動確定する。
@@ -31,11 +31,9 @@ const FINALIZE_WINDOW_DAYS = 45;
  * 設計: docs/koushu-progress-snapshot-plan.md
  */
 export async function GET(request: NextRequest) {
-  // Vercel Cron認証（既存cronと同パターン）
-  const authHeader = request.headers.get('authorization');
-  if (CRON_SECRET && authHeader !== `Bearer ${CRON_SECRET}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  // Vercel Cron認証（CRON_SECRET 未設定なら拒否＝フェイルクローズド）
+  const authError = requireCronAuth(request);
+  if (authError) return authError;
 
   try {
     const supabaseAdmin = getSupabaseAdmin();
@@ -127,6 +125,9 @@ export async function GET(request: NextRequest) {
     }
     return NextResponse.json({ ok: true, saved, skipped, errors, date: todayJST });
   } catch (e) {
+    captureApiError(e, {
+      route: 'GET /api/cron/finalize-course-prep',
+    });
     console.error('[cron/finalize-course-prep] エラー:', e);
     return NextResponse.json({ ok: false, error: 'Internal error' }, { status: 500 });
   }

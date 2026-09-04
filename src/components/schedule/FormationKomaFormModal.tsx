@@ -1,18 +1,22 @@
 'use client';
 
 /**
- * 形態別クラス枠の登録モーダル（Phase C）。
+ * 形態ボードの「講座の枠」登録モーダル（Phase C／特別講座の再設計で講座選択を追加）。
  *
- * 曜日×コマ（セルから開けば自動設定）・講師（1名、担当未決定可）・生徒（複数）・科目（任意）を選び、
- * 生徒ごとに schedule_regular_patterns 行（formation=キー）を作成する。
+ * 講座（その形態の通年講座）・曜日×コマ（セルから開けば自動設定）・講師（1名、担当未決定可）・
+ * 生徒（複数）・科目（任意）を選び、生徒ごとに schedule_regular_patterns 行
+ * （formation=キー・special_course_id=講座）を作成する。
  * バリデーション（定員・同時刻枠数・講師別枠重複・生徒時間重複）は API 側（createFormationClassPatterns）で行う。
  *
  * モード:
- *  - create: 空セルの「＋クラス枠」から。講師を選んで新しいクラス枠を作る。
+ *  - create: 空セルの「＋講座の枠」から。講座と講師を選んで新しい枠を作る。
+ *            講座の候補はそのセルの曜日×コマで開催する講座だけ（親が filterCoursesForCell で絞る）。
  *  - add   : 既存クラスの空席行から。講師は固定、生徒だけ追加する。
+ *            枠は既にどれかの講座に属しているので、講座はその枠から引き継ぐ（選ばせない）。
  */
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import {
   Dialog,
   DialogContent,
@@ -22,8 +26,12 @@ import {
   Button,
 } from '@/components/ui';
 import { StudentSearchInput, type StudentWithSubjects } from './StudentSearchInput';
+import { useAuth } from '@/contexts/AuthContext';
 import type { Subject } from '@/types/database';
 import type { ScheduleTimeSlot } from '@/types/schedule';
+import type { SpecialCourse } from '@/lib/api/specialCourses';
+import { resolveClassCapacity } from '@/lib/schedule/classCapacity';
+import { canUseLessonEntryV2 } from '@/lib/utils/lessonEntryV2';
 import { X } from 'lucide-react';
 
 interface TeacherOption {
@@ -41,18 +49,36 @@ interface Props {
   date: string;
   slot: ScheduleTimeSlot | null;
   subjects: Subject[];
-  /** 1枠あたり生徒数上限（表示用） */
+  /** 1枠あたり生徒数上限の「形態の既定値」（講座に定員が無いときの表示・フォールバック用） */
   maxStudents: number;
+  /**
+   * add モードの解決済み定員（親が capacityByPatternId から引いた値）。
+   * create は選んだ講座から modal 内で解決するので不要。
+   */
+  lockedCapacity?: number;
   /** この教室の講師（担当未決定＝空を含めて選択可） */
   teachers: TeacherOption[];
-  /** 'create'=新規クラス枠 / 'add'=既存クラスへ生徒追加 */
+  /** 'create'=新規の講座の枠 / 'add'=既存クラスへ生徒追加 */
   mode: 'create' | 'add';
   /** add モード時の固定講師（null=担当未決定クラスへの追加） */
   lockedTeacherId?: string | null;
+  /**
+   * 選べる通年講座（is_active のみ）。
+   * create のとき親が「このセルの曜日×コマで開催する講座」に絞って渡す（filterCoursesForCell）。
+   * 0件なら講座の定例枠の設定へ誘導する。
+   */
+  courses: SpecialCourse[];
   onSubmit: (data: {
     teacherId: string | null;
     subjectIds: string[];
     studentIds: string[];
+    /** create のみ。add は undefined で API 側が既存枠の講座を引き継ぐ。 */
+    specialCourseId?: string | null;
+    /**
+     * 授業の開始日（通塾日程v2のみ）。undefined なら API 側の既定（今日）＝従来挙動。
+     * 週次エントリへの反映は再生成機構（planWeeklyEntries）に任せる。
+     */
+    effectiveFrom?: string;
   }) => Promise<void>;
 }
 
@@ -72,26 +98,52 @@ export function FormationKomaFormModal({
   slot,
   subjects,
   maxStudents,
+  lockedCapacity,
   teachers,
   mode,
   lockedTeacherId,
+  courses,
   onSubmit,
 }: Props) {
+  const { profile } = useAuth();
+  // 通塾日程v2（公開ゲート）。false のロールでは開始日の入力を出さず、
+  // effectiveFrom も渡さない（＝API 側の既定＝今日 のまま・従来挙動）。
+  const lessonEntryV2 = canUseLessonEntryV2(profile?.role, schoolId);
+
   // teacherId: '' = 担当未決定（意図的に空を許容）
   const [teacherId, setTeacherId] = useState('');
+  const [courseId, setCourseId] = useState('');
   const [subjectIds, setSubjectIds] = useState<string[]>([]);
   const [students, setStudents] = useState<StudentWithSubjects[]>([]);
+  // v2: 授業の開始日（既定＝クリックしたセルの日付）。create / add どちらでも指定できる。
+  const [startDate, setStartDate] = useState<string>(date);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (open) {
       setTeacherId(mode === 'add' ? (lockedTeacherId ?? '') : '');
+      // 講座が1件だけなら選ぶ手間を省いて既定選択にする（講師UIは操作最小化）
+      setCourseId(courses.length === 1 ? courses[0].id : '');
       setSubjectIds([]);
       setStudents([]);
+      setStartDate(date);
       setError(null);
     }
-  }, [open, mode, lockedTeacherId]);
+    // courses は開いている最中に差し替わらない前提。依存に入れると入力中にリセットされるため除く。
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, mode, lockedTeacherId, date]);
+
+  // 表示する定員。create は選んだ講座の定員（未設定なら形態の既定値）、
+  // add は親が枠から引いた解決済み定員をそのまま出す。
+  const selectedCourse = courses.find((c) => c.id === courseId) ?? null;
+  const effectiveMaxStudents =
+    mode === 'add'
+      ? (lockedCapacity ?? maxStudents)
+      : resolveClassCapacity({
+          courseCapacity: selectedCourse?.capacity,
+          formationDefault: maxStudents,
+        });
 
   const toggleSubject = (id: string) =>
     setSubjectIds((prev) => (prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]));
@@ -103,6 +155,10 @@ export function FormationKomaFormModal({
   const removeStudent = (id: string) => setStudents((prev) => prev.filter((s) => s.id !== id));
 
   const handleSubmit = async () => {
+    if (mode === 'create' && !courseId) {
+      setError('講座を選択してください');
+      return;
+    }
     if (students.length === 0) {
       setError('生徒を1名以上選択してください');
       return;
@@ -114,6 +170,10 @@ export function FormationKomaFormModal({
         teacherId: teacherId || null,
         subjectIds,
         studentIds: students.map((s) => s.id),
+        // add モードは undefined を渡し、API 側で既存枠の講座を引き継がせる
+        specialCourseId: mode === 'create' ? courseId : undefined,
+        // ゲート false では undefined＝従来どおり API 側の既定（今日）を使う
+        effectiveFrom: lessonEntryV2 ? startDate : undefined,
       });
       onClose();
     } catch (e) {
@@ -129,20 +189,61 @@ export function FormationKomaFormModal({
   const lockedTeacher = teachers.find((t) => t.id === lockedTeacherId);
 
   return (
-    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle>
-            {mode === 'add'
-              ? `${formationLabel} クラスに生徒を追加`
-              : `${formationLabel} クラス枠を登録`}
-          </DialogTitle>
-        </DialogHeader>
+    /* Header / Footer は DialogContent の外に置く（中に入れるとスクロール領域に
+       巻き込まれ、タイトルが上端で切れ、ボタンが画面外に出る）。幅は Dialog の size で決まる。 */
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()} size="md">
+      <DialogHeader>
+        <DialogTitle>
+          {mode === 'add'
+            ? `${formationLabel} クラスに生徒を追加`
+            : `${formationLabel} 講座の枠を登録`}
+        </DialogTitle>
+      </DialogHeader>
+      <DialogContent>
         <div className="space-y-4 py-2">
           {/* 曜日×コマ（固定表示） */}
           <div className="text-sm text-[var(--paragraph)] bg-[var(--surface)] rounded px-3 py-2">
             {fmtDate(date)} ・ {slotLabel}
           </div>
+
+          {/* 講座（枠は必ずどれかの講座に属する）。add は既存枠から引き継ぐので選ばせない。 */}
+          {mode === 'create' ? (
+            <div>
+              <label className="block text-sm font-medium text-[var(--headline)] mb-1">
+                講座 <span className="text-red-500">*</span>
+              </label>
+              {courses.length === 0 ? (
+                /* 候補は「このセルの曜日×コマで開催する講座」に絞られている。
+                   0件は講座未作成か、講座に定例の曜日・コマが未設定のどちらか。 */
+                <div className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded px-3 py-2 space-y-1">
+                  <p>このコマに開催する講座がありません。</p>
+                  <Link
+                    href="/schedule/special-courses"
+                    className="underline font-medium hover:no-underline"
+                  >
+                    特別講座管理で講座を作成し、曜日・コマを設定してください
+                  </Link>
+                </div>
+              ) : (
+                <select
+                  value={courseId}
+                  onChange={(e) => setCourseId(e.target.value)}
+                  className="w-full px-3 py-2 border border-[var(--stroke)] rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
+                >
+                  <option value="">講座を選択</option>
+                  {courses.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+          ) : (
+            <p className="text-xs text-[var(--paragraph)]">
+              講座はこのクラスの枠から引き継ぎます。
+            </p>
+          )}
 
           {/* 講師（1名・担当未決定可）。add モードは固定表示 */}
           <div>
@@ -202,9 +303,12 @@ export function FormationKomaFormModal({
             <label className="block text-sm font-medium text-[var(--headline)] mb-1">
               生徒 <span className="text-red-500">*</span>
               <span className="ml-2 text-xs font-normal text-[var(--paragraph)]">
-                {students.length}名選択中（上限{maxStudents}名）
+                {students.length}名選択中（上限{effectiveMaxStudents}名）
               </span>
             </label>
+            <p className="mb-1 text-xs text-[var(--paragraph)]">
+              上限は講座の定員です（未設定の講座は形態の既定値）。
+            </p>
             <StudentSearchInput
               schoolId={schoolId}
               excludeStudentIds={students.map((s) => s.id)}
@@ -233,17 +337,39 @@ export function FormationKomaFormModal({
             )}
           </div>
 
+          {/* v2: 授業の開始日（既定＝クリックしたセルの日付）。
+              週次エントリへの反映は再生成機構に任せる（ここでは作らない）。 */}
+          {lessonEntryV2 && (
+            <div className="border-t border-[var(--stroke)] pt-3 space-y-1">
+              <label className="block text-sm font-medium text-[var(--headline)]">
+                授業の開始日
+              </label>
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="w-full px-3 py-2 border border-[var(--stroke)] rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
+              />
+              <p className="text-[11px] text-[var(--paragraph)]">
+                この日から毎週の授業が始まります。先の日付にすると、その日までは座席表に出ません
+              </p>
+            </div>
+          )}
+
           {error && <p className="text-sm text-red-600 bg-red-50 rounded px-3 py-2">{error}</p>}
         </div>
-        <DialogFooter>
-          <Button variant="secondary" onClick={onClose} disabled={saving}>
-            キャンセル
-          </Button>
-          <Button onClick={handleSubmit} disabled={saving || students.length === 0}>
-            {saving ? '登録中...' : '登録'}
-          </Button>
-        </DialogFooter>
       </DialogContent>
+      <DialogFooter>
+        <Button variant="secondary" onClick={onClose} disabled={saving}>
+          キャンセル
+        </Button>
+        <Button
+          onClick={handleSubmit}
+          disabled={saving || students.length === 0 || (mode === 'create' && courses.length === 0)}
+        >
+          {saving ? '登録中...' : '登録'}
+        </Button>
+      </DialogFooter>
     </Dialog>
   );
 }

@@ -903,6 +903,8 @@ export type Database = {
           // 物理的に所持しているか（進行表管理 track_progress とは独立）
           is_owned: boolean;
           season: 'spring' | 'summer' | 'winter' | null;
+          // 使い終わったテキストに付ける完了ラベル。NULL=未完了
+          completed_at: string | null;
           sort_order: number | null;
           created_at: string;
           updated_at: string;
@@ -917,6 +919,7 @@ export type Database = {
           track_progress?: boolean;
           is_owned?: boolean;
           season?: 'spring' | 'summer' | 'winter' | null;
+          completed_at?: string | null;
           sort_order?: number | null;
           created_at?: string;
           updated_at?: string;
@@ -931,6 +934,7 @@ export type Database = {
           is_draft?: boolean;
           is_owned?: boolean;
           season?: 'spring' | 'summer' | 'winter' | null;
+          completed_at?: string | null;
           sort_order?: number | null;
           created_at?: string;
           updated_at?: string;
@@ -1180,6 +1184,9 @@ export type Database = {
           schedule_entry_id: string | null;
           confirmed_at: string | null;
           confirmed_by: string | null;
+          report_id: string | null;
+          /** 次回やる予定の単元ID（機能D）。既定は空配列 */
+          next_plan_curriculum_item_ids: number[];
           created_at: string;
           updated_at: string;
         };
@@ -1195,6 +1202,8 @@ export type Database = {
           schedule_entry_id?: string | null;
           confirmed_at?: string | null;
           confirmed_by?: string | null;
+          report_id?: string | null;
+          next_plan_curriculum_item_ids?: number[];
           created_at?: string;
           updated_at?: string;
         };
@@ -1210,6 +1219,8 @@ export type Database = {
           schedule_entry_id?: string | null;
           confirmed_at?: string | null;
           confirmed_by?: string | null;
+          report_id?: string | null;
+          next_plan_curriculum_item_ids?: number[];
           created_at?: string;
           updated_at?: string;
         };
@@ -1230,6 +1241,12 @@ export type Database = {
             foreignKeyName: 'progress_sessions_schedule_entry_id_fkey';
             columns: ['schedule_entry_id'];
             referencedRelation: 'schedule_entries';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'progress_sessions_report_id_fkey';
+            columns: ['report_id'];
+            referencedRelation: 'class_reports';
             referencedColumns: ['id'];
           },
         ];
@@ -1257,6 +1274,8 @@ export type Database = {
           employee_no?: string | null;
           /** 講師の入社日。入社3ヶ月アラートの判定に使用。NULL=未設定（判定対象外） */
           hire_date?: string | null;
+          /** 次回の契約更新日（研修期間の終了日）。NULL=対象外／更新済み */
+          contract_renewal_date?: string | null;
           /** true=時給講師として扱い、出勤簿等に含める（owner/admin兼任向け） */
           is_teaching_staff?: boolean;
         };
@@ -1281,6 +1300,8 @@ export type Database = {
           employee_no?: string | null;
           /** 講師の入社日。入社3ヶ月アラートの判定に使用。NULL=未設定（判定対象外） */
           hire_date?: string | null;
+          /** 次回の契約更新日（研修期間の終了日）。NULL=対象外／更新済み */
+          contract_renewal_date?: string | null;
           /** true=時給講師として扱い、出勤簿等に含める（owner/admin兼任向け） */
           is_teaching_staff?: boolean;
         };
@@ -1305,6 +1326,8 @@ export type Database = {
           employee_no?: string | null;
           /** 講師の入社日。入社3ヶ月アラートの判定に使用。NULL=未設定（判定対象外） */
           hire_date?: string | null;
+          /** 次回の契約更新日（研修期間の終了日）。NULL=対象外／更新済み */
+          contract_renewal_date?: string | null;
           /** true=時給講師として扱い、出勤簿等に含める（owner/admin兼任向け） */
           is_teaching_staff?: boolean;
         };
@@ -1646,6 +1669,8 @@ export type Database = {
           year_month: string;
           status: 'draft' | 'submitted' | 'reviewed' | 'approved' | 'rejected';
           submitted_at: string | null;
+          /** 提出ボタンを押した人。teacher_id と違えば代理提出 */
+          submitted_by: string | null;
           approved_at: string | null;
           approved_by: string | null;
           reviewed_at: string | null;
@@ -1669,6 +1694,7 @@ export type Database = {
           year_month: string;
           status?: 'draft' | 'submitted' | 'reviewed' | 'approved' | 'rejected';
           submitted_at?: string | null;
+          submitted_by?: string | null;
           approved_at?: string | null;
           approved_by?: string | null;
           reviewed_at?: string | null;
@@ -1692,6 +1718,7 @@ export type Database = {
           year_month?: string;
           status?: 'draft' | 'submitted' | 'reviewed' | 'approved' | 'rejected';
           submitted_at?: string | null;
+          submitted_by?: string | null;
           approved_at?: string | null;
           approved_by?: string | null;
           reviewed_at?: string | null;
@@ -3920,6 +3947,24 @@ export interface SeasonalCourseWithDetails extends SeasonalCourse {
   application_count?: number;
 }
 
+/**
+ * 講習一覧（/courses）用の軽量版。
+ *
+ * 一覧は単元の中身を一切表示しないため、単元行そのものは取得せず件数だけを持つ。
+ * 有効コース全体で単元は約1.7万行あり、以前は単元＋教材マスタまで結合していたため
+ * 一覧を開くたびに大量のデータを転送していた。
+ *
+ * curriculum_count は「中身が入っているか」の判定にも使う。0 のコースは雛形として
+ * 未完成なので、他教室へ展開させない（空のまま展開すると各校に空の複製が増える）。
+ */
+export interface SeasonalCourseListItem extends SeasonalCourse {
+  textbooks: SeasonalCourseTextbook[];
+  /** 単元設定の件数。0 なら中身が空のテンプレ */
+  curriculum_count: number;
+  /** 適用済みの生徒数 */
+  application_count: number;
+}
+
 // カリキュラム表示用（進行表風）
 export interface CourseCurriculumRow {
   curriculumItem: CurriculumItem;
@@ -4072,6 +4117,11 @@ export interface UserProfile {
   employee_no?: string | null;
   /** 講師の入社日。入社3ヶ月アラートの判定に使用。NULL=未設定（判定対象外） */
   hire_date?: string | null;
+  /**
+   * 次回の契約更新日（研修期間の終了日）。NULL=対象外／更新済み。
+   * 入社日からの自動計算はしない（契約は月単位で切るため、境界は教室長が判断する）。
+   */
+  contract_renewal_date?: string | null;
   /** true=時給講師として扱い、出勤簿等に含める（owner/admin兼任向け） */
   is_teaching_staff?: boolean;
 }

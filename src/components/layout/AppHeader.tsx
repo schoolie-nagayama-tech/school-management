@@ -6,7 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useBulletinUnread } from '@/contexts/BulletinUnreadContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMasterData } from '@/contexts/MasterDataContext';
-import { USER_ROLE_LABELS } from '@/types/database';
+import { USER_ROLE_LABELS, type UserRole } from '@/types/database';
 import {
   Megaphone,
   ChevronDown,
@@ -23,10 +23,12 @@ import { BadgeFlowerField } from '@/components/badges/HiddenFlower';
 import { HEADER_FLOWERS } from '@/components/badges/flowerPlacements';
 import { ThemeToggle } from './ThemeToggle';
 import { getSurname } from '@/lib/utils/teacherName';
-import { PushNotificationButton } from '@/components/ui/PushNotificationButton';
 import { buildNavEntries, isLinkActive, isGroupActive } from './navConfig';
 import { isSystemAdmin } from '@/lib/utils/roles';
+import { canAccessPortalDemo } from '@/lib/mypage/demoAccess';
 import { MobileBottomNav } from './MobileBottomNav';
+import { HeaderAiHelp } from '@/components/help/HeaderAiHelp';
+import type { RoleTag } from '@/lib/help/faqData';
 import { useStandalone } from '@/lib/utils/useStandalone';
 import { useToast } from '@/hooks/useToast';
 import { ToastContainer } from '@/components/ui';
@@ -44,6 +46,15 @@ interface AppHeaderProps {
 // ドロップダウンパネル共通クラス生成。
 // 常時DOMに残し、opacity + scale の CSS transitionで開閉する。
 // enter: 150ms ease-out（即時反応）/ exit: 100ms（より速く閉じて応答感を高める）
+/** UserRole を FAQ の RoleTag に寄せる（faqIndex.ts の toRoleTag と同じ対応） */
+function helpRoleTag(role: UserRole | undefined): RoleTag {
+  if (!role) return 'all';
+  if (role === 'admin' || role === 'owner') return 'admin';
+  if (role === 'manager') return 'manager';
+  if (role === 'teacher') return 'teacher';
+  return 'all';
+}
+
 function dropdownPanelClass(open: boolean, align: 'left' | 'right' = 'left') {
   const base =
     'absolute top-full mt-1 bg-white rounded-lg border border-gray-200 shadow-xl transition-[opacity,transform] ease-out';
@@ -188,6 +199,7 @@ export function AppHeader({
   const showAllLinks = !permissions || authLoading;
 
   // ナビ項目（PC/スマホ共通の単一定義）。権限ゲートは navConfig 側で評価済み。
+  // 家モード（講師＋教室端末マーク無し）では教室限定の項目を落とす（正典 §2）。
   const navEntries = useMemo(
     () => buildNavEntries({ permissions, profile, showAll: showAllLinks, schools }),
     [permissions, profile, showAllLinks, schools]
@@ -251,7 +263,7 @@ export function AppHeader({
             <div className="flex items-center gap-4">
               {/* NESTロゴ（スマホのナビは下部のボトムタブ＋メニューシートに集約）。
                   PWA(standalone)の教室長以上はダッシュボード /home をホームにする。 */}
-              <Link href={homeHref} className="shrink-0">
+              <Link prefetch={false} href={homeHref} className="shrink-0">
                 <span className="text-white font-black text-2xl tracking-[0.4em] pr-[0.4em] select-none">
                   NEST
                 </span>
@@ -262,6 +274,7 @@ export function AppHeader({
                 {navEntries.map((entry) =>
                   entry.kind === 'link' ? (
                     <Link
+                      prefetch={false}
                       key={entry.key}
                       href={entry.href}
                       className={navLinkClass(isLinkActive(pathname, entry))}
@@ -289,6 +302,7 @@ export function AppHeader({
                         <div className="py-1">
                           {entry.items.map((item) => (
                             <Link
+                              prefetch={false}
                               key={item.key}
                               href={item.href}
                               className={`${dropdownItemClass(isLinkActive(pathname, item))} flex items-center justify-between gap-2`}
@@ -440,6 +454,7 @@ export function AppHeader({
                         </button>
                       )}
                       <Link
+                        prefetch={false}
                         href="/settings"
                         className={`block px-3 py-2 text-xs hover:bg-gray-50 transition-colors ${
                           pathname === '/settings'
@@ -453,35 +468,55 @@ export function AppHeader({
                       <div className="border-t border-border my-1" />
                       {/* 試作・クローズドな機能の入口。
                           通常ナビ（navConfig）には載せず、ここが唯一の入口。
-                          ★ 一旦すべて admin 限定（ユーザー判断 2026-07-16）。ポータルV2デモは
-                            当初 manager 以上に開いていたが admin のみに絞った。ここを広げる
-                            ときは /api/portal-demo/start の requireSystemAdmin と、デモSQL の
-                            user_schools 付与範囲（2-b）も3点セットで揃えること
-                            （ここは導線であって認可の境界ではない＝APIを緩めないと意味がない）。 */}
+                          検討用モック /home-mock は admin 限定のまま据え置き
+                          （試用向けの本ルートは /dashboard に分離済み・navConfig に掲載）。 */}
                       {isSystemAdmin(profile?.role) && (
-                        <>
-                          <Link
-                            href="/home-mock"
-                            className="flex items-center gap-2 px-3 py-2 text-xs text-text-heading hover:bg-gray-50 transition-colors"
-                            onClick={() => setShowSettingsDropdown(false)}
-                          >
-                            <LayoutDashboard className="w-3.5 h-3.5" aria-hidden />
-                            教室長ダッシュボード（試作）
-                          </Link>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setShowSettingsDropdown(false);
-                              handlePortalDemo();
-                            }}
-                            disabled={startingPortalDemo}
-                            className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-text-heading transition-colors hover:bg-gray-50 disabled:opacity-50"
-                          >
-                            <Smartphone className="w-3.5 h-3.5 shrink-0" aria-hidden />
-                            保護者ポータルV2（試作・ダミーデータ）
-                          </button>
-                          <div className="border-t border-border my-1" />
-                        </>
+                        <Link
+                          prefetch={false}
+                          href="/home-mock"
+                          className="flex items-center gap-2 px-3 py-2 text-xs text-text-heading hover:bg-gray-50 transition-colors"
+                          onClick={() => setShowSettingsDropdown(false)}
+                        >
+                          <LayoutDashboard className="w-3.5 h-3.5" aria-hidden />
+                          教室長ダッシュボード（試作）
+                        </Link>
+                      )}
+                      {/* 座席表。ヘッダーのアイコン列から試作の並びへ移した
+                          （ヘッダーを詰めるため。運用開始までは試作扱いのまま） */}
+                      {isSystemAdmin(profile?.role) && (
+                        <Link
+                          prefetch={false}
+                          href="/schedule"
+                          className={`flex items-center gap-2 px-3 py-2 text-xs transition-colors hover:bg-gray-50 ${
+                            pathname === '/schedule' || pathname?.startsWith('/schedule')
+                              ? 'font-bold text-primary'
+                              : 'text-text-heading'
+                          }`}
+                          onClick={() => setShowSettingsDropdown(false)}
+                        >
+                          <LayoutDashboard className="w-3.5 h-3.5" aria-hidden />
+                          座席表（試作）
+                        </Link>
+                      )}
+                      {/* ポータルV2デモの導線。公開範囲は canAccessPortalDemo が単一の判定点
+                          （API 側 /api/portal-demo/start も同じヘルパーで認可する。
+                           開放時はヘルパー1箇所＋デモSQLの user_schools 付与を揃える）。 */}
+                      {canAccessPortalDemo(profile?.role) && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowSettingsDropdown(false);
+                            handlePortalDemo();
+                          }}
+                          disabled={startingPortalDemo}
+                          className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-text-heading transition-colors hover:bg-gray-50 disabled:opacity-50"
+                        >
+                          <Smartphone className="w-3.5 h-3.5 shrink-0" aria-hidden />
+                          保護者ポータルV2（試作・ダミーデータ）
+                        </button>
+                      )}
+                      {(isSystemAdmin(profile?.role) || canAccessPortalDemo(profile?.role)) && (
+                        <div className="border-t border-border my-1" />
                       )}
                       {/* テーマ切替 */}
                       <div className="px-3 py-2 flex items-center justify-between">
@@ -490,40 +525,25 @@ export function AppHeader({
                       </div>
                       {/* ヘルプ */}
                       <Link
+                        prefetch={false}
                         href="/help"
                         className="block px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 transition-colors"
                         onClick={() => setShowSettingsDropdown(false)}
                       >
                         ヘルプ
                       </Link>
-                      {/* プッシュ通知 */}
-                      {!isTeacher && (
-                        <div className="px-3 py-2 flex items-center justify-between">
-                          <span className="text-xs text-gray-600">プッシュ通知</span>
-                          {selectedSchoolId && selectedSchoolId !== 'all' ? (
-                            <PushNotificationButton schoolId={selectedSchoolId} compact />
-                          ) : schools.length > 0 ? (
-                            <PushNotificationButton schoolId={schools[0].id} compact />
-                          ) : null}
-                        </div>
-                      )}
+                      {/* ★ PWA一時閉鎖中（2026-08-20）。SWを登録していないため
+                          PushNotificationButton は 'unsupported' で null を返し、
+                          「プッシュ通知」のラベルだけが右側が空のまま残っていた。
+                          行ごと畳んでおき、PWA再開時にこのブロックを戻す。
+                          （layout.tsx の <ServiceWorkerUpdateBar /> と同じ扱い） */}
                     </div>
                   </div>
                 </div>
               )}
-              {/* 座席表：システム管理者のみ表示 */}
-              {profile && isSystemAdmin(profile.role) && (
-                <Link
-                  href="/schedule"
-                  className={`p-1.5 rounded-lg transition-[color,background-color,transform] duration-150 ease-out active:scale-[0.97] ${
-                    pathname === '/schedule' || pathname?.startsWith('/schedule')
-                      ? 'bg-white text-primary'
-                      : 'text-white/80 hover:text-white hover:bg-white/10'
-                  }`}
-                  title="座席表（開発中）"
-                >
-                  <LayoutDashboard className="w-4 h-4" aria-hidden />
-                </Link>
+              {/* ★AIヘルプ。歯車の奥だと存在に気づかれないので、どの画面からも見える位置に出す */}
+              {profile && !authLoading && (
+                <HeaderAiHelp role={helpRoleTag(profile.role as UserRole | undefined)} />
               )}
             </div>
           </div>
@@ -531,6 +551,7 @@ export function AppHeader({
             slide-in-bar: globals.css で定義済み（@starting-style でフェードイン）*/}
           {bulletinUnreadCount > 0 && (
             <Link
+              prefetch={false}
               href="/students"
               className="slide-in-bar block py-2 px-4 bg-amber-400 text-amber-950 font-bold text-sm text-center hover:bg-amber-500 transition-colors duration-150"
             >
@@ -583,6 +604,7 @@ export function AppHeader({
           {/* PWA(standalone)の教室長以上のみ: ダッシュボードへの導線をメニュー先頭に出す */}
           {showPwaHome && (
             <Link
+              prefetch={false}
               href="/home"
               className={`block rounded-md px-4 py-2.5 text-sm transition-[color,background-color,transform] duration-150 ease-out active:scale-[0.98] ${
                 pathname === '/home'
@@ -597,6 +619,7 @@ export function AppHeader({
           {navEntries.map((entry) =>
             entry.kind === 'link' ? (
               <Link
+                prefetch={false}
                 key={entry.key}
                 href={entry.href}
                 className={`block rounded-md px-4 py-2.5 text-sm transition-[color,background-color,transform] duration-150 ease-out active:scale-[0.98] ${
@@ -639,6 +662,7 @@ export function AppHeader({
                   <div className="space-y-0.5 py-0.5 pl-3">
                     {entry.items.map((item) => (
                       <Link
+                        prefetch={false}
                         key={item.key}
                         href={item.href}
                         className={`flex items-center justify-between gap-2 rounded-md px-4 py-2 text-sm transition-[color,background-color,transform] duration-150 ease-out active:scale-[0.98] ${
@@ -666,6 +690,7 @@ export function AppHeader({
             <ThemeToggle />
           </div>
           <Link
+            prefetch={false}
             href="/help"
             className="block rounded-md px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
           >

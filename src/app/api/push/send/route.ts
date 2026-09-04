@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { captureApiError } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 
@@ -76,6 +77,11 @@ export async function POST(request: NextRequest) {
           ) {
             stale.push(sub.endpoint);
           } else {
+            // 410（期限切れ）は正常な後始末なので送らない。それ以外だけ Sentry へ。
+            captureApiError(err, {
+              route: 'POST /api/push/send',
+              action: 'send_notification',
+            });
             console.warn('[push/send] 送信失敗:', err);
           }
         }
@@ -89,6 +95,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ sent });
   } catch (e) {
+    captureApiError(e, {
+      route: 'POST /api/push/send',
+    });
     console.error('[push/send]', e);
     return NextResponse.json({ error: '送信に失敗しました' }, { status: 500 });
   }

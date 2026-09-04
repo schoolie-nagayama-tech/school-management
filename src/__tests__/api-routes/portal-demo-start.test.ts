@@ -7,8 +7,8 @@
  *   2) 紐づけ生徒が全員ダミーでなければ発行を拒否すること（実データ到達の最後の砦）
  * の2点が壊れていないことを固定する。
  *
- * ★ 認可は requireSystemAdmin（admin のみ）。requireAdmin は owner も通してしまうため
- *   使わない（AppHeader の isSystemAdmin と境界を揃える）。
+ * ★ 認可は requirePortalDemoAccess（ロールの線引きは canAccessPortalDemo に集約・現在は admin のみ）。
+ *   AppHeader の導線と同じヘルパーを見るため境界がズレない。
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { NextRequest } from 'next/server';
@@ -18,7 +18,7 @@ import { createMockChain } from './helpers';
 vi.mock('server-only', () => ({}));
 
 vi.mock('@/lib/api-auth', () => ({
-  requireSystemAdmin: vi.fn().mockResolvedValue(null),
+  requirePortalDemoAccess: vi.fn().mockResolvedValue(null),
 }));
 
 // service role クライアントを直接差し替える（実DB・実鍵に触らない）。
@@ -40,7 +40,7 @@ vi.mock('@/lib/mypage/session', () => ({
 import { POST } from '@/app/api/portal-demo/start/route';
 import { signPortalJwt } from '@/lib/mypage/jwt';
 import { setPortalSession } from '@/lib/mypage/session';
-import { requireSystemAdmin } from '@/lib/api-auth';
+import { requirePortalDemoAccess } from '@/lib/api-auth';
 
 const ACCOUNT = { id: 'acc-1', login_id: 'demo-parent', display_name: 'デモ保護者' };
 
@@ -76,7 +76,7 @@ function makeRequest() {
 describe('POST /api/portal-demo/start', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(requireSystemAdmin).mockResolvedValue(null);
+    vi.mocked(requirePortalDemoAccess).mockResolvedValue(null);
   });
 
   it('紐づけ生徒が全員ダミーならデモセッションを発行する', async () => {
@@ -91,7 +91,7 @@ describe('POST /api/portal-demo/start', () => {
   });
 
   it('admin 以外（owner / manager / 講師）は弾かれ、セッションを発行しない', async () => {
-    vi.mocked(requireSystemAdmin).mockResolvedValue(
+    vi.mocked(requirePortalDemoAccess).mockResolvedValue(
       NextResponse.json({ error: 'システム管理者権限が必要です' }, { status: 403 })
     );
 

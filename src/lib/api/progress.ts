@@ -335,6 +335,29 @@ export async function updateStudentTextbookSeason(
 }
 
 /**
+ * 生徒×テキストの「完了」ラベルを更新する。
+ * 使い終わったテキスト（最終単元まで進んだ等）に付ける。completed_at に日時を入れ、解除は null。
+ * is_active とは別物で、完了にしても進行表は今までどおり開ける（記録を消さない）。
+ */
+export async function updateStudentTextbookCompleted(
+  id: string,
+  completed: boolean
+): Promise<StudentTextbook> {
+  const { data, error } = await supabase
+    .from('student_textbooks')
+    .update({ completed_at: completed ? new Date().toISOString() : null })
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) {
+    throw new Error(`完了ラベルの更新に失敗しました: ${error.message}`);
+  }
+
+  return data as StudentTextbook;
+}
+
+/**
  * 生徒×テキストの紐付けを解除
  */
 export async function deleteStudentTextbook(id: string): Promise<void> {

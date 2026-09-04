@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getPortalContext } from '@/lib/mypage/supabase';
 import { getPortalServiceClient } from '@/lib/mypage/serviceClient';
 import { verifyPortalLink, markRead } from '@/lib/mypage/chatService';
+import { captureApiError } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,7 +18,11 @@ export async function POST(request: NextRequest) {
   let body: Record<string, unknown>;
   try {
     body = (await request.json()) as Record<string, unknown>;
-  } catch {
+  } catch (error) {
+    captureApiError(error, {
+      route: 'POST /api/mypage/chat/read',
+      userId: accountId,
+    });
     return NextResponse.json({ error: 'リクエストが不正です' }, { status: 400 });
   }
   const studentId = body.student_id;

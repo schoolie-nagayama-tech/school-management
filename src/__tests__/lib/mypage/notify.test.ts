@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 // notify.ts は 'server-only' を import するため、node のテスト環境では空モジュールに差し替える。
 vi.mock('server-only', () => ({}));
@@ -314,5 +314,100 @@ describe('notify: defaultEmailResolver のダミーデータガード', () => {
     expect(await defaultEmailResolver({ ...event, toEmails: ['x@example.com'] })).toEqual([
       'x@example.com',
     ]);
+  });
+});
+
+/**
+ * デモ通知試用の許可リスト（NOTIFY_DEMO_LINE_ALLOWLIST / NOTIFY_DEMO_EMAIL_ALLOWLIST）。
+ * ダミーデータガードの唯一の例外なので、以下を厳密に固定する:
+ *   1) env 未設定なら従来どおり全ブロック（既定の安全性が変わらない）
+ *   2) 設定時もリスト掲載の宛先しか返らない（リスト外の実在宛先は落ちる）
+ *   3) 実在生徒（非ダミー）の経路には一切影響しない
+ */
+describe('notify: デモ通知試用の許可リスト', () => {
+  const lineEvent: NotifyEvent = {
+    kind: 'report_published',
+    audience: 'guardian',
+    studentId: 's1',
+    title: 'タイトル',
+    body: '本文',
+  };
+  const emailEvent: NotifyEvent = {
+    kind: 'chat_new_message',
+    studentId: 's1',
+    title: 'タイトル',
+    body: '本文',
+  };
+
+  beforeEach(() => {
+    // ダミー生徒（デモ教室）を既定にする。
+    state.student = { is_test: false, schools: { is_demo: true } };
+    state.studentError = null;
+    state.linkedAccounts = [
+      { portal_accounts: { line_user_id: 'U-staff' } },
+      { portal_accounts: { line_user_id: 'U-real-parent' } },
+    ];
+    state.formResponses = [
+      { email: 'staff@example.com', created_at: '2026-07-02' },
+      { email: 'parent@example.com', created_at: '2026-07-01' },
+    ];
+  });
+
+  afterEach(() => {
+    // env はテストプロセス全体で共有されるので必ず掃除する。
+    delete process.env.NOTIFY_DEMO_LINE_ALLOWLIST;
+    delete process.env.NOTIFY_DEMO_EMAIL_ALLOWLIST;
+  });
+
+  it('LINE: env 未設定ならダミー生徒は従来どおり全ブロック', async () => {
+    expect(await defaultLineResolver(lineEvent)).toEqual([]);
+  });
+
+  it('LINE: 許可リスト掲載の userId だけが宛先に残る', async () => {
+    process.env.NOTIFY_DEMO_LINE_ALLOWLIST = 'U-staff';
+    expect(await defaultLineResolver(lineEvent)).toEqual(['U-staff']);
+  });
+
+  it('LINE: リスト外しか紐づいていなければ空（実在宛先には流れない）', async () => {
+    process.env.NOTIFY_DEMO_LINE_ALLOWLIST = 'U-someone-else';
+    expect(await defaultLineResolver(lineEvent)).toEqual([]);
+  });
+
+  it('LINE: 実在生徒（非ダミー）の宛先解決は許可リストの影響を受けない', async () => {
+    state.student = { is_test: false, schools: { is_demo: false } };
+    process.env.NOTIFY_DEMO_LINE_ALLOWLIST = 'U-staff';
+    expect(await defaultLineResolver(lineEvent)).toEqual(['U-staff', 'U-real-parent']);
+  });
+
+  it('メール: env 未設定ならダミー生徒は従来どおり全ブロック', async () => {
+    expect(await defaultEmailResolver(emailEvent)).toEqual([]);
+  });
+
+  it('メール: 許可リスト掲載のアドレスだけが残る（大文字小文字は無視）', async () => {
+    process.env.NOTIFY_DEMO_EMAIL_ALLOWLIST = 'STAFF@example.com';
+    expect(await defaultEmailResolver(emailEvent)).toEqual(['staff@example.com']);
+  });
+
+  it('メール: 空白まじりのカンマ区切りをパースできる', async () => {
+    process.env.NOTIFY_DEMO_EMAIL_ALLOWLIST = ' staff@example.com , other@example.com ';
+    expect(await defaultEmailResolver(emailEvent)).toEqual(['staff@example.com']);
+  });
+
+  it('メール: 実在生徒（非ダミー）の宛先解決は許可リストの影響を受けない', async () => {
+    state.student = { is_test: false, schools: { is_demo: false } };
+    process.env.NOTIFY_DEMO_EMAIL_ALLOWLIST = 'staff@example.com';
+    expect(await defaultEmailResolver(emailEvent)).toEqual([
+      'staff@example.com',
+      'parent@example.com',
+    ]);
+  });
+
+  it('ダミー判定が失敗してもリスト外には漏れない（安全側の下限を固定）', async () => {
+    // isDummyStudent のエラーは dummy=true 扱い。許可リストが設定されていれば
+    // リスト掲載分（＝自社スタッフ）だけは届くが、リスト外の実在宛先には決して
+    // 流れない。ここで固定したいのはその下限。
+    state.studentError = { message: 'boom' };
+    process.env.NOTIFY_DEMO_LINE_ALLOWLIST = 'U-staff';
+    expect(await defaultLineResolver(lineEvent)).toEqual(['U-staff']);
   });
 });

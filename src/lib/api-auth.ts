@@ -3,6 +3,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { createServerClient } from '@supabase/ssr';
 import { NextRequest, NextResponse } from 'next/server';
 import { isSystemAdmin, canEditScores } from '@/lib/utils/roles';
+import { canAccessPortalDemo } from '@/lib/mypage/demoAccess';
 import { AUTH_COOKIE_NAME } from '@/lib/authCookie';
 
 /**
@@ -191,6 +192,47 @@ export async function requireSystemAdmin(request: NextRequest): Promise<NextResp
       })
     );
     const res = NextResponse.json({ error: 'システム管理者権限が必要です' }, { status: 403 });
+    mergeCookiesIntoResponse(cookieResponse, res);
+    return res;
+  }
+  return null;
+}
+
+/**
+ * 保護者ポータルV2デモの利用権限を要求する。
+ *
+ * ロールの線引きは canAccessPortalDemo（lib/mypage/demoAccess.ts）が単一の判定点。
+ * AppHeader のデモ導線も同じヘルパーを見るため、公開範囲を広げるときは
+ * ヘルパー1箇所の変更で UI と API が同時に追従する（デモSQL の user_schools
+ * 付与だけは別途必要。ヘルパーのコメント参照）。
+ *
+ * @returns 権限不足なら NextResponse（401/403）、OKなら null（処理続行）
+ */
+export async function requirePortalDemoAccess(request: NextRequest): Promise<NextResponse | null> {
+  const { auth, cookieResponse } = await getApiAuth(request);
+  if (!auth) {
+    console.error(
+      JSON.stringify({
+        type: 'AUTH_FAILURE',
+        path: request.nextUrl.pathname,
+        ip: request.headers.get('x-forwarded-for'),
+        timestamp: new Date().toISOString(),
+      })
+    );
+    const res = NextResponse.json({ error: '認証が必要です' }, { status: 401 });
+    mergeCookiesIntoResponse(cookieResponse, res);
+    return res;
+  }
+  if (!canAccessPortalDemo(auth.role)) {
+    console.error(
+      JSON.stringify({
+        type: 'AUTH_FAILURE',
+        path: request.nextUrl.pathname,
+        ip: request.headers.get('x-forwarded-for'),
+        timestamp: new Date().toISOString(),
+      })
+    );
+    const res = NextResponse.json({ error: 'このデモを利用する権限がありません' }, { status: 403 });
     mergeCookiesIntoResponse(cookieResponse, res);
     return res;
   }

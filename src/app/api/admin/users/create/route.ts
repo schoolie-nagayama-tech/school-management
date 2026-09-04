@@ -5,6 +5,7 @@ import { requireManager, getApiAuth, isSchoolInScope } from '@/lib/api-auth';
 import { writeAuditLog } from '@/lib/audit-log';
 import { USER_ROLE_LEVELS } from '@/types/database';
 import type { UserRole } from '@/types/database';
+import { captureApiError } from '@/lib/api-error';
 
 function getSupabaseAdmin() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -299,6 +300,9 @@ export async function POST(request: NextRequest) {
       user: createdUser,
     });
   } catch (error) {
+    captureApiError(error, {
+      route: 'POST /api/admin/users/create',
+    });
     console.error('Failed to create user:', error);
     return NextResponse.json({ error: 'ユーザーの作成に失敗しました' }, { status: 500 });
   }

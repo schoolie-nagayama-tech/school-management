@@ -15,6 +15,7 @@ import {
   resolveBookingCalendarUserId,
   resolveBookingConfig,
 } from '@/lib/server/booking';
+import { captureApiError } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 
@@ -59,7 +60,10 @@ export async function POST(
   let body: Record<string, unknown>;
   try {
     body = await request.json();
-  } catch {
+  } catch (error) {
+    captureApiError(error, {
+      route: 'POST /api/booking/[token]/confirm',
+    });
     return NextResponse.json({ error: 'リクエストが不正です' }, { status: 400 });
   }
 

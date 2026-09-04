@@ -41,7 +41,12 @@ import {
   type TransferNotification,
   type TransferNotificationStatus,
 } from '@/lib/api/transfer-notifications';
-import { Mail, CheckCircle, X, AlertCircle } from 'lucide-react';
+import { Mail, CheckCircle, X, AlertCircle, Send } from 'lucide-react';
+import {
+  notifyTransfer,
+  transferNotifyMessage,
+  isTransferNotifyDelivered,
+} from '@/lib/api/transfer-notify';
 import AccessDenied from '@/components/AccessDenied';
 import { formatGradeLabel } from '@/lib/utils/gradeLabel';
 
@@ -56,6 +61,10 @@ export default function TransferNotificationsPage() {
   const [markTarget, setMarkTarget] = useState<TransferNotification | null>(null);
   const [markMethod, setMarkMethod] = useState('email');
   const [markSentTo, setMarkSentTo] = useState('');
+  // LINE送信中の行。二度押しでの重複送信を防ぐ（API側も冪等だが、押せてしまう見た目を作らない）。
+  const [sendingId, setSendingId] = useState<string | null>(null);
+  // 送信の確認待ちの行。誤送信は取り消せないので必ず1枚挟む。
+  const [confirmingId, setConfirmingId] = useState<string | null>(null);
 
   const isManager =
     profile?.role === 'admin' || profile?.role === 'manager' || profile?.role === 'owner';
@@ -94,6 +103,31 @@ export default function TransferNotificationsPage() {
       await load();
     } catch (e) {
       toastError(e instanceof Error ? e.message : '更新に失敗しました');
+    }
+  };
+
+  /**
+   * LINE（＋マイページのチャット）で実際に送る。
+   * 送信できたときだけ delivery_status を sent に倒す。保護者がマイページ未登録で
+   * 届かなかった場合に送信済みにしてしまうと、未送信の取りこぼしが一覧から消える。
+   */
+  const handleSendLine = async (n: TransferNotification) => {
+    setSendingId(n.id);
+    try {
+      const result = await notifyTransfer({ transferNotificationId: n.id });
+      const message = transferNotifyMessage(result);
+      if (!isTransferNotifyDelivered(result)) {
+        toastError(message);
+        return;
+      }
+      await markTransferNotificationSent(n.id, 'line', '保護者LINE（マイページ連携）');
+      success(message);
+      setConfirmingId(null);
+      await load();
+    } catch (e) {
+      toastError(e instanceof Error ? e.message : '送信に失敗しました');
+    } finally {
+      setSendingId(null);
     }
   };
 
@@ -146,7 +180,7 @@ export default function TransferNotificationsPage() {
           </Select>
         </div>
         <p className="text-sm text-text-muted">
-          振替が確定したコマの通知レコード。実際のメール/LINE送信は別途行い、送信後は「送信済みにマーク」してください。
+          振替が確定したコマの通知一覧です。「LINEで送信」で保護者のマイページとLINEに通知します。電話など別の方法で連絡した場合は「別の方法で送信済」で記録してください。
           通知が不要な場合は「スキップ」で記録できます。
         </p>
 
@@ -199,25 +233,54 @@ export default function TransferNotificationsPage() {
                         </div>
                       )}
                     </div>
-                    {n.delivery_status === 'pending' && (
-                      <>
-                        <Button
-                          size="sm"
-                          onClick={() => {
-                            setMarkTarget(n);
-                            setMarkSentTo('');
-                            setMarkMethod('email');
-                          }}
-                        >
-                          <CheckCircle className="w-4 h-4 mr-1" />
-                          送信済にする
-                        </Button>
-                        <Button variant="outline" size="sm" onClick={() => handleSkip(n)}>
-                          <X className="w-4 h-4 mr-1" />
-                          スキップ
-                        </Button>
-                      </>
-                    )}
+                    {n.delivery_status === 'pending' &&
+                      (confirmingId === n.id ? (
+                        /* 確認: 誤送信は取り消せないので必ず1枚挟む */
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="text-xs text-text-muted">LINEで送信しますか？</span>
+                          <Button
+                            size="sm"
+                            disabled={sendingId === n.id}
+                            onClick={() => handleSendLine(n)}
+                          >
+                            <Send className="w-4 h-4 mr-1" />
+                            {sendingId === n.id ? '送信中…' : '送信する'}
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={sendingId === n.id}
+                            onClick={() => setConfirmingId(null)}
+                          >
+                            やめる
+                          </Button>
+                        </div>
+                      ) : (
+                        <>
+                          <Button size="sm" onClick={() => setConfirmingId(n.id)}>
+                            <Send className="w-4 h-4 mr-1" />
+                            LINEで送信
+                          </Button>
+                          {/* 電話・紙など LINE 以外で連絡したときの事後ログ。
+                              保護者がマイページ未登録の間はこちらが主になる。 */}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setMarkTarget(n);
+                              setMarkSentTo('');
+                              setMarkMethod('email');
+                            }}
+                          >
+                            <CheckCircle className="w-4 h-4 mr-1" />
+                            別の方法で送信済
+                          </Button>
+                          <Button variant="outline" size="sm" onClick={() => handleSkip(n)}>
+                            <X className="w-4 h-4 mr-1" />
+                            スキップ
+                          </Button>
+                        </>
+                      ))}
                   </CardContent>
                 </Card>
               );
@@ -227,11 +290,13 @@ export default function TransferNotificationsPage() {
       </div>
 
       {/* 送信済みマーク ダイアログ */}
+      {/* Header / Footer は DialogContent の外に置く（中に入れるとスクロール領域に巻き込まれ、
+          タイトルが上端で切れ、ボタンが画面外に出る）。幅は Dialog の size で決まる。 */}
       <Dialog open={!!markTarget} onOpenChange={(v) => !v && setMarkTarget(null)}>
+        <DialogHeader>
+          <DialogTitle>送信済みにマーク</DialogTitle>
+        </DialogHeader>
         <DialogContent>
-          <DialogHeader>
-            <DialogTitle>送信済みにマーク</DialogTitle>
-          </DialogHeader>
           <div className="space-y-3">
             <p className="text-sm text-text-muted">
               実際に送信した方法と宛先を記録します（事後ログ）。
@@ -266,15 +331,15 @@ export default function TransferNotificationsPage() {
               将来：Edge Function が pending を自動送信する仕組みに置き換える予定
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setMarkTarget(null)}>
-              キャンセル
-            </Button>
-            <Button onClick={handleMark} disabled={!markSentTo.trim()}>
-              記録
-            </Button>
-          </DialogFooter>
         </DialogContent>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setMarkTarget(null)}>
+            キャンセル
+          </Button>
+          <Button onClick={handleMark} disabled={!markSentTo.trim()}>
+            記録
+          </Button>
+        </DialogFooter>
       </Dialog>
     </AdminLayout>
   );

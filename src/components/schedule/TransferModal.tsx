@@ -79,6 +79,27 @@ export function TransferModal({
 
   const today = new Date().toISOString().slice(0, 10);
 
+  /**
+   * 振替元の要約。振替先の入力欄だけだと「どの授業を動かしているのか」が画面から消え、
+   * 別の生徒のコマを動かす事故につながるため、確定ボタンと同じ画面に出す。
+   */
+  const sourceSummary = (() => {
+    if (!entry) return null;
+    const d = new Date(entry.entry_date + 'Z');
+    const week = ['日', '月', '火', '水', '木', '金', '土'][d.getUTCDay()];
+    const dateLabel = `${d.getUTCMonth() + 1}/${d.getUTCDate()}(${week})`;
+    const student = entry.student
+      ? `${entry.student.last_name} ${entry.student.first_name}`
+      : (entry.student_id ?? '—');
+    const slot = entry.time_slot ? `${entry.time_slot.slot_number}限` : '';
+    const teacher = entry.teacher?.display_name || entry.teacher?.email || '';
+    const subjects = (entry.subjects ?? [])
+      .map((s) => (typeof s === 'object' && s && 'name' in s ? s.name : String(s)))
+      .filter(Boolean)
+      .join('・');
+    return { student, dateLabel, slot, teacher, subjects };
+  })();
+
   const handleSubmit = async () => {
     if (!targetDate || !targetSlotId || !targetTeacherId) return;
     setSaving(true);
@@ -91,12 +112,27 @@ export function TransferModal({
   };
 
   return (
-    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle>別の週へ振替</DialogTitle>
-        </DialogHeader>
+    /* Header / Footer は DialogContent の外に置く（中に入れるとスクロール領域に
+       巻き込まれ、タイトルが上端で切れ、ボタンが画面外に出る）。幅は Dialog の size で決まる。 */
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()} size="md">
+      <DialogHeader>
+        <DialogTitle>別の週へ振替</DialogTitle>
+      </DialogHeader>
+      <DialogContent>
         <div className="space-y-4">
+          {sourceSummary && (
+            <div className="rounded-md border border-[var(--stroke)] bg-[var(--surface)] px-3 py-2 text-sm">
+              <div className="text-xs font-semibold text-[var(--headline)]">振替元</div>
+              <div className="mt-0.5 font-medium text-[var(--headline)]">
+                {sourceSummary.student}
+              </div>
+              <div className="text-xs text-[var(--paragraph)]">
+                {sourceSummary.dateLabel} {sourceSummary.slot}
+                {sourceSummary.teacher && ` ・ ${sourceSummary.teacher}`}
+                {sourceSummary.subjects && ` ・ ${sourceSummary.subjects}`}
+              </div>
+            </div>
+          )}
           <div className="space-y-2">
             <Label>振替先日付</Label>
             <Input
@@ -146,31 +182,31 @@ export function TransferModal({
             />
           </div>
         </div>
-        <DialogFooter className="flex-col sm:flex-row sm:justify-between gap-2">
-          {/* Phase P2: 振替先が未定なら保留プールへ。左端に置いて確定操作と視覚的に分ける。 */}
-          {onHold ? (
-            <Button
-              variant="outline"
-              onClick={onHold}
-              disabled={saving}
-              className="sm:mr-auto"
-              title="振替先を決めずに保留プールに入れる（後で座席表から配置）"
-            >
-              振替先が未定（保留にする）
-            </Button>
-          ) : (
-            <span />
-          )}
-          <div className="flex gap-2 justify-end">
-            <Button variant="secondary" onClick={onClose}>
-              キャンセル
-            </Button>
-            <Button onClick={handleSubmit} disabled={saving}>
-              {saving ? '振替中...' : '振替する'}
-            </Button>
-          </div>
-        </DialogFooter>
       </DialogContent>
+      <DialogFooter className="flex-col sm:flex-row sm:justify-between gap-2">
+        {/* Phase P2: 振替先が未定なら保留プールへ。左端に置いて確定操作と視覚的に分ける。 */}
+        {onHold ? (
+          <Button
+            variant="outline"
+            onClick={onHold}
+            disabled={saving}
+            className="sm:mr-auto"
+            title="振替先を決めずに保留プールに入れる（後で座席表から配置）"
+          >
+            振替先が未定（保留にする）
+          </Button>
+        ) : (
+          <span />
+        )}
+        <div className="flex gap-2 justify-end">
+          <Button variant="secondary" onClick={onClose}>
+            キャンセル
+          </Button>
+          <Button onClick={handleSubmit} disabled={saving}>
+            {saving ? '振替中...' : '振替する'}
+          </Button>
+        </div>
+      </DialogFooter>
     </Dialog>
   );
 }

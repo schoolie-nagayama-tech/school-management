@@ -25,6 +25,8 @@ import {
   filterSubjectsForGrade,
   gradeCategoryFromStudentGrade,
 } from '@/lib/utils/subjectOptions';
+import { canUseLessonEntryV2 } from '@/lib/utils/lessonEntryV2';
+import { shouldCreateEntryForCell } from '@/lib/schedule/patternVersioning';
 
 /**
  * 「この日のみ追加」で選べる授業種別。
@@ -70,6 +72,9 @@ export function AddStudentToSlotModal({
   onSuccess,
 }: AddStudentToSlotModalProps) {
   const { profile } = useAuth();
+  // 通塾日程v2（公開ゲート）。false のロールでは開始日の入力を出さず、
+  // 保存経路も従来のまま（effective_from を渡さない＝createRegularPattern 側で今日）。
+  const lessonEntryV2 = canUseLessonEntryV2(profile?.role, schoolId);
   const [selectedStudent, setSelectedStudent] = useState<StudentWithSubjects | null>(null);
   const [subjectId, setSubjectId] = useState<string>('');
   const [registerType, setRegisterType] = useState<RegisterType>('regular');
@@ -82,6 +87,8 @@ export function AddStudentToSlotModal({
   const [halfPosition, setHalfPosition] = useState<HalfPosition>(null);
   // 生徒×科目の契約比率マップ（科目選択時の ratio 初期値）。
   const [contractRatioMap, setContractRatioMap] = useState<Map<string, 1 | 2>>(new Map());
+  // v2: 通常授業の開始日（既定＝クリックしたセルの日付）。セグメントは使わず日付入力1つ。
+  const [startDate, setStartDate] = useState<string>(date);
 
   // 選択科目の授業時間（45分なら前後半セレクトを出す）。
   const selectedSubject = subjects.find((s) => s.id === subjectId);
@@ -120,8 +127,9 @@ export function AddStudentToSlotModal({
       setRatio(2);
       setHalfPosition(null);
       setContractRatioMap(new Map());
+      setStartDate(date);
     }
-  }, [isOpen, availableSubjects]);
+  }, [isOpen, availableSubjects, date]);
 
   // Phase R: 生徒選択時に契約比率マップを読み込む（科目選択時の ratio 初期値に使う）。
   useEffect(() => {
@@ -201,11 +209,20 @@ export function AddStudentToSlotModal({
           ratio,
           duration_minutes: effDuration,
           half_position: effHalf,
+          // v2 のときだけ開始日を渡す。ゲート false では従来どおり列自体を送らない
+          // （createRegularPattern 側の既定＝今日 のまま）。
+          ...(lessonEntryV2 ? { effective_from: startDate } : {}),
         });
-        await createScheduleEntry(schoolId, date, timeSlot.id, form, {
-          regular_pattern_id: pattern.id,
-          status: 'scheduled',
-        });
+        // 当週ぶんのコマは、開始日がこのセルの日付以降のときだけ作る。
+        // 未来開始のパターンでここに作ると、開始日前の授業が座席表に出てしまう。
+        if (
+          shouldCreateEntryForCell({ cellDate: date, startDate: lessonEntryV2 ? startDate : null })
+        ) {
+          await createScheduleEntry(schoolId, date, timeSlot.id, form, {
+            regular_pattern_id: pattern.id,
+            status: 'scheduled',
+          });
+        }
         await regenerateWeekForDate(schoolId, date, profile?.id);
       } else {
         const conflict = await checkStudentTimeConflict(
@@ -242,12 +259,13 @@ export function AddStudentToSlotModal({
   const canSubmit = selectedStudent && subjectId && schoolId;
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-md bg-white border border-gray-200">
-        <DialogHeader>
-          <DialogTitle>生徒を追加</DialogTitle>
-        </DialogHeader>
-
+    /* Header / Footer は DialogContent の外に置く（中に入れるとスクロール領域に
+       巻き込まれ、タイトルが上端で切れ、ボタンが画面外に出る）。幅は Dialog の size で決まる。 */
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()} size="md">
+      <DialogHeader>
+        <DialogTitle>生徒を追加</DialogTitle>
+      </DialogHeader>
+      <DialogContent>
         <div className="space-y-4 py-2">
           <div className="text-sm text-[var(--paragraph)]">
             <div>追加先: {slotLabel}</div>
@@ -380,6 +398,25 @@ export function AddStudentToSlotModal({
                 </select>
               </div>
             )}
+
+            {/* v2: 通常授業のときだけ開始日を選ぶ（既定＝クリックしたセルの日付）。
+                「この日だけ」は単発コマなので開始日の概念がない。 */}
+            {lessonEntryV2 && registerType === 'regular' && (
+              <div className="mt-2 pl-6">
+                <label className="block text-xs font-medium text-[var(--paragraph)] mb-1">
+                  授業の開始日
+                </label>
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="w-full px-3 py-2 border border-[var(--stroke)] rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
+                />
+                <p className="mt-1 text-[10px] text-[var(--paragraph-light)]">
+                  この日から毎週の授業が始まります。先の日付にすると、その日までは座席表に出ません
+                </p>
+              </div>
+            )}
           </div>
 
           {conflictError && (
@@ -389,20 +426,19 @@ export function AddStudentToSlotModal({
             </div>
           )}
         </div>
-
-        <DialogFooter className="gap-2">
-          <Button variant="outline" onClick={onClose} disabled={saving}>
-            キャンセル
-          </Button>
-          <Button
-            onClick={handleSubmit}
-            disabled={!canSubmit || saving}
-            className="bg-[#1e3a5f] hover:bg-[#2a4a6f]"
-          >
-            {saving ? '追加中...' : '追加する'}
-          </Button>
-        </DialogFooter>
       </DialogContent>
+      <DialogFooter className="gap-2">
+        <Button variant="outline" onClick={onClose} disabled={saving}>
+          キャンセル
+        </Button>
+        <Button
+          onClick={handleSubmit}
+          disabled={!canSubmit || saving}
+          className="bg-[#1e3a5f] hover:bg-[#2a4a6f]"
+        >
+          {saving ? '追加中...' : '追加する'}
+        </Button>
+      </DialogFooter>
     </Dialog>
   );
 }

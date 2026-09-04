@@ -70,14 +70,16 @@ export function TimeSlotForm({
   };
 
   return (
+    /* Header / Footer は DialogContent の外に置く（中に入れるとスクロール領域に
+       巻き込まれ、タイトルが上端で切れ、ボタンが画面外に出る）。幅は Dialog の size で決まる。 */
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogHeader>
+        <DialogTitle>{editingSlot ? 'コマ時間を編集' : 'コマ時間を追加'}</DialogTitle>
+      </DialogHeader>
       <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{editingSlot ? 'コマ時間を編集' : 'コマ時間を追加'}</DialogTitle>
-        </DialogHeader>
         <div className="space-y-4">
           <p className="text-sm text-[var(--paragraph)]">
-            コマ番号は開始時刻の早い順に自動で割り当てられます。
+            コマ番号は末尾に自動で割り当てられます。並び順は一覧の矢印ボタンで変更できます。
           </p>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -108,15 +110,15 @@ export function TimeSlotForm({
             />
           </div>
         </div>
-        <DialogFooter>
-          <Button variant="secondary" onClick={onClose}>
-            キャンセル
-          </Button>
-          <Button onClick={handleSubmit} disabled={saving}>
-            {saving ? '保存中...' : '保存'}
-          </Button>
-        </DialogFooter>
       </DialogContent>
+      <DialogFooter>
+        <Button variant="secondary" onClick={onClose}>
+          キャンセル
+        </Button>
+        <Button onClick={handleSubmit} disabled={saving}>
+          {saving ? '保存中...' : '保存'}
+        </Button>
+      </DialogFooter>
     </Dialog>
   );
 }

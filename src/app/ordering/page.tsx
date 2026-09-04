@@ -37,7 +37,14 @@ import {
 import { getStudents } from '@/lib/api/students';
 import { getBillingPeriods } from '@/lib/api/billing';
 import { getTextbooks } from '@/lib/api/textbooks';
-import type { Material, MaterialOrderWithDetails, BillingPeriod, Textbook } from '@/types/database';
+import type {
+  Material,
+  MaterialOrderWithDetails,
+  BillingPeriod,
+  Textbook,
+  OrderStatus,
+} from '@/types/database';
+import { ORDER_STATUS_LABELS } from '@/types/database';
 import { useRequirePermission, useCanEdit } from '@/hooks/usePermissions';
 import AccessDenied from '@/components/AccessDenied';
 import { useAuth } from '@/contexts/AuthContext';
@@ -152,7 +159,15 @@ export default function OrderingPage() {
   }, [orders]);
 
   // 二重発注の確認ダイアログ。確定時にサーバー再判定した重複を提示し、除外/含める/中止を選ばせる。
-  type DuplicateRow = { key: string; studentLabel: string; textbookName: string; reason: string };
+  type DuplicateRow = {
+    key: string;
+    studentLabel: string;
+    textbookName: string;
+    /** 表示ラベル。所持なら「所持」、発注済みなら実際のステータス（未確認/発注済み/…） */
+    reason: string;
+    /** 所持による重複か（バッジの色分け用） */
+    owned: boolean;
+  };
   const [dupPrompt, setDupPrompt] = useState<{ rows: DuplicateRow[]; total: number } | null>(null);
   // ダイアログの選択結果を handleBulkOrder 側の await に渡すための resolver。
   const dupResolverRef = useRef<((choice: 'exclude' | 'include' | 'cancel') => void) | null>(null);
@@ -307,6 +322,10 @@ export default function OrderingPage() {
     if (dupCandidates.length > 0) {
       const dupKeys = new Set<string>();
       const ownedKeys = new Set<string>();
+      // 発注が理由の重複は、そのステータス（未確認/発注済み/発送済み/配布済み）まで覚えておく。
+      // 「未確認」＝まだ取次に出していない状態を「発注済み」と出すと、実物が来ていないのに
+      // 発注できないように読めるため。
+      const orderStatusKeys = new Map<string, OrderStatus>();
       try {
         const results = await checkOrderDuplicates(
           dupCandidates.map(({ studentId, textbookId }) => ({ studentId, textbookId }))
@@ -315,6 +334,9 @@ export default function OrderingPage() {
           if (r.isDuplicate) {
             dupKeys.add(`${r.studentId}:${r.textbookId}`);
             if (r.alreadyOwned) ownedKeys.add(`${r.studentId}:${r.textbookId}`);
+            if (r.activeOrderStatus) {
+              orderStatusKeys.set(`${r.studentId}:${r.textbookId}`, r.activeOrderStatus);
+            }
           }
         }
       } catch (err) {
@@ -330,11 +352,14 @@ export default function OrderingPage() {
           const key = `${studentId}:${textbookId}`;
           if (!dupKeys.has(key) || seen.has(key)) continue;
           seen.add(key);
+          const owned = ownedKeys.has(key);
+          const orderStatus = orderStatusKeys.get(key);
           rows.push({
             key,
             studentLabel: item.studentLabel,
             textbookName: item.textbook.name,
-            reason: ownedKeys.has(key) ? '所持' : '発注済み',
+            reason: owned ? '所持' : orderStatus ? ORDER_STATUS_LABELS[orderStatus] : '発注済み',
+            owned,
           });
         }
 
@@ -641,7 +666,7 @@ export default function OrderingPage() {
                 <h3 className="text-base font-bold text-gray-900">二重発注の可能性</h3>
                 <p className="mt-0.5 text-xs text-gray-500">
                   カート{dupPrompt.total}件のうち、次の{dupPrompt.rows.length}
-                  件はすでに発注済み／所持済みです。
+                  件は所持済み、または発注リストに残っています（右のラベルが現在の状態です）。
                 </p>
               </div>
             </div>
@@ -659,9 +684,7 @@ export default function OrderingPage() {
                     </span>
                     <span
                       className={`flex-shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium ${
-                        r.reason === '所持'
-                          ? 'bg-green-100 text-green-700'
-                          : 'bg-blue-100 text-blue-700'
+                        r.owned ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'
                       }`}
                     >
                       {r.reason}
@@ -671,7 +694,12 @@ export default function OrderingPage() {
               </ul>
             </div>
             <div className="flex flex-col gap-2 border-t border-gray-200 px-5 py-4">
-              <Button onClick={() => resolveDupChoice('exclude')} className="w-full text-sm">
+              {/* 全件が重複だと除外して残るものが無い。押しても何も起きずカートだけ残るので無効化する */}
+              <Button
+                onClick={() => resolveDupChoice('exclude')}
+                disabled={dupPrompt.total - dupPrompt.rows.length === 0}
+                className="w-full text-sm"
+              >
                 重複を除いて発注（{dupPrompt.total - dupPrompt.rows.length}件）
               </Button>
               <div className="flex gap-2">

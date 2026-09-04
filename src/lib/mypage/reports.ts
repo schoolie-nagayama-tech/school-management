@@ -3,6 +3,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { getPortalServiceClient } from './serviceClient';
 import type {
   PortalHomeworkAssignment,
+  PortalNextPlanItem,
   PortalReportDetail,
   PortalReportListItem,
   PortalReportUnit,
@@ -58,6 +59,11 @@ interface ReportDetailRow extends ReportListRow {
   review_comment: string | null;
   homework_assignments: unknown;
   subject_specific: unknown;
+  /** 本日の様子マーク。ビュー追加前の環境を踏んでも落ちないよう null 許容で受ける。 */
+  tardy: boolean | null;
+  homework_not_done: boolean | null;
+  /** 次回の予定（jsonb）。講師フォームが書く形を信用せず normalizeNextPlan で正規化する。 */
+  next_plan: unknown;
 }
 
 interface ReportUnitRow {
@@ -75,7 +81,7 @@ interface ReportUnitRow {
 const LIST_COLUMNS =
   'id, student_id, lesson_date, teacher_id, short_term_goal, check_test_score, check_test_total, check_test_passed, homework_completion_pct, subject_names';
 
-const DETAIL_COLUMNS = `${LIST_COLUMNS}, mid_term_goal_snapshot, school_progress, homework_correct_pct, today_correct_pct, review_comment, homework_assignments, subject_specific`;
+const DETAIL_COLUMNS = `${LIST_COLUMNS}, mid_term_goal_snapshot, school_progress, homework_correct_pct, today_correct_pct, review_comment, homework_assignments, subject_specific, tardy, homework_not_done, next_plan`;
 
 /**
  * 講師名を限定公開ビュー経由で解決する（Stage3 の予定APIと同じ作法）。
@@ -221,6 +227,11 @@ export async function getPortalReport(
     midTermGoal: r.mid_term_goal_snapshot,
     units,
     schoolProgress: r.school_progress,
+    // 本日の様子マーク。値が無ければ false（＝該当なし）に倒す。
+    // 「該当したときだけ出す」表示なので、不明を true 側に倒すと誤って保護者に伝わる。
+    tardy: r.tardy === true,
+    homeworkNotDone: r.homework_not_done === true,
+    nextPlan: normalizeNextPlan(r.next_plan),
     homeworkCompletionPct: r.homework_completion_pct,
     homeworkCorrectPct: r.homework_correct_pct,
     todayCorrectPct: r.today_correct_pct,
@@ -250,6 +261,31 @@ function normalizeAssignments(raw: unknown): PortalHomeworkAssignment[] {
     // 中身が無い行は出さない。
     if (!date && !text) continue;
     out.push({ date, text });
+  }
+  return out;
+}
+
+/**
+ * next_plan（JSONB。次回の予定 [{textbookName, unitTitles[]}]）を表示用に正規化する。
+ * normalizeAssignments と同じ理由で信頼できない入力として扱う（講師フォームが書く形が
+ * 変わっても保護者面を壊さない）。単元名が1つも無い要素は落とす
+ * ＝呼び出し側は配列が空かどうかだけを見ればよい。
+ */
+export function normalizeNextPlan(raw: unknown): PortalNextPlanItem[] {
+  if (!Array.isArray(raw)) return [];
+  const out: PortalNextPlanItem[] = [];
+  for (const item of raw) {
+    if (item == null || typeof item !== 'object') continue;
+    const rec = item as Record<string, unknown>;
+    const textbookName =
+      typeof rec.textbookName === 'string' && rec.textbookName.trim() !== ''
+        ? rec.textbookName
+        : null;
+    const unitTitles = Array.isArray(rec.unitTitles)
+      ? rec.unitTitles.filter((t): t is string => typeof t === 'string' && t.trim() !== '')
+      : [];
+    if (unitTitles.length === 0) continue;
+    out.push({ textbookName, unitTitles });
   }
   return out;
 }

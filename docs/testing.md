@@ -4,11 +4,11 @@
 
 本プロジェクトのテスト環境は3層構成になっています。
 
-| レイヤー | ツール | 環境 | 対象 |
-|---------|--------|------|------|
-| ユニットテスト | Vitest | node | ユーティリティ関数、Zodスキーマ、APIルート |
-| コンポーネントテスト | Vitest + React Testing Library | jsdom | Reactコンポーネント |
-| 統合テスト | Vitest + ローカルSupabase | node | DB操作（CRUD） |
+| レイヤー             | ツール                         | 環境  | 対象                                       |
+| -------------------- | ------------------------------ | ----- | ------------------------------------------ |
+| ユニットテスト       | Vitest                         | node  | ユーティリティ関数、Zodスキーマ、APIルート |
+| コンポーネントテスト | Vitest + React Testing Library | jsdom | Reactコンポーネント                        |
+| 統合テスト           | Vitest + ローカルSupabase      | node  | DB操作（CRUD）                             |
 
 ---
 
@@ -217,11 +217,11 @@ supabase/migrations/
 
 ## パッケージ一覧（テスト関連）
 
-| パッケージ | 用途 |
-|-----------|------|
-| `vitest` | テストランナー |
-| `@vitejs/plugin-react` | JSX変換（コンポーネントテスト） |
-| `@testing-library/react` | Reactコンポーネントテスト |
-| `@testing-library/jest-dom` | DOM マッチャー |
+| パッケージ                    | 用途                             |
+| ----------------------------- | -------------------------------- |
+| `vitest`                      | テストランナー                   |
+| `@vitejs/plugin-react`        | JSX変換（コンポーネントテスト）  |
+| `@testing-library/react`      | Reactコンポーネントテスト        |
+| `@testing-library/jest-dom`   | DOM マッチャー                   |
 | `@testing-library/user-event` | ユーザーイベントシミュレーション |
-| `jsdom` | ブラウザ環境エミュレーション |
+| `jsdom`                       | ブラウザ環境エミュレーション     |

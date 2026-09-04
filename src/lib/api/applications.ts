@@ -1,4 +1,5 @@
 import { supabase } from '../supabase';
+import { canDeleteOnClear } from '@/lib/bulletin/applicationSync';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/database';
 import type {
@@ -289,7 +290,38 @@ export async function updateStudentApplication(
   const schoolId = student.school_id;
 
   if (status === null) {
-    // 削除（未登録状態に戻す）
+    /**
+     * チェックを外す。
+     *
+     * ★自動で付いた行は消さない。消すと「まだ付けていない」と区別できず、
+     *   次の同期で自動が付け直してしまう（docs/bulletin-ai-assist.html）。
+     *   status を空にし set_by='manual' で残して、「人が外した」事実を持たせる。
+     *   人が自分で付けた行は元から manual なので、従来どおり消してよい。
+     */
+    const { data: current } = await supabase
+      .from('student_applications')
+      .select('id, set_by')
+      .eq('student_id', studentId)
+      .eq('item_id', itemId)
+      .eq('school_id', schoolId)
+      .maybeSingle();
+
+    const row = current as { id: string; set_by?: string | null } | null;
+
+    if (
+      !canDeleteOnClear({ exists: Boolean(row), setBy: row?.set_by === 'auto' ? 'auto' : 'manual' })
+    ) {
+      const { error } = await supabase
+        .from('student_applications')
+        .update({ status: null, set_by: 'manual' })
+        .eq('id', row!.id);
+
+      if (error) {
+        throw new Error(`申込状況の解除に失敗しました: ${error.message}`);
+      }
+      return null;
+    }
+
     const { error } = await supabase
       .from('student_applications')
       .delete()
@@ -325,9 +357,10 @@ export async function updateStudentApplication(
 
   if (existing) {
     // 更新
+    // ★人が触ったので manual に戻す。以後この行は自動の対象外になる
     const { data, error } = await supabase
       .from('student_applications')
-      .update({ status })
+      .update({ status, set_by: 'manual' })
       .eq('id', existing.id)
       .select()
       .single();
@@ -351,6 +384,8 @@ export async function updateStudentApplication(
         student_id: studentId,
         item_id: itemId,
         status,
+        // ★人が付けた行。自動はこの行に触らない
+        set_by: 'manual',
       })
       .select()
       .single();

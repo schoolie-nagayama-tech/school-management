@@ -34,7 +34,13 @@ export function useMasterTimeSlots(): {
     getActiveTimeSlots(schoolId)
       .then((rows) => {
         if (cancelled) return;
-        setSlots(rows.map((r) => `${r.start_time.slice(0, 5)}-${r.end_time.slice(0, 5)}`));
+        // シフト（講師の出勤時間帯）は形態横断でよいが、コマ時間マスタは教室×形態ごとに
+        // 独立したセットのため formation 無指定だと個別/集団で同じ時間帯が重複しうる。
+        // 全形態のコマを統合し時間帯文字列で重複排除（シフトは形態横断のため）、開始時刻順に並べる。
+        const uniqueSlots = Array.from(
+          new Set(rows.map((r) => `${r.start_time.slice(0, 5)}-${r.end_time.slice(0, 5)}`))
+        ).sort((a, b) => a.localeCompare(b));
+        setSlots(uniqueSlots);
       })
       .catch(() => {
         if (cancelled) return;

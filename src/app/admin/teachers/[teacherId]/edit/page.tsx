@@ -20,7 +20,7 @@ import { addUserToSchool, removeUserFromSchool, fetchWithAuth } from '@/lib/api/
 import { displayLoginId } from '@/lib/utils/loginId';
 import { ChevronLeft } from 'lucide-react';
 import { useMasterData } from '@/contexts/MasterDataContext';
-import { getActiveTimeSlots } from '@/lib/api/schedule';
+import { getActiveTimeSlots, mergeTimeSlotsByTimeRange } from '@/lib/api/schedule';
 import {
   getTeacherBadges,
   getTeacherBadgeAssignments,
@@ -108,6 +108,8 @@ export default function TeacherEditPage() {
   const [editFirstName, setEditFirstName] = useState('');
   const [editSchoolIds, setEditSchoolIds] = useState<string[]>([]);
   const [editTeachableSubjectIds, setEditTeachableSubjectIds] = useState<string[]>([]);
+  // 次回の契約更新日（研修期間の終了日）。空欄＝対象外／更新済みで、アラートに出さない。
+  const [editContractRenewalDate, setEditContractRenewalDate] = useState('');
   // 出勤可能（曜日×コマ）は teacher_availability_periods（シフト申請由来＋手動）で版管理する。
   // 旧 user_profiles.available_slot_numbers_by_day 直編集は廃止し、期間パネルへ一本化。
   const [availabilityPeriods, setAvailabilityPeriods] = useState<TeacherAvailabilityPeriod[]>([]);
@@ -235,6 +237,7 @@ export default function TeacherEditPage() {
         }
         const subjectIds = normalizeToStrArray(found.teachable_subject_ids);
         setEditTeachableSubjectIds(subjectIds);
+        setEditContractRenewalDate(found.contract_renewal_date || '');
       } catch (e) {
         if (!cancelled) toastError((e as Error).message);
       } finally {
@@ -303,18 +306,8 @@ export default function TeacherEditPage() {
           editSchoolIds.map((sid) => getActiveTimeSlots(sid).catch(() => [] as ScheduleTimeSlot[]))
         );
         if (cancelled) return;
-        const seen = new Set<number>();
-        const allSlots: ScheduleTimeSlot[] = [];
-        for (const slots of slotsArrays) {
-          for (const s of slots) {
-            if (!seen.has(s.slot_number)) {
-              seen.add(s.slot_number);
-              allSlots.push(s);
-            }
-          }
-        }
-        allSlots.sort((a, b) => a.slot_number - b.slot_number);
-        setScheduleTimeSlots(allSlots);
+        // 重複排除は slot_number ではなく実時刻区間で行う（形態違いの同番コマを潰さないため）。
+        setScheduleTimeSlots(mergeTimeSlotsByTimeRange(slotsArrays));
       } catch {
         if (!cancelled) setScheduleTimeSlots([]);
       }
@@ -339,6 +332,8 @@ export default function TeacherEditPage() {
           last_name: editLastName,
           first_name: editFirstName,
           teachable_subject_ids: editTeachableSubjectIds,
+          // 空欄はクリア（＝更新済み・対象外）として送る
+          contract_renewal_date: editContractRenewalDate || null,
         }),
       });
       const errBody = (await profileRes.json().catch(() => ({}))) as {
@@ -505,6 +500,25 @@ export default function TeacherEditPage() {
                       </label>
                     ))}
                   </div>
+                </div>
+                {/* 契約更新日（研修期間の終了日）。
+                    規定では入社から3ヶ月が研修期間だが、契約は月単位で切るため
+                    （6/25入社なら9月末、6月頭入社なら8月末）自動計算はせず教室長が入れる。
+                    入れておくと更新月が近づいたときに出勤簿管理でアラートに出る。 */}
+                <div>
+                  <Label className="block text-sm font-medium text-text-muted mb-1.5">
+                    次回の契約更新日
+                  </Label>
+                  <Input
+                    type="date"
+                    value={editContractRenewalDate}
+                    onChange={(e) => setEditContractRenewalDate(e.target.value)}
+                    className="w-full"
+                  />
+                  <p className="mt-1.5 text-xs text-text-muted">
+                    研修期間の終了日を入れてください（例: 6月入社なら8月31日）。
+                    更新月が近づくと出勤簿管理にアラートが出ます。更新が済んだら空欄に戻します。
+                  </p>
                 </div>
               </div>
             </div>

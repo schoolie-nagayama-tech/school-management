@@ -4,10 +4,10 @@
  * 形態ボード（小集団・プログラミング等のユーザー定義形態）— Phase D。
  *
  * 行 = その形態のコマ時間（schedule_time_slots, formation=キー）、列 = 表示日（向きに追随）。
- * 各セル = その (日付×コマ) のクラス枠カード群。1カード = 1講師のクラス（講師1名＋生徒N行）。
+ * 各セル = その (日付×コマ) の講座の枠カード群。1カード = 1講師のクラス（講師1名＋生徒N行）。
  * カード言語は個別ボード（Phase U 高密度）と統一し、scheduleDensity.module.css を再利用/拡張する。
  *
- * 集団は手動編成なので D&D は無し。空セルの「＋クラス枠」バーで登録モーダル、
+ * 形態ボードは手動編成なので D&D は無し。空セルの「＋講座の枠」バーで登録モーダル、
  * 空席プレースホルダ行で既存クラスへの生徒追加、生徒行クリックで StudentActionModal を開く。
  */
 
@@ -44,14 +44,19 @@ export interface FormationBoardProps {
   /** その形態の週次エントリ（kind='regular', formation=キーで絞り込み済み） */
   entries: ScheduleEntry[];
   closedDates: string[];
-  /** 1枠あたり生徒数上限（school_formation_capacity.max_students_per_group） */
+  /** 1枠あたり生徒数上限の「形態の既定値」（school_formation_capacity.max_students_per_group） */
   maxStudentsPerGroup: number;
+  /**
+   * 週次パターンid → 解決済みの枠の定員（講座の定員 > 形態の既定値）。
+   * 省略時や引けなかった枠は maxStudentsPerGroup（従来挙動）。
+   */
+  capacityByPatternId?: Map<string, number>;
   subjectNameById?: Map<string, string>;
-  /** 空セルの「＋クラス枠」バー文言（例: クラス枠 / コース枠） */
+  /** 空セルの「＋…」バー文言（例: 講座の枠） */
   addLabel?: string;
   orientation: 'cols' | 'rows';
   stickyOffset?: number;
-  /** 空セルの「＋クラス枠」クリック → 登録モーダル（曜日×コマ自動設定） */
+  /** 空セルの「＋講座の枠」クリック → 登録モーダル（曜日×コマ自動設定） */
   onCreate: (date: string, slotId: string) => void;
   /** 空席プレースホルダ行クリック → 既存クラスへ生徒追加（講師固定） */
   onAddStudent: (date: string, slotId: string, teacherId: string | null) => void;
@@ -59,10 +64,11 @@ export interface FormationBoardProps {
   onStudentClick: (entry: ScheduleEntry, e: React.MouseEvent) => void;
 }
 
-/** 1クラス枠カード（1講師分）。 */
+/** 1枠カード（1講師分）。 */
 function ClassCard({
   entries,
   maxStudents,
+  capacityByPatternId,
   subjectNameById,
   date,
   slotId,
@@ -70,7 +76,9 @@ function ClassCard({
   onStudentClick,
 }: {
   entries: ScheduleEntry[];
+  /** 形態の既定値（講座の定員が引けなかったときのフォールバック） */
   maxStudents: number;
+  capacityByPatternId?: Map<string, number>;
   subjectNameById?: Map<string, string>;
   date: string;
   slotId: string;
@@ -79,6 +87,9 @@ function ClassCard({
 }) {
   if (entries.length === 0) return null;
   const teacherId = entries[0].teacher_id ?? null;
+  // この枠の定員。枠のどのエントリも同じ講座に属する前提なので先頭の週次パターンで引く。
+  const patternId = entries[0].regular_pattern_id ?? null;
+  const capacity = (patternId ? capacityByPatternId?.get(patternId) : undefined) ?? maxStudents;
   const teacher = entries[0].teacher;
   const teacherFullName = teacher?.display_name || teacher?.email || null;
   // 座席表ボードは密度優先のため姓のみ表示（フルネームは title 属性で確認できる）
@@ -94,7 +105,7 @@ function ClassCard({
     : '';
 
   const count = entries.length;
-  const remaining = Math.max(0, maxStudents - count);
+  const remaining = Math.max(0, capacity - count);
   const isFull = remaining === 0;
   const emptyRows = Math.min(remaining, MAX_EMPTY_ROWS);
   const hiddenRemain = remaining - emptyRows;
@@ -106,7 +117,7 @@ function ClassCard({
           {subjectLabel || 'クラス'}
         </span>
         <span className={`${styles.gCap} ${isFull ? '' : styles.openSlots}`}>
-          {count}/{maxStudents}
+          {count}/{capacity}
         </span>
       </div>
       <div
@@ -162,14 +173,20 @@ function ClassCard({
   );
 }
 
-export function FormationBoard({
+/**
+ * 形態ボード本体。★ React.memo でラップして export している（末尾）。
+ * 理由は WeeklyScheduleGrid と同じ（盤面に無関係なデータが届くたびの再描画を止める）。
+ * 呼び出し側は props を安定させること。
+ */
+function FormationBoardImpl({
   weekDates,
   slots,
   entries,
   closedDates,
   maxStudentsPerGroup,
+  capacityByPatternId,
   subjectNameById,
-  addLabel = 'クラス枠',
+  addLabel = '講座の枠',
   orientation,
   stickyOffset = 0,
   onCreate,
@@ -195,7 +212,7 @@ export function FormationBoard({
   const slotTimeLabel = (slot: ScheduleTimeSlot) =>
     `${slot.start_time?.slice(0, 5) ?? ''}〜${slot.end_time?.slice(0, 5) ?? ''}`;
 
-  // 1セルの中身（クラス枠カード群 ＋ ＋クラス枠バー）
+  // 1セルの中身（枠カード群 ＋ ＋バー）
   const renderCell = (date: string, slot: ScheduleTimeSlot) => {
     const closed = closedSet.has(date);
     const groups = cellGroups(date, slot.id);
@@ -209,6 +226,7 @@ export function FormationBoard({
             key={tid}
             entries={list}
             maxStudents={maxStudentsPerGroup}
+            capacityByPatternId={capacityByPatternId}
             subjectNameById={subjectNameById}
             date={date}
             slotId={slot.id}
@@ -325,3 +343,6 @@ export function FormationBoard({
     </div>
   );
 }
+
+export const FormationBoard = React.memo(FormationBoardImpl);
+FormationBoard.displayName = 'FormationBoard';

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { createClient } from '@supabase/supabase-js';
+import { captureApiError } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 
@@ -83,6 +84,9 @@ export async function GET(request: NextRequest) {
         }));
       }
     } catch (dbErr) {
+      captureApiError(dbErr, {
+        route: 'GET /api/system-settings',
+      });
       console.warn('system-settings: DB access failed:', dbErr);
       if (category === 'security') {
         settings = [
@@ -103,12 +107,18 @@ export async function GET(request: NextRequest) {
       response.cookies.getAll().forEach((c) => {
         json.cookies.set(c.name, c.value);
       });
-    } catch {
+    } catch (error) {
+      captureApiError(error, {
+        route: 'GET /api/system-settings',
+      });
       // Cookie マージ失敗時は無視
     }
 
     return json;
   } catch (err) {
+    captureApiError(err, {
+      route: 'GET /api/system-settings',
+    });
     console.error('system-settings GET error:', err);
     const category = request.nextUrl.searchParams.get('category');
     if (category === 'security') {

@@ -9,7 +9,7 @@
    Supabase の `user_profiles` テーブルを **全件** 取得（`select('*')`）。  
    メールドメイン（@test.com / @aread-company.com）での絞り込みは **一切していません**。
 
-2. **フィルタ**  
+2. **フィルタ**
    - クエリに `?role=teacher` がある → **講師（role=teacher）だけ**返す（講師一覧用）
    - それ以外（ユーザー管理用）→ **講師以外（admin, owner, manager など）** だけ返す
 
@@ -27,6 +27,7 @@
 （例: 招待以外の方法で作成された、またはプロファイル作成に失敗したケース）
 
 確認手順:
+
 1. Supabase Dashboard → Table Editor → `user_profiles`
 2. 上記 4 人のメール（または id）で検索し、行があるか確認する。
 

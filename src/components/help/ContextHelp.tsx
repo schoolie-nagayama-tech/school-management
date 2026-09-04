@@ -3,6 +3,10 @@
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { HelpCircle, X, ArrowRight, ExternalLink } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { AiHelpAsk } from '@/components/help/AiHelpAsk';
+import type { UserRole } from '@/types/database';
+import type { RoleTag } from '@/lib/help/faqData';
 
 export interface ContextHelpTopic {
   /** 操作のタイトル */
@@ -26,7 +30,17 @@ interface ContextHelpProps {
  * 各ページに配置するコンテキストヘルプボタン。
  * クリックでポップオーバーを表示し、そのページに関連する操作ガイドを提供する。
  */
+/** UserRole を FAQ の RoleTag に寄せる（help/page.tsx の mapUserRoleToTag と同じ対応） */
+function toRoleTag(role: UserRole | undefined): RoleTag {
+  if (!role) return 'all';
+  if (role === 'admin' || role === 'owner') return 'admin';
+  if (role === 'manager') return 'manager';
+  if (role === 'teacher') return 'teacher';
+  return 'all';
+}
+
 export function ContextHelp({ topics, searchQuery, position = 'inline' }: ContextHelpProps) {
+  const { profile } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -88,6 +102,15 @@ export function ContextHelp({ topics, searchQuery, position = 'inline' }: Contex
             <button onClick={() => setIsOpen(false)} className="text-white/80 hover:text-white">
               <X className="w-4 h-4" />
             </button>
+          </div>
+
+          {/* ★この画面について聞く。いまのパスを添えて /api/ai/help を呼ぶ */}
+          <div className="px-3 pt-3">
+            <AiHelpAsk
+              variant="popover"
+              role={toRoleTag(profile?.role as UserRole | undefined)}
+              pageTopics={topics.map((t) => t.title)}
+            />
           </div>
 
           {/* トピック一覧 */}

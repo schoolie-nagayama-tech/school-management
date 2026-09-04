@@ -26,6 +26,7 @@ import { StudentDetailModal } from '@/components/students/StudentDetailModal';
 import { Calendar, Settings } from 'lucide-react';
 import type { ScheduleEntry, ScheduleEntryFormData, ScheduleTimeSlot } from '@/types/schedule';
 import type { Student } from '@/types/database';
+import type { AvailabilityDayMap } from '@/lib/api/teacher-availability';
 
 interface Teacher {
   id: string;
@@ -55,6 +56,10 @@ interface ScheduleDialogsProps {
 
   // Student action modal
   actionModalEntry: ScheduleEntry | null;
+  /** 振替先コマから保護者へ通知する（未指定なら通知ボタンを出さない） */
+  onNotifyTransfer?: () => Promise<void>;
+  /** 振替元コマ（transfer_from_id の先）。親が解決して渡す。未指定なら振替元を表示しない */
+  actionModalTransferSource?: ScheduleEntry | null;
   onActionModalClose: () => void;
   timeSlots: ScheduleTimeSlot[];
   onTransferFromAction: () => void;
@@ -114,6 +119,8 @@ interface ScheduleDialogsProps {
   teacherDetailOpen: boolean;
   onTeacherDetailClose: () => void;
   selectedTeacher: Teacher | null;
+  /** 出勤可否（正典）。schoolId・週単位で page.tsx が取得済みのものをそのまま渡す。 */
+  availabilityMap: AvailabilityDayMap | null;
 
   // Delete modal
   deleteDialogOpen: boolean;
@@ -146,6 +153,8 @@ export function ScheduleDialogs({
   onScheduleGenerateConfirm,
 
   actionModalEntry,
+  onNotifyTransfer,
+  actionModalTransferSource,
   onActionModalClose,
   timeSlots,
   onTransferFromAction,
@@ -190,6 +199,7 @@ export function ScheduleDialogs({
   teacherDetailOpen,
   onTeacherDetailClose,
   selectedTeacher,
+  availabilityMap,
 
   deleteDialogOpen,
   onDeleteDialogClose,
@@ -204,11 +214,13 @@ export function ScheduleDialogs({
 
   return (
     <>
-      <Dialog open={scheduleSettingsOpen} onOpenChange={onScheduleSettingsChange}>
-        <DialogContent className="max-w-sm bg-white border border-gray-200">
-          <DialogHeader>
-            <DialogTitle>座席表の設定</DialogTitle>
-          </DialogHeader>
+      {/* Header / Footer は DialogContent の外に置く（中に入れるとスクロール領域に
+          巻き込まれ、タイトルが上端で切れ、ボタンが画面外に出る）。幅は Dialog の size で決まる。 */}
+      <Dialog open={scheduleSettingsOpen} onOpenChange={onScheduleSettingsChange} size="sm">
+        <DialogHeader>
+          <DialogTitle>表示の設定</DialogTitle>
+        </DialogHeader>
+        <DialogContent>
           <div className="flex flex-col gap-2 py-2">
             <Button
               variant="secondary"
@@ -228,11 +240,11 @@ export function ScheduleDialogs({
               className="justify-start"
               onClick={() => {
                 onScheduleSettingsChange(false);
-                router.push('/settings/time-slots');
+                router.push('/schedule/special-courses');
               }}
             >
               <Settings className="mr-2 h-4 w-4" />
-              コマ時間設定
+              授業の設定
             </Button>
             <Button
               variant="secondary"
@@ -292,6 +304,7 @@ export function ScheduleDialogs({
             : null
         }
         onTransfer={onTransferFromAction}
+        onNotifyTransfer={onNotifyTransfer}
         onRevertTransfer={onRevertTransfer}
         onAbsent={onAbsentFromAction}
         onSwap={onSwapFromAction}
@@ -299,6 +312,13 @@ export function ScheduleDialogs({
         onDelete={onDeleteClick}
         onStudentClick={onStudentClickFromAction}
         onTeacherClick={onTeacherClickFromAction}
+        transferSource={actionModalTransferSource}
+        // 進行表は生徒に紐づくページなので、生徒のいるコマ（見込み客の体験は除く）だけ出す
+        progressHref={
+          actionModalEntry?.student_id
+            ? `/students/${actionModalEntry.student_id}/progress`
+            : undefined
+        }
       />
 
       <StudentDetailModal
@@ -383,6 +403,7 @@ export function ScheduleDialogs({
         onClose={onTeacherDetailClose}
         teacher={selectedTeacher}
         subjects={subjects}
+        availabilityMap={availabilityMap}
       />
 
       <DeleteScheduleEntryModal
