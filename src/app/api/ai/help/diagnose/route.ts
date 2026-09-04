@@ -52,6 +52,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: '権限がありません' }, { status: 403 });
   }
 
+  const workspaceId = process.env.ANTHROPIC_WORKSPACE_ID?.trim();
   const configured = isClaudeConfigured();
   if (!configured) {
     return NextResponse.json({
@@ -111,11 +112,15 @@ export async function GET(request: NextRequest) {
   const firstFailure = blocking[0];
   return NextResponse.json({
     configured: true,
+    // ★「すべてのワークスペース」の鍵ではこれが要る。鍵IDそのものは出さない
+    workspaceIdSet: Boolean(workspaceId),
     models: CLAUDE_MODELS,
     allOk: !firstFailure,
     promptCacheAvailable: cacheCheck ? cacheCheck.ok : null,
     hint: firstFailure
-      ? `「${firstFailure.name}」で失敗しました。detail にAPIが返した理由が入っています。`
+      ? firstFailure.reason === 'workspace_required'
+        ? 'この鍵は「すべてのワークスペース」に紐づいているため、対象ワークスペースの指定が要ります。ANTHROPIC_WORKSPACE_ID を設定するか、ワークスペース固定の鍵を作り直してください。'
+        : `「${firstFailure.name}」で失敗しました。detail にAPIが返した理由が入っています。`
       : cacheCheck && !cacheCheck.ok
         ? 'AIヘルプは動きます。プロンプトキャッシュだけ組織で無効です（コンソールで有効にすると費用と速度が改善します）。'
         : 'すべて通りました。AIヘルプは動くはずです。',
