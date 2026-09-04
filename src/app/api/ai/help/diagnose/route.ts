@@ -78,7 +78,8 @@ export async function GET(request: NextRequest) {
 
   // 3. プロンプトキャッシュ付き。
   //    ★本番の呼び出しは、弾かれたらキャッシュ無しで自動的に retry するので落ちない。
-  //      ここは「組織でキャッシュが有効か」を素で見るための検査。ok:false でも機能は動く。
+  //      キャッシュはリクエストごとに cache_control を付けて使うもので、コンソールの設定ではない。
+  //      ここは cache_control を素で通せるかを見るだけの検査。ok:false でも機能は動く。
   checks.push(
     await run('プロンプトキャッシュ付き（無効でも機能は動く）', () =>
       callClaude({
@@ -122,7 +123,7 @@ export async function GET(request: NextRequest) {
         ? 'この鍵は「すべてのワークスペース」に紐づいているため、対象ワークスペースの指定が要ります。ANTHROPIC_WORKSPACE_ID を設定するか、ワークスペース固定の鍵を作り直してください。'
         : `「${firstFailure.name}」で失敗しました。detail にAPIが返した理由が入っています。`
       : cacheCheck && !cacheCheck.ok
-        ? 'AIヘルプは動きます。プロンプトキャッシュだけ組織で無効です（コンソールで有効にすると費用と速度が改善します）。'
+        ? 'AIヘルプは動きます。cache_control だけ通りませんでした（キャッシュ無しで動くので実害はありません）。'
         : 'すべて通りました。AIヘルプは動くはずです。',
     checks,
   });

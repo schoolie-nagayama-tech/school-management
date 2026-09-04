@@ -186,16 +186,17 @@ export async function callClaude(options: ClaudeCallOptions): Promise<string> {
     const err = toClaudeError(e);
 
     /**
-     * ★プロンプトキャッシュが組織で有効になっていないと、cache_control が 400 で弾かれる。
-     *   キャッシュは速度と費用のための飾りであって、機能の前提ではない。
-     *   無ければ外して通す（ここを落とすと、コンソールの設定ひとつで機能ごと死ぬ）。
+     * cache_control が理由で 400 になったときの保険。
+     *
+     * ★プロンプトキャッシュはリクエストごとに cache_control を付けて使うもので、
+     *   コンソールに有効/無効のスイッチがあるわけではない
+     *   （コンソールの「プロンプトキャッシュ」カードは使用状況の表示であって設定ではない）。
+     *   なのでここが実際に効く場面は多くないが、キャッシュは速度と費用のための飾りであって
+     *   機能の前提ではないので、弾かれたら外して通す。
      */
     if (wantsCache && !cacheDisabled && err.reason === 'bad_request' && isCacheRejection(err)) {
       cacheDisabled = true;
-      console.warn(
-        '[claude] プロンプトキャッシュが使えないため、以後キャッシュ無しで呼びます。' +
-          'コンソールで有効にすると費用と速度が改善します。'
-      );
+      console.warn('[claude] cache_control が弾かれたため、以後キャッシュ無しで呼びます。');
       return await send(options, false);
     }
 
