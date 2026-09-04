@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getApiAuth } from '@/lib/api-auth';
 import { getPortalServiceClient } from '@/lib/mypage/serviceClient';
-import { callClaudeJson, isClaudeConfigured, CLAUDE_MODELS } from '@/lib/ai/claude';
+import {
+  callClaudeJson,
+  isClaudeConfigured,
+  CLAUDE_MODELS,
+  ClaudeError,
+  type ClaudeFailureReason,
+} from '@/lib/ai/claude';
 import {
   buildFaqIndex,
   filterIndexByRole,
@@ -45,6 +51,11 @@ export interface AiHelpResponse {
   unanswered: boolean;
   /** AIが使えない（鍵未設定・障害）。UIは従来の検索だけを出す */
   degraded: boolean;
+  /**
+   * ★なぜ使えなかったか。「鍵が無い」と「呼んだが失敗した」が同じ文言だと
+   *   設定を直すべきか待つべきかが分からないので、画面に出し分けるために返す。
+   */
+  degradedReason: ClaudeFailureReason | null;
   /** unanswered / degraded のときの代替候補 */
   fallback: { id: string; question: string; categoryTitle: string; href?: string }[];
   /** 記録した行のID。画面の「役に立った / 立たなかった」を後から結びつけるのに使う */
@@ -158,6 +169,7 @@ export async function POST(request: NextRequest) {
     unanswered: true,
     degraded: false,
     fallback: fallbackFrom(visible, question),
+    degradedReason: null,
     logId: null,
   };
 
@@ -172,7 +184,12 @@ export async function POST(request: NextRequest) {
       unanswered: true,
       degraded: true,
     });
-    return NextResponse.json({ ...empty, degraded: true, logId } satisfies AiHelpResponse);
+    return NextResponse.json({
+      ...empty,
+      degraded: true,
+      degradedReason: 'not_configured',
+      logId,
+    } satisfies AiHelpResponse);
   }
 
   try {
@@ -183,7 +200,6 @@ export async function POST(request: NextRequest) {
       system: [{ text: intro }, { text: catalog, cache: true }],
       userText: `【質問】\n${question}${path ? `\n【いま開いている画面】${path}` : ''}`,
       maxTokens: 200,
-      prefill: '{"ids":',
     });
 
     const ids = Array.isArray(shortlist?.ids)
@@ -215,7 +231,6 @@ export async function POST(request: NextRequest) {
         roleLabel: ROLE_LABELS_JA[roleTag] ?? 'スタッフ',
       }),
       maxTokens: 900,
-      prefill: '{"answer":',
     });
 
     const answerText = typeof answer?.answer === 'string' ? answer.answer.trim() : '';
@@ -272,11 +287,13 @@ export async function POST(request: NextRequest) {
       page,
       unanswered: false,
       degraded: false,
+      degradedReason: null,
       fallback: [],
       logId,
     } satisfies AiHelpResponse);
   } catch (e) {
-    console.error('[ai/help] failed', e);
+    const reason: ClaudeFailureReason = e instanceof ClaudeError ? e.reason : 'unavailable';
+    console.error('[ai/help] failed', reason, e);
     const logId = await recordQuestion({
       userId: auth.userId,
       role: roleTag,
@@ -287,6 +304,11 @@ export async function POST(request: NextRequest) {
       degraded: true,
     });
     // 落ちたときも従来の検索は返す
-    return NextResponse.json({ ...empty, degraded: true, logId } satisfies AiHelpResponse);
+    return NextResponse.json({
+      ...empty,
+      degraded: true,
+      degradedReason: reason,
+      logId,
+    } satisfies AiHelpResponse);
   }
 }

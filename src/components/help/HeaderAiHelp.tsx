@@ -62,11 +62,12 @@ export function HeaderAiHelp({ role }: Props) {
         aria-haspopup="dialog"
         aria-expanded={open}
         title="AIに聞いてみる（Ctrl+K）"
-        className="ai-pill flex items-center gap-1.5 h-8 pl-2.5 pr-3 rounded-full bg-white/15 hover:bg-white/25 text-white/90 hover:text-white border border-white/25 transition-[background-color,color] duration-150 sm:min-w-[152px]"
+        className="ai-pill flex items-center gap-1.5 h-8 px-2.5 rounded-full bg-white/15 hover:bg-white/25 text-white/90 hover:text-white border border-white/25 transition-[background-color,color] duration-150"
       >
         <Sparkles className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
-        <span className="hidden sm:inline text-xs whitespace-nowrap">AIに聞いてみる</span>
-        <span className="sr-only sm:hidden">AIに聞いてみる</span>
+        {/* ★ヘッダーが狭いので、文字は広い画面だけ。短く「AIに聞く」 */}
+        <span className="hidden lg:inline text-xs whitespace-nowrap">AIに聞く</span>
+        <span className="sr-only lg:hidden">AIに聞いてみる</span>
       </button>
 
       {open && (

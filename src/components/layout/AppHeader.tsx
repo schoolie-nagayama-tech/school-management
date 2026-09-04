@@ -482,6 +482,23 @@ export function AppHeader({
                           教室長ダッシュボード（試作）
                         </Link>
                       )}
+                      {/* 座席表。ヘッダーのアイコン列から試作の並びへ移した
+                          （ヘッダーを詰めるため。運用開始までは試作扱いのまま） */}
+                      {isSystemAdmin(profile?.role) && (
+                        <Link
+                          prefetch={false}
+                          href="/schedule"
+                          className={`flex items-center gap-2 px-3 py-2 text-xs transition-colors hover:bg-gray-50 ${
+                            pathname === '/schedule' || pathname?.startsWith('/schedule')
+                              ? 'font-bold text-primary'
+                              : 'text-text-heading'
+                          }`}
+                          onClick={() => setShowSettingsDropdown(false)}
+                        >
+                          <LayoutDashboard className="w-3.5 h-3.5" aria-hidden />
+                          座席表（試作）
+                        </Link>
+                      )}
                       {/* ポータルV2デモの導線。公開範囲は canAccessPortalDemo が単一の判定点
                           （API 側 /api/portal-demo/start も同じヘルパーで認可する。
                            開放時はヘルパー1箇所＋デモSQLの user_schools 付与を揃える）。 */}
@@ -534,21 +551,6 @@ export function AppHeader({
               {/* ★AIヘルプ。歯車の奥だと存在に気づかれないので、どの画面からも見える位置に出す */}
               {profile && !authLoading && (
                 <HeaderAiHelp role={helpRoleTag(profile.role as UserRole | undefined)} />
-              )}
-              {/* 座席表：システム管理者のみ表示 */}
-              {profile && isSystemAdmin(profile.role) && (
-                <Link
-                  prefetch={false}
-                  href="/schedule"
-                  className={`p-1.5 rounded-lg transition-[color,background-color,transform] duration-150 ease-out active:scale-[0.97] ${
-                    pathname === '/schedule' || pathname?.startsWith('/schedule')
-                      ? 'bg-white text-primary'
-                      : 'text-white/80 hover:text-white hover:bg-white/10'
-                  }`}
-                  title="座席表（開発中）"
-                >
-                  <LayoutDashboard className="w-4 h-4" aria-hidden />
-                </Link>
               )}
             </div>
           </div>

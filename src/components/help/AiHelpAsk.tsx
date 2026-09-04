@@ -39,8 +39,32 @@ interface AiHelpResponse {
   unanswered: boolean;
   degraded: boolean;
   fallback: FallbackItem[];
+  degradedReason?: DegradedReason | null;
   logId?: string | null;
 }
+
+type DegradedReason = 'not_configured' | 'auth' | 'rate_limit' | 'bad_request' | 'unavailable';
+
+/**
+ * ★「AIが使えません」だけだと、設定を直すべきか待つべきかが分からない。
+ *   社内だけが読む画面なので、理由をそのまま出す。
+ */
+const DEGRADED_LABEL: Record<DegradedReason, string> = {
+  not_configured: 'AIの設定がまだです',
+  auth: 'AIの鍵が正しくありません',
+  rate_limit: 'AIが混み合っています',
+  bad_request: 'AIの呼び出しに失敗しました',
+  unavailable: 'AIが使えません',
+};
+
+const DEGRADED_HINT: Record<DegradedReason, string> = {
+  not_configured:
+    '管理者が設定すると使えるようになります。それまではキーワードで探した結果を出します。',
+  auth: '管理者に鍵の確認をお願いしてください。それまではキーワードで探した結果を出します。',
+  rate_limit: '少し待ってからもう一度お試しください。いまはキーワードで探した結果を出します。',
+  bad_request: '不具合の可能性があります。いまはキーワードで探した結果を出します。',
+  unavailable: 'いまAIに聞けないので、キーワードで探した結果を出します。',
+};
 
 interface Props {
   variant?: 'page' | 'popover' | 'modal';
@@ -240,7 +264,11 @@ function AnswerCard({
               : 'bg-warning-subtle text-text-body'
         }`}
       >
-        {answered ? 'ヘルプから' : result.degraded ? 'AIが使えません' : 'ヘルプに載っていません'}
+        {answered
+          ? 'ヘルプから'
+          : result.degraded
+            ? DEGRADED_LABEL[result.degradedReason ?? 'unavailable']
+            : 'ヘルプに載っていません'}
       </span>
 
       {answered ? (
@@ -250,7 +278,7 @@ function AnswerCard({
       ) : (
         <p className="mt-2.5 text-sm leading-[1.85] text-text-body">
           {result.degraded
-            ? 'いまAIに聞けないので、キーワードで探した結果を出します。'
+            ? DEGRADED_HINT[result.degradedReason ?? 'unavailable']
             : 'この質問はヘルプに載っていません。近いかもしれない項目を出します。'}
         </p>
       )}
