@@ -53,6 +53,7 @@ import { SchoolSwitcher } from '@/components/SchoolSwitcher';
 import { ProposalPrintView } from '@/components/proposals/ProposalPrintView';
 import type { PrintUnitDraft, ProposalPrintData } from '@/components/proposals/ProposalPrintView';
 import { getSubjectBadgeColor } from '@/lib/subjectBadge';
+import { BulkConceptPanel } from '@/components/proposals/BulkConceptPanel';
 
 const STATUS_BADGE: Record<ProposalStatus, string> = {
   draft: 'bg-surface-hover text-text-muted',
@@ -494,6 +495,34 @@ export default function CourseProposalsPage() {
   };
   const selectAllSelectable = () => setSelected(new Set(selectable.map((p) => p.id)));
   const clearSelection = () => setSelected(new Set());
+  /**
+   * テーマの書き足しの対象。★選択中のもののうち、教室が1つに定まるときだけ。
+   *   この画面は複数教室を横断して選べるが、AIの入切は教室ごとなので、
+   *   混ざったまま走らせるとオフの教室のデータまで出てしまう。
+   */
+  const conceptTargets = useMemo(() => {
+    return filtered
+      .filter((p) => selected.has(p.id))
+      .map((p) => ({
+        id: p.id,
+        label: [
+          p.student ? `${p.student.last_name} ${p.student.first_name}` : '不明',
+          p.textbook?.subject ?? '',
+          p.textbook?.name ?? '',
+        ]
+          .filter(Boolean)
+          .join(' / '),
+        theme: p.theme ?? '',
+      }));
+  }, [filtered, selected]);
+
+  const conceptSchoolId = useMemo(() => {
+    const ids = new Set(filtered.filter((p) => selected.has(p.id)).map((p) => p.school_id ?? ''));
+    // 教室が混ざっている・分からないときは出さない
+    if (ids.size !== 1) return null;
+    const only = Array.from(ids)[0];
+    return only || null;
+  }, [filtered, selected]);
 
   const handleBulkPublish = async () => {
     if (!isManagerOrAbove) return;
@@ -1002,6 +1031,21 @@ export default function CourseProposalsPage() {
                 )}
               </div>
             )}
+
+            {/* 選んだ提案書のテーマをまとめて書き足す。
+                ★教室の設定がオフならパネル自体が出ない（成績の外部送信が起きない）。
+                ★この画面は複数教室を横断して選べるので、教室が1つに定まるときだけ出す。 */}
+            {hasSelection && conceptSchoolId && conceptTargets.length > 0 && (
+              <BulkConceptPanel
+                schoolId={conceptSchoolId}
+                targets={conceptTargets}
+                onApplied={() => {
+                  clearSelection();
+                  void load();
+                }}
+              />
+            )}
+
             {studentGroups.map(
               ({ name, studentId, grade, proposals: studentProposals }, groupIndex) => {
                 // 生徒の全提案書の合計コマ数（名前横に表示）

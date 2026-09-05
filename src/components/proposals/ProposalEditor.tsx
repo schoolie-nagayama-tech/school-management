@@ -50,6 +50,7 @@ import {
   promoteProposalToCourse,
 } from '@/lib/api/proposals';
 import type { ProposalUnitInput } from '@/lib/api/proposals';
+import { ConceptBar } from './ConceptBar';
 import { getProposalOrderCandidates, type OrderCandidate } from '@/lib/api/ordering';
 import { PublishOrderDialog } from './PublishOrderDialog';
 import { getTextbooks } from '@/lib/api/textbooks';
@@ -169,6 +170,12 @@ export default function ProposalEditor() {
 
   const [studentName, setStudentName] = useState('');
   const [studentSchoolId, setStudentSchoolId] = useState<string | null>(null);
+  /**
+   * テーマの書き足しに使うID。★新規作成中は出さない。
+   *   まだ保存されていないので、単元も成績もサーバー側から引けない。
+   */
+  const conceptTargetId = isNew ? null : proposalId;
+  const conceptSchoolId = studentSchoolId;
   const [textbookName, setTextbookName] = useState('');
   const [textbookSubject, setTextbookSubject] = useState('');
   const [textbookGrade, setTextbookGrade] = useState('');
@@ -1352,6 +1359,18 @@ export default function ProposalEditor() {
             }`}
             placeholder="例: 英検3級対策 / 1年生の総復習 / 2学期の先取り"
           />
+
+          {/* テーマ欄に書いた一言を、その生徒の単元と成績で書き足す。
+              ★教室の設定がオフならバー自体が出ない（成績の外部送信が起きない） */}
+          {conceptTargetId && conceptSchoolId && (
+            <ConceptBar
+              className="mt-2"
+              proposalId={conceptTargetId}
+              schoolId={conceptSchoolId}
+              value={theme}
+              onChange={setTheme}
+            />
+          )}
         </section>
 
         {/* 単元選択 */}

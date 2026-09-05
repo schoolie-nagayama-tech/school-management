@@ -14,3 +14,14 @@
  * ★行が無ければOFF（設定を作り忘れた教室が黙って送るのを防ぐ）。
  */
 export const BULLETIN_AI_FEATURE_KEY = 'bulletin_ai';
+
+/**
+ * 講習テーマの書き足し（/api/ai/koushu/concept）。
+ *
+ * ★掲示板とキーを分ける。送るデータが違うため。
+ *   掲示板は社内向けの連絡文だが、こちらは**生徒の成績**を送る。
+ *   同じスイッチにすると、掲示板を開けた教室で成績まで流れ出す。
+ *
+ * ★既定OFF。プライバシーポリシーのリーガルチェックが終わるまで、どの教室もオンにしない。
+ */
+export const KOUSHU_CONCEPT_FEATURE_KEY = 'koushu_concept';
