@@ -26,6 +26,14 @@ import { getCurriculumItems } from './textbooks';
 import { getDefaultSchoolId } from './schools';
 import { computeKoushuKoma } from '@/lib/utils/koushuKoma';
 import type { KoushuKomaRow, KoushuKomaSummary } from '@/lib/utils/koushuKoma';
+// 目標(student_textbook_exams)の親は「生徒×テキスト」ではなく「生徒×科目」。
+// 科目の分類は進行表タブ(カードビュー)と完全に同じ判定を使う必要があるため、
+// categorizeSubject をそのまま re-use する（判定がズレると目標が別科目に飛ぶ）。
+import {
+  categorizeSubject,
+  SUBJECT_COLUMNS,
+  type SubjectColumn,
+} from '@/app/students/[studentId]/progress/newProgress.shared';
 
 // ============================================
 // 生徒×テキスト紐付け（student_textbooks）
@@ -66,14 +74,17 @@ export async function getStudentTextbooksExamsBySchool(
   const stList = studentTextbooks;
   if (stList.length === 0) return empty;
 
-  // stIds も教室横断で 1000 を超えうる。さらに 1 テキストに複数試験があり .in() の結果が
-  // id 数より増えるため、id チャンク分割＋チャンク内ページングの fetchAllInChunks で取得する。
+  // stIds も教室横断で 1000 を超えうる。
   const stIds = stList.map((st) => st.id);
-  const exams = await fetchAllInChunks<StudentTextbookExam>(stIds, (chunk, from, to) =>
+  // 目標(student_textbook_exams)の親は「生徒×科目」なので、テキストIDではなく生徒IDで引く。
+  // 1生徒に対し科目数(最大6)×履歴ぶんの行があるため、student_textbook_id での取得と同様に
+  // id チャンク分割＋チャンク内ページングの fetchAllInChunks で安全に取得する。
+  const studentIds = Array.from(new Set(stList.map((st) => st.student_id)));
+  const exams = await fetchAllInChunks<StudentTextbookExam>(studentIds, (chunk, from, to) =>
     supabase
       .from('student_textbook_exams')
       .select('*')
-      .in('student_textbook_id', chunk)
+      .in('student_id', chunk)
       .order('exam_date', { ascending: true })
       .order('id', { ascending: true })
       .range(from, to)
@@ -95,11 +106,21 @@ export async function getStudentTextbooksExamsBySchool(
     }
   }
 
-  const examsByStId = new Map<string, StudentTextbookExam[]>();
+  // (student_id, subject_key) → 目標一覧。同じ科目の全テキストがこの1本を共有する
+  // （読み込み層で科目単位に束ねることで、UIコンポーネント側は無変更で済む。
+  //  docs/progress-goal-subject-level-plan.md §3参照）。
+  const examsBySubjectKey = new Map<string, StudentTextbookExam[]>();
+  const subjectKeyOf = (studentId: string, subjectKey: string) => `${studentId}:${subjectKey}`;
   for (const exam of (exams || []) as StudentTextbookExam[]) {
-    const list = examsByStId.get(exam.student_textbook_id) || [];
+    const key = subjectKeyOf(exam.student_id, exam.subject_key);
+    const list = examsBySubjectKey.get(key) || [];
     list.push(exam);
-    examsByStId.set(exam.student_textbook_id, list);
+    examsBySubjectKey.set(key, list);
+  }
+  const examsByStId = new Map<string, StudentTextbookExam[]>();
+  for (const st of stList) {
+    const subject = categorizeSubject(st.textbook?.subject);
+    examsByStId.set(st.id, examsBySubjectKey.get(subjectKeyOf(st.student_id, subject)) || []);
   }
 
   const settingsByStId = new Map<string, StudentTextbookSetting | null>();
@@ -224,33 +245,80 @@ export async function getStudentTextbooks(
     textbook: Textbook;
   })[];
 
-  // 設定とテスト情報をテキストブックID一覧で一括取得（N×2クエリ→2クエリ）
+  // 設定は引き続きテキストID単位。目標(exams)は科目単位で1回取得し、
+  // 各テキストにはその科目の目標一覧を割り当てる（同じ科目のテキストは同じ配列を共有する）。
   const stIds = studentTextbooks.map((st) => st.id);
-  const [settingsResult, examsResult] = await Promise.all([
+  const [settingsResult, examsBySubject] = await Promise.all([
     supabase.from('student_textbook_settings').select('*').in('student_textbook_id', stIds),
-    supabase
-      .from('student_textbook_exams')
-      .select('*')
-      .in('student_textbook_id', stIds)
-      .order('exam_date', { ascending: true }),
+    getExamsBySubject(studentId),
   ]);
 
   const settingsList = (settingsResult.data || []) as StudentTextbookSetting[];
   const settingsMap = new Map<string, StudentTextbookSetting>(
     settingsList.map((s) => [s.student_textbook_id, s])
   );
-  const examsMap = new Map<string, StudentTextbookExam[]>();
-  for (const exam of (examsResult.data || []) as StudentTextbookExam[]) {
-    const list = examsMap.get(exam.student_textbook_id) || [];
-    list.push(exam);
-    examsMap.set(exam.student_textbook_id, list);
-  }
 
   return studentTextbooks.map((st) => ({
     ...st,
     settings: settingsMap.get(st.id) || null,
-    exams: examsMap.get(st.id) || [],
+    exams: examsBySubject[categorizeSubject(st.textbook?.subject)] || [],
   }));
+}
+
+/** 進行表タブと同じ 5教科＋その他の全列挙（グループ化の初期値作りに使う） */
+const ALL_SUBJECT_COLUMNS: SubjectColumn[] = [...SUBJECT_COLUMNS, 'その他'];
+
+/**
+ * 生徒の全目標(student_textbook_exams)を科目キーでグループ化して一括取得する。
+ *
+ * 目標の親は「生徒×テキスト」ではなく「生徒×科目」なので、進行表は1生徒ぶんを
+ * この1回のクエリで取れる（テキストごとに引くとN+1になる）。
+ * 同じ科目の複数テキストは、ここで得た同じ配列を共有することになる。
+ */
+export async function getExamsBySubject(
+  studentId: string
+): Promise<Record<SubjectColumn, StudentTextbookExam[]>> {
+  const result = Object.fromEntries(
+    ALL_SUBJECT_COLUMNS.map((col) => [col, [] as StudentTextbookExam[]])
+  ) as Record<SubjectColumn, StudentTextbookExam[]>;
+
+  const { data, error } = await supabase
+    .from('student_textbook_exams')
+    .select('*')
+    .eq('student_id', studentId)
+    .order('exam_date', { ascending: true });
+
+  if (error) {
+    throw new Error(`テスト設定の取得に失敗しました: ${error.message}`);
+  }
+
+  for (const exam of (data || []) as StudentTextbookExam[]) {
+    const col = (exam.subject_key as SubjectColumn) ?? 'その他';
+    (result[col] ||= []).push(exam);
+  }
+  return result;
+}
+
+/**
+ * 生徒×科目の目標一覧を取得する（1科目分だけでよい場合。行動目標コピー等の限定用途向け）。
+ * 一覧画面で全科目まとめて取るなら getExamsBySubject を使うこと（N+1回避）。
+ */
+export async function getSubjectExams(
+  studentId: string,
+  subjectKey: SubjectColumn
+): Promise<StudentTextbookExam[]> {
+  const { data, error } = await supabase
+    .from('student_textbook_exams')
+    .select('*')
+    .eq('student_id', studentId)
+    .eq('subject_key', subjectKey)
+    .order('exam_date', { ascending: true });
+
+  if (error) {
+    throw new Error(`テスト設定の取得に失敗しました: ${error.message}`);
+  }
+
+  return (data || []) as StudentTextbookExam[];
 }
 
 /**
@@ -420,28 +488,16 @@ export async function upsertStudentTextbookSettings(
 // ============================================
 // テスト設定（student_textbook_exams）
 // ============================================
-
-/**
- * 生徒×テキストのテスト設定一覧を取得
- */
-export async function getStudentTextbookExams(
-  studentTextbookId: string
-): Promise<StudentTextbookExam[]> {
-  const { data, error } = await supabase
-    .from('student_textbook_exams')
-    .select('*')
-    .eq('student_textbook_id', studentTextbookId)
-    .order('exam_date', { ascending: true });
-
-  if (error) {
-    throw new Error(`テスト設定の取得に失敗しました: ${error.message}`);
-  }
-
-  return (data || []) as StudentTextbookExam[];
-}
+// 生徒×テキスト単位の一覧取得（旧 getStudentTextbookExams）は廃止。
+// 目標の親は「生徒×科目」になったので getExamsBySubject / getSubjectExams を使う。
 
 /**
  * テスト設定を作成
+ */
+/**
+ * テスト設定（目標）を作成する。
+ * 親は student_id + subject_key（生徒×科目）。student_textbook_id は「作成元テキストの記録」
+ * として任意で入れられるが、読み込み経路では使わない（省略しても科目単位の表示に支障は無い）。
  */
 export async function createStudentTextbookExam(
   exam: StudentTextbookExamInsert

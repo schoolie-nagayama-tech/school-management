@@ -12,10 +12,21 @@ import {
   getCurriculumItems,
   createCurriculumItem,
   updateCurriculumItem,
-  deleteCurriculumItem,
   updateCurriculumOrder,
   updateTextbook,
 } from '@/lib/api/textbooks';
+import {
+  getCurriculumItemsUsage,
+  deleteCurriculumItems,
+  forceDeleteCurriculumItems,
+  mergeCurriculumItems,
+  emptyCurriculumItemUsage,
+  isCurriculumItemBlocked,
+  hasCurriculumItemUsage,
+  sumCurriculumItemUsage,
+  type CurriculumItemUsage,
+} from '@/lib/api/curriculumItemsApi';
+import { isOwnerOrAbove } from '@/lib/utils/roles';
 import {
   DndContext,
   closestCenter,
@@ -73,6 +84,8 @@ export default function CurriculumPage() {
   const { toasts, removeToast, success: toastSuccess, error: toastError } = useToast();
   const isManager =
     profile?.role === 'admin' || profile?.role === 'owner' || profile?.role === 'manager';
+  // 参照ごと削除・付け替えは全教室のデータに影響するため admin / owner のみ（API 側の requireAdmin と同じ境界）
+  const canForceEdit = isOwnerOrAbove(profile?.role);
 
   const [textbook, setTextbook] = useState<Textbook | null>(null);
   const [items, setItems] = useState<CurriculumItem[]>([]);
@@ -98,7 +111,14 @@ export default function CurriculumPage() {
   // 選択削除
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
-  const [bulkDeleting, setBulkDeleting] = useState(false);
+
+  // 削除確認（使用状況つき）。単体削除・一括削除の両方がこのモーダルを通る
+  const [deleteTargets, setDeleteTargets] = useState<CurriculumItem[]>([]);
+  const [deleteUsage, setDeleteUsage] = useState<Record<number, CurriculumItemUsage>>({});
+  const [usageLoading, setUsageLoading] = useState(false);
+  const [deleteBusy, setDeleteBusy] = useState(false);
+  const [mergeMode, setMergeMode] = useState(false);
+  const [mergeTargetId, setMergeTargetId] = useState('');
 
   // Bulk import
   const [showBulkModal, setShowBulkModal] = useState(false);
@@ -160,7 +180,9 @@ export default function CurriculumPage() {
     try {
       if (editingId) {
         await updateCurriculumItem(editingId, {
-          item_number: form.item_number ? Number(form.item_number) : null,
+          // ★ 番号は数値化しない。「1-8」「第15回」のような番号が実データに入っており、
+          //   Number() を通すと NaN → null になって番号が消える。
+          item_number: form.item_number.trim() || null,
           title: form.title.trim(),
           item_type: form.item_type,
         });
@@ -169,7 +191,7 @@ export default function CurriculumPage() {
         const maxSort = items.length > 0 ? Math.max(...items.map((i) => i.sort_order)) : 0;
         const data: CurriculumItemInsert = {
           textbook_id: textbookId,
-          item_number: form.item_number ? Number(form.item_number) : null,
+          item_number: form.item_number.trim() || null,
           title: form.title.trim(),
           item_type: form.item_type,
           sort_order: maxSort + 1,
@@ -186,15 +208,133 @@ export default function CurriculumPage() {
     }
   };
 
-  const handleDelete = async (id: number) => {
-    if (!window.confirm('この項目を削除しますか？')) return;
+  // ---- 削除（使用状況を確認してから実行する） ----
+  //
+  // ★ 単元は進行表（student_progress）から ON DELETE RESTRICT で参照されているため、
+  //   一度でも生徒の進行表に載った単元は DB が削除を拒否する。生の Postgres エラーを
+  //   そのまま出すと理由が伝わらないので、先に使用状況を取ってモーダルで見せる。
+  const openDeleteModal = async (targets: CurriculumItem[]) => {
+    if (targets.length === 0) return;
+    setDeleteTargets(targets);
+    setDeleteUsage({});
+    setMergeMode(false);
+    setMergeTargetId('');
+    setUsageLoading(true);
     try {
-      await deleteCurriculumItem(id);
-      toastSuccess('項目を削除しました');
-      loadData();
+      setDeleteUsage(await getCurriculumItemsUsage(targets.map((t) => t.id)));
+    } catch (e) {
+      toastError(
+        `使用状況の確認に失敗しました: ${e instanceof Error ? e.message : '不明なエラー'}`
+      );
+      setDeleteTargets([]);
+    } finally {
+      setUsageLoading(false);
+    }
+  };
+
+  /** モーダルを閉じて状態を捨てる（処理完了直後に使う内部用） */
+  const closeDeleteModalForce = () => {
+    setDeleteTargets([]);
+    setDeleteUsage({});
+    setMergeMode(false);
+    setMergeTargetId('');
+  };
+
+  const closeDeleteModal = () => {
+    if (deleteBusy) return;
+    closeDeleteModalForce();
+  };
+
+  const usageOf = (id: number) => deleteUsage[id] ?? emptyCurriculumItemUsage();
+  const blockedTargets = deleteTargets.filter((t) => isCurriculumItemBlocked(usageOf(t.id)));
+  const freeTargets = deleteTargets.filter((t) => !isCurriculumItemBlocked(usageOf(t.id)));
+  const totalUsage = sumCurriculumItemUsage(deleteTargets.map((t) => usageOf(t.id)));
+
+  /** 使用中のものはスキップして削除する（途中で中断しないので部分削除に気づけないことがない） */
+  const runDelete = async () => {
+    setDeleteBusy(true);
+    try {
+      const { deleted, blocked } = await deleteCurriculumItems(deleteTargets.map((t) => t.id));
+      if (deleted.length > 0) toastSuccess(`${deleted.length}件の項目を削除しました`);
+      await loadData();
+      if (blocked.length === 0) {
+        setSelectedIds(new Set());
+        setSelectionMode(false);
+        closeDeleteModalForce();
+      } else {
+        // 残った使用中のものは、付け替え・参照ごと削除を選べるようモーダルに残す
+        toastError(`使用中の${blocked.length}件は削除できませんでした`);
+        const blockedIds = new Set(blocked.map((b) => b.id));
+        setDeleteTargets((prev) => prev.filter((t) => blockedIds.has(t.id)));
+        setDeleteUsage(Object.fromEntries(blocked.map((b) => [b.id, b.usage])));
+        setSelectedIds(blockedIds);
+      }
     } catch (e) {
       toastError(`削除に失敗しました: ${e instanceof Error ? e.message : '不明なエラー'}`);
+    } finally {
+      setDeleteBusy(false);
     }
+  };
+
+  /** 進行表などの参照行ごと消す。講評・引継ぎも失われるので二段確認する */
+  const runForceDelete = async () => {
+    const message =
+      `使用中の${deleteTargets.length}件を、参照ごと削除します。\n\n` +
+      `・進行表 ${totalUsage.progress}行（講評・引継ぎを含む）\n` +
+      `・テスト対策提案書 ${totalUsage.testPrep}行\n` +
+      `・講習提案書 ${totalUsage.seasonalProposal}行\n` +
+      `・講習カリキュラム ${totalUsage.seasonalCourse}行\n` +
+      `・授業報告の指導単元 ${totalUsage.lessonReport}件\n\n` +
+      'これらは元に戻せません。実行しますか？';
+    if (!window.confirm(message)) return;
+    setDeleteBusy(true);
+    try {
+      const { deleted } = await forceDeleteCurriculumItems(deleteTargets.map((t) => t.id));
+      toastSuccess(`${deleted.length}件を参照ごと削除しました`);
+      setSelectedIds(new Set());
+      setSelectionMode(false);
+      closeDeleteModalForce();
+      await loadData();
+    } catch (e) {
+      toastError(`削除に失敗しました: ${e instanceof Error ? e.message : '不明なエラー'}`);
+    } finally {
+      setDeleteBusy(false);
+    }
+  };
+
+  /** 別の単元にまとめる（付け替え）。進行表や提案書の実績を正しい単元に移してから削除する */
+  const runMerge = async () => {
+    const toId = Number(mergeTargetId);
+    if (!Number.isInteger(toId) || toId <= 0) {
+      toastError('まとめ先の単元を選んでください');
+      return;
+    }
+    setDeleteBusy(true);
+    try {
+      const { moved, dropped } = await mergeCurriculumItems(
+        deleteTargets.map((t) => t.id),
+        toId
+      );
+      const target = items.find((i) => i.id === toId);
+      toastSuccess(
+        `「${target?.title ?? ''}」にまとめました（付け替え${moved}行` +
+          (dropped > 0 ? ` / 重複${dropped}行を整理` : '') +
+          '）'
+      );
+      setSelectedIds(new Set());
+      setSelectionMode(false);
+      closeDeleteModalForce();
+      await loadData();
+    } catch (e) {
+      toastError(`付け替えに失敗しました: ${e instanceof Error ? e.message : '不明なエラー'}`);
+    } finally {
+      setDeleteBusy(false);
+    }
+  };
+
+  const handleDelete = (id: number) => {
+    const item = items.find((i) => i.id === id);
+    if (item) openDeleteModal([item]);
   };
 
   // 並べ替え確定: 楽観的に並べ替え→sort_orderを保存。失敗時は元に戻す。
@@ -236,13 +376,14 @@ export default function CurriculumPage() {
 
       for (const line of lines) {
         const parts = line.split('\t');
-        let itemNumber: number | null = null;
+        // 番号は文字列のまま扱う（「1-8」「第15回」のような番号が実際に使われている）
+        let itemNumber: string | null = null;
         let title = '';
         let itemType = 'lesson';
 
         if (parts.length >= 3) {
           // number \t title \t type
-          itemNumber = parts[0] ? Number(parts[0]) || null : null;
+          itemNumber = parts[0]?.trim() || null;
           title = parts[1];
           const typeMap: Record<string, string> = {
             通常単元: 'lesson',
@@ -257,7 +398,7 @@ export default function CurriculumPage() {
           itemType = typeMap[parts[2]] || 'lesson';
         } else if (parts.length === 2) {
           // number \t title
-          itemNumber = parts[0] ? Number(parts[0]) || null : null;
+          itemNumber = parts[0]?.trim() || null;
           title = parts[1];
         } else {
           // title only
@@ -353,24 +494,9 @@ export default function CurriculumPage() {
     }
   };
 
-  const handleBulkDelete = async () => {
+  const handleBulkDelete = () => {
     if (selectedIds.size === 0) return;
-    if (!window.confirm(`選択した${selectedIds.size}件の項目を削除しますか？`)) return;
-    setBulkDeleting(true);
-    try {
-      const ids = Array.from(selectedIds);
-      for (const id of ids) {
-        await deleteCurriculumItem(id);
-      }
-      toastSuccess(`${selectedIds.size}件の項目を削除しました`);
-      setSelectedIds(new Set());
-      setSelectionMode(false);
-      loadData();
-    } catch (e) {
-      toastError(`削除に失敗しました: ${e instanceof Error ? e.message : '不明なエラー'}`);
-    } finally {
-      setBulkDeleting(false);
-    }
+    openDeleteModal(items.filter((i) => selectedIds.has(i.id)));
   };
 
   const exitSelectionMode = () => {
@@ -460,11 +586,11 @@ export default function CurriculumPage() {
               <>
                 <button
                   onClick={handleBulkDelete}
-                  disabled={selectedIds.size === 0 || bulkDeleting}
+                  disabled={selectedIds.size === 0 || deleteBusy || usageLoading}
                   className="inline-flex items-center gap-1.5 px-3 py-2 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors duration-150"
                 >
                   <Trash2 className="w-4 h-4" />
-                  {bulkDeleting ? '削除中...' : `${selectedIds.size}件を削除`}
+                  {`${selectedIds.size}件を削除`}
                 </button>
                 <button
                   onClick={exitSelectionMode}
@@ -635,6 +761,192 @@ export default function CurriculumPage() {
             </DndContext>
           )}
         </div>
+
+        {/* Delete Modal（使用状況を見せてから消す／まとめる） */}
+        {deleteTargets.length > 0 && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+            onClick={closeDeleteModal}
+          >
+            <div
+              className="bg-surface-raised rounded-xl shadow-xl w-full max-w-lg mx-4 p-6"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h2 className="text-lg font-bold text-text-heading mb-4">
+                {deleteTargets.length === 1
+                  ? '単元を削除'
+                  : `${deleteTargets.length}件の単元を削除`}
+              </h2>
+
+              {usageLoading ? (
+                <Loading size="sm" label="使用状況を確認中..." />
+              ) : (
+                <>
+                  {/* 削除対象 */}
+                  <div className="border border-border rounded-lg divide-y divide-border max-h-48 overflow-y-auto mb-4">
+                    {deleteTargets.map((t) => {
+                      const u = usageOf(t.id);
+                      return (
+                        <div
+                          key={t.id}
+                          className="flex items-center gap-2 px-3 py-2 text-sm text-text-heading"
+                        >
+                          <span className="text-text-muted w-8 shrink-0 text-right">
+                            {t.item_number || '-'}
+                          </span>
+                          <span className="flex-1 truncate">{t.title}</span>
+                          {isCurriculumItemBlocked(u) ? (
+                            <span className="text-xs px-2 py-0.5 rounded bg-red-100 text-red-700 shrink-0">
+                              使用中
+                            </span>
+                          ) : hasCurriculumItemUsage(u) ? (
+                            <span className="text-xs px-2 py-0.5 rounded bg-amber-100 text-amber-700 shrink-0">
+                              講習で参照
+                            </span>
+                          ) : (
+                            <span className="text-xs px-2 py-0.5 rounded bg-surface-hover text-text-muted shrink-0">
+                              未使用
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* 削除できない理由 */}
+                  {blockedTargets.length > 0 && (
+                    <div className="border border-red-200 bg-red-50 rounded-lg p-3 mb-3 text-sm">
+                      <div className="font-medium text-red-800 mb-1">
+                        {blockedTargets.length}件は使用中のため削除できません
+                      </div>
+                      <ul className="text-red-700 text-xs space-y-0.5">
+                        {totalUsage.progress > 0 && (
+                          <li>進行表 {totalUsage.progress}行（講評・引継ぎを含む）</li>
+                        )}
+                        {totalUsage.testPrep > 0 && (
+                          <li>テスト対策提案書 {totalUsage.testPrep}行</li>
+                        )}
+                      </ul>
+                      <div className="text-xs text-red-700 mt-2">
+                        誤字や番号違いなら削除せず「編集」で直せます（進行表・提案書の表示も一斉に直ります）。
+                        単元そのものが不要なら、実績を残したまま正しい単元に「まとめる」ことができます。
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 削除しても止まらないが、一緒に消える／書き換わるもの */}
+                  {(totalUsage.seasonalProposal > 0 ||
+                    totalUsage.seasonalCourse > 0 ||
+                    totalUsage.lessonReport > 0) && (
+                    <div className="border border-amber-200 bg-amber-50 rounded-lg p-3 mb-3 text-xs text-amber-800">
+                      <div>削除すると、次からも一緒に消えます（全教室が対象）。</div>
+                      <ul className="mt-1 space-y-0.5">
+                        {totalUsage.seasonalProposal > 0 && (
+                          <li>講習提案書 {totalUsage.seasonalProposal}行</li>
+                        )}
+                        {totalUsage.seasonalCourse > 0 && (
+                          <li>講習カリキュラム {totalUsage.seasonalCourse}行</li>
+                        )}
+                        {totalUsage.lessonReport > 0 && (
+                          <li>授業報告の指導単元 {totalUsage.lessonReport}件</li>
+                        )}
+                      </ul>
+                    </div>
+                  )}
+
+                  {freeTargets.length > 0 && blockedTargets.length > 0 && (
+                    <div className="text-xs text-text-muted mb-3">
+                      「使用していない{freeTargets.length}件を削除」を押すと、消せるものだけ削除して
+                      使用中のものはこの画面に残ります。
+                    </div>
+                  )}
+
+                  {/* まとめ先の選択 */}
+                  {mergeMode && (
+                    <div className="border border-border rounded-lg p-3 mb-3">
+                      <label className="block text-sm font-medium text-text-heading mb-1">
+                        まとめ先の単元
+                      </label>
+                      <select
+                        value={mergeTargetId}
+                        onChange={(e) => setMergeTargetId(e.target.value)}
+                        className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-surface-raised"
+                      >
+                        <option value="">選択してください</option>
+                        {items
+                          .filter((i) => !deleteTargets.some((t) => t.id === i.id))
+                          .map((i) => (
+                            <option key={i.id} value={i.id}>
+                              {i.item_number ? `${i.item_number}. ` : ''}
+                              {i.title}
+                            </option>
+                          ))}
+                      </select>
+                      <div className="text-xs text-text-muted mt-2">
+                        進行表・提案書の参照をこの単元に付け替えてから、選択した単元を削除します。
+                        両方を持っている生徒はまとめ先の行を残します。
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex flex-wrap justify-end gap-2 mt-6">
+                    <button
+                      onClick={closeDeleteModal}
+                      disabled={deleteBusy}
+                      className="px-4 py-2 text-sm text-text-muted disabled:opacity-50"
+                    >
+                      キャンセル
+                    </button>
+
+                    {/* 使用中がある場合の逃げ道（admin / owner のみ） */}
+                    {blockedTargets.length > 0 && canForceEdit && !mergeMode && (
+                      <>
+                        <button
+                          onClick={() => setMergeMode(true)}
+                          disabled={deleteBusy}
+                          className="px-4 py-2 border border-border text-sm text-text-heading rounded-lg hover:bg-surface disabled:opacity-50"
+                        >
+                          別の単元にまとめる
+                        </button>
+                        <button
+                          onClick={runForceDelete}
+                          disabled={deleteBusy}
+                          className="px-4 py-2 border border-red-300 text-sm text-red-700 rounded-lg hover:bg-red-50 disabled:opacity-50"
+                        >
+                          参照ごと削除
+                        </button>
+                      </>
+                    )}
+
+                    {mergeMode && (
+                      <button
+                        onClick={runMerge}
+                        disabled={deleteBusy || !mergeTargetId}
+                        className="px-4 py-2 bg-ink text-white text-sm rounded-lg hover:bg-ink/80 disabled:opacity-50"
+                      >
+                        {deleteBusy ? '実行中...' : 'まとめて削除'}
+                      </button>
+                    )}
+
+                    {!mergeMode && freeTargets.length > 0 && (
+                      <button
+                        onClick={runDelete}
+                        disabled={deleteBusy}
+                        className="px-4 py-2 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 disabled:opacity-50"
+                      >
+                        {deleteBusy
+                          ? '削除中...'
+                          : blockedTargets.length > 0
+                            ? `使用していない${freeTargets.length}件を削除`
+                            : `${freeTargets.length}件を削除`}
+                      </button>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Add/Edit Modal */}
         {showModal && (

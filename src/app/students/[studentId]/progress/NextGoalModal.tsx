@@ -3,15 +3,19 @@
 import { useState } from 'react';
 import { createStudentTextbookExam, updateStudentTextbookExam } from '@/lib/api/progress';
 import { copyActionGoalsFromExam } from '@/lib/api/action-goals';
+import type { SubjectColumn } from './newProgress.shared';
 import type { ExamType, StudentTextbookExam } from '@/types/database';
 
 /**
  * 「次の目標へ」モーダル
  * 試験が終わった後の一連の流れ（振り返り → 次の目標作成 → 行動目標の引き継ぎ）を
  * 1つのフローでまとめて実行する。ExamGoalEditModal の新規作成部分の入力仕様・バリデーションを踏襲。
+ *
+ * 目標の親は「生徒×科目」（studentId + subjectKey）。同科目の全テキストが対象になる。
  */
 export function NextGoalModal({
-  textbookId,
+  studentId,
+  subjectKey,
   prevExam,
   prevExamName,
   examTypes,
@@ -19,7 +23,8 @@ export function NextGoalModal({
   onSaved,
   toastError,
 }: {
-  textbookId: string;
+  studentId: string;
+  subjectKey: SubjectColumn;
   prevExam: StudentTextbookExam;
   prevExamName: string;
   examTypes: ExamType[];
@@ -64,7 +69,8 @@ export function NextGoalModal({
 
       // 2. 次の目標を作成
       const nextExam = await createStudentTextbookExam({
-        student_textbook_id: textbookId,
+        student_id: studentId,
+        subject_key: subjectKey,
         exam_type_id: examTypeId || null,
         custom_exam_name: examTypeId ? null : customName.trim() || null,
         exam_date: examDate,

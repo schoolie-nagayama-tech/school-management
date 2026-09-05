@@ -66,6 +66,23 @@ const DEFAULT_COLORS = {
   dot: 'bg-gray-400',
 };
 
+/**
+ * 一覧に出す更新日。直近は相対表記（今日／3日前）にして、
+ * それ以前は日付にする。「最近いじった教材」を一目で見つけるための表示。
+ */
+function formatUpdatedAt(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  const days = Math.floor((Date.now() - d.getTime()) / 86400000);
+  if (days <= 0) return '今日';
+  if (days === 1) return '昨日';
+  if (days < 7) return `${days}日前`;
+  const sameYear = d.getFullYear() === new Date().getFullYear();
+  return sameYear
+    ? `${d.getMonth() + 1}/${d.getDate()}`
+    : `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
+}
+
 interface TextbookForm {
   name: string;
   publisher: string;
@@ -538,6 +555,15 @@ function TextbookMasterPage() {
 
                         {/* Tags */}
                         <div className="flex items-center gap-1.5 flex-shrink-0">
+                          {/* 更新日: textbooks.updated_at はDBトリガーで自動更新される（手入力ではない） */}
+                          {t.updated_at && (
+                            <span
+                              className="text-xs text-text-faint tabular-nums"
+                              title={`最終更新 ${new Date(t.updated_at).toLocaleString('ja-JP')}`}
+                            >
+                              {formatUpdatedAt(t.updated_at)}
+                            </span>
+                          )}
                           <span className="text-xs px-1.5 py-0.5 rounded bg-surface-hover text-text-muted">
                             {t.grade || '-'}
                           </span>

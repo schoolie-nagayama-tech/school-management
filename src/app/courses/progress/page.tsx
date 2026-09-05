@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef, type CSSProperties } from 'react';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
-import { Printer, Trash2, AlertTriangle } from 'lucide-react';
+import { Printer, Trash2, AlertTriangle, Lock, History } from 'lucide-react';
 import { AdminLayout } from '@/components/layouts';
 import { Loading, InlineLoading } from '@/components/ui';
 import { StudentDetailModal } from '@/components/students';
@@ -46,6 +46,8 @@ import {
   unhideCourseProgressItem,
   getProgressTableSummary,
   deleteProgressTable,
+  saveCoursePrepSnapshot,
+  getCoursePrepSnapshot,
   type AutoValues,
   type ProgressTableSummary,
 } from '@/lib/api/courseProgress';
@@ -65,6 +67,8 @@ import type {
   ApplicationStatus,
   SeasonType,
   ApplicationColumnType,
+  CoursePrepSnapshot,
+  CoursePrepSnapshotMeta,
 } from '@/types/database';
 import { PROGRESS_COLUMN_GROUPS, SEASON_LABELS } from '@/types/database';
 import { useRequirePermission, useCanEdit } from '@/hooks/usePermissions';
@@ -76,6 +80,14 @@ import { loadSavedSeasonYear, saveSavedSeasonYear } from '@/lib/utils/coursePrep
 import { useLocalSchoolId } from '@/hooks/useLocalSchoolId';
 import { SchoolSwitcher } from '@/components/SchoolSwitcher';
 import { formatGradeLabel } from '@/lib/utils/gradeLabel';
+
+/** 確定保存の日時を「2026年9月4日」の形にする（時刻までは要らない） */
+function formatSnapshotDate(iso: string | null | undefined): string {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日`;
+}
 
 export default function CourseProgressPage() {
   const { hasPermission, isLoading: permissionLoading } = useRequirePermission(
@@ -116,11 +128,33 @@ export default function CourseProgressPage() {
   const [reportMode, setReportMode] = useState<'none' | 'single' | 'all'>('none');
 
   // データ
-  const [students, setStudents] = useState<Student[]>([]);
-  const [items, setItems] = useState<CourseProgressItem[]>([]);
-  const [progressData, setProgressData] = useState<StudentCourseProgress[]>([]);
-  const [period, setPeriod] = useState<CoursePrepPeriod | null>(null);
-  const [autoValuesData, setAutoValuesData] = useState<AutoValues>({});
+  // ライブ（現在のDBから再計算された）データ。確定保存を表示しているときは
+  // 下の students / items / ... がスナップショット側に差し替わる。
+  const [liveStudents, setStudents] = useState<Student[]>([]);
+  const [liveItems, setItems] = useState<CourseProgressItem[]>([]);
+  const [liveProgressData, setProgressData] = useState<StudentCourseProgress[]>([]);
+  const [livePeriod, setPeriod] = useState<CoursePrepPeriod | null>(null);
+  const [liveAutoValuesData, setAutoValuesData] = useState<AutoValues>({});
+
+  // 確定保存（スナップショット）。設計は docs/koushu-progress-snapshot-plan.md。
+  // meta は「この期が保存済みか」を示すだけの軽い情報で、表を再生するときだけ payload を取りにいく。
+  const [snapshotMeta, setSnapshotMeta] = useState<CoursePrepSnapshotMeta | null>(null);
+  const [snapshot, setSnapshot] = useState<CoursePrepSnapshot | null>(null);
+  const [snapshotLoading, setSnapshotLoading] = useState(false);
+  const [isSavingSnapshot, setIsSavingSnapshot] = useState(false);
+  // 保存済みの期は既定で「当時の姿」を出す。ライブも見たいときだけ切り替える。
+  const [showLiveInstead, setShowLiveInstead] = useState(false);
+
+  const isSnapshotView = !!snapshot && !showLiveInstead;
+
+  // 以降のロジックは差し替え後のデータだけを見る（表示・集計・印刷の分岐を増やさないため）。
+  const students = isSnapshotView ? (snapshot.payload.students as Student[]) : liveStudents;
+  const items = isSnapshotView ? snapshot.payload.items : liveItems;
+  const progressData = isSnapshotView ? snapshot.payload.progress : liveProgressData;
+  const period = isSnapshotView ? snapshot.payload.period : livePeriod;
+  const autoValuesData = isSnapshotView
+    ? (snapshot.payload.autoValues as AutoValues)
+    : liveAutoValuesData;
   const [isLoading, setIsLoading] = useState(true);
   // 重い auto_values 集計の読み込み状態。表本体より遅れて到着するので分けて持つ。
   const [autoLoading, setAutoLoading] = useState(true);
@@ -200,6 +234,8 @@ export default function CourseProgressPage() {
       'progress_items',
       'student_progress',
       'period',
+      // この期が確定保存済みかどうか（payload は含まない軽い情報）
+      'snapshot_meta',
     ]);
     const heavyPromise = batchFetchCoursePrepApi(params, ['auto_values', 'schedule_tasks']);
 
@@ -243,6 +279,20 @@ export default function CourseProgressPage() {
       setItems(itemsData);
       setProgressData(progressResult);
       setPeriod((batchData.period as CoursePrepPeriod) || null);
+
+      // 期を切り替えたので、前の期のスナップショットを持ち越さない。
+      const meta = (batchData.snapshot_meta as CoursePrepSnapshotMeta | null) ?? null;
+      setSnapshotMeta(meta);
+      setSnapshot(null);
+      setShowLiveInstead(false);
+      if (meta) {
+        // 保存済みなら当時の姿を既定で出すため、payload を後追いで取りにいく。
+        setSnapshotLoading(true);
+        getCoursePrepSnapshot(schoolId, season, year)
+          .then((snap) => setSnapshot(snap))
+          .catch((e) => console.error('Error fetching snapshot:', e))
+          .finally(() => setSnapshotLoading(false));
+      }
 
       // 項目が0件なら初回テンプレート適用を提案
       if (itemsData.length === 0 && isOwnerOrAbove) {
@@ -515,6 +565,77 @@ export default function CourseProgressPage() {
     },
     [students, fetchData]
   );
+
+  /**
+   * この期を確定保存する（取り直しは上書き）。
+   *
+   * 保存するのは集計結果ではなく「集計の入力」なので、payload はサーバー側で
+   * ライブ表示と同じ取得関数から組み立てる。ここで渡す summary は一覧表示用の
+   * キャッシュに過ぎない（正典は payload 側）。
+   */
+  const handleSaveSnapshot = useCallback(async () => {
+    if (!localSchoolId) return;
+    const already = !!snapshotMeta;
+    const message = already
+      ? `${year}年${SEASON_LABELS[season]}の確定データを、いまの内容で取り直します。\n以前保存した内容は上書きされます。よろしいですか？`
+      : `${year}年${SEASON_LABELS[season]}の進捗管理表を確定保存します。\n以降この期は、保存した時点の内容で振り返れるようになります。`;
+    if (!window.confirm(message)) return;
+
+    setIsSavingSnapshot(true);
+    setErrorMessage('');
+    try {
+      // 一覧用の見出し数値。ライブ側の集計をそのまま渡す。
+      const today = new Date().toISOString().slice(0, 10);
+      const kpis = computeSchoolKpis(
+        liveStudents,
+        liveItems,
+        liveProgressData,
+        liveAutoValuesData,
+        livePeriod,
+        today
+      );
+      await saveCoursePrepSnapshot(
+        localSchoolId,
+        season,
+        year,
+        kpis as unknown as Record<string, unknown>
+      );
+      // 保存後は当時の姿（＝いま保存した内容）に切り替えて、何が残ったかを確認できるようにする。
+      const snap = await getCoursePrepSnapshot(localSchoolId, season, year);
+      setSnapshot(snap);
+      // meta は状態バー表示用なので、payload まで抱え込まないよう必要な項目だけ取り出す
+      setSnapshotMeta(
+        snap
+          ? {
+              id: snap.id,
+              season: snap.season,
+              year: snap.year,
+              captured_at: snap.captured_at,
+              captured_by: snap.captured_by,
+              capture_reason: snap.capture_reason,
+              student_count: snap.student_count,
+              summary: snap.summary,
+            }
+          : null
+      );
+      setShowLiveInstead(false);
+    } catch (error) {
+      console.error('Error saving snapshot:', error);
+      setErrorMessage(getUserErrorMessage(error, '確定保存に失敗しました'));
+    } finally {
+      setIsSavingSnapshot(false);
+    }
+  }, [
+    localSchoolId,
+    season,
+    year,
+    snapshotMeta,
+    liveStudents,
+    liveItems,
+    liveProgressData,
+    liveAutoValuesData,
+    livePeriod,
+  ]);
 
   // 予算コマ変更
   const handleBudgetKomaChange = useCallback(
@@ -1187,13 +1308,83 @@ export default function CourseProgressPage() {
           />
         )}
 
+        {/* 確定保存の状態バー。
+            進捗表の数字はライブだと期の終了後も動き続ける（退塾で行が消える、通塾パターンの
+            組み替えでコマ数が変わる）ため、確定済みかどうかを常に見えるところに出す。 */}
+        {!showAllSchoolsOverview && !isLoading && displayItems.length > 0 && (
+          <div
+            className={`mb-4 rounded-xl border px-4 py-3 flex flex-wrap items-center gap-x-4 gap-y-2 ${
+              isSnapshotView ? 'bg-amber-50/60 border-amber-200' : 'bg-white border-gray-200'
+            }`}
+          >
+            {snapshotLoading ? (
+              <InlineLoading label="確定データを読み込み中…" />
+            ) : (
+              <>
+                <div className="flex items-center gap-2 text-sm">
+                  {isSnapshotView ? (
+                    <>
+                      <Lock className="w-4 h-4 text-amber-600" />
+                      <span className="font-semibold text-amber-900">
+                        {formatSnapshotDate(snapshotMeta?.captured_at)}時点の確定データ
+                      </span>
+                      <span className="text-xs text-amber-700">
+                        （{snapshotMeta?.student_count ?? students.length}名・編集不可
+                        {snapshotMeta?.capture_reason === 'auto' ? '・自動保存' : ''}）
+                      </span>
+                    </>
+                  ) : snapshotMeta ? (
+                    <>
+                      <History className="w-4 h-4 text-gray-400" />
+                      <span className="text-gray-600">
+                        最新のデータを表示中（この期は
+                        {formatSnapshotDate(snapshotMeta.captured_at)}に確定保存済み）
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <History className="w-4 h-4 text-gray-400" />
+                      <span className="text-gray-500">この期はまだ確定保存されていません</span>
+                    </>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2 ml-auto">
+                  {snapshot && (
+                    <button
+                      onClick={() => setShowLiveInstead((v) => !v)}
+                      className="px-3 py-1.5 text-xs rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 transition-colors"
+                    >
+                      {isSnapshotView ? '最新のデータで見る' : '確定データに戻す'}
+                    </button>
+                  )}
+                  {isManagerOrAbove && (
+                    <button
+                      onClick={handleSaveSnapshot}
+                      disabled={isSavingSnapshot}
+                      className="px-3 py-1.5 text-xs rounded-lg bg-ink text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
+                    >
+                      {isSavingSnapshot
+                        ? '保存中…'
+                        : snapshotMeta
+                          ? '確定データを取り直す'
+                          : 'この期を確定保存'}
+                    </button>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
         {/* ダッシュボード（教室長以上のみ表示）。集計(auto_values)が届いてから表示し、
-            それまではグリッドを先に出す。集計中は控えめなプレースホルダを表示する。 */}
+            それまではグリッドを先に出す。集計中は控えめなプレースホルダを表示する。
+            確定データ表示中は集計もスナップショットに入っているので待たない。 */}
         {!showAllSchoolsOverview &&
           !isLoading &&
           displayItems.length > 0 &&
           isManagerOrAbove &&
-          (autoLoading ? (
+          (autoLoading && !isSnapshotView ? (
             <div className="mb-4 bg-white rounded-xl border border-gray-200 p-6 flex items-center justify-center">
               <InlineLoading label="集計データを読み込み中…" />
             </div>
@@ -1204,10 +1395,19 @@ export default function CourseProgressPage() {
               progressData={progressData}
               period={period}
               autoValues={autoValuesData}
-              onBudgetKomaChange={isManagerOrAbove ? handleBudgetKomaChange : undefined}
-              onTargetKomaChange={isManagerOrAbove ? handleTargetKomaChange : undefined}
-              onExpectedRateChange={isManagerOrAbove ? handleExpectedRateChange : undefined}
-              onPeriodDateChange={isManagerOrAbove ? handlePeriodDateChange : undefined}
+              // 確定データは凍結物なので、予算・目標・期間の編集口を閉じる
+              onBudgetKomaChange={
+                isManagerOrAbove && !isSnapshotView ? handleBudgetKomaChange : undefined
+              }
+              onTargetKomaChange={
+                isManagerOrAbove && !isSnapshotView ? handleTargetKomaChange : undefined
+              }
+              onExpectedRateChange={
+                isManagerOrAbove && !isSnapshotView ? handleExpectedRateChange : undefined
+              }
+              onPeriodDateChange={
+                isManagerOrAbove && !isSnapshotView ? handlePeriodDateChange : undefined
+              }
             />
           ))}
 
@@ -1564,13 +1764,16 @@ export default function CourseProgressPage() {
               items={displayItems}
               progressData={progressData}
               autoValues={autoValuesData}
-              canEdit={canEdit}
+              // 確定データは当時の記録なので、セルもヘッダーも一切編集させない
+              canEdit={canEdit && !isSnapshotView}
               onStatusChange={handleStatusChange}
               onNumberChange={handleNumberChange}
               onDateChange={handleDateChange}
               onItemNameChange={isOwnerOrAbove ? handleItemNameChange : undefined}
               onItemDeadlineChange={isOwnerOrAbove ? handleItemDeadlineChange : undefined}
-              onShowStudentInfo={setInfoStudent}
+              // 確定データ表示中は生徒詳細を開かせない。
+              // 凍結された当時の記録と、現在の生徒情報が混ざって見えるのを防ぐ。
+              onShowStudentInfo={isSnapshotView ? undefined : setInfoStudent}
             />
           ))}
       </div>

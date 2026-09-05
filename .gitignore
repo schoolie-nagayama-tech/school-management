@@ -61,3 +61,4 @@ supabase/signing_keys.json
 # 実データ検証で .env.local の service role key を直読みするものがあり、
 # CI では必ず落ちるうえ機微情報を含みうるのでコミットしない。
 _tmp_*
+.env*

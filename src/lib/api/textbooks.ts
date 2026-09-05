@@ -213,15 +213,14 @@ export async function updateCurriculumItem(
 }
 
 /**
- * 目次項目を削除
+ * 目次項目の削除はここには置かない。サーバーAPI（/api/curriculum-items、
+ * lib/api/curriculumItemsApi.ts）を使うこと。
+ *
+ * ★ 理由: curriculum_items は全教室共通のマスタだが、参照元の student_progress などは
+ *   check_school_access で教室スコープされている。ブラウザのクライアントから消そうとしても
+ *   他教室の参照は見えず消せないため、「使用 0 件に見えるのに外部キーで削除が失敗する」
+ *   という状態になる。使用状況の確認・参照ごと削除・付け替えはすべて Service Role 側で行う。
  */
-export async function deleteCurriculumItem(id: number): Promise<void> {
-  const { error } = await supabase.from('curriculum_items').delete().eq('id', id);
-
-  if (error) {
-    throw new Error(`目次項目の削除に失敗しました: ${error.message}`);
-  }
-}
 
 /**
  * 目次項目の並び順をまとめて更新する（ドラッグ&ドロップ後の保存用）。

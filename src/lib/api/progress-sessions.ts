@@ -7,6 +7,9 @@ import type {
   ProgressSessionWithDetails,
   StudentProgressLessonInsert,
 } from '@/types/database';
+// 目標(student_textbook_exams)の親は「生徒×テキスト」ではなく「生徒×科目」。
+// 科目の分類は進行表タブと完全に同じ判定にする必要があるため categorizeSubject を再利用する。
+import { categorizeSubject } from '@/app/students/[studentId]/progress/newProgress.shared';
 
 /** Supabase select 句（フィード共通） */
 // student_textbooks は !inner。これにより getSessionFeed で school_id を
@@ -1001,6 +1004,12 @@ export async function getHomeworkTardyCounts(
  * 「緊急（学校追い抜き等）」の検知精度が不足しており誤検知が多いため、進行表確認の
  * 注意事項板からは一旦外している（現在は getHomeworkTardyAlerts を使用）。
  * ロジックは将来の再有効化に備えて温存する。呼び出しを復活させれば元に戻せる。
+ *
+ * ★再有効化時の注意（2026-09-05）: 目標(student_textbook_exams)の親が「生徒×テキスト」から
+ *   「生徒×科目」に変わった。この関数は下の試験取得で `student_textbook_id` で引いているが、
+ *   student_textbook_id は「作成元テキストの記録」のみで新規作成時は入らないこともある。
+ *   再有効化するなら getExamsBySubject 等の科目単位の取得に置き換えること
+ *   （docs/progress-goal-subject-level-plan.md 参照）。
  */
 export async function getSmartAlerts(schoolIds: string[]): Promise<SmartAlert[]> {
   if (schoolIds.length === 0) return [];
@@ -1228,17 +1237,45 @@ export interface FeedGoalSummary {
 /**
  * フィードカードに表示する 目標 / 行動目標 を student_textbook_id 単位で一括取得。
  * 試験日が今日以降のものを優先し、なければ最新の試験を返す。
+ *
+ * 目標(student_textbook_exams)の親は「生徒×テキスト」ではなく「生徒×科目」になったため、
+ * テキストID → (生徒ID, 科目キー) を解決してから科目単位で引く。戻り値の形（テキストID を
+ * キーにした Record）は変えない。同じ科目の複数テキストは同じ目標を指すことになる。
  */
 export async function getFeedGoalsByTextbooks(
   studentTextbookIds: string[]
 ): Promise<Record<string, FeedGoalSummary>> {
   if (studentTextbookIds.length === 0) return {};
 
-  // 試験目標を一括取得
+  // 1. テキストID → (生徒ID, 科目キー) を解決
+  const { data: textbookRows, error: tbErr } = await supabase
+    .from('student_textbooks')
+    .select('id, student_id, textbook:textbooks(subject)')
+    .in('id', studentTextbookIds);
+  if (tbErr) {
+    console.error('Failed to resolve textbook subjects for feed goals:', tbErr);
+    return {};
+  }
+  type TextbookRow = {
+    id: string;
+    student_id: string;
+    textbook: { subject: string | null } | { subject: string | null }[] | null;
+  };
+  const subjectKeyByTextbook = new Map<string, string>();
+  const studentIdByTextbook = new Map<string, string>();
+  for (const r of (textbookRows || []) as TextbookRow[]) {
+    const tb = Array.isArray(r.textbook) ? r.textbook[0] : r.textbook;
+    subjectKeyByTextbook.set(r.id, categorizeSubject(tb?.subject));
+    studentIdByTextbook.set(r.id, r.student_id);
+  }
+  const studentIds = Array.from(new Set(Array.from(studentIdByTextbook.values())));
+  if (studentIds.length === 0) return {};
+
+  // 2. 対象生徒ぶんの目標を一括取得（科目単位で束ねるため student_id で引く）
   const { data: exams, error: examErr } = await supabase
     .from('student_textbook_exams')
-    .select('id, student_textbook_id, exam_date, target_score, custom_exam_name, exam_type_id')
-    .in('student_textbook_id', studentTextbookIds)
+    .select('id, student_id, subject_key, exam_date, target_score, custom_exam_name, exam_type_id')
+    .in('student_id', studentIds)
     .order('exam_date', { ascending: true });
   if (examErr) {
     console.error('Failed to fetch feed exams:', examErr);
@@ -1246,7 +1283,8 @@ export async function getFeedGoalsByTextbooks(
   }
   const examRows = (exams || []) as Array<{
     id: string;
-    student_textbook_id: string;
+    student_id: string;
+    subject_key: string;
     exam_date: string | null;
     target_score: number | null;
     custom_exam_name: string | null;
@@ -1268,30 +1306,32 @@ export async function getFeedGoalsByTextbooks(
     }
   }
 
-  // student_textbook ごとに「直近の未来の試験」または最新の試験を選択
+  // (生徒ID, 科目キー) ごとに「直近の未来の試験」または最新の試験を選択
   const today = new Date().toISOString().slice(0, 10);
-  const examByTextbook = new Map<string, (typeof examRows)[0]>();
+  const subjectKeyOf = (studentId: string, subjectKey: string) => `${studentId}:${subjectKey}`;
+  const examBySubject = new Map<string, (typeof examRows)[0]>();
   for (const e of examRows) {
-    const cur = examByTextbook.get(e.student_textbook_id);
+    const key = subjectKeyOf(e.student_id, e.subject_key);
+    const cur = examBySubject.get(key);
     if (!cur) {
-      examByTextbook.set(e.student_textbook_id, e);
+      examBySubject.set(key, e);
       continue;
     }
     // 未来の試験を優先（exam_date >= today）。両方未来なら早いほう、両方過去なら新しいほう。
     const curFuture = (cur.exam_date ?? '') >= today;
     const newFuture = (e.exam_date ?? '') >= today;
-    if (newFuture && !curFuture) examByTextbook.set(e.student_textbook_id, e);
+    if (newFuture && !curFuture) examBySubject.set(key, e);
     else if (newFuture === curFuture) {
       if (newFuture && (e.exam_date ?? '') < (cur.exam_date ?? '')) {
-        examByTextbook.set(e.student_textbook_id, e);
+        examBySubject.set(key, e);
       } else if (!newFuture && (e.exam_date ?? '') > (cur.exam_date ?? '')) {
-        examByTextbook.set(e.student_textbook_id, e);
+        examBySubject.set(key, e);
       }
     }
   }
 
-  // 行動目標を該当 examId 群で一括取得
-  const examIds = Array.from(examByTextbook.values()).map((e) => e.id);
+  // 行動目標を該当 examId 群で一括取得（同じ科目を複数テキストが指すため重複を排除してから引く）
+  const examIds = Array.from(new Set(Array.from(examBySubject.values()).map((e) => e.id)));
   const goalsByExam = new Map<
     string,
     Array<{
@@ -1326,10 +1366,13 @@ export async function getFeedGoalsByTextbooks(
     }
   }
 
-  // textbook_id → サマリへ
+  // textbook_id → サマリへ（テキストIDをいったん科目キーに変換して引く）
   const out: Record<string, FeedGoalSummary> = {};
   for (const tbId of studentTextbookIds) {
-    const exam = examByTextbook.get(tbId);
+    const studentId = studentIdByTextbook.get(tbId);
+    const subjectKey = subjectKeyByTextbook.get(tbId);
+    const exam =
+      studentId && subjectKey ? examBySubject.get(subjectKeyOf(studentId, subjectKey)) : undefined;
     if (!exam) {
       out[tbId] = { exam: null, actionGoals: [], achievedCount: 0, totalCount: 0 };
       continue;

@@ -49,6 +49,9 @@ import type {
 import { GRADE_LABELS, SEASON_LABELS } from '@/types/database';
 import { useAuth } from '@/contexts/AuthContext';
 import { toSurnameOnly } from '@/lib/utils/teacherName';
+// 目標(student_textbook_exams)の親は「生徒×科目」。旧UI（ロールバック用）でも
+// 保存先の判定は新UIと完全に揃える必要があるため categorizeSubject を再利用する。
+import { categorizeSubject } from './newProgress.shared';
 
 export default function LegacyProgressPage() {
   const params = useParams();
@@ -2272,7 +2275,8 @@ export default function LegacyProgressPage() {
                     }
 
                     await createStudentTextbookExam({
-                      student_textbook_id: selectedTextbookId,
+                      student_id: studentId,
+                      subject_key: categorizeSubject(selectedTextbook?.textbook?.subject),
                       exam_type_id: examTypeId,
                       custom_exam_name: customExamName,
                       exam_date: newExamDate,

@@ -12,6 +12,10 @@
     {
       "path": "/api/cron/withdraw-expired-students",
       "schedule": "0 19 * * *"
+    },
+    {
+      "path": "/api/cron/finalize-course-prep",
+      "schedule": "30 20 * * *"
     }
   ]
 }
