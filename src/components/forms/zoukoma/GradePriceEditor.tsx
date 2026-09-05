@@ -18,7 +18,7 @@ const ALL_GRADES = ['中1', '中2', '中3', '高1', '高2', '高3'];
  * 単価は変わらない（当時の価格のまま残る）。次に作る期間の初期値になるだけ。
  * 料金改定のたびにここも更新すること。
  */
-const DEFAULT_PRICES: PriceTable = {
+export const DEFAULT_PRICES: PriceTable = {
   中1: 4380,
   中2: 4380,
   中3: 4540,

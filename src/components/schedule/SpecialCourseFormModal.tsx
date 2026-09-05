@@ -16,8 +16,10 @@ import type { SpecialCourse, SpecialCourseFormValues } from '@/lib/api/specialCo
 import { getActiveTimeSlots } from '@/lib/api/schedule';
 import {
   totalCourseFee,
+  COURSE_BILLING_UNIT_LABELS,
   DOW_LABELS,
   SPECIAL_COURSE_SCOPE_LABELS,
+  type CourseBillingUnit,
   type SpecialCourseScope,
 } from '@/lib/utils/specialCourses';
 
@@ -60,6 +62,8 @@ const emptyValues = (
   target_grades: [],
   subject_id: null,
   unit_price: null,
+  // 既定は1回ごと。月謝制（HALなど）だけ画面で monthly に切り替える
+  billing_unit: 'per_session',
   capacity: null,
   session_dates: [],
   day_of_week: null,
@@ -94,6 +98,8 @@ export function SpecialCourseFormModal({
   const [error, setError] = useState<string | null>(null);
 
   const isKoushu = scope === 'koushu';
+  // 月額の講座は合計金額プレビュー（単価×回数）を出さない
+  const isMonthly = !isKoushu && values.billing_unit === 'monthly';
 
   useEffect(() => {
     if (!open) return;
@@ -105,6 +111,7 @@ export function SpecialCourseFormModal({
         target_grades: editing.target_grades,
         subject_id: editing.subject_id,
         unit_price: editing.unit_price,
+        billing_unit: editing.billing_unit ?? 'per_session',
         capacity: editing.capacity,
         session_dates: editing.session_dates,
         day_of_week: editing.day_of_week,
@@ -276,11 +283,36 @@ export function SpecialCourseFormModal({
             </select>
           </div>
 
-          {/* 単価・定員 */}
+          {/* 受講料・定員。通年講座は「1回ごと」か「月額」かを講座ごとに選ぶ（HALは月額） */}
+          {!isKoushu && (
+            <div>
+              <label className="block text-sm font-medium text-[var(--headline)] mb-1">
+                受講料の数え方
+              </label>
+              <select
+                value={values.billing_unit}
+                onChange={(e) =>
+                  setValues((v) => ({ ...v, billing_unit: e.target.value as CourseBillingUnit }))
+                }
+                className="w-full px-3 py-2 border border-[var(--stroke)] rounded-lg bg-white text-sm focus:ring-2 focus:ring-primary focus:border-primary"
+              >
+                {(Object.keys(COURSE_BILLING_UNIT_LABELS) as CourseBillingUnit[]).map((u) => (
+                  <option key={u} value={u}>
+                    {COURSE_BILLING_UNIT_LABELS[u]}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-1 text-[11px] text-[var(--paragraph-light)]">
+                月謝制の講座（HALなど）は「月額」にしてください。「1回ごと」のまま月額を入れると、
+                その月の実施回数ぶん掛かって数倍の請求になります。
+              </p>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-[var(--headline)] mb-1">
-                単価（1回・円）
+                {isMonthly ? '月額（円）' : '単価（1回・円）'}
               </label>
               <input
                 type="number"
@@ -292,9 +324,14 @@ export function SpecialCourseFormModal({
                     unit_price: e.target.value === '' ? null : Number(e.target.value),
                   }))
                 }
-                placeholder="例: 3000"
+                placeholder={isMonthly ? '例: 10890' : '例: 3000'}
                 className="w-full px-3 py-2 border border-[var(--stroke)] rounded-lg bg-white text-sm focus:ring-2 focus:ring-primary focus:border-primary"
               />
+              {isMonthly && (
+                <p className="mt-1 text-[11px] text-[var(--paragraph-light)]">
+                  その月に4回でも5回でも、この金額を1回だけ請求します。
+                </p>
+              )}
             </div>
             <div>
               <label className="block text-sm font-medium text-[var(--headline)] mb-1">

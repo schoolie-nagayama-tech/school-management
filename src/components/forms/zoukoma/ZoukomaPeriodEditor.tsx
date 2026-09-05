@@ -11,6 +11,8 @@ import {
 } from '@/lib/api/form-periods';
 import { getApplicationItems } from '@/lib/api/applications';
 import type { ZoukomaPeriod, ZoukomaSettings } from '@/types/forms/zoukoma';
+// 単価の既定値は1箇所（GradePriceEditor）に置く。料金改定のときはそこだけ直す
+import { DEFAULT_PRICES } from './GradePriceEditor';
 import type { ApplicationItem } from '@/types/database';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 import { resolveUpdateSchoolIds, resolveCreateSchoolIds } from '@/hooks/usePeriodEditor';
@@ -116,16 +118,11 @@ export function ZoukomaPeriodEditor({
 
     setIsSubmitting(true);
     try {
+      // 新規期間の既定値。単価は GradePriceEditor の DEFAULT_PRICES と同じものを使う
+      // （3箇所に同じ表を書いていたため、2026年9月改定でここだけ旧単価が残っていた）。
       const settings: ZoukomaSettings = period?.settings || {
         grades: ['中1', '中2', '中3', '高1', '高2', '高3'],
-        price_table: {
-          中1: 3980,
-          中2: 3980,
-          中3: 4120,
-          高1: 4480,
-          高2: 4770,
-          高3: 5060,
-        },
+        price_table: { ...DEFAULT_PRICES },
         subjects: ['英語', '数学', '国語', '理科', '社会'],
       };
 
