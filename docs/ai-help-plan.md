@@ -5,6 +5,8 @@
 前提: [docs/ai-platform-comparison.md](./ai-platform-comparison.md)（基盤＝Claude API）
 親: [docs/ai-features-integration-plan.md](./ai-features-integration-plan.md)
 
+★機能を足す・変えるときのFAQの書き方は [docs/help-authoring-guide.md](./help-authoring-guide.md)（この設計書は「なぜそうなっているか」、あちらは「どう書くか」）。
+
 ---
 
 ## 0. 何をするか
