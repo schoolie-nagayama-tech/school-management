@@ -88,21 +88,15 @@ export const SUBJECT_BADGE_COLORS: Record<string, { bg: string; text: string }> 
 };
 export const DEFAULT_SUBJECT_BADGE = { bg: 'bg-gray-100', text: 'text-gray-600' };
 
-/** 現在月から既定のシーズンを判定（2〜4月=春 / 5〜9月=夏 / それ以外=冬） */
-export function getCurrentSeason(): SeasonType {
-  const month = new Date().getMonth() + 1;
-  if (month >= 2 && month <= 4) return 'spring';
-  if (month >= 5 && month <= 9) return 'summer';
-  return 'winter';
-}
-
 /**
  * これから準備する講習のシーズン（1〜3月=春 / 4〜8月=夏 / 9〜12月=冬）。
  *
- * `getCurrentSeason` は「今どのシーズンにいるか」で、既存データの絞り込みに使う。
- * こちらは「次にどのシーズンを作るか」。講習の雛形は実施の数か月前から作るので、
- * 新規作成の既定値には今のシーズンではなくこちらを使う。
- * 例: 9月は夏期が終わって冬期の準備に入っているので、既定は冬期。
+ * 講習は実施の数か月前から用意するので、画面の既定値には「今いるシーズン」ではなく
+ * 「次に用意するシーズン」を使う。例: 9月は夏期が終わって冬期の準備に入っているので冬期。
+ * 提案書・講習テンプレートの新規作成と、講習教材の名簿の初期表示がこれを使う。
+ *
+ * ★「今いるシーズン」を返す関数は、かつてここにもあったが使う場所が無くなったので消した。
+ *   `courseProgressSync` だけが同種の判定を自前で持っている（月の区切りが別なので統合していない）。
  */
 export function getPreparingSeason(): SeasonType {
   const month = new Date().getMonth() + 1;
