@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { BulletinPostCard } from './BulletinPostCard';
 import { BulletinPostModal } from './BulletinPostModal';
 import { BulletinReadersModal } from './BulletinReadersModal';
+import { BulletinTaskBoard } from './BulletinTaskBoard';
 import {
   getBulletinPostsBatch,
   getBulletinLabelsBatch,
@@ -482,6 +483,10 @@ export function BulletinBoard({ className = '', initialData }: BulletinBoardProp
                 );
               })
             )}
+
+            {/* 掲示板AIアシスト: 投稿から読み取った依頼の「残っている人」（教室長以上）。
+                ★連絡の下に置く。依頼と、その結果は同じ場所で見るもので、別画面にすると見に行かれない。 */}
+            <BulletinTaskBoard schools={schools} />
 
             {/* アーカイブ（過去の連絡）: 教室長以上のみ。開くと取得して表示する。 */}
             {canEdit && (

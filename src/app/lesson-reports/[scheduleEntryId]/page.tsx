@@ -110,6 +110,7 @@ import {
 import { DemoProgressPreview } from '@/components/lesson-reports/DemoProgressPreview';
 import { LessonReportProgressGrid } from '@/components/lesson-reports/LessonReportProgressGrid';
 import { ReportGuideBar } from '@/components/lesson-reports/ReportGuideBar';
+import { LessonTaskPopup } from '@/components/bulletin/LessonTaskPopup';
 import { computeGuideSteps, type GuideStepInput } from '@/lib/lesson-reports/guideSteps';
 import { ReportDetail } from '@/components/mypage/ReportDetail';
 import { formatGradeLabelOrEmpty } from '@/lib/utils/gradeLabel';
@@ -149,6 +150,10 @@ interface ScheduleEntryInfo {
   student_id: string;
   teacher_id: string;
   subject_ids: string[];
+  /** 45分授業のときだけ入る（NULL=コマ丸ごと）。掲示板AIアシストの経過の計算に使う */
+  duration_minutes?: number | null;
+  /** 45分授業がコマのどちら側を使うか。'second' なら授業の開始はコマ開始の45分後 */
+  half_position?: 'first' | 'second' | null;
   time_slot?: { slot_number: number; start_time: string; end_time: string };
   student?: { id: string; last_name: string; first_name: string; grade: number };
   /** last_name は報告書に苗字だけを出すために取る（getSurname のフォールバックより確実） */
@@ -1375,6 +1380,19 @@ export default function LessonReportFormPage() {
   return (
     <AdminLayout documentTitle={`${studentName}｜授業報告書`}>
       <ToastContainer toasts={toasts} onRemove={removeToast} />
+
+      {/* 掲示板AIアシスト: 授業中のお願い（正典: docs/bulletin-ai-assist.html §3）。
+          ★このコマの講師本人・AIアシストON・今日のコマ、のときだけ出る。判断はすべてAPI側。
+          ここでは仕掛けるだけで、出す出さないをフォームが決めることはない。 */}
+      <LessonTaskPopup
+        scheduleEntryId={entry.id}
+        lessonDate={entry.entry_date}
+        startTime={entry.time_slot?.start_time ?? null}
+        endTime={entry.time_slot?.end_time ?? null}
+        durationMinutes={entry.duration_minutes}
+        halfPosition={entry.half_position}
+      />
+
       <div className="space-y-4">
         {/* スティッキーバー（高さ0の入れ物に浮かせるので、出し入れしてもレイアウトが動かない）。
             このページは AppHeader を出さない（AdminLayout に headerTitle を渡していない）ので

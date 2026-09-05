@@ -18,6 +18,7 @@ import {
   type TaskKind,
   type TaskScope,
 } from '@/lib/bulletin/taskCatalog';
+import type { BulletinTaskView } from '@/lib/bulletin/apiTypes';
 
 export const dynamic = 'force-dynamic';
 
@@ -37,26 +38,8 @@ export const dynamic = 'force-dynamic';
  * 正典: docs/bulletin-ai-assist.html
  */
 
-interface TaskView {
-  taskId: string;
-  kind: TaskKind;
-  kindLabel: string;
-  scope: TaskScope;
-  scopeLabel: string;
-  dueType: string;
-  dueDate: string | null;
-  /** 判定を実装していない種別。画面は数字を出さず「判定していません」と書く */
-  unsupported: boolean;
-  total: number;
-  done: number;
-  notYet: number;
-  excluded: number;
-  teachers: { teacherId: string | null; total: number; done: number; notYet: number }[];
-  /** 自動チェックの対象列。未設定なら自動チェックはしない */
-  applicationItemId: string | null;
-  /** 今回のアクセスで新しく自動チェックを付けた件数 */
-  autoChecked: number;
-}
+/** カードに出す名前の数。これを超えたぶんは「ほかN人」にまとめる */
+const NAME_PREVIEW = 5;
 
 /** 1教室の生徒数は100名台。上限に当てないよう明示する（PostgRESTの1000行上限対策） */
 const STUDENT_SCAN_LIMIT = 2000;
@@ -205,6 +188,51 @@ async function syncApplicationChecks(
   return changed;
 }
 
+/**
+ * タスクを生んだ掲示板投稿を、タスクごとにまとめて引く。
+ *
+ * ★どの投稿から来たかを出さないと、教室長は「×で消してよいか」を判断できない。
+ *   同じ依頼が再掲されると2件以上になるので、新しい順に並べて全部返す
+ *   （何回目の依頼かが分かると、督促の重複にも気づける）。
+ */
+async function loadSources(
+  supabase: SupabaseClient,
+  taskIds: string[]
+): Promise<Map<string, { title: string; postedAt: string | null }[]>> {
+  const byTask = new Map<string, { title: string; postedAt: string | null }[]>();
+  if (taskIds.length === 0) return byTask;
+
+  const { data, error } = await supabase
+    .from('bulletin_task_posts')
+    .select('task_id, bulletin_posts(title, created_at)')
+    .in('task_id', taskIds);
+
+  if (error) {
+    console.error('[ai/bulletin/progress] 投稿元の取得に失敗', error.message);
+    return byTask;
+  }
+
+  for (const row of data ?? []) {
+    // ★PostgREST の結合は配列で返ることがあるので、両方の形を受ける
+    const raw = row.bulletin_posts as
+      | { title: string; created_at: string }
+      | { title: string; created_at: string }[]
+      | null;
+    const post = Array.isArray(raw) ? (raw[0] ?? null) : raw;
+    if (!post) continue;
+    const list = byTask.get(row.task_id as string) ?? [];
+    list.push({ title: post.title, postedAt: post.created_at ?? null });
+    byTask.set(row.task_id as string, list);
+  }
+
+  // 新しい順。画面は先頭を「この依頼の出どころ」として使う。
+  // ★tsconfig に target が無く ES5 扱いなので、Map のイテレータは Array.from で回す
+  for (const list of Array.from(byTask.values())) {
+    list.sort((a, b) => (b.postedAt ?? '').localeCompare(a.postedAt ?? ''));
+  }
+  return byTask;
+}
+
 export async function GET(request: NextRequest) {
   const { auth } = await getApiAuth(request);
   if (!auth) {
@@ -227,7 +255,7 @@ export async function GET(request: NextRequest) {
   const { data: taskRows, error: taskError } = await supabase
     .from('bulletin_tasks')
     .select(
-      'id, kind, scope, target_grades, target_student_ids, due_type, due_date, application_item_id'
+      'id, kind, scope, target_grades, target_student_ids, due_type, due_date, application_item_id, created_at'
     )
     .eq('school_id', schoolId)
     .is('closed_at', null)
@@ -245,7 +273,7 @@ export async function GET(request: NextRequest) {
   // 在籍生徒。研修用テスト生徒は数えない
   const { data: studentRows } = await supabase
     .from('students')
-    .select('id, grade')
+    .select('id, grade, last_name, first_name')
     .eq('school_id', schoolId)
     .eq('status', 'active')
     .neq('is_test', true)
@@ -257,6 +285,19 @@ export async function GET(request: NextRequest) {
   }));
   const studentIds = students.map((s) => s.id);
 
+  // 残っている生徒の名前を出すための対応表
+  const nameById = new Map<string, string>(
+    (studentRows ?? []).map((s) => [
+      s.id as string,
+      `${(s.last_name as string) ?? ''} ${(s.first_name as string) ?? ''}`.trim(),
+    ])
+  );
+
+  const sourcesByTask = await loadSources(
+    supabase,
+    taskRows.map((t) => t.id as string)
+  );
+
   // 内申は種別が使うときだけ引く
   const needsReportCard = taskRows.some(
     (t) => t.kind === 'report_card_entry' && isJudgeable(t.kind as TaskKind)
@@ -265,7 +306,7 @@ export async function GET(request: NextRequest) {
     ? await loadReportCardSubjects(supabase, studentIds)
     : new Map<string, string[]>();
 
-  const views: TaskView[] = [];
+  const views: BulletinTaskView[] = [];
 
   for (const t of taskRows) {
     const kind = t.kind as TaskKind;
@@ -324,6 +365,13 @@ export async function GET(request: NextRequest) {
       teachers: breakdownByTeacher(progress),
       applicationItemId: itemId,
       autoChecked,
+      notYetNames: progress.students
+        .filter((s) => s.state === 'not_yet')
+        .slice(0, NAME_PREVIEW)
+        .map((s) => nameById.get(s.studentId) ?? '')
+        .filter(Boolean),
+      sources: sourcesByTask.get(t.id as string) ?? [],
+      createdAt: t.created_at as string,
     });
   }
 

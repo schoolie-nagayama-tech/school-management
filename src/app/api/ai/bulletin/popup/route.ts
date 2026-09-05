@@ -22,6 +22,8 @@ import {
   type TaskKind,
   type TaskScope,
 } from '@/lib/bulletin/taskCatalog';
+import { taskActionText, taskLink } from '@/lib/bulletin/taskLink';
+import type { BulletinPopupResponse } from '@/lib/bulletin/apiTypes';
 
 export const dynamic = 'force-dynamic';
 
@@ -39,26 +41,19 @@ export const dynamic = 'force-dynamic';
  * 正典: docs/bulletin-ai-assist.html §3
  */
 
-interface PopupResponse {
-  /** 出すときだけ中身が入る */
-  show: boolean;
-  taskId: string | null;
-  kindLabel: string | null;
-  message: string;
-  /** 出さなかった理由。画面では使わないが、動きを追うために返す */
-  skipReason: string | null;
-}
-
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** コマの時間が引けなかったときに使う既定（1コマ80分） */
 const DEFAULT_LESSON_MINUTES = 80;
 
-const NOT_SHOWN: PopupResponse = {
+const NOT_SHOWN: BulletinPopupResponse = {
   show: false,
   taskId: null,
   kindLabel: null,
   message: '',
+  actionText: '',
+  href: null,
+  linkLabel: null,
   skipReason: null,
 };
 
@@ -124,13 +119,13 @@ export async function POST(request: NextRequest) {
   const { data: entry } = await supabase
     .from('schedule_entries')
     .select(
-      'id, school_id, student_id, teacher_id, entry_date, duration_minutes, time_slots(start_time, end_time)'
+      'id, school_id, student_id, teacher_id, entry_date, duration_minutes, time_slot:schedule_time_slots(start_time, end_time)'
     )
     .eq('id', entryId)
     .maybeSingle();
 
   if (!entry || !entry.student_id) {
-    return NextResponse.json(NOT_SHOWN satisfies PopupResponse);
+    return NextResponse.json(NOT_SHOWN satisfies BulletinPopupResponse);
   }
 
   const schoolId = entry.school_id as string;
@@ -139,7 +134,7 @@ export async function POST(request: NextRequest) {
 
   // ★出す相手はこのコマの講師本人だけ。他人のコマを覗いて判断させない
   if (teacherId !== auth.userId) {
-    return NextResponse.json(NOT_SHOWN satisfies PopupResponse);
+    return NextResponse.json(NOT_SHOWN satisfies BulletinPopupResponse);
   }
 
   // ★AIアシストがOFFなら何も出さない（既定OFF）
@@ -150,12 +145,15 @@ export async function POST(request: NextRequest) {
     .maybeSingle();
 
   if (!profile?.bulletin_ai_assist) {
-    return NextResponse.json({ ...NOT_SHOWN, skipReason: 'assist_off' } satisfies PopupResponse);
+    return NextResponse.json({
+      ...NOT_SHOWN,
+      skipReason: 'assist_off',
+    } satisfies BulletinPopupResponse);
   }
 
   // 授業時間。45分授業などは duration_minutes を優先し、無ければコマの時間から出す。
   // ★PostgREST の結合は配列で返ることがあるので、両方の形を受ける
-  const slotRaw = entry.time_slots as
+  const slotRaw = entry.time_slot as
     | { start_time: string; end_time: string }
     | { start_time: string; end_time: string }[]
     | null;
@@ -175,16 +173,19 @@ export async function POST(request: NextRequest) {
     .eq('tracked', true);
 
   if (!taskRows || taskRows.length === 0) {
-    return NextResponse.json({ ...NOT_SHOWN, skipReason: 'no_pending' } satisfies PopupResponse);
+    return NextResponse.json({
+      ...NOT_SHOWN,
+      skipReason: 'no_pending',
+    } satisfies BulletinPopupResponse);
   }
 
   const { data: student } = await supabase
     .from('students')
-    .select('id, grade')
+    .select('id, grade, last_name, first_name')
     .eq('id', studentId)
     .maybeSingle();
 
-  if (!student) return NextResponse.json(NOT_SHOWN satisfies PopupResponse);
+  if (!student) return NextResponse.json(NOT_SHOWN satisfies BulletinPopupResponse);
 
   // ★実データで再照合する。冒頭で講師が自分でやった分はここで消える
   const subjects = await loadReportCardSubjects(supabase, studentId);
@@ -235,7 +236,10 @@ export async function POST(request: NextRequest) {
   });
 
   if (timing.action === 'skip') {
-    return NextResponse.json({ ...NOT_SHOWN, skipReason: timing.reason } satisfies PopupResponse);
+    return NextResponse.json({
+      ...NOT_SHOWN,
+      skipReason: timing.reason,
+    } satisfies BulletinPopupResponse);
   }
 
   // 期限が近いものを先に出す。期限なしは後ろ
@@ -249,6 +253,14 @@ export async function POST(request: NextRequest) {
   });
   const target = sorted[0];
   const kindLabel = TASK_KIND_LABELS[target.kind];
+
+  // カードに出す1行と、その作業ができる場所。
+  // ★生徒が決まっている種別は生徒のページまで開く。「生徒管理を開いてください」で止めると、
+  //   生徒を探す→タブを選ぶ→学期を選ぶ、で授業が終わる。
+  const studentName =
+    `${(student.last_name as string) ?? ''} ${(student.first_name as string) ?? ''}`.trim();
+  const actionText = taskActionText(target.kind, studentName || null);
+  const link = taskLink(target.kind, { studentId, scheduleEntryId: entryId });
 
   let decision: PopupDecision;
 
@@ -264,7 +276,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       ...NOT_SHOWN,
       skipReason: 'ai_unavailable',
-    } satisfies PopupResponse);
+    } satisfies BulletinPopupResponse);
   } else {
     try {
       const raw = await callClaudeJson<unknown>({
@@ -287,7 +299,10 @@ export async function POST(request: NextRequest) {
     } catch (e) {
       // ★呼べなかったら出さない。授業中に壊れたカードを出すより黙るほうがよい
       console.error('[ai/bulletin/popup] failed', e);
-      return NextResponse.json({ ...NOT_SHOWN, skipReason: 'ai_error' } satisfies PopupResponse);
+      return NextResponse.json({
+        ...NOT_SHOWN,
+        skipReason: 'ai_error',
+      } satisfies BulletinPopupResponse);
     }
   }
 
@@ -305,7 +320,10 @@ export async function POST(request: NextRequest) {
   });
 
   if (decision.action !== 'show') {
-    return NextResponse.json({ ...NOT_SHOWN, skipReason: decision.action } satisfies PopupResponse);
+    return NextResponse.json({
+      ...NOT_SHOWN,
+      skipReason: decision.action,
+    } satisfies BulletinPopupResponse);
   }
 
   return NextResponse.json({
@@ -313,8 +331,11 @@ export async function POST(request: NextRequest) {
     taskId: target.id,
     kindLabel,
     message: decision.message,
+    actionText,
+    href: link?.href ?? null,
+    linkLabel: link?.label ?? null,
     skipReason: null,
-  } satisfies PopupResponse);
+  } satisfies BulletinPopupResponse);
 }
 
 function labelOf(checkpoint: Checkpoint): string {
