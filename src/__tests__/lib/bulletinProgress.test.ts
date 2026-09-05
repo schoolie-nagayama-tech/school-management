@@ -181,3 +181,96 @@ describe('講師別の内訳', () => {
     }
   });
 });
+
+/**
+ * 種別を増やしたぶんの判定（2026-09-05）。
+ *
+ * ★ここで守りたいのは2点:
+ *  - 定期テストを「どの回か」が決まる前に数えないこと
+ *    （決め打ちで外すと、入っていない回を見て「全員済」＝最も危ない方向に誤る）
+ *  - 材料が無いものを済と数えないこと
+ */
+describe('判定できる種別を増やしたぶん', () => {
+  const mid2: StudentRow = { id: 's-mid', grade: 8, teacherId: null, markedNotApplicable: false };
+  const elem: StudentRow = { id: 's-elem', grade: 4, teacherId: null, markedNotApplicable: false };
+
+  it('定期テストは「どの回か」が決まるまで数えない', () => {
+    expect(isJudgeable('test_result_entry')).toBe(false);
+    expect(isJudgeable('test_result_entry', { hasTargetPeriod: false })).toBe(false);
+    expect(isJudgeable('test_result_entry', { hasTargetPeriod: true })).toBe(true);
+  });
+
+  it('回が決まっていなければ unsupported を返し、人数を出さない', () => {
+    const p = computeTaskProgress({
+      kind: 'test_result_entry',
+      scope: 'all_students',
+      targetGrades: [],
+      targetStudentIds: [],
+      students: [mid2],
+      hasTargetPeriod: false,
+    });
+    expect(p.unsupported).toBe(true);
+    expect(p.total).toBe(0);
+  });
+
+  it('回が決まれば、点が入っている生徒を済として数える', () => {
+    const p = computeTaskProgress({
+      kind: 'test_result_entry',
+      scope: 'all_students',
+      targetGrades: [],
+      targetStudentIds: [],
+      students: [mid2],
+      hasTargetPeriod: true,
+      inputs: { testEnteredStudentIds: new Set(['s-mid']) },
+    });
+    expect(p.unsupported).toBe(false);
+    expect(p.done).toBe(1);
+    expect(p.notYet).toBe(0);
+  });
+
+  it('小学生は定期テストの母数に入れない（誰も入力しようがない人数を残さない）', () => {
+    const p = computeTaskProgress({
+      kind: 'test_result_entry',
+      scope: 'all_students',
+      targetGrades: [],
+      targetStudentIds: [],
+      students: [mid2, elem],
+      hasTargetPeriod: true,
+      inputs: { testEnteredStudentIds: new Set<string>() },
+    });
+    expect(p.total).toBe(1);
+    expect(p.notYet).toBe(1);
+  });
+
+  it('進行表入力は、記録がある生徒だけを済にする（材料が無ければ未済）', () => {
+    const p = computeTaskProgress({
+      kind: 'progress_entry',
+      scope: 'all_students',
+      targetGrades: [],
+      targetStudentIds: [],
+      students: [mid2, elem],
+      inputs: { progressRecordedStudentIds: new Set(['s-mid']) },
+    });
+    expect(p.unsupported).toBe(false);
+    expect(p.done).toBe(1);
+    expect(p.notYet).toBe(1);
+  });
+
+  it('進行表入力は材料そのものが無ければ全員未済（黙って済にしない）', () => {
+    const p = computeTaskProgress({
+      kind: 'progress_entry',
+      scope: 'all_students',
+      targetGrades: [],
+      targetStudentIds: [],
+      students: [mid2],
+    });
+    expect(p.done).toBe(0);
+    expect(p.notYet).toBe(1);
+  });
+
+  it('判定を実装していない種別は、これまでどおり数字を出さない', () => {
+    for (const kind of ['goal_setting', 'shift_submit', 'report_deadline'] as const) {
+      expect(isJudgeable(kind)).toBe(false);
+    }
+  });
+});

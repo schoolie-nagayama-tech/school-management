@@ -22,7 +22,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/useToast';
 import { isManagerOrAbove } from '@/lib/utils/roles';
 import type { BulletinProgressResponse, BulletinTaskView } from '@/lib/bulletin/apiTypes';
-import type { School } from '@/types/database';
+import { ASSESSMENT_NAME_LABELS } from '@/types/database';
+import type { ApplicationItem, School } from '@/types/database';
+import { TASK_PERIOD_CHOICES, type TaskKind } from '@/lib/bulletin/taskCatalog';
+import { getApplicationItems } from '@/lib/api/applications';
 
 /** 教室が複数選ばれているときだけ、行に教室名を添える */
 interface Row extends BulletinTaskView {
@@ -57,6 +60,8 @@ export function BulletinTaskBoard({
   const [isLoading, setIsLoading] = useState(true);
   /** ×で消した行。UIからは畳むが「戻す」で戻せるように覚えておく */
   const [removed, setRemoved] = useState<Set<string>>(new Set());
+  /** 申込状況の列の候補（教室ごと）。★列名は教室ごとに違うので教室単位で持つ */
+  const [itemsBySchool, setItemsBySchool] = useState<Record<string, ApplicationItem[]>>({});
 
   const canSee = isManagerOrAbove(profile?.role);
   const schoolIds = getSelectedSchoolIds();
@@ -96,6 +101,55 @@ export function BulletinTaskBoard({
   useEffect(() => {
     void load();
   }, [load]);
+
+  /**
+   * 申込状況の列の候補を取る。★列名は教室ごとにバラバラなので、
+   *   AIにも名前で推測させない（人が1回選ぶ）。選び終えた依頼では選択欄が消える。
+   */
+  useEffect(() => {
+    const ids = schoolKey ? schoolKey.split(',') : [];
+    if (!canSee || ids.length === 0) return;
+    let alive = true;
+    void (async () => {
+      try {
+        const items = await getApplicationItems(ids);
+        if (!alive) return;
+        const map: Record<string, ApplicationItem[]> = {};
+        for (const it of items) {
+          const sid = it.school_id;
+          if (!sid) continue;
+          (map[sid] ??= []).push(it);
+        }
+        setItemsBySchool(map);
+      } catch {
+        // 取れなくてもボードは動く（選択欄が空になるだけ）
+        setItemsBySchool({});
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [canSee, schoolKey]);
+
+  /**
+   * 依頼の設定を変える（追跡の入切／どの回か／申込状況の列）。
+   * ★変えたら数え直す。回や列が決まると判定できるようになるので、その場で人数が出る。
+   */
+  const patchTask = async (
+    taskId: string,
+    patch: { targetPeriod?: string; applicationItemId?: string }
+  ) => {
+    const res = await fetchWithAuth('/api/ai/bulletin/tasks', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ taskId, ...patch }),
+    });
+    if (!res.ok) {
+      toastError('変更できませんでした');
+      return;
+    }
+    await load();
+  };
 
   /** ×＝この依頼は追跡しない。消さずに tracked=false にするので「戻す」で戻せる */
   const setTracked = async (taskId: string, tracked: boolean) => {
@@ -146,6 +200,9 @@ export function BulletinTaskBoard({
             showSchool={multiSchool}
             removed={removed.has(row.taskId)}
             onToggle={() => void setTracked(row.taskId, removed.has(row.taskId))}
+            applicationItems={itemsBySchool[row.schoolId] ?? []}
+            onPeriodChange={(period) => void patchTask(row.taskId, { targetPeriod: period })}
+            onItemChange={(itemId) => void patchTask(row.taskId, { applicationItemId: itemId })}
           />
         ))}
       </div>
@@ -158,11 +215,17 @@ function TaskRow({
   showSchool,
   removed,
   onToggle,
+  applicationItems,
+  onPeriodChange,
+  onItemChange,
 }: {
   row: Row;
   showSchool: boolean;
   removed: boolean;
   onToggle: () => void;
+  applicationItems: ApplicationItem[];
+  onPeriodChange: (period: string) => void;
+  onItemChange: (itemId: string) => void;
 }) {
   const label =
     showSchool && row.schoolName ? `${row.kindLabel}（${row.schoolName}）` : row.kindLabel;
@@ -182,15 +245,24 @@ function TaskRow({
     );
   }
 
-  // ★判定できない種別。人数を出さず、そう書く
+  // ★判定できない種別。人数を出さず、そう書く。
+  //   ただし「どの回か」さえ決まれば数えられる種別（定期テスト）は、その選択欄を出す。
   if (row.unsupported) {
+    const canJudgeOnceChosen = row.needsPeriod && !row.targetPeriod;
     return (
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-border-subtle bg-surface-hover/40 px-3.5 py-2.5">
-        <span className="text-sm font-bold text-text-heading">{label}</span>
-        <span className="text-xs text-text-muted">
-          まだ数えられません。数えられるまで人数は出しません
-        </span>
-        <RemoveButton onClick={onToggle} className="ml-auto" />
+      <div className="flex flex-col gap-2 rounded-lg border border-border-subtle bg-surface-hover/40 px-3.5 py-2.5">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          <span className="text-sm font-bold text-text-heading">{label}</span>
+          <span className="text-xs text-text-muted">
+            {canJudgeOnceChosen
+              ? 'どの回のことか選ぶと、残り人数を数えます'
+              : 'まだ数えられません。数えられるまで人数は出しません'}
+          </span>
+          <RemoveButton onClick={onToggle} className="ml-auto" />
+        </div>
+        {canJudgeOnceChosen && (
+          <PeriodPicker kind={row.kind} value={row.targetPeriod} onChange={onPeriodChange} />
+        )}
       </div>
     );
   }
@@ -198,6 +270,9 @@ function TaskRow({
   const fresh = isFresh(row.createdAt);
   const zero = row.notYet === 0;
   const hidden = Math.max(0, row.notYet - row.notYetNames.length);
+  // ★決めることが残っているときだけ選択欄を出す。決まったら消える（常設の操作を増やさない）
+  const askPeriod = row.needsPeriod && !row.targetPeriod;
+  const askItem = !row.unsupported && !row.applicationItemId;
 
   return (
     <div
@@ -246,6 +321,32 @@ function TaskRow({
         </div>
       )}
 
+      {/* ★決めることが残っているときだけ出る。決まったら消えるので、常設の操作にはならない */}
+      {(askPeriod || askItem) && (
+        <div className="flex flex-col gap-1.5 rounded-md border border-dashed border-border bg-surface px-2.5 py-2">
+          {askPeriod && (
+            <PeriodPicker kind={row.kind} value={row.targetPeriod} onChange={onPeriodChange} />
+          )}
+          {askItem && (
+            <label className="flex flex-wrap items-center gap-1.5 text-[11px] text-text-muted">
+              <span>済んだ人に自動でチェックを付ける列（任意）</span>
+              <select
+                value=""
+                onChange={(e) => e.target.value && onItemChange(e.target.value)}
+                className="rounded border border-border bg-surface px-1.5 py-0.5 text-[11px] text-text-body"
+              >
+                <option value="">選ぶ</option>
+                {applicationItems.map((it) => (
+                  <option key={it.id} value={it.id}>
+                    {it.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+        </div>
+      )}
+
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className={`text-xs ${zero ? 'text-success' : 'text-text-muted'}`}>
           {footNote(row)}
@@ -253,6 +354,40 @@ function TaskRow({
         <RemoveButton onClick={onToggle} />
       </div>
     </div>
+  );
+}
+
+/**
+ * 「どの回か」を選ぶ。
+ * ★AIには選ばせない。「テスト結果を入力して」からは回が決まらず、
+ *   外すと入っていない回を見て「全員済」と出す——最も危ない方向に誤る。
+ */
+function PeriodPicker({
+  kind,
+  value,
+  onChange,
+}: {
+  kind: TaskKind;
+  value: string | null;
+  onChange: (period: string) => void;
+}) {
+  const choices = TASK_PERIOD_CHOICES[kind] ?? [];
+  return (
+    <label className="flex flex-wrap items-center gap-1.5 text-[11px] text-text-muted">
+      <span>どの回のことか</span>
+      <select
+        value={value ?? ''}
+        onChange={(e) => e.target.value && onChange(e.target.value)}
+        className="rounded border border-border bg-surface px-1.5 py-0.5 text-[11px] text-text-body"
+      >
+        <option value="">選ぶ</option>
+        {choices.map((c) => (
+          <option key={c} value={c}>
+            {ASSESSMENT_NAME_LABELS[c] ?? c}
+          </option>
+        ))}
+      </select>
+    </label>
   );
 }
 

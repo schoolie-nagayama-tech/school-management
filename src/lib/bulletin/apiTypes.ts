@@ -30,6 +30,13 @@ export interface BulletinTaskView {
   /** 今回のアクセスで新しく自動チェックを付けた件数 */
   autoChecked: number;
   /**
+   * 依頼が指す回（assessments.name_code）。未選択なら null。
+   * ★AIに推測させない。定期テストはこれが決まるまで数えない。
+   */
+  targetPeriod: string | null;
+  /** その種別は「どの回か」を選ぶ必要があるか。画面が選択欄を出すかの判断に使う */
+  needsPeriod: boolean;
+  /**
    * まだ済んでいない生徒の名前（先頭だけ）。
    * ★教室長が動く先は「誰がまだか」であって達成率ではないので、数字と一緒に名前を返す。
    */

@@ -6,7 +6,6 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import {
   breakdownByTeacher,
   computeTaskProgress,
-  isJudgeable,
   type StudentRow,
   type TaskProgress,
 } from '@/lib/bulletin/progress';
@@ -15,6 +14,7 @@ import {
   REPORT_CARD_SUBJECTS,
   TASK_KIND_LABELS,
   TASK_SCOPE_LABELS,
+  needsTargetPeriod,
   type TaskKind,
   type TaskScope,
 } from '@/lib/bulletin/taskCatalog';
@@ -49,11 +49,12 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 
 /**
  * 内申が入っている科目を生徒ごとに集める。
- * ★通知表（report_card）の1学期だけを見る。換算内申は科目ではないので拾わない。
+ * ★どの回（name_code）を見るかは呼び出し側が渡す。換算内申は科目ではないので拾わない。
  */
 async function loadReportCardSubjects(
   supabase: SupabaseClient,
-  studentIds: string[]
+  studentIds: string[],
+  namePeriod: string
 ): Promise<Map<string, string[]>> {
   const byStudent = new Map<string, string[]>();
   if (studentIds.length === 0) return byStudent;
@@ -62,7 +63,7 @@ async function loadReportCardSubjects(
     .from('assessments')
     .select('student_id, assessment_scores(subject, value)')
     .eq('category', 'report_card')
-    .eq('name_code', 'term1')
+    .eq('name_code', namePeriod)
     .in('student_id', studentIds)
     .limit(SCORE_SCAN_LIMIT);
 
@@ -83,6 +84,75 @@ async function loadReportCardSubjects(
     byStudent.set(sid, got);
   }
   return byStudent;
+}
+
+/**
+ * 指定の回のテストに、1科目でも点が入っている生徒を集める。
+ *
+ * ★どの回かは教室長が選んだもの（target_period）だけを見る。
+ *   決め打ちや推測をすると、入っていない回を見て「全員済」と出してしまう。
+ */
+async function loadTestEntered(
+  supabase: SupabaseClient,
+  studentIds: string[],
+  namePeriod: string
+): Promise<Set<string>> {
+  const entered = new Set<string>();
+  if (studentIds.length === 0) return entered;
+
+  const { data, error } = await supabase
+    .from('assessments')
+    .select('student_id, assessment_scores(value)')
+    .eq('category', 'regular_test')
+    .eq('name_code', namePeriod)
+    .in('student_id', studentIds)
+    .limit(SCORE_SCAN_LIMIT);
+
+  if (error) {
+    console.error('[ai/bulletin/progress] テスト結果の取得に失敗', error.message);
+    return entered;
+  }
+
+  for (const row of data ?? []) {
+    const scores = (row.assessment_scores ?? []) as { value: number | null }[];
+    if (scores.some((s) => s.value != null)) entered.add(row.student_id as string);
+  }
+  return entered;
+}
+
+/**
+ * 依頼が出てから進行表に記録がある生徒を集める。
+ *
+ * ★「依頼より後の記録」だけを数える。前からある記録を数えると、
+ *   依頼が出た瞬間にほぼ全員が済になり、督促の役に立たない。
+ */
+async function loadProgressRecorded(
+  supabase: SupabaseClient,
+  studentIds: string[],
+  since: string
+): Promise<Set<string>> {
+  const recorded = new Set<string>();
+  if (studentIds.length === 0) return recorded;
+
+  const { data, error } = await supabase
+    .from('progress_sessions')
+    .select('session_date, student_textbooks!inner(student_id)')
+    .gte('session_date', since)
+    .in('student_textbooks.student_id', studentIds)
+    .limit(SCORE_SCAN_LIMIT);
+
+  if (error) {
+    console.error('[ai/bulletin/progress] 進行表の記録の取得に失敗', error.message);
+    return recorded;
+  }
+
+  for (const row of data ?? []) {
+    // ★PostgREST の結合は配列で返ることがあるので、両方の形を受ける
+    const raw = row.student_textbooks as { student_id: string } | { student_id: string }[] | null;
+    const link = Array.isArray(raw) ? (raw[0] ?? null) : raw;
+    if (link?.student_id) recorded.add(link.student_id);
+  }
+  return recorded;
 }
 
 /**
@@ -255,7 +325,7 @@ export async function GET(request: NextRequest) {
   const { data: taskRows, error: taskError } = await supabase
     .from('bulletin_tasks')
     .select(
-      'id, kind, scope, target_grades, target_student_ids, due_type, due_date, application_item_id, created_at'
+      'id, kind, scope, target_grades, target_student_ids, due_type, due_date, application_item_id, target_period, created_at'
     )
     .eq('school_id', schoolId)
     .is('closed_at', null)
@@ -299,12 +369,11 @@ export async function GET(request: NextRequest) {
   );
 
   // 内申は種別が使うときだけ引く
-  const needsReportCard = taskRows.some(
-    (t) => t.kind === 'report_card_entry' && isJudgeable(t.kind as TaskKind)
-  );
-  const subjectsByStudent = needsReportCard
-    ? await loadReportCardSubjects(supabase, studentIds)
-    : new Map<string, string[]>();
+  // ★材料は種別が要るときだけ引く。同じ回を何度も引かないよう、回ごとに覚えておく。
+  //   内申も定期テストも「どの回か」でデータが変わるので、回をまたいで使い回せない。
+  const reportCardCache = new Map<string, Map<string, string[]>>();
+  const testCache = new Map<string, Set<string>>();
+  let progressRecorded: Set<string> | null = null;
 
   const views: BulletinTaskView[] = [];
 
@@ -332,13 +401,36 @@ export async function GET(request: NextRequest) {
       markedNotApplicable: notApplicable.has(s.id),
     }));
 
+    // この種別が要る材料だけを引く（回ごとにキャッシュ）
+    const period = (t.target_period as string | null) ?? null;
+
+    if (kind === 'report_card_entry' && period && !reportCardCache.has(period)) {
+      reportCardCache.set(period, await loadReportCardSubjects(supabase, studentIds, period));
+    }
+    if (kind === 'test_result_entry' && period && !testCache.has(period)) {
+      testCache.set(period, await loadTestEntered(supabase, studentIds, period));
+    }
+    if (kind === 'progress_entry' && progressRecorded === null) {
+      // 「依頼が出てから」の記録だけを数える
+      progressRecorded = await loadProgressRecorded(
+        supabase,
+        studentIds,
+        String(t.created_at).slice(0, 10)
+      );
+    }
+
     const progress = computeTaskProgress({
       kind,
       scope,
       targetGrades: (t.target_grades as number[]) ?? [],
       targetStudentIds: (t.target_student_ids as string[]) ?? [],
       students: rows,
-      subjectsByStudent,
+      hasTargetPeriod: Boolean(period),
+      inputs: {
+        subjectsByStudent: period ? reportCardCache.get(period) : undefined,
+        testEnteredStudentIds: period ? testCache.get(period) : undefined,
+        progressRecordedStudentIds: progressRecorded ?? undefined,
+      },
     });
 
     let autoChecked = 0;
@@ -372,6 +464,8 @@ export async function GET(request: NextRequest) {
         .filter(Boolean),
       sources: sourcesByTask.get(t.id as string) ?? [],
       createdAt: t.created_at as string,
+      targetPeriod: period,
+      needsPeriod: needsTargetPeriod(kind),
     });
   }
 
