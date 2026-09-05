@@ -24,7 +24,17 @@ export interface BulletinTaskView {
   done: number;
   notYet: number;
   excluded: number;
-  teachers: { teacherId: string | null; total: number; done: number; notYet: number }[];
+  /**
+   * 講師別の内訳。teacherId=null は「次に会う講師が決まっていない」生徒。
+   * ★null の行も残す。消すと合計が合わなくなり、ボードの数字が信用されなくなる。
+   */
+  teachers: {
+    teacherId: string | null;
+    teacherName: string | null;
+    total: number;
+    done: number;
+    notYet: number;
+  }[];
   /** 自動チェックの対象列。未設定なら自動チェックはしない */
   applicationItemId: string | null;
   /** 今回のアクセスで新しく自動チェックを付けた件数 */
@@ -37,10 +47,12 @@ export interface BulletinTaskView {
   /** その種別は「どの回か」を選ぶ必要があるか。画面が選択欄を出すかの判断に使う */
   needsPeriod: boolean;
   /**
-   * まだ済んでいない生徒の名前（先頭だけ）。
+   * まだ済んでいない生徒（先頭だけ）。
    * ★教室長が動く先は「誰がまだか」であって達成率ではないので、数字と一緒に名前を返す。
+   * ★teacherName は「次にこの生徒の授業をする講師」。名簿上の担当ではない。
+   *   決まらなければ null（コマが無い＝誰にも頼めない）。
    */
-  notYetNames: string[];
+  notYetStudents: { name: string; teacherName: string | null }[];
   /** このタスクを生んだ掲示板投稿。新しい順。再掲されていれば2件以上になる */
   sources: { title: string; postedAt: string | null }[];
   /** タスクが作られた時刻。画面はこれを見て「いま追加」を出す */

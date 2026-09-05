@@ -269,7 +269,7 @@ function TaskRow({
 
   const fresh = isFresh(row.createdAt);
   const zero = row.notYet === 0;
-  const hidden = Math.max(0, row.notYet - row.notYetNames.length);
+  const hidden = Math.max(0, row.notYet - row.notYetStudents.length);
   // ★決めることが残っているときだけ選択欄を出す。決まったら消える（常設の操作を増やさない）
   const askPeriod = row.needsPeriod && !row.targetPeriod;
   const askItem = !row.unsupported && !row.applicationItemId;
@@ -303,14 +303,24 @@ function TaskRow({
         <span className="text-sm text-text-body">人 残っています</span>
       </div>
 
-      {row.notYetNames.length > 0 && (
+      {row.notYetStudents.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
-          {row.notYetNames.map((name) => (
+          {row.notYetStudents.map((s) => (
             <span
-              key={name}
+              key={s.name}
               className="whitespace-nowrap rounded-full border border-border bg-surface px-2.5 py-0.5 text-xs text-text-body"
+              title={
+                s.teacherName
+                  ? `次に授業をするのは ${s.teacherName} 先生`
+                  : '次に授業をする講師が決まっていません'
+              }
             >
-              {name}
+              {s.name}
+              {/* ★次にこの生徒に会う講師。頼む相手はここ（名簿上の担当ではない）。
+                  決まっていなければ何も出さない（推測で名前を出さない） */}
+              {s.teacherName && (
+                <span className="ml-1 text-[11px] text-text-faint">/ {s.teacherName}</span>
+              )}
             </span>
           ))}
           {hidden > 0 && (

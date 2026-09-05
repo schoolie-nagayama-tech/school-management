@@ -19,6 +19,7 @@ import {
   type TaskScope,
 } from '@/lib/bulletin/taskCatalog';
 import type { BulletinTaskView } from '@/lib/bulletin/apiTypes';
+import { pickNextTeacherByStudent, type LessonSlot } from '@/lib/bulletin/nextTeacher';
 
 export const dynamic = 'force-dynamic';
 
@@ -44,6 +45,8 @@ const NAME_PREVIEW = 5;
 /** 1教室の生徒数は100名台。上限に当てないよう明示する（PostgRESTの1000行上限対策） */
 const STUDENT_SCAN_LIMIT = 2000;
 const SCORE_SCAN_LIMIT = 5000;
+/** 座席表のコマ。永山校で今日以降 861 件あるので、1000行の既定上限に当てないよう明示する */
+const ENTRY_SCAN_LIMIT = 5000;
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -153,6 +156,67 @@ async function loadProgressRecorded(
     if (link?.student_id) recorded.add(link.student_id);
   }
   return recorded;
+}
+
+/**
+ * 生徒ごとに「次にその生徒の授業をする講師」を出す。
+ *
+ * ★名簿上の担当ではない（2026-09-04 訂正）。生徒に固定の担当が付いているとは限らず、
+ *   曜日で講師が変わる。頼みたい相手は「その生徒の前に座る講師」なので、
+ *   座席表のコマ（schedule_entries）から直接引く。
+ *
+ * ★採るのは「今日以降でいちばん早い、講師が決まっているコマ」。
+ *   本番を見ると直近のコマほど teacher_id が未定で、先のコマには入っている
+ *   （永山校: 14日以内だと81名中34名しか決まらないが、期間全体なら75名決まる）。
+ *   いちばん近いコマだけを見ると、決まっているのに「担当なし」に落ちる生徒が増える。
+ *
+ * ★固定講師や進行表へのフォールバックはしない。コマが無い生徒は誰にも頼めないので、
+ *   名前だけ埋めても督促先にならない。解決できなければ null のままにして、
+ *   進捗ボードには「担当なし」の行として残す（消すと合計が合わなくなる）。
+ */
+async function loadNextTeacherByStudent(
+  supabase: SupabaseClient,
+  schoolId: string,
+  today: string
+): Promise<Map<string, string>> {
+  const byStudent = new Map<string, string>();
+
+  const { data, error } = await supabase
+    .from('schedule_entries')
+    .select('student_id, teacher_id, entry_date, schedule_time_slots(slot_number)')
+    .eq('school_id', schoolId)
+    .gte('entry_date', today)
+    .not('teacher_id', 'is', null)
+    // 振替で出ていったコマ・取り消したコマは「会う予定」ではない
+    .in('status', ['scheduled', 'completed', 'transferred_in'])
+    .order('entry_date', { ascending: true })
+    .limit(ENTRY_SCAN_LIMIT);
+
+  if (error) {
+    console.error('[ai/bulletin/progress] コマの取得に失敗', error.message);
+    return byStudent;
+  }
+
+  const slots: LessonSlot[] = (data ?? []).map((row) => {
+    // ★PostgREST の結合は配列で返ることがあるので、両方の形を受ける
+    const raw = row.schedule_time_slots as
+      | { slot_number: number }
+      | { slot_number: number }[]
+      | null;
+    const slot = Array.isArray(raw) ? (raw[0] ?? null) : raw;
+    return {
+      studentId: (row.student_id as string) ?? '',
+      teacherId: (row.teacher_id as string | null) ?? null,
+      entryDate: row.entry_date as string,
+      slotNumber: slot?.slot_number ?? null,
+    };
+  });
+
+  // 選び方（いちばん早い「決まっている」コマ・同日は早い時限）は純関数側にある
+  for (const [sid, tid] of Array.from(pickNextTeacherByStudent(slots))) {
+    byStudent.set(sid, tid);
+  }
+  return byStudent;
 }
 
 /**
@@ -368,6 +432,24 @@ export async function GET(request: NextRequest) {
     taskRows.map((t) => t.id as string)
   );
 
+  // ★「その日授業をする講師」＝次に会うコマの講師。名簿上の担当ではない
+  const today = new Date().toISOString().slice(0, 10);
+  const nextTeacherByStudent = await loadNextTeacherByStudent(supabase, schoolId, today);
+
+  // 督促先として名前を出すので、講師名を引く
+  const teacherIds = Array.from(new Set(Array.from(nextTeacherByStudent.values())));
+  const teacherNameById = new Map<string, string>();
+  if (teacherIds.length > 0) {
+    const { data: teacherRows } = await supabase
+      .from('user_profiles')
+      .select('id, display_name, last_name')
+      .in('id', teacherIds);
+    for (const t of teacherRows ?? []) {
+      const name = ((t.last_name as string) || (t.display_name as string) || '').trim();
+      if (name) teacherNameById.set(t.id as string, name);
+    }
+  }
+
   // 内申は種別が使うときだけ引く
   // ★材料は種別が要るときだけ引く。同じ回を何度も引かないよう、回ごとに覚えておく。
   //   内申も定期テストも「どの回か」でデータが変わるので、回をまたいで使い回せない。
@@ -396,8 +478,8 @@ export async function GET(request: NextRequest) {
     const rows: StudentRow[] = students.map((s) => ({
       id: s.id,
       grade: s.grade,
-      // 担当の解決は進捗ボードの内訳でだけ要る。次のPRで座席表→固定講師→進行表の順に入れる
-      teacherId: null,
+      // ★次にこの生徒の授業をする講師。決まらなければ null のまま（誰にも頼めない）
+      teacherId: nextTeacherByStudent.get(s.id) ?? null,
       markedNotApplicable: notApplicable.has(s.id),
     }));
 
@@ -454,14 +536,20 @@ export async function GET(request: NextRequest) {
       done: progress.done,
       notYet: progress.notYet,
       excluded: progress.excluded,
-      teachers: breakdownByTeacher(progress),
+      teachers: breakdownByTeacher(progress).map((b) => ({
+        ...b,
+        teacherName: b.teacherId ? (teacherNameById.get(b.teacherId) ?? null) : null,
+      })),
       applicationItemId: itemId,
       autoChecked,
-      notYetNames: progress.students
+      notYetStudents: progress.students
         .filter((s) => s.state === 'not_yet')
         .slice(0, NAME_PREVIEW)
-        .map((s) => nameById.get(s.studentId) ?? '')
-        .filter(Boolean),
+        .map((s) => ({
+          name: nameById.get(s.studentId) ?? '',
+          teacherName: s.teacherId ? (teacherNameById.get(s.teacherId) ?? null) : null,
+        }))
+        .filter((s) => s.name),
       sources: sourcesByTask.get(t.id as string) ?? [],
       createdAt: t.created_at as string,
       targetPeriod: period,
