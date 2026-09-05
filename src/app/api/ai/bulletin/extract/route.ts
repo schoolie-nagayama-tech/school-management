@@ -18,6 +18,8 @@ import {
   type TaskScope,
 } from '@/lib/bulletin/taskCatalog';
 
+import { BULLETIN_AI_FEATURE_KEY } from '@/lib/bulletin/schoolSetting';
+
 export const dynamic = 'force-dynamic';
 
 /**
@@ -113,7 +115,7 @@ export async function POST(request: NextRequest) {
     .from('school_ai_settings')
     .select('enabled')
     .eq('school_id', schoolId)
-    .eq('feature_key', 'bulletin_extract')
+    .eq('feature_key', BULLETIN_AI_FEATURE_KEY)
     .maybeSingle();
 
   if (!setting?.enabled) {
