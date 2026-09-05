@@ -23,6 +23,13 @@ import { useLocalSchoolId } from '@/hooks/useLocalSchoolId';
 import { SchoolSwitcher } from '@/components/SchoolSwitcher';
 import type { School } from '@/types/database';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
+import {
+  AI_FEATURE_DESCRIPTIONS,
+  AI_FEATURE_KEYS,
+  AI_FEATURE_LABELS,
+  AI_FEATURE_SENDS,
+  type AiFeatureKey,
+} from '@/lib/ai/features';
 import { ChevronLeft, ImageIcon, X, Plus } from 'lucide-react';
 
 export default function SchoolSettingsPage() {
@@ -43,11 +50,19 @@ export default function SchoolSettingsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  /** 掲示板の読み取りを、この教室で許しているか（行が無ければOFF） */
-  const [extractEnabled, setExtractEnabled] = useState(false);
+  /**
+   * AI機能を、この教室で許しているか（行が無ければOFF）。
+   * ★機能ごとに分ける。送るものが違うので、まとめて入切させない
+   *   （連絡文のために開けた教室から、生徒の成績まで出てしまう）。
+   */
+  const [aiEnabled, setAiEnabled] = useState<Record<AiFeatureKey, boolean>>({
+    ai_compose: false,
+    teacher_assist: false,
+    plan_theme: false,
+  });
   /** 切り替えられるのは admin/owner だけ。教室長には状態だけ見せる */
-  const [extractCanChange, setExtractCanChange] = useState(false);
-  const [isSavingExtract, setIsSavingExtract] = useState(false);
+  const [aiCanChange, setAiCanChange] = useState(false);
+  const [savingAi, setSavingAi] = useState<AiFeatureKey | null>(null);
 
   // 教室情報を取得
   useEffect(() => {
@@ -70,19 +85,19 @@ export default function SchoolSettingsPage() {
           }
         }
 
-        // 掲示板の読み取りの入切。取れなくてもページは壊さない（既定OFFのまま出す）
+        // AI機能の入切（3つまとめて1回）。取れなくてもページは壊さない（既定OFFのまま出す）
         try {
-          const res = await fetchWithAuth(
-            `/api/ai/bulletin/school-setting?school_id=${localSchoolId}`
-          );
+          const res = await fetchWithAuth(`/api/ai/feature-setting?school_id=${localSchoolId}`);
           if (res.ok) {
-            const json = (await res.json()) as { enabled: boolean; canChange: boolean };
-            setExtractEnabled(json.enabled);
-            setExtractCanChange(json.canChange);
+            const json = (await res.json()) as {
+              features: Record<AiFeatureKey, boolean>;
+              canChange: boolean;
+            };
+            setAiEnabled(json.features);
+            setAiCanChange(json.canChange);
           }
         } catch {
-          setExtractEnabled(false);
-          setExtractCanChange(false);
+          setAiCanChange(false);
         }
       } catch (error) {
         console.error('Error fetching school:', error);
@@ -224,28 +239,28 @@ export default function SchoolSettingsPage() {
   };
 
   /**
-   * 掲示板の読み取りの入切。
-   * ★オンにするのは「この教室の投稿を外部に出してよい」と決めたときだけ。
+   * AI機能の入切。
+   * ★オンにするのは「この教室のデータを外部に出してよい」と決めたときだけ。
    *   失敗したら見た目も戻す（オンに見えているのに送っていない／その逆を作らない）。
    */
-  const handleExtractChange = async (enabled: boolean) => {
+  const handleAiChange = async (feature: AiFeatureKey, enabled: boolean) => {
     if (!school) return;
-    setIsSavingExtract(true);
-    const before = extractEnabled;
-    setExtractEnabled(enabled);
+    setSavingAi(feature);
+    const before = aiEnabled[feature];
+    setAiEnabled((prev) => ({ ...prev, [feature]: enabled }));
     try {
-      const res = await fetchWithAuth('/api/ai/bulletin/school-setting', {
+      const res = await fetchWithAuth('/api/ai/feature-setting', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ schoolId: school.id, enabled }),
+        body: JSON.stringify({ schoolId: school.id, feature, enabled }),
       });
       if (!res.ok) throw new Error('failed');
-      success(enabled ? '読み取りをオンにしました' : '読み取りをオフにしました');
+      success(`${AI_FEATURE_LABELS[feature]}を${enabled ? 'オンにしました' : 'オフにしました'}`);
     } catch {
-      setExtractEnabled(before);
+      setAiEnabled((prev) => ({ ...prev, [feature]: before }));
       toastError('変更できませんでした');
     } finally {
-      setIsSavingExtract(false);
+      setSavingAi(null);
     }
   };
 
@@ -456,39 +471,47 @@ export default function SchoolSettingsPage() {
           </CardContent>
         </Card>
 
-        {/* 掲示板の投稿をAIに読み取らせるか。★費用の話ではなく、外部に出してよいかの歯止め。
-            切り替えられるのは admin/owner だけで、教室長には状態だけ見せる。 */}
+        {/* AI機能の入切。★費用の話ではなく、外部に出してよいかの歯止め。
+            切り替えられるのは admin/owner だけで、教室長には状態だけ見せる。
+            ★1機能1行にして、何が外に出るのかをスイッチの真横に書く。
+              まとめて「AI」1つにすると、連絡文のために入れた栓から成績まで出る。 */}
         <Card>
           <CardHeader>
-            <CardTitle>掲示板の依頼の読み取り（AI）</CardTitle>
+            <CardTitle>AIを使う機能</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex items-start justify-between gap-4">
-              <div className="min-w-0">
-                <p className="text-sm text-text-body">
-                  連絡掲示板の投稿から依頼（内申入力など）を読み取り、「残っている人」を出します。
-                  <b className="font-bold text-text-heading">
-                    投稿の件名と本文が、AIの提供元（Anthropic）へ送られます。
-                  </b>
-                </p>
-                <p className="mt-2 text-sm text-text-body">
-                  プライバシーポリシーのリーガルチェックが終わるまでは、
-                  確認できた教室だけをオンにしてください。オフの教室では送信そのものが起きません。
-                </p>
-                {!extractCanChange && (
-                  <p className="mt-2 text-xs text-text-muted">
-                    切り替えられるのはシステム管理者のみです。
-                  </p>
-                )}
-              </div>
-              <div className="shrink-0 pt-1">
-                <Switch
-                  checked={extractEnabled}
-                  onCheckedChange={handleExtractChange}
-                  disabled={!extractCanChange || isSavingExtract}
-                  aria-label="掲示板の依頼の読み取り"
-                />
-              </div>
+            <p className="text-sm text-text-body">
+              オンにした機能だけが、その教室のデータをAIの提供元（Anthropic）へ送ります。
+              オフの教室では送信そのものが起きず、画面にもバーやカードが出ません。
+              プライバシーポリシーのリーガルチェックが終わるまでは、確認できた教室だけをオンにしてください。
+            </p>
+            {!aiCanChange && (
+              <p className="mt-2 text-xs text-text-muted">
+                切り替えられるのはシステム管理者のみです。
+              </p>
+            )}
+
+            <div className="mt-4 flex flex-col divide-y divide-border border-t border-border">
+              {AI_FEATURE_KEYS.map((key) => (
+                <div key={key} className="flex items-start justify-between gap-4 py-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-bold text-text-heading">{AI_FEATURE_LABELS[key]}</p>
+                    <p className="mt-1 text-sm text-text-body">{AI_FEATURE_DESCRIPTIONS[key]}</p>
+                    <p className="mt-1 text-xs text-text-muted">
+                      外に出るもの:{' '}
+                      <b className="font-bold text-text-heading">{AI_FEATURE_SENDS[key]}</b>
+                    </p>
+                  </div>
+                  <div className="shrink-0 pt-1">
+                    <Switch
+                      checked={aiEnabled[key]}
+                      onCheckedChange={(next) => handleAiChange(key, next)}
+                      disabled={!aiCanChange || savingAi !== null}
+                      aria-label={AI_FEATURE_LABELS[key]}
+                    />
+                  </div>
+                </div>
+              ))}
             </div>
           </CardContent>
         </Card>

@@ -23,6 +23,7 @@ import {
   type TaskScope,
 } from '@/lib/bulletin/taskCatalog';
 import { taskActionText, taskLink } from '@/lib/bulletin/taskLink';
+import { TEACHER_ASSIST_FEATURE_KEY } from '@/lib/ai/features';
 import type { BulletinPopupResponse } from '@/lib/bulletin/apiTypes';
 
 export const dynamic = 'force-dynamic';
@@ -36,7 +37,7 @@ export const dynamic = 'force-dynamic';
  * ★AIを呼ぶのは最後の最後。未対応0件・表示済み・時間切れ・照合の時刻でない、を
  *   先に落とすので、大半の授業ではAIを一度も呼ばない（費用が効くのはここ）。
  *
- * ★AIアシストがOFFの講師には何も出さない（既定OFF・教室長が講師ごとに付ける）。
+ * ★「講師のAIサポート」が付いていない講師には何も出さない（既定OFF・教室長が講師ごとに付ける）。
  *
  * 正典: docs/bulletin-ai-assist.html §3
  */
@@ -137,14 +138,31 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(NOT_SHOWN satisfies BulletinPopupResponse);
   }
 
-  // ★AIアシストがOFFなら何も出さない（既定OFF）
+  // ★この講師に「講師のAIサポート」が付いていなければ何も出さない（既定OFF）
   const { data: profile } = await supabase
     .from('user_profiles')
-    .select('bulletin_ai_assist')
+    .select('teacher_ai_assist')
     .eq('id', auth.userId)
     .maybeSingle();
 
-  if (!profile?.bulletin_ai_assist) {
+  if (!profile?.teacher_ai_assist) {
+    return NextResponse.json({
+      ...NOT_SHOWN,
+      skipReason: 'assist_off',
+    } satisfies BulletinPopupResponse);
+  }
+
+  // ★教室側の栓も見る。講師個人に付いていても、教室がオフなら送信を起こさない。
+  //   読み取りが止まればタスクも生まれないので実害は出にくいが、
+  //   ここでAIを呼ぶ以上、栓は栓として通す（片方だけ見て外部送信しない）。
+  const { data: schoolSetting } = await supabase
+    .from('school_ai_settings')
+    .select('enabled')
+    .eq('school_id', schoolId)
+    .eq('feature_key', TEACHER_ASSIST_FEATURE_KEY)
+    .maybeSingle();
+
+  if (!schoolSetting?.enabled) {
     return NextResponse.json({
       ...NOT_SHOWN,
       skipReason: 'assist_off',

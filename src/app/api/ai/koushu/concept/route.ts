@@ -12,7 +12,7 @@ import {
   type ConceptInput,
   type ConceptResult,
 } from '@/lib/ai/koushuConcept';
-import { KOUSHU_CONCEPT_FEATURE_KEY } from '@/lib/bulletin/schoolSetting';
+import { PLAN_THEME_FEATURE_KEY } from '@/lib/ai/features';
 import { GRADE_LABELS, ASSESSMENT_NAME_LABELS } from '@/types/database';
 
 export const dynamic = 'force-dynamic';
@@ -193,7 +193,7 @@ export async function POST(request: NextRequest) {
     .from('school_ai_settings')
     .select('enabled')
     .eq('school_id', schoolId)
-    .eq('feature_key', KOUSHU_CONCEPT_FEATURE_KEY)
+    .eq('feature_key', PLAN_THEME_FEATURE_KEY)
     .maybeSingle();
 
   if (!setting?.enabled) {

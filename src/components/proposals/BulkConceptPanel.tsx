@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * 選んだ提案書のテーマを、まとめて書き足す。
+ * 「テーマふくらませ」— 選んだ提案書のテーマを、まとめてふくらませる。
  *
  * 正典: docs/ai-features-integration-plan.md §2-5
  *

@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * 掲示板AIアシスト: 教室長が見る「残っている人」。
+ * 講師のAIサポート: 教室長が見る「残っている人」。
  *
  * 正典: docs/bulletin-ai-assist.html
  *

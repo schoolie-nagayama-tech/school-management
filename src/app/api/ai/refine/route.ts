@@ -12,7 +12,7 @@ import {
   type RefineLine,
   type RefineResult,
 } from '@/lib/ai/refine';
-import { BULLETIN_AI_FEATURE_KEY } from '@/lib/bulletin/schoolSetting';
+import { COMPOSE_FEATURE_KEY, PLAN_THEME_FEATURE_KEY } from '@/lib/ai/features';
 
 export const dynamic = 'force-dynamic';
 
@@ -89,13 +89,15 @@ export async function POST(request: NextRequest) {
 
   const empty: RefineResponse = { lines, changes: [], degraded: false, disabled: false };
 
-  // ★この教室でAIに送ってよいか。読み取りと同じ栓（行が無ければOFF）
+  // ★この教室でAIに送ってよいか（行が無ければOFF）。
+  //   ★栓は種類ごとに違う。推敲は掲示板だけの道具ではなく、講習テーマでも使う。
+  //   掲示板の文章と講習テーマでは、外に出してよいかの判断も別の機能に属する。
   const supabase = getPortalServiceClient();
   const { data: setting } = await supabase
     .from('school_ai_settings')
     .select('enabled')
     .eq('school_id', schoolId)
-    .eq('feature_key', BULLETIN_AI_FEATURE_KEY)
+    .eq('feature_key', kind === 'proposal_theme' ? PLAN_THEME_FEATURE_KEY : COMPOSE_FEATURE_KEY)
     .maybeSingle();
 
   if (!setting?.enabled) {
