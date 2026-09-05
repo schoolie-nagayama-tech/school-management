@@ -27,7 +27,7 @@ import {
 } from '@/lib/api/textbook-favorites';
 import type { CurriculumItem, SeasonType, Textbook } from '@/types/database';
 import { GRADE_LABELS, SEASON_LABELS } from '@/types/database';
-import type { UnitDraft } from '@/components/proposals/proposalEditor.shared';
+import { getPreparingSeason, type UnitDraft } from '@/components/proposals/proposalEditor.shared';
 import {
   applyDragRange as applyDragRangeTo,
   buildGroupMap,
@@ -109,7 +109,9 @@ export function CourseEditor({ courseId, schoolId }: { courseId?: string; school
 
   // ── メタ情報 ──
   const [name, setName] = useState('');
-  const [season, setSeason] = useState<SeasonType>('summer');
+  // 雛形は実施の数か月前から作るので、既定は「今のシーズン」ではなく「次に作るシーズン」。
+  // 9月に新規作成すると冬期になる（夏期を選び直す手間を無くす）。既存を開いた場合は上書きされる。
+  const [season, setSeason] = useState<SeasonType>(() => getPreparingSeason());
   const [targetGrades, setTargetGrades] = useState<number[]>([]);
   const [comment, setComment] = useState('');
 

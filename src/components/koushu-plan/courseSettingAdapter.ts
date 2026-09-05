@@ -77,6 +77,32 @@ export function draftsToCourseSettings(
 }
 
 /**
+ * テンプレートの単元設定のうち、生徒のプランに載せるものを選び出す。
+ *
+ * ★コマ数が0でも結合に属している単元は必ず残す。
+ * 「先頭のみ規約」ではグループの2件目以降が0コマなので、素朴に `proposal_count > 0` で
+ * 絞ると**まとめたはずの単元が先頭1件だけになって生徒に渡る**。
+ * 実際に本番で、42行ある講習を適用された生徒の提案書が22行になっていた。
+ * 取り込み側（`courseSettingsToDrafts`）は同じ理由で既に0コマの結合メンバーを残している。
+ * 判定がずれないよう、ここに1本化する。
+ */
+export function pickCourseSettingsForApply(
+  settings: CourseCurriculumSetting[]
+): { curriculum_item_id: number; koma_count: number; group_id: number }[] {
+  return settings
+    .filter((s) => s.proposal_count > 0 || (s.group_number != null && s.group_number > 0))
+    .map((s) => {
+      const inGroup = s.group_number != null && s.group_number > 0;
+      return {
+        curriculum_item_id: s.curriculum_item_id,
+        // グループ内は0コマでも1コマ扱いで有効化する。合計はグループで1回しか数えないので増えない
+        koma_count: inGroup ? s.proposal_count || 1 : s.proposal_count,
+        group_id: inGroup ? (s.group_number as number) : 0,
+      };
+    });
+}
+
+/**
  * テンプレートの単元設定 → 単元ドラフト（ひな形取込）。
  *
  * - `group_number` は既存のドラフトと衝突しないよう `startGroupId` から振り直す。

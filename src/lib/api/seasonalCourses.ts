@@ -15,6 +15,8 @@ import type { ScheduleEntryFormation } from '@/types/schedule';
 // Phase A: 形態キーの直書きを定数参照に置換（既定値は個別）
 import { INDIVIDUAL_FORMATION } from '@/types/schedule';
 import { normalizeKomaBySubject, totalKoma, type KomaSpec } from '@/lib/utils/komaBySubject';
+// テンプレの単元設定 → 生徒のプランに載せる単元。結合の規約はこの1か所に集約している
+import { pickCourseSettingsForApply } from '@/components/koushu-plan/courseSettingAdapter';
 
 // =====================================================
 // 講習機能（座席表連携）用の型定義
@@ -883,9 +885,8 @@ export async function applyCoursesToStudents(
 
   for (const studentId of studentIds) {
     for (const ct of course.textbooks) {
-      const settings = (curriculumByTextbook.get(ct.textbook_id) || []).filter(
-        (s) => s.proposal_count > 0
-      );
+      // 0コマの結合メンバーも残す（pickCourseSettingsForApply のコメント参照）
+      const settings = pickCourseSettingsForApply(curriculumByTextbook.get(ct.textbook_id) || []);
       const hasCurriculum = !textbooksWithoutCurriculum.has(ct.textbook_id);
 
       if (settings.length === 0 && hasCurriculum) continue;
@@ -939,18 +940,17 @@ export async function applyCoursesToStudents(
       for (const ct of course.textbooks) {
         const proposalId = proposalMap.get(`${studentId}:${ct.textbook_id}`);
         if (!proposalId) continue;
-        const settings = (curriculumByTextbook.get(ct.textbook_id) || []).filter(
-          (s) => s.proposal_count > 0
-        );
+        // 結合の2件目以降（0コマ）を落とさない。落とすとまとめた単元が先頭1件だけ生徒に渡る
+        const settings = pickCourseSettingsForApply(curriculumByTextbook.get(ct.textbook_id) || []);
         settings.forEach((s, i) => {
           unitInserts.push({
             proposal_id: proposalId,
             curriculum_item_id: s.curriculum_item_id,
-            koma_count: s.proposal_count,
+            koma_count: s.koma_count,
             // 下書きでは申込未確定。提案済/公開時に koma_count から初期化される。
             applied_koma: 0,
             reason: '',
-            group_id: s.group_number ?? 0,
+            group_id: s.group_id,
             intent_tag: null,
             sort_order: i,
           });
