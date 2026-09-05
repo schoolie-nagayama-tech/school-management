@@ -5,7 +5,6 @@ export { FormEditor } from './FormEditor';
 export { FormList } from './FormList';
 export { PublicFormList } from './PublicFormList';
 export { PublicFormRenderer } from './PublicFormRenderer';
-export { KomaFormRenderer } from './KomaFormRenderer';
 export { ResponseList } from './ResponseList';
 export { ResponseDetailModal } from './ResponseDetailModal';
 export { LinkStudentModal } from './LinkStudentModal';

@@ -6,6 +6,7 @@ import type { School } from '@/types/database';
 import { validateStudentName } from '@/lib/utils/validation';
 import type { ZoukomaPeriod, ZoukomaResponseData, PriceTable } from '@/types/forms/zoukoma';
 import { submitZoukomaResponse } from '@/lib/api/zoukoma';
+import { DEFAULT_GRADE_PRICES } from '@/lib/forms/pricing';
 import { GRADE_NAME_TO_NUMBER } from '@/types/forms/zoukoma';
 import { SubjectInput } from './SubjectInput';
 import { PriceQuote } from './PriceQuote';
@@ -85,18 +86,7 @@ export function ZoukomaForm({ school, period, isPreview, initialValues }: Zoukom
   const grades = settings.grades || ['中1', '中2', '中3', '高1', '高2', '高3'];
   const subjects = settings.subjects || ['英語', '数学', '国語', '理科', '社会'];
   // 単価は期間ごとに settings.price_table で持つ。ここはそれが未設定だったときの保険。
-  // 値は2026年9月改定の料金表「追加授業（単コマ）」＝1対2・90分。
-  // GradePriceEditor の DEFAULT_PRICES と対で、料金改定のときは両方直すこと。
-  const priceTable: PriceTable =
-    settings.price_table ||
-    ({
-      中1: 4380,
-      中2: 4380,
-      中3: 4540,
-      高1: 4930,
-      高2: 5250,
-      高3: 5570,
-    } as PriceTable);
+  const priceTable: PriceTable = settings.price_table || DEFAULT_GRADE_PRICES;
 
   // 合計コマ数を計算
   const totalKoma = useMemo(() => {
