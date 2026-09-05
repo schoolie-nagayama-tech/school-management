@@ -14,6 +14,7 @@ import {
   hardDeleteBulletinPost,
 } from '@/lib/api/bulletin';
 import { getSchools } from '@/lib/api/schools';
+import { fetchWithAuth } from '@/lib/api/auth';
 import type { BulletinPost, BulletinLabel } from '@/types/bulletin';
 import { isPostPublished } from '@/types/bulletin';
 import type { School } from '@/types/database';
@@ -109,6 +110,10 @@ export function BulletinBoard({ className = '', initialData }: BulletinBoardProp
   const [isLoading, setIsLoading] = useState(!initialData);
   const [isExpanded, setIsExpanded] = useState(true);
   const [isPostModalOpen, setIsPostModalOpen] = useState(false);
+  /** 投稿から依頼を読み取っている最中か（下の「残っている人」に出す） */
+  const [isExtracting, setIsExtracting] = useState(false);
+  /** 読み取りが終わったら「残っている人」を数え直させる */
+  const [taskReloadKey, setTaskReloadKey] = useState(0);
   const [editingPost, setEditingPost] = useState<BulletinPost | null>(null);
   /** 編集対象がまとめカードの場合、同一内容の全教室分の投稿ID。編集を全教室へ反映するために使う。 */
   const [editingGroupIds, setEditingGroupIds] = useState<string[] | undefined>(undefined);
@@ -389,9 +394,38 @@ export function BulletinBoard({ className = '', initialData }: BulletinBoardProp
     setIsPostModalOpen(true);
   }, [getSelectedSchoolIds]);
 
-  const handlePostSaved = useCallback(() => {
-    fetchData();
-  }, [fetchData]);
+  /**
+   * 投稿の保存後。
+   *
+   * ★投稿したらそのまま依頼の読み取りを走らせる。承認は挟まない
+   *   （承認待ちにすると「押し忘れたら何も起きない」で、いまの督促と同じ問題が形を変えて残る）。
+   *   読み取った結果は下の「残っている人」に「いま追加」付きで並び、違えば「×」で消せる。
+   *
+   * ★失敗しても投稿は成功のまま。読み取りは投稿の付属品で、
+   *   これがこけたからといって連絡が出ていないことにはならない。
+   */
+  const handlePostSaved = useCallback(
+    (createdPostIds: string[]) => {
+      fetchData();
+      if (createdPostIds.length === 0) return;
+
+      setIsExtracting(true);
+      // 教室ごとに別レコードなので投稿の数だけ呼ぶ（タスクは教室単位で持つため）
+      void Promise.all(
+        createdPostIds.map((postId) =>
+          fetchWithAuth('/api/ai/bulletin/extract', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ postId }),
+          }).catch(() => null)
+        )
+      ).finally(() => {
+        setIsExtracting(false);
+        setTaskReloadKey((k) => k + 1);
+      });
+    },
+    [fetchData]
+  );
 
   if (isLoading) {
     return (
@@ -486,7 +520,11 @@ export function BulletinBoard({ className = '', initialData }: BulletinBoardProp
 
             {/* 掲示板AIアシスト: 投稿から読み取った依頼の「残っている人」（教室長以上）。
                 ★連絡の下に置く。依頼と、その結果は同じ場所で見るもので、別画面にすると見に行かれない。 */}
-            <BulletinTaskBoard schools={schools} />
+            <BulletinTaskBoard
+              schools={schools}
+              reloadKey={taskReloadKey}
+              isExtracting={isExtracting}
+            />
 
             {/* アーカイブ（過去の連絡）: 教室長以上のみ。開くと取得して表示する。 */}
             {canEdit && (

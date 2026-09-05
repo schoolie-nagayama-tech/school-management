@@ -36,10 +36,19 @@ const FRESH_HOURS = 24;
 interface BulletinTaskBoardProps {
   /** 教室名の対応表。掲示板がすでに持っているものを受け取る（同じ取得を二度しない） */
   schools: School[];
+  /** 値が変わったら数え直す。投稿の読み取りが終わったときに掲示板側が変える */
+  reloadKey?: number;
+  /** 投稿から依頼を読み取っている最中。★待たせている理由が分かるように出す */
+  isExtracting?: boolean;
   className?: string;
 }
 
-export function BulletinTaskBoard({ schools, className = '' }: BulletinTaskBoardProps) {
+export function BulletinTaskBoard({
+  schools,
+  reloadKey = 0,
+  isExtracting = false,
+  className = '',
+}: BulletinTaskBoardProps) {
   const { getSelectedSchoolIds, profile } = useAuth();
   const { error: toastError } = useToast();
 
@@ -80,7 +89,9 @@ export function BulletinTaskBoard({ schools, className = '' }: BulletinTaskBoard
     } finally {
       setIsLoading(false);
     }
-  }, [canSee, schoolKey, schools]);
+    // reloadKey は「読み取りが終わったので数え直す」合図。値そのものは使わない
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canSee, schoolKey, schools, reloadKey]);
 
   useEffect(() => {
     void load();
@@ -106,8 +117,9 @@ export function BulletinTaskBoard({ schools, className = '' }: BulletinTaskBoard
   };
 
   if (!canSee) return null;
-  // ★依頼が1件も無いときは、空の箱を掲示板に足さない
-  if (isLoading || rows.length === 0) return null;
+  // ★依頼が1件も無いときは、空の箱を掲示板に足さない。
+  //   ただし読み取り中は、投稿したのに何も出ない時間の理由が分かるように出す
+  if (!isExtracting && (isLoading || rows.length === 0)) return null;
 
   const multiSchool = schoolIds.length > 1;
 
@@ -115,10 +127,14 @@ export function BulletinTaskBoard({ schools, className = '' }: BulletinTaskBoard
     <section className={`mt-4 ${className}`} aria-label="残っている人">
       <div className="mb-2 flex items-baseline justify-between gap-2">
         <h3 className="text-sm font-bold text-text-heading">残っている人</h3>
-        {measuredAt && (
-          <span className="font-mono text-[11px] tabular-nums text-text-faint">
-            {formatClock(measuredAt)} 時点
-          </span>
+        {isExtracting ? (
+          <span className="text-[11px] text-text-muted">投稿から依頼を読み取っています…</span>
+        ) : (
+          measuredAt && (
+            <span className="font-mono text-[11px] tabular-nums text-text-faint">
+              {formatClock(measuredAt)} 時点
+            </span>
+          )
         )}
       </div>
 

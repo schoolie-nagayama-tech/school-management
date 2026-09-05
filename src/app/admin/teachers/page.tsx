@@ -22,6 +22,7 @@ import {
 import { Button } from '@/components/ui';
 import { Input } from '@/components/ui';
 import { Label } from '@/components/ui';
+import { Switch } from '@/components/ui';
 import {
   SelectShadcn as Select,
   SelectContent,
@@ -80,6 +81,9 @@ export default function TeachersPage() {
   const lastLoadAtRef = useRef<number>(0);
   /** フォーカス復帰時に再読込をスキップする閾値 (ms)。30秒以内なら何もしない。 */
   const FOCUS_REFRESH_MIN_INTERVAL_MS = 30_000;
+
+  /** 掲示板AIアシストを保存中の講師ID。連打で行が二重に切り替わるのを防ぐ */
+  const [assistSaving, setAssistSaving] = useState<string | null>(null);
 
   // 教室長かどうかを判定
   const isManager = profile?.role === 'manager';
@@ -164,6 +168,37 @@ export default function TeachersPage() {
   const hiddenInactiveCount = useMemo(
     () => (showInactive ? 0 : teachers.filter((t) => t.is_active === false).length),
     [teachers, showInactive]
+  );
+
+  /**
+   * 掲示板AIアシストの入切。
+   * ★先に画面を切り替えて、失敗したら戻す。一覧全体を読み直すと、
+   *   何人か続けて付けるときに毎回すべての行が点滅して押しづらい。
+   */
+  const handleAssistChange = useCallback(
+    async (teacherId: string, enabled: boolean) => {
+      setAssistSaving(teacherId);
+      setTeachers((prev) =>
+        prev.map((t) => (t.id === teacherId ? { ...t, bulletin_ai_assist: enabled } : t))
+      );
+      try {
+        const res = await fetchWithAuth('/api/ai/bulletin/assist', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ teacherId, enabled }),
+        });
+        if (!res.ok) throw new Error('failed');
+        success(enabled ? 'AIアシストを付けました' : 'AIアシストを外しました');
+      } catch {
+        setTeachers((prev) =>
+          prev.map((t) => (t.id === teacherId ? { ...t, bulletin_ai_assist: !enabled } : t))
+        );
+        toastError('変更できませんでした');
+      } finally {
+        setAssistSaving(null);
+      }
+    },
+    [success, toastError]
   );
 
   const loadData = useCallback(async () => {
@@ -564,6 +599,12 @@ export default function TeachersPage() {
                       <th className="px-4 py-3 text-left text-sm font-bold text-text-heading">
                         最終ログイン
                       </th>
+                      {/* 掲示板AIアシスト。授業中に「やること」のカードを出す相手を選ぶ。
+                          ★一覧に置くのは、導入が「まず数人に付けて様子を見る」運用になるため。
+                          詳細ページを1人ずつ開かせると、付け直すたびに人数分の往復になる。 */}
+                      <th className="px-4 py-3 text-left text-sm font-bold text-text-heading whitespace-nowrap">
+                        AIアシスト
+                      </th>
                       <th className="px-4 py-3 text-right text-sm font-bold text-text-heading">
                         操作
                       </th>
@@ -653,6 +694,15 @@ export default function TeachersPage() {
                           {teacher.last_login_at
                             ? new Date(teacher.last_login_at).toLocaleDateString('ja-JP')
                             : '-'}
+                        </td>
+                        <td className="px-4 py-3">
+                          <Switch
+                            checked={teacher.bulletin_ai_assist === true}
+                            onCheckedChange={(v) => handleAssistChange(teacher.id, v)}
+                            disabled={assistSaving === teacher.id || teacher.is_active === false}
+                            aria-label={`${teacher.display_name || '講師'}の掲示板AIアシスト`}
+                            title="授業中に「やること」のカードを出す"
+                          />
                         </td>
                         <td className="px-4 py-3 text-right">
                           <div className="flex items-center justify-end gap-2">
