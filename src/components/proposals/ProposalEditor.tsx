@@ -69,7 +69,7 @@ import {
   STATUS_COLORS,
   STATUS_FLOW,
   STATUS_INACTIVE,
-  getCurrentSeason,
+  getPreparingSeason,
   type IntentTag,
   type UnitDraft,
 } from './proposalEditor.shared';
@@ -116,7 +116,9 @@ export default function ProposalEditor() {
   const [saving, setSaving] = useState(false);
   const [proposal, setProposal] = useState<SeasonalProposalWithDetails | null>(null);
   const [studentTextbookId, setStudentTextbookId] = useState<string | null>(qStbId || null);
-  const [season, setSeason] = useState<SeasonType>(qSeason || getCurrentSeason());
+  // 提案書は実施の数か月前に作るので、既定は「今のシーズン」ではなく「次に作るシーズン」。
+  // 9月に新規作成すると冬期になる（URLで指定があればそちらが優先）
+  const [season, setSeason] = useState<SeasonType>(qSeason || getPreparingSeason());
   const [year, setYear] = useState(qYear);
   const [theme, setTheme] = useState('');
   const [notes, setNotes] = useState('');
