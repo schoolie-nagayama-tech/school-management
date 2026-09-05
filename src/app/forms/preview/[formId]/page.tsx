@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { getForm } from '@/lib/api/forms';
 import { getSchool } from '@/lib/api/schools';
-import { PublicFormRenderer, KomaFormRenderer } from '@/components/forms';
+import { PublicFormRenderer } from '@/components/forms';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,9 +29,6 @@ export default async function FormPreviewPage({ params }: FormPreviewPageProps) 
     notFound();
   }
 
-  const isKomaForm = form.slug === 'test-koma';
-  const Renderer = isKomaForm ? KomaFormRenderer : PublicFormRenderer;
-
   return (
     <div className="min-h-screen bg-surface-hover">
       <div className="max-w-lg mx-auto px-4 py-8 w-full">
@@ -54,7 +51,7 @@ export default async function FormPreviewPage({ params }: FormPreviewPageProps) 
         </header>
 
         <div className="bg-surface-raised rounded-xl border border-border p-6">
-          <Renderer form={form} schoolCode={school.code ?? ''} isReadOnly />
+          <PublicFormRenderer form={form} schoolCode={school.code ?? ''} isReadOnly />
         </div>
       </div>
     </div>
