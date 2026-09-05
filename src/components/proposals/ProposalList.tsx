@@ -22,6 +22,7 @@ import type { PrintUnitDraft, ProposalPrintData } from './ProposalPrintView';
 import type { SeasonalProposalWithDetails, SeasonType, ProposalStatus } from '@/types/database';
 import { SEASON_LABELS, PROPOSAL_STATUS_LABELS, GRADE_LABELS } from '@/types/database';
 import { getSubjectBadgeColor } from '@/lib/subjectBadge';
+import { getPreparingSeason } from './proposalEditor.shared';
 
 const STATUS_BADGE: Record<ProposalStatus, string> = {
   draft: 'bg-surface-hover text-text-muted',
@@ -266,7 +267,8 @@ export default function ProposalList() {
   };
 
   const currentYear = new Date().getFullYear();
-  const currentSeason = getCurrentSeason();
+  // 新規作成の既定シーズン。実施の数か月前に作るので「今」ではなく「次に作るシーズン」
+  const newProposalSeason = getPreparingSeason();
 
   // ── 印刷モード ──
   if (printMode) {
@@ -396,7 +398,7 @@ export default function ProposalList() {
               テスト対策
             </Link>
             <Link
-              href={`/students/${studentId}/proposals/new?season=${currentSeason}&year=${currentYear}`}
+              href={`/students/${studentId}/proposals/new?season=${newProposalSeason}&year=${currentYear}`}
               className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium bg-ink text-text-on-primary rounded-lg hover:brightness-[0.85] transition-[filter] duration-150"
             >
               <Plus className="w-3 h-3" />
@@ -621,11 +623,4 @@ export default function ProposalList() {
       )}
     </div>
   );
-}
-
-function getCurrentSeason(): SeasonType {
-  const month = new Date().getMonth() + 1;
-  if (month >= 2 && month <= 4) return 'spring';
-  if (month >= 5 && month <= 9) return 'summer';
-  return 'winter';
 }

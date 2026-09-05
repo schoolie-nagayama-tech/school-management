@@ -95,3 +95,18 @@ export function getCurrentSeason(): SeasonType {
   if (month >= 5 && month <= 9) return 'summer';
   return 'winter';
 }
+
+/**
+ * これから準備する講習のシーズン（1〜3月=春 / 4〜8月=夏 / 9〜12月=冬）。
+ *
+ * `getCurrentSeason` は「今どのシーズンにいるか」で、既存データの絞り込みに使う。
+ * こちらは「次にどのシーズンを作るか」。講習の雛形は実施の数か月前から作るので、
+ * 新規作成の既定値には今のシーズンではなくこちらを使う。
+ * 例: 9月は夏期が終わって冬期の準備に入っているので、既定は冬期。
+ */
+export function getPreparingSeason(): SeasonType {
+  const month = new Date().getMonth() + 1;
+  if (month <= 3) return 'spring';
+  if (month <= 8) return 'summer';
+  return 'winter';
+}
