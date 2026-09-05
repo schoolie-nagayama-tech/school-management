@@ -3,6 +3,8 @@ import { getApiAuth } from '@/lib/api-auth';
 import { isManagerOrAbove, isOwnerOrAbove } from '@/lib/utils/roles';
 import { getPortalServiceClient } from '@/lib/mypage/serviceClient';
 
+import { BULLETIN_AI_FEATURE_KEY } from '@/lib/bulletin/schoolSetting';
+
 export const dynamic = 'force-dynamic';
 
 /**
@@ -17,8 +19,6 @@ export const dynamic = 'force-dynamic';
  *
  * 正典: docs/bulletin-ai-assist.html
  */
-
-const FEATURE_KEY = 'bulletin_extract';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
     .from('school_ai_settings')
     .select('enabled')
     .eq('school_id', schoolId)
-    .eq('feature_key', FEATURE_KEY)
+    .eq('feature_key', BULLETIN_AI_FEATURE_KEY)
     .maybeSingle();
 
   return NextResponse.json({
@@ -85,7 +85,7 @@ export async function PATCH(request: NextRequest) {
   const { error } = await supabase.from('school_ai_settings').upsert(
     {
       school_id: schoolId,
-      feature_key: FEATURE_KEY,
+      feature_key: BULLETIN_AI_FEATURE_KEY,
       enabled: body.enabled,
       updated_by: auth.userId,
       updated_at: new Date().toISOString(),

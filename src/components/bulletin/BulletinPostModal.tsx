@@ -6,6 +6,7 @@ import type { BulletinPost, BulletinLabel, BulletinTargetScope } from '@/types/b
 import type { School } from '@/types/database';
 import { GRADE_LABELS } from '@/types/database';
 import { Modal, Button, Input } from '@/components/ui';
+import { AiWriteBar } from '@/components/ai/AiWriteBar';
 
 /**
  * audience 選択肢（社内＝スタッフ / 保護者）。
@@ -114,6 +115,12 @@ export function BulletinPostModal({
 }: BulletinPostModalProps) {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
+  /**
+   * AIの入切を見る教室。★複数教室に同報するときは代表の1つで判断する。
+   *   本文は1つなので、教室ごとに出し分けようがない。
+   *   代表がオフなら出さない（オンの教室に合わせて緩めない）。
+   */
+  const aiSchoolId = post?.school_id ?? selectedSchoolIds[0] ?? schoolId ?? null;
   const [linkUrl, setLinkUrl] = useState('');
   const [labelId, setLabelId] = useState<string | null>(null);
   const [isPinned, setIsPinned] = useState(false);
@@ -457,6 +464,18 @@ export function BulletinPostModal({
             minHeight="280px"
             resizable
           />
+
+          {/* 下書きを作る／整える。★教室の設定がオフならバー自体が出ない
+              （押せる形にしない＝外部への送信が起きない） */}
+          {aiSchoolId && (
+            <AiWriteBar
+              className="mt-2"
+              value={content}
+              onChange={setContent}
+              schoolId={aiSchoolId}
+              kind="bulletin"
+            />
+          )}
         </div>
 
         <div>
