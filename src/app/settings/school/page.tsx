@@ -49,6 +49,15 @@ export default function SchoolSettingsPage() {
   const [extractCanChange, setExtractCanChange] = useState(false);
   const [isSavingExtract, setIsSavingExtract] = useState(false);
 
+  /**
+   * 講習テーマの書き足しを、この教室で許しているか（行が無ければOFF）。
+   * ★掲示板とは別のスイッチ。掲示板は社内向けの連絡文だが、こちらは生徒の成績を送るため、
+   *   ひとつにまとめると掲示板を開けただけの教室から成績まで出てしまう。
+   */
+  const [conceptEnabled, setConceptEnabled] = useState(false);
+  const [conceptCanChange, setConceptCanChange] = useState(false);
+  const [isSavingConcept, setIsSavingConcept] = useState(false);
+
   // 教室情報を取得
   useEffect(() => {
     const fetchSchool = async () => {
@@ -83,6 +92,21 @@ export default function SchoolSettingsPage() {
         } catch {
           setExtractEnabled(false);
           setExtractCanChange(false);
+        }
+
+        // 講習テーマの書き足しの入切。こちらも取れなければ既定OFFのまま出す
+        try {
+          const res = await fetchWithAuth(
+            `/api/ai/koushu/concept-setting?school_id=${localSchoolId}`
+          );
+          if (res.ok) {
+            const json = (await res.json()) as { enabled: boolean; canChange: boolean };
+            setConceptEnabled(json.enabled);
+            setConceptCanChange(json.canChange);
+          }
+        } catch {
+          setConceptEnabled(false);
+          setConceptCanChange(false);
         }
       } catch (error) {
         console.error('Error fetching school:', error);
@@ -246,6 +270,33 @@ export default function SchoolSettingsPage() {
       toastError('変更できませんでした');
     } finally {
       setIsSavingExtract(false);
+    }
+  };
+
+  /**
+   * 講習テーマの書き足しの入切。
+   * ★失敗したら見た目も戻す。オンに見えているのに送っていない／その逆を作らない。
+   */
+  const handleConceptChange = async (enabled: boolean) => {
+    if (!school) return;
+    setIsSavingConcept(true);
+    const before = conceptEnabled;
+    setConceptEnabled(enabled);
+    try {
+      const res = await fetchWithAuth('/api/ai/koushu/concept-setting', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ schoolId: school.id, enabled }),
+      });
+      if (!res.ok) throw new Error('failed');
+      success(
+        enabled ? '講習テーマの書き足しをオンにしました' : '講習テーマの書き足しをオフにしました'
+      );
+    } catch {
+      setConceptEnabled(before);
+      toastError('変更できませんでした');
+    } finally {
+      setIsSavingConcept(false);
     }
   };
 
@@ -487,6 +538,43 @@ export default function SchoolSettingsPage() {
                   onCheckedChange={handleExtractChange}
                   disabled={!extractCanChange || isSavingExtract}
                   aria-label="掲示板の依頼の読み取り"
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* 講習テーマの書き足し。★掲示板と別カードにしているのは、送るものが違うから。
+            こちらは生徒の成績を出すので、掲示板を開けた判断のままオンにさせない。 */}
+        <Card>
+          <CardHeader>
+            <CardTitle>講習テーマの書き足し（AI）</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <p className="text-sm text-text-body">
+                  講習提案書のテーマ欄に書いた一言を、その生徒の単元と成績で書き足します。
+                  <b className="font-bold text-text-heading">
+                    生徒の成績（内申・定期テスト）が、AIの提供元（Anthropic）へ送られます。
+                  </b>
+                </p>
+                <p className="mt-2 text-sm text-text-body">
+                  掲示板とは別のスイッチです。掲示板は連絡文だけですが、こちらは成績を出すため、
+                  分けて判断してください。オフの教室では送信そのものが起きず、バーも出ません。
+                </p>
+                {!conceptCanChange && (
+                  <p className="mt-2 text-xs text-text-muted">
+                    切り替えられるのはシステム管理者のみです。
+                  </p>
+                )}
+              </div>
+              <div className="shrink-0 pt-1">
+                <Switch
+                  checked={conceptEnabled}
+                  onCheckedChange={handleConceptChange}
+                  disabled={!conceptCanChange || isSavingConcept}
+                  aria-label="講習テーマの書き足し"
                 />
               </div>
             </div>

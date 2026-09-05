@@ -22,6 +22,7 @@ export const BULLETIN_AI_FEATURE_KEY = 'bulletin_ai';
  *   掲示板は社内向けの連絡文だが、こちらは**生徒の成績**を送る。
  *   同じスイッチにすると、掲示板を開けた教室で成績まで流れ出す。
  *
- * ★既定OFF。プライバシーポリシーのリーガルチェックが終わるまで、どの教室もオンにしない。
+ * ★既定OFF（行が無ければOFF）。2026-09-05に永山校のみオンにした。
+ *   プライバシーポリシーへのAnthropic追記はリーガルチェック中のため、他の教室はまだ開けない。
  */
 export const KOUSHU_CONCEPT_FEATURE_KEY = 'koushu_concept';
