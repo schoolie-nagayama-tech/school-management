@@ -8,17 +8,10 @@ import {
   ArrowUp,
   BookPlus,
   Check,
-  ChevronDown,
-  ChevronUp,
   Download,
   FileText,
-  Link2,
   PackageOpen,
   Printer,
-  Save,
-  Search,
-  Star,
-  Tag,
   Trash2,
 } from 'lucide-react';
 import {
@@ -72,15 +65,10 @@ import type {
 import { SEASON_LABELS, PROPOSAL_STATUS_LABELS, GRADE_LABELS } from '@/types/database';
 import { ProposalPrintView } from './ProposalPrintView';
 
-import { UnitRow } from './UnitRow';
 import {
-  DEFAULT_SUBJECT_BADGE,
-  INTENT_TAG_COLOR,
-  INTENT_TAGS,
   STATUS_COLORS,
   STATUS_FLOW,
   STATUS_INACTIVE,
-  SUBJECT_BADGE_COLORS,
   getCurrentSeason,
   type IntentTag,
   type UnitDraft,
@@ -98,10 +86,12 @@ import {
   type GroupKind,
 } from '@/components/koushu-plan/unitDraftLogic';
 import { courseSettingsToDrafts } from '@/components/koushu-plan/courseSettingAdapter';
-import {
-  filterAndSortTextbooks,
-  textbookFilterOptions,
-} from '@/components/koushu-plan/textbookPicker';
+// 単元編集まわりのUI部品。講習テンプレートの編集画面と見た目・操作を共有する
+import { TextbookPickerScreen } from '@/components/koushu-plan/TextbookPickerScreen';
+import { UnitList } from '@/components/koushu-plan/UnitList';
+import { SelectionPill } from '@/components/koushu-plan/SelectionPill';
+import { EditorBottomBar } from '@/components/koushu-plan/EditorBottomBar';
+import { usePillPosition } from '@/components/koushu-plan/usePillPosition';
 
 export default function ProposalEditor() {
   const params = useParams();
@@ -160,12 +150,8 @@ export default function ProposalEditor() {
   const dragSnapshotRef = useRef<Set<number>>(new Set()); // ドラッグ開始時点の選択集合（ラバーバンドの基準）
   const draggingRef = useRef(false); // 高速クリック時のリスナ取りこぼしを防ぐため ref でも保持
   const listRef = useRef<HTMLDivElement>(null);
-  const [pillPos, setPillPos] = useState<{ top: number; left: number } | null>(null);
   // 「まとめる」ピルを出す基準行＝最後にチェック操作した単元。下部バーへ往復せず、今クリックした真横ですぐまとめられるようにする。
   const [pillAnchorId, setPillAnchorId] = useState<number | null>(null);
-  // 指導意図の一括設定メニュー（選択中の単元へまとめて適用。行ごとの個別クリックを無くす）
-  const [intentMenuOpen, setIntentMenuOpen] = useState(false);
-  const intentMenuRef = useRef<HTMLDivElement>(null);
 
   const [studentName, setStudentName] = useState('');
   const [studentSchoolId, setStudentSchoolId] = useState<string | null>(null);
@@ -511,7 +497,6 @@ export default function ProposalEditor() {
       });
       return next;
     });
-    setIntentMenuOpen(false);
     if (count > 0) {
       addToast(
         tag ? `${count}単元に「${tag}」を設定` : `${count}単元の指導意図をクリア`,
@@ -519,18 +504,6 @@ export default function ProposalEditor() {
       );
     }
   };
-
-  // メニュー外クリックで閉じる
-  useEffect(() => {
-    if (!intentMenuOpen) return;
-    const handler = (e: MouseEvent) => {
-      if (intentMenuRef.current && !intentMenuRef.current.contains(e.target as Node)) {
-        setIntentMenuOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [intentMenuOpen]);
 
   const updateUnit = (ciId: number, patch: Partial<UnitDraft>) => {
     setUnitDrafts((prev) => {
@@ -664,44 +637,15 @@ export default function ProposalEditor() {
     };
   }, []);
 
-  // ピルを出す行のindex。最後に操作した行が選択中ならそこ、無効なら選択ブロック末尾行にフォールバック。
-  const pillAnchorIdx = useMemo(() => {
-    if (pillAnchorId != null) {
-      const d = unitDrafts.get(pillAnchorId);
-      if (d?.selected) {
-        const idx = allItems.findIndex((i) => i.id === pillAnchorId);
-        if (idx >= 0) return idx;
-      }
-    }
-    return selectionInfo.lastIdx;
-  }, [pillAnchorId, unitDrafts, allItems, selectionInfo.lastIdx]);
-
-  // フローティング「まとめる」ピルの位置を、最後にチェックした行のチェックボックスの真横に合わせる（スクロール追従）。
-  useEffect(() => {
-    if (selectionInfo.count < 2 || pillAnchorIdx < 0) {
-      setPillPos(null);
-      return;
-    }
-    const update = () => {
-      const cont = listRef.current;
-      const el = cont?.querySelector(`[data-unit-idx="${pillAnchorIdx}"]`) as HTMLElement | null;
-      if (!cont || !el) {
-        setPillPos(null);
-        return;
-      }
-      // 行内の先頭ボタン＝チェックボックス。その右隣・縦中央に出す。
-      const checkbox = el.querySelector('button');
-      const r = (checkbox ?? el).getBoundingClientRect();
-      setPillPos({ top: r.top + r.height / 2, left: r.right + 8 });
-    };
-    update();
-    window.addEventListener('scroll', update, { passive: true });
-    window.addEventListener('resize', update);
-    return () => {
-      window.removeEventListener('scroll', update);
-      window.removeEventListener('resize', update);
-    };
-  }, [selectionInfo.count, pillAnchorIdx]);
+  // フローティング「まとめる」ピルの位置（最後にチェックした行の真横・スクロール追従）
+  const pillPos = usePillPosition({
+    listRef,
+    items: allItems,
+    drafts: unitDrafts,
+    selectionCount: selectionInfo.count,
+    selectionLastIdx: selectionInfo.lastIdx,
+    pillAnchorId,
+  });
 
   // キーボード: G で選択中の隣接単元をまとめる / Esc で選択解除。入力中は無効。
   useEffect(() => {
@@ -1029,173 +973,38 @@ export default function ProposalEditor() {
   // テキスト選択ピッカー
   // ════════════════════════════════════════
   if (showTextbookPicker || (!selectedTextbookId && isNew)) {
-    // 絞り込みと並び順（お気に入り→教科→学年→名前）は講習テンプレートの編集画面と共有する
-    const { schoolTypes, subjects, grades } = textbookFilterOptions(
-      allTextbooks,
-      tbFilterSchoolType || undefined
-    );
-
-    const filtered = filterAndSortTextbooks(
-      allTextbooks,
-      {
-        schoolType: tbFilterSchoolType || undefined,
-        subject: tbFilterSubject || undefined,
-        grade: tbFilterGrade || undefined,
-        search: textbookSearch || undefined,
-      },
-      favoriteTextbookIds
-    );
-
-    // お気に入りとそれ以外の境界 index（区切り線を入れるため）
-    const favoriteEndIdx = filtered.findIndex((tb) => !favoriteTextbookIds.has(tb.id));
-
+    // 外枠の <div> は TextbookPickerScreen 側が持つので、ここではトーストと並べるだけ
     return (
-      <div>
-        <div className="mb-6">
-          <Link
-            href={`/students/${studentId}/proposals`}
-            className="text-sm text-text-muted hover:text-text-heading inline-flex items-center gap-1 mb-2 transition-[color] duration-150 ease-out"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            提案書一覧に戻る
-          </Link>
-          <h1 className="text-lg font-bold text-text-heading">テキストを選択</h1>
-          <p className="text-sm text-text-muted mt-0.5">
-            {studentName} の講習提案書{textbookSubject ? ` (${textbookSubject})` : ''}
-          </p>
-        </div>
-
-        <div className="relative mb-3">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-faint" />
-          <input
-            value={textbookSearch}
-            onChange={(e) => setTextbookSearch(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 text-sm border border-border-default rounded-lg bg-surface-raised focus:ring-2 focus:ring-primary/20 focus:border-primary"
-            placeholder="テキスト名・教科・出版社で検索"
-            autoFocus
-          />
-        </div>
-
-        <div className="flex items-center gap-2 mb-4 flex-wrap">
-          <select
-            value={tbFilterSchoolType}
-            onChange={(e) => {
-              setTbFilterSchoolType(e.target.value);
-              setTbFilterGrade('');
-            }}
-            className="px-2 py-1 border border-border-default rounded-lg text-xs bg-surface-raised text-text-body"
-          >
-            <option value="">学校種別</option>
-            {schoolTypes.map((st) => (
-              <option key={st} value={st}>
-                {st}
-              </option>
-            ))}
-          </select>
-          <select
-            value={tbFilterSubject}
-            onChange={(e) => setTbFilterSubject(e.target.value)}
-            className="px-2 py-1 border border-border-default rounded-lg text-xs bg-surface-raised text-text-body"
-          >
-            <option value="">教科</option>
-            {subjects.map((s) => (
-              <option key={s} value={s}>
-                {s}
-              </option>
-            ))}
-          </select>
-          <select
-            value={tbFilterGrade}
-            onChange={(e) => setTbFilterGrade(e.target.value)}
-            className="px-2 py-1 border border-border-default rounded-lg text-xs bg-surface-raised text-text-body"
-          >
-            <option value="">学年</option>
-            {grades.map((g) => (
-              <option key={g} value={g}>
-                {g}
-              </option>
-            ))}
-          </select>
-          {(tbFilterSchoolType || tbFilterSubject || tbFilterGrade) && (
-            <button
-              onClick={() => {
-                setTbFilterSchoolType('');
-                setTbFilterSubject('');
-                setTbFilterGrade('');
-              }}
-              className="text-xs text-text-muted hover:text-text-heading transition-[color] duration-150 ease-out"
-            >
-              クリア
-            </button>
-          )}
-          <span className="text-xs text-text-faint ml-auto">{filtered.length}件</span>
-        </div>
-
-        <div className="space-y-1 max-h-[60vh] overflow-y-auto">
-          {filtered.map((tb, idx) => {
-            const isFav = favoriteTextbookIds.has(tb.id);
-            // お気に入り群の最後と通常群の境目に区切り線を出す（お気に入りが1件以上ありかつ非お気に入りも存在する場合のみ）
-            const showDivider = favoriteEndIdx > 0 && idx === favoriteEndIdx;
-            return (
-              <div key={tb.id}>
-                {showDivider && (
-                  <div className="my-2 border-t border-border-subtle" aria-hidden="true" />
-                )}
-                <div className="relative">
-                  <button
-                    onClick={() => handleSelectTextbook(tb)}
-                    className="w-full text-left pl-4 pr-12 py-3 bg-surface-raised rounded-lg border border-border-default hover:border-accent-ink/30 hover:bg-accent-ink-subtle active:scale-[0.99] transition-[background-color,border-color,transform] duration-150 ease-out"
-                  >
-                    <div className="flex items-center gap-1.5">
-                      {tb.subject &&
-                        (() => {
-                          const c = SUBJECT_BADGE_COLORS[tb.subject] ?? DEFAULT_SUBJECT_BADGE;
-                          return (
-                            <span
-                              className={`inline-flex px-1.5 py-0.5 text-[10px] font-bold rounded shrink-0 ${c.bg} ${c.text}`}
-                            >
-                              {tb.subject}
-                            </span>
-                          );
-                        })()}
-                      <span className="text-sm font-medium text-text-heading">{tb.name}</span>
-                    </div>
-                    <div className="text-xs text-text-muted mt-0.5">
-                      {[tb.publisher, tb.grade].filter(Boolean).join(' / ')}
-                    </div>
-                  </button>
-                  {/* お気に入りトグル。row 本体の onClick とは独立させたいので絶対配置の別ボタンにする */}
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleToggleFavoriteTextbook(tb.id);
-                    }}
-                    disabled={favoriteTogglePending === tb.id}
-                    aria-label={isFav ? 'お気に入りを解除' : 'お気に入りに追加'}
-                    title={isFav ? 'お気に入りを解除' : 'お気に入りに追加'}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-md hover:bg-surface-hover active:scale-90 transition-[background-color,transform] duration-150 disabled:opacity-50"
-                  >
-                    <Star
-                      className={`w-4 h-4 transition-colors duration-150 ${
-                        isFav
-                          ? 'fill-amber-400 text-amber-400'
-                          : 'text-text-faint hover:text-amber-400'
-                      }`}
-                    />
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-          {filtered.length === 0 && (
-            <div className="py-8 text-center text-sm text-text-faint">
-              該当するテキストがありません
-            </div>
-          )}
-        </div>
+      <>
+        <TextbookPickerScreen
+          textbooks={allTextbooks}
+          search={textbookSearch}
+          onSearchChange={setTextbookSearch}
+          schoolType={tbFilterSchoolType}
+          onSchoolTypeChange={(v) => {
+            setTbFilterSchoolType(v);
+            // 学校種別を変えると選べる学年が変わるので、学年の絞り込みは外す
+            setTbFilterGrade('');
+          }}
+          subject={tbFilterSubject}
+          onSubjectChange={setTbFilterSubject}
+          grade={tbFilterGrade}
+          onGradeChange={setTbFilterGrade}
+          onClearFilters={() => {
+            setTbFilterSchoolType('');
+            setTbFilterSubject('');
+            setTbFilterGrade('');
+          }}
+          favoriteIds={favoriteTextbookIds}
+          favoritePendingId={favoriteTogglePending}
+          onToggleFavorite={handleToggleFavoriteTextbook}
+          onSelect={handleSelectTextbook}
+          backHref={`/students/${studentId}/proposals`}
+          backLabel="提案書一覧に戻る"
+          subtitle={`${studentName} の講習提案書${textbookSubject ? ` (${textbookSubject})` : ''}`}
+        />
         <ToastContainer toasts={toasts} onRemove={removeToast} />
-      </div>
+      </>
     );
   }
 
@@ -1408,48 +1217,25 @@ export default function ProposalEditor() {
             </div>
           </div>
 
-          {activeUnits.length > 0 && (
-            <div className="flex items-center justify-end gap-1 mb-1 pr-8 text-[10px] text-text-faint font-medium">
-              <span className="w-[88px] text-center">提案</span>
-              <span className="w-[88px] text-center">申込</span>
-            </div>
-          )}
-
-          <div ref={listRef} className={`space-y-1 ${dragging ? 'select-none' : ''}`}>
-            {allItems.map((item, idx) => {
-              const draft = unitDrafts.get(item.id);
-              if (!draft) return null;
-              const done = isDone(item.id);
-              const groupMembers = draft.group_id > 0 ? groupMap.get(draft.group_id) : undefined;
-              const appliedGroupMembers =
-                draft.applied_group_id > 0
-                  ? appliedGroupMap.get(draft.applied_group_id)
-                  : undefined;
-
-              return (
-                <UnitRow
-                  key={item.id}
-                  index={idx}
-                  item={item}
-                  draft={draft}
-                  done={done}
-                  appliedMode={appliedMode}
-                  groupMembers={groupMembers}
-                  appliedGroupMembers={appliedGroupMembers}
-                  onToggle={(shiftKey) => toggleUnit(item.id, shiftKey)}
-                  onSelectStart={(shiftKey) => startSelectDrag(idx, shiftKey)}
-                  onSelectEnter={() => onSelectEnter(idx)}
-                  onUpdate={(patch) => updateUnit(item.id, patch)}
-                  onUngroup={() => ungroupUnit(item.id)}
-                  onUngroupAll={() => draft.group_id > 0 && ungroupAll(draft.group_id)}
-                  onUngroupApplied={() => ungroupAppliedUnit(item.id)}
-                  onUngroupAllApplied={() =>
-                    draft.applied_group_id > 0 && ungroupAllApplied(draft.applied_group_id)
-                  }
-                />
-              );
-            })}
-          </div>
+          <UnitList
+            items={allItems}
+            drafts={unitDrafts}
+            isDone={isDone}
+            appliedMode={appliedMode}
+            groupMap={groupMap}
+            appliedGroupMap={appliedGroupMap}
+            dragging={dragging}
+            listRef={listRef}
+            showColumnHeader={activeUnits.length > 0}
+            onToggle={toggleUnit}
+            onSelectStart={startSelectDrag}
+            onSelectEnter={onSelectEnter}
+            onUpdate={updateUnit}
+            onUngroup={ungroupUnit}
+            onUngroupAll={ungroupAll}
+            onUngroupApplied={ungroupAppliedUnit}
+            onUngroupAllApplied={ungroupAllApplied}
+          />
         </section>
 
         {/* メモ */}
@@ -1468,163 +1254,50 @@ export default function ProposalEditor() {
       </div>
 
       {/* 選択脇のフローティング「まとめる」ピル。最後にチェックした行のチェックボックスの真横（縦中央）に出し、下部バーへの往復をなくす。 */}
-      {/* ドラッグ中はピルがポインタ操作を奪わないよう pointer-events を切る。 */}
-      {pillPos && selectionInfo.count >= 2 && (
-        <div
-          className={`fixed z-40 -translate-y-1/2 print:hidden flex items-center gap-1.5 ${dragging ? 'pointer-events-none' : ''}`}
-          style={{ top: pillPos.top, left: pillPos.left }}
-        >
-          {selectionInfo.contiguous ? (
-            <button
-              type="button"
-              onClick={groupSelected}
-              className="flex items-center gap-1.5 rounded-full bg-primary text-white text-xs font-bold pl-3 pr-2.5 py-1.5 shadow-lg ring-1 ring-black/5 hover:bg-primary/90 active:scale-95 transition-[transform,background-color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] origin-left animate-[popover-enter_150ms_cubic-bezier(0.23,1,0.32,1)]"
-            >
-              <Link2 className="w-3.5 h-3.5" />
-              {selectionInfo.count}単元をまとめる
-              <kbd className="ml-0.5 rounded bg-white/20 px-1 text-[10px] font-semibold leading-tight">
-                G
-              </kbd>
-            </button>
-          ) : (
-            <div className="flex items-center gap-1.5 rounded-full bg-surface-raised text-text-muted text-[11px] font-medium px-3 py-1.5 shadow-lg ring-1 ring-border-default origin-left animate-[popover-enter_150ms_cubic-bezier(0.23,1,0.32,1)]">
-              隣接する単元のみまとめられます
-            </div>
-          )}
+      <SelectionPill
+        pos={pillPos}
+        count={selectionInfo.count}
+        contiguous={selectionInfo.contiguous}
+        dragging={dragging}
+        appliedMode={appliedMode}
+        onGroup={groupSelected}
+        onGroupApplied={groupAppliedSelected}
+        onApplyIntent={applyIntentToSelected}
+      />
 
-          {/* 申込編集フェーズ（提案済み/公開済み）では「申込結合」も提示。提案結合とは別系統で申込コマを1コマにまとめる。 */}
-          {appliedMode && selectionInfo.contiguous && (
-            <button
-              type="button"
-              onClick={groupAppliedSelected}
-              className="flex items-center gap-1.5 rounded-full bg-success text-white text-xs font-bold pl-3 pr-3 py-1.5 shadow-lg ring-1 ring-black/5 hover:bg-success/90 active:scale-95 transition-[transform,background-color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] origin-left animate-[popover-enter_150ms_cubic-bezier(0.23,1,0.32,1)]"
-              title="選択中の単元を申込1コマにまとめる（提案結合とは別）"
-            >
-              <Link2 className="w-3.5 h-3.5" />
-              申込結合
-            </button>
-          )}
-
-          {/* グループ化ピルの隣に「指導意図」一括設定。選択した場所のすぐ横でまとめて設定できる。 */}
-          <div className="relative" ref={intentMenuRef}>
-            <button
-              type="button"
-              onClick={() => setIntentMenuOpen((o) => !o)}
-              className="flex items-center gap-1 rounded-full bg-surface-raised text-text-body text-xs font-medium pl-2.5 pr-2 py-1.5 shadow-lg ring-1 ring-border-default hover:bg-surface-hover active:scale-95 transition-[transform,background-color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] origin-left animate-[popover-enter_150ms_cubic-bezier(0.23,1,0.32,1)]"
-              title="選択中の単元へ指導意図を一括設定"
-            >
-              <Tag className="w-3.5 h-3.5" />
-              指導意図
-              {intentMenuOpen ? (
-                <ChevronUp className="w-3 h-3" />
-              ) : (
-                <ChevronDown className="w-3 h-3" />
-              )}
-            </button>
-            {intentMenuOpen && (
-              <div className="absolute top-full left-0 mt-2 w-56 p-2 bg-surface-raised border border-border-default rounded-xl shadow-lg origin-top-left animate-[popover-enter_150ms_cubic-bezier(0.23,1,0.32,1)]">
-                <div className="px-1 pb-1.5 text-[10px] font-bold text-text-faint">
-                  選択中の{selectionInfo.count}単元に設定
-                </div>
-                <div className="flex flex-wrap gap-1">
-                  {INTENT_TAGS.map((tag) => (
-                    <button
-                      key={tag}
-                      onClick={() => applyIntentToSelected(tag)}
-                      className={`px-1.5 py-0.5 text-[10px] font-medium border rounded-full bg-white border-current hover:brightness-95 active:scale-95 transition-[transform,filter] duration-100 ease-out ${INTENT_TAG_COLOR[tag]}`}
-                    >
-                      {tag}
-                    </button>
-                  ))}
-                </div>
-                <button
-                  onClick={() => applyIntentToSelected(null)}
-                  className="mt-1.5 w-full text-left px-1.5 py-1 text-[10px] text-text-faint hover:text-text-muted rounded transition-[color] duration-100"
-                >
-                  指導意図をクリア
-                </button>
-              </div>
+      <EditorBottomBar
+        unitCount={activeUnits.length}
+        totalKoma={totalKoma}
+        totalAppliedKoma={totalAppliedKoma}
+        selectedCount={selectionInfo.count}
+        contiguous={selectionInfo.contiguous}
+        appliedMode={appliedMode}
+        onGroup={groupSelected}
+        onGroupApplied={groupAppliedSelected}
+        onSave={handleSave}
+        saving={saving}
+        saveBlockers={saveBlockers}
+        extraActions={
+          <>
+            {/* 講習に登録ボタン: 教室長以上のみ表示 */}
+            {!isNew && proposal && isManagerOrAbove && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowPromoteConfirm(true)}
+                disabled={promoting || !theme.trim() || !selectedTextbookId}
+              >
+                <BookPlus className="w-3.5 h-3.5 mr-1" />
+                講習に登録
+              </Button>
             )}
-          </div>
-        </div>
-      )}
-
-      {/* スティッキーボトムバー（コンテンツ幅 max-w-[1600px] に合わせる） */}
-      <div className="fixed bottom-0 left-0 right-0 z-30 bg-surface-raised/95 backdrop-blur-sm border-t border-border-default print:hidden">
-        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-2.5 flex items-center gap-3">
-          <div className="text-xs font-bold text-text-muted shrink-0">
-            <span className="text-accent-ink">
-              {activeUnits.length}単元 / {totalKoma}コマ
-            </span>
-            {totalAppliedKoma != null && totalAppliedKoma > 0 && (
-              <span className="text-info ml-2">申込 {totalAppliedKoma}</span>
-            )}
-          </div>
-          <div className="flex-1" />
-          {selectionInfo.count > 0 && (
-            <span className="text-[11px] font-medium text-text-muted shrink-0">
-              {selectionInfo.count}単元 選択中
-            </span>
-          )}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={groupSelected}
-            disabled={!selectionInfo.contiguous}
-            title="選択中の単元を1コマにまとめる（グループ化済みは新しいグループで上書き / ショートカット: G）"
-          >
-            <Link2 className="w-3.5 h-3.5 mr-1" />
-            グループ化
-          </Button>
-          {/* 申込編集フェーズでは申込専用の結合も可能（提案結合とは別系統） */}
-          {appliedMode && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={groupAppliedSelected}
-              disabled={!selectionInfo.contiguous}
-              title="選択中の単元を申込1コマにまとめる（提案結合とは独立）"
-            >
-              <Link2 className="w-3.5 h-3.5 mr-1 text-success" />
-              申込結合
+            <Button variant="outline" size="sm" onClick={() => setPreviewMode(true)}>
+              <Printer className="w-3.5 h-3.5 mr-1" />
+              プレビュー
             </Button>
-          )}
-          {/* 講習に登録ボタン: 教室長以上のみ表示 */}
-          {!isNew && proposal && isManagerOrAbove && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowPromoteConfirm(true)}
-              disabled={promoting || !theme.trim() || !selectedTextbookId}
-            >
-              <BookPlus className="w-3.5 h-3.5 mr-1" />
-              講習に登録
-            </Button>
-          )}
-          <Button variant="outline" size="sm" onClick={() => setPreviewMode(true)}>
-            <Printer className="w-3.5 h-3.5 mr-1" />
-            プレビュー
-          </Button>
-          <div className="flex flex-col items-end gap-1">
-            <Button
-              size="sm"
-              onClick={handleSave}
-              disabled={saving || saveBlockers.length > 0}
-              isLoading={saving}
-              title={saveBlockers.length > 0 ? saveBlockers.join(' / ') : undefined}
-            >
-              <Save className="w-3.5 h-3.5 mr-1" />
-              保存
-            </Button>
-            {/* 保存できない理由を明示（ボタンが disabled でも理由が分かるようにする） */}
-            {saveBlockers.length > 0 && (
-              <p className="text-[11px] font-medium text-red-600 text-right leading-tight">
-                {saveBlockers.join(' / ')}
-              </p>
-            )}
-          </div>
-        </div>
-      </div>
+          </>
+        }
+      />
 
       {/* トップに戻るボタン */}
       {showScrollTop && (

@@ -98,9 +98,40 @@ A3 はデータ変更なし（表示側のグルーピングのみ）。A1・A2 
 
 検証: 型チェック・ESLint・Prettier・単体テスト5件すべて通過。`/courses` は dev サーバーで200を返しコンパイルエラーなし。**画面の目視はログインが要るため未実施**。
 
-### 2-6. 未処理として残っている問題
+### 2-7. 実装済み 第2弾（2026-09-05）
 
-**リポジトリ直下に `courses/` の重複コピーがある**（`courses/page.tsx` ほか2ファイル、2026-01-20 の1コミットのみ）。ルート直下に `app/` が無いためルーティングされない完全な死にコードだが、`tsconfig.json` の `include` が拾うので型チェックの対象にはなる。今回 `SeasonalCourseListItem` 化に合わせて型名だけ追随させた（整形崩れは元から）。**消してよいはずだが、追跡下のファイルなので削除は保留**。
+§2 の残り全部と、テンプレート編集画面の作り直しを実施。
+
+**一覧**: D1（学年ジャンプ付きカスタムスクロールバーを削除）/ D2（科目ソートを削除）/ D4（作成時のコマ数・コメント入力を削除）/
+D5（スクロール位置の保存を削除）/ F3（共通 `Modal` へ→のちに新規作成モーダル自体が不要に）/ F4（季節の色を `course-shared/seasonBadge.ts` に集約）/
+F5（絞り込み解除に文言）/ F7（`getCourseApplications` を全件ページング）/ F8（一括操作バーを単一教室でも表示）/
+**A1**（「未設定のみ」フィルタ＋一括アーカイブ）/ **A2**（有効・アーカイブの切替と「戻す」）。
+
+★**「削除」は論理削除だったので、UI文言を実態に合わせて「アーカイブ」に統一した。** 完全削除の機能は作っていない。
+
+**編集画面**: §3-5-0 の設計どおり `CourseEditor` を新設し、`/courses/[courseId]` は44行の薄いページになった（旧947行）。
+`/courses/new` を追加し、一覧の「新規作成」はモーダルではなくこのページへ飛ぶ。**作成→一覧→詳細で設定という2段構えを廃止**。
+編集画面からもアーカイブできるようにした（一覧まで戻らせない）。
+
+**消したもの**: `groupCourseCurriculumItems` / `ungroupCourseCurriculumItems`（結合をローカル状態にしたので不要）/
+`saveCourseCurriculum`（未使用）/ `convertToCourseCurriculumRows` と `CourseCurriculumRow`（旧疑似テーブルの表示変換。UIごと無くなった）/
+リポジトリ直下の孤立ディレクトリ `courses/`（§2-6）。
+
+**足したAPI**: `replaceCourseCurriculum`（削除→挿入。`saveBulkCourseCurriculum` は upsert なので、コマ0に戻した単元の古い行が残る）/
+`restoreSeasonalCourse` / `archiveSeasonalCourses` / `getSeasonalCourses` の第2引数 `isActive`。
+
+**直したバグ**: `UnitRow` の意図タグ開閉ボタンが押しても何も起きなかった（`expanded` を誰も見ていなかった）ので、
+効いていない制御を削除。`/courses/[courseId]/apply` に権限チェックが無かったので追加。編集画面は権限判定を先頭に移した。
+
+検証: 型チェック0件 / テスト128ファイル1735件パス / `npm run format:check` 通過。**画面の目視は未実施（要ログイン）。**
+
+### 2-6. リポジトリ直下の孤立コピー（2026-09-05 削除済み）
+
+`courses/page.tsx` ほか2ファイル。2026-01-20 の1コミットで入ったきりの重複で、ルート直下に `app/` が無いため
+**Next.js のルーティング対象外＝配信されない死にコード**だった。にもかかわらず `tsconfig.json` の `include` が
+`**/*.tsx` で拾うため型チェックの対象に入り、`saveCourseCurriculum` の削除を塞いでいた。
+
+削除した。git 履歴に残っているので必要なら取り戻せる。
 
 ## 3. 詳細ページを提案書エディタに揃える（本題）
 
@@ -192,6 +223,63 @@ ProposalEditor には**テストが1本も無く**、画面の目視にはログ
 - 規約は維持する:
   - `group_id: 0` ⇔ `group_number: null`
   - グループ内コマ数は **先頭行にだけ値、残りは0**。`applyCoursesToStudents` と `handleImportCourse` がこの前提。変えない。
+
+#### 3-5-0. `CourseEditor` の設計（2026-09-05 確定）
+
+**置き場**: `src/components/koushu-plan/CourseEditor.tsx`。
+`/courses/[courseId]`（既存の編集）と `/courses/new`（新規作成）の両方から同じ部品を呼ぶ。
+
+**画面の流れ**（提案書エディタと同じ手つき）:
+
+1. テキスト未選択なら**テキストピッカーが全画面で開く**（新規作成は必ずここから始まる）。
+2. エディタ本体。上からテンプレ名・季節・対象学年 → テキストのタブ → 単元リスト → スティッキーな下部バー。
+3. 保存で初めて `seasonal_courses` の行ができる（新規の場合）。
+
+**状態の持ち方**:
+
+```
+name / season / targetGrades[] / comment      … メタ情報
+textbooks[]（最大3冊）/ selectedTextbookId      … テキストのタブ
+unitsByTextbook: Map<textbookId, { items, drafts }>
+nextGroupId                                     … コース全体で通し番号
+```
+
+★**テキストごとの編集内容を全部メモリに持つ**。旧実装はタブを切り替えると未保存の入力が警告なく消えていた（`proposalCountValues` を毎回リセットしていた）。全部持てばこの問題が消える。
+
+★**グループ番号はコース全体で通しにする**。旧実装のサーバー側採番は「そのコースの最大値+1」でテキストを跨いで一意だった。
+テキスト内だけで採番すると他テキストと衝突する。表示色と `G{n}` ラベルにしか使わないので実害は薄いが、意味づけを変えない。
+
+**保存**（1回の操作で全部書く）:
+
+1. 新規なら `createSeasonalCourse`、既存なら `updateSeasonalCourse`
+2. テキストの追加・削除を読み込み時との差分で反映
+3. テキストごとに `replaceCourseCurriculum`（後述）で単元設定を丸ごと書き換え
+4. `total_koma` は全テキストの `calcTotalKoma` の合計
+
+★**`saveBulkCourseCurriculum` は upsert しかしないので、そのままでは使えない。**
+コマ数を0に戻した単元は書き出し対象から外れるため、DBに古い行が残って復活してしまう。
+提案書側の `saveProposalUnits`（全削除→全挿入）と同じ意味論の **`replaceCourseCurriculum(courseId, textbookId, settings)`** を新設し、
+そのテキストぶんの行を消してから入れ直す。既存の `saveBulkCourseCurriculum` は
+`promoteProposalToCourse`（新規コースへの初回書き込み）専用として残す。
+
+**旧実装から捨てるもの**:
+
+| 捨てるもの | 理由 |
+|---|---|
+| `groupCourseCurriculumItems` / `ungroupCourseCurriculumItems` | 結合をローカル状態にするのでサーバー往復が不要。`saveBulkCourseCurriculum` は `group_number` も送れる |
+| `saveCourseCurriculum`（単数形） | `src/` から一度も呼ばれていない死にコード |
+| 「提案回数を保存」ボタン | 保存は下部バーの1本に集約 |
+| 基本情報の編集モード（`isEditingBasic`） | 編集中に下のセクションが丸ごと消える作りをやめ、常に編集できる形にする |
+| 疑似テーブルの単元表 | `UnitList` + `UnitRow` に置き換え。行クリックで+1・なぞり選択・「まとめる」ピルが使えるようになる |
+
+**旧実装の往復回数**: `handleSaveProposalCounts` はテキスト N 冊で **N+5 回**のAPI往復をしていた
+（同じ `getCourseCurriculum` を3回呼ぶ重複を含む）。新実装は「更新1 + テキスト数ぶんの置き換え」に収まる。
+
+**申込と指導意図は出さない**: `UnitRow` に `showApplied={false}` `showIntent={false}` を渡す。
+テンプレートに申込コマは無く、指導意図は生徒ごとに決めるもの（§4 の決定1）。
+
+**権限**: 旧実装は `isLoading` と `!course` の早期returnが権限チェックより先にあり、権限の無い利用者でもデータ取得が走っていた。新実装では権限判定を先頭に置く。
+`/courses/[courseId]/apply` には権限チェックが**そもそも無い**ので、あわせて `canAccessCourses` を入れる。
 
 #### 3-5-1. 実装済み: `courseSettingAdapter.ts` と、見つかったコマ数の膨らみ（2026-09-04・PR #142）
 

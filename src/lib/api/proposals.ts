@@ -857,9 +857,8 @@ export async function promoteProposalToCourse(
   }
 
   if (units.length > 0 && proposal.textbook_id) {
-    // 結合は「先頭にだけコマ数・残りは0」で書く。
-    // テンプレート側の読み出し（convertToCourseCurriculumRows）はグループ内を合計するため、
-    // 全メンバーに値を入れるとコマ数がメンバー数ぶん膨らむ。変換規約は adapter に集約している。
+    // 結合は「先頭にだけコマ数・残りは0」で書く。グループのコマ数を持つのは先頭の1件だけ、
+    // という規約にしないと二重に数えられる。変換規約は courseSettingAdapter に集約している。
     await saveBulkCourseCurriculum(
       course.id,
       proposal.textbook_id,

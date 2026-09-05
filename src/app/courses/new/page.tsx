@@ -1,6 +1,5 @@
 'use client';
 
-import { useParams } from 'next/navigation';
 import { AdminLayout } from '@/components/layouts';
 import { Loading } from '@/components/ui';
 import AccessDenied from '@/components/AccessDenied';
@@ -9,17 +8,16 @@ import { useLocalSchoolId } from '@/hooks/useLocalSchoolId';
 import { CourseEditor } from '@/components/koushu-plan/CourseEditor';
 
 /**
- * 講習テンプレートの編集ページ。中身は CourseEditor（/courses/new と同じ部品）。
+ * 講習テンプレートの新規作成ページ。
  *
- * ★権限判定を必ず先頭に置く。旧実装は読み込み中・コース未取得の早期returnが権限チェックより
- * 前にあり、権限の無い利用者にもコースのデータ取得が走っていた。
+ * 編集ページと同じ CourseEditor を courseId 無しで開くだけ。テキストを選ぶところから始まり、
+ * 保存を押して初めて講習の行ができる（「作成 → 一覧 → 詳細で設定」の2段構えを廃止した）。
+ * 権限判定はデータ取得より先に行う。
  */
-export default function CourseDetailPage() {
+export default function NewCoursePage() {
   const { hasPermission, isLoading: permissionLoading } = useRequirePermission(
     (p) => p.canAccessCourses
   );
-  const params = useParams();
-  const courseId = params?.courseId as string;
   const { localSchoolId } = useLocalSchoolId();
 
   if (permissionLoading) {
@@ -39,8 +37,8 @@ export default function CourseDetailPage() {
   }
 
   return (
-    <AdminLayout headerTitle="講習を編集">
-      <CourseEditor courseId={courseId} schoolId={localSchoolId} />
+    <AdminLayout headerTitle="講習を新規作成">
+      <CourseEditor schoolId={localSchoolId} />
     </AdminLayout>
   );
 }

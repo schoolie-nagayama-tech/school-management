@@ -10,7 +10,6 @@ import type {
   SeasonalCourseListItem,
   SeasonType,
   CurriculumItem,
-  CourseCurriculumRow,
 } from '@/types/database';
 import type { ScheduleEntryFormation } from '@/types/schedule';
 // Phase A: 形態キーの直書きを定数参照に置換（既定値は個別）
@@ -407,7 +406,13 @@ export async function getKoushuScheduledCounts(
 // コース一覧を取得
 // 単元は件数だけを取る。一覧は単元の中身を表示しないため、行そのものは要らない。
 // 詳細ページ用に中身が要るときは getSeasonalCourse（単体）を使うこと。
-export async function getSeasonalCourses(schoolId: string): Promise<SeasonalCourseListItem[]> {
+//
+// isActive で「有効」「アーカイブ済み（論理削除）」を出し分ける。既定は有効のみで、
+// 引数を省略した既存の呼び出しは従来どおりの挙動になる。
+export async function getSeasonalCourses(
+  schoolId: string,
+  isActive = true
+): Promise<SeasonalCourseListItem[]> {
   const { data, error } = await supabase
     .from('seasonal_courses')
     .select(
@@ -418,7 +423,7 @@ export async function getSeasonalCourses(schoolId: string): Promise<SeasonalCour
     `
     )
     .eq('school_id', schoolId)
-    .eq('is_active', true)
+    .eq('is_active', isActive)
     .order('created_at', { ascending: false });
 
   if (error) throw error;
@@ -551,6 +556,29 @@ export async function deleteSeasonalCourse(courseId: string): Promise<void> {
     .from('seasonal_courses')
     .update({ is_active: false, updated_at: new Date().toISOString() })
     .eq('id', courseId);
+
+  if (error) throw error;
+}
+
+// アーカイブ済みのコースを有効に戻す（論理削除の取り消し）
+export async function restoreSeasonalCourse(courseId: string): Promise<void> {
+  const { error } = await supabase
+    .from('seasonal_courses')
+    .update({ is_active: true, updated_at: new Date().toISOString() })
+    .eq('id', courseId);
+
+  if (error) throw error;
+}
+
+// 複数コースを一括でアーカイブ（論理削除）。
+// 1件ずつ update を投げると件数分の往復が発生するので .in() で1クエリにまとめる。
+export async function archiveSeasonalCourses(courseIds: string[]): Promise<void> {
+  if (courseIds.length === 0) return;
+
+  const { error } = await supabase
+    .from('seasonal_courses')
+    .update({ is_active: false, updated_at: new Date().toISOString() })
+    .in('id', courseIds);
 
   if (error) throw error;
 }
@@ -718,37 +746,6 @@ export async function getCourseCurriculum(
   };
 }
 
-// カリキュラム設定を保存（upsert）
-export async function saveCourseCurriculum(
-  courseId: string,
-  textbookId: number,
-  curriculumItemId: number,
-  data: {
-    proposal_count?: number;
-    group_number?: number | null;
-  }
-): Promise<SeasonalCourseCurriculum> {
-  const { data: result, error } = await supabase
-    .from('seasonal_course_curriculum')
-    .upsert(
-      {
-        course_id: courseId,
-        textbook_id: textbookId,
-        curriculum_item_id: curriculumItemId,
-        ...data,
-        updated_at: new Date().toISOString(),
-      },
-      {
-        onConflict: 'course_id,curriculum_item_id',
-      }
-    )
-    .select()
-    .single();
-
-  if (error) throw error;
-  return result as SeasonalCourseCurriculum;
-}
-
 // 一括でカリキュラム設定を保存
 export async function saveBulkCourseCurriculum(
   courseId: string,
@@ -775,53 +772,45 @@ export async function saveBulkCourseCurriculum(
   if (error) throw error;
 }
 
-// グループ化
-export async function groupCourseCurriculumItems(
+/**
+ * 1テキストぶんの単元設定を、渡された内容で丸ごと置き換える。
+ *
+ * `saveBulkCourseCurriculum` は upsert しかしないため、編集画面の「まとめて保存」には使えない。
+ * コマ数を0に戻した単元は書き出し対象から外れるので、そのままだとDBに古い行が残り、
+ * 読み直したときに消したはずのコマ数が復活してしまう。
+ * 提案書側の `saveProposalUnits`（全削除→全挿入）と同じ意味論をコース側にも用意する。
+ *
+ * 削除の範囲は course_id ＋ textbook_id。他のテキストのタブで編集中の内容を巻き込まない。
+ */
+export async function replaceCourseCurriculum(
   courseId: string,
   textbookId: number,
-  curriculumItemIds: number[]
+  settings: Array<{
+    curriculum_item_id: number;
+    proposal_count: number;
+    group_number: number | null;
+  }>
 ): Promise<void> {
-  if (curriculumItemIds.length < 2) {
-    throw new Error('グループ化には2つ以上の単元が必要です');
-  }
-
-  // 次のグループ番号を取得
-  const { data: existing } = await supabase
+  const { error: delError } = await supabase
     .from('seasonal_course_curriculum')
-    .select('group_number')
+    .delete()
     .eq('course_id', courseId)
-    .not('group_number', 'is', null)
-    .order('group_number', { ascending: false })
-    .limit(1);
+    .eq('textbook_id', textbookId);
 
-  const nextGroupNumber = (existing?.[0]?.group_number ?? 0) + 1;
+  if (delError) throw delError;
 
-  // 各単元にグループ番号を設定（単元ごとの upsert を1回のバルク upsert に集約）
-  const now = new Date().toISOString();
-  const { error: upsertError } = await supabase.from('seasonal_course_curriculum').upsert(
-    curriculumItemIds.map((curriculumItemId) => ({
-      course_id: courseId,
-      textbook_id: textbookId,
-      curriculum_item_id: curriculumItemId,
-      group_number: nextGroupNumber,
-      updated_at: now,
-    })),
-    { onConflict: 'course_id,curriculum_item_id' }
-  );
-  if (upsertError) throw upsertError;
-}
+  if (settings.length === 0) return;
 
-// グループ解除
-export async function ungroupCourseCurriculumItems(
-  courseId: string,
-  curriculumItemIds: number[]
-): Promise<void> {
-  const { error } = await supabase
-    .from('seasonal_course_curriculum')
-    .update({ group_number: null, updated_at: new Date().toISOString() })
-    .eq('course_id', courseId)
-    .in('curriculum_item_id', curriculumItemIds);
+  const records = settings.map((s) => ({
+    course_id: courseId,
+    textbook_id: textbookId,
+    curriculum_item_id: s.curriculum_item_id,
+    proposal_count: s.proposal_count,
+    group_number: s.group_number,
+    updated_at: new Date().toISOString(),
+  }));
 
+  const { error } = await supabase.from('seasonal_course_curriculum').insert(records);
   if (error) throw error;
 }
 
@@ -989,91 +978,19 @@ export async function applyCoursesToStudents(
 }
 
 // コースの適用履歴を取得
+// 適用履歴は「生徒数 × 適用回数」でスケールし、大規模校では1000行を超えて
+// PostgREST に静かに切り捨てられうるため全件ページングする。
+// applied_at は一意でないためページ境界がぶれる。id を第2ソートキーにして安定させる。
 export async function getCourseApplications(
   courseId: string
 ): Promise<SeasonalCourseApplication[]> {
-  const { data, error } = await supabase
-    .from('seasonal_course_applications')
-    .select('*, student:students(*)')
-    .eq('course_id', courseId)
-    .order('applied_at', { ascending: false });
-
-  if (error) throw error;
-  return data || [];
-}
-
-// =====================================================
-// 表示用データ変換
-// =====================================================
-
-// カリキュラムを表示用に変換（グループ化対応）
-export function convertToCourseCurriculumRows(
-  items: CurriculumItem[],
-  settings: SeasonalCourseCurriculum[]
-): CourseCurriculumRow[] {
-  const settingsMap = new Map<number, SeasonalCourseCurriculum>();
-  for (const s of settings) {
-    settingsMap.set(s.curriculum_item_id, s);
-  }
-
-  // グループごとの単元リスト
-  const groupItems = new Map<number, number[]>();
-  for (const item of items) {
-    const setting = settingsMap.get(item.id);
-    if (setting?.group_number != null) {
-      const existing = groupItems.get(setting.group_number) || [];
-      existing.push(item.id);
-      groupItems.set(setting.group_number, existing);
-    }
-  }
-
-  const displayRows: CourseCurriculumRow[] = [];
-  const processedGroups = new Set<number>();
-
-  for (const item of items) {
-    const setting = settingsMap.get(item.id) || null;
-    const groupNumber = setting?.group_number;
-
-    if (groupNumber != null) {
-      const groupItemIds = groupItems.get(groupNumber) || [];
-      const isFirstInGroup = !processedGroups.has(groupNumber);
-
-      if (isFirstInGroup) {
-        processedGroups.add(groupNumber);
-
-        // グループ全体の提案回数を計算
-        let totalProposal = 0;
-        for (const itemId of groupItemIds) {
-          const s = settingsMap.get(itemId);
-          totalProposal += s?.proposal_count || 0;
-        }
-
-        displayRows.push({
-          curriculumItem: item,
-          setting,
-          isGroupStart: true,
-          groupRowSpan: groupItemIds.length,
-          groupProposalCount: totalProposal,
-        });
-      } else {
-        displayRows.push({
-          curriculumItem: item,
-          setting,
-          isGroupStart: false,
-          groupRowSpan: 0,
-          groupProposalCount: 0,
-        });
-      }
-    } else {
-      displayRows.push({
-        curriculumItem: item,
-        setting,
-        isGroupStart: true,
-        groupRowSpan: 1,
-        groupProposalCount: setting?.proposal_count || 0,
-      });
-    }
-  }
-
-  return displayRows;
+  return fetchAllPaged<SeasonalCourseApplication>((from, to) =>
+    supabase
+      .from('seasonal_course_applications')
+      .select('*, student:students(*)')
+      .eq('course_id', courseId)
+      .order('applied_at', { ascending: false })
+      .order('id', { ascending: true })
+      .range(from, to)
+  );
 }

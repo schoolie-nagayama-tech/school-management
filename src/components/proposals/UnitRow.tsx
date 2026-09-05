@@ -1,7 +1,6 @@
 'use client';
 
-import { useState } from 'react';
-import { Check, ChevronDown, ChevronUp, Minus, Plus, Unlink, X } from 'lucide-react';
+import { Check, Minus, Plus, Unlink, X } from 'lucide-react';
 import type { CurriculumItem } from '@/types/database';
 import {
   GROUP_BG,
@@ -35,12 +34,24 @@ export function UnitRow({
   onUngroupAll,
   onUngroupApplied,
   onUngroupAllApplied,
+  showApplied = true,
+  showIntent = true,
 }: {
   index: number;
   item: CurriculumItem;
   draft: UnitDraft;
   done: boolean;
   appliedMode: boolean;
+  /**
+   * 申込コマの列（±ステッパーと申込結合ボタン）を出すか。
+   * 講習テンプレートには「申込」という概念が無いので false で使う。
+   */
+  showApplied?: boolean;
+  /**
+   * 指導意図のタグを出すか。
+   * テンプレートは意図を持たない（生徒ごとに決めるもの）ので false で使う。
+   */
+  showIntent?: boolean;
   groupMembers?: UnitDraft[];
   appliedGroupMembers?: UnitDraft[];
   onToggle: (shiftKey: boolean) => void;
@@ -52,13 +63,13 @@ export function UnitRow({
   onUngroupApplied: () => void;
   onUngroupAllApplied: () => void;
 }) {
-  const [expanded, setExpanded] = useState(false);
   const isGrouped = draft.group_id > 0;
   const isGroupHead =
     groupMembers && groupMembers[0]?.curriculum_item_id === draft.curriculum_item_id;
-  const hasApplied = draft.applied_koma > 0;
+  // 申込を出さない画面（講習テンプレート）では、申込コマは常に無いものとして扱う
+  const hasApplied = showApplied && draft.applied_koma > 0;
   // 提案コマ・申込コマのどちらかが入っていれば有効（提案0・申込1の単元も操作可能に）
-  const isActive = draft.koma_count > 0 || draft.applied_koma > 0;
+  const isActive = draft.koma_count > 0 || hasApplied;
   // 申込結合: applied_group_id でまとめた単元。head のみ申込±を出し、合計も head 1件で計上。
   const isAppliedGrouped = draft.applied_group_id > 0 && hasApplied;
   const isAppliedGroupHead =
@@ -66,8 +77,8 @@ export function UnitRow({
 
   const handleCardClick = () => {
     // 申込編集フェーズ（提案済み/公開済み）では行クリックで申込コマを足す。
-    // 下書き中は従来どおり提案コマを足す。
-    if (appliedMode) {
+    // 下書き中は従来どおり提案コマを足す。申込を出さない画面では常に提案コマ。
+    if (appliedMode && showApplied) {
       onUpdate({ applied_koma: draft.applied_koma + 1 });
     } else {
       onUpdate({ koma_count: draft.koma_count + 1 });
@@ -180,12 +191,14 @@ export function UnitRow({
             )}
 
             {/* 提案±と申込±が両方出るときだけ区切り */}
-            {(!isGrouped || isGroupHead) && (!isAppliedGrouped || isAppliedGroupHead) && (
-              <div className="w-px h-4 bg-border-default" />
-            )}
+            {showApplied &&
+              (!isGrouped || isGroupHead) &&
+              (!isAppliedGrouped || isAppliedGroupHead) && (
+                <div className="w-px h-4 bg-border-default" />
+              )}
 
             {/* 申込コマ ±（申込結合はheadのみ表示。合計はhead1件で計上） */}
-            {(!isAppliedGrouped || isAppliedGroupHead) && (
+            {showApplied && (!isAppliedGrouped || isAppliedGroupHead) && (
               <div className="flex items-center gap-0.5" title="申込コマ">
                 <button
                   onClick={() => onUpdate({ applied_koma: Math.max(0, draft.applied_koma - 1) })}
@@ -252,19 +265,9 @@ export function UnitRow({
             <Unlink className="w-3.5 h-3.5" />
           </button>
         )}
-
-        {isActive && (
-          <button
-            onClick={() => setExpanded(!expanded)}
-            className="p-1 text-text-faint hover:text-text-body rounded hover:bg-surface-hover active:bg-border-default transition-[background-color,color] duration-100 ease-out"
-            aria-label={expanded ? '詳細を閉じる' : '詳細を開く'}
-          >
-            {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-          </button>
-        )}
       </div>
 
-      {isActive && (
+      {isActive && showIntent && (
         <div className="px-3 pb-2 pt-0">
           <div className="flex items-center gap-1 flex-wrap">
             {INTENT_TAGS.map((tag) => {
