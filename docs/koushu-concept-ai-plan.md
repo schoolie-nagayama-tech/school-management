@@ -108,4 +108,4 @@
 - テーマ欄を複数行入力にする（列の追加は不要）。
 - 印刷版（`ProposalPrintView.tsx`）と申込フォーム（`ApplyProposalLine`）で段落表示、一覧は先頭1行。
 - 背景を集める関数（上記を1回で引く）。
-- `docs/legal/privacy-policy.md` はちーがるチェック中のため改訂しない（2026-09-03）。チェック後に第5条へ Anthropic を追記してから公開。
+- `docs/legal/privacy-policy.md` はリーガルチェック中のため改訂しない（2026-09-03）。チェック後に第5条へ Anthropic を追記してから公開。
