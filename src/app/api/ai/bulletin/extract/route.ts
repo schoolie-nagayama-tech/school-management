@@ -51,6 +51,12 @@ interface ExtractResponse {
   tasks: ExtractedTaskView[];
   /** AIを呼べなかった。画面は黙って何も出さない */
   degraded: boolean;
+  /**
+   * この教室では読み取りを許していない（school_ai_settings）。
+   * ★degraded と分けるのは、こちらは故障ではなく意図した停止だから。
+   *   同じ扱いにすると、止めているのか壊れているのかがログから判別できなくなる。
+   */
+  disabled: boolean;
 }
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -96,7 +102,23 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: '権限がありません' }, { status: 403 });
   }
 
-  const empty: ExtractResponse = { tasks: [], degraded: false };
+  const empty: ExtractResponse = { tasks: [], degraded: false, disabled: false };
+
+  // ★この教室で読み取りを許していなければ、AIを呼ぶ前にここで止める。
+  //   読み取りは投稿の件名と本文をそのまま外部（Anthropic）に送る。
+  //   プライバシーポリシーがリーガルチェック中で Anthropic を追記できていないので、
+  //   出してよいと決めた教室以外では送信そのものを起こさない。
+  //   ★行が無ければOFF（設定を作り忘れた教室が黙って送るのを防ぐ）。
+  const { data: setting } = await supabase
+    .from('school_ai_settings')
+    .select('enabled')
+    .eq('school_id', schoolId)
+    .eq('feature_key', 'bulletin_extract')
+    .maybeSingle();
+
+  if (!setting?.enabled) {
+    return NextResponse.json({ ...empty, disabled: true } satisfies ExtractResponse);
+  }
 
   if (!isClaudeConfigured()) {
     return NextResponse.json({ ...empty, degraded: true } satisfies ExtractResponse);
@@ -203,5 +225,9 @@ export async function POST(request: NextRequest) {
     });
   }
 
-  return NextResponse.json({ tasks: views, degraded: false } satisfies ExtractResponse);
+  return NextResponse.json({
+    tasks: views,
+    degraded: false,
+    disabled: false,
+  } satisfies ExtractResponse);
 }
