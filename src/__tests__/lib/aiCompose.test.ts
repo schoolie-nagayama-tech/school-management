@@ -1,31 +1,35 @@
 /**
- * 下書きを作る側のテスト。
+ * 「おまかせ下書き」の生成側のテスト。
  *
- * ★守りたいのは2点:
+ * ★守りたいのは3点:
  *  - 読めない出力で本文を書き換えないこと（空を返し、呼び出し側が触らない）
- *  - 「知らないことは空欄で残す」という約束が、プロンプトから消えないこと
+ *  - 「空欄で逃げない」という約束が、プロンプトから消えないこと
+ *  - 補ったところの申告（filled）が、決めた5種類から外れないこと
  */
 import { describe, expect, it } from 'vitest';
 import {
   composeSystemPrompt,
   composeUserText,
   countBlanks,
+  FILLED_KINDS,
   MAX_BLOCKS,
+  MAX_FILLED,
   parseComposeResult,
 } from '@/lib/ai/compose';
 
 describe('parseComposeResult', () => {
-  it('見出しと段落を読み取り、空欄の数を数える', () => {
+  it('見出しと段落を読み取り、補ったところを受け取る', () => {
     const got = parseComposeResult({
       blocks: [
         { heading: true, text: '①PCSを配布してください' },
-        { heading: false, text: '　[どこに置いてある]から持っていってください。' },
+        { heading: false, text: '　小学生は国語・算数に出してください。' },
       ],
+      filled: [{ what: '小学生は国語・算数', kind: '対象' }],
     });
     expect(got.blocks).toHaveLength(2);
     expect(got.blocks[0].heading).toBe(true);
     expect(got.blocks[1].heading).toBe(false);
-    expect(got.blankCount).toBe(1);
+    expect(got.filled).toEqual([{ what: '小学生は国語・算数', kind: '対象' }]);
   });
 
   it('★読めない出力は空を返す（本文を書き換えさせない）', () => {
@@ -60,8 +64,66 @@ describe('parseComposeResult', () => {
   });
 });
 
+describe('filled（補ったところの申告）', () => {
+  it('★決めた5種類から外れた kind は捨てる（画面の並びを崩さない）', () => {
+    const got = parseComposeResult({
+      blocks: [{ text: 'あ' }],
+      filled: [
+        { what: '9月10日まで', kind: '期限' },
+        { what: 'なにか', kind: '雰囲気' },
+        { what: 'これも', kind: 42 },
+      ],
+    });
+    expect(got.filled).toEqual([{ what: '9月10日まで', kind: '期限' }]);
+  });
+
+  it('★本文を捨てたなら申告も捨てる（本文と合わない確認を出さない）', () => {
+    const got = parseComposeResult({
+      blocks: [{ text: 'あ'.repeat(500) }],
+      filled: [{ what: '9月10日まで', kind: '期限' }],
+    });
+    expect(got.blocks).toEqual([]);
+    expect(got.filled).toEqual([]);
+  });
+
+  it('同じ申告を2回返してきたら1つにする', () => {
+    const got = parseComposeResult({
+      blocks: [{ text: 'あ' }],
+      filled: [
+        { what: '今週中', kind: '期限' },
+        { what: '今週中', kind: '期限' },
+      ],
+    });
+    expect(got.filled).toHaveLength(1);
+  });
+
+  it('申告の数に上限がある', () => {
+    const many = Array.from({ length: MAX_FILLED + 5 }, (_, i) => ({
+      what: `補い${i}`,
+      kind: '対象',
+    }));
+    expect(parseComposeResult({ blocks: [{ text: 'あ' }], filled: many }).filled).toHaveLength(
+      MAX_FILLED
+    );
+  });
+
+  it('長すぎる申告は捨てる', () => {
+    const got = parseComposeResult({
+      blocks: [{ text: 'あ' }],
+      filled: [{ what: 'あ'.repeat(200), kind: '対象' }],
+    });
+    expect(got.filled).toEqual([]);
+  });
+
+  it('filled が無くても本文は返す（申告は付属品）', () => {
+    const got = parseComposeResult({ blocks: [{ text: 'あ' }] });
+    expect(got.blocks).toHaveLength(1);
+    expect(got.filled).toEqual([]);
+  });
+});
+
 describe('countBlanks', () => {
-  it('角括弧の空欄を数える', () => {
+  it('角括弧の空欄を数える（言うことを聞かずに [ ] を出したときの保険）', () => {
     expect(countBlanks('［なし］')).toBe(0); // 全角は数えない
     expect(countBlanks('[いつまで]までに[どこに]')).toBe(2);
     expect(countBlanks('空欄なし')).toBe(0);
@@ -73,10 +135,22 @@ describe('countBlanks', () => {
 });
 
 describe('composeSystemPrompt', () => {
-  it('★推測して埋めないという約束を含む', () => {
+  it('★空欄で逃げないという約束を含む（骨組みだけ返す設計に戻さない）', () => {
     const p = composeSystemPrompt();
-    expect(p).toContain('推測して埋めない');
-    expect(p).toContain('自分で作らない');
+    expect(p).toContain('空欄を作らない');
+    expect(p).toContain('書き切る');
+  });
+
+  it('★教室の中でしか通じない固有の情報は書かせない', () => {
+    const p = composeSystemPrompt();
+    expect(p).toContain('棚番号');
+    expect(p).toContain('触れずに書く');
+  });
+
+  it('★補ったものを申告させる（本文だけ渡して終わりにしない）', () => {
+    const p = composeSystemPrompt();
+    expect(p).toContain('filled');
+    for (const kind of FILLED_KINDS) expect(p).toContain(kind);
   });
 
   it('★挨拶・名乗り・結びを書かないという約束を含む', () => {

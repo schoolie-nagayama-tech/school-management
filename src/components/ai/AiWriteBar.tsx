@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * 本文の下に置く「作る／整える」のバー。
+ * 「おまかせ下書き」のバー。本文の下に置く。
  *
  * 正典: docs/ai-features-integration-plan.md
  *
@@ -14,13 +14,18 @@
  * ★戻す／やり直すを必ず付ける。どちらも本文をまるごと入れ替える操作なので、
  *   1手で戻せないと怖くて押せない。
  *
- * 掲示板のほかに、引継ぎ・講習コンセプト・面談でも同じ形を使う。
+ * ★空欄で返させない。以前は指示に無い事実を [いつまで] と空けていたが、
+ *   教室長が打つのは「PCS配布」の一言で、骨組みだけが返っていた。
+ *   いまは書き切らせて、AIが自分で決めた箇所を下に並べる（＝投稿前の確認）。
+ *
+ * 掲示板のほかに、引継ぎ・保護者連絡・面談でも同じ形を使う。
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Sparkles, ArrowUp, Undo2, Redo2, Loader2 } from 'lucide-react';
 import { fetchWithAuth } from '@/lib/api/auth';
-import { BLANK_RE, type ComposeBlock } from '@/lib/ai/compose';
+import { BLANK_RE, type ComposeBlock, type FilledNote } from '@/lib/ai/compose';
+import { COMPOSE_FEATURE_KEY } from '@/lib/ai/features';
 import type { RefineChange } from '@/lib/ai/refine';
 import { applyLinesToHtml, blocksToHtml, countBlanksInHtml, htmlToLines } from '@/lib/ai/htmlLines';
 
@@ -38,7 +43,7 @@ interface AiWriteBarProps {
 
 interface ComposeResponse {
   blocks: ComposeBlock[];
-  blankCount: number;
+  filled: FilledNote[];
   degraded: boolean;
   disabled: boolean;
 }
@@ -61,6 +66,8 @@ export function AiWriteBar({
   const [busy, setBusy] = useState<'compose' | 'refine' | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [changes, setChanges] = useState<RefineChange[] | null>(null);
+  /** AIが自分で決めたところ。★投稿前に見せる（本文には印を入れない） */
+  const [filled, setFilled] = useState<FilledNote[] | null>(null);
   /** この教室でAIを使えるか。使えないならバーごと出さない */
   const [available, setAvailable] = useState<boolean | null>(null);
 
@@ -76,7 +83,9 @@ export function AiWriteBar({
     let alive = true;
     void (async () => {
       try {
-        const res = await fetchWithAuth(`/api/ai/bulletin/school-setting?school_id=${schoolId}`);
+        const res = await fetchWithAuth(
+          `/api/ai/feature-setting?school_id=${schoolId}&feature=${COMPOSE_FEATURE_KEY}`
+        );
         if (!alive) return;
         if (!res.ok) return setAvailable(false);
         const json = (await res.json()) as { enabled: boolean };
@@ -108,8 +117,9 @@ export function AiWriteBar({
       const next = posRef.current + delta;
       if (next < 0 || next >= historyRef.current.length) return;
       posRef.current = next;
-      // ★履歴を戻したら、直したところの一覧も消す（画面の文と合わなくなる）
+      // ★履歴を戻したら、直したところ・補ったところの一覧も消す（画面の文と合わなくなる）
       setChanges(null);
+      setFilled(null);
       setMessage(null);
       onChange(historyRef.current[next]);
       forceRender((n) => n + 1);
@@ -123,6 +133,7 @@ export function AiWriteBar({
     setBusy('compose');
     setMessage(null);
     setChanges(null);
+    setFilled(null);
     try {
       const res = await fetchWithAuth('/api/ai/compose', {
         method: 'POST',
@@ -145,11 +156,8 @@ export function AiWriteBar({
 
       replaceBody(blocksToHtml(json.blocks));
       setInstruction('');
-      setMessage(
-        json.blankCount > 0
-          ? `下書きを作りました。書かれていないところを${json.blankCount}か所空けています`
-          : '下書きを作りました'
-      );
+      setFilled(json.filled);
+      setMessage('下書きを作りました。投稿する前に読んでください');
     } catch {
       setMessage('いまは下書きを作れませんでした。本文はそのままです');
     } finally {
@@ -276,11 +284,36 @@ export function AiWriteBar({
 
       {message && <span className="pl-1 text-[11px] text-text-muted">{message}</span>}
 
-      {/* ★書かれていないところは埋めない。残っていることを見せる */}
+      {/* ★AIが自分で決めたところ。本文はきれいなまま書き切らせ、確認はここに集める。
+          文中に〔推測〕を挟むと汚くて読まれないので、文とゲートを分けている。
+          ★これは自己申告なので漏れる。だから「本文も読んでください」と必ず添える。 */}
+      {filled && filled.length > 0 && (
+        <div className="flex flex-col gap-1.5 rounded-lg border border-warning bg-warning-subtle px-3 py-2.5">
+          <span className="text-xs font-bold text-text-heading">
+            AIが決めたところ {filled.length}件（合っているか見てください）
+          </span>
+          <ul className="flex flex-col gap-1">
+            {filled.map((f, i) => (
+              <li key={`${f.kind}-${i}`} className="flex items-baseline gap-2 text-xs">
+                <span className="shrink-0 rounded bg-surface px-1.5 py-0.5 text-[10px] text-text-muted">
+                  {f.kind}
+                </span>
+                <span className="min-w-0 text-text-heading">{f.what}</span>
+              </li>
+            ))}
+          </ul>
+          <span className="text-[11px] text-text-muted">
+            ここに出ないぶんもあります。投稿する前に本文をひととおり読んでください
+          </span>
+        </div>
+      )}
+
+      {/* ★空欄は作らせない決まりだが、言うことを聞かずに [ ] を出すことがある。
+          そのまま投稿すると講師が読むので、見つけたら知らせる（保険） */}
       {blanks > 0 && (
         <div className="rounded-lg border border-warning bg-warning-subtle px-3 py-2 text-xs text-text-heading">
-          <b className="font-bold">［　］が{blanks}か所あります。</b>
-          書いていないことは作りません。直接書くか、上の欄に「PCSは12番」のように足してください
+          <b className="font-bold">［　］が{blanks}か所残っています。</b>
+          直接書くか、上の欄に「PCSは12番」のように足してください
         </div>
       )}
 

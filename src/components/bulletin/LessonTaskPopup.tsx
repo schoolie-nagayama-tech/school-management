@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * 掲示板AIアシスト: 授業中に講師へ出すお願い。
+ * 講師のAIサポート: 授業中に講師へ出すお願い。
  *
  * 正典: docs/bulletin-ai-assist.html §3
  *

@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * 講習テーマを書き足すバー（1件ぶん）。
+ * 「テーマふくらませ」のバー（1件ぶん）。
  *
  * 正典: docs/ai-features-integration-plan.md §2-5
  *
@@ -16,6 +16,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Sparkles, ArrowUp, Undo2, Redo2, Loader2 } from 'lucide-react';
 import { fetchWithAuth } from '@/lib/api/auth';
+import { PLAN_THEME_FEATURE_KEY } from '@/lib/ai/features';
 import type { ConceptResult } from '@/lib/ai/koushuConcept';
 
 interface ConceptBarProps {
@@ -46,7 +47,9 @@ export function ConceptBar({
     let alive = true;
     void (async () => {
       try {
-        const res = await fetchWithAuth(`/api/ai/koushu/concept-setting?school_id=${schoolId}`);
+        const res = await fetchWithAuth(
+          `/api/ai/feature-setting?school_id=${schoolId}&feature=${PLAN_THEME_FEATURE_KEY}`
+        );
         if (!alive) return;
         if (!res.ok) return setAvailable(false);
         const json = (await res.json()) as { enabled: boolean };

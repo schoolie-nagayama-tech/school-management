@@ -11,18 +11,18 @@ import {
   parseComposeResult,
   type ComposeResult,
 } from '@/lib/ai/compose';
-import { BULLETIN_AI_FEATURE_KEY } from '@/lib/bulletin/schoolSetting';
+import { COMPOSE_FEATURE_KEY } from '@/lib/ai/features';
 
 export const dynamic = 'force-dynamic';
 
 /**
- * 指示から本文の下書きを作る（教室長以上）。
+ * 「おまかせ下書き」の生成側（教室長以上）。
  *
  * ★整える（/api/ai/refine）と分ける。白紙から作るのと、書いたものを直すのは別の作業で、
  *   同じ入口にすると「押したら全部書き換わった」が起きる。
  *
- * ★教室ごとの栓を通る。下書きも本文を外部（Anthropic）へ送るので、
- *   読み取り・整えると同じ判断が要る（プライバシーポリシーがリーガルチェック中）。
+ * ★教室ごとの栓を通る（ai_compose）。書きかけの文章を外部（Anthropic）へ送るため。
+ *   ★講師のAIサポート（teacher_assist）とは別の栓。送るものも、要るかどうかの判断も違う。
  *
  * 正典: docs/ai-features-integration-plan.md
  */
@@ -76,15 +76,15 @@ export async function POST(request: NextRequest) {
         .slice(0, MAX_BLOCKS)
     : [];
 
-  const empty: ComposeResponse = { blocks: [], blankCount: 0, degraded: false, disabled: false };
+  const empty: ComposeResponse = { blocks: [], filled: [], degraded: false, disabled: false };
 
-  // ★この教室でAIに送ってよいか。読み取り・整えると同じ栓（行が無ければOFF）
+  // ★この教室で「おまかせ下書き」を使ってよいか（行が無ければOFF）
   const supabase = getPortalServiceClient();
   const { data: setting } = await supabase
     .from('school_ai_settings')
     .select('enabled')
     .eq('school_id', schoolId)
-    .eq('feature_key', BULLETIN_AI_FEATURE_KEY)
+    .eq('feature_key', COMPOSE_FEATURE_KEY)
     .maybeSingle();
 
   if (!setting?.enabled) {

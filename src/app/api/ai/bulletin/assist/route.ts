@@ -6,7 +6,7 @@ import { getPortalServiceClient } from '@/lib/mypage/serviceClient';
 export const dynamic = 'force-dynamic';
 
 /**
- * 講師ごとの「掲示板AIアシスト」の入切（教室長以上）。
+ * 講師ごとの「講師のAIサポート」の入切（教室長以上）。
  *
  * ★既定はOFF。しきい値で自動ONにはしない（2026-09-04 決定）。
  *   授業中に画面が割り込む機能なので、誰に出すかは人が決める。
@@ -64,7 +64,7 @@ export async function PATCH(request: NextRequest) {
 
   const { error } = await supabase
     .from('user_profiles')
-    .update({ bulletin_ai_assist: body.enabled })
+    .update({ teacher_ai_assist: body.enabled })
     .eq('id', teacherId);
 
   if (error) {

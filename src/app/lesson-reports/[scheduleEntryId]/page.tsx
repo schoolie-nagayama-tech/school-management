@@ -150,7 +150,7 @@ interface ScheduleEntryInfo {
   student_id: string;
   teacher_id: string;
   subject_ids: string[];
-  /** 45分授業のときだけ入る（NULL=コマ丸ごと）。掲示板AIアシストの経過の計算に使う */
+  /** 45分授業のときだけ入る（NULL=コマ丸ごと）。講師のAIサポートの経過の計算に使う */
   duration_minutes?: number | null;
   /** 45分授業がコマのどちら側を使うか。'second' なら授業の開始はコマ開始の45分後 */
   half_position?: 'first' | 'second' | null;
@@ -1381,8 +1381,8 @@ export default function LessonReportFormPage() {
     <AdminLayout documentTitle={`${studentName}｜授業報告書`}>
       <ToastContainer toasts={toasts} onRemove={removeToast} />
 
-      {/* 掲示板AIアシスト: 授業中のお願い（正典: docs/bulletin-ai-assist.html §3）。
-          ★このコマの講師本人・AIアシストON・今日のコマ、のときだけ出る。判断はすべてAPI側。
+      {/* 講師のAIサポート: 授業中のお願い（正典: docs/bulletin-ai-assist.html §3）。
+          ★このコマの講師本人・AIサポートON・今日のコマ、のときだけ出る。判断はすべてAPI側。
           ここでは仕掛けるだけで、出す出さないをフォームが決めることはない。 */}
       <LessonTaskPopup
         scheduleEntryId={entry.id}
