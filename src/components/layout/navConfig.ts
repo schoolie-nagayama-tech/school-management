@@ -151,13 +151,15 @@ export function buildNavEntries(ctx: NavContext): NavEntry[] {
       kind: 'group',
       key: 'course',
       label: '講習管理',
-      matchPrefixes: ['/courses', '/schedule/special-courses'],
+      // ★「授業の設定」(/schedule/special-courses) はここに出さない。
+      //   指導形態・コマ時間・定員は講習に限らず通常授業でも使うマスタなので、
+      //   設定ページの「授業・教材」から辿る（settings/page.tsx に同じ導線がある）。
+      matchPrefixes: ['/courses'],
       items: [
         { key: 'courses', label: '講習一覧', href: '/courses', exact: true },
         { key: 'progress', label: '進捗管理', href: '/courses/progress' },
         { key: 'schedule', label: '準備スケジュール', href: '/courses/schedule' },
         { key: 'proposals', label: '講習提案書', href: '/courses/proposals' },
-        { key: 'special-courses', label: '授業の設定', href: '/schedule/special-courses' },
       ],
     });
   }

@@ -127,15 +127,22 @@ describe('buildNavEntries: 教室長(manager)', () => {
     ]);
   });
 
-  it('講習グループに5項目が正しいラベルで入る', () => {
+  it('講習グループに4項目が正しいラベルで入る', () => {
     const course = entries.find((e) => e.key === 'course') as NavGroup;
     expect(course.items.map((i) => i.label)).toEqual([
       '講習一覧',
       '進捗管理',
       '準備スケジュール',
       '講習提案書',
-      '授業の設定',
     ]);
+  });
+
+  // 「授業の設定」は講習に限らず通常授業でも使うマスタなので設定ページ側に置く。
+  // 講習メニューに戻さないための番人。
+  it('講習グループに「授業の設定」を入れない', () => {
+    const course = entries.find((e) => e.key === 'course') as NavGroup;
+    expect(course.items.map((i) => i.label)).not.toContain('授業の設定');
+    expect(course.matchPrefixes).not.toContain('/schedule/special-courses');
   });
 });
 
