@@ -6,6 +6,7 @@ import {
   updateStudentTextbookExam,
   deleteStudentTextbookExam,
 } from '@/lib/api/progress';
+import type { SubjectColumn } from './newProgress.shared';
 import type { ExamType, StudentTextbookExam } from '@/types/database';
 
 /**
@@ -13,9 +14,13 @@ import type { ExamType, StudentTextbookExam } from '@/types/database';
  * - 試験名（exam_types マスタから選択 or 自由入力）
  * - 試験日 / 目標点
  * - 削除（編集時のみ）
+ *
+ * 目標の親は「生徒×科目」（studentId + subjectKey）。呼び出し元のテキストIDは渡さない
+ * （同じ科目の全テキストが同じ目標を共有するため、どのテキストから開いたかは保存先に影響しない）。
  */
 export function ExamGoalEditModal({
-  textbookId,
+  studentId,
+  subjectKey,
   examTypes,
   editing,
   onClose,
@@ -23,7 +28,8 @@ export function ExamGoalEditModal({
   onDeleted,
   toastError,
 }: {
-  textbookId: string;
+  studentId: string;
+  subjectKey: SubjectColumn;
   examTypes: ExamType[];
   editing: StudentTextbookExam | null;
   onClose: () => void;
@@ -51,7 +57,8 @@ export function ExamGoalEditModal({
     setSaving(true);
     try {
       const payload = {
-        student_textbook_id: textbookId,
+        student_id: studentId,
+        subject_key: subjectKey,
         exam_type_id: examTypeId || null,
         custom_exam_name: examTypeId ? null : customName.trim() || null,
         exam_date: examDate,

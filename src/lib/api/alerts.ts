@@ -24,6 +24,10 @@ import { SUBJECT_LABELS, ASSESSMENT_NAME_LABELS } from '@/types/database';
 import type { AssessmentWithScores, SeasonType } from '@/types/database';
 import type { StudentInterview } from '@/types/database';
 import type { StudentTextbookWithDetails } from '@/types/database';
+// exam_overdue（目標未設定）は科目単位で束ねた目標を見る。同じ科目の全テキストが同じ目標
+// object を共有するため、テキストごとにループすると重複が出る。表示名も科目名にする
+// （複数テキストにまたがる目標に特定のテキスト名を出すと嘘になるため）。
+import { categorizeSubject } from '@/app/students/[studentId]/progress/newProgress.shared';
 
 // ============================================
 // 型定義
@@ -307,18 +311,22 @@ export async function fetchAlertSources(schoolIds: string[]): Promise<AlertSourc
   const { byStudent: textbooksByStudent, examTypeNames } = textbooksResult;
 
   // action_goals が存在するテスト設定IDを取得
-  const allExamIds: string[] = [];
+  // 目標(exams)は科目単位で束ねているため、同じ科目の複数テキストが同じ exam.id を
+  // 重複して持つ。Set で去重してからチャンク分割する（去重しないとチャンク数が
+  // 実際のテキスト数ぶん水増しされる）。
+  const allExamIds = new Set<string>();
   Array.from(textbooksByStudent.values()).forEach((stList) => {
     for (const st of stList) {
-      for (const exam of st.exams ?? []) allExamIds.push(exam.id);
+      for (const exam of st.exams ?? []) allExamIds.add(exam.id);
     }
   });
-  // allExamIds は全生徒×テキスト×試験でスケールし 1000 を超えうる。1 試験に複数ゴールが
+  const allExamIdList = Array.from(allExamIds);
+  // allExamIdList は全生徒×科目×試験でスケールし 1000 を超えうる。1 試験に複数ゴールが
   // ありうるため、id チャンク分割＋チャンク内ページングの fetchAllInChunks で取得する。
   const actionGoalExamIds = new Set<string>();
-  if (allExamIds.length > 0) {
+  if (allExamIdList.length > 0) {
     const goals = await fetchAllInChunks<{ student_textbook_exam_id: string }>(
-      allExamIds,
+      allExamIdList,
       (chunk, from, to) =>
         supabase
           .from('action_goals')
@@ -838,11 +846,16 @@ function buildExamOverdueCandidates(sources: AlertSources): Alert[] {
 
   for (const student of sources.students) {
     const textbooks = sources.textbooksByStudent.get(student.id) ?? [];
+    // 目標(exams)は科目単位で束ねているため、同じ科目の複数テキストが同じ exam を
+    // 重複して持つ。テキストごとにループするとその数だけ同じアラートが出てしまうので、
+    // 判定済みの exam.id をここで記録して2件目以降をスキップする（生徒単位で去重）。
+    const seenExamIds = new Set<string>();
     for (const st of textbooks) {
       const exams = st.exams ?? [];
       // 「次の目標へ」で先に進んでも前の目標行はそのまま残る（結果点数だけ書き戻される）ため、
       // 過去の行まで判定すると次の目標を設定済みでも古い行が永久にアラートを出し続ける。
-      // そこでテキストごとに「最新の試験日の目標」だけを判定対象にする。
+      // そこで科目ごとに「最新の試験日の目標」だけを判定対象にする
+      // （exams は科目単位で共有されているので、同じ科目のテキストなら結果は同じになる）。
       // 同日が複数ある場合はどちらも最新扱い（どちらが後継か決められないので取りこぼさない側に倒す）。
       const latestExamDate = exams.reduce(
         (max, e) => (e.exam_date && (max === null || e.exam_date > max) ? e.exam_date : max),
@@ -850,6 +863,7 @@ function buildExamOverdueCandidates(sources: AlertSources): Alert[] {
       );
       for (const exam of exams) {
         if (!exam.exam_date) continue;
+        if (seenExamIds.has(exam.id)) continue;
         // より新しい目標がある＝この行はすでに次へ進んだ後なので対象外
         if (latestExamDate !== null && exam.exam_date < latestExamDate) continue;
         // 目標点 or 行動目標が設定済みなら目標未設定ではない
@@ -861,9 +875,15 @@ function buildExamOverdueCandidates(sources: AlertSources): Alert[] {
         const daysUntil = Math.ceil((examDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
         if (daysUntil > -overdueThreshold) continue;
 
+        seenExamIds.add(exam.id);
+
         const examName =
           exam.custom_exam_name ?? sources.examTypeNames.get(exam.exam_type_id ?? '') ?? 'テスト';
-        const textbookName = (st as { textbook?: { name: string } }).textbook?.name ?? 'テキスト';
+        // 同じ目標が複数テキストにまたがりうるため、特定のテキスト名ではなく科目名を出す
+        // （テキスト名を出すと「なぜこのテキストの目標なのか」が嘘になる）。
+        const subjectLabel = categorizeSubject(
+          (st as { textbook?: { subject?: string | null } }).textbook?.subject
+        );
         const examDateStr = examDate.toLocaleDateString('ja-JP', {
           month: 'numeric',
           day: 'numeric',
@@ -879,12 +899,12 @@ function buildExamOverdueCandidates(sources: AlertSources): Alert[] {
           school_id: student.school_id,
           alert_type: 'exam_overdue',
           alert_key: alertKey,
-          message: `${textbookName}: ${examName}（${examDateStr}、${daysDiff}日経過）`,
+          message: `${subjectLabel}: ${examName}（${examDateStr}、${daysDiff}日経過）`,
           details: {
             exam_id: exam.id,
             exam_date: exam.exam_date,
             exam_name: examName,
-            textbook_name: textbookName,
+            textbook_name: subjectLabel,
             days_overdue: daysDiff,
           },
         });
@@ -1514,18 +1534,22 @@ async function fetchAlertSourcesHeavy(schoolIds: string[]): Promise<Partial<Aler
   const { byStudent: textbooksByStudent, examTypeNames } = textbooksResult;
 
   // action_goals が存在するテスト設定IDを取得
-  const allExamIds: string[] = [];
+  // 目標(exams)は科目単位で束ねているため、同じ科目の複数テキストが同じ exam.id を
+  // 重複して持つ。Set で去重してからチャンク分割する（去重しないとチャンク数が
+  // 実際のテキスト数ぶん水増しされる）。
+  const allExamIds = new Set<string>();
   Array.from(textbooksByStudent.values()).forEach((stList) => {
     for (const st of stList) {
-      for (const exam of st.exams ?? []) allExamIds.push(exam.id);
+      for (const exam of st.exams ?? []) allExamIds.add(exam.id);
     }
   });
-  // allExamIds は全生徒×テキスト×試験でスケールし 1000 を超えうる。1 試験に複数ゴールが
+  const allExamIdList = Array.from(allExamIds);
+  // allExamIdList は全生徒×科目×試験でスケールし 1000 を超えうる。1 試験に複数ゴールが
   // ありうるため、id チャンク分割＋チャンク内ページングの fetchAllInChunks で取得する。
   const actionGoalExamIds = new Set<string>();
-  if (allExamIds.length > 0) {
+  if (allExamIdList.length > 0) {
     const goals = await fetchAllInChunks<{ student_textbook_exam_id: string }>(
-      allExamIds,
+      allExamIdList,
       (chunk, from, to) =>
         supabase
           .from('action_goals')

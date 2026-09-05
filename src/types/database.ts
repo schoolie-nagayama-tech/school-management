@@ -1003,7 +1003,13 @@ export type Database = {
       student_textbook_exams: {
         Row: {
           id: string;
-          student_textbook_id: string;
+          // 目標の親は「生徒×科目」（student_id + subject_key）。student_textbook_id は
+          // 「作成元テキストの記録」として残るだけで、読み込みには使わない
+          // （進行表の目標を「生徒×テキスト」から「生徒×科目」に持ち替えた際の変更。
+          // docs/progress-goal-subject-level-plan.md 参照）。
+          student_textbook_id: string | null;
+          student_id: string;
+          subject_key: string;
           exam_type_id: string | null;
           custom_exam_name: string | null;
           exam_date: string;
@@ -1015,7 +1021,10 @@ export type Database = {
         };
         Insert: {
           id?: string;
-          student_textbook_id: string;
+          // 作成元テキストの記録として任意で入れる（必須ではない）
+          student_textbook_id?: string | null;
+          student_id: string;
+          subject_key: string;
           exam_type_id?: string | null;
           custom_exam_name?: string | null;
           exam_date: string;
@@ -1027,7 +1036,9 @@ export type Database = {
         };
         Update: {
           id?: string;
-          student_textbook_id?: string;
+          student_textbook_id?: string | null;
+          student_id?: string;
+          subject_key?: string;
           exam_type_id?: string | null;
           custom_exam_name?: string | null;
           exam_date?: string;
@@ -1042,6 +1053,12 @@ export type Database = {
             foreignKeyName: 'student_textbook_exams_student_textbook_id_fkey';
             columns: ['student_textbook_id'];
             referencedRelation: 'student_textbooks';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'student_textbook_exams_student_id_fkey';
+            columns: ['student_id'];
+            referencedRelation: 'students';
             referencedColumns: ['id'];
           },
           {

@@ -26,6 +26,7 @@ import type {
 import {
   INTENT_TAGS,
   activeExamOf,
+  categorizeSubject,
   gradeLabel,
   isIntentTag,
   itemNo,
@@ -100,6 +101,8 @@ export function TableView({
   highlightItemId?: number;
 }) {
   const isMeeting = viewMode === 'meeting';
+  // 目標の親は「生徒×科目」。このテキストの科目キーを求め、モーダルの保存先に渡す。
+  const subjectKey = categorizeSubject(textbook.textbook?.subject);
   const activeExam = activeExamOf(textbook, examTypes);
   const activeExamGoals = activeExam ? (actionGoalsByExam[activeExam.id] ?? []) : [];
   // 試験日を過ぎている（daysLeft が負）かどうか。過ぎている場合は「次の目標へ」の導線を強調する。
@@ -1349,7 +1352,8 @@ export function TableView({
       {/* 目標設定 編集/新規モーダル */}
       {goalModalOpen && (
         <ExamGoalEditModal
-          textbookId={textbook.id}
+          studentId={studentId}
+          subjectKey={subjectKey}
           examTypes={examTypes}
           editing={
             goalModalEditingId
@@ -1378,7 +1382,8 @@ export function TableView({
           const prev = (textbook.exams || []).find((e) => e.id === activeExam.id);
           return prev ? (
             <NextGoalModal
-              textbookId={textbook.id}
+              studentId={studentId}
+              subjectKey={subjectKey}
               prevExam={prev}
               prevExamName={activeExam.name}
               examTypes={examTypes}
