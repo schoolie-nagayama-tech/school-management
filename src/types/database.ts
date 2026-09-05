@@ -4122,6 +4122,12 @@ export interface UserProfile {
   contract_renewal_date?: string | null;
   /** true=時給講師として扱い、出勤簿等に含める（owner/admin兼任向け） */
   is_teaching_staff?: boolean;
+  /**
+   * 掲示板AIアシスト。true の講師にだけ、授業中に「やること」のカードを出す。
+   * ★既定 false。授業中に画面が割り込むので、誰に出すかは教室長が決める
+   *   （しきい値での自動ONは不採用）。
+   */
+  bulletin_ai_assist?: boolean;
 }
 
 // ユーザーと教室の紐付け

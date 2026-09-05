@@ -91,7 +91,12 @@ interface BulletinPostModalProps {
   /** 新規投稿時の投稿先（複数選択可） */
   selectedSchoolIds?: string[];
   onSelectedSchoolIdsChange?: (ids: string[]) => void;
-  onSaved: () => void;
+  /**
+   * 保存後。新規投稿でできた投稿IDを渡す（編集では空）。
+   * ★掲示板側がこれを使って依頼の読み取りを走らせる。読み取りをモーダルの中でやらないのは、
+   *   AIの往復ぶん保存が遅くなり、失敗したときに投稿そのものが失敗したように見えるため。
+   */
+  onSaved: (createdPostIds: string[]) => void;
 }
 
 export function BulletinPostModal({
@@ -251,6 +256,9 @@ export function BulletinPostModal({
       } = await supabase.auth.getUser();
       const userId = user?.id;
 
+      /** 新規に作った投稿のID。掲示板側が依頼の読み取りに使う */
+      const createdPostIds: string[] = [];
+
       const normalizedLink = normalizeLinkUrl(linkUrl);
       const publishStartAt = dateToTimestamp(publishStartDate, 'start');
       const publishEndAt = dateToTimestamp(publishEndDate, 'end');
@@ -328,11 +336,12 @@ export function BulletinPostModal({
           ...audienceFields,
         };
         for (const sid of targetSchoolIds) {
-          await createBulletinPost(sid, payload, userId);
+          const created = await createBulletinPost(sid, payload, userId);
+          if (created?.id) createdPostIds.push(created.id);
         }
       }
 
-      onSaved();
+      onSaved(createdPostIds);
       onClose();
     } catch (error) {
       console.error('Error saving post:', error);

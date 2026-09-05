@@ -11,6 +11,7 @@
  */
 
 import {
+  isRegularTestTarget,
   isReportCardEntered,
   isReportCardTarget,
   type TaskKind,
@@ -58,10 +59,26 @@ export interface TaskProgress {
  *   実データで判定できない種別に無理やり数字を出すと、
  *   その数字を見て督促が飛ぶ——いま起きている問題そのものを再生産する。
  */
-export const JUDGEABLE_KINDS: ReadonlySet<TaskKind> = new Set<TaskKind>(['report_card_entry']);
+export const JUDGEABLE_KINDS: ReadonlySet<TaskKind> = new Set<TaskKind>([
+  'report_card_entry',
+  'test_result_entry',
+  'progress_entry',
+]);
 
-export function isJudgeable(kind: TaskKind): boolean {
-  return JUDGEABLE_KINDS.has(kind);
+/**
+ * 実データで数えられる種別か。
+ *
+ * ★定期テストは「どの回か」が決まるまで数えない。本番の name_code は9種あり、
+ *   投稿の文からは決まらない。決め打ちで外すと、入っていない回を見て
+ *   「全員済」と出す——最も危ない方向に誤る。教室長が選ぶまでは黙る。
+ *
+ * ここに無い種別を足すときは、実データで済が判定できることを先に確かめること。
+ * 判定できない数字を出すと、その数字を見て督促が飛ぶ（いま起きている問題そのもの）。
+ */
+export function isJudgeable(kind: TaskKind, opts?: { hasTargetPeriod?: boolean }): boolean {
+  if (!JUDGEABLE_KINDS.has(kind)) return false;
+  if (kind === 'test_result_entry') return opts?.hasTargetPeriod === true;
+  return true;
 }
 
 /** タスクの対象に含まれる生徒か（scope と学年・名指しで絞る） */
@@ -92,10 +109,52 @@ export function isInScope(
 export type ReportCardSubjectsByStudent = ReadonlyMap<string, readonly string[]>;
 
 /**
+ * 済かどうかを決める材料。種別ごとに使うものが違う。
+ * ★APIが引いてきた「事実」だけを入れる。ここで推測しない。
+ */
+export interface JudgeInputs {
+  /** 内申が入っている科目（report_card_entry） */
+  subjectsByStudent?: ReportCardSubjectsByStudent;
+  /** 指定の回のテストに点が入っている生徒（test_result_entry） */
+  testEnteredStudentIds?: ReadonlySet<string>;
+  /** 依頼が出てから進行表に記録がある生徒（progress_entry） */
+  progressRecordedStudentIds?: ReadonlySet<string>;
+}
+
+/** その生徒はこの種別の対象か（学年で外れる種別がある） */
+function isKindTarget(kind: TaskKind, grade: number | null): boolean {
+  switch (kind) {
+    // ★内申は中学生だけ。高校生は科目体系がまったく違い（hs_ が50種近く・履修が生徒ごとに違う）、
+    //   9科の基準を当てると全員が永久に未済になる。小学生には内申が無い。
+    case 'report_card_entry':
+      return isReportCardTarget(grade);
+    // ★小学生に定期テストは無い。母数に入れると誰も入力しようのない人数が残り続ける
+    case 'test_result_entry':
+      return isRegularTestTarget(grade);
+    default:
+      return true;
+  }
+}
+
+/** 済か。★材料が無ければ未済に倒す（無いものを済と数えない） */
+function isDone(kind: TaskKind, studentId: string, inputs: JudgeInputs): boolean {
+  switch (kind) {
+    case 'report_card_entry':
+      return isReportCardEntered(inputs.subjectsByStudent?.get(studentId) ?? []);
+    case 'test_result_entry':
+      return inputs.testEnteredStudentIds?.has(studentId) === true;
+    case 'progress_entry':
+      return inputs.progressRecordedStudentIds?.has(studentId) === true;
+    default:
+      return false;
+  }
+}
+
+/**
  * タスク1件の進捗を数える。
  *
  * @param students 教室の在籍生徒（研修用・退会は呼び出し側で除いておく）
- * @param subjectsByStudent 内申が入っている科目。report_card_entry のときだけ使う
+ * @param hasTargetPeriod 「どの回か」が選ばれているか。定期テストはこれが無いと数えない
  */
 export function computeTaskProgress(params: {
   kind: TaskKind;
@@ -103,11 +162,19 @@ export function computeTaskProgress(params: {
   targetGrades: readonly number[];
   targetStudentIds: readonly string[];
   students: readonly StudentRow[];
+  hasTargetPeriod?: boolean;
+  /** @deprecated JudgeInputs.subjectsByStudent を使う（呼び出し互換のために残す） */
   subjectsByStudent?: ReportCardSubjectsByStudent;
+  inputs?: JudgeInputs;
 }): TaskProgress {
-  const { kind, scope, targetGrades, targetStudentIds, students, subjectsByStudent } = params;
+  const { kind, scope, targetGrades, targetStudentIds, students } = params;
+  const inputs: JudgeInputs = {
+    subjectsByStudent: params.inputs?.subjectsByStudent ?? params.subjectsByStudent,
+    testEnteredStudentIds: params.inputs?.testEnteredStudentIds,
+    progressRecordedStudentIds: params.inputs?.progressRecordedStudentIds,
+  };
 
-  if (!isJudgeable(kind)) {
+  if (!isJudgeable(kind, { hasTargetPeriod: params.hasTargetPeriod })) {
     return { total: 0, done: 0, notYet: 0, excluded: 0, unsupported: true, students: [] };
   }
 
@@ -115,10 +182,7 @@ export function computeTaskProgress(params: {
 
   for (const s of students) {
     if (!isInScope(s, scope, targetGrades, targetStudentIds)) continue;
-
-    // ★内申は中学生だけ。高校生は科目体系がまったく違い（hs_ が50種近く・履修が生徒ごとに違う）、
-    //   9科の基準を当てると全員が永久に未済になる。小学生には内申が無い。
-    if (kind === 'report_card_entry' && !isReportCardTarget(s.grade)) continue;
+    if (!isKindTarget(kind, s.grade)) continue;
 
     // ★「対象外」は人が付けた判断。属性から導かれていないので、そのまま尊重して母数から外す
     if (s.markedNotApplicable) {
@@ -126,8 +190,7 @@ export function computeTaskProgress(params: {
       continue;
     }
 
-    const entered = subjectsByStudent?.get(s.id) ?? [];
-    const done = isReportCardEntered(entered);
+    const done = isDone(kind, s.id, inputs);
     rows.push({ studentId: s.id, teacherId: s.teacherId, state: done ? 'done' : 'not_yet' });
   }
 

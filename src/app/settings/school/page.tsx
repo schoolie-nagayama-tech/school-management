@@ -11,9 +11,11 @@ import {
   Input,
   ToastContainer,
   Loading,
+  Switch,
 } from '@/components/ui';
 import Link from 'next/link';
 import { getSchool, updateSchool } from '@/lib/api/schools';
+import { fetchWithAuth } from '@/lib/api/auth';
 import { useToast } from '@/hooks/useToast';
 import { useRequirePermission } from '@/hooks/usePermissions';
 import AccessDenied from '@/components/AccessDenied';
@@ -41,6 +43,12 @@ export default function SchoolSettingsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  /** 掲示板の読み取りを、この教室で許しているか（行が無ければOFF） */
+  const [extractEnabled, setExtractEnabled] = useState(false);
+  /** 切り替えられるのは admin/owner だけ。教室長には状態だけ見せる */
+  const [extractCanChange, setExtractCanChange] = useState(false);
+  const [isSavingExtract, setIsSavingExtract] = useState(false);
+
   // 教室情報を取得
   useEffect(() => {
     const fetchSchool = async () => {
@@ -60,6 +68,21 @@ export default function SchoolSettingsPage() {
           } else {
             setNotificationEmails([]);
           }
+        }
+
+        // 掲示板の読み取りの入切。取れなくてもページは壊さない（既定OFFのまま出す）
+        try {
+          const res = await fetchWithAuth(
+            `/api/ai/bulletin/school-setting?school_id=${localSchoolId}`
+          );
+          if (res.ok) {
+            const json = (await res.json()) as { enabled: boolean; canChange: boolean };
+            setExtractEnabled(json.enabled);
+            setExtractCanChange(json.canChange);
+          }
+        } catch {
+          setExtractEnabled(false);
+          setExtractCanChange(false);
         }
       } catch (error) {
         console.error('Error fetching school:', error);
@@ -197,6 +220,32 @@ export default function SchoolSettingsPage() {
       toastError(getUserErrorMessage(error, '更新に失敗しました'));
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  /**
+   * 掲示板の読み取りの入切。
+   * ★オンにするのは「この教室の投稿を外部に出してよい」と決めたときだけ。
+   *   失敗したら見た目も戻す（オンに見えているのに送っていない／その逆を作らない）。
+   */
+  const handleExtractChange = async (enabled: boolean) => {
+    if (!school) return;
+    setIsSavingExtract(true);
+    const before = extractEnabled;
+    setExtractEnabled(enabled);
+    try {
+      const res = await fetchWithAuth('/api/ai/bulletin/school-setting', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ schoolId: school.id, enabled }),
+      });
+      if (!res.ok) throw new Error('failed');
+      success(enabled ? '読み取りをオンにしました' : '読み取りをオフにしました');
+    } catch {
+      setExtractEnabled(before);
+      toastError('変更できませんでした');
+    } finally {
+      setIsSavingExtract(false);
     }
   };
 
@@ -402,6 +451,43 @@ export default function SchoolSettingsPage() {
                 <Button onClick={handleSave} disabled={isSubmitting} className="min-w-[120px]">
                   {isSubmitting ? '保存中...' : '保存'}
                 </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* 掲示板の投稿をAIに読み取らせるか。★費用の話ではなく、外部に出してよいかの歯止め。
+            切り替えられるのは admin/owner だけで、教室長には状態だけ見せる。 */}
+        <Card>
+          <CardHeader>
+            <CardTitle>掲示板の依頼の読み取り（AI）</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <p className="text-sm text-text-body">
+                  連絡掲示板の投稿から依頼（内申入力など）を読み取り、「残っている人」を出します。
+                  <b className="font-bold text-text-heading">
+                    投稿の件名と本文が、AIの提供元（Anthropic）へ送られます。
+                  </b>
+                </p>
+                <p className="mt-2 text-sm text-text-body">
+                  プライバシーポリシーのリーガルチェックが終わるまでは、
+                  確認できた教室だけをオンにしてください。オフの教室では送信そのものが起きません。
+                </p>
+                {!extractCanChange && (
+                  <p className="mt-2 text-xs text-text-muted">
+                    切り替えられるのはシステム管理者のみです。
+                  </p>
+                )}
+              </div>
+              <div className="shrink-0 pt-1">
+                <Switch
+                  checked={extractEnabled}
+                  onCheckedChange={handleExtractChange}
+                  disabled={!extractCanChange || isSavingExtract}
+                  aria-label="掲示板の依頼の読み取り"
+                />
               </div>
             </div>
           </CardContent>
