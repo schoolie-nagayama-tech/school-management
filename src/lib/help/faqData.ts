@@ -8,6 +8,7 @@
  *   カテゴリ id → アイコンの対応はページ側（help/page.tsx の CATEGORY_ICONS）に持つ。
  *
  * 機能を変えたらここのFAQも更新すること（プロジェクトの運用ルール）。
+ * 書き方（どのフィールドに何を書くか・公開前の機能の扱い）は docs/help-authoring-guide.md。
  */
 
 export type RoleTag = 'admin' | 'manager' | 'teacher' | 'all';
