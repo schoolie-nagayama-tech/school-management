@@ -19,7 +19,7 @@
  */
 
 /** 整える対象の種類。面が増えたらここに足す */
-export type RefineKind = 'bulletin';
+export type RefineKind = 'bulletin' | 'proposal_theme';
 
 /** 1行ぶん。index は元の並び順で、AIはこれを変えられない */
 export interface RefineLine {
@@ -58,6 +58,12 @@ const COMMON_RULES = [
 ];
 
 const KIND_RULES: Record<RefineKind, string[]> = {
+  proposal_theme: [
+    'これは学習塾の講習提案書の「講習テーマ」で、保護者が読みます。',
+    '- ★1行のまま。改行しない。長さも大きく変えない。',
+    '- ★中身を変えない。やる単元も、戻るのか進むのかも変えない。言い回しだけ直す。',
+    '- 「ぜひ」「おすすめです」のような売り文句を足さない。',
+  ],
   bulletin: [
     'これは学習塾の教室長が、教室の講師に向けて書いた連絡です。',
     '- 読む相手は社内の講師。ですます調のまま、事務連絡として読みやすくする。',

@@ -38,7 +38,7 @@ interface RefineResponse extends RefineResult {
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-const KINDS: ReadonlySet<string> = new Set<RefineKind>(['bulletin']);
+const KINDS: ReadonlySet<string> = new Set<RefineKind>(['bulletin', 'proposal_theme']);
 
 export async function POST(request: NextRequest) {
   const { auth } = await getApiAuth(request);
