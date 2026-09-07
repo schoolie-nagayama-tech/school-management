@@ -539,6 +539,7 @@ export default function NewProgressPage() {
             role={isTeacher ? 'teacher' : 'manager'}
             viewMode={effectiveViewMode}
             studentId={studentId}
+            schoolId={student?.school_id ?? ''}
             studentName={student ? `${student.last_name} ${student.first_name}` : ''}
             studentGrade={student?.grade}
             selfName={isTeacher ? getSurname(profile) : (profile?.display_name ?? '')}

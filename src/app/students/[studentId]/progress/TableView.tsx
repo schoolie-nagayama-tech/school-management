@@ -63,6 +63,7 @@ export function TableView({
   role,
   viewMode,
   studentId,
+  schoolId,
   studentName,
   studentGrade,
   selfName,
@@ -87,6 +88,8 @@ export function TableView({
   role: 'teacher' | 'manager';
   viewMode: ViewMode;
   studentId: string;
+  /** 生徒の所属校。「前回の引継ぎ」カードのAI（教室ごとの入切）に渡す */
+  schoolId: string;
   studentName: string;
   studentGrade?: number;
   selfName: string;
@@ -922,6 +925,7 @@ export function TableView({
         <div className="mb-3">
           <LastHandoverCard
             studentTextbookId={textbook.id}
+            schoolId={schoolId}
             isTeacher={role === 'teacher'}
             refreshKey={lastHandoverRefresh}
           />

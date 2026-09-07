@@ -29,8 +29,15 @@ export async function GET(request: NextRequest) {
   if (!auth) {
     return NextResponse.json({ error: '認証が必要です' }, { status: 401 });
   }
-  // 読むのは教室長以上。自分の教室がどちらなのかは知れてよい
-  if (!isManagerOrAbove(auth.role)) {
+  /**
+   * ★1機能だけ聞くのは講師にも許す。
+   *   「生徒のまとめ」は講師が使う機能で、オフの教室ではボタンごと出さないため、
+   *   画面がここを読めないと講師には常にボタンが出ないことになる。
+   *   返るのは自分の教室の1機能が入っているかだけで、変更（PATCH）は admin/owner のまま。
+   *   一覧（feature 未指定）は設定画面のためのものなので、これまでどおり教室長以上に閉じる。
+   */
+  const one = request.nextUrl.searchParams.get('feature');
+  if (one === null && !isManagerOrAbove(auth.role)) {
     return NextResponse.json({ error: '権限がありません' }, { status: 403 });
   }
 
@@ -43,7 +50,6 @@ export async function GET(request: NextRequest) {
   }
 
   // feature を指定すれば1つ、省けば全部。画面（設定ページ）は全部を1回で取る
-  const one = request.nextUrl.searchParams.get('feature');
   if (one !== null && !isAiFeatureKey(one)) {
     return NextResponse.json({ error: '機能の指定が不正です' }, { status: 400 });
   }
