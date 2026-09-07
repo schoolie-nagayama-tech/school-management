@@ -331,6 +331,11 @@ export function BulletinPostModal({
             userId
           );
         }
+        // ★編集した投稿も読み取りにかける。
+        //   永山校の試用で、教室長が既存の投稿を書き直したのに「残っている人」が空のままだった。
+        //   読み取りは投稿の作成時にしか走っておらず、編集では一度も呼ばれていなかった。
+        //   同じ種別×対象は既存タスクへの再掲として束ねられるので、二重には作られない。
+        createdPostIds.push(post.id, ...siblingIds);
       } else {
         const payload = {
           title: title.trim(),
