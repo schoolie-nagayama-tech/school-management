@@ -13,6 +13,7 @@ import {
   isInScope,
   isJudgeable,
   type StudentRow,
+  type TeacherRow,
 } from '@/lib/bulletin/progress';
 import { REPORT_CARD_SUBJECTS } from '@/lib/bulletin/taskCatalog';
 
@@ -33,7 +34,8 @@ describe('判定できる種別', () => {
    */
   it('まだ実装していない種別は判定しない', () => {
     expect(isJudgeable('goal_setting')).toBe(false);
-    expect(isJudgeable('shift_submit')).toBe(false);
+    // ★教材配布は品目が分からず誤って済にする方向に弱いので足していない
+    expect(isJudgeable('material_handout_check')).toBe(false);
   });
 
   it('判定できない種別は0を返し、unsupported を立てる', () => {
@@ -269,8 +271,124 @@ describe('判定できる種別を増やしたぶん', () => {
   });
 
   it('判定を実装していない種別は、これまでどおり数字を出さない', () => {
-    for (const kind of ['goal_setting', 'shift_submit', 'report_deadline'] as const) {
+    for (const kind of ['goal_setting', 'material_handout_check', 'report_deadline'] as const) {
       expect(isJudgeable(kind)).toBe(false);
+    }
+  });
+});
+
+/**
+ * テスト対策提案の判定（2026-09-07）。
+ * ★report_card_entry と同じ「材料の Set に入っていれば済」の形。
+ */
+describe('テスト対策提案の判定', () => {
+  const s1: StudentRow = { id: 's1', grade: 8, teacherId: null, markedNotApplicable: false };
+  const s2: StudentRow = { id: 's2', grade: 8, teacherId: null, markedNotApplicable: false };
+
+  it('公開済みの提案がある生徒だけ済になる', () => {
+    const p = computeTaskProgress({
+      kind: 'test_prep_proposal',
+      scope: 'all_students',
+      targetGrades: [],
+      targetStudentIds: [],
+      students: [s1, s2],
+      inputs: { testPrepProposedStudentIds: new Set(['s1']) },
+    });
+    expect(p.unsupported).toBe(false);
+    expect(p.done).toBe(1);
+    expect(p.notYet).toBe(1);
+  });
+
+  it('材料そのものが無ければ全員未済（黙って済にしない）', () => {
+    const p = computeTaskProgress({
+      kind: 'test_prep_proposal',
+      scope: 'all_students',
+      targetGrades: [],
+      targetStudentIds: [],
+      students: [s1],
+    });
+    expect(p.done).toBe(0);
+    expect(p.notYet).toBe(1);
+  });
+});
+
+/**
+ * 講師自身の種別（shift_submit・timesheet_entry）の判定（2026-09-07）。
+ *
+ * ★生徒に紐づかない（isInScope が teacher_self で false を返すのは変えていない）。
+ *   母数は「教室の在籍講師」。渡されなければ材料が無いとして total は0のまま。
+ */
+describe('講師自身の種別の判定', () => {
+  const teachers: TeacherRow[] = [
+    { id: 't1', name: '田中' },
+    { id: 't2', name: '佐藤' },
+    { id: 't3', name: '鈴木' },
+  ];
+
+  it('shift_submit / timesheet_entry は判定できる', () => {
+    expect(isJudgeable('shift_submit')).toBe(true);
+    expect(isJudgeable('timesheet_entry')).toBe(true);
+  });
+
+  it('teachers を渡すと講師の人数で母数を数える（students は空のまま）', () => {
+    const p = computeTaskProgress({
+      kind: 'shift_submit',
+      scope: 'teacher_self',
+      targetGrades: [],
+      targetStudentIds: [],
+      students: [],
+      teachers,
+      inputs: { teacherDoneIds: new Set(['t1']) },
+    });
+    expect(p.unsupported).toBe(false);
+    expect(p.total).toBe(3);
+    expect(p.done).toBe(1);
+    expect(p.notYet).toBe(2);
+    expect(p.students).toEqual([]);
+    expect(p.teachers).toHaveLength(3);
+    expect(p.teachers?.find((t) => t.teacherId === 't1')?.state).toBe('done');
+    expect(p.teachers?.find((t) => t.teacherId === 't2')?.state).toBe('not_yet');
+  });
+
+  it('teacherDoneIds が無ければ全員未済（材料が無ければ未済に倒す）', () => {
+    const p = computeTaskProgress({
+      kind: 'timesheet_entry',
+      scope: 'teacher_self',
+      targetGrades: [],
+      targetStudentIds: [],
+      students: [],
+      teachers,
+    });
+    expect(p.done).toBe(0);
+    expect(p.notYet).toBe(3);
+  });
+
+  it('teachers を渡さなければ total は0（教室の講師一覧が引けなければ数えない）', () => {
+    const p = computeTaskProgress({
+      kind: 'shift_submit',
+      scope: 'teacher_self',
+      targetGrades: [],
+      targetStudentIds: [],
+      students: [],
+    });
+    expect(p.unsupported).toBe(false);
+    expect(p.total).toBe(0);
+    expect(p.done).toBe(0);
+    expect(p.notYet).toBe(0);
+  });
+
+  it('isJudgeable が6種で true', () => {
+    const judgeable = [
+      'report_card_entry',
+      'test_result_entry',
+      'progress_entry',
+      'test_prep_proposal',
+      'shift_submit',
+      'timesheet_entry',
+    ] as const;
+    for (const kind of judgeable) {
+      const opts = kind === 'test_result_entry' ? { hasTargetPeriod: true } : undefined;
+      expect(isJudgeable(kind, opts)).toBe(true);
     }
   });
 });

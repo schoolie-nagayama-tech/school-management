@@ -18,7 +18,14 @@
  */
 
 /** 教室ごとに入切する機能のキー。DBの school_ai_settings.feature_key に入る */
-export const AI_FEATURE_KEYS = ['ai_compose', 'teacher_assist', 'plan_theme'] as const;
+// ★栓は機能が動くときに足す。先に置くと「何も動かないスイッチ」が設定画面に並ぶ。
+//   （今日の段取り・保護者との連絡は、その機能のPRでここに足す）
+export const AI_FEATURE_KEYS = [
+  'ai_compose',
+  'teacher_assist',
+  'plan_theme',
+  'student_digest',
+] as const;
 export type AiFeatureKey = (typeof AI_FEATURE_KEYS)[number];
 
 /**
@@ -41,20 +48,32 @@ export const TEACHER_ASSIST_FEATURE_KEY: AiFeatureKey = 'teacher_assist';
  */
 export const PLAN_THEME_FEATURE_KEY: AiFeatureKey = 'plan_theme';
 
+/**
+ * 生徒のまとめ（面談の報告事項カード ＋ 進行表の引継ぎの要約）。
+ * どちらも「その生徒について書かれたものを束ねて読ませる」同じ動きなので1つの栓にする。
+ * ★送るのは引継ぎ・成績・出欠・保護者とのやりとり。plan_theme より広い。
+ *   引継ぎは本番で95%が埋まっており（直近90日 5,931件）、講師はすでにちゃんと書いている。
+ *   AIの仕事は「整える」ではなく「誰も通して読めない量を束ねる」ほう。
+ */
+export const STUDENT_DIGEST_FEATURE_KEY: AiFeatureKey = 'student_digest';
+
 /** 画面に出す名前。★ここを直せば全部の画面が変わる */
 export const AI_FEATURE_LABELS: Record<AiFeatureKey, string> = {
   ai_compose: 'おまかせ下書き',
   teacher_assist: '講師のAIサポート',
   plan_theme: 'テーマふくらませ',
+  student_digest: '生徒のまとめ',
 };
 
 /** 何をする機能か。設定画面でスイッチの横に出す */
 export const AI_FEATURE_DESCRIPTIONS: Record<AiFeatureKey, string> = {
   ai_compose:
-    '掲示板の投稿画面で、一言の指示から本文の下書きを作ります。書いたものを整える（推敲）もここです。',
+    '掲示板の投稿画面で、一言の指示から本文の下書きを作ります。書いたものを整える（推敲）もここです。保護者向けの投稿はお知らせの体裁に、報告書の講評も整えます。',
   teacher_assist:
     '投稿から依頼を読み取り、教室長に「残っている人」を、講師に授業中のカードを出します。',
   plan_theme: '講習提案書のテーマ欄に書いた一言を、その生徒の単元と成績でふくらませます。',
+  student_digest:
+    '進行表で過去の引継ぎを時系列のまま畳みます。面談の前には、成績・引継ぎ・保護者とのやりとりを束ねて報告事項を作ります。',
 };
 
 /** 何を外に出すのか。スイッチの近くに必ず出す（入れる判断の材料） */
@@ -62,6 +81,7 @@ export const AI_FEATURE_SENDS: Record<AiFeatureKey, string> = {
   ai_compose: '書きかけの文章',
   teacher_assist: '投稿の件名と本文',
   plan_theme: '生徒の単元と成績',
+  student_digest: '生徒の引継ぎ・成績・保護者とのやりとり',
 };
 
 export function isAiFeatureKey(value: unknown): value is AiFeatureKey {

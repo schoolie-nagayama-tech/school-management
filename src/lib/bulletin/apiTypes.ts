@@ -53,6 +53,11 @@ export interface BulletinTaskView {
    *   決まらなければ null（コマが無い＝誰にも頼めない）。
    */
   notYetStudents: { name: string; teacherName: string | null }[];
+  /**
+   * まだ済んでいない講師（先頭だけ）。講師自身の種別（shift_submit・timesheet_entry）だけ埋まる。
+   * ★これらは生徒に紐づかないので notYetStudents ではなくこちらに出す。
+   */
+  notYetTeachers?: { id: string; name: string }[];
   /** このタスクを生んだ掲示板投稿。新しい順。再掲されていれば2件以上になる */
   sources: { title: string; postedAt: string | null }[];
   /** タスクが作られた時刻。画面はこれを見て「いま追加」を出す */
