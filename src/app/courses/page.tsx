@@ -35,6 +35,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRequirePermission } from '@/hooks/usePermissions';
 import AccessDenied from '@/components/AccessDenied';
 import type { SeasonalCourseListItem, SeasonType } from '@/types/database';
+// 初回に開いたときの既定。今いる季節ではなく、これから準備する季節を出す
+import { getPreparingSeason } from '@/components/proposals/proposalEditor.shared';
 import { SEASON_LABELS, GRADE_LABELS } from '@/types/database';
 import { SEASON_COLORS, SEASON_ORDER } from '@/components/course-shared/seasonBadge';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
@@ -60,6 +62,29 @@ const SUBJECT_BADGE_COLORS: Record<string, { bg: string; text: string }> = {
 };
 const DEFAULT_BADGE_COLOR = { bg: 'bg-gray-100', text: 'text-gray-600' };
 
+/**
+ * 季節の絞り込みを覚えておくキー。
+ *
+ * 講習は季節ごとに作るもので、全季節をまとめて見る場面が無い。
+ * 毎回この画面を開くたびに選び直させないよう、最後に選んだ季節を端末に覚えておく。
+ * URLに season が付いていればそちらを優先する（共有リンクを壊さないため）。
+ */
+const SEASON_FILTER_KEY = 'courses-season-filter';
+
+/** 覚えている季節を読む。未保存や壊れた値なら null */
+function readStoredSeason(): SeasonType | '' | null {
+  try {
+    const v = localStorage.getItem(SEASON_FILTER_KEY);
+    if (v === 'spring' || v === 'summer' || v === 'winter') return v;
+    // 「すべて」を選んだことも覚える（空文字で保存している）
+    if (v === '') return '';
+    return null;
+  } catch {
+    // プライベートウィンドウなどで localStorage が使えない場合は既定に任せる
+    return null;
+  }
+}
+
 export default function CoursesPage() {
   const { hasPermission, isLoading: permissionLoading } = useRequirePermission(
     (p) => p.canAccessCourses
@@ -84,9 +109,15 @@ export default function CoursesPage() {
 
   // 検索・フィルタ（URLパラメータから初期化）
   const [query, setQuery] = useState(() => searchParams.get('q') || '');
-  const [filterSeason, setFilterSeason] = useState<SeasonType | ''>(
-    () => (searchParams.get('season') as SeasonType) || ''
-  );
+  // 季節は「URL → 前回選んだもの → これから準備する季節」の順で決める。
+  // 全季節をまとめて見る場面が無いので、何も手がかりが無いときも空(すべて)にはしない。
+  const [filterSeason, setFilterSeason] = useState<SeasonType | ''>(() => {
+    const fromUrl = searchParams.get('season');
+    if (fromUrl === 'spring' || fromUrl === 'summer' || fromUrl === 'winter') return fromUrl;
+    const stored = readStoredSeason();
+    if (stored !== null) return stored;
+    return getPreparingSeason();
+  });
   const [filterGrade, setFilterGrade] = useState<number | ''>(() => {
     const g = searchParams.get('grade');
     return g ? Number(g) : '';
@@ -141,6 +172,16 @@ export default function CoursesPage() {
   useEffect(() => {
     setSelected(new Set());
   }, [localSchoolId, showArchived]);
+
+  // 選んだ季節を端末に覚えておき、次にこの画面を開いたときに復元する。
+  // 「すべて」に戻した場合もそのまま覚える（選び直しを強制しないため）。
+  useEffect(() => {
+    try {
+      localStorage.setItem(SEASON_FILTER_KEY, filterSeason);
+    } catch {
+      // 保存できない環境（プライベートウィンドウ等）では覚えないだけで、動作に影響はない
+    }
+  }, [filterSeason]);
 
   // フィルタ・ソート状態をURLパラメータに同期
   const isInitialMount = useRef(true);
