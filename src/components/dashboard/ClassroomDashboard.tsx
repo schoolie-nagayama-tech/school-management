@@ -51,6 +51,8 @@ import { Card, CardContent, CardHeader, CardTitle, Loading } from '@/components/
 import AccessDenied from '@/components/AccessDenied';
 // 「今日やること」は最上部の主役なので遅延ロードせず即座に出す
 import { TodayTodosWidget } from '@/components/dashboard/TodayTodosWidget';
+// 「今日の段取り」はそのすぐ上。オフの教室では中で早期returnして何も描かない
+import { TodayPlanWidget } from '@/components/dashboard/TodayPlanWidget';
 import { isSystemAdmin } from '@/lib/utils/roles';
 import {
   Inbox,
@@ -887,7 +889,14 @@ function DetailView() {
         これは検討用モックです。すべてダミーデータで、実データは未接続です。
       </div>
 
-      {/* ⓪ 今日やること — 最上部・全幅。運営と生徒の用事を1本に混ぜた行動リスト */}
+      {/*
+        ⓪-a 今日の段取り — 「今日やること」の一覧を時間帯に割り付けたもの。
+        ★機能がオフの教室・教室を複数選んでいるときは、ウィジェットごと出ない
+        （中で判定するので、ここでは条件を書かない）。
+      */}
+      <TodayPlanWidget schoolIds={getSelectedSchoolIds()} />
+
+      {/* ⓪-b 今日やること — 最上部・全幅。運営と生徒の用事を1本に混ぜた行動リスト */}
       <SectionLabel icon={ListTodo}>今日やること</SectionLabel>
       <TodayTodosWidget schoolIds={getSelectedSchoolIds()} />
 
