@@ -11,23 +11,44 @@
  *  - 引継ぎ本文
  *
  * refreshKey を変えると再取得する（記入完了のたびに親から更新するため）。
+ *
+ * カードの下に「これまでの引継ぎをまとめる」を置く（AI・教室ごとの栓は student_digest）。
+ * ここに置く理由は、前回1回ぶんを読んだ人がそのまま「その前はどうだったのか」に進めるから。
+ * 別画面に切ると、授業の直前に開かれない。
  */
 
 import { useEffect, useState } from 'react';
-import { MessageSquare, AlertTriangle, BookOpen, GraduationCap } from 'lucide-react';
+import { MessageSquare, AlertTriangle, BookOpen, GraduationCap, Sparkles, X } from 'lucide-react';
 import { getLastSessionDetail } from '@/lib/api/progress-sessions';
 import type { ProgressSessionWithDetails } from '@/types/database';
 import { toSurnameOnly } from '@/lib/utils/teacherName';
+import { fetchWithAuth } from '@/lib/api/auth';
+import { STUDENT_DIGEST_FEATURE_KEY } from '@/lib/ai/features';
+import type { HandoverDigest } from '@/lib/ai/handoverDigest';
 
 interface Props {
   studentTextbookId: string;
+  /** 教室ごとのAIの入切に使う。空文字ならまとめるボタンを出さない */
+  schoolId: string;
   /** 講師ロールなら苗字のみ表示 */
   isTeacher: boolean;
   /** 値が変わると再取得する（記入完了後の最新化用） */
   refreshKey?: number;
 }
 
-export default function LastHandoverCard({ studentTextbookId, isTeacher, refreshKey }: Props) {
+interface DigestResponse {
+  digest: HandoverDigest | null;
+  count: number;
+  degraded: boolean;
+  disabled: boolean;
+}
+
+export default function LastHandoverCard({
+  studentTextbookId,
+  schoolId,
+  isTeacher,
+  refreshKey,
+}: Props) {
   const [lastSession, setLastSession] = useState<ProgressSessionWithDetails | null>(null);
 
   useEffect(() => {
@@ -143,6 +164,186 @@ export default function LastHandoverCard({ studentTextbookId, isTeacher, refresh
           )}
         </div>
       </div>
+
+      {/* これまでの引継ぎをまとめる（AI）。教室でオフなら中で何も描かない */}
+      <HandoverDigestPanel
+        studentTextbookId={studentTextbookId}
+        schoolId={schoolId}
+        isTeacher={isTeacher}
+      />
+    </div>
+  );
+}
+
+/**
+ * 「これまでの引継ぎをまとめる」ボタンとその結果。
+ *
+ * ★親（カード）は引継ぎが無ければ早期returnするので、フックを持つこちらを別に切る。
+ *
+ * ★機能がオフの教室では、ボタンごと出さない（押せる形にしない＝送信が起きない）。
+ *   これは AiWriteBar と同じ約束。
+ */
+function HandoverDigestPanel({
+  studentTextbookId,
+  schoolId,
+  isTeacher,
+}: {
+  studentTextbookId: string;
+  schoolId: string;
+  isTeacher: boolean;
+}) {
+  /** この教室でAIを使えるか。null=まだ分からない */
+  const [available, setAvailable] = useState<boolean | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [digest, setDigest] = useState<HandoverDigest | null>(null);
+  const [count, setCount] = useState(0);
+  const [message, setMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!schoolId) {
+      setAvailable(false);
+      return;
+    }
+    let alive = true;
+    void (async () => {
+      try {
+        const res = await fetchWithAuth(
+          `/api/ai/feature-setting?school_id=${schoolId}&feature=${STUDENT_DIGEST_FEATURE_KEY}`
+        );
+        if (!alive) return;
+        if (!res.ok) return setAvailable(false);
+        const json = (await res.json()) as { enabled: boolean };
+        setAvailable(json.enabled);
+      } catch {
+        setAvailable(false);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [schoolId]);
+
+  // テキストを切り替えたら結果を捨てる（前の生徒のまとめが残ると読み違える）
+  useEffect(() => {
+    setDigest(null);
+    setCount(0);
+    setMessage(null);
+  }, [studentTextbookId]);
+
+  const run = async () => {
+    if (busy) return;
+    setBusy(true);
+    setMessage(null);
+    try {
+      const res = await fetchWithAuth('/api/ai/handover/digest', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ schoolId, studentTextbookId }),
+      });
+      if (!res.ok) throw new Error('failed');
+      const json = (await res.json()) as DigestResponse;
+
+      if (json.disabled) return setAvailable(false);
+      // ★材料が無いのは故障ではない。degraded より先に見て、言い方を分ける
+      if (json.count === 0) {
+        return setMessage('まとめられる引継ぎがまだありません');
+      }
+      if (json.degraded || !json.digest) {
+        return setMessage('いまはまとめられませんでした');
+      }
+      setDigest(json.digest);
+      setCount(json.count);
+    } catch {
+      setMessage('いまはまとめられませんでした');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  // ★オフ・未確定のあいだは何も出さない
+  if (available !== true) return null;
+
+  return (
+    <div className="mt-2 border-t border-black/5 pt-2">
+      {!digest && (
+        <button
+          type="button"
+          onClick={() => void run()}
+          disabled={busy}
+          className="inline-flex items-center gap-1.5 rounded-full border border-ink/25 bg-surface px-3 py-1 text-[11px] font-medium text-ink transition-opacity disabled:opacity-40"
+        >
+          <Sparkles className="h-3 w-3" aria-hidden="true" />
+          {busy ? 'まとめています…' : 'これまでの引継ぎをまとめる'}
+        </button>
+      )}
+
+      {message && <span className="pl-1 text-[11px] text-text-muted">{message}</span>}
+
+      {digest && (
+        <div className="flex flex-col gap-2.5 rounded-lg border border-ink/25 bg-ink-subtle px-3 py-2.5">
+          <div className="flex items-start justify-between gap-2">
+            <span className="text-xs font-bold text-text-heading">経緯（直近{count}回）</span>
+            <button
+              type="button"
+              onClick={() => setDigest(null)}
+              className="inline-flex shrink-0 items-center gap-1 text-[11px] text-text-muted"
+            >
+              <X className="h-3 w-3" aria-hidden="true" />
+              閉じる
+            </button>
+          </div>
+
+          {/* 時系列のまま1回1行。★まとめて1文にすると「いつからそうなったか」が消える */}
+          <ul className="flex flex-col gap-1">
+            {digest.timeline.map((t, i) => {
+              // ★講師ロールには他の講師を苗字だけで見せる（カード上部の表示と同じ約束）
+              const teacher = isTeacher ? toSurnameOnly(t.teacher) : (t.teacher ?? '');
+              return (
+                <li key={`${t.date}-${i}`} className="flex items-baseline gap-2 text-xs">
+                  <span className="shrink-0 font-mono text-[10px] text-text-faint">
+                    {t.date.replace(/-/g, '/').slice(5)}
+                  </span>
+                  <span className="min-w-0 text-text-heading">{t.line}</span>
+                  {teacher && (
+                    <span className="ml-auto shrink-0 text-[10px] text-text-faint">{teacher}</span>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+
+          {/* 空の見出しは出さない（無いものを見出しだけ立てると「抜けている」に見える） */}
+          {digest.ongoing.length > 0 && (
+            <div className="flex flex-col gap-1">
+              <span className="text-xs font-bold text-text-heading">ずっとある課題</span>
+              <ul className="flex flex-col gap-0.5">
+                {digest.ongoing.map((o, i) => (
+                  <li key={i} className="text-xs text-text-heading">
+                    ・{o}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {digest.nextCare.length > 0 && (
+            <div className="flex flex-col gap-1">
+              <span className="text-xs font-bold text-text-heading">次に気をつけること</span>
+              <ul className="flex flex-col gap-0.5">
+                {digest.nextCare.map((n, i) => (
+                  <li key={i} className="text-xs text-text-heading">
+                    ・{n}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          <span className="text-[11px] text-text-muted">
+            AIが引継ぎを1回1行に畳んだものです。書かれていないことは足していません
+          </span>
+        </div>
+      )}
     </div>
   );
 }
