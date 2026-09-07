@@ -26,6 +26,7 @@ export const AI_FEATURE_KEYS = [
   'plan_theme',
   'student_digest',
   'today_plan',
+  'parent_message',
 ] as const;
 export type AiFeatureKey = (typeof AI_FEATURE_KEYS)[number];
 
@@ -67,6 +68,13 @@ export const STUDENT_DIGEST_FEATURE_KEY: AiFeatureKey = 'student_digest';
  */
 export const TODAY_PLAN_FEATURE_KEY: AiFeatureKey = 'today_plan';
 
+/**
+ * 保護者との連絡（保護者チャットの返信欄で、教室長の箇条書きを文章にする）。
+ * ★内容はAIが決めない。教室長が箇条書きで用意した答えを、そのスレッドのやりとりに
+ *   合う文章にするだけ。送るのは保護者とのやりとり本文（氏名を含む）。
+ */
+export const PARENT_MESSAGE_FEATURE_KEY: AiFeatureKey = 'parent_message';
+
 /** 画面に出す名前。★ここを直せば全部の画面が変わる */
 export const AI_FEATURE_LABELS: Record<AiFeatureKey, string> = {
   ai_compose: 'おまかせ下書き',
@@ -74,6 +82,7 @@ export const AI_FEATURE_LABELS: Record<AiFeatureKey, string> = {
   plan_theme: 'テーマふくらませ',
   student_digest: '生徒のまとめ',
   today_plan: '今日の段取り',
+  parent_message: '保護者との連絡',
 };
 
 /** 何をする機能か。設定画面でスイッチの横に出す */
@@ -87,6 +96,8 @@ export const AI_FEATURE_DESCRIPTIONS: Record<AiFeatureKey, string> = {
     '進行表で過去の引継ぎを時系列のまま畳みます。面談の前には、成績・引継ぎ・保護者とのやりとりを束ねて報告事項を作ります。',
   today_plan:
     'ダッシュボードの「今日やること」を、授業前・各コマ・片付けの時間帯に割り付けます。朝に1回組み、日中に増えた用事は入れ場所だけ決めます。',
+  parent_message:
+    '保護者チャットで、教室長が書いた箇条書きを、これまでのやりとりの流れに合わせた文章にします。',
 };
 
 /** 何を外に出すのか。スイッチの近くに必ず出す（入れる判断の材料） */
@@ -96,6 +107,7 @@ export const AI_FEATURE_SENDS: Record<AiFeatureKey, string> = {
   plan_theme: '生徒の単元と成績',
   student_digest: '生徒の引継ぎ・成績・保護者とのやりとり',
   today_plan: '今日の用事・授業のコマ・生徒と講師の姓',
+  parent_message: '保護者とのやりとり（氏名を含む）',
 };
 
 export function isAiFeatureKey(value: unknown): value is AiFeatureKey {
