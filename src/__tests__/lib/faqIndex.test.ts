@@ -18,7 +18,7 @@ import {
   renderItemsForAnswer,
   toRoleTag,
 } from '@/lib/help/faqIndex';
-import { FAQ_DATA } from '@/lib/help/faqData';
+import { FAQ_DATA, GLOSSARY_DATA } from '@/lib/help/faqData';
 import { exampleQuestions } from '@/lib/help/exampleQuestions';
 
 describe('faqItemId', () => {
@@ -355,5 +355,89 @@ describe('質問の例（チップ）', () => {
         expect(top?.status).not.toBe('planned');
       }
     }
+  });
+});
+
+/**
+ * 用語の定義。
+ *
+ * ★ここを固定する理由: 用語集は回答のたびに全文がAIへ渡るので、定義が実装とずれると
+ *   全部の答えが汚染される。実際に「提案書＝料金をまとめた資料」という定義が残っていて、
+ *   同じFAQの本文（料金の欄は無い）と正面から矛盾していた。
+ */
+describe('用語集', () => {
+  const byTerm = new Map(GLOSSARY_DATA.map((g) => [g.term, g.definition]));
+
+  it.each(['提案書', '講習プラン', '提案コマ・申込コマ', '講習', '進行表', '進捗管理（講習）'])(
+    '「%s」の定義がある',
+    (term) => {
+      expect(byTerm.get(term)).toBeTruthy();
+    }
+  );
+
+  it('提案書の定義が「料金をまとめた資料」に戻っていない', () => {
+    const def = byTerm.get('提案書') ?? '';
+    expect(def).not.toMatch(/コマ数・料金をまとめた/);
+    // 料金に触れるのは「無い」と言うときだけ
+    expect(def).toMatch(/料金・単価の欄は無く/);
+  });
+
+  it('紛らわしい3つの画面を互いに区別している', () => {
+    // 進行表 / 進行表確認 / 進捗管理 は名前が似ていて取り違えが起きる
+    expect(byTerm.get('進行表')).toMatch(/進行表確認/);
+    expect(byTerm.get('進行表')).toMatch(/進捗管理/);
+    expect(byTerm.get('進捗管理（講習）')).toMatch(/進行表/);
+  });
+});
+
+describe('提案書の作り方', () => {
+  const index = buildFaqIndex();
+
+  it('提案書をテンプレート化する道順が載っている', () => {
+    // 「講習に登録」は現場の作り方の1本なのに、以前は1行も書かれていなかった
+    const hit = index.find((e) => e.question === '提案書を講習（テンプレート）として登録する');
+    expect(hit).toBeTruthy();
+    expect(keywordSearch(index, '講習に登録', 3).map((e) => e.id)).toContain(hit?.id);
+  });
+
+  it('提案書の項目に、コマ数と公開の決まりが規則として書いてある', () => {
+    const item = index.find((e) => e.question === '提案書の作成方法')?.item;
+    expect(item?.rules?.join(' ')).toMatch(/取得率＝申込コマ÷提案コマ/);
+    expect(item?.rules?.join(' ')).toMatch(/進行表に反映されるのは「公開」した提案書だけ/);
+  });
+});
+
+/**
+ * 問合せ管理の記述。
+ *
+ * ★2026-09-07 に26項目を実装と突き合わせた際、いちばん重い誤りは
+ *   「詳細ページに関連する問合せが自動表示される」だった。名寄せのAPI
+ *   （findRelatedInquiries）は書かれているがどこからも呼ばれておらず、
+ *   画面に無いものを案内していた。同じ形の誤りを戻さないための固定。
+ */
+describe('問合せ管理の記述', () => {
+  const index = buildFaqIndex();
+  const inquiries = index.filter((e) => e.categoryId === 'inquiries');
+  const find = (q: string) => inquiries.find((e) => e.question === q)?.item;
+
+  it('画面に無い「関連する問合せ」を、あるものとして書かない', () => {
+    const item = find('再問合せや兄弟の問合せはわかりますか？');
+    expect(item).toBeTruthy();
+    // 「自動表示されます」と言い切らず、無いことを明示している
+    expect(item?.answer).toMatch(/自動では出ません/);
+    expect(item?.tips?.join(' ')).toMatch(/という欄はありません/);
+  });
+
+  it('入会と削除の道順が載っている', () => {
+    // どちらも詳細ページの「操作」カードにあるのに、項目が無かった
+    expect(find('入会が決まったらどうしますか？（生徒として登録）')).toBeTruthy();
+    expect(find('問合せを削除するには？')).toBeTruthy();
+  });
+
+  it('追客メールの送信候補が既定で全選択だと書いてある', () => {
+    // 開いた瞬間に全件チェック済み。知らずに送信を押すと事故になる
+    const item = find('追客メールをまとめて送るには？');
+    expect(item?.steps?.join(' ')).toMatch(/全件にチェックが入っています/);
+    expect(item?.rules?.join(' ')).toMatch(/13日以内/);
   });
 });
