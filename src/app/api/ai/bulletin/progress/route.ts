@@ -164,7 +164,7 @@ async function loadProgressRecorded(
  * 依頼が出てからテスト対策提案が公開された生徒を集める。
  *
  * ★見るのは status = 'published' だけ。draft はまだ講師の手元にあるだけで、
- *   生徒側には何も届いていない（本番の status は draft / sent / published）。
+ *   生徒側には何も届いていない（本番の status は draft / published）。
  * ★「依頼より後」だけを数える。既存の公開済み提案まで拾うと、
  *   依頼が出た瞬間にほぼ全員が済になってしまう。
  */
@@ -234,7 +234,8 @@ async function loadSchoolTeachers(
   return (profileRows ?? [])
     .map((r) => ({
       id: r.id as string,
-      name: ((r.display_name as string) || (r.last_name as string) || '').trim(),
+      // 「次の講師」の添え書き（teacherNameById）と同じ順で引く。同じ講師が場所で違う名前にならないように
+      name: ((r.last_name as string) || (r.display_name as string) || '').trim(),
     }))
     .filter((t) => t.name);
 }
