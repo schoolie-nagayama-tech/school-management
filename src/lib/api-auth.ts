@@ -80,17 +80,17 @@ export async function getApiAuth(request: NextRequest): Promise<{
       }
     );
 
-    // Route Handler では getUser() が失敗する不具合のため getSession() を使用
+    // Cookie 由来の getSession() はサーバー側で検証されず偽造できるため、
+    // Auth サーバーに問い合わせて検証する getUser() を使う（Supabase 公式の推奨）。
+    // 上のヘッダー経路の関数と同じ扱いにする。
     const {
-      data: { session },
+      data: { user },
       error: authError,
-    } = await supabase.auth.getSession();
+    } = await supabase.auth.getUser();
 
-    if (authError || !session?.user) {
+    if (authError || !user) {
       return { auth: null, cookieResponse };
     }
-
-    const user = session.user;
 
     const { data: profile } = await supabase
       .from('user_profiles')

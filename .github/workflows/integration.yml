@@ -95,10 +95,12 @@ jobs:
           grep NEXT_PUBLIC_SUPABASE_URL .env.test
 
       # RLS 回帰テストを実行（このワークフローの目的）。
+      # 講師スコープに加え、保護者ポータル系（rls-portal-*）も PR 時に回す。
+      # service role を直接使う API が 50 本近くあり、認可の回帰を PR で止める最後の砦がここ。
       # schools/students の汎用CRUD統合テストは環境依存の既存課題があり別系統のため、
-      # ここでは RLS 回帰スイートのみを対象にする（ローカルでは npm run test:integration で全体を実行可）。
+      # 引き続き対象外（ローカルでは npm run test:integration で全体を実行可）。
       - name: Run RLS regression tests
-        run: npx vitest run --config vitest.integration.config.ts src/__tests__/integration/rls-teacher-scope.test.ts
+        run: npx vitest run --config vitest.integration.config.ts src/__tests__/integration/rls-*.test.ts
 
       # 後処理: 成功・失敗にかかわらず Supabase を停止
       - name: Stop Supabase
