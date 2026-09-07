@@ -1,5 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { fetchAllPaged, fetchAllInChunks } from '@/lib/utils/supabasePaging';
+import { resolveGradeEndDate } from '@/lib/utils/koushuApplyPure';
+import { computeCourseSessionsForStudent } from '@/lib/coursePrepKpis';
 
 /**
  * 講習準備（進捗管理表・工程表）のサーバー側データ取得を集めたモジュール。
@@ -302,6 +304,38 @@ export async function runBatchForSchool(
   const getPeriodStart = async () =>
     ((await getPeriod())?.schedule_start_date as string | null | undefined) ?? null;
 
+  /**
+   * 生徒の学年（id → grade）。auto_values の通常回数を学年別終了日で数えるために要る。
+   *
+   * targets の 'students' とは別クエリにしている。あちらは「期間中に在籍していた生徒」に
+   * 絞り込んだ一覧で、auto_values 側は通塾パターンに出てくる生徒全員の学年が要るため、
+   * 同じ結果を使い回せない。列は id, grade の2つだけなので軽い。
+   * getPeriod と同じく遅延1回だけ引いて共有する。
+   */
+  let gradesPromise: Promise<Map<string, number>> | null = null;
+  const getStudentGrades = () => {
+    if (!gradesPromise) {
+      gradesPromise = fetchAllPaged<{ id: string; grade: number | null }>((from, to) =>
+        supabaseAdmin
+          .from('students')
+          .select('id, grade')
+          .eq('school_id', schoolId)
+          .is('deleted_at', null)
+          .order('id', { ascending: true })
+          .range(from, to)
+      )
+        .then((rows) => {
+          const map = new Map<string, number>();
+          for (const row of rows) {
+            if (typeof row.grade === 'number') map.set(row.id, row.grade);
+          }
+          return map;
+        })
+        .catch(() => new Map<string, number>());
+    }
+    return gradesPromise;
+  };
+
   if (targets.includes('students')) {
     promises.push(
       (async () => {
@@ -397,30 +431,32 @@ export async function runBatchForSchool(
       (async () => {
         // 通塾日程は (生徒数 × 曜日) でスケールし単一校でも 1000 行を超えうるため
         // 全件ページング取得する（切り捨てると一部生徒の自動コマ数計算が欠落する）。
-        const [regularPatterns, seasonalPatterns, periodForAuto, proposalMaps] = await Promise.all([
-          fetchAllPaged<{ student_id: string; day_of_week: number }>((from, to) =>
-            supabaseAdmin
-              .from('schedule_regular_patterns')
-              .select('student_id, day_of_week, id')
-              .eq('school_id', schoolId)
-              .eq('period_type', 'regular')
-              .eq('is_active', true)
-              .order('id', { ascending: true })
-              .range(from, to)
-          ).catch(() => []),
-          fetchAllPaged<{ student_id: string; day_of_week: number }>((from, to) =>
-            supabaseAdmin
-              .from('schedule_regular_patterns')
-              .select('student_id, day_of_week, id')
-              .eq('school_id', schoolId)
-              .eq('period_type', season)
-              .eq('is_active', true)
-              .order('id', { ascending: true })
-              .range(from, to)
-          ).catch(() => []),
-          getPeriod(),
-          fetchSubjectProposals(supabaseAdmin, schoolId, season, year),
-        ]);
+        const [regularPatterns, seasonalPatterns, periodForAuto, proposalMaps, studentGrades] =
+          await Promise.all([
+            fetchAllPaged<{ student_id: string; day_of_week: number }>((from, to) =>
+              supabaseAdmin
+                .from('schedule_regular_patterns')
+                .select('student_id, day_of_week, id')
+                .eq('school_id', schoolId)
+                .eq('period_type', 'regular')
+                .eq('is_active', true)
+                .order('id', { ascending: true })
+                .range(from, to)
+            ).catch(() => []),
+            fetchAllPaged<{ student_id: string; day_of_week: number }>((from, to) =>
+              supabaseAdmin
+                .from('schedule_regular_patterns')
+                .select('student_id, day_of_week, id')
+                .eq('school_id', schoolId)
+                .eq('period_type', season)
+                .eq('is_active', true)
+                .order('id', { ascending: true })
+                .range(from, to)
+            ).catch(() => []),
+            getPeriod(),
+            fetchSubjectProposals(supabaseAdmin, schoolId, season, year),
+            getStudentGrades(),
+          ]);
         const regularWeeklyMap: Record<string, number> = {};
         const regularDayMap: Record<string, Record<number, number>> = {};
         for (const p of (regularPatterns || []) as { student_id: string; day_of_week: number }[]) {
@@ -435,12 +471,36 @@ export async function runBatchForSchool(
           seasonalDayMap[p.student_id][p.day_of_week] =
             (seasonalDayMap[p.student_id][p.day_of_week] || 0) + 1;
         }
-        let dayCounts: Record<number, number> | null = null;
         const autoStart = periodForAuto?.schedule_start_date as string | null | undefined;
         const autoEnd = periodForAuto?.schedule_end_date as string | null | undefined;
-        if (autoStart && autoEnd) {
-          dayCounts = countDayOccurrences(autoStart, autoEnd);
-        }
+        const endByGrade = periodForAuto?.schedule_end_by_grade as
+          | Record<string, string>
+          | null
+          | undefined;
+
+        /**
+         * 学年の終了日ごとの「期間内に各曜日が何回出るか」。
+         *
+         * なぜ学年別に数えるか: 増コマ＝提案コマ−通常回数（course_sessions）なので、
+         * 中3だけ講習期間が長い冬期に共通の終了日で数えると、中3の通常回数が実際より
+         * 少なく出て、増コマが水増しされる（提案していないコマを提案したことになる）。
+         *
+         * 同じ終了日になる学年が大半（上書きが無い学年はすべて共通の終了日）なので、
+         * 終了日文字列をキーにして数え直しを1回だけにする。
+         */
+        const dayCountsCache = new Map<string, Record<number, number>>();
+        const getDayCounts = (
+          endDate: string | null | undefined
+        ): Record<number, number> | null => {
+          if (!autoStart || !endDate) return null;
+          const cached = dayCountsCache.get(endDate);
+          if (cached) return cached;
+          const counts = countDayOccurrences(autoStart, endDate);
+          dayCountsCache.set(endDate, counts);
+          return counts;
+        };
+        // 学年が引けない生徒や学年別の上書きが無い学年は、共通の終了日で数える。
+        const commonDayCounts = getDayCounts(autoEnd);
         const autoResult: Record<
           string,
           {
@@ -461,14 +521,19 @@ export async function runBatchForSchool(
             Object.keys(seasonalDayMap[sid] || {}).length > 0
               ? seasonalDayMap[sid]
               : regularDayMap[sid] || {};
-          let sessions = 0;
-          if (dayCounts) {
-            for (const [day, patternCount] of Object.entries(dayMap)) {
-              sessions += patternCount * (dayCounts[Number(day)] || 0);
-            }
-          } else {
-            sessions = Object.values(dayMap).reduce((s, c) => s + c, 0);
-          }
+          // 生徒の学年に対応する終了日で数える（上書きが無ければ共通の終了日にフォールバック）。
+          // 学年別終了日は jsonb の自由入力なので、書式が壊れていたら共通の終了日に倒す。
+          // ここで壊れた日付のまま数えると通常回数が0になり、増コマが丸ごと水増しされる。
+          const grade = studentGrades.get(sid);
+          const gradeEnd =
+            autoEnd && grade !== undefined
+              ? resolveGradeEndDate(autoEnd, endByGrade, grade)
+              : undefined;
+          const dayCounts =
+            gradeEnd && /^\d{4}-\d{2}-\d{2}$/.test(gradeEnd)
+              ? getDayCounts(gradeEnd)
+              : commonDayCounts;
+          const sessions = computeCourseSessionsForStudent(dayMap, dayCounts);
           autoResult[sid] = {
             regular_weekly: weeklyCount,
             course_sessions: sessions,

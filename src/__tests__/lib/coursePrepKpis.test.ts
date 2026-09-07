@@ -11,6 +11,8 @@ import {
   computeDashboardAggregates,
   computeSchoolKpis,
   isCoursePrepOutOfScope,
+  resolvePeriodLastEndDate,
+  computeCourseSessionsForStudent,
 } from '@/lib/coursePrepKpis';
 import type { CourseProgressItem, StudentCourseProgress, Student } from '@/types/database';
 import type { AutoValues } from '@/lib/api/courseProgress';
@@ -250,5 +252,89 @@ describe('期日超過の集計で進路調査の対象外セルを数えない'
     const progressData = [progress({ student_id: 's1', item_id: 'sh', status: 'pending' })];
     const k = computeSchoolKpis(students, items, progressData, auto({}), null, today);
     expect(k.overdueCount).toBe(4);
+  });
+});
+
+/**
+ * 学年別終了日（決定44）まわり。
+ * 冬期は中3だけ講習期間が長いので、「期が終わったか」の判定と通常回数の数え方が
+ * 共通の終了日だけを見ていると実績が壊れる（自動確定が早すぎる／増コマが水増しされる）。
+ */
+describe('resolvePeriodLastEndDate（最後の学年が終わる日）', () => {
+  it('学年別の上書きが無ければ共通の終了日', () => {
+    expect(
+      resolvePeriodLastEndDate({ schedule_end_date: '2027-01-05', schedule_end_by_grade: null })
+    ).toBe('2027-01-05');
+    expect(resolvePeriodLastEndDate({ schedule_end_date: '2027-01-05' })).toBe('2027-01-05');
+  });
+
+  it('学年別が共通より後ならそちらを返す（中3が入試直前まで続く冬期）', () => {
+    expect(
+      resolvePeriodLastEndDate({
+        schedule_end_date: '2027-01-05',
+        schedule_end_by_grade: { '9': '2027-02-10', '6': '2027-01-10' },
+      })
+    ).toBe('2027-02-10');
+  });
+
+  it('学年別が共通より前なら共通のまま（早く終わる学年に引きずられない）', () => {
+    expect(
+      resolvePeriodLastEndDate({
+        schedule_end_date: '2027-01-05',
+        schedule_end_by_grade: { '1': '2026-12-28' },
+      })
+    ).toBe('2027-01-05');
+  });
+
+  it('共通も学年別も無ければ null', () => {
+    expect(
+      resolvePeriodLastEndDate({ schedule_end_date: null, schedule_end_by_grade: {} })
+    ).toBeNull();
+    expect(resolvePeriodLastEndDate(null)).toBeNull();
+    expect(resolvePeriodLastEndDate(undefined)).toBeNull();
+  });
+
+  it('YYYY-MM-DD でない値は無視する', () => {
+    expect(
+      resolvePeriodLastEndDate({
+        schedule_end_date: '2027-01-05',
+        schedule_end_by_grade: { '9': '2027/02/10', '8': '', '7': 'あとで' },
+      })
+    ).toBe('2027-01-05');
+    // 共通側が壊れていて学年別だけが正しい場合も、正しい方だけを採用する
+    expect(
+      resolvePeriodLastEndDate({
+        schedule_end_date: 'unknown',
+        schedule_end_by_grade: { '9': '2027-02-10' },
+      })
+    ).toBe('2027-02-10');
+    expect(
+      resolvePeriodLastEndDate({ schedule_end_date: 'unknown', schedule_end_by_grade: null })
+    ).toBeNull();
+  });
+});
+
+describe('computeCourseSessionsForStudent（通常回数の数え方）', () => {
+  // 月曜が5回・水曜が4回ある期間を想定
+  const dayCounts = { 0: 0, 1: 5, 2: 0, 3: 4, 4: 0, 5: 0, 6: 0 };
+
+  it('曜日ごとのコマ数 × その曜日の出現回数の合計', () => {
+    expect(computeCourseSessionsForStudent({ 1: 1, 3: 2 }, dayCounts)).toBe(5 + 8);
+  });
+
+  it('期間日付が無い（dayCounts=null）ときはパターン本数の合計にフォールバック', () => {
+    expect(computeCourseSessionsForStudent({ 1: 1, 3: 2 }, null)).toBe(3);
+  });
+
+  it('通塾パターンが無い生徒は0', () => {
+    expect(computeCourseSessionsForStudent(undefined, dayCounts)).toBe(0);
+    expect(computeCourseSessionsForStudent({}, null)).toBe(0);
+  });
+
+  it('終了日が長い学年ほど通常回数が多く出る（増コマの水増しを防ぐ根拠）', () => {
+    const longer = { 0: 0, 1: 9, 2: 0, 3: 8, 4: 0, 5: 0, 6: 0 };
+    expect(computeCourseSessionsForStudent({ 1: 1, 3: 1 }, longer)).toBeGreaterThan(
+      computeCourseSessionsForStudent({ 1: 1, 3: 1 }, dayCounts)
+    );
   });
 });
