@@ -1,5 +1,5 @@
 /**
- * AIが乗っている機能は4つ。名前とキーをここに1か所だけ置く。
+ * AIが乗っている機能は5つ。名前とキーをここに1か所だけ置く。
  *
  * 正典: docs/ai-features-integration-plan.md
  *
@@ -19,12 +19,13 @@
 
 /** 教室ごとに入切する機能のキー。DBの school_ai_settings.feature_key に入る */
 // ★栓は機能が動くときに足す。先に置くと「何も動かないスイッチ」が設定画面に並ぶ。
-//   （今日の段取り・保護者との連絡は、その機能のPRでここに足す）
+//   （保護者との連絡は、その機能のPRでここに足す）
 export const AI_FEATURE_KEYS = [
   'ai_compose',
   'teacher_assist',
   'plan_theme',
   'student_digest',
+  'today_plan',
 ] as const;
 export type AiFeatureKey = (typeof AI_FEATURE_KEYS)[number];
 
@@ -57,12 +58,22 @@ export const PLAN_THEME_FEATURE_KEY: AiFeatureKey = 'plan_theme';
  */
 export const STUDENT_DIGEST_FEATURE_KEY: AiFeatureKey = 'student_digest';
 
+/**
+ * 今日の段取り（ダッシュボードの「今日やること」を時間帯に割り付ける）。
+ *
+ * ★送るのは今日の用事・授業のコマ・生徒と講師の姓だけ。成績も引継ぎも送らない。
+ *   それでも別の栓にするのは、これが教室長ひとりの手元の道具だから。
+ *   まとめると「生徒のまとめは閉じたままで段取りだけ使う」ができなくなる。
+ */
+export const TODAY_PLAN_FEATURE_KEY: AiFeatureKey = 'today_plan';
+
 /** 画面に出す名前。★ここを直せば全部の画面が変わる */
 export const AI_FEATURE_LABELS: Record<AiFeatureKey, string> = {
   ai_compose: 'おまかせ下書き',
   teacher_assist: '講師のAIサポート',
   plan_theme: 'テーマふくらませ',
   student_digest: '生徒のまとめ',
+  today_plan: '今日の段取り',
 };
 
 /** 何をする機能か。設定画面でスイッチの横に出す */
@@ -74,6 +85,8 @@ export const AI_FEATURE_DESCRIPTIONS: Record<AiFeatureKey, string> = {
   plan_theme: '講習提案書のテーマ欄に書いた一言を、その生徒の単元と成績でふくらませます。',
   student_digest:
     '進行表で過去の引継ぎを時系列のまま畳みます。面談の前には、成績・引継ぎ・保護者とのやりとりを束ねて報告事項を作ります。',
+  today_plan:
+    'ダッシュボードの「今日やること」を、授業前・各コマ・片付けの時間帯に割り付けます。朝に1回組み、日中に増えた用事は入れ場所だけ決めます。',
 };
 
 /** 何を外に出すのか。スイッチの近くに必ず出す（入れる判断の材料） */
@@ -82,6 +95,7 @@ export const AI_FEATURE_SENDS: Record<AiFeatureKey, string> = {
   teacher_assist: '投稿の件名と本文',
   plan_theme: '生徒の単元と成績',
   student_digest: '生徒の引継ぎ・成績・保護者とのやりとり',
+  today_plan: '今日の用事・授業のコマ・生徒と講師の姓',
 };
 
 export function isAiFeatureKey(value: unknown): value is AiFeatureKey {
@@ -89,7 +103,7 @@ export function isAiFeatureKey(value: unknown): value is AiFeatureKey {
 }
 
 /**
- * AIヘルプ（FAQで答える）は4つ目だが、ここに無い。
+ * AIヘルプ（FAQで答える）もAIを使うが、ここに無い。
  * 送るのは利用者の質問文とFAQ本文だけで、生徒や講師の個人データを含まないため、
  * 教室ごとの栓を持たせていない。
  */
