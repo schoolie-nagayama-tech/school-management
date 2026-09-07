@@ -887,9 +887,20 @@ export default function CoursesPage() {
                               {GRADE_LABELS[g]}
                             </span>
                           ))}
+                        {/* 単元が未設定のコマ数は、旧作成画面で手入力された「予定」の数字。
+                            単元に割り当てた実際のコマ数と見分けが付くようにする
+                            （一覧では12コマなのに開くと0、という食い違いの正体） */}
                         {course.total_koma > 0 && (
-                          <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 text-[10px] font-medium tabular-nums">
+                          <span
+                            className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 text-[10px] font-medium tabular-nums"
+                            title={
+                              course.curriculum_count === 0
+                                ? '単元にはまだ割り当てられていません（作成時に入力された予定のコマ数）'
+                                : '単元に割り当てたコマ数の合計'
+                            }
+                          >
                             {course.total_koma}コマ
+                            {course.curriculum_count === 0 && '（予定）'}
                           </span>
                         )}
                         {/* 単元が未設定＝雛形として未完成。展開も適用もできないので目立たせる */}

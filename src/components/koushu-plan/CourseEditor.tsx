@@ -115,6 +115,18 @@ export function CourseEditor({ courseId, schoolId }: { courseId?: string; school
   const [targetGrades, setTargetGrades] = useState<number[]>([]);
   const [comment, setComment] = useState('');
 
+  /**
+   * 単元を1つも設定しないまま保存されていた合計コマ数。
+   *
+   * 旧い作成画面には「合計コマ数」の手入力欄があり、単元を決める前に数字だけ入れられた。
+   * その欄は廃止したが、既に入力された数字は残っている（冬期だけで37講習・610コマ）。
+   * 単元から計算し直すとこれが0になって上書き消滅するので、単元が入るまでは保持して表示する。
+   * 単元にコマ数を入れれば、その合計が正となってこの値は使われなくなる。
+   */
+  const [legacyKoma, setLegacyKoma] = useState(0);
+  /** 読み込んだ時点で単元設定が1件でもあったか。あれば total_koma は常に単元から計算した値で上書きする */
+  const hadCurriculumAtLoadRef = useRef(false);
+
   // ── テキストのタブ ──
   const [textbooks, setTextbooks] = useState<CourseTextbook[]>([]);
   const [selectedTextbookId, setSelectedTextbookId] = useState<number | null>(null);
@@ -204,6 +216,12 @@ export function CourseEditor({ courseId, schoolId }: { courseId?: string; school
             runningGroupId = converted.nextGroupId;
             map.set(entry.textbookId, { items: entry.items, drafts: converted.drafts });
           }
+
+          // 単元設定が1件も無いのに合計コマ数だけ入っている＝旧作成画面での手入力。
+          // 単元を入れるまでこの数字を保持し、画面にも出す（開いただけで消えないように）
+          const hasAnyCurriculum = loaded.some((entry) => entry.settings.length > 0);
+          hadCurriculumAtLoadRef.current = hasAnyCurriculum;
+          setLegacyKoma(hasAnyCurriculum ? 0 : (course.total_koma ?? 0));
 
           setName(course.name);
           setSeason(course.season);
@@ -580,12 +598,19 @@ export function CourseEditor({ courseId, schoolId }: { courseId?: string; school
     }
     setSaving(true);
     try {
+      // 単元から計算した合計を保存する。
+      // ただし「単元が元々1件も無く、今も入れていない」場合だけは、旧作成画面で手入力された
+      // 合計コマ数を残す（開いて保存しただけで数字が0に消えるのを防ぐ）。
+      // 単元を1つでも入れれば計算値が正になり、以後この保持は効かない。
+      const komaToSave =
+        !hadCurriculumAtLoadRef.current && totals.koma === 0 ? legacyKoma : totals.koma;
+
       const meta = {
         name: name.trim(),
         season,
         target_grades: targetGrades,
         comment: comment.trim() || null,
-        total_koma: totals.koma,
+        total_koma: komaToSave,
       };
 
       let targetCourseId = savedCourseId;
@@ -890,6 +915,17 @@ export function CourseEditor({ courseId, schoolId }: { courseId?: string; school
             })}
           </div>
         </section>
+
+        {/* 旧作成画面で合計コマ数だけ手入力され、単元が未設定のまま残っている講習への案内。
+            黙って0で上書きすると入力した数字が消えるので、残っていることを画面に出す。 */}
+        {legacyKoma > 0 && totals.koma === 0 && (
+          <div className="px-4 py-3 rounded-xl border border-amber-200 bg-amber-50 text-xs text-amber-800">
+            この講習には <span className="font-bold tabular-nums">{legacyKoma}コマ</span>{' '}
+            という数字だけが保存されていて、単元にはまだ1コマも割り当てられていません。
+            以前の作成画面で合計だけ入力できたためです。
+            下の単元にコマ数を入れると、その合計に置き換わります。単元を入れないまま保存しても、この数字は消えません。
+          </div>
+        )}
 
         {/* 単元。行クリックで+1、なぞりドラッグで範囲選択、G で結合（提案書エディタと同じ） */}
         <section className="p-4 bg-surface-raised rounded-xl border border-border-default">
