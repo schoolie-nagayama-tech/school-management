@@ -1,6 +1,6 @@
 # 講習進捗管理表 スナップショット計画
 
-作成: 2026-09-04 / 状態: Phase 1〜5 実装済み・DBマイグレーション未適用・実機未検証
+作成: 2026-09-04 / 状態: Phase 1〜6 実装済み・`course_prep_snapshots` 本番適用済み（2026-09-04）・実機未検証
 
 ## 1. 何が問題か
 
@@ -118,13 +118,39 @@ create table course_prep_snapshots (
 
 ### Phase 4: 自動確定
 
-日次 cron で「`schedule_end_date` を過ぎていて、まだスナップショットが無い期」を1回だけ保存する（`capture_reason='auto'`）。
+日次 cron で「最後の学年の終了日（Phase 6 の `resolvePeriodLastEndDate`）を過ぎていて、まだスナップショットが無い期」を
+1回だけ保存する（`capture_reason='auto'`）。対象は終了から45日以内の期だけ（導入時に昔の痩せた期を確定として焼き付けないため）。
 Phase 1 で退塾者が消えなくなっているので、退塾 cron との実行順に依存しない。
 
 ### Phase 5: 仕上げ
 
 - `help/page.tsx` の `FAQ_DATA` を更新（[[進め方_機能変更時にヘルプ更新]]）。
 - 夏期2026 を遡って確定保存する（Phase 1 適用後、退塾者が戻ってから）。
+
+### Phase 6: 学年別終了日への対応（2026-09-07）
+
+冬期は学年で講習期間が違う（中3だけ入試直前まで続く）。この上書きは
+`course_prep_periods.schedule_end_by_grade`（jsonb・学年番号の文字列 → `YYYY-MM-DD`）に入っていて、
+入力は「設定 → 講習申込」の「学年別の講習終了日」（決定44）。未記載の学年は `schedule_end_date` に落ちる。
+
+進捗表側は共通の `schedule_end_date` しか見ていなかったので、次の3か所を学年別終了日に合わせる。
+
+| 何を | どこで | なぜ |
+| --- | --- | --- |
+| 通常回数（`course_sessions`）を生徒の学年の終了日で数える | `runBatchForSchool` の auto_values（`src/lib/server/coursePrepBatch.ts`） | 増コマ＝提案コマ−通常回数。中3の期間が長いのに共通終了日で数えると通常回数が少なく出て、**増コマが水増しされる** |
+| 自動確定は「最後の学年が終わってから」 | `src/app/api/cron/finalize-course-prep/route.ts` | 中3がまだ講習中なのに凍結すると、そのあと入る中3の取得コマが実績から丸ごと落ちる |
+| 状態バーの終了判定 | `hasPeriodEnded`（`src/app/courses/progress/page.tsx`） | 上と判定基準を揃える。中3が講習中の期に「終わっているのに未確定」と出すと誤って手動確定させてしまう |
+
+- 判定の共通部品は純関数 `resolvePeriodLastEndDate(period)`（`src/lib/coursePrepKpis.ts`）。
+  `schedule_end_date` と `schedule_end_by_grade` の値の最大を返す（`YYYY-MM-DD` 固定長なので辞書順比較、
+  書式が違う値は無視）。cron は SQL では窓をかけず終了日のある期を全件取り、終了判定も45日窓も JS 側でこれに対して行う。
+  **SQL で `schedule_end_date` に下限をかけてはいけない**: 共通1/7・中3が2/25 のような冬期では、中3が終わる頃に
+  共通終了日が窓の外に出ていて、その期が永久に自動確定されなくなる。
+- 通常回数の計算は `computeCourseSessionsForStudent(dayMap, dayCounts)` に切り出し、
+  終了日ごとの曜日出現回数（`countDayOccurrences`）を終了日文字列でキャッシュして数え直しを避ける。
+  学年は `students` から `id, grade` だけを遅延1回引く（`students` target は在籍フィルタで絞られていて使い回せない）。
+- **退塾者を残す判定（Phase 1）は開始日だけを見るので影響を受けない。** 開始日は全学年共通。
+- ダッシュボードの「講習期間」欄には、学年別の上書きがあるときだけ補足を出す（表示のみ・編集は設定側に一本化）。
 
 ## 4. 決めたこと・決めなかったこと
 

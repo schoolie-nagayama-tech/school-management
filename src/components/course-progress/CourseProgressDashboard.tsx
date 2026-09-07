@@ -1,8 +1,10 @@
 'use client';
 
 import { useMemo, useState, useRef, useCallback, type CSSProperties } from 'react';
+import Link from 'next/link';
 import type { CourseProgressItem, StudentCourseProgress, CoursePrepPeriod } from '@/types/database';
 import type { Student } from '@/types/database';
+import { GRADE_LABELS } from '@/types/database';
 import type { AutoValues } from '@/lib/api/courseProgress';
 import {
   computeDashboardAggregates,
@@ -171,6 +173,33 @@ export function CourseProgressDashboard({
 
   const hasScheduleDates = period?.schedule_start_date && period?.schedule_end_date;
 
+  /**
+   * 学年別の講習終了日（決定44）の補足表示。
+   *
+   * 冬期は中3だけ入試直前まで続くなど学年で期間が違い、通常回数（course_sessions）も
+   * 学年別終了日で数えている。ここで終了日の入力欄だけを見ていると「中3も1/5で終わる」と
+   * 誤解するので、上書きがあることをこの場で知らせる。編集は設定→講習申込に一本化する。
+   */
+  const gradeEndNote = useMemo(() => {
+    const byGrade = period?.schedule_end_by_grade;
+    if (!byGrade) return null;
+    // jsonb の自由入力なので、書式が壊れた値（NaN/NaN と出てしまう）は表示から外す
+    const entries = Object.entries(byGrade)
+      .filter(([grade, date]) => /^\d{4}-\d{2}-\d{2}$/.test(date) && Number.isFinite(Number(grade)))
+      .sort((a, b) => Number(a[0]) - Number(b[0]));
+    if (entries.length === 0) return null;
+    // 全部並べると入力欄より目立ってしまうので、先頭3件だけ出して残りは件数で示す。
+    const shown = entries.slice(0, 3).map(([grade, date]) => {
+      const label = GRADE_LABELS[Number(grade)] || `${grade}`;
+      const [, month, day] = date.split('-');
+      return `${label}: ${Number(month)}/${Number(day)}`;
+    });
+    return {
+      text: shown.join('、'),
+      restCount: entries.length - shown.length,
+    };
+  }, [period?.schedule_end_by_grade]);
+
   const matchInfo = useMemo(() => {
     const info: string[] = [];
     if (proposedKomaItem) info.push(`提案: "${proposedKomaItem.name}"`);
@@ -227,6 +256,16 @@ export function CourseProgressDashboard({
               </span>
             )}
           </div>
+          {gradeEndNote && (
+            <p className="mt-2 text-[10px] text-text-faint">
+              学年別の終了日あり（{gradeEndNote.text}
+              {gradeEndNote.restCount > 0 ? ` 他${gradeEndNote.restCount}学年` : ''}
+              ）。変更は{' '}
+              <Link href="/settings/koushu-apply" className="underline hover:text-text-muted">
+                設定 → 講習申込
+              </Link>
+            </p>
+          )}
         </div>
       )}
       {!onPeriodDateChange && hasScheduleDates && (

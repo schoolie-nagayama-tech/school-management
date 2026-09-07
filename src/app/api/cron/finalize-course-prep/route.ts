@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin, buildSnapshotPayload } from '@/lib/server/coursePrepBatch';
 import { requireCronAuth } from '@/lib/cron-auth';
 import { captureApiError } from '@/lib/api-error';
+import { resolvePeriodLastEndDate } from '@/lib/coursePrepKpis';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -19,7 +20,8 @@ const FINALIZE_WINDOW_DAYS = 45;
  * GET /api/cron/finalize-course-prep
  * 毎日 早朝 JST にVercel Cronから呼ばれる。
  *
- * 講習期間の終了日を過ぎていて、まだ確定保存されていない期を自動で確定保存する。
+ * 講習期間が終わっていて、まだ確定保存されていない期を自動で確定保存する。
+ * 「終わった」の判定は共通の終了日ではなく、学年別終了日も含めた最後の学年の終了日で行う。
  * 進捗表の数字はライブデータから再計算され続けるため（退塾で行が消える、通塾パターンの
  * 組み替えでコマ数が変わる等）、期が終わったら早めに入力を凍結しないと実績が残らない。
  *
@@ -45,19 +47,43 @@ export async function GET(request: NextRequest) {
       .toISOString()
       .slice(0, 10);
 
-    // 終了済みの期（直近ぶんのみ）。期の数は教室×3期/年なので少なく、ページング不要。
+    // 終了日のある期を全部取り、終了判定と45日窓は JS 側で「最後の学年の終了日」に対して行う。
+    //
+    // SQL で schedule_end_date に窓をかけてはいけない。学年別終了日（schedule_end_by_grade）は
+    // 共通の終了日より後になりうるので、
+    //   - 上限を共通終了日で切ると「中3がまだ講習中なのに凍結」→ そのあと入る中3の取得コマが落ちる
+    //   - 下限を共通終了日で切ると「共通は1/7・中3は2/25」のような冬期で、中3が終わった頃には
+    //     共通終了日が45日窓の外に出ていて、その期が永久に自動確定されない
+    // 期の行数は 教室数 × 3期 × 年数 程度なので、全件取って JS で絞って問題ない。
     const { data: periods, error: periodError } = await supabaseAdmin
       .from('course_prep_periods')
-      .select('school_id, season, year, schedule_end_date')
-      .not('schedule_end_date', 'is', null)
-      .lt('schedule_end_date', todayJST)
-      .gte('schedule_end_date', windowStart);
+      .select('school_id, season, year, schedule_end_date, schedule_end_by_grade')
+      .not('schedule_end_date', 'is', null);
 
     if (periodError) {
       console.error('[cron/finalize-course-prep] 期の取得エラー:', periodError);
       return NextResponse.json({ ok: false, error: 'Period query failed' }, { status: 500 });
     }
     if (!periods || periods.length === 0) {
+      return NextResponse.json({ ok: true, saved: 0, skipped: 0, date: todayJST });
+    }
+
+    // 最後の学年が終わっていて、かつ自動確定の対象期間（直近 FINALIZE_WINDOW_DAYS 日）に
+    // 収まっている期だけを対象にする。
+    const endedPeriods = (
+      periods as {
+        school_id: string;
+        season: string;
+        year: number;
+        schedule_end_date: string | null;
+        schedule_end_by_grade: Record<string, string> | null;
+      }[]
+    ).filter((p) => {
+      const lastEnd = resolvePeriodLastEndDate(p);
+      if (!lastEnd) return false;
+      return lastEnd < todayJST && lastEnd >= windowStart;
+    });
+    if (endedPeriods.length === 0) {
       return NextResponse.json({ ok: true, saved: 0, skipped: 0, date: todayJST });
     }
 
@@ -72,9 +98,8 @@ export async function GET(request: NextRequest) {
       )
     );
 
-    const targets = periods.filter(
-      (p: { school_id: string; season: string; year: number }) =>
-        !savedKeys.has(`${p.school_id}:${p.season}:${p.year}`)
+    const targets = endedPeriods.filter(
+      (p) => !savedKeys.has(`${p.school_id}:${p.season}:${p.year}`)
     );
 
     let saved = 0;
@@ -82,7 +107,7 @@ export async function GET(request: NextRequest) {
     const errors: string[] = [];
 
     // 教室ごとに順番に処理する。1件失敗しても残りは続ける（1校の設定漏れで全校が止まらないように）。
-    for (const p of targets as { school_id: string; season: string; year: number }[]) {
+    for (const p of targets) {
       const label = `${p.school_id}/${p.season}/${p.year}`;
       try {
         const { payload, studentCount } = await buildSnapshotPayload(

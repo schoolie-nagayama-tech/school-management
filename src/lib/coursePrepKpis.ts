@@ -125,6 +125,65 @@ export function isCoursePrepOutOfScope(
   return isGrade9OnlyCoursePrepItem(item) && (grade ?? 0) !== 9 && !hasRecord;
 }
 
+/** YYYY-MM-DD 形式かどうか。壊れた値を最大値の比較に混ぜないための門番。 */
+function isIsoDate(value: unknown): value is string {
+  return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value);
+}
+
+/**
+ * 期の「最後の学年が終わる日」を返す。schedule_end_date と schedule_end_by_grade の値の最大。
+ *
+ * なぜ必要か: 冬期は学年で講習期間が違う（中3だけ入試直前まで続く）。共通の終了日だけを見て
+ * 「期が終わった」と判定すると、まだ中3が講習中なのに確定保存してしまい、そのあとに入る
+ * 中3の取得コマが実績から丸ごと落ちる。終了判定は必ず一番遅い学年に合わせる。
+ *
+ * 値は 'YYYY-MM-DD' 固定長なので辞書順比較で日付順になる。書式が違う値は無視する。
+ */
+export function resolvePeriodLastEndDate(
+  period:
+    | {
+        schedule_end_date: string | null;
+        schedule_end_by_grade?: Record<string, string> | null;
+      }
+    | null
+    | undefined
+): string | null {
+  if (!period) return null;
+  let last: string | null = isIsoDate(period.schedule_end_date) ? period.schedule_end_date : null;
+  const byGrade = period.schedule_end_by_grade;
+  if (byGrade) {
+    for (const value of Object.values(byGrade)) {
+      if (!isIsoDate(value)) continue;
+      if (last === null || value > last) last = value;
+    }
+  }
+  return last;
+}
+
+/**
+ * 生徒1人分の「通常授業の回数（course_sessions）」を数える。
+ *
+ * dayMap: 曜日(0=日〜6=土) → その曜日のコマ数（通塾パターンの本数）
+ * dayCounts: 期間内に各曜日が何回出現するか。期間日付が無いときは null を渡す。
+ *
+ * dayCounts が null（開始日か終了日が未設定）のときは、期間が引けないのでパターン本数の
+ * 合計をそのまま返す従来の挙動に倒す。
+ */
+export function computeCourseSessionsForStudent(
+  dayMap: Record<number, number> | undefined,
+  dayCounts: Record<number, number> | null
+): number {
+  const map = dayMap ?? {};
+  if (!dayCounts) {
+    return Object.values(map).reduce((sum, count) => sum + count, 0);
+  }
+  let sessions = 0;
+  for (const [day, patternCount] of Object.entries(map)) {
+    sessions += patternCount * (dayCounts[Number(day)] || 0);
+  }
+  return sessions;
+}
+
 export interface SchoolKpis {
   studentCount: number;
   // 提案増コマ合計 / 取得（決定）増コマ合計

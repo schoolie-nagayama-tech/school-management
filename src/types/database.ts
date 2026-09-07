@@ -4521,6 +4521,12 @@ export interface CoursePrepPeriod {
   expected_rate: number;
   schedule_start_date: string | null;
   schedule_end_date: string | null;
+  /**
+   * 学年別の講習終了日（決定44）。'1'〜'13' の学年番号文字列 → 'YYYY-MM-DD'。
+   * 未記載の学年は schedule_end_date にフォールバックする（開始日は全学年共通）。
+   * 冬期は中3だけ入試直前まで続くなど、学年で期間が違うために持っている。
+   */
+  schedule_end_by_grade: Record<string, string> | null;
   created_at: string;
   updated_at: string;
 }
