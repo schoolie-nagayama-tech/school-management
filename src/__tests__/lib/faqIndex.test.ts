@@ -406,3 +406,38 @@ describe('提案書の作り方', () => {
     expect(item?.rules?.join(' ')).toMatch(/進行表に反映されるのは「公開」した提案書だけ/);
   });
 });
+
+/**
+ * 問合せ管理の記述。
+ *
+ * ★2026-09-07 に26項目を実装と突き合わせた際、いちばん重い誤りは
+ *   「詳細ページに関連する問合せが自動表示される」だった。名寄せのAPI
+ *   （findRelatedInquiries）は書かれているがどこからも呼ばれておらず、
+ *   画面に無いものを案内していた。同じ形の誤りを戻さないための固定。
+ */
+describe('問合せ管理の記述', () => {
+  const index = buildFaqIndex();
+  const inquiries = index.filter((e) => e.categoryId === 'inquiries');
+  const find = (q: string) => inquiries.find((e) => e.question === q)?.item;
+
+  it('画面に無い「関連する問合せ」を、あるものとして書かない', () => {
+    const item = find('再問合せや兄弟の問合せはわかりますか？');
+    expect(item).toBeTruthy();
+    // 「自動表示されます」と言い切らず、無いことを明示している
+    expect(item?.answer).toMatch(/自動では出ません/);
+    expect(item?.tips?.join(' ')).toMatch(/という欄はありません/);
+  });
+
+  it('入会と削除の道順が載っている', () => {
+    // どちらも詳細ページの「操作」カードにあるのに、項目が無かった
+    expect(find('入会が決まったらどうしますか？（生徒として登録）')).toBeTruthy();
+    expect(find('問合せを削除するには？')).toBeTruthy();
+  });
+
+  it('追客メールの送信候補が既定で全選択だと書いてある', () => {
+    // 開いた瞬間に全件チェック済み。知らずに送信を押すと事故になる
+    const item = find('追客メールをまとめて送るには？');
+    expect(item?.steps?.join(' ')).toMatch(/全件にチェックが入っています/);
+    expect(item?.rules?.join(' ')).toMatch(/13日以内/);
+  });
+});
