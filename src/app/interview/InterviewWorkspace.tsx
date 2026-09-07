@@ -40,6 +40,7 @@ import { ScorePanel } from './ScorePanel';
 import { ProgressPanel, type TextbookProgressData } from './ProgressPanel';
 import { DisciplinePanel } from './DisciplinePanel';
 import { InterviewPrintSheet } from './InterviewPrintSheet';
+import { InterviewBriefCard, type BriefView } from './InterviewBriefCard';
 import {
   extractHandover,
   formatKoushuEnrollments,
@@ -77,6 +78,13 @@ export function InterviewWorkspace() {
   // student_textbook_id → 目標（試験目標）と行動目標。進行表パネルで進捗バーの代わりに出す
   const [textbookGoals, setTextbookGoals] = useState<Record<string, FeedGoalSummary>>({});
   const [progressLoading, setProgressLoading] = useState(false);
+
+  /**
+   * 報告事項（AI）の結果。★カードではなくここで持つ。印刷シートにも同じものを出すため。
+   * 保存はしない（生徒を切り替えるとカード側から null が上がってきて消える）。
+   */
+  const [brief, setBrief] = useState<BriefView | null>(null);
+  const handleBriefResult = useCallback((v: BriefView | null) => setBrief(v), []);
 
   // 生徒一覧（在籍中のみ、学年→氏名かな順）
   useEffect(() => {
@@ -405,6 +413,18 @@ export function InterviewWorkspace() {
               loading={lightLoading}
               handover={handover}
               onChanged={refetchInterviews}
+              briefSlot={
+                <InterviewBriefCard
+                  student={student}
+                  assessments={assessments}
+                  interviews={interviews}
+                  textbookData={textbookProgressData}
+                  disciplineSessions={disciplineSessions}
+                  koushuEnrollments={koushuEnrollments}
+                  loading={lightLoading || progressLoading}
+                  onResult={handleBriefResult}
+                />
+              }
             />
             <div className="flex flex-col gap-5">
               <ScorePanel assessments={assessments} loading={lightLoading} />
@@ -426,6 +446,7 @@ export function InterviewWorkspace() {
             assessments={assessments}
             textbookData={textbookProgressData}
             disciplineSessions={disciplineSessions}
+            brief={brief}
           />
         </>
       )}

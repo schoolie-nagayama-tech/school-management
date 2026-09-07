@@ -21,6 +21,7 @@ import {
 import type { HandoverInfo } from './InterviewTimeline';
 import type { TextbookProgressData } from './ProgressPanel';
 import type { DisciplineSessionRow } from '@/lib/api/progress-sessions';
+import type { BriefView } from './InterviewBriefCard';
 import { formatGradeLabel } from '@/lib/utils/gradeLabel';
 import { INTERVIEW_TYPE_LABELS, type StudentInterview } from '@/types/database';
 
@@ -35,6 +36,11 @@ interface InterviewPrintSheetProps {
   textbookData: TextbookProgressData[];
   /** 宿題・遅刻パネルと同じ生セッション行。集計は computeDisciplineMonthly で画面側と揃える */
   disciplineSessions: DisciplineSessionRow[];
+  /**
+   * 報告事項（AI）。作っていなければ null で、その節ごと出さない。
+   * ★画面で手直しした「見えること」がそのまま入る（親が結果を持っているため）。
+   */
+  brief?: BriefView | null;
 }
 
 export function InterviewPrintSheet({
@@ -45,6 +51,7 @@ export function InterviewPrintSheet({
   assessments,
   textbookData,
   disciplineSessions,
+  brief,
 }: InterviewPrintSheetProps) {
   const scoreSummary = computeScoreSummary(assessments);
   // 画面（DisciplinePanel）と同じ直近6ヶ月・同じ集計関数で数字を揃える
@@ -86,6 +93,39 @@ export function InterviewPrintSheet({
           <p className="text-[10px] text-gray-500">面談記録はまだありません</p>
         )}
       </div>
+
+      {/* 報告事項（AI）。作っていなければ節ごと出さない。画面と同じく申し送りの直下に置く。
+          ★紙は簡素に: 現状の行＋見えること＋話す項目だけ（色線・編集欄は紙では意味を持たない）。 */}
+      {brief && (
+        <div className="mb-3">
+          <div className="mb-1 border-b border-black pb-0.5 text-xs font-bold">報告事項</div>
+          <div className="flex flex-col gap-1">
+            {brief.sections.map((s) => (
+              <div key={s.key} className="break-inside-avoid text-[10px] leading-snug">
+                <span className="font-medium">{s.label}：</span>
+                <span className="text-gray-700">{s.current.join(' ／ ')}</span>
+                {s.seen && <div className="ml-2">→ {s.seen}</div>}
+              </div>
+            ))}
+          </div>
+          {brief.thread && (
+            <div className="mt-1 text-[10px] leading-snug">
+              <span className="font-medium">つなげて見えること：</span>
+              {brief.thread}
+            </div>
+          )}
+          {brief.talk.length > 0 && (
+            <div className="mt-1 text-[10px] leading-snug">
+              <div className="font-medium">話す項目</div>
+              <ol className="ml-4 list-decimal">
+                {brief.talk.map((t, i) => (
+                  <li key={i}>{t.text}</li>
+                ))}
+              </ol>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* 直近3件の面談 */}
       <div className="mb-3">
