@@ -55,10 +55,11 @@ export default function SchoolSettingsPage() {
    * ★機能ごとに分ける。送るものが違うので、まとめて入切させない
    *   （連絡文のために開けた教室から、生徒の成績まで出てしまう）。
    */
-  const [aiEnabled, setAiEnabled] = useState<Record<AiFeatureKey, boolean>>({
-    ai_compose: false,
-    teacher_assist: false,
-    plan_theme: false,
+  // ★初期値はキーの配列から組む。キーを足すたびにここも直す作りだと、型エラーで止まる
+  const [aiEnabled, setAiEnabled] = useState<Record<AiFeatureKey, boolean>>(() => {
+    const init = {} as Record<AiFeatureKey, boolean>;
+    for (const key of AI_FEATURE_KEYS) init[key] = false;
+    return init;
   });
   /** 切り替えられるのは admin/owner だけ。教室長には状態だけ見せる */
   const [aiCanChange, setAiCanChange] = useState(false);
