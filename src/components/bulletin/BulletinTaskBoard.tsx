@@ -24,7 +24,7 @@ import { isManagerOrAbove } from '@/lib/utils/roles';
 import type { BulletinProgressResponse, BulletinTaskView } from '@/lib/bulletin/apiTypes';
 import { ASSESSMENT_NAME_LABELS } from '@/types/database';
 import type { ApplicationItem, School } from '@/types/database';
-import { TASK_PERIOD_CHOICES, type TaskKind } from '@/lib/bulletin/taskCatalog';
+import { TASK_PERIOD_CHOICES, isTeacherSelfKind, type TaskKind } from '@/lib/bulletin/taskCatalog';
 import { getApplicationItems } from '@/lib/api/applications';
 
 /** 教室が複数選ばれているときだけ、行に教室名を添える */
@@ -269,7 +269,12 @@ function TaskRow({
 
   const fresh = isFresh(row.createdAt);
   const zero = row.notYet === 0;
-  const hidden = Math.max(0, row.notYet - row.notYetStudents.length);
+  // ★講師自身の種別（シフト提出・出勤簿入力）は生徒が居ない。名前は notYetTeachers から出す
+  const isTeacherKind = isTeacherSelfKind(row.kind);
+  const notYetTeachers = row.notYetTeachers ?? [];
+  const hidden = isTeacherKind
+    ? Math.max(0, row.notYet - notYetTeachers.length)
+    : Math.max(0, row.notYet - row.notYetStudents.length);
   // ★決めることが残っているときだけ選択欄を出す。決まったら消える（常設の操作を増やさない）
   const askPeriod = row.needsPeriod && !row.targetPeriod;
   const askItem = !row.unsupported && !row.applicationItemId;
@@ -303,33 +308,52 @@ function TaskRow({
         <span className="text-sm text-text-body">人 残っています</span>
       </div>
 
-      {row.notYetStudents.length > 0 && (
-        <div className="flex flex-wrap gap-1.5">
-          {row.notYetStudents.map((s) => (
-            <span
-              key={s.name}
-              className="whitespace-nowrap rounded-full border border-border bg-surface px-2.5 py-0.5 text-xs text-text-body"
-              title={
-                s.teacherName
-                  ? `次に授業をするのは ${s.teacherName} 先生`
-                  : '次に授業をする講師が決まっていません'
-              }
-            >
-              {s.name}
-              {/* ★次にこの生徒に会う講師。頼む相手はここ（名簿上の担当ではない）。
-                  決まっていなければ何も出さない（推測で名前を出さない） */}
-              {s.teacherName && (
-                <span className="ml-1 text-[11px] text-text-faint">/ {s.teacherName}</span>
+      {/* ★講師自身の種別は「次の講師」の添え書きを出さない（生徒に会う予定の話ではないので意味が無い） */}
+      {isTeacherKind
+        ? notYetTeachers.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {notYetTeachers.map((t) => (
+                <span
+                  key={t.id}
+                  className="whitespace-nowrap rounded-full border border-border bg-surface px-2.5 py-0.5 text-xs text-text-body"
+                >
+                  {t.name}
+                </span>
+              ))}
+              {hidden > 0 && (
+                <span className="whitespace-nowrap rounded-full border border-dashed border-border px-2.5 py-0.5 text-xs text-text-muted">
+                  ほか{hidden}人
+                </span>
               )}
-            </span>
-          ))}
-          {hidden > 0 && (
-            <span className="whitespace-nowrap rounded-full border border-dashed border-border px-2.5 py-0.5 text-xs text-text-muted">
-              ほか{hidden}人
-            </span>
+            </div>
+          )
+        : row.notYetStudents.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {row.notYetStudents.map((s) => (
+                <span
+                  key={s.name}
+                  className="whitespace-nowrap rounded-full border border-border bg-surface px-2.5 py-0.5 text-xs text-text-body"
+                  title={
+                    s.teacherName
+                      ? `次に授業をするのは ${s.teacherName} 先生`
+                      : '次に授業をする講師が決まっていません'
+                  }
+                >
+                  {s.name}
+                  {/* ★次にこの生徒に会う講師。頼む相手はここ（名簿上の担当ではない）。
+                      決まっていなければ何も出さない（推測で名前を出さない） */}
+                  {s.teacherName && (
+                    <span className="ml-1 text-[11px] text-text-faint">/ {s.teacherName}</span>
+                  )}
+                </span>
+              ))}
+              {hidden > 0 && (
+                <span className="whitespace-nowrap rounded-full border border-dashed border-border px-2.5 py-0.5 text-xs text-text-muted">
+                  ほか{hidden}人
+                </span>
+              )}
+            </div>
           )}
-        </div>
-      )}
 
       {/* ★決めることが残っているときだけ出る。決まったら消えるので、常設の操作にはならない */}
       {(askPeriod || askItem) && (

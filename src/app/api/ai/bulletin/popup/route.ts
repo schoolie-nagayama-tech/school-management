@@ -19,6 +19,7 @@ import { computeTaskProgress, isJudgeable, type StudentRow } from '@/lib/bulleti
 import {
   REPORT_CARD_SUBJECTS,
   TASK_KIND_LABELS,
+  isTeacherSelfKind,
   type TaskKind,
   type TaskScope,
 } from '@/lib/bulletin/taskCatalog';
@@ -214,6 +215,9 @@ export async function POST(request: NextRequest) {
   for (const t of taskRows) {
     const kind = t.kind as TaskKind;
     if (!isJudgeable(kind)) continue;
+    // ★カードは生徒の授業中に出すもの。シフト提出・出勤簿入力のような
+    //   講師自身の事務は、生徒を目の前にしているこの場では頼まない
+    if (isTeacherSelfKind(kind)) continue;
 
     const rows: StudentRow[] = [
       {

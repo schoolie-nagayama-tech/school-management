@@ -14,6 +14,7 @@ import {
   isRegularTestTarget,
   isReportCardEntered,
   isReportCardTarget,
+  isTeacherSelfKind,
   type TaskKind,
   type TaskScope,
 } from './taskCatalog';
@@ -41,6 +42,18 @@ export interface StudentProgress {
   state: StudentState;
 }
 
+/** 判定に必要な講師1人分（shift_submit・timesheet_entry など講師自身の種別で使う） */
+export interface TeacherRow {
+  id: string;
+  name: string;
+}
+
+/** 講師1人の判定結果。生徒と違い「対象外」「判定できない」は無い（在籍していれば全員が対象） */
+export interface TeacherProgress {
+  teacherId: string;
+  state: 'done' | 'not_yet';
+}
+
 export interface TaskProgress {
   /** 母数（対象外を除いた人数） */
   total: number;
@@ -51,6 +64,11 @@ export interface TaskProgress {
   /** 判定できない種別なら true。この場合 total は0になる */
   unsupported: boolean;
   students: StudentProgress[];
+  /**
+   * 講師自身の種別（shift_submit・timesheet_entry）だけ埋まる。
+   * ★これらは生徒に紐づかないので students は空のまま、講師で数えた結果をここに置く。
+   */
+  teachers?: TeacherProgress[];
 }
 
 /**
@@ -63,6 +81,9 @@ export const JUDGEABLE_KINDS: ReadonlySet<TaskKind> = new Set<TaskKind>([
   'report_card_entry',
   'test_result_entry',
   'progress_entry',
+  'test_prep_proposal',
+  'shift_submit',
+  'timesheet_entry',
 ]);
 
 /**
@@ -119,6 +140,13 @@ export interface JudgeInputs {
   testEnteredStudentIds?: ReadonlySet<string>;
   /** 依頼が出てから進行表に記録がある生徒（progress_entry） */
   progressRecordedStudentIds?: ReadonlySet<string>;
+  /** 依頼が出てからテスト対策提案が公開された生徒（test_prep_proposal） */
+  testPrepProposedStudentIds?: ReadonlySet<string>;
+  /**
+   * 講師自身の種別で済んだ講師（shift_submit・timesheet_entry）。
+   * ★生徒IDではなく講師IDの集合。students ではなく teachers 側の判定で使う
+   */
+  teacherDoneIds?: ReadonlySet<string>;
 }
 
 /** その生徒はこの種別の対象か（学年で外れる種別がある） */
@@ -145,6 +173,8 @@ function isDone(kind: TaskKind, studentId: string, inputs: JudgeInputs): boolean
       return inputs.testEnteredStudentIds?.has(studentId) === true;
     case 'progress_entry':
       return inputs.progressRecordedStudentIds?.has(studentId) === true;
+    case 'test_prep_proposal':
+      return inputs.testPrepProposedStudentIds?.has(studentId) === true;
     default:
       return false;
   }
@@ -162,6 +192,8 @@ export function computeTaskProgress(params: {
   targetGrades: readonly number[];
   targetStudentIds: readonly string[];
   students: readonly StudentRow[];
+  /** 講師自身の種別（shift_submit・timesheet_entry）でだけ使う。教室の在籍講師 */
+  teachers?: readonly TeacherRow[];
   hasTargetPeriod?: boolean;
   /** @deprecated JudgeInputs.subjectsByStudent を使う（呼び出し互換のために残す） */
   subjectsByStudent?: ReportCardSubjectsByStudent;
@@ -172,10 +204,34 @@ export function computeTaskProgress(params: {
     subjectsByStudent: params.inputs?.subjectsByStudent ?? params.subjectsByStudent,
     testEnteredStudentIds: params.inputs?.testEnteredStudentIds,
     progressRecordedStudentIds: params.inputs?.progressRecordedStudentIds,
+    testPrepProposedStudentIds: params.inputs?.testPrepProposedStudentIds,
+    teacherDoneIds: params.inputs?.teacherDoneIds,
   };
 
   if (!isJudgeable(kind, { hasTargetPeriod: params.hasTargetPeriod })) {
     return { total: 0, done: 0, notYet: 0, excluded: 0, unsupported: true, students: [] };
+  }
+
+  // ★講師自身の種別は生徒に紐づかない（isInScope が teacher_self で false を返すのはそのまま正しい）。
+  //   ここだけ生徒のループを通さず、講師を母数にして数える。
+  //   教室の在籍講師（params.teachers）が渡されなければ、材料が無いとして total は0のまま
+  //   （無いものを済と数えない、の原則を「母数が引けない」場合にも適用する）。
+  if (isTeacherSelfKind(kind)) {
+    const teacherRows: TeacherProgress[] = (params.teachers ?? []).map((t) => ({
+      teacherId: t.id,
+      state: inputs.teacherDoneIds?.has(t.id) === true ? 'done' : 'not_yet',
+    }));
+    const done = teacherRows.filter((t) => t.state === 'done').length;
+    const notYet = teacherRows.filter((t) => t.state === 'not_yet').length;
+    return {
+      total: done + notYet,
+      done,
+      notYet,
+      excluded: 0,
+      unsupported: false,
+      students: [],
+      teachers: teacherRows,
+    };
   }
 
   const rows: StudentProgress[] = [];

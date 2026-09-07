@@ -8,12 +8,14 @@ import {
   computeTaskProgress,
   type StudentRow,
   type TaskProgress,
+  type TeacherRow,
 } from '@/lib/bulletin/progress';
 import { canAutoWrite } from '@/lib/bulletin/applicationSync';
 import {
   REPORT_CARD_SUBJECTS,
   TASK_KIND_LABELS,
   TASK_SCOPE_LABELS,
+  isTeacherSelfKind,
   needsTargetPeriod,
   type TaskKind,
   type TaskScope,
@@ -156,6 +158,154 @@ async function loadProgressRecorded(
     if (link?.student_id) recorded.add(link.student_id);
   }
   return recorded;
+}
+
+/**
+ * 依頼が出てからテスト対策提案が公開された生徒を集める。
+ *
+ * ★見るのは status = 'published' だけ。draft はまだ講師の手元にあるだけで、
+ *   生徒側には何も届いていない（本番の status は draft / sent / published）。
+ * ★「依頼より後」だけを数える。既存の公開済み提案まで拾うと、
+ *   依頼が出た瞬間にほぼ全員が済になってしまう。
+ */
+async function loadTestPrepProposed(
+  supabase: SupabaseClient,
+  studentIds: string[],
+  since: string
+): Promise<Set<string>> {
+  const proposed = new Set<string>();
+  if (studentIds.length === 0) return proposed;
+
+  const { data, error } = await supabase
+    .from('test_prep_proposals')
+    .select('student_id')
+    .eq('status', 'published')
+    .gte('created_at', since)
+    .in('student_id', studentIds)
+    .limit(SCORE_SCAN_LIMIT);
+
+  if (error) {
+    console.error('[ai/bulletin/progress] テスト対策提案の取得に失敗', error.message);
+    return proposed;
+  }
+
+  for (const row of data ?? []) proposed.add(row.student_id as string);
+  return proposed;
+}
+
+/**
+ * その教室に在籍する講師。shift_submit・timesheet_entry は生徒ではなくこれを母数にする。
+ *
+ * ★/api/admin/users と同じ結合（user_schools → user_profiles）にそろえる。
+ *   role='teacher' かつ is_active=true だけを講師として数える
+ *   （退職・休止中の講師を残すと、誰も入力しようのない人数が残り続ける）。
+ */
+async function loadSchoolTeachers(
+  supabase: SupabaseClient,
+  schoolId: string
+): Promise<TeacherRow[]> {
+  const { data: schoolRows, error: schoolError } = await supabase
+    .from('user_schools')
+    .select('user_id')
+    .eq('school_id', schoolId)
+    .limit(STUDENT_SCAN_LIMIT);
+
+  if (schoolError) {
+    console.error('[ai/bulletin/progress] 教室の在籍講師の取得に失敗', schoolError.message);
+    return [];
+  }
+
+  const userIds = Array.from(new Set((schoolRows ?? []).map((r) => r.user_id as string)));
+  if (userIds.length === 0) return [];
+
+  const { data: profileRows, error: profileError } = await supabase
+    .from('user_profiles')
+    .select('id, display_name, last_name, role, is_active')
+    .in('id', userIds)
+    .eq('role', 'teacher')
+    .eq('is_active', true)
+    .limit(STUDENT_SCAN_LIMIT);
+
+  if (profileError) {
+    console.error('[ai/bulletin/progress] 講師プロフィールの取得に失敗', profileError.message);
+    return [];
+  }
+
+  return (profileRows ?? [])
+    .map((r) => ({
+      id: r.id as string,
+      name: ((r.display_name as string) || (r.last_name as string) || '').trim(),
+    }))
+    .filter((t) => t.name);
+}
+
+/**
+ * 依頼が出てからシフトを提出した講師を集める。
+ * ★「依頼より後」だけを数える。前から出ている提出まで拾うと依頼の瞬間に全員済になる。
+ */
+async function loadShiftSubmitted(
+  supabase: SupabaseClient,
+  schoolId: string,
+  teacherIds: string[],
+  since: string
+): Promise<Set<string>> {
+  const submitted = new Set<string>();
+  if (teacherIds.length === 0) return submitted;
+
+  const { data, error } = await supabase
+    .from('regular_shift_submissions')
+    .select('user_id')
+    .eq('school_id', schoolId)
+    .in('user_id', teacherIds)
+    .gte('submitted_at', since)
+    .limit(SCORE_SCAN_LIMIT);
+
+  if (error) {
+    console.error('[ai/bulletin/progress] シフト提出の取得に失敗', error.message);
+    return submitted;
+  }
+
+  for (const row of data ?? []) {
+    const uid = row.user_id as string | null;
+    if (uid) submitted.add(uid);
+  }
+  return submitted;
+}
+
+/**
+ * 依頼が出てから出勤簿を出した（承認待ち以降まで進めた）講師を集める。
+ *
+ * ★見るのは reviewed・approved だけ。draft はまだ講師の手元にあるだけで未提出
+ *   （本番の status は draft / reviewed / approved）。
+ */
+async function loadTimesheetSubmitted(
+  supabase: SupabaseClient,
+  schoolId: string,
+  teacherIds: string[],
+  since: string
+): Promise<Set<string>> {
+  const submitted = new Set<string>();
+  if (teacherIds.length === 0) return submitted;
+
+  const { data, error } = await supabase
+    .from('attendance_sheets')
+    .select('teacher_id')
+    .eq('school_id', schoolId)
+    .in('teacher_id', teacherIds)
+    .in('status', ['reviewed', 'approved'])
+    .gte('submitted_at', since)
+    .limit(SCORE_SCAN_LIMIT);
+
+  if (error) {
+    console.error('[ai/bulletin/progress] 出勤簿の取得に失敗', error.message);
+    return submitted;
+  }
+
+  for (const row of data ?? []) {
+    const tid = row.teacher_id as string | null;
+    if (tid) submitted.add(tid);
+  }
+  return submitted;
 }
 
 /**
@@ -456,6 +606,13 @@ export async function GET(request: NextRequest) {
   const reportCardCache = new Map<string, Map<string, string[]>>();
   const testCache = new Map<string, Set<string>>();
   let progressRecorded: Set<string> | null = null;
+  let testPrepProposed: Set<string> | null = null;
+  // ★講師自身の種別（shift_submit・timesheet_entry）は生徒ではなく講師を母数にする。
+  //   同じ教室で複数タスクがあっても、教室の在籍講師は1回引けば足りる。
+  let schoolTeachers: TeacherRow[] | null = null;
+  let schoolTeacherNameById = new Map<string, string>();
+  let shiftSubmitted: Set<string> | null = null;
+  let timesheetSubmitted: Set<string> | null = null;
 
   const views: BulletinTaskView[] = [];
 
@@ -500,6 +657,35 @@ export async function GET(request: NextRequest) {
         String(t.created_at).slice(0, 10)
       );
     }
+    if (kind === 'test_prep_proposal' && testPrepProposed === null) {
+      testPrepProposed = await loadTestPrepProposed(
+        supabase,
+        studentIds,
+        String(t.created_at).slice(0, 10)
+      );
+    }
+
+    // ★講師自身の種別が最初に出てきたところで、教室の在籍講師を1回だけ引く
+    if (isTeacherSelfKind(kind) && schoolTeachers === null) {
+      schoolTeachers = await loadSchoolTeachers(supabase, schoolId);
+      schoolTeacherNameById = new Map(schoolTeachers.map((tc) => [tc.id, tc.name]));
+    }
+    if (kind === 'shift_submit' && shiftSubmitted === null) {
+      shiftSubmitted = await loadShiftSubmitted(
+        supabase,
+        schoolId,
+        (schoolTeachers ?? []).map((tc) => tc.id),
+        String(t.created_at).slice(0, 10)
+      );
+    }
+    if (kind === 'timesheet_entry' && timesheetSubmitted === null) {
+      timesheetSubmitted = await loadTimesheetSubmitted(
+        supabase,
+        schoolId,
+        (schoolTeachers ?? []).map((tc) => tc.id),
+        String(t.created_at).slice(0, 10)
+      );
+    }
 
     const progress = computeTaskProgress({
       kind,
@@ -507,11 +693,19 @@ export async function GET(request: NextRequest) {
       targetGrades: (t.target_grades as number[]) ?? [],
       targetStudentIds: (t.target_student_ids as string[]) ?? [],
       students: rows,
+      teachers: isTeacherSelfKind(kind) ? (schoolTeachers ?? []) : undefined,
       hasTargetPeriod: Boolean(period),
       inputs: {
         subjectsByStudent: period ? reportCardCache.get(period) : undefined,
         testEnteredStudentIds: period ? testCache.get(period) : undefined,
         progressRecordedStudentIds: progressRecorded ?? undefined,
+        testPrepProposedStudentIds: testPrepProposed ?? undefined,
+        teacherDoneIds:
+          kind === 'shift_submit'
+            ? (shiftSubmitted ?? undefined)
+            : kind === 'timesheet_entry'
+              ? (timesheetSubmitted ?? undefined)
+              : undefined,
       },
     });
 
@@ -542,6 +736,7 @@ export async function GET(request: NextRequest) {
       })),
       applicationItemId: itemId,
       autoChecked,
+      // ★講師自身の種別は生徒が居ないので notYetStudents は出さず、講師の名前を notYetTeachers に出す
       notYetStudents: progress.students
         .filter((s) => s.state === 'not_yet')
         .slice(0, NAME_PREVIEW)
@@ -550,6 +745,16 @@ export async function GET(request: NextRequest) {
           teacherName: s.teacherId ? (teacherNameById.get(s.teacherId) ?? null) : null,
         }))
         .filter((s) => s.name),
+      notYetTeachers: isTeacherSelfKind(kind)
+        ? (progress.teachers ?? [])
+            .filter((tc) => tc.state === 'not_yet')
+            .slice(0, NAME_PREVIEW)
+            .map((tc) => ({
+              id: tc.teacherId,
+              name: schoolTeacherNameById.get(tc.teacherId) ?? '',
+            }))
+            .filter((tc) => tc.name)
+        : undefined,
       sources: sourcesByTask.get(t.id as string) ?? [],
       createdAt: t.created_at as string,
       targetPeriod: period,
