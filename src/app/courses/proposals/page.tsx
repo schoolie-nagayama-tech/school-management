@@ -47,12 +47,15 @@ import { publishStatusOf } from '@/lib/utils/koushuApplySettings';
 import { supabase } from '@/lib/supabase';
 import { fetchAllPaged } from '@/lib/utils/supabasePaging';
 import type { SeasonalProposalWithDetails, SeasonType, ProposalStatus } from '@/types/database';
+// 新規作成の既定シーズン。実施の数か月前に作るので「今」ではなく「次に作るシーズン」を使う
+import { getPreparingSeason } from '@/components/proposals/proposalEditor.shared';
 import { SEASON_LABELS, PROPOSAL_STATUS_LABELS, GRADE_LABELS } from '@/types/database';
 import { useLocalSchoolId } from '@/hooks/useLocalSchoolId';
 import { SchoolSwitcher } from '@/components/SchoolSwitcher';
 import { ProposalPrintView } from '@/components/proposals/ProposalPrintView';
 import type { PrintUnitDraft, ProposalPrintData } from '@/components/proposals/ProposalPrintView';
 import { getSubjectBadgeColor } from '@/lib/subjectBadge';
+import { BulkConceptPanel } from '@/components/proposals/BulkConceptPanel';
 
 const STATUS_BADGE: Record<ProposalStatus, string> = {
   draft: 'bg-surface-hover text-text-muted',
@@ -79,13 +82,6 @@ interface StudentOption {
   last_name_kana: string | null;
   first_name_kana: string | null;
   grade: number | null;
-}
-
-function getCurrentSeason(): SeasonType {
-  const month = new Date().getMonth() + 1;
-  if (month >= 2 && month <= 4) return 'spring';
-  if (month >= 5 && month <= 9) return 'summer';
-  return 'winter';
 }
 
 // 提案書 → 発注候補判定の入力に変換
@@ -406,7 +402,7 @@ export default function CourseProposalsPage() {
 
   const handleSelectStudent = (studentId: string) => {
     setPickerOpen(false);
-    const season = getCurrentSeason();
+    const season = getPreparingSeason();
     router.push(`/students/${studentId}/proposals/new?season=${season}&year=${currentYear}`);
   };
 
@@ -494,6 +490,34 @@ export default function CourseProposalsPage() {
   };
   const selectAllSelectable = () => setSelected(new Set(selectable.map((p) => p.id)));
   const clearSelection = () => setSelected(new Set());
+  /**
+   * テーマの書き足しの対象。★選択中のもののうち、教室が1つに定まるときだけ。
+   *   この画面は複数教室を横断して選べるが、AIの入切は教室ごとなので、
+   *   混ざったまま走らせるとオフの教室のデータまで出てしまう。
+   */
+  const conceptTargets = useMemo(() => {
+    return filtered
+      .filter((p) => selected.has(p.id))
+      .map((p) => ({
+        id: p.id,
+        label: [
+          p.student ? `${p.student.last_name} ${p.student.first_name}` : '不明',
+          p.textbook?.subject ?? '',
+          p.textbook?.name ?? '',
+        ]
+          .filter(Boolean)
+          .join(' / '),
+        theme: p.theme ?? '',
+      }));
+  }, [filtered, selected]);
+
+  const conceptSchoolId = useMemo(() => {
+    const ids = new Set(filtered.filter((p) => selected.has(p.id)).map((p) => p.school_id ?? ''));
+    // 教室が混ざっている・分からないときは出さない
+    if (ids.size !== 1) return null;
+    const only = Array.from(ids)[0];
+    return only || null;
+  }, [filtered, selected]);
 
   const handleBulkPublish = async () => {
     if (!isManagerOrAbove) return;
@@ -1002,6 +1026,21 @@ export default function CourseProposalsPage() {
                 )}
               </div>
             )}
+
+            {/* 選んだ提案書のテーマをまとめて書き足す。
+                ★教室の設定がオフならパネル自体が出ない（成績の外部送信が起きない）。
+                ★この画面は複数教室を横断して選べるので、教室が1つに定まるときだけ出す。 */}
+            {hasSelection && conceptSchoolId && conceptTargets.length > 0 && (
+              <BulkConceptPanel
+                schoolId={conceptSchoolId}
+                targets={conceptTargets}
+                onApplied={() => {
+                  clearSelection();
+                  void load();
+                }}
+              />
+            )}
+
             {studentGroups.map(
               ({ name, studentId, grade, proposals: studentProposals }, groupIndex) => {
                 // 生徒の全提案書の合計コマ数（名前横に表示）
@@ -1095,7 +1134,7 @@ export default function CourseProposalsPage() {
                           )}
                         </button>
                         <Link
-                          href={`/students/${studentId}/proposals/new?season=${getCurrentSeason()}&year=${currentYear}`}
+                          href={`/students/${studentId}/proposals/new?season=${getPreparingSeason()}&year=${currentYear}`}
                           className="text-text-muted hover:text-text-heading transition-[color,transform] duration-150 ease-out active:scale-[0.97]"
                           title="この生徒の提案書を作成"
                         >

@@ -6,8 +6,10 @@
  *   1. 結合の表し方   … 提案書 `group_id: number`(0=なし) / テンプレ `group_number: number | null`(null=なし)
  *   2. 結合内のコマ数 … テンプレは **先頭の単元にだけ値を入れ、残りは0** にする（先頭のみ規約）
  *
- * 2 が重要。読み出し側 `convertToCourseCurriculumRows` はグループ内の proposal_count を
- * **合計** して1グループのコマ数とするため、全メンバーに値を入れるとコマ数が membership 倍に膨らむ。
+ * 2 が重要。グループのコマ数は先頭の1件だけが持つ、と決めておかないと二重に数えられる。
+ * 実際、かつてテンプレート画面の表示がグループ内を合計していたため、全メンバーに値を書く
+ * 経路（提案書の「講習に登録」）で作られた講習はコマ数がメンバー数ぶん膨らんで見えていた。
+ * 合計を出す `calcTotalKoma` もグループを最初に見つけた1件で数えるので、先頭に寄せるのが正しい。
  * 変換をこの1か所に集約して、書き手ごとに規約がぶれるのを防ぐ。
  */
 import type { UnitDraft } from '@/components/proposals/proposalEditor.shared';
@@ -72,6 +74,32 @@ export function draftsToCourseSettings(
   }
 
   return result;
+}
+
+/**
+ * テンプレートの単元設定のうち、生徒のプランに載せるものを選び出す。
+ *
+ * ★コマ数が0でも結合に属している単元は必ず残す。
+ * 「先頭のみ規約」ではグループの2件目以降が0コマなので、素朴に `proposal_count > 0` で
+ * 絞ると**まとめたはずの単元が先頭1件だけになって生徒に渡る**。
+ * 実際に本番で、42行ある講習を適用された生徒の提案書が22行になっていた。
+ * 取り込み側（`courseSettingsToDrafts`）は同じ理由で既に0コマの結合メンバーを残している。
+ * 判定がずれないよう、ここに1本化する。
+ */
+export function pickCourseSettingsForApply(
+  settings: CourseCurriculumSetting[]
+): { curriculum_item_id: number; koma_count: number; group_id: number }[] {
+  return settings
+    .filter((s) => s.proposal_count > 0 || (s.group_number != null && s.group_number > 0))
+    .map((s) => {
+      const inGroup = s.group_number != null && s.group_number > 0;
+      return {
+        curriculum_item_id: s.curriculum_item_id,
+        // グループ内は0コマでも1コマ扱いで有効化する。合計はグループで1回しか数えないので増えない
+        koma_count: inGroup ? s.proposal_count || 1 : s.proposal_count,
+        group_id: inGroup ? (s.group_number as number) : 0,
+      };
+    });
 }
 
 /**

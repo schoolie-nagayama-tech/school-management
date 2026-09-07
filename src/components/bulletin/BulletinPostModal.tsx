@@ -6,6 +6,7 @@ import type { BulletinPost, BulletinLabel, BulletinTargetScope } from '@/types/b
 import type { School } from '@/types/database';
 import { GRADE_LABELS } from '@/types/database';
 import { Modal, Button, Input } from '@/components/ui';
+import { AiWriteBar } from '@/components/ai/AiWriteBar';
 
 /**
  * audience 選択肢（社内＝スタッフ / 保護者）。
@@ -91,7 +92,12 @@ interface BulletinPostModalProps {
   /** 新規投稿時の投稿先（複数選択可） */
   selectedSchoolIds?: string[];
   onSelectedSchoolIdsChange?: (ids: string[]) => void;
-  onSaved: () => void;
+  /**
+   * 保存後。新規投稿でできた投稿IDを渡す（編集では空）。
+   * ★掲示板側がこれを使って依頼の読み取りを走らせる。読み取りをモーダルの中でやらないのは、
+   *   AIの往復ぶん保存が遅くなり、失敗したときに投稿そのものが失敗したように見えるため。
+   */
+  onSaved: (createdPostIds: string[]) => void;
 }
 
 export function BulletinPostModal({
@@ -109,6 +115,12 @@ export function BulletinPostModal({
 }: BulletinPostModalProps) {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
+  /**
+   * AIの入切を見る教室。★複数教室に同報するときは代表の1つで判断する。
+   *   本文は1つなので、教室ごとに出し分けようがない。
+   *   代表がオフなら出さない（オンの教室に合わせて緩めない）。
+   */
+  const aiSchoolId = post?.school_id ?? selectedSchoolIds[0] ?? schoolId ?? null;
   const [linkUrl, setLinkUrl] = useState('');
   const [labelId, setLabelId] = useState<string | null>(null);
   const [isPinned, setIsPinned] = useState(false);
@@ -251,6 +263,9 @@ export function BulletinPostModal({
       } = await supabase.auth.getUser();
       const userId = user?.id;
 
+      /** 新規に作った投稿のID。掲示板側が依頼の読み取りに使う */
+      const createdPostIds: string[] = [];
+
       const normalizedLink = normalizeLinkUrl(linkUrl);
       const publishStartAt = dateToTimestamp(publishStartDate, 'start');
       const publishEndAt = dateToTimestamp(publishEndDate, 'end');
@@ -316,6 +331,11 @@ export function BulletinPostModal({
             userId
           );
         }
+        // ★編集した投稿も読み取りにかける。
+        //   永山校の試用で、教室長が既存の投稿を書き直したのに「残っている人」が空のままだった。
+        //   読み取りは投稿の作成時にしか走っておらず、編集では一度も呼ばれていなかった。
+        //   同じ種別×対象は既存タスクへの再掲として束ねられるので、二重には作られない。
+        createdPostIds.push(post.id, ...siblingIds);
       } else {
         const payload = {
           title: title.trim(),
@@ -328,11 +348,12 @@ export function BulletinPostModal({
           ...audienceFields,
         };
         for (const sid of targetSchoolIds) {
-          await createBulletinPost(sid, payload, userId);
+          const created = await createBulletinPost(sid, payload, userId);
+          if (created?.id) createdPostIds.push(created.id);
         }
       }
 
-      onSaved();
+      onSaved(createdPostIds);
       onClose();
     } catch (error) {
       console.error('Error saving post:', error);
@@ -448,6 +469,18 @@ export function BulletinPostModal({
             minHeight="280px"
             resizable
           />
+
+          {/* 下書きを作る／整える。★教室の設定がオフならバー自体が出ない
+              （押せる形にしない＝外部への送信が起きない） */}
+          {aiSchoolId && (
+            <AiWriteBar
+              className="mt-2"
+              value={content}
+              onChange={setContent}
+              schoolId={aiSchoolId}
+              kind="bulletin"
+            />
+          )}
         </div>
 
         <div>

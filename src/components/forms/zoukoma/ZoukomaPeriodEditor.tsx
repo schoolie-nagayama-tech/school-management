@@ -11,6 +11,7 @@ import {
 } from '@/lib/api/form-periods';
 import { getApplicationItems } from '@/lib/api/applications';
 import type { ZoukomaPeriod, ZoukomaSettings } from '@/types/forms/zoukoma';
+import { DEFAULT_GRADE_PRICES } from '@/lib/forms/pricing';
 import type { ApplicationItem } from '@/types/database';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 import { resolveUpdateSchoolIds, resolveCreateSchoolIds } from '@/hooks/usePeriodEditor';
@@ -118,14 +119,9 @@ export function ZoukomaPeriodEditor({
     try {
       const settings: ZoukomaSettings = period?.settings || {
         grades: ['中1', '中2', '中3', '高1', '高2', '高3'],
-        price_table: {
-          中1: 3980,
-          中2: 3980,
-          中3: 4120,
-          高1: 4480,
-          高2: 4770,
-          高3: 5060,
-        },
+        // この画面には単価の入力欄が無い。改定のたびに直し忘れて旧価格のまま公開され、
+        // 清瀬の2学期中間で実際に旧単価の申込が出た。値を直書きせず既定単価を参照する。
+        price_table: { ...DEFAULT_GRADE_PRICES },
         subjects: ['英語', '数学', '国語', '理科', '社会'],
       };
 

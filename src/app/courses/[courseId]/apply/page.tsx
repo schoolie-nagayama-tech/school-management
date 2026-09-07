@@ -19,14 +19,15 @@ import type {
   Student,
 } from '@/types/database';
 import { SEASON_LABELS, GRADE_LABELS } from '@/types/database';
-
-const SEASON_BADGE: Record<string, string> = {
-  spring: 'bg-pink-100 text-pink-700',
-  summer: 'bg-sky-100 text-sky-700',
-  winter: 'bg-slate-100 text-slate-600',
-};
+import { SEASON_COLORS } from '@/components/course-shared/seasonBadge';
+import { useRequirePermission } from '@/hooks/usePermissions';
+import AccessDenied from '@/components/AccessDenied';
 
 export default function CourseApplyPage() {
+  // 権限チェックはデータ取得より先に置く（この画面には権限判定がそもそも無かった）
+  const { hasPermission, isLoading: permissionLoading } = useRequirePermission(
+    (p) => p.canAccessCourses
+  );
   const params = useParams();
   const router = useRouter();
   const courseId = params?.courseId as string;
@@ -82,13 +83,15 @@ export default function CourseApplyPage() {
   }, [courseId]);
 
   useEffect(() => {
+    // 権限が確定するまで、また権限が無い場合は取得しない（画面を出さないだけでは取得は止まらない）
+    if (permissionLoading || !hasPermission) return;
     const load = async () => {
       setIsLoading(true);
       await Promise.all([fetchCourse(), fetchApplications()]);
       setIsLoading(false);
     };
     load();
-  }, [fetchCourse, fetchApplications]);
+  }, [fetchCourse, fetchApplications, permissionLoading, hasPermission]);
 
   useEffect(() => {
     if (course) fetchStudents();
@@ -148,6 +151,22 @@ export default function CourseApplyPage() {
     }
   };
 
+  if (permissionLoading) {
+    return (
+      <AdminLayout headerTitle="講習管理">
+        <Loading className="min-h-[60vh]" />
+      </AdminLayout>
+    );
+  }
+
+  if (!hasPermission) {
+    return (
+      <AdminLayout headerTitle="講習管理">
+        <AccessDenied message="講習管理ページは教室長以上のみアクセス可能です" />
+      </AdminLayout>
+    );
+  }
+
   if (isLoading) {
     return (
       <AdminLayout headerTitle="講習管理">
@@ -185,7 +204,7 @@ export default function CourseApplyPage() {
             <div className="flex items-center gap-2.5">
               <h1 className="text-lg font-bold text-text-heading">{course.name}</h1>
               <span
-                className={`px-2 py-0.5 text-[11px] font-bold rounded ${SEASON_BADGE[course.season] || ''}`}
+                className={`px-2 py-0.5 text-[11px] font-bold rounded ${SEASON_COLORS[course.season] || ''}`}
               >
                 {SEASON_LABELS[course.season]}
               </span>

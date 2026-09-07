@@ -14,7 +14,7 @@ import { SeasonYearSelector } from '@/components/course-shared/SeasonYearSelecto
 import { supabase } from '@/lib/supabase';
 import { fetchAllPaged } from '@/lib/utils/supabasePaging';
 import { getProposalsBySchool } from '@/lib/api/proposals';
-import { getCurrentSeason } from '@/components/proposals/proposalEditor.shared';
+import { getPreparingSeason } from '@/components/proposals/proposalEditor.shared';
 import type { SeasonalProposalWithDetails, SeasonType, Student } from '@/types/database';
 import { SEASON_LABELS, GRADE_LABELS } from '@/types/database';
 import { formatTextbookGrade } from '@/lib/utils/textbookLabel';
@@ -93,7 +93,9 @@ export default function KoushuTextbookRosterPage() {
   const { getSelectedSchoolIds } = useAuth();
   const { localSchoolId, setLocalSchoolId, isAllSelected, availableSchools } = useLocalSchoolId();
 
-  const [season, setSeason] = useState<SeasonType>(() => getCurrentSeason());
+  // このページは講習に向けて教材を揃えるために見るので、既定は「今のシーズン」ではなく
+  // 「次に作るシーズン」。9月に開くと冬期になる（終わった夏期から毎回切り替えずに済む）
+  const [season, setSeason] = useState<SeasonType>(() => getPreparingSeason());
   const [year, setYear] = useState<number>(() => new Date().getFullYear());
   const [proposals, setProposals] = useState<SeasonalProposalWithDetails[]>([]);
   // 所持済みテキスト: `${studentId}:${textbookId}`

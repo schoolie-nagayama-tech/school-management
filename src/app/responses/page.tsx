@@ -155,7 +155,12 @@ function getSortIcon(currentKey: SortKey, key: SortKey, order: SortOrder) {
   );
 }
 
-/** 一覧で「未処理」バッジが付くか（計上・座席・発注のいずれかが未チェック） */
+/**
+ * 一覧で「未処理」バッジが付くか（各フォームが持つチェックが1つでも未チェックなら未処理）
+ * 既定表示は「未処理のみ」なので、ここが false になった回答は一覧から消える。
+ * 計上だけで消すと「主催者への申込を済ませたか」が追えなくなるため、
+ * Vもぎは計上＋申込の両方が付いて初めて処理済みにする。
+ */
 function isUnprocessed(response: FormResponseWithStudent): boolean {
   const sc = (response.status_checks as Record<string, boolean> | undefined) ?? {};
   switch (response.form_type) {
@@ -166,7 +171,7 @@ function isUnprocessed(response: FormResponseWithStudent): boolean {
     case 'shukaisu':
       return !sc.charged || !sc.seated;
     case 'mogi':
-      return !sc.charged;
+      return !sc.charged || !sc.applied;
     case 'soudan':
       return !sc.handled;
     default:
@@ -211,7 +216,8 @@ function ResponseStatusBadges({ response }: { response: FormResponseWithStudent 
         <span className="inline-flex flex-wrap items-center gap-1">
           {linked && badge('紐付け済み', 'bg-success-subtle text-success')}
           {sc.charged && badge('計上済み', 'bg-info-subtle text-info')}
-          {!sc.charged && badge('未処理', 'bg-warning-subtle text-warning')}
+          {sc.applied && badge('申込済み', 'bg-info-subtle text-info')}
+          {(!sc.charged || !sc.applied) && badge('未処理', 'bg-warning-subtle text-warning')}
         </span>
       );
     case 'soudan':

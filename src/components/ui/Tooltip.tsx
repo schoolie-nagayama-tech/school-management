@@ -1,6 +1,6 @@
 'use client';
 
-import { ReactNode } from 'react';
+import { ReactNode, useId } from 'react';
 
 interface TooltipProps {
   text: string;
@@ -12,9 +12,13 @@ interface TooltipProps {
 }
 
 /**
- * ホバーでツールチップを表示する汎用コンポーネント
+ * ホバー・フォーカス両方でツールチップを表示する汎用コンポーネント。
+ * キーボード操作（Tab）だけの利用者にもマウスホバーと同じ情報が届くよう、
+ * group-hover に加えて group-focus-within でも表示する。
+ * トリガーがネイティブにフォーカス不可（div等）な場合は tabIndex={0} を補う。
  */
 export function Tooltip({ text, children, position = 'top', multiline = false }: TooltipProps) {
+  const tooltipId = useId();
   const positionClasses = {
     top: 'bottom-full left-1/2 -translate-x-1/2 mb-1.5',
     bottom: 'top-full left-1/2 -translate-x-1/2 mt-1.5',
@@ -23,12 +27,15 @@ export function Tooltip({ text, children, position = 'top', multiline = false }:
   };
 
   return (
-    <div className="relative group/tip inline-flex">
+    <div className="relative group/tip inline-flex" tabIndex={0} aria-describedby={tooltipId}>
       {children}
       <div
+        id={tooltipId}
+        role="tooltip"
         className={`absolute ${positionClasses[position]} z-50 pointer-events-none
           opacity-0 scale-95
           group-hover/tip:opacity-100 group-hover/tip:scale-100
+          group-focus-within/tip:opacity-100 group-focus-within/tip:scale-100
           transition-[opacity,transform] duration-[125ms] ease-[cubic-bezier(0.23,1,0.32,1)]`}
       >
         <div

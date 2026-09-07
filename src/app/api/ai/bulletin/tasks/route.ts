@@ -27,7 +27,12 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: '権限がありません' }, { status: 403 });
   }
 
-  let body: { taskId?: unknown; tracked?: unknown };
+  let body: {
+    taskId?: unknown;
+    tracked?: unknown;
+    applicationItemId?: unknown;
+    targetPeriod?: unknown;
+  };
   try {
     body = await request.json();
   } catch {
@@ -38,8 +43,44 @@ export async function PATCH(request: NextRequest) {
   if (!UUID_RE.test(taskId)) {
     return NextResponse.json({ error: 'タスクIDが不正です' }, { status: 400 });
   }
-  if (typeof body.tracked !== 'boolean') {
-    return NextResponse.json({ error: '指定が不正です' }, { status: 400 });
+
+  // 送られてきた項目だけを変える。★3つとも省略なら何もしない（黙って空更新をしない）
+  const patch: Record<string, unknown> = {};
+
+  if (body.tracked !== undefined) {
+    if (typeof body.tracked !== 'boolean') {
+      return NextResponse.json({ error: '指定が不正です' }, { status: 400 });
+    }
+    patch.tracked = body.tracked;
+  }
+
+  // 申込状況の列。★列名は教室ごとにバラバラなのでAIには選ばせない。人が1回選ぶ
+  if (body.applicationItemId !== undefined) {
+    if (body.applicationItemId === null) {
+      patch.application_item_id = null;
+    } else if (typeof body.applicationItemId === 'string' && UUID_RE.test(body.applicationItemId)) {
+      patch.application_item_id = body.applicationItemId;
+    } else {
+      return NextResponse.json({ error: '列の指定が不正です' }, { status: 400 });
+    }
+  }
+
+  // どの回か（assessments.name_code）。★これもAIに推測させない
+  if (body.targetPeriod !== undefined) {
+    if (body.targetPeriod === null) {
+      patch.target_period = null;
+    } else if (
+      typeof body.targetPeriod === 'string' &&
+      /^[a-z0-9_]{1,32}$/.test(body.targetPeriod)
+    ) {
+      patch.target_period = body.targetPeriod;
+    } else {
+      return NextResponse.json({ error: '回の指定が不正です' }, { status: 400 });
+    }
+  }
+
+  if (Object.keys(patch).length === 0) {
+    return NextResponse.json({ error: '変更する内容がありません' }, { status: 400 });
   }
 
   const supabase = getPortalServiceClient();
@@ -60,7 +101,7 @@ export async function PATCH(request: NextRequest) {
 
   const { error } = await supabase
     .from('bulletin_tasks')
-    .update({ tracked: body.tracked, updated_at: new Date().toISOString() })
+    .update({ ...patch, updated_at: new Date().toISOString() })
     .eq('id', taskId);
 
   if (error) {
@@ -68,5 +109,5 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: '更新できませんでした' }, { status: 500 });
   }
 
-  return NextResponse.json({ ok: true, tracked: body.tracked });
+  return NextResponse.json({ ok: true });
 }

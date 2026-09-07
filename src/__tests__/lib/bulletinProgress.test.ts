@@ -13,6 +13,7 @@ import {
   isInScope,
   isJudgeable,
   type StudentRow,
+  type TeacherRow,
 } from '@/lib/bulletin/progress';
 import { REPORT_CARD_SUBJECTS } from '@/lib/bulletin/taskCatalog';
 
@@ -33,7 +34,8 @@ describe('判定できる種別', () => {
    */
   it('まだ実装していない種別は判定しない', () => {
     expect(isJudgeable('goal_setting')).toBe(false);
-    expect(isJudgeable('shift_submit')).toBe(false);
+    // ★教材配布は品目が分からず誤って済にする方向に弱いので足していない
+    expect(isJudgeable('material_handout_check')).toBe(false);
   });
 
   it('判定できない種別は0を返し、unsupported を立てる', () => {
@@ -178,6 +180,215 @@ describe('講師別の内訳', () => {
     const rows = breakdownByTeacher(progress);
     for (let i = 1; i < rows.length; i++) {
       expect(rows[i - 1].notYet).toBeGreaterThanOrEqual(rows[i].notYet);
+    }
+  });
+});
+
+/**
+ * 種別を増やしたぶんの判定（2026-09-05）。
+ *
+ * ★ここで守りたいのは2点:
+ *  - 定期テストを「どの回か」が決まる前に数えないこと
+ *    （決め打ちで外すと、入っていない回を見て「全員済」＝最も危ない方向に誤る）
+ *  - 材料が無いものを済と数えないこと
+ */
+describe('判定できる種別を増やしたぶん', () => {
+  const mid2: StudentRow = { id: 's-mid', grade: 8, teacherId: null, markedNotApplicable: false };
+  const elem: StudentRow = { id: 's-elem', grade: 4, teacherId: null, markedNotApplicable: false };
+
+  it('定期テストは「どの回か」が決まるまで数えない', () => {
+    expect(isJudgeable('test_result_entry')).toBe(false);
+    expect(isJudgeable('test_result_entry', { hasTargetPeriod: false })).toBe(false);
+    expect(isJudgeable('test_result_entry', { hasTargetPeriod: true })).toBe(true);
+  });
+
+  it('回が決まっていなければ unsupported を返し、人数を出さない', () => {
+    const p = computeTaskProgress({
+      kind: 'test_result_entry',
+      scope: 'all_students',
+      targetGrades: [],
+      targetStudentIds: [],
+      students: [mid2],
+      hasTargetPeriod: false,
+    });
+    expect(p.unsupported).toBe(true);
+    expect(p.total).toBe(0);
+  });
+
+  it('回が決まれば、点が入っている生徒を済として数える', () => {
+    const p = computeTaskProgress({
+      kind: 'test_result_entry',
+      scope: 'all_students',
+      targetGrades: [],
+      targetStudentIds: [],
+      students: [mid2],
+      hasTargetPeriod: true,
+      inputs: { testEnteredStudentIds: new Set(['s-mid']) },
+    });
+    expect(p.unsupported).toBe(false);
+    expect(p.done).toBe(1);
+    expect(p.notYet).toBe(0);
+  });
+
+  it('小学生は定期テストの母数に入れない（誰も入力しようがない人数を残さない）', () => {
+    const p = computeTaskProgress({
+      kind: 'test_result_entry',
+      scope: 'all_students',
+      targetGrades: [],
+      targetStudentIds: [],
+      students: [mid2, elem],
+      hasTargetPeriod: true,
+      inputs: { testEnteredStudentIds: new Set<string>() },
+    });
+    expect(p.total).toBe(1);
+    expect(p.notYet).toBe(1);
+  });
+
+  it('進行表入力は、記録がある生徒だけを済にする（材料が無ければ未済）', () => {
+    const p = computeTaskProgress({
+      kind: 'progress_entry',
+      scope: 'all_students',
+      targetGrades: [],
+      targetStudentIds: [],
+      students: [mid2, elem],
+      inputs: { progressRecordedStudentIds: new Set(['s-mid']) },
+    });
+    expect(p.unsupported).toBe(false);
+    expect(p.done).toBe(1);
+    expect(p.notYet).toBe(1);
+  });
+
+  it('進行表入力は材料そのものが無ければ全員未済（黙って済にしない）', () => {
+    const p = computeTaskProgress({
+      kind: 'progress_entry',
+      scope: 'all_students',
+      targetGrades: [],
+      targetStudentIds: [],
+      students: [mid2],
+    });
+    expect(p.done).toBe(0);
+    expect(p.notYet).toBe(1);
+  });
+
+  it('判定を実装していない種別は、これまでどおり数字を出さない', () => {
+    for (const kind of ['goal_setting', 'material_handout_check', 'report_deadline'] as const) {
+      expect(isJudgeable(kind)).toBe(false);
+    }
+  });
+});
+
+/**
+ * テスト対策提案の判定（2026-09-07）。
+ * ★report_card_entry と同じ「材料の Set に入っていれば済」の形。
+ */
+describe('テスト対策提案の判定', () => {
+  const s1: StudentRow = { id: 's1', grade: 8, teacherId: null, markedNotApplicable: false };
+  const s2: StudentRow = { id: 's2', grade: 8, teacherId: null, markedNotApplicable: false };
+
+  it('公開済みの提案がある生徒だけ済になる', () => {
+    const p = computeTaskProgress({
+      kind: 'test_prep_proposal',
+      scope: 'all_students',
+      targetGrades: [],
+      targetStudentIds: [],
+      students: [s1, s2],
+      inputs: { testPrepProposedStudentIds: new Set(['s1']) },
+    });
+    expect(p.unsupported).toBe(false);
+    expect(p.done).toBe(1);
+    expect(p.notYet).toBe(1);
+  });
+
+  it('材料そのものが無ければ全員未済（黙って済にしない）', () => {
+    const p = computeTaskProgress({
+      kind: 'test_prep_proposal',
+      scope: 'all_students',
+      targetGrades: [],
+      targetStudentIds: [],
+      students: [s1],
+    });
+    expect(p.done).toBe(0);
+    expect(p.notYet).toBe(1);
+  });
+});
+
+/**
+ * 講師自身の種別（shift_submit・timesheet_entry）の判定（2026-09-07）。
+ *
+ * ★生徒に紐づかない（isInScope が teacher_self で false を返すのは変えていない）。
+ *   母数は「教室の在籍講師」。渡されなければ材料が無いとして total は0のまま。
+ */
+describe('講師自身の種別の判定', () => {
+  const teachers: TeacherRow[] = [
+    { id: 't1', name: '田中' },
+    { id: 't2', name: '佐藤' },
+    { id: 't3', name: '鈴木' },
+  ];
+
+  it('shift_submit / timesheet_entry は判定できる', () => {
+    expect(isJudgeable('shift_submit')).toBe(true);
+    expect(isJudgeable('timesheet_entry')).toBe(true);
+  });
+
+  it('teachers を渡すと講師の人数で母数を数える（students は空のまま）', () => {
+    const p = computeTaskProgress({
+      kind: 'shift_submit',
+      scope: 'teacher_self',
+      targetGrades: [],
+      targetStudentIds: [],
+      students: [],
+      teachers,
+      inputs: { teacherDoneIds: new Set(['t1']) },
+    });
+    expect(p.unsupported).toBe(false);
+    expect(p.total).toBe(3);
+    expect(p.done).toBe(1);
+    expect(p.notYet).toBe(2);
+    expect(p.students).toEqual([]);
+    expect(p.teachers).toHaveLength(3);
+    expect(p.teachers?.find((t) => t.teacherId === 't1')?.state).toBe('done');
+    expect(p.teachers?.find((t) => t.teacherId === 't2')?.state).toBe('not_yet');
+  });
+
+  it('teacherDoneIds が無ければ全員未済（材料が無ければ未済に倒す）', () => {
+    const p = computeTaskProgress({
+      kind: 'timesheet_entry',
+      scope: 'teacher_self',
+      targetGrades: [],
+      targetStudentIds: [],
+      students: [],
+      teachers,
+    });
+    expect(p.done).toBe(0);
+    expect(p.notYet).toBe(3);
+  });
+
+  it('teachers を渡さなければ total は0（教室の講師一覧が引けなければ数えない）', () => {
+    const p = computeTaskProgress({
+      kind: 'shift_submit',
+      scope: 'teacher_self',
+      targetGrades: [],
+      targetStudentIds: [],
+      students: [],
+    });
+    expect(p.unsupported).toBe(false);
+    expect(p.total).toBe(0);
+    expect(p.done).toBe(0);
+    expect(p.notYet).toBe(0);
+  });
+
+  it('isJudgeable が6種で true', () => {
+    const judgeable = [
+      'report_card_entry',
+      'test_result_entry',
+      'progress_entry',
+      'test_prep_proposal',
+      'shift_submit',
+      'timesheet_entry',
+    ] as const;
+    for (const kind of judgeable) {
+      const opts = kind === 'test_result_entry' ? { hasTargetPeriod: true } : undefined;
+      expect(isJudgeable(kind, opts)).toBe(true);
     }
   });
 });

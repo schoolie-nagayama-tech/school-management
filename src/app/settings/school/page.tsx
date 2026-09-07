@@ -11,9 +11,11 @@ import {
   Input,
   ToastContainer,
   Loading,
+  Switch,
 } from '@/components/ui';
 import Link from 'next/link';
 import { getSchool, updateSchool } from '@/lib/api/schools';
+import { fetchWithAuth } from '@/lib/api/auth';
 import { useToast } from '@/hooks/useToast';
 import { useRequirePermission } from '@/hooks/usePermissions';
 import AccessDenied from '@/components/AccessDenied';
@@ -21,6 +23,13 @@ import { useLocalSchoolId } from '@/hooks/useLocalSchoolId';
 import { SchoolSwitcher } from '@/components/SchoolSwitcher';
 import type { School } from '@/types/database';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
+import {
+  AI_FEATURE_DESCRIPTIONS,
+  AI_FEATURE_KEYS,
+  AI_FEATURE_LABELS,
+  AI_FEATURE_SENDS,
+  type AiFeatureKey,
+} from '@/lib/ai/features';
 import { ChevronLeft, ImageIcon, X, Plus } from 'lucide-react';
 
 export default function SchoolSettingsPage() {
@@ -41,6 +50,21 @@ export default function SchoolSettingsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  /**
+   * AI機能を、この教室で許しているか（行が無ければOFF）。
+   * ★機能ごとに分ける。送るものが違うので、まとめて入切させない
+   *   （連絡文のために開けた教室から、生徒の成績まで出てしまう）。
+   */
+  // ★初期値はキーの配列から組む。キーを足すたびにここも直す作りだと、型エラーで止まる
+  const [aiEnabled, setAiEnabled] = useState<Record<AiFeatureKey, boolean>>(() => {
+    const init = {} as Record<AiFeatureKey, boolean>;
+    for (const key of AI_FEATURE_KEYS) init[key] = false;
+    return init;
+  });
+  /** 切り替えられるのは admin/owner だけ。教室長には状態だけ見せる */
+  const [aiCanChange, setAiCanChange] = useState(false);
+  const [savingAi, setSavingAi] = useState<AiFeatureKey | null>(null);
+
   // 教室情報を取得
   useEffect(() => {
     const fetchSchool = async () => {
@@ -60,6 +84,21 @@ export default function SchoolSettingsPage() {
           } else {
             setNotificationEmails([]);
           }
+        }
+
+        // AI機能の入切（3つまとめて1回）。取れなくてもページは壊さない（既定OFFのまま出す）
+        try {
+          const res = await fetchWithAuth(`/api/ai/feature-setting?school_id=${localSchoolId}`);
+          if (res.ok) {
+            const json = (await res.json()) as {
+              features: Record<AiFeatureKey, boolean>;
+              canChange: boolean;
+            };
+            setAiEnabled(json.features);
+            setAiCanChange(json.canChange);
+          }
+        } catch {
+          setAiCanChange(false);
         }
       } catch (error) {
         console.error('Error fetching school:', error);
@@ -197,6 +236,32 @@ export default function SchoolSettingsPage() {
       toastError(getUserErrorMessage(error, '更新に失敗しました'));
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  /**
+   * AI機能の入切。
+   * ★オンにするのは「この教室のデータを外部に出してよい」と決めたときだけ。
+   *   失敗したら見た目も戻す（オンに見えているのに送っていない／その逆を作らない）。
+   */
+  const handleAiChange = async (feature: AiFeatureKey, enabled: boolean) => {
+    if (!school) return;
+    setSavingAi(feature);
+    const before = aiEnabled[feature];
+    setAiEnabled((prev) => ({ ...prev, [feature]: enabled }));
+    try {
+      const res = await fetchWithAuth('/api/ai/feature-setting', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ schoolId: school.id, feature, enabled }),
+      });
+      if (!res.ok) throw new Error('failed');
+      success(`${AI_FEATURE_LABELS[feature]}を${enabled ? 'オンにしました' : 'オフにしました'}`);
+    } catch {
+      setAiEnabled((prev) => ({ ...prev, [feature]: before }));
+      toastError('変更できませんでした');
+    } finally {
+      setSavingAi(null);
     }
   };
 
@@ -403,6 +468,51 @@ export default function SchoolSettingsPage() {
                   {isSubmitting ? '保存中...' : '保存'}
                 </Button>
               </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* AI機能の入切。★費用の話ではなく、外部に出してよいかの歯止め。
+            切り替えられるのは admin/owner だけで、教室長には状態だけ見せる。
+            ★1機能1行にして、何が外に出るのかをスイッチの真横に書く。
+              まとめて「AI」1つにすると、連絡文のために入れた栓から成績まで出る。 */}
+        <Card>
+          <CardHeader>
+            <CardTitle>AIを使う機能</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-text-body">
+              オンにした機能だけが、その教室のデータをAIの提供元（Anthropic）へ送ります。
+              オフの教室では送信そのものが起きず、画面にもバーやカードが出ません。
+              プライバシーポリシーのリーガルチェックが終わるまでは、確認できた教室だけをオンにしてください。
+            </p>
+            {!aiCanChange && (
+              <p className="mt-2 text-xs text-text-muted">
+                切り替えられるのはシステム管理者のみです。
+              </p>
+            )}
+
+            <div className="mt-4 flex flex-col divide-y divide-border border-t border-border">
+              {AI_FEATURE_KEYS.map((key) => (
+                <div key={key} className="flex items-start justify-between gap-4 py-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-bold text-text-heading">{AI_FEATURE_LABELS[key]}</p>
+                    <p className="mt-1 text-sm text-text-body">{AI_FEATURE_DESCRIPTIONS[key]}</p>
+                    <p className="mt-1 text-xs text-text-muted">
+                      外に出るもの:{' '}
+                      <b className="font-bold text-text-heading">{AI_FEATURE_SENDS[key]}</b>
+                    </p>
+                  </div>
+                  <div className="shrink-0 pt-1">
+                    <Switch
+                      checked={aiEnabled[key]}
+                      onCheckedChange={(next) => handleAiChange(key, next)}
+                      disabled={!aiCanChange || savingAi !== null}
+                      aria-label={AI_FEATURE_LABELS[key]}
+                    />
+                  </div>
+                </div>
+              ))}
             </div>
           </CardContent>
         </Card>

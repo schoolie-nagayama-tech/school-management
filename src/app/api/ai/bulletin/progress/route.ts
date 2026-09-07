@@ -6,18 +6,22 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import {
   breakdownByTeacher,
   computeTaskProgress,
-  isJudgeable,
   type StudentRow,
   type TaskProgress,
+  type TeacherRow,
 } from '@/lib/bulletin/progress';
 import { canAutoWrite } from '@/lib/bulletin/applicationSync';
 import {
   REPORT_CARD_SUBJECTS,
   TASK_KIND_LABELS,
   TASK_SCOPE_LABELS,
+  isTeacherSelfKind,
+  needsTargetPeriod,
   type TaskKind,
   type TaskScope,
 } from '@/lib/bulletin/taskCatalog';
+import type { BulletinTaskView } from '@/lib/bulletin/apiTypes';
+import { pickNextTeacherByStudent, type LessonSlot } from '@/lib/bulletin/nextTeacher';
 
 export const dynamic = 'force-dynamic';
 
@@ -37,40 +41,25 @@ export const dynamic = 'force-dynamic';
  * 正典: docs/bulletin-ai-assist.html
  */
 
-interface TaskView {
-  taskId: string;
-  kind: TaskKind;
-  kindLabel: string;
-  scope: TaskScope;
-  scopeLabel: string;
-  dueType: string;
-  dueDate: string | null;
-  /** 判定を実装していない種別。画面は数字を出さず「判定していません」と書く */
-  unsupported: boolean;
-  total: number;
-  done: number;
-  notYet: number;
-  excluded: number;
-  teachers: { teacherId: string | null; total: number; done: number; notYet: number }[];
-  /** 自動チェックの対象列。未設定なら自動チェックはしない */
-  applicationItemId: string | null;
-  /** 今回のアクセスで新しく自動チェックを付けた件数 */
-  autoChecked: number;
-}
+/** カードに出す名前の数。これを超えたぶんは「ほかN人」にまとめる */
+const NAME_PREVIEW = 5;
 
 /** 1教室の生徒数は100名台。上限に当てないよう明示する（PostgRESTの1000行上限対策） */
 const STUDENT_SCAN_LIMIT = 2000;
 const SCORE_SCAN_LIMIT = 5000;
+/** 座席表のコマ。永山校で今日以降 861 件あるので、1000行の既定上限に当てないよう明示する */
+const ENTRY_SCAN_LIMIT = 5000;
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
  * 内申が入っている科目を生徒ごとに集める。
- * ★通知表（report_card）の1学期だけを見る。換算内申は科目ではないので拾わない。
+ * ★どの回（name_code）を見るかは呼び出し側が渡す。換算内申は科目ではないので拾わない。
  */
 async function loadReportCardSubjects(
   supabase: SupabaseClient,
-  studentIds: string[]
+  studentIds: string[],
+  namePeriod: string
 ): Promise<Map<string, string[]>> {
   const byStudent = new Map<string, string[]>();
   if (studentIds.length === 0) return byStudent;
@@ -79,7 +68,7 @@ async function loadReportCardSubjects(
     .from('assessments')
     .select('student_id, assessment_scores(subject, value)')
     .eq('category', 'report_card')
-    .eq('name_code', 'term1')
+    .eq('name_code', namePeriod)
     .in('student_id', studentIds)
     .limit(SCORE_SCAN_LIMIT);
 
@@ -98,6 +87,285 @@ async function loadReportCardSubjects(
       if (s.value != null && core.has(s.subject) && !got.includes(s.subject)) got.push(s.subject);
     }
     byStudent.set(sid, got);
+  }
+  return byStudent;
+}
+
+/**
+ * 指定の回のテストに、1科目でも点が入っている生徒を集める。
+ *
+ * ★どの回かは教室長が選んだもの（target_period）だけを見る。
+ *   決め打ちや推測をすると、入っていない回を見て「全員済」と出してしまう。
+ */
+async function loadTestEntered(
+  supabase: SupabaseClient,
+  studentIds: string[],
+  namePeriod: string
+): Promise<Set<string>> {
+  const entered = new Set<string>();
+  if (studentIds.length === 0) return entered;
+
+  const { data, error } = await supabase
+    .from('assessments')
+    .select('student_id, assessment_scores(value)')
+    .eq('category', 'regular_test')
+    .eq('name_code', namePeriod)
+    .in('student_id', studentIds)
+    .limit(SCORE_SCAN_LIMIT);
+
+  if (error) {
+    console.error('[ai/bulletin/progress] テスト結果の取得に失敗', error.message);
+    return entered;
+  }
+
+  for (const row of data ?? []) {
+    const scores = (row.assessment_scores ?? []) as { value: number | null }[];
+    if (scores.some((s) => s.value != null)) entered.add(row.student_id as string);
+  }
+  return entered;
+}
+
+/**
+ * 依頼が出てから進行表に記録がある生徒を集める。
+ *
+ * ★「依頼より後の記録」だけを数える。前からある記録を数えると、
+ *   依頼が出た瞬間にほぼ全員が済になり、督促の役に立たない。
+ */
+async function loadProgressRecorded(
+  supabase: SupabaseClient,
+  studentIds: string[],
+  since: string
+): Promise<Set<string>> {
+  const recorded = new Set<string>();
+  if (studentIds.length === 0) return recorded;
+
+  const { data, error } = await supabase
+    .from('progress_sessions')
+    .select('session_date, student_textbooks!inner(student_id)')
+    .gte('session_date', since)
+    .in('student_textbooks.student_id', studentIds)
+    .limit(SCORE_SCAN_LIMIT);
+
+  if (error) {
+    console.error('[ai/bulletin/progress] 進行表の記録の取得に失敗', error.message);
+    return recorded;
+  }
+
+  for (const row of data ?? []) {
+    // ★PostgREST の結合は配列で返ることがあるので、両方の形を受ける
+    const raw = row.student_textbooks as { student_id: string } | { student_id: string }[] | null;
+    const link = Array.isArray(raw) ? (raw[0] ?? null) : raw;
+    if (link?.student_id) recorded.add(link.student_id);
+  }
+  return recorded;
+}
+
+/**
+ * 依頼が出てからテスト対策提案が公開された生徒を集める。
+ *
+ * ★見るのは status = 'published' だけ。draft はまだ講師の手元にあるだけで、
+ *   生徒側には何も届いていない（本番の status は draft / published）。
+ * ★「依頼より後」だけを数える。既存の公開済み提案まで拾うと、
+ *   依頼が出た瞬間にほぼ全員が済になってしまう。
+ */
+async function loadTestPrepProposed(
+  supabase: SupabaseClient,
+  studentIds: string[],
+  since: string
+): Promise<Set<string>> {
+  const proposed = new Set<string>();
+  if (studentIds.length === 0) return proposed;
+
+  const { data, error } = await supabase
+    .from('test_prep_proposals')
+    .select('student_id')
+    .eq('status', 'published')
+    .gte('created_at', since)
+    .in('student_id', studentIds)
+    .limit(SCORE_SCAN_LIMIT);
+
+  if (error) {
+    console.error('[ai/bulletin/progress] テスト対策提案の取得に失敗', error.message);
+    return proposed;
+  }
+
+  for (const row of data ?? []) proposed.add(row.student_id as string);
+  return proposed;
+}
+
+/**
+ * その教室に在籍する講師。shift_submit・timesheet_entry は生徒ではなくこれを母数にする。
+ *
+ * ★/api/admin/users と同じ結合（user_schools → user_profiles）にそろえる。
+ *   role='teacher' かつ is_active=true だけを講師として数える
+ *   （退職・休止中の講師を残すと、誰も入力しようのない人数が残り続ける）。
+ */
+async function loadSchoolTeachers(
+  supabase: SupabaseClient,
+  schoolId: string
+): Promise<TeacherRow[]> {
+  const { data: schoolRows, error: schoolError } = await supabase
+    .from('user_schools')
+    .select('user_id')
+    .eq('school_id', schoolId)
+    .limit(STUDENT_SCAN_LIMIT);
+
+  if (schoolError) {
+    console.error('[ai/bulletin/progress] 教室の在籍講師の取得に失敗', schoolError.message);
+    return [];
+  }
+
+  const userIds = Array.from(new Set((schoolRows ?? []).map((r) => r.user_id as string)));
+  if (userIds.length === 0) return [];
+
+  const { data: profileRows, error: profileError } = await supabase
+    .from('user_profiles')
+    .select('id, display_name, last_name, role, is_active')
+    .in('id', userIds)
+    .eq('role', 'teacher')
+    .eq('is_active', true)
+    .limit(STUDENT_SCAN_LIMIT);
+
+  if (profileError) {
+    console.error('[ai/bulletin/progress] 講師プロフィールの取得に失敗', profileError.message);
+    return [];
+  }
+
+  return (profileRows ?? [])
+    .map((r) => ({
+      id: r.id as string,
+      // 「次の講師」の添え書き（teacherNameById）と同じ順で引く。同じ講師が場所で違う名前にならないように
+      name: ((r.last_name as string) || (r.display_name as string) || '').trim(),
+    }))
+    .filter((t) => t.name);
+}
+
+/**
+ * 依頼が出てからシフトを提出した講師を集める。
+ * ★「依頼より後」だけを数える。前から出ている提出まで拾うと依頼の瞬間に全員済になる。
+ */
+async function loadShiftSubmitted(
+  supabase: SupabaseClient,
+  schoolId: string,
+  teacherIds: string[],
+  since: string
+): Promise<Set<string>> {
+  const submitted = new Set<string>();
+  if (teacherIds.length === 0) return submitted;
+
+  const { data, error } = await supabase
+    .from('regular_shift_submissions')
+    .select('user_id')
+    .eq('school_id', schoolId)
+    .in('user_id', teacherIds)
+    .gte('submitted_at', since)
+    .limit(SCORE_SCAN_LIMIT);
+
+  if (error) {
+    console.error('[ai/bulletin/progress] シフト提出の取得に失敗', error.message);
+    return submitted;
+  }
+
+  for (const row of data ?? []) {
+    const uid = row.user_id as string | null;
+    if (uid) submitted.add(uid);
+  }
+  return submitted;
+}
+
+/**
+ * 依頼が出てから出勤簿を出した（承認待ち以降まで進めた）講師を集める。
+ *
+ * ★見るのは reviewed・approved だけ。draft はまだ講師の手元にあるだけで未提出
+ *   （本番の status は draft / reviewed / approved）。
+ */
+async function loadTimesheetSubmitted(
+  supabase: SupabaseClient,
+  schoolId: string,
+  teacherIds: string[],
+  since: string
+): Promise<Set<string>> {
+  const submitted = new Set<string>();
+  if (teacherIds.length === 0) return submitted;
+
+  const { data, error } = await supabase
+    .from('attendance_sheets')
+    .select('teacher_id')
+    .eq('school_id', schoolId)
+    .in('teacher_id', teacherIds)
+    .in('status', ['reviewed', 'approved'])
+    .gte('submitted_at', since)
+    .limit(SCORE_SCAN_LIMIT);
+
+  if (error) {
+    console.error('[ai/bulletin/progress] 出勤簿の取得に失敗', error.message);
+    return submitted;
+  }
+
+  for (const row of data ?? []) {
+    const tid = row.teacher_id as string | null;
+    if (tid) submitted.add(tid);
+  }
+  return submitted;
+}
+
+/**
+ * 生徒ごとに「次にその生徒の授業をする講師」を出す。
+ *
+ * ★名簿上の担当ではない（2026-09-04 訂正）。生徒に固定の担当が付いているとは限らず、
+ *   曜日で講師が変わる。頼みたい相手は「その生徒の前に座る講師」なので、
+ *   座席表のコマ（schedule_entries）から直接引く。
+ *
+ * ★採るのは「今日以降でいちばん早い、講師が決まっているコマ」。
+ *   本番を見ると直近のコマほど teacher_id が未定で、先のコマには入っている
+ *   （永山校: 14日以内だと81名中34名しか決まらないが、期間全体なら75名決まる）。
+ *   いちばん近いコマだけを見ると、決まっているのに「担当なし」に落ちる生徒が増える。
+ *
+ * ★固定講師や進行表へのフォールバックはしない。コマが無い生徒は誰にも頼めないので、
+ *   名前だけ埋めても督促先にならない。解決できなければ null のままにして、
+ *   進捗ボードには「担当なし」の行として残す（消すと合計が合わなくなる）。
+ */
+async function loadNextTeacherByStudent(
+  supabase: SupabaseClient,
+  schoolId: string,
+  today: string
+): Promise<Map<string, string>> {
+  const byStudent = new Map<string, string>();
+
+  const { data, error } = await supabase
+    .from('schedule_entries')
+    .select('student_id, teacher_id, entry_date, schedule_time_slots(slot_number)')
+    .eq('school_id', schoolId)
+    .gte('entry_date', today)
+    .not('teacher_id', 'is', null)
+    // 振替で出ていったコマ・取り消したコマは「会う予定」ではない
+    .in('status', ['scheduled', 'completed', 'transferred_in'])
+    .order('entry_date', { ascending: true })
+    .limit(ENTRY_SCAN_LIMIT);
+
+  if (error) {
+    console.error('[ai/bulletin/progress] コマの取得に失敗', error.message);
+    return byStudent;
+  }
+
+  const slots: LessonSlot[] = (data ?? []).map((row) => {
+    // ★PostgREST の結合は配列で返ることがあるので、両方の形を受ける
+    const raw = row.schedule_time_slots as
+      | { slot_number: number }
+      | { slot_number: number }[]
+      | null;
+    const slot = Array.isArray(raw) ? (raw[0] ?? null) : raw;
+    return {
+      studentId: (row.student_id as string) ?? '',
+      teacherId: (row.teacher_id as string | null) ?? null,
+      entryDate: row.entry_date as string,
+      slotNumber: slot?.slot_number ?? null,
+    };
+  });
+
+  // 選び方（いちばん早い「決まっている」コマ・同日は早い時限）は純関数側にある
+  for (const [sid, tid] of Array.from(pickNextTeacherByStudent(slots))) {
+    byStudent.set(sid, tid);
   }
   return byStudent;
 }
@@ -205,6 +473,51 @@ async function syncApplicationChecks(
   return changed;
 }
 
+/**
+ * タスクを生んだ掲示板投稿を、タスクごとにまとめて引く。
+ *
+ * ★どの投稿から来たかを出さないと、教室長は「×で消してよいか」を判断できない。
+ *   同じ依頼が再掲されると2件以上になるので、新しい順に並べて全部返す
+ *   （何回目の依頼かが分かると、督促の重複にも気づける）。
+ */
+async function loadSources(
+  supabase: SupabaseClient,
+  taskIds: string[]
+): Promise<Map<string, { title: string; postedAt: string | null }[]>> {
+  const byTask = new Map<string, { title: string; postedAt: string | null }[]>();
+  if (taskIds.length === 0) return byTask;
+
+  const { data, error } = await supabase
+    .from('bulletin_task_posts')
+    .select('task_id, bulletin_posts(title, created_at)')
+    .in('task_id', taskIds);
+
+  if (error) {
+    console.error('[ai/bulletin/progress] 投稿元の取得に失敗', error.message);
+    return byTask;
+  }
+
+  for (const row of data ?? []) {
+    // ★PostgREST の結合は配列で返ることがあるので、両方の形を受ける
+    const raw = row.bulletin_posts as
+      | { title: string; created_at: string }
+      | { title: string; created_at: string }[]
+      | null;
+    const post = Array.isArray(raw) ? (raw[0] ?? null) : raw;
+    if (!post) continue;
+    const list = byTask.get(row.task_id as string) ?? [];
+    list.push({ title: post.title, postedAt: post.created_at ?? null });
+    byTask.set(row.task_id as string, list);
+  }
+
+  // 新しい順。画面は先頭を「この依頼の出どころ」として使う。
+  // ★tsconfig に target が無く ES5 扱いなので、Map のイテレータは Array.from で回す
+  for (const list of Array.from(byTask.values())) {
+    list.sort((a, b) => (b.postedAt ?? '').localeCompare(a.postedAt ?? ''));
+  }
+  return byTask;
+}
+
 export async function GET(request: NextRequest) {
   const { auth } = await getApiAuth(request);
   if (!auth) {
@@ -227,7 +540,7 @@ export async function GET(request: NextRequest) {
   const { data: taskRows, error: taskError } = await supabase
     .from('bulletin_tasks')
     .select(
-      'id, kind, scope, target_grades, target_student_ids, due_type, due_date, application_item_id'
+      'id, kind, scope, target_grades, target_student_ids, due_type, due_date, application_item_id, target_period, created_at'
     )
     .eq('school_id', schoolId)
     .is('closed_at', null)
@@ -245,7 +558,7 @@ export async function GET(request: NextRequest) {
   // 在籍生徒。研修用テスト生徒は数えない
   const { data: studentRows } = await supabase
     .from('students')
-    .select('id, grade')
+    .select('id, grade, last_name, first_name')
     .eq('school_id', schoolId)
     .eq('status', 'active')
     .neq('is_test', true)
@@ -257,15 +570,52 @@ export async function GET(request: NextRequest) {
   }));
   const studentIds = students.map((s) => s.id);
 
-  // 内申は種別が使うときだけ引く
-  const needsReportCard = taskRows.some(
-    (t) => t.kind === 'report_card_entry' && isJudgeable(t.kind as TaskKind)
+  // 残っている生徒の名前を出すための対応表
+  const nameById = new Map<string, string>(
+    (studentRows ?? []).map((s) => [
+      s.id as string,
+      `${(s.last_name as string) ?? ''} ${(s.first_name as string) ?? ''}`.trim(),
+    ])
   );
-  const subjectsByStudent = needsReportCard
-    ? await loadReportCardSubjects(supabase, studentIds)
-    : new Map<string, string[]>();
 
-  const views: TaskView[] = [];
+  const sourcesByTask = await loadSources(
+    supabase,
+    taskRows.map((t) => t.id as string)
+  );
+
+  // ★「その日授業をする講師」＝次に会うコマの講師。名簿上の担当ではない
+  const today = new Date().toISOString().slice(0, 10);
+  const nextTeacherByStudent = await loadNextTeacherByStudent(supabase, schoolId, today);
+
+  // 督促先として名前を出すので、講師名を引く
+  const teacherIds = Array.from(new Set(Array.from(nextTeacherByStudent.values())));
+  const teacherNameById = new Map<string, string>();
+  if (teacherIds.length > 0) {
+    const { data: teacherRows } = await supabase
+      .from('user_profiles')
+      .select('id, display_name, last_name')
+      .in('id', teacherIds);
+    for (const t of teacherRows ?? []) {
+      const name = ((t.last_name as string) || (t.display_name as string) || '').trim();
+      if (name) teacherNameById.set(t.id as string, name);
+    }
+  }
+
+  // 内申は種別が使うときだけ引く
+  // ★材料は種別が要るときだけ引く。同じ回を何度も引かないよう、回ごとに覚えておく。
+  //   内申も定期テストも「どの回か」でデータが変わるので、回をまたいで使い回せない。
+  const reportCardCache = new Map<string, Map<string, string[]>>();
+  const testCache = new Map<string, Set<string>>();
+  let progressRecorded: Set<string> | null = null;
+  let testPrepProposed: Set<string> | null = null;
+  // ★講師自身の種別（shift_submit・timesheet_entry）は生徒ではなく講師を母数にする。
+  //   同じ教室で複数タスクがあっても、教室の在籍講師は1回引けば足りる。
+  let schoolTeachers: TeacherRow[] | null = null;
+  let schoolTeacherNameById = new Map<string, string>();
+  let shiftSubmitted: Set<string> | null = null;
+  let timesheetSubmitted: Set<string> | null = null;
+
+  const views: BulletinTaskView[] = [];
 
   for (const t of taskRows) {
     const kind = t.kind as TaskKind;
@@ -286,10 +636,57 @@ export async function GET(request: NextRequest) {
     const rows: StudentRow[] = students.map((s) => ({
       id: s.id,
       grade: s.grade,
-      // 担当の解決は進捗ボードの内訳でだけ要る。次のPRで座席表→固定講師→進行表の順に入れる
-      teacherId: null,
+      // ★次にこの生徒の授業をする講師。決まらなければ null のまま（誰にも頼めない）
+      teacherId: nextTeacherByStudent.get(s.id) ?? null,
       markedNotApplicable: notApplicable.has(s.id),
     }));
+
+    // この種別が要る材料だけを引く（回ごとにキャッシュ）
+    const period = (t.target_period as string | null) ?? null;
+
+    if (kind === 'report_card_entry' && period && !reportCardCache.has(period)) {
+      reportCardCache.set(period, await loadReportCardSubjects(supabase, studentIds, period));
+    }
+    if (kind === 'test_result_entry' && period && !testCache.has(period)) {
+      testCache.set(period, await loadTestEntered(supabase, studentIds, period));
+    }
+    if (kind === 'progress_entry' && progressRecorded === null) {
+      // 「依頼が出てから」の記録だけを数える
+      progressRecorded = await loadProgressRecorded(
+        supabase,
+        studentIds,
+        String(t.created_at).slice(0, 10)
+      );
+    }
+    if (kind === 'test_prep_proposal' && testPrepProposed === null) {
+      testPrepProposed = await loadTestPrepProposed(
+        supabase,
+        studentIds,
+        String(t.created_at).slice(0, 10)
+      );
+    }
+
+    // ★講師自身の種別が最初に出てきたところで、教室の在籍講師を1回だけ引く
+    if (isTeacherSelfKind(kind) && schoolTeachers === null) {
+      schoolTeachers = await loadSchoolTeachers(supabase, schoolId);
+      schoolTeacherNameById = new Map(schoolTeachers.map((tc) => [tc.id, tc.name]));
+    }
+    if (kind === 'shift_submit' && shiftSubmitted === null) {
+      shiftSubmitted = await loadShiftSubmitted(
+        supabase,
+        schoolId,
+        (schoolTeachers ?? []).map((tc) => tc.id),
+        String(t.created_at).slice(0, 10)
+      );
+    }
+    if (kind === 'timesheet_entry' && timesheetSubmitted === null) {
+      timesheetSubmitted = await loadTimesheetSubmitted(
+        supabase,
+        schoolId,
+        (schoolTeachers ?? []).map((tc) => tc.id),
+        String(t.created_at).slice(0, 10)
+      );
+    }
 
     const progress = computeTaskProgress({
       kind,
@@ -297,7 +694,20 @@ export async function GET(request: NextRequest) {
       targetGrades: (t.target_grades as number[]) ?? [],
       targetStudentIds: (t.target_student_ids as string[]) ?? [],
       students: rows,
-      subjectsByStudent,
+      teachers: isTeacherSelfKind(kind) ? (schoolTeachers ?? []) : undefined,
+      hasTargetPeriod: Boolean(period),
+      inputs: {
+        subjectsByStudent: period ? reportCardCache.get(period) : undefined,
+        testEnteredStudentIds: period ? testCache.get(period) : undefined,
+        progressRecordedStudentIds: progressRecorded ?? undefined,
+        testPrepProposedStudentIds: testPrepProposed ?? undefined,
+        teacherDoneIds:
+          kind === 'shift_submit'
+            ? (shiftSubmitted ?? undefined)
+            : kind === 'timesheet_entry'
+              ? (timesheetSubmitted ?? undefined)
+              : undefined,
+      },
     });
 
     let autoChecked = 0;
@@ -321,9 +731,35 @@ export async function GET(request: NextRequest) {
       done: progress.done,
       notYet: progress.notYet,
       excluded: progress.excluded,
-      teachers: breakdownByTeacher(progress),
+      teachers: breakdownByTeacher(progress).map((b) => ({
+        ...b,
+        teacherName: b.teacherId ? (teacherNameById.get(b.teacherId) ?? null) : null,
+      })),
       applicationItemId: itemId,
       autoChecked,
+      // ★講師自身の種別は生徒が居ないので notYetStudents は出さず、講師の名前を notYetTeachers に出す
+      notYetStudents: progress.students
+        .filter((s) => s.state === 'not_yet')
+        .slice(0, NAME_PREVIEW)
+        .map((s) => ({
+          name: nameById.get(s.studentId) ?? '',
+          teacherName: s.teacherId ? (teacherNameById.get(s.teacherId) ?? null) : null,
+        }))
+        .filter((s) => s.name),
+      notYetTeachers: isTeacherSelfKind(kind)
+        ? (progress.teachers ?? [])
+            .filter((tc) => tc.state === 'not_yet')
+            .slice(0, NAME_PREVIEW)
+            .map((tc) => ({
+              id: tc.teacherId,
+              name: schoolTeacherNameById.get(tc.teacherId) ?? '',
+            }))
+            .filter((tc) => tc.name)
+        : undefined,
+      sources: sourcesByTask.get(t.id as string) ?? [],
+      createdAt: t.created_at as string,
+      targetPeriod: period,
+      needsPeriod: needsTargetPeriod(kind),
     });
   }
 

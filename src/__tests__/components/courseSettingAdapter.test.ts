@@ -13,6 +13,7 @@ import { calcTotalKoma } from '@/lib/api/proposals';
 import {
   courseSettingsToDrafts,
   draftsToCourseSettings,
+  pickCourseSettingsForApply,
   type CourseCurriculumSetting,
 } from '@/components/koushu-plan/courseSettingAdapter';
 import type { DraftMap } from '@/components/koushu-plan/unitDraftLogic';
@@ -167,6 +168,56 @@ describe('courseSettingsToDrafts', () => {
       1
     );
     expect(base.get(1)?.koma_count).toBe(0);
+  });
+});
+
+describe('pickCourseSettingsForApply（講習を生徒に適用するとき）', () => {
+  it('結合の2件目以降（0コマ）を落とさない', () => {
+    // 「先頭のみ規約」では 2,3 は0コマ。素朴に proposal_count>0 で絞ると
+    // まとめた単元が先頭1件だけになって生徒に渡ってしまう（本番で実際に起きていた）
+    const settings: CourseCurriculumSetting[] = [
+      { curriculum_item_id: 1, proposal_count: 2, group_number: 5 },
+      { curriculum_item_id: 2, proposal_count: 0, group_number: 5 },
+      { curriculum_item_id: 3, proposal_count: 0, group_number: 5 },
+    ];
+    const out = pickCourseSettingsForApply(settings);
+    expect(out.map((u) => u.curriculum_item_id)).toEqual([1, 2, 3]);
+    // 同じグループに属したまま渡る
+    expect(out.every((u) => u.group_id === 5)).toBe(true);
+    // 0コマは1で有効化。合計はグループで1回しか数えないので増えない
+    expect(out.map((u) => u.koma_count)).toEqual([2, 1, 1]);
+    expect(calcTotalKoma(out)).toBe(2);
+  });
+
+  it('結合していない0コマの単元は落とす（使わない単元）', () => {
+    const settings: CourseCurriculumSetting[] = [
+      { curriculum_item_id: 1, proposal_count: 0, group_number: null },
+      { curriculum_item_id: 2, proposal_count: 3, group_number: null },
+    ];
+    const out = pickCourseSettingsForApply(settings);
+    expect(out).toEqual([{ curriculum_item_id: 2, koma_count: 3, group_id: 0 }]);
+  });
+
+  it('未結合は group_id を0にする（DBのnullを0へ変換）', () => {
+    const out = pickCourseSettingsForApply([
+      { curriculum_item_id: 1, proposal_count: 1, group_number: null },
+    ]);
+    expect(out[0].group_id).toBe(0);
+  });
+
+  it('書き出し → 適用 で単元の数と合計が保たれる', () => {
+    // テンプレートに保存した内容が、そのまま生徒のプランに渡ること
+    const units = [
+      draft(1, { koma_count: 3, group_id: 0 }),
+      draft(2, { koma_count: 2, group_id: 4 }),
+      draft(3, { koma_count: 2, group_id: 4 }),
+      draft(4, { koma_count: 2, group_id: 4 }),
+    ];
+    const saved = draftsToCourseSettings(units, order(4));
+    const applied = pickCourseSettingsForApply(saved);
+    expect(applied).toHaveLength(4);
+    expect(calcTotalKoma(applied)).toBe(calcTotalKoma(units));
+    expect(calcTotalKoma(applied)).toBe(5);
   });
 });
 

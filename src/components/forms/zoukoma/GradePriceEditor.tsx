@@ -2,6 +2,7 @@
 
 import { Input, Button } from '@/components/ui';
 import type { PriceTable } from '@/types/forms/zoukoma';
+import { DEFAULT_GRADE_PRICES } from '@/lib/forms/pricing';
 
 interface GradePriceEditorProps {
   selectedGrades: string[];
@@ -12,21 +13,6 @@ interface GradePriceEditorProps {
 }
 
 const ALL_GRADES = ['中1', '中2', '中3', '高1', '高2', '高3'];
-/**
- * 単価の初期値。2026年9月改定の料金表「追加授業（単コマ）」＝1対2・90分の単価。
- * 期間ごとに settings.price_table として保存されるので、ここを直しても過去の期間の
- * 単価は変わらない（当時の価格のまま残る）。次に作る期間の初期値になるだけ。
- * 料金改定のたびにここも更新すること。
- */
-const DEFAULT_PRICES: PriceTable = {
-  中1: 4380,
-  中2: 4380,
-  中3: 4540,
-  高1: 4930,
-  高2: 5250,
-  高3: 5570,
-};
-
 export function GradePriceEditor({
   selectedGrades,
   priceTable,
@@ -58,7 +44,7 @@ export function GradePriceEditor({
     if (disabled) return;
     const newPriceTable: PriceTable = {};
     selectedGrades.forEach((grade) => {
-      newPriceTable[grade] = DEFAULT_PRICES[grade] || 0;
+      newPriceTable[grade] = DEFAULT_GRADE_PRICES[grade] || 0;
     });
     onPriceTableChange(newPriceTable);
   };
