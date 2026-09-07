@@ -154,28 +154,41 @@ export function parseComposeResult(raw: unknown): ComposeResult {
   }
 
   // ★申告は本文があるときだけ意味を持つ。本文を捨てたなら申告も捨てる
-  const filled: FilledNote[] = [];
-  const seen = new Set<string>();
-  const notes = Array.isArray(obj.filled) ? (obj.filled as unknown[]) : [];
-  if (blocks.length > 0) {
-    for (const note of notes) {
-      if (filled.length >= MAX_FILLED) break;
-      if (!note || typeof note !== 'object') continue;
-      const n = note as { what?: unknown; kind?: unknown };
-      const kind = toFilledKind(n.kind);
-      if (!kind) continue;
-      if (typeof n.what !== 'string') continue;
-
-      const what = n.what.trim();
-      if (!what || what.length > MAX_FILLED_LENGTH) continue;
-      // 同じことを2回申告してくることがある
-      const key = `${kind} ${what}`;
-      if (seen.has(key)) continue;
-      seen.add(key);
-
-      filled.push({ what, kind });
-    }
-  }
+  const filled = parseFilledNotes(obj.filled, blocks.length > 0);
 
   return { blocks, filled };
+}
+
+/**
+ * 「補ったところ」の申告を検証する。
+ *
+ * ★composeNotice.ts（保護者向けお知らせ）でも同じ規則を使う。二重定義すると、
+ *   片方だけ直してもう片方が古いままという事故が起きるので、規則はここに1つだけ置く。
+ *
+ * hasBody: 呼び出し側が作った本文が1つでもあるか。無いなら申告も意味を持たないので空を返す。
+ */
+export function parseFilledNotes(rawNotes: unknown, hasBody: boolean): FilledNote[] {
+  const filled: FilledNote[] = [];
+  if (!hasBody) return filled;
+
+  const seen = new Set<string>();
+  const notes = Array.isArray(rawNotes) ? (rawNotes as unknown[]) : [];
+  for (const note of notes) {
+    if (filled.length >= MAX_FILLED) break;
+    if (!note || typeof note !== 'object') continue;
+    const n = note as { what?: unknown; kind?: unknown };
+    const kind = toFilledKind(n.kind);
+    if (!kind) continue;
+    if (typeof n.what !== 'string') continue;
+
+    const what = n.what.trim();
+    if (!what || what.length > MAX_FILLED_LENGTH) continue;
+    // 同じことを2回申告してくることがある
+    const key = kind + ' ' + what;
+    if (seen.has(key)) continue;
+    seen.add(key);
+
+    filled.push({ what, kind });
+  }
+  return filled;
 }
