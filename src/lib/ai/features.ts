@@ -18,13 +18,13 @@
  */
 
 /** 教室ごとに入切する機能のキー。DBの school_ai_settings.feature_key に入る */
+// ★栓は機能が動くときに足す。先に置くと「何も動かないスイッチ」が設定画面に並ぶ。
+//   （今日の段取り・保護者との連絡は、その機能のPRでここに足す）
 export const AI_FEATURE_KEYS = [
   'ai_compose',
   'teacher_assist',
   'plan_theme',
   'student_digest',
-  'parent_message',
-  'today_plan',
 ] as const;
 export type AiFeatureKey = (typeof AI_FEATURE_KEYS)[number];
 
@@ -57,28 +57,12 @@ export const PLAN_THEME_FEATURE_KEY: AiFeatureKey = 'plan_theme';
  */
 export const STUDENT_DIGEST_FEATURE_KEY: AiFeatureKey = 'student_digest';
 
-/**
- * 保護者との連絡（/admin/portal-chat で、教室長の箇条書きをこれまでの流れに合わせて文章にする）。
- * ★内容は教室長が決める。AIは流れを読んで文章にするだけ。
- *   振替・欠席・模試は定型と機能で返すので、AIの出番は実データで3〜4%。
- * 送るのは保護者とのやりとり（氏名を含む）。
- */
-export const PARENT_MESSAGE_FEATURE_KEY: AiFeatureKey = 'parent_message';
-
-/**
- * 今日の段取り（/dashboard の「今日やること」を時間帯に割り付ける）。
- * 送るのは今日の用事・カレンダーの予定・授業のコマ。生徒と講師は姓のみ。
- */
-export const TODAY_PLAN_FEATURE_KEY: AiFeatureKey = 'today_plan';
-
 /** 画面に出す名前。★ここを直せば全部の画面が変わる */
 export const AI_FEATURE_LABELS: Record<AiFeatureKey, string> = {
   ai_compose: 'おまかせ下書き',
   teacher_assist: '講師のAIサポート',
   plan_theme: 'テーマふくらませ',
   student_digest: '生徒のまとめ',
-  parent_message: '保護者との連絡',
-  today_plan: '今日の段取り',
 };
 
 /** 何をする機能か。設定画面でスイッチの横に出す */
@@ -89,11 +73,7 @@ export const AI_FEATURE_DESCRIPTIONS: Record<AiFeatureKey, string> = {
     '投稿から依頼を読み取り、教室長に「残っている人」を、講師に授業中のカードを出します。',
   plan_theme: '講習提案書のテーマ欄に書いた一言を、その生徒の単元と成績でふくらませます。',
   student_digest:
-    '面談の前に、その生徒の成績・引継ぎ・出欠・保護者とのやりとりを束ねて報告事項を作ります。進行表では過去の引継ぎを時系列のまま畳みます。',
-  parent_message:
-    '保護者チャットで、教室長が書いた箇条書きを、これまでのやりとりの流れに合わせた文章にします。',
-  today_plan:
-    'ダッシュボードの「今日やること」を、授業前・各コマ・片付けの時間帯に割り付けます。毎朝10時に組み、日中に増えた用事は入れ場所だけ決めます。',
+    '進行表で過去の引継ぎを時系列のまま畳みます。面談の前には、成績・引継ぎ・保護者とのやりとりを束ねて報告事項を作ります。',
 };
 
 /** 何を外に出すのか。スイッチの近くに必ず出す（入れる判断の材料） */
@@ -101,9 +81,7 @@ export const AI_FEATURE_SENDS: Record<AiFeatureKey, string> = {
   ai_compose: '書きかけの文章',
   teacher_assist: '投稿の件名と本文',
   plan_theme: '生徒の単元と成績',
-  student_digest: '生徒の引継ぎ・成績・出欠・保護者とのやりとり',
-  parent_message: '保護者とのやりとり（氏名を含む）',
-  today_plan: '今日の用事・カレンダーの予定・生徒と講師の姓',
+  student_digest: '生徒の引継ぎ・成績・保護者とのやりとり',
 };
 
 export function isAiFeatureKey(value: unknown): value is AiFeatureKey {
