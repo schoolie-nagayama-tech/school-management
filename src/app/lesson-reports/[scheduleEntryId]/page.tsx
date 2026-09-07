@@ -111,6 +111,7 @@ import { DemoProgressPreview } from '@/components/lesson-reports/DemoProgressPre
 import { LessonReportProgressGrid } from '@/components/lesson-reports/LessonReportProgressGrid';
 import { ReportGuideBar } from '@/components/lesson-reports/ReportGuideBar';
 import { LessonTaskPopup } from '@/components/bulletin/LessonTaskPopup';
+import { RefineTextButton } from '@/components/ai/RefineTextButton';
 import { computeGuideSteps, type GuideStepInput } from '@/lib/lesson-reports/guideSteps';
 import { ReportDetail } from '@/components/mypage/ReportDetail';
 import { formatGradeLabelOrEmpty } from '@/lib/utils/gradeLabel';
@@ -1776,6 +1777,17 @@ export default function LessonReportFormPage() {
                 <div className="text-xs text-text-muted mt-1">
                   現在 {reviewLineCount} 行 / 推奨 5 行
                 </div>
+                {/* ★全文は作らない。書いた講評を整えるだけ（2026-09-02 決定）。
+                    entry が無い間（読み込み中・デモ以外での初回）は school_id が無いので出さない */}
+                {entry && (
+                  <RefineTextButton
+                    className="mt-2"
+                    value={form.review_comment}
+                    onChange={(next) => setForm((f) => ({ ...f, review_comment: next }))}
+                    kind="report_review"
+                    schoolId={entry.school_id}
+                  />
+                )}
               </Field>
             </div>
 

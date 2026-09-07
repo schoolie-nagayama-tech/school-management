@@ -478,7 +478,10 @@ export function BulletinPostModal({
               value={content}
               onChange={setContent}
               schoolId={aiSchoolId}
-              kind="bulletin"
+              // ★配信先（deliversToPortal）でAIの出し分けを切り替える。保護者を含むときは
+              //   お知らせの体裁（composeNotice.ts）で下書きし、社内のみのときは従来どおり
+              kind={deliversToPortal ? 'parent_notice' : 'bulletin'}
+              audience={deliversToPortal ? 'parents' : 'staff'}
             />
           )}
         </div>

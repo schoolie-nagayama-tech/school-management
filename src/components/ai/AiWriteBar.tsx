@@ -36,7 +36,12 @@ interface AiWriteBarProps {
   /** 教室ごとの入切に使う */
   schoolId: string;
   /** 整えるときの種類 */
-  kind: 'bulletin';
+  kind: 'bulletin' | 'parent_notice';
+  /**
+   * 誰が読むか。★compose側の書式の出し分けに使う（省略時は 'staff'）。
+   * 'parents' なら「お知らせの体裁」（composeNotice.ts）で下書きする。
+   */
+  audience?: 'staff' | 'parents';
   placeholder?: string;
   className?: string;
 }
@@ -59,6 +64,7 @@ export function AiWriteBar({
   onChange,
   schoolId,
   kind,
+  audience = 'staff',
   placeholder,
   className = '',
 }: AiWriteBarProps) {
@@ -143,6 +149,8 @@ export function AiWriteBar({
           instruction: text,
           // 本文があれば作り直し。★手で書いた分も材料に含める
           currentLines: htmlToLines(value).map((l) => l.text),
+          // ★'parents' のときだけ「お知らせの体裁」で下書きする（composeNotice.ts）
+          audience,
         }),
       });
       if (!res.ok) throw new Error('failed');
@@ -224,7 +232,11 @@ export function AiWriteBar({
           disabled={busy !== null}
           placeholder={
             placeholder ??
-            (hasBody ? 'どう直しますか（例: もっと短く）' : '何を知らせますか（箇条書きでOK）')
+            (hasBody
+              ? 'どう直しますか（例: もっと短く）'
+              : audience === 'parents'
+                ? '保護者に何を知らせますか（短くてOK）'
+                : '何を知らせますか（箇条書きでOK）')
           }
           className="min-w-0 flex-1 bg-transparent text-[13px] text-text-heading outline-none placeholder:text-text-faint"
         />

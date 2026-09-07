@@ -11,6 +11,11 @@ import {
   parseComposeResult,
   type ComposeResult,
 } from '@/lib/ai/compose';
+import {
+  composeNoticeSystemPrompt,
+  noticeToBlocks,
+  parseNoticeResult,
+} from '@/lib/ai/composeNotice';
 import { COMPOSE_FEATURE_KEY } from '@/lib/ai/features';
 
 export const dynamic = 'force-dynamic';
@@ -23,6 +28,12 @@ export const dynamic = 'force-dynamic';
  *
  * ★教室ごとの栓を通る（ai_compose）。書きかけの文章を外部（Anthropic）へ送るため。
  *   ★講師のAIサポート（teacher_assist）とは別の栓。送るものも、要るかどうかの判断も違う。
+ *
+ * ★audience（配信先）で書式を出し分ける（掲示板の投稿モーダル §2-2）。
+ *   'parents' なら composeNotice.ts の「お知らせの体裁」プロンプトを通し、
+ *   出来上がった notice を noticeToBlocks で ComposeBlock[] に落として返す。
+ *   返る形（{blocks, filled, degraded, disabled}）は audience に関わらず同じにする。
+ *   画面側（AiWriteBar・blocksToHtml）を出し分けの都合で変えないため。
  *
  * 正典: docs/ai-features-integration-plan.md
  */
@@ -48,12 +59,20 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: '権限がありません' }, { status: 403 });
   }
 
-  let body: { schoolId?: unknown; instruction?: unknown; currentLines?: unknown };
+  let body: {
+    schoolId?: unknown;
+    instruction?: unknown;
+    currentLines?: unknown;
+    audience?: unknown;
+  };
   try {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: 'リクエストが不正です' }, { status: 400 });
   }
+
+  // ★既定は staff（社内向け・従来どおり）。'parents' のときだけお知らせの体裁にする
+  const audience = body.audience === 'parents' ? 'parents' : 'staff';
 
   const schoolId = typeof body.schoolId === 'string' ? body.schoolId : '';
   if (!UUID_RE.test(schoolId)) {
@@ -99,12 +118,25 @@ export async function POST(request: NextRequest) {
     const raw = await callClaudeJson<unknown>({
       // ★下書きは文章を組み立てるので smart を使う。整えるほうは fast で足りる
       model: CLAUDE_MODELS.smart,
-      // 書式の決まりは毎回同じなのでキャッシュに載せる
-      system: [{ text: composeSystemPrompt(), cache: true }],
+      // 書式の決まりは毎回同じなのでキャッシュに載せる。プロンプトはaudienceで出し分ける
+      system: [
+        {
+          text: audience === 'parents' ? composeNoticeSystemPrompt() : composeSystemPrompt(),
+          cache: true,
+        },
+      ],
+      // ★ユーザーメッセージの組み立ては共通。「指示」と「いまの本文」の渡し方に
+      //   お知らせ固有の事情は無いため、composeUserText をそのまま使う
       userText: composeUserText({ instruction, currentLines }),
       maxTokens: 2000,
     });
-    const result = parseComposeResult(raw);
+    let result: ComposeResult;
+    if (audience === 'parents') {
+      const parsed = parseNoticeResult(raw);
+      result = { blocks: noticeToBlocks(parsed.notice), filled: parsed.filled };
+    } else {
+      result = parseComposeResult(raw);
+    }
     if (result.blocks.length === 0) {
       // 読めなかった。★本文は触らせない
       return NextResponse.json({ ...empty, degraded: true } satisfies ComposeResponse);
