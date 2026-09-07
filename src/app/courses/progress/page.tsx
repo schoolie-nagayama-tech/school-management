@@ -155,6 +155,25 @@ export default function CourseProgressPage() {
   const autoValuesData = isSnapshotView
     ? (snapshot.payload.autoValues as AutoValues)
     : liveAutoValuesData;
+
+  // 講習期間の終了日を過ぎたか（JST基準）。終了日が未設定なら判定できないので false。
+  const hasPeriodEnded = useMemo(() => {
+    const end = livePeriod?.schedule_end_date;
+    if (!end) return false;
+    const todayJST = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    return end < todayJST;
+  }, [livePeriod]);
+
+  /**
+   * 確定保存の状態バーを出すか。
+   *
+   * 期の途中は「まだ確定保存されていません」と出しても、まだ確定する時期ではないので
+   * ただの飾りになる。期が終われば日次cronが勝手に確定するので、普段は何も出さない。
+   * 出すのは次の2つだけ:
+   *   - 確定済み（当時のデータを見ているのか今のデータを見ているのかは常に明示する）
+   *   - 期が終わっているのに未確定（自動確定の前後、または45日の自動確定枠を過ぎた古い期）
+   */
+  const showSnapshotBar = !!snapshotMeta || hasPeriodEnded;
   const [isLoading, setIsLoading] = useState(true);
   // 重い auto_values 集計の読み込み状態。表本体より遅れて到着するので分けて持つ。
   const [autoLoading, setAutoLoading] = useState(true);
@@ -1308,10 +1327,8 @@ export default function CourseProgressPage() {
           />
         )}
 
-        {/* 確定保存の状態バー。
-            進捗表の数字はライブだと期の終了後も動き続ける（退塾で行が消える、通塾パターンの
-            組み替えでコマ数が変わる）ため、確定済みかどうかを常に見えるところに出す。 */}
-        {!showAllSchoolsOverview && !isLoading && displayItems.length > 0 && (
+        {/* 確定保存の状態バー。出す条件は showSnapshotBar を参照（期の途中は出さない）。 */}
+        {!showAllSchoolsOverview && !isLoading && displayItems.length > 0 && showSnapshotBar && (
           <div
             className={`mb-4 rounded-xl border px-4 py-3 flex flex-wrap items-center gap-x-4 gap-y-2 ${
               isSnapshotView ? 'bg-amber-50/60 border-amber-200' : 'bg-white border-gray-200'
@@ -1343,8 +1360,12 @@ export default function CourseProgressPage() {
                     </>
                   ) : (
                     <>
-                      <History className="w-4 h-4 text-gray-400" />
-                      <span className="text-gray-500">この期はまだ確定保存されていません</span>
+                      {/* ここに来るのは「期が終わっているのに未確定」のときだけ。
+                          通常は翌朝の自動確定で消えるので、残っていたら手で確定する合図。 */}
+                      <AlertTriangle className="w-4 h-4 text-amber-500" />
+                      <span className="text-gray-600">
+                        講習期間が終わっていますが、まだ確定保存されていません
+                      </span>
                     </>
                   )}
                 </div>
