@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 
 // ダミー生徒リスト
 const MOCK_STUDENTS = [
@@ -127,9 +128,9 @@ export default function TestPrepCreateMock() {
       <div className="sticky top-0 z-30 bg-white/90 backdrop-blur border-b border-gray-200 px-6 py-3">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <a href="/test-prep/mock" className="text-sm text-gray-400 hover:text-gray-600">
+            <Link href="/test-prep/mock" className="text-sm text-gray-400 hover:text-gray-600">
               ← プレビューに戻る
-            </a>
+            </Link>
             <span className="text-gray-300">|</span>
             <h1 className="font-bold text-gray-900">テスト対策提案書 作成</h1>
           </div>

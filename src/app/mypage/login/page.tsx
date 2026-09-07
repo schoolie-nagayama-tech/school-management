@@ -26,11 +26,10 @@ const LINE_ERROR_MESSAGES: Record<string, string> = {
  * サーバーコンポーネントなのは、LINEが設定済みかを環境変数で判定して
  * ボタンの出し分けをするため（未設定の環境で押せないボタンを見せない）。
  */
-export default function MyPageLoginPage({
-  searchParams,
-}: {
-  searchParams: { line_error?: string };
+export default async function MyPageLoginPage(props: {
+  searchParams: Promise<{ line_error?: string }>;
 }) {
+  const searchParams = await props.searchParams;
   const lineEnabled = isLineLoginConfigured();
   const lineError = searchParams.line_error
     ? (LINE_ERROR_MESSAGES[searchParams.line_error] ?? LINE_ERROR_MESSAGES.server_error)

@@ -19,11 +19,12 @@ const nextConfig = {
 
   experimental: {
     optimizePackageImports: ['lucide-react'],
-    serverComponentsExternalPackages: ['web-push'],
-    // Next 14.2 では instrumentation.ts の自動読み込みにこのフラグが必須
-    // （Next 15 で標準化されるまでの暫定要件。Sentry のサーバー/エッジ初期化に使用）
-    instrumentationHook: true,
   },
+  // Next 15 で experimental.serverComponentsExternalPackages から昇格した設定。
+  // web-push はサーバー専用の Node 依存を持つためバンドルせず外部参照にする。
+  // instrumentation.ts の自動読み込み（旧 experimental.instrumentationHook）は
+  // Next 15 で標準化されたのでフラグ不要。
+  serverExternalPackages: ['web-push'],
 
   // ESLintエラーでビルドを失敗させる（品質ゲート）
   eslint: {
@@ -121,7 +122,13 @@ const withBundleAnalyzer = bundleAnalyzer({
 // トレースが見えるようになる。
 export default withSentryConfig(withBundleAnalyzer(nextConfig), {
   silent: true,
-  disableLogger: true,
+  // 旧 disableLogger と同じ効果（Sentry SDK のデバッグログをバンドルから落とす）。
+  // disableLogger は @sentry/nextjs 10 で非推奨になった。
+  webpack: {
+    treeshake: {
+      removeDebugLogging: true,
+    },
+  },
   sourcemaps: {
     disable: true,
   },

@@ -73,7 +73,8 @@ async function getSessionFromRequest(request: NextRequest) {
  * PUT /api/system-settings/[key]
  * 認証必須かつ admin ロールのみ。{ value: "..." } で更新
  */
-export async function PUT(request: NextRequest, { params }: { params: { key: string } }) {
+export async function PUT(request: NextRequest, props: { params: Promise<{ key: string }> }) {
+  const params = await props.params;
   try {
     const key = params?.key;
     if (!key || typeof key !== 'string') {

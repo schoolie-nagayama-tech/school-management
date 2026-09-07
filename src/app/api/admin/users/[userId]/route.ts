@@ -63,7 +63,8 @@ function toSlotNumbersByDay(v: unknown): Record<string, number[]> {
 }
 
 /** 講師1件取得（編集画面用。teachable_subject_ids, available_days_of_week を必ず配列で返す） */
-export async function GET(request: NextRequest, { params }: { params: { userId: string } }) {
+export async function GET(request: NextRequest, props: { params: Promise<{ userId: string }> }) {
+  const params = await props.params;
   try {
     const authError = await requireManager(request);
     if (authError) return authError;
@@ -123,7 +124,8 @@ export async function GET(request: NextRequest, { params }: { params: { userId: 
 }
 
 /** 講師プロファイル更新（display_name, teachable_subject_ids, available_days_of_week）。RPC で確実に保存 */
-export async function PATCH(request: NextRequest, { params }: { params: { userId: string } }) {
+export async function PATCH(request: NextRequest, props: { params: Promise<{ userId: string }> }) {
+  const params = await props.params;
   try {
     const authError = await requireManager(request);
     if (authError) return authError;
@@ -417,7 +419,8 @@ export async function PATCH(request: NextRequest, { params }: { params: { userId
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { userId: string } }) {
+export async function DELETE(request: NextRequest, props: { params: Promise<{ userId: string }> }) {
+  const params = await props.params;
   try {
     const authError = await requireAdmin(request);
     if (authError) return authError;

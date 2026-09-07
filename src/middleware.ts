@@ -45,11 +45,12 @@ const PUBLIC_RATE_LIMITS: Array<{
   { path: '/api/mypage/line/', limit: 30, windowSeconds: 60 },
 ];
 
+// Next 15 で `request.ip` は廃止された。Vercel は x-forwarded-for / x-real-ip に
+// 同じ値を載せるので、ヘッダーだけで足りる。
 function getClientIp(request: NextRequest): string {
   return (
     request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
     request.headers.get('x-real-ip') ||
-    request.ip ||
     '0.0.0.0'
   );
 }
