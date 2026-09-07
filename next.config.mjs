@@ -50,12 +50,22 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   // 画像最適化の設定
+  // ★ワイルドカード（**.supabase.co）だと、攻撃者が用意した任意のSupabaseプロジェクトの
+  //   画像URLをNext.jsの画像最適化API（/_next/image）の入力にできてしまう
+  //   （Next.jsのImage Optimizer DoS告知の条件に該当）。自分のプロジェクトのホストだけに絞る。
+  //   NEXT_PUBLIC_SUPABASE_URL が未設定のビルド環境向けに本番ホストへフォールバックする。
   images: {
     remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: '**.supabase.co',
-      },
+      (() => {
+        const supabaseUrl =
+          process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://bniistrbylypnwpfqszb.supabase.co';
+        const url = new URL(supabaseUrl);
+        return {
+          protocol: url.protocol.replace(':', ''),
+          hostname: url.hostname,
+          ...(url.port ? { port: url.port } : {}),
+        };
+      })(),
     ],
   },
   // セキュリティヘッダー（2026-08-08 セキュリティレビューで追加）。

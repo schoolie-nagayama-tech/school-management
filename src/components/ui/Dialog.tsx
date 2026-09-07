@@ -1,7 +1,20 @@
 'use client';
 
-import { ReactNode, useEffect, useId, useState, createContext, useContext } from 'react';
+import {
+  ReactNode,
+  KeyboardEvent as ReactKeyboardEvent,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  createContext,
+  useContext,
+} from 'react';
 import { createPortal } from 'react-dom';
+
+/** パネル内でフォーカス可能とみなす要素のセレクタ */
+const FOCUSABLE_SELECTOR =
+  'a[href], button:not([disabled]), input:not([disabled]):not([type=hidden]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 const DialogTitleIdContext = createContext<string | undefined>(undefined);
 
@@ -53,6 +66,60 @@ export function Dialog({ open, onOpenChange, children, ariaLabel, size = 'md' }:
     };
   }, [open, onOpenChange]);
 
+  const panelRef = useRef<HTMLDivElement>(null);
+  // 開く直前にフォーカスされていた要素。閉じたときに戻す先。
+  const previouslyFocusedRef = useRef<Element | null>(null);
+
+  useEffect(() => {
+    if (open) {
+      previouslyFocusedRef.current = document.activeElement;
+      // ポータル描画が終わってからでないとパネル内の要素を取得できないため、
+      // 次の描画サイクルまで待つ。
+      const raf = requestAnimationFrame(() => {
+        const panel = panelRef.current;
+        if (!panel) return;
+        const focusable = panel.querySelector<HTMLElement>(FOCUSABLE_SELECTOR);
+        (focusable ?? panel).focus();
+      });
+      return () => cancelAnimationFrame(raf);
+    }
+    // 閉じたときに元の要素へフォーカスを戻す。DOMから消えていたら何もしない。
+    const target = previouslyFocusedRef.current;
+    if (target instanceof HTMLElement && document.contains(target)) {
+      target.focus();
+    }
+    previouslyFocusedRef.current = null;
+    return undefined;
+  }, [open]);
+
+  const handlePanelKeyDown = (e: ReactKeyboardEvent<HTMLDivElement>) => {
+    if (e.key !== 'Tab') return;
+    const panel = panelRef.current;
+    if (!panel) return;
+    const focusableEls = Array.from(panel.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR));
+    if (focusableEls.length === 0) return;
+
+    const first = focusableEls[0];
+    const last = focusableEls[focusableEls.length - 1];
+
+    if (e.shiftKey) {
+      if (document.activeElement === first || document.activeElement === panel) {
+        e.preventDefault();
+        last.focus();
+      }
+    } else {
+      if (document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    }
+    // 入れ子ダイアログ（座席表など）では内側のダイアログだけがTabを処理すべきで、
+    // 外側へ伝播させると外側のパネルでも循環処理が走り二重に動いてしまう。
+    // Reactの合成イベントはポータルで描画してもツリー上の親（外側のDialog）へ
+    // 伝播するため、ここで明示的に止める。
+    e.stopPropagation();
+  };
+
   if (!open || !mounted) return null;
 
   // document.body 直下へポータル描画する。
@@ -67,11 +134,14 @@ export function Dialog({ open, onOpenChange, children, ariaLabel, size = 'md' }:
         aria-hidden="true"
       />
       <div
+        ref={panelRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby={ariaLabel ? undefined : titleId}
         aria-label={ariaLabel}
-        className={`relative z-50 w-full ${DIALOG_SIZE_CLASS[size]} bg-surface-raised rounded-xl shadow-2xl border border-border ring-1 ring-black/5 max-h-[95vh] overflow-hidden flex flex-col modal-panel`}
+        tabIndex={-1}
+        onKeyDown={handlePanelKeyDown}
+        className={`relative z-50 w-full ${DIALOG_SIZE_CLASS[size]} bg-surface-raised rounded-xl shadow-2xl border border-border ring-1 ring-black/5 max-h-[95vh] overflow-hidden flex flex-col modal-panel outline-none`}
       >
         <DialogTitleIdContext.Provider value={titleId}>{children}</DialogTitleIdContext.Provider>
       </div>

@@ -17,7 +17,7 @@
  * createInterview を1件呼んで即登録する（下書きを溜めて後でまとめて保存する設計にはしない）。
  */
 
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import {
   Card,
@@ -61,6 +61,13 @@ interface InterviewTimelineProps {
   interviews: StudentInterview[];
   loading: boolean;
   handover: HandoverInfo | null;
+  /**
+   * 「前回の申し送り」の直下に差し込むもの（＝報告事項カード）。
+   * ★ここを props で受けるのは、中身が面談ワークスペースの state（成績・進行表・
+   *   宿題と遅刻・講習申込）を全部必要とするため。このコンポーネントに持たせると
+   *   面談記録と関係のないデータを引き回すことになる。
+   */
+  briefSlot?: ReactNode;
   /** タスク完了操作・面談編集の保存後に呼ぶ。親側で面談記録を再取得する。 */
   onChanged: () => void;
 }
@@ -71,6 +78,7 @@ export function InterviewTimeline({
   interviews,
   loading,
   handover,
+  briefSlot,
   onChanged,
 }: InterviewTimelineProps) {
   const { success, error: toastError } = useToast();
@@ -215,11 +223,9 @@ export function InterviewTimeline({
           <History className="h-4 w-4 text-text-muted" />
           <CardTitle className="text-sm">面談記録</CardTitle>
         </CardHeader>
-        <CardContent className="max-h-[720px] overflow-y-auto pt-2">
+        <CardContent className="pt-2">
           {loading ? (
             <InlineLoading />
-          ) : timeline.length === 0 ? (
-            <p className="text-sm text-text-muted">面談記録はまだありません</p>
           ) : (
             <div className="flex flex-col gap-3">
               {/* 前回の申し送り。タイムライン最新1件から抜き出したものなので、同じ並びの先頭に置く */}
@@ -237,58 +243,69 @@ export function InterviewTimeline({
                   </p>
                 </div>
               )}
-              {timeline.map((iv) => {
-                const expanded = expandedIds.has(iv.id);
-                return (
-                  <div
-                    key={iv.id}
-                    className="rounded-lg border border-border-subtle p-3 transition-colors hover:bg-surface-hover"
-                  >
-                    <div className="mb-1.5 flex items-center gap-2">
-                      <span className="text-xs text-text-faint">
-                        {fmtDateJa(iv.interview_date)}
-                      </span>
-                      <span
-                        className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${INTERVIEW_TYPE_COLORS[iv.interview_type]}`}
+
+              {/* 報告事項（AI）。★申し送りの直下・スクロール領域の外に置く。
+                  ピン留めのつもりの2枚が面談記録と一緒に流れると、面談中にまず読めない。 */}
+              {briefSlot}
+
+              {timeline.length === 0 ? (
+                <p className="text-sm text-text-muted">面談記録はまだありません</p>
+              ) : (
+                <div className="flex max-h-[560px] flex-col gap-3 overflow-y-auto">
+                  {timeline.map((iv) => {
+                    const expanded = expandedIds.has(iv.id);
+                    return (
+                      <div
+                        key={iv.id}
+                        className="rounded-lg border border-border-subtle p-3 transition-colors hover:bg-surface-hover"
                       >
-                        {INTERVIEW_TYPE_LABELS[iv.interview_type]}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => setEditingInterview(iv)}
-                        className="ml-auto shrink-0 text-xs text-text-muted hover:text-primary"
-                      >
-                        編集
-                      </button>
-                    </div>
-                    {iv.title && (
-                      <p className="mb-1 text-sm font-semibold text-text-heading">{iv.title}</p>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => toggleExpanded(iv.id)}
-                      className="w-full text-left"
-                    >
-                      <p
-                        className={`text-xs leading-relaxed text-text-body ${expanded ? 'whitespace-pre-wrap' : 'line-clamp-3'}`}
-                      >
-                        {iv.content}
-                      </p>
-                      <span className="mt-1 inline-flex items-center gap-0.5 text-xs text-text-muted">
-                        {expanded ? (
-                          <>
-                            閉じる <ChevronUp className="h-3 w-3" />
-                          </>
-                        ) : (
-                          <>
-                            全文を見る <ChevronDown className="h-3 w-3" />
-                          </>
+                        <div className="mb-1.5 flex items-center gap-2">
+                          <span className="text-xs text-text-faint">
+                            {fmtDateJa(iv.interview_date)}
+                          </span>
+                          <span
+                            className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${INTERVIEW_TYPE_COLORS[iv.interview_type]}`}
+                          >
+                            {INTERVIEW_TYPE_LABELS[iv.interview_type]}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setEditingInterview(iv)}
+                            className="ml-auto shrink-0 text-xs text-text-muted hover:text-primary"
+                          >
+                            編集
+                          </button>
+                        </div>
+                        {iv.title && (
+                          <p className="mb-1 text-sm font-semibold text-text-heading">{iv.title}</p>
                         )}
-                      </span>
-                    </button>
-                  </div>
-                );
-              })}
+                        <button
+                          type="button"
+                          onClick={() => toggleExpanded(iv.id)}
+                          className="w-full text-left"
+                        >
+                          <p
+                            className={`text-xs leading-relaxed text-text-body ${expanded ? 'whitespace-pre-wrap' : 'line-clamp-3'}`}
+                          >
+                            {iv.content}
+                          </p>
+                          <span className="mt-1 inline-flex items-center gap-0.5 text-xs text-text-muted">
+                            {expanded ? (
+                              <>
+                                閉じる <ChevronUp className="h-3 w-3" />
+                              </>
+                            ) : (
+                              <>
+                                全文を見る <ChevronDown className="h-3 w-3" />
+                              </>
+                            )}
+                          </span>
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
         </CardContent>

@@ -21,8 +21,9 @@ vi.mock('@supabase/ssr', () => ({
     capturedOptions.push(options);
     return {
       auth: {
-        getSession: () =>
-          Promise.resolve({ data: { session: { user: { id: 'user-1' } } }, error: null }),
+        // api-auth.ts の cookie 経路は getUser() で検証する（getSession() は
+        // サーバー側で未検証のため使わない）。
+        getUser: () => Promise.resolve({ data: { user: { id: 'user-1' } }, error: null }),
       },
       // getApiAuth は user_profiles を maybeSingle() で、user_schools は eq() を
       // そのまま await する。どちらも成立するよう eq() を thenable にしておく。

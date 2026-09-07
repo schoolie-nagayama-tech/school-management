@@ -32,7 +32,7 @@ import {
   callCoursePrepApi,
   invalidateCoursePrepCache,
 } from '@/lib/api/coursePrepApi';
-import { computeSchoolKpis } from '@/lib/coursePrepKpis';
+import { computeSchoolKpis, resolvePeriodLastEndDate } from '@/lib/coursePrepKpis';
 import type { SchoolOverviewRow } from '@/components/course-progress';
 import {
   upsertCoursePrepPeriod,
@@ -155,6 +155,26 @@ export default function CourseProgressPage() {
   const autoValuesData = isSnapshotView
     ? (snapshot.payload.autoValues as AutoValues)
     : liveAutoValuesData;
+
+  // 講習期間の終了日を過ぎたか（JST基準）。終了日が未設定なら判定できないので false。
+  // 学年別終了日がある期（冬期の中3など）は、最後の学年が終わるまで「終了」としない。
+  const hasPeriodEnded = useMemo(() => {
+    const end = resolvePeriodLastEndDate(livePeriod);
+    if (!end) return false;
+    const todayJST = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    return end < todayJST;
+  }, [livePeriod]);
+
+  /**
+   * 確定保存の状態バーを出すか。
+   *
+   * 期の途中は「まだ確定保存されていません」と出しても、まだ確定する時期ではないので
+   * ただの飾りになる。期が終われば日次cronが勝手に確定するので、普段は何も出さない。
+   * 出すのは次の2つだけ:
+   *   - 確定済み（当時のデータを見ているのか今のデータを見ているのかは常に明示する）
+   *   - 期が終わっているのに未確定（自動確定の前後、または45日の自動確定枠を過ぎた古い期）
+   */
+  const showSnapshotBar = !!snapshotMeta || hasPeriodEnded;
   const [isLoading, setIsLoading] = useState(true);
   // 重い auto_values 集計の読み込み状態。表本体より遅れて到着するので分けて持つ。
   const [autoLoading, setAutoLoading] = useState(true);
@@ -1308,10 +1328,8 @@ export default function CourseProgressPage() {
           />
         )}
 
-        {/* 確定保存の状態バー。
-            進捗表の数字はライブだと期の終了後も動き続ける（退塾で行が消える、通塾パターンの
-            組み替えでコマ数が変わる）ため、確定済みかどうかを常に見えるところに出す。 */}
-        {!showAllSchoolsOverview && !isLoading && displayItems.length > 0 && (
+        {/* 確定保存の状態バー。出す条件は showSnapshotBar を参照（期の途中は出さない）。 */}
+        {!showAllSchoolsOverview && !isLoading && displayItems.length > 0 && showSnapshotBar && (
           <div
             className={`mb-4 rounded-xl border px-4 py-3 flex flex-wrap items-center gap-x-4 gap-y-2 ${
               isSnapshotView ? 'bg-amber-50/60 border-amber-200' : 'bg-white border-gray-200'
@@ -1343,8 +1361,12 @@ export default function CourseProgressPage() {
                     </>
                   ) : (
                     <>
-                      <History className="w-4 h-4 text-gray-400" />
-                      <span className="text-gray-500">この期はまだ確定保存されていません</span>
+                      {/* ここに来るのは「期が終わっているのに未確定」のときだけ。
+                          通常は翌朝の自動確定で消えるので、残っていたら手で確定する合図。 */}
+                      <AlertTriangle className="w-4 h-4 text-amber-500" />
+                      <span className="text-gray-600">
+                        講習期間が終わっていますが、まだ確定保存されていません
+                      </span>
                     </>
                   )}
                 </div>
@@ -1710,6 +1732,40 @@ export default function CourseProgressPage() {
                         項目がありません。テンプレートから作成するか、手動で追加してください。
                       </p>
                     )}
+                  </div>
+                </div>
+              )}
+
+              {/* 確定保存の入口。状態バーは期の途中には出さない仕様なので、
+                  期中に凍結したい・古い期を遡って保存したいときはここが唯一の入口になる。 */}
+              {isManagerOrAbove && (
+                <div className="mt-4 pt-4 border-t border-gray-100">
+                  <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5">
+                    <div>
+                      <p className="text-xs font-medium text-text-body">この期の確定保存</p>
+                      <p className="text-[10px] text-gray-500 mt-0.5">
+                        講習期間が終わると翌朝に自動で確定保存されます。期の途中で凍結したいときや、古い期を遡って保存したいときはここから。
+                      </p>
+                      {snapshotMeta && (
+                        <p className="text-[10px] text-gray-600 mt-1">
+                          {formatSnapshotDate(snapshotMeta.captured_at)}に確定保存済み（
+                          {snapshotMeta.student_count}名・
+                          {snapshotMeta.capture_reason === 'auto' ? '自動保存' : '手動'}）
+                        </p>
+                      )}
+                    </div>
+                    <button
+                      onClick={handleSaveSnapshot}
+                      disabled={isSavingSnapshot}
+                      className="inline-flex items-center gap-1 px-3 py-1.5 text-xs rounded-lg bg-ink text-white hover:opacity-90 disabled:opacity-50 transition-[opacity,transform] duration-150 ease-out active:scale-[0.97]"
+                    >
+                      <Lock className="w-3.5 h-3.5" />
+                      {isSavingSnapshot
+                        ? '保存中…'
+                        : snapshotMeta
+                          ? '確定データを取り直す'
+                          : 'この期を確定保存'}
+                    </button>
                   </div>
                 </div>
               )}

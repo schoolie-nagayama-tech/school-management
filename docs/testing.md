@@ -189,7 +189,9 @@ supabase/migrations/
   run: npm test
 ```
 
-統合テストはローカルSupabaseが必要なため、CIでは実行されません。
+RLS 回帰テスト（`src/__tests__/integration/rls-*.test.ts`）は `.github/workflows/integration.yml` が
+PR ごとにローカル Supabase を立てて実行する。schools/students の汎用CRUD統合テストは環境依存の
+既存課題があるため CI では実行しない（ローカルで `npm run test:integration`）。
 
 ---
 

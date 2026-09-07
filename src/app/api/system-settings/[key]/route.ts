@@ -62,10 +62,12 @@ async function getSessionFromRequest(request: NextRequest) {
       },
     }
   );
+  // Cookie 由来の getSession() はサーバー側で検証されず偽造できるため、
+  // Auth サーバーに問い合わせて検証する getUser() を使う（Supabase 公式の推奨）。
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  if (session?.user) return { userId: session.user.id };
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (user) return { userId: user.id };
   return null;
 }
 
