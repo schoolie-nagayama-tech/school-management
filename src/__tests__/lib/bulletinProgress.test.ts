@@ -392,3 +392,18 @@ describe('講師自身の種別の判定', () => {
     }
   });
 });
+
+describe('isInScope: 名指しが空のとき', () => {
+  const s = { id: 's1', grade: 2, teacherId: null, markedNotApplicable: false };
+
+  it('★specific_students で target_student_ids が空なら絞らない（母数0で「全員済」に倒さない）', () => {
+    // 永山校の実例: 「諏訪中生はテスト対策授業の提案を」を AI が specific_students と読み、
+    // 通学校は生徒IDに解決できず空になった。空のまま絞ると母数0→「督促は要りません」と出る
+    expect(isInScope(s, 'specific_students', [], [])).toBe(true);
+  });
+
+  it('IDがあれば名指しどおりに絞る', () => {
+    expect(isInScope(s, 'specific_students', [], ['s1'])).toBe(true);
+    expect(isInScope(s, 'specific_students', [], ['s2'])).toBe(false);
+  });
+});

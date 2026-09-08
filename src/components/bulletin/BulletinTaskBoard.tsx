@@ -461,6 +461,9 @@ function footNote(row: Row): string {
   if (row.notYet === 0 && row.autoChecked > 0) {
     return `済んだ${row.autoChecked}人に、チェックを自動で付けました。督促は要りません`;
   }
+  // ★母数0は「全員済」ではない。対象が決まっていない（名指しが解決できなかった等）。
+  //   ここで「督促は要りません」と言い切ると、誰も済んでいないのに督促が止まる
+  if (row.total === 0) return '対象の生徒が決まっていないので数えていません';
   if (row.notYet === 0) return '全員済んでいます。督促は要りません';
 
   const latest = row.sources[0];
