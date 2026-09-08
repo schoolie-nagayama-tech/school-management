@@ -255,7 +255,7 @@ export function DistributorOrderDialog({
   return (
     <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-      <div className="relative w-full max-w-2xl bg-surface-raised rounded-2xl shadow-xl border border-border-default overflow-hidden animate-[popover-enter_150ms_cubic-bezier(0.23,1,0.32,1)]">
+      <div className="relative w-full max-w-2xl bg-surface-raised rounded-2xl shadow-xl border border-border overflow-hidden animate-[popover-enter_150ms_cubic-bezier(0.23,1,0.32,1)]">
         {/* ヘッダー */}
         <div className="flex items-center gap-2 px-4 py-3 border-b border-border-subtle">
           <Truck className="w-4 h-4 text-info" />
@@ -374,7 +374,7 @@ export function DistributorOrderDialog({
                   <select
                     value={customer.form_prefectures}
                     onChange={(e) => updateCustomer('form_prefectures', e.target.value)}
-                    className="text-xs border border-border-default rounded-md px-2 py-1.5 bg-surface-raised focus:ring-1 focus:ring-info/30"
+                    className="text-xs border border-border rounded-md px-2 py-1.5 bg-surface-raised focus:ring-1 focus:ring-info/30"
                   >
                     <option value="">選択してください</option>
                     {PREFECTURES.map((p) => (
@@ -401,7 +401,7 @@ export function DistributorOrderDialog({
                     type="text"
                     value={customer.form_message}
                     onChange={(e) => updateCustomer('form_message', e.target.value)}
-                    className="text-xs border border-border-default rounded-md px-2 py-1.5 bg-surface-raised focus:ring-1 focus:ring-info/30"
+                    className="text-xs border border-border rounded-md px-2 py-1.5 bg-surface-raised focus:ring-1 focus:ring-info/30"
                   />
                 </label>
               </div>
@@ -435,7 +435,7 @@ export function DistributorOrderDialog({
             <button
               onClick={handleQueue}
               disabled={loadingRows || rows.length === 0 || queuing}
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold border border-border-default rounded-lg hover:bg-surface-hover transition-[background-color,color,transform] duration-150 ease-out active:scale-[0.97] disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold border border-border rounded-lg hover:bg-surface-hover transition-[background-color,color,transform] duration-150 ease-out active:scale-[0.97] disabled:opacity-50"
             >
               {queuing ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -507,7 +507,7 @@ function Field({
         type={field.type ?? 'text'}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="text-xs border border-border-default rounded-md px-2 py-1.5 bg-surface-raised focus:ring-1 focus:ring-info/30"
+        className="text-xs border border-border rounded-md px-2 py-1.5 bg-surface-raised focus:ring-1 focus:ring-info/30"
       />
     </label>
   );

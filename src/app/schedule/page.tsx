@@ -3212,7 +3212,7 @@ export default function SchedulePage() {
       <div
         role="status"
         aria-live="polite"
-        className="fixed bottom-4 right-4 z-50 flex items-center gap-2 rounded-full border border-border-default bg-white/95 px-3 py-1.5 text-xs font-semibold text-text-muted shadow-md backdrop-blur print:hidden"
+        className="fixed bottom-4 right-4 z-50 flex items-center gap-2 rounded-full border border-border bg-white/95 px-3 py-1.5 text-xs font-semibold text-text-muted shadow-md backdrop-blur print:hidden"
       >
         <Loading size="sm" />
         更新中
@@ -3237,7 +3237,7 @@ export default function SchedulePage() {
             転置モードの時限見出しはこの実測高さぶん下に貼り付く（stickyOffset）。 */}
         <div
           ref={setToolbarEl}
-          className="sticky top-0 z-30 -mx-4 px-4 py-1.5 bg-bg/95 backdrop-blur-sm border-b border-border-default print:static print:border-0"
+          className="sticky top-0 z-30 -mx-4 px-4 py-1.5 bg-bg/95 backdrop-blur-sm border-b border-border print:static print:border-0"
         >
           <ScheduleToolbar
             weekStart={weekStart}
@@ -3663,7 +3663,7 @@ export default function SchedulePage() {
                         onClick={goPrevWeek}
                         aria-label="前週へ"
                         title="前週へ"
-                        className="absolute left-1 top-1/2 -translate-y-1/2 w-7 hover:w-12 h-40 flex items-center justify-center rounded-lg bg-white/90 hover:bg-white border border-border-default text-text-muted shadow-md hover:shadow-lg hover:text-text-body opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-[opacity,width,background-color,box-shadow,color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97]"
+                        className="absolute left-1 top-1/2 -translate-y-1/2 w-7 hover:w-12 h-40 flex items-center justify-center rounded-lg bg-white/90 hover:bg-white border border-border text-text-muted shadow-md hover:shadow-lg hover:text-text-body opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-[opacity,width,background-color,box-shadow,color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97]"
                       >
                         <ChevronLeft className="w-5 h-5" />
                       </button>
@@ -3674,7 +3674,7 @@ export default function SchedulePage() {
                         onClick={goNextWeek}
                         aria-label="次週へ"
                         title="次週へ"
-                        className="absolute right-1 top-1/2 -translate-y-1/2 w-7 hover:w-12 h-40 flex items-center justify-center rounded-lg bg-white/90 hover:bg-white border border-border-default text-text-muted shadow-md hover:shadow-lg hover:text-text-body opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-[opacity,width,background-color,box-shadow,color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97]"
+                        className="absolute right-1 top-1/2 -translate-y-1/2 w-7 hover:w-12 h-40 flex items-center justify-center rounded-lg bg-white/90 hover:bg-white border border-border text-text-muted shadow-md hover:shadow-lg hover:text-text-body opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-[opacity,width,background-color,box-shadow,color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97]"
                       >
                         <ChevronRight className="w-5 h-5" />
                       </button>

@@ -643,7 +643,7 @@ export default function CourseProposalsPage() {
           <div className="mb-4 flex gap-2 print:hidden">
             <button
               onClick={() => setPrintMode(false)}
-              className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium border border-border-default text-text-body rounded-lg hover:bg-surface-hover transition-[background-color,transform] duration-150 ease-out active:scale-[0.97]"
+              className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium border border-border text-text-body rounded-lg hover:bg-surface-hover transition-[background-color,transform] duration-150 ease-out active:scale-[0.97]"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
               一覧に戻る
@@ -726,7 +726,7 @@ export default function CourseProposalsPage() {
             )}
             <Link
               href="/courses/koushu-textbooks"
-              className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium border border-border-default text-text-body rounded-lg hover:bg-surface-hover transition-colors duration-150"
+              className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium border border-border text-text-body rounded-lg hover:bg-surface-hover transition-colors duration-150"
             >
               使用テキスト一覧
             </Link>
@@ -739,7 +739,7 @@ export default function CourseProposalsPage() {
                 新規作成
               </button>
               {pickerOpen && (
-                <div className="absolute right-0 top-full mt-1 w-80 bg-surface-raised border border-border-default rounded-xl shadow-lg z-50 overflow-hidden origin-top-right animate-[popover-enter_150ms_cubic-bezier(0.23,1,0.32,1)]">
+                <div className="absolute right-0 top-full mt-1 w-80 bg-surface-raised border border-border rounded-xl shadow-lg z-50 overflow-hidden origin-top-right animate-[popover-enter_150ms_cubic-bezier(0.23,1,0.32,1)]">
                   <div className="p-2 border-b border-border-subtle">
                     <div className="relative">
                       <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-text-faint" />
@@ -749,7 +749,7 @@ export default function CourseProposalsPage() {
                         value={pickerQuery}
                         onChange={(e) => setPickerQuery(e.target.value)}
                         placeholder="氏名・ふりがなで検索..."
-                        className="w-full pl-8 pr-3 py-1.5 text-xs border border-border-default rounded-lg bg-surface-raised text-text-body placeholder:text-text-faint focus:outline-none focus:ring-1 focus:ring-ink/30"
+                        className="w-full pl-8 pr-3 py-1.5 text-xs border border-border rounded-lg bg-surface-raised text-text-body placeholder:text-text-faint focus:outline-none focus:ring-1 focus:ring-ink/30"
                       />
                     </div>
                   </div>
@@ -831,7 +831,7 @@ export default function CourseProposalsPage() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="生徒名・テキスト名・準拠・テーマで検索..."
-              className="w-full pl-9 pr-8 py-2 text-sm border border-border-default rounded-lg bg-surface-raised text-text-body placeholder:text-text-faint focus:outline-none focus:ring-1 focus:ring-ink/30"
+              className="w-full pl-9 pr-8 py-2 text-sm border border-border rounded-lg bg-surface-raised text-text-body placeholder:text-text-faint focus:outline-none focus:ring-1 focus:ring-ink/30"
             />
             {searchQuery && (
               <button
@@ -865,7 +865,7 @@ export default function CourseProposalsPage() {
             <select
               value={filterYear}
               onChange={(e) => setFilterYear(Number(e.target.value))}
-              className="px-2 py-1.5 border border-border-default rounded-lg text-xs bg-surface-raised text-text-body"
+              className="px-2 py-1.5 border border-border rounded-lg text-xs bg-surface-raised text-text-body"
             >
               {[currentYear + 1, currentYear, currentYear - 1].map((y) => (
                 <option key={y} value={y}>
@@ -876,7 +876,7 @@ export default function CourseProposalsPage() {
             <select
               value={filterSeason}
               onChange={(e) => setFilterSeason(e.target.value as SeasonType | '')}
-              className="px-2 py-1.5 border border-border-default rounded-lg text-xs bg-surface-raised text-text-body"
+              className="px-2 py-1.5 border border-border rounded-lg text-xs bg-surface-raised text-text-body"
             >
               <option value="">全シーズン</option>
               {(['spring', 'summer', 'winter'] as SeasonType[]).map((s) => (
@@ -890,7 +890,7 @@ export default function CourseProposalsPage() {
               <select
                 value={filterSubject}
                 onChange={(e) => setFilterSubject(e.target.value)}
-                className={`px-2 py-1.5 border rounded-lg text-xs ${filterSubject ? 'border-info bg-info-subtle text-info font-bold' : 'border-border-default bg-surface-raised text-text-body'}`}
+                className={`px-2 py-1.5 border rounded-lg text-xs ${filterSubject ? 'border-info bg-info-subtle text-info font-bold' : 'border-border bg-surface-raised text-text-body'}`}
               >
                 <option value="">全科目</option>
                 {filterOptions.subjects.map((s) => (
@@ -905,7 +905,7 @@ export default function CourseProposalsPage() {
               <select
                 value={filterGrade}
                 onChange={(e) => setFilterGrade(e.target.value)}
-                className={`px-2 py-1.5 border rounded-lg text-xs ${filterGrade ? 'border-info bg-info-subtle text-info font-bold' : 'border-border-default bg-surface-raised text-text-body'}`}
+                className={`px-2 py-1.5 border rounded-lg text-xs ${filterGrade ? 'border-info bg-info-subtle text-info font-bold' : 'border-border bg-surface-raised text-text-body'}`}
               >
                 <option value="">全学年</option>
                 {filterOptions.grades.map((g) => (
@@ -920,7 +920,7 @@ export default function CourseProposalsPage() {
               <select
                 value={filterPublisher}
                 onChange={(e) => setFilterPublisher(e.target.value)}
-                className={`px-2 py-1.5 border rounded-lg text-xs ${filterPublisher ? 'border-info bg-info-subtle text-info font-bold' : 'border-border-default bg-surface-raised text-text-body'}`}
+                className={`px-2 py-1.5 border rounded-lg text-xs ${filterPublisher ? 'border-info bg-info-subtle text-info font-bold' : 'border-border bg-surface-raised text-text-body'}`}
               >
                 <option value="">全準拠</option>
                 {filterOptions.publishers.map((pub) => (
@@ -967,7 +967,7 @@ export default function CourseProposalsPage() {
                   className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors duration-150 ${
                     hasSelection
                       ? 'bg-emerald-600 border-emerald-600 text-white'
-                      : 'border-border-default hover:border-text-muted'
+                      : 'border-border hover:border-text-muted'
                   }`}
                   title={hasSelection ? '選択解除' : 'すべて選択'}
                 >
@@ -1064,7 +1064,7 @@ export default function CourseProposalsPage() {
                 return (
                   <div
                     key={studentId}
-                    className="bg-surface-raised rounded-xl border border-border-default overflow-hidden feed-card-enter"
+                    className="bg-surface-raised rounded-xl border border-border overflow-hidden feed-card-enter"
                     style={{ animationDelay: groupIndex < 10 ? `${groupIndex * 40}ms` : undefined }}
                   >
                     <div className="px-4 py-2.5 border-b border-border-subtle bg-surface-hover/50 flex items-center justify-between">
@@ -1162,7 +1162,7 @@ export default function CourseProposalsPage() {
                                 className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors duration-150 ${
                                   isChecked
                                     ? 'bg-emerald-600 border-emerald-600 text-white'
-                                    : 'border-border-default hover:border-text-muted'
+                                    : 'border-border hover:border-text-muted'
                                 }`}
                                 title={isChecked ? '選択解除' : '選択'}
                               >

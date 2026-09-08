@@ -277,7 +277,7 @@ export default function ProposalList() {
         <div className="mb-4 flex items-center gap-2 print:hidden">
           <button
             onClick={() => setPrintMode(false)}
-            className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium border border-border-default text-text-body rounded-lg hover:bg-surface-hover transition-colors duration-150"
+            className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium border border-border text-text-body rounded-lg hover:bg-surface-hover transition-colors duration-150"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             戻る
@@ -373,7 +373,7 @@ export default function ProposalList() {
               <button
                 onClick={handleBulkPrint}
                 disabled={printLoading}
-                className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium border border-border-default text-text-body rounded-lg hover:bg-surface-hover active:scale-[0.97] transition-[background-color,transform] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] disabled:opacity-50"
+                className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium border border-border text-text-body rounded-lg hover:bg-surface-hover active:scale-[0.97] transition-[background-color,transform] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] disabled:opacity-50"
               >
                 {printLoading ? (
                   <InlineLoading size="sm" label="読み込み中..." />
@@ -387,13 +387,13 @@ export default function ProposalList() {
             )}
             <Link
               href={`/students/${studentId}/koushu-textbooks`}
-              className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium border border-border-default text-text-body rounded-lg hover:bg-surface-hover transition-colors duration-150"
+              className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium border border-border text-text-body rounded-lg hover:bg-surface-hover transition-colors duration-150"
             >
               使用テキスト
             </Link>
             <Link
               href={`/students/${studentId}/test-prep`}
-              className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium border border-border-default text-text-body rounded-lg hover:bg-surface-hover transition-colors duration-150"
+              className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium border border-border text-text-body rounded-lg hover:bg-surface-hover transition-colors duration-150"
             >
               テスト対策
             </Link>
@@ -452,7 +452,7 @@ export default function ProposalList() {
             className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors duration-150 ${
               hasSelection
                 ? 'bg-emerald-600 border-emerald-600 text-white'
-                : 'border-border-default hover:border-text-muted'
+                : 'border-border hover:border-text-muted'
             }`}
           >
             {hasSelection && <Check className="w-2.5 h-2.5" />}
@@ -529,7 +529,7 @@ export default function ProposalList() {
             <div
               key={tbId}
               // stagger-item: テキストグループ単位で40ms刻みフェードイン（最大8グループでクランプ）
-              className="stagger-item bg-surface-raised rounded-xl border border-border-default overflow-hidden"
+              className="stagger-item bg-surface-raised rounded-xl border border-border overflow-hidden"
               style={{ '--stagger-index': Math.min(i, 7) } as React.CSSProperties}
             >
               <div className="px-4 py-3 border-b border-border-subtle">
@@ -570,7 +570,7 @@ export default function ProposalList() {
                           className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors duration-150 ${
                             isChecked
                               ? 'bg-emerald-600 border-emerald-600 text-white'
-                              : 'border-border-default hover:border-text-muted'
+                              : 'border-border hover:border-text-muted'
                           }`}
                         >
                           {isChecked && <Check className="w-2.5 h-2.5" />}

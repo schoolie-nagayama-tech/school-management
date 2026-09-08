@@ -1104,7 +1104,7 @@ export default function ProposalEditor() {
       <div className="space-y-5">
         {/* シーズン・年 */}
         {isNew && (
-          <section className="p-4 bg-surface-raised rounded-xl border border-border-default">
+          <section className="p-4 bg-surface-raised rounded-xl border border-border">
             <div className="flex gap-4">
               <div>
                 <label className="text-xs font-bold text-text-muted block mb-1.5">シーズン</label>
@@ -1130,7 +1130,7 @@ export default function ProposalEditor() {
                   type="number"
                   value={year}
                   onChange={(e) => setYear(Number(e.target.value))}
-                  className="w-24 px-3 py-1.5 text-sm border border-border-default rounded-lg bg-surface-raised focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                  className="w-24 px-3 py-1.5 text-sm border border-border rounded-lg bg-surface-raised focus:ring-2 focus:ring-primary/20 focus:border-primary"
                 />
               </div>
             </div>
@@ -1139,7 +1139,7 @@ export default function ProposalEditor() {
 
         {/* テキスト変更 */}
         {isNew && (
-          <section className="p-4 bg-surface-raised rounded-xl border border-border-default flex items-center justify-between">
+          <section className="p-4 bg-surface-raised rounded-xl border border-border flex items-center justify-between">
             <div>
               <div className="text-xs font-bold text-text-muted mb-0.5">テキスト</div>
               <div className="text-sm font-medium text-text-heading">
@@ -1153,7 +1153,7 @@ export default function ProposalEditor() {
         )}
 
         {/* テーマ */}
-        <section className="p-4 bg-surface-raised rounded-xl border border-border-default">
+        <section className="p-4 bg-surface-raised rounded-xl border border-border">
           <label className="text-sm font-bold text-text-heading block mb-2">
             講習テーマ
             <span className="ml-1 text-red-600" aria-hidden="true">
@@ -1166,7 +1166,7 @@ export default function ProposalEditor() {
             onChange={(e) => setTheme(e.target.value)}
             aria-required="true"
             className={`w-full px-3 py-2 text-sm border rounded-lg bg-surface-raised focus:ring-2 focus:ring-primary/20 focus:border-primary ${
-              theme.trim() ? 'border-border-default' : 'border-red-300'
+              theme.trim() ? 'border-border' : 'border-red-300'
             }`}
             placeholder="例: 英検3級対策 / 1年生の総復習 / 2学期の先取り"
           />
@@ -1185,7 +1185,7 @@ export default function ProposalEditor() {
         </section>
 
         {/* 単元選択 */}
-        <section className="p-4 bg-surface-raised rounded-xl border border-border-default">
+        <section className="p-4 bg-surface-raised rounded-xl border border-border">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-bold text-text-heading">対象単元を選択</h2>
             <div className="flex items-center gap-3">
@@ -1206,7 +1206,7 @@ export default function ProposalEditor() {
                         className="fixed inset-0 z-10"
                         onClick={() => setShowCourseImport(false)}
                       />
-                      <div className="absolute right-0 top-full mt-1 w-56 bg-surface-raised border border-border-default rounded-lg shadow-lg z-20 overflow-hidden">
+                      <div className="absolute right-0 top-full mt-1 w-56 bg-surface-raised border border-border rounded-lg shadow-lg z-20 overflow-hidden">
                         <div className="px-3 py-1.5 text-[10px] text-text-faint uppercase tracking-wider border-b border-border-subtle">
                           講習ひな形を選択
                         </div>
@@ -1260,7 +1260,7 @@ export default function ProposalEditor() {
         </section>
 
         {/* メモ */}
-        <section className="p-4 bg-surface-raised rounded-xl border border-border-default">
+        <section className="p-4 bg-surface-raised rounded-xl border border-border">
           <label className="text-sm font-bold text-text-heading block mb-2">
             備考（内部メモ・印刷には出ません）
           </label>
@@ -1268,7 +1268,7 @@ export default function ProposalEditor() {
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             rows={2}
-            className="w-full px-3 py-2 text-sm border border-border-default rounded-lg bg-surface-raised focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none"
+            className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-surface-raised focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none"
             placeholder="内部メモ"
           />
         </section>

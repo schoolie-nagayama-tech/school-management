@@ -29,6 +29,12 @@ const config: Config = {
           'monospace',
         ],
       },
+      /* border 幅だけ指定して色クラスを書かなかった要素の既定色。
+         Tailwind の既定は colors.gray.200 (#e5e7eb) 固定で、ダークテーマでも
+         明るいままになってしまうため、テーマトークンに差し替える */
+      borderColor: {
+        DEFAULT: 'var(--border-default)',
+      },
       colors: {
         /* Surfaces */
         bg: 'var(--bg)',

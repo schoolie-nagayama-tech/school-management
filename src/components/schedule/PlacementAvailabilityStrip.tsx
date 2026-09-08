@@ -101,7 +101,7 @@ export function PlacementAvailabilityStrip({
   // ローディング中: 小さく表示
   if (loading) {
     return (
-      <div className="print:hidden border border-border-default rounded-lg bg-white p-3 text-xs text-text-muted">
+      <div className="print:hidden border border-border rounded-lg bg-white p-3 text-xs text-text-muted">
         日程を読み込み中…
       </div>
     );
@@ -158,9 +158,9 @@ export function PlacementAvailabilityStrip({
   })();
 
   return (
-    <div className="print:hidden border border-border-default rounded-lg bg-white p-2 overflow-x-auto">
+    <div className="print:hidden border border-border rounded-lg bg-white p-2 overflow-x-auto">
       {/* ヘッダ行: 左=タイトル+バッジ / 右=凡例 */}
-      <div className="flex items-center justify-between gap-2 mb-2 pb-1.5 border-b border-border-default flex-wrap min-w-0">
+      <div className="flex items-center justify-between gap-2 mb-2 pb-1.5 border-b border-border flex-wrap min-w-0">
         {/* 左: 生徒名・科目名・ソースバッジ */}
         <div className="flex items-center gap-1.5 flex-wrap min-w-0">
           <span className="text-xs font-semibold text-text-body whitespace-nowrap">

@@ -159,7 +159,7 @@ export default function KoushuTextbookList() {
           {totalTextbooks > 0 && (
             <button
               onClick={() => window.print()}
-              className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium border border-border-default text-text-body rounded-lg hover:bg-surface-hover active:scale-[0.97] transition-[background-color,transform] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] print:hidden"
+              className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium border border-border text-text-body rounded-lg hover:bg-surface-hover active:scale-[0.97] transition-[background-color,transform] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] print:hidden"
             >
               <Printer className="w-3 h-3" />
               印刷
@@ -169,7 +169,7 @@ export default function KoushuTextbookList() {
       </div>
 
       {groups.length === 0 ? (
-        <div className="py-12 text-center text-sm text-text-faint border border-border-default rounded-xl">
+        <div className="py-12 text-center text-sm text-text-faint border border-border rounded-xl">
           公開済みの講習提案書がまだありません
         </div>
       ) : (
@@ -177,9 +177,9 @@ export default function KoushuTextbookList() {
           {groups.map((g) => (
             <section
               key={g.key}
-              className="rounded-xl border border-border-default overflow-hidden print:break-inside-avoid"
+              className="rounded-xl border border-border overflow-hidden print:break-inside-avoid"
             >
-              <div className="flex items-center justify-between bg-surface px-4 py-2 border-b border-border-default print:bg-white">
+              <div className="flex items-center justify-between bg-surface px-4 py-2 border-b border-border print:bg-white">
                 <span className="text-sm font-bold text-text-heading print:text-[11px]">
                   {g.label}
                 </span>

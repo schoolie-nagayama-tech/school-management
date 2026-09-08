@@ -80,10 +80,7 @@ export function GroupLaneGrid({
       <div className="overflow-x-auto">
         <div className="min-w-[640px]">
           {/* ヘッダー行 */}
-          <div
-            className="grid border-b border-border-default"
-            style={{ gridTemplateColumns: gridCols }}
-          >
+          <div className="grid border-b border-border" style={{ gridTemplateColumns: gridCols }}>
             <div className="px-1 py-1.5 text-[10px] text-text-muted">コマ</div>
             {weekDates.map((d) => {
               const { day, dow } = dateHeader(d);

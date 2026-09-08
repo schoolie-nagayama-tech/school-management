@@ -82,7 +82,7 @@ export function ProposalPrintView({
 
       {/* テーマ（印刷時も表示） */}
       {theme && (
-        <section className="p-4 print:p-1 bg-surface-raised rounded-xl border border-border-default print:border-border-strong">
+        <section className="p-4 print:p-1 bg-surface-raised rounded-xl border border-border print:border-border-strong">
           <h2 className="text-sm print:text-[10px] font-bold text-text-heading mb-1 print:mb-0">
             講習テーマ
           </h2>
@@ -91,7 +91,7 @@ export function ProposalPrintView({
       )}
 
       {/* 現在の進捗（画面のみ） */}
-      <section className="p-4 bg-surface-raised rounded-xl border border-border-default print:hidden">
+      <section className="p-4 bg-surface-raised rounded-xl border border-border print:hidden">
         <h2 className="text-sm font-bold text-text-heading mb-2">現在の進捗</h2>
         <div className="flex items-center gap-3">
           <div className="flex-1 h-2 bg-surface-hover rounded-full overflow-hidden">
@@ -108,7 +108,7 @@ export function ProposalPrintView({
       </section>
 
       {/* 講習対象単元テーブル（画面のみ） */}
-      <section className="p-4 bg-surface-raised rounded-xl border border-border-default print:hidden">
+      <section className="p-4 bg-surface-raised rounded-xl border border-border print:hidden">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-sm font-bold text-text-heading">講習対象単元</h2>
           <span className="text-sm font-bold text-accent-ink">
@@ -116,7 +116,7 @@ export function ProposalPrintView({
           </span>
         </div>
         <table className="w-full text-xs">
-          <thead className="border-b border-border-default">
+          <thead className="border-b border-border">
             <tr>
               <th className="py-2 text-left font-semibold text-text-muted">単元名</th>
               <th className="py-2 text-center w-10 font-semibold text-text-muted">コマ</th>
@@ -148,7 +148,7 @@ export function ProposalPrintView({
                     {item.title}
                     {intentTag && (
                       <span
-                        className={`inline-block ml-1.5 px-1.5 py-0.5 border rounded-full text-[9px] font-medium align-middle ${INTENT_TAG_PRINT_COLOR[intentTag] ?? 'text-text-muted border-border-default'}`}
+                        className={`inline-block ml-1.5 px-1.5 py-0.5 border rounded-full text-[9px] font-medium align-middle ${INTENT_TAG_PRINT_COLOR[intentTag] ?? 'text-text-muted border-border'}`}
                       >
                         {intentTag}
                       </span>
@@ -165,7 +165,7 @@ export function ProposalPrintView({
       </section>
 
       {/* テキスト全単元（画面のみ：テーブル表示） */}
-      <section className="p-4 bg-surface-raised rounded-xl border border-border-default print:hidden">
+      <section className="p-4 bg-surface-raised rounded-xl border border-border print:hidden">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-sm font-bold text-text-heading">テキスト全単元</h2>
           <span className="text-sm font-bold text-accent-ink">
@@ -173,7 +173,7 @@ export function ProposalPrintView({
           </span>
         </div>
         <table className="w-full text-xs proposal-print-table">
-          <thead className="border-b border-border-default">
+          <thead className="border-b border-border">
             <tr>
               <th className="py-2 text-left font-semibold text-text-muted">単元</th>
               <th className="py-2 text-center w-14 font-semibold text-text-muted">状況</th>
@@ -216,7 +216,7 @@ export function ProposalPrintView({
                     {item.title}
                     {isTarget && intentTag && (
                       <span
-                        className={`inline-block ml-1.5 px-1.5 py-0.5 border rounded-full text-[9px] font-medium align-middle ${INTENT_TAG_PRINT_COLOR[intentTag] ?? 'text-text-muted border-border-default'}`}
+                        className={`inline-block ml-1.5 px-1.5 py-0.5 border rounded-full text-[9px] font-medium align-middle ${INTENT_TAG_PRINT_COLOR[intentTag] ?? 'text-text-muted border-border'}`}
                       >
                         {intentTag}
                       </span>
@@ -292,7 +292,7 @@ export function ProposalPrintView({
       </section>
 
       {/* サマリーフッター */}
-      <section className="p-4 print:p-1 bg-surface rounded-xl border border-border-default print:border-border-strong">
+      <section className="p-4 print:p-1 bg-surface rounded-xl border border-border print:border-border-strong">
         <div className="flex items-center gap-3">
           <div className="text-sm print:text-[10px] text-text-muted">講習内容:</div>
           <div className="text-sm print:text-[10px] font-bold text-accent-ink print:text-text-heading">

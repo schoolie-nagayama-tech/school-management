@@ -194,7 +194,7 @@ export function KoushuAllocationPanel({ period, schoolId, executedBy, onComplete
             className={`px-2 py-0.5 text-[11px] rounded border transition-colors duration-150 ${
               selectedGrades.length === 0
                 ? 'bg-info text-white border-info'
-                : 'border-border-default text-text-muted hover:bg-surface-hover'
+                : 'border-border text-text-muted hover:bg-surface-hover'
             }`}
           >
             全学年
@@ -204,7 +204,7 @@ export function KoushuAllocationPanel({ period, schoolId, executedBy, onComplete
               key={sc.label}
               type="button"
               onClick={() => setSelectedGrades(sc.grades)}
-              className="px-2 py-0.5 text-[11px] rounded border border-border-default text-text-muted hover:bg-surface-hover transition-colors duration-150"
+              className="px-2 py-0.5 text-[11px] rounded border border-border text-text-muted hover:bg-surface-hover transition-colors duration-150"
             >
               {sc.label}
             </button>

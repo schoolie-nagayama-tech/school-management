@@ -117,7 +117,7 @@ export function SelectionPill({
             )}
           </button>
           {intentMenuOpen && (
-            <div className="absolute top-full left-0 mt-2 w-56 p-2 bg-surface-raised border border-border-default rounded-xl shadow-lg origin-top-left animate-[popover-enter_150ms_cubic-bezier(0.23,1,0.32,1)]">
+            <div className="absolute top-full left-0 mt-2 w-56 p-2 bg-surface-raised border border-border rounded-xl shadow-lg origin-top-left animate-[popover-enter_150ms_cubic-bezier(0.23,1,0.32,1)]">
               <div className="px-1 pb-1.5 text-[10px] font-bold text-text-faint">
                 選択中の{count}単元に設定
               </div>

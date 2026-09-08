@@ -856,7 +856,7 @@ export default function CoursesPage() {
           </button>
         </div>
       ) : (
-        <div className="max-h-[calc(100vh-130px)] overflow-y-auto rounded-xl border border-border-default bg-surface-raised">
+        <div className="max-h-[calc(100vh-130px)] overflow-y-auto rounded-xl border border-border bg-surface-raised">
           <div className="divide-y divide-border-subtle">
             {filteredSorted.map((course) => {
               const isChecked = selected.has(course.id);

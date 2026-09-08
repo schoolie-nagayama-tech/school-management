@@ -244,7 +244,7 @@ function NumberField({
       <label className="block text-sm font-medium text-text-body mb-1">{label}</label>
       <input
         type="number"
-        className="w-32 px-3 py-2 border border-border-default rounded-md"
+        className="w-32 px-3 py-2 border border-border rounded-md"
         value={value}
         min={min}
         max={max}
