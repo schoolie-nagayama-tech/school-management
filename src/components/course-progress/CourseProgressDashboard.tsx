@@ -17,7 +17,7 @@ import {
   type SchoolCategory,
 } from '@/lib/coursePrepKpis';
 import { HelpTooltip } from '@/components/ui/Tooltip';
-import { AlertTriangle, ChevronDown, Plus, X } from 'lucide-react';
+import { AlertTriangle, ChevronDown, ChevronUp, Pencil, Plus, X } from 'lucide-react';
 
 interface CourseProgressDashboardProps {
   students: Student[];
@@ -86,6 +86,9 @@ function TrackRow({
   const [endDate, setEndDate] = useState(track?.schedule_end_date ?? defaultEndDate ?? '');
   const [grades, setGrades] = useState<number[]>(track?.default_grades ?? []);
   const [showGrades, setShowGrades] = useState(false);
+  // 登録済みの区分は普段たたんでおく。入力欄を出しっぱなしにすると区分の数だけ縦に伸びて、
+  // その下の進捗表が押し出されてしまう（区分をいじるのは期の頭だけで、普段は見るだけのため）。
+  const [editing, setEditing] = useState(isNew);
 
   // 保存後の再取得で外から値が変わったら、手元の下書きを作り直す（新規行には効かせない）
   const syncedFrom = useRef('');
@@ -119,8 +122,41 @@ function TrackRow({
     grades.length > 0 ? grades.map((g) => GRADE_LABELS[g] || String(g)).join('・') : 'なし';
   const dateClass = 'px-2 py-1 text-xs border border-border rounded-lg';
 
+  // たたむときは手元の下書きを保存済みの値に戻す（直しかけのまま閉じて、
+  // 次に開いたときに保存済みと違う値が出ていると、保存したつもりの取り違えが起きる）
+  const collapse = () => {
+    if (track) {
+      setName(track.name);
+      setStartDate(track.schedule_start_date ?? '');
+      setEndDate(track.schedule_end_date ?? '');
+      setGrades(track.default_grades ?? []);
+    }
+    setShowGrades(false);
+    setEditing(false);
+  };
+
+  // 登録済み・編集していないときは1行のチップだけ出す。押すと編集欄が開く
+  if (track && !editing) {
+    return (
+      <button
+        type="button"
+        onClick={() => setEditing(true)}
+        className="inline-flex items-center gap-1.5 px-2 py-1 text-xs border border-border rounded-lg hover:bg-surface-hover"
+        title="この区分を編集"
+      >
+        {/* 表示は props ではなく手元の値。保存直後、再取得が返る前でも送った内容が出るようにする */}
+        <span className="font-medium">{trimmedName}</span>
+        <span className="text-text-muted">
+          {shortDate(startDate) || '共通'}〜{shortDate(endDate)}
+        </span>
+        {grades.length > 0 && <span className="text-[10px] text-text-faint">{gradeSummary}</span>}
+        <Pencil className="w-3 h-3 text-text-faint" />
+      </button>
+    );
+  }
+
   return (
-    <div className="relative py-1">
+    <div className="relative w-full py-1">
       {/* 1行に収める。狭いときは横スクロールさせ、折り返して縦に伸びないようにする */}
       <div className="flex items-center gap-2 overflow-x-auto whitespace-nowrap">
         <input
@@ -157,7 +193,7 @@ function TrackRow({
         <button
           type="button"
           disabled={!dirty || !valid}
-          onClick={() =>
+          onClick={() => {
             onSave({
               // 新規行は id を送らない（サーバー側が作成として扱う）
               ...(track ? { id: track.id } : {}),
@@ -167,8 +203,12 @@ function TrackRow({
               schedule_end_date: endDate,
               default_grades: grades,
               sort_order: track?.sort_order ?? sortOrder ?? 0,
-            })
-          }
+            });
+            // 保存できたら1行のチップに戻す（新規行は親が閉じる）。
+            // 送った値をそのまま畳むので、再取得を待たずに結果が見える
+            setShowGrades(false);
+            setEditing(false);
+          }}
           className="shrink-0 px-2.5 py-1 text-[10px] rounded-lg bg-ink text-white disabled:opacity-40 hover:opacity-90 transition-opacity"
           title={isNew ? 'この区分を登録します' : dirty ? '変更を保存します' : '変更はありません'}
         >
@@ -196,6 +236,17 @@ function TrackRow({
         >
           <X className="w-3.5 h-3.5" />
         </button>
+        {/* 登録済みの区分だけ、保存せずに畳める（直しかけは捨てる） */}
+        {track && (
+          <button
+            type="button"
+            onClick={collapse}
+            className="shrink-0 p-1 text-text-faint hover:text-text-body"
+            title={dirty ? '直した内容を捨てて閉じる' : '編集を閉じる'}
+          >
+            <ChevronUp className="w-3.5 h-3.5" />
+          </button>
+        )}
       </div>
       {showGrades && (
         <div className="mt-1 flex flex-wrap gap-1 pl-1 pb-1">
@@ -455,27 +506,30 @@ export function CourseProgressDashboard({
           {/* 講習期間の区分（Phase 8）。生徒によって講習期間が違う冬期のためのもの。
               普段の期は区分ゼロなので、0件のときは追加ボタン以外は何も出さない。 */}
           {onTrackSave && onTrackDelete && (trackList.length > 0 || addingTrack) && (
-            <div className="mt-2 pt-2 border-t border-border space-y-1">
-              {trackList.map((track) => (
-                <TrackRow
-                  key={track.id}
-                  track={track}
-                  onSave={onTrackSave}
-                  onDelete={onTrackDelete}
-                />
-              ))}
-              {addingTrack && (
-                <TrackRow
-                  track={null}
-                  defaultEndDate={period?.schedule_end_date ?? ''}
-                  sortOrder={trackList.length}
-                  onSave={(draft) => {
-                    onTrackSave(draft);
-                    setAddingTrack(false);
-                  }}
-                  onCancel={() => setAddingTrack(false)}
-                />
-              )}
+            <div className="mt-2 pt-2 border-t border-border">
+              {/* たたんだ区分はチップなので横に並べる。開いている行だけが幅いっぱいで1行を使う */}
+              <div className="flex flex-wrap items-center gap-1.5">
+                {trackList.map((track) => (
+                  <TrackRow
+                    key={track.id}
+                    track={track}
+                    onSave={onTrackSave}
+                    onDelete={onTrackDelete}
+                  />
+                ))}
+                {addingTrack && (
+                  <TrackRow
+                    track={null}
+                    defaultEndDate={period?.schedule_end_date ?? ''}
+                    sortOrder={trackList.length}
+                    onSave={(draft) => {
+                      onTrackSave(draft);
+                      setAddingTrack(false);
+                    }}
+                    onCancel={() => setAddingTrack(false)}
+                  />
+                )}
+              </div>
               <p className="text-[10px] text-text-faint pt-1">
                 区分に入っていない生徒は共通の期間。既定の学年は自動で当てはまり、生徒ごとに上書きできます。
               </p>
