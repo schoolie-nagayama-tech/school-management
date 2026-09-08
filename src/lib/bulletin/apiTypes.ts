@@ -16,6 +16,13 @@ export interface BulletinTaskView {
   kindLabel: string;
   scope: TaskScope;
   scopeLabel: string;
+  /** scope=attending_school のときの対象の通学校。それ以外では空 */
+  targetSchoolNames: string[];
+  /**
+   * targetSchoolNames を指定したのに、在籍生徒の誰にも一致しなかった（表記ゆれ・入力ミスなど）。
+   * ★このとき母数は絞らず全員にしている。画面はここを見て「全員で数えています」と断る。
+   */
+  schoolMatchFallback: boolean;
   dueType: string;
   dueDate: string | null;
   /** 判定を実装していない種別。画面は数字を出さず「まだ数えられません」と書く */

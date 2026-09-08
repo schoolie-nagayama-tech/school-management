@@ -42,6 +42,7 @@ export interface ExtractedTaskView {
   scope: TaskScope;
   scopeLabel: string;
   targetGrades: number[];
+  targetSchoolNames: string[];
   dueType: string;
   dueDate: string | null;
   reason: string;
@@ -155,7 +156,7 @@ export async function POST(request: NextRequest) {
   // 再掲の突き合わせに使う、この教室の追跡中タスク
   const { data: openRows } = await supabase
     .from('bulletin_tasks')
-    .select('id, kind, scope, due_date')
+    .select('id, kind, scope, due_date, target_school_names')
     .eq('school_id', schoolId)
     .is('closed_at', null)
     .eq('tracked', true);
@@ -165,6 +166,7 @@ export async function POST(request: NextRequest) {
     kind: r.kind as TaskKind,
     scope: r.scope as TaskScope,
     dueDate: (r.due_date as string | null) ?? null,
+    targetSchoolNames: (r.target_school_names as string[] | null) ?? [],
   }));
 
   const views: ExtractedTaskView[] = [];
@@ -190,6 +192,7 @@ export async function POST(request: NextRequest) {
           kind: task.kind,
           scope: task.scope,
           target_grades: task.targetGrades,
+          target_school_names: task.targetSchoolNames,
           due_type: task.dueType,
           due_date: task.dueDate,
         })
@@ -202,7 +205,13 @@ export async function POST(request: NextRequest) {
       }
       taskId = created.id as string;
       // 次のループで同じ種別×対象が来ても二重に作らない
-      openTasks.push({ id: taskId, kind: task.kind, scope: task.scope, dueDate: task.dueDate });
+      openTasks.push({
+        id: taskId,
+        kind: task.kind,
+        scope: task.scope,
+        dueDate: task.dueDate,
+        targetSchoolNames: task.targetSchoolNames,
+      });
     }
 
     // 投稿を紐づける（同じ投稿を二度足さない）
@@ -220,6 +229,7 @@ export async function POST(request: NextRequest) {
       scope: task.scope,
       scopeLabel: TASK_SCOPE_LABELS[task.scope],
       targetGrades: task.targetGrades,
+      targetSchoolNames: task.targetSchoolNames,
       dueType: task.dueType,
       dueDate: task.dueDate,
       reason: task.reason,

@@ -47,12 +47,13 @@ export const TASK_KIND_LABELS: Record<TaskKind, string> = {
   report_title_format: '報告書タイトル形式',
 };
 
-/** 誰に出すか（5種）。DBの bulletin_tasks.scope に入る値 */
+/** 誰に出すか（6種）。DBの bulletin_tasks.scope に入る値 */
 export const TASK_SCOPES = [
   'all_students', // 全生徒
   'assigned_students', // 担当生徒
   'grade', // 学年
   'specific_students', // 特定生徒
+  'attending_school', // 通学校
   'teacher_self', // 講師自身（生徒に紐づかない）
 ] as const;
 
@@ -63,6 +64,7 @@ export const TASK_SCOPE_LABELS: Record<TaskScope, string> = {
   assigned_students: '担当生徒',
   grade: '学年',
   specific_students: '特定生徒',
+  attending_school: '通学校',
   teacher_self: '講師自身',
 };
 
