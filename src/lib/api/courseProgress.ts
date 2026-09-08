@@ -8,6 +8,7 @@ import type {
   SeasonType,
   CoursePrepSnapshot,
   CoursePrepSnapshotMeta,
+  CoursePrepTrack,
 } from '@/types/database';
 
 // =============================================
@@ -46,6 +47,65 @@ export async function upsertCoursePrepPeriod(
     expectedRate: updates.expected_rate,
     scheduleStartDate: updates.schedule_start_date,
     scheduleEndDate: updates.schedule_end_date,
+  });
+}
+
+// =============================================
+// 講習期間の区分（Phase 8）
+//
+// 冬期は生徒によって講習期間が違うが、同じ小6でも受験する子としない子がいて学年では割れない。
+// 期ごとに区分（中学受験・高校受験など）を作り、そこに生徒を当てはめる。
+// 設計は docs/koushu-progress-snapshot-plan.md Phase 8。
+// =============================================
+
+/** 区分の保存に渡す値。id があれば更新、無ければ新規作成。 */
+export type CoursePrepTrackDraft = {
+  id?: string;
+  name: string;
+  short_name: string | null;
+  schedule_start_date: string | null;
+  schedule_end_date: string;
+  default_grades: number[];
+  sort_order: number;
+};
+
+/** 区分を作成・更新する（教室長以上）。 */
+export async function upsertCoursePrepTrack(
+  schoolId: string,
+  season: SeasonType,
+  year: number,
+  draft: CoursePrepTrackDraft
+): Promise<CoursePrepTrack | null> {
+  const result = await callCoursePrepApi('upsert_track', schoolId, {
+    season,
+    year,
+    track: draft,
+  });
+  return (result.data as CoursePrepTrack | null) ?? null;
+}
+
+/** 区分を削除する（教室長以上）。生徒の当てはめも一緒に消える。 */
+export async function deleteCoursePrepTrack(schoolId: string, trackId: string): Promise<void> {
+  await callCoursePrepApi('delete_track', schoolId, { trackId });
+}
+
+/**
+ * 生徒の区分を保存する。
+ * trackId が区分IDならその区分に、null なら「共通に戻す」明示指定、
+ * 'default' なら当てはめ自体をやめて既定（学年）に戻す。
+ */
+export async function setCoursePrepStudentTrack(
+  schoolId: string,
+  season: SeasonType,
+  year: number,
+  studentId: string,
+  trackId: string | null | 'default'
+): Promise<void> {
+  await callCoursePrepApi('set_student_track', schoolId, {
+    season,
+    year,
+    studentId,
+    trackId,
   });
 }
 

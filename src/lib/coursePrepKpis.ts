@@ -2,6 +2,7 @@ import type {
   CourseProgressItem,
   StudentCourseProgress,
   CoursePrepPeriod,
+  CoursePrepTrack,
   Student,
 } from '@/types/database';
 import { GRADE_LABELS } from '@/types/database';
@@ -131,31 +132,87 @@ function isIsoDate(value: unknown): value is string {
 }
 
 /**
- * 期の「最後の学年が終わる日」を返す。schedule_end_date と schedule_end_by_grade の値の最大。
+ * 生徒に効く「区分」を返す。当てはめ → 既定の学年 → null（共通）の順で解決する。
  *
- * なぜ必要か: 冬期は学年で講習期間が違う（中3だけ入試直前まで続く）。共通の終了日だけを見て
- * 「期が終わった」と判定すると、まだ中3が講習中なのに確定保存してしまい、そのあとに入る
- * 中3の取得コマが実績から丸ごと落ちる。終了判定は必ず一番遅い学年に合わせる。
+ * なぜ区分か: 冬期は生徒によって講習期間が違う。学年別終了日で表そうとしたが、
+ * 同じ小6でも受験する子としない子がいるので学年では割れない。中3のように学年で
+ * ほぼ決まるものは既定の学年で一括、小6の受験生のような例外は個別に当てはめる。
+ *
+ * assignments は studentId → trackId のマップ。**キーが無い＝未指定**で、
+ * 値が null なのは「既定の学年による当てはめを打ち消して共通に戻す」明示指定。
+ * この2つは意味が違うので、必ず has() で分岐する（null 判定だけにしない）。
+ */
+export function resolveStudentTrack(
+  tracks: CoursePrepTrack[],
+  assignments: Map<string, string | null>,
+  studentId: string,
+  grade: number | null | undefined
+): CoursePrepTrack | null {
+  // 1. 個別の当てはめが最優先。共通に戻す明示指定（null）もここで効く。
+  if (assignments.has(studentId)) {
+    const trackId = assignments.get(studentId) ?? null;
+    if (trackId === null) return null;
+    return tracks.find((t) => t.id === trackId) ?? null;
+  }
+  // 2. 既定の学年。複数の区分が同じ学年を既定にしていたら sort_order の若い方を採る。
+  //    並び順が同じときは名前で決める（名前は期の中で一意なので必ず1つに決まる）。
+  if (grade == null) return null;
+  const ordered = tracks
+    .slice()
+    .sort((a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name, 'ja'));
+  return ordered.find((t) => (t.default_grades ?? []).includes(grade)) ?? null;
+}
+
+/**
+ * 生徒の講習期間を返す。区分があればその期間、無ければ共通の期間。
+ * 区分の開始日が空なら共通の開始日を使う（開始日は共通のままの区分が大半のため）。
+ */
+export function resolveTrackWindow(
+  track: CoursePrepTrack | null,
+  commonStart: string | null,
+  commonEnd: string | null
+): { start: string | null; end: string | null } {
+  if (!track) return { start: commonStart, end: commonEnd };
+  return {
+    start: track.schedule_start_date || commonStart,
+    end: track.schedule_end_date || commonEnd,
+  };
+}
+
+/**
+ * 表に出す短縮名。short_name があればそれ、無ければ name の先頭2文字。
+ * 進捗表の学年セル横に出す想定なので、長い名前をそのまま出さない。
+ */
+export function trackShortLabel(track: CoursePrepTrack): string {
+  const short = (track.short_name ?? '').trim();
+  if (short) return short;
+  // tsconfig に target 指定が無く ES5 扱いのため slice ではなく Array.from で文字単位に切る
+  return Array.from(track.name ?? '')
+    .slice(0, 2)
+    .join('');
+}
+
+/**
+ * 期の「最後の区分が終わる日」を返す。共通の終了日と全区分の終了日の最大。
+ *
+ * なぜ必要か: 冬期は区分で講習期間が違う（中3や受験生だけ入試直前まで続く）。共通の終了日
+ * だけを見て「期が終わった」と判定すると、まだ講習中の生徒がいるのに確定保存してしまい、
+ * そのあとに入る取得コマが実績から丸ごと落ちる。終了判定は必ず一番遅い区分に合わせる。
  *
  * 値は 'YYYY-MM-DD' 固定長なので辞書順比較で日付順になる。書式が違う値は無視する。
+ * （Phase 6 の schedule_end_by_grade は Phase 8 で区分に置き換えたので、もう見ない。）
  */
 export function resolvePeriodLastEndDate(
-  period:
-    | {
-        schedule_end_date: string | null;
-        schedule_end_by_grade?: Record<string, string> | null;
-      }
-    | null
-    | undefined
+  period: { schedule_end_date: string | null } | null | undefined,
+  // 終了日しか見ないので、cron のように終了日だけを引いた軽い行でも渡せる形にしてある
+  tracks?: Pick<CoursePrepTrack, 'schedule_end_date'>[] | null
 ): string | null {
-  if (!period) return null;
-  let last: string | null = isIsoDate(period.schedule_end_date) ? period.schedule_end_date : null;
-  const byGrade = period.schedule_end_by_grade;
-  if (byGrade) {
-    for (const value of Object.values(byGrade)) {
-      if (!isIsoDate(value)) continue;
-      if (last === null || value > last) last = value;
-    }
+  let last: string | null =
+    period && isIsoDate(period.schedule_end_date) ? period.schedule_end_date : null;
+  for (const track of tracks ?? []) {
+    const value = track?.schedule_end_date;
+    if (!isIsoDate(value)) continue;
+    if (last === null || value > last) last = value;
   }
   return last;
 }

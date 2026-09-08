@@ -12,9 +12,17 @@ import {
   computeSchoolKpis,
   isCoursePrepOutOfScope,
   resolvePeriodLastEndDate,
+  resolveStudentTrack,
+  resolveTrackWindow,
+  trackShortLabel,
   computeCourseSessionsForStudent,
 } from '@/lib/coursePrepKpis';
-import type { CourseProgressItem, StudentCourseProgress, Student } from '@/types/database';
+import type {
+  CourseProgressItem,
+  StudentCourseProgress,
+  Student,
+  CoursePrepTrack,
+} from '@/types/database';
 import type { AutoValues } from '@/lib/api/courseProgress';
 
 // 関数が読むフィールドだけを持つ最小オブジェクトを作る（型はキャストで満たす）
@@ -26,6 +34,15 @@ const auto = (
   v: Record<string, { applied_total?: number; course_sessions?: number }>
 ): AutoValues => v as unknown as AutoValues;
 const student = (partial: Partial<Student>): Student => partial as unknown as Student;
+/** 区分。既定値（短縮名なし・開始日は共通・既定学年なし）を埋めて読みやすくする */
+const track = (partial: Partial<CoursePrepTrack>): CoursePrepTrack =>
+  ({
+    short_name: null,
+    schedule_start_date: null,
+    default_grades: [],
+    sort_order: 0,
+    ...partial,
+  }) as unknown as CoursePrepTrack;
 
 describe('computeDecidedKomaByStudent（取得増コマの算出）', () => {
   it('applied_extra 自動列: max(0, applied_total - course_sessions)', () => {
@@ -256,61 +273,157 @@ describe('期日超過の集計で進路調査の対象外セルを数えない'
 });
 
 /**
- * 学年別終了日（決定44）まわり。
- * 冬期は中3だけ講習期間が長いので、「期が終わったか」の判定と通常回数の数え方が
+ * 講習期間の区分（Phase 8）まわり。
+ * 冬期は生徒によって講習期間が違うので、「期が終わったか」の判定と通常回数の数え方が
  * 共通の終了日だけを見ていると実績が壊れる（自動確定が早すぎる／増コマが水増しされる）。
+ * 学年で割れない（同じ小6でも受験する子としない子がいる）ため、期ごとの区分で表す。
  */
-describe('resolvePeriodLastEndDate（最後の学年が終わる日）', () => {
-  it('学年別の上書きが無ければ共通の終了日', () => {
-    expect(
-      resolvePeriodLastEndDate({ schedule_end_date: '2027-01-05', schedule_end_by_grade: null })
-    ).toBe('2027-01-05');
+describe('resolvePeriodLastEndDate（最後の区分が終わる日）', () => {
+  it('区分が無ければ共通の終了日', () => {
+    expect(resolvePeriodLastEndDate({ schedule_end_date: '2027-01-05' }, [])).toBe('2027-01-05');
     expect(resolvePeriodLastEndDate({ schedule_end_date: '2027-01-05' })).toBe('2027-01-05');
   });
 
-  it('学年別が共通より後ならそちらを返す（中3が入試直前まで続く冬期）', () => {
+  it('区分が共通より後ならそちらを返す（受験生が入試直前まで続く冬期）', () => {
     expect(
-      resolvePeriodLastEndDate({
-        schedule_end_date: '2027-01-05',
-        schedule_end_by_grade: { '9': '2027-02-10', '6': '2027-01-10' },
-      })
-    ).toBe('2027-02-10');
+      resolvePeriodLastEndDate({ schedule_end_date: '2027-01-05' }, [
+        track({ id: 't1', name: '中学受験', schedule_end_date: '2027-01-31' }),
+        track({ id: 't2', name: '高校受験', schedule_end_date: '2027-02-20' }),
+      ])
+    ).toBe('2027-02-20');
   });
 
-  it('学年別が共通より前なら共通のまま（早く終わる学年に引きずられない）', () => {
+  it('区分が共通より前なら共通のまま（早く終わる区分に引きずられない）', () => {
     expect(
-      resolvePeriodLastEndDate({
-        schedule_end_date: '2027-01-05',
-        schedule_end_by_grade: { '1': '2026-12-28' },
-      })
+      resolvePeriodLastEndDate({ schedule_end_date: '2027-01-05' }, [
+        track({ id: 't1', name: '早じまい', schedule_end_date: '2026-12-28' }),
+      ])
     ).toBe('2027-01-05');
   });
 
-  it('共通も学年別も無ければ null', () => {
-    expect(
-      resolvePeriodLastEndDate({ schedule_end_date: null, schedule_end_by_grade: {} })
-    ).toBeNull();
+  it('共通も区分も無ければ null', () => {
+    expect(resolvePeriodLastEndDate({ schedule_end_date: null }, [])).toBeNull();
     expect(resolvePeriodLastEndDate(null)).toBeNull();
     expect(resolvePeriodLastEndDate(undefined)).toBeNull();
   });
 
   it('YYYY-MM-DD でない値は無視する', () => {
     expect(
-      resolvePeriodLastEndDate({
-        schedule_end_date: '2027-01-05',
-        schedule_end_by_grade: { '9': '2027/02/10', '8': '', '7': 'あとで' },
-      })
+      resolvePeriodLastEndDate({ schedule_end_date: '2027-01-05' }, [
+        track({ id: 't1', name: '壊れ', schedule_end_date: '2027/02/10' }),
+      ])
     ).toBe('2027-01-05');
-    // 共通側が壊れていて学年別だけが正しい場合も、正しい方だけを採用する
+    // 共通側が壊れていて区分だけが正しい場合も、正しい方だけを採用する
     expect(
-      resolvePeriodLastEndDate({
-        schedule_end_date: 'unknown',
-        schedule_end_by_grade: { '9': '2027-02-10' },
-      })
+      resolvePeriodLastEndDate({ schedule_end_date: 'unknown' }, [
+        track({ id: 't1', name: '高校受験', schedule_end_date: '2027-02-10' }),
+      ])
     ).toBe('2027-02-10');
-    expect(
-      resolvePeriodLastEndDate({ schedule_end_date: 'unknown', schedule_end_by_grade: null })
-    ).toBeNull();
+    expect(resolvePeriodLastEndDate({ schedule_end_date: 'unknown' }, [])).toBeNull();
+  });
+});
+
+describe('resolveStudentTrack（生徒に効く区分の解決）', () => {
+  const juken = track({
+    id: 't-chu',
+    name: '中学受験',
+    schedule_end_date: '2027-01-31',
+    default_grades: [],
+    sort_order: 0,
+  });
+  const koukou = track({
+    id: 't-kou',
+    name: '高校受験',
+    schedule_end_date: '2027-02-20',
+    default_grades: [9],
+    sort_order: 1,
+  });
+  const tracks = [juken, koukou];
+
+  it('当てはめが最優先（既定の学年より強い）', () => {
+    const assignments = new Map<string, string | null>([['s1', 't-chu']]);
+    // 中3なので既定なら高校受験だが、個別の当てはめが勝つ
+    expect(resolveStudentTrack(tracks, assignments, 's1', 9)?.id).toBe('t-chu');
+  });
+
+  it('当てはめが null なら共通（既定の学年を打ち消す明示指定）', () => {
+    const assignments = new Map<string, string | null>([['s1', null]]);
+    expect(resolveStudentTrack(tracks, assignments, 's1', 9)).toBeNull();
+  });
+
+  it('行が無ければ既定の学年で当てはまる', () => {
+    expect(resolveStudentTrack(tracks, new Map(), 's1', 9)?.id).toBe('t-kou');
+    // 既定に無い学年は共通
+    expect(resolveStudentTrack(tracks, new Map(), 's2', 6)).toBeNull();
+  });
+
+  it('既定の学年が複数の区分で重なったら sort_order の若い方', () => {
+    const early = track({
+      id: 't-early',
+      name: 'あとから作った区分',
+      schedule_end_date: '2027-01-20',
+      default_grades: [9],
+      sort_order: 0,
+    });
+    expect(resolveStudentTrack([koukou, early], new Map(), 's1', 9)?.id).toBe('t-early');
+    // 渡す順番が違っても結果は変わらない（sort_order で決まる）
+    expect(resolveStudentTrack([early, koukou], new Map(), 's1', 9)?.id).toBe('t-early');
+  });
+
+  it('学年が不明なら既定では当てはめない（当てはめ行があればそれは効く）', () => {
+    expect(resolveStudentTrack(tracks, new Map(), 's1', null)).toBeNull();
+    const assignments = new Map<string, string | null>([['s1', 't-kou']]);
+    expect(resolveStudentTrack(tracks, assignments, 's1', null)?.id).toBe('t-kou');
+  });
+
+  it('当てはめ先の区分が消えていたら共通に倒す', () => {
+    const assignments = new Map<string, string | null>([['s1', '消えたID']]);
+    expect(resolveStudentTrack(tracks, assignments, 's1', 9)).toBeNull();
+  });
+});
+
+describe('resolveTrackWindow（生徒の講習期間）', () => {
+  it('区分が無ければ共通の期間', () => {
+    expect(resolveTrackWindow(null, '2026-12-22', '2027-01-07')).toEqual({
+      start: '2026-12-22',
+      end: '2027-01-07',
+    });
+  });
+
+  it('区分の開始日が空なら共通の開始日・終了日は区分のもの', () => {
+    const t = track({ id: 't1', name: '中学受験', schedule_end_date: '2027-01-31' });
+    expect(resolveTrackWindow(t, '2026-12-22', '2027-01-07')).toEqual({
+      start: '2026-12-22',
+      end: '2027-01-31',
+    });
+  });
+
+  it('区分に開始日があればそれを使う（共通より早く始まる大学受験など）', () => {
+    const t = track({
+      id: 't1',
+      name: '大学受験',
+      schedule_start_date: '2026-12-15',
+      schedule_end_date: '2027-02-25',
+    });
+    expect(resolveTrackWindow(t, '2026-12-22', '2027-01-07')).toEqual({
+      start: '2026-12-15',
+      end: '2027-02-25',
+    });
+  });
+});
+
+describe('trackShortLabel（表に出す短縮名）', () => {
+  it('short_name があればそれを使う', () => {
+    expect(trackShortLabel(track({ id: 't1', name: '中学受験', short_name: '中受' }))).toBe('中受');
+  });
+
+  it('short_name が無ければ name の先頭2文字', () => {
+    expect(trackShortLabel(track({ id: 't1', name: '中学受験' }))).toBe('中学');
+    expect(trackShortLabel(track({ id: 't1', name: '英' }))).toBe('英');
+  });
+
+  it('空白だけの short_name は無いものとして扱う', () => {
+    expect(trackShortLabel(track({ id: 't1', name: '高校受験', short_name: '  ' }))).toBe('高校');
   });
 });
 

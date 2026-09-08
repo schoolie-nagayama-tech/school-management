@@ -21,7 +21,7 @@ const FINALIZE_WINDOW_DAYS = 45;
  * 毎日 早朝 JST にVercel Cronから呼ばれる。
  *
  * 講習期間が終わっていて、まだ確定保存されていない期を自動で確定保存する。
- * 「終わった」の判定は共通の終了日ではなく、学年別終了日も含めた最後の学年の終了日で行う。
+ * 「終わった」の判定は共通の終了日ではなく、区分の終了日も含めた一番遅い終了日で行う。
  * 進捗表の数字はライブデータから再計算され続けるため（退塾で行が消える、通塾パターンの
  * 組み替えでコマ数が変わる等）、期が終わったら早めに入力を凍結しないと実績が残らない。
  *
@@ -47,18 +47,21 @@ export async function GET(request: NextRequest) {
       .toISOString()
       .slice(0, 10);
 
-    // 終了日のある期を全部取り、終了判定と45日窓は JS 側で「最後の学年の終了日」に対して行う。
+    // 終了日のある期を全部取り、終了判定と45日窓は JS 側で「最後の区分の終了日」に対して行う。
     //
-    // SQL で schedule_end_date に窓をかけてはいけない。学年別終了日（schedule_end_by_grade）は
+    // SQL で schedule_end_date に窓をかけてはいけない。区分の終了日（course_prep_tracks）は
     // 共通の終了日より後になりうるので、
-    //   - 上限を共通終了日で切ると「中3がまだ講習中なのに凍結」→ そのあと入る中3の取得コマが落ちる
-    //   - 下限を共通終了日で切ると「共通は1/7・中3は2/25」のような冬期で、中3が終わった頃には
-    //     共通終了日が45日窓の外に出ていて、その期が永久に自動確定されない
-    // 期の行数は 教室数 × 3期 × 年数 程度なので、全件取って JS で絞って問題ない。
-    const { data: periods, error: periodError } = await supabaseAdmin
-      .from('course_prep_periods')
-      .select('school_id, season, year, schedule_end_date, schedule_end_by_grade')
-      .not('schedule_end_date', 'is', null);
+    //   - 上限を共通終了日で切ると「受験生がまだ講習中なのに凍結」→ そのあと入る取得コマが落ちる
+    //   - 下限を共通終了日で切ると「共通は1/7・高校受験は2/20」のような冬期で、受験生が終わった頃
+    //     には共通終了日が45日窓の外に出ていて、その期が永久に自動確定されない
+    // 期の行数は 教室数 × 3期 × 年数 程度なので、全件取って JS で絞って問題ない。区分も同様に軽い。
+    const [{ data: periods, error: periodError }, { data: trackRows }] = await Promise.all([
+      supabaseAdmin
+        .from('course_prep_periods')
+        .select('school_id, season, year, schedule_end_date')
+        .not('schedule_end_date', 'is', null),
+      supabaseAdmin.from('course_prep_tracks').select('school_id, season, year, schedule_end_date'),
+    ]);
 
     if (periodError) {
       console.error('[cron/finalize-course-prep] 期の取得エラー:', periodError);
@@ -68,7 +71,21 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ ok: true, saved: 0, skipped: 0, date: todayJST });
     }
 
-    // 最後の学年が終わっていて、かつ自動確定の対象期間（直近 FINALIZE_WINDOW_DAYS 日）に
+    // 区分を (school_id, season, year) でまとめ、期ごとの終了判定に渡せるようにする。
+    const tracksByPeriod = new Map<string, { schedule_end_date: string }[]>();
+    for (const t of (trackRows || []) as {
+      school_id: string;
+      season: string;
+      year: number;
+      schedule_end_date: string;
+    }[]) {
+      const key = `${t.school_id}:${t.season}:${t.year}`;
+      const arr = tracksByPeriod.get(key);
+      if (arr) arr.push(t);
+      else tracksByPeriod.set(key, [t]);
+    }
+
+    // 最後の区分が終わっていて、かつ自動確定の対象期間（直近 FINALIZE_WINDOW_DAYS 日）に
     // 収まっている期だけを対象にする。
     const endedPeriods = (
       periods as {
@@ -76,10 +93,11 @@ export async function GET(request: NextRequest) {
         season: string;
         year: number;
         schedule_end_date: string | null;
-        schedule_end_by_grade: Record<string, string> | null;
       }[]
     ).filter((p) => {
-      const lastEnd = resolvePeriodLastEndDate(p);
+      const tracks = tracksByPeriod.get(`${p.school_id}:${p.season}:${p.year}`) ?? [];
+      // resolvePeriodLastEndDate は終了日しか見ないので、終了日だけの軽い行で足りる
+      const lastEnd = resolvePeriodLastEndDate(p, tracks);
       if (!lastEnd) return false;
       return lastEnd < todayJST && lastEnd >= windowStart;
     });

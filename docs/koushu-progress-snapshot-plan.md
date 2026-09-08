@@ -1,6 +1,7 @@
 # 講習進捗管理表 スナップショット計画
 
-作成: 2026-09-04 / 状態: Phase 1〜7 実装済み・本番DB適用済み（`course_prep_snapshots` 2026-09-04 / 通塾パターンの `effective_until` 埋め戻し 2026-09-07）・実機未検証
+作成: 2026-09-04 / 状態: Phase 1〜8 実装済み・実機未検証。本番DB適用済み（`course_prep_snapshots` 2026-09-04 / 通塾パターンの `effective_until` 埋め戻し 2026-09-07）。
+**Phase 8（講習期間の区分）のマイグレーション `20260908120000_course_prep_tracks.sql` は本番未適用。**
 
 ## 1. 何が問題か
 
@@ -118,7 +119,7 @@ create table course_prep_snapshots (
 
 ### Phase 4: 自動確定
 
-日次 cron で「最後の学年の終了日（Phase 6 の `resolvePeriodLastEndDate`）を過ぎていて、まだスナップショットが無い期」を
+日次 cron で「最後の区分の終了日（`resolvePeriodLastEndDate`。Phase 6 → Phase 8 で区分ベースに）を過ぎていて、まだスナップショットが無い期」を
 1回だけ保存する（`capture_reason='auto'`）。対象は終了から45日以内の期だけ（導入時に昔の痩せた期を確定として焼き付けないため）。
 Phase 1 で退塾者が消えなくなっているので、退塾 cron との実行順に依存しない。
 
@@ -128,6 +129,11 @@ Phase 1 で退塾者が消えなくなっているので、退塾 cron との実
 - 夏期2026 を遡って確定保存する（Phase 1 適用後、退塾者が戻ってから）。
 
 ### Phase 6: 学年別終了日への対応（2026-09-07）
+
+> **★ Phase 8（2026-09-08）で「区分」に置き換え、この節の実装は撤去した。**
+> 同じ小6でも受験する子としない子がいるため、学年では割れなかったのが理由。
+> 以下は経緯の記録として残す。`course_prep_periods.schedule_end_by_grade` の列自体は
+> 既存データを消さないために残してあるが、期間の解決にはもう使わない。
 
 冬期は学年で講習期間が違う（中3だけ入試直前まで続く）。この上書きは
 `course_prep_periods.schedule_end_by_grade`（jsonb・学年番号の文字列 → `YYYY-MM-DD`）に入っていて、
@@ -181,6 +187,41 @@ Phase 1 で退塾者が消えなくなっているので、退塾 cron との実
   空のままだと新ルールで「今も有効」と解釈されて逆に数が増える。厳密な最終通塾日ではない近似。
 - 確定済みスナップショットは集計の入力ごと保存しているので、この変更でも動かない
   （夏期2026 は 2026-09-05 に5校とも自動確定済み）。
+
+### Phase 8: 講習期間の区分（2026-09-08）
+
+冬期は生徒によって講習期間が違う。Phase 6 は学年別終了日で表そうとしたが、
+**同じ小6でも中学受験する子としない子がいるので、学年では割れない**。
+そこで期ごとに「区分」（中学受験・高校受験・大学受験など）を作り、そこに生徒を当てはめる。
+
+DDL: `supabase/migrations/20260908120000_course_prep_tracks.sql`（`course_prep_tracks` /
+`course_prep_student_tracks`。RLS は兄弟の `course_prep_*` と同じ `check_school_access()`）。
+
+**当てはめの決まり（優先順）** — 純関数 `resolveStudentTrack`（`src/lib/coursePrepKpis.ts`）:
+
+1. `course_prep_student_tracks` に行があればそれが正典。`track_id` が NULL なら
+   「既定を打ち消して共通に戻す」明示指定（**行が無い＝未指定とは意味が違う**）
+2. 行が無ければ `default_grades` にその生徒の学年を含む区分（`sort_order` 昇順で最初の1件）
+3. どれにも当たらなければ共通の講習期間（`course_prep_periods` の開始日・終了日）
+
+→ 中3は既定の学年で一括、小6の受験生だけ個別に当てはめる、という運用ができる。
+
+| 何を | どこで |
+| --- | --- |
+| 生徒の期間（開始・終了）を解決 | `resolveTrackWindow`。区分の開始日が空なら共通の開始日 |
+| 通常回数（`course_sessions`）を区分の期間で数える | `runBatchForSchool` の auto_values。**開始日も生徒ごとに変わりうる**ので、曜日出現回数のキャッシュキーは `開始日|終了日` |
+| 通塾パターンの SQL 取得 | 全区分を含む最も広い窓（最小の開始日〜最大の終了日）で広めに取り、生徒ごとの絞り込みは JS 側（Phase 7 の `inWindow` を開始・終了の両方で判定） |
+| 期の終了判定 | `resolvePeriodLastEndDate(period, tracks)` = 共通終了日と全区分の終了日の最大。cron の自動確定・状態バーの `hasPeriodEnded` が使う |
+| 区分の定義 | 進捗管理ダッシュボードの「講習期間」欄（教室長以上・確定データ表示中は不可）。API は `upsert_track` / `delete_track` |
+| 生徒の当てはめ | 進捗表の生徒名クリックのメニュー。API は `set_student_track`（`'default'` で当てはめ行ごと削除） |
+| 表での見え方 | 学年セルの横に短縮名（`trackShortLabel`）。**個別に上書きした子は濃く・既定の学年で入った子は薄く** |
+
+- **スナップショットの payload は `version: 2` に上げた**（`tracks` / `studentTracks` を追加）。
+  読む側（`/courses/progress`）は version 1 の payload でも壊れないよう空配列にフォールバックする。
+- cron は **SQL 側で終了日に窓をかけない**（Phase 6 と同じ理由。区分の終了日は共通より後になる）。
+- 学年別終了日（Phase 6）の実装は撤去した。設定→講習申込の「学年別の講習終了日」セクション、
+  `derivePeriodInfo`（申込フォーム）、`realDataAdapter` の可能枠クランプはすべて区分ベースに置き換え。
+  `resolveGradeEndDate` / `sanitizeEndByGrade` は「新規利用禁止」の注記を付けて残してある。
 
 ## 4. 決めたこと・決めなかったこと
 
