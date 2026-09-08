@@ -19,6 +19,12 @@ export interface BulletinTaskView {
   /** scope=attending_school のときの対象の通学校。それ以外では空 */
   targetSchoolNames: string[];
   /**
+   * scope=grade のときの対象の学年。それ以外では空。
+   * ★画面には出さない。「× 消す」の答え合わせ（ai_feedback）に、AIが出した対象を
+   *   そのまま残すために持つ（対象を誤ったのか種別を誤ったのかを後で分けるため）。
+   */
+  targetGrades: number[];
+  /**
    * targetSchoolNames を指定したのに、在籍生徒の誰にも一致しなかった（表記ゆれ・入力ミスなど）。
    * ★このとき母数は絞らず全員にしている。画面はここを見て「全員で数えています」と断る。
    */
@@ -69,6 +75,12 @@ export interface BulletinTaskView {
   sources: { title: string; postedAt: string | null }[];
   /** タスクが作られた時刻。画面はこれを見て「いま追加」を出す */
   createdAt: string;
+  /**
+   * AIがこの依頼の根拠にした投稿の一文（原文のまま）。無ければ空文字。
+   * ★カードに小さく出す。読み間違いに気づくのは「その一文を見たとき」なので、
+   *   数字だけでなくAIが何を読んだかも一緒に見せる。
+   */
+  sourceExcerpt: string;
 }
 
 export interface BulletinProgressResponse {

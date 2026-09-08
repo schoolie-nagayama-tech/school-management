@@ -213,6 +213,44 @@ describe('重複と上限', () => {
   });
 });
 
+/**
+ * ★根拠にした一文（source_excerpt）。
+ *   「どこで読み間違えたか」を追うために、投稿の文を原文のまま残させている。
+ *   要約や作文が混ざると追跡に使えないので、そう見えるものは捨てて空にする。
+ */
+describe('根拠にした一文', () => {
+  it('そのまま受け取る', () => {
+    const got = parseExtractedTasks(
+      raw({ ...validTask, source_excerpt: '7/31までに通知表を回収してください' })
+    );
+    expect(got[0].sourceExcerpt).toBe('7/31までに通知表を回収してください');
+  });
+
+  it('前後の空白は落とす', () => {
+    const got = parseExtractedTasks(raw({ ...validTask, source_excerpt: '  PCSを配布  ' }));
+    expect(got[0].sourceExcerpt).toBe('PCSを配布');
+  });
+
+  it('改行は空白に潰す（カードの1行に収めるため）', () => {
+    const got = parseExtractedTasks(raw({ ...validTask, source_excerpt: '通知表を\n回収' }));
+    expect(got[0].sourceExcerpt).toBe('通知表を 回収');
+  });
+
+  /** ★長すぎるものは「そのまま写す」に従っていない。中途半端に残すより空にする */
+  it('長すぎるものは捨てて空にする', () => {
+    const got = parseExtractedTasks(raw({ ...validTask, source_excerpt: 'あ'.repeat(61) }));
+    expect(got[0].sourceExcerpt).toBe('');
+  });
+
+  it('無い・文字列でないときは空', () => {
+    expect(parseExtractedTasks(raw(validTask))[0].sourceExcerpt).toBe('');
+    expect(parseExtractedTasks(raw({ ...validTask, source_excerpt: 3 }))[0].sourceExcerpt).toBe('');
+    expect(parseExtractedTasks(raw({ ...validTask, source_excerpt: '   ' }))[0].sourceExcerpt).toBe(
+      ''
+    );
+  });
+});
+
 describe('再掲のまとめ方', () => {
   const task: ExtractedTask = {
     kind: 'report_card_entry',
@@ -222,6 +260,7 @@ describe('再掲のまとめ方', () => {
     dueType: 'date',
     dueDate: '2026-08-10',
     reason: '',
+    sourceExcerpt: '',
   };
   const open: OpenTask[] = [
     { id: 'a', kind: 'report_card_entry', scope: 'all_students', dueDate: '2026-07-31' },
@@ -303,6 +342,7 @@ describe('再掲で期限が変わったか', () => {
     dueType: 'date',
     dueDate: '2026-08-10',
     reason: '',
+    sourceExcerpt: '',
   };
   const target: OpenTask = {
     id: 'a',
