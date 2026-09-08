@@ -35,7 +35,7 @@ const STATUS_STYLES: Record<TestPrepStatus, string> = {
 
 export default function TestPrepProposalsList() {
   const router = useRouter();
-  const { schoolIds, selectedSchoolId, getSelectedSchoolIds } = useAuth();
+  const { selectedSchoolId, getSelectedSchoolIds } = useAuth();
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [proposals, setProposals] = useState<ProposalRow[]>([]);
@@ -50,11 +50,20 @@ export default function TestPrepProposalsList() {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const loadData = useCallback(async () => {
-    if (!schoolIds || schoolIds.length === 0) return;
+    // ★教室スコープはヘッダーの教室切替（getSelectedSchoolIds）に必ず従う。
+    // アクセスできる教室すべて（schoolIds）で引くと、システム管理者・オーナーは全教室、
+    // 掛け持ちの教室長は勤務先以外の提案書まで一覧に混ざる（生徒名が他教室に漏れる）。
+    // selectedSchoolId が未確定（null）のうちは getSelectedSchoolIds が schoolIds を
+    // そのまま返すため、決まるまで引かない。
+    if (!selectedSchoolId) return;
+    const ids = getSelectedSchoolIds();
+    if (ids.length === 0) {
+      setProposals([]);
+      setLoading(false);
+      return;
+    }
     try {
-      const data = await getTestPrepProposalsWithStudent(
-        schoolIds.length === 1 ? schoolIds[0] : schoolIds
-      );
+      const data = await getTestPrepProposalsWithStudent(ids.length === 1 ? ids[0] : ids);
       setProposals(data);
       setLoadError(false);
     } catch (e) {
@@ -63,7 +72,7 @@ export default function TestPrepProposalsList() {
     } finally {
       setLoading(false);
     }
-  }, [schoolIds]);
+  }, [selectedSchoolId, getSelectedSchoolIds]);
 
   useEffect(() => {
     loadData();
@@ -73,10 +82,8 @@ export default function TestPrepProposalsList() {
   const loadStudents = useCallback(async () => {
     setStudentsLoading(true);
     try {
-      const ids =
-        selectedSchoolId && selectedSchoolId !== 'all'
-          ? [selectedSchoolId]
-          : getSelectedSchoolIds();
+      // 一覧と同じスコープで引く（'all' のときのデモ教室除外も getSelectedSchoolIds が担う）
+      const ids = selectedSchoolId ? getSelectedSchoolIds() : [];
       if (ids.length === 0) {
         setStudents([]);
         return;
@@ -99,7 +106,7 @@ export default function TestPrepProposalsList() {
     } finally {
       setStudentsLoading(false);
     }
-  }, [schoolIds, selectedSchoolId, getSelectedSchoolIds]);
+  }, [selectedSchoolId, getSelectedSchoolIds]);
 
   const openPicker = useCallback(() => {
     setPickerOpen(true);
