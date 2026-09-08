@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import type { ReactNode } from 'react';
 import dynamic from 'next/dynamic';
-import { Button, Modal, Loading } from '@/components/ui';
+import { Button, Modal, Loading, ScrollToTopButton } from '@/components/ui';
 import Link from 'next/link';
 import {
   Plus,
@@ -1316,6 +1316,9 @@ export function StudentsPageClient({
         students={studentsForScores}
         onImportComplete={() => void syncListsAfterMutation()}
       />
+
+      {/* 縦に長いページなので、下まで行ったときに先頭へ戻れるようにする */}
+      <ScrollToTopButton />
     </AdminLayout>
   );
 }
