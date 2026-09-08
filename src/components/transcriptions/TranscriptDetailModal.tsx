@@ -66,12 +66,12 @@ export function TranscriptDetailModal({ isOpen, onClose, transcript, onLink, onU
 
         <div>
           <div className="text-text-muted mb-1">文字起こし</div>
-          <div className="whitespace-pre-wrap bg-surface-raised border border-border-default rounded p-3 max-h-96 overflow-y-auto">
+          <div className="whitespace-pre-wrap bg-surface-raised border border-border rounded p-3 max-h-96 overflow-y-auto">
             {transcript.transcript}
           </div>
         </div>
 
-        <div className="flex items-center justify-between pt-2 border-t border-border-default">
+        <div className="flex items-center justify-between pt-2 border-t border-border">
           <div>
             {!transcript.linked_student_id && onLink && (
               <Button onClick={onLink}>

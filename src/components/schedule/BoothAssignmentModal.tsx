@@ -191,7 +191,7 @@ export function BoothAssignmentModal({
                           className={`w-20 px-2 py-1 border rounded ${
                             duplicateBooths.has(r.boothNo)
                               ? 'border-danger bg-danger-subtle'
-                              : 'border-border-default'
+                              : 'border-border'
                           }`}
                           onChange={(e) => {
                             const v = parseInt(e.target.value, 10);

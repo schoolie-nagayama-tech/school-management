@@ -262,7 +262,7 @@ export default function StudentLessonReportsPage() {
                   className={`px-2 py-1 text-xs rounded border transition-[background-color,color,border-color] duration-150 ease-out active:scale-[0.97] ${
                     subjectFilter === 'all'
                       ? 'bg-info text-white border-info'
-                      : 'bg-white text-text-muted border-border-default'
+                      : 'bg-white text-text-muted border-border'
                   }`}
                   onClick={() => setSubjectFilter('all')}
                 >
@@ -275,7 +275,7 @@ export default function StudentLessonReportsPage() {
                     className={`px-2 py-1 text-xs rounded border transition-[background-color,color,border-color] duration-150 ease-out active:scale-[0.97] ${
                       subjectFilter === s
                         ? 'bg-info text-white border-info'
-                        : 'bg-white text-text-muted border-border-default'
+                        : 'bg-white text-text-muted border-border'
                     }`}
                     onClick={() => setSubjectFilter(s)}
                   >

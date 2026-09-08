@@ -754,7 +754,7 @@ export function CourseEditor({ courseId, schoolId }: { courseId?: string; school
           )}
         </div>
 
-        <section className="p-4 bg-surface-raised rounded-xl border border-border-default space-y-3">
+        <section className="p-4 bg-surface-raised rounded-xl border border-border space-y-3">
           <div>
             <label htmlFor="course-name" className="text-xs font-bold text-text-muted block mb-1.5">
               講習名
@@ -772,7 +772,7 @@ export function CourseEditor({ courseId, schoolId }: { courseId?: string; school
               }}
               aria-required="true"
               className={`w-full px-3 py-2 text-sm border rounded-lg bg-surface-raised focus:ring-2 focus:ring-primary/20 focus:border-primary ${
-                name.trim() ? 'border-border-default' : 'border-red-300'
+                name.trim() ? 'border-border' : 'border-red-300'
               }`}
               placeholder="例: 春期講習 中1数学"
             />
@@ -838,7 +838,7 @@ export function CourseEditor({ courseId, schoolId }: { courseId?: string; school
                 setComment(e.target.value);
                 setDirty(true);
               }}
-              className="w-full px-3 py-2 text-sm border border-border-default rounded-lg bg-surface-raised focus:ring-2 focus:ring-primary/20 focus:border-primary"
+              className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-surface-raised focus:ring-2 focus:ring-primary/20 focus:border-primary"
               placeholder="講習に関するメモ"
             />
           </div>
@@ -847,7 +847,7 @@ export function CourseEditor({ courseId, schoolId }: { courseId?: string; school
 
       <div className="space-y-5">
         {/* テキストのタブ。切り替えても未保存の入力は保持される（unitsByTextbook に全冊ぶん持っている） */}
-        <section className="p-4 bg-surface-raised rounded-xl border border-border-default">
+        <section className="p-4 bg-surface-raised rounded-xl border border-border">
           <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
             <div className="text-xs font-bold text-text-muted">
               テキスト（{textbooks.length}/{MAX_TEXTBOOKS}）
@@ -928,7 +928,7 @@ export function CourseEditor({ courseId, schoolId }: { courseId?: string; school
         )}
 
         {/* 単元。行クリックで+1、なぞりドラッグで範囲選択、G で結合（提案書エディタと同じ） */}
-        <section className="p-4 bg-surface-raised rounded-xl border border-border-default">
+        <section className="p-4 bg-surface-raised rounded-xl border border-border">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-bold text-text-heading">対象単元を設定</h2>
             <div className="text-sm font-bold text-accent-ink">
@@ -1000,7 +1000,7 @@ export function CourseEditor({ courseId, schoolId }: { courseId?: string; school
             <Link
               href={`/courses/${savedCourseId}/apply`}
               title="生徒ごとに下書きの提案書を作成します"
-              className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-text-body border border-border-default rounded-lg hover:bg-surface-hover active:scale-[0.97] transition-[background-color,transform] duration-150 ease-out"
+              className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-text-body border border-border rounded-lg hover:bg-surface-hover active:scale-[0.97] transition-[background-color,transform] duration-150 ease-out"
             >
               <Users className="w-3.5 h-3.5 mr-1" />
               生徒に登録

@@ -75,7 +75,7 @@ export function PublishOrderDialog({
   return (
     <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/40" onClick={creating ? undefined : onClose} />
-      <div className="relative w-full max-w-md bg-surface-raised rounded-2xl shadow-xl border border-border-default overflow-hidden animate-[popover-enter_150ms_cubic-bezier(0.23,1,0.32,1)]">
+      <div className="relative w-full max-w-md bg-surface-raised rounded-2xl shadow-xl border border-border overflow-hidden animate-[popover-enter_150ms_cubic-bezier(0.23,1,0.32,1)]">
         {/* ヘッダー */}
         <div className="flex items-center gap-2 px-4 py-3 border-b border-border-subtle">
           <Package className="w-4 h-4 text-info" />
@@ -148,7 +148,7 @@ export function PublishOrderDialog({
                     >
                       <span
                         className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 ${
-                          checked ? 'bg-info border-info text-white' : 'border-border-default'
+                          checked ? 'bg-info border-info text-white' : 'border-border'
                         }`}
                       >
                         {checked && <Check className="w-2.5 h-2.5" />}

@@ -80,7 +80,7 @@ export const ScheduleCell = React.memo(function ScheduleCell({
             if (daysLeft == null) return '';
             if (daysLeft < 0) return 'bg-danger-subtle text-danger border border-danger';
             if (daysLeft <= 7) return 'bg-warning-subtle text-warning border border-warning';
-            return 'bg-surface text-text-body border border-border-default';
+            return 'bg-surface text-text-body border border-border';
           })();
           const chipLabel = (() => {
             if (daysLeft == null) return null;

@@ -254,7 +254,7 @@ export default function PatternMatchPage() {
                 className={`px-2 py-1 text-xs rounded border ${
                   filterDay === 'all'
                     ? 'bg-info text-white border-info'
-                    : 'bg-white text-text-muted border-border-default'
+                    : 'bg-white text-text-muted border-border'
                 }`}
               >
                 全曜日
@@ -267,7 +267,7 @@ export default function PatternMatchPage() {
                   className={`px-2 py-1 text-xs rounded border ${
                     filterDay === d
                       ? 'bg-info text-white border-info'
-                      : 'bg-white text-text-muted border-border-default'
+                      : 'bg-white text-text-muted border-border'
                   }`}
                 >
                   {DAY_LABELS[d]}
@@ -376,7 +376,7 @@ export default function PatternMatchPage() {
                                               ? 'bg-success-subtle border-success text-success font-semibold hover:bg-success/15'
                                               : c.score >= 30
                                                 ? 'bg-info-subtle border-info text-info hover:bg-info/15'
-                                                : 'bg-white border-border-default text-text-body hover:bg-surface'
+                                                : 'bg-white border-border text-text-body hover:bg-surface'
                                           }`}
                                           title={`スコア: ${c.score} / ${c.reasons.join('・')}${c.warnings.length ? ' / ⚠ ' + c.warnings.join('・') : ''}`}
                                         >
@@ -447,7 +447,7 @@ function ScorePill({
       ? 'bg-success-subtle border-success text-success'
       : color === 'info'
         ? 'bg-info-subtle border-info text-info'
-        : 'bg-white border-border-default text-text-body';
+        : 'bg-white border-border text-text-body';
   return (
     <div className="flex items-center gap-1.5">
       <span
@@ -530,7 +530,7 @@ function AllCandidatesModal({
                         ? 'bg-success-subtle border-success hover:bg-success/15'
                         : c.score >= 30
                           ? 'bg-info-subtle border-info hover:bg-info/15'
-                          : 'bg-white border-border-default hover:bg-surface'
+                          : 'bg-white border-border hover:bg-surface'
                     }`}
                   >
                     <span
@@ -539,7 +539,7 @@ function AllCandidatesModal({
                           ? 'bg-white border-success text-success'
                           : c.score >= 30
                             ? 'bg-white border-info text-info'
-                            : 'bg-surface border-border-default text-text-body'
+                            : 'bg-surface border-border text-text-body'
                       }`}
                     >
                       {c.score}

@@ -198,7 +198,7 @@ export function FormationTabBar({
               return (
                 <div
                   key={f.key}
-                  className="inline-flex items-center gap-1 rounded-md border border-border-default bg-white px-2 py-1.5"
+                  className="inline-flex items-center gap-1 rounded-md border border-border bg-white px-2 py-1.5"
                 >
                   <input
                     autoFocus
@@ -211,7 +211,7 @@ export function FormationTabBar({
                         setRenameLabel('');
                       }
                     }}
-                    className="w-28 px-1.5 py-1 text-sm border border-border-default rounded"
+                    className="w-28 px-1.5 py-1 text-sm border border-border rounded"
                   />
                   <button
                     type="button"
@@ -232,7 +232,7 @@ export function FormationTabBar({
                   className={`flex items-center gap-1.5 rounded-md border px-4 py-2 text-sm font-medium transition-colors ${
                     isSelected
                       ? 'border-[var(--primary)] bg-[var(--primary)] text-white shadow-sm'
-                      : 'border-border-default bg-white text-text-muted hover:border-[var(--primary)]/50 hover:text-text-body'
+                      : 'border-border bg-white text-text-muted hover:border-[var(--primary)]/50 hover:text-text-body'
                   } ${!f.is_active ? 'opacity-60' : ''}`}
                 >
                   {f.label}
@@ -249,7 +249,7 @@ export function FormationTabBar({
                     className={`flex items-center justify-center rounded-md border p-2 transition-colors ${
                       isSelected
                         ? 'border-[var(--primary)] bg-[var(--primary)] text-white hover:brightness-90'
-                        : 'border-border-default bg-white text-text-muted hover:border-[var(--primary)]/50 hover:text-text-body'
+                        : 'border-border bg-white text-text-muted hover:border-[var(--primary)]/50 hover:text-text-body'
                     }`}
                     title="形態の操作"
                   >
@@ -296,7 +296,7 @@ export function FormationTabBar({
                     }
                   }}
                   placeholder="形態名"
-                  className="w-28 px-1.5 py-1 text-sm border border-border-default rounded"
+                  className="w-28 px-1.5 py-1 text-sm border border-border rounded"
                 />
                 <button
                   type="button"
@@ -410,7 +410,7 @@ function FormationTabMenu({
   return (
     <div
       ref={ref}
-      className="absolute top-full left-0 z-20 mt-1 w-48 rounded-md border border-border-default bg-white shadow-lg py-1"
+      className="absolute top-full left-0 z-20 mt-1 w-48 rounded-md border border-border bg-white shadow-lg py-1"
     >
       <button
         type="button"
@@ -440,7 +440,7 @@ function FormationTabMenu({
         {formation.is_active ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
         {formation.is_active ? '無効化' : '有効化'}
       </button>
-      <div className="my-1 border-t border-border-default" />
+      <div className="my-1 border-t border-border" />
       <button
         type="button"
         onClick={onDelete}

@@ -182,7 +182,7 @@ export default function TestPrepProposalsList() {
           </button>
           {/* dropdown-menu-right: origin top-right で scale(0.95) から出現 */}
           {pickerOpen && (
-            <div className="dropdown-menu dropdown-menu-right absolute right-0 top-full mt-1 w-80 bg-surface-raised border border-border-default rounded-xl shadow-lg z-50 overflow-hidden">
+            <div className="dropdown-menu dropdown-menu-right absolute right-0 top-full mt-1 w-80 bg-surface-raised border border-border rounded-xl shadow-lg z-50 overflow-hidden">
               <div className="p-2 border-b border-border-subtle">
                 <div className="relative">
                   <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-text-faint" />
@@ -192,7 +192,7 @@ export default function TestPrepProposalsList() {
                     value={pickerQuery}
                     onChange={(e) => setPickerQuery(e.target.value)}
                     placeholder="氏名・ふりがなで検索..."
-                    className="w-full pl-8 pr-3 py-1.5 text-xs border border-border-default rounded-lg bg-surface-raised text-text-body placeholder:text-text-faint focus:outline-none focus:ring-1 focus:ring-ink/30"
+                    className="w-full pl-8 pr-3 py-1.5 text-xs border border-border rounded-lg bg-surface-raised text-text-body placeholder:text-text-faint focus:outline-none focus:ring-1 focus:ring-ink/30"
                   />
                 </div>
               </div>

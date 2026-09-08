@@ -116,7 +116,7 @@ export function StudentPickerList({ schoolIds, onSelect, selectedId }: StudentPi
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="氏名・ふりがなで検索..."
-            className="w-full pl-8 pr-3 py-1.5 text-sm border border-border-default rounded-lg bg-white text-text-body placeholder:text-text-faint focus:outline-none focus:ring-1 focus:ring-[var(--primary)]"
+            className="w-full pl-8 pr-3 py-1.5 text-sm border border-border rounded-lg bg-white text-text-body placeholder:text-text-faint focus:outline-none focus:ring-1 focus:ring-[var(--primary)]"
           />
         </div>
       </div>

@@ -140,7 +140,7 @@ export default function PendingReportsPage() {
           </div>
           <Link
             href="/lesson-reports/sample"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border border-border-default rounded-lg bg-white text-text-body hover:bg-surface hover:border-info/40 hover:text-info transition-colors flex-shrink-0"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border border-border rounded-lg bg-white text-text-body hover:bg-surface hover:border-info/40 hover:text-info transition-colors flex-shrink-0"
           >
             報告書の見本を見る →
           </Link>

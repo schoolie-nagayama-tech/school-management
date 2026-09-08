@@ -91,7 +91,7 @@ export function LinkTranscriptModal({ isOpen, onClose, transcript, onSuccess }: 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="文字起こしを生徒に紐付け">
       <div className="space-y-4">
-        <div className="bg-surface p-3 rounded border border-border-default text-sm space-y-1">
+        <div className="bg-surface p-3 rounded border border-border text-sm space-y-1">
           <div className="font-semibold text-text-heading">{transcript.title || '(無題)'}</div>
           {transcript.recorded_at && (
             <div className="text-text-muted">
@@ -146,7 +146,7 @@ export function LinkTranscriptModal({ isOpen, onClose, transcript, onSuccess }: 
               {students.length === 0 ? '生徒が登録されていません' : '該当する生徒がいません'}
             </div>
           ) : (
-            <div className="space-y-1 max-h-64 overflow-y-auto border border-border-default rounded mt-2 p-2">
+            <div className="space-y-1 max-h-64 overflow-y-auto border border-border rounded mt-2 p-2">
               {filtered.slice(0, 100).map((s) => (
                 <label
                   key={s.id}
@@ -173,7 +173,7 @@ export function LinkTranscriptModal({ isOpen, onClose, transcript, onSuccess }: 
           )}
         </div>
 
-        <div className="flex justify-end gap-2 pt-3 border-t border-border-default">
+        <div className="flex justify-end gap-2 pt-3 border-t border-border">
           <Button onClick={onClose} variant="secondary" disabled={isSubmitting}>
             キャンセル
           </Button>

@@ -75,7 +75,7 @@ export const STATUS_COLORS: Record<string, { active: string }> = {
   approved: { active: 'bg-emerald-600 text-white ring-2 ring-emerald-600/30' },
 };
 export const STATUS_INACTIVE =
-  'bg-transparent text-text-faint border border-border-default hover:bg-surface-hover hover:text-text-muted';
+  'bg-transparent text-text-faint border border-border hover:bg-surface-hover hover:text-text-muted';
 
 // 科目バッジ配色（提案書一覧・講習一覧と統一）
 export const SUBJECT_BADGE_COLORS: Record<string, { bg: string; text: string }> = {
