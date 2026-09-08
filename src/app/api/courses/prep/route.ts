@@ -4,6 +4,7 @@ import { fetchAllInChunks } from '@/lib/utils/supabasePaging';
 import {
   sanitizePriceTable,
   sanitizeEndByGrade,
+  sanitizeTrackInput,
   validatePublishWindow,
 } from '@/lib/utils/koushuApplySettings';
 import { apiErrorResponse } from '@/lib/api-error';
@@ -504,6 +505,9 @@ export async function GET(request: NextRequest) {
  *   - "delete_schedule_marker" : 工程表マーカーを削除
  *   - "upsert_period"          : 講習期間メタを更新
  *   - "save_snapshot"         : 期の進捗管理表を確定保存（教室長以上。取り直しは上書き）
+ *   - "upsert_track"          : 講習期間の区分を作成／更新（教室長以上）
+ *   - "delete_track"          : 講習期間の区分を削除（教室長以上）
+ *   - "set_student_track"     : 生徒の区分の当てはめを保存（進捗表を編集できる人）
  */
 export async function POST(request: NextRequest) {
   // catch 側でも「どの操作・どの教室で落ちたか」を Sentry に残せるよう try の外に保持する
@@ -658,6 +662,24 @@ export async function POST(request: NextRequest) {
           params.summary ?? null
         );
       }
+      case 'upsert_track':
+      case 'delete_track': {
+        // 区分は「誰がどの期間で数えられるか」を決める設定なので、期間日付と同じ境界
+        // （教室長以上）に揃える。生徒個別の当てはめ（set_student_track）は進捗表の
+        // 入力と同じ扱いなので、こちらだけを絞る。
+        const role = (authResult.user.role || '').toLowerCase();
+        if (role !== 'admin' && role !== 'owner' && role !== 'manager') {
+          return NextResponse.json(
+            { error: '講習期間の区分の編集には教室長以上の権限が必要です' },
+            { status: 403 }
+          );
+        }
+        return action === 'upsert_track'
+          ? await handleUpsertTrack(supabaseAdmin, schoolId, params)
+          : await handleDeleteTrack(supabaseAdmin, schoolId, params);
+      }
+      case 'set_student_track':
+        return await handleSetStudentTrack(supabaseAdmin, schoolId, params);
       default:
         return NextResponse.json({ error: `不明なアクション: ${action}` }, { status: 400 });
     }
@@ -1935,5 +1957,164 @@ async function handleUpsertPeriod(
       );
   }
 
+  return NextResponse.json({ success: true });
+}
+
+// ===== 講習期間の区分（Phase 8） =====
+// 冬期は生徒によって講習期間が違うが、同じ小6でも受験する子としない子がいて学年では割れない。
+// 期ごとに「区分」を作り、生徒を当てはめる。設計は docs/koushu-progress-snapshot-plan.md Phase 8。
+
+/**
+ * upsert_track: 区分の作成・更新。
+ * 検証は純関数 sanitizeTrackInput に寄せて、画面で通ったものはサーバーでも通るようにする。
+ */
+async function handleUpsertTrack(
+  supabaseAdmin: ReturnType<typeof getSupabaseAdmin>,
+  schoolId: string,
+  params: { season?: string; year?: number; track?: unknown }
+) {
+  const { season, year } = params;
+  if (!season || !year) {
+    return NextResponse.json({ error: 'season と year が必要です' }, { status: 400 });
+  }
+
+  const sanitized = sanitizeTrackInput(params.track);
+  if (!sanitized.ok) return validationError(sanitized.message);
+
+  const trackId = (params.track as { id?: unknown } | null)?.id;
+  const row = {
+    school_id: schoolId,
+    season,
+    year,
+    ...sanitized.value,
+    updated_at: new Date().toISOString(),
+  };
+
+  // 更新は school_id も条件に入れる（他教室の区分を id 指定で書き換えられないように）
+  const table = supabaseAdmin.from('course_prep_tracks');
+  const { data, error } =
+    typeof trackId === 'string' && trackId
+      ? await table
+          .update(row)
+          .eq('id', trackId)
+          .eq('school_id', schoolId)
+          .select('*')
+          .maybeSingle()
+      : await table.insert(row).select('*').maybeSingle();
+
+  if (error) {
+    // 同名の区分は unique 制約で弾かれる。利用者が自分で直せるので日本語で返す。
+    if (error.code === '23505') {
+      return validationError('同じ名前の区分がすでにあります');
+    }
+    return apiErrorResponse(
+      error,
+      { route: 'POST /api/courses/prep', action: 'upsert_track', schoolId },
+      '区分の保存に失敗しました。時間をおいて再度お試しください。'
+    );
+  }
+  return NextResponse.json({ data });
+}
+
+/**
+ * delete_track: 区分の削除。
+ * 紐づく course_prep_student_tracks は FK の ON DELETE CASCADE で一緒に消えるので、
+ * ここで当てはめを消す必要はない（消し忘れて幽霊行が残る事故を作らない）。
+ */
+async function handleDeleteTrack(
+  supabaseAdmin: ReturnType<typeof getSupabaseAdmin>,
+  schoolId: string,
+  params: { trackId?: string }
+) {
+  const { trackId } = params;
+  if (!trackId) {
+    return NextResponse.json({ error: 'trackId が必要です' }, { status: 400 });
+  }
+  const { error } = await supabaseAdmin
+    .from('course_prep_tracks')
+    .delete()
+    .eq('id', trackId)
+    .eq('school_id', schoolId);
+  if (error) {
+    return apiErrorResponse(
+      error,
+      { route: 'POST /api/courses/prep', action: 'delete_track', schoolId },
+      '区分の削除に失敗しました。時間をおいて再度お試しください。'
+    );
+  }
+  return NextResponse.json({ success: true });
+}
+
+/**
+ * set_student_track: 生徒の当てはめを保存する。
+ *
+ * trackId の3値がそれぞれ別の意味を持つ:
+ *   - 区分ID : その区分に当てはめる
+ *   - null   : 既定の学年による当てはめを打ち消して共通に戻す（行を作る）
+ *   - 'default' : 当てはめ自体をやめて既定に戻す（行を消す）
+ */
+async function handleSetStudentTrack(
+  supabaseAdmin: ReturnType<typeof getSupabaseAdmin>,
+  schoolId: string,
+  params: { season?: string; year?: number; studentId?: string; trackId?: string | null }
+) {
+  const { season, year, studentId } = params;
+  if (!season || !year || !studentId) {
+    return NextResponse.json({ error: 'season・year・studentId が必要です' }, { status: 400 });
+  }
+
+  // 'default' は当てはめ行そのものを消して既定（学年）に戻す
+  if (params.trackId === 'default') {
+    const { error } = await supabaseAdmin
+      .from('course_prep_student_tracks')
+      .delete()
+      .eq('school_id', schoolId)
+      .eq('season', season)
+      .eq('year', year)
+      .eq('student_id', studentId);
+    if (error) {
+      return apiErrorResponse(
+        error,
+        { route: 'POST /api/courses/prep', action: 'set_student_track:clear', schoolId },
+        '区分の当てはめの解除に失敗しました。時間をおいて再度お試しください。'
+      );
+    }
+    return NextResponse.json({ success: true });
+  }
+
+  const trackId = params.trackId ?? null;
+  // service role で RLS を通らないので、他教室・他期の区分を当てはめられないことを自前で確かめる。
+  if (trackId) {
+    const { data: track } = await supabaseAdmin
+      .from('course_prep_tracks')
+      .select('id')
+      .eq('id', trackId)
+      .eq('school_id', schoolId)
+      .eq('season', season)
+      .eq('year', year)
+      .maybeSingle();
+    if (!track) {
+      return validationError('指定された区分が見つかりません');
+    }
+  }
+
+  const { error } = await supabaseAdmin.from('course_prep_student_tracks').upsert(
+    {
+      school_id: schoolId,
+      season,
+      year,
+      student_id: studentId,
+      track_id: trackId,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: 'school_id,season,year,student_id' }
+  );
+  if (error) {
+    return apiErrorResponse(
+      error,
+      { route: 'POST /api/courses/prep', action: 'set_student_track', schoolId },
+      '区分の当てはめの保存に失敗しました。時間をおいて再度お試しください。'
+    );
+  }
   return NextResponse.json({ success: true });
 }

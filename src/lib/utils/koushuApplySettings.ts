@@ -104,6 +104,9 @@ export function sanitizePriceTable(input: unknown): ValidationResult<PriceTable 
  * 学年別の講習終了日（決定44）を検証して正規化する。
  * キーは grade 番号の文字列（'1'〜'13'）。書いていない学年は schedule_end_date にフォールバックする。
  * 開始日より前の終了日は「期間が空」になってしまうので弾く。
+ *
+ * ★ Phase 8 で区分（sanitizeTrackInput / course_prep_tracks）に置き換えた。新規利用禁止。
+ *   API が既存データを壊さず受け取れるように残してあるだけ。
  */
 export function sanitizeEndByGrade(
   input: unknown,
@@ -134,6 +137,87 @@ export function sanitizeEndByGrade(
   }
 
   return { ok: true, value: Object.keys(out).length > 0 ? out : null };
+}
+
+/** 区分の保存に渡す値（DB の course_prep_tracks に1:1で対応する） */
+export interface CoursePrepTrackInput {
+  name: string;
+  short_name: string | null;
+  schedule_start_date: string | null;
+  schedule_end_date: string;
+  default_grades: number[];
+  sort_order: number;
+}
+
+/**
+ * 講習期間の区分（Phase 8）を検証して正規化する。
+ *
+ * 画面（ダッシュボードの区分エディタ）とサーバー（/api/courses/prep の upsert_track）の
+ * 両方から使う。終了日は区分を作る目的そのものなので必須で、開始日は空なら共通の開始日を
+ * 使う意味になる（DB でも NULL 許容）。既定の学年に無い学年番号が混ざると当てはめが
+ * 静かに外れるので、ここで弾く。
+ */
+export function sanitizeTrackInput(input: unknown): ValidationResult<CoursePrepTrackInput> {
+  if (input == null || typeof input !== 'object' || Array.isArray(input)) {
+    return { ok: false, message: '区分の形式が不正です' };
+  }
+  const raw = input as Record<string, unknown>;
+
+  const name = typeof raw.name === 'string' ? raw.name.trim() : '';
+  if (!name) return { ok: false, message: '区分の名前を入力してください' };
+  if (name.length > 30) return { ok: false, message: '区分の名前は30文字以内にしてください' };
+
+  const shortRaw = typeof raw.short_name === 'string' ? raw.short_name.trim() : '';
+  if (shortRaw.length > 6) {
+    return { ok: false, message: '区分の短縮名は6文字以内にしてください' };
+  }
+
+  const endRaw = raw.schedule_end_date;
+  if (!isValidDateString(endRaw)) {
+    return { ok: false, message: `${name}の終了日を入力してください` };
+  }
+  const startRaw = raw.schedule_start_date;
+  let start: string | null = null;
+  if (startRaw != null && startRaw !== '') {
+    if (!isValidDateString(startRaw)) {
+      return { ok: false, message: `${name}の開始日が不正です` };
+    }
+    start = startRaw;
+    if (endRaw < start) {
+      return { ok: false, message: `${name}の終了日が開始日より前です` };
+    }
+  }
+
+  const gradesRaw = raw.default_grades;
+  const grades: number[] = [];
+  if (gradesRaw != null) {
+    if (!Array.isArray(gradesRaw)) {
+      return { ok: false, message: `${name}の既定の学年が不正です` };
+    }
+    for (const g of gradesRaw) {
+      const grade = Number(g);
+      if (!Number.isInteger(grade) || GRADE_LABELS[grade] === undefined) {
+        return { ok: false, message: `${name}の既定の学年に不明な学年があります: ${String(g)}` };
+      }
+      if (!grades.includes(grade)) grades.push(grade);
+    }
+    grades.sort((a, b) => a - b);
+  }
+
+  const sortRaw = Number(raw.sort_order ?? 0);
+  const sortOrder = Number.isInteger(sortRaw) ? sortRaw : 0;
+
+  return {
+    ok: true,
+    value: {
+      name,
+      short_name: shortRaw || null,
+      schedule_start_date: start,
+      schedule_end_date: endRaw,
+      default_grades: grades,
+      sort_order: sortOrder,
+    },
+  };
 }
 
 /**

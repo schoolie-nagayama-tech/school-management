@@ -24,9 +24,9 @@ import {
   type RunKoushuAllocationResult,
 } from '@/lib/api/koushu-match';
 import { DEFAULT_SETTINGS, type AllocatorSettings } from '@/lib/koushu-allocator/types';
-import { getKoushuApplyPeriods } from '@/lib/api/koushuApplyAdmin';
+import { batchFetchCoursePrepApi } from '@/lib/api/coursePrepApi';
 import type { KoushuPeriodInfo } from '@/lib/api/koushu-period';
-import { GRADE_LABELS } from '@/types/database';
+import { GRADE_LABELS, type CoursePrepTrack } from '@/types/database';
 
 interface Props {
   period: KoushuPeriodInfo;
@@ -91,8 +91,11 @@ export function KoushuAllocationPanel({ period, schoolId, executedBy, onComplete
   const [running, setRunning] = useState(false);
   const [result, setResult] = useState<RunKoushuAllocationResult | null>(null);
   const [error, setError] = useState<string | null>(null);
-  /** 学年別の講習終了日（決定44）。course_prep_periods から読む */
-  const [endByGrade, setEndByGrade] = useState<Record<string, string> | null>(null);
+  /** 講習期間の区分（Phase 8）と生徒の当てはめ。可能枠を区分の終了日で切るために読む */
+  const [trackData, setTrackData] = useState<{
+    tracks: CoursePrepTrack[];
+    assignments: { student_id: string; track_id: string | null }[];
+  } | null>(null);
 
   // 教室を切り替えたら記憶した設定を読み直す
   useEffect(() => {
@@ -100,17 +103,23 @@ export function KoushuAllocationPanel({ period, schoolId, executedBy, onComplete
     setResult(null);
   }, [schoolId]);
 
-  // 学年別終了日を取得（失敗しても共通の終了日で動くので致命的ではない）
+  // 講習期間の区分を取得（失敗しても共通の終了日で動くので致命的ではない）
   useEffect(() => {
     let cancelled = false;
-    getKoushuApplyPeriods(schoolId)
-      .then((rows) => {
+    batchFetchCoursePrepApi({ schoolId, season: period.season, year: String(period.year) }, [
+      'tracks',
+    ])
+      .then((batch) => {
         if (cancelled) return;
-        const hit = rows.find((r) => r.season === period.season && r.year === period.year);
-        setEndByGrade(hit?.scheduleEndByGrade ?? null);
+        setTrackData(
+          (batch.tracks as {
+            tracks: CoursePrepTrack[];
+            assignments: { student_id: string; track_id: string | null }[];
+          }) ?? null
+        );
       })
       .catch((err) => {
-        console.error('[KoushuAllocationPanel] 学年別終了日の取得に失敗:', err);
+        console.error('[KoushuAllocationPanel] 講習期間の区分の取得に失敗:', err);
       });
     return () => {
       cancelled = true;
@@ -150,7 +159,8 @@ export function KoushuAllocationPanel({ period, schoolId, executedBy, onComplete
         executedBy,
         settings,
         gradeFilter: selectedGrades.length > 0 ? selectedGrades : null,
-        scheduleEndByGrade: endByGrade,
+        tracks: trackData?.tracks ?? null,
+        studentTracks: trackData?.assignments ?? null,
         rerunMode,
       });
       setResult(res);
@@ -357,7 +367,8 @@ export function KoushuAllocationPanel({ period, schoolId, executedBy, onComplete
           )}
           {result.notes.studentsClampedByGradeEnd > 0 && (
             <p className="text-text-muted">
-              学年別の終了日で {result.notes.studentsClampedByGradeEnd} 名の可能枠を短縮しました。
+              講習期間の区分の終了日で {result.notes.studentsClampedByGradeEnd}{' '}
+              名の可能枠を短縮しました。
             </p>
           )}
 
