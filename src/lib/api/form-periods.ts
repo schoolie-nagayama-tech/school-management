@@ -91,6 +91,26 @@ export async function getFormPeriods(
 }
 
 /**
+ * 公開期間（publish_start / publish_end）から見て、いま公開中かどうか。
+ *
+ * 日付が未設定の側は「制限なし」と見なす（start が null なら開始済み、end が null なら常時公開）。
+ * 設定画面のバッジは start 未設定を「未設定」と表示するが、実際にフォームを開けるかの判定は
+ * ここが正典。判定を写して増やすと、フォームは開けるのに選べない（またはその逆）という
+ * ねじれが生まれるため、公開中かを問う箇所はすべてこの関数を通す。
+ */
+export function isFormPeriodPublished(
+  period: Pick<FormPeriod, 'publish_start' | 'publish_end'>,
+  now: Date = new Date()
+): boolean {
+  const start = period.publish_start ? new Date(period.publish_start) : null;
+  const end = period.publish_end ? new Date(period.publish_end) : null;
+
+  if (start && start > now) return false; // 公開開始前
+  if (end && end < now) return false; // 公開終了後
+  return true;
+}
+
+/**
  * 公開中のフォーム公開期間を取得
  * 期間管理の「公開」状態（is_active=true）と日付ベースで公開期間内の期間を取得
  * 設定画面の公開状況と同期
@@ -124,14 +144,8 @@ export async function getActiveFormPeriod(
   const period = data[0] as FormPeriod;
 
   // 日付ベースで公開期間内かチェック
-  const start = period.publish_start ? new Date(period.publish_start) : null;
-  const end = period.publish_end ? new Date(period.publish_end) : null;
-
-  if (start && start > nowDate) {
-    return null; // 公開開始前
-  }
-  if (end && end < nowDate) {
-    return null; // 公開終了後
+  if (!isFormPeriodPublished(period, nowDate)) {
+    return null;
   }
 
   return period;
