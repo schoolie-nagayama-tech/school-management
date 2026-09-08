@@ -6,6 +6,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import {
   breakdownByTeacher,
   computeTaskProgress,
+  resolveAttendingSchoolNames,
   type StudentRow,
   type TaskProgress,
   type TeacherRow,
@@ -540,7 +541,7 @@ export async function GET(request: NextRequest) {
   const { data: taskRows, error: taskError } = await supabase
     .from('bulletin_tasks')
     .select(
-      'id, kind, scope, target_grades, target_student_ids, due_type, due_date, application_item_id, target_period, created_at'
+      'id, kind, scope, target_grades, target_student_ids, target_school_names, due_type, due_date, application_item_id, target_period, created_at'
     )
     .eq('school_id', schoolId)
     .is('closed_at', null)
@@ -558,7 +559,7 @@ export async function GET(request: NextRequest) {
   // 在籍生徒。研修用テスト生徒は数えない
   const { data: studentRows } = await supabase
     .from('students')
-    .select('id, grade, last_name, first_name')
+    .select('id, grade, last_name, first_name, school_name')
     .eq('school_id', schoolId)
     .eq('status', 'active')
     .neq('is_test', true)
@@ -567,6 +568,7 @@ export async function GET(request: NextRequest) {
   const students = (studentRows ?? []).map((s) => ({
     id: s.id as string,
     grade: (s.grade as number | null) ?? null,
+    schoolName: (s.school_name as string | null) ?? null,
   }));
   const studentIds = students.map((s) => s.id);
 
@@ -639,7 +641,18 @@ export async function GET(request: NextRequest) {
       // ★次にこの生徒の授業をする講師。決まらなければ null のまま（誰にも頼めない）
       teacherId: nextTeacherByStudent.get(s.id) ?? null,
       markedNotApplicable: notApplicable.has(s.id),
+      schoolName: s.schoolName,
     }));
+
+    // ★通学校で絞る依頼は、在籍生徒の中に1人も一致しなければ絞らない（母数0で「全員済」に見えるのを防ぐ）。
+    //   rows はこの教室の在籍生徒全員なので、ここで判定してよい（授業中ポップアップでは行わない）。
+    const rawTargetSchoolNames = (t.target_school_names as string[] | null) ?? [];
+    const targetSchoolNames =
+      scope === 'attending_school' ? resolveAttendingSchoolNames(rows, rawTargetSchoolNames) : [];
+    const schoolMatchFallback =
+      scope === 'attending_school' &&
+      rawTargetSchoolNames.length > 0 &&
+      targetSchoolNames.length === 0;
 
     // この種別が要る材料だけを引く（回ごとにキャッシュ）
     const period = (t.target_period as string | null) ?? null;
@@ -693,6 +706,7 @@ export async function GET(request: NextRequest) {
       scope,
       targetGrades: (t.target_grades as number[]) ?? [],
       targetStudentIds: (t.target_student_ids as string[]) ?? [],
+      targetSchoolNames,
       students: rows,
       teachers: isTeacherSelfKind(kind) ? (schoolTeachers ?? []) : undefined,
       hasTargetPeriod: Boolean(period),
@@ -724,6 +738,8 @@ export async function GET(request: NextRequest) {
       kindLabel: TASK_KIND_LABELS[kind] ?? kind,
       scope,
       scopeLabel: TASK_SCOPE_LABELS[scope] ?? scope,
+      targetSchoolNames: rawTargetSchoolNames,
+      schoolMatchFallback,
       dueType: t.due_type as string,
       dueDate: (t.due_date as string | null) ?? null,
       unsupported: progress.unsupported,

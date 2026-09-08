@@ -229,6 +229,11 @@ function TaskRow({
 }) {
   const label =
     showSchool && row.schoolName ? `${row.kindLabel}（${row.schoolName}）` : row.kindLabel;
+  // ★通学校で絞っている依頼だけ、種別ラベルの横に対象校のチップを出す
+  const attendingSchoolChip =
+    row.scope === 'attending_school' && row.targetSchoolNames.length > 0
+      ? `通学校: ${row.targetSchoolNames.join('・')}`
+      : null;
 
   if (removed) {
     return (
@@ -253,6 +258,7 @@ function TaskRow({
       <div className="flex flex-col gap-2 rounded-lg border border-border-subtle bg-surface-hover/40 px-3.5 py-2.5">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
           <span className="text-sm font-bold text-text-heading">{label}</span>
+          {attendingSchoolChip && <SchoolChip text={attendingSchoolChip} />}
           <span className="text-xs text-text-muted">
             {canJudgeOnceChosen
               ? 'どの回のことか選ぶと、残り人数を数えます'
@@ -285,8 +291,11 @@ function TaskRow({
         fresh ? 'border-ink/35 bg-ink-subtle' : 'border-border-subtle bg-surface-hover/40'
       }`}
     >
-      <div className="flex items-baseline justify-between gap-2">
-        <span className="text-base font-bold text-text-heading">{label}</span>
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <div className="flex flex-wrap items-baseline gap-1.5">
+          <span className="text-base font-bold text-text-heading">{label}</span>
+          {attendingSchoolChip && <SchoolChip text={attendingSchoolChip} />}
+        </div>
         {fresh ? (
           <span className="shrink-0 rounded-full bg-ink px-2 py-0.5 text-[10px] font-bold text-white">
             いま追加
@@ -381,6 +390,14 @@ function TaskRow({
         </div>
       )}
 
+      {/* ★通学校で絞ったつもりが1人も一致しなかった（表記ゆれ・入力ミスなど）。
+          母数を全員に広げて数えているので、教室長に断っておく */}
+      {row.schoolMatchFallback && (
+        <span className="text-[11px] text-text-faint">
+          通学校が見つからないので全員で数えています
+        </span>
+      )}
+
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className={`text-xs ${zero ? 'text-success' : 'text-text-muted'}`}>
           {footNote(row)}
@@ -388,6 +405,15 @@ function TaskRow({
         <RemoveButton onClick={onToggle} />
       </div>
     </div>
+  );
+}
+
+/** 通学校で絞っている依頼の対象校を出すチップ */
+function SchoolChip({ text }: { text: string }) {
+  return (
+    <span className="whitespace-nowrap rounded-full border border-border-subtle bg-surface px-2 py-0.5 text-[10px] text-text-muted">
+      {text}
+    </span>
   );
 }
 

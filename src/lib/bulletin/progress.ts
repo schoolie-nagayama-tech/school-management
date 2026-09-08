@@ -27,6 +27,11 @@ export interface StudentRow {
   teacherId: string | null;
   /** 手動で「対象外」が付いている（人の判断なので尊重して母数から外す） */
   markedNotApplicable: boolean;
+  /**
+   * 通学校（students.school_name）。scope=attending_school の絞り込みに使う。
+   * ★表記ゆれがある（「永山」「永山中」など）。未登録の生徒は null
+   */
+  schoolName?: string | null;
 }
 
 /** 生徒1人の判定結果 */
@@ -102,12 +107,67 @@ export function isJudgeable(kind: TaskKind, opts?: { hasTargetPeriod?: boolean }
   return true;
 }
 
-/** タスクの対象に含まれる生徒か（scope と学年・名指しで絞る） */
+/**
+ * 通学校名の表記ゆれを吸収するためのノイズ語を落として trim する。
+ * ★「◯◯市立◯◯中学校」のような正式表記と、投稿の「◯◯中」「◯◯」のような
+ *   略した書き方を同じものとして扱うための下ごしらえ。
+ */
+const SCHOOL_NAME_NOISE_RE = /学校|市立|町立|区立|立/g;
+
+function normalizeSchoolName(name: string): string {
+  return name.replace(SCHOOL_NAME_NOISE_RE, '').trim();
+}
+
+/**
+ * 通学校がゆるく一致するか。
+ *
+ * ★永山校の試用で「諏訪中生は」が読み取れなかった反省を受けて、照合はゆるくする。
+ *   双方から表記ゆれのノイズ語を落として trim したうえで、どちらかがどちらかを
+ *   含んでいれば一致とみなす（「永山」と「永山中」を同じに扱う）。
+ *   「諏訪中」と「諏訪小」はどちらも他方を含まないので別の学校として区別できる。
+ */
+export function schoolNameMatches(
+  studentSchoolName: string | null | undefined,
+  targetName: string
+): boolean {
+  if (!studentSchoolName) return false;
+  const a = normalizeSchoolName(studentSchoolName);
+  const b = normalizeSchoolName(targetName);
+  if (!a || !b) return false;
+  return a.includes(b) || b.includes(a);
+}
+
+/**
+ * 通学校での絞り込みが、渡された生徒の中で1人でも一致するか確かめたうえで、
+ * 一致が無ければ「絞らない」状態（空配列）を返す。
+ *
+ * ★母数0で「全員済」に見えるのを防ぐ（specific_students が空のとき絞らないのと同じ考え）。
+ *   表記ゆれや学校名の入力ミスで1人も一致しないと、母数が0のまま進捗ボードに
+ *   「全員済」のように出てしまう。それよりは絞り込みを諦めて全員を母数にするほうが安全。
+ *
+ * ★この判定は「渡された students がその教室の在籍者全体を表している」ことが前提。
+ *   授業中ポップアップ（対象の生徒1人だけを渡す呼び出し）でこれを使うと、
+ *   その1人がたまたま対象校でないだけで「誰も居ない」と誤判定し、絞り込みが
+ *   効かなくなってしまう。呼ぶのは進捗ボード（在籍生徒全員を渡す progress/route.ts）だけにする。
+ */
+export function resolveAttendingSchoolNames(
+  students: readonly StudentRow[],
+  targetSchoolNames: readonly string[]
+): string[] {
+  if (targetSchoolNames.length === 0) return [];
+  const anyMatch = students.some((s) =>
+    targetSchoolNames.some((name) => schoolNameMatches(s.schoolName, name))
+  );
+  return anyMatch ? [...targetSchoolNames] : [];
+}
+
+/** タスクの対象に含まれる生徒か（scope と学年・名指し・通学校で絞る） */
 export function isInScope(
   student: StudentRow,
   scope: TaskScope,
   targetGrades: readonly number[],
-  targetStudentIds: readonly string[]
+  targetStudentIds: readonly string[],
+  targetSchoolNames: readonly string[] = []
 ): boolean {
   switch (scope) {
     case 'all_students':
@@ -117,6 +177,10 @@ export function isInScope(
       return targetGrades.length === 0 || targetGrades.includes(student.grade ?? -1);
     case 'specific_students':
       return targetStudentIds.includes(student.id);
+    case 'attending_school':
+      // 通学校の指定が空なら絞らない（呼び出し側で resolveAttendingSchoolNames を通した結果も含む）
+      if (targetSchoolNames.length === 0) return true;
+      return targetSchoolNames.some((name) => schoolNameMatches(student.schoolName, name));
     case 'assigned_students':
       // 担当が解決できない生徒は誰にも配れない。母数からは外さず、進捗ボードには出す
       return true;
@@ -191,6 +255,13 @@ export function computeTaskProgress(params: {
   scope: TaskScope;
   targetGrades: readonly number[];
   targetStudentIds: readonly string[];
+  /**
+   * scope=attending_school のときの対象の通学校。
+   * ★「1人も一致しなければ絞らない」の判定はここでは行わない（渡された students が
+   *   在籍者全体かどうかを computeTaskProgress 側からは判断できないため）。
+   *   進捗ボード側で resolveAttendingSchoolNames を通してから渡すこと。
+   */
+  targetSchoolNames?: readonly string[];
   students: readonly StudentRow[];
   /** 講師自身の種別（shift_submit・timesheet_entry）でだけ使う。教室の在籍講師 */
   teachers?: readonly TeacherRow[];
@@ -200,6 +271,7 @@ export function computeTaskProgress(params: {
   inputs?: JudgeInputs;
 }): TaskProgress {
   const { kind, scope, targetGrades, targetStudentIds, students } = params;
+  const targetSchoolNames = params.targetSchoolNames ?? [];
   const inputs: JudgeInputs = {
     subjectsByStudent: params.inputs?.subjectsByStudent ?? params.subjectsByStudent,
     testEnteredStudentIds: params.inputs?.testEnteredStudentIds,
@@ -237,7 +309,7 @@ export function computeTaskProgress(params: {
   const rows: StudentProgress[] = [];
 
   for (const s of students) {
-    if (!isInScope(s, scope, targetGrades, targetStudentIds)) continue;
+    if (!isInScope(s, scope, targetGrades, targetStudentIds, targetSchoolNames)) continue;
     if (!isKindTarget(kind, s.grade)) continue;
 
     // ★「対象外」は人が付けた判断。属性から導かれていないので、そのまま尊重して母数から外す

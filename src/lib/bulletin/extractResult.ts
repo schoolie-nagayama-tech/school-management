@@ -23,6 +23,8 @@ export interface ExtractedTask {
   kind: TaskKind;
   scope: TaskScope;
   targetGrades: number[];
+  /** scope=attending_school のときの対象の通学校（students.school_name の表記そのまま） */
+  targetSchoolNames: string[];
   dueType: TaskDueType;
   dueDate: string | null;
   /** 投稿のどこからそう読んだか。画面で教室長に見せる */
@@ -36,6 +38,11 @@ const DUE_TYPE_SET = new Set<string>(TASK_DUE_TYPES);
 /** 小1(1) 〜 既卒(13)。これ以外の学年は捨てる */
 const MIN_GRADE = 1;
 const MAX_GRADE = 13;
+
+/** 通学校名1件あたりの上限文字数。長すぎるものはAIが読み違えているので捨てる */
+const MAX_SCHOOL_NAME_LEN = 30;
+/** 通学校の指定はこの件数まで。1投稿でこれを超えるのは読み違えている */
+const MAX_SCHOOL_NAMES = 10;
 
 /** 1つの投稿から取るタスクの上限。これを超えるのは読み違えているので切る */
 const MAX_TASKS_PER_POST = 5;
@@ -101,11 +108,24 @@ export function parseExtractedTasks(raw: unknown): ExtractedTask[] {
         ).sort((a, b) => a - b)
       : [];
 
+    // ★文字列配列・各30字・最大10件・trim・重複除去。長すぎる／多すぎるのはAIが読み違えている
+    const rawSchoolNames = Array.isArray(t.target_school_names) ? t.target_school_names : [];
+    const targetSchoolNames = Array.from(
+      new Set(
+        rawSchoolNames
+          .filter((n): n is string => typeof n === 'string')
+          .map((n) => n.trim())
+          .filter((n) => n.length > 0 && n.length <= MAX_SCHOOL_NAME_LEN)
+      )
+    ).slice(0, MAX_SCHOOL_NAMES);
+
     out.push({
       kind,
       scope,
       // scope が grade でないなら学年の絞りは持たせない
       targetGrades: scope === 'grade' ? targetGrades : [],
+      // scope が attending_school でないなら通学校の絞りは持たせない
+      targetSchoolNames: scope === 'attending_school' ? targetSchoolNames : [],
       dueType: finalDueType,
       dueDate,
       reason: typeof t.reason === 'string' ? t.reason.slice(0, 200) : '',
@@ -113,9 +133,11 @@ export function parseExtractedTasks(raw: unknown): ExtractedTask[] {
   }
 
   // ★同じ種別×対象は1件にまとめる。同じ依頼を2度数えると進捗が割れる
+  //   通学校（target_school_names）が違えば別の依頼として扱う
+  //  （「諏訪中生」と「永山中生」は同じ種別でも母数が別なので束ねない）
   const seen = new Set<string>();
   const deduped = out.filter((t) => {
-    const key = `${t.kind}::${t.scope}`;
+    const key = `${t.kind}::${t.scope}::${[...t.targetSchoolNames].sort().join(',')}`;
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
@@ -134,6 +156,16 @@ export interface OpenTask {
   kind: TaskKind;
   scope: TaskScope;
   dueDate: string | null;
+  /** scope=attending_school のときの対象の通学校。それ以外・未設定なら空 */
+  targetSchoolNames?: string[];
+}
+
+/** 通学校の集合が同じか（順序は無視する） */
+function sameSchoolNames(a: readonly string[], b: readonly string[]): boolean {
+  if (a.length !== b.length) return false;
+  const as = [...a].sort();
+  const bs = [...b].sort();
+  return as.every((v, i) => v === bs[i]);
 }
 
 /**
@@ -145,6 +177,8 @@ export interface OpenTask {
  *
  * ★突き合わせは「種別と対象が同じ」で見る。期限は再掲のたびに延びるので条件に入れない
  *   （7/31が8/10に延びても、同じ通知表回収の依頼である）。
+ *   ★対象には通学校（target_school_names）も含める。「諏訪中生」と「永山中生」は
+ *   同じ種別でも母数が別の依頼なので、別のタスクとして扱う。
  *
  * @returns 束ねる先のタスク。無ければ null（新規作成する）
  */
@@ -152,7 +186,14 @@ export function findReminderTarget(
   task: ExtractedTask,
   openTasks: readonly OpenTask[]
 ): OpenTask | null {
-  return openTasks.find((o) => o.kind === task.kind && o.scope === task.scope) ?? null;
+  return (
+    openTasks.find(
+      (o) =>
+        o.kind === task.kind &&
+        o.scope === task.scope &&
+        sameSchoolNames(o.targetSchoolNames ?? [], task.targetSchoolNames)
+    ) ?? null
+  );
 }
 
 /**
