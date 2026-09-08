@@ -176,7 +176,11 @@ export function isInScope(
       // 学年の指定が空なら絞らない（AIが学年を取れなかったときに全員が消えないように）
       return targetGrades.length === 0 || targetGrades.includes(student.grade ?? -1);
     case 'specific_students':
-      return targetStudentIds.includes(student.id);
+      // ★名指しのIDが空なら絞らない（学年と同じ考え）。
+      //   永山校の実例: 「諏訪中生はテスト対策授業の提案を」を AI が specific_students と読んだが、
+      //   通学校は生徒IDに解決できず target_student_ids が空になった。空のまま絞ると母数0になり、
+      //   画面が「全員済んでいます。督促は要りません」と出す——誰にも提案していないのに、いちばん危ない方向に誤る。
+      return targetStudentIds.length === 0 || targetStudentIds.includes(student.id);
     case 'attending_school':
       // 通学校の指定が空なら絞らない（呼び出し側で resolveAttendingSchoolNames を通した結果も含む）
       if (targetSchoolNames.length === 0) return true;
