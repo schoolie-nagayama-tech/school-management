@@ -29,6 +29,12 @@ export interface ExtractedTask {
   dueDate: string | null;
   /** 投稿のどこからそう読んだか。画面で教室長に見せる */
   reason: string;
+  /**
+   * AIがこの依頼の根拠にした投稿の一文（原文のまま）。見つからなければ空文字。
+   * ★どこで読み間違えたかを追うために持つ。要約された文では追えないので、
+   *   長すぎるもの（＝AIが写さずに作った可能性が高い）は捨てて空にする。
+   */
+  sourceExcerpt: string;
 }
 
 const KIND_SET = new Set<string>(TASK_KINDS);
@@ -46,6 +52,21 @@ const MAX_SCHOOL_NAMES = 10;
 
 /** 1つの投稿から取るタスクの上限。これを超えるのは読み違えているので切る */
 const MAX_TASKS_PER_POST = 5;
+
+/**
+ * 根拠の一文の上限。プロンプトでは40字と指示しているが、少しの超過は許す。
+ * ★これを超えたら「そのまま写す」に従っていない（要約や作文をしている）と見なして捨てる。
+ *   要約された文は読み間違いの追跡に使えないので、中途半端に残すより空のほうがよい。
+ */
+const MAX_SOURCE_EXCERPT_LEN = 60;
+
+/** 根拠の一文を整える。改行はカードの1行に収まらないので空白に潰す */
+function normalizeSourceExcerpt(value: unknown): string {
+  if (typeof value !== 'string') return '';
+  const text = value.replace(/[\r\n]+/g, ' ').trim();
+  if (text.length === 0 || text.length > MAX_SOURCE_EXCERPT_LEN) return '';
+  return text;
+}
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -129,6 +150,7 @@ export function parseExtractedTasks(raw: unknown): ExtractedTask[] {
       dueType: finalDueType,
       dueDate,
       reason: typeof t.reason === 'string' ? t.reason.slice(0, 200) : '',
+      sourceExcerpt: normalizeSourceExcerpt(t.source_excerpt),
     });
   }
 

@@ -39,6 +39,16 @@ describe('抽出システムプロンプトの用語集', () => {
     expect(prompt).toContain('target_school_names');
   });
 
+  /**
+   * ★根拠にした一文は原文のまま。要約されると、AIの読み違いなのか
+   *   投稿の書き方の問題なのかが判別できず、答え合わせに使えなくなる。
+   */
+  it('source_excerpt を要約しない、という指示が入っている', () => {
+    expect(prompt).toContain('source_excerpt');
+    expect(prompt).toContain('要約しない');
+    expect(prompt).toContain('そのまま写す');
+  });
+
   it('glossary を差し替えられる（テスト用の口）', () => {
     const custom = extractSystemPrompt({ glossary: 'ダミーの用語集' });
     expect(custom).toContain('ダミーの用語集');
