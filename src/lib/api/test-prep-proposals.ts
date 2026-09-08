@@ -5,6 +5,8 @@
  */
 
 import { supabase } from '@/lib/supabase';
+import { fetchAllPaged, fetchInChunks } from '@/lib/utils/supabasePaging';
+import { getSurname } from '@/lib/utils/teacherName';
 import type {
   TestPrepProposal,
   TestPrepProposalInsert,
@@ -49,6 +51,75 @@ export async function getTestPrepProposalsWithStudent(schoolId: string | string[
   const { data, error } = await query;
   if (error) throw new Error(`Failed to get test prep proposals: ${error.message}`);
   return (data || []) as any;
+}
+
+/** 一覧画面の1行。科目内訳と提案者の姓まで含む */
+export type TestPrepProposalListRow = TestPrepProposal & {
+  student: { last_name: string; first_name: string; grade: number } | null;
+  exam_type: { id: string; name: string } | null;
+  /** 科目ごとの提案コマ（sort_order 昇順）。科目未入力の提案書は空配列 */
+  subjects: { subject_name: string; proposed_koma: number }[];
+  /**
+   * 提案者の姓。講師には個人情報保護のため苗字だけ出す規約に合わせる。
+   * 退職などで profile を引けないときは空文字（誰の提案か分からない行として出す）。
+   */
+  teacher_surname: string;
+};
+
+/**
+ * 一覧画面用の提案書一覧。生徒・試験・科目内訳・提案者をまとめて引く。
+ *
+ * 提案者は teacher_user_id が auth.users への FK で、user_profiles とは PostgREST の
+ * 埋め込み join ができない（auth スキーマは公開していない）。そのため id を集めて
+ * 別途 user_profiles を引き、姓に変換して混ぜている。
+ */
+export async function getTestPrepProposalsForList(
+  schoolIds: string[]
+): Promise<TestPrepProposalListRow[]> {
+  if (schoolIds.length === 0) return [];
+
+  // 提案書は 生徒 × 試験 で増え続けるため、未ページングだと 1000 行で静かに切り捨てられる。
+  // 並びが一意になるよう id を第2キーに入れて安定ページングする。
+  const rows = await fetchAllPaged<TestPrepProposalListRow>((from, to) =>
+    db()
+      .from('test_prep_proposals')
+      .select(
+        '*, student:students(last_name, first_name, grade), exam_type:exam_types(id, name), subjects:test_prep_proposal_subjects(subject_name, proposed_koma, sort_order)'
+      )
+      .in('school_id', schoolIds)
+      .order('updated_at', { ascending: false })
+      .order('id', { ascending: true })
+      .range(from, to)
+  );
+
+  const teacherIds = Array.from(
+    new Set(rows.map((r) => r.teacher_user_id).filter((id): id is string => !!id))
+  );
+  const surnameById = new Map<string, string>();
+  if (teacherIds.length > 0) {
+    const profiles = await fetchInChunks<{
+      id: string;
+      last_name: string | null;
+      display_name: string | null;
+    }>(teacherIds, (chunk) =>
+      supabase.from('user_profiles').select('id, last_name, display_name').in('id', chunk)
+    );
+    for (const p of profiles) surnameById.set(p.id, getSurname(p));
+  }
+
+  return rows.map((r) => ({
+    ...r,
+    // 埋め込みの並び順は保証されないので、提案書の科目順（編集画面の並び）に揃える
+    subjects: (r.subjects || [])
+      .slice()
+      .sort(
+        (a, b) =>
+          ((a as { sort_order?: number }).sort_order ?? 0) -
+          ((b as { sort_order?: number }).sort_order ?? 0)
+      )
+      .map((s) => ({ subject_name: s.subject_name, proposed_koma: s.proposed_koma ?? 0 })),
+    teacher_surname: r.teacher_user_id ? (surnameById.get(r.teacher_user_id) ?? '') : '',
+  }));
 }
 
 /** 生徒の提案書一覧 */
