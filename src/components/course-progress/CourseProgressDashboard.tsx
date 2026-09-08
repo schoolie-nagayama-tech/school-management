@@ -56,121 +56,149 @@ function shortDate(date: string | null | undefined): string {
 /**
  * 区分1件の編集行。
  *
- * 打鍵を減らすため、日付と既定学年は選んだ瞬間に保存し、名前だけ入力が終わってから
- * （onBlur）保存する。名前は入力途中の値を保存すると同名チェックに引っかかるため。
+ * 入力は手元に溜めておき、「保存」を押したときだけサーバーに送る。
+ * 以前は選んだ瞬間に保存していたが、1操作ごとに通常回数の再集計が走って重かったうえ、
+ * 学年チップを続けて押すと途中の状態が何度も保存されていた。
+ * 未保存かどうかが分かるよう、変更があるときだけ保存ボタンを押せるようにする。
  */
 function TrackRow({
   track,
+  defaultEndDate,
+  sortOrder,
   onSave,
   onDelete,
+  onCancel,
 }: {
-  track: CoursePrepTrack;
+  /** 既存の区分。null なら「登録」する新規行 */
+  track: CoursePrepTrack | null;
+  /** 新規行の終了日の初期値（共通の終了日） */
+  defaultEndDate?: string;
+  /** 新規行の並び順 */
+  sortOrder?: number;
   onSave: (draft: CoursePrepTrackDraft) => void;
-  onDelete: (trackId: string) => void;
+  onDelete?: (trackId: string) => void;
+  /** 新規行をやめる */
+  onCancel?: () => void;
 }) {
-  const [name, setName] = useState(track.name);
+  const isNew = track === null;
+  const [name, setName] = useState(track?.name ?? '');
+  const [startDate, setStartDate] = useState(track?.schedule_start_date ?? '');
+  const [endDate, setEndDate] = useState(track?.schedule_end_date ?? defaultEndDate ?? '');
+  const [grades, setGrades] = useState<number[]>(track?.default_grades ?? []);
   const [showGrades, setShowGrades] = useState(false);
-  // 開始日が空のときは「共通」と見せる。押したときだけ日付入力に変える。
-  const [editingStart, setEditingStart] = useState(false);
 
-  // 保存後の再取得で外から値が変わったら追随する（打鍵中の値は上書きしない）
-  const prevName = useRef(track.name);
-  if (track.name !== prevName.current) {
-    prevName.current = track.name;
+  // 保存後の再取得で外から値が変わったら、手元の下書きを作り直す（新規行には効かせない）
+  const syncedFrom = useRef('');
+  const signature = track
+    ? `${track.name}|${track.schedule_start_date ?? ''}|${track.schedule_end_date ?? ''}|${(track.default_grades ?? []).join(',')}`
+    : '';
+  if (track && syncedFrom.current !== signature) {
+    syncedFrom.current = signature;
     setName(track.name);
+    setStartDate(track.schedule_start_date ?? '');
+    setEndDate(track.schedule_end_date ?? '');
+    setGrades(track.default_grades ?? []);
   }
 
-  // 変更した項目だけを差し替えて、区分1件ぶんをまるごと保存する
-  const emit = (patch: Partial<CoursePrepTrackDraft>) =>
-    onSave({
-      id: track.id,
-      name: track.name,
-      short_name: track.short_name,
-      schedule_start_date: track.schedule_start_date,
-      schedule_end_date: track.schedule_end_date,
-      default_grades: track.default_grades ?? [],
-      sort_order: track.sort_order,
-      ...patch,
-    });
+  const sortedGrades = (list: number[]) =>
+    list
+      .slice()
+      .sort((a, b) => a - b)
+      .join(',');
+  const trimmedName = name.trim();
+  const draftSignature = `${trimmedName}|${startDate}|${endDate}|${sortedGrades(grades)}`;
+  const savedSignature = track
+    ? `${track.name}|${track.schedule_start_date ?? ''}|${track.schedule_end_date ?? ''}|${sortedGrades(track.default_grades ?? [])}`
+    : null;
+  // 新規行は常に「未登録」なので、入力が妥当なら登録できる
+  const dirty = savedSignature === null || draftSignature !== savedSignature;
+  // 名前と終了日は必須（終了日は区分を作る目的そのもの）
+  const valid = trimmedName.length > 0 && !!endDate && (!startDate || endDate >= startDate);
 
-  const grades = track.default_grades ?? [];
   const gradeSummary =
     grades.length > 0 ? grades.map((g) => GRADE_LABELS[g] || String(g)).join('・') : 'なし';
   const dateClass = 'px-2 py-1 text-xs border border-border rounded-lg';
 
   return (
-    <div className="flex flex-wrap items-center gap-2 py-1">
-      <input
-        type="text"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        onBlur={() => {
-          const trimmed = name.trim();
-          if (!trimmed) {
-            setName(track.name); // 空欄はサーバーで弾かれるので、その場で元に戻す
-            return;
-          }
-          if (trimmed !== track.name) emit({ name: trimmed });
-        }}
-        className="w-24 px-2 py-1 text-xs border border-border rounded-lg"
-        placeholder="区分名"
-      />
-      <span className="text-[10px] text-text-faint">開始</span>
-      {track.schedule_start_date || editingStart ? (
+    <div className="relative py-1">
+      {/* 1行に収める。狭いときは横スクロールさせ、折り返して縦に伸びないようにする */}
+      <div className="flex items-center gap-2 overflow-x-auto whitespace-nowrap">
+        <input
+          type="text"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          className="w-24 shrink-0 px-2 py-1 text-xs border border-border rounded-lg"
+          placeholder="区分名"
+        />
+        <span className="shrink-0 text-[10px] text-text-faint">開始</span>
         <input
           type="date"
-          value={track.schedule_start_date || ''}
-          autoFocus={editingStart && !track.schedule_start_date}
-          onChange={(e) => emit({ schedule_start_date: e.target.value || null })}
-          onBlur={() => setEditingStart(false)}
-          className={dateClass}
+          value={startDate}
+          onChange={(e) => setStartDate(e.target.value)}
+          className={`${dateClass} shrink-0`}
+          title="空欄なら共通の開始日を使います"
         />
-      ) : (
+        {!startDate && <span className="shrink-0 text-[10px] text-text-faint">(共通)</span>}
+        <span className="shrink-0 text-[10px] text-text-faint">終了</span>
+        <input
+          type="date"
+          value={endDate}
+          onChange={(e) => setEndDate(e.target.value)}
+          className={`${dateClass} shrink-0`}
+        />
         <button
           type="button"
-          onClick={() => setEditingStart(true)}
-          className={`${dateClass} text-text-muted hover:bg-surface-hover`}
-          title="共通の開始日を使っています。押すと個別の開始日を入れられます"
+          onClick={() => setShowGrades((v) => !v)}
+          className="shrink-0 px-2 py-1 text-[10px] text-text-muted border border-border rounded-lg hover:bg-surface-hover"
+          title="この学年の生徒は自動でこの区分に入ります（生徒ごとに上書きできます）"
         >
-          共通
+          既定の学年: {gradeSummary}
         </button>
-      )}
-      <span className="text-[10px] text-text-faint">終了</span>
-      <input
-        type="date"
-        value={track.schedule_end_date || ''}
-        onChange={(e) => {
-          // 終了日は区分を作る目的そのものなので、空にはさせない
-          if (e.target.value) emit({ schedule_end_date: e.target.value });
-        }}
-        className={dateClass}
-      />
-      <button
-        type="button"
-        onClick={() => setShowGrades((v) => !v)}
-        className="px-2 py-1 text-[10px] text-text-muted border border-border rounded-lg hover:bg-surface-hover"
-        title="この学年の生徒は自動でこの区分に入ります（生徒ごとに上書きできます）"
-      >
-        既定の学年: {gradeSummary}
-      </button>
-      <button
-        type="button"
-        onClick={() => {
-          if (
-            window.confirm(
-              `区分「${track.name}」を削除しますか？この区分に入れた生徒は共通の期間に戻ります。`
-            )
-          ) {
-            onDelete(track.id);
+        <button
+          type="button"
+          disabled={!dirty || !valid}
+          onClick={() =>
+            onSave({
+              // 新規行は id を送らない（サーバー側が作成として扱う）
+              ...(track ? { id: track.id } : {}),
+              name: trimmedName,
+              short_name: track?.short_name ?? null,
+              schedule_start_date: startDate || null,
+              schedule_end_date: endDate,
+              default_grades: grades,
+              sort_order: track?.sort_order ?? sortOrder ?? 0,
+            })
           }
-        }}
-        className="p-1 text-text-faint hover:text-danger"
-        title="この区分を削除"
-      >
-        <X className="w-3.5 h-3.5" />
-      </button>
+          className="shrink-0 px-2.5 py-1 text-[10px] rounded-lg bg-ink text-white disabled:opacity-40 hover:opacity-90 transition-opacity"
+          title={isNew ? 'この区分を登録します' : dirty ? '変更を保存します' : '変更はありません'}
+        >
+          {isNew ? '登録' : '保存'}
+        </button>
+        {!isNew && dirty && <span className="shrink-0 text-[10px] text-amber-600">未保存</span>}
+        <button
+          type="button"
+          onClick={() => {
+            // 新規行は登録前なので、消すのではなく追加をやめるだけ
+            if (!track) {
+              onCancel?.();
+              return;
+            }
+            if (
+              window.confirm(
+                `区分「${track.name}」を削除しますか？この区分に入れた生徒は共通の期間に戻ります。`
+              )
+            ) {
+              onDelete?.(track.id);
+            }
+          }}
+          className="shrink-0 p-1 text-text-faint hover:text-danger"
+          title={track ? 'この区分を削除' : '追加をやめる'}
+        >
+          <X className="w-3.5 h-3.5" />
+        </button>
+      </div>
       {showGrades && (
-        <div className="w-full flex flex-wrap gap-1 pl-1 pb-1">
+        <div className="mt-1 flex flex-wrap gap-1 pl-1 pb-1">
           {TRACK_GRADES.map((grade) => {
             const on = grades.includes(grade);
             return (
@@ -178,9 +206,9 @@ function TrackRow({
                 key={grade}
                 type="button"
                 onClick={() =>
-                  emit({
-                    default_grades: on ? grades.filter((g) => g !== grade) : [...grades, grade],
-                  })
+                  setGrades((prev) =>
+                    on ? prev.filter((g) => g !== grade) : [...prev, grade].sort((a, b) => a - b)
+                  )
                 }
                 className={`px-1.5 py-0.5 text-[10px] rounded border transition-colors duration-100 ${
                   on
@@ -299,6 +327,8 @@ export function CourseProgressDashboard({
   onTrackSave,
   onTrackDelete,
 }: CourseProgressDashboardProps) {
+  // 区分の追加中（まだ登録していない空の行を出しているか）
+  const [addingTrack, setAddingTrack] = useState(false);
   const [categoryOpen, setCategoryOpen] = useState(false);
   // 教科別 提案vs取得セクションの開閉と、表示対象（全体／学校種別）
   const [subjectOpen, setSubjectOpen] = useState(false);
@@ -407,21 +437,9 @@ export function CourseProgressDashboard({
               <button
                 type="button"
                 disabled={!period?.schedule_end_date}
-                onClick={() => {
-                  // 名前は期の中で一意なので、続けて押しても衝突しない名前を用意する
-                  let name = '新しい区分';
-                  for (let n = 2; trackList.some((t) => t.name === name); n++) {
-                    name = `新しい区分${n}`;
-                  }
-                  onTrackSave({
-                    name,
-                    short_name: null,
-                    schedule_start_date: null,
-                    schedule_end_date: period?.schedule_end_date ?? '',
-                    default_grades: [],
-                    sort_order: trackList.length,
-                  });
-                }}
+                // 押した時点では作らない。空の行を出して、名前を入れて「登録」で作る
+                // （途中でやめたときに「新しい区分」という空の行が残らないように）。
+                onClick={() => setAddingTrack(true)}
                 className="ml-auto inline-flex items-center gap-1 px-2 py-1 text-[11px] text-text-muted border border-border rounded-lg hover:bg-surface-hover disabled:opacity-40 disabled:cursor-not-allowed"
                 title={
                   period?.schedule_end_date
@@ -436,7 +454,7 @@ export function CourseProgressDashboard({
           </div>
           {/* 講習期間の区分（Phase 8）。生徒によって講習期間が違う冬期のためのもの。
               普段の期は区分ゼロなので、0件のときは追加ボタン以外は何も出さない。 */}
-          {onTrackSave && onTrackDelete && trackList.length > 0 && (
+          {onTrackSave && onTrackDelete && (trackList.length > 0 || addingTrack) && (
             <div className="mt-2 pt-2 border-t border-border space-y-1">
               {trackList.map((track) => (
                 <TrackRow
@@ -446,6 +464,18 @@ export function CourseProgressDashboard({
                   onDelete={onTrackDelete}
                 />
               ))}
+              {addingTrack && (
+                <TrackRow
+                  track={null}
+                  defaultEndDate={period?.schedule_end_date ?? ''}
+                  sortOrder={trackList.length}
+                  onSave={(draft) => {
+                    onTrackSave(draft);
+                    setAddingTrack(false);
+                  }}
+                  onCancel={() => setAddingTrack(false)}
+                />
+              )}
               <p className="text-[10px] text-text-faint pt-1">
                 区分に入っていない生徒は共通の期間。既定の学年は自動で当てはまり、生徒ごとに上書きできます。
               </p>
