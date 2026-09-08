@@ -12,7 +12,6 @@ import {
   School,
   FileText,
   Globe,
-  Calendar,
   Shield,
   Clock,
   Link2,
@@ -143,18 +142,6 @@ const settingsGroups: SettingsGroup[] = [
         icon: <ClipboardList className="w-5 h-5" />,
         label: '試験名マスタ',
         description: '進行表の目標設定・試験範囲で使う試験名の管理',
-        requiresManager: true,
-      },
-    ],
-  },
-  {
-    title: '講習',
-    items: [
-      {
-        href: '/settings/seasonal-shifts',
-        icon: <Calendar className="w-5 h-5" />,
-        label: '講習シフト設定',
-        description: '季節講習のシフト管理',
         requiresManager: true,
       },
     ],

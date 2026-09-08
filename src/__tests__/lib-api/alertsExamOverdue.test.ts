@@ -34,6 +34,7 @@ type ExamFixture = {
   exam_date: string | null;
   target_score: number | null;
   custom_exam_name?: string | null;
+  closed_at?: string | null;
 };
 
 /**
@@ -46,7 +47,12 @@ function makeSources(
   actionGoalExamIds: string[] = [],
   textbookCount = 1
 ): AlertSources {
-  const hydratedExams = exams.map((e) => ({ exam_type_id: null, custom_exam_name: null, ...e }));
+  const hydratedExams = exams.map((e) => ({
+    exam_type_id: null,
+    custom_exam_name: null,
+    closed_at: null,
+    ...e,
+  }));
   const textbooks = Array.from({ length: textbookCount }, (_, i) => ({
     id: `st-${i + 1}`,
     // 科目は「国語」で揃える（categorizeSubject が同じ列に分類する前提のテスト用）
@@ -148,5 +154,38 @@ describe('exam_overdue（目標未設定）', () => {
     );
     expect(alerts[0].message).toContain('国語');
     expect(alerts[0].details?.textbook_name).toBe('国語');
+  });
+
+  // ── 目標の「終了」機能（docs/progress-goal-close-plan.md）を入れたことによる回帰確認 ──
+
+  it('終了済みの目標ではアラートを出さない', () => {
+    const alerts = evaluate(
+      makeSources([
+        {
+          id: 'e1',
+          exam_date: '2026-07-31',
+          target_score: null,
+          closed_at: '2026-08-01T00:00:00.000Z',
+        },
+      ])
+    );
+    expect(alerts).toEqual([]);
+  });
+
+  it('終了済みの未来日があっても、生きている過去日の目標のアラートは出る（§4-4 の罠）', () => {
+    // 終了済みの未来日目標を「最新」扱いにして latestExamDate 判定から生きている過去日を
+    // 弾いてしまうと、目標未設定の検知漏れになる。この回帰を固定する。
+    const alerts = evaluate(
+      makeSources([
+        { id: 'alive', exam_date: '2026-07-31', target_score: null },
+        {
+          id: 'closed-future',
+          exam_date: '2026-12-25',
+          target_score: null,
+          closed_at: '2026-08-01T00:00:00.000Z',
+        },
+      ])
+    );
+    expect(alerts.map((a) => a.details?.exam_id)).toEqual(['alive']);
   });
 });
