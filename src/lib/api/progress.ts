@@ -547,6 +547,50 @@ export async function deleteStudentTextbookExam(id: string): Promise<void> {
   }
 }
 
+/**
+ * 目標を終える（教室長以上）。行は消さず closed_at / closed_by を立てるだけ。
+ * 同じ科目のテキストは同じ目標を共有しているため、この1件を終えるだけで
+ * activeExamOf() の選択から科目全体で外れる（docs/progress-goal-close-plan.md 参照）。
+ *
+ * closedBy は useAuth() の profile?.id を渡す。取れなければ null で通す
+ * （監査情報が欠けるだけで機能は動くようにする）。
+ */
+export async function closeStudentTextbookExam(
+  id: string,
+  closedBy: string | null
+): Promise<StudentTextbookExam> {
+  const { data, error } = await supabase
+    .from('student_textbook_exams')
+    .update({ closed_at: new Date().toISOString(), closed_by: closedBy })
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) {
+    throw new Error(`目標の終了に失敗しました: ${error.message}`);
+  }
+
+  return data as StudentTextbookExam;
+}
+
+/**
+ * 終了した目標を取り消す（教室長以上）。closed_at / closed_by を NULL に戻す。
+ */
+export async function reopenStudentTextbookExam(id: string): Promise<StudentTextbookExam> {
+  const { data, error } = await supabase
+    .from('student_textbook_exams')
+    .update({ closed_at: null, closed_by: null })
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) {
+    throw new Error(`目標の終了の取り消しに失敗しました: ${error.message}`);
+  }
+
+  return data as StudentTextbookExam;
+}
+
 // ============================================
 // 進行記録（student_progress）
 // ============================================

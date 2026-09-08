@@ -1016,6 +1016,10 @@ export type Database = {
           target_score: number | null;
           result_score: number | null;
           exam_range: string | null;
+          // 目標を終えた日時。NULL=進行中。docs/progress-goal-close-plan.md 参照
+          closed_at: string | null;
+          // 終えた操作者(user_profiles.id)。監査目的のみ。FKはON DELETE SET NULL
+          closed_by: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -1031,6 +1035,8 @@ export type Database = {
           target_score?: number | null;
           result_score?: number | null;
           exam_range?: string | null;
+          closed_at?: string | null;
+          closed_by?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -1045,6 +1051,8 @@ export type Database = {
           target_score?: number | null;
           result_score?: number | null;
           exam_range?: string | null;
+          closed_at?: string | null;
+          closed_by?: string | null;
           created_at?: string;
           updated_at?: string;
         };

@@ -253,7 +253,10 @@ export function activeExamOf(
   daysLeft: number | null;
   targetScore: number | null;
 } | null {
-  const exams = tb.exams || [];
+  // 終了済み（closed_at が入っている）は選択から外す。日付での絞り込みより先に外すこと。
+  // 未来日の終了済みが残っていても「一番近い将来」として拾われてしまうため
+  // （docs/progress-goal-close-plan.md §4-1）。
+  const exams = (tb.exams || []).filter((e) => !e.closed_at);
   if (exams.length === 0) return null;
   const future = exams
     .filter((e) => e.exam_date)
@@ -269,6 +272,39 @@ export function activeExamOf(
     date: pick.exam_date,
     daysLeft: daysLeftOf(pick.exam_date),
     targetScore: pick.target_score,
+  };
+}
+
+/**
+ * その科目で一番最近終えた目標を返す（無ければ null）。
+ * 「終えたあとのカード」に試験名・終了日を出すために使う。
+ * closed_at が最も新しいもの＝ここでいう「終了した目標」（docs/progress-goal-close-plan.md §4-2）。
+ */
+export function latestClosedExamOf(
+  tb: StudentTextbookWithDetails,
+  examTypes: ExamType[] = []
+): {
+  id: string;
+  name: string;
+  closedAt: string;
+  /** 終了日をローカル（日本時間）で 'YYYY-MM-DD' にしたもの。表示にはこちらを使う */
+  closedOn: string;
+} | null {
+  const closed = (tb.exams || []).filter((e) => !!e.closed_at);
+  if (closed.length === 0) return null;
+  const latest = closed.reduce((a, b) => (a.closed_at! > b.closed_at! ? a : b));
+  const etName = examTypes.find((t) => t.id === latest.exam_type_id)?.name;
+  // closed_at は UTC で入る。ISO文字列をそのまま切ると、日本時間の未明（UTCでは前日）に
+  // 終えたぶんが1日前に表示される。ローカル日付に直してから渡す。
+  const d = new Date(latest.closed_at!);
+  const closedOn = isNaN(d.getTime())
+    ? latest.closed_at!.slice(0, 10)
+    : `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  return {
+    id: latest.id,
+    name: etName || latest.custom_exam_name || '目標設定',
+    closedAt: latest.closed_at!,
+    closedOn,
   };
 }
 

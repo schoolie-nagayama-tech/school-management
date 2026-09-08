@@ -857,12 +857,17 @@ function buildExamOverdueCandidates(sources: AlertSources): Alert[] {
       // そこで科目ごとに「最新の試験日の目標」だけを判定対象にする
       // （exams は科目単位で共有されているので、同じ科目のテキストなら結果は同じになる）。
       // 同日が複数ある場合はどちらも最新扱い（どちらが後継か決められないので取りこぼさない側に倒す）。
+      // 終了済み（closed_at あり）は「最新の目標」の判定からも外す。
+      // 外し忘れると、終了した未来日の目標が「最新」扱いになり、その手前の生きている
+      // 目標が「もう古い」と判定されてアラートが検知漏れする（docs/progress-goal-close-plan.md §4-4）。
       const latestExamDate = exams.reduce(
-        (max, e) => (e.exam_date && (max === null || e.exam_date > max) ? e.exam_date : max),
+        (max, e) =>
+          e.exam_date && !e.closed_at && (max === null || e.exam_date > max) ? e.exam_date : max,
         null as string | null
       );
       for (const exam of exams) {
         if (!exam.exam_date) continue;
+        if (exam.closed_at) continue; // 終了済みの目標自体はアラート対象外
         if (seenExamIds.has(exam.id)) continue;
         // より新しい目標がある＝この行はすでに次へ進んだ後なので対象外
         if (latestExamDate !== null && exam.exam_date < latestExamDate) continue;
