@@ -756,19 +756,54 @@ export default function CourseProgressPage() {
    * 区分を変えると生徒ごとの講習期間が変わり、通常回数（course_sessions）＝増コマの
    * 基準まで動く。そのため保存後は区分と auto_values をまとめて取り直す。
    */
+  /**
+   * 区分の一覧・当てはめだけを取り直す（軽い）。
+   *
+   * auto_values は含めない。あちらは通塾パターン・提案書・単元を全件ページングする
+   * このページで一番重い集計で、区分を1つ触るたびに走らせると操作がもっさりする
+   * （学年チップを5個押すだけで5回フル再集計になっていた）。
+   */
   const refreshTracks = useCallback(async () => {
     if (!localSchoolId) return;
     const batchResult = await batchFetchCoursePrepApi(
       { schoolId: localSchoolId, season, year: String(year) },
-      ['tracks', 'auto_values']
+      ['tracks']
     );
     const trackData = batchResult.tracks as
       | { tracks: CoursePrepTrack[]; assignments: CoursePrepStudentTrack[] }
       | undefined;
     setTracks(trackData?.tracks ?? []);
     setStudentTracks(trackData?.assignments ?? []);
-    setAutoValuesData((batchResult.auto_values || {}) as AutoValues);
   }, [localSchoolId, season, year]);
+
+  /**
+   * 区分をいじった後の通常回数・増コマの取り直し。
+   *
+   * 区分を変えると course_sessions が変わるので集計はやり直す必要があるが、
+   * 連続操作のたびに走らせる必要はない。最後の操作から少し待ってから1回だけ走らせ、
+   * その間は画面の当てはめだけ先に更新しておく（数字は少し遅れて追いつく）。
+   */
+  const autoValuesTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const scheduleAutoValuesRefresh = useCallback(() => {
+    if (!localSchoolId) return;
+    if (autoValuesTimerRef.current) clearTimeout(autoValuesTimerRef.current);
+    autoValuesTimerRef.current = setTimeout(() => {
+      setAutoLoading(true);
+      batchFetchCoursePrepApi({ schoolId: localSchoolId, season, year: String(year) }, [
+        'auto_values',
+      ])
+        .then((r) => setAutoValuesData((r.auto_values || {}) as AutoValues))
+        .catch((err) => console.error('Error refreshing auto_values:', err))
+        .finally(() => setAutoLoading(false));
+    }, 800);
+  }, [localSchoolId, season, year]);
+
+  // 画面を離れるときに待機中のタイマーを止める（消えたコンポーネントへの setState を防ぐ）
+  useEffect(() => {
+    return () => {
+      if (autoValuesTimerRef.current) clearTimeout(autoValuesTimerRef.current);
+    };
+  }, []);
 
   const handleTrackSave = useCallback(
     async (draft: CoursePrepTrackDraft) => {
@@ -776,12 +811,13 @@ export default function CourseProgressPage() {
       try {
         await upsertCoursePrepTrack(localSchoolId, season, year, draft);
         await refreshTracks();
+        scheduleAutoValuesRefresh();
       } catch (err) {
         console.error('Error saving track:', err);
         setErrorMessage(getUserErrorMessage(err, '区分の保存に失敗しました'));
       }
     },
-    [localSchoolId, season, year, refreshTracks]
+    [localSchoolId, season, year, refreshTracks, scheduleAutoValuesRefresh]
   );
 
   const handleTrackDelete = useCallback(
@@ -790,26 +826,57 @@ export default function CourseProgressPage() {
       try {
         await deleteCoursePrepTrack(localSchoolId, trackId);
         await refreshTracks();
+        scheduleAutoValuesRefresh();
       } catch (err) {
         console.error('Error deleting track:', err);
         setErrorMessage(getUserErrorMessage(err, '区分の削除に失敗しました'));
       }
     },
-    [localSchoolId, refreshTracks]
+    [localSchoolId, refreshTracks, scheduleAutoValuesRefresh]
   );
 
+  /**
+   * 生徒の区分を変える。一番よく押される操作なので、画面は待たせない。
+   *
+   * 先に手元の当てはめを書き換えて表示を即座に変え、保存はその裏で走らせる。
+   * 失敗したら元に戻してエラーを出す（間違った当てはめが残ったままにならないように）。
+   * 通常回数の再集計は重いので、連続操作をまとめて後追いで1回だけ走らせる。
+   */
   const handleStudentTrackChange = useCallback(
     async (studentId: string, trackId: string | null | 'default') => {
       if (!localSchoolId) return;
+      const previous = liveStudentTracks;
+      // 楽観更新: 'default' は当てはめ行を消す、それ以外はその生徒の行を差し替える
+      setStudentTracks((rows) => {
+        const rest = rows.filter((r) => r.student_id !== studentId);
+        if (trackId === 'default') return rest;
+        const existing = rows.find((r) => r.student_id === studentId);
+        return [
+          ...rest,
+          {
+            ...(existing ?? {
+              id: `optimistic-${studentId}`,
+              school_id: localSchoolId,
+              season,
+              year,
+              student_id: studentId,
+              created_at: '',
+              updated_at: '',
+            }),
+            track_id: trackId,
+          } as CoursePrepStudentTrack,
+        ];
+      });
       try {
         await setCoursePrepStudentTrack(localSchoolId, season, year, studentId, trackId);
-        await refreshTracks();
+        scheduleAutoValuesRefresh();
       } catch (err) {
+        setStudentTracks(previous); // 保存できなかったので画面も戻す
         console.error('Error setting student track:', err);
         setErrorMessage(getUserErrorMessage(err, '区分の当てはめに失敗しました'));
       }
     },
-    [localSchoolId, season, year, refreshTracks]
+    [localSchoolId, season, year, liveStudentTracks, scheduleAutoValuesRefresh]
   );
 
   // テンプレート適用

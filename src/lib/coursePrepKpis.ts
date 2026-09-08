@@ -148,19 +148,50 @@ export function resolveStudentTrack(
   studentId: string,
   grade: number | null | undefined
 ): CoursePrepTrack | null {
-  // 1. 個別の当てはめが最優先。共通に戻す明示指定（null）もここで効く。
-  if (assignments.has(studentId)) {
-    const trackId = assignments.get(studentId) ?? null;
-    if (trackId === null) return null;
-    return tracks.find((t) => t.id === trackId) ?? null;
-  }
-  // 2. 既定の学年。複数の区分が同じ学年を既定にしていたら sort_order の若い方を採る。
-  //    並び順が同じときは名前で決める（名前は期の中で一意なので必ず1つに決まる）。
-  if (grade == null) return null;
+  return createTrackResolver(tracks, assignments).resolve(studentId, grade);
+}
+
+/**
+ * 区分の解決を1回だけ組み立てて使い回す形。
+ *
+ * ★ 生徒ごとに resolveStudentTrack を呼ぶと、そのたびに区分の配列コピーと並べ替えが走る。
+ *   進捗表は200名規模で毎レンダー解決するので、人数ぶんの並べ替えがそのまま「もっさり」になる。
+ *   並べ替えと「学年 → 既定の区分」の対応表を先に作り、生徒ごとの解決を O(1) にする。
+ *
+ * 解決の順序は resolveStudentTrack と同じ（個別の当てはめ → 既定の学年 → null）。
+ */
+export function createTrackResolver(
+  tracks: CoursePrepTrack[],
+  assignments: Map<string, string | null>
+): { resolve: (studentId: string, grade: number | null | undefined) => CoursePrepTrack | null } {
+  const byId = new Map<string, CoursePrepTrack>();
+  for (const t of tracks) byId.set(t.id, t);
+
+  // 複数の区分が同じ学年を既定にしていたら sort_order の若い方を採る。
+  // 並び順が同じときは名前で決める（名前は期の中で一意なので必ず1つに決まる）。
   const ordered = tracks
     .slice()
     .sort((a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name, 'ja'));
-  return ordered.find((t) => (t.default_grades ?? []).includes(grade)) ?? null;
+  const byGrade = new Map<number, CoursePrepTrack>();
+  for (const t of ordered) {
+    for (const g of t.default_grades ?? []) {
+      if (!byGrade.has(g)) byGrade.set(g, t);
+    }
+  }
+
+  return {
+    resolve(studentId, grade) {
+      // 1. 個別の当てはめが最優先。共通に戻す明示指定（null）もここで効く。
+      if (assignments.has(studentId)) {
+        const trackId = assignments.get(studentId) ?? null;
+        if (trackId === null) return null;
+        return byId.get(trackId) ?? null;
+      }
+      // 2. 既定の学年。
+      if (grade == null) return null;
+      return byGrade.get(grade) ?? null;
+    },
+  };
 }
 
 /**

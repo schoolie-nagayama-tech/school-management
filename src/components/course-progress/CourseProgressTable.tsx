@@ -14,6 +14,7 @@ import { GRADE_LABELS, PROGRESS_COLUMN_GROUPS } from '@/types/database';
 import type { AutoValues } from '@/lib/api/courseProgress';
 import {
   isGrade9OnlyCoursePrepItem,
+  createTrackResolver,
   resolveStudentTrack,
   trackShortLabel,
 } from '@/lib/coursePrepKpis';
@@ -277,10 +278,18 @@ export function CourseProgressTable({
   const studentTrackLabels = useMemo(() => {
     const map = new Map<string, { label: string; explicit: boolean }>();
     if (trackList.length === 0) return map;
+    // 解決器は1回だけ作る（生徒ごとに作ると人数ぶん並べ替えが走る）
+    const resolver = createTrackResolver(trackList, assignments);
+    // 同じ区分の短縮名を人数ぶん計算し直さないよう、区分ごとに1回だけ求める
+    const shortLabels = new Map<string, string>();
+    for (const t of trackList) shortLabels.set(t.id, trackShortLabel(t));
     for (const s of students) {
-      const track = resolveStudentTrack(trackList, assignments, s.id, s.grade);
+      const track = resolver.resolve(s.id, s.grade);
       if (!track) continue;
-      map.set(s.id, { label: trackShortLabel(track), explicit: assignments.has(s.id) });
+      map.set(s.id, {
+        label: shortLabels.get(track.id) ?? trackShortLabel(track),
+        explicit: assignments.has(s.id),
+      });
     }
     return map;
   }, [students, trackList, assignments]);
@@ -1237,6 +1246,7 @@ export function CourseProgressTable({
                 );
                 // 何も当てはめなかったときに効く区分。同じものを選んだら行ごと消して既定に戻す
                 // （わざわざ「共通に戻す」行を作らないため）。
+                // ここは開いているメニュー1件ぶんなので、解決器を作り直しても負荷にならない。
                 const fallback = resolveStudentTrack(
                   trackList,
                   NO_TRACK_ASSIGNMENTS,
