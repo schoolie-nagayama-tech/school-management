@@ -115,7 +115,7 @@ export default function TextbookMasterPageWrapper() {
 function TextbookMasterPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { profile, schoolIds, selectedSchoolId, isLoading: authLoading } = useAuth();
+  const { profile, getSelectedSchoolIds, isLoading: authLoading } = useAuth();
   const { toasts, removeToast, success: toastSuccess, error: toastError } = useToast();
   const isManager =
     profile?.role === 'admin' || profile?.role === 'owner' || profile?.role === 'manager';
@@ -153,7 +153,8 @@ function TextbookMasterPage() {
       setProposalStudentQuery('');
       setProposalStudentsLoading(true);
       try {
-        const ids = selectedSchoolId && selectedSchoolId !== 'all' ? [selectedSchoolId] : schoolIds;
+        // 教室スコープはヘッダーの教室切替に従う（'all' のときのデモ教室除外もここが担う）
+        const ids = getSelectedSchoolIds();
         if (ids.length === 0) {
           setProposalStudents([]);
           return;
@@ -178,7 +179,7 @@ function TextbookMasterPage() {
       }
       setTimeout(() => proposalInputRef.current?.focus(), 50);
     },
-    [schoolIds, selectedSchoolId]
+    [getSelectedSchoolIds]
   );
 
   useEffect(() => {
@@ -218,7 +219,8 @@ function TextbookMasterPage() {
       setTextbooks(data);
       // 発注教材の紐付け候補（materials）。失敗しても教材一覧は表示したいので握りつぶす。
       try {
-        const ids = selectedSchoolId && selectedSchoolId !== 'all' ? [selectedSchoolId] : schoolIds;
+        // 教室スコープはヘッダーの教室切替に従う（'all' のときのデモ教室除外もここが担う）
+        const ids = getSelectedSchoolIds();
         if (ids.length > 0) setMaterials(await getMaterials(ids));
       } catch {
         /* ignore */
@@ -230,7 +232,7 @@ function TextbookMasterPage() {
     } finally {
       setLoading(false);
     }
-  }, [schoolIds, selectedSchoolId]);
+  }, [getSelectedSchoolIds]);
 
   const loadedRef = useRef(false);
   useEffect(() => {

@@ -105,6 +105,8 @@ export interface YoubiResponse {
   response_data: YoubiResponseData;
   linked_student_id: string | null;
   linked_at: string | null;
+  /** 代理申込を出した職員。保護者本人の申込は null。 */
+  submitted_by_user_id: string | null;
   status_checks: {
     charged?: boolean;
     seated?: boolean;

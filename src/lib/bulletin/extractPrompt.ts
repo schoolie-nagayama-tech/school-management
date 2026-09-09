@@ -90,9 +90,12 @@ export function extractSystemPrompt(params?: { glossary?: string }): string {
     '  学年の指定が無ければ空の配列。',
     '- 対象の通学校が書かれていれば target_school_names に学校名の文字列でそのまま入れる（例:「諏訪中」）。',
     '  通学校の指定が無ければ空の配列。',
+    // ★あとから「どこで読み間違えたか」を追うため、根拠にした一文を原文のまま残させる。
+    //   要約されると、AIの読み違いなのか投稿の書き方の問題なのかが判別できなくなる。
+    '- ★source_excerpt は投稿の文をそのまま写す。要約しない・作らない（40字まで。見つからなければ空文字）。',
     '',
     '出力はJSONだけ。前置きは書かない:',
-    '{"tasks":[{"kind":"test_prep_proposal","scope":"attending_school","target_grades":[],"target_school_names":["諏訪中"],"due_type":"none","due_date":null,"reason":"投稿のどこからそう読んだか"}]}',
+    '{"tasks":[{"kind":"test_prep_proposal","scope":"attending_school","target_grades":[],"target_school_names":["諏訪中"],"due_type":"none","due_date":null,"reason":"投稿のどこからそう読んだか","source_excerpt":"根拠にした投稿の一文をそのまま"}]}',
     '',
     '作業が1つも無ければ {"tasks":[]} を返す。',
   ].join('\n');

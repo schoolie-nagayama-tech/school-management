@@ -75,6 +75,7 @@ export function OrderList({ orders, canEdit, onStatusChange, onDelete }: OrderLi
               <TableHead>教材名</TableHead>
               <TableHead className="text-center">数量</TableHead>
               <TableHead>ステータス</TableHead>
+              <TableHead>請求</TableHead>
               <TableHead>発注日</TableHead>
               <TableHead>発送日</TableHead>
               {canEdit && <TableHead className="text-center">操作</TableHead>}
@@ -121,6 +122,18 @@ export function OrderList({ orders, canEdit, onStatusChange, onDelete }: OrderLi
                   ) : (
                     <OrderStatusBadge status={order.status} />
                   )}
+                </TableCell>
+                {/* 請求に載せるのが既定なので、外したものだけ印を付ける
+                    （全行に「請求対象」と出すと埋まって読めなくなる）。 */}
+                <TableCell>
+                  {order.exclude_from_billing ? (
+                    <span
+                      className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600 border border-gray-200 whitespace-nowrap"
+                      title="この発注は請求管理の「教材発注」に出ません"
+                    >
+                      請求対象外
+                    </span>
+                  ) : null}
                 </TableCell>
                 <TableCell>{formatDate(order.ordered_at)}</TableCell>
                 <TableCell>{formatDate(order.delivered_at)}</TableCell>

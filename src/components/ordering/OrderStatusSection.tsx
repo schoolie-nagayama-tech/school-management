@@ -216,6 +216,22 @@ interface SubSectionWithDeleteProps extends SubSectionProps {
   onDelete: (orderId: string) => Promise<void>;
 }
 
+/**
+ * 請求管理に載せない発注の印。
+ * 載せるのが既定なので、外したものだけに出す（全件に「請求対象」と書くと埋まって読めない）。
+ */
+function BillingExcludedBadge({ order }: { order: MaterialOrderWithDetails }) {
+  if (!order.exclude_from_billing) return null;
+  return (
+    <span
+      className="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-medium bg-gray-100 text-gray-600 border border-gray-200 whitespace-nowrap"
+      title="この発注は請求管理の「教材発注」に出ません"
+    >
+      請求対象外
+    </span>
+  );
+}
+
 // Inline status dropdown
 function StatusDropdown({
   order,
@@ -306,7 +322,12 @@ function UnconfirmedSection({
               key={order.id}
               className="border-b border-gray-100 hover:bg-gray-50 transition-[background-color,color] duration-150 ease-out"
             >
-              <td className="py-2 px-4 text-sm text-gray-900">{order.material?.name || '-'}</td>
+              <td className="py-2 px-4 text-sm text-gray-900">
+                <span className="inline-flex items-center gap-1.5 flex-wrap">
+                  {order.material?.name || '-'}
+                  <BillingExcludedBadge order={order} />
+                </span>
+              </td>
               <td className="py-2 px-4 text-sm text-gray-600">{getSchoolName(order)}</td>
               <td className="py-2 px-4 text-sm text-gray-600">
                 {order.is_sample ? (
@@ -388,6 +409,7 @@ function OrderedSection({
                 <span className="text-sm text-gray-900 truncate">
                   {order.material?.name || '-'}
                 </span>
+                <BillingExcludedBadge order={order} />
                 <span className="text-sm text-gray-600 whitespace-nowrap">{order.quantity}冊</span>
                 <span className="text-xs text-gray-400 whitespace-nowrap">
                   {order.is_sample ? (
@@ -489,6 +511,7 @@ function DeliveredSection({
                   <span className="text-sm text-gray-600 truncate">
                     {order.material?.name || '-'} x{order.quantity}
                   </span>
+                  <BillingExcludedBadge order={order} />
                 </div>
                 {canEdit && (
                   <div className="ml-2">
@@ -561,6 +584,7 @@ function DistributedSection({
                 <span className="text-sm text-gray-600 truncate">
                   {order.material?.name || '-'} x{order.quantity}
                 </span>
+                <BillingExcludedBadge order={order} />
               </div>
               {canEdit && (
                 <div className="ml-2">

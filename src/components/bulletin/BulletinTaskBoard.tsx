@@ -9,6 +9,10 @@
  *   前の設計には依頼ごとの追跡ボタンが2か所、数え直す、申込状況の列を選ぶ、があった。
  *   教室長は1日に何度もここを通るので、押すものが増えるほど見られなくなる。
  *
+ * ★例外は「× 消す」の理由だけ。消す理由（読み間違い／もう済んだ／追わなくていい）は
+ *   これまで同じ操作に潰れていて、AIの読みが合っていたかがどこにも残らなかった。
+ *   増えるのは押したあとの1回だけにし、確認ダイアログは出さない。
+ *
  * ★達成率（47/62）は出さない。教室長が動く先は「誰がまだか」であって割合ではない。
  *   分数を出すと、残り1人でも「76%」に見えて動く気にならない。
  *
@@ -16,11 +20,13 @@
  *   その数字を見て督促が飛ぶ——いま起きている問題そのものを再生産する。
  */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { fetchWithAuth } from '@/lib/api/auth';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/useToast';
 import { isManagerOrAbove } from '@/lib/utils/roles';
+import { TEACHER_ASSIST_FEATURE_KEY } from '@/lib/ai/features';
+import { FEEDBACK_VERDICT_LABELS, recordAiFeedback, type FeedbackVerdict } from '@/lib/ai/feedback';
 import type { BulletinProgressResponse, BulletinTaskView } from '@/lib/bulletin/apiTypes';
 import { ASSESSMENT_NAME_LABELS } from '@/types/database';
 import type { ApplicationItem, School } from '@/types/database';
@@ -35,6 +41,18 @@ interface Row extends BulletinTaskView {
 
 /** 「いま追加」を出す期間。投稿した教室長がその場で結果を見られればよい */
 const FRESH_HOURS = 24;
+
+/**
+ * 「× 消す」を押したときに聞く理由。
+ *
+ * ★これまで「× 消す」だけだったので、読み間違いなのか・もう済んだのか・
+ *   追わなくていいのかが同じ操作に潰れていた。どれも消える結果は同じでも、
+ *   直せるのは「読み間違い」だけで、それが何件あるのかが分からなかった。
+ *
+ * ★'ok'（合っていた）は出さない。合っていたものは消さないので、
+ *   ここに並べても押されない（押すものを増やすだけになる）。
+ */
+const REMOVE_VERDICTS: readonly FeedbackVerdict[] = ['misread', 'already_done', 'not_needed'];
 
 interface BulletinTaskBoardProps {
   /** 教室名の対応表。掲示板がすでに持っているものを受け取る（同じ取得を二度しない） */
@@ -152,7 +170,7 @@ export function BulletinTaskBoard({
   };
 
   /** ×＝この依頼は追跡しない。消さずに tracked=false にするので「戻す」で戻せる */
-  const setTracked = async (taskId: string, tracked: boolean) => {
+  const setTracked = async (taskId: string, tracked: boolean): Promise<boolean> => {
     const res = await fetchWithAuth('/api/ai/bulletin/tasks', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -160,13 +178,43 @@ export function BulletinTaskBoard({
     });
     if (!res.ok) {
       toastError(tracked ? '戻せませんでした' : '消せませんでした');
-      return;
+      return false;
     }
     setRemoved((prev) => {
       const next = new Set(prev);
       if (tracked) next.delete(taskId);
       else next.add(taskId);
       return next;
+    });
+    return true;
+  };
+
+  /**
+   * 理由を選んで消す。
+   *
+   * ★消すのが先、記録はあと。記録が失敗しても消せたことは変わらないし、
+   *   記録のために消す操作を待たせたり失敗させたりしてはいけない
+   *   （そうなると教室長は次から理由を押さなくなり、集めたいものが集まらなくなる）。
+   */
+  const removeWithVerdict = async (row: Row, verdict: FeedbackVerdict) => {
+    const ok = await setTracked(row.taskId, false);
+    if (!ok) return;
+    void recordAiFeedback({
+      schoolId: row.schoolId,
+      feature: TEACHER_ASSIST_FEATURE_KEY,
+      targetKind: 'bulletin_task',
+      targetId: row.taskId,
+      verdict,
+      // ★AIが何を出したかを丸ごと残す。あとから「対象を誤ったのか種別を誤ったのか」を
+      //   分けて数えるため。title は根拠になった投稿の件名（どの投稿の読み取りかを追う）
+      aiOutput: {
+        kind: row.kind,
+        scope: row.scope,
+        targetGrades: row.targetGrades,
+        targetSchoolNames: row.targetSchoolNames,
+        sourceExcerpt: row.sourceExcerpt,
+        title: row.sources[0]?.title ?? '',
+      },
     });
   };
 
@@ -199,7 +247,10 @@ export function BulletinTaskBoard({
             row={row}
             showSchool={multiSchool}
             removed={removed.has(row.taskId)}
-            onToggle={() => void setTracked(row.taskId, removed.has(row.taskId))}
+            onRemove={(verdict) => void removeWithVerdict(row, verdict)}
+            // ★「戻す」ではフィードバックを送らない。戻すのは
+            //   「消したのが間違いだった」という操作で、AIの読みへの答えではない
+            onRestore={() => void setTracked(row.taskId, true)}
             applicationItems={itemsBySchool[row.schoolId] ?? []}
             onPeriodChange={(period) => void patchTask(row.taskId, { targetPeriod: period })}
             onItemChange={(itemId) => void patchTask(row.taskId, { applicationItemId: itemId })}
@@ -214,7 +265,8 @@ function TaskRow({
   row,
   showSchool,
   removed,
-  onToggle,
+  onRemove,
+  onRestore,
   applicationItems,
   onPeriodChange,
   onItemChange,
@@ -222,7 +274,8 @@ function TaskRow({
   row: Row;
   showSchool: boolean;
   removed: boolean;
-  onToggle: () => void;
+  onRemove: (verdict: FeedbackVerdict) => void;
+  onRestore: () => void;
   applicationItems: ApplicationItem[];
   onPeriodChange: (period: string) => void;
   onItemChange: (itemId: string) => void;
@@ -241,7 +294,7 @@ function TaskRow({
         <span className="text-xs text-text-faint">{label} を消しました</span>
         <button
           type="button"
-          onClick={onToggle}
+          onClick={onRestore}
           className="rounded-md border border-border px-2.5 py-1 text-[11px] text-text-muted transition-colors hover:bg-surface-hover"
         >
           戻す
@@ -264,8 +317,9 @@ function TaskRow({
               ? 'どの回のことか選ぶと、残り人数を数えます'
               : 'まだ数えられません。数えられるまで人数は出しません'}
           </span>
-          <RemoveButton onClick={onToggle} className="ml-auto" />
+          <RemoveControl onRemove={onRemove} className="ml-auto" />
         </div>
+        <SourceExcerpt text={row.sourceExcerpt} />
         {canJudgeOnceChosen && (
           <PeriodPicker kind={row.kind} value={row.targetPeriod} onChange={onPeriodChange} />
         )}
@@ -304,6 +358,9 @@ function TaskRow({
           <DueLabel dueDate={row.dueDate} />
         )}
       </div>
+
+      {/* ★AIが何を読んだか。読み間違いに気づけるのは、この一文を見たときだけ */}
+      <SourceExcerpt text={row.sourceExcerpt} />
 
       {/* ★この画面の主役。残り人数だけを大きく出す */}
       <div className="flex items-baseline gap-2">
@@ -402,7 +459,7 @@ function TaskRow({
         <span className={`text-xs ${zero ? 'text-success' : 'text-text-muted'}`}>
           {footNote(row)}
         </span>
-        <RemoveButton onClick={onToggle} />
+        <RemoveControl onRemove={onRemove} />
       </div>
     </div>
   );
@@ -448,6 +505,74 @@ function PeriodPicker({
         ))}
       </select>
     </label>
+  );
+}
+
+/**
+ * AIがこの依頼の根拠にした投稿の一文。
+ * ★数字だけ見ていても読み間違いには気づけない。AIが何を読んだかを並べて出す
+ *   （本番の「PCSを配布 → 教材配布チェック」は、この一文があれば一目で分かった）。
+ */
+function SourceExcerpt({ text }: { text: string }) {
+  if (!text) return null;
+  return <span className="text-[11px] text-text-faint">「{text}」から</span>;
+}
+
+/**
+ * 「× 消す」と、その理由を聞くチップ。
+ *
+ * ★確認ダイアログは出さない。ダイアログは画面を覆い、理由を選ぶより手間が重い。
+ *   その場でチップを出し、押すものが増えるのは1回だけにする。
+ * ★外を押す／「やめる」で取り消せる。理由を聞かれて逃げ場が無いと、
+ *   次から「× 消す」そのものが押されなくなる。
+ */
+function RemoveControl({
+  onRemove,
+  className = '',
+}: {
+  onRemove: (verdict: FeedbackVerdict) => void;
+  className?: string;
+}) {
+  const [asking, setAsking] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!asking) return;
+    const onDown = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setAsking(false);
+    };
+    document.addEventListener('mousedown', onDown);
+    return () => document.removeEventListener('mousedown', onDown);
+  }, [asking]);
+
+  if (!asking) {
+    return <RemoveButton onClick={() => setAsking(true)} className={className} />;
+  }
+
+  return (
+    <div ref={ref} className={`flex shrink-0 flex-wrap items-center gap-1 ${className}`}>
+      <span className="text-[11px] text-text-muted">理由は？</span>
+      {REMOVE_VERDICTS.map((v) => (
+        <button
+          key={v}
+          type="button"
+          onClick={() => {
+            setAsking(false);
+            onRemove(v);
+          }}
+          className="whitespace-nowrap rounded-full border border-border bg-surface px-2.5 py-1 text-[11px] text-text-body transition-colors hover:bg-surface-hover"
+        >
+          {FEEDBACK_VERDICT_LABELS[v]}
+        </button>
+      ))}
+      <button
+        type="button"
+        onClick={() => setAsking(false)}
+        className="whitespace-nowrap px-1.5 py-1 text-[11px] text-text-faint underline-offset-2 hover:underline"
+      >
+        やめる
+      </button>
+    </div>
   );
 }
 

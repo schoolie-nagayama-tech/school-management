@@ -1281,6 +1281,10 @@ export type Database = {
           id: string;
           email: string;
           display_name: string | null;
+          /** 姓。display_name はここから自動生成される（本番DBに存在する列） */
+          last_name?: string | null;
+          /** 名 */
+          first_name?: string | null;
           role: string;
           is_active: boolean;
           invited_by: string | null;
@@ -1308,6 +1312,10 @@ export type Database = {
           id?: string;
           email: string;
           display_name?: string | null;
+          /** 姓。display_name はここから自動生成される（本番DBに存在する列） */
+          last_name?: string | null;
+          /** 名 */
+          first_name?: string | null;
           role?: string;
           is_active?: boolean;
           invited_by?: string | null;
@@ -1334,6 +1342,10 @@ export type Database = {
           id?: string;
           email?: string;
           display_name?: string | null;
+          /** 姓。display_name はここから自動生成される（本番DBに存在する列） */
+          last_name?: string | null;
+          /** 名 */
+          first_name?: string | null;
           role?: string;
           is_active?: boolean;
           invited_by?: string | null;
@@ -1540,6 +1552,7 @@ export type Database = {
           response_data: Record<string, unknown>;
           linked_student_id: string | null;
           linked_at: string | null;
+          submitted_by_user_id: string | null;
           status_checks: Record<string, unknown>;
           is_archived: boolean;
           archived_at: string | null;
@@ -1558,6 +1571,7 @@ export type Database = {
           response_data?: Record<string, unknown>;
           linked_student_id?: string | null;
           linked_at?: string | null;
+          submitted_by_user_id?: string | null;
           status_checks?: Record<string, unknown>;
           is_archived?: boolean;
           archived_at?: string | null;
@@ -1576,6 +1590,7 @@ export type Database = {
           response_data?: Record<string, unknown>;
           linked_student_id?: string | null;
           linked_at?: string | null;
+          submitted_by_user_id?: string | null;
           status_checks?: Record<string, unknown>;
           is_archived?: boolean;
           archived_at?: string | null;
@@ -2936,6 +2951,7 @@ export type Database = {
           material_id: string;
           student_id: string | null;
           is_sample: boolean;
+          exclude_from_billing: boolean;
           quantity: number;
           status: 'unconfirmed' | 'ordered' | 'delivered' | 'distributed' | 'cancelled';
           ordered_at: string | null;
@@ -2952,6 +2968,7 @@ export type Database = {
           material_id: string;
           student_id?: string | null;
           is_sample?: boolean;
+          exclude_from_billing?: boolean;
           quantity?: number;
           status?: 'unconfirmed' | 'ordered' | 'delivered' | 'distributed' | 'cancelled';
           ordered_at?: string | null;
@@ -2968,6 +2985,7 @@ export type Database = {
           material_id?: string;
           student_id?: string | null;
           is_sample?: boolean;
+          exclude_from_billing?: boolean;
           quantity?: number;
           status?: 'unconfirmed' | 'ordered' | 'delivered' | 'distributed' | 'cancelled';
           ordered_at?: string | null;
@@ -3527,6 +3545,8 @@ export type FormResponse = {
   response_data: Record<string, unknown>;
   linked_student_id: string | null;
   linked_at: string | null;
+  /** 代理申込を出した職員。保護者本人の申込は null（＝ null かどうかが代理の判定）。 */
+  submitted_by_user_id: string | null;
   status_checks: Record<string, boolean>;
   is_archived: boolean;
   archived_at: string | null;
@@ -3534,7 +3554,8 @@ export type FormResponse = {
   updated_at: string;
 };
 
-export type FormResponseInsert = Omit<FormResponse, 'id' | 'created_at' | 'updated_at' | 'linked_student_id' | 'linked_at' | 'is_archived' | 'archived_at'>;
+// submitted_by_user_id はサーバー側がセッションから詰めるので、クライアントの Insert からは外す。
+export type FormResponseInsert = Omit<FormResponse, 'id' | 'created_at' | 'updated_at' | 'linked_student_id' | 'linked_at' | 'is_archived' | 'archived_at' | 'submitted_by_user_id'>;
 
 export type FormResponseUpdate = Partial<Omit<FormResponse, 'id' | 'school_id' | 'form_type' | 'form_period' | 'created_at' | 'updated_at'>>;
 

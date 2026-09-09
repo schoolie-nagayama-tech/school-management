@@ -55,6 +55,11 @@ export function buildNavEntries(ctx: NavContext): NavEntry[] {
   //   常時目に入るヘッダーではなく設定ページのカードから入る。
   //   公開する段になったらここに link を足す（ページ側のガードは isManagerOrAbove）。
 
+  // ★ AIの答え合わせ(/admin/ai-feedback) もここに出さない。
+  //   教室の運用で使う画面ではなく、AIの読み取りを直す人が直接URLで開くもの。
+  //   全教室ぶんの記録を出すので、ナビに並べると教室長が「自分が見るもの」だと思って開き、
+  //   他教室の記録まで見えてしまう（ページ側のガードは isSystemAdmin）。
+
   // 生徒管理（全ロール）
   if (showAll || p?.canAccessStudents) {
     entries.push({

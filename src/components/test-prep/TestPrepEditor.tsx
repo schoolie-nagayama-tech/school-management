@@ -15,6 +15,7 @@ import {
   deleteTestPrepProposal,
 } from '@/lib/api/test-prep-proposals';
 import { getExamTypes } from '@/lib/api/textbooks';
+import { isFormPeriodPublished } from '@/lib/api/form-periods';
 import { getSubjects } from '@/lib/api/subjects';
 import { getSurname } from '@/lib/utils/teacherName';
 import type { Student, ExamType, CurriculumItem, Subject } from '@/types/database';
@@ -46,6 +47,15 @@ interface SubjectDraft {
   subject_name: string;
   target_score: number | null;
   units: UnitDraft[];
+}
+
+/** 増コマ申込期間の選択肢（公開中かの判定に日付が要るので publish_* も持つ） */
+interface ZoukomaPeriodOption {
+  id: string;
+  title: string;
+  period_key: string;
+  publish_start: string | null;
+  publish_end: string | null;
 }
 
 // テキスト選択肢（全テキストから条件フィルタ）
@@ -89,9 +99,7 @@ export default function TestPrepEditor() {
   const [notes, setNotes] = useState('');
   const [subjects, setSubjects] = useState<SubjectDraft[]>([]);
   const [status, setStatus] = useState<TestPrepStatus>('draft');
-  const [zoukomaPeriods, setZoukomaPeriods] = useState<
-    Array<{ id: string; title: string; period_key: string }>
-  >([]);
+  const [zoukomaPeriods, setZoukomaPeriods] = useState<ZoukomaPeriodOption[]>([]);
 
   // テキスト→単元選択用（全テキストから条件フィルタ）
   const [allTextbooks, setAllTextbooks] = useState<TextbookOption[]>([]);
@@ -125,17 +133,22 @@ export default function TestPrepEditor() {
         setExamTypes(types);
       }
 
+      // 紐づけ先に出すのは「いま申し込める期間」だけ。公開前・終了済み・アーカイブ済みを
+      // 並べると、提案書の申込ボタンから開けないフォームを選べてしまう。
+      let activePeriods: ZoukomaPeriodOption[] = [];
       if (schoolId) {
         const { data: periods } = await supabase
           .from('form_periods')
-          .select('id, title, period_key')
+          .select('id, title, period_key, publish_start, publish_end')
           .eq('school_id', schoolId)
           .eq('form_type', 'zoukoma')
           .eq('is_active', true)
+          .or('is_archived.eq.false,is_archived.is.null')
           .order('publish_start', { ascending: false });
-        setZoukomaPeriods(
-          (periods || []) as Array<{ id: string; title: string; period_key: string }>
+        activePeriods = ((periods || []) as ZoukomaPeriodOption[]).filter((p) =>
+          isFormPeriodPublished(p)
         );
+        setZoukomaPeriods(activePeriods);
       }
 
       // テキスト一覧を取得（科目・学年・準拠でフィルタ）+ 科目マスタ
@@ -164,6 +177,20 @@ export default function TestPrepEditor() {
           setTitle(detail.title);
           setExamTypeId(detail.exam_type_id || '');
           setZoukomaPeriodId(detail.zoukoma_period_id || '');
+          // 既に紐づけてある期間が公開終了していると選択肢から落ち、選択欄が「紐づけなし」に
+          // 見えてしまう（実際には紐づけは残っている）。誤解を避けるため、その期間だけは
+          // 「（公開終了）」と分かる形で選択肢に戻す。
+          const linkedId = detail.zoukoma_period_id;
+          if (linkedId && !activePeriods.some((p) => p.id === linkedId)) {
+            const { data: linked } = await supabase
+              .from('form_periods')
+              .select('id, title, period_key, publish_start, publish_end')
+              .eq('id', linkedId)
+              .maybeSingle();
+            if (linked) {
+              setZoukomaPeriods([...activePeriods, linked as ZoukomaPeriodOption]);
+            }
+          }
           setNotes(detail.notes || '');
           setStatus(detail.status);
           setSubjects(
@@ -639,7 +666,7 @@ export default function TestPrepEditor() {
                 <option value="">紐づけなし</option>
                 {zoukomaPeriods.map((p) => (
                   <option key={p.id} value={p.id}>
-                    {p.title}
+                    {isFormPeriodPublished(p) ? p.title : `${p.title}（公開終了）`}
                   </option>
                 ))}
               </select>

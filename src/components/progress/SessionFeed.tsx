@@ -80,14 +80,17 @@ interface Props {
 }
 
 export default function SessionFeed({ schoolIds: propSchoolIds }: Props) {
-  const { schoolIds: allSchoolIds, selectedSchoolId, profile } = useAuth();
+  const { getSelectedSchoolIds, profile } = useAuth();
   const isTeacher = profile?.role === 'teacher';
 
-  const schoolIds = useMemo(() => {
-    if (propSchoolIds) return propSchoolIds;
-    if (selectedSchoolId === 'all' || !selectedSchoolId) return allSchoolIds;
-    return [selectedSchoolId];
-  }, [propSchoolIds, allSchoolIds, selectedSchoolId]);
+  // ★教室スコープはヘッダーの教室切替（getSelectedSchoolIds）に従う。
+  //   以前はここで同じ判定を自前で書いていたが、('all' のときのデモ教室除外が抜ける／
+  //   selectedSchoolId が未確定(null)のうちにアクセスできる全教室を引いてしまう、の
+  //   2点でずれていた。判定を1か所に寄せる。
+  const schoolIds = useMemo(
+    () => propSchoolIds ?? getSelectedSchoolIds(),
+    [propSchoolIds, getSelectedSchoolIds]
+  );
   const schoolIdsKey = schoolIds.join(',');
 
   // ── State ──

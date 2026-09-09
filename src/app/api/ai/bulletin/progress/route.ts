@@ -541,7 +541,7 @@ export async function GET(request: NextRequest) {
   const { data: taskRows, error: taskError } = await supabase
     .from('bulletin_tasks')
     .select(
-      'id, kind, scope, target_grades, target_student_ids, target_school_names, due_type, due_date, application_item_id, target_period, created_at'
+      'id, kind, scope, target_grades, target_student_ids, target_school_names, due_type, due_date, application_item_id, target_period, created_at, source_excerpt'
     )
     .eq('school_id', schoolId)
     .is('closed_at', null)
@@ -739,6 +739,8 @@ export async function GET(request: NextRequest) {
       scope,
       scopeLabel: TASK_SCOPE_LABELS[scope] ?? scope,
       targetSchoolNames: rawTargetSchoolNames,
+      // ★画面には出さない。答え合わせ（ai_feedback）にAIの出した対象を残すために返す
+      targetGrades: (t.target_grades as number[] | null) ?? [],
       schoolMatchFallback,
       dueType: t.due_type as string,
       dueDate: (t.due_date as string | null) ?? null,
@@ -774,6 +776,8 @@ export async function GET(request: NextRequest) {
         : undefined,
       sources: sourcesByTask.get(t.id as string) ?? [],
       createdAt: t.created_at as string,
+      // ★AIが何を読んだか。画面はこれを見て読み間違いに気づく
+      sourceExcerpt: (t.source_excerpt as string | null) ?? '',
       targetPeriod: period,
       needsPeriod: needsTargetPeriod(kind),
     });

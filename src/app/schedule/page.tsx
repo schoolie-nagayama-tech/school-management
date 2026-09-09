@@ -663,14 +663,18 @@ export default function SchedulePage() {
   }, [schoolId, weekStartStr, weekEndStr, toastError, profile?.id]);
 
   useEffect(() => {
-    if (masterSchools.length > 0) {
-      const ids = getSelectedSchoolIds();
-      const filtered =
-        ids.length > 0 ? masterSchools.filter((s) => ids.includes(s.id)) : masterSchools;
-      setSchools(filtered);
-      if (filtered.length > 0 && !selectedSchoolIdLocal) {
-        setSelectedSchoolIdLocal(filtered[0].id);
-      }
+    if (masterSchools.length === 0) return;
+    const ids = getSelectedSchoolIds();
+    // ★ ids が空＝教室選択がまだ未確定。ここで全教室にフォールバックすると、
+    //   担当外教室が候補に出たうえ下の初期選択がその教室で固定されてしまう
+    //   （MasterDataContext の schools は schools テーブルの RLS が manager 以上を
+    //    無条件で通すため全教室が入る）。確定するまで触らない。
+    if (ids.length === 0) return;
+    const filtered = masterSchools.filter((s) => ids.includes(s.id));
+    setSchools(filtered);
+    // 選択済みでも候補から外れたら選び直す（ヘッダーの教室切替に追従させる）
+    if (filtered.length > 0 && !filtered.some((s) => s.id === selectedSchoolIdLocal)) {
+      setSelectedSchoolIdLocal(filtered[0].id);
     }
   }, [masterSchools, getSelectedSchoolIds, selectedSchoolIdLocal]);
 

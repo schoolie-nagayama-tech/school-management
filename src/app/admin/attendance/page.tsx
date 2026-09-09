@@ -281,7 +281,13 @@ export default function AttendanceManagementPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   // グローバルの教室選択に連動（ヘッダーのドロップダウンと同期）
-  const { profile, schoolIds: userSchoolIds, selectedSchoolId, setSelectedSchoolId } = useAuth();
+  const {
+    profile,
+    schoolIds: userSchoolIds,
+    selectedSchoolId,
+    setSelectedSchoolId,
+    getSelectedSchoolIds,
+  } = useAuth();
   const { toasts, removeToast, success, error: toastError } = useToast();
 
   const isManager = profile?.role === 'manager';
@@ -391,22 +397,12 @@ export default function AttendanceManagementPage() {
     setIsLoading(true);
     try {
       const schoolId = selectedSchoolId === 'all' ? null : selectedSchoolId;
-      const schoolIdsForTypes = schoolId
-        ? [schoolId]
-        : userSchoolIds.length > 0
-          ? userSchoolIds
-          : undefined;
-      const allowedIds = schoolId
-        ? undefined
-        : userSchoolIds.length > 0
-          ? userSchoolIds
-          : undefined;
+      // 'all' のときの対象教室はヘッダーの教室切替に合わせる（デモ教室の除外もここが担う）。
+      // 以前は userSchoolIds をそのまま使っていたため、デモ教室の講師が混ざっていた。
+      const effectiveSchoolIds = getSelectedSchoolIds();
+      const schoolIdsForTypes = effectiveSchoolIds.length > 0 ? effectiveSchoolIds : undefined;
+      const allowedIds = schoolId ? undefined : schoolIdsForTypes;
       const realPrevMonth = getPrevMonth(getCurrentYearMonth());
-      const effectiveSchoolIds = schoolId
-        ? [schoolId]
-        : userSchoolIds.length > 0
-          ? userSchoolIds
-          : [];
 
       const [
         typesData,
@@ -454,7 +450,7 @@ export default function AttendanceManagementPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [selectedSchoolId, yearMonth, userSchoolIds, toastError]);
+  }, [selectedSchoolId, yearMonth, getSelectedSchoolIds, toastError]);
 
   useEffect(() => {
     fetchData();
@@ -770,8 +766,7 @@ export default function AttendanceManagementPage() {
       if (komaDirty) {
         const [from1to2, to1to2] = parsePair(komaChangeFrom, komaChangeTo);
         const [from1to1, to1to1] = parsePair(komaChangeFrom1to1, komaChangeTo1to1);
-        const effectiveSchoolIds =
-          !selectedSchoolId || selectedSchoolId === 'all' ? userSchoolIds : [selectedSchoolId];
+        const effectiveSchoolIds = getSelectedSchoolIds();
         await setKomaChange(hrTeacherId, yearMonth, effectiveSchoolIds, {
           from_1to2: from1to2,
           to_1to2: to1to2,
@@ -792,8 +787,7 @@ export default function AttendanceManagementPage() {
   const handleClearKomaChange = async (sheet: SummaryRow) => {
     if (!sheet.teacher?.id && !sheet.teacher_id) return;
     const teacherId = sheet.teacher?.id || sheet.teacher_id!;
-    const effectiveSchoolIds =
-      !selectedSchoolId || selectedSchoolId === 'all' ? userSchoolIds : [selectedSchoolId];
+    const effectiveSchoolIds = getSelectedSchoolIds();
     try {
       await setKomaChange(teacherId, yearMonth, effectiveSchoolIds, {
         from_1to2: null,
