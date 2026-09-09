@@ -24,6 +24,7 @@ import {
   BarChart3,
   LogIn,
   LayoutDashboard,
+  Sparkles,
 } from 'lucide-react';
 
 interface SettingsItem {
@@ -33,6 +34,8 @@ interface SettingsItem {
   description: string;
   requiresAdmin?: boolean;
   requiresManager?: boolean;
+  /** システム管理者（admin）だけ。★owner は含めない（requiresAdmin は owner も通す） */
+  requiresSystemAdmin?: boolean;
 }
 
 interface SettingsGroup {
@@ -188,6 +191,23 @@ const settingsGroups: SettingsGroup[] = [
   //   横断的に見つけられるように、という理由で設定にも並べていたが、
   //   設定は「ここからしか入れないもの」の置き場にする（同じ画面が2か所にあると入口が決まらない）。
   {
+    // ★AIの答え合わせ。ナビには出さない（教室の運用で使う画面ではない）ので、
+    //   設定が唯一の入口。システム管理者だけ。
+    title: 'AI',
+    items: [
+      {
+        href: '/admin/ai-feedback',
+        icon: <Sparkles className="w-5 h-5" />,
+        label: 'AIの答え合わせ',
+        description:
+          '読み取り・下書き・まとめが合っていたかの記録。読み間違いが何件あるかを見てAIを直す',
+        // ★ページ側の門番は isSystemAdmin（owner は入れない）。設定の入口もそれに合わせる。
+        //   requiresAdmin だと owner にリンクが見えて、押すと権限なしになる
+        requiresSystemAdmin: true,
+      },
+    ],
+  },
+  {
     title: '通知・セキュリティ',
     items: [
       {
@@ -219,12 +239,14 @@ export default function SettingsPage() {
   const { profile } = useAuth();
   const isAdmin = profile?.role === 'admin' || profile?.role === 'owner';
   const isManager = isAdmin || profile?.role === 'manager';
+  const isSystemAdmin = profile?.role === 'admin';
 
   // 権限でフィルタしたグループ（項目が0件のグループは非表示）
   const visibleGroups = settingsGroups
     .map((group) => ({
       ...group,
       items: group.items.filter((item) => {
+        if (item.requiresSystemAdmin && !isSystemAdmin) return false;
         if (item.requiresAdmin && !isAdmin) return false;
         if (item.requiresManager && !isManager) return false;
         return true;
