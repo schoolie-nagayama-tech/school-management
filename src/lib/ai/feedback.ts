@@ -33,8 +33,16 @@ export const FEEDBACK_VERDICTS = [
   'already_done',
   /** 追わなくていい（依頼ではあるが、この教室では追跡しないと決めた） */
   'not_needed',
-  /** 合っていた。★いまの掲示板UIからは入らない。将来ほかの機能で使う */
+  /** 合っていた（まとめ・読み取りが実際と合っていた） */
   'ok',
+  /** ずれていた（まとめが実際と合っていない） */
+  'off',
+  /** そのまま使った（AIが出したものに手を入れずに使った） */
+  'used_as_is',
+  /** 直して使った（AIが出したものに手を入れて使った） */
+  'edited',
+  /** 使わなかった（AIが出したものを捨てた） */
+  'discarded',
   'other',
 ] as const;
 
@@ -46,13 +54,69 @@ export const FEEDBACK_VERDICT_LABELS: Record<FeedbackVerdict, string> = {
   already_done: 'もう済んだ',
   not_needed: '追わなくていい',
   ok: '合っていた',
+  off: 'ずれていた',
+  used_as_is: 'そのまま',
+  edited: '直して使った',
+  discarded: '使わなかった',
   other: 'その他',
 };
 
+/**
+ * 機能ごとに使う答えの一覧。
+ *
+ * ★機能ごとに聞きたいことが違う。読み取り（講師のAIサポート）で知りたいのは
+ *   「解釈が合っていたか」、生成（おまかせ下書き・テーマふくらませ）で知りたいのは
+ *   「使えたか」、まとめ（生徒のまとめ）で知りたいのは「合っていたか」である。
+ *   1つの語彙で全部を聞くと、どの機能でも答えづらい語になり、数が集まらない。
+ *
+ * ★それでも表は分けない。分けると「AIはどこで間違えているか」を横断で数えられなくなる。
+ *   分けるのは語彙だけにして、記録先は ai_feedback の1つのままにする。
+ *
+ * ★画面のチップも、APIの検証もこの一覧から出す。画面側で配列を書くと、
+ *   そこだけ勝手な verdict が混ざり、あとから数えられなくなる。
+ *
+ * ★空配列は「まだ入口を作っていない」の意味。ボタンだけ先に置かない
+ *   （押されないボタンは、無いより悪い）。
+ */
+export const FEEDBACK_VERDICTS_BY_FEATURE: Record<AiFeatureKey, readonly FeedbackVerdict[]> = {
+  teacher_assist: ['misread', 'already_done', 'not_needed'],
+  ai_compose: ['used_as_is', 'edited', 'discarded'],
+  // ★テーマふくらませに 'edited' は無い。操作が「反映する／しない」の2択しかなく、
+  //   部分的に直して使ったという状態が作れないため（無い答えを一覧に置かない）
+  plan_theme: ['used_as_is', 'discarded'],
+  student_digest: ['ok', 'off'],
+  today_plan: [],
+  parent_message: [],
+};
+
+/** その機能で受け付ける答えかどうか。★一覧に無いものは記録しない */
+export function isVerdictForFeature(feature: AiFeatureKey, verdict: unknown): boolean {
+  if (!isFeedbackVerdict(verdict)) return false;
+  return FEEDBACK_VERDICTS_BY_FEATURE[feature].includes(verdict);
+}
+
 /** 何についてのフィードバックか。★AI機能が増えるたびにここに足す */
-export const FEEDBACK_TARGET_KINDS = ['bulletin_task'] as const;
+export const FEEDBACK_TARGET_KINDS = [
+  /** 掲示板の依頼（講師のAIサポートが読み取った1件） */
+  'bulletin_task',
+  /** 掲示板の投稿（おまかせ下書きと最終の本文を比べた1件） */
+  'bulletin_post',
+  /** 講習提案書（テーマふくらませの1件） */
+  'seasonal_proposal',
+  /** 進行表のテキスト（引継ぎのまとめの1件） */
+  'student_textbook',
+  /** 生徒（面談の報告事項の1件） */
+  'student',
+] as const;
 
 export type FeedbackTargetKind = (typeof FEEDBACK_TARGET_KINDS)[number];
+
+/**
+ * 1回のリクエストで記録できる上限。
+ * ★テーマふくらませは1回の反映で数百件ぶんの答えが出るので、上限が無いと
+ *   1リクエストが巨大になる。超えたぶんは捨てる（記録のために本体を止めない）。
+ */
+export const MAX_FEEDBACK_BATCH = 100;
 
 /** 記録する1件 */
 export interface AiFeedbackInput {
@@ -112,12 +176,32 @@ export interface AiFeedbackListResponse {
  *   上で import するとサーバーのルートにそれを引き込んでしまう。
  */
 export async function recordAiFeedback(input: AiFeedbackInput): Promise<void> {
+  await recordAiFeedbackBatch([input]);
+}
+
+/**
+ * まとめて何件も記録する（クライアントから呼ぶ）。
+ *
+ * ★1件ずつ送らない。テーマふくらませは1回の反映で数十〜数百件ぶんの答えが出るので、
+ *   件数ぶんのリクエストを投げると、反映そのものより記録のほうが重くなる。
+ *
+ * ★recordAiFeedback も中でこれを呼ぶ。送り口を2つ持つと、片方だけ直して
+ *   挙動がずれる（例: 片方だけ失敗を投げるようになる）。
+ *
+ * ★失敗しても投げない。記録は「おまけ」であって、本体の操作（投稿する・
+ *   テーマを反映する）を止めてよい理由にはならない。
+ */
+export async function recordAiFeedbackBatch(items: readonly AiFeedbackInput[]): Promise<void> {
+  // 0件なら送らない（空のリクエストで往復しない）
+  if (items.length === 0) return;
+  // ★上限を超えたぶんは捨てる。APIも同じ数で切るので、送っても入らない
+  const capped = items.slice(0, MAX_FEEDBACK_BATCH);
   try {
     const { fetchWithAuth } = await import('@/lib/api/auth');
     const res = await fetchWithAuth('/api/ai/feedback', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(input),
+      body: JSON.stringify({ items: capped }),
     });
     if (!res.ok) {
       console.error('[ai/feedback] 記録できませんでした', res.status);

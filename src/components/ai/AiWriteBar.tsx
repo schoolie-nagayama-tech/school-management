@@ -44,6 +44,14 @@ interface AiWriteBarProps {
   audience?: 'staff' | 'parents';
   placeholder?: string;
   className?: string;
+  /**
+   * AIが本文を入れ替えたときに、その直後のHTMLを渡す。
+   *
+   * ★これは「答え合わせ用のボタン」を増やさないための配線である。
+   *   使えたかどうかは、AIが出したものと、実際に保存された本文を比べれば分かる。
+   *   投稿画面はこれを覚えておいて、投稿できたときだけ記録する。
+   */
+  onAiDraft?: (html: string) => void;
 }
 
 interface ComposeResponse {
@@ -67,6 +75,7 @@ export function AiWriteBar({
   audience = 'staff',
   placeholder,
   className = '',
+  onAiDraft,
 }: AiWriteBarProps) {
   const [instruction, setInstruction] = useState('');
   const [busy, setBusy] = useState<'compose' | 'refine' | null>(null);
@@ -113,9 +122,11 @@ export function AiWriteBar({
       historyRef.current = hist;
       posRef.current = hist.length - 1;
       onChange(html);
+      // ★作る・整えるの両方をここが通る。最後にAIが出したHTMLを親に渡す
+      onAiDraft?.(html);
       forceRender((n) => n + 1);
     },
-    [onChange]
+    [onChange, onAiDraft]
   );
 
   const step = useCallback(
