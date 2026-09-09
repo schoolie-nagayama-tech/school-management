@@ -178,7 +178,10 @@ const settingsGroups: SettingsGroup[] = [
         requiresManager: true,
       },
       {
-        href: '/settings/forms/moshi',
+        // ★ 旧 /settings/forms/{種別}（教室が ENV の既定教室に固定されていた）は削除した。
+        //   ヘッダーの教室切替に従う /settings/forms/{種別}/periods へ寄せている。
+        //   種別ごとの入口はポータル設定側（上の「ポータル・フォーム設定」）にある。
+        href: '/settings/forms/moshi/periods',
         icon: <FileText className="w-5 h-5" />,
         label: 'フォーム期間設定',
         description: '模試・模擬・集回数・曜日・相談・増コマの受付期間',
