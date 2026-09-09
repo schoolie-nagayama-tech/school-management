@@ -63,14 +63,23 @@ import {
   deleteAttendanceType,
   updateAttendanceTypeOrder,
 } from '@/lib/api/attendance';
-import { useMasterData } from '@/contexts/MasterDataContext';
+import { useLocalSchoolId } from '@/hooks/useLocalSchoolId';
+import { useRequirePermission } from '@/hooks/usePermissions';
+import AccessDenied from '@/components/AccessDenied';
 import type { AttendanceType, AttendanceTypeFormData } from '@/types/attendance';
-import type { School } from '@/types/database';
 
 export default function AttendanceTypesPage() {
   const { toasts, removeToast, success, error: toastError } = useToast();
-  const [schools, setSchools] = useState<School[]>([]);
-  const [selectedSchoolId, setSelectedSchoolId] = useState<string>('');
+  // ★教室はヘッダーの教室切替に従う。以前は全教室を候補にして先頭教室を既定にしていたため、
+  //   教室長が担当外教室のコマ種別を編集できた（is_class_type は出勤簿の準備給日数に効く）。
+  const {
+    localSchoolId: selectedSchoolId,
+    setLocalSchoolId: setSelectedSchoolId,
+    availableSchools: schools,
+  } = useLocalSchoolId();
+  const { hasPermission, isLoading: permissionLoading } = useRequirePermission(
+    (p) => p.canAccessSettings
+  );
   const [attendanceTypes, setAttendanceTypes] = useState<AttendanceType[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -86,16 +95,6 @@ export default function AttendanceTypesPage() {
     is_active: true,
     is_class_type: true,
   });
-
-  const { schools: masterSchools } = useMasterData();
-
-  // 教室一覧をコンテキストから取得
-  useEffect(() => {
-    if (masterSchools.length > 0) {
-      setSchools(masterSchools);
-      if (!selectedSchoolId) setSelectedSchoolId(masterSchools[0].id);
-    }
-  }, [masterSchools, selectedSchoolId]);
 
   // コマ種別を取得
   useEffect(() => {
@@ -240,6 +239,22 @@ export default function AttendanceTypesPage() {
   };
 
   const isSubmitting = isReordering;
+
+  // 設定一覧では requiresManager で伏せているが、URL直打ちは素通りだったのでページ側でも止める。
+  if (permissionLoading) {
+    return (
+      <AdminLayout headerTitle="講師勤怠">
+        <Loading size="md" />
+      </AdminLayout>
+    );
+  }
+  if (!hasPermission) {
+    return (
+      <AdminLayout headerTitle="講師勤怠">
+        <AccessDenied message="設定ページは教室長以上のみアクセス可能です" />
+      </AdminLayout>
+    );
+  }
 
   return (
     <AdminLayout headerTitle="講師勤怠">
