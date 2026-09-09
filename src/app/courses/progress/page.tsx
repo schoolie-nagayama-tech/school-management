@@ -342,7 +342,7 @@ export default function CourseProgressPage() {
       }
 
       // 項目が0件なら初回テンプレート適用を提案
-      if (itemsData.length === 0 && isOwnerOrAbove) {
+      if (itemsData.length === 0 && isManagerOrAbove) {
         const tpls = await getTemplates('progress', season, schoolId);
         setTemplates(tpls);
         if (tpls.length > 0) {
@@ -355,7 +355,7 @@ export default function CourseProgressPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [localSchoolId, season, year, showHidden, isOwnerOrAbove]);
+  }, [localSchoolId, season, year, showHidden, isManagerOrAbove]);
 
   useEffect(() => {
     // 横断サマリー表示中は単一校の取得をスキップ（無駄なリクエストを避ける）
@@ -1369,14 +1369,18 @@ export default function CourseProgressPage() {
           <div className="flex items-center gap-2">
             {/* アクションは単一校（特定教室の詳細表）のときだけ。横断サマリーでは非表示。 */}
             <div className={`flex items-center gap-2 ${showAllSchoolsOverview ? 'hidden' : ''}`}>
+              {/* テンプレートの適用は各教室で期を立ち上げるときに使うので教室長以上。
+                  保存（教室のやり方を型にする）と面談同期はエリアマネージャー以上のまま。 */}
+              {isManagerOrAbove && (
+                <button
+                  onClick={handleOpenTemplateDialog}
+                  className="px-3 py-1.5 text-xs border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600 transition-[background-color,transform] duration-150 ease-out active:scale-[0.97]"
+                >
+                  テンプレート適用
+                </button>
+              )}
               {isOwnerOrAbove && (
                 <>
-                  <button
-                    onClick={handleOpenTemplateDialog}
-                    className="px-3 py-1.5 text-xs border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600 transition-[background-color,transform] duration-150 ease-out active:scale-[0.97]"
-                  >
-                    テンプレート適用
-                  </button>
                   <button
                     onClick={() => {
                       const seasonLabel =
@@ -1964,7 +1968,7 @@ export default function CourseProgressPage() {
           ) : displayItems.length === 0 ? (
             <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
               <p className="text-text-body mb-4">進捗管理項目がありません。</p>
-              {isOwnerOrAbove && (
+              {isManagerOrAbove && (
                 <button
                   onClick={handleOpenTemplateDialog}
                   className="px-4 py-2 text-sm bg-ink text-white rounded-lg hover:bg-ink/80 transition-[background-color,transform] duration-150 ease-out active:scale-[0.97]"
