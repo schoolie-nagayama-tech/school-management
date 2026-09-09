@@ -24,6 +24,7 @@ import {
   BarChart3,
   LogIn,
   LayoutDashboard,
+  Sparkles,
 } from 'lucide-react';
 
 interface SettingsItem {
@@ -187,6 +188,21 @@ const settingsGroups: SettingsGroup[] = [
   // ★「問合せ管理」はここに出さない。ヘッダーのトップナビから入れるため。
   //   横断的に見つけられるように、という理由で設定にも並べていたが、
   //   設定は「ここからしか入れないもの」の置き場にする（同じ画面が2か所にあると入口が決まらない）。
+  {
+    // ★AIの答え合わせ。ナビには出さない（教室の運用で使う画面ではない）ので、
+    //   設定が唯一の入口。システム管理者だけ。
+    title: 'AI',
+    items: [
+      {
+        href: '/admin/ai-feedback',
+        icon: <Sparkles className="w-5 h-5" />,
+        label: 'AIの答え合わせ',
+        description:
+          '読み取り・下書き・まとめが合っていたかの記録。読み間違いが何件あるかを見てAIを直す',
+        requiresAdmin: true,
+      },
+    ],
+  },
   {
     title: '通知・セキュリティ',
     items: [
