@@ -262,9 +262,9 @@ export async function getSubmitterNames(userIds: string[]): Promise<Map<string, 
   for (const row of data ?? []) {
     const p = row as {
       id: string;
-      display_name: string | null;
-      last_name: string | null;
-      first_name: string | null;
+      display_name?: string | null;
+      last_name?: string | null;
+      first_name?: string | null;
     };
     const name = p.display_name || [p.last_name, p.first_name].filter(Boolean).join(' ');
     if (name) map.set(p.id, name);

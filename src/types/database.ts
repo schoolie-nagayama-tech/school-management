@@ -1281,6 +1281,10 @@ export type Database = {
           id: string;
           email: string;
           display_name: string | null;
+          /** 姓。display_name はここから自動生成される（本番DBに存在する列） */
+          last_name?: string | null;
+          /** 名 */
+          first_name?: string | null;
           role: string;
           is_active: boolean;
           invited_by: string | null;
@@ -1308,6 +1312,10 @@ export type Database = {
           id?: string;
           email: string;
           display_name?: string | null;
+          /** 姓。display_name はここから自動生成される（本番DBに存在する列） */
+          last_name?: string | null;
+          /** 名 */
+          first_name?: string | null;
           role?: string;
           is_active?: boolean;
           invited_by?: string | null;
@@ -1334,6 +1342,10 @@ export type Database = {
           id?: string;
           email?: string;
           display_name?: string | null;
+          /** 姓。display_name はここから自動生成される（本番DBに存在する列） */
+          last_name?: string | null;
+          /** 名 */
+          first_name?: string | null;
           role?: string;
           is_active?: boolean;
           invited_by?: string | null;
