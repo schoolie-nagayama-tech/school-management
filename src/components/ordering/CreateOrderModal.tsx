@@ -32,7 +32,9 @@ export function CreateOrderModal({ isOpen, onClose, onCreated, schoolIds }: Crea
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-  const [autoBilling, setAutoBilling] = useState(true);
+  // 請求管理に載せるか。既定はON（これまでどおり載る）。外すと発注レコードに残るので、
+  // あとから同じ生徒に発注しても請求へ戻らない。
+  const [includeInBilling, setIncludeInBilling] = useState(true);
 
   // フォーム
   const [isSample, setIsSample] = useState(false);
@@ -73,7 +75,7 @@ export function CreateOrderModal({ isOpen, onClose, onCreated, schoolIds }: Crea
       setNotes('');
       setStudentSearch('');
       setErrorMessage('');
-      setAutoBilling(true);
+      setIncludeInBilling(true);
     }
   }, [isOpen, fetchData]);
 
@@ -142,9 +144,10 @@ export function CreateOrderModal({ isOpen, onClose, onCreated, schoolIds }: Crea
             student_id: sid,
             quantity: 1,
             notes: notes || undefined,
+            exclude_from_billing: !includeInBilling,
           };
 
-          if (autoBilling && activeBillingPeriod) {
+          if (includeInBilling && activeBillingPeriod) {
             await createOrderWithBilling(orderData, activeBillingPeriod.id, schoolId);
           } else {
             await createOrder(orderData, schoolId);
@@ -312,20 +315,28 @@ export function CreateOrderModal({ isOpen, onClose, onCreated, schoolIds }: Crea
               />
             </div>
 
-            {/* 請求自動反映（見本でない場合のみ） */}
+            {/* 請求管理に載せるか（見本は元々請求連携しないので出さない） */}
             {!isSample && activeBillingPeriod && (
-              <div className="flex items-center gap-2">
+              <label
+                className={`flex items-start gap-2.5 p-3 rounded-lg border cursor-pointer transition-[background-color,border-color] duration-150 ease-out ${
+                  includeInBilling ? 'bg-[#eef4fb] border-[#c3d6ea]' : 'bg-gray-50 border-gray-200'
+                }`}
+              >
                 <input
                   type="checkbox"
-                  id="autoBilling"
-                  checked={autoBilling}
-                  onChange={(e) => setAutoBilling(e.target.checked)}
-                  className="h-4 w-4 rounded border-gray-300 text-[#1e3a5f] focus:ring-[#1e3a5f]"
+                  checked={includeInBilling}
+                  onChange={(e) => setIncludeInBilling(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 rounded border-gray-300 text-[#1e3a5f] focus:ring-[#1e3a5f]"
                 />
-                <label htmlFor="autoBilling" className="text-sm text-[#374151]">
-                  請求に自動反映（{activeBillingPeriod.name}）
-                </label>
-              </div>
+                <span className="min-w-0">
+                  <span className="block text-sm font-medium text-[#374151]">
+                    請求管理に載せる（{activeBillingPeriod.name}）
+                  </span>
+                  <span className="block text-[11px] text-gray-500 leading-relaxed mt-0.5">
+                    入会時の初回教材など、本部で別途請求するものはチェックを外す。
+                  </span>
+                </span>
+              </label>
             )}
           </>
         )}

@@ -82,7 +82,19 @@ export function OrderHistoryPanel({
                   '-'
                 )}
               </td>
-              <td className="py-2 px-3 text-xs text-gray-800">{order.material?.name || '-'}</td>
+              {/* 幅の狭いパネルなので列は増やさず、教材名の横に付ける。
+                  請求に載せるのが既定なので、外したものだけ印を出す。 */}
+              <td className="py-2 px-3 text-xs text-gray-800">
+                {order.material?.name || '-'}
+                {order.exclude_from_billing && (
+                  <span
+                    className="ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-medium bg-gray-100 text-gray-600 border border-gray-200 whitespace-nowrap"
+                    title="この発注は請求管理の「教材発注」に出ません"
+                  >
+                    請求対象外
+                  </span>
+                )}
+              </td>
               <td className="py-2 px-3 text-center text-xs text-gray-800">{order.quantity}</td>
               <td className="py-2 px-3 text-center">
                 {canEdit ? (
