@@ -53,6 +53,7 @@ import AccessDenied from '@/components/AccessDenied';
 import { TodayTodosWidget } from '@/components/dashboard/TodayTodosWidget';
 // 「今日の段取り」はそのすぐ上。オフの教室では中で早期returnして何も描かない
 import { TodayPlanWidget } from '@/components/dashboard/TodayPlanWidget';
+import type { TodayTodoItem } from '@/types/today-todos';
 import { isSystemAdmin } from '@/lib/utils/roles';
 import {
   Inbox,
@@ -863,6 +864,15 @@ function DetailView() {
     };
   }, [getSelectedSchoolIds]);
 
+  /**
+   * 下の「今日やること」が読んだ用事。これをそのまま上の「今日の段取り」へ渡す。
+   *
+   * ★段取り側で用事を集め直さない（2026-09-09）。別々に集めると、同じ画面の上と下で
+   *   違う用事が並び、どちらが正しいのか分からなくなる。
+   * ★null は「まだ読めていない」。段取り側はこのあいだ「組む」を押させない。
+   */
+  const [todayTodos, setTodayTodos] = useState<TodayTodoItem[] | null>(null);
+
   // テスト対策 提案→取得ファネル（7月運用開始予定。現状は提案0件で「データなし」表示）
   const [funnel, setFunnel] = useState<ProposalFunnel | null>(null);
   useEffect(() => {
@@ -894,11 +904,15 @@ function DetailView() {
         ★機能がオフの教室・教室を複数選んでいるときは、ウィジェットごと出ない
         （中で判定するので、ここでは条件を書かない）。
       */}
-      <TodayPlanWidget schoolIds={getSelectedSchoolIds()} />
+      <TodayPlanWidget schoolIds={getSelectedSchoolIds()} todos={todayTodos} />
 
       {/* ⓪-b 今日やること — 最上部・全幅。運営と生徒の用事を1本に混ぜた行動リスト */}
       <SectionLabel icon={ListTodo}>今日やること</SectionLabel>
-      <TodayTodosWidget schoolIds={getSelectedSchoolIds()} />
+      {/*
+        ★読んだ用事を上の「今日の段取り」に渡す。段取りは下より上に描かれるが、
+        使うのは「組む」を押したときなので、そのころには下が読み終わっている。
+      */}
+      <TodayTodosWidget schoolIds={getSelectedSchoolIds()} onItemsChange={setTodayTodos} />
 
       {/* ① 連絡事項（掲示板）— 全幅 */}
       <SectionLabel icon={Pin}>連絡事項</SectionLabel>

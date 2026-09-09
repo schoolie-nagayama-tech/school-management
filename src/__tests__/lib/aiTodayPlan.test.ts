@@ -10,7 +10,9 @@
  */
 import { describe, expect, it } from 'vitest';
 import {
+  MAX_INPUT_TODOS,
   MAX_ITEMS_PER_BLOCK,
+  MAX_PLAN_TODOS,
   MAX_TEXT_LENGTH,
   MAX_WHY_LENGTH,
   WORK_END,
@@ -20,9 +22,12 @@ import {
   planBlocksForSchool,
   planSystemPrompt,
   planUserText,
+  sanitizePlanTodos,
+  selectPlanTodos,
   validatePlanForSave,
   type PlanBlock,
   type PlanMaterials,
+  type PlanTodo,
 } from '@/lib/ai/todayPlan';
 
 const SLOT_A = 'aaaaaaaa-1111-4111-8111-111111111111';
@@ -47,7 +52,16 @@ const materials: PlanMaterials = {
     { id: SLOT_B, label: '4限', start: '17:55', end: '19:25' },
   ],
   lessons: [{ slotId: SLOT_A, studentSurname: '山田', teacherSurname: '佐藤' }],
-  todos: [{ id: 'material:s1', text: '届いた教材を渡す', studentSurname: '山田' }],
+  todos: [
+    {
+      id: 'material:s1',
+      label: '教材',
+      text: '届いた教材を渡す',
+      studentSurname: '山田',
+      slotNumber: 3,
+    },
+  ],
+  calendar: [],
   upcomingLessonDays: ALLOWED_DAYS,
 };
 
@@ -104,6 +118,150 @@ describe('planUserText', () => {
   it('授業がある日が無ければ later を使えないと伝える', () => {
     const text = planUserText({ ...materials, upcomingLessonDays: [] });
     expect(text).toContain('later は使えません');
+  });
+
+  it('★用事は「[チップ] やること（姓・N限・期限超過）」の形で並ぶ', () => {
+    const text = planUserText({
+      ...materials,
+      todos: [
+        {
+          id: 'alert:a1',
+          label: '面談',
+          text: '面談の日程を聞く',
+          studentSurname: '鈴木',
+          slotNumber: 4,
+          overdue: true,
+          note: '締切 9/5',
+        },
+      ],
+    });
+    expect(text).toContain('- alert:a1: [面談] 面談の日程を聞く（鈴木・4限・期限超過・締切 9/5）');
+  });
+
+  it('生徒にも時限にも紐づかない用事は、余計な括弧を付けない', () => {
+    const text = planUserText({
+      ...materials,
+      todos: [{ id: 'task:t1', label: 'タスク', text: '請求データを確認する' }],
+    });
+    expect(text).toContain('- task:t1: [タスク] 請求データを確認する\n');
+  });
+
+  it('カレンダーの予定を時刻つきで渡す', () => {
+    const text = planUserText({
+      ...materials,
+      calendar: [{ start: '15:00', end: '16:00', title: '鈴木さん 面談' }],
+    });
+    expect(text).toContain('- 15:00〜16:00 鈴木さん 面談');
+  });
+
+  it('★カレンダーが空でも材料は組める（未連携でも段取りは作れる）', () => {
+    const text = planUserText({ ...materials, calendar: [] });
+    expect(text).toContain('【カレンダーの予定');
+    expect(text).toContain('- なし');
+  });
+});
+
+describe('sanitizePlanTodos', () => {
+  const raw = (over: Record<string, unknown> = {}) => ({
+    id: 'alert:a1',
+    source: 'student',
+    label: '面談',
+    title: '面談の日程を聞く',
+    urgency: 'low',
+    ...over,
+  });
+
+  it('★生徒はフルネームでなく姓だけになる', () => {
+    const out = sanitizePlanTodos([raw({ student: { id: 's1', name: '山田 太郎' } })]);
+    expect(out[0].studentSurname).toBe('山田');
+    expect(JSON.stringify(out)).not.toContain('太郎');
+  });
+
+  it('チップ・補足・時限・期限超過・緊急を写す', () => {
+    const out = sanitizePlanTodos([
+      raw({ note: '締切 9/5', slotNumber: 4, overdue: true, urgency: 'high' }),
+    ]);
+    expect(out[0]).toEqual({
+      id: 'alert:a1',
+      label: '面談',
+      text: '面談の日程を聞く',
+      note: '締切 9/5',
+      slotNumber: 4,
+      overdue: true,
+      urgent: true,
+    });
+  });
+
+  it('★slotNumber が整数でなければ落とす（用事そのものは残す）', () => {
+    expect(sanitizePlanTodos([raw({ slotNumber: 3.5 })])[0].slotNumber).toBeUndefined();
+    expect(sanitizePlanTodos([raw({ slotNumber: '4' })])[0].slotNumber).toBeUndefined();
+    expect(sanitizePlanTodos([raw({ slotNumber: 4 })])[0].slotNumber).toBe(4);
+  });
+
+  it('★読めない要素は1件ずつ捨てて、残りは使う', () => {
+    const out = sanitizePlanTodos([
+      null,
+      'あ',
+      raw({ id: 123 }),
+      raw({ title: 42 }),
+      raw({ title: '   ' }),
+      raw({ id: 'task:t1', title: '請求データを確認する' }),
+    ]);
+    expect(out).toHaveLength(1);
+    expect(out[0].id).toBe('task:t1');
+  });
+
+  it('同じIDが2回来たら後のほうは捨てる（todoId がどちらを指すか決まらない）', () => {
+    const out = sanitizePlanTodos([raw(), raw({ title: '別の用事' })]);
+    expect(out).toHaveLength(1);
+    expect(out[0].text).toBe('面談の日程を聞く');
+  });
+
+  it(`★${MAX_INPUT_TODOS}件で切る`, () => {
+    const out = sanitizePlanTodos(
+      Array.from({ length: MAX_INPUT_TODOS + 30 }, (_, i) => raw({ id: `task:${i}` }))
+    );
+    expect(out).toHaveLength(MAX_INPUT_TODOS);
+  });
+
+  it('配列でなければ空（段取りは組める。用事が無いだけ）', () => {
+    expect(sanitizePlanTodos(undefined)).toEqual([]);
+    expect(sanitizePlanTodos({ items: [] })).toEqual([]);
+  });
+});
+
+describe('selectPlanTodos', () => {
+  const todo = (id: string, over: Partial<PlanTodo> = {}): PlanTodo => ({
+    id,
+    label: 'タスク',
+    text: `用事${id}`,
+    ...over,
+  });
+
+  it('上限以下ならそのまま（並びも変えない）', () => {
+    const list = [todo('a'), todo('b')];
+    expect(selectPlanTodos(list, 5)).toEqual(list);
+  });
+
+  it(`★${MAX_PLAN_TODOS}件を超えるときは、期限超過と急ぎを残して他から切る`, () => {
+    const filler = Array.from({ length: MAX_PLAN_TODOS + 20 }, (_, i) => todo(`filler${i}`));
+    // 重要なものは、切られる側（後ろ）に置いても残ること
+    const list = [...filler, todo('over', { overdue: true }), todo('urg', { urgent: true })];
+
+    const out = selectPlanTodos(list);
+    expect(out).toHaveLength(MAX_PLAN_TODOS);
+    expect(out.map((t) => t.id)).toContain('over');
+    expect(out.map((t) => t.id)).toContain('urg');
+    // 残ったものは元の並び（時間順）のまま
+    expect(out[out.length - 1].id).toBe('urg');
+  });
+
+  it('時限がある用事は、時限が無い用事より残る', () => {
+    const list = [
+      ...Array.from({ length: MAX_PLAN_TODOS }, (_, i) => todo(`none${i}`)),
+      todo('slot', { slotNumber: 3 }),
+    ];
+    expect(selectPlanTodos(list).map((t) => t.id)).toContain('slot');
   });
 });
 
