@@ -80,16 +80,24 @@ function toPortalScoreSubmission(row: SubmissionRow): PortalScoreSubmission {
 export async function listScoreSubmissionsForReview(
   svc: SupabaseClient,
   schoolIds: string[],
-  status: ScoreSubmissionStatus
+  status: ScoreSubmissionStatus,
+  /**
+   * 生徒を1人に絞る（生徒詳細の承認キュー用）。
+   * 呼び出し側で捨てる前提の行まで返すと、他教室の生徒名・点数がレスポンスに乗るので、
+   * 絞れるものはここで絞る。schoolIds のチェックはこの絞り込みとは独立に必ず効く。
+   */
+  studentId?: string
 ): Promise<AdminScoreSubmissionQueueItem[]> {
   if (schoolIds.length === 0) return [];
 
-  const { data, error } = await svc
+  let query = svc
     .from('portal_score_submissions')
     .select(`${SUBMISSION_COLUMNS}, students(last_name, first_name)`)
     .in('school_id', schoolIds)
-    .eq('status', status)
-    .order('created_at', { ascending: false });
+    .eq('status', status);
+  if (studentId) query = query.eq('student_id', studentId);
+
+  const { data, error } = await query.order('created_at', { ascending: false });
 
   if (error) {
     console.error('[admin/score-submissions] 一覧取得に失敗:', error.message);

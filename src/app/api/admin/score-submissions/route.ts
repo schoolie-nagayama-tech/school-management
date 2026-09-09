@@ -19,6 +19,8 @@ const VALID_STATUSES: ScoreSubmissionStatus[] = ['submitted', 'approved', 'rejec
  * 承認ボタンだけ権限不足で弾かれる、という画面側のズレを作らないため。
  *
  * GET ?status=submitted（省略時は 'submitted'）→ auth.schoolIds に絞った一覧。
+ * GET ?student_id=... を付けるとその生徒だけに絞る。呼び出し側で捨てる行まで返すと
+ * 他教室の生徒名・点数がレスポンスに乗るため、生徒が決まっている画面は必ず付ける。
  */
 export async function GET(request: NextRequest) {
   const denied = await requireScoreEditor(request);
@@ -30,6 +32,7 @@ export async function GET(request: NextRequest) {
   if (!VALID_STATUSES.includes(statusParam as ScoreSubmissionStatus)) {
     return NextResponse.json({ error: 'status が不正です' }, { status: 400 });
   }
+  const studentIdParam = request.nextUrl.searchParams.get('student_id') ?? undefined;
 
   if (auth.schoolIds.length === 0) {
     return NextResponse.json({ ok: true, submissions: [] });
@@ -39,7 +42,8 @@ export async function GET(request: NextRequest) {
   const submissions = await listScoreSubmissionsForReview(
     svc,
     auth.schoolIds,
-    statusParam as ScoreSubmissionStatus
+    statusParam as ScoreSubmissionStatus,
+    studentIdParam
   );
 
   return NextResponse.json({ ok: true, submissions });
