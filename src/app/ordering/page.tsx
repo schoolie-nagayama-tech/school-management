@@ -309,7 +309,10 @@ export default function OrderingPage() {
   // --- Bulk Order (Cart) ---
   // 単語練習帳は生徒の所属教室から在庫減算するため、item ごとに対象教室を決定して
   // 発注レコード・在庫減算の school_id を分ける（他の教材は schoolIds[0] のまま）。
-  const handleBulkOrder = async (items: CartItem[]) => {
+  const handleBulkOrder = async (items: CartItem[], options: { excludeFromBilling: boolean }) => {
+    // 請求に載せない発注は、発注レコードに残す必要がある。画面で1件スキップするだけだと
+    // 次に同じ生徒を発注したときの請求再集計で、外したはずの教材名が戻ってくる。
+    const excludeFromBilling = options.excludeFromBilling;
     const fallbackSchoolId = schoolIds.length > 0 ? schoolIds[0] : undefined;
 
     // ─── 二重発注チェック（確定前・サーバー再判定） ───
@@ -398,6 +401,7 @@ export default function OrderingPage() {
       is_sample?: boolean;
       quantity: number;
       notes?: string;
+      exclude_from_billing?: boolean;
       targetSchoolId: string | undefined;
     };
     const orderEntries: Entry[] = [];
@@ -430,12 +434,13 @@ export default function OrderingPage() {
           material_id: material.id,
           ...(isSample ? { is_sample: true } : { student_id: item.studentId }),
           quantity: item.quantity,
+          exclude_from_billing: excludeFromBilling,
           targetSchoolId,
         });
       }
 
       // 発注レコード作成（target school 別にグルーピング）
-      if (activeBillingPeriod) {
+      if (activeBillingPeriod && !excludeFromBilling) {
         for (const entry of orderEntries) {
           const { targetSchoolId, ...orderData } = entry;
           await createOrderWithBilling(orderData, activeBillingPeriod.id, targetSchoolId);
@@ -456,7 +461,12 @@ export default function OrderingPage() {
           const { targetSchoolId } = orderEntries[0] ?? { targetSchoolId: fallbackSchoolId };
           const payload = orderEntries.map(({ targetSchoolId: _ts, ...rest }) => rest);
           const created = await createBulkOrders(
-            payload as Array<{ material_id: string; student_id: string; quantity: number }>,
+            payload as Array<{
+              material_id: string;
+              student_id: string;
+              quantity: number;
+              exclude_from_billing?: boolean;
+            }>,
             targetSchoolId
           );
           createdCount = created.length;
@@ -625,6 +635,7 @@ export default function OrderingPage() {
           materials={materials}
           onOrder={handleTextbookOrder}
           onBulkOrder={handleBulkOrder}
+          billingPeriodName={activeBillingPeriod?.name ?? null}
           schoolScopeKey={cartScopeKey}
           existingOrderPairs={existingOrderPairs}
           onStockAdjust={handleStockAdjust}

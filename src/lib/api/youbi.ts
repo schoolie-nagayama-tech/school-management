@@ -31,15 +31,21 @@ export const unarchiveYoubiPeriod = periodApi.unarchive;
 
 /**
  * 曜日変更回答を送信
+ *
+ * proxy を渡すと代理申込（教室長が保護者の代わりに出す）になる。
+ * 誰が出したかはサーバーがセッションから記録し、保護者・教室への通知は送られない。
  */
-export async function submitYoubiResponse(data: {
-  school_id: string;
-  period_key: string;
-  student_name: string;
-  grade: number;
-  email: string;
-  response_data: YoubiResponseData;
-}): Promise<void> {
+export async function submitYoubiResponse(
+  data: {
+    school_id: string;
+    period_key: string;
+    student_name: string;
+    grade: number;
+    email: string;
+    response_data: YoubiResponseData;
+  },
+  proxy?: { linkedStudentId?: string | null }
+): Promise<void> {
   const responseData: FormResponseInsert = {
     school_id: data.school_id,
     form_type: 'youbi',
@@ -54,7 +60,7 @@ export async function submitYoubiResponse(data: {
     },
   };
 
-  await createPublicFormResponse(responseData);
+  await createPublicFormResponse(responseData, proxy);
 }
 
 // ============================================

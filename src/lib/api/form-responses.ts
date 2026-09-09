@@ -7,6 +7,7 @@ import type {
   Student,
 } from '@/types/database';
 import { getDefaultSchoolId } from './schools';
+import { fetchWithAuth } from '@/lib/api/auth';
 import { withFetchCache } from '@/lib/utils/fetchCache';
 import { zoukomaKomaCount } from '@/lib/utils/zoukomaKoma';
 
@@ -205,13 +206,24 @@ export async function getFormResponse(id: string): Promise<FormResponse | null> 
 /**
  * 保護者ポータル用フォーム回答を作成（認証不要）
  * サーバー側の /api/portal/form-responses に fetch して RLS をバイパスする
+ *
+ * ★ proxy を渡すと代理申込（教室長が保護者の代わりに出す）になる。
+ *   「誰が出したか」はサーバーがセッションから取るので、必ずトークンを乗せて送る
+ *   （素の fetch では Cookie が読めず 403 になる）。
  */
-export async function createPublicFormResponse(data: FormResponseInsert): Promise<FormResponse> {
-  const res = await fetch('/api/portal/form-responses', {
+export async function createPublicFormResponse(
+  data: FormResponseInsert,
+  proxy?: { linkedStudentId?: string | null }
+): Promise<FormResponse> {
+  const url = '/api/portal/form-responses';
+  const init: RequestInit = {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
-  });
+    body: JSON.stringify(
+      proxy ? { ...data, is_proxy: true, linked_student_id: proxy.linkedStudentId ?? null } : data
+    ),
+  };
+  const res = proxy ? await fetchWithAuth(url, init) : await fetch(url, init);
 
   const json = await res.json().catch(() => ({}));
 
@@ -225,6 +237,39 @@ export async function createPublicFormResponse(data: FormResponseInsert): Promis
   }
 
   return (json as { data: FormResponse }).data;
+}
+
+/**
+ * 代理申込を出した職員の表示名を id → 名前 で引く。
+ * 回答一覧に「誰が代理で出したか」を出すためだけの軽い問い合わせ。
+ * 名前が引けなかった id は Map に入れない（呼び出し側はバッジだけ出す）。
+ */
+export async function getSubmitterNames(userIds: string[]): Promise<Map<string, string>> {
+  const unique = Array.from(new Set(userIds.filter(Boolean)));
+  if (unique.length === 0) return new Map();
+
+  const { data, error } = await supabase
+    .from('user_profiles')
+    .select('id, display_name, last_name, first_name')
+    .in('id', unique);
+
+  if (error) {
+    console.warn('代理申込者の氏名取得に失敗しました（バッジのみ表示します）:', error);
+    return new Map();
+  }
+
+  const map = new Map<string, string>();
+  for (const row of data ?? []) {
+    const p = row as {
+      id: string;
+      display_name: string | null;
+      last_name: string | null;
+      first_name: string | null;
+    };
+    const name = p.display_name || [p.last_name, p.first_name].filter(Boolean).join(' ');
+    if (name) map.set(p.id, name);
+  }
+  return map;
 }
 
 /**

@@ -8,12 +8,15 @@ interface YoubiResponseDetailModalProps {
   isOpen: boolean;
   response: YoubiResponse;
   onClose: () => void;
+  /** 代理申込を出した職員の表示名（保護者本人の申込では渡さない） */
+  submitterName?: string | null;
 }
 
 export function YoubiResponseDetailModal({
   isOpen,
   response,
   onClose,
+  submitterName,
 }: YoubiResponseDetailModalProps) {
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -43,6 +46,15 @@ export function YoubiResponseDetailModal({
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="回答詳細" size="lg" minHeight="80vh">
       <div className="space-y-4">
+        {/* 保護者本人の申込か、教室長が代わりに出したものかを最初に見せる */}
+        {response.submitted_by_user_id && (
+          <div className="rounded border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+            <span className="font-medium">代理申込</span>
+            {submitterName ? ` — ${submitterName}` : ''}
+            {` ／ ${formatDate(response.created_at)}`}
+          </div>
+        )}
+
         <div>
           <label className="block text-sm font-medium text-[#1f2937] mb-1">回答日時</label>
           <p className="text-sm text-[#4b5563]">{formatDate(response.created_at)}</p>

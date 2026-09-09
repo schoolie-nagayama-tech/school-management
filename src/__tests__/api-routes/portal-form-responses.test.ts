@@ -12,6 +12,12 @@ vi.mock('@supabase/supabase-js', () => ({
   createClient: vi.fn(() => mockAdmin),
 }));
 
+// 代理申込は getApiAuth でログイン中の職員を確認する。テストごとに差し替える。
+const mockGetApiAuth = vi.fn();
+vi.mock('@/lib/api-auth', () => ({
+  getApiAuth: (...args: unknown[]) => mockGetApiAuth(...args),
+}));
+
 // Google Calendar のモック
 vi.mock('@/lib/google-calendar', () => ({
   createFurikaeCalendarEvents: vi.fn().mockResolvedValue(undefined),
@@ -272,5 +278,116 @@ describe('POST /api/portal/form-responses', () => {
     expect(res.status).toBe(409);
     const body = await res.json();
     expect(body.error).toContain('既に送信');
+  });
+
+  // ── 代理申込（教室長が保護者の代わりに出す） ──
+
+  it('代理申込はログインしていないと403', async () => {
+    mockGetApiAuth.mockResolvedValue({ auth: null });
+
+    const { POST } = await import('@/app/api/portal/form-responses/route');
+    const res = await POST(makeRequest({ ...validBody, is_proxy: true }));
+
+    expect(res.status).toBe(403);
+    // 権限判定より先に insert が走っていないこと
+    expect(mockAdmin.from).not.toHaveBeenCalled();
+  });
+
+  it('代理申込は講師では403', async () => {
+    mockGetApiAuth.mockResolvedValue({
+      auth: { userId: 'u1', role: 'teacher', schoolIds: [validBody.school_id] },
+    });
+
+    const { POST } = await import('@/app/api/portal/form-responses/route');
+    const res = await POST(makeRequest({ ...validBody, is_proxy: true }));
+
+    expect(res.status).toBe(403);
+  });
+
+  it('代理申込は自分の教室以外だと403', async () => {
+    mockGetApiAuth.mockResolvedValue({
+      auth: { userId: 'u1', role: 'manager', schoolIds: ['other-school'] },
+    });
+
+    const { POST } = await import('@/app/api/portal/form-responses/route');
+    const res = await POST(makeRequest({ ...validBody, is_proxy: true }));
+
+    expect(res.status).toBe(403);
+  });
+
+  it('代理申込は送信者を記録し、受付メールを送らない', async () => {
+    const period = {
+      id: 'p1',
+      is_active: true,
+      is_archived: false,
+      publish_start: '2020-01-01',
+      publish_end: '2099-12-31',
+    };
+    mockGetApiAuth.mockResolvedValue({
+      auth: { userId: 'manager-1', role: 'manager', schoolIds: [validBody.school_id] },
+    });
+
+    const insertChain = createMockChain({ id: 'resp-proxy', ...validBody });
+    let callCount = 0;
+    mockAdmin.from.mockImplementation(() => {
+      callCount++;
+      if (callCount === 1) return createMockChain(period) as never;
+      if (callCount === 2) return createMockChain([]) as never;
+      if (callCount === 3) return insertChain as never;
+      return createMockChain(null) as never;
+    });
+
+    const { POST } = await import('@/app/api/portal/form-responses/route');
+    const res = await POST(makeRequest({ ...validBody, is_proxy: true }));
+
+    expect(res.status).toBe(200);
+    expect(insertChain.insert).toHaveBeenCalledWith(
+      expect.objectContaining({ submitted_by_user_id: 'manager-1' })
+    );
+    // 保護者は申し込んだつもりがないので、受付メールは送らない
+    expect(mockAdmin.functions.invoke).not.toHaveBeenCalled();
+  });
+
+  it('代理申込は公開期間が終わっていても受け付ける', async () => {
+    const closedPeriod = {
+      id: 'p1',
+      is_active: false,
+      is_archived: false,
+      publish_start: '2020-01-01',
+      publish_end: '2020-12-31',
+    };
+    mockGetApiAuth.mockResolvedValue({
+      auth: { userId: 'manager-1', role: 'manager', schoolIds: [validBody.school_id] },
+    });
+
+    let callCount = 0;
+    mockAdmin.from.mockImplementation(() => {
+      callCount++;
+      if (callCount === 1) return createMockChain(closedPeriod) as never;
+      if (callCount === 2) return createMockChain([]) as never;
+      if (callCount === 3) return createMockChain({ id: 'resp-late', ...validBody }) as never;
+      return createMockChain(null) as never;
+    });
+
+    const { POST } = await import('@/app/api/portal/form-responses/route');
+    const res = await POST(makeRequest({ ...validBody, is_proxy: true }));
+
+    expect(res.status).toBe(200);
+  });
+
+  it('保護者からの申込は公開期間が終わっていれば400のまま', async () => {
+    const closedPeriod = {
+      id: 'p1',
+      is_active: true,
+      is_archived: false,
+      publish_start: '2020-01-01',
+      publish_end: '2020-12-31',
+    };
+    mockAdmin.from.mockImplementation(() => createMockChain(closedPeriod) as never);
+
+    const { POST } = await import('@/app/api/portal/form-responses/route');
+    const res = await POST(makeRequest());
+
+    expect(res.status).toBe(400);
   });
 });

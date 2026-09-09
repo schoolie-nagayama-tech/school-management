@@ -11,6 +11,8 @@ import {
   stableStringify,
 } from '@/lib/utils/formDedup';
 import { captureApiError } from '@/lib/api-error';
+import { getApiAuth } from '@/lib/api-auth';
+import { isManagerOrAbove } from '@/lib/utils/roles';
 
 export const dynamic = 'force-dynamic';
 
@@ -46,6 +48,40 @@ export async function POST(request: NextRequest) {
 
     const supabaseAdmin = getSupabaseAdmin();
 
+    // ── 代理申込（教室長が保護者の代わりに出す） ──
+    // ★ ログインしているかどうかでは判定しない。教室長が自分の端末で保護者用フォームを
+    //   開いているだけの場合まで代理扱いになるため、画面から明示的に is_proxy を立てた
+    //   ときだけ代理とする。誰が出したかはセッションから取り、body の user_id は見ない。
+    const wantsProxy = (body as Record<string, unknown>).is_proxy === true;
+    let submittedByUserId: string | null = null;
+    let proxyLinkedStudentId: string | null = null;
+    if (wantsProxy) {
+      const { auth } = await getApiAuth(request);
+      if (!auth || !isManagerOrAbove(auth.role)) {
+        return NextResponse.json({ error: '代理申込の権限がありません' }, { status: 403 });
+      }
+      if (!auth.schoolIds.includes(school_id)) {
+        return NextResponse.json({ error: 'この教室の代理申込はできません' }, { status: 403 });
+      }
+      submittedByUserId = auth.userId;
+
+      // 代理は在籍生徒から選んで出すので、最初から紐付けておく（名前一致の推測に頼らない）。
+      // 他教室の生徒IDを渡されても紐付けないよう、所属教室を確認する。
+      const requestedStudentId = (body as Record<string, unknown>).linked_student_id;
+      if (typeof requestedStudentId === 'string' && requestedStudentId) {
+        const { data: student } = await supabaseAdmin
+          .from('students')
+          .select('id')
+          .eq('id', requestedStudentId)
+          .eq('school_id', school_id)
+          .maybeSingle();
+        if (!student) {
+          return NextResponse.json({ error: '選択した生徒が見つかりません' }, { status: 400 });
+        }
+        proxyLinkedStudentId = requestedStudentId;
+      }
+    }
+
     // フォーム公開期間が有効かチェック
     const { data: period, error: periodError } = await supabaseAdmin
       .from('form_periods')
@@ -59,16 +95,25 @@ export async function POST(request: NextRequest) {
       throw periodError;
     }
 
-    if (!period || !period.is_active || period.is_archived) {
+    if (!period || period.is_archived) {
       return NextResponse.json({ error: '現在受付していません' }, { status: 400 });
     }
 
-    const now = new Date();
-    if (period.publish_start && new Date(period.publish_start) > now) {
-      return NextResponse.json({ error: '現在受付していません' }, { status: 400 });
-    }
-    if (period.publish_end && new Date(period.publish_end) < now) {
-      return NextResponse.json({ error: '受付期間が終了しました' }, { status: 400 });
+    // ★ 代理申込は公開期間の外でも通す。締切の翌日に電話で受けた変更を教室長が入れる、
+    //   というのが代理を作った理由そのもので、そこで弾くと使えない。
+    //   保護者からの申込はこれまでどおり公開中しか受け付けない（アーカイブ済みは代理も不可）。
+    if (!wantsProxy) {
+      if (!period.is_active) {
+        return NextResponse.json({ error: '現在受付していません' }, { status: 400 });
+      }
+
+      const now = new Date();
+      if (period.publish_start && new Date(period.publish_start) > now) {
+        return NextResponse.json({ error: '現在受付していません' }, { status: 400 });
+      }
+      if (period.publish_end && new Date(period.publish_end) < now) {
+        return NextResponse.json({ error: '受付期間が終了しました' }, { status: 400 });
+      }
     }
 
     // 二重送信ガード（冪等化）
@@ -102,6 +147,10 @@ export async function POST(request: NextRequest) {
         email,
         response_data,
         status_checks,
+        submitted_by_user_id: submittedByUserId,
+        ...(proxyLinkedStudentId
+          ? { linked_student_id: proxyLinkedStudentId, linked_at: new Date().toISOString() }
+          : {}),
       })
       .select()
       .single();
@@ -178,57 +227,64 @@ export async function POST(request: NextRequest) {
     }
 
     // 申込通知メール送信（失敗しても回答は成功扱い）
-    try {
-      // 自動紐付け後の最新データを取得してメール送信
-      const { data: latestResponse, error: refetchError } = await supabaseAdmin
-        .from('form_responses')
-        .select('*')
-        .eq('id', created.id)
-        .single();
+    // ★ 代理申込では送らない。保護者は申し込んだつもりがないのに受付メールが届き、
+    //   教室にも自分が今出した申込の通知が返ってくるだけになるため。
+    if (!wantsProxy) {
+      try {
+        // 自動紐付け後の最新データを取得してメール送信
+        const { data: latestResponse, error: refetchError } = await supabaseAdmin
+          .from('form_responses')
+          .select('*')
+          .eq('id', created.id)
+          .single();
 
-      if (refetchError) {
-        console.warn(
-          '[portal/form-responses] 最新データの再取得に失敗（元データで通知します）:',
-          refetchError
+        if (refetchError) {
+          console.warn(
+            '[portal/form-responses] 最新データの再取得に失敗（元データで通知します）:',
+            refetchError
+          );
+        }
+
+        const { error: invokeError } = await supabaseAdmin.functions.invoke(
+          'send-form-notification',
+          { body: { record: latestResponse || created } }
         );
+        if (invokeError) {
+          console.warn('[portal/form-responses] 申込通知メールの送信に失敗しました:', invokeError);
+        }
+      } catch (e) {
+        captureApiError(e, {
+          route: 'POST /api/portal/form-responses',
+        });
+        console.warn('[portal/form-responses] 申込通知メールの送信に失敗しました:', e);
       }
-
-      const { error: invokeError } = await supabaseAdmin.functions.invoke(
-        'send-form-notification',
-        { body: { record: latestResponse || created } }
-      );
-      if (invokeError) {
-        console.warn('[portal/form-responses] 申込通知メールの送信に失敗しました:', invokeError);
-      }
-    } catch (e) {
-      captureApiError(e, {
-        route: 'POST /api/portal/form-responses',
-      });
-      console.warn('[portal/form-responses] 申込通知メールの送信に失敗しました:', e);
     }
 
     // プッシュ通知（新回答受信）— 失敗しても回答は成功扱い
-    try {
-      const formLabel = FORM_TYPE_LABELS[form_type as keyof typeof FORM_TYPE_LABELS] ?? form_type;
-      const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
-      await fetch(`${appUrl}/api/push/send`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-internal-key': process.env.SUPABASE_SERVICE_ROLE_KEY ?? '',
-        },
-        body: JSON.stringify({
-          schoolId: school_id,
-          title: `新しい回答：${formLabel}`,
-          bodyText: `${student_name} さんから${formLabel}の申込が届きました`,
-          url: '/responses',
-        }),
-      });
-    } catch (e) {
-      captureApiError(e, {
-        route: 'POST /api/portal/form-responses',
-      });
-      console.warn('[portal/form-responses] プッシュ通知に失敗しました（無視します）:', e);
+    // 代理申込は出した本人が画面にいるので通知しない。
+    if (!wantsProxy) {
+      try {
+        const formLabel = FORM_TYPE_LABELS[form_type as keyof typeof FORM_TYPE_LABELS] ?? form_type;
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
+        await fetch(`${appUrl}/api/push/send`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-internal-key': process.env.SUPABASE_SERVICE_ROLE_KEY ?? '',
+          },
+          body: JSON.stringify({
+            schoolId: school_id,
+            title: `新しい回答：${formLabel}`,
+            bodyText: `${student_name} さんから${formLabel}の申込が届きました`,
+            url: '/responses',
+          }),
+        });
+      } catch (e) {
+        captureApiError(e, {
+          route: 'POST /api/portal/form-responses',
+        });
+        console.warn('[portal/form-responses] プッシュ通知に失敗しました（無視します）:', e);
+      }
     }
 
     return NextResponse.json({ data: created });
