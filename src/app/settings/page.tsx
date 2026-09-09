@@ -34,6 +34,8 @@ interface SettingsItem {
   description: string;
   requiresAdmin?: boolean;
   requiresManager?: boolean;
+  /** システム管理者（admin）だけ。★owner は含めない（requiresAdmin は owner も通す） */
+  requiresSystemAdmin?: boolean;
 }
 
 interface SettingsGroup {
@@ -199,7 +201,9 @@ const settingsGroups: SettingsGroup[] = [
         label: 'AIの答え合わせ',
         description:
           '読み取り・下書き・まとめが合っていたかの記録。読み間違いが何件あるかを見てAIを直す',
-        requiresAdmin: true,
+        // ★ページ側の門番は isSystemAdmin（owner は入れない）。設定の入口もそれに合わせる。
+        //   requiresAdmin だと owner にリンクが見えて、押すと権限なしになる
+        requiresSystemAdmin: true,
       },
     ],
   },
@@ -235,12 +239,14 @@ export default function SettingsPage() {
   const { profile } = useAuth();
   const isAdmin = profile?.role === 'admin' || profile?.role === 'owner';
   const isManager = isAdmin || profile?.role === 'manager';
+  const isSystemAdmin = profile?.role === 'admin';
 
   // 権限でフィルタしたグループ（項目が0件のグループは非表示）
   const visibleGroups = settingsGroups
     .map((group) => ({
       ...group,
       items: group.items.filter((item) => {
+        if (item.requiresSystemAdmin && !isSystemAdmin) return false;
         if (item.requiresAdmin && !isAdmin) return false;
         if (item.requiresManager && !isManager) return false;
         return true;
