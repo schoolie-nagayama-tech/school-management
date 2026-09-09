@@ -507,7 +507,7 @@ export async function GET(request: NextRequest) {
  *   - "save_snapshot"         : 期の進捗管理表を確定保存（教室長以上。取り直しは上書き）
  *   - "upsert_track"          : 講習期間の区分を作成／更新（教室長以上）
  *   - "delete_track"          : 講習期間の区分を削除（教室長以上）
- *   - "set_student_track"     : 生徒の区分の当てはめを保存（進捗表を編集できる人）
+ *   - "set_student_track"     : 生徒の区分の当てはめを保存（教室長以上）
  */
 export async function POST(request: NextRequest) {
   // catch 側でも「どの操作・どの教室で落ちたか」を Sentry に残せるよう try の外に保持する
@@ -531,9 +531,20 @@ export async function POST(request: NextRequest) {
 
     switch (action) {
       case 'init_progress_template':
-        return await handleInitProgressTemplate(supabaseAdmin, schoolId, params);
-      case 'init_schedule_template':
-        return await handleInitScheduleTemplate(supabaseAdmin, schoolId, params);
+      case 'init_schedule_template': {
+        // テンプレートの適用は進捗表の列や工程表のタスクをまとめて作る操作なので、
+        // 教室長以上に限る（画面のボタンと同じ境界。API だけ素通りする状態を作らない）。
+        const role = (authResult.user.role || '').toLowerCase();
+        if (role !== 'admin' && role !== 'owner' && role !== 'manager') {
+          return NextResponse.json(
+            { error: 'テンプレートの適用には教室長以上の権限が必要です' },
+            { status: 403 }
+          );
+        }
+        return action === 'init_progress_template'
+          ? await handleInitProgressTemplate(supabaseAdmin, schoolId, params)
+          : await handleInitScheduleTemplate(supabaseAdmin, schoolId, params);
+      }
       case 'create_progress_item':
         return await handleCreateProgressItem(supabaseAdmin, schoolId, params);
       case 'update_student_progress':
@@ -621,9 +632,20 @@ export async function POST(request: NextRequest) {
       case 'delete_schedule_task':
         return await handleDeleteScheduleTask(supabaseAdmin, schoolId, params);
       case 'save_template':
-        return await handleSaveTemplate(supabaseAdmin, schoolId, params);
-      case 'delete_template':
-        return await handleDeleteTemplate(supabaseAdmin, params);
+      case 'delete_template': {
+        // テンプレートの作成・削除も教室長以上。削除の範囲（自教室か全体共通か）は
+        // handleDeleteTemplate 側でさらに絞る。
+        const role = (authResult.user.role || '').toLowerCase();
+        if (role !== 'admin' && role !== 'owner' && role !== 'manager') {
+          return NextResponse.json(
+            { error: 'テンプレートの編集には教室長以上の権限が必要です' },
+            { status: 403 }
+          );
+        }
+        return action === 'save_template'
+          ? await handleSaveTemplate(supabaseAdmin, schoolId, params)
+          : await handleDeleteTemplate(supabaseAdmin, params, schoolId, role);
+      }
       case 'delete_progress_table': {
         // 進捗表まるごとの削除は取り消せないので admin/owner に限定する
         // （UI の isOwnerOrAbove と同じ境界。「ボタンは出ないのに API は叩ける」を作らない）
@@ -663,10 +685,12 @@ export async function POST(request: NextRequest) {
         );
       }
       case 'upsert_track':
-      case 'delete_track': {
-        // 区分は「誰がどの期間で数えられるか」を決める設定なので、期間日付と同じ境界
-        // （教室長以上）に揃える。生徒個別の当てはめ（set_student_track）は進捗表の
-        // 入力と同じ扱いなので、こちらだけを絞る。
+      case 'delete_track':
+      case 'set_student_track': {
+        // 区分は「その生徒を、いつからいつまでの期間で数えるか」を決めるもので、
+        // 進捗表のセル入力と違って通常回数・増コマ・自動確定のタイミングまで動く。
+        // 定義（upsert/delete）も生徒個別の当てはめ（set_student_track）も影響は同じなので、
+        // 期間日付と同じ境界（教室長以上）に揃える。
         const role = (authResult.user.role || '').toLowerCase();
         if (role !== 'admin' && role !== 'owner' && role !== 'manager') {
           return NextResponse.json(
@@ -674,12 +698,12 @@ export async function POST(request: NextRequest) {
             { status: 403 }
           );
         }
-        return action === 'upsert_track'
-          ? await handleUpsertTrack(supabaseAdmin, schoolId, params)
-          : await handleDeleteTrack(supabaseAdmin, schoolId, params);
-      }
-      case 'set_student_track':
+        if (action === 'upsert_track')
+          return await handleUpsertTrack(supabaseAdmin, schoolId, params);
+        if (action === 'delete_track')
+          return await handleDeleteTrack(supabaseAdmin, schoolId, params);
         return await handleSetStudentTrack(supabaseAdmin, schoolId, params);
+      }
       default:
         return NextResponse.json({ error: `不明なアクション: ${action}` }, { status: 400 });
     }
@@ -1706,10 +1730,51 @@ async function handleSaveTemplate(
   return NextResponse.json({ data });
 }
 
+/**
+ * テンプレートの削除。
+ *
+ * ★ service role で RLS を通らないので、消せる範囲をここで自前で確かめる。
+ *   id だけで消していたため、他教室のテンプレートや school_id が NULL の全体共通の
+ *   テンプレートまで消せる状態だった。テンプレート適用を教室長以上に広げたことで
+ *   この経路（適用ダイアログの削除）に教室長が届くようになるため、範囲を絞る。
+ *   - 自教室のテンプレート: 教室長以上で消せる
+ *   - 全体共通（school_id が NULL）: admin/owner だけが消せる
+ */
 async function handleDeleteTemplate(
   supabaseAdmin: ReturnType<typeof getSupabaseAdmin>,
-  params: { templateId: string }
+  params: { templateId: string },
+  schoolId: string,
+  role: string
 ) {
+  const { data: target, error: readError } = await supabaseAdmin
+    .from('course_prep_templates')
+    .select('id, school_id, is_default')
+    .eq('id', params.templateId)
+    .maybeSingle();
+
+  if (readError)
+    return apiErrorResponse(
+      readError,
+      { route: 'POST /api/courses/prep', action: 'delete_template:read', schoolId },
+      'テンプレートの削除に失敗しました。時間をおいて再度お試しください。'
+    );
+  if (!target) return validationError('テンプレートが見つかりません');
+
+  const isAdmin = role === 'admin' || role === 'owner';
+  const templateSchoolId = target.school_id as string | null;
+  const allowed = templateSchoolId === null ? isAdmin : templateSchoolId === schoolId;
+  if (!allowed) {
+    return NextResponse.json(
+      {
+        error:
+          templateSchoolId === null
+            ? '全体共通のテンプレートの削除には管理者権限が必要です'
+            : '他の教室のテンプレートは削除できません',
+      },
+      { status: 403 }
+    );
+  }
+
   const { error } = await supabaseAdmin
     .from('course_prep_templates')
     .delete()

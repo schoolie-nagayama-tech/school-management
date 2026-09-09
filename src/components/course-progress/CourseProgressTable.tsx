@@ -1267,6 +1267,22 @@ export function CourseProgressTable({
                     end: t.schedule_end_date,
                   })),
                 ];
+                // 教室長以上でないとき（と確定データ表示中）は選ばせない。
+                // 選択肢を並べても押せないだけなので、今どの区分かを1行で見せるに留める。
+                const editable = canEdit && !!onStudentTrackChange;
+                if (!editable) {
+                  const currentEnd = trackEndLabel(current?.schedule_end_date ?? commonEndDate);
+                  return (
+                    <>
+                      <div className="my-1 border-t border-gray-100" />
+                      <div className="px-3 py-1.5 text-[10px] text-gray-500">
+                        講習期間の区分:{' '}
+                        <span className="text-gray-700">{current?.name ?? '共通'}</span>
+                        {currentEnd && <span className="text-gray-400">（{currentEnd}）</span>}
+                      </div>
+                    </>
+                  );
+                }
                 return (
                   <>
                     <div className="my-1 border-t border-gray-100" />
