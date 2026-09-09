@@ -24,6 +24,8 @@ import type { ProgressSessionWithDetails } from '@/types/database';
 import { toSurnameOnly } from '@/lib/utils/teacherName';
 import { fetchWithAuth } from '@/lib/api/auth';
 import { STUDENT_DIGEST_FEATURE_KEY } from '@/lib/ai/features';
+import { recordAiFeedback } from '@/lib/ai/feedback';
+import { DigestVerdictChips } from '@/components/ai/DigestVerdictChips';
 import type { HandoverDigest } from '@/lib/ai/handoverDigest';
 
 interface Props {
@@ -198,6 +200,11 @@ function HandoverDigestPanel({
   const [digest, setDigest] = useState<HandoverDigest | null>(null);
   const [count, setCount] = useState(0);
   const [message, setMessage] = useState<string | null>(null);
+  /**
+   * この画面でもう答えたか。★押し直させないためだけの印で、保存はしない。
+   *   「閉じる」で消したあとにもう一度まとめれば、また聞く（そのまとめは別物なので）。
+   */
+  const [rated, setRated] = useState(false);
 
   useEffect(() => {
     if (!schoolId) {
@@ -228,6 +235,7 @@ function HandoverDigestPanel({
     setDigest(null);
     setCount(0);
     setMessage(null);
+    setRated(false);
   }, [studentTextbookId]);
 
   const run = async () => {
@@ -253,6 +261,7 @@ function HandoverDigestPanel({
       }
       setDigest(json.digest);
       setCount(json.count);
+      setRated(false);
     } catch {
       setMessage('いまはまとめられませんでした');
     } finally {
@@ -342,6 +351,23 @@ function HandoverDigestPanel({
           <span className="text-[11px] text-text-muted">
             AIが引継ぎを1回1行に畳んだものです。書かれていないことは足していません
           </span>
+
+          {/* ★答え合わせ。まとめの中身は記録しない（引継ぎは生徒の記録なので、
+              AIを直すための表に本文を溜めない）。畳んだ回数だけ残す */}
+          <DigestVerdictChips
+            rated={rated}
+            onRate={(verdict) => {
+              setRated(true);
+              void recordAiFeedback({
+                schoolId,
+                feature: STUDENT_DIGEST_FEATURE_KEY,
+                targetKind: 'student_textbook',
+                targetId: studentTextbookId,
+                verdict,
+                aiOutput: { entryCount: count },
+              });
+            }}
+          />
         </div>
       )}
     </div>
