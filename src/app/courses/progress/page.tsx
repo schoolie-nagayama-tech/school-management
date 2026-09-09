@@ -1992,7 +1992,11 @@ export default function CourseProgressPage() {
               tracks={tracks}
               trackAssignments={trackAssignments}
               commonEndDate={period?.schedule_end_date ?? null}
-              onStudentTrackChange={isSnapshotView ? undefined : handleStudentTrackChange}
+              // 区分の当てはめは通常回数・増コマ・自動確定まで動かすので、
+              // 区分の定義と同じく教室長以上に限る（講師には今の当てはめを見せるだけ）
+              onStudentTrackChange={
+                isManagerOrAbove && !isSnapshotView ? handleStudentTrackChange : undefined
+              }
             />
           ))}
       </div>

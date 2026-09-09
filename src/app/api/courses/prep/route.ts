@@ -507,7 +507,7 @@ export async function GET(request: NextRequest) {
  *   - "save_snapshot"         : 期の進捗管理表を確定保存（教室長以上。取り直しは上書き）
  *   - "upsert_track"          : 講習期間の区分を作成／更新（教室長以上）
  *   - "delete_track"          : 講習期間の区分を削除（教室長以上）
- *   - "set_student_track"     : 生徒の区分の当てはめを保存（進捗表を編集できる人）
+ *   - "set_student_track"     : 生徒の区分の当てはめを保存（教室長以上）
  */
 export async function POST(request: NextRequest) {
   // catch 側でも「どの操作・どの教室で落ちたか」を Sentry に残せるよう try の外に保持する
@@ -663,10 +663,12 @@ export async function POST(request: NextRequest) {
         );
       }
       case 'upsert_track':
-      case 'delete_track': {
-        // 区分は「誰がどの期間で数えられるか」を決める設定なので、期間日付と同じ境界
-        // （教室長以上）に揃える。生徒個別の当てはめ（set_student_track）は進捗表の
-        // 入力と同じ扱いなので、こちらだけを絞る。
+      case 'delete_track':
+      case 'set_student_track': {
+        // 区分は「その生徒を、いつからいつまでの期間で数えるか」を決めるもので、
+        // 進捗表のセル入力と違って通常回数・増コマ・自動確定のタイミングまで動く。
+        // 定義（upsert/delete）も生徒個別の当てはめ（set_student_track）も影響は同じなので、
+        // 期間日付と同じ境界（教室長以上）に揃える。
         const role = (authResult.user.role || '').toLowerCase();
         if (role !== 'admin' && role !== 'owner' && role !== 'manager') {
           return NextResponse.json(
@@ -674,12 +676,12 @@ export async function POST(request: NextRequest) {
             { status: 403 }
           );
         }
-        return action === 'upsert_track'
-          ? await handleUpsertTrack(supabaseAdmin, schoolId, params)
-          : await handleDeleteTrack(supabaseAdmin, schoolId, params);
-      }
-      case 'set_student_track':
+        if (action === 'upsert_track')
+          return await handleUpsertTrack(supabaseAdmin, schoolId, params);
+        if (action === 'delete_track')
+          return await handleDeleteTrack(supabaseAdmin, schoolId, params);
         return await handleSetStudentTrack(supabaseAdmin, schoolId, params);
+      }
       default:
         return NextResponse.json({ error: `不明なアクション: ${action}` }, { status: 400 });
     }
