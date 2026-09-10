@@ -32,3 +32,4 @@ export {
   SelectItem,
 } from './Select-shadcn';
 export { Spinner, Loading, InlineLoading } from './Spinner';
+export { ScrollToTopButton } from './ScrollToTopButton';

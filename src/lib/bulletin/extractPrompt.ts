@@ -13,6 +13,7 @@
  */
 
 import { TASK_KINDS, TASK_KIND_LABELS, TASK_SCOPES, TASK_SCOPE_LABELS } from './taskCatalog';
+import { formatExtractGlossary } from './extractGlossary';
 
 /** 種別の一覧を「値 = 日本語ラベル（何をしたら済か）」の形で並べる */
 function kindCatalog(): string {
@@ -26,7 +27,7 @@ function kindCatalog(): string {
     timesheet_entry: '講師が出勤簿を入力する',
     material_handout_check: '教材を配布したチェックを付ける',
     owned_material_check: '生徒の所持教材を確認して登録する',
-    test_prep_proposal: 'テスト対策の提案を作成する',
+    test_prep_proposal: 'テスト対策の提案を作成する（増コマの申込そのものではない）',
     application_check: '申込状況にチェックを付ける',
     report_deadline: '授業報告書を期限までに提出する',
     report_title_format: '報告書のタイトルを決められた形式で書く',
@@ -39,14 +40,24 @@ function scopeCatalog(): string {
     all_students: '教室の在籍生徒すべて',
     assigned_students: 'その講師が担当している生徒だけ',
     grade: '中3だけ、など学年で絞る',
-    specific_students: '投稿で名前が挙がった生徒だけ',
+    specific_students:
+      '投稿で生徒の名前が挙がった場合だけ。学校名は specific_students ではなく attending_school',
+    attending_school:
+      '通学校で絞る（「諏訪中生は」「永山中・多摩中の生徒は」など。学校名をそのまま target_school_names に入れる）',
     teacher_self: 'シフト提出・出勤簿など、生徒に紐づかないもの',
   };
   return TASK_SCOPES.map((s) => `- ${s} … ${TASK_SCOPE_LABELS[s]}（${hints[s]}）`).join('\n');
 }
 
-/** 抽出のシステムプロンプト。中身は毎回同じなのでキャッシュに載せる */
-export function extractSystemPrompt(): string {
+/**
+ * 抽出のシステムプロンプト。
+ *
+ * @param params.glossary 【教室の用語】に並べるテキスト。省略時は extractGlossary.ts の固定値。
+ *   ★テスト用の差し替え口として引数化しているだけで、本番の呼び出し（extract/route.ts）は
+ *   引数無しで呼ぶ。中身は毎回同じなのでキャッシュ（cache: true）にそのまま載る。
+ */
+export function extractSystemPrompt(params?: { glossary?: string }): string {
+  const glossary = params?.glossary ?? formatExtractGlossary();
   return [
     'あなたは学習塾の教室長です。連絡掲示板の投稿を読み、講師にやってもらう作業を取り出してください。',
     '',
@@ -63,19 +74,28 @@ export function extractSystemPrompt(): string {
     '- every … 授業のたびに発生する（報告書の提出、進行表の入力など）',
     '- none … 期限が書かれていない',
     '',
+    '【教室の用語】',
+    glossary,
+    '',
     '守ること:',
     '- ★NESTに記録が残る作業だけを取る。心構え・物理的な作業・ただの情報共有は取らない。',
     '  例: 「がんばりましょう」「教室を掃除してください」「模試の日程を共有します」→ 取らない。',
     '- ★依頼になっていないものは取らない。資料を「読んでください」「参考にしてください」は作業ではない。',
     '- ★迷ったら取らない。無理に埋めるより、空で返すほうが良い。',
+    '- ★用語が【教室の用語】にあれば、その意味で読む。似た言葉（配布・回収）だけで種別を決めない。',
     '- 1つの投稿から複数の作業が出ることがある（例: 通知表を回収し、内申を入力し、チェックを付ける）。',
     '  ただしNESTに記録が残らないもの（回収そのもの）は取らない。',
     '- 相対的な期限（「今週中」「月末まで」）は、渡された今日の日付から実際の日付に直す。',
     '- 対象の学年が書かれていれば target_grades に数字で入れる（小1=1 … 中1=7・中2=8・中3=9 … 高3=12）。',
     '  学年の指定が無ければ空の配列。',
+    '- 対象の通学校が書かれていれば target_school_names に学校名の文字列でそのまま入れる（例:「諏訪中」）。',
+    '  通学校の指定が無ければ空の配列。',
+    // ★あとから「どこで読み間違えたか」を追うため、根拠にした一文を原文のまま残させる。
+    //   要約されると、AIの読み違いなのか投稿の書き方の問題なのかが判別できなくなる。
+    '- ★source_excerpt は投稿の文をそのまま写す。要約しない・作らない（40字まで。見つからなければ空文字）。',
     '',
     '出力はJSONだけ。前置きは書かない:',
-    '{"tasks":[{"kind":"report_card_entry","scope":"all_students","target_grades":[7,8,9],"due_type":"date","due_date":"2026-07-31","reason":"投稿のどこからそう読んだか"}]}',
+    '{"tasks":[{"kind":"test_prep_proposal","scope":"attending_school","target_grades":[],"target_school_names":["諏訪中"],"due_type":"none","due_date":null,"reason":"投稿のどこからそう読んだか","source_excerpt":"根拠にした投稿の一文をそのまま"}]}',
     '',
     '作業が1つも無ければ {"tasks":[]} を返す。',
   ].join('\n');

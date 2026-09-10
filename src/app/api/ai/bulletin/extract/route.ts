@@ -42,6 +42,7 @@ export interface ExtractedTaskView {
   scope: TaskScope;
   scopeLabel: string;
   targetGrades: number[];
+  targetSchoolNames: string[];
   dueType: string;
   dueDate: string | null;
   reason: string;
@@ -155,7 +156,8 @@ export async function POST(request: NextRequest) {
   // 再掲の突き合わせに使う、この教室の追跡中タスク
   const { data: openRows } = await supabase
     .from('bulletin_tasks')
-    .select('id, kind, scope, due_date')
+    // source_excerpt も読む。★再掲では上書きしないので、入っているかの判定に要る
+    .select('id, kind, scope, due_date, target_school_names, source_excerpt')
     .eq('school_id', schoolId)
     .is('closed_at', null)
     .eq('tracked', true);
@@ -165,7 +167,14 @@ export async function POST(request: NextRequest) {
     kind: r.kind as TaskKind,
     scope: r.scope as TaskScope,
     dueDate: (r.due_date as string | null) ?? null,
+    targetSchoolNames: (r.target_school_names as string[] | null) ?? [],
   }));
+
+  // 既に根拠の一文が入っているタスク。★OpenTask には持たせない
+  //   （あちらは再掲の突き合わせに使う型で、突き合わせの条件ではないものを混ぜたくない）
+  const excerptByTask = new Map<string, string>(
+    (openRows ?? []).map((r) => [r.id as string, (r.source_excerpt as string | null) ?? ''])
+  );
 
   const views: ExtractedTaskView[] = [];
 
@@ -176,10 +185,21 @@ export async function POST(request: NextRequest) {
     if (target) {
       // ★再掲。新しいタスクを作らず、既存に投稿を足す
       taskId = target.id;
+      const patch: Record<string, unknown> = {};
       if (shouldUpdateDueDate(task, target)) {
+        patch.due_date = task.dueDate;
+      }
+      // ★根拠の一文は最初に読んだものを残す（既に入っていれば上書きしない）。
+      //   読み間違いを追いたいのは「最初にそう読んだとき」の文であって、
+      //   再掲の投稿の言い回しではない。空のときだけ埋める。
+      if (!excerptByTask.get(taskId) && task.sourceExcerpt) {
+        patch.source_excerpt = task.sourceExcerpt;
+        excerptByTask.set(taskId, task.sourceExcerpt);
+      }
+      if (Object.keys(patch).length > 0) {
         await supabase
           .from('bulletin_tasks')
-          .update({ due_date: task.dueDate, updated_at: new Date().toISOString() })
+          .update({ ...patch, updated_at: new Date().toISOString() })
           .eq('id', taskId);
       }
     } else {
@@ -190,8 +210,10 @@ export async function POST(request: NextRequest) {
           kind: task.kind,
           scope: task.scope,
           target_grades: task.targetGrades,
+          target_school_names: task.targetSchoolNames,
           due_type: task.dueType,
           due_date: task.dueDate,
+          source_excerpt: task.sourceExcerpt || null,
         })
         .select('id')
         .single();
@@ -201,8 +223,15 @@ export async function POST(request: NextRequest) {
         continue;
       }
       taskId = created.id as string;
+      excerptByTask.set(taskId, task.sourceExcerpt);
       // 次のループで同じ種別×対象が来ても二重に作らない
-      openTasks.push({ id: taskId, kind: task.kind, scope: task.scope, dueDate: task.dueDate });
+      openTasks.push({
+        id: taskId,
+        kind: task.kind,
+        scope: task.scope,
+        dueDate: task.dueDate,
+        targetSchoolNames: task.targetSchoolNames,
+      });
     }
 
     // 投稿を紐づける（同じ投稿を二度足さない）
@@ -220,6 +249,7 @@ export async function POST(request: NextRequest) {
       scope: task.scope,
       scopeLabel: TASK_SCOPE_LABELS[task.scope],
       targetGrades: task.targetGrades,
+      targetSchoolNames: task.targetSchoolNames,
       dueType: task.dueType,
       dueDate: task.dueDate,
       reason: task.reason,

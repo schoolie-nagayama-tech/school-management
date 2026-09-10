@@ -19,7 +19,7 @@
  */
 
 /** 整える対象の種類。面が増えたらここに足す */
-export type RefineKind = 'bulletin' | 'proposal_theme' | 'report_review';
+export type RefineKind = 'bulletin' | 'proposal_theme' | 'report_review' | 'parent_notice';
 
 /** 1行ぶん。index は元の並び順で、AIはこれを変えられない */
 export interface RefineLine {
@@ -78,6 +78,14 @@ const KIND_RULES: Record<RefineKind, string[]> = {
     '- ★評価の強さを変えない。「少し」を「かなり」にしない。褒め言葉も注意も足さない。',
     '- 保護者が読む文としてていねいに。ただし「〜でございます」のような過剰な敬語にしない。',
     '- 生徒の名前・呼び方はそのまま。',
+  ],
+  // ★掲示板の投稿モーダルで、配信先に保護者を含むときに使う（composeNotice.ts で作った
+  //   お知らせの体裁を、手で直したあとに整える）。全文は作らない。言い回しだけ直す。
+  parent_notice: [
+    'これは学習塾の教室長が、保護者に向けて書いたお知らせです。',
+    '- 読む相手は保護者。ていねいに整えます。ただし「〜でございます」のような過剰な敬語にはしない。',
+    '- 箇条書きは箇条書きのまま。文章にまとめない。',
+    '- ★宛名や日付を足さない。無ければ無いままにする（ポータルの画面が別に表示するため）。',
   ],
 };
 

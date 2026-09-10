@@ -100,7 +100,11 @@ export async function saveKoushuApplySettings(params: {
   applyPublishStart: string | null;
   applyPublishEnd: string | null;
   applyPriceTable: PriceTable | null;
-  scheduleEndByGrade: Record<string, string> | null;
+  /**
+   * 学年別の講習終了日（決定44）。★ Phase 8 で区分に置き換えたので新規利用禁止。
+   * 渡さなければ既存値に触らない（API は undefined の項目を更新対象にしない）。
+   */
+  scheduleEndByGrade?: Record<string, string> | null;
 }): Promise<void> {
   await callCoursePrepApi('upsert_period', params.schoolId, {
     season: params.season,
@@ -108,7 +112,9 @@ export async function saveKoushuApplySettings(params: {
     applyPublishStart: params.applyPublishStart,
     applyPublishEnd: params.applyPublishEnd,
     applyPriceTable: params.applyPriceTable,
-    scheduleEndByGrade: params.scheduleEndByGrade,
+    ...(params.scheduleEndByGrade !== undefined
+      ? { scheduleEndByGrade: params.scheduleEndByGrade }
+      : {}),
   });
 }
 

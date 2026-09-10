@@ -36,9 +36,22 @@ interface AiWriteBarProps {
   /** 教室ごとの入切に使う */
   schoolId: string;
   /** 整えるときの種類 */
-  kind: 'bulletin';
+  kind: 'bulletin' | 'parent_notice';
+  /**
+   * 誰が読むか。★compose側の書式の出し分けに使う（省略時は 'staff'）。
+   * 'parents' なら「お知らせの体裁」（composeNotice.ts）で下書きする。
+   */
+  audience?: 'staff' | 'parents';
   placeholder?: string;
   className?: string;
+  /**
+   * AIが本文を入れ替えたときに、その直後のHTMLを渡す。
+   *
+   * ★これは「答え合わせ用のボタン」を増やさないための配線である。
+   *   使えたかどうかは、AIが出したものと、実際に保存された本文を比べれば分かる。
+   *   投稿画面はこれを覚えておいて、投稿できたときだけ記録する。
+   */
+  onAiDraft?: (html: string) => void;
 }
 
 interface ComposeResponse {
@@ -59,8 +72,10 @@ export function AiWriteBar({
   onChange,
   schoolId,
   kind,
+  audience = 'staff',
   placeholder,
   className = '',
+  onAiDraft,
 }: AiWriteBarProps) {
   const [instruction, setInstruction] = useState('');
   const [busy, setBusy] = useState<'compose' | 'refine' | null>(null);
@@ -107,9 +122,11 @@ export function AiWriteBar({
       historyRef.current = hist;
       posRef.current = hist.length - 1;
       onChange(html);
+      // ★作る・整えるの両方をここが通る。最後にAIが出したHTMLを親に渡す
+      onAiDraft?.(html);
       forceRender((n) => n + 1);
     },
-    [onChange]
+    [onChange, onAiDraft]
   );
 
   const step = useCallback(
@@ -143,6 +160,8 @@ export function AiWriteBar({
           instruction: text,
           // 本文があれば作り直し。★手で書いた分も材料に含める
           currentLines: htmlToLines(value).map((l) => l.text),
+          // ★'parents' のときだけ「お知らせの体裁」で下書きする（composeNotice.ts）
+          audience,
         }),
       });
       if (!res.ok) throw new Error('failed');
@@ -224,7 +243,11 @@ export function AiWriteBar({
           disabled={busy !== null}
           placeholder={
             placeholder ??
-            (hasBody ? 'どう直しますか（例: もっと短く）' : '何を知らせますか（箇条書きでOK）')
+            (hasBody
+              ? 'どう直しますか（例: もっと短く）'
+              : audience === 'parents'
+                ? '保護者に何を知らせますか（短くてOK）'
+                : '何を知らせますか（箇条書きでOK）')
           }
           className="min-w-0 flex-1 bg-transparent text-[13px] text-text-heading outline-none placeholder:text-text-faint"
         />

@@ -12,6 +12,7 @@ import {
   computeTaskProgress,
   isInScope,
   isJudgeable,
+  resolveAttendingSchoolNames,
   type StudentRow,
   type TeacherRow,
 } from '@/lib/bulletin/progress';
@@ -75,6 +76,64 @@ describe('対象の絞り込み', () => {
 
   it('講師自身のタスクは生徒では数えない', () => {
     expect(isInScope(s, 'teacher_self', [], [])).toBe(false);
+  });
+});
+
+/**
+ * 通学校で絞る（2026-09-08）。
+ *
+ * ★永山校の試用で「諏訪中生は」が specific_students・target_student_ids=[] に
+ *   なり、母数が0になった。「◯◯中生」は通学校であって名指しではないので、
+ *   通学校で絞る scope（attending_school）を別に用意した。
+ */
+describe('通学校で絞る', () => {
+  it('表記ゆれを吸収して一致する（「永山」と「永山中」）', () => {
+    const s = student({ id: 'a', schoolName: '永山中' });
+    expect(isInScope(s, 'attending_school', [], [], ['永山'])).toBe(true);
+  });
+
+  it('似ていても別の学校は一致しない（「諏訪中」と「諏訪小」）', () => {
+    const s = student({ id: 'a', schoolName: '諏訪小' });
+    expect(isInScope(s, 'attending_school', [], [], ['諏訪中'])).toBe(false);
+  });
+
+  it('通学校の指定が空なら絞らない', () => {
+    const s = student({ id: 'a', schoolName: '永山中' });
+    expect(isInScope(s, 'attending_school', [], [], [])).toBe(true);
+  });
+
+  it('通学校が未登録の生徒は一致しない', () => {
+    const s = student({ id: 'a', schoolName: null });
+    expect(isInScope(s, 'attending_school', [], [], ['永山'])).toBe(false);
+  });
+
+  it('正式表記（市立◯◯中学校）でも一致する', () => {
+    const s = student({ id: 'a', schoolName: '永山市立永山中学校' });
+    expect(isInScope(s, 'attending_school', [], [], ['永山中'])).toBe(true);
+  });
+});
+
+/**
+ * ★母数0で「全員済」に見えるのを防ぐ（specific_students が空のとき絞らないのと同じ考え）。
+ *   表記ゆれ・入力ミスで1人も一致しないと、絞り込みをあきらめて全員を母数にする。
+ *   ★この判定は在籍生徒全員を渡す進捗ボード側だけで使う（授業中ポップアップでは使わない）。
+ */
+describe('通学校の絞り込みで1人も一致しなければ絞らない', () => {
+  const roster = [
+    student({ id: 'a', schoolName: '永山中' }),
+    student({ id: 'b', schoolName: '多摩中' }),
+  ];
+
+  it('1人も一致しなければ空配列（絞らない）を返す', () => {
+    expect(resolveAttendingSchoolNames(roster, ['諏訪中'])).toEqual([]);
+  });
+
+  it('1人でも一致すればそのまま返す', () => {
+    expect(resolveAttendingSchoolNames(roster, ['永山'])).toEqual(['永山']);
+  });
+
+  it('target が空ならそのまま空', () => {
+    expect(resolveAttendingSchoolNames(roster, [])).toEqual([]);
   });
 });
 
@@ -390,5 +449,20 @@ describe('講師自身の種別の判定', () => {
       const opts = kind === 'test_result_entry' ? { hasTargetPeriod: true } : undefined;
       expect(isJudgeable(kind, opts)).toBe(true);
     }
+  });
+});
+
+describe('isInScope: 名指しが空のとき', () => {
+  const s = { id: 's1', grade: 2, teacherId: null, markedNotApplicable: false };
+
+  it('★specific_students で target_student_ids が空なら絞らない（母数0で「全員済」に倒さない）', () => {
+    // 永山校の実例: 「諏訪中生はテスト対策授業の提案を」を AI が specific_students と読み、
+    // 通学校は生徒IDに解決できず空になった。空のまま絞ると母数0→「督促は要りません」と出る
+    expect(isInScope(s, 'specific_students', [], [])).toBe(true);
+  });
+
+  it('IDがあれば名指しどおりに絞る', () => {
+    expect(isInScope(s, 'specific_students', [], ['s1'])).toBe(true);
+    expect(isInScope(s, 'specific_students', [], ['s2'])).toBe(false);
   });
 });

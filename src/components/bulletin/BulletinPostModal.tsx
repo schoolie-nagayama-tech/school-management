@@ -1,12 +1,16 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import type { BulletinPost, BulletinLabel, BulletinTargetScope } from '@/types/bulletin';
 import type { School } from '@/types/database';
 import { GRADE_LABELS } from '@/types/database';
 import { Modal, Button, Input } from '@/components/ui';
 import { AiWriteBar } from '@/components/ai/AiWriteBar';
+import { judgeComposeUsage } from '@/lib/ai/composeUsage';
+import { htmlToLines } from '@/lib/ai/htmlLines';
+import { COMPOSE_FEATURE_KEY } from '@/lib/ai/features';
+import { recordAiFeedback } from '@/lib/ai/feedback';
 
 /**
  * audience 選択肢（社内＝スタッフ / 保護者）。
@@ -121,6 +125,15 @@ export function BulletinPostModal({
    *   代表がオフなら出さない（オンの教室に合わせて緩めない）。
    */
   const aiSchoolId = post?.school_id ?? selectedSchoolIds[0] ?? schoolId ?? null;
+  /**
+   * AIが最後に出した下書き（HTML）。★投稿できたときの答え合わせにだけ使う。
+   *
+   * ★「役に立ちましたか？」のボタンは置かない。教室長は投稿を出したいだけなので押さない。
+   *   代わりに、AIが出した下書きと実際に投稿した本文を比べて、
+   *   そのまま使ったのか・直したのか・捨てたのかを機械的に記録する。
+   *   一度もAIを使っていなければ null のままで、そのときは何も記録しない。
+   */
+  const lastAiHtmlRef = useRef<string | null>(null);
   const [linkUrl, setLinkUrl] = useState('');
   const [labelId, setLabelId] = useState<string | null>(null);
   const [isPinned, setIsPinned] = useState(false);
@@ -175,6 +188,8 @@ export function BulletinPostModal({
       setTargetStudentIds([]);
     }
     setStudentQuery('');
+    // ★前に開いたときのAIの下書きを持ち越さない（別の投稿の答えとして記録されてしまう）
+    lastAiHtmlRef.current = null;
   }, [post, isOpen]);
 
   // 個別配信を選んだら、対象校の生徒を読み込む（検索用）。
@@ -237,6 +252,40 @@ export function BulletinPostModal({
     publishEndDate &&
     publishEndDate < publishStartDate
   );
+
+  /**
+   * おまかせ下書きが使われたかを記録する（ボタンなし・投稿の結果から取る）。
+   *
+   * ★本文そのものは送らない。連絡文には生徒名・保護者への連絡・教室の事情が入るので、
+   *   答え合わせの表に溜めると、AIを直すために開いた画面が個人情報の置き場になる。
+   *   知りたいのは「そのまま出せたか」だけなので、行数だけあれば足りる。
+   */
+  const recordComposeUsage = (createdPostId: string | undefined) => {
+    const aiHtml = lastAiHtmlRef.current;
+    // AIを一度も使っていない投稿は記録しない（答え合わせにならない）
+    if (!aiHtml || !aiSchoolId) return;
+    try {
+      const aiLines = htmlToLines(aiHtml).map((l) => l.text);
+      const finalLines = htmlToLines(content).map((l) => l.text);
+      const { verdict, kept } = judgeComposeUsage(aiLines, finalLines);
+      void recordAiFeedback({
+        schoolId: aiSchoolId,
+        feature: COMPOSE_FEATURE_KEY,
+        targetKind: 'bulletin_post',
+        // 複数教室に同報したときは先頭の1件だけ（本文は同じなので、答えも1件でよい）
+        targetId: createdPostId,
+        verdict,
+        aiOutput: {
+          aiLineCount: aiLines.length,
+          finalLineCount: finalLines.length,
+          keptLineCount: kept,
+        },
+      });
+    } catch (e) {
+      // ★記録の失敗で投稿を失敗にしない
+      console.error('[bulletin] 下書きの使われ方を記録できませんでした', e);
+    }
+  };
 
   const handleSubmit = async () => {
     if (!title.trim() || isContentEmpty(content) || isInvalidPeriod) {
@@ -352,6 +401,9 @@ export function BulletinPostModal({
           if (created?.id) createdPostIds.push(created.id);
         }
       }
+
+      // ★保存が終わってから記録する。記録が落ちても投稿は成功のまま
+      recordComposeUsage(createdPostIds[0]);
 
       onSaved(createdPostIds);
       onClose();
@@ -478,7 +530,14 @@ export function BulletinPostModal({
               value={content}
               onChange={setContent}
               schoolId={aiSchoolId}
-              kind="bulletin"
+              // ★配信先（deliversToPortal）でAIの出し分けを切り替える。保護者を含むときは
+              //   お知らせの体裁（composeNotice.ts）で下書きし、社内のみのときは従来どおり
+              kind={deliversToPortal ? 'parent_notice' : 'bulletin'}
+              audience={deliversToPortal ? 'parents' : 'staff'}
+              // ★答え合わせ用。ここでは覚えるだけで、記録するのは投稿できたとき
+              onAiDraft={(html) => {
+                lastAiHtmlRef.current = html;
+              }}
             />
           )}
         </div>

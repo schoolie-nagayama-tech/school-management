@@ -1,7 +1,12 @@
 import { createClient } from '@supabase/supabase-js';
 import { fetchAllPaged, fetchAllInChunks } from '@/lib/utils/supabasePaging';
-import { resolveGradeEndDate } from '@/lib/utils/koushuApplyPure';
-import { computeCourseSessionsForStudent } from '@/lib/coursePrepKpis';
+import {
+  computeCourseSessionsForStudent,
+  resolvePeriodLastEndDate,
+  resolveStudentTrack,
+  resolveTrackWindow,
+} from '@/lib/coursePrepKpis';
+import type { CoursePrepTrack, CoursePrepStudentTrack } from '@/types/database';
 
 /**
  * 講習準備（進捗管理表・工程表）のサーバー側データ取得を集めたモジュール。
@@ -13,6 +18,11 @@ import { computeCourseSessionsForStudent } from '@/lib/coursePrepKpis';
  *
  * 設計: docs/koushu-progress-snapshot-plan.md
  */
+
+/** 'YYYY-MM-DD' ならその値、そうでなければ null。壊れた日付を期間計算に混ぜないための門番。 */
+function asIsoDate(value: unknown): string | null {
+  return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : null;
+}
 
 /** 期間内の各曜日の出現回数を正確にカウント (0=日〜6=土) */
 function countDayOccurrences(startDate: string, endDate: string): Record<number, number> {
@@ -199,6 +209,35 @@ export function getSupabaseAdmin() {
 }
 
 /**
+ * 「この講習期間に通っていた通塾パターンか」の判定。
+ *
+ * 通常回数（course_sessions）を is_active だけで数えていたため、通塾パターンを
+ * いじるたびに過去の期の数字が両方向に狂っていた。
+ *   - 期の後に停止したパターンが数から消える → 通常回数↓ → 増コマが水増し
+ *   - 期の後に新設したパターンが過去にも数えられる → 通常回数↑ → 増コマが過少
+ * 「今その形か」ではなく「その期に有効だったか」で数えるのが正しい。
+ *
+ * 判定は期間の重なり: effective_from <= 期間終了日 かつ
+ * （effective_until が空 = 今も継続 または effective_until >= 期間開始日）。
+ * is_active は見ない（停止済みでも、その期に有効だったなら数える）。
+ *
+ * @returns 期間で絞れるとき or 句に渡す文字列、絞れないとき null（呼び出し側は is_active で従来どおり）
+ */
+export function patternOverlapsPeriodFilter(
+  periodStart: string | null | undefined,
+  periodEnd: string | null | undefined
+): { from: string; orUntil: string } | null {
+  const isDate = (v: unknown): v is string =>
+    typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v);
+  // 期間日付が入っていない期は重なりを判定できない。従来どおり is_active で数える。
+  if (!isDate(periodStart) || !isDate(periodEnd)) return null;
+  return {
+    from: periodEnd,
+    orUntil: `effective_until.is.null,effective_until.gte.${periodStart}`,
+  };
+}
+
+/**
  * 「この講習期間中に在籍していた生徒」に絞り込む共通フィルタ。
  *
  * 講習の実績は期が終わったあとに振り返るものなので、退塾しただけで行が消えると
@@ -222,8 +261,13 @@ export function enrolledDuringPeriodFilter(periodStart: string | null | undefine
 // 保存するのは「集計結果」ではなく「集計の入力」。computeDashboardAggregates の
 // 引数5点セット（students / items / progress / autoValues / period）を凍結する。
 
-/** payload の形式版。生徒の保存項目や構造を変えるときに上げる。 */
-const SNAPSHOT_PAYLOAD_VERSION = 1;
+/**
+ * payload の形式版。生徒の保存項目や構造を変えるときに上げる。
+ *   1: students / items / progress / autoValues / period
+ *   2: + tracks / studentTracks（Phase 8 の講習期間の区分）
+ * 読む側は version 1 の payload（tracks が無い）でも壊れないこと。
+ */
+const SNAPSHOT_PAYLOAD_VERSION = 2;
 
 /**
  * スナップショットに残す生徒の項目。
@@ -305,7 +349,7 @@ export async function runBatchForSchool(
     ((await getPeriod())?.schedule_start_date as string | null | undefined) ?? null;
 
   /**
-   * 生徒の学年（id → grade）。auto_values の通常回数を学年別終了日で数えるために要る。
+   * 生徒の学年（id → grade）。区分の「既定の学年」による当てはめに要る。
    *
    * targets の 'students' とは別クエリにしている。あちらは「期間中に在籍していた生徒」に
    * 絞り込んだ一覧で、auto_values 側は通塾パターンに出てくる生徒全員の学年が要るため、
@@ -335,6 +379,57 @@ export async function runBatchForSchool(
     }
     return gradesPromise;
   };
+
+  /**
+   * 講習期間の区分と、生徒の当てはめ。
+   *
+   * auto_values（通常回数を生徒ごとの期間で数える）と 'tracks' ターゲットの両方で要るので、
+   * getPeriod と同じく遅延1回だけ引いて共有する。
+   * 件数は「期の区分」数本 × 生徒数程度だが、当てはめは生徒数ぶん増えうるのでページングする
+   * （未ページングの select は1000行で静かに切り捨てられる）。
+   */
+  let tracksPromise: Promise<{
+    tracks: CoursePrepTrack[];
+    assignments: CoursePrepStudentTrack[];
+  }> | null = null;
+  const getTracks = () => {
+    if (!tracksPromise) {
+      tracksPromise = Promise.all([
+        supabaseAdmin
+          .from('course_prep_tracks')
+          .select('*')
+          .eq('school_id', schoolId)
+          .eq('season', season)
+          .eq('year', year)
+          .order('sort_order', { ascending: true })
+          .then(({ data }) => (data ?? []) as CoursePrepTrack[]),
+        fetchAllPaged<CoursePrepStudentTrack>((from, to) =>
+          supabaseAdmin
+            .from('course_prep_student_tracks')
+            .select('*')
+            .eq('school_id', schoolId)
+            .eq('season', season)
+            .eq('year', year)
+            .order('id', { ascending: true })
+            .range(from, to)
+        ),
+      ])
+        .then(([tracks, assignments]) => ({ tracks, assignments }))
+        .catch(() => ({
+          tracks: [] as CoursePrepTrack[],
+          assignments: [] as CoursePrepStudentTrack[],
+        }));
+    }
+    return tracksPromise;
+  };
+
+  if (targets.includes('tracks')) {
+    promises.push(
+      (async () => {
+        batchResult.tracks = await getTracks();
+      })()
+    );
+  }
 
   if (targets.includes('students')) {
     promises.push(
@@ -429,78 +524,124 @@ export async function runBatchForSchool(
   if (targets.includes('auto_values')) {
     promises.push(
       (async () => {
+        // 通塾パターンの絞り込みに期間日付と区分が要るので、先に引く。
+        const [periodForAuto, trackData] = await Promise.all([getPeriod(), getTracks()]);
+        const autoStart = asIsoDate(periodForAuto?.schedule_start_date);
+        const autoEnd = asIsoDate(periodForAuto?.schedule_end_date);
+        const tracks = trackData.tracks;
+        // 生徒 → その生徒に当てはめられた区分（null は「共通に戻す」明示指定）。
+        const trackAssignments = new Map<string, string | null>();
+        for (const row of trackData.assignments) {
+          trackAssignments.set(row.student_id, row.track_id);
+        }
+
+        // SQL 側は「全区分を含む最も広い窓」で取る。生徒ごとの絞り込みは JS 側で行う
+        // （2月まで続く受験区分のパターンを、1月で終わる共通の生徒に数えないため）。
+        const fetchEnd = resolvePeriodLastEndDate({ schedule_end_date: autoEnd }, tracks);
+        let fetchStart = autoStart;
+        for (const t of tracks) {
+          const ts = asIsoDate(t.schedule_start_date);
+          if (ts && (fetchStart === null || ts < fetchStart)) fetchStart = ts;
+        }
+        const overlap = patternOverlapsPeriodFilter(fetchStart, fetchEnd);
+
+        type PatternRow = {
+          student_id: string;
+          day_of_week: number;
+          effective_from: string | null;
+          effective_until: string | null;
+        };
+        // 期間で絞れるときは is_active を見ない（停止済みでも、その期に有効だったなら数える）。
+        // 期間日付が無い期だけ、従来どおり is_active=true で数える。
+        const patternQuery = (periodType: string, from: number, to: number) => {
+          const base = supabaseAdmin
+            .from('schedule_regular_patterns')
+            .select('student_id, day_of_week, id, effective_from, effective_until')
+            .eq('school_id', schoolId)
+            .eq('period_type', periodType);
+          const scoped = overlap
+            ? base.lte('effective_from', overlap.from).or(overlap.orUntil)
+            : base.eq('is_active', true);
+          return scoped.order('id', { ascending: true }).range(from, to);
+        };
+
         // 通塾日程は (生徒数 × 曜日) でスケールし単一校でも 1000 行を超えうるため
         // 全件ページング取得する（切り捨てると一部生徒の自動コマ数計算が欠落する）。
-        const [regularPatterns, seasonalPatterns, periodForAuto, proposalMaps, studentGrades] =
-          await Promise.all([
-            fetchAllPaged<{ student_id: string; day_of_week: number }>((from, to) =>
-              supabaseAdmin
-                .from('schedule_regular_patterns')
-                .select('student_id, day_of_week, id')
-                .eq('school_id', schoolId)
-                .eq('period_type', 'regular')
-                .eq('is_active', true)
-                .order('id', { ascending: true })
-                .range(from, to)
-            ).catch(() => []),
-            fetchAllPaged<{ student_id: string; day_of_week: number }>((from, to) =>
-              supabaseAdmin
-                .from('schedule_regular_patterns')
-                .select('student_id, day_of_week, id')
-                .eq('school_id', schoolId)
-                .eq('period_type', season)
-                .eq('is_active', true)
-                .order('id', { ascending: true })
-                .range(from, to)
-            ).catch(() => []),
-            getPeriod(),
-            fetchSubjectProposals(supabaseAdmin, schoolId, season, year),
-            getStudentGrades(),
-          ]);
-        const regularWeeklyMap: Record<string, number> = {};
-        const regularDayMap: Record<string, Record<number, number>> = {};
-        for (const p of (regularPatterns || []) as { student_id: string; day_of_week: number }[]) {
-          regularWeeklyMap[p.student_id] = (regularWeeklyMap[p.student_id] || 0) + 1;
-          if (!regularDayMap[p.student_id]) regularDayMap[p.student_id] = {};
-          regularDayMap[p.student_id][p.day_of_week] =
-            (regularDayMap[p.student_id][p.day_of_week] || 0) + 1;
-        }
-        const seasonalDayMap: Record<string, Record<number, number>> = {};
-        for (const p of (seasonalPatterns || []) as { student_id: string; day_of_week: number }[]) {
-          if (!seasonalDayMap[p.student_id]) seasonalDayMap[p.student_id] = {};
-          seasonalDayMap[p.student_id][p.day_of_week] =
-            (seasonalDayMap[p.student_id][p.day_of_week] || 0) + 1;
-        }
-        const autoStart = periodForAuto?.schedule_start_date as string | null | undefined;
-        const autoEnd = periodForAuto?.schedule_end_date as string | null | undefined;
-        const endByGrade = periodForAuto?.schedule_end_by_grade as
-          | Record<string, string>
-          | null
-          | undefined;
+        const [regularPatterns, seasonalPatterns, proposalMaps, studentGrades] = await Promise.all([
+          fetchAllPaged<PatternRow>((from, to) => patternQuery('regular', from, to)).catch(
+            () => []
+          ),
+          fetchAllPaged<PatternRow>((from, to) => patternQuery(season, from, to)).catch(() => []),
+          fetchSubjectProposals(supabaseAdmin, schoolId, season, year),
+          getStudentGrades(),
+        ]);
+
+        // 生徒ごとにパターンを束ねる。曜日の集計は、その生徒の期間が決まってから行う
+        // （区分で期間が違うと、同じパターンでも数える期間が変わるため）。
+        const groupByStudent = (rows: PatternRow[]) => {
+          const map = new Map<string, PatternRow[]>();
+          for (const p of rows || []) {
+            const arr = map.get(p.student_id);
+            if (arr) arr.push(p);
+            else map.set(p.student_id, [p]);
+          }
+          return map;
+        };
+        const regularByStudent = groupByStudent(regularPatterns as PatternRow[]);
+        const seasonalByStudent = groupByStudent(seasonalPatterns as PatternRow[]);
 
         /**
-         * 学年の終了日ごとの「期間内に各曜日が何回出るか」。
+         * その生徒の講習期間（その区分の開始日〜終了日）に、このパターンが有効だったか。
+         * 区分は開始日も上書きできるので、開始・終了の両方を生徒ごとに受け取る。
+         */
+        const inWindow = (
+          p: PatternRow,
+          studentStart: string | null,
+          studentEnd: string | null
+        ): boolean => {
+          if (!overlap || !studentStart || !studentEnd) return true; // 期間で絞れないときは全部
+          if (p.effective_from && p.effective_from > studentEnd) return false;
+          if (p.effective_until && p.effective_until < studentStart) return false;
+          return true;
+        };
+        const toDayMap = (
+          rows: PatternRow[] | undefined,
+          studentStart: string | null,
+          studentEnd: string | null
+        ) => {
+          const dayMap: Record<number, number> = {};
+          let count = 0;
+          for (const p of rows || []) {
+            if (!inWindow(p, studentStart, studentEnd)) continue;
+            dayMap[p.day_of_week] = (dayMap[p.day_of_week] || 0) + 1;
+            count++;
+          }
+          return { dayMap, count };
+        };
+
+        /**
+         * 期間ごとの「期間内に各曜日が何回出るか」。
          *
-         * なぜ学年別に数えるか: 増コマ＝提案コマ−通常回数（course_sessions）なので、
-         * 中3だけ講習期間が長い冬期に共通の終了日で数えると、中3の通常回数が実際より
-         * 少なく出て、増コマが水増しされる（提案していないコマを提案したことになる）。
+         * なぜ生徒ごとに数えるか: 増コマ＝提案コマ−通常回数（course_sessions）なので、
+         * 受験区分だけ講習期間が長い冬期に共通の終了日で数えると、その生徒の通常回数が
+         * 実際より少なく出て、増コマが水増しされる（提案していないコマを提案したことになる）。
          *
-         * 同じ終了日になる学年が大半（上書きが無い学年はすべて共通の終了日）なので、
-         * 終了日文字列をキーにして数え直しを1回だけにする。
+         * 区分に入らない生徒が大半で期間は同じになるので、**開始日|終了日**をキーにして
+         * 数え直しを1回だけにする（区分は開始日も変えられるため終了日だけのキーでは足りない）。
          */
         const dayCountsCache = new Map<string, Record<number, number>>();
         const getDayCounts = (
-          endDate: string | null | undefined
+          startDate: string | null,
+          endDate: string | null
         ): Record<number, number> | null => {
-          if (!autoStart || !endDate) return null;
-          const cached = dayCountsCache.get(endDate);
+          if (!startDate || !endDate) return null;
+          const key = `${startDate}|${endDate}`;
+          const cached = dayCountsCache.get(key);
           if (cached) return cached;
-          const counts = countDayOccurrences(autoStart, endDate);
-          dayCountsCache.set(endDate, counts);
+          const counts = countDayOccurrences(startDate, endDate);
+          dayCountsCache.set(key, counts);
           return counts;
         };
-        // 学年が引けない生徒や学年別の上書きが無い学年は、共通の終了日で数える。
-        const commonDayCounts = getDayCounts(autoEnd);
         const autoResult: Record<
           string,
           {
@@ -512,31 +653,29 @@ export async function runBatchForSchool(
             subject_applied?: Record<string, number>;
           }
         > = {};
+        // tsconfig に target 指定が無く ES5 扱いのため Map/Set を直接 for-of できない（TS2802）
         const allIds = Array.from(
-          new Set([...Object.keys(regularWeeklyMap), ...Object.keys(seasonalDayMap)])
+          new Set([...Array.from(regularByStudent.keys()), ...Array.from(seasonalByStudent.keys())])
         );
         for (const sid of allIds) {
-          const weeklyCount = regularWeeklyMap[sid] || 0;
-          const dayMap =
-            Object.keys(seasonalDayMap[sid] || {}).length > 0
-              ? seasonalDayMap[sid]
-              : regularDayMap[sid] || {};
-          // 生徒の学年に対応する終了日で数える（上書きが無ければ共通の終了日にフォールバック）。
-          // 学年別終了日は jsonb の自由入力なので、書式が壊れていたら共通の終了日に倒す。
-          // ここで壊れた日付のまま数えると通常回数が0になり、増コマが丸ごと水増しされる。
-          const grade = studentGrades.get(sid);
-          const gradeEnd =
-            autoEnd && grade !== undefined
-              ? resolveGradeEndDate(autoEnd, endByGrade, grade)
-              : undefined;
-          const dayCounts =
-            gradeEnd && /^\d{4}-\d{2}-\d{2}$/.test(gradeEnd)
-              ? getDayCounts(gradeEnd)
-              : commonDayCounts;
-          const sessions = computeCourseSessionsForStudent(dayMap, dayCounts);
+          // 生徒に効く区分から期間を決める（区分に入っていなければ共通の期間）。
+          // 区分の日付が壊れていたら共通に倒す。壊れた日付のまま数えると通常回数が0になり、
+          // 増コマが丸ごと水増しされる。
+          const track = resolveStudentTrack(tracks, trackAssignments, sid, studentGrades.get(sid));
+          const window = resolveTrackWindow(track, autoStart, autoEnd);
+          const studentStart = asIsoDate(window.start) ?? autoStart;
+          const studentEnd = asIsoDate(window.end) ?? autoEnd;
+
+          // その生徒の期間に有効だったパターンだけで曜日を数える。
+          const regular = toDayMap(regularByStudent.get(sid), studentStart, studentEnd);
+          const seasonal = toDayMap(seasonalByStudent.get(sid), studentStart, studentEnd);
+          // 講習用パターンが登録されていれば優先、無ければ通常パターンで代用する（従来どおり）。
+          const dayMap = Object.keys(seasonal.dayMap).length > 0 ? seasonal.dayMap : regular.dayMap;
+
+          const dayCounts = getDayCounts(studentStart, studentEnd);
           autoResult[sid] = {
-            regular_weekly: weeklyCount,
-            course_sessions: sessions,
+            regular_weekly: regular.count,
+            course_sessions: computeCourseSessionsForStudent(dayMap, dayCounts),
           };
         }
         const proposalSids = Array.from(
@@ -669,6 +808,7 @@ export async function buildSnapshotPayload(
     'student_progress',
     'period',
     'auto_values',
+    'tracks',
   ]);
 
   const students = ((batch.students as Record<string, unknown>[]) || []).map(pickSnapshotStudent);
@@ -688,6 +828,13 @@ export async function buildSnapshotPayload(
     if (autoValuesAll[sid] !== undefined) autoValues[sid] = autoValuesAll[sid];
   }
 
+  // 区分は「当時どの生徒がどの期間で数えられていたか」の説明になるので一緒に凍結する。
+  // 当てはめも進捗セルと同じく対象生徒の分だけに絞る。
+  const trackData = (batch.tracks as
+    | { tracks: CoursePrepTrack[]; assignments: CoursePrepStudentTrack[] }
+    | undefined) ?? { tracks: [], assignments: [] };
+  const scopedStudentTracks = trackData.assignments.filter((a) => studentIds.has(a.student_id));
+
   return {
     payload: {
       version: SNAPSHOT_PAYLOAD_VERSION,
@@ -696,6 +843,8 @@ export async function buildSnapshotPayload(
       progress: scopedProgress,
       autoValues,
       period: (batch.period as Record<string, unknown> | null) ?? null,
+      tracks: trackData.tracks,
+      studentTracks: scopedStudentTracks,
     },
     studentCount: students.length,
   };

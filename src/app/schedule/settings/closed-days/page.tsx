@@ -17,10 +17,9 @@ import { ToastContainer } from '@/components/ui';
 import { ClosedDayForm } from '@/components/schedule/ClosedDayForm';
 import { ClosedDayList } from '@/components/schedule/ClosedDayList';
 import { useToast } from '@/hooks/useToast';
-import { useMasterData } from '@/contexts/MasterDataContext';
+import { useLocalSchoolId } from '@/hooks/useLocalSchoolId';
 import { getClosedDays, createClosedDay, deleteClosedDay } from '@/lib/api/schedule';
 import type { ScheduleClosedDay, ScheduleClosedDayFormData } from '@/types/schedule';
-import type { School } from '@/types/database';
 import AccessDenied from '@/components/AccessDenied';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -35,8 +34,14 @@ function getMonthRange(yearMonth: string): { from: string; to: string } {
 export default function ClosedDaysPage() {
   const { profile } = useAuth();
   const { toasts, removeToast, success, error: toastError } = useToast();
-  const [schools, setSchools] = useState<School[]>([]);
-  const [selectedSchoolId, setSelectedSchoolId] = useState<string>('');
+  // ★教室はヘッダーの教室切替に従う。以前は MasterDataContext の全教室を候補にし
+  //   先頭教室を既定にしていたため、教室長が担当外教室の休講日を登録・削除できた。
+  //   schools テーブルの RLS は manager 以上に無条件で通るので、DB側は止めてくれない。
+  const {
+    localSchoolId: selectedSchoolId,
+    setLocalSchoolId: setSelectedSchoolId,
+    availableSchools: schools,
+  } = useLocalSchoolId();
   const [yearMonth, setYearMonth] = useState(() => {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
@@ -44,15 +49,6 @@ export default function ClosedDaysPage() {
   const [closedDays, setClosedDays] = useState<ScheduleClosedDay[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [formOpen, setFormOpen] = useState(false);
-
-  const { schools: masterSchools } = useMasterData();
-
-  useEffect(() => {
-    if (masterSchools.length > 0) {
-      setSchools(masterSchools);
-      if (!selectedSchoolId) setSelectedSchoolId(masterSchools[0].id);
-    }
-  }, [masterSchools, selectedSchoolId]);
 
   useEffect(() => {
     if (!selectedSchoolId) return;

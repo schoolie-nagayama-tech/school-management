@@ -28,8 +28,8 @@ describe('タスクのカタログ', () => {
     }
   });
 
-  it('対象は5種で、すべてに日本語ラベルがある', () => {
-    expect(TASK_SCOPES).toHaveLength(5);
+  it('対象は6種で、すべてに日本語ラベルがある', () => {
+    expect(TASK_SCOPES).toHaveLength(6);
     for (const scope of TASK_SCOPES) {
       expect(TASK_SCOPE_LABELS[scope]).toBeTruthy();
     }

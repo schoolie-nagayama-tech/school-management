@@ -4,6 +4,7 @@ import { fetchAllInChunks } from '@/lib/utils/supabasePaging';
 import {
   sanitizePriceTable,
   sanitizeEndByGrade,
+  sanitizeTrackInput,
   validatePublishWindow,
 } from '@/lib/utils/koushuApplySettings';
 import { apiErrorResponse } from '@/lib/api-error';
@@ -504,6 +505,9 @@ export async function GET(request: NextRequest) {
  *   - "delete_schedule_marker" : 工程表マーカーを削除
  *   - "upsert_period"          : 講習期間メタを更新
  *   - "save_snapshot"         : 期の進捗管理表を確定保存（教室長以上。取り直しは上書き）
+ *   - "upsert_track"          : 講習期間の区分を作成／更新（教室長以上）
+ *   - "delete_track"          : 講習期間の区分を削除（教室長以上）
+ *   - "set_student_track"     : 生徒の区分の当てはめを保存（教室長以上）
  */
 export async function POST(request: NextRequest) {
   // catch 側でも「どの操作・どの教室で落ちたか」を Sentry に残せるよう try の外に保持する
@@ -527,9 +531,20 @@ export async function POST(request: NextRequest) {
 
     switch (action) {
       case 'init_progress_template':
-        return await handleInitProgressTemplate(supabaseAdmin, schoolId, params);
-      case 'init_schedule_template':
-        return await handleInitScheduleTemplate(supabaseAdmin, schoolId, params);
+      case 'init_schedule_template': {
+        // テンプレートの適用は進捗表の列や工程表のタスクをまとめて作る操作なので、
+        // 教室長以上に限る（画面のボタンと同じ境界。API だけ素通りする状態を作らない）。
+        const role = (authResult.user.role || '').toLowerCase();
+        if (role !== 'admin' && role !== 'owner' && role !== 'manager') {
+          return NextResponse.json(
+            { error: 'テンプレートの適用には教室長以上の権限が必要です' },
+            { status: 403 }
+          );
+        }
+        return action === 'init_progress_template'
+          ? await handleInitProgressTemplate(supabaseAdmin, schoolId, params)
+          : await handleInitScheduleTemplate(supabaseAdmin, schoolId, params);
+      }
       case 'create_progress_item':
         return await handleCreateProgressItem(supabaseAdmin, schoolId, params);
       case 'update_student_progress':
@@ -617,9 +632,20 @@ export async function POST(request: NextRequest) {
       case 'delete_schedule_task':
         return await handleDeleteScheduleTask(supabaseAdmin, schoolId, params);
       case 'save_template':
-        return await handleSaveTemplate(supabaseAdmin, schoolId, params);
-      case 'delete_template':
-        return await handleDeleteTemplate(supabaseAdmin, params);
+      case 'delete_template': {
+        // テンプレートの作成・削除も教室長以上。削除の範囲（自教室か全体共通か）は
+        // handleDeleteTemplate 側でさらに絞る。
+        const role = (authResult.user.role || '').toLowerCase();
+        if (role !== 'admin' && role !== 'owner' && role !== 'manager') {
+          return NextResponse.json(
+            { error: 'テンプレートの編集には教室長以上の権限が必要です' },
+            { status: 403 }
+          );
+        }
+        return action === 'save_template'
+          ? await handleSaveTemplate(supabaseAdmin, schoolId, params)
+          : await handleDeleteTemplate(supabaseAdmin, params, schoolId, role);
+      }
       case 'delete_progress_table': {
         // 進捗表まるごとの削除は取り消せないので admin/owner に限定する
         // （UI の isOwnerOrAbove と同じ境界。「ボタンは出ないのに API は叩ける」を作らない）
@@ -657,6 +683,26 @@ export async function POST(request: NextRequest) {
           'manual',
           params.summary ?? null
         );
+      }
+      case 'upsert_track':
+      case 'delete_track':
+      case 'set_student_track': {
+        // 区分は「その生徒を、いつからいつまでの期間で数えるか」を決めるもので、
+        // 進捗表のセル入力と違って通常回数・増コマ・自動確定のタイミングまで動く。
+        // 定義（upsert/delete）も生徒個別の当てはめ（set_student_track）も影響は同じなので、
+        // 期間日付と同じ境界（教室長以上）に揃える。
+        const role = (authResult.user.role || '').toLowerCase();
+        if (role !== 'admin' && role !== 'owner' && role !== 'manager') {
+          return NextResponse.json(
+            { error: '講習期間の区分の編集には教室長以上の権限が必要です' },
+            { status: 403 }
+          );
+        }
+        if (action === 'upsert_track')
+          return await handleUpsertTrack(supabaseAdmin, schoolId, params);
+        if (action === 'delete_track')
+          return await handleDeleteTrack(supabaseAdmin, schoolId, params);
+        return await handleSetStudentTrack(supabaseAdmin, schoolId, params);
       }
       default:
         return NextResponse.json({ error: `不明なアクション: ${action}` }, { status: 400 });
@@ -1684,10 +1730,51 @@ async function handleSaveTemplate(
   return NextResponse.json({ data });
 }
 
+/**
+ * テンプレートの削除。
+ *
+ * ★ service role で RLS を通らないので、消せる範囲をここで自前で確かめる。
+ *   id だけで消していたため、他教室のテンプレートや school_id が NULL の全体共通の
+ *   テンプレートまで消せる状態だった。テンプレート適用を教室長以上に広げたことで
+ *   この経路（適用ダイアログの削除）に教室長が届くようになるため、範囲を絞る。
+ *   - 自教室のテンプレート: 教室長以上で消せる
+ *   - 全体共通（school_id が NULL）: admin/owner だけが消せる
+ */
 async function handleDeleteTemplate(
   supabaseAdmin: ReturnType<typeof getSupabaseAdmin>,
-  params: { templateId: string }
+  params: { templateId: string },
+  schoolId: string,
+  role: string
 ) {
+  const { data: target, error: readError } = await supabaseAdmin
+    .from('course_prep_templates')
+    .select('id, school_id, is_default')
+    .eq('id', params.templateId)
+    .maybeSingle();
+
+  if (readError)
+    return apiErrorResponse(
+      readError,
+      { route: 'POST /api/courses/prep', action: 'delete_template:read', schoolId },
+      'テンプレートの削除に失敗しました。時間をおいて再度お試しください。'
+    );
+  if (!target) return validationError('テンプレートが見つかりません');
+
+  const isAdmin = role === 'admin' || role === 'owner';
+  const templateSchoolId = target.school_id as string | null;
+  const allowed = templateSchoolId === null ? isAdmin : templateSchoolId === schoolId;
+  if (!allowed) {
+    return NextResponse.json(
+      {
+        error:
+          templateSchoolId === null
+            ? '全体共通のテンプレートの削除には管理者権限が必要です'
+            : '他の教室のテンプレートは削除できません',
+      },
+      { status: 403 }
+    );
+  }
+
   const { error } = await supabaseAdmin
     .from('course_prep_templates')
     .delete()
@@ -1935,5 +2022,164 @@ async function handleUpsertPeriod(
       );
   }
 
+  return NextResponse.json({ success: true });
+}
+
+// ===== 講習期間の区分（Phase 8） =====
+// 冬期は生徒によって講習期間が違うが、同じ小6でも受験する子としない子がいて学年では割れない。
+// 期ごとに「区分」を作り、生徒を当てはめる。設計は docs/koushu-progress-snapshot-plan.md Phase 8。
+
+/**
+ * upsert_track: 区分の作成・更新。
+ * 検証は純関数 sanitizeTrackInput に寄せて、画面で通ったものはサーバーでも通るようにする。
+ */
+async function handleUpsertTrack(
+  supabaseAdmin: ReturnType<typeof getSupabaseAdmin>,
+  schoolId: string,
+  params: { season?: string; year?: number; track?: unknown }
+) {
+  const { season, year } = params;
+  if (!season || !year) {
+    return NextResponse.json({ error: 'season と year が必要です' }, { status: 400 });
+  }
+
+  const sanitized = sanitizeTrackInput(params.track);
+  if (!sanitized.ok) return validationError(sanitized.message);
+
+  const trackId = (params.track as { id?: unknown } | null)?.id;
+  const row = {
+    school_id: schoolId,
+    season,
+    year,
+    ...sanitized.value,
+    updated_at: new Date().toISOString(),
+  };
+
+  // 更新は school_id も条件に入れる（他教室の区分を id 指定で書き換えられないように）
+  const table = supabaseAdmin.from('course_prep_tracks');
+  const { data, error } =
+    typeof trackId === 'string' && trackId
+      ? await table
+          .update(row)
+          .eq('id', trackId)
+          .eq('school_id', schoolId)
+          .select('*')
+          .maybeSingle()
+      : await table.insert(row).select('*').maybeSingle();
+
+  if (error) {
+    // 同名の区分は unique 制約で弾かれる。利用者が自分で直せるので日本語で返す。
+    if (error.code === '23505') {
+      return validationError('同じ名前の区分がすでにあります');
+    }
+    return apiErrorResponse(
+      error,
+      { route: 'POST /api/courses/prep', action: 'upsert_track', schoolId },
+      '区分の保存に失敗しました。時間をおいて再度お試しください。'
+    );
+  }
+  return NextResponse.json({ data });
+}
+
+/**
+ * delete_track: 区分の削除。
+ * 紐づく course_prep_student_tracks は FK の ON DELETE CASCADE で一緒に消えるので、
+ * ここで当てはめを消す必要はない（消し忘れて幽霊行が残る事故を作らない）。
+ */
+async function handleDeleteTrack(
+  supabaseAdmin: ReturnType<typeof getSupabaseAdmin>,
+  schoolId: string,
+  params: { trackId?: string }
+) {
+  const { trackId } = params;
+  if (!trackId) {
+    return NextResponse.json({ error: 'trackId が必要です' }, { status: 400 });
+  }
+  const { error } = await supabaseAdmin
+    .from('course_prep_tracks')
+    .delete()
+    .eq('id', trackId)
+    .eq('school_id', schoolId);
+  if (error) {
+    return apiErrorResponse(
+      error,
+      { route: 'POST /api/courses/prep', action: 'delete_track', schoolId },
+      '区分の削除に失敗しました。時間をおいて再度お試しください。'
+    );
+  }
+  return NextResponse.json({ success: true });
+}
+
+/**
+ * set_student_track: 生徒の当てはめを保存する。
+ *
+ * trackId の3値がそれぞれ別の意味を持つ:
+ *   - 区分ID : その区分に当てはめる
+ *   - null   : 既定の学年による当てはめを打ち消して共通に戻す（行を作る）
+ *   - 'default' : 当てはめ自体をやめて既定に戻す（行を消す）
+ */
+async function handleSetStudentTrack(
+  supabaseAdmin: ReturnType<typeof getSupabaseAdmin>,
+  schoolId: string,
+  params: { season?: string; year?: number; studentId?: string; trackId?: string | null }
+) {
+  const { season, year, studentId } = params;
+  if (!season || !year || !studentId) {
+    return NextResponse.json({ error: 'season・year・studentId が必要です' }, { status: 400 });
+  }
+
+  // 'default' は当てはめ行そのものを消して既定（学年）に戻す
+  if (params.trackId === 'default') {
+    const { error } = await supabaseAdmin
+      .from('course_prep_student_tracks')
+      .delete()
+      .eq('school_id', schoolId)
+      .eq('season', season)
+      .eq('year', year)
+      .eq('student_id', studentId);
+    if (error) {
+      return apiErrorResponse(
+        error,
+        { route: 'POST /api/courses/prep', action: 'set_student_track:clear', schoolId },
+        '区分の当てはめの解除に失敗しました。時間をおいて再度お試しください。'
+      );
+    }
+    return NextResponse.json({ success: true });
+  }
+
+  const trackId = params.trackId ?? null;
+  // service role で RLS を通らないので、他教室・他期の区分を当てはめられないことを自前で確かめる。
+  if (trackId) {
+    const { data: track } = await supabaseAdmin
+      .from('course_prep_tracks')
+      .select('id')
+      .eq('id', trackId)
+      .eq('school_id', schoolId)
+      .eq('season', season)
+      .eq('year', year)
+      .maybeSingle();
+    if (!track) {
+      return validationError('指定された区分が見つかりません');
+    }
+  }
+
+  const { error } = await supabaseAdmin.from('course_prep_student_tracks').upsert(
+    {
+      school_id: schoolId,
+      season,
+      year,
+      student_id: studentId,
+      track_id: trackId,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: 'school_id,season,year,student_id' }
+  );
+  if (error) {
+    return apiErrorResponse(
+      error,
+      { route: 'POST /api/courses/prep', action: 'set_student_track', schoolId },
+      '区分の当てはめの保存に失敗しました。時間をおいて再度お試しください。'
+    );
+  }
   return NextResponse.json({ success: true });
 }

@@ -64,12 +64,22 @@ const KIND_LABELS: Record<MetricKind, string> = {
 };
 
 export default function SchoolMetricsSettingsPage() {
-  const { profile, selectedSchoolId: headerSelectedSchoolId } = useAuth();
+  const { profile, selectedSchoolId: headerSelectedSchoolId, getSelectedSchoolIds } = useAuth();
   const { schools: masterSchools, schoolsLoading } = useMasterData();
   const { toasts, removeToast, success, error: toastError } = useToast();
 
-  // デモ教室は経営指標の入力対象外（ヘッダーのドロップダウンと同じ扱い）
-  const schools = useMemo(() => masterSchools.filter((s) => !s.is_demo), [masterSchools]);
+  // 候補はヘッダーの教室切替の範囲に閉じる。
+  // ★MasterDataContext の schools は「アクセスできる教室」ではない: schools テーブルの RLS は
+  //   manager 以上に無条件で通るため全教室が入る。ここで絞らないと教室長が担当外教室の
+  //   経営指標を読み書きできてしまう。デモ教室は指標の入力対象外なので併せて外す。
+  const selectedSchoolIds = getSelectedSchoolIds();
+  const selectedSchoolIdsKey = selectedSchoolIds.join(',');
+  const schools = useMemo(
+    () => masterSchools.filter((s) => !s.is_demo && selectedSchoolIds.includes(s.id)),
+    // selectedSchoolIds は毎回新しい配列になるので、内容を表す key を依存に使う
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [masterSchools, selectedSchoolIdsKey]
+  );
 
   const currentYear = new Date().getFullYear();
   // 過去実績の遡り入力（2022〜）と来年度予算の先行入力（今年+1）を許容する
@@ -86,9 +96,12 @@ export default function SchoolMetricsSettingsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
-  // 教室選択の初期化: ヘッダーで個別教室を選んでいればそれを優先、'all' なら先頭の教室
+  // 教室選択の初期化: ヘッダーで個別教室を選んでいればそれを優先、'all' なら先頭の教室。
+  // ★選択済みでも候補から外れたら選び直す（ヘッダーの教室を切り替えたのに前の教室の
+  //   指標を読み書きし続けるのを防ぐ）。
   useEffect(() => {
-    if (selectedSchoolId || schools.length === 0) return;
+    if (schools.length === 0) return;
+    if (selectedSchoolId && schools.some((s) => s.id === selectedSchoolId)) return;
     const preferred =
       headerSelectedSchoolId &&
       headerSelectedSchoolId !== 'all' &&
@@ -204,6 +217,13 @@ export default function SchoolMetricsSettingsPage() {
             教室長ダッシュボードの在籍トレンド・予実・増減に使う月次データを入力します。
           </p>
         </div>
+
+        {/* 選択中の教室がデモ教室だけのときは入力対象が無い（指標はデモ教室を扱わない） */}
+        {!schoolsLoading && schools.length === 0 && (
+          <div className="mb-4 rounded-lg border border-border bg-surface p-4 text-sm text-text-muted">
+            入力できる教室がありません。ヘッダーで教室を切り替えてください。
+          </div>
+        )}
 
         {/* セレクタ行: 教室 / 年 / 種別 */}
         <div className="flex flex-wrap items-end gap-3 mb-4">

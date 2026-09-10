@@ -782,6 +782,8 @@ export default function MoshiResponsePage() {
               response_data: linkingResponse.response_data as unknown as Record<string, unknown>,
               linked_student_id: linkingResponse.linked_student_id,
               linked_at: linkingResponse.linked_at,
+              // 代理申込の入口があるのは曜日変更だけ。ここは紐付けモーダルに渡すだけで使わない。
+              submitted_by_user_id: null,
               status_checks: (linkingResponse.status_checks ?? {}) as Record<string, boolean>,
               is_archived: linkingResponse.is_archived,
               archived_at: linkingResponse.archived_at,

@@ -129,7 +129,7 @@ export default function ScheduleChangeLogsPage() {
                   className={`px-2 py-1 text-xs rounded border transition-[background-color,color,border-color,transform] duration-150 active:scale-[0.97] ${
                     filterAction === opt.key
                       ? 'bg-info text-white border-info'
-                      : 'bg-white text-text-muted border-border-default hover:bg-surface'
+                      : 'bg-white text-text-muted border-border hover:bg-surface'
                   }`}
                 >
                   {opt.label}

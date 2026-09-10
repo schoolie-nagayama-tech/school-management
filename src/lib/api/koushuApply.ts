@@ -13,7 +13,8 @@
  */
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { fetchAllPaged } from '@/lib/utils/supabasePaging';
-import { GRADE_LABELS } from '@/types/database';
+import { GRADE_LABELS, type CoursePrepTrack } from '@/types/database';
+import { resolveStudentTrack, resolveTrackWindow } from '@/lib/coursePrepKpis';
 import { INDIVIDUAL_FORMATION } from '@/types/schedule';
 import {
   lookupUnitPrice,
@@ -36,7 +37,6 @@ import {
   markHeldSessions,
   regularKomaInPeriod,
   remainingSessionCount,
-  resolveGradeEndDate,
   sumProposalUnitsKoma,
   type ProposalSubjectInput,
 } from '@/lib/utils/koushuApplyPure';
@@ -81,7 +81,6 @@ interface PeriodRow {
   apply_publish_start: string | null;
   apply_publish_end: string | null;
   apply_price_table: PriceTable | null;
-  schedule_end_by_grade: Record<string, string> | null;
 }
 
 interface StudentRow {
@@ -101,6 +100,13 @@ export interface ApplyContext {
   year: number;
   period: PeriodRow;
   student: StudentRow;
+  /**
+   * この期の講習期間の区分と、この生徒の当てはめ（Phase 8）。
+   * 期間（開始日・終了日）は区分で変わるので、derivePeriodInfo がこれを見て解決する。
+   * 区分が無い期では空配列・空マップになり、共通の期間がそのまま使われる。
+   */
+  tracks: CoursePrepTrack[];
+  trackAssignments: Map<string, string | null>;
   /** 由来の可読な区別（ログ・監査用途）。書き込み側では使わない */
   via: ResolveParams['kind'];
 }
@@ -174,7 +180,7 @@ export async function resolveApplyContext(params: ResolveParams): Promise<ApplyC
   const { data: period } = await db
     .from('course_prep_periods')
     .select(
-      'id, school_id, season, year, schedule_start_date, schedule_end_date, apply_publish_start, apply_publish_end, apply_price_table, schedule_end_by_grade'
+      'id, school_id, season, year, schedule_start_date, schedule_end_date, apply_publish_start, apply_publish_end, apply_price_table'
     )
     .eq('school_id', schoolId)
     .eq('season', season)
@@ -197,6 +203,29 @@ export async function resolveApplyContext(params: ResolveParams): Promise<ApplyC
     return { ok: false, reason: 'not_found' };
   }
 
+  // 講習期間の区分（Phase 8）。当てはめはこの生徒の行だけあればよい。
+  // 取れなくても共通の期間で動くので、失敗しても申込フォーム自体は開けるようにする。
+  const [{ data: trackRows }, { data: assignmentRows }] = await Promise.all([
+    db
+      .from('course_prep_tracks')
+      .select('*')
+      .eq('school_id', schoolId)
+      .eq('season', season)
+      .eq('year', year)
+      .order('sort_order', { ascending: true }),
+    db
+      .from('course_prep_student_tracks')
+      .select('student_id, track_id')
+      .eq('school_id', schoolId)
+      .eq('season', season)
+      .eq('year', year)
+      .eq('student_id', studentId),
+  ]);
+  const trackAssignments = new Map<string, string | null>();
+  for (const row of (assignmentRows ?? []) as { student_id: string; track_id: string | null }[]) {
+    trackAssignments.set(row.student_id, row.track_id);
+  }
+
   return {
     ok: true,
     ctx: {
@@ -207,6 +236,8 @@ export async function resolveApplyContext(params: ResolveParams): Promise<ApplyC
       year,
       period: period as PeriodRow,
       student,
+      tracks: (trackRows ?? []) as CoursePrepTrack[],
+      trackAssignments,
       via: params.kind,
     },
   };
@@ -217,13 +248,17 @@ export function derivePeriodInfo(ctx: ApplyContext) {
   const grade = ctx.student.grade;
   const gradeLabel = GRADE_LABELS[grade] ?? String(grade);
   const gradeCategory = gradeCategoryOf(grade);
-  // resolveApplyContext で schedule_start_date/schedule_end_date の非NULLは確認済み
-  const startDate = ctx.period.schedule_start_date as string;
-  const endDate = resolveGradeEndDate(
-    ctx.period.schedule_end_date as string,
-    ctx.period.schedule_end_by_grade,
-    grade
+  // 期間はその生徒に効く区分で決まる（区分に入っていなければ共通の期間）。
+  // resolveApplyContext で schedule_start_date/schedule_end_date の非NULLは確認済みなので、
+  // 区分が無い／区分に日付が無い場合も必ず共通の値に落ちる。
+  const track = resolveStudentTrack(ctx.tracks, ctx.trackAssignments, ctx.studentId, grade);
+  const window = resolveTrackWindow(
+    track,
+    ctx.period.schedule_start_date,
+    ctx.period.schedule_end_date
   );
+  const startDate = window.start as string;
+  const endDate = window.end as string;
   const weeks = calendarWeeks(startDate, endDate);
   const priceTable = ctx.period.apply_price_table ?? null;
   const allow45 = grade <= MAX_GRADE_FOR_45MIN;

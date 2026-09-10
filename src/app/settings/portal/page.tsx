@@ -63,7 +63,7 @@ export default function PortalSettingsPage() {
   const { hasPermission, isLoading: permissionLoading } = useRequirePermission(
     (p) => p.canAccessSettings
   );
-  const { getSelectedSchoolIds, selectedSchoolId, schoolIds } = useAuth();
+  const { getSelectedSchoolIds, selectedSchoolId } = useAuth();
   const { schools: masterSchools } = useMasterData();
 
   const [menus, setMenus] = useState<PortalMenu[]>([]);
@@ -186,29 +186,18 @@ export default function PortalSettingsPage() {
     }
   };
 
-  // ポータルURLを取得
+  // ポータルURLを取得。
+  // 教室スコープはヘッダーの教室切替に従う（'all' のときのデモ教室除外も
+  // getSelectedSchoolIds が担う）。以前は 'all' の分岐で schoolIds を直接舐めていたため、
+  // デモ教室のポータルURLまで並んでいた。
   const getPortalUrls = (): Array<{ school: School; url: string }> => {
+    const origin = typeof window !== 'undefined' ? window.location.origin : '';
     const urls: Array<{ school: School; url: string }> = [];
 
-    if (selectedSchoolId === 'all') {
-      // すべての教室を選択している場合
-      for (const schoolId of schoolIds) {
-        const school = allSchools.find((s) => s.id === schoolId);
-        if (school?.code) {
-          urls.push({
-            school,
-            url: `${typeof window !== 'undefined' ? window.location.origin : ''}/portal/${school.code}`,
-          });
-        }
-      }
-    } else if (selectedSchoolId) {
-      // 特定の教室を選択している場合
-      const school = allSchools.find((s) => s.id === selectedSchoolId);
+    for (const schoolId of getSelectedSchoolIds()) {
+      const school = allSchools.find((s) => s.id === schoolId);
       if (school?.code) {
-        urls.push({
-          school,
-          url: `${typeof window !== 'undefined' ? window.location.origin : ''}/portal/${school.code}`,
-        });
+        urls.push({ school, url: `${origin}/portal/${school.code}` });
       }
     }
 

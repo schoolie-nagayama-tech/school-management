@@ -1016,6 +1016,10 @@ export type Database = {
           target_score: number | null;
           result_score: number | null;
           exam_range: string | null;
+          // 目標を終えた日時。NULL=進行中。docs/progress-goal-close-plan.md 参照
+          closed_at: string | null;
+          // 終えた操作者(user_profiles.id)。監査目的のみ。FKはON DELETE SET NULL
+          closed_by: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -1031,6 +1035,8 @@ export type Database = {
           target_score?: number | null;
           result_score?: number | null;
           exam_range?: string | null;
+          closed_at?: string | null;
+          closed_by?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -1045,6 +1051,8 @@ export type Database = {
           target_score?: number | null;
           result_score?: number | null;
           exam_range?: string | null;
+          closed_at?: string | null;
+          closed_by?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -1273,6 +1281,10 @@ export type Database = {
           id: string;
           email: string;
           display_name: string | null;
+          /** 姓。display_name はここから自動生成される（本番DBに存在する列） */
+          last_name?: string | null;
+          /** 名 */
+          first_name?: string | null;
           role: string;
           is_active: boolean;
           invited_by: string | null;
@@ -1300,6 +1312,10 @@ export type Database = {
           id?: string;
           email: string;
           display_name?: string | null;
+          /** 姓。display_name はここから自動生成される（本番DBに存在する列） */
+          last_name?: string | null;
+          /** 名 */
+          first_name?: string | null;
           role?: string;
           is_active?: boolean;
           invited_by?: string | null;
@@ -1326,6 +1342,10 @@ export type Database = {
           id?: string;
           email?: string;
           display_name?: string | null;
+          /** 姓。display_name はここから自動生成される（本番DBに存在する列） */
+          last_name?: string | null;
+          /** 名 */
+          first_name?: string | null;
           role?: string;
           is_active?: boolean;
           invited_by?: string | null;
@@ -1532,6 +1552,7 @@ export type Database = {
           response_data: Record<string, unknown>;
           linked_student_id: string | null;
           linked_at: string | null;
+          submitted_by_user_id: string | null;
           status_checks: Record<string, unknown>;
           is_archived: boolean;
           archived_at: string | null;
@@ -1550,6 +1571,7 @@ export type Database = {
           response_data?: Record<string, unknown>;
           linked_student_id?: string | null;
           linked_at?: string | null;
+          submitted_by_user_id?: string | null;
           status_checks?: Record<string, unknown>;
           is_archived?: boolean;
           archived_at?: string | null;
@@ -1568,6 +1590,7 @@ export type Database = {
           response_data?: Record<string, unknown>;
           linked_student_id?: string | null;
           linked_at?: string | null;
+          submitted_by_user_id?: string | null;
           status_checks?: Record<string, unknown>;
           is_archived?: boolean;
           archived_at?: string | null;
@@ -2928,6 +2951,7 @@ export type Database = {
           material_id: string;
           student_id: string | null;
           is_sample: boolean;
+          exclude_from_billing: boolean;
           quantity: number;
           status: 'unconfirmed' | 'ordered' | 'delivered' | 'distributed' | 'cancelled';
           ordered_at: string | null;
@@ -2944,6 +2968,7 @@ export type Database = {
           material_id: string;
           student_id?: string | null;
           is_sample?: boolean;
+          exclude_from_billing?: boolean;
           quantity?: number;
           status?: 'unconfirmed' | 'ordered' | 'delivered' | 'distributed' | 'cancelled';
           ordered_at?: string | null;
@@ -2960,6 +2985,7 @@ export type Database = {
           material_id?: string;
           student_id?: string | null;
           is_sample?: boolean;
+          exclude_from_billing?: boolean;
           quantity?: number;
           status?: 'unconfirmed' | 'ordered' | 'delivered' | 'distributed' | 'cancelled';
           ordered_at?: string | null;
@@ -3519,6 +3545,8 @@ export type FormResponse = {
   response_data: Record<string, unknown>;
   linked_student_id: string | null;
   linked_at: string | null;
+  /** 代理申込を出した職員。保護者本人の申込は null（＝ null かどうかが代理の判定）。 */
+  submitted_by_user_id: string | null;
   status_checks: Record<string, boolean>;
   is_archived: boolean;
   archived_at: string | null;
@@ -3526,7 +3554,8 @@ export type FormResponse = {
   updated_at: string;
 };
 
-export type FormResponseInsert = Omit<FormResponse, 'id' | 'created_at' | 'updated_at' | 'linked_student_id' | 'linked_at' | 'is_archived' | 'archived_at'>;
+// submitted_by_user_id はサーバー側がセッションから詰めるので、クライアントの Insert からは外す。
+export type FormResponseInsert = Omit<FormResponse, 'id' | 'created_at' | 'updated_at' | 'linked_student_id' | 'linked_at' | 'is_archived' | 'archived_at' | 'submitted_by_user_id'>;
 
 export type FormResponseUpdate = Partial<Omit<FormResponse, 'id' | 'school_id' | 'form_type' | 'form_period' | 'created_at' | 'updated_at'>>;
 
@@ -4529,10 +4558,55 @@ export interface CoursePrepPeriod {
   schedule_end_date: string | null;
   /**
    * 学年別の講習終了日（決定44）。'1'〜'13' の学年番号文字列 → 'YYYY-MM-DD'。
-   * 未記載の学年は schedule_end_date にフォールバックする（開始日は全学年共通）。
-   * 冬期は中3だけ入試直前まで続くなど、学年で期間が違うために持っている。
+   *
+   * ★ Phase 8 で「区分」（CoursePrepTrack）に置き換えた。新規参照禁止。
+   *   同じ小6でも受験する子としない子がいて学年では割れなかったのが理由。
+   *   DB 列は既存データを消さないために残してあるだけで、期間の解決には使わない。
    */
   schedule_end_by_grade: Record<string, string> | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/**
+ * 講習期間の「区分」（中学受験・高校受験・大学受験など）。期ごとに作る。
+ *
+ * 冬期は生徒によって講習期間が違う。当初は学年別終了日で表そうとしたが、
+ * 同じ小6でも受験する子としない子がいて学年では割れないため、期ごとに区分を作って
+ * そこに生徒を当てはめる形にした（Phase 8）。
+ * 正典: docs/koushu-progress-snapshot-plan.md Phase 8
+ */
+export interface CoursePrepTrack {
+  id: string;
+  school_id: string;
+  season: SeasonType;
+  year: number;
+  name: string;
+  /** 進捗表の行に出す短い名前。空なら name の先頭2文字を使う（trackShortLabel） */
+  short_name: string | null;
+  /** null なら共通の開始日（course_prep_periods.schedule_start_date）を使う */
+  schedule_start_date: string | null;
+  /** 区分を作る目的そのものなので必須 */
+  schedule_end_date: string;
+  /** 既定で当てはめる学年（1〜13）。空配列なら個別の当てはめだけが効く */
+  default_grades: number[];
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+/**
+ * 生徒を区分に当てはめた行。行があればそれが正典。
+ * track_id が null は「既定の学年による当てはめを打ち消して共通に戻す」明示指定で、
+ * 行が無い（未指定）状態とは意味が違う。
+ */
+export interface CoursePrepStudentTrack {
+  id: string;
+  school_id: string;
+  season: SeasonType;
+  year: number;
+  student_id: string;
+  track_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -4603,6 +4677,12 @@ export interface CoursePrepSnapshotPayload {
     }
   >;
   period: CoursePrepPeriod | null;
+  /**
+   * 講習期間の区分と生徒の当てはめ（version 2 以降）。
+   * version 1 の payload には無いので、読む側は必ず空配列にフォールバックすること。
+   */
+  tracks?: CoursePrepTrack[];
+  studentTracks?: CoursePrepStudentTrack[];
 }
 
 /** 一覧・バッジ表示に使うスナップショットのメタ情報（payload を含まない） */

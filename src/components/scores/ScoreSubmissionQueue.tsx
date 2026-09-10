@@ -49,11 +49,13 @@ export function ScoreSubmissionQueue({
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetchWithAuth('/api/admin/score-submissions?status=submitted');
+      // ★ student_id はサーバ側で絞らせる。以前はここでクライアント絞り込みをしていたが、
+      //   それだと他教室の生徒名・点数までレスポンスに乗って（画面に出ないだけで）ブラウザに届く。
+      const res = await fetchWithAuth(
+        `/api/admin/score-submissions?status=submitted&student_id=${encodeURIComponent(studentId)}`
+      );
       const json = await res.json();
-      const all: AdminScoreSubmissionQueueItem[] = res.ok ? (json.submissions ?? []) : [];
-      // ★ APIはstudent_idで絞らない契約なので、このページの対象生徒だけをここで絞る。
-      setItems(all.filter((s) => s.studentId === studentId));
+      setItems(res.ok ? (json.submissions ?? []) : []);
     } catch {
       setItems([]);
     } finally {

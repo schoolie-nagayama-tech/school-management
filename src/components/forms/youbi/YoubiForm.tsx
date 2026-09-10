@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useMemo } from 'react';
+import { AlertTriangle } from 'lucide-react';
 import { Input, Select } from '@/components/ui';
 import { fetchClassPeriodsLive, type ClassPeriodItem } from '@/lib/api/class-periods';
 import { ToastContainer } from '@/components/ui/Toast';
@@ -18,13 +19,38 @@ import { validateStudentName } from '@/lib/utils/validation';
 import type { YoubiPeriod, YoubiResponseData, YoubiSlot } from '@/types/forms/youbi';
 import { submitYoubiResponse } from '@/lib/api/youbi';
 import { getSubjects } from '@/lib/api/subjects';
-import { YOUBI_GRADE_NAME_TO_NUMBER } from '@/types/forms/youbi';
+import { YOUBI_GRADE_NAME_TO_NUMBER, YOUBI_GRADE_NUMBER_TO_NAME } from '@/types/forms/youbi';
 import { useToast } from '@/hooks/useToast';
+
+/** 代理申込で選ばせる在籍生徒。講師UIのタイピングを増やさないため一覧から選ぶ。 */
+export interface YoubiProxyStudent {
+  id: string;
+  last_name: string;
+  first_name: string;
+  grade: number | null;
+}
+
+/**
+ * 代理申込モード。保護者用フォームと同じ中身をそのまま使い、
+ * 入口と記録だけを変える（別フォームを作ると設定変更のたびに片方が古くなる）。
+ */
+export interface YoubiProxyMode {
+  /** 選べる在籍生徒（選択中の教室のもの） */
+  students: YoubiProxyStudent[];
+  /** バナーに出す申込者の表示名（ログイン中の教室長） */
+  submitterLabel: string;
+  /** 送信できたときに呼ばれる（完了画面ではなくモーダルを閉じて一覧を更新する） */
+  onSubmitted: () => void;
+  /** キャンセル */
+  onCancel: () => void;
+}
 
 interface YoubiFormProps {
   school: School;
   period: YoubiPeriod;
   isPreview?: boolean;
+  /** 渡すと代理申込になる（保護者からの申込では渡さない） */
+  proxy?: YoubiProxyMode;
 }
 
 const GRADES = ['小1', '小2', '小3', '小4', '小5', '小6', '中1', '中2', '中3', '高1', '高2', '高3'];
@@ -37,7 +63,8 @@ function gradeToCategory(gradeLabel: string): 'elementary' | 'middle' | 'high' |
   return null;
 }
 
-export function YoubiForm({ school, period, isPreview }: YoubiFormProps) {
+export function YoubiForm({ school, period, isPreview, proxy }: YoubiFormProps) {
+  const isProxy = !!proxy;
   const { toasts, removeToast, success, error } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const submittingRef = useRef(false);
@@ -48,6 +75,8 @@ export function YoubiForm({ school, period, isPreview }: YoubiFormProps) {
   const [studentName, setStudentName] = useState('');
   const [selectedGrade, setSelectedGrade] = useState<string>('');
   const [email, setEmail] = useState('');
+  // 代理申込で選んだ在籍生徒。選んだ時点で紐付けまで済ませる（名前一致の推測に頼らない）。
+  const [proxyStudentId, setProxyStudentId] = useState('');
 
   // 現状
   const [current, setCurrent] = useState<YoubiSlot>({
@@ -113,7 +142,7 @@ export function YoubiForm({ school, period, isPreview }: YoubiFormProps) {
   // ドラフト自動保存
   const { clearDraft } = usePortalFormDraft({
     storageKey: `youbi:${school.id}:${period.period_key}`,
-    enabled: !isPreview,
+    enabled: !isPreview && !isProxy,
     value: { studentName, selectedGrade, email, current, request1, request2, changeFrom, note },
     onRestore: (d) => {
       if (d.studentName) setStudentName(d.studentName);
@@ -246,19 +275,27 @@ export function YoubiForm({ school, period, isPreview }: YoubiFormProps) {
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
 
-    const nameError = validateStudentName(studentName);
-    if (nameError) {
-      newErrors.studentName = nameError;
-    }
+    if (isProxy) {
+      // 代理は在籍生徒から選ぶので、名前・学年は選択結果から入る。
+      // メールは保護者へ通知しないため取らない。
+      if (!proxyStudentId) {
+        newErrors.studentName = '生徒を選択してください';
+      }
+    } else {
+      const nameError = validateStudentName(studentName);
+      if (nameError) {
+        newErrors.studentName = nameError;
+      }
 
-    if (!selectedGrade) {
-      newErrors.grade = '学年を選択してください';
-    }
+      if (!selectedGrade) {
+        newErrors.grade = '学年を選択してください';
+      }
 
-    if (!email.trim()) {
-      newErrors.email = 'メールアドレスを入力してください';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      newErrors.email = '正しいメールアドレスを入力してください';
+      if (!email.trim()) {
+        newErrors.email = 'メールアドレスを入力してください';
+      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        newErrors.email = '正しいメールアドレスを入力してください';
+      }
     }
 
     if (!validateSlot(current, '現在の通塾情報')) {
@@ -315,16 +352,25 @@ export function YoubiForm({ school, period, isPreview }: YoubiFormProps) {
         note: note.trim() || undefined,
       };
 
-      await submitYoubiResponse({
-        school_id: school.id,
-        period_key: period.period_key,
-        student_name: studentName.trim(),
-        grade: gradeToNumber(selectedGrade),
-        email: email.trim(),
-        response_data: responseData,
-      });
+      await submitYoubiResponse(
+        {
+          school_id: school.id,
+          period_key: period.period_key,
+          student_name: studentName.trim(),
+          grade: gradeToNumber(selectedGrade),
+          email: email.trim(),
+          response_data: responseData,
+        },
+        isProxy ? { linkedStudentId: proxyStudentId || null } : undefined
+      );
 
       clearDraft();
+      if (proxy) {
+        // 代理は教室長の作業なので完了画面は出さず、呼び出し元（回答一覧）に戻す。
+        success('代理で申し込みました');
+        proxy.onSubmitted();
+        return;
+      }
       setIsSubmitted(true);
       success('申請を受け付けました');
     } catch (err) {
@@ -422,65 +468,123 @@ export function YoubiForm({ school, period, isPreview }: YoubiFormProps) {
   return (
     <div className="space-y-5">
       <ToastContainer toasts={toasts} onRemove={removeToast} />
-      <PortalFormHeader
-        eyebrow="曜日変更 申込"
-        title={period.title || '曜日変更'}
-        description={settings.description}
-      />
+      {!isProxy && (
+        <PortalFormHeader
+          eyebrow="曜日変更 申込"
+          title={period.title || '曜日変更'}
+          description={settings.description}
+        />
+      )}
 
       <form onSubmit={handleSubmit} className="space-y-5">
         {isPreview && <PortalPreviewBanner />}
+        {/* 誰の操作として残るのかを、送信する前に見えるところへ出す */}
+        {proxy && (
+          <div className="flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2.5 text-[13px] leading-relaxed text-amber-800">
+            <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" aria-hidden="true" />
+            <span>
+              保護者の代わりに申し込みます。
+              <span className="font-medium">{proxy.submitterLabel}</span>
+              が出したものとして記録され、一覧に「代理」と表示されます。保護者への受付メールは送りません。
+            </span>
+          </div>
+        )}
         {errorMessage && <PortalErrorBanner message={errorMessage} />}
 
         <PortalFormSection title="基本情報">
           <div className="space-y-3">
-            <div>
-              <label className="block text-sm font-medium mb-1 text-[#1f2937]">
-                生徒名 <span className="text-[color:var(--primary)]">*</span>
-              </label>
-              <Input
-                type="text"
-                value={studentName}
-                onChange={(e) => setStudentName(e.target.value)}
-                placeholder="例：山田 太郎"
-                className={errors.studentName ? 'border-[color:var(--primary)]' : ''}
-              />
-              {errors.studentName && (
-                <p className="text-[color:var(--primary)] text-xs mt-1">{errors.studentName}</p>
-              )}
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1 text-[#1f2937]">
-                学年 <span className="text-[color:var(--primary)]">*</span>
-              </label>
-              <Select
-                value={selectedGrade}
-                onChange={(e) => setSelectedGrade(e.target.value)}
-                options={[
-                  { value: '', label: '選択してください' },
-                  ...GRADES.map((g) => ({ value: g, label: g })),
-                ]}
-                className={errors.grade ? 'border-[color:var(--primary)]' : ''}
-              />
-              {errors.grade && (
-                <p className="text-[color:var(--primary)] text-xs mt-1">{errors.grade}</p>
-              )}
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1 text-[#1f2937]">
-                メールアドレス <span className="text-[color:var(--primary)]">*</span>
-              </label>
-              <Input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="example@email.com"
-                className={errors.email ? 'border-[color:var(--primary)]' : ''}
-              />
-              {errors.email && (
-                <p className="text-[color:var(--primary)] text-xs mt-1">{errors.email}</p>
-              )}
-            </div>
+            {isProxy ? (
+              // 代理は在籍生徒から選ぶ。名前を手で打たせない（打ち間違いは紐付かない回答になる）。
+              <div>
+                <label className="block text-sm font-medium mb-1 text-[#1f2937]">
+                  生徒 <span className="text-[color:var(--primary)]">*</span>
+                </label>
+                <Select
+                  value={proxyStudentId}
+                  onChange={(e) => {
+                    const id = e.target.value;
+                    setProxyStudentId(id);
+                    const student = proxy?.students.find((s) => s.id === id);
+                    setStudentName(student ? `${student.last_name} ${student.first_name}` : '');
+                    setSelectedGrade(
+                      student?.grade != null
+                        ? (YOUBI_GRADE_NUMBER_TO_NAME[student.grade] ?? '')
+                        : ''
+                    );
+                  }}
+                  options={[
+                    { value: '', label: '選択してください' },
+                    ...(proxy?.students ?? []).map((s) => ({
+                      value: s.id,
+                      label:
+                        `${s.grade != null ? (YOUBI_GRADE_NUMBER_TO_NAME[s.grade] ?? '') : ''} ${s.last_name} ${s.first_name}`.trim(),
+                    })),
+                  ]}
+                  className={errors.studentName ? 'border-[color:var(--primary)]' : ''}
+                />
+                {errors.studentName ? (
+                  <p className="text-[color:var(--primary)] text-xs mt-1">{errors.studentName}</p>
+                ) : (
+                  <p className="text-xs text-[#4b5563] mt-1">
+                    選ぶと学年が入り、回答と生徒の紐付けも済みます
+                  </p>
+                )}
+              </div>
+            ) : (
+              <div>
+                <label className="block text-sm font-medium mb-1 text-[#1f2937]">
+                  生徒名 <span className="text-[color:var(--primary)]">*</span>
+                </label>
+                <Input
+                  type="text"
+                  value={studentName}
+                  onChange={(e) => setStudentName(e.target.value)}
+                  placeholder="例：山田 太郎"
+                  className={errors.studentName ? 'border-[color:var(--primary)]' : ''}
+                />
+                {errors.studentName && (
+                  <p className="text-[color:var(--primary)] text-xs mt-1">{errors.studentName}</p>
+                )}
+              </div>
+            )}
+            {/* 学年・メールは代理では出さない。学年は選んだ生徒から入り、
+                メールは保護者へ通知しないので取る意味がない（空欄が並ぶだけになる）。 */}
+            {!isProxy && (
+              <>
+                <div>
+                  <label className="block text-sm font-medium mb-1 text-[#1f2937]">
+                    学年 <span className="text-[color:var(--primary)]">*</span>
+                  </label>
+                  <Select
+                    value={selectedGrade}
+                    onChange={(e) => setSelectedGrade(e.target.value)}
+                    options={[
+                      { value: '', label: '選択してください' },
+                      ...GRADES.map((g) => ({ value: g, label: g })),
+                    ]}
+                    className={errors.grade ? 'border-[color:var(--primary)]' : ''}
+                  />
+                  {errors.grade && (
+                    <p className="text-[color:var(--primary)] text-xs mt-1">{errors.grade}</p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1 text-[#1f2937]">
+                    メールアドレス <span className="text-[color:var(--primary)]">*</span>
+                  </label>
+                  <Input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="example@email.com"
+                    className={errors.email ? 'border-[color:var(--primary)]' : ''}
+                  />
+                  {errors.email && (
+                    <p className="text-[color:var(--primary)] text-xs mt-1">{errors.email}</p>
+                  )}
+                </div>
+              </>
+            )}
           </div>
         </PortalFormSection>
 
@@ -530,7 +634,12 @@ export function YoubiForm({ school, period, isPreview }: YoubiFormProps) {
           />
         </PortalFormSection>
 
-        <PortalFormActions isSubmitting={isSubmitting} submitLabel="申請する" />
+        <PortalFormActions
+          isSubmitting={isSubmitting}
+          submitLabel={isProxy ? '代理で申し込む' : '申請する'}
+          onReset={proxy ? proxy.onCancel : undefined}
+          resetLabel={proxy ? 'キャンセル' : undefined}
+        />
       </form>
     </div>
   );

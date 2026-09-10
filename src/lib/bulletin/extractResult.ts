@@ -23,10 +23,18 @@ export interface ExtractedTask {
   kind: TaskKind;
   scope: TaskScope;
   targetGrades: number[];
+  /** scope=attending_school のときの対象の通学校（students.school_name の表記そのまま） */
+  targetSchoolNames: string[];
   dueType: TaskDueType;
   dueDate: string | null;
   /** 投稿のどこからそう読んだか。画面で教室長に見せる */
   reason: string;
+  /**
+   * AIがこの依頼の根拠にした投稿の一文（原文のまま）。見つからなければ空文字。
+   * ★どこで読み間違えたかを追うために持つ。要約された文では追えないので、
+   *   長すぎるもの（＝AIが写さずに作った可能性が高い）は捨てて空にする。
+   */
+  sourceExcerpt: string;
 }
 
 const KIND_SET = new Set<string>(TASK_KINDS);
@@ -37,8 +45,28 @@ const DUE_TYPE_SET = new Set<string>(TASK_DUE_TYPES);
 const MIN_GRADE = 1;
 const MAX_GRADE = 13;
 
+/** 通学校名1件あたりの上限文字数。長すぎるものはAIが読み違えているので捨てる */
+const MAX_SCHOOL_NAME_LEN = 30;
+/** 通学校の指定はこの件数まで。1投稿でこれを超えるのは読み違えている */
+const MAX_SCHOOL_NAMES = 10;
+
 /** 1つの投稿から取るタスクの上限。これを超えるのは読み違えているので切る */
 const MAX_TASKS_PER_POST = 5;
+
+/**
+ * 根拠の一文の上限。プロンプトでは40字と指示しているが、少しの超過は許す。
+ * ★これを超えたら「そのまま写す」に従っていない（要約や作文をしている）と見なして捨てる。
+ *   要約された文は読み間違いの追跡に使えないので、中途半端に残すより空のほうがよい。
+ */
+const MAX_SOURCE_EXCERPT_LEN = 60;
+
+/** 根拠の一文を整える。改行はカードの1行に収まらないので空白に潰す */
+function normalizeSourceExcerpt(value: unknown): string {
+  if (typeof value !== 'string') return '';
+  const text = value.replace(/[\r\n]+/g, ' ').trim();
+  if (text.length === 0 || text.length > MAX_SOURCE_EXCERPT_LEN) return '';
+  return text;
+}
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -101,21 +129,37 @@ export function parseExtractedTasks(raw: unknown): ExtractedTask[] {
         ).sort((a, b) => a - b)
       : [];
 
+    // ★文字列配列・各30字・最大10件・trim・重複除去。長すぎる／多すぎるのはAIが読み違えている
+    const rawSchoolNames = Array.isArray(t.target_school_names) ? t.target_school_names : [];
+    const targetSchoolNames = Array.from(
+      new Set(
+        rawSchoolNames
+          .filter((n): n is string => typeof n === 'string')
+          .map((n) => n.trim())
+          .filter((n) => n.length > 0 && n.length <= MAX_SCHOOL_NAME_LEN)
+      )
+    ).slice(0, MAX_SCHOOL_NAMES);
+
     out.push({
       kind,
       scope,
       // scope が grade でないなら学年の絞りは持たせない
       targetGrades: scope === 'grade' ? targetGrades : [],
+      // scope が attending_school でないなら通学校の絞りは持たせない
+      targetSchoolNames: scope === 'attending_school' ? targetSchoolNames : [],
       dueType: finalDueType,
       dueDate,
       reason: typeof t.reason === 'string' ? t.reason.slice(0, 200) : '',
+      sourceExcerpt: normalizeSourceExcerpt(t.source_excerpt),
     });
   }
 
   // ★同じ種別×対象は1件にまとめる。同じ依頼を2度数えると進捗が割れる
+  //   通学校（target_school_names）が違えば別の依頼として扱う
+  //  （「諏訪中生」と「永山中生」は同じ種別でも母数が別なので束ねない）
   const seen = new Set<string>();
   const deduped = out.filter((t) => {
-    const key = `${t.kind}::${t.scope}`;
+    const key = `${t.kind}::${t.scope}::${[...t.targetSchoolNames].sort().join(',')}`;
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
@@ -134,6 +178,16 @@ export interface OpenTask {
   kind: TaskKind;
   scope: TaskScope;
   dueDate: string | null;
+  /** scope=attending_school のときの対象の通学校。それ以外・未設定なら空 */
+  targetSchoolNames?: string[];
+}
+
+/** 通学校の集合が同じか（順序は無視する） */
+function sameSchoolNames(a: readonly string[], b: readonly string[]): boolean {
+  if (a.length !== b.length) return false;
+  const as = [...a].sort();
+  const bs = [...b].sort();
+  return as.every((v, i) => v === bs[i]);
 }
 
 /**
@@ -145,6 +199,8 @@ export interface OpenTask {
  *
  * ★突き合わせは「種別と対象が同じ」で見る。期限は再掲のたびに延びるので条件に入れない
  *   （7/31が8/10に延びても、同じ通知表回収の依頼である）。
+ *   ★対象には通学校（target_school_names）も含める。「諏訪中生」と「永山中生」は
+ *   同じ種別でも母数が別の依頼なので、別のタスクとして扱う。
  *
  * @returns 束ねる先のタスク。無ければ null（新規作成する）
  */
@@ -152,7 +208,14 @@ export function findReminderTarget(
   task: ExtractedTask,
   openTasks: readonly OpenTask[]
 ): OpenTask | null {
-  return openTasks.find((o) => o.kind === task.kind && o.scope === task.scope) ?? null;
+  return (
+    openTasks.find(
+      (o) =>
+        o.kind === task.kind &&
+        o.scope === task.scope &&
+        sameSchoolNames(o.targetSchoolNames ?? [], task.targetSchoolNames)
+    ) ?? null
+  );
 }
 
 /**

@@ -6,6 +6,8 @@ interface PortalFormActionsProps {
   submitDisabled?: boolean;
   /** 送信ボタンのラベル（デフォルト: "申し込む"） */
   submitLabel?: string;
+  /** 左ボタンのラベル（デフォルト: "リセット"。代理申込では "キャンセル"） */
+  resetLabel?: string;
 }
 
 /**
@@ -17,6 +19,7 @@ export function PortalFormActions({
   isSubmitting,
   submitDisabled = false,
   submitLabel = '申し込む',
+  resetLabel = 'リセット',
 }: PortalFormActionsProps) {
   return (
     <div className="flex gap-3 pt-1">
@@ -27,7 +30,7 @@ export function PortalFormActions({
           disabled={isSubmitting}
           className="px-5 py-3 text-sm text-[#4b5563] font-medium rounded-lg border border-[#e5e7eb] hover:bg-[#f8f8f8] active:scale-[0.97] transition-[transform,background-color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          リセット
+          {resetLabel}
         </button>
       )}
       <button

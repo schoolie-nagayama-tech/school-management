@@ -8,11 +8,27 @@ import type {
   CourseProgressItem,
   StudentCourseProgress,
   ApplicationStatus,
+  CoursePrepTrack,
 } from '@/types/database';
 import { GRADE_LABELS, PROGRESS_COLUMN_GROUPS } from '@/types/database';
 import type { AutoValues } from '@/lib/api/courseProgress';
-import { isGrade9OnlyCoursePrepItem } from '@/lib/coursePrepKpis';
+import {
+  isGrade9OnlyCoursePrepItem,
+  createTrackResolver,
+  resolveStudentTrack,
+  trackShortLabel,
+} from '@/lib/coursePrepKpis';
 import { Tooltip } from '@/components/ui/Tooltip';
+
+/** 「当てはめが1件も無い状態」を表す共有の空マップ（既定の当てはめを引くときに使う） */
+const NO_TRACK_ASSIGNMENTS: Map<string, string | null> = new Map();
+
+/** 'YYYY-MM-DD' → '〜M/D'。区分の終了日をメニューに短く出す（表示専用） */
+function trackEndLabel(date: string | null | undefined): string {
+  if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return '';
+  const [, month, day] = date.split('-');
+  return `〜${Number(month)}/${Number(day)}`;
+}
 
 /** auto_source の表示名と簡易説明 */
 const AUTO_SOURCE_LABELS: Record<string, { label: string; desc: string }> = {
@@ -36,6 +52,14 @@ interface CourseProgressTableProps {
   onItemDeadlineChange?: (itemId: string, deadline: string | null) => void;
   /** 生徒名クリック時のポップオーバーから「生徒情報」を開く */
   onShowStudentInfo?: (student: Student) => void;
+  /** 講習期間の区分（Phase 8）。sort_order 昇順 */
+  tracks?: CoursePrepTrack[];
+  /** studentId → trackId。null は「共通に戻す」明示指定で、キーが無いのは未指定 */
+  trackAssignments?: Map<string, string | null>;
+  /** 共通の講習期間の終了日。メニューに「共通（〜1/7）」と出すために使う */
+  commonEndDate?: string | null;
+  /** 生徒の区分を変更する。'default' は当てはめをやめて既定（学年）に戻す */
+  onStudentTrackChange?: (studentId: string, trackId: string | null | 'default') => void;
 }
 
 function nextStatus(current: ApplicationStatus | null | undefined): ApplicationStatus | null {
@@ -182,6 +206,10 @@ export function CourseProgressTable({
   onItemNameChange,
   onItemDeadlineChange,
   onShowStudentInfo,
+  tracks,
+  trackAssignments,
+  commonEndDate,
+  onStudentTrackChange,
 }: CourseProgressTableProps) {
   const [editingCell, setEditingCell] = useState<{
     studentId: string;
@@ -237,6 +265,34 @@ export function CourseProgressTable({
   const sortedStudents = useMemo(() => {
     return [...students].sort((a, b) => (a.grade || 0) - (b.grade || 0));
   }, [students]);
+
+  const trackList = useMemo(() => tracks ?? [], [tracks]);
+  const assignments = useMemo(() => trackAssignments ?? NO_TRACK_ASSIGNMENTS, [trackAssignments]);
+
+  /**
+   * 生徒ごとの区分の短縮名。学年セルの横に出す。
+   *
+   * explicit = 生徒ごとに手で当てはめた（＝既定の学年ではない）。既定で自動的に入っている子と
+   * 見分けが付かないと、「この子だけ個別に変えたはず」が確かめられないので濃さで区別する。
+   */
+  const studentTrackLabels = useMemo(() => {
+    const map = new Map<string, { label: string; explicit: boolean }>();
+    if (trackList.length === 0) return map;
+    // 解決器は1回だけ作る（生徒ごとに作ると人数ぶん並べ替えが走る）
+    const resolver = createTrackResolver(trackList, assignments);
+    // 同じ区分の短縮名を人数ぶん計算し直さないよう、区分ごとに1回だけ求める
+    const shortLabels = new Map<string, string>();
+    for (const t of trackList) shortLabels.set(t.id, trackShortLabel(t));
+    for (const s of students) {
+      const track = resolver.resolve(s.id, s.grade);
+      if (!track) continue;
+      map.set(s.id, {
+        label: shortLabels.get(track.id) ?? trackShortLabel(track),
+        explicit: assignments.has(s.id),
+      });
+    }
+    return map;
+  }, [students, trackList, assignments]);
 
   // グループ分け
   const columnGroups = useMemo(() => {
@@ -547,8 +603,8 @@ export function CourseProgressTable({
     return () => observer.disconnect();
   }, []);
 
-  // 左固定列の幅
-  const GRADE_W = 36;
+  // 左固定列の幅。区分があるときは学年セルに短縮名も出すので広げる
+  const GRADE_W = trackList.length > 0 ? 62 : 36;
   const NAME_W = 88;
   const PROGRESS_W = 72;
   const LEFT_TOTAL = GRADE_W + NAME_W + PROGRESS_W;
@@ -868,7 +924,26 @@ export function CourseProgressTable({
                     className={`sticky left-0 z-10 px-1 py-0.5 text-center text-[10px] text-gray-400 border-b border-gray-100 ${isEven ? 'bg-white' : 'bg-gray-50/80'}`}
                     style={{ width: GRADE_W, minWidth: GRADE_W }}
                   >
-                    {GRADE_LABELS[student.grade || 0] || ''}
+                    <span className="inline-flex items-baseline gap-0.5 justify-center">
+                      <span>{GRADE_LABELS[student.grade || 0] || ''}</span>
+                      {(() => {
+                        const t = studentTrackLabels.get(student.id);
+                        if (!t) return null;
+                        // 個別に上書きした子は濃く、既定の学年で入っている子は薄く出す
+                        return (
+                          <span
+                            className={`text-[9px] ${t.explicit ? 'text-gray-600 font-medium' : 'text-gray-300'}`}
+                            title={
+                              t.explicit
+                                ? '個別に当てはめた講習期間の区分'
+                                : '既定の学年で当てはまった講習期間の区分'
+                            }
+                          >
+                            {t.label}
+                          </span>
+                        );
+                      })()}
+                    </span>
                   </td>
                   {/* 名前 */}
                   <td
@@ -879,8 +954,10 @@ export function CourseProgressTable({
                       type="button"
                       onClick={(e) => {
                         const r = e.currentTarget.getBoundingClientRect();
-                        // メニュー高さの概算（ヘッダー＋2項目で約110px）。下に収まらなければ上向きに開く。
-                        const ESTIMATED_MENU_HEIGHT = 110;
+                        // メニュー高さの概算（ヘッダー＋2項目で約110px）。区分の選択肢が付くと
+                        // 伸びるので、その分（見出し＋「共通」＋区分の数）を足してから判定する。
+                        const ESTIMATED_MENU_HEIGHT =
+                          110 + (trackList.length > 0 ? 28 + (trackList.length + 1) * 26 : 0);
                         const openUp = window.innerHeight - r.bottom < ESTIMATED_MENU_HEIGHT;
                         setNameMenu({
                           student,
@@ -1156,6 +1233,88 @@ export function CourseProgressTable({
               <FileText className="w-3.5 h-3.5 text-gray-400 shrink-0" />
               提案書一覧
             </Link>
+            {/* 講習期間の区分（Phase 8）。区分が1つも無い期では出さない（普段の期の邪魔をしない）。
+                確定データ表示中（canEdit=false）は今の当てはめを見せるだけで、選ばせない。 */}
+            {trackList.length > 0 &&
+              (() => {
+                const student = nameMenu.student;
+                const current = resolveStudentTrack(
+                  trackList,
+                  assignments,
+                  student.id,
+                  student.grade
+                );
+                // 何も当てはめなかったときに効く区分。同じものを選んだら行ごと消して既定に戻す
+                // （わざわざ「共通に戻す」行を作らないため）。
+                // ここは開いているメニュー1件ぶんなので、解決器を作り直しても負荷にならない。
+                const fallback = resolveStudentTrack(
+                  trackList,
+                  NO_TRACK_ASSIGNMENTS,
+                  student.id,
+                  student.grade
+                );
+                const select = (trackId: string | null) => {
+                  if (!canEdit || !onStudentTrackChange) return;
+                  const fallbackId = fallback?.id ?? null;
+                  onStudentTrackChange(student.id, trackId === fallbackId ? 'default' : trackId);
+                  setNameMenu(null);
+                };
+                const options: { id: string | null; label: string; end: string | null }[] = [
+                  { id: null, label: '共通', end: commonEndDate ?? null },
+                  ...trackList.map((t) => ({
+                    id: t.id,
+                    label: t.name,
+                    end: t.schedule_end_date,
+                  })),
+                ];
+                // 教室長以上でないとき（と確定データ表示中）は選ばせない。
+                // 選択肢を並べても押せないだけなので、今どの区分かを1行で見せるに留める。
+                const editable = canEdit && !!onStudentTrackChange;
+                if (!editable) {
+                  const currentEnd = trackEndLabel(current?.schedule_end_date ?? commonEndDate);
+                  return (
+                    <>
+                      <div className="my-1 border-t border-gray-100" />
+                      <div className="px-3 py-1.5 text-[10px] text-gray-500">
+                        講習期間の区分:{' '}
+                        <span className="text-gray-700">{current?.name ?? '共通'}</span>
+                        {currentEnd && <span className="text-gray-400">（{currentEnd}）</span>}
+                      </div>
+                    </>
+                  );
+                }
+                return (
+                  <>
+                    <div className="my-1 border-t border-gray-100" />
+                    <div className="px-3 py-1 text-[10px] font-bold text-gray-400">
+                      講習期間の区分
+                    </div>
+                    {options.map((opt) => {
+                      const selected = (current?.id ?? null) === opt.id;
+                      const end = trackEndLabel(opt.end);
+                      return (
+                        <button
+                          key={opt.id ?? 'common'}
+                          type="button"
+                          disabled={!canEdit || !onStudentTrackChange}
+                          onClick={() => select(opt.id)}
+                          className="w-full flex items-center gap-2 px-3 py-1.5 text-[11px] text-gray-700 hover:bg-gray-50 active:bg-gray-100 disabled:hover:bg-transparent disabled:cursor-default transition-[background-color] duration-100"
+                        >
+                          <span
+                            className={`w-2.5 h-2.5 rounded-full border shrink-0 ${
+                              selected ? 'bg-[#1e3a5f] border-[#1e3a5f]' : 'border-gray-300'
+                            }`}
+                          />
+                          <span className="truncate">
+                            {opt.label}
+                            {end && <span className="text-gray-400">（{end}）</span>}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </>
+                );
+              })()}
           </div>
         </>
       )}

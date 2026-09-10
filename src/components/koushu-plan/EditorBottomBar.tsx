@@ -44,7 +44,7 @@ export function EditorBottomBar({
 }) {
   return (
     // スティッキーボトムバー（コンテンツ幅 max-w-[1600px] に合わせる）
-    <div className="fixed bottom-0 left-0 right-0 z-30 bg-surface-raised/95 backdrop-blur-sm border-t border-border-default print:hidden">
+    <div className="fixed bottom-0 left-0 right-0 z-30 bg-surface-raised/95 backdrop-blur-sm border-t border-border print:hidden">
       <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-2.5 flex items-center gap-3">
         <div className="text-xs font-bold text-text-muted shrink-0">
           <span className="text-accent-ink">

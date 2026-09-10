@@ -37,7 +37,7 @@ interface TextbookCatalogProps {
     quantity: number,
     notes: string
   ) => Promise<void>;
-  onBulkOrder: (items: CartItem[]) => Promise<void>;
+  onBulkOrder: (items: CartItem[], options: { excludeFromBilling: boolean }) => Promise<void>;
   onStockAdjust?: (material: Material) => void;
   onStockRegister?: (textbookName: string) => void;
   /** カート保存のスコープ（選択中の教室）。変わったらカートを捨てる。 */
@@ -48,6 +48,8 @@ interface TextbookCatalogProps {
    * 所持済みは含めない（このページで未ロードのため）。確定時のサーバー再判定で最終的に弾く。
    */
   existingOrderPairs?: Set<string>;
+  /** 公開中の請求期間名。null なら請求連携が起きないのでカートにチェックボックスを出さない。 */
+  billingPeriodName?: string | null;
 }
 
 const ITEMS_PER_PAGE = 60;
@@ -380,6 +382,9 @@ function CartDrawer({
   onRemove,
   onSubmit,
   isSubmitting,
+  billingPeriodName,
+  includeInBilling,
+  onChangeIncludeInBilling,
 }: {
   isOpen: boolean;
   items: CartItem[];
@@ -387,6 +392,10 @@ function CartDrawer({
   onRemove: (id: string) => void;
   onSubmit: () => void;
   isSubmitting: boolean;
+  /** 公開中の請求期間名。無ければ請求連携自体が起きないのでチェックボックスも出さない。 */
+  billingPeriodName: string | null;
+  includeInBilling: boolean;
+  onChangeIncludeInBilling: (next: boolean) => void;
 }) {
   if (!isOpen) return null;
 
@@ -465,6 +474,33 @@ function CartDrawer({
                 {items.length}件 / {items.reduce((sum, i) => sum + i.quantity, 0)}冊
               </span>
             </div>
+
+            {/* 請求管理に載せるか。入会時の初回教材のように本部で別途請求するものを外すための
+                スイッチで、既定はON（これまでどおり載る）。外すと発注レコードに残るので、
+                あとから同じ生徒に発注しても請求へ戻らない。 */}
+            {billingPeriodName && (
+              <label
+                className={`flex items-start gap-2.5 p-3 rounded-lg border cursor-pointer transition-[background-color,border-color] duration-150 ease-out ${
+                  includeInBilling ? 'bg-[#eef4fb] border-[#c3d6ea]' : 'bg-gray-50 border-gray-200'
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  checked={includeInBilling}
+                  onChange={(e) => onChangeIncludeInBilling(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 rounded border-gray-300 text-[#1e3a5f] focus:ring-[#1e3a5f]"
+                />
+                <span className="min-w-0">
+                  <span className="block text-sm font-medium text-gray-700">
+                    請求管理に載せる（{billingPeriodName}）
+                  </span>
+                  <span className="block text-[11px] text-gray-500 leading-relaxed mt-0.5">
+                    入会時の初回教材など、本部で別途請求するものはチェックを外す。外した発注は請求管理の「教材発注」に出ません。
+                  </span>
+                </span>
+              </label>
+            )}
+
             <button
               onClick={onSubmit}
               disabled={isSubmitting}
@@ -493,11 +529,14 @@ export function TextbookCatalog({
   onStockRegister,
   schoolScopeKey,
   existingOrderPairs,
+  billingPeriodName,
 }: TextbookCatalogProps) {
   // Cart state（アンマウントで消えないよう sessionStorage から初期化する）
   const [cartItems, setCartItems] = useState<CartItem[]>(() => loadStoredCart(schoolScopeKey));
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // 請求管理に載せるか。既定はON（これまでどおり載る）。カートを空にしたら既定へ戻す。
+  const [includeInBilling, setIncludeInBilling] = useState(true);
 
   // カートの変更を都度 sessionStorage へ反映する。
   useEffect(() => {
@@ -564,17 +603,19 @@ export function TextbookCatalog({
     if (cartItems.length === 0) return;
     setIsSubmitting(true);
     try {
-      await onBulkOrder(cartItems);
+      await onBulkOrder(cartItems, { excludeFromBilling: !includeInBilling });
       // 成功したときだけカートを空にする（失敗時に消すと入力し直しになるため）。
       setCartItems([]);
       setIsCartOpen(false);
+      // 次の発注に「請求に載せない」が残ると事故になるので既定へ戻す。
+      setIncludeInBilling(true);
     } catch {
       // 失敗の通知は呼び出し元がトーストで行う。ここで捕まえないと unhandled rejection になり、
       // カートは残るのに画面には何も出ない（＝無言で失敗する）ため握りつぶさず捕捉だけする。
     } finally {
       setIsSubmitting(false);
     }
-  }, [cartItems, onBulkOrder]);
+  }, [cartItems, includeInBilling, onBulkOrder]);
 
   // Filters
   const [search, setSearch] = useState('');
@@ -1015,6 +1056,9 @@ export function TextbookCatalog({
         onRemove={handleRemoveFromCart}
         onSubmit={handleBulkOrder}
         isSubmitting={isSubmitting}
+        billingPeriodName={billingPeriodName ?? null}
+        includeInBilling={includeInBilling}
+        onChangeIncludeInBilling={setIncludeInBilling}
       />
     </div>
   );

@@ -110,4 +110,55 @@ describe('TextbookCatalog カート永続化', () => {
     expect(screen.getByText('カート: 1件（2冊）')).toBeInTheDocument();
     expect(readCart()?.items).toHaveLength(1);
   });
+
+  // ── 請求管理に載せるか（既定ON・外すと発注レコードに残る） ──
+
+  it('請求期間が公開中なら、既定で請求に載せて発注する', async () => {
+    const user = userEvent.setup();
+    seedCart('school-1', [cartItem]);
+    const onBulkOrder = vi.fn().mockResolvedValue(undefined);
+    render(
+      <TextbookCatalog
+        {...baseProps}
+        onBulkOrder={onBulkOrder}
+        schoolScopeKey="school-1"
+        billingPeriodName="2026年4月請求"
+      />
+    );
+
+    await user.click(screen.getByText('カート: 1件（2冊）'));
+    expect(screen.getByLabelText(/請求管理に載せる/)).toBeChecked();
+    await user.click(screen.getByText('まとめて発注する'));
+
+    expect(onBulkOrder).toHaveBeenCalledWith(expect.anything(), { excludeFromBilling: false });
+  });
+
+  it('チェックを外すと請求対象外として発注する（初回教材など）', async () => {
+    const user = userEvent.setup();
+    seedCart('school-1', [cartItem]);
+    const onBulkOrder = vi.fn().mockResolvedValue(undefined);
+    render(
+      <TextbookCatalog
+        {...baseProps}
+        onBulkOrder={onBulkOrder}
+        schoolScopeKey="school-1"
+        billingPeriodName="2026年4月請求"
+      />
+    );
+
+    await user.click(screen.getByText('カート: 1件（2冊）'));
+    await user.click(screen.getByLabelText(/請求管理に載せる/));
+    await user.click(screen.getByText('まとめて発注する'));
+
+    expect(onBulkOrder).toHaveBeenCalledWith(expect.anything(), { excludeFromBilling: true });
+  });
+
+  it('公開中の請求期間が無ければチェックボックス自体を出さない', async () => {
+    const user = userEvent.setup();
+    seedCart('school-1', [cartItem]);
+    render(<TextbookCatalog {...baseProps} onBulkOrder={vi.fn()} schoolScopeKey="school-1" />);
+
+    await user.click(screen.getByText('カート: 1件（2冊）'));
+    expect(screen.queryByText(/請求管理に載せる/)).not.toBeInTheDocument();
+  });
 });

@@ -11,8 +11,6 @@ import {
   Users,
   School,
   FileText,
-  Globe,
-  Calendar,
   Shield,
   Clock,
   Link2,
@@ -26,6 +24,7 @@ import {
   BarChart3,
   LogIn,
   LayoutDashboard,
+  Sparkles,
 } from 'lucide-react';
 
 interface SettingsItem {
@@ -35,6 +34,8 @@ interface SettingsItem {
   description: string;
   requiresAdmin?: boolean;
   requiresManager?: boolean;
+  /** システム管理者（admin）だけ。★owner は含めない（requiresAdmin は owner も通す） */
+  requiresSystemAdmin?: boolean;
 }
 
 interface SettingsGroup {
@@ -148,18 +149,6 @@ const settingsGroups: SettingsGroup[] = [
     ],
   },
   {
-    title: '講習',
-    items: [
-      {
-        href: '/settings/seasonal-shifts',
-        icon: <Calendar className="w-5 h-5" />,
-        label: '講習シフト設定',
-        description: '季節講習のシフト管理',
-        requiresManager: true,
-      },
-    ],
-  },
-  {
     title: '外部サイト自動入力',
     items: [
       {
@@ -174,14 +163,10 @@ const settingsGroups: SettingsGroup[] = [
   },
   {
     title: '保護者ポータル',
+    // ★「ポータル・フォーム設定」はここに出さない。ヘッダーの「フォーム管理」から入れるため。
+    //   メニューから入れるものを設定にも並べると、同じ画面が2か所に出て、
+    //   どちらが正しい入口か分からなくなる（設定は「ここからしか入れないもの」の置き場）。
     items: [
-      {
-        href: '/settings/portal',
-        icon: <Globe className="w-5 h-5" />,
-        label: 'ポータル・フォーム設定',
-        description: '保護者ポータルのメニュー・公開設定',
-        requiresManager: true,
-      },
       {
         // 教室長も自教室の棚卸しに使うので requiresManager（APIも manager＋自教室スコープ）。
         href: '/settings/line-status',
@@ -191,7 +176,10 @@ const settingsGroups: SettingsGroup[] = [
         requiresManager: true,
       },
       {
-        href: '/settings/forms/moshi',
+        // ★ 旧 /settings/forms/{種別}（教室が ENV の既定教室に固定されていた）は削除した。
+        //   ヘッダーの教室切替に従う /settings/forms/{種別}/periods へ寄せている。
+        //   種別ごとの入口は、ヘッダーの「フォーム管理」→「ポータル設定」にある。
+        href: '/settings/forms/moshi/periods',
         icon: <FileText className="w-5 h-5" />,
         label: 'フォーム期間設定',
         description: '模試・模擬・集回数・曜日・相談・増コマの受付期間',
@@ -199,17 +187,23 @@ const settingsGroups: SettingsGroup[] = [
       },
     ],
   },
+  // ★「問合せ管理」はここに出さない。ヘッダーのトップナビから入れるため。
+  //   横断的に見つけられるように、という理由で設定にも並べていたが、
+  //   設定は「ここからしか入れないもの」の置き場にする（同じ画面が2か所にあると入口が決まらない）。
   {
-    // 教室長以上（manager/owner/admin）に表示する。トップナビからも入れるが、
-    // 設定一覧にも掲載しておき横断的に機能を見つけられるようにする。
-    title: '問合せ管理',
+    // ★AIの答え合わせ。ナビには出さない（教室の運用で使う画面ではない）ので、
+    //   設定が唯一の入口。システム管理者だけ。
+    title: 'AI',
     items: [
       {
-        href: '/admin/inquiries',
-        icon: <MessageSquare className="w-5 h-5" />,
-        label: '問合せ管理',
-        description: 'HPからの問合せを取り込み・追客・分析・発送まで一元管理',
-        requiresManager: true,
+        href: '/admin/ai-feedback',
+        icon: <Sparkles className="w-5 h-5" />,
+        label: 'AIの答え合わせ',
+        description:
+          '読み取り・下書き・まとめが合っていたかの記録。読み間違いが何件あるかを見てAIを直す',
+        // ★ページ側の門番は isSystemAdmin（owner は入れない）。設定の入口もそれに合わせる。
+        //   requiresAdmin だと owner にリンクが見えて、押すと権限なしになる
+        requiresSystemAdmin: true,
       },
     ],
   },
@@ -245,12 +239,14 @@ export default function SettingsPage() {
   const { profile } = useAuth();
   const isAdmin = profile?.role === 'admin' || profile?.role === 'owner';
   const isManager = isAdmin || profile?.role === 'manager';
+  const isSystemAdmin = profile?.role === 'admin';
 
   // 権限でフィルタしたグループ（項目が0件のグループは非表示）
   const visibleGroups = settingsGroups
     .map((group) => ({
       ...group,
       items: group.items.filter((item) => {
+        if (item.requiresSystemAdmin && !isSystemAdmin) return false;
         if (item.requiresAdmin && !isAdmin) return false;
         if (item.requiresManager && !isManager) return false;
         return true;
@@ -287,7 +283,10 @@ export default function SettingsPage() {
               {
                 title: 'ポータルのURLを確認する',
                 description: '保護者ポータルの公開リンクを取得します。',
-                steps: ['「ポータル・フォーム設定」をクリック', '教室ごとのポータルURLをコピー'],
+                steps: [
+                  'ヘッダーの「フォーム管理」→「ポータル設定」を開く',
+                  '教室ごとのポータルURLをコピー',
+                ],
               },
             ]}
           />

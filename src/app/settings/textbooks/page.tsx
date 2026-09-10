@@ -115,7 +115,7 @@ export default function TextbookMasterPageWrapper() {
 function TextbookMasterPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { profile, schoolIds, selectedSchoolId, isLoading: authLoading } = useAuth();
+  const { profile, getSelectedSchoolIds, isLoading: authLoading } = useAuth();
   const { toasts, removeToast, success: toastSuccess, error: toastError } = useToast();
   const isManager =
     profile?.role === 'admin' || profile?.role === 'owner' || profile?.role === 'manager';
@@ -153,7 +153,8 @@ function TextbookMasterPage() {
       setProposalStudentQuery('');
       setProposalStudentsLoading(true);
       try {
-        const ids = selectedSchoolId && selectedSchoolId !== 'all' ? [selectedSchoolId] : schoolIds;
+        // 教室スコープはヘッダーの教室切替に従う（'all' のときのデモ教室除外もここが担う）
+        const ids = getSelectedSchoolIds();
         if (ids.length === 0) {
           setProposalStudents([]);
           return;
@@ -178,7 +179,7 @@ function TextbookMasterPage() {
       }
       setTimeout(() => proposalInputRef.current?.focus(), 50);
     },
-    [schoolIds, selectedSchoolId]
+    [getSelectedSchoolIds]
   );
 
   useEffect(() => {
@@ -218,7 +219,8 @@ function TextbookMasterPage() {
       setTextbooks(data);
       // 発注教材の紐付け候補（materials）。失敗しても教材一覧は表示したいので握りつぶす。
       try {
-        const ids = selectedSchoolId && selectedSchoolId !== 'all' ? [selectedSchoolId] : schoolIds;
+        // 教室スコープはヘッダーの教室切替に従う（'all' のときのデモ教室除外もここが担う）
+        const ids = getSelectedSchoolIds();
         if (ids.length > 0) setMaterials(await getMaterials(ids));
       } catch {
         /* ignore */
@@ -230,7 +232,7 @@ function TextbookMasterPage() {
     } finally {
       setLoading(false);
     }
-  }, [schoolIds, selectedSchoolId]);
+  }, [getSelectedSchoolIds]);
 
   const loadedRef = useRef(false);
   useEffect(() => {
@@ -541,7 +543,7 @@ function TextbookMasterPage() {
                               {t.name}
                             </span>
                             {!t.is_active && (
-                              <span className="flex-shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded bg-surface-hover text-text-faint border border-border-default">
+                              <span className="flex-shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded bg-surface-hover text-text-faint border border-border">
                                 非表示
                               </span>
                             )}
@@ -605,7 +607,7 @@ function TextbookMasterPage() {
                             </button>
                             {proposalPickerTextbookId === t.id && (
                               /* dropdown-menu-right: transform-origin を top-right に設定し @starting-style スケール+フェードを適用 */
-                              <div className="dropdown-menu dropdown-menu-right absolute right-0 top-full mt-1 w-64 bg-surface-raised border border-border-default rounded-xl shadow-lg z-50 overflow-hidden">
+                              <div className="dropdown-menu dropdown-menu-right absolute right-0 top-full mt-1 w-64 bg-surface-raised border border-border rounded-xl shadow-lg z-50 overflow-hidden">
                                 <div className="p-2 border-b border-border-subtle">
                                   <div className="relative">
                                     <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-text-faint" />
@@ -615,7 +617,7 @@ function TextbookMasterPage() {
                                       value={proposalStudentQuery}
                                       onChange={(e) => setProposalStudentQuery(e.target.value)}
                                       placeholder="生徒を検索..."
-                                      className="w-full pl-8 pr-3 py-1.5 text-xs border border-border-default rounded-lg bg-surface-raised text-text-body placeholder:text-text-faint focus:outline-none focus:ring-1 focus:ring-ink/30"
+                                      className="w-full pl-8 pr-3 py-1.5 text-xs border border-border rounded-lg bg-surface-raised text-text-body placeholder:text-text-faint focus:outline-none focus:ring-1 focus:ring-ink/30"
                                       onClick={(e) => e.stopPropagation()}
                                     />
                                   </div>

@@ -101,7 +101,7 @@ export function TextbookPickerScreen<T extends PickableTextbook>({
         <input
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
-          className="w-full pl-9 pr-3 py-2 text-sm border border-border-default rounded-lg bg-surface-raised focus:ring-2 focus:ring-primary/20 focus:border-primary"
+          className="w-full pl-9 pr-3 py-2 text-sm border border-border rounded-lg bg-surface-raised focus:ring-2 focus:ring-primary/20 focus:border-primary"
           placeholder="テキスト名・教科・出版社で検索"
           autoFocus
         />
@@ -111,7 +111,7 @@ export function TextbookPickerScreen<T extends PickableTextbook>({
         <select
           value={schoolType}
           onChange={(e) => onSchoolTypeChange(e.target.value)}
-          className="px-2 py-1 border border-border-default rounded-lg text-xs bg-surface-raised text-text-body"
+          className="px-2 py-1 border border-border rounded-lg text-xs bg-surface-raised text-text-body"
         >
           <option value="">学校種別</option>
           {schoolTypes.map((st) => (
@@ -123,7 +123,7 @@ export function TextbookPickerScreen<T extends PickableTextbook>({
         <select
           value={subject}
           onChange={(e) => onSubjectChange(e.target.value)}
-          className="px-2 py-1 border border-border-default rounded-lg text-xs bg-surface-raised text-text-body"
+          className="px-2 py-1 border border-border rounded-lg text-xs bg-surface-raised text-text-body"
         >
           <option value="">教科</option>
           {subjects.map((s) => (
@@ -135,7 +135,7 @@ export function TextbookPickerScreen<T extends PickableTextbook>({
         <select
           value={grade}
           onChange={(e) => onGradeChange(e.target.value)}
-          className="px-2 py-1 border border-border-default rounded-lg text-xs bg-surface-raised text-text-body"
+          className="px-2 py-1 border border-border rounded-lg text-xs bg-surface-raised text-text-body"
         >
           <option value="">学年</option>
           {grades.map((g) => (
@@ -168,7 +168,7 @@ export function TextbookPickerScreen<T extends PickableTextbook>({
               <div className="relative">
                 <button
                   onClick={() => onSelect(tb)}
-                  className="w-full text-left pl-4 pr-12 py-3 bg-surface-raised rounded-lg border border-border-default hover:border-accent-ink/30 hover:bg-accent-ink-subtle active:scale-[0.99] transition-[background-color,border-color,transform] duration-150 ease-out"
+                  className="w-full text-left pl-4 pr-12 py-3 bg-surface-raised rounded-lg border border-border hover:border-accent-ink/30 hover:bg-accent-ink-subtle active:scale-[0.99] transition-[background-color,border-color,transform] duration-150 ease-out"
                 >
                   <div className="flex items-center gap-1.5">
                     {tb.subject &&

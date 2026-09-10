@@ -42,6 +42,7 @@ const KINDS: ReadonlySet<string> = new Set<RefineKind>([
   'bulletin',
   'proposal_theme',
   'report_review',
+  'parent_notice',
 ]);
 
 export async function POST(request: NextRequest) {

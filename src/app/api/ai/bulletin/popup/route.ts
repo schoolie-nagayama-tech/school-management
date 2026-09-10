@@ -186,7 +186,9 @@ export async function POST(request: NextRequest) {
   // 追跡中のタスク
   const { data: taskRows } = await supabase
     .from('bulletin_tasks')
-    .select('id, kind, scope, target_grades, target_student_ids, due_date, application_item_id')
+    .select(
+      'id, kind, scope, target_grades, target_student_ids, target_school_names, due_date, application_item_id'
+    )
     .eq('school_id', schoolId)
     .is('closed_at', null)
     .eq('tracked', true);
@@ -200,7 +202,7 @@ export async function POST(request: NextRequest) {
 
   const { data: student } = await supabase
     .from('students')
-    .select('id, grade, last_name, first_name')
+    .select('id, grade, last_name, first_name, school_name')
     .eq('id', studentId)
     .maybeSingle();
 
@@ -225,6 +227,7 @@ export async function POST(request: NextRequest) {
         grade: (student.grade as number | null) ?? null,
         teacherId,
         markedNotApplicable: false,
+        schoolName: (student.school_name as string | null) ?? null,
       },
     ];
 
@@ -233,6 +236,10 @@ export async function POST(request: NextRequest) {
       scope: t.scope as TaskScope,
       targetGrades: (t.target_grades as number[]) ?? [],
       targetStudentIds: (t.target_student_ids as string[]) ?? [],
+      // ★ここは対象生徒1人だけの呼び出しなので、進捗ボードのような
+      //   「1人も一致しなければ絞らない」の widen は行わない（resolveAttendingSchoolNames を参照）。
+      //   target_school_names をそのまま渡し、この生徒が対象校かどうかだけで判定する。
+      targetSchoolNames: (t.target_school_names as string[]) ?? [],
       students: rows,
       subjectsByStudent,
     });

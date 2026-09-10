@@ -12,6 +12,7 @@ import { useToast } from '@/hooks/useToast';
 import { fetchWithAuth } from '@/lib/api/auth';
 import { isManagerOrAbove } from '@/lib/utils/roles';
 import { formatGradeLabel } from '@/lib/utils/gradeLabel';
+import { QuickReplyChips, ParentMessageComposer } from '@/components/ai/ParentMessageComposer';
 import type { ChatMessage } from '@/types/chat';
 
 /**
@@ -200,6 +201,8 @@ function StaffConversation({
   const [loading, setLoading] = useState(true);
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
+  // 「保護者との連絡」AIが返信先とした保護者メッセージ。会話ビュー側でその1通に印を付ける
+  const [quotedMessageId, setQuotedMessageId] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
   const load = useCallback(async () => {
@@ -254,28 +257,56 @@ function StaffConversation({
         {loading ? (
           <Loading size="md" />
         ) : (
-          messages.map((m) => <StaffBubble key={m.id} message={m} />)
+          messages.map((m) => (
+            <StaffBubble key={m.id} message={m} highlighted={m.id === quotedMessageId} />
+          ))
         )}
         <div ref={bottomRef} />
       </div>
-      <div className="flex items-end gap-2 border-t border-border p-3">
-        <Textarea
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          placeholder="返信を入力"
-          rows={2}
-          className="flex-1"
+      <div className="flex flex-col gap-2 border-t border-border p-3">
+        {/* ワンタップ定型（AIではない・常に出す）。押すと返信欄の末尾に足す */}
+        <QuickReplyChips
+          onPick={(phrase) =>
+            setText((prev) => {
+              if (!prev) return phrase;
+              const sep = /[\s　]$/.test(prev) ? '' : ' ';
+              return `${prev}${sep}${phrase}`;
+            })
+          }
         />
-        <Button onClick={reply} isLoading={sending} disabled={!text.trim()}>
-          <Send className="h-4 w-4" />
-        </Button>
+
+        <div className="flex items-end gap-2">
+          <Textarea
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            placeholder="返信を入力"
+            rows={2}
+            className="flex-1"
+          />
+          <Button onClick={reply} isLoading={sending} disabled={!text.trim()}>
+            <Send className="h-4 w-4" />
+          </Button>
+        </div>
+
+        {/* 「保護者との連絡」AI。教室でオフ・振替欠席テンプレのスレッドでは中で何も描かない */}
+        <ParentMessageComposer
+          schoolId={thread.school_id}
+          threadId={thread.thread_id}
+          messages={messages}
+          replyText={text}
+          onReplyTextChange={setText}
+          onQuoteChange={setQuotedMessageId}
+        />
       </div>
     </div>
   );
 }
 
-/** スタッフ側の吹き出し（staff=右 / portal=左 / system=中央）。 */
-function StaffBubble({ message }: { message: ChatMessage }) {
+/**
+ * スタッフ側の吹き出し（staff=右 / portal=左 / system=中央）。
+ * highlighted: 「保護者との連絡」AIがこのメッセージを返信先にしたことを示す印。
+ */
+function StaffBubble({ message, highlighted }: { message: ChatMessage; highlighted?: boolean }) {
   const time = new Date(message.created_at).toLocaleString('ja-JP', {
     month: 'numeric',
     day: 'numeric',
@@ -300,12 +331,13 @@ function StaffBubble({ message }: { message: ChatMessage }) {
             isStaff
               ? 'rounded-br-sm bg-ink text-white'
               : 'rounded-bl-sm border border-border bg-surface text-text-body'
-          }`}
+          } ${highlighted ? 'ring-2 ring-ink ring-offset-1' : ''}`}
         >
           {message.body}
         </div>
         <p className={`mt-0.5 text-[10px] text-text-muted ${isStaff ? 'text-right' : 'text-left'}`}>
           {isStaff ? '教室' : '保護者'}・{time}
+          {highlighted && '・返信先'}
         </p>
       </div>
     </div>

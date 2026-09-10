@@ -98,4 +98,31 @@ describe('refineSystemPrompt', () => {
     expect(p).toContain('削らない');
     expect(p).toContain('要約しない');
   });
+
+  it('report_review: 評価の強さを変えないという約束を含む（全文生成はしない）', () => {
+    const p = refineSystemPrompt('report_review');
+    expect(p).toContain('評価の強さ');
+    expect(p).toContain('保護者');
+  });
+
+  it('parent_notice: 保護者向けであることと、宛名・日付を足さないという約束を含む', () => {
+    const p = refineSystemPrompt('parent_notice');
+    expect(p).toContain('保護者');
+    expect(p).toContain('宛名');
+    expect(p).toContain('日付');
+  });
+
+  it('すべての種類が、事実を足さない・行を増減しないという共通規則を持つ', () => {
+    const kinds: Parameters<typeof refineSystemPrompt>[0][] = [
+      'bulletin',
+      'proposal_theme',
+      'report_review',
+      'parent_notice',
+    ];
+    for (const kind of kinds) {
+      const p = refineSystemPrompt(kind);
+      expect(p).toContain('足さない');
+      expect(p).toContain('行を増やさない');
+    }
+  });
 });

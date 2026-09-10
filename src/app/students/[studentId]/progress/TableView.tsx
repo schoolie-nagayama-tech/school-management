@@ -4,13 +4,16 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { CheckCircle2, Eye, EyeOff, FileText, RefreshCw, Send, Settings2 } from 'lucide-react';
 import {
+  closeStudentTextbookExam,
   getStudentProgress,
+  reopenStudentTextbookExam,
   updateStudentProgress,
   updateStudentTextbookCompleted,
   updateStudentTextbookSeason,
   upsertStudentProgress,
   upsertStudentProgressLesson,
 } from '@/lib/api/progress';
+import { useAuth } from '@/contexts/AuthContext';
 import SessionRecordingPanel from '@/components/progress/SessionRecordingPanel';
 import type { SessionRecordingPanelHandle } from '@/components/progress/SessionRecordingPanel';
 import LastHandoverCard from '@/components/progress/LastHandoverCard';
@@ -30,6 +33,8 @@ import {
   gradeLabel,
   isIntentTag,
   itemNo,
+  latestClosedExamOf,
+  monthDayLabel,
   seasonLabel,
   type IntentTag,
   type ViewMode,
@@ -104,12 +109,57 @@ export function TableView({
   highlightItemId?: number;
 }) {
   const isMeeting = viewMode === 'meeting';
+  const { profile } = useAuth();
+  // 「完了にしますか？」「目標を終えますか？」の確認ダイアログ
+  const { confirm, ConfirmDialog } = useConfirm();
   // 目標の親は「生徒×科目」。このテキストの科目キーを求め、モーダルの保存先に渡す。
   const subjectKey = categorizeSubject(textbook.textbook?.subject);
   const activeExam = activeExamOf(textbook, examTypes);
   const activeExamGoals = activeExam ? (actionGoalsByExam[activeExam.id] ?? []) : [];
   // 試験日を過ぎている（daysLeft が負）かどうか。過ぎている場合は「次の目標へ」の導線を強調する。
   const isExpired = activeExam?.daysLeft != null && activeExam.daysLeft < 0;
+  // 終了した目標（activeExam が無いときのカード出し分け用）。§4-2: その科目の終了済みのうち
+  // closed_at が最も新しいもの。
+  const latestClosedExam = activeExam ? null : latestClosedExamOf(textbook, examTypes);
+  // 目標を終える／終了を取り消す（教室長以上のみ）
+  const [closingExam, setClosingExam] = useState(false);
+  const handleCloseExam = useCallback(async () => {
+    if (!activeExam) return;
+    const ok = await confirm({
+      title: '目標を終える',
+      description:
+        '同じ科目のテキスト全体でこの目標が消えます（誤操作すると科目全体の目標が消えます）。終了しますか？',
+      confirmLabel: '終える',
+      cancelLabel: 'キャンセル',
+      variant: 'warning',
+    });
+    if (!ok) return;
+    setClosingExam(true);
+    try {
+      await closeStudentTextbookExam(activeExam.id, profile?.id ?? null);
+      success('目標を終えました');
+      await onRefresh();
+    } catch (e) {
+      console.error(e);
+      toastError('目標の終了に失敗しました');
+    } finally {
+      setClosingExam(false);
+    }
+  }, [activeExam, confirm, profile?.id, success, toastError, onRefresh]);
+  const handleReopenExam = useCallback(async () => {
+    if (!latestClosedExam) return;
+    setClosingExam(true);
+    try {
+      await reopenStudentTextbookExam(latestClosedExam.id);
+      success('終了を取り消しました');
+      await onRefresh();
+    } catch (e) {
+      console.error(e);
+      toastError('終了の取り消しに失敗しました');
+    } finally {
+      setClosingExam(false);
+    }
+  }, [latestClosedExam, success, toastError, onRefresh]);
   // 目標設定編集モーダル
   const [goalModalOpen, setGoalModalOpen] = useState(false);
   const [goalModalEditingId, setGoalModalEditingId] = useState<string | null>(null);
@@ -140,9 +190,6 @@ export function TableView({
   }, [textbook.id]);
   const displayCompleted =
     completedOverride !== undefined ? completedOverride : !!textbook.completed_at;
-
-  // 「完了にしますか？」の確認ダイアログ
-  const { confirm, ConfirmDialog } = useConfirm();
 
   // 列可視化: 管理モード / 面談モード共通の1つの設定として保存。
   // 申込・引継ぎ・講師名は面談モードでは列設定に関係なく常時非表示（内部情報のため）。
@@ -970,6 +1017,16 @@ export function TableView({
                   >
                     編集
                   </button>
+                  {/* 目標を終える: 教室長以上のみ。同じ科目の全テキストから目標が消えるため確認を挟む */}
+                  {role !== 'teacher' && (
+                    <button
+                      onClick={handleCloseExam}
+                      disabled={closingExam}
+                      className="px-2 py-0.5 text-[11px] bg-white border border-gray-300 rounded text-gray-600 hover:bg-gray-100 hover:text-gray-800 transition-[background-color,color] duration-150 ease-out active:scale-[0.97] disabled:opacity-50"
+                    >
+                      目標を終える
+                    </button>
+                  )}
                 </div>
               )}
             </div>
@@ -1034,7 +1091,48 @@ export function TableView({
               }}
             />
           </div>
+        ) : latestClosedExam ? (
+          // 終了した目標がある場合（B案）: 「目標未設定」で煽らず、終えた事実を静かに書く。
+          // 見た目も警告色ではなく通常のカードに寄せる（docs/progress-goal-close-plan.md §4-2）。
+          <div className="bg-white border border-[#e5e7eb] rounded-lg px-4 py-3 flex items-center justify-between">
+            <div>
+              <div className="text-sm font-bold text-[#1f2937]">目標なし</div>
+              <div className="text-[11px] text-[#6b7280] mt-0.5">
+                {latestClosedExam.name}は {monthDayLabel(latestClosedExam.closedOn)} に終了しました
+              </div>
+              {/* 講師には「なぜ記録ボタンが押せないか」の理由だけ添える。教室長は目標が無くても記録できる */}
+              {role === 'teacher' && (
+                <div className="text-[11px] text-[#6b7280] mt-0.5">
+                  目標を設定すると授業の記録ができます
+                </div>
+              )}
+            </div>
+            {!isMeeting && (
+              <div className="flex items-center gap-1.5">
+                {/* 終了を取り消せる場所はここしか無い（終了した目標はカードから消えるため） */}
+                {role !== 'teacher' && (
+                  <button
+                    onClick={handleReopenExam}
+                    disabled={closingExam}
+                    className="px-3 py-2 bg-white border border-gray-300 text-xs font-medium rounded-lg text-gray-600 hover:bg-gray-100 transition-[background-color] duration-150 ease-out active:scale-[0.97] whitespace-nowrap disabled:opacity-50"
+                  >
+                    終了を取り消す
+                  </button>
+                )}
+                <button
+                  onClick={() => {
+                    setGoalModalEditingId(null);
+                    setGoalModalOpen(true);
+                  }}
+                  className="px-4 py-2 bg-[#1e3a5f] text-white text-xs font-bold rounded-lg hover:bg-[#2a4d7a] transition-[background-color] duration-150 ease-out active:scale-[0.97] whitespace-nowrap"
+                >
+                  目標を設定する
+                </button>
+              </div>
+            )}
+          </div>
         ) : (
+          // 一度も目標が無い場合: 現行の警告カードのまま（変更しない）
           <div className="bg-amber-50 border-2 border-amber-400 rounded-lg px-4 py-3 flex items-center justify-between">
             <div>
               <div className="text-sm font-bold text-amber-800">目標が設定されていません</div>

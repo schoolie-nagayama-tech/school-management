@@ -48,7 +48,11 @@ import {
   deleteProgressTable,
   saveCoursePrepSnapshot,
   getCoursePrepSnapshot,
+  upsertCoursePrepTrack,
+  deleteCoursePrepTrack,
+  setCoursePrepStudentTrack,
   type AutoValues,
+  type CoursePrepTrackDraft,
   type ProgressTableSummary,
 } from '@/lib/api/courseProgress';
 import {
@@ -69,6 +73,8 @@ import type {
   ApplicationColumnType,
   CoursePrepSnapshot,
   CoursePrepSnapshotMeta,
+  CoursePrepTrack,
+  CoursePrepStudentTrack,
 } from '@/types/database';
 import { PROGRESS_COLUMN_GROUPS, SEASON_LABELS } from '@/types/database';
 import { useRequirePermission, useCanEdit } from '@/hooks/usePermissions';
@@ -135,6 +141,9 @@ export default function CourseProgressPage() {
   const [liveProgressData, setProgressData] = useState<StudentCourseProgress[]>([]);
   const [livePeriod, setPeriod] = useState<CoursePrepPeriod | null>(null);
   const [liveAutoValuesData, setAutoValuesData] = useState<AutoValues>({});
+  // 講習期間の区分（Phase 8）と生徒の当てはめ。生徒によって講習期間が違う期のためのもの。
+  const [liveTracks, setTracks] = useState<CoursePrepTrack[]>([]);
+  const [liveStudentTracks, setStudentTracks] = useState<CoursePrepStudentTrack[]>([]);
 
   // 確定保存（スナップショット）。設計は docs/koushu-progress-snapshot-plan.md。
   // meta は「この期が保存済みか」を示すだけの軽い情報で、表を再生するときだけ payload を取りにいく。
@@ -155,15 +164,25 @@ export default function CourseProgressPage() {
   const autoValuesData = isSnapshotView
     ? (snapshot.payload.autoValues as AutoValues)
     : liveAutoValuesData;
+  // version 1 の payload には区分が無いので、必ず空配列にフォールバックする
+  const tracks = isSnapshotView ? (snapshot.payload.tracks ?? []) : liveTracks;
+
+  // 生徒 → 当てはめられた区分。null は「共通に戻す」明示指定で、キーが無いのは未指定。
+  const trackAssignments = useMemo(() => {
+    const rows = isSnapshotView ? (snapshot?.payload.studentTracks ?? []) : liveStudentTracks;
+    const map = new Map<string, string | null>();
+    for (const row of rows) map.set(row.student_id, row.track_id);
+    return map;
+  }, [isSnapshotView, snapshot, liveStudentTracks]);
 
   // 講習期間の終了日を過ぎたか（JST基準）。終了日が未設定なら判定できないので false。
-  // 学年別終了日がある期（冬期の中3など）は、最後の学年が終わるまで「終了」としない。
+  // 区分がある期（受験生だけ入試直前まで続く冬期など）は、最後の区分が終わるまで「終了」としない。
   const hasPeriodEnded = useMemo(() => {
-    const end = resolvePeriodLastEndDate(livePeriod);
+    const end = resolvePeriodLastEndDate(livePeriod, liveTracks);
     if (!end) return false;
     const todayJST = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
     return end < todayJST;
-  }, [livePeriod]);
+  }, [livePeriod, liveTracks]);
 
   /**
    * 確定保存の状態バーを出すか。
@@ -256,6 +275,8 @@ export default function CourseProgressPage() {
       'period',
       // この期が確定保存済みかどうか（payload は含まない軽い情報）
       'snapshot_meta',
+      // 講習期間の区分と生徒の当てはめ（件数が少ないので軽い側に混ぜる）
+      'tracks',
     ]);
     const heavyPromise = batchFetchCoursePrepApi(params, ['auto_values', 'schedule_tasks']);
 
@@ -300,6 +321,12 @@ export default function CourseProgressPage() {
       setProgressData(progressResult);
       setPeriod((batchData.period as CoursePrepPeriod) || null);
 
+      const trackData = batchData.tracks as
+        | { tracks: CoursePrepTrack[]; assignments: CoursePrepStudentTrack[] }
+        | undefined;
+      setTracks(trackData?.tracks ?? []);
+      setStudentTracks(trackData?.assignments ?? []);
+
       // 期を切り替えたので、前の期のスナップショットを持ち越さない。
       const meta = (batchData.snapshot_meta as CoursePrepSnapshotMeta | null) ?? null;
       setSnapshotMeta(meta);
@@ -315,7 +342,7 @@ export default function CourseProgressPage() {
       }
 
       // 項目が0件なら初回テンプレート適用を提案
-      if (itemsData.length === 0 && isOwnerOrAbove) {
+      if (itemsData.length === 0 && isManagerOrAbove) {
         const tpls = await getTemplates('progress', season, schoolId);
         setTemplates(tpls);
         if (tpls.length > 0) {
@@ -328,7 +355,7 @@ export default function CourseProgressPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [localSchoolId, season, year, showHidden, isOwnerOrAbove]);
+  }, [localSchoolId, season, year, showHidden, isManagerOrAbove]);
 
   useEffect(() => {
     // 横断サマリー表示中は単一校の取得をスキップ（無駄なリクエストを避ける）
@@ -721,6 +748,135 @@ export default function CourseProgressPage() {
       }
     },
     [localSchoolId, season, year]
+  );
+
+  /**
+   * 区分（講習期間の区分）の作成・更新・削除と、生徒の当てはめ。
+   *
+   * 区分を変えると生徒ごとの講習期間が変わり、通常回数（course_sessions）＝増コマの
+   * 基準まで動く。そのため保存後は区分と auto_values をまとめて取り直す。
+   */
+  /**
+   * 区分の一覧・当てはめだけを取り直す（軽い）。
+   *
+   * auto_values は含めない。あちらは通塾パターン・提案書・単元を全件ページングする
+   * このページで一番重い集計で、区分を1つ触るたびに走らせると操作がもっさりする
+   * （学年チップを5個押すだけで5回フル再集計になっていた）。
+   */
+  const refreshTracks = useCallback(async () => {
+    if (!localSchoolId) return;
+    const batchResult = await batchFetchCoursePrepApi(
+      { schoolId: localSchoolId, season, year: String(year) },
+      ['tracks']
+    );
+    const trackData = batchResult.tracks as
+      | { tracks: CoursePrepTrack[]; assignments: CoursePrepStudentTrack[] }
+      | undefined;
+    setTracks(trackData?.tracks ?? []);
+    setStudentTracks(trackData?.assignments ?? []);
+  }, [localSchoolId, season, year]);
+
+  /**
+   * 区分をいじった後の通常回数・増コマの取り直し。
+   *
+   * 区分を変えると course_sessions が変わるので集計はやり直す必要があるが、
+   * 連続操作のたびに走らせる必要はない。最後の操作から少し待ってから1回だけ走らせ、
+   * その間は画面の当てはめだけ先に更新しておく（数字は少し遅れて追いつく）。
+   */
+  const autoValuesTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const scheduleAutoValuesRefresh = useCallback(() => {
+    if (!localSchoolId) return;
+    if (autoValuesTimerRef.current) clearTimeout(autoValuesTimerRef.current);
+    autoValuesTimerRef.current = setTimeout(() => {
+      setAutoLoading(true);
+      batchFetchCoursePrepApi({ schoolId: localSchoolId, season, year: String(year) }, [
+        'auto_values',
+      ])
+        .then((r) => setAutoValuesData((r.auto_values || {}) as AutoValues))
+        .catch((err) => console.error('Error refreshing auto_values:', err))
+        .finally(() => setAutoLoading(false));
+    }, 800);
+  }, [localSchoolId, season, year]);
+
+  // 画面を離れるときに待機中のタイマーを止める（消えたコンポーネントへの setState を防ぐ）
+  useEffect(() => {
+    return () => {
+      if (autoValuesTimerRef.current) clearTimeout(autoValuesTimerRef.current);
+    };
+  }, []);
+
+  const handleTrackSave = useCallback(
+    async (draft: CoursePrepTrackDraft) => {
+      if (!localSchoolId) return;
+      try {
+        await upsertCoursePrepTrack(localSchoolId, season, year, draft);
+        await refreshTracks();
+        scheduleAutoValuesRefresh();
+      } catch (err) {
+        console.error('Error saving track:', err);
+        setErrorMessage(getUserErrorMessage(err, '区分の保存に失敗しました'));
+      }
+    },
+    [localSchoolId, season, year, refreshTracks, scheduleAutoValuesRefresh]
+  );
+
+  const handleTrackDelete = useCallback(
+    async (trackId: string) => {
+      if (!localSchoolId) return;
+      try {
+        await deleteCoursePrepTrack(localSchoolId, trackId);
+        await refreshTracks();
+        scheduleAutoValuesRefresh();
+      } catch (err) {
+        console.error('Error deleting track:', err);
+        setErrorMessage(getUserErrorMessage(err, '区分の削除に失敗しました'));
+      }
+    },
+    [localSchoolId, refreshTracks, scheduleAutoValuesRefresh]
+  );
+
+  /**
+   * 生徒の区分を変える。一番よく押される操作なので、画面は待たせない。
+   *
+   * 先に手元の当てはめを書き換えて表示を即座に変え、保存はその裏で走らせる。
+   * 失敗したら元に戻してエラーを出す（間違った当てはめが残ったままにならないように）。
+   * 通常回数の再集計は重いので、連続操作をまとめて後追いで1回だけ走らせる。
+   */
+  const handleStudentTrackChange = useCallback(
+    async (studentId: string, trackId: string | null | 'default') => {
+      if (!localSchoolId) return;
+      const previous = liveStudentTracks;
+      // 楽観更新: 'default' は当てはめ行を消す、それ以外はその生徒の行を差し替える
+      setStudentTracks((rows) => {
+        const rest = rows.filter((r) => r.student_id !== studentId);
+        if (trackId === 'default') return rest;
+        const existing = rows.find((r) => r.student_id === studentId);
+        return [
+          ...rest,
+          {
+            ...(existing ?? {
+              id: `optimistic-${studentId}`,
+              school_id: localSchoolId,
+              season,
+              year,
+              student_id: studentId,
+              created_at: '',
+              updated_at: '',
+            }),
+            track_id: trackId,
+          } as CoursePrepStudentTrack,
+        ];
+      });
+      try {
+        await setCoursePrepStudentTrack(localSchoolId, season, year, studentId, trackId);
+        scheduleAutoValuesRefresh();
+      } catch (err) {
+        setStudentTracks(previous); // 保存できなかったので画面も戻す
+        console.error('Error setting student track:', err);
+        setErrorMessage(getUserErrorMessage(err, '区分の当てはめに失敗しました'));
+      }
+    },
+    [localSchoolId, season, year, liveStudentTracks, scheduleAutoValuesRefresh]
   );
 
   // テンプレート適用
@@ -1213,14 +1369,18 @@ export default function CourseProgressPage() {
           <div className="flex items-center gap-2">
             {/* アクションは単一校（特定教室の詳細表）のときだけ。横断サマリーでは非表示。 */}
             <div className={`flex items-center gap-2 ${showAllSchoolsOverview ? 'hidden' : ''}`}>
+              {/* テンプレートの適用は各教室で期を立ち上げるときに使うので教室長以上。
+                  保存（教室のやり方を型にする）と面談同期はエリアマネージャー以上のまま。 */}
+              {isManagerOrAbove && (
+                <button
+                  onClick={handleOpenTemplateDialog}
+                  className="px-3 py-1.5 text-xs border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600 transition-[background-color,transform] duration-150 ease-out active:scale-[0.97]"
+                >
+                  テンプレート適用
+                </button>
+              )}
               {isOwnerOrAbove && (
                 <>
-                  <button
-                    onClick={handleOpenTemplateDialog}
-                    className="px-3 py-1.5 text-xs border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600 transition-[background-color,transform] duration-150 ease-out active:scale-[0.97]"
-                  >
-                    テンプレート適用
-                  </button>
                   <button
                     onClick={() => {
                       const seasonLabel =
@@ -1430,6 +1590,9 @@ export default function CourseProgressPage() {
               onPeriodDateChange={
                 isManagerOrAbove && !isSnapshotView ? handlePeriodDateChange : undefined
               }
+              tracks={tracks}
+              onTrackSave={isManagerOrAbove && !isSnapshotView ? handleTrackSave : undefined}
+              onTrackDelete={isManagerOrAbove && !isSnapshotView ? handleTrackDelete : undefined}
             />
           ))}
 
@@ -1805,7 +1968,7 @@ export default function CourseProgressPage() {
           ) : displayItems.length === 0 ? (
             <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
               <p className="text-text-body mb-4">進捗管理項目がありません。</p>
-              {isOwnerOrAbove && (
+              {isManagerOrAbove && (
                 <button
                   onClick={handleOpenTemplateDialog}
                   className="px-4 py-2 text-sm bg-ink text-white rounded-lg hover:bg-ink/80 transition-[background-color,transform] duration-150 ease-out active:scale-[0.97]"
@@ -1830,6 +1993,14 @@ export default function CourseProgressPage() {
               // 確定データ表示中は生徒詳細を開かせない。
               // 凍結された当時の記録と、現在の生徒情報が混ざって見えるのを防ぐ。
               onShowStudentInfo={isSnapshotView ? undefined : setInfoStudent}
+              tracks={tracks}
+              trackAssignments={trackAssignments}
+              commonEndDate={period?.schedule_end_date ?? null}
+              // 区分の当てはめは通常回数・増コマ・自動確定まで動かすので、
+              // 区分の定義と同じく教室長以上に限る（講師には今の当てはめを見せるだけ）
+              onStudentTrackChange={
+                isManagerOrAbove && !isSnapshotView ? handleStudentTrackChange : undefined
+              }
             />
           ))}
       </div>

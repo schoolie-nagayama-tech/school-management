@@ -46,6 +46,9 @@ export function calendarWeeks(startDate: string, endDate: string): number {
  * 学年別終了日の解決（決定44）。開始日は共通・終了日だけ学年別。
  * 書いていない学年（またはテーブル自体が無い）は schedule_end_date にフォールバックする。
  * jsonb から来る値なのでキーは常に文字列（例 '7'）。
+ *
+ * ★ Phase 8 で区分（resolveStudentTrack + resolveTrackWindow・src/lib/coursePrepKpis.ts）に
+ *   置き換えた。新規利用禁止。同じ小6でも受験する子としない子がいて学年では割れないため。
  */
 export function resolveGradeEndDate(
   scheduleEndDate: string,

@@ -12,6 +12,7 @@ import {
   archiveResponses,
   deleteFormResponse,
   deleteResponses,
+  getSubmitterNames,
 } from '@/lib/api/form-responses';
 import { getStudents } from '@/lib/api/students';
 import { LinkStudentModal } from '@/components/forms/LinkStudentModal';
@@ -25,6 +26,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { YOUBI_GRADE_NUMBER_TO_NAME } from '@/types/forms/youbi';
 import { YoubiStats } from '@/components/forms/youbi/YoubiStats';
 import { YoubiResponseDetailModal } from '@/components/forms/youbi/YoubiResponseDetailModal';
+import { YoubiProxyApplyModal } from '@/components/forms/youbi/YoubiProxyApplyModal';
+import { isManagerOrAbove } from '@/lib/utils/roles';
+import { UserPlus } from 'lucide-react';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 
 export default function YoubiResponsePage() {
@@ -32,7 +36,7 @@ export default function YoubiResponsePage() {
   const searchParams = useSearchParams();
   const schoolIdParam = searchParams.get('schoolId');
   const periodKey = (params?.periodKey as string) || '';
-  const { getSelectedSchoolIds, permissions } = useAuth();
+  const { getSelectedSchoolIds, permissions, profile } = useAuth();
   const [responses, setResponses] = useState<YoubiResponse[]>([]);
   const [stats, setStats] = useState({
     total_responses: 0,
@@ -61,6 +65,9 @@ export default function YoubiResponsePage() {
   const [archivedCount, setArchivedCount] = useState(0);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isProcessing, setIsProcessing] = useState(false);
+  // 代理申込を出した職員の表示名（id → 名前）
+  const [submitterNames, setSubmitterNames] = useState<Map<string, string>>(new Map());
+  const [isProxyOpen, setIsProxyOpen] = useState(false);
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
@@ -86,6 +93,14 @@ export default function YoubiResponsePage() {
       setResponses(responsesData);
       setStats(statsData);
       setArchivedCount(archivedCountData);
+
+      // 代理申込があるときだけ、出した職員の名前を引く。
+      const submitterIds = responsesData
+        .map((r) => r.submitted_by_user_id)
+        .filter((id): id is string => !!id);
+      setSubmitterNames(
+        submitterIds.length > 0 ? await getSubmitterNames(submitterIds) : new Map()
+      );
     } catch (error) {
       console.error('Error fetching youbi responses:', error);
       setErrorMessage(getUserErrorMessage(error, '回答一覧の取得に失敗しました'));
@@ -316,6 +331,13 @@ export default function YoubiResponsePage() {
   const allSelected =
     activeResponses.length > 0 && activeResponses.every((r) => selectedIds.has(r.id));
 
+  // 代理申込の入口。教室が1つに決まるときだけ出す。
+  // 複数教室を選択中はどの教室の申込にするか決められず、取り違えると別教室の申込になる。
+  const selectedSchoolIds = getSelectedSchoolIds();
+  const proxySchoolId =
+    schoolIdParam || (selectedSchoolIds.length === 1 ? selectedSchoolIds[0] : null);
+  const canProxyApply = isManagerOrAbove(profile?.role) && !!proxySchoolId;
+
   return (
     <>
       <ToastContainer toasts={toasts} onRemove={removeToast} />
@@ -407,6 +429,17 @@ export default function YoubiResponsePage() {
                 {isLoading && <Spinner size="xs" tone="current" className="inline-block" />}
               </span>
             </label>
+
+            {/* 教室長が電話などで受けた変更を、保護者の代わりにその場で申し込む導線 */}
+            {canProxyApply && (
+              <button
+                onClick={() => setIsProxyOpen(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-2 text-sm rounded-lg border border-border bg-surface-raised text-text-body hover:bg-surface-hover active:scale-[0.97] transition-[transform,background-color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)]"
+              >
+                <UserPlus className="w-4 h-4" aria-hidden="true" />
+                代理で申し込む
+              </button>
+            )}
           </div>
         </div>
 
@@ -517,9 +550,24 @@ export default function YoubiResponsePage() {
                         {formatDate(response.created_at)}
                       </td>
                       <td className="px-4 py-3 text-sm text-text-heading font-medium">
-                        {response.linked_student
-                          ? `${response.linked_student.last_name} ${response.linked_student.first_name}`
-                          : response.student_name}
+                        <span className="inline-flex items-center gap-1.5 flex-wrap">
+                          {response.linked_student
+                            ? `${response.linked_student.last_name} ${response.linked_student.first_name}`
+                            : response.student_name}
+                          {/* 保護者本人の申込か、教室長が代わりに出したものかを一覧で見分ける */}
+                          {response.submitted_by_user_id && (
+                            <span
+                              className="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-medium bg-amber-100 text-amber-800 whitespace-nowrap"
+                              title={
+                                submitterNames.get(response.submitted_by_user_id)
+                                  ? `${submitterNames.get(response.submitted_by_user_id)}が保護者の代わりに申し込みました`
+                                  : '保護者ではなく教室長が代わりに申し込みました'
+                              }
+                            >
+                              代理
+                            </span>
+                          )}
+                        </span>
                       </td>
                       <td className="px-4 py-3 text-sm text-text-body">
                         {YOUBI_GRADE_NUMBER_TO_NAME[response.grade] || response.grade}
@@ -649,6 +697,7 @@ export default function YoubiResponsePage() {
               response_data: linkingResponse.response_data as unknown as Record<string, unknown>,
               linked_student_id: linkingResponse.linked_student_id,
               linked_at: linkingResponse.linked_at,
+              submitted_by_user_id: linkingResponse.submitted_by_user_id,
               status_checks: (linkingResponse.status_checks ?? {}) as Record<string, boolean>,
               is_archived: linkingResponse.is_archived,
               archived_at: linkingResponse.archived_at,
@@ -666,9 +715,29 @@ export default function YoubiResponsePage() {
           <YoubiResponseDetailModal
             isOpen={!!detailResponse}
             response={detailResponse}
+            submitterName={
+              detailResponse.submitted_by_user_id
+                ? (submitterNames.get(detailResponse.submitted_by_user_id) ?? null)
+                : null
+            }
             onClose={() => setDetailResponse(null)}
           />
         )}
+        {/* 代理申込（保護者用フォームと同じ中身を、教室長の画面で開く） */}
+        {canProxyApply && proxySchoolId && (
+          <YoubiProxyApplyModal
+            isOpen={isProxyOpen}
+            schoolId={proxySchoolId}
+            periodKey={periodKey}
+            submitterLabel={profile?.display_name || '教室長'}
+            onClose={() => setIsProxyOpen(false)}
+            onSubmitted={() => {
+              setIsProxyOpen(false);
+              fetchData();
+            }}
+          />
+        )}
+
         {ConfirmDialog}
       </AdminLayout>
     </>

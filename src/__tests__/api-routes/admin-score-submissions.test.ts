@@ -82,7 +82,23 @@ describe('GET /api/admin/score-submissions', () => {
     expect(listScoreSubmissionsForReview).toHaveBeenCalledWith(
       { tag: 'svc' },
       ['school-1', 'school-2'],
-      'submitted'
+      'submitted',
+      undefined
+    );
+  });
+
+  it('student_id を付けるとサーバ側で生徒に絞る（他教室の生徒をレスポンスに乗せない）', async () => {
+    mockAuthSuccess(['school-1', 'school-2']);
+    vi.mocked(listScoreSubmissionsForReview).mockResolvedValue([]);
+    const res = await GET(
+      new NextRequest('http://localhost:3000/api/admin/score-submissions?student_id=stu-1')
+    );
+    expect(res.status).toBe(200);
+    expect(listScoreSubmissionsForReview).toHaveBeenCalledWith(
+      { tag: 'svc' },
+      ['school-1', 'school-2'],
+      'submitted',
+      'stu-1'
     );
   });
 

@@ -31,7 +31,8 @@ import { normalizePersonName } from '@/lib/utils/personName';
 import { getClosedDays } from '@/lib/api/schedule';
 import { getClassCapacity, DEFAULT_CLASS_CAPACITY } from '@/lib/api/school-class-capacity';
 import { normalizeKomaBySubject } from '@/lib/utils/komaBySubject';
-import { resolveGradeEndDate } from '@/lib/utils/koushuApplyPure';
+import { resolveStudentTrack, resolveTrackWindow } from '@/lib/coursePrepKpis';
+import type { CoursePrepTrack } from '@/types/database';
 import { INDIVIDUAL_FORMATION } from '@/types/schedule';
 import type {
   AllocatorInput,
@@ -66,10 +67,12 @@ export interface RealDataOptions {
    */
   gradeFilter?: number[] | null;
   /**
-   * 学年別の講習終了日（決定44。course_prep_periods.schedule_end_by_grade）。
-   * 生徒の可能枠をその学年の終了日でクランプする。未設定の学年は共通の終了日。
+   * 講習期間の区分（Phase 8。course_prep_tracks）と、生徒の当てはめ。
+   * 生徒の可能枠をその区分の終了日でクランプする。区分に入っていない生徒は共通の終了日。
+   * 学年別終了日（決定44）は学年で割れないことが分かったのでこれに置き換えた。
    */
-  scheduleEndByGrade?: Record<string, string> | null;
+  tracks?: CoursePrepTrack[] | null;
+  studentTracks?: { student_id: string; track_id: string | null }[] | null;
   /**
    * 既存の下書き提案（schedule_match_proposals.status='draft'）も既存配置として積むか。
    * true = 差分モード（埋まっていないコマだけ足す） / false = 破棄モード（下書きは無かったものとして組み直す）。
@@ -111,7 +114,7 @@ export interface RealDataNotes {
   subjectAssignmentIsProvisional: boolean;
   /** 学年で絞った場合の対象学年（未指定なら null＝全学年） */
   gradeFilter: number[] | null;
-  /** 学年別終了日で可能枠を切り落とした生徒数（決定44の効き具合の確認用） */
+  /** 区分の終了日で可能枠を切り落とした生徒数（Phase 8 の効き具合の確認用） */
   studentsClampedByGradeEnd: number;
   /** 既存配置として積んだ下書き提案の件数（差分モードのときだけ非0） */
   draftsCountedAsExisting: number;
@@ -689,24 +692,31 @@ export async function loadRealAllocatorInput(opts: RealDataOptions): Promise<Rea
       );
     }
   }
-  // ---- 10-b. 学年別の講習終了日でクランプ（決定44・§17-2） ----
-  // 開始は全学年共通・終了だけ学年別。終了が早い学年の生徒に期間外のコマを置かないようにする。
+  // ---- 10-b. 講習期間の区分でクランプ（Phase 8・旧 決定44） ----
+  // 期間が早く終わる区分の生徒に、期間外のコマを置かないようにする。
   // 可能枠の側で切るのが最小の実装で、アロケータ本体はこれ以上手を入れなくてよい
   // （アンカーの span は「その生徒の可能枠の端から端」を見るので自動的に追随する）。
+  // 日付の列挙（dates）は共通の期間で作っているので、共通より後ろに伸びる区分は
+  // ここでは伸ばせない（切るだけ）。伸ばすのは期の期間そのものを延ばす運用で対応する。
   let studentsClampedByGradeEnd = 0;
-  if (opts.scheduleEndByGrade && Object.keys(opts.scheduleEndByGrade).length > 0) {
+  const clampTracks = opts.tracks ?? [];
+  if (clampTracks.length > 0) {
+    const trackAssignments = new Map<string, string | null>();
+    for (const row of opts.studentTracks ?? []) {
+      trackAssignments.set(row.student_id, row.track_id);
+    }
     for (const [studentId, cells] of Array.from(studentAvailability.entries())) {
       const grade = studentById.get(studentId)?.grade;
-      if (grade == null) continue;
-      const endForGrade = resolveGradeEndDate(
-        period.schedule_end_date,
-        opts.scheduleEndByGrade,
-        grade
-      );
-      if (endForGrade >= period.schedule_end_date) continue; // 共通の終了日と同じ or それ以降なら切る必要なし
+      const track = resolveStudentTrack(clampTracks, trackAssignments, studentId, grade);
+      const endForStudent = resolveTrackWindow(
+        track,
+        period.schedule_start_date,
+        period.schedule_end_date
+      ).end;
+      if (!endForStudent || endForStudent >= period.schedule_end_date) continue; // 共通と同じ or それ以降なら切る必要なし
       const kept = new Set<CellKey>();
       for (const key of Array.from(cells)) {
-        if (key.slice(0, 10) <= endForGrade) kept.add(key);
+        if (key.slice(0, 10) <= endForStudent) kept.add(key);
       }
       if (kept.size !== cells.size) studentsClampedByGradeEnd++;
       studentAvailability.set(studentId, kept);

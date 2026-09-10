@@ -158,7 +158,7 @@ export function UnitRow({
           )}
           {isActive && draft.intent_tag && (
             <span
-              className={`ml-1.5 inline-block px-1.5 py-0 border rounded-full text-[9px] font-medium ${INTENT_TAG_COLOR[draft.intent_tag as IntentTag] ?? 'text-text-muted border-border-default'}`}
+              className={`ml-1.5 inline-block px-1.5 py-0 border rounded-full text-[9px] font-medium ${INTENT_TAG_COLOR[draft.intent_tag as IntentTag] ?? 'text-text-muted border-border'}`}
             >
               {draft.intent_tag}
             </span>
@@ -280,7 +280,7 @@ export function UnitRow({
                   className={`px-1.5 py-0.5 text-[10px] font-medium border rounded-full transition-[background-color,border-color,color,transform] duration-100 ease-out active:scale-95 ${
                     active
                       ? `${color} bg-white border-current`
-                      : 'text-text-faint border-border-default hover:border-text-muted hover:text-text-muted'
+                      : 'text-text-faint border-border hover:border-text-muted hover:text-text-muted'
                   }`}
                 >
                   {tag}

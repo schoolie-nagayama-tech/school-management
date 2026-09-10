@@ -3,11 +3,14 @@
 /**
  * 講習申込（Web申込）の公開設定。
  *
- * 正典仕様: docs/koushu-auto-allocation-spec.md §10-4・決定26/29/44。
- * 講習期間（course_prep_periods）1件ごとに次の3つを編集する。
+ * 正典仕様: docs/koushu-auto-allocation-spec.md §10-4・決定26/29。
+ * 講習期間（course_prep_periods）1件ごとに次の2つを編集する。
  *   1. 公開期間 — ここに日時が入るまで保護者は申込フォームを開けない（§12の非公開担保）
- *   2. 学年別の終了日 — 開始は共通・終了だけ学年で変えられる（決定44）
- *   3. 単価表 — 学年 × 授業形式(1対1/1対2) × 授業時間(45/90) の3軸（決定26）
+ *   2. 単価表 — 学年 × 授業形式(1対1/1対2) × 授業時間(45/90) の3軸（決定26）
+ *
+ * ★ かつてここにあった「学年別の講習終了日」（決定44）は Phase 8 で「区分」に置き換えた。
+ *   同じ小6でも受験する子としない子がいて学年では割れないため。区分の編集は
+ *   講習管理 → 進捗管理のダッシュボード（講習期間の欄）に移した。
  *
  * ★ 2027年2月の切替まで公開期間は空のままにする。公開期間を入れた瞬間に
  *   /koushu-apply/[token] と /portal/[schoolCode]/koushu が保護者に開く。
@@ -32,7 +35,6 @@ import {
   toDatetimeLocalValue,
   validatePublishWindow,
   sanitizePriceTable,
-  sanitizeEndByGrade,
   PUBLISH_STATUS_LABELS,
   type PublishStatus,
 } from '@/lib/utils/koushuApplySettings';
@@ -119,7 +121,6 @@ export default function KoushuApplySettingsPage() {
   // 編集中の値
   const [publishStart, setPublishStart] = useState('');
   const [publishEnd, setPublishEnd] = useState('');
-  const [endByGrade, setEndByGrade] = useState<Record<string, string>>({});
   const [priceDraft, setPriceDraft] = useState<PriceDraft>(() => toPriceDraft(null));
   // 単価のまとめて入力
   const [bulkPrices, setBulkPrices] = useState<Record<string, string>>({});
@@ -165,13 +166,11 @@ export default function KoushuApplySettingsPage() {
     if (!selectedPeriod) {
       setPublishStart('');
       setPublishEnd('');
-      setEndByGrade({});
       setPriceDraft(toPriceDraft(null));
       return;
     }
     setPublishStart(toDatetimeLocalValue(selectedPeriod.applyPublishStart));
     setPublishEnd(toDatetimeLocalValue(selectedPeriod.applyPublishEnd));
-    setEndByGrade({ ...(selectedPeriod.scheduleEndByGrade ?? {}) });
     setPriceDraft(toPriceDraft(selectedPeriod.applyPriceTable));
   }, [selectedPeriod]);
 
@@ -215,14 +214,10 @@ export default function KoushuApplySettingsPage() {
       error(table.message);
       return;
     }
-    const byGrade = sanitizeEndByGrade(endByGrade, selectedPeriod.scheduleStartDate);
-    if (!byGrade.ok) {
-      error(byGrade.message);
-      return;
-    }
-
     setSaving(true);
     try {
+      // 学年別終了日（scheduleEndByGrade）は渡さない。Phase 8 で区分に置き換えたので、
+      // この画面からは既存値に触れない（渡さなければ API 側も更新対象にしない）。
       await saveKoushuApplySettings({
         schoolId,
         season: selectedPeriod.season,
@@ -230,7 +225,6 @@ export default function KoushuApplySettingsPage() {
         applyPublishStart: win.value.start,
         applyPublishEnd: win.value.end,
         applyPriceTable: table.value,
-        scheduleEndByGrade: byGrade.value,
       });
       success('公開設定を保存しました');
       await loadPeriods();
@@ -370,33 +364,7 @@ export default function KoushuApplySettingsPage() {
               </div>
             </div>
 
-            {/* 2. 学年別の終了日 */}
-            <div className="bg-surface-raised rounded-xl border border-border p-6">
-              <h2 className="text-lg font-bold text-text-heading mb-1">学年別の講習終了日</h2>
-              <p className="text-xs text-text-muted mb-4">
-                開始日は全学年で共通です。空欄の学年は共通の終了日（
-                {selectedPeriod?.scheduleEndDate ?? '未設定'}）を使います。
-              </p>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-                {GRADES.map((grade) => (
-                  <div key={grade} className="flex items-center gap-2">
-                    <span className="text-sm text-text-body w-10 shrink-0">
-                      {GRADE_LABELS[grade]}
-                    </span>
-                    <input
-                      type="date"
-                      value={endByGrade[String(grade)] ?? ''}
-                      onChange={(e) =>
-                        setEndByGrade((prev) => ({ ...prev, [String(grade)]: e.target.value }))
-                      }
-                      className="flex-1 min-w-0 px-2 py-1.5 border border-border rounded-lg text-sm bg-surface text-text-body"
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* 3. 単価表 */}
+            {/* 2. 単価表 */}
             <div className="bg-surface-raised rounded-xl border border-border p-6">
               <h2 className="text-lg font-bold text-text-heading mb-1">
                 単価表（1コマあたり・円）

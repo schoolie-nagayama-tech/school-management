@@ -757,11 +757,38 @@ export async function updateRegularPattern(
   return data as ScheduleRegularPattern;
 }
 
-/** 論理削除（is_active = false） */
-export async function deleteRegularPattern(id: string): Promise<void> {
+/**
+ * 論理削除（is_active = false ＋ 有効期間を締める）。
+ *
+ * ★ effective_until を必ず入れること。
+ *   is_active を落とすだけだと「いつまで通っていたか」が失われ、講習の通常回数
+ *   （course_sessions）のように「その期に通っていたか」を後から数える集計が、
+ *   過去に遡って狂う。増コマ＝提案コマ−通常回数 なので、通常回数が消えると
+ *   その生徒の増コマが提案コマ全部に化ける。
+ *   パターンの「変更」経路（changeRegularPattern・pattern-matching の担当変更）は
+ *   前から旧行を effective_until で締めており、停止の経路だけが漏れていた。
+ *
+ * @param endDate 最終有効日（この日までは通っていた扱い）。既定は今日(JST)。
+ *   既に effective_until が入っている行は、そちらを優先して上書きしない
+ *   （変更で締められた履歴を後から消さないため）。
+ */
+export async function deleteRegularPattern(id: string, endDate?: string): Promise<void> {
+  const until = endDate ?? new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
+
+  const { data: current, error: readErr } = await db
+    .from('schedule_regular_patterns')
+    .select('effective_until')
+    .eq('id', id)
+    .maybeSingle();
+
+  if (readErr) {
+    console.error('Error reading regular pattern before delete:', readErr);
+    throw new Error('通塾日程の削除に失敗しました');
+  }
+
   const { error } = await db
     .from('schedule_regular_patterns')
-    .update({ is_active: false })
+    .update({ is_active: false, effective_until: current?.effective_until ?? until })
     .eq('id', id);
 
   if (error) {

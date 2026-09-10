@@ -218,13 +218,13 @@ export default function KoushuTextbookRosterPage() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="生徒名で検索..."
-                className="pl-8 pr-3 py-1.5 text-xs border border-border-default rounded-lg bg-surface-raised w-48 focus:outline-none focus:ring-1 focus:ring-ink/30"
+                className="pl-8 pr-3 py-1.5 text-xs border border-border rounded-lg bg-surface-raised w-48 focus:outline-none focus:ring-1 focus:ring-ink/30"
               />
             </div>
             {filtered.length > 0 && (
               <button
                 onClick={() => window.print()}
-                className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium border border-border-default text-text-body rounded-lg hover:bg-surface-hover active:scale-[0.97] transition-[background-color,transform] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)]"
+                className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium border border-border text-text-body rounded-lg hover:bg-surface-hover active:scale-[0.97] transition-[background-color,transform] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)]"
               >
                 <Printer className="w-3 h-3" />
                 印刷
@@ -242,14 +242,14 @@ export default function KoushuTextbookRosterPage() {
         {loading ? (
           <Loading className="min-h-[40vh]" label="使用テキストを読み込み中..." />
         ) : filtered.length === 0 ? (
-          <div className="py-12 text-center text-sm text-text-faint border border-border-default rounded-xl">
+          <div className="py-12 text-center text-sm text-text-faint border border-border rounded-xl">
             {year} {SEASON_LABELS[season]}講習の公開済み提案書がありません
           </div>
         ) : (
-          <div className="rounded-xl border border-border-default overflow-hidden">
+          <div className="rounded-xl border border-border overflow-hidden">
             <table className="w-full text-sm print:text-[11px]">
               <thead>
-                <tr className="bg-surface text-text-muted border-b border-border-default print:bg-white">
+                <tr className="bg-surface text-text-muted border-b border-border print:bg-white">
                   <th className="text-left font-semibold px-4 py-2 w-44 print:py-1">生徒名</th>
                   <th className="text-left font-semibold px-4 py-2 w-20 print:py-1">学年</th>
                   <th className="text-left font-semibold px-4 py-2 w-24 print:py-1">科目</th>

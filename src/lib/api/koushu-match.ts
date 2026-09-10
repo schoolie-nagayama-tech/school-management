@@ -19,6 +19,7 @@
  *   講師選択の加点（固定50/過去30/科目20/性別10/出勤5）は allocate.ts の ALLOC_WEIGHTS へ移した。
  */
 
+import type { CoursePrepTrack } from '@/types/database';
 import type { KoushuPeriodInfo } from '@/lib/api/koushu-period';
 import { createMatchBatch, dismissKoushuDraftsInPeriod } from '@/lib/api/schedule-match';
 import type { MatchBatchMode } from '@/types/schedule-match';
@@ -50,8 +51,9 @@ export interface RunKoushuAllocationInput {
   settings: AllocatorSettings;
   /** 対象学年（決定21）。空/未指定＝全学年 */
   gradeFilter?: number[] | null;
-  /** 学年別の講習終了日（決定44）。course_prep_periods.schedule_end_by_grade をそのまま渡す */
-  scheduleEndByGrade?: Record<string, string> | null;
+  /** 講習期間の区分（Phase 8）と生徒の当てはめ。course_prep_tracks をそのまま渡す */
+  tracks?: CoursePrepTrack[] | null;
+  studentTracks?: { student_id: string; track_id: string | null }[] | null;
   rerunMode: KoushuRerunMode;
 }
 
@@ -120,7 +122,8 @@ export async function runKoushuAllocation(
     },
     settings,
     gradeFilter: input.gradeFilter ?? null,
-    scheduleEndByGrade: input.scheduleEndByGrade ?? null,
+    tracks: input.tracks ?? null,
+    studentTracks: input.studentTracks ?? null,
     // 差分モードのときだけ既存下書きを占有として積む（破棄モードは上で消した）
     includeDrafts: rerunMode === 'diff',
   });

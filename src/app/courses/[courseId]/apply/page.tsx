@@ -223,7 +223,7 @@ export default function CourseApplyPage() {
         </div>
 
         {/* 下書き登録の説明 */}
-        <div className="p-3 bg-surface-raised rounded-xl border border-border-default mb-4">
+        <div className="p-3 bg-surface-raised rounded-xl border border-border mb-4">
           <div className="text-xs text-text-muted leading-relaxed">
             この操作は<span className="font-bold text-text-heading">下書きの提案書</span>
             を作成するだけです。
@@ -232,7 +232,7 @@ export default function CourseApplyPage() {
         </div>
 
         {/* 生徒選択 */}
-        <div className="bg-surface-raised rounded-xl border border-border-default overflow-hidden">
+        <div className="bg-surface-raised rounded-xl border border-border overflow-hidden">
           {/* 操作バー */}
           <div className="px-4 py-2.5 border-b border-border-subtle flex items-center gap-3">
             <button
@@ -265,13 +265,13 @@ export default function CourseApplyPage() {
                 placeholder="氏名・コードで検索"
                 value={searchKeyword}
                 onChange={(e) => setSearchKeyword(e.target.value)}
-                className="pl-8 pr-3 py-1.5 text-xs border border-border-default rounded-lg bg-surface-raised text-text-body placeholder:text-text-faint focus:outline-none focus:ring-1 focus:ring-ink/30 w-44"
+                className="pl-8 pr-3 py-1.5 text-xs border border-border rounded-lg bg-surface-raised text-text-body placeholder:text-text-faint focus:outline-none focus:ring-1 focus:ring-ink/30 w-44"
               />
             </div>
             <select
               value={filterGrade}
               onChange={(e) => setFilterGrade(e.target.value ? parseInt(e.target.value) : '')}
-              className="px-2 py-1.5 text-xs border border-border-default rounded-lg bg-surface-raised text-text-body"
+              className="px-2 py-1.5 text-xs border border-border rounded-lg bg-surface-raised text-text-body"
             >
               <option value="">全学年</option>
               {course.target_grades.map((g) => (
@@ -352,7 +352,7 @@ export default function CourseApplyPage() {
 
         {/* 下書き登録履歴 */}
         {applications.length > 0 && (
-          <div className="mt-4 bg-surface-raised rounded-xl border border-border-default overflow-hidden">
+          <div className="mt-4 bg-surface-raised rounded-xl border border-border overflow-hidden">
             <div className="px-4 py-2.5 border-b border-border-subtle flex items-center gap-2">
               <span className="text-xs font-bold text-text-muted">下書き登録履歴</span>
               <span className="text-[10px] text-text-faint">
@@ -378,7 +378,7 @@ export default function CourseApplyPage() {
       {/* 確認モーダル */}
       {isConfirmOpen && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50 animate-in fade-in duration-150">
-          <div className="bg-surface-raised rounded-xl border border-border-default p-5 max-w-sm w-full animate-in fade-in zoom-in-[0.97] duration-150">
+          <div className="bg-surface-raised rounded-xl border border-border p-5 max-w-sm w-full animate-in fade-in zoom-in-[0.97] duration-150">
             <h2 className="text-sm font-bold text-text-heading mb-3">下書き登録の確認</h2>
             <p className="text-xs text-text-body mb-3">
               以下の内容で下書きの提案書を作成します。よろしいですか？
@@ -409,7 +409,7 @@ export default function CourseApplyPage() {
             <div className="flex justify-end gap-2">
               <button
                 onClick={() => setIsConfirmOpen(false)}
-                className="px-3 py-1.5 text-xs font-medium text-text-muted border border-border-default rounded-lg hover:bg-surface-hover active:scale-[0.97] transition-[background-color,transform] duration-150 ease-out"
+                className="px-3 py-1.5 text-xs font-medium text-text-muted border border-border rounded-lg hover:bg-surface-hover active:scale-[0.97] transition-[background-color,transform] duration-150 ease-out"
               >
                 キャンセル
               </button>

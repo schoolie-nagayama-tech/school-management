@@ -102,6 +102,8 @@ export async function createOrder(
     is_sample?: boolean;
     quantity?: number;
     notes?: string;
+    /** 請求管理に載せない発注（入会時の初回教材など）。既定 false＝載る。 */
+    exclude_from_billing?: boolean;
   },
   schoolId?: string
 ): Promise<MaterialOrder> {
@@ -118,6 +120,7 @@ export async function createOrder(
       quantity: order.quantity ?? 1,
       status: 'unconfirmed' as OrderStatus,
       notes: order.notes || null,
+      exclude_from_billing: order.exclude_from_billing ?? false,
       ordered_at: null,
       delivered_at: null,
       distributed_at: null,
@@ -722,6 +725,11 @@ export async function checkOrderDuplicates(
 
 /**
  * 発注を作成し、「教材発注」請求項目の生徒セルに教材名を自動反映する
+ *
+ * ★ order.exclude_from_billing が true なら請求連携を丸ごと行わない。
+ *   除外はフラグとして発注レコードに残す必要がある（画面で1件スキップするだけでは足りない）。
+ *   下の「生徒の全発注から教材名を集め直す」処理が、あとからの発注のたびに走るため、
+ *   除外を残さないと2件目の発注で1件目の教材名が請求に戻ってくる。
  */
 export async function createOrderWithBilling(
   order: {
@@ -730,6 +738,7 @@ export async function createOrderWithBilling(
     is_sample?: boolean;
     quantity?: number;
     notes?: string;
+    exclude_from_billing?: boolean;
   },
   billingPeriodId: string,
   schoolId?: string
@@ -741,9 +750,9 @@ export async function createOrderWithBilling(
 
   let billingItem: BillingItem | null = null;
 
-  // 見本発注の場合は請求連携をスキップ
+  // 見本発注・請求対象外の発注は請求連携をスキップ
   const isSample = order.is_sample ?? false;
-  if (isSample || !order.student_id) {
+  if (isSample || order.exclude_from_billing || !order.student_id) {
     return { order: createdOrder, billingItem: null };
   }
 
@@ -794,11 +803,14 @@ export async function createOrderWithBilling(
     const startDate = periodData?.start_date || '';
     const endDate = periodData?.end_date || '';
 
+    // ★ 請求対象外の発注（初回教材など）は集めない。ここで拾うと、除外したはずの教材名が
+    //   別の発注をきっかけに請求へ戻る。
     const { data: studentOrders } = await supabase
       .from('material_orders')
       .select('material_id, materials(name)')
       .eq('student_id', order.student_id)
       .eq('school_id', targetSchoolId)
+      .eq('exclude_from_billing', false)
       .neq('status', 'cancelled')
       .gte('created_at', startDate)
       .lte('created_at', endDate + 'T23:59:59');
@@ -1006,6 +1018,7 @@ export async function createBulkOrders(
     material_id: string;
     student_id: string;
     quantity?: number;
+    exclude_from_billing?: boolean;
   }>,
   schoolId?: string
 ): Promise<MaterialOrder[]> {
@@ -1018,6 +1031,7 @@ export async function createBulkOrders(
     quantity: order.quantity ?? 1,
     status: 'unconfirmed' as OrderStatus,
     notes: null,
+    exclude_from_billing: order.exclude_from_billing ?? false,
     ordered_at: null,
     delivered_at: null,
     distributed_at: null,
