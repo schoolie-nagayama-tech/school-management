@@ -32,6 +32,7 @@ import {
   type FeedbackVerdict,
 } from '@/lib/ai/feedback';
 import type { AiFeatureKey } from '@/lib/ai/features';
+import { HelpFeedbackSection } from '@/components/help/HelpFeedbackSection';
 import { ClipboardCheck } from 'lucide-react';
 
 /** 一度に読む件数。答え合わせは直近を見るものなので、深く遡らない */
@@ -123,7 +124,7 @@ export default function AiFeedbackPage() {
           AIの答え合わせ
         </h1>
         <p className="text-sm text-text-muted">
-          機能ごとに、AIの出したものがどう扱われたかを集めています。聞いていることは機能ごとに違い（読み取りは「解釈が合っていたか」、下書きは「使えたか」、まとめは「合っていたか」）、集まった分だけAIを直せます。
+          機能ごとに、AIの出したものがどう扱われたかを集めています。聞いていることは機能ごとに違い（読み取りは「解釈が合っていたか」、下書きは「使えたか」、まとめは「合っていたか」）、集まった分だけAIを直せます。AIヘルプの「役に立った／立たなかった」は、いちばん下にまとめています。
         </p>
       </div>
 
@@ -252,6 +253,9 @@ export default function AiFeedbackPage() {
           </table>
         </div>
       )}
+
+      {/* ★AIヘルプの評価は help_questions にあり、ai_feedback とは母数が違うので別の区画に置く */}
+      <HelpFeedbackSection />
     </AdminLayout>
   );
 }

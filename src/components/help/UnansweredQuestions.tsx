@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { fetchWithAuth } from '@/lib/api/auth';
+import type { HelpQuestionRow, HelpQuestionsResponse } from '@/lib/help/helpFeedback';
 
 /**
  * 答えられなかった質問の一覧（admin 限定）。
@@ -12,14 +13,6 @@ import { fetchWithAuth } from '@/lib/api/auth';
  *
  * 既定は畳んでおく。ヘルプを見に来た人の邪魔をしないため。
  */
-
-interface Row {
-  question: string;
-  role: string;
-  pagePath: string | null;
-  count: number;
-  lastAskedAt: string;
-}
 
 const ROLE_LABELS: Record<string, string> = {
   admin: '管理者',
@@ -38,7 +31,7 @@ function formatDate(iso: string): string {
 
 export function UnansweredQuestions() {
   const [open, setOpen] = useState(false);
-  const [rows, setRows] = useState<Row[] | null>(null);
+  const [rows, setRows] = useState<HelpQuestionRow[] | null>(null);
   const [loading, setLoading] = useState(false);
 
   const load = useCallback(async () => {
@@ -49,7 +42,7 @@ export function UnansweredQuestions() {
         setRows([]);
         return;
       }
-      const body = (await res.json()) as { rows?: Row[] };
+      const body = (await res.json()) as Partial<HelpQuestionsResponse>;
       setRows(body.rows ?? []);
     } catch {
       setRows([]);
@@ -102,52 +95,60 @@ export function UnansweredQuestions() {
             </p>
           )}
 
-          {!loading && rows !== null && rows.length > 0 && (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border">
-                    <th className="text-left font-normal text-xs text-text-faint pb-2 pr-3 whitespace-nowrap">
-                      最後に聞かれた
-                    </th>
-                    <th className="text-left font-normal text-xs text-text-faint pb-2 pr-3 whitespace-nowrap">
-                      役割
-                    </th>
-                    <th className="text-left font-normal text-xs text-text-faint pb-2 pr-3">
-                      質問
-                    </th>
-                    <th className="text-left font-normal text-xs text-text-faint pb-2 pr-3 whitespace-nowrap">
-                      開いていた画面
-                    </th>
-                    <th className="text-left font-normal text-xs text-text-faint pb-2 whitespace-nowrap">
-                      回数
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rows.map((r) => (
-                    <tr key={r.question} className="border-b border-border-subtle last:border-0">
-                      <td className="py-2 pr-3 text-xs text-text-muted tabular-nums whitespace-nowrap">
-                        {formatDate(r.lastAskedAt)}
-                      </td>
-                      <td className="py-2 pr-3 whitespace-nowrap">
-                        <span className="px-2 py-0.5 rounded-full bg-surface-hover text-xs text-text-muted">
-                          {ROLE_LABELS[r.role] ?? r.role}
-                        </span>
-                      </td>
-                      <td className="py-2 pr-3 text-text-heading">{r.question}</td>
-                      <td className="py-2 pr-3 text-xs text-text-faint tabular-nums whitespace-nowrap">
-                        {r.pagePath ?? '—'}
-                      </td>
-                      <td className="py-2 text-xs text-text-muted tabular-nums">{r.count}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+          {!loading && rows !== null && rows.length > 0 && <UnansweredQuestionsTable rows={rows} />}
         </div>
       )}
     </section>
+  );
+}
+
+/**
+ * 答えられなかった／立たなかった質問の表。
+ *
+ * ★ヘルプ（/help）と AIの答え合わせ（/admin/ai-feedback）の両方で使う。
+ *   表を2か所で書くと、片方だけ列が増えて「同じ質問なのに見え方が違う」が起きる。
+ */
+export function UnansweredQuestionsTable({ rows }: { rows: HelpQuestionRow[] }) {
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="border-b border-border">
+            <th className="text-left font-normal text-xs text-text-faint pb-2 pr-3 whitespace-nowrap">
+              最後に聞かれた
+            </th>
+            <th className="text-left font-normal text-xs text-text-faint pb-2 pr-3 whitespace-nowrap">
+              役割
+            </th>
+            <th className="text-left font-normal text-xs text-text-faint pb-2 pr-3">質問</th>
+            <th className="text-left font-normal text-xs text-text-faint pb-2 pr-3 whitespace-nowrap">
+              開いていた画面
+            </th>
+            <th className="text-left font-normal text-xs text-text-faint pb-2 whitespace-nowrap">
+              回数
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r) => (
+            <tr key={r.question} className="border-b border-border-subtle last:border-0">
+              <td className="py-2 pr-3 text-xs text-text-muted tabular-nums whitespace-nowrap">
+                {formatDate(r.lastAskedAt)}
+              </td>
+              <td className="py-2 pr-3 whitespace-nowrap">
+                <span className="px-2 py-0.5 rounded-full bg-surface-hover text-xs text-text-muted">
+                  {ROLE_LABELS[r.role] ?? r.role}
+                </span>
+              </td>
+              <td className="py-2 pr-3 text-text-heading">{r.question}</td>
+              <td className="py-2 pr-3 text-xs text-text-faint tabular-nums whitespace-nowrap">
+                {r.pagePath ?? '—'}
+              </td>
+              <td className="py-2 text-xs text-text-muted tabular-nums">{r.count}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
