@@ -200,7 +200,7 @@ const settingsGroups: SettingsGroup[] = [
         icon: <Sparkles className="w-5 h-5" />,
         label: 'AIの答え合わせ',
         description:
-          '読み取り・下書き・まとめが合っていたかの記録。読み間違いが何件あるかを見てAIを直す',
+          '読み取り・下書き・まとめが合っていたかの記録と、AIヘルプの評価。読み間違いや答えられなかった質問を見てAIとFAQを直す',
         // ★ページ側の門番は isSystemAdmin（owner は入れない）。設定の入口もそれに合わせる。
         //   requiresAdmin だと owner にリンクが見えて、押すと権限なしになる
         requiresSystemAdmin: true,
