@@ -7,6 +7,7 @@
  * 以前はこのファイルに紙面のマークアップを複製していたため、公開ページだけ直すと
  * モックが古い見た目のまま取り残されていた。データの形だけここで用意する。
  */
+import Link from 'next/link';
 import {
   ProposalSheet,
   ProposalApplyCard,
@@ -108,12 +109,12 @@ export default function TestPrepProposalMock() {
 
         {/* 講師作成画面への導線（モック用） */}
         <div className="print:hidden mt-6 text-center">
-          <a
+          <Link
             href="/test-prep/mock/create"
             className="text-sm text-[#9ca3af] hover:text-[#4b5563] underline"
           >
             講師作成画面モックを見る →
-          </a>
+          </Link>
         </div>
       </div>
 

@@ -17,7 +17,8 @@ vi.mock('@/lib/audit-log', () => ({ writeAuditLog: vi.fn().mockResolvedValue(und
 const defaultAuthMocks = authSuccessMocks();
 vi.mock('@/lib/api-auth', () => defaultAuthMocks);
 
-const routeParams = { params: { userId: 'target-user-id' } };
+// Next 15 から動的ルートの params は Promise で渡ってくる。
+const routeParams = { params: Promise.resolve({ userId: 'target-user-id' }) };
 
 function makePatchRequest(body: Record<string, unknown>) {
   return new NextRequest('http://localhost:3000/api/admin/users/target-user-id', {
@@ -165,7 +166,7 @@ describe('PATCH /api/admin/users/[userId]', () => {
   });
 
   it('自分自身の編集ではrole/school_idsが変更されない', async () => {
-    const selfParams = { params: { userId: 'test-user-id' } };
+    const selfParams = { params: Promise.resolve({ userId: 'test-user-id' }) };
     const updatedProfile = { id: 'test-user-id', display_name: '新名前', role: 'admin' };
 
     mockAdmin.from.mockImplementation(() => {
