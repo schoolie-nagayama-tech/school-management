@@ -203,6 +203,8 @@ function StaffConversation({
   const [sending, setSending] = useState(false);
   // 「保護者との連絡」AIが返信先とした保護者メッセージ。会話ビュー側でその1通に印を付ける
   const [quotedMessageId, setQuotedMessageId] = useState<string | null>(null);
+  // 相手が生徒本人か保護者か。「保護者との連絡」AIの欄を最初から出すかどうかに使う
+  const [counterpartRelation, setCounterpartRelation] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
   const load = useCallback(async () => {
@@ -213,6 +215,7 @@ function StaffConversation({
       );
       const json = await res.json();
       setMessages(res.ok ? (json.messages ?? []) : []);
+      setCounterpartRelation(res.ok ? (json.counterpart_relation ?? null) : null);
     } finally {
       setLoading(false);
     }
@@ -293,6 +296,7 @@ function StaffConversation({
           schoolId={thread.school_id}
           threadId={thread.thread_id}
           messages={messages}
+          counterpartRelation={counterpartRelation}
           replyText={text}
           onReplyTextChange={setText}
           onQuoteChange={setQuotedMessageId}
