@@ -18,6 +18,7 @@ import {
 } from '@/types/forms/mogi';
 import type { ApplicationItem } from '@/types/database';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
+import { parseVenues, restoreMogiEditorVenues } from '@/lib/utils/mogiVenues';
 
 interface MogiPeriodEditorProps {
   isOpen: boolean;
@@ -77,18 +78,6 @@ export function MogiPeriodEditor({
 
   const MOGI_DEFAULTS_KEY = (id: string) => `mogi_defaults_${id}`;
   const MOGI_USE_DEFAULTS_KEY = (id: string) => `mogi_use_defaults_${id}`;
-
-  // 会場テキストを配列に変換（IDは連番で自動生成）
-  const parseVenues = (text: string): Venue[] => {
-    return text
-      .split('\n')
-      .map((line) => line.trim())
-      .filter((line) => line.length > 0)
-      .map((label, index) => ({
-        id: `venue_${index + 1}`,
-        label,
-      }));
-  };
 
   // YYYY-MM-DD から「M月D日（曜）」ラベルを生成
   const formatDateLabel = (dateStr: string): string => {
@@ -157,26 +146,23 @@ export function MogiPeriodEditor({
         setPublishEnd(
           period.publish_end ? new Date(period.publish_end).toISOString().slice(0, 16) : ''
         );
-        // 会場テキスト復元（全日程の会場を集約してユニーク化）
-        const venueMap = new Map<string, string>();
-        const uwabakiMap: Record<string, boolean> = {};
-        settings.dates?.forEach((d) => {
-          d.venues.forEach((v) => {
-            venueMap.set(v.id, v.label);
-            // 新フィールド優先、旧 bring_items に「上履き」が含まれる場合もマイグレーション的に拾う
-            if (v.requires_uwabaki) uwabakiMap[v.id] = true;
-            else if (v.bring_items?.includes('上履き')) uwabakiMap[v.id] = true;
-          });
-        });
-        setVenueText(Array.from(venueMap.values()).join('\n'));
-        setVenueRequiresUwabaki(uwabakiMap);
-        // 日程エントリ復元（固有会場は空で開始し、選択状態のみ保持）
+        // 会場テキスト復元（全日程の会場をラベルで集約してユニーク化）
+        // 会場IDは行番号の連番のため、保存済みの歯抜けID（venue_1,2,6,7 など）を
+        // そのまま使うと詰め直し後のIDとズレて別会場に付け替わる。ラベルで突き合わせる。
+        const {
+          venueText: restoredVenueText,
+          venueRequiresUwabaki,
+          selectedVenueIdsByDate,
+        } = restoreMogiEditorVenues(settings.dates);
+        setVenueText(restoredVenueText);
+        setVenueRequiresUwabaki(venueRequiresUwabaki);
+        // 日程エントリ復元（固有会場は空で開始し、選択状態のみラベル突き合わせ済みのIDで保持）
         setDateEntries(
-          settings.dates?.map((d) => ({
+          settings.dates?.map((d, idx) => ({
             // id が `YYYY-MM-DD__type` 形式の場合は date 部分だけ取り出す
             date: d.id.includes('__') ? d.id.split('__')[0] : d.id,
             examType: d.exam_type ?? '',
-            selectedVenueIds: d.venues.map((v) => v.id),
+            selectedVenueIds: selectedVenueIdsByDate[idx] ?? [],
             extraVenueText: '',
           })) || []
         );
