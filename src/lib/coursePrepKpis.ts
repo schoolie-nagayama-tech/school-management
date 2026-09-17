@@ -3,6 +3,7 @@ import type {
   StudentCourseProgress,
   CoursePrepPeriod,
   CoursePrepTrack,
+  SeasonType,
   Student,
 } from '@/types/database';
 import { GRADE_LABELS } from '@/types/database';
@@ -246,6 +247,82 @@ export function resolvePeriodLastEndDate(
     if (last === null || value > last) last = value;
   }
   return last;
+}
+
+/** 期を一意に指すキー。course_prep_* 系はどのテーブルも (教室 × 期 × 年) で1件を指す。 */
+export function coursePrepPeriodKey(p: {
+  school_id: string;
+  season: string;
+  year: number;
+}): string {
+  return `${p.school_id}:${p.season}:${p.year}`;
+}
+
+/** 期の絞り込み結果。項目や進捗を引き当てるのに要る3点だけを持つ。 */
+export interface CoursePrepPeriodScope {
+  school_id: string;
+  season: SeasonType;
+  year: number;
+}
+
+/**
+ * 「まだ終わっていない期」を選ぶ。講習準備アラートが対象にする期の唯一の定義。
+ *
+ * なぜ月で決めないか: 講習の準備は講習期間より前に走る。夏期2026（7/06〜8/31）の
+ * 準備項目の期日は 5/13〜7/01 に並ぶ。つまり9月に動いているのは冬期の準備であって、
+ * 「9月だから夏期」と月で決めると常に1期ぶんずれる。年も new Date().getFullYear() で
+ * 決めてはいけない。冬期2026 は year=2026 のまま 2027-01 まで続くので、1月になった
+ * 途端に year=2027 と一致しなくなり、冬期のアラートが黙って全部消える。
+ *
+ * 判定は「終わったか」だけを見る。まだ先の期が混ざっても、期日が遠ければ呼び出し側の
+ * 警告日数（warnDays）の窓で落ちるので、未来側の上限は設けない。
+ *
+ * 除外する期:
+ *  - 確定保存（course_prep_snapshots）済み。進捗表が「当時の姿」に凍結されていて、
+ *    今から進捗を埋めても確定データは変わらない＝消しようがないアラートになるため。
+ *  - 最後の区分の終了日が今日より前。終了日は resolvePeriodLastEndDate で解決するので、
+ *    受験生だけ2月まで続く冬期のような期は、受験生が終わるまで開いたままになる。
+ *
+ * 終了日がまったく引けない期（共通の終了日も区分も未設定）は「開いている」側に倒す。
+ * アラートを黙って消すより、出しすぎて人が気づけるほうが害が小さい。
+ *
+ * 期は重なる。冬期2026 は高校受験の区分が 2027-02-28 まで続き、その頃には春期2027 の
+ * 準備期日が動き始めている。片方だけを選ぶともう片方の未完了が見えなくなるので、
+ * 重なっている期は全部返す。
+ *
+ * @param todayIso JSTの今日（'YYYY-MM-DD'）。固定長なので辞書順比較で日付順になる。
+ */
+export function selectOpenCoursePrepPeriods(
+  periods: {
+    school_id: string;
+    season: SeasonType;
+    year: number;
+    schedule_end_date: string | null;
+  }[],
+  tracks: { school_id: string; season: SeasonType; year: number; schedule_end_date: string }[],
+  snapshots: { school_id: string; season: SeasonType; year: number }[],
+  todayIso: string
+): CoursePrepPeriodScope[] {
+  const tracksByPeriod = new Map<string, { schedule_end_date: string }[]>();
+  for (const t of tracks) {
+    const key = coursePrepPeriodKey(t);
+    const arr = tracksByPeriod.get(key);
+    if (arr) arr.push(t);
+    else tracksByPeriod.set(key, [t]);
+  }
+
+  const closedKeys = new Set(snapshots.map(coursePrepPeriodKey));
+
+  const open: CoursePrepPeriodScope[] = [];
+  for (const p of periods) {
+    const key = coursePrepPeriodKey(p);
+    if (closedKeys.has(key)) continue;
+    // 終了日しか見ないので、区分は終了日だけの軽い行で渡せる
+    const lastEnd = resolvePeriodLastEndDate(p, tracksByPeriod.get(key) ?? []);
+    if (lastEnd !== null && lastEnd < todayIso) continue;
+    open.push({ school_id: p.school_id, season: p.season, year: p.year });
+  }
+  return open;
 }
 
 /**

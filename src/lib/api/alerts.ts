@@ -9,7 +9,12 @@ import { getStudentTextbooksExamsBySchool } from './progress';
 import { getAlertSettingsBySchools, pickStrictestThreshold } from './alertSettings';
 import { fetchAllInChunks, fetchAllPaged } from '@/lib/utils/supabasePaging';
 import { compareByRoster } from '@/lib/alerts/grouping';
-import { isCoursePrepOutOfScope } from '@/lib/coursePrepKpis';
+import {
+  coursePrepPeriodKey,
+  isCoursePrepOutOfScope,
+  selectOpenCoursePrepPeriods,
+} from '@/lib/coursePrepKpis';
+import type { CoursePrepPeriodScope } from '@/lib/coursePrepKpis';
 import { isProgrammingOnlyStudent } from '@/lib/students/programming';
 import type {
   Alert,
@@ -981,11 +986,63 @@ function buildTardyCandidates(sources: AlertSources): Alert[] {
 // 講習準備アラート用データ取得
 // ============================================
 
-function getCoursePrepSeason(): SeasonType {
-  const month = new Date().getMonth() + 1;
-  if (month >= 2 && month <= 5) return 'spring';
-  if (month >= 5 && month <= 9) return 'summer';
-  return 'winter';
+/**
+ * アラートが対象にする期（教室 × 期 × 年）を、実際の日付から決める。
+ *
+ * 月と getFullYear() で決めていたころは2つの形でずれていた。
+ *  - 準備は講習期間より前に走る（夏期2026 は期間 7/06〜8/31 に対して期日が 5/13〜7/01）。
+ *    9月に動いているのは冬期の準備なのに「9月だから夏期」と決めていた。
+ *  - 冬期2026 は year=2026 のまま 2027-01 まで続くのに、1月になると getFullYear() が
+ *    2027 を返して .eq('year') が一致せず、冬期のアラートが黙って全部消えていた。
+ *
+ * 判定の中身（重なった期をどうするか等）は selectOpenCoursePrepPeriods 側にまとめてある。
+ */
+async function fetchOpenCoursePrepPeriods(
+  schoolIds: string[]
+): Promise<CoursePrepPeriodScope[] | null> {
+  // JSTの暦日で比べる。UTCの日付で比べると、JST深夜0〜9時に「終了日当日の期」が
+  // 前日扱いで先に閉じてしまう（サーバー側レンダリングはUTCで動く）。
+  const todayJST = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Tokyo' });
+
+  const [
+    { data: periods, error: periodError },
+    { data: tracks },
+    { data: snapshots, error: snapshotError },
+  ] = await Promise.all([
+    supabase
+      .from('course_prep_periods')
+      .select('school_id, season, year, schedule_end_date')
+      .in('school_id', schoolIds),
+    supabase
+      .from('course_prep_tracks')
+      .select('school_id, season, year, schedule_end_date')
+      .in('school_id', schoolIds),
+    // 確定保存（締め）済みの期は、進捗表が「当時の姿」に凍結されていて入力が終わっている。
+    // ライブ計算のアラートだけ残ると、締めたあとに入会した生徒が未完了項目ぶんの期日超過で
+    // 並び、しかも今から埋めても確定データは変わらない＝消しようがない。
+    supabase
+      .from('course_prep_snapshots')
+      .select('school_id, season, year')
+      .in('school_id', schoolIds),
+  ]);
+
+  // 期が読めないと対象そのものを決められないので、呼び出し側に「不明」を返す。
+  // 確定状況と区分は絞り込みを足すだけなので、読めなくても空扱いで先に進む
+  // （アラートを黙って消さないほうに倒す。これは確定保存の修正から引き継いだ方針）。
+  if (periodError) {
+    console.warn('講習準備アラート: 期の取得エラー:', periodError);
+    return null;
+  }
+  if (snapshotError) {
+    console.warn('講習準備アラート: 確定保存の取得エラー:', snapshotError);
+  }
+
+  return selectOpenCoursePrepPeriods(
+    (periods ?? []) as Parameters<typeof selectOpenCoursePrepPeriods>[0],
+    (tracks ?? []) as Parameters<typeof selectOpenCoursePrepPeriods>[1],
+    (snapshots ?? []) as Parameters<typeof selectOpenCoursePrepPeriods>[2],
+    todayJST
+  );
 }
 
 export async function fetchCoursePrepAlertData(schoolIds: string[]): Promise<{
@@ -994,54 +1051,37 @@ export async function fetchCoursePrepAlertData(schoolIds: string[]): Promise<{
 }> {
   if (schoolIds.length === 0) return { items: [], studentProgress: [] };
 
-  const season = getCoursePrepSeason();
-  const year = new Date().getFullYear();
-
   try {
-    // 確定保存（締め）済みの期は、進捗表が「当時の姿」に凍結されていて入力が終わっている。
-    // ライブ計算のアラートだけ残ると、締めたあとに入会した生徒が未完了項目ぶんの期日超過で
-    // 並び、しかも今から埋めても確定データは変わらない＝消しようがない。
-    // そのため確定保存済みの教室は、その期のアラート対象から丸ごと外す。
-    const [{ data: items, error: itemsError }, { data: snapshots, error: snapshotError }] =
-      await Promise.all([
-        supabase
-          .from('course_prep_progress_items')
-          .select('id, school_id, name, column_type, deadline, season, year')
-          .in('school_id', schoolIds)
-          .eq('season', season)
-          .eq('year', year)
-          .eq('is_hidden', false)
-          .eq('column_type', 'check')
-          .not('deadline', 'is', null),
-        supabase
-          .from('course_prep_snapshots')
-          .select('school_id')
-          .in('school_id', schoolIds)
-          .eq('season', season)
-          .eq('year', year),
-      ]);
+    const openPeriods = await fetchOpenCoursePrepPeriods(schoolIds);
+    if (openPeriods === null || openPeriods.length === 0) {
+      return { items: [], studentProgress: [] };
+    }
+
+    // PostgREST は (教室, 期, 年) の組でまとめて絞れないので、3軸それぞれの値集合で広めに
+    // 引いてから JS 側で組に突き合わせる。期の行数は 教室数 × 3期 × 年数 程度なので軽い。
+    const openKeys = new Set(openPeriods.map(coursePrepPeriodKey));
+    const { data: rawItems, error: itemsError } = await supabase
+      .from('course_prep_progress_items')
+      .select('id, school_id, name, column_type, deadline, season, year')
+      .in('school_id', Array.from(new Set(openPeriods.map((p) => p.school_id))))
+      .in('season', Array.from(new Set(openPeriods.map((p) => p.season))))
+      .in('year', Array.from(new Set(openPeriods.map((p) => p.year))))
+      .eq('is_hidden', false)
+      .eq('column_type', 'check')
+      .not('deadline', 'is', null);
 
     if (itemsError) {
       console.warn('講習準備アラートデータ取得エラー:', itemsError);
       return { items: [], studentProgress: [] };
     }
-    // 確定状況が読めなかったときは従来どおり全校を対象にする（アラートを黙って消さない）
-    if (snapshotError) {
-      console.warn('講習準備アラート: 確定保存の取得エラー:', snapshotError);
-    }
+    if (!rawItems || rawItems.length === 0) return { items: [], studentProgress: [] };
 
-    if (!items || items.length === 0) return { items: [], studentProgress: [] };
-
-    const closedSchoolIds = new Set(
-      (snapshots || []).map((s: { school_id: string }) => s.school_id)
+    const items = (rawItems as AlertSources['coursePrepItems']).filter((i) =>
+      openKeys.has(coursePrepPeriodKey(i))
     );
-    const openItems =
-      closedSchoolIds.size > 0
-        ? items.filter((i: { school_id: string }) => !closedSchoolIds.has(i.school_id))
-        : items;
-    if (openItems.length === 0) return { items: [], studentProgress: [] };
+    if (items.length === 0) return { items: [], studentProgress: [] };
 
-    const itemIds = openItems.map((i: { id: string }) => i.id);
+    const itemIds = items.map((i) => i.id);
     // 進捗は (生徒 × 講習準備項目) でスケールし1000行を超えうる。itemIds も多いと
     // .in() の URL が長くなるため、チャンク分割 + チャンク内ページングで取得する（id 昇順で安定）。
     const progress = await fetchAllInChunks<{
@@ -1058,7 +1098,7 @@ export async function fetchCoursePrepAlertData(schoolIds: string[]): Promise<{
     );
 
     return {
-      items: openItems as AlertSources['coursePrepItems'],
+      items,
       studentProgress: progress,
     };
   } catch (e) {

@@ -12,6 +12,7 @@ import {
   computeSchoolKpis,
   isCoursePrepOutOfScope,
   resolvePeriodLastEndDate,
+  selectOpenCoursePrepPeriods,
   resolveStudentTrack,
   resolveTrackWindow,
   trackShortLabel,
@@ -449,5 +450,132 @@ describe('computeCourseSessionsForStudent（通常回数の数え方）', () => 
     expect(computeCourseSessionsForStudent({ 1: 1, 3: 1 }, longer)).toBeGreaterThan(
       computeCourseSessionsForStudent({ 1: 1, 3: 1 }, dayCounts)
     );
+  });
+});
+
+/**
+ * 講習準備アラートが「どの期を見るか」の境界。
+ *
+ * 月と getFullYear() で決めていたころの2つのずれ（準備は講習期間より前に走るので9月に
+ * 動いているのは冬期／冬期は year を跨がず1月に year 一致が外れて全部消える）を、
+ * ここで固定して二度と戻らないようにする。
+ */
+describe('selectOpenCoursePrepPeriods（アラートが見る期の絞り込み）', () => {
+  // 本番の実データに合わせた形。冬期は年をまたぎ、受験の区分だけ2月まで続く。
+  const SUMMER_2026 = {
+    school_id: 'school-a',
+    season: 'summer' as const,
+    year: 2026,
+    schedule_end_date: '2026-08-31',
+  };
+  const WINTER_2026 = {
+    school_id: 'school-a',
+    season: 'winter' as const,
+    year: 2026,
+    schedule_end_date: '2027-01-09',
+  };
+  const WINTER_TRACKS = [
+    {
+      school_id: 'school-a',
+      season: 'winter' as const,
+      year: 2026,
+      schedule_end_date: '2027-02-28',
+    },
+  ];
+
+  const keys = (periods: { school_id: string; season: string; year: number }[]) =>
+    periods.map((p) => `${p.school_id}:${p.season}:${p.year}`);
+
+  it('9月中旬は、終わった夏期でなくこれから始まる冬期を対象にする', () => {
+    // 準備の期日は講習期間より前（夏期2026は期間7/06〜8/31に対し期日5/13〜7/01）。
+    // 「9月だから夏期」と月で決めると1期ぶんずれる、が直っていることの確認。
+    const open = selectOpenCoursePrepPeriods(
+      [SUMMER_2026, WINTER_2026],
+      WINTER_TRACKS,
+      [],
+      '2026-09-17'
+    );
+    expect(keys(open)).toEqual(['school-a:winter:2026']);
+  });
+
+  it('年が明けても冬期2026は落ちない（year=2027 と一致しなくなる罠）', () => {
+    const open = selectOpenCoursePrepPeriods(
+      [SUMMER_2026, WINTER_2026],
+      WINTER_TRACKS,
+      [],
+      '2027-01-20'
+    );
+    expect(keys(open)).toEqual(['school-a:winter:2026']);
+  });
+
+  it('共通の終了日を過ぎても、受験の区分が残っていれば開いたまま', () => {
+    // 共通は 1/09 に終わるが高校受験の区分は 2/28 まで。まだ講習中の生徒がいる。
+    const open = selectOpenCoursePrepPeriods([WINTER_2026], WINTER_TRACKS, [], '2027-02-01');
+    expect(keys(open)).toEqual(['school-a:winter:2026']);
+  });
+
+  it('最後の区分が終わった翌日に閉じる', () => {
+    expect(
+      keys(selectOpenCoursePrepPeriods([WINTER_2026], WINTER_TRACKS, [], '2027-02-28'))
+    ).toEqual(['school-a:winter:2026']);
+    expect(
+      keys(selectOpenCoursePrepPeriods([WINTER_2026], WINTER_TRACKS, [], '2027-03-01'))
+    ).toEqual([]);
+  });
+
+  it('重なっている期は両方返す（冬期の受験区分と春期の準備が並走する2月）', () => {
+    const spring2027 = {
+      school_id: 'school-a',
+      season: 'spring' as const,
+      year: 2027,
+      schedule_end_date: '2027-04-05',
+    };
+    const open = selectOpenCoursePrepPeriods(
+      [WINTER_2026, spring2027],
+      WINTER_TRACKS,
+      [],
+      '2027-02-10'
+    );
+    expect(keys(open).sort()).toEqual(['school-a:spring:2027', 'school-a:winter:2026']);
+  });
+
+  it('確定保存済みの期は、まだ終わっていなくても外す', () => {
+    // 手動で締めた期。進捗表が凍結されているので、今から埋めても消せないアラートになる。
+    const open = selectOpenCoursePrepPeriods(
+      [WINTER_2026],
+      WINTER_TRACKS,
+      [{ school_id: 'school-a', season: 'winter', year: 2026 }],
+      '2026-12-20'
+    );
+    expect(open).toEqual([]);
+  });
+
+  it('確定保存は教室ごとに効く（同じ期でも締めていない教室は残る）', () => {
+    const winterB = { ...WINTER_2026, school_id: 'school-b' };
+    const open = selectOpenCoursePrepPeriods(
+      [WINTER_2026, winterB],
+      [],
+      [{ school_id: 'school-a', season: 'winter', year: 2026 }],
+      '2026-12-20'
+    );
+    expect(keys(open)).toEqual(['school-b:winter:2026']);
+  });
+
+  it('終了日が引けない期は開いている扱い（黙って消さない）', () => {
+    const noDates = {
+      school_id: 'school-a',
+      season: 'spring' as const,
+      year: 2027,
+      schedule_end_date: null,
+    };
+    expect(keys(selectOpenCoursePrepPeriods([noDates], [], [], '2027-06-01'))).toEqual([
+      'school-a:spring:2027',
+    ]);
+  });
+
+  it('他の期の区分に引きずられない（キーが違えば終了日を混ぜない）', () => {
+    // 冬期の区分（2/28）が夏期の終了判定に混ざると、終わった夏期が開いたままになる。
+    const open = selectOpenCoursePrepPeriods([SUMMER_2026], WINTER_TRACKS, [], '2026-09-17');
+    expect(open).toEqual([]);
   });
 });
