@@ -8,6 +8,8 @@ import { supabase } from '@/lib/supabase';
 import { fetchAllPaged } from '@/lib/utils/supabasePaging';
 import { getTestPrepProposalsForList } from '@/lib/api/test-prep-proposals';
 import type { TestPrepProposalListRow } from '@/lib/api/test-prep-proposals';
+import { getZoukomaPeriods, getZoukomaApplications } from '@/lib/api/zoukoma-applications';
+import type { ZoukomaApplication } from '@/lib/api/zoukoma-applications';
 import type { TestPrepStatus } from '@/types/test-prep';
 import { TEST_PREP_STATUS_LABELS } from '@/types/test-prep';
 import { Spinner } from '@/components/ui';
@@ -51,10 +53,17 @@ export default function TestPrepProposalsList() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [proposals, setProposals] = useState<ProposalRow[]>([]);
-  const [filter, setFilter] = useState<TestPrepStatus | 'all'>('all');
+  const [filter, setFilter] = useState<TestPrepStatus | 'all' | 'unapplied'>('all');
   // 試験・提案者の絞り込み（'all' は絞らない）。試験は exam_type_id、提案者は teacher_user_id で持つ
   const [examFilter, setExamFilter] = useState<string>('all');
   const [teacherFilter, setTeacherFilter] = useState<string>('all');
+
+  // 増コマ申込状況（対象の期・その期の申込一覧）。提案書とは別クエリで、失敗しても
+  // 提案書一覧自体は出したいので、成否を applicationsError で分けて持つ
+  const [periods, setPeriods] = useState<string[]>([]);
+  const [periodKey, setPeriodKey] = useState<string>('');
+  const [applications, setApplications] = useState<ZoukomaApplication[]>([]);
+  const [applicationsError, setApplicationsError] = useState(false);
 
   // 生徒ピッカー
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -92,6 +101,66 @@ export default function TestPrepProposalsList() {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  // 増コマ申込の期一覧を取得し、最新の期（先頭）を既定にする。
+  // ★教室スコープは提案書一覧と同じくヘッダーの教室切替に従う（loadData のコメント参照）
+  const loadPeriods = useCallback(async () => {
+    if (!selectedSchoolId) return;
+    const ids = getSelectedSchoolIds();
+    if (ids.length === 0) {
+      setPeriods([]);
+      setPeriodKey('');
+      return;
+    }
+    try {
+      const data = await getZoukomaPeriods(ids);
+      setPeriods(data);
+      // すでに選んでいる期が新しい一覧にも残っているなら変えない
+      // （教室切替などで再取得するたびに選択がリセットされると使いにくい）
+      setPeriodKey((prev) => (prev && data.includes(prev) ? prev : (data[0] ?? '')));
+    } catch (e) {
+      console.error(e);
+      // 増コマの期が取れなくても提案書一覧は表示できるようにする。申込関連のUIだけ出さない
+      setPeriods([]);
+      setPeriodKey('');
+    }
+  }, [selectedSchoolId, getSelectedSchoolIds]);
+
+  useEffect(() => {
+    loadPeriods();
+  }, [loadPeriods]);
+
+  // 選んだ期の増コマ申込を取得する。periodKey が変わるたびに引き直す
+  useEffect(() => {
+    if (!selectedSchoolId || !periodKey) {
+      setApplications([]);
+      return;
+    }
+    const ids = getSelectedSchoolIds();
+    if (ids.length === 0) {
+      setApplications([]);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const data = await getZoukomaApplications(ids, periodKey);
+        if (cancelled) return;
+        setApplications(data);
+        setApplicationsError(false);
+      } catch (e) {
+        console.error(e);
+        if (cancelled) return;
+        // 失敗時は「全員未申込」という誤った表示にしないよう、申込関連のUI自体を隠す
+        // （showApplicationUI の判定で applicationsError を見る）
+        setApplications([]);
+        setApplicationsError(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedSchoolId, getSelectedSchoolIds, periodKey]);
 
   // 生徒一覧の取得（ふりがな昇順）
   const loadStudents = useCallback(async () => {
@@ -201,7 +270,98 @@ export default function TestPrepProposalsList() {
     [proposals, examFilter, teacherFilter]
   );
 
-  const filtered = filter === 'all' ? scoped : scoped.filter((p) => p.status === filter);
+  // 増コマを使っていない教室（この教室群に増コマ回答が1件も無い＝periods が空）では
+  // 申込関連のUIを一切出さない。増コマを使っていない教室の画面を勝手に変えないため。
+  // 期は取れたが選んだ期の申込取得に失敗したとき（applicationsError）も同様に隠す。
+  // 隠さずに「申込0件」を出すと、実際は未取得なだけなのに「全員未申込」に見えてしまう。
+  const showApplicationUI = periods.length > 0 && !applicationsError;
+
+  // 生徒ID → 申込コマ合計・申込件数（同じ生徒が複数回申し込むことがあるので合算する）。
+  // linkedStudentId が null の回答（生徒に紐付いていない）は Map に入れない
+  // ＝ その生徒は判定できず「未申込」に見える。仕様どおり（回答一覧で紐付ければ直る）。
+  const appliedByStudent = useMemo(() => {
+    const map = new Map<string, { koma: number; count: number }>();
+    for (const a of applications) {
+      if (!a.linkedStudentId) continue;
+      const cur = map.get(a.linkedStudentId) ?? { koma: 0, count: 0 };
+      cur.koma += a.koma;
+      cur.count += 1;
+      map.set(a.linkedStudentId, cur);
+    }
+    return map;
+  }, [applications]);
+
+  const unlinkedCount = useMemo(
+    () => applications.filter((a) => !a.linkedStudentId).length,
+    [applications]
+  );
+
+  // 提案書のある生徒（ステータス不問。下書きでも「提案自体はした」ことは変わらないため）
+  const studentIdsWithProposal = useMemo(
+    () => new Set(proposals.map((p) => p.student_id)),
+    [proposals]
+  );
+
+  // 提案書の無い生徒からの申込（表には出てこないので、注記の括弧で氏名を出す）
+  const applicationsWithoutProposal = useMemo(
+    () =>
+      applications
+        .filter((a) => a.linkedStudentId && !studentIdsWithProposal.has(a.linkedStudentId))
+        .map((a) => a.studentName)
+        .filter((name): name is string => !!name),
+    [applications, studentIdsWithProposal]
+  );
+
+  const filtered =
+    filter === 'all'
+      ? scoped
+      : filter === 'unapplied'
+        ? // 未申込の判定対象は「公開中」の提案書だけ。下書き・提案済はまだ保護者に見えていないので、
+          // 申し込みようが無く「未申込」とは呼べない（table 側では空欄で出す）
+          scoped.filter((p) => p.status === 'published' && !appliedByStudent.has(p.student_id))
+        : scoped.filter((p) => p.status === filter);
+
+  // 未申込チップの件数も、絞り込み結果と同じ「公開中のうち申込なし」で数える
+  const unappliedCount = useMemo(
+    () =>
+      scoped.filter((p) => p.status === 'published' && !appliedByStudent.has(p.student_id)).length,
+    [scoped, appliedByStudent]
+  );
+
+  // 申込UIを出すときだけ「未申込を上→提案コマの多い順、その下に申込済(同じく降順)」に並べ替える。
+  // 未申込を上から追って連絡していけるようにするため。判定不能（未公開）の行は最後に回す。
+  // 申込UIを出さないとき（増コマ未使用の教室）は、従来どおり scoped/filtered の更新日順のまま。
+  const sortedFiltered = useMemo(() => {
+    if (!showApplicationUI) return filtered;
+    const rank = (p: ProposalRow) => {
+      if (p.status !== 'published') return 2;
+      return appliedByStudent.has(p.student_id) ? 1 : 0;
+    };
+    return filtered.slice().sort((a, b) => {
+      const diff = rank(a) - rank(b);
+      return diff !== 0 ? diff : totalKoma(b) - totalKoma(a);
+    });
+  }, [filtered, showApplicationUI, appliedByStudent]);
+
+  // 表の上の注記。選んだ期の申込件数と、提案書の無い申込・紐付いていない回答を添える
+  const applicationNote = useMemo(() => {
+    if (!showApplicationUI) return '';
+    let note = `${periodKey}の増コマ申込 ${applications.length}件`;
+    if (applicationsWithoutProposal.length > 0) {
+      note += `（うち提案書のない申込 ${applicationsWithoutProposal.length}件：${applicationsWithoutProposal.join('・')}）`;
+    }
+    note += '。保護者は提案がなくても申し込めます。';
+    if (unlinkedCount > 0) {
+      note += `生徒に紐付いていない回答 ${unlinkedCount}件は判定に入りません。`;
+    }
+    return note;
+  }, [
+    showApplicationUI,
+    periodKey,
+    applications.length,
+    applicationsWithoutProposal,
+    unlinkedCount,
+  ]);
 
   // 集計は「いま表に出ている行」の数字。絞り込むと集計も一緒に動く
   const summary = useMemo(() => {
@@ -214,6 +374,34 @@ export default function TestPrepProposalsList() {
       teachers: teachers.size,
     };
   }, [filtered]);
+
+  // KPIカードは基本の4枚（いま表に出ている行の集計）＋申込UIを出すときだけ5枚目を足す。
+  // 5枚目は「選んだ期の申込コマ合計」で、表の絞り込みとは連動しない別の数字（提案書の無い
+  // 申込も含む）ため、他の4枚と混同されないよう見た目（淡い赤）と title で明示する。
+  const kpiCards = useMemo(() => {
+    const cards: Array<{
+      label: string;
+      value: number;
+      unit: string;
+      highlight?: boolean;
+      title?: string;
+    }> = [
+      { label: '提案書', value: summary.count, unit: '件' },
+      { label: '提案コマ', value: summary.koma, unit: 'コマ' },
+      { label: '提案した生徒', value: summary.students, unit: '名' },
+      { label: '提案者', value: summary.teachers, unit: '名' },
+    ];
+    if (showApplicationUI) {
+      cards.push({
+        label: '申込コマ',
+        value: applications.reduce((sum, a) => sum + a.koma, 0),
+        unit: 'コマ',
+        highlight: true,
+        title: 'この期の増コマ申込の合計。表の絞り込みとは連動しません',
+      });
+    }
+    return cards;
+  }, [summary, showApplicationUI, applications]);
 
   const selectClass =
     'px-2.5 py-1 text-[11px] border border-border rounded-lg bg-surface-raised text-text-body focus:outline-none focus:ring-1 focus:ring-ink/30';
@@ -301,15 +489,16 @@ export default function TestPrepProposalsList() {
         </div>
       </div>
 
-      {/* 集計。絞り込みを当てたあとの数字を出す */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
-        {[
-          { label: '提案書', value: summary.count, unit: '件' },
-          { label: '提案コマ', value: summary.koma, unit: 'コマ' },
-          { label: '提案した生徒', value: summary.students, unit: '名' },
-          { label: '提案者', value: summary.teachers, unit: '名' },
-        ].map((s) => (
-          <div key={s.label} className="bg-surface-hover rounded-lg px-3 py-2">
+      {/* 集計。絞り込みを当てたあとの数字を出す。申込UIが出るときだけ5枚目「申込コマ」が付く */}
+      <div
+        className={`grid grid-cols-2 gap-2 mb-4 ${showApplicationUI ? 'sm:grid-cols-5' : 'sm:grid-cols-4'}`}
+      >
+        {kpiCards.map((s) => (
+          <div
+            key={s.label}
+            title={s.title}
+            className={`rounded-lg px-3 py-2 ${s.highlight ? 'bg-danger-subtle' : 'bg-surface-hover'}`}
+          >
             <div className="text-[11px] text-text-muted">{s.label}</div>
             <div className="text-lg font-medium text-text-heading tabular-nums">
               {s.value}
@@ -319,8 +508,25 @@ export default function TestPrepProposalsList() {
         ))}
       </div>
 
-      {/* 絞り込み: ステータス（チップ）＋ 試験・提案者（プルダウン） */}
+      {/* 絞り込み: 対象の期（申込UIが出るときだけ）＋ ステータス（チップ）＋ 試験・提案者（プルダウン） */}
       <div className="flex items-center gap-1.5 mb-4 flex-wrap">
+        {showApplicationUI && (
+          <div className="flex items-center gap-1.5 text-[11px] text-text-muted mr-1">
+            対象の期:
+            <select
+              value={periodKey}
+              onChange={(e) => setPeriodKey(e.target.value)}
+              className={selectClass}
+              aria-label="増コマ申込の対象の期を選ぶ"
+            >
+              {periods.map((pk) => (
+                <option key={pk} value={pk}>
+                  {pk}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
         {(['all', 'draft', 'sent', 'published'] as const).map((s) => {
           const count = s === 'all' ? scoped.length : scoped.filter((p) => p.status === s).length;
           return (
@@ -338,6 +544,19 @@ export default function TestPrepProposalsList() {
             </button>
           );
         })}
+        {showApplicationUI && (
+          <button
+            onClick={() => setFilter('unapplied')}
+            className={`px-2.5 py-1 text-[11px] font-medium rounded-lg transition-[background-color,color,transform] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97] ${
+              filter === 'unapplied'
+                ? 'bg-primary text-primary-contrast'
+                : 'bg-surface-hover text-text-muted hover:text-text-body'
+            }`}
+          >
+            未申込
+            <span className="ml-1 tabular-nums">{unappliedCount}</span>
+          </button>
+        )}
         {/* 選択肢が1つしか無いなら絞る意味が無いので出さない */}
         {examOptions.length > 1 && (
           <select
@@ -382,6 +601,11 @@ export default function TestPrepProposalsList() {
         )}
       </div>
 
+      {/* 申込状況の注記。警告ではなく単なる補足なので控えめな色で出す */}
+      {showApplicationUI && (
+        <p className="text-[11px] text-text-faint px-1 pb-2">{applicationNote}</p>
+      )}
+
       {/* 一覧 */}
       {filtered.length === 0 ? (
         <div
@@ -398,7 +622,9 @@ export default function TestPrepProposalsList() {
         <div className="bg-surface-raised rounded-xl border border-border overflow-hidden">
           {/* 列が増えたぶん、狭い画面では表だけを横スクロールさせる（ページ全体は横に流さない） */}
           <div className="overflow-x-auto">
-            <table className="w-full text-sm min-w-[46rem]">
+            <table
+              className={`w-full text-sm ${showApplicationUI ? 'min-w-[52rem]' : 'min-w-[46rem]'}`}
+            >
               <thead>
                 <tr className="bg-surface-hover text-text-muted text-xs">
                   <th className="text-left px-4 py-2.5 font-medium">生徒</th>
@@ -407,11 +633,14 @@ export default function TestPrepProposalsList() {
                   <th className="text-right px-3 py-2.5 font-medium">コマ</th>
                   <th className="text-left px-3 py-2.5 font-medium">提案者</th>
                   <th className="text-center px-4 py-2.5 font-medium">ステータス</th>
+                  {showApplicationUI && (
+                    <th className="text-center px-4 py-2.5 font-medium">申込</th>
+                  )}
                   <th className="text-right px-4 py-2.5 font-medium">更新日</th>
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((p, i) => (
+                {sortedFiltered.map((p, i) => (
                   <tr
                     key={p.id}
                     onClick={() => router.push(`/students/${p.student_id}/test-prep/${p.id}`)}
@@ -477,6 +706,33 @@ export default function TestPrepProposalsList() {
                         {TEST_PREP_STATUS_LABELS[p.status]}
                       </span>
                     </td>
+                    {showApplicationUI && (
+                      <td className="px-4 py-3 text-center">
+                        {p.status !== 'published' ? (
+                          // 未公開（下書き・提案済）はまだ保護者に見えていないので判定できない。
+                          // 「未申込」と決めつけて表示すると事実と違いうるため空欄にする
+                          <span
+                            className="text-xs text-text-faint"
+                            title="未公開のため判定しません"
+                          >
+                            ―
+                          </span>
+                        ) : appliedByStudent.has(p.student_id) ? (
+                          <div className="inline-flex items-center gap-1.5">
+                            <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-success-subtle text-green-700">
+                              申込済
+                            </span>
+                            <span className="text-[11px] text-text-muted tabular-nums">
+                              {appliedByStudent.get(p.student_id)!.koma}コマ
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-surface-hover text-text-muted">
+                            未申込
+                          </span>
+                        )}
+                      </td>
+                    )}
                     <td className="px-4 py-3 text-right text-xs text-text-muted">
                       {new Date(p.updated_at).toLocaleDateString('ja-JP')}
                     </td>
