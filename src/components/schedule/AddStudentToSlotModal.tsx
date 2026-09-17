@@ -11,10 +11,14 @@ import {
   checkStudentTimeConflict,
   regenerateWeekForDate,
 } from '@/lib/api/schedule';
+import { getStudentCourseMap, setStudentCourse } from '@/lib/api/student-subject-contracts';
+import { CoursePicker, isCourseSelectionMissing } from '@/components/schedule/CoursePicker';
+import { isManagerOrAbove } from '@/lib/utils/roles';
 import {
-  getStudentContractRatioMap,
-  upsertStudentContract,
-} from '@/lib/api/student-subject-contracts';
+  resolveDuration,
+  type CourseDuration,
+  type StudentCourse,
+} from '@/lib/utils/studentCourse';
 import type { ScheduleTimeSlot, HalfPosition } from '@/types/schedule';
 import type { ScheduleEntryFormData, ScheduleEntryKind } from '@/types/schedule';
 import type { Subject } from '@/types/database';
@@ -82,17 +86,21 @@ export function AddStudentToSlotModal({
   const [singleKind, setSingleKind] = useState<ScheduleEntryKind>('additional');
   const [saving, setSaving] = useState(false);
   const [conflictError, setConflictError] = useState<string | null>(null);
-  // Phase R: 指導比率（1対1/1対2）と45分の前後半。
-  const [ratio, setRatio] = useState<1 | 2>(2);
+  // コース（PS1／PS2／キッズ）が未設定の科目で選んだ形態。★既定値を置かない。
+  const [ratio, setRatio] = useState<1 | 2 | null>(null);
+  const [pickedDuration, setPickedDuration] = useState<CourseDuration>(null);
   const [halfPosition, setHalfPosition] = useState<HalfPosition>(null);
-  // 生徒×科目の契約比率マップ（科目選択時の ratio 初期値）。
-  const [contractRatioMap, setContractRatioMap] = useState<Map<string, 1 | 2>>(new Map());
+  // 生徒×科目のコース。比率・時間の正のソース。
+  const [courseMap, setCourseMap] = useState<Map<string, StudentCourse>>(new Map());
+  const [courseLoading, setCourseLoading] = useState(false);
+  // ★読み込み失敗を「未設定」と同じ扱いにしない。
+  const [courseLoadError, setCourseLoadError] = useState(false);
   // v2: 通常授業の開始日（既定＝クリックしたセルの日付）。セグメントは使わず日付入力1つ。
   const [startDate, setStartDate] = useState<string>(date);
 
-  // 選択科目の授業時間（45分なら前後半セレクトを出す）。
+  // 選択科目。45分かどうかはコースの時間が正なので、判定は下の effectiveIs45 を使う
+  // （科目マスタの duration_minutes はコース未設定の科目の既定としてだけ使う）。
   const selectedSubject = subjects.find((s) => s.id === subjectId);
-  const is45 = selectedSubject?.duration_minutes === 45;
 
   const availableSubjects = useMemo(() => {
     if (!teacherTeachableSubjectIds || teacherTeachableSubjectIds.length === 0) {
@@ -124,33 +132,47 @@ export function AddStudentToSlotModal({
       setRegisterType('regular');
       setSingleKind('additional');
       setConflictError(null);
-      setRatio(2);
+      // ★既定の 1対2 を入れない。コース未設定の科目では選ばれるまで登録させない。
+      setRatio(null);
+      setPickedDuration(null);
       setHalfPosition(null);
-      setContractRatioMap(new Map());
+      setCourseMap(new Map());
+      setCourseLoadError(false);
       setStartDate(date);
     }
   }, [isOpen, availableSubjects, date]);
 
-  // Phase R: 生徒選択時に契約比率マップを読み込む（科目選択時の ratio 初期値に使う）。
+  // 生徒選択時にコースを読み込む。
   useEffect(() => {
     if (!selectedStudent) {
-      setContractRatioMap(new Map());
+      setCourseMap(new Map());
+      setCourseLoadError(false);
       return;
     }
     let cancelled = false;
-    getStudentContractRatioMap(selectedStudent.id).then((m) => {
-      if (!cancelled) setContractRatioMap(m);
+    setCourseLoading(true);
+    setCourseLoadError(false);
+    getStudentCourseMap(selectedStudent.id).then((res) => {
+      if (cancelled) return;
+      setCourseLoading(false);
+      if (res.ok) {
+        setCourseMap(res.map);
+      } else {
+        setCourseMap(new Map());
+        setCourseLoadError(true);
+      }
     });
     return () => {
       cancelled = true;
     };
   }, [selectedStudent]);
 
-  // Phase R: 科目が変わったら ratio は契約から初期化、half は45分科目なら前半を既定に。
+  // 科目が変わったら選んだ形態をクリアする（別の科目へ持ち越さない）。
+  // ★ここで既定の 1対2 を入れないこと。未選択のまま登録させないのが目的。
   useEffect(() => {
-    setRatio(contractRatioMap.get(subjectId) ?? 2);
-    setHalfPosition(selectedSubject?.duration_minutes === 45 ? 'first' : null);
-  }, [subjectId, contractRatioMap, selectedSubject?.duration_minutes]);
+    setRatio(null);
+    setPickedDuration(null);
+  }, [subjectId]);
 
   // 学年区分の絞り込みで現在の選択が候補外になったら先頭へ寄せる。
   useEffect(() => {
@@ -162,23 +184,43 @@ export function AddStudentToSlotModal({
 
   const slotLabel = `${DAY_OF_WEEK_LABELS[dayOfWeek] ?? ''}曜日 ${timeSlot.slot_number}限 ${timeSlot.start_time?.slice(0, 5) ?? ''}-${timeSlot.end_time?.slice(0, 5) ?? ''}`;
 
+  /** 選択中の科目のコース。 */
+  const selectedSubjectCourse = subjectId ? (courseMap.get(subjectId) ?? null) : null;
+  /** 実際に保存する値。★コースがあればコースが正。 */
+  const effectiveRatio: 1 | 2 | null = selectedSubjectCourse ? selectedSubjectCourse.ratio : ratio;
+  const effectiveDuration: CourseDuration = selectedSubjectCourse
+    ? selectedSubjectCourse.durationMinutes
+    : pickedDuration;
+  const effectiveIs45 =
+    resolveDuration(effectiveDuration, selectedSubject?.duration_minutes) === 45;
+  /** コース未設定で形態が選ばれていない（または読み込み失敗）あいだは登録させない。 */
+  const courseBlocked =
+    !!subjectId && isCourseSelectionMissing(selectedSubjectCourse, courseLoadError, effectiveRatio);
+
+  // 45分になったら前後半の既定を前半にする（全コマに戻ったら外す）。
+  useEffect(() => {
+    setHalfPosition((prev) => (effectiveIs45 ? (prev ?? 'first') : null));
+  }, [effectiveIs45]);
+
   const handleSubmit = async () => {
     if (!selectedStudent || !subjectId || !schoolId) return;
+    if (courseBlocked) return;
     setConflictError(null);
     setSaving(true);
     try {
       const startTime = timeSlot.start_time ?? '00:00:00';
       const endTime = timeSlot.end_time ?? '23:59:59';
-      // Phase R: 45分科目のみ半コマ、それ以外は全コマ(null)。duration は科目からスナップショット。
-      const effHalf: HalfPosition = is45 ? halfPosition : null;
-      const effDuration = selectedSubject?.duration_minutes ?? null;
+      // 45分のみ半コマ、それ以外は全コマ(null)。比率・時間はコースが正。
+      const effHalf: HalfPosition = effectiveIs45 ? halfPosition : null;
+      const effDuration = resolveDuration(effectiveDuration, selectedSubject?.duration_minutes);
+      const ratioToSave: 1 | 2 = effectiveRatio ?? 2;
       const form: ScheduleEntryFormData = {
         teacher_id: teacherId,
         student_id: selectedStudent.id,
         subject_ids: [subjectId],
         seat_label: '',
         note: '',
-        ratio,
+        ratio: ratioToSave,
         duration_minutes: effDuration,
         half_position: effHalf,
       };
@@ -196,8 +238,27 @@ export function AddStudentToSlotModal({
           setSaving(false);
           return;
         }
-        // 契約=正の設計。通常授業として登録するときは選んだ比率を契約にも反映（upsert）。
-        await upsertStudentContract(schoolId, selectedStudent.id, subjectId, ratio);
+        // ★授業の登録ではコースを書き換えない（ここの upsert が事故の原因だった）。
+        //   コースが「まだ無い」ときの初回登録だけ、教室長以上に限って確定させる。
+        //   講師にはコースを作らせない。間違ったコースが静かに増えると、
+        //   以降の登録が全部それに従ってしまうため。未設定のまま入った分は
+        //   教室長ダッシュボードの「コースと登録の食い違い」に出る。
+        if (!selectedSubjectCourse && effectiveRatio !== null && isManagerOrAbove(profile?.role)) {
+          try {
+            await setStudentCourse({
+              schoolId,
+              studentId: selectedStudent.id,
+              subjectId,
+              ratio: effectiveRatio,
+              durationMinutes: effectiveDuration,
+              reasonCode: 'initial',
+              actorId: profile?.id,
+              actorRole: profile?.role,
+            });
+          } catch (e) {
+            console.warn('コースの初回登録に失敗しました:', e);
+          }
+        }
         const pattern = await createRegularPattern(schoolId, {
           student_id: selectedStudent.id,
           day_of_week: dayOfWeek,
@@ -206,7 +267,7 @@ export function AddStudentToSlotModal({
           subject_ids: [subjectId],
           seat_label: '',
           period_type: 'regular',
-          ratio,
+          ratio: ratioToSave,
           duration_minutes: effDuration,
           half_position: effHalf,
           // v2 のときだけ開始日を渡す。ゲート false では従来どおり列自体を送らない
@@ -256,7 +317,8 @@ export function AddStudentToSlotModal({
     }
   };
 
-  const canSubmit = selectedStudent && subjectId && schoolId;
+  // コースが未設定のまま形態を選ばずに登録させない（既定 1対2 で素通りさせない）。
+  const canSubmit = selectedStudent && subjectId && schoolId && !courseBlocked && !courseLoading;
 
   return (
     /* Header / Footer は DialogContent の外に置く（中に入れるとスクロール領域に
@@ -316,25 +378,29 @@ export function AddStudentToSlotModal({
             )}
           </div>
 
-          {/* Phase R: 指導比率（契約から初期化・変更可）＋45分科目の前後半 */}
+          {/* コース（PS1／PS2／キッズ）＋45分のときの前後半 */}
           <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-medium text-[var(--paragraph)] mb-1">
-                指導比率
-              </label>
-              <select
-                value={String(ratio)}
-                onChange={(e) => setRatio(e.target.value === '1' ? 1 : 2)}
-                className="w-full px-3 py-2 border border-[var(--stroke)] rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
-              >
-                <option value="2">1対2</option>
-                <option value="1">1対1（1名で満席）</option>
-              </select>
-              <p className="mt-1 text-[10px] text-[var(--paragraph-light)]">
-                契約（生徒×科目）の比率。変更すると契約も更新されます
-              </p>
-            </div>
-            {is45 && (
+            <CoursePicker
+              course={selectedSubjectCourse}
+              loading={courseLoading}
+              loadError={courseLoadError}
+              ratio={ratio}
+              durationMinutes={pickedDuration}
+              onChange={(r, d) => {
+                setRatio(r);
+                setPickedDuration(d);
+              }}
+              grade={selectedStudent?.grade ?? null}
+              canManageCourse={isManagerOrAbove(profile?.role)}
+              subjectSelected={!!subjectId}
+              studentName={
+                selectedStudent
+                  ? `${selectedStudent.last_name} ${selectedStudent.first_name}`
+                  : null
+              }
+              subjectName={selectedSubject?.name ?? null}
+            />
+            {effectiveIs45 && (
               <div>
                 <label className="block text-xs font-medium text-[var(--paragraph)] mb-1">
                   45分の前後半

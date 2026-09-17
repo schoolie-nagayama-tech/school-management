@@ -53,6 +53,7 @@ import AccessDenied from '@/components/AccessDenied';
 import { TodayTodosWidget } from '@/components/dashboard/TodayTodosWidget';
 // 「今日の段取り」はそのすぐ上。オフの教室では中で早期returnして何も描かない
 import { TodayPlanWidget } from '@/components/dashboard/TodayPlanWidget';
+import { CourseMismatchCard } from '@/components/dashboard/CourseMismatchCard';
 import { isSystemAdmin } from '@/lib/utils/roles';
 import {
   Inbox,
@@ -899,6 +900,14 @@ function DetailView() {
       {/* ⓪-b 今日やること — 最上部・全幅。運営と生徒の用事を1本に混ぜた行動リスト */}
       <SectionLabel icon={ListTodo}>今日やること</SectionLabel>
       <TodayTodosWidget schoolIds={getSelectedSchoolIds()} />
+
+      {/*
+        ⓪-c コースと登録の食い違い。
+        食い違いが1件も無ければカードごと出ない（中で判定するので、ここでは条件を書かない）。
+        1対1の生徒を1対2で登録したまま気づかない、が今回いちばん防ぎたい事故なので、
+        「今日やること」の直後という目に入る位置に置く。
+      */}
+      <CourseMismatchCard schoolIds={getSelectedSchoolIds()} />
 
       {/* ① 連絡事項（掲示板）— 全幅 */}
       <SectionLabel icon={Pin}>連絡事項</SectionLabel>
