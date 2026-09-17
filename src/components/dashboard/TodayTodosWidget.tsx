@@ -133,7 +133,18 @@ function mergeItems(base: TodayTodoItem[], incoming: TodayTodoItem[]): TodayTodo
  * 本体
  * ========================================================== */
 
-export function TodayTodosWidget({ schoolIds }: { schoolIds: string[] }) {
+export function TodayTodosWidget({
+  schoolIds,
+  onItemsChange,
+}: {
+  schoolIds: string[];
+  /**
+   * 読み終わった用事を親へ渡す。
+   * ★「今日の段取り」の材料になる。段取り側で用事を集め直すと、同じ画面の上と下で
+   *   違う用事が並んでどちらが正しいか分からなくなるため、集めるのはここ1か所だけ。
+   */
+  onItemsChange?: (items: TodayTodoItem[]) => void;
+}) {
   // schoolIds は呼び出し側で毎レンダー新しい配列になりうるので、依存には文字列キーを使う
   const schoolIdsKey = schoolIds.join(',');
 
@@ -210,6 +221,18 @@ export function TodayTodosWidget({ schoolIds }: { schoolIds: string[] }) {
       cancelled = true;
     };
   }, [schoolIdsKey, today, reloadCount]);
+
+  /**
+   * 読めた用事を親へ渡す（「今日の段取り」の材料になる）。
+   *
+   * ★読み込み中と失敗のあいだは渡さない。空配列を渡すと、段取り側が
+   *   「用事が1件も無い日」とみなして空の段取りを作ってしまう
+   *   （段取りは1日1回しか組めないので、その日はもう組み直せない）。
+   */
+  useEffect(() => {
+    if (lightLoading || hasError) return;
+    onItemsChange?.(items);
+  }, [items, lightLoading, hasError, onItemsChange]);
 
   // 「済」の切り替え。押し間違いを戻せるよう、もう一度押すと未完了に戻る
   const toggleDone = useCallback(

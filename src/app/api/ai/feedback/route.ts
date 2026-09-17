@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getApiAuth } from '@/lib/api-auth';
-import { isManagerOrAbove, isSystemAdmin } from '@/lib/utils/roles';
+import { hasRoleLevel, isSystemAdmin } from '@/lib/utils/roles';
 import { getPortalServiceClient } from '@/lib/mypage/serviceClient';
 import { isAiFeatureKey } from '@/lib/ai/features';
 import {
   isFeedbackTargetKind,
   isFeedbackVerdict,
+  isVerdictForFeature,
+  MAX_FEEDBACK_BATCH,
   type AiFeedbackListResponse,
   type AiFeedbackRow,
 } from '@/lib/ai/feedback';
@@ -21,9 +23,16 @@ export const dynamic = 'force-dynamic';
  *   「AIはどこで間違えているか」を横断で数えられなくなる。
  *   どのAI機能のフィードバックも POST /api/ai/feedback に来る。
  *
- * ★POSTは教室長以上（画面に出る操作の主は教室長）。GETはシステム管理者だけ。
- *   GETは全教室ぶんを返すので、教室の境界を越える。改善のために見る画面であって、
- *   教室の運用で使うものではない。
+ * ★POSTは自分の教室のぶんだけ。ロールは講師以上（＝ログインできるスタッフ）にしてある。
+ *   もとは教室長以上だったが、進行表の「引継ぎのまとめ」は講師がいちばん使う機能で、
+ *   そこに置いた「合っていた／ずれていた」を講師が押しても記録されない状態になっていた。
+ *   答えを捨てるくらいなら、自教室の行を1行足せるほうがよい（教室の越境は下で弾く）。
+ *   GETはシステム管理者だけ。GETは全教室ぶんを返すので教室の境界を越える。
+ *   改善のために見る画面であって、教室の運用で使うものではない。
+ *
+ * ★POSTは1件でも配列でも受ける（{ items: [...] }）。
+ *   テーマふくらませは1回の反映で数百件ぶんの答えが出るので、
+ *   1件ずつのリクエストにすると反映そのものより記録が重くなる。
  */
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -40,63 +49,55 @@ const MAX_AI_OUTPUT_BYTES = 4096;
 const DEFAULT_LIMIT = 50;
 const MAX_LIMIT = 200;
 
-export async function POST(request: NextRequest) {
-  const { auth } = await getApiAuth(request);
-  if (!auth) {
-    return NextResponse.json({ error: '認証が必要です' }, { status: 401 });
-  }
-  if (!isManagerOrAbove(auth.role)) {
-    return NextResponse.json({ error: '権限がありません' }, { status: 403 });
-  }
+/** insert する1行。★検証を通ったものだけがこの形になる */
+interface FeedbackInsert {
+  school_id: string;
+  feature: string;
+  target_kind: string;
+  target_id: string | null;
+  ai_output: Record<string, unknown>;
+  verdict: string;
+  note: string | null;
+  created_by: string;
+}
 
-  let body: {
-    schoolId?: unknown;
-    feature?: unknown;
-    targetKind?: unknown;
-    targetId?: unknown;
-    aiOutput?: unknown;
-    verdict?: unknown;
-    note?: unknown;
-  };
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: 'リクエストが不正です' }, { status: 400 });
-  }
+/**
+ * 1件ぶんを検証して insert の形にする。読めなければ null。
+ *
+ * ★まとめて送られた中の1件が読めなくても、全体を400にしない。
+ *   読めたものだけ入れる。記録は「おまけ」であり、1件の形が違うだけで
+ *   数百件ぶんの答えを丸ごと捨てるほうが損である。
+ */
+function toInsert(
+  raw: unknown,
+  auth: { userId: string; schoolIds: string[] }
+): FeedbackInsert | null {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+  const body = raw as Record<string, unknown>;
 
   const schoolId = typeof body.schoolId === 'string' ? body.schoolId : '';
-  if (!UUID_RE.test(schoolId)) {
-    return NextResponse.json({ error: '教室IDが不正です' }, { status: 400 });
-  }
+  if (!UUID_RE.test(schoolId)) return null;
   // ★自教室のぶんだけ。他教室の記録を書き込ませない
-  if (!auth.schoolIds.includes(schoolId)) {
-    return NextResponse.json({ error: '権限がありません' }, { status: 403 });
-  }
+  if (!auth.schoolIds.includes(schoolId)) return null;
 
-  if (!isAiFeatureKey(body.feature)) {
-    return NextResponse.json({ error: '機能の指定が不正です' }, { status: 400 });
-  }
-  if (!isFeedbackTargetKind(body.targetKind)) {
-    return NextResponse.json({ error: '対象の指定が不正です' }, { status: 400 });
-  }
-  // ★verdict は一覧のどれかに限る。自由記述を通すと数えられなくなる
-  if (!isFeedbackVerdict(body.verdict)) {
-    return NextResponse.json({ error: '判断の指定が不正です' }, { status: 400 });
-  }
+  if (!isAiFeatureKey(body.feature)) return null;
+  if (!isFeedbackTargetKind(body.targetKind)) return null;
+  // ★verdict は「その機能で使う一覧」に載っているものだけ。
+  //   一覧に無い組み合わせ（例: おまかせ下書きに「読み間違い」）を入れると、
+  //   機能ごとの件数が意味を持たなくなる
+  if (!isVerdictForFeature(body.feature, body.verdict)) return null;
 
   // 対象IDは任意。あるなら形だけ確かめる（対象が消えていてもそのまま記録する）
   let targetId: string | null = null;
   if (body.targetId != null) {
-    if (typeof body.targetId !== 'string' || !UUID_RE.test(body.targetId)) {
-      return NextResponse.json({ error: '対象IDが不正です' }, { status: 400 });
-    }
+    if (typeof body.targetId !== 'string' || !UUID_RE.test(body.targetId)) return null;
     targetId = body.targetId;
   }
 
   const note =
     typeof body.note === 'string' && body.note.trim() ? body.note.trim().slice(0, MAX_NOTE) : null;
 
-  // ★大きすぎる ai_output は捨てる（エラーにはしない）。
+  // ★大きすぎる ai_output は捨てる（その1件を落とさない）。
   //   記録が入らないより、AIの出力だけ落ちて判断が残るほうが良い。
   let aiOutput: Record<string, unknown> = {};
   if (body.aiOutput && typeof body.aiOutput === 'object' && !Array.isArray(body.aiOutput)) {
@@ -113,24 +114,65 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  const supabase = getPortalServiceClient();
-  const { error } = await supabase.from('ai_feedback').insert({
+  return {
     school_id: schoolId,
     feature: body.feature,
     target_kind: body.targetKind,
     target_id: targetId,
     ai_output: aiOutput,
-    verdict: body.verdict,
+    verdict: body.verdict as string,
     note,
     created_by: auth.userId,
-  });
+  };
+}
+
+export async function POST(request: NextRequest) {
+  const { auth } = await getApiAuth(request);
+  if (!auth) {
+    return NextResponse.json({ error: '認証が必要です' }, { status: 401 });
+  }
+  // ★講師以上（＝ログインするスタッフ）。保護者は入れない
+  if (!hasRoleLevel(auth.role, 'teacher')) {
+    return NextResponse.json({ error: '権限がありません' }, { status: 403 });
+  }
+
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: 'リクエストが不正です' }, { status: 400 });
+  }
+
+  // ★1件でも配列でも同じ検証を通す。入口を2つに分けると、
+  //   片方だけ緩んだまま気づかない（verdict の一覧のような肝心なところで起きる）
+  const items: unknown[] =
+    body && typeof body === 'object' && Array.isArray((body as { items?: unknown }).items)
+      ? ((body as { items: unknown[] }).items as unknown[]).slice(0, MAX_FEEDBACK_BATCH)
+      : [body];
+
+  const inserts = items
+    .map((item) => toInsert(item, { userId: auth.userId, schoolIds: auth.schoolIds }))
+    .filter((row): row is FeedbackInsert => row !== null);
+
+  // ★1件も読めなかったときだけ400。読めたものがあれば、そこまでで入れる
+  if (inserts.length === 0) {
+    return NextResponse.json({ error: '記録できる内容がありませんでした' }, { status: 400 });
+  }
+
+  const supabase = getPortalServiceClient();
+  const { error } = await supabase.from('ai_feedback').insert(inserts);
 
   if (error) {
     console.error('[ai/feedback] 記録に失敗', error.message);
     return NextResponse.json({ error: '記録できませんでした' }, { status: 500 });
   }
 
-  return NextResponse.json({ ok: true });
+  // skipped は「形が違って捨てた件数」。画面は見ないが、切り分けのために返す
+  return NextResponse.json({
+    ok: true,
+    saved: inserts.length,
+    skipped: items.length - inserts.length,
+  });
 }
 
 /**

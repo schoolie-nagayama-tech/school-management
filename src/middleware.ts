@@ -49,11 +49,12 @@ function getClientIp(request: NextRequest): string {
   // x-forwarded-for はクライアントが先頭に任意の値を足してレート制限を偽装できる
   // （例: "1.2.3.4, 実IP" と自称すれば1.2.3.4として扱われてしまう）。
   // Vercel のプロキシが確実に上書きする x-real-ip を最優先で信頼する。
+  // Next 15 で `request.ip` は廃止されたので、ヘッダーだけで判定する（Vercel では
+  // x-real-ip に同じ値が載るため欠けるものはない）。
   return (
     request.headers.get('x-real-ip') ||
     request.headers.get('x-vercel-forwarded-for')?.split(',')[0]?.trim() ||
     request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
-    request.ip ||
     '0.0.0.0'
   );
 }

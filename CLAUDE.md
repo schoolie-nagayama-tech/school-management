@@ -66,5 +66,7 @@ npm run lint
 
 ## 言語の罠
 
-- ★`tsconfig.json` に `target` が無くES5扱いになるため、`[...set]` `[...map]` や
-  Map/Set への `for-of` が **TS2802** で落ちる。`Array.from()` を使う。
+- `tsconfig.json` の `target` は Next 15 が自動で `ES2017` を書き込んだ（2026-09-07）。
+  それ以前は `target` 無し＝ES5扱いで、`[...set]` `[...map]` や Map/Set への `for-of` が
+  **TS2802** で落ちていた。既存コードの `Array.from()` はその名残なので、直さなくてよい。
+  ★`target` を消すと罠が復活する（Next が再度書き足すが、その間に CI が落ちる）。

@@ -18,6 +18,8 @@
  * このファイルは純関数だけ。fetch もDBも触らない（テストできるようにするため）。
  */
 
+import { toSurnameOnly } from '@/lib/utils/teacherName';
+
 /** 勤務の開始。★出勤簿からは引かない（2026-09-07 決定・既定固定） */
 export const WORK_START = '13:00';
 /** 勤務の終わり。★1日はここで終わる。これ以降の時間帯を作らせない */
@@ -29,6 +31,23 @@ export const MAX_ITEMS_PER_BLOCK = 4;
 export const MAX_TEXT_LENGTH = 80;
 /** 置いた理由の上限。1行で読み切れる長さに留める */
 export const MAX_WHY_LENGTH = 60;
+
+/**
+ * APIが1回に受け取ってよい「今日やること」の件数。
+ * ★画面が送ってくる件数の上限で、材料に載せる件数（MAX_PLAN_TODOS）とは別。
+ *   ここで一度受けてから、重要なものだけを材料に残す。
+ */
+export const MAX_INPUT_TODOS = 100;
+/** 材料に載せる用事の上限。★多すぎると各時間帯4件に収まらず、AIが黙って落とす */
+export const MAX_PLAN_TODOS = 50;
+/**
+ * 受け取った用事の本文・補足の上限。★超えたぶんは切る。
+ *   AIの出力（切り詰めない＝行ごと捨てる）と扱いが違うのは、こちらが自分の画面から
+ *   来たデータで、捨てると用事そのものが段取りから消えてしまうため。
+ */
+export const MAX_TODO_TEXT_LENGTH = 120;
+/** カレンダーのタイトルの上限。★長い予定名でプロンプトが膨らむのを防ぐだけ */
+export const MAX_CALENDAR_TITLE_LENGTH = 120;
 
 /**
  * 段取りの時間帯。
@@ -65,6 +84,43 @@ export interface PlanItem {
   when?: string;
 }
 
+/**
+ * AIに渡す用事1件。
+ *
+ * ★これは画面の「今日やること」（TodayTodoItem）を写したもの。
+ *   段取りのためにサーバーで用事を集め直さない。別々に集めると、同じ画面の上と下で
+ *   違う用事が並び、どちらが正しいか分からなくなる（2026-09-09 決定）。
+ *
+ * ★生徒は姓のみ。フルネームも連絡先もAIに渡さない。
+ */
+export interface PlanTodo {
+  /** 「今日やること」の安定ID。todoId の突き合わせに使う */
+  id: string;
+  /** 行頭チップの文言（面談 / 教材 / 報告書 / タスク など） */
+  label: string;
+  /** やること1行（TodayTodoItem.title） */
+  text: string;
+  /** 補足。締切・件数など判断材料になるもの */
+  note?: string;
+  /** ★姓のみ */
+  studentSurname?: string;
+  /** その用事に紐づく時限。★これがあるので「どのコマに来る生徒か」をAIに推測させずに済む */
+  slotNumber?: number;
+  /** 期限を過ぎている */
+  overdue?: boolean;
+  /** 緊急度が高い（TodayTodoItem.urgency === 'high'） */
+  urgent?: boolean;
+}
+
+/** その日のカレンダーの予定。★タイトルは教室長自身の予定なのでそのまま渡す */
+export interface PlanCalendarEvent {
+  /** 'HH:MM' */
+  start: string;
+  /** 'HH:MM' */
+  end: string;
+  title: string;
+}
+
 /** AIに渡す材料。★新しく読むデータを増やさない（既存のものだけ） */
 export interface PlanMaterials {
   /** 段取りを組む日（YYYY-MM-DD） */
@@ -75,8 +131,10 @@ export interface PlanMaterials {
   slots: { id: string; label: string; start: string; end: string }[];
   /** 今日の授業。★生徒・講師は姓のみ */
   lessons: { slotId: string; studentSurname: string; teacherSurname?: string }[];
-  /** 今日やること */
-  todos: { id: string; text: string; studentSurname?: string; due?: string }[];
+  /** 今日やること。★画面の「今日やること」から渡ってくる（サーバーで集め直さない） */
+  todos: PlanTodo[];
+  /** 教室長のGoogleカレンダーの予定。未連携・取得失敗なら空 */
+  calendar: PlanCalendarEvent[];
   /** この先で授業の登録がある日。★later はこの中からしか選ばせない */
   upcomingLessonDays: string[];
 }
@@ -95,6 +153,117 @@ export interface PlanPlacement {
   block: PlanBlock;
   when?: string;
   why: string;
+}
+
+/* ============================================================
+ * 「今日やること」を材料にする
+ * ========================================================== */
+
+/**
+ * 画面から送られてきた「今日やること」を、材料に載せてよい形にする。
+ *
+ * ★1件ずつ検める。読めない要素があっても残りは使う
+ *   （1件おかしいだけで段取りが組めなくなるほうが最悪）。
+ *
+ * ★生徒はここで姓だけに落とす。画面はフルネームを持っているが、AIには渡さない。
+ *
+ * @param raw 画面が送ってきた TodayTodoItem の配列（信用しない）
+ */
+export function sanitizePlanTodos(raw: unknown): PlanTodo[] {
+  if (!Array.isArray(raw)) return [];
+
+  const out: PlanTodo[] = [];
+  const seen = new Set<string>();
+
+  for (const row of raw as unknown[]) {
+    if (out.length >= MAX_INPUT_TODOS) break;
+    if (!row || typeof row !== 'object') continue;
+
+    const r = row as {
+      id?: unknown;
+      label?: unknown;
+      title?: unknown;
+      note?: unknown;
+      student?: unknown;
+      slotNumber?: unknown;
+      overdue?: unknown;
+      urgency?: unknown;
+    };
+
+    // ID と本文が無いものは、あとで todoId の突き合わせもできないので捨てる
+    if (typeof r.id !== 'string') continue;
+    const id = r.id.trim();
+    if (!id || id.length > 128) continue;
+    // ★同じIDが2回来たら後は無視（todoId がどちらを指すか決まらなくなる）
+    if (seen.has(id)) continue;
+
+    if (typeof r.title !== 'string') continue;
+    const text = r.title.replace(/\s+/g, ' ').trim().slice(0, MAX_TODO_TEXT_LENGTH);
+    if (!text) continue;
+
+    const label = typeof r.label === 'string' ? r.label.replace(/\s+/g, ' ').trim() : '';
+    const note =
+      typeof r.note === 'string'
+        ? r.note.replace(/\s+/g, ' ').trim().slice(0, MAX_TODO_TEXT_LENGTH)
+        : '';
+
+    // ★姓だけにする。画面は「山田 太郎」を持っているが、渡すのは「山田」
+    const studentName =
+      r.student && typeof r.student === 'object'
+        ? (r.student as { name?: unknown }).name
+        : undefined;
+    const studentSurname =
+      typeof studentName === 'string' ? toSurnameOnly(studentName).slice(0, 32) : '';
+
+    // 時限は整数のときだけ採る。小数や文字列で来たら、その項目は残して時限だけ落とす
+    const slotNumber =
+      typeof r.slotNumber === 'number' && Number.isInteger(r.slotNumber) && r.slotNumber > 0
+        ? r.slotNumber
+        : undefined;
+
+    seen.add(id);
+    out.push({
+      id,
+      label,
+      text,
+      ...(note ? { note } : {}),
+      ...(studentSurname ? { studentSurname } : {}),
+      ...(slotNumber != null ? { slotNumber } : {}),
+      ...(r.overdue === true ? { overdue: true } : {}),
+      ...(r.urgency === 'high' ? { urgent: true } : {}),
+    });
+  }
+
+  return out;
+}
+
+/**
+ * 材料に載せる用事を選ぶ。
+ *
+ * ★上限を超えるときに切るのは「重要でないもの」から。
+ *   期限超過 → 緊急 → 時限がある（＝その時間に人が教室にいる） の順で残す。
+ *   残ったものは、元の並び（時間順）のまま返す。
+ */
+export function selectPlanTodos(todos: readonly PlanTodo[], limit = MAX_PLAN_TODOS): PlanTodo[] {
+  if (todos.length <= limit) return todos.slice();
+
+  const rank = (t: PlanTodo): number => {
+    if (t.overdue) return 0;
+    if (t.urgent) return 1;
+    if (t.slotNumber != null) return 2;
+    return 3;
+  };
+
+  const keep = new Set(
+    todos
+      .map((t, index) => ({ t, index }))
+      // 同じ重さなら元の並び（時間順）を保つ
+      .sort((a, b) => rank(a.t) - rank(b.t) || a.index - b.index)
+      .slice(0, limit)
+      .map((x) => x.index)
+  );
+
+  return todos.filter((_, index) => keep.has(index));
 }
 
 /* ============================================================
@@ -143,9 +312,16 @@ export function planSystemPrompt(): string {
     '',
     '■ どこに置くか',
     '- ★生徒に渡す用事は、その生徒が来るコマに置く。帰ってからでは渡せません。',
-    '  誰に渡すかが書かれている用事は、その生徒の授業があるコマを探して置くこと。',
+    '  用事に「N限」と書いてあるなら、そのコマに置くこと。',
+    '  時限が書かれていない用事は、その生徒の授業があるコマを探して置くこと。',
     '- 誰にも紐づかない用事（報告書・タスクなど）は、授業前か片付けに置く。',
+    '- ★カレンダーの予定が入っている時間帯には用事を置かない。',
+    '  予定そのものも項目として出し、その時間に何があるかが分かるようにする',
+    '  （カレンダーから作る項目に todoId は付けない）。',
+    '- ★カレンダーで来塾する予定（面談など）があるなら、',
+    '  その人に渡すものはその時間に置いてよい（授業に来ない生徒でも、面談で来るなら渡せます）。',
     `- 各時間帯は 0〜${MAX_ITEMS_PER_BLOCK}件。詰め込みすぎると結局どれもやりません。`,
+    '- 「期限超過」「急ぎ」と書かれた用事は、先に置ける時間帯に置く。',
     '- 置いた理由を why に1行で書く。締切があるものは why に締切日を書く。',
     '',
     '■ 今日に入らないもの',
@@ -185,11 +361,23 @@ export function planUserText(materials: PlanMaterials): string {
     return `- ${s.label}（${s.id}）: ${names.length > 0 ? names.join('、') : 'なし'}`;
   });
 
+  /**
+   * 用事1件を1行に。★形は `[チップ] やること（生徒の姓・N限・期限超過）`。
+   * 画面の「今日やること」の見え方に合わせてあるので、
+   * 出てきた段取りと下の一覧を並べて見たときに同じ用事だと分かる。
+   */
   const todoLines = materials.todos.map((t) => {
-    const who = t.studentSurname ? ` [${t.studentSurname}]` : '';
-    const due = t.due ? `（締切 ${t.due}）` : '';
-    return `- ${t.id}: ${flat(t.text)}${who}${due}`;
+    const marks: string[] = [];
+    if (t.studentSurname) marks.push(t.studentSurname);
+    if (t.slotNumber != null) marks.push(`${t.slotNumber}限`);
+    if (t.overdue) marks.push('期限超過');
+    if (t.urgent) marks.push('急ぎ');
+    if (t.note) marks.push(flat(t.note));
+    const chip = t.label ? `[${flat(t.label)}] ` : '';
+    return `- ${t.id}: ${chip}${flat(t.text)}${marks.length > 0 ? `（${marks.join('・')}）` : ''}`;
   });
+
+  const calendarLines = materials.calendar.map((c) => `- ${c.start}〜${c.end} ${flat(c.title)}`);
 
   return [
     `【日付】${materials.date}`,
@@ -203,6 +391,9 @@ export function planUserText(materials: PlanMaterials): string {
     '',
     `【今日やること（${materials.todos.length}件）】`,
     ...(todoLines.length > 0 ? todoLines : ['- なし']),
+    '',
+    '【カレンダーの予定（この時間には用事を置かない。予定そのものも項目に出す）】',
+    ...(calendarLines.length > 0 ? calendarLines : ['- なし']),
     '',
     '【この先で授業がある日（later はこの中から選ぶ）】',
     materials.upcomingLessonDays.length > 0
@@ -306,6 +497,8 @@ export function placeSystemPrompt(): string {
     '■ どこに置くか',
     '- ★その用事に生徒が出てくるなら、その生徒が来るコマに置く。帰ってからでは渡せません。',
     '- 誰にも紐づかないなら、授業前か片付けの空いているほうに置く。',
+    '- ★カレンダーの予定が入っている時間帯は避ける。',
+    '  ただし、その予定で来塾する人に渡すものなら、その時間に置いてよい。',
     `- すでに${MAX_ITEMS_PER_BLOCK}件ある時間帯は避け、空いている時間帯を選ぶ。`,
     '- 今日どうやっても入らないときだけ block を "later" にし、',
     '  when に「この先で授業がある日」として渡した日付の中から1つ選んで書く。',

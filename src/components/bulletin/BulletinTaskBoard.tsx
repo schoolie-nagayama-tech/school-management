@@ -26,7 +26,12 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/useToast';
 import { isManagerOrAbove } from '@/lib/utils/roles';
 import { TEACHER_ASSIST_FEATURE_KEY } from '@/lib/ai/features';
-import { FEEDBACK_VERDICT_LABELS, recordAiFeedback, type FeedbackVerdict } from '@/lib/ai/feedback';
+import {
+  FEEDBACK_VERDICT_LABELS,
+  FEEDBACK_VERDICTS_BY_FEATURE,
+  recordAiFeedback,
+  type FeedbackVerdict,
+} from '@/lib/ai/feedback';
 import type { BulletinProgressResponse, BulletinTaskView } from '@/lib/bulletin/apiTypes';
 import { ASSESSMENT_NAME_LABELS } from '@/types/database';
 import type { ApplicationItem, School } from '@/types/database';
@@ -52,7 +57,8 @@ const FRESH_HOURS = 24;
  * ★'ok'（合っていた）は出さない。合っていたものは消さないので、
  *   ここに並べても押されない（押すものを増やすだけになる）。
  */
-const REMOVE_VERDICTS: readonly FeedbackVerdict[] = ['misread', 'already_done', 'not_needed'];
+const REMOVE_VERDICTS: readonly FeedbackVerdict[] =
+  FEEDBACK_VERDICTS_BY_FEATURE[TEACHER_ASSIST_FEATURE_KEY];
 
 interface BulletinTaskBoardProps {
   /** 教室名の対応表。掲示板がすでに持っているものを受け取る（同じ取得を二度しない） */

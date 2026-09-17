@@ -1,8 +1,8 @@
 /**
  * サーバー/エッジランタイムの Sentry 初期化（Next.js instrumentation hook）。
  *
- * next.config.mjs の experimental.instrumentationHook を有効にしないと
- * このファイルは読み込まれない（Next 14.2 時点の要件。Next 15 で標準化）。
+ * Next 15 からは next.config.mjs のフラグ無しで自動的に読み込まれる
+ * （Next 14.2 までは experimental.instrumentationHook が必須だった）。
  *
  * DSN 未設定時は SDK が自動的に無効化されるため、未設定でも安全にビルド・起動できる
  * （src/instrumentation-client.ts と同じ挙動）。

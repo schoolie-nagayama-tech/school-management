@@ -9,6 +9,9 @@
  * ★出てくるのは読み物ではなくタスク。チェック・書き換え・移動・削除・追加ができ、
  *   直した結果が正典。AIが出すのは案で、決めるのは教室長。
  *
+ * ★材料はすぐ下の「今日やること」そのもの（props の todos）。ここで用事を集め直さない。
+ *   別々に集めると、同じ画面の上と下で違う用事が並ぶ（2026-09-09 決定）。
+ *
  * ★組むのは1日1回。すでに組んだ日は「組む」ボタンを出さない。
  *   組み直すと、手で直した並び・消した項目・書き換えた本文が全部消える。
  *   日中に増えた用事は上の入力欄から足す（AIは入れ場所だけ決める）。
@@ -28,6 +31,7 @@ import { useToast } from '@/hooks/useToast';
 import { fetchWithAuth } from '@/lib/api/auth';
 import { TODAY_PLAN_FEATURE_KEY } from '@/lib/ai/features';
 import { WORK_END, WORK_START, type PlanBlock, type PlanItem } from '@/lib/ai/todayPlan';
+import type { TodayTodoItem } from '@/types/today-todos';
 import { CalendarClock, Check, Loader2, Plus, Sparkles, X, ArrowUp } from 'lucide-react';
 
 /** 保存の間引き。1文字打つたびに投げると、書いている最中に何度も往復する */
@@ -54,9 +58,23 @@ function toClock(iso: string | null): string {
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 }
 
-export function TodayPlanWidget({ schoolIds }: { schoolIds: string[] }) {
+export function TodayPlanWidget({
+  schoolIds,
+  todos,
+}: {
+  schoolIds: string[];
+  /**
+   * 下の「今日やること」が読んだ用事。★段取りの材料はこれ（ここで集め直さない）。
+   * null は「まだ読めていない」。そのあいだは「組む」を押させない
+   * （空のまま組むと、その日はもう組み直せない）。
+   */
+  todos?: TodayTodoItem[] | null;
+}) {
   // ★教室は1つだけ。0件でも2件以上でも出さない
   const schoolId = schoolIds.length === 1 ? schoolIds[0] : '';
+
+  /** 「今日やること」が読めているか。押せるのはこれが true のときだけ */
+  const todosReady = Array.isArray(todos);
 
   const { toasts, removeToast, error: toastError } = useToast();
 
@@ -215,13 +233,14 @@ export function TodayPlanWidget({ schoolIds }: { schoolIds: string[] }) {
    * 組む（朝に1回）
    * ------------------------------------------------------ */
   const generate = async () => {
-    if (generating || !schoolId || !date) return;
+    // ★用事が読めていないうちは組ませない（空のまま組むと、その日はもう組み直せない）
+    if (generating || !schoolId || !date || !todosReady) return;
     setGenerating(true);
     try {
       const res = await fetchWithAuth('/api/ai/today-plan/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ schoolId, date }),
+        body: JSON.stringify({ schoolId, date, todos }),
       });
       if (!res.ok) throw new Error('failed');
       const json = (await res.json()) as {
@@ -253,7 +272,8 @@ export function TodayPlanWidget({ schoolIds }: { schoolIds: string[] }) {
       const res = await fetchWithAuth('/api/ai/today-plan/place', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ schoolId, date, text }),
+        // ★組むときと同じ材料を渡す（入れ場所を決めるのに今日の用事が要る）
+        body: JSON.stringify({ schoolId, date, text, todos: todos ?? [] }),
       });
       if (!res.ok) throw new Error('failed');
       const json = (await res.json()) as {
@@ -326,10 +346,10 @@ export function TodayPlanWidget({ schoolIds }: { schoolIds: string[] }) {
             <button
               type="button"
               onClick={() => void generate()}
-              disabled={generating}
+              disabled={generating || !todosReady}
               className="inline-flex items-center gap-1.5 rounded-full border border-ink/25 bg-surface px-3.5 py-1.5 text-xs font-medium text-ink transition-opacity disabled:opacity-40"
             >
-              {generating ? (
+              {generating || !todosReady ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
               ) : (
                 <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
@@ -337,7 +357,9 @@ export function TodayPlanWidget({ schoolIds }: { schoolIds: string[] }) {
               {generating ? '組んでいます…' : '今日の段取りを組む'}
             </button>
             <p className="text-xs text-text-faint">
-              今日やること・今日のコマから、時間帯への割り付けを作ります。組むのは1日1回です
+              {todosReady
+                ? '下の「今日やること」・今日のコマ・カレンダーの予定から、時間帯への割り付けを作ります。組むのは1日1回です'
+                : '今日やることの読み込みを待っています'}
             </p>
           </div>
         )}

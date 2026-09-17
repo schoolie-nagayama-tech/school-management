@@ -9,6 +9,7 @@ import {
   planBlocksForSchool,
   planSystemPrompt,
   planUserText,
+  sanitizePlanTodos,
   type PlanItem,
 } from '@/lib/ai/todayPlan';
 import { buildPlanMaterials } from '@/lib/ai/todayPlanMaterials';
@@ -55,7 +56,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: '権限がありません' }, { status: 403 });
   }
 
-  let body: { schoolId?: unknown; date?: unknown };
+  let body: { schoolId?: unknown; date?: unknown; todos?: unknown };
   try {
     body = await request.json();
   } catch {
@@ -75,6 +76,13 @@ export async function POST(request: NextRequest) {
   if (!date) {
     return NextResponse.json({ error: '日付が不正です' }, { status: 400 });
   }
+
+  /**
+   * ★用事は画面の「今日やること」から受け取る（サーバーで集め直さない）。
+   *   別々に集めると、同じ画面の上と下で違う用事が並ぶ。
+   *   送られてきたものは信用せず、1件ずつ検めて読めないものだけ捨てる。
+   */
+  const todos = sanitizePlanTodos(body.todos);
 
   const supabase = getPortalServiceClient();
 
@@ -111,10 +119,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ...empty, degraded: true } satisfies GenerateResponse);
   }
 
-  const materials = await buildPlanMaterials(supabase, schoolId, date);
+  const materials = await buildPlanMaterials(supabase, schoolId, date, todos, auth.userId);
 
-  // 用事が1件も無い日は組む必要がない。故障ではないので degraded は立てない
-  if (materials.todos.length === 0) {
+  /**
+   * 用事もカレンダーの予定も無い日は組む必要がない。故障ではないので degraded は立てない。
+   * ★カレンダーも見るのは、用事が空でも「その時間に何があるか」は段取りに出すため。
+   */
+  if (materials.todos.length === 0 && materials.calendar.length === 0) {
     const generatedAt = new Date().toISOString();
     await savePlan(supabase, { schoolId, date, plan: [], userId: auth.userId, generatedAt });
     return NextResponse.json({

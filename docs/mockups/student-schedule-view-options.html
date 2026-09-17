@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>生徒の予定表：表示方式 比較モック（案A〜D）</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+         background: #eef0f4; color: #1f2328; font-size: 14px; padding: 20px; }
+  .wrap { max-width: 1100px; margin: 0 auto; }
+  .note { background: #fff; border: 1px solid #dfe3e8; border-radius: 10px; padding: 14px 16px; margin-bottom: 20px; font-size: 12.5px; line-height: 1.75; color: #4b5563; }
+  .note h2 { font-size: 14px; color: #1f2328; margin-bottom: 6px; }
+  .note code { background: #f3f4f6; padding: 1px 4px; border-radius: 3px; font-size: 11.5px; }
+  .note ul { margin: 4px 0 0 18px; }
+
+  /* ===== 案の見出しカード ===== */
+  .opt-head { background: #fff; border: 1px solid #dfe3e8; border-radius: 10px; padding: 14px 18px; margin: 30px 0 10px; }
+  .opt-head:first-of-type { margin-top: 0; }
+  .opt-title { font-size: 16px; font-weight: 700; color: #1f2328; display: flex; align-items: center; gap: 8px; }
+  .opt-badge { font-size: 10px; font-weight: 700; background: #2563eb; color: #fff; padding: 2px 8px; border-radius: 10px; }
+  .opt-desc { font-size: 12.5px; color: #4b5563; margin: 6px 0 12px; line-height: 1.65; }
+  .opt-pc { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  .opt-pc .pc-label { font-size: 11px; font-weight: 700; margin-bottom: 4px; }
+  .opt-pc .pros .pc-label { color: #059669; }
+  .opt-pc .cons .pc-label { color: #dc2626; }
+  .opt-pc ul { margin: 0 0 0 16px; font-size: 12px; color: #374151; line-height: 1.7; }
+
+  /* ===== 生徒詳細モーダルの器（案Aのみフル再現） ===== */
+  .modal { background: #fff; border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,.12); overflow: hidden; margin-bottom: 8px; }
+  .mhead { padding: 16px 20px 0; border-bottom: 1px solid #e5e7eb; }
+  .mtitle { display: flex; align-items: baseline; gap: 10px; }
+  .mtitle h1 { font-size: 18px; font-weight: 700; }
+  .mtitle .sub { font-size: 12px; color: #6b7280; }
+  .tabs { display: flex; gap: 2px; margin-top: 14px; }
+  .tab { padding: 9px 14px; font-size: 13px; color: #6b7280; border-bottom: 2px solid transparent; cursor: default; }
+  .tab.active { color: #2563eb; border-bottom-color: #2563eb; font-weight: 700; }
+  .body { padding: 14px 20px 20px; }
+
+  /* 案B〜D用の簡易パネル（.body相当の器だけ） */
+  .panel { background: #fff; border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,.08); padding: 14px 20px 20px; margin-bottom: 8px; }
+
+  /* ===== 月ナビ（共通） ===== */
+  .toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+  .navbtn { width: 28px; height: 28px; border: 1px solid #d7dbe0; background: #fff; border-radius: 8px;
+            display: flex; align-items: center; justify-content: center; cursor: default; color: #4b5563; }
+  .month { font-size: 15px; font-weight: 700; min-width: 100px; text-align: center; }
+  .today-btn { border: 1px solid #d7dbe0; background: #fff; border-radius: 8px; padding: 5px 11px; font-size: 12px; cursor: default; color: #374151; }
+  .spacer { flex: 1; }
+  .toggle { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: #4b5563; cursor: default; }
+  .summary { font-size: 12px; color: #6b7280; }
+  .summary b { color: #1f2328; }
+
+  /* ===== 既存マトリクス（案D）に流用する部品一式 ===== */
+  .scroll { border: 1px solid #dfe3e8; border-radius: 10px; overflow: auto; background: #fff; }
+  table { border-collapse: separate; border-spacing: 0; width: 100%; table-layout: fixed; font-size: 12px; }
+  th, td { border-right: 1px solid #edeff2; border-bottom: 1px solid #edeff2; }
+  thead th { position: sticky; top: 0; background: #f7f8fa; z-index: 3; font-weight: 600; color: #4b5563;
+             height: 34px; padding: 3px 6px; }
+  .slotname { font-weight: 700; color: #1f2328; font-size: 12px; }
+  .slottime { display: block; font-size: 9.5px; color: #9aa1ab; font-weight: 400; margin-top: 1px; }
+
+  th.datecol, td.datecol { position: sticky; left: 0; z-index: 2; background: #fff; width: 96px; min-width: 96px;
+                           text-align: left; padding: 4px 8px; white-space: nowrap; border-right: 1px solid #dfe3e8; }
+  thead th.datecol { z-index: 4; background: #f7f8fa; }
+  td.datecol { font-weight: 600; color: #374151; }
+  td.datecol .dow { font-weight: 400; color: #9aa1ab; margin-left: 3px; font-size: 11px; }
+  tr.sat td.datecol { color: #2563eb; } tr.sat td.datecol .dow { color: #93b4f3; }
+  tr.sun td.datecol { color: #dc2626; } tr.sun td.datecol .dow { color: #f0a3a3; }
+  tr.sun td, tr.sat td { background: #fcfcfd; }
+  tr.today td { background: #fffbeb; }
+  tr.today td.datecol { background: #fef3c7; color: #92400e; }
+  tr.today td.datecol::before { content: "今日"; display: inline-block; background: #f59e0b; color: #fff;
+                                font-size: 9px; padding: 0 4px; border-radius: 3px; margin-right: 4px; vertical-align: 1px; }
+  td.cell { padding: 1px 2px; vertical-align: top; }
+  tr.matrow-week td { background: #f3f4f6; color: #6b7280; font-size: 10.5px; font-weight: 700; padding: 4px 8px; border-right: none; }
+
+  /* コマ1件分の見た目（案A・案D共通で使う） */
+  .ent { display: flex; align-items: center; gap: 4px; padding: 2px 4px; border-radius: 5px;
+         background: #eef4ff; border: 1px solid #d9e5fb; line-height: 1.25; margin-bottom: 2px; }
+  .ent:last-child { margin-bottom: 0; }
+  .ent-l1, .ent-l2 { display: contents; }
+  .subj { font-weight: 700; color: #1f2328; white-space: nowrap; }
+  .tch { order: 1; color: #6b7280; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+  .tag11 { flex-shrink: 0; font-size: 8.5px; font-weight: 700; color: #6b7280; letter-spacing: -.02em; }
+  .half, .fchip { flex-shrink: 0; font-size: 9px; padding: 0 3px; border-radius: 3px; background: #e5e7eb; color: #4b5563; }
+  .done { order: 2; flex-shrink: 0; margin-left: auto; font-size: 9.5px; font-weight: 700; color: #fff;
+          background: #10b981; border-radius: 3px; padding: 0 4px; }
+
+  .ent.koushu   { background: #fff7ed; border-color: #fdd9a8; }
+  .ent.testprep { background: #f5f0ff; border-color: #e0d3fb; }
+  .ent.trial    { background: #ecfdf5; border-color: #b8e8d0; }
+  .ent.tin      { background: #e0f2fe; border-color: #b5ddf7; }
+  .ent.absent   { background: #fef2f2; border-color: #f8d0d0; }
+  .ent.absent .subj { text-decoration: line-through; color: #b6bcc4; }
+  .ent.absent .tch  { color: #c9ced5; }
+  .ent.tout     { opacity: .55; }
+  .ent.tout .subj { text-decoration: line-through; color: #9aa1ab; }
+  .badge-abs { order: 2; flex-shrink: 0; margin-left: auto; font-size: 9.5px; font-weight: 700; color: #fff; background: #ef4444; border-radius: 3px; padding: 0 4px; }
+  .badge-mv  { order: 2; flex-shrink: 0; margin-left: auto; font-size: 9.5px; font-weight: 700; color: #6b7280; background: #e5e7eb; border-radius: 3px; padding: 0 4px; }
+
+  /* ===== 案A：曜日×時限グリッド ===== */
+  .agrid-wrap { border: 1px solid #dfe3e8; border-radius: 10px; overflow: hidden; background: #fff; }
+  .agrid table { table-layout: fixed; }
+  .agrid th, .agrid td { border-right: 1px solid #edeff2; border-bottom: 1px solid #edeff2; }
+  .agrid thead th { background: #f7f8fa; padding: 6px 4px; font-weight: 600; color: #4b5563; text-align: center; position: static; }
+  .agrid td.slotcol { background: #f7f8fa; width: 108px; min-width: 108px; padding: 6px 8px; vertical-align: top; position: static; }
+  .agrid td.acell { padding: 5px 5px; vertical-align: top; }
+  .agrid td.acell.empty { background: #fbfbfc; }
+
+  .ablock { background: #eef4ff; border: 1px solid #d9e5fb; border-radius: 6px; padding: 4px 6px; margin-bottom: 4px; }
+  .ablock:last-child { margin-bottom: 0; }
+  .ablock.koushu   { background: #fff7ed; border-color: #fdd9a8; }
+  .ablock.testprep { background: #f5f0ff; border-color: #e0d3fb; }
+  .ablock.tin      { background: #e0f2fe; border-color: #b5ddf7; }
+  .ahead { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; font-size: 11.5px; margin-bottom: 3px; }
+  .ahead .subj { font-weight: 700; color: #1f2328; }
+  .ahead .tch { color: #6b7280; font-size: 11px; }
+
+  .chiprow { display: flex; flex-wrap: wrap; gap: 3px; }
+  /* 日付チップ。order/margin を明示的に打ち消す：.ent 用の .done などが order:2 / margin-left:auto を
+     持っており、それを継いでしまうと実施済みのチップだけ日付順から末尾へ飛ぶ */
+  .dchip { order: 0; margin-left: 0; font-size: 9.5px; padding: 1px 5px; border-radius: 9px; border: 1px solid #d7dbe0; color: #4b5563; background: #fff; white-space: nowrap; }
+  .dchip.done   { background: #10b981; border-color: #10b981; color: #fff; font-weight: 700; }
+  .dchip.absent { background: #fef2f2; border-color: #f8d0d0; color: #b91c1c; text-decoration: line-through; }
+  .dchip.moved  { background: #e5e7eb; border-color: #e5e7eb; color: #9aa1ab; text-decoration: line-through; }
+  .dchip.today  { box-shadow: 0 0 0 2px #f59e0b; font-weight: 700; }
+
+  /* ===== 案B：月カレンダー型 ===== */
+  .cal { display: grid; grid-template-columns: repeat(7, 1fr); border: 1px solid #dfe3e8; border-radius: 10px; overflow: hidden; background: #fff; }
+  .cal-head { background: #f7f8fa; padding: 6px; text-align: center; font-size: 11px; font-weight: 700; color: #4b5563; border-right: 1px solid #edeff2; border-bottom: 1px solid #dfe3e8; }
+  .cal-cell { height: 92px; border-right: 1px solid #edeff2; border-bottom: 1px solid #edeff2; padding: 4px 5px; overflow: hidden; }
+  .cal-cell.blank { background: #fbfbfc; }
+  .cal-cell.weekend { background: #fcfcfd; }
+  .cal-cell.today { background: #fffbeb; }
+  .daynum { font-size: 11px; font-weight: 700; color: #374151; margin-bottom: 3px; }
+  .cal-cell.today .daynum { color: #92400e; }
+  .todaytag { display: inline-block; background: #f59e0b; color: #fff; font-size: 8.5px; padding: 0 4px; border-radius: 3px; margin-left: 4px; vertical-align: 1px; }
+  .cline { font-size: 9.5px; padding: 1px 3px; border-radius: 3px; background: #eef4ff; border: 1px solid #d9e5fb; margin-bottom: 2px; line-height: 1.35;
+           white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cline.koushu   { background: #fff7ed; border-color: #fdd9a8; }
+  .cline.testprep { background: #f5f0ff; border-color: #e0d3fb; }
+  .cline.tin      { background: #e0f2fe; border-color: #b5ddf7; }
+  .cline.absent   { background: #fef2f2; border-color: #f8d0d0; color: #b91c1c; text-decoration: line-through; }
+  .cline.moved    { opacity: .55; text-decoration: line-through; }
+  .more { font-size: 9px; color: #6b7280; }
+
+  /* ===== 案C：日付リスト（時系列） ===== */
+  .clist-wrap { border: 1px solid #dfe3e8; border-radius: 10px; overflow: hidden; background: #fff; }
+  .clist table { table-layout: auto; }
+  .clist th { background: #f7f8fa; padding: 7px 10px; text-align: left; font-size: 11px; color: #4b5563; font-weight: 700; border-bottom: 1px solid #dfe3e8; }
+  .clist td { padding: 6px 10px; border-bottom: 1px solid #edeff2; border-right: none; vertical-align: top; font-size: 12px; }
+  .clist td.datecol2 { width: 110px; font-weight: 700; color: #374151; background: #fafbfc; }
+  .clist tr.today td { background: #fffbeb; }
+  .clist tr.today td.datecol2 { background: #fef3c7; color: #92400e; }
+  .clist .slottime2 { font-size: 10px; color: #9aa1ab; }
+  .clist .subline { margin-bottom: 5px; }
+  .clist .subline:last-child { margin-bottom: 0; }
+  .clist .planned-text { color: #9aa1ab; font-size: 11px; }
+  .weekrow td { padding: 5px 10px; background: #f3f4f6; color: #6b7280; font-size: 10.5px; font-weight: 700; border-bottom: 1px solid #dfe3e8; }
+
+  /* ===== 凡例（共通） ===== */
+  .legend { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 16px; font-size: 11px; color: #6b7280; align-items: center;
+            background: #fff; border: 1px solid #dfe3e8; border-radius: 10px; padding: 12px 14px; }
+  .lg { display: inline-flex; align-items: center; gap: 4px; }
+  .sw { width: 20px; height: 12px; border-radius: 3px; border: 1px solid #d9e5fb; background: #eef4ff; display: inline-block; }
+  .sw.koushu { background: #fff7ed; border-color: #fdd9a8; }
+  .sw.testprep { background: #f5f0ff; border-color: #e0d3fb; }
+  .sw.tin { background: #e0f2fe; border-color: #b5ddf7; }
+  .sw.absent { background: #fef2f2; border-color: #f8d0d0; }
+  .lg .done, .lg .badge-abs, .lg .badge-mv { margin-left: 0; }
+
+  /* ===== 比較まとめ ===== */
+  h2.compare-title { font-size: 15px; margin: 24px 0 8px; }
+  table.compare { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid #dfe3e8; border-radius: 10px; overflow: hidden; font-size: 12.5px; }
+  table.compare th, table.compare td { border-bottom: 1px solid #edeff2; border-right: 1px solid #edeff2; padding: 9px 10px; text-align: center; }
+  table.compare th:last-child, table.compare td:last-child { border-right: none; }
+  table.compare th { background: #f7f8fa; color: #4b5563; font-weight: 700; }
+  table.compare td:first-child, table.compare th:first-child { text-align: left; font-weight: 700; color: #1f2328; }
+  table.compare tr:last-child td { border-bottom: none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="note">
+    <h2>比較モック：生徒詳細モーダル「予定表」タブの表示方式を4案で比較</h2>
+    対象は生徒詳細モーダル（教室長側）の <code>予定表</code> タブ。読み取り専用・1か月分・講師名を出す（保護者ポータルには出さない別画面）。
+    <ul>
+      <li>現行案（日付30行×時限7列のマトリクス）は、通塾が曜日固定のため大半のマスが空白になりスカスカ、というのが却下理由。この4案はその反省を踏まえた別方式。</li>
+      <li>4案とも同じサンプルデータ（佐藤 陽菜・中2・清瀬教室・2026年9月・全20件）を並べ替えて表示しているだけで、データ自体は変えていない。</li>
+    </ul>
+  </div>
+
+  <!-- ============ 案A ============ -->
+  <div class="opt-head">
+    <div class="opt-title">案A：曜日×時限グリッド <span class="opt-badge">本命</span></div>
+    <div class="opt-desc">縦を時限、横を曜日（月〜土）にした7行×6列の表。曜日×コマごとに、実際にあった日付をチップにして横並びで列挙する。通塾は曜日固定なので、埋まるマスはごく一部。</div>
+    <div class="opt-pc">
+      <div class="pros">
+        <div class="pc-label">良い点</div>
+        <ul>
+          <li>「毎週何曜日の何時に来るか」の型が一目で分かる</li>
+          <li>欠席・振替・テスト対策などの例外も、同じマスの中に積むだけで完結する</li>
+        </ul>
+      </div>
+      <div class="cons">
+        <div class="pc-label">弱い点</div>
+        <ul>
+          <li>単発の授業が重なるマスは、中でブロックが縦に積み上がる</li>
+          <li>「今日がどのマスか」はチップの枠線でしか示せず目立ちにくい</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal">
+    <div class="mhead">
+      <div class="mtitle">
+        <h1>佐藤 陽菜</h1>
+        <span class="sub">中2 ／ 清瀬教室 ／ 在籍</span>
+      </div>
+      <div class="tabs">
+        <div class="tab">基本情報</div>
+        <div class="tab">成績</div>
+        <div class="tab">通塾日程</div>
+        <div class="tab active">予定表</div>
+        <div class="tab">講習</div>
+        <div class="tab">面談記録</div>
+      </div>
+    </div>
+    <div class="body">
+      <div class="toolbar">
+        <button class="navbtn">&lsaquo;</button>
+        <span class="month">2026年9月</span>
+        <button class="navbtn">&rsaquo;</button>
+        <button class="today-btn">今月</button>
+        <span class="spacer"></span>
+        <span class="summary" id="summaryA"></span>
+      </div>
+      <div class="agrid-wrap agrid">
+        <table>
+          <thead id="aThead"></thead>
+          <tbody id="aTbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 案B ============ -->
+  <div class="opt-head">
+    <div class="opt-title">案B：月カレンダー型</div>
+    <div class="opt-desc">見慣れた月間カレンダー。各日のマスに、その日にあった授業を縦に並べる。時限の縦揃えは持たず、各授業の中にコマ名を書く。</div>
+    <div class="opt-pc">
+      <div class="pros">
+        <div class="pc-label">良い点</div>
+        <ul>
+          <li>「いつ来るか」が普段見ているカレンダーそのままで直感的</li>
+          <li>今日の位置がひと目で分かる</li>
+        </ul>
+      </div>
+      <div class="cons">
+        <div class="pc-label">弱い点</div>
+        <ul>
+          <li>時限は文字情報になり「何時のコマか」がぱっと見えない</li>
+          <li>授業が3件以上ある日はマスに収まらず「他N件」に省略される</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="toolbar">
+      <button class="navbtn">&lsaquo;</button>
+      <span class="month">2026年9月</span>
+      <button class="navbtn">&rsaquo;</button>
+      <button class="today-btn">今月</button>
+      <span class="spacer"></span>
+      <span class="summary" id="summaryB"></span>
+    </div>
+    <div class="cal" id="bCal"></div>
+  </div>
+
+  <!-- ============ 案C ============ -->
+  <div class="opt-head">
+    <div class="opt-title">案C：日付リスト（授業のある日だけ・時系列）</div>
+    <div class="opt-desc">縦1列。授業のある日だけを上から時系列で並べる。同じ日に複数コマがある日は、日付セルを縦結合してぶら下げる。</div>
+    <div class="opt-pc">
+      <div class="pros">
+        <div class="pc-label">良い点</div>
+        <ul>
+          <li>省略なしで全件を読める</li>
+          <li>「欠席→振替」のような経緯を時系列のまま追える</li>
+        </ul>
+      </div>
+      <div class="cons">
+        <div class="pc-label">弱い点</div>
+        <ul>
+          <li>「毎週何曜日か」の規則性は14行を目で追わないと分からない</li>
+          <li>授業が多い月ほど縦に伸びてスクロールが発生しやすい</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="toolbar">
+      <button class="navbtn">&lsaquo;</button>
+      <span class="month">2026年9月</span>
+      <button class="navbtn">&rsaquo;</button>
+      <button class="today-btn">今月</button>
+      <span class="spacer"></span>
+      <span class="summary" id="summaryC"></span>
+    </div>
+    <div class="clist-wrap clist">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:110px;">日付</th>
+            <th style="width:150px;">コマ</th>
+            <th>科目</th>
+            <th style="width:90px;">講師</th>
+            <th style="width:130px;">状態</th>
+          </tr>
+        </thead>
+        <tbody id="cTbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ============ 案D ============ -->
+  <div class="opt-head">
+    <div class="opt-title">案D：現行マトリクス＋空の日を畳む</div>
+    <div class="opt-desc">既存と同じ「日付×時限」マトリクスはそのまま、既定では授業のある日だけを表示して空白の行を畳む。週が変わるところに区切り線を入れる。</div>
+    <div class="opt-pc">
+      <div class="pros">
+        <div class="pc-label">良い点</div>
+        <ul>
+          <li>既存実装の大部分をそのまま流用でき、手戻りが少ない</li>
+          <li>日付・時限のどちらも数値のまま追える</li>
+        </ul>
+      </div>
+      <div class="cons">
+        <div class="pc-label">弱い点</div>
+        <ul>
+          <li>行を畳んでも「表」という構造自体は変わらず、列の大半（別形態の時限）は空欄のまま</li>
+          <li>畳んだ日が「本当に空」なのか「表示していないだけ」なのか一見紛らわしい</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="toolbar">
+      <button class="navbtn">&lsaquo;</button>
+      <span class="month">2026年9月</span>
+      <button class="navbtn">&rsaquo;</button>
+      <button class="today-btn">今月</button>
+      <label class="toggle"><input type="checkbox"> 空いている日も表示</label>
+      <span class="spacer"></span>
+      <span class="summary" id="summaryD"></span>
+    </div>
+    <div class="scroll">
+      <table>
+        <thead id="dThead"></thead>
+        <tbody id="dTbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ============ 凡例（共通） ============ -->
+  <div class="legend">
+    <span class="lg"><span class="sw"></span>通常</span>
+    <span class="lg"><span class="sw koushu"></span>講習</span>
+    <span class="lg"><span class="sw testprep"></span>テスト対策・追加</span>
+    <span class="lg"><span class="sw tin"></span>振替で入ったコマ</span>
+    <span class="lg"><span class="sw absent"></span>欠席</span>
+    <span class="lg"><span class="done">済</span>実施済</span>
+    <span class="lg"><span class="badge-abs">欠</span>欠席</span>
+    <span class="lg"><span class="badge-mv">振</span>振替で移動した元のコマ</span>
+    <span class="lg"><span class="tag11">1:1</span>1対1</span>
+    <span class="lg"><span class="half">前</span><span class="half">後</span>45分授業の前半・後半</span>
+    <span class="lg"><span class="fchip">小集団</span>統合列で形態を示すチップ</span>
+    <span class="lg"><span class="dchip done">9/1 済</span>案A・案Bの日付チップ（実施済）</span>
+    <span class="lg"><span class="dchip absent">9/10 欠</span>日付チップ（欠席）</span>
+    <span class="lg"><span class="dchip moved">9/10 振</span>日付チップ（振替元）</span>
+  </div>
+
+  <!-- ============ 比較まとめ ============ -->
+  <h2 class="compare-title">比較まとめ</h2>
+  <table class="compare">
+    <thead>
+      <tr>
+        <th>案</th>
+        <th>いつ来るか</th>
+        <th>何時のコマか</th>
+        <th>毎週の型</th>
+        <th>1画面に収まるか</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>案A：曜日×時限グリッド（本命）</td><td>△</td><td>◎</td><td>◎</td><td>◎</td></tr>
+      <tr><td>案B：月カレンダー型</td><td>◎</td><td>△</td><td>○</td><td>◎</td></tr>
+      <tr><td>案C：日付リスト（時系列）</td><td>◎</td><td>◎</td><td>×</td><td>△</td></tr>
+      <tr><td>案D：現行マトリクス＋畳む</td><td>○</td><td>◎</td><td>△</td><td>△</td></tr>
+    </tbody>
+  </table>
+
+</div>
+
+<script>
+// ------------------------------------------------------------------
+// 共通データ：2026年9月（9/1は火曜・9/9が今日）。全案はこの1本の配列を並べ替えて描くだけで、
+// 案ごとにサンプルデータを書き写さない。
+// ------------------------------------------------------------------
+var DOWNAMES = ['日', '月', '火', '水', '木', '金', '土'];
+
+// コマ定義：開始時刻順。案Aの列・案Dの列はこの順で並べる。
+var SLOTS = [
+  { key: 'k1', name: '1限',       time: '13:00-14:20' },
+  { key: 'h2', name: 'HALLO&#9313;', time: '14:30-15:20' },
+  { key: 'h3', name: 'HALLO&#9314;', time: '15:30-16:20' },
+  { key: 'k2', name: '2限',       time: '15:30-16:50' },
+  { key: 'k3', name: '3限',       time: '17:00-18:20' },
+  { key: 'k4', name: '4限',       time: '18:30-19:50' },
+  { key: 'k5', name: '5限',       time: '20:00-21:20' }
+];
+var SLOT_INDEX = {};
+for (var si0 = 0; si0 < SLOTS.length; si0++) { SLOT_INDEX[SLOTS[si0].key] = si0; }
+
+// 授業データ（全13件相当＋振替元1件＝実データは20エントリ）。
+// kind: regular(通常) / testprep(テスト対策) / koushu(講習) / tin(振替で入ったコマ)
+// status: done(済) / planned(予定) / absent(欠席) / moved(振替元＝移動済み)
+var LESSONS = [
+  { d: 1,  slot: 'k3', subj: '英語',        tch: '田中', kind: 'regular',  status: 'done' },
+  { d: 3,  slot: 'k4', subj: '数学',        tch: '佐藤', kind: 'regular',  status: 'done' },
+  { d: 5,  slot: 'h3', subj: 'プログラミング', tch: '山本', kind: 'regular',  status: 'done' },
+  { d: 8,  slot: 'k3', subj: '英語',        tch: '田中', kind: 'regular',  status: 'done' },
+  { d: 8,  slot: 'k5', subj: '国語',        tch: '鈴木', kind: 'testprep', status: 'done', ratio1: true },
+  { d: 9,  slot: 'k5', subj: '数学',        tch: '佐藤', kind: 'testprep', status: 'planned', ratio1: true },
+  { d: 10, slot: 'k4', subj: '数学',        tch: '佐藤', kind: 'regular',  status: 'absent' },
+  { d: 10, slot: 'k4', subj: '数学',        tch: '佐藤', kind: 'regular',  status: 'moved' },
+  { d: 12, slot: 'k3', subj: '数学',        tch: '佐藤', kind: 'tin',      status: 'planned' },
+  { d: 12, slot: 'h3', subj: 'プログラミング', tch: '山本', kind: 'regular',  status: 'done' },
+  { d: 15, slot: 'k3', subj: '英語',        tch: '田中', kind: 'regular',  status: 'done' },
+  { d: 17, slot: 'k4', subj: '数学',        tch: '佐藤', kind: 'regular',  status: 'planned', half: '前' },
+  { d: 17, slot: 'k4', subj: '英語',        tch: '田中', kind: 'regular',  status: 'planned', half: '後' },
+  { d: 19, slot: 'k1', subj: '英語',        tch: '田中', kind: 'koushu',   status: 'planned' },
+  { d: 19, slot: 'k3', subj: '理科',        tch: '高橋', kind: 'regular',  status: 'planned', formation: '小集団' },
+  { d: 19, slot: 'h3', subj: 'プログラミング', tch: '山本', kind: 'regular',  status: 'planned' },
+  { d: 22, slot: 'k3', subj: '英語',        tch: '田中', kind: 'regular',  status: 'planned' },
+  { d: 24, slot: 'k4', subj: '数学',        tch: '佐藤', kind: 'regular',  status: 'planned' },
+  { d: 26, slot: 'h3', subj: 'プログラミング', tch: '山本', kind: 'regular',  status: 'planned' },
+  { d: 29, slot: 'k3', subj: '英語',        tch: '田中', kind: 'regular',  status: 'planned' }
+];
+var TODAY_D = 9;
+
+function getDow(d) { return new Date(2026, 8, d).getDay(); } // 0=日...6=土
+function weekOf(d) { return Math.floor((d - 1 + getDow(1)) / 7) + 1; }
+function slotByKey(key) {
+  for (var i = 0; i < SLOTS.length; i++) { if (SLOTS[i].key === key) return SLOTS[i]; }
+  return null;
+}
+function lessonsOnDay(d) {
+  var out = [];
+  for (var i = 0; i < LESSONS.length; i++) { if (LESSONS[i].d === d) out.push(LESSONS[i]); }
+  out.sort(function (a, b) { return SLOT_INDEX[a.slot] - SLOT_INDEX[b.slot]; });
+  return out;
+}
+function groupBySlot(dayLessons) {
+  var groups = [], cur = null;
+  for (var i = 0; i < dayLessons.length; i++) {
+    var l = dayLessons[i];
+    if (cur && cur.slotKey === l.slot) { cur.entries.push(l); }
+    else { cur = { slotKey: l.slot, entries: [l] }; groups.push(cur); }
+  }
+  return groups;
+}
+// 授業のある日だけを昇順で
+var DAYS = [];
+for (var li = 0; li < LESSONS.length; li++) {
+  if (DAYS.indexOf(LESSONS[li].d) === -1) DAYS.push(LESSONS[li].d);
+}
+DAYS.sort(function (a, b) { return a - b; });
+
+// サマリー文言（件数の内訳。全案で共通の集計ロジックを使う）
+function summaryText() {
+  var done = 0, absent = 0, moved = 0, planned = 0;
+  for (var i = 0; i < LESSONS.length; i++) {
+    var s = LESSONS[i].status;
+    if (s === 'done') done++; else if (s === 'absent') absent++; else if (s === 'moved') moved++; else planned++;
+  }
+  return '全' + LESSONS.length + '件（実施済 <b>' + done + '</b>・予定 <b>' + planned + '</b>・欠席 <b>' + absent + '</b>・振替元 <b>' + moved + '</b>）';
+}
+var sumEls = ['summaryA', 'summaryB', 'summaryC', 'summaryD'];
+for (var se = 0; se < sumEls.length; se++) {
+  var el = document.getElementById(sumEls[se]);
+  if (el) el.innerHTML = summaryText();
+}
+
+// ------------------------------------------------------------------
+// 案A：曜日×時限グリッド
+// ------------------------------------------------------------------
+function chipHtml(e) {
+  var cls = '';
+  if (e.status === 'done') cls = 'done';
+  else if (e.status === 'absent') cls = 'absent';
+  else if (e.status === 'moved') cls = 'moved';
+  if (e.d === TODAY_D) cls += ' today';
+  var label = '9/' + e.d;
+  if (e.half) label += '&middot;' + e.half;
+  if (e.status === 'done') label += ' 済';
+  else if (e.status === 'absent') label += ' 欠';
+  else if (e.status === 'moved') label += ' 振';
+  return '<span class="dchip ' + cls + '">' + label + '</span>';
+}
+
+function buildA() {
+  var WEEKDAYS = [1, 2, 3, 4, 5, 6]; // 月〜土（日曜は列ごと出さない）
+  var head = '<tr><th class="slotcol">時限</th>';
+  for (var w = 0; w < WEEKDAYS.length; w++) head += '<th>' + DOWNAMES[WEEKDAYS[w]] + '</th>';
+  head += '</tr>';
+
+  var body = '';
+  for (var s = 0; s < SLOTS.length; s++) {
+    var slot = SLOTS[s];
+    var row = '<tr><td class="slotcol"><span class="slotname">' + slot.name + '</span><span class="slottime">' + slot.time + '</span></td>';
+    for (var w2 = 0; w2 < WEEKDAYS.length; w2++) {
+      var wd = WEEKDAYS[w2];
+      var cellLessons = [];
+      for (var i = 0; i < LESSONS.length; i++) {
+        if (LESSONS[i].slot === slot.key && getDow(LESSONS[i].d) === wd) cellLessons.push(LESSONS[i]);
+      }
+      if (cellLessons.length === 0) { row += '<td class="acell empty"></td>'; continue; }
+
+      // 科目・講師・形態が同じもの同士をひとつのブロックにまとめる
+      var groups = {}, order = [];
+      for (var j = 0; j < cellLessons.length; j++) {
+        var l = cellLessons[j];
+        var gkey = l.subj + '|' + l.tch + '|' + l.kind + '|' + (l.formation || '');
+        if (!groups[gkey]) { groups[gkey] = []; order.push(gkey); }
+        groups[gkey].push(l);
+      }
+      var cellHtml = '';
+      for (var g = 0; g < order.length; g++) {
+        var arr = groups[order[g]];
+        arr.sort(function (a, b) { return a.d - b.d; });
+        var first = arr[0];
+        var blockCls = (first.kind === 'koushu') ? 'koushu' : (first.kind === 'testprep') ? 'testprep' : (first.kind === 'tin') ? 'tin' : '';
+        var hasRatio = false;
+        for (var r = 0; r < arr.length; r++) { if (arr[r].ratio1) hasRatio = true; }
+        cellHtml += '<div class="ablock ' + blockCls + '">';
+        cellHtml += '<div class="ahead"><span class="subj">' + first.subj + '</span><span class="tch">' + first.tch + '</span>';
+        if (first.formation) cellHtml += '<span class="fchip">' + first.formation + '</span>';
+        if (hasRatio) cellHtml += '<span class="tag11">1:1</span>';
+        cellHtml += '</div><div class="chiprow">';
+        for (var c = 0; c < arr.length; c++) cellHtml += chipHtml(arr[c]);
+        cellHtml += '</div></div>';
+      }
+      row += '<td class="acell">' + cellHtml + '</td>';
+    }
+    row += '</tr>';
+    body += row;
+  }
+  document.getElementById('aThead').innerHTML = head;
+  document.getElementById('aTbody').innerHTML = body;
+}
+
+// ------------------------------------------------------------------
+// 案B：月カレンダー型
+// ------------------------------------------------------------------
+function buildB() {
+  var blanksBefore = getDow(1); // 9/1が火曜＝2（日・月が空マス）
+  var html = '';
+  for (var h = 0; h < 7; h++) html += '<div class="cal-head">' + DOWNAMES[h] + '</div>';
+  for (var b1 = 0; b1 < blanksBefore; b1++) html += '<div class="cal-cell blank"></div>';
+
+  var MAX = 2;
+  for (var d = 1; d <= 30; d++) {
+    var wd = getDow(d);
+    var dayLessons = lessonsOnDay(d);
+    var cls = 'cal-cell' + ((wd === 0 || wd === 6) ? ' weekend' : '') + (d === TODAY_D ? ' today' : '');
+    var cell = '<div class="' + cls + '"><div class="daynum">' + d + (d === TODAY_D ? '<span class="todaytag">今日</span>' : '') + '</div>';
+    var shown = Math.min(dayLessons.length, MAX);
+    for (var i = 0; i < shown; i++) {
+      var l = dayLessons[i], slot = slotByKey(l.slot);
+      var lcls = '';
+      if (l.status === 'absent') lcls = 'absent';
+      else if (l.status === 'moved') lcls = 'moved';
+      else if (l.kind === 'koushu') lcls = 'koushu';
+      else if (l.kind === 'testprep') lcls = 'testprep';
+      else if (l.kind === 'tin') lcls = 'tin';
+      var text = slot.name + ' ' + l.subj + ' ' + l.tch;
+      if (l.status === 'done') text += ' 済'; else if (l.status === 'absent') text += ' 欠'; else if (l.status === 'moved') text += ' 振';
+      cell += '<div class="cline ' + lcls + '">' + text + '</div>';
+    }
+    if (dayLessons.length > MAX) cell += '<div class="more">他' + (dayLessons.length - MAX) + '件</div>';
+    cell += '</div>';
+    html += cell;
+  }
+  var blanksAfter = (7 - ((blanksBefore + 30) % 7)) % 7;
+  for (var b2 = 0; b2 < blanksAfter; b2++) html += '<div class="cal-cell blank"></div>';
+  document.getElementById('bCal').innerHTML = html;
+}
+
+// ------------------------------------------------------------------
+// 案C：日付リスト（授業のある日だけ・時系列）
+// ------------------------------------------------------------------
+function statusBadgeHtml(e) {
+  if (e.status === 'done') return '<span class="done">済</span>';
+  if (e.status === 'absent') return '<span class="badge-abs">欠</span>';
+  if (e.status === 'moved') return '<span class="badge-mv">振</span>';
+  if (e.kind === 'koushu') return '<span class="fchip">講習・予定</span>';
+  if (e.kind === 'testprep') return '<span class="fchip">テスト対策・予定</span>';
+  if (e.kind === 'tin') return '<span class="fchip">振替・予定</span>';
+  return '<span class="planned-text">予定</span>';
+}
+
+function buildC() {
+  var lastWeek = 0, rows = '';
+  for (var di = 0; di < DAYS.length; di++) {
+    var day = DAYS[di];
+    var groups = groupBySlot(lessonsOnDay(day));
+    var week = weekOf(day);
+    if (week !== lastWeek) { rows += '<tr class="weekrow"><td colspan="5">第' + week + '週</td></tr>'; lastWeek = week; }
+
+    for (var gi = 0; gi < groups.length; gi++) {
+      var grp = groups[gi], slot = slotByKey(grp.slotKey);
+      rows += '<tr class="' + (day === TODAY_D ? 'today' : '') + '">';
+      if (gi === 0) {
+        rows += '<td class="datecol2" rowspan="' + groups.length + '">9/' + day + '（' + DOWNAMES[getDow(day)] + '）</td>';
+      }
+      rows += '<td>' + slot.name + '<br><span class="slottime2">' + slot.time + '</span></td>';
+      var subjHtml = '', tchHtml = '', statHtml = '';
+      for (var ei = 0; ei < grp.entries.length; ei++) {
+        var e = grp.entries[ei];
+        var subjLine = e.subj;
+        if (e.formation) subjLine += ' <span class="fchip">' + e.formation + '</span>';
+        if (e.ratio1) subjLine += ' <span class="tag11">1:1</span>';
+        if (e.half) subjLine += ' <span class="half">' + e.half + '</span>';
+        subjHtml += '<div class="subline">' + subjLine + '</div>';
+        tchHtml += '<div class="subline">' + e.tch + '</div>';
+        statHtml += '<div class="subline">' + statusBadgeHtml(e) + '</div>';
+      }
+      rows += '<td>' + subjHtml + '</td><td>' + tchHtml + '</td><td>' + statHtml + '</td></tr>';
+    }
+  }
+  document.getElementById('cTbody').innerHTML = rows;
+}
+
+// ------------------------------------------------------------------
+// 案D：現行マトリクス（日付×時限）＋授業のある日だけ表示
+// ------------------------------------------------------------------
+function entHtml(e) {
+  var cls = (e.kind === 'koushu') ? 'koushu' : (e.kind === 'testprep') ? 'testprep' : (e.kind === 'tin') ? 'tin' : '';
+  if (e.status === 'absent') cls += ' absent';
+  if (e.status === 'moved') cls += ' tout';
+  var badge = '';
+  if (e.status === 'done') badge = '<span class="done">済</span>';
+  else if (e.status === 'absent') badge = '<span class="badge-abs">欠</span>';
+  else if (e.status === 'moved') badge = '<span class="badge-mv">振</span>';
+  return '<div class="ent ' + cls + '">' +
+    '<div class="ent-l1"><span class="subj">' + e.subj + '</span>' +
+    (e.formation ? '<span class="fchip">' + e.formation + '</span>' : '') +
+    (e.ratio1 ? '<span class="tag11">1:1</span>' : '') +
+    (e.half ? '<span class="half">' + e.half + '</span>' : '') +
+    badge +
+    '</div><div class="ent-l2"><span class="tch">' + e.tch + '</span></div></div>';
+}
+
+function buildD() {
+  var thead = '<tr><th class="datecol">日付</th>';
+  for (var s = 0; s < SLOTS.length; s++) {
+    thead += '<th><span class="slotname">' + SLOTS[s].name + '</span><span class="slottime">' + SLOTS[s].time + '</span></th>';
+  }
+  thead += '</tr>';
+  document.getElementById('dThead').innerHTML = thead;
+
+  var lastWeek = 0, rows = '';
+  for (var di = 0; di < DAYS.length; di++) {
+    var day = DAYS[di], wd = getDow(day), week = weekOf(day);
+    if (week !== lastWeek) {
+      rows += '<tr class="matrow-week"><td colspan="' + (SLOTS.length + 1) + '">第' + week + '週</td></tr>';
+      lastWeek = week;
+    }
+    var rowCls = [];
+    if (wd === 0) rowCls.push('sun'); if (wd === 6) rowCls.push('sat'); if (day === TODAY_D) rowCls.push('today');
+    rows += '<tr class="' + rowCls.join(' ') + '">';
+    rows += '<td class="datecol">9/' + day + '<span class="dow">' + DOWNAMES[wd] + '</span></td>';
+    for (var si = 0; si < SLOTS.length; si++) {
+      var slotKey = SLOTS[si].key, cellHtml = '';
+      for (var k = 0; k < LESSONS.length; k++) {
+        if (LESSONS[k].d === day && LESSONS[k].slot === slotKey) cellHtml += entHtml(LESSONS[k]);
+      }
+      rows += '<td class="cell">' + cellHtml + '</td>';
+    }
+    rows += '</tr>';
+  }
+  document.getElementById('dTbody').innerHTML = rows;
+}
+
+buildA();
+buildB();
+buildC();
+buildD();
+</script>
+</body>
+</html>

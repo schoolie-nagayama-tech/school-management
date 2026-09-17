@@ -20,6 +20,8 @@ import { Sparkles, Loader2, X } from 'lucide-react';
 import { fetchWithAuth } from '@/lib/api/auth';
 import { updateProposal } from '@/lib/api/proposals';
 import { MAX_CONCEPTS_PER_CALL, type ConceptResult } from '@/lib/ai/koushuConcept';
+import { PLAN_THEME_FEATURE_KEY } from '@/lib/ai/features';
+import { MAX_FEEDBACK_BATCH, recordAiFeedbackBatch, type AiFeedbackInput } from '@/lib/ai/feedback';
 
 /** 一覧が持っている、表示に要るぶんだけ */
 export interface BulkConceptTarget {
@@ -111,11 +113,14 @@ export function BulkConceptPanel({
     if (picked.length === 0) return;
     setSaving(true);
     let ok = 0;
+    /** 実際に保存できた提案書。★保存に失敗した行を「使った」と数えない */
+    const savedIds = new Set<string>();
     try {
       for (const r of picked) {
         try {
           await updateProposal(r.id, { theme: r.after });
           ok += 1;
+          savedIds.add(r.id);
         } catch {
           // 1件こけても残りは続ける。件数で結果を伝える
         }
@@ -127,6 +132,35 @@ export function BulkConceptPanel({
       );
       setRows(null);
       onApplied();
+
+      // ★答え合わせは、チェックの結果をそのまま使う（別のボタンを増やさない）。
+      //   反映した＝使えた（used_as_is）、出したのに反映しなかった＝使わなかった（discarded）。
+      //   反映を押した人は、その時点で1行ずつ見て決めているので、これ以上聞くことがない。
+      //
+      //   ★テーマの文そのものは記録しない。テーマはその生徒の単元と成績から書かれており、
+      //     答え合わせの表に入れると成績由来の文が溜まる。長さと変わったかどうかで足りる。
+      //
+      //   ★「変えていません」と返った行（changed === false）は記録しない。
+      //     AIが何もしていないので、使った・使わなかったを聞いても意味がない。
+      const feedback: AiFeedbackInput[] = rows
+        .filter((r) => r.after.trim() !== r.theme.trim())
+        .map((r) => ({
+          schoolId,
+          feature: PLAN_THEME_FEATURE_KEY,
+          targetKind: 'seasonal_proposal',
+          targetId: r.id,
+          verdict: savedIds.has(r.id) ? 'used_as_is' : 'discarded',
+          aiOutput: {
+            beforeLength: r.theme.trim().length,
+            afterLength: r.after.trim().length,
+            changed: true,
+          },
+        }));
+      // ★分けて送る。夏期は776件を一度に扱うので、1回の上限（100件）で切ると
+      //   いちばん数の多い機能の答えが9割方こぼれる。作るときも同じように分けている
+      for (let i = 0; i < feedback.length; i += MAX_FEEDBACK_BATCH) {
+        void recordAiFeedbackBatch(feedback.slice(i, i + MAX_FEEDBACK_BATCH));
+      }
     } finally {
       setSaving(false);
     }

@@ -32,7 +32,8 @@ interface InvitationRow {
  * service role で招待を取得し、状態（無効/期限切れ/受諾済み/有効）で分岐する。
  * 有効なときだけクライアントの受諾フォームを描画する。
  */
-export default async function InvitePage({ params }: { params: { token: string } }) {
+export default async function InvitePage(props: { params: Promise<{ token: string }> }) {
+  const params = await props.params;
   const token = params.token;
   const supabase = getPortalServiceClient();
 

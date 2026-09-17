@@ -30,6 +30,7 @@ import {
 import { InterviewList } from './InterviewList';
 import { AttendanceMatrix } from './AttendanceMatrix';
 import { StudentCourseSection } from './StudentCourseSection';
+import { StudentScheduleCalendar } from './StudentScheduleCalendar';
 import { StudentKoushuTab } from './StudentKoushuTab';
 import { PortalInviteSection } from './PortalInviteSection';
 import { useAuth } from '@/contexts/AuthContext';
@@ -54,7 +55,7 @@ interface StudentDetailModalProps {
   onDelete?: (student: Student) => Promise<void>;
 }
 
-type TabType = 'basic' | 'scores' | 'interviews' | 'schedule' | 'koushu';
+type TabType = 'basic' | 'scores' | 'interviews' | 'schedule' | 'calendar' | 'koushu';
 
 type StudentTextbookRow = Awaited<ReturnType<typeof getStudentTextbooksForProgress>>[number];
 
@@ -113,6 +114,8 @@ export function StudentDetailModal({
     { key: 'basic', label: '基本情報' },
     { key: 'scores', label: '成績' },
     ...(isTeacher ? [] : [{ key: 'schedule' as const, label: '通塾日程' }]),
+    // 予定表（月カレンダー）も通塾日程と同じく講師には出さない
+    ...(isTeacher ? [] : [{ key: 'calendar' as const, label: '予定表' }]),
     // 講習タブは全ロールに表示（その生徒の講習提案・申込の簡易まとめ）
     { key: 'koushu', label: '講習' },
     { key: 'interviews', label: '面談記録' },
@@ -761,6 +764,10 @@ export function StudentDetailModal({
             studentGrade={student.grade}
             canEdit={!isTeacher}
           />
+        )}
+
+        {activeTab === 'calendar' && !isTeacher && student && (
+          <StudentScheduleCalendar studentId={student.id} />
         )}
 
         {activeTab === 'scores' && student && (

@@ -9,6 +9,7 @@ import {
   placeSystemPrompt,
   placeUserText,
   planBlocksForSchool,
+  sanitizePlanTodos,
   MAX_SAVED_TEXT_LENGTH,
   type PlanItem,
   type PlanPlacement,
@@ -63,7 +64,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: '権限がありません' }, { status: 403 });
   }
 
-  let body: { schoolId?: unknown; text?: unknown; date?: unknown };
+  let body: { schoolId?: unknown; text?: unknown; date?: unknown; todos?: unknown };
   try {
     body = await request.json();
   } catch {
@@ -101,8 +102,11 @@ export async function POST(request: NextRequest) {
     } satisfies PlaceResponse);
   }
 
+  // ★用事は画面の「今日やること」から受け取る（組むときと同じ材料で入れ場所を決める）
+  const todos = sanitizePlanTodos(body.todos);
+
   const [materials, stored] = await Promise.all([
-    buildPlanMaterials(supabase, schoolId, date),
+    buildPlanMaterials(supabase, schoolId, date, todos, auth.userId),
     loadPlan(supabase, schoolId, date),
   ]);
 

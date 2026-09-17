@@ -24,6 +24,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { Sparkles, RefreshCw } from 'lucide-react';
 import { fetchWithAuth } from '@/lib/api/auth';
 import { STUDENT_DIGEST_FEATURE_KEY } from '@/lib/ai/features';
+import { recordAiFeedback } from '@/lib/ai/feedback';
+import { DigestVerdictChips } from '@/components/ai/DigestVerdictChips';
 import type { BriefSectionKey, BriefSign, BriefTalk } from '@/lib/ai/interviewBrief';
 import { briefSectionLabel } from '@/lib/ai/interviewBrief';
 import type { AssessmentWithScores, Student, StudentInterview } from '@/types/database';
@@ -202,6 +204,11 @@ export function InterviewBriefCard({
   const [view, setView] = useState<BriefView | null>(null);
   const [madeAt, setMadeAt] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  /**
+   * この画面でもう答えたか。★押し直させないためだけの印で、保存はしない。
+   *   「もう一度作る」を押せば別のまとめになるので、また聞く。
+   */
+  const [rated, setRated] = useState(false);
 
   useEffect(() => {
     if (!student.school_id) {
@@ -232,6 +239,7 @@ export function InterviewBriefCard({
     setView(null);
     setMadeAt(null);
     setMessage(null);
+    setRated(false);
     onResult(null);
     // onResult は親で useCallback 済みだが、依存に入れると親の再描画で結果が消えるため入れない
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -281,6 +289,7 @@ export function InterviewBriefCard({
       }
       apply({ sections: json.sections, thread: json.thread, talk: json.talk });
       setMadeAt(new Date().toISOString().slice(0, 10));
+      setRated(false);
     } catch {
       setMessage('いまは作れませんでした');
     } finally {
@@ -391,6 +400,23 @@ export function InterviewBriefCard({
           <span className="text-[11px] leading-snug text-text-muted">
             現状の行はシステムの記録です。「見えること」「話す項目」はAIが読んだもので、直せます
           </span>
+
+          {/* ★答え合わせ。現状の行も「見えること」も記録しない（成績と引継ぎが混ざる）。
+              残すのはセクション数と話す項目の数だけ */}
+          <DigestVerdictChips
+            rated={rated}
+            onRate={(verdict) => {
+              setRated(true);
+              void recordAiFeedback({
+                schoolId: student.school_id ?? '',
+                feature: STUDENT_DIGEST_FEATURE_KEY,
+                targetKind: 'student',
+                targetId: student.id,
+                verdict,
+                aiOutput: { sectionCount: view.sections.length, talkCount: view.talk.length },
+              });
+            }}
+          />
         </div>
       )}
     </div>

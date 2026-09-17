@@ -1,25 +1,35 @@
 import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { toSurnameOnly } from '@/lib/utils/teacherName';
-import { WORK_START, WORK_END, type PlanMaterials } from '@/lib/ai/todayPlan';
+import { listCalendarEvents } from '@/lib/google-calendar';
+import {
+  MAX_CALENDAR_TITLE_LENGTH,
+  WORK_START,
+  WORK_END,
+  selectPlanTodos,
+  type PlanCalendarEvent,
+  type PlanMaterials,
+  type PlanTodo,
+} from '@/lib/ai/todayPlan';
 
 /**
  * 「今日の段取り」の材料を集める（サーバー専用）。
  *
  * 正典: docs/today-plan-ai-plan.md
  *
- * ★材料を増やさない。今日の用事・今日のコマ・この先で授業がある日、だけ。
- *   カレンダーも出勤簿も読まない（勤務は 13:00〜21:30 の既定固定）。
- *   材料が増えるほど、朝の1回で組み切れなくなる。
+ * ★用事はここで集めない。画面の「今日やること」（TodayTodosWidget）が持っているものを
+ *   そのまま受け取る（2026-09-09 変更）。
+ *   以前はサーバーで material_orders と monthly_tasks を引き直していたが、
+ *   同じ画面の上（段取り）と下（今日やること）で違う用事が並び、
+ *   どちらが正しいのか分からなくなっていた。集めるのは1か所だけにする。
+ *
+ * ここで集めるのは、画面が持っていないものだけ:
+ *   コマ・今日の授業・この先で授業がある日・教室長のGoogleカレンダー。
  *
  * ★生徒・講師は姓のみ。フルネームも連絡先も外へ出さない。
  *
- * ★「今日やること」（src/lib/api/todayTodos.ts）はここから呼べない。
- *   あちらはブラウザ用の supabase クライアントをモジュールの中で掴んでいて、
- *   サーバーでは他人のセッションで動いてしまう。
- *   なので用事は、その日に手が動かせる2つ ——「届いた教材を渡す」と
- *   「期限が近い月次タスク」—— だけをここで引き直す。
- *   作り込みすぎない（材料が増えると、そもそも朝に組み切れない）。
+ * ★カレンダーが読めなくても段取りは組めること。未連携・取得失敗は握って空にする
+ *   （カレンダーのせいで1日の段取りが作れなくなるほうが困る）。
  *
  * ★.limit() を必ず付ける。未ページングの select は1000行で黙って切られる。
  */
@@ -27,17 +37,75 @@ import { WORK_START, WORK_END, type PlanMaterials } from '@/lib/ai/todayPlan';
 /** 引く上限。教室1つ・1日ぶんなので、これで足りる */
 const SLOT_LIMIT = 60;
 const ENTRY_LIMIT = 300;
-const ORDER_LIMIT = 200;
-const TASK_LIMIT = 100;
 const UPCOMING_LIMIT = 500;
-/** 用事は多すぎると置き切れない。上限で切る */
-const TODO_LIMIT = 30;
+/** カレンダーの予定は多くても数件。並べすぎると段取りが予定表になる */
+const CALENDAR_LIMIT = 20;
 /** この先どこまで見るか（日） */
 const UPCOMING_DAYS = 7;
 
 /** 'HH:MM:SS' → 'HH:MM' */
 function toHhMm(time: string | null | undefined): string {
   return (time ?? '').slice(0, 5);
+}
+
+/**
+ * ISO日時 → 日本時間の 'HH:MM'。
+ * ★タイムゾーンを固定する。サーバーはUTCで動くので、素の getHours() では9時間ずれる。
+ */
+function toJstHhMm(iso: string | null | undefined): string {
+  if (!iso) return '';
+  const t = Date.parse(iso);
+  if (Number.isNaN(t)) return '';
+  return new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Asia/Tokyo',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).format(new Date(t));
+}
+
+/**
+ * その日のカレンダーの予定を読む。
+ *
+ * ★何があっても投げない。未連携・トークン切れ・APIの不調はすべて空で返す
+ *   （カレンダーが読めないだけで段取りが組めなくなってはいけない）。
+ *
+ * ★終日の予定は外す。時間帯が決まらないので「この時間は空けておく」に使えず、
+ *   00:00〜23:59 として渡すと1日ぶんの用事が全部行き場を失う。
+ */
+async function fetchCalendar(userId: string, date: string): Promise<PlanCalendarEvent[]> {
+  if (!userId) return [];
+  try {
+    // 教室は日本時間で動く。UTCで切ると前日・翌日の予定が混ざる
+    const res = await listCalendarEvents(
+      userId,
+      `${date}T00:00:00+09:00`,
+      `${date}T23:59:59+09:00`
+    );
+    if (!res.success || !res.events) return [];
+
+    const out: PlanCalendarEvent[] = [];
+    for (const ev of res.events) {
+      if (out.length >= CALENDAR_LIMIT) break;
+      if (ev.allDay) continue;
+      const start = toJstHhMm(ev.start);
+      const end = toJstHhMm(ev.end);
+      if (!start || !end) continue;
+      out.push({
+        start,
+        end,
+        // ★タイトルはそのまま渡す（教室長自身の予定。長さだけ抑える）
+        title: (ev.summary || '(無題)')
+          .replace(/\s+/g, ' ')
+          .trim()
+          .slice(0, MAX_CALENDAR_TITLE_LENGTH),
+      });
+    }
+    return out;
+  } catch (e) {
+    console.error('[todayPlanMaterials] カレンダーを読めませんでした', e);
+    return [];
+  }
 }
 
 /** 'YYYY-MM-DD' を n 日ずらす。★UTC固定で計算する（ローカル時刻だと1日ずれる） */
@@ -100,11 +168,22 @@ export async function fetchPlanSlots(
   return { slots, repIdBySlotId };
 }
 
+/**
+ * 段取りの材料を組み立てる。
+ *
+ * @param todos 画面の「今日やること」。★APIが検めたもの（sanitizePlanTodos）を渡す
+ * @param userId 教室長本人。Googleカレンダーのトークンは個人に紐づく
+ */
 export async function buildPlanMaterials(
   supabase: SupabaseClient,
   schoolId: string,
-  date: string
+  date: string,
+  todos: readonly PlanTodo[],
+  userId: string
 ): Promise<PlanMaterials> {
+  // カレンダーは外部APIで遅い。DBを引いている間に走らせておく（結果は下で待つ）
+  const calendarPromise = fetchCalendar(userId, date);
+
   const { slots, repIdBySlotId } = await fetchPlanSlots(supabase, schoolId);
   const slotIds = new Set(slots.map((s) => s.id));
 
@@ -152,84 +231,14 @@ export async function buildPlanMaterials(
   }
 
   /* --------------------------------------------------------
-   * 用事1: 届いているのにまだ渡していない教材
+   * 教室長のカレンダー（面談・来客など）
    * ------------------------------------------------------ */
-  // ★status は 'delivered'（＝現物は届いたが未配布）。'distributed' はもう渡し終わっている
-  const { data: orderRows } = await supabase
-    .from('material_orders')
-    .select('id, student_id, student:students(last_name), material:materials(name)')
-    .eq('school_id', schoolId)
-    .eq('status', 'delivered')
-    .not('student_id', 'is', null)
-    .limit(ORDER_LIMIT);
-
-  /** 生徒ごとに1件へ畳む。1冊ずつ行を作ると教材の多い生徒で段取りが埋まる */
-  const materialByStudent = new Map<string, { surname: string; names: string[] }>();
-  for (const row of orderRows ?? []) {
-    const r = row as {
-      student_id: string;
-      student?: { last_name?: string } | { last_name?: string }[];
-      material?: { name?: string } | { name?: string }[];
-    };
-    const surname = (one(r.student)?.last_name ?? '').trim();
-    if (!surname) continue;
-    const entry = materialByStudent.get(r.student_id) ?? { surname, names: [] };
-    const name = one(r.material)?.name;
-    if (name) entry.names.push(name);
-    materialByStudent.set(r.student_id, entry);
-  }
-
-  const todos: PlanMaterials['todos'] = Array.from(materialByStudent.entries()).map(
-    ([studentId, info]) => ({
-      id: `material:${studentId}`,
-      text:
-        info.names.length > 0
-          ? `届いた教材を渡す（${info.names.slice(0, 2).join('・')}${info.names.length > 2 ? 'ほか' : ''}）`
-          : '届いた教材を渡す',
-      studentSurname: info.surname,
-    })
-  );
-
-  /* --------------------------------------------------------
-   * 用事2: 期限が近い月次タスクのうち、この教室でまだ済んでいないもの
-   * ------------------------------------------------------ */
-  const until = shiftDate(date, UPCOMING_DAYS);
-  const { data: taskRows } = await supabase
-    .from('monthly_tasks')
-    .select('id, task_name, task_date')
-    .gte('task_date', date)
-    .lte('task_date', until)
-    .order('task_date', { ascending: true })
-    .limit(TASK_LIMIT);
-
-  const taskIds = (taskRows ?? []).map((t) => (t as { id: string }).id);
-  /**
-   * ★monthly_tasks は全教室共通のマスタで、済かどうかは monthly_task_checks 側にある。
-   *   行が無い＝まだ誰も触っていない＝未済。
-   */
-  const doneTaskIds = new Set<string>();
-  if (taskIds.length > 0) {
-    const { data: checkRows } = await supabase
-      .from('monthly_task_checks')
-      .select('task_id, is_completed')
-      .eq('school_id', schoolId)
-      .in('task_id', taskIds)
-      .limit(TASK_LIMIT);
-    for (const row of checkRows ?? []) {
-      const c = row as { task_id: string; is_completed: boolean };
-      if (c.is_completed) doneTaskIds.add(c.task_id);
-    }
-  }
-
-  for (const row of taskRows ?? []) {
-    const t = row as { id: string; task_name: string; task_date: string };
-    if (doneTaskIds.has(t.id)) continue;
-    todos.push({ id: `task:${t.id}`, text: t.task_name, due: t.task_date });
-  }
+  const calendar = await calendarPromise;
 
   /* --------------------------------------------------------
    * この先で授業がある日
    * ------------------------------------------------------ */
+  const until = shiftDate(date, UPCOMING_DAYS);
   // ★これが無いと「明日でいいか」を判断できない。授業の登録が無い日に回しても誰もいない
   const { data: upcomingRows } = await supabase
     .from('schedule_entries')
@@ -250,8 +259,9 @@ export async function buildPlanMaterials(
     workHours: { start: WORK_START, end: WORK_END },
     slots,
     lessons,
-    // ★用事が多すぎると各時間帯4件に収まらず、AIが勝手に落としたものが分からなくなる
-    todos: todos.slice(0, TODO_LIMIT),
+    // ★用事が多すぎると各時間帯4件に収まらない。切るときは重要でないものから
+    todos: selectPlanTodos(todos),
+    calendar,
     upcomingLessonDays,
   };
 }

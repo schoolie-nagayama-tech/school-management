@@ -75,7 +75,11 @@ async function getSubmissionByToken(
   };
 }
 
-export async function GET(_request: NextRequest, { params }: { params: { editToken: string } }) {
+export async function GET(
+  _request: NextRequest,
+  props: { params: Promise<{ editToken: string }> }
+) {
+  const params = await props.params;
   try {
     const editToken = params.editToken?.trim();
     if (!editToken) {
@@ -97,7 +101,8 @@ export async function GET(_request: NextRequest, { params }: { params: { editTok
   }
 }
 
-export async function PUT(request: NextRequest, { params }: { params: { editToken: string } }) {
+export async function PUT(request: NextRequest, props: { params: Promise<{ editToken: string }> }) {
+  const params = await props.params;
   try {
     const editToken = params.editToken?.trim();
     if (!editToken) {
