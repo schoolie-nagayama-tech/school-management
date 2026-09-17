@@ -988,7 +988,7 @@ function getCoursePrepSeason(): SeasonType {
   return 'winter';
 }
 
-async function fetchCoursePrepAlertData(schoolIds: string[]): Promise<{
+export async function fetchCoursePrepAlertData(schoolIds: string[]): Promise<{
   items: AlertSources['coursePrepItems'];
   studentProgress: AlertSources['coursePrepStudentProgress'];
 }> {
@@ -998,24 +998,50 @@ async function fetchCoursePrepAlertData(schoolIds: string[]): Promise<{
   const year = new Date().getFullYear();
 
   try {
-    const { data: items, error: itemsError } = await supabase
-      .from('course_prep_progress_items')
-      .select('id, school_id, name, column_type, deadline, season, year')
-      .in('school_id', schoolIds)
-      .eq('season', season)
-      .eq('year', year)
-      .eq('is_hidden', false)
-      .eq('column_type', 'check')
-      .not('deadline', 'is', null);
+    // 確定保存（締め）済みの期は、進捗表が「当時の姿」に凍結されていて入力が終わっている。
+    // ライブ計算のアラートだけ残ると、締めたあとに入会した生徒が未完了項目ぶんの期日超過で
+    // 並び、しかも今から埋めても確定データは変わらない＝消しようがない。
+    // そのため確定保存済みの教室は、その期のアラート対象から丸ごと外す。
+    const [{ data: items, error: itemsError }, { data: snapshots, error: snapshotError }] =
+      await Promise.all([
+        supabase
+          .from('course_prep_progress_items')
+          .select('id, school_id, name, column_type, deadline, season, year')
+          .in('school_id', schoolIds)
+          .eq('season', season)
+          .eq('year', year)
+          .eq('is_hidden', false)
+          .eq('column_type', 'check')
+          .not('deadline', 'is', null),
+        supabase
+          .from('course_prep_snapshots')
+          .select('school_id')
+          .in('school_id', schoolIds)
+          .eq('season', season)
+          .eq('year', year),
+      ]);
 
     if (itemsError) {
       console.warn('講習準備アラートデータ取得エラー:', itemsError);
       return { items: [], studentProgress: [] };
     }
+    // 確定状況が読めなかったときは従来どおり全校を対象にする（アラートを黙って消さない）
+    if (snapshotError) {
+      console.warn('講習準備アラート: 確定保存の取得エラー:', snapshotError);
+    }
 
     if (!items || items.length === 0) return { items: [], studentProgress: [] };
 
-    const itemIds = items.map((i: { id: string }) => i.id);
+    const closedSchoolIds = new Set(
+      (snapshots || []).map((s: { school_id: string }) => s.school_id)
+    );
+    const openItems =
+      closedSchoolIds.size > 0
+        ? items.filter((i: { school_id: string }) => !closedSchoolIds.has(i.school_id))
+        : items;
+    if (openItems.length === 0) return { items: [], studentProgress: [] };
+
+    const itemIds = openItems.map((i: { id: string }) => i.id);
     // 進捗は (生徒 × 講習準備項目) でスケールし1000行を超えうる。itemIds も多いと
     // .in() の URL が長くなるため、チャンク分割 + チャンク内ページングで取得する（id 昇順で安定）。
     const progress = await fetchAllInChunks<{
@@ -1032,7 +1058,7 @@ async function fetchCoursePrepAlertData(schoolIds: string[]): Promise<{
     );
 
     return {
-      items: items as AlertSources['coursePrepItems'],
+      items: openItems as AlertSources['coursePrepItems'],
       studentProgress: progress,
     };
   } catch (e) {
