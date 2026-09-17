@@ -24,7 +24,7 @@ import { HEADER_FLOWERS } from '@/components/badges/flowerPlacements';
 import { ThemeToggle } from './ThemeToggle';
 import { getSurname } from '@/lib/utils/teacherName';
 import { buildNavEntries, isLinkActive, isGroupActive } from './navConfig';
-import { isSystemAdmin } from '@/lib/utils/roles';
+import { isSystemAdmin, isManagerOrAbove } from '@/lib/utils/roles';
 import { canAccessPortalDemo } from '@/lib/mypage/demoAccess';
 import { MobileBottomNav } from './MobileBottomNav';
 import { HeaderAiHelp } from '@/components/help/HeaderAiHelp';
@@ -390,6 +390,20 @@ export function AppHeader({
                 </div>
               )}
               {isTeacher && badgeCount !== null && <TierMedal count={badgeCount} />}
+              {/* ログイン中の氏名。教室長以上にだけ出す。
+                  複数教室を見るロールほど「いま誰で入っているか」を取り違えやすく、
+                  設定ドロップダウンを開かないと確認できないのが実態に合わないため常時表示にした。
+                  講師は共用端末で使う場面があり、氏名を出しっぱなしにすると別人の名前が
+                  残って見えるので対象外（従来どおり設定メニューの中だけ）。
+                  狭い画面ではロゴ・教室名と競合するので sm 未満では隠す。 */}
+              {profile && !authLoading && isManagerOrAbove(profile.role) && (
+                <div
+                  className="hidden sm:block max-w-[140px] truncate text-xs font-medium text-white/90"
+                  title={`${profile.display_name || profile.email}（${USER_ROLE_LABELS[profile.role]}）`}
+                >
+                  {profile.display_name || profile.email}
+                </div>
+              )}
               {profile && !authLoading && (
                 <button
                   onClick={signOut}
