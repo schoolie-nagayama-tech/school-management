@@ -325,6 +325,111 @@ export function selectOpenCoursePrepPeriods(
   return open;
 }
 
+/** 期の並び順。同じ年の中では 春 → 夏 → 冬 の順に進む。 */
+const SEASON_ORDER: Record<SeasonType, number> = { spring: 1, summer: 2, winter: 3 };
+
+/**
+ * 「いま準備が動いている期」を1つだけ選ぶ。Googleカレンダーの面談予約を進捗に
+ * 書き戻すときの、唯一の書き込み先の定義。
+ *
+ * アラート（selectOpenCoursePrepPeriods）は重なっている期を全部返してよいが、同期は
+ * 書き込み先を1つに決めないといけないので、開いている期からさらに1つに絞る。
+ *
+ * 選び方: 準備は講習期間より前に走るので、★これから始まる期のうち、いちばん早く始まる期
+ * を採る。9月なら夏期（7/06〜8/31）はもう終わっていて、次に始まるのは冬期（12/07〜）なので
+ * 冬期。2月なら冬期は高校受験の区分が2/28まで残って「開いて」はいるが、次に始まるのは
+ * 春期2027 なので春期を採る（冬期の面談は11〜12月にとうに終わっている）。
+ * 開いている期がすべて開始日を過ぎているときだけ、いちばん早く終わる期に倒す。
+ *
+ * ★予約日（イベントの開始日）から期を決めるやり方は採らない。面談は講習期間より前に行うので、
+ * 予約日はどの期の講習期間にも入らない（夏期2026 は期間 7/06〜8/31 に対して面談申込の期日が
+ * 5/30）。日付を期間に当てはめると、どの期にも当たらないか、たまたま重なった前の期に当たる。
+ *
+ * 開始日は共通の開始日だけを見る。区分（course_prep_tracks）は終わりを後ろへ伸ばすもので、
+ * 始まりは共通のままというのが運用の前提（退塾者を表に残す判定も共通の開始日だけを見る）。
+ *
+ * 完全ではない。冬期の講習中（12月下旬）にすでに春期の期が作ってあると、春期を選んでしまう。
+ * 書き込み先の期は呼び出し側が利用者にそのまま見せるので（「2027年春期の面談申込を…」）、
+ * 外したときに人が気づける形にしてある。
+ *
+ * 開始日も終了日も引けない期は、いつの期か分からないので最後に回す。それでも並びが決まらない
+ * ときは (年, 期) の暦順で決める（呼び出すたびに書き込み先が変わらないように）。
+ *
+ * @param todayIso JSTの今日（'YYYY-MM-DD'）。固定長なので辞書順比較で日付順になる。
+ * @returns 書き込み先の期。開いている期が1つも無ければ null
+ */
+export function selectCoursePrepSyncTargetPeriod(
+  periods: {
+    school_id: string;
+    season: SeasonType;
+    year: number;
+    schedule_start_date: string | null;
+    schedule_end_date: string | null;
+  }[],
+  tracks: { school_id: string; season: SeasonType; year: number; schedule_end_date: string }[],
+  snapshots: { school_id: string; season: SeasonType; year: number }[],
+  todayIso: string
+): CoursePrepPeriodScope | null {
+  const open = selectOpenCoursePrepPeriods(periods, tracks, snapshots, todayIso);
+  if (open.length === 0) return null;
+
+  const tracksByPeriod = new Map<string, { schedule_end_date: string }[]>();
+  for (const t of tracks) {
+    const key = coursePrepPeriodKey(t);
+    const arr = tracksByPeriod.get(key);
+    if (arr) arr.push(t);
+    else tracksByPeriod.set(key, [t]);
+  }
+
+  // 並べ替えに使う日付を期ごとに1回だけ解決しておく
+  const windowByKey = new Map<string, { start: string | null; end: string | null }>();
+  for (const p of periods) {
+    const key = coursePrepPeriodKey(p);
+    windowByKey.set(key, {
+      start: isIsoDate(p.schedule_start_date) ? p.schedule_start_date : null,
+      end: resolvePeriodLastEndDate(p, tracksByPeriod.get(key) ?? []),
+    });
+  }
+
+  const ranked = open.map((scope) => {
+    const w = windowByKey.get(coursePrepPeriodKey(scope)) ?? { start: null, end: null };
+    // これから始まる期を先に見る（0）。すでに始まっている・開始日が無い期は後回し（1）。
+    const upcoming = w.start !== null && w.start > todayIso;
+    return { scope, upcoming, sortKey: upcoming ? w.start : w.end };
+  });
+
+  ranked.sort((a, b) => {
+    if (a.upcoming !== b.upcoming) return a.upcoming ? -1 : 1;
+    // これから始まる期どうしは開始が早い順、それ以外は終わりが早い順。
+    // 日付が無いものは比べようがないので後ろへ送る。
+    if (a.sortKey !== b.sortKey) {
+      if (a.sortKey === null) return 1;
+      if (b.sortKey === null) return -1;
+      return a.sortKey < b.sortKey ? -1 : 1;
+    }
+    if (a.scope.year !== b.scope.year) return a.scope.year - b.scope.year;
+    return SEASON_ORDER[a.scope.season] - SEASON_ORDER[b.scope.season];
+  });
+
+  return ranked[0].scope;
+}
+
+/**
+ * 進捗項目のうち「面談の予約が取れたら完了にしてよい」ものかを判定する。
+ *
+ * 項目名は教室・期ごとに違い、本番では「面談申込」（夏期）と「面談申込・面談日決定」（冬期）の
+ * 2通りが使われている。どちらも部分一致「面談申込」で拾える。
+ *
+ * ★ただし「面談申込未提出者へ電話」も同じ部分一致に引っかかる。これは申込が取れていない生徒に
+ * 電話をかける作業で、予約が取れた生徒については完了ではなく「対象外」になる項目なので、
+ * カレンダー同期で完了にしてはいけない。同じ理由で「未申込」を含む名前も外す。
+ */
+export function isInterviewBookingProgressItem(item: { name: string }): boolean {
+  const name = item.name ?? '';
+  if (!name.includes('面談申込')) return false;
+  return !name.includes('未提出') && !name.includes('未申込');
+}
+
 /**
  * 生徒1人分の「通常授業の回数（course_sessions）」を数える。
  *

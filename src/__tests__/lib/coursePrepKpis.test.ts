@@ -13,6 +13,8 @@ import {
   isCoursePrepOutOfScope,
   resolvePeriodLastEndDate,
   selectOpenCoursePrepPeriods,
+  selectCoursePrepSyncTargetPeriod,
+  isInterviewBookingProgressItem,
   resolveStudentTrack,
   resolveTrackWindow,
   trackShortLabel,
@@ -577,5 +579,149 @@ describe('selectOpenCoursePrepPeriods（アラートが見る期の絞り込み�
     // 冬期の区分（2/28）が夏期の終了判定に混ざると、終わった夏期が開いたままになる。
     const open = selectOpenCoursePrepPeriods([SUMMER_2026], WINTER_TRACKS, [], '2026-09-17');
     expect(open).toEqual([]);
+  });
+});
+
+describe('selectCoursePrepSyncTargetPeriod（カレンダー同期の書き込み先）', () => {
+  // 本番の実データに合わせた形。準備（面談）は講習期間より前に走り、冬期だけ年をまたぐ。
+  const SUMMER_2026 = {
+    school_id: 'school-a',
+    season: 'summer' as const,
+    year: 2026,
+    schedule_start_date: '2026-07-06',
+    schedule_end_date: '2026-08-31',
+  };
+  const WINTER_2026 = {
+    school_id: 'school-a',
+    season: 'winter' as const,
+    year: 2026,
+    schedule_start_date: '2026-12-07',
+    schedule_end_date: '2027-01-09',
+  };
+  const SPRING_2027 = {
+    school_id: 'school-a',
+    season: 'spring' as const,
+    year: 2027,
+    schedule_start_date: '2027-03-25',
+    schedule_end_date: '2027-04-05',
+  };
+  // 受験生だけ2月まで続く区分。冬期の「終わり」を後ろへ伸ばす。
+  const WINTER_TRACKS = [
+    {
+      school_id: 'school-a',
+      season: 'winter' as const,
+      year: 2026,
+      schedule_end_date: '2027-02-28',
+    },
+  ];
+
+  it('9月中旬は、終わった夏期でなく次に始まる冬期に書く', () => {
+    // 月で決めると「9月だから夏期」となり、8月末に終わった夏期の面談申込に印が付いていた。
+    const target = selectCoursePrepSyncTargetPeriod(
+      [SUMMER_2026, WINTER_2026],
+      WINTER_TRACKS,
+      [],
+      '2026-09-17'
+    );
+    expect(target).toEqual({ school_id: 'school-a', season: 'winter', year: 2026 });
+  });
+
+  it('年が明けても冬期2026に書ける（getFullYear() が 2027 を返す罠）', () => {
+    const target = selectCoursePrepSyncTargetPeriod(
+      [SUMMER_2026, WINTER_2026],
+      WINTER_TRACKS,
+      [],
+      '2027-01-20'
+    );
+    expect(target).toEqual({ school_id: 'school-a', season: 'winter', year: 2026 });
+  });
+
+  it('2月は、区分でまだ開いている冬期でなく、次に始まる春期に書く', () => {
+    // 冬期は受験の区分が2/28まで残るが、冬期の面談は11〜12月にとうに終わっている。
+    // このころ入る面談予約は春期のもの。
+    const target = selectCoursePrepSyncTargetPeriod(
+      [WINTER_2026, SPRING_2027],
+      WINTER_TRACKS,
+      [],
+      '2027-02-15'
+    );
+    expect(target).toEqual({ school_id: 'school-a', season: 'spring', year: 2027 });
+  });
+
+  it('開いている期がすべて開始日を過ぎているときは、いちばん早く終わる期に書く', () => {
+    const target = selectCoursePrepSyncTargetPeriod(
+      [WINTER_2026, SPRING_2027],
+      WINTER_TRACKS,
+      [],
+      '2027-03-30' // 春期も冬期も開始済み。終わりは春期4/05 < 冬期（区分）は既に過ぎている
+    );
+    // 冬期は 2027-02-28 で閉じているので候補は春期だけ
+    expect(target).toEqual({ school_id: 'school-a', season: 'spring', year: 2027 });
+  });
+
+  it('確定保存済みの期には書かない', () => {
+    const target = selectCoursePrepSyncTargetPeriod(
+      [SUMMER_2026, WINTER_2026],
+      WINTER_TRACKS,
+      [{ school_id: 'school-a', season: 'winter', year: 2026 }],
+      '2026-09-17'
+    );
+    expect(target).toBeNull();
+  });
+
+  it('開いている期が1つも無ければ null（月から勝手に決めない）', () => {
+    expect(selectCoursePrepSyncTargetPeriod([SUMMER_2026], [], [], '2026-09-17')).toBeNull();
+    expect(selectCoursePrepSyncTargetPeriod([], [], [], '2026-09-17')).toBeNull();
+  });
+
+  it('日付が並ばないときは (年, 期) の暦順で決める（毎回同じ期に書く）', () => {
+    // 開始日が同じ2つの期。順序が入力順で揺れると、書き込み先が呼び出しのたびに変わる。
+    const sameStartSummer = { ...SUMMER_2026, schedule_start_date: '2027-05-01' };
+    const sameStartSpring = { ...SPRING_2027, schedule_start_date: '2027-05-01' };
+    const expected = { school_id: 'school-a', season: 'spring', year: 2027 };
+    expect(
+      selectCoursePrepSyncTargetPeriod(
+        [{ ...sameStartSummer, year: 2027 }, sameStartSpring],
+        [],
+        [],
+        '2027-01-01'
+      )
+    ).toEqual(expected);
+    expect(
+      selectCoursePrepSyncTargetPeriod(
+        [sameStartSpring, { ...sameStartSummer, year: 2027 }],
+        [],
+        [],
+        '2027-01-01'
+      )
+    ).toEqual(expected);
+  });
+
+  it('開始日が無い期は後回し（いつの期か分からないため）', () => {
+    const noStart = { ...SPRING_2027, schedule_start_date: null };
+    const target = selectCoursePrepSyncTargetPeriod(
+      [noStart, WINTER_2026],
+      WINTER_TRACKS,
+      [],
+      '2026-09-17'
+    );
+    expect(target).toEqual({ school_id: 'school-a', season: 'winter', year: 2026 });
+  });
+});
+
+describe('isInterviewBookingProgressItem（面談予約で完了にしてよい項目）', () => {
+  it('本番で使われている2つの名前を拾う', () => {
+    expect(isInterviewBookingProgressItem({ name: '面談申込' })).toBe(true);
+    expect(isInterviewBookingProgressItem({ name: '面談申込・面談日決定' })).toBe(true);
+  });
+
+  it('未申込者を追いかける項目は拾わない（予約が取れた生徒は対象外であって完了ではない）', () => {
+    expect(isInterviewBookingProgressItem({ name: '面談申込未提出者へ電話' })).toBe(false);
+    expect(isInterviewBookingProgressItem({ name: '面談未申込対応' })).toBe(false);
+  });
+
+  it('面談と関係ない項目は拾わない', () => {
+    expect(isInterviewBookingProgressItem({ name: 'PCS回収' })).toBe(false);
+    expect(isInterviewBookingProgressItem({ name: '父母面談実施' })).toBe(false);
   });
 });
