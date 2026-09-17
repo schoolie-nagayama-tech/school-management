@@ -821,6 +821,39 @@ export async function cancelFutureEntriesByRegularPatternId(
 // スケジュールエントリ（週次）
 // ========================================
 
+/**
+ * 生徒1人の授業を日付範囲で取得する（生徒詳細モーダルの「予定表」タブ用）。
+ *
+ * getScheduleEntries は教室全体×日付範囲なので、1か月分を引くと他生徒の授業まで数千行を
+ * 読むことになり、未ページングの .select() が 1000 行で静かに切り捨てられる範囲に入る。
+ * 生徒で絞れば1か月あたり数十行に収まるため、こちらを使う。
+ *
+ * school_id で絞らないのは意図的。生徒が別教室のコマに入っている行（振替・講習など）も
+ * その生徒の予定なので出す。表示側は entry.time_slot を見て列を組み立てること。
+ */
+export async function getStudentScheduleEntries(
+  studentId: string,
+  fromDate: string,
+  toDate: string
+): Promise<ScheduleEntry[]> {
+  const { data, error } = await db
+    .from('schedule_entries')
+    .select(
+      '*, time_slot:schedule_time_slots(*), teacher:user_profiles!schedule_entries_teacher_id_fkey(id, display_name, last_name, email)'
+    )
+    .eq('student_id', studentId)
+    .gte('entry_date', fromDate)
+    .lte('entry_date', toDate)
+    .order('entry_date')
+    .order('time_slot_id');
+
+  if (error) {
+    console.error('Error fetching student schedule entries:', error);
+    throw new Error('授業予定の取得に失敗しました');
+  }
+  return (data || []) as ScheduleEntry[];
+}
+
 export async function getScheduleEntries(
   schoolId: string,
   fromDate: string,

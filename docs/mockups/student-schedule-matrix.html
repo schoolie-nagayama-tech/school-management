@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>生徒の予定表（日付×時限マトリクス）モック</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+         background: #eef0f4; color: #1f2328; font-size: 14px; padding: 20px; }
+  .wrap { max-width: 1040px; margin: 0 auto; }
+  .note { background: #fff; border: 1px solid #dfe3e8; border-radius: 10px; padding: 14px 16px; margin-bottom: 16px; font-size: 12.5px; line-height: 1.75; color: #4b5563; }
+  .note h2 { font-size: 13px; color: #1f2328; margin-bottom: 6px; }
+  .note code { background: #f3f4f6; padding: 1px 4px; border-radius: 3px; font-size: 11.5px; }
+  .note ul { margin: 4px 0 0 18px; }
+
+  /* 生徒詳細モーダルの器（実物の見え方に寄せた簡易再現） */
+  .modal { background: #fff; border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,.12); overflow: hidden; }
+  .mhead { padding: 16px 20px 0; border-bottom: 1px solid #e5e7eb; }
+  .mtitle { display: flex; align-items: baseline; gap: 10px; }
+  .mtitle h1 { font-size: 18px; font-weight: 700; }
+  .mtitle .sub { font-size: 12px; color: #6b7280; }
+  .tabs { display: flex; gap: 2px; margin-top: 14px; }
+  .tab { padding: 9px 14px; font-size: 13px; color: #6b7280; border-bottom: 2px solid transparent; cursor: pointer; }
+  .tab.active { color: #2563eb; border-bottom-color: #2563eb; font-weight: 700; }
+
+  .body { padding: 14px 20px 20px; }
+
+  /* 月ナビ */
+  .toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+  .navbtn { width: 28px; height: 28px; border: 1px solid #d7dbe0; background: #fff; border-radius: 8px;
+            display: flex; align-items: center; justify-content: center; cursor: pointer; color: #4b5563; }
+  .navbtn:hover { background: #f3f4f6; }
+  .month { font-size: 15px; font-weight: 700; min-width: 116px; text-align: center; }
+  .today-btn { border: 1px solid #d7dbe0; background: #fff; border-radius: 8px; padding: 5px 11px; font-size: 12px; cursor: pointer; color: #374151; }
+  .spacer { flex: 1; }
+  .toggle { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: #4b5563; cursor: pointer; }
+  .summary { font-size: 12px; color: #6b7280; }
+  .summary b { color: #1f2328; }
+
+  /* マトリクス */
+  .scroll { border: 1px solid #dfe3e8; border-radius: 10px; overflow: auto; background: #fff; }
+  table { border-collapse: separate; border-spacing: 0; width: 100%; table-layout: fixed; font-size: 12px; }
+  th, td { border-right: 1px solid #edeff2; border-bottom: 1px solid #edeff2; }
+  thead th { position: sticky; top: 0; background: #f7f8fa; z-index: 3; font-weight: 600; color: #4b5563;
+             height: 34px; padding: 3px 6px; }
+  .slotname { font-weight: 700; color: #1f2328; font-size: 12px; }
+  .slottime { display: block; font-size: 9.5px; color: #9aa1ab; font-weight: 400; margin-top: 1px; }
+
+  th.datecol, td.datecol { position: sticky; left: 0; z-index: 2; background: #fff; width: 96px; min-width: 96px;
+                           text-align: left; padding: 4px 8px; white-space: nowrap; border-right: 1px solid #dfe3e8; }
+  thead th.datecol { z-index: 4; background: #f7f8fa; }
+  td.datecol { font-weight: 600; color: #374151; }
+  td.datecol .dow { font-weight: 400; color: #9aa1ab; margin-left: 3px; font-size: 11px; }
+  tr.sat td.datecol { color: #2563eb; } tr.sat td.datecol .dow { color: #93b4f3; }
+  tr.sun td.datecol { color: #dc2626; } tr.sun td.datecol .dow { color: #f0a3a3; }
+  tr.sun td, tr.sat td { background: #fcfcfd; }
+  tr.today td { background: #fffbeb; }
+  tr.today td.datecol { background: #fef3c7; color: #92400e; }
+  tr.today td.datecol::before { content: "今日"; display: inline-block; background: #f59e0b; color: #fff;
+                                font-size: 9px; padding: 0 4px; border-radius: 3px; margin-right: 4px; vertical-align: 1px; }
+  tr.empty td.datecol { color: #b6bcc4; padding: 1px 8px; }
+  tr.empty td { height: 14px; }
+  tr.empty td.cell { padding: 0; }
+
+  td.cell { padding: 1px 2px; vertical-align: top; }
+
+  /* コマ1件（1行: 科目・タグ・講師名・バッジ。列幅 120px 前後なら1行に収まり、月全体が1画面に入る） */
+  .ent { display: flex; align-items: center; gap: 4px; padding: 2px 4px; border-radius: 5px;
+         background: #eef4ff; border: 1px solid #d9e5fb; line-height: 1.25; margin-bottom: 2px; }
+  .ent:last-child { margin-bottom: 0; }
+  /* マークアップは2行構成のままだが表示は1行に畳む。order で「講師名 → バッジ」の並びにする */
+  .ent-l1, .ent-l2 { display: contents; }
+  .subj { font-weight: 700; color: #1f2328; white-space: nowrap; }
+  .tch { order: 1; color: #6b7280; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+  .tag11 { flex-shrink: 0; font-size: 8.5px; font-weight: 700; color: #6b7280; letter-spacing: -.02em; }
+  .half, .fchip { flex-shrink: 0; font-size: 9px; padding: 0 3px; border-radius: 3px; background: #e5e7eb; color: #4b5563; }
+  .done { order: 2; flex-shrink: 0; margin-left: auto; font-size: 9.5px; font-weight: 700; color: #fff;
+          background: #10b981; border-radius: 3px; padding: 0 4px; }
+
+  /* 状態別（座席表の色分けに合わせる） */
+  .ent.koushu   { background: #fff7ed; border-color: #fdd9a8; }
+  .ent.testprep { background: #f5f0ff; border-color: #e0d3fb; }
+  .ent.trial    { background: #ecfdf5; border-color: #b8e8d0; }
+  .ent.tin      { background: #e0f2fe; border-color: #b5ddf7; }
+  .ent.absent   { background: #fef2f2; border-color: #f8d0d0; }
+  .ent.absent .subj { text-decoration: line-through; color: #b6bcc4; }
+  .ent.absent .tch  { color: #c9ced5; }
+  .ent.tout     { opacity: .55; }
+  .ent.tout .subj { text-decoration: line-through; color: #9aa1ab; }
+  .badge-abs { order: 2; flex-shrink: 0; margin-left: auto; font-size: 9.5px; font-weight: 700; color: #fff; background: #ef4444; border-radius: 3px; padding: 0 4px; }
+  .badge-mv  { order: 2; flex-shrink: 0; margin-left: auto; font-size: 9.5px; font-weight: 700; color: #6b7280; background: #e5e7eb; border-radius: 3px; padding: 0 4px; }
+
+  /* 凡例 */
+  .legend { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 10px; font-size: 11px; color: #6b7280; align-items: center; }
+  .lg { display: inline-flex; align-items: center; gap: 4px; }
+  .sw { width: 20px; height: 12px; border-radius: 3px; border: 1px solid #d9e5fb; background: #eef4ff; display: inline-block; }
+  .sw.koushu { background: #fff7ed; border-color: #fdd9a8; }
+  .sw.testprep { background: #f5f0ff; border-color: #e0d3fb; }
+  .sw.trial { background: #ecfdf5; border-color: #b8e8d0; }
+  .sw.tin { background: #e0f2fe; border-color: #b5ddf7; }
+  .sw.absent { background: #fef2f2; border-color: #f8d0d0; }
+  .lg .done, .lg .badge-abs, .lg .badge-mv { margin-left: 0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="note">
+    <h2>モック：生徒詳細モーダル「予定表」タブ（読み取り専用）</h2>
+    生徒1人 × 実際の日付1か月 × 時限のマトリクス。<code>通塾日程</code>タブ（曜日×コマの<b>週の型</b>）とは別物で、こちらは実際に登録された授業（<code>schedule_entries</code>）を出す。
+    <ul>
+      <li>列は全形態のコマを<b>開始時刻順</b>に1本の時間軸へ並べる。同じ時刻区間（開始・終了が完全一致）のコマは形態が違っても<b>1列に統合</b>し、形態はその統合列でだけエントリ内チップで示す（3限＝個別＋小集団の例）。</li>
+      <li><code>schedule_time_slots</code> にコマ名の列は無いので、見出しは「形態ラベル＋<code>slot_number</code>＋時刻」で組み立てる。</li>
+      <li>1セルに複数件が積まれる（9/17 木・4限＝前半後半の2件、9/10 木・4限＝欠席と振替元）。</li>
+      <li>講師名を出す（教室長側の画面のため）。保護者ポータルの予定には出さない。</li>
+    </ul>
+  </div>
+
+  <div class="modal">
+    <div class="mhead">
+      <div class="mtitle">
+        <h1>佐藤 陽菜</h1>
+        <span class="sub">中2 ／ 清瀬教室 ／ 在籍</span>
+      </div>
+      <div class="tabs">
+        <div class="tab">基本情報</div>
+        <div class="tab">成績</div>
+        <div class="tab">通塾日程</div>
+        <div class="tab active">予定表</div>
+        <div class="tab">講習</div>
+        <div class="tab">面談記録</div>
+      </div>
+    </div>
+
+    <div class="body">
+      <div class="toolbar">
+        <button class="navbtn">&lsaquo;</button>
+        <span class="month">2026年9月</span>
+        <button class="navbtn">&rsaquo;</button>
+        <button class="today-btn">今月</button>
+        <span class="spacer"></span>
+        <label class="toggle"><input type="checkbox"> 授業のある日だけ</label>
+        <span class="summary">予定 <b>7</b>件 ／ 実施済 <b>7</b>件 ／ 欠席 <b>1</b>件 ／ 振替 <b>1</b>件</span>
+      </div>
+
+      <div class="scroll">
+        <table>
+          <thead>
+            <tr>
+              <th class="datecol">日付</th>
+              <th><span class="slotname">1限</span><span class="slottime">13:00-14:20</span></th>
+              <th><span class="slotname">HALLO&#9313;</span><span class="slottime">14:30-15:20</span></th>
+              <th><span class="slotname">HALLO&#9314;</span><span class="slottime">15:30-16:20</span></th>
+              <th><span class="slotname">2限</span><span class="slottime">15:30-16:50</span></th>
+              <th><span class="slotname">3限</span><span class="slottime">17:00-18:20</span></th>
+              <th><span class="slotname">4限</span><span class="slottime">18:30-19:50</span></th>
+              <th><span class="slotname">5限</span><span class="slottime">20:00-21:20</span></th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+
+      <div class="legend">
+        <span class="lg"><span class="sw"></span>通常</span>
+        <span class="lg"><span class="sw koushu"></span>講習</span>
+        <span class="lg"><span class="sw testprep"></span>テスト対策・追加</span>
+        <span class="lg"><span class="sw trial"></span>体験</span>
+        <span class="lg"><span class="sw tin"></span>振替で入ったコマ</span>
+        <span class="lg"><span class="sw absent"></span>欠席</span>
+        <span class="lg"><span class="done">済</span>実施済</span>
+        <span class="lg"><span class="badge-abs">欠</span>欠席</span>
+        <span class="lg"><span class="badge-mv">振</span>振替で移動した元のコマ</span>
+        <span class="lg"><span class="tag11">1:1</span>1対1</span>
+        <span class="lg"><span class="half">前</span><span class="half">後</span>45分授業の前半・後半</span>
+        <span class="lg"><span class="fchip">小集団</span>同じ時刻に別形態のコマがある統合列で、形態を示すチップ</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// 2026年9月（9/1 は火曜）。列キーは開始時刻順の1本の時間軸:
+// k1=1限(個別)13:00-14:20 / h2=HALLO②14:30-15:20 / h3=HALLO③15:30-16:20 /
+// k2=2限(個別)15:30-16:50 / k3=3限(個別・小集団の統合列)17:00-18:20 /
+// k4=4限(個別)18:30-19:50 / k5=5限(個別)20:00-21:20
+var DOW = ['日', '月', '火', '水', '木', '金', '土'];
+function E(subj, tch, opt) {
+  opt = opt || {};
+  return '<div class="ent ' + (opt.cls || '') + '">' +
+    '<div class="ent-l1">' +
+      '<span class="subj">' + subj + '</span>' +
+      (opt.formation ? '<span class="fchip">' + opt.formation + '</span>' : '') +
+      (opt.ratio1 ? '<span class="tag11">1:1</span>' : '') +
+      (opt.half ? '<span class="half">' + opt.half + '</span>' : '') +
+      (opt.badge || '') +
+    '</div>' +
+    '<div class="ent-l2"><span class="tch">' + tch + '</span></div>' +
+    '</div>';
+}
+var DONE = '<span class="done">済</span>';
+var ABS = '<span class="badge-abs">欠</span>';
+var MOVED = '<span class="badge-mv">振</span>';
+
+// 実データ相当のサンプル：火=英語3限 / 木=数学4限 / 土=HALLO③ が通常の型
+var data = {
+  1: { k3: E('英語', '田中', { badge: DONE }) },
+  3: { k4: E('数学', '佐藤', { badge: DONE }) },
+  5: { h3: E('プログラミング', '山本', { badge: DONE }) },
+  8: {
+    k3: E('英語', '田中', { badge: DONE }),
+    k5: E('国語', '鈴木', { cls: 'testprep', ratio1: true, badge: DONE })
+  },
+  9: { k5: E('数学', '佐藤', { cls: 'testprep', ratio1: true }) },
+  // 欠席したコマと、その振替元（9/12 3限へ移動済み）が同じセルに積まれる例
+  10: { k4: E('数学', '佐藤', { cls: 'absent', badge: ABS }) + E('数学', '佐藤', { cls: 'tout', badge: MOVED }) },
+  12: {
+    k3: E('数学', '佐藤', { cls: 'tin' }),
+    h3: E('プログラミング', '山本', { badge: DONE })
+  },
+  15: { k3: E('英語', '田中', { badge: DONE }) },
+  // 45分×2件が同じコマに積まれる例（前半・後半）
+  17: { k4: E('数学', '佐藤', { half: '前' }) + E('英語', '田中', { half: '後' }) },
+  // 3限（個別＋小集団の統合列）に別形態が並ぶ例。個別以外の形態はチップで示す
+  19: {
+    k1: E('英語', '田中', { cls: 'koushu' }),
+    h3: E('プログラミング', '山本'),
+    k3: E('理科', '高橋', { formation: '小集団' })
+  },
+  22: { k3: E('英語', '田中') },
+  24: { k4: E('数学', '佐藤') },
+  26: { h3: E('プログラミング', '山本') },
+  29: { k3: E('英語', '田中') }
+};
+
+var COLS = ['k1', 'h2', 'h3', 'k2', 'k3', 'k4', 'k5'];
+var html = '';
+for (var d = 1; d <= 30; d++) {
+  var dow = new Date(2026, 8, d).getDay();
+  var row = data[d] || {};
+  var cls = [
+    dow === 0 ? 'sun' : dow === 6 ? 'sat' : '',
+    d === 9 ? 'today' : '',
+    Object.keys(row).length === 0 ? 'empty' : ''
+  ].filter(Boolean).join(' ');
+  html += '<tr class="' + cls + '">';
+  html += '<td class="datecol">9/' + d + '<span class="dow">' + DOW[dow] + '</span></td>';
+  for (var i = 0; i < COLS.length; i++) html += '<td class="cell">' + (row[COLS[i]] || '') + '</td>';
+  html += '</tr>';
+}
+document.getElementById('tbody').innerHTML = html;
+</script>
+</body>
+</html>
