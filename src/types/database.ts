@@ -3289,6 +3289,10 @@ export const SUBJECT_LABELS: Record<string, string> = {
   [SUBJECT_CODES.CONV_5]: '換算内申(5科)',
   [SUBJECT_CODES.CONV_4]: '換算内申(4科)',
   [SUBJECT_CODES.CONV_TOTAL]: '換算内申(合計)',
+  // 模試の手入力欄（3科・5科の偏差値）。成績画面では列見出しが「3科」「5科」で足りるが、
+  // アラートなど文脈の無い場所ではコード名がそのまま出てしまうため、ここにラベルを持たせる。
+  hensa_3: '3科偏差値',
+  hensa_5: '5科偏差値',
   // 小学校
   elem_japanese: '国語', elem_math: '算数', elem_seikatsu: '生活',
   elem_science: '理科', elem_social: '社会', elem_eng_activity: '外国語活動',
