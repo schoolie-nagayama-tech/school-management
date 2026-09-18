@@ -67,8 +67,13 @@ function dropdownPanelClass(open: boolean, align: 'left' | 'right' = 'left') {
 }
 
 // ナビリンク共通クラス。hover + active:scale[0.97] で押した感を出す。
+// ★whitespace-nowrap + shrink-0 は外さない。ナビ9項目に対して横幅が足りないと、flex が各項目を
+//   縮めて「進行表確/認」のように全項目が2行に折れる（1024〜1200px前後で起きていた）。
+//   縮める代わりに lg〜xl の間だけ余白を詰め、氏名を歯車に畳んで幅を空けている（下の右側ボタン参照）。
+const NAV_ITEM_SIZE = 'px-2 xl:px-2.5 whitespace-nowrap shrink-0';
+
 function navLinkClass(active: boolean) {
-  return `px-2.5 py-1 rounded text-xs font-medium transition-[color,background-color,transform] duration-150 ease-out active:scale-[0.97] ${
+  return `${NAV_ITEM_SIZE} py-1 rounded text-xs font-medium transition-[color,background-color,transform] duration-150 ease-out active:scale-[0.97] ${
     active
       ? 'bg-white text-primary font-semibold'
       : 'text-white/90 hover:bg-white/10 hover:text-white'
@@ -77,7 +82,7 @@ function navLinkClass(active: boolean) {
 
 // ドロップダウントリガーボタン共通クラス（上記 navLinkClass + flex）
 function navDropdownTriggerClass(active: boolean) {
-  return `px-2.5 py-1 rounded text-xs font-medium transition-[color,background-color,transform] duration-150 ease-out active:scale-[0.97] flex items-center gap-1 ${
+  return `${NAV_ITEM_SIZE} py-1 rounded text-xs font-medium transition-[color,background-color,transform] duration-150 ease-out active:scale-[0.97] flex items-center gap-1 ${
     active
       ? 'bg-white text-primary font-semibold'
       : 'text-white/90 hover:bg-white/10 hover:text-white'
@@ -262,7 +267,7 @@ export function AppHeader({
         <BadgeFlowerField count={badgeCount ?? 0} placements={HEADER_FLOWERS} />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-14">
-            <div className="flex items-center gap-4">
+            <div className="flex min-w-0 items-center gap-3 xl:gap-4">
               {/* NESTロゴ（スマホのナビは下部のボトムタブ＋メニューシートに集約）。
                   PWA(standalone)の教室長以上はダッシュボード /home をホームにする。 */}
               <Link prefetch={false} href={homeHref} className="shrink-0">
@@ -271,7 +276,7 @@ export function AppHeader({
                 </span>
               </Link>
               <div className="hidden lg:block h-6 w-px bg-white/30"></div>
-              <nav className="hidden lg:flex items-center gap-3">
+              <nav className="hidden lg:flex items-center gap-0.5 xl:gap-2">
                 {/* PCナビ: navConfig の単一定義から描画（単独リンク or ホバードロップダウン） */}
                 {navEntries.map((entry) =>
                   entry.kind === 'link' ? (
@@ -324,7 +329,7 @@ export function AppHeader({
                 )}
               </nav>
             </div>
-            <div className="flex items-center gap-1.5 sm:gap-3">
+            <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
               {displaySchools.length > 1 && schoolDisplayName && (
                 <div className="relative school-dropdown-container">
                   <button
@@ -332,11 +337,14 @@ export function AppHeader({
                       e.stopPropagation();
                       setShowSchoolDropdown(!showSchoolDropdown);
                     }}
-                    className="text-white px-2.5 py-1.5 bg-white/20 rounded-lg hover:bg-white/30 transition-[color,background-color,transform] duration-150 ease-out active:scale-[0.97] flex items-center gap-1 text-xs font-medium shrink-0 whitespace-nowrap max-w-[110px] sm:max-w-none"
+                    // 教室名は長いもの（「デモ校（保護者ポータル体験）」）があるので、ナビと並ぶ
+                    // lg 以上では幅を決めて省略する。全文は title で出す。
+                    className="text-white px-2.5 py-1.5 bg-white/20 rounded-lg hover:bg-white/30 transition-[color,background-color,transform] duration-150 ease-out active:scale-[0.97] flex items-center gap-1 text-xs font-medium shrink-0 whitespace-nowrap max-w-[110px] sm:max-w-[10rem] lg:max-w-[7rem] xl:max-w-[10rem]"
+                    title={schoolDisplayName}
                   >
                     <span className="truncate">{schoolDisplayName}</span>
                     <ChevronDown
-                      className={`w-3 h-3 transition-[transform] duration-150 ease-out ${showSchoolDropdown ? 'rotate-180' : ''}`}
+                      className={`w-3 h-3 shrink-0 transition-[transform] duration-150 ease-out ${showSchoolDropdown ? 'rotate-180' : ''}`}
                     />
                   </button>
                   <div
@@ -403,7 +411,9 @@ export function AppHeader({
                       （歯車メニュー時代の実装コメントの趣旨を引き継ぐ）。
                       狭い画面でも講師でも、歯車アイコンだけは必ず出す。
                       氏名だけを隠してもボタン自体は消さない — 消すとメニューにもログアウトにも
-                      到達できなくなるため。 */}
+                      到達できなくなるため。
+                      ★lg〜xl（1024〜1279px）でも氏名を歯車に畳む。PCナビ9項目が出る幅なのに
+                      氏名まで並べると、ナビが押し出されて全項目が2行に折れていた。氏名は title で見える。 */}
                   <button
                     type="button"
                     onClick={(e) => {
@@ -419,16 +429,19 @@ export function AppHeader({
                     }
                   >
                     {isManagerOrAbove(profile.role) && (
-                      <span className="hidden max-w-[140px] truncate sm:inline">
+                      <span className="hidden max-w-[8rem] truncate sm:inline lg:hidden xl:inline">
                         {profile.display_name || profile.email}
                       </span>
                     )}
                     <Settings
-                      className={`w-4 h-4 ${isManagerOrAbove(profile.role) ? 'sm:hidden' : ''}`}
+                      className={`w-4 h-4 ${isManagerOrAbove(profile.role) ? 'sm:hidden lg:block xl:hidden' : ''}`}
                       aria-hidden
                     />
                     {isManagerOrAbove(profile.role) && (
-                      <ChevronDown className="hidden w-3 h-3 sm:block" aria-hidden />
+                      <ChevronDown
+                        className="hidden w-3 h-3 sm:block lg:hidden xl:block"
+                        aria-hidden
+                      />
                     )}
                   </button>
                   <div
