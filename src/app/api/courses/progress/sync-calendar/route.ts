@@ -219,11 +219,14 @@ export async function POST(request: Request) {
       });
     }
 
-    // 進捗を同期
-    const result = await syncCalendarBookingsToProgress(schoolId, events);
+    // 進捗を同期。呼び出し元の教室スコープはこの上で検証済みなので、RLSが効かない
+    // サーバー側では service role クライアントをそのまま渡す。
+    const result = await syncCalendarBookingsToProgress(supabaseAdmin, schoolId, events);
 
     return NextResponse.json({
-      message: `${result.synced}件の面談申込を同期しました`,
+      // 同期できなかったときは理由をそのまま出す。できたときは、画面で開いている期とは
+      // 限らないので、どの期に印を付けたのかを必ず添える。
+      message: result.reason ?? `${result.periodLabel}の面談申込を${result.synced}件同期しました`,
       ...result,
       totalEvents: events.length,
     });
