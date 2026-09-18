@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>テスト対策提案書一覧（申込状況付き）モック</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: #ffffff;
+    color: #1f2328;
+    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+    font-size: 13px;
+  }
+  .page {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 24px 20px 60px;
+  }
+
+  /* ==== 冒頭の説明ボックス（このモックについての注記。実装画面には出ない） ==== */
+  .mock-note {
+    border: 1px solid #d7dbe0;
+    background: #f8f9fb;
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin-bottom: 22px;
+    line-height: 1.7;
+    color: #3d4451;
+  }
+  .mock-note-title {
+    font-weight: 700;
+    color: #1f2328;
+    margin-bottom: 6px;
+    font-size: 13px;
+  }
+  .mock-note ul {
+    margin: 6px 0 0;
+    padding-left: 18px;
+  }
+  .mock-note li { margin-bottom: 3px; }
+
+  /* ==== ヘッダー ==== */
+  .header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 18px;
+  }
+  .header-row h1 {
+    font-size: 20px;
+    margin: 0;
+    font-weight: 700;
+    color: #1f2328;
+  }
+  .btn-primary {
+    background: #9c1f3c;
+    color: #ffffff;
+    border: none;
+    border-radius: 6px;
+    padding: 9px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  /* ==== KPIカード ==== */
+  .kpi-row {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .kpi-card {
+    background: #f4f5f7;
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+  .kpi-card.is-added {
+    background: #fdf1e9;
+  }
+  .kpi-label {
+    font-size: 11px;
+    color: #767c88;
+    margin-bottom: 6px;
+  }
+  .kpi-value {
+    font-size: 22px;
+    font-weight: 700;
+    color: #1f2328;
+  }
+  .kpi-unit {
+    font-size: 11px;
+    font-weight: 400;
+    color: #767c88;
+    margin-left: 2px;
+  }
+
+  /* ==== フィルタ行 ==== */
+  .filter-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .period-select {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #55606e;
+    margin-right: 6px;
+  }
+  select {
+    font-size: 12px;
+    padding: 6px 8px;
+    border: 1px solid #d7dbe0;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #1f2328;
+  }
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    background: #f0f1f3;
+    color: #4a505a;
+  }
+  .chip.is-active {
+    background: #9c1f3c;
+    color: #ffffff;
+    font-weight: 600;
+  }
+  .chip.is-muted {
+    background: #ececee;
+    color: #6b7280;
+  }
+  .filter-spacer { flex: 1; }
+  .filter-right {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #55606e;
+  }
+
+  /* ==== 注記（申込に関する補足。表のすぐ上） ==== */
+  .table-annotation {
+    font-size: 11.5px;
+    color: #8a909a;
+    padding: 6px 2px 10px;
+  }
+
+  /* ==== テーブル ==== */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #ffffff;
+    border: 1px solid #e4e6ea;
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  thead th {
+    text-align: left;
+    font-size: 11px;
+    color: #8a909a;
+    font-weight: 600;
+    background: #fafbfc;
+    padding: 10px 12px;
+    border-bottom: 1px solid #e4e6ea;
+    white-space: nowrap;
+  }
+  th.num, td.num { text-align: right; }
+  tbody td {
+    padding: 10px 12px;
+    border-bottom: 1px solid #eef0f2;
+    vertical-align: middle;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr.is-unapplied { background: #fffdfa; }
+
+  .student-name {
+    font-weight: 700;
+    color: #1f2328;
+  }
+  .student-grade {
+    font-size: 11px;
+    color: #8a909a;
+    margin-top: 2px;
+  }
+  .exam-name {
+    font-weight: 600;
+    color: #2c313a;
+  }
+  .exam-sub {
+    font-size: 11px;
+    color: #8a909a;
+    margin-top: 2px;
+  }
+  .subject-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  .subject-chip {
+    font-size: 11px;
+    color: #4a505a;
+    border: 1px solid #dfe2e6;
+    border-radius: 4px;
+    padding: 1px 5px;
+    white-space: nowrap;
+  }
+  .subject-none {
+    font-size: 11px;
+    color: #b3b8c0;
+  }
+  .badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 9px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+  .badge-published {
+    background: #e5f5ea;
+    color: #1e7b3e;
+  }
+  .badge-applied {
+    background: #e5f5ea;
+    color: #1e7b3e;
+  }
+  .badge-unapplied {
+    background: #eef0f2;
+    color: #767c88;
+  }
+  .applied-cell {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+  }
+  .applied-lessons {
+    font-size: 11px;
+    color: #767c88;
+  }
+  td.updated {
+    text-align: right;
+    color: #55606e;
+    white-space: nowrap;
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="mock-note">
+    <div class="mock-note-title">このモックについて</div>
+    <ul>
+      <li>「テスト対策提案書」一覧に、生徒ごとに増コマ申込が済んでいるか（未申込か）を出す改修案。</li>
+      <li>判定は「選んだ期（対象の期）の増コマ申込に、その生徒の回答があるか」で行う。提案書と申込を直接つなぐ列はDBに無いため、生徒と期で突き合わせる。</li>
+      <li>未申込チップは公開中の提案書だけを数える（下書きは保護者にまだ見えていないため）。</li>
+      <li>増コマ申込のうち生徒に紐付いていない回答は、この判定には入らない（該当生徒は未申込のまま表示される）。</li>
+      <li>表の並び順は、未申込を上・提案コマの多い順、その下に申込済という順にしている（未申込を上から追えるように）。</li>
+    </ul>
+  </div>
+
+  <div class="header-row">
+    <h1>テスト対策提案書</h1>
+    <button class="btn-primary" type="button">＋ 新規作成</button>
+  </div>
+
+  <div class="kpi-row">
+    <div class="kpi-card">
+      <div class="kpi-label">提案書</div>
+      <div class="kpi-value">23<span class="kpi-unit">件</span></div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">提案コマ</div>
+      <div class="kpi-value">88<span class="kpi-unit">コマ</span></div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">提案した生徒</div>
+      <div class="kpi-value">23<span class="kpi-unit">名</span></div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">提案者</div>
+      <div class="kpi-value">8<span class="kpi-unit">名</span></div>
+    </div>
+    <div class="kpi-card is-added">
+      <div class="kpi-label">申込コマ</div>
+      <div class="kpi-value">20<span class="kpi-unit">コマ</span></div>
+    </div>
+  </div>
+
+  <div class="filter-row">
+    <div class="period-select">
+      対象の期:
+      <select>
+        <option>2026-09</option>
+        <option>2026-06</option>
+        <option>2026-01</option>
+      </select>
+    </div>
+    <span class="chip is-active">すべて 23</span>
+    <span class="chip">下書き 0</span>
+    <span class="chip">提案済 0</span>
+    <span class="chip">公開中 23</span>
+    <span class="chip is-muted">未申込 17</span>
+    <div class="filter-spacer"></div>
+    <div class="filter-right">
+      提案者:
+      <select>
+        <option>すべて</option>
+        <option>十川</option>
+        <option>内山</option>
+        <option>西舘</option>
+        <option>川俣</option>
+        <option>杉浦</option>
+        <option>瀧川</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="table-annotation">
+    2026-09期の増コマ申込 8件（うち提案書のない申込 2件：馬場 芽希・酒井 礼央）。保護者は提案がなくても申し込めます。
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>生徒</th>
+        <th>試験</th>
+        <th>科目</th>
+        <th class="num">コマ</th>
+        <th>提案者</th>
+        <th>ステータス</th>
+        <th>申込</th>
+        <th class="num">更新日</th>
+      </tr>
+    </thead>
+    <tbody>
+
+      <!-- ==== 未申込（提案コマの多い順） ==== -->
+
+      <tr class="is-unapplied">
+        <td><div class="student-name">立花 さくら</div><div class="student-grade">小1</div></td>
+        <td><div class="exam-name">2学期中間</div><div class="exam-sub">テスト対策</div></td>
+        <td><div class="subject-chips">
+          <span class="subject-chip">英2</span><span class="subject-chip">数2</span><span class="subject-chip">国2</span><span class="subject-chip">理2</span><span class="subject-chip">社1</span>
+        </div></td>
+        <td class="num">9</td>
+        <td>十川</td>
+        <td><span class="badge badge-published">公開中</span></td>
+        <td><span class="badge badge-unapplied">未申込</span></td>
+        <td class="updated">2026/9/5</td>
+      </tr>
+
+      <tr class="is-unapplied">
+        <td><div class="student-name">鈴木 さくら</div><div class="student-grade">中3</div></td>
+        <td><div class="exam-name">2学期中間</div><div class="exam-sub">2学期中間 対策</div></td>
+        <td><div class="subject-chips">
+          <span class="subject-chip">英2</span><span class="subject-chip">数2</span><span class="subject-chip">国1</span><span class="subject-chip">理2</span><span class="subject-chip">社1</span>
+        </div></td>
+        <td class="num">8</td>
+        <td>内山</td>
+        <td><span class="badge badge-published">公開中</span></td>
+        <td><span class="badge badge-unapplied">未申込</span></td>
+        <td class="updated">2026/9/8</td>
+      </tr>
+
+      <tr class="is-unapplied">
+        <td><div class="student-name">佐々木 奈絆</div><div class="student-grade">中2</div></td>
+        <td><div class="exam-name">2学期中間</div><div class="exam-sub">テスト対策</div></td>
+        <td><div class="subject-chips">
+          <span class="subject-chip">英1</span><span class="subject-chip">数2</span><span class="subject-chip">国1</span><span class="subject-chip">理1</span>
+        </div></td>
+        <td class="num">5</td>
+        <td>西舘</td>
+        <td><span class="badge badge-published">公開中</span></td>
+        <td><span class="badge badge-unapplied">未申込</span></td>
+        <td class="updated">2026/9/12</td>
+      </tr>
+
+      <tr class="is-unapplied">
+        <td><div class="student-name">秋和 匠</div><div class="student-grade">中2</div></td>
+        <td><div class="exam-name">2学期中間</div><div class="exam-sub">2学期中間 対策</div></td>
+        <td><div class="subject-chips">
+          <span class="subject-chip">英2</span><span class="subject-chip">数1</span><span class="subject-chip">国1</span><span class="subject-chip">社1</span>
+        </div></td>
+        <td class="num">5</td>
+        <td>川俣</td>
+        <td><span class="badge badge-published">公開中</span></td>
+        <td><span class="badge badge-unapplied">未申込</span></td>
+        <td class="updated">2026/9/6</td>
+      </tr>
+
+      <tr class="is-unapplied">
+        <td><div class="student-name">正橋 咲楽</div><div class="student-grade">中1</div></td>
+        <td><div class="exam-name">2学期中間</div><div class="exam-sub">テスト対策</div></td>
+        <td><div class="subject-chips">
+          <span class="subject-chip">英1</span><span class="subject-chip">数1</span><span class="subject-chip">国1</span><span class="subject-chip">理1</span>
+        </div></td>
+        <td class="num">4</td>
+        <td>杉浦</td>
+        <td><span class="badge badge-published">公開中</span></td>
+        <td><span class="badge badge-unapplied">未申込</span></td>
+        <td class="updated">2026/9/9</td>
+      </tr>
+
+      <tr class="is-unapplied">
+        <td><div class="student-name">武見 知弥</div><div class="student-grade">中1</div></td>
+        <td><div class="exam-name">2学期中間</div><div class="exam-sub">2学期中間 対策</div></td>
+        <td><div class="subject-chips">
+          <span class="subject-chip">英1</span><span class="subject-chip">数1</span><span class="subject-chip">国2</span>
+        </div></td>
+        <td class="num">4</td>
+        <td>瀧川</td>
+        <td><span class="badge badge-published">公開中</span></td>
+        <td><span class="badge badge-unapplied">未申込</span></td>
+        <td class="updated">2026/9/3</td>
+      </tr>
+
+      <tr class="is-unapplied">
+        <td><div class="student-name">永井 友音</div><div class="student-grade">中3</div></td>
+        <td><div class="exam-name">2学期中間</div><div class="exam-sub">テスト対策</div></td>
+        <td><div class="subject-chips">
+          <span class="subject-chip">英2</span><span class="subject-chip">数1</span><span class="subject-chip">社1</span>
+        </div></td>
+        <td class="num">4</td>
+        <td>十川</td>
+        <td><span class="badge badge-published">公開中</span></td>
+        <td><span class="badge badge-unapplied">未申込</span></td>
+        <td class="updated">2026/9/13</td>
+      </tr>
+
+      <tr class="is-unapplied">
+        <td><div class="student-name">中村 朱里</div><div class="student-grade">中1</div></td>
+        <td><div class="exam-name">2学期中間</div><div class="exam-sub">2学期中間 対策</div></td>
+        <td><div class="subject-chips">
+          <span class="subject-chip">英1</span><span class="subject-chip">国1</span><span class="subject-chip">社1</span>
+        </div></td>
+        <td class="num">3</td>
+        <td>内山</td>
+        <td><span class="badge badge-published">公開中</span></td>
+        <td><span class="badge badge-unapplied">未申込</span></td>
+        <td class="updated">2026/9/4</td>
+      </tr>
+
+      <tr class="is-unapplied">
+        <td><div class="student-name">冨來 瑞生</div><div class="student-grade">中2</div></td>
+        <td><div class="exam-name">2学期中間</div><div class="exam-sub">テスト対策</div></td>
+        <td><div class="subject-chips">
+          <span class="subject-chip">数1</span><span class="subject-chip">国1</span><span class="subject-chip">理1</span>
+        </div></td>
+        <td class="num">3</td>
+        <td>西舘</td>
+        <td><span class="badge badge-published">公開中</span></td>
+        <td><span class="badge badge-unapplied">未申込</span></td>
+        <td class="updated">2026/9/10</td>
+      </tr>
+
+      <tr class="is-unapplied">
+        <td><div class="student-name">叶 志帆</div><div class="student-grade">中2</div></td>
+        <td><div class="exam-name">2学期中間</div><div class="exam-sub">2学期中間 対策</div></td>
+        <td><div class="subject-chips">
+          <span class="subject-chip">英1</span><span class="subject-chip">数1</span><span class="subject-chip">理1</span>
+        </div></td>
+        <td class="num">3</td>
+        <td>川俣</td>
+        <td><span class="badge badge-published">公開中</span></td>
+        <td><span class="badge badge-unapplied">未申込</span></td>
+        <td class="updated">2026/9/7</td>
+      </tr>
+
+      <tr class="is-unapplied">
+        <td><div class="student-name">吉野 蓮都</div><div class="student-grade">中2</div></td>
+        <td><div class="exam-name">2学期中間</div><div class="exam-sub">テスト対策</div></td>
+        <td><div class="subject-chips">
+          <span class="subject-chip">英2</span><span class="subject-chip">国1</span>
+        </div></td>
+        <td class="num">3</td>
+        <td>杉浦</td>
+        <td><span class="badge badge-published">公開中</span></td>
+        <td><span class="badge badge-unapplied">未申込</span></td>
+        <td class="updated">2026/9/14</td>
+      </tr>
+
+      <tr class="is-unapplied">
+        <td><div class="student-name">堀川 美來</div><div class="student-grade">中2</div></td>
+        <td><div class="exam-name">2学期中間</div><div class="exam-sub">2学期中間 対策</div></td>
+        <td><div class="subject-chips">
+          <span class="subject-chip">数2</span><span class="subject-chip">社1</span>
+        </div></td>
+        <td class="num">3</td>
+        <td>瀧川</td>
+        <td><span class="badge badge-published">公開中</span></td>
+        <td><span class="badge badge-unapplied">未申込</span></td>
+        <td class="updated">2026/9/11</td>
+      </tr>
+
+      <tr class="is-unapplied">
+        <td><div class="student-name">小林 晃士</div><div class="student-grade">中2</div></td>
+        <td><div class="exam-name">2学期中間</div><div class="exam-sub">テスト対策</div></td>
+        <td><div class="subject-chips">
+          <span class="subject-chip">英1</span><span class="subject-chip">数1</span><span class="subject-chip">社1</span>
+        </div></td>
+        <td class="num">3</td>
+        <td>十川</td>
+        <td><span class="badge badge-published">公開中</span></td>
+        <td><span class="badge badge-unapplied">未申込</span></td>
+        <td class="updated">2026/9/3</td>
+      </tr>
+
+      <tr class="is-unapplied">
+        <td><div class="student-name">小澤 侑也</div><div class="student-grade">中2</div></td>
+        <td><div class="exam-name">2学期中間</div><div class="exam-sub">2学期中間 対策</div></td>
+        <td><div class="subject-chips">
+          <span class="subject-chip">国2</span><span class="subject-chip">理1</span>
+        </div></td>
+        <td class="num">3</td>
+        <td>内山</td>
+        <td><span class="badge badge-published">公開中</span></td>
+        <td><span class="badge badge-unapplied">未申込</span></td>
+        <td class="updated">2026/9/8</td>
+      </tr>
+
+      <tr class="is-unapplied">
+        <td><div class="student-name">藤田 愛菜</div><div class="student-grade">中3</div></td>
+        <td><div class="exam-name">2学期中間</div><div class="exam-sub">テスト対策</div></td>
+        <td><div class="subject-chips">
+          <span class="subject-chip">英1</span><span class="subject-chip">理2</span>
+        </div></td>
+        <td class="num">3</td>
+        <td>西舘</td>
+        <td><span class="badge badge-published">公開中</span></td>
+        <td><span class="badge badge-unapplied">未申込</span></td>
+        <td class="updated">2026/9/6</td>
+      </tr>
+
+      <tr class="is-unapplied">
+        <td><div class="student-name">永井 祐吏</div><div class="student-grade">中2</div></td>
+        <td><div class="exam-name">2学期中間</div><div class="exam-sub">2学期中間 対策</div></td>
+        <td><div class="subject-chips">
+          <span class="subject-chip">英1</span>
+        </div></td>
+        <td class="num">1</td>
+        <td>川俣</td>
+        <td><span class="badge badge-published">公開中</span></td>
+        <td><span class="badge badge-unapplied">未申込</span></td>
+        <td class="updated">2026/9/9</td>
+      </tr>
+
+      <tr class="is-unapplied">
+        <td><div class="student-name">河野 優多</div><div class="student-grade">中3</div></td>
+        <td><div class="exam-name">2学期中間</div><div class="exam-sub">テスト対策</div></td>
+        <td><div class="subject-chips"><span class="subject-none">なし</span></div></td>
+        <td class="num">0</td>
+        <td>杉浦</td>
+        <td><span class="badge badge-published">公開中</span></td>
+        <td><span class="badge badge-unapplied">未申込</span></td>
+        <td class="updated">2026/9/4</td>
+      </tr>
+
+      <!-- ==== 申込済 ==== -->
+
+      <tr>
+        <td><div class="student-name">福田 律</div><div class="student-grade">中3</div></td>
+        <td><div class="exam-name">2学期中間</div><div class="exam-sub">テスト対策</div></td>
+        <td><div class="subject-chips">
+          <span class="subject-chip">英1</span><span class="subject-chip">数1</span><span class="subject-chip">国1</span><span class="subject-chip">理1</span>
+        </div></td>
+        <td class="num">4</td>
+        <td>瀧川</td>
+        <td><span class="badge badge-published">公開中</span></td>
+        <td><div class="applied-cell"><span class="badge badge-applied">申込済</span><span class="applied-lessons">4コマ</span></div></td>
+        <td class="updated">2026/9/10</td>
+      </tr>
+
+      <tr>
+        <td><div class="student-name">澤口 心希</div><div class="student-grade">中2</div></td>
+        <td><div class="exam-name">2学期中間</div><div class="exam-sub">2学期中間 対策</div></td>
+        <td><div class="subject-chips">
+          <span class="subject-chip">英1</span><span class="subject-chip">数2</span><span class="subject-chip">国1</span><span class="subject-chip">理2</span><span class="subject-chip">社1</span>
+        </div></td>
+        <td class="num">7</td>
+        <td>十川</td>
+        <td><span class="badge badge-published">公開中</span></td>
+        <td><div class="applied-cell"><span class="badge badge-applied">申込済</span><span class="applied-lessons">3コマ</span></div></td>
+        <td class="updated">2026/9/11</td>
+      </tr>
+
+      <tr>
+        <td><div class="student-name">樺澤 千晴</div><div class="student-grade">中2</div></td>
+        <td><div class="exam-name">2学期中間</div><div class="exam-sub">テスト対策</div></td>
+        <td><div class="subject-chips">
+          <span class="subject-chip">英1</span><span class="subject-chip">数1</span><span class="subject-chip">国1</span>
+        </div></td>
+        <td class="num">3</td>
+        <td>内山</td>
+        <td><span class="badge badge-published">公開中</span></td>
+        <td><div class="applied-cell"><span class="badge badge-applied">申込済</span><span class="applied-lessons">3コマ</span></div></td>
+        <td class="updated">2026/9/10</td>
+      </tr>
+
+      <tr>
+        <td><div class="student-name">大石 朝陽</div><div class="student-grade">中1</div></td>
+        <td><div class="exam-name">2学期中間</div><div class="exam-sub">2学期中間 対策</div></td>
+        <td><div class="subject-chips">
+          <span class="subject-chip">英2</span><span class="subject-chip">数1</span><span class="subject-chip">国1</span><span class="subject-chip">理1</span><span class="subject-chip">社1</span>
+        </div></td>
+        <td class="num">6</td>
+        <td>西舘</td>
+        <td><span class="badge badge-published">公開中</span></td>
+        <td><div class="applied-cell"><span class="badge badge-applied">申込済</span><span class="applied-lessons">2コマ</span></div></td>
+        <td class="updated">2026/9/11</td>
+      </tr>
+
+      <tr>
+        <td><div class="student-name">荻野 隼</div><div class="student-grade">中2</div></td>
+        <td><div class="exam-name">2学期中間</div><div class="exam-sub">テスト対策</div></td>
+        <td><div class="subject-chips">
+          <span class="subject-chip">英1</span><span class="subject-chip">数1</span>
+        </div></td>
+        <td class="num">2</td>
+        <td>川俣</td>
+        <td><span class="badge badge-published">公開中</span></td>
+        <td><div class="applied-cell"><span class="badge badge-applied">申込済</span><span class="applied-lessons">2コマ</span></div></td>
+        <td class="updated">2026/9/10</td>
+      </tr>
+
+      <tr>
+        <td><div class="student-name">萩野 結愛</div><div class="student-grade">中2</div></td>
+        <td><div class="exam-name">2学期中間</div><div class="exam-sub">2学期中間 対策</div></td>
+        <td><div class="subject-chips">
+          <span class="subject-chip">英1</span><span class="subject-chip">国1</span>
+        </div></td>
+        <td class="num">2</td>
+        <td>杉浦</td>
+        <td><span class="badge badge-published">公開中</span></td>
+        <td><div class="applied-cell"><span class="badge badge-applied">申込済</span><span class="applied-lessons">1コマ</span></div></td>
+        <td class="updated">2026/9/11</td>
+      </tr>
+
+    </tbody>
+  </table>
+
+</div>
+</body>
+</html>

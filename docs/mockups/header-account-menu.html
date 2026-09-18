@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ヘッダー右上の整理案 比較モック</title>
+<style>
+  :root {
+    --red: #c0182b;
+    --red-dark: #9c1322;
+    --bg: #eef0f4;
+    --card: #ffffff;
+    --ink: #1f2328;
+    --sub: #6b7280;
+    --line: #e2e4e9;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo", sans-serif;
+    overflow-x: hidden;
+  }
+  .page {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 32px 16px 64px;
+  }
+  h1 {
+    font-size: 20px;
+    margin: 0 0 6px;
+  }
+  .lead {
+    color: var(--sub);
+    font-size: 13px;
+    margin: 0 0 20px;
+  }
+  .note {
+    background: #fff8e6;
+    border: 1px solid #f0d998;
+    border-radius: 8px;
+    padding: 14px 16px;
+    font-size: 13px;
+    line-height: 1.9;
+    margin-bottom: 28px;
+  }
+  .note strong { color: var(--red-dark); }
+  .note ul { margin: 6px 0 0; padding-left: 20px; }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 18px;
+    margin-bottom: 20px;
+    box-shadow: 0 1px 2px rgba(0,0,0,.04);
+  }
+  .card h2 {
+    font-size: 15px;
+    margin: 0 0 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .badge {
+    font-size: 11px;
+    font-weight: normal;
+    background: #f1f2f5;
+    color: var(--sub);
+    border-radius: 999px;
+    padding: 2px 9px;
+  }
+  .badge.rec {
+    background: #fde8ea;
+    color: var(--red-dark);
+  }
+  .desc {
+    font-size: 13px;
+    color: var(--sub);
+    margin: 0 0 14px;
+    line-height: 1.7;
+  }
+
+  /* ヘッダー帯の共通スタイル */
+  .bar-wrap {
+    position: relative;
+    margin-bottom: 14px;
+  }
+  .bar {
+    height: 48px;
+    background: var(--red);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    padding: 0 14px;
+    gap: 16px;
+    width: 100%;
+  }
+  .logo {
+    color: #fff;
+    font-weight: 700;
+    font-size: 15px;
+    letter-spacing: .03em;
+    flex-shrink: 0;
+  }
+  .nav {
+    display: flex;
+    gap: 14px;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+  }
+  .nav span {
+    color: rgba(255,255,255,.65);
+    font-size: 11.5px;
+    white-space: nowrap;
+  }
+  .right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .chip {
+    background: rgba(255,255,255,.2);
+    color: #fff;
+    font-size: 12px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .chip.clickable { cursor: pointer; }
+  .plain-name {
+    color: #fff;
+    font-size: 12.5px;
+    white-space: nowrap;
+    padding: 0 2px;
+  }
+  .icon-btn {
+    width: 30px;
+    height: 30px;
+    border-radius: 6px;
+    background: rgba(255,255,255,.15);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255,255,255,.9);
+    flex-shrink: 0;
+  }
+  .ai-btn {
+    border: 1px solid rgba(255,255,255,.7);
+    color: #fff;
+    font-size: 11.5px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    white-space: nowrap;
+    background: transparent;
+  }
+  .avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #fff;
+    color: var(--red-dark);
+    font-size: 12px;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .role-sub {
+    font-size: 10px;
+    color: rgba(255,255,255,.75);
+    display: block;
+    margin-top: 1px;
+  }
+  .name-chip {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: flex-start;
+    line-height: 1.25;
+    padding: 4px 10px;
+  }
+
+  .count-line {
+    font-size: 12px;
+    color: var(--red-dark);
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+
+  .pros-cons {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    font-size: 12.5px;
+    margin-top: 12px;
+  }
+  .pros-cons > div { flex: 1; min-width: 220px; }
+  .pros-cons .label {
+    font-weight: 700;
+    font-size: 11.5px;
+    margin-bottom: 4px;
+  }
+  .pros .label { color: #1a7f4b; }
+  .cons .label { color: var(--red-dark); }
+  .pros-cons ul {
+    margin: 0;
+    padding-left: 16px;
+    color: var(--ink);
+    line-height: 1.7;
+  }
+
+  /* 案A ドロップダウン */
+  .dropdown-area {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: -2px;
+  }
+  .dropdown {
+    width: 220px;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0,0,0,.14);
+    overflow: hidden;
+    font-size: 12.5px;
+  }
+  .dd-head {
+    padding: 10px 12px;
+  }
+  .dd-head .dd-name {
+    font-size: 13px;
+    font-weight: 700;
+  }
+  .dd-head .dd-role {
+    font-size: 11px;
+    color: var(--sub);
+    margin-top: 2px;
+  }
+  .dd-sep {
+    height: 1px;
+    background: var(--line);
+    margin: 2px 0;
+  }
+  .dd-item {
+    padding: 8px 12px;
+    color: var(--ink);
+  }
+  .dd-item.logout {
+    color: var(--red);
+    font-weight: 700;
+  }
+  .dd-theme {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+  }
+  .theme-toggle {
+    display: flex;
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    overflow: hidden;
+  }
+  .theme-toggle span {
+    padding: 2px 6px;
+    font-size: 10px;
+    color: var(--sub);
+  }
+  .theme-toggle span.active {
+    background: #f1f2f5;
+    color: var(--ink);
+    font-weight: 700;
+  }
+  .dd-arrow {
+    position: absolute;
+    top: -8px;
+    right: 40px;
+    width: 14px;
+    height: 14px;
+    background: #fff;
+    border-left: 1px solid var(--line);
+    border-top: 1px solid var(--line);
+    transform: rotate(45deg);
+  }
+
+  /* 比較表 */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12.5px;
+    background: var(--card);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  th, td {
+    border: 1px solid var(--line);
+    padding: 9px 10px;
+    text-align: center;
+  }
+  th {
+    background: #f7f7f9;
+    font-size: 12px;
+  }
+  td.plan {
+    text-align: left;
+    font-weight: 700;
+  }
+  .ok { color: #1a7f4b; font-weight: 700; }
+  .mid { color: #b8860b; font-weight: 700; }
+  .ng { color: var(--red-dark); font-weight: 700; }
+
+  svg { display: block; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <h1>ヘッダー右上の整理案 比較</h1>
+  <p class="lead">NEST ヘッダー右上の混雑を解消するための5案を並べて比較する。実装前のモックであり、動作はしない。</p>
+
+  <div class="note">
+    <strong>出発点：</strong>いまのヘッダー右上には「教室チップ・氏名・ログアウト・歯車・AIに聞くボタン」の5つが並び、混雑している。
+    <ul>
+      <li><strong>氏名が2箇所にある。</strong>ヘッダーのバー上（素のテキスト）と、歯車メニューを開いた先頭（氏名＋権限）に重複して表示されている。どの案でもこの重複は解消する。</li>
+      <li>ログアウトは現状、ヘッダーに直置きされたアイコン1つだけで、歯車メニューの中には入っていない。</li>
+      <li>歯車メニューの中身（現状）：氏名と権限 ／ （画面固有の設定項目） ／ すべての設定 ／ 教室長ダッシュボード（試作）／ 座席表（試作）／ 保護者ポータルV2（試作）／ テーマ ／ ヘルプ</li>
+    </ul>
+  </div>
+
+  <!-- 現状 -->
+  <div class="card">
+    <h2>現状</h2>
+    <p class="desc">教室チップ・氏名・ログアウト・歯車・AIに聞くボタンの5要素がそのまま横並びになっている。</p>
+    <div class="count-line">右側の要素数：5</div>
+    <div class="bar-wrap">
+      <div class="bar">
+        <div class="logo">NEST</div>
+        <div class="nav">
+          <span>生徒管理</span><span>進行表確認</span><span>面談</span><span>講習</span><span>座席表</span><span>問合せ</span>
+        </div>
+        <div class="right">
+          <span class="chip">京王堀之内校 ▾</span>
+          <span class="plain-name">高橋</span>
+          <span class="icon-btn" title="ログアウト">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          </span>
+          <span class="icon-btn" title="設定">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          </span>
+          <span class="ai-btn">AIに聞く</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 案A -->
+  <div class="card">
+    <h2>案A：氏名をメニューのトリガーにする <span class="badge rec">推奨</span></h2>
+    <p class="desc">氏名チップをクリックするとメニューが開く。歯車アイコンは廃止し、ログアウトもこのメニューへ移す。歯車メニューにあった項目はすべてここに統合される。</p>
+    <div class="count-line">右側の要素数：5 → 3</div>
+    <div class="bar-wrap">
+      <div class="bar">
+        <div class="logo">NEST</div>
+        <div class="nav">
+          <span>生徒管理</span><span>進行表確認</span><span>面談</span><span>講習</span><span>座席表</span><span>問合せ</span>
+        </div>
+        <div class="right">
+          <span class="chip">京王堀之内校 ▾</span>
+          <span class="chip clickable">高橋 ▾</span>
+          <span class="ai-btn">AIに聞く</span>
+        </div>
+      </div>
+    </div>
+    <div class="dropdown-area">
+      <div style="position: relative;">
+        <div class="dd-arrow"></div>
+        <div class="dropdown">
+          <div class="dd-head">
+            <div class="dd-name">高橋</div>
+            <div class="dd-role">システム管理者</div>
+          </div>
+          <div class="dd-sep"></div>
+          <div class="dd-item">すべての設定</div>
+          <div class="dd-item">教室長ダッシュボード（試作）</div>
+          <div class="dd-item">座席表（試作）</div>
+          <div class="dd-item">保護者ポータルV2（試作・ダミーデータ）</div>
+          <div class="dd-sep"></div>
+          <div class="dd-theme">
+            <span>テーマ</span>
+            <span class="theme-toggle">
+              <span class="active">ライト</span><span>ダーク</span><span>システム</span>
+            </span>
+          </div>
+          <div class="dd-item">ヘルプ</div>
+          <div class="dd-sep"></div>
+          <div class="dd-item logout">ログアウト</div>
+        </div>
+      </div>
+    </div>
+    <div class="pros-cons">
+      <div class="pros">
+        <div class="label">良い点</div>
+        <ul>
+          <li>氏名の重複表示が解消し、要素数が最も減る</li>
+          <li>ログアウトが他の設定項目と同じ場所にまとまり迷わない</li>
+        </ul>
+      </div>
+      <div class="cons">
+        <div class="label">弱い点</div>
+        <ul>
+          <li>氏名がクリック可能だと初見でわかりにくい（チップ化とキャレットで補う）</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- 案B -->
+  <div class="card">
+    <h2>案B：イニシャルの丸アイコン</h2>
+    <p class="desc">氏名を白い円に1文字（濃い赤文字）で表す。円をクリックするとメニューが開く（中身は案Aと同じ）。</p>
+    <div class="count-line">右側の要素数：5 → 3</div>
+    <div class="bar-wrap">
+      <div class="bar">
+        <div class="logo">NEST</div>
+        <div class="nav">
+          <span>生徒管理</span><span>進行表確認</span><span>面談</span><span>講習</span><span>座席表</span><span>問合せ</span>
+        </div>
+        <div class="right">
+          <span class="chip">京王堀之内校 ▾</span>
+          <span class="avatar">高</span>
+          <span class="ai-btn">AIに聞く</span>
+        </div>
+      </div>
+    </div>
+    <div class="pros-cons">
+      <div class="pros">
+        <div class="label">良い点</div>
+        <ul>
+          <li>最も省スペース。将来アイコンに写真を載せる拡張もしやすい</li>
+        </ul>
+      </div>
+      <div class="cons">
+        <div class="label">弱い点</div>
+        <ul>
+          <li>氏名が常時読めない。誰でログインしているかは開かないとわからない</li>
+          <li>同姓（例：高橋が複数）だと見分けがつかない</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- 案C -->
+  <div class="card">
+    <h2>案C：教室と氏名を1つに統合</h2>
+    <p class="desc">教室チップと氏名チップを1つにまとめ、「京王堀之内校・高橋 ▾」の1要素にする。クリックで開くメニューの先頭に教室切替の項目を置く想定。</p>
+    <div class="count-line">右側の要素数：5 → 2</div>
+    <div class="bar-wrap">
+      <div class="bar">
+        <div class="logo">NEST</div>
+        <div class="nav">
+          <span>生徒管理</span><span>進行表確認</span><span>面談</span><span>講習</span><span>座席表</span><span>問合せ</span>
+        </div>
+        <div class="right">
+          <span class="chip clickable">京王堀之内校・高橋 ▾</span>
+          <span class="ai-btn">AIに聞く</span>
+        </div>
+      </div>
+    </div>
+    <div class="pros-cons">
+      <div class="pros">
+        <div class="label">良い点</div>
+        <ul>
+          <li>要素数が最小。ヘッダーが最も広く使える</li>
+        </ul>
+      </div>
+      <div class="cons">
+        <div class="label">弱い点</div>
+        <ul>
+          <li>教室切替がメニューを開いてからの1クリック増になる（掛け持ち講師が多用する操作）</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- 案D -->
+  <div class="card">
+    <h2>案D：氏名に権限を添える</h2>
+    <p class="desc">氏名チップの中に権限（システム管理者など）を一回り小さく添える。教室チップは従来どおり別要素。</p>
+    <div class="count-line">右側の要素数：5 → 3</div>
+    <div class="bar-wrap">
+      <div class="bar">
+        <div class="logo">NEST</div>
+        <div class="nav">
+          <span>生徒管理</span><span>進行表確認</span><span>面談</span><span>講習</span><span>座席表</span><span>問合せ</span>
+        </div>
+        <div class="right">
+          <span class="chip clickable name-chip">高橋<span class="role-sub">システム管理者</span></span>
+          <span class="chip">京王堀之内校 ▾</span>
+          <span class="ai-btn">AIに聞く</span>
+        </div>
+      </div>
+    </div>
+    <div class="pros-cons">
+      <div class="pros">
+        <div class="label">良い点</div>
+        <ul>
+          <li>誰がどの権限でログインしているかが一目でわかる。管理者の確認作業に向く</li>
+        </ul>
+      </div>
+      <div class="cons">
+        <div class="label">弱い点</div>
+        <ul>
+          <li>チップの横幅が広がり、ナビが狭い画面ではさらに詰まる</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- 案E -->
+  <div class="card">
+    <h2>案E：最小変更（ログアウトだけメニューへ）</h2>
+    <p class="desc">いまの構造をほぼ変えず、ログアウトのアイコンだけ廃止して歯車メニューの中に移す。要素数は1つしか減らない。</p>
+    <div class="count-line">右側の要素数：5 → 4</div>
+    <div class="bar-wrap">
+      <div class="bar">
+        <div class="logo">NEST</div>
+        <div class="nav">
+          <span>生徒管理</span><span>進行表確認</span><span>面談</span><span>講習</span><span>座席表</span><span>問合せ</span>
+        </div>
+        <div class="right">
+          <span class="chip">京王堀之内校 ▾</span>
+          <span class="plain-name">高橋</span>
+          <span class="icon-btn" title="設定">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          </span>
+          <span class="ai-btn">AIに聞く</span>
+        </div>
+      </div>
+    </div>
+    <div class="pros-cons">
+      <div class="pros">
+        <div class="label">良い点</div>
+        <ul>
+          <li>変更範囲が最も小さく、実装リスクが低い</li>
+        </ul>
+      </div>
+      <div class="cons">
+        <div class="label">弱い点</div>
+        <ul>
+          <li>氏名の2箇所重複（バー上／歯車メニュー先頭）は解消されないまま残る</li>
+          <li>混雑の解消幅が5案の中で最も小さい</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- 比較表 -->
+  <div class="card">
+    <h2>比較表</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>案</th>
+          <th>要素数</th>
+          <th>氏名が読める</th>
+          <th>教室切替の手数</th>
+          <th>実装量</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="plan">案A（推奨）</td>
+          <td><span class="ok">◎</span> 5→3</td>
+          <td><span class="ok">◎</span> 常時</td>
+          <td><span class="ok">◎</span> 1クリック</td>
+          <td><span class="mid">○</span> 中</td>
+        </tr>
+        <tr>
+          <td class="plan">案B</td>
+          <td><span class="ok">◎</span> 5→3</td>
+          <td><span class="ng">×</span> 開くまで不可</td>
+          <td><span class="ok">◎</span> 1クリック</td>
+          <td><span class="mid">○</span> 中</td>
+        </tr>
+        <tr>
+          <td class="plan">案C</td>
+          <td><span class="ok">◎</span> 5→2</td>
+          <td><span class="ok">◎</span> 常時</td>
+          <td><span class="ng">×</span> 2クリック</td>
+          <td><span class="mid">○</span> 中</td>
+        </tr>
+        <tr>
+          <td class="plan">案D</td>
+          <td><span class="mid">○</span> 5→3</td>
+          <td><span class="ok">◎</span> 常時＋権限</td>
+          <td><span class="ok">◎</span> 1クリック</td>
+          <td><span class="ok">◎</span> 小</td>
+        </tr>
+        <tr>
+          <td class="plan">案E</td>
+          <td><span class="ng">×</span> 5→4</td>
+          <td><span class="ok">◎</span> 常時</td>
+          <td><span class="ok">◎</span> 1クリック</td>
+          <td><span class="ok">◎</span> 最小</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+</body>
+</html>

@@ -126,7 +126,9 @@ export function AppHeader({
   );
   const displaySchools = schools;
   const [showSchoolDropdown, setShowSchoolDropdown] = useState(false);
-  const [showSettingsDropdown, setShowSettingsDropdown] = useState(false);
+  // ★元は「設定」ドロップダウンだったが、氏名チップをトリガーにするアカウントメニューへ
+  // 統合したため改名（ログアウトもここに入る＝もう「設定」専用ではない）。
+  const [showAccountMenu, setShowAccountMenu] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   // PCナビ: 現在開いているドロップダウンのキー（同時に1つだけ開く）
   const [openDropdownKey, setOpenDropdownKey] = useState<string | null>(null);
@@ -231,17 +233,17 @@ export function AppHeader({
 
   const schoolDisplayName = getCurrentSchoolDisplayName();
 
-  // クリック外でドロップダウンを閉じる（教室選択・設定のみ — ナビはホバー制御）
+  // クリック外でドロップダウンを閉じる（教室選択・アカウントメニューのみ — ナビはホバー制御）
   useEffect(() => {
-    if (!showSchoolDropdown && !showSettingsDropdown) return;
+    if (!showSchoolDropdown && !showAccountMenu) return;
 
     const handleClickOutside = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
       if (showSchoolDropdown && !target.closest('.school-dropdown-container')) {
         setShowSchoolDropdown(false);
       }
-      if (showSettingsDropdown && !target.closest('.settings-dropdown-container')) {
-        setShowSettingsDropdown(false);
+      if (showAccountMenu && !target.closest('.account-menu-container')) {
+        setShowAccountMenu(false);
       }
     };
 
@@ -250,7 +252,7 @@ export function AppHeader({
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [showSchoolDropdown, showSettingsDropdown]);
+  }, [showSchoolDropdown, showAccountMenu]);
 
   return (
     <>
@@ -390,45 +392,49 @@ export function AppHeader({
                 </div>
               )}
               {isTeacher && badgeCount !== null && <TierMedal count={badgeCount} />}
-              {/* ログイン中の氏名。教室長以上にだけ出す。
-                  複数教室を見るロールほど「いま誰で入っているか」を取り違えやすく、
-                  設定ドロップダウンを開かないと確認できないのが実態に合わないため常時表示にした。
-                  講師は共用端末で使う場面があり、氏名を出しっぱなしにすると別人の名前が
-                  残って見えるので対象外（従来どおり設定メニューの中だけ）。
-                  狭い画面ではロゴ・教室名と競合するので sm 未満では隠す。 */}
-              {profile && !authLoading && isManagerOrAbove(profile.role) && (
-                <div
-                  className="hidden sm:block max-w-[140px] truncate text-xs font-medium text-white/90"
-                  title={`${profile.display_name || profile.email}（${USER_ROLE_LABELS[profile.role]}）`}
-                >
-                  {profile.display_name || profile.email}
-                </div>
-              )}
               {profile && !authLoading && (
-                <button
-                  onClick={signOut}
-                  className="p-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-[color,background-color,transform] duration-150 ease-out active:scale-[0.97]"
-                  title="ログアウト"
-                >
-                  <LogOut className="w-4 h-4" />
-                </button>
-              )}
-              {profile && !authLoading && (
-                <div className="relative settings-dropdown-container">
+                <div className="relative account-menu-container">
+                  {/* アカウントメニューのトリガー。旧・歯車ボタンと旧・氏名表示を統合した。
+                      ★ボタンは常に1つだけレンダリングし、中身（氏名の <span> / 歯車アイコン）を
+                      hidden sm:inline 等で出し分ける。ボタンを条件分岐で2つに分けると
+                      「どちらも出ない／二重に出る」事故が起きるため避ける。
+                      氏名は教室長以上かつ sm 以上でのみ出す。講師は教室の共用端末で使う場面があり、
+                      氏名を出しっぱなしにすると前に使った人の名前が残って見えてしまうため
+                      （歯車メニュー時代の実装コメントの趣旨を引き継ぐ）。
+                      狭い画面でも講師でも、歯車アイコンだけは必ず出す。
+                      氏名だけを隠してもボタン自体は消さない — 消すとメニューにもログアウトにも
+                      到達できなくなるため。 */}
                   <button
+                    type="button"
                     onClick={(e) => {
                       e.stopPropagation();
-                      setShowSettingsDropdown(!showSettingsDropdown);
+                      setShowAccountMenu(!showAccountMenu);
                     }}
-                    className="p-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-[color,background-color,transform] duration-150 ease-out active:scale-[0.97]"
-                    title="設定"
+                    className="flex shrink-0 items-center gap-1 rounded-lg bg-white/20 px-3 py-1.5 text-xs font-medium text-white/90 transition-[color,background-color,transform] duration-150 ease-out hover:bg-white/30 active:scale-[0.97]"
+                    aria-label="アカウントメニュー"
+                    title={
+                      isManagerOrAbove(profile.role)
+                        ? `${profile.display_name || profile.email}（${USER_ROLE_LABELS[profile.role]}）`
+                        : 'アカウントメニュー'
+                    }
                   >
-                    <Settings className="w-4 h-4" />
+                    {isManagerOrAbove(profile.role) && (
+                      <span className="hidden max-w-[140px] truncate sm:inline">
+                        {profile.display_name || profile.email}
+                      </span>
+                    )}
+                    <Settings
+                      className={`w-4 h-4 ${isManagerOrAbove(profile.role) ? 'sm:hidden' : ''}`}
+                      aria-hidden
+                    />
+                    {isManagerOrAbove(profile.role) && (
+                      <ChevronDown className="hidden w-3 h-3 sm:block" aria-hidden />
+                    )}
                   </button>
                   <div
-                    className={`${dropdownPanelClass(showSettingsDropdown, 'right')} z-50 min-w-[200px]`}
+                    className={`${dropdownPanelClass(showAccountMenu, 'right')} z-50 min-w-[200px]`}
                     onClick={(e) => e.stopPropagation()}
-                    aria-hidden={!showSettingsDropdown}
+                    aria-hidden={!showAccountMenu}
                   >
                     <div className="py-1">
                       {/* ユーザー情報 */}
@@ -449,7 +455,7 @@ export function AppHeader({
                         <button
                           onClick={() => {
                             onBulkGradeUpdateClick();
-                            setShowSettingsDropdown(false);
+                            setShowAccountMenu(false);
                           }}
                           className="w-full text-left px-3 py-2 text-xs hover:bg-gray-50 transition-colors duration-150"
                         >
@@ -460,7 +466,7 @@ export function AppHeader({
                         <button
                           onClick={() => {
                             onSettingsClick();
-                            setShowSettingsDropdown(false);
+                            setShowAccountMenu(false);
                           }}
                           className="w-full text-left px-3 py-2 text-xs hover:bg-gray-50 transition-colors duration-150"
                         >
@@ -475,7 +481,7 @@ export function AppHeader({
                             ? 'bg-primary/10 text-primary font-semibold'
                             : 'text-text-heading'
                         }`}
-                        onClick={() => setShowSettingsDropdown(false)}
+                        onClick={() => setShowAccountMenu(false)}
                       >
                         すべての設定
                       </Link>
@@ -489,7 +495,7 @@ export function AppHeader({
                           prefetch={false}
                           href="/home-mock"
                           className="flex items-center gap-2 px-3 py-2 text-xs text-text-heading hover:bg-gray-50 transition-colors"
-                          onClick={() => setShowSettingsDropdown(false)}
+                          onClick={() => setShowAccountMenu(false)}
                         >
                           <LayoutDashboard className="w-3.5 h-3.5" aria-hidden />
                           教室長ダッシュボード（試作）
@@ -506,7 +512,7 @@ export function AppHeader({
                               ? 'font-bold text-primary'
                               : 'text-text-heading'
                           }`}
-                          onClick={() => setShowSettingsDropdown(false)}
+                          onClick={() => setShowAccountMenu(false)}
                         >
                           <LayoutDashboard className="w-3.5 h-3.5" aria-hidden />
                           座席表（試作）
@@ -519,7 +525,7 @@ export function AppHeader({
                         <button
                           type="button"
                           onClick={() => {
-                            setShowSettingsDropdown(false);
+                            setShowAccountMenu(false);
                             handlePortalDemo();
                           }}
                           disabled={startingPortalDemo}
@@ -542,7 +548,7 @@ export function AppHeader({
                         prefetch={false}
                         href="/help"
                         className="block px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 transition-colors"
-                        onClick={() => setShowSettingsDropdown(false)}
+                        onClick={() => setShowAccountMenu(false)}
                       >
                         ヘルプ
                       </Link>
@@ -551,6 +557,20 @@ export function AppHeader({
                           「プッシュ通知」のラベルだけが右側が空のまま残っていた。
                           行ごと畳んでおき、PWA再開時にこのブロックを戻す。
                           （layout.tsx の <ServiceWorkerUpdateBar /> と同じ扱い） */}
+                      <div className="border-t border-border my-1" />
+                      {/* ログアウト。旧ヘッダー直置きのアイコンボタンをここへ統合した
+                          （トリガーを1つにまとめるため）。 */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowAccountMenu(false);
+                          signOut();
+                        }}
+                        className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-danger hover:bg-gray-50 transition-colors"
+                      >
+                        <LogOut className="w-3.5 h-3.5" aria-hidden />
+                        ログアウト
+                      </button>
                     </div>
                   </div>
                 </div>
