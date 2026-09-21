@@ -9,16 +9,16 @@ import { Loading, InlineLoading } from '@/components/ui';
 import { supabase } from '@/lib/supabase';
 import {
   getProposalsByStudent,
-  getTextbookUnitsWithProgress,
   bulkPublishProposals,
   bulkMarkProposalsSent,
   calcTotalKoma,
   calcTotalAppliedKoma,
 } from '@/lib/api/proposals';
+import { buildPrintSheets } from '@/lib/proposals/buildPrintSheets';
 import { getProposalOrderCandidates, type OrderCandidate } from '@/lib/api/ordering';
 import { ProposalPrintView } from './ProposalPrintView';
 import { PublishOrderDialog } from './PublishOrderDialog';
-import type { PrintUnitDraft, ProposalPrintData } from './ProposalPrintView';
+import type { ProposalPrintData } from './ProposalPrintView';
 import type { SeasonalProposalWithDetails, SeasonType, ProposalStatus } from '@/types/database';
 import { SEASON_LABELS, PROPOSAL_STATUS_LABELS, GRADE_LABELS } from '@/types/database';
 import { getSubjectBadgeColor } from '@/lib/subjectBadge';
@@ -189,72 +189,15 @@ export default function ProposalList() {
     }
   };
 
-  // ── 一括印刷（科目順にソート） ──
+  // ── 一括印刷（同じ科目は1枚にまとめ、紙は科目順） ──
 
   const handleBulkPrint = async () => {
     if (proposals.length === 0) return;
     setPrintLoading(true);
     try {
-      const results: ProposalPrintData[] = [];
-
-      const sorted = [...proposals].sort((a, b) => {
-        const sa = a.textbook?.subject ?? '';
-        const sb = b.textbook?.subject ?? '';
-        if (sa !== sb) return sa.localeCompare(sb, 'ja');
-        const na = a.textbook?.name ?? '';
-        const nb = b.textbook?.name ?? '';
-        return na.localeCompare(nb, 'ja');
-      });
-
-      // 提案書ごとの進捗取得は互いに独立なので並列実行（旧実装は逐次awaitで
-      // 提案書数に比例して待ち時間が増えていた）。整形は取得後に科目順で行う。
-      const progressList = await Promise.all(
-        sorted.map((p) =>
-          getTextbookUnitsWithProgress(p.student_textbook_id ?? null, p.textbook_id)
-        )
-      );
-
-      for (let pi = 0; pi < sorted.length; pi++) {
-        const p = sorted[pi];
-        const { items, progressMap } = progressList[pi];
-
-        const activeUnits: PrintUnitDraft[] = p.units
-          .filter((u) => u.koma_count > 0)
-          .map((u) => ({
-            curriculum_item_id: u.curriculum_item_id,
-            koma_count: u.koma_count,
-            applied_koma: u.applied_koma ?? 0,
-            reason: u.reason,
-            group_id: u.group_id,
-            intent_tag: u.intent_tag ?? null,
-          }));
-
-        const groupMap = new Map<number, PrintUnitDraft[]>();
-        for (const u of activeUnits) {
-          if (u.group_id > 0) {
-            const list = groupMap.get(u.group_id) ?? [];
-            list.push(u);
-            groupMap.set(u.group_id, list);
-          }
-        }
-
-        const tbName = p.textbook?.subject
-          ? `${p.textbook.subject} ${p.textbook.name}`
-          : (p.textbook?.name ?? '');
-
-        results.push({
-          studentName,
-          textbookName: tbName,
-          seasonLabel: `${SEASON_LABELS[p.season as SeasonType]}`,
-          year: p.year,
-          theme: p.theme,
-          allItems: items,
-          activeUnits,
-          progressMap,
-          totalKoma: calcTotalKoma(p.units),
-          groupMap,
-        });
-      }
+      // まとめる規則（生徒×期×科目で1枚・中は作った順）と取得は buildPrintSheets に集約。
+      // 教室全体の提案書一覧（/courses/proposals）も同じ関数を使う。
+      const results = await buildPrintSheets(proposals, studentName);
 
       setPrintData(results);
       setPrintMode(true);
@@ -290,7 +233,7 @@ export default function ProposalList() {
             印刷
           </button>
           <span className="text-sm text-text-muted ml-2">
-            {studentName} ({printData.length}件)
+            {studentName} ({printData.length}枚)
           </span>
         </div>
         <div className="space-y-8">

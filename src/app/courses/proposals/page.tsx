@@ -24,13 +24,13 @@ import { useRequirePermission } from '@/hooks/usePermissions';
 import AccessDenied from '@/components/AccessDenied';
 import {
   getProposalsBySchool,
-  getTextbookUnitsWithProgress,
   calcTotalKoma,
   calcTotalAppliedKoma,
   deleteProposal,
   bulkPublishProposals,
   bulkMarkProposalsSent,
 } from '@/lib/api/proposals';
+import { buildPrintSheets } from '@/lib/proposals/buildPrintSheets';
 import {
   getProposalOrderCandidates,
   type OrderCandidate,
@@ -53,7 +53,7 @@ import { SEASON_LABELS, PROPOSAL_STATUS_LABELS, GRADE_LABELS } from '@/types/dat
 import { useLocalSchoolId } from '@/hooks/useLocalSchoolId';
 import { SchoolSwitcher } from '@/components/SchoolSwitcher';
 import { ProposalPrintView } from '@/components/proposals/ProposalPrintView';
-import type { PrintUnitDraft, ProposalPrintData } from '@/components/proposals/ProposalPrintView';
+import type { ProposalPrintData } from '@/components/proposals/ProposalPrintView';
 import { getSubjectBadgeColor } from '@/lib/subjectBadge';
 import { BulkConceptPanel } from '@/components/proposals/BulkConceptPanel';
 
@@ -135,7 +135,11 @@ export default function CourseProposalsPage() {
 
   const currentYear = new Date().getFullYear();
   const [filterYear, setFilterYear] = useState<number>(currentYear);
-  const [filterSeason, setFilterSeason] = useState<SeasonType | ''>('');
+  // 既定は「これから準備する期」。
+  // 全シーズンを既定にしていたころは、過去の講習の提案書が全部混ざって目的のものを探しづらい
+  // という声があった。全シーズンは選択肢として残してあるので、過去を見たいときは切り替える。
+  // ★シーズンが決まると講習申込（Web申込）の入口も出る（申込は season 単位のため）。
+  const [filterSeason, setFilterSeason] = useState<SeasonType | ''>(() => getPreparingSeason());
   const [filterStatus, setFilterStatus] = useState<ProposalStatus | ''>('');
   const [searchQuery, setSearchQuery] = useState('');
   const [filterSubject, setFilterSubject] = useState('');
@@ -165,54 +169,9 @@ export default function CourseProposalsPage() {
     if (studentProposals.length === 0) return;
     setPrintLoading(studentId);
     try {
-      const results: ProposalPrintData[] = [];
-      const sorted = [...studentProposals].sort((a, b) => {
-        const sa = a.textbook?.subject ?? '';
-        const sb = b.textbook?.subject ?? '';
-        if (sa !== sb) return sa.localeCompare(sb, 'ja');
-        const na = a.textbook?.name ?? '';
-        const nb = b.textbook?.name ?? '';
-        return na.localeCompare(nb, 'ja');
-      });
-      for (const p of sorted) {
-        const { items, progressMap } = await getTextbookUnitsWithProgress(
-          p.student_textbook_id ?? null,
-          p.textbook_id
-        );
-        const activeUnits: PrintUnitDraft[] = p.units
-          .filter((u) => u.koma_count > 0)
-          .map((u) => ({
-            curriculum_item_id: u.curriculum_item_id,
-            koma_count: u.koma_count,
-            applied_koma: u.applied_koma ?? 0,
-            reason: u.reason,
-            group_id: u.group_id,
-            intent_tag: u.intent_tag ?? null,
-          }));
-        const groupMap = new Map<number, PrintUnitDraft[]>();
-        for (const u of activeUnits) {
-          if (u.group_id > 0) {
-            const list = groupMap.get(u.group_id) ?? [];
-            list.push(u);
-            groupMap.set(u.group_id, list);
-          }
-        }
-        const tbName = p.textbook?.subject
-          ? `${p.textbook.subject} ${p.textbook.name}`
-          : (p.textbook?.name ?? '');
-        results.push({
-          studentName,
-          textbookName: tbName,
-          seasonLabel: SEASON_LABELS[p.season as SeasonType],
-          year: p.year,
-          theme: p.theme,
-          allItems: items,
-          activeUnits,
-          progressMap,
-          totalKoma: calcTotalKoma(p.units),
-          groupMap,
-        });
-      }
+      // まとめる規則（生徒×期×科目で1枚・中は作った順）と取得は buildPrintSheets に集約。
+      // 生徒別の提案書一覧（ProposalList）も同じ関数を使う。
+      const results = await buildPrintSheets(studentProposals, studentName);
       setPrintData(results);
       setPrintStudentName(studentName);
       setPrintMode(true);
@@ -656,7 +615,7 @@ export default function CourseProposalsPage() {
               印刷
             </button>
             <span className="text-sm text-text-muted self-center ml-2">
-              {printStudentName} ({printData.length}件)
+              {printStudentName} ({printData.length}枚)
             </span>
           </div>
           <div className="space-y-8">
@@ -683,19 +642,22 @@ export default function CourseProposalsPage() {
                 topics={[
                   {
                     title: '提案書を新規作成する',
-                    description: '生徒ごとの講習提案書を作成します。',
+                    description:
+                      '生徒ごとの講習提案書を作成します。テキストは最大3冊まで選べます。',
                     steps: [
                       '「新規作成」ボタンをクリック',
                       '対象生徒を選択',
-                      '教科・コマ数を入力して保存',
+                      'テキストを選び、単元のコマ数を入力（「テキストを追加」で最大3冊）',
+                      '「保存（提案書◯件）」で保存（1冊につき提案書1件ができます）',
                     ],
                   },
                   {
                     title: '提案書を印刷する',
-                    description: '保護者配布用にPDF印刷します。',
+                    description:
+                      '保護者配布用にPDF印刷します。同じ科目の提案書は1枚にまとまります。',
                     steps: [
-                      '印刷したい提案書を選択',
-                      '「印刷」ボタンをクリック',
+                      '生徒名の横のプリンターアイコンをクリック',
+                      'プレビューを確認して「印刷」ボタンをクリック',
                       'ブラウザの印刷ダイアログで出力',
                     ],
                   },

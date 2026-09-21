@@ -27,7 +27,11 @@ import {
 } from '@/lib/api/textbook-favorites';
 import type { CurriculumItem, SeasonType, Textbook } from '@/types/database';
 import { GRADE_LABELS, SEASON_LABELS } from '@/types/database';
-import { getPreparingSeason, type UnitDraft } from '@/components/proposals/proposalEditor.shared';
+import {
+  MAX_TEXTBOOKS,
+  getPreparingSeason,
+  type UnitDraft,
+} from '@/components/proposals/proposalEditor.shared';
 import {
   applyDragRange as applyDragRangeTo,
   buildGroupMap,
@@ -58,7 +62,7 @@ interface CourseTextbook {
   textbook: Textbook;
 }
 
-const MAX_TEXTBOOKS = 3;
+// MAX_TEXTBOOKS は提案書エディタと共有（proposalEditor.shared.ts）
 const GRADES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
 const SEASONS: SeasonType[] = ['spring', 'summer', 'winter'];
 

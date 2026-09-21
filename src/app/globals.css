@@ -515,6 +515,33 @@ a:focus-visible {
     border-bottom: none;
   }
 
+  /* 同じ科目の複数冊を1枚にまとめる印刷。冊ごとに1列（左から右へ＝進める順）にして、
+     どの冊をどこまでやるかが1枚で読めるようにする。
+     1冊のときは従来どおり .proposal-print-compact の2段組を使う（見た目を変えない）。
+     A4縦1枚が目標だが、溢れたら自然に次ページへ流す（無理に縮めない）。 */
+  .proposal-print-books {
+    display: grid;
+    gap: 0 10px;
+    align-items: start;
+  }
+  .proposal-print-books--2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .proposal-print-books--3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .proposal-print-book-col {
+    min-width: 0;
+  }
+  .proposal-print-book-head {
+    font-size: 8px;
+    line-height: 1.3;
+    font-weight: 700;
+    padding-bottom: 1px;
+    margin-bottom: 2px;
+    border-bottom: 1px solid #111827;
+  }
+
   /* 講習進捗レポート: A3縦1枚に収める（提案書と同じく名前付きページで向きを固定） */
   .course-report-print-root,
   .course-report-print-page {

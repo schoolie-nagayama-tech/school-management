@@ -23,6 +23,8 @@ export function EditorBottomBar({
   onSave,
   saving,
   saveBlockers,
+  saveLabel = '保存',
+  saveHint,
   extraActions,
 }: {
   unitCount: number;
@@ -39,6 +41,10 @@ export function EditorBottomBar({
   saving: boolean;
   /** 保存できない理由。空でなければ保存ボタンを無効化し、理由をそのまま表示する */
   saveBlockers: string[];
+  /** 保存ボタンの文言。何件できるかを明示したいとき（提案書の複数冊作成）に差し替える */
+  saveLabel?: string;
+  /** 保存ボタンの手前に出す補足（冊ごとのコマ数の内訳など） */
+  saveHint?: ReactNode;
   /** 画面固有のボタン（提案書なら「講習に登録」「プレビュー」）を差し込むスロット */
   extraActions?: ReactNode;
 }) {
@@ -84,6 +90,7 @@ export function EditorBottomBar({
           </Button>
         )}
         {extraActions}
+        {saveHint && <div className="shrink-0">{saveHint}</div>}
         <div className="flex flex-col items-end gap-1">
           <Button
             size="sm"
@@ -93,7 +100,7 @@ export function EditorBottomBar({
             title={saveBlockers.length > 0 ? saveBlockers.join(' / ') : undefined}
           >
             <Save className="w-3.5 h-3.5 mr-1" />
-            保存
+            {saveLabel}
           </Button>
           {/* 保存できない理由を明示（ボタンが disabled でも理由が分かるようにする） */}
           {saveBlockers.length > 0 && (
