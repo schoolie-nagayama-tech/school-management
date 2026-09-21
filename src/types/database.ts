@@ -3190,6 +3190,203 @@ export type Database = {
           },
         ];
       };
+      // ============================================
+      // 高校マスタ・志望校（面談での「志望校との差」表示用）
+      // 正典: docs/interview-script-ai-plan.md
+      // ============================================
+      high_schools: {
+        Row: {
+          id: string;
+          prefecture: string;
+          school_name: string;
+          // ★NULL ではなく空文字（普通科の本体）。NULL だと UNIQUE (prefecture, school_name, course) が
+          // 効かない（Postgres は NULL 同士を重複とみなさない）ため、空文字を既定値にしている。
+          course: string;
+          category: string;
+          school_code: string | null;
+          old_district: number | null;
+          municipality: string | null;
+          address: string | null;
+          lat: number | null;
+          lon: number | null;
+          primary_station: string | null;
+          primary_lines: string[] | null;
+          access_lines: string[] | null;
+          station_source: string | null;
+          location_source: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          prefecture?: string;
+          school_name: string;
+          course?: string;
+          category: string;
+          school_code?: string | null;
+          old_district?: number | null;
+          municipality?: string | null;
+          address?: string | null;
+          lat?: number | null;
+          lon?: number | null;
+          primary_station?: string | null;
+          primary_lines?: string[] | null;
+          access_lines?: string[] | null;
+          station_source?: string | null;
+          location_source?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          prefecture?: string;
+          school_name?: string;
+          course?: string;
+          category?: string;
+          school_code?: string | null;
+          old_district?: number | null;
+          municipality?: string | null;
+          address?: string | null;
+          lat?: number | null;
+          lon?: number | null;
+          primary_station?: string | null;
+          primary_lines?: string[] | null;
+          access_lines?: string[] | null;
+          station_source?: string | null;
+          location_source?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      high_school_standards: {
+        Row: {
+          id: string;
+          high_school_id: string;
+          source: string;
+          source_year: number;
+          source_label: string;
+          total_score: number | null;
+          naishin: number | null;
+          naishin_max: number | null;
+          hensachi: number | null;
+          exam_type: string | null;
+          gakuryoku_ratio: string | null;
+          note: string | null;
+          // ★NULL = 紙の原本とまだ突き合わせていない。保護者に見せる画面では
+          // その旨が分かるようにする（数値の出どころが手起こしのため）。
+          verified_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          high_school_id: string;
+          source: string;
+          source_year: number;
+          source_label: string;
+          total_score?: number | null;
+          naishin?: number | null;
+          naishin_max?: number | null;
+          hensachi?: number | null;
+          exam_type?: string | null;
+          gakuryoku_ratio?: string | null;
+          note?: string | null;
+          verified_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          high_school_id?: string;
+          source?: string;
+          source_year?: number;
+          source_label?: string;
+          total_score?: number | null;
+          naishin?: number | null;
+          naishin_max?: number | null;
+          hensachi?: number | null;
+          exam_type?: string | null;
+          gakuryoku_ratio?: string | null;
+          note?: string | null;
+          verified_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'high_school_standards_high_school_id_fkey';
+            columns: ['high_school_id'];
+            referencedRelation: 'high_schools';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      student_target_schools: {
+        Row: {
+          id: string;
+          school_id: string;
+          student_id: string;
+          rank: number;
+          school_name: string;
+          // ★NULL可。私立・国立・他県はhigh_schoolsマスタに無いため、必須にすると入力できなくなる。
+          high_school_id: string | null;
+          reason: string | null;
+          updated_by: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          school_id: string;
+          student_id: string;
+          rank: number;
+          school_name: string;
+          high_school_id?: string | null;
+          reason?: string | null;
+          updated_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          school_id?: string;
+          student_id?: string;
+          rank?: number;
+          school_name?: string;
+          high_school_id?: string | null;
+          reason?: string | null;
+          updated_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'student_target_schools_school_id_fkey';
+            columns: ['school_id'];
+            referencedRelation: 'schools';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'student_target_schools_student_id_fkey';
+            columns: ['student_id'];
+            referencedRelation: 'students';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'student_target_schools_high_school_id_fkey';
+            columns: ['high_school_id'];
+            referencedRelation: 'high_schools';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'student_target_schools_updated_by_fkey';
+            columns: ['updated_by'];
+            referencedRelation: 'user_profiles';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
@@ -4837,3 +5034,23 @@ export interface MonthlyTaskWithChecks extends MonthlyTask {
   checks: MonthlyTaskCheck[];
   overrides?: MonthlyTaskOverride[];
 }
+
+// ============================================
+// 高校マスタ・志望校（面談での「志望校との差」表示用）
+// 正典: docs/interview-script-ai-plan.md
+// ============================================
+export type HighSchool = Database['public']['Tables']['high_schools']['Row'];
+export type HighSchoolInsert = Database['public']['Tables']['high_schools']['Insert'];
+export type HighSchoolUpdate = Database['public']['Tables']['high_schools']['Update'];
+
+export type HighSchoolStandard = Database['public']['Tables']['high_school_standards']['Row'];
+export type HighSchoolStandardInsert =
+  Database['public']['Tables']['high_school_standards']['Insert'];
+export type HighSchoolStandardUpdate =
+  Database['public']['Tables']['high_school_standards']['Update'];
+
+export type StudentTargetSchool = Database['public']['Tables']['student_target_schools']['Row'];
+export type StudentTargetSchoolInsert =
+  Database['public']['Tables']['student_target_schools']['Insert'];
+export type StudentTargetSchoolUpdate =
+  Database['public']['Tables']['student_target_schools']['Update'];

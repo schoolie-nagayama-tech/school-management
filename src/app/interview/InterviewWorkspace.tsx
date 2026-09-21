@@ -41,6 +41,7 @@ import { ProgressPanel, type TextbookProgressData } from './ProgressPanel';
 import { DisciplinePanel } from './DisciplinePanel';
 import { InterviewPrintSheet } from './InterviewPrintSheet';
 import { InterviewBriefCard, type BriefView } from './InterviewBriefCard';
+import { TargetSchoolsPanel } from '@/components/interview/TargetSchoolsPanel';
 import {
   extractHandover,
   formatKoushuEnrollments,
@@ -414,16 +415,21 @@ export function InterviewWorkspace() {
               handover={handover}
               onChanged={refetchInterviews}
               briefSlot={
-                <InterviewBriefCard
-                  student={student}
-                  assessments={assessments}
-                  interviews={interviews}
-                  textbookData={textbookProgressData}
-                  disciplineSessions={disciplineSessions}
-                  koushuEnrollments={koushuEnrollments}
-                  loading={lightLoading || progressLoading}
-                  onResult={handleBriefResult}
-                />
+                <>
+                  <InterviewBriefCard
+                    student={student}
+                    assessments={assessments}
+                    interviews={interviews}
+                    textbookData={textbookProgressData}
+                    disciplineSessions={disciplineSessions}
+                    koushuEnrollments={koushuEnrollments}
+                    loading={lightLoading || progressLoading}
+                    onResult={handleBriefResult}
+                  />
+                  {/* 志望校（第1〜3志望）。②のヒアリングで聞いてその場で入れる想定のため
+                      報告事項カードのすぐ近くに置く。正典: docs/interview-script-ai-plan.md §4 */}
+                  <TargetSchoolsPanel studentId={student.id} schoolId={student.school_id} />
+                </>
               }
             />
             <div className="flex flex-col gap-5">
