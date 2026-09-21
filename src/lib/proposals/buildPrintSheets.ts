@@ -11,23 +11,29 @@ import type {
 } from '@/components/proposals/ProposalPrintView';
 import type { SeasonalProposalWithDetails, SeasonType } from '@/types/database';
 import { SEASON_LABELS } from '@/types/database';
-import { groupProposalsForPrint } from './printSheetGrouping';
+import { groupProposalsForPrint, type PrintSheetBlock } from './printSheetGrouping';
 
-/** 表示用の書名。科目が分かるなら「科目 書名」にする（従来の組み立てと同じ） */
-export function printTextbookName(p: SeasonalProposalWithDetails): string {
-  return p.textbook?.subject
-    ? `${p.textbook.subject} ${p.textbook.name}`
-    : (p.textbook?.name ?? '');
+/**
+ * 表示用の書名。科目が分かるなら「科目 書名」にする。
+ *
+ * 科目は引数で受け取る（`textbook.subject` を直に見ない）。過去問のように教材の科目が
+ * 空の教材では、単元から解決した科目を付けて「英語 都立入試過去問」と出したいため。
+ */
+export function printTextbookName(proposal: SeasonalProposalWithDetails, subject: string): string {
+  const name = proposal.textbook?.name ?? '';
+  return subject ? `${subject} ${name}` : name;
 }
 
-/** 保存済みの提案書1件 → 紙に載せる1冊ぶん */
+/** 紙に載る1ブロック（提案書 × 科目）→ 紙に載せる1冊ぶん */
 export function buildPrintBook(
-  proposal: SeasonalProposalWithDetails,
-  items: PrintBook['allItems'],
+  block: PrintSheetBlock,
   progressMap: PrintBook['progressMap']
 ): PrintBook {
-  const activeUnits: PrintUnitDraft[] = proposal.units
-    .filter((u) => u.koma_count > 0)
+  // その科目の単元だけを載せる。過去問の提案書は英語の紙にも数学の紙にも出るが、
+  // どちらにも全コマを出すと保護者が2枚を足したときコマ数が倍に見える。
+  const itemIds = new Set(block.items.map((item) => item.id));
+  const activeUnits: PrintUnitDraft[] = block.proposal.units
+    .filter((u) => u.koma_count > 0 && itemIds.has(u.curriculum_item_id))
     .map((u) => ({
       curriculum_item_id: u.curriculum_item_id,
       koma_count: u.koma_count,
@@ -38,12 +44,13 @@ export function buildPrintBook(
     }));
 
   return {
-    textbookName: printTextbookName(proposal),
-    theme: proposal.theme ?? '',
-    allItems: items,
+    textbookName: printTextbookName(block.proposal, block.subject),
+    theme: block.proposal.theme ?? '',
+    allItems: block.items,
     activeUnits,
     progressMap,
-    totalKoma: calcTotalKoma(proposal.units),
+    // 合計コマもその科目の単元だけで数える（紙に出ているコマ数と一致させる）
+    totalKoma: calcTotalKoma(activeUnits),
   };
 }
 
@@ -52,27 +59,28 @@ export function buildPrintBook(
  *
  * 単元と進捗の取得は提案書ごとに独立なので並列で取る
  * （逐次 await だと提案書の件数に比例して待ち時間が伸びる）。
+ * 単元の科目を見てから紙を分けるので、取得はまとめる前に行う。
  */
 export async function buildPrintSheets(
   proposals: SeasonalProposalWithDetails[],
   studentName: string
 ): Promise<ProposalPrintData[]> {
-  const sheets = groupProposalsForPrint(proposals);
-  // 紙をまたいで1本の配列にしてから並列取得し、あとで紙ごとに切り戻す
-  const flat = sheets.flatMap((sheet) => sheet.proposals);
   const loaded = await Promise.all(
-    flat.map((p) => getTextbookUnitsWithProgress(p.student_textbook_id ?? null, p.textbook_id))
+    proposals.map((p) => getTextbookUnitsWithProgress(p.student_textbook_id ?? null, p.textbook_id))
   );
-  const byProposalId = new Map(flat.map((p, i) => [p.id, loaded[i]]));
+  const progressByProposalId = new Map(proposals.map((p, i) => [p.id, loaded[i].progressMap]));
+
+  const sheets = groupProposalsForPrint(
+    proposals.map((proposal, i) => ({ proposal, items: loaded[i].items }))
+  );
 
   return sheets.map((sheet) => ({
     studentName,
     seasonLabel: SEASON_LABELS[sheet.season as SeasonType] ?? sheet.season,
     year: sheet.year,
     subject: sheet.subject,
-    books: sheet.proposals.map((p) => {
-      const entry = byProposalId.get(p.id);
-      return buildPrintBook(p, entry?.items ?? [], entry?.progressMap ?? new Map());
-    }),
+    books: sheet.blocks.map((block) =>
+      buildPrintBook(block, progressByProposalId.get(block.proposal.id) ?? new Map())
+    ),
   }));
 }

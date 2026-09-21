@@ -55,6 +55,7 @@ import { SchoolSwitcher } from '@/components/SchoolSwitcher';
 import { ProposalPrintView } from '@/components/proposals/ProposalPrintView';
 import type { ProposalPrintData } from '@/components/proposals/ProposalPrintView';
 import { getSubjectBadgeColor } from '@/lib/subjectBadge';
+import { matchesSubjectFilter } from '@/lib/curriculum/subject';
 import { BulkConceptPanel } from '@/components/proposals/BulkConceptPanel';
 
 const STATUS_BADGE: Record<ProposalStatus, string> = {
@@ -404,7 +405,9 @@ export default function CourseProposalsPage() {
       );
     }
     if (filterSubject) {
-      result = result.filter((p) => p.textbook?.subject === filterSubject);
+      // 科目が空の教材（過去問など1冊で全科目を扱うもの）の提案書はどの科目で絞っても残す。
+      // 科目は単元側に持たせてあるので、教材の科目だけで消すと絞り込むたびに姿を消す。
+      result = result.filter((p) => matchesSubjectFilter(p.textbook?.subject, filterSubject));
     }
     if (filterGrade) {
       result = result.filter((p) => String(p.student?.grade) === filterGrade);

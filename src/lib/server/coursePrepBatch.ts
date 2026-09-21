@@ -1,5 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { fetchAllPaged, fetchAllInChunks } from '@/lib/utils/supabasePaging';
+// 科目は「単元の科目 ?? 教材の科目」で解決する。判定を画面ごとに書くとズレるため1か所に集約
+import { resolveUnitSubject } from '@/lib/curriculum/subject';
 import {
   computeCourseSessionsForStudent,
   resolvePeriodLastEndDate,
@@ -44,6 +46,11 @@ function countDayOccurrences(startDate: string, endDate: string): Record<number,
  *
  * 同一生徒×科目は提案書データがあればそちらを優先し、なければ進行表を使用。
  *
+ * ★科目は「単元の科目」で数える（教材の科目ではない）。過去問のように1冊で全科目を扱う教材は
+ *   textbooks.subject が空なので、教材の科目だけで数えると提案書ごと集計から落ちて
+ *   コマが黙って消えていた。1件の提案書が複数科目にまたがる場合は単元のコマを科目ごとに振り分ける。
+ *   単元の科目が NULL の既存教材は教材の科目に落ちるので、数字は従来と変わらない。
+ *
  * 返り値: { [studentId]: { [subject]: totalProposalCount } }
  */
 async function fetchSubjectProposals(
@@ -75,6 +82,8 @@ async function fetchSubjectProposals(
       textbook: { subject: string | null } | { subject: string | null }[] | null;
     };
     // 提案書は通常 1000 行未満だが、安全のためページングする（教科を埋め込んで往復を1つ削減）
+    // ★ !inner のままで良い: 除きたいのは「教材が無い提案書」であって、
+    //   「教材の科目が空の提案書」（＝過去問）ではない。科目は単元側で解決する。
     const proposals = await fetchAllPaged<ProposalRow>((from, to) => {
       let q = supabaseAdmin
         .from('seasonal_proposals')
@@ -96,12 +105,14 @@ async function fetchSubjectProposals(
       return { proposed, applied };
     }
 
-    // 提案書ID → { studentId, subject }。教科(subject)が無い提案書は集計対象外。
-    const proposalInfo = new Map<string, { studentId: string; subject: string }>();
+    // 提案書ID → { studentId, 教材の科目 }。教材の科目が空でも外さない
+    // （過去問は単元側に科目があるので、ここで落とすとコマが丸ごと消える）。
+    const proposalInfo = new Map<string, { studentId: string; textbookSubject: string | null }>();
     for (const p of proposals) {
-      const subject = firstOf(p.textbook)?.subject;
-      if (!subject) continue;
-      proposalInfo.set(p.id, { studentId: p.student_id, subject });
+      proposalInfo.set(p.id, {
+        studentId: p.student_id,
+        textbookSubject: firstOf(p.textbook)?.subject ?? null,
+      });
     }
     const proposalIds = Array.from(proposalInfo.keys());
     if (proposalIds.length === 0) {
@@ -115,6 +126,8 @@ async function fetchSubjectProposals(
       group_id: number;
       applied_koma: number | null;
       applied_group_id: number;
+      // 単元ごとの科目。NULL なら教材の科目を使う（過去問だけが値を持つ）
+      curriculum_item: { subject: string | null } | { subject: string | null }[] | null;
     };
     // 1 提案書あたり最大 ~55 ユニット。15 提案書/バッチで 1 クエリ最大 825 行に抑え、
     // PostgREST のデフォルト 1000 行上限の余裕内に収める。バッチ同士は並列実行（往復は1ラウンド）。
@@ -127,7 +140,9 @@ async function fetchSubjectProposals(
       batches.map((batch) =>
         supabaseAdmin
           .from('seasonal_proposal_units')
-          .select('id, proposal_id, koma_count, group_id, applied_koma, applied_group_id')
+          .select(
+            'id, proposal_id, koma_count, group_id, applied_koma, applied_group_id, curriculum_item:curriculum_items(subject)'
+          )
           .in('proposal_id', batch)
           // 提案コマ・申込コマのどちらかが1以上の単元を取得（提案0・申込1の単元も拾う）
           .or('koma_count.gt.0,applied_koma.gt.0')
@@ -145,48 +160,53 @@ async function fetchSubjectProposals(
       }
     }
 
-    // proposal(=生徒×教科) 単位に集計する。group_id で提案コマを、
-    // applied_group_id で申込コマを1コマに重複排除する（提案結合と申込結合は別系統）。
+    // proposal 単位に集計する。group_id で提案コマを、applied_group_id で申込コマを
+    // 1コマに重複排除する（提案結合と申込結合は別系統）。
+    // ★ 重複排除は「提案書 × 科目」単位で行う。結合は1つの提案書の中で閉じており、
+    //   単元の科目が NULL の既存教材は全単元が同じ科目に落ちるので、従来と同じ数になる。
     for (const [proposalId, info] of Array.from(proposalInfo.entries())) {
       const units = unitsByProposal.get(proposalId) || [];
-      const seenGroups = new Set<number>();
-      let proposedTotal = 0;
-      const seenAppliedGroups = new Set<number>();
-      let appliedTotal = 0;
+      const seenGroups = new Map<string, Set<number>>();
+      const proposedBySubject = new Map<string, number>();
+      const seenAppliedGroups = new Map<string, Set<number>>();
+      const appliedBySubject = new Map<string, number>();
 
       for (const u of units) {
+        const subject = resolveUnitSubject(
+          firstOf(u.curriculum_item)?.subject,
+          info.textbookSubject
+        );
+        // 単元にも教材にも科目が無いものは科目別集計に載せようがない（従来どおり対象外）
+        if (!subject) continue;
+
         if (u.koma_count > 0) {
-          if (u.group_id > 0) {
-            if (!seenGroups.has(u.group_id)) {
-              seenGroups.add(u.group_id);
-              proposedTotal += u.koma_count;
-            }
-          } else {
-            proposedTotal += u.koma_count;
+          const seen = seenGroups.get(subject) ?? new Set<number>();
+          seenGroups.set(subject, seen);
+          if (u.group_id === 0 || !seen.has(u.group_id)) {
+            if (u.group_id > 0) seen.add(u.group_id);
+            proposedBySubject.set(subject, (proposedBySubject.get(subject) || 0) + u.koma_count);
           }
         }
         const ak = u.applied_koma ?? 0;
         if (ak > 0) {
-          if (u.applied_group_id > 0) {
-            if (!seenAppliedGroups.has(u.applied_group_id)) {
-              seenAppliedGroups.add(u.applied_group_id);
-              appliedTotal += ak;
-            }
-          } else {
-            appliedTotal += ak;
+          const seen = seenAppliedGroups.get(subject) ?? new Set<number>();
+          seenAppliedGroups.set(subject, seen);
+          if (u.applied_group_id === 0 || !seen.has(u.applied_group_id)) {
+            if (u.applied_group_id > 0) seen.add(u.applied_group_id);
+            appliedBySubject.set(subject, (appliedBySubject.get(subject) || 0) + ak);
           }
         }
       }
 
-      if (proposedTotal > 0) {
+      for (const [subject, total] of Array.from(proposedBySubject.entries())) {
+        if (total <= 0) continue;
         if (!proposed[info.studentId]) proposed[info.studentId] = {};
-        proposed[info.studentId][info.subject] =
-          (proposed[info.studentId][info.subject] || 0) + proposedTotal;
+        proposed[info.studentId][subject] = (proposed[info.studentId][subject] || 0) + total;
       }
-      if (appliedTotal > 0) {
+      for (const [subject, total] of Array.from(appliedBySubject.entries())) {
+        if (total <= 0) continue;
         if (!applied[info.studentId]) applied[info.studentId] = {};
-        applied[info.studentId][info.subject] =
-          (applied[info.studentId][info.subject] || 0) + appliedTotal;
+        applied[info.studentId][subject] = (applied[info.studentId][subject] || 0) + total;
       }
     }
 

@@ -1,6 +1,7 @@
 // 新・生徒進捗ページ(NewProgressPage)とその子コンポーネント群で共有する
 // 型・定数・純粋ヘルパー。挙動を持たない定義だけを集約したもの。
 import type { ExamType, StudentTextbookWithDetails } from '@/types/database';
+import { isAllSubjectTextbook } from '@/lib/curriculum/subject';
 
 // ─────────────────────────────────────────────
 // 型
@@ -174,6 +175,21 @@ export function categorizeSubject(subject: string | null | undefined): SubjectCo
   if (/理科|物理|化学|生物|地学/.test(s)) return '理科';
   if (/社会|歴史|地理|公民|日本史|世界史|政経|倫理/.test(s)) return '社会';
   return 'その他';
+}
+
+/**
+ * 目標（student_textbook_exams）を科目単位で共有してよい教材か。
+ *
+ * 目標の親は「生徒×科目」で、科目キーは categorizeSubject の結果（5教科＋その他）。
+ * ★教材の科目が空の教材は無条件で「その他」に落ちるため、過去問（1冊で全科目を扱い、
+ *   科目は単元側に持たせている）と、他の科目未設定の教材が同じ目標を共有してしまう。
+ *   過去問に無関係な目標がぶら下がって見えるのを防ぐため、科目が空の教材は共有の輪から外す。
+ *
+ * ★カンバンの列分け（categorizeSubject による「その他」列）は変えない。
+ *   列から消すと教材そのものが進行表で見えなくなり、別の事故になる。
+ */
+export function sharesSubjectGoals(textbookSubject: string | null | undefined): boolean {
+  return !isAllSubjectTextbook(textbookSubject);
 }
 
 export function sortByOrder(list: StudentTextbookWithDetails[]): StudentTextbookWithDetails[] {

@@ -855,12 +855,15 @@ export type Database = {
       curriculum_items: {
         // ★ item_number は DB では text。「1-8」「第15回」のような番号が実際に入っている。
         //   number として扱うと Number('1-8') = NaN → JSON 化で null になり、番号が消える。
+        // ★ subject は「単元ごとの科目」。過去問のように1冊で全科目を扱う教材で使う。
+        //   NULL なら従来どおり textbooks.subject を使う（解決は lib/curriculum/subject.ts）。
         Row: {
           id: number;
           textbook_id: number;
           title: string;
           item_number: string | null;
           item_type: string | null;
+          subject: string | null;
           sort_order: number;
           created_at: string;
         };
@@ -870,6 +873,7 @@ export type Database = {
           title: string;
           item_number?: string | null;
           item_type?: string | null;
+          subject?: string | null;
           sort_order?: number;
           created_at?: string;
         };
@@ -879,6 +883,7 @@ export type Database = {
           title?: string;
           item_number?: string | null;
           item_type?: string | null;
+          subject?: string | null;
           sort_order?: number;
           created_at?: string;
         };

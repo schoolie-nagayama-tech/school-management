@@ -9,7 +9,10 @@ import type {
 } from '@/types/database';
 // 目標(student_textbook_exams)の親は「生徒×テキスト」ではなく「生徒×科目」。
 // 科目の分類は進行表タブと完全に同じ判定にする必要があるため categorizeSubject を再利用する。
-import { categorizeSubject } from '@/app/students/[studentId]/progress/newProgress.shared';
+import {
+  categorizeSubject,
+  sharesSubjectGoals,
+} from '@/app/students/[studentId]/progress/newProgress.shared';
 
 /** Supabase select 句（フィード共通） */
 // student_textbooks は !inner。これにより getSessionFeed で school_id を
@@ -1265,6 +1268,9 @@ export async function getFeedGoalsByTextbooks(
   const studentIdByTextbook = new Map<string, string>();
   for (const r of (textbookRows || []) as TextbookRow[]) {
     const tb = Array.isArray(r.textbook) ? r.textbook[0] : r.textbook;
+    // 教材の科目が空の教材（過去問など）は科目単位の目標共有から外す。
+    // 進行表側（progress.ts）と判定を揃えないと、フィードにだけ他教材の目標が出る。
+    if (!sharesSubjectGoals(tb?.subject)) continue;
     subjectKeyByTextbook.set(r.id, categorizeSubject(tb?.subject));
     studentIdByTextbook.set(r.id, r.student_id);
   }
