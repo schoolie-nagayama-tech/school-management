@@ -33,6 +33,7 @@ import {
 import { buildPrintSheets } from '@/lib/proposals/buildPrintSheets';
 import {
   getProposalOrderCandidates,
+  isRelevantOrderCandidate,
   type OrderCandidate,
   type ProposalOrderInput,
 } from '@/lib/api/ordering';
@@ -507,7 +508,7 @@ export default function CourseProposalsPage() {
       await load();
 
       // 発注が要りそうな候補（自動対象 or 手動誘導）があればダイアログを開く
-      const relevant = candidates.filter((c) => c.needsOrder || (!c.alreadyOwned && !c.materialId));
+      const relevant = candidates.filter(isRelevantOrderCandidate);
       if (relevant.length > 0) setOrderDialog(candidates);
     } catch (e) {
       console.error(e);

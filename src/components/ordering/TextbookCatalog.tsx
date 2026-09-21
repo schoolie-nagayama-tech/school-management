@@ -635,12 +635,21 @@ export function TextbookCatalog({
     return map;
   }, [materials]);
 
+  // ★発注できるテキストだけを扱う。
+  // 実在しない器のテキスト（志望校過去問、「大学受験日本史①」のような第1回〜第30回だけを
+  // 持つ器）は実物が無いので、カートにも絞り込みの選択肢にも出さない。
+  // 進行表や提案書のピッカーには出す必要があるため、is_active では隠せない。
+  const orderableTextbooks = useMemo(
+    () => textbooks.filter((tb) => tb.is_orderable !== false),
+    [textbooks]
+  );
+
   // Derive available grades, subjects, and publishers from data
   const { grades, subjects, publishers } = useMemo(() => {
     const gradeSet = new Set<string>();
     const subjectSet = new Set<string>();
     const publisherSet = new Set<string>();
-    textbooks.forEach((tb) => {
+    orderableTextbooks.forEach((tb) => {
       if (tb.grade) gradeSet.add(tb.grade);
       if (tb.subject) subjectSet.add(tb.subject);
       if (tb.publisher) publisherSet.add(tb.publisher);
@@ -650,11 +659,11 @@ export function TextbookCatalog({
       subjects: Array.from(subjectSet).sort(),
       publishers: Array.from(publisherSet).sort((a, b) => a.localeCompare(b, 'ja')),
     };
-  }, [textbooks]);
+  }, [orderableTextbooks]);
 
   // Filter textbooks
   const filteredTextbooks = useMemo(() => {
-    let result = textbooks;
+    let result = orderableTextbooks;
 
     // School type filter
     if (schoolTypeFilter !== 'all') {
@@ -702,7 +711,14 @@ export function TextbookCatalog({
     });
 
     return result;
-  }, [textbooks, schoolTypeFilter, selectedGrades, selectedSubjects, selectedPublishers, search]);
+  }, [
+    orderableTextbooks,
+    schoolTypeFilter,
+    selectedGrades,
+    selectedSubjects,
+    selectedPublishers,
+    search,
+  ]);
 
   // Pagination
   const totalPages = Math.max(1, Math.ceil(filteredTextbooks.length / ITEMS_PER_PAGE));

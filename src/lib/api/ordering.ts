@@ -320,7 +320,13 @@ export interface OrderCandidate extends ProposalOrderInput {
   alreadyOwned: boolean;
   /** 既に未キャンセルの発注があるか（生徒×教材） */
   hasOrder: boolean;
-  /** 自動発注の対象か（紐付けあり & 未所持 & 既存発注なし） */
+  /**
+   * 発注できるテキストか（textbooks.is_orderable）。
+   * false は実在しない器のテキスト（志望校過去問、「大学受験日本史①」のような
+   * 第1回〜第30回だけを持つ器）で、実物が無いので発注リストに積まない。
+   */
+  isOrderable: boolean;
+  /** 自動発注の対象か（発注できる & 未所持 & 既存発注なし） */
   needsOrder: boolean;
 }
 
@@ -332,7 +338,8 @@ export interface OrderCandidate extends ProposalOrderInput {
  *   名前が「テキスト名 | 学年 | 科目」(出版社ありは間に出版社)の形なので、その名前で照合して解決する。
  * - alreadyOwned: 同生徒・同テキストの有効化済み(student_textbooks.is_draft=false)があれば所持とみなし発注しない
  * - hasOrder: 同生徒・同教材の未キャンセル発注があれば重複作成しない
- * - needsOrder: 発注教材が解決でき & 未所持 & 既存発注なし → 発注対象
+ * - isOrderable: textbooks.is_orderable。実在しない器のテキストは発注しない
+ * - needsOrder: 発注できる & 未所持 & 既存発注なし → 発注対象
  */
 export async function getProposalOrderCandidates(
   inputs: ProposalOrderInput[]
@@ -354,12 +361,13 @@ export async function getProposalOrderCandidates(
       grade: string | null;
       subject: string | null;
       publisher: string | null;
+      is_orderable: boolean;
     }
   >();
   {
     const { data } = await supabase
       .from('textbooks')
-      .select('id, name, grade, subject, publisher, material_id')
+      .select('id, name, grade, subject, publisher, material_id, is_orderable')
       .in('id', textbookIds);
     for (const t of (data ?? []) as {
       id: number;
@@ -368,6 +376,7 @@ export async function getProposalOrderCandidates(
       subject: string | null;
       publisher: string | null;
       material_id: string | null;
+      is_orderable: boolean | null;
     }[]) {
       tbDetail.set(t.id, {
         material_id: t.material_id,
@@ -375,6 +384,8 @@ export async function getProposalOrderCandidates(
         grade: t.grade,
         subject: t.subject,
         publisher: t.publisher,
+        // 列が無い古い行に備えて、未設定は「発注できる」とみなす（既定値と同じ）
+        is_orderable: t.is_orderable !== false,
       });
     }
   }
@@ -458,9 +469,12 @@ export async function getProposalOrderCandidates(
     const { existingId, label } = perInput[idx];
     const alreadyOwned = ownedSet.has(`${i.studentId}:${i.textbookId}`);
     const hasOrder = !!existingId && orderedSet.has(`${i.studentId}:${existingId}`);
+    // ★実在しない器のテキスト（志望校過去問・大学受験の回数だけの器）は発注しない。
+    //   名前さえあれば material が自動で作られて候補に上がってしまうため、ここで明示的に外す。
+    const isOrderable = tbDetail.get(i.textbookId)?.is_orderable !== false;
     // 発注教材ラベルが作れる（=テキスト名がある）なら、material が無くても発注可能（発注時に作成）。
     // 未所持(物理) かつ 既存発注なし のものを発注対象とする。
-    const needsOrder = !!label && !alreadyOwned && !hasOrder;
+    const needsOrder = isOrderable && !!label && !alreadyOwned && !hasOrder;
     return {
       ...i,
       // 既存があればその id、無ければ null（発注時に label から作成）
@@ -469,9 +483,28 @@ export async function getProposalOrderCandidates(
       materialName: existingId ? (matNameById.get(existingId) ?? label) : label,
       alreadyOwned,
       hasOrder,
+      isOrderable,
       needsOrder,
     };
   });
+}
+
+/**
+ * 公開後に発注ダイアログを出す価値がある候補か。
+ *
+ * - needsOrder: そのまま発注リストへ積める
+ * - 未所持なのに発注教材が紐付いていない: 自動では積めないので、手で発注してもらうために見せる
+ *
+ * ★ 実在しない器のテキスト（志望校過去問、「大学受験日本史①」のような第1回〜第30回だけを
+ *   持つ器）は、どちらの条件にも乗せない。器は material_id が未設定なので、
+ *   needsOrder を false にするだけでは第2条件で拾われてダイアログが開いてしまう。
+ *
+ * ★ この判定は提案書の公開経路3箇所（単体公開・一覧の一括公開・提案書一覧）で使う。
+ *   同じ式を各画面に書くと、条件を足したときに片方だけ直す事故が起きるのでここに集約する。
+ */
+export function isRelevantOrderCandidate(c: OrderCandidate): boolean {
+  if (!c.isOrderable) return false;
+  return c.needsOrder || (!c.alreadyOwned && !c.materialId);
 }
 
 /**
