@@ -137,7 +137,10 @@ export async function getStudentTargetSchools(studentId: string): Promise<Target
       throw new Error(`合格めやすの取得に失敗しました: ${standardsRes.error.message}`);
     }
 
-    schoolsById = new Map((schoolsRes.data || []).map((s) => [s.id, s as HighSchoolRow]));
+    // ★Promise.all で別テーブルのクエリを並べると要素の型が {} に潰れる。
+    //   map の中で as を書くと s.id が引けないので、配列ごと先にキャストする。
+    const schoolRows = (schoolsRes.data || []) as HighSchoolRow[];
+    schoolsById = new Map(schoolRows.map((s) => [s.id, s]));
     standards = (standardsRes.data || []) as HighSchoolStandardRow[];
   }
 
