@@ -36,6 +36,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useConfirm } from '@/hooks/useConfirm';
 import { useToast } from '@/hooks/useToast';
 import { isManagerOrAbove } from '@/lib/utils/roles';
+import { matchesSubjectFilter } from '@/lib/curriculum/subject';
 
 /** 'YYYY-MM-DD' を '2026/9/30' にする（ゼロ埋めを外して読みやすくする） */
 function formatJaDate(date: string): string {
@@ -191,20 +192,25 @@ export function StudentDetailModal({
       '6年': 6,
       共通: 7,
     };
-    return availableTextbooks
-      .filter((t) => !alreadyLinked.has(t.id))
-      .filter((t) => selectedSubject === 'all' || t.subject === selectedSubject)
-      .sort((a, b) => {
-        // 学校種別 → テキスト名 → 学年
-        const sa = SCHOOL_ORDER[a.school_type ?? ''] ?? 99;
-        const sb = SCHOOL_ORDER[b.school_type ?? ''] ?? 99;
-        if (sa !== sb) return sa - sb;
-        const nameCmp = (a.name ?? '').localeCompare(b.name ?? '', 'ja');
-        if (nameCmp !== 0) return nameCmp;
-        const ga = GRADE_ORDER[a.grade ?? ''] ?? 99;
-        const gb = GRADE_ORDER[b.grade ?? ''] ?? 99;
-        return ga - gb;
-      });
+    return (
+      availableTextbooks
+        .filter((t) => !alreadyLinked.has(t.id))
+        // 科目が空の教材（過去問など1冊で全科目を扱うもの）はどの科目で絞っても残す
+        .filter((t) =>
+          matchesSubjectFilter(t.subject, selectedSubject === 'all' ? '' : selectedSubject)
+        )
+        .sort((a, b) => {
+          // 学校種別 → テキスト名 → 学年
+          const sa = SCHOOL_ORDER[a.school_type ?? ''] ?? 99;
+          const sb = SCHOOL_ORDER[b.school_type ?? ''] ?? 99;
+          if (sa !== sb) return sa - sb;
+          const nameCmp = (a.name ?? '').localeCompare(b.name ?? '', 'ja');
+          if (nameCmp !== 0) return nameCmp;
+          const ga = GRADE_ORDER[a.grade ?? ''] ?? 99;
+          const gb = GRADE_ORDER[b.grade ?? ''] ?? 99;
+          return ga - gb;
+        })
+    );
   }, [availableTextbooks, textbooks, selectedSubject]);
 
   // 最新1件ずつ（カテゴリ別）

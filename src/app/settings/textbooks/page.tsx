@@ -764,13 +764,16 @@ function TextbookMasterPage() {
                       onChange={(e) => setForm({ ...form, subject: e.target.value })}
                       className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-surface-raised"
                     >
-                      <option value="">選択</option>
+                      <option value="">指定なし（全科目）</option>
                       {SUBJECTS.map((s) => (
                         <option key={s} value={s}>
                           {s}
                         </option>
                       ))}
                     </select>
+                    <p className="mt-1 text-xs text-text-muted">
+                      過去問のように1冊で複数科目を扱う教材は空のままにして、科目は単元側に持たせます。
+                    </p>
                   </div>
                 </div>
                 <div>

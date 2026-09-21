@@ -51,7 +51,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toSurnameOnly } from '@/lib/utils/teacherName';
 // 目標(student_textbook_exams)の親は「生徒×科目」。旧UI（ロールバック用）でも
 // 保存先の判定は新UIと完全に揃える必要があるため categorizeSubject を再利用する。
-import { categorizeSubject } from './newProgress.shared';
+import { categorizeSubject, sharesSubjectGoals } from './newProgress.shared';
 
 export default function LegacyProgressPage() {
   const params = useParams();
@@ -1137,90 +1137,105 @@ export default function LegacyProgressPage() {
                   )}
                 </div>
               </div>
-              {selectedTextbook.exams && selectedTextbook.exams.length > 0 ? (
-                <div className="space-y-4 mb-4">
-                  {selectedTextbook.exams.map((exam) => {
-                    const examType = examTypes.find((et) => et.id === exam.exam_type_id);
-                    const examName = examType?.name || exam.custom_exam_name || '-';
-                    const examDate = new Date(exam.exam_date + 'T00:00:00');
-                    const formattedDate = examDate.toLocaleDateString('ja-JP', {
-                      month: '2-digit',
-                      day: '2-digit',
-                    });
-                    const daysUntil = calculateDaysUntilExam(exam.exam_date);
-                    return (
-                      <div
-                        key={exam.id}
-                        className="p-6 bg-[#f3f4f6] rounded-lg border-2 border-[#e5e7eb]"
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex-1">
-                            <div className="font-bold text-[#1f2937] text-2xl mb-3">{examName}</div>
-                            <div className="flex items-center gap-6 mb-2">
-                              <div className="flex items-center gap-2">
-                                <span className="text-lg font-semibold text-[#4b5563]">
-                                  テスト日:
-                                </span>
-                                <span className="text-2xl font-bold text-[#3b82f6]">
-                                  {formattedDate}
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <span className="text-lg font-semibold text-[#4b5563]">
-                                  目標点:
-                                </span>
-                                <span className="text-2xl font-bold text-[#3b82f6]">
-                                  {exam.target_score || '-'}点
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <span className="text-lg font-semibold text-[#4b5563]">
-                                  次回テストまで:
-                                </span>
-                                <span className="text-2xl font-bold text-[#3b82f6]">
-                                  {daysUntil}日
-                                </span>
-                              </div>
-                            </div>
-                            {exam.exam_range && (
-                              <div className="text-sm text-[#4b5563] mt-2">
-                                試験範囲: {exam.exam_range}
-                              </div>
-                            )}
-                          </div>
-                          <Button
-                            onClick={async () => {
-                              await deleteStudentTextbookExam(exam.id);
-                              await fetchStudentTextbooks();
-                              success('テスト設定を削除しました');
-                            }}
-                            variant="danger"
-                            size="sm"
-                          >
-                            削除
-                          </Button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
+              {/* ★ 科目が「指定なし（全科目）」の教材（過去問など）は目標を扱わない。
+                  目標(student_textbook_exams)は「生徒×科目」で共有される作りで、科目が空だと
+                  無条件に「その他」へ落ち、無関係な教材の目標がぶら下がって見える
+                  （読み込み側の除外は lib/api/progress.ts の sharesSubjectGoals）。
+                  作れてしまうと「保存したのに出てこない」になるので、入口ごと閉じる。 */}
+              {!sharesSubjectGoals(selectedTextbook.textbook?.subject) ? (
+                <p className="text-sm text-[#4b5563] mb-4">
+                  この教材は科目が「指定なし（全科目）」のため、目標は設定できません。科目のある教材から設定してください
+                </p>
               ) : (
-                <p className="text-sm text-[#4b5563] mb-4">テスト設定がありません</p>
+                <>
+                  {selectedTextbook.exams && selectedTextbook.exams.length > 0 ? (
+                    <div className="space-y-4 mb-4">
+                      {selectedTextbook.exams.map((exam) => {
+                        const examType = examTypes.find((et) => et.id === exam.exam_type_id);
+                        const examName = examType?.name || exam.custom_exam_name || '-';
+                        const examDate = new Date(exam.exam_date + 'T00:00:00');
+                        const formattedDate = examDate.toLocaleDateString('ja-JP', {
+                          month: '2-digit',
+                          day: '2-digit',
+                        });
+                        const daysUntil = calculateDaysUntilExam(exam.exam_date);
+                        return (
+                          <div
+                            key={exam.id}
+                            className="p-6 bg-[#f3f4f6] rounded-lg border-2 border-[#e5e7eb]"
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex-1">
+                                <div className="font-bold text-[#1f2937] text-2xl mb-3">
+                                  {examName}
+                                </div>
+                                <div className="flex items-center gap-6 mb-2">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-lg font-semibold text-[#4b5563]">
+                                      テスト日:
+                                    </span>
+                                    <span className="text-2xl font-bold text-[#3b82f6]">
+                                      {formattedDate}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-lg font-semibold text-[#4b5563]">
+                                      目標点:
+                                    </span>
+                                    <span className="text-2xl font-bold text-[#3b82f6]">
+                                      {exam.target_score || '-'}点
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-lg font-semibold text-[#4b5563]">
+                                      次回テストまで:
+                                    </span>
+                                    <span className="text-2xl font-bold text-[#3b82f6]">
+                                      {daysUntil}日
+                                    </span>
+                                  </div>
+                                </div>
+                                {exam.exam_range && (
+                                  <div className="text-sm text-[#4b5563] mt-2">
+                                    試験範囲: {exam.exam_range}
+                                  </div>
+                                )}
+                              </div>
+                              <Button
+                                onClick={async () => {
+                                  await deleteStudentTextbookExam(exam.id);
+                                  await fetchStudentTextbooks();
+                                  success('テスト設定を削除しました');
+                                }}
+                                variant="danger"
+                                size="sm"
+                              >
+                                削除
+                              </Button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-[#4b5563] mb-4">テスト設定がありません</p>
+                  )}
+                  <Button
+                    onClick={() => {
+                      setIsAddExamModalOpen(true);
+                      setNewExamTypeId('');
+                      setNewExamDate('');
+                      setNewExamTargetScore('');
+                      setNewExamRange('');
+                      setNewCustomExamName('');
+                    }}
+                    variant="primary"
+                    size="sm"
+                  >
+                    目標を設定
+                  </Button>
+                </>
               )}
-              <Button
-                onClick={() => {
-                  setIsAddExamModalOpen(true);
-                  setNewExamTypeId('');
-                  setNewExamDate('');
-                  setNewExamTargetScore('');
-                  setNewExamRange('');
-                  setNewCustomExamName('');
-                }}
-                variant="primary"
-                size="sm"
-              >
-                目標を設定
-              </Button>
 
               {/* 進め方・宿題の出し方 */}
               <div className="mt-6 pt-6 border-t border-[#e5e7eb]">

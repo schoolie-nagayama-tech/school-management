@@ -71,6 +71,11 @@ import { SEASON_LABELS, PROPOSAL_STATUS_LABELS, GRADE_LABELS } from '@/types/dat
 import { ProposalPrintView } from './ProposalPrintView';
 import type { PrintBook, ProposalPrintData } from './ProposalPrintView';
 import { buildPrintBook } from '@/lib/proposals/buildPrintSheets';
+// プレビューのまとめ方は印刷と同じ純関数を通す（見え方がズレると「印刷したら違った」になる）
+import {
+  groupProposalsForPrint,
+  type PrintProposalSource,
+} from '@/lib/proposals/printSheetGrouping';
 // 複数冊（最大3冊）を1画面で作るための純粋ロジック。テストで固定してある
 import {
   buildProposalSaveBlockers,
@@ -238,8 +243,9 @@ export default function ProposalEditor() {
   const [textbookGrade, setTextbookGrade] = useState('');
 
   const [previewMode, setPreviewMode] = useState(false);
-  // プレビューで出す紙。同じ生徒×期×科目の他の提案書も同じ1枚にまとめるため、開くときに組み立てる
-  const [previewSheet, setPreviewSheet] = useState<ProposalPrintData | null>(null);
+  // プレビューで出す紙。同じ生徒×期×科目の他の提案書も同じ1枚にまとめるため、開くときに組み立てる。
+  // 過去問のように1冊で複数科目を扱う教材では、編集中の1件が科目ごとの紙に分かれて複数枚になる。
+  const [previewSheets, setPreviewSheets] = useState<ProposalPrintData[]>([]);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showOrderAlert, setShowOrderAlert] = useState(false);
@@ -1058,15 +1064,16 @@ export default function ProposalEditor() {
    * 1枚＝同じ生徒×期×科目。編集中の冊は画面の未保存の状態をそのまま使い、
    * 同じ科目の他の提案書はDBから取って同じ紙に並べる（印刷したときと同じ見え方にする）。
    * 新規の複数冊作成中は、まだDBに無いので全タブの今の状態を並べる。
+   *
+   * ★まとめ方は印刷と同じ純関数（groupProposalsForPrint）に通す。過去問のように1冊で複数科目を
+   *   扱う教材は、編集中の1件が科目ごとの紙に分かれる（紙が複数枚になる）。
    */
   const handleOpenPreview = async () => {
     setPreviewLoading(true);
     try {
-      let printBooks: PrintBook[];
-      let subject = textbookSubject;
-
       if (isNew) {
-        printBooks = booksWithUnits.map((e) => ({
+        // 新規作成は保存前でDBに無いため、タブの今の状態をそのまま1枚に並べる
+        const printBooks: PrintBook[] = booksWithUnits.map((e) => ({
           textbookName: e.label,
           theme,
           allItems:
@@ -1080,48 +1087,77 @@ export default function ProposalEditor() {
               : (bookStash.get(e.book.textbookId)?.progressMap ?? new Map()),
           totalKoma: bookSummary.perBook.find((b) => b.textbookId === e.book.textbookId)?.koma ?? 0,
         }));
-        subject = books[0]?.subject ?? textbookSubject;
-      } else {
-        const current: PrintBook = {
-          textbookName: [textbookGrade, textbookSubject, textbookName].filter(Boolean).join(' '),
-          theme,
-          allItems,
-          activeUnits,
-          progressMap,
-          totalKoma,
-        };
-        // 科目が未設定の提案書はまとめる相手が決まらないので単独で出す（印刷と同じ規則）
-        const siblings = textbookSubject
-          ? (await getProposalsByStudent(studentId)).filter(
-              (p) =>
-                p.id !== proposalId &&
-                p.season === season &&
-                p.year === year &&
-                (p.textbook?.subject ?? '') === textbookSubject
-            )
-          : [];
-        const loaded = await Promise.all(
-          siblings.map((p) =>
-            getTextbookUnitsWithProgress(p.student_textbook_id ?? null, p.textbook_id)
-          )
-        );
-        const ordered = [
-          ...siblings.map((p, i) => ({
-            createdAt: p.created_at ?? '',
-            book: buildPrintBook(p, loaded[i].items, loaded[i].progressMap),
-          })),
-          { createdAt: proposal?.created_at ?? '', book: current },
-        ].sort((a, b) => (a.createdAt === b.createdAt ? 0 : a.createdAt < b.createdAt ? -1 : 1));
-        printBooks = ordered.map((o) => o.book);
+        setPreviewSheets([
+          {
+            studentName,
+            seasonLabel: SEASON_LABELS[season] ?? season,
+            year,
+            subject: books[0]?.subject ?? textbookSubject,
+            books: printBooks,
+          },
+        ]);
+        setPreviewMode(true);
+        return;
       }
 
-      setPreviewSheet({
-        studentName,
-        seasonLabel: SEASON_LABELS[season] ?? season,
-        year,
-        subject,
-        books: printBooks,
-      });
+      // 編集中の1件を、未保存の入力そのままで「提案書1件」として扱う
+      const editingId = proposalId ?? 'editing';
+      const editingSource: PrintProposalSource = {
+        proposal: {
+          id: editingId,
+          student_id: studentId,
+          textbook_id: selectedTextbookId ?? 0,
+          season,
+          year,
+          created_at: proposal?.created_at ?? '',
+          theme,
+          units: activeUnits,
+          textbook: { name: textbookName, subject: textbookSubject || null },
+        } as unknown as SeasonalProposalWithDetails,
+        items: allItems,
+      };
+
+      // 同じ生徒・同じ期の他の提案書。どれと同じ紙になるかは科目（単元の科目）が決めるので、
+      // ここでは科目で絞り込まない（過去問は教材の科目が空でも英語の紙に合流する）。
+      const siblings = (await getProposalsByStudent(studentId)).filter(
+        (p) => p.id !== editingId && p.season === season && p.year === year
+      );
+      const loaded = await Promise.all(
+        siblings.map((p) =>
+          getTextbookUnitsWithProgress(p.student_textbook_id ?? null, p.textbook_id)
+        )
+      );
+      const progressBySibling = new Map(siblings.map((p, i) => [p.id, loaded[i].progressMap]));
+
+      const sheets = groupProposalsForPrint([
+        ...siblings.map((p, i) => ({ proposal: p, items: loaded[i].items })),
+        editingSource,
+      ])
+        // 編集中の冊が載っていない紙（他科目の既存提案書だけの紙）は出さない
+        .filter((sheet) => sheet.blocks.some((b) => b.proposal.id === editingId))
+        .map((sheet) => ({
+          studentName,
+          seasonLabel: SEASON_LABELS[season] ?? season,
+          year,
+          subject: sheet.subject,
+          books: sheet.blocks.map((block) => {
+            const isEditing = block.proposal.id === editingId;
+            const book = buildPrintBook(
+              block,
+              isEditing ? progressMap : (progressBySibling.get(block.proposal.id) ?? new Map())
+            );
+            // 編集中の冊だけは画面と同じ書名（学年つき）にする
+            if (isEditing) {
+              book.textbookName =
+                [textbookGrade, block.subject || textbookSubject, textbookName]
+                  .filter(Boolean)
+                  .join(' ') || textbookName;
+            }
+            return book;
+          }),
+        }));
+
+      setPreviewSheets(sheets);
       setPreviewMode(true);
     } catch (_e) {
       addToast('プレビューの作成に失敗しました', 'error');
@@ -1336,7 +1372,7 @@ export default function ProposalEditor() {
   // ════════════════════════════════════════
   // プレビューモード
   // ════════════════════════════════════════
-  if (previewMode && previewSheet) {
+  if (previewMode && previewSheets.length > 0) {
     return (
       <div className="proposal-print-root max-w-5xl mx-auto">
         <div className="mb-4 flex items-center gap-2 print:hidden">
@@ -1348,14 +1384,28 @@ export default function ProposalEditor() {
             <Printer className="w-4 h-4 mr-1.5" />
             印刷
           </Button>
-          {previewSheet.books.length > 1 && (
+          {previewSheets.length > 1 ? (
+            // 1冊で複数科目を扱う教材（過去問）は科目ごとに紙が分かれる
             <span className="text-xs text-text-muted ml-1">
-              同じ科目の{previewSheet.books.length}冊を1枚にまとめています
+              科目ごとに{previewSheets.length}枚に分かれます
             </span>
+          ) : (
+            previewSheets[0].books.length > 1 && (
+              <span className="text-xs text-text-muted ml-1">
+                同じ科目の{previewSheets[0].books.length}冊を1枚にまとめています
+              </span>
+            )
           )}
         </div>
 
-        <ProposalPrintView {...previewSheet} />
+        {previewSheets.map((sheet, i) => (
+          <div
+            key={i}
+            className="print:break-before-page first:print:break-before-auto [&:not(:first-child)]:mt-8 [&:not(:first-child)]:print:mt-0"
+          >
+            <ProposalPrintView {...sheet} />
+          </div>
+        ))}
         <ToastContainer toasts={toasts} onRemove={removeToast} />
       </div>
     );

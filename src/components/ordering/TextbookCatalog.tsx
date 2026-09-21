@@ -4,6 +4,7 @@ import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { Search, AlertTriangle, Package, ShoppingCart, X, Trash2, Plus, Minus } from 'lucide-react';
 import type { Textbook, Material } from '@/types/database';
 import { formatGradeLabelOrEmpty } from '@/lib/utils/gradeLabel';
+import { matchesSubjectSelection } from '@/lib/curriculum/subject';
 
 interface StudentOption {
   id: string;
@@ -666,8 +667,10 @@ export function TextbookCatalog({
     }
 
     // Subject filter
+    // 科目が空の教材（過去問など1冊で全科目を扱うもの）はどの科目で絞っても残す。
+    // 科目は単元側に持たせてあり、発注は1冊なので科目で消してはいけない。
     if (selectedSubjects.size > 0) {
-      result = result.filter((tb) => tb.subject !== null && selectedSubjects.has(tb.subject));
+      result = result.filter((tb) => matchesSubjectSelection(tb.subject, selectedSubjects));
     }
 
     // Publisher filter
