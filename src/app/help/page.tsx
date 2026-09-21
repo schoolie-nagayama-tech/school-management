@@ -31,6 +31,7 @@ import {
   ArrowRight,
   BookOpenCheck,
   Info,
+  School,
   type LucideIcon,
 } from 'lucide-react';
 import type { UserRole } from '@/types/database';
@@ -53,6 +54,7 @@ import { UnansweredQuestions } from '@/components/help/UnansweredQuestions';
 const CATEGORY_ICONS: Record<string, LucideIcon> = {
   students: Users,
   scores: BarChart3,
+  exam: School,
   schedule: CalendarDays,
   forms: FileText,
   alerts: Bell,
