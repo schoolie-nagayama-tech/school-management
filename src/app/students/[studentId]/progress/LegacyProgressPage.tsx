@@ -274,6 +274,8 @@ export default function LegacyProgressPage() {
       item_number: item.item_number,
       title: item.title,
       item_type: item.item_type,
+      // 単元の科目。進行表は教材1冊ぶんしか表示しないので使わないが、型を満たすために持つ
+      subject: item.subject,
       created_at: item.created_at,
     }));
 
@@ -387,6 +389,8 @@ export default function LegacyProgressPage() {
             item_number: item.item_number,
             title: item.title,
             item_type: item.item_type,
+            // 単元の科目。PDFは教材1冊ぶんなので使わないが、型を満たすために持つ
+            subject: item.subject,
             created_at: item.created_at,
           }));
 
