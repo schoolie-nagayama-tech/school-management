@@ -23,6 +23,8 @@ import type { ConceptResult } from '@/lib/ai/koushuConcept';
 interface ConceptBarProps {
   /** ★保存前（新規作成中）は null。材料がまだDBに無いので、案内だけを出す */
   proposalId: string | null;
+  /** 単元を1つ以上選んでいるか。★単元がAIの主材料なので、無いうちは押させない */
+  hasUnits: boolean;
   schoolId: string;
   value: string;
   onChange: (theme: string) => void;
@@ -31,6 +33,7 @@ interface ConceptBarProps {
 
 export function ConceptBar({
   proposalId,
+  hasUnits,
   schoolId,
   value,
   onChange,
@@ -178,6 +181,20 @@ export function ConceptBar({
       <p className={`flex items-center gap-1.5 text-[11px] text-text-faint ${className}`}>
         <Sparkles className="h-3 w-3 shrink-0" aria-hidden="true" />
         保存すると、選んだ単元と成績でテーマを書き足せます
+      </p>
+    );
+  }
+
+  /**
+   * ★単元が無いと、渡せる材料は学年と科目だけになる。
+   *   それで60字を書けと言えば、一言を言い換えただけの当たり障りのない文になる。
+   *   押せるようにしておく意味がないので、足りない材料のほうを伝える。
+   */
+  if (!hasUnits) {
+    return (
+      <p className={`flex items-center gap-1.5 text-[11px] text-text-faint ${className}`}>
+        <Sparkles className="h-3 w-3 shrink-0" aria-hidden="true" />
+        単元を選ぶと、その単元と成績でテーマを書き足せます
       </p>
     );
   }

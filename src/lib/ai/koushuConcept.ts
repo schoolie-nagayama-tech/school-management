@@ -15,6 +15,61 @@
  *   残りに「基礎が不安」と書けば、それは作り話になる。
  */
 
+import { SUBJECT_LABELS } from '@/types/database';
+
+/** 学年から学校種別。評価科目マスタが学校種別ごとに別コードを持つため要る */
+export function schoolTypeOfGrade(grade: number | null): '小学' | '中学' | '高校' | null {
+  if (grade == null) return null;
+  if (grade <= 6) return '小学';
+  if (grade <= 9) return '中学';
+  return '高校';
+}
+
+/**
+ * 教材の科目（'英語' のような日本語ラベル）から、成績側の科目の値を拾う集合を作る。
+ *
+ * ★ここが噛み合っていなかった。教材マスタの科目は日本語ラベル
+ *   （設定画面の選択肢が ['英語','数学','算数','国語','理科','社会']）なのに、
+ *   成績は評価科目マスタのコード（中学英語なら 'jhs_english'）。等号で比べていたので
+ *   成績は一度も見つからず、AIには毎回「記録なし」と伝わっていた。
+ *   ＝「成績でどこから入るかを変える」が、そもそも一度も起きていなかった。
+ *
+ * ★一対一ではない。中学の「社会」は地理・歴史・公民の3コードに分かれるので、
+ *   3つとも拾う（拾いすぎても、見るのはその生徒のその科目だけ）。
+ *
+ * ★保険を3枚重ねる。評価科目マスタが引けない教室でも、旧コードでも、
+ *   日本語のまま入っている古いデータでも当たるようにする。
+ *
+ * ★教材の科目が空（過去問など、1冊で複数科目）のときは空集合を返す。
+ *   どの科目の成績を見ればよいか決まらないので、憶測で拾わない。
+ */
+export function subjectKeysForLabel(
+  label: string,
+  schoolType: '小学' | '中学' | '高校' | null,
+  masters: readonly { code: string; name: string; school_type: string }[]
+): Set<string> {
+  const target = (label ?? '').trim();
+  const keys = new Set<string>();
+  if (!target) return keys;
+
+  // 1. ラベルそのもの（日本語で入っている古いデータ向け）
+  keys.add(target);
+
+  // 2. 評価科目マスタ。学校種別が合うものと「共通」だけを見る
+  for (const m of masters) {
+    if ((m.name ?? '').trim() !== target) continue;
+    if (schoolType && m.school_type !== schoolType && m.school_type !== '共通') continue;
+    if (m.code) keys.add(m.code);
+  }
+
+  // 3. 旧コード（'english' など）。SUBJECT_LABELS の逆引き
+  for (const [code, name] of Object.entries(SUBJECT_LABELS)) {
+    if (name === target) keys.add(code);
+  }
+
+  return keys;
+}
+
 /** 1件ぶんの材料。★その生徒のものだけを入れる */
 export interface ConceptInput {
   proposalId: string;
@@ -55,6 +110,7 @@ export function conceptSystemPrompt(): string {
     '- 1行。30〜60字くらい。改行しない。',
     '- 何をやる講習かが分かる文にする。です・ます調。',
     '- ★型に嵌めない。生徒ごとに単元も成績も違うので、同じ言い回しを使い回さない。',
+    '- ★渡された単元の名前を、最低1つそのまま使う。「基礎」「応用」のような抽象語に言い換えない。',
     '- コマ数は入れてよい（例:「（英語8コマ）」）。',
     '',
     '■ 成績の使い方',

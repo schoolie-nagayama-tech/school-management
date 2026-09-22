@@ -9,6 +9,8 @@ import {
   conceptUserText,
   MAX_CONCEPTS_PER_CALL,
   parseConceptResult,
+  schoolTypeOfGrade,
+  subjectKeysForLabel,
   type ConceptInput,
   type ConceptResult,
 } from '@/lib/ai/koushuConcept';
@@ -40,6 +42,14 @@ interface ConceptResponse {
 }
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** 成績1行。科目は成績側の値（'jhs_english' などのコード）のまま持つ */
+interface ScoreRow {
+  subject: string;
+  name_code: string;
+  created_at: string;
+  value: number;
+}
 
 /** 直近の成績を1件だけ拾う。★その科目のものだけ */
 function pickLatest(
@@ -112,32 +122,46 @@ async function loadInputs(
     .in('student_id', studentIds)
     .in('category', ['regular_test', 'report_card']);
 
-  type Row = { name_code: string; created_at: string; value: number };
-  const testBy = new Map<string, Row[]>();
-  const cardBy = new Map<string, Row[]>();
+  /**
+   * 評価科目マスタ。教材の科目（日本語ラベル）を成績側のコードに直すために引く。
+   * ★引けなくても止めない。subjectKeysForLabel が旧コードとラベルでも当てる。
+   */
+  const { data: subjectMasters } = await supabase
+    .from('assessment_subjects')
+    .select('code, name, school_type')
+    .eq('is_active', true);
+  const masters = (subjectMasters ?? []) as { code: string; name: string; school_type: string }[];
+
+  // ★生徒ごとに束ねる。科目で絞るのは提案書ごと（教材の科目が提案書で違うため）
+  const testBy = new Map<string, ScoreRow[]>();
+  const cardBy = new Map<string, ScoreRow[]>();
 
   for (const a of assessments ?? []) {
     const scores = (a.assessment_scores ?? []) as { subject: string; value: number | null }[];
     for (const s of scores) {
       if (s.value == null) continue;
-      const key = `${a.student_id as string}:${s.subject}`;
-      const row: Row = {
+      const studentId = a.student_id as string;
+      const row: ScoreRow = {
+        subject: s.subject,
         name_code: a.name_code as string,
         created_at: a.created_at as string,
         value: s.value,
       };
       const target = a.category === 'regular_test' ? testBy : cardBy;
-      const list = target.get(key) ?? [];
+      const list = target.get(studentId) ?? [];
       list.push(row);
-      target.set(key, list);
+      target.set(studentId, list);
     }
   }
 
   return proposals.map((p) => {
     const studentId = p.student_id as string;
     const subject = subjectById.get(p.textbook_id as number) ?? '';
-    const key = `${studentId}:${subject}`;
     const grade = gradeById.get(studentId) ?? null;
+
+    // ★教材の科目（日本語ラベル）と成績の科目（コード）は別系統なので、集合で突き合わせる
+    const keys = subjectKeysForLabel(subject, schoolTypeOfGrade(grade), masters);
+    const ofSubject = (rows: ScoreRow[]) => rows.filter((row) => keys.has(row.subject));
 
     return {
       proposalId: p.id as string,
@@ -146,8 +170,8 @@ async function loadInputs(
       subject,
       units: unitsByProposal.get(p.id as string) ?? [],
       // ★無ければ null のまま。prompt 側で「触れないこと」と伝える
-      testScore: pickLatest(testBy.get(key) ?? []),
-      reportCard: pickLatest(cardBy.get(key) ?? []),
+      testScore: pickLatest(ofSubject(testBy.get(studentId) ?? [])),
+      reportCard: pickLatest(ofSubject(cardBy.get(studentId) ?? [])),
     };
   });
 }

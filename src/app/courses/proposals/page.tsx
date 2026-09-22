@@ -459,19 +459,23 @@ export default function CourseProposalsPage() {
    *   混ざったまま走らせるとオフの教室のデータまで出てしまう。
    */
   const conceptTargets = useMemo(() => {
-    return filtered
-      .filter((p) => selected.has(p.id))
-      .map((p) => ({
-        id: p.id,
-        label: [
-          p.student ? `${p.student.last_name} ${p.student.first_name}` : '不明',
-          p.textbook?.subject ?? '',
-          p.textbook?.name ?? '',
-        ]
-          .filter(Boolean)
-          .join(' / '),
-        theme: p.theme ?? '',
-      }));
+    return (
+      filtered
+        // ★単元ゼロは外す。AIに渡る材料が学年と科目だけになり、
+        //   一言を言い換えただけの文しか返らない（空殻の提案書が33%ある）。
+        .filter((p) => selected.has(p.id) && p.units.length > 0)
+        .map((p) => ({
+          id: p.id,
+          label: [
+            p.student ? `${p.student.last_name} ${p.student.first_name}` : '不明',
+            p.textbook?.subject ?? '',
+            p.textbook?.name ?? '',
+          ]
+            .filter(Boolean)
+            .join(' / '),
+          theme: p.theme ?? '',
+        }))
+    );
   }, [filtered, selected]);
 
   const conceptSchoolId = useMemo(() => {
