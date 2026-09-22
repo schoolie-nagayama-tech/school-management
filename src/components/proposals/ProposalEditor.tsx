@@ -60,12 +60,17 @@ import {
   getFavoriteTextbookIds,
   removeFavoriteTextbook,
 } from '@/lib/api/textbook-favorites';
-import { getCourseCurriculum } from '@/lib/api/seasonalCourses';
+import {
+  getCourseCurriculum,
+  getSeasonalCourse,
+  getSeasonalCourses,
+} from '@/lib/api/seasonalCourses';
 import { supabase } from '@/lib/supabase';
 import type {
   CurriculumItem,
   ProposalStatus,
   SeasonalCourse,
+  SeasonalCourseListItem,
   SeasonalProposalWithDetails,
   SeasonType,
   StudentProgress,
@@ -111,6 +116,10 @@ import {
   type GroupKind,
 } from '@/components/koushu-plan/unitDraftLogic';
 import { courseSettingsToDrafts } from '@/components/koushu-plan/courseSettingAdapter';
+import {
+  CreateMethodScreen,
+  TemplatePickerScreen,
+} from '@/components/proposals/NewProposalStartScreen';
 // 単元編集まわりのUI部品。講習テンプレートの編集画面と見た目・操作を共有する
 import { TextbookPickerScreen } from '@/components/koushu-plan/TextbookPickerScreen';
 import { UnitList } from '@/components/koushu-plan/UnitList';
@@ -205,6 +214,18 @@ export default function ProposalEditor() {
   const [bookStash, setBookStash] = useState<Map<number, StashedBook>>(new Map());
   const [allTextbooks, setAllTextbooks] = useState<Textbook[]>([]);
   const [showTextbookPicker, setShowTextbookPicker] = useState(false);
+  /**
+   * 新規作成の入口。テキストから作るか、テンプレートから作るかを先に選ばせる。
+   * ★URLでテキストが決まっている導線（教材マスタから）は選ばせても意味が無いので飛ばす。
+   */
+  const [newStartMode, setNewStartMode] = useState<'choose' | 'textbook' | 'template'>(
+    isNew && !qTextbookId ? 'choose' : 'textbook'
+  );
+  const [templates, setTemplates] = useState<SeasonalCourseListItem[]>([]);
+  const [templatesLoading, setTemplatesLoading] = useState(false);
+  /** テンプレ一覧の絞り込み（既定は準備中の季節＋その生徒の学年）。外すと全件 */
+  const [templateFiltered, setTemplateFiltered] = useState(true);
+  const [applyingTemplate, setApplyingTemplate] = useState(false);
   const [textbookSearch, setTextbookSearch] = useState('');
   // テキスト選択画面で上位表示するためのお気に入り集合。ユーザー個人ごと（DB保存）
   const [favoriteTextbookIds, setFavoriteTextbookIds] = useState<Set<number>>(new Set());
@@ -661,6 +682,99 @@ export default function ProposalEditor() {
       nextAppliedGroupId: 1,
     });
     setShowTextbookPicker(false);
+  };
+
+  /**
+   * テンプレート候補を読む。
+   * ★既定は「準備中の季節 ＋ その生徒の学年」。教室のテンプレは本番で1,265件あり、
+   *   全部並べると選べない。ただし0件になりやすいので、外す道を画面側に出している。
+   * ★単元ゼロのテンプレは出さない（本番の33%が空殻）。選んでも何も入らない。
+   */
+  const loadTemplates = async (useFilter: boolean) => {
+    if (!studentSchoolId) return;
+    setTemplatesLoading(true);
+    try {
+      const all = await getSeasonalCourses(studentSchoolId);
+      const withUnits = all.filter((c) => c.curriculum_count > 0);
+      const list = useFilter
+        ? withUnits.filter((c) => {
+            if (c.season !== season) return false;
+            const grades = c.target_grades ?? [];
+            // 対象学年が空のテンプレは「学年を問わない」扱いにする（絞りで消さない）
+            return grades.length === 0 || studentGrade == null || grades.includes(studentGrade);
+          })
+        : withUnits;
+      setTemplates(list);
+    } catch (_e) {
+      addToast('テンプレートの読み込みに失敗しました', 'error');
+      setTemplates([]);
+    } finally {
+      setTemplatesLoading(false);
+    }
+  };
+
+  /**
+   * テンプレートを1つ選んで、その内容で新規作成を始める。
+   *
+   * ★テンプレが複数テキストを持つときは、そのまま複数冊のタブとして開く（冬期の実態）。
+   *   1冊目をアクティブにし、残りは bookStash に入れる＝タブ切替と同じ形にしておく。
+   * ★単元の取り込み規約（0コマの結合メンバーを残す・グループ番号の振り直し）は
+   *   courseSettingsToDrafts に集約してある。ここで独自に判定しない。
+   */
+  const handleSelectTemplate = async (courseId: string) => {
+    if (applyingTemplate) return;
+    setApplyingTemplate(true);
+    try {
+      const course = await getSeasonalCourse(courseId);
+      if (!course || course.textbooks.length === 0) {
+        addToast('このテンプレートにはテキストがありません', 'error');
+        return;
+      }
+
+      const targets = course.textbooks.slice(0, MAX_TEXTBOOKS);
+      const prepared: { book: ProposalBook; stash: StashedBook }[] = [];
+      for (const ct of targets) {
+        const { items } = await getTextbookUnitsWithProgress(null, ct.textbook_id);
+        const settings = course.curriculum
+          .filter((c) => c.textbook_id === ct.textbook_id)
+          .map((c) => ({
+            curriculum_item_id: c.curriculum_item_id,
+            proposal_count: c.proposal_count,
+            group_number: c.group_number,
+          }));
+        const { drafts, nextGroupId } = courseSettingsToDrafts(emptyDraftsFor(items), settings, 1);
+        prepared.push({
+          book: {
+            textbookId: ct.textbook_id,
+            name: ct.textbook?.name ?? '',
+            subject: ct.textbook?.subject ?? '',
+            grade: ct.textbook?.grade ?? '',
+          },
+          stash: { items, drafts, progressMap: new Map(), nextGroupId, nextAppliedGroupId: 1 },
+        });
+      }
+
+      setBooks(prepared.map((p) => p.book));
+      setBookStash(new Map(prepared.slice(1).map((p) => [p.book.textbookId, p.stash])));
+      initialTextbookIdRef.current = prepared[0].book.textbookId;
+      restoreBook(prepared[0].book, prepared[0].stash);
+      // テーマはテンプレ名を初期値に入れる（「生徒に登録」で配ったときと同じ）
+      setTheme(course.name);
+      setNewStartMode('textbook');
+
+      if (course.textbooks.length > MAX_TEXTBOOKS) {
+        addToast(
+          `テキストは最大${MAX_TEXTBOOKS}冊までのため、先頭${MAX_TEXTBOOKS}冊だけ取り込みました`,
+          'error'
+        );
+      } else {
+        addToast(`「${course.name}」から作ります`, 'success');
+      }
+    } catch (_e) {
+      addToast('テンプレートの取り込みに失敗しました', 'error');
+    } finally {
+      setApplyingTemplate(false);
+    }
   };
 
   const lastToggleStateRef = useRef<boolean>(true);
@@ -1411,6 +1525,46 @@ export default function ProposalEditor() {
         ))}
         <ToastContainer toasts={toasts} onRemove={removeToast} />
       </div>
+    );
+  }
+
+  // ════════════════════════════════════════
+  // 新規作成の入口（テキストから / テンプレートから）
+  // ════════════════════════════════════════
+  if (isNew && books.length === 0 && newStartMode !== 'textbook') {
+    return (
+      <>
+        {newStartMode === 'choose' ? (
+          <CreateMethodScreen
+            studentName={studentName}
+            backHref={`/students/${studentId}/proposals`}
+            onPickTextbook={() => setNewStartMode('textbook')}
+            onPickTemplate={() => {
+              setNewStartMode('template');
+              setTemplateFiltered(true);
+              void loadTemplates(true);
+            }}
+          />
+        ) : (
+          <TemplatePickerScreen
+            studentName={studentName}
+            templates={templates}
+            loading={templatesLoading}
+            season={season}
+            grade={studentGrade}
+            filtered={templateFiltered}
+            applying={applyingTemplate}
+            onSelect={(courseId) => void handleSelectTemplate(courseId)}
+            onClearFilters={() => {
+              setTemplateFiltered(false);
+              void loadTemplates(false);
+            }}
+            onBack={() => setNewStartMode('choose')}
+          />
+        )}
+        <ToastContainer toasts={toasts} onRemove={removeToast} />
+        {ConfirmDialog}
+      </>
     );
   }
 
