@@ -43,6 +43,93 @@ export function schoolTypeOfGrade(grade: number | null): '小学' | '中学' | '
  * ★教材の科目が空（過去問など、1冊で複数科目）のときは空集合を返す。
  *   どの科目の成績を見ればよいか決まらないので、憶測で拾わない。
  */
+/**
+ * 教材の科目ラベル → 同じ系統の成績コード。★実データに合わせた表。
+ *
+ * ★マスタと旧コードの2枚だけでは、本番の成績の多くに当たらなかった。本番（京王堀之内校）を見ると:
+ *   - 中学・小学の成績は今も旧コード（'math' 'english' …）で入っていて、jhs_* / elem_* は0件。
+ *   - 高校の成績は hs_* だが、教材ラベル「数学」に当たる1つのコードが無い
+ *     （hs_math_1 / hs_math_a / hs_math_2 …と履修科目ごとに割れている）。
+ *   - 評価科目マスタの中学「社会」は name が「社会(地理)」で、ラベル「社会」と等号では合わない。
+ *   提案書172件のうち高校16件と「算数」12件が、材料はあるのに「記録なし」で送られていた。
+ *
+ * ★学校種別で絞らない。コードがすでに学校種別ごとに分かれていて絞る意味が無く、
+ *   絞ると「中学生なのに教材の科目が算数」（本番に2件ある）で 'math' を落としてしまう。
+ *
+ * ★高校は1科目が複数コードに割れるので、拾ったうちの直近1件が使われる（呼び出し側の pickLatest）。
+ *   どの履修科目かまでは見分けない。テーマに書くのは方針だけなので、これで足りる。
+ *
+ * ★小学の「外国語活動」（elem_eng_activity）は入れない。英語の成績として読ませると、
+ *   持っていない成績に触れたのと同じことになる。無ければ触れない、を優先する。
+ */
+const SUBJECT_FAMILY: Record<string, readonly string[]> = {
+  英語: [
+    'english',
+    'jhs_english',
+    'elem_english',
+    'hs_eng_com_1',
+    'hs_eng_com_2',
+    'hs_eng_com_3',
+    'hs_logic_expr_1',
+    'hs_logic_expr_2',
+    'hs_logic_expr_3',
+  ],
+  // ★「算数」と「数学」は同じ系統。教材ラベルは分かれるが、成績は同じ 'math' に入っている
+  数学: [
+    'math',
+    'jhs_math',
+    'elem_math',
+    'hs_math_1',
+    'hs_math_a',
+    'hs_math_2',
+    'hs_math_b',
+    'hs_math_3',
+    'hs_math_c',
+  ],
+  国語: [
+    'japanese',
+    'jhs_japanese',
+    'elem_japanese',
+    'hs_gendai_kokugo',
+    'hs_gengo_bunka',
+    'hs_ronri_kokugo',
+    'hs_bungaku_kokugo',
+    'hs_kokugo_hyogen',
+    'hs_koten_tankyu',
+  ],
+  理科: [
+    'science',
+    'jhs_science',
+    'elem_science',
+    'hs_phys_basic',
+    'hs_chem_basic',
+    'hs_bio_basic',
+    'hs_earth_basic',
+    'hs_phys',
+    'hs_chem',
+    'hs_bio',
+    'hs_earth',
+    'hs_kagaku_jinsei',
+  ],
+  社会: [
+    'social',
+    'elem_social',
+    'jhs_social_geo',
+    'jhs_social_history',
+    'jhs_social_civics',
+    'hs_chiri_sogo',
+    'hs_rekishi_sogo',
+    'hs_chiri_tankyu',
+    'hs_nihonshi_tankyu',
+    'hs_sekaishi_tankyu',
+    'hs_kokyo',
+    'hs_rinri',
+    'hs_seikei',
+  ],
+};
+// 算数は数学と同じ表を見る
+SUBJECT_FAMILY.算数 = SUBJECT_FAMILY.数学;
+
 export function subjectKeysForLabel(
   label: string,
   schoolType: '小学' | '中学' | '高校' | null,
@@ -66,6 +153,9 @@ export function subjectKeysForLabel(
   for (const [code, name] of Object.entries(SUBJECT_LABELS)) {
     if (name === target) keys.add(code);
   }
+
+  // 4. 同じ系統のコード。★1〜3が当たらない本番データ（高校の hs_* と「算数」）の受け皿
+  for (const code of SUBJECT_FAMILY[target] ?? []) keys.add(code);
 
   return keys;
 }
