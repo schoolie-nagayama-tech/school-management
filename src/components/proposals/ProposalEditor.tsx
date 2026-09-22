@@ -1698,6 +1698,7 @@ export default function ProposalEditor() {
             <ConceptBar
               className="mt-2"
               proposalId={conceptTargetId}
+              hasUnits={activeUnits.length > 0}
               schoolId={conceptSchoolId}
               value={theme}
               onChange={setTheme}
