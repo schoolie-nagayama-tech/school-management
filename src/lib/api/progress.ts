@@ -331,6 +331,42 @@ export async function getSubjectExams(
   return (data || []) as StudentTextbookExam[];
 }
 
+/** 面談の「目標の達成度」で使う試験目標1件（exam_types.name を結合したもの） */
+export interface StudentExamGoalWithType extends StudentTextbookExam {
+  /** exam_type_id が指すマスタの名前（例: '1学期期末'）。custom_exam_name のときは null */
+  exam_type_name: string | null;
+}
+
+/**
+ * 面談ワークスペース用: 生徒の試験目標一覧を exam_types.name 付きで取得する。
+ *
+ * ★getExamsBySubject と別に用意している理由: あちらは進行表タブ用で exam_type 名を
+ *   結合していない（画面が別途マスタ一覧を持っていて id→name を引けるため）。面談側は
+ *   docs/interview-script-ai-plan.md §3 の「目標の達成度」で成績側（assessments）と
+ *   突き合わせるのに試験名の文字列そのものが要るため、ここで結合して返す。
+ * ★closed_at が入っている（目標を終えた）行と target_score 未設定の行は面談で話す対象にならないので
+ *   ここで除く（呼び出し側に判定を持ち込まない）。
+ */
+export async function getStudentExamGoalsForInterview(
+  studentId: string
+): Promise<StudentExamGoalWithType[]> {
+  const { data, error } = await supabase
+    .from('student_textbook_exams')
+    .select('*, exam_type:exam_types(name)')
+    .eq('student_id', studentId)
+    .is('closed_at', null)
+    .not('target_score', 'is', null)
+    .order('exam_date', { ascending: false });
+
+  if (error) {
+    throw new Error(`試験目標の取得に失敗しました: ${error.message}`);
+  }
+
+  return ((data || []) as (StudentTextbookExam & { exam_type: { name: string } | null })[]).map(
+    (row) => ({ ...row, exam_type_name: row.exam_type?.name ?? null })
+  );
+}
+
 /**
  * 生徒×テキストを紐付け
  */

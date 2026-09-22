@@ -1,19 +1,28 @@
 /**
- * 面談の「報告事項」— その生徒についてシステムに溜まっているものを、面談の直前に1枚で読ませる。
+ * 面談で話すこと（旧「報告事項」）— AIとの入出力の正典。
  *
- * 正典: docs/interview-brief-ai-plan.md（ただし入力欄と ask は削り、「話す項目」を足した）
+ * 正典: docs/interview-script-ai-plan.md §6（前身: docs/interview-brief-ai-plan.md）
  *
- * ★現状の行はシステムが組む。AIが書くのは「見えること」「つなげて見えること」「話す項目」だけ。
- *   数字をAIに触らせない。書き写しの1字違い（72点が27点になる類）は、その場の誰にも
- *   気づけないうえ、保護者に向かって読み上げてしまう。画面には現状の行を別に出すので、
- *   AIの側に数字を持たせる必要がそもそも無い。
+ * ★AIに投げる単位は「セクション」（成績・宿題…）のまま。面談の流れ順（①〜⑦シーン）への
+ *   割り当ては src/lib/interview/scenes.ts の固定テーブルが決める。AIはどのセクションが
+ *   どのシーンに出るか関知しない（並び順をAIに決めさせないという前身からの原則）。
+ *
+ * ★現状の行はシステムが組む。AIが書くのは「見えること」「つなげて見えること」
+ *   「④の課題と⑤のプランのつながり」だけ。数字をAIに触らせない。書き写しの1字違い
+ *  （72点が27点になる類）は、その場の誰にも気づけないうえ、保護者に向かって読み上げてしまう。
+ *   画面には現状の行を別に出すので、AIの側に数字を持たせる必要がそもそも無い。
  *   （進行表の「これまでの引継ぎをまとめる」＝ src/lib/ai/handoverDigest.ts と同じ構え）
  *
  * ★セクションの並びはシステムが固定する。AIに順番を決めさせない。並びが毎回変わると、
  *   いつも同じ場所を見て話す準備ができなくなる。
  *
- * ★長いと結局読まれない。見えることは40字・つなげて見えることは80字・話す項目は60字で、
+ * ★長いと結局読まれない。見えることは40字・つなげて見えること／つながりは80字で、
  *   超えたものはパーサで捨てる（切り詰めない。途中で切れた文は誤読の元）。
+ *
+ * ★シーン作り替え（2026-09）で「話す項目」（talk）は廃止した。シーン順そのものが
+ *   話す順になるため、AIに改めて並べさせる意味が無くなったため。代わりに「④の課題と
+ *   ⑤のプランのつながり」（bridge）を足した。講習面談の核なので、他の見えることと
+ *   混ぜずに独立させる。
  */
 
 /** セクション（固定・この順）。key はAIとの突き合わせキー、label は画面の見出し */
@@ -47,30 +56,25 @@ export interface BriefSectionResult {
   sign: BriefSign;
 }
 
-/** 面談で順に話す項目の1つ */
-export interface BriefTalk {
-  text: string;
-  /** 根拠にしたセクション。渡していない key なら空文字（画面はラベルを出さない） */
-  basis: BriefSectionKey | '';
-}
-
 export interface BriefResult {
   /** 渡したセクションぶん必ず並ぶ（読めなかったときは seen が全部空になる） */
   sections: BriefSectionResult[];
   /** 複数のセクションをつなげて初めて見えること。無ければ空文字 */
   thread: string;
-  talk: BriefTalk[];
+  /**
+   * ④現状の確認で見えた課題と、⑤プラン提示の中身のつながりを1文。
+   * ★講習の提案（koushu セクション）を渡していないときは常に空文字にする
+   *  （呼び出し側で強制する。プロンプトの指示だけに頼らない）。
+   */
+  bridge: string;
 }
 
 /** 「見えること」1文の上限。★超えたら空にする（切り詰めない） */
 export const MAX_SEEN_LENGTH = 40;
 /** 「つなげて見えること」1文の上限 */
 export const MAX_THREAD_LENGTH = 80;
-/** 「話す項目」1件の上限 */
-export const MAX_TALK_LENGTH = 60;
-/** 「話す項目」の件数。3〜5個に収める（少なすぎると準備にならず、多すぎると読まれない） */
-export const MIN_TALK = 3;
-export const MAX_TALK = 5;
+/** 「④の課題と⑤のプランのつながり」1文の上限 */
+export const MAX_BRIDGE_LENGTH = 80;
 /** 現状の行の上限（1セクションあたり）。これ以上並べても読む側が追えない */
 export const MAX_CURRENT_LINES = 12;
 /** 現状の1行の上限 */
@@ -168,16 +172,16 @@ export function briefSystemPrompt(): string {
     '  1つのセクションだけで言えることは書かない（それは seen の仕事）。',
     '- 無ければ空文字。',
     '',
-    '■ talk（話す項目）',
-    `- 面談で順に話す項目を${MIN_TALK}〜${MAX_TALK}個、話す順に並べる。各${MAX_TALK_LENGTH}字まで。`,
-    '- ★悪い話だけを並べない。良い方向のものがあれば必ず1つ入れる。',
-    '- basis には、その項目の根拠にしたセクションの key を1つだけ書く。',
-    '- 保護者向けの言い回しにしない（教室長が見る覚え書きです）。',
+    '■ bridge（④の課題と⑤のプランのつながり）',
+    `- 現状の確認（score・progress）で見えた課題と、講習のプラン（koushu）の中身をつなぐ1文だけを`,
+    `  ${MAX_BRIDGE_LENGTH}字までで書く。`,
+    '- ★つながりが見えなければ空文字にする。無理にこじつけない。',
+    '- koushu セクションを渡していないときは、この項目は使われないので考えなくてよい。',
     '',
     '出力はJSONだけ。前置きは書かない:',
     '{"sections":[{"key":"score","seen":"下がったのは英語だけ。数学は続けて上がっている","sign":"warn"}],' +
       '"thread":"英語だけ、成績と宿題が同じ方向を向いている",' +
-      '"talk":[{"text":"数学が続けて上がっていることを先に伝える","basis":"score"}]}',
+      '"bridge":"英語の単語不足 → プランの英語8コマ（単語・文法の復習）につながる"}',
   ].join('\n');
 }
 
@@ -218,8 +222,10 @@ function takeSign(raw: unknown): BriefSign {
  * - 40字を超える seen は空にする（勝手に短くしない。途中で切れた文は誤読の元）
  * - sign は3値以外を空に
  * - thread は80字超なら空
- * - talk は先頭5つまで。60字超の項目は捨て、basis が渡していない key なら空文字にする
- * - 読めない出力なら seen も talk も空（呼び出し側が「作れなかった」に倒せる。
+ * - bridge は80字超なら空。koushu セクションを渡していなければ、AIの出力に関わらず空にする
+ *  （プロンプトで指示済みだが、パーサ側でも強制する。「渡していない材料の話をさせない」という
+ *   原則をAIの言うことを信じずにコードで守るため）
+ * - 読めない出力なら seen も thread も bridge も空（呼び出し側が「作れなかった」に倒せる。
  *   ★現状の行だけは画面に残るので、カード自体は成立する）
  */
 export function parseBriefResult(raw: unknown, sentKeys: readonly BriefSectionKey[]): BriefResult {
@@ -227,11 +233,11 @@ export function parseBriefResult(raw: unknown, sentKeys: readonly BriefSectionKe
   const empty: BriefResult = {
     sections: keys.map((key) => ({ key, seen: '', sign: '' as BriefSign })),
     thread: '',
-    talk: [],
+    bridge: '',
   };
   if (!raw || typeof raw !== 'object') return empty;
 
-  const obj = raw as { sections?: unknown; thread?: unknown; talk?: unknown };
+  const obj = raw as { sections?: unknown; thread?: unknown; bridge?: unknown };
 
   // 渡した key ごとに1件だけ拾う（同じ key を2回返してきたら先に来たほうを採る）
   const seenByKey = new Map<BriefSectionKey, { seen: string; sign: BriefSign }>();
@@ -259,20 +265,12 @@ export function parseBriefResult(raw: unknown, sentKeys: readonly BriefSectionKe
   const threadRaw = typeof obj.thread === 'string' ? obj.thread.trim() : '';
   const thread = threadRaw.length > MAX_THREAD_LENGTH ? '' : threadRaw;
 
-  const talk: BriefTalk[] = [];
-  const talkRows = Array.isArray(obj.talk) ? (obj.talk as unknown[]) : [];
-  for (const row of talkRows) {
-    // ★多ければ先頭5つ。少ないぶんは足さない（こちらで作れる中身ではない）
-    if (talk.length >= MAX_TALK) break;
-    if (!row || typeof row !== 'object') continue;
-    const r = row as { text?: unknown; basis?: unknown };
-    if (typeof r.text !== 'string') continue;
-    const text = r.text.trim();
-    if (!text) continue;
-    if (text.length > MAX_TALK_LENGTH) continue;
-    const basis = isBriefSectionKey(r.basis) && keys.indexOf(r.basis) !== -1 ? r.basis : '';
-    talk.push({ text, basis });
-  }
+  const bridgeRaw = typeof obj.bridge === 'string' ? obj.bridge.trim() : '';
+  // ★koushu を渡していないのにAIが書いてきたら、ここで無条件に捨てる
+  const bridge =
+    bridgeRaw.length > 0 && bridgeRaw.length <= MAX_BRIDGE_LENGTH && keys.indexOf('koushu') !== -1
+      ? bridgeRaw
+      : '';
 
-  return { sections, thread, talk };
+  return { sections, thread, bridge };
 }

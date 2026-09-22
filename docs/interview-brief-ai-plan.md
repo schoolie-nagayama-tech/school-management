@@ -1,6 +1,10 @@
 # 面談の準備メモをAIに作らせる（設計書）
 
-作成: 2026-09-03 ／ 更新: 2026-09-07 ／ 状態: **実装済み（PR #168）**
+★[docs/interview-script-ai-plan.md](./interview-script-ai-plan.md) に置き換え済み（2026-09-21）。
+「報告事項」カードは「面談で話すこと」カード（面談の流れ順の7シーン）に作り替えた。
+本書は前身の設計として残す（AIとの入出力の大枠はそのまま引き継いでいる）。
+
+作成: 2026-09-03 ／ 更新: 2026-09-07 ／ 状態: **実装済み（PR #168）→ 置き換え済み**
 対象: `src/app/interview/`（面談ワークスペース）
 モック: [AIに書かせる場所](https://claude.ai/code/artifact/b60623a6-6bcf-4068-89f5-21685579aac0) の「面談の準備メモ」タブ
 前提: [docs/ai-platform-comparison.md](./ai-platform-comparison.md)（基盤＝Claude API）
@@ -28,15 +32,15 @@
 
 ## 2. セクション（固定・この順）
 
-| # | セクション | 現状の行（システムが組む） | 材料 |
-| --- | --- | --- | --- |
-| 1 | 成績 | 直近の定期テスト（前回比）・通知表 | `assessments`＋`assessment_scores`（`computeScoreSummary`） |
-| 2 | 授業の様子（報告書・引継ぎ） | 報告書の件数・直近の講評の引用・繰り返し出る引継ぎ | `class_reports.review_comment`、`student_progress.handover`、`progress_sessions.handover` |
-| 3 | 宿題・遅刻・出欠 | 月次の宿題忘れ日数・遅刻日数、欠席・振替回数 | `progress_sessions`（`computeDisciplineMonthly`）、`schedule_entries.attendance_status`、`class_reports.homework_*` |
-| 4 | 進度（進行表） | テキストごとの進捗%・学校進度との差・次の単元 | `summarizeTextbookDetail`、`student_progress.school_progress_date` |
-| 5 | 講習 | 前回の提案コマ vs 受講コマ、今回の提案書の状態 | `koushu_enrollments`、`seasonal_proposals` |
-| 6 | 保護者とのやりとり | 件数・直近の連絡の要旨・返信待ちの有無 | `chat_threads`＋`chat_messages` |
-| 7 | 前回の面談から | 日付・経過日数・申し送り | `student_interviews`（`extractHandover`） |
+| #   | セクション                   | 現状の行（システムが組む）                         | 材料                                                                                                                |
+| --- | ---------------------------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| 1   | 成績                         | 直近の定期テスト（前回比）・通知表                 | `assessments`＋`assessment_scores`（`computeScoreSummary`）                                                         |
+| 2   | 授業の様子（報告書・引継ぎ） | 報告書の件数・直近の講評の引用・繰り返し出る引継ぎ | `class_reports.review_comment`、`student_progress.handover`、`progress_sessions.handover`                           |
+| 3   | 宿題・遅刻・出欠             | 月次の宿題忘れ日数・遅刻日数、欠席・振替回数       | `progress_sessions`（`computeDisciplineMonthly`）、`schedule_entries.attendance_status`、`class_reports.homework_*` |
+| 4   | 進度（進行表）               | テキストごとの進捗%・学校進度との差・次の単元      | `summarizeTextbookDetail`、`student_progress.school_progress_date`                                                  |
+| 5   | 講習                         | 前回の提案コマ vs 受講コマ、今回の提案書の状態     | `koushu_enrollments`、`seasonal_proposals`                                                                          |
+| 6   | 保護者とのやりとり           | 件数・直近の連絡の要旨・返信待ちの有無             | `chat_threads`＋`chat_messages`                                                                                     |
+| 7   | 前回の面談から               | 日付・経過日数・申し送り                           | `student_interviews`（`extractHandover`）                                                                           |
 
 データが無いセクションは**行ごと出さない**（「記録なし」を並べない）。
 
@@ -44,7 +48,9 @@
 
 ```json
 {
-  "sections": [{ "key": "score", "seen": "下がったのは英語だけ。数学は2回続けて上がっている", "sign": "warn" }],
+  "sections": [
+    { "key": "score", "seen": "下がったのは英語だけ。数学は2回続けて上がっている", "sign": "warn" }
+  ],
   "thread": "英語だけ、成績・宿題・出欠・家庭の話がすべて同じ方向を向いている。",
   "talk": [{ "text": "数学が下がった理由は計算ミス。解き方は分かっている", "basis": "lessons" }]
 }
@@ -74,10 +80,10 @@
 面談ワークスペースは 成績・進行表・宿題と遅刻（5か月）・面談記録・通塾日程・講習申込 をすでに読んでいる。
 足りないのは次の2つだけ。
 
-| 材料 | 読み方 |
-| --- | --- |
-| 出欠・振替 | **座席表に記録がある**: `schedule_entries.attendance_status`（`present / absent / late`、座席表のセルから記録）。生徒×期間で数える1クエリを足すだけ（`attendance.ts` は講師の勤怠なので使わない） |
-| 保護者とのやりとり | `chat_threads` → `chat_messages` を生徒で引く。直近の要旨と返信待ちの有無 |
+| 材料               | 読み方                                                                                                                                                                                            |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 出欠・振替         | **座席表に記録がある**: `schedule_entries.attendance_status`（`present / absent / late`、座席表のセルから記録）。生徒×期間で数える1クエリを足すだけ（`attendance.ts` は講師の勤怠なので使わない） |
+| 保護者とのやりとり | `chat_threads` → `chat_messages` を生徒で引く。直近の要旨と返信待ちの有無                                                                                                                         |
 
 報告書の講評（`class_reports.review_comment`）も面談ワークスペースは読んでいないが、
 `getApprovedReportsByStudent` がある。

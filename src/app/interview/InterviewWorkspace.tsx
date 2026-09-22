@@ -24,7 +24,12 @@ import { formatGradeLabel } from '@/lib/utils/gradeLabel';
 import { getStudents, getStudent, type EnrichedStudent } from '@/lib/api/students';
 import { getStudentInterviews } from '@/lib/api/interviews';
 import { listAssessments } from '@/lib/api/assessments';
-import { getStudentTextbooks, getStudentProgress } from '@/lib/api/progress';
+import {
+  getStudentTextbooks,
+  getStudentProgress,
+  getStudentExamGoalsForInterview,
+  type StudentExamGoalWithType,
+} from '@/lib/api/progress';
 import {
   getStudentDisciplineSessions,
   getFeedGoalsByTextbooks,
@@ -33,6 +38,7 @@ import {
 } from '@/lib/api/progress-sessions';
 import { getRegularPatterns } from '@/lib/api/schedule';
 import { getKoushuEnrollmentsByStudent, type KoushuEnrollment } from '@/lib/api/seasonalCourses';
+import { getStudentTargetSchools, type TargetSchoolRow } from '@/lib/api/targetSchools';
 import type { AssessmentWithScores, Student, StudentInterview } from '@/types/database';
 import type { ScheduleRegularPattern } from '@/types/schedule';
 import { InterviewTimeline, type HandoverInfo } from './InterviewTimeline';
@@ -40,7 +46,7 @@ import { ScorePanel } from './ScorePanel';
 import { ProgressPanel, type TextbookProgressData } from './ProgressPanel';
 import { DisciplinePanel } from './DisciplinePanel';
 import { InterviewPrintSheet } from './InterviewPrintSheet';
-import { InterviewBriefCard, type BriefView } from './InterviewBriefCard';
+import { InterviewScriptCard, type ScriptView } from './InterviewScriptCard';
 import { TargetSchoolsPanel } from '@/components/interview/TargetSchoolsPanel';
 import {
   extractHandover,
@@ -71,6 +77,10 @@ export function InterviewWorkspace() {
   const [koushuEnrollments, setKoushuEnrollments] = useState<KoushuEnrollment[]>([]);
   // 宿題・遅刻の月次集計（DisciplinePanel）用の生セッション行。集計自体は computeDisciplineMonthly に任せる
   const [disciplineSessions, setDisciplineSessions] = useState<DisciplineSessionRow[]>([]);
+  // 試験目標（②ヒアリング「目標の達成度」の材料）
+  const [examGoals, setExamGoals] = useState<StudentExamGoalWithType[]>([]);
+  // 志望校（④現状の確認「志望校との差」の材料。TargetSchoolsPanel の保存後に反映するため refetch も持つ）
+  const [targetSchools, setTargetSchools] = useState<TargetSchoolRow[]>([]);
   const [lightLoading, setLightLoading] = useState(false);
 
   // 進行表の生データ（テキスト×そのテキストの進行記録行）をテキストぶん保持する。
@@ -81,11 +91,11 @@ export function InterviewWorkspace() {
   const [progressLoading, setProgressLoading] = useState(false);
 
   /**
-   * 報告事項（AI）の結果。★カードではなくここで持つ。印刷シートにも同じものを出すため。
+   * 面談で話すこと（AI）の結果。★カードではなくここで持つ。印刷シートにも同じものを出すため。
    * 保存はしない（生徒を切り替えるとカード側から null が上がってきて消える）。
    */
-  const [brief, setBrief] = useState<BriefView | null>(null);
-  const handleBriefResult = useCallback((v: BriefView | null) => setBrief(v), []);
+  const [script, setScript] = useState<ScriptView | null>(null);
+  const handleScriptResult = useCallback((v: ScriptView | null) => setScript(v), []);
 
   // 生徒一覧（在籍中のみ、学年→氏名かな順）
   useEffect(() => {
@@ -200,6 +210,17 @@ export function InterviewWorkspace() {
     }
   }, [selectedStudentId]);
 
+  // 志望校だけの再取得。TargetSchoolsPanel で保存した直後に呼び、④現状の確認の
+  // 「志望校との差」を保存内容に合わせて即座に更新する（ページ再読み込みを待たせない）
+  const refetchTargetSchools = useCallback(async () => {
+    if (!selectedStudentId) return;
+    try {
+      setTargetSchools(await getStudentTargetSchools(selectedStudentId));
+    } catch (e) {
+      console.error('Error fetching target schools:', e);
+    }
+  }, [selectedStudentId]);
+
   // 軽いデータ（面談記録・成績・通塾日程・講習申込）をまとめて取得。進行表より先に描画する。
   // 通塾日程と講習申込は面談で必ず話題に出る（曜日の相談・講習の案内）ため、
   // 専用カードは持たずヘッダー帯に1行で添える。
@@ -217,12 +238,14 @@ export function InterviewWorkspace() {
           disciplineFrom.getMonth() + 1
         ).padStart(2, '0')}-01`;
 
-        const [iv, asm, patterns, koushu, discipline] = await Promise.all([
+        const [iv, asm, patterns, koushu, discipline, goals, schools] = await Promise.all([
           getStudentInterviews(selectedStudentId).catch(() => []),
           listAssessments(selectedStudentId).catch(() => []),
           getRegularPatterns(student.school_id, { studentId: selectedStudentId }).catch(() => []),
           getKoushuEnrollmentsByStudent(selectedStudentId).catch(() => []),
           getStudentDisciplineSessions(selectedStudentId, disciplineFromStr).catch(() => []),
+          getStudentExamGoalsForInterview(selectedStudentId).catch(() => []),
+          getStudentTargetSchools(selectedStudentId).catch(() => []),
         ]);
         if (cancelled) return;
         setInterviews(iv);
@@ -230,6 +253,8 @@ export function InterviewWorkspace() {
         setRegularPatterns(patterns);
         setKoushuEnrollments(koushu);
         setDisciplineSessions(discipline);
+        setExamGoals(goals);
+        setTargetSchools(schools);
       } finally {
         if (!cancelled) setLightLoading(false);
       }
@@ -416,19 +441,27 @@ export function InterviewWorkspace() {
               onChanged={refetchInterviews}
               briefSlot={
                 <>
-                  <InterviewBriefCard
+                  <InterviewScriptCard
                     student={student}
                     assessments={assessments}
                     interviews={interviews}
                     textbookData={textbookProgressData}
                     disciplineSessions={disciplineSessions}
                     koushuEnrollments={koushuEnrollments}
+                    regularPatterns={regularPatterns}
+                    examGoals={examGoals}
+                    targetSchools={targetSchools}
                     loading={lightLoading || progressLoading}
-                    onResult={handleBriefResult}
+                    onResult={handleScriptResult}
                   />
                   {/* 志望校（第1〜3志望）。②のヒアリングで聞いてその場で入れる想定のため
-                      報告事項カードのすぐ近くに置く。正典: docs/interview-script-ai-plan.md §4 */}
-                  <TargetSchoolsPanel studentId={student.id} schoolId={student.school_id} />
+                      「面談で話すこと」カードのすぐ近くに置く。正典: docs/interview-script-ai-plan.md §4
+                      保存後に onSaved で④「志望校との差」を再取得し、その場で反映する */}
+                  <TargetSchoolsPanel
+                    studentId={student.id}
+                    schoolId={student.school_id}
+                    onSaved={refetchTargetSchools}
+                  />
                 </>
               }
             />
@@ -447,12 +480,15 @@ export function InterviewWorkspace() {
           <InterviewPrintSheet
             student={student}
             today={today}
-            handover={handover}
-            recentInterviews={nonTaskInterviews}
+            interviews={interviews}
             assessments={assessments}
             textbookData={textbookProgressData}
             disciplineSessions={disciplineSessions}
-            brief={brief}
+            koushuEnrollments={koushuEnrollments}
+            regularPatterns={regularPatterns}
+            examGoals={examGoals}
+            targetSchools={targetSchools}
+            script={script}
           />
         </>
       )}
