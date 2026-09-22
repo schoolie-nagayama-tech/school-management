@@ -2,7 +2,6 @@ import { describe, it, expect } from 'vitest';
 import {
   SCENE_KEYS,
   SCENE_LABEL,
-  SCENE_OPEN_BY_DEFAULT,
   SCENE_OF_SECTION,
   GRADE_BAND_LABEL,
   gradeBandOf,
@@ -14,7 +13,7 @@ import {
   type GradeBand,
 } from '@/lib/interview/scenes';
 import { BRIEF_SECTIONS } from '@/lib/ai/interviewBrief';
-import { stripNottaMeta } from '@/app/interview/interview.shared';
+import { stripNottaMeta, parseNottaSummary } from '@/app/interview/interview.shared';
 import {
   examCountdownLine,
   examApplicationLine,
@@ -36,22 +35,10 @@ describe('面談のシーン定義', () => {
     ]);
   });
 
-  it('全シーンにラベルと既定の開閉がある', () => {
+  it('全シーンにラベルがある', () => {
     for (const key of SCENE_KEYS) {
       expect(SCENE_LABEL[key]).toBeTruthy();
-      expect(typeof SCENE_OPEN_BY_DEFAULT[key]).toBe('boolean');
     }
-  });
-
-  it('★定型の①③⑦は閉じ、生徒ごとに変わる②④⑤⑥は開く', () => {
-    // 全部開くと縦に長くなって読まれない。ここが逆になると設計意図が失われる
-    expect(SCENE_OPEN_BY_DEFAULT.intro).toBe(false);
-    expect(SCENE_OPEN_BY_DEFAULT.timing).toBe(false);
-    expect(SCENE_OPEN_BY_DEFAULT.closing).toBe(false);
-    expect(SCENE_OPEN_BY_DEFAULT.hearing).toBe(true);
-    expect(SCENE_OPEN_BY_DEFAULT.status).toBe(true);
-    expect(SCENE_OPEN_BY_DEFAULT.plan).toBe(true);
-    expect(SCENE_OPEN_BY_DEFAULT.apply).toBe(true);
   });
 
   it('★AIに渡すセクションが全部どれかのシーンに割り当たっている', () => {
@@ -254,6 +241,83 @@ describe('Nottaのメタ情報を落とす', () => {
   it('メタ行しかなければ元の本文を返す（空にして情報を失わない）', () => {
     const onlyMeta = '【タイトル】面談\n【録音日時】2026/08/03';
     expect(stripNottaMeta(onlyMeta)).toBe(onlyMeta);
+  });
+});
+
+describe('Nottaの要約を構造化する（parseNottaSummary）', () => {
+  const notta = [
+    '【タイトル】9/11 05:10 模試の成績と受験対策の相談',
+    '【録音日時】2026/09/11 05:10',
+    '【音声URL】https://app.notta.ai/7389587941842665472/dashboard/abc',
+    '【参加者】教室長・保護者',
+    '--- Notta 要約 ---',
+    '■ 前回の確認',
+    '・前回の面談に関する具体的な情報は会話の中で見つかりませんでした。',
+    '',
+    '■ 相談事項',
+    '・高校選択が主なテーマ',
+    '・法政と鎌倉学園の比較',
+    '',
+    '■ 次回への申し送り',
+    '・志望校を小平と東大和南に絞る',
+  ].join('\n');
+
+  it('メタ行を落とし、見出しと箇条書きに割る', () => {
+    const parsed = parseNottaSummary(notta);
+    expect(parsed).not.toBeNull();
+    expect(parsed!.title).toBe('9/11 05:10 模試の成績と受験対策の相談');
+    expect(parsed!.audioUrl).toBe('https://app.notta.ai/7389587941842665472/dashboard/abc');
+    expect(parsed!.sections.map((s) => s.heading)).toEqual(['相談事項', '次回への申し送り']);
+    expect(parsed!.sections[0].bullets).toEqual(['高校選択が主なテーマ', '法政と鎌倉学園の比較']);
+  });
+
+  it('★中身が「見つかりませんでした」等しか無い見出しは畳んで omitted に回す', () => {
+    // 実物ではこの定型文が本文の半分を占める。出したままだと面談中に読めない
+    const parsed = parseNottaSummary(notta);
+    expect(parsed!.omitted).toEqual(['前回の確認']);
+  });
+
+  it('「確認できませんでした」「記載がありません」も空の言い回しとして畳む', () => {
+    const parsed = parseNottaSummary(
+      [
+        '■ 塾からの報告',
+        '・授業態度に関する具体的な報告は会話の中で確認できませんでした。',
+        '■ 保護者からの要望',
+        '・特段の記載がありません',
+        '■ 相談事項',
+        '・進路の相談',
+      ].join('\n')
+    );
+    expect(parsed!.omitted).toEqual(['塾からの報告', '保護者からの要望']);
+    expect(parsed!.sections.map((s) => s.heading)).toEqual(['相談事項']);
+  });
+
+  it('【見出し】形式（古いNottaの出力）も見出しとして扱う', () => {
+    const parsed = parseNottaSummary(
+      [
+        '【塾からの報告】',
+        '楽しく学習を進めたいという方針を説明',
+        '【今後の方針】',
+        '初回授業を実施',
+      ].join('\n')
+    );
+    expect(parsed!.sections.map((s) => s.heading)).toEqual(['塾からの報告', '今後の方針']);
+    expect(parsed!.sections[0].bullets).toEqual(['楽しく学習を進めたいという方針を説明']);
+  });
+
+  it('見出しが1つも無い本文（手入力の短い記録）は null', () => {
+    expect(
+      parseNottaSummary('夏期の進捗を報告。数学の関数を冬期に回す旨を了承いただいた')
+    ).toBeNull();
+  });
+
+  it('メタ行しか無い本文も null（節に割れないものを無理に構造化しない）', () => {
+    expect(parseNottaSummary('【タイトル】面談\n【録音日時】2026/08/03')).toBeNull();
+  });
+
+  it('箇条書きが1件も無い見出しも「記載なし」に回す', () => {
+    const parsed = parseNottaSummary(['■ 前回の確認', '■ 相談事項', '・進路の相談'].join('\n'));
+    expect(parsed!.omitted).toEqual(['前回の確認']);
   });
 });
 

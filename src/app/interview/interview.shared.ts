@@ -104,6 +104,128 @@ export function stripNottaMeta(content: string): string {
 }
 
 /* ============================================================
+ * 材料カードのアンカー
+ * ========================================================== */
+
+/**
+ * 「材料（記録）」の段に並ぶカードの id。
+ * ★台本（InterviewScriptCard）の「事実」の行から、その元になったカードへ飛ぶために使う。
+ *   飛び先とアンカーを別々の場所に書くとすぐずれるので、ここ1箇所で持つ。
+ */
+export const INTERVIEW_CARD_IDS = {
+  score: 'interview-card-score',
+  progress: 'interview-card-progress',
+  discipline: 'interview-card-discipline',
+  records: 'interview-card-records',
+} as const;
+
+/* ============================================================
+ * Notta 取込本文の構造化
+ * ========================================================== */
+
+/** Notta 要約の1見出しぶん */
+export interface NottaSection {
+  heading: string;
+  bullets: string[];
+}
+
+/** parseNottaSummary の戻り。面談記録カードが構造化して描くための材料 */
+export interface NottaSummary {
+  /** 【タイトル】の中身。無ければ null */
+  title: string | null;
+  /** 【音声URL】のURL。無ければ null */
+  audioUrl: string | null;
+  /** 中身のある見出しだけ（この順に出す） */
+  sections: NottaSection[];
+  /** 中身が空だった見出しの名前。末尾に「記載なし：A・B」と1行でまとめる */
+  omitted: string[];
+}
+
+/** 本文に出さないメタ行。面談で読む行が録音日時とURLで埋まるため（stripNottaMeta と同じ対象） */
+const NOTTA_META_KEYS = ['タイトル', '録音日時', '音声URL', '参加者'] as const;
+
+/**
+ * 「中身が無い」箇条書きの言い回し。
+ * ★Nottaは話題が出なかった見出しも必ず立て、「〜は会話の中で確認できませんでした」と書く。
+ *   実物では本文の半分がこれで埋まるため、見出しごと畳んで末尾に1行でまとめる。
+ */
+const NOTTA_EMPTY_BULLET =
+  /(見つかりませんでした|確認できませんでした|確認できません|記載がありません)/;
+
+/** 行末に紛れ込む不可視文字（Nottaの出力に LRM が混ざる）ごと落とす */
+function trimNottaLine(line: string): string {
+  return line.replace(/[\s‎‏​]+$/g, '').replace(/^[\s‎‏​]+/g, '');
+}
+
+/**
+ * Notta（文字起こし）取込の本文を、見出し＋箇条書きに組み直す。
+ *
+ * ★Notta以外の本文（手入力の短い記録）では null を返す。呼び出し側は従来どおり
+ *   本文をそのまま出す。構造が無いものを無理に節に割ると、かえって読めなくなる。
+ * ★見出しの書き方は実物に2通りある（「■ 塾からの報告」と「【塾からの報告】」）。
+ *   Nottaの出力テンプレートが途中で変わった名残なので、両方を見出しとして扱う。
+ *   ただし【タイトル】【録音日時】【音声URL】【参加者】はメタなので見出しにしない。
+ * ★見出しが1つも取れなければ null（＝構造化できていない）。音声URLだけ拾って
+ *   本文を節に割らずに出す、という中途半端な状態を作らない。
+ */
+export function parseNottaSummary(content: string): NottaSummary | null {
+  const lines = content.split('\n');
+
+  let title: string | null = null;
+  let audioUrl: string | null = null;
+  const sections: NottaSection[] = [];
+  let current: NottaSection | null = null;
+
+  for (const raw of lines) {
+    const line = trimNottaLine(raw);
+    if (!line) continue;
+
+    // 「--- Notta 要約 ---」の区切りは出さない
+    if (/^-{2,}\s*Notta\s*要約\s*-{2,}$/.test(line)) continue;
+
+    const meta = line.match(/^【(タイトル|録音日時|音声URL|参加者)】\s*(.*)$/);
+    if (meta) {
+      if (meta[1] === 'タイトル' && meta[2]) title = meta[2];
+      if (meta[1] === '音声URL') {
+        const url = meta[2].match(/https?:\/\/\S+/);
+        if (url) audioUrl = url[0];
+      }
+      continue;
+    }
+
+    const headingMark = line.match(/^■\s*(.+)$/);
+    const headingBracket = line.match(/^【(.+?)】$/);
+    const heading = headingMark?.[1] ?? headingBracket?.[1];
+    if (heading && !(NOTTA_META_KEYS as readonly string[]).includes(heading)) {
+      current = { heading: trimNottaLine(heading), bullets: [] };
+      sections.push(current);
+      continue;
+    }
+
+    // 見出しが始まる前の行は捨てる（メタの残りか、Nottaの前置き）
+    if (!current) continue;
+    const bullet = trimNottaLine(line.replace(/^[・\-*]\s*/, ''));
+    if (bullet) current.bullets.push(bullet);
+  }
+
+  if (sections.length === 0) return null;
+
+  // ★箇条書きが「確認できませんでした」等しか無い見出しは畳む。
+  //   1件も箇条書きが無い見出しも同じ扱い（読む人にとっては同じ「記載なし」）。
+  const kept: NottaSection[] = [];
+  const omitted: string[] = [];
+  for (const s of sections) {
+    if (s.bullets.length === 0 || s.bullets.every((b) => NOTTA_EMPTY_BULLET.test(b))) {
+      omitted.push(s.heading);
+    } else {
+      kept.push(s);
+    }
+  }
+
+  return { title, audioUrl, sections: kept, omitted };
+}
+
+/* ============================================================
  * 進行表サマリ
  * ========================================================== */
 
@@ -749,6 +871,13 @@ export interface GoalAchievementLines {
  * ★結果が見つからない（科目・試験名が変換できない、または成績側にまだその試験が
  *   入っていない）ときは「聞くこと」に回す。247名のうち多数がこちらに入る想定で、
  *   台本が入力を促す形になるのが狙い。黙って行ごと落とさない。
+ *
+ * ★同じ行が2回出ないように、組み上げた文で重複を落とす（2026-09）。
+ *   目標は「生徒×科目」に移したが、student_textbook_exams の行はテキストごとに残っており、
+ *   同じ科目のテキストを複数持つ生徒には subject_key・exam_date・target_score が
+ *   まったく同じ行が2件できる（実例: 緑園都市校の中3で英語の目標が2行並んだ）。
+ *   ★落とすのは「組み上げた文が完全に同じ」ときだけにしてある。科目と試験が同じでも
+ *     目標点が違う行は、データの食い違いとして両方見せる（片方を黙って選ぶと気づけない）。
  */
 export function buildGoalAchievementLines(
   examGoals: readonly ExamGoalForAchievement[],
@@ -792,7 +921,7 @@ export function buildGoalAchievementLines(
     tell.push(`${goal.subject_key} ${examLabel} 目標${target} → ${score}（${diffText}）`);
   }
 
-  return { tell, ask };
+  return { tell: Array.from(new Set(tell)), ask: Array.from(new Set(ask)) };
 }
 
 /* ============================================================

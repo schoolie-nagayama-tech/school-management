@@ -36,21 +36,6 @@ export const SCENE_LABEL: Record<SceneKey, string> = {
 };
 
 /**
- * 既定で開くシーン。
- * ★①③⑦は毎回同じことを言う定型なので閉じておく。開くのは生徒ごとに中身が変わる②④⑤⑥。
- *   全部開くと縦に長くなり、結局読まれない（前身で「長いと読まれない」と学んだ）。
- */
-export const SCENE_OPEN_BY_DEFAULT: Record<SceneKey, boolean> = {
-  intro: false,
-  hearing: true,
-  timing: false,
-  status: true,
-  plan: true,
-  apply: true,
-  closing: false,
-};
-
-/**
  * AIに渡すセクションを、どのシーンに置くか。
  * ★7セクションは②④⑤の3つに収まる。①③⑥⑦はAIを使わない。
  */

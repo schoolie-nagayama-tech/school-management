@@ -710,6 +710,54 @@ describe('buildGoalAchievementLines', () => {
     ];
     expect(buildGoalAchievementLines(goals, [])).toEqual({ tell: [], ask: [] });
   });
+
+  it('★同じ内容の目標が2件あっても1行にまとめる（聞くこと）', () => {
+    // 目標は「生徒×科目」に移したが student_textbook_exams の行はテキストごとに残っており、
+    // 同じ科目のテキストを2冊持つ生徒には中身がまったく同じ行が2件できる。
+    // 実機（緑園都市校の中3）で②に同じ「聞く」が2行並んだ。
+    const same: ExamGoalForAchievement = {
+      subject_key: '英語',
+      exam_type_name: null,
+      custom_exam_name: '学校の成績で「5」をとる',
+      exam_date: '2026-10-08',
+      target_score: 80,
+    };
+    const { tell, ask } = buildGoalAchievementLines([same, { ...same }], []);
+    expect(tell).toEqual([]);
+    expect(ask).toEqual(['英語 学校の成績で「5」をとる 目標80点。結果を聞いて入れる']);
+  });
+
+  it('★同じ内容の目標が2件あっても1行にまとめる（伝える）', () => {
+    const same: ExamGoalForAchievement = {
+      subject_key: '数学',
+      exam_type_name: '2学期中間',
+      custom_exam_name: null,
+      exam_date: '2026-11-01',
+      target_score: 70,
+    };
+    const assessments = [
+      {
+        category: 'regular_test',
+        name_code: 'term2_mid',
+        scores: [{ subject: 'math', value: 73 }],
+      },
+    ] as unknown as AssessmentWithScores[];
+
+    const { tell } = buildGoalAchievementLines([same, { ...same }], assessments);
+    expect(tell).toEqual(['数学 2学期中間 目標70 → 73（+3・達成）']);
+  });
+
+  it('★科目と試験が同じでも目標点が違えば両方出す（食い違いを隠さない）', () => {
+    const base: ExamGoalForAchievement = {
+      subject_key: '英語',
+      exam_type_name: null,
+      custom_exam_name: '学校の成績で「5」をとる',
+      exam_date: '2026-10-08',
+      target_score: 80,
+    };
+    const { ask } = buildGoalAchievementLines([base, { ...base, target_score: 90 }], []);
+    expect(ask).toHaveLength(2);
+  });
 });
 
 describe('buildMissingRecordAskLines', () => {

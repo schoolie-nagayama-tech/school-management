@@ -41,7 +41,7 @@ import { getKoushuEnrollmentsByStudent, type KoushuEnrollment } from '@/lib/api/
 import { getStudentTargetSchools, type TargetSchoolRow } from '@/lib/api/targetSchools';
 import type { AssessmentWithScores, Student, StudentInterview } from '@/types/database';
 import type { ScheduleRegularPattern } from '@/types/schedule';
-import { InterviewTimeline, type HandoverInfo } from './InterviewTimeline';
+import { InterviewRecordsCard, InterviewTasksCard, type HandoverInfo } from './InterviewTimeline';
 import { ScorePanel } from './ScorePanel';
 import { ProgressPanel, type TextbookProgressData } from './ProgressPanel';
 import { DisciplinePanel } from './DisciplinePanel';
@@ -52,9 +52,27 @@ import {
   extractHandover,
   formatKoushuEnrollments,
   formatRegularPatternsSchedule,
+  stripNottaMeta,
+  INTERVIEW_CARD_IDS,
 } from './interview.shared';
 import { InterviewHub } from './InterviewHub';
 import { ArrowLeft, History, Printer } from 'lucide-react';
+
+/**
+ * 段の区切り帯（「話すこと」「材料（記録）」）。
+ * ★行動（話すこと）とデータ（材料）の境目を画面に出すためだけの細い見出し。
+ *   カードの見出しより弱く見せたいので、小さな文字＋1本の罫線にしてある。
+ */
+function SectionBand({ label }: { label: string }) {
+  return (
+    <div className="mb-2.5 mt-6 flex items-center gap-3 first:mt-0">
+      <span className="shrink-0 text-[11px] font-bold tracking-[0.24em] text-text-muted">
+        {label}
+      </span>
+      <span className="h-px flex-1 bg-border-subtle" aria-hidden="true" />
+    </div>
+  );
+}
 
 export function InterviewWorkspace() {
   const { profile, isLoading: authLoading, getSelectedSchoolIds, selectedSchoolId } = useAuth();
@@ -313,8 +331,14 @@ export function InterviewWorkspace() {
     const extracted = extractHandover(latest.content);
     return {
       date: latest.interview_date,
-      text: extracted ?? latest.content.slice(0, 200),
+      // ★見出しが無いときも先頭200字をそのまま出さない。Notta取込の本文は
+      //   【タイトル】【録音日時】【音声URL】で始まるので、ピン留めが録音日時とURLで埋まる。
+      //   buildTellSections（台本の「前回の面談から」）と同じ受け皿に揃える。
+      text: extracted ?? stripNottaMeta(latest.content).slice(0, 200),
       isFallback: !extracted,
+      // ★本文そのものも渡す。「## 次回への申し送り」が無いNotta記録は、ピン留め側で
+      //   タイムラインと同じ構造化（空の見出しを畳む）をして出すため。
+      content: latest.content,
     };
   }, [nonTaskInterviews]);
 
@@ -429,50 +453,78 @@ export function InterviewWorkspace() {
         </Card>
       ) : (
         <>
-          {/* 2カラム本体（左＝約束/タスク・面談記録、右＝成績・進行表）。
-              左カラムは面談記録（Notta取込の長文が入る）を読ませる列なので広めに取る。 */}
-          <div className="grid gap-5 print:hidden lg:grid-cols-[minmax(0,440px)_minmax(0,1fr)] lg:items-start">
-            <InterviewTimeline
-              studentId={student.id}
-              schoolId={student.school_id}
+          {/* ★並びは「上＝話すこと、下＝材料」。正典: docs/interview-workspace-layout-2026-09.md
+              ①面談で話すこと（全幅）→②成績｜面談記録→③進行表｜授業の様子→④タスク（最下段）。
+              以前は左440pxの列に「タスク→面談記録→（その中に）話すこと」と入れ子にしていたが、
+              話すことが材料の中に埋まって何をすればよいか分からない、と教室長から指摘があった。 */}
+          <div className="print:hidden">
+            {/* 帯はカード側に渡す。教室でAIがオフのときカードごと消えるので、帯だけ残らないように */}
+            <InterviewScriptCard
+              student={student}
+              assessments={assessments}
               interviews={interviews}
-              loading={lightLoading}
-              handover={handover}
-              onChanged={refetchInterviews}
-              briefSlot={
-                <>
-                  <InterviewScriptCard
-                    student={student}
-                    assessments={assessments}
-                    interviews={interviews}
-                    textbookData={textbookProgressData}
-                    disciplineSessions={disciplineSessions}
-                    koushuEnrollments={koushuEnrollments}
-                    regularPatterns={regularPatterns}
-                    examGoals={examGoals}
-                    targetSchools={targetSchools}
-                    loading={lightLoading || progressLoading}
-                    onResult={handleScriptResult}
-                  />
-                  {/* 志望校（第1〜3志望）。②のヒアリングで聞いてその場で入れる想定のため
-                      「面談で話すこと」カードのすぐ近くに置く。正典: docs/interview-script-ai-plan.md §4
-                      保存後に onSaved で④「志望校との差」を再取得し、その場で反映する */}
-                  <TargetSchoolsPanel
-                    studentId={student.id}
-                    schoolId={student.school_id}
-                    onSaved={refetchTargetSchools}
-                  />
-                </>
-              }
+              textbookData={textbookProgressData}
+              disciplineSessions={disciplineSessions}
+              koushuEnrollments={koushuEnrollments}
+              regularPatterns={regularPatterns}
+              examGoals={examGoals}
+              targetSchools={targetSchools}
+              loading={lightLoading || progressLoading}
+              onResult={handleScriptResult}
+              band={<SectionBand label="話すこと" />}
             />
-            <div className="flex flex-col gap-5">
-              <ScorePanel assessments={assessments} loading={lightLoading} />
-              <ProgressPanel
-                textbookData={textbookProgressData}
-                goals={textbookGoals}
-                loading={progressLoading}
+
+            <SectionBand label="材料（記録）" />
+
+            {/* 成績 ｜ 面談記録（半々）。台本の「事実」の行からここへ飛ぶので id を付ける */}
+            <div className="grid gap-5 lg:grid-cols-2 lg:items-start">
+              <div className="flex flex-col gap-5">
+                <div id={INTERVIEW_CARD_IDS.score} className="scroll-mt-4">
+                  <ScorePanel assessments={assessments} loading={lightLoading} />
+                </div>
+                {/* 志望校（第1〜3志望）。②のヒアリングで聞いてその場で入れる想定。
+                    保存後に onSaved で④「志望校との差」を再取得し、その場で反映する */}
+                <TargetSchoolsPanel
+                  studentId={student.id}
+                  schoolId={student.school_id}
+                  onSaved={refetchTargetSchools}
+                />
+              </div>
+              <div id={INTERVIEW_CARD_IDS.records} className="scroll-mt-4">
+                <InterviewRecordsCard
+                  studentId={student.id}
+                  schoolId={student.school_id}
+                  interviews={interviews}
+                  loading={lightLoading}
+                  handover={handover}
+                  onChanged={refetchInterviews}
+                />
+              </div>
+            </div>
+
+            {/* 進行表 ｜ 授業の様子（二次的な材料） */}
+            <div className="mt-5 grid gap-5 lg:grid-cols-2 lg:items-start">
+              <div id={INTERVIEW_CARD_IDS.progress} className="scroll-mt-4">
+                <ProgressPanel
+                  textbookData={textbookProgressData}
+                  goals={textbookGoals}
+                  loading={progressLoading}
+                />
+              </div>
+              <div id={INTERVIEW_CARD_IDS.discipline} className="scroll-mt-4">
+                <DisciplinePanel sessions={disciplineSessions} loading={lightLoading} />
+              </div>
+            </div>
+
+            {/* ★タスクは最下段。ほとんど使われていないのに最上段を占めていた */}
+            <div className="mt-5">
+              <InterviewTasksCard
+                studentId={student.id}
+                schoolId={student.school_id}
+                interviews={interviews}
+                loading={lightLoading}
+                onChanged={refetchInterviews}
               />
-              <DisciplinePanel sessions={disciplineSessions} loading={lightLoading} />
             </div>
           </div>
 

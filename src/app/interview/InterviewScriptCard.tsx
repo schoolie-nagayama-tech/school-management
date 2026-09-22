@@ -1,10 +1,18 @@
 'use client';
 
 /**
- * 面談ワークスペース 左カラム: 「面談で話すこと」カード（旧「報告事項」カード）
+ * 面談ワークスペース: 「面談で話すこと」カード（旧「報告事項」カード）
  * ------------------------------------------------------------------
- * 「前回の申し送り」の直下に置く。「報告事項を作る」を「面談で話すこと」に置き換え、
- * データの種類順（成績／授業の様子…）ではなく面談の流れ順（①導入〜⑦クロージング）で並べる。
+ * ページ最上段・全幅に置く。データの種類順（成績／授業の様子…）ではなく
+ * 面談の流れ順（①導入〜⑦クロージング）で並べる。
+ *
+ * ★2026-09の組み替えで、各シーンを2列にした（正典:
+ *   docs/interview-workspace-layout-2026-09.md）。
+ *   - 左＝話すこと（定型・聞く・AIの着眼点・つながり・見せる物・想定問答）
+ *   - 右＝事実（システムが記録から組んだ数字の行）
+ *   左を上から追えば面談が進み、右はその根拠になる。
+ * ★シーンの開閉（旧 SCENE_OPEN_BY_DEFAULT）は廃止した。縦に全部出す並びに変えたので、
+ *   畳んでおくと「左を追えば進む」が成立しない。
  *
  * 正典: docs/interview-script-ai-plan.md
  *
@@ -23,7 +31,7 @@
  *   この2つはサーバー（/api/ai/interview/brief）が足す。
  */
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Sparkles, RefreshCw, FileText, ArrowRight, HelpCircle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { isOwnerOrAbove } from '@/lib/utils/roles';
@@ -52,11 +60,11 @@ import {
   buildTargetSchoolGapLines,
   currentSeason,
   formatRegularPatternsSchedule,
+  INTERVIEW_CARD_IDS,
 } from './interview.shared';
 import {
   SCENE_KEYS,
   SCENE_LABEL,
-  SCENE_OPEN_BY_DEFAULT,
   SCENE_OF_SECTION,
   ASK_LINES,
   SHOW_LINES,
@@ -118,6 +126,12 @@ interface Props {
   loading?: boolean;
   /** 結果を親へ上げる。印刷シートが同じ内容を出すため */
   onResult: (view: ScriptView | null) => void;
+  /**
+   * カードの上に出す帯（「話すこと」）。
+   * ★カードと対で消えてほしいのでカード側に持たせる。教室でAIがオフのときは
+   *   カードごと出ないため、帯だけが残ると中身の無い見出しになる。
+   */
+  band?: ReactNode;
 }
 
 /** BRIEF_SECTIONS の並びのまま、そのシーンに属するセクションだけを抜き出す */
@@ -129,14 +143,71 @@ function sectionsForScene(sections: ScriptSectionView[], scene: SceneKey): Scrip
  * 1行の見た目（種類ごと）
  * ========================================================== */
 
-/** 伝える（システムの事実）。丸ドットだけの素の1行 */
+/**
+ * 事実の行の見出し → 飛び先カードの id。
+ * ★見出しは「◯◯ ―― …」の「◯◯」の部分と完全一致で引く。
+ *   ここに無い見出しはただの文字のまま出す（飛べないのにボタンに見せない）。
+ * ★飛び先を増やすときは interview.shared.ts の INTERVIEW_CARD_IDS と対で足す。
+ */
+const FACT_JUMP_TARGETS: Record<string, string> = {
+  成績: INTERVIEW_CARD_IDS.score,
+  定期テスト: INTERVIEW_CARD_IDS.score,
+  通知表: INTERVIEW_CARD_IDS.score,
+  内申: INTERVIEW_CARD_IDS.score,
+  模試: INTERVIEW_CARD_IDS.score,
+  進度: INTERVIEW_CARD_IDS.progress,
+  進行表: INTERVIEW_CARD_IDS.progress,
+  授業の様子: INTERVIEW_CARD_IDS.discipline,
+  '宿題・遅刻': INTERVIEW_CARD_IDS.discipline,
+  前回の面談から: INTERVIEW_CARD_IDS.records,
+};
+
+/** 見出しと本文の区切り。buildTellSections などが組む行の書式 */
+const FACT_SEPARATOR = ' ―― ';
+
+function scrollToCard(id: string) {
+  document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+/**
+ * 伝える（システムの事実）。丸ドットだけの素の1行。
+ * 見出しに飛び先があるときだけ、その部分をボタンにして材料カードへスクロールする。
+ */
 function TellLine({ text }: { text: string }) {
+  const sepIndex = text.indexOf(FACT_SEPARATOR);
+  const label = sepIndex === -1 ? null : text.slice(0, sepIndex);
+  const targetId = label ? FACT_JUMP_TARGETS[label] : undefined;
+
   return (
-    <div className="flex items-start gap-2 text-[13px] leading-snug text-text-body">
+    <div className="flex items-start gap-2 text-[12.5px] leading-snug text-text-body">
       <span
         className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-text-heading"
         aria-hidden="true"
       />
+      {targetId && label ? (
+        <span>
+          <button
+            type="button"
+            onClick={() => scrollToCard(targetId)}
+            className="font-medium text-text-heading underline decoration-border-strong underline-offset-2 hover:decoration-primary"
+            title="記録のカードへ移動する"
+          >
+            {label}
+          </button>
+          {text.slice(sepIndex)}
+        </span>
+      ) : (
+        <span>{text}</span>
+      )}
+    </div>
+  );
+}
+
+/** 話すこと（定型の読み上げ行）。事実の行と区別するため、印はダッシュにする */
+function SayLine({ text }: { text: string }) {
+  return (
+    <div className="flex items-start gap-2 text-[13px] leading-snug text-text-body">
+      <span className="mt-[9px] h-px w-2 shrink-0 bg-text-faint" aria-hidden="true" />
       <span>{text}</span>
     </div>
   );
@@ -272,6 +343,7 @@ export function InterviewScriptCard({
   targetSchools,
   loading,
   onResult,
+  band,
 }: Props) {
   /** この教室でAIを使えるか。null=まだ分からない */
   const [available, setAvailable] = useState<boolean | null>(null);
@@ -473,330 +545,364 @@ export function InterviewScriptCard({
   // ★オフ・未確定のあいだは何も出さない（押せる形にしない＝送信が起きない）
   if (available !== true) return null;
 
-  /** シーンごとのAIセクション（tell+seen）を並べる小コンポーネント */
-  const renderAiSections = (scene: SceneKey) => {
-    if (!view) return null;
-    return sectionsForScene(view.sections, scene).map((s) => (
-      <div key={s.key} className="flex flex-col gap-1">
-        {s.current.map((line, i) => (
-          <TellLine key={i} text={i === 0 ? `${s.label} ―― ${line}` : line} />
-        ))}
-        <SeenLine
-          label={s.label}
-          value={s.seen}
-          sign={s.sign}
-          onChange={(v) => editSeen(s.key, v)}
-        />
-      </div>
-    ));
+  /* ----------------------------------------------------------
+   * シーンごとの「左＝話すこと」「右＝事実」を組む
+   * ★どちらの列もこの2つの関数の中だけで組む。並びが複数箇所に散ると、
+   *   「左を上から追えば面談が進む」という前提がシーンごとに崩れる。
+   * -------------------------------------------------------- */
+
+  /** そのシーンのAIセクションの「見えること」（話すこと＝左） */
+  /**
+   * AIが1文でも書けたか。
+   * ★1文も書けていない（degraded・APIが落ちている等）ときは「見えること」の枠ごと出さない。
+   *   枠は空でも編集できるので教室長が自分の言葉を書き足せるが、それは
+   *   「AIは書いたが、この項目だけ見えることが無かった」ときに意味がある。
+   *   AIが丸ごと動かなかった日に「（見えることはありませんでした）」が
+   *   シーンの先頭に何行も並ぶと、AI抜きでも読めるはずの台本がただ読みにくくなる。
+   */
+  const hasAnySeen = view?.sections.some((s) => s.seen !== '') === true;
+
+  const aiSeenLines = (scene: SceneKey): ReactNode[] =>
+    view && hasAnySeen
+      ? sectionsForScene(view.sections, scene).map((s) => (
+          <SeenLine
+            key={s.key}
+            label={s.label}
+            value={s.seen}
+            sign={s.sign}
+            onChange={(v) => editSeen(s.key, v)}
+          />
+        ))
+      : [];
+
+  /** そのシーンのAIセクションの「現状の行」（事実＝右） */
+  const aiFactLines = (scene: SceneKey): ReactNode[] =>
+    view
+      ? sectionsForScene(view.sections, scene).flatMap((s) =>
+          s.current.map((line, i) => (
+            <TellLine
+              key={`${s.key}-${i}`}
+              text={i === 0 ? `${s.label}${FACT_SEPARATOR}${line}` : line}
+            />
+          ))
+        )
+      : [];
+
+  const askLine = (id: string, text: string) => (
+    <AskLine key={id} text={text} checked={checked[id] === true} onToggle={() => toggleAsk(id)} />
+  );
+
+  /** 左（話すこと）。定型・聞く・AIの着眼点・つながり・見せる物・想定問答 */
+  const sceneSayLines = (scene: SceneKey): ReactNode[] => {
+    const askLines = ASK_LINES[scene] ?? [];
+    const showLines = SHOW_LINES[scene] ?? [];
+
+    switch (scene) {
+      case 'intro':
+        return INTRO_LINES.map((t, i) => <SayLine key={i} text={t} />);
+
+      case 'hearing':
+        return [
+          ...aiSeenLines('hearing'),
+          ...askLines.map((t, i) => askLine(`hearing:${i}`, t)),
+          // 目標はあるが結果が成績側にまだ入っていない試験。台本が入力を促す形にする
+          ...goalAchievement.ask.map((t, i) => askLine(`hearing:goal:${i}`, t)),
+        ];
+
+      case 'timing':
+        if (timing.length === 0 && qa.length === 0) {
+          return [
+            <span key="empty" className="text-[11px] text-text-faint">
+              この学年・季節の定型トークはまだ用意されていません
+            </span>,
+          ];
+        }
+        return [
+          ...timing.map((t, i) => <SayLine key={`timing-${i}`} text={t} />),
+          ...qa.map((item, i) => <QaLine key={`qa-${i}`} q={item.q} a={item.a} />),
+        ];
+
+      case 'status':
+        return [
+          ...aiSeenLines('status'),
+          ...showLines.map((t, i) => <ShowLine key={`show-${i}`} text={t} />),
+          ...askLines.map((t, i) => askLine(`status:${i}`, t)),
+          // 定期テスト・模試のどちらかが1件も記録に無いとき（中学生以上のみ）
+          ...missingRecordAsk.map((t, i) => askLine(`status:missing:${i}`, t)),
+          // 志望校が1件も登録されていないとき
+          ...targetSchoolGap.ask.map((t, i) => askLine(`status:target-school:${i}`, t)),
+        ];
+
+      case 'plan':
+        return [
+          // ★③で話した「なぜ今か」を、プラン表を開いた場でもう一度出す（話すことなので左）
+          ...planRationale.map((t, i) => <SayLine key={`rationale-${i}`} text={t} />),
+          ...aiSeenLines('plan'),
+          ...(view?.bridge
+            ? [
+                <div
+                  key="bridge"
+                  className="flex items-start gap-2 rounded-md bg-info-subtle px-2.5 py-1.5 text-[13px] leading-snug text-info"
+                >
+                  <ArrowRight className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                  <span className="font-bold">{view.bridge}</span>
+                </div>,
+              ]
+            : []),
+          ...showLines.map((t, i) => <ShowLine key={`show-${i}`} text={t} />),
+        ];
+
+      case 'apply':
+        return APPLY_LINES.map((t, i) => <SayLine key={i} text={t} />);
+
+      case 'closing':
+        return CLOSING_LINES.map((t, i) => <SayLine key={i} text={t} />);
+    }
+  };
+
+  /** 右（事実）。システムが記録から組んだ行だけを置く */
+  const sceneFactLines = (scene: SceneKey): ReactNode[] => {
+    switch (scene) {
+      case 'hearing':
+        return [
+          ...aiFactLines('hearing'),
+          // 目標の達成度。AIを通さず、システムが試験目標と成績を突き合わせて組む行
+          ...goalAchievement.tell.map((t, i) => (
+            <TellLine key={`goal-${i}`} text={i === 0 ? `目標の達成度${FACT_SEPARATOR}${t}` : t} />
+          )),
+        ];
+
+      case 'timing':
+        return [
+          // 入試までの日数。★中3のときだけ出る（examDates.ts）。
+          // 中1・中2に「あと900日」と言っても面談では使わない
+          ...(examCountdown ? [<TellLine key="countdown" text={examCountdown} />] : []),
+          ...(examApplication ? [<TellLine key="application" text={examApplication} />] : []),
+        ];
+
+      case 'status':
+        return [
+          ...aiFactLines('status'),
+          // 志望校との差。マスタに当たり本人の内申・偏差値も取れたときだけ出る
+          ...targetSchoolGap.tell.map((t, i) => <TellLine key={`gap-${i}`} text={t} />),
+        ];
+
+      case 'plan':
+        return [
+          ...(regularPatterns.length > 0
+            ? [
+                <TellLine
+                  key="regular"
+                  text={`通常授業${FACT_SEPARATOR}${formatRegularPatternsSchedule(regularPatterns)}`}
+                />,
+              ]
+            : []),
+          ...aiFactLines('plan'),
+        ];
+
+      case 'apply':
+        return [
+          <TellLine
+            key="applied"
+            text={`申込の状況${FACT_SEPARATOR}${
+              applied ? `申込あり（${SEASON_LABELS[seasonKey]} ${seasonKoma}コマ）` : '未申込'
+            }`}
+          />,
+        ];
+
+      default:
+        // ★①⑦は右が空。埋めずに空のままにする（非対称のほうが「ここは言うだけ」と分かる）
+        return [];
+    }
   };
 
   return (
-    <div className="rounded-lg border border-border bg-surface-raised p-3">
-      <div className="flex items-center gap-1.5">
-        <Sparkles className="h-3.5 w-3.5 shrink-0 text-ink" aria-hidden="true" />
-        <span className="text-xs font-semibold text-text-heading">面談で話すこと</span>
-        <span className="ml-auto shrink-0 text-[11px] text-text-faint">
-          {madeAt ? `${madeAt.slice(5).replace('-', '/')} に作成 ・ ` : ''}
-          {/* ★見比べるときに取り違えないよう、作ったモデルは結果のそばに常に出す（admin/owner のみ） */}
-          {canChooseModel && madeWithModelKey ? `${MODEL_LABELS[madeWithModelKey]}で作成 ・ ` : ''}
-          保存されません
-        </span>
-      </div>
-
-      {!view && (
-        <div className="mt-2 flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={() => void run()}
-            disabled={busy || loading === true}
-            className="inline-flex items-center gap-1.5 rounded-full bg-ink px-3 py-1 text-[11px] font-medium text-white transition-opacity disabled:opacity-40"
-          >
-            <Sparkles className="h-3 w-3" aria-hidden="true" />
-            {busy ? '作っています…' : '面談で話すことを作る'}
-          </button>
-          {canChooseModel && (
-            <ModelKeyToggle value={modelKey} onChange={setModelKey} disabled={busy} />
-          )}
-          {message && <span className="text-[11px] text-text-muted">{message}</span>}
+    <>
+      {band}
+      <div className="rounded-xl border border-border bg-surface p-4">
+        <div className="flex flex-wrap items-center gap-2">
+          <Sparkles className="h-4 w-4 shrink-0 text-ink" aria-hidden="true" />
+          <span className="text-sm font-bold text-text-heading">面談で話すこと</span>
+          <span className="ml-auto shrink-0 text-[11px] text-text-faint">
+            {madeAt ? `${madeAt.slice(5).replace('-', '/')} に作成 ・ ` : ''}
+            {/* ★見比べるときに取り違えないよう、作ったモデルは結果のそばに常に出す（admin/owner のみ） */}
+            {canChooseModel && madeWithModelKey
+              ? `${MODEL_LABELS[madeWithModelKey]}で作成 ・ `
+              : ''}
+            保存されません
+          </span>
         </div>
-      )}
 
-      {view && (
-        <div className="mt-2 flex flex-col gap-2.5">
-          {/* 凡例 */}
-          <div className="flex flex-wrap items-center gap-3 rounded-md bg-surface px-2.5 py-1.5 text-[11px] text-text-muted">
-            <span className="flex items-center gap-1">
-              <span className="h-1.5 w-1.5 rounded-full bg-text-heading" aria-hidden="true" />
-              伝える
-            </span>
-            <span className="flex items-center gap-1">
-              <Sparkles className="h-3 w-3 text-ink" aria-hidden="true" />
-              AIの着眼点
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="h-2.5 w-2.5 rounded-sm border border-border" aria-hidden="true" />
-              聞く
-            </span>
-            <span className="flex items-center gap-1">
-              <FileText className="h-3 w-3 text-warning" aria-hidden="true" />
-              見せる
-            </span>
-          </div>
-
-          {SCENE_KEYS.map((scene) => {
-            const askLines = ASK_LINES[scene] ?? [];
-            const showLines = SHOW_LINES[scene] ?? [];
-
-            return (
-              <details
-                key={scene}
-                open={SCENE_OPEN_BY_DEFAULT[scene]}
-                className="rounded-md border border-border-subtle"
-              >
-                <summary className="flex cursor-pointer items-center gap-2 px-2.5 py-1.5 text-xs font-bold text-text-heading">
-                  <span>{SCENE_LABEL[scene]}</span>
-                  {/* シーンごとの短い補足バッジ */}
-                  {scene === 'timing' && (
-                    <span className="font-normal text-text-faint">
-                      {SEASON_LABELS[seasonKey]}
-                      {isExamGrade(student.grade) ? '・受験学年' : ''}
-                    </span>
-                  )}
-                  {scene === 'plan' && seasonEnrollments.length > 0 && (
-                    <span className="ml-auto font-normal text-text-faint">
-                      {SEASON_LABELS[seasonKey]} 申込 {seasonKoma}コマ
-                    </span>
-                  )}
-                  {scene === 'apply' && (
-                    <span className="ml-auto font-normal text-text-faint">
-                      {applied ? '申込あり' : '未申込'}
-                    </span>
-                  )}
-                </summary>
-
-                <div className="flex flex-col gap-1.5 px-2.5 pb-2.5">
-                  {scene === 'intro' && INTRO_LINES.map((t, i) => <TellLine key={i} text={t} />)}
-
-                  {scene === 'hearing' && (
-                    <>
-                      {renderAiSections('hearing')}
-                      {/* 目標の達成度。AI（renderAiSections）を通さず、システムが試験目標と
-                          成績を突き合わせて直接組む「伝える」行 */}
-                      {goalAchievement.tell.map((t, i) => (
-                        <TellLine key={`goal-${i}`} text={i === 0 ? `目標の達成度 ―― ${t}` : t} />
-                      ))}
-                      {(askLines.length > 0 || goalAchievement.ask.length > 0) && (
-                        <>
-                          <div className="mt-0.5 h-px bg-border-subtle" />
-                          <div className="text-[11px] font-medium text-text-faint">
-                            ここから先は聞くこと（NESTに記録が無い）
-                          </div>
-                          {askLines.map((t, i) => {
-                            const id = `hearing:${i}`;
-                            return (
-                              <AskLine
-                                key={id}
-                                text={t}
-                                checked={checked[id] === true}
-                                onToggle={() => toggleAsk(id)}
-                              />
-                            );
-                          })}
-                          {/* 目標はあるが結果が成績側にまだ入っていない試験。台本が入力を促す形にする */}
-                          {goalAchievement.ask.map((t, i) => {
-                            const id = `hearing:goal:${i}`;
-                            return (
-                              <AskLine
-                                key={id}
-                                text={t}
-                                checked={checked[id] === true}
-                                onToggle={() => toggleAsk(id)}
-                              />
-                            );
-                          })}
-                        </>
-                      )}
-                    </>
-                  )}
-
-                  {scene === 'timing' && (
-                    <>
-                      {/* 入試までの日数。★中3のときだけ出る（examDates.ts）。
-                          中1・中2に「あと900日」と言っても面談では使わない */}
-                      {examCountdown && <TellLine text={examCountdown} />}
-                      {examApplication && <TellLine text={examApplication} />}
-                      {timing.length > 0 || qa.length > 0 ? (
-                        <>
-                          {timing.map((t, i) => (
-                            <TellLine key={i} text={t} />
-                          ))}
-                          {qa.map((item, i) => (
-                            <QaLine key={`qa-${i}`} q={item.q} a={item.a} />
-                          ))}
-                        </>
-                      ) : (
-                        <span className="text-[11px] text-text-faint">
-                          この学年・季節の定型トークはまだ用意されていません
-                        </span>
-                      )}
-                    </>
-                  )}
-
-                  {scene === 'status' && (
-                    <>
-                      {renderAiSections('status')}
-                      {/* 志望校との差。マスタに当たり本人の内申・偏差値も取れたときだけ出る */}
-                      {targetSchoolGap.tell.map((t, i) => (
-                        <TellLine key={`gap-${i}`} text={t} />
-                      ))}
-                      {showLines.map((t, i) => (
-                        <ShowLine key={i} text={t} />
-                      ))}
-                      {askLines.map((t, i) => {
-                        const id = `status:${i}`;
-                        return (
-                          <AskLine
-                            key={id}
-                            text={t}
-                            checked={checked[id] === true}
-                            onToggle={() => toggleAsk(id)}
-                          />
-                        );
-                      })}
-                      {/* 定期テスト・模試のどちらかが1件も記録に無いとき（中学生以上のみ） */}
-                      {missingRecordAsk.map((t, i) => {
-                        const id = `status:missing:${i}`;
-                        return (
-                          <AskLine
-                            key={id}
-                            text={t}
-                            checked={checked[id] === true}
-                            onToggle={() => toggleAsk(id)}
-                          />
-                        );
-                      })}
-                      {/* 志望校が1件も登録されていないとき */}
-                      {targetSchoolGap.ask.map((t, i) => {
-                        const id = `status:target-school:${i}`;
-                        return (
-                          <AskLine
-                            key={id}
-                            text={t}
-                            checked={checked[id] === true}
-                            onToggle={() => toggleAsk(id)}
-                          />
-                        );
-                      })}
-                    </>
-                  )}
-
-                  {scene === 'plan' && (
-                    <>
-                      {regularPatterns.length > 0 && (
-                        <TellLine
-                          text={`通常授業 ―― ${formatRegularPatternsSchedule(regularPatterns)}`}
-                        />
-                      )}
-                      {/* ★③で話した「なぜ今か」を、プラン表を開いた場でもう一度出す。
-                          ③と同じ行（scenes.ts の KANAGAWA_JUNIOR3_WINTER_SUBJECTS） */}
-                      {planRationale.map((t, i) => (
-                        <TellLine key={`rationale-${i}`} text={t} />
-                      ))}
-                      {renderAiSections('plan')}
-                      {view.bridge && (
-                        <div className="flex items-start gap-2 rounded-md bg-info-subtle px-2.5 py-1.5 text-[13px] leading-snug text-info">
-                          <ArrowRight className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-                          <span className="font-bold">{view.bridge}</span>
-                        </div>
-                      )}
-                      {showLines.map((t, i) => (
-                        <ShowLine key={i} text={t} />
-                      ))}
-                    </>
-                  )}
-
-                  {scene === 'apply' && (
-                    <>
-                      <TellLine
-                        text={`申込の状況 ―― ${
-                          applied
-                            ? `申込あり（${SEASON_LABELS[seasonKey]} ${seasonKoma}コマ）`
-                            : '未申込'
-                        }`}
-                      />
-                      {APPLY_LINES.map((t, i) => (
-                        <TellLine key={i} text={t} />
-                      ))}
-                    </>
-                  )}
-
-                  {scene === 'closing' &&
-                    CLOSING_LINES.map((t, i) => <TellLine key={i} text={t} />)}
-                </div>
-              </details>
-            );
-          })}
-
-          {/* 空の見出しは出さない（無いものを見出しだけ立てると「抜けている」に見える） */}
-          {view.thread && (
-            <div className="flex flex-col gap-1">
-              <span className="text-[11px] font-bold text-text-heading">つなげて見えること</span>
-              <p className="text-xs leading-snug text-text-heading">{view.thread}</p>
-            </div>
-          )}
-
-          <div className="flex flex-wrap items-center gap-2">
+        {!view && (
+          <div className="mt-2 flex flex-wrap items-center gap-2">
             <button
               type="button"
               onClick={() => void run()}
-              disabled={busy}
-              className="inline-flex items-center gap-1 rounded-full border border-ink/25 bg-surface px-2.5 py-1 text-[11px] text-ink transition-opacity disabled:opacity-40"
+              disabled={busy || loading === true}
+              className="inline-flex items-center gap-1.5 rounded-full bg-ink px-3 py-1 text-[11px] font-medium text-white transition-opacity disabled:opacity-40"
             >
-              <RefreshCw className="h-3 w-3" aria-hidden="true" />
-              {busy ? '作っています…' : '作り直す'}
+              <Sparkles className="h-3 w-3" aria-hidden="true" />
+              {busy ? '作っています…' : '面談で話すことを作る'}
             </button>
             {canChooseModel && (
               <ModelKeyToggle value={modelKey} onChange={setModelKey} disabled={busy} />
             )}
             {message && <span className="text-[11px] text-text-muted">{message}</span>}
           </div>
+        )}
 
-          <span className="text-[11px] leading-snug text-text-muted">
-            伝える行はシステムの記録です。AIの着眼点は直せます。聞くのチェックは保存されません
-          </span>
+        {view && (
+          <div className="mt-3 flex flex-col gap-2">
+            {/* 凡例 */}
+            <div className="flex flex-wrap items-center gap-3 rounded-md bg-surface-hover px-2.5 py-1.5 text-[11px] text-text-muted">
+              <span className="flex items-center gap-1">
+                <span className="h-px w-2 bg-text-faint" aria-hidden="true" />
+                話す（定型）
+              </span>
+              {/* AIが1文も書けなかった日は着眼点の行自体が出ないので、凡例からも外す */}
+              {hasAnySeen && (
+                <span className="flex items-center gap-1">
+                  <Sparkles className="h-3 w-3 text-ink" aria-hidden="true" />
+                  AIの着眼点
+                </span>
+              )}
+              <span className="flex items-center gap-1">
+                <span className="h-2.5 w-2.5 rounded-sm border border-border" aria-hidden="true" />
+                聞く
+              </span>
+              <span className="flex items-center gap-1">
+                <FileText className="h-3 w-3 text-warning" aria-hidden="true" />
+                見せる
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="h-1.5 w-1.5 rounded-full bg-text-heading" aria-hidden="true" />
+                事実（見出しを押すと記録へ移動）
+              </span>
+            </div>
 
-          {/* ★答え合わせ。現状の行も「見えること」も記録しない（成績と引継ぎが混ざる）。
+            {/* ★列の見出しは一覧の先頭に1回だけ。シーンごとに繰り返すと読む線が切れる */}
+            <div className="hidden gap-6 lg:grid lg:grid-cols-2">
+              <span className="text-[10px] font-bold tracking-[0.2em] text-text-faint">
+                話すこと
+              </span>
+              <span className="pl-3 text-[10px] font-bold tracking-[0.2em] text-text-faint">
+                事実（記録から）
+              </span>
+            </div>
+
+            {SCENE_KEYS.map((scene, index) => {
+              const sayLines = sceneSayLines(scene);
+              const factLines = sceneFactLines(scene);
+
+              return (
+                <section
+                  key={scene}
+                  className="border-t border-border-subtle pt-2.5 first-of-type:border-t-0 first-of-type:pt-0"
+                >
+                  <div className="mb-1.5 flex items-center gap-2">
+                    <span
+                      className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-border-subtle bg-surface-hover text-[10px] font-bold text-text-muted"
+                      aria-hidden="true"
+                    >
+                      {String(index + 1).padStart(2, '0')}
+                    </span>
+                    <span className="text-[13px] font-bold text-text-heading">
+                      {SCENE_LABEL[scene]}
+                    </span>
+                    {/* シーンごとの短い補足バッジ */}
+                    {scene === 'timing' && (
+                      <span className="text-[11px] text-text-faint">
+                        {SEASON_LABELS[seasonKey]}
+                        {isExamGrade(student.grade) ? '・受験学年' : ''}
+                      </span>
+                    )}
+                    {scene === 'plan' && seasonEnrollments.length > 0 && (
+                      <span className="ml-auto text-[11px] text-text-faint">
+                        {SEASON_LABELS[seasonKey]} 申込 {seasonKoma}コマ
+                      </span>
+                    )}
+                    {scene === 'apply' && (
+                      <span className="ml-auto text-[11px] text-text-faint">
+                        {applied ? '申込あり' : '未申込'}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="grid items-start gap-x-6 gap-y-2 lg:grid-cols-2">
+                    <div className="flex flex-col gap-1.5">{sayLines}</div>
+                    {/* 右は少し静かに（薄い背景・小さめ）。空のシーンでは枠ごと出さない */}
+                    {factLines.length > 0 ? (
+                      <div className="flex flex-col gap-1 rounded-r-md border-l border-border-subtle bg-surface-hover px-3 py-1.5">
+                        {factLines}
+                      </div>
+                    ) : (
+                      <div aria-hidden="true" />
+                    )}
+                  </div>
+                </section>
+              );
+            })}
+
+            {/* 空の見出しは出さない（無いものを見出しだけ立てると「抜けている」に見える） */}
+            {view.thread && (
+              <div className="flex flex-col gap-1 border-t border-border-subtle pt-2.5">
+                <span className="text-[11px] font-bold text-text-heading">つなげて見えること</span>
+                <p className="text-xs leading-snug text-text-heading">{view.thread}</p>
+              </div>
+            )}
+
+            <div className="flex flex-wrap items-center gap-2 border-t border-border-subtle pt-2.5">
+              <button
+                type="button"
+                onClick={() => void run()}
+                disabled={busy}
+                className="inline-flex items-center gap-1 rounded-full border border-ink/25 bg-surface px-2.5 py-1 text-[11px] text-ink transition-opacity disabled:opacity-40"
+              >
+                <RefreshCw className="h-3 w-3" aria-hidden="true" />
+                {busy ? '作っています…' : '作り直す'}
+              </button>
+              {canChooseModel && (
+                <ModelKeyToggle value={modelKey} onChange={setModelKey} disabled={busy} />
+              )}
+              {message && <span className="text-[11px] text-text-muted">{message}</span>}
+            </div>
+
+            <span className="text-[11px] leading-snug text-text-muted">
+              右の「事実」はシステムの記録です。AIの着眼点は直せます。聞くのチェックは保存されません
+            </span>
+
+            {/* ★答え合わせ。現状の行も「見えること」も記録しない（成績と引継ぎが混ざる）。
               残すのはセクション数とモデルだけ。
               ★モデルを残すのは、Sonnet 5 / Opus 5 のどちらが良いかを実データで比べるため
                 （ai_output は jsonb なのでDB変更は不要。集計は /admin/ai-feedback）。
               ★AIが1文も書けなかったとき（APIが落ちている等）は出さない。
                 評価する対象が無いのに「合っていた／ずれていた」を押させると、
                 何を答えたのか分からない記録が溜まる。 */}
-          {(view.thread !== '' ||
-            view.bridge !== '' ||
-            view.sections.some((s) => s.seen !== '')) && (
-            <DigestVerdictChips
-              rated={rated}
-              onRate={(verdict) => {
-                setRated(true);
-                void recordAiFeedback({
-                  schoolId: student.school_id ?? '',
-                  feature: STUDENT_DIGEST_FEATURE_KEY,
-                  targetKind: 'student',
-                  targetId: student.id,
-                  verdict,
-                  aiOutput: {
-                    sectionCount: view.sections.length,
-                    ...(madeWithModelKey ? { modelKey: madeWithModelKey } : {}),
-                    ...(madeWithModel ? { model: madeWithModel } : {}),
-                  },
-                });
-              }}
-            />
-          )}
-        </div>
-      )}
-    </div>
+            {(view.thread !== '' ||
+              view.bridge !== '' ||
+              view.sections.some((s) => s.seen !== '')) && (
+              <DigestVerdictChips
+                rated={rated}
+                onRate={(verdict) => {
+                  setRated(true);
+                  void recordAiFeedback({
+                    schoolId: student.school_id ?? '',
+                    feature: STUDENT_DIGEST_FEATURE_KEY,
+                    targetKind: 'student',
+                    targetId: student.id,
+                    verdict,
+                    aiOutput: {
+                      sectionCount: view.sections.length,
+                      ...(madeWithModelKey ? { modelKey: madeWithModelKey } : {}),
+                      ...(madeWithModel ? { model: madeWithModel } : {}),
+                    },
+                  });
+                }}
+              />
+            )}
+          </div>
+        )}
+      </div>
+    </>
   );
 }
