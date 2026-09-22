@@ -187,6 +187,44 @@ export const MAX_CONCEPTS_PER_CALL = 20;
 /** テーマの長さの上限。本番の最長は82字 */
 export const MAX_THEME_LENGTH = 120;
 
+/** 単元を何件まで並べるか。★超えたぶんは頭と尻を残して間を省く */
+export const MAX_UNITS_SHOWN = 12;
+const UNITS_HEAD = 8;
+const UNITS_TAIL = 4;
+
+/**
+ * 単元の行を作る。
+ *
+ * ★本番の単元は多い。提案書775件のうち21件以上が286件（37%）、最大116件。
+ *   単元数とコマ数がほぼ一致している（1コマ1単元）ので、これは誤入力ではなく本物の計画。
+ *   中3の総復習や高校の予習コースが、テキストの目次をそのまま並べた形になる。
+ *
+ * ★全部並べると、AIは42件のうち1件を選んで書くことになり、
+ *   「否定文・命令文をやります」のように、計画のごく一部だけを指す文になってしまう。
+ *   そこで多いときは頭と尻だけ見せる。範囲（どこからどこまで）が分かれば
+ *   「文型から分詞構文まで」と書けて、42コマの計画を1行で正しく言える。
+ *
+ * ★省いた件数は明示する。黙って切ると「その単元はやらない」と読まれる。
+ *
+ * ★合計コマ数は数えて渡す。AIに42個の数を足させると間違えるため。
+ */
+export function formatUnitsLine(units: readonly { title: string; koma: number }[]): string {
+  if (units.length === 0) return '単元: （未選択）';
+
+  const totalKoma = units.reduce((sum, u) => sum + u.koma, 0);
+  const head = `単元（${units.length}件・計${totalKoma}コマ）: `;
+  const show = (u: { title: string; koma: number }) => `${u.title} ${u.koma}コマ`;
+
+  if (units.length <= MAX_UNITS_SHOWN) return head + units.map(show).join(' / ');
+
+  const omitted = units.length - UNITS_HEAD - UNITS_TAIL;
+  return [
+    head + units.slice(0, UNITS_HEAD).map(show).join(' / '),
+    `…（間の${omitted}件は省略。やらないという意味ではない）…`,
+    units.slice(-UNITS_TAIL).map(show).join(' / '),
+  ].join(' / ');
+}
+
 export function conceptSystemPrompt(): string {
   return [
     'あなたは学習塾の教室長です。講習提案書の「講習テーマ」を1行で書きます。',
@@ -201,7 +239,11 @@ export function conceptSystemPrompt(): string {
     '- 何をやる講習かが分かる文にする。です・ます調。',
     '- ★型に嵌めない。生徒ごとに単元も成績も違うので、同じ言い回しを使い回さない。',
     '- ★渡された単元の名前を、最低1つそのまま使う。「基礎」「応用」のような抽象語に言い換えない。',
+    '- ★単元が多いときは、1つだけ挙げて全体のように書かない。最初と最後の単元で範囲を示す',
+    '  （例:「文型から分詞構文まで」）。40件の計画を1件の話にすると、別の講習の説明になる。',
+    '- ★「…（間の◯件は省略…）…」は、見せていないだけで、やらない単元ではない。',
     '- コマ数は入れてよい（例:「（英語8コマ）」）。',
+    '  ★書くなら「計◯コマ」として渡した数をそのまま使う。自分で足し算しない。',
     '',
     '■ 成績の使い方',
     '- ★渡された成績だけを見る。渡されていなければ、成績には一切触れない。',
@@ -227,9 +269,7 @@ export function conceptUserText(items: readonly ConceptInput[]): string {
       const lines = [`--- id: ${it.proposalId}`];
       lines.push(`学年科目: ${[it.gradeLabel, it.subject].filter(Boolean).join(' ') || '不明'}`);
       lines.push(`教室長が書いた一言: ${it.theme.trim() || '（空）'}`);
-      lines.push(
-        `単元: ${it.units.length > 0 ? it.units.map((u) => `${u.title} ${u.koma}コマ`).join(' / ') : '（未選択）'}`
-      );
+      lines.push(formatUnitsLine(it.units));
 
       // ★持っている成績だけを書く。無い項目は行ごと出さない（「無い」と伝えて推測させない）
       const grades: string[] = [];
