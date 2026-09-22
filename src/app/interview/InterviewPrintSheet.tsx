@@ -38,10 +38,11 @@ import {
   CLOSING_LINES,
   APPLY_LINES,
   timingLines,
+  timingQa,
   planRationaleLines,
   isExamGrade,
 } from '@/lib/interview/scenes';
-import { examCountdownLine } from '@/lib/interview/examDates';
+import { examCountdownLine, examApplicationLine } from '@/lib/interview/examDates';
 import { regionOfSchool } from '@/lib/interview/region';
 import { briefSectionLabel, type BriefSectionKey } from '@/lib/ai/interviewBrief';
 import { formatGradeLabel } from '@/lib/utils/gradeLabel';
@@ -141,6 +142,9 @@ export function InterviewPrintSheet({
   // ⑤で「なぜこの教科・この単元か」を言うための根拠。③と同じ行（scenes.ts）
   const planRationale = planRationaleLines(student.grade, seasonKey, region);
   const examCountdown = examCountdownLine(new Date(), student.grade, region);
+  const examApplication = examApplicationLine(new Date(), student.grade, region);
+  // ③の想定問答。よく聞かれること → こう答えている（scenes.ts）
+  const qa = timingQa(student.grade, seasonKey, region);
   const seasonEnrollments = koushuEnrollments.filter((e) => e.season === seasonKey);
   const seasonKoma = seasonEnrollments.reduce((sum, e) => sum + (e.koma_count ?? 0), 0);
   const applied = seasonEnrollments.length > 0;
@@ -202,8 +206,18 @@ export function InterviewPrintSheet({
           />
           {/* 入試までの日数。★中3のときだけ出る（examDates.ts） */}
           {examCountdown && <p className="text-[10px] font-medium">{examCountdown}</p>}
-          {timing.length > 0 ? (
-            <Bullets items={timing} />
+          {examApplication && <p className="text-[10px] font-medium">{examApplication}</p>}
+          {timing.length > 0 || qa.length > 0 ? (
+            <>
+              <Bullets items={timing} />
+              {/* 想定問答。面談中に引くものなので、問を太字にして答えを下げる */}
+              {qa.map((item, i) => (
+                <div key={i} className="text-[9.5px] leading-[1.5] text-gray-800">
+                  <div className="font-bold">Q. {item.q}</div>
+                  <div className="pl-2.5">A. {item.a}</div>
+                </div>
+              ))}
+            </>
           ) : (
             <p className="text-[10px] text-gray-500">この学年・季節の定型トークは未登録です</p>
           )}

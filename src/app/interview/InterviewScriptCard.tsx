@@ -24,7 +24,7 @@
  */
 
 import { useEffect, useMemo, useState } from 'react';
-import { Sparkles, RefreshCw, FileText, ArrowRight } from 'lucide-react';
+import { Sparkles, RefreshCw, FileText, ArrowRight, HelpCircle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { isOwnerOrAbove } from '@/lib/utils/roles';
 import { fetchWithAuth } from '@/lib/api/auth';
@@ -64,11 +64,12 @@ import {
   CLOSING_LINES,
   APPLY_LINES,
   timingLines,
+  timingQa,
   planRationaleLines,
   isExamGrade,
   type SceneKey,
 } from '@/lib/interview/scenes';
-import { examCountdownLine } from '@/lib/interview/examDates';
+import { examCountdownLine, examApplicationLine } from '@/lib/interview/examDates';
 import { regionOfSchool } from '@/lib/interview/region';
 
 /** 画面に出す1セクション（APIの戻り） */
@@ -137,6 +138,22 @@ function TellLine({ text }: { text: string }) {
         aria-hidden="true"
       />
       <span>{text}</span>
+    </div>
+  );
+}
+
+/**
+ * 想定問答（よく聞かれること → こう答えている）。
+ * ★読み上げる順ではなく面談中に引くものなので、伝える行とは見た目を分けている。
+ */
+function QaLine({ q, a }: { q: string; a: string }) {
+  return (
+    <div className="rounded-md border border-border-subtle bg-surface-hover px-2.5 py-1.5">
+      <div className="flex items-start gap-2 text-[13px] font-bold leading-snug text-text-heading">
+        <HelpCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-text-faint" aria-hidden="true" />
+        <span>{q}</span>
+      </div>
+      <div className="mt-1 pl-[22px] text-[13px] leading-snug text-text-body">{a}</div>
     </div>
   );
 }
@@ -356,6 +373,16 @@ export function InterviewScriptCard({
   const timing = useMemo(
     () => timingLines(student.grade, seasonKey, region),
     [student.grade, seasonKey, region]
+  );
+  // ③の想定問答。よく聞かれること → こう答えている（scenes.ts）
+  const qa = useMemo(
+    () => timingQa(student.grade, seasonKey, region),
+    [student.grade, seasonKey, region]
+  );
+  // 出願・取り下げの〆切。★過ぎた日付は出ない（examDates.ts）
+  const examApplication = useMemo(
+    () => examApplicationLine(new Date(), student.grade, region),
+    [student.grade, region]
   );
   // ⑤で「なぜこの教科・この単元か」を言うための根拠。③と同じ行（scenes.ts）
   const planRationale = useMemo(
@@ -598,8 +625,16 @@ export function InterviewScriptCard({
                       {/* 入試までの日数。★中3のときだけ出る（examDates.ts）。
                           中1・中2に「あと900日」と言っても面談では使わない */}
                       {examCountdown && <TellLine text={examCountdown} />}
-                      {timing.length > 0 ? (
-                        timing.map((t, i) => <TellLine key={i} text={t} />)
+                      {examApplication && <TellLine text={examApplication} />}
+                      {timing.length > 0 || qa.length > 0 ? (
+                        <>
+                          {timing.map((t, i) => (
+                            <TellLine key={i} text={t} />
+                          ))}
+                          {qa.map((item, i) => (
+                            <QaLine key={`qa-${i}`} q={item.q} a={item.a} />
+                          ))}
+                        </>
                       ) : (
                         <span className="text-[11px] text-text-faint">
                           この学年・季節の定型トークはまだ用意されていません

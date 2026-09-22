@@ -7,6 +7,7 @@ import {
   GRADE_BAND_LABEL,
   gradeBandOf,
   timingLines,
+  timingQa,
   planRationaleLines,
   emptyTimingCells,
   isExamGrade,
@@ -14,7 +15,12 @@ import {
 } from '@/lib/interview/scenes';
 import { BRIEF_SECTIONS } from '@/lib/ai/interviewBrief';
 import { stripNottaMeta } from '@/app/interview/interview.shared';
-import { examCountdownLine, nextTokyoExamDate, daysUntil } from '@/lib/interview/examDates';
+import {
+  examCountdownLine,
+  examApplicationLine,
+  nextTokyoExamDate,
+  daysUntil,
+} from '@/lib/interview/examDates';
 import { regionOfSchool } from '@/lib/interview/region';
 
 describe('面談のシーン定義', () => {
@@ -113,12 +119,36 @@ describe('③時期の重要性の定型トーク', () => {
   });
 
   it('★都県で中身が変わる。東京の制度の話が神奈川に出ない', () => {
-    const tokyo = timingLines(9, 'winter', 'tokyo');
-    const kanagawa = timingLines(9, 'winter', 'kanagawa');
+    const tokyo = [...timingLines(9, 'winter', 'tokyo')];
+    const kanagawa = [...timingLines(9, 'winter', 'kanagawa')];
     expect(tokyo.some((l) => l.includes('都立'))).toBe(true);
     expect(kanagawa.some((l) => l.includes('都立'))).toBe(false);
-    expect(kanagawa.some((l) => l.includes('打診値表'))).toBe(true);
-    expect(tokyo.some((l) => l.includes('打診値表'))).toBe(false);
+    // 想定問答のほうも混ざらない
+    const tokyoQa = timingQa(9, 'winter', 'tokyo').map((x) => x.q + x.a);
+    const kanagawaQa = timingQa(9, 'winter', 'kanagawa').map((x) => x.q + x.a);
+    expect(kanagawaQa.some((l) => l.includes('打診値表'))).toBe(true);
+    expect(tokyoQa.some((l) => l.includes('打診値表'))).toBe(false);
+    expect(tokyoQa.some((l) => l.includes('Vもぎ'))).toBe(true);
+    expect(kanagawaQa.some((l) => l.includes('Vもぎ'))).toBe(false);
+  });
+
+  it('★想定問答は共通 → 都県の順。共通の問は両方に出る', () => {
+    const tokyo = timingQa(9, 'winter', 'tokyo');
+    const kanagawa = timingQa(9, 'winter', 'kanagawa');
+    const common = 'まだ受験生の意識が無いのですが、大丈夫ですか';
+    expect(tokyo[0].q).toBe(common);
+    expect(kanagawa[0].q).toBe(common);
+    // 問と答が両方とも埋まっている（片方だけの行を作らない）
+    for (const item of [...tokyo, ...kanagawa]) {
+      expect(item.q.length).toBeGreaterThan(0);
+      expect(item.a.length).toBeGreaterThan(0);
+    }
+  });
+
+  it('用意されていない組み合わせの想定問答は空', () => {
+    expect(timingQa(9, 'summer', 'tokyo')).toEqual([]);
+    expect(timingQa(1, 'winter', 'tokyo')).toEqual([]);
+    expect(timingQa(null, 'winter', 'tokyo')).toEqual([]);
   });
 
   it('共通の行は両方に出る', () => {
@@ -130,9 +160,12 @@ describe('③時期の重要性の定型トーク', () => {
   it('★共通の行は前と後ろに分かれる。締めの言葉が話の2行目に来ない', () => {
     const lines = timingLines(9, 'winter', 'kanagawa');
     expect(lines[0]).toBe('受験間近。最後の追い込みの時期');
-    expect(lines[lines.length - 1]).toContain('体調管理');
     // 都県の話は共通の前後に挟まれる
     expect(lines[1]).toContain('内申の大詰め');
+    // 締めの「ご家庭へ」はすべて末尾にまとまる
+    const tail = lines.slice(-3);
+    expect(tail.every((l) => l.startsWith('ご家庭へ'))).toBe(true);
+    expect(tail.some((l) => l.includes('体調管理'))).toBe(true);
   });
 
   it('★教室が未登録（region=null）でも共通の行だけは出る', () => {
@@ -231,6 +264,29 @@ describe('入試までの日数', () => {
     expect(examCountdownLine(t, 8, 'tokyo')).toBeNull();
     expect(examCountdownLine(t, 12, 'tokyo')).toBeNull(); // 高3は都立入試ではない
     expect(examCountdownLine(t, null, 'tokyo')).toBeNull();
+  });
+
+  it('★出願・取り下げの〆切は examDates.ts に持つ（定型トークに年度の日付を書かない）', () => {
+    const t = new Date('2026-11-20');
+    const line = examApplicationLine(t, 9, 'tokyo');
+    expect(line).toContain('出願は 2/4 まで');
+    expect(line).toContain('取り下げは 2/10');
+  });
+
+  it('★過ぎた〆切は出さない。面談は11月から2月まで続く', () => {
+    // 出願は済んでいるが取り下げはまだ
+    expect(examApplicationLine(new Date('2027-02-06'), 9, 'tokyo')).toBe(
+      '★都立 ―― 志望変更の取り下げは 2/10'
+    );
+    // どちらも過ぎたら行そのものを出さない
+    expect(examApplicationLine(new Date('2027-02-15'), 9, 'tokyo')).toBeNull();
+  });
+
+  it('★出願の〆切も神奈川・中3以外・登録の無い年度には出さない', () => {
+    const t = new Date('2026-11-20');
+    expect(examApplicationLine(t, 9, 'kanagawa')).toBeNull();
+    expect(examApplicationLine(t, 8, 'tokyo')).toBeNull();
+    expect(examApplicationLine(new Date('2028-11-20'), 9, 'tokyo')).toBeNull();
   });
 
   it('★東京都以外には出さない。神奈川の共通選抜は日程も制度も別物', () => {
