@@ -15,8 +15,9 @@
 
 import { useEffect, useState } from 'react';
 import { Sparkles, Loader2 } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 import { fetchWithAuth } from '@/lib/api/auth';
-import { COMPOSE_FEATURE_KEY } from '@/lib/ai/features';
+import { canUseAiFeature, COMPOSE_FEATURE_KEY } from '@/lib/ai/features';
 import { toRefineLines, type RefineChange, type RefineKind } from '@/lib/ai/refine';
 
 interface RefineTextButtonProps {
@@ -48,8 +49,18 @@ export function RefineTextButton({
   const [previous, setPrevious] = useState<string | null>(null);
   /** この教室でAIを使えるか。使えないならボタンごと出さない */
   const [available, setAvailable] = useState<boolean | null>(null);
+  const { profile } = useAuth();
+  /**
+   * ★このロールで推敲を呼べるか。呼べないならボタンを出さない（＝動かないものは出さない）。
+   *   報告書は講師が書く画面だが /api/ai/refine は教室長以上で、以前はここで
+   *   教室の栓だけを見ていたため、講師が押すと403が「いまは整えられませんでした」に
+   *   化けて故障のように見えていた。
+   */
+  const allowedByRole = canUseAiFeature(profile?.role, COMPOSE_FEATURE_KEY);
 
   useEffect(() => {
+    // 呼べないロールでは教室の設定も引かない（無駄な問い合わせをしない）
+    if (!allowedByRole) return;
     let alive = true;
     void (async () => {
       try {
@@ -67,7 +78,7 @@ export function RefineTextButton({
     return () => {
       alive = false;
     };
-  }, [schoolId]);
+  }, [schoolId, allowedByRole]);
 
   const runRefine = async () => {
     if (busy) return;
@@ -121,8 +132,8 @@ export function RefineTextButton({
     setMessage(null);
   };
 
-  // ★この教室でAIに送らない設定なら、押せる形にしない（送信が起きない）
-  if (available !== true) return null;
+  // ★ロールが足りないか、この教室でAIに送らない設定なら、押せる形にしない（送信が起きない）
+  if (!allowedByRole || available !== true) return null;
 
   const hasText = value.trim().length > 0;
 

@@ -15,12 +15,14 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Sparkles, ArrowUp, Undo2, Redo2, Loader2 } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 import { fetchWithAuth } from '@/lib/api/auth';
-import { PLAN_THEME_FEATURE_KEY } from '@/lib/ai/features';
+import { canUseAiFeature, PLAN_THEME_FEATURE_KEY } from '@/lib/ai/features';
 import type { ConceptResult } from '@/lib/ai/koushuConcept';
 
 interface ConceptBarProps {
-  proposalId: string;
+  /** ★保存前（新規作成中）は null。材料がまだDBに無いので、案内だけを出す */
+  proposalId: string | null;
   schoolId: string;
   value: string;
   onChange: (theme: string) => void;
@@ -38,12 +40,21 @@ export function ConceptBar({
   const [message, setMessage] = useState<string | null>(null);
   /** この教室で成績をAIに送ってよいか。だめならバーごと出さない */
   const [available, setAvailable] = useState<boolean | null>(null);
+  const { profile } = useAuth();
+  /**
+   * ★このロールでテーマふくらませを呼べるか。呼べないならバーを出さない。
+   *   提案書エディタのページ自体にロールのゲートが無く、URL直打ちなら講師も開けるため、
+   *   ここで見ないと「押せるのに403」になる（＝動かないものは出さない）。
+   */
+  const allowedByRole = canUseAiFeature(profile?.role, PLAN_THEME_FEATURE_KEY);
 
   const historyRef = useRef<string[]>([value]);
   const posRef = useRef(0);
   const [, forceRender] = useState(0);
 
   useEffect(() => {
+    // 呼べないロールでは教室の設定も引かない
+    if (!allowedByRole) return;
     let alive = true;
     void (async () => {
       try {
@@ -61,7 +72,7 @@ export function ConceptBar({
     return () => {
       alive = false;
     };
-  }, [schoolId]);
+  }, [schoolId, allowedByRole]);
 
   const replace = useCallback(
     (next: string) => {
@@ -88,7 +99,7 @@ export function ConceptBar({
   );
 
   const runMake = async () => {
-    if (busy) return;
+    if (busy || !proposalId) return;
     setBusy('make');
     setMessage(null);
     try {
@@ -153,8 +164,23 @@ export function ConceptBar({
     }
   };
 
-  // ★この教室で成績をAIに送らない設定なら、押せる形にしない
-  if (available !== true) return null;
+  // ★ロールが足りないか、この教室で成績をAIに送らない設定なら、押せる形にしない
+  if (!allowedByRole || available !== true) return null;
+
+  /**
+   * ★保存前は「書き足す」を呼べない。提案書の行がまだ無く、単元も成績も引けないため
+   *   （/api/ai/koushu/concept は提案書のIDから材料を集める）。
+   *   それでも何も出さないと、この機能があること自体に気付けない。使える条件だけを1行置く。
+   *   ここまで来ているので、教室の栓はオンでロールも足りている＝保存すれば必ず使える。
+   */
+  if (!proposalId) {
+    return (
+      <p className={`flex items-center gap-1.5 text-[11px] text-text-faint ${className}`}>
+        <Sparkles className="h-3 w-3 shrink-0" aria-hidden="true" />
+        保存すると、選んだ単元と成績でテーマを書き足せます
+      </p>
+    );
+  }
 
   const word = value.trim();
   const shown = word.length > 14 ? `${word.slice(0, 14)}…` : word;

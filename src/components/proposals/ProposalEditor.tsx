@@ -237,8 +237,9 @@ export default function ProposalEditor() {
   const [studentName, setStudentName] = useState('');
   const [studentSchoolId, setStudentSchoolId] = useState<string | null>(null);
   /**
-   * テーマの書き足しに使うID。★新規作成中は出さない。
+   * テーマの書き足しに使うID。★新規作成中は null。
    *   まだ保存されていないので、単元も成績もサーバー側から引けない。
+   *   バーは出さず、ConceptBar が「保存すると書き足せます」の1行に切り替わる。
    */
   const conceptTargetId = isNew ? null : proposalId;
   const conceptSchoolId = studentSchoolId;
@@ -1690,8 +1691,10 @@ export default function ProposalEditor() {
           )}
 
           {/* テーマ欄に書いた一言を、その生徒の単元と成績で書き足す。
-              ★教室の設定がオフならバー自体が出ない（成績の外部送信が起きない） */}
-          {conceptTargetId && conceptSchoolId && (
+              ★教室の設定がオフならバー自体が出ない（成績の外部送信が起きない）。
+              ★新規作成中（conceptTargetId が null）でも置く。バーの代わりに
+                「保存すると書き足せます」の1行になる。出さないと存在に気付けない。 */}
+          {conceptSchoolId && (
             <ConceptBar
               className="mt-2"
               proposalId={conceptTargetId}
