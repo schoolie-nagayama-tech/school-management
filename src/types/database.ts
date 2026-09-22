@@ -817,6 +817,10 @@ export type Database = {
           is_active: boolean;
           // 対応する発注教材(materials.id)。提案書公開時の自動発注に使う。未紐付けは null。
           material_id: string | null;
+          // ★ 発注の対象にするか。false は実在しない器のテキスト（志望校過去問、
+          //   「大学受験日本史①」のように第1回〜第30回だけを持つ器）。進行表や提案書では
+          //   選べるが発注リストには積まない。is_active で隠すとピッカーからも消えてしまう。
+          is_orderable: boolean;
           created_at: string | null;
           updated_at: string | null;
         };
@@ -832,6 +836,7 @@ export type Database = {
           grade_category?: 'elementary' | 'middle' | 'high' | null;
           is_active?: boolean;
           material_id?: string | null;
+          is_orderable?: boolean;
           created_at?: string | null;
           updated_at?: string | null;
         };
@@ -847,6 +852,7 @@ export type Database = {
           grade_category?: 'elementary' | 'middle' | 'high' | null;
           is_active?: boolean;
           material_id?: string | null;
+          is_orderable?: boolean;
           created_at?: string | null;
           updated_at?: string | null;
         };

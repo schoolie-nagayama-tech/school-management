@@ -15,7 +15,11 @@ import {
   calcTotalAppliedKoma,
 } from '@/lib/api/proposals';
 import { buildPrintSheets } from '@/lib/proposals/buildPrintSheets';
-import { getProposalOrderCandidates, type OrderCandidate } from '@/lib/api/ordering';
+import {
+  getProposalOrderCandidates,
+  isRelevantOrderCandidate,
+  type OrderCandidate,
+} from '@/lib/api/ordering';
 import { ProposalPrintView } from './ProposalPrintView';
 import { PublishOrderDialog } from './PublishOrderDialog';
 import type { ProposalPrintData } from './ProposalPrintView';
@@ -153,7 +157,7 @@ export default function ProposalList() {
       clearSelection();
       await load();
 
-      const relevant = candidates.filter((c) => c.needsOrder || (!c.alreadyOwned && !c.materialId));
+      const relevant = candidates.filter(isRelevantOrderCandidate);
       if (relevant.length > 0) setOrderDialog(candidates);
     } catch (e) {
       console.error(e);

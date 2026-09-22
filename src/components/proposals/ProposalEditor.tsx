@@ -48,7 +48,11 @@ import {
 } from '@/lib/api/proposals';
 import type { ProposalUnitInput } from '@/lib/api/proposals';
 import { ConceptBar } from './ConceptBar';
-import { getProposalOrderCandidates, type OrderCandidate } from '@/lib/api/ordering';
+import {
+  getProposalOrderCandidates,
+  isRelevantOrderCandidate,
+  type OrderCandidate,
+} from '@/lib/api/ordering';
 import { PublishOrderDialog } from './PublishOrderDialog';
 import { getTextbooks } from '@/lib/api/textbooks';
 import {
@@ -1295,9 +1299,7 @@ export default function ProposalEditor() {
         await publishProposal(proposalId);
 
         // 発注が要りそうな候補があればダイアログを開く
-        const relevant = candidates.filter(
-          (c) => c.needsOrder || (!c.alreadyOwned && !c.materialId)
-        );
+        const relevant = candidates.filter(isRelevantOrderCandidate);
         if (relevant.length > 0) setOrderDialog(candidates);
       } else if (newStatus === 'draft') {
         // 下書きに戻す: 申込コマ数は未確定に戻す（提案済で入れた申込を0クリア）。
