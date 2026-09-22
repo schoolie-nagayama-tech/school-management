@@ -449,7 +449,13 @@ export default function ProposalEditor() {
 
       if (!tbId) {
         setLoading(false);
-        if (isNew) setShowTextbookPicker(true);
+        /**
+         * ★ここでピッカーを開かない。テキスト未指定の新規作成はまず作り方の2択
+         *   （CreateMethodScreen）を出す画面で、ピッカーは「テキストから作る」を
+         *   選んだときに books が空であることで出る。
+         *   ここで開いたままにすると、テンプレートから作ったあと books が入って
+         *   入口の分岐を抜けた瞬間に、閉じ忘れたピッカーが復活する。
+         */
         return;
       }
 
@@ -761,6 +767,8 @@ export default function ProposalEditor() {
       // テーマはテンプレ名を初期値に入れる（「生徒に登録」で配ったときと同じ）
       setTheme(course.name);
       setNewStartMode('textbook');
+      // テキストを選んだとき（handleSelectTextbook）と同じく、ピッカーは閉じた状態にする
+      setShowTextbookPicker(false);
 
       if (course.textbooks.length > MAX_TEXTBOOKS) {
         addToast(
