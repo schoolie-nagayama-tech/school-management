@@ -3,7 +3,7 @@
 /**
  * 面談ワークスペース左カラム: 志望校（第1〜3志望）の入力パネル
  * ------------------------------------------------------------------
- * 面談の②（ヒアリング）でその場で聞いて入れる想定。「報告事項」カード（InterviewBriefCard）の
+ * 面談の②（ヒアリング）でその場で聞いて入れる想定。「面談で話すこと」カード（InterviewScriptCard）の
  * 近くに置く。正典: docs/interview-script-ai-plan.md §4
  *
  * ★候補を選ばず自由記述のままでも保存できる。私立・国立・他県はマスタ（都立のみ205件）に
@@ -20,6 +20,7 @@ import {
   type TargetSchoolRow,
   type HighSchoolSearchResult,
 } from '@/lib/api/targetSchools';
+import { formatNaishin } from '@/app/interview/interview.shared';
 
 const SEARCH_DEBOUNCE_MS = 300;
 const RANKS = [1, 2, 3] as const;
@@ -42,20 +43,8 @@ function emptyRow(rank: number): FormRow {
   return { rank, schoolName: '', highSchoolId: null, reason: '', master: null };
 }
 
-/**
- * 必要内申の表示。
- * ★満点が65以外のとき（3教科校は75、産業技術高専は独自換算で52）は分母を添える。
- *   分母が無いと、面談で言う「必要内申55」が65点満点の55として伝わってしまう。
- */
-function formatNaishin(
-  naishin: number | null,
-  naishinMax: number | null,
-  label = '必要内申'
-): string {
-  if (naishin == null) return `${label}は未設定`;
-  if (naishinMax != null && naishinMax !== 65) return `${label}${naishin}/${naishinMax}`;
-  return `${label}${naishin}`;
-}
+// 必要内申の表示（満点65以外は分母を添える formatNaishin）は
+// InterviewScriptCard（④現状の確認）と同じ書式にするため interview.shared.ts に共通化してある。
 
 function toFormRows(rows: TargetSchoolRow[]): FormRow[] {
   const byRank = new Map(rows.map((r) => [r.rank, r]));
@@ -75,9 +64,12 @@ function toFormRows(rows: TargetSchoolRow[]): FormRow[] {
 interface Props {
   studentId: string;
   schoolId: string;
+  /** 保存が成功したあとに呼ばれる。親（InterviewWorkspace）が④現状の確認「志望校との差」の
+   *  材料を再取得し、保存内容をページ再読み込みなしで即座に反映するために使う */
+  onSaved?: () => void;
 }
 
-export function TargetSchoolsPanel({ studentId, schoolId }: Props) {
+export function TargetSchoolsPanel({ studentId, schoolId, onSaved }: Props) {
   const [rows, setRows] = useState<FormRow[]>(RANKS.map(emptyRow));
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -209,6 +201,7 @@ export function TargetSchoolsPanel({ studentId, schoolId }: Props) {
       const data = await getStudentTargetSchools(studentId);
       setRows(toFormRows(data));
       setSavedMessage('保存しました');
+      onSaved?.();
     } catch (e) {
       setError(e instanceof Error ? e.message : '志望校の保存に失敗しました');
     } finally {

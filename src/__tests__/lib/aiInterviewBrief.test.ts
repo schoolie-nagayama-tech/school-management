@@ -1,11 +1,13 @@
 /**
- * 面談の「報告事項」のテスト。
+ * 面談で話すこと（旧「報告事項」）のテスト。
  *
- * ★守りたいのは2点:
+ * ★守りたいのは3点:
  *  - AIに数字を触らせないという建て付けが崩れないこと（プロンプトの禁止事項が消えると、
  *    AIが点数を書き写しはじめ、面談の場で1字違いに誰も気づけなくなる）
  *  - 読めない出力で画面が壊れないこと（現状の行は残したまま、呼び出し側が
  *    「作れなかった」に倒せる）
+ *  - bridge（④の課題と⑤のプランのつながり）が、koushu セクションを渡していないときは
+ *    AIの出力に関わらず必ず空になること（講習面談ではないのにプランの話を混ぜない）
  */
 import { describe, expect, it } from 'vitest';
 import {
@@ -18,13 +20,14 @@ import {
   MAX_CURRENT_LINES,
   MAX_CURRENT_LINE_LENGTH,
   MAX_SEEN_LENGTH,
-  MAX_TALK,
-  MAX_TALK_LENGTH,
+  MAX_BRIDGE_LENGTH,
   MAX_THREAD_LENGTH,
   type BriefSectionKey,
 } from '@/lib/ai/interviewBrief';
+import { SCENE_OF_SECTION, SCENE_KEYS } from '@/lib/interview/scenes';
 
 const sent: BriefSectionKey[] = ['score', 'discipline', 'lastInterview'];
+const sentWithKoushu: BriefSectionKey[] = ['score', 'koushu'];
 
 /** 41字（上限ちょうど超え）の見えること */
 const tooLongSeen = 'あ'.repeat(MAX_SEEN_LENGTH + 1);
@@ -60,18 +63,17 @@ describe('briefSystemPrompt', () => {
     expect(p).toContain('悪い話だけにしない');
   });
 
-  it('話す項目を出させる（件数と「良い話を1つ」の決まり込み）', () => {
+  it('★bridge（④の課題と⑤のプランのつながり）を書かせる。無理にこじつけさせない', () => {
     const p = briefSystemPrompt();
-    expect(p).toContain('話す項目');
-    expect(p).toContain('3〜5個');
-    expect(p).toContain('必ず1つ入れる');
+    expect(p).toContain('bridge');
+    expect(p).toContain('つながりが見えなければ空文字');
   });
 
   it('字数の上限を伝える', () => {
     const p = briefSystemPrompt();
     expect(p).toContain(`${MAX_SEEN_LENGTH}字`);
     expect(p).toContain(`${MAX_THREAD_LENGTH}字`);
-    expect(p).toContain(`${MAX_TALK_LENGTH}字`);
+    expect(p).toContain(`${MAX_BRIDGE_LENGTH}字`);
   });
 
   it('見えることが無ければ空にさせる（無理に書かせない）', () => {
@@ -218,45 +220,29 @@ describe('parseBriefResult', () => {
     expect(parseBriefResult({ thread: just }, sent).thread).toBe(just);
   });
 
-  it('★talk は先頭5つで切る', () => {
-    const got = parseBriefResult(
-      {
-        talk: Array.from({ length: 8 }, (_, i) => ({ text: `項目${i}`, basis: 'score' })),
-      },
-      sent
-    );
-    expect(got.talk).toHaveLength(MAX_TALK);
-    expect(got.talk[0].text).toBe('項目0');
+  it('★bridge は koushu を渡していれば残る', () => {
+    const got = parseBriefResult({ bridge: '英語の単語不足 → プランの英語8コマ' }, sentWithKoushu);
+    expect(got.bridge).toBe('英語の単語不足 → プランの英語8コマ');
   });
 
-  it('★talk の basis が渡していない key なら空文字にする', () => {
-    const got = parseBriefResult(
-      {
-        talk: [
-          { text: 'あ', basis: 'koushu' },
-          { text: 'い', basis: 'score' },
-          { text: 'う', basis: 42 },
-        ],
-      },
-      sent
-    );
-    expect(got.talk.map((t) => t.basis)).toEqual(['', 'score', '']);
+  it('★bridge は koushu を渡していなければ、AIが書いてきても空にする', () => {
+    const got = parseBriefResult({ bridge: '④の課題と⑤のプランがつながる話' }, sent);
+    expect(got.bridge).toBe('');
   });
 
-  it('60字を超える talk は捨てる', () => {
-    const got = parseBriefResult(
-      {
-        talk: [
-          { text: 'あ'.repeat(MAX_TALK_LENGTH + 1), basis: 'score' },
-          { text: '残るほう', basis: 'score' },
-        ],
-      },
-      sent
-    );
-    expect(got.talk.map((t) => t.text)).toEqual(['残るほう']);
+  it('★bridge は80字超なら空', () => {
+    const long = 'あ'.repeat(MAX_BRIDGE_LENGTH + 1);
+    expect(parseBriefResult({ bridge: long }, sentWithKoushu).bridge).toBe('');
+    const just = 'あ'.repeat(MAX_BRIDGE_LENGTH);
+    expect(parseBriefResult({ bridge: just }, sentWithKoushu).bridge).toBe(just);
   });
 
-  it('★読めない出力なら sections は全部 seen 空・talk 空（現状の行は画面に残る）', () => {
+  it('bridge が空文字・無ければ空のまま（無理にこじつけない）', () => {
+    expect(parseBriefResult({ bridge: '' }, sentWithKoushu).bridge).toBe('');
+    expect(parseBriefResult({}, sentWithKoushu).bridge).toBe('');
+  });
+
+  it('★読めない出力なら sections は全部 seen 空・thread も bridge も空（現状の行は画面に残る）', () => {
     for (const raw of [null, undefined, 'これはJSONではありません', {}, { sections: 'ちがう' }]) {
       const got = parseBriefResult(raw, sent);
       expect(got.sections).toEqual([
@@ -265,7 +251,7 @@ describe('parseBriefResult', () => {
         { key: 'lastInterview', seen: '', sign: '' },
       ]);
       expect(got.thread).toBe('');
-      expect(got.talk).toEqual([]);
+      expect(got.bridge).toBe('');
     }
   });
 
@@ -273,11 +259,28 @@ describe('parseBriefResult', () => {
     const got = parseBriefResult(
       {
         sections: [null, 42, { seen: 'キーが無い' }, { key: 'score', seen: 'あ', sign: 'warn' }],
-        talk: [null, 7, { basis: 'score' }, { text: '  ', basis: 'score' }],
+        bridge: 42,
       },
       sent
     );
     expect(got.sections[0].seen).toBe('あ');
-    expect(got.talk).toEqual([]);
+    expect(got.bridge).toBe('');
+  });
+});
+
+describe('SCENE_OF_SECTION（面談の流れ順シーンへの割り当て）', () => {
+  it('★BRIEF_SECTIONS の全セクションが、どれかのシーンに割り当てられている', () => {
+    for (const { key } of BRIEF_SECTIONS) {
+      expect(SCENE_KEYS).toContain(SCENE_OF_SECTION[key]);
+    }
+  });
+
+  it('★AIに投げる7セクションは②④⑤の3シーンだけに収まる（①③⑥⑦はAIを使わない）', () => {
+    const usedScenes = new Set(BRIEF_SECTIONS.map(({ key }) => SCENE_OF_SECTION[key]));
+    expect(usedScenes).toEqual(new Set(['hearing', 'status', 'plan']));
+  });
+
+  it('koushu は⑤プラン提示に割り当てる（bridge の前提）', () => {
+    expect(SCENE_OF_SECTION.koushu).toBe('plan');
   });
 });

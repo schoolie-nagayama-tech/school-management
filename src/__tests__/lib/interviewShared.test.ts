@@ -9,6 +9,13 @@ import {
   computeDisciplineMonthlyByStudent,
   computeDisciplineMonthlyTotals,
   computeDisciplineOverallTotal,
+  formatNaishin,
+  buildGoalAchievementLines,
+  buildMissingRecordAskLines,
+  buildTargetSchoolGapLines,
+  GOAL_SUBJECT_TO_ASSESSMENT_SUBJECT,
+  GOAL_EXAM_NAME_TO_ASSESSMENT_NAME_CODE,
+  type ExamGoalForAchievement,
 } from '@/app/interview/interview.shared';
 import type {
   AssessmentWithScores,
@@ -17,6 +24,7 @@ import type {
 } from '@/types/database';
 import type { ScheduleRegularPattern } from '@/types/schedule';
 import type { KoushuEnrollment } from '@/lib/api/seasonalCourses';
+import type { TargetSchoolRow, TargetSchoolMaster } from '@/lib/api/targetSchools';
 
 describe('extractHandover', () => {
   it('見出し以降〜次の見出しまでを抜き出す', () => {
@@ -529,5 +537,403 @@ describe('computeDisciplineOverallTotal', () => {
     const snapshot = JSON.parse(JSON.stringify(studentA));
     computeDisciplineOverallTotal([studentA]);
     expect(studentA).toEqual(snapshot);
+  });
+});
+
+describe('formatNaishin', () => {
+  it('満点65のときは分母を出さない', () => {
+    expect(formatNaishin(45, 65)).toBe('必要内申45');
+  });
+
+  it('満点が65以外（3教科校=75, 産業技術高専=52）のときは分母を出す', () => {
+    expect(formatNaishin(55, 75)).toBe('必要内申55/75');
+    expect(formatNaishin(40, 52)).toBe('必要内申40/52');
+  });
+
+  it('naishin が無ければ「未設定」を返す', () => {
+    expect(formatNaishin(null, 65)).toBe('必要内申は未設定');
+  });
+
+  it('label を差し替えられる', () => {
+    expect(formatNaishin(45, 65, '内申')).toBe('内申45');
+  });
+});
+
+describe('buildGoalAchievementLines', () => {
+  // 変換表そのものの検証: 目標側(日本語)と成績側(英語キー)の対応が崩れていないか
+  it('科目の変換表が5科すべて揃っている', () => {
+    expect(GOAL_SUBJECT_TO_ASSESSMENT_SUBJECT).toEqual({
+      数学: 'math',
+      英語: 'english',
+      国語: 'japanese',
+      理科: 'science',
+      社会: 'social',
+    });
+  });
+
+  it('試験名の変換表が9種すべて揃っている', () => {
+    expect(Object.keys(GOAL_EXAM_NAME_TO_ASSESSMENT_NAME_CODE).sort()).toEqual(
+      [
+        '1学期中間',
+        '1学期期末',
+        '2学期中間',
+        '2学期期末',
+        '学年末',
+        '前期中間',
+        '前期期末',
+        '後期中間',
+        '後期期末',
+      ].sort()
+    );
+  });
+
+  it('結果が突き合ったとき、目標→結果（差分）の1行を伝えるに出す', () => {
+    const goals: ExamGoalForAchievement[] = [
+      {
+        subject_key: '英語',
+        exam_type_name: '1学期期末',
+        custom_exam_name: null,
+        exam_date: '2026-07-10',
+        target_score: 75,
+      },
+    ];
+    const assessments = [
+      {
+        category: 'regular_test',
+        name_code: 'term1_final',
+        scores: [{ subject: 'english', value: 68 }],
+      },
+    ] as unknown as AssessmentWithScores[];
+
+    const { tell, ask } = buildGoalAchievementLines(goals, assessments);
+    expect(ask).toEqual([]);
+    expect(tell).toEqual(['英語 1学期期末 目標75 → 68（-7）']);
+  });
+
+  it('目標を上回ったときは「達成」を添える', () => {
+    const goals: ExamGoalForAchievement[] = [
+      {
+        subject_key: '数学',
+        exam_type_name: '2学期中間',
+        custom_exam_name: null,
+        exam_date: '2026-11-01',
+        target_score: 70,
+      },
+    ];
+    const assessments = [
+      {
+        category: 'regular_test',
+        name_code: 'term2_mid',
+        scores: [{ subject: 'math', value: 73 }],
+      },
+    ] as unknown as AssessmentWithScores[];
+
+    const { tell } = buildGoalAchievementLines(goals, assessments);
+    expect(tell).toEqual(['数学 2学期中間 目標70 → 73（+3・達成）']);
+  });
+
+  it('結果が成績側に見つからないときは「聞くこと」に回す（数が多いケースの本体）', () => {
+    const goals: ExamGoalForAchievement[] = [
+      {
+        subject_key: '英語',
+        exam_type_name: '1学期期末',
+        custom_exam_name: null,
+        exam_date: '2026-07-10',
+        target_score: 75,
+      },
+    ];
+    // 成績側にまだ何も入っていない
+    const { tell, ask } = buildGoalAchievementLines(goals, []);
+    expect(tell).toEqual([]);
+    expect(ask).toEqual(['英語 1学期期末 目標75点。結果を聞いて入れる']);
+  });
+
+  it('試験名が変換表に無い（学校独自の試験名など）ときも聞くことに回す', () => {
+    const goals: ExamGoalForAchievement[] = [
+      {
+        subject_key: '英語',
+        exam_type_name: null,
+        custom_exam_name: '実力テスト',
+        exam_date: '2026-07-10',
+        target_score: 75,
+      },
+    ];
+    const assessments = [
+      {
+        category: 'regular_test',
+        name_code: 'term1_final',
+        scores: [{ subject: 'english', value: 68 }],
+      },
+    ] as unknown as AssessmentWithScores[];
+
+    const { tell, ask } = buildGoalAchievementLines(goals, assessments);
+    expect(tell).toEqual([]);
+    expect(ask).toEqual(['英語 実力テスト 目標75点。結果を聞いて入れる']);
+  });
+
+  it('直近の試験（最新の exam_date）のぶんだけに絞る', () => {
+    const goals: ExamGoalForAchievement[] = [
+      {
+        subject_key: '英語',
+        exam_type_name: '1学期中間',
+        custom_exam_name: null,
+        exam_date: '2026-06-01',
+        target_score: 70,
+      },
+      {
+        subject_key: '数学',
+        exam_type_name: '1学期期末',
+        custom_exam_name: null,
+        exam_date: '2026-07-10',
+        target_score: 80,
+      },
+    ];
+    const { tell, ask } = buildGoalAchievementLines(goals, []);
+    // 古い方（1学期中間）は落ち、新しい方（1学期期末）だけが残る
+    expect(tell.length + ask.length).toBe(1);
+    expect(ask[0]).toContain('数学');
+  });
+
+  it('目標が1件も無ければ何も出さない', () => {
+    expect(buildGoalAchievementLines([], [])).toEqual({ tell: [], ask: [] });
+  });
+
+  it('target_score が無い行は対象外', () => {
+    const goals: ExamGoalForAchievement[] = [
+      {
+        subject_key: '英語',
+        exam_type_name: '1学期期末',
+        custom_exam_name: null,
+        exam_date: '2026-07-10',
+        target_score: null,
+      },
+    ];
+    expect(buildGoalAchievementLines(goals, [])).toEqual({ tell: [], ask: [] });
+  });
+});
+
+describe('buildMissingRecordAskLines', () => {
+  it('定期テスト・模試どちらも無ければ両方を聞くことに出す', () => {
+    expect(buildMissingRecordAskLines([], 9)).toEqual([
+      '定期テストの結果を聞いて入れる',
+      '模試を受けているか聞く',
+    ]);
+  });
+
+  it('定期テストだけあれば模試の分だけ出す', () => {
+    const assessments = [
+      { category: 'regular_test', name_code: 'term1_final', scores: [] },
+    ] as unknown as AssessmentWithScores[];
+    expect(buildMissingRecordAskLines(assessments, 9)).toEqual(['模試を受けているか聞く']);
+  });
+
+  it('両方あれば何も出さない', () => {
+    const assessments = [
+      { category: 'regular_test', name_code: 'term1_final', scores: [] },
+      { category: 'mock', name_code: 'venue', scores: [] },
+    ] as unknown as AssessmentWithScores[];
+    expect(buildMissingRecordAskLines(assessments, 9)).toEqual([]);
+  });
+
+  it('小学生（学年6以下）には出さない', () => {
+    expect(buildMissingRecordAskLines([], 6)).toEqual([]);
+  });
+
+  it('学年が不明（null）なら出さない', () => {
+    expect(buildMissingRecordAskLines([], null)).toEqual([]);
+  });
+
+  it('中1（学年7）は中学生扱いで出す', () => {
+    expect(buildMissingRecordAskLines([], 7)).toEqual([
+      '定期テストの結果を聞いて入れる',
+      '模試を受けているか聞く',
+    ]);
+  });
+});
+
+describe('buildTargetSchoolGapLines', () => {
+  function targetSchool(
+    overrides: Partial<TargetSchoolMaster> & { rank?: number }
+  ): TargetSchoolRow {
+    const { rank = 1, ...master } = overrides;
+    return {
+      id: 'ts-1',
+      rank,
+      schoolName: '清瀬',
+      highSchoolId: 'hs-1',
+      reason: null,
+      updatedAt: '2026-09-01T00:00:00Z',
+      master: {
+        prefecture: '東京都',
+        schoolName: '清瀬',
+        course: '',
+        category: '普通科',
+        naishin: 45,
+        naishinMax: 65,
+        hensachi: 51,
+        sourceLabel: 'Vもぎ 2025年9月版',
+        verifiedAt: null,
+        ...master,
+      },
+    };
+  }
+
+  const reportCardAssessment = {
+    category: 'report_card',
+    name_code: 'term2',
+    scores: [
+      { subject: 'english', value: 4 },
+      { subject: 'math', value: 4 },
+      { subject: 'japanese', value: 4 },
+      { subject: 'science', value: 3 },
+      { subject: 'social', value: 4 },
+      { subject: 'music', value: 3 },
+      { subject: 'art', value: 3 },
+      { subject: 'tech_home', value: 3 },
+      { subject: 'pe', value: 4 },
+    ],
+  } as unknown as AssessmentWithScores;
+  // 5科(4+4+4+3+4=19) + 実技4科(3+3+3+4=13)*2=26 → 換算内申45（65点満点）
+  const mockAssessment = {
+    category: 'mock',
+    name_code: 'classroom',
+    scores: [{ subject: 'hensa_5', value: 48 }],
+  } as unknown as AssessmentWithScores;
+
+  it('志望校が未登録なら聞くことに「志望校を聞いて入れる」だけを出す', () => {
+    const result = buildTargetSchoolGapLines([], [reportCardAssessment, mockAssessment]);
+    expect(result).toEqual({ tell: [], ask: ['志望校を聞いて入れる'] });
+  });
+
+  it('マスタに当たり本人の内申・偏差値も取れるときだけ、必要内申・必要偏差値と差を出す', () => {
+    const schools = [targetSchool({ naishin: 45, naishinMax: 65, hensachi: 51 })];
+    const { tell, ask } = buildTargetSchoolGapLines(schools, [
+      reportCardAssessment,
+      mockAssessment,
+    ]);
+    expect(ask).toEqual([]);
+    expect(tell).toHaveLength(1);
+    // 本人内申45・偏差値48 に対し、必要内申45(diff 0)・必要偏差値51(diff -3)
+    expect(tell[0]).toContain('第1志望 清瀬');
+    expect(tell[0]).toContain('必要内申45（+0）');
+    expect(tell[0]).toContain('必要偏差値51（-3）');
+  });
+
+  it('満点が65以外（3教科校=75）のときは必要内申に分母を添える', () => {
+    const schools = [targetSchool({ naishin: 55, naishinMax: 75, hensachi: null })];
+    const { tell } = buildTargetSchoolGapLines(schools, [reportCardAssessment]);
+    expect(tell[0]).toContain('必要内申55/75');
+  });
+
+  it('出典（Vもぎ・版）と、verified_at が null なら「原本との突き合わせは未了」を添える', () => {
+    const schools = [
+      targetSchool({ naishin: 45, naishinMax: 65, hensachi: null, verifiedAt: null }),
+    ];
+    const { tell } = buildTargetSchoolGapLines(schools, [reportCardAssessment]);
+    expect(tell[0]).toContain('Vもぎ 2025年9月版・合格可能性60%の位置');
+    expect(tell[0]).toContain('原本との突き合わせは未了');
+  });
+
+  it('verified_at が入っていれば「突き合わせ未了」を出さない', () => {
+    const schools = [
+      targetSchool({
+        naishin: 45,
+        naishinMax: 65,
+        hensachi: null,
+        verifiedAt: '2026-09-01T00:00:00Z',
+      }),
+    ];
+    const { tell } = buildTargetSchoolGapLines(schools, [reportCardAssessment]);
+    expect(tell[0]).not.toContain('突き合わせ');
+  });
+
+  it('マスタに当たっていない（私立など）志望校は出さない', () => {
+    const schools: TargetSchoolRow[] = [
+      {
+        id: 'ts-2',
+        rank: 1,
+        schoolName: '私立A高校',
+        highSchoolId: null,
+        reason: null,
+        updatedAt: '2026-09-01T00:00:00Z',
+        master: null,
+      },
+    ];
+    const { tell, ask } = buildTargetSchoolGapLines(schools, [
+      reportCardAssessment,
+      mockAssessment,
+    ]);
+    expect(tell).toEqual([]);
+    expect(ask).toEqual([]);
+  });
+
+  it('本人の内申・偏差値がどちらも取れないときは出さない', () => {
+    const schools = [targetSchool({ naishin: 45, naishinMax: 65, hensachi: 51 })];
+    const { tell } = buildTargetSchoolGapLines(schools, []);
+    expect(tell).toEqual([]);
+  });
+});
+
+describe('★満点が違う学校と差を取らない', () => {
+  const mock = (naishin: number, naishinMax: number | null) => [
+    {
+      id: 'x',
+      rank: 1,
+      schoolName: '駒場',
+      highSchoolId: 'h1',
+      reason: null,
+      updatedAt: '2026-09-01',
+      master: {
+        prefecture: '東京都',
+        schoolName: '駒場',
+        course: '保健体育',
+        category: '国際・科学技術・産業・芸術・体育科',
+        naishin,
+        naishinMax,
+        hensachi: null,
+        sourceLabel: 'Vもぎ 2025年9月版',
+        verifiedAt: null,
+      },
+    },
+  ];
+  // 本人の換算内申41（65点満点）が取れる通知表
+  const reportCard = [
+    {
+      id: 'a1',
+      category: 'report_card' as const,
+      name_code: 'term1',
+      exam_date: '2026-07-01',
+      scores: [
+        { subject: 'japanese', value: 4 },
+        { subject: 'math', value: 5 },
+        { subject: 'english', value: 4 },
+        { subject: 'science', value: 4 },
+        { subject: 'social', value: 4 },
+        { subject: 'music', value: 3 },
+        { subject: 'art', value: 3 },
+        { subject: 'pe', value: 4 },
+        { subject: 'tech_home', value: 3 },
+      ],
+    },
+  ];
+
+  it('65点満点どうしなら差を出す', () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const out = buildTargetSchoolGapLines(mock(45, 65) as any, reportCard as any);
+    expect(out.tell[0]).toMatch(/必要内申45（[+-]\d+）/);
+  });
+
+  it('★75点満点（3教科校）とは差を出さない。引くと嘘の数字になる', () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const out = buildTargetSchoolGapLines(mock(55, 75) as any, reportCard as any);
+    expect(out.tell[0]).toContain('必要内申55/75');
+    expect(out.tell[0]).not.toMatch(/必要内申55\/75（[+-]/);
+  });
+
+  it('★52点満点（産業技術高専）とも差を出さない', () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const out = buildTargetSchoolGapLines(mock(33, 52) as any, reportCard as any);
+    expect(out.tell[0]).toContain('必要内申33/52');
+    expect(out.tell[0]).not.toMatch(/33\/52（[+-]/);
   });
 });

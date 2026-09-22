@@ -8,12 +8,18 @@
 import type {
   AssessmentWithScores,
   CurriculumItemWithProgress,
+  StudentInterview,
   StudentTextbookWithDetails,
 } from '@/types/database';
 import { ASSESSMENT_NAME_LABELS, SEASON_LABELS, SUBJECT_LABELS } from '@/types/database';
 import type { ScheduleRegularPattern } from '@/types/schedule';
 import { DAY_OF_WEEK_LABELS } from '@/types/schedule';
 import type { KoushuEnrollment } from '@/lib/api/seasonalCourses';
+import type { BriefSectionKey } from '@/lib/ai/interviewBrief';
+import type { TextbookProgressData } from './ProgressPanel';
+import type { DisciplineSessionRow } from '@/lib/api/progress-sessions';
+import type { TargetSchoolRow } from '@/lib/api/targetSchools';
+import { calcTokyoNaishin } from '@/lib/utils/convertedNaishin';
 
 /* ============================================================
  * 日付ユーティリティ
@@ -66,6 +72,35 @@ export function extractHandover(content: string): string | null {
     nextHeadingOffset === -1 ? afterHeading : afterHeading.slice(0, nextHeadingOffset);
   const trimmed = excerpt.trim();
   return trimmed || null;
+}
+
+/** 申し送りとして1行に載せる長さ。これ以上は面談中に読まれない */
+const MAX_HANDOVER_LENGTH = 120;
+
+/**
+ * 面談記録に `## 次回への申し送り` が無いときの受け皿。
+ *
+ * ★Notta（文字起こし）取込の本文は【タイトル】【録音日時】【音声URL】で始まる。
+ *   そのまま先頭を切り出すと、面談で読む行が録音日時とURLで埋まる（実機で確認した）。
+ *   話の中身が始まるのは「--- Notta 要約 ---」や最初の「■」見出しから。
+ *   見つかればそこから、無ければメタ行だけを落として返す。
+ */
+export function stripNottaMeta(content: string): string {
+  const summaryIdx = content.indexOf('--- Notta 要約 ---');
+  if (summaryIdx !== -1) {
+    const after = content.slice(summaryIdx + '--- Notta 要約 ---'.length).trim();
+    if (after) return after;
+  }
+  const sectionIdx = content.indexOf('■');
+  if (sectionIdx !== -1) return content.slice(sectionIdx).trim();
+
+  // メタ行（【…】で始まる行）だけを落とす
+  const rest = content
+    .split('\n')
+    .filter((line) => !/^\s*【(タイトル|録音日時|音声URL|参加者)】/.test(line))
+    .join('\n')
+    .trim();
+  return rest || content;
 }
 
 /* ============================================================
@@ -225,6 +260,130 @@ export function formatKoushuEnrollments(enrollments: KoushuEnrollment[]): string
         `${SEASON_LABELS[season as keyof typeof SEASON_LABELS] ?? season}: ${koma}コマ`
     )
     .join('、');
+}
+
+/* ============================================================
+ * 面談で話すこと（InterviewScriptCard・印刷シート共通）
+ * ========================================================== */
+
+/**
+ * 今日から見た「いま話すべき講習の季節」を月から決める暫定ヒューリスティック。
+ *
+ * ★正確な根拠は無い（docs/interview-script-ai-plan.md §8 は入試日・期の定義を未決としている）。
+ *   ヘルプFAQ「面談同期」の運用メモにある「面談は講習期間の1〜2か月前に行う」を手がかりに、
+ *   各季節の準備〜実施期間（冬期=秋〜冬／春期=冬〜春／夏期=春〜夏）で年間を3分割した。
+ *   季節ごとの定型トーク（timingLines）が実際に用意されているのは中3・夏期だけなので、
+ *   この分割の粗さが実害になる場面はいまのところ無い。より正確な期の判定ができるようになったら
+ *   （講習期間の設定を読みに行くなど）差し替える。
+ */
+export function currentSeason(date: Date): 'spring' | 'summer' | 'winter' {
+  const month = date.getMonth() + 1; // 1〜12
+  if (month >= 3 && month <= 5) return 'spring';
+  if (month >= 6 && month <= 8) return 'summer';
+  return 'winter'; // 9〜2月
+}
+
+/** 面談で話すこと（InterviewScriptCard）の「伝える」行。AIに渡す【現状】とも兼用する */
+export interface TellSection {
+  key: BriefSectionKey;
+  current: string[];
+}
+
+/** 進度に載せるテキストの数。並べすぎると読まれない */
+const TELL_MAX_PROGRESS_LINES = 4;
+/** 宿題・遅刻をさかのぼる月数 */
+const TELL_DISCIPLINE_MONTHS = 3;
+
+/** 「英語 72（前回 65）」を科目ぶん並べた1行を作る。値が1つも無ければ null */
+function tellScoreLine(
+  assessments: AssessmentWithScores[],
+  category: AssessmentCategory,
+  heading: string
+): string | null {
+  // 直近2件（今回・前回）だけ見る。推移そのものは右カラムの成績パネルが出している
+  const summary = computeScoreSummary(assessments, category, 2);
+  if (summary.testLabels.length === 0) return null;
+
+  const last = summary.testLabels.length - 1;
+  const prev = last - 1;
+  const parts: string[] = [];
+  for (const row of summary.rows) {
+    const curr = row.values[last];
+    if (curr == null) continue;
+    const before = prev >= 0 ? row.values[prev] : null;
+    parts.push(before == null ? `${row.label} ${curr}` : `${row.label} ${curr}（前回 ${before}）`);
+  }
+  if (parts.length === 0) return null;
+  return `${heading} ${summary.testLabels[last]}: ${parts.join('／')}`;
+}
+
+/**
+ * 面談ワークスペースが持っているデータから「伝える」行（システムが組んだ現状）を作る。
+ *
+ * ★InterviewScriptCard（AIへ送る材料）と InterviewPrintSheet（AI未生成でも刷れる土台）の
+ *   両方から呼ぶ。二重実装すると、片方だけ直したときに画面と紙で数字がずれるため。
+ * ★lessons（授業の様子）と parent（保護者と）はここでは組まない。面談画面が読んでいない
+ *   材料なので、サーバー（/api/ai/interview/brief）が足す。AI未生成のときは印刷シートにも
+ *   この2つは出ない。
+ */
+export function buildTellSections(props: {
+  assessments: AssessmentWithScores[];
+  interviews: StudentInterview[];
+  textbookData: TextbookProgressData[];
+  disciplineSessions: DisciplineSessionRow[];
+  koushuEnrollments: KoushuEnrollment[];
+}): TellSection[] {
+  const sections: TellSection[] = [];
+
+  const scoreLines: string[] = [];
+  const regular = tellScoreLine(props.assessments, 'regular_test', '定期テスト');
+  if (regular) scoreLines.push(regular);
+  const report = tellScoreLine(props.assessments, 'report_card', '通知表');
+  if (report) scoreLines.push(report);
+  if (scoreLines.length > 0) sections.push({ key: 'score', current: scoreLines });
+
+  const months = computeDisciplineMonthly(
+    props.disciplineSessions,
+    TELL_DISCIPLINE_MONTHS,
+    new Date()
+  );
+  const disciplineLines = months
+    .filter((m) => m.lessonDays > 0)
+    .map(
+      (m) =>
+        `${m.label}（授業${m.lessonDays}日）: 宿題未提出 ${m.homeworkMissedDays}回／遅刻 ${m.tardyDays}回`
+    );
+  if (disciplineLines.length > 0) sections.push({ key: 'discipline', current: disciplineLines });
+
+  const progressLines = props.textbookData
+    .slice(0, TELL_MAX_PROGRESS_LINES)
+    .map(({ textbook, rows }) => {
+      const detail = summarizeTextbookDetail(textbook, rows);
+      const next = detail.nextUnitTitles[0];
+      const stalled = detail.stalled ? '・停滞' : '';
+      return `${detail.name}: ${detail.progressPct}%${stalled}${next ? `・次: ${next}` : ''}`;
+    });
+  if (progressLines.length > 0) sections.push({ key: 'progress', current: progressLines });
+
+  if (props.koushuEnrollments.length > 0) {
+    sections.push({
+      key: 'koushu',
+      current: [`申込 ${formatKoushuEnrollments(props.koushuEnrollments)}`],
+    });
+  }
+
+  const latest = props.interviews.filter((i) => i.interview_type !== 'task')[0];
+  if (latest) {
+    const lines = [
+      `${fmtDateJa(latest.interview_date)}（${daysSince(latest.interview_date)}日前）`,
+    ];
+    const handover = extractHandover(latest.content) ?? stripNottaMeta(latest.content);
+    const text = handover.replace(/\s+/g, ' ').trim().slice(0, MAX_HANDOVER_LENGTH);
+    if (text) lines.push(`申し送り: ${text}`);
+    sections.push({ key: 'lastInterview', current: lines });
+  }
+
+  return sections;
 }
 
 /* ============================================================
@@ -527,3 +686,259 @@ export function computeDisciplineOverallTotal(
  * （二重定義しない）。
  */
 export const DISCIPLINE_ALERT_RATIO_THRESHOLD = 0.3;
+
+/* ============================================================
+ * 目標の達成度（②ヒアリング）
+ * ------------------------------------------------------------
+ * 正典: docs/interview-script-ai-plan.md §「②ヒアリングに『目標の達成度』を足す」
+ *
+ * 目標（student_textbook_exams.target_score）と結果は別テーブルに分かれている。
+ * student_textbook_exams.result_score にも結果欄はあるが、現場は結果を成績側
+ * （assessments category='regular_test' + assessment_scores）にしか入れていない
+ * （本番確認：result_score が入っているのは9件だけ）。そのため結果は成績側と突き合わせる。
+ *
+ * 突き合わせには科目・試験名の変換が要る。目標側は日本語（subject_key='英語'、
+ * exam_types.name='1学期期末'）、成績側は英語キー（subject='english'、
+ * name_code='term1_final'）で持っているため。★変換表はこの1か所にまとめる。
+ * 片方だけ直すと黙って突き合わなくなる（例: exam_types に試験名を追加しても、
+ * ここに対応する name_code を足し忘れると、その試験の目標は永遠に「聞くこと」に回り続ける）。
+ * ========================================================== */
+
+/** 目標側（student_textbook_exams.subject_key・日本語）→成績側（assessment_scores.subject）の変換 */
+export const GOAL_SUBJECT_TO_ASSESSMENT_SUBJECT: Record<string, string> = {
+  数学: 'math',
+  英語: 'english',
+  国語: 'japanese',
+  理科: 'science',
+  社会: 'social',
+};
+
+/** 目標側（exam_types.name・日本語）→成績側（assessments.name_code）の変換 */
+export const GOAL_EXAM_NAME_TO_ASSESSMENT_NAME_CODE: Record<string, string> = {
+  '1学期中間': 'term1_mid',
+  '1学期期末': 'term1_final',
+  '2学期中間': 'term2_mid',
+  '2学期期末': 'term2_final',
+  学年末: 'year_end',
+  前期中間: 'first_mid',
+  前期期末: 'first_final',
+  後期中間: 'second_mid',
+  後期期末: 'second_final',
+};
+
+/** buildGoalAchievementLines に渡す試験目標1件分（getStudentExamGoalsForInterview の戻りと互換） */
+export interface ExamGoalForAchievement {
+  subject_key: string;
+  exam_type_name: string | null;
+  custom_exam_name: string | null;
+  exam_date: string;
+  target_score: number | null;
+}
+
+/** 「目標の達成度」の行。伝える（突き合わせできた）／聞く（結果が見つからない）に分かれる */
+export interface GoalAchievementLines {
+  tell: string[];
+  ask: string[];
+}
+
+/**
+ * 試験目標と定期テストの結果を突き合わせて「目標の達成度」の行を作る。
+ *
+ * ★直近の試験のぶんだけ（最新の exam_date のグループ）に絞る。行数が増えすぎると
+ *   結局読まれないため（他のシーンと同じ方針）。
+ * ★結果が見つからない（科目・試験名が変換できない、または成績側にまだその試験が
+ *   入っていない）ときは「聞くこと」に回す。247名のうち多数がこちらに入る想定で、
+ *   台本が入力を促す形になるのが狙い。黙って行ごと落とさない。
+ */
+export function buildGoalAchievementLines(
+  examGoals: readonly ExamGoalForAchievement[],
+  assessments: AssessmentWithScores[]
+): GoalAchievementLines {
+  const withTarget = examGoals.filter((g) => g.target_score != null);
+  if (withTarget.length === 0) return { tell: [], ask: [] };
+
+  const latestDate = withTarget.reduce(
+    (max, g) => (g.exam_date > max ? g.exam_date : max),
+    withTarget[0].exam_date
+  );
+  const targets = withTarget.filter((g) => g.exam_date === latestDate);
+
+  const tell: string[] = [];
+  const ask: string[] = [];
+
+  for (const goal of targets) {
+    const target = goal.target_score as number;
+    const examLabel = goal.exam_type_name ?? goal.custom_exam_name ?? '（試験名未設定）';
+    const subject = GOAL_SUBJECT_TO_ASSESSMENT_SUBJECT[goal.subject_key];
+    const nameCode = goal.exam_type_name
+      ? GOAL_EXAM_NAME_TO_ASSESSMENT_NAME_CODE[goal.exam_type_name]
+      : undefined;
+
+    // 変換できない（科目・試験名がどちらの変換表にも無い）ときは、結果を探しようが無いので聞くことに回す
+    const score =
+      subject && nameCode
+        ? (assessments
+            .find((a) => a.category === 'regular_test' && a.name_code === nameCode)
+            ?.scores.find((s) => s.subject === subject)?.value ?? null)
+        : null;
+
+    if (score == null) {
+      ask.push(`${goal.subject_key} ${examLabel} 目標${target}点。結果を聞いて入れる`);
+      continue;
+    }
+
+    const diff = score - target;
+    const diffText = diff >= 0 ? `+${diff}・達成` : `${diff}`;
+    tell.push(`${goal.subject_key} ${examLabel} 目標${target} → ${score}（${diffText}）`);
+  }
+
+  return { tell, ask };
+}
+
+/* ============================================================
+ * ④現状の確認: 成績が無いときに黙らない
+ * ========================================================== */
+
+/**
+ * 定期テスト・模試のどちらかが1件も記録に無いとき、④の「聞くこと」に回す行を作る。
+ *
+ * ★いまは記録が無いセクションを丸ごと落としており、定期テストは51%・模試は39%の生徒にしか
+ *   入っていないため、半数の生徒で成績の話がまるごと台本から消えて面談で話し忘れる。
+ * ★小学生には出さない（定期テストが無い学年で「聞いて入れる」は的外れ）。
+ *   学年は小1=1 の通し番号で、7以上が中学生（GRADE_LABELS が正典）。
+ */
+export function buildMissingRecordAskLines(
+  assessments: AssessmentWithScores[],
+  grade: number | null
+): string[] {
+  if (grade == null || grade < 7) return [];
+
+  const lines: string[] = [];
+  if (!assessments.some((a) => a.category === 'regular_test')) {
+    lines.push('定期テストの結果を聞いて入れる');
+  }
+  if (!assessments.some((a) => a.category === 'mock')) {
+    lines.push('模試を受けているか聞く');
+  }
+  return lines;
+}
+
+/* ============================================================
+ * ④現状の確認: 志望校との差
+ * ========================================================== */
+
+/**
+ * 必要内申の表示。★満点が65以外のとき（3教科校は75点満点、産業技術高専は52点満点）は
+ * 分母を添える（「必要内申55/75」）。分母が無いと、面談で言う「必要内申55」が
+ * 65点満点の55として伝わってしまう。
+ *
+ * ★TargetSchoolsPanel（志望校の入力パネル）と InterviewScriptCard（④現状の確認）の
+ *   両方が同じ書式で必要内申を出すため、ここに共通化して置く（二重定義しない）。
+ */
+export function formatNaishin(
+  naishin: number | null,
+  naishinMax: number | null,
+  label = '必要内申'
+): string {
+  if (naishin == null) return `${label}は未設定`;
+  if (naishinMax != null && naishinMax !== 65) return `${label}${naishin}/${naishinMax}`;
+  return `${label}${naishin}`;
+}
+
+/** 生徒本人の直近の内申（report_card）から、換算内申（都立・65点満点）を計算する。無ければ null */
+function latestOwnNaishin(assessments: AssessmentWithScores[]): number | null {
+  // assessments は新しい順（降順）で来る前提（computeScoreSummary と同じ前提）
+  const latest = assessments.find((a) => a.category === 'report_card');
+  if (!latest) return null;
+  const scores: Record<string, number | null> = {};
+  for (const s of latest.scores) scores[s.subject] = s.value;
+  return calcTokyoNaishin(scores).converted;
+}
+
+/** 生徒本人の直近の模試（mock）の5科偏差値（hensa_5）。無ければ null */
+function latestOwnHensachi(assessments: AssessmentWithScores[]): number | null {
+  const latest = assessments.find(
+    (a) => a.category === 'mock' && a.scores.some((s) => s.subject === 'hensa_5')
+  );
+  return latest?.scores.find((s) => s.subject === 'hensa_5')?.value ?? null;
+}
+
+/** 「志望校との差」の行。伝える（マスタに当たり本人の数字も取れた）／聞く（志望校が未登録） */
+export interface TargetSchoolGapLines {
+  tell: string[];
+  ask: string[];
+}
+
+/**
+ * 志望校（マスタに当たったもの）と本人の内申・偏差値を並べて「志望校との差」の行を作る。
+ *
+ * ★マスタに当たっていて（master が非null）、本人の内申・偏差値のどちらかが取れるときだけ出す。
+ * ★「Vもぎ 2025年9月版・合格可能性60%の位置」の出典と、verified_at が null なら
+ *   「原本との突き合わせは未了」を必ず添える。保護者に見せうる数字なので、
+ *   出どころと確度を隠さない（docs/interview-script-ai-plan.md §4-2）。
+ * ★志望校が1件も登録されていなければ、④の「聞くこと」に「志望校を聞いて入れる」を出す
+ *   （②ではなく④。志望校そのものはTargetSchoolsPanelが②の近くで入力させるが、
+ *   「聞くこと」の定型リストとしては現状の確認で扱う）。
+ */
+export function buildTargetSchoolGapLines(
+  targetSchools: readonly TargetSchoolRow[],
+  assessments: AssessmentWithScores[]
+): TargetSchoolGapLines {
+  if (targetSchools.length === 0) {
+    return { tell: [], ask: ['志望校を聞いて入れる'] };
+  }
+
+  const ownNaishin = latestOwnNaishin(assessments);
+  const ownHensachi = latestOwnHensachi(assessments);
+
+  const tell: string[] = [];
+  for (const school of targetSchools) {
+    const master = school.master;
+    if (!master) continue;
+
+    const parts: string[] = [];
+    if (master.naishin != null) {
+      /**
+       * ★差を出してよいのは、本人の換算内申と必要内申の満点が揃っているときだけ。
+       *
+       * calcTokyoNaishin は5科×1＋実技4科×2＝65点満点しか計算しない。
+       * 3教科入試の学科（芸術・体育系）は国数英×1＋残り6科×2＝75点満点、
+       * 産業技術高専は独自換算で52点満点なので、65点満点の本人の数字から引くと
+       * 意味のない値になる（駒場の保健体育は必要内申55/75。本人41を引いて「-14」と
+       * 出すと、面談で「あと14足りません」と言ってしまう）。
+       *
+       * 満点が違うときは必要内申だけを分母つきで出し、差は出さない。
+       * 出典: vault NEST/ナレッジ/高校入試情報_都立は1020点の総合得点1本で決まる.md
+       *      「3教科入試の学科を志望に混ぜたら換算内申の満点が75になる。
+       *        65点満点の学校と同じ数字で並べない」
+       */
+      const comparable = master.naishinMax == null || master.naishinMax === 65;
+      if (ownNaishin != null) {
+        if (comparable) {
+          const diff = ownNaishin - master.naishin;
+          const diffText = diff >= 0 ? `+${diff}` : `${diff}`;
+          parts.push(`${formatNaishin(master.naishin, master.naishinMax)}（${diffText}）`);
+        } else {
+          // 満点が違うので差は出せない。必要内申だけを分母つきで示す
+          parts.push(formatNaishin(master.naishin, master.naishinMax));
+        }
+      }
+      // 本人の内申が取れないときは何も出さない（②④の「聞くこと」が入力を促す）
+    }
+    if (master.hensachi != null && ownHensachi != null) {
+      const diff = ownHensachi - master.hensachi;
+      const diffText = diff >= 0 ? `+${diff}` : `${diff}`;
+      parts.push(`必要偏差値${master.hensachi}（${diffText}）`);
+    }
+    if (parts.length === 0) continue;
+
+    const sourceBits: string[] = [];
+    if (master.sourceLabel) sourceBits.push(`${master.sourceLabel}・合格可能性60%の位置`);
+    if (master.verifiedAt == null) sourceBits.push('原本との突き合わせは未了');
+    const sourceSuffix = sourceBits.length > 0 ? `（${sourceBits.join('／')}）` : '';
+
+    tell.push(`第${school.rank}志望 ${master.schoolName} ―― ${parts.join('・')}${sourceSuffix}`);
+  }
+
+  return { tell, ask: [] };
+}

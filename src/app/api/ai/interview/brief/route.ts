@@ -14,14 +14,15 @@ import {
   type BriefSectionInput,
   type BriefSectionKey,
   type BriefSign,
-  type BriefTalk,
 } from '@/lib/ai/interviewBrief';
 import { STUDENT_DIGEST_FEATURE_KEY } from '@/lib/ai/features';
 
 export const dynamic = 'force-dynamic';
 
 /**
- * 面談の「報告事項」（面談ワークスペースの左カラムのカードから呼ぶ）。
+ * 面談で話すこと（面談ワークスペースの左カラム・InterviewScriptCard から呼ぶ）。
+ * ★エンドポイントのパスは前身（報告事項カード）のまま据え置いている。中身の変更点は
+ *   docs/interview-script-ai-plan.md §6 の「talk 廃止・bridge 追加」のみ。
  *
  * ★教室長以上。面談そのものが教室長の仕事で、講師は /interview を開かない。
  *   （同じ栓を使う進行表の「引継ぎをまとめる」は講師も叩ける。あちらは授業の直前に
@@ -49,7 +50,8 @@ interface BriefSectionPayload {
 interface BriefResponse {
   sections: BriefSectionPayload[];
   thread: string;
-  talk: BriefTalk[];
+  /** ④の課題と⑤のプランのつながり。koushu セクションを渡していなければ常に空文字 */
+  bridge: string;
   /** AIを呼べなかった・読めなかった。故障側（現状の行は返しているので画面は成立する） */
   degraded: boolean;
   /** この教室ではAIに送らない設定。故障ではなく意図した停止 */
@@ -219,7 +221,7 @@ export async function POST(request: NextRequest) {
   const empty: BriefResponse = {
     sections: [],
     thread: '',
-    talk: [],
+    bridge: '',
     degraded: false,
     disabled: false,
   };
@@ -281,13 +283,29 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(empty satisfies BriefResponse);
   }
 
+  /**
+   * ★画面に出す行は、AIに渡す材料とは別に作る。
+   *
+   * 「授業の様子」はAIには直近20回ぶんを全部渡す。繰り返し出ている言葉（「単語が抜ける」が
+   * 4回、など）は、並べて初めて見えるもので、間引くと着眼点が書けなくなる。
+   * 一方で画面に20行並べると、面談中に読めるものではなくなる（実機で6行でも読みにくかった）。
+   * そこで画面には件数と直近1件だけを出し、中身はAIの着眼点で読ませる。
+   *
+   * 他のセクションは行数がもともと少ないので、そのまま出す。
+   */
+  const viewCurrent = (s: BriefSectionInput): string[] => {
+    if (s.key !== 'lessons' || s.current.length <= 2) return s.current;
+    // loadLessonLines は古い順に戻して返すので、直近は末尾
+    return [`引継ぎ ${s.current.length}件`, `直近 ―― ${s.current[s.current.length - 1]}`];
+  };
+
   const withCurrent = (
     seenByKey: Map<BriefSectionKey, { seen: string; sign: BriefSign }>
   ): BriefSectionPayload[] =>
     sections.map((s) => ({
       key: s.key,
       label: briefSectionLabel(s.key),
-      current: s.current,
+      current: viewCurrent(s),
       seen: seenByKey.get(s.key)?.seen ?? '',
       sign: seenByKey.get(s.key)?.sign ?? '',
     }));
@@ -319,15 +337,17 @@ export async function POST(request: NextRequest) {
     for (const s of parsed.sections) seenByKey.set(s.key, { seen: s.seen, sign: s.sign });
 
     /**
-     * ★見えることも話す項目も1つも残らなかったら「作れなかった」に倒す。
+     * ★見えることもつなげて見えることも1つも残らなかったら「作れなかった」に倒す。
      *   現状の行だけのカードは、画面の他のパネルの写しでしかない。
+     *   ★bridge は koushu を渡していない（講習面談ではない）ときは常に空になるので、
+     *     この判定には使わない。
      */
-    const nothing = parsed.talk.length === 0 && parsed.sections.every((s) => !s.seen);
+    const nothing = !parsed.thread && parsed.sections.every((s) => !s.seen);
 
     return NextResponse.json({
       sections: withCurrent(seenByKey),
       thread: parsed.thread,
-      talk: parsed.talk,
+      bridge: parsed.bridge,
       degraded: nothing,
       disabled: false,
     } satisfies BriefResponse);
