@@ -43,6 +43,93 @@ export function schoolTypeOfGrade(grade: number | null): '小学' | '中学' | '
  * ★教材の科目が空（過去問など、1冊で複数科目）のときは空集合を返す。
  *   どの科目の成績を見ればよいか決まらないので、憶測で拾わない。
  */
+/**
+ * 教材の科目ラベル → 同じ系統の成績コード。★実データに合わせた表。
+ *
+ * ★マスタと旧コードの2枚だけでは、本番の成績の多くに当たらなかった。本番（京王堀之内校）を見ると:
+ *   - 中学・小学の成績は今も旧コード（'math' 'english' …）で入っていて、jhs_* / elem_* は0件。
+ *   - 高校の成績は hs_* だが、教材ラベル「数学」に当たる1つのコードが無い
+ *     （hs_math_1 / hs_math_a / hs_math_2 …と履修科目ごとに割れている）。
+ *   - 評価科目マスタの中学「社会」は name が「社会(地理)」で、ラベル「社会」と等号では合わない。
+ *   提案書172件のうち高校16件と「算数」12件が、材料はあるのに「記録なし」で送られていた。
+ *
+ * ★学校種別で絞らない。コードがすでに学校種別ごとに分かれていて絞る意味が無く、
+ *   絞ると「中学生なのに教材の科目が算数」（本番に2件ある）で 'math' を落としてしまう。
+ *
+ * ★高校は1科目が複数コードに割れるので、拾ったうちの直近1件が使われる（呼び出し側の pickLatest）。
+ *   どの履修科目かまでは見分けない。テーマに書くのは方針だけなので、これで足りる。
+ *
+ * ★小学の「外国語活動」（elem_eng_activity）は入れない。英語の成績として読ませると、
+ *   持っていない成績に触れたのと同じことになる。無ければ触れない、を優先する。
+ */
+const SUBJECT_FAMILY: Record<string, readonly string[]> = {
+  英語: [
+    'english',
+    'jhs_english',
+    'elem_english',
+    'hs_eng_com_1',
+    'hs_eng_com_2',
+    'hs_eng_com_3',
+    'hs_logic_expr_1',
+    'hs_logic_expr_2',
+    'hs_logic_expr_3',
+  ],
+  // ★「算数」と「数学」は同じ系統。教材ラベルは分かれるが、成績は同じ 'math' に入っている
+  数学: [
+    'math',
+    'jhs_math',
+    'elem_math',
+    'hs_math_1',
+    'hs_math_a',
+    'hs_math_2',
+    'hs_math_b',
+    'hs_math_3',
+    'hs_math_c',
+  ],
+  国語: [
+    'japanese',
+    'jhs_japanese',
+    'elem_japanese',
+    'hs_gendai_kokugo',
+    'hs_gengo_bunka',
+    'hs_ronri_kokugo',
+    'hs_bungaku_kokugo',
+    'hs_kokugo_hyogen',
+    'hs_koten_tankyu',
+  ],
+  理科: [
+    'science',
+    'jhs_science',
+    'elem_science',
+    'hs_phys_basic',
+    'hs_chem_basic',
+    'hs_bio_basic',
+    'hs_earth_basic',
+    'hs_phys',
+    'hs_chem',
+    'hs_bio',
+    'hs_earth',
+    'hs_kagaku_jinsei',
+  ],
+  社会: [
+    'social',
+    'elem_social',
+    'jhs_social_geo',
+    'jhs_social_history',
+    'jhs_social_civics',
+    'hs_chiri_sogo',
+    'hs_rekishi_sogo',
+    'hs_chiri_tankyu',
+    'hs_nihonshi_tankyu',
+    'hs_sekaishi_tankyu',
+    'hs_kokyo',
+    'hs_rinri',
+    'hs_seikei',
+  ],
+};
+// 算数は数学と同じ表を見る
+SUBJECT_FAMILY.算数 = SUBJECT_FAMILY.数学;
+
 export function subjectKeysForLabel(
   label: string,
   schoolType: '小学' | '中学' | '高校' | null,
@@ -66,6 +153,9 @@ export function subjectKeysForLabel(
   for (const [code, name] of Object.entries(SUBJECT_LABELS)) {
     if (name === target) keys.add(code);
   }
+
+  // 4. 同じ系統のコード。★1〜3が当たらない本番データ（高校の hs_* と「算数」）の受け皿
+  for (const code of SUBJECT_FAMILY[target] ?? []) keys.add(code);
 
   return keys;
 }
@@ -97,6 +187,44 @@ export const MAX_CONCEPTS_PER_CALL = 20;
 /** テーマの長さの上限。本番の最長は82字 */
 export const MAX_THEME_LENGTH = 120;
 
+/** 単元を何件まで並べるか。★超えたぶんは頭と尻を残して間を省く */
+export const MAX_UNITS_SHOWN = 12;
+const UNITS_HEAD = 8;
+const UNITS_TAIL = 4;
+
+/**
+ * 単元の行を作る。
+ *
+ * ★本番の単元は多い。提案書775件のうち21件以上が286件（37%）、最大116件。
+ *   単元数とコマ数がほぼ一致している（1コマ1単元）ので、これは誤入力ではなく本物の計画。
+ *   中3の総復習や高校の予習コースが、テキストの目次をそのまま並べた形になる。
+ *
+ * ★全部並べると、AIは42件のうち1件を選んで書くことになり、
+ *   「否定文・命令文をやります」のように、計画のごく一部だけを指す文になってしまう。
+ *   そこで多いときは頭と尻だけ見せる。範囲（どこからどこまで）が分かれば
+ *   「文型から分詞構文まで」と書けて、42コマの計画を1行で正しく言える。
+ *
+ * ★省いた件数は明示する。黙って切ると「その単元はやらない」と読まれる。
+ *
+ * ★合計コマ数は数えて渡す。AIに42個の数を足させると間違えるため。
+ */
+export function formatUnitsLine(units: readonly { title: string; koma: number }[]): string {
+  if (units.length === 0) return '単元: （未選択）';
+
+  const totalKoma = units.reduce((sum, u) => sum + u.koma, 0);
+  const head = `単元（${units.length}件・計${totalKoma}コマ）: `;
+  const show = (u: { title: string; koma: number }) => `${u.title} ${u.koma}コマ`;
+
+  if (units.length <= MAX_UNITS_SHOWN) return head + units.map(show).join(' / ');
+
+  const omitted = units.length - UNITS_HEAD - UNITS_TAIL;
+  return [
+    head + units.slice(0, UNITS_HEAD).map(show).join(' / '),
+    `…（間の${omitted}件は省略。やらないという意味ではない）…`,
+    units.slice(-UNITS_TAIL).map(show).join(' / '),
+  ].join(' / ');
+}
+
 export function conceptSystemPrompt(): string {
   return [
     'あなたは学習塾の教室長です。講習提案書の「講習テーマ」を1行で書きます。',
@@ -111,7 +239,11 @@ export function conceptSystemPrompt(): string {
     '- 何をやる講習かが分かる文にする。です・ます調。',
     '- ★型に嵌めない。生徒ごとに単元も成績も違うので、同じ言い回しを使い回さない。',
     '- ★渡された単元の名前を、最低1つそのまま使う。「基礎」「応用」のような抽象語に言い換えない。',
+    '- ★単元が多いときは、1つだけ挙げて全体のように書かない。最初と最後の単元で範囲を示す',
+    '  （例:「文型から分詞構文まで」）。40件の計画を1件の話にすると、別の講習の説明になる。',
+    '- ★「…（間の◯件は省略…）…」は、見せていないだけで、やらない単元ではない。',
     '- コマ数は入れてよい（例:「（英語8コマ）」）。',
+    '  ★書くなら「計◯コマ」として渡した数をそのまま使う。自分で足し算しない。',
     '',
     '■ 成績の使い方',
     '- ★渡された成績だけを見る。渡されていなければ、成績には一切触れない。',
@@ -137,9 +269,7 @@ export function conceptUserText(items: readonly ConceptInput[]): string {
       const lines = [`--- id: ${it.proposalId}`];
       lines.push(`学年科目: ${[it.gradeLabel, it.subject].filter(Boolean).join(' ') || '不明'}`);
       lines.push(`教室長が書いた一言: ${it.theme.trim() || '（空）'}`);
-      lines.push(
-        `単元: ${it.units.length > 0 ? it.units.map((u) => `${u.title} ${u.koma}コマ`).join(' / ') : '（未選択）'}`
-      );
+      lines.push(formatUnitsLine(it.units));
 
       // ★持っている成績だけを書く。無い項目は行ごと出さない（「無い」と伝えて推測させない）
       const grades: string[] = [];
