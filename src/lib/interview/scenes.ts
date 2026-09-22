@@ -10,6 +10,7 @@
  */
 
 import type { BriefSectionKey } from '@/lib/ai/interviewBrief';
+import type { Region } from '@/lib/interview/region';
 
 /** シーン（本部チェックリストの①〜⑦）。この順に出す */
 export const SCENE_KEYS = [
@@ -151,9 +152,21 @@ export function gradeBandOf(grade: number | null): GradeBand | null {
 }
 
 /**
- * ③時期の重要性の定型トーク。学年区分 × 季節の15マス。
+ * ③時期の重要性の定型トーク。
  *
  * ★ここを埋めるのは人間の仕事。AIに書かせない。毎回同じことを言う場所だから。
+ *
+ * ■ 2層に分かれている
+ *   COMMON_TIMING_LEAD ―― 都県の話に入る前に言うこと（この時期が何の時期か）
+ *   REGION_TIMING      ―― 都県ごとの話。★入試制度・日程・教科別対策はすべてこちら
+ *   COMMON_TIMING_TAIL ―― 都県の話のあとに言うこと（ご家庭へのお願いなど）
+ *   実際に出るのはこの順に繋げたもの（timingLines）。
+ *
+ *   ★LEAD と TAIL に分けてあるのは、共通の行をまとめて先頭に出すと
+ *     「ご家庭へ ―― 体調管理」が話の2行目に来てしまうため。締めの言葉は締めに置く。
+ *
+ *   ★制度の話を COMMON に書かない。都立は1020点の総合得点1本・併願優遇は12月15日の
+ *     入試相談、神奈川は打診値表と前期/後期の内申。混ぜると面談でそのまま事故る。
  *
  * ■ 1マスに書く観点（本部の「夏期保護者面談 チェックリスト」③より）
  *   1. 目標達成までの期間 ―― 入試まで／学年末まで、あと何か月か
@@ -169,80 +182,184 @@ export function gradeBandOf(grade: number | null): GradeBand | null {
  * ■ 記入シート: docs/interview-timing-talks.md
  *   そちらに観点と記入例、空欄の表がある。書いたものをここへ写す。
  */
-const TIMING_TEMPLATES: Record<GradeBand, Record<SeasonKey, readonly string[]>> = {
-  elementary: {
-    spring: [],
-    summer: [],
-    winter: [],
-  },
-  junior12: {
-    spring: [],
-    // ★中1・中2に内申の話をするのは早すぎない。都立の調査書点は中3の評定で決まるが、
-    //   その中3の授業は中1・中2の積み残しの上に乗る。ここを外すと夏の意味が伝わらない。
-    summer: [
-      '7〜8月 ―― 学校が止まる。つまずいた単元まで戻れるのは夏だけ',
-      '2学期 ―― 内容が一段難しくなる。ここで差がつく',
-      '中3の内申は中3の授業で決まるが、その授業は中1・中2の上に乗る',
-    ],
-    winter: [
-      '冬は範囲が短い ―― 戻る時間は取れない。いまの単元を固める時期',
-      '学年末テスト ―― 1年間の総まとめ。ここの評定が次の学年の土台になる',
-      '春 ―― 次の学年が始まる前に、苦手を残さず上げる',
-    ],
-  },
+type TimingGrid = Record<GradeBand, Record<SeasonKey, readonly string[]>>;
+
+/**
+ * 神奈川・中3・冬期の教科別の話（2026-09-22・緑園都市校の教室長）。
+ *
+ * ★③「なぜ今なのか」の答えであると同時に、⑤「なぜこの教科・この単元か」の根拠でもある。
+ *   両方に同じ行を出すので、定数はここ1つ。片方だけ直すと面談の中で食い違う。
+ *
+ * ★公立と私立でやることが分かれる。NESTは生徒がどちらを受けるか持っていないので、
+ *   両方を出して面談で選んでもらう。行頭の【公立】【私立】はそのための印。
+ */
+const KANAGAWA_JUNIOR3_WINTER_SUBJECTS: readonly string[] = [
+  '【公立】英語 ―― 長文は700語が3題で40点。ここが取れないと点にならない',
+  '【公立】英語 ―― 問2・問3・問4は短時間で切り抜ける練習が要る',
+  '【公立】数学 ―― 問1〜問3をノーミスで64点。ここだけで偏差値55に届きうる',
+  '【公立】国語 ―― 問5の資料読み取りで10点。偏差値が1変わる得点源',
+  '【公立】理科・社会 ―― 過去問の前に問題ベースで1周できる最後のチャンス',
+  '【私立】中学内容の総復習。高校内容に入る前に1周触れておくと入りやすい',
+  '【私立】理科・社会で学校が終わっていない範囲の予習。知らないまま高校に行くと大変',
+];
+
+/** 都県によらず同じ話のうち、都県の話より前に言うこと */
+const COMMON_TIMING_LEAD: TimingGrid = {
+  elementary: { spring: [], summer: [], winter: [] },
+  junior12: { spring: [], summer: [], winter: [] },
   junior3: {
-    spring: [
-      '受験の年が始まった ―― 内申が決まるのは2学期。逆算するとあと2回のテスト',
-      '1学期の内申も調査書に効く。ここから手を抜けない',
-      '志望校は夏の間に絞る。9月以降は動かしにくくなる',
-    ],
-    // 本部のチェックリスト（中3・夏期版）から起こしたものに、
-    // vault の高校入試情報（都立1020点・私立12月相談）で肉付けした
-    summer: [
-      '年間学習計画を見ながら、いまがどの地点かを確認する',
-      '7〜8月 ―― 部活が終わり、まとまった時間が取れる最後の時期',
-      '9月以降 ―― 内申が決まる2学期。三者面談と出願までの流れ',
-      '夏と冬の違い ―― 冬は範囲を詰められない。戻れるのは夏だけ',
-      '内申1点の重み ―― 換算内申1点は当日の素点で約3点ぶん。当日がそのぶんラクになる',
-      '★私立を併願するなら、動けるのは11月の三者面談まで。12月15日からは先生同士の入試相談',
-    ],
-    winter: [
-      '都立は学力検査700点＋調査書300点＋スピーキング20点の1020点、1本の勝負',
-      '内申はもう動かない ―― ここから伸ばせるのは当日の点だけ',
-      '★私立の併願優遇は12月の入試相談で決着済み。2月の一般で戦うのはオープンの生徒',
-      '併願優遇でも「加点型」の学校は当日の出来次第で落ちる。押さえたつもりにしない',
-      '冬期 ―― 新しいことを増やさず、5教科の穴を埋めて過去問の型に慣れる',
-      '二次募集は3教科・6:4・スピーキング無効。一次とは戦い方が違う',
-    ],
+    spring: [],
+    summer: ['年間学習計画を見ながら、いまがどの地点かを確認する'],
+    winter: ['受験間近。最後の追い込みの時期'],
   },
-  high12: {
+  high12: { spring: [], summer: [], winter: [] },
+  high3: { spring: [], summer: [], winter: [] },
+};
+
+/** 都県によらず同じ話のうち、都県の話のあとに言うこと（締めの言葉） */
+const COMMON_TIMING_TAIL: TimingGrid = {
+  elementary: { spring: [], summer: [], winter: [] },
+  junior12: { spring: [], summer: [], winter: [] },
+  junior3: {
     spring: [],
     summer: [],
-    winter: [],
+    // ★教室長の言葉で書いた（2026-09-22）。ここは都県によらず同じ
+    winter: ['ご家庭へ ―― 体調管理と、結果に一喜一憂しないこと。応援してやってください'],
   },
-  high3: {
-    spring: [],
-    summer: [],
-    winter: [],
+  high12: { spring: [], summer: [], winter: [] },
+  high3: { spring: [], summer: [], winter: [] },
+};
+
+/** 都県ごとの話。★入試制度・日程・教科別対策はここ */
+const REGION_TIMING: Record<Region, TimingGrid> = {
+  tokyo: {
+    elementary: { spring: [], summer: [], winter: [] },
+    junior12: {
+      spring: [],
+      // ★中1・中2に内申の話をするのは早すぎない。都立の調査書点は中3の評定で決まるが、
+      //   その中3の授業は中1・中2の積み残しの上に乗る。ここを外すと夏の意味が伝わらない。
+      summer: [
+        '7〜8月 ―― 学校が止まる。つまずいた単元まで戻れるのは夏だけ',
+        '2学期 ―― 内容が一段難しくなる。ここで差がつく',
+        '中3の内申は中3の授業で決まるが、その授業は中1・中2の上に乗る',
+      ],
+      winter: [
+        '冬は範囲が短い ―― 戻る時間は取れない。いまの単元を固める時期',
+        '学年末テスト ―― 1年間の総まとめ。ここの評定が次の学年の土台になる',
+        '春 ―― 次の学年が始まる前に、苦手を残さず上げる',
+      ],
+    },
+    junior3: {
+      spring: [
+        '受験の年が始まった ―― 内申が決まるのは2学期。逆算するとあと2回のテスト',
+        '1学期の内申も調査書に効く。ここから手を抜けない',
+        '志望校は夏の間に絞る。9月以降は動かしにくくなる',
+      ],
+      // 本部のチェックリスト（中3・夏期版）から起こしたものに、
+      // vault の高校入試情報（都立1020点・私立12月相談）で肉付けした
+      summer: [
+        '7〜8月 ―― 部活が終わり、まとまった時間が取れる最後の時期',
+        '9月以降 ―― 内申が決まる2学期。三者面談と出願までの流れ',
+        '夏と冬の違い ―― 冬は範囲を詰められない。戻れるのは夏だけ',
+        '内申1点の重み ―― 換算内申1点は当日の素点で約3点ぶん。当日がそのぶんラクになる',
+        '★私立を併願するなら、動けるのは11月の三者面談まで。12月15日からは先生同士の入試相談',
+      ],
+      // ★教室長の言葉で書き直した（2026-09-22）。資料から起こした制度の説明より、
+      //   実際に面談で使っている言い方のほうが通じる。制度の話は「言い忘れると事故る」
+      //   1行だけ残し、あとは落とした。
+      winter: [
+        '学校では ―― 2学期の期末テストと進路決定。ここで内申が確定する',
+        '必ず聞かれる ―― 「うちの子、受かりますか」「まだ間に合いますか」',
+        '→ 最後の取り組み次第で合格レベルまでは上がります。偏差値は最後まで伸びます。1月の模試を見て決めましょう',
+        '12月頭に私立が決まる。見学は今のうちに',
+        '都立は1月まで悩んでよい。ただし「何を基準に決めるか」は今決めておく',
+        '★併願優遇でも「加点型」の学校は当日の出来次第で落ちる。押さえたつもりにしない',
+      ],
+    },
+    high12: { spring: [], summer: [], winter: [] },
+    high3: { spring: [], summer: [], winter: [] },
+  },
+  kanagawa: {
+    elementary: { spring: [], summer: [], winter: [] },
+    junior12: { spring: [], summer: [], winter: [] },
+    junior3: {
+      spring: [],
+      summer: [],
+      // ★教室長の言葉で書いた（2026-09-22・緑園都市校）。神奈川は都立と別制度。
+      //   打診値表・前期/後期の内申・共通選抜。東京の行をここに流用しない。
+      winter: [
+        '学校では ―― 2学期（2期制なら前期）の内申の大詰め。11月末に仮内申が出る',
+        '提出物の〆切と文化祭準備が重なる時期',
+        '必ず聞かれる ―― 私立の志望校（内申との兼ね合い）／公立の志望校（模試結果との兼ね合い）／「理科・社会どうしましょう」',
+        '→ 私立は打診値表を見ながら「11月の内申がここまで上がれば○○高校、そのままなら○○高校」と幅で示す',
+        '→ 公立は偏差値表と模試結果を並べて「あと偏差値◯・点数で◯点」まで落とし、埋める単元まで決める',
+        '→ 理科・社会は冬期中におさらい',
+        ...KANAGAWA_JUNIOR3_WINTER_SUBJECTS,
+        'ご家庭へ ―― 高校継続の確約／併願私立の確定／コマを取るための覚悟',
+        '★併願私立は12月上旬までに決定。公立の志望校は1月上旬までに確定',
+      ],
+    },
+    high12: { spring: [], summer: [], winter: [] },
+    high3: { spring: [], summer: [], winter: [] },
   },
 };
 
 /**
  * ③のシーンに出す定型行を返す。まだ書かれていないマスは空を返す。
  * ★空のときは「入試まで◯日」だけを出す。埋め草を書かない。
+ * ★region が null（教室が region.ts に未登録）のときは共通の行だけ。
+ *   知らない都県に東京の制度の話をするより、行が消えたほうが安全。
  */
-export function timingLines(grade: number | null, season: SeasonKey): readonly string[] {
+export function timingLines(
+  grade: number | null,
+  season: SeasonKey,
+  region: Region | null
+): readonly string[] {
   const band = gradeBandOf(grade);
   if (!band) return [];
-  return TIMING_TEMPLATES[band][season];
+  const local = region ? REGION_TIMING[region][band][season] : [];
+  return [...COMMON_TIMING_LEAD[band][season], ...local, ...COMMON_TIMING_TAIL[band][season]];
 }
 
-/** まだ書かれていないマスの一覧。記入シートの進み具合を見るのに使う */
-export function emptyTimingCells(): { band: GradeBand; season: SeasonKey }[] {
-  const out: { band: GradeBand; season: SeasonKey }[] = [];
-  for (const band of Object.keys(TIMING_TEMPLATES) as GradeBand[]) {
-    for (const season of Object.keys(TIMING_TEMPLATES[band]) as SeasonKey[]) {
-      if (TIMING_TEMPLATES[band][season].length === 0) out.push({ band, season });
+/**
+ * ⑤プラン提示で出す「なぜこの教科・この単元なのか」。
+ *
+ * ★③と同じ行をもう一度出している。③では「なぜ今か」、⑤では「だから何をやるか」として
+ *   読む。面談は①から順に進むので、プラン表を開いた場で根拠が手元にあるほうが使える。
+ *
+ * ★ここは入試制度の話なので都県ごと。共通の層は持たない。
+ */
+type PartialTimingGrid = Partial<Record<GradeBand, Partial<Record<SeasonKey, readonly string[]>>>>;
+
+const REGION_PLAN_RATIONALE: Record<Region, PartialTimingGrid> = {
+  tokyo: {},
+  kanagawa: { junior3: { winter: KANAGAWA_JUNIOR3_WINTER_SUBJECTS } },
+};
+
+/** ⑤に出す「なぜこの教科・この単元か」の行。無ければ空 */
+export function planRationaleLines(
+  grade: number | null,
+  season: SeasonKey,
+  region: Region | null
+): readonly string[] {
+  const band = gradeBandOf(grade);
+  if (!band || !region) return [];
+  return REGION_PLAN_RATIONALE[region][band]?.[season] ?? [];
+}
+
+/**
+ * まだ都県ごとの行が1つも書かれていないマスの一覧。記入シートの進み具合を見るのに使う。
+ *
+ * ★見るのは REGION_TIMING だけ。共通の層に1行あるだけのマスを「記入済み」と
+ *   数えると、制度の話が抜けたまま埋まったことになってしまう。
+ */
+export function emptyTimingCells(): { region: Region; band: GradeBand; season: SeasonKey }[] {
+  const out: { region: Region; band: GradeBand; season: SeasonKey }[] = [];
+  for (const region of Object.keys(REGION_TIMING) as Region[]) {
+    for (const band of Object.keys(REGION_TIMING[region]) as GradeBand[]) {
+      for (const season of Object.keys(REGION_TIMING[region][band]) as SeasonKey[]) {
+        if (REGION_TIMING[region][band][season].length === 0) out.push({ region, band, season });
+      }
     }
   }
   return out;

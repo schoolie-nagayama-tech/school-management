@@ -17,6 +17,8 @@ import {
   parseBriefResult,
   sanitizeBriefSections,
   sortBriefSections,
+  isSelectableModelKey,
+  resolveInterviewBriefModelKey,
   MAX_CURRENT_LINES,
   MAX_CURRENT_LINE_LENGTH,
   MAX_SEEN_LENGTH,
@@ -29,7 +31,7 @@ import { SCENE_OF_SECTION, SCENE_KEYS } from '@/lib/interview/scenes';
 const sent: BriefSectionKey[] = ['score', 'discipline', 'lastInterview'];
 const sentWithKoushu: BriefSectionKey[] = ['score', 'koushu'];
 
-/** 41字（上限ちょうど超え）の見えること */
+/** 上限をちょうど1字超えた「見えること」 */
 const tooLongSeen = 'あ'.repeat(MAX_SEEN_LENGTH + 1);
 
 describe('BRIEF_SECTIONS', () => {
@@ -53,14 +55,31 @@ describe('briefSystemPrompt', () => {
     expect(p).toContain('書き写しもしない');
   });
 
-  it('★書かれていないことを足させない', () => {
-    expect(briefSystemPrompt()).toContain('書かれていないことを足さない');
+  it('★断定してよいのは渡した現状だけ、と釘を刺す（見立ては書かせるが推測と分かる形で）', () => {
+    const p = briefSystemPrompt();
+    expect(p).toContain('断定していいのは');
+    expect(p).toContain('推測は推測と分かる書き方');
+  });
+
+  it('★見立て・提案・切り出し方を書かせる（2026-09-22に禁止を解いた）', () => {
+    // 読み手がプロで、事実と違えば気づける、という前提を明示してあること。
+    // ここが消えると、また当たり障りのない1文に戻る
+    const p = briefSystemPrompt();
+    expect(p).toContain('原因の見立て');
+    expect(p).toContain('切り出し方');
+    expect(p).toContain('気づきます');
+  });
+
+  it('★数字を書かせない縛りだけは残す（1字違いに面談の場で誰も気づけない）', () => {
+    const p = briefSystemPrompt();
+    expect(p).toContain('数字を書き直さない');
+    expect(p).toContain('誰も気づけません');
   });
 
   it('★悪い話だけにさせない（良い方向のものは良いと書かせる）', () => {
     const p = briefSystemPrompt();
     expect(p).toContain('良い');
-    expect(p).toContain('悪い話だけにしない');
+    expect(p).toContain('悪い話だけを並べない');
   });
 
   it('★bridge（④の課題と⑤のプランのつながり）を書かせる。無理にこじつけさせない', () => {
@@ -77,7 +96,7 @@ describe('briefSystemPrompt', () => {
   });
 
   it('見えることが無ければ空にさせる（無理に書かせない）', () => {
-    expect(briefSystemPrompt()).toContain('無理に書かない');
+    expect(briefSystemPrompt()).toContain('無理に書かず');
   });
 });
 
@@ -182,7 +201,7 @@ describe('parseBriefResult', () => {
     expect(got.sections.every((s) => s.seen !== '渡していないセクション')).toBe(true);
   });
 
-  it('★40字を超える seen は空にする（勝手に短くしない）', () => {
+  it('★上限を超える seen は空にする（勝手に短くしない）', () => {
     const got = parseBriefResult(
       { sections: [{ key: 'score', seen: tooLongSeen, sign: 'warn' }] },
       sent
@@ -192,7 +211,7 @@ describe('parseBriefResult', () => {
     expect(got.sections[0].sign).toBe('');
   });
 
-  it('40字ちょうどは残す', () => {
+  it('上限ちょうどは残す', () => {
     const just = 'あ'.repeat(MAX_SEEN_LENGTH);
     const got = parseBriefResult({ sections: [{ key: 'score', seen: just, sign: 'good' }] }, sent);
     expect(got.sections[0].seen).toBe(just);
@@ -213,7 +232,7 @@ describe('parseBriefResult', () => {
     expect(got.sections.map((s) => s.sign)).toEqual(['', 'good', 'warn']);
   });
 
-  it('★thread は80字超なら空', () => {
+  it('★thread は上限を超えたら空', () => {
     const long = 'あ'.repeat(MAX_THREAD_LENGTH + 1);
     expect(parseBriefResult({ thread: long }, sent).thread).toBe('');
     const just = 'あ'.repeat(MAX_THREAD_LENGTH);
@@ -230,7 +249,7 @@ describe('parseBriefResult', () => {
     expect(got.bridge).toBe('');
   });
 
-  it('★bridge は80字超なら空', () => {
+  it('★bridge は上限を超えたら空', () => {
     const long = 'あ'.repeat(MAX_BRIDGE_LENGTH + 1);
     expect(parseBriefResult({ bridge: long }, sentWithKoushu).bridge).toBe('');
     const just = 'あ'.repeat(MAX_BRIDGE_LENGTH);
@@ -265,6 +284,56 @@ describe('parseBriefResult', () => {
     );
     expect(got.sections[0].seen).toBe('あ');
     expect(got.bridge).toBe('');
+  });
+});
+
+describe('isSelectableModelKey', () => {
+  it('smart / best だけを受け付ける', () => {
+    expect(isSelectableModelKey('smart')).toBe(true);
+    expect(isSelectableModelKey('best')).toBe(true);
+  });
+
+  it('★fast（Haiku）は比較対象ではないので弾く', () => {
+    expect(isSelectableModelKey('fast')).toBe(false);
+  });
+
+  it('★生のモデルIDは受け付けない（キー名だけを許す）', () => {
+    expect(isSelectableModelKey('claude-opus-5')).toBe(false);
+    expect(isSelectableModelKey('claude-sonnet-5')).toBe(false);
+  });
+
+  it('文字列以外・知らない値は弾く', () => {
+    for (const v of [null, undefined, 42, {}, [], '']) {
+      expect(isSelectableModelKey(v)).toBe(false);
+    }
+  });
+});
+
+describe('resolveInterviewBriefModelKey（Sonnet 5 / Opus 5 の見比べ用モデル選択）', () => {
+  it('admin が smart を指定すれば smart になる', () => {
+    expect(resolveInterviewBriefModelKey('smart', 'admin')).toBe('smart');
+  });
+
+  it('owner が best を指定すれば best になる', () => {
+    expect(resolveInterviewBriefModelKey('best', 'owner')).toBe('best');
+  });
+
+  it('指定が無ければ admin / owner でも既定（best）のまま', () => {
+    expect(resolveInterviewBriefModelKey(undefined, 'admin')).toBe('best');
+    expect(resolveInterviewBriefModelKey(undefined, 'owner')).toBe('best');
+  });
+
+  it('★admin/owner 未満（manager 以下）が model を指定しても、エラーにせず既定（best）に倒す', () => {
+    expect(resolveInterviewBriefModelKey('smart', 'manager')).toBe('best');
+    expect(resolveInterviewBriefModelKey('smart', 'teacher')).toBe('best');
+    expect(resolveInterviewBriefModelKey('smart', null)).toBe('best');
+    expect(resolveInterviewBriefModelKey('smart', undefined)).toBe('best');
+  });
+
+  it('★キー名以外（生のモデルID・知らない文字列）は、admin/owner が送っても弾いて既定にする', () => {
+    expect(resolveInterviewBriefModelKey('claude-opus-5', 'admin')).toBe('best');
+    expect(resolveInterviewBriefModelKey('fast', 'owner')).toBe('best');
+    expect(resolveInterviewBriefModelKey('', 'admin')).toBe('best');
   });
 });
 

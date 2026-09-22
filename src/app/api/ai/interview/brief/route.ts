@@ -2,7 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getApiAuth } from '@/lib/api-auth';
 import { isManagerOrAbove } from '@/lib/utils/roles';
 import { getPortalServiceClient } from '@/lib/mypage/serviceClient';
-import { callClaudeJson, isClaudeConfigured, CLAUDE_MODELS, ClaudeError } from '@/lib/ai/claude';
+import {
+  callClaudeJson,
+  isClaudeConfigured,
+  CLAUDE_MODELS,
+  ClaudeError,
+  type ClaudeModel,
+} from '@/lib/ai/claude';
 import {
   briefSectionLabel,
   briefSystemPrompt,
@@ -10,10 +16,12 @@ import {
   parseBriefResult,
   sanitizeBriefSections,
   sortBriefSections,
+  resolveInterviewBriefModelKey,
   MAX_CURRENT_LINE_LENGTH,
   type BriefSectionInput,
   type BriefSectionKey,
   type BriefSign,
+  type SelectableModelKey,
 } from '@/lib/ai/interviewBrief';
 import { STUDENT_DIGEST_FEATURE_KEY } from '@/lib/ai/features';
 
@@ -56,6 +64,10 @@ interface BriefResponse {
   degraded: boolean;
   /** この教室ではAIに送らない設定。故障ではなく意図した停止 */
   disabled: boolean;
+  /** 実際に使ったモデルのID。Sonnet 5 / Opus 5 の見比べで取り違えないように必ず返す */
+  model: ClaudeModel;
+  /** 実際に使ったモデルのキー名 */
+  modelKey: SelectableModelKey;
 }
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -198,7 +210,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: '権限がありません' }, { status: 403 });
   }
 
-  let body: { schoolId?: unknown; studentId?: unknown; sections?: unknown };
+  let body: { schoolId?: unknown; studentId?: unknown; sections?: unknown; model?: unknown };
   try {
     body = await request.json();
   } catch {
@@ -218,12 +230,22 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: '生徒の指定が不正です' }, { status: 400 });
   }
 
+  /**
+   * Sonnet 5 / Opus 5 の見比べ用モデル選択。
+   * ★判定そのものは interviewBrief.ts の resolveInterviewBriefModelKey に集約してある
+   *   （権限外は黙って既定に倒す・キー名以外は弾く、の2点をSupabase無しで単体テストするため）。
+   */
+  const modelKey: SelectableModelKey = resolveInterviewBriefModelKey(body.model, auth.role);
+  const model: ClaudeModel = CLAUDE_MODELS[modelKey];
+
   const empty: BriefResponse = {
     sections: [],
     thread: '',
     bridge: '',
     degraded: false,
     disabled: false,
+    model,
+    modelKey,
   };
 
   const supabase = getPortalServiceClient();
@@ -324,12 +346,26 @@ export async function POST(request: NextRequest) {
 
   try {
     const raw = await callClaudeJson<unknown>({
-      // 7つのセクションを見比べて「つなげて見えること」を出す仕事なので smart
-      model: CLAUDE_MODELS.smart,
+      /**
+       * ★既定は best（Opus 5）のまま。
+       *
+       * 7つのセクションを突き合わせて「英語だけ成績・宿題・引継ぎが同じ方向を向いている」を
+       * 見つける仕事は、1つの材料を要約するのとは別の難しさがある。materialを見比べて
+       * 筋を通すところでモデルの差が出やすい。
+       *
+       * 面談1回につき1呼び出しで、年間でも千回の単位。単価が smart の約2.5倍でも
+       * 差は年間数千円にとどまるので、質を取る（2026-09-22）。
+       *
+       * ★admin / owner はどちらで作るのが良いかを実データで見比べたいので、
+       *   上で決めた model（smart / best）をそのまま使う。それ以外のロールは
+       *   常に best（既定）になる。
+       */
+      model,
       // 書き方の決まりは毎回同じなのでキャッシュに載せる
       system: [{ text: briefSystemPrompt(), cache: true }],
       userText: briefUserText(sections),
-      maxTokens: 1500,
+      // ★長く書かせるようにしたので、出力の上限も広げる（seen 180字×7＋thread＋bridge）
+      maxTokens: 4000,
     });
 
     const parsed = parseBriefResult(raw, sentKeys);
@@ -350,6 +386,8 @@ export async function POST(request: NextRequest) {
       bridge: parsed.bridge,
       degraded: nothing,
       disabled: false,
+      model,
+      modelKey,
     } satisfies BriefResponse);
   } catch (e) {
     const reason = e instanceof ClaudeError ? e.reason : 'unavailable';

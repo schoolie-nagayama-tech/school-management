@@ -22,7 +22,12 @@ import AccessDenied from '@/components/AccessDenied';
 import { useAuth } from '@/contexts/AuthContext';
 import { fetchWithAuth } from '@/lib/api/auth';
 import { isSystemAdmin } from '@/lib/utils/roles';
-import { AI_FEATURE_KEYS, AI_FEATURE_LABELS, isAiFeatureKey } from '@/lib/ai/features';
+import {
+  AI_FEATURE_KEYS,
+  AI_FEATURE_LABELS,
+  isAiFeatureKey,
+  STUDENT_DIGEST_FEATURE_KEY,
+} from '@/lib/ai/features';
 import {
   FEEDBACK_VERDICTS_BY_FEATURE,
   FEEDBACK_VERDICT_LABELS,
@@ -32,6 +37,11 @@ import {
   type FeedbackVerdict,
 } from '@/lib/ai/feedback';
 import type { AiFeatureKey } from '@/lib/ai/features';
+import {
+  SELECTABLE_MODEL_KEY_LABELS,
+  isSelectableModelKey,
+  type SelectableModelKey,
+} from '@/lib/ai/interviewBrief';
 import { HelpFeedbackSection } from '@/components/help/HelpFeedbackSection';
 import { ClipboardCheck } from 'lucide-react';
 
@@ -115,6 +125,8 @@ export default function AiFeedbackPage() {
   // ★機能ごと × 判断の件数。1つの表に混ざっているので、機能で割らないと読めない
   //   （「そのまま 5」が下書きの話なのかテーマの話なのか分からなくなる）
   const counts = countByFeatureAndVerdict(rows);
+  // ★「生徒のまとめ」はSonnet 5 / Opus 5 の見比べが目的なので、モデル別にも割る
+  const studentDigestByModel = countStudentDigestByModel(rows);
 
   return (
     <AdminLayout headerTitle="AIの答え合わせ">
@@ -196,6 +208,35 @@ export default function AiFeedbackPage() {
           );
         })}
       </div>
+
+      {/* ★「生徒のまとめ」（面談の下書き）だけは、どのモデルで作ったかを併せて見たい。
+          Sonnet 5 と Opus 5 のどちらが良いかは、ほかの機能と違って実データを溜めながら
+          決めたい問いなので、既存の機能ごとの集計を壊さずにここへ追加する。
+          ★モデルが記録されていない古い行（この機能を切り分ける前のもの）は「不明」でまとめる。 */}
+      {hasAnyModelBucketRows(studentDigestByModel) && (
+        <div className="mb-4 rounded-lg border border-border-subtle bg-surface px-3 py-2">
+          <div className="mb-1.5 text-xs font-bold text-text-heading">
+            {AI_FEATURE_LABELS[STUDENT_DIGEST_FEATURE_KEY]} ── モデル別
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            {MODEL_BUCKETS.map((bucket) => {
+              const byVerdict = studentDigestByModel[bucket];
+              if (!byVerdict) return null;
+              const total = Object.values(byVerdict).reduce((a, b) => a + b, 0);
+              const ok = byVerdict.ok ?? 0;
+              return (
+                <span key={bucket} className="text-xs text-text-muted">
+                  <b className="font-bold text-text-heading">{MODEL_BUCKET_LABELS[bucket]}</b>:
+                  合っていた{' '}
+                  <b className="font-bold tabular-nums text-text-heading">
+                    {ok}/{total}
+                  </b>
+                </span>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {isLoading ? (
         <Loading />
@@ -312,6 +353,43 @@ function countByFeatureAndVerdict(
     byVerdict[r.verdict] = (byVerdict[r.verdict] ?? 0) + 1;
   }
   return counts;
+}
+
+/**
+ * 「生徒のまとめ」のモデル別集計。
+ *
+ * ★aiOutput.modelKey が無い行（この切り分けを入れる前に記録されたもの）は 'unknown' に
+ *   まとめる。無いことを弾いて表から消すと「昔ぶんの記録が急に減った」ように見えるため。
+ */
+type ModelBucket = SelectableModelKey | 'unknown';
+const MODEL_BUCKETS: readonly ModelBucket[] = ['best', 'smart', 'unknown'];
+const MODEL_BUCKET_LABELS: Record<ModelBucket, string> = {
+  ...SELECTABLE_MODEL_KEY_LABELS,
+  unknown: '不明',
+};
+
+function modelBucketOf(row: AiFeedbackRow): ModelBucket {
+  const key = row.aiOutput?.modelKey;
+  return isSelectableModelKey(key) ? key : 'unknown';
+}
+
+/** モデル → 判断 → 件数。student_digest 以外の機能は数えない（他機能はモデルを選べないため） */
+function countStudentDigestByModel(
+  rows: AiFeedbackRow[]
+): Partial<Record<ModelBucket, Record<string, number>>> {
+  const counts: Partial<Record<ModelBucket, Record<string, number>>> = {};
+  for (const r of rows) {
+    if (r.feature !== STUDENT_DIGEST_FEATURE_KEY) continue;
+    const bucket = modelBucketOf(r);
+    const byVerdict = (counts[bucket] ??= {});
+    byVerdict[r.verdict] = (byVerdict[r.verdict] ?? 0) + 1;
+  }
+  return counts;
+}
+
+/** モデル別の区画そのものを出すかどうか。1件も無ければブロックごと出さない */
+function hasAnyModelBucketRows(counts: Partial<Record<ModelBucket, Record<string, number>>>) {
+  return Object.keys(counts).length > 0;
 }
 
 function formatDateTime(iso: string): string {
