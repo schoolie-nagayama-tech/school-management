@@ -8,7 +8,11 @@
  * ここでは「自分の単元だけを入れ替える」「番号は残っている単元の続きから振る」を固定する。
  */
 import { describe, it, expect, vi } from 'vitest';
-import { planTemplateUnitDeletes, buildTemplateUnitInserts } from '@/lib/api/seasonalCourses';
+import {
+  planTemplateUnitDeletes,
+  buildTemplateUnitInserts,
+  buildApplySettingsByTextbook,
+} from '@/lib/api/seasonalCourses';
 
 // seasonalCourses は import 時に supabase クライアントを掴むので、純関数のテストでも差し替える。
 // vi.mock はファイル先頭に巻き上げられるため、ファクトリの中で完結させる（外の変数は参照できない）。
@@ -19,6 +23,43 @@ vi.mock('@/lib/supabase', () => {
     getSupabaseBrowserClient: () => client,
     createSupabaseBrowserClient: () => client,
   };
+});
+
+describe('buildApplySettingsByTextbook', () => {
+  /**
+   * 「先頭のみ規約」= 結合のコマ数は先頭の1件だけが持ち、2件目以降は0。
+   * 適用のときに 0コマを落とすと、まとめた単元が先頭1件だけ生徒に渡り、
+   * 画面では色と丸数字だけが残って「結合が引き継がれない」ように見える。
+   */
+  const CURRICULUM = [
+    { textbook_id: 1, curriculum_item_id: 10, proposal_count: 2, group_number: 1 },
+    { textbook_id: 1, curriculum_item_id: 11, proposal_count: 0, group_number: 1 },
+    { textbook_id: 1, curriculum_item_id: 12, proposal_count: 0, group_number: 1 },
+    { textbook_id: 1, curriculum_item_id: 13, proposal_count: 1, group_number: null },
+    { textbook_id: 1, curriculum_item_id: 14, proposal_count: 0, group_number: null },
+    { textbook_id: 2, curriculum_item_id: 20, proposal_count: 3, group_number: null },
+  ];
+
+  it('0コマでも結合に属する単元は残す（結合が先頭1件だけにならない）', () => {
+    const byTextbook = buildApplySettingsByTextbook(CURRICULUM, [1, 2]);
+    const first = byTextbook.get(1) ?? [];
+
+    expect(first.map((s) => s.curriculum_item_id)).toEqual([10, 11, 12, 13]);
+    // 結合の3件はすべて同じグループに入り、0コマのメンバーも1コマ扱いで有効になる
+    expect(first.filter((s) => s.group_id === 1)).toHaveLength(3);
+    expect(first.find((s) => s.curriculum_item_id === 11)?.koma_count).toBe(1);
+  });
+
+  it('結合していない0コマの単元は落とす', () => {
+    const first = buildApplySettingsByTextbook(CURRICULUM, [1]).get(1) ?? [];
+    expect(first.some((s) => s.curriculum_item_id === 14)).toBe(false);
+  });
+
+  it('教材ごとに分ける。単元の無い教材は空で返す', () => {
+    const byTextbook = buildApplySettingsByTextbook(CURRICULUM, [1, 2, 3]);
+    expect(byTextbook.get(2)?.map((s) => s.curriculum_item_id)).toEqual([20]);
+    expect(byTextbook.get(3)).toEqual([]);
+  });
 });
 
 describe('planTemplateUnitDeletes', () => {

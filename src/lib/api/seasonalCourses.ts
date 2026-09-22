@@ -880,6 +880,37 @@ export function buildTemplateUnitInserts(
   }));
 }
 
+/** テンプレの単元行のうち、教材ごとの束ね直しに要る分 */
+export interface ApplyCurriculumRow {
+  textbook_id: number;
+  curriculum_item_id: number;
+  proposal_count: number;
+  group_number: number | null;
+}
+
+/**
+ * テンプレの単元行を教材ごとに束ね、生徒に入れる設定に直す（純関数）。
+ *
+ * ★ここで `proposal_count > 0` で絞ってはいけない。「先頭のみ規約」で結合の2件目以降は
+ *   0コマなので、絞ると**まとめたはずの単元が先頭1件だけ生徒に渡る**。
+ *   画面では色と丸数字だけが残り、結合の相手が消えて「結合が引き継がれない」ように見える。
+ *   残す・落とすの判定は pickCourseSettingsForApply に一本化する（同じ判定を2か所に書かない）。
+ */
+export function buildApplySettingsByTextbook(
+  curriculum: readonly ApplyCurriculumRow[],
+  textbookIds: readonly number[]
+): Map<number, { curriculum_item_id: number; koma_count: number; group_id: number }[]> {
+  const byTextbook = new Map<
+    number,
+    { curriculum_item_id: number; koma_count: number; group_id: number }[]
+  >();
+  for (const textbookId of textbookIds) {
+    const rows = curriculum.filter((c) => c.textbook_id === textbookId);
+    byTextbook.set(textbookId, pickCourseSettingsForApply(rows));
+  }
+  return byTextbook;
+}
+
 /** 提案書に残っている単元の「いちばん大きい番号」。続きから振るのに使う */
 export interface ProposalUnitMaxima {
   sortOrder: number;
@@ -947,25 +978,16 @@ export async function applyCoursesToStudents(
   // student_textbook を作成/有効化する。こうすることで「実際には申し込まれていない下書き」が
   // 生徒の所持教材一覧に混入しないようにする（発注→所持教材の流れは ordering 側で維持）。
 
-  const curriculumByTextbook = new Map<
-    number,
-    { curriculum_item_id: number; proposal_count: number; group_number: number | null }[]
-  >();
-  for (const ct of course.textbooks) {
-    const items = course.curriculum
-      .filter((c) => c.textbook_id === ct.textbook_id && c.proposal_count > 0)
-      .map((c) => ({
-        curriculum_item_id: c.curriculum_item_id,
-        proposal_count: c.proposal_count,
-        group_number: c.group_number,
-      }));
-    curriculumByTextbook.set(ct.textbook_id, items);
-  }
+  // 教材ごとに「生徒に入れる単元」を作る。0コマの結合メンバーもここで残る
+  const settingsByTextbook = buildApplySettingsByTextbook(
+    course.curriculum,
+    course.textbooks.map((ct) => ct.textbook_id)
+  );
 
   // カリキュラム設定がないテキストを記録（提案書だけ作りユニットは空にする）
   const textbooksWithoutCurriculum = new Set(
     course.textbooks
-      .filter((ct) => (curriculumByTextbook.get(ct.textbook_id) || []).length === 0)
+      .filter((ct) => (settingsByTextbook.get(ct.textbook_id) || []).length === 0)
       .map((ct) => ct.textbook_id)
   );
 
@@ -992,8 +1014,8 @@ export async function applyCoursesToStudents(
 
   for (const studentId of studentIds) {
     for (const ct of course.textbooks) {
-      // 0コマの結合メンバーも残す（pickCourseSettingsForApply のコメント参照）
-      const settings = pickCourseSettingsForApply(curriculumByTextbook.get(ct.textbook_id) || []);
+      // 0コマの結合メンバーも入っている（buildApplySettingsByTextbook のコメント参照）
+      const settings = settingsByTextbook.get(ct.textbook_id) || [];
       const hasCurriculum = !textbooksWithoutCurriculum.has(ct.textbook_id);
 
       if (settings.length === 0 && hasCurriculum) continue;
@@ -1038,9 +1060,9 @@ export async function applyCoursesToStudents(
     //   curriculum_item_id で絞れば、同じテンプレを当て直したときは自分の分だけが入れ替わる。
     for (const plan of planTemplateUnitDeletes(
       course.textbooks.map((ct) => ({
-        curriculumItemIds: pickCourseSettingsForApply(
-          curriculumByTextbook.get(ct.textbook_id) || []
-        ).map((s) => s.curriculum_item_id),
+        curriculumItemIds: (settingsByTextbook.get(ct.textbook_id) || []).map(
+          (s) => s.curriculum_item_id
+        ),
         proposalIds: studentIds
           .map((studentId) => proposalMap.get(`${studentId}:${ct.textbook_id}`))
           .filter((id): id is string => !!id),
@@ -1067,7 +1089,7 @@ export async function applyCoursesToStudents(
         const proposalId = proposalMap.get(`${studentId}:${ct.textbook_id}`);
         if (!proposalId) continue;
         // 結合の2件目以降（0コマ）を落とさない。落とすとまとめた単元が先頭1件だけ生徒に渡る
-        const settings = pickCourseSettingsForApply(curriculumByTextbook.get(ct.textbook_id) || []);
+        const settings = settingsByTextbook.get(ct.textbook_id) || [];
         unitInserts.push(
           ...buildTemplateUnitInserts(
             proposalId,
