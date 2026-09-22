@@ -92,6 +92,8 @@ interface TextbookForm {
   revision_date: string;
   // 対応する発注教材(materials.id)。空文字=未紐付け。提案書公開時の自動発注に使う。
   material_id: string;
+  // 発注の対象にするか。false は実在しない器のテキスト（大学受験の回数だけのもの・志望校過去問）。
+  is_orderable: boolean;
 }
 
 const emptyForm: TextbookForm = {
@@ -102,6 +104,7 @@ const emptyForm: TextbookForm = {
   subject: '',
   revision_date: '',
   material_id: '',
+  is_orderable: true,
 };
 
 export default function TextbookMasterPageWrapper() {
@@ -329,6 +332,7 @@ function TextbookMasterPage() {
       subject: t.subject || '',
       revision_date: t.revision_date || '',
       material_id: t.material_id || '',
+      is_orderable: t.is_orderable !== false,
     });
     setShowModal(true);
   };
@@ -360,7 +364,9 @@ function TextbookMasterPage() {
         subject: form.subject || null,
         revision_date: form.revision_date || null,
         grade_category: gradeCategory || null,
-        material_id: form.material_id || null,
+        // 発注しない教材に発注教材を紐付けても意味がないので、外したときは紐付けも落とす
+        material_id: form.is_orderable ? form.material_id || null : null,
+        is_orderable: form.is_orderable,
       };
       if (editingId) {
         await updateTextbook(editingId, data);
@@ -545,6 +551,15 @@ function TextbookMasterPage() {
                             {!t.is_active && (
                               <span className="flex-shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded bg-surface-hover text-text-faint border border-border">
                                 非表示
+                              </span>
+                            )}
+                            {/* 実物が無い器のテキスト。「非表示」とは意味が違うので別のバッジにする */}
+                            {!t.is_orderable && (
+                              <span
+                                className="flex-shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200"
+                                title="発注のテキストカタログにも、提案書の公開時の発注ダイアログにも出ません"
+                              >
+                                発注しない
                               </span>
                             )}
                             {t.publisher && (
@@ -764,13 +779,16 @@ function TextbookMasterPage() {
                       onChange={(e) => setForm({ ...form, subject: e.target.value })}
                       className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-surface-raised"
                     >
-                      <option value="">選択</option>
+                      <option value="">指定なし（全科目）</option>
                       {SUBJECTS.map((s) => (
                         <option key={s} value={s}>
                           {s}
                         </option>
                       ))}
                     </select>
+                    <p className="mt-1 text-xs text-text-muted">
+                      過去問のように1冊で複数科目を扱う教材は空のままにして、科目は単元側に持たせます。
+                    </p>
                   </div>
                 </div>
                 <div>
@@ -783,15 +801,35 @@ function TextbookMasterPage() {
                     placeholder="例: 20250401"
                   />
                 </div>
+                {/* 発注の対象にするか。実物が無い器のテキストを発注から外すための設定 */}
+                <div className="border-t border-border-subtle pt-3">
+                  <label className="flex items-start gap-2.5 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={form.is_orderable}
+                      onChange={(e) => setForm({ ...form, is_orderable: e.target.checked })}
+                      className="mt-0.5 w-4 h-4 flex-shrink-0 rounded border-border text-ink focus:ring-ink/30"
+                    />
+                    <span>
+                      <span className="block text-sm font-medium text-text-heading">
+                        発注の対象にする
+                      </span>
+                      <span className="block text-xs text-text-muted leading-relaxed mt-0.5">
+                        実物が無い器のテキスト（大学受験の回数だけのもの・志望校過去問）はチェックを外します。発注のテキストカタログにも、提案書を公開したときの発注ダイアログにも出なくなります。
+                      </span>
+                    </span>
+                  </label>
+                </div>
                 {/* 発注教材の紐付け: 提案書公開時に自動発注の候補として使う */}
-                <div>
+                <div className={form.is_orderable ? '' : 'opacity-40'}>
                   <label className="block text-sm font-medium text-text-heading mb-1">
                     発注教材（任意）
                   </label>
                   <select
-                    value={form.material_id}
+                    value={form.is_orderable ? form.material_id : ''}
                     onChange={(e) => setForm({ ...form, material_id: e.target.value })}
-                    className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-surface-raised"
+                    disabled={!form.is_orderable}
+                    className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-surface-raised disabled:cursor-not-allowed"
                   >
                     <option value="">紐付けなし（発注は手動）</option>
                     {materials.map((m) => (
@@ -801,7 +839,9 @@ function TextbookMasterPage() {
                     ))}
                   </select>
                   <p className="text-[11px] text-text-faint mt-1">
-                    提案書を公開したとき、この教材の発注候補が自動で出ます。未設定なら手動発注になります。
+                    {form.is_orderable
+                      ? '提案書を公開したとき、この教材の発注候補が自動で出ます。未設定なら手動発注になります。'
+                      : '発注の対象にしないときは選べません'}
                   </p>
                 </div>
               </div>

@@ -15,6 +15,15 @@ export interface UnitDraft {
   intent_tag: string | null;
 }
 
+/**
+ * 1つの編集画面で扱えるテキストの上限。
+ *
+ * 講習テンプレート（CourseEditor）と提案書の新規作成で同じ上限にする。
+ * 片方だけ変えると「テンプレは3冊入るのに提案書は2冊まで」のような食い違いが出るので、
+ * 置き場をここに1つにしてある。
+ */
+export const MAX_TEXTBOOKS = 3;
+
 export const INTENT_TAGS = [
   '予習',
   '復習',

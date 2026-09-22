@@ -31,6 +31,7 @@ import type { KoushuKomaRow, KoushuKomaSummary } from '@/lib/utils/koushuKoma';
 // categorizeSubject をそのまま re-use する（判定がズレると目標が別科目に飛ぶ）。
 import {
   categorizeSubject,
+  sharesSubjectGoals,
   SUBJECT_COLUMNS,
   type SubjectColumn,
 } from '@/app/students/[studentId]/progress/newProgress.shared';
@@ -119,6 +120,12 @@ export async function getStudentTextbooksExamsBySchool(
   }
   const examsByStId = new Map<string, StudentTextbookExam[]>();
   for (const st of stList) {
+    // 教材の科目が空の教材（過去問など）は科目単位の共有から外す。
+    // 空だと無条件で「その他」に落ち、無関係な教材の目標がぶら下がって見えるため。
+    if (!sharesSubjectGoals(st.textbook?.subject)) {
+      examsByStId.set(st.id, []);
+      continue;
+    }
     const subject = categorizeSubject(st.textbook?.subject);
     examsByStId.set(st.id, examsBySubjectKey.get(subjectKeyOf(st.student_id, subject)) || []);
   }
@@ -261,7 +268,10 @@ export async function getStudentTextbooks(
   return studentTextbooks.map((st) => ({
     ...st,
     settings: settingsMap.get(st.id) || null,
-    exams: examsBySubject[categorizeSubject(st.textbook?.subject)] || [],
+    // 教材の科目が空の教材（過去問など）には科目単位の目標を配らない（sharesSubjectGoals 参照）
+    exams: sharesSubjectGoals(st.textbook?.subject)
+      ? examsBySubject[categorizeSubject(st.textbook?.subject)] || []
+      : [],
   }));
 }
 

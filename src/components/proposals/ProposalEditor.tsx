@@ -11,8 +11,10 @@ import {
   Download,
   FileText,
   PackageOpen,
+  Plus,
   Printer,
   Trash2,
+  X,
 } from 'lucide-react';
 import {
   Button,
@@ -28,9 +30,11 @@ import {
   Loading,
 } from '@/components/ui';
 import { useToast } from '@/hooks/useToast';
+import { useConfirm } from '@/hooks/useConfirm';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   getProposal,
+  getProposalsByStudent,
   getTextbookUnitsWithProgress,
   upsertProposal,
   deleteProposal,
@@ -44,7 +48,11 @@ import {
 } from '@/lib/api/proposals';
 import type { ProposalUnitInput } from '@/lib/api/proposals';
 import { ConceptBar } from './ConceptBar';
-import { getProposalOrderCandidates, type OrderCandidate } from '@/lib/api/ordering';
+import {
+  getProposalOrderCandidates,
+  isRelevantOrderCandidate,
+  type OrderCandidate,
+} from '@/lib/api/ordering';
 import { PublishOrderDialog } from './PublishOrderDialog';
 import { getTextbooks } from '@/lib/api/textbooks';
 import {
@@ -52,12 +60,17 @@ import {
   getFavoriteTextbookIds,
   removeFavoriteTextbook,
 } from '@/lib/api/textbook-favorites';
-import { getCourseCurriculum } from '@/lib/api/seasonalCourses';
+import {
+  getCourseCurriculum,
+  getSeasonalCourse,
+  getSeasonalCourses,
+} from '@/lib/api/seasonalCourses';
 import { supabase } from '@/lib/supabase';
 import type {
   CurriculumItem,
   ProposalStatus,
   SeasonalCourse,
+  SeasonalCourseListItem,
   SeasonalProposalWithDetails,
   SeasonType,
   StudentProgress,
@@ -65,8 +78,24 @@ import type {
 } from '@/types/database';
 import { SEASON_LABELS, PROPOSAL_STATUS_LABELS, GRADE_LABELS } from '@/types/database';
 import { ProposalPrintView } from './ProposalPrintView';
+import type { PrintBook, ProposalPrintData } from './ProposalPrintView';
+import { buildPrintBook } from '@/lib/proposals/buildPrintSheets';
+// プレビューのまとめ方は印刷と同じ純関数を通す（見え方がズレると「印刷したら違った」になる）
+import {
+  groupProposalsForPrint,
+  type PrintProposalSource,
+} from '@/lib/proposals/printSheetGrouping';
+// 複数冊（最大3冊）を1画面で作るための純粋ロジック。テストで固定してある
+import {
+  buildProposalSaveBlockers,
+  calcBookKomaSummary,
+  formatBookTitles,
+  summarizeBookSaves,
+  type BookSaveOutcome,
+} from './proposalMultiBook';
 
 import {
+  MAX_TEXTBOOKS,
   STATUS_COLORS,
   STATUS_FLOW,
   STATUS_INACTIVE,
@@ -87,6 +116,10 @@ import {
   type GroupKind,
 } from '@/components/koushu-plan/unitDraftLogic';
 import { courseSettingsToDrafts } from '@/components/koushu-plan/courseSettingAdapter';
+import {
+  CreateMethodScreen,
+  TemplatePickerScreen,
+} from '@/components/proposals/NewProposalStartScreen';
 // 単元編集まわりのUI部品。講習テンプレートの編集画面と見た目・操作を共有する
 import { TextbookPickerScreen } from '@/components/koushu-plan/TextbookPickerScreen';
 import { UnitList } from '@/components/koushu-plan/UnitList';
@@ -94,11 +127,57 @@ import { SelectionPill } from '@/components/koushu-plan/SelectionPill';
 import { EditorBottomBar } from '@/components/koushu-plan/EditorBottomBar';
 import { usePillPosition } from '@/components/koushu-plan/usePillPosition';
 
+/**
+ * 新規作成でタブに並べるテキスト1冊ぶんの見出し情報。
+ * 実体（単元・入力中のコマ数）はアクティブなタブだけ既存の state に載り、
+ * 離れているタブは bookStash に退避する。
+ */
+interface ProposalBook {
+  textbookId: number;
+  name: string;
+  subject: string;
+  grade: string;
+}
+
+/** タブを離れている冊の作業状態。切り替えで丸ごと入れ替える */
+interface StashedBook {
+  items: CurriculumItem[];
+  drafts: Map<number, UnitDraft>;
+  /** 学校の進度。1冊目が生徒の所持テキストから開かれた場合だけ中身がある */
+  progressMap: Map<number, StudentProgress>;
+  nextGroupId: number;
+  nextAppliedGroupId: number;
+}
+
+/** テキスト1冊ぶんの空ドラフト（単元は全部0コマ・未選択） */
+function emptyDraftsFor(items: CurriculumItem[]): Map<number, UnitDraft> {
+  const drafts = new Map<number, UnitDraft>();
+  for (const item of items) {
+    drafts.set(item.id, {
+      curriculum_item_id: item.id,
+      koma_count: 0,
+      applied_koma: 0,
+      reason: '',
+      selected: false,
+      group_id: 0,
+      applied_group_id: 0,
+      intent_tag: null,
+    });
+  }
+  return drafts;
+}
+
+/** 表示用のテキスト名（学年 科目 書名） */
+function bookLabel(book: { grade: string; subject: string; name: string }): string {
+  return [book.grade, book.subject, book.name].filter(Boolean).join(' ');
+}
+
 export default function ProposalEditor() {
   const params = useParams();
   const searchParams = useSearchParams();
   const router = useRouter();
   const { toasts, addToast, removeToast } = useToast();
+  const { confirm, ConfirmDialog } = useConfirm();
   const { profile } = useAuth();
   // 公開・削除・講習登録は教室長以上(manager/owner/admin)のみ許可
   const isManagerOrAbove =
@@ -125,8 +204,28 @@ export default function ProposalEditor() {
   const [notes, setNotes] = useState('');
 
   const [selectedTextbookId, setSelectedTextbookId] = useState<number>(qTextbookId);
+  /**
+   * 新規作成で選んだテキスト（最大3冊）。タブの並び順＝上から進める順。
+   * 保存すると1冊につき提案書1件になる（DBは 生徒×テキスト×期 で1件のまま）。
+   * 既存の提案書を編集しているときは使わない（1件＝1冊で固定）。
+   */
+  const [books, setBooks] = useState<ProposalBook[]>([]);
+  /** アクティブでない冊の作業状態。アクティブな冊は allItems / unitDrafts 側が正 */
+  const [bookStash, setBookStash] = useState<Map<number, StashedBook>>(new Map());
   const [allTextbooks, setAllTextbooks] = useState<Textbook[]>([]);
   const [showTextbookPicker, setShowTextbookPicker] = useState(false);
+  /**
+   * 新規作成の入口。テキストから作るか、テンプレートから作るかを先に選ばせる。
+   * ★URLでテキストが決まっている導線（教材マスタから）は選ばせても意味が無いので飛ばす。
+   */
+  const [newStartMode, setNewStartMode] = useState<'choose' | 'textbook' | 'template'>(
+    isNew && !qTextbookId ? 'choose' : 'textbook'
+  );
+  const [templates, setTemplates] = useState<SeasonalCourseListItem[]>([]);
+  const [templatesLoading, setTemplatesLoading] = useState(false);
+  /** テンプレ一覧の絞り込み（既定は準備中の季節＋その生徒の学年）。外すと全件 */
+  const [templateFiltered, setTemplateFiltered] = useState(true);
+  const [applyingTemplate, setApplyingTemplate] = useState(false);
   const [textbookSearch, setTextbookSearch] = useState('');
   // テキスト選択画面で上位表示するためのお気に入り集合。ユーザー個人ごと（DB保存）
   const [favoriteTextbookIds, setFavoriteTextbookIds] = useState<Set<number>>(new Set());
@@ -159,8 +258,9 @@ export default function ProposalEditor() {
   const [studentName, setStudentName] = useState('');
   const [studentSchoolId, setStudentSchoolId] = useState<string | null>(null);
   /**
-   * テーマの書き足しに使うID。★新規作成中は出さない。
+   * テーマの書き足しに使うID。★新規作成中は null。
    *   まだ保存されていないので、単元も成績もサーバー側から引けない。
+   *   バーは出さず、ConceptBar が「保存すると書き足せます」の1行に切り替わる。
    */
   const conceptTargetId = isNew ? null : proposalId;
   const conceptSchoolId = studentSchoolId;
@@ -169,6 +269,10 @@ export default function ProposalEditor() {
   const [textbookGrade, setTextbookGrade] = useState('');
 
   const [previewMode, setPreviewMode] = useState(false);
+  // プレビューで出す紙。同じ生徒×期×科目の他の提案書も同じ1枚にまとめるため、開くときに組み立てる。
+  // 過去問のように1冊で複数科目を扱う教材では、編集中の1件が科目ごとの紙に分かれて複数枚になる。
+  const [previewSheets, setPreviewSheets] = useState<ProposalPrintData[]>([]);
+  const [previewLoading, setPreviewLoading] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showOrderAlert, setShowOrderAlert] = useState(false);
 
@@ -191,8 +295,55 @@ export default function ProposalEditor() {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
+  /**
+   * このテキストを取り込めるひな形（講習）を読み直す。
+   * アクティブなタブのテキストに対して効かせたいので、タブを切り替えるたびに呼ぶ。
+   */
+  const loadAvailableCourses = useCallback(async (tbId: number, schoolId: string | null) => {
+    try {
+      const { data: courseTextbooks } = await supabase
+        .from('seasonal_course_textbooks')
+        .select('course_id')
+        .eq('textbook_id', tbId);
+      if (courseTextbooks && courseTextbooks.length > 0) {
+        const courseIds = (courseTextbooks as { course_id: string }[]).map((ct) => ct.course_id);
+        // 同名のひな形が複数教室に存在するため、この生徒の教室のものだけに絞る。
+        // school_id で絞らないと他教室のコピーが重複表示されてしまう。
+        let q = supabase
+          .from('seasonal_courses')
+          .select('id, name, season')
+          .in('id', courseIds)
+          .eq('is_active', true);
+        if (schoolId) q = q.eq('school_id', schoolId);
+        const { data: courses } = await q;
+        setAvailableCourses((courses ?? []) as SeasonalCourse[]);
+      } else {
+        setAvailableCourses([]);
+      }
+    } catch {
+      setAvailableCourses([]);
+    }
+  }, []);
+
+  /**
+   * ★新規作成では初期読み込みを1回きりにするためのフラグ。
+   *
+   * loadData の依存に selectedTextbookId が入っているので、タブを切り替える（＝アクティブな
+   * テキストを変える）だけでこの useEffect が再実行され、他タブぶんも含めて作業中の入力が
+   * 作り直されてしまう。新規作成ではテキストの読み込みを追加・切替のハンドラ側が担当するので、
+   * ここは生徒情報・テキストマスタを1回取れば足りる。
+   * 既存の提案書を編集するときの挙動は従来どおり（このフラグは効かせない）。
+   */
+  const newLoadDoneRef = useRef(false);
+  /** URL で指定されて最初に読み込んだテキスト。所持テキストの紐付けを渡す先の判定に使う */
+  const initialTextbookIdRef = useRef(0);
+
   // ── 初期読み込み ──
   const loadData = useCallback(async () => {
+    if (isNew) {
+      if (newLoadDoneRef.current) return;
+      newLoadDoneRef.current = true;
+    }
     setLoading(true);
     try {
       // テキスト一覧・お気に入りは student/proposal に依存しないので先に起動し、
@@ -222,6 +373,8 @@ export default function ProposalEditor() {
       // 直後にもう一度保存を押すと空ユニットで DB が上書きされ、未設定表示と
       // 進捗集計欠落のデータ消失バグになっていた。
       let fetchedProposal: SeasonalProposalWithDetails | null = null;
+      // タブに出す書名。state は同一実行内では読めないのでローカルにも持つ
+      const tbMeta = { name: '', subject: '', grade: '' };
 
       if (!isNew && proposalId) {
         const data = await getProposal(proposalId);
@@ -239,9 +392,12 @@ export default function ProposalEditor() {
         setNotes(data.notes ?? '');
         tbId = data.textbook_id;
         setSelectedTextbookId(tbId);
-        setTextbookName(data.textbook?.name ?? '');
-        setTextbookSubject(data.textbook?.subject ?? '');
-        setTextbookGrade(((data.textbook as Record<string, unknown>)?.grade as string) ?? '');
+        tbMeta.name = data.textbook?.name ?? '';
+        tbMeta.subject = data.textbook?.subject ?? '';
+        tbMeta.grade = ((data.textbook as Record<string, unknown>)?.grade as string) ?? '';
+        setTextbookName(tbMeta.name);
+        setTextbookSubject(tbMeta.subject);
+        setTextbookGrade(tbMeta.grade);
       } else if (stbId) {
         const { data: stb } = await supabase
           .from('student_textbooks')
@@ -258,10 +414,13 @@ export default function ProposalEditor() {
             grade?: string | null;
           } | null;
           tbId = textbook?.id ?? 0;
+          tbMeta.name = textbook?.name ?? '';
+          tbMeta.subject = textbook?.subject ?? '';
+          tbMeta.grade = textbook?.grade ?? '';
           setSelectedTextbookId(tbId);
-          setTextbookName(textbook?.name ?? '');
-          setTextbookSubject(textbook?.subject ?? '');
-          setTextbookGrade(textbook?.grade ?? '');
+          setTextbookName(tbMeta.name);
+          setTextbookSubject(tbMeta.subject);
+          setTextbookGrade(tbMeta.grade);
         }
       } else if (tbId) {
         const { data: tb } = await supabase
@@ -271,9 +430,12 @@ export default function ProposalEditor() {
           .single();
         if (tb) {
           const t = tb as { name: string; subject: string | null; grade: string | null };
-          setTextbookName(t.name);
-          setTextbookSubject(t.subject ?? '');
-          setTextbookGrade(t.grade ?? '');
+          tbMeta.name = t.name;
+          tbMeta.subject = t.subject ?? '';
+          tbMeta.grade = t.grade ?? '';
+          setTextbookName(tbMeta.name);
+          setTextbookSubject(tbMeta.subject);
+          setTextbookGrade(tbMeta.grade);
         }
       }
 
@@ -337,30 +499,14 @@ export default function ProposalEditor() {
       setNextGroupId(maxGroup + 1);
       setNextAppliedGroupId(maxAppliedGroup + 1);
 
-      // このテキストを含む講習コースを取得
-      try {
-        const { data: courseTextbooks } = await supabase
-          .from('seasonal_course_textbooks')
-          .select('course_id')
-          .eq('textbook_id', tbId);
-        if (courseTextbooks && courseTextbooks.length > 0) {
-          const courseIds = (courseTextbooks as { course_id: string }[]).map((ct) => ct.course_id);
-          // 同名のひな形が複数教室に存在するため、この生徒の教室のものだけに絞る。
-          // school_id で絞らないと他教室のコピーが重複表示されてしまう。
-          let q = supabase
-            .from('seasonal_courses')
-            .select('id, name, season')
-            .in('id', courseIds)
-            .eq('is_active', true);
-          if (schoolId) q = q.eq('school_id', schoolId);
-          const { data: courses } = await q;
-          setAvailableCourses((courses ?? []) as SeasonalCourse[]);
-        } else {
-          setAvailableCourses([]);
-        }
-      } catch {
-        setAvailableCourses([]);
+      // URL でテキストが指定された新規作成は、その1冊を最初のタブとして登録する
+      if (isNew) {
+        initialTextbookIdRef.current = tbId;
+        setBooks([{ textbookId: tbId, ...tbMeta }]);
       }
+
+      // このテキストを含む講習コースを取得
+      await loadAvailableCourses(tbId, schoolId);
     } catch (_e) {
       addToast('データの読み込みに失敗しました', 'error');
     } finally {
@@ -401,31 +547,234 @@ export default function ProposalEditor() {
     }
   };
 
+  /** 今アクティブなタブの作業状態（退避用のかたまり） */
+  const snapshotActiveBook = (): StashedBook => ({
+    items: allItems,
+    drafts: unitDrafts,
+    progressMap,
+    nextGroupId,
+    nextAppliedGroupId,
+  });
+
+  /** 退避してあった冊をアクティブに戻す */
+  const restoreBook = (book: ProposalBook, entry: StashedBook | undefined) => {
+    setSelectedTextbookId(book.textbookId);
+    setTextbookName(book.name);
+    setTextbookSubject(book.subject);
+    setTextbookGrade(book.grade);
+    setAllItems(entry?.items ?? []);
+    setUnitDrafts(entry?.drafts ?? new Map());
+    setNextGroupId(entry?.nextGroupId ?? 1);
+    setNextAppliedGroupId(entry?.nextAppliedGroupId ?? 1);
+    // 単元の選択・ピルの基準はテキストが変われば意味を持たないので持ち越さない
+    lastToggleIdRef.current = null;
+    setPillAnchorId(null);
+    // 進捗は生徒の所持テキスト（student_textbook）に紐づく。2冊目以降は紐付けが無いので空になる。
+    setProgressMap(entry?.progressMap ?? new Map());
+    void loadAvailableCourses(book.textbookId, studentSchoolId);
+  };
+
+  /**
+   * タブの切り替え。今の入力を退避してから、切替先の入力を復元する。
+   * ★DBには触らない。保存するまでは全冊ぶんの入力がブラウザ内にだけある。
+   */
+  const switchBook = (textbookId: number) => {
+    if (textbookId === selectedTextbookId) return;
+    const target = books.find((b) => b.textbookId === textbookId);
+    if (!target) return;
+    const entry = bookStash.get(textbookId);
+    setBookStash((prev) => {
+      const next = new Map(prev);
+      next.set(selectedTextbookId, snapshotActiveBook());
+      next.delete(textbookId);
+      return next;
+    });
+    restoreBook(target, entry);
+  };
+
+  /**
+   * 指定の冊をタブから外す。アクティブな冊を外したときは残った先頭の冊へ移る。
+   * 保存が途中で失敗したときの「保存できた冊だけ外す」にも使う。
+   */
+  const dropBooks = (removeIds: number[]) => {
+    const remaining = books.filter((b) => !removeIds.includes(b.textbookId));
+    const nextStash = new Map(bookStash);
+    for (const id of removeIds) nextStash.delete(id);
+
+    if (removeIds.includes(selectedTextbookId)) {
+      const next = remaining[0];
+      if (next) {
+        const entry = nextStash.get(next.textbookId);
+        nextStash.delete(next.textbookId);
+        restoreBook(next, entry);
+      } else {
+        // 1冊も残らなければテキスト選択画面に戻る
+        setSelectedTextbookId(0);
+        setTextbookName('');
+        setTextbookSubject('');
+        setTextbookGrade('');
+        setAllItems([]);
+        setUnitDrafts(new Map());
+        setNextGroupId(1);
+        setNextAppliedGroupId(1);
+        setAvailableCourses([]);
+      }
+    }
+    setBooks(remaining);
+    setBookStash(nextStash);
+  };
+
+  const handleRemoveBook = async (book: ProposalBook) => {
+    const ok = await confirm({
+      title: 'テキストを外す',
+      description: `「${bookLabel(book)}」をこの提案書から外しますか？\n単元の設定も一緒に消えます（まだ保存していない入力です）。`,
+      confirmLabel: '外す',
+      variant: 'danger',
+    });
+    if (!ok) return;
+    dropBooks([book.textbookId]);
+  };
+
+  /** 2冊目以降を足すときは、1冊目と同じ科目・学年で絞った状態で選択画面を開く（解除はできる） */
+  const openAddBookPicker = () => {
+    const first = books[0];
+    if (first) {
+      setTbFilterSubject(first.subject || '');
+      setTbFilterGrade(first.grade || '');
+    }
+    setShowTextbookPicker(true);
+  };
+
   const handleSelectTextbook = async (tb: Textbook) => {
-    setSelectedTextbookId(tb.id);
-    setTextbookName(tb.name);
-    setTextbookSubject(tb.subject ?? '');
-    setTextbookGrade(tb.grade ?? '');
-    setShowTextbookPicker(false);
+    if (books.some((b) => b.textbookId === tb.id)) {
+      addToast('このテキストはすでに追加されています', 'error');
+      return;
+    }
+    if (books.length >= MAX_TEXTBOOKS) {
+      addToast(`テキストは最大${MAX_TEXTBOOKS}冊までです`, 'error');
+      return;
+    }
 
     const { items } = await getTextbookUnitsWithProgress(null, tb.id);
-    setAllItems(items);
-    setProgressMap(new Map());
+    const drafts = emptyDraftsFor(items);
 
-    const drafts = new Map<number, UnitDraft>();
-    for (const item of items) {
-      drafts.set(item.id, {
-        curriculum_item_id: item.id,
-        koma_count: 0,
-        applied_koma: 0,
-        reason: '',
-        selected: false,
-        group_id: 0,
-        applied_group_id: 0,
-        intent_tag: null,
+    // 今のタブの入力を退避してから新しいタブへ移る（切り替えで入力が消えないように）
+    if (books.length > 0 && selectedTextbookId) {
+      setBookStash((prev) => {
+        const next = new Map(prev);
+        next.set(selectedTextbookId, snapshotActiveBook());
+        return next;
       });
     }
-    setUnitDrafts(drafts);
+
+    const book: ProposalBook = {
+      textbookId: tb.id,
+      name: tb.name,
+      subject: tb.subject ?? '',
+      grade: tb.grade ?? '',
+    };
+    setBooks((prev) => [...prev, book]);
+    restoreBook(book, {
+      items,
+      drafts,
+      progressMap: new Map(),
+      nextGroupId: 1,
+      nextAppliedGroupId: 1,
+    });
+    setShowTextbookPicker(false);
+  };
+
+  /**
+   * テンプレート候補を読む。
+   * ★既定は「準備中の季節 ＋ その生徒の学年」。教室のテンプレは本番で1,265件あり、
+   *   全部並べると選べない。ただし0件になりやすいので、外す道を画面側に出している。
+   * ★単元ゼロのテンプレは出さない（本番の33%が空殻）。選んでも何も入らない。
+   */
+  const loadTemplates = async (useFilter: boolean) => {
+    if (!studentSchoolId) return;
+    setTemplatesLoading(true);
+    try {
+      const all = await getSeasonalCourses(studentSchoolId);
+      const withUnits = all.filter((c) => c.curriculum_count > 0);
+      const list = useFilter
+        ? withUnits.filter((c) => {
+            if (c.season !== season) return false;
+            const grades = c.target_grades ?? [];
+            // 対象学年が空のテンプレは「学年を問わない」扱いにする（絞りで消さない）
+            return grades.length === 0 || studentGrade == null || grades.includes(studentGrade);
+          })
+        : withUnits;
+      setTemplates(list);
+    } catch (_e) {
+      addToast('テンプレートの読み込みに失敗しました', 'error');
+      setTemplates([]);
+    } finally {
+      setTemplatesLoading(false);
+    }
+  };
+
+  /**
+   * テンプレートを1つ選んで、その内容で新規作成を始める。
+   *
+   * ★テンプレが複数テキストを持つときは、そのまま複数冊のタブとして開く（冬期の実態）。
+   *   1冊目をアクティブにし、残りは bookStash に入れる＝タブ切替と同じ形にしておく。
+   * ★単元の取り込み規約（0コマの結合メンバーを残す・グループ番号の振り直し）は
+   *   courseSettingsToDrafts に集約してある。ここで独自に判定しない。
+   */
+  const handleSelectTemplate = async (courseId: string) => {
+    if (applyingTemplate) return;
+    setApplyingTemplate(true);
+    try {
+      const course = await getSeasonalCourse(courseId);
+      if (!course || course.textbooks.length === 0) {
+        addToast('このテンプレートにはテキストがありません', 'error');
+        return;
+      }
+
+      const targets = course.textbooks.slice(0, MAX_TEXTBOOKS);
+      const prepared: { book: ProposalBook; stash: StashedBook }[] = [];
+      for (const ct of targets) {
+        const { items } = await getTextbookUnitsWithProgress(null, ct.textbook_id);
+        const settings = course.curriculum
+          .filter((c) => c.textbook_id === ct.textbook_id)
+          .map((c) => ({
+            curriculum_item_id: c.curriculum_item_id,
+            proposal_count: c.proposal_count,
+            group_number: c.group_number,
+          }));
+        const { drafts, nextGroupId } = courseSettingsToDrafts(emptyDraftsFor(items), settings, 1);
+        prepared.push({
+          book: {
+            textbookId: ct.textbook_id,
+            name: ct.textbook?.name ?? '',
+            subject: ct.textbook?.subject ?? '',
+            grade: ct.textbook?.grade ?? '',
+          },
+          stash: { items, drafts, progressMap: new Map(), nextGroupId, nextAppliedGroupId: 1 },
+        });
+      }
+
+      setBooks(prepared.map((p) => p.book));
+      setBookStash(new Map(prepared.slice(1).map((p) => [p.book.textbookId, p.stash])));
+      initialTextbookIdRef.current = prepared[0].book.textbookId;
+      restoreBook(prepared[0].book, prepared[0].stash);
+      // テーマはテンプレ名を初期値に入れる（「生徒に登録」で配ったときと同じ）
+      setTheme(course.name);
+      setNewStartMode('textbook');
+
+      if (course.textbooks.length > MAX_TEXTBOOKS) {
+        addToast(
+          `テキストは最大${MAX_TEXTBOOKS}冊までのため、先頭${MAX_TEXTBOOKS}冊だけ取り込みました`,
+          'error'
+        );
+      } else {
+        addToast(`「${course.name}」から作ります`, 'success');
+      }
+    } catch (_e) {
+      addToast('テンプレートの取り込みに失敗しました', 'error');
+    } finally {
+      setApplyingTemplate(false);
+    }
   };
 
   const lastToggleStateRef = useRef<boolean>(true);
@@ -608,6 +957,37 @@ export default function ProposalEditor() {
     return calcTotalAppliedKoma(activeUnits);
   }, [activeUnits]);
 
+  /**
+   * タブに並ぶ全冊ぶんの「有効な単元」。
+   * アクティブなタブは画面の入力（activeUnits）、離れているタブは退避した入力から取る。
+   * 並びはタブの順＝1冊目・2冊目…＝保存する順。
+   */
+  const booksWithUnits = useMemo(() => {
+    return books.map((b) => ({
+      book: b,
+      label: bookLabel(b),
+      units:
+        b.textbookId === selectedTextbookId
+          ? activeUnits
+          : Array.from(bookStash.get(b.textbookId)?.drafts.values() ?? []).filter(
+              (d) => d.koma_count > 0 || d.applied_koma > 0
+            ),
+    }));
+  }, [books, bookStash, selectedTextbookId, activeUnits]);
+
+  // 冊ごとのコマ数と合計（保存ボタン脇に出す内訳）
+  const bookSummary = useMemo(
+    () =>
+      calcBookKomaSummary(
+        booksWithUnits.map((e) => ({
+          textbookId: e.book.textbookId,
+          name: e.label,
+          units: e.units,
+        }))
+      ),
+    [booksWithUnits]
+  );
+
   const groupMap = useMemo(() => buildGroupMap(activeUnits, 'proposal'), [activeUnits]);
 
   // 申込結合グループ（applied_group_id ごと）。申込コマのある単元のみ対象。
@@ -673,14 +1053,22 @@ export default function ProposalEditor() {
     // groupSelected/clearSelection は選択変化で作り直されるため selectionInfo を依存に含めれば十分
   }, [selectionInfo.contiguous, selectionInfo.count]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  /** 単元ドラフト → 保存用の入力 */
+  const toUnitInputs = (units: UnitDraft[], appliedFallback: number | null): ProposalUnitInput[] =>
+    units.map((u) => ({
+      curriculum_item_id: u.curriculum_item_id,
+      koma_count: u.koma_count,
+      applied_koma: u.applied_koma > 0 ? u.applied_koma : appliedFallback,
+      reason: u.reason,
+      group_id: u.group_id,
+      applied_group_id: u.applied_group_id,
+      intent_tag: u.intent_tag,
+    }));
+
   const handleSave = async () => {
     // 保存できない場合は理由を明示してユーザーに知らせる
-    if (!theme.trim()) {
-      addToast('テーマを入力してください', 'error');
-      return;
-    }
-    if (!selectedTextbookId) {
-      addToast('テキストを選択してください', 'error');
+    if (saveBlockers.length > 0) {
+      addToast(saveBlockers[0], 'error');
       return;
     }
     setSaving(true);
@@ -689,45 +1077,84 @@ export default function ProposalEditor() {
       // 下書き中のみ「未確定」を表す null にして、直接公開時に提案回数で初期化できるようにする。
       // （null のまま保存すると一括公開などで提案回数に巻き戻るため）
       const appliedFallback = isNew || proposal?.status === 'draft' ? null : 0;
-      const unitInputs: ProposalUnitInput[] = activeUnits.map((u) => ({
-        curriculum_item_id: u.curriculum_item_id,
-        koma_count: u.koma_count,
-        applied_koma: u.applied_koma > 0 ? u.applied_koma : appliedFallback,
-        reason: u.reason,
-        group_id: u.group_id,
-        applied_group_id: u.applied_group_id,
-        intent_tag: u.intent_tag,
-      }));
 
-      const result = await upsertProposal({
-        id: isNew ? undefined : proposalId,
-        studentId,
-        textbookId: selectedTextbookId,
-        studentTextbookId: studentTextbookId,
-        schoolId: studentSchoolId,
-        season,
-        year,
-        theme,
-        notes: notes || null,
-        units: unitInputs,
-      });
-
-      addToast('保存しました', 'success');
-
-      // 保存後はチェックボックスを空状態に戻す（要望）。
-      // 保存内容は koma_count > 0 でハイライト表示されるため、選択状態をクリアしても可視性は保たれる。
-      setUnitDrafts((prev) => {
-        const next = new Map(prev);
-        Array.from(next.entries()).forEach(([k, d]) => {
-          if (d.selected) next.set(k, { ...d, selected: false });
+      if (!isNew) {
+        // 既存の提案書の編集は従来どおり1件だけを上書きする
+        const result = await upsertProposal({
+          id: proposalId,
+          studentId,
+          textbookId: selectedTextbookId,
+          studentTextbookId: studentTextbookId,
+          schoolId: studentSchoolId,
+          season,
+          year,
+          theme,
+          notes: notes || null,
+          units: toUnitInputs(activeUnits, appliedFallback),
         });
-        return next;
-      });
 
-      if (isNew) {
-        router.replace(`/students/${studentId}/proposals/${result.id}`);
-      } else {
+        addToast('保存しました', 'success');
+
+        // 保存後はチェックボックスを空状態に戻す（要望）。
+        // 保存内容は koma_count > 0 でハイライト表示されるため、選択状態をクリアしても可視性は保たれる。
+        setUnitDrafts((prev) => {
+          const next = new Map(prev);
+          Array.from(next.entries()).forEach(([k, d]) => {
+            if (d.selected) next.set(k, { ...d, selected: false });
+          });
+          return next;
+        });
+
         setProposal(result);
+        return;
+      }
+
+      // ── 新規作成: タブの順に1冊ずつ保存する（1冊＝提案書1件） ──
+      // ★並列にしない。created_at の昇順がそのまま「上から進める順」になり、
+      //   印刷で同じ科目を1枚にまとめるときの並び順にも使われる。
+      //   Promise.all で投げると採番の順番が保証されず、紙の上で順番が入れ替わる。
+      const outcomes: BookSaveOutcome[] = [];
+      for (const entry of booksWithUnits) {
+        try {
+          const result = await upsertProposal({
+            studentId,
+            textbookId: entry.book.textbookId,
+            // 所持テキストの紐付け（student_textbook_id）があるのは、URLで指定されて開いた冊だけ。
+            // 画面で足した2冊目以降はまだ生徒に紐づいていないので null で作る。
+            studentTextbookId:
+              entry.book.textbookId === initialTextbookIdRef.current ? studentTextbookId : null,
+            schoolId: studentSchoolId,
+            season,
+            year,
+            theme,
+            notes: notes || null,
+            units: toUnitInputs(entry.units, appliedFallback),
+          });
+          outcomes.push({
+            textbookId: entry.book.textbookId,
+            name: entry.label,
+            proposalId: result.id,
+          });
+        } catch (e) {
+          console.error('提案書の保存に失敗:', e);
+          outcomes.push({ textbookId: entry.book.textbookId, name: entry.label, proposalId: null });
+        }
+      }
+
+      const summary = summarizeBookSaves(outcomes);
+      addToast(summary.message, summary.tone);
+
+      if (!summary.allSucceeded) {
+        // 保存できた冊はタブから外し、失敗した冊だけを残して再保存できる状態で画面に留まる
+        dropBooks(summary.savedTextbookIds);
+        return;
+      }
+
+      if (summary.savedProposalIds.length === 1) {
+        router.replace(`/students/${studentId}/proposals/${summary.savedProposalIds[0]}`);
+      } else {
+        // 複数件できたときは、どれか1件を開くより一覧で並べて見せるほうが分かりやすい
+        router.push(`/students/${studentId}/proposals`);
       }
     } catch (_e) {
       addToast('保存に失敗しました', 'error');
@@ -736,10 +1163,127 @@ export default function ProposalEditor() {
     }
   };
 
-  // 保存できない理由（保存ボタン横に表示してユーザーに知らせる）
-  const saveBlockers: string[] = [];
-  if (!theme.trim()) saveBlockers.push('テーマを入力してください');
-  if (!selectedTextbookId) saveBlockers.push('テキストを選択してください');
+  // 保存できない理由（保存ボタン横に表示してユーザーに知らせる）。
+  // 新規作成は冊ごとに判定し、原因の冊は書名を添える。
+  const saveBlockers: string[] = isNew
+    ? buildProposalSaveBlockers({
+        theme,
+        books: bookSummary.perBook.map((b) => ({ name: b.name, koma: b.koma })),
+      })
+    : (() => {
+        const blockers: string[] = [];
+        if (!theme.trim()) blockers.push('テーマを入力してください');
+        if (!selectedTextbookId) blockers.push('テキストを選択してください');
+        return blockers;
+      })();
+
+  /**
+   * プレビューの紙を組み立てる。
+   *
+   * 1枚＝同じ生徒×期×科目。編集中の冊は画面の未保存の状態をそのまま使い、
+   * 同じ科目の他の提案書はDBから取って同じ紙に並べる（印刷したときと同じ見え方にする）。
+   * 新規の複数冊作成中は、まだDBに無いので全タブの今の状態を並べる。
+   *
+   * ★まとめ方は印刷と同じ純関数（groupProposalsForPrint）に通す。過去問のように1冊で複数科目を
+   *   扱う教材は、編集中の1件が科目ごとの紙に分かれる（紙が複数枚になる）。
+   */
+  const handleOpenPreview = async () => {
+    setPreviewLoading(true);
+    try {
+      if (isNew) {
+        // 新規作成は保存前でDBに無いため、タブの今の状態をそのまま1枚に並べる
+        const printBooks: PrintBook[] = booksWithUnits.map((e) => ({
+          textbookName: e.label,
+          theme,
+          allItems:
+            e.book.textbookId === selectedTextbookId
+              ? allItems
+              : (bookStash.get(e.book.textbookId)?.items ?? []),
+          activeUnits: e.units,
+          progressMap:
+            e.book.textbookId === selectedTextbookId
+              ? progressMap
+              : (bookStash.get(e.book.textbookId)?.progressMap ?? new Map()),
+          totalKoma: bookSummary.perBook.find((b) => b.textbookId === e.book.textbookId)?.koma ?? 0,
+        }));
+        setPreviewSheets([
+          {
+            studentName,
+            seasonLabel: SEASON_LABELS[season] ?? season,
+            year,
+            subject: books[0]?.subject ?? textbookSubject,
+            books: printBooks,
+          },
+        ]);
+        setPreviewMode(true);
+        return;
+      }
+
+      // 編集中の1件を、未保存の入力そのままで「提案書1件」として扱う
+      const editingId = proposalId ?? 'editing';
+      const editingSource: PrintProposalSource = {
+        proposal: {
+          id: editingId,
+          student_id: studentId,
+          textbook_id: selectedTextbookId ?? 0,
+          season,
+          year,
+          created_at: proposal?.created_at ?? '',
+          theme,
+          units: activeUnits,
+          textbook: { name: textbookName, subject: textbookSubject || null },
+        } as unknown as SeasonalProposalWithDetails,
+        items: allItems,
+      };
+
+      // 同じ生徒・同じ期の他の提案書。どれと同じ紙になるかは科目（単元の科目）が決めるので、
+      // ここでは科目で絞り込まない（過去問は教材の科目が空でも英語の紙に合流する）。
+      const siblings = (await getProposalsByStudent(studentId)).filter(
+        (p) => p.id !== editingId && p.season === season && p.year === year
+      );
+      const loaded = await Promise.all(
+        siblings.map((p) =>
+          getTextbookUnitsWithProgress(p.student_textbook_id ?? null, p.textbook_id)
+        )
+      );
+      const progressBySibling = new Map(siblings.map((p, i) => [p.id, loaded[i].progressMap]));
+
+      const sheets = groupProposalsForPrint([
+        ...siblings.map((p, i) => ({ proposal: p, items: loaded[i].items })),
+        editingSource,
+      ])
+        // 編集中の冊が載っていない紙（他科目の既存提案書だけの紙）は出さない
+        .filter((sheet) => sheet.blocks.some((b) => b.proposal.id === editingId))
+        .map((sheet) => ({
+          studentName,
+          seasonLabel: SEASON_LABELS[season] ?? season,
+          year,
+          subject: sheet.subject,
+          books: sheet.blocks.map((block) => {
+            const isEditing = block.proposal.id === editingId;
+            const book = buildPrintBook(
+              block,
+              isEditing ? progressMap : (progressBySibling.get(block.proposal.id) ?? new Map())
+            );
+            // 編集中の冊だけは画面と同じ書名（学年つき）にする
+            if (isEditing) {
+              book.textbookName =
+                [textbookGrade, block.subject || textbookSubject, textbookName]
+                  .filter(Boolean)
+                  .join(' ') || textbookName;
+            }
+            return book;
+          }),
+        }));
+
+      setPreviewSheets(sheets);
+      setPreviewMode(true);
+    } catch (_e) {
+      addToast('プレビューの作成に失敗しました', 'error');
+    } finally {
+      setPreviewLoading(false);
+    }
+  };
 
   const [statusChanging, setStatusChanging] = useState(false);
   // 公開後の教材発注ダイアログ（公開前に算出した候補スナップショット）
@@ -870,9 +1414,7 @@ export default function ProposalEditor() {
         await publishProposal(proposalId);
 
         // 発注が要りそうな候補があればダイアログを開く
-        const relevant = candidates.filter(
-          (c) => c.needsOrder || (!c.alreadyOwned && !c.materialId)
-        );
+        const relevant = candidates.filter(isRelevantOrderCandidate);
         if (relevant.length > 0) setOrderDialog(candidates);
       } else if (newStatus === 'draft') {
         // 下書きに戻す: 申込コマ数は未確定に戻す（提案済で入れた申込を0クリア）。
@@ -947,10 +1489,10 @@ export default function ProposalEditor() {
   // ════════════════════════════════════════
   // プレビューモード
   // ════════════════════════════════════════
-  if (previewMode) {
+  if (previewMode && previewSheets.length > 0) {
     return (
-      <div className="max-w-5xl mx-auto">
-        <div className="mb-4 flex gap-2 print:hidden">
+      <div className="proposal-print-root max-w-5xl mx-auto">
+        <div className="mb-4 flex items-center gap-2 print:hidden">
           <Button variant="outline" size="sm" onClick={() => setPreviewMode(false)}>
             <ArrowLeft className="w-4 h-4 mr-1.5" />
             編集に戻る
@@ -959,29 +1501,77 @@ export default function ProposalEditor() {
             <Printer className="w-4 h-4 mr-1.5" />
             印刷
           </Button>
+          {previewSheets.length > 1 ? (
+            // 1冊で複数科目を扱う教材（過去問）は科目ごとに紙が分かれる
+            <span className="text-xs text-text-muted ml-1">
+              科目ごとに{previewSheets.length}枚に分かれます
+            </span>
+          ) : (
+            previewSheets[0].books.length > 1 && (
+              <span className="text-xs text-text-muted ml-1">
+                同じ科目の{previewSheets[0].books.length}冊を1枚にまとめています
+              </span>
+            )
+          )}
         </div>
 
-        <ProposalPrintView
-          studentName={studentName}
-          textbookName={[textbookGrade, textbookSubject, textbookName].filter(Boolean).join(' ')}
-          seasonLabel={seasonLabel}
-          year={year}
-          theme={theme}
-          allItems={allItems}
-          activeUnits={activeUnits}
-          progressMap={progressMap}
-          totalKoma={totalKoma}
-          groupMap={groupMap}
-        />
+        {previewSheets.map((sheet, i) => (
+          <div
+            key={i}
+            className="print:break-before-page first:print:break-before-auto [&:not(:first-child)]:mt-8 [&:not(:first-child)]:print:mt-0"
+          >
+            <ProposalPrintView {...sheet} />
+          </div>
+        ))}
         <ToastContainer toasts={toasts} onRemove={removeToast} />
       </div>
     );
   }
 
   // ════════════════════════════════════════
+  // 新規作成の入口（テキストから / テンプレートから）
+  // ════════════════════════════════════════
+  if (isNew && books.length === 0 && newStartMode !== 'textbook') {
+    return (
+      <>
+        {newStartMode === 'choose' ? (
+          <CreateMethodScreen
+            studentName={studentName}
+            backHref={`/students/${studentId}/proposals`}
+            onPickTextbook={() => setNewStartMode('textbook')}
+            onPickTemplate={() => {
+              setNewStartMode('template');
+              setTemplateFiltered(true);
+              void loadTemplates(true);
+            }}
+          />
+        ) : (
+          <TemplatePickerScreen
+            studentName={studentName}
+            templates={templates}
+            loading={templatesLoading}
+            season={season}
+            grade={studentGrade}
+            filtered={templateFiltered}
+            applying={applyingTemplate}
+            onSelect={(courseId) => void handleSelectTemplate(courseId)}
+            onClearFilters={() => {
+              setTemplateFiltered(false);
+              void loadTemplates(false);
+            }}
+            onBack={() => setNewStartMode('choose')}
+          />
+        )}
+        <ToastContainer toasts={toasts} onRemove={removeToast} />
+        {ConfirmDialog}
+      </>
+    );
+  }
+
+  // ════════════════════════════════════════
   // テキスト選択ピッカー
   // ════════════════════════════════════════
-  if (showTextbookPicker || (!selectedTextbookId && isNew)) {
+  if (showTextbookPicker || (isNew && books.length === 0)) {
     // 外枠の <div> は TextbookPickerScreen 側が持つので、ここではトーストと並べるだけ
     return (
       <>
@@ -1010,9 +1600,14 @@ export default function ProposalEditor() {
           onSelect={handleSelectTextbook}
           backHref={`/students/${studentId}/proposals`}
           backLabel="提案書一覧に戻る"
-          subtitle={`${studentName} の講習提案書${textbookSubject ? ` (${textbookSubject})` : ''}`}
+          subtitle={
+            books.length > 0
+              ? `${studentName} の講習提案書（${books.length + 1}冊目 / 最大${MAX_TEXTBOOKS}冊）`
+              : `${studentName} の講習提案書${textbookSubject ? ` (${textbookSubject})` : ''}`
+          }
         />
         <ToastContainer toasts={toasts} onRemove={removeToast} />
+        {ConfirmDialog}
       </>
     );
   }
@@ -1046,10 +1641,13 @@ export default function ProposalEditor() {
             <h1 className="text-lg font-bold text-text-heading">
               {isNew ? '講習提案書を作成' : '講習提案書を編集'}
             </h1>
+            {/* 複数冊のときは書名を並べる。3冊以上は「ほかn冊」に畳んで1行に収める */}
             <p className="text-sm text-text-muted mt-0.5">
               {studentName} /{' '}
-              {[textbookGrade, textbookSubject, textbookName].filter(Boolean).join(' ')} / {year}年{' '}
-              {seasonLabel}講習
+              {isNew && books.length > 0
+                ? formatBookTitles(books.map((b) => bookLabel(b)))
+                : [textbookGrade, textbookSubject, textbookName].filter(Boolean).join(' ')}{' '}
+              / {year}年 {seasonLabel}講習
             </p>
           </div>
 
@@ -1137,18 +1735,86 @@ export default function ProposalEditor() {
           </section>
         )}
 
-        {/* テキスト変更 */}
+        {/* テキストのタブ（新規作成のみ・最大3冊）。
+            切り替えても未保存の入力は保持される（離れているタブは bookStash に退避）。
+            保存すると1冊につき提案書1件になる（まとめて1件にはしない）。 */}
         {isNew && (
-          <section className="p-4 bg-surface-raised rounded-xl border border-border flex items-center justify-between">
-            <div>
-              <div className="text-xs font-bold text-text-muted mb-0.5">テキスト</div>
-              <div className="text-sm font-medium text-text-heading">
-                {[textbookGrade, textbookSubject, textbookName].filter(Boolean).join(' ')}
+          <section className="p-4 bg-surface-raised rounded-xl border border-border">
+            <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
+              <div className="text-xs font-bold text-text-muted">
+                テキスト（{books.length}/{MAX_TEXTBOOKS}）
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] text-text-faint">上から順に進めます</span>
+                {books.length < MAX_TEXTBOOKS && (
+                  <button
+                    type="button"
+                    onClick={openAddBookPicker}
+                    className="px-2.5 py-1 text-[11px] font-medium bg-ink text-text-on-primary rounded-md hover:brightness-[0.85] transition-[filter] duration-150 inline-flex items-center gap-1"
+                  >
+                    <Plus className="w-3 h-3" />
+                    テキストを追加
+                  </button>
+                )}
               </div>
             </div>
-            <Button variant="ghost" size="sm" onClick={() => setShowTextbookPicker(true)}>
-              変更
-            </Button>
+            <div className="flex gap-2 flex-wrap">
+              {books.map((b, i) => {
+                const isActive = selectedTextbookId === b.textbookId;
+                const koma = bookSummary.perBook.find((r) => r.textbookId === b.textbookId)?.koma;
+                return (
+                  // タブ本体と「外す」は別のボタンにする。
+                  // 入れ子のボタンはHTMLとして不正で、キーボードから「外す」に到達できなくなる。
+                  <div
+                    key={b.textbookId}
+                    className={`flex items-center rounded-lg text-sm font-medium transition-[background-color,color] duration-150 ${
+                      isActive
+                        ? 'bg-ink text-text-on-primary'
+                        : 'bg-surface-hover text-text-body hover:bg-border-default'
+                    }`}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => switchBook(b.textbookId)}
+                      aria-pressed={isActive}
+                      className="pl-3 pr-2 py-1.5 rounded-l-lg"
+                    >
+                      <span
+                        className={`mr-1.5 text-[11px] tabular-nums ${
+                          isActive ? 'text-text-on-primary/70' : 'text-text-faint'
+                        }`}
+                      >
+                        {i + 1}冊目
+                      </span>
+                      {bookLabel(b)}
+                      <span
+                        className={`ml-1.5 text-[11px] tabular-nums ${
+                          isActive ? 'text-text-on-primary/70' : 'text-text-muted'
+                        }`}
+                      >
+                        {koma ?? 0}コマ
+                      </span>
+                    </button>
+                    {/* 1冊しか無いときは外すボタンを出さない（外しても作れないため） */}
+                    {books.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveBook(b)}
+                        aria-label={`${bookLabel(b)} を提案書から外す`}
+                        title="このテキストを外す"
+                        className={`pr-2.5 pl-1 py-1.5 rounded-r-lg transition-[color] duration-150 ${
+                          isActive
+                            ? 'text-text-on-primary/60 hover:text-text-on-primary'
+                            : 'text-text-faint hover:text-danger'
+                        }`}
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </section>
         )}
 
@@ -1171,12 +1837,22 @@ export default function ProposalEditor() {
             placeholder="例: 英検3級対策 / 1年生の総復習 / 2学期の先取り"
           />
 
+          {/* 複数冊のときはテーマが全冊に入る。あとで冊ごとに直せることを先に言っておく */}
+          {isNew && books.length > 1 && (
+            <p className="mt-1.5 text-[11px] text-text-faint">
+              テーマは全冊に共通で入ります。保存後は提案書ごとに直せます
+            </p>
+          )}
+
           {/* テーマ欄に書いた一言を、その生徒の単元と成績で書き足す。
-              ★教室の設定がオフならバー自体が出ない（成績の外部送信が起きない） */}
-          {conceptTargetId && conceptSchoolId && (
+              ★教室の設定がオフならバー自体が出ない（成績の外部送信が起きない）。
+              ★新規作成中（conceptTargetId が null）でも置く。バーの代わりに
+                「保存すると書き足せます」の1行になる。出さないと存在に気付けない。 */}
+          {conceptSchoolId && (
             <ConceptBar
               className="mt-2"
               proposalId={conceptTargetId}
+              hasUnits={activeUnits.length > 0}
               schoolId={conceptSchoolId}
               value={theme}
               onChange={setTheme}
@@ -1298,6 +1974,18 @@ export default function ProposalEditor() {
         onSave={handleSave}
         saving={saving}
         saveBlockers={saveBlockers}
+        saveLabel={isNew && books.length > 1 ? `保存（提案書${books.length}件）` : '保存'}
+        saveHint={
+          // 冊ごとのコマ数と合計。どの冊にどれだけ入っているかを保存前に確かめられるように出す
+          isNew && books.length > 1 ? (
+            <span className="text-[11px] text-text-muted tabular-nums">
+              {bookSummary.perBook.map((b) => `${b.order}冊目 ${b.koma}コマ`).join(' / ')}
+              <span className="ml-2 font-bold text-text-heading">
+                合計 {bookSummary.totalKoma}コマ
+              </span>
+            </span>
+          ) : undefined
+        }
         extraActions={
           <>
             {/* 講習に登録ボタン: 教室長以上のみ表示 */}
@@ -1312,9 +2000,14 @@ export default function ProposalEditor() {
                 講習に登録
               </Button>
             )}
-            <Button variant="outline" size="sm" onClick={() => setPreviewMode(true)}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleOpenPreview}
+              disabled={previewLoading}
+            >
               <Printer className="w-3.5 h-3.5 mr-1" />
-              プレビュー
+              {previewLoading ? '準備中...' : 'プレビュー'}
             </Button>
           </>
         }
@@ -1439,6 +2132,7 @@ export default function ProposalEditor() {
       )}
 
       <ToastContainer toasts={toasts} onRemove={removeToast} />
+      {ConfirmDialog}
     </div>
   );
 }

@@ -4,6 +4,7 @@
  * 提案書エディタと講習テンプレートの編集画面で同じ選び方にするため、
  * 画面から独立した部分だけをここに置く。
  */
+import { matchesSubjectFilter } from '@/lib/curriculum/subject';
 
 /** ピッカーが必要とする教材の最小フィールド */
 export interface PickableTextbook {
@@ -49,7 +50,10 @@ export function filterAndSortTextbooks<T extends PickableTextbook>(
   return textbooks
     .filter((tb) => {
       if (filter.schoolType && tb.school_type !== filter.schoolType) return false;
-      if (filter.subject && tb.subject !== filter.subject) return false;
+      // 科目が空の教材（過去問など1冊で全科目を扱うもの）はどの科目で絞っても候補に残す。
+      // 完全一致で消すと、英語の提案書に過去問を足す導線が塞がれる
+      //（2冊目を足すとき1冊目の科目でフィルタが初期セットされるため、なおさら出てこない）。
+      if (!matchesSubjectFilter(tb.subject, filter.subject)) return false;
       if (filter.grade && tb.grade !== filter.grade) return false;
       if (q) {
         const hit =

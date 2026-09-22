@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase';
-import { fetchAllPaged } from '@/lib/utils/supabasePaging';
+import { fetchAllPaged, fetchAllInChunks } from '@/lib/utils/supabasePaging';
 import { withFetchCache } from '@/lib/utils/fetchCache';
 import type {
   SeasonalCourse,
@@ -820,6 +820,144 @@ export async function replaceCourseCurriculum(
 // 生徒への適用
 // =====================================================
 
+/**
+ * `.in('proposal_id', ...)` に渡す1回あたりの件数。UUID は1件およそ37文字で、
+ * リストはクエリ文字列に載るため、多すぎると URL 長の上限に当たる（supabasePaging と同じ刻み）。
+ */
+const PROPOSAL_ID_CHUNK = 300;
+
+/**
+ * テンプレート適用時に「消してよい単元」を教材ごとに束ねる（純関数）。
+ *
+ * 消すのはそのテンプレートが持っている単元だけ。空の組（単元が無い教材・対象の提案書が無い教材）は
+ * 落とす。`.in()` に空配列を渡すと0件条件になって無意味なクエリが1本増えるため。
+ */
+export function planTemplateUnitDeletes(
+  byTextbook: { proposalIds: string[]; curriculumItemIds: number[] }[]
+): { proposalIds: string[]; curriculumItemIds: number[] }[] {
+  return byTextbook.filter(
+    (plan) => plan.proposalIds.length > 0 && plan.curriculumItemIds.length > 0
+  );
+}
+
+/** テンプレート適用で提案書に入れる単元1行 */
+export interface TemplateUnitInsert {
+  proposal_id: string;
+  curriculum_item_id: number;
+  koma_count: number;
+  applied_koma: number;
+  reason: string;
+  group_id: number;
+  intent_tag: null;
+  sort_order: number;
+}
+
+/**
+ * テンプレートの単元設定 → 提案書に入れる単元行（純関数）。
+ *
+ * sort_order も group_id も「その提案書に残っている単元の最大値の続き」から振る。
+ * 同じ提案書に別テンプレート（別科目）の単元が同居するようになったので、0 から振り直すと
+ * 並びがぶつかり、結合番号は別々の結合が1つに数えられてコマが足りなくなる。
+ * 結合していない単元（group_id=0）はずらさない。
+ */
+export function buildTemplateUnitInserts(
+  proposalId: string,
+  settings: { curriculum_item_id: number; koma_count: number; group_id: number }[],
+  existing: ProposalUnitMaxima | null
+): TemplateUnitInsert[] {
+  const sortBase = (existing?.sortOrder ?? -1) + 1;
+  const groupBase = existing?.groupId ?? 0;
+  return settings.map((s, i) => ({
+    proposal_id: proposalId,
+    curriculum_item_id: s.curriculum_item_id,
+    koma_count: s.koma_count,
+    // 下書きでは申込未確定。提案済/公開時に koma_count から初期化される。
+    applied_koma: 0,
+    reason: '',
+    group_id: s.group_id > 0 ? groupBase + s.group_id : 0,
+    intent_tag: null,
+    sort_order: sortBase + i,
+  }));
+}
+
+/** テンプレの単元行のうち、教材ごとの束ね直しに要る分 */
+export interface ApplyCurriculumRow {
+  textbook_id: number;
+  curriculum_item_id: number;
+  proposal_count: number;
+  group_number: number | null;
+}
+
+/**
+ * テンプレの単元行を教材ごとに束ね、生徒に入れる設定に直す（純関数）。
+ *
+ * ★ここで `proposal_count > 0` で絞ってはいけない。「先頭のみ規約」で結合の2件目以降は
+ *   0コマなので、絞ると**まとめたはずの単元が先頭1件だけ生徒に渡る**。
+ *   画面では色と丸数字だけが残り、結合の相手が消えて「結合が引き継がれない」ように見える。
+ *   残す・落とすの判定は pickCourseSettingsForApply に一本化する（同じ判定を2か所に書かない）。
+ */
+export function buildApplySettingsByTextbook(
+  curriculum: readonly ApplyCurriculumRow[],
+  textbookIds: readonly number[]
+): Map<number, { curriculum_item_id: number; koma_count: number; group_id: number }[]> {
+  const byTextbook = new Map<
+    number,
+    { curriculum_item_id: number; koma_count: number; group_id: number }[]
+  >();
+  for (const textbookId of textbookIds) {
+    const rows = curriculum.filter((c) => c.textbook_id === textbookId);
+    byTextbook.set(textbookId, pickCourseSettingsForApply(rows));
+  }
+  return byTextbook;
+}
+
+/** 提案書に残っている単元の「いちばん大きい番号」。続きから振るのに使う */
+export interface ProposalUnitMaxima {
+  sortOrder: number;
+  groupId: number;
+}
+
+/**
+ * 提案書ごとの「残っている単元の sort_order / group_id の最大値」を引く。
+ *
+ * 他のテンプレート由来の単元が同じ提案書に同居するようになったので、挿入する単元は
+ * 続きの番号から振る。
+ *  - sort_order: 重複すると提案書内の並びが不定になる。
+ *  - group_id: ★結合の合計は提案書内で group_id ごとに1回しか数えない（calcTotalKoma）。
+ *    英語コースのグループ1と数学コースのグループ1が同居すると、別々の結合が1つに数えられ
+ *    コマが足りなくなる。
+ * 1提案書あたり数十行になりうるので、チャンク分割＋チャンク内ページングで全件取る。
+ */
+async function fetchProposalUnitMaxima(
+  proposalIds: string[]
+): Promise<Map<string, ProposalUnitMaxima>> {
+  const result = new Map<string, ProposalUnitMaxima>();
+  if (proposalIds.length === 0) return result;
+
+  type Row = { proposal_id: string; sort_order: number | null; group_id: number | null };
+  // ★失敗を握りつぶさない。空で返すと番号を 0 から振り直すことになり、
+  //   結合番号が他テンプレートのものと衝突してコマが足りなくなる（この関数が防ぎたい事故そのもの）。
+  //   数字が静かに狂うより、適用を失敗させて気づけるほうがよい。
+  const rows = await fetchAllInChunks<Row>(proposalIds, (chunk, from, to) =>
+    supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .from('seasonal_proposal_units' as any)
+      .select('id, proposal_id, sort_order, group_id')
+      .in('proposal_id', chunk)
+      .order('id', { ascending: true })
+      .range(from, to)
+  );
+
+  for (const row of rows) {
+    const current = result.get(row.proposal_id) ?? { sortOrder: -1, groupId: 0 };
+    result.set(row.proposal_id, {
+      sortOrder: Math.max(current.sortOrder, row.sort_order ?? 0),
+      groupId: Math.max(current.groupId, row.group_id ?? 0),
+    });
+  }
+  return result;
+}
+
 // コースを生徒に適用（下書きの提案書のみ作成）
 // 進行表(student_progress)反映・student_textbooks の講師公開は行わず、
 // 編集者が提案書編集画面から個別に「公開」することで初めて反映される。
@@ -840,25 +978,16 @@ export async function applyCoursesToStudents(
   // student_textbook を作成/有効化する。こうすることで「実際には申し込まれていない下書き」が
   // 生徒の所持教材一覧に混入しないようにする（発注→所持教材の流れは ordering 側で維持）。
 
-  const curriculumByTextbook = new Map<
-    number,
-    { curriculum_item_id: number; proposal_count: number; group_number: number | null }[]
-  >();
-  for (const ct of course.textbooks) {
-    const items = course.curriculum
-      .filter((c) => c.textbook_id === ct.textbook_id && c.proposal_count > 0)
-      .map((c) => ({
-        curriculum_item_id: c.curriculum_item_id,
-        proposal_count: c.proposal_count,
-        group_number: c.group_number,
-      }));
-    curriculumByTextbook.set(ct.textbook_id, items);
-  }
+  // 教材ごとに「生徒に入れる単元」を作る。0コマの結合メンバーもここで残る
+  const settingsByTextbook = buildApplySettingsByTextbook(
+    course.curriculum,
+    course.textbooks.map((ct) => ct.textbook_id)
+  );
 
   // カリキュラム設定がないテキストを記録（提案書だけ作りユニットは空にする）
   const textbooksWithoutCurriculum = new Set(
     course.textbooks
-      .filter((ct) => (curriculumByTextbook.get(ct.textbook_id) || []).length === 0)
+      .filter((ct) => (settingsByTextbook.get(ct.textbook_id) || []).length === 0)
       .map((ct) => ct.textbook_id)
   );
 
@@ -885,8 +1014,8 @@ export async function applyCoursesToStudents(
 
   for (const studentId of studentIds) {
     for (const ct of course.textbooks) {
-      // 0コマの結合メンバーも残す（pickCourseSettingsForApply のコメント参照）
-      const settings = pickCourseSettingsForApply(curriculumByTextbook.get(ct.textbook_id) || []);
+      // 0コマの結合メンバーも入っている（buildApplySettingsByTextbook のコメント参照）
+      const settings = settingsByTextbook.get(ct.textbook_id) || [];
       const hasCurriculum = !textbooksWithoutCurriculum.has(ct.textbook_id);
 
       if (settings.length === 0 && hasCurriculum) continue;
@@ -922,39 +1051,52 @@ export async function applyCoursesToStudents(
     }
 
     const proposalIds = Array.from(proposalMap.values());
-    if (proposalIds.length > 0) {
-      await fromProposalUnits().delete().in('proposal_id', proposalIds);
+
+    // ★ 消すのは「このテンプレートが持っている単元」だけ。提案書の単元を全部消してはいけない。
+    //   提案書は (student_id, textbook_id, season, year) で一意なので、同じ教材（過去問など）を
+    //   含むテンプレートを複数（英語コースと数学コース）同じ生徒に当てると、同じ1件の提案書に
+    //   集まる。以前はここで全単元を削除していたため、後から当てたテンプレが前のテンプレの単元を
+    //   消し、中3に5教科ぶん当てると最後の1科目しか残らなかった。
+    //   curriculum_item_id で絞れば、同じテンプレを当て直したときは自分の分だけが入れ替わる。
+    for (const plan of planTemplateUnitDeletes(
+      course.textbooks.map((ct) => ({
+        curriculumItemIds: (settingsByTextbook.get(ct.textbook_id) || []).map(
+          (s) => s.curriculum_item_id
+        ),
+        proposalIds: studentIds
+          .map((studentId) => proposalMap.get(`${studentId}:${ct.textbook_id}`))
+          .filter((id): id is string => !!id),
+      }))
+    )) {
+      // 生徒をまとめて適用すると提案書IDが増えるので、`.in()` のリストが長くなりすぎて
+      // URL 長の上限に当たらないよう分割する（fetchInChunks と同じ 300 件刻み）。
+      for (let i = 0; i < plan.proposalIds.length; i += PROPOSAL_ID_CHUNK) {
+        const { error: dError } = await fromProposalUnits()
+          .delete()
+          .in('proposal_id', plan.proposalIds.slice(i, i + PROPOSAL_ID_CHUNK))
+          .in('curriculum_item_id', plan.curriculumItemIds);
+        if (dError) throw dError;
+      }
     }
 
-    const unitInserts: {
-      proposal_id: string;
-      curriculum_item_id: number;
-      koma_count: number;
-      applied_koma: number;
-      reason: string;
-      group_id: number;
-      intent_tag: null;
-      sort_order: number;
-    }[] = [];
+    // 残った単元（他のテンプレート由来）と sort_order / group_id がぶつからないよう、
+    // 続きの番号から振る。削除のあとに読むこと（先に読むと自分が消す分まで数えてしまう）。
+    const maximaByProposal = await fetchProposalUnitMaxima(proposalIds);
+
+    const unitInserts: TemplateUnitInsert[] = [];
     for (const studentId of studentIds) {
       for (const ct of course.textbooks) {
         const proposalId = proposalMap.get(`${studentId}:${ct.textbook_id}`);
         if (!proposalId) continue;
         // 結合の2件目以降（0コマ）を落とさない。落とすとまとめた単元が先頭1件だけ生徒に渡る
-        const settings = pickCourseSettingsForApply(curriculumByTextbook.get(ct.textbook_id) || []);
-        settings.forEach((s, i) => {
-          unitInserts.push({
-            proposal_id: proposalId,
-            curriculum_item_id: s.curriculum_item_id,
-            koma_count: s.koma_count,
-            // 下書きでは申込未確定。提案済/公開時に koma_count から初期化される。
-            applied_koma: 0,
-            reason: '',
-            group_id: s.group_id,
-            intent_tag: null,
-            sort_order: i,
-          });
-        });
+        const settings = settingsByTextbook.get(ct.textbook_id) || [];
+        unitInserts.push(
+          ...buildTemplateUnitInserts(
+            proposalId,
+            settings,
+            maximaByProposal.get(proposalId) ?? null
+          )
+        );
       }
     }
 

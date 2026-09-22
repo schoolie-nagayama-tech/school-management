@@ -68,13 +68,18 @@ const ITEM_TYPES: { value: string; label: string; color: string }[] = [
   { value: 'special', label: '特別', color: 'bg-purple-100 text-purple-700' },
 ];
 
+/** 教材・単元どちらの科目欄でも同じ選択肢を出す（表記ゆれを増やさない） */
+const UNIT_SUBJECTS = ['英語', '数学', '算数', '国語', '理科', '社会'];
+
 interface ItemForm {
   item_number: string;
   title: string;
   item_type: string;
+  /** 単元ごとの科目。空＝教材の科目に従う（過去問など1冊で全科目の教材だけ使う） */
+  subject: string;
 }
 
-const emptyForm: ItemForm = { item_number: '', title: '', item_type: 'lesson' };
+const emptyForm: ItemForm = { item_number: '', title: '', item_type: 'lesson', subject: '' };
 
 export default function CurriculumPage() {
   const params = useParams();
@@ -167,6 +172,7 @@ export default function CurriculumPage() {
       item_number: item.item_number?.toString() || '',
       title: item.title,
       item_type: item.item_type || 'lesson',
+      subject: item.subject || '',
     });
     setShowModal(true);
   };
@@ -185,6 +191,8 @@ export default function CurriculumPage() {
           item_number: form.item_number.trim() || null,
           title: form.title.trim(),
           item_type: form.item_type,
+          // 空は null に戻す。NULL＝教材の科目に従う、という既定の意味に揃える
+          subject: form.subject || null,
         });
         toastSuccess('項目を更新しました');
       } else {
@@ -194,6 +202,7 @@ export default function CurriculumPage() {
           item_number: form.item_number.trim() || null,
           title: form.title.trim(),
           item_type: form.item_type,
+          subject: form.subject || null,
           sort_order: maxSort + 1,
         };
         await createCurriculumItem(data);
@@ -1001,6 +1010,28 @@ export default function CurriculumPage() {
                     autoFocus
                   />
                 </div>
+                {/* 単元ごとの科目。過去問のように1冊で全科目を扱う教材でだけ使う。
+                    教材に科目が入っている普通の教材では「教材に従う」のままでよい。 */}
+                <div>
+                  <label className="block text-sm font-medium text-text-heading mb-1">科目</label>
+                  <select
+                    value={form.subject}
+                    onChange={(e) => setForm({ ...form, subject: e.target.value })}
+                    className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-surface-raised"
+                  >
+                    <option value="">
+                      教材に従う{textbook?.subject ? `（${textbook.subject}）` : ''}
+                    </option>
+                    {UNIT_SUBJECTS.map((s) => (
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="mt-1 text-xs text-text-muted">
+                    過去問のように1冊で複数科目を扱う教材だけ、単元ごとに科目を選びます。提案書の紙はこの科目で分かれます。
+                  </p>
+                </div>
               </div>
               <div className="flex justify-end gap-2 mt-6">
                 <button
@@ -1094,14 +1125,16 @@ export default function CurriculumPage() {
                       }
                       className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-surface-raised"
                     >
-                      <option value="">未設定</option>
-                      <option value="英語">英語</option>
-                      <option value="数学">数学</option>
-                      <option value="算数">算数</option>
-                      <option value="国語">国語</option>
-                      <option value="理科">理科</option>
-                      <option value="社会">社会</option>
+                      <option value="">指定なし（全科目）</option>
+                      {UNIT_SUBJECTS.map((s) => (
+                        <option key={s} value={s}>
+                          {s}
+                        </option>
+                      ))}
                     </select>
+                    <p className="mt-1 text-xs text-text-muted">
+                      過去問のように1冊で複数科目を扱う教材は空のままにして、科目は単元ごとに設定します。
+                    </p>
                   </div>
                 </div>
               </div>

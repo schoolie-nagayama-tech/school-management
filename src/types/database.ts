@@ -817,6 +817,10 @@ export type Database = {
           is_active: boolean;
           // 対応する発注教材(materials.id)。提案書公開時の自動発注に使う。未紐付けは null。
           material_id: string | null;
+          // ★ 発注の対象にするか。false は実在しない器のテキスト（志望校過去問、
+          //   「大学受験日本史①」のように第1回〜第30回だけを持つ器）。進行表や提案書では
+          //   選べるが発注リストには積まない。is_active で隠すとピッカーからも消えてしまう。
+          is_orderable: boolean;
           created_at: string | null;
           updated_at: string | null;
         };
@@ -832,6 +836,7 @@ export type Database = {
           grade_category?: 'elementary' | 'middle' | 'high' | null;
           is_active?: boolean;
           material_id?: string | null;
+          is_orderable?: boolean;
           created_at?: string | null;
           updated_at?: string | null;
         };
@@ -847,6 +852,7 @@ export type Database = {
           grade_category?: 'elementary' | 'middle' | 'high' | null;
           is_active?: boolean;
           material_id?: string | null;
+          is_orderable?: boolean;
           created_at?: string | null;
           updated_at?: string | null;
         };
@@ -855,12 +861,15 @@ export type Database = {
       curriculum_items: {
         // ★ item_number は DB では text。「1-8」「第15回」のような番号が実際に入っている。
         //   number として扱うと Number('1-8') = NaN → JSON 化で null になり、番号が消える。
+        // ★ subject は「単元ごとの科目」。過去問のように1冊で全科目を扱う教材で使う。
+        //   NULL なら従来どおり textbooks.subject を使う（解決は lib/curriculum/subject.ts）。
         Row: {
           id: number;
           textbook_id: number;
           title: string;
           item_number: string | null;
           item_type: string | null;
+          subject: string | null;
           sort_order: number;
           created_at: string;
         };
@@ -870,6 +879,7 @@ export type Database = {
           title: string;
           item_number?: string | null;
           item_type?: string | null;
+          subject?: string | null;
           sort_order?: number;
           created_at?: string;
         };
@@ -879,6 +889,7 @@ export type Database = {
           title?: string;
           item_number?: string | null;
           item_type?: string | null;
+          subject?: string | null;
           sort_order?: number;
           created_at?: string;
         };

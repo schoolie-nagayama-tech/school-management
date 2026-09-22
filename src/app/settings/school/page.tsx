@@ -488,7 +488,7 @@ export default function SchoolSettingsPage() {
             </p>
             {!aiCanChange && (
               <p className="mt-2 text-xs text-text-muted">
-                切り替えられるのはシステム管理者のみです。
+                切り替えられるのはシステム管理者とエリアマネージャーのみです。
               </p>
             )}
 

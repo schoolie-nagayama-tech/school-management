@@ -17,6 +17,8 @@
  * ★行が無ければOFF。設定を作り忘れた教室が黙って外部送信するのを防ぐ。
  */
 
+import { hasRoleLevel } from '@/lib/utils/roles';
+
 /** 教室ごとに入切する機能のキー。DBの school_ai_settings.feature_key に入る */
 // ★栓は機能が動くときに足す。先に置くと「何も動かないスイッチ」が設定画面に並ぶ。
 //   （保護者との連絡は、その機能のPRでここに足す）
@@ -114,6 +116,35 @@ export const AI_FEATURE_SENDS: Record<AiFeatureKey, string> = {
 
 export function isAiFeatureKey(value: unknown): value is AiFeatureKey {
   return typeof value === 'string' && (AI_FEATURE_KEYS as readonly string[]).includes(value);
+}
+
+/**
+ * AIを呼べる最低ロール。★画面の入口も、APIの403も、この表と同じ境界にする。
+ *
+ * ★動かないものは出さない（2026-09-22 方針）。ボタンを出しておいて押したら403だと、
+ *   画面には「いまは整えられませんでした」とだけ出て、権限の話だと分からないまま
+ *   故障に見える。実際に報告書の講評の推敲がその状態だった（教室の栓だけを見て
+ *   ボタンを描いており、/api/ai/refine は教室長以上だった）。
+ *
+ * ★ここは「AIを呼べる下限」。これより上に閉じている入口は各画面が追加で絞る
+ *   （投稿の読み取りと「残っている人」は teacher_assist だが教室長以上、
+ *   面談の報告事項は student_digest だが教室長以上）。下限を上げるのではなく、
+ *   その画面で絞ること（下げると講師向けの入口ごと消える）。
+ */
+export const AI_FEATURE_MIN_ROLE: Record<AiFeatureKey, 'teacher' | 'manager'> = {
+  ai_compose: 'manager',
+  // 授業中のカードは講師本人が見る。誰に出すかは講師ごとのスイッチ（teacher_ai_assist）で決める
+  teacher_assist: 'teacher',
+  plan_theme: 'manager',
+  // 進行表の引継ぎのまとめは講師が使う
+  student_digest: 'teacher',
+  today_plan: 'manager',
+  parent_message: 'manager',
+};
+
+/** このロールでその機能のAIを呼べるか。★新しい入口を作るときは必ずここを通す */
+export function canUseAiFeature(role: string | null | undefined, feature: AiFeatureKey): boolean {
+  return hasRoleLevel(role, AI_FEATURE_MIN_ROLE[feature]);
 }
 
 /**

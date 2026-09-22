@@ -4,21 +4,25 @@ import { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
-import { ArrowLeft, Check, FileText, Plus, Printer, User } from 'lucide-react';
+import { ArrowLeft, Check, Filter, FileText, Plus, Printer, User } from 'lucide-react';
 import { Loading, InlineLoading } from '@/components/ui';
 import { supabase } from '@/lib/supabase';
 import {
   getProposalsByStudent,
-  getTextbookUnitsWithProgress,
   bulkPublishProposals,
   bulkMarkProposalsSent,
   calcTotalKoma,
   calcTotalAppliedKoma,
 } from '@/lib/api/proposals';
-import { getProposalOrderCandidates, type OrderCandidate } from '@/lib/api/ordering';
+import { buildPrintSheets } from '@/lib/proposals/buildPrintSheets';
+import {
+  getProposalOrderCandidates,
+  isRelevantOrderCandidate,
+  type OrderCandidate,
+} from '@/lib/api/ordering';
 import { ProposalPrintView } from './ProposalPrintView';
 import { PublishOrderDialog } from './PublishOrderDialog';
-import type { PrintUnitDraft, ProposalPrintData } from './ProposalPrintView';
+import type { ProposalPrintData } from './ProposalPrintView';
 import type { SeasonalProposalWithDetails, SeasonType, ProposalStatus } from '@/types/database';
 import { SEASON_LABELS, PROPOSAL_STATUS_LABELS, GRADE_LABELS } from '@/types/database';
 import { getSubjectBadgeColor } from '@/lib/subjectBadge';
@@ -42,6 +46,14 @@ export default function ProposalList() {
   const [studentName, setStudentName] = useState('');
   const [studentGrade, setStudentGrade] = useState<number | null>(null);
   const [proposals, setProposals] = useState<SeasonalProposalWithDetails[]>([]);
+  /**
+   * 講習（期）の絞り込み。教室全体の一覧（/courses/proposals）と同じ仕様に揃える。
+   * ★既定は「これから準備する期」。全部出すと過去の講習の提案書が混ざって、
+   *   いま作っている期のものを探せない（全体の一覧が全シーズン既定をやめたのと同じ理由）。
+   * ★年度は全体の一覧と同じく前後1年ぶんだけ選べる。「全年度」は無い。
+   */
+  const [filterYear, setFilterYear] = useState<number>(new Date().getFullYear());
+  const [filterSeason, setFilterSeason] = useState<SeasonType | ''>(() => getPreparingSeason());
   const [printMode, setPrintMode] = useState(false);
   const [printLoading, setPrintLoading] = useState(false);
   const [printData, setPrintData] = useState<ProposalPrintData[]>([]);
@@ -81,6 +93,11 @@ export default function ProposalList() {
     load();
   }, [load]);
 
+  // ★絞り込みを変えたら選択を捨てる。見えていない提案書が一括公開に混ざらないようにする
+  useEffect(() => {
+    setSelected(new Set());
+  }, [filterYear, filterSeason]);
+
   // ── チェック操作 ──
 
   const toggleSelect = (id: string) => {
@@ -92,17 +109,28 @@ export default function ProposalList() {
     });
   };
 
+  /**
+   * 絞り込み後の提案書。★以降の集計・一括操作・印刷はすべてこれを見る。
+   *   画面に出ていないものが一括公開や印刷に混ざると、別の期の提案書を
+   *   知らないうちに公開してしまう。
+   */
+  const visibleProposals = proposals.filter(
+    (p) => p.year === filterYear && (!filterSeason || p.season === filterSeason)
+  );
+  /** 絞り込みで隠れている件数。「消えた」と思わせないために件数だけ伝える */
+  const hiddenCount = proposals.length - visibleProposals.length;
+
   // 一括操作の対象は「未公開（下書き or 提案済み）」。バー表示・全選択の母集団。
-  const actionable = proposals.filter((p) => p.status !== 'approved');
+  const actionable = visibleProposals.filter((p) => p.status !== 'approved');
   // 公開対象は「提案済み(sent)」のみ。下書きからの直接公開は禁止（提案済みを経由させる）。
-  const publishable = proposals.filter((p) => p.status === 'sent');
+  const publishable = visibleProposals.filter((p) => p.status === 'sent');
   // 公開ボタン用: 選択中のうち sent（公開できる）件数
   const selectedCount = Array.from(selected).filter((id) =>
     publishable.some((p) => p.id === id)
   ).length;
   // 「提案済みにする」は下書き(draft)のみ対象（sentの再初期化で手入力の申込を上書きしないため）
   const selectedDraftCount = Array.from(selected).filter((id) =>
-    proposals.some((p) => p.id === id && p.status === 'draft')
+    visibleProposals.some((p) => p.id === id && p.status === 'draft')
   ).length;
   // 「○件選択」表示用: 未公開のうち選択中の件数
   const selectedActionableCount = Array.from(selected).filter((id) =>
@@ -126,7 +154,7 @@ export default function ProposalList() {
     setPublishing(true);
     try {
       // 公開前に発注候補をスナップショット（所持判定は is_draft=false 化の前に取る必要がある）
-      const targets = proposals.filter((p) => ids.includes(p.id));
+      const targets = visibleProposals.filter((p) => ids.includes(p.id));
       let candidates: OrderCandidate[] = [];
       try {
         candidates = await getProposalOrderCandidates(
@@ -153,7 +181,7 @@ export default function ProposalList() {
       clearSelection();
       await load();
 
-      const relevant = candidates.filter((c) => c.needsOrder || (!c.alreadyOwned && !c.materialId));
+      const relevant = candidates.filter(isRelevantOrderCandidate);
       if (relevant.length > 0) setOrderDialog(candidates);
     } catch (e) {
       console.error(e);
@@ -165,7 +193,7 @@ export default function ProposalList() {
   // ── 一括提案済み（draft → sent。公開と違い進行表へは反映しない） ──
   const handleBulkSent = async () => {
     const ids = Array.from(selected).filter((id) =>
-      proposals.some((p) => p.id === id && p.status === 'draft')
+      visibleProposals.some((p) => p.id === id && p.status === 'draft')
     );
     if (ids.length === 0) return;
     if (
@@ -189,72 +217,16 @@ export default function ProposalList() {
     }
   };
 
-  // ── 一括印刷（科目順にソート） ──
+  // ── 一括印刷（同じ科目は1枚にまとめ、紙は科目順） ──
 
   const handleBulkPrint = async () => {
-    if (proposals.length === 0) return;
+    // ★印刷するのは絞り込んだぶんだけ。全期を出すと過去の講習の紙まで混ざる
+    if (visibleProposals.length === 0) return;
     setPrintLoading(true);
     try {
-      const results: ProposalPrintData[] = [];
-
-      const sorted = [...proposals].sort((a, b) => {
-        const sa = a.textbook?.subject ?? '';
-        const sb = b.textbook?.subject ?? '';
-        if (sa !== sb) return sa.localeCompare(sb, 'ja');
-        const na = a.textbook?.name ?? '';
-        const nb = b.textbook?.name ?? '';
-        return na.localeCompare(nb, 'ja');
-      });
-
-      // 提案書ごとの進捗取得は互いに独立なので並列実行（旧実装は逐次awaitで
-      // 提案書数に比例して待ち時間が増えていた）。整形は取得後に科目順で行う。
-      const progressList = await Promise.all(
-        sorted.map((p) =>
-          getTextbookUnitsWithProgress(p.student_textbook_id ?? null, p.textbook_id)
-        )
-      );
-
-      for (let pi = 0; pi < sorted.length; pi++) {
-        const p = sorted[pi];
-        const { items, progressMap } = progressList[pi];
-
-        const activeUnits: PrintUnitDraft[] = p.units
-          .filter((u) => u.koma_count > 0)
-          .map((u) => ({
-            curriculum_item_id: u.curriculum_item_id,
-            koma_count: u.koma_count,
-            applied_koma: u.applied_koma ?? 0,
-            reason: u.reason,
-            group_id: u.group_id,
-            intent_tag: u.intent_tag ?? null,
-          }));
-
-        const groupMap = new Map<number, PrintUnitDraft[]>();
-        for (const u of activeUnits) {
-          if (u.group_id > 0) {
-            const list = groupMap.get(u.group_id) ?? [];
-            list.push(u);
-            groupMap.set(u.group_id, list);
-          }
-        }
-
-        const tbName = p.textbook?.subject
-          ? `${p.textbook.subject} ${p.textbook.name}`
-          : (p.textbook?.name ?? '');
-
-        results.push({
-          studentName,
-          textbookName: tbName,
-          seasonLabel: `${SEASON_LABELS[p.season as SeasonType]}`,
-          year: p.year,
-          theme: p.theme,
-          allItems: items,
-          activeUnits,
-          progressMap,
-          totalKoma: calcTotalKoma(p.units),
-          groupMap,
-        });
-      }
+      // まとめる規則（生徒×期×科目で1枚・中は作った順）と取得は buildPrintSheets に集約。
+      // 教室全体の提案書一覧（/courses/proposals）も同じ関数を使う。
+      const results = await buildPrintSheets(visibleProposals, studentName);
 
       setPrintData(results);
       setPrintMode(true);
@@ -290,7 +262,7 @@ export default function ProposalList() {
             印刷
           </button>
           <span className="text-sm text-text-muted ml-2">
-            {studentName} ({printData.length}件)
+            {studentName} ({printData.length}枚)
           </span>
         </div>
         <div className="space-y-8">
@@ -309,7 +281,7 @@ export default function ProposalList() {
     number,
     { name: string; subject: string; proposals: SeasonalProposalWithDetails[] }
   >();
-  for (const p of proposals) {
+  for (const p of visibleProposals) {
     const tbId = p.textbook_id;
     const tbName = p.textbook?.name ?? '不明なテキスト';
     const tbSubject = p.textbook?.subject ?? '';
@@ -326,7 +298,7 @@ export default function ProposalList() {
   // ── 科目別サマリー（上部に「何の科目を何コマ提案しているか」を集約表示） ──
   // 全提案書を科目で束ね、提案コマ数・申込コマ数を合算する。科目バッジ＋コマ数で一覧性を上げる狙い。
   const bySubject = new Map<string, { koma: number; appliedKoma: number; count: number }>();
-  for (const p of proposals) {
+  for (const p of visibleProposals) {
     const subject = p.textbook?.subject || 'その他';
     const entry = bySubject.get(subject) ?? { koma: 0, appliedKoma: 0, count: 0 };
     entry.koma += calcTotalKoma(p.units);
@@ -364,12 +336,13 @@ export default function ProposalList() {
             <div>
               <h1 className="text-lg font-bold text-text-heading">{studentName}</h1>
               <p className="text-xs text-text-muted">
-                {studentGrade ? `${GRADE_LABELS[studentGrade]} ` : ''}提案書 {proposals.length}件
+                {studentGrade ? `${GRADE_LABELS[studentGrade]} ` : ''}提案書{' '}
+                {visibleProposals.length}件
               </p>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {proposals.length > 0 && (
+            {visibleProposals.length > 0 && (
               <button
                 onClick={handleBulkPrint}
                 disabled={printLoading}
@@ -406,6 +379,39 @@ export default function ProposalList() {
             </Link>
           </div>
         </div>
+      </div>
+
+      {/* 講習（期）の絞り込み。教室全体の一覧と同じ並び・同じ選択肢にする */}
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <Filter className="w-3.5 h-3.5 text-text-faint" aria-hidden="true" />
+        <select
+          value={filterYear}
+          onChange={(e) => setFilterYear(Number(e.target.value))}
+          aria-label="年度"
+          className="px-2 py-1.5 border border-border rounded-lg text-xs bg-surface-raised text-text-body"
+        >
+          {[currentYear + 1, currentYear, currentYear - 1].map((y) => (
+            <option key={y} value={y}>
+              {y}年
+            </option>
+          ))}
+        </select>
+        <select
+          value={filterSeason}
+          onChange={(e) => setFilterSeason(e.target.value as SeasonType | '')}
+          aria-label="シーズン"
+          className="px-2 py-1.5 border border-border rounded-lg text-xs bg-surface-raised text-text-body"
+        >
+          <option value="">全シーズン</option>
+          {(['spring', 'summer', 'winter'] as SeasonType[]).map((s) => (
+            <option key={s} value={s}>
+              {SEASON_LABELS[s]}
+            </option>
+          ))}
+        </select>
+        {!loading && hiddenCount > 0 && (
+          <span className="text-[11px] text-text-muted">ほかの期に{hiddenCount}件</span>
+        )}
       </div>
 
       {/* 科目別サマリー */}
@@ -516,12 +522,15 @@ export default function ProposalList() {
       {/* 一覧 */}
       {loading ? (
         <Loading size="md" />
-      ) : proposals.length === 0 ? (
+      ) : visibleProposals.length === 0 ? (
         <div
           className="stagger-item py-12 text-center text-sm text-text-faint"
           style={{ '--stagger-index': 0 } as React.CSSProperties}
         >
-          提案書はまだありません
+          {/* ★「消えた」と思わせない。ほかの期にあるなら、そう書いて切り替えを促す */}
+          {proposals.length === 0
+            ? '提案書はまだありません'
+            : `この期の提案書はありません（ほかの期に${hiddenCount}件あります）`}
         </div>
       ) : (
         <div className="space-y-6">
