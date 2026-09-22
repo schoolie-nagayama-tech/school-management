@@ -17,9 +17,21 @@ import Anthropic from '@anthropic-ai/sdk';
  * 主力は Haiku、難所だけ Sonnet に上げる方針（共通土台の取り決め）。
  * ヘルプはFAQから選んで写すだけの仕事なので Haiku で足りる。
  */
+/**
+ * 使うモデル。★IDに日付を付けない（`claude-opus-5-20260401` のような形は無い）。
+ *
+ * 使い分け:
+ * - fast  … 分類・抜き出し・短い整形。量が出るもの
+ * - smart … 文章を書く仕事の既定
+ * - best  … ★材料を見比べて筋を見つける仕事だけ。面談の下書きがこれ。
+ *           成績・宿題・引継ぎ・講習を突き合わせて「同じ方向を向いている」を見つけるのは、
+ *           1つの材料を要約するのとは別の難しさがある。1回の面談で1呼び出しなので、
+ *           単価差（smart の約2.5倍）より質を取る。
+ */
 export const CLAUDE_MODELS = {
   fast: 'claude-haiku-4-5',
   smart: 'claude-sonnet-5',
+  best: 'claude-opus-5',
 } as const;
 
 export type ClaudeModel = (typeof CLAUDE_MODELS)[keyof typeof CLAUDE_MODELS];
