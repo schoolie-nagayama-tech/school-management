@@ -25,11 +25,18 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { Sparkles, RefreshCw, FileText, ArrowRight } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { isOwnerOrAbove } from '@/lib/utils/roles';
 import { fetchWithAuth } from '@/lib/api/auth';
 import { STUDENT_DIGEST_FEATURE_KEY } from '@/lib/ai/features';
 import { recordAiFeedback } from '@/lib/ai/feedback';
 import { DigestVerdictChips } from '@/components/ai/DigestVerdictChips';
-import type { BriefSectionKey, BriefSign } from '@/lib/ai/interviewBrief';
+import {
+  SELECTABLE_MODEL_KEY_LABELS as MODEL_LABELS,
+  type BriefSectionKey,
+  type BriefSign,
+  type SelectableModelKey,
+} from '@/lib/ai/interviewBrief';
 import type { AssessmentWithScores, Student, StudentInterview } from '@/types/database';
 import type { DisciplineSessionRow } from '@/lib/api/progress-sessions';
 import type { KoushuEnrollment } from '@/lib/api/seasonalCourses';
@@ -57,10 +64,12 @@ import {
   CLOSING_LINES,
   APPLY_LINES,
   timingLines,
+  planRationaleLines,
   isExamGrade,
   type SceneKey,
 } from '@/lib/interview/scenes';
 import { examCountdownLine } from '@/lib/interview/examDates';
+import { regionOfSchool } from '@/lib/interview/region';
 
 /** 画面に出す1セクション（APIの戻り） */
 export interface ScriptSectionView {
@@ -82,6 +91,9 @@ export interface ScriptView {
 interface ScriptResponse extends ScriptView {
   degraded: boolean;
   disabled: boolean;
+  /** 実際に使ったモデルのID。表示にしか使わない（判断はサーバー側で完結している） */
+  model: string;
+  modelKey: SelectableModelKey;
 }
 
 interface Props {
@@ -162,6 +174,42 @@ function AskLine({
   );
 }
 
+/**
+ * Sonnet 5 / Opus 5 の切り替え（admin/owner のみ表示）。
+ *
+ * ★実データで見比べたいだけなので、小さく・「作り直す」の近くに置く。
+ *   目立たせすぎると、比較目的ではない教室長にも「選ぶもの」だと誤解される
+ *  （そもそも教室長には出していないが、admin/owner にとっても主役はモデル選びではなく面談の台本）。
+ */
+function ModelKeyToggle({
+  value,
+  onChange,
+  disabled,
+}: {
+  value: SelectableModelKey;
+  onChange: (v: SelectableModelKey) => void;
+  disabled: boolean;
+}) {
+  return (
+    <div className="inline-flex items-center overflow-hidden rounded-full border border-border text-[11px]">
+      {(['smart', 'best'] as const).map((key) => (
+        <button
+          key={key}
+          type="button"
+          disabled={disabled}
+          onClick={() => onChange(key)}
+          aria-pressed={value === key}
+          className={`px-2 py-0.5 transition-colors disabled:opacity-40 ${
+            value === key ? 'bg-ink text-white' : 'bg-surface text-text-muted hover:text-text-body'
+          }`}
+        >
+          {MODEL_LABELS[key]}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 /** 着眼点（AIが書いたもの・直せる）。sign は右のドットで示す */
 function SeenLine({
   label,
@@ -219,6 +267,21 @@ export function InterviewScriptCard({
   /** この画面でもう答えたか。★押し直させないためだけの印で、保存はしない */
   const [rated, setRated] = useState(false);
 
+  /**
+   * Sonnet 5 / Opus 5 の見比べ用。
+   * ★admin / owner だけに切り替えを出す。比較は運営の仕事であって、講師・教室長には関係が無い
+   *   （教室長は面談そのものは行うが、どのモデルで作るかを選ぶ理由が無い）。
+   * ★サーバー（/api/ai/interview/brief）も同じロール境界を isOwnerOrAbove で確認しており、
+   *   ここは表示を絞るだけ。権限外から model を送っても、サーバー側が黙って既定に倒す。
+   */
+  const { profile } = useAuth();
+  const canChooseModel = isOwnerOrAbove(profile?.role);
+  const [modelKey, setModelKey] = useState<SelectableModelKey>('best');
+  /** 実際に作ったときに使われたモデル。★取り違え防止のため、結果のそばに常に出す */
+  const [madeWithModelKey, setMadeWithModelKey] = useState<SelectableModelKey | null>(null);
+  /** 上と対で持つ実際のモデルID（サーバーの応答そのまま）。答え合わせに残す用 */
+  const [madeWithModel, setMadeWithModel] = useState<string | null>(null);
+
   useEffect(() => {
     if (!student.school_id) {
       setAvailable(false);
@@ -250,6 +313,8 @@ export function InterviewScriptCard({
     setMessage(null);
     setChecked({});
     setRated(false);
+    setMadeWithModelKey(null);
+    setMadeWithModel(null);
     onResult(null);
     // onResult は親で useCallback 済みだが、依存に入れると親の再描画で結果が消えるため入れない
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -286,11 +351,21 @@ export function InterviewScriptCard({
 
   // ★季節はヒューリスティック（interview.shared.ts の currentSeason 参照）。今日1回だけ決める
   const seasonKey = useMemo(() => currentSeason(new Date()), []);
-  const timing = useMemo(() => timingLines(student.grade, seasonKey), [student.grade, seasonKey]);
-  // 入試まであと何日。中3以外・年度の登録が無い年は null（行を出さない）
+  // ★③の定型と入試日は都県で中身が変わる。教室から引く（region.ts）
+  const region = useMemo(() => regionOfSchool(student.school_id), [student.school_id]);
+  const timing = useMemo(
+    () => timingLines(student.grade, seasonKey, region),
+    [student.grade, seasonKey, region]
+  );
+  // ⑤で「なぜこの教科・この単元か」を言うための根拠。③と同じ行（scenes.ts）
+  const planRationale = useMemo(
+    () => planRationaleLines(student.grade, seasonKey, region),
+    [student.grade, seasonKey, region]
+  );
+  // 入試まであと何日。中3以外・東京都以外・年度の登録が無い年は null（行を出さない）
   const examCountdown = useMemo(
-    () => examCountdownLine(new Date(), student.grade),
-    [student.grade]
+    () => examCountdownLine(new Date(), student.grade, region),
+    [student.grade, region]
   );
   const seasonEnrollments = useMemo(
     () => koushuEnrollments.filter((e) => e.season === seasonKey),
@@ -316,6 +391,9 @@ export function InterviewScriptCard({
           schoolId: student.school_id,
           studentId: student.id,
           sections: currentSections,
+          // ★admin/owner 以外は切り替えUIを出していないので modelKey は常に既定値（best）のまま。
+          //   送ってもサーバー側で権限外なら無視されるだけなので、ここで出し分けなくてよい。
+          model: modelKey,
         }),
       });
       if (!res.ok) throw new Error('failed');
@@ -325,6 +403,10 @@ export function InterviewScriptCard({
       if (json.sections.length === 0) {
         return setMessage('面談で話せる記録がまだありません');
       }
+      // ★実際に使われたモデルはサーバーの判断がすべて（権限外の指定はサーバーが黙って既定に倒す）。
+      //   ここではその結果をそのまま表示・答え合わせ用に持つだけで、判断はしない。
+      setMadeWithModelKey(json.modelKey);
+      setMadeWithModel(json.model);
 
       // ★AIが使えなかったときも台本は出す。
       //   前身の「報告事項」はAIの見えることが主役だったので、作れなければ何も出さなかった。
@@ -388,7 +470,10 @@ export function InterviewScriptCard({
         <Sparkles className="h-3.5 w-3.5 shrink-0 text-ink" aria-hidden="true" />
         <span className="text-xs font-semibold text-text-heading">面談で話すこと</span>
         <span className="ml-auto shrink-0 text-[11px] text-text-faint">
-          {madeAt ? `${madeAt.slice(5).replace('-', '/')} に作成 ・ ` : ''}保存されません
+          {madeAt ? `${madeAt.slice(5).replace('-', '/')} に作成 ・ ` : ''}
+          {/* ★見比べるときに取り違えないよう、作ったモデルは結果のそばに常に出す（admin/owner のみ） */}
+          {canChooseModel && madeWithModelKey ? `${MODEL_LABELS[madeWithModelKey]}で作成 ・ ` : ''}
+          保存されません
         </span>
       </div>
 
@@ -403,6 +488,9 @@ export function InterviewScriptCard({
             <Sparkles className="h-3 w-3" aria-hidden="true" />
             {busy ? '作っています…' : '面談で話すことを作る'}
           </button>
+          {canChooseModel && (
+            <ModelKeyToggle value={modelKey} onChange={setModelKey} disabled={busy} />
+          )}
           {message && <span className="text-[11px] text-text-muted">{message}</span>}
         </div>
       )}
@@ -575,6 +663,11 @@ export function InterviewScriptCard({
                           text={`通常授業 ―― ${formatRegularPatternsSchedule(regularPatterns)}`}
                         />
                       )}
+                      {/* ★③で話した「なぜ今か」を、プラン表を開いた場でもう一度出す。
+                          ③と同じ行（scenes.ts の KANAGAWA_JUNIOR3_WINTER_SUBJECTS） */}
+                      {planRationale.map((t, i) => (
+                        <TellLine key={`rationale-${i}`} text={t} />
+                      ))}
                       {renderAiSections('plan')}
                       {view.bridge && (
                         <div className="flex items-start gap-2 rounded-md bg-info-subtle px-2.5 py-1.5 text-[13px] leading-snug text-info">
@@ -618,7 +711,7 @@ export function InterviewScriptCard({
             </div>
           )}
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
               onClick={() => void run()}
@@ -628,6 +721,9 @@ export function InterviewScriptCard({
               <RefreshCw className="h-3 w-3" aria-hidden="true" />
               {busy ? '作っています…' : '作り直す'}
             </button>
+            {canChooseModel && (
+              <ModelKeyToggle value={modelKey} onChange={setModelKey} disabled={busy} />
+            )}
             {message && <span className="text-[11px] text-text-muted">{message}</span>}
           </div>
 
@@ -636,7 +732,9 @@ export function InterviewScriptCard({
           </span>
 
           {/* ★答え合わせ。現状の行も「見えること」も記録しない（成績と引継ぎが混ざる）。
-              残すのはセクション数だけ。
+              残すのはセクション数とモデルだけ。
+              ★モデルを残すのは、Sonnet 5 / Opus 5 のどちらが良いかを実データで比べるため
+                （ai_output は jsonb なのでDB変更は不要。集計は /admin/ai-feedback）。
               ★AIが1文も書けなかったとき（APIが落ちている等）は出さない。
                 評価する対象が無いのに「合っていた／ずれていた」を押させると、
                 何を答えたのか分からない記録が溜まる。 */}
@@ -653,7 +751,11 @@ export function InterviewScriptCard({
                   targetKind: 'student',
                   targetId: student.id,
                   verdict,
-                  aiOutput: { sectionCount: view.sections.length },
+                  aiOutput: {
+                    sectionCount: view.sections.length,
+                    ...(madeWithModelKey ? { modelKey: madeWithModelKey } : {}),
+                    ...(madeWithModel ? { model: madeWithModel } : {}),
+                  },
                 });
               }}
             />

@@ -38,9 +38,11 @@ import {
   CLOSING_LINES,
   APPLY_LINES,
   timingLines,
+  planRationaleLines,
   isExamGrade,
 } from '@/lib/interview/scenes';
 import { examCountdownLine } from '@/lib/interview/examDates';
+import { regionOfSchool } from '@/lib/interview/region';
 import { briefSectionLabel, type BriefSectionKey } from '@/lib/ai/interviewBrief';
 import { formatGradeLabel } from '@/lib/utils/gradeLabel';
 
@@ -133,8 +135,12 @@ export function InterviewPrintSheet({
   }
 
   const seasonKey = currentSeason(new Date());
-  const timing = timingLines(student.grade, seasonKey);
-  const examCountdown = examCountdownLine(new Date(), student.grade);
+  // ★③の定型と入試日は都県で中身が変わる。教室から引く（region.ts）
+  const region = regionOfSchool(student.school_id);
+  const timing = timingLines(student.grade, seasonKey, region);
+  // ⑤で「なぜこの教科・この単元か」を言うための根拠。③と同じ行（scenes.ts）
+  const planRationale = planRationaleLines(student.grade, seasonKey, region);
+  const examCountdown = examCountdownLine(new Date(), student.grade, region);
   const seasonEnrollments = koushuEnrollments.filter((e) => e.season === seasonKey);
   const seasonKoma = seasonEnrollments.reduce((sum, e) => sum + (e.koma_count ?? 0), 0);
   const applied = seasonEnrollments.length > 0;
@@ -289,6 +295,8 @@ export function InterviewPrintSheet({
               ・通常授業 ―― {formatRegularPatternsSchedule(regularPatterns)}
             </p>
           )}
+          {/* ★③で話した「なぜ今か」を、プラン表のところでもう一度出す（scenes.ts） */}
+          <Bullets items={planRationale} />
           {planKeys.map(sectionBlock)}
           {script?.bridge && (
             <div className="rounded bg-teal-50 px-2 py-1 text-[10px] leading-[1.6] text-teal-800">

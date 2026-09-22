@@ -13,7 +13,10 @@
  *
  * ★東京都のみ。緑園都市校が抱える神奈川県立は制度も日程も別物なので、
  *   ここに混ぜない（同じナレッジの冒頭に明記がある）。
+ *   神奈川の教室には日付を出さない（region を渡すと null が返る）。共通選抜の日程を
+ *   確かな出どころで持つまで、都立の日付を代わりに見せることはしない。
  */
+import type { Region } from '@/lib/interview/region';
 
 /** 都立高校 第一次募集・分割前期の学力検査日（年度キーは「令和N年度入試」の西暦年） */
 const TOKYO_GENERAL_EXAM_DATES: Record<number, string> = {
@@ -29,8 +32,12 @@ const TOKYO_GENERAL_EXAM_DATES: Record<number, string> = {
  *   **受験学年（中3）のときだけ**日付を出す。中1・中2に「入試まで900日」と言っても
  *   面談では使わない。
  */
-export function nextTokyoExamDate(today: Date, grade: number | null): string | null {
-  if (grade !== 9) return null;
+export function nextTokyoExamDate(
+  today: Date,
+  grade: number | null,
+  region: Region | null
+): string | null {
+  if (grade !== 9 || region !== 'tokyo') return null;
 
   // 学年度は4月始まり。1〜3月は前年の4月に始まった年度なので、入試はその年の2月
   const year = today.getFullYear();
@@ -50,8 +57,12 @@ export function daysUntil(today: Date, isoDate: string): number {
 /**
  * ③に出す「入試まで」の1行。日付が分からなければ null（行そのものを出さない）。
  */
-export function examCountdownLine(today: Date, grade: number | null): string | null {
-  const date = nextTokyoExamDate(today, grade);
+export function examCountdownLine(
+  today: Date,
+  grade: number | null,
+  region: Region | null
+): string | null {
+  const date = nextTokyoExamDate(today, grade, region);
   if (!date) return null;
   const days = daysUntil(today, date);
   if (days < 0) return null;

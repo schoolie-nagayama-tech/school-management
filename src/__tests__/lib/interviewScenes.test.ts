@@ -7,6 +7,7 @@ import {
   GRADE_BAND_LABEL,
   gradeBandOf,
   timingLines,
+  planRationaleLines,
   emptyTimingCells,
   isExamGrade,
   type GradeBand,
@@ -14,6 +15,7 @@ import {
 import { BRIEF_SECTIONS } from '@/lib/ai/interviewBrief';
 import { stripNottaMeta } from '@/app/interview/interview.shared';
 import { examCountdownLine, nextTokyoExamDate, daysUntil } from '@/lib/interview/examDates';
+import { regionOfSchool } from '@/lib/interview/region';
 
 describe('面談のシーン定義', () => {
   it('7シーンが本部チェックリストの順に並ぶ', () => {
@@ -95,26 +97,87 @@ describe('学年の区分', () => {
 
 describe('③時期の重要性の定型トーク', () => {
   it('中3・夏期は本部チェックリストから起こした行が入っている', () => {
-    const lines = timingLines(9, 'summer');
+    const lines = timingLines(9, 'summer', 'tokyo');
     expect(lines.length).toBeGreaterThan(0);
     expect(lines.some((l) => l.includes('7〜8月'))).toBe(true);
   });
 
   it('★まだ書かれていないマスは空を返す（埋め草を書かない）', () => {
-    expect(timingLines(1, 'summer')).toEqual([]); // 小学生はまだ書いていない
-    expect(timingLines(10, 'winter')).toEqual([]); // 高1・高2も
+    expect(timingLines(1, 'summer', 'tokyo')).toEqual([]); // 小学生はまだ書いていない
+    expect(timingLines(10, 'winter', 'tokyo')).toEqual([]); // 高1・高2も
   });
 
   it('区分が取れない学年は空', () => {
-    expect(timingLines(13, 'summer')).toEqual([]);
-    expect(timingLines(null, 'summer')).toEqual([]);
+    expect(timingLines(13, 'summer', 'tokyo')).toEqual([]);
+    expect(timingLines(null, 'summer', 'tokyo')).toEqual([]);
+  });
+
+  it('★都県で中身が変わる。東京の制度の話が神奈川に出ない', () => {
+    const tokyo = timingLines(9, 'winter', 'tokyo');
+    const kanagawa = timingLines(9, 'winter', 'kanagawa');
+    expect(tokyo.some((l) => l.includes('都立'))).toBe(true);
+    expect(kanagawa.some((l) => l.includes('都立'))).toBe(false);
+    expect(kanagawa.some((l) => l.includes('打診値表'))).toBe(true);
+    expect(tokyo.some((l) => l.includes('打診値表'))).toBe(false);
+  });
+
+  it('共通の行は両方に出る', () => {
+    const common = '受験間近。最後の追い込みの時期';
+    expect(timingLines(9, 'winter', 'tokyo')).toContain(common);
+    expect(timingLines(9, 'winter', 'kanagawa')).toContain(common);
+  });
+
+  it('★共通の行は前と後ろに分かれる。締めの言葉が話の2行目に来ない', () => {
+    const lines = timingLines(9, 'winter', 'kanagawa');
+    expect(lines[0]).toBe('受験間近。最後の追い込みの時期');
+    expect(lines[lines.length - 1]).toContain('体調管理');
+    // 都県の話は共通の前後に挟まれる
+    expect(lines[1]).toContain('内申の大詰め');
+  });
+
+  it('★教室が未登録（region=null）でも共通の行だけは出る', () => {
+    const lines = timingLines(9, 'winter', null);
+    expect(lines.length).toBeGreaterThan(0);
+    expect(lines.some((l) => l.includes('都立'))).toBe(false);
+    expect(lines.some((l) => l.includes('打診値表'))).toBe(false);
+  });
+
+  it('★③の教科別の行は⑤にもそのまま出る（出どころが1つ）', () => {
+    const timing = timingLines(9, 'winter', 'kanagawa');
+    const plan = planRationaleLines(9, 'winter', 'kanagawa');
+    expect(plan.length).toBeGreaterThan(0);
+    // ⑤に出る行はすべて③にも出ている。片方だけ直すと面談の中で食い違う
+    for (const line of plan) expect(timing).toContain(line);
+  });
+
+  it('⑤の根拠が用意されていない組み合わせは空', () => {
+    expect(planRationaleLines(9, 'winter', 'tokyo')).toEqual([]);
+    expect(planRationaleLines(9, 'summer', 'kanagawa')).toEqual([]);
+    expect(planRationaleLines(9, 'winter', null)).toEqual([]);
+    expect(planRationaleLines(null, 'winter', 'kanagawa')).toEqual([]);
+  });
+
+  it('★中3・冬期は2期制と3学期制を併記する（緑園学園は2期制だが3学期制の学校もある）', () => {
+    const lines = timingLines(9, 'winter', 'kanagawa');
+    expect(lines.some((l) => l.includes('2学期（2期制なら前期）'))).toBe(true);
+    expect(lines.some((l) => l.includes('仮内申'))).toBe(true);
   });
 
   it('未記入のマスを数えられる（記入シートの進み具合を見るため）', () => {
     const empty = emptyTimingCells();
-    // 5区分 × 3季節 = 15マス。中1・中2の夏冬と中3の3期が記入済み
-    expect(empty).toHaveLength(10);
-    expect(empty.some((c) => c.band === 'junior3' && c.season === 'summer')).toBe(false);
+    // 2都県 × 5区分 × 3季節 = 30マス。
+    // 東京=中1・中2の夏冬＋中3の3期で5マス、神奈川=中3・冬期の1マスが記入済み
+    expect(empty).toHaveLength(24);
+    expect(
+      empty.some((c) => c.region === 'tokyo' && c.band === 'junior3' && c.season === 'summer')
+    ).toBe(false);
+    expect(
+      empty.some((c) => c.region === 'kanagawa' && c.band === 'junior3' && c.season === 'winter')
+    ).toBe(false);
+    // ★神奈川の中3・夏期はまだ無い（東京の行が流用されていないことの裏取り）
+    expect(
+      empty.some((c) => c.region === 'kanagawa' && c.band === 'junior3' && c.season === 'summer')
+    ).toBe(true);
   });
 });
 
@@ -164,25 +227,46 @@ describe('Nottaのメタ情報を落とす', () => {
 describe('入試までの日数', () => {
   it('★中3のときだけ出す。中1・中2に「あと900日」は面談で使わない', () => {
     const t = new Date('2026-09-22');
-    expect(examCountdownLine(t, 9)).toMatch(/都立一次（2\/21）まで あと\d+日/);
-    expect(examCountdownLine(t, 8)).toBeNull();
-    expect(examCountdownLine(t, 12)).toBeNull(); // 高3は都立入試ではない
-    expect(examCountdownLine(t, null)).toBeNull();
+    expect(examCountdownLine(t, 9, 'tokyo')).toMatch(/都立一次（2\/21）まで あと\d+日/);
+    expect(examCountdownLine(t, 8, 'tokyo')).toBeNull();
+    expect(examCountdownLine(t, 12, 'tokyo')).toBeNull(); // 高3は都立入試ではない
+    expect(examCountdownLine(t, null, 'tokyo')).toBeNull();
+  });
+
+  it('★東京都以外には出さない。神奈川の共通選抜は日程も制度も別物', () => {
+    const t = new Date('2026-09-22');
+    expect(examCountdownLine(t, 9, 'kanagawa')).toBeNull();
+    expect(examCountdownLine(t, 9, null)).toBeNull();
   });
 
   it('学年度は4月始まり。9月の中3は翌年2月の入試を見る', () => {
-    expect(nextTokyoExamDate(new Date('2026-09-22'), 9)).toBe('2027-02-21');
+    expect(nextTokyoExamDate(new Date('2026-09-22'), 9, 'tokyo')).toBe('2027-02-21');
     // 1〜3月はその年度の入試（＝同じ年の2月）
-    expect(nextTokyoExamDate(new Date('2027-01-10'), 9)).toBe('2027-02-21');
+    expect(nextTokyoExamDate(new Date('2027-01-10'), 9, 'tokyo')).toBe('2027-02-21');
   });
 
   it('★登録の無い年度は null。当て推量の日付を出さない', () => {
-    expect(nextTokyoExamDate(new Date('2028-09-01'), 9)).toBeNull();
-    expect(examCountdownLine(new Date('2028-09-01'), 9)).toBeNull();
+    expect(nextTokyoExamDate(new Date('2028-09-01'), 9, 'tokyo')).toBeNull();
+    expect(examCountdownLine(new Date('2028-09-01'), 9, 'tokyo')).toBeNull();
   });
 
   it('日数の計算', () => {
     expect(daysUntil(new Date('2027-02-21'), '2027-02-21')).toBe(0);
     expect(daysUntil(new Date('2027-02-20'), '2027-02-21')).toBe(1);
+  });
+});
+
+describe('教室から都県を引く', () => {
+  it('緑園都市校は神奈川県、他の3校は東京都', () => {
+    expect(regionOfSchool('9a6b5996-a266-47ed-878f-85e93c2b8b90')).toBe('kanagawa');
+    expect(regionOfSchool('9f519794-3673-4e90-b1ea-88a79f70174a')).toBe('tokyo');
+    expect(regionOfSchool('d187f7a3-633a-46ce-8d32-c56c85d17bac')).toBe('tokyo');
+    expect(regionOfSchool('e26b398c-8e30-47bc-b528-ee92fd45be7f')).toBe('tokyo');
+  });
+
+  it('★未登録の教室は null。既定を東京にしない（神奈川に都立の話が出てしまう）', () => {
+    expect(regionOfSchool('00000000-0000-0000-0000-000000000000')).toBeNull();
+    expect(regionOfSchool(null)).toBeNull();
+    expect(regionOfSchool(undefined)).toBeNull();
   });
 });
