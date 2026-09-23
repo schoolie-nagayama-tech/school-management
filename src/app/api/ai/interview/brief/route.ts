@@ -26,6 +26,7 @@ import {
   type BriefSign,
   type SelectableModelKey,
 } from '@/lib/ai/interviewBrief';
+import { regionOfSchool } from '@/lib/interview/region';
 import { STUDENT_DIGEST_FEATURE_KEY } from '@/lib/ai/features';
 
 export const dynamic = 'force-dynamic';
@@ -397,7 +398,7 @@ export async function POST(request: NextRequest) {
       model,
       // 書き方の決まりは毎回同じなのでキャッシュに載せる
       system: [{ text: briefSystemPrompt(), cache: true }],
-      userText: briefUserText(sections, followUpItems),
+      userText: briefUserText(sections, followUpItems, regionOfSchool(schoolId)),
       // ★長く書かせるようにしたので、出力の上限も広げる（seen 180字×7＋thread＋bridge＋followUps）。
       //   Opus 5.5 は思考が常に入り、その分も max_tokens から引かれる。4000 だと思考で食われて
       //   JSONが途中で切れる（＝作れなかったに倒れる）ので余裕を持たせる。使った分しか課金されない

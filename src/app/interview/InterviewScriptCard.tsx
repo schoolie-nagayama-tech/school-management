@@ -13,6 +13,8 @@
  *   左を上から追えば面談が進み、右はその根拠になる。
  * ★シーンの開閉（旧 SCENE_OPEN_BY_DEFAULT）は廃止した。縦に全部出す並びに変えたので、
  *   畳んでおくと「左を追えば進む」が成立しない。
+ *   ★例外は③時期の重要性の左だけ（2026-09-23）。毎回同じ定型なので既定でたたむ
+ *   （理由は timingOpen の注記）。
  *
  * 正典: docs/interview-script-ai-plan.md
  *
@@ -31,8 +33,16 @@
  *   この2つはサーバー（/api/ai/interview/brief）が足す。
  */
 
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { Sparkles, RefreshCw, FileText, ArrowRight, HelpCircle } from 'lucide-react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import {
+  Sparkles,
+  RefreshCw,
+  FileText,
+  ArrowRight,
+  HelpCircle,
+  ChevronDown,
+  ChevronUp,
+} from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { isOwnerOrAbove } from '@/lib/utils/roles';
 import { fetchWithAuth } from '@/lib/api/auth';
@@ -63,6 +73,9 @@ import {
   buildMissingRecordAskLines,
   buildPreviousCommitmentLines,
   buildTargetSchoolGapLines,
+  buildTargetSchoolTalkLines,
+  latestOwnHensachi,
+  latestOwnNaishin,
   currentSeason,
   previousFollowUpAskLine,
   previousFollowUpReportLine,
@@ -197,6 +210,9 @@ const TARGET_SCHOOL_ASK_LINES = [
   '併願の私立は決まっているか',
 ] as const;
 
+/** ③時期の重要性の開閉を覚えておく localStorage のキー（値は '1'＝開く／'0'＝たたむ） */
+const TIMING_OPEN_STORAGE_KEY = 'nest.interview.timingOpen';
+
 function scrollToCard(id: string) {
   document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
@@ -330,6 +346,39 @@ function ModelKeyToggle({
   );
 }
 
+/**
+ * textarea の高さを中身に合わせる。
+ * ★2026-09-23 の教室長レビューで入れた。以前は rows を字数で1〜2行に決め打ちしており、
+ *   AIの着眼点（最大数百字）が枠の中でスクロールして、面談中に全文が読めなかった。
+ * ★幅が変わると折り返しが変わるので、ウィンドウのリサイズでも測り直す。
+ *   値が変わったとき（手直し・作り直し）も測り直す。
+ * ★一度 height を auto に戻してから scrollHeight を読む。戻さないと、縮めるべきときに
+ *   前の高さのまま scrollHeight が返り、文を消しても枠が小さくならない。
+ */
+function useAutosizeTextarea(value: string) {
+  const ref = useRef<HTMLTextAreaElement>(null);
+
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${el.scrollHeight}px`;
+  }, [value]);
+
+  useEffect(() => {
+    const onResize = () => {
+      const el = ref.current;
+      if (!el) return;
+      el.style.height = 'auto';
+      el.style.height = `${el.scrollHeight}px`;
+    };
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
+  return ref;
+}
+
 /** 着眼点（AIが書いたもの・直せる）。sign は右のドットで示す */
 function SeenLine({
   label,
@@ -342,16 +391,19 @@ function SeenLine({
   sign: BriefSign;
   onChange: (v: string) => void;
 }) {
+  // ★全文を枠の中でスクロールさせない（useAutosizeTextarea の注記）
+  const textareaRef = useAutosizeTextarea(value);
   return (
     <div className="flex items-start gap-2 rounded-md bg-ink-subtle px-2.5 py-1.5">
       <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-ink" aria-hidden="true" />
       <textarea
+        ref={textareaRef}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        rows={value.length > 24 ? 2 : 1}
+        rows={1}
         placeholder="（見えることはありませんでした）"
         aria-label={`${label}から見えること`}
-        className="min-w-0 flex-1 resize-none bg-transparent text-[13px] leading-snug text-text-heading outline-none"
+        className="min-w-0 flex-1 resize-none overflow-hidden bg-transparent text-[13px] leading-snug text-text-heading outline-none"
       />
       {sign && (
         <span
@@ -514,6 +566,49 @@ export function InterviewScriptCard({
   const seasonKey = useMemo(() => currentSeason(new Date()), []);
   // ★③の定型と入試日は都県で中身が変わる。教室から引く（region.ts）
   const region = useMemo(() => regionOfSchool(student.school_id), [student.school_id]);
+  // ④の左（話すこと）: 志望校ごとに「めやすとの差から何を言うか」。★右の志望校の行と同じ差を使う
+  const targetSchoolTalk = useMemo(
+    () =>
+      buildTargetSchoolTalkLines(
+        targetSchools,
+        latestOwnNaishin(assessments),
+        latestOwnHensachi(assessments),
+        region
+      ),
+    [targetSchools, assessments, region]
+  );
+
+  /**
+   * ③時期の重要性を開いておくか。★既定はたたむ。ブラウザごとに覚える。
+   * ★③だけ畳めるようにした（2026-09-23 教室長レビュー）。③の左は学年×季節×都県の定型と
+   *   想定問答で、どの生徒でも毎回同じ文。十数行あって台本の中で一番長いのに、
+   *   読み慣れた教室長には要らない。②④⑤は生徒ごとに中身が変わる（前回の要望・志望校・
+   *   提案書）ので畳まない。畳むと、その生徒にしか無い話を見落とす。
+   * ★右（入試まで・出願〆切）は短く、その日にしか言えない事実なので、たたんでも出したままにする。
+   * ★保存先は localStorage（講師の好み。サーバーに持つほどのものではない）。
+   *   プライベートウィンドウ等で読み書きが投げることがあるので try/catch で包み、
+   *   読めなければ既定（たたむ）のまま動かす。最初の描画は常にたたんだ状態で、
+   *   読めた値はマウント後に反映する（SSRとの食い違いを出さないため）。
+   */
+  const [timingOpen, setTimingOpen] = useState(false);
+  useEffect(() => {
+    try {
+      if (window.localStorage.getItem(TIMING_OPEN_STORAGE_KEY) === '1') setTimingOpen(true);
+    } catch {
+      // 読めなければ既定（たたむ）のまま
+    }
+  }, []);
+  const toggleTimingOpen = () => {
+    setTimingOpen((prev) => {
+      const next = !prev;
+      try {
+        window.localStorage.setItem(TIMING_OPEN_STORAGE_KEY, next ? '1' : '0');
+      } catch {
+        // 覚えられなくても、この画面の中では開閉できる
+      }
+      return next;
+    });
+  };
   const timing = useMemo(
     () => timingLines(student.grade, seasonKey, region),
     [student.grade, seasonKey, region]
@@ -742,7 +837,7 @@ export function InterviewScriptCard({
                 // AIが書いていない報告は、中身を教室長が口頭で埋める（行だけ立てる）
                 <SayLine
                   key={`hearing:followup:${i}`}
-                  text={previousFollowUpReportLine(item.text)}
+                  text={previousFollowUpReportLine(item.text, item.source)}
                 />
               );
             }
@@ -764,13 +859,56 @@ export function InterviewScriptCard({
             </span>,
           ];
         }
+        // ★③だけ畳める（timingOpen の注記）。たたんでいるときは件数だけを1行で見せる
+        if (!timingOpen) {
+          const counts = [
+            timing.length > 0 ? `定型 ${timing.length}行` : null,
+            qa.length > 0 ? `想定問答 ${qa.length}件` : null,
+          ]
+            .filter(Boolean)
+            .join('・');
+          return [
+            <button
+              key="timing-toggle"
+              type="button"
+              onClick={toggleTimingOpen}
+              aria-expanded={false}
+              className="inline-flex items-center gap-1 self-start rounded-md px-1 py-0.5 text-[12px] text-text-muted hover:bg-surface-hover hover:text-text-body"
+            >
+              {counts}を表示
+              <ChevronDown className="h-3.5 w-3.5" aria-hidden="true" />
+            </button>,
+          ];
+        }
         return [
           ...timing.map((t, i) => <SayLine key={`timing-${i}`} text={t} />),
           ...qa.map((item, i) => <QaLine key={`qa-${i}`} q={item.q} a={item.a} />),
+          <button
+            key="timing-toggle"
+            type="button"
+            onClick={toggleTimingOpen}
+            aria-expanded={true}
+            className="inline-flex items-center gap-1 self-start rounded-md px-1 py-0.5 text-[12px] text-text-muted hover:bg-surface-hover hover:text-text-body"
+          >
+            たたむ
+            <ChevronUp className="h-3.5 w-3.5" aria-hidden="true" />
+          </button>,
         ];
 
       case 'status':
         return [
+          /**
+           * ★志望校の話を先頭に置く（2026-09-23 教室長レビュー）。右に差の数字が出ていても、
+           *   左で何を言うかが無いと面談で志望校に触れずに終わる。数字はシステムが計算したもの
+           *  （buildTargetSchoolTalkLines の注記）。
+           */
+          ...targetSchoolTalk.map((line, i) =>
+            line.kind === 'ask' ? (
+              askLine(`status:target-school-talk:${i}`, line.text)
+            ) : (
+              <SayLine key={`status:target-school-talk:${i}`} text={line.text} />
+            )
+          ),
           ...aiSeenLines('status'),
           ...showLines.map((t, i) => <ShowLine key={`show-${i}`} text={t} />),
           ...askLines.map((t, i) => askLine(`status:${i}`, t)),
@@ -825,7 +963,10 @@ export function InterviewScriptCard({
           )),
           // 前回の要望（直近の面談記録の「要望」「申し送り」「今後の方針」）
           ...previous.requests.map((t, i) => (
-            <TellLine key={`request-${i}`} text={i === 0 ? `前回の要望${FACT_SEPARATOR}${t}` : t} />
+            <TellLine
+              key={`request-${i}`}
+              text={i === 0 ? `前回の要望・方針${FACT_SEPARATOR}${t}` : t}
+            />
           )),
           ...aiFactLinesOf('lessons'),
           ...aiFactLinesOf('discipline'),

@@ -25,6 +25,7 @@ import {
   buildGoalAchievementLines,
   buildMissingRecordAskLines,
   buildTargetSchoolGapLines,
+  buildTargetSchoolTalkLines,
   isTargetSchoolFactLine,
   stripTargetSchoolFactLines,
   TARGET_SCHOOL_FACT_PREFIX,
@@ -1586,5 +1587,209 @@ describe('buildTellSections（AIへ渡す現状の行）', () => {
     const last = sections.find((s) => s.key === 'lastInterview');
     expect(last!.current.join('')).not.toContain('確認できませんでした');
     expect(last!.current.some((l) => l.startsWith('申し送り: '))).toBe(true);
+  });
+});
+
+describe('前回の要望から「無い」と論評を外す（2026-09-23 教室長レビュー）', () => {
+  // 小川 華佳さんの実物の文（Nottaの要約）
+  const OGAWA_RECORD = [
+    '--- Notta 要約 ---',
+    '■ 保護者からの要望',
+    '・保護者からの明確な要望として確認できる発言はありません。',
+    '・要望の強さは、具体的な依頼というより進路選択に関する相談・不安の表明レベルです。',
+    '■ 前回の確認',
+    '・前回の面談での約束事項について明確な記録は確認できません',
+    '■ 相談事項',
+    '・狛江と調布北で迷っている',
+  ].join('\n');
+
+  it('★「発言はありません」と論評の箇条書きは前回の要望に出さない', () => {
+    const { requests, items, asks } = buildPreviousCommitmentLines([
+      interviewRow({ content: OGAWA_RECORD }),
+    ]);
+    expect(requests).toEqual([]);
+    expect(items).toEqual([]);
+    expect(asks).toEqual([]);
+  });
+
+  it('★「報告 ―― …への対応を伝える」の受け皿も立たない（items が空なので）', () => {
+    const { items } = buildPreviousCommitmentLines([interviewRow({ content: OGAWA_RECORD })]);
+    const reports = items
+      .filter((i) => i.fallback === 'report')
+      .map((i) => previousFollowUpReportLine(i.text));
+    expect(reports).toEqual([]);
+  });
+
+  it('要望そのものは残す（論評の判定を広げすぎない）', () => {
+    const { requests } = buildPreviousCommitmentLines([
+      interviewRow({
+        content: [
+          '■ 保護者からの要望',
+          '・英語の長文を増やしてほしい',
+          '・要望の強さは、具体的な依頼というより相談レベルです。',
+        ].join('\n'),
+      }),
+    ]);
+    expect(requests).toEqual(['英語の長文を増やしてほしい']);
+  });
+
+  it('★Notta が様子から推し量った所見（〜が見られます／〜がうかがえます）も要望に拾わない', () => {
+    const { requests, items } = buildPreviousCommitmentLines([
+      interviewRow({
+        content: [
+          '■ 保護者からの要望',
+          '・推薦入試の結果や志望校の倍率に対する不安が強く、早く安心したい気持ちが見られます。',
+          '・進路面では、推薦入試を活用して早期に進路を決めたいという意向・期待がうかがえます。',
+          '・過去問の進め方を教えてほしい',
+        ].join('\n'),
+      }),
+    ]);
+    expect(requests).toEqual(['過去問の進め方を教えてほしい']);
+    expect(items.map((i) => i.text)).toEqual(['過去問の進め方を教えてほしい']);
+  });
+
+  it('★今後の方針でも、塾が引き受けた行動（〜を確認します）は報告に振る', () => {
+    const { items } = buildPreviousCommitmentLines([
+      interviewRow({
+        content: [
+          '■ 今後の方針',
+          '・次回までに、内申・加点を踏まえた志望校の可能性、推薦入試の条件を確認します。',
+          '・面接対策を進め、本番の緊張に対応できるよう準備します。',
+          '・私立単願に限定しない進路方針を検討します。',
+        ].join('\n'),
+      }),
+    ]);
+    expect(items.map((i) => i.fallback)).toEqual(['report', 'report', 'ask']);
+    expect(previousFollowUpReportLine(items[0].text, items[0].source)).toMatch(
+      /^報告 ―― 前回決めた「.+」の進み具合を伝える$/
+    );
+  });
+
+  it('要望から来た報告は「対応を伝える」のまま', () => {
+    expect(previousFollowUpReportLine('長文を増やしてほしい', '保護者からの要望')).toBe(
+      '報告 ―― 前回の要望「長文を増やしてほしい」への対応を伝える'
+    );
+  });
+
+  it('申し送りの文面にも「確認できません」の1件が混ざらない', () => {
+    const text = buildHandoverText(OGAWA_RECORD);
+    expect(text).not.toContain('確認できません');
+    expect(text).not.toContain('発言はありません');
+    expect(text).toContain('狛江と調布北で迷っている');
+  });
+});
+
+describe('buildTargetSchoolTalkLines（④の左・志望校について話すこと）', () => {
+  function school(
+    name: string,
+    master: Partial<TargetSchoolMaster> | null,
+    rank = 1
+  ): TargetSchoolRow {
+    return {
+      id: `ts-${name}`,
+      rank,
+      schoolName: name,
+      highSchoolId: master ? 'hs-1' : null,
+      reason: null,
+      updatedAt: '2026-09-01T00:00:00Z',
+      master: master
+        ? {
+            prefecture: '東京都',
+            schoolName: name,
+            course: '',
+            category: '普通科',
+            naishin: 49,
+            naishinMax: 65,
+            hensachi: 55,
+            sourceLabel: 'Vもぎ 2025年9月版',
+            verifiedAt: null,
+            accessLines: [],
+            ...master,
+          }
+        : null,
+    } as TargetSchoolRow;
+  }
+
+  it('★小川 華佳さん（狛江・内申53 vs 49・偏差値54 vs 55・東京）', () => {
+    const lines = buildTargetSchoolTalkLines([school('狛江', {})], 53, 54, 'tokyo');
+    expect(lines).toEqual([
+      { kind: 'say', text: '狛江：内申はめやすを4上回っている。推薦も一般も内申が武器になる' },
+      { kind: 'say', text: '偏差値はめやすまであと1。次の模試で届く幅かを一緒に見る' },
+      { kind: 'ask', text: '狛江の推薦を受けるか聞く' },
+    ]);
+  });
+
+  it('両方プラスなら「安全圏。上の学校を狙うか」を聞く', () => {
+    const lines = buildTargetSchoolTalkLines([school('狛江', {})], 52, 58, 'tokyo');
+    expect(lines[1]).toEqual({ kind: 'say', text: '偏差値もめやすを3上回っている。このまま維持' });
+    expect(lines[2]).toEqual({
+      kind: 'ask',
+      text: '狛江は第1志望として安全圏。上の学校を狙うかを聞く',
+    });
+  });
+
+  it('★内申が足りないときは東京だけ「換算内申1点＝当日約3点」を添える（scenes.ts と同じ文）', () => {
+    const tokyo = buildTargetSchoolTalkLines([school('狛江', {})], 46, 57, 'tokyo');
+    expect(tokyo[0].text).toBe(
+      '狛江：内申がめやすに3届かない。当日の点で取り返す（換算内申1点は当日の素点で約3点ぶん）'
+    );
+    expect(tokyo[1].text).toBe('偏差値はめやすを2上回っている。このまま維持');
+    expect(tokyo[2]).toEqual({ kind: 'say', text: '狛江は一般入試の当日点で勝負する形になる' });
+  });
+
+  it('★神奈川は中立な比較だけ（換算内申の比・推薦の言葉を出さない）', () => {
+    const plus = buildTargetSchoolTalkLines([school('希望ケ丘', {})], 53, 54, 'kanagawa');
+    const minus = buildTargetSchoolTalkLines([school('希望ケ丘', {})], 46, 57, 'kanagawa');
+    const all = [...plus, ...minus].map((l) => l.text).join('\n');
+    expect(all).not.toContain('推薦');
+    expect(all).not.toContain('換算内申');
+    expect(plus.map((l) => l.text)).toEqual([
+      '希望ケ丘：内申はめやすを4上回っている。内申が武器になる',
+      '偏差値はめやすまであと1。次の模試で届く幅かを一緒に見る',
+    ]);
+    expect(minus[2].text).toBe('希望ケ丘は当日の学力検査で勝負する形になる');
+  });
+
+  it('都県が分からない教室も中立な形に倒す', () => {
+    const text = buildTargetSchoolTalkLines([school('狛江', {})], 53, 54, null)
+      .map((l) => l.text)
+      .join('\n');
+    expect(text).not.toContain('推薦');
+  });
+
+  it('めやすちょうどのとき', () => {
+    const lines = buildTargetSchoolTalkLines([school('狛江', {})], 49, 55, 'tokyo');
+    expect(lines.map((l) => l.text)).toEqual([
+      '狛江：内申はめやすちょうど',
+      '偏差値はめやすちょうど',
+    ]);
+  });
+
+  it('マスタに当たらない・本人の材料が無いときは1行だけ', () => {
+    expect(buildTargetSchoolTalkLines([school('私立A', null)], 53, 54, 'tokyo')).toEqual([
+      { kind: 'say', text: '私立A：めやすと比べる材料が無い（内申・模試を聞いて入れる）' },
+    ]);
+    expect(buildTargetSchoolTalkLines([school('狛江', {})], null, null, 'tokyo')).toEqual([
+      { kind: 'say', text: '狛江：めやすと比べる材料が無い（内申・模試を聞いて入れる）' },
+    ]);
+  });
+
+  it('★満点が65でない学校は内申の話をしない（右の志望校の行と同じ規則）', () => {
+    const lines = buildTargetSchoolTalkLines(
+      [school('駒場', { naishin: 55, naishinMax: 75 })],
+      41,
+      54,
+      'tokyo'
+    );
+    expect(lines).toEqual([
+      { kind: 'say', text: '駒場：偏差値はめやすまであと1。次の模試で届く幅かを一緒に見る' },
+    ]);
+  });
+
+  it('偏差値だけあるときは学校名を偏差値の行に付ける', () => {
+    const lines = buildTargetSchoolTalkLines([school('狛江', {})], null, 57, 'tokyo');
+    expect(lines).toEqual([
+      { kind: 'say', text: '狛江：偏差値はめやすを2上回っている。このまま維持' },
+    ]);
   });
 });

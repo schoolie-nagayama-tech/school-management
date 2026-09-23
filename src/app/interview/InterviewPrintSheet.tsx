@@ -22,6 +22,9 @@ import {
   buildMissingRecordAskLines,
   buildPreviousCommitmentLines,
   buildTargetSchoolGapLines,
+  buildTargetSchoolTalkLines,
+  latestOwnHensachi,
+  latestOwnNaishin,
   currentSeason,
   formatRegularPatternsSchedule,
   koushuFiscalYear,
@@ -150,7 +153,7 @@ export function InterviewPrintSheet({
     const kind = hit?.kind ?? item.fallback;
     if (kind === 'report') {
       followUpReports.push(
-        hit?.text ? `報告 ―― ${hit.text}` : previousFollowUpReportLine(item.text)
+        hit?.text ? `報告 ―― ${hit.text}` : previousFollowUpReportLine(item.text, item.source)
       );
     } else {
       followUpAsks.push(hit?.text || previousFollowUpAskLine(item.text));
@@ -182,6 +185,13 @@ export function InterviewPrintSheet({
   const timing = timingLines(student.grade, seasonKey, region);
   // ⑤で「なぜこの教科・この単元か」を言うための根拠。③と同じ行（scenes.ts）
   const planRationale = planRationaleLines(student.grade, seasonKey, region);
+  // ④の話すこと: 志望校ごとに「めやすとの差から何を言うか」（画面と同じ関数）
+  const targetSchoolTalk = buildTargetSchoolTalkLines(
+    targetSchools,
+    latestOwnNaishin(assessments),
+    latestOwnHensachi(assessments),
+    region
+  );
   const examCountdown = examCountdownLine(new Date(), student.grade, region);
   const examApplication = examApplicationLine(new Date(), student.grade, region);
   // ③の想定問答。よく聞かれること → こう答えている（scenes.ts）
@@ -282,7 +292,7 @@ export function InterviewPrintSheet({
               )}
               {previous.requests.length > 0 && (
                 <div className="text-[10px] leading-[1.6] text-gray-800">
-                  ・前回の要望 ―― {previous.requests.join('／')}
+                  ・前回の要望・方針 ―― {previous.requests.join('／')}
                 </div>
               )}
               {sectionBlock('lessons')}
@@ -350,6 +360,21 @@ export function InterviewPrintSheet({
               ))}
             </div>
             <div className="flex flex-col gap-1 border-l border-dotted border-gray-400 pl-3.5">
+              {/* ★志望校について話すこと（画面の④左の先頭と同じ行）。聞く行は □ を付ける */}
+              {targetSchoolTalk.length > 0 && (
+                <>
+                  <div className="mb-0.5 text-[9px] font-bold text-gray-600">話すこと</div>
+                  {targetSchoolTalk.map((line, i) => (
+                    <div key={`talk-${i}`} className="text-[10px] leading-[1.6] text-gray-800">
+                      {line.kind === 'ask' ? '□ ' : '・'}
+                      {line.text}
+                    </div>
+                  ))}
+                  <div className="mb-0.5 mt-1 text-[9px] font-bold text-gray-600">
+                    聞くこと・見せる物
+                  </div>
+                </>
+              )}
               {(SHOW_LINES.status ?? []).map((t, i) => (
                 <div key={i} className="text-[10px] leading-[1.6] text-gray-800">
                   {t}

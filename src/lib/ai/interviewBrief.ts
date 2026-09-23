@@ -326,6 +326,12 @@ export function briefSystemPrompt(): string {
     '- sign は "warn"（注意して話す）／"good"（伝えたい良い話）／""（どちらでもない）の3つだけ。',
     '',
     '■ セクションごとの書き方（渡されたものだけ）',
+    // ★2026-09-23 教室長レビュー。④で志望校に触れずに成績の話だけで終わっていた。
+    //   差の数字は画面（buildTargetSchoolTalkLines）が別に出すので、ここでは言葉だけを求める
+    '- score（成績）: 志望校（【現状】に志望校の行があるとき）には必ず触れる。',
+    '  どちらの入試（推薦・一般）が向くか、内申と当日点のどちらを伸ばすか、次の模試で何を見るかを、',
+    '  学校名を出して書く。数字は書かない（差の数字は画面が別に出す）。',
+    '  ★【教室の都県】が神奈川県のときは推薦の話をしない（神奈川の公立入試は制度が別物）。',
     '- lessons（授業の様子）: できるようになったこと・授業中の発言・態度の変化を、保護者に伝える',
     '  良い報告として書く。家庭では見えないことを優先する。',
     '- lastInterview（前回の面談から）: 前回の約束・要望に対して、その後の記録（引継ぎ・成績）から',
@@ -386,13 +392,26 @@ export function briefSystemPrompt(): string {
  */
 export function briefUserText(
   sections: readonly BriefSectionInput[],
-  followUpItems: readonly string[] = []
+  followUpItems: readonly string[] = [],
+  /**
+   * 教室の都県。★神奈川では推薦・換算内申の話をさせないために渡す（東京と制度が別物）。
+   * 分からないときは null で、都県の注記を付けない。
+   */
+  region: 'tokyo' | 'kanagawa' | null = null
 ): string {
   const blocks = sections.map((s) => {
     const lines = s.current.map((c) => `- ${c}`);
     return [`【${s.key}: ${briefSectionLabel(s.key)}】`, ...lines].join('\n');
   });
-  const body = ['【現状】', ...blocks];
+  const body = [
+    ...(region === 'kanagawa'
+      ? ['【教室の都県】神奈川県 ―― 神奈川の公立入試。推薦・換算内申・都立の話はしない', '']
+      : region === 'tokyo'
+        ? ['【教室の都県】東京都', '']
+        : []),
+    '【現状】',
+    ...blocks,
+  ];
   // ★約束・要望は現状の行とは別枠で渡す。followUps の item はこの文と1字も違えられないため、
   //   セクションの行に混ぜず「この文をそのまま使う」と見出しで明示する
   if (followUpItems.length > 0) {
