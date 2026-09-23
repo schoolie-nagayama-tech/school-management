@@ -173,6 +173,7 @@ export function TargetSchoolsPanel({ studentId, schoolId, onSaved }: Props) {
                 hensachi: candidate.hensachi,
                 sourceLabel: candidate.sourceLabel,
                 verifiedAt: candidate.verifiedAt,
+                accessLines: candidate.accessLines,
               },
             }
           : r

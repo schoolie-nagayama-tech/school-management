@@ -68,6 +68,8 @@ export interface HighSchoolSearchResult {
   hensachi: number | null;
   sourceLabel: string;
   verifiedAt: string | null;
+  /** 沿線。★最寄駅は持たせない（TargetSchoolMaster と同じ理由） */
+  accessLines: string[];
 }
 
 /**
@@ -276,6 +278,7 @@ export async function searchHighSchools(query: string): Promise<HighSchoolSearch
         hensachi: standard?.hensachi ?? null,
         sourceLabel: standard?.source_label ?? '',
         verifiedAt: standard?.verified_at ?? null,
+        accessLines: s.access_lines ?? [],
       };
     })
     .sort((a, b) => {
