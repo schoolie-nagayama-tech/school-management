@@ -25,6 +25,8 @@ import type { TextbookProgressData } from './ProgressPanel';
 import type { DisciplineSessionRow } from '@/lib/api/progress-sessions';
 import type { TargetSchoolMaster, TargetSchoolRow } from '@/lib/api/targetSchools';
 import { calcTokyoNaishin } from '@/lib/utils/convertedNaishin';
+import type { Region } from '@/lib/interview/region';
+import { TOKYO_NAISHIN_POINT_WEIGHT } from '@/lib/interview/scenes';
 
 /* ============================================================
  * 日付ユーティリティ
@@ -153,9 +155,15 @@ const NOTTA_META_KEYS = ['タイトル', '録音日時', '音声URL', '参加者
  * 「中身が無い」箇条書きの言い回し。
  * ★Nottaは話題が出なかった見出しも必ず立て、「〜は会話の中で確認できませんでした」と書く。
  *   実物では本文の半分がこれで埋まるため、見出しごと畳んで末尾に1行でまとめる。
+ * ★2026-09-23 に言い回しを足し、**箇条書き1件ずつ**落とすようにした。
+ *   「保護者からの明確な要望として確認できる発言はありません。」のような1件が中身のある
+ *   箇条書きに混ざると、②で「前回の要望」として読み上げ、「対応を伝える」行まで立っていた
+ *  （小川 華佳さんの実例）。
+ * ★文末で当てる（末尾の句点・空白は許す）。文中に「ありませんでした」を含むだけの
+ *   中身のある箇条書き（「宿題は問題ありませんでしたが、英語の小テストが…」）まで消さないため。
  */
 const NOTTA_EMPTY_BULLET =
-  /(見つかりませんでした|確認できませんでした|確認できません|記載がありません)/;
+  /(見つかりませんでした|確認できませんでした|確認できません|見当たりません|記載がありません|発言はありません|ありませんでした|特になし)[。．.\s]*$/;
 
 /** 行末に紛れ込む不可視文字（Nottaの出力に LRM が混ざる）ごと落とす */
 function trimNottaLine(line: string): string {
@@ -210,17 +218,18 @@ export function parseNottaSummary(content: string): NottaSummary | null {
     // 見出しが始まる前の行は捨てる（メタの残りか、Nottaの前置き）
     if (!current) continue;
     const bullet = trimNottaLine(line.replace(/^[・\-*]\s*/, ''));
-    if (bullet) current.bullets.push(bullet);
+    // ★「確認できませんでした」等の箇条書きは1件ずつ落とす（NOTTA_EMPTY_BULLET の注記）
+    if (bullet && !NOTTA_EMPTY_BULLET.test(bullet)) current.bullets.push(bullet);
   }
 
   if (sections.length === 0) return null;
 
-  // ★箇条書きが「確認できませんでした」等しか無い見出しは畳む。
+  // ★箇条書きがすべて落ちた見出しは畳む。
   //   1件も箇条書きが無い見出しも同じ扱い（読む人にとっては同じ「記載なし」）。
   const kept: NottaSection[] = [];
   const omitted: string[] = [];
   for (const s of sections) {
-    if (s.bullets.length === 0 || s.bullets.every((b) => NOTTA_EMPTY_BULLET.test(b))) {
+    if (s.bullets.length === 0) {
       omitted.push(s.heading);
     } else {
       kept.push(s);
@@ -998,7 +1007,7 @@ export function formatNaishin(
 }
 
 /** 生徒本人の直近の内申（report_card）から、換算内申（都立・65点満点）を計算する。無ければ null */
-function latestOwnNaishin(assessments: AssessmentWithScores[]): number | null {
+export function latestOwnNaishin(assessments: AssessmentWithScores[]): number | null {
   // assessments は新しい順（降順）で来る前提（computeScoreSummary と同じ前提）
   const latest = assessments.find((a) => a.category === 'report_card');
   if (!latest) return null;
@@ -1008,7 +1017,7 @@ function latestOwnNaishin(assessments: AssessmentWithScores[]): number | null {
 }
 
 /** 生徒本人の直近の模試（mock）の5科偏差値（hensa_5）。無ければ null */
-function latestOwnHensachi(assessments: AssessmentWithScores[]): number | null {
+export function latestOwnHensachi(assessments: AssessmentWithScores[]): number | null {
   const latest = assessments.find(
     (a) => a.category === 'mock' && a.scores.some((s) => s.subject === 'hensa_5')
   );
@@ -1055,13 +1064,12 @@ function targetSchoolStandardParts(
   ownHensachi: number | null
 ): string[] {
   const parts: string[] = [];
+  const { naishinDiff, hensachiDiff } = targetSchoolDiffs(master, ownNaishin, ownHensachi);
 
   if (master.naishin != null) {
-    const comparable = master.naishinMax == null || master.naishinMax === 65;
-    if (ownNaishin != null && comparable) {
-      const diff = ownNaishin - master.naishin;
+    if (naishinDiff != null) {
       parts.push(
-        `${formatNaishin(master.naishin, master.naishinMax)}（${diff >= 0 ? '+' : ''}${diff}）`
+        `${formatNaishin(master.naishin, master.naishinMax)}（${naishinDiff >= 0 ? '+' : ''}${naishinDiff}）`
       );
     } else {
       // 本人の内申が無い／満点が違って引けない。めやすだけを分母つきで示す
@@ -1070,15 +1078,38 @@ function targetSchoolStandardParts(
   }
 
   if (master.hensachi != null) {
-    if (ownHensachi != null) {
-      const diff = ownHensachi - master.hensachi;
-      parts.push(`必要偏差値${master.hensachi}（${diff >= 0 ? '+' : ''}${diff}）`);
+    if (hensachiDiff != null) {
+      parts.push(`必要偏差値${master.hensachi}（${hensachiDiff >= 0 ? '+' : ''}${hensachiDiff}）`);
     } else {
       parts.push(`必要偏差値${master.hensachi}`);
     }
   }
 
   return parts;
+}
+
+/**
+ * 本人とめやすの差（本人 − めやす）。引けないときは null。
+ *
+ * ★満点が65以外（3教科校=75・産業技術高専=52）の学校とは内申の差を取らない。
+ *   理由は targetSchoolStandardParts の注記のとおり。右の「志望校」の行（数字）と
+ *   左の「話すこと」（buildTargetSchoolTalkLines）が**同じこの関数**を通るので、
+ *   片方だけ差が出て片方は出ない、という食い違いが起きない。
+ */
+function targetSchoolDiffs(
+  master: TargetSchoolMaster,
+  ownNaishin: number | null,
+  ownHensachi: number | null
+): { naishinDiff: number | null; hensachiDiff: number | null } {
+  const comparable = master.naishinMax == null || master.naishinMax === 65;
+  return {
+    naishinDiff:
+      master.naishin != null && ownNaishin != null && comparable
+        ? ownNaishin - master.naishin
+        : null,
+    hensachiDiff:
+      master.hensachi != null && ownHensachi != null ? ownHensachi - master.hensachi : null,
+  };
 }
 
 /**
@@ -1144,6 +1175,117 @@ export function buildTargetSchoolGapLines(
   return { tell, ask: [] };
 }
 
+/** ④の左（話すこと）に出す、志望校についての1行。say＝言う／ask＝聞く（チェック付き） */
+export interface TargetSchoolTalkLine {
+  kind: 'say' | 'ask';
+  text: string;
+}
+
+/**
+ * ④現状の確認: 志望校について**話すこと**（左の列）を学校ごとに組む。
+ *
+ * ★2026-09-23 の教室長レビューで足した。右に「めやす 必要内申49（+4）・必要偏差値55（-1）」が
+ *   出ていても、左が「見学に行ったか」の定型だけでは、その数字から何を言うかが台本に無かった。
+ * ★AIには書かせない。差の数字はシステムが計算したものなので、ここでは数字を使ってよい
+ *  （AIに数字を書かせない決まりは「書き写しの1字違いに誰も気づけない」ため。計算した本人が
+ *   組むならその心配は無い）。
+ * ★差は targetSchoolDiffs を通す。右の「志望校」の行と同じ関数なので、満点が違う学校
+ *  （75点満点・52点満点）で内申の話をしない、という決まりも自動で揃う。
+ * ★東京と神奈川で言うことを変える。
+ *   - 「換算内申1点は当日の素点で約3点ぶん」は都立の1020点方式の話（scenes.ts と同じ定数）。
+ *   - 「推薦」は都立の推薦入試のこと。神奈川の公立には東京の意味での推薦入試が無いので、
+ *     推薦の言葉を出さず、中立な比較だけにする。
+ *   - 都県が分からない教室（region=null）も神奈川と同じ中立な形に倒す。どちらの制度か
+ *     言えない話を出すより、比べた事実だけ言うほうが事故が小さい。
+ */
+export function buildTargetSchoolTalkLines(
+  targetSchools: readonly TargetSchoolRow[],
+  ownNaishin: number | null,
+  ownHensachi: number | null,
+  region: Region | null
+): TargetSchoolTalkLine[] {
+  const isTokyo = region === 'tokyo';
+  const lines: TargetSchoolTalkLine[] = [];
+
+  for (const school of targetSchools) {
+    const name = school.master?.schoolName ?? school.schoolName;
+    const { naishinDiff, hensachiDiff } = school.master
+      ? targetSchoolDiffs(school.master, ownNaishin, ownHensachi)
+      : { naishinDiff: null, hensachiDiff: null };
+
+    if (naishinDiff == null && hensachiDiff == null) {
+      lines.push({
+        kind: 'say',
+        text: `${name}：めやすと比べる材料が無い（内申・模試を聞いて入れる）`,
+      });
+      continue;
+    }
+
+    // --- 内申 ---
+    if (naishinDiff != null) {
+      if (naishinDiff > 0) {
+        lines.push({
+          kind: 'say',
+          text: isTokyo
+            ? `${name}：内申はめやすを${naishinDiff}上回っている。推薦も一般も内申が武器になる`
+            : `${name}：内申はめやすを${naishinDiff}上回っている。内申が武器になる`,
+        });
+      } else if (naishinDiff < 0) {
+        lines.push({
+          kind: 'say',
+          text:
+            `${name}：内申がめやすに${-naishinDiff}届かない。当日の点で取り返す` +
+            (isTokyo ? `（${TOKYO_NAISHIN_POINT_WEIGHT}）` : ''),
+        });
+      } else {
+        lines.push({ kind: 'say', text: `${name}：内申はめやすちょうど` });
+      }
+    }
+
+    // --- 偏差値 ---
+    if (hensachiDiff != null) {
+      // 学校名は内申の行で出していれば繰り返さない。「も」は内申もプラスのときだけ
+      const head = naishinDiff == null ? `${name}：` : '';
+      if (hensachiDiff > 0) {
+        const particle = naishinDiff != null && naishinDiff > 0 ? 'も' : 'は';
+        lines.push({
+          kind: 'say',
+          text: `${head}偏差値${particle}めやすを${hensachiDiff}上回っている。このまま維持`,
+        });
+      } else if (hensachiDiff < 0) {
+        lines.push({
+          kind: 'say',
+          text: `${head}偏差値はめやすまであと${-hensachiDiff}。次の模試で届く幅かを一緒に見る`,
+        });
+      } else {
+        lines.push({ kind: 'say', text: `${head}偏差値はめやすちょうど` });
+      }
+    }
+
+    // --- 組み合わせ（両方そろったときだけ） ---
+    if (naishinDiff != null && hensachiDiff != null) {
+      if (naishinDiff > 0 && hensachiDiff > 0) {
+        lines.push({
+          kind: 'ask',
+          text: `${name}は第${school.rank}志望として安全圏。上の学校を狙うかを聞く`,
+        });
+      } else if (naishinDiff > 0 && hensachiDiff < 0) {
+        // ★内申が効く推薦のほうが有利になりうる。神奈川には東京の意味での推薦が無いので出さない
+        if (isTokyo) lines.push({ kind: 'ask', text: `${name}の推薦を受けるか聞く` });
+      } else if (naishinDiff < 0 && hensachiDiff > 0) {
+        lines.push({
+          kind: 'say',
+          text: isTokyo
+            ? `${name}は一般入試の当日点で勝負する形になる`
+            : `${name}は当日の学力検査で勝負する形になる`,
+        });
+      }
+    }
+  }
+
+  return lines;
+}
+
 /* ============================================================
  * ②ヒアリング: 前回の約束・前回の要望
  * ------------------------------------------------------------
@@ -1167,6 +1309,25 @@ const MAX_PREVIOUS_PROMISES = 5;
  *   保護者と約束したことは、この3つのどこに書かれるか運用で決まっていないため。
  */
 const PREVIOUS_REQUEST_HEADING = /(保護者からの要望|要望|次回への申し送り|今後の方針)/;
+
+/**
+ * 要望の「中身」ではなく、要望について**論評している**箇条書き。
+ * ★Nottaは要望の節に「要望の強さは、具体的な依頼というより進路選択に関する相談・
+ *   不安の表明レベルです。」のような所見を混ぜる（小川 華佳さんの実例）。
+ *   これを「前回の要望」として拾うと、②で「〜への対応を伝える」という意味の通らない行が立つ。
+ * ★当てる範囲は狭くしてある（頭が「要望の強さ」「要望は」「要望としては」、または
+ *   「というより」「レベルです」を含むものだけ）。要望そのものを取りこぼすほうが害が大きいので、
+ *   広げるときは実物の文で確かめてから足すこと。
+ * ★面談記録カード（parseNottaSummary の表示）では消さない。所見として読む価値はあるので、
+ *   ②の「前回の要望」に拾うときだけ外す。
+ * ★「〜がうかがえます」「〜が見られます」「〜と思われます」で終わる文も外す（2026-09-23 追加）。
+ *   保護者が言ったことではなく、Notta が様子から推し量った所見。小川 華佳さんの
+ *   「推薦入試の結果や志望校の倍率に対する不安が強く、早く安心したい気持ちが見られます。」が
+ *   「報告 ―― 前回の要望『…気持ちが見られます。』への対応を伝える」になっていた。
+ *   ②の読み取り（AI）には申し送りとして全文が渡るので、所見そのものは失われない。
+ */
+const PREVIOUS_REQUEST_COMMENTARY =
+  /^(要望の強さ|要望は|要望としては)|というより|レベルです|(うかがえます|伺えます|見られます|と思われます|と考えられます)。?$/;
 
 /** 'YYYY-MM-DD' を 'M/D' にする（狭い枠に出す事実の行では年を落とす） */
 export function fmtMonthDay(dateStr: string): string {
@@ -1221,10 +1382,21 @@ export interface PreviousCommitmentLines {
  *
  * 保護者からの**要望**は、その後こちらがどう対応したかを塾から伝えるもの
  * （聞き返すと「前に頼んだのに何もしていないのか」になる）。
- * 一方で約束・申し送り・今後の方針は、家庭側が動いた結果を聞く side が多い。
+ * 一方で約束・申し送り・今後の方針は、家庭側が動いた結果を聞く側が多い。
+ *
+ * ★ただし今後の方針・申し送りでも、塾が引き受けた行動（「〜を確認します」「〜を準備します」）は
+ *   報告にする（2026-09-23・小川 華佳さんの実例）。Notta は「次回までに…推薦入試の条件を確認します」
+ *   のように塾の宿題を方針として書く。これを「その後どうですか」と保護者に聞くのは筋が違う。
+ *   語尾で当てるのは、AIが使えない日の受け皿だから（AIが動けば AI が1件ずつ決める）。
+ *   家庭と塾のどちらの行動とも読める「検討します」は含めない（聞くほうに倒す）。
  */
-export function previousItemFallbackKind(source: string): FollowUpFallbackKind {
-  return source !== 'task' && /要望/.test(source) ? 'report' : 'ask';
+const SCHOOL_SIDE_ACTION =
+  /(確認します|準備します|進めます|用意します|提案します|お伝えします|共有します)。?$/;
+
+export function previousItemFallbackKind(source: string, text = ''): FollowUpFallbackKind {
+  if (source === 'task') return 'ask';
+  if (/要望/.test(source)) return 'report';
+  return SCHOOL_SIDE_ACTION.test(text) ? 'report' : 'ask';
 }
 
 /** 左（話すこと）: 「前回の『◯◯』はその後どうですか」 */
@@ -1232,9 +1404,14 @@ export function previousFollowUpAskLine(text: string): string {
   return `前回の「${clipForTalk(text)}」はその後どうですか`;
 }
 
-/** 左（話すこと）: 対応を口頭で伝える行（中身は教室長が埋める） */
-export function previousFollowUpReportLine(text: string): string {
-  return `報告 ―― 前回の要望「${clipForTalk(text)}」への対応を伝える`;
+/**
+ * 左（話すこと）: 対応を口頭で伝える行（中身は教室長が埋める）。
+ * ★出どころで言い方を変える。要望なら「対応を伝える」、塾が引き受けた方針なら「進み具合を伝える」
+ */
+export function previousFollowUpReportLine(text: string, source = '要望'): string {
+  return /要望/.test(source)
+    ? `報告 ―― 前回の要望「${clipForTalk(text)}」への対応を伝える`
+    : `報告 ―― 前回決めた「${clipForTalk(text)}」の進み具合を伝える`;
 }
 
 /**
@@ -1279,13 +1456,15 @@ export function buildPreviousCommitmentLines(
         if (requests.length >= MAX_PREVIOUS_REQUESTS) break;
         const text = bullet.replace(/\s+/g, ' ').trim();
         if (!text) continue;
+        // 要望そのものではなく要望への論評（PREVIOUS_REQUEST_COMMENTARY の注記）
+        if (PREVIOUS_REQUEST_COMMENTARY.test(text)) continue;
         requests.push(text);
         // ★同じ文面が約束にもあるときは、先に積んだ約束のほうを残す（2回追いかけさせない）
         if (!items.some((i) => i.text === text)) {
           items.push({
             text,
             source: section.heading,
-            fallback: previousItemFallbackKind(section.heading),
+            fallback: previousItemFallbackKind(section.heading, text),
           });
         }
       }

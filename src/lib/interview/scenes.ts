@@ -221,6 +221,14 @@ const COMMON_TIMING_TAIL: TimingGrid = {
   high3: { spring: [], summer: [], winter: [] },
 };
 
+/**
+ * 都立の「内申1点の重み」。★③（中3・夏）の定型と、④の志望校の話
+ *（interview.shared.ts の buildTargetSchoolTalkLines）の両方で使う。
+ *   数字を2か所に書くと片方だけ直して食い違うので、ここ1か所に持つ。
+ * ★東京だけの話。神奈川は内申と当日点の比が学校ごとに違うので使わない。
+ */
+export const TOKYO_NAISHIN_POINT_WEIGHT = '換算内申1点は当日の素点で約3点ぶん';
+
 /** 都県ごとの話。★入試制度・日程・教科別対策はここ */
 const REGION_TIMING: Record<Region, TimingGrid> = {
   tokyo: {
@@ -252,7 +260,7 @@ const REGION_TIMING: Record<Region, TimingGrid> = {
         '7〜8月 ―― 部活が終わり、まとまった時間が取れる最後の時期',
         '9月以降 ―― 内申が決まる2学期。三者面談と出願までの流れ',
         '夏と冬の違い ―― 冬は範囲を詰められない。戻れるのは夏だけ',
-        '内申1点の重み ―― 換算内申1点は当日の素点で約3点ぶん。当日がそのぶんラクになる',
+        `内申1点の重み ―― ${TOKYO_NAISHIN_POINT_WEIGHT}。当日がそのぶんラクになる`,
         '★私立を併願するなら、動けるのは11月の三者面談まで。12月15日からは先生同士の入試相談',
       ],
       // ★教室長の言葉で書き直した（2026-09-22）。資料から起こした制度の説明より、

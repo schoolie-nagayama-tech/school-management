@@ -315,6 +315,36 @@ describe('Nottaの要約を構造化する（parseNottaSummary）', () => {
     expect(parseNottaSummary('【タイトル】面談\n【録音日時】2026/08/03')).toBeNull();
   });
 
+  it('★中身のある見出しに混ざった「発言はありません」等は、その1件だけ落とす', () => {
+    // 小川 華佳さんの実物。要望の節に「無い」という箇条書きが混ざり、②で要望として読み上げていた
+    const parsed = parseNottaSummary(
+      [
+        '■ 保護者からの要望',
+        '・保護者からの明確な要望として確認できる発言はありません。',
+        '・志望校選びの相談をしたい',
+        '■ 前回の確認',
+        '・前回の面談での約束事項について明確な記録は確認できません',
+        '■ 相談事項',
+        '・部活は特になし',
+        '・進路の相談',
+      ].join('\n')
+    );
+    expect(parsed!.sections.map((s) => s.heading)).toEqual(['保護者からの要望', '相談事項']);
+    expect(parsed!.sections[0].bullets).toEqual(['志望校選びの相談をしたい']);
+    expect(parsed!.sections[1].bullets).toEqual(['進路の相談']);
+    // すべて落ちた見出しは従来どおり omitted へ
+    expect(parsed!.omitted).toEqual(['前回の確認']);
+  });
+
+  it('★文末で当てる。文中に「ありませんでした」を含むだけの箇条書きは残す', () => {
+    const parsed = parseNottaSummary(
+      ['■ 塾からの報告', '・宿題は問題ありませんでしたが、英語の小テストが続けて低い'].join('\n')
+    );
+    expect(parsed!.sections[0].bullets).toEqual([
+      '宿題は問題ありませんでしたが、英語の小テストが続けて低い',
+    ]);
+  });
+
   it('箇条書きが1件も無い見出しも「記載なし」に回す', () => {
     const parsed = parseNottaSummary(['■ 前回の確認', '■ 相談事項', '・進路の相談'].join('\n'));
     expect(parsed!.omitted).toEqual(['前回の確認']);
