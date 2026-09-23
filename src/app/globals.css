@@ -552,9 +552,44 @@ a:focus-visible {
     margin: 10mm;
   }
 
-  /* 面談ワークスペース印刷シート: A4縦1枚（画面上は hidden、印刷時だけ表示） */
+  /* 面談ワークスペース印刷シート: A4縦1枚（画面上は hidden、印刷時だけ表示）。
+     ★以前は縦2枚＋末尾に横向きの白紙1枚が出ていた（2026-09-23 教室長の報告）。原因は2つ:
+     (1) シートの後ろに、ルートレイアウトの箱（sonner の通知枠 <section>・ToastContainer・
+         Next のルート告知）が残っていた。名前付きページ（縦）の外の箱は既定の @page（横）に
+         載るので、高さ0でも横向きのページが1枚増える。これらは AdminLayout の外（app/layout.tsx）
+         にあるので、提案書のような「中身を包む root に page を付ける」方式では届かない。
+         そこで「シートがあるページ」を :has() で判定し、body ごと縦ページにしたうえで、
+         シートとその祖先以外の箱を印刷では全部消す。★シートがあるのは面談ページだけなので、
+         他の画面の印刷には効かない。
+     (2) 中身が長いと縦2枚に溢れていた → シートを紙の大きさの固定の箱にする（下）。 */
+  html:has(.interview-report-print-page),
+  body:has(.interview-report-print-page) {
+    page: interviewreport;
+  }
+  /* スマホ幅のボトムナビ用の下余白（body.has-bottom-nav）は、印刷の紙幅（190mm≒718px）でも
+     max-width:1023px に当たって効いてしまい、シートの後ろに余白の2枚目を作る。印刷では消す */
+  body:has(.interview-report-print-page) {
+    margin: 0 !important;
+    padding: 0 !important;
+    min-height: 0 !important;
+  }
+  body:has(.interview-report-print-page)
+    *:not(:has(.interview-report-print-page)):not(.interview-report-print-page):not(
+      .interview-report-print-page *
+    ) {
+    display: none !important;
+  }
+  /* 紙1枚の固定の箱。A4縦(297mm)−上下余白(10mm×2)=277mm。★1mm 小さくして 276mm にしている
+     （ちょうど277mmだと端数の丸めで空の2枚目が出ることがある）。溢れは次の紙へ流さず切る。
+     何を先に削るかは InterviewPrintSheet.tsx / printCaps.ts 側で決めている */
   .interview-report-print-page {
     page: interviewreport;
+    width: 190mm;
+    height: 276mm;
+    overflow: hidden;
+    break-before: avoid;
+    break-after: avoid;
+    break-inside: avoid;
   }
   @page interviewreport {
     size: A4 portrait;

@@ -1605,6 +1605,22 @@ describe('前回の要望から「無い」と論評を外す（2026-09-23 教�
     '・狛江と調布北で迷っている',
   ].join('\n');
 
+  it('★常体の「確認できなかった。」も前回の要望に出さない（松村 知佳さんの実例）', () => {
+    const { requests, items } = buildPreviousCommitmentLines([
+      interviewRow({
+        content: [
+          '■ 保護者からの要望',
+          '・保護者からの要望は会話内では確認できなかった。',
+          '・保護者の感情面についても会話内では確認できなかった。',
+          '・宿題をやらなかった日が続いたので声かけしてほしい',
+        ].join('\n'),
+      }),
+    ]);
+    // 「なかった」で終わる中身のある要望は残す（単独の「なかった」では消さない）
+    expect(requests).toEqual(['宿題をやらなかった日が続いたので声かけしてほしい']);
+    expect(items.map((i) => i.text)).toEqual(['宿題をやらなかった日が続いたので声かけしてほしい']);
+  });
+
   it('★「発言はありません」と論評の箇条書きは前回の要望に出さない', () => {
     const { requests, items, asks } = buildPreviousCommitmentLines([
       interviewRow({ content: OGAWA_RECORD }),
