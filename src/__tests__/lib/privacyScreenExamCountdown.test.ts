@@ -22,7 +22,7 @@ describe('プライバシースクリーンの入試カウントダウン', () =
     expect(c!.label).toBe('都立入試まで');
   });
 
-  it('曜日は出さない（examDates の日付がまだ疑わしいため）', () => {
+  it('曜日は出さない（短く保つため）', () => {
     const c = examCountdownForSchool(new Date(2026, 8, 22), NAGAYAMA);
     expect(c!.dateLabel).not.toMatch(/[（(]/);
   });
