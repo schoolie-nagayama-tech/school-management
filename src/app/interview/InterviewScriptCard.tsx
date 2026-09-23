@@ -64,12 +64,14 @@ import type { SeasonalProposalSeasonSummary } from '@/lib/api/seasonalProposalSu
 import type { ScheduleRegularPattern } from '@/types/schedule';
 import type { StudentExamGoalWithType } from '@/lib/api/progress';
 import type { TargetSchoolRow } from '@/lib/api/targetSchools';
+import type { MockSchoolRecord } from '@/lib/api/mockTargetSchools';
 import { SEASON_LABELS } from '@/types/database';
 import type { TextbookProgressData } from './ProgressPanel';
 import {
   buildTellSections,
   buildGoalAchievementLines,
   buildKoushuHistoryLines,
+  buildMockSchoolLines,
   buildMissingRecordAskLines,
   buildPreviousCommitmentLines,
   buildTargetSchoolGapLines,
@@ -92,6 +94,9 @@ import {
   SCENE_LABEL,
   SCENE_OF_SECTION,
   ASK_LINES,
+  HEARING_GROUP_KEYS,
+  HEARING_GROUPS,
+  hearingGroupOfSection,
   SHOW_LINES,
   INTRO_LINES,
   CLOSING_LINES,
@@ -100,6 +105,7 @@ import {
   timingQa,
   planRationaleLines,
   isExamGrade,
+  type HearingGroupKey,
   type SceneKey,
 } from '@/lib/interview/scenes';
 import { examCountdownLine, examApplicationLine } from '@/lib/interview/examDates';
@@ -154,6 +160,8 @@ interface Props {
   examGoals: StudentExamGoalWithType[];
   /** 志望校（④現状の確認「志望校」の材料） */
   targetSchools: TargetSchoolRow[];
+  /** 模試の志望校と合格可能性（④現状の確認「直近の模試」の材料） */
+  mockSchools: MockSchoolRecord[];
   /** 科目ID→科目名（⑤プラン提示「講習の履歴」の科目名に使う） */
   subjectNames: Record<string, string>;
   /** 材料の読み込み中はボタンを押させない（半端な材料でまとめても作り直しになる） */
@@ -450,6 +458,7 @@ export function InterviewScriptCard({
   regularPatterns,
   examGoals,
   targetSchools,
+  mockSchools,
   subjectNames,
   loading,
   onResult,
@@ -530,6 +539,7 @@ export function InterviewScriptCard({
         koushuSummaries,
         subjectNames,
         targetSchools,
+        mockSchools,
       }),
     [
       assessments,
@@ -540,11 +550,12 @@ export function InterviewScriptCard({
       koushuSummaries,
       subjectNames,
       targetSchools,
+      mockSchools,
     ]
   );
 
   // ②ヒアリング「目標の達成度」。AIセクションを通さない「伝える」「聞く」行なので、
-  // buildTellSections とは別に持って scenes.ts の静的な ASK_LINES.hearing に足し込む。
+  // buildTellSections とは別に持って②「学校」の小見出しに足し込む。
   const goalAchievement = useMemo(
     () => buildGoalAchievementLines(examGoals, assessments),
     [examGoals, assessments]
@@ -553,6 +564,11 @@ export function InterviewScriptCard({
   const targetSchoolGap = useMemo(
     () => buildTargetSchoolGapLines(targetSchools, assessments),
     [targetSchools, assessments]
+  );
+  // ④現状の確認「直近の模試」。合格可能性と、登録に無い公立校（あれば聞く）
+  const mockSchoolLines = useMemo(
+    () => buildMockSchoolLines(mockSchools, assessments, targetSchools),
+    [mockSchools, assessments, targetSchools]
   );
   // ②ヒアリング「前回の約束・前回の要望」と、そこから組む「その後どうですか」。
   // ★AIには書かせない（件数と文言が確実でないと面談で使えない）
@@ -788,8 +804,8 @@ export function InterviewScriptCard({
 
   /**
    * セクション1つぶんの「事実」の行。
-   * ★②ヒアリングは面談で話す順（前回の面談から→約束→要望→授業の様子→宿題・遅刻）に
-   *   並べ替えたいので、シーン単位ではなくキー単位で取り出せるようにしてある。
+   * ★②ヒアリングは小見出し（振り返り／学校／塾／家庭）ごとに出すので、
+   *   シーン単位ではなくキー単位で取り出せるようにしてある。
    *   BRIEF_SECTIONS の順（AIへ送る順）は変えない。
    */
   const aiFactLinesOf = (key: BriefSectionKey): ReactNode[] =>
@@ -820,39 +836,8 @@ export function InterviewScriptCard({
         return INTRO_LINES.map((t, i) => <SayLine key={i} text={t} />);
 
       case 'hearing':
-        return [
-          ...aiSeenLines('hearing'),
-          /**
-           * ★前回の約束・要望は、1件ずつ「報告する」か「聞く」かを分ける（2026-09-23）。
-           *   一律に「その後どうですか」と聞いていたが、保護者からの要望
-           *  （「英語の長文を増やしてほしい」）は塾が対応を**報告する**ことで、
-           *   聞き返すと「前に頼んだのに何もしていないのか」になる（教室長の指摘）。
-           * ★判定はAI（followUps）。返ってこなかった項目・AIが使えない日は
-           *   出どころ（item.fallback）で振る。
-           */
-          ...previous.items.map((item, i) => {
-            const hit = followUpByItem.get(followUpItemKey(item.text));
-            const kind = hit?.kind ?? item.fallback;
-            if (kind === 'report') {
-              return hit?.text ? (
-                <ReportRow key={`hearing:followup:${i}`} text={hit.text} />
-              ) : (
-                // AIが書いていない報告は、中身を教室長が口頭で埋める（行だけ立てる）
-                <SayLine
-                  key={`hearing:followup:${i}`}
-                  text={previousFollowUpReportLine(item.text, item.source)}
-                />
-              );
-            }
-            return askLine(
-              `hearing:followup:${i}`,
-              hit?.text || previousFollowUpAskLine(item.text)
-            );
-          }),
-          ...askLines.map((t, i) => askLine(`hearing:${i}`, t)),
-          // 目標はあるが結果が成績側にまだ入っていない試験。台本が入力を促す形にする
-          ...goalAchievement.ask.map((t, i) => askLine(`hearing:goal:${i}`, t)),
-        ];
+        // ★②は小見出しごとに組む（hearingSayLines）。ここには来ない
+        return [];
 
       case 'timing':
         if (timing.length === 0 && qa.length === 0) {
@@ -919,6 +904,8 @@ export function InterviewScriptCard({
           ...missingRecordAsk.map((t, i) => askLine(`status:missing:${i}`, t)),
           // 志望校が1件も登録されていないとき
           ...targetSchoolGap.ask.map((t, i) => askLine(`status:target-school:${i}`, t)),
+          // 模試に書いたのに志望校に登録されていない公立校
+          ...mockSchoolLines.ask.map((t, i) => askLine(`status:mock-school:${i}`, t)),
           // ★登録がある生徒には、めやすの数字ではなく「動いたか」を聞く
           ...(targetSchools.length > 0
             ? TARGET_SCHOOL_ASK_LINES.map((t, i) => askLine(`status:target-school-ask:${i}`, t))
@@ -956,29 +943,8 @@ export function InterviewScriptCard({
   const sceneFactLines = (scene: SceneKey): ReactNode[] => {
     switch (scene) {
       case 'hearing':
-        // ★並びは面談で話す順（前回の面談から → 前回の約束 → 前回の要望 → 授業の様子 →
-        //   宿題・遅刻 → 目標の達成度）。表示の順であって、AIへ送る順（BRIEF_SECTIONS）は変えない
-        return [
-          ...aiFactLinesOf('lastInterview'),
-          // 前回の約束（未完了のタスク）。1件1行
-          ...previous.promises.map((t, i) => (
-            <TellLine key={`promise-${i}`} text={i === 0 ? `前回の約束${FACT_SEPARATOR}${t}` : t} />
-          )),
-          // 前回の要望（直近の面談記録の「要望」「申し送り」「今後の方針」）
-          ...previous.requests.map((t, i) => (
-            <TellLine
-              key={`request-${i}`}
-              text={i === 0 ? `前回の要望・方針${FACT_SEPARATOR}${t}` : t}
-            />
-          )),
-          ...aiFactLinesOf('lessons'),
-          ...aiFactLinesOf('discipline'),
-          ...aiFactLinesOf('parent'),
-          // 目標の達成度。AIを通さず、システムが試験目標と成績を突き合わせて組む行
-          ...goalAchievement.tell.map((t, i) => (
-            <TellLine key={`goal-${i}`} text={i === 0 ? `目標の達成度${FACT_SEPARATOR}${t}` : t} />
-          )),
-        ];
+        // ★②は小見出しごとに組む（hearingFactLines）。ここには来ない
+        return [];
 
       case 'timing':
         return [
@@ -995,6 +961,8 @@ export function InterviewScriptCard({
           ...targetSchoolGap.tell.map((t, i) => (
             <TellLine key={`gap-${i}`} text={i === 0 ? `志望校${FACT_SEPARATOR}${t}` : t} />
           )),
+          // 直近の模試の合格可能性（前回との比較つき）と、登録に無い公立校の指摘
+          ...mockSchoolLines.tell.map((t, i) => <TellLine key={`mock-school-${i}`} text={t} />),
         ];
 
       case 'plan':
@@ -1027,6 +995,125 @@ export function InterviewScriptCard({
         return [];
     }
   };
+
+  /* ----------------------------------------------------------
+   * ②ヒアリングは小見出し（振り返り／学校／塾／家庭）ごとに左右を組む
+   * ★どのAIセクションをどの小見出しに出すか・何を聞くかは scenes.ts の
+   *   HEARING_GROUP_OF_SECTION / HEARING_GROUPS が決める。ここで決め打ちしない。
+   * -------------------------------------------------------- */
+
+  /** その小見出しに属するAIセクション（BRIEF_SECTIONS の並びのまま） */
+  const sectionsOfGroup = (group: HearingGroupKey): ScriptSectionView[] =>
+    view ? view.sections.filter((s) => hearingGroupOfSection(s.key) === group) : [];
+
+  /** 左（話すこと） */
+  const hearingSayLines = (group: HearingGroupKey): ReactNode[] => {
+    const seen: ReactNode[] = hasAnySeen
+      ? sectionsOfGroup(group).map((s) => (
+          <SeenLine
+            key={s.key}
+            label={s.label}
+            value={s.seen}
+            sign={s.sign}
+            onChange={(v) => editSeen(s.key, v)}
+          />
+        ))
+      : [];
+    const asks = HEARING_GROUPS[group].ask.map((t, i) => askLine(`hearing:${group}:${i}`, t));
+
+    switch (group) {
+      case 'review':
+        return [
+          /**
+           * ★前回の約束・要望は、1件ずつ「報告する」か「聞く」かを分ける（2026-09-23）。
+           *   一律に「その後どうですか」と聞いていたが、保護者からの要望
+           *  （「英語の長文を増やしてほしい」）は塾が対応を**報告する**ことで、
+           *   聞き返すと「前に頼んだのに何もしていないのか」になる（教室長の指摘）。
+           * ★判定はAI（followUps）。返ってこなかった項目・AIが使えない日は
+           *   出どころ（item.fallback）で振る。
+           */
+          ...previous.items.map((item, i) => {
+            const hit = followUpByItem.get(followUpItemKey(item.text));
+            const kind = hit?.kind ?? item.fallback;
+            if (kind === 'report') {
+              return hit?.text ? (
+                <ReportRow key={`hearing:followup:${i}`} text={hit.text} />
+              ) : (
+                // AIが書いていない報告は、中身を教室長が口頭で埋める（行だけ立てる）
+                <SayLine
+                  key={`hearing:followup:${i}`}
+                  text={previousFollowUpReportLine(item.text, item.source)}
+                />
+              );
+            }
+            return askLine(
+              `hearing:followup:${i}`,
+              hit?.text || previousFollowUpAskLine(item.text)
+            );
+          }),
+          ...seen,
+          ...asks,
+        ];
+      case 'school':
+        return [
+          ...seen,
+          ...asks,
+          // 目標はあるが結果が成績側にまだ入っていない試験。台本が入力を促す形にする
+          ...goalAchievement.ask.map((t, i) => askLine(`hearing:goal:${i}`, t)),
+        ];
+      default:
+        // 塾＝AIの着眼点（家庭では見えない塾での様子）／家庭＝着眼点のあとに聞くこと
+        return [...seen, ...asks];
+    }
+  };
+
+  /** 右（事実） */
+  const hearingFactLines = (group: HearingGroupKey): ReactNode[] => {
+    const sectionFacts = sectionsOfGroup(group).flatMap((s) => aiFactLinesOf(s.key));
+    switch (group) {
+      case 'review':
+        // ★並びは話す順（前回の面談から → 前回の約束 → 前回の要望・方針）
+        return [
+          ...sectionFacts,
+          // 前回の約束（未完了のタスク）。1件1行
+          ...previous.promises.map((t, i) => (
+            <TellLine key={`promise-${i}`} text={i === 0 ? `前回の約束${FACT_SEPARATOR}${t}` : t} />
+          )),
+          // 前回の要望（直近の面談記録の「要望」「申し送り」「今後の方針」）
+          ...previous.requests.map((t, i) => (
+            <TellLine
+              key={`request-${i}`}
+              text={i === 0 ? `前回の要望・方針${FACT_SEPARATOR}${t}` : t}
+            />
+          )),
+        ];
+      case 'school':
+        // 目標の達成度。AIを通さず、システムが試験目標と成績を突き合わせて組む行
+        return [
+          ...sectionFacts,
+          ...goalAchievement.tell.map((t, i) => (
+            <TellLine key={`goal-${i}`} text={i === 0 ? `目標の達成度${FACT_SEPARATOR}${t}` : t} />
+          )),
+        ];
+      default:
+        return sectionFacts;
+    }
+  };
+
+  /** 左右の2列。★右が空のときは枠ごと出さない（全シーン共通の見た目） */
+  const sayFactGrid = (sayLines: ReactNode[], factLines: ReactNode[]) => (
+    <div className="grid items-start gap-x-6 gap-y-2 lg:grid-cols-2">
+      <div className="flex flex-col gap-1.5">{sayLines}</div>
+      {/* 右は少し静かに（薄い背景・小さめ）。空のシーンでは枠ごと出さない */}
+      {factLines.length > 0 ? (
+        <div className="flex flex-col gap-1 rounded-r-md border-l border-border-subtle bg-surface-hover px-3 py-1.5">
+          {factLines}
+        </div>
+      ) : (
+        <div aria-hidden="true" />
+      )}
+    </div>
+  );
 
   return (
     <>
@@ -1140,17 +1227,36 @@ export function InterviewScriptCard({
                     )}
                   </div>
 
-                  <div className="grid items-start gap-x-6 gap-y-2 lg:grid-cols-2">
-                    <div className="flex flex-col gap-1.5">{sayLines}</div>
-                    {/* 右は少し静かに（薄い背景・小さめ）。空のシーンでは枠ごと出さない */}
-                    {factLines.length > 0 ? (
-                      <div className="flex flex-col gap-1 rounded-r-md border-l border-border-subtle bg-surface-hover px-3 py-1.5">
-                        {factLines}
-                      </div>
-                    ) : (
-                      <div aria-hidden="true" />
-                    )}
-                  </div>
+                  {scene === 'hearing' ? (
+                    /**
+                     * ②は小見出し（振り返り／学校／塾／家庭）ごとに左右を組む。
+                     * ★左右どちらも空の小見出しは出さない（見出しだけ立てると「抜けている」に見える）。
+                     *   片側だけ空のときは空のまま（事実が無いことに埋め草を置かない）。
+                     */
+                    <div className="flex flex-col gap-3">
+                      {HEARING_GROUP_KEYS.map((group) => {
+                        const groupSay = hearingSayLines(group);
+                        const groupFact = hearingFactLines(group);
+                        if (groupSay.length === 0 && groupFact.length === 0) return null;
+                        const meta = HEARING_GROUPS[group];
+                        return (
+                          <div key={group} data-hearing-group={group}>
+                            <div className="mb-1.5 border-l-[3px] border-border-strong pl-2 text-[13px] font-bold leading-tight text-text-heading">
+                              {meta.label}
+                              {meta.note && (
+                                <span className="ml-2 text-[11px] font-normal text-text-muted">
+                                  {meta.note}
+                                </span>
+                              )}
+                            </div>
+                            {sayFactGrid(groupSay, groupFact)}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    sayFactGrid(sayLines, factLines)
+                  )}
                 </section>
               );
             })}

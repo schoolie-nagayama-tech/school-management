@@ -39,6 +39,7 @@ import {
 import { getRegularPatterns } from '@/lib/api/schedule';
 import { getKoushuEnrollmentsByStudent, type KoushuEnrollment } from '@/lib/api/seasonalCourses';
 import { getStudentTargetSchools, type TargetSchoolRow } from '@/lib/api/targetSchools';
+import { getStudentMockSchools, type MockSchoolRecord } from '@/lib/api/mockTargetSchools';
 import { getSubjects } from '@/lib/api/subjects';
 import {
   getSeasonalProposalSummaryByStudent,
@@ -113,6 +114,8 @@ export function InterviewWorkspace() {
   const [examGoals, setExamGoals] = useState<StudentExamGoalWithType[]>([]);
   // 志望校（④現状の確認「志望校との差」の材料。TargetSchoolsPanel の保存後に反映するため refetch も持つ）
   const [targetSchools, setTargetSchools] = useState<TargetSchoolRow[]>([]);
+  // 模試の志望校と合格可能性（④現状の確認「直近の模試」の材料。模試の取り込みで入る）
+  const [mockSchools, setMockSchools] = useState<MockSchoolRecord[]>([]);
   /**
    * 科目ID→科目名。⑤プラン提示の「講習の履歴」で科目名を出すために使う。
    * ★生徒に依存しないマスタなので、生徒の切り替えでは取り直さない。
@@ -308,7 +311,7 @@ export function InterviewWorkspace() {
           disciplineFrom.getMonth() + 1
         ).padStart(2, '0')}-01`;
 
-        const [iv, asm, patterns, koushu, koushuProposals, discipline, goals, schools] =
+        const [iv, asm, patterns, koushu, koushuProposals, discipline, goals, schools, mocks] =
           await Promise.all([
             getStudentInterviews(selectedStudentId).catch(() => []),
             listAssessments(selectedStudentId).catch(() => []),
@@ -318,6 +321,8 @@ export function InterviewWorkspace() {
             getStudentDisciplineSessions(selectedStudentId, disciplineFromStr).catch(() => []),
             getStudentExamGoalsForInterview(selectedStudentId).catch(() => []),
             getStudentTargetSchools(selectedStudentId).catch(() => []),
+            // ★表がまだ無い環境（マイグレーション未適用）でも面談画面は開けるよう、失敗は空で受ける
+            getStudentMockSchools(selectedStudentId).catch(() => []),
           ]);
         if (cancelled) return;
         setInterviews(iv);
@@ -328,6 +333,7 @@ export function InterviewWorkspace() {
         setDisciplineSessions(discipline);
         setExamGoals(goals);
         setTargetSchools(schools);
+        setMockSchools(mocks);
       } finally {
         if (!cancelled) setLightLoading(false);
       }
@@ -525,6 +531,7 @@ export function InterviewWorkspace() {
               regularPatterns={regularPatterns}
               examGoals={examGoals}
               targetSchools={targetSchools}
+              mockSchools={mockSchools}
               subjectNames={subjectNames}
               loading={lightLoading || progressLoading}
               onResult={handleScriptResult}
@@ -598,6 +605,7 @@ export function InterviewWorkspace() {
             regularPatterns={regularPatterns}
             examGoals={examGoals}
             targetSchools={targetSchools}
+            mockSchools={mockSchools}
             subjectNames={subjectNames}
             script={script}
           />
