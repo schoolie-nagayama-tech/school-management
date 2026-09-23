@@ -441,6 +441,9 @@ URL: https://www.pref.kanagawa.jp/docs/b8k/schooldata.html
 `municipality` `address` `lat` `lon` `primary_station` `primary_lines` `access_lines` `station_source` `location_source` を入れる。
 ★`access_stations` はまだ入れていない（列を足す東京側のPRがマージされてから、東京と同じ1行を足す）。
 
+**2026-09-23 に本番へ取込済み**（`--go`・`--verified` なし）。神奈川199行すべてに `municipality`・座標・`access_lines` が入り、
+`station_source=手動` は42行（29校の全学科）。`school_code` は0行（意図どおりNULL）。
+
 作り直すときの手順（スクリプトは東京と同じくリポジトリに置いていない。手順だけ残す）:
 
 1. 県CSVを取り直し、合格基準の学校名と名寄せして address CSV を作る
