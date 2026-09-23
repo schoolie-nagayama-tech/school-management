@@ -59,9 +59,10 @@ export async function loadSchools(): Promise<SchoolMatch[]> {
   }>((from, to) =>
     supabase
       .from('high_schools')
+      // ★列名は1本の文字列リテラルで書く。`+` でつなぐと supabase-js の型が列を読めず
+      //   GenericStringError になり、CIの型チェックで落ちる。
       .select(
-        'id,prefecture,school_name,course,category,region,old_district,municipality,lat,lon,' +
-          'primary_station,primary_lines,access_lines,access_stations'
+        'id,prefecture,school_name,course,category,region,old_district,municipality,lat,lon,primary_station,primary_lines,access_lines,access_stations'
       )
       .range(from, to)
   );
