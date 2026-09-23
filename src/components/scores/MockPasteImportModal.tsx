@@ -1,8 +1,24 @@
 'use client';
 
-import { useState, useMemo, useRef, useCallback } from 'react';
+import { useState, useMemo, useRef, useCallback, useEffect } from 'react';
 import { Modal, Button } from '@/components/ui';
 import { createAssessmentRow, updateScore } from '@/lib/api/assessments';
+import {
+  countTargetSchoolsByStudents,
+  fillTargetSchoolsFromMock,
+  getHighSchoolKeysByNames,
+  insertAssessmentTargetSchools,
+  type MockSchoolToSave,
+} from '@/lib/api/mockTargetSchools';
+// ★読み取り（パース）は純関数にして lib へ出した。テストはそちらを直接叩く
+import { parseFileRows, parsePastedData, type ParsedMockRow } from '@/lib/scores/mockImportParse';
+import {
+  formatPossibility,
+  matchMockSchoolName,
+  splitMockSchoolName,
+  type HighSchoolKeyRow,
+} from '@/lib/scores/mockSchools';
+import { regionOfSchool, REGION_LABEL } from '@/lib/interview/region';
 import type { Student } from '@/types/database';
 import { GRADE_LABELS } from '@/types/database';
 import { AlertCircle, Check, HelpCircle, Upload, ClipboardPaste } from 'lucide-react';
@@ -14,217 +30,7 @@ interface MockPasteImportModalProps {
   onImportComplete: () => void;
 }
 
-/** パースした1生徒分のデータ */
-interface ParsedMockRow {
-  originalCode: string;
-  originalName: string;
-  matchedStudent: Student | null;
-  scores: {
-    japanese: number | null;
-    math: number | null;
-    english: number | null;
-    social: number | null;
-    science: number | null;
-    hensa_3: number | null;
-    hensa_5: number | null;
-  };
-  schools: string[];
-}
-
 type InputMode = 'file' | 'paste';
-
-/** 氏名を正規化（全角スペース・半角スペース除去、全角英数→半角） */
-function normalizeName(name: string): string {
-  return name
-    .replace(/[\s　]+/g, '')
-    .replace(/[Ａ-Ｚａ-ｚ０-９]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfee0))
-    .trim();
-}
-
-/** 生徒名でマッチング */
-function findStudentByName(name: string, students: Student[]): Student | null {
-  const normalized = normalizeName(name);
-  if (!normalized) return null;
-
-  // 完全一致（姓+名）
-  for (const s of students) {
-    const fullName = normalizeName(s.last_name + s.first_name);
-    if (fullName === normalized) return s;
-  }
-  // カナ一致
-  for (const s of students) {
-    const fullKana = normalizeName(s.last_name_kana + s.first_name_kana);
-    if (fullKana === normalized) return s;
-  }
-  // 部分一致（姓だけ一致 + 名の先頭一致）
-  for (const s of students) {
-    const last = normalizeName(s.last_name);
-    const first = normalizeName(s.first_name);
-    if (normalized.startsWith(last) && normalized.endsWith(first)) return s;
-  }
-  return null;
-}
-
-/** 数値パース（空白や全角数字対応） */
-function parseNum(val: string | number | undefined | null): number | null {
-  if (val === undefined || val === null) return null;
-  if (typeof val === 'number') return isNaN(val) ? null : val;
-  const trimmed = val
-    .trim()
-    .replace(/[０-９]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfee0));
-  if (trimmed === '' || trimmed === '-' || trimmed === '—') return null;
-  const n = parseFloat(trimmed);
-  return isNaN(n) ? null : n;
-}
-
-/**
- * xlsx/CSVファイルから読み込んだデータをパースする。
- *
- * 進研テストの列構造:
- *   0:登録番号, 1:塾コード, 2:塾名, 3:教室名, 4:学年, 5:塾内番号, 6:性別, 7:氏名,
- *   8:年度, 9:商品, 10:学年, 11:回号,
- *   12:国語得点, 13:国語偏差値, 14:数学得点, 15:数学偏差値,
- *   16:英語得点, 17:英語偏差値, 18:社会得点, 19:社会偏差値,
- *   20:理科得点, 21:理科偏差値, 22:二科三科得点, 23:二科三科偏差値,
- *   24:四科五科得点, 25:四科五科偏差値,
- *   26〜: 志望校名,合格可能性 のペア
- */
-function parseFileRows(
-  rows: (string | number | undefined)[][],
-  students: Student[]
-): ParsedMockRow[] {
-  const results: ParsedMockRow[] = [];
-
-  // ヘッダー行をスキップ（先頭行）
-  for (let i = 1; i < rows.length; i++) {
-    const r = rows[i];
-    if (!r || r.length < 12) continue;
-
-    const name = String(r[7] || '').trim();
-    if (!name) continue;
-
-    const schoolList: string[] = [];
-    for (let j = 26; j < r.length; j += 2) {
-      const schoolName = String(r[j] || '').trim();
-      if (schoolName) schoolList.push(schoolName);
-    }
-
-    results.push({
-      originalCode: String(r[5] || ''),
-      originalName: name,
-      matchedStudent: findStudentByName(name, students),
-      scores: {
-        japanese: parseNum(r[13]),
-        math: parseNum(r[15]),
-        english: parseNum(r[17]),
-        social: parseNum(r[19]),
-        science: parseNum(r[21]),
-        hensa_3: parseNum(r[23]),
-        hensa_5: parseNum(r[25]),
-      },
-      schools: schoolList,
-    });
-  }
-
-  return results;
-}
-
-/**
- * コピペされたデータをパースする。
- *
- * フォーマット:
- *   生徒行ブロック: 番号 TAB 性別 TAB 氏名
- *   得点行ブロック: 国語得点 TAB 国語SS TAB 数学得点 TAB 数学SS TAB ...
- */
-function parsePastedData(text: string, students: Student[]): ParsedMockRow[] {
-  const lines = text.split('\n').map((l) => l.replace(/\r$/, ''));
-
-  const headerKeywords = [
-    '塾内',
-    '番号',
-    '性別',
-    '氏名',
-    '得点',
-    'ＳＳ',
-    'SS',
-    '志望校',
-    '合格',
-    '可能性',
-    '年度',
-    '商品',
-    '学年',
-    '回号',
-    '偏差値',
-  ];
-
-  const studentRows: { code: string; name: string }[] = [];
-  const scoreRows: string[][] = [];
-
-  for (const line of lines) {
-    const trimmed = line.trim();
-    if (!trimmed) continue;
-
-    const isHeader = headerKeywords.some((kw) => trimmed.includes(kw));
-    if (isHeader) continue;
-
-    const cols = trimmed.split('\t');
-    const col0 = (cols[0] || '').trim();
-    const col1 = (cols[1] || '').trim();
-    const col2 = (cols[2] || '').trim();
-
-    const isGender = col1 === '男' || col1 === '女';
-    const hasName = col2.length > 0 && /[　-鿿゠-ヿ぀-ゟ]/.test(col2);
-    const restEmpty = cols.slice(3).every((c) => !c || !c.trim());
-
-    if (isGender && hasName && restEmpty) {
-      studentRows.push({ code: col0, name: col2 });
-      continue;
-    }
-
-    const firstNum = parseNum(col0);
-    if (firstNum !== null && cols.length >= 6) {
-      scoreRows.push(cols);
-      continue;
-    }
-  }
-
-  const results: ParsedMockRow[] = [];
-  const count = Math.min(studentRows.length, scoreRows.length);
-
-  for (let i = 0; i < count; i++) {
-    const sr = studentRows[i];
-    const sc = scoreRows[i];
-
-    // 偏差値列を参照（得点ではなく SS を取得）
-    // 0:国語得点, 1:国語SS, 2:数学得点, 3:数学SS, 4:英語得点, 5:英語SS,
-    // 6:社会得点, 7:社会SS, 8:理科得点, 9:理科SS,
-    // 10:二科三科得点, 11:二科三科SS, 12:四科五科得点, 13:四科五科SS
-
-    const schoolList: string[] = [];
-    for (let j = 14; j < sc.length; j += 2) {
-      const name = (sc[j] || '').trim();
-      if (name) schoolList.push(name);
-    }
-
-    results.push({
-      originalCode: sr.code,
-      originalName: sr.name,
-      matchedStudent: findStudentByName(sr.name, students),
-      scores: {
-        japanese: parseNum(sc[1]),
-        math: parseNum(sc[3]),
-        english: parseNum(sc[5]),
-        social: parseNum(sc[7]),
-        science: parseNum(sc[9]),
-        hensa_3: parseNum(sc[11]),
-        hensa_5: parseNum(sc[13]),
-      },
-      schools: schoolList,
-    });
-  }
-
-  return results;
-}
 
 export function MockPasteImportModal({
   isOpen,
@@ -247,7 +53,21 @@ export function MockPasteImportModal({
     success: number;
     failed: number;
     skipped: number;
+    /** 志望校が未登録だったので模試の公立校を入れた生徒の数 */
+    filled: number;
+    /** 成績は入ったが、模試の志望校の保存に失敗した生徒の数 */
+    schoolFailed: number;
   } | null>(null);
+  /**
+   * 志望校が未登録の生徒に、模試の公立の志望校（1〜3枠）を第1〜3志望として入れるか。
+   * ★既定はON。志望校が空のままだと面談の④で「志望校との差」が出ず、模試には書いてあるのに
+   *   面談の前に誰かが打ち直す手間になっている。既に1件でも入っている生徒には触らない。
+   */
+  const [fillTargetSchools, setFillTargetSchools] = useState(true);
+  /** 模試に出てきた学校名で引いた高校マスタ（当ての材料） */
+  const [masterRows, setMasterRows] = useState<HighSchoolKeyRow[]>([]);
+  /** 生徒ID→志望校の登録件数。null＝まだ読めていない */
+  const [targetCounts, setTargetCounts] = useState<Map<string, number> | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const activeStudents = useMemo(
@@ -265,6 +85,101 @@ export function MockPasteImportModal({
   }, [inputMode, fileRows, pasteText, activeStudents]);
 
   const matchedCount = parsed.filter((r) => r.matchedStudent).length;
+
+  // 当てに使う高校マスタを、模試に出てきた公立の学校名だけ引く（全件は読まない）
+  const publicSchoolNamesKey = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          parsed.flatMap((r) =>
+            r.schools.filter((c) => c.isPublic).map((c) => splitMockSchoolName(c.nameRaw).school)
+          )
+        )
+      )
+        .sort()
+        .join('|'),
+    [parsed]
+  );
+  // ★名前の集合が変わったときだけ引き直す（貼り付けの1文字ごとに引かない）
+  useEffect(() => {
+    const names = publicSchoolNamesKey ? publicSchoolNamesKey.split('|') : [];
+    let alive = true;
+    getHighSchoolKeysByNames(names)
+      .then((rows) => {
+        if (alive) setMasterRows(rows);
+      })
+      .catch(() => {
+        if (alive) setMasterRows([]);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [publicSchoolNamesKey]);
+
+  const matchedStudentIdsKey = useMemo(
+    () =>
+      parsed
+        .map((r) => r.matchedStudent?.id)
+        .filter((id): id is string => Boolean(id))
+        .sort()
+        .join('|'),
+    [parsed]
+  );
+  useEffect(() => {
+    const ids = matchedStudentIdsKey ? matchedStudentIdsKey.split('|') : [];
+    if (ids.length === 0) {
+      setTargetCounts(new Map());
+      return;
+    }
+    let alive = true;
+    setTargetCounts(null);
+    countTargetSchoolsByStudents(ids)
+      .then((m) => {
+        if (alive) setTargetCounts(m);
+      })
+      // 読めなければ「入る数」を出さない（数えられないものを数えたように見せない）
+      .catch(() => {
+        if (alive) setTargetCounts(null);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [matchedStudentIdsKey]);
+
+  /**
+   * 1行ぶんの志望校を、保存する形（マスタに当てた結果つき）にする。
+   * ★当てるのは公立の枠だけ。私立はマスタに無いので、当てにいくと同名の公立に誤って当たりうる。
+   * ★都県は生徒の教室から決める（「多摩」は東京と神奈川の両方にある）。
+   */
+  const schoolsToSave = useCallback(
+    (row: ParsedMockRow): MockSchoolToSave[] => {
+      const region = regionOfSchool(row.matchedStudent?.school_id);
+      const prefer = REGION_LABEL[region ?? 'tokyo'];
+      return row.schools.map((c) => {
+        const m = c.isPublic ? matchMockSchoolName(c.nameRaw, masterRows, prefer) : null;
+        return {
+          ...c,
+          highSchoolId: m?.highSchoolId ?? null,
+          // ★志望校の自動登録では、マスタに当たればマスタの名前（志望校の入力欄と同じ形）、
+          //   当たらなければ模試に書かれたままの名前を入れる
+          schoolName: m?.highSchoolId ? m.schoolName : c.nameRaw,
+        };
+      });
+    },
+    [masterRows]
+  );
+
+  /** 志望校が未登録で、模試に公立の志望校がある生徒（＝取り込むと志望校が入る生徒）の数 */
+  const willFillCount = useMemo(() => {
+    if (!targetCounts) return null;
+    const ids = new Set<string>();
+    for (const r of parsed) {
+      const id = r.matchedStudent?.id;
+      if (!id || (targetCounts.get(id) ?? 0) > 0) continue;
+      if (r.schools.some((c) => c.isPublic)) ids.add(id);
+    }
+    return ids.size;
+  }, [parsed, targetCounts]);
   const unmatchedCount = parsed.filter((r) => !r.matchedStudent).length;
 
   const processFiles = useCallback(async (files: File[]) => {
@@ -375,6 +290,8 @@ export function MockPasteImportModal({
     setIsImporting(true);
     let success = 0;
     let failed = 0;
+    let filled = 0;
+    let schoolFailed = 0;
 
     for (const row of importable) {
       const student = row.matchedStudent!;
@@ -393,13 +310,36 @@ export function MockPasteImportModal({
           }
         }
         success++;
+
+        /**
+         * 模試の志望校と合格可能性。★成績の取り込みとは別に失敗を数える。
+         *   ここで落ちても成績は入っているので、成績まで「失敗」と数えない。
+         */
+        if (row.schools.length > 0) {
+          try {
+            const schools = schoolsToSave(row);
+            await insertAssessmentTargetSchools(
+              assessment.id,
+              student.id,
+              student.school_id,
+              schools
+            );
+            if (fillTargetSchools) {
+              const n = await fillTargetSchoolsFromMock(student.id, student.school_id, schools);
+              if (n > 0) filled++;
+            }
+          } catch (e) {
+            console.error('Mock school import failed for', row.originalName, e);
+            schoolFailed++;
+          }
+        }
       } catch (e) {
         console.error('Import failed for', row.originalName, e);
         failed++;
       }
     }
 
-    setImportResult({ success, failed, skipped: unmatchedCount });
+    setImportResult({ success, failed, skipped: unmatchedCount, filled, schoolFailed });
     setIsImporting(false);
 
     if (success > 0) {
@@ -514,7 +454,7 @@ export function MockPasteImportModal({
             </div>
             {fileError && <p className="text-xs text-red-600 mt-1">{fileError}</p>}
             <p className="text-[11px] text-text-muted mt-1">
-              進研テスト等のダウンロードファイルに対応（学年別ファイルを複数同時選択可）。偏差値のみ取り込みます（得点は除外）。
+              進研テスト等のダウンロードファイルに対応（学年別ファイルを複数同時選択可）。偏差値と志望校・合格可能性を取り込みます（得点は除外）。
             </p>
           </div>
         )}
@@ -536,7 +476,7 @@ export function MockPasteImportModal({
               className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-white font-mono focus:ring-2 focus:ring-primary/30 focus:border-primary resize-y"
             />
             <p className="text-[11px] text-text-muted mt-1">
-              生徒の氏名でNESTの生徒と自動マッチングします。偏差値のみ取り込みます。
+              生徒の氏名でNESTの生徒と自動マッチングします。偏差値と志望校・合格可能性を取り込みます。
             </p>
           </div>
         )}
@@ -559,6 +499,26 @@ export function MockPasteImportModal({
                 </span>
               )}
             </div>
+
+            {/* 志望校の自動登録。★既にある志望校は上書きしない（fillTargetSchoolsFromMock） */}
+            <label className="flex items-start gap-2 text-xs text-text-body">
+              <input
+                type="checkbox"
+                checked={fillTargetSchools}
+                onChange={(e) => setFillTargetSchools(e.target.checked)}
+                className="mt-0.5"
+              />
+              <span>
+                志望校が未登録の生徒には、模試の公立の志望校を第1〜3志望として登録する
+                <span className="ml-1 text-text-muted">
+                  {willFillCount === null
+                    ? '（登録状況を確認中）'
+                    : fillTargetSchools
+                      ? `（${willFillCount}名に志望校が入ります）`
+                      : `（対象 ${willFillCount}名）`}
+                </span>
+              </span>
+            </label>
 
             <div className="overflow-x-auto max-h-[340px] overflow-y-auto rounded-lg border border-border">
               <table className="w-full text-sm border-collapse">
@@ -640,11 +600,21 @@ export function MockPasteImportModal({
                       <td className="px-2 py-1.5 text-xs text-center tabular-nums font-medium">
                         {row.scores.hensa_5 ?? '—'}
                       </td>
-                      <td
-                        className="px-2 py-1.5 text-xs text-text-muted max-w-[200px] truncate"
-                        title={row.schools.join(', ')}
-                      >
-                        {row.schools.join(', ') || '—'}
+                      {/* 志望校と合格可能性。★判定不能は「判定なし」（0% と書かない） */}
+                      <td className="min-w-[220px] px-2 py-1.5 text-xs text-text-muted">
+                        {row.schools.length === 0
+                          ? '—'
+                          : row.schools.map((c) => (
+                              <div key={c.slot} className="whitespace-nowrap">
+                                {!c.isPublic && <span className="mr-1 text-text-faint">私立</span>}
+                                {c.nameRaw}
+                                {formatPossibility(c) && (
+                                  <span className="ml-1 tabular-nums text-text-body">
+                                    {formatPossibility(c)}
+                                  </span>
+                                )}
+                              </div>
+                            ))}
                       </td>
                     </tr>
                   ))}
@@ -658,7 +628,7 @@ export function MockPasteImportModal({
         {importResult && (
           <div
             className={`p-3 rounded-lg text-sm ${
-              importResult.failed > 0
+              importResult.failed > 0 || importResult.schoolFailed > 0
                 ? 'bg-amber-50 text-amber-800 border border-amber-200'
                 : 'bg-green-50 text-green-800 border border-green-200'
             }`}
@@ -666,6 +636,9 @@ export function MockPasteImportModal({
             取り込み完了: {importResult.success}名成功
             {importResult.failed > 0 && `、${importResult.failed}名失敗`}
             {importResult.skipped > 0 && `、${importResult.skipped}名スキップ（未マッチ）`}
+            {importResult.filled > 0 && `。志望校を${importResult.filled}名に登録しました`}
+            {importResult.schoolFailed > 0 &&
+              `。${importResult.schoolFailed}名は模試の志望校を保存できませんでした（成績は入っています）`}
           </div>
         )}
 

@@ -19,6 +19,7 @@ import {
   buildTellSections,
   buildGoalAchievementLines,
   buildKoushuHistoryLines,
+  buildMockSchoolLines,
   buildMissingRecordAskLines,
   buildPreviousCommitmentLines,
   buildTargetSchoolGapLines,
@@ -42,10 +43,15 @@ import type { SeasonalProposalSeasonSummary } from '@/lib/api/seasonalProposalSu
 import type { ScheduleRegularPattern } from '@/types/schedule';
 import type { StudentExamGoalWithType } from '@/lib/api/progress';
 import type { TargetSchoolRow } from '@/lib/api/targetSchools';
+import type { MockSchoolRecord } from '@/lib/api/mockTargetSchools';
 import type { ScriptView } from './InterviewScriptCard';
 import {
   SCENE_OF_SECTION,
   ASK_LINES,
+  HEARING_GROUP_KEYS,
+  HEARING_GROUPS,
+  hearingGroupOfSection,
+  type HearingGroupKey,
   SHOW_LINES,
   INTRO_LINES,
   CLOSING_LINES,
@@ -57,7 +63,12 @@ import {
 } from '@/lib/interview/scenes';
 import { examCountdownLine, examApplicationLine } from '@/lib/interview/examDates';
 import { regionOfSchool } from '@/lib/interview/region';
-import { briefSectionLabel, followUpItemKey, type BriefSectionKey } from '@/lib/ai/interviewBrief';
+import {
+  BRIEF_SECTIONS,
+  briefSectionLabel,
+  followUpItemKey,
+  type BriefSectionKey,
+} from '@/lib/ai/interviewBrief';
 import { formatGradeLabel } from '@/lib/utils/gradeLabel';
 
 interface InterviewPrintSheetProps {
@@ -78,6 +89,8 @@ interface InterviewPrintSheetProps {
   examGoals: StudentExamGoalWithType[];
   /** 志望校（④現状の確認「志望校」の材料） */
   targetSchools: TargetSchoolRow[];
+  /** 模試の志望校と合格可能性（④現状の確認「直近の模試」の材料） */
+  mockSchools: MockSchoolRecord[];
   /** 科目ID→科目名（⑤プラン提示「講習の履歴」の科目名に使う） */
   subjectNames: Record<string, string>;
   /**
@@ -121,6 +134,7 @@ export function InterviewPrintSheet({
   regularPatterns,
   examGoals,
   targetSchools,
+  mockSchools,
   subjectNames,
   script,
 }: InterviewPrintSheetProps) {
@@ -134,11 +148,14 @@ export function InterviewPrintSheet({
     koushuSummaries,
     subjectNames,
     targetSchools,
+    mockSchools,
   });
   // 目標の達成度・志望校との差・成績記録なしの「聞くこと」も同じ関数で組み直す
   // （InterviewScriptCard と二重実装しない。画面と紙で数字がずれる事故を防ぐ）
   const goalAchievement = buildGoalAchievementLines(examGoals, assessments);
   const targetSchoolGap = buildTargetSchoolGapLines(targetSchools, assessments);
+  // 直近の模試の合格可能性と、登録に無い公立校（画面の④と同じ関数）
+  const mockSchoolLines = buildMockSchoolLines(mockSchools, assessments, targetSchools);
   const missingRecordAsk = buildMissingRecordAskLines(assessments, student.grade);
   // ②ヒアリングの「前回の約束・前回の要望」と、そこから組む「その後どうですか」
   const previous = buildPreviousCommitmentLines(interviews);
@@ -230,6 +247,50 @@ export function InterviewPrintSheet({
     (k) => SCENE_OF_SECTION[k] === 'plan'
   );
 
+  /**
+   * ②の小見出しごとの「事実」（左）。★並びは画面の hearingFactLines と揃える。
+   *   どのセクションをどの小見出しに出すかは scenes.ts の HEARING_GROUP_OF_SECTION が決める。
+   */
+  function hearingFacts(group: HearingGroupKey) {
+    const nodes = BRIEF_SECTIONS.map((s) => s.key)
+      .filter((k) => hearingGroupOfSection(k) === group)
+      .map(sectionBlock)
+      .filter((n) => n !== null);
+    const line = (text: string) => (
+      <div className="text-[10px] leading-[1.6] text-gray-800">・{text}</div>
+    );
+    if (group === 'review') {
+      // 前回の約束（未完了タスク）・前回の要望（直近の面談記録）
+      if (previous.promises.length > 0)
+        nodes.push(line(`前回の約束 ―― ${previous.promises.join('／')}`));
+      if (previous.requests.length > 0)
+        nodes.push(line(`前回の要望・方針 ―― ${previous.requests.join('／')}`));
+    }
+    if (group === 'school' && goalAchievement.tell.length > 0) {
+      // 目標の達成度。試験目標と成績を突き合わせて組む「伝える」行
+      nodes.push(line(`目標の達成度 ―― ${goalAchievement.tell.join('／')}`));
+    }
+    return nodes;
+  }
+
+  /** ②の小見出しごとの「話すこと・聞くこと」（右）。★画面の hearingSayLines と揃える */
+  function hearingSays(group: HearingGroupKey): { text: string; ask: boolean }[] {
+    const asks = HEARING_GROUPS[group].ask.map((text) => ({ text, ask: true }));
+    if (group === 'review') {
+      // 前回の要望のうち、塾から対応を伝えるもの → 家庭に聞くもの（画面と同じ振り分け）
+      return [
+        ...followUpReports.map((text) => ({ text, ask: false })),
+        ...followUpAsks.map((text) => ({ text, ask: true })),
+        ...asks,
+      ];
+    }
+    if (group === 'school') {
+      // 目標はあるが結果が成績側にまだ入っていない試験
+      return [...asks, ...goalAchievement.ask.map((text) => ({ text, ask: true }))];
+    }
+    return asks;
+  }
+
   return (
     <div className="interview-report-print-page hidden bg-white text-black print:block">
       {/* ヘッダー */}
@@ -282,69 +343,36 @@ export function InterviewPrintSheet({
         {/* ② ヒアリング（2段ぶち抜き） */}
         <div className="col-span-2 flex flex-col gap-1 break-inside-avoid">
           <SceneHeading no="02" label="ヒアリング" />
-          <div className="grid grid-cols-2 gap-x-5">
-            {/* ★並びは画面（InterviewScriptCard の sceneFactLines('hearing')）と揃える。
-                前回の面談から → 前回の約束 → 前回の要望 → 授業の様子 → 宿題・遅刻 → 目標の達成度 */}
-            <div className="flex flex-col gap-1">
-              {sectionBlock('lastInterview')}
-              {/* 前回の約束（未完了タスク）・前回の要望（直近の面談記録） */}
-              {previous.promises.length > 0 && (
-                <div className="text-[10px] leading-[1.6] text-gray-800">
-                  ・前回の約束 ―― {previous.promises.join('／')}
-                </div>
-              )}
-              {previous.requests.length > 0 && (
-                <div className="text-[10px] leading-[1.6] text-gray-800">
-                  ・前回の要望・方針 ―― {previous.requests.join('／')}
-                </div>
-              )}
-              {sectionBlock('lessons')}
-              {sectionBlock('discipline')}
-              {sectionBlock('parent')}
-              {/* 目標の達成度。試験目標と成績を突き合わせて組む「伝える」行 */}
-              {goalAchievement.tell.length > 0 && (
-                <div className="text-[10px] leading-[1.6] text-gray-800">
-                  ・目標の達成度 ―― {goalAchievement.tell.join('／')}
-                </div>
-              )}
-            </div>
-            <div className="border-l border-dotted border-gray-400 pl-3.5">
-              {/* ★前回の要望のうち、塾から対応を伝えるもの（画面と同じ振り分け） */}
-              {followUpReports.length > 0 && (
-                <>
-                  <div className="mb-0.5 text-[9px] font-bold text-gray-600">話すこと</div>
-                  {followUpReports.map((t, i) => (
-                    <div key={`report-${i}`} className="text-[10px] leading-[1.6] text-gray-800">
-                      ・{t}
+          {/* ★小見出し（振り返り／学校／塾／家庭）は画面（InterviewScriptCard）と同じ順・同じ振り分け。
+              A4 1枚に収めるため、見出しは1行の小さな文字にして、左右とも空の小見出しは出さない */}
+          <div className="flex flex-col gap-1">
+            {HEARING_GROUP_KEYS.map((group) => {
+              const facts = hearingFacts(group);
+              const says = hearingSays(group);
+              if (facts.length === 0 && says.length === 0) return null;
+              return (
+                <div key={group}>
+                  <div className="border-l-2 border-gray-400 pl-1 text-[9.5px] font-bold leading-tight text-gray-700">
+                    {HEARING_GROUPS[group].label}
+                  </div>
+                  <div className="grid grid-cols-2 gap-x-5">
+                    <div className="flex flex-col">
+                      {facts.map((node, i) => (
+                        <div key={i}>{node}</div>
+                      ))}
                     </div>
-                  ))}
-                </>
-              )}
-              <div
-                className={`mb-0.5 text-[9px] font-bold text-gray-600 ${
-                  followUpReports.length > 0 ? 'mt-1' : ''
-                }`}
-              >
-                聞くこと
-              </div>
-              {/* 前回の約束・要望のうち、家庭に聞くもの */}
-              {followUpAsks.map((t, i) => (
-                <div key={`followup-${i}`} className="text-[10px] leading-[1.6] text-gray-800">
-                  □ {t}
+                    <div className="border-l border-dotted border-gray-400 pl-3.5">
+                      {says.map((line, i) => (
+                        <div key={i} className="text-[10px] leading-[1.6] text-gray-800">
+                          {line.ask ? '□ ' : '・'}
+                          {line.text}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
-              ))}
-              {(ASK_LINES.hearing ?? []).map((t, i) => (
-                <div key={i} className="text-[10px] leading-[1.6] text-gray-800">
-                  □ {t}
-                </div>
-              ))}
-              {/* 目標はあるが結果が成績側にまだ入っていない試験 */}
-              {goalAchievement.ask.map((t, i) => (
-                <div key={`goal-${i}`} className="text-[10px] leading-[1.6] text-gray-800">
-                  □ {t}
-                </div>
-              ))}
-            </div>
+              );
+            })}
           </div>
         </div>
 
@@ -359,6 +387,12 @@ export function InterviewPrintSheet({
                 <div key={i} className="text-[10px] leading-[1.6] text-gray-800">
                   ・{i === 0 ? '志望校 ―― ' : ''}
                   {t}
+                </div>
+              ))}
+              {/* 直近の模試の合格可能性と、登録に無い公立校の指摘（画面の④右と同じ行） */}
+              {mockSchoolLines.tell.map((t, i) => (
+                <div key={`mock-${i}`} className="text-[10px] leading-[1.6] text-gray-800">
+                  ・{t}
                 </div>
               ))}
             </div>
@@ -391,6 +425,12 @@ export function InterviewPrintSheet({
               {/* 定期テスト・模試のどちらかが1件も記録に無いとき（中学生以上のみ） */}
               {missingRecordAsk.map((t, i) => (
                 <div key={`missing-${i}`} className="text-[10px] leading-[1.6] text-gray-800">
+                  □ {t}
+                </div>
+              ))}
+              {/* 模試に書いたのに志望校に登録されていない公立校 */}
+              {mockSchoolLines.ask.map((t, i) => (
+                <div key={`mock-ask-${i}`} className="text-[10px] leading-[1.6] text-gray-800">
                   □ {t}
                 </div>
               ))}
@@ -470,13 +510,15 @@ export function InterviewPrintSheet({
         印刷時のページ物理サイズであって画面のボックス高さには効かないため、flex-1 で
         「残りを埋める」ことはできない（親に高さの制約が無い）。かわりに十分な高さを
         固定で確保しておく。中身（①〜⑦）が短い生徒ほど余白が増えるだけで、はみ出す事故は起きない。
+        ★300px → 250px（2026-09-23）。②に小見出し4つ・④に直近の模試の行を足したぶん、
+          罫線を2本減らして A4 1枚に収めている。中身を足すときはここも見直す。
       */}
       <div className="mt-3.5 flex flex-col gap-1">
         <div className="border-b border-gray-300 pb-0.5 text-[9px] font-bold text-gray-600">
           面談中のメモ
         </div>
         <div
-          className="min-h-[300px]"
+          className="min-h-[250px]"
           style={{
             backgroundImage:
               'repeating-linear-gradient(to bottom, transparent, transparent 24px, #e7e5e4 24px, #e7e5e4 25px)',

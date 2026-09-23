@@ -3,6 +3,11 @@ import {
   SCENE_KEYS,
   SCENE_LABEL,
   SCENE_OF_SECTION,
+  ASK_LINES,
+  HEARING_GROUP_KEYS,
+  HEARING_GROUPS,
+  HEARING_GROUP_OF_SECTION,
+  hearingGroupOfSection,
   GRADE_BAND_LABEL,
   gradeBandOf,
   timingLines,
@@ -51,6 +56,53 @@ describe('面談のシーン定義', () => {
   it('セクションが置かれるのは②④⑤の3シーンだけ（①③⑥⑦はAIを使わない）', () => {
     const used = new Set(Object.values(SCENE_OF_SECTION));
     expect([...used].sort()).toEqual(['hearing', 'plan', 'status']);
+  });
+});
+
+describe('②ヒアリングの小見出し', () => {
+  it('振り返り → 学校 → 塾 → 家庭 の順（承認済みのモックの順）', () => {
+    expect(HEARING_GROUP_KEYS).toEqual(['review', 'school', 'juku', 'home']);
+    expect(HEARING_GROUP_KEYS.map((k) => HEARING_GROUPS[k].label)).toEqual([
+      '振り返り',
+      '学校',
+      '塾',
+      '家庭',
+    ]);
+  });
+
+  it('★②に置いたセクションは全部どれかの小見出しに入る（入れ忘れると画面から消える）', () => {
+    for (const s of BRIEF_SECTIONS) {
+      if (SCENE_OF_SECTION[s.key] !== 'hearing') continue;
+      expect(HEARING_GROUP_KEYS).toContain(hearingGroupOfSection(s.key));
+    }
+  });
+
+  it('②以外のセクションは小見出しを持たない', () => {
+    expect(hearingGroupOfSection('score')).toBeNull();
+    expect(hearingGroupOfSection('koushu')).toBeNull();
+  });
+
+  it('セクションの振り分け（前回→振り返り／授業・宿題→塾／保護者→家庭）', () => {
+    expect(HEARING_GROUP_OF_SECTION).toEqual({
+      lastInterview: 'review',
+      lessons: 'juku',
+      discipline: 'juku',
+      parent: 'home',
+    });
+  });
+
+  it('聞くことは小見出しごとに持つ（学校のことは学校、家庭学習は家庭）', () => {
+    expect(HEARING_GROUPS.school.ask).toEqual([
+      '学校の授業と宿題の進み具合',
+      '学校の面談で言われたこと',
+      '学校生活の様子（部活動の引退後の過ごし方など）',
+    ]);
+    expect(HEARING_GROUPS.home.ask).toEqual([
+      '家庭学習の様子。机に向かう時間は取れているか',
+      '次の定期テスト・模試の目標を決める',
+    ]);
+    // ★②の聞くことを平たい ASK_LINES に戻さない（どの小見出しにも出ない行になる）
+    expect(ASK_LINES.hearing).toBeUndefined();
   });
 });
 

@@ -24,6 +24,8 @@ import type { BriefSectionKey } from '@/lib/ai/interviewBrief';
 import type { TextbookProgressData } from './ProgressPanel';
 import type { DisciplineSessionRow } from '@/lib/api/progress-sessions';
 import type { TargetSchoolMaster, TargetSchoolRow } from '@/lib/api/targetSchools';
+import type { MockSchoolRecord } from '@/lib/api/mockTargetSchools';
+import { mockSchoolShortName } from '@/lib/scores/mockSchools';
 import {
   calcKanagawaNaishin135,
   calcTokyoNaishin,
@@ -477,6 +479,8 @@ export function buildTellSections(props: {
   subjectNames?: Record<string, string>;
   /** 志望校。★score の現状に混ぜてAIへ送る（④で志望校に触れさせるため） */
   targetSchools?: readonly TargetSchoolRow[];
+  /** 模試の志望校と合格可能性。★「直近の模試」の行を score に混ぜてAIへ送る */
+  mockSchools?: readonly MockSchoolRecord[];
 }): TellSection[] {
   const sections: TellSection[] = [];
 
@@ -494,6 +498,17 @@ export function buildTellSections(props: {
   for (const line of buildTargetSchoolGapLines(props.targetSchools ?? [], props.assessments).tell) {
     scoreLines.push(`${TARGET_SCHOOL_FACT_PREFIX}${line}`);
   }
+  /**
+   * ★「直近の模試」の行（合格可能性つき）も score に混ぜる。AIが合格可能性の流れに
+   *   言葉で触れられるようにするため（数字はAIに書かせない。画面が別に出す）。
+   *   表示側は志望校の行と同じく stripTargetSchoolFactLines で外す。
+   */
+  const mockLine = buildMockSchoolLines(
+    props.mockSchools ?? [],
+    props.assessments,
+    props.targetSchools ?? []
+  ).aiLine;
+  if (mockLine) scoreLines.push(mockLine);
   if (scoreLines.length > 0) sections.push({ key: 'score', current: scoreLines });
 
   const months = computeDisciplineMonthly(
@@ -1115,9 +1130,126 @@ export function isTargetSchoolFactLine(line: string): boolean {
   return line.startsWith(TARGET_SCHOOL_FACT_PREFIX);
 }
 
-/** score の現状の行から志望校の行を外す（画面・紙は志望校ブロックで別に出すため） */
+/**
+ * score の現状の行から志望校の行と「直近の模試」の行を外す。
+ * ★どちらもAIには score に混ぜて渡すが、画面・紙では④の志望校ブロックとして別に出すため。
+ */
 export function stripTargetSchoolFactLines(lines: readonly string[]): string[] {
-  return lines.filter((l) => !isTargetSchoolFactLine(l));
+  return lines.filter((l) => !isTargetSchoolFactLine(l) && !isMockSchoolFactLine(l));
+}
+
+/* ============================================================
+ * 模試の志望校と合格可能性（④現状の確認）
+ * ========================================================== */
+
+/** 「直近の模試」の行の書き出し。score に混ぜた行を表示側で見分けるのに使う */
+export const MOCK_SCHOOL_FACT_PREFIX = '直近の模試（';
+
+export function isMockSchoolFactLine(line: string): boolean {
+  return line.startsWith(MOCK_SCHOOL_FACT_PREFIX);
+}
+
+export interface MockSchoolLines {
+  /** 右（事実）。1行目が「直近の模試（…） ―― …」、2行目があれば「★模試では … も書いている」 */
+  tell: string[];
+  /** 左（聞く）。登録に無い公立校を志望校に入れるか */
+  ask: string[];
+  /** AIの score に混ぜる行（tell の1行目と同じ）。無ければ null */
+  aiLine: string | null;
+}
+
+/** 合格可能性の短い表示。「60%」／「判定なし」／空欄は空文字 */
+function possibilityText(s: { possibility: number | null; unjudged: boolean }): string {
+  if (s.possibility != null) return `${s.possibility}%`;
+  return s.unjudged ? '判定なし' : '';
+}
+
+/** 同じ学校かどうか。マスタに当たっていればIDで、無ければ短い名前で比べる */
+function sameMockSchool(a: MockSchoolRecord, b: MockSchoolRecord): boolean {
+  if (a.highSchoolId && b.highSchoolId) return a.highSchoolId === b.highSchoolId;
+  return mockSchoolShortName(a.nameRaw) === mockSchoolShortName(b.nameRaw);
+}
+
+/**
+ * ④に出す「直近の模試」の行。
+ *   直近の模試（会場模試 9月） ―― 狛江 60%（前回 50%）・神代 20%／私立 専修大附属 70%
+ *
+ * ★直近＝志望校が1件でも入っている模試のうち、いちばん新しいもの。前回＝その1つ前。
+ *   模試の並びは assessments（listAssessments の新しい順）に従う。
+ * ★合格可能性の数字はシステムが組む（AIに書かせない。数字の書き写しの1字違いに誰も気づけない）。
+ * ★「判定なし」（模試の **）は 0% と書かない。
+ * ★登録に無い公立校の指摘は、志望校が1件以上登録されている生徒だけに出す。
+ *   未登録の生徒には④に「志望校を聞いて入れる」が既に出ており、同じことを2回言わせない。
+ */
+export function buildMockSchoolLines(
+  mockSchools: readonly MockSchoolRecord[],
+  assessments: readonly AssessmentWithScores[],
+  targetSchools: readonly TargetSchoolRow[]
+): MockSchoolLines {
+  const empty: MockSchoolLines = { tell: [], ask: [], aiLine: null };
+  if (mockSchools.length === 0) return empty;
+
+  const byAssessment = new Map<string, MockSchoolRecord[]>();
+  for (const s of mockSchools) {
+    const list = byAssessment.get(s.assessmentId) ?? [];
+    list.push(s);
+    byAssessment.set(s.assessmentId, list);
+  }
+  const mocks = assessments.filter((a) => a.category === 'mock' && byAssessment.has(a.id));
+  if (mocks.length === 0) return empty;
+
+  const latest = mocks[0];
+  const current = [...(byAssessment.get(latest.id) ?? [])].sort((a, b) => a.slot - b.slot);
+  const previous = mocks[1] ? (byAssessment.get(mocks[1].id) ?? []) : [];
+
+  const part = (s: MockSchoolRecord) => {
+    const poss = possibilityText(s);
+    const before = previous.find((p) => sameMockSchool(p, s));
+    const beforeText = before ? possibilityText(before) : '';
+    return [mockSchoolShortName(s.nameRaw), poss, beforeText ? `（前回 ${beforeText}）` : '']
+      .filter(Boolean)
+      .join(' ')
+      .replace(' （', '（');
+  };
+
+  const publicParts = current.filter((s) => s.isPublic).map(part);
+  const privateParts = current.filter((s) => !s.isPublic).map(part);
+  const title = ASSESSMENT_NAME_LABELS[latest.name_code] ?? latest.title ?? '模試';
+  const monthSource = latest.exam_month ?? latest.exam_date;
+  const month = monthSource ? ` ${Number(monthSource.slice(5, 7))}月` : '';
+  const body = [
+    publicParts.join('・'),
+    privateParts.length > 0 ? `私立 ${privateParts.join('・')}` : '',
+  ]
+    .filter(Boolean)
+    .join('／');
+  const aiLine = `${MOCK_SCHOOL_FACT_PREFIX}${title}${month}） ―― ${body}`;
+
+  const tell = [aiLine];
+  const ask: string[] = [];
+  if (targetSchools.length > 0) {
+    const registered = targetSchools.map((t) => ({
+      id: t.highSchoolId,
+      name: mockSchoolShortName(t.schoolName),
+    }));
+    const missing = current
+      .filter((s) => s.isPublic)
+      .filter(
+        (s) =>
+          !registered.some((r) =>
+            s.highSchoolId && r.id
+              ? s.highSchoolId === r.id
+              : r.name === mockSchoolShortName(s.nameRaw)
+          )
+      )
+      .map((s) => mockSchoolShortName(s.nameRaw));
+    if (missing.length > 0) {
+      const names = missing.join('・');
+      tell.push(`★模試では ${names} も書いている（登録に無い）`);
+      ask.push(`模試で書いた ${names} は志望校に入れるか聞く`);
+    }
+  }
+  return { tell, ask, aiLine };
 }
 
 /**

@@ -3399,6 +3399,77 @@ export type Database = {
           },
         ];
       };
+      // 模試に書いた志望校と合格可能性（20260923140000_assessment_target_schools.sql）
+      assessment_target_schools: {
+        Row: {
+          id: string;
+          assessment_id: string;
+          student_id: string;
+          // ★トリガーで生徒の所属校に強制される（RLSが見る列）
+          school_id: string;
+          // 模試の志望校欄の位置 1〜5。★空き枠を詰めない（1〜3＝公立、4〜5＝私立）
+          slot: number;
+          is_public: boolean;
+          school_name_raw: string;
+          high_school_id: string | null;
+          // ★判定不能（**）は null。0 と読まないよう possibility_unjudged と対で見る
+          possibility: number | null;
+          possibility_unjudged: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          assessment_id: string;
+          student_id: string;
+          school_id: string;
+          slot: number;
+          is_public: boolean;
+          school_name_raw: string;
+          high_school_id?: string | null;
+          possibility?: number | null;
+          possibility_unjudged?: boolean;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          assessment_id?: string;
+          student_id?: string;
+          school_id?: string;
+          slot?: number;
+          is_public?: boolean;
+          school_name_raw?: string;
+          high_school_id?: string | null;
+          possibility?: number | null;
+          possibility_unjudged?: boolean;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'assessment_target_schools_assessment_id_fkey';
+            columns: ['assessment_id'];
+            referencedRelation: 'assessments';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'assessment_target_schools_student_id_fkey';
+            columns: ['student_id'];
+            referencedRelation: 'students';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'assessment_target_schools_school_id_fkey';
+            columns: ['school_id'];
+            referencedRelation: 'schools';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'assessment_target_schools_high_school_id_fkey';
+            columns: ['high_school_id'];
+            referencedRelation: 'high_schools';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
