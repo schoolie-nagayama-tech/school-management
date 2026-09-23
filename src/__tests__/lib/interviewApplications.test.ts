@@ -35,7 +35,10 @@ import type { AssessmentWithScores } from '@/types/database';
 const TODAY = new Date(2026, 8, 23, 12, 0, 0);
 
 function assessment(
-  over: Partial<AssessmentWithScores> & { scores?: { subject: string; value: number }[] }
+  // ★scores は Partial<AssessmentWithScores> 側（行の全列）と交差させると型が合わなくなるので外す
+  over: Omit<Partial<AssessmentWithScores>, 'scores'> & {
+    scores?: { subject: string; value: number }[];
+  }
 ): AssessmentWithScores {
   return {
     id: `a-${over.name_code}-${over.grade}`,
