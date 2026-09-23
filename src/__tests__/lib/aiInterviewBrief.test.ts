@@ -443,7 +443,7 @@ describe('briefSystemPrompt（followUps）', () => {
 describe('briefUserText（前回の約束・要望）', () => {
   it('渡した約束・要望を別枠の見出しで並べる', () => {
     const t = briefUserText([{ key: 'score', current: ['定期テスト: 英語'] }], sentItems);
-    expect(t).toContain('■ 前回の約束・要望（followUps の item はこの文をそのまま使う）');
+    expect(t).toContain('■ 前回の約束・要望（followUps の item はこの文をそのまま使う');
     expect(t).toContain('- 英語の長文を増やしてほしい');
   });
 

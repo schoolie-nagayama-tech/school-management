@@ -273,7 +273,16 @@ export function InterviewPrintSheet({
     return nodes;
   }
 
-  /** ②の小見出しごとの「話すこと・聞くこと」（右）。★画面の hearingSayLines と揃える */
+  /**
+   * ②の小見出しごとの「話すこと・聞くこと」（右）。★画面の hearingBlock と揃える。
+   *
+   * ★2026-09-23 に画面へ足した「ひとこと」「場面」「前回の言葉」は、紙の話すことには足さない。
+   *   紙は2列のまま（面談前の準備用で、根拠も並べて見せる）で、A4 1枚はメモ欄を 250px まで
+   *   削ってやっと収まっている。ひとこと（最大8行）・場面（最大2行）を足すと2枚目に溢れる。
+   *   - 前回の言葉は、lastInterview の現状の行（「前回の言葉: 「…」（生徒）」）として
+   *     左の「前回の面談から」の1行に「／」区切りで既に乗る。話すことに重ねて出さない。
+   *   - ひとこと・場面は画面で見る（面談中に読むもので、準備の紙には要らない）。
+   */
   function hearingSays(group: HearingGroupKey): { text: string; ask: boolean }[] {
     const asks = HEARING_GROUPS[group].ask.map((text) => ({ text, ask: true }));
     if (group === 'review') {

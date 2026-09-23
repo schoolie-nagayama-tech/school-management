@@ -16,14 +16,17 @@ import {
   parseBriefResult,
   sanitizeBriefSections,
   sanitizeFollowUpItems,
+  sanitizeFollowUpActors,
   sortBriefSections,
   dedupeConsecutiveLessonLines,
   resolveInterviewBriefModelKey,
   MAX_CURRENT_LINE_LENGTH,
+  type BriefEpisode,
   type BriefFollowUp,
   type BriefSectionInput,
   type BriefSectionKey,
   type BriefSign,
+  type OpenerKey,
   type SelectableModelKey,
 } from '@/lib/ai/interviewBrief';
 import { regionOfSchool } from '@/lib/interview/region';
@@ -70,6 +73,13 @@ interface BriefResponse {
   thread: string;
   /** ④の課題と⑤のプランのつながり。koushu セクションを渡していなければ常に空文字 */
   bridge: string;
+  /** シーン・②の小見出しの頭の「ひとこと」。AIが書けなかった key は無い */
+  openers: Partial<Record<OpenerKey, string>>;
+  /**
+   * 引継ぎから拾った場面。★date・teacher はAIではなく引継ぎの行から取ったもの
+   * （parseBriefResult が番号で引く）
+   */
+  episodes: BriefEpisode[];
   /** AIを呼べなかった・読めなかった。故障側（現状の行は返しているので画面は成立する） */
   degraded: boolean;
   /** この教室ではAIに送らない設定。故障ではなく意図した停止 */
@@ -261,6 +271,8 @@ export async function POST(request: NextRequest) {
     followUps: [],
     thread: '',
     bridge: '',
+    openers: {},
+    episodes: [],
     degraded: false,
     disabled: false,
     model,
@@ -275,7 +287,8 @@ export async function POST(request: NextRequest) {
    */
   const { data: student } = await supabase
     .from('students')
-    .select('id, school_id')
+    // ★first_name はひとことで「◯◯さん」と呼ばせるため（クライアントの言い値にしない）
+    .select('id, school_id, first_name')
     .eq('id', studentId)
     .maybeSingle();
   if (!student || (student as { school_id?: string }).school_id !== schoolId) {
@@ -310,6 +323,8 @@ export async function POST(request: NextRequest) {
    *   AIが正しく書き写しても「渡していない item」になって全部捨てられる。
    */
   const followUpItems = sanitizeFollowUpItems(body.followUpItems);
+  // 新しいNottaの型の「塾：」「家庭：」…（誰が動くか）。本文とは別に添えてAIへ渡す
+  const followUpActors = sanitizeFollowUpActors(body.followUpItems);
 
   const [lessonLines, parentLines] = await Promise.all([
     loadLessonLines(supabase, studentId),
@@ -398,7 +413,10 @@ export async function POST(request: NextRequest) {
       model,
       // 書き方の決まりは毎回同じなのでキャッシュに載せる
       system: [{ text: briefSystemPrompt(), cache: true }],
-      userText: briefUserText(sections, followUpItems, regionOfSchool(schoolId)),
+      userText: briefUserText(sections, followUpItems, regionOfSchool(schoolId), {
+        givenName: (student as { first_name?: string | null }).first_name ?? null,
+        followUpActors,
+      }),
       // ★長く書かせるようにしたので、出力の上限も広げる（seen 180字×7＋thread＋bridge＋followUps）。
       //   Opus 5.5 は思考が常に入り、その分も max_tokens から引かれる。4000 だと思考で食われて
       //   JSONが途中で切れる（＝作れなかったに倒れる）ので余裕を持たせる。使った分しか課金されない
@@ -407,7 +425,10 @@ export async function POST(request: NextRequest) {
       effort: 'high',
     });
 
-    const parsed = parseBriefResult(raw, sentKeys, followUpItems);
+    // ★場面の番号は、AIに番号付きで渡した引継ぎの行（sections の lessons）で引く。
+    //   画面用に畳んだ viewCurrent の行ではない（番号がずれる）
+    const lessonLinesSent = sections.find((s) => s.key === 'lessons')?.current ?? [];
+    const parsed = parseBriefResult(raw, sentKeys, followUpItems, lessonLinesSent);
     const seenByKey = new Map<BriefSectionKey, { seen: string; sign: BriefSign }>();
     for (const s of parsed.sections) seenByKey.set(s.key, { seen: s.seen, sign: s.sign });
 
@@ -420,13 +441,19 @@ export async function POST(request: NextRequest) {
      *     「どれが報告することか」が分かるだけで②の中身が変わるため。
      */
     const nothing =
-      !parsed.thread && parsed.sections.every((s) => !s.seen) && parsed.followUps.length === 0;
+      !parsed.thread &&
+      parsed.sections.every((s) => !s.seen) &&
+      parsed.followUps.length === 0 &&
+      Object.keys(parsed.openers).length === 0 &&
+      parsed.episodes.length === 0;
 
     return NextResponse.json({
       sections: withCurrent(seenByKey),
       followUps: parsed.followUps,
       thread: parsed.thread,
       bridge: parsed.bridge,
+      openers: parsed.openers,
+      episodes: parsed.episodes,
       degraded: nothing,
       disabled: false,
       model,
