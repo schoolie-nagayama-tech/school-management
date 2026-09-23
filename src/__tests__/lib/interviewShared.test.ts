@@ -1,5 +1,17 @@
 import { describe, it, expect } from 'vitest';
 import {
+  buildHandoverText,
+  buildKoushuCurrentLines,
+  buildKoushuHistoryLines,
+  dedupeConsecutiveHandovers,
+  koushuFiscalYear,
+  mergeKoushuSeasons,
+  summarizeCurrentKoushu,
+  buildPreviousCommitmentLines,
+  previousFollowUpAskLine,
+  previousFollowUpReportLine,
+  buildProgressFactLines,
+  buildTellSections,
   extractHandover,
   formatKoushuEnrollments,
   formatRegularPatternsSchedule,
@@ -13,6 +25,9 @@ import {
   buildGoalAchievementLines,
   buildMissingRecordAskLines,
   buildTargetSchoolGapLines,
+  isTargetSchoolFactLine,
+  stripTargetSchoolFactLines,
+  TARGET_SCHOOL_FACT_PREFIX,
   GOAL_SUBJECT_TO_ASSESSMENT_SUBJECT,
   GOAL_EXAM_NAME_TO_ASSESSMENT_NAME_CODE,
   type ExamGoalForAchievement,
@@ -20,10 +35,12 @@ import {
 import type {
   AssessmentWithScores,
   CurriculumItemWithProgress,
+  StudentInterview,
   StudentTextbookWithDetails,
 } from '@/types/database';
 import type { ScheduleRegularPattern } from '@/types/schedule';
 import type { KoushuEnrollment } from '@/lib/api/seasonalCourses';
+import type { SeasonalProposalSeasonSummary } from '@/lib/api/seasonalProposalSummary';
 import type { TargetSchoolRow, TargetSchoolMaster } from '@/lib/api/targetSchools';
 
 describe('extractHandover', () => {
@@ -710,6 +727,54 @@ describe('buildGoalAchievementLines', () => {
     ];
     expect(buildGoalAchievementLines(goals, [])).toEqual({ tell: [], ask: [] });
   });
+
+  it('★同じ内容の目標が2件あっても1行にまとめる（聞くこと）', () => {
+    // 目標は「生徒×科目」に移したが student_textbook_exams の行はテキストごとに残っており、
+    // 同じ科目のテキストを2冊持つ生徒には中身がまったく同じ行が2件できる。
+    // 実機（緑園都市校の中3）で②に同じ「聞く」が2行並んだ。
+    const same: ExamGoalForAchievement = {
+      subject_key: '英語',
+      exam_type_name: null,
+      custom_exam_name: '学校の成績で「5」をとる',
+      exam_date: '2026-10-08',
+      target_score: 80,
+    };
+    const { tell, ask } = buildGoalAchievementLines([same, { ...same }], []);
+    expect(tell).toEqual([]);
+    expect(ask).toEqual(['英語 学校の成績で「5」をとる 目標80点。結果を聞いて入れる']);
+  });
+
+  it('★同じ内容の目標が2件あっても1行にまとめる（伝える）', () => {
+    const same: ExamGoalForAchievement = {
+      subject_key: '数学',
+      exam_type_name: '2学期中間',
+      custom_exam_name: null,
+      exam_date: '2026-11-01',
+      target_score: 70,
+    };
+    const assessments = [
+      {
+        category: 'regular_test',
+        name_code: 'term2_mid',
+        scores: [{ subject: 'math', value: 73 }],
+      },
+    ] as unknown as AssessmentWithScores[];
+
+    const { tell } = buildGoalAchievementLines([same, { ...same }], assessments);
+    expect(tell).toEqual(['数学 2学期中間 目標70 → 73（+3・達成）']);
+  });
+
+  it('★科目と試験が同じでも目標点が違えば両方出す（食い違いを隠さない）', () => {
+    const base: ExamGoalForAchievement = {
+      subject_key: '英語',
+      exam_type_name: null,
+      custom_exam_name: '学校の成績で「5」をとる',
+      exam_date: '2026-10-08',
+      target_score: 80,
+    };
+    const { ask } = buildGoalAchievementLines([base, { ...base, target_score: 90 }], []);
+    expect(ask).toHaveLength(2);
+  });
 });
 
 describe('buildMissingRecordAskLines', () => {
@@ -773,6 +838,7 @@ describe('buildTargetSchoolGapLines', () => {
         hensachi: 51,
         sourceLabel: 'Vもぎ 2025年9月版',
         verifiedAt: null,
+        accessLines: [],
         ...master,
       },
     };
@@ -814,7 +880,7 @@ describe('buildTargetSchoolGapLines', () => {
     expect(ask).toEqual([]);
     expect(tell).toHaveLength(1);
     // 本人内申45・偏差値48 に対し、必要内申45(diff 0)・必要偏差値51(diff -3)
-    expect(tell[0]).toContain('第1志望 清瀬');
+    expect(tell[0]).toContain('第1 清瀬');
     expect(tell[0]).toContain('必要内申45（+0）');
     expect(tell[0]).toContain('必要偏差値51（-3）');
   });
@@ -847,7 +913,7 @@ describe('buildTargetSchoolGapLines', () => {
     expect(tell[0]).not.toContain('突き合わせ');
   });
 
-  it('マスタに当たっていない（私立など）志望校は出さない', () => {
+  it('★マスタに当たっていない（私立など）志望校も、学校名だけの行を出す（第2段）', () => {
     const schools: TargetSchoolRow[] = [
       {
         id: 'ts-2',
@@ -863,14 +929,31 @@ describe('buildTargetSchoolGapLines', () => {
       reportCardAssessment,
       mockAssessment,
     ]);
-    expect(tell).toEqual([]);
+    // 登録されている志望校は必ず1行出す。めやすはマスタに当たったときだけ添える
+    expect(tell).toEqual(['第1 私立A高校']);
     expect(ask).toEqual([]);
   });
 
-  it('本人の内申・偏差値がどちらも取れないときは出さない', () => {
+  it('★本人の内申・偏差値が取れないときは、めやすだけを出して差は出さない', () => {
     const schools = [targetSchool({ naishin: 45, naishinMax: 65, hensachi: 51 })];
     const { tell } = buildTargetSchoolGapLines(schools, []);
-    expect(tell).toEqual([]);
+    expect(tell[0]).toContain('めやす 必要内申45・必要偏差値51');
+    expect(tell[0]).not.toMatch(/（[+-]\d+）/);
+  });
+
+  it('★沿線は出す。最寄駅は出さない（直線距離で使えない）', () => {
+    const schools = [targetSchool({ accessLines: ['西武池袋線', 'JR武蔵野線'] })];
+    const { tell } = buildTargetSchoolGapLines(schools, [reportCardAssessment]);
+    expect(tell[0]).toContain('沿線: 西武池袋線・JR武蔵野線');
+  });
+
+  it('学科（course）が空文字＝普通科の本体なので括弧ごと出さない', () => {
+    expect(buildTargetSchoolGapLines([targetSchool({ course: '' })], []).tell[0]).toContain(
+      '第1 清瀬 ／'
+    );
+    expect(buildTargetSchoolGapLines([targetSchool({ course: '外国語' })], []).tell[0]).toContain(
+      '第1 清瀬（外国語）'
+    );
   });
 });
 
@@ -935,5 +1018,573 @@ describe('★満点が違う学校と差を取らない', () => {
     const out = buildTargetSchoolGapLines(mock(33, 52) as any, reportCard as any);
     expect(out.tell[0]).toContain('必要内申33/52');
     expect(out.tell[0]).not.toMatch(/33\/52（[+-]/);
+  });
+});
+
+/* ============================================================
+ * 第2段（②④⑤の中身）
+ * 正典: docs/interview-workspace-layout-2026-09.md §「中身の追加（第2段）」
+ * ========================================================== */
+
+/** 面談記録・タスクの最小行（型の穴埋めはテストに要らない項目だけ） */
+function interviewRow(over: Partial<StudentInterview>): StudentInterview {
+  return {
+    id: 'i1',
+    school_id: 's1',
+    student_id: 'st1',
+    interview_date: '2026-09-01',
+    interview_type: 'parent_interview',
+    title: null,
+    content: '',
+    is_completed: false,
+    completed_at: null,
+    created_by: null,
+    created_at: '2026-09-01T00:00:00Z',
+    updated_at: '2026-09-01T00:00:00Z',
+    ...over,
+  };
+}
+
+const NOTTA_RECORD = [
+  '【タイトル】面談',
+  '【録音日時】2026/09/01 17:00',
+  '【音声URL】https://example.com/a.mp3',
+  '--- Notta 要約 ---',
+  '■ 保護者からの要望',
+  '・英語の宿題を減らしてほしい',
+  '・土曜の振替を増やしたい',
+  '■ 塾からの報告',
+  '・数学は順調',
+  '■ 前回の確認',
+  '・会話の中で確認できませんでした',
+].join('\n');
+
+describe('buildPreviousCommitmentLines（②ヒアリング）', () => {
+  it('未完了のタスクを「前回の約束」として1件1行にし、記録日を M/D で添える', () => {
+    const rows = [
+      interviewRow({
+        id: 't1',
+        interview_type: 'task',
+        content: '英語ワークP10まで',
+        interview_date: '2026-08-05',
+      }),
+      interviewRow({
+        id: 't2',
+        interview_type: 'task',
+        content: '模試の申込',
+        is_completed: true,
+      }),
+    ];
+    const { promises } = buildPreviousCommitmentLines(rows);
+    expect(promises).toEqual(['英語ワークP10まで（8/5・未完了）']);
+  });
+
+  it('直近の面談記録の「要望」「申し送り」「今後の方針」の箇条書きを前回の要望に出す', () => {
+    const { requests } = buildPreviousCommitmentLines([interviewRow({ content: NOTTA_RECORD })]);
+    expect(requests).toEqual(['英語の宿題を減らしてほしい', '土曜の振替を増やしたい']);
+  });
+
+  it('★中身が無い見出し（確認できませんでした）は拾わない', () => {
+    const { requests } = buildPreviousCommitmentLines([
+      interviewRow({
+        content: ['■ 保護者からの要望', '・会話の中で確認できませんでした'].join('\n'),
+      }),
+    ]);
+    expect(requests).toEqual([]);
+  });
+
+  it('約束・要望の1件ごとに「その後どうですか」を組む（同じ文面は1つにまとめる）', () => {
+    const rows = [
+      interviewRow({ content: NOTTA_RECORD }),
+      interviewRow({ id: 't1', interview_type: 'task', content: '英語の宿題を減らしてほしい' }),
+    ];
+    const { asks } = buildPreviousCommitmentLines(rows);
+    expect(asks).toEqual([
+      '前回の「英語の宿題を減らしてほしい」はその後どうですか',
+      '前回の「土曜の振替を増やしたい」はその後どうですか',
+    ]);
+  });
+
+  it('長い文面は40字で切って…を付ける（面談で読み上げられる長さにする）', () => {
+    const long = 'あ'.repeat(60);
+    const { asks } = buildPreviousCommitmentLines([
+      interviewRow({ id: 't1', interview_type: 'task', content: long }),
+    ]);
+    expect(asks[0]).toBe(`前回の「${'あ'.repeat(40)}…」はその後どうですか`);
+  });
+
+  it('タスクも記録も無ければ何も出ない', () => {
+    expect(buildPreviousCommitmentLines([])).toEqual({
+      promises: [],
+      requests: [],
+      asks: [],
+      items: [],
+    });
+  });
+
+  /**
+   * ★「聞く」か「報告する」かは中身で決まる（2026-09-23・教室長の指摘）。
+   *   判定は原則AI（followUps）だが、AIが使えない日に振る受け皿がここ。
+   */
+  it('★items は出どころ付き。保護者からの要望は「報告」、約束は「聞く」に振る', () => {
+    const rows = [
+      interviewRow({ content: NOTTA_RECORD }),
+      interviewRow({ id: 't1', interview_type: 'task', content: '英語ワークP10まで' }),
+    ];
+    const { items } = buildPreviousCommitmentLines(rows);
+    // 並びは約束が先（面談で話す順）
+    expect(items[0]).toEqual({ text: '英語ワークP10まで', source: 'task', fallback: 'ask' });
+    expect(items[1]).toEqual({
+      text: '英語の宿題を減らしてほしい',
+      source: '保護者からの要望',
+      fallback: 'report',
+    });
+    expect(items[2].fallback).toBe('report');
+  });
+
+  it('★「今後の方針」「次回への申し送り」は聞くほう（家庭が動いた結果を聞く）', () => {
+    const { items } = buildPreviousCommitmentLines([
+      interviewRow({
+        content: [
+          '--- Notta 要約 ---',
+          '■ 今後の方針',
+          '・慶應を含めて最後まで検討する',
+          '■ 次回への申し送り',
+          '・冬期の受講科目を決める',
+        ].join('\n'),
+      }),
+    ]);
+    expect(items.map((i) => [i.source, i.fallback])).toEqual([
+      ['今後の方針', 'ask'],
+      ['次回への申し送り', 'ask'],
+    ]);
+  });
+
+  it('同じ文面が約束と要望の両方にあるときは1件だけ（約束のほうを残す）', () => {
+    const rows = [
+      interviewRow({ content: NOTTA_RECORD }),
+      interviewRow({ id: 't1', interview_type: 'task', content: '英語の宿題を減らしてほしい' }),
+    ];
+    const { items } = buildPreviousCommitmentLines(rows);
+    expect(items.filter((i) => i.text === '英語の宿題を減らしてほしい')).toEqual([
+      { text: '英語の宿題を減らしてほしい', source: 'task', fallback: 'ask' },
+    ]);
+  });
+});
+
+describe('previousFollowUpAskLine / previousFollowUpReportLine', () => {
+  it('聞く行と報告行の文言（画面と印刷シートで同じ関数を使う）', () => {
+    expect(previousFollowUpAskLine('英語ワークP10まで')).toBe(
+      '前回の「英語ワークP10まで」はその後どうですか'
+    );
+    expect(previousFollowUpReportLine('英語の長文を増やしてほしい')).toBe(
+      '報告 ―― 前回の要望「英語の長文を増やしてほしい」への対応を伝える'
+    );
+  });
+});
+
+describe('buildHandoverText（②ヒアリング・AIにも渡る文面）', () => {
+  it('「## 次回への申し送り」があればそれを使う', () => {
+    const text = buildHandoverText(
+      '前置き\n## 次回への申し送り\n英語の単語を続ける\n## 別の見出し'
+    );
+    expect(text).toBe('英語の単語を続ける');
+  });
+
+  it('★Nottaの本文はメタ行と空の見出しを落として「見出し: 箇条書き」に畳む', () => {
+    const text = buildHandoverText(NOTTA_RECORD);
+    expect(text).not.toContain('録音日時');
+    expect(text).not.toContain('確認できませんでした');
+    expect(text).toContain('保護者からの要望: 英語の宿題を減らしてほしい／土曜の振替を増やしたい');
+    expect(text).toContain('｜塾からの報告: 数学は順調');
+  });
+
+  it('Nottaに「次回への申し送り」の節があればそこだけを使う', () => {
+    const text = buildHandoverText(
+      ['■ 塾からの報告', '・数学は順調', '■ 次回への申し送り', '・英語の語彙を続ける'].join('\n')
+    );
+    expect(text).toBe('英語の語彙を続ける');
+  });
+
+  it('構造化できない手入力の記録はそのまま（メタ行だけ落とす）', () => {
+    expect(buildHandoverText('数学の復習を家でも続けることになった')).toBe(
+      '数学の復習を家でも続けることになった'
+    );
+  });
+});
+
+describe('buildProgressFactLines（④現状の確認）', () => {
+  const textbook = (
+    id: string,
+    name: string,
+    subject: string,
+    sortOrder: number
+  ): StudentTextbookWithDetails =>
+    ({
+      id,
+      sort_order: sortOrder,
+      textbook: { id: 1, name, subject },
+    }) as unknown as StudentTextbookWithDetails;
+
+  const item = (
+    title: string,
+    sortOrder: number,
+    lessons: { lesson_date: string; teacher_name?: string | null }[],
+    handover?: string
+  ): CurriculumItemWithProgress =>
+    ({
+      id: `c-${title}`,
+      title,
+      sort_order: sortOrder,
+      progress: lessons.length > 0 || handover ? { lessons, handover: handover ?? null } : null,
+    }) as unknown as CurriculumItemWithProgress;
+
+  it('★科目ごとに最終利用日が最新の1冊（LIVE）だけを出す。進捗%は出さない', () => {
+    const data = [
+      {
+        textbook: textbook('tb-old', '旧テキスト', 'math', 1),
+        rows: [item('式の計算', 1, [{ lesson_date: '2026-06-01' }])],
+      },
+      {
+        textbook: textbook('tb-new', '新テキスト', 'math', 2),
+        rows: [
+          item(
+            '二次関数',
+            1,
+            [{ lesson_date: '2026-09-01', teacher_name: '山田' }],
+            '符号ミスが多い'
+          ),
+        ],
+      },
+    ];
+    const lines = buildProgressFactLines(data);
+    expect(lines.some((l) => l.includes('旧テキスト'))).toBe(false);
+    expect(lines[0]).toBe('新テキスト（数学） 最終記入 9/1');
+    expect(lines[1]).toBe('9/1 二次関数（山田）：符号ミスが多い');
+    expect(lines.join('')).not.toContain('%');
+  });
+
+  it('直近3回まで・新しい順に出し、次にやる単元を添える', () => {
+    const data = [
+      {
+        textbook: textbook('tb', 'テキスト', 'english', 1),
+        rows: [
+          item('Unit1', 1, [{ lesson_date: '2026-09-01' }]),
+          item('Unit2', 2, [{ lesson_date: '2026-09-08' }]),
+          item('Unit3', 3, [{ lesson_date: '2026-09-15' }]),
+          item('Unit4', 4, [{ lesson_date: '2026-09-22' }]),
+          item('Unit5', 5, []),
+          item('Unit6', 6, []),
+        ],
+      },
+    ];
+    const lines = buildProgressFactLines(data);
+    expect(lines).toEqual([
+      'テキスト（英語） 最終記入 9/22',
+      '9/22 Unit4',
+      '9/15 Unit3',
+      '9/8 Unit2',
+      '次 ―― Unit5、Unit6',
+    ]);
+  });
+
+  it('授業記録が1件も無い教材は出さない（LIVEの候補にしない）', () => {
+    const data = [
+      { textbook: textbook('tb', '未使用', 'math', 1), rows: [item('式の計算', 1, [])] },
+    ];
+    expect(buildProgressFactLines(data)).toEqual([]);
+  });
+
+  it('同じ最終利用日なら手動の並び順（sort_order）が上の教材を採る', () => {
+    const data = [
+      {
+        textbook: textbook('tb-b', 'B', 'math', 2),
+        rows: [item('B1', 1, [{ lesson_date: '2026-09-01' }])],
+      },
+      {
+        textbook: textbook('tb-a', 'A', 'math', 1),
+        rows: [item('A1', 1, [{ lesson_date: '2026-09-01' }])],
+      },
+    ];
+    expect(buildProgressFactLines(data)[0]).toContain('A（数学）');
+  });
+});
+
+describe('講習（⑤プラン提示）', () => {
+  const subjectNames = { 'sub-math': '数学', 'sub-eng': '英語' };
+
+  // 提案書（seasonal_proposals）の期ごとのまとめ。★これが本番の主材料
+  const summary = (
+    over: Partial<SeasonalProposalSeasonSummary>
+  ): SeasonalProposalSeasonSummary => ({
+    year: 2026,
+    season: 'summer',
+    status: 'approved',
+    komaBySubject: {},
+    totalKoma: 0,
+    ...over,
+  });
+
+  // koushu_enrollments（2027-02公開のWeb申込の入力源。本番はいま0行）
+  const enrollment = (over: Partial<KoushuEnrollment>): KoushuEnrollment =>
+    ({
+      id: 'e1',
+      course_id: null,
+      student_id: 'st1',
+      formation: 'kobetsu',
+      koma_count: 0,
+      subject_ids: [],
+      created_at: '2026-07-01T00:00:00Z',
+      updated_at: null,
+      ...over,
+    }) as unknown as KoushuEnrollment;
+
+  const buckets = (
+    summaries: SeasonalProposalSeasonSummary[],
+    enrollments: KoushuEnrollment[] = []
+  ) => mergeKoushuSeasons(summaries, enrollments, subjectNames);
+
+  describe('koushuFiscalYear', () => {
+    it('★1〜3月は前年度に属する（年度は4月始まり）', () => {
+      expect(koushuFiscalYear(new Date(2027, 0, 15))).toBe(2026);
+      expect(koushuFiscalYear(new Date(2027, 2, 20))).toBe(2026);
+      expect(koushuFiscalYear(new Date(2026, 3, 1))).toBe(2026);
+      expect(koushuFiscalYear(new Date(2026, 8, 23))).toBe(2026);
+    });
+  });
+
+  describe('buildKoushuHistoryLines', () => {
+    it('今期を除いた期を新しい順に「期ラベル 年：科目 nコマ（申込）」で出す', () => {
+      const rows = buckets([
+        summary({ season: 'summer', komaBySubject: { 数学: 8, 英語: 6 }, totalKoma: 14 }),
+        summary({ season: 'spring', komaBySubject: { 英語: 4 }, totalKoma: 4 }),
+        // 今期（冬期 2026）は今期の行が出すので履歴には出さない
+        summary({ season: 'winter', komaBySubject: { 数学: 8 }, totalKoma: 8 }),
+      ]);
+      expect(buildKoushuHistoryLines(rows, 2026, 'winter')).toEqual([
+        '夏期 2026：数学 8コマ・英語 6コマ（申込）',
+        '春期 2026：英語 4コマ（申込）',
+      ]);
+    });
+
+    it('★下書き・提案中の過去の期は出さない（出したが取らなかった行はノイズ）', () => {
+      const rows = buckets([
+        summary({ season: 'summer', status: 'sent', komaBySubject: { 数学: 8 }, totalKoma: 8 }),
+        summary({ season: 'spring', status: 'draft', komaBySubject: { 英語: 4 }, totalKoma: 4 }),
+      ]);
+      expect(buildKoushuHistoryLines(rows, 2026, 'winter')).toEqual([]);
+    });
+
+    it('同じ期の提案書は科目ごとに足し合わせる', () => {
+      const rows = buckets([
+        summary({ season: 'summer', komaBySubject: { 数学: 8 }, totalKoma: 8 }),
+        summary({ season: 'summer', komaBySubject: { 数学: 4 }, totalKoma: 4 }),
+      ]);
+      expect(buildKoushuHistoryLines(rows, 2026, 'winter')).toEqual([
+        '夏期 2026：数学 12コマ（申込）',
+      ]);
+    });
+
+    it('★koushu_enrollments の行は同じ期の提案書に足し込む（消さずに合流させる）', () => {
+      const rows = buckets(
+        [summary({ season: 'summer', komaBySubject: { 数学: 8 }, totalKoma: 8 })],
+        [
+          enrollment({
+            season: 'summer',
+            koma_count: 6,
+            koma_by_subject: { 'sub-eng': 6 },
+            created_at: '2026-07-01T00:00:00Z',
+          }),
+        ]
+      );
+      expect(buildKoushuHistoryLines(rows, 2026, 'winter')).toEqual([
+        '夏期 2026：数学 8コマ・英語 6コマ（申込）',
+      ]);
+    });
+
+    it('★科目別の内訳が無い行は総コマ数だけ出す（黙って0コマにしない）', () => {
+      const rows = buckets([], [enrollment({ season: 'summer', koma_count: 10 })]);
+      expect(buildKoushuHistoryLines(rows, 2026, 'winter')).toEqual(['夏期 2026：10コマ（申込）']);
+    });
+
+    it('今期しか無ければ履歴の行を出さない', () => {
+      const rows = buckets([summary({ season: 'winter', totalKoma: 8 })]);
+      expect(buildKoushuHistoryLines(rows, 2026, 'winter')).toEqual([]);
+    });
+  });
+
+  describe('buildKoushuCurrentLines', () => {
+    it('今期の提案を科目ごとに並べ、状態を添える', () => {
+      const rows = buckets([
+        summary({ season: 'winter', komaBySubject: { 数学: 8, 英語: 6 }, totalKoma: 14 }),
+      ]);
+      expect(buildKoushuCurrentLines(rows, 2026, 'winter')).toEqual([
+        '提案 数学 8コマ・英語 6コマ（申込済）',
+      ]);
+    });
+
+    it('sent は（提案中）・draft は（下書き）', () => {
+      expect(
+        buildKoushuCurrentLines(
+          buckets([summary({ season: 'winter', status: 'sent', komaBySubject: { 数学: 8 } })]),
+          2026,
+          'winter'
+        )
+      ).toEqual(['提案 数学 8コマ（提案中）']);
+      expect(
+        buildKoushuCurrentLines(
+          buckets([summary({ season: 'winter', status: 'draft', komaBySubject: { 数学: 8 } })]),
+          2026,
+          'winter'
+        )
+      ).toEqual(['提案 数学 8コマ（下書き）']);
+    });
+
+    it('★コマ数が1つも入っていなければ「提案あり・コマ未確定」（黙らない）', () => {
+      const rows = buckets([
+        summary({ season: 'winter', status: 'sent', komaBySubject: { 数学: 0 }, totalKoma: 0 }),
+      ]);
+      expect(buildKoushuCurrentLines(rows, 2026, 'winter')).toEqual([
+        '提案あり・コマ未確定（提案中）',
+      ]);
+    });
+
+    it('今期の提案書が無ければ行を出さない', () => {
+      const rows = buckets([summary({ season: 'summer' })]);
+      expect(buildKoushuCurrentLines(rows, 2026, 'winter')).toEqual([]);
+    });
+  });
+
+  describe('summarizeCurrentKoushu', () => {
+    it('今期があればその期のコマ数と状態を出す', () => {
+      const rows = buckets([summary({ season: 'winter', totalKoma: 14 })]);
+      expect(summarizeCurrentKoushu(rows, 2026, 'winter')).toEqual({
+        label: '冬期 2026 14コマ（申込済）',
+        koma: 14,
+        applied: true,
+        isCurrentSeason: true,
+      });
+    });
+
+    it('★今期が空でも「申込なし」で終わらせず、直近の期を添える', () => {
+      const rows = buckets([summary({ season: 'summer', totalKoma: 98 })]);
+      expect(summarizeCurrentKoushu(rows, 2026, 'winter')).toEqual({
+        label: '冬期 2026 は申込なし（直近 夏期 2026 98コマ・申込済）',
+        koma: 98,
+        applied: false,
+        isCurrentSeason: false,
+      });
+    });
+
+    it('1件も無ければ「申込なし」', () => {
+      expect(summarizeCurrentKoushu([], 2026, 'winter')).toEqual({
+        label: '申込なし',
+        koma: 0,
+        applied: false,
+        isCurrentSeason: false,
+      });
+    });
+  });
+});
+
+describe('dedupeConsecutiveHandovers（④LIVE進行表）', () => {
+  const lesson = (
+    lessonDate: string,
+    unitTitle: string,
+    teacherName: string | null,
+    handover: string | null
+  ) => ({ lessonDate, unitTitle, teacherName, handover });
+
+  it('★同じ講師・同じ引継ぎ文が続いたら、いちばん新しい1件だけ残す', () => {
+    const rows = [
+      lesson('2026-09-15', '2次方程式', '広田', '計算は安定。文章題は復習が要る'),
+      lesson('2026-09-11', '2次方程式', '広田', '計算は安定。文章題は復習が要る'),
+      lesson('2026-09-04', '因数分解', '広田', '公式の使い分けを確認'),
+    ];
+    expect(dedupeConsecutiveHandovers(rows).map((r) => r.lessonDate)).toEqual([
+      '2026-09-15',
+      '2026-09-04',
+    ]);
+  });
+
+  it('★引継ぎが空の行は畳まない（別の単元が消えて何をやったか分からなくなる）', () => {
+    const rows = [
+      lesson('2026-09-15', '2次方程式', '広田', null),
+      lesson('2026-09-11', '因数分解', '広田', ''),
+    ];
+    expect(dedupeConsecutiveHandovers(rows)).toHaveLength(2);
+  });
+
+  it('★連続していなければ残す（時系列が飛ぶと読めなくなる）', () => {
+    const rows = [
+      lesson('2026-09-15', 'A', '広田', '同じ文'),
+      lesson('2026-09-11', 'B', '広田', '別の文'),
+      lesson('2026-09-04', 'C', '広田', '同じ文'),
+    ];
+    expect(dedupeConsecutiveHandovers(rows)).toHaveLength(3);
+  });
+
+  it('講師が違えば同じ文でも残す', () => {
+    const rows = [
+      lesson('2026-09-15', 'A', '広田', '同じ文'),
+      lesson('2026-09-11', 'A', '田中', '同じ文'),
+    ];
+    expect(dedupeConsecutiveHandovers(rows)).toHaveLength(2);
+  });
+});
+
+describe('buildTellSections（AIへ渡す現状の行）', () => {
+  const base = {
+    assessments: [] as AssessmentWithScores[],
+    interviews: [] as StudentInterview[],
+    textbookData: [],
+    disciplineSessions: [],
+    koushuEnrollments: [],
+  };
+
+  const school = {
+    id: 'ts1',
+    rank: 1,
+    schoolName: '清瀬',
+    highSchoolId: 'hs1',
+    reason: null,
+    updatedAt: '2026-09-01T00:00:00Z',
+    master: {
+      prefecture: '東京都',
+      schoolName: '清瀬',
+      course: '',
+      category: '普通科',
+      naishin: 45,
+      naishinMax: 65,
+      hensachi: 51,
+      sourceLabel: 'Vもぎ 2025年9月版',
+      verifiedAt: null,
+      accessLines: ['西武池袋線'],
+    },
+  };
+
+  it('★志望校の行は score に混ぜて送る（④でAIが志望校に触れられるように）', () => {
+    const sections = buildTellSections({ ...base, targetSchools: [school] });
+    const score = sections.find((s) => s.key === 'score');
+    expect(score).toBeTruthy();
+    const targetLines = score!.current.filter(isTargetSchoolFactLine);
+    expect(targetLines).toHaveLength(1);
+    expect(targetLines[0]).toContain(TARGET_SCHOOL_FACT_PREFIX);
+    // ★画面・紙は「志望校」の行を別に出すので、表示側はこの行を外して二重に出さない
+    expect(stripTargetSchoolFactLines(score!.current)).toEqual([]);
+  });
+
+  it('志望校が無ければ score の行は増えない', () => {
+    expect(buildTellSections(base).find((s) => s.key === 'score')).toBeUndefined();
+  });
+
+  it('前回の面談からの申し送りは、空の見出しを畳んだ文面で渡す', () => {
+    const sections = buildTellSections({
+      ...base,
+      interviews: [interviewRow({ content: NOTTA_RECORD })],
+    });
+    const last = sections.find((s) => s.key === 'lastInterview');
+    expect(last!.current.join('')).not.toContain('確認できませんでした');
+    expect(last!.current.some((l) => l.startsWith('申し送り: '))).toBe(true);
   });
 });

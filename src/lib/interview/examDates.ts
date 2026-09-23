@@ -21,27 +21,55 @@
  */
 import type { Region } from '@/lib/interview/region';
 
+/** 都立高校 第一次募集・分割前期の日程（年度キーは「令和N年度入試」の西暦年） */
+interface TokyoExamSchedule {
+  /** 学力検査日 */
+  exam: string;
+  /** 出願の〆切 */
+  applicationDue: string;
+  /** 志望変更（出願の取り下げ）ができる最終日 */
+  withdrawalDue: string;
+}
+
 /**
- * 都県ごとの学力検査日（年度キーは「令和N年度入試」の西暦年）
+ * ★出願・取り下げの日付もここに置く。
+ *   面談では「2/4までに出願」「2/10が取り下げ日」と口で言う場面があるが、
+ *   これを定型トークの文字列に書くと**年が変わっても誰も気づかないまま残る**。
+ *   年度ごとに手で足すこのファイルに集めておき、年度が無ければ黙る。
  *
- * ★東京の 2027-02-21 は日曜だが、これで正しい。直さないこと。
- *   都立の一次が日曜なのは珍しく、「前年度の日付を引き写した誤りでは」と一度疑われたが、
- *   都教委の一次情報2つで「2月21日（日曜日）」と明記されているのを確かめた（2026-09-23）。
- *     - 「令和9年度都立高等学校入学者選抜の日程について」（2026-05-28 報道発表）
- *     - 「令和9年度東京都立高等学校入学者選抜実施要綱・同細目について」（2026-09-17 報道発表）
- *   日曜になった理由は発表に書かれていない。曜日を画面に出しても差し支えない。
+ * ★2027-02-21 は日曜だが、これで正しい（2026-09-23 に確認）。
+ *   都教委「令和９年度東京都立高等学校入学者選抜実施要綱」第２－１（2026-09-17 公表）に
+ *   「学力検査及び面談 令和９年２月２１日（日）」とある。日程発表（2026-05-28）にも
+ *   「2月21日（日）」と明記。例年と曜日が違うので疑いたくなるが、直さないこと。
+ *   同じ表の 出願〆切 ２月４日（木）・取下げ ２月１０日（水）とも一致した
+ *   （再提出は ２月１２日（金）正午まで）。
  */
-const EXAM_DATES: Record<Region, Record<number, string>> = {
+const TOKYO_EXAM_SCHEDULE: Record<number, TokyoExamSchedule> = {
   // 令和9年度入試。推薦 1/26(火)・27(水)（発表 2/2(火)）／一次 2/21(日)（発表 3/1(月)）／
   // 二次・分割後期 3/9(火)（発表 3/12(金)）
-  tokyo: {
-    2027: '2027-02-21',
-  },
+  2027: { exam: '2027-02-21', applicationDue: '2027-02-04', withdrawalDue: '2027-02-10' },
+};
+
+/**
+ * 神奈川県公立高校 共通選抜の学力検査日（年度キーは「令和N年度入試」の西暦年）
+ *
+ * ★出願・志願変更の日付はまだ持たない（examApplicationLine は東京のみ）。
+ *   神奈川は出願期間・志願変更期間が「◯日〜◯日正午」の幅で、都立の「〆切1日」とは
+ *   言い方が違う。足すときは都立の行を流用せず、神奈川用の文言を別に作ること。
+ */
+const KANAGAWA_EXAM_DATES: Record<number, string> = {
   // 令和9年度入試。共通選抜のみ（推薦は無い）。学力検査 2/16(火)（発表 2/26(金)）／
   // 二次募集 検査 3/9(火)。出どころは県教委「募集案内 1 日程」PDF（一次情報で確認済み）
-  kanagawa: {
-    2027: '2027-02-16',
-  },
+  2027: '2027-02-16',
+};
+
+/**
+ * 都県 → その年度の学力検査日。
+ * ★Record<Region, …> にしてあるので、都県を足したときに日付の引き方を書き忘れると型で落ちる。
+ */
+const EXAM_DATE_OF: Record<Region, (examYear: number) => string | null> = {
+  tokyo: (y) => TOKYO_EXAM_SCHEDULE[y]?.exam ?? null,
+  kanagawa: (y) => KANAGAWA_EXAM_DATES[y] ?? null,
 };
 
 /**
@@ -55,21 +83,22 @@ export const EXAM_NAME: Record<Region, string> = {
   kanagawa: '共通選抜',
 };
 
+/** 今日から見て次に来る入試の年度キー。学年度は4月始まりで、1〜3月はその年の2月の入試 */
+function examYearOf(today: Date): number {
+  const year = today.getFullYear();
+  const month = today.getMonth() + 1;
+  return month >= 4 ? year + 1 : year;
+}
+
 /**
  * その教室にとって次に来る入試日を返す。無ければ null。学年は見ない。
  *
- * 生徒ごとではなく「教室として次に来る入試」を出したいときに使う。
- * 面談台本のように受験学年に限りたいときは nextExamDate を使うこと。
+ * 生徒ごとではなく「教室として次に来る入試」を出したいとき（プライバシースクリーンの
+ * カウントダウン等）に使う。面談台本のように受験学年に限りたいときは nextExamDate を使うこと。
  */
 export function nextExamDateForRegion(today: Date, region: Region | null): string | null {
   if (!region) return null;
-
-  // 学年度は4月始まり。1〜3月は前年の4月に始まった年度なので、入試はその年の2月
-  const year = today.getFullYear();
-  const month = today.getMonth() + 1;
-  const examYear = month >= 4 ? year + 1 : year;
-
-  return EXAM_DATES[region][examYear] ?? null;
+  return EXAM_DATE_OF[region](examYearOf(today));
 }
 
 /**
@@ -87,6 +116,44 @@ export function nextExamDate(
 ): string | null {
   if (grade !== 9) return null;
   return nextExamDateForRegion(today, region);
+}
+
+/** その生徒にとって次に来る都立一次の日程一式。無ければ null */
+function nextTokyoExamSchedule(
+  today: Date,
+  grade: number | null,
+  region: Region | null
+): TokyoExamSchedule | null {
+  if (grade !== 9 || region !== 'tokyo') return null;
+  return TOKYO_EXAM_SCHEDULE[examYearOf(today)] ?? null;
+}
+
+/** 「2/4」の形にする */
+function formatMonthDay(isoDate: string): string {
+  const [, m, d] = isoDate.split('-');
+  return `${Number(m)}/${Number(d)}`;
+}
+
+/**
+ * ③に出す出願まわりの1行。日程が分からなければ null（行そのものを出さない）。
+ * ★過ぎた日付は出さない。面談は11月から2月まで続くので、終わった〆切を読み上げないため。
+ * ★東京のみ。神奈川は出願の日程をまだ持っていないので黙る（KANAGAWA_EXAM_DATES の注記）。
+ */
+export function examApplicationLine(
+  today: Date,
+  grade: number | null,
+  region: Region | null
+): string | null {
+  const schedule = nextTokyoExamSchedule(today, grade, region);
+  if (!schedule) return null;
+  const parts: string[] = [];
+  if (daysUntil(today, schedule.applicationDue) >= 0) {
+    parts.push(`出願は ${formatMonthDay(schedule.applicationDue)} まで`);
+  }
+  if (daysUntil(today, schedule.withdrawalDue) >= 0) {
+    parts.push(`志望変更の取り下げは ${formatMonthDay(schedule.withdrawalDue)}`);
+  }
+  return parts.length > 0 ? `★都立 ―― ${parts.join('／')}` : null;
 }
 
 /** 入試まであと何日か。過ぎていたら 0 以下を返す */
@@ -109,6 +176,5 @@ export function examCountdownLine(
   if (!date || !region) return null;
   const days = daysUntil(today, date);
   if (days < 0) return null;
-  const [, m, d] = date.split('-');
-  return `${EXAM_NAME[region]}（${Number(m)}/${Number(d)}）まで あと${days}日`;
+  return `${EXAM_NAME[region]}（${formatMonthDay(date)}）まで あと${days}日`;
 }

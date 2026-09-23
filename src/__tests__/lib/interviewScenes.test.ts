@@ -2,19 +2,24 @@ import { describe, it, expect } from 'vitest';
 import {
   SCENE_KEYS,
   SCENE_LABEL,
-  SCENE_OPEN_BY_DEFAULT,
   SCENE_OF_SECTION,
   GRADE_BAND_LABEL,
   gradeBandOf,
   timingLines,
+  timingQa,
   planRationaleLines,
   emptyTimingCells,
   isExamGrade,
   type GradeBand,
 } from '@/lib/interview/scenes';
 import { BRIEF_SECTIONS } from '@/lib/ai/interviewBrief';
-import { stripNottaMeta } from '@/app/interview/interview.shared';
-import { examCountdownLine, nextExamDate, daysUntil } from '@/lib/interview/examDates';
+import { stripNottaMeta, parseNottaSummary } from '@/app/interview/interview.shared';
+import {
+  examCountdownLine,
+  examApplicationLine,
+  nextExamDate,
+  daysUntil,
+} from '@/lib/interview/examDates';
 import { regionOfSchool } from '@/lib/interview/region';
 
 describe('面談のシーン定義', () => {
@@ -30,22 +35,10 @@ describe('面談のシーン定義', () => {
     ]);
   });
 
-  it('全シーンにラベルと既定の開閉がある', () => {
+  it('全シーンにラベルがある', () => {
     for (const key of SCENE_KEYS) {
       expect(SCENE_LABEL[key]).toBeTruthy();
-      expect(typeof SCENE_OPEN_BY_DEFAULT[key]).toBe('boolean');
     }
-  });
-
-  it('★定型の①③⑦は閉じ、生徒ごとに変わる②④⑤⑥は開く', () => {
-    // 全部開くと縦に長くなって読まれない。ここが逆になると設計意図が失われる
-    expect(SCENE_OPEN_BY_DEFAULT.intro).toBe(false);
-    expect(SCENE_OPEN_BY_DEFAULT.timing).toBe(false);
-    expect(SCENE_OPEN_BY_DEFAULT.closing).toBe(false);
-    expect(SCENE_OPEN_BY_DEFAULT.hearing).toBe(true);
-    expect(SCENE_OPEN_BY_DEFAULT.status).toBe(true);
-    expect(SCENE_OPEN_BY_DEFAULT.plan).toBe(true);
-    expect(SCENE_OPEN_BY_DEFAULT.apply).toBe(true);
   });
 
   it('★AIに渡すセクションが全部どれかのシーンに割り当たっている', () => {
@@ -113,12 +106,36 @@ describe('③時期の重要性の定型トーク', () => {
   });
 
   it('★都県で中身が変わる。東京の制度の話が神奈川に出ない', () => {
-    const tokyo = timingLines(9, 'winter', 'tokyo');
-    const kanagawa = timingLines(9, 'winter', 'kanagawa');
+    const tokyo = [...timingLines(9, 'winter', 'tokyo')];
+    const kanagawa = [...timingLines(9, 'winter', 'kanagawa')];
     expect(tokyo.some((l) => l.includes('都立'))).toBe(true);
     expect(kanagawa.some((l) => l.includes('都立'))).toBe(false);
-    expect(kanagawa.some((l) => l.includes('打診値表'))).toBe(true);
-    expect(tokyo.some((l) => l.includes('打診値表'))).toBe(false);
+    // 想定問答のほうも混ざらない
+    const tokyoQa = timingQa(9, 'winter', 'tokyo').map((x) => x.q + x.a);
+    const kanagawaQa = timingQa(9, 'winter', 'kanagawa').map((x) => x.q + x.a);
+    expect(kanagawaQa.some((l) => l.includes('打診値表'))).toBe(true);
+    expect(tokyoQa.some((l) => l.includes('打診値表'))).toBe(false);
+    expect(tokyoQa.some((l) => l.includes('Vもぎ'))).toBe(true);
+    expect(kanagawaQa.some((l) => l.includes('Vもぎ'))).toBe(false);
+  });
+
+  it('★想定問答は共通 → 都県の順。共通の問は両方に出る', () => {
+    const tokyo = timingQa(9, 'winter', 'tokyo');
+    const kanagawa = timingQa(9, 'winter', 'kanagawa');
+    const common = 'まだ受験生の意識が無いのですが、大丈夫ですか';
+    expect(tokyo[0].q).toBe(common);
+    expect(kanagawa[0].q).toBe(common);
+    // 問と答が両方とも埋まっている（片方だけの行を作らない）
+    for (const item of [...tokyo, ...kanagawa]) {
+      expect(item.q.length).toBeGreaterThan(0);
+      expect(item.a.length).toBeGreaterThan(0);
+    }
+  });
+
+  it('用意されていない組み合わせの想定問答は空', () => {
+    expect(timingQa(9, 'summer', 'tokyo')).toEqual([]);
+    expect(timingQa(1, 'winter', 'tokyo')).toEqual([]);
+    expect(timingQa(null, 'winter', 'tokyo')).toEqual([]);
   });
 
   it('共通の行は両方に出る', () => {
@@ -130,9 +147,12 @@ describe('③時期の重要性の定型トーク', () => {
   it('★共通の行は前と後ろに分かれる。締めの言葉が話の2行目に来ない', () => {
     const lines = timingLines(9, 'winter', 'kanagawa');
     expect(lines[0]).toBe('受験間近。最後の追い込みの時期');
-    expect(lines[lines.length - 1]).toContain('体調管理');
     // 都県の話は共通の前後に挟まれる
     expect(lines[1]).toContain('内申の大詰め');
+    // 締めの「ご家庭へ」はすべて末尾にまとまる
+    const tail = lines.slice(-3);
+    expect(tail.every((l) => l.startsWith('ご家庭へ'))).toBe(true);
+    expect(tail.some((l) => l.includes('体調管理'))).toBe(true);
   });
 
   it('★教室が未登録（region=null）でも共通の行だけは出る', () => {
@@ -224,6 +244,83 @@ describe('Nottaのメタ情報を落とす', () => {
   });
 });
 
+describe('Nottaの要約を構造化する（parseNottaSummary）', () => {
+  const notta = [
+    '【タイトル】9/11 05:10 模試の成績と受験対策の相談',
+    '【録音日時】2026/09/11 05:10',
+    '【音声URL】https://app.notta.ai/7389587941842665472/dashboard/abc',
+    '【参加者】教室長・保護者',
+    '--- Notta 要約 ---',
+    '■ 前回の確認',
+    '・前回の面談に関する具体的な情報は会話の中で見つかりませんでした。',
+    '',
+    '■ 相談事項',
+    '・高校選択が主なテーマ',
+    '・法政と鎌倉学園の比較',
+    '',
+    '■ 次回への申し送り',
+    '・志望校を小平と東大和南に絞る',
+  ].join('\n');
+
+  it('メタ行を落とし、見出しと箇条書きに割る', () => {
+    const parsed = parseNottaSummary(notta);
+    expect(parsed).not.toBeNull();
+    expect(parsed!.title).toBe('9/11 05:10 模試の成績と受験対策の相談');
+    expect(parsed!.audioUrl).toBe('https://app.notta.ai/7389587941842665472/dashboard/abc');
+    expect(parsed!.sections.map((s) => s.heading)).toEqual(['相談事項', '次回への申し送り']);
+    expect(parsed!.sections[0].bullets).toEqual(['高校選択が主なテーマ', '法政と鎌倉学園の比較']);
+  });
+
+  it('★中身が「見つかりませんでした」等しか無い見出しは畳んで omitted に回す', () => {
+    // 実物ではこの定型文が本文の半分を占める。出したままだと面談中に読めない
+    const parsed = parseNottaSummary(notta);
+    expect(parsed!.omitted).toEqual(['前回の確認']);
+  });
+
+  it('「確認できませんでした」「記載がありません」も空の言い回しとして畳む', () => {
+    const parsed = parseNottaSummary(
+      [
+        '■ 塾からの報告',
+        '・授業態度に関する具体的な報告は会話の中で確認できませんでした。',
+        '■ 保護者からの要望',
+        '・特段の記載がありません',
+        '■ 相談事項',
+        '・進路の相談',
+      ].join('\n')
+    );
+    expect(parsed!.omitted).toEqual(['塾からの報告', '保護者からの要望']);
+    expect(parsed!.sections.map((s) => s.heading)).toEqual(['相談事項']);
+  });
+
+  it('【見出し】形式（古いNottaの出力）も見出しとして扱う', () => {
+    const parsed = parseNottaSummary(
+      [
+        '【塾からの報告】',
+        '楽しく学習を進めたいという方針を説明',
+        '【今後の方針】',
+        '初回授業を実施',
+      ].join('\n')
+    );
+    expect(parsed!.sections.map((s) => s.heading)).toEqual(['塾からの報告', '今後の方針']);
+    expect(parsed!.sections[0].bullets).toEqual(['楽しく学習を進めたいという方針を説明']);
+  });
+
+  it('見出しが1つも無い本文（手入力の短い記録）は null', () => {
+    expect(
+      parseNottaSummary('夏期の進捗を報告。数学の関数を冬期に回す旨を了承いただいた')
+    ).toBeNull();
+  });
+
+  it('メタ行しか無い本文も null（節に割れないものを無理に構造化しない）', () => {
+    expect(parseNottaSummary('【タイトル】面談\n【録音日時】2026/08/03')).toBeNull();
+  });
+
+  it('箇条書きが1件も無い見出しも「記載なし」に回す', () => {
+    const parsed = parseNottaSummary(['■ 前回の確認', '■ 相談事項', '・進路の相談'].join('\n'));
+    expect(parsed!.omitted).toEqual(['前回の確認']);
+  });
+});
+
 describe('入試までの日数', () => {
   it('★中3のときだけ出す。中1・中2に「あと900日」は面談で使わない', () => {
     const t = new Date('2026-09-22');
@@ -231,6 +328,29 @@ describe('入試までの日数', () => {
     expect(examCountdownLine(t, 8, 'tokyo')).toBeNull();
     expect(examCountdownLine(t, 12, 'tokyo')).toBeNull(); // 高3は都立入試ではない
     expect(examCountdownLine(t, null, 'tokyo')).toBeNull();
+  });
+
+  it('★出願・取り下げの〆切は examDates.ts に持つ（定型トークに年度の日付を書かない）', () => {
+    const t = new Date('2026-11-20');
+    const line = examApplicationLine(t, 9, 'tokyo');
+    expect(line).toContain('出願は 2/4 まで');
+    expect(line).toContain('取り下げは 2/10');
+  });
+
+  it('★過ぎた〆切は出さない。面談は11月から2月まで続く', () => {
+    // 出願は済んでいるが取り下げはまだ
+    expect(examApplicationLine(new Date('2027-02-06'), 9, 'tokyo')).toBe(
+      '★都立 ―― 志望変更の取り下げは 2/10'
+    );
+    // どちらも過ぎたら行そのものを出さない
+    expect(examApplicationLine(new Date('2027-02-15'), 9, 'tokyo')).toBeNull();
+  });
+
+  it('★出願の〆切も神奈川・中3以外・登録の無い年度には出さない', () => {
+    const t = new Date('2026-11-20');
+    expect(examApplicationLine(t, 9, 'kanagawa')).toBeNull();
+    expect(examApplicationLine(t, 8, 'tokyo')).toBeNull();
+    expect(examApplicationLine(new Date('2028-11-20'), 9, 'tokyo')).toBeNull();
   });
 
   it('★神奈川（緑園都市校）にも出す。日付は共通選抜の学力検査 2/16', () => {

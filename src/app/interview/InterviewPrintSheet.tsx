@@ -18,14 +18,23 @@ import { SEASON_LABELS } from '@/types/database';
 import {
   buildTellSections,
   buildGoalAchievementLines,
+  buildKoushuHistoryLines,
   buildMissingRecordAskLines,
+  buildPreviousCommitmentLines,
   buildTargetSchoolGapLines,
   currentSeason,
   formatRegularPatternsSchedule,
+  koushuFiscalYear,
+  mergeKoushuSeasons,
+  previousFollowUpAskLine,
+  previousFollowUpReportLine,
+  stripTargetSchoolFactLines,
+  summarizeCurrentKoushu,
 } from './interview.shared';
 import type { TextbookProgressData } from './ProgressPanel';
 import type { DisciplineSessionRow } from '@/lib/api/progress-sessions';
 import type { KoushuEnrollment } from '@/lib/api/seasonalCourses';
+import type { SeasonalProposalSeasonSummary } from '@/lib/api/seasonalProposalSummary';
 import type { ScheduleRegularPattern } from '@/types/schedule';
 import type { StudentExamGoalWithType } from '@/lib/api/progress';
 import type { TargetSchoolRow } from '@/lib/api/targetSchools';
@@ -38,12 +47,13 @@ import {
   CLOSING_LINES,
   APPLY_LINES,
   timingLines,
+  timingQa,
   planRationaleLines,
   isExamGrade,
 } from '@/lib/interview/scenes';
-import { examCountdownLine } from '@/lib/interview/examDates';
+import { examCountdownLine, examApplicationLine } from '@/lib/interview/examDates';
 import { regionOfSchool } from '@/lib/interview/region';
-import { briefSectionLabel, type BriefSectionKey } from '@/lib/ai/interviewBrief';
+import { briefSectionLabel, followUpItemKey, type BriefSectionKey } from '@/lib/ai/interviewBrief';
 import { formatGradeLabel } from '@/lib/utils/gradeLabel';
 
 interface InterviewPrintSheetProps {
@@ -57,11 +67,15 @@ interface InterviewPrintSheetProps {
   /** 宿題・遅刻パネルと同じ生セッション行 */
   disciplineSessions: DisciplineSessionRow[];
   koushuEnrollments: KoushuEnrollment[];
+  /** 講習の提案書（期ごとのまとめ）。★⑤の主材料。koushu_enrollments は本番0行 */
+  koushuSummaries: SeasonalProposalSeasonSummary[];
   regularPatterns: ScheduleRegularPattern[];
   /** 試験目標（②ヒアリング「目標の達成度」の材料。InterviewScriptCard と同じもの） */
   examGoals: StudentExamGoalWithType[];
-  /** 志望校（④現状の確認「志望校との差」の材料） */
+  /** 志望校（④現状の確認「志望校」の材料） */
   targetSchools: TargetSchoolRow[];
+  /** 科目ID→科目名（⑤プラン提示「講習の履歴」の科目名に使う） */
+  subjectNames: Record<string, string>;
   /**
    * 面談で話すこと（AI）。押していなければ null で、「見えること」「つながり」は乗らない。
    * ★画面で手直しした「見えること」がそのまま入る（親が結果を持っているため）。
@@ -99,9 +113,11 @@ export function InterviewPrintSheet({
   textbookData,
   disciplineSessions,
   koushuEnrollments,
+  koushuSummaries,
   regularPatterns,
   examGoals,
   targetSchools,
+  subjectNames,
   script,
 }: InterviewPrintSheetProps) {
   // ★AI未生成でも刷れるよう、伝える行は独自に組み直す（InterviewScriptCard と同じ関数）
@@ -111,12 +127,35 @@ export function InterviewPrintSheet({
     textbookData,
     disciplineSessions,
     koushuEnrollments,
+    koushuSummaries,
+    subjectNames,
+    targetSchools,
   });
   // 目標の達成度・志望校との差・成績記録なしの「聞くこと」も同じ関数で組み直す
   // （InterviewScriptCard と二重実装しない。画面と紙で数字がずれる事故を防ぐ）
   const goalAchievement = buildGoalAchievementLines(examGoals, assessments);
   const targetSchoolGap = buildTargetSchoolGapLines(targetSchools, assessments);
   const missingRecordAsk = buildMissingRecordAskLines(assessments, student.grade);
+  // ②ヒアリングの「前回の約束・前回の要望」と、そこから組む「その後どうですか」
+  const previous = buildPreviousCommitmentLines(interviews);
+  /**
+   * 前回の約束・要望を「報告」と「聞く」に振り分ける（画面と同じ規則）。
+   * ★AIが返した項目はその判定に従い、無いものは出どころ（fallback）で振る。
+   */
+  const followUpByItem = new Map((script?.followUps ?? []).map((f) => [f.item, f]));
+  const followUpReports: string[] = [];
+  const followUpAsks: string[] = [];
+  for (const item of previous.items) {
+    const hit = followUpByItem.get(followUpItemKey(item.text));
+    const kind = hit?.kind ?? item.fallback;
+    if (kind === 'report') {
+      followUpReports.push(
+        hit?.text ? `報告 ―― ${hit.text}` : previousFollowUpReportLine(item.text)
+      );
+    } else {
+      followUpAsks.push(hit?.text || previousFollowUpAskLine(item.text));
+    }
+  }
 
   // seen（AIの着眼点）は script があれば key で引く。無ければ全て空文字扱い
   const seenByKey = new Map<BriefSectionKey, string>();
@@ -125,12 +164,15 @@ export function InterviewPrintSheet({
   }
   // script は lessons・parent（サーバーが足す2セクション）の current も持っている。
   // ★AI未生成のときはこの2つが無いまま（面談画面はこの2つの材料を読んでいないため）
+  // ★志望校の行は score に混ぜてAIへ送っているので、ここで外す（④で別ブロックにして出す）
   const currentByKey = new Map<BriefSectionKey, string[]>(
-    tellSections.map((s) => [s.key, s.current])
+    tellSections.map((s) => [s.key, stripTargetSchoolFactLines(s.current)])
   );
   if (script) {
     for (const s of script.sections) {
-      if (!currentByKey.has(s.key) && s.current.length > 0) currentByKey.set(s.key, s.current);
+      if (!currentByKey.has(s.key) && s.current.length > 0) {
+        currentByKey.set(s.key, stripTargetSchoolFactLines(s.current));
+      }
     }
   }
 
@@ -141,9 +183,17 @@ export function InterviewPrintSheet({
   // ⑤で「なぜこの教科・この単元か」を言うための根拠。③と同じ行（scenes.ts）
   const planRationale = planRationaleLines(student.grade, seasonKey, region);
   const examCountdown = examCountdownLine(new Date(), student.grade, region);
-  const seasonEnrollments = koushuEnrollments.filter((e) => e.season === seasonKey);
-  const seasonKoma = seasonEnrollments.reduce((sum, e) => sum + (e.koma_count ?? 0), 0);
-  const applied = seasonEnrollments.length > 0;
+  const examApplication = examApplicationLine(new Date(), student.grade, region);
+  // ③の想定問答。よく聞かれること → こう答えている（scenes.ts）
+  const qa = timingQa(student.grade, seasonKey, region);
+  // ★年度は4月始まり（1〜3月は前年度）。画面（InterviewScriptCard）と同じ規則で組む
+  const fiscalYear = koushuFiscalYear(new Date());
+  // 提案書（主材料）と koushu_enrollments（2027-02公開のWeb申込。いまは0行）を期ごとに合流
+  const koushuBuckets = mergeKoushuSeasons(koushuSummaries, koushuEnrollments, subjectNames);
+  // ⑤プラン提示「これまでの講習の申し込み履歴」。今期は今期の行が出すので除く
+  const koushuHistory = buildKoushuHistoryLines(koushuBuckets, fiscalYear, seasonKey);
+  // ★ヘッダー帯・⑤のバッジ・⑥の「申込の状況」で同じ値を使う
+  const koushuSummary = summarizeCurrentKoushu(koushuBuckets, fiscalYear, seasonKey);
 
   /** シーン内の1セクション（伝える＋見えること）を1ブロックにする */
   function sectionBlock(key: BriefSectionKey) {
@@ -160,9 +210,6 @@ export function InterviewPrintSheet({
     );
   }
 
-  const hearingKeys = (Object.keys(SCENE_OF_SECTION) as BriefSectionKey[]).filter(
-    (k) => SCENE_OF_SECTION[k] === 'hearing'
-  );
   const statusKeys = (Object.keys(SCENE_OF_SECTION) as BriefSectionKey[]).filter(
     (k) => SCENE_OF_SECTION[k] === 'status'
   );
@@ -202,8 +249,18 @@ export function InterviewPrintSheet({
           />
           {/* 入試までの日数。★中3のときだけ出る（examDates.ts） */}
           {examCountdown && <p className="text-[10px] font-medium">{examCountdown}</p>}
-          {timing.length > 0 ? (
-            <Bullets items={timing} />
+          {examApplication && <p className="text-[10px] font-medium">{examApplication}</p>}
+          {timing.length > 0 || qa.length > 0 ? (
+            <>
+              <Bullets items={timing} />
+              {/* 想定問答。面談中に引くものなので、問を太字にして答えを下げる */}
+              {qa.map((item, i) => (
+                <div key={i} className="text-[9.5px] leading-[1.5] text-gray-800">
+                  <div className="font-bold">Q. {item.q}</div>
+                  <div className="pl-2.5">A. {item.a}</div>
+                </div>
+              ))}
+            </>
           ) : (
             <p className="text-[10px] text-gray-500">この学年・季節の定型トークは未登録です</p>
           )}
@@ -213,8 +270,24 @@ export function InterviewPrintSheet({
         <div className="col-span-2 flex flex-col gap-1 break-inside-avoid">
           <SceneHeading no="02" label="ヒアリング" />
           <div className="grid grid-cols-2 gap-x-5">
+            {/* ★並びは画面（InterviewScriptCard の sceneFactLines('hearing')）と揃える。
+                前回の面談から → 前回の約束 → 前回の要望 → 授業の様子 → 宿題・遅刻 → 目標の達成度 */}
             <div className="flex flex-col gap-1">
-              {hearingKeys.map(sectionBlock)}
+              {sectionBlock('lastInterview')}
+              {/* 前回の約束（未完了タスク）・前回の要望（直近の面談記録） */}
+              {previous.promises.length > 0 && (
+                <div className="text-[10px] leading-[1.6] text-gray-800">
+                  ・前回の約束 ―― {previous.promises.join('／')}
+                </div>
+              )}
+              {previous.requests.length > 0 && (
+                <div className="text-[10px] leading-[1.6] text-gray-800">
+                  ・前回の要望 ―― {previous.requests.join('／')}
+                </div>
+              )}
+              {sectionBlock('lessons')}
+              {sectionBlock('discipline')}
+              {sectionBlock('parent')}
               {/* 目標の達成度。試験目標と成績を突き合わせて組む「伝える」行 */}
               {goalAchievement.tell.length > 0 && (
                 <div className="text-[10px] leading-[1.6] text-gray-800">
@@ -223,7 +296,30 @@ export function InterviewPrintSheet({
               )}
             </div>
             <div className="border-l border-dotted border-gray-400 pl-3.5">
-              <div className="mb-0.5 text-[9px] font-bold text-gray-600">聞くこと</div>
+              {/* ★前回の要望のうち、塾から対応を伝えるもの（画面と同じ振り分け） */}
+              {followUpReports.length > 0 && (
+                <>
+                  <div className="mb-0.5 text-[9px] font-bold text-gray-600">話すこと</div>
+                  {followUpReports.map((t, i) => (
+                    <div key={`report-${i}`} className="text-[10px] leading-[1.6] text-gray-800">
+                      ・{t}
+                    </div>
+                  ))}
+                </>
+              )}
+              <div
+                className={`mb-0.5 text-[9px] font-bold text-gray-600 ${
+                  followUpReports.length > 0 ? 'mt-1' : ''
+                }`}
+              >
+                聞くこと
+              </div>
+              {/* 前回の約束・要望のうち、家庭に聞くもの */}
+              {followUpAsks.map((t, i) => (
+                <div key={`followup-${i}`} className="text-[10px] leading-[1.6] text-gray-800">
+                  □ {t}
+                </div>
+              ))}
               {(ASK_LINES.hearing ?? []).map((t, i) => (
                 <div key={i} className="text-[10px] leading-[1.6] text-gray-800">
                   □ {t}
@@ -245,10 +341,11 @@ export function InterviewPrintSheet({
           <div className="grid grid-cols-2 gap-x-5">
             <div className="flex flex-col gap-1">
               {statusKeys.map(sectionBlock)}
-              {/* 志望校との差。マスタに当たり本人の内申・偏差値も取れたときだけ出る */}
+              {/* 志望校。めやす・本人との差・沿線を1件1行にまとめたブロック */}
               {targetSchoolGap.tell.map((t, i) => (
                 <div key={i} className="text-[10px] leading-[1.6] text-gray-800">
-                  ・{t}
+                  ・{i === 0 ? '志望校 ―― ' : ''}
+                  {t}
                 </div>
               ))}
             </div>
@@ -275,6 +372,13 @@ export function InterviewPrintSheet({
                   □ {t}
                 </div>
               ))}
+              {/* ★登録がある生徒には「動いたか」を聞く（カードの TARGET_SCHOOL_ASK_LINES と同じ） */}
+              {targetSchools.length > 0 &&
+                ['志望校の見学・説明会に行ったか', '併願の私立は決まっているか'].map((t, i) => (
+                  <div key={`school-ask-${i}`} className="text-[10px] leading-[1.6] text-gray-800">
+                    □ {t}
+                  </div>
+                ))}
             </div>
           </div>
         </div>
@@ -284,11 +388,7 @@ export function InterviewPrintSheet({
           <SceneHeading
             no="05"
             label="プラン提示"
-            badge={
-              seasonEnrollments.length > 0
-                ? `${SEASON_LABELS[seasonKey]} ${seasonKoma}コマ`
-                : undefined
-            }
+            badge={koushuSummary.koma > 0 ? koushuSummary.label : undefined}
           />
           {regularPatterns.length > 0 && (
             <p className="text-[10px] leading-[1.6] text-gray-800">
@@ -298,6 +398,12 @@ export function InterviewPrintSheet({
           {/* ★③で話した「なぜ今か」を、プラン表のところでもう一度出す（scenes.ts） */}
           <Bullets items={planRationale} />
           {planKeys.map(sectionBlock)}
+          {/* これまでの申し込み（今期を除く）。履歴が無ければ行ごと出ない */}
+          {koushuHistory.length > 0 && (
+            <p className="text-[10px] leading-[1.6] text-gray-800">
+              ・講習の履歴 ―― {koushuHistory.join('／')}
+            </p>
+          )}
           {script?.bridge && (
             <div className="rounded bg-teal-50 px-2 py-1 text-[10px] leading-[1.6] text-teal-800">
               {script.bridge}
@@ -313,13 +419,7 @@ export function InterviewPrintSheet({
         {/* ⑥⑦ 申し込み・クロージング */}
         <div className="flex flex-col gap-3">
           <div className="flex flex-col gap-1">
-            <SceneHeading
-              no="06"
-              label="申し込み"
-              badge={
-                applied ? `申込あり（${SEASON_LABELS[seasonKey]} ${seasonKoma}コマ）` : '未申込'
-              }
-            />
+            <SceneHeading no="06" label="申し込み" badge={koushuSummary.label} />
             <Bullets items={APPLY_LINES} />
           </div>
           <div className="flex flex-col gap-1">

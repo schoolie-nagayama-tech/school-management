@@ -26,6 +26,12 @@ export interface TargetSchoolMaster {
   sourceLabel: string;
   // ★NULL＝紙の原本とまだ突き合わせていない（手起こしの数値）。画面ではその旨を示す。
   verifiedAt: string | null;
+  /**
+   * 沿線（複数可）。★最寄駅（primary_station）は持たせない。
+   * 直線距離で選んでおり、乗り換えを無視した「最寄り」は保護者に言えない
+   * （docs/data/README.md）。通学の話は沿線までにとどめる。
+   */
+  accessLines: string[];
 }
 
 /** 生徒1人の志望校1件（第1〜3志望のいずれか） */
@@ -62,6 +68,8 @@ export interface HighSchoolSearchResult {
   hensachi: number | null;
   sourceLabel: string;
   verifiedAt: string | null;
+  /** 沿線。★最寄駅は持たせない（TargetSchoolMaster と同じ理由） */
+  accessLines: string[];
 }
 
 /**
@@ -93,6 +101,7 @@ function toMaster(
     hensachi: standard?.hensachi ?? null,
     sourceLabel: standard?.source_label ?? '',
     verifiedAt: standard?.verified_at ?? null,
+    accessLines: school.access_lines ?? [],
   };
 }
 
@@ -269,6 +278,7 @@ export async function searchHighSchools(query: string): Promise<HighSchoolSearch
         hensachi: standard?.hensachi ?? null,
         sourceLabel: standard?.source_label ?? '',
         verifiedAt: standard?.verified_at ?? null,
+        accessLines: s.access_lines ?? [],
       };
     })
     .sort((a, b) => {

@@ -27,7 +27,7 @@ describe('プライバシースクリーンの入試カウントダウン', () =
     expect(c!.label).not.toContain('共通選抜');
   });
 
-  it('曜日は出さない', () => {
+  it('曜日は出さない（短く保つため）', () => {
     const c = examCountdownForSchool(new Date(2026, 8, 22), NAGAYAMA);
     expect(c!.dateLabel).not.toMatch(/[（(]/);
   });
