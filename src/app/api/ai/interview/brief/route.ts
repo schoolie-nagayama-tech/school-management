@@ -73,7 +73,7 @@ interface BriefResponse {
   degraded: boolean;
   /** この教室ではAIに送らない設定。故障ではなく意図した停止 */
   disabled: boolean;
-  /** 実際に使ったモデルのID。Sonnet 5 / Opus 5 の見比べで取り違えないように必ず返す */
+  /** 実際に使ったモデルのID。Sonnet 5 / Opus 5.5 の見比べで取り違えないように必ず返す */
   model: ClaudeModel;
   /** 実際に使ったモデルのキー名 */
   modelKey: SelectableModelKey;
@@ -248,7 +248,7 @@ export async function POST(request: NextRequest) {
   }
 
   /**
-   * Sonnet 5 / Opus 5 の見比べ用モデル選択。
+   * Sonnet 5 / Opus 5.5 の見比べ用モデル選択。
    * ★判定そのものは interviewBrief.ts の resolveInterviewBriefModelKey に集約してある
    *   （権限外は黙って既定に倒す・キー名以外は弾く、の2点をSupabase無しで単体テストするため）。
    */
@@ -381,7 +381,7 @@ export async function POST(request: NextRequest) {
   try {
     const raw = await callClaudeJson<unknown>({
       /**
-       * ★既定は best（Opus 5）のまま。
+       * ★既定は best（Opus 5.5）のまま。
        *
        * 7つのセクションを突き合わせて「英語だけ成績・宿題・引継ぎが同じ方向を向いている」を
        * 見つける仕事は、1つの材料を要約するのとは別の難しさがある。materialを見比べて
@@ -398,8 +398,12 @@ export async function POST(request: NextRequest) {
       // 書き方の決まりは毎回同じなのでキャッシュに載せる
       system: [{ text: briefSystemPrompt(), cache: true }],
       userText: briefUserText(sections, followUpItems),
-      // ★長く書かせるようにしたので、出力の上限も広げる（seen 180字×7＋thread＋bridge）
-      maxTokens: 4000,
+      // ★長く書かせるようにしたので、出力の上限も広げる（seen 180字×7＋thread＋bridge＋followUps）。
+      //   Opus 5.5 は思考が常に入り、その分も max_tokens から引かれる。4000 だと思考で食われて
+      //   JSONが途中で切れる（＝作れなかったに倒れる）ので余裕を持たせる。使った分しか課金されない
+      maxTokens: 16000,
+      // ★Opus 5.5 の既定は medium。材料を突き合わせる仕事なので Opus 5.5 と同じ high に揃える
+      effort: 'high',
     });
 
     const parsed = parseBriefResult(raw, sentKeys, followUpItems);

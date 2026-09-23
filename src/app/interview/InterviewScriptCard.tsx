@@ -295,7 +295,7 @@ function AskLine({
 }
 
 /**
- * Sonnet 5 / Opus 5 の切り替え（admin/owner のみ表示）。
+ * Sonnet 5 / Opus 5.5 の切り替え（admin/owner のみ表示）。
  *
  * ★実データで見比べたいだけなので、小さく・「作り直す」の近くに置く。
  *   目立たせすぎると、比較目的ではない教室長にも「選ぶもの」だと誤解される
@@ -414,7 +414,7 @@ export function InterviewScriptCard({
   const [rated, setRated] = useState(false);
 
   /**
-   * Sonnet 5 / Opus 5 の見比べ用。
+   * Sonnet 5 / Opus 5.5 の見比べ用。
    * ★admin / owner だけに切り替えを出す。比較は運営の仕事であって、講師・教室長には関係が無い
    *   （教室長は面談そのものは行うが、どのモデルで作るかを選ぶ理由が無い）。
    * ★サーバー（/api/ai/interview/brief）も同じロール境界を isOwnerOrAbove で確認しており、
@@ -1040,7 +1040,7 @@ export function InterviewScriptCard({
 
             {/* ★答え合わせ。現状の行も「見えること」も記録しない（成績と引継ぎが混ざる）。
               残すのはセクション数とモデルだけ。
-              ★モデルを残すのは、Sonnet 5 / Opus 5 のどちらが良いかを実データで比べるため
+              ★モデルを残すのは、Sonnet 5 / Opus 5.5 のどちらが良いかを実データで比べるため
                 （ai_output は jsonb なのでDB変更は不要。集計は /admin/ai-feedback）。
               ★AIが1文も書けなかったとき（APIが落ちている等）は出さない。
                 評価する対象が無いのに「合っていた／ずれていた」を押させると、

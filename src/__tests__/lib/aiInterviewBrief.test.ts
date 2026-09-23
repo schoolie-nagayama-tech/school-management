@@ -322,7 +322,7 @@ describe('isSelectableModelKey', () => {
   });
 });
 
-describe('resolveInterviewBriefModelKey（Sonnet 5 / Opus 5 の見比べ用モデル選択）', () => {
+describe('resolveInterviewBriefModelKey（Sonnet 5 / Opus 5.5 の見比べ用モデル選択）', () => {
   it('admin が smart を指定すれば smart になる', () => {
     expect(resolveInterviewBriefModelKey('smart', 'admin')).toBe('smart');
   });
