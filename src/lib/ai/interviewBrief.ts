@@ -185,6 +185,48 @@ export const MAX_CURRENT_LINES = 24;
 export const MAX_CURRENT_LINE_LENGTH = 120;
 
 /**
+ * score（成績）の現状に混ぜる「テスト対策」の行の書き出し。
+ * ★画面・紙では④の根拠に別の形（試験名・増コマ申込・結果・単元を分けた行）で出すので、
+ *   表示側はこの書き出しの行を score から外す（interview.shared.ts の stripTargetSchoolFactLines）。
+ */
+export const TEST_PREP_AI_PREFIX = 'テスト対策:';
+
+/**
+ * lessons（授業の様子）の現状に足す「週回数変更」の行の書き出し。
+ * ★lessons はサーバーが引継ぎから組む決まり（クライアントの言い値を混ぜない）。
+ *   ただし週回数変更は面談画面が読んでいる申込（form_responses）から組む事実なので、
+ *   別の口（lessonNotes）で受け取り、この書き出しで始まる行だけを通す（sanitizeLessonNotes）。
+ */
+export const SHUKAISU_AI_PREFIX = '週回数変更:';
+
+/** lessonNotes の件数の上限。週回数変更は最新の1件しか組まないので、余裕を見て2 */
+export const MAX_LESSON_NOTES = 2;
+
+/**
+ * クライアントから来た lessonNotes（授業の様子に足す行）を検める。
+ * ★SHUKAISU_AI_PREFIX で始まる行だけを通す。ここを緩めると「画面に無いはずの引継ぎ」を
+ *   lessons に差し込める口になる（route.ts の fromClient の注記と同じ理由）。
+ */
+export function sanitizeLessonNotes(raw: unknown): string[] {
+  const rows = Array.isArray(raw) ? (raw as unknown[]) : [];
+  const out: string[] = [];
+  for (const row of rows) {
+    if (out.length >= MAX_LESSON_NOTES) break;
+    if (typeof row !== 'string') continue;
+    const text = row.replace(/\s+/g, ' ').trim().slice(0, MAX_CURRENT_LINE_LENGTH);
+    if (!text.startsWith(SHUKAISU_AI_PREFIX)) continue;
+    if (out.indexOf(text) !== -1) continue;
+    out.push(text);
+  }
+  return out;
+}
+
+/** lessons の行のうち、引継ぎではなく lessonNotes から足した行か（画面に出す行から外すため） */
+export function isLessonNoteLine(line: string): boolean {
+  return line.startsWith(SHUKAISU_AI_PREFIX);
+}
+
+/**
  * 数字（半角・全角のアラビア数字）を含むか。
  *
  * ★「ひとこと」「場面」はこれで落とす（パーサ側の関所）。
@@ -480,8 +522,16 @@ export function briefSystemPrompt(): string {
     // ★2026-09-23 模試の志望校と合格可能性を取り込むようにした。数字は画面が出すので言葉だけ
     '  【現状】に「直近の模試」の行があるときは、合格可能性が前回から上がったか・下がったか・',
     '  判定なしかを言葉で触れてよい。数字は書かない。「判定なし」を「可能性ゼロ」と言い換えない。',
+    // ★2026-09-23 教室長「テスト対策は取ったのに点数が上がった下がったとか課題感とリンクしたい」
+    `  【現状】に「${TEST_PREP_AI_PREFIX}」の行があるときは、テスト対策を受けた科目について、`,
+    '  対策した単元と結果を結び付けて「効いたところ」と「残った課題」を書く（数字は書かない）。',
+    '  結果がまだ無いときは、結果を聞いたうえで何を確かめるかを書く。',
     '- lessons（授業の様子）: できるようになったこと・授業中の発言・態度の変化を、保護者に伝える',
     '  良い報告として書く。家庭では見えないことを優先する。',
+    // ★2026-09-23 教室長「週回数変更は変更してそのあとどうかを報告事項としてあげる」
+    `  「${SHUKAISU_AI_PREFIX}」の行があるときは、週回数を変えたあとの授業の様子（引継ぎ・宿題）を`,
+    '  塾からの報告として書く。まだ変更前なら、変更後に何を見ていくかを書く。',
+    `  ★「${SHUKAISU_AI_PREFIX}」の行は引継ぎではないので、episodes の lesson に選ばない。`,
     '- lastInterview（前回の面談から）: 前回の約束・要望に対して、その後の記録（引継ぎ・成績）から',
     '  追えることがあれば、それを書く。追えなければ無理に書かない。',
     '',
