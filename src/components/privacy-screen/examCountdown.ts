@@ -1,18 +1,18 @@
 /**
  * プライバシースクリーンに出す「入試まであと◯日」。
  * ------------------------------------------------------------------
- * 日付そのものは lib/interview/examDates.ts が正典。ここは「どの教室に・どのくらいの
+ * 日付と呼び名は lib/interview/examDates.ts が正典。ここは「どの教室に・どのくらいの
  * 頻度で出すか」という出し方だけを持つ。
  */
-import { nextTokyoExamDateForRegion, daysUntil } from '@/lib/interview/examDates';
+import { nextExamDateForRegion, daysUntil, EXAM_NAME } from '@/lib/interview/examDates';
 import { regionOfSchool } from '@/lib/interview/region';
 
 /**
  * ★試験運用中。まず永山校だけで回す。
  *
- * 教室セレクタで永山校を選んでいるときだけ出す。良ければ東京3校（region === 'tokyo'）へ
- * 広げ、この定数ごと消す。神奈川（緑園都市校）は共通選抜 2/16 の日付を持っているが、
- * examDates.ts に足すと面談台本③の挙動まで変わるため、試験の範囲に入れていない。
+ * 教室セレクタで永山校を選んでいるときだけ出す。良ければ他の教室へ広げ、この定数ごと消す。
+ * 日付も見出しも都県で出し分けるようにしてあるので、緑園都市校（神奈川）を足しても
+ * 「共通選抜まで」が出る。広げるかどうかは運用の判断で、コードの都合ではない。
  */
 const TRIAL_SCHOOL_IDS: readonly string[] = [
   'd187f7a3-633a-46ce-8d32-c56c85d17bac', // 永山校
@@ -30,7 +30,7 @@ const TRIAL_SCHOOL_IDS: readonly string[] = [
 export const COUNTDOWN_PROBABILITY = 1 / 100;
 
 export interface ExamCountdown {
-  /** 見出し。「都立入試まで」 */
+  /** 見出し。★都県で変わる（東京「都立一次まで」／神奈川「共通選抜まで」） */
   label: string;
   /** 残り日数。0 は当日 */
   days: number;
@@ -51,7 +51,10 @@ export function examCountdownForSchool(
   if (!schoolId || schoolId === 'all') return null;
   if (!TRIAL_SCHOOL_IDS.includes(schoolId)) return null;
 
-  const date = nextTokyoExamDateForRegion(today, regionOfSchool(schoolId));
+  const region = regionOfSchool(schoolId);
+  if (!region) return null; // 都県の分からない教室に、どちらかの入試の日数を出さない
+
+  const date = nextExamDateForRegion(today, region);
   if (!date) return null;
 
   const days = daysUntil(today, date);
@@ -59,7 +62,7 @@ export function examCountdownForSchool(
 
   const [, m, d] = date.split('-');
   return {
-    label: '都立入試まで',
+    label: `${EXAM_NAME[region]}まで`,
     days,
     dateLabel: `${Number(m)}/${Number(d)}`,
   };

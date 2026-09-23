@@ -4,7 +4,7 @@ import {
   drawCountdown,
   COUNTDOWN_PROBABILITY,
 } from '@/components/privacy-screen/examCountdown';
-import { nextTokyoExamDate, nextTokyoExamDateForRegion } from '@/lib/interview/examDates';
+import { nextExamDate, nextExamDateForRegion } from '@/lib/interview/examDates';
 
 /** 永山校（試験運用中の唯一の対象） */
 const NAGAYAMA = 'd187f7a3-633a-46ce-8d32-c56c85d17bac';
@@ -19,7 +19,12 @@ describe('プライバシースクリーンの入試カウントダウン', () =
     expect(c).not.toBeNull();
     expect(c!.days).toBe(152);
     expect(c!.dateLabel).toBe('2/21');
-    expect(c!.label).toBe('都立入試まで');
+    expect(c!.label).toBe('都立一次まで');
+  });
+
+  it('★見出しは面談台本と同じ呼び名。東京の教室に「共通選抜」は出さない', () => {
+    const c = examCountdownForSchool(new Date(2026, 8, 22), NAGAYAMA);
+    expect(c!.label).not.toContain('共通選抜');
   });
 
   it('曜日は出さない（短く保つため）', () => {
@@ -31,7 +36,7 @@ describe('プライバシースクリーンの入試カウントダウン', () =
     expect(examCountdownForSchool(new Date(2026, 8, 22), HORINOUCHI)).toBeNull();
   });
 
-  it('神奈川の教室では出さない', () => {
+  it('★試験対象外なので緑園都市校でも出さない（日付は持っているが、広げるのは運用の判断）', () => {
     expect(examCountdownForSchool(new Date(2026, 8, 22), RYOKUEN)).toBeNull();
   });
 
@@ -70,25 +75,31 @@ describe('カウントダウンの抽選', () => {
 });
 
 describe('教室単位の入試日（学年を見ない版）', () => {
-  it('学年ゲートのある既存の関数と、東京・中3では同じ日付を返す', () => {
+  it('学年ゲートのある関数と、中3では同じ日付を返す', () => {
     const today = new Date(2026, 8, 22);
-    expect(nextTokyoExamDateForRegion(today, 'tokyo')).toBe('2027-02-21');
-    expect(nextTokyoExamDate(today, 9, 'tokyo')).toBe('2027-02-21');
+    expect(nextExamDateForRegion(today, 'tokyo')).toBe('2027-02-21');
+    expect(nextExamDate(today, 9, 'tokyo')).toBe('2027-02-21');
+    expect(nextExamDateForRegion(today, 'kanagawa')).toBe('2027-02-16');
+    expect(nextExamDate(today, 9, 'kanagawa')).toBe('2027-02-16');
   });
 
   it('教室単位の版は中3以外でも日付を返す（面談台本の学年ゲートを引きずらない）', () => {
     const today = new Date(2026, 8, 22);
-    expect(nextTokyoExamDate(today, 7, 'tokyo')).toBeNull();
-    expect(nextTokyoExamDateForRegion(today, 'tokyo')).toBe('2027-02-21');
+    expect(nextExamDate(today, 7, 'tokyo')).toBeNull();
+    expect(nextExamDateForRegion(today, 'tokyo')).toBe('2027-02-21');
   });
 
-  it('神奈川・未登録の教室には日付を出さない', () => {
+  it('★都県ごとに日付が違う。神奈川は共通選抜の 2/16', () => {
     const today = new Date(2026, 8, 22);
-    expect(nextTokyoExamDateForRegion(today, 'kanagawa')).toBeNull();
-    expect(nextTokyoExamDateForRegion(today, null)).toBeNull();
+    expect(nextExamDateForRegion(today, 'kanagawa')).toBe('2027-02-16');
+  });
+
+  it('未登録の教室には日付を出さない', () => {
+    expect(nextExamDateForRegion(new Date(2026, 8, 22), null)).toBeNull();
   });
 
   it('1〜3月は前年4月に始まった年度なので、その年の2月の入試を指す', () => {
-    expect(nextTokyoExamDateForRegion(new Date(2027, 0, 10), 'tokyo')).toBe('2027-02-21');
+    expect(nextExamDateForRegion(new Date(2027, 0, 10), 'tokyo')).toBe('2027-02-21');
+    expect(nextExamDateForRegion(new Date(2027, 0, 10), 'kanagawa')).toBe('2027-02-16');
   });
 });

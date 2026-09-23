@@ -45,25 +45,25 @@ function setup(opts: { showCountdown: boolean; schoolId: string | 'all' | null }
 describe('PrivacyScreen の入試カウントダウン', () => {
   it('抽選に当たり、永山校を選んでいるときは日数を出す', () => {
     setup({ showCountdown: true, schoolId: NAGAYAMA });
-    expect(screen.getByText('都立入試まで')).toBeDefined();
+    expect(screen.getByText('都立一次まで')).toBeDefined();
     expect(screen.getByText('152')).toBeDefined();
     expect(screen.getByText(/2\/21/)).toBeDefined();
   });
 
   it('抽選に外れたら出さない（100回に99回はこちら）', () => {
     setup({ showCountdown: false, schoolId: NAGAYAMA });
-    expect(screen.queryByText('都立入試まで')).toBeNull();
+    expect(screen.queryByText('都立一次まで')).toBeNull();
     expect(screen.queryByText('152')).toBeNull();
   });
 
   it('当たっても試験対象外の教室では出さない', () => {
     setup({ showCountdown: true, schoolId: HORINOUCHI });
-    expect(screen.queryByText('都立入試まで')).toBeNull();
+    expect(screen.queryByText('都立一次まで')).toBeNull();
   });
 
   it('当たっても「すべての教室」では出さない', () => {
     setup({ showCountdown: true, schoolId: 'all' });
-    expect(screen.queryByText('都立入試まで')).toBeNull();
+    expect(screen.queryByText('都立一次まで')).toBeNull();
   });
 
   it('オーバーレイ自体はクリックで解除できるまま', () => {

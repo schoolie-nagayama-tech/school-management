@@ -533,7 +533,8 @@ export function InterviewScriptCard({
     () => planRationaleLines(student.grade, seasonKey, region),
     [student.grade, seasonKey, region]
   );
-  // 入試まであと何日。中3以外・東京都以外・年度の登録が無い年は null（行を出さない）
+  // 入試まであと何日。★呼び名は都県で変わる（東京「都立一次」／神奈川「共通選抜」）。
+  // 中3以外・都県が未登録の教室・年度の登録が無い年は null（行を出さない）
   const examCountdown = useMemo(
     () => examCountdownLine(new Date(), student.grade, region),
     [student.grade, region]
