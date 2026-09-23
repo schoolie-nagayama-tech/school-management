@@ -8,6 +8,8 @@ import {
   mergeKoushuSeasons,
   summarizeCurrentKoushu,
   buildPreviousCommitmentLines,
+  previousFollowUpAskLine,
+  previousFollowUpReportLine,
   buildProgressFactLines,
   buildTellSections,
   extractHandover,
@@ -1112,7 +1114,72 @@ describe('buildPreviousCommitmentLines（②ヒアリング）', () => {
   });
 
   it('タスクも記録も無ければ何も出ない', () => {
-    expect(buildPreviousCommitmentLines([])).toEqual({ promises: [], requests: [], asks: [] });
+    expect(buildPreviousCommitmentLines([])).toEqual({
+      promises: [],
+      requests: [],
+      asks: [],
+      items: [],
+    });
+  });
+
+  /**
+   * ★「聞く」か「報告する」かは中身で決まる（2026-09-23・教室長の指摘）。
+   *   判定は原則AI（followUps）だが、AIが使えない日に振る受け皿がここ。
+   */
+  it('★items は出どころ付き。保護者からの要望は「報告」、約束は「聞く」に振る', () => {
+    const rows = [
+      interviewRow({ content: NOTTA_RECORD }),
+      interviewRow({ id: 't1', interview_type: 'task', content: '英語ワークP10まで' }),
+    ];
+    const { items } = buildPreviousCommitmentLines(rows);
+    // 並びは約束が先（面談で話す順）
+    expect(items[0]).toEqual({ text: '英語ワークP10まで', source: 'task', fallback: 'ask' });
+    expect(items[1]).toEqual({
+      text: '英語の宿題を減らしてほしい',
+      source: '保護者からの要望',
+      fallback: 'report',
+    });
+    expect(items[2].fallback).toBe('report');
+  });
+
+  it('★「今後の方針」「次回への申し送り」は聞くほう（家庭が動いた結果を聞く）', () => {
+    const { items } = buildPreviousCommitmentLines([
+      interviewRow({
+        content: [
+          '--- Notta 要約 ---',
+          '■ 今後の方針',
+          '・慶應を含めて最後まで検討する',
+          '■ 次回への申し送り',
+          '・冬期の受講科目を決める',
+        ].join('\n'),
+      }),
+    ]);
+    expect(items.map((i) => [i.source, i.fallback])).toEqual([
+      ['今後の方針', 'ask'],
+      ['次回への申し送り', 'ask'],
+    ]);
+  });
+
+  it('同じ文面が約束と要望の両方にあるときは1件だけ（約束のほうを残す）', () => {
+    const rows = [
+      interviewRow({ content: NOTTA_RECORD }),
+      interviewRow({ id: 't1', interview_type: 'task', content: '英語の宿題を減らしてほしい' }),
+    ];
+    const { items } = buildPreviousCommitmentLines(rows);
+    expect(items.filter((i) => i.text === '英語の宿題を減らしてほしい')).toEqual([
+      { text: '英語の宿題を減らしてほしい', source: 'task', fallback: 'ask' },
+    ]);
+  });
+});
+
+describe('previousFollowUpAskLine / previousFollowUpReportLine', () => {
+  it('聞く行と報告行の文言（画面と印刷シートで同じ関数を使う）', () => {
+    expect(previousFollowUpAskLine('英語ワークP10まで')).toBe(
+      '前回の「英語ワークP10まで」はその後どうですか'
+    );
+    expect(previousFollowUpReportLine('英語の長文を増やしてほしい')).toBe(
+      '報告 ―― 前回の要望「英語の長文を増やしてほしい」への対応を伝える'
+    );
   });
 });
 

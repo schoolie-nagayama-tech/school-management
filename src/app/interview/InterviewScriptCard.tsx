@@ -41,6 +41,8 @@ import { recordAiFeedback } from '@/lib/ai/feedback';
 import { DigestVerdictChips } from '@/components/ai/DigestVerdictChips';
 import {
   SELECTABLE_MODEL_KEY_LABELS as MODEL_LABELS,
+  followUpItemKey,
+  type BriefFollowUp,
   type BriefSectionKey,
   type BriefSign,
   type SelectableModelKey,
@@ -62,6 +64,8 @@ import {
   buildPreviousCommitmentLines,
   buildTargetSchoolGapLines,
   currentSeason,
+  previousFollowUpAskLine,
+  previousFollowUpReportLine,
   formatRegularPatternsSchedule,
   koushuFiscalYear,
   mergeKoushuSeasons,
@@ -99,6 +103,11 @@ export interface ScriptSectionView {
 /** 印刷シートにも渡す結果。★親（InterviewWorkspace）が持つ */
 export interface ScriptView {
   sections: ScriptSectionView[];
+  /**
+   * 前回の約束・要望を「報告する」か「聞く」か（AIの判定・1件ずつ）。
+   * ★AIが返さなかった項目はここに無い。画面は出どころで振る受け皿へ落とす。
+   */
+  followUps: BriefFollowUp[];
   thread: string;
   /** ④の課題と⑤のプランのつながり。koushu セクションを渡していなければ空文字 */
   bridge: string;
@@ -354,6 +363,29 @@ function SeenLine({
   );
 }
 
+/**
+ * 前回の要望・約束への「報告」（AIが記録から追えたもの）。
+ *
+ * ★見た目は着眼点（SeenLine）と同じ枠に揃える。どちらもAIが書いた文で、
+ *   面談では並んで読むため、枠が違うと視線が飛ぶ。
+ * ★直せない（textarea にしていない）。着眼点と違って「前回こう言われて、こう対応した」は
+ *   事実の報告なので、その場で書き換える場面が思いつかない。
+ *   要る場面が出たら SeenLine と同じ editSeen 相当を足す（いまは見送り）。
+ */
+function ReportRow({ text }: { text: string }) {
+  return (
+    <div className="flex items-start gap-2 rounded-md bg-ink-subtle px-2.5 py-1.5">
+      <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-ink" aria-hidden="true" />
+      <p className="min-w-0 flex-1 text-[13px] leading-snug text-text-heading">
+        <span className="mr-1.5 rounded-sm bg-ink/10 px-1 py-px text-[10px] font-bold text-ink">
+          報告
+        </span>
+        {text}
+      </p>
+    </div>
+  );
+}
+
 export function InterviewScriptCard({
   student,
   assessments,
@@ -541,6 +573,9 @@ export function InterviewScriptCard({
           schoolId: student.school_id,
           studentId: student.id,
           sections: currentSections,
+          // ★前回の約束・要望。「報告する」か「聞く」かをAIに1件ずつ決めさせるため、
+          //   本文をそのまま渡す（戻りの item はこの文と1字も違わないことが条件）
+          followUpItems: previous.items.map((i) => i.text),
           // ★admin/owner 以外は切り替えUIを出していないので modelKey は常に既定値（best）のまま。
           //   送ってもサーバー側で権限外なら無視されるだけなので、ここで出し分けなくてよい。
           model: modelKey,
@@ -565,6 +600,8 @@ export function InterviewScriptCard({
       //   捨てると、APIが落ちている日に面談の台本が丸ごと使えなくなる。
       apply({
         sections: json.sections,
+        // ★degraded の日はAIの文を1つも出さない（前回の約束・要望は出どころで振る）
+        followUps: json.degraded ? [] : (json.followUps ?? []),
         thread: json.degraded ? '' : json.thread,
         bridge: json.degraded ? '' : json.bridge,
       });
@@ -611,7 +648,14 @@ export function InterviewScriptCard({
    *   AIが丸ごと動かなかった日に「（見えることはありませんでした）」が
    *   シーンの先頭に何行も並ぶと、AI抜きでも読めるはずの台本がただ読みにくくなる。
    */
-  const hasAnySeen = view?.sections.some((s) => s.seen !== '') === true;
+  const hasAnySeen =
+    view?.sections.some((s) => s.seen !== '') === true || (view?.followUps.length ?? 0) > 0;
+
+  /**
+   * 前回の約束・要望 → AIの振り分け。★突き合わせは本文の完全一致
+   *  （サーバーが同じ文字列で突き合わせて捨てているので、ここに残っているものは必ず一致する）。
+   */
+  const followUpByItem = new Map((view?.followUps ?? []).map((f) => [f.item, f]));
 
   const aiSeenLines = (scene: SceneKey): ReactNode[] =>
     view && hasAnySeen
@@ -679,8 +723,33 @@ export function InterviewScriptCard({
       case 'hearing':
         return [
           ...aiSeenLines('hearing'),
-          // ★前回の約束・要望を1件ずつ追いかける行。システムが組む（AIに書かせない）
-          ...previous.asks.map((t, i) => askLine(`hearing:followup:${i}`, t)),
+          /**
+           * ★前回の約束・要望は、1件ずつ「報告する」か「聞く」かを分ける（2026-09-23）。
+           *   一律に「その後どうですか」と聞いていたが、保護者からの要望
+           *  （「英語の長文を増やしてほしい」）は塾が対応を**報告する**ことで、
+           *   聞き返すと「前に頼んだのに何もしていないのか」になる（教室長の指摘）。
+           * ★判定はAI（followUps）。返ってこなかった項目・AIが使えない日は
+           *   出どころ（item.fallback）で振る。
+           */
+          ...previous.items.map((item, i) => {
+            const hit = followUpByItem.get(followUpItemKey(item.text));
+            const kind = hit?.kind ?? item.fallback;
+            if (kind === 'report') {
+              return hit?.text ? (
+                <ReportRow key={`hearing:followup:${i}`} text={hit.text} />
+              ) : (
+                // AIが書いていない報告は、中身を教室長が口頭で埋める（行だけ立てる）
+                <SayLine
+                  key={`hearing:followup:${i}`}
+                  text={previousFollowUpReportLine(item.text)}
+                />
+              );
+            }
+            return askLine(
+              `hearing:followup:${i}`,
+              hit?.text || previousFollowUpAskLine(item.text)
+            );
+          }),
           ...askLines.map((t, i) => askLine(`hearing:${i}`, t)),
           // 目標はあるが結果が成績側にまだ入っていない試験。台本が入力を促す形にする
           ...goalAchievement.ask.map((t, i) => askLine(`hearing:goal:${i}`, t)),
@@ -978,6 +1047,7 @@ export function InterviewScriptCard({
                 何を答えたのか分からない記録が溜まる。 */}
             {(view.thread !== '' ||
               view.bridge !== '' ||
+              view.followUps.length > 0 ||
               view.sections.some((s) => s.seen !== '')) && (
               <DigestVerdictChips
                 rated={rated}

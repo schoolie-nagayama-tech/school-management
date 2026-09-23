@@ -1181,6 +1181,26 @@ function clipForTalk(text: string): string {
   return flat.length > MAX_FOLLOW_UP_TEXT ? `${flat.slice(0, MAX_FOLLOW_UP_TEXT)}…` : flat;
 }
 
+/**
+ * 追いかける1件（前回の約束・前回の要望）。
+ *
+ * ★2026-09-23 に source を持たせた。教室長の指摘で「聞く」か「報告する」かは**中身で決まる**
+ *   ことが分かったため（「英語の長文を増やしてほしい」は塾が対応を報告すること、
+ *   「慶應を含めて最後まで検討」は家庭に聞くこと）。判定は原則AI（followUps）が行うが、
+ *   AIが使えない日に何も出さないわけにいかないので、出どころで振る受け皿をここに持つ。
+ */
+export interface PreviousCommitmentItem {
+  /** 本文（原文のまま）。★AIへ送る followUps の item はこの文字列そのもの */
+  text: string;
+  /** 出どころ。'task'＝前回の約束（未完了タスク）／それ以外は面談記録の見出し */
+  source: string;
+  /** AIが使えない・その項目を返さなかったときの既定の扱い */
+  fallback: FollowUpFallbackKind;
+}
+
+/** AIが使えないときの既定の扱い。report＝塾から対応を伝える／ask＝家庭に聞く */
+export type FollowUpFallbackKind = 'report' | 'ask';
+
 /** ②ヒアリングの「前回の約束」「前回の要望」と、そこから組む「聞くこと」 */
 export interface PreviousCommitmentLines {
   /** 右（事実）: 未完了のタスク。1件1行 */
@@ -1189,6 +1209,32 @@ export interface PreviousCommitmentLines {
   requests: string[];
   /** 左（話すこと）: 約束・要望1件ごとの「その後どうですか」 */
   asks: string[];
+  /**
+   * 左（話すこと）を1件ずつ組むための素。★約束が先・要望が後（面談で話す順）。
+   * 同じ本文が約束と要望の両方にあるときは先に来たほう（約束）だけを残す。
+   */
+  items: PreviousCommitmentItem[];
+}
+
+/**
+ * その出どころは「報告」か「聞く」か。★AIが使えないときだけ使う受け皿。
+ *
+ * 保護者からの**要望**は、その後こちらがどう対応したかを塾から伝えるもの
+ * （聞き返すと「前に頼んだのに何もしていないのか」になる）。
+ * 一方で約束・申し送り・今後の方針は、家庭側が動いた結果を聞く side が多い。
+ */
+export function previousItemFallbackKind(source: string): FollowUpFallbackKind {
+  return source !== 'task' && /要望/.test(source) ? 'report' : 'ask';
+}
+
+/** 左（話すこと）: 「前回の『◯◯』はその後どうですか」 */
+export function previousFollowUpAskLine(text: string): string {
+  return `前回の「${clipForTalk(text)}」はその後どうですか`;
+}
+
+/** 左（話すこと）: 対応を口頭で伝える行（中身は教室長が埋める） */
+export function previousFollowUpReportLine(text: string): string {
+  return `報告 ―― 前回の要望「${clipForTalk(text)}」への対応を伝える`;
 }
 
 /**
@@ -1199,6 +1245,8 @@ export interface PreviousCommitmentLines {
  *   content に書くため）。title が入っている古い行もあるので title を優先する。
  * ★同じ文面が約束と要望の両方に出ることがある（面談でタスクに起こした要望など）ので、
  *   「聞くこと」は文面で重複を落とす。同じことを2回聞かせない。
+ * ★items は出どころ（source）付きで1件ずつ返す。「聞く」か「報告する」かは中身で決まり、
+ *   その判定はAI（followUps）が行うが、AIが使えない日のために出どころでも振れるようにしてある。
  */
 export function buildPreviousCommitmentLines(
   interviews: readonly StudentInterview[]
@@ -1206,6 +1254,8 @@ export function buildPreviousCommitmentLines(
   // --- 前回の約束（未完了タスク） ---
   const promiseTexts: string[] = [];
   const promises: string[] = [];
+  /** 出どころ付きの1件ずつ。約束→要望の順に積む */
+  const items: PreviousCommitmentItem[] = [];
   for (const row of interviews) {
     if (row.interview_type !== 'task' || row.is_completed) continue;
     if (promises.length >= MAX_PREVIOUS_PROMISES) break;
@@ -1213,6 +1263,7 @@ export function buildPreviousCommitmentLines(
     if (!text) continue;
     promiseTexts.push(text);
     promises.push(`${text}（${fmtMonthDay(row.interview_date)}・未完了）`);
+    items.push({ text, source: 'task', fallback: previousItemFallbackKind('task') });
   }
 
   // --- 前回の要望（直近の面談記録の箇条書き） ---
@@ -1227,19 +1278,26 @@ export function buildPreviousCommitmentLines(
       for (const bullet of section.bullets) {
         if (requests.length >= MAX_PREVIOUS_REQUESTS) break;
         const text = bullet.replace(/\s+/g, ' ').trim();
-        if (text) requests.push(text);
+        if (!text) continue;
+        requests.push(text);
+        // ★同じ文面が約束にもあるときは、先に積んだ約束のほうを残す（2回追いかけさせない）
+        if (!items.some((i) => i.text === text)) {
+          items.push({
+            text,
+            source: section.heading,
+            fallback: previousItemFallbackKind(section.heading),
+          });
+        }
       }
     }
   }
 
   // --- 「その後どうですか」（左） ---
   const asks = Array.from(
-    new Set(
-      [...promiseTexts, ...requests].map((t) => `前回の「${clipForTalk(t)}」はその後どうですか`)
-    )
+    new Set([...promiseTexts, ...requests].map((t) => previousFollowUpAskLine(t)))
   );
 
-  return { promises, requests, asks };
+  return { promises, requests, asks, items };
 }
 
 /* ============================================================

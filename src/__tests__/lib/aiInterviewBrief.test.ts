@@ -16,6 +16,7 @@ import {
   briefUserText,
   parseBriefResult,
   sanitizeBriefSections,
+  sanitizeFollowUpItems,
   sortBriefSections,
   dedupeConsecutiveLessonLines,
   isSelectableModelKey,
@@ -25,6 +26,8 @@ import {
   MAX_SEEN_LENGTH,
   MAX_BRIDGE_LENGTH,
   MAX_THREAD_LENGTH,
+  MAX_FOLLOW_UPS,
+  MAX_FOLLOW_UP_ITEMS,
   type BriefSectionKey,
 } from '@/lib/ai/interviewBrief';
 import { SCENE_OF_SECTION, SCENE_KEYS } from '@/lib/interview/scenes';
@@ -390,5 +393,157 @@ describe('dedupeConsecutiveLessonLines（②授業の様子）', () => {
   it('★「: 」が無い想定外の形の行は畳まない', () => {
     const lines = ['引継ぎ 3件', '引継ぎ 3件'];
     expect(dedupeConsecutiveLessonLines(lines)).toHaveLength(2);
+  });
+});
+
+/* ============================================================
+ * followUps（前回の約束・要望を「報告する」か「聞く」か）
+ * ------------------------------------------------------------
+ * ★守りたいのは「渡していない文を画面に出さない」こと。ここで item の突き合わせが
+ *   緩むと、AIが言い換えた（あるいは作った）約束が面談の台本に載る。
+ * ========================================================== */
+
+const sentItems = ['英語の長文を増やしてほしい', '慶應を含めて最後まで検討'];
+
+describe('briefSystemPrompt（followUps）', () => {
+  it('★報告と聞くの意味と、要望は原則「報告」だと書いてある', () => {
+    const p = briefSystemPrompt();
+    expect(p).toContain('followUps');
+    expect(p).toContain('kind="report"');
+    expect(p).toContain('kind="ask"');
+    expect(p).toContain('保護者からの要望は、ほとんどが report');
+    expect(p).toContain('家庭では見えないこと');
+  });
+
+  it('★followUps の本文にも「数字は書かない」が効いている', () => {
+    expect(briefSystemPrompt()).toContain('★ここでも数字は書かない');
+  });
+
+  it('item はそのまま書き写させる（1字でも変えると捨てる、と明示する）', () => {
+    expect(briefSystemPrompt()).toContain('item は渡した文を**そのまま**書き写す');
+  });
+});
+
+describe('briefUserText（前回の約束・要望）', () => {
+  it('渡した約束・要望を別枠の見出しで並べる', () => {
+    const t = briefUserText([{ key: 'score', current: ['定期テスト: 英語'] }], sentItems);
+    expect(t).toContain('■ 前回の約束・要望（followUps の item はこの文をそのまま使う）');
+    expect(t).toContain('- 英語の長文を増やしてほしい');
+  });
+
+  it('1件も無ければ見出しごと出さない（空の見出しを読ませない）', () => {
+    const t = briefUserText([{ key: 'score', current: ['定期テスト: 英語'] }]);
+    expect(t).not.toContain('前回の約束・要望');
+  });
+});
+
+describe('sanitizeFollowUpItems', () => {
+  it('空・重複・文字列でないものを落とす', () => {
+    expect(sanitizeFollowUpItems(['あ', '  ', 'あ', 42, null, 'い'])).toEqual(['あ', 'い']);
+  });
+
+  it('配列でなければ空', () => {
+    for (const raw of [null, undefined, 'ちがう', {}])
+      expect(sanitizeFollowUpItems(raw)).toEqual([]);
+  });
+
+  it(`${MAX_FOLLOW_UP_ITEMS}件でとめる`, () => {
+    const many = Array.from({ length: MAX_FOLLOW_UP_ITEMS + 5 }, (_, i) => `約束${i}`);
+    expect(sanitizeFollowUpItems(many)).toHaveLength(MAX_FOLLOW_UP_ITEMS);
+  });
+});
+
+describe('parseBriefResult（followUps）', () => {
+  it('報告と聞くをそのまま拾う', () => {
+    const got = parseBriefResult(
+      {
+        followUps: [
+          { item: sentItems[0], kind: 'report', text: '長文の教材に切り替えて進めている' },
+          { item: sentItems[1], kind: 'ask', text: '' },
+        ],
+      },
+      sent,
+      sentItems
+    );
+    expect(got.followUps).toEqual([
+      { item: sentItems[0], kind: 'report', text: '長文の教材に切り替えて進めている' },
+      { item: sentItems[1], kind: 'ask', text: '' },
+    ]);
+  });
+
+  it('★渡していない item は捨てる（AIが言い換えた・作った約束を台本に載せない）', () => {
+    const got = parseBriefResult(
+      {
+        followUps: [
+          { item: '英語の長文を増やしてほしいそうです', kind: 'report', text: '対応済み' },
+          { item: sentItems[1], kind: 'ask', text: '' },
+        ],
+      },
+      sent,
+      sentItems
+    );
+    expect(got.followUps.map((f) => f.item)).toEqual([sentItems[1]]);
+  });
+
+  it('同じ item が2回来たら先に来たほうを採る', () => {
+    const got = parseBriefResult(
+      {
+        followUps: [
+          { item: sentItems[0], kind: 'report', text: '先に来たほう' },
+          { item: sentItems[0], kind: 'report', text: 'あとから来たほう' },
+        ],
+      },
+      sent,
+      sentItems
+    );
+    expect(got.followUps).toEqual([{ item: sentItems[0], kind: 'report', text: '先に来たほう' }]);
+  });
+
+  it('★kind が report / ask 以外なら ask に倒す（していない対応を報告と言わせない）', () => {
+    const got = parseBriefResult(
+      { followUps: [{ item: sentItems[0], kind: 'tell', text: 'あ' }] },
+      sent,
+      sentItems
+    );
+    expect(got.followUps[0].kind).toBe('ask');
+  });
+
+  it('★上限を超える text は空にする。report は本文が消えたら行ごと捨てる', () => {
+    const got = parseBriefResult(
+      {
+        followUps: [
+          { item: sentItems[0], kind: 'report', text: tooLongSeen },
+          { item: sentItems[1], kind: 'ask', text: tooLongSeen },
+        ],
+      },
+      sent,
+      sentItems
+    );
+    // report は中身が無ければ画面に出しても読めない（呼び出し側の受け皿に落とす）
+    expect(got.followUps).toEqual([{ item: sentItems[1], kind: 'ask', text: '' }]);
+  });
+
+  it(`多くても${MAX_FOLLOW_UPS}件でとめる`, () => {
+    const items = Array.from({ length: MAX_FOLLOW_UPS + 3 }, (_, i) => `約束${i}`);
+    const got = parseBriefResult(
+      { followUps: items.map((item) => ({ item, kind: 'ask', text: '' })) },
+      sent,
+      items
+    );
+    expect(got.followUps).toHaveLength(MAX_FOLLOW_UPS);
+  });
+
+  it('followUps が無い・読めない出力でも空配列で返る（古い応答でも画面が壊れない）', () => {
+    for (const raw of [{}, { followUps: 'ちがう' }, { followUps: [null, 42] }, null]) {
+      expect(parseBriefResult(raw, sent, sentItems).followUps).toEqual([]);
+    }
+  });
+
+  it('約束を1件も渡していなければ、AIが書いてきても空（材料の無い話をさせない）', () => {
+    const got = parseBriefResult(
+      { followUps: [{ item: sentItems[0], kind: 'report', text: '対応済み' }] },
+      sent
+    );
+    expect(got.followUps).toEqual([]);
   });
 });

@@ -15,10 +15,12 @@ import {
   briefUserText,
   parseBriefResult,
   sanitizeBriefSections,
+  sanitizeFollowUpItems,
   sortBriefSections,
   dedupeConsecutiveLessonLines,
   resolveInterviewBriefModelKey,
   MAX_CURRENT_LINE_LENGTH,
+  type BriefFollowUp,
   type BriefSectionInput,
   type BriefSectionKey,
   type BriefSign,
@@ -58,6 +60,12 @@ interface BriefSectionPayload {
 
 interface BriefResponse {
   sections: BriefSectionPayload[];
+  /**
+   * 前回の約束・要望を「報告する」か「聞く」か（1件ずつ）。
+   * ★渡していない item は parseBriefResult が捨てるので、返ってこなかった分は
+   *   画面が出どころで振る（AIが使えない日と同じ道を通る）。
+   */
+  followUps: BriefFollowUp[];
   thread: string;
   /** ④の課題と⑤のプランのつながり。koushu セクションを渡していなければ常に空文字 */
   bridge: string;
@@ -213,7 +221,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: '権限がありません' }, { status: 403 });
   }
 
-  let body: { schoolId?: unknown; studentId?: unknown; sections?: unknown; model?: unknown };
+  let body: {
+    schoolId?: unknown;
+    studentId?: unknown;
+    sections?: unknown;
+    followUpItems?: unknown;
+    model?: unknown;
+  };
   try {
     body = await request.json();
   } catch {
@@ -243,6 +257,7 @@ export async function POST(request: NextRequest) {
 
   const empty: BriefResponse = {
     sections: [],
+    followUps: [],
     thread: '',
     bridge: '',
     degraded: false,
@@ -286,6 +301,14 @@ export async function POST(request: NextRequest) {
   const fromClient = sanitizeBriefSections(body.sections).filter(
     (s) => s.key !== 'lessons' && s.key !== 'parent'
   );
+
+  /**
+   * ②ヒアリングの「前回の約束・要望」。★現状の行と同じ理由でクライアントが組んで送る
+   * （面談画面がすでに読んでいる面談記録・タスクから作れる）。
+   * ★ここで検めたものを、プロンプトと突き合わせの両方に使う。片方だけ切り詰めると、
+   *   AIが正しく書き写しても「渡していない item」になって全部捨てられる。
+   */
+  const followUpItems = sanitizeFollowUpItems(body.followUpItems);
 
   const [lessonLines, parentLines] = await Promise.all([
     loadLessonLines(supabase, studentId),
@@ -374,12 +397,12 @@ export async function POST(request: NextRequest) {
       model,
       // 書き方の決まりは毎回同じなのでキャッシュに載せる
       system: [{ text: briefSystemPrompt(), cache: true }],
-      userText: briefUserText(sections),
+      userText: briefUserText(sections, followUpItems),
       // ★長く書かせるようにしたので、出力の上限も広げる（seen 180字×7＋thread＋bridge）
       maxTokens: 4000,
     });
 
-    const parsed = parseBriefResult(raw, sentKeys);
+    const parsed = parseBriefResult(raw, sentKeys, followUpItems);
     const seenByKey = new Map<BriefSectionKey, { seen: string; sign: BriefSign }>();
     for (const s of parsed.sections) seenByKey.set(s.key, { seen: s.seen, sign: s.sign });
 
@@ -388,11 +411,15 @@ export async function POST(request: NextRequest) {
      *   現状の行だけのカードは、画面の他のパネルの写しでしかない。
      *   ★bridge は koushu を渡していない（講習面談ではない）ときは常に空になるので、
      *     この判定には使わない。
+     *   ★followUps（前回の約束・要望の振り分け）は数に入れる。ここだけ書けた日でも、
+     *     「どれが報告することか」が分かるだけで②の中身が変わるため。
      */
-    const nothing = !parsed.thread && parsed.sections.every((s) => !s.seen);
+    const nothing =
+      !parsed.thread && parsed.sections.every((s) => !s.seen) && parsed.followUps.length === 0;
 
     return NextResponse.json({
       sections: withCurrent(seenByKey),
+      followUps: parsed.followUps,
       thread: parsed.thread,
       bridge: parsed.bridge,
       degraded: nothing,

@@ -26,6 +26,8 @@ import {
   formatRegularPatternsSchedule,
   koushuFiscalYear,
   mergeKoushuSeasons,
+  previousFollowUpAskLine,
+  previousFollowUpReportLine,
   stripTargetSchoolFactLines,
   summarizeCurrentKoushu,
 } from './interview.shared';
@@ -51,7 +53,7 @@ import {
 } from '@/lib/interview/scenes';
 import { examCountdownLine, examApplicationLine } from '@/lib/interview/examDates';
 import { regionOfSchool } from '@/lib/interview/region';
-import { briefSectionLabel, type BriefSectionKey } from '@/lib/ai/interviewBrief';
+import { briefSectionLabel, followUpItemKey, type BriefSectionKey } from '@/lib/ai/interviewBrief';
 import { formatGradeLabel } from '@/lib/utils/gradeLabel';
 
 interface InterviewPrintSheetProps {
@@ -136,6 +138,24 @@ export function InterviewPrintSheet({
   const missingRecordAsk = buildMissingRecordAskLines(assessments, student.grade);
   // ②ヒアリングの「前回の約束・前回の要望」と、そこから組む「その後どうですか」
   const previous = buildPreviousCommitmentLines(interviews);
+  /**
+   * 前回の約束・要望を「報告」と「聞く」に振り分ける（画面と同じ規則）。
+   * ★AIが返した項目はその判定に従い、無いものは出どころ（fallback）で振る。
+   */
+  const followUpByItem = new Map((script?.followUps ?? []).map((f) => [f.item, f]));
+  const followUpReports: string[] = [];
+  const followUpAsks: string[] = [];
+  for (const item of previous.items) {
+    const hit = followUpByItem.get(followUpItemKey(item.text));
+    const kind = hit?.kind ?? item.fallback;
+    if (kind === 'report') {
+      followUpReports.push(
+        hit?.text ? `報告 ―― ${hit.text}` : previousFollowUpReportLine(item.text)
+      );
+    } else {
+      followUpAsks.push(hit?.text || previousFollowUpAskLine(item.text));
+    }
+  }
 
   // seen（AIの着眼点）は script があれば key で引く。無ければ全て空文字扱い
   const seenByKey = new Map<BriefSectionKey, string>();
@@ -276,9 +296,26 @@ export function InterviewPrintSheet({
               )}
             </div>
             <div className="border-l border-dotted border-gray-400 pl-3.5">
-              <div className="mb-0.5 text-[9px] font-bold text-gray-600">聞くこと</div>
-              {/* ★前回の約束・要望を1件ずつ追いかける行（システムが組む） */}
-              {previous.asks.map((t, i) => (
+              {/* ★前回の要望のうち、塾から対応を伝えるもの（画面と同じ振り分け） */}
+              {followUpReports.length > 0 && (
+                <>
+                  <div className="mb-0.5 text-[9px] font-bold text-gray-600">話すこと</div>
+                  {followUpReports.map((t, i) => (
+                    <div key={`report-${i}`} className="text-[10px] leading-[1.6] text-gray-800">
+                      ・{t}
+                    </div>
+                  ))}
+                </>
+              )}
+              <div
+                className={`mb-0.5 text-[9px] font-bold text-gray-600 ${
+                  followUpReports.length > 0 ? 'mt-1' : ''
+                }`}
+              >
+                聞くこと
+              </div>
+              {/* 前回の約束・要望のうち、家庭に聞くもの */}
+              {followUpAsks.map((t, i) => (
                 <div key={`followup-${i}`} className="text-[10px] leading-[1.6] text-gray-800">
                   □ {t}
                 </div>
