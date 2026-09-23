@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Plus, Trash2, Users, X } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Users } from 'lucide-react';
 import { Loading, ToastContainer } from '@/components/ui';
 import { useToast } from '@/hooks/useToast';
 import { useConfirm } from '@/hooks/useConfirm';
@@ -15,6 +15,7 @@ import {
   getCourseCurriculum,
   getSeasonalCourse,
   removeTextbookFromCourse,
+  updateCourseTextbookOrder,
   replaceCourseCurriculum,
   updateSeasonalCourse,
 } from '@/lib/api/seasonalCourses';
@@ -44,6 +45,7 @@ import {
   type DraftMap,
 } from './unitDraftLogic';
 import { courseSettingsToDrafts, draftsToCourseSettings } from './courseSettingAdapter';
+import { ProposalBookTabs } from '@/components/proposals/ProposalBookTabs';
 import { TextbookPickerScreen } from './TextbookPickerScreen';
 import { UnitList } from './UnitList';
 import { SelectionPill } from './SelectionPill';
@@ -643,6 +645,8 @@ export function CourseEditor({ courseId, schoolId }: { courseId?: string; school
           await addTextbookToCourse(targetCourseId, currentIds[i], i);
         }
       }
+      // 既にある冊もタブの並びで振り直す（ドラッグで入れ替えた順番を残す）
+      await updateCourseTextbookOrder(targetCourseId, currentIds);
 
       // 単元設定。読み込み済みのタブだけを対象にする（＝画面に出ている全タブ）
       for (const tbId of currentIds) {
@@ -853,8 +857,16 @@ export function CourseEditor({ courseId, schoolId }: { courseId?: string; school
         {/* テキストのタブ。切り替えても未保存の入力は保持される（unitsByTextbook に全冊ぶん持っている） */}
         <section className="p-4 bg-surface-raised rounded-xl border border-border">
           <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
-            <div className="text-xs font-bold text-text-muted">
-              テキスト（{textbooks.length}/{MAX_TEXTBOOKS}）
+            <div className="flex items-center gap-2">
+              <div className="text-xs font-bold text-text-muted">
+                テキスト（{textbooks.length}/{MAX_TEXTBOOKS}）
+              </div>
+              {/* この並びが、テンプレから作る提案書の1冊目・2冊目になる */}
+              {textbooks.length > 1 && (
+                <span className="text-[11px] text-text-faint">
+                  左から順に進めます（ドラッグで入れ替え）
+                </span>
+              )}
             </div>
             <button
               type="button"
@@ -871,53 +883,29 @@ export function CourseEditor({ courseId, schoolId }: { courseId?: string; school
               テキスト追加
             </button>
           </div>
-          <div className="flex gap-2 flex-wrap">
-            {textbooks.map((ct) => {
-              const isActive = selectedTextbookId === ct.textbook_id;
-              const koma = totals.perTextbook.get(ct.textbook_id) ?? 0;
-              return (
-                // タブ本体と「外す」は別のボタンにする。
-                // 入れ子のボタンはHTMLとして不正で、キーボードから「外す」に到達できなくなる。
-                <div
-                  key={ct.textbook_id}
-                  className={`flex items-center rounded-lg text-sm font-medium transition-[background-color,color] duration-150 ${
-                    isActive
-                      ? 'bg-ink text-text-on-primary'
-                      : 'bg-surface-hover text-text-body hover:bg-border-default'
-                  }`}
-                >
-                  <button
-                    type="button"
-                    onClick={() => setSelectedTextbookId(ct.textbook_id)}
-                    aria-pressed={isActive}
-                    className="pl-3 pr-2 py-1.5 rounded-l-lg"
-                  >
-                    {ct.textbook.name}
-                    <span
-                      className={`ml-1.5 text-[11px] tabular-nums ${
-                        isActive ? 'text-text-on-primary/70' : 'text-text-muted'
-                      }`}
-                    >
-                      {koma}コマ
-                    </span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveTextbook(ct.textbook_id, ct.textbook.name)}
-                    aria-label={`${ct.textbook.name} を講習から外す`}
-                    title="このテキストを外す"
-                    className={`pr-2.5 pl-1 py-1.5 rounded-r-lg transition-[color] duration-150 ${
-                      isActive
-                        ? 'text-text-on-primary/60 hover:text-text-on-primary'
-                        : 'text-text-faint hover:text-danger'
-                    }`}
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                </div>
+          <ProposalBookTabs
+            books={textbooks.map((ct) => ({
+              textbookId: ct.textbook_id,
+              label: ct.textbook.name,
+              koma: totals.perTextbook.get(ct.textbook_id) ?? 0,
+            }))}
+            selectedTextbookId={selectedTextbookId}
+            onSwitch={setSelectedTextbookId}
+            onRemove={(id) => {
+              const ct = textbooks.find((t) => t.textbook_id === id);
+              if (ct) void handleRemoveTextbook(ct.textbook_id, ct.textbook.name);
+            }}
+            onReorder={(ids) => {
+              setTextbooks((prev) =>
+                ids
+                  .map((id) => prev.find((t) => t.textbook_id === id))
+                  .filter((t): t is CourseTextbook => !!t)
               );
-            })}
-          </div>
+              setDirty(true);
+            }}
+            alwaysRemovable
+            removeTarget="講習"
+          />
         </section>
 
         {/* 旧作成画面で合計コマ数だけ手入力され、単元が未設定のまま残っている講習への案内。

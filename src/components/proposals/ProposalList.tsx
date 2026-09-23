@@ -13,8 +13,14 @@ import {
   bulkMarkProposalsSent,
   calcTotalKoma,
   calcTotalAppliedKoma,
+  getCurriculumItemSubjects,
 } from '@/lib/api/proposals';
 import { buildPrintSheets } from '@/lib/proposals/buildPrintSheets';
+import {
+  itemIdsNeedingSubject,
+  summarizeKomaBySubject,
+  UNKNOWN_SUBJECT,
+} from '@/lib/proposals/subjectKomaSummary';
 import {
   getProposalOrderCandidates,
   isRelevantOrderCandidate,
@@ -46,6 +52,8 @@ export default function ProposalList() {
   const [studentName, setStudentName] = useState('');
   const [studentGrade, setStudentGrade] = useState<number | null>(null);
   const [proposals, setProposals] = useState<SeasonalProposalWithDetails[]>([]);
+  /** 過去問の単元ID → 単元の科目。科目別サマリーで過去問のコマを各科目に振り分けるのに使う */
+  const [unitSubjects, setUnitSubjects] = useState<Map<number, string | null>>(new Map());
   /**
    * 講習（期）の絞り込み。教室全体の一覧（/courses/proposals）と同じ仕様に揃える。
    * ★既定は「これから準備する期」。全部出すと過去の講習の提案書が混ざって、
@@ -81,6 +89,9 @@ export default function ProposalList() {
 
       const list = await getProposalsByStudent(studentId);
       setProposals(list);
+      // 過去問が無い生徒では1回も問い合わせない（ほとんどの生徒はここで終わる）
+      const itemIds = itemIdsNeedingSubject(list);
+      setUnitSubjects(itemIds.length > 0 ? await getCurriculumItemSubjects(itemIds) : new Map());
       setSelected(new Set());
     } catch (e) {
       console.error(e);
@@ -296,20 +307,13 @@ export default function ProposalList() {
   });
 
   // ── 科目別サマリー（上部に「何の科目を何コマ提案しているか」を集約表示） ──
-  // 全提案書を科目で束ね、提案コマ数・申込コマ数を合算する。科目バッジ＋コマ数で一覧性を上げる狙い。
-  const bySubject = new Map<string, { koma: number; appliedKoma: number; count: number }>();
-  for (const p of visibleProposals) {
-    const subject = p.textbook?.subject || 'その他';
-    const entry = bySubject.get(subject) ?? { koma: 0, appliedKoma: 0, count: 0 };
-    entry.koma += calcTotalKoma(p.units);
-    entry.appliedKoma += calcTotalAppliedKoma(p.units) ?? 0;
-    entry.count += 1;
-    bySubject.set(subject, entry);
-  }
-  const subjectSummary = Array.from(bySubject.entries()).sort(([a], [b]) =>
-    a.localeCompare(b, 'ja')
+  // ★過去問のコマは単元の科目で各科目に振り分ける（「その他」にまとめない）。
+  //   テンプレでは「数学のテキスト＋過去問の数学」が1パックなので、科目ごとに見たときに
+  //   パックの総量が出ているほうが読みやすい。数え方は subjectKomaSummary.ts に集約。
+  const { subjects: subjectSummary, total: totalKomaAll } = summarizeKomaBySubject(
+    visibleProposals,
+    unitSubjects
   );
-  const totalKomaAll = subjectSummary.reduce((sum, [, v]) => sum + v.koma, 0);
 
   const hasSelection = selected.size > 0;
 
@@ -418,8 +422,8 @@ export default function ProposalList() {
       {!loading && subjectSummary.length > 0 && (
         <div className="mb-4 flex items-center gap-2 flex-wrap px-3.5 py-2.5 rounded-xl border border-border-subtle bg-surface-raised">
           <span className="text-[11px] font-medium text-text-faint shrink-0">提案内容</span>
-          {subjectSummary.map(([subject, v]) => {
-            const colors = getSubjectBadgeColor(subject === 'その他' ? null : subject);
+          {subjectSummary.map(({ subject, koma }) => {
+            const colors = getSubjectBadgeColor(subject === UNKNOWN_SUBJECT ? null : subject);
             return (
               <span
                 key={subject}
@@ -431,15 +435,17 @@ export default function ProposalList() {
                   {subject}
                 </span>
                 <span className="text-xs font-semibold text-text-heading tabular-nums">
-                  {v.koma}コマ
+                  {koma}コマ
                 </span>
               </span>
             );
           })}
-          <span className="flex-1" />
-          <span className="text-xs text-text-muted shrink-0">
-            合計 <span className="font-bold text-text-heading tabular-nums">{totalKomaAll}</span>
-            コマ
+          {/* ★合計は科目の並びのすぐ後ろに置く。右端に離すと広い画面で目に入らない */}
+          <span className="inline-flex items-center gap-1.5 pl-2 ml-0.5 border-l border-border-subtle">
+            <span className="text-[11px] font-medium text-text-faint">合計</span>
+            <span className="text-sm font-bold text-text-heading tabular-nums">
+              {totalKomaAll}コマ
+            </span>
           </span>
         </div>
       )}

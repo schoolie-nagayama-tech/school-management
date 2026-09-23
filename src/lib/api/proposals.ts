@@ -57,6 +57,30 @@ async function fetchAllUnitsByProposalIds(proposalIds: string[]): Promise<Season
   return all;
 }
 
+/**
+ * 単元ID → 単元の科目（curriculum_items.subject）。
+ * 過去問のコマを科目ごとに振り分けるために使う（生徒別の提案書一覧の科目別サマリー）。
+ * ★IDは500件ずつに分ける。1回で1000行を超えるとPostgRESTが黙って切り捨てるため。
+ * 失敗しても一覧は止めない（振り分けられない単元は教材の科目＝「その他」に落ちるだけ）。
+ */
+export async function getCurriculumItemSubjects(
+  itemIds: number[]
+): Promise<Map<number, string | null>> {
+  const result = new Map<number, string | null>();
+  const BATCH = 500;
+  for (let i = 0; i < itemIds.length; i += BATCH) {
+    const { data, error } = await supabase
+      .from('curriculum_items')
+      .select('id, subject')
+      .in('id', itemIds.slice(i, i + BATCH));
+    if (error) break;
+    for (const row of (data ?? []) as { id: number; subject: string | null }[]) {
+      result.set(row.id, row.subject);
+    }
+  }
+  return result;
+}
+
 // ============================================
 // 提案書 CRUD
 // ============================================

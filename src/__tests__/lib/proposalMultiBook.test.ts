@@ -3,6 +3,7 @@ import {
   buildProposalSaveBlockers,
   calcBookKomaSummary,
   formatBookTitles,
+  reorderBooks,
   summarizeBookSaves,
 } from '@/components/proposals/proposalMultiBook';
 
@@ -128,5 +129,19 @@ describe('formatBookTitles', () => {
   it('空の書名は数に入れない', () => {
     expect(formatBookTitles(['A', '', '  '])).toBe('A');
     expect(formatBookTitles([])).toBe('');
+  });
+});
+
+describe('reorderBooks', () => {
+  // ★タブの並び＝保存する順＝進める順。テンプレの登録順から生徒ごとに入れ替えられるようにした
+  it('つかんだ冊を落とした冊の位置へ動かし、間の冊は1つずつずれる', () => {
+    expect(reorderBooks([1, 2, 3], 3, 1)).toEqual([3, 1, 2]);
+    expect(reorderBooks([1, 2, 3], 1, 3)).toEqual([2, 3, 1]);
+    expect(reorderBooks([1, 2, 3], 2, 3)).toEqual([1, 3, 2]);
+  });
+
+  it('見つからない冊・同じ位置なら並びを変えない', () => {
+    expect(reorderBooks([1, 2], 9, 1)).toEqual([1, 2]);
+    expect(reorderBooks([1, 2], 1, 1)).toEqual([1, 2]);
   });
 });

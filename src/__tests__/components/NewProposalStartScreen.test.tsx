@@ -13,7 +13,9 @@ import userEvent from '@testing-library/user-event';
 import {
   CreateMethodScreen,
   TemplatePickerScreen,
+  filterTemplates,
   sortTemplates,
+  subjectOptions,
 } from '@/components/proposals/NewProposalStartScreen';
 import type { SeasonalCourseListItem } from '@/types/database';
 
@@ -67,6 +69,33 @@ describe('CreateMethodScreen', () => {
   });
 });
 
+/** 絞り込みのテスト用に、季節・学年・科目・書名を差し替えたテンプレを作る */
+function tpl(
+  id: string,
+  opts: {
+    name?: string;
+    season?: string;
+    grades?: number[];
+    books?: { name: string; subject: string | null }[];
+  } = {}
+): SeasonalCourseListItem {
+  return {
+    ...TEMPLATE,
+    id,
+    name: opts.name ?? `テンプレ${id}`,
+    season: opts.season ?? 'winter',
+    target_grades: opts.grades ?? [8],
+    textbooks: (opts.books ?? [{ name: '中2 数学', subject: '数学' }]).map((b, i) => ({
+      id: `${id}-${i}`,
+      course_id: id,
+      textbook_id: i,
+      sort_order: i,
+      created_at: '2026-09-01T00:00:00Z',
+      textbook: { id: i, name: b.name, subject: b.subject },
+    })),
+  } as unknown as SeasonalCourseListItem;
+}
+
 describe('TemplatePickerScreen', () => {
   const base = {
     studentName: '高橋 英佑',
@@ -75,13 +104,12 @@ describe('TemplatePickerScreen', () => {
     grade: 8,
     applying: false,
     onSelect: vi.fn(),
-    onClearFilters: vi.fn(),
     onBack: vi.fn(),
   };
 
   it('テンプレートの中身（テキスト・単元数）を出し、選んだIDを返す', async () => {
     const onSelect = vi.fn();
-    render(<TemplatePickerScreen {...base} templates={[TEMPLATE]} filtered onSelect={onSelect} />);
+    render(<TemplatePickerScreen {...base} templates={[TEMPLATE]} onSelect={onSelect} />);
 
     expect(screen.getByText('中2数学 図形の証明 総仕上げ')).toBeInTheDocument();
     expect(screen.getByText(/中2 数学 ステップバイステップ/)).toBeInTheDocument();
@@ -91,20 +119,45 @@ describe('TemplatePickerScreen', () => {
     expect(onSelect).toHaveBeenCalledWith('course-1');
   });
 
-  it('0件のときは絞りを外す道を出す', async () => {
-    const onClearFilters = vi.fn();
-    render(
-      <TemplatePickerScreen {...base} templates={[]} filtered onClearFilters={onClearFilters} />
-    );
+  it('既定は準備中の季節＋生徒の学年。季節は件数があってもいつでも切り替えられる', async () => {
+    const list = [
+      tpl('w', { name: '冬の講習', season: 'winter' }),
+      tpl('s', { name: '夏の講習', season: 'summer' }),
+    ];
+    render(<TemplatePickerScreen {...base} templates={list} />);
+    expect(screen.getByText('冬の講習')).toBeInTheDocument();
+    expect(screen.queryByText('夏の講習')).not.toBeInTheDocument();
 
-    expect(screen.getByText('この条件に合うテンプレートがありません')).toBeInTheDocument();
-    await userEvent.click(screen.getByText('季節・学年の絞り込みを外す'));
-    expect(onClearFilters).toHaveBeenCalledTimes(1);
+    await userEvent.click(screen.getByRole('button', { name: '夏期' }));
+    expect(screen.getByText('夏の講習')).toBeInTheDocument();
+    expect(screen.queryByText('冬の講習')).not.toBeInTheDocument();
   });
 
-  it('絞りを外したあとの0件では「外す」を出さない（押せる先が無い）', () => {
-    render(<TemplatePickerScreen {...base} templates={[]} filtered={false} />);
-    expect(screen.queryByText('季節・学年の絞り込みを外す')).not.toBeInTheDocument();
+  it('0件のときは絞り込みをすべて外す道を出す', async () => {
+    const list = [tpl('s', { name: '夏の講習', season: 'summer' })];
+    render(<TemplatePickerScreen {...base} templates={list} />);
+
+    expect(screen.getByText('この条件に合うテンプレートがありません')).toBeInTheDocument();
+    await userEvent.click(screen.getByText('絞り込みをすべて外す'));
+    expect(screen.getByText('夏の講習')).toBeInTheDocument();
+  });
+
+  it('テンプレが1件も無いときは「外す」を出さない（外しても出てこない）', () => {
+    render(<TemplatePickerScreen {...base} templates={[]} />);
+    expect(screen.getByText('単元の入ったテンプレートがありません')).toBeInTheDocument();
+    expect(screen.queryByText('絞り込みをすべて外す')).not.toBeInTheDocument();
+  });
+
+  it('キーワードは講習名とテキスト名のどちらでも当たる', async () => {
+    const list = [
+      tpl('a', { name: '図形の証明', books: [{ name: '必勝シリーズ', subject: '数学' }] }),
+      tpl('b', { name: '英文法', books: [{ name: 'サミングアップ', subject: '英語' }] }),
+    ];
+    render(<TemplatePickerScreen {...base} templates={list} />);
+
+    await userEvent.type(screen.getByLabelText('講習名・テキスト名で探す'), '必勝');
+    expect(screen.getByText('図形の証明')).toBeInTheDocument();
+    expect(screen.queryByText('英文法')).not.toBeInTheDocument();
   });
 
   it('並べ替えボタンで一覧の順番が変わる', async () => {
@@ -122,7 +175,7 @@ describe('TemplatePickerScreen', () => {
       make('b', '第10回 数学', '2026-09-03T00:00:00Z', 5),
       make('c', '第1回 数学', '2026-09-02T00:00:00Z', 12),
     ];
-    render(<TemplatePickerScreen {...base} templates={list} filtered />);
+    render(<TemplatePickerScreen {...base} templates={list} />);
     const names = () => screen.getAllByText(/^第\d+回 数学$/).map((el) => el.textContent);
 
     // 既定は新しい順
@@ -135,6 +188,57 @@ describe('TemplatePickerScreen', () => {
     await userEvent.click(screen.getByText('使われている順'));
     expect(names()).toEqual(['第1回 数学', '第10回 数学', '第2回 数学']);
     expect(screen.getByText(/12人に適用/)).toBeInTheDocument();
+  });
+});
+
+describe('filterTemplates', () => {
+  const all = { season: 'all', grade: 'all', subject: 'all', keyword: '' } as const;
+
+  it('対象学年が空のテンプレは学年で絞っても残す（学年を問わない扱い）', () => {
+    const out = filterTemplates(
+      [tpl('any', { grades: [] }), tpl('g9', { grades: [9] }), tpl('g8', { grades: [8] })],
+      { ...all, grade: 8 }
+    );
+    expect(out.map((c) => c.id)).toEqual(['any', 'g8']);
+  });
+
+  it('科目はテキストの科目で絞る。過去問だけ（科目が空）のテンプレはどの科目でも残す', () => {
+    const out = filterTemplates(
+      [
+        tpl('math', { books: [{ name: '数学A', subject: '数学' }] }),
+        tpl('eng', { books: [{ name: '英語A', subject: '英語' }] }),
+        tpl('kakomon', { books: [{ name: '都立入試過去問', subject: null }] }),
+        tpl('mix', {
+          books: [
+            { name: '数学A', subject: '数学' },
+            { name: '都立入試過去問', subject: null },
+          ],
+        }),
+      ],
+      { ...all, subject: '英語' }
+    );
+    expect(out.map((c) => c.id)).toEqual(['eng', 'kakomon']);
+  });
+
+  it('キーワードは空白区切りの全語を含むもの。全角半角・大文字小文字をそろえて比べる', () => {
+    const list = [
+      tpl('a', { name: '中3 ＥＮＧＬＩＳＨ 総復習' }),
+      tpl('b', { name: '中3 数学 総復習' }),
+    ];
+    expect(filterTemplates(list, { ...all, keyword: 'english　総復習' }).map((c) => c.id)).toEqual([
+      'a',
+    ]);
+  });
+});
+
+describe('subjectOptions', () => {
+  it('テンプレに実在する科目だけを、英数国理社の順で出す', () => {
+    const out = subjectOptions([
+      tpl('a', { books: [{ name: '社会A', subject: '社会' }] }),
+      tpl('b', { books: [{ name: '英語A', subject: '英語' }] }),
+      tpl('c', { books: [{ name: '過去問', subject: null }] }),
+    ]);
+    expect(out).toEqual(['英語', '社会']);
   });
 });
 
