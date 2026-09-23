@@ -1,6 +1,6 @@
 import 'server-only';
 import { getPortalServiceClient } from '@/lib/mypage/serviceClient';
-import type { SchoolMatch } from '@/lib/ai/schoolLookup';
+import { parseAccessStations, type SchoolMatch } from '@/lib/ai/schoolLookup';
 
 /**
  * 高校マスタの読み込み（AIヘルプの2つ目の材料）。
@@ -50,12 +50,18 @@ export async function loadSchools(): Promise<SchoolMatch[]> {
     region: string | null;
     old_district: number | null;
     municipality: string | null;
+    lat: number | null;
+    lon: number | null;
+    primary_station: string | null;
+    primary_lines: string[] | null;
     access_lines: string[] | null;
+    access_stations: string[] | null;
   }>((from, to) =>
     supabase
       .from('high_schools')
       .select(
-        'id,prefecture,school_name,course,category,region,old_district,municipality,access_lines'
+        'id,prefecture,school_name,course,category,region,old_district,municipality,lat,lon,' +
+          'primary_station,primary_lines,access_lines,access_stations'
       )
       .range(from, to)
   );
@@ -99,7 +105,12 @@ export async function loadSchools(): Promise<SchoolMatch[]> {
       region: h.region,
       oldDistrict: h.old_district,
       municipality: h.municipality,
+      lat: h.lat,
+      lon: h.lon,
+      primaryStation: h.primary_station,
+      primaryLines: h.primary_lines,
       accessLines: h.access_lines,
+      accessStations: parseAccessStations(h.access_stations),
       sourceLabel: s?.source_label ?? '',
       sourceYear: s?.source_year ?? 0,
       totalScore: s?.total_score ?? null,

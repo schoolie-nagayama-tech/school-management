@@ -2,14 +2,17 @@
  * AIヘルプの高校マスタ引き当て（src/lib/ai/schoolLookup.ts）。
  * 正典: docs/ai-help-school-lookup.md
  *
- * ★ここで固定しているのは「誤爆しない」「満点の違う数字を混ぜない」「県で語を変える」の3つ。
+ * ★ここで固定しているのは「誤爆しない」「満点の違う数字を混ぜない」「県で語を変える」
+ * 「場所で引いても遠い学校を近いと言わない」の4つ。
  *   どれも壊れると、AIが自信たっぷりに間違った数字を案内する。
  */
 import { describe, expect, it } from 'vitest';
 import {
   findByName,
   findByRange,
+  lineAliases,
   matchSchools,
+  parseAccessStations,
   prefectureHint,
   renderSchools,
   type SchoolMatch,
@@ -24,7 +27,12 @@ function school(
     region: null,
     oldDistrict: null,
     municipality: null,
+    lat: null,
+    lon: null,
+    primaryStation: null,
+    primaryLines: null,
     accessLines: null,
+    accessStations: null,
     sourceLabel: 'テスト版',
     sourceYear: 2027,
     totalScore: null,
@@ -39,11 +47,105 @@ function school(
   };
 }
 
+const IKEBUKURO = '西武鉄道 池袋線';
+
+/** 場所で引くための都立（座標・駅は本番マスタの値をもとにした近似） */
+const PLACES: SchoolMatch[] = [
+  school({
+    prefecture: '東京都',
+    schoolName: '八王子東',
+    municipality: '八王子市',
+    hensachi: 63,
+    naishin: 56,
+    naishinMax: 65,
+  }),
+  school({
+    prefecture: '東京都',
+    schoolName: '八王子北',
+    municipality: '八王子市',
+    hensachi: 37,
+    naishin: 37,
+    naishinMax: 65,
+  }),
+  school({
+    prefecture: '東京都',
+    schoolName: '町田',
+    municipality: '町田市',
+    hensachi: 59,
+    naishin: 52,
+    naishinMax: 65,
+  }),
+  school({
+    prefecture: '東京都',
+    schoolName: '成瀬',
+    municipality: '町田市',
+    hensachi: 50,
+    naishin: 44,
+    naishinMax: 65,
+  }),
+  school({
+    prefecture: '東京都',
+    schoolName: '清瀬',
+    municipality: '清瀬市',
+    lat: 35.7739,
+    lon: 139.5158,
+    primaryStation: '清瀬',
+    primaryLines: [IKEBUKURO],
+    accessLines: [IKEBUKURO],
+    accessStations: [{ name: '清瀬', m: 439 }],
+    hensachi: 51,
+    naishin: 45,
+    naishinMax: 65,
+  }),
+  school({
+    prefecture: '東京都',
+    schoolName: '久留米西',
+    municipality: '東久留米市',
+    lat: 35.763,
+    lon: 139.5105,
+    primaryStation: '清瀬',
+    primaryLines: [IKEBUKURO],
+    accessLines: [IKEBUKURO],
+    accessStations: [{ name: '清瀬', m: 1500 }],
+    hensachi: 37,
+    naishin: 36,
+    naishinMax: 65,
+  }),
+  // 同じ沿線で清瀬駅からおよそ5km（2km圏の外）
+  school({
+    prefecture: '東京都',
+    schoolName: '保谷',
+    municipality: '西東京市',
+    lat: 35.745,
+    lon: 139.556,
+    accessLines: [IKEBUKURO, '西武鉄道 新宿線'],
+    accessStations: [{ name: 'ひばりヶ丘', m: 1200 }],
+    hensachi: 47,
+    naishin: 41,
+    naishinMax: 65,
+  }),
+  // 同じ沿線でも清瀬駅から15km近く離れている（「近い」に入れてはいけない）
+  school({
+    prefecture: '東京都',
+    schoolName: '武蔵丘',
+    municipality: '中野区',
+    lat: 35.717,
+    lon: 139.67,
+    accessLines: [IKEBUKURO],
+    accessStations: [{ name: '沼袋', m: 900 }],
+    hensachi: 49,
+    naishin: 44,
+    naishinMax: 65,
+  }),
+];
+
 const ALL: SchoolMatch[] = [
   school({
     prefecture: '東京都',
     schoolName: '日比谷',
     oldDistrict: 1,
+    municipality: '千代田区',
+    accessLines: ['東京地下鉄 2号線日比谷線', '東京地下鉄 7号線南北線'],
     totalScore: 920,
     naishin: 61,
     naishinMax: 65,
@@ -240,5 +342,100 @@ describe('回答に渡す本文', () => {
 
   it('当たらなければ空文字（プロンプトに見出しだけ残さない）', () => {
     expect(renderSchools([])).toBe('');
+  });
+});
+
+describe('場所で引く（都立だけ）', () => {
+  const names = (q: string) => matchSchools(q, PLACES).rows.map((s) => s.schoolName);
+
+  it('市区町村で引く。「八王子」だけでも八王子市の学校が出る', () => {
+    expect(names('八王子にある都立は？')).toEqual(['八王子東', '八王子北']);
+    expect(names('八王子市の高校')).toEqual(['八王子東', '八王子北']);
+    expect(matchSchools('八王子にある都立は？', PLACES).conditions[0]).toContain('八王子市');
+  });
+
+  it('★学校名と同じ地名は、ふつうは学校。「にある」などが付けば市区町村', () => {
+    expect(names('町田の偏差値')).toEqual(['町田']);
+    expect(names('町田にある都立')).toEqual(['町田', '成瀬']);
+  });
+
+  it('★「八王子北にある」は八王子北高校（「北」で北区や八王子市に取らない）', () => {
+    expect(names('八王子北にある部活')).toEqual(['八王子北']);
+  });
+
+  it('★「清瀬駅」は駅、「清瀬の偏差値」は清瀬高校', () => {
+    expect(names('清瀬の偏差値')).toEqual(['清瀬']);
+    expect(names('清瀬駅から近い都立')).toEqual(['清瀬', '久留米西', '保谷']);
+  });
+
+  it('★駅から近い＝直線2km圏＋同じ沿線で直線およそ8km以内。沿線の反対側の学校は出さない', () => {
+    const r = matchSchools('清瀬駅から近い都立', PLACES);
+    expect(r.rows.map((s) => s.schoolName)).not.toContain('武蔵丘');
+    const text = renderSchools(r);
+    expect(text).toContain('清瀬駅まで直線439m');
+    expect(text).toContain('清瀬駅まで直線1.5km');
+    expect(text).toMatch(/保谷.*2km圏の外・同じ沿線（西武鉄道 池袋線）・駅からおよそ直線4\.\dkm/);
+    expect(text).toContain('直線距離');
+  });
+
+  it('場所と偏差値を組み合わせる', () => {
+    expect(names('清瀬駅から近くて偏差値50の高校は？')).toEqual(['清瀬']);
+  });
+
+  it('★帯に1校も無ければ、値の近い順に出して「帯には無い」と条件に書く', () => {
+    const r = matchSchools('八王子にある都立で偏差値50', PLACES);
+    expect(r.rows.map((s) => s.schoolName)).toEqual(['八王子東', '八王子北']);
+    expect(r.conditions.join('／')).toContain('に入る学校は無い');
+  });
+
+  it('★路線で引く。「日比谷線」は路線で、学校の日比谷としては当てない', () => {
+    const all = [...ALL, ...PLACES];
+    const r = matchSchools('日比谷線沿いの都立', all);
+    expect(r.rows.map((s) => s.schoolName)).toEqual(['日比谷']);
+    expect(r.conditions[0]).toContain('日比谷線');
+    // 路線で聞かれたら偏差値の高い順（駅の距離の並べ方はしない）
+    expect(names('西武池袋線の都立')).toEqual(['清瀬', '武蔵丘', '保谷', '久留米西']);
+  });
+
+  it('★「中央大学」の中央は地名として当てない', () => {
+    const r = matchSchools('中央大学附属の話', [
+      ...PLACES,
+      school({
+        prefecture: '東京都',
+        schoolName: '晴海総合',
+        municipality: '中央区',
+        hensachi: 47,
+      }),
+    ]);
+    expect(r.rows).toEqual([]);
+  });
+
+  it('神奈川を場所で聞かれたら、データが無いことを伝える本文を渡す（黙らない）', () => {
+    const r = matchSchools('横浜駅から近い県立', [...ALL, ...PLACES]);
+    expect(r.rows).toEqual([]);
+    expect(renderSchools(r)).toContain('所在地・最寄駅・沿線のデータがまだ');
+  });
+});
+
+describe('路線と駅の読み方', () => {
+  it('国土数値情報の路線名から、ふだんの呼び名を作る', () => {
+    const a = lineAliases('東京地下鉄 5号線東西線');
+    expect(a).toContain('東西線');
+    expect(a).toContain('東京メトロ東西線');
+    expect(lineAliases('西武鉄道 新宿線')).toContain('西武新宿線');
+    expect(lineAliases('東京都 10号線新宿線')).toContain('都営新宿線');
+  });
+
+  it('★「本線」だけは会社名なしで当てない（京成本線と京急本線の取り違え）', () => {
+    expect(lineAliases('京成電鉄 本線')).not.toContain('本線');
+    expect(lineAliases('京成電鉄 本線')).toContain('京成線');
+  });
+
+  it('DBの `駅名(距離m)` を読む', () => {
+    expect(parseAccessStations(['清瀬(439m)', '秋津'])).toEqual([
+      { name: '清瀬', m: 439 },
+      { name: '秋津', m: null },
+    ]);
+    expect(parseAccessStations(null)).toBe(null);
   });
 });

@@ -3219,6 +3219,7 @@ export type Database = {
           primary_station: string | null;
           primary_lines: string[] | null;
           access_lines: string[] | null;
+          access_stations: string[] | null;
           station_source: string | null;
           location_source: string | null;
           created_at: string;
@@ -3240,6 +3241,7 @@ export type Database = {
           primary_station?: string | null;
           primary_lines?: string[] | null;
           access_lines?: string[] | null;
+          access_stations?: string[] | null;
           station_source?: string | null;
           location_source?: string | null;
           created_at?: string;
@@ -3261,6 +3263,7 @@ export type Database = {
           primary_station?: string | null;
           primary_lines?: string[] | null;
           access_lines?: string[] | null;
+          access_stations?: string[] | null;
           station_source?: string | null;
           location_source?: string | null;
           created_at?: string;
