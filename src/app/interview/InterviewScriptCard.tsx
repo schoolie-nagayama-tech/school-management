@@ -8,13 +8,16 @@
  *
  * ★2026-09-23 の整理で、シーンの左右2列をやめて1列にした（正典:
  *   docs/interview-workspace-layout-2026-09.md「2026-09-23 整理」）。
+ *   ★同日、lg 以上だけ「左＝(a)(b) 話すこと／右＝(c)(d) 聞くこと・根拠」の2列に戻した
+ *   （1列＋880px 上限では広い画面の右半分が空いたため。renderBlock の注記）。
+ *   旧2列（左＝事実／右＝話す）とは分け方が違う。話す行は左の1列だけを上から追えばよい。
  *   シーン・②の小見出しの中は必ずこの順に並べる:
  *     (a) ひとこと（AIが書いた、そのまま言える切り出しの1文）
  *     (b) 話すこと（定型・AIの着眼点・報告・場面・前回の言葉・見せる物・想定問答）
  *     (c) 聞くこと（チェックの行。小さな見出し「聞くこと」の下にまとめる）
  *     (d) 根拠（記録）… システムが記録から組んだ事実の行。★既定はたたむ
  *   2列だと、面談中に目が左右を往復して「いま何を言うか」が追えなかった。事実は話す前の
- *   確認には要るが、話している最中には要らないので、畳んで下に置く。
+ *   確認には要るが、話している最中には要らないので、畳んでおく。
  *   ★聞くことを話すことの間に混ぜない。チェックの行が話す行の間に挟まると、
  *     話の流れが「言う→聞く→言う」で切れ、どこまで話したか分からなくなる。
  * ★シーンの開閉（旧 SCENE_OPEN_BY_DEFAULT）は廃止した。縦に全部出す並びに変えたので、
@@ -520,7 +523,10 @@ function PillLine({ pill, text }: { pill: string; text: string }) {
 /** 聞くことの小見出し。★チェックの行はこの下にまとめ、話す行の間に混ぜない */
 function AskLabel() {
   return (
-    <div className="mt-1.5 text-[10px] font-bold tracking-[0.14em] text-text-muted">聞くこと</div>
+    // ★lg 以上は右の列の先頭に来るので上の余白を消す（左の1行目と頭をそろえる）
+    <div className="mt-1.5 text-[10px] font-bold tracking-[0.14em] text-text-muted lg:mt-0">
+      聞くこと
+    </div>
   );
 }
 
@@ -1324,29 +1330,48 @@ export function InterviewScriptCard({
 
   /**
    * シーン・小見出し1つぶんを描く。★並びは (a)〜(d) に固定（ファイル冒頭の注記）。
-   * ★本文の幅は 880px までに絞る。全幅のカードで1行が長くなりすぎると、面談中に行を追えない。
+   * ★lg 以上は2列（2026-09-23 教室長承認）。左＝話すこと（(a)(b)）、右＝聞くこと→根拠（(c)(d)）。
+   *   1列＋880px の上限では広い画面でカードの右半分が空いていた。話す行と、チェックする行・
+   *   確かめる事実は面談中の使い方が違う（読み上げる／消し込む・ちらっと見る）ので、
+   *   左右に分けても「言う→聞く→言う」で話が切れることはない（聞くことを話す行の間に
+   *   混ぜない、という決まりはそのまま）。
+   * ★880px の上限は外した。左の行の長さは列の比（1.7 : 1）で抑える。
+   * ★右に置くもの（聞くこと・根拠）が無いシーンは1列のまま全幅にする。空の右列を立てると
+   *   「何か抜けている」に見える。逆に右だけあるときも右の列に置く（位置が毎回同じ方が探せる）。
+   * ★lg 未満は従来どおり縦に積む（左の中身→聞くこと→根拠）。
    */
-  const renderBlock = (id: string, parts: BlockParts) => (
-    <div className="flex max-w-[880px] flex-col gap-1.5">
-      {parts.opener && <OpenerLine text={parts.opener} />}
-      {parts.talk}
-      {parts.ask.length > 0 && (
-        <div className="flex flex-col gap-1">
-          <AskLabel />
-          {parts.ask}
+  const renderBlock = (id: string, parts: BlockParts) => {
+    const hasRight = parts.ask.length > 0 || parts.facts.length > 0;
+    const left = (
+      <div className="flex min-w-0 flex-col gap-1.5" data-script-col="talk">
+        {parts.opener && <OpenerLine text={parts.opener} />}
+        {parts.talk}
+      </div>
+    );
+    if (!hasRight) return left;
+    return (
+      <div className="grid grid-cols-1 gap-1.5 lg:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)] lg:gap-6">
+        {left}
+        <div className="flex min-w-0 flex-col gap-1.5" data-script-col="ask">
+          {parts.ask.length > 0 && (
+            <div className="flex flex-col gap-1">
+              <AskLabel />
+              {parts.ask}
+            </div>
+          )}
+          {parts.facts.length > 0 && (
+            <FactsDisclosure
+              count={parts.facts.length}
+              open={isFactsOpen(id)}
+              onToggle={() => toggleFacts(id)}
+            >
+              {parts.facts}
+            </FactsDisclosure>
+          )}
         </div>
-      )}
-      {parts.facts.length > 0 && (
-        <FactsDisclosure
-          count={parts.facts.length}
-          open={isFactsOpen(id)}
-          onToggle={() => toggleFacts(id)}
-        >
-          {parts.facts}
-        </FactsDisclosure>
-      )}
-    </div>
-  );
+      </div>
+    );
+  };
 
   const hasAnyOpener = Object.keys(openers).length > 0;
   const hasAnyEpisode = (view?.episodes.length ?? 0) > 0;
@@ -1440,18 +1465,36 @@ export function InterviewScriptCard({
                 </span>
               )}
               <span className="flex items-center gap-1">
-                <span className="h-2.5 w-2.5 rounded-sm border border-border" aria-hidden="true" />
-                聞く
-              </span>
-              <span className="flex items-center gap-1">
                 <FileText className="h-3 w-3 text-warning" aria-hidden="true" />
                 見せる
+              </span>
+              {/* ★ここから右の列（lg 以上）に出る種類。凡例も画面の左→右の順に並べる */}
+              <span className="flex items-center gap-1">
+                <span className="h-2.5 w-2.5 rounded-sm border border-border" aria-hidden="true" />
+                聞く
               </span>
               <span className="flex items-center gap-1">
                 <ChevronRight className="h-3 w-3" aria-hidden="true" />
                 根拠（記録。見出しを押すと記録へ移動）
               </span>
             </div>
+
+            {/**
+             * つなげて見えること（AI）。★①より上・全幅に置く（2026-09-23 教室長の指摘）。
+             *   複数の材料をまたいだ見立てで、面談全体の芯になる。以前はシーンの下（カードの末尾）に
+             *   あり、面談の前に目を通されずに終わっていた。面談に入る前に最初に読むものとして上に出す。
+             * ★目立たせるが騒がせない：info-subtle の地と 14px の本文。枠線・強い色は使わない。
+             * ★空なら何も出さない（無いものを見出しだけ立てると「抜けている」に見える）。
+             */}
+            {view.thread && (
+              <div
+                className="flex flex-col gap-1 rounded-md bg-info-subtle px-3 py-2"
+                data-script-thread
+              >
+                <span className="text-[11px] font-bold text-info">つなげて見えること</span>
+                <p className="text-sm leading-relaxed text-text-heading">{view.thread}</p>
+              </div>
+            )}
 
             {SCENE_KEYS.map((scene, index) => (
               <section
@@ -1520,14 +1563,6 @@ export function InterviewScriptCard({
                 )}
               </section>
             ))}
-
-            {/* 空の見出しは出さない（無いものを見出しだけ立てると「抜けている」に見える） */}
-            {view.thread && (
-              <div className="flex max-w-[880px] flex-col gap-1 border-t border-border-subtle pt-2.5">
-                <span className="text-[11px] font-bold text-text-heading">つなげて見えること</span>
-                <p className="text-xs leading-snug text-text-heading">{view.thread}</p>
-              </div>
-            )}
 
             <div className="flex flex-wrap items-center gap-2 border-t border-border-subtle pt-2.5">
               <button
