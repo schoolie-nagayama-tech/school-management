@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { calcTokyoNaishin, calcKanagawaNaishin, calcNaishin } from '@/lib/utils/convertedNaishin';
+import {
+  calcTokyoNaishin,
+  calcKanagawaNaishin,
+  calcKanagawaNaishin135,
+  calcNaishin,
+} from '@/lib/utils/convertedNaishin';
 
 describe('calcTokyoNaishin - 都立換算内申', () => {
   it('全9科目オール5で65点満点', () => {
@@ -256,5 +261,138 @@ describe('calcNaishin - 統合関数', () => {
     expect(result.max_score).toBe(45);
     // 9科合計=37
     expect(result.converted).toBe(37);
+  });
+});
+
+describe('calcKanagawaNaishin135 - 神奈川県公立の内申（中2学年末×1＋中3×2＝135点満点）', () => {
+  /** 9教科を同じ値で埋める。override で個別に変える */
+  function nine(v: number, override: Record<string, number | null> = {}) {
+    return {
+      english: v,
+      math: v,
+      japanese: v,
+      social: v,
+      science: v,
+      music: v,
+      art: v,
+      tech_home: v,
+      pe: v,
+      ...override,
+    };
+  }
+
+  it('オール5なら135点満点', () => {
+    const r = calcKanagawaNaishin135(
+      { nameCode: 'year_end', scores: nine(5) },
+      { nameCode: 'term2', scores: nine(5) }
+    );
+    expect(r).toEqual({
+      converted: 135,
+      grade8Total: 45,
+      grade9Total: 45,
+      max_score: 135,
+      provisional: false,
+      label: '換算内申',
+    });
+  });
+
+  it('中2×1＋中3×2で計算する（中2=27・中3=36 → 27+72=99）', () => {
+    const r = calcKanagawaNaishin135(
+      { nameCode: 'year_end', scores: nine(3) },
+      { nameCode: 'term2', scores: nine(4) }
+    );
+    expect(r?.converted).toBe(99);
+    expect(r?.grade8Total).toBe(27);
+    expect(r?.grade9Total).toBe(36);
+  });
+
+  it('中2と中3を取り違えない（重いのは中3）', () => {
+    const a = calcKanagawaNaishin135(
+      { nameCode: 'year_end', scores: nine(5) },
+      { nameCode: 'term2', scores: nine(3) }
+    );
+    const b = calcKanagawaNaishin135(
+      { nameCode: 'year_end', scores: nine(3) },
+      { nameCode: 'term2', scores: nine(5) }
+    );
+    expect(a?.converted).toBe(45 + 54);
+    expect(b?.converted).toBe(27 + 90);
+  });
+
+  it('2期制の後期（second）も確定扱い', () => {
+    const r = calcKanagawaNaishin135(
+      { nameCode: 'second', scores: nine(4) },
+      { nameCode: 'second', scores: nine(4) }
+    );
+    expect(r?.converted).toBe(108);
+    expect(r?.provisional).toBe(false);
+  });
+
+  it('中3の学年末（year_end）も確定扱い', () => {
+    const r = calcKanagawaNaishin135(
+      { nameCode: 'year_end', scores: nine(4) },
+      { nameCode: 'year_end', scores: nine(4) }
+    );
+    expect(r?.provisional).toBe(false);
+  });
+
+  it('★中3が1学期（term1）だけなら計算はするが暫定', () => {
+    const r = calcKanagawaNaishin135(
+      { nameCode: 'year_end', scores: nine(3) },
+      { nameCode: 'term1', scores: nine(4) }
+    );
+    expect(r?.converted).toBe(99);
+    expect(r?.provisional).toBe(true);
+    expect(r?.label).toBe('換算内申（中3は1学期の評定で仮計算）');
+  });
+
+  it('★中3が前期（first）だけでも暫定', () => {
+    const r = calcKanagawaNaishin135(
+      { nameCode: 'second', scores: nine(3) },
+      { nameCode: 'first', scores: nine(3) }
+    );
+    expect(r?.converted).toBe(81);
+    expect(r?.provisional).toBe(true);
+  });
+
+  it('中2学年末が無ければ null（推測しない）', () => {
+    expect(calcKanagawaNaishin135(null, { nameCode: 'term2', scores: nine(4) })).toBeNull();
+    expect(calcKanagawaNaishin135(undefined, { nameCode: 'term2', scores: nine(4) })).toBeNull();
+  });
+
+  it('中3が無ければ null', () => {
+    expect(calcKanagawaNaishin135({ nameCode: 'year_end', scores: nine(4) }, null)).toBeNull();
+  });
+
+  it('★9教科のどれか1つでも欠けたら null（平均で埋めない）', () => {
+    expect(
+      calcKanagawaNaishin135(
+        { nameCode: 'year_end', scores: nine(4, { pe: null }) },
+        { nameCode: 'term2', scores: nine(4) }
+      )
+    ).toBeNull();
+    // 教科そのものが無い（キーが無い）場合も欠けとして扱う
+    const withoutArt: Record<string, number | null> = nine(4);
+    delete withoutArt.art;
+    expect(
+      calcKanagawaNaishin135(
+        { nameCode: 'year_end', scores: nine(4) },
+        { nameCode: 'term2', scores: withoutArt }
+      )
+    ).toBeNull();
+  });
+
+  it('想定外の name_code（定期テストの term2_final など）は null', () => {
+    expect(
+      calcKanagawaNaishin135(
+        { nameCode: 'year_end', scores: nine(4) },
+        { nameCode: 'term2_final', scores: nine(4) }
+      )
+    ).toBeNull();
+  });
+
+  it('既存の calcKanagawaNaishin（1行・45点満点）は挙動を変えていない', () => {
+    expect(calcKanagawaNaishin(nine(4)).converted).toBe(36);
+    expect(calcKanagawaNaishin(nine(4)).max_score).toBe(45);
   });
 });

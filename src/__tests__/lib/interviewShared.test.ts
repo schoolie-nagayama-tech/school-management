@@ -26,6 +26,8 @@ import {
   buildMissingRecordAskLines,
   buildTargetSchoolGapLines,
   buildTargetSchoolTalkLines,
+  latestOwnKanagawaNaishin,
+  latestOwnNaishin,
   isTargetSchoolFactLine,
   stripTargetSchoolFactLines,
   TARGET_SCHOOL_FACT_PREFIX,
@@ -1791,5 +1793,257 @@ describe('buildTargetSchoolTalkLines（④の左・志望校について話す�
     expect(lines).toEqual([
       { kind: 'say', text: '狛江：偏差値はめやすを2上回っている。このまま維持' },
     ]);
+  });
+});
+
+/* ============================================================
+ * 神奈川県立の志望校（135点満点の内申）
+ * 正典: docs/interview-workspace-layout-2026-09.md §「神奈川県立の志望校」
+ * ========================================================== */
+
+describe('神奈川県立の志望校（基準内申 n/135）', () => {
+  const NINE = [
+    'english',
+    'math',
+    'japanese',
+    'social',
+    'science',
+    'music',
+    'art',
+    'tech_home',
+    'pe',
+  ] as const;
+
+  /** 通知表1件。9教科を同じ値で埋める */
+  function reportCard(grade: number, nameCode: string, v: number): AssessmentWithScores {
+    return {
+      category: 'report_card',
+      grade,
+      name_code: nameCode,
+      scores: NINE.map((subject) => ({ subject, value: v })),
+    } as unknown as AssessmentWithScores;
+  }
+  const mock = (h: number) =>
+    ({
+      category: 'mock',
+      name_code: 'classroom',
+      grade: 9,
+      scores: [{ subject: 'hensa_5', value: h }],
+    }) as unknown as AssessmentWithScores;
+
+  function kanagawaSchool(overrides: Partial<TargetSchoolMaster> = {}): TargetSchoolRow {
+    return {
+      id: 'ts-k',
+      rank: 1,
+      schoolName: '光陵',
+      highSchoolId: 'hs-k',
+      reason: null,
+      updatedAt: '2026-09-01T00:00:00Z',
+      master: {
+        prefecture: '神奈川県',
+        schoolName: '光陵',
+        course: '',
+        category: '普通科',
+        naishin: 107,
+        naishinMax: 135,
+        hensachi: 60,
+        sourceLabel: '合格基準一覧表 2026年度',
+        verifiedAt: null,
+        accessLines: [],
+        ...overrides,
+      },
+    };
+  }
+  function tokyoSchool(): TargetSchoolRow {
+    return {
+      id: 'ts-t',
+      rank: 2,
+      schoolName: '狛江',
+      highSchoolId: 'hs-t',
+      reason: null,
+      updatedAt: '2026-09-01T00:00:00Z',
+      master: {
+        prefecture: '東京都',
+        schoolName: '狛江',
+        course: '',
+        category: '普通科',
+        naishin: 49,
+        naishinMax: 65,
+        hensachi: 55,
+        sourceLabel: 'Vもぎ 2025年9月版',
+        verifiedAt: null,
+        accessLines: [],
+      },
+    };
+  }
+
+  // 新しい順（中3 2学期 → 中2学年末）。中2=4×9=36・中3=4×9=36 → 36+72=108
+  const confirmed = [reportCard(9, 'term2', 4), reportCard(8, 'year_end', 4), mock(58)];
+  // 中3が1学期だけ。中2=3×9=27・中3=4×9=36 → 27+72=99
+  const provisional = [reportCard(9, 'term1', 4), reportCard(8, 'year_end', 3), mock(58)];
+
+  describe('latestOwnKanagawaNaishin', () => {
+    it('中2学年末と中3の2学期から135点満点で出す', () => {
+      expect(latestOwnKanagawaNaishin(confirmed)).toMatchObject({
+        converted: 108,
+        provisional: false,
+      });
+    });
+
+    it('中3が1学期だけなら仮計算', () => {
+      expect(latestOwnKanagawaNaishin(provisional)).toMatchObject({
+        converted: 99,
+        provisional: true,
+      });
+    });
+
+    it('★中3に2学期と1学期の両方があれば2学期を使う（新しさより入試に使う評定）', () => {
+      const r = latestOwnKanagawaNaishin([
+        reportCard(9, 'term1', 5),
+        reportCard(9, 'term2', 3),
+        reportCard(8, 'year_end', 3),
+      ]);
+      expect(r).toMatchObject({ converted: 27 + 54, provisional: false });
+    });
+
+    it('★中3の学年末があっても2学期を使う（学年末は入試のあとの評定）', () => {
+      const r = latestOwnKanagawaNaishin([
+        reportCard(9, 'year_end', 5),
+        reportCard(9, 'term2', 3),
+        reportCard(8, 'year_end', 3),
+      ]);
+      expect(r?.converted).toBe(27 + 54);
+    });
+
+    it('2期制は中2の後期（second）を学年末として使う', () => {
+      const r = latestOwnKanagawaNaishin([reportCard(9, 'second', 4), reportCard(8, 'second', 3)]);
+      expect(r).toMatchObject({ converted: 27 + 72, provisional: false });
+    });
+
+    it('中2の学年末でない通知表（1学期・前期）だけなら null', () => {
+      expect(
+        latestOwnKanagawaNaishin([reportCard(9, 'term2', 4), reportCard(8, 'term1', 4)])
+      ).toBeNull();
+      expect(
+        latestOwnKanagawaNaishin([reportCard(9, 'term2', 4), reportCard(8, 'first', 4)])
+      ).toBeNull();
+    });
+
+    it('中3が無い／中2が無いなら null', () => {
+      expect(latestOwnKanagawaNaishin([reportCard(8, 'year_end', 4)])).toBeNull();
+      expect(latestOwnKanagawaNaishin([reportCard(9, 'term2', 4)])).toBeNull();
+      expect(latestOwnKanagawaNaishin([])).toBeNull();
+    });
+  });
+
+  describe('buildTargetSchoolGapLines（④の右）', () => {
+    it('基準内申n/135と本人の値・差を並べ、偏差値は基準偏差値と呼ぶ', () => {
+      const { tell } = buildTargetSchoolGapLines([kanagawaSchool()], confirmed);
+      expect(tell[0]).toBe(
+        '第1 光陵 ／ めやす 基準内申107/135（本人 108・+1）・基準偏差値60（-2）' +
+          '（合格基準一覧表 2026年度／原本との突き合わせは未了）'
+      );
+    });
+
+    it('★「合格可能性60%の位置」は Vもぎ（都立）の定義なので神奈川には付けない', () => {
+      const { tell } = buildTargetSchoolGapLines([kanagawaSchool()], confirmed);
+      expect(tell[0]).not.toContain('合格可能性60%');
+    });
+
+    it('中3が1学期だけなら仮計算と添える', () => {
+      const { tell } = buildTargetSchoolGapLines([kanagawaSchool()], provisional);
+      expect(tell[0]).toContain('基準内申107/135（本人 99・-8）（中3は1学期の評定で仮計算）');
+    });
+
+    it('本人の内申が出せなければ、めやすだけ分母つきで出す（65点満点の数字と引かない）', () => {
+      // 中3の通知表しか無い＝都立の換算内申は出せるが、神奈川の内申は出せない
+      const { tell } = buildTargetSchoolGapLines(
+        [kanagawaSchool()],
+        [reportCard(9, 'term2', 4), mock(58)]
+      );
+      expect(tell[0]).toContain('めやす 基準内申107/135・基準偏差値60（-2）');
+      expect(tell[0]).not.toContain('107/135（');
+    });
+
+    it('内申が空の16校（naishin_max も空）でも神奈川の語で出す', () => {
+      const { tell } = buildTargetSchoolGapLines(
+        [kanagawaSchool({ naishin: null, naishinMax: null })],
+        confirmed
+      );
+      expect(tell[0]).toContain('めやす 基準偏差値60（-2）');
+      expect(tell[0]).not.toContain('必要');
+    });
+
+    it('沿線があれば出す・無ければ出さない', () => {
+      expect(
+        buildTargetSchoolGapLines([kanagawaSchool({ accessLines: ['相鉄線'] })], confirmed).tell[0]
+      ).toContain('沿線: 相鉄線');
+      expect(buildTargetSchoolGapLines([kanagawaSchool()], confirmed).tell[0]).not.toContain(
+        '沿線'
+      );
+    });
+
+    it('★都立と神奈川県立を並べても、それぞれの満点の本人の内申で比べる', () => {
+      const { tell } = buildTargetSchoolGapLines([kanagawaSchool(), tokyoSchool()], confirmed);
+      expect(tell[0]).toContain('基準内申107/135（本人 108・+1）');
+      // 都立は直近の通知表（中3 2学期・オール4）の換算内申 20+16×2=52 → 52-49=+3
+      expect(tell[1]).toContain('必要内申49（+3）');
+      expect(tell[1]).toContain('合格可能性60%の位置');
+    });
+  });
+
+  describe('buildTargetSchoolTalkLines（④の左）', () => {
+    it('神奈川の教室・神奈川県立は中立な言い方で数字を使う', () => {
+      const lines = buildTargetSchoolTalkLines(
+        [kanagawaSchool()],
+        latestOwnNaishin(confirmed),
+        58,
+        'kanagawa',
+        latestOwnKanagawaNaishin(confirmed)
+      );
+      expect(lines.map((l) => l.text)).toEqual([
+        '光陵：内申はめやすを1上回っている。内申が武器になる',
+        '偏差値はめやすまであと2。次の模試で届く幅かを一緒に見る',
+      ]);
+    });
+
+    it('仮計算なら内申の行に（仮計算）を添える', () => {
+      const lines = buildTargetSchoolTalkLines(
+        [kanagawaSchool()],
+        latestOwnNaishin(provisional),
+        58,
+        'kanagawa',
+        latestOwnKanagawaNaishin(provisional)
+      );
+      expect(lines[0].text).toBe('光陵：内申がめやすに8届かない（仮計算）。当日の点で取り返す');
+    });
+
+    it('★東京の教室の生徒が神奈川県立を志望しても、推薦・換算内申の話をしない', () => {
+      const lines = buildTargetSchoolTalkLines(
+        [kanagawaSchool()],
+        latestOwnNaishin(confirmed),
+        61,
+        'tokyo',
+        latestOwnKanagawaNaishin(confirmed)
+      );
+      const text = lines.map((l) => l.text).join('\n');
+      expect(text).not.toContain('推薦');
+      expect(text).not.toContain('換算内申');
+      expect(lines[0].text).toBe('光陵：内申はめやすを1上回っている。内申が武器になる');
+    });
+
+    it('★神奈川の本人の内申を渡さなければ、65点満点の数字で神奈川県立と比べない', () => {
+      const lines = buildTargetSchoolTalkLines([kanagawaSchool()], 52, null, 'kanagawa');
+      expect(lines).toEqual([
+        { kind: 'say', text: '光陵：めやすと比べる材料が無い（内申・模試を聞いて入れる）' },
+      ]);
+    });
+  });
+
+  it('formatNaishin: 135点満点は「基準内申」と呼ぶ（東京は従来どおり「必要内申」）', () => {
+    expect(formatNaishin(107, 135)).toBe('基準内申107/135');
+    expect(formatNaishin(null, 135)).toBe('基準内申は未設定');
+    expect(formatNaishin(107, 135, '内申')).toBe('内申107/135');
+    expect(formatNaishin(45, 65)).toBe('必要内申45');
   });
 });

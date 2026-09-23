@@ -6,8 +6,9 @@
  * 面談の②（ヒアリング）でその場で聞いて入れる想定。「面談で話すこと」カード（InterviewScriptCard）の
  * 近くに置く。正典: docs/interview-script-ai-plan.md §4
  *
- * ★候補を選ばず自由記述のままでも保存できる。私立・国立・他県はマスタ（都立のみ205件）に
- *   無いので、ここを塞ぐと入力そのものができなくなる。
+ * ★候補を選ばず自由記述のままでも保存できる。私立・国立・他県はマスタ（都立205校・
+ *   神奈川県立199校）に無いので、ここを塞ぐと入力そのものができなくなる。
+ * ★候補は教室の都県の学校を先に並べる（緑園都市校なら神奈川県立が上）。都県で絞りはしない。
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -20,7 +21,8 @@ import {
   type TargetSchoolRow,
   type HighSchoolSearchResult,
 } from '@/lib/api/targetSchools';
-import { formatNaishin } from '@/app/interview/interview.shared';
+import { displayNaishinMax, formatNaishin } from '@/app/interview/interview.shared';
+import { regionOfSchool } from '@/lib/interview/region';
 
 const SEARCH_DEBOUNCE_MS = 300;
 const RANKS = [1, 2, 3] as const;
@@ -113,17 +115,21 @@ export function TargetSchoolsPanel({ studentId, schoolId, onSaved }: Props) {
     };
   }, []);
 
-  const runSearch = useCallback(async (rank: number, q: string) => {
-    setSearchingRank(rank);
-    try {
-      const results = await searchHighSchools(q);
-      setCandidates((prev) => ({ ...prev, [rank]: results }));
-    } catch {
-      setCandidates((prev) => ({ ...prev, [rank]: [] }));
-    } finally {
-      setSearchingRank((cur) => (cur === rank ? null : cur));
-    }
-  }, []);
+  const runSearch = useCallback(
+    async (rank: number, q: string) => {
+      setSearchingRank(rank);
+      try {
+        // 教室の都県の学校を先に出す（region.ts。未登録の教室は東京都が先）
+        const results = await searchHighSchools(q, regionOfSchool(schoolId));
+        setCandidates((prev) => ({ ...prev, [rank]: results }));
+      } catch {
+        setCandidates((prev) => ({ ...prev, [rank]: [] }));
+      } finally {
+        setSearchingRank((cur) => (cur === rank ? null : cur));
+      }
+    },
+    [schoolId]
+  );
 
   const handleNameChange = (rank: number, value: string) => {
     setSavedMessage(null);
@@ -256,7 +262,7 @@ export function TargetSchoolsPanel({ studentId, schoolId, onSaved }: Props) {
                           <div className="py-3 text-center text-xs text-text-muted">検索中...</div>
                         ) : (candidates[row.rank] || []).length === 0 ? (
                           <div className="py-3 text-center text-xs text-text-muted">
-                            該当する高校がありません（マスタは都立のみ）
+                            該当する高校がありません（マスタは都立・神奈川県立のみ）
                           </div>
                         ) : (
                           <ul className="py-1">
@@ -273,9 +279,15 @@ export function TargetSchoolsPanel({ studentId, schoolId, onSaved }: Props) {
                                   )}
                                   <span className="ml-1 text-xs text-text-faint">
                                     {[
+                                      // 同名・似た名前の学校を取り違えないよう、どちらの都県かを添える
+                                      c.prefecture === '神奈川県' ? '神奈川' : '東京',
                                       c.municipality,
                                       c.naishin != null
-                                        ? formatNaishin(c.naishin, c.naishinMax, '内申')
+                                        ? formatNaishin(
+                                            c.naishin,
+                                            displayNaishinMax(c.prefecture, c.naishinMax),
+                                            '内申'
+                                          )
                                         : null,
                                       c.hensachi != null ? `偏差値${c.hensachi}` : null,
                                     ]
@@ -296,7 +308,12 @@ export function TargetSchoolsPanel({ studentId, schoolId, onSaved }: Props) {
                   <div className="flex items-start gap-1.5 text-xs text-success">
                     <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                     <span>
-                      マスタに一致 ―― {formatNaishin(row.master.naishin, row.master.naishinMax)}・
+                      マスタに一致 ――{' '}
+                      {formatNaishin(
+                        row.master.naishin,
+                        displayNaishinMax(row.master.prefecture, row.master.naishinMax)
+                      )}
+                      ・
                       {row.master.hensachi != null
                         ? `偏差値${row.master.hensachi}`
                         : '偏差値は未設定'}
@@ -331,8 +348,7 @@ export function TargetSchoolsPanel({ studentId, schoolId, onSaved }: Props) {
             </div>
 
             <p className="text-xs leading-relaxed text-text-faint">
-              マスタは都立のみ（205件）。私立・国立・他県は名前だけ残る。
-              緑園都市校のように通塾圏が神奈川県立中心の教室では、都立マスタだけでは届かない。
+              マスタは都立205校・神奈川県立199校。私立・国立・他県は名前だけ残る。
             </p>
           </div>
         )}

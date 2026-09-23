@@ -25,6 +25,7 @@ import {
   buildTargetSchoolTalkLines,
   latestOwnHensachi,
   latestOwnNaishin,
+  latestOwnKanagawaNaishin,
   currentSeason,
   formatRegularPatternsSchedule,
   koushuFiscalYear,
@@ -190,7 +191,9 @@ export function InterviewPrintSheet({
     targetSchools,
     latestOwnNaishin(assessments),
     latestOwnHensachi(assessments),
-    region
+    region,
+    // 神奈川県立（135点満点）と比べる本人の内申。どちらを使うかは学校の満点で決まる
+    latestOwnKanagawaNaishin(assessments)
   );
   const examCountdown = examCountdownLine(new Date(), student.grade, region);
   const examApplication = examApplicationLine(new Date(), student.grade, region);

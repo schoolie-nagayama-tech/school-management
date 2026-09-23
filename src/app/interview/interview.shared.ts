@@ -24,7 +24,12 @@ import type { BriefSectionKey } from '@/lib/ai/interviewBrief';
 import type { TextbookProgressData } from './ProgressPanel';
 import type { DisciplineSessionRow } from '@/lib/api/progress-sessions';
 import type { TargetSchoolMaster, TargetSchoolRow } from '@/lib/api/targetSchools';
-import { calcTokyoNaishin } from '@/lib/utils/convertedNaishin';
+import {
+  calcKanagawaNaishin135,
+  calcTokyoNaishin,
+  type KanagawaNaishin135Result,
+  type ReportCardInput,
+} from '@/lib/utils/convertedNaishin';
 import type { Region } from '@/lib/interview/region';
 import { TOKYO_NAISHIN_POINT_WEIGHT } from '@/lib/interview/scenes';
 
@@ -999,11 +1004,14 @@ export function buildMissingRecordAskLines(
 export function formatNaishin(
   naishin: number | null,
   naishinMax: number | null,
-  label = '必要内申'
+  label?: string
 ): string {
-  if (naishin == null) return `${label}は未設定`;
-  if (naishinMax != null && naishinMax !== 65) return `${label}${naishin}/${naishinMax}`;
-  return `${label}${naishin}`;
+  // ★神奈川（135点満点）の資料上の呼び名は「基準内申」。東京の「必要内申」と呼び分ける
+  //   （どちらの制度の数字かを語で見分けられるように。schoolLookup.ts の出し分けと揃える）
+  const name = label ?? (naishinMax === KANAGAWA_NAISHIN_MAX ? '基準内申' : '必要内申');
+  if (naishin == null) return `${name}は未設定`;
+  if (naishinMax != null && naishinMax !== 65) return `${name}${naishin}/${naishinMax}`;
+  return `${name}${naishin}`;
 }
 
 /** 生徒本人の直近の内申（report_card）から、換算内申（都立・65点満点）を計算する。無ければ null */
@@ -1014,6 +1022,71 @@ export function latestOwnNaishin(assessments: AssessmentWithScores[]): number | 
   const scores: Record<string, number | null> = {};
   for (const s of latest.scores) scores[s.subject] = s.value;
   return calcTokyoNaishin(scores).converted;
+}
+
+/** 神奈川県公立の内申の満点（中2学年末×1＋中3×2）。high_school_standards.naishin_max と同じ値 */
+export const KANAGAWA_NAISHIN_MAX = 135;
+
+/**
+ * 表示に使う内申の満点。★神奈川で内申が空の16校は naishin_max も空で入っている
+ * （docs/data/README.md §神奈川）。そのまま formatNaishin に渡すと「必要内申は未設定」と
+ * 東京の語で出るので、神奈川は満点が空でも135として扱う。
+ */
+export function displayNaishinMax(prefecture: string, naishinMax: number | null): number | null {
+  if (naishinMax == null && prefecture === '神奈川県') return KANAGAWA_NAISHIN_MAX;
+  return naishinMax;
+}
+
+/** 通知表1件を calcKanagawaNaishin135 に渡す形にする */
+function toReportCardInput(a: AssessmentWithScores): ReportCardInput {
+  const scores: Record<string, number | null> = {};
+  for (const s of a.scores) scores[s.subject] = s.value;
+  return { nameCode: a.name_code, scores };
+}
+
+/** 中2の「学年末」にあたる通知表の name_code。★2期制は後期（second）が学年の評定になる */
+const GRADE8_YEAR_END_CODES = ['year_end', 'second'] as const;
+/**
+ * 中3の通知表として使う name_code の優先順。
+ * ★入試に使うのは2学期（2期制は後期）の評定なので、それを最優先にする。学年末（year_end）が
+ *   あっても2学期のほうを採る（学年末は入試のあとに出る評定で、入試の計算には使われない）。
+ *   1学期・前期しか無いときは仮計算（calcKanagawaNaishin135 が provisional を立てる）。
+ */
+const GRADE9_CODE_PRIORITY = ['term2', 'second', 'year_end', 'term1', 'first'] as const;
+
+/**
+ * 生徒本人の神奈川県公立の内申（135点満点）。材料が足りなければ null。
+ * ★学年は小1=1 の通し番号（中2=8・中3=9）。assessments は新しい順で来る前提なので、
+ *   同じ学年・同じ name_code が2件あれば新しいほうを使う。
+ */
+export function latestOwnKanagawaNaishin(
+  assessments: AssessmentWithScores[]
+): KanagawaNaishin135Result | null {
+  const reportCards = assessments.filter((a) => a.category === 'report_card');
+  const pick = (grade: number, codes: readonly string[]) => {
+    for (const code of codes) {
+      const hit = reportCards.find((a) => a.grade === grade && a.name_code === code);
+      if (hit) return hit;
+    }
+    return undefined;
+  };
+  const g8 = pick(8, GRADE8_YEAR_END_CODES);
+  const g9 = pick(9, GRADE9_CODE_PRIORITY);
+  if (!g8 || !g9) return null;
+  return calcKanagawaNaishin135(toReportCardInput(g8), toReportCardInput(g9));
+}
+
+/**
+ * 本人の内申を、志望校の満点ごとに持ったもの。
+ * ★どちらで比べるかは**学校の満点**で決める。教室の都県（region）では決めない。
+ *   東京の教室の生徒が神奈川県立を、神奈川の教室の生徒が都立を志望することはあり、
+ *   教室の都県で計算方法を選ぶと、65点満点の数字と135点満点のめやすを引き算してしまう。
+ */
+export interface OwnNaishinByScale {
+  /** 都立の換算内申（65点満点・直近の通知表1回分） */
+  tokyo: number | null;
+  /** 神奈川県公立の内申（135点満点） */
+  kanagawa: KanagawaNaishin135Result | null;
 }
 
 /** 生徒本人の直近の模試（mock）の5科偏差値（hensa_5）。無ければ null */
@@ -1048,6 +1121,28 @@ export function stripTargetSchoolFactLines(lines: readonly string[]): string[] {
 }
 
 /**
+ * 志望校の内申の満点がどちらの制度か。
+ * ★学校の満点で決める（教室の都県では決めない。OwnNaishinByScale の注記）。
+ *   神奈川で内申が空の16校は naishin_max も空で来うるので、そのときは都県で神奈川と見る。
+ *   - 'kanagawa' … 135点満点（中2学年末×1＋中3×2）
+ *   - 'tokyo'    … 65点満点（都立の換算内申）。満点が空の都立もここ（従来どおり）
+ *   - 'other'    … 75点満点（3教科校）・52点満点（産業技術高専）。本人の数字を計算できない
+ */
+function naishinScaleOf(master: TargetSchoolMaster): 'tokyo' | 'kanagawa' | 'other' {
+  const max = displayNaishinMax(master.prefecture, master.naishinMax);
+  if (max === KANAGAWA_NAISHIN_MAX) return 'kanagawa';
+  return max == null || max === 65 ? 'tokyo' : 'other';
+}
+
+/** 差の符号つき表示（+0 も「+」を付ける。従来の④と同じ） */
+function signed(n: number): string {
+  return `${n >= 0 ? '+' : ''}${n}`;
+}
+
+/** 中3が1学期（前期）の評定で仮に計算した内申であることを、④の右に添える文言 */
+const KANAGAWA_PROVISIONAL_NOTE = '（中3は1学期の評定で仮計算）';
+
+/**
  * 合格のめやすと本人との差を「必要内申45（+0）」「必要偏差値51（-3）」の形に組む。
  *
  * ★満点が65以外（3教科校=75点満点、産業技術高専=52点満点）のときは差を出さない。
@@ -1056,33 +1151,50 @@ export function stripTargetSchoolFactLines(lines: readonly string[]): string[] {
  *   必要内申55/75。本人41を引いて「-14」と出すと、面談で「あと14足りません」と
  *   言ってしまう）。満点が違うときは必要内申だけを分母つきで示す。
  *   出典: vault NEST/ナレッジ/高校入試情報_都立は1020点の総合得点1本で決まる.md
+ * ★神奈川県立（135点満点）は本人の内申を別の式（中2学年末×1＋中3×2）で出して比べ、
+ *   「基準内申107/135（本人 98・-9）」の形にする。135点満点の数字は面談で聞き慣れないので、
+ *   差だけでなく本人の値も並べる。語は資料どおり「基準内申」「基準偏差値」（東京の「必要〜」と
+ *   呼び分ける）。中3が1学期の評定しか無ければ「（中3は1学期の評定で仮計算）」を添える。
  * ★この分母の決まりを書くのはここ1か所だけ。志望校の行も、④の「差」も、ここを通す。
  */
 function targetSchoolStandardParts(
   master: TargetSchoolMaster,
-  ownNaishin: number | null,
+  own: OwnNaishinByScale,
   ownHensachi: number | null
 ): string[] {
   const parts: string[] = [];
-  const { naishinDiff, hensachiDiff } = targetSchoolDiffs(master, ownNaishin, ownHensachi);
+  const { naishinDiff, hensachiDiff, ownNaishin, provisional } = targetSchoolDiffs(
+    master,
+    own,
+    ownHensachi
+  );
+  const isKanagawa = naishinScaleOf(master) === 'kanagawa';
 
   if (master.naishin != null) {
-    if (naishinDiff != null) {
+    const base = formatNaishin(
+      master.naishin,
+      displayNaishinMax(master.prefecture, master.naishinMax)
+    );
+    if (naishinDiff != null && isKanagawa) {
       parts.push(
-        `${formatNaishin(master.naishin, master.naishinMax)}（${naishinDiff >= 0 ? '+' : ''}${naishinDiff}）`
+        `${base}（本人 ${ownNaishin}・${signed(naishinDiff)}）` +
+          (provisional ? KANAGAWA_PROVISIONAL_NOTE : '')
       );
+    } else if (naishinDiff != null) {
+      parts.push(`${base}（${signed(naishinDiff)}）`);
     } else {
       // 本人の内申が無い／満点が違って引けない。めやすだけを分母つきで示す
-      parts.push(formatNaishin(master.naishin, master.naishinMax));
+      parts.push(base);
     }
   }
 
   if (master.hensachi != null) {
-    if (hensachiDiff != null) {
-      parts.push(`必要偏差値${master.hensachi}（${hensachiDiff >= 0 ? '+' : ''}${hensachiDiff}）`);
-    } else {
-      parts.push(`必要偏差値${master.hensachi}`);
-    }
+    const label = isKanagawa ? '基準偏差値' : '必要偏差値';
+    parts.push(
+      hensachiDiff != null
+        ? `${label}${master.hensachi}（${signed(hensachiDiff)}）`
+        : `${label}${master.hensachi}`
+    );
   }
 
   return parts;
@@ -1091,24 +1203,33 @@ function targetSchoolStandardParts(
 /**
  * 本人とめやすの差（本人 − めやす）。引けないときは null。
  *
- * ★満点が65以外（3教科校=75・産業技術高専=52）の学校とは内申の差を取らない。
- *   理由は targetSchoolStandardParts の注記のとおり。右の「志望校」の行（数字）と
- *   左の「話すこと」（buildTargetSchoolTalkLines）が**同じこの関数**を通るので、
- *   片方だけ差が出て片方は出ない、という食い違いが起きない。
+ * ★本人の内申は学校の満点で選ぶ（65＝都立の換算内申、135＝神奈川の中2＋中3×2）。
+ *   満点が75・52の学校とは内申の差を取らない。理由は targetSchoolStandardParts の注記のとおり。
+ *   右の「志望校」の行（数字）と左の「話すこと」（buildTargetSchoolTalkLines）が
+ *   **同じこの関数**を通るので、片方だけ差が出て片方は出ない、という食い違いが起きない。
  */
 function targetSchoolDiffs(
   master: TargetSchoolMaster,
-  ownNaishin: number | null,
+  own: OwnNaishinByScale,
   ownHensachi: number | null
-): { naishinDiff: number | null; hensachiDiff: number | null } {
-  const comparable = master.naishinMax == null || master.naishinMax === 65;
+): {
+  naishinDiff: number | null;
+  hensachiDiff: number | null;
+  /** 差の計算に使った本人の内申（学校の満点に合わせたもの） */
+  ownNaishin: number | null;
+  /** 神奈川の内申を中3の1学期の評定で仮に計算したか */
+  provisional: boolean;
+} {
+  const scale = naishinScaleOf(master);
+  const ownNaishin =
+    scale === 'kanagawa' ? (own.kanagawa?.converted ?? null) : scale === 'tokyo' ? own.tokyo : null;
+  const provisional = scale === 'kanagawa' && (own.kanagawa?.provisional ?? false);
   return {
-    naishinDiff:
-      master.naishin != null && ownNaishin != null && comparable
-        ? ownNaishin - master.naishin
-        : null,
+    naishinDiff: master.naishin != null && ownNaishin != null ? ownNaishin - master.naishin : null,
     hensachiDiff:
       master.hensachi != null && ownHensachi != null ? ownHensachi - master.hensachi : null,
+    ownNaishin,
+    provisional,
   };
 }
 
@@ -1138,7 +1259,11 @@ export function buildTargetSchoolGapLines(
     return { tell: [], ask: ['志望校を聞いて入れる'] };
   }
 
-  const ownNaishin = latestOwnNaishin(assessments);
+  // ★本人の内申は両方の満点ぶん先に出しておき、学校ごとに満点で選ぶ（targetSchoolDiffs）
+  const own: OwnNaishinByScale = {
+    tokyo: latestOwnNaishin(assessments),
+    kanagawa: latestOwnKanagawaNaishin(assessments),
+  };
   const ownHensachi = latestOwnHensachi(assessments);
 
   const tell: string[] = [];
@@ -1151,10 +1276,18 @@ export function buildTargetSchoolGapLines(
     const blocks: string[] = [`第${school.rank} ${name}${course}`];
 
     if (master) {
-      const parts = targetSchoolStandardParts(master, ownNaishin, ownHensachi);
+      const parts = targetSchoolStandardParts(master, own, ownHensachi);
       if (parts.length > 0) {
         const sourceBits: string[] = [];
-        if (master.sourceLabel) sourceBits.push(`${master.sourceLabel}・合格可能性60%の位置`);
+        // ★「合格可能性60%の位置」は Vもぎ（都立）の表の定義。神奈川の合格基準一覧表
+        //  （新教育研究協会）にはその定義が書かれていないので、出典名だけにする
+        if (master.sourceLabel) {
+          sourceBits.push(
+            naishinScaleOf(master) === 'kanagawa'
+              ? master.sourceLabel
+              : `${master.sourceLabel}・合格可能性60%の位置`
+          );
+        }
         if (master.verifiedAt == null) sourceBits.push('原本との突き合わせは未了');
         const sourceSuffix = sourceBits.length > 0 ? `（${sourceBits.join('／')}）` : '';
         blocks.push(`めやす ${parts.join('・')}${sourceSuffix}`);
@@ -1197,21 +1330,31 @@ export interface TargetSchoolTalkLine {
  *     推薦の言葉を出さず、中立な比較だけにする。
  *   - 都県が分からない教室（region=null）も神奈川と同じ中立な形に倒す。どちらの制度か
  *     言えない話を出すより、比べた事実だけ言うほうが事故が小さい。
+ *   - 東京の教室でも、志望校が神奈川県立なら中立な形にする（都立の推薦・1020点方式の話は
+ *     神奈川県立には当てはまらない）。
+ * ★ownNaishin は都立の換算内申（65点満点）。神奈川県立（135点満点）と比べる本人の内申は
+ *   ownKanagawaNaishin で別に渡す。どちらを使うかは学校の満点で決まる（targetSchoolDiffs）。
+ *   中3が1学期の評定で仮に計算した値なら、内申の行に「（仮計算）」を添える。
  */
 export function buildTargetSchoolTalkLines(
   targetSchools: readonly TargetSchoolRow[],
   ownNaishin: number | null,
   ownHensachi: number | null,
-  region: Region | null
+  region: Region | null,
+  ownKanagawaNaishin: KanagawaNaishin135Result | null = null
 ): TargetSchoolTalkLine[] {
-  const isTokyo = region === 'tokyo';
+  const own: OwnNaishinByScale = { tokyo: ownNaishin, kanagawa: ownKanagawaNaishin };
   const lines: TargetSchoolTalkLine[] = [];
 
   for (const school of targetSchools) {
     const name = school.master?.schoolName ?? school.schoolName;
-    const { naishinDiff, hensachiDiff } = school.master
-      ? targetSchoolDiffs(school.master, ownNaishin, ownHensachi)
-      : { naishinDiff: null, hensachiDiff: null };
+    const { naishinDiff, hensachiDiff, provisional } = school.master
+      ? targetSchoolDiffs(school.master, own, ownHensachi)
+      : { naishinDiff: null, hensachiDiff: null, provisional: false };
+    // 都立の制度の話（推薦・換算内申1点の重み）をするのは、東京の教室で神奈川県立以外を見ているときだけ
+    const isTokyo =
+      region === 'tokyo' && !(school.master && naishinScaleOf(school.master) === 'kanagawa');
+    const prov = provisional ? '（仮計算）' : '';
 
     if (naishinDiff == null && hensachiDiff == null) {
       lines.push({
@@ -1227,18 +1370,18 @@ export function buildTargetSchoolTalkLines(
         lines.push({
           kind: 'say',
           text: isTokyo
-            ? `${name}：内申はめやすを${naishinDiff}上回っている。推薦も一般も内申が武器になる`
-            : `${name}：内申はめやすを${naishinDiff}上回っている。内申が武器になる`,
+            ? `${name}：内申はめやすを${naishinDiff}上回っている${prov}。推薦も一般も内申が武器になる`
+            : `${name}：内申はめやすを${naishinDiff}上回っている${prov}。内申が武器になる`,
         });
       } else if (naishinDiff < 0) {
         lines.push({
           kind: 'say',
           text:
-            `${name}：内申がめやすに${-naishinDiff}届かない。当日の点で取り返す` +
+            `${name}：内申がめやすに${-naishinDiff}届かない${prov}。当日の点で取り返す` +
             (isTokyo ? `（${TOKYO_NAISHIN_POINT_WEIGHT}）` : ''),
         });
       } else {
-        lines.push({ kind: 'say', text: `${name}：内申はめやすちょうど` });
+        lines.push({ kind: 'say', text: `${name}：内申はめやすちょうど${prov}` });
       }
     }
 
