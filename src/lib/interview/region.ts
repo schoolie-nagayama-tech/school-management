@@ -23,6 +23,9 @@ export const REGION_LABEL: Record<Region, string> = {
 const REGION_BY_SCHOOL_ID: Record<string, Region> = {
   '9f519794-3673-4e90-b1ea-88a79f70174a': 'tokyo', // 京王堀之内校
   'd187f7a3-633a-46ce-8d32-c56c85d17bac': 'tokyo', // 永山校
+  // ★清瀬校は埼玉県境だが東京のまま。都内在住の生徒は埼玉の公立の全日制に出願できない
+  //   （隣接県協定に東京都は入っていない）ので、面談の相手は都立と私立。埼玉の日程・定型トークは
+  //   足さない（2026-09-23決定）。埼玉の入試制度はAIヘルプ（faqData.ts「高校入試の制度」）にだけ置く。
   'e26b398c-8e30-47bc-b528-ee92fd45be7f': 'tokyo', // 清瀬校
   '9a6b5996-a266-47ed-878f-85e93c2b8b90': 'kanagawa', // 緑園都市校
   // デモ校（保護者ポータル体験）。実在の生徒はいないが、面談画面を見せるときに
