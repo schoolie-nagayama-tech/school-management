@@ -84,6 +84,9 @@ import type { TextbookProgressData } from './ProgressPanel';
 import {
   buildTellSections,
   buildGoalAchievementLines,
+  buildMockReturnLines,
+  buildShukaisuLines,
+  buildTestPrepLines,
   buildKoushuHistoryLines,
   buildMockSchoolLines,
   buildMissingRecordAskLines,
@@ -104,6 +107,9 @@ import {
   stripTargetSchoolFactLines,
   summarizeCurrentKoushu,
   INTERVIEW_CARD_IDS,
+  type MockApplicationForInterview,
+  type ShukaisuChangeForInterview,
+  type TestPrepProposalForInterview,
 } from './interview.shared';
 import {
   SCENE_KEYS,
@@ -185,6 +191,12 @@ interface Props {
   targetSchools: TargetSchoolRow[];
   /** 模試の志望校と合格可能性（④現状の確認「直近の模試」の材料） */
   mockSchools: MockSchoolRecord[];
+  /** テスト対策の提案書と増コマ申込（④「テスト対策 → 結果と課題」の材料） */
+  testPrep: TestPrepProposalForInterview[];
+  /** 週回数変更の申込の最新1件（②塾「変えたあとどうか」の材料） */
+  shukaisu: ShukaisuChangeForInterview | null;
+  /** 模試の申込（④「結果を返せているか」の材料） */
+  mockApplications: MockApplicationForInterview[];
   /** 科目ID→科目名（⑤プラン提示「講習の履歴」の科目名に使う） */
   subjectNames: Record<string, string>;
   /** 材料の読み込み中はボタンを押させない（半端な材料でまとめても作り直しになる） */
@@ -220,6 +232,7 @@ const FACT_JUMP_TARGETS: Record<string, string> = {
   通知表: INTERVIEW_CARD_IDS.score,
   内申: INTERVIEW_CARD_IDS.score,
   模試: INTERVIEW_CARD_IDS.score,
+  模試の申込: INTERVIEW_CARD_IDS.score,
   進度: INTERVIEW_CARD_IDS.progress,
   進行表: INTERVIEW_CARD_IDS.progress,
   授業の様子: INTERVIEW_CARD_IDS.discipline,
@@ -594,6 +607,9 @@ export function InterviewScriptCard({
   examGoals,
   targetSchools,
   mockSchools,
+  testPrep,
+  shukaisu,
+  mockApplications,
   subjectNames,
   loading,
   onResult,
@@ -663,6 +679,31 @@ export function InterviewScriptCard({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [student.id]);
 
+  // ②ヒアリング「目標の達成度」。AIセクションを通さない「伝える」「聞く」行なので、
+  // buildTellSections とは別に持って②「学校」の小見出しに足し込む。
+  const goalAchievement = useMemo(
+    () => buildGoalAchievementLines(examGoals, assessments),
+    [examGoals, assessments]
+  );
+  /**
+   * ④「テスト対策 → 結果と課題」。★目標の達成度がすでに同じ試験の結果を聞いているときは、
+   *   「結果を聞いて入れる」を重ねない（existingAsks）。AIには aiLines を score に混ぜて渡す
+   */
+  const testPrepLines = useMemo(
+    () => buildTestPrepLines(testPrep, assessments, student.grade, new Date(), goalAchievement.ask),
+    [testPrep, assessments, student.grade, goalAchievement.ask]
+  );
+  // ②塾「週回数変更 → 変えたあとどうか」。変更後の月は宿題・遅刻と同じ集計を使う
+  const shukaisuLines = useMemo(
+    () => buildShukaisuLines(shukaisu, disciplineSessions, new Date()),
+    [shukaisu, disciplineSessions]
+  );
+  // ④「模試 → 結果を返せているか」。結果が入っていれば何も出ない
+  const mockReturn = useMemo(
+    () => buildMockReturnLines(mockApplications, assessments, new Date()),
+    [mockApplications, assessments]
+  );
+
   const currentSections = useMemo(
     () =>
       buildTellSections({
@@ -675,8 +716,10 @@ export function InterviewScriptCard({
         subjectNames,
         targetSchools,
         mockSchools,
+        testPrepAiLines: testPrepLines.aiLines,
       }),
     [
+      testPrepLines.aiLines,
       assessments,
       interviews,
       textbookData,
@@ -689,12 +732,6 @@ export function InterviewScriptCard({
     ]
   );
 
-  // ②ヒアリング「目標の達成度」。AIセクションを通さない「伝える」「聞く」行なので、
-  // buildTellSections とは別に持って②「学校」の小見出しに足し込む。
-  const goalAchievement = useMemo(
-    () => buildGoalAchievementLines(examGoals, assessments),
-    [examGoals, assessments]
-  );
   // ④現状の確認「志望校」。志望校が未登録なら ask に「聞いて入れる」が1件入る
   const targetSchoolGap = useMemo(
     () => buildTargetSchoolGapLines(targetSchools, assessments),
@@ -715,9 +752,14 @@ export function InterviewScriptCard({
     return latest ? extractQuotedWords(latest.content) : [];
   }, [interviews]);
   // ④現状の確認「成績が無いときに黙らない」。小学生には出さない
+  // ★申込から分かっていること（テスト対策の結果を聞く・模試を申し込んでいる）は重ねて聞かない
   const missingRecordAsk = useMemo(
-    () => buildMissingRecordAskLines(assessments, student.grade),
-    [assessments, student.grade]
+    () =>
+      buildMissingRecordAskLines(assessments, student.grade, {
+        hasTestPrepAsk: testPrepLines.ask.length > 0,
+        hasMockApplication: mockApplications.length > 0,
+      }),
+    [assessments, student.grade, testPrepLines.ask.length, mockApplications.length]
   );
 
   // ★季節はヒューリスティック（interview.shared.ts の currentSeason 参照）。今日1回だけ決める
@@ -867,6 +909,9 @@ export function InterviewScriptCard({
           followUpItems: previous.items.map((i) =>
             i.actor ? { text: i.text, actor: i.actor } : i.text
           ),
+          // ★週回数変更は授業の様子（lessons＝サーバーが組む）に足す行なので、別の口で送る
+          //   （サーバーは「週回数変更:」で始まる行しか通さない。sanitizeLessonNotes）
+          lessonNotes: shukaisuLines.aiLine ? [shukaisuLines.aiLine] : [],
           // ★admin/owner 以外は切り替えUIを出していないので modelKey は常に既定値（best）のまま。
           //   送ってもサーバー側で権限外なら無視されるだけなので、ここで出し分けなくてよい。
           model: modelKey,
@@ -1121,6 +1166,10 @@ export function InterviewScriptCard({
             ...targetSchoolGap.ask.map((t, i) => askLine(`status:target-school:${i}`, t)),
             // 模試に書いたのに志望校に登録されていない公立校
             ...mockSchoolLines.ask.map((t, i) => askLine(`status:mock-school:${i}`, t)),
+            // テスト対策をした試験の結果がまだ入っていない
+            ...testPrepLines.ask.map((t, i) => askLine(`status:test-prep:${i}`, t)),
+            // 申し込んだ模試の結果がまだ入っていない（返却を確認）
+            ...mockReturn.ask.map((t, i) => askLine(`status:mock-return:${i}`, t)),
             // ★登録がある生徒には、めやすの数字ではなく「動いたか」を聞く
             ...(targetSchools.length > 0
               ? TARGET_SCHOOL_ASK_LINES.map((t, i) => askLine(`status:target-school-ask:${i}`, t))
@@ -1134,6 +1183,10 @@ export function InterviewScriptCard({
             )),
             // 直近の模試の合格可能性（前回との比較つき）と、登録に無い公立校の指摘
             ...mockSchoolLines.tell.map((t, i) => <TellLine key={`mock-school-${i}`} text={t} />),
+            // テスト対策（試験・コマ・増コマ申込 → 結果 → 対策した単元）。数字はシステムが組む
+            ...testPrepLines.facts.map((t, i) => <TellLine key={`test-prep-${i}`} text={t} />),
+            // 申し込んだ模試の結果が未入力（入っていれば行ごと出ない）
+            ...mockReturn.facts.map((t, i) => <TellLine key={`mock-return-${i}`} text={t} />),
           ],
         };
 
@@ -1314,14 +1367,27 @@ export function InterviewScriptCard({
         return {
           opener,
           // 塾＝AIの着眼点（家庭では見えない塾での様子）と、引継ぎから拾った場面
+          // ★週回数変更の「報告」を先頭に置く。変えたあとどうかは塾から切り出す話題
+          //  （教室長「変更してそのあとどうかを報告事項としてあげる」）
           talk: [
+            ...(shukaisuLines.talk?.kind === 'say'
+              ? [<SayLine key="shukaisu-say" text={shukaisuLines.talk.text} />]
+              : []),
             ...seen,
             ...(view?.episodes ?? []).map((e, i) => (
               <EpisodeLine key={`episode-${i}`} episode={e} />
             )),
           ],
-          ask: groupAsks,
-          facts: sectionFacts,
+          ask: [
+            ...groupAsks,
+            ...(shukaisuLines.talk?.kind === 'ask'
+              ? [askLine('hearing:shukaisu', shukaisuLines.talk.text)]
+              : []),
+          ],
+          facts: [
+            ...sectionFacts,
+            ...shukaisuLines.facts.map((t, i) => <TellLine key={`shukaisu-${i}`} text={t} />),
+          ],
         };
       default:
         return { opener, talk: seen, ask: groupAsks, facts: sectionFacts };

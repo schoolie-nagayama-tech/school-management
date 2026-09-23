@@ -21,6 +21,8 @@ import type {
 } from '@/lib/api/seasonalProposalSummary';
 import { normalizeKomaBySubject } from '@/lib/utils/komaBySubject';
 import type { BriefSectionKey, FollowUpActor } from '@/lib/ai/interviewBrief';
+import { SHUKAISU_AI_PREFIX, TEST_PREP_AI_PREFIX } from '@/lib/ai/interviewBrief';
+import { zoukomaKomaCount } from '@/lib/utils/zoukomaKoma';
 import type { TextbookProgressData } from './ProgressPanel';
 import type { DisciplineSessionRow } from '@/lib/api/progress-sessions';
 import type { TargetSchoolMaster, TargetSchoolRow } from '@/lib/api/targetSchools';
@@ -544,6 +546,11 @@ export function buildTellSections(props: {
   targetSchools?: readonly TargetSchoolRow[];
   /** 模試の志望校と合格可能性。★「直近の模試」の行を score に混ぜてAIへ送る */
   mockSchools?: readonly MockSchoolRecord[];
+  /**
+   * テスト対策の短い行（buildTestPrepLines の aiLines。「テスト対策:」で始まる）。
+   * ★score に混ぜてAIへ送る。表示側は stripTargetSchoolFactLines で外す（④に別の形で出すため）
+   */
+  testPrepAiLines?: readonly string[];
 }): TellSection[] {
   const sections: TellSection[] = [];
 
@@ -572,6 +579,7 @@ export function buildTellSections(props: {
     props.targetSchools ?? []
   ).aiLine;
   if (mockLine) scoreLines.push(mockLine);
+  for (const line of props.testPrepAiLines ?? []) scoreLines.push(line);
   if (scoreLines.length > 0) sections.push({ key: 'score', current: scoreLines });
 
   const months = computeDisciplineMonthly(
@@ -1055,15 +1063,21 @@ export function buildGoalAchievementLines(
  */
 export function buildMissingRecordAskLines(
   assessments: AssessmentWithScores[],
-  grade: number | null
+  grade: number | null,
+  /**
+   * ★申込から分かっていることがあるときは、同じことを別の言い方で2回聞かせない。
+   *   - hasTestPrepAsk: テスト対策の「{試験名}の結果を聞いて入れる」が出ている
+   *   - hasMockApplication: 模試の申込がある（受けているかは聞くまでもない。結果の返却は別の行が聞く）
+   */
+  known: { hasTestPrepAsk?: boolean; hasMockApplication?: boolean } = {}
 ): string[] {
   if (grade == null || grade < 7) return [];
 
   const lines: string[] = [];
-  if (!assessments.some((a) => a.category === 'regular_test')) {
+  if (!known.hasTestPrepAsk && !assessments.some((a) => a.category === 'regular_test')) {
     lines.push('定期テストの結果を聞いて入れる');
   }
-  if (!assessments.some((a) => a.category === 'mock')) {
+  if (!known.hasMockApplication && !assessments.some((a) => a.category === 'mock')) {
     lines.push('模試を受けているか聞く');
   }
   return lines;
@@ -1200,7 +1214,15 @@ export function isTargetSchoolFactLine(line: string): boolean {
  * ★どちらもAIには score に混ぜて渡すが、画面・紙では④の志望校ブロックとして別に出すため。
  */
 export function stripTargetSchoolFactLines(lines: readonly string[]): string[] {
-  return lines.filter((l) => !isTargetSchoolFactLine(l) && !isMockSchoolFactLine(l));
+  // ★「テスト対策:」の行も同じ扱い（AIには score に混ぜて渡し、画面・紙は④に別の形で出す）
+  return lines.filter(
+    (l) => !isTargetSchoolFactLine(l) && !isMockSchoolFactLine(l) && !isTestPrepAiLine(l)
+  );
+}
+
+/** score の現状の行のうち、AIに渡すために混ぜた「テスト対策:」の行か */
+export function isTestPrepAiLine(line: string): boolean {
+  return line.startsWith(TEST_PREP_AI_PREFIX);
 }
 
 /* ============================================================
@@ -2491,4 +2513,457 @@ export function summarizeCurrentKoushu(
     applied: false,
     isCurrentSeason: false,
   };
+}
+
+/* ============================================================
+ * 申込から見えること（④テスト対策・②週回数変更・④模試の結果）
+ * ------------------------------------------------------------
+ * 正典: docs/interview-workspace-layout-2026-09.md「申込から見えること」
+ *
+ * 教室長の言葉（2026-09-23）:
+ *   「テスト対策は取ったのに点数が上がった下がったとか課題感とリンクしたい。
+ *    週回数変更は変更してそのあとどうかを報告事項としてあげる。
+ *    模試は結果を返せてればよい」
+ *
+ * ★申込（提案書・フォームの回答）は面談画面が読み込み、ここは並べるだけの純粋関数にする
+ *  （読み込みは lib/api/interviewApplications.ts）。画面・紙・テストで同じ関数を使う。
+ * ★数字はシステムが組む。AIには短い行（aiLines）を渡し、言葉だけを書かせる。
+ * ========================================================== */
+
+/** 'YYYY-MM-DD'（ローカル日付）。★toISOString は UTC なので、朝の9時前に前日へずれる */
+function localYmd(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+/** 'YYYY-MM-DD' 同士の日数差（b − a）。どちらかが読めなければ NaN */
+function ymdDiffDays(a: string, b: string): number {
+  const ta = Date.parse(`${a.slice(0, 10)}T00:00:00Z`);
+  const tb = Date.parse(`${b.slice(0, 10)}T00:00:00Z`);
+  return Math.round((tb - ta) / 86400000);
+}
+
+/** 'YYYY-MM' → '9月'（今日と年が違えば '2027年1月'） */
+function monthLabel(ym: string, today: Date): string {
+  const [y, m] = ym.split('-').map(Number);
+  return y === today.getFullYear() ? `${m}月` : `${y}年${m}月`;
+}
+
+/* ---------- ④ テスト対策 → 結果と課題 ---------- */
+
+/** 増コマ申込（form_responses form_type='zoukoma'）1件ぶん。読み込み側がそのまま渡す */
+export interface ZoukomaResponseForInterview {
+  formPeriod: string;
+  createdAt: string;
+  responseData: unknown;
+}
+
+/**
+ * 提案書に対する増コマ申込の状況。
+ * - applied: その期にこの生徒の回答がある（コマ数は請求と同じ zoukomaKomaCount）
+ * - none: 期は分かるが、回答が無い
+ * - unknown: 提案書に期（zoukoma_period_id）が付いていない。★申込の有無を決めつけない
+ */
+export type TestPrepZoukomaStatus =
+  | { status: 'applied'; koma: number }
+  | { status: 'none' }
+  | { status: 'unknown' };
+
+/**
+ * 提案書の期（period_key）に対する増コマ申込を決める。
+ * ★同じ期に回答が2件以上あるときは、いちばん新しい1件を採る（出し直しを足し算しない）。
+ *   コマ数の数え方は請求と同じ zoukomaKomaCount（src/lib/utils/zoukomaKoma.ts）に合わせる。
+ */
+export function resolveTestPrepZoukoma(
+  periodKey: string | null,
+  responses: readonly ZoukomaResponseForInterview[]
+): TestPrepZoukomaStatus {
+  if (!periodKey) return { status: 'unknown' };
+  const latest = responses
+    .filter((r) => r.formPeriod === periodKey)
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
+  if (!latest) return { status: 'none' };
+  return { status: 'applied', koma: zoukomaKomaCount(latest.responseData) };
+}
+
+/** テスト対策の提案書1件ぶん（公開済みのものだけを渡す） */
+export interface TestPrepProposalForInterview {
+  id: string;
+  /** exam_types.name（「2学期中間」）。★試験の種類が付いていない提案書は null */
+  examName: string | null;
+  title: string;
+  createdAt: string;
+  /**
+   * 科目（提案書の並び順）。units は提案書に載った単元（並び順）と、その単元に割り当てたコマ数。
+   * ★単元にはテスト範囲がまるごと入る（自己評価を付けるため）。コマが付いた単元だけが「対策した」単元
+   */
+  subjects: { name: string; koma: number; units: { name: string; koma: number }[] }[];
+  zoukoma: TestPrepZoukomaStatus;
+}
+
+export interface TestPrepLines {
+  /** ④の根拠。1件目の提案書から順に「見出し → 結果 → 単元」 */
+  facts: string[];
+  /** ④の聞くこと（結果がまだ入っていない試験） */
+  ask: string[];
+  /** AIの score に混ぜる行（「テスト対策:」で始まる・1提案書1行） */
+  aiLines: string[];
+}
+
+/** 何件の提案書まで見るか。★最新と、その1つ前まで（「前回の対策はどうだったか」まで） */
+const MAX_TEST_PREP_PROPOSALS = 2;
+/** 「対策した単元」に並べる単元の数と1単元の長さ */
+const MAX_TEST_PREP_UNITS = 3;
+const TEST_PREP_UNIT_LENGTH = 14;
+
+/**
+ * 定期テストの年度内の順番。★成績は listAssessments が学年→実施月→name_code で並べて返すが、
+ *   実施月（exam_month）は6割以上が空で、そのとき name_code の文字順（term1_final が term1_mid より前）
+ *   になる。「前回」を正しく引くため、年度内の順番はここで決め打ちする。
+ */
+const REGULAR_TEST_ORDER: Record<string, number> = {
+  term1_mid: 1,
+  first_mid: 1,
+  term1_final: 2,
+  first_final: 2,
+  term2_mid: 3,
+  second_mid: 3,
+  term2_final: 4,
+  second_final: 4,
+  year_end: 5,
+};
+
+function regularTestKey(a: AssessmentWithScores): number | null {
+  const order = REGULAR_TEST_ORDER[a.name_code];
+  if (order == null || a.grade == null) return null;
+  return a.grade * 10 + order;
+}
+
+/**
+ * 提案書の科目のうち、対策をした科目と、その単元。
+ *
+ * ★提案書の単元にはテスト範囲がまるごと入っている（全科目の単元に自己評価を付けてから、
+ *   苦手な単元にだけコマを割り当てる作り）。本番の実例（永山校 中3）では、英語・数学・国語は
+ *   単元が載っているのに0コマで、コマが付いているのは理科・社会の3単元だけだった。
+ *   そこで、コマの付いた科目があれば「コマの付いた科目・コマの付いた単元」だけを対策とみなす
+ *  （科目にコマがあっても単元にコマが無ければ、その科目の単元をすべて出す）。
+ * ★どの科目にもコマが無い提案書（コマ未入力のまま公開したもの）は、単元の載った科目を対策とみなす。
+ */
+function proposedSubjects(
+  p: TestPrepProposalForInterview
+): { name: string; koma: number; units: string[] }[] {
+  const names = (units: { name: string; koma: number }[], onlyKoma: boolean) => {
+    const picked = onlyKoma ? units.filter((u) => u.koma > 0) : units;
+    return (picked.length > 0 ? picked : units).map((u) => u.name).filter((n) => n.trim() !== '');
+  };
+  const withKoma = p.subjects.filter((s) => s.koma > 0);
+  if (withKoma.length > 0) {
+    return withKoma.map((s) => ({ name: s.name, koma: s.koma, units: names(s.units, true) }));
+  }
+  return p.subjects
+    .filter((s) => s.units.length > 0)
+    .map((s) => ({ name: s.name, koma: 0, units: names(s.units, false) }));
+}
+
+/**
+ * ④に出すテスト対策の行を組む。
+ *
+ *   テスト対策（2学期中間）数学 4コマ・英語 1コマ（増コマ申込 3コマ）
+ *   → 結果 数学 64→70（+6）／英語 72
+ *   対策した単元：一次関数・連立方程式・不定詞（ほか5）
+ *
+ * ★結果は「その試験の、その学年の」定期テストだけと突き合わせる。name_code だけで引くと、
+ *   中2の2学期中間（去年）を中3の対策の結果として出してしまう（本番に去年の term2_mid が111件ある）。
+ *   提案書を作った年度の学年は、今の学年から年度の差を引いて出す（4月始まり・koushuFiscalYear）。
+ * ★「前回」は同じ科目の点がある、1つ前の定期テスト（学年×年度内の順番。REGULAR_TEST_ORDER）。
+ * ★科目名・試験名の変換は目標の達成度と同じ表（GOAL_*）を使う。変換できない科目（高校の科目など）は
+ *   結果を出さない。点の無い科目を「前回なし」と書くと、受けていないように読めるため。
+ * ★結果がまだ入っていない試験は「聞くこと」に回す。ただし目標の達成度が同じ試験を
+ *   すでに聞いているとき（existingAsks にその試験名が入っているとき）は重ねない。
+ * ★試験の種類が付いていない提案書（本番の公開済み57件のうち15件）は、結果と突き合わせようが無いので
+ *   見出しと単元だけを出す（聞くことも出さない。何の結果を聞けばよいかが分からない）。
+ * ★コマも単元も無い提案書（中身が空）は飛ばす。「テスト対策（…）」とだけ出しても話せない。
+ */
+export function buildTestPrepLines(
+  proposals: readonly TestPrepProposalForInterview[],
+  assessments: readonly AssessmentWithScores[],
+  studentGrade: number | null,
+  today: Date,
+  existingAsks: readonly string[] = []
+): TestPrepLines {
+  const facts: string[] = [];
+  const ask: string[] = [];
+  const aiLines: string[] = [];
+
+  const regular = assessments.filter((a) => a.category === 'regular_test');
+  const fiscalNow = koushuFiscalYear(today);
+
+  const picked = [...proposals]
+    .filter((p) => proposedSubjects(p).length > 0)
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+    .slice(0, MAX_TEST_PREP_PROPOSALS);
+
+  for (const p of picked) {
+    const subjects = proposedSubjects(p);
+    const examLabel = p.examName ?? p.title;
+    const komaText = subjects
+      .filter((s) => s.koma > 0)
+      .map((s) => `${s.name} ${s.koma}コマ`)
+      .join('・');
+    const subjectText = komaText || subjects.map((s) => s.name).join('・');
+    const zoukomaText =
+      p.zoukoma.status === 'applied'
+        ? `増コマ申込 ${p.zoukoma.koma}コマ`
+        : p.zoukoma.status === 'none'
+          ? '増コマ申込なし'
+          : '';
+    facts.push(
+      `テスト対策（${examLabel}）${subjectText}${zoukomaText ? `（${zoukomaText}）` : ''}`
+    );
+
+    // 結果の突き合わせ（その試験・その学年の定期テスト）
+    const nameCode = p.examName ? GOAL_EXAM_NAME_TO_ASSESSMENT_NAME_CODE[p.examName] : undefined;
+    const created = new Date(p.createdAt);
+    const proposalGrade =
+      studentGrade != null && !Number.isNaN(created.getTime())
+        ? studentGrade - (fiscalNow - koushuFiscalYear(created))
+        : null;
+    const mappable = subjects
+      .map((s) => ({ name: s.name, key: GOAL_SUBJECT_TO_ASSESSMENT_SUBJECT[s.name] }))
+      .filter((s): s is { name: string; key: string } => !!s.key);
+
+    let resultText = '';
+    if (nameCode && proposalGrade != null && mappable.length > 0) {
+      const result = regular.find((a) => a.name_code === nameCode && a.grade === proposalGrade);
+      const resultKey = result ? regularTestKey(result) : null;
+      const parts: string[] = [];
+      if (result && resultKey != null) {
+        for (const s of mappable) {
+          const now = result.scores.find((x) => x.subject === s.key)?.value;
+          if (now == null) continue;
+          // 1つ前の定期テストで、同じ科目の点があるもの
+          let prev: { key: number; value: number } | null = null;
+          for (const a of regular) {
+            const k = regularTestKey(a);
+            if (k == null || k >= resultKey) continue;
+            const v = a.scores.find((x) => x.subject === s.key)?.value;
+            if (v == null) continue;
+            if (!prev || k > prev.key) prev = { key: k, value: v };
+          }
+          if (prev) {
+            const diff = now - prev.value;
+            parts.push(`${s.name} ${prev.value}→${now}（${diff >= 0 ? `+${diff}` : diff}）`);
+          } else {
+            parts.push(`${s.name} ${now}`);
+          }
+        }
+      }
+      if (parts.length > 0) {
+        resultText = parts.join('／');
+        facts.push(`→ 結果 ${resultText}`);
+      } else if (!existingAsks.some((t) => t.includes(examLabel))) {
+        ask.push(`${examLabel}の結果を聞いて入れる`);
+      }
+    }
+
+    const units = subjects.flatMap((s) => s.units);
+    let unitText = '';
+    if (units.length > 0) {
+      const shown = units
+        .slice(0, MAX_TEST_PREP_UNITS)
+        .map((u) =>
+          u.length > TEST_PREP_UNIT_LENGTH ? `${u.slice(0, TEST_PREP_UNIT_LENGTH)}…` : u
+        );
+      const rest = units.length - shown.length;
+      unitText = `${shown.join('・')}${rest > 0 ? `（ほか${rest}）` : ''}`;
+      facts.push(`対策した単元：${unitText}`);
+    }
+
+    aiLines.push(
+      [
+        `${TEST_PREP_AI_PREFIX} ${examLabel} ${subjects.map((s) => s.name).join('・')}${
+          zoukomaText ? `（${zoukomaText}）` : ''
+        }`,
+        resultText ? `結果 ${resultText}` : '結果まだ',
+        unitText ? `単元 ${unitText}` : '',
+      ]
+        .filter(Boolean)
+        .join('／')
+    );
+  }
+
+  return { facts, ask: Array.from(new Set(ask)), aiLines };
+}
+
+/* ---------- ② 週回数変更 → 変えたあとどうか ---------- */
+
+/** 週回数変更の申込（form_responses form_type='shukaisu'）の最新1件 */
+export interface ShukaisuChangeForInterview {
+  createdAt: string;
+  currentWeekly: number | null;
+  requestedWeekly: number | null;
+  /** 'YYYY-MM'（response_data.change_from）。読めなければ null */
+  changeFrom: string | null;
+  /** 席を用意したか（status_checks.seated） */
+  seated: boolean;
+}
+
+export interface ShukaisuLines {
+  /** ②塾の根拠 */
+  facts: string[];
+  /** ②塾の話すこと（say）・聞くこと（ask）。1件 */
+  talk: { kind: 'say' | 'ask'; text: string } | null;
+  /** AIの lessons に足す行（「週回数変更:」で始まる）。無ければ null */
+  aiLine: string | null;
+}
+
+/** 何日前までの申込を拾うか。★半年より前の変更は、もう「変えたあと」の話ではない */
+const SHUKAISU_LOOKBACK_DAYS = 183;
+/** 変更後の月の集計を何か月ぶん出すか */
+const SHUKAISU_MONTHS = 3;
+
+/**
+ * ②塾に出す週回数変更の行を組む。
+ *
+ *   週回数変更 週2→週3（9月から）実施中
+ *   変更後 2026年9月（授業8日）: 宿題未提出 1回／遅刻 0回
+ *
+ * ★変更月が来ていれば（実施中）、変えたあとの様子を**報告**する行を話すことに立てる
+ *  （教室長「変更してそのあとどうかを報告事項としてあげる」）。
+ *   変更後の月の集計は、宿題・遅刻のパネルと同じ computeDisciplineMonthly の出力をそのまま使う。
+ * ★まだ変更前なら、席を用意済みか（status_checks.seated）で言うことが変わる。
+ *   用意済み → 「◯月から週◯で席を用意しています」と伝える／未 → 確定してよいかを聞く。
+ * ★週回数が同じ（曜日・科目だけの変更）ときは「週2→週2」と書かない。
+ */
+export function buildShukaisuLines(
+  change: ShukaisuChangeForInterview | null,
+  disciplineSessions: readonly {
+    session_date: string;
+    homework_not_done: boolean;
+    tardy: boolean;
+  }[],
+  today: Date
+): ShukaisuLines {
+  const empty: ShukaisuLines = { facts: [], talk: null, aiLine: null };
+  if (!change || !change.changeFrom || !/^\d{4}-\d{2}$/.test(change.changeFrom)) return empty;
+  const age = ymdDiffDays(change.createdAt.slice(0, 10), localYmd(today));
+  if (Number.isNaN(age) || age > SHUKAISU_LOOKBACK_DAYS) return empty;
+
+  const from = change.changeFrom;
+  const fromLabel = monthLabel(from, today);
+  const thisMonth = localYmd(today).slice(0, 7);
+  const effective = from <= thisMonth;
+  const a = change.currentWeekly;
+  const b = change.requestedWeekly;
+  const sameCount = a != null && b != null && a === b;
+  const countText =
+    a != null && b != null
+      ? sameCount
+        ? `週${b}のまま・曜日/科目の変更`
+        : `週${a}→週${b}`
+      : b != null
+        ? `週${b}へ`
+        : '内容は申込を確認';
+  const statusText = effective ? '実施中' : change.seated ? '席確定' : '受付済み';
+
+  const facts = [`週回数変更 ${countText}（${fromLabel}から）${statusText}`];
+  const after = effective
+    ? computeDisciplineMonthly([...disciplineSessions], SHUKAISU_MONTHS, today)
+        .filter((m) => m.month >= from && m.lessonDays > 0)
+        .reverse() // 変更月から順に読む
+    : [];
+  for (const m of after) {
+    facts.push(
+      `変更後 ${m.label}（授業${m.lessonDays}日）: 宿題未提出 ${m.homeworkMissedDays}回／遅刻 ${m.tardyDays}回`
+    );
+  }
+
+  const target = sameCount ? '新しい曜日・科目' : b != null ? `週${b}` : '新しい通塾';
+  const talk: ShukaisuLines['talk'] = effective
+    ? {
+        kind: 'say',
+        text: sameCount
+          ? '報告 ―― 曜日・科目を変えてからの様子を伝える'
+          : `報告 ―― ${target}にしてからの様子を伝える`,
+      }
+    : change.seated
+      ? { kind: 'say', text: `${fromLabel}から${target}で席を用意しています` }
+      : { kind: 'ask', text: `${fromLabel}から${target}で確定してよいか確認する` };
+
+  const afterText = after
+    .map((m) => `${m.label} 授業${m.lessonDays}日・宿題未提出${m.homeworkMissedDays}回`)
+    .join('、');
+  const aiLine = `${SHUKAISU_AI_PREFIX} ${countText}（${fromLabel}から・${statusText}）${
+    afterText ? `／変更後 ${afterText}` : ''
+  }`;
+
+  return { facts, talk, aiLine };
+}
+
+/* ---------- ④ 模試 → 結果を返せているか ---------- */
+
+/** 模試の申込1件（受験日が確かに分かるものだけ。読み込み側で決める） */
+export interface MockApplicationForInterview {
+  /** 表示名（「都立Vもぎ」「9月度オープン模試」） */
+  name: string;
+  /** 受験日 'YYYY-MM-DD' */
+  examDate: string;
+}
+
+export interface MockReturnLines {
+  facts: string[];
+  ask: string[];
+}
+
+/** 受験から何日たったら「まだ入っていない」と言うか。返却・入力にかかる日数の目安 */
+const MOCK_RETURN_GRACE_DAYS = 7;
+/** 何日前の受験まで見るか。★古い模試を今さら聞いても面談では使わない */
+const MOCK_RETURN_LOOKBACK_DAYS = 90;
+/** 出す件数 */
+const MAX_MOCK_RETURN = 2;
+
+/**
+ * ④に出す「模試の結果がまだ入っていない」の行（教室長「模試は結果を返せてればよい」）。
+ *
+ * ★結果が入っていれば何も出さない。出すのは受験から7日以上たって、その月以降の模試の成績
+ *  （assessments category='mock'）が1件も無いときだけ。
+ * ★成績側の日付は月単位（exam_date は '2026-09-01' の形）なので、月で比べる。
+ *   同じ月に別の模試の成績が入っていると「入っている」と見なして黙る。
+ *   間違って黙るほうが、入っているのに「入っていない」と言うより害が小さい。
+ * ★名前は模試名に月を添える（「都立Vもぎ 9月」）。名前にもう月が入っていれば足さない。
+ */
+export function buildMockReturnLines(
+  applications: readonly MockApplicationForInterview[],
+  assessments: readonly AssessmentWithScores[],
+  today: Date
+): MockReturnLines {
+  const todayYmd = localYmd(today);
+  const mockMonths = assessments
+    .filter((a) => a.category === 'mock')
+    .map((a) => (a.exam_date ?? a.exam_month ?? '').slice(0, 7))
+    .filter((m) => /^\d{4}-\d{2}$/.test(m));
+
+  const seen = new Set<string>();
+  const facts: string[] = [];
+  const ask: string[] = [];
+  const sorted = [...applications].sort((a, b) => b.examDate.localeCompare(a.examDate));
+  for (const app of sorted) {
+    if (facts.length >= MAX_MOCK_RETURN) break;
+    const days = ymdDiffDays(app.examDate, todayYmd);
+    if (Number.isNaN(days) || days < MOCK_RETURN_GRACE_DAYS || days > MOCK_RETURN_LOOKBACK_DAYS) {
+      continue;
+    }
+    const month = app.examDate.slice(0, 7);
+    if (mockMonths.some((m) => m >= month)) continue;
+
+    const m = Number(app.examDate.slice(5, 7));
+    const name = app.name.includes(`${m}月`) ? app.name : `${app.name} ${m}月`;
+    if (seen.has(name)) continue;
+    seen.add(name);
+    facts.push(`模試の申込 ―― ${name}（${fmtMonthDay(app.examDate)}受験）の結果が未入力`);
+    ask.push(`${name}の結果がまだ入っていない（返却を確認）`);
+  }
+  return { facts, ask };
 }

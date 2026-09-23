@@ -28,6 +28,9 @@ import { SEASON_LABELS } from '@/types/database';
 import {
   buildTellSections,
   buildGoalAchievementLines,
+  buildMockReturnLines,
+  buildShukaisuLines,
+  buildTestPrepLines,
   buildKoushuHistoryLines,
   buildMockSchoolLines,
   buildMissingRecordAskLines,
@@ -45,6 +48,9 @@ import {
   previousFollowUpReportLine,
   stripTargetSchoolFactLines,
   summarizeCurrentKoushu,
+  type MockApplicationForInterview,
+  type ShukaisuChangeForInterview,
+  type TestPrepProposalForInterview,
 } from './interview.shared';
 import type { TextbookProgressData } from './ProgressPanel';
 import type { DisciplineSessionRow } from '@/lib/api/progress-sessions';
@@ -112,6 +118,12 @@ interface InterviewPrintSheetProps {
   targetSchools: TargetSchoolRow[];
   /** 模試の志望校と合格可能性（④現状の確認「直近の模試」の材料） */
   mockSchools: MockSchoolRecord[];
+  /** テスト対策の提案書と増コマ申込（④。InterviewScriptCard と同じもの） */
+  testPrep: TestPrepProposalForInterview[];
+  /** 週回数変更の申込の最新1件（②塾） */
+  shukaisu: ShukaisuChangeForInterview | null;
+  /** 模試の申込（④結果の返却） */
+  mockApplications: MockApplicationForInterview[];
   /** 科目ID→科目名（⑤プラン提示「講習の履歴」の科目名に使う） */
   subjectNames: Record<string, string>;
   /**
@@ -165,6 +177,9 @@ export function InterviewPrintSheet({
   examGoals,
   targetSchools,
   mockSchools,
+  testPrep,
+  shukaisu,
+  mockApplications,
   subjectNames,
   script,
 }: InterviewPrintSheetProps) {
@@ -186,7 +201,20 @@ export function InterviewPrintSheet({
   const targetSchoolGap = buildTargetSchoolGapLines(targetSchools, assessments);
   // 直近の模試の合格可能性と、登録に無い公立校（画面の④と同じ関数）
   const mockSchoolLines = buildMockSchoolLines(mockSchools, assessments, targetSchools);
-  const missingRecordAsk = buildMissingRecordAskLines(assessments, student.grade);
+  // 申込から見えること（画面の④・②塾と同じ関数）
+  const testPrepLines = buildTestPrepLines(
+    testPrep,
+    assessments,
+    student.grade,
+    new Date(),
+    goalAchievement.ask
+  );
+  const shukaisuLines = buildShukaisuLines(shukaisu, disciplineSessions, new Date());
+  const mockReturn = buildMockReturnLines(mockApplications, assessments, new Date());
+  const missingRecordAsk = buildMissingRecordAskLines(assessments, student.grade, {
+    hasTestPrepAsk: testPrepLines.ask.length > 0,
+    hasMockApplication: mockApplications.length > 0,
+  });
   // ②ヒアリングの「前回の約束・前回の要望」と、そこから組む「その後どうですか」
   const previous = buildPreviousCommitmentLines(interviews);
   /**
@@ -306,6 +334,10 @@ export function InterviewPrintSheet({
           )
         );
     }
+    if (group === 'juku') {
+      // 週回数変更。★紙は見出しの1行だけ（変更後の月の集計は画面の②塾の根拠で）
+      for (const t of shukaisuLines.facts.slice(0, CAPS.shukaisu)) nodes.push(line(t));
+    }
     if (group === 'school' && goalAchievement.tell.length > 0) {
       // 目標の達成度。試験目標と成績を突き合わせて組む「伝える」行
       nodes.push(line(`目標の達成度 ―― ${goalAchievement.tell.join('／')}`));
@@ -349,6 +381,12 @@ export function InterviewPrintSheet({
         hidden: 0,
       };
     }
+    if (group === 'juku' && shukaisuLines.talk) {
+      // 週回数変更の「報告」または「確定してよいか」（画面の②塾と同じ行）
+      const talk = shukaisuLines.talk;
+      // ★週回数変更の行は1件しか組まれない（CAPS.shukaisu と同じ1行）ので、ここでは絞らない
+      return { lines: [{ text: talk.text, ask: talk.kind === 'ask' }, ...asks], hidden: 0 };
+    }
     return { lines: asks, hidden: 0 };
   }
 
@@ -359,6 +397,12 @@ export function InterviewPrintSheet({
   const mockCapped = capItems(mockSchoolLines.tell, CAPS.mockSchoolLines);
   const talkCapped = capItems(targetSchoolTalk, CAPS.targetSchoolTalk);
   const planRationaleCapped = capItems(planRationale, CAPS.planRationale);
+  // ④の申込から見えること。★テスト対策の根拠は1行につなぐ・聞くことは1件（printCaps.ts）
+  const testPrepFactLine = capItems(testPrepLines.facts, CAPS.testPrepFacts).shown.join('／');
+  const applicationAsksCapped = capItems(
+    [...testPrepLines.ask, ...mockReturn.ask],
+    CAPS.applicationAsks
+  );
 
   /*
    * ★シーンごとの高さの上限（max-h + overflow-hidden）。件数の上限と line-clamp で普通は届かない
@@ -490,6 +534,10 @@ export function InterviewPrintSheet({
                 </div>
               ))}
               <RestNote hidden={mockCapped.hidden} />
+              {/* テスト対策（見出し → 結果）。画面の④根拠と同じ関数で組んだ行の頭2件 */}
+              {testPrepFactLine && (
+                <div className={`line-clamp-2 ${LINE}`}>・{testPrepFactLine}</div>
+              )}
             </div>
             <div className="flex flex-col gap-0.5 border-l border-dotted border-gray-400 pl-3.5">
               {/* ★志望校について話すこと（画面の④左の先頭と同じ行）。聞く行は □ を付ける */}
@@ -530,6 +578,13 @@ export function InterviewPrintSheet({
                   □ {t}
                 </div>
               ))}
+              {/* 申込から聞くこと（テスト対策の結果・模試の返却）。★1件だけ（printCaps.ts） */}
+              {applicationAsksCapped.shown.map((t, i) => (
+                <div key={`application-ask-${i}`} className={`line-clamp-1 ${LINE}`}>
+                  □ {t}
+                </div>
+              ))}
+              <RestNote hidden={applicationAsksCapped.hidden} />
               {/* 志望校が1件も登録されていないとき */}
               {targetSchoolGap.ask.map((t, i) => (
                 <div key={`school-${i}`} className={LINE}>

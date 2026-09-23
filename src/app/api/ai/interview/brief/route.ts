@@ -17,6 +17,8 @@ import {
   sanitizeBriefSections,
   sanitizeFollowUpItems,
   sanitizeFollowUpActors,
+  sanitizeLessonNotes,
+  isLessonNoteLine,
   sortBriefSections,
   dedupeConsecutiveLessonLines,
   resolveInterviewBriefModelKey,
@@ -237,6 +239,7 @@ export async function POST(request: NextRequest) {
     studentId?: unknown;
     sections?: unknown;
     followUpItems?: unknown;
+    lessonNotes?: unknown;
     model?: unknown;
   };
   try {
@@ -331,8 +334,16 @@ export async function POST(request: NextRequest) {
     loadParentLines(supabase, studentId),
   ]);
 
+  /**
+   * 授業の様子に足す「週回数変更」の行（クライアントが申込から組む）。
+   * ★引継ぎの後ろに足す。前に足すと引継ぎの番号がずれ、場面（episodes）が別の授業を指す。
+   * ★sanitizeLessonNotes が「週回数変更:」で始まる行しか通さない（引継ぎを差し込ませない）。
+   */
+  const lessonNotes = sanitizeLessonNotes(body.lessonNotes);
+  const lessonCurrent = lessonLines.concat(lessonNotes);
+
   const added: BriefSectionInput[] = [];
-  if (lessonLines.length > 0) added.push({ key: 'lessons', current: lessonLines });
+  if (lessonCurrent.length > 0) added.push({ key: 'lessons', current: lessonCurrent });
   if (parentLines.length > 0) added.push({ key: 'parent', current: parentLines });
 
   /**
@@ -362,9 +373,11 @@ export async function POST(request: NextRequest) {
    */
   const viewCurrent = (s: BriefSectionInput): string[] => {
     if (s.key !== 'lessons') return s.current;
+    // ★週回数変更の行は、画面では②塾の根拠に別の形で出す（クライアントが組む）のでここでは外す
+    const handovers = s.current.filter((l) => !isLessonNoteLine(l));
     // ★同じ講師・同じ引継ぎ文が続く塊は、いちばん新しい1件だけ残す（画面に出す3行が
     //   同じ文で埋まると材料にならない）。AIに渡す材料（sections）は畳まない
-    const lines = dedupeConsecutiveLessonLines(s.current);
+    const lines = dedupeConsecutiveLessonLines(handovers);
     if (lines.length <= LESSON_VIEW_ENTRIES + 1) return lines;
     // loadLessonLines は古い順に戻して返すので、直近は末尾。新しい順に並べ直して先頭3件を出す
     const recent = lines.slice(-LESSON_VIEW_ENTRIES).reverse();
