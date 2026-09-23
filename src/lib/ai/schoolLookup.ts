@@ -125,6 +125,26 @@ export function prefectureHint(question: string): string | null {
 // ─────────────────────────────────────────────────────────────
 
 /**
+ * 質問と名前の表記をそろえる。
+ *   - 全角数字→半角（IMEのまま「偏差値５０」と打たれる）、全角空白→半角
+ *   - 漢字・ひらがなと漢字にはさまれた「ケ」「ヵ」→「ヶ」（緑ケ丘／緑ヶ丘、ひばりケ丘／ひばりヶ丘）。
+ *     カタカナ語（ケース等）の「ケ」は前後が漢字・ひらがなにならないので変わらない
+ * ★「が」は助詞と区別できないので質問側では直さない。名前の側に「が」の別名を足す（kanaVariants）。
+ */
+export function normalizeText(s: string): string {
+  return s
+    .replace(/[０-９]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfee0))
+    .replace(/　/g, ' ')
+    .replace(/([ぁ-ん一-鿿])[ケヵ](?=[一-鿿])/g, '$1ヶ');
+}
+
+/** 「ヶ」を含む名前は「が」でも書かれる（ひばりヶ丘→ひばりが丘） */
+function kanaVariants(name: string): string[] {
+  const n = normalizeText(name);
+  return n.includes('ヶ') ? [n, n.replace(/ヶ/g, 'が')] : [n];
+}
+
+/**
  * 当たった語を伏せ字にして返す。
  * ★先に当てた語を伏せてから次の種類を当てる。「日比谷線」を路線で当てたあと、
  *   同じ文字列の「日比谷」を学校名で拾い直さないため。「清瀬駅」の清瀬も同じ。
@@ -185,14 +205,21 @@ const COMPANY_SHORT: Record<string, string[]> = {
 
 /** 国土数値情報の路線名と、ふだんの呼び名が違うもの */
 const LINE_NICKNAMES: Record<string, string[]> = {
-  '首都圏新都市鉄道 常磐新線': ['つくばエクスプレス'],
+  // ★国土数値情報は運行系統ではなく線路の名前で持っている。
+  //   京浜東北線は東京駅の北が「東北線」、南が「東海道線」の線路を走る。
+  //   埼京線は都内ではほぼ「赤羽線」（池袋〜赤羽）。東北線に当てると京浜東北線の上野まで並ぶので当てない。
+  '東日本旅客鉄道 東北線': ['京浜東北線'],
+  '東日本旅客鉄道 東海道線': ['京浜東北線'],
+  '東日本旅客鉄道 赤羽線': ['埼京線'],
+  '東京地下鉄 4号線丸ノ内線': ['丸の内線'],
+  '首都圏新都市鉄道 常磐新線': ['つくばエクスプレス', 'TX'],
   'ゆりかもめ 東京臨海新交通臨海線': ['ゆりかもめ'],
   '東京臨海高速鉄道 臨海副都心線': ['りんかい線'],
   '東京モノレール 東京モノレール羽田空港線': ['東京モノレール'],
   '多摩都市モノレール 多摩都市モノレール線': ['多摩モノレール'],
   '東京都 荒川線': ['都電荒川線', '都電'],
   '東武鉄道 伊勢崎線': ['スカイツリーライン'],
-  '東京都 日暮里・舎人ライナー': ['舎人ライナー'],
+  '東京都 日暮里・舎人ライナー': ['舎人ライナー', '日暮里舎人ライナー'],
 };
 
 /**
@@ -244,38 +271,78 @@ export function lineAliases(line: string): string[] {
  */
 function aliasesOf(name: string): string[] {
   const stripped = name.replace(/^(都立|県立|市立)/, '');
-  return stripped && stripped !== name ? [name, stripped] : [name];
+  const base = stripped && stripped !== name ? [name, stripped] : [name];
+  return base.flatMap(kanaVariants);
 }
 
-/** 学校名が当たった位置と長さ。伏せ字にするのに使う */
-function hitsInQuestion(question: string, name: string): { at: number; len: number } | null {
-  for (const alias of aliasesOf(name)) {
-    if (alias.length >= 2) {
-      for (let i = question.indexOf(alias); i >= 0; i = question.indexOf(alias, i + 1)) {
-        // 「国立大学」の国立のように、直後に「大」が続くのは高校名ではない
-        if (question[i + alias.length] !== '大') return { at: i, len: alias.length };
-      }
-    } else {
-      // 1文字の名前は文脈を要求する
-      for (const ctx of [`${alias}高`, `都立${alias}`, `県立${alias}`, `市立${alias}`]) {
-        const i = question.indexOf(ctx);
-        if (i >= 0) return { at: i, len: ctx.length };
-      }
+/** ふだんの呼び方が正式名の部分文字列にならないもの */
+const SCHOOL_NICKNAMES: Record<string, string[]> = {
+  市立横浜サイエンスフロンティア: ['サイフロ', 'YSFH'],
+};
+
+/**
+ * 地名を冠した学校の、冠を外した呼び方（横浜翠嵐→翠嵐、横浜緑ヶ丘→緑ヶ丘）。
+ * ★冠を外すと一般語になるもの（工業・商業・国際・総合…）と1文字（横浜栄→栄）は作らない。
+ *   「工科高校」で川崎工科に、「国際」で横浜国際に当たってしまう。
+ */
+const PLACE_PREFIX = /^(横浜|川崎|相模原|横須賀)/;
+const GENERIC_REMAINDER =
+  /^(工業|工科|商業|総合|国際|農業|水産|高等|中央|北|南|東|西)$|(工業|商業|総合|工科|定時|通信)/;
+
+interface SchoolAlias {
+  alias: string;
+  name: string;
+}
+
+/** 学校名の別名の一覧。長い順に当てる */
+function schoolAliasTable(all: SchoolMatch[]): SchoolAlias[] {
+  const names = Array.from(new Set(all.map((s) => s.schoolName)));
+  const nameSet = new Set(names);
+  const out: SchoolAlias[] = [];
+  for (const name of names) {
+    for (const alias of aliasesOf(name)) out.push({ alias, name });
+    for (const nick of SCHOOL_NICKNAMES[name] ?? []) out.push({ alias: nick, name });
+  }
+  // 冠を外した呼び方は、ほかの学校名とかぶらず、1校にしか当たらないものだけ
+  const remainders = new Map<string, string[]>();
+  for (const name of names) {
+    const base = name.replace(/^(都立|県立|市立)/, '');
+    if (!PLACE_PREFIX.test(base)) continue;
+    const rest = base.replace(PLACE_PREFIX, '');
+    if (rest.length < 2 || GENERIC_REMAINDER.test(rest) || nameSet.has(rest)) continue;
+    remainders.set(rest, [...(remainders.get(rest) ?? []), name]);
+  }
+  remainders.forEach((ns, rest) => {
+    if (ns.length !== 1) return;
+    for (const alias of kanaVariants(rest)) out.push({ alias, name: ns[0] });
+  });
+  return out.sort((a, b) => b.alias.length - a.alias.length);
+}
+
+/** 別名が当たった位置と長さ。伏せ字にするのに使う */
+function hitsInQuestion(question: string, alias: string): { at: number; len: number } | null {
+  if (alias.length >= 2) {
+    for (let i = question.indexOf(alias); i >= 0; i = question.indexOf(alias, i + 1)) {
+      // 「国立大学」の国立のように、直後に「大」が続くのは高校名ではない
+      if (question[i + alias.length] !== '大') return { at: i, len: alias.length };
     }
+    return null;
+  }
+  // 1文字の名前は文脈を要求する
+  for (const ctx of [`${alias}高`, `都立${alias}`, `県立${alias}`, `市立${alias}`]) {
+    const i = question.indexOf(ctx);
+    if (i >= 0) return { at: i, len: ctx.length };
   }
   return null;
 }
 
 /** 質問文に名前が出ている学校名（長い名前を優先して重複を避ける）と、伏せ字にした質問 */
 function takeSchoolNames(q: string, all: SchoolMatch[]): { q: string; names: string[] } {
-  const names = Array.from(new Set(all.map((s) => s.schoolName))).sort(
-    (a, b) => b.length - a.length
-  );
   const matched: string[] = [];
-  for (const n of names) {
-    const hit = hitsInQuestion(q, n);
+  for (const { alias, name } of schoolAliasTable(all)) {
+    const hit = hitsInQuestion(q, alias);
     if (!hit) continue;
-    matched.push(n);
+    if (!matched.includes(name)) matched.push(name);
     // 当たった箇所を伏せる（「市立横浜総合」に当たったあと「横浜」で拾わない）
     q = mask(q, hit.at, hit.len);
   }
@@ -284,7 +351,7 @@ function takeSchoolNames(q: string, all: SchoolMatch[]): { q: string; names: str
 
 /** 質問文に名前が出ている学校（全学科）を返す */
 export function findByName(question: string, all: SchoolMatch[]): SchoolMatch[] {
-  const { names } = takeSchoolNames(question, all);
+  const { names } = takeSchoolNames(normalizeText(question), all);
   return rowsOfNames(question, names, all);
 }
 
@@ -305,9 +372,15 @@ interface RangeQuery {
   naishin: number | null;
 }
 
+/**
+ * ★人は「偏差値が50」「内申は35くらい」「内申点40」のように助詞を挟んで書く。
+ *   最初は「偏差値50」「内申35」の形しか拾っておらず、本番の質問
+ *   「八王子で内申が35くらいの都立教えて」を取りこぼしていた。
+ */
 function parseRange(question: string): RangeQuery {
-  const h = question.match(/偏差値\s*(\d{2})/);
-  const n = question.match(/(?:内申|換算内申|基準内申)\s*(\d{2,3})/);
+  const q = normalizeText(question);
+  const h = q.match(/偏差値\s*(?:が|は|で|の|も)?\s*(\d{2})/);
+  const n = q.match(/(?:換算内申|基準内申|内申)点?\s*(?:が|は|で|の|も)?\s*(\d{2,3})/);
   return { hensachi: h ? Number(h[1]) : null, naishin: n ? Number(n[1]) : null };
 }
 
@@ -366,20 +439,45 @@ export function findByRange(question: string, all: SchoolMatch[]): SchoolMatch[]
 // ─────────────────────────────────────────────────────────────
 
 /** 地名のあとに続けば「場所として聞いている」とみなす語 */
-const PLACE_INTENT =
-  /^(市|区|町|村|にある|の都立|の高校|の公立|の学校|周辺|付近|近辺|エリア|方面|あたり|界隈|市内|区内|に住|から通)/;
 /**
- * 駅名のあとに続けば駅として聞いているとみなす語（「清瀬駅」「清瀬から近い」）。
+ * 地名のあとに続けば「場所として聞いている」とみなす語。
+ * ★「で」を入れている。「町田で偏差値50」の町田は町田市（学校の町田なら「町田の偏差値」と書く）。
+ *   本番の質問「偏差値50くらいの学校ある？八王子で」もこの形。
+ */
+const PLACE_INTENT =
+  /^(市|区|町|村|にある|の都立|の高|の公立|の学校|周辺|付近|近辺|の近く|近く|エリア|方面|あたり|辺り|界隈|市内|区内|に住|から通|で)/;
+/**
+ * 駅名のあとに続けば駅として聞いているとみなす語（「清瀬駅」「清瀬から近い」「清瀬近くの高校」）。
  * ★「から」単独は入れない。「日比谷から西に変えたい」の日比谷は学校なのに駅に取られる。
  *   「あたり」も入れない。「日比谷あたりの学校」はたいてい偏差値の水準の話。
  */
-const STATION_INTENT = /^(駅|から近|から通|から行|周辺|付近|近辺|の近く|界隈)/;
+const STATION_INTENT = /^(駅|から近|から通|から行|周辺|付近|近辺|の近く|近く|界隈)/;
+/** 会社名だけで沿線を言う形（「西武沿線」「小田急沿い」） */
+const COMPANY_ALONG = /^(沿|の沿線|線沿)/;
+
+/**
+ * 市区町村をまとめて言う呼び方。
+ * ★多摩は島しょ部を外す（「多摩地区の都立」に大島海洋国際を並べない）。
+ */
+const ISLANDS = ['大島町', '八丈町', '三宅村', '新島村', '神津島村', '小笠原村'];
+const AREAS: { pattern: RegExp; label: string; pick: (m: string) => boolean }[] = [
+  { pattern: /23区|都区部|区部/, label: '23区', pick: (m) => m.endsWith('区') },
+  {
+    pattern: /多摩地区|多摩地域|多摩エリア|多摩方面|都下|市部/,
+    label: '多摩地区',
+    pick: (m) => !m.endsWith('区') && !ISLANDS.includes(m),
+  },
+];
 
 interface Places {
   q: string;
   lines: string[];
   stations: string[];
+  /** 質問に名前が出た市区町村 */
   municipalities: string[];
+  /** 「23区」「多摩地区」のようにまとめて言われた範囲と、その市区町村 */
+  areas: string[];
+  areaMunicipalities: string[];
   /** 学校名として当たったもの */
   names: string[];
 }
@@ -413,25 +511,45 @@ function readPlaces(question: string, all: SchoolMatch[]): Places {
     }
   }
   const L = takeHits(question, lineAliasList);
+  // 「西武沿線」「小田急沿い」のように「線」を付けない言い方も、その会社の全路線
+  const L2 = takeHits(
+    L.q,
+    allLines.flatMap((line) => {
+      const company = line.slice(0, Math.max(0, line.indexOf(' ')));
+      return (COMPANY_SHORT[company] ?? []).map((s) => ({ alias: s, key: line }));
+    }),
+    (after) => COMPANY_ALONG.test(after)
+  );
 
   const stationNames = Array.from(
     new Set(tokyo.flatMap((s) => (s.accessStations ?? []).map((x) => x.name)))
   );
   const S = takeHits(
-    L.q,
-    stationNames.map((n) => ({ alias: n, key: n })),
+    L2.q,
+    stationNames.flatMap((n) => kanaVariants(n).map((alias) => ({ alias, key: n }))),
     (after) => STATION_INTENT.test(after)
   );
   // 「清瀬駅」の「駅」も伏せる（後ろの段で邪魔にならないように）
   let q = S.q.replace(/＿駅/g, '＿＿');
 
   const munis = Array.from(new Set(tokyo.map((s) => s.municipality).filter(Boolean))) as string[];
+
   // 正式名（八王子市・北区）は紛れが無いので、いつでも当てる
   const M0 = takeHits(
     q,
     munis.map((m) => ({ alias: m, key: m }))
   );
   q = M0.q;
+  // まとめた呼び方（23区・多摩地区）は正式名のあとで取る。先に取ると「八王子市部活」の「市部」を拾う
+  const areas: string[] = [];
+  const areaMunicipalities: string[] = [];
+  for (const a of AREAS) {
+    const m = q.match(a.pattern);
+    if (!m || m.index == null) continue;
+    areas.push(a.label);
+    areaMunicipalities.push(...munis.filter(a.pick));
+    q = mask(q, m.index, m[0].length);
+  }
   // ★「市」「区」を外した呼び方は2文字以上だけ。1文字（北区→北・港区→港）を当てると
   //   「八王子北にある」の北で北区に当たる。
   const shortAliases: Alias[] = munis
@@ -454,9 +572,11 @@ function readPlaces(question: string, all: SchoolMatch[]): Places {
 
   return {
     q: M2.q,
-    lines: L.keys,
+    lines: Array.from(new Set([...L.keys, ...L2.keys])),
     stations: S.keys,
     municipalities: Array.from(new Set([...M0.keys, ...M1.keys, ...M2.keys])),
+    areas,
+    areaMunicipalities,
     names: N.names,
   };
 }
@@ -554,9 +674,10 @@ function findByPlace(p: Places, all: SchoolMatch[]): { rows: SchoolMatch[]; cond
   const sets: SchoolMatch[][] = [];
   const conditions: string[] = [];
 
-  if (p.municipalities.length) {
-    sets.push(tokyo.filter((s) => s.municipality && p.municipalities.includes(s.municipality)));
-    conditions.push(`所在地が ${p.municipalities.join('・')}`);
+  if (p.municipalities.length || p.areaMunicipalities.length) {
+    const ms = [...p.municipalities, ...p.areaMunicipalities];
+    sets.push(tokyo.filter((s) => s.municipality && ms.includes(s.municipality)));
+    conditions.push(`所在地が ${[...p.areas, ...p.municipalities].join('・')}`);
   }
   if (p.lines.length) {
     sets.push(tokyo.filter((s) => s.accessLines?.some((l) => p.lines.includes(l))));
@@ -638,7 +759,8 @@ const KANAGAWA_PLACE = /駅|沿線|沿い|にある|近く|周辺|付近|市内|
  *   学校名が出ていれば学校名で（駅が出ていれば距離を添える）。
  *   無ければ場所（市区町村・駅・沿線）で。場所も無ければ範囲（偏差値・内申）で。
  */
-export function matchSchools(question: string, all: SchoolMatch[]): SchoolLookup {
+export function matchSchools(rawQuestion: string, all: SchoolMatch[]): SchoolLookup {
+  const question = normalizeText(rawQuestion);
   const p = readPlaces(question, all);
   const r = parseRange(question);
   const empty: SchoolLookup = {
@@ -654,7 +776,7 @@ export function matchSchools(question: string, all: SchoolMatch[]): SchoolLookup
     return { ...empty, ...at, rows: rowsOfNames(question, p.names, all) };
   }
 
-  if (p.municipalities.length || p.lines.length || p.stations.length) {
+  if (p.municipalities.length || p.areas.length || p.lines.length || p.stations.length) {
     const found = findByPlace(p, all);
     const conditions = [...found.conditions];
     const rows = arrangePlaceRows(found.rows, r, p.stations, at.stationInfo, conditions);
