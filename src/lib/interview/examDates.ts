@@ -33,11 +33,35 @@ interface TokyoExamSchedule {
  *   面談では「2/4までに出願」「2/10が取り下げ日」と口で言う場面があるが、
  *   これを定型トークの文字列に書くと**年が変わっても誰も気づかないまま残る**。
  *   年度ごとに手で足すこのファイルに集めておき、年度が無ければ黙る。
+ *
+ * ★2027-02-21 は日曜。都立の一次が日曜に行われることはまず無いので、この日付は疑わしい。
+ *   根拠にした vault ノートの出所が「令和8年度実施要綱」で、日程だけ前年度から引き写した
+ *   可能性がある（令和7年度の 2025-02-21 は金曜）。令和9年度の実施要綱で確かめて直すこと。
+ *   2026-09-22 時点では「この日付のまま進める」判断で運用している。
+ *   直すまで曜日は画面に出さない（誤った曜日を自信たっぷりに見せないため）。
  */
 const TOKYO_EXAM_SCHEDULE: Record<number, TokyoExamSchedule> = {
   // 令和9年度入試。推薦 1/26・27（発表 2/2）／一次 2/21（発表 3/1）／二次 3/9
   2027: { exam: '2027-02-21', applicationDue: '2027-02-04', withdrawalDue: '2027-02-10' },
 };
+
+/**
+ * その教室にとって次に来る都立一次の日付を返す。無ければ null。学年は見ない。
+ *
+ * 生徒ごとではなく「教室として次に来る入試」を出したいとき（プライバシースクリーンの
+ * カウントダウン等）に使う。面談台本のように受験学年に限りたいときは
+ * nextTokyoExamDate を使うこと。
+ */
+export function nextTokyoExamDateForRegion(today: Date, region: Region | null): string | null {
+  if (region !== 'tokyo') return null;
+
+  // 学年度は4月始まり。1〜3月は前年の4月に始まった年度なので、入試はその年の2月
+  const year = today.getFullYear();
+  const month = today.getMonth() + 1;
+  const examYear = month >= 4 ? year + 1 : year;
+
+  return TOKYO_EXAM_SCHEDULE[examYear]?.exam ?? null;
+}
 
 /**
  * その生徒にとって次に来る都立一次の日付を返す。無ければ null。
@@ -52,14 +76,8 @@ export function nextTokyoExamDate(
   grade: number | null,
   region: Region | null
 ): string | null {
-  if (grade !== 9 || region !== 'tokyo') return null;
-
-  // 学年度は4月始まり。1〜3月は前年の4月に始まった年度なので、入試はその年の2月
-  const year = today.getFullYear();
-  const month = today.getMonth() + 1;
-  const examYear = month >= 4 ? year + 1 : year;
-
-  return TOKYO_EXAM_SCHEDULE[examYear]?.exam ?? null;
+  if (grade !== 9) return null;
+  return nextTokyoExamDateForRegion(today, region);
 }
 
 /** その生徒にとって次に来る都立一次の日程一式。無ければ null */

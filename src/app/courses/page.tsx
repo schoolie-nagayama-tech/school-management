@@ -309,28 +309,36 @@ export default function CoursesPage() {
       return;
     }
 
-    // 中身が空のまま展開させない。
-    // 展開は教材も単元もコピーするので、単元を入れる前に展開すると各教室に空の複製が増えるだけになる。
-    // 2026-09の冬期でこれが起き、他教室に空のコースが268件でき本番データの整理が必要になった。
+    /**
+     * 単元が未設定でも展開できる（2026-09-23 ユーザー判断）。
+     *
+     * ★以前はここで止めていた。2026-09の冬期に、単元を入れる前に展開して
+     *   他教室に空のコースが268件でき、本番データの整理が必要になったため。
+     *   ただし「先に枠だけ各教室に配り、単元は各教室で入れる」使い方が実際にあり、
+     *   止めると回らない（中学受験対策のように、備考で進め方を書いて運用する講習）。
+     * ★止める代わりに、確認ダイアログで件数と名前を出す。
+     *   押す前に「空のまま配ろうとしている」と分かれば、事故は同じようには起きない。
+     *   確認は元から1回出るので、この変更でクリックは増えない。
+     */
     const emptyCourses = filteredSorted.filter(
       (c) => selected.has(c.id) && c.curriculum_count === 0
     );
-    if (emptyCourses.length > 0) {
-      const names = emptyCourses
-        .slice(0, 3)
-        .map((c) => `「${c.name}」`)
-        .join('、');
-      const more = emptyCourses.length > 3 ? ` ほか${emptyCourses.length - 3}件` : '';
-      setErrorMessage(
-        `単元が未設定の講習は展開できません（${names}${more}）。先に単元とコマ数を設定してから展開してください。`
-      );
-      return;
-    }
+    const emptyNotice =
+      emptyCourses.length > 0
+        ? `
+
+★${emptyCourses.length}件は単元が未設定のまま展開されます（${emptyCourses
+            .slice(0, 3)
+            .map((c) => `「${c.name}」`)
+            .join('、')}${
+            emptyCourses.length > 3 ? ` ほか${emptyCourses.length - 3}件` : ''
+          }）。展開先の教室でも中身は空なので、単元とコマ数は各教室で入れてください。`
+        : '';
 
     if (
       !(await confirm({
         title: '全教室に展開',
-        description: `選択した${count}件の講習を他の${targetCount}教室に展開します。同名・同季節の講習が既にある教室はスキップされます。`,
+        description: `選択した${count}件の講習を他の${targetCount}教室に展開します。同名・同季節の講習が既にある教室はスキップされます。${emptyNotice}`,
         confirmLabel: '展開する',
       }))
     )
@@ -944,11 +952,11 @@ export default function CoursesPage() {
                             {course.curriculum_count === 0 && '（予定）'}
                           </span>
                         )}
-                        {/* 単元が未設定＝雛形として未完成。展開も適用もできないので目立たせる */}
+                        {/* 単元が未設定＝雛形として未完成。展開はできるが中身は空のままなので目立たせる */}
                         {course.curriculum_count === 0 && (
                           <span
                             className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 text-[10px] font-medium"
-                            title="単元とコマ数が未設定です。このままでは他教室に展開できません"
+                            title="単元とコマ数が未設定です。このまま展開すると、展開先でも中身は空のままです"
                           >
                             未設定
                           </span>

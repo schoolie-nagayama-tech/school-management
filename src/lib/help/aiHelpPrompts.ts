@@ -50,6 +50,15 @@ export function answerSystem(): string {
     '- ★答えてよいのは、NESTの操作と、ヘルプ本文に書かれている制度・運用の決まりまで。',
     '  「この生徒を退塾にすべきか」「この子はどの高校を受けるべきか」のように、',
     '  人が決めることへの助言は、本文に関係する記述があっても unanswered にする。',
+    // ★学校マスタ（high_schools）を2つ目の材料として渡すようになった（src/lib/ai/schoolLookup.ts）。
+    //   規則（rules）と同じ考え方で、渡した行に書かれた数字だけを読ませる。
+    //   ここを緩めると、載っていない学校の数字を一般知識で捏造する。
+    '- ★「【学校のめやす】」の行が渡されたときは、そこに書かれた数字をそのまま読んでよい。',
+    '  ただし、足し算・引き算・換算をしない（渡した数字以外を作らない）。',
+    '  渡されていない学校については「高校マスタに入っていません」と答える。一般知識で補わない。',
+    '  ★答えには必ず「出典」をそのまま添える。「（紙と未突合）」と書いてあれば、それも必ず伝える。',
+    '  ★都県をまたいで数字を比べない。満点の違う内申（65/75/52/135）を並べて比べない。',
+    '  合否の見込みや「受かる／受からない」は言わない。数字を示すところまでにする。',
     '- ★「公開状態」の行がある項目を使うときは、answer の1文目でその状態を必ず伝える。',
     '  例:「この機能はまだ公開前で、いまは操作できません。」／「これは試作中の機能で、システム管理者だけが試せます。」',
     '  そのうえで手順を書く（手順を隠さない。いつ何ができるようになるかを知りたい人がいるため）。',
@@ -70,17 +79,20 @@ export function answerUserText(params: {
   glossary: string;
   path?: string | null;
   roleLabel: string;
+  /** 高校マスタから引いた行（src/lib/ai/schoolLookup.ts）。当たらなければ空文字 */
+  schoolsText?: string;
 }): string {
   const lines = ['【質問】', params.question, '', `【質問した人の役割】${params.roleLabel}`];
   if (params.path) lines.push(`【いま開いている画面】${params.path}`);
   lines.push(
     '',
     '【ヘルプ本文（これだけを使う）】',
-    params.itemsText,
+    params.itemsText || '（この質問に当たるヘルプ項目はありません）',
     '',
     '【用語集（読み替えの参考。ここから手順を作らない）】',
     params.glossary
   );
+  if (params.schoolsText) lines.push('', params.schoolsText);
   return lines.join('\n');
 }
 

@@ -129,6 +129,38 @@ describe('getSeasonalCourses (N+1解消後)', () => {
     expect(result[0]).not.toHaveProperty('curriculum');
   });
 
+  it('1000件を超えるテンプレも切り捨てずに全件返す（PostgREST の1000行上限対策）', async () => {
+    // 本番の教室は1,265件。1ページ目が満杯(1000)なら次ページを取りに行き、265件で止まる。
+    const makeCourses = (start: number, n: number) =>
+      Array.from({ length: n }, (_, i) => ({
+        id: `c${start + i}`,
+        school_id: 's1',
+        name: `テンプレ${start + i}`,
+      }));
+    const page1 = createMockChain(makeCourses(0, 1000));
+    const page2 = createMockChain(makeCourses(1000, 265));
+
+    let callCount = 0;
+    mockSupabase.from.mockImplementation((table: string) => {
+      if (table === 'seasonal_course_applications') return createMockChain([]);
+      callCount++;
+      return callCount === 1 ? page1 : page2;
+    });
+
+    const { getSeasonalCourses } = await import('@/lib/api/seasonalCourses');
+    const result = await getSeasonalCourses('s1');
+
+    expect(result).toHaveLength(1265);
+    expect(result[1264].id).toBe('c1264');
+    expect(page1.range).toHaveBeenCalledWith(0, 999);
+    expect(page2.range).toHaveBeenCalledWith(1000, 1999);
+    // 申込は id 1,265件を300件ずつ .in() に分ける（URL長対策）→ 5チャンク
+    const appCalls = mockSupabase.from.mock.calls.filter(
+      ([t]) => t === 'seasonal_course_applications'
+    );
+    expect(appCalls).toHaveLength(5);
+  });
+
   it('講習一覧の取得エラーは throw する', async () => {
     mockSupabase.from.mockImplementation(() => createMockChain(null, { message: 'DB error' }));
 
