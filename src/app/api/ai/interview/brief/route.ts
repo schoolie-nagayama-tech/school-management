@@ -15,9 +15,12 @@ import {
   briefUserText,
   parseBriefResult,
   sanitizeBriefSections,
+  sanitizeFollowUpItems,
   sortBriefSections,
+  dedupeConsecutiveLessonLines,
   resolveInterviewBriefModelKey,
   MAX_CURRENT_LINE_LENGTH,
+  type BriefFollowUp,
   type BriefSectionInput,
   type BriefSectionKey,
   type BriefSign,
@@ -57,6 +60,12 @@ interface BriefSectionPayload {
 
 interface BriefResponse {
   sections: BriefSectionPayload[];
+  /**
+   * 前回の約束・要望を「報告する」か「聞く」か（1件ずつ）。
+   * ★渡していない item は parseBriefResult が捨てるので、返ってこなかった分は
+   *   画面が出どころで振る（AIが使えない日と同じ道を通る）。
+   */
+  followUps: BriefFollowUp[];
   thread: string;
   /** ④の課題と⑤のプランのつながり。koushu セクションを渡していなければ常に空文字 */
   bridge: string;
@@ -64,7 +73,7 @@ interface BriefResponse {
   degraded: boolean;
   /** この教室ではAIに送らない設定。故障ではなく意図した停止 */
   disabled: boolean;
-  /** 実際に使ったモデルのID。Sonnet 5 / Opus 5 の見比べで取り違えないように必ず返す */
+  /** 実際に使ったモデルのID。Sonnet 5 / Opus 5.5 の見比べで取り違えないように必ず返す */
   model: ClaudeModel;
   /** 実際に使ったモデルのキー名 */
   modelKey: SelectableModelKey;
@@ -74,6 +83,8 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 
 /** 「授業の様子」に載せる引継ぎの回数。1回45字として900字ぶん */
 const LESSON_ENTRIES = 20;
+/** 画面（事実の列）に出す引継ぎの件数。AIには LESSON_ENTRIES 件ぶん全部渡す */
+const LESSON_VIEW_ENTRIES = 3;
 /** 「保護者と」に載せるやりとりの件数 */
 const PARENT_MESSAGES = 10;
 /** 直近の連絡の本文をどこまで載せるか */
@@ -210,7 +221,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: '権限がありません' }, { status: 403 });
   }
 
-  let body: { schoolId?: unknown; studentId?: unknown; sections?: unknown; model?: unknown };
+  let body: {
+    schoolId?: unknown;
+    studentId?: unknown;
+    sections?: unknown;
+    followUpItems?: unknown;
+    model?: unknown;
+  };
   try {
     body = await request.json();
   } catch {
@@ -231,7 +248,7 @@ export async function POST(request: NextRequest) {
   }
 
   /**
-   * Sonnet 5 / Opus 5 の見比べ用モデル選択。
+   * Sonnet 5 / Opus 5.5 の見比べ用モデル選択。
    * ★判定そのものは interviewBrief.ts の resolveInterviewBriefModelKey に集約してある
    *   （権限外は黙って既定に倒す・キー名以外は弾く、の2点をSupabase無しで単体テストするため）。
    */
@@ -240,6 +257,7 @@ export async function POST(request: NextRequest) {
 
   const empty: BriefResponse = {
     sections: [],
+    followUps: [],
     thread: '',
     bridge: '',
     degraded: false,
@@ -284,6 +302,14 @@ export async function POST(request: NextRequest) {
     (s) => s.key !== 'lessons' && s.key !== 'parent'
   );
 
+  /**
+   * ②ヒアリングの「前回の約束・要望」。★現状の行と同じ理由でクライアントが組んで送る
+   * （面談画面がすでに読んでいる面談記録・タスクから作れる）。
+   * ★ここで検めたものを、プロンプトと突き合わせの両方に使う。片方だけ切り詰めると、
+   *   AIが正しく書き写しても「渡していない item」になって全部捨てられる。
+   */
+  const followUpItems = sanitizeFollowUpItems(body.followUpItems);
+
   const [lessonLines, parentLines] = await Promise.all([
     loadLessonLines(supabase, studentId),
     loadParentLines(supabase, studentId),
@@ -311,14 +337,22 @@ export async function POST(request: NextRequest) {
    * 「授業の様子」はAIには直近20回ぶんを全部渡す。繰り返し出ている言葉（「単語が抜ける」が
    * 4回、など）は、並べて初めて見えるもので、間引くと着眼点が書けなくなる。
    * 一方で画面に20行並べると、面談中に読めるものではなくなる（実機で6行でも読みにくかった）。
-   * そこで画面には件数と直近1件だけを出し、中身はAIの着眼点で読ませる。
+   * そこで画面には件数と直近3件だけを出し、残りはAIの着眼点で読ませる。
+   *
+   * ★2026-09の第2段で1件→3件にした。②ヒアリングで「家庭では見えない授業の様子」を
+   *   話すのに、直近1件だけでは材料にならなかった（docs/interview-workspace-layout-2026-09.md）。
    *
    * 他のセクションは行数がもともと少ないので、そのまま出す。
    */
   const viewCurrent = (s: BriefSectionInput): string[] => {
-    if (s.key !== 'lessons' || s.current.length <= 2) return s.current;
-    // loadLessonLines は古い順に戻して返すので、直近は末尾
-    return [`引継ぎ ${s.current.length}件`, `直近 ―― ${s.current[s.current.length - 1]}`];
+    if (s.key !== 'lessons') return s.current;
+    // ★同じ講師・同じ引継ぎ文が続く塊は、いちばん新しい1件だけ残す（画面に出す3行が
+    //   同じ文で埋まると材料にならない）。AIに渡す材料（sections）は畳まない
+    const lines = dedupeConsecutiveLessonLines(s.current);
+    if (lines.length <= LESSON_VIEW_ENTRIES + 1) return lines;
+    // loadLessonLines は古い順に戻して返すので、直近は末尾。新しい順に並べ直して先頭3件を出す
+    const recent = lines.slice(-LESSON_VIEW_ENTRIES).reverse();
+    return [`引継ぎ ${lines.length}件`, `直近 ―― ${recent[0]}`, ...recent.slice(1)];
   };
 
   const withCurrent = (
@@ -347,7 +381,7 @@ export async function POST(request: NextRequest) {
   try {
     const raw = await callClaudeJson<unknown>({
       /**
-       * ★既定は best（Opus 5）のまま。
+       * ★既定は best（Opus 5.5）のまま。
        *
        * 7つのセクションを突き合わせて「英語だけ成績・宿題・引継ぎが同じ方向を向いている」を
        * 見つける仕事は、1つの材料を要約するのとは別の難しさがある。materialを見比べて
@@ -363,12 +397,16 @@ export async function POST(request: NextRequest) {
       model,
       // 書き方の決まりは毎回同じなのでキャッシュに載せる
       system: [{ text: briefSystemPrompt(), cache: true }],
-      userText: briefUserText(sections),
-      // ★長く書かせるようにしたので、出力の上限も広げる（seen 180字×7＋thread＋bridge）
-      maxTokens: 4000,
+      userText: briefUserText(sections, followUpItems),
+      // ★長く書かせるようにしたので、出力の上限も広げる（seen 180字×7＋thread＋bridge＋followUps）。
+      //   Opus 5.5 は思考が常に入り、その分も max_tokens から引かれる。4000 だと思考で食われて
+      //   JSONが途中で切れる（＝作れなかったに倒れる）ので余裕を持たせる。使った分しか課金されない
+      maxTokens: 16000,
+      // ★Opus 5.5 の既定は medium。材料を突き合わせる仕事なので Opus 5.5 と同じ high に揃える
+      effort: 'high',
     });
 
-    const parsed = parseBriefResult(raw, sentKeys);
+    const parsed = parseBriefResult(raw, sentKeys, followUpItems);
     const seenByKey = new Map<BriefSectionKey, { seen: string; sign: BriefSign }>();
     for (const s of parsed.sections) seenByKey.set(s.key, { seen: s.seen, sign: s.sign });
 
@@ -377,11 +415,15 @@ export async function POST(request: NextRequest) {
      *   現状の行だけのカードは、画面の他のパネルの写しでしかない。
      *   ★bridge は koushu を渡していない（講習面談ではない）ときは常に空になるので、
      *     この判定には使わない。
+     *   ★followUps（前回の約束・要望の振り分け）は数に入れる。ここだけ書けた日でも、
+     *     「どれが報告することか」が分かるだけで②の中身が変わるため。
      */
-    const nothing = !parsed.thread && parsed.sections.every((s) => !s.seen);
+    const nothing =
+      !parsed.thread && parsed.sections.every((s) => !s.seen) && parsed.followUps.length === 0;
 
     return NextResponse.json({
       sections: withCurrent(seenByKey),
+      followUps: parsed.followUps,
       thread: parsed.thread,
       bridge: parsed.bridge,
       degraded: nothing,

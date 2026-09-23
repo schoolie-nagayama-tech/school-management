@@ -39,9 +39,14 @@ import {
 import { getRegularPatterns } from '@/lib/api/schedule';
 import { getKoushuEnrollmentsByStudent, type KoushuEnrollment } from '@/lib/api/seasonalCourses';
 import { getStudentTargetSchools, type TargetSchoolRow } from '@/lib/api/targetSchools';
+import { getSubjects } from '@/lib/api/subjects';
+import {
+  getSeasonalProposalSummaryByStudent,
+  type SeasonalProposalSeasonSummary,
+} from '@/lib/api/seasonalProposalSummary';
 import type { AssessmentWithScores, Student, StudentInterview } from '@/types/database';
 import type { ScheduleRegularPattern } from '@/types/schedule';
-import { InterviewTimeline, type HandoverInfo } from './InterviewTimeline';
+import { InterviewRecordsCard, InterviewTasksCard, type HandoverInfo } from './InterviewTimeline';
 import { ScorePanel } from './ScorePanel';
 import { ProgressPanel, type TextbookProgressData } from './ProgressPanel';
 import { DisciplinePanel } from './DisciplinePanel';
@@ -49,12 +54,33 @@ import { InterviewPrintSheet } from './InterviewPrintSheet';
 import { InterviewScriptCard, type ScriptView } from './InterviewScriptCard';
 import { TargetSchoolsPanel } from '@/components/interview/TargetSchoolsPanel';
 import {
+  currentSeason,
   extractHandover,
-  formatKoushuEnrollments,
   formatRegularPatternsSchedule,
+  koushuFiscalYear,
+  mergeKoushuSeasons,
+  stripNottaMeta,
+  summarizeCurrentKoushu,
+  INTERVIEW_CARD_IDS,
 } from './interview.shared';
 import { InterviewHub } from './InterviewHub';
 import { ArrowLeft, History, Printer } from 'lucide-react';
+
+/**
+ * 段の区切り帯（「話すこと」「材料（記録）」）。
+ * ★行動（話すこと）とデータ（材料）の境目を画面に出すためだけの細い見出し。
+ *   カードの見出しより弱く見せたいので、小さな文字＋1本の罫線にしてある。
+ */
+function SectionBand({ label }: { label: string }) {
+  return (
+    <div className="mb-2.5 mt-6 flex items-center gap-3 first:mt-0">
+      <span className="shrink-0 text-[11px] font-bold tracking-[0.24em] text-text-muted">
+        {label}
+      </span>
+      <span className="h-px flex-1 bg-border-subtle" aria-hidden="true" />
+    </div>
+  );
+}
 
 export function InterviewWorkspace() {
   const { profile, isLoading: authLoading, getSelectedSchoolIds, selectedSchoolId } = useAuth();
@@ -75,12 +101,23 @@ export function InterviewWorkspace() {
   // 通塾日程・講習申込はヘッダー帯に1行で添える（面談で必ず話題に出るため）
   const [regularPatterns, setRegularPatterns] = useState<ScheduleRegularPattern[]>([]);
   const [koushuEnrollments, setKoushuEnrollments] = useState<KoushuEnrollment[]>([]);
+  /**
+   * 講習の提案書（期ごとのまとめ）。★⑤プラン提示と講習バッジの主材料。
+   *   koushu_enrollments は本番0行（2027-02公開のWeb申込の入力源）なので、
+   *   これを読まないと全生徒が「講習: 申込なし」になる。
+   */
+  const [koushuSummaries, setKoushuSummaries] = useState<SeasonalProposalSeasonSummary[]>([]);
   // 宿題・遅刻の月次集計（DisciplinePanel）用の生セッション行。集計自体は computeDisciplineMonthly に任せる
   const [disciplineSessions, setDisciplineSessions] = useState<DisciplineSessionRow[]>([]);
   // 試験目標（②ヒアリング「目標の達成度」の材料）
   const [examGoals, setExamGoals] = useState<StudentExamGoalWithType[]>([]);
   // 志望校（④現状の確認「志望校との差」の材料。TargetSchoolsPanel の保存後に反映するため refetch も持つ）
   const [targetSchools, setTargetSchools] = useState<TargetSchoolRow[]>([]);
+  /**
+   * 科目ID→科目名。⑤プラン提示の「講習の履歴」で科目名を出すために使う。
+   * ★生徒に依存しないマスタなので、生徒の切り替えでは取り直さない。
+   */
+  const [subjectNames, setSubjectNames] = useState<Record<string, string>>({});
   const [lightLoading, setLightLoading] = useState(false);
 
   // 進行表の生データ（テキスト×そのテキストの進行記録行）をテキストぶん保持する。
@@ -96,6 +133,39 @@ export function InterviewWorkspace() {
    */
   const [script, setScript] = useState<ScriptView | null>(null);
   const handleScriptResult = useCallback((v: ScriptView | null) => setScript(v), []);
+
+  /**
+   * ヘッダー帯の「講習: …」。★⑤のバッジ・⑥の「申込の状況」と同じ関数で組む
+   *   （片方だけ直して食い違うのを防ぐ。interview.shared.ts の summarizeCurrentKoushu）。
+   */
+  const koushuSummary = useMemo(() => {
+    const today = new Date();
+    return summarizeCurrentKoushu(
+      mergeKoushuSeasons(koushuSummaries, koushuEnrollments, subjectNames),
+      koushuFiscalYear(today),
+      currentSeason(today)
+    );
+  }, [koushuSummaries, koushuEnrollments, subjectNames]);
+
+  // 科目マスタ（講習の履歴の科目名）。生徒に依存しないので最初に1回だけ取る
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const subjects = await getSubjects();
+        if (cancelled) return;
+        const map: Record<string, string> = {};
+        for (const s of subjects) map[s.id] = s.name;
+        setSubjectNames(map);
+      } catch (e) {
+        // 科目名が引けなくても講習の履歴以外は出せる。ここで画面を止めない
+        console.error('Error fetching subjects:', e);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // 生徒一覧（在籍中のみ、学年→氏名かな順）
   useEffect(() => {
@@ -238,20 +308,23 @@ export function InterviewWorkspace() {
           disciplineFrom.getMonth() + 1
         ).padStart(2, '0')}-01`;
 
-        const [iv, asm, patterns, koushu, discipline, goals, schools] = await Promise.all([
-          getStudentInterviews(selectedStudentId).catch(() => []),
-          listAssessments(selectedStudentId).catch(() => []),
-          getRegularPatterns(student.school_id, { studentId: selectedStudentId }).catch(() => []),
-          getKoushuEnrollmentsByStudent(selectedStudentId).catch(() => []),
-          getStudentDisciplineSessions(selectedStudentId, disciplineFromStr).catch(() => []),
-          getStudentExamGoalsForInterview(selectedStudentId).catch(() => []),
-          getStudentTargetSchools(selectedStudentId).catch(() => []),
-        ]);
+        const [iv, asm, patterns, koushu, koushuProposals, discipline, goals, schools] =
+          await Promise.all([
+            getStudentInterviews(selectedStudentId).catch(() => []),
+            listAssessments(selectedStudentId).catch(() => []),
+            getRegularPatterns(student.school_id, { studentId: selectedStudentId }).catch(() => []),
+            getKoushuEnrollmentsByStudent(selectedStudentId).catch(() => []),
+            getSeasonalProposalSummaryByStudent(selectedStudentId).catch(() => []),
+            getStudentDisciplineSessions(selectedStudentId, disciplineFromStr).catch(() => []),
+            getStudentExamGoalsForInterview(selectedStudentId).catch(() => []),
+            getStudentTargetSchools(selectedStudentId).catch(() => []),
+          ]);
         if (cancelled) return;
         setInterviews(iv);
         setAssessments(asm);
         setRegularPatterns(patterns);
         setKoushuEnrollments(koushu);
+        setKoushuSummaries(koushuProposals);
         setDisciplineSessions(discipline);
         setExamGoals(goals);
         setTargetSchools(schools);
@@ -313,8 +386,14 @@ export function InterviewWorkspace() {
     const extracted = extractHandover(latest.content);
     return {
       date: latest.interview_date,
-      text: extracted ?? latest.content.slice(0, 200),
+      // ★見出しが無いときも先頭200字をそのまま出さない。Notta取込の本文は
+      //   【タイトル】【録音日時】【音声URL】で始まるので、ピン留めが録音日時とURLで埋まる。
+      //   buildTellSections（台本の「前回の面談から」）と同じ受け皿に揃える。
+      text: extracted ?? stripNottaMeta(latest.content).slice(0, 200),
       isFallback: !extracted,
+      // ★本文そのものも渡す。「## 次回への申し送り」が無いNotta記録は、ピン留め側で
+      //   タイムラインと同じ構造化（空の見出しを畳む）をして出すため。
+      content: latest.content,
     };
   }, [nonTaskInterviews]);
 
@@ -392,7 +471,7 @@ export function InterviewWorkspace() {
                   {/* 通塾日程・講習申込。専用カードは持たせず、面談中に目に入る位置へ添える */}
                   <span className="text-xs text-text-faint">
                     通塾: {formatRegularPatternsSchedule(regularPatterns)} ／ 講習:{' '}
-                    {formatKoushuEnrollments(koushuEnrollments)}
+                    {koushuSummary.label}
                   </span>
                 </div>
               )}
@@ -429,50 +508,80 @@ export function InterviewWorkspace() {
         </Card>
       ) : (
         <>
-          {/* 2カラム本体（左＝約束/タスク・面談記録、右＝成績・進行表）。
-              左カラムは面談記録（Notta取込の長文が入る）を読ませる列なので広めに取る。 */}
-          <div className="grid gap-5 print:hidden lg:grid-cols-[minmax(0,440px)_minmax(0,1fr)] lg:items-start">
-            <InterviewTimeline
-              studentId={student.id}
-              schoolId={student.school_id}
+          {/* ★並びは「上＝話すこと、下＝材料」。正典: docs/interview-workspace-layout-2026-09.md
+              ①面談で話すこと（全幅）→②成績｜面談記録→③進行表｜授業の様子→④タスク（最下段）。
+              以前は左440pxの列に「タスク→面談記録→（その中に）話すこと」と入れ子にしていたが、
+              話すことが材料の中に埋まって何をすればよいか分からない、と教室長から指摘があった。 */}
+          <div className="print:hidden">
+            {/* 帯はカード側に渡す。教室でAIがオフのときカードごと消えるので、帯だけ残らないように */}
+            <InterviewScriptCard
+              student={student}
+              assessments={assessments}
               interviews={interviews}
-              loading={lightLoading}
-              handover={handover}
-              onChanged={refetchInterviews}
-              briefSlot={
-                <>
-                  <InterviewScriptCard
-                    student={student}
-                    assessments={assessments}
-                    interviews={interviews}
-                    textbookData={textbookProgressData}
-                    disciplineSessions={disciplineSessions}
-                    koushuEnrollments={koushuEnrollments}
-                    regularPatterns={regularPatterns}
-                    examGoals={examGoals}
-                    targetSchools={targetSchools}
-                    loading={lightLoading || progressLoading}
-                    onResult={handleScriptResult}
-                  />
-                  {/* 志望校（第1〜3志望）。②のヒアリングで聞いてその場で入れる想定のため
-                      「面談で話すこと」カードのすぐ近くに置く。正典: docs/interview-script-ai-plan.md §4
-                      保存後に onSaved で④「志望校との差」を再取得し、その場で反映する */}
-                  <TargetSchoolsPanel
-                    studentId={student.id}
-                    schoolId={student.school_id}
-                    onSaved={refetchTargetSchools}
-                  />
-                </>
-              }
+              textbookData={textbookProgressData}
+              disciplineSessions={disciplineSessions}
+              koushuEnrollments={koushuEnrollments}
+              koushuSummaries={koushuSummaries}
+              regularPatterns={regularPatterns}
+              examGoals={examGoals}
+              targetSchools={targetSchools}
+              subjectNames={subjectNames}
+              loading={lightLoading || progressLoading}
+              onResult={handleScriptResult}
+              band={<SectionBand label="話すこと" />}
             />
-            <div className="flex flex-col gap-5">
-              <ScorePanel assessments={assessments} loading={lightLoading} />
-              <ProgressPanel
-                textbookData={textbookProgressData}
-                goals={textbookGoals}
-                loading={progressLoading}
+
+            <SectionBand label="材料（記録）" />
+
+            {/* 成績 ｜ 面談記録（半々）。台本の「事実」の行からここへ飛ぶので id を付ける */}
+            <div className="grid gap-5 lg:grid-cols-2 lg:items-start">
+              <div className="flex flex-col gap-5">
+                <div id={INTERVIEW_CARD_IDS.score} className="scroll-mt-4">
+                  <ScorePanel assessments={assessments} loading={lightLoading} />
+                </div>
+                {/* 志望校（第1〜3志望）。②のヒアリングで聞いてその場で入れる想定。
+                    保存後に onSaved で④「志望校との差」を再取得し、その場で反映する */}
+                <TargetSchoolsPanel
+                  studentId={student.id}
+                  schoolId={student.school_id}
+                  onSaved={refetchTargetSchools}
+                />
+              </div>
+              <div id={INTERVIEW_CARD_IDS.records} className="scroll-mt-4">
+                <InterviewRecordsCard
+                  studentId={student.id}
+                  schoolId={student.school_id}
+                  interviews={interviews}
+                  loading={lightLoading}
+                  handover={handover}
+                  onChanged={refetchInterviews}
+                />
+              </div>
+            </div>
+
+            {/* 進行表 ｜ 授業の様子（二次的な材料） */}
+            <div className="mt-5 grid gap-5 lg:grid-cols-2 lg:items-start">
+              <div id={INTERVIEW_CARD_IDS.progress} className="scroll-mt-4">
+                <ProgressPanel
+                  textbookData={textbookProgressData}
+                  goals={textbookGoals}
+                  loading={progressLoading}
+                />
+              </div>
+              <div id={INTERVIEW_CARD_IDS.discipline} className="scroll-mt-4">
+                <DisciplinePanel sessions={disciplineSessions} loading={lightLoading} />
+              </div>
+            </div>
+
+            {/* ★タスクは最下段。ほとんど使われていないのに最上段を占めていた */}
+            <div className="mt-5">
+              <InterviewTasksCard
+                studentId={student.id}
+                schoolId={student.school_id}
+                interviews={interviews}
+                loading={lightLoading}
+                onChanged={refetchInterviews}
               />
-              <DisciplinePanel sessions={disciplineSessions} loading={lightLoading} />
             </div>
           </div>
 
@@ -485,9 +594,11 @@ export function InterviewWorkspace() {
             textbookData={textbookProgressData}
             disciplineSessions={disciplineSessions}
             koushuEnrollments={koushuEnrollments}
+            koushuSummaries={koushuSummaries}
             regularPatterns={regularPatterns}
             examGoals={examGoals}
             targetSchools={targetSchools}
+            subjectNames={subjectNames}
             script={script}
           />
         </>

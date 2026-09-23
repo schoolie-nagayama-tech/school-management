@@ -26,12 +26,15 @@ import Anthropic from '@anthropic-ai/sdk';
  * - best  … ★材料を見比べて筋を見つける仕事だけ。面談の下書きがこれ。
  *           成績・宿題・引継ぎ・講習を突き合わせて「同じ方向を向いている」を見つけるのは、
  *           1つの材料を要約するのとは別の難しさがある。1回の面談で1呼び出しなので、
- *           単価差（smart の約2.5倍）より質を取る。
+ *           単価差（smart の約2倍）より質を取る。
+ *           ★2026-09-23 Opus 5 → Opus 5.5。単価は Opus 5 より安い（入力/出力0）。
+ *           Opus 5.5 は思考を切れず、effort の既定が medium（Opus 5 は high）なので、
+ *           面談の下書きは呼び出し側で effort: 'high' を明示している。
  */
 export const CLAUDE_MODELS = {
   fast: 'claude-haiku-4-5',
   smart: 'claude-sonnet-5',
-  best: 'claude-opus-5',
+  best: 'claude-opus-5-5',
 } as const;
 
 export type ClaudeModel = (typeof CLAUDE_MODELS)[keyof typeof CLAUDE_MODELS];
@@ -157,6 +160,11 @@ export interface ClaudeCallOptions {
   system: ClaudeBlock[];
   userText: string;
   maxTokens?: number;
+  /**
+   * 考える深さ。省略時はモデルの既定（Opus 5.5 は medium、それ以外は high）。
+   * ★モデルを替えると既定が変わるので、質が要る呼び出しは明示する。
+   */
+  effort?: 'low' | 'medium' | 'high' | 'xhigh' | 'max';
   signal?: AbortSignal;
 }
 
@@ -172,6 +180,7 @@ async function send(options: ClaudeCallOptions, useCache: boolean): Promise<stri
           : { type: 'text' as const, text: b.text }
       ),
       messages: [{ role: 'user', content: options.userText }],
+      ...(options.effort ? { output_config: { effort: options.effort } } : {}),
     },
     { signal: options.signal }
   );

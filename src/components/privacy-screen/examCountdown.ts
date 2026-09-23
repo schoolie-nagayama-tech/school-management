@@ -34,7 +34,7 @@ export interface ExamCountdown {
   label: string;
   /** 残り日数。0 は当日 */
   days: number;
-  /** 「2/21」。★曜日は出さない（examDates.ts の日付がまだ疑わしいため） */
+  /** 「2/21」。曜日は出さない（短く保つため。日付そのものは 2026-09-23 に実施要綱で確認済み） */
   dateLabel: string;
 }
 

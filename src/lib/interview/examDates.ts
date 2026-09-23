@@ -18,18 +18,31 @@
  */
 import type { Region } from '@/lib/interview/region';
 
+/** 都立高校 第一次募集・分割前期の日程（年度キーは「令和N年度入試」の西暦年） */
+interface TokyoExamSchedule {
+  /** 学力検査日 */
+  exam: string;
+  /** 出願の〆切 */
+  applicationDue: string;
+  /** 志望変更（出願の取り下げ）ができる最終日 */
+  withdrawalDue: string;
+}
+
 /**
- * 都立高校 第一次募集・分割前期の学力検査日（年度キーは「令和N年度入試」の西暦年）
+ * ★出願・取り下げの日付もここに置く。
+ *   面談では「2/4までに出願」「2/10が取り下げ日」と口で言う場面があるが、
+ *   これを定型トークの文字列に書くと**年が変わっても誰も気づかないまま残る**。
+ *   年度ごとに手で足すこのファイルに集めておき、年度が無ければ黙る。
  *
- * ★2027-02-21 は日曜。都立の一次が日曜に行われることはまず無いので、この日付は疑わしい。
- *   根拠にした vault ノートの出所が「令和8年度実施要綱」で、日程だけ前年度から引き写した
- *   可能性がある（令和7年度の 2025-02-21 は金曜）。令和9年度の実施要綱で確かめて直すこと。
- *   2026-09-22 時点では「この日付のまま進める」判断で運用している。
- *   直すまで曜日は画面に出さない（誤った曜日を自信たっぷりに見せないため）。
+ * ★2027-02-21 は日曜だが、これで正しい（2026-09-23 に確認）。
+ *   都教委「令和９年度東京都立高等学校入学者選抜実施要綱」第２－１（2026-09-17 公表）に
+ *   「学力検査及び面談 令和９年２月２１日（日）」とある。例年と曜日が違うので疑いたくなるが、
+ *   直さないこと。同じ表の 出願〆切 ２月４日（木）・取下げ ２月１０日（水）とも一致した
+ *   （再提出は ２月１２日（金）正午まで）。
  */
-const TOKYO_GENERAL_EXAM_DATES: Record<number, string> = {
+const TOKYO_EXAM_SCHEDULE: Record<number, TokyoExamSchedule> = {
   // 令和9年度入試。推薦 1/26・27（発表 2/2）／一次 2/21（発表 3/1）／二次 3/9
-  2027: '2027-02-21',
+  2027: { exam: '2027-02-21', applicationDue: '2027-02-04', withdrawalDue: '2027-02-10' },
 };
 
 /**
@@ -47,7 +60,7 @@ export function nextTokyoExamDateForRegion(today: Date, region: Region | null): 
   const month = today.getMonth() + 1;
   const examYear = month >= 4 ? year + 1 : year;
 
-  return TOKYO_GENERAL_EXAM_DATES[examYear] ?? null;
+  return TOKYO_EXAM_SCHEDULE[examYear]?.exam ?? null;
 }
 
 /**
@@ -65,6 +78,46 @@ export function nextTokyoExamDate(
 ): string | null {
   if (grade !== 9) return null;
   return nextTokyoExamDateForRegion(today, region);
+}
+
+/** その生徒にとって次に来る都立一次の日程一式。無ければ null */
+function nextTokyoExamSchedule(
+  today: Date,
+  grade: number | null,
+  region: Region | null
+): TokyoExamSchedule | null {
+  if (grade !== 9 || region !== 'tokyo') return null;
+  const year = today.getFullYear();
+  const month = today.getMonth() + 1;
+  const examYear = month >= 4 ? year + 1 : year;
+  return TOKYO_EXAM_SCHEDULE[examYear] ?? null;
+}
+
+/** 「2/4」の形にする */
+function formatMonthDay(isoDate: string): string {
+  const [, m, d] = isoDate.split('-');
+  return `${Number(m)}/${Number(d)}`;
+}
+
+/**
+ * ③に出す出願まわりの1行。日程が分からなければ null（行そのものを出さない）。
+ * ★過ぎた日付は出さない。面談は11月から2月まで続くので、終わった〆切を読み上げないため。
+ */
+export function examApplicationLine(
+  today: Date,
+  grade: number | null,
+  region: Region | null
+): string | null {
+  const schedule = nextTokyoExamSchedule(today, grade, region);
+  if (!schedule) return null;
+  const parts: string[] = [];
+  if (daysUntil(today, schedule.applicationDue) >= 0) {
+    parts.push(`出願は ${formatMonthDay(schedule.applicationDue)} まで`);
+  }
+  if (daysUntil(today, schedule.withdrawalDue) >= 0) {
+    parts.push(`志望変更の取り下げは ${formatMonthDay(schedule.withdrawalDue)}`);
+  }
+  return parts.length > 0 ? `★都立 ―― ${parts.join('／')}` : null;
 }
 
 /** 入試まであと何日か。過ぎていたら 0 以下を返す */
@@ -86,6 +139,5 @@ export function examCountdownLine(
   if (!date) return null;
   const days = daysUntil(today, date);
   if (days < 0) return null;
-  const [, m, d] = date.split('-');
-  return `都立一次（${Number(m)}/${Number(d)}）まで あと${days}日`;
+  return `都立一次（${formatMonthDay(date)}）まで あと${days}日`;
 }

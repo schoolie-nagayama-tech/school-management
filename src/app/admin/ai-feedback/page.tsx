@@ -125,7 +125,7 @@ export default function AiFeedbackPage() {
   // ★機能ごと × 判断の件数。1つの表に混ざっているので、機能で割らないと読めない
   //   （「そのまま 5」が下書きの話なのかテーマの話なのか分からなくなる）
   const counts = countByFeatureAndVerdict(rows);
-  // ★「生徒のまとめ」はSonnet 5 / Opus 5 の見比べが目的なので、モデル別にも割る
+  // ★「生徒のまとめ」はSonnet 5 / Opus 5.5 の見比べが目的なので、モデル別にも割る
   const studentDigestByModel = countStudentDigestByModel(rows);
 
   return (
@@ -210,7 +210,7 @@ export default function AiFeedbackPage() {
       </div>
 
       {/* ★「生徒のまとめ」（面談の下書き）だけは、どのモデルで作ったかを併せて見たい。
-          Sonnet 5 と Opus 5 のどちらが良いかは、ほかの機能と違って実データを溜めながら
+          Sonnet 5 と Opus 5.5 のどちらが良いかは、ほかの機能と違って実データを溜めながら
           決めたい問いなので、既存の機能ごとの集計を壊さずにここへ追加する。
           ★モデルが記録されていない古い行（この機能を切り分ける前のもの）は「不明」でまとめる。 */}
       {hasAnyModelBucketRows(studentDigestByModel) && (
@@ -361,14 +361,21 @@ function countByFeatureAndVerdict(
  * ★aiOutput.modelKey が無い行（この切り分けを入れる前に記録されたもの）は 'unknown' に
  *   まとめる。無いことを弾いて表から消すと「昔ぶんの記録が急に減った」ように見えるため。
  */
-type ModelBucket = SelectableModelKey | 'unknown';
-const MODEL_BUCKETS: readonly ModelBucket[] = ['best', 'smart', 'unknown'];
+/**
+ * ★'opus5' は 2026-09-23 に best を Opus 5 → Opus 5.5 に替える前の記録。
+ *   modelKey はどちらも 'best' なので、キーで割ると新旧が1つに混ざる。記録に残した
+ *   モデルID（aiOutput.model）で見分けて別の行にする。
+ */
+type ModelBucket = SelectableModelKey | 'opus5' | 'unknown';
+const MODEL_BUCKETS: readonly ModelBucket[] = ['best', 'smart', 'opus5', 'unknown'];
 const MODEL_BUCKET_LABELS: Record<ModelBucket, string> = {
   ...SELECTABLE_MODEL_KEY_LABELS,
+  opus5: 'Opus 5（切替前）',
   unknown: '不明',
 };
 
 function modelBucketOf(row: AiFeedbackRow): ModelBucket {
+  if (row.aiOutput?.model === 'claude-opus-5') return 'opus5';
   const key = row.aiOutput?.modelKey;
   return isSelectableModelKey(key) ? key : 'unknown';
 }
