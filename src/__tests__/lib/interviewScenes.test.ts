@@ -14,7 +14,7 @@ import {
 } from '@/lib/interview/scenes';
 import { BRIEF_SECTIONS } from '@/lib/ai/interviewBrief';
 import { stripNottaMeta } from '@/app/interview/interview.shared';
-import { examCountdownLine, nextTokyoExamDate, daysUntil } from '@/lib/interview/examDates';
+import { examCountdownLine, nextExamDate, daysUntil } from '@/lib/interview/examDates';
 import { regionOfSchool } from '@/lib/interview/region';
 
 describe('面談のシーン定義', () => {
@@ -233,21 +233,44 @@ describe('入試までの日数', () => {
     expect(examCountdownLine(t, null, 'tokyo')).toBeNull();
   });
 
-  it('★東京都以外には出さない。神奈川の共通選抜は日程も制度も別物', () => {
+  it('★神奈川（緑園都市校）にも出す。日付は共通選抜の学力検査 2/16', () => {
     const t = new Date('2026-09-22');
-    expect(examCountdownLine(t, 9, 'kanagawa')).toBeNull();
-    expect(examCountdownLine(t, 9, null)).toBeNull();
+    expect(examCountdownLine(t, 9, 'kanagawa')).toMatch(/共通選抜（2\/16）まで あと\d+日/);
+    expect(examCountdownLine(t, 8, 'kanagawa')).toBeNull();
+    expect(examCountdownLine(t, null, 'kanagawa')).toBeNull();
+  });
+
+  it('★呼び名を都県で変える。神奈川に「都立一次」と出すと面談が事故る', () => {
+    const t = new Date('2026-09-22');
+    expect(examCountdownLine(t, 9, 'kanagawa')).not.toContain('都立');
+    expect(examCountdownLine(t, 9, 'tokyo')).not.toContain('共通選抜');
+  });
+
+  it('★都県が分からない教室には出さない。どちらの入試か言えない日数は害になる', () => {
+    expect(examCountdownLine(new Date('2026-09-22'), 9, null)).toBeNull();
+    expect(nextExamDate(new Date('2026-09-22'), 9, null)).toBeNull();
   });
 
   it('学年度は4月始まり。9月の中3は翌年2月の入試を見る', () => {
-    expect(nextTokyoExamDate(new Date('2026-09-22'), 9, 'tokyo')).toBe('2027-02-21');
+    expect(nextExamDate(new Date('2026-09-22'), 9, 'tokyo')).toBe('2027-02-21');
+    expect(nextExamDate(new Date('2026-09-22'), 9, 'kanagawa')).toBe('2027-02-16');
     // 1〜3月はその年度の入試（＝同じ年の2月）
-    expect(nextTokyoExamDate(new Date('2027-01-10'), 9, 'tokyo')).toBe('2027-02-21');
+    expect(nextExamDate(new Date('2027-01-10'), 9, 'tokyo')).toBe('2027-02-21');
+    expect(nextExamDate(new Date('2027-01-10'), 9, 'kanagawa')).toBe('2027-02-16');
   });
 
   it('★登録の無い年度は null。当て推量の日付を出さない', () => {
-    expect(nextTokyoExamDate(new Date('2028-09-01'), 9, 'tokyo')).toBeNull();
+    expect(nextExamDate(new Date('2028-09-01'), 9, 'tokyo')).toBeNull();
+    expect(nextExamDate(new Date('2028-09-01'), 9, 'kanagawa')).toBeNull();
     expect(examCountdownLine(new Date('2028-09-01'), 9, 'tokyo')).toBeNull();
+    expect(examCountdownLine(new Date('2028-09-01'), 9, 'kanagawa')).toBeNull();
+  });
+
+  it('★入試日を過ぎたら出さない。神奈川は 2/16、東京は 2/21 と消える日が違う', () => {
+    expect(examCountdownLine(new Date('2027-02-16'), 9, 'kanagawa')).toMatch(/あと0日/);
+    expect(examCountdownLine(new Date('2027-02-17'), 9, 'kanagawa')).toBeNull();
+    // 神奈川が終わった日でも、東京はまだ 2/21 が残っている
+    expect(examCountdownLine(new Date('2027-02-17'), 9, 'tokyo')).toMatch(/あと4日/);
   });
 
   it('日数の計算', () => {
