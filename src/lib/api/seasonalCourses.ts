@@ -448,6 +448,8 @@ export async function getSeasonalCourses(
     const { curriculum, ...rest } = row;
     return {
       ...rest,
+      // 一覧に出す書名も1冊目・2冊目の順にする（埋め込みは順番が保証されない）
+      textbooks: sortCourseTextbooks(rest.textbooks ?? []),
       curriculum_count: curriculum?.[0]?.count ?? 0,
       application_count: 0,
     } as SeasonalCourseListItem;
@@ -512,7 +514,23 @@ export async function getSeasonalCourse(
     throw error;
   }
 
-  return data as SeasonalCourseWithDetails | null;
+  const course = data as SeasonalCourseWithDetails | null;
+  // ★埋め込んだテキストは PostgREST が順番を保証しない。ここで sort_order 順に並べて返す。
+  //   テンプレから提案書を作る（1人ずつ・まとめて配る）ときの1冊目・2冊目はこの並びで決まる。
+  if (course?.textbooks) course.textbooks = sortCourseTextbooks(course.textbooks);
+  return course;
+}
+
+/**
+ * コースのテキストを sort_order 順に並べる。同じ番号が残っている古いデータ（途中で外した名残）は
+ * 登録した順（created_at）で決める。
+ */
+export function sortCourseTextbooks<T extends { sort_order: number; created_at: string }>(
+  textbooks: T[]
+): T[] {
+  return [...textbooks].sort(
+    (a, b) => a.sort_order - b.sort_order || a.created_at.localeCompare(b.created_at)
+  );
 }
 
 // コースを作成
@@ -704,6 +722,26 @@ export async function addTextbookToCourse(
 
   if (error) throw error;
   return data;
+}
+
+/**
+ * コースのテキストの並び（1冊目・2冊目…）を保存する。orderedIds の並びで sort_order を 0 から振る。
+ * ★この順番が、テンプレから作った提案書のタブの並び＝進める順になる。
+ *   以前は追加した順に番号を振るだけで、途中で外すと同じ番号が並んで順番が決まらなかった。
+ *   保存のたびに全冊を振り直して、重複を残さない。
+ */
+export async function updateCourseTextbookOrder(
+  courseId: string,
+  orderedIds: number[]
+): Promise<void> {
+  for (let i = 0; i < orderedIds.length; i++) {
+    const { error } = await supabase
+      .from('seasonal_course_textbooks')
+      .update({ sort_order: i })
+      .eq('course_id', courseId)
+      .eq('textbook_id', orderedIds[i]);
+    if (error) throw error;
+  }
 }
 
 // テキストをコースから削除

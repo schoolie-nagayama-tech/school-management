@@ -129,6 +129,20 @@ export function summarizeBookSaves(outcomes: BookSaveOutcome[]): BookSaveSummary
 }
 
 /**
+ * タブの並べ替え。activeId の冊を overId の冊の位置へ動かす（間の冊は1つずつずれる）。
+ * どちらかが見つからなければ並びを変えない（ドラッグ中に冊が外された場合など）。
+ */
+export function reorderBooks(ids: number[], activeId: number, overId: number): number[] {
+  const from = ids.indexOf(activeId);
+  const to = ids.indexOf(overId);
+  if (from < 0 || to < 0 || from === to) return ids;
+  const next = [...ids];
+  next.splice(from, 1);
+  next.splice(to, 0, activeId);
+  return next;
+}
+
+/**
  * 画面の見出しに出す書名。冊数が増えても1行に収まるようにする。
  * 3冊ぶん並べるとヘッダーが折り返して読みにくいので、3冊目からは「ほかn冊」に畳む。
  */
