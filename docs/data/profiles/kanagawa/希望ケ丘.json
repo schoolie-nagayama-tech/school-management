@@ -1,0 +1,1074 @@
+{
+  "prefecture": "神奈川県",
+  "school_name": "希望ケ丘",
+  "official_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/",
+  "researched_at": "2026-09-23",
+  "stats": [
+    {
+      "metric": "university_count",
+      "item": "国公立",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 45,
+      "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/shinro/documents/78shinro.pdf",
+      "source_label": "希望ケ丘高校 令和7年度進路状況について（受験結果一覧・実進学者数一覧）",
+      "as_of": "2026-03-31",
+      "note": "学校集計「実進学者数一覧」の新卒者数（浪人含む場合は53=新卒45+浪人8）。4年制大学のみ。"
+    },
+    {
+      "metric": "university_count",
+      "item": "早慶上理",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 53,
+      "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/shinro/documents/78shinro.pdf",
+      "source_label": "希望ケ丘高校 令和7年度進路状況について（受験結果一覧・実進学者数一覧）",
+      "as_of": "2026-03-31",
+      "note": "大学別の表から合算（早稲田25+慶應16+上智5+東京理科7、いずれも新卒実進学者数）。"
+    },
+    {
+      "metric": "university_count",
+      "item": "GMARCH",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 100,
+      "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/shinro/documents/78shinro.pdf",
+      "source_label": "希望ケ丘高校 令和7年度進路状況について（受験結果一覧・実進学者数一覧）",
+      "as_of": "2026-03-31",
+      "note": "大学別の表から合算（学習院5+明治40+青山学院25+立教12+中央14+法政4）。"
+    },
+    {
+      "metric": "university_count",
+      "item": "成成明武",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 10,
+      "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/shinro/documents/78shinro.pdf",
+      "source_label": "希望ケ丘高校 令和7年度進路状況について（受験結果一覧・実進学者数一覧）",
+      "as_of": "2026-03-31",
+      "note": "大学別の表から合算（成蹊0+成城0+明治学院8+武蔵2）。"
+    },
+    {
+      "metric": "university_count",
+      "item": "日東駒専",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 16,
+      "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/shinro/documents/78shinro.pdf",
+      "source_label": "希望ケ丘高校 令和7年度進路状況について（受験結果一覧・実進学者数一覧）",
+      "as_of": "2026-03-31",
+      "note": "大学別の表から合算（日本10+東洋4+駒澤0+専修2）。"
+    },
+    {
+      "metric": "university_count",
+      "item": "合計",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 299,
+      "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/shinro/documents/78shinro.pdf",
+      "source_label": "希望ケ丘高校 令和7年度進路状況について（受験結果一覧・実進学者数一覧）",
+      "as_of": "2026-03-31",
+      "note": "学校集計「受験方法別実進学者数（4年制大学）」の合計。新卒のみ（浪人除く）。国公立45+私立254。"
+    },
+    {
+      "metric": "university_count",
+      "item": "明治大学",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 40,
+      "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/shinro/documents/78shinro.pdf",
+      "source_label": "希望ケ丘高校 令和7年度進路状況について（受験結果一覧・実進学者数一覧）",
+      "as_of": "2026-03-31",
+      "note": "大学別の表（実進学者数）から。上位1位。"
+    },
+    {
+      "metric": "university_count",
+      "item": "青山学院大学",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 25,
+      "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/shinro/documents/78shinro.pdf",
+      "source_label": "希望ケ丘高校 令和7年度進路状況について（受験結果一覧・実進学者数一覧）",
+      "as_of": "2026-03-31",
+      "note": "大学別の表（実進学者数）から。上位2位。"
+    },
+    {
+      "metric": "university_count",
+      "item": "早稲田大学",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 25,
+      "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/shinro/documents/78shinro.pdf",
+      "source_label": "希望ケ丘高校 令和7年度進路状況について（受験結果一覧・実進学者数一覧）",
+      "as_of": "2026-03-31",
+      "note": "大学別の表（実進学者数）から。上位3位（青山学院と同数）。"
+    },
+    {
+      "metric": "university_count",
+      "item": "慶應義塾大学",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 16,
+      "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/shinro/documents/78shinro.pdf",
+      "source_label": "希望ケ丘高校 令和7年度進路状況について（受験結果一覧・実進学者数一覧）",
+      "as_of": "2026-03-31",
+      "note": "大学別の表（実進学者数）から。上位4位。"
+    },
+    {
+      "metric": "university_count",
+      "item": "中央大学",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 14,
+      "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/shinro/documents/78shinro.pdf",
+      "source_label": "希望ケ丘高校 令和7年度進路状況について（受験結果一覧・実進学者数一覧）",
+      "as_of": "2026-03-31",
+      "note": "大学別の表（実進学者数）から。上位5位。"
+    },
+    {
+      "metric": "admission_route_share",
+      "item": "一般",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 63.5,
+      "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/shinro/documents/78shinro.pdf",
+      "source_label": "希望ケ丘高校 令和7年度進路状況について（受験結果一覧・実進学者数一覧）",
+      "as_of": "2026-03-31",
+      "note": "分母299（4年制大学・新卒実進学者数）に対する比率。実数190。"
+    },
+    {
+      "metric": "admission_route_share",
+      "item": "指定校推薦",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 16.7,
+      "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/shinro/documents/78shinro.pdf",
+      "source_label": "希望ケ丘高校 令和7年度進路状況について（受験結果一覧・実進学者数一覧）",
+      "as_of": "2026-03-31",
+      "note": "実数50。"
+    },
+    {
+      "metric": "admission_route_share",
+      "item": "公募推薦",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 3,
+      "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/shinro/documents/78shinro.pdf",
+      "source_label": "希望ケ丘高校 令和7年度進路状況について（受験結果一覧・実進学者数一覧）",
+      "as_of": "2026-03-31",
+      "note": "実数9（学校推薦型・公募制）。"
+    },
+    {
+      "metric": "admission_route_share",
+      "item": "総合型",
+      "basis": "実進学",
+      "fiscal_year": 2025,
+      "value_num": 2.7,
+      "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/shinro/documents/78shinro.pdf",
+      "source_label": "希望ケ丘高校 令和7年度進路状況について（受験結果一覧・実進学者数一覧）",
+      "as_of": "2026-03-31",
+      "note": "実数8（総合型選抜）。"
+    },
+    {
+      "metric": "career_decided_rate",
+      "item": "",
+      "basis": "",
+      "fiscal_year": 2025,
+      "value_num": 87,
+      "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/nyugaku/documents/gakkoannai_2026.pdf",
+      "source_label": "希望ケ丘高校 令和9年度入学者用学校案内（パンフレット）",
+      "as_of": "2026-07-08",
+      "note": "令和7年3月卒業生347名のうち現役進学率87%（大学299名+大学校2名=301名、進路状況PDFの短大・専修等を含めた新卒進路決定者302名/347名=87.0%と整合）。"
+    },
+    {
+      "metric": "designation",
+      "item": "SSH",
+      "basis": "",
+      "fiscal_year": 2023,
+      "value_text": "文部科学省スーパーサイエンスハイスクール第Ⅱ期指定（令和5年度〜。第Ⅰ期は平成30年度〜）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/nyugaku/documents/gakkoannai_2026.pdf",
+      "source_label": "希望ケ丘高校 令和9年度入学者用学校案内（パンフレット）",
+      "as_of": "2026-07-08"
+    },
+    {
+      "metric": "designation",
+      "item": "学力向上進学重点校エントリー校",
+      "basis": "",
+      "fiscal_year": 2026,
+      "value_text": "神奈川県教育委員会指定（指定開始年度は資料に記載なし）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/nyugaku/documents/gakkoannai_2026.pdf",
+      "source_label": "希望ケ丘高校 令和9年度入学者用学校案内（パンフレット）",
+      "as_of": "2026-07-08"
+    },
+    {
+      "metric": "uniform",
+      "item": "",
+      "basis": "",
+      "fiscal_year": 2026,
+      "value_text": "制服なし",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/nyugaku/documents/gakkoannai_2026.pdf",
+      "source_label": "希望ケ丘高校 令和9年度入学者用学校案内（パンフレット）",
+      "as_of": "2026-07-08"
+    },
+    {
+      "metric": "rules_summary",
+      "item": "",
+      "basis": "",
+      "fiscal_year": 2023,
+      "value_text": "頭髪・アルバイトの明文規定は生徒心得に記載なし。登校8:35〜下校19:00完全下校、車両(自動車・バイク)通学は課業時間中禁止、無断外出・試験中のスマホ使用(鳴動)は特別指導の対象。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/hogosha/documents/kokoroer5.pdf",
+      "source_label": "希望ケ丘高校 生徒心得",
+      "as_of": "2023-04-01"
+    }
+  ],
+  "clubs": [
+    {
+      "name": "サッカー部",
+      "kind": "運動",
+      "days_note": "月曜日OFF、火～日曜(ボールTR・紅白戦・TRM)",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "神奈川県U-18サッカーリーグで2023年度K6→2024年度K5に昇格。都県大会ベスト8以上・全国関東大会出場の記録は2012〜2015年度が最新で、直近3年の該当実績なし。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/seikatsu/sportss.html",
+      "as_of": "2026-03-23",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "神奈川県U-18サッカーリーグ",
+          "level": "都県",
+          "result": "K6からK5へ昇格",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/seikatsu/sportss.html"
+        }
+      ]
+    },
+    {
+      "name": "硬式野球部",
+      "kind": "運動",
+      "days_note": "火～日の放課後（土日祝は試合・実践練習）",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "一球速報で2024〜2026年度の夏・秋・春を確認。いずれも1〜3回戦で敗退（2025年春・秋は2勝後に3回戦敗退）。学校公式サイトの「ベスト32」表記と回戦数の対応が確認できない（conflicts参照）。",
+      "source_url": "https://sites.google.com/gl.pen-kanagawa.ed.jp/kibogaoka-baseball?usp=sharing",
+      "as_of": "2026-09-23",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "神奈川県高等学校野球春季県大会",
+          "level": "都県",
+          "result": "1回戦（初戦）敗退（1-8 茅ケ崎）",
+          "happened_on": "2024-04-06",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12157&year=2024"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "第106回全国高等学校野球選手権神奈川大会",
+          "level": "都県",
+          "result": "1回戦（初戦）敗退（4-5 麻溝台）",
+          "happened_on": "2024-07-07",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12157&year=2024"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "神奈川県高等学校野球秋季県大会",
+          "level": "都県",
+          "result": "1回戦（初戦）敗退（8-9 白山、延長11回）",
+          "happened_on": "2024-09-07",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12157&year=2024"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "神奈川県高等学校野球春季県大会",
+          "level": "都県",
+          "result": "2勝して3回戦敗退（6-13 向上、8回コールド）。学校発表は「ベスト32」",
+          "happened_on": "2025-04-12",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12157&year=2025"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第107回全国高等学校野球選手権神奈川大会",
+          "level": "都県",
+          "result": "1回戦（初戦）敗退（0勝1敗）",
+          "happened_on": "2025-07",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12157&year=2025"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "神奈川県高等学校野球秋季県大会",
+          "level": "都県",
+          "result": "2勝して3回戦敗退（3-10 横浜商大、7回コールド）。学校発表は「ベスト32（予選全勝1位）」",
+          "happened_on": "2025-09-13",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12157&year=2025"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "神奈川県高等学校野球春季県大会",
+          "level": "都県",
+          "result": "2回戦敗退（1-8 星槎国際湘南）",
+          "happened_on": "2026-04-05",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12157&year=2026"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "第108回全国高等学校野球選手権神奈川大会",
+          "level": "都県",
+          "result": "1勝1敗、2回戦敗退（0-4 藤沢翔陵）",
+          "happened_on": "2026-07-11",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12157&year=2026"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "神奈川県高等学校野球秋季県大会",
+          "level": "都県",
+          "result": "1勝1敗、2回戦敗退（0-2 横浜栄）",
+          "happened_on": "2026-09-10",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=12157&year=2026"
+        }
+      ]
+    },
+    {
+      "name": "ソフトボール部",
+      "kind": "運動",
+      "days_note": "月・火・木・金＋土or日",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "部員3名のため合同チームで各種大会に参加（2024年度）。単独チームでの大会実績記載なし。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/seikatsu/sportss.html",
+      "as_of": "2026-03-23",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "各種大会（合同チーム）",
+          "level": "その他",
+          "result": "合同チームで参加",
+          "happened_on": "2024-06",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/seikatsu/sportss.html"
+        }
+      ]
+    },
+    {
+      "name": "ラグビー部",
+      "kind": "運動",
+      "days_note": "月・水・金・土(練習)、火(自主トレ)、木・日(OFF、日に試合なら月OFF)",
+      "days_per_week": 4,
+      "weekend": "土",
+      "tier": 2,
+      "tier_basis": "2024・2025年度に都県大会ベスト16が複数回、2025年度に都県大会予選第一地区でベスト8。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/seikatsu/sportss.html",
+      "as_of": "2026-03-23",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "神奈川県高等学校ラグビー新人大会",
+          "level": "都県",
+          "result": "ベスト16",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/seikatsu/sportss.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "関東大会予選神奈川県大会",
+          "level": "都県",
+          "result": "ベスト16",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/seikatsu/sportss.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "横浜市民大会（7人制）",
+          "level": "地区",
+          "result": "優勝",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/seikatsu/sportss.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "全国大会予選神奈川県大会第一地区",
+          "level": "地区",
+          "result": "ベスト8",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/seikatsu/sportss.html"
+        }
+      ]
+    },
+    {
+      "name": "陸上競技部",
+      "kind": "運動",
+      "days_note": "基本、月火水金土が練習日（大会翌日は休養日）",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 1,
+      "tier_basis": "2025年度に全国高等学校総合体育大会（インターハイ）に女子400mHで出場し、関東大会でも女子400mH第6位。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/seikatsu/sportss.html",
+      "as_of": "2026-03-23",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "全国高等学校総合体育大会陸上競技会",
+          "level": "全国",
+          "result": "女子400mH出場",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/seikatsu/sportss.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "関東高等学校陸上競技大会",
+          "level": "関東",
+          "result": "女子400mH第6位、女子100m準決勝進出",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/seikatsu/sportss.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "神奈川県総合体育大会陸上競技大会",
+          "level": "都県",
+          "result": "女子400mH第5位、女子100m第6位",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/seikatsu/sportss.html"
+        }
+      ]
+    },
+    {
+      "name": "剣道部",
+      "kind": "運動",
+      "days_note": "三勤一休（3日活動して1日休み）",
+      "tier": 1,
+      "tier_basis": "2023年度に都県大会でベスト8以上の成績が複数回（関東大会県予選団体第8位、インターハイ県予選団体第3位、全国選抜県予選団体ベスト8）。2024・2025年度も男女で複数のベスト16。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/seikatsu/sportss.html",
+      "as_of": "2026-03-23",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "関東高等学校剣道大会神奈川県予選",
+          "level": "都県",
+          "result": "女子団体第8位",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/seikatsu/sportss.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "全国高校総体（インターハイ）神奈川県予選",
+          "level": "都県",
+          "result": "女子団体第3位、男子個人ベスト16（3年木村）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/seikatsu/sportss.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "全国高等学校剣道選抜大会神奈川県予選",
+          "level": "都県",
+          "result": "女子団体ベスト8、女子団体第3位（IH県予選）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/seikatsu/sportss.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "全国高校総体神奈川県予選・関東大会県予選・県新人剣道大会など",
+          "level": "都県",
+          "result": "男女とも団体ベスト16が複数（男子個人2年岩﨑ベスト16 等）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/seikatsu/sportss.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "関東高等学校剣道大会神奈川県予選ほか",
+          "level": "都県",
+          "result": "男子ベスト16、男子団体ベスト16（総体・新人・選抜の各予選）、女子団体ベスト16（総体予選）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/seikatsu/sportss.html"
+        }
+      ]
+    },
+    {
+      "name": "弓道部",
+      "kind": "運動",
+      "days_note": "月火水金土（定休日 木・日）",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "公式サイトに記載の最新実績は2021年度（男子個人二次予選6位・個人6位）で、直近3年（2023〜2025年度）の大会結果の記載はない。活動は継続中。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/seikatsu/sportss.html",
+      "as_of": "2026-03-23",
+      "results": []
+    },
+    {
+      "name": "柔道部",
+      "kind": "運動",
+      "days_note": "毎週土曜日（活動日は応相談）",
+      "days_per_week": 1,
+      "weekend": "土",
+      "tier": 2,
+      "tier_basis": "2024年度に全国総合体育大会県予選で女子団体第5位（都県大会ベスト8内）。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/seikatsu/sportss.html",
+      "as_of": "2026-03-23",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "全国総合体育大会神奈川県予選",
+          "level": "都県",
+          "result": "女子団体第5位",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/seikatsu/sportss.html"
+        }
+      ]
+    },
+    {
+      "name": "水泳部",
+      "kind": "運動",
+      "days_note": "月・火・木・金（夏季は土曜午前も）",
+      "days_per_week": 4,
+      "weekend": "なし",
+      "tier": 3,
+      "tier_basis": "県総合体育大会・県新人水泳大会に出場（順位の記載なし）。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/seikatsu/sportss.html",
+      "as_of": "2026-03-23",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "神奈川県高等学校総合体育大会水泳競技大会",
+          "level": "都県",
+          "result": "出場",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/seikatsu/sportss.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "神奈川県高等学校新人水泳大会",
+          "level": "都県",
+          "result": "出場",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/seikatsu/sportss.html"
+        }
+      ]
+    },
+    {
+      "name": "ブレイクダンス部",
+      "kind": "運動",
+      "tier": 3,
+      "tier_basis": "神奈川県高等学校ダンス新人大会に出場（順位の記載なし、開催年度は公式ページに明記なし）。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/seikatsu/sportss.html",
+      "as_of": "2026-03-23",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "神奈川県高等学校ダンス新人大会（第32回）",
+          "level": "都県",
+          "result": "出場",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/seikatsu/sportss.html"
+        }
+      ]
+    },
+    {
+      "name": "ダンス部",
+      "kind": "運動",
+      "tier": 3,
+      "tier_basis": "神奈川県高等学校ダンス新人大会等に出場歴あり。全国規模（日本高校ダンス部選手権大会）・関東規模（スーパーカップダンススタジアム）の民間主催大会にも出場歴があるが、開催年度・順位が確認できず段階判定には反映していない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/seikatsu/sportss.html",
+      "as_of": "2026-03-23",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "神奈川県高等学校ダンス新人大会（第32回）",
+          "level": "都県",
+          "result": "出場",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/seikatsu/sportss.html"
+        }
+      ]
+    },
+    {
+      "name": "男子ハンドボール部",
+      "kind": "運動",
+      "days_note": "火～日（月曜日は定休日）",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "関東大会出場を目標に活動中だが、公式サイト記載の最新実績は令和4年度（2022）県高校総体ベスト8で、直近3年（2023〜2025年度）の実績記載はない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/seikatsu/sportss.html",
+      "as_of": "2026-03-23",
+      "results": []
+    },
+    {
+      "name": "女子ハンドボール部",
+      "kind": "運動",
+      "days_note": "週3日活動",
+      "days_per_week": 3,
+      "tier": 4,
+      "tier_basis": "部員7名、週3日活動。公式サイト記載の最新実績は令和元年度（2019）関東大会出場で、直近3年の実績記載はない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/seikatsu/sportss.html",
+      "as_of": "2026-03-23",
+      "results": []
+    },
+    {
+      "name": "男子バスケットボール部",
+      "kind": "運動",
+      "days_note": "月・火・木・金・土・日（水曜オフ）",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 2,
+      "tier_basis": "2024・2025年度いずれも新人戦県大会ベスト32（都県大会ベスト16〜32が複数回）。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/seikatsu/sportss.html",
+      "as_of": "2026-03-23",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "新人戦",
+          "level": "都県",
+          "result": "県大会ベスト32",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/seikatsu/sportss.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "横浜地区高等学校バスケットボール大会",
+          "level": "地区",
+          "result": "Gブロックベスト4",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/seikatsu/sportss.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "新人戦",
+          "level": "都県",
+          "result": "県大会ベスト32（支部予選ベスト12）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/seikatsu/sportss.html"
+        }
+      ]
+    },
+    {
+      "name": "女子バスケットボール部",
+      "kind": "運動",
+      "days_note": "月・火・木・金・土・日（水曜オフ）",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "地区大会（横浜地区aブロック優勝等）では上位だが、都県大会での上位実績は2025年度新人戦県大会ベスト32の1回のみ。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/seikatsu/sportss.html",
+      "as_of": "2026-03-23",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "横浜地区高等学校バスケットボール大会",
+          "level": "地区",
+          "result": "aブロック優勝",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/seikatsu/sportss.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "新人戦",
+          "level": "都県",
+          "result": "県大会ベスト32（支部予選ベスト4）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/seikatsu/sportss.html"
+        }
+      ]
+    },
+    {
+      "name": "男子バレーボール部",
+      "kind": "運動",
+      "days_note": "火曜日～日曜日（週休日：月曜日）",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "関東大会地区予選・インターハイ神奈川県予選等に出場（都県大会での順位の記載なし）。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/seikatsu/sportss.html",
+      "as_of": "2026-03-23",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "関東大会地区予選",
+          "level": "地区",
+          "result": "出場",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/seikatsu/sportss.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "全国高校総体（インターハイ）神奈川県予選",
+          "level": "都県",
+          "result": "出場",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/seikatsu/sportss.html"
+        }
+      ]
+    },
+    {
+      "name": "女子バレーボール部",
+      "kind": "運動",
+      "days_note": "月：お休み／火：体育館1.5時間程度／水：外で体力づくり／金：体育館2.5時間程度／休日：体育館3時間程度（練習試合orお休み）",
+      "weekend": "土日",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/seikatsu/sportss.html",
+      "as_of": "2026-03-23",
+      "results": []
+    },
+    {
+      "name": "男子硬式テニス部",
+      "kind": "運動",
+      "days_note": "月・火・水・金と土日のどちらか",
+      "days_per_week": 5,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2025年度は県新人大会個人戦で本戦出場、団体戦は2回戦敗退。都県大会での上位進出の記録なし。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/seikatsu/sportss.html",
+      "as_of": "2026-03-23",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "横浜地区高等学校テニスリーグ大会",
+          "level": "地区",
+          "result": "3部5位",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/seikatsu/sportss.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "神奈川県高等学校新人テニス大会",
+          "level": "都県",
+          "result": "個人戦ダブルス本戦出場、団体戦2回戦敗退",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/seikatsu/sportss.html"
+        }
+      ]
+    },
+    {
+      "name": "女子硬式テニス部",
+      "kind": "運動",
+      "days_note": "月・水・木・金と土日のどちらか",
+      "days_per_week": 5,
+      "weekend": "土日",
+      "tier": 2,
+      "tier_basis": "都県大会団体戦で2024年度新人大会4回戦進出（ベスト16）、2025年度県大会団体ベスト16と、ベスト16が複数回。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/seikatsu/sportss.html",
+      "as_of": "2026-03-23",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "神奈川県高等学校テニス大会（関東・インターハイ予選）",
+          "level": "都県",
+          "result": "個人シングルス・ダブルス本戦出場、団体ベスト16",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/seikatsu/sportss.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "横浜地区高等学校テニスリーグ大会",
+          "level": "地区",
+          "result": "7部準優勝（来季6部昇格）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/seikatsu/sportss.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "神奈川県高等学校新人テニス大会",
+          "level": "都県",
+          "result": "団体4回戦進出（ベスト16）、個人ダブルス本戦ベスト8",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/seikatsu/sportss.html"
+        }
+      ]
+    },
+    {
+      "name": "バドミントン部",
+      "kind": "運動",
+      "days_note": "金曜日を除く毎日",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2025年度新人大会で地区上位から県大会に出場（男子ダブルス地区4位等）だが、県大会での上位順位の記載なし。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/seikatsu/sportss.html",
+      "as_of": "2026-03-23",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "新人大会",
+          "level": "都県",
+          "result": "男子ダブルス・男子シングルス・女子シングルスで地区上位から県大会出場、男子学校対抗地区3位県大会出場",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/seikatsu/sportss.html"
+        }
+      ]
+    },
+    {
+      "name": "卓球部",
+      "kind": "運動",
+      "days_note": "月・水・金（隔週）・土",
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "2023年度は関東大会県予選・県総合体育大会とも男子学校対抗ベスト32。2024年度は個人戦出場のみの記載で、直近では上位進出の記録が乏しい。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/seikatsu/sportss.html",
+      "as_of": "2026-03-23",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "関東高校卓球大会神奈川県予選",
+          "level": "都県",
+          "result": "男子学校対抗ベスト32",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/seikatsu/sportss.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "神奈川県高等学校総合体育大会",
+          "level": "都県",
+          "result": "男子学校対抗ベスト32",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/seikatsu/sportss.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "神奈川県高等学校新人卓球大会",
+          "level": "都県",
+          "result": "女子シングルス1名出場",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/seikatsu/sportss.html"
+        }
+      ]
+    },
+    {
+      "name": "チアダンス同好会",
+      "kind": "同好会",
+      "tier": 3,
+      "tier_basis": "2024年発足。2025年度にUSAチアダンス学生新人大会2025EASTに出場（順位の記載なし）。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/seikatsu/sportss.html",
+      "as_of": "2026-03-23",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "USAチアダンス学生新人大会2025EAST",
+          "level": "全国",
+          "result": "出場",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/seikatsu/sportss.html"
+        }
+      ]
+    },
+    {
+      "name": "科学部",
+      "kind": "文化",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/seikatsu/cultural.html",
+      "as_of": "2026-03-23",
+      "results": []
+    },
+    {
+      "name": "合唱部",
+      "kind": "文化",
+      "days_note": "毎週水・金（発表前は休日も）",
+      "days_per_week": 2,
+      "tier": 3,
+      "tier_basis": "NHK全国学校音楽コンクール神奈川県大会は予選出場にとどまり、県代表・金賞等の記載はない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/seikatsu/cultural.html",
+      "as_of": "2026-03-23",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "NHK全国学校音楽コンクール神奈川県大会",
+          "level": "都県",
+          "result": "予選出場",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/seikatsu/cultural.html"
+        }
+      ]
+    },
+    {
+      "name": "文芸部",
+      "kind": "文化",
+      "days_note": "不定期",
+      "tier": 2,
+      "tier_basis": "令和7年度（2025）神奈川県高等学校文化連盟 文芸（部誌）部門で高文連会長賞を受賞。（2026-09-23 Opus見直し: 県の賞1回は段階2）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/seikatsu/cultural.html",
+      "as_of": "2026-03-23",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "神奈川県高等学校文化連盟 文芸（部誌）部門",
+          "level": "都県",
+          "result": "高文連会長賞受賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/seikatsu/cultural.html"
+        }
+      ]
+    },
+    {
+      "name": "ギター部",
+      "kind": "文化",
+      "days_note": "月～金",
+      "days_per_week": 5,
+      "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/seikatsu/cultural.html",
+      "as_of": "2026-03-23",
+      "results": []
+    },
+    {
+      "name": "軽音楽部",
+      "kind": "文化",
+      "days_note": "毎日（休日もあり、テスト前1週間は休み）",
+      "days_per_week": 7,
+      "weekend": "土日",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/seikatsu/cultural.html",
+      "as_of": "2026-03-23",
+      "results": []
+    },
+    {
+      "name": "茶道部",
+      "kind": "文化",
+      "days_note": "毎週金曜日",
+      "days_per_week": 1,
+      "tier": 4,
+      "tier_basis": "活動は校内でのお点前披露や茶会参加が中心で、コンクール・大会の実績記載はない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/seikatsu/cultural.html",
+      "as_of": "2026-03-23",
+      "results": []
+    },
+    {
+      "name": "美術部",
+      "kind": "文化",
+      "days_note": "美術室は毎日使用可。生徒各自週1〜4日程度",
+      "tier": 3,
+      "tier_basis": "記念祭展示・高校美術展への出品はあるが、受賞等の記載はない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/seikatsu/cultural.html",
+      "as_of": "2026-03-23",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "高校美術展",
+          "level": "都県",
+          "result": "作品出品",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/seikatsu/cultural.html"
+        }
+      ]
+    },
+    {
+      "name": "吹奏楽部",
+      "kind": "文化",
+      "days_note": "月～土曜日（たまに日曜OFF）",
+      "days_per_week": 6,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "2024・2025年度とも横浜吹奏楽コンクールで銀賞（地区レベル）。県代表・金賞には届いていない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/seikatsu/cultural.html",
+      "as_of": "2026-03-23",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "横浜吹奏楽コンクール",
+          "level": "地区",
+          "result": "銀賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/seikatsu/cultural.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "横浜吹奏楽コンクール",
+          "level": "地区",
+          "result": "銀賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/seikatsu/cultural.html"
+        }
+      ]
+    },
+    {
+      "name": "写真部",
+      "kind": "文化",
+      "days_note": "不定期",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/seikatsu/cultural.html",
+      "as_of": "2026-03-23",
+      "results": []
+    },
+    {
+      "name": "クイズ研究部",
+      "kind": "文化",
+      "days_note": "水、金",
+      "days_per_week": 2,
+      "tier": 4,
+      "tier_basis": "大会・コンクール実績の記載はなく、週2日の活動。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/seikatsu/cultural.html",
+      "as_of": "2026-03-23",
+      "results": []
+    },
+    {
+      "name": "フォークソング部",
+      "kind": "文化",
+      "days_note": "水、金、土、日",
+      "days_per_week": 4,
+      "weekend": "土日",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/seikatsu/cultural.html",
+      "as_of": "2026-03-23",
+      "results": []
+    },
+    {
+      "name": "室内楽部",
+      "kind": "文化",
+      "days_note": "水曜日と金曜日",
+      "days_per_week": 2,
+      "tier": 4,
+      "tier_basis": "記念祭・合唱祭等の校内発表が中心で、コンクール実績の記載はない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/seikatsu/cultural.html",
+      "as_of": "2026-03-23",
+      "results": []
+    },
+    {
+      "name": "漫画ファンクラブ(MFC)",
+      "kind": "文化",
+      "days_note": "月・金の週2日",
+      "days_per_week": 2,
+      "tier": 4,
+      "tier_basis": "「まんが甲子園」に予選作品を提出したが、本戦出場の記載はない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/seikatsu/cultural.html",
+      "as_of": "2026-03-23",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "まんが甲子園",
+          "level": "全国",
+          "result": "予選作品提出（本戦出場の記載なし）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/seikatsu/cultural.html"
+        }
+      ]
+    },
+    {
+      "name": "パントマイム部",
+      "kind": "文化",
+      "days_note": "月～木の放課後、土曜の午前中",
+      "days_per_week": 4.5,
+      "weekend": "土",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/seikatsu/cultural.html",
+      "as_of": "2026-03-23",
+      "results": []
+    },
+    {
+      "name": "ドレスクリエイト部",
+      "kind": "文化",
+      "days_note": "不定期（イベント前は多い）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/seikatsu/cultural.html",
+      "as_of": "2026-03-23",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "神奈川県高等学校ファッションフェスティバル（第23回）",
+          "level": "都県",
+          "result": "最優秀賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/seikatsu/cultural.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "神奈川県高等学校ファッションフェスティバル（第24回）",
+          "level": "都県",
+          "result": "準優秀賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/seikatsu/cultural.html"
+        }
+      ]
+    },
+    {
+      "name": "交通研究部",
+      "kind": "文化",
+      "days_note": "水曜日",
+      "days_per_week": 1,
+      "tier": 4,
+      "tier_basis": "活動実績の記載はなく、週1日の活動。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/seikatsu/cultural.html",
+      "as_of": "2026-03-23",
+      "results": []
+    },
+    {
+      "name": "演劇有志",
+      "kind": "文化",
+      "days_note": "月・水・金（公演前は臨時活動あり）",
+      "days_per_week": 3,
+      "tier": 4,
+      "tier_basis": "2024年度発足したばかりで、大会・公演実績の記載はまだない。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/seikatsu/cultural.html",
+      "as_of": "2026-03-23",
+      "results": []
+    }
+  ],
+  "designated_universities": [],
+  "events": [
+    {
+      "kind": "指定",
+      "period_label": "令和5年度（2023年度）から",
+      "summary": "文部科学省スーパーサイエンスハイスクール（SSH）第Ⅱ期の指定を受けた（第Ⅰ期は平成30年度から）。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/kibogaoka-h/zennichi/nyugaku/documents/gakkoannai_2026.pdf"
+    }
+  ],
+  "unresolved": [
+    "指定校推薦の大学名：進路ページ・学校案内とも公開なし。",
+    "推薦入試の応募・受検倍率（exam_ratio/推薦）：神奈川県公立高校入試は共通選抜のみで、東京都のような別立ての推薦選抜がないため対象データなし。",
+    "部活動加入率（club_join_rate）：学校評価報告書（県様式、文章のみで数値なし）・学校案内とも数値の記載なし。",
+    "男女別生徒数（students）：学校案内には「男女比はほぼ5対5」との記載のみで、学年・男女別の実数の公表はない。",
+    "学級増減：直近の学級数変化に関する県教育委員会の発表を確認できず（学校案内では現在も各学年9クラスと記載）。",
+    "科学部の活動日・活動実績：文化部一覧ページからは外部サイトへのリンクのみで、詳細を確認できなかった。",
+    "ダンス部・ブレイクダンス部の一部大会実績（日本高校ダンス部選手権大会、スーパーカップダンススタジアム関東・甲信越大会等）：開催年度の記載がなく、直近3年の実績かどうか確認できなかった。",
+    "ドレスクリエイト部：段階を付けず（2026-09-23 Opus見直し: 開催年度が不明で直近3年の根拠にならない）。元の見立て：神奈川県高等学校ファッションフェスティバルで最優秀賞（第23回）・準優秀賞（第24回）を連続受賞。開催年度は資料に明記なし。"
+  ],
+  "conflicts": [
+    "進路状況PDF（受験方法別実進学者数・4年制大学）の内訳（一般190+指定校推薦50+公募推薦9+総合型8=257）が、表に記載の合計299と一致しない（出典PDFの数値をそのまま記載。原因不明）。",
+    "学校案内パンフレットの「令和7年度の主な進路実績」（大学別合格者数）と、進路状況PDF「令和7年度卒業生の受験結果一覧」（延べ合格者数＝一般受験+推薦総合型）が、複数の大学で一致しない（例：専修大19→パンフ10、成蹊大17→パンフ10、明治大107→パンフ118、法政大64→パンフ70、東京理科大20→パンフ23）。statsの university_count は詳細な内訳がある進路状況PDF（受験結果一覧・実進学者数一覧）の数値を採用した。",
+    "硬式野球部：学校公式サイトは「2025年度春季県大会ベスト32」「秋季県大会ベスト32（予選全勝1位）」と記載するが、一球速報の試合結果では春・秋とも2勝後に3回戦で敗退しており、回戦数とベスト32表記の対応が確認できない（学校側と一球速報で回戦の呼び方が異なる可能性がある）。"
+  ]
+}

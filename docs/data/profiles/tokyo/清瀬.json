@@ -1,0 +1,1100 @@
+{
+  "prefecture": "東京都",
+  "school_name": "清瀬",
+  "official_url": "https://www.metro.ed.jp/kiyose-h/",
+  "researched_at": "2026-09-23",
+  "stats": [
+    {
+      "metric": "university_count",
+      "item": "早慶上理",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 5,
+      "source_url": "https://www.metro.ed.jp/kiyose-h/assets/filelink/filelink-pdffile-30110.pdf",
+      "source_label": "清瀬高校 令和7年度 学校経営報告",
+      "as_of": "2026-09-23",
+      "note": "資料に「※延べ数」と明記"
+    },
+    {
+      "metric": "university_count",
+      "item": "GMARCH",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 85,
+      "source_url": "https://www.metro.ed.jp/kiyose-h/assets/filelink/filelink-pdffile-30110.pdf",
+      "source_label": "清瀬高校 令和7年度 学校経営報告",
+      "as_of": "2026-09-23",
+      "note": "資料に「※延べ数」と明記"
+    },
+    {
+      "metric": "university_count",
+      "item": "日東駒専",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 116,
+      "source_url": "https://www.metro.ed.jp/kiyose-h/assets/filelink/filelink-pdffile-30110.pdf",
+      "source_label": "清瀬高校 令和7年度 学校経営報告",
+      "as_of": "2026-09-23",
+      "note": "資料に「※延べ数」と明記"
+    },
+    {
+      "metric": "university_count",
+      "item": "成成獨國武明学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 60,
+      "source_url": "https://www.metro.ed.jp/kiyose-h/assets/filelink/filelink-pdffile-30110.pdf",
+      "source_label": "清瀬高校 令和7年度 学校経営報告",
+      "as_of": "2026-09-23",
+      "note": "学校独自の括り（成蹊・成城・獨協・國學院・明治学院・武蔵）。手引きが定義する「成成明武」（成蹊・成城・明治学院・武蔵）とは対象大学が異なるため、成成明武としては転記していない。"
+    },
+    {
+      "metric": "club_join_rate",
+      "fiscal_year": 2025,
+      "value_num": 89.5,
+      "source_url": "https://www.metro.ed.jp/kiyose-h/assets/filelink/filelink-pdffile-30110.pdf",
+      "source_label": "清瀬高校 令和7年度 学校経営報告",
+      "as_of": "2026-09-23",
+      "note": "R7実績。目標95％以上（R6実績90.6％・R5実績89.9％・R4実績94.5％）"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "生徒:学校生活",
+      "fiscal_year": 2025,
+      "value_num": 82.6,
+      "source_url": "https://www.metro.ed.jp/kiyose-h/assets/filelink/filelink-pdffile-30110.pdf",
+      "source_label": "清瀬高校 令和7年度 学校経営報告",
+      "as_of": "2026-09-23",
+      "note": "R7実績。目標90％以上"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "生徒:授業",
+      "fiscal_year": 2025,
+      "value_num": 68.2,
+      "source_url": "https://www.metro.ed.jp/kiyose-h/assets/filelink/filelink-pdffile-30110.pdf",
+      "source_label": "清瀬高校 令和7年度 学校経営報告",
+      "as_of": "2026-09-23",
+      "note": "授業満足度（興味・関心向上）R7実績。目標80％以上"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "生徒:学校行事",
+      "fiscal_year": 2025,
+      "value_num": 88.8,
+      "source_url": "https://www.metro.ed.jp/kiyose-h/assets/filelink/filelink-pdffile-30110.pdf",
+      "source_label": "清瀬高校 令和7年度 学校経営報告",
+      "as_of": "2026-09-23",
+      "note": "R7実績。目標95％以上"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "生徒:ICT教育",
+      "fiscal_year": 2025,
+      "value_num": 54.5,
+      "source_url": "https://www.metro.ed.jp/kiyose-h/assets/filelink/filelink-pdffile-30110.pdf",
+      "source_label": "清瀬高校 令和7年度 学校経営報告",
+      "as_of": "2026-09-23",
+      "note": "ICT教育満足度（端末活用）R7実績。目標70％以上"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "生徒:グローバル人材育成教育",
+      "fiscal_year": 2025,
+      "value_num": 72.9,
+      "source_url": "https://www.metro.ed.jp/kiyose-h/assets/filelink/filelink-pdffile-30110.pdf",
+      "source_label": "清瀬高校 令和7年度 学校経営報告",
+      "as_of": "2026-09-23",
+      "note": "国際理解教育満足度（新規調査）R7実績。目標85％以上"
+    },
+    {
+      "metric": "exam_ratio",
+      "item": "推薦",
+      "fiscal_year": 2026,
+      "value_num": 2.13,
+      "source_url": "https://www.metro.ed.jp/kiyose-h/assets/filelink/filelink-pdffile-30110.pdf",
+      "source_label": "清瀬高校 令和7年度 学校経営報告",
+      "as_of": "2026-09-23",
+      "note": "応募倍率。令和8年4月入学者選抜（推薦）の最終応募倍率。一般入試の倍率は全校まとめ資料で取込済みのためここでは扱わない。"
+    },
+    {
+      "metric": "uniform",
+      "fiscal_year": 2026,
+      "value_text": "令和7年度入学生からブレザー型の新制服（緑基調）。ネクタイ・リボン、スカート・スラックスは選択制。夏季略装（5〜10月）は半袖白Yシャツまたはポロシャツ可。令和7年度入学生（53回生）からはセーター・ベスト等の防寒着が学校あっせん品限定に変更。",
+      "source_url": "https://www.metro.ed.jp/kiyose-h/school_life/symbols.html",
+      "source_label": "清瀬高校 制服・校章・校歌ページ／生徒心得",
+      "as_of": "2026-09-23",
+      "note": ""
+    },
+    {
+      "metric": "rules_summary",
+      "fiscal_year": 2026,
+      "value_text": "頭髪の染色・脱色・極端な加工、ピアス等の装飾品は禁止。バイク通学は禁止、自転車通学は生活指導部への届出制。スマートフォンの校内利用規定・アルバイトの可否は生徒心得に記載なし。",
+      "source_url": "https://www.metro.ed.jp/kiyose-h/assets/filelink/filelink-pdffile-33026.pdf",
+      "source_label": "清瀬高校 生徒心得（生徒手帳より）",
+      "as_of": "2026-09-23",
+      "note": ""
+    },
+    {
+      "metric": "designation",
+      "item": "理数研究拠点校",
+      "fiscal_year": 2026,
+      "value_text": "理数教育の研究・深化を進める東京都指定校",
+      "source_url": "https://www.metro.ed.jp/kiyose-h/assets/filelink/filelink-pdffile-33008.pdf",
+      "source_label": "清瀬高校 令和8年度 学校経営計画",
+      "as_of": "2026-09-23",
+      "note": ""
+    },
+    {
+      "metric": "designation",
+      "item": "海外学校間交流推進校",
+      "fiscal_year": 2026,
+      "value_text": "グローバル人材育成教育を推進する東京都指定校。海外体験研修・海外修学旅行等を実施",
+      "source_url": "https://www.metro.ed.jp/kiyose-h/assets/filelink/filelink-pdffile-33008.pdf",
+      "source_label": "清瀬高校 令和8年度 学校経営計画",
+      "as_of": "2026-09-23",
+      "note": ""
+    },
+    {
+      "metric": "designation",
+      "item": "進学指導研究校",
+      "fiscal_year": 2024,
+      "value_text": "学校案内パンフレット（2024年7月時点）に記載のある指定",
+      "source_url": "https://www.toritsuko.metro.tokyo.lg.jp/wp/wp-content/uploads/2024/07/kiyose.pdf",
+      "source_label": "東京都立清瀬高等学校 School Guide 2025",
+      "as_of": "2026-09-23",
+      "note": "令和8年度学校経営計画の目標一覧には記載がなく、現在も指定が続いているか未確認（conflictsも参照）。"
+    }
+  ],
+  "clubs": [
+    {
+      "name": "男子バスケットボール部",
+      "kind": "運動",
+      "days_note": "火・水・木・金・土または日（月曜休養日）",
+      "days_per_week": 5,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "新人戦支部大会1回戦敗退（部活動ページ、年度表記なし）。都県大会での上位進出実績の記載なし。",
+      "source_url": "https://www.metro.ed.jp/kiyose-h/activities/cat2107/index.html",
+      "as_of": "2026-09-23",
+      "results": []
+    },
+    {
+      "name": "女子バスケットボール部",
+      "kind": "運動",
+      "days_note": "火曜日から土曜日（日曜日は練習試合が入る場合あり）",
+      "days_per_week": 5.5,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "都大会には毎年出場しているが、直近も含めて3回戦・2回戦進出止まりでベスト8等には届いていない。",
+      "source_url": "https://www.metro.ed.jp/kiyose-h/activities/cat2106/index.html",
+      "as_of": "2026-09-23",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "東京都高等学校総合体育大会（インターハイ予選）",
+          "level": "都県",
+          "result": "3回戦進出",
+          "source_url": "https://www.metro.ed.jp/kiyose-h/activities/cat2106/index.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "東京都高等学校女子バスケットボール春季大会 兼 関東高等学校女子バスケットボール東京都予選",
+          "level": "都県",
+          "result": "2回戦進出",
+          "source_url": "https://www.metro.ed.jp/kiyose-h/activities/cat2106/index.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "夏季大会",
+          "level": "地区",
+          "result": "ブロック3位",
+          "source_url": "https://www.metro.ed.jp/kiyose-h/activities/cat2106/index.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "東京都高等学校総合体育大会（インターハイ予選）",
+          "level": "都県",
+          "result": "2回戦進出",
+          "source_url": "https://www.metro.ed.jp/kiyose-h/activities/cat2106/index.html"
+        }
+      ]
+    },
+    {
+      "name": "男子バレーボール部",
+      "kind": "運動",
+      "days_note": "月・水・木・金・土・日",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "令和4年度冬季都立高大会で都立校ベスト16、令和5年度冬季都立校大会でも都立校ベスト16と、ベスト16〜32相当の成績が複数回ある。（2026-09-23 Opus見直し: 都立校だけの大会のベスト16は段階3）",
+      "source_url": "https://www.metro.ed.jp/kiyose-h/activities/cat2105/index.html",
+      "as_of": "2026-09-23",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "全日本バレーボール高等学校選手権大会一次予選（インターハイ予選）",
+          "level": "都県",
+          "result": "1日目敗退",
+          "happened_on": "2024-06-09",
+          "source_url": "https://www.metro.ed.jp/kiyose-h/activities/cat2105/index.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "冬季都立校大会",
+          "level": "都県",
+          "result": "都立校ベスト16",
+          "source_url": "https://www.metro.ed.jp/kiyose-h/activities/cat2105/index.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "新人大会一次予選",
+          "level": "都県",
+          "result": "東京都ベスト60（参加約200チーム中）",
+          "source_url": "https://www.metro.ed.jp/kiyose-h/activities/cat2105/index.html"
+        },
+        {
+          "fiscal_year": 2022,
+          "competition": "冬季都立高大会",
+          "level": "都県",
+          "result": "都立高校ベスト16",
+          "source_url": "https://www.metro.ed.jp/kiyose-h/activities/cat2105/index.html"
+        }
+      ]
+    },
+    {
+      "name": "女子バレーボール部",
+      "kind": "運動",
+      "days_note": "月・水・木・金・(土)・日",
+      "days_per_week": 5.5,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "春季大会兼関東大会予選でベスト64まで進出（部活動ページ、年度表記なし）。",
+      "source_url": "https://www.metro.ed.jp/kiyose-h/activities/cat2104/index.html",
+      "as_of": "2026-09-23",
+      "results": []
+    },
+    {
+      "name": "サッカー部（男女）",
+      "kind": "運動",
+      "days_note": "月・水・木・金・土・日",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 2,
+      "tier_basis": "女子は令和6年度インターハイ東京都予選で東京都ベスト16、同年度皇后杯東京都予選高校ラウンドで東京都ベスト12と、ベスト16前後の成績が同一年度に複数ある。男子は西地区支部2回戦出場（年度表記なし）にとどまる。",
+      "source_url": "https://www.metro.ed.jp/kiyose-h/activities/cat2101/index.html",
+      "as_of": "2026-09-23",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "第25回東京都高等学校総合体育大会（インターハイ予選・女子）",
+          "level": "都県",
+          "result": "東京都ベスト16",
+          "source_url": "https://www.metro.ed.jp/kiyose-h/activities/cat2101/index.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "皇后杯東京都予選 高校ラウンド（女子）",
+          "level": "都県",
+          "result": "東京都ベスト12",
+          "source_url": "https://www.metro.ed.jp/kiyose-h/activities/cat2101/index.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "東京都女子サッカー高校リーグ3部",
+          "level": "都県",
+          "result": "準優勝・2部リーグ昇格（清瀬史上初）",
+          "source_url": "https://www.metro.ed.jp/kiyose-h/activities/cat2101/index.html"
+        },
+        {
+          "fiscal_year": 2021,
+          "competition": "総体予選（女子・都大会）",
+          "level": "都県",
+          "result": "ベスト16入り（清瀬史上初）",
+          "source_url": "https://www.metro.ed.jp/kiyose-h/activities/cat2101/index.html"
+        }
+      ]
+    },
+    {
+      "name": "男子バドミントン部",
+      "kind": "運動",
+      "days_note": "火・土・日",
+      "days_per_week": 3,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "令和5年度冬季ブロック大会Ⅱ部ベスト8、東京都国公立高等学校バドミントン選手権大会（団体）ベスト32。全都規模の上位進出には届いていない。",
+      "source_url": "https://www.metro.ed.jp/kiyose-h/activities/cat2100/index.html",
+      "as_of": "2026-09-23",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "冬季ブロック大会（団体）Ⅱ部",
+          "level": "地区",
+          "result": "ベスト8",
+          "source_url": "https://www.metro.ed.jp/kiyose-h/activities/cat2100/index.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "第21回東京都国公立高等学校バドミントン選手権大会（団体）",
+          "level": "都県",
+          "result": "ベスト32",
+          "source_url": "https://www.metro.ed.jp/kiyose-h/activities/cat2100/index.html"
+        }
+      ]
+    },
+    {
+      "name": "女子バドミントン部",
+      "kind": "運動",
+      "days_note": "火・土・日",
+      "days_per_week": 3,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "令和5年度東京都春季高校バドミントン大会兼関東高等学校バドミントン選手権大会東京都予選会（団体）で3回戦進出。",
+      "source_url": "https://www.metro.ed.jp/kiyose-h/activities/cat2099/index.html",
+      "as_of": "2026-09-23",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "東京都春季高校バドミントン大会 兼 関東高等学校バドミントン選手権大会東京都予選会（団体）",
+          "level": "都県",
+          "result": "3回戦進出",
+          "source_url": "https://www.metro.ed.jp/kiyose-h/activities/cat2099/index.html"
+        }
+      ]
+    },
+    {
+      "name": "剣道部",
+      "kind": "運動",
+      "days_note": "月・火・木・金・土",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 2,
+      "tier_basis": "令和6年度（2024年12月）東京都国公立高等学校剣道大会で女子団体ベスト8（敢闘賞）。都大会個人戦でも令和8年6月に男子ベスト32。目標の都ベスト16には毎年あと一歩届いていない。",
+      "source_url": "https://www.metro.ed.jp/kiyose-h/activities/cat2098/index.html",
+      "as_of": "2026-09-23",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "全国高等学校剣道大会東京都予選（団体・男子）",
+          "level": "都県",
+          "result": "1回戦敗退（日本大学第一に接戦の末敗退）",
+          "happened_on": "2026-06-20",
+          "source_url": "https://www.metro.ed.jp/kiyose-h/activities/cat2098/index.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "全国高等学校剣道大会東京都予選（団体・男子）",
+          "level": "都県",
+          "result": "1回戦敗退（法政大学に大将戦までもつれ敗退）",
+          "happened_on": "2025-06-22",
+          "source_url": "https://www.metro.ed.jp/kiyose-h/activities/cat2098/index.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "東京都国公立高等学校剣道大会（女子団体）",
+          "level": "都県",
+          "result": "ベスト8（敢闘賞）",
+          "happened_on": "2024-12-28",
+          "source_url": "https://www.metro.ed.jp/kiyose-h/activities/cat2098/index.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "東京都高等学校秋季剣道大会（男子団体）",
+          "level": "都県",
+          "result": "Ⅱ部ベスト32",
+          "happened_on": "2024-08-21",
+          "source_url": "https://www.metro.ed.jp/kiyose-h/activities/cat2098/index.html"
+        }
+      ]
+    },
+    {
+      "name": "水泳部",
+      "kind": "運動",
+      "days_note": "夏は月・水・木・金・土曜日。冬はトレーニングを平日中心に実施",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "直近の大会実績の掲載は令和3年（2021年）分のみ（西東京国公立高校水泳競技大会で男子2位・女子6位など）で、直近3年分の結果は未公表。",
+      "source_url": "https://www.metro.ed.jp/kiyose-h/activities/cat2097/index.html",
+      "as_of": "2026-09-23",
+      "results": [
+        {
+          "fiscal_year": 2021,
+          "competition": "第47回西東京国公立高校水泳競技大会",
+          "level": "地区",
+          "result": "男子背泳ぎ100m 2位入賞、女子平泳ぎ100m 6位入賞",
+          "source_url": "https://www.metro.ed.jp/kiyose-h/activities/cat2097/index.html"
+        }
+      ]
+    },
+    {
+      "name": "陸上競技部",
+      "kind": "運動",
+      "days_note": "月・火・水・金・土（看護大グラウンドなど）",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 2,
+      "tier_basis": "令和7年度、男子やり投で東京都大会第4位に入賞し関東大会に出場（第5支部予選では男子やり投・男子砲丸投で第2位）。",
+      "source_url": "https://www.metro.ed.jp/kiyose-h/activities/cat2096/index.html",
+      "as_of": "2026-09-23",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "東京都高等学校陸上競技対校選手権大会",
+          "level": "都県",
+          "result": "男子やり投 第4位・関東大会出場",
+          "happened_on": "2025-05-18",
+          "source_url": "https://www.metro.ed.jp/kiyose-h/activities/cat2096/index.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "東京都高等学校陸上競技対校選手権大会 第5支部予選会",
+          "level": "地区",
+          "result": "男子砲丸投・男子やり投 いずれも第2位（都大会出場）",
+          "happened_on": "2025-04-20",
+          "source_url": "https://www.metro.ed.jp/kiyose-h/activities/cat2096/index.html"
+        },
+        {
+          "fiscal_year": 2022,
+          "competition": "東京都高等学校陸上競技対校選手権大会 第5支部予選会",
+          "level": "地区",
+          "result": "5種目で都大会出場（女子400m第6位など）",
+          "source_url": "https://www.metro.ed.jp/kiyose-h/activities/cat2096/index.html"
+        }
+      ]
+    },
+    {
+      "name": "ダンス部",
+      "kind": "運動",
+      "days_note": "月・火・水・金・土/日（どちらか）",
+      "days_per_week": 5,
+      "weekend": "土日",
+      "tier": 1,
+      "tier_basis": "2024年度・2023年度とも全国大会（USA School&College Nationals、Dance Drill Winter Cup等）に複数回出場し、2023年度は全国ダンスパフォーマンスコンテスト決勝進出、Winter Cup全国大会2位など上位入賞も複数。",
+      "source_url": "https://www.metro.ed.jp/kiyose-h/activities/cat2095/index.html",
+      "as_of": "2026-09-23",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "USA School&College Nationals 2025（全国大会）",
+          "level": "全国",
+          "result": "スピリット賞",
+          "happened_on": "2025-03-25",
+          "source_url": "https://www.metro.ed.jp/kiyose-h/activities/cat2095/index.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "東日本中学校高等学校ダンスドリル競技大会2025",
+          "level": "関東",
+          "result": "HIPHOP女子Medium編成 第3位",
+          "happened_on": "2025-03-16",
+          "source_url": "https://www.metro.ed.jp/kiyose-h/activities/cat2095/index.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "Dance Drill Winter Cup 2024（全国大会）",
+          "level": "全国",
+          "result": "HIPHOP女子Medium編成 第2位",
+          "happened_on": "2024-01-13",
+          "source_url": "https://www.metro.ed.jp/kiyose-h/activities/cat2095/index.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "令和5年度ダンスドリル秋季競技大会関東大会",
+          "level": "関東",
+          "result": "HIPHOP女子Medium編成 第1位",
+          "source_url": "https://www.metro.ed.jp/kiyose-h/activities/cat2095/index.html"
+        }
+      ]
+    },
+    {
+      "name": "ソフトボール部",
+      "kind": "運動",
+      "days_note": "月・水・木・金・土・(日)",
+      "days_per_week": 5.5,
+      "weekend": "土日",
+      "tier": 2,
+      "tier_basis": "令和5年度・令和7年度とも東京都公立高等学校選手権大会でベスト8以上（令和7年度はベスト4）を2回達成。（2026-09-23 Opus見直し: 都立・公立だけの大会のベスト8は段階2まで）",
+      "source_url": "https://www.metro.ed.jp/kiyose-h/activities/cat2094/index.html",
+      "as_of": "2026-09-23",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "東京都公立選手権大会",
+          "level": "都県",
+          "result": "ベスト4",
+          "source_url": "https://www.metro.ed.jp/kiyose-h/activities/cat2094/index.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "東京都公立選手権大会",
+          "level": "都県",
+          "result": "決勝トーナメント進出・ベスト8",
+          "source_url": "https://www.metro.ed.jp/kiyose-h/activities/cat2094/index.html"
+        }
+      ]
+    },
+    {
+      "name": "ハンドボール部（男女）",
+      "kind": "運動",
+      "days_note": "月・水・木・金・土",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 1,
+      "tier_basis": "女子は令和元年度以降ほぼ毎年都ベスト4クラス、令和3年度は都4位で初の関東大会出場・関東大会でも1勝。総合体育大会兼全国選手権大会東京予選でも女子ベスト8（部活動ページ、年度表記なし）。男子は都ベスト16。",
+      "source_url": "https://www.metro.ed.jp/kiyose-h/activities/cat2093/index.html",
+      "as_of": "2026-09-23",
+      "results": [
+        {
+          "fiscal_year": 2021,
+          "competition": "春季大会兼関東大会都予選（女子）",
+          "level": "都県",
+          "result": "第4位・関東大会出場（創部48年目で初出場）",
+          "source_url": "https://www.metro.ed.jp/kiyose-h/activities/cat2093/index.html"
+        },
+        {
+          "fiscal_year": 2021,
+          "competition": "第67回関東高等学校ハンドボール選手権大会（女子）",
+          "level": "関東",
+          "result": "1回戦敗退",
+          "happened_on": "2021-06-04",
+          "source_url": "https://www.metro.ed.jp/kiyose-h/activities/cat2093/index.html"
+        },
+        {
+          "fiscal_year": 2021,
+          "competition": "インターハイ都予選（女子）",
+          "level": "都県",
+          "result": "第3位",
+          "source_url": "https://www.metro.ed.jp/kiyose-h/activities/cat2093/index.html"
+        }
+      ]
+    },
+    {
+      "name": "男子硬式テニス部",
+      "kind": "運動",
+      "days_note": "月・木・金・土・日",
+      "days_per_week": 5,
+      "weekend": "土日",
+      "source_url": "https://www.metro.ed.jp/kiyose-h/activities/cat2092/index.html",
+      "as_of": "2026-09-23",
+      "results": []
+    },
+    {
+      "name": "女子硬式テニス部",
+      "kind": "運動",
+      "days_note": "月・水・金・土または日",
+      "days_per_week": 4,
+      "weekend": "土日",
+      "source_url": "https://www.metro.ed.jp/kiyose-h/activities/cat2091/index.html",
+      "as_of": "2026-09-23",
+      "results": []
+    },
+    {
+      "name": "硬式野球部",
+      "kind": "運動",
+      "days_note": "火曜日から土曜日",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "直近3年の西東京大会（夏）は毎年出場。令和6年度は初戦を突破し2回戦で敗退、令和7年度・令和8年度は初戦敗退。秋季・春季大会も一次予選での初戦敗退が続く（一球速報.com）。",
+      "source_url": "https://www.metro.ed.jp/kiyose-h/activities/cat2090/index.html",
+      "as_of": "2026-09-23",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "第108回全国高等学校野球選手権西東京大会",
+          "level": "都県",
+          "result": "1回戦敗退（学芸大附属に5-8）",
+          "happened_on": "2026-07-08",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=11815"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "秋季東京都高等学校野球大会 一次予選",
+          "level": "都県",
+          "result": "1回戦敗退",
+          "source_url": "https://baseball.omyutech.com/teamStats.action?teamId=11815&year=2025"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第107回全国高等学校野球選手権西東京大会",
+          "level": "都県",
+          "result": "1回戦敗退（狛江に0-12、6回コールド）",
+          "happened_on": "2025-07-06",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=11815"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "第106回全国高等学校野球選手権西東京大会",
+          "level": "都県",
+          "result": "初戦を突破し2回戦敗退（昭和第一学園に1-9）",
+          "happened_on": "2024-07-13",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=11815&year=2024"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "春季東京都高等学校野球大会",
+          "level": "都県",
+          "result": "1回戦敗退（立正大立正に7-8）",
+          "happened_on": "2024-04-01",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=11815"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "秋季東京都高等学校野球大会 本大会",
+          "level": "都県",
+          "result": "1回戦敗退（佼成学園に0-8、7回コールド）。一次予選はブロック優勝で本大会出場。",
+          "happened_on": "2023-10-10",
+          "source_url": "https://baseball.omyutech.com/teamGames.action?teamId=11815"
+        }
+      ]
+    },
+    {
+      "name": "山岳部",
+      "kind": "運動",
+      "days_note": "水・木（週2）、土日（月1）",
+      "days_per_week": 2,
+      "weekend": "土日",
+      "tier": 4,
+      "tier_basis": "活動は週2日＋月1回の登山（休日）で週3日以下。大会形式の実績はなく、直近の話題も2020年のYAMAP全国大会THE NORTH FACE賞（大会ではなく投稿企画）にとどまる。",
+      "source_url": "https://www.metro.ed.jp/kiyose-h/activities/cat2089/index.html",
+      "as_of": "2026-09-23",
+      "results": []
+    },
+    {
+      "name": "少林寺拳法部",
+      "kind": "運動",
+      "days_note": "月・火・木・金・土",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 1,
+      "tier_basis": "令和7年度、関東選抜大会で女子自由組演武優勝、全国選抜大会出場権を部員4名全員が獲得。同年11月には少林寺拳法全国大会（オールジャパン）で女子準優勝。令和8年度も東京都総合体育大会から関東大会・インターハイに連続して出場。",
+      "source_url": "https://www.metro.ed.jp/kiyose-h/activities/cat2088/index.html",
+      "as_of": "2026-09-23",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "インターハイ（全国高等学校総合体育大会）女子組演武の部",
+          "level": "全国",
+          "result": "決勝ラウンド進出ならず（予選敗退）",
+          "happened_on": "2026-07-31",
+          "source_url": "https://www.metro.ed.jp/kiyose-h/activities/cat2088/index.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "少林寺拳法全国大会（オールジャパン）in かながわ",
+          "level": "全国",
+          "result": "一般女子級拳士の部 準優勝",
+          "happened_on": "2025-11-16",
+          "source_url": "https://www.metro.ed.jp/kiyose-h/activities/cat2088/index.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "関東高等学校少林寺拳法選抜大会",
+          "level": "関東",
+          "result": "女子自由組演武 優勝。部員4名全員が全国選抜大会出場権獲得",
+          "happened_on": "2025-12-28",
+          "source_url": "https://www.metro.ed.jp/kiyose-h/activities/cat2088/index.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "東京都高等学校少林寺拳法新人大会",
+          "level": "都県",
+          "result": "男子規定単独演武 優勝ほか、関東選抜大会進出4名",
+          "happened_on": "2025-11-03",
+          "source_url": "https://www.metro.ed.jp/kiyose-h/activities/cat2088/index.html"
+        }
+      ]
+    },
+    {
+      "name": "演劇部",
+      "kind": "文化",
+      "days_note": "月・水・金",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "tier": 3,
+      "tier_basis": "過去に地区大会を勝ち抜き中央大会（都大会）に選出され東京芸術劇場で上演した実績がある（部活動ページ、年度表記なし）。直近の2023年度は多摩北地区大会で奨励賞（地区内どまり）。（2026-09-23 Opus見直し: 都大会出場は年度不明で直近3年の根拠にならない）",
+      "source_url": "https://www.metro.ed.jp/kiyose-h/activities/cat2077/index.html",
+      "as_of": "2026-09-23",
+      "results": [
+        {
+          "fiscal_year": 2023,
+          "competition": "東京都高校演劇多摩北地区大会",
+          "level": "地区",
+          "result": "奨励賞（「さよなら小宮くん」上演）",
+          "happened_on": "2023-09-16",
+          "source_url": "https://tkek.org/2023/10/10/7755/"
+        }
+      ]
+    },
+    {
+      "name": "生物部",
+      "kind": "文化",
+      "days_note": "火・水・金",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "柳瀬川の生物調査・飼育と清高祭展示が中心で、コンクール等への参加実績の記載はない。",
+      "source_url": "https://www.metro.ed.jp/kiyose-h/activities/cat2087/index.html",
+      "as_of": "2026-09-23",
+      "results": []
+    },
+    {
+      "name": "茶道部",
+      "kind": "文化",
+      "days_note": "火・木",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "お手前の稽古と文化祭出店が中心で、コンクール等への参加実績の記載はない。",
+      "source_url": "https://www.metro.ed.jp/kiyose-h/activities/cat2086/index.html",
+      "as_of": "2026-09-23",
+      "results": []
+    },
+    {
+      "name": "美術部",
+      "kind": "文化",
+      "days_note": "月・水・金",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "tier": 3,
+      "tier_basis": "令和4年度の中央展で東京都高等学校文化連盟会長賞を受賞したが、令和5年度は中央展出品も入賞なしと報告されている。",
+      "source_url": "https://www.metro.ed.jp/kiyose-h/activities/cat2085/index.html",
+      "as_of": "2026-09-23",
+      "results": [
+        {
+          "fiscal_year": 2022,
+          "competition": "東京都高等学校文化祭美術・工芸部門中央大会 第33回中央展",
+          "level": "都県",
+          "result": "東京都高等学校文化連盟会長賞（1名）・奨励賞（1名）",
+          "source_url": "https://www.metro.ed.jp/kiyose-h/activities/cat2085/index.html"
+        }
+      ]
+    },
+    {
+      "name": "文芸部",
+      "kind": "文化",
+      "days_note": "火・水",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "部誌の作成・発行が中心で、コンクール等への応募・入賞実績の記載はない。",
+      "source_url": "https://www.metro.ed.jp/kiyose-h/activities/cat2080/index.html",
+      "as_of": "2026-09-23",
+      "results": []
+    },
+    {
+      "name": "筝曲部",
+      "kind": "文化",
+      "days_note": "火（演奏会前はほぼ毎日）",
+      "days_per_week": 1,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "新歓演奏・サマーコンサート・文化祭など発表中心で、コンクール等への参加実績の記載はない。",
+      "source_url": "https://www.metro.ed.jp/kiyose-h/activities/cat2076/index.html",
+      "as_of": "2026-09-23",
+      "results": []
+    },
+    {
+      "name": "写真部",
+      "kind": "文化",
+      "days_note": "月・火・水・金",
+      "days_per_week": 4,
+      "weekend": "なし",
+      "tier": 2,
+      "tier_basis": "令和8年度、第50回全国高等学校総合文化祭（全国大会）に出場。地区大会では最優秀賞2作品・佳作3作品。学校サイトに「関東大会・全国大会出場」「全国大会連続参加を目指し」との記載があり、複数年にわたり全国大会出場が続いている。（2026-09-23 Opus見直し: 全国出場が確認できたのは1回）",
+      "source_url": "https://www.metro.ed.jp/kiyose-h/activities/cat2078/index.html",
+      "as_of": "2026-09-23",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "第50回全国高等学校総合文化祭",
+          "level": "全国",
+          "result": "出場",
+          "happened_on": "2026-07-28",
+          "source_url": "https://www.metro.ed.jp/kiyose-h/activities/cat2078/index.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "東京都高等学校文化連盟 写真部門 地区大会",
+          "level": "地区",
+          "result": "最優秀賞2作品・佳作3作品",
+          "happened_on": "2026-07-26",
+          "source_url": "https://www.metro.ed.jp/kiyose-h/activities/cat2078/index.html"
+        }
+      ]
+    },
+    {
+      "name": "漫画研究部",
+      "kind": "文化",
+      "days_note": "水・金",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "部員2名で部誌発行と文化祭合作が中心。コンクール等への参加実績の記載はない。",
+      "source_url": "https://www.metro.ed.jp/kiyose-h/activities/cat2084/index.html",
+      "as_of": "2026-09-23",
+      "results": []
+    },
+    {
+      "name": "地学部",
+      "kind": "文化",
+      "days_note": "月・金",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "科学全般の活動が中心で、コンクール等への参加実績の記載はない。",
+      "source_url": "https://www.metro.ed.jp/kiyose-h/activities/cat2081/index.html",
+      "as_of": "2026-09-23",
+      "results": []
+    },
+    {
+      "name": "民族音楽部",
+      "kind": "文化",
+      "days_note": "火・水・木",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "実態は軽音楽部で、新歓ライブ・文化祭ライブ等の発表が中心。「大会やコンテストへの参加も積極的に行う予定」と書かれているが、具体的な結果の記載はない。",
+      "source_url": "https://www.metro.ed.jp/kiyose-h/activities/cat2083/index.html",
+      "as_of": "2026-09-23",
+      "results": []
+    },
+    {
+      "name": "吹奏楽部",
+      "kind": "文化",
+      "days_note": "月・火・水・金・土",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 2,
+      "tier_basis": "令和7年度、第65回東京都高等学校吹奏楽コンクールC組で清瀬高校初の金賞。同年度の東京都高等学校アンサンブルコンテストでも銀賞2部門。（2026-09-23 Opus見直し: 都コンクールC組の金賞1回は段階2）",
+      "source_url": "https://www.metro.ed.jp/kiyose-h/activities/cat2082/index.html",
+      "as_of": "2026-09-23",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "第65回東京都高等学校吹奏楽コンクール C組",
+          "level": "都県",
+          "result": "金賞（清瀬高校初）",
+          "happened_on": "2025-08-15",
+          "source_url": "https://www.metro.ed.jp/kiyose-h/activities/cat2082/index.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第49回東京都高等学校アンサンブルコンテスト",
+          "level": "都県",
+          "result": "管打7重奏・管打5重奏がいずれも銀賞",
+          "happened_on": "2025-12-27",
+          "source_url": "https://www.metro.ed.jp/kiyose-h/activities/cat2082/index.html"
+        }
+      ]
+    },
+    {
+      "name": "コーラス部",
+      "kind": "文化",
+      "days_note": "火・木（昼休み・放課後）",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 3,
+      "tier_basis": "令和7年度、NHK全国学校音楽コンクール東京都予選で奨励賞。上位入賞（都代表等）には届いていない。",
+      "source_url": "https://www.metro.ed.jp/kiyose-h/activities/club_1/index.html",
+      "as_of": "2026-09-23",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "NHK全国学校音楽コンクール東京都予選",
+          "level": "都県",
+          "result": "奨励賞",
+          "source_url": "https://www.metro.ed.jp/kiyose-h/activities/club_1/index.html"
+        }
+      ]
+    },
+    {
+      "name": "男子ソフトテニス部",
+      "kind": "運動",
+      "days_note": "火・水・木・金・土",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 1,
+      "tier_basis": "東京都「Premiere Club」（Tier3、取込済みcsvでは「ソフトテニス（男女）」表記）に指定。令和8年度は全日本団体選手権予選でベスト16、新人大会で準優勝、関東団体選手権予選で第3位など、関東大会出場を争う水準の実績が続く。",
+      "source_url": "https://www.metro.ed.jp/kiyose-h/activities/cat2103/index.html",
+      "as_of": "2026-09-23",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "新人大会",
+          "level": "都県",
+          "result": "準優勝（関戸・岡田ペア）",
+          "happened_on": "2026-08-19",
+          "source_url": "https://www.metro.ed.jp/kiyose-h/activities/cat2103/index.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "全日本団体選手権予選",
+          "level": "都県",
+          "result": "ベスト16",
+          "happened_on": "2026-06-07",
+          "source_url": "https://www.metro.ed.jp/kiyose-h/activities/cat2103/index.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "関東団体選手権予選",
+          "level": "関東",
+          "result": "第3位",
+          "happened_on": "2026-05-03",
+          "source_url": "https://www.metro.ed.jp/kiyose-h/activities/cat2103/index.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "東京都国公立高等学校ソフトテニス選手権大会（個人戦）",
+          "level": "都県",
+          "result": "優勝（結城・岡田ペア）",
+          "happened_on": "2026-03-26",
+          "source_url": "https://www.metro.ed.jp/kiyose-h/activities/cat2103/index.html"
+        }
+      ]
+    },
+    {
+      "name": "女子ソフトテニス部",
+      "kind": "運動",
+      "days_note": "火・水・木・金・土",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 1,
+      "tier_basis": "東京都「Premiere Club」（Tier3）に指定（部活動ページに明記）。過去5年戦績としてインターハイ出場（個人）・関東大会出場（団体・個人）・関東団体ベスト16を掲げ、令和7年度もインターハイ団体予選第3位・関東大会出場など毎年関東大会クラスの実績が続く。",
+      "source_url": "https://www.metro.ed.jp/kiyose-h/activities/cat2102/index.html",
+      "as_of": "2026-09-23",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "インターハイ団体予選",
+          "level": "都県",
+          "result": "第3位",
+          "source_url": "https://www.metro.ed.jp/kiyose-h/activities/cat2102/index.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "関東予選（個人）",
+          "level": "都県",
+          "result": "第5位。永田・宮坂ペアが関東大会出場",
+          "source_url": "https://www.metro.ed.jp/kiyose-h/activities/cat2102/index.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "関東大会（個人）",
+          "level": "関東",
+          "result": "初戦敗退",
+          "source_url": "https://www.metro.ed.jp/kiyose-h/activities/cat2102/index.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "東京都国公立高等学校ソフトテニス選手権大会",
+          "level": "都県",
+          "result": "準優勝（永田・宮坂組）ほかベスト16以上6ペア",
+          "source_url": "https://www.metro.ed.jp/kiyose-h/activities/cat2102/index.html"
+        }
+      ]
+    }
+  ],
+  "designated_universities": [
+    {
+      "university": "東京理科大学",
+      "fiscal_year": 2024,
+      "source_url": "https://www.toritsuko.metro.tokyo.lg.jp/wp/wp-content/uploads/2024/07/kiyose.pdf",
+      "note": "School Guide 2025（2024年7月時点）の「指定校推薦」欄。校数・年度は明記なし。"
+    },
+    {
+      "university": "明治大学",
+      "fiscal_year": 2024,
+      "source_url": "https://www.toritsuko.metro.tokyo.lg.jp/wp/wp-content/uploads/2024/07/kiyose.pdf",
+      "note": ""
+    },
+    {
+      "university": "青山学院大学",
+      "fiscal_year": 2024,
+      "source_url": "https://www.toritsuko.metro.tokyo.lg.jp/wp/wp-content/uploads/2024/07/kiyose.pdf",
+      "note": ""
+    },
+    {
+      "university": "立教大学",
+      "fiscal_year": 2024,
+      "source_url": "https://www.toritsuko.metro.tokyo.lg.jp/wp/wp-content/uploads/2024/07/kiyose.pdf",
+      "note": ""
+    },
+    {
+      "university": "中央大学",
+      "fiscal_year": 2024,
+      "source_url": "https://www.toritsuko.metro.tokyo.lg.jp/wp/wp-content/uploads/2024/07/kiyose.pdf",
+      "note": ""
+    },
+    {
+      "university": "法政大学",
+      "fiscal_year": 2024,
+      "source_url": "https://www.toritsuko.metro.tokyo.lg.jp/wp/wp-content/uploads/2024/07/kiyose.pdf",
+      "note": ""
+    },
+    {
+      "university": "成蹊大学",
+      "fiscal_year": 2024,
+      "source_url": "https://www.toritsuko.metro.tokyo.lg.jp/wp/wp-content/uploads/2024/07/kiyose.pdf",
+      "note": ""
+    },
+    {
+      "university": "武蔵大学",
+      "fiscal_year": 2024,
+      "source_url": "https://www.toritsuko.metro.tokyo.lg.jp/wp/wp-content/uploads/2024/07/kiyose.pdf",
+      "note": ""
+    },
+    {
+      "university": "明治薬科大学",
+      "fiscal_year": 2024,
+      "source_url": "https://www.toritsuko.metro.tokyo.lg.jp/wp/wp-content/uploads/2024/07/kiyose.pdf",
+      "note": ""
+    },
+    {
+      "university": "日本獣医生命科学大学",
+      "fiscal_year": 2024,
+      "source_url": "https://www.toritsuko.metro.tokyo.lg.jp/wp/wp-content/uploads/2024/07/kiyose.pdf",
+      "note": ""
+    },
+    {
+      "university": "津田塾大学",
+      "fiscal_year": 2024,
+      "source_url": "https://www.toritsuko.metro.tokyo.lg.jp/wp/wp-content/uploads/2024/07/kiyose.pdf",
+      "note": "パンフレットは「など」として他にも指定校推薦先があることを示唆しているが、全大学名の記載はない。"
+    }
+  ],
+  "events": [
+    {
+      "kind": "制服",
+      "period_label": "令和7年度入学生から",
+      "summary": "紺ブレザーの新制服に刷新。ネクタイ・リボン、スカート・スラックスを選択制にし、53回生からは防寒着を学校あっせん品に限定。",
+      "source_url": "https://www.metro.ed.jp/kiyose-h/school_life/symbols.html"
+    },
+    {
+      "kind": "その他",
+      "period_label": "令和6年度入学生から",
+      "summary": "海外学校間交流推進校の指定を受け、海外修学旅行を開始。令和7年度に本校初の海外修学旅行を実施し、令和7年度入学生も継続して実施予定。",
+      "source_url": "https://www.metro.ed.jp/kiyose-h/assets/filelink/filelink-pdffile-30110.pdf"
+    }
+  ],
+  "unresolved": [
+    "男女別生徒数：学校経営報告・パンフレットいずれにも記載なし（学校が公式に男女人数を公表していない可能性）",
+    "career_decided_rate（卒業後の進路決定率）：学校経営報告に該当する指標の記載なし",
+    "admission_route_share（一般・指定校推薦・公募推薦・総合型の実進学割合）：資料に記載なし",
+    "学校評価アンケート報告（保護者側の満足度数値）：個別のPDFを特定できず、経営報告に載る生徒側の数値のみ確認",
+    "学級増減：令和8年度都教委発表（第一学年生徒募集人員等について）の例示校に清瀬は含まれておらず、直近の学級増減は無いとみられるが過去分は未確認",
+    "男子硬式テニス部・女子硬式テニス部の大会実績：部活動ページに記載なし",
+    "男子バスケットボール部の新人戦支部大会1回戦敗退の年度：部活動ページに年度表記なし",
+    "サッカー部（男女）の「男子インターハイ東京都予選西地区支部2回戦出場」「女子インターハイ東京都予選ベスト16」の年度：部活動ページの「実績」欄に年度表記なし（本文中の令和6年度の記載と符合する可能性あり）",
+    "女子バレーボール部の「春季大会兼関東大会予選ベスト64」の年度：部活動ページに年度表記なし",
+    "演劇部の「中央大会（都大会）選出、東京芸術劇場にて上演」の年度：部活動ページに年度表記なし",
+    "国公立の合格数：学校経営報告に14名とあるが、延べか現役かの注記が無いので入れていない（https://www.metro.ed.jp/kiyose-h/assets/filelink/filelink-pdffile-30110.pdf）"
+  ],
+  "conflicts": [
+    "男子硬式テニス部の活動日：部活動ページ冒頭の表記は「月・木・金・土・日」だが、部長コメントでは「木曜日の定休日を除く平日4日間と休日」と、木曜の扱いが食い違う。",
+    "部活動一覧：現在の部活動ページ本文（32部：運動部20・文化部12、コーラス部あり）と、同じページのHTMLソース内に無効化（コメントアウト）されたまま残る旧リスト（文化部にパソコン部があり、コーラス部が無い）とで内容が異なる。旧リストは表示されておらず、現行の32部一覧を採用した。",
+    "少林寺拳法部のPremiere Club相当指定：学校案内パンフレット（2024年7月時点）は「令和6年度Sport-Science Promotion Club」として男子・女子ソフトテニスと並び少林寺拳法部も指定校として明記しているが、取込済みの東京都Premiere Club一覧（2026年版csv）には清瀬のソフトテニス（男女）のみが記載され、少林寺拳法部は含まれていない。",
+    "進学指導研究校の指定：学校案内パンフレット（2024年7月）には「進学指導研究校」等の指定を受けている旨の記載があるが、令和8年度学校経営計画の目標一覧（理数研究拠点校・海外学校間交流推進校のみ記載）には見当たらない。"
+  ]
+}

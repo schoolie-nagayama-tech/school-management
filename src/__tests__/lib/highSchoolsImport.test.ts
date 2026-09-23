@@ -17,6 +17,17 @@ describe('normalizeClubName', () => {
     expect(normalizeClubName('男女硬式テニス部')).toEqual({ clubKey: '硬式テニス', sex: '' });
   });
 
+  it('末尾の括弧の男女を読む（清瀬の「ソフトテニス（男女）」が別の部になった罠）', () => {
+    expect(normalizeClubName('ソフトテニス（男女）')).toEqual({ clubKey: 'ソフトテニス', sex: '' });
+    expect(normalizeClubName('バレーボール部（女子）')).toEqual({
+      clubKey: 'バレーボール',
+      sex: '女子',
+    });
+    expect(normalizeClubName('サッカー部（男女）')).toEqual({ clubKey: 'サッカー', sex: '' });
+    // 男女以外の括弧は部名の一部として残す
+    expect(normalizeClubName('漫画ファンクラブ(MFC)').clubKey).toBe('漫画ファンクラブ(MFC)');
+  });
+
   it('別名を統一名に寄せる', () => {
     expect(normalizeClubName('蹴球部').clubKey).toBe('サッカー');
     expect(normalizeClubName('硬式野球').clubKey).toBe('硬式野球');

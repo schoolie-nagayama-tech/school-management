@@ -546,18 +546,29 @@ if (!GO || dups.length) {
     updated = 0;
   for (const r of rows) {
     const cur = byKey.get(key(r));
-    if (!cur) {
+    // ★男女の区別の無い指定（「ソフトテニス（男女）」）で、学校の調査が既に男子・女子の行に
+    //   分けているときは、その行に指定を載せる。区別の無い行を足すと同じ部が2つ数えられる
+    const targets = cur
+      ? [cur]
+      : r.sex === ''
+        ? existing.filter(
+            (e) => e.campus_id === r.campus_id && e.club_key === r.club_key && e.sex !== ''
+          )
+        : [];
+    if (!targets.length) {
       const { error } = await supa.from('high_school_clubs').insert(r);
       if (error) throw error;
       inserted++;
       continue;
     }
-    const patch = { designation: r.designation, source_url: r.source_url, as_of: r.as_of };
-    if (cur.tier == null || cur.tier > r.tier)
-      Object.assign(patch, { tier: r.tier, tier_basis: r.tier_basis });
-    const { error } = await supa.from('high_school_clubs').update(patch).eq('id', cur.id);
-    if (error) throw error;
-    updated++;
+    for (const t of targets) {
+      const patch = { designation: r.designation, source_url: r.source_url, as_of: r.as_of };
+      if (t.tier == null || t.tier > r.tier)
+        Object.assign(patch, { tier: r.tier, tier_basis: r.tier_basis });
+      const { error } = await supa.from('high_school_clubs').update(patch).eq('id', t.id);
+      if (error) throw error;
+      updated++;
+    }
   }
   console.log(`完了: 追加 ${inserted}部・更新 ${updated}部`);
 } else {

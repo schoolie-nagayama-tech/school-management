@@ -47,12 +47,22 @@ function tidy(raw: string): string {
 }
 
 export function normalizeClubName(raw: string): NormalizedClub {
+  // tidy の NFKC で全角括弧は半角 ( ) になる
   let s = tidy(raw);
 
-  // 末尾の「部」「同好会」「愛好会」「（有志）」を外す
-  s = s.replace(/[（(]有志[）)]$/, '').replace(/(同好会|愛好会|部)$/, '');
-
   let sex: ClubSex = '';
+  // ★末尾の括弧で男女を書く資料がある（Premiere Club の「ソフトテニス（男女）」、
+  //   学校の「バレーボール部（女子）」）。外さないと「ソフトテニス(男女)」という別の部として数えられ、
+  //   同じ学校の「男子ソフトテニス部」に指定が載らない（清瀬で実際に起きた）。
+  const tail = s.match(/\((男女|男子|女子)\)$/);
+  if (tail) {
+    if (tail[1] !== '男女') sex = tail[1] as ClubSex;
+    s = s.slice(0, -tail[0].length);
+  }
+
+  // 末尾の「部」「同好会」「愛好会」「（有志）」を外す
+  s = s.replace(/\(有志\)$/, '').replace(/(同好会|愛好会|部)$/, '');
+
   // 「男女硬式テニス」は男女とも＝区別なし
   if (s.startsWith('男女')) {
     s = s.slice(2);

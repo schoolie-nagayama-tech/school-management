@@ -1,0 +1,803 @@
+{
+  "prefecture": "東京都",
+  "school_name": "日野",
+  "official_url": "https://www.metro.ed.jp/hino-h/",
+  "researched_at": "2026-09-23",
+  "stats": [
+    {
+      "metric": "university_count",
+      "item": "国公立",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 1,
+      "source_url": "https://www.metro.ed.jp/hino-h/assets/pamphlet/pamphlet-pdffile-4466.pdf",
+      "source_label": "学校案内パンフレット「HINO 2027」四年制大学合格者数（国公立大学の表）",
+      "as_of": "2026-09",
+      "note": "58期生(2026年3月卒業)。東京都立大学0名・徳島大学1名の合計。学校経営計画(令和8年度版)の「現役合格者数1名」（令和7年度実績）とも一致。"
+    },
+    {
+      "metric": "university_count",
+      "item": "早慶上理",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 0,
+      "source_url": "https://www.metro.ed.jp/hino-h/assets/pamphlet/pamphlet-pdffile-4466.pdf",
+      "source_label": "学校案内パンフレット「HINO 2027」四年制大学合格者数の表・進路指導本文",
+      "as_of": "2026-09",
+      "note": "表中で早慶上理に該当するのは東京理科大学のみ(2024年3月2名・2025年3月1名・2026年3月0名)。本文に「早慶上理の難関大学への進学(最近3カ年延べ3名)」とあり、2+1+0=3で整合。学校経営計画の「現役合格者数0名」（令和7年度実績）とも一致。"
+    },
+    {
+      "metric": "university_count",
+      "item": "GMARCH",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 7,
+      "source_url": "https://www.metro.ed.jp/hino-h/assets/pamphlet/pamphlet-pdffile-4466.pdf",
+      "source_label": "学校案内パンフレット「HINO 2027」進路指導本文",
+      "as_of": "2026-09",
+      "note": "本文「今年度G-MARCHが延べ7名（前年8名）」。学校経営計画の「現役合格者数7名」（令和7年度実績）とも一致。"
+    },
+    {
+      "metric": "university_count",
+      "item": "成成明武",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 1,
+      "source_url": "https://www.metro.ed.jp/hino-h/assets/pamphlet/pamphlet-pdffile-4466.pdf",
+      "source_label": "学校案内パンフレット「HINO 2027」四年制大学合格者数の表から合算",
+      "as_of": "2026-09",
+      "note": "成蹊0・成城0・明治学院1・武蔵0(2026年3月)の合算。学校経営計画の「現役合格者数1名」（令和7年度実績）とも一致。"
+    },
+    {
+      "metric": "university_count",
+      "item": "日東駒専",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 77,
+      "source_url": "https://www.metro.ed.jp/hino-h/assets/pamphlet/pamphlet-pdffile-4466.pdf",
+      "source_label": "学校案内パンフレット「HINO 2027」進路指導本文",
+      "as_of": "2026-09",
+      "note": "本文「日東駒専が延べ77名（前年49名）」。日本大学28・東洋大学14・駒澤大学12・専修大学23の合算(=77)とも一致。"
+    },
+    {
+      "metric": "university_count",
+      "item": "日東駒専",
+      "basis": "現役",
+      "fiscal_year": 2025,
+      "value_num": 71,
+      "source_url": "https://www.metro.ed.jp/hino-h/assets/filelink/filelink-pdffile-36469.pdf",
+      "source_label": "令和8年度学校経営計画 重点数値目標(令和7年度実績)",
+      "as_of": "2026-03",
+      "note": "学校経営計画は「現役合格者数」として71名(令和7年度実績)と記載。パンフレットの延べ77名とは基準が異なる（conflicts参照）。"
+    },
+    {
+      "metric": "university_count",
+      "item": "合計",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 447,
+      "source_url": "https://www.metro.ed.jp/hino-h/assets/pamphlet/pamphlet-pdffile-4466.pdf",
+      "source_label": "学校案内パンフレット「HINO 2027」四年制大学合格者数（国公立私立合計）",
+      "as_of": "2026-09",
+      "note": "58期生(2026年3月卒業)。四年制大学私立合計446名+国公立合計1名。大学校(職業能力開発総合大学校2名)は含まない。既卒を含む可能性あり。"
+    },
+    {
+      "metric": "university_count",
+      "item": "明星大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 71,
+      "source_url": "https://www.metro.ed.jp/hino-h/assets/pamphlet/pamphlet-pdffile-4466.pdf",
+      "source_label": "学校案内パンフレット「HINO 2027」四年制大学合格者数の表",
+      "as_of": "2026-09",
+      "note": "四年制大学合格者数の中で最多(2026年3月)。"
+    },
+    {
+      "metric": "university_count",
+      "item": "帝京大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 57,
+      "source_url": "https://www.metro.ed.jp/hino-h/assets/pamphlet/pamphlet-pdffile-4466.pdf",
+      "source_label": "学校案内パンフレット「HINO 2027」四年制大学合格者数の表",
+      "as_of": "2026-09",
+      "note": ""
+    },
+    {
+      "metric": "university_count",
+      "item": "東京経済大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 32,
+      "source_url": "https://www.metro.ed.jp/hino-h/assets/pamphlet/pamphlet-pdffile-4466.pdf",
+      "source_label": "学校案内パンフレット「HINO 2027」四年制大学合格者数の表",
+      "as_of": "2026-09",
+      "note": ""
+    },
+    {
+      "metric": "university_count",
+      "item": "桜美林大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 18,
+      "source_url": "https://www.metro.ed.jp/hino-h/assets/pamphlet/pamphlet-pdffile-4466.pdf",
+      "source_label": "学校案内パンフレット「HINO 2027」四年制大学合格者数の表",
+      "as_of": "2026-09",
+      "note": ""
+    },
+    {
+      "metric": "university_count",
+      "item": "杏林大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 16,
+      "source_url": "https://www.metro.ed.jp/hino-h/assets/pamphlet/pamphlet-pdffile-4466.pdf",
+      "source_label": "学校案内パンフレット「HINO 2027」四年制大学合格者数の表",
+      "as_of": "2026-09",
+      "note": ""
+    },
+    {
+      "metric": "career_decided_rate",
+      "fiscal_year": 2025,
+      "value_num": 91,
+      "source_url": "https://www.metro.ed.jp/hino-h/assets/filelink/filelink-pdffile-36469.pdf",
+      "source_label": "令和8年度学校経営計画 重点数値目標(令和7年度実績)",
+      "as_of": "2026-03",
+      "note": "令和7年度実績。令和6年度実績は90%。"
+    },
+    {
+      "metric": "club_join_rate",
+      "fiscal_year": 2025,
+      "value_num": 85,
+      "source_url": "https://www.metro.ed.jp/hino-h/assets/filelink/filelink-pdffile-36469.pdf",
+      "source_label": "令和8年度学校経営計画 重点数値目標(令和7年度実績)",
+      "as_of": "2026-03",
+      "note": "令和6年度実績も85%。令和8年度目標90%。"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "生徒:学習指導",
+      "fiscal_year": 2025,
+      "value_num": 86,
+      "source_url": "https://www.metro.ed.jp/hino-h/assets/filelink/filelink-pdffile-36469.pdf",
+      "source_label": "令和8年度学校経営計画 重点数値目標(令和7年度実績)",
+      "as_of": "2026-03",
+      "note": "令和6年度実績74%。"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "生徒:総合(入学して良かった)",
+      "fiscal_year": 2025,
+      "value_num": 90,
+      "source_url": "https://www.metro.ed.jp/hino-h/assets/filelink/filelink-pdffile-36469.pdf",
+      "source_label": "令和8年度学校経営計画 重点数値目標(令和7年度実績)",
+      "as_of": "2026-03",
+      "note": "令和6年度実績も90%。"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "保護者:学習指導",
+      "fiscal_year": 2025,
+      "value_num": 78,
+      "source_url": "https://www.metro.ed.jp/hino-h/assets/filelink/filelink-pdffile-36469.pdf",
+      "source_label": "令和8年度学校経営計画 重点数値目標(令和7年度実績)",
+      "as_of": "2026-03",
+      "note": "令和6年度実績72%。"
+    },
+    {
+      "metric": "satisfaction",
+      "item": "保護者:総合(入学させて良かった)",
+      "fiscal_year": 2025,
+      "value_num": 96,
+      "source_url": "https://www.metro.ed.jp/hino-h/assets/filelink/filelink-pdffile-36469.pdf",
+      "source_label": "令和8年度学校経営計画 重点数値目標(令和7年度実績)",
+      "as_of": "2026-03",
+      "note": "令和6年度実績93%。"
+    },
+    {
+      "metric": "exam_ratio",
+      "item": "推薦",
+      "fiscal_year": 2024,
+      "value_num": 4.33,
+      "source_url": "https://www.metro.ed.jp/hino-h/assets/filelink/filelink-pdffile-32892.pdf",
+      "source_label": "令和6(2024)年度 入学者選抜結果",
+      "as_of": "2024-02",
+      "note": "応募倍率。推薦に基づく選抜(特別推薦の人数を含む)、募集64名・応募277名。"
+    },
+    {
+      "metric": "exam_ratio",
+      "item": "推薦",
+      "fiscal_year": 2025,
+      "value_num": 3.38,
+      "source_url": "https://www.metro.ed.jp/hino-h/assets/filelink/filelink-pdffile-32893.pdf",
+      "source_label": "令和7(2025)年度 入学者選抜結果",
+      "as_of": "2025-02",
+      "note": "応募倍率。推薦に基づく選抜(特別推薦の人数を含む)、募集64名・応募216名。"
+    },
+    {
+      "metric": "exam_ratio",
+      "item": "推薦",
+      "fiscal_year": 2026,
+      "value_num": 3.92,
+      "source_url": "https://www.metro.ed.jp/hino-h/assets/pamphlet/pamphlet-pdffile-4466.pdf",
+      "source_label": "学校案内パンフレット「HINO 2027」令和8年度(2026年度)入学者選抜状況",
+      "as_of": "2026-09",
+      "note": "応募倍率。推薦に基づく選抜、募集64名・応募251名。直近で最も新しい年度。"
+    },
+    {
+      "metric": "designation",
+      "item": "DXハイスクール",
+      "fiscal_year": 2026,
+      "value_text": "高等学校DX加速化推進事業（文部科学省指定）",
+      "source_url": "https://www.metro.ed.jp/hino-h/assets/pamphlet/pamphlet-pdffile-4466.pdf",
+      "source_label": "学校案内パンフレット「HINO 2027」令和8年度の主な研究指定校等",
+      "as_of": "2026-09",
+      "note": ""
+    },
+    {
+      "metric": "designation",
+      "item": "Premiere Club（Tier1）",
+      "fiscal_year": 2026,
+      "value_text": "都立学校における部活動の特別強化プロジェクト。硬式野球部が指定（東京都教育委員会指定）",
+      "source_url": "https://www.metro.ed.jp/hino-h/assets/pamphlet/pamphlet-pdffile-4466.pdf",
+      "source_label": "学校案内パンフレット「HINO 2027」令和8年度の主な研究指定校等",
+      "as_of": "2026-09",
+      "note": ""
+    },
+    {
+      "metric": "designation",
+      "item": "教育データ利活用実証研究校",
+      "fiscal_year": 2026,
+      "value_text": "東京都教育委員会指定",
+      "source_url": "https://www.metro.ed.jp/hino-h/assets/pamphlet/pamphlet-pdffile-4466.pdf",
+      "source_label": "学校案内パンフレット「HINO 2027」令和8年度の主な研究指定校等",
+      "as_of": "2026-09",
+      "note": ""
+    },
+    {
+      "metric": "designation",
+      "item": "Tokyo-IBLハイスクール事業（TIPS-Type3）",
+      "fiscal_year": 2026,
+      "value_text": "東京都教育委員会指定。高校間連携の協働的な探究学習",
+      "source_url": "https://www.metro.ed.jp/hino-h/assets/pamphlet/pamphlet-pdffile-4466.pdf",
+      "source_label": "学校案内パンフレット「HINO 2027」令和8年度の主な研究指定校等",
+      "as_of": "2026-09",
+      "note": ""
+    },
+    {
+      "metric": "designation",
+      "item": "デジタルを活用したこれからの学び",
+      "fiscal_year": 2026,
+      "value_text": "東京都教育委員会指定",
+      "source_url": "https://www.metro.ed.jp/hino-h/assets/pamphlet/pamphlet-pdffile-4466.pdf",
+      "source_label": "学校案内パンフレット「HINO 2027」令和8年度の主な研究指定校等",
+      "as_of": "2026-09",
+      "note": ""
+    },
+    {
+      "metric": "designation",
+      "item": "デジタルテストの調査研究における協力校",
+      "fiscal_year": 2026,
+      "value_text": "東京都教育委員会指定",
+      "source_url": "https://www.metro.ed.jp/hino-h/assets/pamphlet/pamphlet-pdffile-4466.pdf",
+      "source_label": "学校案内パンフレット「HINO 2027」令和8年度の主な研究指定校等",
+      "as_of": "2026-09",
+      "note": ""
+    },
+    {
+      "metric": "uniform",
+      "fiscal_year": 2026,
+      "value_text": "ブレザー(緑地に翡翠色ストライプのネクタイ/リボン)。Ⅰ型(男性型:スラックス+ネクタイ)とⅡ型(女性型:スカートまたはスラックス選択可、リボンまたはネクタイ)。夏は白ワイシャツ(白/紺ポロシャツ可)。冬はベスト・セーター・カーディガン着用可(色指定あり)。平成28年度入学生から現行デザイン。",
+      "source_url": "https://www.metro.ed.jp/hino-h/school_life/symbols.html",
+      "source_label": "東京都立日野高等学校「制服・校章・校歌」および生徒手帳抜粋(校則および制服について)",
+      "as_of": "2026-09",
+      "note": ""
+    },
+    {
+      "metric": "rules_summary",
+      "fiscal_year": 2026,
+      "value_text": "頭髪は華美でない端正なもの(カラーリング・加工不可)。ピアス・指輪・ネックレス等の装飾品は禁止。規定外の服装は「異装願」を生徒手帳に記入し保護者印を得て届出。校舎内では登校靴・野外運動靴・上履き・体育館履きを区別。",
+      "source_url": "https://www.metro.ed.jp/hino-h/assets/filelink/filelink-pdffile-25872.pdf",
+      "source_label": "校則および制服について(生徒手帳より抜粋)",
+      "as_of": "2026-09",
+      "note": "スマートフォン・アルバイトに関する個別規定の記載は資料中に見当たらず。"
+    }
+  ],
+  "clubs": [
+    {
+      "name": "陸上競技部",
+      "kind": "運動",
+      "days_note": "月・火・水・金・土（日）",
+      "days_per_week": 5.5,
+      "weekend": "土",
+      "tier": 2,
+      "tier_basis": "2025年6月に関東大会出場をニュースで報告(該当大会名の詳細は同記事)。パンフレットにも「関東大会への出場や都大会決勝進出者も増えてきている」と記載。直近3年で複数回の裏付けまでは確認できず段階2にとどめた。",
+      "source_url": "https://www.metro.ed.jp/hino-h/activities/club/index.html",
+      "as_of": "2026-09-22",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "関東大会",
+          "level": "関東",
+          "result": "出場",
+          "source_url": "https://www.metro.ed.jp/hino-h/news/2025/06/newsentry_138.html"
+        }
+      ]
+    },
+    {
+      "name": "サッカー部",
+      "kind": "運動",
+      "source_url": "https://www.metro.ed.jp/hino-h/activities/club_6/index.html",
+      "as_of": "2026-09-22"
+    },
+    {
+      "name": "男女硬式テニス部",
+      "kind": "運動",
+      "days_note": "平日週4日、土日は自主練・練習試合",
+      "days_per_week": 4,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "「都立高校ベスト8、テニス選手権本戦出場」を目標に掲げるが、都大会での具体的な順位の記載はなし。民間大会での優勝・入賞者を多数輩出。",
+      "source_url": "https://www.metro.ed.jp/hino-h/activities/club_3/index.html",
+      "as_of": "2026-09-22"
+    },
+    {
+      "name": "卓球部",
+      "kind": "運動",
+      "days_note": "月・火・水・木・土",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "団体東京都ベスト16、女子団体東京都ベスト16、都総体男子シングルス5回戦進出、女子学年別大会1年生の部準優勝など(学校案内パンフレット、年度記載なし)。ベスト16クラスの成績が複数あり段階2。（2026-09-23 Opus見直し: 成績に年度が無く直近3年の根拠にならない。大会には出ている）",
+      "source_url": "https://www.metro.ed.jp/hino-h/activities/club_1/index.html",
+      "as_of": "2026-09-22"
+    },
+    {
+      "name": "硬式野球部",
+      "kind": "運動",
+      "days_note": "火・水・木・金・土・日",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 2,
+      "tier_basis": "東京都指定「都立学校における部活動の特別強化プロジェクト」Premiere Club（Tier1）指定(令和8年度)。令和7年度学校経営報告に「秋の大会でベスト8」と記載。一球速報(baseball.omyutech.com、teamId=12012)による試合結果の取込みは別途実施済み。",
+      "source_url": "https://www.metro.ed.jp/hino-h/activities/club_5/index.html",
+      "as_of": "2026-09-22",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "秋季東京都大会",
+          "level": "都県",
+          "result": "ベスト8",
+          "source_url": "https://www.metro.ed.jp/hino-h/assets/filelink/filelink-pdffile-36467.pdf"
+        }
+      ]
+    },
+    {
+      "name": "女子ソフトボール部",
+      "kind": "運動",
+      "days_note": "月・水・木・金・土・日",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 2,
+      "tier_basis": "2026年度、春季大会都大会・インターハイ予選都大会でともにベスト16(部活動ページ)。2021〜2023年度は関東公立大会に3年連続出場（直近3年からは外れる）。",
+      "source_url": "https://www.metro.ed.jp/hino-h/activities/club_13/index.html",
+      "as_of": "2026-09-22",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "春季大会(都大会)",
+          "level": "都県",
+          "result": "ベスト16",
+          "source_url": "https://www.metro.ed.jp/hino-h/activities/club_13/index.html"
+        },
+        {
+          "fiscal_year": 2026,
+          "competition": "インターハイ予選(都大会)",
+          "level": "都県",
+          "result": "ベスト16",
+          "source_url": "https://www.metro.ed.jp/hino-h/activities/club_13/index.html"
+        },
+        {
+          "fiscal_year": 2023,
+          "competition": "関東公立大会",
+          "level": "関東",
+          "result": "出場（2021〜2023年度3年連続）",
+          "source_url": "https://www.metro.ed.jp/hino-h/activities/club_13/index.html"
+        }
+      ]
+    },
+    {
+      "name": "男子バスケットボール部",
+      "kind": "運動",
+      "days_note": "月・水・木・(金)・土・日",
+      "days_per_week": 5.5,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "高体連加盟300校超の中で「ベスト8」を目標に掲げるが、具体的な大会成績の記載なし。",
+      "source_url": "https://www.metro.ed.jp/hino-h/activities/club_8/index.html",
+      "as_of": "2026-09-22"
+    },
+    {
+      "name": "女子バスケットボール部",
+      "kind": "運動",
+      "days_note": "火・水・木・金・土・日",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "「関東大会出場」「関東大会ベスト8」を目標に掲げるが、具体的な大会成績の記載なし。",
+      "source_url": "https://www.metro.ed.jp/hino-h/activities/club_9/index.html",
+      "as_of": "2026-09-22"
+    },
+    {
+      "name": "女子バレーボール部",
+      "kind": "運動",
+      "days_note": "火・水・金・土・日",
+      "days_per_week": 5,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "過去10年間で4回関東大会に出場している伝統校(直近の年度は不明)。目標は東京都ベスト8・関東大会出場・公立大会優勝。（2026-09-23 Opus見直し: 関東大会出場は直近の年度が不明）",
+      "source_url": "https://www.metro.ed.jp/hino-h/activities/club_10/index.html",
+      "as_of": "2026-09-22"
+    },
+    {
+      "name": "女子ダンス部",
+      "kind": "運動",
+      "weekend": "試合のみ",
+      "tier": 1,
+      "tier_basis": "2024年夏「ダンススタジアム」、2025年「ダンスドリル秋季競技大会」でいずれも全国大会に出場(学校案内パンフレット・2024/08/20付ニュース「ダンス部 全国大会出場」)。直近3年で2回の全国大会出場。",
+      "source_url": "https://www.metro.ed.jp/hino-h/activities/club_11/index.html",
+      "as_of": "2026-09-22",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "ダンススタジアム",
+          "level": "全国",
+          "result": "全国大会出場",
+          "happened_on": "2024-08",
+          "source_url": "https://www.metro.ed.jp/hino-h/news/2024/08/newsentry_101.html"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "ダンスドリル秋季競技大会",
+          "level": "全国",
+          "result": "全国大会出場（関東大会を経て）",
+          "source_url": "https://www.metro.ed.jp/hino-h/assets/pamphlet/pamphlet-pdffile-4466.pdf"
+        }
+      ]
+    },
+    {
+      "name": "水泳部",
+      "kind": "運動",
+      "days_note": "月・火・水・金・土",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "都高校総体(インターハイ)予選・西東京大会・三多摩大会等に出場するが、順位等の具体的な記載はなし。",
+      "source_url": "https://www.metro.ed.jp/hino-h/activities/club_12/index.html",
+      "as_of": "2026-09-22"
+    },
+    {
+      "name": "山岳部",
+      "kind": "運動",
+      "days_note": "月・水・金・（土or日）",
+      "days_per_week": 3.5,
+      "source_url": "https://www.metro.ed.jp/hino-h/activities/club_14/index.html",
+      "as_of": "2026-09-22"
+    },
+    {
+      "name": "柔道部",
+      "kind": "運動",
+      "source_url": "https://www.metro.ed.jp/hino-h/activities/club_15/index.html",
+      "as_of": "2026-09-22",
+      "note": "部活動ページは「部員募集再開」のみの記載で、活動日・実績とも確認できず。"
+    },
+    {
+      "name": "剣道部",
+      "kind": "運動",
+      "days_note": "火・木・土",
+      "days_per_week": 3,
+      "weekend": "土",
+      "tier": 4,
+      "tier_basis": "週3日活動。直近3年の大会実績の記載はなし（2022年に男子団体で都大会出場の実績はあるが古い）。",
+      "source_url": "https://www.metro.ed.jp/hino-h/activities/club_2/index.html",
+      "as_of": "2026-09-22"
+    },
+    {
+      "name": "バドミントン部",
+      "kind": "運動",
+      "days_note": "月・水・木・金・土・日",
+      "days_per_week": 6,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "関東大会予選・新人戦等に出場するが、順位等の具体的な記載はなし。総勢37名で活動。",
+      "source_url": "https://www.metro.ed.jp/hino-h/activities/club_4/index.html",
+      "as_of": "2026-09-22"
+    },
+    {
+      "name": "女子サッカー同好会",
+      "kind": "同好会",
+      "days_note": "月・水・木・金",
+      "days_per_week": 4,
+      "weekend": "なし",
+      "tier": 4,
+      "tier_basis": "民間企業主催フットサル大会への参加が中心で、勝敗を競う大会実績の記載はなし。",
+      "source_url": "https://www.metro.ed.jp/hino-h/activities/club_7/index.html",
+      "as_of": "2026-09-22"
+    },
+    {
+      "name": "科学部",
+      "kind": "文化",
+      "tier": 2,
+      "tier_basis": "「ネイチャー甲子園」生きもの調査部門で全国3位入賞(昨年度)。直近3年で全国大会入賞が確認できるのは1回のみ。",
+      "source_url": "https://www.metro.ed.jp/hino-h/activities/club_16/index.html",
+      "as_of": "2026-09-22"
+    },
+    {
+      "name": "美術部",
+      "kind": "文化",
+      "days_note": "月・火・水・金",
+      "days_per_week": 4,
+      "weekend": "なし",
+      "tier": 1,
+      "tier_basis": "中央展(東京都高等学校文化祭美術・工芸部門)で5年連続選抜、全国高等学校総合文化祭に9年連続出場(学校案内パンフレット・部活動ページ)。令和4年に日野市長より文化スポーツ功労者顕彰。",
+      "source_url": "https://www.metro.ed.jp/hino-h/activities/club_17/index.html",
+      "as_of": "2026-09-22"
+    },
+    {
+      "name": "軽音楽部",
+      "kind": "文化",
+      "days_note": "月・火・水・金・土",
+      "days_per_week": 5,
+      "weekend": "土",
+      "source_url": "https://www.metro.ed.jp/hino-h/activities/club_18/index.html",
+      "as_of": "2026-09-22",
+      "note": "校内ライブが中心でコンクール等への参加記載なし。"
+    },
+    {
+      "name": "パソコン部",
+      "kind": "文化",
+      "days_note": "火・水・金",
+      "days_per_week": 3,
+      "source_url": "https://www.metro.ed.jp/hino-h/activities/club_21/index.html",
+      "as_of": "2026-09-22",
+      "note": "文化祭での発表が中心でコンクール等への参加記載なし。"
+    },
+    {
+      "name": "マニュアルアーツ部",
+      "kind": "文化",
+      "days_note": "水",
+      "days_per_week": 1,
+      "tier": 4,
+      "tier_basis": "週1日活動。製菓・アクセサリー製作が中心でコンクール等の実績記載なし。",
+      "source_url": "https://www.metro.ed.jp/hino-h/activities/club_19/index.html",
+      "as_of": "2026-09-22"
+    },
+    {
+      "name": "吹奏楽部",
+      "kind": "文化",
+      "days_note": "月・火・水・木・金・土",
+      "days_per_week": 6,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "コンクール・アンサンブルコンテストに参加、ここ数年は中央音楽会にも参加。都大会上位等の具体的な記載はなし。",
+      "source_url": "https://www.metro.ed.jp/hino-h/activities/club_20/index.html",
+      "as_of": "2026-09-22"
+    },
+    {
+      "name": "文芸部",
+      "kind": "文化",
+      "days_note": "月・金",
+      "days_per_week": 2,
+      "tier": 4,
+      "tier_basis": "高文連の大会には今年度初めて参加し結果は未確認。過去に俳句・短歌の部で最優秀賞を受賞し全国大会に出場した先輩がいるとの記載があるが年度不明。",
+      "source_url": "https://www.metro.ed.jp/hino-h/activities/club_22/index.html",
+      "as_of": "2026-09-22"
+    },
+    {
+      "name": "映画演劇部",
+      "kind": "文化",
+      "source_url": "https://www.metro.ed.jp/hino-h/activities/club_23/index.html",
+      "as_of": "2026-09-22",
+      "note": "活動日・大会成績の具体的な記載なし。ワークショップや地区の大会・発表会に参加。"
+    },
+    {
+      "name": "合唱部",
+      "kind": "文化",
+      "days_note": "月・火・金",
+      "days_per_week": 3,
+      "tier": 3,
+      "tier_basis": "NHK全国学校音楽コンクール(Nコン)に出場するが、上位進出等の具体的な記載はなし。",
+      "source_url": "https://www.metro.ed.jp/hino-h/activities/club_24/index.html",
+      "as_of": "2026-09-22"
+    },
+    {
+      "name": "茶華道部",
+      "kind": "文化",
+      "days_note": "月・水・金",
+      "days_per_week": 3,
+      "source_url": "https://www.metro.ed.jp/hino-h/activities/club_25/index.html",
+      "as_of": "2026-09-22",
+      "note": "お点前披露・研修会が中心で、コンクール等の順位を競う活動ではない。"
+    },
+    {
+      "name": "写真同好会",
+      "kind": "同好会",
+      "days_note": "月・土",
+      "days_per_week": 2,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "東京都高等学校文化祭写真部門中央大会で入選作品あり(昨年度、との記載のみで年度不明)。",
+      "source_url": "https://www.metro.ed.jp/hino-h/activities/club_26/index.html",
+      "as_of": "2026-09-22"
+    }
+  ],
+  "designated_universities": [
+    {
+      "university": "中央大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/hino-h/assets/pamphlet/pamphlet-pdffile-4466.pdf",
+      "note": "学校案内「HINO 2027」p.7「主な指定校推薦」（ほかに「他」とある）"
+    },
+    {
+      "university": "学習院大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/hino-h/assets/pamphlet/pamphlet-pdffile-4466.pdf",
+      "note": "学校案内「HINO 2027」p.7「主な指定校推薦」（ほかに「他」とある）"
+    },
+    {
+      "university": "成蹊大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/hino-h/assets/pamphlet/pamphlet-pdffile-4466.pdf",
+      "note": "学校案内「HINO 2027」p.7「主な指定校推薦」（ほかに「他」とある）"
+    },
+    {
+      "university": "日本大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/hino-h/assets/pamphlet/pamphlet-pdffile-4466.pdf",
+      "note": "学校案内「HINO 2027」p.7「主な指定校推薦」（ほかに「他」とある）"
+    },
+    {
+      "university": "東洋大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/hino-h/assets/pamphlet/pamphlet-pdffile-4466.pdf",
+      "note": "学校案内「HINO 2027」p.7「主な指定校推薦」（ほかに「他」とある）"
+    },
+    {
+      "university": "専修大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/hino-h/assets/pamphlet/pamphlet-pdffile-4466.pdf",
+      "note": "学校案内「HINO 2027」p.7「主な指定校推薦」（ほかに「他」とある）"
+    },
+    {
+      "university": "産業能率大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/hino-h/assets/pamphlet/pamphlet-pdffile-4466.pdf",
+      "note": "学校案内「HINO 2027」p.7「主な指定校推薦」（ほかに「他」とある）"
+    },
+    {
+      "university": "東京経済大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/hino-h/assets/pamphlet/pamphlet-pdffile-4466.pdf",
+      "note": "学校案内「HINO 2027」p.7「主な指定校推薦」（ほかに「他」とある）"
+    },
+    {
+      "university": "工学院大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/hino-h/assets/pamphlet/pamphlet-pdffile-4466.pdf",
+      "note": "学校案内「HINO 2027」p.7「主な指定校推薦」（ほかに「他」とある）"
+    },
+    {
+      "university": "創価大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/hino-h/assets/pamphlet/pamphlet-pdffile-4466.pdf",
+      "note": "学校案内「HINO 2027」p.7「主な指定校推薦」（ほかに「他」とある）"
+    },
+    {
+      "university": "東京電機大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/hino-h/assets/pamphlet/pamphlet-pdffile-4466.pdf",
+      "note": "学校案内「HINO 2027」p.7「主な指定校推薦」（ほかに「他」とある）"
+    },
+    {
+      "university": "東京都市大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/hino-h/assets/pamphlet/pamphlet-pdffile-4466.pdf",
+      "note": "学校案内「HINO 2027」p.7「主な指定校推薦」（ほかに「他」とある）"
+    },
+    {
+      "university": "東京農業大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/hino-h/assets/pamphlet/pamphlet-pdffile-4466.pdf",
+      "note": "学校案内「HINO 2027」p.7「主な指定校推薦」（ほかに「他」とある）"
+    },
+    {
+      "university": "日本体育大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/hino-h/assets/pamphlet/pamphlet-pdffile-4466.pdf",
+      "note": "学校案内「HINO 2027」p.7「主な指定校推薦」（ほかに「他」とある）"
+    },
+    {
+      "university": "東京女子体育大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/hino-h/assets/pamphlet/pamphlet-pdffile-4466.pdf",
+      "note": "学校案内「HINO 2027」p.7「主な指定校推薦」（ほかに「他」とある）"
+    },
+    {
+      "university": "日本女子体育大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/hino-h/assets/pamphlet/pamphlet-pdffile-4466.pdf",
+      "note": "学校案内「HINO 2027」p.7「主な指定校推薦」（ほかに「他」とある）"
+    },
+    {
+      "university": "武蔵野大学",
+      "fiscal_year": null,
+      "source_url": "https://www.metro.ed.jp/hino-h/assets/pamphlet/pamphlet-pdffile-4466.pdf",
+      "note": "学校案内「HINO 2027」p.7「主な指定校推薦」（ほかに「他」とある）"
+    }
+  ],
+  "events": [
+    {
+      "kind": "改築",
+      "period_label": "2020年8月",
+      "happened_on": "2020-08-12",
+      "summary": "校舎改築に伴い仮設校舎へ移転",
+      "source_url": "https://www.metro.ed.jp/hino-h/our_school/history.html"
+    },
+    {
+      "kind": "学級増減",
+      "period_label": "令和4年度(2022年度)から",
+      "happened_on": "2022-04-01",
+      "summary": "1学年8学級に戻り、全学年合計23学級となった",
+      "source_url": "https://www.metro.ed.jp/hino-h/our_school/history.html"
+    },
+    {
+      "kind": "施設",
+      "period_label": "2025年度(創立60周年)",
+      "summary": "創立60周年記念式典および新校舎落成式を挙行",
+      "source_url": "https://www.metro.ed.jp/hino-h/assets/pamphlet/pamphlet-pdffile-4466.pdf"
+    },
+    {
+      "kind": "施設",
+      "period_label": "2025年7月",
+      "happened_on": "2025-07",
+      "summary": "野球部の新グラウンドが完成(両翼90m、黒土の内野、ブルペン4か所等)。2025年9月からは秋季・春季大会一次予選の会場校に",
+      "source_url": "https://www.metro.ed.jp/hino-h/activities/club_5/index.html"
+    },
+    {
+      "kind": "その他",
+      "period_label": "令和6年度(2024年度)入試から",
+      "summary": "推薦選抜・一般選抜とも男女別定員を撤廃し男女合同選抜となった(文化・スポーツ等特別推薦を除く)",
+      "source_url": "https://www.metro.ed.jp/hino-h/assets/pamphlet/pamphlet-pdffile-4466.pdf"
+    },
+    {
+      "kind": "学科改編",
+      "period_label": "令和7年度入学生から",
+      "summary": "DX環境整備を軸に、情報Ⅱを必修化",
+      "source_url": "https://www.metro.ed.jp/hino-h/assets/pamphlet/pamphlet-pdffile-4466.pdf"
+    },
+    {
+      "kind": "その他",
+      "period_label": "2024年9月30日",
+      "happened_on": "2024-09-30",
+      "summary": "東京女子体育大学と高大連携協定を締結",
+      "source_url": "https://www.metro.ed.jp/hino-h/news/2024/09/newsentry_110.html"
+    },
+    {
+      "kind": "指定",
+      "period_label": "令和8年度",
+      "summary": "硬式野球部が東京都「部活動の特別強化プロジェクト」Premiere Club（Tier1）に指定",
+      "source_url": "https://www.metro.ed.jp/hino-h/assets/pamphlet/pamphlet-pdffile-4466.pdf"
+    }
+  ],
+  "unresolved": [
+    "男女別の在籍生徒数：公式資料に記載なし（入試の応募・合格者数の男女内訳はあるが、在籍者数の男女内訳は未公開）。学校要覧等未確認。",
+    "入学者の入試方式別割合（一般/指定校推薦/公募推薦/総合型）：進路状況資料は進学先の学校種別（四年制大学・専門学校等）の割合のみで、入試方式別の割合の記載は見当たらない。",
+    "サッカー部・山岳部・柔道部・軽音楽部・パソコン部・映画演劇部・茶華道部：活動日または大会成績の記載が乏しく、部活動の強さの段階を付けなかった。",
+    "Tokyo GE-NET EE・学力向上進学重点校エントリー校等の指定：令和8年度の研究指定校等一覧に記載がなく、該当指定は確認できなかった。",
+    "陸上競技部・剣道部などの詳細な大会成績（直近3年分の複数回のベスト8/16等）：ニュース欄・部活動ページに断片的な記載はあるが、年度をまたいだ網羅的な結果一覧は非公開。"
+  ],
+  "conflicts": [
+    "四年制大学合格実績のうち日東駒専：令和8年度学校経営計画の重点数値目標は「現役合格者数71名」（令和7年度実績）とするが、学校案内パンフレット「HINO 2027」の進路指導本文は「日東駒専が延べ77名」（58期生・2026年3月卒業）としている。現役限定か延べ（既卒含む）かの集計基準の違いによるとみられる。",
+    "指定校推薦：調査の初稿は「一般選抜・総合型選抜・学校推薦選抜（公募）による合格大学」の一覧（44校、国公立を含む）を指定校として入れていた。パンフp.7の「主な指定校推薦」17校に直した（2026-09-23 Opusが原本で確認）"
+  ]
+}

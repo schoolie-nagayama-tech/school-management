@@ -1,0 +1,1038 @@
+{
+  "prefecture": "神奈川県",
+  "school_name": "横浜緑園",
+  "official_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/",
+  "researched_at": "2026-09-23",
+  "stats": [
+    {
+      "metric": "university_count",
+      "item": "国公立",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 0,
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/shinro/documents/20260501_r8shinnrojoukyou.pdf",
+      "source_label": "神奈川県立横浜緑園高等学校 9期生（令和7年度卒業生）の進路状況・過去3年間の進路実績",
+      "as_of": "2026-05-01",
+      "note": "大学別の表（過去3年間の進路実績）に国公立大学の掲載なし"
+    },
+    {
+      "metric": "university_count",
+      "item": "早慶上理",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 0,
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/shinro/documents/20260501_r8shinnrojoukyou.pdf",
+      "source_label": "神奈川県立横浜緑園高等学校 9期生（令和7年度卒業生）の進路状況・過去3年間の進路実績",
+      "as_of": "2026-05-01",
+      "note": "大学別の表から合算（早稲田・慶應・上智・東京理科いずれも掲載なし）"
+    },
+    {
+      "metric": "university_count",
+      "item": "GMARCH",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 0,
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/shinro/documents/20260501_r8shinnrojoukyou.pdf",
+      "source_label": "神奈川県立横浜緑園高等学校 9期生（令和7年度卒業生）の進路状況・過去3年間の進路実績",
+      "as_of": "2026-05-01",
+      "note": "大学別の表から合算（学習院・明治・青山学院・立教・中央・法政のうち掲載は青山学院・中央・法政のみで、いずれも令和7年度は0）"
+    },
+    {
+      "metric": "university_count",
+      "item": "成成明武",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 0,
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/shinro/documents/20260501_r8shinnrojoukyou.pdf",
+      "source_label": "神奈川県立横浜緑園高等学校 9期生（令和7年度卒業生）の進路状況・過去3年間の進路実績",
+      "as_of": "2026-05-01",
+      "note": "大学別の表から合算（成蹊・成城・武蔵は掲載なし、明治学院大学は令和7年度0）"
+    },
+    {
+      "metric": "university_count",
+      "item": "日東駒専",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 0,
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/shinro/documents/20260501_r8shinnrojoukyou.pdf",
+      "source_label": "神奈川県立横浜緑園高等学校 9期生（令和7年度卒業生）の進路状況・過去3年間の進路実績",
+      "as_of": "2026-05-01",
+      "note": "大学別の表から合算（東洋大学は掲載なし、日本・駒澤・専修は令和7年度いずれも0）"
+    },
+    {
+      "metric": "university_count",
+      "item": "合計",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 112,
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/shinro/documents/20260501_r8shinnrojoukyou.pdf",
+      "source_label": "神奈川県立横浜緑園高等学校 9期生（令和7年度卒業生）の進路状況・過去3年間の進路実績",
+      "as_of": "2026-05-01",
+      "note": "表末尾の合計行（推薦56・総合型35・一般21・計112。浪人1名を内数で含む）"
+    },
+    {
+      "metric": "university_count",
+      "item": "関東学院大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 21,
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/shinro/documents/20260501_r8shinnrojoukyou.pdf",
+      "source_label": "神奈川県立横浜緑園高等学校 9期生（令和7年度卒業生）の進路状況・過去3年間の進路実績",
+      "as_of": "2026-05-01",
+      "note": "令和7年度で最多の合格大学"
+    },
+    {
+      "metric": "university_count",
+      "item": "桜美林大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 9,
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/shinro/documents/20260501_r8shinnrojoukyou.pdf",
+      "source_label": "神奈川県立横浜緑園高等学校 9期生（令和7年度卒業生）の進路状況・過去3年間の進路実績",
+      "as_of": "2026-05-01",
+      "note": ""
+    },
+    {
+      "metric": "university_count",
+      "item": "和光大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 7,
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/shinro/documents/20260501_r8shinnrojoukyou.pdf",
+      "source_label": "神奈川県立横浜緑園高等学校 9期生（令和7年度卒業生）の進路状況・過去3年間の進路実績",
+      "as_of": "2026-05-01",
+      "note": ""
+    },
+    {
+      "metric": "university_count",
+      "item": "神奈川大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 6,
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/shinro/documents/20260501_r8shinnrojoukyou.pdf",
+      "source_label": "神奈川県立横浜緑園高等学校 9期生（令和7年度卒業生）の進路状況・過去3年間の進路実績",
+      "as_of": "2026-05-01",
+      "note": "6名で並ぶ大学が他に神奈川工科大学・鎌倉女子大学・フェリス女学院大学・鶴見大学・相模女子大学がある"
+    },
+    {
+      "metric": "university_count",
+      "item": "相模女子大学",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 6,
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/shinro/documents/20260501_r8shinnrojoukyou.pdf",
+      "source_label": "神奈川県立横浜緑園高等学校 9期生（令和7年度卒業生）の進路状況・過去3年間の進路実績",
+      "as_of": "2026-05-01",
+      "note": "6名タイの一校として代表で掲載（神奈川工科大学・鎌倉女子大学・フェリス女学院大学・鶴見大学も同数）"
+    },
+    {
+      "metric": "admission_route_share",
+      "item": "推薦",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 50,
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/shinro/documents/20260501_r8shinnrojoukyou.pdf",
+      "source_label": "神奈川県立横浜緑園高等学校 9期生（令和7年度卒業生）の進路状況・過去3年間の進路実績",
+      "as_of": "2026-05-01",
+      "note": "大学合格者数(延べ)の推薦56／計112から算出（実進学ベースではない）"
+    },
+    {
+      "metric": "admission_route_share",
+      "item": "総合型",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 31.3,
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/shinro/documents/20260501_r8shinnrojoukyou.pdf",
+      "source_label": "神奈川県立横浜緑園高等学校 9期生（令和7年度卒業生）の進路状況・過去3年間の進路実績",
+      "as_of": "2026-05-01",
+      "note": "大学合格者数(延べ)の総合型35／計112から算出（実進学ベースではない）"
+    },
+    {
+      "metric": "admission_route_share",
+      "item": "一般",
+      "basis": "延べ",
+      "fiscal_year": 2025,
+      "value_num": 18.8,
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/shinro/documents/20260501_r8shinnrojoukyou.pdf",
+      "source_label": "神奈川県立横浜緑園高等学校 9期生（令和7年度卒業生）の進路状況・過去3年間の進路実績",
+      "as_of": "2026-05-01",
+      "note": "大学合格者数(延べ)の一般21(浪人1内数)／計112から算出（実進学ベースではない）"
+    },
+    {
+      "metric": "career_decided_rate",
+      "item": "",
+      "basis": "",
+      "fiscal_year": 2025,
+      "value_num": 95.7,
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/shinro/documents/20260501_r8shinnrojoukyou.pdf",
+      "source_label": "神奈川県立横浜緑園高等学校 9期生（令和7年度卒業生）の進路状況",
+      "as_of": "2026-05-01",
+      "note": "卒業者数257名のうち大学102・短大17・専門121・就職6の計246名／257名から算出（進学準備・その他11名を除く）。学校が自ら決定率として公表した数値ではない"
+    },
+    {
+      "metric": "designation",
+      "item": "文部科学省「人権教育研究推進事業」人権教育研究指定校",
+      "basis": "",
+      "fiscal_year": 2025,
+      "value_text": "令和7・8年度の2年間指定",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/zaikousei-hogosha/documents/20260625110103.pdf",
+      "source_label": "神奈川県立横浜緑園高等学校 令和9年度入学生用学校案内",
+      "as_of": "2026-06-25",
+      "note": ""
+    },
+    {
+      "metric": "uniform",
+      "item": "",
+      "basis": "",
+      "fiscal_year": 2026,
+      "value_text": "ブレザー。スカートまたはスラックスの選択制。冬服(10月〜5月)は白または水色のワイシャツにリボンまたはネクタイ。夏服(6月〜9月)は白または水色のワイシャツ（白・黒・紺のポロシャツも可）、リボン・ネクタイは任意。前後1か月は移行期間。",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/zaikousei-hogosha/documents/20260625110103.pdf",
+      "source_label": "神奈川県立横浜緑園高等学校 令和9年度入学生用学校案内",
+      "as_of": "2026-06-25",
+      "note": ""
+    }
+  ],
+  "clubs": [
+    {
+      "name": "陸上競技",
+      "kind": "運動",
+      "days_note": "月火木金土",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 3,
+      "tier_basis": "2024・2025年度とも神奈川県高校新人陸上競技大会の地区予選会・県大会に出場したが上位入賞の記録はない（女子砲丸投げ・円盤投げ17位、女子走幅跳・三段跳12位など）（学校サイト・学校案内パンフレット）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/seikatsu/rikujou.html",
+      "as_of": "2026-09-23",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "神奈川県高等学校新人陸上競技大会",
+          "level": "都県",
+          "result": "横浜地区予選会を経て県大会出場（女子砲丸投げ17位・女子円盤投げ17位）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/seikatsu/rikujou.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "神奈川県高等学校新人陸上競技大会",
+          "level": "都県",
+          "result": "横浜地区予選会を経て県大会出場（女子走幅跳・三段跳12位、女子やり投げ）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/seikatsu/rikujou.html"
+        }
+      ]
+    },
+    {
+      "name": "ソフトボール",
+      "kind": "運動",
+      "days_note": "活動休止（令和8年5月時点、部員0名）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/seikatsu/documents/r8_bukatudou_katudoujoukyou1.pdf",
+      "as_of": "2026-05-01"
+    },
+    {
+      "name": "剣道",
+      "kind": "運動",
+      "days_note": "月水金",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "tier": 3,
+      "tier_basis": "2025年度に全国高校総体県予選会・関東大会県予選会・県新人大会に出場したが、いずれも出場の記録のみで上位入賞の記載はない（学校案内パンフレット）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/seikatsu/kendou.html",
+      "as_of": "2026-09-23",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "第72回関東高等学校剣道大会神奈川県予選会",
+          "level": "都県",
+          "result": "女子個人出場",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/zaikousei-hogosha/documents/20260625110103.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第72回全国高等学校総合体育大会剣道競技神奈川県予選会",
+          "level": "都県",
+          "result": "男女参加",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/zaikousei-hogosha/documents/20260625110103.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第72回神奈川県高等学校新人剣道大会",
+          "level": "都県",
+          "result": "男女出場",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/zaikousei-hogosha/documents/20260625110103.pdf"
+        }
+      ]
+    },
+    {
+      "name": "硬式テニス部",
+      "kind": "運動",
+      "days_note": "活動休止（令和8年5月時点、部員0名）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/seikatsu/documents/r8_bukatudou_katudoujoukyou1.pdf",
+      "as_of": "2026-05-01"
+    },
+    {
+      "name": "ダンス",
+      "kind": "運動",
+      "days_note": "月水金",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/seikatsu/documents/r8_bukatudou_katudoujoukyou1.pdf",
+      "as_of": "2026-05-01"
+    },
+    {
+      "name": "バドミントン",
+      "kind": "運動",
+      "days_note": "月水木金土",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 2,
+      "tier_basis": "2024年度：男子団体県大会ベスト16、女子団体県大会ベスト16（インターハイ予選）・ベスト32（新人戦）、関東大会予選県ベスト32。2025年度：ドリームカップ神奈川県予選で男子シングルス県ベスト8、横浜地区冬季大会で女子シングルスA・Dブロック優勝、新人戦県大会に3年連続出場（学校サイト・学校案内パンフレット）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/seikatsu/badminton.html",
+      "as_of": "2026-09-23",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "ドリームカップ神奈川県予選",
+          "level": "都県",
+          "result": "男子シングルス県ベスト8",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/zaikousei-hogosha/documents/20260625110103.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "横浜地区冬季バドミントン大会",
+          "level": "地区",
+          "result": "女子シングルスA・Dブロック優勝",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/zaikousei-hogosha/documents/20260625110103.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "新人戦県大会（地区大会を勝ち抜き3年連続出場）",
+          "level": "都県",
+          "result": "初戦敗退",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/seikatsu/badminton.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "インターハイ予選 男子団体",
+          "level": "都県",
+          "result": "県大会ベスト16",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/zaikousei-hogosha/documents/20260625110103.pdf"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "インターハイ予選 団体戦（女子）",
+          "level": "都県",
+          "result": "県大会ベスト16",
+          "happened_on": "2024-07-16",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/seikatsu/badminton.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "新人大会 団体戦",
+          "level": "都県",
+          "result": "県大会ベスト32",
+          "happened_on": "2024-12-23",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/seikatsu/badminton.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "関東大会予選",
+          "level": "都県",
+          "result": "県ベスト32",
+          "happened_on": "2024-04-23",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/seikatsu/badminton.html"
+        }
+      ]
+    },
+    {
+      "name": "チアバトン",
+      "kind": "運動",
+      "days_note": "月水金(土)",
+      "days_per_week": 3.5,
+      "weekend": "土",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/seikatsu/chiabaton.html",
+      "as_of": "2026-09-23"
+    },
+    {
+      "name": "バレーボール部（女子）",
+      "kind": "運動",
+      "days_note": "火金(土日)",
+      "days_per_week": 3,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2024年度 横浜地区新人大会地区予選出場、2025年度 横浜市民スポーツ大会高校の部出場（学校案内パンフレット）。上位入賞の記録はない",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/seikatsu/documents/r8_bukatudou_katudoujoukyou1.pdf",
+      "as_of": "2026-05-01",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "横浜地区高等学校バレーボール新人大会",
+          "level": "地区",
+          "result": "地区予選出場",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/zaikousei-hogosha/documents/20260625110103.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "横浜市民スポーツ大会 バレーボール競技高校の部",
+          "level": "地区",
+          "result": "出場",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/zaikousei-hogosha/documents/20260625110103.pdf"
+        }
+      ]
+    },
+    {
+      "name": "バスケットボール男",
+      "kind": "運動",
+      "days_note": "火水金(土日)",
+      "days_per_week": 4,
+      "weekend": "土日",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/seikatsu/documents/r8_bukatudou_katudoujoukyou1.pdf",
+      "as_of": "2026-05-01"
+    },
+    {
+      "name": "バスケットボール女",
+      "kind": "運動",
+      "days_note": "火水金(土日)",
+      "days_per_week": 4,
+      "weekend": "土日",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/seikatsu/documents/r8_bukatudou_katudoujoukyou1.pdf",
+      "as_of": "2026-05-01"
+    },
+    {
+      "name": "硬式野球",
+      "kind": "運動",
+      "days_note": "火水(木)金土日",
+      "days_per_week": 5.5,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "2024年度春季県大会に永谷高校との合同チームで出場（学校案内パンフレット）。2025年夏（第107回選手権）は単独チームで神奈川大会1回戦敗退（綾瀬に0-19）、2026年夏（第108回選手権）も1回戦敗退（厚木西に0-12）。秋季県大会（本大会）は2024・2025年度とも試合記録なし（一球速報.com）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/seikatsu/kousikiyakyuu.html",
+      "as_of": "2026-09-23",
+      "results": [
+        {
+          "fiscal_year": 2026,
+          "competition": "第108回全国高等学校野球選手権神奈川大会",
+          "level": "都県",
+          "result": "1回戦敗退（厚木西に0-12）",
+          "happened_on": "2026-07-08",
+          "source_url": "https://baseball.omyutech.com/CupHomePageTeamSchedule.action?teamId=15670&cupId=20260013579"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第107回全国高等学校野球選手権神奈川大会",
+          "level": "都県",
+          "result": "1回戦敗退（綾瀬に0-19）",
+          "happened_on": "2025-07-10",
+          "source_url": "https://baseball.omyutech.com/CupHomePageTeamSchedule.action?teamId=15670&cupId=20250000302"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "令和7年度神奈川県高等学校野球秋季県大会",
+          "level": "都県",
+          "result": "本大会の試合記録なし",
+          "source_url": "https://baseball.omyutech.com/CupHomePageTeamSchedule.action?teamId=15670&cupId=20250005743"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "令和6年度神奈川県高等学校野球秋季県大会",
+          "level": "都県",
+          "result": "本大会の試合記録なし",
+          "source_url": "https://baseball.omyutech.com/CupHomePageTeamSchedule.action?teamId=15670&cupId=20240012872"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "春季県大会",
+          "level": "都県",
+          "result": "永谷高校との合同チームで県大会出場",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/zaikousei-hogosha/documents/20260625110103.pdf"
+        }
+      ]
+    },
+    {
+      "name": "サッカー",
+      "kind": "運動",
+      "days_note": "火木金土(日)",
+      "days_per_week": 4.5,
+      "weekend": "土日",
+      "tier": 3,
+      "tier_basis": "県立永谷高校との合同チームで活動。2025年度は総体県予選2回戦敗退（1回戦は有馬に4-2で勝利、2回戦は相模原弥栄に1-6で敗退）。2024年度はU-18リーグ8チーム中3位（学校サイト）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/seikatsu/soccer.html",
+      "as_of": "2026-09-23",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "令和7年度全国高等学校総合体育大会サッカー競技大会神奈川県予選会",
+          "level": "都県",
+          "result": "2回戦敗退（合同チーム。1回戦は有馬に4-2で勝利、2回戦は相模原弥栄に1-6で敗退）",
+          "happened_on": "2025-05-03",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/seikatsu/soccer.html"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "2024神奈川県U-18リーグ",
+          "level": "その他",
+          "result": "8チーム中3位（合同チーム）",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/seikatsu/soccer.html"
+        }
+      ]
+    },
+    {
+      "name": "ハンドボール",
+      "kind": "運動",
+      "days_note": "週２程度（令和8年度は部員0名で休部中）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/seikatsu/hando.html",
+      "as_of": "2026-09-23"
+    },
+    {
+      "name": "空手道",
+      "kind": "運動",
+      "days_note": "活動休止（令和8年5月時点、部員0名）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/seikatsu/karate.html",
+      "as_of": "2026-09-23"
+    },
+    {
+      "name": "弓道",
+      "kind": "運動",
+      "days_note": "月木金土",
+      "days_per_week": 4,
+      "weekend": "土",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/seikatsu/kyuudou.html",
+      "as_of": "2026-09-23"
+    },
+    {
+      "name": "吹奏楽",
+      "kind": "文化",
+      "days_note": "月(火)水木金日",
+      "days_per_week": 5.5,
+      "weekend": "日",
+      "tier": 3,
+      "tier_basis": "2024・2025年度とも横浜地区の吹奏楽コンクール・アンサンブルコンテストで金・銀・銅賞（都県大会以上の出場記録は直近では確認できず）（学校案内パンフレット）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/suisougakubu/suisougakubu-top.html",
+      "as_of": "2026-09-23",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "横浜吹奏楽コンクール",
+          "level": "地区",
+          "result": "銀賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/zaikousei-hogosha/documents/20260625110103.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "横浜アンサンブルコンテスト（打楽器三重奏）",
+          "level": "地区",
+          "result": "銅賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/zaikousei-hogosha/documents/20260625110103.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "横浜アンサンブルコンテスト（サックス五重奏）",
+          "level": "地区",
+          "result": "銀賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/zaikousei-hogosha/documents/20260625110103.pdf"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "横浜吹奏楽コンクールA部門",
+          "level": "地区",
+          "result": "銀賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/zaikousei-hogosha/documents/20260625110103.pdf"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "横浜アンサンブルコンテスト（木管三重奏）",
+          "level": "地区",
+          "result": "金賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/zaikousei-hogosha/documents/20260625110103.pdf"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "横浜アンサンブルコンテスト（サックス四重奏）",
+          "level": "地区",
+          "result": "銀賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/zaikousei-hogosha/documents/20260625110103.pdf"
+        }
+      ]
+    },
+    {
+      "name": "美術",
+      "kind": "文化",
+      "days_note": "火木金",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "tier": 3,
+      "tier_basis": "2025年度 第72回神奈川県高等学校美術展に出展（順位・賞の記載なし）（学校案内パンフレット）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/seikatsu/bijutubu.html",
+      "as_of": "2026-09-23",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "第72回神奈川県高等学校美術展",
+          "level": "都県",
+          "result": "出展",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/zaikousei-hogosha/documents/20260625110103.pdf"
+        }
+      ]
+    },
+    {
+      "name": "写真",
+      "kind": "文化",
+      "days_note": "木(土日)休日は不定期撮影実習",
+      "days_per_week": 2,
+      "weekend": "土日",
+      "tier": 2,
+      "tier_basis": "2024年度 神奈川県高等学校写真連盟主催コンテストで特選（最上位区分）1名を受賞。2025年度も同連盟コンテストで佳作（学校案内パンフレット）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/seikatsu/syasin.html",
+      "as_of": "2026-09-23",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "神奈川県高等学校写真連盟 第53回写真コンテスト",
+          "level": "都県",
+          "result": "佳作1名",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/zaikousei-hogosha/documents/20260625110103.pdf"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "神奈川県高等学校写真連盟 第51回鎌倉江ノ島撮影コンテスト",
+          "level": "都県",
+          "result": "特選1名・佳作1名",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/zaikousei-hogosha/documents/20260625110103.pdf"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "第52回写真コンテスト",
+          "level": "都県",
+          "result": "佳作1名",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/zaikousei-hogosha/documents/20260625110103.pdf"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "関東地区高等学校文化連盟 第31回関東地区高等学校写真展（千葉大会）",
+          "level": "関東",
+          "result": "出品",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/zaikousei-hogosha/documents/20260625110103.pdf"
+        }
+      ]
+    },
+    {
+      "name": "放送",
+      "kind": "文化",
+      "days_note": "平日の昼休み＋行事",
+      "weekend": "なし",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/seikatsu/housou.html",
+      "as_of": "2026-09-23"
+    },
+    {
+      "name": "演劇",
+      "kind": "文化",
+      "days_note": "通常時 週３日（月・水・金）、大会前 週４日（月・火・水・金 または 月・水・木・金）",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "tier": 3,
+      "tier_basis": "2024年度 第62回神奈川県高等学校演劇発表会横浜大会の地区大会に出場（上位進出の記載なし）（学校案内パンフレット）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/seikatsu/engeki.html",
+      "as_of": "2026-09-23",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "第62回神奈川県高等学校演劇発表会横浜大会",
+          "level": "地区",
+          "result": "地区大会出場",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/zaikousei-hogosha/documents/20260625110103.pdf"
+        }
+      ]
+    },
+    {
+      "name": "軽音楽",
+      "kind": "文化",
+      "days_note": "月火木金土",
+      "days_per_week": 5,
+      "weekend": "土",
+      "tier": 1,
+      "tier_basis": "2024・2025年度とも全国大会に複数回出場（We are SNEAKER AGES全国4〜5位、ガールズバンドステージコンテスト全国決勝、とよさと軽音楽甲子園全国決勝、全国高等学校軽音楽部オリジナルソング・グランプリ最優秀賞など）。高等学校軽音楽コンテスト関東大会にも出場（奨励賞）（学校案内パンフレット）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/seikatsu/documents/r8_bukatudou_katudoujoukyou1.pdf",
+      "as_of": "2026-05-01",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "第4回全国高等学校軽音楽部オリジナルソング・グランプリ",
+          "level": "全国",
+          "result": "最優秀賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/zaikousei-hogosha/documents/20260625110103.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "We are SNEAKER AGES（関東甲越支部）",
+          "level": "全国",
+          "result": "3年連続関東甲越代表・全国大会4位入賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/zaikousei-hogosha/documents/20260625110103.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第9回ガールズバンドステージコンテスト全国決勝大会",
+          "level": "全国",
+          "result": "3バンド入賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/zaikousei-hogosha/documents/20260625110103.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第13回とよさと軽音楽甲子園",
+          "level": "全国",
+          "result": "全国決勝進出",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/zaikousei-hogosha/documents/20260625110103.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第24回神奈川県軽音楽コンテスト決勝",
+          "level": "都県",
+          "result": "4バンド入賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/zaikousei-hogosha/documents/20260625110103.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "第23回県総合文化祭軽音楽コンクール決勝",
+          "level": "都県",
+          "result": "2バンド入賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/zaikousei-hogosha/documents/20260625110103.pdf"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "We are SNEAKER AGES（関東甲越支部）",
+          "level": "全国",
+          "result": "2年連続優勝・全国大会5位",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/zaikousei-hogosha/documents/20260625110103.pdf"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "高校生ライブ MUSIC DAYS 2024全国ファイナル",
+          "level": "全国",
+          "result": "2年連続優秀賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/zaikousei-hogosha/documents/20260625110103.pdf"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "第17回全国高等学校軽音フェスティバル大阪大会",
+          "level": "全国",
+          "result": "優秀賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/zaikousei-hogosha/documents/20260625110103.pdf"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "第18回全国高等学校軽音フェスティバル大阪大会",
+          "level": "全国",
+          "result": "優秀賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/zaikousei-hogosha/documents/20260625110103.pdf"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "第8回ガールズバンドステージコンテスト全国決勝大会",
+          "level": "全国",
+          "result": "入選",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/zaikousei-hogosha/documents/20260625110103.pdf"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "第12回とよさと軽音楽甲子園",
+          "level": "全国",
+          "result": "全国決勝進出",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/zaikousei-hogosha/documents/20260625110103.pdf"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "第4回高等学校軽音楽コンテスト関東大会",
+          "level": "関東",
+          "result": "奨励賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/zaikousei-hogosha/documents/20260625110103.pdf"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "第23回神奈川県軽音楽コンテスト決勝",
+          "level": "都県",
+          "result": "4バンド入賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/zaikousei-hogosha/documents/20260625110103.pdf"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "第22回総合文化祭軽音楽コンクール決勝",
+          "level": "都県",
+          "result": "3バンド入賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/zaikousei-hogosha/documents/20260625110103.pdf"
+        }
+      ]
+    },
+    {
+      "name": "合唱",
+      "kind": "文化",
+      "days_note": "火金",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 2,
+      "tier_basis": "2024・2025年度とも神奈川県高等学校合唱祭で合唱専門部会長賞を受賞（学校案内パンフレット）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/seikatsu/gassyoubu.html",
+      "as_of": "2026-09-23",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "第92回NHK全国学校音楽コンクール神奈川コンクール予選",
+          "level": "都県",
+          "result": "奨励賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/zaikousei-hogosha/documents/20260625110103.pdf"
+        },
+        {
+          "fiscal_year": 2025,
+          "competition": "神奈川県高等学校合唱祭",
+          "level": "都県",
+          "result": "合唱専門部会長賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/zaikousei-hogosha/documents/20260625110103.pdf"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "第91回NHK全国学校音楽コンクール神奈川コンクール予選",
+          "level": "都県",
+          "result": "奨励賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/zaikousei-hogosha/documents/20260625110103.pdf"
+        },
+        {
+          "fiscal_year": 2024,
+          "competition": "神奈川県高等学校合唱祭",
+          "level": "都県",
+          "result": "合唱専門部会長賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/zaikousei-hogosha/documents/20260625110103.pdf"
+        }
+      ]
+    },
+    {
+      "name": "茶道",
+      "kind": "文化",
+      "days_note": "月金",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "tier": 2,
+      "tier_basis": "2025年度 第31回高校生茶会（神奈川県高等学校文化連盟主催）で高文連会長賞を受賞（学校案内パンフレット）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/seikatsu/sadoubu.html",
+      "as_of": "2026-09-23",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "第31回高校生茶会（神奈川県高等学校文化連盟）",
+          "level": "都県",
+          "result": "高文連会長賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/zaikousei-hogosha/documents/20260625110103.pdf"
+        }
+      ]
+    },
+    {
+      "name": "華道",
+      "kind": "文化",
+      "days_note": "木or金（週1日）",
+      "days_per_week": 1,
+      "weekend": "なし",
+      "tier": 3,
+      "tier_basis": "2024年度 第3回小原流学生いけばな競技会 南関東地区大会（小原流本部主催）で団体戦3位。高体連・高文連主催の公的な大会ではなく流派主催の大会のため、関東大会相当として段階2（都県大会で上位相当）にとどめた（学校案内パンフレット）（2026-09-23 Opus見直し: 流派主催の地区大会3位が1回。公的な大会の上位ではない）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/seikatsu/kadoubu.html",
+      "as_of": "2026-09-23",
+      "results": [
+        {
+          "fiscal_year": 2024,
+          "competition": "第3回小原流学生いけばな競技会 南関東地区大会（小原流本部）",
+          "level": "関東",
+          "result": "団体戦3位",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/zaikousei-hogosha/documents/20260625110103.pdf"
+        }
+      ]
+    },
+    {
+      "name": "料理研究",
+      "kind": "文化",
+      "days_note": "金（隔週）",
+      "days_per_week": 0.5,
+      "weekend": "なし",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/seikatsu/documents/r8_bukatudou_katudoujoukyou1.pdf",
+      "as_of": "2026-05-01"
+    },
+    {
+      "name": "漫画研究",
+      "kind": "文化",
+      "days_note": "月水",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/seikatsu/documents/r8_bukatudou_katudoujoukyou1.pdf",
+      "as_of": "2026-05-01"
+    },
+    {
+      "name": "パソコン研究",
+      "kind": "文化",
+      "days_note": "火木",
+      "days_per_week": 2,
+      "weekend": "なし",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/seikatsu/pasokon.html",
+      "as_of": "2026-09-23"
+    },
+    {
+      "name": "ボードゲーム",
+      "kind": "同好会",
+      "days_note": "火木金",
+      "days_per_week": 3,
+      "weekend": "なし",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/seikatsu/documents/r8_bukatudou_katudoujoukyou1.pdf",
+      "as_of": "2026-05-01"
+    },
+    {
+      "name": "文芸",
+      "kind": "同好会",
+      "days_note": "火",
+      "days_per_week": 1,
+      "weekend": "なし",
+      "tier": 2,
+      "tier_basis": "2025年度 第44回高等学校文芸コンクール（神奈川県高等学校文化連盟主催）小説部門で教育長賞・連盟賞を受賞（学校案内パンフレット）",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/seikatsu/bungei.html",
+      "as_of": "2026-09-23",
+      "results": [
+        {
+          "fiscal_year": 2025,
+          "competition": "第44回高等学校文芸コンクール（神奈川県高等学校文化連盟）小説部門",
+          "level": "都県",
+          "result": "教育長賞・連盟賞",
+          "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/zaikousei-hogosha/documents/20260625110103.pdf"
+        }
+      ]
+    }
+  ],
+  "designated_universities": [
+    {
+      "university": "麻布大学",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/zaikousei-hogosha/documents/20260625110103.pdf",
+      "note": "学校案内パンフレット「学校推薦型選抜（指定校）の大学・短期大学例」"
+    },
+    {
+      "university": "桜美林大学",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/zaikousei-hogosha/documents/20260625110103.pdf",
+      "note": "学校案内パンフレット「学校推薦型選抜（指定校）の大学・短期大学例」"
+    },
+    {
+      "university": "神奈川大学",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/zaikousei-hogosha/documents/20260625110103.pdf",
+      "note": "学校案内パンフレット「学校推薦型選抜（指定校）の大学・短期大学例」"
+    },
+    {
+      "university": "神奈川工科大学",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/zaikousei-hogosha/documents/20260625110103.pdf",
+      "note": "学校案内パンフレット「学校推薦型選抜（指定校）の大学・短期大学例」"
+    },
+    {
+      "university": "鎌倉女子大学",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/zaikousei-hogosha/documents/20260625110103.pdf",
+      "note": "学校案内パンフレット「学校推薦型選抜（指定校）の大学・短期大学例」"
+    },
+    {
+      "university": "鎌倉女子大学短期大学部",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/zaikousei-hogosha/documents/20260625110103.pdf",
+      "note": "学校案内パンフレット「学校推薦型選抜（指定校）の大学・短期大学例」"
+    },
+    {
+      "university": "関東学院大学",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/zaikousei-hogosha/documents/20260625110103.pdf",
+      "note": "学校案内パンフレット「学校推薦型選抜（指定校）の大学・短期大学例」"
+    },
+    {
+      "university": "相模女子大学",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/zaikousei-hogosha/documents/20260625110103.pdf",
+      "note": "学校案内パンフレット「学校推薦型選抜（指定校）の大学・短期大学例」"
+    },
+    {
+      "university": "産業能率大学",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/zaikousei-hogosha/documents/20260625110103.pdf",
+      "note": "学校案内パンフレット「学校推薦型選抜（指定校）の大学・短期大学例」"
+    },
+    {
+      "university": "昭和音楽大学",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/zaikousei-hogosha/documents/20260625110103.pdf",
+      "note": "学校案内パンフレット「学校推薦型選抜（指定校）の大学・短期大学例」"
+    },
+    {
+      "university": "昭和音楽大学短期大学部",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/zaikousei-hogosha/documents/20260625110103.pdf",
+      "note": "学校案内パンフレット「学校推薦型選抜（指定校）の大学・短期大学例」"
+    },
+    {
+      "university": "多摩大学",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/zaikousei-hogosha/documents/20260625110103.pdf",
+      "note": "学校案内パンフレット「学校推薦型選抜（指定校）の大学・短期大学例」"
+    },
+    {
+      "university": "玉川大学",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/zaikousei-hogosha/documents/20260625110103.pdf",
+      "note": "学校案内パンフレット「学校推薦型選抜（指定校）の大学・短期大学例」"
+    },
+    {
+      "university": "鶴見大学",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/zaikousei-hogosha/documents/20260625110103.pdf",
+      "note": "学校案内パンフレット「学校推薦型選抜（指定校）の大学・短期大学例」"
+    },
+    {
+      "university": "鶴見大学短期大学部",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/zaikousei-hogosha/documents/20260625110103.pdf",
+      "note": "学校案内パンフレット「学校推薦型選抜（指定校）の大学・短期大学例」"
+    },
+    {
+      "university": "東海大学",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/zaikousei-hogosha/documents/20260625110103.pdf",
+      "note": "学校案内パンフレット「学校推薦型選抜（指定校）の大学・短期大学例」"
+    },
+    {
+      "university": "東京家政大学",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/zaikousei-hogosha/documents/20260625110103.pdf",
+      "note": "学校案内パンフレット「学校推薦型選抜（指定校）の大学・短期大学例」"
+    },
+    {
+      "university": "東京工科大学",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/zaikousei-hogosha/documents/20260625110103.pdf",
+      "note": "学校案内パンフレット「学校推薦型選抜（指定校）の大学・短期大学例」"
+    },
+    {
+      "university": "日本大学",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/zaikousei-hogosha/documents/20260625110103.pdf",
+      "note": "学校案内パンフレット「学校推薦型選抜（指定校）の大学・短期大学例」"
+    },
+    {
+      "university": "フェリス女学院大学",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/zaikousei-hogosha/documents/20260625110103.pdf",
+      "note": "学校案内パンフレット「学校推薦型選抜（指定校）の大学・短期大学例」"
+    },
+    {
+      "university": "文教大学",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/zaikousei-hogosha/documents/20260625110103.pdf",
+      "note": "学校案内パンフレット「学校推薦型選抜（指定校）の大学・短期大学例」"
+    },
+    {
+      "university": "湘北短期大学",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/zaikousei-hogosha/documents/20260625110103.pdf",
+      "note": "学校案内パンフレット「学校推薦型選抜（指定校）の大学・短期大学例」"
+    },
+    {
+      "university": "戸板女子短期大学",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/zaikousei-hogosha/documents/20260625110103.pdf",
+      "note": "学校案内パンフレット「学校推薦型選抜（指定校）の大学・短期大学例」"
+    }
+  ],
+  "events": [
+    {
+      "kind": "その他",
+      "period_label": "令和8年度から",
+      "summary": "「21世紀型リーダーシップ教育」を導入した",
+      "source_url": "https://www.pen-kanagawa.ed.jp/y-ryokuen-h/zaikousei-hogosha/documents/20260625110103.pdf"
+    }
+  ],
+  "unresolved": [
+    "推薦の倍率：神奈川県公立高校入試は共通選抜のみで推薦単独の選考区分がないため対象外（入試情報ページも県のサイトへの案内のみ）",
+    "校則の要約（頭髪・スマートフォン・アルバイト等）：生徒心得のような公開資料が見つからなかった（学則PDFには入学・卒業・懲戒等の基本規則のみ掲載）",
+    "部活動加入率：公式資料に記載が見つからなかった",
+    "学校評価の満足度：神奈川県様式の学校評価報告書は文章のみで数値の記載がない（手引き§4のとおり）",
+    "改築・改修・学級増減などの学校の変化：2020年以降の公式な発表が見つからなかった（お知らせ一覧・学校経営関連ページを確認）",
+    "バスケットボール部（男・女）の直近の大会結果：学校サイト・学校案内パンフレットのいずれにも記載が見つからなかった",
+    "ソフトボール部・硬式テニス部・空手道部・ハンドボール部・ダンス部・チアバトン部・放送部・料理研究部・漫画研究部・パソコン研究部・ボードゲーム同好会の直近の大会・コンクール結果：公式サイト・学校案内パンフレットのいずれにも記載が見つからなかった（ソフトボール部・硬式テニス部・空手道部・ハンドボール部は令和8年5月時点で部員0名または休部中）"
+  ],
+  "conflicts": [
+    "バレーボール部の性別構成：部活動状況状況表（令和8年5月現在）は女子3名のみの部として記載しているが、部のページに掲載されたPDF「活動報告」は男子3名（県立商工高校と合同チーム、平成31・令和元年度の実績）についてのもので、現在の女子チームとは食い違う。現在は女子部として活動していると判断した",
+    "演劇部の活動日数：部活動状況表（令和8年5月現在）は「週１程度」としているが、部のページ（engeki.html）は「通常時週3日（月・水・金）、大会前週4日」としており日数が食い違う。より具体的な部のページの記載を採用した"
+  ]
+}
