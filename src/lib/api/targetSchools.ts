@@ -1,5 +1,6 @@
 import { supabase } from '../supabase';
 import type { Database } from '@/types/database';
+import { REGION_LABEL, type Region } from '@/lib/interview/region';
 
 /**
  * 志望校・高校マスタの読み書き。
@@ -225,8 +226,14 @@ export async function saveStudentTargetSchools(
  * 最新年度の内申・偏差値・所在地も一緒に返す。
  * ★course が空文字のもの（普通科の本体）を先に出す。「小平（外国語科）」より「小平」を上に、
  *   という面談での自然な並び（普通科が基本形）に合わせるため。
+ * ★マスタは都立と神奈川県立の両方。都県では絞らない（東京の教室の生徒が神奈川県立を、
+ *   神奈川の教室の生徒が都立を志望することもある）。代わりに、教室の都県（region）の学校を
+ *   先に並べる。region が null（都県未登録の教室）なら従来どおり東京都が先。
  */
-export async function searchHighSchools(query: string): Promise<HighSchoolSearchResult[]> {
+export async function searchHighSchools(
+  query: string,
+  region: Region | null = null
+): Promise<HighSchoolSearchResult[]> {
   // ★ilike のパターンなので % と _ はワイルドカードとして効いてしまう。
   //   学校名に含まれることはないので、打ち間違いで全件マッチにならないよう落とす。
   const q = query.trim().replace(/[%_]/g, '');
@@ -239,6 +246,10 @@ export async function searchHighSchools(query: string): Promise<HighSchoolSearch
     //   JS側で並べ替えると「先に見せたい普通科の本体」が20件の枠から落ちる。
     //   「工科」で25件ヒットするような検索で実際に落ちた。
     .ilike('school_name', `%${q}%`)
+    // ★都県の並べ替えも limit より前に。文字コード順で「東京都」<「神奈川県」なので、
+    //   神奈川の教室だけ降順にすれば神奈川県立が先頭に来る（都県は2つしか無い前提。
+    //   3つ目の都県を入れたら、この並べ方は見直すこと）
+    .order('prefecture', { ascending: region !== 'kanagawa' })
     .order('course', { ascending: true })
     .order('school_name', { ascending: true })
     .limit(20);
@@ -262,6 +273,7 @@ export async function searchHighSchools(query: string): Promise<HighSchoolSearch
   }
 
   const standards = (standardsData || []) as HighSchoolStandardRow[];
+  const homePrefecture = REGION_LABEL[region ?? 'tokyo'];
 
   return list
     .map((s) => {
@@ -282,6 +294,10 @@ export async function searchHighSchools(query: string): Promise<HighSchoolSearch
       };
     })
     .sort((a, b) => {
+      // 教室の都県の学校を先に（DB側の並びと同じ規則をJSでも保つ）
+      const aHome = a.prefecture === homePrefecture ? 0 : 1;
+      const bHome = b.prefecture === homePrefecture ? 0 : 1;
+      if (aHome !== bHome) return aHome - bHome;
       // course 空文字（普通科の本体）を先に。空文字はどの非空文字より辞書順で小さいので
       // localeCompare でも自然にそうなるが、意図を明示するため比較を分ける。
       const aIsBase = a.course === '' ? 0 : 1;

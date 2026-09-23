@@ -76,6 +76,7 @@ import {
   buildTargetSchoolTalkLines,
   latestOwnHensachi,
   latestOwnNaishin,
+  latestOwnKanagawaNaishin,
   currentSeason,
   previousFollowUpAskLine,
   previousFollowUpReportLine,
@@ -573,7 +574,9 @@ export function InterviewScriptCard({
         targetSchools,
         latestOwnNaishin(assessments),
         latestOwnHensachi(assessments),
-        region
+        region,
+        // 神奈川県立（135点満点）と比べる本人の内申。どちらを使うかは学校の満点で決まる
+        latestOwnKanagawaNaishin(assessments)
       ),
     [targetSchools, assessments, region]
   );
