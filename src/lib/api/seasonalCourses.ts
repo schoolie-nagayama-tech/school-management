@@ -415,30 +415,36 @@ export async function getSeasonalCourses(
   schoolId: string,
   isActive = true
 ): Promise<SeasonalCourseListItem[]> {
-  const { data, error } = await supabase
-    .from('seasonal_courses')
-    .select(
-      `
+  // PostgREST の埋め込み集計は curriculum: [{ count: n }] という形で返る（0件でも [{count:0}]）。
+  // 形が変わっても一覧が壊れないよう、取り出せなければ 0 とみなす。
+  type CountEnvelope = { count: number }[] | null | undefined;
+  type CourseRow = SeasonalCourse & {
+    textbooks: SeasonalCourseTextbook[];
+    curriculum?: CountEnvelope;
+  };
+
+  // 教室のテンプレは1,000件を超える（2026-09時点で1,265件）。未ページングの .select() は
+  // PostgREST に1000行で静かに切り捨てられ、created_at 降順の末尾＝古いテンプレが
+  // 一覧から黙って消えていた。全件ページングで取る。
+  // created_at は一括作成で同時刻が並びうるため、id を第2ソートキーにしてページ境界を安定させる。
+  const data = await fetchAllPaged<CourseRow>((from, to) =>
+    supabase
+      .from('seasonal_courses')
+      .select(
+        `
       *,
       textbooks:seasonal_course_textbooks(*, textbook:textbooks(*)),
       curriculum:seasonal_course_curriculum(count)
     `
-    )
-    .eq('school_id', schoolId)
-    .eq('is_active', isActive)
-    .order('created_at', { ascending: false });
+      )
+      .eq('school_id', schoolId)
+      .eq('is_active', isActive)
+      .order('created_at', { ascending: false })
+      .order('id', { ascending: true })
+      .range(from, to)
+  );
 
-  if (error) throw error;
-
-  // PostgREST の埋め込み集計は curriculum: [{ count: n }] という形で返る（0件でも [{count:0}]）。
-  // 形が変わっても一覧が壊れないよう、取り出せなければ 0 とみなす。
-  type CountEnvelope = { count: number }[] | null | undefined;
-  const coursesTyped = (
-    (data || []) as (SeasonalCourse & {
-      textbooks: SeasonalCourseTextbook[];
-      curriculum?: CountEnvelope;
-    })[]
-  ).map((row) => {
+  const coursesTyped = data.map((row) => {
     const { curriculum, ...rest } = row;
     return {
       ...rest,
@@ -449,21 +455,28 @@ export async function getSeasonalCourses(
   if (coursesTyped.length === 0) return [];
 
   // 適用数を一括取得（N+1解消: コース毎にcountクエリ → 全コース分を1クエリで取得しJS側で集計）
+  // コースが1,000件を超えると、id を1本の .in() に並べた URL が長くなりすぎてゲートウェイに
+  // 弾かれうる。また適用は「生徒数 × コース」でスケールし1000行を超えうる。
+  // id チャンク分割＋チャンク内ページングで取る。
   const courseIds = coursesTyped.map((c) => c.id);
-  const { data: applications, error: appsError } = await supabase
-    .from('seasonal_course_applications')
-    .select('course_id')
-    .in('course_id', courseIds);
-
-  if (appsError) {
+  let applications: { course_id: string }[] = [];
+  try {
+    applications = await fetchAllInChunks<{ course_id: string }>(courseIds, (chunk, from, to) =>
+      supabase
+        .from('seasonal_course_applications')
+        .select('course_id')
+        .in('course_id', chunk)
+        .order('id', { ascending: true })
+        .range(from, to)
+    );
+  } catch (appsError) {
     // 申込集計の失敗はメイン機能を止めない（application_count を 0 として続行）
     console.warn('Failed to fetch application counts:', appsError);
   }
 
   const countMap = new Map<string, number>();
-  for (const app of applications || []) {
-    const cid = (app as { course_id: string }).course_id;
-    countMap.set(cid, (countMap.get(cid) || 0) + 1);
+  for (const app of applications) {
+    countMap.set(app.course_id, (countMap.get(app.course_id) || 0) + 1);
   }
 
   return coursesTyped.map((course) => ({
