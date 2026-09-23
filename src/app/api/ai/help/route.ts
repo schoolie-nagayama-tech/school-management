@@ -255,7 +255,9 @@ export async function POST(request: NextRequest) {
         roleLabel: ROLE_LABELS_JA[roleTag] ?? 'スタッフ',
         schoolsText,
       }),
-      maxTokens: 900,
+      // ★学校の一覧を渡したときは長くなる。900のままだと24校ぶんで出力が切れ、
+      //   JSONが壊れて「答えられない」に倒れた（本番の「京王線沿線　都立」）。
+      maxTokens: schoolsText ? 2000 : 900,
     });
 
     const answerText = typeof answer?.answer === 'string' ? answer.answer.trim() : '';

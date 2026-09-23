@@ -397,6 +397,48 @@ describe('場所で引く（都立だけ）', () => {
     expect(names('西武池袋線の都立')).toEqual(['清瀬', '武蔵丘', '保谷', '久留米西']);
   });
 
+  it('★会社名で呼ぶ路線（「西武線」）は、その会社の全路線に当てる', () => {
+    const r = matchSchools('西武線沿線　都立', PLACES);
+    expect(r.rows.map((s) => s.schoolName)).toEqual(['清瀬', '武蔵丘', '保谷', '久留米西']);
+    expect(r.conditions[0]).toContain('西武鉄道 新宿線');
+  });
+
+  it('★「京王線」は京王電鉄の京王線だけ（会社名の呼び方でもあるが、路線名が優先）', () => {
+    const all = [
+      school({
+        prefecture: '東京都',
+        schoolName: '神代',
+        accessLines: ['京王電鉄 京王線'],
+        hensachi: 54,
+      }),
+      school({
+        prefecture: '東京都',
+        schoolName: '芦花',
+        accessLines: ['京王電鉄 井の頭線'],
+        hensachi: 50,
+      }),
+    ];
+    expect(matchSchools('京王線沿線の都立', all).rows.map((s) => s.schoolName)).toEqual(['神代']);
+  });
+
+  it('★同じ呼び名の路線は全部当てる（「新宿線」＝西武新宿線と都営新宿線）', () => {
+    const all = [
+      ...PLACES,
+      school({
+        prefecture: '東京都',
+        schoolName: '新宿',
+        accessLines: ['東京都 10号線新宿線'],
+        hensachi: 63,
+      }),
+    ];
+    const r = matchSchools('新宿線沿いの都立', all);
+    expect(r.rows.map((s) => s.schoolName)).toEqual(['新宿', '保谷']);
+    // 路線まで言えば、その路線だけ
+    expect(matchSchools('都営新宿線沿いの都立', all).rows.map((s) => s.schoolName)).toEqual([
+      '新宿',
+    ]);
+  });
+
   it('★「中央大学」の中央は地名として当てない', () => {
     const r = matchSchools('中央大学附属の話', [
       ...PLACES,
@@ -437,5 +479,59 @@ describe('路線と駅の読み方', () => {
       { name: '秋津', m: null },
     ]);
     expect(parseAccessStations(null)).toBe(null);
+  });
+});
+
+describe('ふだんの言い方で聞かれても引ける（本番の質問ログより）', () => {
+  const all = [...ALL, ...PLACES];
+  const names = (q: string) => matchSchools(q, all).rows.map((s) => s.schoolName);
+
+  it('★助詞をはさんだ数字・全角数字も拾う（「内申が３５くらい」）', () => {
+    expect(names('八王子で内申が３５くらいの都立教えて')).toEqual(['八王子北']);
+    expect(names('偏差値は５０くらい。町田で')).toEqual(['成瀬']);
+  });
+
+  it('★「都立」を付けなくても場所で引く（「偏差値50くらいの学校ある？八王子で」）', () => {
+    const r = matchSchools('偏差値50くらいの学校ある？八王子で', all);
+    expect(r.rows.map((s) => s.schoolName)).toEqual(['八王子東', '八王子北']);
+    expect(r.conditions[0]).toContain('八王子市');
+  });
+
+  it('★学校名と同じ地名は「で」「の高校」なら場所、「の偏差値」なら学校', () => {
+    expect(names('町田で偏差値50')).toEqual(['成瀬']);
+    expect(names('清瀬の高校')).toEqual(['清瀬']);
+    expect(matchSchools('清瀬の高校', all).conditions[0]).toContain('清瀬市');
+    expect(matchSchools('清瀬の偏差値', all).conditions).toEqual([]);
+  });
+
+  it('「清瀬近くの高校」は駅として読む', () => {
+    expect(matchSchools('清瀬近くの高校', all).stations).toEqual(['清瀬']);
+  });
+
+  it('★会社名だけの沿線（「西武沿線」「西武沿い」）', () => {
+    expect(names('西武沿線で内申40')).toEqual(['保谷']);
+    expect(names('西武沿いの学校')).toContain('清瀬');
+  });
+
+  it('「23区」「多摩地区」はまとめて引く', () => {
+    expect(names('23区で偏差値49')).toEqual(['武蔵丘']);
+    expect(names('多摩地区で偏差値63')).toEqual(['八王子東']);
+    expect(matchSchools('多摩地区で偏差値63', all).conditions[0]).toContain('多摩地区');
+  });
+
+  it('★地名を冠した学校の略称（翠嵐）とあだ名（サイフロ）', () => {
+    expect(names('翠嵐の内申')).toEqual(['横浜翠嵐']);
+    expect(names('サイフロの偏差値')).toEqual(['市立横浜サイエンスフロンティア']);
+  });
+
+  it('「ヶ」と「が」「ケ」の書き分けをそろえる（ひばりが丘駅＝ひばりヶ丘）', () => {
+    expect(matchSchools('ひばりが丘駅から近い都立', all).stations).toEqual(['ひばりヶ丘']);
+    expect(matchSchools('ひばりケ丘駅の近く', all).stations).toEqual(['ひばりヶ丘']);
+  });
+
+  it('路線のふだんの呼び名（丸の内線・京浜東北線・埼京線）', () => {
+    expect(lineAliases('東京地下鉄 4号線丸ノ内線')).toContain('丸の内線');
+    expect(lineAliases('東日本旅客鉄道 東北線')).toContain('京浜東北線');
+    expect(lineAliases('東日本旅客鉄道 赤羽線')).toContain('埼京線');
   });
 });
