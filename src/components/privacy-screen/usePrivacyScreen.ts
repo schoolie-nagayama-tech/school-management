@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePrivacyScreenSettings } from './usePrivacyScreenSettings';
+import { drawCountdown } from './examCountdown';
 
 const ACTIVITY_EVENTS = ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll'] as const;
 
@@ -50,6 +51,12 @@ export function usePrivacyScreen() {
   const { timeoutByRole, isLoading } = usePrivacyScreenSettings();
   const [showOverlay, setShowOverlay] = useState(false);
 
+  // 今回のロックで入試カウントダウンを出すか。ロックに入る瞬間に1回だけ抽選する。
+  // ★レンダーごとに引いてはいけない（4秒ごとのポーリングで出たり消えたりする）。
+  // ★タブごとに独立した抽選。表示状態はタブ間で共有しているが、こちらは共有しない。
+  //   別タブで同時に出る必要のあるものではなく、共有すると localStorage の書き込みが増える。
+  const [showCountdown, setShowCountdown] = useState(false);
+
   const roleTimeout = profile?.role ? (timeoutByRole[profile.role] ?? 0) : 0;
   const timeoutMs = roleTimeout * 1000;
 
@@ -86,6 +93,8 @@ export function usePrivacyScreen() {
     let lastWrite = 0;
 
     const lock = () => {
+      // 未ロック → ロックの遷移のときだけ抽選する。ロック中の再評価では引き直さない。
+      if (!lockedRef.current) setShowCountdown(drawCountdown());
       lockedRef.current = true;
       setShowOverlay(true);
     };
@@ -166,6 +175,7 @@ export function usePrivacyScreen() {
 
   return {
     showOverlay: isActive && showOverlay,
+    showCountdown: isActive && showOverlay && showCountdown,
     dismiss,
     isActive,
   };

@@ -3211,6 +3211,7 @@ export type Database = {
           category: string;
           school_code: string | null;
           old_district: number | null;
+          region: string | null;
           municipality: string | null;
           address: string | null;
           lat: number | null;
@@ -3231,6 +3232,7 @@ export type Database = {
           category: string;
           school_code?: string | null;
           old_district?: number | null;
+          region?: string | null;
           municipality?: string | null;
           address?: string | null;
           lat?: number | null;
@@ -3251,6 +3253,7 @@ export type Database = {
           category?: string;
           school_code?: string | null;
           old_district?: number | null;
+          region?: string | null;
           municipality?: string | null;
           address?: string | null;
           lat?: number | null;

@@ -21,6 +21,8 @@ import {
   toRoleTag,
   type FaqIndexEntry,
 } from '@/lib/help/faqIndex';
+import { matchSchools, renderSchools } from '@/lib/ai/schoolLookup';
+import { loadSchools } from '@/lib/ai/schoolMaster';
 import {
   answerSystem,
   answerUserText,
@@ -31,14 +33,18 @@ import {
 export const dynamic = 'force-dynamic';
 
 /**
- * AIヘルプ。質問を受けて、FAQの中から答える。
+ * AIヘルプ。質問を受けて、FAQと高校マスタの中から答える。
  *
- * ★この機能は個人情報をAIに渡さない。渡すのは FAQ本文・質問・ロール・いまのパスだけ。
- *   生徒や保護者のデータには一切触れない（AI機能の中でこれだけがそう作られている）。
+ * ★この機能は個人情報をAIに渡さない。渡すのは FAQ本文・用語集・高校マスタの行・
+ *   質問・ロール・いまのパスだけ。生徒や保護者のデータには一切触れない
+ *   （AI機能の中でこれだけがそう作られている。高校マスタは全教室共通の参照データで、
+ *   生徒に結びついていないので、この性質は変わらない）。
  *
- * 2段階にしている理由は faqIndex.ts の冒頭に書いた（FAQ全文が大きすぎる）。
+ * 材料が2つある。選び方が違う。
+ *   - FAQ  … 2段階。見出しの一覧をAIに見せて選ばせる（faqIndex.ts の冒頭を参照）
+ *   - 学校 … 質問文から直接引く。AIに選ばせない（schoolLookup.ts）
  *
- * 正典: docs/ai-help-plan.md
+ * 正典: docs/ai-help-plan.md ／ 学校マスタの引き当ては docs/ai-help-school-lookup.md
  */
 
 /** 画面に返す形。UIはこれだけを見る */
@@ -212,7 +218,19 @@ export async function POST(request: NextRequest) {
       ? shortlist.ids.filter((x): x is string => typeof x === 'string')
       : [];
     const picked = pickEntriesByIds(visible, ids);
-    if (picked.length === 0) {
+
+    // ★学校マスタの引き当て。FAQと違い、ここは質問文から直接引く（AIに選ばせない）。
+    //   「日比谷の偏差値は？」のような質問は当たるFAQ項目が無いので、
+    //   picked が空でも学校が当たっていれば回答へ進む。
+    //   引けなくても回答は続ける（マスタが落ちてもヘルプ全体は動かす）。
+    let schoolsText = '';
+    try {
+      schoolsText = renderSchools(matchSchools(question, await loadSchools()));
+    } catch (e) {
+      console.error('[ai/help] 高校マスタの引き当てに失敗', e);
+    }
+
+    if (picked.length === 0 && !schoolsText) {
       const logId = await recordQuestion({
         userId: auth.userId,
         role: roleTag,
@@ -235,6 +253,7 @@ export async function POST(request: NextRequest) {
         glossary: renderGlossary(),
         path,
         roleLabel: ROLE_LABELS_JA[roleTag] ?? 'スタッフ',
+        schoolsText,
       }),
       maxTokens: 900,
     });
