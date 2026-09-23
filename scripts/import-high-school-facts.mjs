@@ -386,7 +386,7 @@ async function selectAll(table, columns, filter) {
   }
 }
 
-// ★マイグレーション（20260923140000_high_school_profiles.sql）を当てる前でも下見はできるようにする。
+// ★マイグレーション（20260923150000_high_school_profiles.sql）を当てる前でも下見はできるようにする。
 //   学校の表がまだ無いときは、既存の学科の行から学校を組み立てる（id は仮。書き込みはさせない）。
 let campuses, courses;
 try {

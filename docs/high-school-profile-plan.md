@@ -84,7 +84,7 @@
 
 実装（第1段）:
 
-- 表: `supabase/migrations/20260923140000_high_school_profiles.sql`。既存の学科の行から学校（301校）を起こし、
+- 表: `supabase/migrations/20260923150000_high_school_profiles.sql`。既存の学科の行から学校（301校）を起こし、
   ★学科の行を足したら親の学校を自動で付けるトリガーを置いた（既存の取込スクリプトは campus_id を知らないため）。
 - 項目キー: `src/lib/highSchools/metrics.ts`。部名の統一: `src/lib/highSchools/clubKeys.ts`。
   資料の学校名・学科名 → マスタ: `src/lib/highSchools/importRules.ts`（いずれも .mjs から直接 import する）。
