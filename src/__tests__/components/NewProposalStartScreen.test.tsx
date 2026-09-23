@@ -13,6 +13,7 @@ import userEvent from '@testing-library/user-event';
 import {
   CreateMethodScreen,
   TemplatePickerScreen,
+  sortTemplates,
 } from '@/components/proposals/NewProposalStartScreen';
 import type { SeasonalCourseListItem } from '@/types/database';
 
@@ -104,5 +105,44 @@ describe('TemplatePickerScreen', () => {
   it('絞りを外したあとの0件では「外す」を出さない（押せる先が無い）', () => {
     render(<TemplatePickerScreen {...base} templates={[]} filtered={false} />);
     expect(screen.queryByText('季節・学年の絞り込みを外す')).not.toBeInTheDocument();
+  });
+
+  it('並べ替えボタンで一覧の順番が変わる', async () => {
+    window.localStorage.clear();
+    const make = (id: string, name: string, created: string, applied: number) =>
+      ({
+        ...TEMPLATE,
+        id,
+        name,
+        created_at: created,
+        application_count: applied,
+      }) as SeasonalCourseListItem;
+    const list = [
+      make('a', '第2回 数学', '2026-09-01T00:00:00Z', 0),
+      make('b', '第10回 数学', '2026-09-03T00:00:00Z', 5),
+      make('c', '第1回 数学', '2026-09-02T00:00:00Z', 12),
+    ];
+    render(<TemplatePickerScreen {...base} templates={list} filtered />);
+    const names = () => screen.getAllByText(/^第\d+回 数学$/).map((el) => el.textContent);
+
+    // 既定は新しい順
+    expect(names()).toEqual(['第10回 数学', '第1回 数学', '第2回 数学']);
+
+    // 名前順は数字を数として比べる（10 が 2 より前に来ない）
+    await userEvent.click(screen.getByText('名前順'));
+    expect(names()).toEqual(['第1回 数学', '第2回 数学', '第10回 数学']);
+
+    await userEvent.click(screen.getByText('使われている順'));
+    expect(names()).toEqual(['第1回 数学', '第10回 数学', '第2回 数学']);
+    expect(screen.getByText(/12人に適用/)).toBeInTheDocument();
+  });
+});
+
+describe('sortTemplates', () => {
+  it('使われている順の同点は新しい順で並べる', () => {
+    const t = (id: string, created: string) =>
+      ({ ...TEMPLATE, id, created_at: created, application_count: 0 }) as SeasonalCourseListItem;
+    const out = sortTemplates([t('old', '2026-01-01'), t('new', '2026-09-01')], 'popular');
+    expect(out.map((c) => c.id)).toEqual(['new', 'old']);
   });
 });

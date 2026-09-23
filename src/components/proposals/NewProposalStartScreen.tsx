@@ -11,6 +11,7 @@
  *   もう選ぶものが無いので、2択を出しても片方しか押せない。
  */
 
+import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, BookOpen, LayoutTemplate, Loader2 } from 'lucide-react';
 import { GRADE_LABELS, SEASON_LABELS, type SeasonType } from '@/types/database';
@@ -75,6 +76,54 @@ export function CreateMethodScreen({
   );
 }
 
+/** テンプレ一覧の並べ替え */
+export type TemplateSortKey = 'newest' | 'name' | 'popular';
+
+const SORT_OPTIONS: { key: TemplateSortKey; label: string }[] = [
+  { key: 'newest', label: '新しい順' },
+  { key: 'name', label: '名前順' },
+  { key: 'popular', label: '使われている順' },
+];
+
+// 講師は同じ並べ方で何度も作るので、選んだ並べ方を端末に覚えておく（個人の好みなのでDBには持たない）
+const SORT_STORAGE_KEY = 'nest:proposal-template-sort';
+
+function readStoredSort(): TemplateSortKey {
+  try {
+    const v = window.localStorage.getItem(SORT_STORAGE_KEY);
+    if (v === 'newest' || v === 'name' || v === 'popular') return v;
+  } catch (_e) {
+    // プライベートウィンドウ等で読めなくても既定で動けばよい
+  }
+  return 'newest';
+}
+
+/**
+ * 並べ替え。
+ * ★名前順は numeric 比較にする。「第2回」「第10回」や「中1」「中2」が
+ *   文字コード順だと 10 が 2 より前に来てしまう。
+ * ★同点は新しい順で決める（使われている順で0人が大量に並ぶため、順番が揺れないように）。
+ */
+export function sortTemplates(
+  list: SeasonalCourseListItem[],
+  key: TemplateSortKey
+): SeasonalCourseListItem[] {
+  const byNewest = (a: SeasonalCourseListItem, b: SeasonalCourseListItem) =>
+    b.created_at.localeCompare(a.created_at);
+  const sorted = [...list];
+  if (key === 'name') {
+    sorted.sort(
+      (a, b) =>
+        a.name.localeCompare(b.name, 'ja', { numeric: true, sensitivity: 'base' }) || byNewest(a, b)
+    );
+  } else if (key === 'popular') {
+    sorted.sort((a, b) => b.application_count - a.application_count || byNewest(a, b));
+  } else {
+    sorted.sort(byNewest);
+  }
+  return sorted;
+}
+
 /**
  * テンプレートを選ぶ画面。
  *
@@ -107,6 +156,18 @@ export function TemplatePickerScreen({
   onClearFilters: () => void;
   onBack: () => void;
 }) {
+  const [sortKey, setSortKey] = useState<TemplateSortKey>(readStoredSort);
+  const sortedTemplates = useMemo(() => sortTemplates(templates, sortKey), [templates, sortKey]);
+
+  const changeSort = (key: TemplateSortKey) => {
+    setSortKey(key);
+    try {
+      window.localStorage.setItem(SORT_STORAGE_KEY, key);
+    } catch (_e) {
+      // 覚えられなくても並べ替え自体はできる
+    }
+  };
+
   return (
     <div className="pb-20">
       <div className="mb-4">
@@ -135,6 +196,29 @@ export function TemplatePickerScreen({
           )}
           {!loading && <span className="text-[11px] text-text-muted">{templates.length}件</span>}
         </div>
+        {!loading && templates.length > 1 && (
+          <div
+            role="group"
+            aria-label="並べ替え"
+            className="mt-3 inline-flex rounded-lg border border-border bg-surface-raised p-0.5"
+          >
+            {SORT_OPTIONS.map((o) => (
+              <button
+                key={o.key}
+                type="button"
+                aria-pressed={sortKey === o.key}
+                onClick={() => changeSort(o.key)}
+                className={`rounded-md px-3 py-1 text-xs transition-[background-color,color] duration-150 ${
+                  sortKey === o.key
+                    ? 'bg-surface-hover font-bold text-text-heading'
+                    : 'text-text-muted hover:text-text-heading'
+                }`}
+              >
+                {o.label}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {loading ? (
@@ -157,7 +241,7 @@ export function TemplatePickerScreen({
         </div>
       ) : (
         <div className="flex flex-col gap-2">
-          {templates.map((c) => {
+          {sortedTemplates.map((c) => {
             const bookNames = c.textbooks
               .map((ct) => ct.textbook?.name ?? '')
               .filter(Boolean)
@@ -180,6 +264,8 @@ export function TemplatePickerScreen({
                     grades,
                     `テキスト${c.textbooks.length}冊${bookNames ? `（${bookNames}）` : ''}`,
                     `${c.curriculum_count}単元`,
+                    // 「使われている順」の根拠が見えないと並びを信用できないので数も出す
+                    c.application_count > 0 ? `${c.application_count}人に適用` : '',
                   ]
                     .filter(Boolean)
                     .join(' ・ ')}
