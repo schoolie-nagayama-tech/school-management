@@ -144,12 +144,21 @@ function takeHits(
   aliases: Alias[],
   accept: (after: string) => boolean = () => true
 ): { q: string; keys: string[] } {
+  // ★同じ呼び名が複数のキーを指すことがある（「新宿線」＝西武新宿線と都営新宿線、
+  //   「西武線」＝西武の全路線）。呼び名ごとにまとめてから当てる。
+  //   1件ずつ当てると、最初のキーで伏せ字にした時点で2件目以降が当たらなくなる。
+  const byAlias = new Map<string, string[]>();
+  for (const { alias, key } of aliases) {
+    const ks = byAlias.get(alias) ?? [];
+    if (!ks.includes(key)) ks.push(key);
+    byAlias.set(alias, ks);
+  }
   const keys: string[] = [];
-  const sorted = [...aliases].sort((a, b) => b.alias.length - a.alias.length);
-  for (const { alias, key } of sorted) {
+  const sorted = Array.from(byAlias.keys()).sort((a, b) => b.length - a.length);
+  for (const alias of sorted) {
     for (let i = q.indexOf(alias); i >= 0; i = q.indexOf(alias, i + 1)) {
       if (!accept(q.slice(i + alias.length))) continue;
-      if (!keys.includes(key)) keys.push(key);
+      for (const key of byAlias.get(alias) as string[]) if (!keys.includes(key)) keys.push(key);
       q = mask(q, i, alias.length);
     }
   }
@@ -387,9 +396,21 @@ interface Places {
 function readPlaces(question: string, all: SchoolMatch[]): Places {
   const tokyo = all.filter((s) => s.prefecture === '東京都');
 
+  const allLines = Array.from(new Set(tokyo.flatMap((s) => s.accessLines ?? [])));
   const lineAliasList: Alias[] = [];
-  for (const line of Array.from(new Set(tokyo.flatMap((s) => s.accessLines ?? [])))) {
+  for (const line of allLines) {
     for (const alias of lineAliases(line)) lineAliasList.push({ alias, key: line });
+  }
+  // 会社名で呼ぶ言い方（「西武線」「小田急線」「都営線」）は、その会社の全路線に当てる。
+  // ★「西武新宿線」のように路線まで言っていれば、長い呼び名が先に当たってそちらになる。
+  // ★「京王線」「京成線」のように、その呼び名が特定の路線の呼び名でもあるときは、その路線だけ。
+  //   「京王線沿線」で井の頭線まで並べない。
+  const named = new Set(lineAliasList.map((a) => a.alias));
+  for (const line of allLines) {
+    const company = line.slice(0, Math.max(0, line.indexOf(' ')));
+    for (const s of COMPANY_SHORT[company] ?? []) {
+      if (!named.has(`${s}線`)) lineAliasList.push({ alias: `${s}線`, key: line });
+    }
   }
   const L = takeHits(question, lineAliasList);
 

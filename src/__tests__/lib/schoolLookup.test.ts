@@ -397,6 +397,48 @@ describe('場所で引く（都立だけ）', () => {
     expect(names('西武池袋線の都立')).toEqual(['清瀬', '武蔵丘', '保谷', '久留米西']);
   });
 
+  it('★会社名で呼ぶ路線（「西武線」）は、その会社の全路線に当てる', () => {
+    const r = matchSchools('西武線沿線　都立', PLACES);
+    expect(r.rows.map((s) => s.schoolName)).toEqual(['清瀬', '武蔵丘', '保谷', '久留米西']);
+    expect(r.conditions[0]).toContain('西武鉄道 新宿線');
+  });
+
+  it('★「京王線」は京王電鉄の京王線だけ（会社名の呼び方でもあるが、路線名が優先）', () => {
+    const all = [
+      school({
+        prefecture: '東京都',
+        schoolName: '神代',
+        accessLines: ['京王電鉄 京王線'],
+        hensachi: 54,
+      }),
+      school({
+        prefecture: '東京都',
+        schoolName: '芦花',
+        accessLines: ['京王電鉄 井の頭線'],
+        hensachi: 50,
+      }),
+    ];
+    expect(matchSchools('京王線沿線の都立', all).rows.map((s) => s.schoolName)).toEqual(['神代']);
+  });
+
+  it('★同じ呼び名の路線は全部当てる（「新宿線」＝西武新宿線と都営新宿線）', () => {
+    const all = [
+      ...PLACES,
+      school({
+        prefecture: '東京都',
+        schoolName: '新宿',
+        accessLines: ['東京都 10号線新宿線'],
+        hensachi: 63,
+      }),
+    ];
+    const r = matchSchools('新宿線沿いの都立', all);
+    expect(r.rows.map((s) => s.schoolName)).toEqual(['新宿', '保谷']);
+    // 路線まで言えば、その路線だけ
+    expect(matchSchools('都営新宿線沿いの都立', all).rows.map((s) => s.schoolName)).toEqual([
+      '新宿',
+    ]);
+  });
+
   it('★「中央大学」の中央は地名として当てない', () => {
     const r = matchSchools('中央大学附属の話', [
       ...PLACES,
