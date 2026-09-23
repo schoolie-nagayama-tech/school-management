@@ -23,7 +23,7 @@
  *（下書きを溜めて後でまとめて保存する設計にはしない）。
  */
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import {
   Card,
@@ -35,6 +35,8 @@ import {
   Button,
 } from '@/components/ui';
 import { InterviewModal } from '@/components/students/InterviewModal';
+import { ImportNottaModal } from '@/components/students/ImportNottaModal';
+import { useAuth } from '@/contexts/AuthContext';
 import { completeTask, uncompleteTask, createInterview } from '@/lib/api/interviews';
 import { useToast } from '@/hooks/useToast';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
@@ -43,7 +45,13 @@ import {
   INTERVIEW_TYPE_LABELS,
   type StudentInterview,
 } from '@/types/database';
-import { fmtDateJa, parseNottaSummary, type NottaSummary } from './interview.shared';
+import {
+  fmtDateJa,
+  matchesSearch,
+  parseNottaSummary,
+  splitForHighlight,
+  type NottaSummary,
+} from './interview.shared';
 import {
   CheckCircle2,
   Circle,
@@ -51,8 +59,11 @@ import {
   ChevronUp,
   ExternalLink,
   History,
+  Mic,
   Pin,
   Plus,
+  Search,
+  X,
 } from 'lucide-react';
 
 export interface HandoverInfo {
@@ -209,28 +220,57 @@ export function InterviewTasksCard({
 /** 構造化して出すとき、畳まずに最初から見せる節の数。残りは「すべて表示」で開く */
 const NOTTA_VISIBLE_SECTIONS = 2;
 
-/** Notta取込を見出し＋箇条書きで出す。空だった見出しは末尾に1行でまとめる */
-function NottaBody({ summary }: { summary: NottaSummary }) {
+/**
+ * 検索語に当たった所を塗って出す。検索していないときは素の文字のまま。
+ * ★色は warning-subtle（前回の申し送りのピンと同じ系統）。新しい色は足さない。
+ */
+function Hl({ text, query }: { text: string; query: string }) {
+  if (!query.trim()) return <>{text}</>;
+  return (
+    <>
+      {splitForHighlight(text, query).map((part, i) =>
+        part.hit ? (
+          <mark key={i} className="rounded-sm bg-warning-subtle px-px text-inherit">
+            {part.text}
+          </mark>
+        ) : (
+          <span key={i}>{part.text}</span>
+        )
+      )}
+    </>
+  );
+}
+
+/**
+ * Notta取込を見出し＋箇条書きで出す。空だった見出しは末尾に1行でまとめる。
+ * ★検索中は全部の節を出す（当たった箇所が「すべて表示」の奥に隠れると、件数だけ出て
+ *   どこに当たったのか見えない）。
+ */
+function NottaBody({ summary, query }: { summary: NottaSummary; query: string }) {
   const [expanded, setExpanded] = useState(false);
+  const searching = query.trim() !== '';
   const hasMore = summary.sections.length > NOTTA_VISIBLE_SECTIONS;
-  const shown = expanded ? summary.sections : summary.sections.slice(0, NOTTA_VISIBLE_SECTIONS);
+  const shown =
+    expanded || searching ? summary.sections : summary.sections.slice(0, NOTTA_VISIBLE_SECTIONS);
 
   return (
     <div className="flex flex-col gap-1.5">
       {shown.map((section) => (
         <div key={section.heading}>
-          <h5 className="text-[11px] font-bold text-text-heading">{section.heading}</h5>
+          <h5 className="text-[11px] font-bold text-text-heading">
+            <Hl text={section.heading} query={query} />
+          </h5>
           <ul className="mt-0.5 list-disc pl-4">
             {section.bullets.map((b, i) => (
               <li key={i} className="text-xs leading-relaxed text-text-body">
-                {b}
+                <Hl text={b} query={query} />
               </li>
             ))}
           </ul>
         </div>
       ))}
 
-      {hasMore && (
+      {hasMore && !searching && (
         <button
           type="button"
           onClick={() => setExpanded((v) => !v)}
@@ -279,13 +319,16 @@ function NottaBody({ summary }: { summary: NottaSummary }) {
  *   3. Nottaでもなければ、メタ行を落とした受け皿の文（InterviewWorkspace が組む handover.text）
  * ★ピン留めは「最初に目に入る短い一枚」なので、タイムラインと違って
  *   「すべて表示」も「録音を開く」も出さない（同じ記録はすぐ下のタイムラインにある）。
+ * ★検索中も絞り込まない（前回の申し送りは常に最初に読むもの）。当たった所は塗る。
  */
-function HandoverBody({ handover }: { handover: HandoverInfo }) {
+function HandoverBody({ handover, query }: { handover: HandoverInfo; query: string }) {
   const notta = handover.isFallback ? parseNottaSummary(handover.content) : null;
 
   if (!notta) {
     return (
-      <p className="whitespace-pre-wrap text-sm leading-relaxed text-text-body">{handover.text}</p>
+      <p className="whitespace-pre-wrap text-sm leading-relaxed text-text-body">
+        <Hl text={handover.text} query={query} />
+      </p>
     );
   }
 
@@ -293,11 +336,13 @@ function HandoverBody({ handover }: { handover: HandoverInfo }) {
     <div className="flex flex-col gap-1.5">
       {notta.sections.map((section) => (
         <div key={section.heading}>
-          <h5 className="text-[11px] font-bold text-text-heading">{section.heading}</h5>
+          <h5 className="text-[11px] font-bold text-text-heading">
+            <Hl text={section.heading} query={query} />
+          </h5>
           <ul className="mt-0.5 list-disc pl-4">
             {section.bullets.map((b, i) => (
               <li key={i} className="text-xs leading-relaxed text-text-body">
-                {b}
+                <Hl text={b} query={query} />
               </li>
             ))}
           </ul>
@@ -310,9 +355,19 @@ function HandoverBody({ handover }: { handover: HandoverInfo }) {
   );
 }
 
-/** 構造化できない本文（手入力の短い記録など）。従来どおり3行で畳む */
-function PlainBody({ content }: { content: string }) {
+/**
+ * 構造化できない本文（手入力の短い記録など）。従来どおり3行で畳む。
+ * ★検索中は畳まずに全文を出す（当たった箇所が4行目以降だと見えないため）。
+ */
+function PlainBody({ content, query }: { content: string; query: string }) {
   const [expanded, setExpanded] = useState(false);
+  if (query.trim()) {
+    return (
+      <p className="whitespace-pre-wrap text-xs leading-relaxed text-text-body">
+        <Hl text={content} query={query} />
+      </p>
+    );
+  }
   return (
     <button type="button" onClick={() => setExpanded((v) => !v)} className="w-full text-left">
       <p
@@ -341,7 +396,7 @@ interface RecordsCardProps {
   interviews: StudentInterview[];
   loading: boolean;
   handover: HandoverInfo | null;
-  /** 面談編集の保存後に呼ぶ。親側で面談記録を再取得する。 */
+  /** 面談編集の保存後・Notta取り込みの後に呼ぶ。親側で面談記録を再取得する。 */
   onChanged: () => void;
 }
 
@@ -354,19 +409,93 @@ export function InterviewRecordsCard({
   onChanged,
 }: RecordsCardProps) {
   const [editingInterview, setEditingInterview] = useState<StudentInterview | null>(null);
-  const timeline = interviews.filter((i) => i.interview_type !== 'task');
+  /**
+   * Nottaから取り込み。★生徒詳細「面談記録」タブ（InterviewList）と同じ栓
+   * （permissions.canEditInterviews）で出し分ける。講師には出さない。
+   * ★取り込みの中身（どの文字起こしをどの種別で入れるか）は既存のモーダルをそのまま使う。
+   *   2か所で別々の取り込み画面を持つと、片方だけ直したときに挙動がずれる。
+   */
+  const { permissions } = useAuth();
+  const canImportNotta = permissions?.canEditInterviews ?? false;
+  const [nottaOpen, setNottaOpen] = useState(false);
+  const { success } = useToast();
+  /**
+   * 面談記録の検索。★タイトルと本文の部分一致（全角半角・大文字小文字を区別しない）。
+   * 保存しない（その場で探すためのもので、生徒を切り替えたら要らない）。
+   */
+  const [query, setQuery] = useState('');
+  const searching = query.trim() !== '';
+
+  const timeline = useMemo(
+    () => interviews.filter((i) => i.interview_type !== 'task'),
+    [interviews]
+  );
+  const shownTimeline = useMemo(
+    () =>
+      searching
+        ? timeline.filter((iv) => {
+            const title = iv.title ?? parseNottaSummary(iv.content)?.title ?? '';
+            return matchesSearch(`${title}\n${iv.content}`, query);
+          })
+        : timeline,
+    [timeline, query, searching]
+  );
 
   return (
     <Card>
       <CardHeader className="flex flex-row items-center gap-2 border-b-0 pb-0">
         <History className="h-4 w-4 text-text-muted" />
         <CardTitle className="text-sm">面談記録</CardTitle>
+        {canImportNotta && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setNottaOpen(true)}
+            className="ml-auto h-7 shrink-0 gap-1 px-2 text-xs"
+          >
+            <Mic className="h-3.5 w-3.5" />
+            Nottaから取り込み
+          </Button>
+        )}
       </CardHeader>
       <CardContent className="pt-2">
         {loading ? (
           <InlineLoading />
         ) : (
           <div className="flex flex-col gap-3">
+            {/* 検索。★記録が1件も無いときは出さない（探すものが無い） */}
+            {timeline.length > 0 && (
+              <div className="flex items-center gap-2">
+                <div className="flex min-w-0 flex-1 items-center gap-1.5 rounded-md border border-border bg-surface px-2 py-1 focus-within:border-border-strong">
+                  <Search className="h-3.5 w-3.5 shrink-0 text-text-muted" aria-hidden="true" />
+                  <input
+                    type="text"
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder="面談記録を検索（例：推薦、英検）"
+                    aria-label="面談記録を検索"
+                    className="min-w-0 flex-1 bg-transparent text-xs text-text-heading outline-none placeholder:text-text-faint"
+                  />
+                  {searching && (
+                    <button
+                      type="button"
+                      onClick={() => setQuery('')}
+                      className="inline-flex shrink-0 items-center gap-0.5 text-[11px] text-text-muted hover:text-text-body"
+                      aria-label="検索をクリア"
+                    >
+                      <X className="h-3 w-3" aria-hidden="true" />
+                      クリア
+                    </button>
+                  )}
+                </div>
+                {searching && (
+                  <span className="shrink-0 text-[11px] text-text-muted">
+                    {shownTimeline.length}件
+                  </span>
+                )}
+              </div>
+            )}
+
             {/* 前回の申し送り。タイムライン最新1件から抜き出したものなので、同じ並びの先頭に置く */}
             {handover && (
               <div className="rounded-lg border-l-4 border-l-warning bg-warning-subtle p-3">
@@ -377,15 +506,19 @@ export function InterviewRecordsCard({
                     {fmtDateJa(handover.date)}
                   </span>
                 </div>
-                <HandoverBody handover={handover} />
+                <HandoverBody handover={handover} query={query} />
               </div>
             )}
 
             {timeline.length === 0 ? (
               <p className="text-sm text-text-muted">面談記録はまだありません</p>
+            ) : shownTimeline.length === 0 ? (
+              <p className="text-sm text-text-muted">
+                「{query.trim()}」を含む面談記録はありません
+              </p>
             ) : (
               <div className="flex max-h-[560px] flex-col gap-3 overflow-y-auto">
-                {timeline.map((iv) => {
+                {shownTimeline.map((iv) => {
                   const notta = parseNottaSummary(iv.content);
                   const title = iv.title ?? notta?.title ?? null;
                   return (
@@ -416,9 +549,15 @@ export function InterviewRecordsCard({
                         </button>
                       </div>
                       {title && (
-                        <p className="mb-1 text-sm font-semibold text-text-heading">{title}</p>
+                        <p className="mb-1 text-sm font-semibold text-text-heading">
+                          <Hl text={title} query={query} />
+                        </p>
                       )}
-                      {notta ? <NottaBody summary={notta} /> : <PlainBody content={iv.content} />}
+                      {notta ? (
+                        <NottaBody summary={notta} query={query} />
+                      ) : (
+                        <PlainBody content={iv.content} query={query} />
+                      )}
                     </div>
                   );
                 })}
@@ -447,6 +586,21 @@ export function InterviewRecordsCard({
           onSaved={() => {
             setEditingInterview(null);
             onChanged();
+          }}
+        />
+      )}
+
+      {canImportNotta && (
+        <ImportNottaModal
+          isOpen={nottaOpen}
+          onClose={() => setNottaOpen(false)}
+          studentId={studentId}
+          schoolId={schoolId}
+          onSuccess={() => {
+            setNottaOpen(false);
+            // ★取り込んだ記録がすぐ台本（前回の要望・前回の言葉）にも効くよう、親で読み直す
+            onChanged();
+            success('Notta文字起こしを面談記録に取り込みました');
           }}
         />
       )}

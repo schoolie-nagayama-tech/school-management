@@ -20,7 +20,7 @@ import type {
   SeasonalProposalStatus,
 } from '@/lib/api/seasonalProposalSummary';
 import { normalizeKomaBySubject } from '@/lib/utils/komaBySubject';
-import type { BriefSectionKey } from '@/lib/ai/interviewBrief';
+import type { BriefSectionKey, FollowUpActor } from '@/lib/ai/interviewBrief';
 import type { TextbookProgressData } from './ProgressPanel';
 import type { DisciplineSessionRow } from '@/lib/api/progress-sessions';
 import type { TargetSchoolMaster, TargetSchoolRow } from '@/lib/api/targetSchools';
@@ -172,6 +172,61 @@ const NOTTA_META_KEYS = ['タイトル', '録音日時', '音声URL', '参加者
 const NOTTA_EMPTY_BULLET =
   /(見つかりませんでした|確認できませんでした|確認できません|見当たりません|記載がありません|発言はありません|ありませんでした|特になし)[。．.\s]*$/;
 
+/**
+ * 新しいNottaの型（2026-09-23 に教室長が変更）で「話題が出なかった」ことを表す1件。
+ * ★新しい型では、出なかった見出しには「（なし）」を1件だけ書く決まり。
+ *   古い型の「確認できませんでした」と同じ扱い（見出しごと記載なしに畳む）。
+ */
+const NOTTA_NONE_BULLET = /^[（(]\s*なし\s*[）)][。．.]?$/;
+
+/**
+ * Nottaの要約の見出しとして扱ってよい名前（■・【】が付いていない形で来たときだけ使う）。
+ * ★Slack経由で届いた要約は「前回の確認 • 前回の面談…」のように、見出しの印が無く、
+ *   箇条書きの「•」と同じ行に見出しが並ぶ。自由文の中の語を見出しと取り違えないよう、
+ *   知っている名前だけを見出しにする（src/lib/api/notta-transcripts.ts の
+ *   NOTTA_SECTION_HEADERS と揃える。印象に残った言葉は2026-09-23の新しい型で足した見出し）。
+ */
+const NOTTA_KNOWN_HEADINGS = [
+  '前回の確認',
+  '塾からの報告',
+  '保護者からの要望',
+  '生徒からの要望',
+  '相談事項',
+  '今後の方針',
+  '総合メモ',
+  '印象に残った言葉',
+  '次回への申し送り',
+] as const;
+
+/** 不可視文字（LRM・RLM・ゼロ幅空白）。Nottaの出力の行末や見出しの前に混ざる */
+const NOTTA_INVISIBLE = /[‎‏​]/g;
+
+/**
+ * Slack経由の形（見出しの印なし・「•」の箇条書き・見出しが前の箇条書きの行末に続く）を、
+ * 「■ 見出し」と「・箇条書き」の行に組み直す。
+ *
+ * 例（本番の notta_transcripts.transcript の実物の形）:
+ *   「前回の確認 • 前回の面談…\n• 前回決めた方針…\n• …‎ 塾からの報告 • 英語は…」
+ * ★見出しとみなすのは「知っている見出し名の直後に •」が来たときと、
+ *   知っている見出し名だけの行（印なし）のときだけ。
+ * ★すでに「■ 見出し」「【見出し】」の形の本文（取り込み時に整形済みの記録）は触らない
+ *  （■ や 【 の直後の見出しは (^|\s) に当たらないので置き換わらない）。
+ */
+function normalizeNottaLayout(content: string): string {
+  const names = NOTTA_KNOWN_HEADINGS.join('|');
+  const inlineHeading = new RegExp(`(^|\\s)(${names})\\s*•\\s*`, 'g');
+  const bareHeadingLine = new RegExp(`^\\s*(${names})\\s*$`);
+  return content
+    .replace(NOTTA_INVISIBLE, '')
+    .replace(inlineHeading, (_m, _pre: string, name: string) => `\n■ ${name}\n・`)
+    .split('\n')
+    .map((line) => {
+      const bare = line.match(bareHeadingLine);
+      return bare ? `■ ${bare[1]}` : line;
+    })
+    .join('\n');
+}
+
 /** 行末に紛れ込む不可視文字（Nottaの出力に LRM が混ざる）ごと落とす */
 function trimNottaLine(line: string): string {
   return line.replace(/[\s‎‏​]+$/g, '').replace(/^[\s‎‏​]+/g, '');
@@ -189,7 +244,8 @@ function trimNottaLine(line: string): string {
  *   本文を節に割らずに出す、という中途半端な状態を作らない。
  */
 export function parseNottaSummary(content: string): NottaSummary | null {
-  const lines = content.split('\n');
+  // ★Slack経由の形（見出しの印なし・「•」の箇条書き）を先に組み直す（normalizeNottaLayout の注記）
+  const lines = normalizeNottaLayout(content).split('\n');
 
   let title: string | null = null;
   let audioUrl: string | null = null;
@@ -224,9 +280,12 @@ export function parseNottaSummary(content: string): NottaSummary | null {
 
     // 見出しが始まる前の行は捨てる（メタの残りか、Nottaの前置き）
     if (!current) continue;
-    const bullet = trimNottaLine(line.replace(/^[・\-*]\s*/, ''));
-    // ★「確認できませんでした」等の箇条書きは1件ずつ落とす（NOTTA_EMPTY_BULLET の注記）
-    if (bullet && !NOTTA_EMPTY_BULLET.test(bullet)) current.bullets.push(bullet);
+    const bullet = trimNottaLine(line.replace(/^[・•\-*]\s*/, ''));
+    // ★「確認できませんでした」等の箇条書きは1件ずつ落とす（NOTTA_EMPTY_BULLET の注記）。
+    //   新しい型の「（なし）」も同じ（NOTTA_NONE_BULLET の注記）
+    if (bullet && !NOTTA_EMPTY_BULLET.test(bullet) && !NOTTA_NONE_BULLET.test(bullet)) {
+      current.bullets.push(bullet);
+    }
   }
 
   if (sections.length === 0) return null;
@@ -554,6 +613,8 @@ export function buildTellSections(props: {
     // ★空の節（「確認できませんでした」だけの見出し）を畳んだ文面。AIにもこれがそのまま渡る
     const text = buildHandoverText(latest.content);
     if (text) lines.push(`申し送り: ${text}`);
+    // ★前回、本人・保護者が「」で言った言葉。AIには言い換えずに引用させる（extractQuotedWords）
+    for (const word of extractQuotedWords(latest.content)) lines.push(quotedWordFactLine(word));
     sections.push({ key: 'lastInterview', current: lines });
   }
 
@@ -1632,6 +1693,13 @@ export interface PreviousCommitmentItem {
   source: string;
   /** AIが使えない・その項目を返さなかったときの既定の扱い */
   fallback: FollowUpFallbackKind;
+  /**
+   * 新しいNottaの型の「誰が動くか」。★AIにも本文とは別に添えて送る（interviewBrief.ts の
+   * FollowUpActor）。古い型の記録・タスクには付かない。
+   */
+  actor?: FollowUpActor;
+  /** 新しいNottaの型の要望の印（【相談】【要望】）。いまは画面に出していない */
+  tag?: '相談' | '要望';
 }
 
 /** AIが使えないときの既定の扱い。report＝塾から対応を伝える／ask＝家庭に聞く */
@@ -1668,10 +1736,80 @@ export interface PreviousCommitmentLines {
 const SCHOOL_SIDE_ACTION =
   /(確認します|準備します|進めます|用意します|提案します|お伝えします|共有します)。?$/;
 
-export function previousItemFallbackKind(source: string, text = ''): FollowUpFallbackKind {
+export function previousItemFallbackKind(
+  source: string,
+  text = '',
+  /**
+   * 新しいNottaの型の「誰が動くか」（parsePreviousBullet が頭の語から取ったもの）。
+   * ★あれば語尾の当て推量（SCHOOL_SIDE_ACTION）より優先する。書いた本人が決めた動く人なので、
+   *   語尾から推すより確か。塾が動く＝報告、家庭・生徒・次回確認＝聞く。
+   */
+  actor?: FollowUpActor
+): FollowUpFallbackKind {
   if (source === 'task') return 'ask';
+  if (actor) return actor === 'juku' ? 'report' : 'ask';
   if (/要望/.test(source)) return 'report';
   return SCHOOL_SIDE_ACTION.test(text) ? 'report' : 'ask';
+}
+
+/**
+ * 新しいNottaの型（2026-09-23）の判断の行。「感情：不安が強い」「受け止め：前向き」のように、
+ * 書いた人の見立てを頭の語で分けて書く決まり。
+ * ★面談記録カードにはそのまま出すが、②の「前回の要望・方針」には拾わない
+ *  （要望でも約束でもないものに「対応を伝える」「その後どうですか」が立つと意味が通らない）。
+ */
+const NOTTA_JUDGEMENT_PREFIX = /^(感情|受け止め)\s*[：:]/;
+
+/**
+ * 新しいNottaの型の「保護者からの要望」の末尾の印（【相談】【要望】）。
+ * ★②で読み上げる本文からは外す。印は tag に残す（いまは画面に出していない）。
+ */
+const NOTTA_REQUEST_TAG = /\s*【(相談|要望)】\s*$/;
+
+/** 新しいNottaの型の「今後の方針」の頭の語（誰が動くか） */
+const NOTTA_ACTOR_PREFIX: readonly { re: RegExp; actor: FollowUpActor }[] = [
+  { re: /^塾\s*[：:]\s*/, actor: 'juku' },
+  { re: /^家庭\s*[：:]\s*/, actor: 'home' },
+  { re: /^生徒\s*[：:]\s*/, actor: 'student' },
+  { re: /^次回確認\s*[：:]\s*/, actor: 'nextCheck' },
+];
+
+/** parsePreviousBullet の戻り */
+export interface PreviousBullet {
+  /** 頭の語・末尾の印を外した本文。★②とAIに渡すのはこの文 */
+  text: string;
+  /** 「塾：」「家庭：」…から取った動く人。古い型（頭の語なし）では無い */
+  actor?: FollowUpActor;
+  /** 「【相談】」「【要望】」の印。無ければ無い */
+  tag?: '相談' | '要望';
+  /** 「感情：」「受け止め：」の判断の行。②には拾わない */
+  judgement: boolean;
+}
+
+/**
+ * Nottaの箇条書き1件を、②で追いかける1件として読む（新しい型・古い型の両方）。
+ * ★古い型の箇条書き（頭の語も印も無い）はそのまま text に入り、actor も tag も付かない。
+ */
+export function parsePreviousBullet(bullet: string): PreviousBullet {
+  let text = bullet.replace(/\s+/g, ' ').trim();
+  if (NOTTA_JUDGEMENT_PREFIX.test(text)) return { text, judgement: true };
+
+  let tag: PreviousBullet['tag'];
+  const tagMatch = text.match(NOTTA_REQUEST_TAG);
+  if (tagMatch) {
+    tag = tagMatch[1] as PreviousBullet['tag'];
+    text = text.slice(0, tagMatch.index).trim();
+  }
+
+  let actor: FollowUpActor | undefined;
+  for (const p of NOTTA_ACTOR_PREFIX) {
+    if (p.re.test(text)) {
+      actor = p.actor;
+      text = text.replace(p.re, '').trim();
+      break;
+    }
+  }
+  return { text, actor, tag, judgement: false };
 }
 
 /** 左（話すこと）: 「前回の『◯◯』はその後どうですか」 */
@@ -1729,7 +1867,11 @@ export function buildPreviousCommitmentLines(
       if (!PREVIOUS_REQUEST_HEADING.test(section.heading)) continue;
       for (const bullet of section.bullets) {
         if (requests.length >= MAX_PREVIOUS_REQUESTS) break;
-        const text = bullet.replace(/\s+/g, ' ').trim();
+        // ★新しい型の頭の語（塾：／家庭：…）・末尾の印（【相談】…）はここで外す（parsePreviousBullet）
+        const parsedBullet = parsePreviousBullet(bullet);
+        // 「感情：」「受け止め：」は見立ての行で、要望・約束・方針ではない
+        if (parsedBullet.judgement) continue;
+        const text = parsedBullet.text;
         if (!text) continue;
         // 要望そのものではなく要望への論評（PREVIOUS_REQUEST_COMMENTARY の注記）
         if (PREVIOUS_REQUEST_COMMENTARY.test(text)) continue;
@@ -1739,7 +1881,9 @@ export function buildPreviousCommitmentLines(
           items.push({
             text,
             source: section.heading,
-            fallback: previousItemFallbackKind(section.heading, text),
+            fallback: previousItemFallbackKind(section.heading, text, parsedBullet.actor),
+            ...(parsedBullet.actor ? { actor: parsedBullet.actor } : {}),
+            ...(parsedBullet.tag ? { tag: parsedBullet.tag } : {}),
           });
         }
       }
@@ -1788,6 +1932,234 @@ export function buildHandoverText(content: string): string {
   }
 
   return stripNottaMeta(content).replace(/\s+/g, ' ').trim().slice(0, MAX_HANDOVER_LENGTH);
+}
+
+/* ============================================================
+ * ②ヒアリング: 前回の「」の言葉をそのまま運ぶ
+ * ------------------------------------------------------------
+ * 正典: docs/interview-workspace-layout-2026-09.md「2026-09-23 整理」
+ *
+ * ★前回の面談で本人・保護者が口にした言葉（「頑張ります」）を、次の面談で
+ *   そのまま返す。言い換えた要約では「覚えていてくれた」にならない。
+ *   AIには書かせずシステムが拾う（1字でも変わると本人の言葉ではなくなる）。
+ * ========================================================== */
+
+/** 前回の言葉1件 */
+export interface QuotedWord {
+  /** 「」の中身（原文のまま） */
+  quote: string;
+  /** 誰の言葉か。分からなければ null（画面は「〜という言葉が出ていました」と言う） */
+  speaker: '生徒' | '保護者' | null;
+}
+
+/** 拾う言葉の上限。②の振り返りの話すことに並ぶので多すぎると埋まる */
+const MAX_QUOTED_WORDS = 3;
+/** これより短い「」は言葉ではなく語（「英検」「推薦」など）とみなして拾わない */
+const MIN_QUOTE_LENGTH = 3;
+/**
+ * これより長い「」は拾わない。★切り詰めない（途中で切ったら本人の言葉ではなくなる）。
+ *   長い「」はたいてい発言ではなく、文書・資料の引用。
+ */
+const MAX_QUOTE_LENGTH = 60;
+
+/** 話し手を指す語。★同じ文の中で「」より前にある、いちばん近いものを採る */
+const SPEAKER_STUDENT = /(生徒|本人|お子さん|お子様)/g;
+const SPEAKER_PARENT = /(保護者|お母様|お母さん|お父様|お父さん|母|父)/g;
+
+/** 新しい型の「印象に残った言葉」の末尾の話し手の印（（生徒）（保護者）など） */
+const QUOTE_SPEAKER_LABEL = /[（(]\s*([^（）()]{1,8})\s*[）)]\s*$/;
+
+/** 話し手の語から生徒・保護者を決める（どちらでもなければ null） */
+function speakerOfWord(word: string): QuotedWord['speaker'] {
+  if (/^(生徒|本人|お子さん|お子様)$/.test(word)) return '生徒';
+  if (/^(保護者|お母様|お母さん|お父様|お父さん|母|父)$/.test(word)) return '保護者';
+  return null;
+}
+
+/** 正規表現で最後に当たった位置（無ければ -1） */
+function lastMatchIndex(re: RegExp, text: string): number {
+  let last = -1;
+  re.lastIndex = 0;
+  for (let m = re.exec(text); m; m = re.exec(text)) last = m.index;
+  return last;
+}
+
+/**
+ * 古い型（「印象に残った言葉」の節が無い記録）で、文中の「」が発言かどうか。
+ * ★「」の直後が「と」（「〜」と発言／と話す／という）か、「」の中が話し言葉の語尾で
+ *   終わるときだけ拾う。教材名（「新中学問題集」を進める）や見出しの引用を
+ *   「前回こう話していました」と読み上げないため。
+ */
+function looksSpoken(quote: string, after: string): boolean {
+  // ★「最初にしては良い」「伸びしろがある」と… のように「」が続くときは、続きの「」を飛ばして
+  //   「と」を見る（小川 華佳さんの実物。先頭の「」だけ取りこぼしていた）
+  if (after.replace(/^(?:[、・]?「[^「」]*」)+/, '').startsWith('と')) return true;
+  return /(ます|です|たい|ない|だ|よ|ね|な|か|[。！？!?])$/.test(quote);
+}
+
+/**
+ * 面談記録の本文から、本人・保護者が言った「」の言葉を拾う（最大3件・重複なし）。
+ *
+ * - ★新しい型（2026-09-23〜）で「印象に残った言葉」の見出しがあれば、その節だけを使う。
+ *   話し手は末尾の（生徒）（保護者）の印から取る。節が「（なし）」でも他の節からは拾わない
+ *  （新しい型で書いた人が「無かった」と決めたものを、推し量りで埋めない）。
+ * - 古い型は、中身のある節の箇条書きから文中の「」を拾う。話し手は同じ文の中で「」より前にある
+ *   生徒｜本人｜お子さん／保護者｜お母様｜母… のうち、いちばん近い語で決める。無ければ null。
+ * - 3字未満・60字超・見出しと同じ語・重複は拾わない。
+ * - 「感情：」「受け止め：」の見立ての行からは拾わない（本人の言葉ではない）。
+ * - Nottaとして読めない本文（手入力の短い記録）は、メタ行を落とした本文から同じ規則で拾う。
+ */
+export function extractQuotedWords(content: string): QuotedWord[] {
+  const parsed = parseNottaSummary(content);
+  const out: QuotedWord[] = [];
+  const headings = new Set<string>([
+    ...(parsed?.sections.map((s) => s.heading) ?? []),
+    ...(parsed?.omitted ?? []),
+  ]);
+
+  const push = (quoteRaw: string, speaker: QuotedWord['speaker']) => {
+    if (out.length >= MAX_QUOTED_WORDS) return;
+    const quote = quoteRaw.replace(/\s+/g, ' ').trim();
+    if (quote.length < MIN_QUOTE_LENGTH || quote.length > MAX_QUOTE_LENGTH) return;
+    if (headings.has(quote)) return;
+    if (out.some((q) => q.quote === quote)) return;
+    out.push({ quote, speaker });
+  };
+
+  // --- 新しい型：「印象に残った言葉」の節 ---
+  const impressive = '印象に残った言葉';
+  if (parsed && headings.has(impressive)) {
+    const section = parsed.sections.find((s) => s.heading === impressive);
+    for (const bullet of section?.bullets ?? []) {
+      const label = bullet.match(QUOTE_SPEAKER_LABEL);
+      const speaker = label ? speakerOfWord(label[1].trim()) : null;
+      const body = label ? bullet.slice(0, label.index).trim() : bullet.trim();
+      const quoted = Array.from(body.matchAll(/「([^「」]+)」/g)).map((m) => m[1]);
+      // 「」で囲んでいない書き方（頑張ります（生徒））も言葉として拾う
+      if (quoted.length === 0) push(body, speaker);
+      for (const q of quoted) push(q, speaker);
+    }
+    return out;
+  }
+
+  // --- 古い型：文中の「」 ---
+  const texts: string[] = parsed
+    ? parsed.sections.flatMap((s) => s.bullets)
+    : stripNottaMeta(content).split('\n');
+  for (const text of texts) {
+    if (NOTTA_JUDGEMENT_PREFIX.test(text.trim())) continue;
+    for (const m of Array.from(text.matchAll(/「([^「」]+)」/g))) {
+      const start = m.index ?? 0;
+      const after = text.slice(start + m[0].length);
+      if (!looksSpoken(m[1], after)) continue;
+      // 同じ文の中（直前の句点・改行より後ろ）だけを見る
+      const before = text.slice(0, start);
+      const sentenceStart = Math.max(
+        before.lastIndexOf('。'),
+        before.lastIndexOf('！'),
+        before.lastIndexOf('？'),
+        before.lastIndexOf('\n')
+      );
+      const sentence = before.slice(sentenceStart + 1);
+      const s = lastMatchIndex(SPEAKER_STUDENT, sentence);
+      const p = lastMatchIndex(SPEAKER_PARENT, sentence);
+      const speaker: QuotedWord['speaker'] =
+        s === -1 && p === -1 ? null : s > p ? '生徒' : '保護者';
+      push(m[1], speaker);
+    }
+  }
+  return out;
+}
+
+/**
+ * 前回の言葉を②振り返りで話す1文にする。
+ * ★呼び方は「◯◯さん」（名字・様は使わない。ひとことと同じ）。名前が無ければ「本人」。
+ */
+export function quotedWordTalkLine(word: QuotedWord, givenName: string | null | undefined): string {
+  const name = (givenName ?? '').trim();
+  if (word.speaker === '生徒') {
+    return `前回、${name ? `${name}さん` : '本人'}は「${word.quote}」と話していました`;
+  }
+  if (word.speaker === '保護者') {
+    return `前回、保護者の方は「${word.quote}」とおっしゃっていました`;
+  }
+  return `前回の面談で「${word.quote}」という言葉が出ていました`;
+}
+
+/**
+ * AIへ渡す【現状】の行（lastInterview に足す）。
+ * ★「前回の言葉:」で始める。プロンプトはこの印の「」を言い換えずに引用させる。
+ */
+export function quotedWordFactLine(word: QuotedWord): string {
+  return `前回の言葉: 「${word.quote}」${word.speaker ? `（${word.speaker}）` : ''}`;
+}
+
+/* ============================================================
+ * 面談記録の検索（材料の段・面談記録カード）
+ * ========================================================== */
+
+/**
+ * 1文字ずつ検索用に揃える（全角英数→半角・半角カナ→全角・大文字→小文字）。
+ * ★1文字ずつ NFKC を掛けるのは、揃えたあとの位置から元の文の位置へ戻すため
+ *  （文全体に掛けると「ｶﾞ」の2文字が1文字になるなど長さが変わり、ハイライトの位置がずれる）。
+ *   その代わり半角カナの濁点は合成されない（「ｶﾞ」は「カ゛」）。面談記録の検索では困らない。
+ */
+function foldForSearch(text: string): { folded: string; origin: number[] } {
+  let folded = '';
+  const origin: number[] = [];
+  let i = 0;
+  for (const ch of Array.from(text)) {
+    const f = ch.normalize('NFKC').toLowerCase();
+    folded += f;
+    for (let k = 0; k < f.length; k += 1) origin.push(i);
+    i += ch.length;
+  }
+  return { folded, origin };
+}
+
+/** 検索語を揃える（空白だけなら空文字） */
+export function normalizeSearchQuery(query: string): string {
+  return foldForSearch(query.trim()).folded;
+}
+
+/** 本文が検索語を含むか（全角半角・大文字小文字を区別しない）。空の検索語は常に true */
+export function matchesSearch(text: string, query: string): boolean {
+  const q = normalizeSearchQuery(query);
+  if (!q) return true;
+  return foldForSearch(text).folded.includes(q);
+}
+
+/** ハイライト用に分けた1片 */
+export interface HighlightPart {
+  text: string;
+  hit: boolean;
+}
+
+/**
+ * 本文を「当たった所」と「それ以外」に分ける（元の文字のまま返す）。
+ * 当たらなければ1片（hit=false）。空の検索語も1片。
+ */
+export function splitForHighlight(text: string, query: string): HighlightPart[] {
+  const q = normalizeSearchQuery(query);
+  if (!q || !text) return [{ text, hit: false }];
+  const { folded, origin } = foldForSearch(text);
+  const parts: HighlightPart[] = [];
+  let cursor = 0; // 元の文での位置
+  let from = 0; // 揃えた文での検索開始位置
+  for (let at = folded.indexOf(q, from); at !== -1; at = folded.indexOf(q, from)) {
+    const start = origin[at];
+    const lastOrigin = origin[at + q.length - 1];
+    // 当たりの末尾の1文字（サロゲートペアなら2単位）まで含める
+    const end = lastOrigin + ((text.codePointAt(lastOrigin) ?? 0) > 0xffff ? 2 : 1);
+    if (start >= cursor) {
+      if (start > cursor) parts.push({ text: text.slice(cursor, start), hit: false });
+      parts.push({ text: text.slice(start, end), hit: true });
+      cursor = end;
+    }
+    from = at + q.length;
+  }
+  if (cursor < text.length) parts.push({ text: text.slice(cursor), hit: false });
+  return parts;
 }
 
 /* ============================================================
