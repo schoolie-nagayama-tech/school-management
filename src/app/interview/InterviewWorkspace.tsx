@@ -39,6 +39,11 @@ import {
 import { getRegularPatterns } from '@/lib/api/schedule';
 import { getKoushuEnrollmentsByStudent, type KoushuEnrollment } from '@/lib/api/seasonalCourses';
 import { getStudentTargetSchools, type TargetSchoolRow } from '@/lib/api/targetSchools';
+import { getSubjects } from '@/lib/api/subjects';
+import {
+  getSeasonalProposalSummaryByStudent,
+  type SeasonalProposalSeasonSummary,
+} from '@/lib/api/seasonalProposalSummary';
 import type { AssessmentWithScores, Student, StudentInterview } from '@/types/database';
 import type { ScheduleRegularPattern } from '@/types/schedule';
 import { InterviewRecordsCard, InterviewTasksCard, type HandoverInfo } from './InterviewTimeline';
@@ -49,10 +54,13 @@ import { InterviewPrintSheet } from './InterviewPrintSheet';
 import { InterviewScriptCard, type ScriptView } from './InterviewScriptCard';
 import { TargetSchoolsPanel } from '@/components/interview/TargetSchoolsPanel';
 import {
+  currentSeason,
   extractHandover,
-  formatKoushuEnrollments,
   formatRegularPatternsSchedule,
+  koushuFiscalYear,
+  mergeKoushuSeasons,
   stripNottaMeta,
+  summarizeCurrentKoushu,
   INTERVIEW_CARD_IDS,
 } from './interview.shared';
 import { InterviewHub } from './InterviewHub';
@@ -93,12 +101,23 @@ export function InterviewWorkspace() {
   // 通塾日程・講習申込はヘッダー帯に1行で添える（面談で必ず話題に出るため）
   const [regularPatterns, setRegularPatterns] = useState<ScheduleRegularPattern[]>([]);
   const [koushuEnrollments, setKoushuEnrollments] = useState<KoushuEnrollment[]>([]);
+  /**
+   * 講習の提案書（期ごとのまとめ）。★⑤プラン提示と講習バッジの主材料。
+   *   koushu_enrollments は本番0行（2027-02公開のWeb申込の入力源）なので、
+   *   これを読まないと全生徒が「講習: 申込なし」になる。
+   */
+  const [koushuSummaries, setKoushuSummaries] = useState<SeasonalProposalSeasonSummary[]>([]);
   // 宿題・遅刻の月次集計（DisciplinePanel）用の生セッション行。集計自体は computeDisciplineMonthly に任せる
   const [disciplineSessions, setDisciplineSessions] = useState<DisciplineSessionRow[]>([]);
   // 試験目標（②ヒアリング「目標の達成度」の材料）
   const [examGoals, setExamGoals] = useState<StudentExamGoalWithType[]>([]);
   // 志望校（④現状の確認「志望校との差」の材料。TargetSchoolsPanel の保存後に反映するため refetch も持つ）
   const [targetSchools, setTargetSchools] = useState<TargetSchoolRow[]>([]);
+  /**
+   * 科目ID→科目名。⑤プラン提示の「講習の履歴」で科目名を出すために使う。
+   * ★生徒に依存しないマスタなので、生徒の切り替えでは取り直さない。
+   */
+  const [subjectNames, setSubjectNames] = useState<Record<string, string>>({});
   const [lightLoading, setLightLoading] = useState(false);
 
   // 進行表の生データ（テキスト×そのテキストの進行記録行）をテキストぶん保持する。
@@ -114,6 +133,39 @@ export function InterviewWorkspace() {
    */
   const [script, setScript] = useState<ScriptView | null>(null);
   const handleScriptResult = useCallback((v: ScriptView | null) => setScript(v), []);
+
+  /**
+   * ヘッダー帯の「講習: …」。★⑤のバッジ・⑥の「申込の状況」と同じ関数で組む
+   *   （片方だけ直して食い違うのを防ぐ。interview.shared.ts の summarizeCurrentKoushu）。
+   */
+  const koushuSummary = useMemo(() => {
+    const today = new Date();
+    return summarizeCurrentKoushu(
+      mergeKoushuSeasons(koushuSummaries, koushuEnrollments, subjectNames),
+      koushuFiscalYear(today),
+      currentSeason(today)
+    );
+  }, [koushuSummaries, koushuEnrollments, subjectNames]);
+
+  // 科目マスタ（講習の履歴の科目名）。生徒に依存しないので最初に1回だけ取る
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const subjects = await getSubjects();
+        if (cancelled) return;
+        const map: Record<string, string> = {};
+        for (const s of subjects) map[s.id] = s.name;
+        setSubjectNames(map);
+      } catch (e) {
+        // 科目名が引けなくても講習の履歴以外は出せる。ここで画面を止めない
+        console.error('Error fetching subjects:', e);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // 生徒一覧（在籍中のみ、学年→氏名かな順）
   useEffect(() => {
@@ -256,20 +308,23 @@ export function InterviewWorkspace() {
           disciplineFrom.getMonth() + 1
         ).padStart(2, '0')}-01`;
 
-        const [iv, asm, patterns, koushu, discipline, goals, schools] = await Promise.all([
-          getStudentInterviews(selectedStudentId).catch(() => []),
-          listAssessments(selectedStudentId).catch(() => []),
-          getRegularPatterns(student.school_id, { studentId: selectedStudentId }).catch(() => []),
-          getKoushuEnrollmentsByStudent(selectedStudentId).catch(() => []),
-          getStudentDisciplineSessions(selectedStudentId, disciplineFromStr).catch(() => []),
-          getStudentExamGoalsForInterview(selectedStudentId).catch(() => []),
-          getStudentTargetSchools(selectedStudentId).catch(() => []),
-        ]);
+        const [iv, asm, patterns, koushu, koushuProposals, discipline, goals, schools] =
+          await Promise.all([
+            getStudentInterviews(selectedStudentId).catch(() => []),
+            listAssessments(selectedStudentId).catch(() => []),
+            getRegularPatterns(student.school_id, { studentId: selectedStudentId }).catch(() => []),
+            getKoushuEnrollmentsByStudent(selectedStudentId).catch(() => []),
+            getSeasonalProposalSummaryByStudent(selectedStudentId).catch(() => []),
+            getStudentDisciplineSessions(selectedStudentId, disciplineFromStr).catch(() => []),
+            getStudentExamGoalsForInterview(selectedStudentId).catch(() => []),
+            getStudentTargetSchools(selectedStudentId).catch(() => []),
+          ]);
         if (cancelled) return;
         setInterviews(iv);
         setAssessments(asm);
         setRegularPatterns(patterns);
         setKoushuEnrollments(koushu);
+        setKoushuSummaries(koushuProposals);
         setDisciplineSessions(discipline);
         setExamGoals(goals);
         setTargetSchools(schools);
@@ -416,7 +471,7 @@ export function InterviewWorkspace() {
                   {/* 通塾日程・講習申込。専用カードは持たせず、面談中に目に入る位置へ添える */}
                   <span className="text-xs text-text-faint">
                     通塾: {formatRegularPatternsSchedule(regularPatterns)} ／ 講習:{' '}
-                    {formatKoushuEnrollments(koushuEnrollments)}
+                    {koushuSummary.label}
                   </span>
                 </div>
               )}
@@ -466,9 +521,11 @@ export function InterviewWorkspace() {
               textbookData={textbookProgressData}
               disciplineSessions={disciplineSessions}
               koushuEnrollments={koushuEnrollments}
+              koushuSummaries={koushuSummaries}
               regularPatterns={regularPatterns}
               examGoals={examGoals}
               targetSchools={targetSchools}
+              subjectNames={subjectNames}
               loading={lightLoading || progressLoading}
               onResult={handleScriptResult}
               band={<SectionBand label="話すこと" />}
@@ -537,9 +594,11 @@ export function InterviewWorkspace() {
             textbookData={textbookProgressData}
             disciplineSessions={disciplineSessions}
             koushuEnrollments={koushuEnrollments}
+            koushuSummaries={koushuSummaries}
             regularPatterns={regularPatterns}
             examGoals={examGoals}
             targetSchools={targetSchools}
+            subjectNames={subjectNames}
             script={script}
           />
         </>

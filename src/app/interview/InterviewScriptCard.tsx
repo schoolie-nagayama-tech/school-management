@@ -48,6 +48,7 @@ import {
 import type { AssessmentWithScores, Student, StudentInterview } from '@/types/database';
 import type { DisciplineSessionRow } from '@/lib/api/progress-sessions';
 import type { KoushuEnrollment } from '@/lib/api/seasonalCourses';
+import type { SeasonalProposalSeasonSummary } from '@/lib/api/seasonalProposalSummary';
 import type { ScheduleRegularPattern } from '@/types/schedule';
 import type { StudentExamGoalWithType } from '@/lib/api/progress';
 import type { TargetSchoolRow } from '@/lib/api/targetSchools';
@@ -56,10 +57,16 @@ import type { TextbookProgressData } from './ProgressPanel';
 import {
   buildTellSections,
   buildGoalAchievementLines,
+  buildKoushuHistoryLines,
   buildMissingRecordAskLines,
+  buildPreviousCommitmentLines,
   buildTargetSchoolGapLines,
   currentSeason,
   formatRegularPatternsSchedule,
+  koushuFiscalYear,
+  mergeKoushuSeasons,
+  stripTargetSchoolFactLines,
+  summarizeCurrentKoushu,
   INTERVIEW_CARD_IDS,
 } from './interview.shared';
 import {
@@ -116,12 +123,16 @@ interface Props {
   /** 宿題・遅刻の生セッション行（DisciplinePanel と同じもの） */
   disciplineSessions: DisciplineSessionRow[];
   koushuEnrollments: KoushuEnrollment[];
+  /** 講習の提案書（期ごとのまとめ）。★⑤の主材料。koushu_enrollments は本番0行 */
+  koushuSummaries: SeasonalProposalSeasonSummary[];
   /** 通塾日程。⑤プラン提示の「通常授業との関係」に使う */
   regularPatterns: ScheduleRegularPattern[];
   /** 試験目標（②ヒアリング「目標の達成度」の材料） */
   examGoals: StudentExamGoalWithType[];
-  /** 志望校（④現状の確認「志望校との差」の材料） */
+  /** 志望校（④現状の確認「志望校」の材料） */
   targetSchools: TargetSchoolRow[];
+  /** 科目ID→科目名（⑤プラン提示「講習の履歴」の科目名に使う） */
+  subjectNames: Record<string, string>;
   /** 材料の読み込み中はボタンを押させない（半端な材料でまとめても作り直しになる） */
   loading?: boolean;
   /** 結果を親へ上げる。印刷シートが同じ内容を出すため */
@@ -160,10 +171,22 @@ const FACT_JUMP_TARGETS: Record<string, string> = {
   授業の様子: INTERVIEW_CARD_IDS.discipline,
   '宿題・遅刻': INTERVIEW_CARD_IDS.discipline,
   前回の面談から: INTERVIEW_CARD_IDS.records,
+  前回の約束: INTERVIEW_CARD_IDS.records,
+  前回の要望: INTERVIEW_CARD_IDS.records,
 };
 
 /** 見出しと本文の区切り。buildTellSections などが組む行の書式 */
 const FACT_SEPARATOR = ' ―― ';
+
+/**
+ * 志望校が登録されている生徒に④で聞くこと。
+ * ★登録が無い生徒には出さない（無い志望校の見学を聞いても始まらない。
+ *   その場合は buildTargetSchoolGapLines の ask「志望校を聞いて入れる」が出る）。
+ */
+const TARGET_SCHOOL_ASK_LINES = [
+  '志望校の見学・説明会に行ったか',
+  '併願の私立は決まっているか',
+] as const;
 
 function scrollToCard(id: string) {
   document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -338,9 +361,11 @@ export function InterviewScriptCard({
   textbookData,
   disciplineSessions,
   koushuEnrollments,
+  koushuSummaries,
   regularPatterns,
   examGoals,
   targetSchools,
+  subjectNames,
   loading,
   onResult,
   band,
@@ -417,8 +442,20 @@ export function InterviewScriptCard({
         textbookData,
         disciplineSessions,
         koushuEnrollments,
+        koushuSummaries,
+        subjectNames,
+        targetSchools,
       }),
-    [assessments, interviews, textbookData, disciplineSessions, koushuEnrollments]
+    [
+      assessments,
+      interviews,
+      textbookData,
+      disciplineSessions,
+      koushuEnrollments,
+      koushuSummaries,
+      subjectNames,
+      targetSchools,
+    ]
   );
 
   // ②ヒアリング「目標の達成度」。AIセクションを通さない「伝える」「聞く」行なので、
@@ -427,11 +464,14 @@ export function InterviewScriptCard({
     () => buildGoalAchievementLines(examGoals, assessments),
     [examGoals, assessments]
   );
-  // ④現状の確認「志望校との差」。志望校が未登録なら ask に「聞いて入れる」が1件入る
+  // ④現状の確認「志望校」。志望校が未登録なら ask に「聞いて入れる」が1件入る
   const targetSchoolGap = useMemo(
     () => buildTargetSchoolGapLines(targetSchools, assessments),
     [targetSchools, assessments]
   );
+  // ②ヒアリング「前回の約束・前回の要望」と、そこから組む「その後どうですか」。
+  // ★AIには書かせない（件数と文言が確実でないと面談で使えない）
+  const previous = useMemo(() => buildPreviousCommitmentLines(interviews), [interviews]);
   // ④現状の確認「成績が無いときに黙らない」。小学生には出さない
   const missingRecordAsk = useMemo(
     () => buildMissingRecordAskLines(assessments, student.grade),
@@ -466,12 +506,23 @@ export function InterviewScriptCard({
     () => examCountdownLine(new Date(), student.grade, region),
     [student.grade, region]
   );
-  const seasonEnrollments = useMemo(
-    () => koushuEnrollments.filter((e) => e.season === seasonKey),
-    [koushuEnrollments, seasonKey]
+  // ★年度は4月始まり（1〜3月は前年度）。⑤の今期・履歴・バッジで同じ規則を使う
+  const fiscalYear = useMemo(() => koushuFiscalYear(new Date()), []);
+  // 提案書（主材料）と koushu_enrollments（2027-02公開のWeb申込。いまは0行）を期ごとに合流
+  const koushuBuckets = useMemo(
+    () => mergeKoushuSeasons(koushuSummaries, koushuEnrollments, subjectNames),
+    [koushuSummaries, koushuEnrollments, subjectNames]
   );
-  const seasonKoma = seasonEnrollments.reduce((sum, e) => sum + (e.koma_count ?? 0), 0);
-  const applied = seasonEnrollments.length > 0;
+  // ⑤プラン提示「これまでの講習の申し込み履歴」。今期は今期の行が出すので除く
+  const koushuHistory = useMemo(
+    () => buildKoushuHistoryLines(koushuBuckets, fiscalYear, seasonKey),
+    [koushuBuckets, fiscalYear, seasonKey]
+  );
+  // ★ヘッダー帯（InterviewWorkspace）・⑤のバッジ・⑥の「申込の状況」で同じ値を使う
+  const koushuSummary = useMemo(
+    () => summarizeCurrentKoushu(koushuBuckets, fiscalYear, seasonKey),
+    [koushuBuckets, fiscalYear, seasonKey]
+  );
 
   const apply = (next: ScriptView | null) => {
     setView(next);
@@ -575,17 +626,41 @@ export function InterviewScriptCard({
         ))
       : [];
 
-  /** そのシーンのAIセクションの「現状の行」（事実＝右） */
+  /**
+   * そのシーンのAIセクションの「現状の行」（事実＝右）。
+   * ★志望校の行は score に混ぜてAIへ送っているが、画面では下の「志望校」のブロックで
+   *   別に出すので、ここでは外す（同じ行を2回出さない）。
+   */
   const aiFactLines = (scene: SceneKey): ReactNode[] =>
     view
       ? sectionsForScene(view.sections, scene).flatMap((s) =>
-          s.current.map((line, i) => (
+          stripTargetSchoolFactLines(s.current).map((line, i) => (
             <TellLine
               key={`${s.key}-${i}`}
               text={i === 0 ? `${s.label}${FACT_SEPARATOR}${line}` : line}
             />
           ))
         )
+      : [];
+
+  /**
+   * セクション1つぶんの「事実」の行。
+   * ★②ヒアリングは面談で話す順（前回の面談から→約束→要望→授業の様子→宿題・遅刻）に
+   *   並べ替えたいので、シーン単位ではなくキー単位で取り出せるようにしてある。
+   *   BRIEF_SECTIONS の順（AIへ送る順）は変えない。
+   */
+  const aiFactLinesOf = (key: BriefSectionKey): ReactNode[] =>
+    view
+      ? view.sections
+          .filter((s) => s.key === key)
+          .flatMap((s) =>
+            stripTargetSchoolFactLines(s.current).map((line, i) => (
+              <TellLine
+                key={`${s.key}-${i}`}
+                text={i === 0 ? `${s.label}${FACT_SEPARATOR}${line}` : line}
+              />
+            ))
+          )
       : [];
 
   const askLine = (id: string, text: string) => (
@@ -604,6 +679,8 @@ export function InterviewScriptCard({
       case 'hearing':
         return [
           ...aiSeenLines('hearing'),
+          // ★前回の約束・要望を1件ずつ追いかける行。システムが組む（AIに書かせない）
+          ...previous.asks.map((t, i) => askLine(`hearing:followup:${i}`, t)),
           ...askLines.map((t, i) => askLine(`hearing:${i}`, t)),
           // 目標はあるが結果が成績側にまだ入っていない試験。台本が入力を促す形にする
           ...goalAchievement.ask.map((t, i) => askLine(`hearing:goal:${i}`, t)),
@@ -631,6 +708,10 @@ export function InterviewScriptCard({
           ...missingRecordAsk.map((t, i) => askLine(`status:missing:${i}`, t)),
           // 志望校が1件も登録されていないとき
           ...targetSchoolGap.ask.map((t, i) => askLine(`status:target-school:${i}`, t)),
+          // ★登録がある生徒には、めやすの数字ではなく「動いたか」を聞く
+          ...(targetSchools.length > 0
+            ? TARGET_SCHOOL_ASK_LINES.map((t, i) => askLine(`status:target-school-ask:${i}`, t))
+            : []),
         ];
 
       case 'plan':
@@ -664,8 +745,21 @@ export function InterviewScriptCard({
   const sceneFactLines = (scene: SceneKey): ReactNode[] => {
     switch (scene) {
       case 'hearing':
+        // ★並びは面談で話す順（前回の面談から → 前回の約束 → 前回の要望 → 授業の様子 →
+        //   宿題・遅刻 → 目標の達成度）。表示の順であって、AIへ送る順（BRIEF_SECTIONS）は変えない
         return [
-          ...aiFactLines('hearing'),
+          ...aiFactLinesOf('lastInterview'),
+          // 前回の約束（未完了のタスク）。1件1行
+          ...previous.promises.map((t, i) => (
+            <TellLine key={`promise-${i}`} text={i === 0 ? `前回の約束${FACT_SEPARATOR}${t}` : t} />
+          )),
+          // 前回の要望（直近の面談記録の「要望」「申し送り」「今後の方針」）
+          ...previous.requests.map((t, i) => (
+            <TellLine key={`request-${i}`} text={i === 0 ? `前回の要望${FACT_SEPARATOR}${t}` : t} />
+          )),
+          ...aiFactLinesOf('lessons'),
+          ...aiFactLinesOf('discipline'),
+          ...aiFactLinesOf('parent'),
           // 目標の達成度。AIを通さず、システムが試験目標と成績を突き合わせて組む行
           ...goalAchievement.tell.map((t, i) => (
             <TellLine key={`goal-${i}`} text={i === 0 ? `目標の達成度${FACT_SEPARATOR}${t}` : t} />
@@ -683,8 +777,10 @@ export function InterviewScriptCard({
       case 'status':
         return [
           ...aiFactLines('status'),
-          // 志望校との差。マスタに当たり本人の内申・偏差値も取れたときだけ出る
-          ...targetSchoolGap.tell.map((t, i) => <TellLine key={`gap-${i}`} text={t} />),
+          // 志望校。めやす・本人との差・沿線を1件1行にまとめたブロック
+          ...targetSchoolGap.tell.map((t, i) => (
+            <TellLine key={`gap-${i}`} text={i === 0 ? `志望校${FACT_SEPARATOR}${t}` : t} />
+          )),
         ];
 
       case 'plan':
@@ -698,16 +794,18 @@ export function InterviewScriptCard({
               ]
             : []),
           ...aiFactLines('plan'),
+          // これまでの申し込み（今期を除く）。履歴が無ければ行ごと出ない
+          ...koushuHistory.map((t, i) => (
+            <TellLine
+              key={`koushu-history-${i}`}
+              text={i === 0 ? `講習の履歴${FACT_SEPARATOR}${t}` : t}
+            />
+          )),
         ];
 
       case 'apply':
         return [
-          <TellLine
-            key="applied"
-            text={`申込の状況${FACT_SEPARATOR}${
-              applied ? `申込あり（${SEASON_LABELS[seasonKey]} ${seasonKoma}コマ）` : '未申込'
-            }`}
-          />,
+          <TellLine key="applied" text={`申込の状況${FACT_SEPARATOR}${koushuSummary.label}`} />,
         ];
 
       default:
@@ -816,14 +914,14 @@ export function InterviewScriptCard({
                         {isExamGrade(student.grade) ? '・受験学年' : ''}
                       </span>
                     )}
-                    {scene === 'plan' && seasonEnrollments.length > 0 && (
+                    {scene === 'plan' && koushuSummary.koma > 0 && (
                       <span className="ml-auto text-[11px] text-text-faint">
-                        {SEASON_LABELS[seasonKey]} 申込 {seasonKoma}コマ
+                        {koushuSummary.label}
                       </span>
                     )}
                     {scene === 'apply' && (
                       <span className="ml-auto text-[11px] text-text-faint">
-                        {applied ? '申込あり' : '未申込'}
+                        {koushuSummary.applied ? '申込あり' : '未申込'}
                       </span>
                     )}
                   </div>

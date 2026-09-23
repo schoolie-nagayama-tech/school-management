@@ -32,7 +32,7 @@ export const BRIEF_SECTIONS = [
   { key: 'score', label: '成績' },
   { key: 'lessons', label: '授業の様子' },
   { key: 'discipline', label: '宿題・遅刻' },
-  { key: 'progress', label: '進度' },
+  { key: 'progress', label: '進行表' },
   { key: 'koushu', label: '講習' },
   { key: 'parent', label: '保護者と' },
   { key: 'lastInterview', label: '前回の面談から' },
@@ -84,10 +84,42 @@ export const MAX_SEEN_LENGTH = 180;
 export const MAX_THREAD_LENGTH = 220;
 /** 「④の課題と⑤のプランのつながり」の上限。コマ数の根拠を言い切らせる */
 export const MAX_BRIDGE_LENGTH = 220;
-/** 現状の行の上限（1セクションあたり）。これ以上並べても読む側が追えない */
-export const MAX_CURRENT_LINES = 12;
+/**
+ * 現状の行の上限（1セクションあたり）。
+ * ★2026-09の第2段で 12→24 に広げた。進行表が「LIVE教材ごとに 教材＋直近3回＋次」で
+ *   1冊5行になり、3科目で15行に届く。12のままだと直近の授業が黙って落ちる。
+ */
+export const MAX_CURRENT_LINES = 24;
 /** 現状の1行の上限 */
 export const MAX_CURRENT_LINE_LENGTH = 120;
+
+/**
+ * 「授業の様子」の行から、同じ講師・同じ引継ぎ文が続く塊をいちばん新しい1件に畳む。
+ *
+ * ★引継ぎは単元（student_progress）に付いており、同じ単元を複数回に分けて進めると
+ *   その回すべてに同じ文が乗る。実際に 9/15 と 9/11 に同じ講師・同じ文の行が並んでいた。
+ *   直近3件だけを見せる②のヒアリングでは、同じ文が3行を埋めて材料が無くなる。
+ * ★行の形は loadLessonLines（/api/ai/interview/brief）が作る
+ *   「YYYY/MM/DD 講師名: 引継ぎ（宿題未提出）」。日付を外した残りが同じなら同じ行とみなす。
+ * ★入力は古い順なので、連続する塊の末尾＝いちばん新しい1件を残す。
+ * ★「: 」が無い行（想定外の形）は畳まない。形が変わったときに黙って行を消さないため。
+ */
+export function dedupeConsecutiveLessonLines(lines: readonly string[]): string[] {
+  const kept: string[] = [];
+  let prevKey: string | null = null;
+  for (const line of lines) {
+    const sep = line.indexOf(': ');
+    // 「YYYY/MM/DD 講師名」から日付だけを落とし、講師名＋本文を突き合わせのキーにする
+    const key =
+      sep === -1
+        ? null
+        : JSON.stringify([line.slice(0, sep).replace(/^\S+\s*/, ''), line.slice(sep + 2)]);
+    if (key != null && key === prevKey) kept.pop();
+    kept.push(line);
+    prevKey = key;
+  }
+  return kept;
+}
 
 /**
  * Sonnet 5 / Opus 5 の見比べで、クライアントから選ばせてよいモデルのキー名。
@@ -231,6 +263,12 @@ export function briefSystemPrompt(): string {
     '- ★悪い話だけを並べない。良い方向のものは、良いとはっきり書く。',
     '  保護者面談は詰める場ではないので、伝えたい良い話を1つは拾ってください。',
     '- sign は "warn"（注意して話す）／"good"（伝えたい良い話）／""（どちらでもない）の3つだけ。',
+    '',
+    '■ セクションごとの書き方（渡されたものだけ）',
+    '- lessons（授業の様子）: できるようになったこと・授業中の発言・態度の変化を、保護者に伝える',
+    '  良い報告として書く。家庭では見えないことを優先する。',
+    '- lastInterview（前回の面談から）: 前回の約束・要望に対して、その後の記録（引継ぎ・成績）から',
+    '  追えることがあれば、それを書く。追えなければ無理に書かない。',
     '',
     '■ thread（つなげて見えること）',
     `- ★複数のセクションをつなげて初めて見えることを ${MAX_THREAD_LENGTH}字まで。`,

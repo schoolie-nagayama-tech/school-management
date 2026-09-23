@@ -15,10 +15,15 @@ import { ASSESSMENT_NAME_LABELS, SEASON_LABELS, SUBJECT_LABELS } from '@/types/d
 import type { ScheduleRegularPattern } from '@/types/schedule';
 import { DAY_OF_WEEK_LABELS } from '@/types/schedule';
 import type { KoushuEnrollment } from '@/lib/api/seasonalCourses';
+import type {
+  SeasonalProposalSeasonSummary,
+  SeasonalProposalStatus,
+} from '@/lib/api/seasonalProposalSummary';
+import { normalizeKomaBySubject } from '@/lib/utils/komaBySubject';
 import type { BriefSectionKey } from '@/lib/ai/interviewBrief';
 import type { TextbookProgressData } from './ProgressPanel';
 import type { DisciplineSessionRow } from '@/lib/api/progress-sessions';
-import type { TargetSchoolRow } from '@/lib/api/targetSchools';
+import type { TargetSchoolMaster, TargetSchoolRow } from '@/lib/api/targetSchools';
 import { calcTokyoNaishin } from '@/lib/utils/convertedNaishin';
 
 /* ============================================================
@@ -411,8 +416,6 @@ export interface TellSection {
   current: string[];
 }
 
-/** 進度に載せるテキストの数。並べすぎると読まれない */
-const TELL_MAX_PROGRESS_LINES = 4;
 /** 宿題・遅刻をさかのぼる月数 */
 const TELL_DISCIPLINE_MONTHS = 3;
 
@@ -454,6 +457,12 @@ export function buildTellSections(props: {
   textbookData: TextbookProgressData[];
   disciplineSessions: DisciplineSessionRow[];
   koushuEnrollments: KoushuEnrollment[];
+  /** 講習の提案書（期ごとのまとめ）。★⑤の主材料。koushu_enrollments は本番0行 */
+  koushuSummaries?: readonly SeasonalProposalSeasonSummary[];
+  /** 科目ID→科目名。koushu_enrollments 側の科目名を出すために使う */
+  subjectNames?: Record<string, string>;
+  /** 志望校。★score の現状に混ぜてAIへ送る（④で志望校に触れさせるため） */
+  targetSchools?: readonly TargetSchoolRow[];
 }): TellSection[] {
   const sections: TellSection[] = [];
 
@@ -462,6 +471,15 @@ export function buildTellSections(props: {
   if (regular) scoreLines.push(regular);
   const report = tellScoreLine(props.assessments, 'report_card', '通知表');
   if (report) scoreLines.push(report);
+  /**
+   * ★志望校の行を score に混ぜて送る。④の「見えること」で志望校に触れられるようにするため
+   *   （docs/interview-workspace-layout-2026-09.md §④）。
+   * ★画面・紙では「志望校」の行として別に出すので、表示側はこの行を score から外す
+   *   （isTargetSchoolFactLine で見分ける）。二重に出さないため。
+   */
+  for (const line of buildTargetSchoolGapLines(props.targetSchools ?? [], props.assessments).tell) {
+    scoreLines.push(`${TARGET_SCHOOL_FACT_PREFIX}${line}`);
+  }
   if (scoreLines.length > 0) sections.push({ key: 'score', current: scoreLines });
 
   const months = computeDisciplineMonthly(
@@ -477,30 +495,35 @@ export function buildTellSections(props: {
     );
   if (disciplineLines.length > 0) sections.push({ key: 'discipline', current: disciplineLines });
 
-  const progressLines = props.textbookData
-    .slice(0, TELL_MAX_PROGRESS_LINES)
-    .map(({ textbook, rows }) => {
-      const detail = summarizeTextbookDetail(textbook, rows);
-      const next = detail.nextUnitTitles[0];
-      const stalled = detail.stalled ? '・停滞' : '';
-      return `${detail.name}: ${detail.progressPct}%${stalled}${next ? `・次: ${next}` : ''}`;
-    });
+  // ★科目ごとのLIVE教材だけ・進捗%は出さない（第2段の決めごと）。主役は引継ぎのテキスト
+  const progressLines = buildProgressFactLines(props.textbookData);
   if (progressLines.length > 0) sections.push({ key: 'progress', current: progressLines });
 
-  if (props.koushuEnrollments.length > 0) {
-    sections.push({
-      key: 'koushu',
-      current: [`申込 ${formatKoushuEnrollments(props.koushuEnrollments)}`],
-    });
-  }
+  /**
+   * ⑤の「今期の講習」。★材料は提案書（seasonal_proposals）。koushu_enrollments は
+   *   本番0行なので、これだけを見ていた頃は全生徒が「申込なし」になっていた。
+   *   2027-02公開のWeb申込が動き出したら、同じ期のバケットに合流して同じ行に出る。
+   */
+  const koushuBuckets = mergeKoushuSeasons(
+    props.koushuSummaries ?? [],
+    props.koushuEnrollments,
+    props.subjectNames ?? {}
+  );
+  const today = new Date();
+  const koushuLines = buildKoushuCurrentLines(
+    koushuBuckets,
+    koushuFiscalYear(today),
+    currentSeason(today)
+  );
+  if (koushuLines.length > 0) sections.push({ key: 'koushu', current: koushuLines });
 
   const latest = props.interviews.filter((i) => i.interview_type !== 'task')[0];
   if (latest) {
     const lines = [
       `${fmtDateJa(latest.interview_date)}（${daysSince(latest.interview_date)}日前）`,
     ];
-    const handover = extractHandover(latest.content) ?? stripNottaMeta(latest.content);
-    const text = handover.replace(/\s+/g, ' ').trim().slice(0, MAX_HANDOVER_LENGTH);
+    // ★空の節（「確認できませんでした」だけの見出し）を畳んだ文面。AIにもこれがそのまま渡る
+    const text = buildHandoverText(latest.content);
     if (text) lines.push(`申し送り: ${text}`);
     sections.push({ key: 'lastInterview', current: lines });
   }
@@ -992,19 +1015,86 @@ function latestOwnHensachi(assessments: AssessmentWithScores[]): number | null {
   return latest?.scores.find((s) => s.subject === 'hensa_5')?.value ?? null;
 }
 
-/** 「志望校との差」の行。伝える（マスタに当たり本人の数字も取れた）／聞く（志望校が未登録） */
+/** 「志望校」の行。伝える（登録されている志望校ぶん）／聞く（志望校が未登録） */
 export interface TargetSchoolGapLines {
   tell: string[];
   ask: string[];
 }
 
 /**
- * 志望校（マスタに当たったもの）と本人の内申・偏差値を並べて「志望校との差」の行を作る。
+ * 志望校の行の見出し。
+ * ★AIには score セクションの現状に混ぜて渡す（④で志望校に触れさせるため）が、
+ *   画面・紙では「志望校」の行として別に出す。どちらの行かをこの見出しで見分ける。
+ */
+export const TARGET_SCHOOL_FACT_PREFIX = '志望校 ―― ';
+
+/** score の現状の行のうち、志望校の行かどうか（表示側が外すために使う） */
+export function isTargetSchoolFactLine(line: string): boolean {
+  return line.startsWith(TARGET_SCHOOL_FACT_PREFIX);
+}
+
+/** score の現状の行から志望校の行を外す（画面・紙は志望校ブロックで別に出すため） */
+export function stripTargetSchoolFactLines(lines: readonly string[]): string[] {
+  return lines.filter((l) => !isTargetSchoolFactLine(l));
+}
+
+/**
+ * 合格のめやすと本人との差を「必要内申45（+0）」「必要偏差値51（-3）」の形に組む。
  *
- * ★マスタに当たっていて（master が非null）、本人の内申・偏差値のどちらかが取れるときだけ出す。
+ * ★満点が65以外（3教科校=75点満点、産業技術高専=52点満点）のときは差を出さない。
+ *   calcTokyoNaishin は5科×1＋実技4科×2＝65点満点しか計算しないので、
+ *   満点の違う学校の必要内申から引くと意味のない値になる（駒場の保健体育は
+ *   必要内申55/75。本人41を引いて「-14」と出すと、面談で「あと14足りません」と
+ *   言ってしまう）。満点が違うときは必要内申だけを分母つきで示す。
+ *   出典: vault NEST/ナレッジ/高校入試情報_都立は1020点の総合得点1本で決まる.md
+ * ★この分母の決まりを書くのはここ1か所だけ。志望校の行も、④の「差」も、ここを通す。
+ */
+function targetSchoolStandardParts(
+  master: TargetSchoolMaster,
+  ownNaishin: number | null,
+  ownHensachi: number | null
+): string[] {
+  const parts: string[] = [];
+
+  if (master.naishin != null) {
+    const comparable = master.naishinMax == null || master.naishinMax === 65;
+    if (ownNaishin != null && comparable) {
+      const diff = ownNaishin - master.naishin;
+      parts.push(
+        `${formatNaishin(master.naishin, master.naishinMax)}（${diff >= 0 ? '+' : ''}${diff}）`
+      );
+    } else {
+      // 本人の内申が無い／満点が違って引けない。めやすだけを分母つきで示す
+      parts.push(formatNaishin(master.naishin, master.naishinMax));
+    }
+  }
+
+  if (master.hensachi != null) {
+    if (ownHensachi != null) {
+      const diff = ownHensachi - master.hensachi;
+      parts.push(`必要偏差値${master.hensachi}（${diff >= 0 ? '+' : ''}${diff}）`);
+    } else {
+      parts.push(`必要偏差値${master.hensachi}`);
+    }
+  }
+
+  return parts;
+}
+
+/**
+ * 志望校を1件1行にまとめる（④現状の確認）。
+ *
+ * 「第1 清瀬（普通科） ／ めやす 必要内申45（+0）・必要偏差値51（-3）（出典） ／ 沿線: 西武池袋線」。
+ *
+ * ★登録されている志望校は、マスタに当たらなくても行を出す（私立・他県は自由記述のまま残るため）。
+ *   めやすと差はマスタに当たったときだけ足す。
+ * ★2026-09の第2段で「志望校との差」の行と統合した。めやすと差を別の行に出すと
+ *   同じ数字が2か所に並び、どちらが本人でどちらが学校か読み違える。
  * ★「Vもぎ 2025年9月版・合格可能性60%の位置」の出典と、verified_at が null なら
  *   「原本との突き合わせは未了」を必ず添える。保護者に見せうる数字なので、
  *   出どころと確度を隠さない（docs/interview-script-ai-plan.md §4-2）。
+ * ★最寄駅（primary_station）は出さない。直線距離で選んでおり、乗り換えを無視した
+ *   「最寄り」は保護者に対して使えない（docs/data/README.md）。沿線だけを出す。
  * ★志望校が1件も登録されていなければ、④の「聞くこと」に「志望校を聞いて入れる」を出す
  *   （②ではなく④。志望校そのものはTargetSchoolsPanelが②の近くで入力させるが、
  *   「聞くこと」の定型リストとしては現状の確認で扱う）。
@@ -1023,51 +1113,494 @@ export function buildTargetSchoolGapLines(
   const tell: string[] = [];
   for (const school of targetSchools) {
     const master = school.master;
-    if (!master) continue;
+    // 学校名はマスタ優先（自由記述の表記ゆれを直した正式名が入る）
+    const name = master?.schoolName ?? school.schoolName;
+    // ★course の空文字は「普通科の本体」。学科名が無いのではないので、括弧ごと出さない
+    const course = master?.course ? `（${master.course}）` : '';
+    const blocks: string[] = [`第${school.rank} ${name}${course}`];
 
-    const parts: string[] = [];
-    if (master.naishin != null) {
-      /**
-       * ★差を出してよいのは、本人の換算内申と必要内申の満点が揃っているときだけ。
-       *
-       * calcTokyoNaishin は5科×1＋実技4科×2＝65点満点しか計算しない。
-       * 3教科入試の学科（芸術・体育系）は国数英×1＋残り6科×2＝75点満点、
-       * 産業技術高専は独自換算で52点満点なので、65点満点の本人の数字から引くと
-       * 意味のない値になる（駒場の保健体育は必要内申55/75。本人41を引いて「-14」と
-       * 出すと、面談で「あと14足りません」と言ってしまう）。
-       *
-       * 満点が違うときは必要内申だけを分母つきで出し、差は出さない。
-       * 出典: vault NEST/ナレッジ/高校入試情報_都立は1020点の総合得点1本で決まる.md
-       *      「3教科入試の学科を志望に混ぜたら換算内申の満点が75になる。
-       *        65点満点の学校と同じ数字で並べない」
-       */
-      const comparable = master.naishinMax == null || master.naishinMax === 65;
-      if (ownNaishin != null) {
-        if (comparable) {
-          const diff = ownNaishin - master.naishin;
-          const diffText = diff >= 0 ? `+${diff}` : `${diff}`;
-          parts.push(`${formatNaishin(master.naishin, master.naishinMax)}（${diffText}）`);
-        } else {
-          // 満点が違うので差は出せない。必要内申だけを分母つきで示す
-          parts.push(formatNaishin(master.naishin, master.naishinMax));
-        }
+    if (master) {
+      const parts = targetSchoolStandardParts(master, ownNaishin, ownHensachi);
+      if (parts.length > 0) {
+        const sourceBits: string[] = [];
+        if (master.sourceLabel) sourceBits.push(`${master.sourceLabel}・合格可能性60%の位置`);
+        if (master.verifiedAt == null) sourceBits.push('原本との突き合わせは未了');
+        const sourceSuffix = sourceBits.length > 0 ? `（${sourceBits.join('／')}）` : '';
+        blocks.push(`めやす ${parts.join('・')}${sourceSuffix}`);
       }
-      // 本人の内申が取れないときは何も出さない（②④の「聞くこと」が入力を促す）
-    }
-    if (master.hensachi != null && ownHensachi != null) {
-      const diff = ownHensachi - master.hensachi;
-      const diffText = diff >= 0 ? `+${diff}` : `${diff}`;
-      parts.push(`必要偏差値${master.hensachi}（${diffText}）`);
-    }
-    if (parts.length === 0) continue;
 
-    const sourceBits: string[] = [];
-    if (master.sourceLabel) sourceBits.push(`${master.sourceLabel}・合格可能性60%の位置`);
-    if (master.verifiedAt == null) sourceBits.push('原本との突き合わせは未了');
-    const sourceSuffix = sourceBits.length > 0 ? `（${sourceBits.join('／')}）` : '';
+      /**
+       * ★沿線まで。最寄駅（primary_station）は出さない。
+       *   直線距離で決めており、乗り換えを無視した「最寄り」は面談で使えない
+       *  （docs/data/README.md）。
+       */
+      const accessLines = (master.accessLines ?? []).filter((l) => l.trim());
+      if (accessLines.length > 0) blocks.push(`沿線: ${accessLines.join('・')}`);
+    }
 
-    tell.push(`第${school.rank}志望 ${master.schoolName} ―― ${parts.join('・')}${sourceSuffix}`);
+    tell.push(blocks.join(' ／ '));
   }
 
   return { tell, ask: [] };
+}
+
+/* ============================================================
+ * ②ヒアリング: 前回の約束・前回の要望
+ * ------------------------------------------------------------
+ * 正典: docs/interview-workspace-layout-2026-09.md §「中身の追加（第2段）」
+ *
+ * せっかく来てもらう面談なので、「前回こう言っていましたが、その後どうですか」を
+ * 台本に載せる。件数と文言が確実でないと面談で使えないため、AIには書かせず
+ * システムが組む（AIに書かせるのは lastInterview の「見えること」だけ）。
+ * ========================================================== */
+
+/** 「その後どうですか」に埋め込む本文の長さ。これ以上は面談で読み上げられない */
+const MAX_FOLLOW_UP_TEXT = 40;
+/** 前回の要望として拾う箇条書きの上限。並べすぎると左の「話すこと」が埋まる */
+const MAX_PREVIOUS_REQUESTS = 5;
+/** 前回の約束として出す未完了タスクの上限（同上） */
+const MAX_PREVIOUS_PROMISES = 5;
+
+/**
+ * 「前回の要望」として拾う Notta の見出し。
+ * ★要望そのものだけでなく「次回への申し送り」「今後の方針」も拾う。前回の面談で
+ *   保護者と約束したことは、この3つのどこに書かれるか運用で決まっていないため。
+ */
+const PREVIOUS_REQUEST_HEADING = /(保護者からの要望|要望|次回への申し送り|今後の方針)/;
+
+/** 'YYYY-MM-DD' を 'M/D' にする（狭い枠に出す事実の行では年を落とす） */
+export function fmtMonthDay(dateStr: string): string {
+  const m = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return dateStr;
+  return `${Number(m[2])}/${Number(m[3])}`;
+}
+
+/** 面談で読み上げる長さに詰める（切ったことが分かるよう…を付ける） */
+function clipForTalk(text: string): string {
+  const flat = text.replace(/\s+/g, ' ').trim();
+  return flat.length > MAX_FOLLOW_UP_TEXT ? `${flat.slice(0, MAX_FOLLOW_UP_TEXT)}…` : flat;
+}
+
+/** ②ヒアリングの「前回の約束」「前回の要望」と、そこから組む「聞くこと」 */
+export interface PreviousCommitmentLines {
+  /** 右（事実）: 未完了のタスク。1件1行 */
+  promises: string[];
+  /** 右（事実）: 直近の面談記録から拾った要望・申し送りの箇条書き */
+  requests: string[];
+  /** 左（話すこと）: 約束・要望1件ごとの「その後どうですか」 */
+  asks: string[];
+}
+
+/**
+ * 前回の約束（未完了タスク）と前回の要望（直近の面談記録の箇条書き）を組み、
+ * 1件ごとに「前回の『◯◯』はその後どうですか」を作る。
+ *
+ * ★約束の本文は title ではなく content に入る（InterviewTasksCard の追加欄が
+ *   content に書くため）。title が入っている古い行もあるので title を優先する。
+ * ★同じ文面が約束と要望の両方に出ることがある（面談でタスクに起こした要望など）ので、
+ *   「聞くこと」は文面で重複を落とす。同じことを2回聞かせない。
+ */
+export function buildPreviousCommitmentLines(
+  interviews: readonly StudentInterview[]
+): PreviousCommitmentLines {
+  // --- 前回の約束（未完了タスク） ---
+  const promiseTexts: string[] = [];
+  const promises: string[] = [];
+  for (const row of interviews) {
+    if (row.interview_type !== 'task' || row.is_completed) continue;
+    if (promises.length >= MAX_PREVIOUS_PROMISES) break;
+    const text = (row.title?.trim() || row.content || '').replace(/\s+/g, ' ').trim();
+    if (!text) continue;
+    promiseTexts.push(text);
+    promises.push(`${text}（${fmtMonthDay(row.interview_date)}・未完了）`);
+  }
+
+  // --- 前回の要望（直近の面談記録の箇条書き） ---
+  const requests: string[] = [];
+  const latest = interviews.find((i) => i.interview_type !== 'task');
+  if (latest) {
+    // ★中身が空の見出し（「確認できませんでした」だけの節）は parseNottaSummary が畳むので、
+    //   ここに来る時点で omitted は混ざらない
+    const parsed = parseNottaSummary(latest.content);
+    for (const section of parsed?.sections ?? []) {
+      if (!PREVIOUS_REQUEST_HEADING.test(section.heading)) continue;
+      for (const bullet of section.bullets) {
+        if (requests.length >= MAX_PREVIOUS_REQUESTS) break;
+        const text = bullet.replace(/\s+/g, ' ').trim();
+        if (text) requests.push(text);
+      }
+    }
+  }
+
+  // --- 「その後どうですか」（左） ---
+  const asks = Array.from(
+    new Set(
+      [...promiseTexts, ...requests].map((t) => `前回の「${clipForTalk(t)}」はその後どうですか`)
+    )
+  );
+
+  return { promises, requests, asks };
+}
+
+/* ============================================================
+ * ②ヒアリング: 前回の申し送り（AIにもこの文面を渡す）
+ * ========================================================== */
+
+/**
+ * 面談記録1件から「前回の申し送り」として1行に載せる文面を作る。
+ *
+ * ★Notta取込の本文をそのまま切り出すと、「確認できませんでした」だけの節や
+ *   録音日時・URLが行の半分を占める。実機で読めなかったので、構造化してから畳む。
+ *   ここで作った文面は画面だけでなく **AIにもそのまま渡る**（ノイズを減らすのが狙い）。
+ *
+ * 優先順:
+ *   1. `## 次回への申し送り` 見出し（手で書いたもの）
+ *   2. Nottaの「次回への申し送り」節
+ *   3. Nottaの中身のある節を「見出し: 箇条書き／…」で並べたもの
+ *   4. メタ行だけ落とした本文（構造化できない手入力の記録）
+ */
+export function buildHandoverText(content: string): string {
+  const explicit = extractHandover(content);
+  if (explicit) return explicit.replace(/\s+/g, ' ').trim().slice(0, MAX_HANDOVER_LENGTH);
+
+  const parsed = parseNottaSummary(content);
+  if (parsed && parsed.sections.length > 0) {
+    const handoverSection = parsed.sections.find((s) => /次回への申し送り/.test(s.heading));
+    const text = handoverSection
+      ? handoverSection.bullets.join('／')
+      : // ★節の区切りは「｜」。箇条書きの区切り（／）と見分けが付かないと、
+        //   どこまでが同じ見出しの話なのか読めなくなる
+        parsed.sections.map((s) => `${s.heading}: ${s.bullets.join('／')}`).join('｜');
+    const flat = text.replace(/\s+/g, ' ').trim();
+    if (flat) return flat.slice(0, MAX_HANDOVER_LENGTH);
+  }
+
+  return stripNottaMeta(content).replace(/\s+/g, ' ').trim().slice(0, MAX_HANDOVER_LENGTH);
+}
+
+/* ============================================================
+ * ④現状の確認: 進行表（LIVEの教材だけ・引継ぎのテキストが主役）
+ * ========================================================== */
+
+/** 1冊につき出す直近の履歴の数。3回ぶん見れば「最近どうか」は分かる */
+const PROGRESS_RECENT_LESSONS = 3;
+/** 引継ぎの1行に載せる長さ */
+const PROGRESS_HANDOVER_LENGTH = 80;
+
+/**
+ * 科目ごとに「いま使っている教材」（LIVE）を1冊だけ選ぶ。
+ *
+ * ★判定は進行表ページの `pickLiveTextbookIds`（newProgress.shared.ts）と同じ
+ *   「最終利用日が最新・同日なら手動の並び順が上」。同じ画面で LIVE の付く教材が
+ *   違って見えると取り違えるため、意味論はあちらに合わせること。
+ *   関数そのものを共有しないのは、面談ページが取得している形
+ *  （テキスト×進行記録の配列）が進行表ページと違うため（このファイル冒頭の
+ *   summarizeTextbookProgress と同じ事情）。
+ * ★授業記録が1件も無い教材は候補にしない（最終利用日が無い＝使っていない）。
+ */
+export function pickLiveTextbookDetails(
+  textbookData: readonly TextbookProgressData[]
+): TextbookProgressDetail[] {
+  const best = new Map<string, { detail: TextbookProgressDetail; order: number }>();
+
+  textbookData.forEach(({ textbook, rows }, index) => {
+    const detail = summarizeTextbookDetail(textbook, rows);
+    if (!detail.lastDate) return;
+    // 並び順は手動（sort_order）が正。取得順は呼び出し側の都合なので同点のときだけ使う
+    const order = textbook.sort_order ?? index;
+    const current = best.get(detail.subject);
+    if (
+      !current ||
+      detail.lastDate > (current.detail.lastDate ?? '') ||
+      (detail.lastDate === current.detail.lastDate && order < current.order)
+    ) {
+      best.set(detail.subject, { detail, order });
+    }
+  });
+
+  return Array.from(best.values()).map((v) => v.detail);
+}
+
+/**
+ * 同じ講師・同じ引継ぎ文の行が続いたら、いちばん新しい1件だけ残す。
+ *
+ * ★引継ぎは単元（student_progress）に付いており、同じ単元を複数回に分けて進めると
+ *   その回すべてに同じ文が乗る。実際に 9/15 と 9/11 に同じ講師・同じ文の行が並んでいた。
+ *   面談で同じ文を2回読むと「先週と同じことしか言えていない」に見えるので畳む。
+ * ★引継ぎが空の行は畳まない。文が無い行同士を「同じ」と見なすと、別々の単元が消えて
+ *   何をやったのかが分からなくなる。
+ * ★連続していないとき（間に別の引継ぎが挟まるとき）は残す。時系列が飛ぶと読めなくなるため。
+ * ★入力は新しい順（summarizeTextbookDetail が実施日の降順で返す）なので、
+ *   連続する塊の先頭＝いちばん新しい1件が残る。
+ */
+export function dedupeConsecutiveHandovers(
+  lessons: readonly TextbookLessonHistoryEntry[]
+): TextbookLessonHistoryEntry[] {
+  const kept: TextbookLessonHistoryEntry[] = [];
+  let prevKey: string | null = null;
+  for (const lesson of lessons) {
+    const text = lesson.handover?.replace(/\s+/g, ' ').trim() ?? '';
+    const key = text ? JSON.stringify([lesson.teacherName?.trim() ?? '', text]) : null;
+    if (key != null && key === prevKey) continue;
+    kept.push(lesson);
+    prevKey = key;
+  }
+  return kept;
+}
+
+/**
+ * ④現状の確認の「進行表」の行を組む。
+ *
+ * ★進捗%は出さない。数字の話は成績でする、というのが第2段の決めごと
+ *  （docs/interview-workspace-layout-2026-09.md）。主役は引継ぎのテキスト。
+ * ★1冊目の行に「進行表 ―― 」の見出しを付けるのは呼び出し側（カード・印刷シート）。
+ */
+export function buildProgressFactLines(textbookData: readonly TextbookProgressData[]): string[] {
+  const lines: string[] = [];
+
+  for (const detail of pickLiveTextbookDetails(textbookData)) {
+    const subject = SUBJECT_LABELS[detail.subject] ?? detail.subject;
+    const head = `${detail.name}${subject ? `（${subject}）` : ''}`;
+    lines.push(`${head} 最終記入 ${detail.lastDate ? fmtMonthDay(detail.lastDate) : '―'}`);
+
+    for (const lesson of dedupeConsecutiveHandovers(detail.recentLessons).slice(
+      0,
+      PROGRESS_RECENT_LESSONS
+    )) {
+      const teacher = lesson.teacherName?.trim();
+      const handover = lesson.handover?.replace(/\s+/g, ' ').trim();
+      lines.push(
+        `${fmtMonthDay(lesson.lessonDate)} ${lesson.unitTitle}${teacher ? `（${teacher}）` : ''}` +
+          // 引継ぎが無い単元のほうが多い。「：」だけが並ぶと読めないので、無ければ足さない
+          (handover ? `：${handover.slice(0, PROGRESS_HANDOVER_LENGTH)}` : '')
+      );
+    }
+
+    if (detail.nextUnitTitles.length > 0) {
+      lines.push(`次 ―― ${detail.nextUnitTitles.join('、')}`);
+    }
+  }
+
+  return lines;
+}
+
+/* ============================================================
+ * ⑤プラン提示: 今期の提案と、これまでの講習の履歴
+ * ------------------------------------------------------------
+ * 正典: docs/interview-workspace-layout-2026-09.md §⑤
+ *
+ * ★材料は提案書（seasonal_proposals）。koushu_enrollments は本番0行で、
+ *   2027-02公開のWeb申込の入力源として空のまま待っている。消さずに足し込む側に置き、
+ *   行ができたら同じ期のバケットに合流させる（lib/api/seasonalProposalSummary.ts 参照）。
+ * ========================================================== */
+
+/** 履歴として出す期の数。古い期まで並べても面談では使わない */
+const MAX_KOUSHU_HISTORY = 4;
+
+/** 期の状態の言い方。⑤の行・⑥のバッジ・ヘッダー帯で同じ言葉を使う */
+const KOUSHU_STATUS_LABEL: Record<SeasonalProposalStatus, string> = {
+  approved: '申込済',
+  sent: '提案中',
+  draft: '下書き',
+};
+
+/** 年度内の季節の並び（古い→新しい）。年度は4月始まりなので 春期 → 夏期 → 冬期 */
+const SEASON_ORDER_IN_YEAR: Record<string, number> = { spring: 0, summer: 1, winter: 2 };
+
+/**
+ * 今日が属する講習の年度。
+ *
+ * ★1〜3月は前年度。年度は4月始まりで、1〜2月の冬期講習・3月の春期講習はどちらも
+ *   前年4月に始まった年度のものとして year に入っている
+ *  （本番の実例: 2026-09 に作った冬期の提案書が year=2026）。
+ */
+export function koushuFiscalYear(date: Date): number {
+  const month = date.getMonth() + 1;
+  return month <= 3 ? date.getFullYear() - 1 : date.getFullYear();
+}
+
+/** 期（年度×季節）1つぶんの講習。提案書と（将来の）Web申込を合流させた形 */
+export interface KoushuSeasonBucket {
+  year: number;
+  season: string;
+  status: SeasonalProposalStatus;
+  /** 科目名（日本語）→ コマ数 */
+  komaBySubject: Record<string, number>;
+  totalKoma: number;
+}
+
+/**
+ * 提案書のまとめ（getSeasonalProposalSummaryByStudent）と koushu_enrollments を、
+ * 期（年度×季節）ごとに1つのバケットへ合流させる。
+ *
+ * ★koushu_enrollments は年度カラムを持たない（school+season+student+formation で一意）ので、
+ *   年度は created_at の年から出す。1〜3月に作られた行は前年度に寄せる（koushuFiscalYear と同じ規則）。
+ * ★enrollments の行は「保護者が実際に申し込んだ」ものなので approved 扱いにする。
+ * ★科目名は subjects マスタ（id→name）を呼び出し側から渡す。ここでは引かない（純粋関数を保つ）。
+ */
+export function mergeKoushuSeasons(
+  summaries: readonly SeasonalProposalSeasonSummary[],
+  enrollments: readonly KoushuEnrollment[],
+  subjectNames: Record<string, string>
+): KoushuSeasonBucket[] {
+  const byKey = new Map<string, KoushuSeasonBucket>();
+
+  const bucketOf = (year: number, season: string): KoushuSeasonBucket => {
+    const key = `${year}-${season}`;
+    const found = byKey.get(key);
+    if (found) return found;
+    const created: KoushuSeasonBucket = {
+      year,
+      season,
+      status: 'draft',
+      komaBySubject: {},
+      totalKoma: 0,
+    };
+    byKey.set(key, created);
+    return created;
+  };
+
+  const rank: Record<SeasonalProposalStatus, number> = { draft: 0, sent: 1, approved: 2 };
+
+  for (const s of summaries) {
+    const bucket = bucketOf(s.year, s.season);
+    if (rank[s.status] > rank[bucket.status]) bucket.status = s.status;
+    for (const [subject, koma] of Object.entries(s.komaBySubject)) {
+      bucket.komaBySubject[subject] = (bucket.komaBySubject[subject] ?? 0) + koma;
+    }
+    bucket.totalKoma += s.totalKoma;
+  }
+
+  for (const e of enrollments) {
+    const season = e.season ?? '';
+    if (!season) continue;
+    const created = e.created_at ? new Date(e.created_at) : null;
+    if (!created || Number.isNaN(created.getTime())) continue;
+    const bucket = bucketOf(koushuFiscalYear(created), season);
+    bucket.status = 'approved';
+    const normalized = normalizeKomaBySubject(e.koma_by_subject);
+    let named = 0;
+    for (const [subjectId, spec] of Object.entries(normalized)) {
+      const name = subjectNames[subjectId] ?? '科目不明';
+      bucket.komaBySubject[name] = (bucket.komaBySubject[name] ?? 0) + spec.koma;
+      named += spec.koma;
+    }
+    // ★科目別の内訳が無い古い行は総コマ数だけ足す。内訳が取れないことを黙って0コマに見せない
+    bucket.totalKoma += named > 0 ? named : (e.koma_count ?? 0);
+  }
+
+  return Array.from(byKey.values());
+}
+
+/** 新しい期が先頭になる並び（年度降順 → 年度内は 冬期・夏期・春期 の順） */
+function sortKoushuSeasonsDesc(buckets: readonly KoushuSeasonBucket[]): KoushuSeasonBucket[] {
+  return [...buckets].sort(
+    (a, b) =>
+      b.year - a.year ||
+      (SEASON_ORDER_IN_YEAR[b.season] ?? -1) - (SEASON_ORDER_IN_YEAR[a.season] ?? -1)
+  );
+}
+
+/** 「数学 8コマ・英語 6コマ」。0コマの科目は出さない。1つも残らなければ null */
+function komaBySubjectText(komaBySubject: Record<string, number>): string | null {
+  const parts = Object.entries(komaBySubject)
+    .filter(([, koma]) => koma > 0)
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .map(([subject, koma]) => `${subject} ${koma}コマ`);
+  return parts.length > 0 ? parts.join('・') : null;
+}
+
+/** 期の見出し（「夏期 2026」）。DBに無い季節キーはそのまま出す */
+function koushuSeasonLabel(bucket: KoushuSeasonBucket): string {
+  const label = SEASON_LABELS[bucket.season as keyof typeof SEASON_LABELS] ?? bucket.season;
+  return `${label} ${bucket.year}`;
+}
+
+/**
+ * ⑤の「今期」の行（1行 or 0行）。
+ *
+ * 「提案 数学 8コマ・英語 6コマ（申込済）」。status が sent なら（提案中）、draft なら（下書き）。
+ * ★コマ数が1つも入っていない提案書（applied_koma が全部0）は「提案あり・コマ未確定」。
+ *   提案書はあるのに何も言わないと、面談で話し漏らす。
+ */
+export function buildKoushuCurrentLines(
+  buckets: readonly KoushuSeasonBucket[],
+  year: number,
+  season: string
+): string[] {
+  const bucket = buckets.find((b) => b.year === year && b.season === season);
+  if (!bucket) return [];
+  const body = komaBySubjectText(bucket.komaBySubject);
+  const status = KOUSHU_STATUS_LABEL[bucket.status];
+  return [body ? `提案 ${body}（${status}）` : `提案あり・コマ未確定（${status}）`];
+}
+
+/**
+ * ⑤の「講習の履歴」の行（今期を除く・新しい順・最大4件）。
+ *
+ * 「夏期 2026：数学 12コマ・英語 8コマ（申込）」。
+ * ★approved（申し込みが確定した期）だけを出す。下書き・提案中の過去の期は
+ *   「出したが取らなかった」「作りかけのまま残った」行で、面談で読み上げるとノイズになる。
+ * ★履歴が無ければ空配列（呼び出し側は行を出さない）。
+ */
+export function buildKoushuHistoryLines(
+  buckets: readonly KoushuSeasonBucket[],
+  year: number,
+  season: string
+): string[] {
+  return sortKoushuSeasonsDesc(buckets)
+    .filter((b) => !(b.year === year && b.season === season))
+    .filter((b) => b.status === 'approved')
+    .slice(0, MAX_KOUSHU_HISTORY)
+    .map((b) => {
+      const body = komaBySubjectText(b.komaBySubject) ?? `${b.totalKoma}コマ`;
+      return `${koushuSeasonLabel(b)}：${body}（申込）`;
+    });
+}
+
+/** ヘッダー帯・⑤のバッジ・⑥「申込の状況」が共通に使う、講習1行のまとめ */
+export interface KoushuSummaryView {
+  /** 表示文。3か所で同じ文言を使う（片方だけ直して食い違うのを防ぐ） */
+  label: string;
+  /** コマ数。今期が空なら直近の期のコマ数 */
+  koma: number;
+  /** 今期の申込が確定しているか。★過去の期にフォールバックしているときは false */
+  applied: boolean;
+  /** label が今期のものか。false＝今期は空で直近の期を出している */
+  isCurrentSeason: boolean;
+}
+
+/**
+ * 今期の講習を1行にまとめる。ヘッダー帯・⑤のバッジ・⑥の「申込の状況」で同じ値を使う。
+ *
+ * ★今期に1件も無いときは黙って「申込なし」で終わらせない。直近の期を添える。
+ *   本番では夏期の提案書しか無い生徒が大半で、9月の面談で「申込なし」とだけ出ると
+ *   「この生徒は講習を取ったことがない」と読み違える（実際は夏期に98コマ取っている）。
+ */
+export function summarizeCurrentKoushu(
+  buckets: readonly KoushuSeasonBucket[],
+  year: number,
+  season: string
+): KoushuSummaryView {
+  const seasonLabel = SEASON_LABELS[season as keyof typeof SEASON_LABELS] ?? season;
+  const current = buckets.find((b) => b.year === year && b.season === season);
+  if (current) {
+    return {
+      label: `${koushuSeasonLabel(current)} ${current.totalKoma}コマ（${KOUSHU_STATUS_LABEL[current.status]}）`,
+      koma: current.totalKoma,
+      applied: current.status === 'approved',
+      isCurrentSeason: true,
+    };
+  }
+
+  const latest = sortKoushuSeasonsDesc(buckets)[0];
+  if (!latest) {
+    return { label: '申込なし', koma: 0, applied: false, isCurrentSeason: false };
+  }
+  return {
+    label: `${seasonLabel} ${year} は申込なし（直近 ${koushuSeasonLabel(latest)} ${latest.totalKoma}コマ・${KOUSHU_STATUS_LABEL[latest.status]}）`,
+    koma: latest.totalKoma,
+    applied: false,
+    isCurrentSeason: false,
+  };
 }

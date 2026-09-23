@@ -17,6 +17,7 @@ import {
   parseBriefResult,
   sanitizeBriefSections,
   sortBriefSections,
+  dedupeConsecutiveLessonLines,
   isSelectableModelKey,
   resolveInterviewBriefModelKey,
   MAX_CURRENT_LINES,
@@ -93,6 +94,15 @@ describe('briefSystemPrompt', () => {
     expect(p).toContain(`${MAX_SEEN_LENGTH}字`);
     expect(p).toContain(`${MAX_THREAD_LENGTH}字`);
     expect(p).toContain(`${MAX_BRIDGE_LENGTH}字`);
+  });
+
+  it('★②ヒアリングは「家庭で見えないこと・良い報告」に寄せる（第2段）', () => {
+    const p = briefSystemPrompt();
+    // 授業の様子は、保護者が家では見られないものを良い報告として書かせる
+    expect(p).toContain('できるようになったこと');
+    expect(p).toContain('家庭では見えないことを優先する');
+    // 前回の面談からは、約束・要望のその後を追わせる
+    expect(p).toContain('前回の約束・要望に対して');
   });
 
   it('見えることが無ければ空にさせる（無理に書かせない）', () => {
@@ -351,5 +361,34 @@ describe('SCENE_OF_SECTION（面談の流れ順シーンへの割り当て）', 
 
   it('koushu は⑤プラン提示に割り当てる（bridge の前提）', () => {
     expect(SCENE_OF_SECTION.koushu).toBe('plan');
+  });
+});
+
+describe('dedupeConsecutiveLessonLines（②授業の様子）', () => {
+  it('★同じ講師・同じ引継ぎ文が続いたら、いちばん新しい1件だけ残す（入力は古い順）', () => {
+    const lines = [
+      '2026/09/04 広田: 因数分解の公式を確認',
+      '2026/09/11 広田: 計算は安定。文章題は復習が要る',
+      '2026/09/15 広田: 計算は安定。文章題は復習が要る',
+    ];
+    expect(dedupeConsecutiveLessonLines(lines)).toEqual([
+      '2026/09/04 広田: 因数分解の公式を確認',
+      '2026/09/15 広田: 計算は安定。文章題は復習が要る',
+    ]);
+  });
+
+  it('講師が違えば同じ文でも残す', () => {
+    const lines = ['2026/09/11 広田: 同じ文', '2026/09/15 田中: 同じ文'];
+    expect(dedupeConsecutiveLessonLines(lines)).toHaveLength(2);
+  });
+
+  it('★連続していなければ残す（時系列が飛ぶと読めなくなる）', () => {
+    const lines = ['2026/09/04 広田: 同じ文', '2026/09/11 広田: 別の文', '2026/09/15 広田: 同じ文'];
+    expect(dedupeConsecutiveLessonLines(lines)).toHaveLength(3);
+  });
+
+  it('★「: 」が無い想定外の形の行は畳まない', () => {
+    const lines = ['引継ぎ 3件', '引継ぎ 3件'];
+    expect(dedupeConsecutiveLessonLines(lines)).toHaveLength(2);
   });
 });

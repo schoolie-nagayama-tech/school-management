@@ -16,6 +16,7 @@ import {
   parseBriefResult,
   sanitizeBriefSections,
   sortBriefSections,
+  dedupeConsecutiveLessonLines,
   resolveInterviewBriefModelKey,
   MAX_CURRENT_LINE_LENGTH,
   type BriefSectionInput,
@@ -74,6 +75,8 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 
 /** 「授業の様子」に載せる引継ぎの回数。1回45字として900字ぶん */
 const LESSON_ENTRIES = 20;
+/** 画面（事実の列）に出す引継ぎの件数。AIには LESSON_ENTRIES 件ぶん全部渡す */
+const LESSON_VIEW_ENTRIES = 3;
 /** 「保護者と」に載せるやりとりの件数 */
 const PARENT_MESSAGES = 10;
 /** 直近の連絡の本文をどこまで載せるか */
@@ -311,14 +314,22 @@ export async function POST(request: NextRequest) {
    * 「授業の様子」はAIには直近20回ぶんを全部渡す。繰り返し出ている言葉（「単語が抜ける」が
    * 4回、など）は、並べて初めて見えるもので、間引くと着眼点が書けなくなる。
    * 一方で画面に20行並べると、面談中に読めるものではなくなる（実機で6行でも読みにくかった）。
-   * そこで画面には件数と直近1件だけを出し、中身はAIの着眼点で読ませる。
+   * そこで画面には件数と直近3件だけを出し、残りはAIの着眼点で読ませる。
+   *
+   * ★2026-09の第2段で1件→3件にした。②ヒアリングで「家庭では見えない授業の様子」を
+   *   話すのに、直近1件だけでは材料にならなかった（docs/interview-workspace-layout-2026-09.md）。
    *
    * 他のセクションは行数がもともと少ないので、そのまま出す。
    */
   const viewCurrent = (s: BriefSectionInput): string[] => {
-    if (s.key !== 'lessons' || s.current.length <= 2) return s.current;
-    // loadLessonLines は古い順に戻して返すので、直近は末尾
-    return [`引継ぎ ${s.current.length}件`, `直近 ―― ${s.current[s.current.length - 1]}`];
+    if (s.key !== 'lessons') return s.current;
+    // ★同じ講師・同じ引継ぎ文が続く塊は、いちばん新しい1件だけ残す（画面に出す3行が
+    //   同じ文で埋まると材料にならない）。AIに渡す材料（sections）は畳まない
+    const lines = dedupeConsecutiveLessonLines(s.current);
+    if (lines.length <= LESSON_VIEW_ENTRIES + 1) return lines;
+    // loadLessonLines は古い順に戻して返すので、直近は末尾。新しい順に並べ直して先頭3件を出す
+    const recent = lines.slice(-LESSON_VIEW_ENTRIES).reverse();
+    return [`引継ぎ ${lines.length}件`, `直近 ―― ${recent[0]}`, ...recent.slice(1)];
   };
 
   const withCurrent = (
