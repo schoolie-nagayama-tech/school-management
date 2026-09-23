@@ -1,5 +1,8 @@
 #!/usr/bin/env node
-// docs/data/kanagawa-goukaku-kijun-2026.csv → high_schools + high_school_standards（神奈川県）
+// docs/data/ の神奈川の3つのCSV → high_schools + high_school_standards（神奈川県）
+//   kanagawa-goukaku-kijun-2026.csv  … 合格基準（写真から手起こし）
+//   kanagawa-school-address-r7.csv   … 所在地（神奈川県オープンデータ CC BY 4.0）
+//   kanagawa-school-station-r7.csv   … 座標・最寄駅・沿線（こちらで算出＋公式サイトで手動上書き）
 //
 // 使い方:
 //   node scripts/import-kanagawa-schools.mjs            # 下見（書き込まない）
@@ -10,7 +13,7 @@
 //   東京（Vもぎ）= 総合得点（学力検査＋調査書＝1000点）・換算内申（65/75/52）
 //   神奈川（新教育研究協会）= 基準S1値（1000点・各校の比率で計算・特色検査を含まない）
 //                              ・基準内申（重点化校も含めて全て135点満点）
-//   さらに神奈川には所在地・最寄駅のCSVが無い（東京は4つのCSVを結合している）。
+//   所在地の出どころも違う（東京=都教委の学校一覧／神奈川=県のオープンデータ）。
 //
 // ★列の使い回しに注意（docs/data/README.md にも書いた）:
 //   - total_score に入るのは神奈川では「基準S1値」。東京の「総合得点」とは算出法が違う。
@@ -20,6 +23,13 @@
 //   - exam_type（共通/自校作成）と gakuryoku_ratio（7:3 等）は神奈川では使わない（NULL）。
 //     各校の比率 f:g はこの資料に無く、県の「選考基準」が正典。
 //   - 単位制・3科/4科は note に文字で入れる（専用列を足すほどの使い道がまだ無い）。
+//
+// ★所在地・最寄駅の結合キーは school_name（合格基準一覧表の表記。「市立東」「県立川崎」など）。
+//   県オープンデータのIDは横浜瀬谷と厚木王子で重複している（元データの誤り）ので使えない。
+//   同じ理由で high_schools.school_code にも入れない（NULLのまま）。東京の school_code は
+//   都教委の学校番号で、そもそも意味が違う。
+// ★access_stations（「駅名(距離m)」の配列）はまだ入れない。列を足す東京側のPR
+//   （claude/ai-help-school-location）がマージされたら、東京と同じく arr(s.access_stations) を足す。
 
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -42,6 +52,7 @@ const FILE = opt('--file', 'kanagawa-goukaku-kijun-2026.csv');
 const SOURCE = '新教育研究協会';
 const SOURCE_YEAR = Number(opt('--year', '2026'));
 const SOURCE_LABEL = opt('--label', '合格基準一覧表 2026年度');
+const LOCATION_SOURCE = '神奈川県 公立小・中・高等学校等一覧（2025-08-15）';
 
 function parseCsv(text) {
   const rows = [];
@@ -80,8 +91,12 @@ function parseCsv(text) {
 
 const num = (v) => (v === '' || v == null ? null : Number(v));
 const str = (v) => (v === '' ? null : v);
+const arr = (v) => (v ? v.split(';').filter(Boolean) : null);
 
-const src = parseCsv(readFileSync(`docs/data/${FILE}`, 'utf8').trim());
+const read = (f) => parseCsv(readFileSync(`docs/data/${f}`, 'utf8').trim());
+const src = read(FILE);
+const addrBy = new Map(read('kanagawa-school-address-r7.csv').map((r) => [r.school_name, r]));
+const staBy = new Map(read('kanagawa-school-station-r7.csv').map((r) => [r.school_name, r]));
 
 const rows = src.map((r) => {
   // 単位制・入試教科数は専用列を作らず note に持つ
@@ -90,6 +105,8 @@ const rows = src.map((r) => {
   if (r.subjects === '3') notes.push('3教科入試');
   if (r.subjects === '4') notes.push('4教科入試');
   if (r.note?.trim()) notes.push(r.note.trim());
+  const a = addrBy.get(r.school_name);
+  const s = staBy.get(r.school_name);
   return {
     row: {
       prefecture: '神奈川県',
@@ -97,9 +114,17 @@ const rows = src.map((r) => {
       course: r.course || '', // ★NULLにしない。UNIQUEが効かなくなる
       category: r.category,
       region: str(r.region),
-      // 所在地・最寄駅の資料が神奈川には無い
-      school_code: null,
-      old_district: null,
+      school_code: null, // ★県オープンデータのIDは重複があるので入れない（冒頭の注記）
+      old_district: null, // 神奈川に学区制は無い
+      municipality: a ? a.municipality : null,
+      address: a ? a.full_address : null,
+      lat: s ? num(s.lat) : null,
+      lon: s ? num(s.lon) : null,
+      primary_station: s ? str(s.primary_station) : null,
+      primary_lines: s ? arr(s.primary_lines) : null,
+      access_lines: s ? arr(s.access_lines) : null,
+      station_source: s ? str(s.source) : null,
+      location_source: a ? LOCATION_SOURCE : null,
     },
     std: {
       source: SOURCE,
@@ -124,6 +149,11 @@ console.log(
   `版: ${SOURCE_LABEL}（source_year=${SOURCE_YEAR}・${FILE}・verified=${VERIFIED ? 'あり' : 'なし'}）`
 );
 console.log(`→ high_schools（神奈川県）${rows.length}行`);
+const noAddr = [...new Set(rows.filter((x) => !x.row.municipality).map((x) => x.row.school_name))];
+const noSta = [...new Set(rows.filter((x) => !x.row.access_lines).map((x) => x.row.school_name))];
+console.log(`所在地が付かない学校: ${noAddr.join('、') || 'なし'}`);
+console.log(`沿線が付かない学校: ${noSta.join('、') || 'なし'}`);
+console.log(`最寄駅が手動確認: ${rows.filter((x) => x.row.station_source === '手動').length}行`);
 console.log(
   `内申が空: ${blankNaishin.length}行 … ${blankNaishin.map((x) => x.row.school_name).join('、') || 'なし'}`
 );
