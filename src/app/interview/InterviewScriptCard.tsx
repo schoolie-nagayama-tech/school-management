@@ -681,9 +681,10 @@ export function InterviewScriptCard({
 
   // ②ヒアリング「目標の達成度」。AIセクションを通さない「伝える」「聞く」行なので、
   // buildTellSections とは別に持って②「学校」の小見出しに足し込む。
+  // ★学年を渡すのは、去年の同じ試験（中2の2学期中間など）の点を突き合わせないため
   const goalAchievement = useMemo(
-    () => buildGoalAchievementLines(examGoals, assessments),
-    [examGoals, assessments]
+    () => buildGoalAchievementLines(examGoals, assessments, student.grade, new Date()),
+    [examGoals, assessments, student.grade]
   );
   /**
    * ④「テスト対策 → 結果と課題」。★目標の達成度がすでに同じ試験の結果を聞いているときは、
