@@ -30,7 +30,15 @@ import {
   AI_FEATURE_SENDS,
   type AiFeatureKey,
 } from '@/lib/ai/features';
-import { ChevronLeft, ImageIcon, X, Plus } from 'lucide-react';
+import { ChevronLeft, ImageIcon, X, Plus, MapPin } from 'lucide-react';
+
+/** 緯度経度の入力欄の文字列 → 数値。空は null、範囲外や数字でないものは NaN（保存させない） */
+function parseCoord(text: string, min: number, max: number): number | null {
+  const t = text.trim();
+  if (t === '') return null;
+  const n = Number(t);
+  return Number.isFinite(n) && n >= min && n <= max ? n : NaN;
+}
 
 export default function SchoolSettingsPage() {
   const { hasPermission, isLoading: permissionLoading } = useRequirePermission(
@@ -46,6 +54,16 @@ export default function SchoolSettingsPage() {
   const [logoUrl, setLogoUrl] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [isSavingBookingUrl, setIsSavingBookingUrl] = useState(false);
+  /**
+   * 最寄り駅（高校までの通学時間の起点）。★生徒の住所は使わず、教室の最寄り駅から測る。
+   * 緯度経度は文字列で持つ（手で直している途中の「35.」のような値を消さないため）。
+   */
+  const [nearestStation, setNearestStation] = useState('');
+  const [stationLat, setStationLat] = useState('');
+  const [stationLon, setStationLon] = useState('');
+  const [isEditingCoords, setIsEditingCoords] = useState(false);
+  const [isGeocoding, setIsGeocoding] = useState(false);
+  const [isSavingStation, setIsSavingStation] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -76,6 +94,10 @@ export default function SchoolSettingsPage() {
           setLogoUrl(schoolData.logo_url || '');
           setSlackMentionId(schoolData.slack_mention_id || '');
           setMeetingBookingUrl(schoolData.meeting_booking_url || '');
+          setNearestStation(schoolData.nearest_station || '');
+          setStationLat(schoolData.nearest_station_lat?.toString() ?? '');
+          setStationLon(schoolData.nearest_station_lon?.toString() ?? '');
+          setIsEditingCoords(false);
           // notification_emails 配列を優先、なければ旧フィールドから復元
           if (schoolData.notification_emails && schoolData.notification_emails.length > 0) {
             setNotificationEmails(schoolData.notification_emails);
@@ -204,6 +226,87 @@ export default function SchoolSettingsPage() {
       toastError(getUserErrorMessage(err, '更新に失敗しました'));
     } finally {
       setIsSavingBookingUrl(false);
+    }
+  };
+
+  // 駅名から緯度経度を取る（国土地理院の地名検索をサーバー経由で引く）。
+  // ★ここでは画面に入れるだけで保存しない。取れた位置を見てから「保存」を押してもらう。
+  const handleGeocodeStation = async () => {
+    const name = nearestStation.trim();
+    if (!name) {
+      toastError('駅名を入力してください');
+      return;
+    }
+    setIsGeocoding(true);
+    try {
+      const res = await fetchWithAuth(
+        `/api/admin/station-geocode?name=${encodeURIComponent(name)}`
+      );
+      const json = (await res.json().catch(() => ({}))) as {
+        station?: string;
+        lat?: number;
+        lon?: number;
+        error?: string;
+      };
+      if (!res.ok || json.lat == null || json.lon == null) {
+        throw new Error(json.error || '位置を取得できませんでした');
+      }
+      // 「清瀬駅」と打たれても保存は「清瀬」に揃える（APIが整えた名前を使う）
+      if (json.station) setNearestStation(json.station);
+      setStationLat(String(json.lat));
+      setStationLon(String(json.lon));
+      success('位置を取得しました。確かめてから保存してください');
+    } catch (err) {
+      toastError(getUserErrorMessage(err, '位置を取得できませんでした'));
+    } finally {
+      setIsGeocoding(false);
+    }
+  };
+
+  // 最寄り駅を保存
+  // ★ほかのカードと保存を分けている理由は handleSaveBookingUrl と同じ（カードごとに閉じる）。
+  const handleSaveStation = async () => {
+    if (!school) return;
+    const station = nearestStation.trim().replace(/駅$/, '') || null;
+    const lat = parseCoord(stationLat, -90, 90);
+    const lon = parseCoord(stationLon, -180, 180);
+    if (Number.isNaN(lat) || Number.isNaN(lon)) {
+      toastError('緯度経度が数字になっていません（緯度は-90〜90、経度は-180〜180）');
+      return;
+    }
+    // ★緯度と経度は片方だけでは使えない。駅名なしの位置も、何の位置か分からなくなるので保存させない
+    if ((lat == null) !== (lon == null)) {
+      toastError('緯度と経度は両方入れてください');
+      return;
+    }
+    if (!station && lat != null) {
+      toastError('駅名を入れてください');
+      return;
+    }
+    setIsSavingStation(true);
+    try {
+      await updateSchool(school.id, {
+        nearest_station: station,
+        nearest_station_lat: lat,
+        nearest_station_lon: lon,
+      });
+      setSchool({
+        ...school,
+        nearest_station: station,
+        nearest_station_lat: lat,
+        nearest_station_lon: lon,
+      });
+      setNearestStation(station ?? '');
+      setIsEditingCoords(false);
+      success(
+        station && lat == null
+          ? '最寄り駅を保存しました（位置が未設定のため、通学時間はまだ計算されません）'
+          : '最寄り駅を保存しました'
+      );
+    } catch (err) {
+      toastError(getUserErrorMessage(err, '保存に失敗しました'));
+    } finally {
+      setIsSavingStation(false);
     }
   };
 
@@ -390,6 +493,100 @@ export default function SchoolSettingsPage() {
                     {isSavingBookingUrl ? '保存中...' : '保存'}
                   </Button>
                 </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* 最寄り駅。★面談で出す「高校までの通学時間」の起点。生徒の住所は使わない */}
+        <Card>
+          <CardHeader>
+            <CardTitle>最寄り駅</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              <p className="text-sm text-text-body">
+                高校までの通学時間を、この駅を起点に計算します（生徒の住所は使いません）。
+              </p>
+              <div className="flex flex-wrap items-center gap-2">
+                <Input
+                  type="text"
+                  value={nearestStation}
+                  onChange={(e) => {
+                    setNearestStation(e.target.value);
+                    // ★駅名を変えたら前の駅の位置は捨てる。残すと「永山」の名前で別の駅の位置を
+                    //   保存でき、通学時間が黙って別の駅から測られてしまう
+                    setStationLat('');
+                    setStationLon('');
+                  }}
+                  placeholder="例: 京王永山"
+                  maxLength={31}
+                  className="max-w-xs"
+                  aria-label="最寄り駅"
+                />
+                <Button
+                  variant="secondary"
+                  onClick={handleGeocodeStation}
+                  disabled={isGeocoding || !nearestStation.trim()}
+                  className="text-sm"
+                >
+                  <MapPin className="w-4 h-4 mr-1" />
+                  {isGeocoding ? '取得中...' : '駅名から位置を取得'}
+                </Button>
+              </div>
+
+              {isEditingCoords ? (
+                <div className="flex flex-wrap items-center gap-2">
+                  <Input
+                    type="text"
+                    inputMode="decimal"
+                    value={stationLat}
+                    onChange={(e) => setStationLat(e.target.value)}
+                    placeholder="緯度 例: 35.633133"
+                    className="max-w-[11rem]"
+                    aria-label="緯度"
+                  />
+                  <Input
+                    type="text"
+                    inputMode="decimal"
+                    value={stationLon}
+                    onChange={(e) => setStationLon(e.target.value)}
+                    placeholder="経度 例: 139.447712"
+                    className="max-w-[11rem]"
+                    aria-label="経度"
+                  />
+                </div>
+              ) : (
+                <p className="text-xs text-text-muted">
+                  緯度経度:{' '}
+                  {stationLat && stationLon ? (
+                    <span className="tabular-nums text-text-heading">
+                      {stationLat}, {stationLon}
+                    </span>
+                  ) : (
+                    '未設定'
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setIsEditingCoords(true)}
+                    className="ml-2 underline hover:text-text-heading transition-colors duration-150"
+                  >
+                    手で直す
+                  </button>
+                </p>
+              )}
+              <p className="text-xs text-text-muted">
+                位置は国土地理院の地名検索から取ります。見つからないときは、地図アプリで駅の緯度経度を調べて手で入れてください。
+              </p>
+
+              <div className="flex justify-end">
+                <Button
+                  onClick={handleSaveStation}
+                  disabled={isSavingStation}
+                  className="min-w-[120px]"
+                >
+                  {isSavingStation ? '保存中...' : '保存'}
+                </Button>
               </div>
             </div>
           </CardContent>

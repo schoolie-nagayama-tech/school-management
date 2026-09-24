@@ -349,6 +349,10 @@ export type Database = {
           is_demo: boolean;
           /** 面談予約用のGoogleカレンダーURL。null=未設定（自動返信にURLを載せない）。 */
           meeting_booking_url: string | null;
+          /** 高校までの通学時間の起点にする最寄り駅（生徒の住所は使わない）。null=未設定。 */
+          nearest_station: string | null;
+          nearest_station_lat: number | null;
+          nearest_station_lon: number | null;
           created_at: string;
           updated_at: string;
         };
@@ -362,6 +366,9 @@ export type Database = {
           logo_url?: string | null;
           is_demo?: boolean;
           meeting_booking_url?: string | null;
+          nearest_station?: string | null;
+          nearest_station_lat?: number | null;
+          nearest_station_lon?: number | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -375,6 +382,9 @@ export type Database = {
           logo_url?: string | null;
           is_demo?: boolean;
           meeting_booking_url?: string | null;
+          nearest_station?: string | null;
+          nearest_station_lat?: number | null;
+          nearest_station_lon?: number | null;
           created_at?: string;
           updated_at?: string;
         };
